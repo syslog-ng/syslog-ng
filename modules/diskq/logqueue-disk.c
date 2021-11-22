@@ -205,3 +205,32 @@ log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, cons
 
   self->qdisk = qdisk_new(options, qdisk_file_id);
 }
+
+static gboolean
+_serialize_msg(SerializeArchive *sa, gpointer user_data)
+{
+  LogQueueDisk *self = ((gpointer *) user_data)[0];
+  LogMessage *msg = ((gpointer *) user_data)[1];
+
+  DiskQueueOptions *options = qdisk_get_options(self->qdisk);
+
+  return log_msg_serialize(msg, sa, options->compaction ? LMSF_COMPACTION : 0);
+}
+
+gboolean
+log_queue_disk_serialize_msg(LogQueueDisk *self, LogMessage *msg, GString *serialized)
+{
+  gpointer user_data[] = { self, msg };
+  GError *error = NULL;
+
+  if (!qdisk_serialize(serialized, _serialize_msg, user_data, &error))
+    {
+      msg_error("Error serializing message for the disk-queue file",
+                evt_tag_str("error", error->message),
+                evt_tag_str("persist-name", self->super.persist_name));
+      g_error_free(error);
+      return FALSE;
+    }
+
+  return TRUE;
+}

@@ -117,7 +117,7 @@ _serialize_and_write_message_to_disk(LogQueueDiskNonReliable *self, LogMessage *
 {
   ScratchBuffersMarker marker;
   GString *write_serialized = scratch_buffers_alloc_and_mark(&marker);
-  if (!qdisk_serialize_msg(self->super.qdisk, msg, write_serialized))
+  if (!log_queue_disk_serialize_msg(&self->super, msg, write_serialized))
     {
       scratch_buffers_reclaim_marked(marker);
       return FALSE;
@@ -424,7 +424,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
   if (_is_msg_serialization_needed_hint(self))
     {
       serialized_msg = scratch_buffers_alloc_and_mark(&marker);
-      if (!qdisk_serialize_msg(self->super.qdisk, msg, serialized_msg))
+      if (!log_queue_disk_serialize_msg(&self->super, msg, serialized_msg))
         {
           msg_error("Failed to serialize message for non-reliable disk-buffer, dropping message",
                     evt_tag_str("filename", qdisk_get_filename(self->super.qdisk)),

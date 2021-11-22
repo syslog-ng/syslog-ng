@@ -84,6 +84,20 @@ struct _QDisk
   DiskQueueOptions *options;
 };
 
+#define QDISK_ERROR qdisk_error_quark()
+#define QDISK_ERROR_SERIALIZE 0
+
+GQuark
+qdisk_error_quark(void)
+{
+  static GQuark q = 0;
+
+  if (q == 0)
+    q = g_quark_from_static_string("qdisk-error");
+
+  return q;
+}
+
 static gboolean
 pwrite_strict(gint fd, const void *buf, size_t count, off_t offset)
 {
@@ -577,40 +591,32 @@ _overwrite_with_real_record_length(GString *serialized)
 }
 
 gboolean
-qdisk_serialize_msg(QDisk *self, LogMessage *msg, GString *serialized)
+qdisk_serialize(GString *serialized, QDiskSerializeFunc serialize_func, gpointer user_data, GError **error)
 {
-  gchar *error = NULL;
   SerializeArchive *sa = serialize_string_archive_new(serialized);
 
   /* Leave space for the real record_length for later */
   if (!serialize_write_uint32(sa, 0))
     {
-      error = "cannot write record length";
+      g_set_error(error, QDISK_ERROR, QDISK_ERROR_SERIALIZE, "failed to write record length");
       goto exit;
     }
 
-  if (!log_msg_serialize(msg, sa, self->options->compaction ? LMSF_COMPACTION : 0))
+  if (!serialize_func(sa, user_data))
     {
-      error = "cannot serialize LogMessage";
+      g_set_error(error, QDISK_ERROR, QDISK_ERROR_SERIALIZE, "failed to serialize data");
       goto exit;
     }
 
   if (!_overwrite_with_real_record_length(serialized))
     {
-      error = "message is empty";
+      g_set_error(error, QDISK_ERROR, QDISK_ERROR_SERIALIZE, "serializable data is empty");
       goto exit;
     }
 
 exit:
-  if (error)
-    {
-      msg_error("Error serializing message for the disk-queue file",
-                evt_tag_str("error", error),
-                evt_tag_str("filename", qdisk_get_filename(self)));
-    }
-
   serialize_archive_free(sa);
-  return error == NULL;
+  return *error == NULL;
 }
 
 gboolean

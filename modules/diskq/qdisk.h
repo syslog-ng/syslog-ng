@@ -37,6 +37,8 @@
  */
 #define POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) (lpo)->ack_needed = (GPOINTER_TO_INT(ptr) & ~0x80000000)
 
+typedef gboolean (*QDiskSerializeFunc)(SerializeArchive *sa, gpointer user_data);
+
 typedef struct
 {
   gint64 ofs;
@@ -84,7 +86,7 @@ const gchar *qdisk_get_filename(QDisk *self);
 
 guint64 qdisk_skip_record(QDisk *self, guint64 position);
 
-gboolean qdisk_serialize_msg(QDisk *self, LogMessage *msg, GString *serialized);
+gboolean qdisk_serialize(GString *serialized, QDiskSerializeFunc serialize_func, gpointer user_data, GError **error);
 gboolean qdisk_deserialize_msg(QDisk *self, GString *serialized, LogMessage **msg);
 
 #endif /* QDISK_H_ */
