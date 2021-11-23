@@ -70,28 +70,29 @@ jobs:
               libpcre3-dev \
               libssl-dev \
               libpaho-mqtt-dev
+
+              cd /tmp && wget -q https://github.com/Snaipe/Criterion/releases/download/v2.3.3/criterion-v2.3.3.tar.bz2
+              tar xf criterion-v2.3.3.tar.bz2
+              pushd criterion-v2.3.3
+              cmake .
+              make -j $(nproc) all
+              make -j $(nproc) install
+              popd
+              rm -rf /tmp/criterion-v2.3.3 /tmp/criterion-v2.3.3.tar.bz2
+
+              cd /tmp && wget -q https://ftp.gnu.org/gnu/bison/bison-3.7.6.tar.gz
+              tar xf bison-3.7.6.tar.gz
+              pushd bison-3.7.6
+              ./configure
+              make -j $(nproc) all
+              make -j $(nproc) install
+              popd
+              rm -rf /tmp/bison-3.7.6 /tmp/bison-3.7.6.tar.gz
           run: |
             python3 -m pip install --user --cache-dir=$PWD/pip-cache -r requirements.txt
             python3 -m pip list
 
             set -e
-            cd /tmp && wget https://github.com/Snaipe/Criterion/releases/download/v2.3.3/criterion-v2.3.3.tar.bz2
-            tar xf criterion-v2.3.3.tar.bz2
-            pushd criterion-v2.3.3
-            cmake .
-            make -j $(nproc) all
-            make -j $(nproc) install
-            popd
-
-            cd /tmp && wget https://ftp.gnu.org/gnu/bison/bison-3.7.6.tar.gz
-            tar xf bison-3.7.6.tar.gz
-            pushd bison-3.7.6
-            ./configure
-            make -j $(nproc) all
-            make -j $(nproc) install
-            popd
-
-
             cd "${GITHUB_WORKSPACE}"
             mkdir build && cd build
             cmake -DCMAKE_C_FLAGS=-Werror -DPYTHON_VERSION=3 -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng ..
