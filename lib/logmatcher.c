@@ -408,7 +408,7 @@ log_matcher_pcre_re_feed_backrefs(LogMatcher *s, LogMessage *msg, gint value_han
 
       if (indirect)
         {
-          log_msg_set_match_indirect(msg, i, value_handle, 0, begin_index, end_index - begin_index);
+          log_msg_set_match_indirect(msg, i, value_handle, begin_index, end_index - begin_index);
         }
       else
         {

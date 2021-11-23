@@ -48,7 +48,7 @@ _create_log_message(const gchar *log)
   log_msg_set_value_by_name(msg, "MESSAGE2", buf, -1);
 
   /* add a non-zero terminated indirect value which contains the whole message */
-  log_msg_set_value_indirect(msg, nonasciiz, log_msg_get_value_handle("MESSAGE2"), 0, 0, msglen);
+  log_msg_set_value_indirect(msg, nonasciiz, log_msg_get_value_handle("MESSAGE2"), 0, msglen);
 
   return msg;
 }

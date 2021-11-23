@@ -257,9 +257,9 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
 
 /* runs over the LogMessage nv-pairs, and inserts them unless excluded */
 static gboolean
-vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
+vp_msg_nvpairs_foreach(NVHandle handle, const gchar *name,
                        const gchar *value, gssize value_len,
-                       gpointer user_data)
+                       NVType type, gpointer user_data)
 {
   ValuePairs *vp = ((gpointer *)user_data)[0];
   VPResults *results = ((gpointer *)user_data)[5];
@@ -437,7 +437,7 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
   if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA + VPS_RFC5424) ||
       vp->patterns->len > 0)
     nv_table_foreach(msg->payload, logmsg_registry,
-                     (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
+                     vp_msg_nvpairs_foreach, args);
 
   vp_merge_builtins(vp, &results, msg, options);
 

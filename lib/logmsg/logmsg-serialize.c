@@ -293,7 +293,7 @@ log_msg_read_matches_details(LogMessage *self, SerializeArchive *sa)
               !serialize_read_uint16(sa, &ofs) ||
               !serialize_read_uint16(sa, &len))
             return FALSE;
-          log_msg_set_match_indirect(self, i, builtin_value, type, ofs, len);
+          log_msg_set_match_indirect_with_type(self, i, builtin_value, ofs, len, type);
         }
       else
         {

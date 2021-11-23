@@ -33,8 +33,10 @@ typedef struct _NVRegistry NVRegistry;
 typedef struct _NVIndexEntry NVIndexEntry;
 typedef struct _NVEntry NVEntry;
 typedef guint32 NVHandle;
-typedef gboolean (*NVTableForeachFunc)(NVHandle handle, const gchar *name, const gchar *value, gssize value_len,
-                                       gpointer user_data);
+typedef guint8 NVType;
+typedef gboolean (*NVTableForeachFunc)(NVHandle handle, const gchar *name,
+                                       const gchar *value, gssize value_len,
+                                       NVType type, gpointer user_data);
 typedef gboolean (*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry,
                                             gpointer user_data);
 
@@ -116,9 +118,6 @@ typedef struct _NVReferencedSlice
   NVHandle handle;
   guint32 ofs;
   guint32 len;
-  guint8 type;
-
-  gchar name[0];
 } NVReferencedSlice;
 
 /*
@@ -133,14 +132,32 @@ struct _NVEntry
     {
       /* make sure you don't exceed 8 bits here. So if you want to add new
        * bits, decrease the size of __bit_padding below */
+
+      /* some of these bits were not zero initialized in the past, which we
+       * are fixing by the use of the NVT_SUPPORTS_UNSET flag in the NVTable
+       * header.  If that flag is not present, we fix all but the originally
+       * existing bit fields to zero (both in current and legacy
+       * deserializers).  We are using
+       * NVENTRY_FLAGS_DEFINED_IN_LEGACY_FORMATS as a bitmask to mask out
+       * "indirect" and "referenced" in the "flags" member below, which is
+       * unioned on the bitfield.
+       */
       guint8 indirect:1,
              referenced:1,
              unset:1,
-             __bit_padding:5;
+             type_present:1,
+             __bit_padding:4;
     };
     guint8 flags;
   };
   guint8 name_len;
+  NVType type;
+
+  /* NOTE: this field fills an empty padding byte, so if you are adding
+   * fields, please remove this.  This is now zero initialized as of the
+   * first version of syslog-ng that contain this member.  Earlier versions
+   * had an uninitialized padding byte here.  */
+  guint8 __reserved;
   guint32 alloc_len;
   union
   {
@@ -151,7 +168,25 @@ struct _NVEntry
       gchar data[];
     } vdirect;
 
-    NVReferencedSlice vindirect;
+    struct
+    {
+      NVHandle handle;
+      guint32 ofs;
+      guint32 len;
+
+      /* NOTE: this type field was promoted up into NVEntry, so we won't need
+       * the "type" field here, we are moving the value stored here in existing
+       * serialized messages in _update_entry() in logmsg-serialize-fixup.c.  We
+       * might be able to reuse this byte once we drop compatibility with
+       * version 26 of the LogMessage serialization format.
+       *
+       * NOTE: we zero out this field upon reading and then reserializing a message.
+       */
+
+      guint8 __deprecated_type_field;
+
+      gchar name[0];
+    } vindirect;
   };
 };
 
@@ -260,11 +295,15 @@ struct _NVTable
  * static values */
 #define NV_TABLE_MIN_BYTES  128
 
-gboolean nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value,
-                            gsize value_len, gboolean *new_entry);
+gboolean nv_table_add_value(NVTable *self, NVHandle handle,
+                            const gchar *name, gsize name_len,
+                            const gchar *value, gsize value_len,
+                            NVType type, gboolean *new_entry);
 gboolean nv_table_unset_value(NVTable *self, NVHandle handle);
-gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len,
-                                     NVReferencedSlice *referenced_slice, gboolean *new_entry);
+gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle,
+                                     const gchar *name, gsize name_len,
+                                     NVReferencedSlice *referenced_slice,
+                                     NVType type, gboolean *new_entry);
 
 gboolean nv_table_foreach(NVTable *self, NVRegistry *registry, NVTableForeachFunc func, gpointer user_data);
 gboolean nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer user_data);
