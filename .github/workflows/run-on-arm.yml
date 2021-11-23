@@ -89,7 +89,7 @@ jobs:
               popd
               rm -rf /tmp/bison-3.7.6 /tmp/bison-3.7.6.tar.gz
           run: |
-            python3 -m pip install --user --cache-dir=$PWD/pip-cache -r requirements.txt
+            python3 -m pip install -q --user --cache-dir=$PWD/pip-cache -r requirements.txt
             python3 -m pip list
 
             set -e
