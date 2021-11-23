@@ -79,16 +79,16 @@ jobs:
             tar xf criterion-v2.3.3.tar.bz2
             pushd criterion-v2.3.3
             cmake .
-            make all
-            make install
+            make -j $(nproc) all
+            make -j $(nproc) install
             popd
 
             cd /tmp && wget https://ftp.gnu.org/gnu/bison/bison-3.7.6.tar.gz
             tar xf bison-3.7.6.tar.gz
             pushd bison-3.7.6
             ./configure
-            make all
-            make install
+            make -j $(nproc) all
+            make -j $(nproc) install
             popd
 
 
