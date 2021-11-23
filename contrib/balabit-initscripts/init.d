@@ -13,7 +13,7 @@
 # Description: reads and logs messages to the system console, log \
 #              files, other machines and/or users as specified by \
 #              its configuration file.
-# Short-Description: Next-generation syslog server. Proprietary edition.
+# Short-Description: Next-generation syslog server.
 # Required-Start: $local_fs
 # Required-Stop:  $local_fs
 # Default-Start:  2 3 4 5
