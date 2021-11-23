@@ -19,7 +19,7 @@ jobs:
         uses: uraimo/run-on-arch-action@v2.1.1
         with:
           arch: aarch64
-          distro: ubuntu20.04
+          distro: bullseye
           githubToken: ${{ github.token }}
           install: |
             set -x
