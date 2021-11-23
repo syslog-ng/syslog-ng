@@ -83,7 +83,7 @@ jobs:
               cd /tmp && wget -q https://ftp.gnu.org/gnu/bison/bison-3.7.6.tar.gz
               tar xf bison-3.7.6.tar.gz
               pushd bison-3.7.6
-              ./configure
+              ./configure --disable-nls
               make -j $(nproc) all
               make -j $(nproc) install
               popd
