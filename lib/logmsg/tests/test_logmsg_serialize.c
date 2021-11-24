@@ -64,7 +64,7 @@ _reset_log_msg_registry(void)
 }
 
 static void
-_check_deserialized_message(LogMessage *msg, SerializeArchive *sa)
+_check_deserialized_message(LogMessage *msg)
 {
   assert_template_format_msg("${ISODATE}", "2006-10-29T01:59:59.156+01:00", msg);
 
@@ -117,6 +117,24 @@ _serialize_message_for_test(GString *stream, const gchar *raw_msg)
   return sa;
 }
 
+static LogMessage *
+_deserialize_message_from_string(const guint8 *serialized, gsize serialized_len)
+{
+  GString s = {0};
+
+  s.allocated_len = 0;
+  s.len = serialized_len;
+  s.str = (gchar *) serialized;
+  LogMessage *msg = log_msg_new_empty();
+
+  SerializeArchive *sa = serialize_string_archive_new(&s);
+  _reset_log_msg_registry();
+
+  cr_assert(log_msg_deserialize(msg, sa), ERROR_MSG);
+  serialize_archive_free(sa);
+  return msg;
+}
+
 Test(logmsg_serialize, serialize)
 {
   NVHandle indirect_handle = 0;
@@ -137,7 +155,7 @@ Test(logmsg_serialize, serialize)
   cr_assert(log_msg_is_handle_sdata(sdata_handle),
             "deserialized SDATA name-value pairs have to marked as such");
 
-  _check_deserialized_message(msg, sa);
+  _check_deserialized_message(msg);
 
   indirect_handle = log_msg_get_value_handle("indirect_1");
   const gchar *indirect_value = log_msg_get_value(msg, indirect_handle, &length);
@@ -315,21 +333,10 @@ ParameterizedTestParameters(logmsg_serialize, test_deserialization_of_legacy_mes
 
 ParameterizedTest(struct iovec *param, logmsg_serialize, test_deserialization_of_legacy_messages)
 {
-  GString serialized = {0};
-  serialized.allocated_len = 0;
-  serialized.len = param->iov_len;
-  serialized.str = param->iov_base;
-  LogMessage *msg = log_msg_new_empty();
-
-  SerializeArchive *sa = serialize_string_archive_new(&serialized);
-  _reset_log_msg_registry();
-
-  cr_assert(log_msg_deserialize(msg, sa), ERROR_MSG);
-
-  _check_deserialized_message(msg, sa);
+  LogMessage *msg = _deserialize_message_from_string(param->iov_base, param->iov_len);
+  _check_deserialized_message(msg);
 
   log_msg_unref(msg);
-  serialize_archive_free(sa);
 }
 
 Test(logmsg_serialize, serialization_performance)
