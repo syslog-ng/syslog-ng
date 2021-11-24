@@ -65,7 +65,7 @@ _reset_log_msg_registry(void)
 }
 
 static void
-_check_deserialized_message(LogMessage *msg)
+_check_deserialized_message_original_fields(LogMessage *msg)
 {
   assert_template_format_msg("${ISODATE}", "2006-10-29T01:59:59.156+01:00", msg);
 
@@ -79,6 +79,16 @@ _check_deserialized_message(LogMessage *msg)
                                     "Application",
                                     LM_VT_STRING);
   cr_assert_eq(msg->pri, 132, ERROR_MSG);
+
+}
+
+static void
+_check_deserialized_message_all_fields(LogMessage *msg)
+{
+  _check_deserialized_message_original_fields(msg);
+  assert_log_message_value(msg, log_msg_get_value_handle("indirect_1"), "val");
+  assert_log_message_value_and_type(msg, log_msg_get_value_handle("indirect_2"), "53", LM_VT_INT64);
+
 }
 
 static LogMessage *
@@ -159,11 +169,7 @@ Test(logmsg_serialize, serialize)
   cr_assert(log_msg_is_handle_sdata(sdata_handle),
             "deserialized SDATA name-value pairs have to marked as such");
 
-  _check_deserialized_message(msg);
-
-  assert_log_message_value(msg, log_msg_get_value_handle("indirect_1"), "val");
-
-  assert_log_message_value_and_type(msg, log_msg_get_value_handle("indirect_2"), "53", LM_VT_INT64);
+  _check_deserialized_message_all_fields(msg);
 
   log_msg_unref(msg);
   serialize_archive_free(sa);
@@ -320,7 +326,6 @@ ParameterizedTestParameters(logmsg_serialize, test_deserialization_of_legacy_mes
 {
   static struct iovec messages[] =
   {
-    { serialized_pe_msg, sizeof(serialized_pe_msg) },
     { serialized_message_3_17_1, sizeof(serialized_message_3_17_1) },
     { serialized_message_3_18_1, sizeof(serialized_message_3_18_1) },
     { serialized_message_3_21_1, sizeof(serialized_message_3_21_1) },
@@ -335,10 +340,17 @@ ParameterizedTestParameters(logmsg_serialize, test_deserialization_of_legacy_mes
 }
 
 
+Test(logmsg_serialize, test_deserialization_of_pe_message)
+{
+  LogMessage *msg = _deserialize_message_from_string(serialized_pe_msg, sizeof(serialized_pe_msg));
+  _check_deserialized_message_original_fields(msg);
+  log_msg_unref(msg);
+}
+
 ParameterizedTest(struct iovec *param, logmsg_serialize, test_deserialization_of_legacy_messages)
 {
   LogMessage *msg = _deserialize_message_from_string(param->iov_base, param->iov_len);
-  _check_deserialized_message(msg);
+  _check_deserialized_message_all_fields(msg);
 
   log_msg_unref(msg);
 }
