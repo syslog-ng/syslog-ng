@@ -48,6 +48,6 @@ set(LIBDBI_INCLUDE_DIRS ${LIBDBI_INCLUDE_DIR})
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRES arguments and set LIBDBI_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(LibDbi DEFAULT_MSG
+find_package_handle_standard_args(LIBDBI DEFAULT_MSG
     LIBDBI_LIBRARY LIBDBI_INCLUDE_DIR)
 mark_as_advanced(LIBDBI_INCLUDE_DIR LIBDBI_LIBRARY)
