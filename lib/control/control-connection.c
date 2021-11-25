@@ -217,7 +217,10 @@ control_connection_io_input(void *s)
       goto destroy_connection;
     }
 
-  cmd_desc->func(self, command, cmd_desc->user_data);
+  if (!cmd_desc->threaded)
+    cmd_desc->func(self, command, cmd_desc->user_data);
+  else
+    control_connection_start_as_thread(self, cmd_desc->func, command, cmd_desc->user_data);
   control_connection_wait_for_output(self);
 
   secret_storage_wipe(command->str, command->len);

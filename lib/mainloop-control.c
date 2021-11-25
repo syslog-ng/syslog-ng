@@ -432,6 +432,6 @@ main_loop_register_control_commands(MainLoop *main_loop)
   for (i = 0; default_commands[i].command_name != NULL; i++)
     {
       cmd = &default_commands[i];
-      control_register_command(cmd->command_name, cmd->func, main_loop);
+      control_register_command(cmd->command_name, cmd->func, main_loop, cmd->threaded);
     }
 }

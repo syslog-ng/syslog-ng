@@ -182,8 +182,8 @@ _dispatch_query(gint cmd_id, const gchar *filter_expr, GString *result)
   return QUERY_CMDS[cmd_id](filter_expr, result);
 }
 
-static void
-_process_query_command(ControlConnection *cc, GString *command, gpointer user_data)
+void
+process_query_command(ControlConnection *cc, GString *command, gpointer user_data)
 {
   GString *result = g_string_new("");
   gchar **cmds = g_strsplit(command->str, " ", 3);
@@ -198,10 +198,4 @@ _process_query_command(ControlConnection *cc, GString *command, gpointer user_da
     g_string_assign(result, "\n");
 
   control_connection_send_reply(cc, result);
-}
-
-void
-process_query_command(ControlConnection *cc, GString *command, gpointer user_data)
-{
-  control_connection_start_as_thread(cc, _process_query_command, command, user_data);
 }

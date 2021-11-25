@@ -87,7 +87,7 @@ _send_batched_response(const gchar *record, gpointer user_data)
 }
 
 static void
-_send_stats_get_result(ControlConnection *cc, GString *command, gpointer user_data)
+control_connection_send_stats(ControlConnection *cc, GString *command, gpointer user_data)
 {
   GString *response = NULL;
   gpointer args[] = {cc, &response};
@@ -95,12 +95,6 @@ _send_stats_get_result(ControlConnection *cc, GString *command, gpointer user_da
   if (response != NULL)
     control_connection_send_batched_reply(cc, response);
   control_connection_send_close_batch(cc);
-}
-
-static void
-control_connection_send_stats(ControlConnection *cc, GString *command, gpointer user_data)
-{
-  control_connection_start_as_thread(cc, _send_stats_get_result, command, user_data);
 }
 
 static void
@@ -135,8 +129,8 @@ control_connection_remove_orphans(ControlConnection *cc, GString *command, gpoin
 void
 stats_register_control_commands(void)
 {
-  control_register_command("STATS", control_connection_send_stats, NULL);
-  control_register_command("RESET_STATS", control_connection_reset_stats, NULL);
-  control_register_command("REMOVE_ORPHANED_STATS", control_connection_remove_orphans, NULL);
-  control_register_command("QUERY", process_query_command, NULL);
+  control_register_command("STATS", control_connection_send_stats, NULL, TRUE);
+  control_register_command("RESET_STATS", control_connection_reset_stats, NULL, FALSE);
+  control_register_command("REMOVE_ORPHANED_STATS", control_connection_remove_orphans, NULL, FALSE);
+  control_register_command("QUERY", process_query_command, NULL, TRUE);
 }

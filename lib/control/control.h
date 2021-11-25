@@ -37,6 +37,7 @@ typedef struct _ControlCommand
   const gchar *command_name;
   ControlCommandFunc func;
   gpointer user_data;
+  gboolean threaded;
 } ControlCommand;
 
 #endif
