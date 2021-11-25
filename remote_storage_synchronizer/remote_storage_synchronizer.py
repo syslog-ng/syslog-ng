@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum, auto
@@ -34,6 +36,16 @@ class RemoteStorageSynchronizer(ABC):
         self.local_dir = WorkingDir(local_root_dir)
 
         self.__logger = RemoteStorageSynchronizer.__create_logger()
+
+    @staticmethod
+    @abstractmethod
+    def get_config_keyword() -> str:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def from_config(cfg: dict) -> RemoteStorageSynchronizer:
+        pass
 
     @abstractmethod
     def sync_from_remote(self) -> None:
