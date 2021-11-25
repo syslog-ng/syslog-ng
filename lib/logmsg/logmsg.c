@@ -510,6 +510,21 @@ _value_invalidates_legacy_header(NVHandle handle)
 }
 
 void
+log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to)
+{
+  if (from == to)
+    return;
+
+  gssize value_len = 0;
+  const gchar *value = log_msg_get_value_if_set(self, from, &value_len);
+  if (!value)
+    return;
+
+  log_msg_set_value(self, to, value, value_len);
+  log_msg_unset_value(self, from);
+}
+
+void
 log_msg_set_value_with_type(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len, NVType type)
 {
   const gchar *name;

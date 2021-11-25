@@ -354,6 +354,8 @@ log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *valu
   log_msg_set_value(self, handle, value, length);
 }
 
+void log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to);
+
 void log_msg_append_format_sdata(const LogMessage *self, GString *result, guint32 seq_num);
 void log_msg_format_sdata(const LogMessage *self, GString *result, guint32 seq_num);
 
