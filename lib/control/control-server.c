@@ -39,7 +39,7 @@ typedef struct _ThreadedCommandRunner
     gboolean cancelled;
     gboolean finished;
   } real_thread;
-  ControlConnectionCommand func;
+  ControlCommandFunc func;
   struct iv_event thread_finished;
 } ThreadedCommandRunner;
 
@@ -91,7 +91,7 @@ _thread(gpointer user_data)
 }
 
 static void
-_thread_command_runner_sync_run(ThreadedCommandRunner *self, ControlConnectionCommand func)
+_thread_command_runner_sync_run(ThreadedCommandRunner *self, ControlCommandFunc func)
 {
   msg_warning("Cannot start a separated thread - ControlServer is not running",
               evt_tag_str("command", self->command->str));
@@ -101,7 +101,7 @@ _thread_command_runner_sync_run(ThreadedCommandRunner *self, ControlConnectionCo
 }
 
 static void
-_thread_command_runner_run(ThreadedCommandRunner *self, ControlConnectionCommand func)
+_thread_command_runner_run(ThreadedCommandRunner *self, ControlCommandFunc func)
 {
   IV_EVENT_INIT(&self->thread_finished);
   self->thread_finished.handler = _on_thread_finished;
@@ -122,7 +122,7 @@ _thread_command_runner_run(ThreadedCommandRunner *self, ControlConnectionCommand
 }
 
 void
-control_connection_start_as_thread(ControlConnection *self, ControlConnectionCommand cmd_cb,
+control_connection_start_as_thread(ControlConnection *self, ControlCommandFunc cmd_cb,
                                    GString *command, gpointer user_data)
 {
   ThreadedCommandRunner *runner = _thread_command_runner_new(self, command, user_data);

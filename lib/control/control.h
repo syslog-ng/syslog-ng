@@ -31,11 +31,11 @@ typedef struct _ControlServer ControlServer;
 typedef struct _ControlConnection ControlConnection;
 
 
-typedef void (*CommandFunction)(ControlConnection *cc, GString *, gpointer user_data);
+typedef void (*ControlCommandFunc)(ControlConnection *cc, GString *, gpointer user_data);
 typedef struct _ControlCommand
 {
   const gchar *command_name;
-  CommandFunction func;
+  ControlCommandFunc func;
   gpointer user_data;
 } ControlCommand;
 

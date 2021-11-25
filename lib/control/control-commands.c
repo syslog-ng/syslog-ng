@@ -50,8 +50,8 @@ control_find_command(const char *cmd)
 }
 
 void
-control_register_command(const gchar *command_name, CommandFunction function,
-                         gpointer user_data)
+control_register_command(const gchar *command_name,
+                         ControlCommandFunc function, gpointer user_data)
 {
   ControlCommand *command = control_find_command(command_name);
 
@@ -69,8 +69,8 @@ control_register_command(const gchar *command_name, CommandFunction function,
 }
 
 void
-control_replace_command(const gchar *command_name, CommandFunction function,
-                        gpointer user_data)
+control_replace_command(const gchar *command_name,
+                        ControlCommandFunc function, gpointer user_data)
 {
   ControlCommand *command = control_find_command(command_name);
 

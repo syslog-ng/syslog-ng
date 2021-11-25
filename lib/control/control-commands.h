@@ -30,10 +30,10 @@
 
 
 ControlCommand *control_find_command(const char *cmd);
-void control_register_command(const gchar *command_name, CommandFunction function,
-                              gpointer user_data);
-void control_replace_command(const gchar *command_name, CommandFunction function,
-                             gpointer user_data);
+void control_register_command(const gchar *command_name,
+                              ControlCommandFunc function, gpointer user_data);
+void control_replace_command(const gchar *command_name,
+                             ControlCommandFunc function, gpointer user_data);
 void reset_control_command_list(void);
 
 #endif
