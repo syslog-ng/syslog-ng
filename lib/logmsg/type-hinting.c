@@ -48,8 +48,8 @@ type_hint_parse(const gchar *hint, LogMessageValueType *out_type, GError **error
 
   if (strcmp(hint, "string") == 0)
     *out_type = LM_VT_STRING;
-  else if (strcmp(hint, "literal") == 0)
-    *out_type = LM_VT_LITERAL;
+  else if (strcmp(hint, "json") == 0 || strcmp(hint, "literal") == 0)
+    *out_type = LM_VT_JSON;
   else if (strcmp(hint, "int32") == 0 || strcmp(hint, "int") == 0)
     *out_type = LM_VT_INT32;
   else if (strcmp(hint, "int64") == 0)

@@ -306,7 +306,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
       break;
     }
     case LM_VT_STRING:
-    case LM_VT_LITERAL:
+    case LM_VT_JSON:
       bson_append_utf8(o, name, -1, value, value_len);
       break;
     default:

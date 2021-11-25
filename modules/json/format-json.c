@@ -218,7 +218,7 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
     default:
       tf_json_append_value(name, value, value_len, state, TRUE);
       break;
-    case LM_VT_LITERAL:
+    case LM_VT_JSON:
       tf_json_append_literal(name, value, value_len, state);
       break;
     case LM_VT_LIST:

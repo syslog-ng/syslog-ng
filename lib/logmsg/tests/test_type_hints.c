@@ -63,7 +63,8 @@ ParameterizedTestParameters(type_hints, test_type_hint_parse)
   {
     {"string",    LM_VT_STRING},
     {NULL,        LM_VT_STRING},
-    {"literal",   LM_VT_LITERAL},
+    {"literal",   LM_VT_JSON},
+    {"json",      LM_VT_JSON},
     {"boolean",   LM_VT_BOOLEAN},
     {"int",       LM_VT_INT32},
     {"int32",     LM_VT_INT32},

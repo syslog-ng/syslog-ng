@@ -153,7 +153,7 @@ enum _LogMessageValueType
    * recognition. Add new types at the end.
    */
   LM_VT_STRING = 0,
-  LM_VT_LITERAL = 1,
+  LM_VT_JSON = 1,
   LM_VT_BOOLEAN = 2,
   LM_VT_INT32 = 3,
   LM_VT_INT64 = 4,
