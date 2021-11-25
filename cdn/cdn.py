@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -6,6 +8,16 @@ from pathlib import Path
 class CDN(ABC):
     def __init__(self) -> None:
         self.__logger = CDN.__create_logger()
+
+    @staticmethod
+    @abstractmethod
+    def get_config_keyword() -> str:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def from_config(config: dict) -> CDN:
+        pass
 
     @abstractmethod
     def refresh_cache(self, path: Path) -> None:

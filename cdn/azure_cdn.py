@@ -9,6 +9,24 @@ from .cdn import CDN
 
 
 class AzureCDN(CDN):
+    """
+    A `CDN` implementation that can connect to an Azure CDN instance.
+
+    Example config:
+
+    ```yaml
+    vendor: "azure"
+    all:
+      resource-group-name: "secret1"
+      profile-name: "secret2"
+      endpoint-name: "secret3"
+      endpoint-subscription-id: "secret4"
+      tenant-id: "secret5"
+      client-id: "secret6"
+      client-secret: "secret7"
+    ```
+    """
+
     def __init__(
         self,
         resource_group_name: str,
@@ -34,6 +52,22 @@ class AzureCDN(CDN):
         self.__endpoint_name = endpoint_name
 
         super().__init__()
+
+    @staticmethod
+    def get_config_keyword() -> str:
+        return "azure"
+
+    @staticmethod
+    def from_config(cfg: dict) -> CDN:
+        return AzureCDN(
+            resource_group_name=cfg["resource-group-name"],
+            profile_name=cfg["profile-name"],
+            endpoint_name=cfg["endpoint-name"],
+            endpoint_subscription_id=cfg["endpoint-subscription-id"],
+            tenant_id=cfg["tenant-id"],
+            client_id=cfg["client-id"],
+            client_secret=cfg["client-secret"],
+        )
 
     def refresh_cache(self, path: Path) -> None:
         path_str = str(Path("/", path))
