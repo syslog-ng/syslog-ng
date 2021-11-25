@@ -71,6 +71,14 @@ log_queue_queued_messages_dec(LogQueue *self)
   atomic_gssize_dec(&self->stats_cache.queued_messages);
 }
 
+void
+log_queue_queued_messages_reset(LogQueue *self)
+{
+  const gssize queue_length = log_queue_get_length(self);
+  stats_counter_set(self->queued_messages, queue_length);
+  atomic_gssize_set_and_get(&self->stats_cache.queued_messages, queue_length);
+}
+
 /*
  * When this is called, it is assumed that the output thread is currently
  * not running (since this is the function that wakes it up), thus we can
