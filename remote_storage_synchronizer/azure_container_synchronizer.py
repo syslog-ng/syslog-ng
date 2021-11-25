@@ -6,7 +6,7 @@ from azure.storage.blob import BlobClient, ContainerClient
 
 from .remote_storage_synchronizer import FileSyncState, RemoteStorageSynchronizer
 
-DEFAULT_ROOT_DIR = Path("/tmp/container_synchronizer")
+DEFAULT_ROOT_DIR = Path("/tmp/azure_container_synchronizer")
 
 
 class AzureContainerSynchronizer(RemoteStorageSynchronizer):
