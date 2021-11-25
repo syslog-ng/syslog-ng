@@ -86,7 +86,7 @@ _send_batched_response(const gchar *record, gpointer user_data)
     }
 }
 
-static GString *
+static void
 _send_stats_get_result(ControlConnection *cc, GString *command, gpointer user_data)
 {
   GString *response = NULL;
@@ -95,7 +95,6 @@ _send_stats_get_result(ControlConnection *cc, GString *command, gpointer user_da
   if (response != NULL)
     control_connection_send_batched_reply(cc, response);
   control_connection_send_close_batch(cc);
-  return NULL;
 }
 
 static void

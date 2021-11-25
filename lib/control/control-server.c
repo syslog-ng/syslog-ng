@@ -80,9 +80,7 @@ static void
 _thread(gpointer user_data)
 {
   ThreadedCommandRunner *self = (ThreadedCommandRunner *)user_data;
-  GString *response = self->func(self->connection, self->command, self->user_data);
-  if (response)
-    control_connection_send_reply(self->connection, response);
+  self->func(self->connection, self->command, self->user_data);
   g_mutex_lock(&self->real_thread.state_lock);
   {
     self->real_thread.finished = TRUE;
@@ -98,10 +96,7 @@ _thread_command_runner_sync_run(ThreadedCommandRunner *self, ControlConnectionCo
   msg_warning("Cannot start a separated thread - ControlServer is not running",
               evt_tag_str("command", self->command->str));
 
-  GString *response = func(self->connection, self->command, self->user_data);
-  if (response)
-    control_connection_send_reply(self->connection, response);
-
+  func(self->connection, self->command, self->user_data);
   _thread_command_runner_free(self);
 }
 
