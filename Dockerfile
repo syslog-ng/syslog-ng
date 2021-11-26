@@ -8,4 +8,6 @@ RUN apt-get update && apt-get install -y \
 RUN pip install \
   azure-storage-blob \
   azure-mgmt-cdn \
-  azure-identity
+  azure-identity \
+  pyyaml \
+  types-PyYAML
