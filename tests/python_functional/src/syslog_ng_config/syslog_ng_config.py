@@ -30,6 +30,7 @@ from src.syslog_ng_config.statements.destinations.example_destination import Exa
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
 from src.syslog_ng_config.statements.destinations.snmp_destination import SnmpDestination
 from src.syslog_ng_config.statements.filters.filter import Filter
+from src.syslog_ng_config.statements.filters.filter import Throttle
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
 from src.syslog_ng_config.statements.parsers.db_parser import DBParser
 from src.syslog_ng_config.statements.parsers.parser import Parser
@@ -104,6 +105,9 @@ class SyslogNgConfig(object):
 
     def create_filter(self, expr=None, **options):
         return Filter("", [expr] if expr else [], **options)
+
+    def create_throttle_filter(self, **options):
+        return Throttle(**options)
 
     def create_app_parser(self, **options):
         return Parser("app-parser", **options)
