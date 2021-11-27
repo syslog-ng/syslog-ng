@@ -30,8 +30,8 @@ void
 control_connection_start_as_thread(ControlConnection *self, ControlCommandFunc cmd_cb,
                                    GString *command, gpointer user_data)
 {
-  ThreadedCommandRunner *runner = _thread_command_runner_new(self, command, user_data);
-  _thread_command_runner_run(runner, cmd_cb);
+  ControlCommandThread *runner = control_command_thread_new(self, command, user_data);
+  control_command_thread_run(runner, cmd_cb);
 }
 
 void
@@ -41,7 +41,7 @@ control_server_cancel_workers(ControlServer *self)
     {
       self->cancelled = TRUE; // racy, but it's okay
       msg_warning("Cancelling control server worker threads");
-      g_list_free_full(self->worker_threads, _delete_thread_command_runner);
+      g_list_free_full(self->worker_threads, _delete_control_command_thread);
       msg_warning("Control server worker threads has been cancelled.");
       self->worker_threads = NULL;
     }
@@ -67,10 +67,10 @@ control_server_stop_method(ControlServer *self)
 {
   // it's not racy as the iv_main() is executed by this thread
   // posted events are not executed as iv_quit() is already called (before control_server_free)
-  // but it is possible that some ThreadedCommandRunner::thread are still running
+  // but it is possible that some ControlCommandThread::thread are still running
   if (self->worker_threads)
     {
-      g_list_free_full(self->worker_threads, _delete_thread_command_runner);
+      g_list_free_full(self->worker_threads, _delete_control_command_thread);
       self->worker_threads = NULL;
     }
 }

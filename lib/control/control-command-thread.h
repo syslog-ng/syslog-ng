@@ -27,10 +27,11 @@
 
 #include "control.h"
 
-typedef struct _ThreadedCommandRunner ThreadedCommandRunner;
+typedef struct _ControlCommandThread ControlCommandThread;
 
-ThreadedCommandRunner *_thread_command_runner_new(ControlConnection *cc, GString *cmd, gpointer user_data);
-void _thread_command_runner_run(ThreadedCommandRunner *self, ControlCommandFunc func);
-void _delete_thread_command_runner(gpointer data);
+ControlCommandThread *control_command_thread_new(ControlConnection *cc, GString *cmd, gpointer user_data);
+void control_command_thread_run(ControlCommandThread *self, ControlCommandFunc func);
+
+void _delete_control_command_thread(gpointer data);
 
 #endif
