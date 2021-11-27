@@ -55,13 +55,16 @@ _on_thread_finished(gpointer user_data)
   iv_event_unregister(&self->thread_finished);
 
   control_server_worker_finished(self->connection->server, self);
+
+  /* drop ref belonging to the thread_finished event */
   control_command_thread_unref(self);
 }
 
 static void
 _thread(gpointer user_data)
 {
-  ControlCommandThread *self = (ControlCommandThread *)user_data;
+  ControlCommandThread *self = (ControlCommandThread *) user_data;
+
   self->func(self->connection, self->command, self->user_data);
   g_mutex_lock(&self->real_thread.state_lock);
   {
@@ -70,6 +73,9 @@ _thread(gpointer user_data)
       iv_event_post(&self->thread_finished);
   }
   g_mutex_unlock(&self->real_thread.state_lock);
+
+  /* drop ref belonging to the thread function */
+  control_command_thread_unref(self);
 }
 
 static void
@@ -79,7 +85,6 @@ control_command_thread_sync_run(ControlCommandThread *self)
               evt_tag_str("command", self->command->str));
 
   self->func(self->connection, self->command, self->user_data);
-  control_command_thread_unref(self);
 }
 
 const gchar *
@@ -97,33 +102,30 @@ control_command_thread_run(ControlCommandThread *self)
       return;
     }
 
+  self->thread_finished.cookie = control_command_thread_ref(self);
   iv_event_register(&self->thread_finished);
 
-  self->thread = g_thread_new(self->command->str, (GThreadFunc) _thread, self);
-  ControlServer *server = self->connection->server;
-  server->worker_threads = g_list_append(server->worker_threads, self);
+  control_server_worker_started(self->connection->server, self);
+  self->thread = g_thread_new(self->command->str, (GThreadFunc) _thread, control_command_thread_ref(self));
 }
 
 void
 control_command_thread_cancel(ControlCommandThread *self)
 {
-  gboolean has_to_free = FALSE;
+  gboolean has_to_join = FALSE;
 
   g_mutex_lock(&self->real_thread.state_lock);
   {
     self->real_thread.cancelled = TRUE;
     if (!self->real_thread.finished)
       {
-        has_to_free = TRUE;
+        has_to_join = TRUE;
       }
   }
   g_mutex_unlock(&self->real_thread.state_lock);
 
-  if (has_to_free)
-    {
-      g_thread_join(self->thread);
-      control_command_thread_unref(self);
-    }
+  if (has_to_join)
+    g_thread_join(self->thread);
 }
 
 ControlCommandThread *
@@ -141,7 +143,6 @@ control_command_thread_new(ControlConnection *cc, GString *cmd, ControlCommandFu
 
   IV_EVENT_INIT(&self->thread_finished);
   self->thread_finished.handler = _on_thread_finished;
-  self->thread_finished.cookie = self;
 
   return self;
 }
