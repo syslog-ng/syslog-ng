@@ -29,6 +29,7 @@
 
 void control_command_thread_run(ControlCommandThread *self);
 void control_command_thread_cancel(ControlCommandThread *self);
+const gchar *control_command_thread_get_command(ControlCommandThread *self);
 
 ControlCommandThread *control_command_thread_new(ControlConnection *cc, GString *cmd,
                                                  ControlCommandFunc func, gpointer user_data);

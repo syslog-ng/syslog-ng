@@ -82,6 +82,12 @@ control_command_thread_sync_run(ControlCommandThread *self)
   control_command_thread_unref(self);
 }
 
+const gchar *
+control_command_thread_get_command(ControlCommandThread *self)
+{
+  return self->command->str;
+}
+
 void
 control_command_thread_run(ControlCommandThread *self)
 {
