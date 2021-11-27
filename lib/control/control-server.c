@@ -35,6 +35,14 @@ control_connection_start_as_thread(ControlConnection *self, ControlCommandFunc c
 }
 
 void
+_delete_control_command_thread(gpointer data)
+{
+  ControlCommandThread *thread = (ControlCommandThread *) data;
+
+  control_command_thread_cancel(thread);
+}
+
+void
 control_server_cancel_workers(ControlServer *self)
 {
   if (self->worker_threads)

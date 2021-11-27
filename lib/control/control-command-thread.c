@@ -124,9 +124,8 @@ control_command_thread_run(ControlCommandThread *self, ControlCommandFunc func)
 }
 
 void
-_delete_control_command_thread(gpointer data)
+control_command_thread_cancel(ControlCommandThread *self)
 {
-  ControlCommandThread *self = (ControlCommandThread *) data;
   gboolean has_to_free = FALSE;
 
   g_mutex_lock(&self->real_thread.state_lock);
