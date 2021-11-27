@@ -85,10 +85,6 @@ control_command_thread_sync_run(ControlCommandThread *self)
 void
 control_command_thread_run(ControlCommandThread *self)
 {
-  IV_EVENT_INIT(&self->thread_finished);
-  self->thread_finished.handler = _on_thread_finished;
-  self->thread_finished.cookie = self;
-
   if (!main_loop_is_control_server_running(main_loop_get_instance()))
     {
       control_command_thread_sync_run(self);
@@ -136,6 +132,10 @@ control_command_thread_new(ControlConnection *cc, GString *cmd, ControlCommandFu
   self->user_data = user_data;
 
   g_mutex_init(&self->real_thread.state_lock);
+
+  IV_EVENT_INIT(&self->thread_finished);
+  self->thread_finished.handler = _on_thread_finished;
+  self->thread_finished.cookie = self;
 
   return self;
 }
