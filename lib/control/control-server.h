@@ -26,7 +26,6 @@
 #include "syslog-ng.h"
 #include "control.h"
 #include "atomic.h"
-#include <iv_event.h>
 #include <stdio.h>
 
 #define MAX_CONTROL_LINE_LENGTH 4096

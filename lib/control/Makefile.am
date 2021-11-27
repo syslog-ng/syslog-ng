@@ -6,6 +6,7 @@ EXTRA_DIST +=	\
 controlinclude_HEADERS = \
 	lib/control/control.h			\
 	lib/control/control-commands.h		\
+	lib/control/control-command-thread.h	\
 	lib/control/control-main.h		\
 	lib/control/control-server.h		\
 	lib/control/control-server-unix.h	\
@@ -13,6 +14,7 @@ controlinclude_HEADERS = \
 
 control_sources = \
 	lib/control/control-commands.c		\
+	lib/control/control-command-thread.c	\
 	lib/control/control-main.c		\
 	lib/control/control-server.c		\
 	lib/control/control-server-unix.c	\

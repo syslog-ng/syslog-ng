@@ -1,6 +1,7 @@
 set(CONTROL_HEADERS
     control/control.h
     control/control-commands.h
+    control/control-command-thread.h
     control/control-main.h
     control/control-server.h
     control/control-server-unix.h
@@ -9,6 +10,7 @@ set(CONTROL_HEADERS
 
 set(CONTROL_SOURCES
     control/control-commands.c
+    control/control-command-thread.c
     control/control-main.c
     control/control-server.c
     control/control-server-unix.c
