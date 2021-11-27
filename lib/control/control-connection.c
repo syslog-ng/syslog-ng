@@ -24,6 +24,7 @@
 #include "control-connection.h"
 #include "control-server.h"
 #include "control-commands.h"
+#include "control-command-thread.h"
 #include "str-utils.h"
 #include "secret-storage/secret-storage.h"
 #include "messages.h"
@@ -145,6 +146,34 @@ control_connection_wait_for_output(ControlConnection *self)
 }
 
 static void
+control_connection_start_as_thread(ControlConnection *self, ControlCommandFunc cmd_cb,
+                                   GString *command, gpointer user_data)
+{
+  ControlCommandThread *runner = control_command_thread_new(self, command, cmd_cb, user_data);
+  control_command_thread_run(runner);
+  control_command_thread_unref(runner);
+}
+
+static gboolean
+control_connection_run_command(ControlConnection *self, GString *command)
+{
+  ControlCommand *cmd_desc = control_find_command(command->str);
+
+  if (cmd_desc == NULL)
+    {
+      msg_error("Unknown command read on control channel, closing control channel",
+                evt_tag_str("command", command->str));
+      return FALSE;
+    }
+
+  if (!cmd_desc->threaded)
+    cmd_desc->func(self, command, cmd_desc->user_data);
+  else
+    control_connection_start_as_thread(self, cmd_desc->func, command, cmd_desc->user_data);
+  return TRUE;
+}
+
+static void
 control_connection_io_input(void *s)
 {
   ControlConnection *self = (ControlConnection *) s;
@@ -208,25 +237,19 @@ control_connection_io_input(void *s)
       return;
     }
 
-  ControlCommand *cmd_desc = control_find_command(command->str);
-  if (cmd_desc == NULL)
-    {
-      msg_error("Unknown command read on control channel, closing control channel",
-                evt_tag_str("command", command->str));
-      g_string_free(command, TRUE);
-      goto destroy_connection;
-    }
-
-  if (!cmd_desc->threaded)
-    cmd_desc->func(self, command, cmd_desc->user_data);
-  else
-    control_connection_start_as_thread(self, cmd_desc->func, command, cmd_desc->user_data);
+  if (!control_connection_run_command(self, command))
+    goto destroy_connection;
   control_connection_wait_for_output(self);
 
   secret_storage_wipe(command->str, command->len);
   g_string_free(command, TRUE);
   return;
 destroy_connection:
+  if (command)
+    {
+      secret_storage_wipe(command->str, command->len);
+      g_string_free(command, TRUE);
+    }
   control_server_connection_closed(self->server, self);
 }
 

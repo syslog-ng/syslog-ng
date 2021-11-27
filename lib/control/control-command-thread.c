@@ -26,6 +26,7 @@
 #include "control-server.h"
 #include "messages.h"
 #include "mainloop.h"
+#include "secret-storage/secret-storage.h"
 #include <iv_event.h>
 
 struct _ControlCommandThread
@@ -151,6 +152,7 @@ static void
 _control_command_thread_free(ControlCommandThread *self)
 {
   g_mutex_clear(&self->real_thread.state_lock);
+  secret_storage_wipe(self->command->str, self->command->len);
   g_string_free(self->command, TRUE);
   control_connection_unref(self->connection);
   g_free(self);

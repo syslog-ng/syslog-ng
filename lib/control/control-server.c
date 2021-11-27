@@ -26,14 +26,6 @@
 #include "control-command-thread.h"
 #include "messages.h"
 
-void
-control_connection_start_as_thread(ControlConnection *self, ControlCommandFunc cmd_cb,
-                                   GString *command, gpointer user_data)
-{
-  ControlCommandThread *runner = control_command_thread_new(self, command, cmd_cb, user_data);
-  control_command_thread_run(runner);
-  control_command_thread_unref(runner);
-}
 
 void
 _cancel_worker(gpointer data, gpointer user_data)

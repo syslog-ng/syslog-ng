@@ -65,9 +65,4 @@ control_server_stop(ControlServer *self)
     self->stop(self);
 }
 
-typedef void (*ControlConnectionCommand)(ControlConnection *cc, GString *command, gpointer user_data);
-void control_connection_start_as_thread(ControlConnection *self, ControlConnectionCommand cmd_cb,
-                                        GString *command, gpointer user_data);
-
-
 #endif
