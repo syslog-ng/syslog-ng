@@ -27,8 +27,10 @@
 
 #include "control.h"
 
-ControlCommandThread *control_command_thread_new(ControlConnection *cc, GString *cmd, gpointer user_data);
-void control_command_thread_run(ControlCommandThread *self, ControlCommandFunc func);
+void control_command_thread_run(ControlCommandThread *self);
 void control_command_thread_cancel(ControlCommandThread *self);
+
+ControlCommandThread *control_command_thread_new(ControlConnection *cc, GString *cmd,
+                                                 ControlCommandFunc func, gpointer user_data);
 
 #endif

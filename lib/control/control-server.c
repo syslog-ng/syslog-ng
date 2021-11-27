@@ -30,8 +30,8 @@ void
 control_connection_start_as_thread(ControlConnection *self, ControlCommandFunc cmd_cb,
                                    GString *command, gpointer user_data)
 {
-  ControlCommandThread *runner = control_command_thread_new(self, command, user_data);
-  control_command_thread_run(runner, cmd_cb);
+  ControlCommandThread *runner = control_command_thread_new(self, command, cmd_cb, user_data);
+  control_command_thread_run(runner);
 }
 
 void
@@ -41,6 +41,7 @@ _delete_control_command_thread(gpointer data)
 
   control_command_thread_cancel(thread);
 }
+
 
 void
 control_server_cancel_workers(ControlServer *self)

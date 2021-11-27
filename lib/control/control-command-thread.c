@@ -45,27 +45,8 @@ struct _ControlCommandThread
   struct iv_event thread_finished;
 };
 
-ControlCommandThread *
-control_command_thread_new(ControlConnection *cc, GString *cmd, gpointer user_data)
-{
-  ControlCommandThread *self = g_new0(ControlCommandThread, 1);
-  self->connection = control_connection_ref(cc);
-  self->command = g_string_new(cmd->str);
-  self->user_data = user_data;
-
-  g_mutex_init(&self->real_thread.state_lock);
-
-  return self;
-}
-
 static void
-control_command_thread_free(ControlCommandThread *self)
-{
-  g_mutex_clear(&self->real_thread.state_lock);
-  g_string_free(self->command, TRUE);
-  control_connection_unref(self->connection);
-  g_free(self);
-}
+control_command_thread_free(ControlCommandThread *self);
 
 static void
 _on_thread_finished(gpointer user_data)
@@ -94,26 +75,25 @@ _thread(gpointer user_data)
 }
 
 static void
-control_command_thread_sync_run(ControlCommandThread *self, ControlCommandFunc func)
+control_command_thread_sync_run(ControlCommandThread *self)
 {
   msg_warning("Cannot start a separated thread - ControlServer is not running",
               evt_tag_str("command", self->command->str));
 
-  func(self->connection, self->command, self->user_data);
+  self->func(self->connection, self->command, self->user_data);
   control_command_thread_free(self);
 }
 
 void
-control_command_thread_run(ControlCommandThread *self, ControlCommandFunc func)
+control_command_thread_run(ControlCommandThread *self)
 {
   IV_EVENT_INIT(&self->thread_finished);
   self->thread_finished.handler = _on_thread_finished;
   self->thread_finished.cookie = self;
-  self->func = func;
 
   if (!main_loop_is_control_server_running(main_loop_get_instance()))
     {
-      control_command_thread_sync_run(self, func);
+      control_command_thread_sync_run(self);
       return;
     }
 
@@ -144,4 +124,27 @@ control_command_thread_cancel(ControlCommandThread *self)
       g_thread_join(self->thread);
       control_command_thread_free(self);
     }
+}
+
+ControlCommandThread *
+control_command_thread_new(ControlConnection *cc, GString *cmd, ControlCommandFunc func, gpointer user_data)
+{
+  ControlCommandThread *self = g_new0(ControlCommandThread, 1);
+  self->connection = control_connection_ref(cc);
+  self->command = g_string_new(cmd->str);
+  self->func = func;
+  self->user_data = user_data;
+
+  g_mutex_init(&self->real_thread.state_lock);
+
+  return self;
+}
+
+static void
+control_command_thread_free(ControlCommandThread *self)
+{
+  g_mutex_clear(&self->real_thread.state_lock);
+  g_string_free(self->command, TRUE);
+  control_connection_unref(self->connection);
+  g_free(self);
 }
