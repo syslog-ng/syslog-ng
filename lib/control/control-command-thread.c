@@ -66,6 +66,8 @@ _thread(gpointer user_data)
 {
   ControlCommandThread *self = (ControlCommandThread *) user_data;
 
+  msg_debug("Control command thread has started",
+            evt_tag_str("control_command", self->command->str));
   self->func(self->connection, self->command, self->user_data);
   g_mutex_lock(&self->real_thread.state_lock);
   {
@@ -76,6 +78,8 @@ _thread(gpointer user_data)
   g_mutex_unlock(&self->real_thread.state_lock);
 
   /* drop ref belonging to the thread function */
+  msg_debug("Control command thread is exiting now",
+            evt_tag_str("control_command", self->command->str));
   control_command_thread_unref(self);
 }
 
