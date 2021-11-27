@@ -56,6 +56,12 @@ control_server_cancel_workers(ControlServer *self)
 }
 
 void
+control_server_worker_finished(ControlServer *self, ControlCommandThread *worker)
+{
+  self->worker_threads = g_list_remove(self->worker_threads, worker);
+}
+
+void
 control_server_connection_closed(ControlServer *self, ControlConnection *cc)
 {
   control_connection_stop_watches(cc);

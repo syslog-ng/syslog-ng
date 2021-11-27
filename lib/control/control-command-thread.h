@@ -27,8 +27,6 @@
 
 #include "control.h"
 
-typedef struct _ControlCommandThread ControlCommandThread;
-
 ControlCommandThread *control_command_thread_new(ControlConnection *cc, GString *cmd, gpointer user_data);
 void control_command_thread_run(ControlCommandThread *self, ControlCommandFunc func);
 void control_command_thread_cancel(ControlCommandThread *self);

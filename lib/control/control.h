@@ -29,7 +29,7 @@
 
 typedef struct _ControlServer ControlServer;
 typedef struct _ControlConnection ControlConnection;
-
+typedef struct _ControlCommandThread ControlCommandThread;
 
 typedef void (*ControlCommandFunc)(ControlConnection *cc, GString *, gpointer user_data);
 typedef struct _ControlCommand

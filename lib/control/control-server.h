@@ -41,6 +41,8 @@ struct _ControlServer
 
 void control_server_cancel_workers(ControlServer *self);
 void control_server_connection_closed(ControlServer *self, ControlConnection *cc);
+void control_server_worker_finished(ControlServer *self, ControlCommandThread *worker);
+
 gboolean control_server_start_method(ControlServer *self);
 void control_server_stop_method(ControlServer *self);
 void control_server_free_method(ControlServer *self);

@@ -71,10 +71,11 @@ static void
 _on_thread_finished(gpointer user_data)
 {
   ControlCommandThread *self = (ControlCommandThread *) user_data;
+
   g_thread_join(self->thread);
   iv_event_unregister(&self->thread_finished);
-  ControlServer *server = self->connection->server;
-  server->worker_threads = g_list_remove(server->worker_threads, self);
+
+  control_server_worker_finished(self->connection->server, self);
   control_command_thread_free(self);
 }
 
