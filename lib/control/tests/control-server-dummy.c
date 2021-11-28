@@ -31,6 +31,14 @@ typedef struct _ControlConnectionDummy
   GString *input;
 } ControlConnectionDummy;
 
+gboolean
+control_connection_dummy_run_command(ControlConnection *s, ControlCommand *command_desc, GString *command_string)
+{
+  /* ignore threaded execution */
+  command_desc->func(s, command_string, command_desc->user_data);
+  return TRUE;
+}
+
 gint
 control_connection_dummy_write(ControlConnection *s, gpointer buffer, gsize size)
 {
@@ -109,6 +117,7 @@ control_connection_dummy_new(ControlServer *server)
   ControlConnectionDummy *self = g_new0(ControlConnectionDummy, 1);
 
   control_connection_init_instance(&self->super, server);
+  self->super.run_command = control_connection_dummy_run_command;
   self->super.read = control_connection_dummy_read;
   self->super.write = control_connection_dummy_write;
   self->super.events.start_watches = control_connection_dummy_start_watches;

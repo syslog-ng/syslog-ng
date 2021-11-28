@@ -25,7 +25,6 @@
 #include "control-connection.h"
 #include "control-server.h"
 #include "messages.h"
-#include "mainloop.h"
 #include "secret-storage/secret-storage.h"
 #include <iv_event.h>
 
@@ -83,15 +82,6 @@ _thread(gpointer user_data)
   control_command_thread_unref(self);
 }
 
-static void
-control_command_thread_sync_run(ControlCommandThread *self)
-{
-  msg_warning("Cannot start a separated thread - ControlServer is not running",
-              evt_tag_str("command", self->command->str));
-
-  self->func(self->connection, self->command, self->user_data);
-}
-
 const gchar *
 control_command_thread_get_command(ControlCommandThread *self)
 {
@@ -101,12 +91,6 @@ control_command_thread_get_command(ControlCommandThread *self)
 void
 control_command_thread_run(ControlCommandThread *self)
 {
-  if (!main_loop_is_control_server_running(main_loop_get_instance()))
-    {
-      control_command_thread_sync_run(self);
-      return;
-    }
-
   self->thread_finished.cookie = control_command_thread_ref(self);
   iv_event_register(&self->thread_finished);
 
