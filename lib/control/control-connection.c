@@ -155,22 +155,28 @@ control_connection_start_as_thread(ControlConnection *self, ControlCommandFunc c
 }
 
 static gboolean
-control_connection_run_command(ControlConnection *self, GString *command)
+control_connection_run_command_method(ControlConnection *self, ControlCommand *command_desc, GString *command_string)
 {
-  ControlCommand *cmd_desc = control_find_command(command->str);
+  if (!command_desc->threaded)
+    command_desc->func(self, command_string, command_desc->user_data);
+  else
+    control_connection_start_as_thread(self, command_desc->func, command_string, command_desc->user_data);
+  return TRUE;
+}
 
-  if (cmd_desc == NULL)
+gboolean
+control_connection_run_command(ControlConnection *self, GString *command_string)
+{
+  ControlCommand *command_desc = control_find_command(command_string->str);
+
+  if (command_desc == NULL)
     {
       msg_error("Unknown command read on control channel, closing control channel",
-                evt_tag_str("command", command->str));
+                evt_tag_str("command", command_string->str));
       return FALSE;
     }
 
-  if (!cmd_desc->threaded)
-    cmd_desc->func(self, command, cmd_desc->user_data);
-  else
-    control_connection_start_as_thread(self, cmd_desc->func, command, cmd_desc->user_data);
-  return TRUE;
+  return self->run_command(self, command_desc, command_string);
 }
 
 static void
@@ -269,6 +275,7 @@ control_connection_init_instance(ControlConnection *self, ControlServer *server)
   self->handle_input = control_connection_io_input;
   self->handle_output = control_connection_io_output;
   self->response_batches = g_queue_new();
+  self->run_command = control_connection_run_command_method;
   g_mutex_init(&self->response_batches_lock);
 
   IV_EVENT_INIT(&self->evt_response_added);

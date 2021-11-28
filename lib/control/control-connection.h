@@ -41,6 +41,7 @@ struct _ControlConnection
   GString *output_buffer;
   gsize pos;
   ControlServer *server;
+  gboolean (*run_command)(ControlConnection *self, ControlCommand *command_desc, GString *command_string);
   int (*read)(ControlConnection *self, gpointer buffer, gsize size);
   int (*write)(ControlConnection *self, gpointer buffer, gsize size);
   void (*handle_input)(gpointer s);
@@ -55,6 +56,7 @@ struct _ControlConnection
 
 };
 
+gboolean control_connection_run_command(ControlConnection *self, GString *command_string);
 void control_connection_send_reply(ControlConnection *self, GString *reply);
 void control_connection_send_batched_reply(ControlConnection *self, GString *reply);
 void control_connection_send_close_batch(ControlConnection *self);
@@ -65,5 +67,6 @@ void control_connection_init_instance(ControlConnection *self, ControlServer *se
 
 ControlConnection *control_connection_ref(ControlConnection *self);
 void control_connection_unref(ControlConnection *self);
+
 
 #endif
