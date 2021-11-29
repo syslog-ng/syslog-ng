@@ -32,5 +32,7 @@ void control_command_thread_cancel(ControlCommandThread *self);
 
 ControlCommandThread *control_command_thread_new(ControlConnection *cc, GString *cmd,
                                                  ControlCommandFunc func, gpointer user_data);
+ControlCommandThread *control_command_thread_ref(ControlCommandThread *self);
+void control_command_thread_unref(ControlCommandThread *self);
 
 #endif

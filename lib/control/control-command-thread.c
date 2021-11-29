@@ -30,6 +30,7 @@
 
 struct _ControlCommandThread
 {
+  GAtomicCounter ref_cnt;
   ControlConnection *connection;
   GString *command;
   gpointer user_data;
@@ -46,9 +47,6 @@ struct _ControlCommandThread
 };
 
 static void
-control_command_thread_free(ControlCommandThread *self);
-
-static void
 _on_thread_finished(gpointer user_data)
 {
   ControlCommandThread *self = (ControlCommandThread *) user_data;
@@ -57,7 +55,7 @@ _on_thread_finished(gpointer user_data)
   iv_event_unregister(&self->thread_finished);
 
   control_server_worker_finished(self->connection->server, self);
-  control_command_thread_free(self);
+  control_command_thread_unref(self);
 }
 
 static void
@@ -81,7 +79,7 @@ control_command_thread_sync_run(ControlCommandThread *self)
               evt_tag_str("command", self->command->str));
 
   self->func(self->connection, self->command, self->user_data);
-  control_command_thread_free(self);
+  control_command_thread_unref(self);
 }
 
 void
@@ -122,7 +120,7 @@ control_command_thread_cancel(ControlCommandThread *self)
   if (has_to_free)
     {
       g_thread_join(self->thread);
-      control_command_thread_free(self);
+      control_command_thread_unref(self);
     }
 }
 
@@ -130,6 +128,8 @@ ControlCommandThread *
 control_command_thread_new(ControlConnection *cc, GString *cmd, ControlCommandFunc func, gpointer user_data)
 {
   ControlCommandThread *self = g_new0(ControlCommandThread, 1);
+
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->connection = control_connection_ref(cc);
   self->command = g_string_new(cmd->str);
   self->func = func;
@@ -141,10 +141,30 @@ control_command_thread_new(ControlConnection *cc, GString *cmd, ControlCommandFu
 }
 
 static void
-control_command_thread_free(ControlCommandThread *self)
+_control_command_thread_free(ControlCommandThread *self)
 {
   g_mutex_clear(&self->real_thread.state_lock);
   g_string_free(self->command, TRUE);
   control_connection_unref(self->connection);
   g_free(self);
+}
+
+ControlCommandThread *
+control_command_thread_ref(ControlCommandThread *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+
+  if (self)
+    g_atomic_counter_inc(&self->ref_cnt);
+
+  return self;
+}
+
+void
+control_command_thread_unref(ControlCommandThread *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    _control_command_thread_free(self);
 }
