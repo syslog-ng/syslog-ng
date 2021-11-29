@@ -191,6 +191,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_SSL_OPTIONS
 %token KW_SNI
 %token KW_ALLOW_COMPRESS
+%token KW_KEYLOG_FILE
 
 /* INCLUDE_DECLS */
 
@@ -801,6 +802,11 @@ tls_option
 	| KW_KEY_FILE '(' path_secret ')'
 	  {
 	    tls_context_set_key_file(last_tls_context, $3);
+            free($3);
+          }
+	| KW_KEYLOG_FILE '(' string ')'
+	  {
+		CHECK_ERROR(tls_context_set_keylog_file(last_tls_context, $3), @3, "keylog_file() requires OpenSSL >= v1.1.1");
             free($3);
           }
 	| KW_CERT_FILE '(' path_check ')'
