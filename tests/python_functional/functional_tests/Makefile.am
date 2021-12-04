@@ -25,6 +25,7 @@ EXTRA_DIST += \
 	tests/python_functional/functional_tests/parsers/panos/test_panos_parser.py \
 	tests/python_functional/functional_tests/parsers/regexp-parser/test_regexp_parser.py \
 	tests/python_functional/functional_tests/rewrites/set-tag/test_set_tag.py \
+	tests/python_functional/functional_tests/rewrites/cc-mask/test_cc_mask_and_cc_hash.py \
 	tests/python_functional/functional_tests/source_drivers/file_source/test_acceptance.py \
 	tests/python_functional/functional_tests/source_drivers/file_source/test_follow_freq_value.py \
 	tests/python_functional/functional_tests/source_drivers/generator_source/test_generator_source.py \
