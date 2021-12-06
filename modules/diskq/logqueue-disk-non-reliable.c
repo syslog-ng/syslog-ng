@@ -169,7 +169,7 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
     }
 }
 
-static void
+static gboolean
 _move_messages_from_disk_to_qout(LogQueueDiskNonReliable *self)
 {
   do
@@ -181,26 +181,32 @@ _move_messages_from_disk_to_qout(LogQueueDiskNonReliable *self)
       LogMessage *msg = log_queue_disk_read_message(&self->super, &path_options);
 
       if (!msg)
-        break;
+        return FALSE;
 
       g_queue_push_tail(self->qout, msg);
       g_queue_push_tail(self->qout, LOG_PATH_OPTIONS_TO_POINTER(&path_options));
       log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
     }
   while (HAS_SPACE_IN_QUEUE(self->qout));
+
+  return TRUE;
 }
 
-static inline void
+static inline gboolean
 _maybe_move_messages_among_queue_segments(LogQueueDiskNonReliable *self)
 {
+  gboolean ret = TRUE;
+
   if (qdisk_is_read_only(self->super.qdisk))
-    return;
+    return TRUE;
 
   if (self->qout->length == 0 && self->qout_size > 0)
-    _move_messages_from_disk_to_qout(self);
+    ret = _move_messages_from_disk_to_qout(self);
 
   if (self->qoverflow->length > 0)
     _move_messages_from_overflow(self);
+
+  return ret;
 }
 
 /* runs only in the output thread */
@@ -288,6 +294,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
 {
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
   LogMessage *msg = NULL;
+  gboolean stats_update = TRUE;
 
   g_mutex_lock(&s->lock);
 
@@ -312,14 +319,18 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
     }
 
 success:
-  _maybe_move_messages_among_queue_segments(self);
+  if (!_maybe_move_messages_among_queue_segments(self))
+    {
+      stats_update = FALSE;
+    }
 
   g_mutex_unlock(&s->lock);
 
   if (s->use_backlog)
     _push_tail_qbacklog(self, msg, path_options);
 
-  log_queue_queued_messages_dec(s);
+  if (stats_update)
+    log_queue_queued_messages_dec(s);
 
   return msg;
 }

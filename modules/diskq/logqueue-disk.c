@@ -192,6 +192,7 @@ void
 log_queue_disk_restart_corrupted(LogQueueDisk *self)
 {
   _restart_diskq(self);
+  log_queue_queued_messages_reset(&self->super);
 }
 
 
