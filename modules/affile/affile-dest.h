@@ -47,6 +47,7 @@ typedef struct _AFFileDestDriver
   GHashTable *writer_hash;
 
   gint overwrite_if_older;
+  gchar *symlink_as;
   gboolean use_time_recvd;
 } AFFileDestDriver;
 
@@ -56,6 +57,7 @@ LogDriver *affile_dd_new(LogTemplate *filename_template, GlobalConfig *cfg);
 void affile_dd_set_create_dirs(LogDriver *s, gboolean create_dirs);
 void affile_dd_set_fsync(LogDriver *s, gboolean enable);
 void affile_dd_set_overwrite_if_older(LogDriver *s, gint overwrite_if_older);
+void affile_dd_set_symlink_as(LogDriver *s, const gchar *symlink_as);
 void affile_dd_set_local_time_zone(LogDriver *s, const gchar *local_time_zone);
 void affile_dd_set_time_reap(LogDriver *s, gint time_reap);
 void affile_dd_global_init(void);
