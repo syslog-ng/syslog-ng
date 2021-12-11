@@ -103,12 +103,13 @@ _py_convert_return_value_to_result(const gchar *function_name, PyObject *ret, GS
 }
 
 static void
-tf_python(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_python(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   PyGILState_STATE gstate;
   const gchar *function_name;
   PyObject *ret;
 
+  *type = LM_VT_STRING;
   if (argc == 0)
     return;
   function_name = argv[0]->str;

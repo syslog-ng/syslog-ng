@@ -26,18 +26,20 @@
 #include <ctype.h>
 
 static void
-tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
+  *type = LM_VT_STRING;
   _append_args_with_separator(argc, argv, result, ' ');
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_echo);
 
 static void
-tf_length(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_length(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gint i;
 
+  *type = LM_VT_INT32;
   for (i = 0; i < argc; i++)
     {
       format_uint32_padded(result, 0, 0, 10, argv[i]->len);
@@ -52,10 +54,11 @@ TEMPLATE_FUNCTION_SIMPLE(tf_length);
  * $(substr $arg START [LEN])
  */
 static void
-tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gint64 start, len;
 
+  *type = LM_VT_STRING;
   /*
    * We need to cast argv[0]->len, which is gsize (so unsigned) type, to a
    * signed type, so we can compare negative offsets/lengths with string
@@ -164,11 +167,12 @@ TEMPLATE_FUNCTION_SIMPLE(tf_substr);
  * $(strip $arg1 $arg2 ...)
  */
 static void
-tf_strip(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_strip(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gsize initial_len = result->len;
   gint i;
 
+  *type = LM_VT_STRING;
   for (i = 0; i < argc; i++)
     {
       if (argv[i]->len == 0)
@@ -260,12 +264,14 @@ exit:
 }
 
 static void
-tf_sanitize_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_sanitize_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+                 LogMessageValueType *type)
 {
   TFSanitizeState *state = (TFSanitizeState *) s;
   gint argc;
   gint i, pos;
 
+  *type = LM_VT_STRING;
   argc = state->super.argc;
   for (i = 0; i < argc; i++)
     {
@@ -298,10 +304,11 @@ TEMPLATE_FUNCTION(TFSanitizeState, tf_sanitize, tf_sanitize_prepare, tf_simple_f
 
 
 void
-tf_indent_multi_line(LogMessage *msg, gint argc, GString *argv[], GString *text)
+tf_indent_multi_line(LogMessage *msg, gint argc, GString *argv[], GString *text, LogMessageValueType *type)
 {
   gchar *p, *new_line;
 
+  *type = LM_VT_STRING;
   /* append the message text(s) to the template string */
   _append_args_with_separator(argc, argv, text, ' ');
 
@@ -321,10 +328,11 @@ tf_indent_multi_line(LogMessage *msg, gint argc, GString *argv[], GString *text)
 TEMPLATE_FUNCTION_SIMPLE(tf_indent_multi_line);
 
 void
-tf_lowercase(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_lowercase(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gint i;
 
+  *type = LM_VT_STRING;
   for (i = 0; i < argc; i++)
     {
       gchar *new = g_utf8_strdown(argv[i]->str, argv[i]->len);
@@ -340,10 +348,11 @@ tf_lowercase(LogMessage *msg, gint argc, GString *argv[], GString *result)
 TEMPLATE_FUNCTION_SIMPLE(tf_lowercase);
 
 void
-tf_uppercase(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_uppercase(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gint i;
 
+  *type = LM_VT_STRING;
   for (i = 0; i < argc; i++)
     {
       gchar *new = g_utf8_strup(argv[i]->str, argv[i]->len);
@@ -359,10 +368,11 @@ tf_uppercase(LogMessage *msg, gint argc, GString *argv[], GString *result)
 TEMPLATE_FUNCTION_SIMPLE(tf_uppercase);
 
 void
-tf_replace_delimiter(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_replace_delimiter(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gchar *haystack, *delimiters, new_delimiter;
 
+  *type = LM_VT_STRING;
   if (argc != 3)
     {
       msg_error("$(replace-delimiter) parsing failed, wrong number of arguments");
@@ -456,10 +466,12 @@ tf_string_padding_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *pa
 }
 
 static void
-tf_string_padding_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_string_padding_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+                       LogMessageValueType *type)
 {
   TFStringPaddingState *state = (TFStringPaddingState *) s;
 
+  *type = LM_VT_STRING;
   if (args->argv[0]->len > state->width)
     {
       g_string_append_len(result, args->argv[0]->str, args->argv[0]->len);
@@ -490,10 +502,12 @@ typedef struct _TFBinaryState
 } TFBinaryState;
 
 static void
-tf_binary_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_binary_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+               LogMessageValueType *type)
 {
   TFBinaryState *state = (TFBinaryState *) s;
 
+  *type = LM_VT_STRING;
   g_string_append_len(result, state->octets->str, state->octets->len);
 }
 
@@ -570,7 +584,7 @@ _get_base64_encoded_size(gsize len)
 }
 
 static void
-tf_base64encode(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_base64encode(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gint i;
   gint state = 0;
@@ -578,6 +592,7 @@ tf_base64encode(LogMessage *msg, gint argc, GString *argv[], GString *result)
   gsize out_len = 0;
   gsize init_len = result->len;
 
+  *type = LM_VT_STRING;
   for (i = 0; i < argc; i++)
     {
       /* expand the buffer and add space for the base64 encoded string */

@@ -197,11 +197,13 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
  * Create a new encrypted log entry
  */
 static void
-tf_slog_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_slog_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+             LogMessageValueType *type)
 {
 
   TFSlogState *state = (TFSlogState *) s;
 
+  *type = LM_VT_STRING;
   // If we do not have a good key, just forward input
   if (state->badKey == TRUE)
     {

@@ -36,13 +36,15 @@ tf_filter_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gi
 }
 
 static void
-tf_filter_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_filter_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+               LogMessageValueType *type)
 {
   ListScanner scanner;
   gsize initial_len = result->len;
   TFCondState *state = (TFCondState *)s;
   GString *lst = args->argv[0];
 
+  *type = LM_VT_STRING;
   list_scanner_init(&scanner);
   list_scanner_input_string(&scanner, lst->str, lst->len);
 

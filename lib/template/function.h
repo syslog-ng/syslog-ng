@@ -63,7 +63,8 @@ struct _LogTemplateFunction
   void (*eval)(LogTemplateFunction *self, gpointer state, LogTemplateInvokeArgs *args);
 
   /* call the function */
-  void (*call)(LogTemplateFunction *self, gpointer state, const LogTemplateInvokeArgs *args, GString *result);
+  void (*call)(LogTemplateFunction *self, gpointer state, const LogTemplateInvokeArgs *args, GString *result,
+               LogMessageValueType *type);
 
   /* free data in state */
   void (*free_state)(gpointer s);

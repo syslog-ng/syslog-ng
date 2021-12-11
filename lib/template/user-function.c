@@ -50,11 +50,13 @@ user_template_function_prepare(LogTemplateFunction *s, gpointer state, LogTempla
 }
 
 static void
-user_template_function_call(LogTemplateFunction *s, gpointer state, const LogTemplateInvokeArgs *args, GString *result)
+user_template_function_call(LogTemplateFunction *s, gpointer state, const LogTemplateInvokeArgs *args, GString *result,
+                            LogMessageValueType *type)
 {
   UserTemplateFunction *self = (UserTemplateFunction *) s;
 
-  log_template_append_format_with_context(self->template, args->messages, args->num_messages, args->options, result);
+  log_template_append_format_value_and_type_with_context(self->template, args->messages, args->num_messages,
+                                                         args->options, result, type);
 }
 
 static void

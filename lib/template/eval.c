@@ -131,26 +131,24 @@ log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMes
         }
         case LTE_FUNC:
         {
-          if (1)
-            {
-              LogTemplateInvokeArgs args =
-              {
-                e->msg_ref ? &messages[msg_ndx] : messages,
-                e->msg_ref ? 1 : num_messages,
-                options,
-              };
+          LogTemplateInvokeArgs args =
+          {
+            e->msg_ref ? &messages[msg_ndx] : messages,
+            e->msg_ref ? 1 : num_messages,
+            options,
+          };
+          LogMessageValueType value_type = LM_VT_NONE;
 
 
-              /* if a function call is called with an msg_ref, we only
-               * pass that given logmsg to argument resolution, otherwise
-               * we pass the whole set so the arguments can individually
-               * specify which message they want to resolve from
-               */
-              if (e->func.ops->eval)
-                e->func.ops->eval(e->func.ops, e->func.state, &args);
-              e->func.ops->call(e->func.ops, e->func.state, &args, result);
-              t = _propagate_type(t, LM_VT_STRING);
-            }
+          /* if a function call is called with an msg_ref, we only
+           * pass that given logmsg to argument resolution, otherwise
+           * we pass the whole set so the arguments can individually
+           * specify which message they want to resolve from
+           */
+          if (e->func.ops->eval)
+            e->func.ops->eval(e->func.ops, e->func.state, &args);
+          e->func.ops->call(e->func.ops, e->func.state, &args, result, &value_type);
+          t = _propagate_type(t, value_type);
           break;
         }
         default:

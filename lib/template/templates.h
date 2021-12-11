@@ -73,7 +73,8 @@ gboolean log_template_is_literal_string(const LogTemplate *self);
 const gchar *log_template_get_literal_value(const LogTemplate *self, gssize *value_len);
 gboolean log_template_is_trivial(LogTemplate *self);
 const gchar *log_template_get_trivial_value(LogTemplate *self, LogMessage *msg, gssize *value_len);
-const gchar *log_template_get_trivial_value_and_type(LogTemplate *self, LogMessage *msg, gssize *value_len, LogMessageValueType *type);
+const gchar *log_template_get_trivial_value_and_type(LogTemplate *self, LogMessage *msg, gssize *value_len,
+                                                     LogMessageValueType *type);
 void log_template_set_name(LogTemplate *self, const gchar *name);
 
 LogTemplate *log_template_new(GlobalConfig *cfg, const gchar *name);

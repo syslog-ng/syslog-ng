@@ -169,13 +169,14 @@ tf_cef_append(GString *result, ValuePairs *vp, LogMessage *msg, LogTemplateEvalO
 
 static void
 tf_cef_call(LogTemplateFunction *self, gpointer s,
-            const LogTemplateInvokeArgs *args, GString *result)
+            const LogTemplateInvokeArgs *args, GString *result, LogMessageValueType *type)
 {
   TFCefState *state = (TFCefState *)s;
   gint i;
   gboolean r = TRUE;
   gsize orig_size = result->len;
 
+  *type = LM_VT_STRING;
   for (i = 0; i < args->num_messages; i++)
     r &= tf_cef_append(result, state->vp, args->messages[i], args->options);
 

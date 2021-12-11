@@ -22,8 +22,9 @@
  */
 
 static void
-tf_urlencode(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_urlencode(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
+  *type = LM_VT_STRING;
   if (argc < 1)
     return;
 
@@ -38,8 +39,9 @@ tf_urlencode(LogMessage *msg, gint argc, GString *argv[], GString *result)
 TEMPLATE_FUNCTION_SIMPLE(tf_urlencode);
 
 static void
-tf_urldecode(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_urldecode(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
+  *type = LM_VT_STRING;
   if (argc < 1)
     return;
 

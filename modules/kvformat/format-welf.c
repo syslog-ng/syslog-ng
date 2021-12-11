@@ -86,7 +86,8 @@ tf_format_welf_strcmp(gconstpointer a, gconstpointer b)
 }
 
 static void
-tf_format_welf_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_format_welf_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+                    LogMessageValueType *type)
 {
   TFWelfState *state = (TFWelfState *) s;
   TFWelfIterState iter_state =
@@ -96,6 +97,7 @@ tf_format_welf_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvo
   };
   gint i;
 
+  *type = LM_VT_STRING;
   for (i = 0; i < args->num_messages; i++)
     {
       value_pairs_foreach_sorted(state->vp,

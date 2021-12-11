@@ -64,7 +64,8 @@ log_template_is_trivial(LogTemplate *self)
 }
 
 const gchar *
-log_template_get_trivial_value_and_type(LogTemplate *self, LogMessage *msg, gssize *value_len, LogMessageValueType *type)
+log_template_get_trivial_value_and_type(LogTemplate *self, LogMessage *msg, gssize *value_len,
+                                        LogMessageValueType *type)
 {
   LogMessageValueType t = LM_VT_STRING;
   const gchar *result = "";

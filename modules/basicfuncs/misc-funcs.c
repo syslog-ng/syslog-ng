@@ -21,10 +21,11 @@
  */
 
 static void
-tf_env(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_env(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gint i;
 
+  *type = LM_VT_STRING;
   for (i = 0; i < argc; i++)
     {
       char *val = getenv(argv[i]->str);

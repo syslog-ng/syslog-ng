@@ -120,7 +120,8 @@ error:
 }
 
 static void
-tf_geoip_maxminddb_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_geoip_maxminddb_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+                        LogMessageValueType *type)
 {
   TFMaxMindDBState *state = (TFMaxMindDBState *) s;
 
@@ -128,6 +129,7 @@ tf_geoip_maxminddb_call(LogTemplateFunction *self, gpointer s, const LogTemplate
   MMDB_lookup_result_s mmdb_result =
     MMDB_lookup_string(state->database, args->argv[0]->str, &_gai_error, &mmdb_error);
 
+  *type = LM_VT_STRING;
   if (!mmdb_result.found_entry)
     {
       goto error;

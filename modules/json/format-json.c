@@ -357,11 +357,12 @@ tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg, LogTemplateEval
 
 static void
 tf_json_call(LogTemplateFunction *self, gpointer s,
-             const LogTemplateInvokeArgs *args, GString *result)
+             const LogTemplateInvokeArgs *args, GString *result, LogMessageValueType *type)
 {
   TFJsonState *state = (TFJsonState *)s;
   gsize orig_size = result->len;
 
+  *type = LM_VT_JSON;
   for (gint i = 0; i < args->num_messages; i++)
     {
       gboolean r = tf_json_append(result, state->vp, args->messages[i], args->options);
@@ -455,11 +456,12 @@ tf_flat_json_append(GString *result, ValuePairs *vp, LogMessage *msg, LogTemplat
 
 static void
 tf_flat_json_call(LogTemplateFunction *self, gpointer s,
-                  const LogTemplateInvokeArgs *args, GString *result)
+                  const LogTemplateInvokeArgs *args, GString *result, LogMessageValueType *type)
 {
   TFJsonState *state = (TFJsonState *)s;
   gsize orig_size = result->len;
 
+  *type = LM_VT_JSON;
   for (gint i = 0; i < args->num_messages; i++)
     {
       gboolean r = tf_flat_json_append(result, state->vp, args->messages[i], args->options);

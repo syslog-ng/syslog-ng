@@ -31,10 +31,11 @@
 #include <openssl/evp.h>
 
 static void
-tf_uuid(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_uuid(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   char uuid_str[37];
 
+  *type = LM_VT_STRING;
   uuid_gen_random(uuid_str, sizeof(uuid_str));
   g_string_append (result, uuid_str);
 }
@@ -128,7 +129,8 @@ _hash(const EVP_MD *md, GString *const *argv, gint argc, guchar *hash, guint has
 }
 
 static void
-tf_hash_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_hash_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+             LogMessageValueType *type)
 {
   TFHashState *state = (TFHashState *) s;
   gint argc;
@@ -136,6 +138,7 @@ tf_hash_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
   gchar hash_str[EVP_MAX_MD_SIZE * 2 + 1];
   guint md_len;
 
+  *type = LM_VT_STRING;
   argc = state->super.argc;
   md_len = _hash(state->md, args->argv, argc, hash, sizeof(hash));
   // we fetch the entire hash in a hex format otherwise we cannot truncate at

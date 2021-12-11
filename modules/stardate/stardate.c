@@ -105,12 +105,14 @@ tf_stardate_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
 
 static void
 tf_stardate_call(LogTemplateFunction *self, gpointer s,
-                 const LogTemplateInvokeArgs *args, GString *result)
+                 const LogTemplateInvokeArgs *args, GString *result, LogMessageValueType *type)
 {
   TFStardateState  *state = (TFStardateState *) s;
 
   char *status;
   time_t time_to_convert = strtol(args->argv[0]->str, &status, 10);
+
+  *type = LM_VT_STRING;
   if (*status)
     {
       msg_error("stardate: wrong format: expected unixtime like value",

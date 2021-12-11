@@ -25,10 +25,11 @@
 #include <ctype.h>
 
 static void
-tf_basename(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_basename(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gchar *base;
 
+  *type = LM_VT_STRING;
   base = g_path_get_basename(argv[0]->str);
   g_string_append(result, base);
   g_free(base);
@@ -37,10 +38,11 @@ tf_basename(LogMessage *msg, gint argc, GString *argv[], GString *result)
 TEMPLATE_FUNCTION_SIMPLE(tf_basename);
 
 static void
-tf_dirname(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_dirname(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gchar *dir;
 
+  *type = LM_VT_STRING;
   dir = g_path_get_dirname(argv[0]->str);
   g_string_append(result, dir);
   g_free(dir);
