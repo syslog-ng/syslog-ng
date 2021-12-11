@@ -392,7 +392,7 @@ log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len, LogM
     }
   g_string_truncate(value, 0);
 
-  log_macro_expand_simple(value, id, self);
+  log_macro_expand_simple(id, self, value);
   if (value_len)
     *value_len = value->len;
   if (type)

@@ -269,8 +269,8 @@ _is_message_dest_an_ip_address(const LogMessage *msg)
 }
 
 static void
-log_macro_expand_date_time(GString *result, gint id, gboolean escape,
-                           LogTemplateEvalOptions *options, const LogMessage *msg)
+log_macro_expand_date_time(gint id, gboolean escape,
+                           LogTemplateEvalOptions *options, const LogMessage *msg, GString *result)
 {
   /* year, month, day */
   const UnixTime *stamp;
@@ -420,7 +420,7 @@ log_macro_expand_date_time(GString *result, gint id, gboolean escape,
 }
 
 gboolean
-log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateEvalOptions *options, const LogMessage *msg)
+log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, const LogMessage *msg, GString *result)
 {
   switch (id)
     {
@@ -686,7 +686,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateEvalOptio
 
     default:
     {
-      log_macro_expand_date_time(result, id, escape, options, msg);
+      log_macro_expand_date_time(id, escape, options, msg, result);
       break;
     }
 
@@ -695,10 +695,10 @@ log_macro_expand(GString *result, gint id, gboolean escape, LogTemplateEvalOptio
 }
 
 gboolean
-log_macro_expand_simple(GString *result, gint id, const LogMessage *msg)
+log_macro_expand_simple(gint id, const LogMessage *msg, GString *result)
 {
   LogTemplateEvalOptions options = {&template_options_for_macro_expand, LTZ_LOCAL, 0, NULL};
-  return log_macro_expand(result, id, FALSE, &options, msg);
+  return log_macro_expand(id, FALSE, &options, msg, result);
 }
 
 guint
