@@ -3,12 +3,6 @@ name: Compile dbld-images
 on:
   pull_request:
   push:
-    paths:
-      - .github/workflows/dbld-images.yml
-      # List is from dbld/rules cache-image-% "WATCHED_FILES"
-      - "dbld/**"
-      - "packaging/rhel/syslog-ng.spec"
-      - "packaging/debian/control"
   schedule:
     - cron: '00 03 * * *'
   workflow_dispatch:
