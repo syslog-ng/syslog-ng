@@ -35,9 +35,10 @@ jobs:
           gh_export CONTAINER_REGISTRY
 
       - name: Build the images
-        run: dbld/rules images -j $(nproc)
+        run: dbld/rules images -j $(nproc) --keep-going
 
       - name: Should we upload the images?
+        if: always()
         run: |
           if [ "${{ github.event.inputs.upload_images }}" = "true" ] || \
              ( \
@@ -55,7 +56,7 @@ jobs:
           gh_export UPLOAD_IMAGES_INTERNAL
 
       - name: Log in to the Container registry
-        if: env.UPLOAD_IMAGES_INTERNAL == 'true'
+        if: always() && env.UPLOAD_IMAGES_INTERNAL == 'true'
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
@@ -63,7 +64,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push the images
-        if: env.UPLOAD_IMAGES_INTERNAL == 'true'
+        if: always() && env.UPLOAD_IMAGES_INTERNAL == 'true'
         run: |
           IMAGES=$(docker image ls --filter "reference=${{ env.CONTAINER_REGISTRY }}/dbld-*:latest" --format '{{.Repository}}:{{.Tag}}')
           for IMAGE in $IMAGES; do
