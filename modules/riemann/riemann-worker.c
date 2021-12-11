@@ -170,16 +170,17 @@ static gboolean
 riemann_add_metric_to_event(RiemannDestWorker *self, riemann_event_t *event, LogMessage *msg, GString *str)
 {
   RiemannDestDriver *owner = (RiemannDestDriver *) self->super.owner;
+  LogMessageValueType type;
 
   LogTemplateEvalOptions options = {&owner->template_options,
                                     LTZ_SEND, self->super.seq_num, NULL
                                    };
-  log_template_format(owner->fields.metric, msg, &options, str);
+  log_template_format_value_and_type(owner->fields.metric, msg, &options, str, &type);
 
   if (str->len == 0)
     return TRUE;
 
-  switch (owner->fields.metric->type_hint)
+  switch (type)
     {
     case LM_VT_INT32:
     case LM_VT_INT64:

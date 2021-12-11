@@ -169,6 +169,10 @@ Test(format_json, test_v3x_value_pairs_yields_string_values)
 
   /* auto-cast is the same but suppresses warning */
 
+  /* template */
+  assert_template_format("$(format-json --auto-cast foo=$number1)",
+                         "{\"foo\":\"123\"}");
+
   /* name value pair */
   assert_template_format("$(format-json --auto-cast number1)",
                          "{\"number1\":\"123\"}");
@@ -181,7 +185,9 @@ Test(format_json, test_v40_value_pairs_yields_typed_values)
 
   /* in 4.x mode, numbers become numbers */
 
-  /* templates not yet supported */
+  /* template */
+  assert_template_format("$(format-json foo=$number1)",
+                         "{\"foo\":123}");
 
   /* name value pair */
   assert_template_format("$(format-json number1)",
@@ -191,6 +197,9 @@ Test(format_json, test_v40_value_pairs_yields_typed_values)
 
   /* auto-cast is the same but suppresses warning */
 
+  /* template */
+  assert_template_format("$(format-json --auto-cast foo=$number1)",
+                         "{\"foo\":123}");
 
   /* name value pair */
   assert_template_format("$(format-json --auto-cast number1)",
@@ -230,7 +239,9 @@ Test(format_json, test_cast_option_always_yields_strings_regardless_of_versions)
 
 Test(format_json, test_no_cast_option_always_yields_types_regardless_of_versions)
 {
-  /* template not yet supported */
+  /* template */
+  assert_template_format("$(format-json --no-cast foo=$number1)",
+                         "{\"foo\":123}");
 
   /* name value pair */
   assert_template_format("$(format-json --no-cast number1)",
@@ -240,7 +251,9 @@ Test(format_json, test_no_cast_option_always_yields_types_regardless_of_versions
 
   cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
 
-  /* template not yet supported */
+  /* template */
+  assert_template_format("$(format-json --no-cast foo=$number1)",
+                         "{\"foo\":123}");
 
   /* name value pair */
   assert_template_format("$(format-json --no-cast number1)",

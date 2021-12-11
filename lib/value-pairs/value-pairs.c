@@ -247,12 +247,15 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
   VPResults *results = ((gpointer *)user_data)[5];
   GString *sb = scratch_buffers_alloc();
   VPPairConf *vpc = (VPPairConf *)data;
+  LogMessageValueType type;
 
-  log_template_append_format((LogTemplate *)vpc->template, msg, options, sb);
+  log_template_append_format_value_and_type((LogTemplate *)vpc->template, msg, options, sb, &type);
 
   if (vp->omit_empty_values && sb->len == 0)
     return;
-  vp_results_insert(results, vp_transform_apply(vp, vpc->name), vpc->template->type_hint, sb);
+  if (vp->cast_to_strings && type != vpc->template->type_hint)
+    type = LM_VT_STRING;
+  vp_results_insert(results, vp_transform_apply(vp, vpc->name), type, sb);
 }
 
 /* runs over the LogMessage nv-pairs, and inserts them unless excluded */
