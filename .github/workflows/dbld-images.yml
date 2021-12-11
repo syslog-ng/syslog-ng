@@ -13,7 +13,7 @@ on:
     - cron: '00 03 * * *'
   workflow_dispatch:
     inputs:
-      upload_images:
+      testing_image_upload:
         description: Should we upload the images into GitHub Packages? (true/false)
         required: false
         default: "false"
@@ -40,7 +40,7 @@ jobs:
       - name: Should we upload the images?
         if: always()
         run: |
-          if [ "${{ github.event.inputs.upload_images }}" = "true" ] || \
+          if [ "${{ github.event.inputs.testing_image_upload }}" = "true" ] || \
              ( \
               [ "${{ github.repository_owner }}" = "syslog-ng" ] && \
               [ "${{ github.ref }}" = "refs/heads/master" ] && \
