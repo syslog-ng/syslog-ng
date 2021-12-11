@@ -115,6 +115,12 @@ format_number(GString *result, Number n)
   g_string_append_printf(result, "%.*f", n.precision, number_as_double(n));
 }
 
+void
+format_nan(GString *result)
+{
+  g_string_append_len(result, "NaN", 3);
+}
+
 static gboolean
 tf_num_parse(gint argc, GString *argv[],
              const gchar *func_name, Number *n, Number *m)
@@ -152,7 +158,7 @@ tf_num_plus(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   if (!tf_num_parse(argc, argv, "+", &n, &m))
     {
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result);
       return;
     }
 
@@ -177,7 +183,7 @@ tf_num_minus(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   if (!tf_num_parse(argc, argv, "-", &n, &m))
     {
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result);
       return;
     }
 
@@ -202,7 +208,7 @@ tf_num_multi(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   if (!tf_num_parse(argc, argv, "*", &n, &m))
     {
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result);
       return;
     }
 
@@ -227,7 +233,7 @@ tf_num_div(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   if (!tf_num_parse(argc, argv, "/", &n, &m) || number_is_zero(m))
     {
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result);
       return;
     }
 
@@ -252,7 +258,7 @@ tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   if (!tf_num_parse(argc, argv, "%", &n, &m) || number_is_zero(m))
     {
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result);
       return;
     }
 
@@ -280,7 +286,7 @@ tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
     {
       msg_debug("Template function requires exactly one or two arguments.",
                 evt_tag_str("function", "round"));
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result);
       return;
     }
 
@@ -289,7 +295,7 @@ tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
       msg_debug("Parsing failed, template function's first argument is not a number",
                 evt_tag_str("function", "round"),
                 evt_tag_str("arg1", argv[0]->str));
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result);
       return;
     }
 
@@ -300,7 +306,7 @@ tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
           msg_debug("Parsing failed, template function's second argument is not a number",
                     evt_tag_str("function", "round"),
                     evt_tag_str("arg2", argv[1]->str));
-          g_string_append_len(result, "NaN", 3);
+          format_nan(result);
           return;
         }
 
@@ -309,7 +315,7 @@ tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
           msg_debug("Parsing failed, precision is not in the supported range (0..20)",
                     evt_tag_str("function", "round"),
                     evt_tag_str("arg2", argv[1]->str));
-          g_string_append_len(result, "NaN", 3);
+          format_nan(result);
           return;
         }
     }
@@ -337,7 +343,7 @@ tf_num_ceil(LogMessage *msg, gint argc, GString *argv[], GString *result)
     {
       msg_debug("Template function requires one argument.",
                 evt_tag_str("function", "ceil"));
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result);
       return;
     }
 
@@ -346,7 +352,7 @@ tf_num_ceil(LogMessage *msg, gint argc, GString *argv[], GString *result)
       msg_debug("Parsing failed, template function's first argument is not a number",
                 evt_tag_str("function", "ceil"),
                 evt_tag_str("arg1", argv[0]->str));
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result);
       return;
     }
 
@@ -364,7 +370,7 @@ tf_num_floor(LogMessage *msg, gint argc, GString *argv[], GString *result)
     {
       msg_debug("Template function requires one argument.",
                 evt_tag_str("function", "floor"));
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result);
       return;
     }
 
@@ -373,7 +379,7 @@ tf_num_floor(LogMessage *msg, gint argc, GString *argv[], GString *result)
       msg_debug("Parsing failed, template function's first argument is not a number",
                 evt_tag_str("function", "floor"),
                 evt_tag_str("arg1", argv[0]->str));
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result);
       return;
     }
 
