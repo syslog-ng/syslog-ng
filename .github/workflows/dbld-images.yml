@@ -44,7 +44,7 @@ jobs:
              ( \
               [ "${{ github.repository_owner }}" = "syslog-ng" ] && \
               [ "${{ github.ref }}" = "refs/heads/master" ] && \
-              [ "${{ github.event_name }}" = "push" ] \
+              [[ "${{ github.event_name }}" =~ ^(push|workflow_dispatch|schedule)$ ]] \
             )
           then
             UPLOAD_IMAGES_INTERNAL="true"
