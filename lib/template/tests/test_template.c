@@ -348,19 +348,24 @@ Test(template, test_template_function_args)
 }
 
 static void
-assert_template_trivial_value(const gchar *template_code, LogMessage *msg, const gchar *expected_value)
+assert_template_trivial_value(const gchar *template_code, LogMessage *msg,
+                              const gchar *expected_value, LogMessageValueType expected_type)
 {
   LogTemplate *template = compile_template(template_code);
+  LogMessageValueType type;
 
   cr_assert(log_template_is_trivial(template));
 
-  const gchar *trivial_value = log_template_get_trivial_value(template, msg, NULL);
+  const gchar *trivial_value = log_template_get_trivial_value_and_type(template, msg, NULL, &type);
   cr_assert_str_eq(trivial_value, expected_value);
+  cr_assert_eq(type, expected_type);
 
   GString *formatted_value = g_string_sized_new(64);
-  log_template_format(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value);
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
   cr_assert_str_eq(trivial_value, formatted_value->str,
                    "Formatted and trivial value does not match: '%s' - '%s'", trivial_value, formatted_value->str);
+  cr_assert_eq(type, expected_type,
+               "Formatted and trivial type does not match: '%d' - '%d'", type, expected_type);
 
   g_string_free(formatted_value, TRUE);
   log_template_unref(template);
@@ -371,15 +376,26 @@ Test(template, test_single_values_and_literal_strings_are_considered_trivial)
 {
   LogMessage *msg = create_sample_message();
 
-  assert_template_trivial_value("", msg, "");
-  assert_template_trivial_value(" ", msg, " ");
-  assert_template_trivial_value("literal", msg, "literal");
-  assert_template_trivial_value("$1", msg, "first-match");
-  assert_template_trivial_value("$MSG", msg, "árvíztűrőtükörfúrógép");
-  assert_template_trivial_value("$HOST", msg, "bzorp");
-  assert_template_trivial_value("${APP.VALUE}", msg, "value");
+  assert_template_trivial_value("", msg, "", LM_VT_STRING);
+  assert_template_trivial_value(" ", msg, " ", LM_VT_STRING);
+  assert_template_trivial_value("literal", msg, "literal", LM_VT_STRING);
+  assert_template_trivial_value("$1", msg, "first-match", LM_VT_STRING);
+  assert_template_trivial_value("$MSG", msg, "árvíztűrőtükörfúrógép", LM_VT_STRING);
+  assert_template_trivial_value("$HOST", msg, "bzorp", LM_VT_STRING);
+  assert_template_trivial_value("${APP.VALUE}", msg, "value", LM_VT_STRING);
+  assert_template_trivial_value("${number1}", msg, "123", LM_VT_STRING);
 
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  assert_template_trivial_value("${number1}", msg, "123", LM_VT_INT64);
+
+  log_msg_unref(msg);
+}
+
+Test(template, test_invalid_templates_are_trivial)
+{
+  LogMessage *msg = create_sample_message();
   LogTemplate *template = log_template_new(configuration, NULL);
+
   cr_assert_not(log_template_compile(template, "$1 $2 ${MSG invalid", NULL));
   cr_assert(log_template_is_trivial(template), "Invalid templates are trivial");
   cr_assert(g_str_has_prefix(log_template_get_trivial_value(template, NULL, NULL), "error in template"));
