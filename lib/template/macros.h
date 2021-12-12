@@ -119,8 +119,9 @@ extern LogMacroDef macros[];
 guint log_macro_lookup(const gchar *macro, gint len);
 gboolean log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options,
                           const LogMessage *msg,
-                          GString *result);
-gboolean log_macro_expand_simple(gint id, const LogMessage *msg, GString *result);
+                          GString *result, LogMessageValueType *type);
+gboolean log_macro_expand_simple(gint id, const LogMessage *msg,
+                                 GString *result, LogMessageValueType *type);
 
 void log_macros_global_init(void);
 void log_macros_global_deinit(void);

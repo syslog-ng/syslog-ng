@@ -30,13 +30,15 @@
 #include "syslog-names.h"
 
 static void
-assert_macro_value(gint id, LogMessage *msg, const gchar *expected_value)
+assert_macro_value(gint id, LogMessage *msg, const gchar *expected_value, LogMessageValueType expected_type)
 {
   GString *resolved = g_string_new("");
+  LogMessageValueType type;
 
-  gboolean result = log_macro_expand_simple(id, msg, resolved);
+  gboolean result = log_macro_expand_simple(id, msg, resolved, &type);
   cr_assert(result);
   cr_assert_str_eq(resolved->str, expected_value);
+  cr_assert_eq(type, expected_type);
 
   g_string_free(resolved, TRUE);
 }
@@ -49,7 +51,7 @@ Test(macro, test_facility)
   LogMessage *msg = log_msg_new_empty();
   msg->pri = facility_lpr;
 
-  assert_macro_value(M_FACILITY, msg, "lpr");
+  assert_macro_value(M_FACILITY, msg, "lpr", LM_VT_STRING);
 
   log_msg_unref(msg);
 }
@@ -61,12 +63,12 @@ Test(macro, test_date_week)
   /* Wed Jan 1 11:20:50 GMT 2015 */
   fake_time(1420111250);
   unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
-  assert_macro_value(M_WEEK, msg, "00");
+  assert_macro_value(M_WEEK, msg, "00", LM_VT_STRING);
 
   /* Thu Dec 31 11:20:50 GMT 2015 */
   fake_time(1451560850);
   unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
-  assert_macro_value(M_WEEK, msg, "52");
+  assert_macro_value(M_WEEK, msg, "52", LM_VT_STRING);
 
   log_msg_unref(msg);
 }
@@ -79,22 +81,22 @@ Test(macro, test_date_iso_week_testcases)
 
   fake_time(1420111250);
   unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
-  assert_macro_value(M_ISOWEEK, msg, "01");
+  assert_macro_value(M_ISOWEEK, msg, "01", LM_VT_STRING);
 
   /* Last week, still in 2015: Thu Dec 31 11:20:50 GMT 2015 */
   fake_time(1451560850);
   unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
-  assert_macro_value(M_ISOWEEK, msg, "53");
+  assert_macro_value(M_ISOWEEK, msg, "53", LM_VT_STRING);
 
   /* Already 2016, but still the same week as the previous case: Fri Jan 1 11:20:50 GMT 2016 */
   fake_time(1451647250);
   unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
-  assert_macro_value(M_ISOWEEK, msg, "53");
+  assert_macro_value(M_ISOWEEK, msg, "53", LM_VT_STRING);
 
   /* Mon Jan 5 11:20:50 GMT 2015 */
   fake_time(1420456850);
   unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
-  assert_macro_value(M_ISOWEEK, msg, "02");
+  assert_macro_value(M_ISOWEEK, msg, "02", LM_VT_STRING);
 
   log_msg_unref(msg);
 }

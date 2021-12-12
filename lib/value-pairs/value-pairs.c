@@ -382,8 +382,7 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, LogTempla
       switch (spec->type)
         {
         case VPT_MACRO:
-          log_macro_expand(spec->id, FALSE, options, msg, sb);
-          type = LM_VT_STRING;
+          log_macro_expand(spec->id, FALSE, options, msg, sb, &type);
           break;
         case VPT_NVPAIR:
         {

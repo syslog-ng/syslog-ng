@@ -119,13 +119,14 @@ log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMes
         case LTE_MACRO:
         {
           gint len = result->len;
+          LogMessageValueType value_type = LM_VT_NONE;
 
           if (e->macro)
             {
-              log_macro_expand(e->macro, self->escape, options, messages[msg_ndx], result);
+              log_macro_expand(e->macro, self->escape, options, messages[msg_ndx], result, &value_type);
               if (len == result->len && e->default_value)
                 g_string_append(result, e->default_value);
-              t = _propagate_type(t, LM_VT_STRING);
+              t = _propagate_type(t, value_type);
             }
           break;
         }

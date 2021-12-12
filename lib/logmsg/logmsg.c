@@ -392,11 +392,9 @@ log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len, LogM
     }
   g_string_truncate(value, 0);
 
-  log_macro_expand_simple(id, self, value);
+  log_macro_expand_simple(id, self, value, type);
   if (value_len)
     *value_len = value->len;
-  if (type)
-    *type = LM_VT_STRING;
   return value->str;
 }
 
