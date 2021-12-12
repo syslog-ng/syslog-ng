@@ -25,8 +25,6 @@
 #ifndef MSG_PARSE_LIB_H_INCLUDED
 #define MSG_PARSE_LIB_H_INCLUDED
 
-#include "testutils.h"
-
 #include "cfg.h"
 #include "logmsg/logmsg.h"
 
