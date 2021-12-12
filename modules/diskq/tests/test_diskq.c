@@ -363,8 +363,8 @@ ParameterizedTest(restart_test_parameters *test_case, diskq, testcase_diskbuffer
   stat(filename_corrupted_dq, &file_stat);
   cr_assert_eq(S_ISREG(file_stat.st_mode), TRUE,
                "Corrupted disk-queue file does not exists!!");
-  assert_string(qdisk_get_filename(disk_queue->qdisk), filename,
-                "New disk-queue file's name should be the same\n");
+  cr_assert_str_eq(qdisk_get_filename(disk_queue->qdisk), filename,
+                   "New disk-queue file's name should be the same\n");
   cr_assert_eq(qdisk_get_maximum_size(disk_queue->qdisk), original_disk_buf_size,
                "Disk-queue option does not match the original configured value!\n");
   cr_assert_eq(qdisk_get_length(disk_queue->qdisk), 0,
@@ -587,7 +587,7 @@ setup(void)
   configuration = cfg_new_snippet();
   configuration->stats_options.level = 1;
 
-  assert_true(cfg_init(configuration), "cfg_init failed!");
+  cr_assert(cfg_init(configuration));
 }
 
 static void

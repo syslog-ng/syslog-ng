@@ -104,7 +104,7 @@ _get_file_size(LogQueue *q)
 {
   struct stat file_stats;
   const gchar *filename = log_queue_disk_get_filename(q);
-  assert_gint(stat(filename, &file_stats), 0, "Stat call failed, errno:%d", errno);
+  cr_assert(stat(filename, &file_stats) == 0, "Stat call failed, errno:%d", errno);
   return (gint64)file_stats.st_size;
 }
 
