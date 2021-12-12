@@ -22,7 +22,6 @@
 #include <criterion/criterion.h>
 
 #include "snmptrapd-parser.h"
-#include "testutils.h"
 #include "apphook.h"
 #include "msg_parse_lib.h"
 
