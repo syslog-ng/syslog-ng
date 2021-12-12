@@ -25,21 +25,14 @@
 
 #include <criterion/criterion.h>
 #include "config_parse_lib.h"
+#include "msg_parse_lib.h"
 #include "cr_template.h"
+#include "grab-logging.h"
 
 #include "scratch-buffers.h"
 #include "apphook.h"
 #include "plugin.h"
 #include "cfg-grammar.h"
-
-void
-cr_assert_msg_field_equals(LogMessage *msg, const gchar *field_name, const gchar *expected_value,
-                           gssize expected_value_len)
-{
-  const gboolean result = assert_msg_field_equals_non_fatal(msg, field_name, expected_value, expected_value_len, NULL);
-  cr_assert(result, "Message field assert");
-}
-
 
 LogMessage *
 create_message_with_fields(const char *field_name, ...)
@@ -96,9 +89,9 @@ Test(parser, condition_success)
   LogParser *test_parser = create_parser_rule("csv-parser(columns('a', 'b', 'c'));");
 
   invoke_parser_rule(test_parser, msg);
-  cr_assert_msg_field_equals(msg, "a", "foo", -1);
-  cr_assert_msg_field_equals(msg, "b", "bar", -1);
-  cr_assert_msg_field_equals(msg, "c", "baz", -1);
+  assert_log_message_value_by_name(msg, "a", "foo");
+  assert_log_message_value_by_name(msg, "b", "bar");
+  assert_log_message_value_by_name(msg, "c", "baz");
 }
 
 void
