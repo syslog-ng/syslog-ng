@@ -21,224 +21,122 @@
  *
  */
 
-#include "syslog-ng.h"
-#include "testutils.h"
-#include "mainloop.h"
-#include "modules/afmongodb/afmongodb-parser.h"
-#include "logthrdest/logthrdestdrv.h"
-#include "template/templates.h"
+#include <criterion/criterion.h>
+#include "libtest/cr_template.h"
+#include "libtest/grab-logging.h"
 
-static int _tests_failed = 0;
-static GlobalConfig *test_cfg;
-static LogDriver *mongodb;
+#include "apphook.h"
+#include "logthrdest/logthrdestdrv.h"
+#include "../afmongodb-parser.h"
 
 #define SAFEOPTS "?wtimeoutMS=60000&socketTimeoutMS=60000&connectTimeoutMS=60000"
 
-static void
-_before_test(void)
-{
-  start_grabbing_messages();
-  mongodb = afmongodb_dd_new(test_cfg);
-}
-
-static gboolean
-_after_test(void)
-{
-  gboolean uri_init_ok = afmongodb_dd_private_uri_init(mongodb);
-  stop_grabbing_messages();
-  return uri_init_ok;
-}
+static LogDriver *mongodb;
 
 static void
-_free_test(void)
-{
-  reset_grabbed_messages();
-  if (mongodb)
-    {
-      log_pipe_unref(&mongodb->super);
-      mongodb = NULL;
-    }
-}
-
-typedef gboolean (*Checks)(const gchar *user_data);
-
-static gboolean
-_execute(const gchar *testcase, Checks checks, const gchar *user_data)
-{
-  gboolean uri_init_ok = _after_test();
-
-  testcase_begin("%s(%s, %s)", __FUNCTION__, testcase, user_data);
-  if (!checks(user_data))
-    _tests_failed = 1;
-  reset_grabbed_messages();
-  testcase_end();
-
-  _free_test();
-  _before_test();
-  return uri_init_ok;
-}
-
-static gboolean
-_execute_find_text_in_log(const gchar *pattern)
-{
-  return assert_grabbed_messages_contain_non_fatal(pattern, "mismatch");
-}
-
-static void
-_log_error(const gchar *message)
-{
-  fprintf(stderr, "error: %s\n", message);
-}
-
-static void
-_execute_correct(const gchar *testcase, Checks checks, const gchar *user_data)
-{
-  if (!_execute(testcase, checks, user_data))
-    {
-      _log_error("expected the subject to succeed, but it failed");
-      _tests_failed = 1;
-    }
-}
-
-static void
-_execute_failing(const gchar *testcase, Checks checks, const gchar *user_data)
-{
-  if (_execute(testcase, checks, user_data))
-    {
-      _log_error("expected the subject to fail, but it succeeded");
-      _tests_failed = 1;
-    }
-}
-
-static void
-_expect_error_in_log(const gchar *testcase, const gchar *pattern)
-{
-  _execute_failing(testcase, _execute_find_text_in_log, pattern);
-}
-
-static void
-_expect_uri_in_log(const gchar *testcase, const gchar *uri, const gchar *db, const gchar *coll)
+assert_uri_present_in_log(const gchar *uri, const gchar *db, const gchar *coll)
 {
   GString *pattern = g_string_sized_new(0);
   g_string_append_printf(pattern,
                          "Initializing MongoDB destination;"
                          " uri='mongodb://%s', db='%s', collection='%s'",
                          uri, db, coll);
-  _execute_correct(testcase, _execute_find_text_in_log, pattern->str);
+  assert_grabbed_log_contains(pattern->str);
   g_string_free(pattern, TRUE);
 }
 
-static gboolean
-_execute_compare_persist_name(const gchar *expected_name)
-{
-  LogThreadedDestDriver *self = (LogThreadedDestDriver *)mongodb;
-  const gchar *name = log_pipe_get_persist_name((const LogPipe *)self);
-  return assert_nstring_non_fatal(name, -1, expected_name, -1, "mismatch");
-}
-
-static void
-_test_persist_name(void)
+Test(mongodb_config, test_persist_name)
 {
   afmongodb_dd_set_uri(mongodb, "mongodb://127.0.0.2:27018,localhost:1234/syslog"
                        SAFEOPTS "&replicaSet=x");
-  _execute_correct("persist", _execute_compare_persist_name,
-                   "afmongodb(127.0.0.2:27018,syslog,x,messages)");
+
+  cr_assert(afmongodb_dd_private_uri_init(mongodb));
+  cr_assert_str_eq(log_pipe_get_persist_name(&mongodb->super), "afmongodb(127.0.0.2:27018,syslog,x,messages)");
 }
 
-static gboolean
-_execute_compare_stats_name(const gchar *expected_name)
+Test(mongodb_config, test_stats_name)
 {
+  afmongodb_dd_set_uri(mongodb, "mongodb://127.0.0.2:27018,localhost:1234/syslog"
+                       SAFEOPTS "&replicaSet=x");
+
+  cr_assert(afmongodb_dd_private_uri_init(mongodb));
+
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)mongodb;
   const gchar *name = self->format_stats_instance(self);
-  return assert_nstring_non_fatal(name, -1, expected_name, -1, "mismatch");
+  cr_assert(name, "mongodb,127.0.0.2:27018,syslog,x,messages");
 }
 
-static void
-_test_stats_name(void)
+Test(mongodb_config, test_uri_components_are_parsed_and_reported_correctly)
 {
-  afmongodb_dd_set_uri(mongodb, "mongodb://127.0.0.2:27018,localhost:1234/syslog"
-                       SAFEOPTS "&replicaSet=x");
-  _execute_correct("stats", _execute_compare_stats_name,
-                   "mongodb,127.0.0.2:27018,syslog,x,messages");
-}
-
-static void
-_test_uri_correct(void)
-{
-  _expect_uri_in_log("default_uri", "127.0.0.1:27017/syslog" SAFEOPTS, "syslog", "messages");
+  reset_grabbed_messages();
+  cr_assert(afmongodb_dd_private_uri_init(mongodb));
+  assert_uri_present_in_log("127.0.0.1:27017/syslog" SAFEOPTS, "syslog", "messages");
+  reset_grabbed_messages();
 
   afmongodb_dd_set_uri(mongodb, "mongodb://%2Ftmp%2Fmongo.sock/syslog");
-  _expect_uri_in_log("socket", "%2Ftmp%2Fmongo.sock/syslog", "syslog", "messages");
+  cr_assert(afmongodb_dd_private_uri_init(mongodb));
+  assert_uri_present_in_log("%2Ftmp%2Fmongo.sock/syslog", "syslog", "messages");
+  reset_grabbed_messages();
 
   afmongodb_dd_set_uri(mongodb, "mongodb://localhost:1234/syslog-ng");
-  _expect_uri_in_log("uri", "localhost:1234/syslog-ng", "syslog-ng", "messages");
-
-  LogTemplate *collection = log_template_new(test_cfg, NULL);
-  log_template_compile_literal_string(collection, "messages2");
-  afmongodb_dd_set_collection(mongodb, collection);
-  _expect_uri_in_log("collection", "127.0.0.1:27017/syslog" SAFEOPTS, "syslog", "messages2");
+  cr_assert(afmongodb_dd_private_uri_init(mongodb));
+  assert_uri_present_in_log("localhost:1234/syslog-ng", "syslog-ng", "messages");
+  reset_grabbed_messages();
 }
 
-static void
-_test_uri_error(void)
+Test(mongodb_config, test_collection_option_is_consumed_and_reported_correctly)
+{
+  afmongodb_dd_set_collection(mongodb, compile_template("messages2"));
+  cr_assert(afmongodb_dd_private_uri_init(mongodb));
+  assert_uri_present_in_log("127.0.0.1:27017/syslog" SAFEOPTS, "syslog", "messages2");
+}
+
+Test(mongodb_config, test_invalid_uris_are_reported_as_errors)
 {
   afmongodb_dd_set_uri(mongodb, "INVALID-URI");
-  _expect_error_in_log("invalid_uri", "Error parsing MongoDB URI; uri='INVALID-URI'");
+  cr_assert_not(afmongodb_dd_private_uri_init(mongodb));
+  assert_grabbed_log_contains("Error parsing MongoDB URI; uri='INVALID-URI'");
+  reset_grabbed_messages();
 
   afmongodb_dd_set_uri(mongodb, "mongodb://127.0.0.1:27017/");
-  _expect_error_in_log("missing_db", "Missing DB name from MongoDB URI;"
-                       " uri='mongodb://127.0.0.1:27017/'");
+  cr_assert_not(afmongodb_dd_private_uri_init(mongodb));
+  assert_grabbed_log_contains("Missing DB name from MongoDB URI; uri='mongodb://127.0.0.1:27017/'");
 }
 
 static void
-_setup(void)
+setup(void)
 {
-  main_loop_thread_resource_init();
-  stats_cluster_init();
-  msg_init(FALSE);
-
-  debug_flag = TRUE;
+  /* we are relying on verbose messages in tests */
   verbose_flag = TRUE;
-  trace_flag = TRUE;
+  app_startup();
 
-  log_msg_registry_init();
-
-  test_cfg = cfg_new_snippet();
-  g_assert(test_cfg);
+  configuration = cfg_new_snippet();
 
   const gchar *persist_filename = "";
-  test_cfg->state = persist_state_new(persist_filename);
+  configuration->state = persist_state_new(persist_filename);
 
-  _before_test();
+  start_grabbing_messages();
+  mongodb = afmongodb_dd_new(configuration);
 }
 
 static void
-_teardown(void)
+teardown(void)
 {
-  _free_test();
-  if (test_cfg->persist)
+
+  reset_grabbed_messages();
+  if (mongodb)
     {
-      persist_config_free(test_cfg->persist);
-      test_cfg->persist = NULL;
+      log_pipe_unref(&mongodb->super);
+      mongodb = NULL;
     }
-  cfg_free(test_cfg);
 
-  log_msg_registry_deinit();
-  msg_deinit();
-  stats_cluster_deinit();
-  main_loop_thread_resource_deinit();
+  if (configuration->persist)
+    {
+      persist_config_free(configuration->persist);
+      configuration->persist = NULL;
+    }
+  cfg_free(configuration);
+  app_shutdown();
 }
 
-int
-main(int argc, char **argv)
-{
-  _setup();
-
-  _test_persist_name();
-  _test_stats_name();
-  _test_uri_correct();
-  _test_uri_error();
-
-  _teardown();
-  return _tests_failed;
-}
+TestSuite(mongodb_config,  .init = setup, .fini = teardown);
