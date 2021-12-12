@@ -25,7 +25,6 @@
 #include <value-pairs/value-pairs.h>
 
 #include <criterion/criterion.h>
-#include <libtest/testutils.h>
 
 #include <apphook.h>
 #include <plugin.h>
