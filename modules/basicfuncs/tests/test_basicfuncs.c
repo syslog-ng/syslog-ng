@@ -23,7 +23,6 @@
 
 #include "libtest/cr_template.h"
 #include "libtest/grab-logging.h"
-#include "libtest/testutils.h"
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 
@@ -190,7 +189,7 @@ Test(basicfuncs, test_str_funcs)
 #endif
   start_grabbing_messages();
   assert_template_format("$(dns-resolve-ip --use-dns=no --dns-cache=yes 123.123.123.123)", "123.123.123.123");
-  assert_grabbed_messages_contain("WARNING: With use-dns(no), dns-cache() will be forced to 'no' too!", NULL);
+  assert_grabbed_log_contains("WARNING: With use-dns(no), dns-cache() will be forced to 'no' too!");
   stop_grabbing_messages();
 
   assert_template_format("$(length $HOST $PID)", "5 5");
