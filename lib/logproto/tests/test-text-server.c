@@ -22,14 +22,15 @@
  *
  */
 
+#include <criterion/criterion.h>
 #include "mock-transport.h"
 #include "proto_lib.h"
 #include "msg_parse_lib.h"
-#include "logproto/logproto-text-server.h"
+#include "grab-logging.h"
 
+#include "logproto/logproto-text-server.h"
 #include <errno.h>
 
-#include <criterion/criterion.h>
 
 static gint accumulate_seq;
 
@@ -266,8 +267,7 @@ Test(log_proto, test_log_proto_text_server_invalid_encoding)
 
   start_grabbing_messages();
   success = log_proto_server_validate_options(proto);
-  assert_grabbed_messages_contain("Unknown character set name specified; encoding='never-ever-is-going-to-be-such-an-encoding'",
-                                  "message about unknown charset missing");
+  assert_grabbed_log_contains("Unknown character set name specified; encoding='never-ever-is-going-to-be-such-an-encoding'");
   cr_assert_not(success, "validate_options() returned success but it should have failed");
   log_proto_server_free(proto);
 }
