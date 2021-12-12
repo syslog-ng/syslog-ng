@@ -20,7 +20,6 @@
  *
  */
 
-#include "testutils.h"
 #include "pathutils.h"
 #include <criterion/criterion.h>
 
