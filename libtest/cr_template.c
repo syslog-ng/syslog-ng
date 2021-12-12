@@ -136,7 +136,7 @@ create_sample_message(void)
 }
 
 LogTemplate *
-compile_template(const gchar *template, gboolean escaping)
+compile_template_with_escaping(const gchar *template, gboolean escaping)
 {
   LogTemplate *templ = log_template_new(configuration, NULL);
   gboolean success;
@@ -152,12 +152,24 @@ compile_template(const gchar *template, gboolean escaping)
   return templ;
 }
 
+LogTemplate *
+compile_template(const gchar *template)
+{
+  return compile_template_with_escaping(template, FALSE);
+}
+
+LogTemplate *
+compile_escaped_template(const gchar *template)
+{
+  return compile_template_with_escaping(template, TRUE);
+}
+
 void
 assert_template_format_with_escaping_and_context_msgs(const gchar *template, gboolean escaping,
                                                       const gchar *expected, gssize expected_len,
                                                       LogMessage **msgs, gint num_messages)
 {
-  LogTemplate *templ = compile_template(template, escaping);
+  LogTemplate *templ = compile_template_with_escaping(template, escaping);
   const gchar *prefix = "somevoodooprefix/";
   gint prefix_len = strlen(prefix);
   if (!templ)

@@ -120,9 +120,7 @@ LogTemplate *createTemplate(TestData *testData)
   // Initialize the template
   g_string_printf(slog_templ_str, "$(slog -k %s -m %s $RAWMSG)", testData->keyFile->str, testData->macFile->str);
 
-  const gboolean escaping = FALSE;
-
-  LogTemplate *slog_templ = compile_template(slog_templ_str->str, escaping);
+  LogTemplate *slog_templ = compile_template(slog_templ_str->str);
 
   cr_assert(slog_templ != NULL, "Template '%s' does not compile correctly", slog_templ_str->str);
 
