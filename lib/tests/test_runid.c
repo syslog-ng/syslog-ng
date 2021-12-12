@@ -23,7 +23,6 @@
  *
  */
 
-#include "libtest/testutils.h"
 #include "libtest/persist_lib.h"
 #include "lib/run-id.h"
 #include "lib/apphook.h"
