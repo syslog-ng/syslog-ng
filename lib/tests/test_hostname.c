@@ -20,9 +20,10 @@
  * COPYING for details.
  *
  */
-#include "hostname.h"
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+
+#include "hostname.h"
 #include "apphook.h"
 
 #include <string.h>

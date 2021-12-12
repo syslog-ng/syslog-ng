@@ -22,16 +22,17 @@
  *
  */
 
-#include "mock-transport.h"
-#include "proto_lib.h"
-#include "msg_parse_lib.h"
+#include <criterion/criterion.h>
+#include "libtest/mock-transport.h"
+#include "libtest/proto_lib.h"
+#include "libtest/msg_parse_lib.h"
+
 #include "logproto/logproto-text-server.h"
 #include "logproto/logproto-framed-server.h"
 #include "logproto/logproto-dgram-server.h"
 #include "logproto/logproto-record-server.h"
 #include "apphook.h"
 
-#include <criterion/criterion.h>
 
 void
 setup(void)

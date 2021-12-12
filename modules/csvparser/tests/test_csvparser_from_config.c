@@ -24,10 +24,10 @@
  */
 
 #include <criterion/criterion.h>
-#include "config_parse_lib.h"
-#include "msg_parse_lib.h"
-#include "cr_template.h"
-#include "grab-logging.h"
+#include "libtest/config_parse_lib.h"
+#include "libtest/msg_parse_lib.h"
+#include "libtest/cr_template.h"
+#include "libtest/grab-logging.h"
 
 #include "scratch-buffers.h"
 #include "apphook.h"

@@ -20,10 +20,10 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/cr_template.h"
 
 #include "logmsg/logmsg.h"
 #include "timeutils/misc.h"
-#include "libtest/cr_template.h"
 #include "apphook.h"
 #include "cfg.h"
 

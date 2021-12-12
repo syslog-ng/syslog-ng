@@ -22,10 +22,11 @@
  *
  */
 #include <criterion/criterion.h>
+#include "libtest/fake-time.h"
+
 #include "timeutils/wallclocktime.h"
 #include "timeutils/cache.h"
 #include "timeutils/conv.h"
-#include "fake-time.h"
 
 Test(wallclocktime, test_wall_clock_time_init)
 {

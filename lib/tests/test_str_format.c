@@ -23,8 +23,9 @@
  *
  */
 
-#include "str-format.h"
 #include <criterion/criterion.h>
+
+#include "str-format.h"
 
 Test(test_str_format, hex_string__single_byte__perfect)
 {

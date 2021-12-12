@@ -21,13 +21,13 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+
 #include "regexp-parser.h"
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "scratch-buffers.h"
-
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 
 void
 setup(void)

@@ -21,8 +21,9 @@
  *
  */
 
-#include "dynamic-window.h"
 #include <criterion/criterion.h>
+
+#include "dynamic-window.h"
 
 Test(dynamic_window, window_stat_reset)
 {

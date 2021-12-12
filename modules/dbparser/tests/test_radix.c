@@ -22,6 +22,9 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+
 #include "apphook.h"
 #include "radix.h"
 #include "messages.h"
@@ -31,9 +34,6 @@
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
-
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 
 #define RADIX_TEST_MAX_PATTERN 5
 #define RADIX_TEST_MAX_NODE 5

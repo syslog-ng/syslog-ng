@@ -22,9 +22,9 @@
  */
 
 #include <criterion/criterion.h>
-#include "msg_parse_lib.h"
+#include "libtest/msg_parse_lib.h"
+#include "libtest/fake-time.h"
 
-#include "syslog-ng.h"
 #include "logmsg/logmsg.h"
 #include "serialize.h"
 #include "apphook.h"
@@ -33,7 +33,6 @@
 #include "timeutils/misc.h"
 #include "cfg.h"
 #include "plugin.h"
-#include "fake-time.h"
 
 #include <time.h>
 #include <string.h>

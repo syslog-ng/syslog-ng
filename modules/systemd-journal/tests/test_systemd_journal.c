@@ -21,12 +21,13 @@
  *
  */
 
-#include "journald-mock.h"
+#include <criterion/criterion.h>
 #include "test-source.h"
+#include "journald-mock.h"
+
 #include "journald-helper.c"
 #include "journal-reader.c"
 #include "apphook.h"
-#include <criterion/criterion.h>
 
 static gboolean task_called;
 static gboolean poll_triggered;

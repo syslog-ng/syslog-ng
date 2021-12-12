@@ -23,9 +23,10 @@
  */
 
 #include <criterion/criterion.h>
-#include "apphook.h"
+
 #include "logmsg/logmsg.h"
 #include "logmsg/timestamp-serialize.h"
+#include "apphook.h"
 
 SerializeArchive *sa = NULL;
 GString *stream = NULL;

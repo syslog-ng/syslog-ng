@@ -22,8 +22,10 @@
  */
 
 #include <criterion/criterion.h>
-#include <unistd.h>
+
 #include "http-loadbalancer.h"
+
+#include <unistd.h>
 
 #define NUM_TARGETS 5
 #define NUM_CLIENTS 16

@@ -22,17 +22,18 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+#include "libtest/msg_parse_lib.h"
+#include "libtest/cr_template.h"
+#include "libtest/stopwatch.h"
+
 #include "logmsg/logmsg.h"
 #include "msg-format.h"
-#include "stopwatch.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "plugin.h"
 #include "logmsg/logmsg-serialize.h"
-#include "msg_parse_lib.h"
-#include "cr_template.h"
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 
 #define RAW_MSG "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\" eventSource=\"Application\"] An application event log entry..."
 

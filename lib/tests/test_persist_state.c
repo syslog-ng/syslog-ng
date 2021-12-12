@@ -25,6 +25,7 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/persist_lib.h"
 
 #include "persist-state.h"
 #include "apphook.h"
@@ -35,7 +36,6 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include "libtest/persist_lib.h"
 
 typedef struct _TestState
 {

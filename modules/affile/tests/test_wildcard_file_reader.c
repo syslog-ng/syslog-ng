@@ -21,12 +21,13 @@
  */
 
 #include <criterion/criterion.h>
-#include <glib/gstdio.h>
-#include <unistd.h>
+
 #include "apphook.h"
 #include "wildcard-file-reader.h"
 #include "logpipe.h"
 #include "iv.h"
+#include <glib/gstdio.h>
+#include <unistd.h>
 
 #define TEST_FILE_NAME "TEST_FILE"
 

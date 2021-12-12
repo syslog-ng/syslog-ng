@@ -19,12 +19,16 @@
  * COPYING for details.
  */
 
+/* this has to come first for modules which include the Python.h header */
+#include "python-module.h"
+
+#include <criterion/criterion.h>
+#include "libtest/persist_lib.h"
+
 #include "python-persist.h"
 #include "python-main.h"
 #include "apphook.h"
-#include "persist_lib.h"
 
-#include <criterion/criterion.h>
 
 static PyObject *_python_main;
 static PyObject *_python_main_dict;

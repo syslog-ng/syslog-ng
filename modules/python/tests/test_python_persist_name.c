@@ -19,6 +19,12 @@
  * COPYING for details.
  */
 
+/* this has to come first for modules which include the Python.h header */
+#include "python-module.h"
+
+#include <criterion/criterion.h>
+#include "libtest/grab-logging.h"
+
 #include "python-helpers.h"
 #include "apphook.h"
 #include "python-dest.h"
@@ -30,9 +36,7 @@
 #include "mainloop-worker.h"
 #include "mainloop.h"
 #include "python-persist.h"
-#include "grab-logging.h"
 
-#include <criterion/criterion.h>
 
 MainLoop *main_loop;
 MainLoopOptions main_loop_options = {0};

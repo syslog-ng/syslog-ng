@@ -20,10 +20,12 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+
 #include "mainloop.h"
 #include "scratch-buffers.h"
 #include "stats/stats-registry.h"
-#include <criterion/criterion.h>
+
 #include <iv.h>
 
 #define ITERATIONS 10

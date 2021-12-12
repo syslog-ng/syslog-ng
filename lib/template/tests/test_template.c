@@ -23,8 +23,6 @@
  */
 
 #include <criterion/criterion.h>
-
-#include "syslog-ng.h"
 #include "libtest/cr_template.h"
 
 #include "logmsg/logmsg.h"

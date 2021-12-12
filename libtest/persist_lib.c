@@ -22,9 +22,9 @@
  *
  */
 
-#include <criterion/criterion.h>
 #include "persist_lib.h"
 
+#include <criterion/criterion.h>
 #include <stdlib.h>
 #include <unistd.h>
 

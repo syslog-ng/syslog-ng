@@ -21,9 +21,10 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "transport/transport-factory.h"
 #include "apphook.h"
-#include <criterion/criterion.h>
 
 typedef struct _FakeTransport FakeTransport;
 typedef struct _FakeTransportFactory FakeTransportFactory;

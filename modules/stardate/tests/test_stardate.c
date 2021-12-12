@@ -20,18 +20,17 @@
  *
  */
 
-#include <syslog-ng.h>
-#include <logmsg/logmsg.h>
-#include <cr_template.h>
-#include <apphook.h>
-#include <plugin.h>
+#include <criterion/criterion.h>
+#include "libtest/cr_template.h"
+#include "libtest/msg_parse_lib.h"
 
+#include "logmsg/logmsg.h"
+#include "apphook.h"
+#include "plugin.h"
 #include "cfg.h"
 
-#include <criterion/criterion.h>
 #include <stdlib.h>
 
-#include "msg_parse_lib.h"
 
 MsgFormatOptions parse_options;
 

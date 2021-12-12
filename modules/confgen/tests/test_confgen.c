@@ -21,11 +21,12 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include "libtest/grab-logging.h"
+#include "libtest/mock-cfg-parser.h"
+
 #include "apphook.h"
 #include "cfg-grammar.h"
-#include "mock-cfg-parser.h"
-#include "grab-logging.h"
-#include <criterion/criterion.h>
 
 #define TESTDATA_DIR TOP_SRCDIR "/modules/confgen/tests"
 

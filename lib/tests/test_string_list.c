@@ -21,8 +21,9 @@
  * COPYING for details.
  *
  */
-#include "string-list.h"
 #include <criterion/criterion.h>
+
+#include "string-list.h"
 
 Test(string_list, test_string_array_to_list_converts_to_an_equivalent_glist)
 {

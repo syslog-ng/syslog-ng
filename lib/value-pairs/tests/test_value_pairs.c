@@ -22,11 +22,10 @@
  *
  */
 
-#include "value-pairs/value-pairs.h"
-
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 
+#include "value-pairs/value-pairs.h"
 #include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "cfg.h"

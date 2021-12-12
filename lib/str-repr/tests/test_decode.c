@@ -21,8 +21,9 @@
  * COPYING for details.
  *
  */
-#include "str-repr/decode.h"
+
 #include <criterion/criterion.h>
+#include "str-repr/decode.h"
 
 GString *value;
 

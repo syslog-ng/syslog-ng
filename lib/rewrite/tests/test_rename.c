@@ -23,13 +23,13 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/grab-logging.h"
+#include "libtest/msg_parse_lib.h"
 
-#include "apphook.h"
 #include "rewrite/rewrite-rename.h"
 #include "logmsg/logmsg.h"
 #include "scratch-buffers.h"
-#include "grab-logging.h"
-#include "msg_parse_lib.h"
+#include "apphook.h"
 
 GlobalConfig *cfg = NULL;
 LogMessage *msg;

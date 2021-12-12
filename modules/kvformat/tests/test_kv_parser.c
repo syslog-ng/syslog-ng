@@ -19,12 +19,13 @@
  * COPYING for details.
  */
 
+#include <criterion/criterion.h>
+#include "libtest/msg_parse_lib.h"
+
 #include "kv-parser.h"
 #include "apphook.h"
-#include "msg_parse_lib.h"
 #include "scratch-buffers.h"
 
-#include <criterion/criterion.h>
 
 GlobalConfig *cfg;
 LogParser *kv_parser;

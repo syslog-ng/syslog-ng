@@ -21,10 +21,8 @@
  *
  */
 
-#include <syslog-ng.h>
-
 #include <criterion/criterion.h>
-#include "mock-transport.h"
+#include "libtest/mock-transport.h"
 
 #include <errno.h>
 

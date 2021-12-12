@@ -20,12 +20,13 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "add-contextual-data-template-selector.h"
 #include "logmsg/logmsg.h"
 #include "template/macros.h"
 #include "cfg.h"
 #include "apphook.h"
-#include <criterion/criterion.h>
 #include <unistd.h>
 
 TestSuite(add_contextual_data_template_selector, .init = app_startup, .fini = app_shutdown);

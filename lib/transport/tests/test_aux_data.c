@@ -21,8 +21,9 @@
  * COPYING for details.
  */
 #include <criterion/criterion.h>
-#include "apphook.h"
+
 #include "transport/transport-aux-data.h"
+#include "apphook.h"
 
 LogTransportAuxData *aux = NULL;
 

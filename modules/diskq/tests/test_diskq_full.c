@@ -21,15 +21,16 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include "libtest/queue_utils_lib.h"
+#include "test_diskq_tools.h"
+
 #include "messages.h"
 #include "logqueue-disk.h"
 #include "logqueue-disk-reliable.h"
 #include "logqueue-disk-non-reliable.h"
 #include "apphook.h"
 #include "plugin.h"
-#include <criterion/criterion.h>
-#include "queue_utils_lib.h"
-#include "test_diskq_tools.h"
 
 #include <stdlib.h>
 #include <string.h>

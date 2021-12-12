@@ -20,10 +20,10 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/msg_parse_lib.h"
 
 #include "snmptrapd-parser.h"
 #include "apphook.h"
-#include "msg_parse_lib.h"
 
 #define SIZE_OF_ARRAY(array) (sizeof(array) / sizeof((array)[0]))
 

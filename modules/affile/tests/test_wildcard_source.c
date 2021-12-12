@@ -22,8 +22,8 @@
 
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
-#include "config_parse_lib.h"
-#include "grab-logging.h"
+#include "libtest/config_parse_lib.h"
+#include "libtest/grab-logging.h"
 
 #include "cfg.h"
 #include "apphook.h"

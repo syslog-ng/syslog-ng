@@ -22,9 +22,11 @@
 
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+
+#include "collection-comparator.h"
+
 #include <glib/gstdio.h>
 #include <unistd.h>
-#include "collection-comparator.h"
 
 typedef struct _TestData
 {

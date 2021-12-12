@@ -21,6 +21,7 @@
  *
  */
 #include <criterion/criterion.h>
+
 #include "scratch-buffers.h"
 #include "apphook.h"
 #include "csv-scanner.h"

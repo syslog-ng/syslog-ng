@@ -22,6 +22,7 @@
 
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+
 #include "xml.h"
 #include "scanner/xml-scanner/xml-scanner.h"
 #include "apphook.h"

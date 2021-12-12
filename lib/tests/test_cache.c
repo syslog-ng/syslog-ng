@@ -20,8 +20,9 @@
  * COPYING for details.
  *
  */
-#include "cache.h"
 #include <criterion/criterion.h>
+
+#include "cache.h"
 
 gint fetch_count;
 gint free_fn_count;

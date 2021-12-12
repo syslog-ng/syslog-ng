@@ -23,13 +23,14 @@
  *
  */
 
-#include "mock-transport.h"
-#include "proto_lib.h"
-#include "msg_parse_lib.h"
-#include "logproto/logproto-regexp-multiline-server.h"
-
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+#include "libtest/mock-transport.h"
+#include "libtest/proto_lib.h"
+#include "libtest/msg_parse_lib.h"
+
+#include "logproto/logproto-regexp-multiline-server.h"
+
 
 ParameterizedTestParameters(log_proto, test_lines_separated_with_prefix)
 {

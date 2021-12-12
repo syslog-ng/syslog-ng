@@ -24,8 +24,9 @@
 #ifndef AFSOCKET_OPTIONS_LIB_H_INCLUDED
 #define AFSOCKET_OPTIONS_LIB_H_INCLUDED
 
-#include "transport-mapper.h"
 #include <criterion/criterion.h>
+
+#include "transport-mapper.h"
 
 extern TransportMapper *transport_mapper;
 

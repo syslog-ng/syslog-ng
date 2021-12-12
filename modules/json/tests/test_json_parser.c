@@ -19,10 +19,12 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
+
+#include <criterion/criterion.h>
+#include "libtest/msg_parse_lib.h"
+
 #include "json-parser.h"
 #include "apphook.h"
-#include "msg_parse_lib.h"
-#include <criterion/criterion.h>
 
 static LogMessage *
 parse_json_into_log_message_no_check(const gchar *json, LogParser *json_parser)

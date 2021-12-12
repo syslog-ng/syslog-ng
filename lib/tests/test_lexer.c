@@ -22,12 +22,13 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include "libtest/mock-cfg-parser.h"
+#include "libtest/grab-logging.h"
+
 #include "cfg-lexer.h"
 #include "cfg-grammar.h"
 #include "apphook.h"
-#include <criterion/criterion.h>
-#include "mock-cfg-parser.h"
-#include "grab-logging.h"
 
 #define TESTDATA_DIR TOP_SRCDIR "/lib/tests/testdata-lexer"
 

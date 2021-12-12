@@ -22,12 +22,12 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/grab-logging.h"
 
 #include "syslog-names.h"
 #include "apphook.h"
 #include "rewrite/rewrite-set-facility.h"
 #include "logmsg/logmsg.h"
-#include "grab-logging.h"
 
 GlobalConfig *cfg = NULL;
 LogMessage *msg;

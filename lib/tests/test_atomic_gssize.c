@@ -21,8 +21,9 @@
  *
  */
 
-#include "atomic-gssize.h"
 #include <criterion/criterion.h>
+
+#include "atomic-gssize.h"
 
 Test(test_atomic_gssize, set_min_value)
 {

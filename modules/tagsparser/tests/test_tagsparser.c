@@ -22,10 +22,11 @@
 
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+#include "libtest/msg_parse_lib.h"
+#include "libtest/cr_template.h"
+
 #include "tags-parser.h"
 #include "apphook.h"
-#include "msg_parse_lib.h"
-#include "libtest/cr_template.h"
 
 void
 setup(void)

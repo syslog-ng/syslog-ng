@@ -22,8 +22,8 @@
  */
 
 #include <criterion/criterion.h>
-
 #include "libtest/cr_template.h"
+
 #include "apphook.h"
 #include "plugin.h"
 #include "cfg.h"

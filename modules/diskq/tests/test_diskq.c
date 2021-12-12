@@ -21,6 +21,11 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+#include "libtest/queue_utils_lib.h"
+#include "test_diskq_tools.h"
+
 #include "logqueue.h"
 #include "logqueue-fifo.h"
 #include "logqueue-disk.h"
@@ -34,10 +39,6 @@
 #include "mainloop-call.h"
 #include "mainloop-io-worker.h"
 #include "tls-support.h"
-#include "queue_utils_lib.h"
-#include "test_diskq_tools.h"
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 #include "timeutils/misc.h"
 #include <stdlib.h>
 #include <string.h>

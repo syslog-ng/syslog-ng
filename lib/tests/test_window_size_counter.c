@@ -21,9 +21,8 @@
  *
  */
 
-#include "syslog-ng.h"
-#include "window-size-counter.h"
 #include <criterion/criterion.h>
+#include "window-size-counter.h"
 
 
 Test(test_window_size_counter, suspend_resume)

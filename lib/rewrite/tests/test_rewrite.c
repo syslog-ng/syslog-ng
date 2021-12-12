@@ -23,9 +23,9 @@
  */
 
 #include <criterion/criterion.h>
-#include "config_parse_lib.h"
-#include "msg_parse_lib.h"
-#include "grab-logging.h"
+#include "libtest/config_parse_lib.h"
+#include "libtest/msg_parse_lib.h"
+#include "libtest/grab-logging.h"
 
 #include "apphook.h"
 #include "plugin.h"

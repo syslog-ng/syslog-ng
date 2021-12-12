@@ -20,9 +20,10 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+
 #include "test-source.h"
 #include "syslog-ng.h"
-#include <criterion/criterion.h>
 #include "stats/stats.h"
 
 struct _TestSource

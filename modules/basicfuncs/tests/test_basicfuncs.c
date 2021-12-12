@@ -21,10 +21,10 @@
  *
  */
 
-#include "libtest/cr_template.h"
-#include "libtest/grab-logging.h"
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+#include "libtest/cr_template.h"
+#include "libtest/grab-logging.h"
 
 #include "apphook.h"
 #include "plugin.h"

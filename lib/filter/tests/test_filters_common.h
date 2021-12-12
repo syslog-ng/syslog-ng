@@ -23,6 +23,9 @@
 
 #ifndef __TEST_FILTER_COMMON_H__
 #define __TEST_FILTER_COMMON_H__
+
+#include "filter/filter-expr.h"
+
 void
 testcase_with_socket(const gchar *msg, const gchar *sockaddr,
                      FilterExprNode *f,

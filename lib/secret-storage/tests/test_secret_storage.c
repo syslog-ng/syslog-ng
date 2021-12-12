@@ -22,12 +22,12 @@
  */
 
 #include <criterion/criterion.h>
-#include <stdio.h>
-#include <sys/resource.h>
-#include <unistd.h>
 
 #include "secret-storage/secret-storage.h"
 #include "secret-storage/nondumpable-allocator.h"
+#include <stdio.h>
+#include <sys/resource.h>
+#include <unistd.h>
 
 void
 logger(char *summary, char *reason)

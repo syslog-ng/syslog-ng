@@ -21,15 +21,15 @@
  *
  */
 
-#include "timerwheel.h"
+#include <criterion/criterion.h>
 
+#include "timerwheel.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
 
-#include <criterion/criterion.h>
 
 #define NUM_TIMERS 10000
 

@@ -20,13 +20,14 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+#include "libtest/cr_template.h"
+
 #include "context-info-db.h"
 #include "apphook.h"
 #include "scratch-buffers.h"
 #include "cfg.h"
-#include "libtest/cr_template.h"
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 #include <stdio.h>
 #include <string.h>
 

@@ -23,6 +23,7 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/cr_template.h"
 
 #include "logthrsource/logthrfetcherdrv.h"
 #include "apphook.h"
@@ -31,7 +32,6 @@
 #include "cfg.h"
 #include "stats/stats-counter.h"
 #include "logsource.h"
-#include "cr_template.h"
 
 typedef struct _TestThreadedFetcherDriver
 {

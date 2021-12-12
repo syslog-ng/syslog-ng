@@ -21,11 +21,12 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "messages.h"
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 
-#include <criterion/criterion.h>
 #include <errno.h>
 
 TestSuite(test_messages, .init = app_startup, .fini = app_shutdown);

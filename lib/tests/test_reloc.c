@@ -22,6 +22,7 @@
  */
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+
 #include "reloc.h"
 
 CacheResolver *path_resolver;

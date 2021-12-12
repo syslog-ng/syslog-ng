@@ -22,9 +22,9 @@
  *
  */
 
-#include "pragma-parser.h"
-
 #include <criterion/criterion.h>
+
+#include "pragma-parser.h"
 
 Test(pragma_parser, process_valid_major_minor)
 {

@@ -21,10 +21,11 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "logmsg/nvhandle-descriptors.h"
 
-#include "string.h"
-#include <criterion/criterion.h>
+#include <string.h>
 
 Test(nvhandle_desc_array, add_elements)
 {

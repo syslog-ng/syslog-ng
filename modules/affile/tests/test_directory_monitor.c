@@ -20,6 +20,8 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "directory-monitor.h"
 #include "directory-monitor-factory.h"
 
@@ -29,7 +31,6 @@
 
 #include "directory-monitor-poll.h"
 #include "apphook.h"
-#include <criterion/criterion.h>
 #include <glib/gstdio.h>
 #include <unistd.h>
 

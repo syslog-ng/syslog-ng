@@ -23,10 +23,10 @@
  */
 
 #include <criterion/criterion.h>
-#include "mock-transport.h"
-#include "proto_lib.h"
-#include "msg_parse_lib.h"
-#include "grab-logging.h"
+#include "libtest/mock-transport.h"
+#include "libtest/proto_lib.h"
+#include "libtest/msg_parse_lib.h"
+#include "libtest/grab-logging.h"
 
 #include "logproto/logproto-text-server.h"
 #include <errno.h>

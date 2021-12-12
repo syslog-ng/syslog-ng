@@ -22,13 +22,12 @@
  *
  */
 
-#include <libgen.h>
-
-#include "template/templates.h"
-
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+
+#include "template/templates.h"
 #include "apphook.h"
+#include <libgen.h>
 
 typedef struct _TemplateTestCase
 {

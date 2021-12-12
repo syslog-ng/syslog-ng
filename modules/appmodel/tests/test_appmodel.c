@@ -23,12 +23,13 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/config_parse_lib.h"
+
 #include "appmodel.h"
 #include "application.h"
 #include "plugin.h"
 #include "apphook.h"
 #include "cfg-grammar.h"
-#include "config_parse_lib.h"
 
 Application *
 _parse_application(const char *appmodel, const gchar *name, const gchar *topic)

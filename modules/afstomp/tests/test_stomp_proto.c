@@ -21,8 +21,8 @@
  *
  */
 
-#include "stomp.h"
 #include <criterion/criterion.h>
+#include "stomp.h"
 
 static void
 assert_stomp_header(stomp_frame *frame, char *key, char *value)

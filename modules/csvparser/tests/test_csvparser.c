@@ -21,9 +21,10 @@
  *
  */
 
-#include "csvparser.h"
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
-#include "syslog-ng.h"
+#include "csvparser.h"
 #include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "string-list.h"
@@ -35,8 +36,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 
 MsgFormatOptions parse_options;
 

@@ -20,14 +20,12 @@
  * COPYING for details.
  *
  */
-#include "logproto/logproto-proxied-text-server.h"
-
-#include "mock-transport.h"
-#include "proto_lib.h"
-
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+#include "libtest/mock-transport.h"
+#include "libtest/proto_lib.h"
 
+#include "logproto/logproto-proxied-text-server.h"
 #include <errno.h>
 
 typedef struct

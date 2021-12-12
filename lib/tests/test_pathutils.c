@@ -22,13 +22,14 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "pathutils.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <criterion/criterion.h>
 
 Test(test_pathutils, test_is_file_directory)
 {

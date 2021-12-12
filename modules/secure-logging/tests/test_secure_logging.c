@@ -21,21 +21,24 @@
  *
  */
 
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
 #include <criterion/criterion.h>
+#include "libtest/cr_template.h"
+#include "libtest/msg_parse_lib.h"
+#include "libtest/stopwatch.h"
+
+// Secure logging functions
+#include "slog.h"
+
 
 #include "apphook.h"
 #include "cfg.h"
 #include "logmatcher.h"
-#include "libtest/cr_template.h"
-#include "libtest/msg_parse_lib.h"
-#include "libtest/stopwatch.h"
 #include "timeutils/misc.h"
 
-// Secure logging functions
-#include "slog.h"
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
+
 
 #define MAX_TEST_MESSAGES 1000
 #define MIN_TEST_MESSAGES 10

@@ -21,6 +21,10 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+#include "libtest/msg_parse_lib.h"
+
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
@@ -30,9 +34,6 @@
 #include "plugin.h"
 #include "cfg.h"
 #include "timerwheel.h"
-#include "libtest/msg_parse_lib.h"
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 
 #include <stdio.h>
 #include <sys/time.h>

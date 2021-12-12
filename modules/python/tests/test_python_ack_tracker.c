@@ -20,6 +20,13 @@
  * COPYING for details.
  */
 
+/* this has to come first for modules which include the Python.h header */
+#include "python-module.h"
+
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+#include "libtest/msg_parse_lib.h"
+
 #include "python-helpers.h"
 #include "python-ack-tracker.h"
 #include "python-bookmark.h"
@@ -27,10 +34,7 @@
 #include "cfg.h"
 #include "ack-tracker/instant_ack_tracker.h"
 
-#include "msg_parse_lib.h"
 
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 
 static PyObject *_python_main;
 static PyObject *_python_main_dict;

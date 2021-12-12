@@ -23,6 +23,7 @@
 
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+
 #include "xml-scanner.h"
 #include "apphook.h"
 #include "scratch-buffers.h"

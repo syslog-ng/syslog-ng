@@ -21,11 +21,12 @@
  *
  */
 #include <criterion/criterion.h>
-#include <stdio.h>
-#include "stopwatch.h"
+#include "libtest/stopwatch.h"
+
 #include "scratch-buffers.h"
 #include "apphook.h"
 #include "kv-scanner.h"
+#include <stdio.h>
 
 static gboolean
 _expect_no_more_tokens(KVScanner *scanner, gchar **error)
