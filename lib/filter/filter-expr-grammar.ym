@@ -101,14 +101,14 @@ filter_simple_expr
 	| KW_SEVERITY '(' filter_severity_list ')' { $$ = filter_severity_new($3); }
 	| KW_FILTER '(' string ')'		{ $$ = filter_call_new($3, configuration); free($3); }
 	| KW_NETMASK '(' string ')'    { $$ = filter_netmask_new($3); free($3); }
-  | KW_NETMASK6 '(' string ')'   {
+        | KW_NETMASK6 '(' string ')'   {
   #if SYSLOG_NG_ENABLE_IPV6
-                                    $$ = filter_netmask6_new($3);
+                                         $$ = filter_netmask6_new($3);
   #else
-                                    YYERROR;
+                                         YYERROR;
   #endif
-                                    free($3);
-                                  }
+                                         free($3);
+                                       }
         | KW_TAGS '(' string_list ')'           { $$ = filter_tags_new($3); }
         | KW_IN_LIST '(' string string ')'
           {
