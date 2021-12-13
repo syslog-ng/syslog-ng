@@ -175,20 +175,7 @@ filter_identifier
         ;
 
 filter_comparison
-	: LL_STRING operator LL_STRING
-          {
-            LogTemplate *left, *right;
-            GError *error = NULL;
-
-            left = log_template_new(configuration, NULL);
-            right = log_template_new(configuration, NULL);
-            CHECK_ERROR_GERROR(log_template_compile(left, $1, &error), @1, error, "compiling the left-hand-side template failed");
-            CHECK_ERROR_GERROR(log_template_compile(right, $3, &error), @3, error, "compiling the right-hand-side template failed");
-
-            free($1);
-            free($3);
-            $$ = fop_cmp_new(left, right, $2);
-          }
+	: template_content operator template_content         { $$ = fop_cmp_new($1, $3, $2); }
         ;
 
 operator
