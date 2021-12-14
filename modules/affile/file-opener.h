@@ -87,6 +87,8 @@ file_opener_construct_dst_proto(FileOpener *self, LogTransport *transport, LogPr
 
 FileOpenerResult file_opener_open_fd(FileOpener *self, const gchar *name, FileDirection dir, gint *fd);
 
+void file_opener_symlink(FileOpener *self, const gchar *name, const gchar *target);
+
 void file_opener_set_options(FileOpener *self, FileOpenerOptions *options);
 void file_opener_init_instance(FileOpener *self);
 FileOpener *file_opener_new(void);

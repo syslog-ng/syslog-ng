@@ -86,6 +86,7 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
 %token KW_FSYNC
 %token KW_FOLLOW_FREQ
 %token KW_OVERWRITE_IF_OLDER
+%token KW_SYMLINK_AS
 %token KW_MULTI_LINE_MODE
 %token KW_MULTI_LINE_PREFIX
 %token KW_MULTI_LINE_GARBAGE
@@ -293,6 +294,7 @@ dest_affile_option
         | file_perm_option
 	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
 	| KW_OVERWRITE_IF_OLDER '(' nonnegative_integer ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
+	| KW_SYMLINK_AS '(' string ')'		{ affile_dd_set_symlink_as(last_driver, $3); }
 	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
         | dest_affile_common_option
 	;

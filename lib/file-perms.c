@@ -195,6 +195,20 @@ file_perm_options_apply_file(const FilePermOptions *self, const gchar *path)
 }
 
 gboolean
+file_perm_options_apply_symlink(const FilePermOptions *self, const gchar *path)
+{
+#ifndef _MSC_VER
+  gboolean result = TRUE;
+
+  if (self->file_uid >= 0 && lchown(path, (uid_t) self->file_uid, -1) < 0)
+    result = FALSE;
+  if (self->file_gid >= 0 && lchown(path, -1, (gid_t) self->file_gid) < 0)
+    result = FALSE;
+  return result;
+#endif
+}
+
+gboolean
 file_perm_options_apply_dir(const FilePermOptions *self, const gchar *path)
 {
 #ifndef _MSC_VER

@@ -182,6 +182,73 @@ file_opener_open_fd(FileOpener *self, const gchar *name, FileDirection dir, gint
   return FILE_OPENER_RESULT_SUCCESS;
 }
 
+static gboolean
+_is_symlink_creation_needed(const gchar *name, const gchar *target)
+{
+  gboolean r = FALSE;
+  GError *e = NULL;
+  gchar *s = g_file_read_link(name, &e);
+  if (e != NULL)
+    {
+      if (g_error_matches(e, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+        r = TRUE;
+      else msg_error("Error checking symlink",
+                       evt_tag_str("filename", name),
+                       evt_tag_str("message", e->message));
+      g_error_free(e);
+    }
+  else if (strcmp(s, target) != 0)
+    {
+      if (unlink(name) == 0)
+        r = TRUE;
+      else
+        msg_error("Error removing symlink",
+                  evt_tag_str("filename", name),
+                  evt_tag_errno(EVT_TAG_OSERROR, errno));
+    }
+  g_free(s);
+  return r;
+}
+
+void
+file_opener_symlink(FileOpener *self, const gchar *name, const gchar *target)
+{
+  cap_t saved_caps;
+
+  msg_trace("file_opener_symlink",
+            evt_tag_str("filename", name),
+            evt_tag_str("target", target));
+
+  if (!_is_symlink_creation_needed(name, target)) return;
+
+  saved_caps = g_process_cap_save();
+
+  if (!_obtain_capabilities(self, name, &saved_caps))
+    {
+      g_process_cap_restore(saved_caps);
+      return;
+    }
+
+  g_process_enable_cap("cap_chown");
+
+  msg_info("Creating symlink",
+           evt_tag_str("filename", name),
+           evt_tag_str("target", target));
+
+  if (symlink(target, name) == -1)
+    msg_error("Error creating symlink",
+              evt_tag_str("filename", name),
+              evt_tag_str("target", target),
+              evt_tag_errno(EVT_TAG_OSERROR, errno));
+  else if (!file_perm_options_apply_symlink(&self->options->file_perm_options, name))
+    msg_error("Error setting symlink ownership",
+              evt_tag_str("filename", name),
+              evt_tag_errno(EVT_TAG_OSERROR, errno));
+
+  g_process_cap_restore(saved_caps);
+
+}
+
 void
 file_opener_set_options(FileOpener *self, FileOpenerOptions *options)
 {
