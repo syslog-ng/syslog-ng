@@ -90,10 +90,7 @@ start
             last_header = *instance = python_http_header_new();
           }
           '(' python_http_header_options ')'    { YYACCEPT; }
-        | LL_CONTEXT_ROOT KW_PYTHON
-          { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "Python code"); }
-          LL_BLOCK
-          { cfg_lexer_pop_context(lexer); }
+        | LL_CONTEXT_ROOT KW_PYTHON _block_content_context_push LL_BLOCK _block_content_context_pop
           {
             gboolean result;
 
