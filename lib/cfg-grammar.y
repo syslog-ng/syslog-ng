@@ -316,6 +316,7 @@
 %token <cptr> LL_STRING               10433
 %token <token> LL_TOKEN               10434
 %token <cptr> LL_BLOCK                10435
+%token <cptr> LL_PLUGIN	              10436
 
 %destructor { free($$); } <cptr>
 
@@ -503,7 +504,7 @@ log_stmt
 
 
 plugin_stmt
-        : LL_IDENTIFIER
+        : LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_ROOT;
@@ -537,7 +538,7 @@ source_item
 	;
 
 source_plugin
-        : LL_IDENTIFIER
+        : LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_SOURCE;
@@ -625,7 +626,7 @@ dest_item
 	;
 
 dest_plugin
-        : LL_IDENTIFIER
+        : LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_DESTINATION;
@@ -915,7 +916,7 @@ options_item
 	| { last_stats_options = &configuration->stats_options; } stat_option
 	| { last_dns_cache_options = &configuration->dns_cache_options; } dns_cache_option
 	| { last_file_perm_options = &configuration->file_perm_options; } file_perm_option
-	| LL_IDENTIFIER
+	| LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_OPTIONS;
@@ -1099,7 +1100,7 @@ driver_option
         ;
 
 inner_source
-        : LL_IDENTIFIER
+        : LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_INNER_SRC;
@@ -1130,7 +1131,7 @@ source_driver_option
         ;
 
 inner_dest
-        : LL_IDENTIFIER
+        : LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_INNER_DEST;

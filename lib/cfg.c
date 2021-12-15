@@ -255,7 +255,7 @@ _construct_plugin_prelude(GlobalConfig *cfg, Plugin *plugin, CFG_LTYPE *yylloc)
   /* start a new lexer context, so plugin specific keywords are recognized,
    * we only do this to lookup the parser name. */
   cfg_lexer_push_context(cfg->lexer, plugin->parser->context, plugin->parser->keywords, plugin->parser->name);
-  cfg_lexer_lookup_keyword(cfg->lexer, &token, yylloc, plugin->name);
+  cfg_lexer_map_word_to_token(cfg->lexer, &token, yylloc, plugin->name);
   cfg_lexer_pop_context(cfg->lexer);
 
   /* add plugin name token */

@@ -158,7 +158,7 @@ rewrite_expr
             last_rewrite = log_rewrite_set_facility_new($3, configuration);
             log_template_unref($3);
           } rewrite_set_facility_opts ')'       { $$ = last_rewrite; };
-        | LL_IDENTIFIER
+        | LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_REWRITE;

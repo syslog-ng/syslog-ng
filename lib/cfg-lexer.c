@@ -182,7 +182,7 @@ cfg_lexer_format_location_tag(CfgLexer *self, CFG_LTYPE *yylloc)
   return evt_tag_str("location", cfg_lexer_format_location(self, yylloc, buf, sizeof(buf)));
 }
 
-int
+static int
 cfg_lexer_lookup_keyword(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc, const char *token)
 {
   GList *l;
@@ -242,6 +242,24 @@ cfg_lexer_lookup_keyword(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc, c
   yylval->type = LL_IDENTIFIER;
   yylval->cptr = strdup(token);
   return LL_IDENTIFIER;
+}
+
+int
+cfg_lexer_map_word_to_token(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc, const char *token)
+{
+  int tok = cfg_lexer_lookup_keyword(self, yylval, yylloc, token);
+
+  if (tok == LL_IDENTIFIER)
+    {
+      /* plugins registered into the current context use a separate token,
+       * LL_PLUGIN, so that LL_IDENTIFIER can still be used in our grammar
+       * to distinguish rules.  This is used to allow plugins in our filter
+       * expressions but still be able to use non-quoted literals */
+
+      if (self->cfg && plugin_is_plugin_available(&self->cfg->plugin_context, cfg_lexer_get_context_type(self), token))
+        return LL_PLUGIN;
+    }
+  return tok;
 }
 
 void

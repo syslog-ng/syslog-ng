@@ -190,7 +190,7 @@ void cfg_lexer_append_char(CfgLexer *self, char c);
 /* keyword handling */
 void cfg_lexer_set_current_keywords(CfgLexer *self, CfgLexerKeyword *keywords);
 char *cfg_lexer_get_keyword_string(CfgLexer *self, int kw);
-int cfg_lexer_lookup_keyword(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc, const char *token);
+int cfg_lexer_map_word_to_token(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc, const char *token);
 
 /* include files */
 gboolean cfg_lexer_start_next_include(CfgLexer *self);
