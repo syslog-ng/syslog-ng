@@ -180,6 +180,21 @@ Installation steps:
 
 3. Run `apt-get update`
 
+
+syslog-ng packages are released for the following distribution versions (x86-64):
+
+| Distro version | sources.list component name |
+|---|---|
+| Ubuntu 21.10 | ubuntu-impish |
+| Ubuntu 20.04 | ubuntu-focal |
+| Ubuntu 18.04 | ubuntu-bionic |
+| Ubuntu 16.04 | ubuntu-xenial |
+| Debian 11 | debian-bullseye |
+| Debian 10 | debian-buster |
+| Debian 9 | debian-stretch |
+| Debian Unstable | debian-sid |
+| Debian Testing | debian-testing |
+
 ### Fedora
 
 syslog-ng is available as a Fedora package that you can install using
