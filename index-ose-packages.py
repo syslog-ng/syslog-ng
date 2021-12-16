@@ -102,7 +102,7 @@ def parse_args() -> dict:
 
 
 def init_logging(args: dict) -> None:
-    handlers = []
+    handlers: List[logging.Handler] = []
 
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.INFO)
