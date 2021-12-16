@@ -1020,23 +1020,6 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, CFG_STYPE *yylval, CFG_LTYPE *yyl
 
       return CLPR_LEX_AGAIN;
     }
-  else if (cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA && !self->non_pragma_seen)
-    {
-      /* first non-pragma token */
-
-      if (self->cfg->user_version == 0)
-        {
-          msg_error("ERROR: configuration files without a version number has become unsupported in " VERSION_3_13
-                    ", please specify a version number using @version and update your configuration accordingly");
-          return CLPR_ERROR;
-        }
-
-      cfg_discover_candidate_modules(self->cfg);
-
-      cfg_load_forced_modules(self->cfg);
-
-      self->non_pragma_seen = TRUE;
-    }
 
   return CLPR_OK;
 }

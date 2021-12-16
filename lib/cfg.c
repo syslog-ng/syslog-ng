@@ -647,6 +647,9 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
   FILE *cfg_file;
   gint res;
 
+  cfg_discover_candidate_modules(self);
+  cfg_load_forced_modules(self);
+
   self->filename = fname;
 
   if ((cfg_file = fopen(fname, "r")) != NULL)
@@ -661,6 +664,13 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
       if (preprocess_into)
         {
           cfg_dump_processed_config(self->preprocess_config, preprocess_into);
+        }
+
+      if (self->user_version == 0)
+        {
+          msg_error("ERROR: configuration files without a version number have become unsupported in " VERSION_3_13
+                    ", please specify a version number using @version as the first line in the configuration file");
+          return FALSE;
         }
 
       if (res)
