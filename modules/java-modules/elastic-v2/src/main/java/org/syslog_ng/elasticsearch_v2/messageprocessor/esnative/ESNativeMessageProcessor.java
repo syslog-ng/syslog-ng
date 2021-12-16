@@ -23,7 +23,8 @@
 
 package org.syslog_ng.elasticsearch_v2.messageprocessor.esnative;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.elasticsearch.action.index.IndexRequest;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.esnative.ESNativeClient;
@@ -39,7 +40,7 @@ public abstract class ESNativeMessageProcessor implements ESMessageProcessor {
 	public ESNativeMessageProcessor(ElasticSearchOptions options, ESNativeClient client) {
 		this.options = options;
 		this.client = client;
-		logger = Logger.getRootLogger();
+		logger = LogManager.getRootLogger();
 	}
 
 	public void init() {

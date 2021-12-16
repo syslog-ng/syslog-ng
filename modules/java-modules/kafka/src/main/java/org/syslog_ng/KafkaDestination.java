@@ -27,7 +27,8 @@ import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.syslog_ng.LogMessage;
 import org.syslog_ng.StructuredLogDestination;
 import org.syslog_ng.logging.SyslogNgInternalLogger;
@@ -47,8 +48,7 @@ public class KafkaDestination extends StructuredLogDestination {
   public KafkaDestination(long handle) {
     super(handle);
 
-    Logger.getLogger("org.apache.kafka").setLevel(SyslogNgInternalLogger.getLevel());
-    logger = Logger.getRootLogger();
+    logger = LogManager.getRootLogger();
     SyslogNgInternalLogger.register(logger);
 
     options = new KafkaDestinationOptions(this);

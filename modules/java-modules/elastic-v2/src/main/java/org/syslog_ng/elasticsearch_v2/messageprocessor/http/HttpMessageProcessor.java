@@ -25,7 +25,8 @@
 package org.syslog_ng.elasticsearch_v2.messageprocessor.http;
 
 import io.searchbox.core.Index;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.http.ESHttpClient;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
@@ -40,7 +41,7 @@ public abstract class HttpMessageProcessor implements ESMessageProcessor {
 	public HttpMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
 		this.options = options;
 		this.client = client;
-		this.logger = Logger.getRootLogger();
+		this.logger = LogManager.getRootLogger();
 	}
 
 	public void init() {

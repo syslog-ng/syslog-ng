@@ -29,8 +29,9 @@ import java.io.*;
 
 import org.syslog_ng.options.InvalidOptionException;
 import org.syslog_ng.logging.SyslogNgInternalLogger;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.lang.SecurityException;
 import java.lang.IllegalStateException;
@@ -45,7 +46,7 @@ public class HTTPDestination extends StructuredLogDestination {
 
     public HTTPDestination(long handle) {
         super(handle);
-        logger = Logger.getRootLogger();
+        logger = LogManager.getRootLogger();
         SyslogNgInternalLogger.register(logger);
         options = new HTTPDestinationOptions(this);
     }
