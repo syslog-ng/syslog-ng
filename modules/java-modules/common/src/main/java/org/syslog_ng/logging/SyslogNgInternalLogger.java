@@ -24,64 +24,57 @@
 
 package org.syslog_ng.logging;
 
-import org.apache.log4j.AppenderSkeleton;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.spi.LoggingEvent;
+import org.apache.logging.log4j.core.config.plugins.Plugin;
+import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
+import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
+import org.apache.logging.log4j.core.config.plugins.PluginElement;
+import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
+import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.ErrorHandler;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.Layout;
+import org.apache.logging.log4j.core.config.Property;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.Logger;
+import java.io.Serializable;
+
+
 import org.syslog_ng.InternalMessageSender;
 
-public class SyslogNgInternalLogger extends AppenderSkeleton {
 
-    public static final String NAME = "syslog-ng-internal";
+@Plugin(name = "SyslogNgInternalLogger", category = "Core", elementType = "appender", printObject = true)
+public class SyslogNgInternalLogger implements Appender {
+
+    public final String name;
 
     public static void register(Logger logger) {
-        if (logger.getAppender(SyslogNgInternalLogger.NAME) == null) {
-            logger.removeAllAppenders();
-            logger.addAppender(new SyslogNgInternalLogger());
-            logger.setLevel(SyslogNgInternalLogger.getLevel());
-        }
     }
 
-    public SyslogNgInternalLogger() {
-        super();
-        this.name = NAME;
+    public SyslogNgInternalLogger(String name) {
+       this.name=name;
     }
 
     @Override
-    public void close() {
-    }
+    public void append(LogEvent event) {
 
-    @Override
-    public boolean requiresLayout() {
-        return false;
-    }
+        String message = event.getMessage().getFormattedMessage();
 
-    @Override
-    protected void append(LoggingEvent event) {
+        Level level = event.getLevel();
 
-        String message = event.getMessage().toString();
-
-        switch(event.getLevel().toInt()) {
-        case Level.INFO_INT:
+        if (level.equals(Level.INFO)) {
             InternalMessageSender.info(message);
-            break;
-        case Level.DEBUG_INT:
+        } else if (level.equals(Level.DEBUG)) {
             InternalMessageSender.debug(message);
-            break;
-        case Level.ERROR_INT:
+        } else if (level.equals(Level.ERROR)) {
             InternalMessageSender.error(message);
-            break;
-        case Level.FATAL_INT:
+        } else if (level.equals(Level.FATAL)) {
             InternalMessageSender.fatal(message);
-            break;
-        case Level.WARN_INT:
+        } else if (level.equals(Level.WARN)) {
             InternalMessageSender.warning(message);
-            break;
-        case Level.TRACE_INT:
+        } else if (level.equals(Level.TRACE)) {
             InternalMessageSender.debug(message);
-            break;
-        default:
-            break;
         }
     }
 
@@ -102,5 +95,44 @@ public class SyslogNgInternalLogger extends AppenderSkeleton {
         }
 
         return Level.OFF;
+    }
+
+   /* Boilerplate for Appender */
+
+   @Override public String getName() { return name; }
+   @Override public ErrorHandler getHandler() { return null; }
+   @Override public void setHandler(ErrorHandler handler) { }
+   @Override public boolean ignoreExceptions() { return false; }
+   @Override public Layout<? extends Serializable> getLayout() { return null; }
+
+   /* Boilerplate for LifeCycle (Appender extends LifeCycle) */
+
+   @Override public boolean isStopped() { return true; }
+   @Override public boolean isStarted() { return true; }
+   @Override public void stop() {  }
+   @Override public void start() {  }
+   @Override public void initialize() {  }
+   @Override public State getState() { return null; }
+
+   @PluginBuilderFactory
+   public static Builder newBuilder() {
+       return new Builder();
+   }
+    
+   public static class Builder implements org.apache.logging.log4j.core.util.Builder<SyslogNgInternalLogger> {
+
+       @PluginBuilderAttribute
+       @Required(message = "No name provided for SyslogNgInternalLogger")
+       private String name;
+    
+       public Builder setName(final String name) {
+           this.name = name;
+           return this;
+       }
+    
+       @Override
+       public SyslogNgInternalLogger build() {
+           return new SyslogNgInternalLogger(name);
+       }
     }
 }
