@@ -29,7 +29,7 @@ jobs:
           gh_export CONTAINER_REGISTRY
 
       - name: Build the images
-        run: dbld/rules images -j $(nproc) --keep-going
+        run: dbld/rules images -j $(nproc) --keep-going --output-sync
 
       - name: Should we upload the images?
         if: always()
