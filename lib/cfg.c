@@ -253,20 +253,22 @@ cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
   return plugin_find(&cfg->plugin_context, plugin_type, plugin_name);
 }
 
-/* construct a plugin instance by parsing its relevant portion from the
- * configuration file */
-gpointer
-cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, CFG_LTYPE *yylloc, gpointer arg)
+static CfgTokenBlock *
+_construct_plugin_prelude(GlobalConfig *cfg, Plugin *plugin, CFG_LTYPE *yylloc)
 {
   CfgTokenBlock *block;
   CFG_STYPE token;
 
-
-  /* we add two tokens to an inserted token-block:
+  /* we inject two tokens to a new token-block:
    *  1) the plugin type (in order to make it possible to support different
    *  plugins from the same grammar)
    *
    *  2) the keyword equivalent of the plugin name
+   *
+   * These tokens are automatically inserted into the token stream, so that
+   * the module specific grammar finds it there before any other token.
+   * These tokens are used to branch out for multiple different
+   * plugins within the same module, e.g. grammar.
    */
   block = cfg_token_block_new();
 
@@ -284,8 +286,15 @@ cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, CFG_LTYPE *yylloc, gpointer 
 
   /* add plugin name token */
   cfg_token_block_add_and_consume_token(block, &token);
+  return block;
+}
 
-  cfg_lexer_inject_token_block(cfg->lexer, block);
+/* construct a plugin instance by parsing its relevant portion from the
+ * configuration file */
+gpointer
+cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, CFG_LTYPE *yylloc, gpointer arg)
+{
+  cfg_lexer_inject_token_block(cfg->lexer, _construct_plugin_prelude(cfg, plugin, yylloc));
 
   return plugin_construct_from_config(plugin, cfg->lexer, arg);
 }
