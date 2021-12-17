@@ -59,6 +59,15 @@
 
 CfgArgs *last_module_args = NULL;
 
+static void
+pragma_define_global(GlobalConfig *cfg, const gchar *name, const gchar *value)
+{
+  msg_debug("Global value changed",
+            evt_tag_str("define", name),
+            evt_tag_str("value", value));
+  cfg_args_set(cfg->globals, name, value);
+}
+
 }
 
 %type   <cptr> requires_message
@@ -107,10 +116,7 @@ version_stmt
 define_stmt
 	: KW_DEFINE LL_IDENTIFIER string_or_number
           {
-            msg_debug("Global value changed",
-                      evt_tag_str("define", $2),
-                      evt_tag_str("value", $3));
-	    cfg_args_set(configuration->globals, $2, $3);
+            pragma_define_global(configuration, $2, $3);
             free($2);
             free($3);
           }
