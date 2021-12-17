@@ -482,7 +482,7 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
     case M_TAGS:
     {
       t = LM_VT_LIST;
-      log_msg_print_tags(msg, result);
+      log_msg_format_tags(msg, result);
       break;
     }
     case M_BSDTAG:

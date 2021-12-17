@@ -1215,7 +1215,7 @@ log_msg_append_tags_callback(const LogMessage *self, LogTagId tag_id, const gcha
 }
 
 void
-log_msg_print_tags(const LogMessage *self, GString *result)
+log_msg_format_tags(const LogMessage *self, GString *result)
 {
   gpointer args[] = { result, GUINT_TO_POINTER(result->len) };
 
