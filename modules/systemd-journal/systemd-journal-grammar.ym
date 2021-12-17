@@ -68,7 +68,7 @@ start
         ;
 
 source_systemd_journal
-	: KW_SYSTEMD_JOURNAL '(' source_systemd_journal_params ')' { $$ = $3; }
+	: KW_SYSTEMD_JOURNAL '(' _inner_src_context_push source_systemd_journal_params _inner_src_context_pop ')' { $$ = $4; }
 	;
 
 source_systemd_journal_params

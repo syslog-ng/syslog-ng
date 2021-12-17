@@ -69,27 +69,27 @@ start
           {
             last_driver = *instance = python_dd_new(configuration);
           }
-          '(' python_dd_options ')'         { YYACCEPT; }
+          '(' _inner_dest_context_push python_dd_options _inner_dest_context_pop ')'         { YYACCEPT; }
         | LL_CONTEXT_PARSER KW_PYTHON
 	      {
 	        last_parser = *instance = python_parser_new(configuration);
           }
-          '(' python_parser_options ')' { YYACCEPT; }
+          '(' python_parser_options ')'                                                      { YYACCEPT; }
         | LL_CONTEXT_SOURCE KW_PYTHON
           {
             last_driver = *instance = python_sd_new(configuration);
           }
-          '(' python_sd_options ')'         { YYACCEPT; }
+          '(' _inner_src_context_push python_sd_options _inner_src_context_pop ')'           { YYACCEPT; }
         | LL_CONTEXT_SOURCE KW_PYTHON_FETCHER
           {
             last_driver = *instance = python_fetcher_new(configuration);
           }
-          '(' python_fetcher_options ')'         { YYACCEPT; }
+          '(' _inner_src_context_push python_fetcher_options _inner_src_context_pop ')'      { YYACCEPT; }
         | LL_CONTEXT_INNER_DEST KW_PYTHON_HTTP_HEADER
           {
             last_header = *instance = python_http_header_new();
           }
-          '(' python_http_header_options ')'    { YYACCEPT; }
+          '(' python_http_header_options ')'                                                 { YYACCEPT; }
         | LL_CONTEXT_ROOT KW_PYTHON _block_content_context_push LL_BLOCK _block_content_context_pop
           {
             gboolean result;

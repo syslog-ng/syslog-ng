@@ -59,7 +59,7 @@ start
           {
             last_driver = *instance = java_dd_new(configuration);
           }
-          '(' java_dest_options ')'		{ YYACCEPT; }
+          '(' _inner_dest_context_push java_dest_options  _inner_dest_context_pop ')'		{ YYACCEPT; }
         | LL_CONTEXT_OPTIONS java_global_option { YYACCEPT; }
         ;
 

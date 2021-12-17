@@ -71,7 +71,7 @@ source_threaded_random_generator
     {
       last_driver = *instance = threaded_random_generator_sd_new(configuration);
     }
-    '(' source_threaded_random_generator_options ')' { $$ = last_driver; }
+    '(' _inner_src_context_push source_threaded_random_generator_options _inner_src_context_pop ')' { $$ = last_driver; }
   ;
 
 source_threaded_random_generator_options

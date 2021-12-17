@@ -78,7 +78,7 @@ start
         ;
 
 dest_snmpdest
-	: KW_SNMPDEST '(' dest_snmpdest_params ')'
+	: KW_SNMPDEST '(' _inner_dest_context_push dest_snmpdest_params _inner_dest_context_pop ')'
 	;
 
 dest_snmpdest_params

@@ -80,13 +80,13 @@ start
             last_driver = *instance = mqtt_dd_new(configuration);
             last_options = mqtt_dd_get_options(last_driver);
           }
-          '(' mqtt_destination_options ')' { YYACCEPT; }
+          '(' _inner_dest_context_push mqtt_destination_options _inner_dest_context_pop ')' { YYACCEPT; }
         | LL_CONTEXT_SOURCE KW_MQTT
           {
             last_driver = *instance = mqtt_sd_new(configuration);
             last_options = mqtt_sd_get_options(last_driver);
           }
-          '(' mqtt_source_options ')' { YYACCEPT; }
+          '(' _inner_src_context_push mqtt_source_options _inner_src_context_pop ')' { YYACCEPT; }
 ;
 
 mqtt_destination_options

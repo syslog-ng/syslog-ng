@@ -79,7 +79,7 @@ start
 
 
 dest_afsql
-        : KW_SQL '(' dest_afsql_params ')'	{ $$ = $3; }
+        : KW_SQL '(' _inner_dest_context_push dest_afsql_params _inner_dest_context_pop ')'	{ $$ = $4; }
         ;
 
 dest_afsql_params

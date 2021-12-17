@@ -63,7 +63,7 @@ start
           {
             last_driver = *instance = afsmtp_dd_new(configuration);
           }
-          '(' afsmtp_options ')'         { YYACCEPT; }
+          '(' _inner_dest_context_push afsmtp_options _inner_dest_context_pop ')'         { YYACCEPT; }
         ;
 
 afsmtp_options

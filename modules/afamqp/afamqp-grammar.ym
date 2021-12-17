@@ -70,7 +70,7 @@ start
           {
             last_driver = *instance = afamqp_dd_new(configuration);
           }
-          '(' afamqp_options ')'		{ YYACCEPT; }
+          '(' _inner_dest_context_push afamqp_options _inner_dest_context_pop ')'		{ YYACCEPT; }
 	;
 
 afamqp_options
