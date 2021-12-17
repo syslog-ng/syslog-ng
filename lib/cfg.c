@@ -161,31 +161,9 @@ _invoke_module_deinit(gchar *key, ModuleConfig *mc, gpointer user_data)
   module_config_deinit(mc, cfg);
 }
 
-static gboolean
-_sync_plugin_module_path_with_global_define(GlobalConfig *self)
-{
-  const gchar *module_path;
-
-  /* Sync the @define module-path with the actual module search path as implemented by plugin.
-   *
-   * if @define module-path is not defined, we use whatever there's in
-   * PluginContext by default */
-  if (self->lexer)
-    {
-      module_path = cfg_args_get(self->globals, "module-path");
-      if (module_path && strcmp(module_path, self->plugin_context.module_path) != 0)
-        {
-          plugin_context_set_module_path(&self->plugin_context, module_path);
-          return TRUE;
-        }
-    }
-  return FALSE;
-}
-
 gboolean
 cfg_load_module_with_args(GlobalConfig *cfg, const gchar *module_name, CfgArgs *args)
 {
-  _sync_plugin_module_path_with_global_define(cfg);
   return plugin_load_module(&cfg->plugin_context, module_name, args);
 }
 
@@ -221,18 +199,12 @@ cfg_load_forced_modules(GlobalConfig *self)
     }
 }
 
-static gboolean
-_is_module_autoload_enabled(GlobalConfig *self)
-{
-  return atoi(cfg_args_get(self->globals, "autoload-compiled-modules") ? : "1");
-}
-
 void
 cfg_discover_candidate_modules(GlobalConfig *self)
 {
-  if (self->use_plugin_discovery && _is_module_autoload_enabled(self))
+  if (self->use_plugin_discovery)
     {
-      if (_sync_plugin_module_path_with_global_define(self) || !plugin_has_discovery_run(&self->plugin_context))
+      if (!plugin_has_discovery_run(&self->plugin_context))
         plugin_discover_candidate_modules(&self->plugin_context);
     }
 }
@@ -240,11 +212,13 @@ cfg_discover_candidate_modules(GlobalConfig *self)
 gboolean
 cfg_is_module_available(GlobalConfig *self, const gchar *module_name)
 {
-  cfg_discover_candidate_modules(self);
-  if (!_is_module_autoload_enabled(self))
-    return cfg_load_module(self, module_name);
+  /* NOTE: if plugin discovery is disabled, the only way to know if a module
+   * is available is to actually load it */
 
-  return plugin_is_module_available(&self->plugin_context, module_name);
+  if (!self->use_plugin_discovery)
+    return cfg_load_module(self, module_name);
+  else
+    return plugin_is_module_available(&self->plugin_context, module_name);
 }
 
 Plugin *
