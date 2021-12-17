@@ -145,7 +145,6 @@ public class HdfsDestination extends StructuredLogDestination {
     public HdfsDestination(long handle) {
         super(handle);
         logger = LogManager.getRootLogger();
-        SyslogNgInternalLogger.register(logger);
         options = new HdfsOptions(this);
         lock = new ReentrantLock();
     }

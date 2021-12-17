@@ -46,7 +46,6 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 	public ElasticSearchDestination(long handle) {
 		super(handle);
 		logger = LogManager.getRootLogger();
-		SyslogNgInternalLogger.register(logger);
 		options = new ElasticSearchOptions(this);
 	}
 

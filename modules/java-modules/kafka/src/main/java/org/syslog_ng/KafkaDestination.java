@@ -49,7 +49,6 @@ public class KafkaDestination extends StructuredLogDestination {
     super(handle);
 
     logger = LogManager.getRootLogger();
-    SyslogNgInternalLogger.register(logger);
 
     options = new KafkaDestinationOptions(this);
     properties = new KafkaDestinationProperties(options);

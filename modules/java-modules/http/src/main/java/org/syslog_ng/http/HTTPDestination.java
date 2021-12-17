@@ -47,7 +47,6 @@ public class HTTPDestination extends StructuredLogDestination {
     public HTTPDestination(long handle) {
         super(handle);
         logger = LogManager.getRootLogger();
-        SyslogNgInternalLogger.register(logger);
         options = new HTTPDestinationOptions(this);
     }
 
