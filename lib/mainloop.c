@@ -596,6 +596,9 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
   setup_signals(self);
 
   self->current_configuration = cfg_new(0);
+
+  if (self->options->disable_module_discovery)
+    self->current_configuration->use_plugin_discovery = FALSE;
 }
 
 /*
