@@ -140,6 +140,7 @@ _is_jvm_option_predefined(const gchar *option)
   {
     "Djava.class.path",
     "Djava.library.path",
+    "Dlog4j.configurationFactory",
     NULL
   };
 
@@ -193,6 +194,9 @@ _setup_jvm_options_array(JavaVMSingleton *self, const gchar *jvm_options_str)
   jvm_options_array = _jvm_options_array_append(jvm_options_array,
                                                 g_strdup_printf("-Djava.library.path=%s",
                                                     resolvedConfigurablePaths.initial_module_path));
+
+  jvm_options_array = _jvm_options_array_append(jvm_options_array,
+                                                g_strdup_printf("-Dlog4j.configurationFactory=org.syslog_ng.logging.CustomConfigurationFactory"));
 
   jvm_options_array = _jvm_options_array_append(jvm_options_array,
                                                 g_strdup("-Xrs"));
