@@ -321,6 +321,13 @@ log_template_compiler_process_unbraced_template(LogTemplateCompiler *self)
   log_template_compiler_add_elem(self, start, macro_len, NULL);
 }
 
+static void
+log_template_compiler_process_dollar_asterisk(LogTemplateCompiler *self)
+{
+  self->cursor++;
+  log_template_add_macro_elem(self, M__ASTERISK, NULL);
+}
+
 static gboolean
 log_template_compiler_process_value(LogTemplateCompiler *self, GError **error)
 {
@@ -350,6 +357,11 @@ log_template_compiler_process_value(LogTemplateCompiler *self, GError **error)
   else if (is_macro_name(p))
     {
       log_template_compiler_process_unbraced_template(self);
+      finished = TRUE;
+    }
+  else if (p == '*')
+    {
+      log_template_compiler_process_dollar_asterisk(self);
       finished = TRUE;
     }
   /* escaped value with dollar */
