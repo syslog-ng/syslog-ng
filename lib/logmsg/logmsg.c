@@ -1170,6 +1170,22 @@ log_msg_format_tags(const LogMessage *self, GString *result)
 }
 
 void
+log_msg_format_matches(const LogMessage *self, GString *result)
+{
+  gsize original_length = result->len;
+
+  for (gint i = 1; i < self->num_matches; i++)
+    {
+      if (result->len > original_length)
+        g_string_append_c(result, ',');
+
+      gssize len;
+      const gchar *m = log_msg_get_match(self, i, &len);
+      str_repr_encode_append(result, m, len, ",");
+    }
+}
+
+void
 log_msg_set_saddr(LogMessage *self, GSockAddr *saddr)
 {
   log_msg_set_saddr_ref(self, g_sockaddr_ref(saddr));
