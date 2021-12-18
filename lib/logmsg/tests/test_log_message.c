@@ -549,6 +549,27 @@ Test(log_message, test_match_alias_numbered_macros)
   log_msg_unref(msg);
 }
 
+Test(log_message, test_log_message_updates_num_matches_according_to_matches_being_set)
+{
+  LogMessage *msg;
+  GString *result = g_string_new("");
+
+  msg = log_msg_new_empty();
+  cr_assert(msg->num_matches == 0);
+  log_msg_set_match(msg, 1, "match1", -1);
+  cr_assert(msg->num_matches == 2);
+  log_msg_set_match(msg, 2, "match2", -1);
+  cr_assert(msg->num_matches == 3);
+  log_msg_set_match(msg, 3, "match3", -1);
+  cr_assert(msg->num_matches == 4);
+
+  log_msg_format_matches(msg, result);
+  cr_assert_str_eq(result->str, "match1,match2,match3");
+
+  g_string_free(result, TRUE);
+  log_msg_unref(msg);
+}
+
 #define DEFUN_KEY_VALUE(name, key, value, size) \
   gchar name ## _key[size]; \
   gchar name ## _value[size]; \
