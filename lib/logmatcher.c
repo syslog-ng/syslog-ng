@@ -398,6 +398,7 @@ log_matcher_pcre_re_feed_backrefs(LogMatcher *s, LogMessage *msg, gint value_han
   gint i;
   gboolean indirect = _shall_set_values_indirectly(value_handle);
 
+  msg->num_matches = 0;
   for (i = 0; i < (LOGMSG_MAX_MATCHES) && i < match_num; i++)
     {
       gint begin_index = matches[2 * i];
