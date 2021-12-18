@@ -485,6 +485,12 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
       log_msg_format_tags(msg, result);
       break;
     }
+    case M__ASTERISK:
+    {
+      t = LM_VT_LIST;
+      log_msg_format_matches(msg, result);
+      break;
+    }
     case M_BSDTAG:
     {
       format_uint32_padded(result, 0, 0, 10, (msg->pri & LOG_PRIMASK));
