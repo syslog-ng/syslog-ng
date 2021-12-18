@@ -264,3 +264,58 @@ Test(matcher, pcre812_incompatibility, .description = "tests a pcre 8.12 incompa
   testcase_replace("wikiwiki",
                    "([[:digit:]]{1,3}\\.){3}[[:digit:]]{1,3}", "foo", "wikiwiki", _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
 }
+
+Test(matcher, test_matcher_sets_num_matches_upon_successful_matching)
+{
+  LogMatcherOptions matcher_options;
+  LogMessage *msg;
+  gboolean result;
+  const gchar *msg_payload = "kiwi-wiki";
+
+  msg = _create_log_message(msg_payload);
+
+  cr_assert_eq(msg->num_matches, 0);
+
+  log_matcher_options_defaults(&matcher_options);
+  matcher_options.flags = LMF_STORE_MATCHES;
+  LogMatcher *m = log_matcher_pcre_re_new(&matcher_options);
+  log_matcher_compile(m, "^(kiwi).*", NULL);
+
+  /* initial match, number of capture groups is 2: $0, $1 */
+  gssize value_len;
+  const gchar *value = log_msg_get_value(msg, LM_V_MESSAGE, &value_len);
+  result = log_matcher_match(m, msg, LM_V_MESSAGE, value, value_len);
+  cr_assert(result);
+
+  assert_log_message_value(msg, LM_V_MESSAGE, msg_payload);
+  assert_log_message_match_value(msg, 0, value);
+  assert_log_message_match_value(msg, 1, "kiwi");
+
+  cr_assert_eq(msg->num_matches, 2);
+
+  /* another match, number of capture groups is 3, producing $0, $1, $2 */
+  log_matcher_compile(m, "^(ki)(wi).*", NULL);
+  value = log_msg_get_value(msg, LM_V_MESSAGE, &value_len);
+  result = log_matcher_match(m, msg, LM_V_MESSAGE, value, value_len);
+  cr_assert(result);
+
+  assert_log_message_value(msg, LM_V_MESSAGE, msg_payload);
+  assert_log_message_match_value(msg, 0, value);
+  assert_log_message_match_value(msg, 1, "ki");
+  assert_log_message_match_value(msg, 2, "wi");
+  cr_assert_eq(msg->num_matches, 3);
+
+  /* another match, decreasing the number of matches, going back to 2 capture groups */
+  log_matcher_compile(m, "^(kiwi).*", NULL);
+  value = log_msg_get_value(msg, LM_V_MESSAGE, &value_len);
+  result = log_matcher_match(m, msg, LM_V_MESSAGE, value, value_len);
+  cr_assert(result);
+
+  assert_log_message_value(msg, LM_V_MESSAGE, msg_payload);
+  assert_log_message_match_value(msg, 0, value);
+  assert_log_message_match_value(msg, 1, "kiwi");
+  cr_assert_eq(msg->num_matches, 2);
+
+  log_matcher_unref(m);
+  log_msg_unref(msg);
+}
