@@ -402,6 +402,10 @@ void log_msg_set_match_with_type(LogMessage *self, gint index,
 void log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint16 ofs, guint16 len);
 void log_msg_set_match_indirect_with_type(LogMessage *self, gint index, NVHandle ref_handle,
                                           guint16 ofs, guint16 len, LogMessageValueType type);
+void log_msg_unset_match(LogMessage *self, gint index_);
+const gchar *log_msg_get_match_with_type(const LogMessage *self, gint index_, gssize *value_len,
+                                         LogMessageValueType *type);
+const gchar *log_msg_get_match(const LogMessage *self, gint index_, gssize *value_len);
 void log_msg_clear_matches(LogMessage *self);
 
 static inline void

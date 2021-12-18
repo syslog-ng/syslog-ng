@@ -41,6 +41,10 @@ void assert_log_message_value_and_type(LogMessage *self, NVHandle handle,
 void assert_log_message_value_by_name(LogMessage *self, const gchar *name, const gchar *expected_value);
 void assert_log_message_value_and_type_by_name(LogMessage *self, const gchar *name,
                                                const gchar *expected_value, LogMessageValueType expected_type);
+void assert_log_message_value_and_type_by_name(LogMessage *self, const gchar *name,
+                                               const gchar *expected_value, LogMessageValueType expected_type);
+void assert_log_message_match_value(LogMessage *self, gint index_, const gchar *expected_value);
+
 void assert_log_message_has_tag(LogMessage *log_message, const gchar *tag_name);
 void assert_log_message_doesnt_have_tag(LogMessage *log_message, const gchar *tag_name);
 void assert_log_messages_saddr(LogMessage *log_message_a, LogMessage *log_message_b);
