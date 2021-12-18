@@ -209,7 +209,7 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
   template = log_template_new(cfg, NULL);
   if (!log_template_compile(template, v, error))
     goto error;
-  if (!log_template_set_type_hint(template, t, error))
+  if (t && !log_template_set_type_hint(template, t, error))
     goto error;
 
   value_pairs_add_pair(vp, kv[0], template);
