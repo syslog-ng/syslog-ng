@@ -27,6 +27,7 @@
 
 #include "apphook.h"
 #include "logpipe.h"
+#include "scratch-buffers.h"
 #include "rcptid.h"
 
 MsgFormatOptions parse_options;
@@ -161,6 +162,7 @@ setup(void)
 void
 teardown(void)
 {
+  scratch_buffers_explicit_gc();
   deinit_syslogformat_module();
   app_shutdown();
 }
@@ -521,6 +523,29 @@ Test(log_message, test_macro_value_is_set_and_is_a_string)
   cr_assert_str_eq(value, "user");
   cr_assert(type == LM_VT_STRING);
 
+  log_msg_unref(msg);
+}
+
+Test(log_message, test_match_alias_numbered_macros)
+{
+  LogMessage *msg;
+
+  msg = log_msg_new_empty();
+  log_msg_set_match(msg, 0, "match0", -1);
+  assert_log_message_match_value(msg, 0, "match0");
+  assert_log_message_value_by_name(msg, "0", "match0");
+  log_msg_set_match(msg, 0, "match0-update1", -1);
+  assert_log_message_match_value(msg, 0, "match0-update1");
+  assert_log_message_value_by_name(msg, "0", "match0-update1");
+  log_msg_set_value_by_name(msg, "0", "match0-update2", -1);
+  assert_log_message_match_value(msg, 0, "match0-update2");
+  assert_log_message_value_by_name(msg, "0", "match0-update2");
+
+  log_msg_unset_match(msg, 0);
+  assert_log_message_value_unset_by_name(msg, "0");
+
+  log_msg_set_match(msg, 128, "match128", -1);
+  assert_log_message_value_by_name(msg, "128", "match128");
   log_msg_unref(msg);
 }
 

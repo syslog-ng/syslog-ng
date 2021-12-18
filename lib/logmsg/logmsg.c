@@ -748,6 +748,31 @@ log_msg_set_match_indirect_with_type(LogMessage *self, gint index_,
   log_msg_set_value_indirect_with_type(self, match_handles[index_], ref_handle, ofs, len, type);
 }
 
+const gchar *
+log_msg_get_match_with_type(const LogMessage *self, gint index_, gssize *value_len,
+                            LogMessageValueType *type)
+{
+  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
+
+  return log_msg_get_value_with_type(self, match_handles[index_], value_len, type);
+}
+
+const gchar *
+log_msg_get_match(const LogMessage *self, gint index_, gssize *value_len)
+{
+  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
+
+  return log_msg_get_value(self, match_handles[index_], value_len);
+}
+
+void
+log_msg_unset_match(LogMessage *self, gint index_)
+{
+  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
+
+  log_msg_unset_value(self, match_handles[index_]);
+}
+
 void
 log_msg_clear_matches(LogMessage *self)
 {

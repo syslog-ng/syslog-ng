@@ -112,6 +112,36 @@ assert_log_message_value_and_type_by_name(LogMessage *self, const gchar *name,
 }
 
 void
+assert_log_message_match_value_and_type(LogMessage *self, gint index_,
+                                        const gchar *expected_value, LogMessageValueType expected_type)
+{
+  gssize value_length;
+  LogMessageValueType actual_type;
+  const gchar *actual_value_r = log_msg_get_match_with_type(self, index_, &value_length, &actual_type);
+  gchar *actual_value = g_strndup(actual_value_r, value_length);
+
+  if (expected_value)
+    {
+      cr_assert_str_eq(actual_value, expected_value, "Invalid value for $%d; actual: %s, expected: %s", index_,
+                       actual_value, expected_value);
+    }
+  else
+    cr_assert_str_eq(actual_value, "", "No value is expected for $%d but its value is %s", index_, actual_value);
+
+  if (expected_type != LM_VT_NONE)
+    cr_assert_eq(actual_type, expected_type,
+                 "Invalid value type for $%d; actual: %d, expected %d", index_, actual_type, expected_type);
+
+  g_free(actual_value);
+}
+
+void
+assert_log_message_match_value(LogMessage *self, gint index_, const gchar *expected_value)
+{
+  assert_log_message_match_value_and_type(self, index_, expected_value, LM_VT_NONE);
+}
+
+void
 assert_log_message_value_by_name(LogMessage *self, const gchar *name, const gchar *expected_value)
 {
   assert_log_message_value_and_type_by_name(self, name, expected_value, LM_VT_NONE);
