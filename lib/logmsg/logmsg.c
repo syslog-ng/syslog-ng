@@ -413,10 +413,7 @@ log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, 
 static inline void
 log_msg_update_sdata(LogMessage *self, NVHandle handle, const gchar *name, gssize name_len)
 {
-  guint8 flags;
-
-  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  if (G_UNLIKELY(flags & LM_VF_SDATA))
+  if (log_msg_is_handle_sdata(handle))
     log_msg_update_sdata_slow(self, handle, name, name_len);
 }
 
