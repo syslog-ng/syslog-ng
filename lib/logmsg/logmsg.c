@@ -1931,7 +1931,7 @@ log_msg_registry_init(void)
     }
 
   /* register $0 - $255 in order */
-  for (i = 0; i < 256; i++)
+  for (i = 0; i < LOGMSG_MAX_MATCHES; i++)
     {
       gchar buf[8];
 
