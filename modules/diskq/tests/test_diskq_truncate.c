@@ -386,6 +386,44 @@ Test(diskq_truncate, test_diskq_truncate_size_ratio_0)
   _save_diskqueue(q);
 }
 
+Test(diskq_truncate, test_diskq_truncate_short_read)
+{
+  gint FIRST_ACK_NUMBER = 10;
+  gint SEND_AND_ACK_MSG_NUMBER = 5;
+  LogQueue *q;
+  GString *filename = g_string_new("test_diskq_truncate_short_read.rqf");
+
+  DiskQueueOptions options;
+  q = _create_reliable_diskqueue(filename->str, &options, TRUE, 1);
+  cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
+
+  LogQueueDisk *disk_queue = (LogQueueDisk *) q;
+  const gint full_disk_message_number = _calculate_full_disk_message_num(disk_queue);
+  // 1. feed to full
+  feed_some_messages(q, full_disk_message_number);
+  cr_assert_eq(log_queue_get_length(q), full_disk_message_number,
+               "Not all messages have been queued!");
+
+  // 2. process some messages
+  send_some_messages(q, full_disk_message_number);
+  log_queue_ack_backlog(q, FIRST_ACK_NUMBER);
+
+  // 3. send and ack more messages, but qdisk is not full
+  feed_some_messages(q, SEND_AND_ACK_MSG_NUMBER);
+  send_some_messages(q, SEND_AND_ACK_MSG_NUMBER);
+  log_queue_ack_backlog(q, SEND_AND_ACK_MSG_NUMBER);
+
+  // 4. ack every messages
+  log_queue_ack_backlog(q, full_disk_message_number - FIRST_ACK_NUMBER);
+
+  _assert_diskq_actual_file_size_with_stored(q);
+
+  unlink(filename->str);
+  g_string_free(filename, TRUE);
+
+  _save_diskqueue(q);
+}
+
 Test(diskq_truncate, test_diskq_truncate_size_ratio_1)
 {
   LogQueue *q;
