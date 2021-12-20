@@ -21,21 +21,24 @@
  *
  */
 
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
 #include <criterion/criterion.h>
+#include "libtest/cr_template.h"
+#include "libtest/msg_parse_lib.h"
+#include "libtest/stopwatch.h"
+
+// Secure logging functions
+#include "slog.h"
+
 
 #include "apphook.h"
 #include "cfg.h"
 #include "logmatcher.h"
-#include "libtest/cr_template.h"
-#include "libtest/msg_parse_lib.h"
-#include "libtest/stopwatch.h"
 #include "timeutils/misc.h"
 
-// Secure logging functions
-#include "slog.h"
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
+
 
 #define MAX_TEST_MESSAGES 1000
 #define MIN_TEST_MESSAGES 10
@@ -120,9 +123,7 @@ LogTemplate *createTemplate(TestData *testData)
   // Initialize the template
   g_string_printf(slog_templ_str, "$(slog -k %s -m %s $RAWMSG)", testData->keyFile->str, testData->macFile->str);
 
-  const gboolean escaping = FALSE;
-
-  LogTemplate *slog_templ = compile_template(slog_templ_str->str, escaping);
+  LogTemplate *slog_templ = compile_template(slog_templ_str->str);
 
   cr_assert(slog_templ != NULL, "Template '%s' does not compile correctly", slog_templ_str->str);
 

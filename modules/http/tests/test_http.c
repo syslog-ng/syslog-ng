@@ -20,15 +20,15 @@
  *
  */
 
-#include <syslog-ng.h>
-#include <logmsg/logmsg.h>
-#include <apphook.h>
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+
+#include "logmsg/logmsg.h"
+#include "apphook.h"
 #include "http.h"
 #include "http-worker.h"
 #include "logthrdest/logthrdestdrv.h"
 
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 
 TestSuite(http, .init = app_startup, .fini = app_shutdown);
 

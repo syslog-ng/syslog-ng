@@ -26,9 +26,10 @@
  * connectivity.
  */
 
+#include <criterion/criterion.h>
+
 #include "host-resolve.h"
 #include "apphook.h"
-#include <criterion/criterion.h>
 #include "dnscache.h"
 #include "gsocket.h"
 #include "hostname.h"

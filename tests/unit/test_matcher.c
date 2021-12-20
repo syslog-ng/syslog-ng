@@ -21,12 +21,12 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/msg_parse_lib.h"
 
 #include "logmatcher.h"
 #include "apphook.h"
 #include "plugin.h"
 #include "cfg.h"
-#include "msg_parse_lib.h"
 
 #include <stdlib.h>
 #include <string.h>

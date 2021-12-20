@@ -21,10 +21,11 @@
  *
  */
 
-#include "tests/loggen/file_reader.c"
-
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+
+#include "tests/loggen/file_reader.c"
+
 
 typedef struct _filereader_test_param
 {

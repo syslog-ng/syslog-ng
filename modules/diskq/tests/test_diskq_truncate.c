@@ -20,6 +20,10 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include "libtest/queue_utils_lib.h"
+#include "test_diskq_tools.h"
+
 #include "logqueue.h"
 #include "logqueue-disk.h"
 #include "logqueue-disk-reliable.h"
@@ -28,10 +32,6 @@
 #include "qdisk.c"
 #include "apphook.h"
 #include "diskq-config.h"
-
-#include "queue_utils_lib.h"
-#include "test_diskq_tools.h"
-#include <criterion/criterion.h>
 
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -104,7 +104,7 @@ _get_file_size(LogQueue *q)
 {
   struct stat file_stats;
   const gchar *filename = log_queue_disk_get_filename(q);
-  assert_gint(stat(filename, &file_stats), 0, "Stat call failed, errno:%d", errno);
+  cr_assert(stat(filename, &file_stats) == 0, "Stat call failed, errno:%d", errno);
   return (gint64)file_stats.st_size;
 }
 

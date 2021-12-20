@@ -23,10 +23,10 @@
  *
  */
 #include <criterion/criterion.h>
-#include "syslog-ng.h"
+#include "libtest/persist_lib.h"
+
 #include "apphook.h"
 #include "rcptid.h"
-#include "libtest/persist_lib.h"
 
 #include <unistd.h>
 

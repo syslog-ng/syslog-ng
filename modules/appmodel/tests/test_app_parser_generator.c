@@ -23,11 +23,12 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/config_parse_lib.h"
+
 #include "app-parser-generator.h"
 #include "apphook.h"
 #include "plugin-types.h"
 
-#include "config_parse_lib.h"
 
 static CfgBlockGenerator *app_parser;
 static GString *result;

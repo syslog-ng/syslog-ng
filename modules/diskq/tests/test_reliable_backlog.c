@@ -21,12 +21,13 @@
  *
  */
 
-#include "queue_utils_lib.h"
+#include <criterion/criterion.h>
+#include "libtest/queue_utils_lib.h"
 #include "test_diskq_tools.h"
+
 #include "qdisk.c"
 #include "logqueue-disk-reliable.h"
 #include "apphook.h"
-#include <criterion/criterion.h>
 #include "plugin.h"
 
 #include <sys/types.h>
@@ -93,7 +94,7 @@ get_serialized_message_size(LogMessage *msg)
   serialized = g_string_sized_new(64);
   sa = serialize_string_archive_new(serialized);
 
-  assert_true(log_msg_serialize(msg, sa, 0), NULL);
+  cr_assert(log_msg_serialize(msg, sa, 0));
 
   result = serialized->len;
 

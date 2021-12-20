@@ -22,10 +22,10 @@
  * COPYING for details.
  *
  */
-#include <stdlib.h>
-
 #include <criterion/criterion.h>
+
 #include "parse-number.h"
+#include <stdlib.h>
 
 static void
 assert_parse_with_suffix(const gchar *str, gint64 expected)

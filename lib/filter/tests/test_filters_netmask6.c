@@ -22,6 +22,10 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+#include "test_filters_common.h"
+
 #include "filter/filter-expr.h"
 #include "filter/filter-netmask6.h"
 #include "filter/filter-netmask.h"
@@ -30,10 +34,7 @@
 #include "filter/filter-op.h"
 #include "filter/filter-cmp.h"
 #include "cfg.h"
-#include "test_filters_common.h"
 
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

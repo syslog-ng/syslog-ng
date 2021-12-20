@@ -21,12 +21,11 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+
 #include "filter/filter-call.h"
 #include "filter/filter-expr.h"
 #include "apphook.h"
-
-#include <criterion/criterion.h>
-
 
 Test(filter_call, undefined_filter_ref)
 {

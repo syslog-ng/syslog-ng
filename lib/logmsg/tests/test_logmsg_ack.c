@@ -20,11 +20,11 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 #include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "logpipe.h"
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 
 struct _AckRecord
 {

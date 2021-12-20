@@ -20,11 +20,12 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+#include "libtest/grab-logging.h"
+
 #include "kafka-props.h"
 #include "messages.h"
 #include "logmsg/logmsg.h"
-#include <criterion/criterion.h>
-#include "grab-logging.h"
 
 
 #define TESTDATA_DIR TOP_SRCDIR "/modules/kafka/tests/"

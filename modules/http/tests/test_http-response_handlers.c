@@ -20,9 +20,9 @@
  *
  */
 
-#include "syslog-ng.h"
-#include "response-handler.h"
 #include <criterion/criterion.h>
+
+#include "response-handler.h"
 
 Test(response_handlers, test_response_handlers)
 {

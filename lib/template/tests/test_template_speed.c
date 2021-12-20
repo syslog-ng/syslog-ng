@@ -23,12 +23,11 @@
  */
 
 #include <criterion/criterion.h>
-
-#include "syslog-ng.h"
-#include "apphook.h"
-#include "cfg.h"
 #include "libtest/cr_template.h"
 #include "libtest/stopwatch.h"
+
+#include "apphook.h"
+#include "cfg.h"
 
 Test(template_speed, test_template_speed)
 {

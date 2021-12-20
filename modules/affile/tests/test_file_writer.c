@@ -19,13 +19,14 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+#include "libtest/cr_template.h"
+#include "libtest/mock-transport.h"
+
 #include "logproto-file-writer.h"
 #include "logmsg/logmsg.h"
 #include "apphook.h"
 
-#include <criterion/criterion.h>
-#include "cr_template.h"
-#include "mock-transport.h"
 
 static void _ack_callback(gint num_acked, gpointer user_data);
 

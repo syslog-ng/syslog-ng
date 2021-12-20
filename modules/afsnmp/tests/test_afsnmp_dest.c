@@ -22,11 +22,12 @@
 
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
-#include <glib/gstdio.h>
-#include <unistd.h>
+
 #include "apphook.h"
 #include "afsnmpdest.h"
 #include "logpipe.h"
+#include <glib/gstdio.h>
+#include <unistd.h>
 
 static SNMPDestDriver *snmp_driver;
 static GlobalConfig *cfg;

@@ -21,9 +21,8 @@
  *
  */
 
-#include <glib.h>
-
 #include <criterion/criterion.h>
+
 #include "plugin.h"
 #include "apphook.h"
 #include "syslog-names.h"

@@ -22,7 +22,9 @@
  *
  */
 
-#include "syslog-ng.h"
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+
 #include "logsource.h"
 #include "logmsg/logmsg.h"
 #include "logpipe.h"
@@ -30,11 +32,7 @@
 #include "apphook.h"
 #include "dynamic-window-pool.h"
 
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
-
 #include <syslog.h>
-
 #include <string.h>
 
 #define TEST_SOURCE_GROUP "test_source_group"

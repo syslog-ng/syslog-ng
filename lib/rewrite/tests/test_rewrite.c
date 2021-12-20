@@ -22,10 +22,13 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include "libtest/config_parse_lib.h"
+#include "libtest/msg_parse_lib.h"
+#include "libtest/grab-logging.h"
+
 #include "apphook.h"
 #include "plugin.h"
-#include <criterion/criterion.h>
-#include "config_parse_lib.h"
 #include "cfg-grammar.h"
 #include "rewrite/rewrite-expr.h"
 
@@ -95,20 +98,12 @@ rewrite_teardown(LogMessage *msg)
   cfg_free(configuration);
 }
 
-void
-cr_assert_msg_field_equals(LogMessage *msg, const gchar *field_name, const gchar *expected_value,
-                           gssize expected_value_len)
-{
-  const gboolean result = assert_msg_field_equals_non_fatal(msg, field_name, expected_value, expected_value_len, NULL);
-  cr_assert(result, "Message field assert");
-}
-
 Test(rewrite, condition_success)
 {
   LogRewrite *test_rewrite = create_rewrite_rule("set(\"00100\", value(\"device_id\") condition(program(\"ARCGIS\")));");
   LogMessage *msg = create_message_with_field("PROGRAM", "ARCGIS");
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "device_id", "00100", -1);
+  assert_log_message_value_by_name(msg, "device_id", "00100");
   rewrite_teardown(msg);
 }
 
@@ -127,7 +122,7 @@ Test(rewrite, set_field_exist_and_set_literal_string)
   LogRewrite *test_rewrite = create_rewrite_rule("set(\"value\" value(\"field1\") );");
   LogMessage *msg = create_message_with_field("field1", "oldvalue");
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "value", -1);
+  assert_log_message_value_by_name(msg, "field1", "value");
   rewrite_teardown(msg);
 }
 
@@ -136,7 +131,7 @@ Test(rewrite, set_field_not_exist_and_set_literal_string)
   LogRewrite *test_rewrite = create_rewrite_rule("set(\"value\" value(\"field1\") );");
   LogMessage *msg = log_msg_new_empty();
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "value", -1);
+  assert_log_message_value_by_name(msg, "field1", "value");
   rewrite_teardown(msg);
 }
 
@@ -145,7 +140,7 @@ Test(rewrite, set_field_exist_and_set_template_string)
   LogRewrite *test_rewrite = create_rewrite_rule("set(\"$field2\" value(\"field1\") );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "field2", "newvalue", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "newvalue", -1);
+  assert_log_message_value_by_name(msg, "field1", "newvalue");
   rewrite_teardown(msg);
 }
 
@@ -154,7 +149,7 @@ Test(rewrite, subst_field_exist_and_substring_substituted)
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"substring\" \"substitute\" value(\"field1\") );");
   LogMessage *msg = create_message_with_fields("field1", "asubstringb", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "asubstituteb", -1);
+  assert_log_message_value_by_name(msg, "field1", "asubstituteb");
   rewrite_teardown(msg);
 }
 
@@ -164,11 +159,11 @@ Test(rewrite, subst_pcre_unused_subpattern)
     create_rewrite_rule("subst('(a|(z))(bc)', '.', value('field1') type(pcre) flags('store-matches'));");
   LogMessage *msg = create_message_with_fields("field1", "abc", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", ".", -1);
-  cr_assert_msg_field_equals(msg, "0", "abc", -1);
-  cr_assert_msg_field_equals(msg, "1", "a", -1);
-  cr_assert_msg_field_equals(msg, "2", "", -1);
-  cr_assert_msg_field_equals(msg, "3", "bc", -1);
+  assert_log_message_value_by_name(msg, "field1", ".");
+  assert_log_message_value_by_name(msg, "0", "abc");
+  assert_log_message_value_by_name(msg, "1", "a");
+  assert_log_message_value_by_name(msg, "2", "");
+  assert_log_message_value_by_name(msg, "3", "bc");
   rewrite_teardown(msg);
 }
 
@@ -177,7 +172,7 @@ Test(rewrite, subst_field_exist_and_substring_substituted_with_template)
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"substring\" \"$field2\" value(\"field1\") );");
   LogMessage *msg = create_message_with_fields("field1", "asubstringb", "field2", "substitute", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "asubstituteb", -1);
+  assert_log_message_value_by_name(msg, "field1", "asubstituteb");
   rewrite_teardown(msg);
 }
 
@@ -186,7 +181,7 @@ Test(rewrite, subst_field_exist_and_substring_substituted_only_once_without_glob
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"substring\" \"substitute\" value(\"field1\") );");
   LogMessage *msg = create_message_with_fields("field1", "substring substring", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "substitute substring", -1);
+  assert_log_message_value_by_name(msg, "field1", "substitute substring");
   rewrite_teardown(msg);
 }
 
@@ -195,7 +190,7 @@ Test(rewrite, subst_field_exist_and_substring_substituted_every_occurrence_with_
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"substring\" \"substitute\" value(\"field1\") flags(global) );");
   LogMessage *msg = create_message_with_fields("field1", "substring substring", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "substitute substitute", -1);
+  assert_log_message_value_by_name(msg, "field1", "substitute substitute");
   rewrite_teardown(msg);
 }
 
@@ -204,7 +199,7 @@ Test(rewrite, subst_field_exist_and_substring_substituted_when_regexp_matched)
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"[0-9]+\" \"substitute\" value(\"field1\") );");
   LogMessage *msg = create_message_with_fields("field1", "a123b", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "asubstituteb", -1);
+  assert_log_message_value_by_name(msg, "field1", "asubstituteb");
   rewrite_teardown(msg);
 }
 
@@ -213,7 +208,7 @@ Test(rewrite, set_field_exist_and_group_set_literal_string)
   LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field1\") );");
   LogMessage *msg = create_message_with_field("field1", "oldvalue");
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "value", -1);
+  assert_log_message_value_by_name(msg, "field1", "value");
   rewrite_teardown(msg);
 }
 
@@ -222,7 +217,7 @@ Test(rewrite, set_field_honors_time_zone)
   LogRewrite *test_rewrite = create_rewrite_rule("set('${ISODATE}' value('UTCDATE') time-zone('Asia/Tokyo'));");
   LogMessage *msg = create_message_with_fields("field1", "a123b", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "UTCDATE", "1971-01-01T09:00:00+09:00", -1);
+  assert_log_message_value_by_name(msg, "UTCDATE", "1971-01-01T09:00:00+09:00");
   rewrite_teardown(msg);
 }
 
@@ -231,8 +226,8 @@ Test(rewrite, set_field_exist_and_group_set_multiple_fields_with_glob_pattern_li
   LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field.*\") );");
   LogMessage *msg = create_message_with_fields("field.name1", "oldvalue", "field.name2", "oldvalue", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field.name1", "value", -1);
-  cr_assert_msg_field_equals(msg, "field.name2", "value", -1);
+  assert_log_message_value_by_name(msg, "field.name1", "value");
+  assert_log_message_value_by_name(msg, "field.name2", "value");
   rewrite_teardown(msg);
 }
 
@@ -241,8 +236,8 @@ Test(rewrite, set_field_exist_and_group_set_multiple_fields_with_glob_question_m
   LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field?\") );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "field2", "oldvalue", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "value", -1);
-  cr_assert_msg_field_equals(msg, "field2", "value", -1);
+  assert_log_message_value_by_name(msg, "field1", "value");
+  assert_log_message_value_by_name(msg, "field2", "value");
   rewrite_teardown(msg);
 }
 
@@ -251,8 +246,8 @@ Test(rewrite, set_field_exist_and_group_set_multiple_fields_with_multiple_glob_p
   LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field1\" \"field2\") );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "field2", "oldvalue", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "value", -1);
-  cr_assert_msg_field_equals(msg, "field2", "value", -1);
+  assert_log_message_value_by_name(msg, "field1", "value");
+  assert_log_message_value_by_name(msg, "field2", "value");
   rewrite_teardown(msg);
 }
 
@@ -261,7 +256,7 @@ Test(rewrite, set_field_exist_and_group_set_template_string)
   LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"$field2\" values(\"field1\") );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "field2", "value", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "value", -1);
+  assert_log_message_value_by_name(msg, "field1", "value");
   rewrite_teardown(msg);
 }
 
@@ -270,7 +265,7 @@ Test(rewrite, set_field_exist_and_group_set_template_string_with_old_value)
   LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"$_ alma\" values(\"field1\") );");
   LogMessage *msg = create_message_with_field("field1", "value");
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "value alma", -1);
+  assert_log_message_value_by_name(msg, "field1", "value alma");
   rewrite_teardown(msg);
 }
 
@@ -280,7 +275,7 @@ Test(rewrite, set_field_exist_and_group_set_when_condition_doesnt_match)
     create_rewrite_rule("groupset(\"value\" values(\"field1\") condition( program(\"program1\") ) );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "PROGRAM", "program2", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "oldvalue", -1);
+  assert_log_message_value_by_name(msg, "field1", "oldvalue");
   rewrite_teardown(msg);
 }
 
@@ -290,7 +285,7 @@ Test(rewrite, set_field_exist_and_group_set_when_condition_matches)
     create_rewrite_rule("groupset(\"value\" values(\"field1\") condition( program(\"program\") ) );");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "PROGRAM", "program", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "value", -1);
+  assert_log_message_value_by_name(msg, "field1", "value");
   rewrite_teardown(msg);
 }
 
@@ -314,8 +309,8 @@ Test(rewrite, unset_field_disappears)
   LogRewrite *test_rewrite = create_rewrite_rule("unset(value('field1'));");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "PROGRAM", "foobar", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "", -1);
-  cr_assert_msg_field_equals(msg, "PROGRAM", "foobar", -1);
+  assert_log_message_value_by_name(msg, "field1", "");
+  assert_log_message_value_by_name(msg, "PROGRAM", "foobar");
   rewrite_teardown(msg);
 }
 
@@ -324,9 +319,9 @@ Test(rewrite, groupunset_field_disappears)
   LogRewrite *test_rewrite = create_rewrite_rule("groupunset(values('field?'));");
   LogMessage *msg = create_message_with_fields("field1", "oldvalue", "field2", "oldvalue2", "PROGRAM", "foobar", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  cr_assert_msg_field_equals(msg, "field1", "", -1);
-  cr_assert_msg_field_equals(msg, "field2", "", -1);
-  cr_assert_msg_field_equals(msg, "PROGRAM", "foobar", -1);
+  assert_log_message_value_by_name(msg, "field1", "");
+  assert_log_message_value_by_name(msg, "field2", "");
+  assert_log_message_value_by_name(msg, "PROGRAM", "foobar");
   rewrite_teardown(msg);
 }
 

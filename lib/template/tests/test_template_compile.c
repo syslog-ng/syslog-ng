@@ -23,12 +23,13 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include "libtest/grab-logging.h"
+
 #include "template/templates.c"
 #include "template/simple-function.h"
 #include "logmsg/logmsg.h"
 #include "apphook.h"
-#include "grab-logging.h"
-#include <criterion/criterion.h>
 #include "cfg.h"
 #include "plugin.h"
 

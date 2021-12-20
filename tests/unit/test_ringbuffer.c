@@ -22,9 +22,9 @@
  */
 
 #include <criterion/criterion.h>
-#include <string.h>
 
 #include "ringbuffer.h"
+#include <string.h>
 
 static const guint32 capacity = 47;
 

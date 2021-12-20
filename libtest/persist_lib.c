@@ -23,6 +23,8 @@
  */
 
 #include "persist_lib.h"
+
+#include <criterion/criterion.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -30,12 +32,8 @@ PersistState *
 create_persist_state_for_test(const gchar *name)
 {
   PersistState *state = persist_state_new(name);
-  if (!persist_state_start(state))
-    {
-      fprintf(stderr, "Error starting persist_state object\n");
-      exit(1);
-    }
 
+  cr_assert(persist_state_start(state));
   return state;
 };
 

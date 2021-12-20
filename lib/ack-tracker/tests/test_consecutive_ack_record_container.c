@@ -23,6 +23,7 @@
  */
 
 #include <criterion/criterion.h>
+
 #include "ack-tracker/consecutive_ack_record_container.h"
 
 typedef struct _TestBookmark

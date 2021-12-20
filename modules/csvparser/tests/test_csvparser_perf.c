@@ -21,12 +21,13 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "csvparser.h"
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "string-list.h"
 #include "timeutils/misc.h"
-#include <criterion/criterion.h>
 
 
 LogParser *

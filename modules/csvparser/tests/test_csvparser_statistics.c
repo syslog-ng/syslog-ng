@@ -20,6 +20,8 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "csvparser.h"
 #include "syslog-ng.h"
 #include "logmsg/logmsg.h"
@@ -27,8 +29,6 @@
 #include "string-list.h"
 #include "apphook.h"
 #include "cfg.h"
-
-#include <criterion/criterion.h>
 
 LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 

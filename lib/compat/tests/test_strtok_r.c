@@ -21,10 +21,10 @@
  *
  */
 
-#include "syslog-ng.h"
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 
+#include "syslog-ng.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

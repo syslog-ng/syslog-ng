@@ -23,11 +23,11 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/grab-logging.h"
 
 #include "apphook.h"
 #include "rewrite/rewrite-set-severity.h"
 #include "logmsg/logmsg.h"
-#include "grab-logging.h"
 
 GlobalConfig *cfg = NULL;
 LogMessage *msg;

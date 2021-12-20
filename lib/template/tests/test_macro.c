@@ -23,11 +23,11 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/fake-time.h"
 
 #include "template/macros.h"
 #include "logmsg/logmsg.h"
 #include "syslog-names.h"
-#include "fake-time.h"
 
 
 Test(macro, test_facility)

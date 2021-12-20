@@ -21,8 +21,9 @@
  *
  */
 
-#include "syslog-ng.h"
+#include <criterion/criterion.h>
 
+#include <glib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -34,7 +35,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <criterion/criterion.h>
 
 gboolean thread_exit = FALSE;
 gboolean thread_started;

@@ -21,14 +21,15 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+#include "test_filters_common.h"
+
 #include "filter/filter-expr.h"
 #include "filter/filter-re.h"
 #include "filter/filter-pri.h"
 #include "cfg.h"
-#include "test_filters_common.h"
 
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

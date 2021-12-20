@@ -10,7 +10,6 @@ set(LIBTEST_HEADERS
     stopwatch.h
     cr_template.h
     grab-logging.h
-    testutils.h
 )
 
 set(LIBTEST_SOURCES
@@ -26,11 +25,10 @@ set(LIBTEST_SOURCES
     stopwatch.c
     cr_template.c
     grab-logging.c
-    testutils.c
 )
 
 add_library(libtest STATIC ${LIBTEST_SOURCES})
 target_link_libraries(libtest syslog-ng ${CRITERION_LIBRARIES})
-target_include_directories(libtest INTERFACE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR})
+target_include_directories(libtest INTERFACE ${PROJECT_SOURCE_DIR})
 
 add_test_subdirectory(tests)

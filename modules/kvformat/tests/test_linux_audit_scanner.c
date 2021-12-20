@@ -19,12 +19,13 @@
  * COPYING for details.
  */
 
+#include <criterion/criterion.h>
+
 #include "scanner/kv-scanner/kv-scanner.h"
 #include "linux-audit-parser.h"
 #include "apphook.h"
 #include "scratch-buffers.h"
 
-#include <criterion/criterion.h>
 
 KVScanner kv_scanner;
 

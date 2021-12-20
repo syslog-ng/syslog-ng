@@ -21,7 +21,8 @@
  *
  */
 
-#include "syslog-ng.h"
+#include <criterion/criterion.h>
+
 #include "logwriter.h"
 #include "logmsg/logmsg.h"
 #include "template/templates.h"
@@ -31,7 +32,6 @@
 #include "logqueue-fifo.h"
 #include "timeutils/misc.h"
 
-#include <criterion/criterion.h>
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>

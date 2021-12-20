@@ -20,6 +20,9 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "patterndb.h"
@@ -28,8 +31,6 @@
 #include <stdlib.h>
 #include <glib/gstdio.h>
 
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 
 #define MYHOST "MYHOST"
 

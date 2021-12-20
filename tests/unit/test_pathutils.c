@@ -20,9 +20,9 @@
  *
  */
 
-#include "testutils.h"
-#include "pathutils.h"
 #include <criterion/criterion.h>
+
+#include "pathutils.h"
 
 
 typedef struct _PathUtilsTestCase

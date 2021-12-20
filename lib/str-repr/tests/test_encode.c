@@ -21,10 +21,11 @@
  * COPYING for details.
  *
  */
-#include "str-repr/encode.h"
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
-#include "stopwatch.h"
+#include "libtest/stopwatch.h"
+
+#include "str-repr/encode.h"
 
 GString *value;
 

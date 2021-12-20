@@ -21,16 +21,16 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+#include "test_filters_common.h"
+
 #include "filter/filter-op.h"
 #include "filter/filter-expr.h"
 #include "filter/filter-pri.h"
 #include "filter/filter-expr-parser.h"
-#include "test_filters_common.h"
 #include "cfg-lexer.h"
 #include "apphook.h"
-
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 
 static FilterExprNode *
 _compile_standalone_filter(gchar *config_snippet)

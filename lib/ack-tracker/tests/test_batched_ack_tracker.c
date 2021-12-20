@@ -23,6 +23,7 @@
  */
 
 #include <criterion/criterion.h>
+
 #include "ack-tracker/batched_ack_tracker.h"
 #include "ack-tracker/ack_tracker_factory.h"
 #include "logsource.h"

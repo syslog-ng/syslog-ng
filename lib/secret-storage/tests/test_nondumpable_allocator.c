@@ -21,11 +21,12 @@
  *
  */
 
-#include <unistd.h>
-#include <string.h>
 #include <criterion/criterion.h>
 
 #include "secret-storage/nondumpable-allocator.h"
+#include <unistd.h>
+#include <string.h>
+
 
 Test(nondumpableallocator, malloc_realloc_free)
 {

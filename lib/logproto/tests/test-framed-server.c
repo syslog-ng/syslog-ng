@@ -22,13 +22,14 @@
  *
  */
 
-#include "mock-transport.h"
-#include "proto_lib.h"
-#include "msg_parse_lib.h"
+#include <criterion/criterion.h>
+#include "libtest/mock-transport.h"
+#include "libtest/proto_lib.h"
+#include "libtest/msg_parse_lib.h"
+
 #include "logproto/logproto-framed-server.h"
 
 #include <errno.h>
-#include <criterion/criterion.h>
 
 Test(log_proto, test_log_proto_framed_server_simple_messages)
 {

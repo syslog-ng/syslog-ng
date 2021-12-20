@@ -23,12 +23,12 @@
  *
  */
 
-#include "libtest/testutils.h"
+#include <criterion/criterion.h>
 #include "libtest/persist_lib.h"
+
 #include "lib/run-id.h"
 #include "lib/apphook.h"
 #include <unistd.h>
-#include <criterion/criterion.h>
 
 PersistState *create_persist_state(gchar *persist_file_name);
 

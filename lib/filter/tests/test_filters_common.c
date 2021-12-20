@@ -21,6 +21,8 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "filter/filter-expr.h"
 #include "filter/filter-expr-grammar.h"
 #include "filter/filter-netmask.h"
@@ -37,7 +39,6 @@
 #include "apphook.h"
 #include "plugin.h"
 #include "scratch-buffers.h"
-#include <criterion/criterion.h>
 
 #include <time.h>
 #include <string.h>

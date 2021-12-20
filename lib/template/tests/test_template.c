@@ -23,8 +23,6 @@
  */
 
 #include <criterion/criterion.h>
-
-#include "syslog-ng.h"
 #include "libtest/cr_template.h"
 
 #include "logmsg/logmsg.h"
@@ -86,7 +84,7 @@ assert_template_format_multi_thread(const gchar *template, const gchar *expected
   gint i;
 
   msg = create_sample_message();
-  templ = compile_template(template, FALSE);
+  templ = compile_template(template);
   args[0] = msg;
   args[1] = templ;
   args[2] = (gpointer) expected;
@@ -320,7 +318,7 @@ Test(template, test_user_template_function)
 {
   LogTemplate *template;
 
-  template = compile_template("this is a user-defined template function $DATE", FALSE);
+  template = compile_template("this is a user-defined template function $DATE");
   user_template_function_register(configuration, "dummy", template);
   assert_template_format("$(dummy)", "this is a user-defined template function Feb 11 10:34:56.000");
   assert_template_failure("$(dummy arg)", "User defined template function $(dummy) cannot have arguments");
@@ -352,7 +350,7 @@ Test(template, test_template_function_args)
 static void
 assert_template_trivial_value(const gchar *template_code, LogMessage *msg, const gchar *expected_value)
 {
-  LogTemplate *template = compile_template(template_code, FALSE);
+  LogTemplate *template = compile_template(template_code);
 
   cr_assert(log_template_is_trivial(template));
 
@@ -394,31 +392,31 @@ Test(template, test_non_trivial_templates)
 {
   LogTemplate *template;
 
-  template = compile_template("$1", TRUE);
+  template = compile_escaped_template("$1");
   cr_assert_not(log_template_is_trivial(template), "Escaped template is not trivial");
   log_template_unref(template);
 
-  template = compile_template("$1 $2", FALSE);
+  template = compile_template("$1 $2");
   cr_assert_not(log_template_is_trivial(template), "Multi-element template is not trivial");
   log_template_unref(template);
 
-  template = compile_template("$1 literal", FALSE);
+  template = compile_template("$1 literal");
   cr_assert_not(log_template_is_trivial(template), "Multi-element template is not trivial");
   log_template_unref(template);
 
-  template = compile_template("pre${1}", FALSE);
+  template = compile_template("pre${1}");
   cr_assert_not(log_template_is_trivial(template), "Single-value template with preliminary text is not trivial");
   log_template_unref(template);
 
-  template = compile_template("${MSG}@3", FALSE);
+  template = compile_template("${MSG}@3");
   cr_assert_not(log_template_is_trivial(template), "Template referencing non-last context element is not trivial");
   log_template_unref(template);
 
-  template = compile_template("$(echo test)", FALSE);
+  template = compile_template("$(echo test)");
   cr_assert_not(log_template_is_trivial(template), "Template functions are not trivial");
   log_template_unref(template);
 
-  template = compile_template("$DATE", FALSE);
+  template = compile_template("$DATE");
   cr_assert_not(log_template_is_trivial(template), "Hard macros are not trivial");
   log_template_unref(template);
 }
@@ -426,7 +424,7 @@ Test(template, test_non_trivial_templates)
 static void
 assert_template_literal_value(const gchar *template_code, const gchar *expected_value)
 {
-  LogTemplate *template = compile_template(template_code, FALSE);
+  LogTemplate *template = compile_template(template_code);
 
   cr_assert(log_template_is_literal_string(template));
 
@@ -451,7 +449,7 @@ Test(template, test_literal_string_templates)
   assert_template_literal_value("literal string", "literal string");
   assert_template_literal_value("$$not a macro", "$not a macro");
 
-  LogTemplate *template = compile_template("a b c d $MSG", FALSE);
+  LogTemplate *template = compile_template("a b c d $MSG");
   cr_assert_not(log_template_is_literal_string(template));
   log_template_unref(template);
 }

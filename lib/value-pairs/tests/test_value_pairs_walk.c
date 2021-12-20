@@ -22,14 +22,12 @@
  *
  */
 
-#include <value-pairs/value-pairs.h>
-
 #include <criterion/criterion.h>
-#include <libtest/testutils.h>
 
-#include <apphook.h>
-#include <plugin.h>
-#include <cfg.h>
+#include "value-pairs/value-pairs.h"
+#include "apphook.h"
+#include "plugin.h"
+#include "cfg.h"
 #include "logmsg/logmsg.h"
 
 MsgFormatOptions parse_options;

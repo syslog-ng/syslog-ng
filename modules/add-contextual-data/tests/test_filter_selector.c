@@ -19,12 +19,13 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+
 #include "add-contextual-data-filter-selector.h"
 #include "logmsg/logmsg.h"
 #include "template/macros.h"
 #include "cfg.h"
 #include "apphook.h"
-#include <criterion/criterion.h>
 #include <unistd.h>
 
 static gchar *test_filter_conf;

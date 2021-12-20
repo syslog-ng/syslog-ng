@@ -22,13 +22,14 @@
  *
  */
 
-#include "mock-transport.h"
-#include "proto_lib.h"
-#include "msg_parse_lib.h"
-#include "logproto/logproto-indented-multiline-server.h"
-
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+#include "libtest/mock-transport.h"
+#include "libtest/proto_lib.h"
+#include "libtest/msg_parse_lib.h"
+
+#include "logproto/logproto-indented-multiline-server.h"
+
 
 static void
 test_proper_multiline(LogTransportMockConstructor log_transport_mock_new)

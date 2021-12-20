@@ -19,12 +19,16 @@
  * COPYING for details.
  */
 
+/* this has to come first for modules which include the Python.h header */
+#include "python-module.h"
+
+#include <criterion/criterion.h>
+#include "libtest/msg_parse_lib.h"
+
 #include "python-helpers.h"
 #include "python-logmsg.h"
-#include <criterion/criterion.h>
 #include "apphook.h"
 #include "msg-format.h"
-#include "msg_parse_lib.h"
 #include "logmsg/logmsg.h"
 
 static PyObject *_python_main;

@@ -23,6 +23,7 @@
  */
 
 #include <criterion/criterion.h>
+
 #include "stats/stats-cluster.h"
 #include "stats/stats-cluster-single.h"
 #include "apphook.h"

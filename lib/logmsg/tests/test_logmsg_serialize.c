@@ -22,17 +22,18 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+#include "libtest/msg_parse_lib.h"
+#include "libtest/cr_template.h"
+#include "libtest/stopwatch.h"
+
 #include "logmsg/logmsg.h"
 #include "msg-format.h"
-#include "stopwatch.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "plugin.h"
 #include "logmsg/logmsg-serialize.h"
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
-
-GlobalConfig *cfg;
 
 #define RAW_MSG "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\" eventSource=\"Application\"] An application event log entry..."
 
@@ -64,25 +65,17 @@ _reset_log_msg_registry(void)
 }
 
 static void
-_check_deserialized_message(LogMessage *msg, SerializeArchive *sa)
+_check_deserialized_message(LogMessage *msg)
 {
-  GString *output = g_string_new("");
-  LogTemplate *template = log_template_new(cfg, NULL);
-  log_template_compile(template, "${ISODATE}", NULL);
+  assert_template_format_msg("${ISODATE}", "2006-10-29T01:59:59.156+01:00", msg);
 
-  cfg->template_options.frac_digits = 3;
-  LogTemplateEvalOptions options = {&cfg->template_options, LTZ_SEND, 0, NULL};
-  log_template_append_format(template, msg, &options, output);
-  cr_assert_str_eq(output->str, "2006-10-29T01:59:59.156+01:00", ERROR_MSG);
+  assert_log_message_value(msg, LM_V_HOST, "mymachine");
+  assert_log_message_value(msg, LM_V_PROGRAM, "evntslog");
+  assert_log_message_value(msg, LM_V_MESSAGE, "An application event log entry...");
+  assert_log_message_value_unset(msg, log_msg_get_value_handle("unset_value"));
 
-  cr_assert_str_eq(log_msg_get_value(msg, LM_V_HOST, NULL), "mymachine", ERROR_MSG);
-  cr_assert_str_eq(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "evntslog", ERROR_MSG);
-  cr_assert_str_eq(log_msg_get_value(msg, LM_V_MESSAGE, NULL), "An application event log entry...", ERROR_MSG);
-  cr_assert_null(log_msg_get_value_if_set(msg, log_msg_get_value_handle("unset_value"), NULL), ERROR_MSG);
-  cr_assert_str_eq(log_msg_get_value_by_name(msg, ".SDATA.exampleSDID@0.eventSource", NULL), "Application", ERROR_MSG);
+  assert_log_message_value(msg, log_msg_get_value_handle(".SDATA.exampleSDID@0.eventSource"), "Application");
   cr_assert_eq(msg->pri, 132, ERROR_MSG);
-  log_template_unref(template);
-  g_string_free(output, TRUE);
 }
 
 static LogMessage *
@@ -125,6 +118,24 @@ _serialize_message_for_test(GString *stream, const gchar *raw_msg)
   return sa;
 }
 
+static LogMessage *
+_deserialize_message_from_string(const guint8 *serialized, gsize serialized_len)
+{
+  GString s = {0};
+
+  s.allocated_len = 0;
+  s.len = serialized_len;
+  s.str = (gchar *) serialized;
+  LogMessage *msg = log_msg_new_empty();
+
+  SerializeArchive *sa = serialize_string_archive_new(&s);
+  _reset_log_msg_registry();
+
+  cr_assert(log_msg_deserialize(msg, sa), ERROR_MSG);
+  serialize_archive_free(sa);
+  return msg;
+}
+
 Test(logmsg_serialize, serialize)
 {
   NVHandle indirect_handle = 0;
@@ -145,7 +156,7 @@ Test(logmsg_serialize, serialize)
   cr_assert(log_msg_is_handle_sdata(sdata_handle),
             "deserialized SDATA name-value pairs have to marked as such");
 
-  _check_deserialized_message(msg, sa);
+  _check_deserialized_message(msg);
 
   indirect_handle = log_msg_get_value_handle("indirect_1");
   const gchar *indirect_value = log_msg_get_value(msg, indirect_handle, &length);
@@ -323,21 +334,10 @@ ParameterizedTestParameters(logmsg_serialize, test_deserialization_of_legacy_mes
 
 ParameterizedTest(struct iovec *param, logmsg_serialize, test_deserialization_of_legacy_messages)
 {
-  GString serialized = {0};
-  serialized.allocated_len = 0;
-  serialized.len = param->iov_len;
-  serialized.str = param->iov_base;
-  LogMessage *msg = log_msg_new_empty();
-
-  SerializeArchive *sa = serialize_string_archive_new(&serialized);
-  _reset_log_msg_registry();
-
-  cr_assert(log_msg_deserialize(msg, sa), ERROR_MSG);
-
-  _check_deserialized_message(msg, sa);
+  LogMessage *msg = _deserialize_message_from_string(param->iov_base, param->iov_len);
+  _check_deserialized_message(msg);
 
   log_msg_unref(msg);
-  serialize_archive_free(sa);
 }
 
 Test(logmsg_serialize, serialization_performance)
@@ -402,16 +402,19 @@ static void
 setup(void)
 {
   app_startup();
-  cfg = cfg_new_snippet();
-  cfg_load_module(cfg, "syslogformat");
+
+  init_template_tests();
+  configuration->template_options.frac_digits = 3;
+
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, cfg);
+  msg_format_options_init(&parse_options, configuration);
+
 }
 
 static void
 teardown(void)
 {
-  cfg_free(cfg);
+  deinit_template_tests();
   app_shutdown();
 }
 

@@ -21,6 +21,9 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+
 #include "patternize.h"
 #include "logmsg/logmsg.h"
 #include "cfg.h"
@@ -30,9 +33,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 
 MsgFormatOptions parse_options;
 

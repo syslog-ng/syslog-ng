@@ -22,15 +22,12 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/msg_parse_lib.h"
+#include "libtest/persist_lib.h"
 
-#include "msg_parse_lib.h"
 #include "apphook.h"
 #include "logpipe.h"
 #include "rcptid.h"
-#include "libtest/persist_lib.h"
-
-#include <stdlib.h>
-#include <glib/gprintf.h>
 
 MsgFormatOptions parse_options;
 
@@ -508,7 +505,7 @@ test_with_sdata(LogMessage *msg, guint32 old_msg_size)
 
   for (char i = 0; i < iter_length; i++)
     {
-      g_sprintf(key, ".SDATA.%02d", i);
+      g_snprintf(key, sizeof(key), ".SDATA.%02d", i);
       sizes = add_key_value(msg, key, value);
 
       single_sdata_kv_size = NV_ENTRY_DIRECT_HDR + NV_TABLE_BOUND(strlen(key)+1 + strlen(value)+1);

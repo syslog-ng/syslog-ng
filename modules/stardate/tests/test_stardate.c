@@ -20,18 +20,17 @@
  *
  */
 
-#include <syslog-ng.h>
-#include <logmsg/logmsg.h>
-#include <cr_template.h>
-#include <apphook.h>
-#include <plugin.h>
+#include <criterion/criterion.h>
+#include "libtest/cr_template.h"
+#include "libtest/msg_parse_lib.h"
 
+#include "logmsg/logmsg.h"
+#include "apphook.h"
+#include "plugin.h"
 #include "cfg.h"
 
-#include <criterion/criterion.h>
 #include <stdlib.h>
 
-#include "msg_parse_lib.h"
 
 MsgFormatOptions parse_options;
 
@@ -48,7 +47,7 @@ stardate_assert(const gchar *msg_str, const int precision, const gchar *expected
   else
     ret_val = asprintf(&template_command, "$(stardate --digits %d $UNIXTIME)", precision);
 
-  assert_false(ret_val == -1, "Memory allocation failed in asprintf.");
+  cr_assert(ret_val != -1, "Memory allocation failed in asprintf.");
   assert_template_format_msg(template_command, expected, logmsg);
   free(template_command);
 

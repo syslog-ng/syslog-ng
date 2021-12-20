@@ -20,12 +20,12 @@
  *
  */
 
-#include "syslog-ng.h"
-#include <apphook.h>
+#include <criterion/criterion.h>
+
 #include "http.h"
 #include "http-worker.h"
 #include "http-signals.h"
-#include <criterion/criterion.h>
+#include "apphook.h"
 
 MainLoop *main_loop;
 MsgFormatOptions parse_options;

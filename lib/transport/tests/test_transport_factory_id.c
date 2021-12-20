@@ -21,9 +21,10 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "transport/transport-factory-id.h"
 #include "apphook.h"
-#include <criterion/criterion.h>
 
 TestSuite(transport_factory_id, .init = app_startup, .fini = app_shutdown);
 

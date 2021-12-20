@@ -22,6 +22,7 @@
  *
  */
 #include <criterion/criterion.h>
+
 #include "application.h"
 
 Test(application, empty_application_can_be_created_and_freed)

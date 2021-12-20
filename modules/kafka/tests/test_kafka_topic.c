@@ -21,17 +21,17 @@
  * COPYING for details.
  *
  */
-#include <syslog-ng.h>
-#include <apphook.h>
-#include "logthrdest/logthrdestdrv.h"
-#include "kafka-dest-driver.h"
-#include <librdkafka/rdkafka.h>
-#include "kafka-dest-worker.h"
-#include "kafka-dest-driver.h"
-#include "kafka-internal.h"
 
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+
+#include "kafka-dest-driver.h"
+#include "kafka-dest-worker.h"
+#include "kafka-dest-driver.h"
+#include "kafka-internal.h"
+#include "apphook.h"
+#include <librdkafka/rdkafka.h>
+
 
 #define STRING_250_LEN "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
                        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \

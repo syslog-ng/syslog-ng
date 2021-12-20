@@ -22,10 +22,11 @@
 
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+#include "libtest/msg_parse_lib.h"
+#include "libtest/cr_template.h"
+
 #include "tags-parser.h"
 #include "apphook.h"
-#include "msg_parse_lib.h"
-#include "libtest/cr_template.h"
 
 void
 setup(void)
@@ -69,7 +70,7 @@ Test(tagsparser, input_list_is_transferred_to_a_list_of_tags)
 Test(tagsparser, template_argument_uses_that_instead_of_MSG)
 {
   LogParser *tags_parser = tags_parser_new(configuration);
-  LogTemplate *template = compile_template("${PROGRAM}", FALSE);
+  LogTemplate *template = compile_template("${PROGRAM}");
 
   log_pipe_init((LogPipe *) tags_parser);
 

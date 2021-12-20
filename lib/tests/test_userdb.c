@@ -22,8 +22,10 @@
  *
  */
 
-#include "userdb.h"
 #include <criterion/criterion.h>
+
+#include "userdb.h"
+
 #include <grp.h>
 
 Test(user_db, resolve_user_root)

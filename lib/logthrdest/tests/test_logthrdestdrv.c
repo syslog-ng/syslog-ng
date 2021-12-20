@@ -21,13 +21,14 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include "libtest/grab-logging.h"
+#include "libtest/stopwatch.h"
+#include "libtest/cr_template.h"
+
 #include "logthrdest/logthrdestdrv.h"
 #include "apphook.h"
 
-#include <criterion/criterion.h>
-#include "grab-logging.h"
-#include "stopwatch.h"
-#include "cr_template.h"
 
 typedef struct TestThreadedDestDriver
 {

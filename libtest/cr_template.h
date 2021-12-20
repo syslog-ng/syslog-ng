@@ -49,7 +49,9 @@ void perftest_template(gchar *template);
 LogMessage *create_empty_message(void);
 LogMessage *create_sample_message(void);
 LogMessage *message_from_list(va_list ap);
-LogTemplate *compile_template(const gchar *template, gboolean escaping);
+LogTemplate *compile_template(const gchar *template);
+LogTemplate *compile_escaped_template(const gchar *template);
+LogTemplate *compile_template_with_escaping(const gchar *template, gboolean escaping);
 void init_template_tests(void);
 void deinit_template_tests(void);
 

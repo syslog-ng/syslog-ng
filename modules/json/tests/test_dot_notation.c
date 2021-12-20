@@ -21,9 +21,10 @@
  */
 
 #include <criterion/criterion.h>
-#include "apphook.h"
-#include "msg_parse_lib.h"
+#include "libtest/msg_parse_lib.h"
+
 #include "dot-notation.h"
+#include "apphook.h"
 
 #include <json.h>
 

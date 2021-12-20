@@ -22,6 +22,7 @@
  */
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+
 #include "str-utils.h"
 
 /* this macro defines which strchr() implementation we are testing. It is

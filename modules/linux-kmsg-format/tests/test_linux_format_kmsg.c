@@ -21,15 +21,13 @@
  *
  */
 
-#include "syslog-ng.h"
+#include <criterion/criterion.h>
+#include "libtest/msg_parse_lib.h"
 
-#include "msg_parse_lib.h"
 #include "apphook.h"
 #include "plugin.h"
 #include "plugin-types.h"
 #include "scratch-buffers.h"
-
-#include <criterion/criterion.h>
 
 MsgFormatOptions parse_options;
 

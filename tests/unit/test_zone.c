@@ -21,13 +21,14 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "apphook.h"
 #include "timeutils/cache.h"
 #include "timeutils/misc.h"
 #include "timeutils/zoneinfo.h"
 #include "timeutils/unixtime.h"
 #include "timeutils/format.h"
-#include <criterion/criterion.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

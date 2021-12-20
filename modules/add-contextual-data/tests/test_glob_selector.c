@@ -21,6 +21,7 @@
  */
 
 #include <criterion/criterion.h>
+
 #include "add-contextual-data-glob-selector.h"
 #include "scratch-buffers.h"
 #include "string-list.h"

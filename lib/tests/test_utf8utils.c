@@ -22,9 +22,10 @@
  *
  */
 
-#include "utf8utils.h"
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+
+#include "utf8utils.h"
 
 typedef struct _StringValueList
 {

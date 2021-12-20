@@ -25,7 +25,6 @@
 #ifndef LIBTEST_PERSIST_LIB_H_INCLUDED
 #define LIBTEST_PERSIST_LIB_H_INCLUDED
 
-#include "testutils.h"
 #include "persist-state.h"
 
 PersistState *create_persist_state_for_test(const gchar *name);

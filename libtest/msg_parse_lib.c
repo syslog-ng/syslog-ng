@@ -57,12 +57,29 @@ assert_log_message_doesnt_have_tag(LogMessage *log_message, const gchar *tag_nam
 }
 
 void
+assert_log_message_value_unset(LogMessage *self, NVHandle handle)
+{
+  gssize key_name_length;
+  const gchar *key_name = log_msg_get_value_name(handle, &key_name_length);
+  const gchar *value = log_msg_get_value_if_set(self, handle, &key_name_length);
+
+  cr_assert(value == NULL, "Expected value for key %s to be unset but the actual value is %s", key_name, value);
+}
+
+void
+assert_log_message_value_unset_by_name(LogMessage *self, const gchar *name)
+{
+  assert_log_message_value_unset(self, log_msg_get_value_handle(name));
+}
+
+void
 assert_log_message_value(LogMessage *self, NVHandle handle, const gchar *expected_value)
 {
   gssize key_name_length;
   gssize value_length;
   const gchar *key_name = log_msg_get_value_name(handle, &key_name_length);
-  const gchar *actual_value = log_msg_get_value(self, handle, &value_length);
+  const gchar *actual_value_r = log_msg_get_value(self, handle, &value_length);
+  gchar *actual_value = g_strndup(actual_value_r, value_length);
 
   if (expected_value)
     {

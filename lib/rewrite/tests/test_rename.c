@@ -23,13 +23,13 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/grab-logging.h"
+#include "libtest/msg_parse_lib.h"
 
-#include "apphook.h"
 #include "rewrite/rewrite-rename.h"
 #include "logmsg/logmsg.h"
 #include "scratch-buffers.h"
-#include "grab-logging.h"
-#include "msg_parse_lib.h"
+#include "apphook.h"
 
 GlobalConfig *cfg = NULL;
 LogMessage *msg;
@@ -57,28 +57,28 @@ Test(rename, basic_rename)
 {
   _perform_rename("MESSAGE", "m", msg);
   assert_log_message_value_by_name(msg, "m", "example");
-  assert_msg_field_unset(msg, "MESSAGE", "source should not exists anymore");
+  assert_log_message_value_unset_by_name(msg, "MESSAGE");
 }
 
 Test(rename, override_existing)
 {
   _perform_rename(".SDATA.bar", "MESSAGE", msg);
   assert_log_message_value_by_name(msg, "MESSAGE", "foo");
-  assert_msg_field_unset(msg, ".SDATA.bar", "source should not exists anymore");
+  assert_log_message_value_unset_by_name(msg, ".SDATA.bar");
 }
 
 Test(rename, structued)
 {
   _perform_rename(".SDATA.bar", ".json.bar", msg);
   assert_log_message_value_by_name(msg, ".json.bar", "foo");
-  assert_msg_field_unset(msg, ".SDATA.bar", "source should not exists anymore");
+  assert_log_message_value_unset_by_name(msg, ".SDATA.bar");
 }
 
 Test(rename, rename_empty)
 {
   _perform_rename("empty", "really-empty", msg);
   assert_log_message_value_by_name(msg, "really-empty", "");
-  assert_msg_field_unset(msg, "empty", "source should not exists anymore");
+  assert_log_message_value_unset_by_name(msg, "empty");
 }
 
 Test(rename, source_destination_equals)
@@ -87,11 +87,11 @@ Test(rename, source_destination_equals)
   assert_log_message_value_by_name(msg, "MESSAGE", "example");
 }
 
-Test(rename, rename_not_existing)
+Test(rename, rename_not_existing_should_not_create_old_or_new)
 {
   _perform_rename("should-not-exists", "something-else", msg);
-  assert_msg_field_unset(msg, "should-not-exists", "source not existed");
-  assert_msg_field_unset(msg, "something-else", "if source not exists, destination should not be created");
+  assert_log_message_value_unset_by_name(msg, "should-not-exists");
+  assert_log_message_value_unset_by_name(msg, "something-else");
 }
 
 Test(rename, source_option_mandatory)

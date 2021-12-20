@@ -22,9 +22,8 @@
 
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+#include "libtest/msg_parse_lib.h"
 
-#include "msg_parse_lib.h"
-#include "syslog-ng.h"
 #include "logmsg/logmsg.h"
 #include "serialize.h"
 #include "apphook.h"

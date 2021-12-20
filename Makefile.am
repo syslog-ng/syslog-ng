@@ -95,7 +95,7 @@ if ENABLE_DEBUG
 AM_CFLAGS += -DYYDEBUG=1
 endif
 
-TEST_CFLAGS		= -I$(top_srcdir)/libtest -DTOP_SRCDIR=\"$(abs_top_srcdir)\" $(AM_CFLAGS) $(CRITERION_CFLAGS)
+TEST_CFLAGS		= -DTOP_SRCDIR=\"$(abs_top_srcdir)\" $(AM_CFLAGS) $(CRITERION_CFLAGS)
 
 TEST_LDADD		= $(LIBTEST_LIBS) $(CRITERION_LIBS) \
 			  $(top_builddir)/lib/libsyslog-ng.la \

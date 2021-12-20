@@ -19,15 +19,17 @@
  * COPYING for details.
  *
  */
+
+#include <criterion/criterion.h>
+#include "libtest/grab-logging.h"
+
 #include "apphook.h"
-#include "grab-logging.h"
 #include "kafka-dest-driver.h"
 #include "kafka-dest-worker.h"
 #include "kafka-props.h"
 #include "kafka-internal.h"
 
 #include <librdkafka/rdkafka.h>
-#include <criterion/criterion.h>
 
 static void
 _setup_topic(LogDriver *driver, const gchar *topic_name)

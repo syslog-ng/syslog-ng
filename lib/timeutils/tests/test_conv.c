@@ -21,11 +21,12 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+#include "libtest/fake-time.h"
+
 #include "timeutils/unixtime.h"
 #include "timeutils/wallclocktime.h"
 #include "timeutils/conv.h"
-#include <criterion/criterion.h>
-#include "fake-time.h"
 
 static void
 _wct_initialize(WallClockTime *wct, const gchar *timestamp)

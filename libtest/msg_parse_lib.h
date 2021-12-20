@@ -25,8 +25,6 @@
 #ifndef MSG_PARSE_LIB_H_INCLUDED
 #define MSG_PARSE_LIB_H_INCLUDED
 
-#include "testutils.h"
-
 #include "cfg.h"
 #include "logmsg/logmsg.h"
 
@@ -35,6 +33,8 @@ void deinit_syslogformat_module(void);
 
 void assert_log_messages_equal(LogMessage *log_message_a, LogMessage *log_message_b);
 
+void assert_log_message_value_unset(LogMessage *self, NVHandle handle);
+void assert_log_message_value_unset_by_name(LogMessage *self, const gchar *name);
 void assert_log_message_value(LogMessage *self, NVHandle handle, const gchar *expected_value);
 void assert_log_message_value_by_name(LogMessage *self, const gchar *name, const gchar *expected_value);
 void assert_log_message_has_tag(LogMessage *log_message, const gchar *tag_name);

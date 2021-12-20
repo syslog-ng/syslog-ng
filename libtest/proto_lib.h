@@ -25,7 +25,6 @@
 #ifndef PROTO_LIB_H_INCLUDED
 #define PROTO_LIB_H_INCLUDED
 
-#include "testutils.h"
 #include "logproto/logproto-server.h"
 
 extern LogProtoServerOptions proto_server_options;

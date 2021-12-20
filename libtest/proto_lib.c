@@ -22,11 +22,12 @@
  *
  */
 
-#include "proto_lib.h"
-#include "cfg.h"
-
-#include <string.h>
 #include <criterion/criterion.h>
+#include "proto_lib.h"
+#include "grab-logging.h"
+
+#include "cfg.h"
+#include <string.h>
 
 LogProtoServerOptions proto_server_options;
 
@@ -141,7 +142,7 @@ assert_proto_server_fetch_failure(LogProtoServer *proto, LogProtoStatus expected
 
   assert_proto_server_status(proto, status, expected_status);
   if (error_message)
-    assert_grabbed_messages_contain(error_message, "expected error message didn't show up");
+    assert_grabbed_log_contains(error_message);
 }
 
 void

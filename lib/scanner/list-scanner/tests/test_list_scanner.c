@@ -20,8 +20,9 @@
  * COPYING for details.
  *
  */
-#include "scanner/list-scanner/list-scanner.h"
 #include <criterion/criterion.h>
+
+#include "scanner/list-scanner/list-scanner.h"
 
 ListScanner *list_scanner;
 

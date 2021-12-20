@@ -23,6 +23,7 @@
  */
 
 #include <criterion/criterion.h>
+
 #include "ack-tracker/ack_tracker_factory.h"
 
 static void

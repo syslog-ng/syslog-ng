@@ -21,14 +21,15 @@
  * COPYING for details.
  *
  */
-#include "apphook.h"
+#include <criterion/criterion.h>
+#include "libtest/stopwatch.h"
+
 #include "timeutils/scan-timestamp.h"
 #include "timeutils/cache.h"
 #include "timeutils/format.h"
 #include "timeutils/conv.h"
+#include "apphook.h"
 
-#include <criterion/criterion.h>
-#include "stopwatch.h"
 
 static void
 fake_time(time_t now)

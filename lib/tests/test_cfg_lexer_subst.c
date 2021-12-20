@@ -20,9 +20,10 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+
 #include "cfg-lexer-subst.h"
 #include "apphook.h"
-#include <criterion/criterion.h>
 #include <string.h>
 
 static CfgArgs *

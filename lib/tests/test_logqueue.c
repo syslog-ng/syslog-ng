@@ -23,6 +23,8 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/msg_parse_lib.h"
+#include "libtest/queue_utils_lib.h"
 
 #include "logqueue.h"
 #include "logqueue-fifo.h"
@@ -31,8 +33,6 @@
 #include "plugin.h"
 #include "mainloop.h"
 #include "mainloop-io-worker.h"
-#include "libtest/queue_utils_lib.h"
-#include "msg_parse_lib.h"
 #include "timeutils/misc.h"
 
 #include <stdlib.h>

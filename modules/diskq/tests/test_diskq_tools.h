@@ -27,7 +27,6 @@
 #include "syslog-ng.h"
 #include "logmsg/logmsg-serialize.h"
 #include "diskq-options.h"
-#include "testutils.h"
 
 static inline void
 _construct_options(DiskQueueOptions *options, guint64 size, gint mem_size, gboolean reliable)

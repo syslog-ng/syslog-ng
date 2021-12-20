@@ -21,16 +21,17 @@
  * COPYING for details.
  *
  */
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+#include "libtest/cr_template.h"
+#include "test_filters_common.h"
+
 #include "filter/filter-expr.h"
 #include "filter/filter-re.h"
 #include "filter/filter-pri.h"
 #include "filter/filter-op.h"
 #include "cfg.h"
-#include "test_filters_common.h"
-#include "libtest/cr_template.h"
 
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -321,14 +322,14 @@ Test(filter, test_match_with_template)
   FilterExprNode *filter;
 
   filter = create_pcre_regexp_match("^PTHREAD", 0);
-  filter_match_set_template_ref(filter, compile_template("$MSG", FALSE));
+  filter_match_set_template_ref(filter, compile_template("$MSG"));
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter, TRUE);
 
   filter = create_pcre_regexp_match("^2499", 0);
-  filter_match_set_template_ref(filter, compile_template("$PID", FALSE));
+  filter_match_set_template_ref(filter, compile_template("$PID"));
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter, TRUE);
 
   filter = create_pcre_regexp_match("^2499 openvpn", 0);
-  filter_match_set_template_ref(filter, compile_template("$PID $PROGRAM", FALSE));
+  filter_match_set_template_ref(filter, compile_template("$PID $PROGRAM"));
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter, TRUE);
 }

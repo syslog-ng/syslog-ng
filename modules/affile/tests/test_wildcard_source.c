@@ -20,15 +20,17 @@
  *
  */
 
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+#include "libtest/config_parse_lib.h"
+#include "libtest/grab-logging.h"
+
 #include "cfg.h"
 #include "apphook.h"
-#include "config_parse_lib.h"
 #include "cfg-grammar.h"
 #include "plugin.h"
 #include "wildcard-source.h"
 
-#include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 
 static void
 _init(void)
@@ -125,7 +127,7 @@ Test(wildcard_source, test_filename_pattern_required_options)
   cr_assert(_parse_config("base-dir(/tmp)"));
   cr_assert(!cfg_init(configuration), "Config initialization should be failed");
   stop_grabbing_messages();
-  cr_assert(assert_grabbed_messages_contain_non_fatal("filename-pattern option is required", NULL));
+  assert_grabbed_log_contains("filename-pattern option is required");
   reset_grabbed_messages();
 }
 
@@ -135,7 +137,7 @@ Test(wildcard_source, test_base_dir_required_options)
   cr_assert(_parse_config("filename-pattern(/tmp)"));
   cr_assert(!cfg_init(configuration), "Config initialization should be failed");
   stop_grabbing_messages();
-  cr_assert(assert_grabbed_messages_contain_non_fatal("base-dir option is required", NULL));
+  assert_grabbed_log_contains("base-dir option is required");
   reset_grabbed_messages();
 }
 
@@ -144,7 +146,7 @@ Test(wildcard_source, test_invalid_monitor_method)
   start_grabbing_messages();
   cr_assert(!_parse_config("monitor-method(\"something else\""));
   stop_grabbing_messages();
-  cr_assert(assert_grabbed_messages_contain_non_fatal("Invalid monitor-method", NULL));
+  assert_grabbed_log_contains("Invalid monitor-method");
   reset_grabbed_messages();
 }
 

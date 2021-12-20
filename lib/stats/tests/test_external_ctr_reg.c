@@ -22,6 +22,7 @@
  *
  */
 
+#include <criterion/criterion.h>
 
 #include "apphook.h"
 #include "logmsg/logmsg.h"
@@ -30,10 +31,6 @@
 #include "stats/stats-counter.h"
 #include "stats/stats-query.h"
 #include "stats/stats-registry.h"
-#include "syslog-ng.h"
-
-#include <criterion/criterion.h>
-
 #include <limits.h>
 #include <time.h>
 

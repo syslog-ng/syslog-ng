@@ -21,10 +21,11 @@
  *
  */
 
+#include <criterion/criterion.h>
+
 #include "transport/multitransport.h"
 #include "transport/transport-factory.h"
 #include "apphook.h"
-#include <criterion/criterion.h>
 
 #define DEFINE_TEST_TRANSPORT_WITH_FACTORY(TypePrefix, FunPrefix) \
   typedef struct TypePrefix ## Transport_ TypePrefix ## Transport; \

@@ -21,13 +21,12 @@
  *
  */
 
-#include "logproto/logproto-server.h"
-#include "logmsg/logmsg.h"
-#include <stdlib.h>
-
 #include <criterion/parameterized.h>
 #include <criterion/criterion.h>
 
+#include "logproto/logproto-server.h"
+#include "logmsg/logmsg.h"
+#include <stdlib.h>
 
 struct testcase_tuple
 {

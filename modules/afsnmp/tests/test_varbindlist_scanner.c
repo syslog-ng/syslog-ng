@@ -20,8 +20,8 @@
  */
 
 #include <criterion/criterion.h>
-#include "varbindlist-scanner.h"
 
+#include "varbindlist-scanner.h"
 #include "apphook.h"
 #include "scratch-buffers.h"
 

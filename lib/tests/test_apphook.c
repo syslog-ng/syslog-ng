@@ -21,10 +21,10 @@
  * COPYING for details.
  *
  */
-#include "apphook.h"
 
 #include <criterion/criterion.h>
 
+#include "apphook.h"
 
 Test(test_apphook, app_is_tarting_up)
 {
