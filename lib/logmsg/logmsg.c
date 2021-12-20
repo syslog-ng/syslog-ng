@@ -170,6 +170,34 @@ TLS_BLOCK_END;
  * LogMessage
  **********************************************************************/
 
+gboolean
+log_msg_is_handle_macro(NVHandle handle)
+{
+  guint16 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  return !!(flags & LM_VF_MACRO);
+}
+
+gboolean
+log_msg_is_handle_sdata(NVHandle handle)
+{
+  guint16 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  return !!(flags & LM_VF_SDATA);
+}
+
+gboolean
+log_msg_is_handle_match(NVHandle handle)
+{
+  g_assert(match_handles[0] && match_handles[255] && match_handles[0] < match_handles[255]);
+
+  /* NOTE: match_handles are allocated sequentially in log_msg_registry_init(),
+   * so this simple & fast check is enough */
+  return (match_handles[0] <= handle && handle <= match_handles[255]);
+}
+
 static inline gboolean
 log_msg_chk_flag(const LogMessage *self, gint32 flag)
 {
@@ -449,33 +477,6 @@ log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len, LogM
   return value->str;
 }
 
-gboolean
-log_msg_is_handle_macro(NVHandle handle)
-{
-  guint16 flags;
-
-  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  return !!(flags & LM_VF_MACRO);
-}
-
-gboolean
-log_msg_is_handle_sdata(NVHandle handle)
-{
-  guint16 flags;
-
-  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  return !!(flags & LM_VF_SDATA);
-}
-
-gboolean
-log_msg_is_handle_match(NVHandle handle)
-{
-  g_assert(match_handles[0] && match_handles[255] && match_handles[0] < match_handles[255]);
-
-  /* NOTE: match_handles are allocated sequentially in log_msg_registry_init(),
-   * so this simple & fast check is enough */
-  return (match_handles[0] <= handle && handle <= match_handles[255]);
-}
 
 static void
 log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPathOptions *path_options)
