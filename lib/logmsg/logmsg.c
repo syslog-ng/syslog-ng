@@ -366,6 +366,17 @@ log_msg_update_sdata(LogMessage *self, NVHandle handle, const gchar *name, gssiz
     log_msg_update_sdata_slow(self, handle, name, name_len);
 }
 
+static inline void
+log_msg_update_num_matches(LogMessage *self, NVHandle handle)
+{
+  if (log_msg_is_handle_match(handle))
+    {
+      gint index_ = handle - match_handles[0];
+      if (index_ >= self->num_matches)
+        self->num_matches = index_ + 1;
+    }
+}
+
 NVHandle
 log_msg_get_value_handle(const gchar *value_name)
 {
@@ -581,6 +592,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
 
   if (new_entry)
     log_msg_update_sdata(self, handle, name, name_len);
+  log_msg_update_num_matches(self, handle);
 
   if (_value_invalidates_legacy_header(handle))
     log_msg_unset_value(self, LM_V_LEGACY_MSGHDR);
@@ -690,6 +702,7 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
 
   if (new_entry)
     log_msg_update_sdata(self, handle, name, name_len);
+  log_msg_update_num_matches(self, handle);
 }
 
 void
@@ -712,8 +725,6 @@ log_msg_set_match_with_type(LogMessage *self, gint index_,
 {
   g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
 
-  if (index_ >= self->num_matches)
-    self->num_matches = index_ + 1;
   log_msg_set_value_with_type(self, match_handles[index_], value, value_len, type);
 }
 
@@ -725,13 +736,6 @@ log_msg_set_match(LogMessage *self, gint index_, const gchar *value, gssize valu
   log_msg_set_match_with_type(self, index_, value, value_len, LM_VT_STRING);
 }
 
-void
-log_msg_set_match_indirect(LogMessage *self, gint index_, NVHandle ref_handle, guint16 ofs, guint16 len)
-{
-  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
-
-  log_msg_set_value_indirect(self, match_handles[index_], ref_handle, ofs, len);
-}
 
 void
 log_msg_set_match_indirect_with_type(LogMessage *self, gint index_,
@@ -741,6 +745,14 @@ log_msg_set_match_indirect_with_type(LogMessage *self, gint index_,
   g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
 
   log_msg_set_value_indirect_with_type(self, match_handles[index_], ref_handle, ofs, len, type);
+}
+
+void
+log_msg_set_match_indirect(LogMessage *self, gint index_, NVHandle ref_handle, guint16 ofs, guint16 len)
+{
+  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
+
+  log_msg_set_match_indirect_with_type(self, index_, ref_handle, ofs, len, LM_VT_STRING);
 }
 
 const gchar *
@@ -757,7 +769,7 @@ log_msg_get_match(const LogMessage *self, gint index_, gssize *value_len)
 {
   g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
 
-  return log_msg_get_value(self, match_handles[index_], value_len);
+  return log_msg_get_match_with_type(self, index_, value_len, NULL);
 }
 
 void
@@ -1937,6 +1949,7 @@ log_msg_registry_init(void)
 
       g_snprintf(buf, sizeof(buf), "%d", i);
       match_handles[i] = nv_registry_alloc_handle(logmsg_registry, buf);
+      nv_registry_set_handle_flags(logmsg_registry, match_handles[i], (i << 8) + LM_VF_MATCH);
     }
 }
 
