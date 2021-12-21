@@ -60,8 +60,4 @@ jobs:
       - name: Push the images
         if: always() && env.UPLOAD_IMAGES_INTERNAL == 'true'
         run: |
-          IMAGES=$(docker image ls --filter "reference=${{ env.CONTAINER_REGISTRY }}/dbld-*:latest" --format '{{.Repository}}:{{.Tag}}')
-          for IMAGE in $IMAGES; do
-            echo "Pushing image: $IMAGE"
-            docker push $IMAGE
-          done
+          dbld/rules push-images -j $(nproc) --keep-going --output-sync
