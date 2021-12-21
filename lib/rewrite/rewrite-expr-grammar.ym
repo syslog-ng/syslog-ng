@@ -36,6 +36,7 @@
 #include "rewrite/rewrite-rename.h"
 #include "rewrite/rewrite-subst.h"
 #include "rewrite/rewrite-groupset.h"
+#include "rewrite/rewrite-set-matches.h"
 #include "rewrite/rewrite-set-pri.h"
 #include "rewrite/rewrite-set-severity.h"
 #include "rewrite/rewrite-set-facility.h"
@@ -72,6 +73,7 @@
 %token KW_SET_SEVERITY
 %token KW_SET_FACILITY
 %token KW_SET_PRI
+%token KW_SET_MATCHES
 
 %%
 
@@ -105,6 +107,13 @@ rewrite_expr
             log_template_unref($3);
           }
           rewrite_set_opts ')'                 { $$ = last_rewrite; }
+        | KW_SET_MATCHES '(' template_content
+          {
+            last_rewrite = log_rewrite_set_matches_new($3, configuration);
+            last_template_options = log_rewrite_set_get_template_options(last_rewrite);
+            log_template_unref($3);
+          }
+          rewrite_set_matches_opts ')'         { $$ = last_rewrite; }
         | KW_UNSET
           {
             last_rewrite = log_rewrite_unset_new(configuration);
@@ -256,6 +265,15 @@ rewrite_set_facility_opts
         ;
 
 rewrite_set_facility_opt
+        : rewrite_condition_opt
+        ;
+
+rewrite_set_matches_opts
+        : rewrite_set_matches_opt rewrite_set_matches_opts
+        |
+        ;
+
+rewrite_set_matches_opt
         : rewrite_condition_opt
         ;
 
