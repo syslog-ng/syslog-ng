@@ -191,11 +191,10 @@ log_msg_is_handle_sdata(NVHandle handle)
 gboolean
 log_msg_is_handle_match(NVHandle handle)
 {
-  g_assert(match_handles[0] && match_handles[255] && match_handles[0] < match_handles[255]);
+  guint16 flags;
 
-  /* NOTE: match_handles are allocated sequentially in log_msg_registry_init(),
-   * so this simple & fast check is enough */
-  return (match_handles[0] <= handle && handle <= match_handles[255]);
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  return !!(flags & LM_VF_MATCH);
 }
 
 static inline gboolean
@@ -1966,6 +1965,7 @@ log_msg_registry_init(void)
 
       g_snprintf(buf, sizeof(buf), "%d", i);
       match_handles[i] = nv_registry_alloc_handle(logmsg_registry, buf);
+      nv_registry_set_handle_flags(logmsg_registry, match_handles[i], (i << 8) + LM_VF_MATCH);
     }
 }
 
