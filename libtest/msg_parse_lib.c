@@ -88,6 +88,8 @@ assert_log_message_value(LogMessage *self, NVHandle handle, const gchar *expecte
     }
   else
     cr_assert_str_eq(actual_value, "", "No value is expected for key %s but its value is %s", key_name, actual_value);
+
+  g_free(actual_value);
 }
 
 void
