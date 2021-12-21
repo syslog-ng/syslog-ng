@@ -809,12 +809,31 @@ log_msg_set_match_indirect(LogMessage *self, gint index_, NVHandle ref_handle, g
 }
 
 const gchar *
-log_msg_get_match_with_type(const LogMessage *self, gint index_, gssize *value_len,
-                            LogMessageValueType *type)
+log_msg_get_match_if_set_with_type(const LogMessage *self, gint index_, gssize *value_len,
+                                   LogMessageValueType *type)
 {
   g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
 
-  return log_msg_get_value_with_type(self, match_handles[index_], value_len, type);
+  if (index_ >= self->num_matches)
+    return NULL;
+
+  return nv_table_get_value_if_set(self->payload, match_handles[index_], value_len, type);
+}
+
+const gchar *
+log_msg_get_match_with_type(const LogMessage *self, gint index_, gssize *value_len,
+                            LogMessageValueType *type)
+{
+  const gchar *result = log_msg_get_match_if_set_with_type(self, index_, value_len, type);
+
+  if (result)
+    return result;
+
+  if (value_len)
+    *value_len = 0;
+  if (type)
+    *type = LM_VT_STRING;
+  return "";
 }
 
 const gchar *
@@ -836,12 +855,6 @@ log_msg_unset_match(LogMessage *self, gint index_)
 void
 log_msg_clear_matches(LogMessage *self)
 {
-  gint i;
-
-  for (i = 0; i < self->num_matches; i++)
-    {
-      log_msg_set_value(self, match_handles[i], "", 0);
-    }
   self->num_matches = 0;
 }
 
