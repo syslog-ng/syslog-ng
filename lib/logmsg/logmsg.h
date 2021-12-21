@@ -319,6 +319,10 @@ log_msg_is_handle_settable_with_an_indirect_value(NVHandle handle)
 }
 
 const gchar *log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len, LogMessageValueType *type);
+const gchar *log_msg_get_match_with_type(const LogMessage *self, gint index_,
+                                         gssize *value_len, LogMessageValueType *type);
+const gchar *log_msg_get_match_if_set_with_type(const LogMessage *self, gint index_,
+                                                gssize *value_len, LogMessageValueType *type);
 
 static inline const gchar *
 log_msg_get_value_with_type(const LogMessage *self, NVHandle handle, gssize *value_len, LogMessageValueType *type)
@@ -326,10 +330,12 @@ log_msg_get_value_with_type(const LogMessage *self, NVHandle handle, gssize *val
   guint16 flags;
 
   flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  if ((flags & LM_VF_MACRO) == 0)
-    return nv_table_get_value(self->payload, handle, value_len, type);
-  else
+  if (G_UNLIKELY((flags & LM_VF_MATCH)))
+    return log_msg_get_match_with_type(self, flags >> 8, value_len, type);
+  else if ((flags & LM_VF_MACRO))
     return log_msg_get_macro_value(self, flags >> 8, value_len, type);
+  else
+    return nv_table_get_value(self->payload, handle, value_len, type);
 }
 
 static inline const gchar *
@@ -346,10 +352,12 @@ log_msg_get_value_if_set_with_type(const LogMessage *self, NVHandle handle,
   guint16 flags;
 
   flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  if ((flags & LM_VF_MACRO) == 0)
-    return nv_table_get_value_if_set(self->payload, handle, value_len, type);
-  else
+  if (G_UNLIKELY((flags & LM_VF_MATCH)))
+    return log_msg_get_match_if_set_with_type(self, flags >> 8, value_len, type);
+  else if ((flags & LM_VF_MACRO))
     return log_msg_get_macro_value(self, flags >> 8, value_len, type);
+  else
+    return nv_table_get_value_if_set(self->payload, handle, value_len, type);
 }
 
 static inline const gchar *
