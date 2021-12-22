@@ -93,6 +93,7 @@ log_rewrite_groupset_add_fields(LogRewrite *rewrite, GList *fields)
     }
   string_list_free(fields);
 }
+
 static LogPipe *
 log_rewrite_groupset_clone(LogPipe *s)
 {
@@ -107,7 +108,7 @@ log_rewrite_groupset_clone(LogPipe *s)
     cloned->super.condition = filter_expr_clone(self->super.condition);
 
   return &cloned->super.super;
-};
+}
 
 void
 log_rewrite_groupset_free(LogPipe *s)
@@ -140,6 +141,7 @@ LogRewrite *
 log_rewrite_groupunset_new(GlobalConfig *cfg)
 {
   LogRewriteGroupSet *self = (LogRewriteGroupSet *)log_rewrite_groupset_new(NULL, cfg);
+
   self->vp_func = log_rewrite_groupunset_foreach_func;
   return &self->super;
 }
