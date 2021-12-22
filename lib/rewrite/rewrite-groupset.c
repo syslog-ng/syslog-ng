@@ -50,8 +50,7 @@ log_rewrite_groupset_foreach_func(const gchar *name, LogMessageValueType type,
   LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, value, type};
   log_template_format_value_and_type(template, msg, &options, result, &type);
 
-  NVHandle handle = log_msg_get_value_handle(name);
-  log_msg_set_value(msg, handle, result->str, result->len);
+  log_msg_set_value_by_name_with_type(msg, name, result->str, result->len, type);
 
   scratch_buffers_reclaim_marked(mark);
   return FALSE;
@@ -65,8 +64,7 @@ log_rewrite_groupunset_foreach_func(const gchar *name, LogMessageValueType type,
   LogRewriteGroupSetCallbackData *callback_data = (LogRewriteGroupSetCallbackData *) user_data;
   LogMessage *msg = callback_data->msg;
 
-  NVHandle handle = log_msg_get_value_handle(name);
-  log_msg_unset_value(msg, handle);
+  log_msg_unset_value_by_name(msg, name);
   return FALSE;
 }
 
