@@ -43,8 +43,9 @@ log_rewrite_groupset_foreach_func(const gchar *name, LogMessageValueType type,
   LogMessage *msg = callback_data->msg;
   LogTemplate *template = callback_data->template;
   GString *result;
+  ScratchBuffersMarker mark;
 
-  result = scratch_buffers_alloc();
+  result = scratch_buffers_alloc_and_mark(&mark);
 
   LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, value, type};
   log_template_format_value_and_type(template, msg, &options, result, &type);
@@ -52,6 +53,7 @@ log_rewrite_groupset_foreach_func(const gchar *name, LogMessageValueType type,
   NVHandle handle = log_msg_get_value_handle(name);
   log_msg_set_value(msg, handle, result->str, result->len);
 
+  scratch_buffers_reclaim_marked(mark);
   return FALSE;
 }
 
