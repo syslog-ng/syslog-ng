@@ -25,6 +25,7 @@
 
 #include "rewrite-groupset.h"
 #include "scratch-buffers.h"
+#include "string-list.h"
 
 typedef struct _LogRewriteGroupSetCallbackData
 {
@@ -81,24 +82,16 @@ log_rewrite_groupset_process(LogRewrite *s, LogMessage **msg, const LogPathOptio
   value_pairs_foreach(self->query, self->vp_func, *msg, &options, &userdata);
 }
 
-static void
-__free_field(gpointer field, gpointer user_data)
-{
-  g_free(field);
-}
-
-
 void
 log_rewrite_groupset_add_fields(LogRewrite *rewrite, GList *fields)
 {
   LogRewriteGroupSet *self = (LogRewriteGroupSet *) rewrite;
-  GList *head;
-  for (head = fields; head; head = head->next)
+
+  for (GList *head = fields; head; head = head->next)
     {
       value_pairs_add_glob_pattern(self->query, head->data, TRUE);
     }
-  g_list_foreach(fields, __free_field, NULL);
-  g_list_free(fields);
+  string_list_free(fields);
 }
 static LogPipe *
 log_rewrite_groupset_clone(LogPipe *s)
