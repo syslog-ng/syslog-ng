@@ -54,7 +54,7 @@ log_rewrite_set_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *
 
   result = scratch_buffers_alloc();
 
-  LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND, 0, NULL};
+  LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND, 0, NULL, LM_VT_STRING};
   log_template_format_value_and_type(self->value_template, *pmsg, &options, result, &type);
 
   log_msg_make_writable(pmsg, path_options);

@@ -409,7 +409,7 @@ snmpdest_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   GList *snmp_template = self->snmp_templates;
   GString *fs = g_string_sized_new(128);
 
-  LogTemplateEvalOptions options = {&self->template_options, LTZ_LOCAL, 0, NULL};
+  LogTemplateEvalOptions options = {&self->template_options, LTZ_LOCAL, 0, NULL, LM_VT_STRING};
   /* go through the snmp objects and add them to the message */
   while (snmp_obj)
     {

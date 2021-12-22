@@ -99,7 +99,7 @@ riemann_dd_field_string_maybe_add(riemann_event_t *event, LogMessage *msg,
     return;
 
   LogTemplateEvalOptions options = {template_options, LTZ_SEND,
-                                    seq_num, NULL
+                                    seq_num, NULL, LM_VT_STRING
                                    };
   log_template_format(template, msg, &options, target);
 
@@ -118,7 +118,7 @@ riemann_dd_field_integer_maybe_add(riemann_event_t *event, LogMessage *msg,
     return;
 
   LogTemplateEvalOptions options = {template_options, LTZ_SEND,
-                                    seq_num, NULL
+                                    seq_num, NULL, LM_VT_STRING
                                    };
   log_template_format(template, msg, &options, target);
 
@@ -173,7 +173,7 @@ riemann_add_metric_to_event(RiemannDestWorker *self, riemann_event_t *event, Log
   LogMessageValueType type;
 
   LogTemplateEvalOptions options = {&owner->template_options,
-                                    LTZ_SEND, self->super.seq_num, NULL
+                                    LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING
                                    };
   log_template_format_value_and_type(owner->fields.metric, msg, &options, str, &type);
 
@@ -223,7 +223,7 @@ riemann_add_ttl_to_event(RiemannDestWorker *self, riemann_event_t *event, LogMes
   gdouble d;
 
   LogTemplateEvalOptions options = {&owner->template_options,
-                                    LTZ_SEND, self->super.seq_num, NULL
+                                    LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING
                                    };
   log_template_format(owner->fields.ttl, msg, &options, str);
 
@@ -300,7 +300,7 @@ riemann_worker_insert_one(RiemannDestWorker *self, LogMessage *msg)
 
       if (owner->fields.attributes)
         {
-          LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL};
+          LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING};
           value_pairs_foreach(owner->fields.attributes,
                               riemann_dd_field_add_attribute_vp,
                               msg, &options, event);

@@ -183,7 +183,7 @@ assert_template_format_with_escaping_and_context_msgs(const gchar *template, gbo
   GString *res = g_string_new(prefix);
   const gchar *context_id = "test-context-id";
 
-  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, context_id};
+  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, context_id, LM_VT_STRING};
   log_template_append_format_value_and_type_with_context(templ, msgs, num_messages, &options, res, &type);
   cr_assert(strncmp(res->str, prefix, prefix_len) == 0,
             "the prefix was overwritten by the template, template=%s, res=%s, expected_prefix=%s",

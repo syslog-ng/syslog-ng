@@ -45,7 +45,7 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options,
             evt_tag_str ("input", input),
             evt_tag_printf("msg", "%p", *pmsg));
 
-  LogTemplateEvalOptions options = {&cfg->template_options, LTZ_LOCAL, 0, NULL};
+  LogTemplateEvalOptions options = {&cfg->template_options, LTZ_LOCAL, 0, NULL, LM_VT_STRING};
   value_pairs_foreach(self->value_pairs, _map_name_values,
                       msg, &options, msg);
 

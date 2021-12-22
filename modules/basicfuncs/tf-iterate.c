@@ -75,7 +75,7 @@ update_current(LogTemplateFunction *self, IterateState *state, LogMessage *msg)
   gchar *current_value = g_strdup(state->current->str);
 
   g_string_assign(state->current, "");
-  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, current_value};
+  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, current_value, LM_VT_STRING};
   log_template_format_value_and_type(state->template, msg, &options, state->current, &state->current_type);
 
   g_free(current_value);

@@ -62,9 +62,10 @@ typedef struct _LogTemplateEvalOptions
   gint tz;
   gint seq_num;
   const gchar *context_id;
+  LogMessageValueType context_id_type;
 } LogTemplateEvalOptions;
 
-#define DEFAULT_TEMPLATE_EVAL_OPTIONS ((LogTemplateEvalOptions){NULL, LTZ_LOCAL, 0, NULL})
+#define DEFAULT_TEMPLATE_EVAL_OPTIONS ((LogTemplateEvalOptions){NULL, LTZ_LOCAL, 0, NULL, LM_VT_STRING})
 
 void log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateEvalOptions *options, GString *result);
 void log_template_format_value_and_type(LogTemplate *self, LogMessage *lm, LogTemplateEvalOptions *options,

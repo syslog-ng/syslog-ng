@@ -45,8 +45,8 @@ log_rewrite_groupset_foreach_func(const gchar *name, LogMessageValueType type,
 
   result = scratch_buffers_alloc();
 
-  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, value};
-  log_template_format(template, msg, &options, result);
+  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, value, type};
+  log_template_format_value_and_type(template, msg, &options, result, &type);
 
   NVHandle handle = log_msg_get_value_handle(name);
   log_msg_set_value(msg, handle, result->str, result->len);
@@ -77,7 +77,7 @@ log_rewrite_groupset_process(LogRewrite *s, LogMessage **msg, const LogPathOptio
   log_msg_make_writable(msg, path_options);
   userdata.msg = *msg;
   userdata.template = self->replacement;
-  LogTemplateEvalOptions options = {&cfg->template_options, LTZ_LOCAL, 0, NULL};
+  LogTemplateEvalOptions options = {&cfg->template_options, LTZ_LOCAL, 0, NULL, LM_VT_STRING};
   value_pairs_foreach(self->query, self->vp_func, *msg, &options, &userdata);
 }
 

@@ -265,7 +265,7 @@ afstomp_set_frame_body(STOMPDestDriver *self, GString *body, stomp_frame *frame,
   if (self->body_template)
     {
       LogTemplateEvalOptions options = {&self->template_options, LTZ_LOCAL,
-                                        self->super.worker.instance.seq_num, NULL
+                                        self->super.worker.instance.seq_num, NULL, LM_VT_STRING
                                        };
       log_template_format(self->body_template, msg, &options, body);
       stomp_frame_set_body(frame, body->str, body->len);
@@ -300,7 +300,7 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
       stomp_frame_add_header(&frame, "receipt", seq_num);
     };
 
-  LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND, self->super.worker.instance.seq_num, NULL};
+  LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND, self->super.worker.instance.seq_num, NULL, LM_VT_STRING};
   value_pairs_foreach(self->vp, afstomp_vp_foreach, msg, &options, &frame);
 
   afstomp_set_frame_body(self, body, &frame, msg);

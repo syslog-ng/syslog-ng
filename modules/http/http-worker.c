@@ -277,7 +277,7 @@ _add_message_to_batch(HTTPDestinationWorker *self, LogMessage *msg)
   if (owner->body_template)
     {
       LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND,
-                                        self->super.seq_num, NULL
+                                        self->super.seq_num, NULL, LM_VT_STRING
                                        };
       log_template_append_format(owner->body_template, msg, &options, self->request_body);
     }

@@ -720,7 +720,7 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
       GString *filename;
 
       filename = g_string_sized_new(32);
-      LogTemplateEvalOptions options = {&self->writer_options.template_options, LTZ_LOCAL, 0, NULL};
+      LogTemplateEvalOptions options = {&self->writer_options.template_options, LTZ_LOCAL, 0, NULL, LM_VT_STRING};
       log_template_format(self->filename_template, msg, &options, filename);
 
       g_mutex_lock(&self->lock);

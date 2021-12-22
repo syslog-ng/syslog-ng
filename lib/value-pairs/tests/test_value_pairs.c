@@ -128,7 +128,7 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected)
 
   args[0] = &vp_keys_list;
   args[1] = &test_key_found;
-  LogTemplateEvalOptions options = {&template_options, LTZ_LOCAL, 11, NULL};
+  LogTemplateEvalOptions options = {&template_options, LTZ_LOCAL, 11, NULL, LM_VT_STRING};
   value_pairs_foreach(vp, vp_keys_foreach, msg, &options, args);
 
   cr_expect(test_key_found, "test.key is not found in the result set");
@@ -165,7 +165,7 @@ transformers_testcase(const gchar *scope, const gchar *transformed_keys, const g
 
   args[0] = &vp_keys_list;
   args[1] = &test_key_found;
-  LogTemplateEvalOptions options = {&template_options, LTZ_LOCAL, 11, NULL};
+  LogTemplateEvalOptions options = {&template_options, LTZ_LOCAL, 11, NULL, LM_VT_STRING};
   value_pairs_foreach(vp, vp_keys_foreach, msg, &options, args);
 
   assert_keys_match_expected(scope, vp_keys_list, expected);

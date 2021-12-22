@@ -100,3 +100,20 @@ Test(macro, test_date_iso_week_testcases)
 
   log_msg_unref(msg);
 }
+
+Test(macro, test_context_id_type_is_returned)
+{
+  GString *resolved = g_string_new("");
+  LogMessage *msg = log_msg_new_empty();
+  LogMessageValueType type;
+
+  LogTemplateEvalOptions options = {NULL, LTZ_SEND, 5555, "5678", LM_VT_INT64};
+
+  gboolean result = log_macro_expand(M_CONTEXT_ID, FALSE, &options, msg, resolved, &type);
+  cr_assert(result);
+  cr_assert_str_eq(resolved->str, "5678");
+  cr_assert_eq(type, LM_VT_INT64);
+
+  g_string_free(resolved, TRUE);
+  log_msg_unref(msg);
+}

@@ -39,7 +39,7 @@ _format_message_and_key(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
-  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL};
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING};
   log_template_format(owner->message, msg, &options, self->message);
 
   if (owner->key)
@@ -50,7 +50,7 @@ const gchar *
 kafka_dest_worker_resolve_template_topic_name(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
-  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL};
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING};
   log_template_format(owner->topic_name, msg, &options, self->topic_name_buffer);
 
   GError *error = NULL;

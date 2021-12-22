@@ -642,6 +642,7 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
       if (options->context_id)
         {
           result_append(result, options->context_id, strlen(options->context_id), escape);
+          t = options->context_id_type;
         }
       break;
     }
@@ -709,7 +710,7 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
 gboolean
 log_macro_expand_simple(gint id, const LogMessage *msg, GString *result, LogMessageValueType *type)
 {
-  LogTemplateEvalOptions options = {&template_options_for_macro_expand, LTZ_LOCAL, 0, NULL};
+  LogTemplateEvalOptions options = {&template_options_for_macro_expand, LTZ_LOCAL, 0, NULL, LM_VT_STRING};
   return log_macro_expand(id, FALSE, &options, msg, result, type);
 }
 

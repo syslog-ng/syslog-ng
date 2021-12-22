@@ -151,7 +151,7 @@ GString *applyTemplate(LogTemplate *templ, LogMessage *msg)
 {
   GString *output = g_string_new(prefix);
 
-  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, context_id};
+  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, context_id, LM_VT_STRING};
   // Execute secure logging template
   log_template_append_format_with_context(
     templ,       // Secure logging template

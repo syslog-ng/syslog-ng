@@ -62,7 +62,7 @@ format_template_thread(gpointer s)
   g_mutex_unlock(&thread_lock);
 
   result = g_string_sized_new(0);
-  LogTemplateEvalOptions options = {NULL, LTZ_SEND, 5555, NULL};
+  LogTemplateEvalOptions options = {NULL, LTZ_SEND, 5555, NULL, LM_VT_STRING};
   for (i = 0; i < 10000; i++)
     {
       log_template_format(templ, msg, &options, result);

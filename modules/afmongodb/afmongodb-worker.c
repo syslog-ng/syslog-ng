@@ -50,7 +50,7 @@ _format_collection_template(MongoDBDestWorker *self, LogMessage *msg)
 {
   MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
 
-  LogTemplateEvalOptions options = { &owner->template_options, LTZ_SEND, self->super.seq_num, NULL };
+  LogTemplateEvalOptions options = { &owner->template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING };
   log_template_format(owner->collection_template, msg, &options, self->collection);
 
   return self->collection->str;
@@ -327,7 +327,7 @@ _worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
 
   bson_reinit(self->bson);
 
-  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL};
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING};
   success = value_pairs_walk(owner->vp,
                              _vp_obj_start,
                              _vp_process_value,
