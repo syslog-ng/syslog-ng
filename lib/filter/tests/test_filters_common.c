@@ -150,7 +150,7 @@ testcase_with_socket(const gchar *msg, const gchar *sockaddr,
   res = filter_expr_eval(f, logmsg);
   cr_assert_eq(res, expected_result, "Filter test failed; msg='%s'\n", msg);
 
-  f->comp = 1;
+  f->comp = !f->comp;
   res = filter_expr_eval(f, logmsg);
   cr_assert_eq(res, !expected_result, "Filter test failed (negated); msg='%s'\n", msg);
 
