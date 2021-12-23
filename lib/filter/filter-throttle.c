@@ -161,7 +161,7 @@ filter_throttle_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemp
   }
   g_mutex_unlock(&self->map_lock);
 
-  return throttle_ratelimit_process_new_logs(rl, num_msg);
+  return throttle_ratelimit_process_new_logs(rl, num_msg) ^ s->comp;
 }
 
 static void
