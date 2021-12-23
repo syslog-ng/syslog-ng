@@ -77,7 +77,7 @@ class SyslogNgCli(object):
             raise Exception("syslog-ng can not started exit_code={}".format(result["exit_code"]))
 
     def is_process_running(self):
-        return self.__process.poll() is None
+        return self.__process and self.__process.poll() is None
 
     def __wait_for_control_socket_alive(self):
         def is_alive(s):
