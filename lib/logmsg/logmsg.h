@@ -324,25 +324,7 @@ const gchar *log_msg_get_match_with_type(const LogMessage *self, gint index_,
 const gchar *log_msg_get_match_if_set_with_type(const LogMessage *self, gint index_,
                                                 gssize *value_len, LogMessageValueType *type);
 
-static inline const gchar *
-log_msg_get_value_with_type(const LogMessage *self, NVHandle handle, gssize *value_len, LogMessageValueType *type)
-{
-  guint16 flags;
 
-  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  if (G_UNLIKELY((flags & LM_VF_MATCH)))
-    return log_msg_get_match_with_type(self, flags >> 8, value_len, type);
-  else if ((flags & LM_VF_MACRO))
-    return log_msg_get_macro_value(self, flags >> 8, value_len, type);
-  else
-    return nv_table_get_value(self->payload, handle, value_len, type);
-}
-
-static inline const gchar *
-log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
-{
-  return log_msg_get_value_with_type(self, handle, value_len, NULL);
-}
 
 static inline const gchar *
 log_msg_get_value_if_set_with_type(const LogMessage *self, NVHandle handle,
@@ -357,7 +339,27 @@ log_msg_get_value_if_set_with_type(const LogMessage *self, NVHandle handle,
   else if ((flags & LM_VF_MACRO))
     return log_msg_get_macro_value(self, flags >> 8, value_len, type);
   else
-    return nv_table_get_value_if_set(self->payload, handle, value_len, type);
+    return nv_table_get_value(self->payload, handle, value_len, type);
+}
+
+static inline const gchar *
+log_msg_get_value_with_type(const LogMessage *self, NVHandle handle, gssize *value_len, LogMessageValueType *type)
+{
+  const gchar *result = log_msg_get_value_if_set_with_type(self, handle, value_len, type);
+
+  if (result)
+    return result;
+  if (type)
+    *type = LM_VT_STRING;
+  if (value_len)
+    *value_len = 0;
+  return "";
+}
+
+static inline const gchar *
+log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
+{
+  return log_msg_get_value_with_type(self, handle, value_len, NULL);
 }
 
 static inline const gchar *
