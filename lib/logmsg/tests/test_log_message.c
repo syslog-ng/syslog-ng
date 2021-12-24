@@ -475,7 +475,7 @@ Test(log_message, test_value_retains_type_information)
   /* unset */
   value = log_msg_get_value_by_name_with_type(msg, "nvpair", NULL, &type);
   cr_assert_str_empty(value);
-  cr_assert(type == LM_VT_STRING);
+  cr_assert(type == LM_VT_NULL);
 
   /* set with a specific type */
   log_msg_set_value_by_name_with_type(msg, "nvpair", "value", -1, LM_VT_JSON);
@@ -493,7 +493,7 @@ Test(log_message, test_value_retains_type_information)
   log_msg_unset_value_by_name(msg, "nvpair");
   value = log_msg_get_value_by_name_with_type(msg, "nvpair", NULL, &type);
   cr_assert_str_empty(value, "value");
-  cr_assert(type == LM_VT_STRING);
+  cr_assert(type == LM_VT_NULL);
 
   log_msg_unref(msg);
 }

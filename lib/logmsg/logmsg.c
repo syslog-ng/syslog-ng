@@ -838,7 +838,7 @@ log_msg_get_match_with_type(const LogMessage *self, gint index_, gssize *value_l
   if (value_len)
     *value_len = 0;
   if (type)
-    *type = LM_VT_STRING;
+    *type = LM_VT_NULL;
   return "";
 }
 
