@@ -823,7 +823,7 @@ log_msg_get_match_if_set_with_type(const LogMessage *self, gint index_, gssize *
   if (index_ >= self->num_matches)
     return NULL;
 
-  return nv_table_get_value_if_set(self->payload, match_handles[index_], value_len, type);
+  return nv_table_get_value(self->payload, match_handles[index_], value_len, type);
 }
 
 const gchar *

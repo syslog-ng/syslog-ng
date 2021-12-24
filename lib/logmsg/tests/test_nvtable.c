@@ -996,26 +996,25 @@ Test(nvtable, test_nvtable_unset_values)
 
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 1024);
   value = nv_table_get_value(tab, DYN_HANDLE, &size, NULL);
-  cr_assert_not_null(value);
-  cr_assert_eq(value[0], 0);
+  cr_assert_null(value);
   cr_assert_eq(size, 0);
 
   size = 1;
-  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size, NULL);
+  value = nv_table_get_value(tab, DYN_HANDLE, &size, NULL);
   cr_assert_null(value);
   cr_assert_eq(size, 0);
 
   success = nv_table_add_value(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), "foo", 3, 0, NULL);
   cr_assert(success);
   size = 1;
-  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size, NULL);
+  value = nv_table_get_value(tab, DYN_HANDLE, &size, NULL);
   cr_assert_not_null(value);
   cr_assert_arr_eq(value, "foo", 3);
   cr_assert_eq(size, 3);
 
   nv_table_unset_value(tab, DYN_HANDLE);
   size = 1;
-  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size, NULL);
+  value = nv_table_get_value(tab, DYN_HANDLE, &size, NULL);
   cr_assert_null(value);
   cr_assert_eq(size, 0);
 
@@ -1113,8 +1112,7 @@ Test(nvtable, test_nvtable_compact_skips_unset_values)
   nv_table_unref(tab1);
 
   value = nv_table_get_value(tab2, DYN_HANDLE, &size, NULL);
-  cr_assert_not_null(value);
-  cr_assert_str_eq(value, "");
+  cr_assert_null(value);
   cr_assert_eq(size, 0);
 
   value = nv_table_get_value(tab2, STATIC_HANDLE, &size, NULL);

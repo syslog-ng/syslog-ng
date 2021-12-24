@@ -416,7 +416,7 @@ nv_table_is_value_set(NVTable *self, NVHandle handle)
 }
 
 static inline const gchar *
-nv_table_get_value_if_set(NVTable *self, NVHandle handle, gssize *length, NVType *type)
+nv_table_get_value(NVTable *self, NVHandle handle, gssize *length, NVType *type)
 {
   NVEntry *entry;
 
@@ -437,20 +437,6 @@ nv_table_get_value_if_set(NVTable *self, NVHandle handle, gssize *length, NVType
       return entry->vdirect.data + entry->name_len + 1;
     }
   return nv_table_resolve_indirect(self, entry, length);
-}
-
-static inline const gchar *
-nv_table_get_value(NVTable *self, NVHandle handle, gssize *length, NVType *type)
-{
-  const gchar *value = nv_table_get_value_if_set(self, handle, length, type);
-
-  if (!value)
-    {
-      if (type)
-        *type = 0;
-      return null_string;
-    }
-  return value;
 }
 
 static inline NVIndexEntry *
