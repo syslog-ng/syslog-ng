@@ -350,7 +350,7 @@ log_msg_get_value_with_type(const LogMessage *self, NVHandle handle, gssize *val
   if (result)
     return result;
   if (type)
-    *type = LM_VT_STRING;
+    *type = LM_VT_NULL;
   if (value_len)
     *value_len = 0;
   return "";
