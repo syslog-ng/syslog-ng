@@ -206,7 +206,8 @@ TEMPLATE_FUNCTION_SIMPLE(tf_strip);
 typedef struct _TFSanitizeState
 {
   TFSimpleFuncState super;
-  gint ctrl_chars:1, replacement:8;
+  gboolean ctrl_chars;
+  gchar replacement;
   gchar *invalid_chars;
 } TFSanitizeState;
 
