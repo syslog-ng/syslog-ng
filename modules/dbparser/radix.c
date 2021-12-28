@@ -523,17 +523,26 @@ r_parser_ip(gchar *str, gint *len, const gchar *param, gpointer state, RParserMa
   return r_parser_ipv4(str, len, param, state, match) || r_parser_ipv6(str, len, param, state, match);
 }
 
+static inline void
+_scan_digits(gchar *str, gint *len)
+{
+  while (g_ascii_isdigit(str[*len]))
+    (*len)++;
+}
+
 gboolean
 r_parser_float(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
-  gboolean dot = FALSE;
-
   *len = 0;
   if (str[*len] == '-')
     (*len)++;
 
-  while (g_ascii_isdigit(str[*len]) || (!dot && str[*len] == '.' && (dot = TRUE)))
-    (*len)++;
+  _scan_digits(str, len);
+  if (str[*len] == '.')
+    {
+      (*len)++;
+      _scan_digits(str, len);
+    }
 
   if (*len > 0 && (str[*len] == 'e' || str[*len] == 'E'))
     {
