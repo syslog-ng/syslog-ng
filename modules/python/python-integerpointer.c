@@ -57,7 +57,7 @@ PyTypeObject py_integer_pointer_type =
   .tp_dealloc = (destructor) PyObject_Del,
   .tp_flags = Py_TPFLAGS_DEFAULT,
   .tp_doc = "IntegerPointer class exposes an integer by a pointer",
-  .tp_as_number = &(PyNumberMethods){ .nb_int = _as_int },
+  .tp_as_number = &(PyNumberMethods){ .nb_int = _as_int, .nb_index = _as_int },
   .tp_str = _as_str,
   0,
 };
