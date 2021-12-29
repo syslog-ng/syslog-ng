@@ -28,6 +28,7 @@
 
 %code {
 
+#include "cfg-grammar-internal.h"
 #include "cfg-parser.h"
 #include "syslog-names.h"
 #include "messages.h"
@@ -62,4 +63,3 @@ first_rule
 /* INCLUDE_RULES */
 
 %%
-

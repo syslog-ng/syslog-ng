@@ -109,6 +109,7 @@ mkdir "${plugin_dir}"
 
 for filename in ${file_list}; do
   plugin_name_under_score=$(echo "${plugin_name}" | sed "s/-/_/g")
+  plugin_name_under_score_uppercase="${plugin_name_under_score^^}"
   if [ "${filename}" == "plugin_template_Makefile.am" ]; then
     dst_filename="Makefile.am"
   elif [ "${filename}" == "plugin_template_CMakeLists.txt" ]; then
@@ -120,6 +121,7 @@ for filename in ${file_list}; do
   cp "${template_dir}/${filename}" "${dst_filename}"
   sed -i "s/@PLUGIN_NAME@/${plugin_name}/g" "${dst_filename}"
   sed -i "s/@PLUGIN_NAME_US@/${plugin_name_under_score}/g" "${dst_filename}"
+  sed -i "s/@PLUGIN_NAME_USUC@/${plugin_name_under_score_uppercase}/g" "${dst_filename}"
   sed -i "s/@PLUGIN_TYPE@/${plugin_type}/g" "${dst_filename}"
   sed -i "s/@PLUGIN_KEY@/${plugin_key}/g" "${dst_filename}"
   sed -i "s/@YEAR_AND_AUTHOR@/${year_and_author}/g" "${dst_filename}"

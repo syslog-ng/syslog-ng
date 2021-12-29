@@ -20,15 +20,14 @@
  *
  */
 
-#ifndef @PLUGIN_NAME_US@_PARSER_H_INCLUDED
-#define @PLUGIN_NAME_US@_PARSER_H_INCLUDED
+#ifndef @PLUGIN_NAME_USUC@_PARSER_H_INCLUDED
+#define @PLUGIN_NAME_USUC@_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
 #include "driver.h"
 
 extern CfgParser @PLUGIN_NAME_US@_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(@PLUGIN_NAME_US@_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(@PLUGIN_NAME_US@_, @PLUGIN_NAME_USUC@_, LogDriver **)
 
 #endif
-

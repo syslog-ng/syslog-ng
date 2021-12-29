@@ -14,4 +14,3 @@ add_module(
   GRAMMAR @PLUGIN_NAME@-grammar
   SOURCES ${@PLUGIN_NAME@_SOURCES}
 )
-
