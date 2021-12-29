@@ -49,7 +49,7 @@ include modules/system-source/Makefile.am
 include modules/tagsparser/Makefile.am
 include modules/xml/Makefile.am
 include modules/regexp-parser/Makefile.am
-include modules/throttle-filter/Makefile.am
+include modules/rate-limit-filter/Makefile.am
 
 SYSLOG_NG_CORE_JAR=$(top_builddir)/modules/java/syslog-ng-core/libs/syslog-ng-core.jar
 
@@ -64,7 +64,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-native mod-cef mod-add-contextual-data mod-diskq mod-getent \
 	mod-map-value-pairs mod-tags-parser mod-xml \
 	mod-appmodel mod-openbsd mod-snmp mod-secure-logging \
-	mod-mqtt mod-regexp-parser mod-throttle-filter
+	mod-mqtt mod-regexp-parser mod-rate-limit-filter
 
 modules modules/: ${SYSLOG_NG_MODULES}
 
@@ -80,7 +80,7 @@ modules_test_subdirs	=	\
 	modules_secure-logging modules_systemd_journal modules_kvformat modules_date \
 	modules_cef modules_diskq modules-add-contextual-data modules_getent \
 	modules_map-value-pairs modules_tagsparser modules_xml modules_appmodel \
-	modules_regexp-parser modules_throttle-filter
+	modules_regexp-parser modules_rate-limit-filter
 
 EXTRA_DIST += modules/CMakeLists.txt
 

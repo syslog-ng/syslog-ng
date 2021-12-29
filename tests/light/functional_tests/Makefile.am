@@ -14,7 +14,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/destination_drivers/snmp_destination/v2c/test_snmp_destination_v2c_custom_community.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/v2c/test_snmp_destination_v2c_using_macro_snmp_obj.py \
 	tests/light/functional_tests/filters/test_filter_reference.py \
-	tests/light/functional_tests/filters/throttle/test_throttle_filter_acceptance.py \
+	tests/light/functional_tests/filters/rate-limit/test_rate_limit_filter_acceptance.py \
 	tests/light/functional_tests/logpath/test_flags_catch_all.py \
 	tests/light/functional_tests/logpath/test_flags_fallback.py \
 	tests/light/functional_tests/logpath/test_flags_final.py \

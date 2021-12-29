@@ -21,33 +21,30 @@
  */
 
 #include "cfg-parser.h"
-#include "plugin.h"
-#include "plugin-types.h"
+#include "filter/filter-expr.h"
+#include "rate-limit-grammar.h"
 
-extern CfgParser throttle_filter_parser;
+extern int rate_limit_filter_debug;
 
-static Plugin throttle_filter_plugins[] =
+int rate_limit_filter_parse(CfgLexer *lexer, FilterExprNode **instance, gpointer arg);
+
+static CfgLexerKeyword rate_limit_filter_keywords[] =
 {
-  {
-    .type = LL_CONTEXT_FILTER,
-    .name = "throttle",
-    .parser = &throttle_filter_parser,
-  },
+  { "throttle", KW_THROTTLE },
+  { "rate_limit", KW_RATE_LIMIT },
+  { "rate", KW_RATE },
+  { NULL }
 };
 
-gboolean
-throttle_filter_module_init(PluginContext *context, CfgArgs *args)
+CfgParser rate_limit_filter_parser =
 {
-  plugin_register(context, throttle_filter_plugins, G_N_ELEMENTS(throttle_filter_plugins));
-  return TRUE;
-}
-
-const ModuleInfo module_info =
-{
-  .canonical_name = "throttle_filter",
-  .version = SYSLOG_NG_VERSION,
-  .description = "Rate-limiting messages based on arbitrary keys",
-  .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = throttle_filter_plugins,
-  .plugins_len = G_N_ELEMENTS(throttle_filter_plugins),
+#if SYSLOG_NG_ENABLE_DEBUG
+  .debug_flag = &rate_limit_filter_debug,
+#endif
+  .name = "rate-limit-filter",
+  .keywords = rate_limit_filter_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) rate_limit_filter_parse,
+  .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
+
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(rate_limit_filter_, RATE_LIMIT_FILTER_, FilterExprNode **)

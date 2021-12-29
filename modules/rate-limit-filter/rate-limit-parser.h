@@ -20,14 +20,14 @@
  *
  */
 
-#ifndef THROTTLE_FILTER_PARSER_H_INCLUDED
-#define THROTTLE_FILTER_PARSER_H_INCLUDED
+#ifndef RATE_LIMIT_PARSER_H_INCLUDED
+#define RATE_LIMIT_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
 #include "filter/filter-expr.h"
 
-extern CfgParser throttle_filter_parser;
+extern CfgParser rate_limit_filter_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(throttle_filter_, THROTTLE_FILTER_, FilterExprNode **)
+CFG_PARSER_DECLARE_LEXER_BINDING(rate_limit_filter_, RATE_LIMIT_FILTER_, FilterExprNode **)
 
 #endif

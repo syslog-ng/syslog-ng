@@ -20,15 +20,15 @@
  *
  */
 
-#ifndef FILTER_THROTTLE_H_INCLUDED
-#define FILTER_THROTTLE_H_INCLUDED
+#ifndef RATE_LIMIT_H_INCLUDED
+#define RATE_LIMIT_H_INCLUDED
 
 #include "filter/filter-expr.h"
 
-FilterExprNode *filter_throttle_new(void);
+FilterExprNode *rate_limit_new(void);
 
-void filter_throttle_set_key_template(FilterExprNode *s, LogTemplate *template);
-void filter_throttle_set_key(FilterExprNode *s, NVHandle key_handle);
-void filter_throttle_set_rate(FilterExprNode *s, gint rate);
+void rate_limit_set_key_template(FilterExprNode *s, LogTemplate *template);
+void rate_limit_set_key(FilterExprNode *s, NVHandle key_handle);
+void rate_limit_set_rate(FilterExprNode *s, gint rate);
 
 #endif

@@ -21,14 +21,14 @@
  */
 
 %code top {
-#include "throttle-filter-parser.h"
+#include "rate-limit-parser.h"
 
 }
 
 
 %code {
 
-#include "throttle-filter.h"
+#include "rate-limit.h"
 #include "cfg-grammar-internal.h"
 #include "cfg-parser.h"
 #include "syslog-names.h"
@@ -39,7 +39,7 @@
 
 }
 
-%define api.prefix {throttle_filter_}
+%define api.prefix {rate_limit_filter_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */
@@ -51,39 +51,36 @@
 
 /* INCLUDE_DECLS */
 
-%token KW_THROTTLE
+%token KW_RATE_LIMIT
 %token KW_RATE
 
-%type	<ptr> filter_throttle
+%type	<ptr> rate_limit
 
 %%
 
 start
-  : LL_CONTEXT_FILTER filter_throttle          { YYACCEPT; }
+  : LL_CONTEXT_FILTER rate_limit          { YYACCEPT; }
   ;
 
-filter_throttle
-  : KW_THROTTLE
-      {
-        last_filter_expr = *instance = filter_throttle_new();
-      }
-    '(' filter_throttle_args ')' { $$ = last_filter_expr; }
+rate_limit
+  : KW_RATE_LIMIT { last_filter_expr = *instance = rate_limit_new(); } '(' rate_limit_args ')' { $$ = last_filter_expr; }
+  | KW_THROTTLE { last_filter_expr = *instance = rate_limit_new(); } '(' rate_limit_args ')' { $$ = last_filter_expr; }
   ;
 
-filter_throttle_args
-  : filter_throttle_arg filter_throttle_args
+rate_limit_args
+  : rate_limit_arg rate_limit_args
   |
   ;
 
-filter_throttle_arg
+rate_limit_arg
   : KW_TEMPLATE '(' template_content ')'
       {
-        filter_throttle_set_key_template(last_filter_expr, $3);
+        rate_limit_set_key_template(last_filter_expr, $3);
         log_template_unref($3);
       }
   | KW_RATE '(' positive_integer ')'
       {
-        filter_throttle_set_rate(last_filter_expr, $3);
+        rate_limit_set_rate(last_filter_expr, $3);
       }
   ;
 

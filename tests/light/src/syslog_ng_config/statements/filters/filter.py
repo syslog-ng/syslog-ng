@@ -44,6 +44,6 @@ class Match(Filter):
         super(Match, self).__init__("match", [match_string], **options)
 
 
-class Throttle(Filter):
+class RateLimit(Filter):
     def __init__(self, **options):
-        super(Throttle, self).__init__("throttle", [], **options)
+        super(RateLimit, self).__init__("rate-limit", [], **options)

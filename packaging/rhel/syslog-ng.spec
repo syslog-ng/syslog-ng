@@ -478,7 +478,7 @@ fi
 %{_libdir}/%{name}/libmap-value-pairs.so
 %{_libdir}/%{name}/libpseudofile.so
 %{_libdir}/%{name}/libregexp-parser.so
-%{_libdir}/%{name}/libthrottle-filter.so
+%{_libdir}/%{name}/librate-limit-filter.so
 %{_libdir}/%{name}/libstardate.so
 %{_libdir}/%{name}/libsyslogformat.so
 %{_libdir}/%{name}/libsystem-source.so
