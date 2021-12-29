@@ -130,6 +130,7 @@
 #define VERSION_3_33 "syslog-ng 3.33"
 #define VERSION_3_34 "syslog-ng 3.34"
 #define VERSION_3_35 "syslog-ng 3.35"
+#define VERSION_3_36 "syslog-ng 3.36"
 
 /* VERSION_VALUE_* references versions as integers to be compared against stuff like cfg->user_version */
 /* VERSION_STR_* references versions as strings to be shown to the user */
