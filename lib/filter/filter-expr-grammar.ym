@@ -46,8 +46,6 @@
 #include "plugin.h"
 #include "cfg-grammar-internal.h"
 
-FilterExprNode *last_filter_expr;
-
 }
 
 %define api.prefix {filter_expr_}
