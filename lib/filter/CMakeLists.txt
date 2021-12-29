@@ -11,7 +11,6 @@ set(FILTER_HEADERS
     filter/filter-pri.h
     filter/filter-pipe.h
     filter/filter-expr-parser.h
-    filter/filter-throttle.h
     PARENT_SCOPE
     )
 
@@ -28,7 +27,6 @@ set(FILTER_SOURCES
     filter/filter-pri.c
     filter/filter-pipe.c
     filter/filter-expr-parser.c
-    filter/filter-throttle.c
     PARENT_SCOPE
     )
 

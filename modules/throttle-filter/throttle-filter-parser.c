@@ -20,16 +20,18 @@
  *
  */
 
-#include "driver.h"
 #include "cfg-parser.h"
+#include "filter/filter-expr.h"
 #include "throttle-filter-grammar.h"
 
 extern int throttle_filter_debug;
 
-int throttle_filter_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
+int throttle_filter_parse(CfgLexer *lexer, FilterExprNode **instance, gpointer arg);
 
 static CfgLexerKeyword throttle_filter_keywords[] =
 {
+  { "throttle", KW_THROTTLE },
+  { "rate", KW_RATE },
   { NULL }
 };
 
@@ -44,4 +46,4 @@ CfgParser throttle_filter_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(throttle_filter_, THROTTLE_FILTER_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(throttle_filter_, THROTTLE_FILTER_, FilterExprNode **)

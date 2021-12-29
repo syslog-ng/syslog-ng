@@ -28,6 +28,7 @@
 
 %code {
 
+#include "throttle-filter.h"
 #include "cfg-grammar-internal.h"
 #include "cfg-parser.h"
 #include "syslog-names.h"
@@ -45,22 +46,47 @@
 
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {LogDriver **instance}
+%parse-param {FilterExprNode **instance}
 %parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */
 
+%token KW_THROTTLE
+%token KW_RATE
+
+%type	<ptr> filter_throttle
+
 %%
 
 start
-  : LL_CONTEXT_FILTER first_rule          { YYACCEPT; }
+  : LL_CONTEXT_FILTER filter_throttle          { YYACCEPT; }
   ;
 
-first_rule
-  :
+filter_throttle
+  : KW_THROTTLE
+      {
+        last_filter_expr = *instance = filter_throttle_new();
+      }
+    '(' filter_throttle_args ')' { $$ = last_filter_expr; }
+  ;
+
+filter_throttle_args
+  : filter_throttle_arg filter_throttle_args
+  |
+  ;
+
+filter_throttle_arg
+  : KW_TEMPLATE '(' template_content ')'
+      {
+        filter_throttle_set_key_template(last_filter_expr, $3);
+        log_template_unref($3);
+      }
+  | KW_RATE '(' positive_integer ')'
+      {
+        filter_throttle_set_rate(last_filter_expr, $3);
+      }
   ;
 
 /* INCLUDE_RULES */
 
 %%
-

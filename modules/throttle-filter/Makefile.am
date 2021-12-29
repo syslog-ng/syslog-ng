@@ -3,7 +3,9 @@ modules_throttle_filter_libthrottle_filter_la_SOURCES = \
   modules/throttle-filter/throttle-filter-grammar.y       \
   modules/throttle-filter/throttle-filter-parser.c        \
   modules/throttle-filter/throttle-filter-parser.h        \
-  modules/throttle-filter/throttle-filter-plugin.c
+  modules/throttle-filter/throttle-filter-plugin.c \
+  modules/throttle-filter/throttle-filter.h \
+  modules/throttle-filter/throttle-filter.c
 
 BUILT_SOURCES       +=      \
   modules/throttle-filter/throttle-filter-grammar.y       \

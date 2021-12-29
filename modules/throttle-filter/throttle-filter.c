@@ -21,7 +21,7 @@
  *
  */
 
-#include "filter-throttle.h"
+#include "throttle-filter.h"
 #include "timeutils/misc.h"
 #include "scratch-buffers.h"
 #include "str-utils.h"

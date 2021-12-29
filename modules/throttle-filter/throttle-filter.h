@@ -24,7 +24,7 @@
 #ifndef FILTER_THROTTLE_H_INCLUDED
 #define FILTER_THROTTLE_H_INCLUDED
 
-#include "filter-expr.h"
+#include "filter/filter-expr.h"
 
 FilterExprNode *filter_throttle_new(void);
 

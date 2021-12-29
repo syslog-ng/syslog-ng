@@ -56,8 +56,6 @@ static CfgLexerKeyword filter_expr_keywords[] =
   { "message",            KW_MESSAGE },
   { "match",              KW_MATCH },
   { "netmask",            KW_NETMASK },
-  { "throttle",           KW_THROTTLE },
-  { "rate",               KW_RATE },
   { "tags",               KW_TAGS },
   { "in_list",            KW_IN_LIST },
 #if SYSLOG_NG_ENABLE_IPV6

@@ -24,10 +24,10 @@
 #define THROTTLE_FILTER_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
-#include "driver.h"
+#include "filter/filter-expr.h"
 
 extern CfgParser throttle_filter_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(throttle_filter_, THROTTLE_FILTER_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(throttle_filter_, THROTTLE_FILTER_, FilterExprNode **)
 
 #endif
