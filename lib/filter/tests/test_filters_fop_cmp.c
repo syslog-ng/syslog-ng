@@ -32,7 +32,7 @@
 #include "filter/filter-expr-grammar.h"
 
 LogMessage *
-_construct_filter_msg(void)
+_construct_sample_message(void)
 {
   LogMessage *msg = log_msg_new_empty();
 
@@ -41,13 +41,27 @@ _construct_filter_msg(void)
   return msg;
 }
 
-gboolean
-evaluate_testcase(FilterExprNode *filter_node)
+FilterExprNode *
+_construct_filter(const gchar *config_snippet)
 {
-  LogMessage *msg = _construct_filter_msg();
+  FilterExprNode *tmp;
+
+  CfgLexer *lexer = cfg_lexer_new_buffer(configuration, config_snippet, strlen(config_snippet));
+  cr_assert(lexer);
+
+  cr_assert(cfg_run_parser(configuration, lexer, &filter_expr_parser, (gpointer *) &tmp, NULL));
+  cr_assert(tmp);
+  return tmp;
+}
+
+gboolean
+evaluate(const gchar *filter_expr)
+{
+  LogMessage *msg = _construct_sample_message();
+  FilterExprNode *filter_node = _construct_filter(filter_expr);
   gboolean result;
 
-  cr_assert_not_null(filter_node, "Constructing an in-list filter");
+  cr_assert_not_null(filter_node, "Error compiling filter expression");
   result = filter_expr_eval(filter_node, msg);
 
   log_msg_unref(msg);
@@ -55,186 +69,180 @@ evaluate_testcase(FilterExprNode *filter_node)
   return result;
 }
 
-gboolean
-evaluate(const gchar *left, gint operator, const gchar *right)
-{
-  return evaluate_testcase(fop_cmp_new(compile_template(left), compile_template(right), "", operator));
-}
-
 Test(filter, test_num_eq)
 {
-  cr_assert(evaluate("10", KW_NUM_EQ, "10"));
-  cr_assert(evaluate("$SEVERITY_NUM", KW_NUM_EQ, "7"));
-  cr_assert(evaluate("$SEVERITY_NUM", KW_NUM_EQ, "$SEVERITY_NUM"));
+  cr_assert(evaluate("10 == 10"));
+  cr_assert(evaluate("$SEVERITY_NUM == 7"));
+  cr_assert(evaluate("$SEVERITY_NUM == $SEVERITY_NUM"));
 
-  cr_assert_not(evaluate("10", KW_NUM_EQ, "11"));
-
+  cr_assert_not(evaluate("10 == 11"));
 }
+
 Test(filter, test_num_ne)
 {
-  cr_assert(evaluate("10", KW_NUM_NE, "9"));
-  cr_assert(evaluate("$SEVERITY_NUM", KW_NUM_NE, "8"));
-  cr_assert(evaluate("$SEVERITY_NUM", KW_NUM_NE, "$FACILITY_NUM"));
+  cr_assert(evaluate("10 != 9"));
+  cr_assert(evaluate("$SEVERITY_NUM != 8"));
+  cr_assert(evaluate("$SEVERITY_NUM != $FACILITY_NUM"));
 
-  cr_assert_not(evaluate("10", KW_NUM_NE, "10"));
+  cr_assert_not(evaluate("10 != 10"));
 }
 
 Test(filter, test_num_lt)
 {
-  cr_assert(evaluate("10", KW_NUM_LT, "11"));
-  cr_assert(evaluate("7", KW_NUM_LT, "8"));
-  cr_assert(evaluate("7", KW_NUM_LT, "10"));
-  cr_assert(evaluate("$LEVEL_NUM", KW_NUM_LT, "8"));
-  cr_assert(evaluate("$LEVEL_NUM", KW_NUM_LT, "10"));
+  cr_assert(evaluate("10 < 11"));
+  cr_assert(evaluate("7 < 8"));
+  cr_assert(evaluate("7 < 10"));
+  cr_assert(evaluate("$LEVEL_NUM < 8"));
+  cr_assert(evaluate("$LEVEL_NUM < 10"));
 
-  cr_assert_not(evaluate("11", KW_NUM_LT, "10"));
-  cr_assert_not(evaluate("11", KW_NUM_LT, "11"));
+  cr_assert_not(evaluate("11 < 10"));
+  cr_assert_not(evaluate("11 < 11"));
 }
 
 Test(filter, test_num_le)
 {
-  cr_assert(evaluate("11", KW_NUM_LE, "11"));
-  cr_assert(evaluate("10", KW_NUM_LE, "11"));
-  cr_assert(evaluate("7", KW_NUM_LE, "8"));
-  cr_assert(evaluate("7", KW_NUM_LE, "10"));
-  cr_assert(evaluate("$LEVEL_NUM", KW_NUM_LE, "8"));
-  cr_assert(evaluate("$LEVEL_NUM", KW_NUM_LE, "10"));
+  cr_assert(evaluate("11 <= 11"));
+  cr_assert(evaluate("10 <= 11"));
+  cr_assert(evaluate("7 <= 8"));
+  cr_assert(evaluate("7 <= 10"));
+  cr_assert(evaluate("$LEVEL_NUM <= 8"));
+  cr_assert(evaluate("$LEVEL_NUM <= 10"));
 
-  cr_assert_not(evaluate("11", KW_NUM_LE, "10"));
+  cr_assert_not(evaluate("11 <= 10"));
 }
 
 Test(filter, test_num_gt)
 {
-  cr_assert(evaluate("11", KW_NUM_GT, "10"));
-  cr_assert(evaluate("8", KW_NUM_GT, "7"));
-  cr_assert(evaluate("10", KW_NUM_GT, "7"));
-  cr_assert(evaluate("8", KW_NUM_GT, "$LEVEL_NUM"));
-  cr_assert(evaluate("10", KW_NUM_GT, "$LEVEL_NUM"));
+  cr_assert(evaluate("11 > 10"));
+  cr_assert(evaluate("8 > 7"));
+  cr_assert(evaluate("10 > 7"));
+  cr_assert(evaluate("8 > $LEVEL_NUM"));
+  cr_assert(evaluate("10 > $LEVEL_NUM"));
 
-  cr_assert_not(evaluate("10", KW_NUM_GT, "11"));
-  cr_assert_not(evaluate("10", KW_NUM_GT, "10"));
+  cr_assert_not(evaluate("10 > 11"));
+  cr_assert_not(evaluate("10 > 10"));
 }
 
 Test(filter, test_num_ge)
 {
-  cr_assert(evaluate("10", KW_NUM_GE, "10"));
-  cr_assert(evaluate("11", KW_NUM_GE, "10"));
-  cr_assert(evaluate("8", KW_NUM_GE, "7"));
-  cr_assert(evaluate("10", KW_NUM_GE, "7"));
-  cr_assert(evaluate("8", KW_NUM_GE, "$LEVEL_NUM"));
-  cr_assert(evaluate("10", KW_NUM_GE, "$LEVEL_NUM"));
+  cr_assert(evaluate("10 >= 10"));
+  cr_assert(evaluate("11 >= 10"));
+  cr_assert(evaluate("8 >= 7"));
+  cr_assert(evaluate("10 >= 7"));
+  cr_assert(evaluate("8 >= $LEVEL_NUM"));
+  cr_assert(evaluate("10 >= $LEVEL_NUM"));
 
-  cr_assert_not(evaluate("10", KW_NUM_GE, "11"));
+  cr_assert_not(evaluate("10 >= 11"));
 }
 
 Test(filter, test_numeric_ordering)
 {
-  cr_assert_not(evaluate("10", KW_NUM_LT, "10"));
-  cr_assert(evaluate("10", KW_NUM_LE, "10"));
-  cr_assert(evaluate("10", KW_NUM_EQ, "10"));
-  cr_assert(evaluate("10", KW_NUM_GE, "10"));
-  cr_assert_not(evaluate("10", KW_NUM_GT, "10"));
+  cr_assert_not(evaluate("10 < 10"));
+  cr_assert(evaluate("10 <= 10"));
+  cr_assert(evaluate("10 == 10"));
+  cr_assert(evaluate("10 >= 10"));
+  cr_assert_not(evaluate("10 > 10"));
 
-  cr_assert(evaluate("10", KW_NUM_LT, "11"));
-  cr_assert(evaluate("10", KW_NUM_LE, "11"));
-  cr_assert_not(evaluate("10", KW_NUM_EQ, "11"));
-  cr_assert_not(evaluate("10", KW_NUM_GE, "11"));
-  cr_assert_not(evaluate("10", KW_NUM_GT, "11"));
+  cr_assert(evaluate("10 < 11"));
+  cr_assert(evaluate("10 <= 11"));
+  cr_assert_not(evaluate("10 == 11"));
+  cr_assert_not(evaluate("10 >= 11"));
+  cr_assert_not(evaluate("10 > 11"));
 
-  cr_assert_not(evaluate("11", KW_NUM_LT, "10"));
-  cr_assert_not(evaluate("11", KW_NUM_LE, "10"));
-  cr_assert_not(evaluate("11", KW_NUM_EQ, "10"));
-  cr_assert(evaluate("11", KW_NUM_GE, "10"));
-  cr_assert(evaluate("11", KW_NUM_GT, "10"));
+  cr_assert_not(evaluate("11 < 10"));
+  cr_assert_not(evaluate("11 <= 10"));
+  cr_assert_not(evaluate("11 == 10"));
+  cr_assert(evaluate("11 >= 10"));
+  cr_assert(evaluate("11 > 10"));
 }
 
 /* string comparison */
 
 Test(filter, test_eq)
 {
-  cr_assert(evaluate("10", KW_EQ, "10"));
-  cr_assert(evaluate("$SEVERITY_NUM", KW_EQ, "7"));
-  cr_assert(evaluate("$SEVERITY_NUM", KW_EQ, "$SEVERITY_NUM"));
+  cr_assert(evaluate("10 eq 10"));
+  cr_assert(evaluate("$SEVERITY_NUM eq 7"));
+  cr_assert(evaluate("$SEVERITY_NUM eq $SEVERITY_NUM"));
 
-  cr_assert_not(evaluate("10", KW_EQ, "11"));
+  cr_assert_not(evaluate("10 eq 11"));
 
 }
 
 Test(filter, test_ne)
 {
-  cr_assert(evaluate("10", KW_NE, "9"));
-  cr_assert(evaluate("$SEVERITY_NUM", KW_NE, "8"));
-  cr_assert(evaluate("$SEVERITY_NUM", KW_NE, "$FACILITY_NUM"));
+  cr_assert(evaluate("10 ne 9"));
+  cr_assert(evaluate("$SEVERITY_NUM ne 8"));
+  cr_assert(evaluate("$SEVERITY_NUM ne $FACILITY_NUM"));
 
-  cr_assert_not(evaluate("10", KW_NE, "10"));
+  cr_assert_not(evaluate("10 ne 10"));
 }
 
 Test(filter, test_lt)
 {
-  cr_assert(evaluate("10", KW_LT, "11"));
-  cr_assert(evaluate("7", KW_LT, "8"));
-  cr_assert(evaluate("$LEVEL_NUM", KW_LT, "8"));
+  cr_assert(evaluate("10 lt 11"));
+  cr_assert(evaluate("7 lt 8"));
+  cr_assert(evaluate("$LEVEL_NUM lt 8"));
 
-  cr_assert_not(evaluate("7", KW_LT, "10"));
-  cr_assert_not(evaluate("11", KW_LT, "10"));
-  cr_assert_not(evaluate("11", KW_LT, "11"));
+  cr_assert_not(evaluate("7 lt 10"));
+  cr_assert_not(evaluate("11 lt 10"));
+  cr_assert_not(evaluate("11 lt 11"));
 }
 
 Test(filter, test_le)
 {
-  cr_assert(evaluate("11", KW_LE, "11"));
-  cr_assert(evaluate("10", KW_LE, "11"));
-  cr_assert(evaluate("7", KW_LE, "8"));
-  cr_assert(evaluate("$LEVEL_NUM", KW_LE, "8"));
+  cr_assert(evaluate("11 le 11"));
+  cr_assert(evaluate("10 le 11"));
+  cr_assert(evaluate("7 le 8"));
+  cr_assert(evaluate("$LEVEL_NUM le 8"));
 
-  cr_assert_not(evaluate("7", KW_LE, "10"));
-  cr_assert_not(evaluate("11", KW_LE, "10"));
-  cr_assert_not(evaluate("$LEVEL_NUM", KW_LE, "10"));
+  cr_assert_not(evaluate("7 le 10"));
+  cr_assert_not(evaluate("11 le 10"));
+  cr_assert_not(evaluate("$LEVEL_NUM le 10"));
 }
 
 Test(filter, test_gt)
 {
-  cr_assert(evaluate("11", KW_GT, "10"));
-  cr_assert(evaluate("8", KW_GT, "7"));
-  cr_assert(evaluate("8", KW_GT, "$LEVEL_NUM"));
+  cr_assert(evaluate("11 gt 10"));
+  cr_assert(evaluate("8 gt 7"));
+  cr_assert(evaluate("8 gt $LEVEL_NUM"));
 
-  cr_assert_not(evaluate("10", KW_GT, "7"));
-  cr_assert_not(evaluate("10", KW_GT, "11"));
-  cr_assert_not(evaluate("10", KW_GT, "10"));
-  cr_assert_not(evaluate("10", KW_GT, "$LEVEL_NUM"));
+  cr_assert_not(evaluate("10 gt 7"));
+  cr_assert_not(evaluate("10 gt 11"));
+  cr_assert_not(evaluate("10 gt 10"));
+  cr_assert_not(evaluate("10 gt $LEVEL_NUM"));
 }
 
 Test(filter, test_ge)
 {
-  cr_assert(evaluate("10", KW_GE, "10"));
-  cr_assert(evaluate("11", KW_GE, "10"));
-  cr_assert(evaluate("8", KW_GE, "7"));
-  cr_assert(evaluate("8", KW_GE, "$LEVEL_NUM"));
+  cr_assert(evaluate("10 ge 10"));
+  cr_assert(evaluate("11 ge 10"));
+  cr_assert(evaluate("8 ge 7"));
+  cr_assert(evaluate("8 ge $LEVEL_NUM"));
 
-  cr_assert_not(evaluate("10", KW_GE, "7"));
-  cr_assert_not(evaluate("10", KW_GE, "11"));
-  cr_assert_not(evaluate("10", KW_GE, "$LEVEL_NUM"));
+  cr_assert_not(evaluate("10 ge 7"));
+  cr_assert_not(evaluate("10 ge 11"));
+  cr_assert_not(evaluate("10 ge $LEVEL_NUM"));
 }
 
 Test(filter, test_string_ordering)
 {
-  cr_assert_not(evaluate("10", KW_LT, "10"));
-  cr_assert(evaluate("10", KW_LE, "10"));
-  cr_assert(evaluate("10", KW_EQ, "10"));
-  cr_assert(evaluate("10", KW_GE, "10"));
-  cr_assert_not(evaluate("10", KW_GT, "10"));
+  cr_assert_not(evaluate("10 lt 10"));
+  cr_assert(evaluate("10 le 10"));
+  cr_assert(evaluate("10 eq 10"));
+  cr_assert(evaluate("10 ge 10"));
+  cr_assert_not(evaluate("10 gt 10"));
 
-  cr_assert(evaluate("10", KW_LT, "11"));
-  cr_assert(evaluate("10", KW_LE, "11"));
-  cr_assert_not(evaluate("10", KW_EQ, "11"));
-  cr_assert_not(evaluate("10", KW_GE, "11"));
-  cr_assert_not(evaluate("10", KW_GT, "11"));
+  cr_assert(evaluate("10 lt 11"));
+  cr_assert(evaluate("10 le 11"));
+  cr_assert_not(evaluate("10 eq 11"));
+  cr_assert_not(evaluate("10 ge 11"));
+  cr_assert_not(evaluate("10 gt 11"));
 
-  cr_assert_not(evaluate("11", KW_LT, "10"));
-  cr_assert_not(evaluate("11", KW_LE, "10"));
-  cr_assert_not(evaluate("11", KW_EQ, "10"));
-  cr_assert(evaluate("11", KW_GE, "10"));
-  cr_assert(evaluate("11", KW_GT, "10"));
+  cr_assert_not(evaluate("11 lt 10"));
+  cr_assert_not(evaluate("11 le 10"));
+  cr_assert_not(evaluate("11 eq 10"));
+  cr_assert(evaluate("11 ge 10"));
+  cr_assert(evaluate("11 gt 10"));
 }
 
 Test(filter, test_string_ordering_with_non_numbers)
