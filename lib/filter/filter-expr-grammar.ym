@@ -175,7 +175,7 @@ filter_identifier
         ;
 
 filter_comparison
-	: template_content operator template_content         { $$ = fop_cmp_new($1, $3, $2); }
+	: template_content operator <cptr>{ $$ = strdup(lexer->token_text->str); } template_content         { $$ = fop_cmp_new($1, $4, $3, $2); free($3); }
         ;
 
 operator

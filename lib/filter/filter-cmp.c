@@ -146,42 +146,36 @@ fop_map_grammar_token_to_compare_mode(FilterCmp *self, GlobalConfig *cfg, gint t
       self->compare_mode = FCMP_NUM;
     case KW_LT:
       self->compare_mode |= FCMP_LT;
-      self->super.type = g_strdup("<");
       break;
 
     case KW_NUM_LE:
       self->compare_mode = FCMP_NUM;
     case KW_LE:
       self->compare_mode |= FCMP_LT | FCMP_EQ;
-      self->super.type = g_strdup("<=");
       break;
 
     case KW_NUM_EQ:
       self->compare_mode = FCMP_NUM;
     case KW_EQ:
       self->compare_mode |= FCMP_EQ;
-      self->super.type = g_strdup("==");
       break;
 
     case KW_NUM_NE:
       self->compare_mode = FCMP_NUM;
     case KW_NE:
       self->compare_mode |= FCMP_LT | FCMP_GT;
-      self->super.type = g_strdup("!=");
       break;
 
     case KW_NUM_GE:
       self->compare_mode = FCMP_NUM;
     case KW_GE:
       self->compare_mode |= FCMP_GT | FCMP_EQ;
-      self->super.type = g_strdup(">=");
       break;
 
     case KW_NUM_GT:
       self->compare_mode = FCMP_NUM;
     case KW_GT:
       self->compare_mode |= FCMP_GT;
-      self->super.type = g_strdup(">");
       break;
 
     default:
@@ -201,11 +195,12 @@ fop_map_grammar_token_to_compare_mode(FilterCmp *self, GlobalConfig *cfg, gint t
 }
 
 FilterExprNode *
-fop_cmp_new(LogTemplate *left, LogTemplate *right, gint token)
+fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint token)
 {
   FilterCmp *self = g_new0(FilterCmp, 1);
 
   filter_expr_node_init_instance(&self->super);
+  self->super.type = g_strdup(type);
 
   fop_map_grammar_token_to_compare_mode(self, left->cfg, token);
 
