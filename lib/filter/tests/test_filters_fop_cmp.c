@@ -58,7 +58,7 @@ evaluate_testcase(FilterExprNode *filter_node)
 gboolean
 evaluate(const gchar *left, gint operator, const gchar *right)
 {
-  return evaluate_testcase(fop_cmp_new(compile_template(left), compile_template(right), operator));
+  return evaluate_testcase(fop_cmp_new(compile_template(left), compile_template(right), "", operator));
 }
 
 Test(filter, test_num_eq)

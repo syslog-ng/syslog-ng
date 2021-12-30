@@ -28,6 +28,6 @@
 #include "filter-expr.h"
 #include "template/templates.h"
 
-FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op);
+FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint token);
 
 #endif
