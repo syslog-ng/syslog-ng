@@ -182,16 +182,6 @@ fop_map_grammar_token_to_compare_mode(FilterCmp *self, GlobalConfig *cfg, gint t
       g_assert_not_reached();
     }
 
-  if (self->compare_mode & FCMP_NUM && cfg_is_config_version_older(cfg, VERSION_VALUE_3_8))
-    {
-      msg_warning("WARNING: due to a bug in versions before " VERSION_3_8
-                  "numeric comparison operators like '!=' in filter "
-                  "expressions were evaluated as string operators. This is fixed in " VERSION_3_8 ". "
-                  "As we are operating in compatibility mode, syslog-ng will exhibit the buggy "
-                  "behaviour as previous versions until you bump the @version value in your "
-                  "configuration file");
-      self->compare_mode &= ~FCMP_NUM;
-    }
 }
 
 FilterExprNode *
@@ -203,6 +193,17 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint token
   self->super.type = g_strdup(type);
 
   fop_map_grammar_token_to_compare_mode(self, left->cfg, token);
+
+  if (self->compare_mode & FCMP_NUM && cfg_is_config_version_older(left->cfg, VERSION_VALUE_3_8))
+    {
+      msg_warning("WARNING: due to a bug in versions before " VERSION_3_8
+                  "numeric comparison operators like '!=' in filter "
+                  "expressions were evaluated as string operators. This is fixed in " VERSION_3_8 ". "
+                  "As we are operating in compatibility mode, syslog-ng will exhibit the buggy "
+                  "behaviour as previous versions until you bump the @version value in your "
+                  "configuration file");
+      self->compare_mode &= ~FCMP_NUM;
+    }
 
   self->super.eval = fop_cmp_eval;
   self->super.free_fn = fop_cmp_free;
