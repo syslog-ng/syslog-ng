@@ -33,6 +33,8 @@
 #define FCMP_GT  0x0004
 #define FCMP_NUM 0x0010
 
+gint fop_compare_numeric(const gchar *left, const gchar *right);
+gint fop_compare_string(const gchar *left, const gchar *right);
 FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compare_mode);
 
 #endif

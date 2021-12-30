@@ -260,6 +260,105 @@ Test(filter, test_string_ordering_with_non_numbers)
   cr_assert(evaluate("korte", KW_GT, "alma"));
 }
 
+Test(filter, test_compare_string)
+{
+  cr_assert(fop_compare_string("a", "b") < 0);
+  cr_assert(fop_compare_string("b", "a") > 0);
+  cr_assert(fop_compare_string("a", "a") == 0);
+
+  cr_assert(fop_compare_string("7", "10") > 0);
+}
+
+Test(filter, test_compare_numeric)
+{
+  cr_assert(fop_compare_numeric("0", "1") < 0);
+  cr_assert(fop_compare_numeric("1", "0") > 0);
+  cr_assert(fop_compare_numeric("1", "1") == 0);
+
+  cr_assert(fop_compare_numeric("7", "10") < 0);
+}
+
+#if 0
+Test(filter, test_type_aware_comparison_compares_as_strings_if_both_types_are_strings)
+{
+  cr_assert(fop_compare_type_aware("a", LM_VT_STRING, "b", LM_VT_STRING) < 0);
+  cr_assert(fop_compare_type_aware("b", LM_VT_STRING, "a", LM_VT_STRING) > 0);
+  cr_assert(fop_compare_type_aware("a", LM_VT_STRING, "a", LM_VT_STRING) == 0);
+
+  cr_assert(fop_compare_type_aware("7", LM_VT_STRING, "10", LM_VT_STRING) > 0);
+}
+
+Test(filter, test_type_aware_comparison_compares_as_ints_if_both_types_are_ints)
+{
+  cr_assert(fop_compare_type_aware("0", LM_VT_INT64, "1", LM_VT_INT64) < 0);
+  cr_assert(fop_compare_type_aware("1", LM_VT_INT64, "0", LM_VT_INT64) > 0);
+  cr_assert(fop_compare_type_aware("1", LM_VT_INT64, "1", LM_VT_INT64) == 0);
+
+  cr_assert(fop_compare_type_aware("7", LM_VT_INT64, "10", LM_VT_INT64) < 0);
+}
+
+Test(filter, test_type_aware_comparison_compares_as_doubles_if_both_types_are_doubles)
+{
+  cr_assert(fop_compare_type_aware("0.0", LM_VT_DOUBLE, "0.1", LM_VT_DOUBLE) < 0);
+  cr_assert(fop_compare_type_aware("0.1", LM_VT_DOUBLE, "0.0", LM_VT_DOUBLE) > 0);
+  cr_assert(fop_compare_type_aware("1.0", LM_VT_DOUBLE, "1.0", LM_VT_DOUBLE) == 0);
+  
+  /* we consider differences less than 1e-9 negligible, meaning that we can
+   * still compare nanoseconds should the value be a number of seconds
+   * represented as a double */
+  
+  cr_assert(fop_compare_type_aware("1.0000000001", LM_VT_DOUBLE, "1.0", LM_VT_DOUBLE) == 0);
+
+  cr_assert(fop_compare_type_aware("7.00001", LM_VT_DOUBLE, "10.0", LM_VT_DOUBLE) < 0);
+}
+
+Test(filter, test_type_aware_comparison_compares_int32_and_int64_as_integers)
+{
+  cr_assert(fop_compare_type_aware("0", LM_VT_INT64, "1", LM_VT_INT32) < 0);
+  cr_assert(fop_compare_type_aware("1", LM_VT_INT64, "0", LM_VT_INT32) > 0);
+  cr_assert(fop_compare_type_aware("1", LM_VT_INT64, "1", LM_VT_INT32) == 0);
+
+  cr_assert(fop_compare_type_aware("7", LM_VT_INT64, "10", LM_VT_INT32) < 0);
+
+  cr_assert(fop_compare_type_aware("0", LM_VT_INT32, "1", LM_VT_INT64) < 0);
+  cr_assert(fop_compare_type_aware("1", LM_VT_INT32, "0", LM_VT_INT64) > 0);
+  cr_assert(fop_compare_type_aware("1", LM_VT_INT32, "1", LM_VT_INT64) == 0);
+
+  cr_assert(fop_compare_type_aware("7", LM_VT_INT32, "10", LM_VT_INT64) < 0);
+}
+
+Test(filter, test_type_aware_comparison_compares_integers_to_doubles_as_doubles)
+{
+  cr_assert(fop_compare_type_aware("0", LM_VT_INT64, "1", LM_VT_DOUBLE) < 0);
+  cr_assert(fop_compare_type_aware("1", LM_VT_INT64, "0", LM_VT_DOUBLE) > 0);
+  cr_assert(fop_compare_type_aware("1", LM_VT_INT64, "1", LM_VT_DOUBLE) == 0);
+
+  cr_assert(fop_compare_type_aware("7", LM_VT_INT64, "10", LM_VT_DOUBLE) < 0);
+
+  cr_assert(fop_compare_type_aware("0", LM_VT_DOUBLE, "1", LM_VT_INT64) < 0);
+  cr_assert(fop_compare_type_aware("1", LM_VT_DOUBLE, "0", LM_VT_INT64) > 0);
+  cr_assert(fop_compare_type_aware("1", LM_VT_DOUBLE, "1", LM_VT_INT64) == 0);
+
+  cr_assert(fop_compare_type_aware("7", LM_VT_DOUBLE, "10", LM_VT_INT64) < 0);
+}
+
+Test(filter, test_type_aware_comparison_compares_non_numeric_values_as_strings)
+{
+  cr_assert(fop_compare_type_aware("1,2,3", LM_VT_LIST, "1,2,3", LM_VT_BOOLEAN) == 0);
+  cr_assert(fop_compare_type_aware("1,2,3", LM_VT_LIST, "1,2,4", LM_VT_BOOLEAN) < 0);
+  cr_assert(fop_compare_type_aware("1,2,3", LM_VT_LIST, "1,2,2", LM_VT_BOOLEAN) > 0);
+} 
+
+Test(filter, test_type_aware_comparison_compares_integers_to_strings_as_integers)
+{
+  cr_assert(fop_compare_type_aware("0", LM_VT_INT64, "1", LM_VT_STRING) < 0);
+  cr_assert(fop_compare_type_aware("1", LM_VT_INT64, "0", LM_VT_STRING) > 0);
+  cr_assert(fop_compare_type_aware("1", LM_VT_INT64, "1", LM_VT_STRING) == 0);
+
+  cr_assert(fop_compare_type_aware("7", LM_VT_INT64, "10", LM_VT_STRING) < 0);
+}
+#endif
+
 static void
 setup(void)
 {
