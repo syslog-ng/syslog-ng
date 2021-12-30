@@ -33,8 +33,9 @@
 #define FCMP_GT           0x0004
 #define FCMP_TYPE_AWARE   0x0010
 #define FCMP_STRING_BASED 0x0020
+#define FCMP_NUM_BASED    0x0040
 
-#define FCMP_MODE_MASK    0x0030
+#define FCMP_MODE_MASK    0x0070
 
 FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compare_mode);
 

@@ -25,9 +25,12 @@
 #include "filter/filter-cmp.h"
 #include "filter/filter-expr-grammar.h"
 #include "scratch-buffers.h"
+#include "generic-number.h"
+#include "parse-number.h"
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 typedef struct _FilterCmp
 {
@@ -55,30 +58,22 @@ fop_compare_string(const gchar *left, const gchar *right)
   return strcmp(left, right);
 }
 
-static gint
-fop_compare(FilterCmp *self, const gchar *left, const gchar *right)
+static inline gboolean
+_is_object(LogMessageValueType type)
 {
-  if (self->compare_mode & FCMP_NUM_BASED)
-    return fop_compare_numeric(left, right);
-  else
-    return fop_compare_string(left, right);
+  return type == LM_VT_JSON || type == LM_VT_LIST;
+}
+
+static inline gboolean
+_is_string(LogMessageValueType type)
+{
+  return type == LM_VT_STRING;
 }
 
 static gboolean
-fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
+_evaluate_comparison(FilterCmp *self, gint cmp)
 {
-  FilterCmp *self = (FilterCmp *) s;
-
-  ScratchBuffersMarker marker;
-  GString *left_buf = scratch_buffers_alloc_and_mark(&marker);
-  GString *right_buf = scratch_buffers_alloc();
-
-  log_template_format_with_context(self->left, msgs, num_msg, options, left_buf);
-  log_template_format_with_context(self->right, msgs, num_msg, options, right_buf);
-
   gboolean result = FALSE;
-
-  gint cmp = fop_compare(self, left_buf->str, right_buf->str);
 
   if (cmp == 0)
     {
@@ -92,11 +87,129 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEval
     {
       result = !!(self->compare_mode & FCMP_GT);
     }
+  return result;
+}
 
-  msg_trace("cmp() evaluation started",
+
+/* NOTE: this function mimics JavaScript when converting a value to a
+ * number.  As described here:
+ *
+ *   Primitive types: https://javascript.info/type-conversions
+ *   Objects: https://javascript.info/object-toprimitive
+ */
+static void
+_convert_to_number(const gchar *value, LogMessageValueType type, GenericNumber *number)
+{
+  switch (type)
+    {
+    case LM_VT_STRING:
+    case LM_VT_INT32:
+    case LM_VT_INT64:
+    case LM_VT_DOUBLE:
+      if (!parse_generic_number(value, number))
+        gn_set_nan(number);
+      break;
+    case LM_VT_JSON:
+    case LM_VT_LIST:
+      gn_set_nan(number);
+      break;
+    case LM_VT_NULL:
+      gn_set_int64(number, 0);
+      break;
+    case LM_VT_BOOLEAN:
+    {
+      gboolean b;
+
+      if (type_cast_to_boolean(value, &b, NULL))
+        gn_set_int64(number, b);
+      else
+        gn_set_int64(number, 0);
+      break;
+    }
+    case LM_VT_DATETIME:
+    {
+      gint64 msec;
+
+      if (type_cast_to_datetime_msec(value, &msec, NULL))
+        gn_set_int64(number, msec);
+      else
+        gn_set_int64(number, 0);
+      break;
+    }
+    default:
+      g_assert_not_reached();
+    }
+}
+
+static gboolean
+_evaluate_typed(FilterCmp *self,
+                const gchar *left, LogMessageValueType left_type,
+                const gchar *right, LogMessageValueType right_type)
+{
+  GenericNumber l, r;
+
+  /* Type aware comparison:
+   *   - strings are compared as strings.
+   *   - objects (ie. non-numbers) are compared as strings.
+   *   - numbers or mismatching types are compared as numbers */
+
+  if (left_type == right_type &&
+      (_is_string(left_type) || _is_object(left_type)))
+    return _evaluate_comparison(self, fop_compare_string(left, right));
+
+  if (left_type == right_type && left_type == LM_VT_NULL)
+    return _evaluate_comparison(self, 0);
+
+  /* ok, we need to convert to numbers and compare that way */
+
+  _convert_to_number(left, left_type, &l);
+  _convert_to_number(right, right_type, &r);
+
+  if (gn_is_nan(&l) || gn_is_nan(&r))
+    {
+      /* NaN == NaN is false */
+      /* NaN > NaN is false */
+      /* NaN < NaN is false */
+      /* NaN != NaN is true */
+
+      /* != is handled specially */
+      if ((self->compare_mode & (FCMP_LT + FCMP_GT)) == (FCMP_LT + FCMP_GT))
+        return TRUE;
+      /* if we have NaN on either side, we return FALSE in any comparisons */
+      return FALSE;
+    }
+
+  return _evaluate_comparison(self, gn_compare(&l, &r));
+}
+
+static gboolean
+fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
+{
+  FilterCmp *self = (FilterCmp *) s;
+  LogMessageValueType left_type, right_type;
+
+  ScratchBuffersMarker marker;
+  GString *left_buf = scratch_buffers_alloc_and_mark(&marker);
+  GString *right_buf = scratch_buffers_alloc();
+
+  log_template_append_format_value_and_type_with_context(self->left, msgs, num_msg, options, left_buf, &left_type);
+  log_template_append_format_value_and_type_with_context(self->right, msgs, num_msg, options, right_buf, &right_type);
+
+  gboolean result;
+  if (self->compare_mode & FCMP_TYPE_AWARE)
+    result = _evaluate_typed(self, left_buf->str, left_type, right_buf->str, right_type);
+  else if (self->compare_mode & FCMP_STRING_BASED)
+    result = _evaluate_comparison(self, fop_compare_string(left_buf->str, right_buf->str));
+  else if (self->compare_mode & FCMP_NUM_BASED)
+    result = _evaluate_comparison(self, fop_compare_numeric(left_buf->str, right_buf->str));
+  else
+    g_assert_not_reached();
+
+  msg_trace("cmp() evaluation result",
             evt_tag_str("left", left_buf->str),
             evt_tag_str("operator", self->super.type),
             evt_tag_str("right", right_buf->str),
+            evt_tag_int("result", result),
             evt_tag_msg_reference(msgs[num_msg - 1]));
 
   scratch_buffers_reclaim_marked(marker);
@@ -152,6 +265,7 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compa
       self->compare_mode &= ~FCMP_TYPE_AWARE;
       self->compare_mode |= FCMP_STRING_BASED;
     }
+
 
   g_assert((self->compare_mode & FCMP_MODE_MASK) != 0);
   self->super.eval = fop_cmp_eval;

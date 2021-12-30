@@ -45,6 +45,59 @@
 #include "syslog-names.h"
 #include "plugin.h"
 #include "cfg-grammar-internal.h"
+#include "parse-number.h"
+
+/* NOTE: this function translates a literal value enclosed in quotes to
+ * numeric, if they represent a number. This is needed as older versions of
+ * syslog-ng only allowed "strings" as arguments to comparison operators and
+ * used the operator to denote numeric/string comparisons.
+ *
+ * In the post-4.0 world, we want to use type-aware operators by default,
+ * which means that type information should not be lost due to having to
+ * quote number literals earlier.
+ *
+ * So if we are using type-aware operators (<, > and ==) and our argument is
+ * a quoted number, we turn it into a numeric value and warn the user to
+ * remove the quotes.
+ *
+ */
+static LogTemplate *
+_translate_number_literals(CfgLexer *lexer, gint compare_mode, LogTemplate *expr, YYLTYPE *location)
+{
+  /* with string based operators we do nothing */
+  if ((compare_mode & FCMP_STRING_BASED))
+    return expr;
+
+  /* if there's an explicit type-hint we use that */
+  if (expr->type_hint != LM_VT_NONE)
+    return expr;
+
+  /* if the argument is not literal we don't do anything */
+  if (!log_template_is_literal_string(expr))
+    return expr;
+
+  /* let's check if the argument is a numeric value represented as a string,
+   * turn it into a numberic value and warn the user. */
+
+  gint64 v;
+  if (!parse_int64_with_suffix(log_template_get_literal_value(expr, NULL), &v))
+    return expr;
+  if (cfg_is_config_version_older(configuration, VERSION_VALUE_4_0))
+    {
+      if (cfg_is_typing_feature_enabled(configuration))
+        {
+          msg_warning("WARNING: syslog-ng versions before " VERSION_4_0 " interpreted quoted numeric "
+                      "literals as numbers when using the '<', '>' or '==' operators. Please remove "
+                      "the quotes around the numeric literal when upgrading to " VERSION_4_0 " format, "
+                      "otherwise your comparison will become string based "
+                      "instead. Alternatively if your intention is string based "
+                      "comparison add a string() type cast around the expression",
+                      cfg_lexer_format_location_tag(lexer, location));
+        }
+      log_template_set_type_hint(expr, "int64", NULL);
+    }
+  return expr;
+}
 
 }
 
@@ -175,7 +228,13 @@ filter_identifier
         ;
 
 filter_comparison
-	: template_content operator <cptr>{ $$ = strdup(lexer->token_text->str); } template_content         { $$ = fop_cmp_new($1, $4, $3, $2); free($3); }
+	: template_content operator <cptr>{ $$ = strdup(lexer->token_text->str); } template_content
+	  {
+            $1 = _translate_number_literals(lexer, $2, $1, &@1);
+            $4 = _translate_number_literals(lexer, $2, $4, &@4);
+	    $$ = fop_cmp_new($1, $4, $3, $2);
+            free($3);
+          }
         ;
 
 operator

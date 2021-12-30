@@ -38,6 +38,17 @@ _construct_sample_message(void)
 
   msg->pri = 15;
   log_msg_set_value(msg, LM_V_PROGRAM, "software", -1);
+  log_msg_set_value_by_name_with_type(msg, "strvalue", "string", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, "jsonvalue", "{\"foo\":\"foovalue\"}", -1, LM_VT_JSON);
+  log_msg_set_value_by_name_with_type(msg, "truevalue", "1", -1, LM_VT_BOOLEAN);
+  log_msg_set_value_by_name_with_type(msg, "falsevalue", "0", -1, LM_VT_BOOLEAN);
+  log_msg_set_value_by_name_with_type(msg, "int32value", "32", -1, LM_VT_INT32);
+  log_msg_set_value_by_name_with_type(msg, "int64value", "64", -1, LM_VT_INT64);
+  log_msg_set_value_by_name_with_type(msg, "nanvalue", "nan", -1, LM_VT_DOUBLE);
+  log_msg_set_value_by_name_with_type(msg, "dblvalue", "3.1415", -1, LM_VT_INT64);
+  log_msg_set_value_by_name_with_type(msg, "datevalue", "1653246684.123", -1, LM_VT_DATETIME);
+  log_msg_set_value_by_name_with_type(msg, "listvalue", "foo,bar,baz", -1, LM_VT_LIST);
+  log_msg_set_value_by_name_with_type(msg, "nullvalue", "", -1, LM_VT_NULL);
   return msg;
 }
 
@@ -258,6 +269,97 @@ Test(filter, test_string_ordering_with_non_numbers)
   cr_assert_not(evaluate("korte eq alma"));
   cr_assert(evaluate("korte ge alma"));
   cr_assert(evaluate("korte gt alma"));
+}
+
+Test(filter, test_type_aware_comparisons_strings_to_strings_are_compared_as_strings)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  /* strings */
+  cr_assert(evaluate("'alma' != 'korte'"));
+  cr_assert_not(evaluate("'alma' == 'korte'"));
+  cr_assert(evaluate("'alma' < 'korte'"));
+  cr_assert(evaluate("'korte' > 'alma'"));
+
+  /* strings containing numbers */
+  cr_assert(evaluate("'10' != '11'"));
+  cr_assert_not(evaluate("'10' == '11'"));
+  cr_assert(evaluate("'10' < '7'"));
+  cr_assert(evaluate("'7' > '10'"));
+
+  /* string values */
+  cr_assert(evaluate("'$strvalue' == 'string'"));
+  cr_assert(evaluate("'$strvalue' == '$strvalue'"));
+  cr_assert_not(evaluate("'$strvalue' != '$strvalue'"));
+}
+
+Test(filter, test_type_aware_comparison_objects_are_compared_as_strings_if_types_match)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  cr_assert(evaluate("'$jsonvalue' == json('{\"foo\":\"foovalue\"}')"));
+  cr_assert(evaluate("'$listvalue' == list('foo,bar,baz')"));
+
+  /* types are not equal, they'd be compared as numbers, both are NaNs */
+  cr_assert_not(evaluate("list('foo,bar,baz') == string('foo,bar,baz')"));
+  cr_assert_not(evaluate("list('') == string('')"));
+}
+
+Test(filter, test_type_aware_comparison_strings_are_compared_as_strings_if_types_match)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  cr_assert(evaluate("'$strvalue' == 'string')"));
+  cr_assert(evaluate("'$strvalue' > 'foo')"));
+  cr_assert(evaluate("'$strvalue' < 'zabkasa')"));
+}
+
+Test(filter, test_type_aware_comparison_null_equals_to_null_and_converts_to_zero)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  cr_assert(evaluate("'$nullvalue' == null('')"));
+  cr_assert(evaluate("'$nullvalue' == 0"));
+  cr_assert(evaluate("'$nullvalue' < 1"));
+  cr_assert(evaluate("'$nullvalue' > -1"));
+}
+
+Test(filter, test_type_aware_comparisons_mixed_types_or_numbers_are_compared_as_numbers_after_conversion)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  cr_assert(evaluate("int('$int32value') == '32'"));
+  cr_assert(evaluate("int('$int32value') < '321'"));
+  cr_assert(evaluate("int('$int32value') > '7'"));
+
+  /* booleans are converted to 0/1 */
+  cr_assert(evaluate("'$truevalue' == 1"));
+  cr_assert(evaluate("'$falsevalue' == 0"));
+
+  cr_assert(evaluate("'$dblvalue' < 3.145"));
+  cr_assert(evaluate("'$dblvalue' > 3.14"));
+  cr_assert(evaluate("'$dblvalue' > 0.314e1"));
+  cr_assert(evaluate("'$dblvalue' < 0.314e2"));
+  cr_assert(evaluate("'$datevalue' == 1653246684123"));
+  cr_assert(evaluate("'$nullvalue' == 0"));
+
+  /* JSON objects/lists are always NaN values, which produce FALSE comparisons */
+  cr_assert_not(evaluate("'$listvalue' < 01234"));
+  cr_assert_not(evaluate("'$listvalue' > 01234"));
+  cr_assert_not(evaluate("'$listvalue' == 01234"));
+  cr_assert_not(evaluate("'$jsonvalue' < 01234"));
+  cr_assert_not(evaluate("'$jsonvalue' > 01234"));
+  cr_assert_not(evaluate("'$jsonvalue' == 01234"));
+}
+
+Test(filter, test_type_aware_comparison_nan_is_always_different_from_anything)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  cr_assert(evaluate("'$nanvalue' != '$nanvalue'"));
+  cr_assert_not(evaluate("'$nanvalue' < '5'"));
+  cr_assert_not(evaluate("'$nanvalue' > '5'"));
+  cr_assert_not(evaluate("'$nanvalue' == '5'"));
+  cr_assert(evaluate("'5' != '$nanvalue'"));
+  cr_assert_not(evaluate("'$nanvalue' == '$nanvalue'"));
+  cr_assert_not(evaluate("'$nanvalue' == int64('nan')"));
+  cr_assert_not(evaluate("'$nanvalue' == int64('foobar')"));
+  cr_assert_not(evaluate("'$nanvalue' < '$nanvalue'"));
+  cr_assert_not(evaluate("'$nanvalue' > '$nanvalue'"));
 }
 
 static void
