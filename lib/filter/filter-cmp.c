@@ -29,11 +29,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define FCMP_EQ  0x0001
-#define FCMP_LT  0x0002
-#define FCMP_GT  0x0004
-#define FCMP_NUM 0x0010
-
 typedef struct _FilterCmp
 {
   FilterExprNode super;
@@ -137,62 +132,14 @@ fop_cmp_clone(FilterExprNode *s)
   return &cloned_self->super;
 }
 
-static void
-fop_map_grammar_token_to_compare_mode(FilterCmp *self, GlobalConfig *cfg, gint token)
-{
-  switch (token)
-    {
-    case KW_NUM_LT:
-      self->compare_mode = FCMP_NUM;
-    case KW_LT:
-      self->compare_mode |= FCMP_LT;
-      break;
-
-    case KW_NUM_LE:
-      self->compare_mode = FCMP_NUM;
-    case KW_LE:
-      self->compare_mode |= FCMP_LT | FCMP_EQ;
-      break;
-
-    case KW_NUM_EQ:
-      self->compare_mode = FCMP_NUM;
-    case KW_EQ:
-      self->compare_mode |= FCMP_EQ;
-      break;
-
-    case KW_NUM_NE:
-      self->compare_mode = FCMP_NUM;
-    case KW_NE:
-      self->compare_mode |= FCMP_LT | FCMP_GT;
-      break;
-
-    case KW_NUM_GE:
-      self->compare_mode = FCMP_NUM;
-    case KW_GE:
-      self->compare_mode |= FCMP_GT | FCMP_EQ;
-      break;
-
-    case KW_NUM_GT:
-      self->compare_mode = FCMP_NUM;
-    case KW_GT:
-      self->compare_mode |= FCMP_GT;
-      break;
-
-    default:
-      g_assert_not_reached();
-    }
-
-}
-
 FilterExprNode *
-fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint token)
+fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compare_mode)
 {
   FilterCmp *self = g_new0(FilterCmp, 1);
 
   filter_expr_node_init_instance(&self->super);
   self->super.type = g_strdup(type);
-
-  fop_map_grammar_token_to_compare_mode(self, left->cfg, token);
+  self->compare_mode = compare_mode;
 
   if (self->compare_mode & FCMP_NUM && cfg_is_config_version_older(left->cfg, VERSION_VALUE_3_8))
     {

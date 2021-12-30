@@ -28,6 +28,11 @@
 #include "filter-expr.h"
 #include "template/templates.h"
 
-FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint token);
+#define FCMP_EQ  0x0001
+#define FCMP_LT  0x0002
+#define FCMP_GT  0x0004
+#define FCMP_NUM 0x0010
+
+FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compare_mode);
 
 #endif
