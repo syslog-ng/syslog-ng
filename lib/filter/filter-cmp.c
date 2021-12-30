@@ -41,23 +41,32 @@ typedef struct _FilterCmp
   gint cmp_op;
 } FilterCmp;
 
+static gint
+fop_compare_numeric(const gchar *left, const gchar *right)
+{
+  gint l = atoi(left);
+  gint r = atoi(right);
+  if (l == r)
+    return 0;
+  else if (l < r)
+    return -1;
+
+  return 1;
+}
+
+static gint
+fop_compare_string(const gchar *left, const gchar *right)
+{
+  return strcmp(left, right);
+}
 
 static gint
 fop_compare(FilterCmp *self, const gchar *left, const gchar *right)
 {
   if (self->cmp_op & FCMP_NUM)
-    {
-      gint l = atoi(left);
-      gint r = atoi(right);
-      if (l == r)
-        return 0;
-      else if (l < r)
-        return -1;
-
-      return 1;
-    }
-
-  return strcmp(left, right);
+    return fop_compare_numeric(left, right);
+  else
+    return fop_compare_string(left, right);
 }
 
 static gboolean
