@@ -38,7 +38,7 @@ typedef struct _FilterCmp
 {
   FilterExprNode super;
   LogTemplate *left, *right;
-  gint cmp_op;
+  gint compare_mode;
 } FilterCmp;
 
 static gint
@@ -87,15 +87,15 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEval
 
   if (cmp == 0)
     {
-      result = self->cmp_op & FCMP_EQ;
+      result = self->compare_mode & FCMP_EQ;
     }
   else if (cmp < 0)
     {
-      result = !!(self->cmp_op & FCMP_LT);
+      result = !!(self->compare_mode & FCMP_LT);
     }
   else
     {
-      result = !!(self->cmp_op & FCMP_GT);
+      result = !!(self->compare_mode & FCMP_GT);
     }
 
   msg_trace("cmp() evaluation started",
@@ -131,56 +131,56 @@ fop_cmp_clone(FilterExprNode *s)
   cloned_self->super.clone = fop_cmp_clone;
   cloned_self->left = log_template_ref(self->left);
   cloned_self->right = log_template_ref(self->right);
-  cloned_self->cmp_op = self->cmp_op;
+  cloned_self->compare_mode = self->compare_mode;
   cloned_self->super.type = g_strdup(self->super.type);
 
   return &cloned_self->super;
 }
 
 static void
-fop_map_grammar_token_to_cmp_op(FilterCmp *self, GlobalConfig *cfg, gint token)
+fop_map_grammar_token_to_compare_mode(FilterCmp *self, GlobalConfig *cfg, gint token)
 {
   switch (token)
     {
     case KW_NUM_LT:
-      self->cmp_op = FCMP_NUM;
+      self->compare_mode = FCMP_NUM;
     case KW_LT:
-      self->cmp_op |= FCMP_LT;
+      self->compare_mode |= FCMP_LT;
       self->super.type = g_strdup("<");
       break;
 
     case KW_NUM_LE:
-      self->cmp_op = FCMP_NUM;
+      self->compare_mode = FCMP_NUM;
     case KW_LE:
-      self->cmp_op |= FCMP_LT | FCMP_EQ;
+      self->compare_mode |= FCMP_LT | FCMP_EQ;
       self->super.type = g_strdup("<=");
       break;
 
     case KW_NUM_EQ:
-      self->cmp_op = FCMP_NUM;
+      self->compare_mode = FCMP_NUM;
     case KW_EQ:
-      self->cmp_op |= FCMP_EQ;
+      self->compare_mode |= FCMP_EQ;
       self->super.type = g_strdup("==");
       break;
 
     case KW_NUM_NE:
-      self->cmp_op = FCMP_NUM;
+      self->compare_mode = FCMP_NUM;
     case KW_NE:
-      self->cmp_op |= FCMP_LT | FCMP_GT;
+      self->compare_mode |= FCMP_LT | FCMP_GT;
       self->super.type = g_strdup("!=");
       break;
 
     case KW_NUM_GE:
-      self->cmp_op = FCMP_NUM;
+      self->compare_mode = FCMP_NUM;
     case KW_GE:
-      self->cmp_op |= FCMP_GT | FCMP_EQ;
+      self->compare_mode |= FCMP_GT | FCMP_EQ;
       self->super.type = g_strdup(">=");
       break;
 
     case KW_NUM_GT:
-      self->cmp_op = FCMP_NUM;
+      self->compare_mode = FCMP_NUM;
     case KW_GT:
-      self->cmp_op |= FCMP_GT;
+      self->compare_mode |= FCMP_GT;
       self->super.type = g_strdup(">");
       break;
 
@@ -188,7 +188,7 @@ fop_map_grammar_token_to_cmp_op(FilterCmp *self, GlobalConfig *cfg, gint token)
       g_assert_not_reached();
     }
 
-  if (self->cmp_op & FCMP_NUM && cfg_is_config_version_older(cfg, VERSION_VALUE_3_8))
+  if (self->compare_mode & FCMP_NUM && cfg_is_config_version_older(cfg, VERSION_VALUE_3_8))
     {
       msg_warning("WARNING: due to a bug in versions before " VERSION_3_8
                   "numeric comparison operators like '!=' in filter "
@@ -196,7 +196,7 @@ fop_map_grammar_token_to_cmp_op(FilterCmp *self, GlobalConfig *cfg, gint token)
                   "As we are operating in compatibility mode, syslog-ng will exhibit the buggy "
                   "behaviour as previous versions until you bump the @version value in your "
                   "configuration file");
-      self->cmp_op &= ~FCMP_NUM;
+      self->compare_mode &= ~FCMP_NUM;
     }
 }
 
@@ -207,7 +207,7 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, gint token)
 
   filter_expr_node_init_instance(&self->super);
 
-  fop_map_grammar_token_to_cmp_op(self, left->cfg, token);
+  fop_map_grammar_token_to_compare_mode(self, left->cfg, token);
 
   self->super.eval = fop_cmp_eval;
   self->super.free_fn = fop_cmp_free;
