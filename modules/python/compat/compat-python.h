@@ -24,6 +24,8 @@
 #ifndef _COMPAT_PYTHON_H
 #define _COMPAT_PYTHON_H
 
+#define PY_SSIZE_T_CLEAN 1
+
 #include <Python.h>
 #include "syslog-ng.h"
 

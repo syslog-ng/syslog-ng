@@ -171,7 +171,7 @@ py_log_message_new_empty(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
 {
   PyObject *bookmark_data = NULL;
   const gchar *message = NULL;
-  gint message_length = 0;
+  Py_ssize_t message_length = 0;
 
   static const gchar *kwlist[] = {"message", "bookmark", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z#O", (gchar **) kwlist, &message, &message_length, &bookmark_data))
@@ -379,7 +379,7 @@ static PyObject *
 py_log_message_parse(PyObject *_none, PyObject *args, PyObject *kwrds)
 {
   const gchar *raw_msg;
-  gint raw_msg_length;
+  Py_ssize_t raw_msg_length;
 
   PyObject *py_parse_options;
 
