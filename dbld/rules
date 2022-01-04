@@ -217,6 +217,11 @@ image-%:
 	$(DBLD_DIR)/prepare-image-build $* && \
         $(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=ARG_IMAGE_PLATFORM=$* --build-arg=COMMIT=$$($(GIT) rev-parse --short HEAD || echo "") --build-arg=CONTAINER_REGISTRY=${CONTAINER_REGISTRY} --network=host -t ${CONTAINER_REGISTRY}/dbld-$* -f $(DBLD_DIR)/images/$*.dockerfile $(DBLD_DIR)
 
+push-images: $(foreach image,$(IMAGES), push-image-$(image))
+push-image-%:
+	@echo "Pushing image: $(image)"
+	$(DOCKER) push ${CONTAINER_REGISTRY}/dbld-$*
+
 pull-images: $(foreach image,$(BUILDER_IMAGES), pull-image-$(image))
 pull-image: pull-image-$(DEFAULT_IMAGE)
 pull-image-%:
