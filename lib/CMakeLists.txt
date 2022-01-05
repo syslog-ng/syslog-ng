@@ -87,6 +87,7 @@ set (LIB_HEADERS
     fdhelpers.h
     file-perms.h
     find-crlf.h
+    generic-number.h
     gprocess.h
     gsockaddr.h
     gsocket.h
@@ -179,6 +180,7 @@ set(LIB_SOURCES
     file-perms.c
     find-crlf.c
     globals.c
+    generic-number.c
     gprocess.c
     gsockaddr.c
     gsocket.c
