@@ -655,7 +655,7 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
     {
       msg_error("Network error while inserting into AMQP server",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("error", amqp_error_string2(-ret)),
+                evt_tag_str("error", amqp_error_string2(ret)),
                 evt_tag_int("time_reopen", self->super.time_reopen));
       success = FALSE;
     }
