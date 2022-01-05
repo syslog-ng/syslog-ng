@@ -616,6 +616,8 @@ map_amqp_result_to_log_threaded_result(gint amqp_result)
     {
     case AMQP_STATUS_OK:
       return LTR_SUCCESS;
+    case AMQP_STATUS_TABLE_TOO_BIG:
+      return LTR_DROP;
     default:
       return LTR_ERROR;
     }
