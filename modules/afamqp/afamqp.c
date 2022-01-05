@@ -609,13 +609,24 @@ afamqp_vp_foreach(const gchar *name,
   return FALSE;
 }
 
-static gboolean
+static LogThreadedResult
+map_amqp_result_to_log_threaded_result(gint amqp_result)
+{
+  switch (amqp_result)
+    {
+    case AMQP_STATUS_OK:
+      return LTR_SUCCESS;
+    default:
+      return LTR_ERROR;
+    }
+}
+
+static LogThreadedResult
 afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
 {
-  gint pos = 0, ret;
+  gint pos = 0, amqp_result;
   amqp_table_t table;
   amqp_basic_properties_t props;
-  gboolean success = TRUE;
   GString *routing_key = scratch_buffers_alloc();
   GString *body = scratch_buffers_alloc();
   amqp_bytes_t body_bytes = amqp_cstring_bytes("");
@@ -647,17 +658,16 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
       body_bytes = amqp_cstring_bytes(body->str);
     }
 
-  ret = amqp_basic_publish(self->conn, 1, amqp_cstring_bytes(self->exchange),
-                           amqp_cstring_bytes(routing_key->str),
-                           0, 0, &props, body_bytes);
+  amqp_result = amqp_basic_publish(self->conn, 1, amqp_cstring_bytes(self->exchange),
+                                   amqp_cstring_bytes(routing_key->str),
+                                   0, 0, &props, body_bytes);
 
-  if (ret < 0)
+  if (amqp_result < 0)
     {
       msg_error("Network error while inserting into AMQP server",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("error", amqp_error_string2(ret)),
+                evt_tag_str("error", amqp_error_string2(amqp_result)),
                 evt_tag_int("time_reopen", self->super.time_reopen));
-      success = FALSE;
     }
 
   while (--pos >= 0)
@@ -666,7 +676,7 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
       amqp_bytes_free(self->entries[pos].value.value.bytes);
     }
 
-  return success;
+  return map_amqp_result_to_log_threaded_result(amqp_result);
 }
 
 static LogThreadedResult
@@ -677,10 +687,7 @@ afamqp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   if (!afamqp_dd_connect(self))
     return LTR_NOT_CONNECTED;
 
-  if (!afamqp_worker_publish (self, msg))
-    return LTR_ERROR;
-
-  return LTR_SUCCESS;
+  return afamqp_worker_publish(self, msg);
 }
 
 static void
