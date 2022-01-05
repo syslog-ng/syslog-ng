@@ -199,3 +199,23 @@ Test(parse_number_with_suffix, test_invalid_formats_are_not_accepted)
   assert_parse_with_suffix_fails("1234kiZ");
   assert_parse_fails("1234kiZ");
 }
+
+Test(parse_generic_number, test_string_is_properly_represented_as_a_generic_number)
+{
+  GenericNumber gn;
+
+  parse_generic_number("123", &gn);
+  cr_assert(gn.type == GN_INT64);
+  cr_assert(gn.value.raw_int64 == 123);
+  parse_generic_number("-123", &gn);
+  cr_assert(gn.type == GN_INT64);
+  cr_assert(gn.value.raw_int64 == -123);
+
+  parse_generic_number("-123.0", &gn);
+  cr_assert(gn.type == GN_DOUBLE);
+  cr_assert_float_eq(gn.value.raw_double, -123.0, DBL_EPSILON);
+
+  parse_generic_number("9223372036854775808", &gn);
+  cr_assert(gn.type == GN_DOUBLE);
+  cr_assert_float_eq(gn.value.raw_double, 9223372036854775808.0, DBL_EPSILON);
+}

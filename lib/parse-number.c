@@ -27,6 +27,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 static const gint DECIMAL_BASE = 10;
 static const gint DETECT_BASE  = 0;
@@ -147,7 +148,7 @@ _process_suffix(const gchar *suffix, gint64 *d)
 }
 
 static gboolean
-_parse_number(const gchar *s, gchar **endptr, gint base, gint64 *d)
+_int64_from_string(const gchar *s, gchar **endptr, gint base, gint64 *d)
 {
   gint64 val;
 
@@ -187,7 +188,7 @@ parse_int64_base16(const gchar *s, gint64 *d)
 {
   gchar *endptr;
 
-  if (!_parse_number(s, &endptr, 16, d))
+  if (!_int64_from_string(s, &endptr, 16, d))
     return FALSE;
   if (*endptr)
     return FALSE;
@@ -199,7 +200,7 @@ parse_int64_base8(const gchar *s, gint64 *d)
 {
   gchar *endptr;
 
-  if (!_parse_number(s, &endptr, 8, d))
+  if (!_int64_from_string(s, &endptr, 8, d))
     return FALSE;
   if (*endptr)
     return FALSE;
@@ -211,7 +212,7 @@ parse_int64_base_any(const gchar *s, gint64 *d)
 {
   gchar *endptr;
 
-  if (!_parse_number(s, &endptr, DETECT_BASE, d))
+  if (!_int64_from_string(s, &endptr, DETECT_BASE, d))
     return FALSE;
   if (*endptr)
     return FALSE;
@@ -223,7 +224,7 @@ parse_int64(const gchar *s, gint64 *d)
 {
   gchar *endptr;
 
-  if (!_parse_number(s, &endptr, DECIMAL_BASE, d))
+  if (!_int64_from_string(s, &endptr, DECIMAL_BASE, d))
     return FALSE;
   if (*endptr)
     return FALSE;
@@ -235,7 +236,7 @@ parse_int64_with_suffix(const gchar *s, gint64 *d)
 {
   gchar *endptr;
 
-  if (!_parse_number(s, &endptr, DECIMAL_BASE, d))
+  if (!_int64_from_string(s, &endptr, DECIMAL_BASE, d))
     return FALSE;
   return _process_suffix(endptr, d);
 }
@@ -250,4 +251,39 @@ parse_double(const gchar *s, gdouble *d)
   if (*endptr)
     return FALSE;
   return TRUE;
+}
+
+gboolean
+parse_nan(const gchar *s)
+{
+  while (isspace(*s))
+    s++;
+
+  if (strcasecmp(s, "NaN") == 0)
+    return TRUE;
+  return FALSE;
+}
+
+gboolean
+parse_generic_number(const char *str, GenericNumber *number)
+{
+  gint64 int_value;
+
+  if (parse_int64(str, &int_value))
+    {
+      gn_set_int64(number, int_value);
+      return TRUE;
+    }
+
+  double float_value;
+  if (parse_double(str, &float_value))
+    {
+      gn_set_double(number, float_value, -1);
+      return TRUE;
+    }
+
+  if (parse_nan(str))
+    gn_set_nan(number);
+
+  return FALSE;
 }
