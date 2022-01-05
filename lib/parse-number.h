@@ -25,7 +25,7 @@
 #ifndef PARSE_NUMBER_H_INCLUDED
 #define PARSE_NUMBER_H_INCLUDED
 
-#include "syslog-ng.h"
+#include "generic-number.h"
 
 gboolean parse_int64(const gchar *str, gint64 *result);
 gboolean parse_int64_base16(const gchar *str, gint64 *result);
@@ -34,5 +34,6 @@ gboolean parse_int64_base_any(const gchar *str, gint64 *result);
 
 gboolean parse_int64_with_suffix(const gchar *str, gint64 *result);
 gboolean parse_double(const gchar *str, gdouble *result);
+gboolean parse_generic_number(const char *str, GenericNumber *number);
 
 #endif

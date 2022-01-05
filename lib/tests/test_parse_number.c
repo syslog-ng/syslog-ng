@@ -199,3 +199,19 @@ Test(parse_number_with_suffix, test_invalid_formats_are_not_accepted)
   assert_parse_with_suffix_fails("1234kiZ");
   assert_parse_fails("1234kiZ");
 }
+
+Test(parse_generic_number, test_string_is_properly_represented_as_a_generic_number)
+{
+  GenericNumber gn;
+
+  parse_generic_number("123", &gn);
+  cr_assert(gn.type == GN_SIGNED_INTEGER);
+  cr_assert(gn.value.raw_int64 == 123);
+  parse_generic_number("-123", &gn);
+  cr_assert(gn.type == GN_SIGNED_INTEGER);
+  cr_assert(gn.value.raw_int64 == -123);
+
+  parse_generic_number("9223372036854775808", &gn);
+  cr_assert(gn.type == GN_UNSIGNED_INTEGER);
+  cr_assert(gn.value.raw_uint64 == 9223372036854775808ULL);
+}
