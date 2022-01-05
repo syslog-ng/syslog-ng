@@ -44,7 +44,7 @@ _convert_facility_as_number(const gchar *facility_text)
 {
   gint64 facility = 0;
 
-  if (!parse_dec_number(facility_text, &facility))
+  if (!parse_int64(facility_text, &facility))
     return -1;
 
   if (facility > 127)

@@ -27,9 +27,12 @@
 
 #include "syslog-ng.h"
 
-gboolean parse_number_with_suffix(const gchar *str, gint64 *result);
-gboolean parse_number(const gchar *str, gint64 *result);
-gboolean parse_dec_number(const gchar *str, gint64 *result);
-gboolean parse_float(const gchar *str, gdouble *result);
+gboolean parse_int64(const gchar *str, gint64 *result);
+gboolean parse_int64_base16(const gchar *str, gint64 *result);
+gboolean parse_int64_base8(const gchar *str, gint64 *result);
+gboolean parse_int64_base_any(const gchar *str, gint64 *result);
+
+gboolean parse_int64_with_suffix(const gchar *str, gint64 *result);
+gboolean parse_double(const gchar *str, gdouble *result);
 
 #endif

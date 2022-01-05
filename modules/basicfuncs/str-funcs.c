@@ -77,7 +77,7 @@ tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessa
     return;
 
   /* get offset position from second argument */
-  if (!parse_dec_number(argv[1]->str, &start))
+  if (!parse_int64(argv[1]->str, &start))
     {
       msg_error("$(substr) parsing failed, start could not be parsed",
                 evt_tag_str("start", argv[1]->str));
@@ -87,7 +87,7 @@ tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessa
   /* if we were called with >2 arguments, third was desired length */
   if (argc > 2)
     {
-      if (!parse_dec_number(argv[2]->str, &len))
+      if (!parse_int64(argv[2]->str, &len))
         {
           msg_error("$(substr) parsing failed, length could not be parsed",
                     evt_tag_str("length", argv[2]->str));
@@ -407,7 +407,7 @@ _padding_prepare_parse_state(TFStringPaddingState *state, gint argc, gchar **arg
       return FALSE;
     }
 
-  if (!parse_dec_number(argv[2], &state->width))
+  if (!parse_int64(argv[2], &state->width))
     {
 
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
@@ -529,7 +529,7 @@ tf_binary_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gi
       gint64 number;
 
       gchar *token = argv[i];
-      if (!parse_number(token, &number))
+      if (!parse_int64_base_any(token, &number))
         {
           gchar *base = "dec";
 

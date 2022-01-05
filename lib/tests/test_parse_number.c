@@ -33,7 +33,7 @@ assert_parse_with_suffix(const gchar *str, gint64 expected)
   gint64 n;
   gboolean res;
 
-  res = parse_number_with_suffix(str, &n);
+  res = parse_int64_with_suffix(str, &n);
 
   cr_assert_eq(res, TRUE, "Parsing (w/ suffix) %s failed", str);
   cr_assert_eq(n, expected, "Parsing (w/ suffix) %s failed", str);
@@ -45,7 +45,7 @@ assert_parse_with_suffix_fails(const gchar *str)
   gint64 n;
   gboolean res;
 
-  res = parse_number_with_suffix(str, &n);
+  res = parse_int64_with_suffix(str, &n);
   cr_assert_eq(res, FALSE, "Parsing (w/ suffix) %s succeeded, while expecting failure", str);
 }
 
@@ -55,7 +55,7 @@ assert_parse(const gchar *str, gint64 expected)
   gint64 n;
   gboolean res;
 
-  res = parse_number(str, &n);
+  res = parse_int64_base_any(str, &n);
 
   cr_assert_eq(res, TRUE, "Parsing (w/o suffix) %s failed", str);
   cr_assert_eq(n, expected, "Parsing (w/o suffix) %s failed", str);
@@ -67,7 +67,7 @@ assert_parse_fails(const gchar *str)
   gint64 n;
   gboolean res;
 
-  res = parse_number(str, &n);
+  res = parse_int64_base_any(str, &n);
 
   cr_assert_eq(res, FALSE, "Parsing (w/o suffix) %s succeeded, while expecting failure", str);
 }
@@ -78,7 +78,7 @@ assert_parse_dec(const gchar *str, gint64 expected)
   gint64 n;
   gboolean res;
 
-  res = parse_dec_number(str, &n);
+  res = parse_int64(str, &n);
 
   cr_assert_eq(res, TRUE, "Parsing (w/o suffix) %s failed", str);
   cr_assert_eq(n, expected, "Parsing (w/o suffix) %s failed", str);
@@ -90,7 +90,7 @@ assert_parse_dec_fails(const gchar *str)
   gint64 n;
   gboolean res;
 
-  res = parse_dec_number(str, &n);
+  res = parse_int64(str, &n);
 
   cr_assert_eq(res, FALSE, "Parsing (w/o suffix) %s succeeded, while expecting failure", str);
 }
@@ -148,18 +148,11 @@ Test(parse_number_with_suffix, test_simple_numbers_are_parsed_properly)
   assert_parse_with_suffix("-1234", -1234);
 }
 
-Test(parse_number_with_suffix, test_c_like_prefixes_select_base)
+Test(parse_number_with_suffix, test_c_like_prefixes_are_not_supported)
 {
-  assert_parse_with_suffix("0x20", 32);
-  assert_parse_with_suffix("0xFF", 255);
-  assert_parse_with_suffix("-0x09", -9);
-
-  assert_parse_with_suffix("020", 16);
-  assert_parse_with_suffix("-010", -8);
-  assert_parse_with_suffix_fails("08");
-  assert_parse_with_suffix_fails("0A");
-
-  assert_parse_with_suffix("20", 20);
+  assert_parse_with_suffix_fails("0x20");
+  assert_parse_with_suffix("020", 20);
+  assert_parse_with_suffix("-010", -10);
   assert_parse_with_suffix_fails("FF");
 }
 

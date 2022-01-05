@@ -165,7 +165,7 @@ _parse_number(const gchar *s, gchar **endptr, gint base, gint64 *d)
 }
 
 static gboolean
-_parse_float(const gchar *s, gchar **endptr, gdouble *d)
+_parse_double(const gchar *s, gchar **endptr, gdouble *d)
 {
   gdouble val;
 
@@ -183,7 +183,31 @@ _parse_float(const gchar *s, gchar **endptr, gdouble *d)
 }
 
 gboolean
-parse_number(const gchar *s, gint64 *d)
+parse_int64_base16(const gchar *s, gint64 *d)
+{
+  gchar *endptr;
+
+  if (!_parse_number(s, &endptr, 16, d))
+    return FALSE;
+  if (*endptr)
+    return FALSE;
+  return TRUE;
+}
+
+gboolean
+parse_int64_base8(const gchar *s, gint64 *d)
+{
+  gchar *endptr;
+
+  if (!_parse_number(s, &endptr, 8, d))
+    return FALSE;
+  if (*endptr)
+    return FALSE;
+  return TRUE;
+}
+
+gboolean
+parse_int64_base_any(const gchar *s, gint64 *d)
 {
   gchar *endptr;
 
@@ -195,7 +219,7 @@ parse_number(const gchar *s, gint64 *d)
 }
 
 gboolean
-parse_dec_number(const gchar *s, gint64 *d)
+parse_int64(const gchar *s, gint64 *d)
 {
   gchar *endptr;
 
@@ -207,23 +231,23 @@ parse_dec_number(const gchar *s, gint64 *d)
 }
 
 gboolean
-parse_float(const gchar *s, gdouble *d)
+parse_int64_with_suffix(const gchar *s, gint64 *d)
 {
   gchar *endptr;
 
-  if (!_parse_float(s, &endptr, d))
+  if (!_parse_number(s, &endptr, DECIMAL_BASE, d))
+    return FALSE;
+  return _process_suffix(endptr, d);
+}
+
+gboolean
+parse_double(const gchar *s, gdouble *d)
+{
+  gchar *endptr;
+
+  if (!_parse_double(s, &endptr, d))
     return FALSE;
   if (*endptr)
     return FALSE;
   return TRUE;
-}
-
-gboolean
-parse_number_with_suffix(const gchar *s, gint64 *d)
-{
-  gchar *endptr;
-
-  if (!_parse_number(s, &endptr, DETECT_BASE, d))
-    return FALSE;
-  return _process_suffix(endptr, d);
 }
