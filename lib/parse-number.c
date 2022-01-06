@@ -165,24 +165,6 @@ _int64_from_string(const gchar *s, gchar **endptr, gint base, gint64 *d)
 }
 
 static gboolean
-_uint64_from_string(const gchar *s, gchar **endptr, gint base, guint64 *d)
-{
-  guint64 val;
-
-  errno = 0;
-  val = strtoull(s, endptr, base);
-
-  if (errno == ERANGE || errno == EINVAL)
-    return FALSE;
-
-  if (*endptr == s)
-    return FALSE;
-
-  *d = val;
-  return TRUE;
-}
-
-static gboolean
 _parse_double(const gchar *s, gchar **endptr, gdouble *d)
 {
   gdouble val;
@@ -249,18 +231,6 @@ parse_int64(const gchar *s, gint64 *d)
 }
 
 gboolean
-parse_uint64(const gchar *s, guint64 *d)
-{
-  gchar *endptr;
-
-  if (!_uint64_from_string(s, &endptr, DECIMAL_BASE, d))
-    return FALSE;
-  if (*endptr)
-    return FALSE;
-  return TRUE;
-}
-
-gboolean
 parse_int64_with_suffix(const gchar *s, gint64 *d)
 {
   gchar *endptr;
@@ -290,13 +260,6 @@ parse_generic_number(const char *str, GenericNumber *number)
   if (parse_int64(str, &int_value))
     {
       gn_set_int64(number, int_value);
-      return TRUE;
-    }
-
-  guint64 uint_value;
-  if (parse_uint64(str, &uint_value))
-    {
-      gn_set_uint64(number, uint_value);
       return TRUE;
     }
 

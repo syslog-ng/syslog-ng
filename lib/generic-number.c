@@ -27,10 +27,8 @@ gn_as_double(const GenericNumber *number)
 {
   if (number->type == GN_DOUBLE)
     return number->value.raw_double;
-  else if (number->type == GN_SIGNED_INTEGER)
+  else if (number->type == GN_INT64)
     return (gdouble) number->value.raw_int64;
-  else if (number->type == GN_UNSIGNED_INTEGER)
-    return (gdouble) number->value.raw_uint64;
   g_assert_not_reached();
 }
 
@@ -55,63 +53,23 @@ gn_as_int64(const GenericNumber *number)
         return G_MAXINT64;
       return (gint64) r;
     }
-  else if (number->type == GN_SIGNED_INTEGER)
+  else if (number->type == GN_INT64)
     return number->value.raw_int64;
-  else if (number->type == GN_UNSIGNED_INTEGER)
-    {
-      if (number->value.raw_uint64 > G_MAXINT64)
-        return G_MAXINT64;
-      return number->value.raw_uint64;
-    }
-  g_assert_not_reached();
-}
-
-guint64
-gn_as_uint64(const GenericNumber *number)
-{
-  if (number->type == GN_DOUBLE)
-    {
-      double r = round(number->value.raw_double);
-
-      if (r <= 0)
-        return 0;
-      if (r >= G_MAXUINT64)
-        return G_MAXUINT64;
-      return (guint64) r;
-    }
-  else if (number->type == GN_SIGNED_INTEGER)
-    {
-      if (number->value.raw_int64 < 0)
-        return 0;
-      return number->value.raw_int64;
-    }
-  else if (number->type == GN_UNSIGNED_INTEGER)
-    {
-      return number->value.raw_uint64;
-    }
   g_assert_not_reached();
 }
 
 void
 gn_set_int64(GenericNumber *number, gint64 value)
 {
-  number->type = GN_SIGNED_INTEGER;
+  number->type = GN_INT64;
   number->value.raw_int64 = value;
-  number->precision = 0;
-}
-
-void
-gn_set_uint64(GenericNumber *number, guint64 value)
-{
-  number->type = GN_UNSIGNED_INTEGER;
-  number->value.raw_uint64 = value;
   number->precision = 0;
 }
 
 gboolean
 gn_is_zero(const GenericNumber *number)
 {
-  if (number->type == GN_SIGNED_INTEGER || number->type == GN_UNSIGNED_INTEGER)
+  if (number->type == GN_INT64)
     return number->value.raw_int64 == 0;
 
   return fabs(number->value.raw_double) < DBL_EPSILON;
@@ -119,17 +77,6 @@ gn_is_zero(const GenericNumber *number)
 
 static gint
 _compare_int64(gint64 l, gint64 r)
-{
-  if (l == r)
-    return 0;
-  else if (l < r)
-    return -1;
-
-  return 1;
-}
-
-static gint
-_compare_uint64(guint64 l, guint64 r)
 {
   if (l == r)
     return 0;
@@ -155,10 +102,8 @@ gn_compare(const GenericNumber *left, const GenericNumber *right)
 {
   if (left->type == right->type)
     {
-      if (left->type == GN_SIGNED_INTEGER)
+      if (left->type == GN_INT64)
         return _compare_int64(gn_as_int64(left), gn_as_int64(right));
-      else if (left->type == GN_UNSIGNED_INTEGER)
-        return _compare_uint64(gn_as_uint64(left), gn_as_uint64(right));
       else if (left->type == GN_DOUBLE)
         return _compare_double(gn_as_double(left), gn_as_double(right));
       g_assert_not_reached();

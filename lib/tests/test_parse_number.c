@@ -205,13 +205,17 @@ Test(parse_generic_number, test_string_is_properly_represented_as_a_generic_numb
   GenericNumber gn;
 
   parse_generic_number("123", &gn);
-  cr_assert(gn.type == GN_SIGNED_INTEGER);
+  cr_assert(gn.type == GN_INT64);
   cr_assert(gn.value.raw_int64 == 123);
   parse_generic_number("-123", &gn);
-  cr_assert(gn.type == GN_SIGNED_INTEGER);
+  cr_assert(gn.type == GN_INT64);
   cr_assert(gn.value.raw_int64 == -123);
 
+  parse_generic_number("-123.0", &gn);
+  cr_assert(gn.type == GN_DOUBLE);
+  cr_assert_float_eq(gn.value.raw_double, -123.0, DBL_EPSILON);
+
   parse_generic_number("9223372036854775808", &gn);
-  cr_assert(gn.type == GN_UNSIGNED_INTEGER);
-  cr_assert(gn.value.raw_uint64 == 9223372036854775808ULL);
+  cr_assert(gn.type == GN_DOUBLE);
+  cr_assert_float_eq(gn.value.raw_double, 9223372036854775808.0, DBL_EPSILON);
 }
