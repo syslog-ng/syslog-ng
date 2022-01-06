@@ -1,0 +1,37 @@
+# When started manually, a syslog-ng-* tag has to be selected
+name: Publish Docker image
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'syslog-ng-*'
+
+jobs:
+  publish-docker-image:
+    name: Publish syslog-ng Docker image
+    if: github.repository_owner == 'syslog-ng'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Extract metadata (syslog-ng version) for Docker
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: balabit/syslog-ng
+          tags: type=match,pattern=syslog-ng-(.*),group=1
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: docker/
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
