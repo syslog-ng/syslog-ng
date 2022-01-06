@@ -285,7 +285,7 @@ ParameterizedTestParameters(type_hints, test_datetime_cast)
 
 ParameterizedTest(StringUInt64Pair *string_value_pair, type_hints, test_datetime_cast)
 {
-  guint64 value;
+  gint64 value;
   GError *error = NULL;
 
   cr_assert_eq(type_cast_to_datetime_msec(string_value_pair->string, &value, &error), TRUE,
@@ -297,7 +297,7 @@ ParameterizedTest(StringUInt64Pair *string_value_pair, type_hints, test_datetime
 Test(type_hints, test_invalid_datetime_cast)
 {
   GError *error = NULL;
-  guint64 value;
+  gint64 value;
 
   cr_assert_eq(type_cast_to_datetime_msec("invalid", &value, &error), FALSE,
                "Type cast of invalid string to gint64 should be failed");
