@@ -140,7 +140,7 @@ type_cast_to_double(const gchar *value, gdouble *out, GError **error)
 }
 
 gboolean
-type_cast_to_datetime_msec(const gchar *value, guint64 *out, GError **error)
+type_cast_to_datetime_msec(const gchar *value, gint64 *out, GError **error)
 {
   gchar *endptr;
 
