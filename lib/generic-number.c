@@ -75,6 +75,18 @@ gn_is_zero(const GenericNumber *number)
   return fabs(number->value.raw_double) < DBL_EPSILON;
 }
 
+void
+gn_set_nan(GenericNumber *number)
+{
+  number->type = GN_NAN;
+}
+
+gboolean
+gn_is_nan(const GenericNumber *number)
+{
+  return number->type == GN_NAN || (number->type == GN_DOUBLE && isnan(number->value.raw_double));
+}
+
 static gint
 _compare_int64(gint64 l, gint64 r)
 {

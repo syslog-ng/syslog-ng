@@ -1,6 +1,7 @@
 #include <criterion/criterion.h>
 
 #include "generic-number.h"
+#include <math.h>
 
 Test(generic_number, test_set_signed_int_retrieves_the_value_specified)
 {
@@ -64,4 +65,16 @@ Test(generic_number, test_double_outside_of_the_int64_range_is_represented_as_ex
 
   gn_set_double(&gn, ((gdouble) G_MININT64) - 1.0, -1);
   cr_assert_eq(gn_as_int64(&gn), G_MININT64);
+}
+
+Test(generic_number, test_set_nan_becomes_a_nan)
+{
+  GenericNumber gn;
+
+  gn_set_nan(&gn);
+  cr_assert(gn_is_nan(&gn));
+
+  /* NAN requires _GNU_SOURCE */
+  gn_set_double(&gn, NAN, -1);
+  cr_assert(gn_is_nan(&gn));
 }

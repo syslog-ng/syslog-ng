@@ -31,6 +31,7 @@ typedef struct _GenericNumber
   {
     GN_INT64,
     GN_DOUBLE,
+    GN_NAN,
   } type;
   union
   {
@@ -45,6 +46,8 @@ gdouble gn_as_double(const GenericNumber *number);
 void gn_set_int64(GenericNumber *number, gint64 value);
 gint64 gn_as_int64(const GenericNumber *number);
 gboolean gn_is_zero(const GenericNumber *number);
+void gn_set_nan(GenericNumber *number);
+gboolean gn_is_nan(const GenericNumber *number);
 gint gn_compare(const GenericNumber *left, const GenericNumber *right);
 
 #endif
