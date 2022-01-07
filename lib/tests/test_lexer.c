@@ -312,6 +312,7 @@ Test(lexer, at_version_stores_config_version_in_parsed_version_in_hex_form)
 {
   parser->lexer->ignore_pragma = FALSE;
 
+  start_grabbing_messages();
   cfg_set_version_without_validation(configuration, 0);
   _input("@version: 3.1\n\
 bar\n");
@@ -319,12 +320,17 @@ bar\n");
   cr_assert_eq(configuration->user_version, 0x0301,
                "@version parsing mismatch, value %04x expected %04x", configuration->user_version, 0x0301);
 
+  assert_grabbed_log_contains("Configuration file format is too old");
+
+  reset_grabbed_messages();
   cfg_set_version_without_validation(configuration, 0);
   _input("@version: 3.5\n\
 baz\n");
   assert_parser_identifier("baz");
   cr_assert_eq(configuration->user_version, 0x0305,
                "@version parsing mismatch, value %04x expected %04x", configuration->user_version, 0x0305);
+
+  assert_grabbed_log_contains("Configuration file format is too old");
 }
 
 Test(lexer, current_version)
@@ -337,6 +343,40 @@ foo\n");
   assert_parser_identifier("foo");
   cr_assert_eq(configuration->user_version, VERSION_VALUE_CURRENT,
                "@version parsing mismatch, value %04x expected %04x", configuration->user_version, VERSION_VALUE_CURRENT);
+}
+
+Test(lexer, feature_flip_to_typing)
+{
+  gchar buf[128];
+  parser->lexer->ignore_pragma = FALSE;
+
+  start_grabbing_messages();
+
+  cfg_set_version_without_validation(configuration, 0);
+
+  gint flip_version = FEATURE_TYPING_MIN_VERSION - 1;
+  g_snprintf(buf, sizeof(buf), "@version: %d.%d\nbar\n",
+             (flip_version & 0xFF00) >> 8,
+             flip_version & 0xFF);
+  _input(buf);
+  assert_parser_identifier("bar");
+  cr_assert(configuration->user_version == flip_version);
+  assert_grabbed_log_contains("experimental behaviors of the future syslog-ng");
+
+  cr_assert(cfg_is_config_version_older(configuration, VERSION_VALUE_4_0));
+  cr_assert(cfg_is_typing_feature_enabled(configuration));
+
+  reset_grabbed_messages();
+
+  cfg_set_version_without_validation(configuration, 0);
+  g_snprintf(buf, sizeof(buf), "@version: %d.%d\nbar\n",
+             (VERSION_VALUE_4_0 & 0xFF00) >> 8,
+             VERSION_VALUE_4_0 & 0xFF);
+  _input(buf);
+  assert_parser_identifier("bar");
+  assert_grabbed_log_contains("experimental behaviors of the future syslog-ng");
+  cr_assert(!cfg_is_config_version_older(configuration, VERSION_VALUE_4_0));
+  cr_assert(cfg_is_typing_feature_enabled(configuration));
 }
 
 Test(lexer, test_lexer_others)

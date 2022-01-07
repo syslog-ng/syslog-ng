@@ -184,13 +184,43 @@ __cfg_is_config_version_older(GlobalConfig *cfg, gint req)
 
 /* VERSION_VALUE_LAST_SEMANTIC_CHANGE needs to be bumped in versioning.h whenever
  * we add a conditional on the config version anywhere in the codebase.  The
- * G_STATIC_ASSERT checks that we indeed did that */
+ * G_STATIC_ASSERT checks that we indeed did that.
+ *
+ * We also allow merging the features for the upcoming major version.
+ */
 
 #define cfg_is_config_version_older(__cfg, __req) \
   ({ \
-    /* check that VERSION_VALUE_LAST_SEMANTIC_CHANGE is set correctly */ G_STATIC_ASSERT((__req) <= VERSION_VALUE_LAST_SEMANTIC_CHANGE); \
+    /* check that VERSION_VALUE_LAST_SEMANTIC_CHANGE is set correctly */ G_STATIC_ASSERT((__req) <= VERSION_VALUE_LAST_SEMANTIC_CHANGE || (__req) == VERSION_VALUE_NEXT_MAJOR); \
     __cfg_is_config_version_older(__cfg, __req); \
   })
+
+/* This function returns TRUE if a version based feature flip is enabled.
+ * This will enable or disable feature related upgrade warnings.
+ *
+ * This was initially introduced for "typing" support, where the following
+ * is implemented:
+ *
+ * As long as we are using a 3.x version number (less than 3.255), the upgrade
+ * warnings are suppressed and compatibility mode is enabled.  Once @version
+ * is something equal or larger than 3.255, we still enable compatibility but
+ * warnings will NOT be suppressed.  This is controlled with
+ * FEATURE_TYPING_MIN_VERSION.
+ *
+ * Once we release 4.0, FEATURE_TYPING_MIN_VERSION needs to be set to zero in
+ * versioning.h With that all upgrade notices start to appear when syslog-ng
+ * finds a 3.x configuration.
+ */
+#define __cfg_is_feature_enabled(cfg, min_version) \
+  ({ \
+    /* the flip-over for min_version reached, set min_version to 0 */ G_STATIC_ASSERT(VERSION_VALUE_CURRENT < ((min_version) - 1));       \
+    version_convert_from_user(cfg->user_version) >= (min_version) - 1;  \
+  })
+
+#define cfg_is_feature_enabled(cfg, topic)        __cfg_is_feature_enabled(cfg, FEATURE_ ## topic ## _MIN_VERSION)
+#define cfg_is_typing_feature_enabled(cfg)        cfg_is_feature_enabled(cfg, TYPING)
+
+#define cfg_is_experimental_feature_enabled(cfg)  (cfg_is_typing_feature_enabled(cfg))
 
 static inline void
 cfg_set_use_uniqid(gboolean flag)
