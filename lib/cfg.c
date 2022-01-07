@@ -421,6 +421,14 @@ cfg_set_version(GlobalConfig *self, gint version)
                   "file",
                   cfg_format_config_version_tag(self));
     }
+  else if (version_convert_from_user(self->user_version) >= VERSION_VALUE_3_LAST &&
+           version_convert_from_user(self->user_version) <= VERSION_VALUE_4_0)
+    {
+      msg_warning("WARNING: experimental behavior of the future syslog-ng 4.0 are now enabled. This mode of "
+                  "operation is meant to solicit feedback and allow the evaluation of the new features. USE THIS "
+                  "MODE AT YOUR OWN RISK, please share feedback via GitHub, Gitter.im or email to the authors",
+                  cfg_format_config_version_tag(self));
+    }
   else if (version_convert_from_user(self->user_version) > VERSION_VALUE_CURRENT)
     {
       msg_warning("WARNING: Configuration file format is newer than the current version, please specify the "

@@ -188,9 +188,35 @@ __cfg_is_config_version_older(GlobalConfig *cfg, gint req)
 
 #define cfg_is_config_version_older(__cfg, __req) \
   ({ \
-    /* check that VERSION_VALUE_LAST_SEMANTIC_CHANGE is set correctly */ G_STATIC_ASSERT((__req) <= VERSION_VALUE_LAST_SEMANTIC_CHANGE); \
+    /* check that VERSION_VALUE_LAST_SEMANTIC_CHANGE is set correctly */ G_STATIC_ASSERT((__req) <= VERSION_VALUE_LAST_SEMANTIC_CHANGE || (__req) >= VERSION_VALUE_4_0); \
     __cfg_is_config_version_older(__cfg, __req); \
   })
+
+/* This function returns TRUE if post-4.0 upgrade warnings should be
+ * displayed or not.  As long as we are using a 3.x version number, these
+ * warnings are suppressed and compatibility mode is enabled.  Once @version
+ * something equal or larger than 3.99, we still enable compatibility but warnings
+ * will NOT be suppressed.
+ *
+ * Once we are ready with all 4.0 changes, we need to do the following:
+ *   1) eliminate all calls to cfg_is_config_to_be_migrated_to_post_4_0()
+ *   2) eliminate the 4.0 related exception from the static assert in
+ *      cfg_is_config_version_older()
+ *   3) set LAST_SEMANTIC_CHANGE to at least 4.0
+ *
+ * With those all upgrade notices start to appear when syslog-ng finds a 3.x
+ * configuration.
+ */
+static inline gboolean
+cfg_is_config_to_be_migrated_to_post_4_0(GlobalConfig *cfg)
+{
+  /* this assert should fail once we release 4.0 */
+  G_STATIC_ASSERT(VERSION_VALUE_CURRENT < VERSION_VALUE_3_LAST);
+
+  if (!cfg)
+    return FALSE;
+  return version_convert_from_user(cfg->user_version) >= VERSION_VALUE_3_LAST;
+}
 
 static inline void
 cfg_set_use_uniqid(gboolean flag)

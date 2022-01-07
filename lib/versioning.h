@@ -131,6 +131,8 @@
 #define VERSION_3_34 "syslog-ng 3.34"
 #define VERSION_3_35 "syslog-ng 3.35"
 
+#define VERSION_4_0 "syslog-ng 4.0"
+
 /* VERSION_VALUE_* references versions as integers to be compared against stuff like cfg->user_version */
 /* VERSION_STR_* references versions as strings to be shown to the user */
 
@@ -170,6 +172,11 @@
 #define VERSION_VALUE_3_33 0x0321
 #define VERSION_VALUE_3_34 0x0322
 #define VERSION_VALUE_3_35 0x0323
+
+/* these are defined to allow 4.0 related changes to be introduced while we
+ * are still producing 3.x releases. */
+#define VERSION_VALUE_3_LAST  0x0363
+#define VERSION_VALUE_4_0     0x0400
 
 /* config version code, in the same format as GlobalConfig->version */
 #define VERSION_VALUE_CURRENT   VERSION_VALUE_3_35
