@@ -650,8 +650,8 @@ ParameterizedTestParameters(basicfuncs, test_filter)
     { "Something $(filter ('$_' eq '0') '')", "Something " },
     { "$(filter ('1' eq '0') '')", "" },
     { "$(filter message('árvíztűrőtükörfúrógép') 'doesnotchange')", "doesnotchange" },
-    { "$(filter (message('árvíz') and ('$APP.VALUE' == 'value')) 'doesnotchange')", "doesnotchange" },
-    { "$(filter (message('donotmatch') or ('$APP.VALUE' == 'value')) 'doesnotchange')", "doesnotchange" },
+    { "$(filter (message('árvíz') and ('${APP.VALUE}' eq 'value')) 'doesnotchange')", "doesnotchange" },
+    { "$(filter (message('donotmatch') or ('${APP.VALUE}' eq 'value')) 'doesnotchange')", "doesnotchange" },
     { "$(filter ('$YEAR' ge '1900') 'doesnotchange')", "doesnotchange" },
     { "$(filter ('$YEAR' le '1900') 'doesnotchange')", "" },
   };
