@@ -118,6 +118,7 @@ gint tls_context_get_verify_mode(const TLSContext *self);
 void tls_context_set_verify_mode(TLSContext *self, gint verify_mode);
 void tls_context_set_key_file(TLSContext *self, const gchar *key_file);
 void tls_context_set_cert_file(TLSContext *self, const gchar *cert_file);
+gboolean tls_context_set_keylog_file(TLSContext *self, gchar *keylog_file_path);
 void tls_context_set_pkcs12_file(TLSContext *self, const gchar *pkcs12_file);
 void tls_context_set_ca_dir(TLSContext *self, const gchar *ca_dir);
 void tls_context_set_crl_dir(TLSContext *self, const gchar *crl_dir);

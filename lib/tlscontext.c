@@ -31,6 +31,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <glib/gstdio.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
@@ -45,6 +46,12 @@ struct _TLSContext
   TLSMode mode;
   gint verify_mode;
   gchar *key_file;
+  struct
+  {
+    gchar *keylog_file_path;
+    FILE *keylog_file;
+    GMutex keylog_file_lock;
+  };
   gchar *cert_file;
   gchar *dhparam_file;
   gchar *pkcs12_file;
@@ -335,6 +342,46 @@ _set_sni_in_client_mode(TLSSession *self)
   return FALSE;
 }
 
+void
+_write_line_to_keylog_file(const char *file_path, const char *line, FILE *keylog_file, GMutex *mutex)
+{
+  if(!keylog_file)
+    return;
+
+
+  g_mutex_lock(mutex);
+  gint ret_val = fprintf(keylog_file, "%s\n", line);
+  if (ret_val != strlen(line)+1)
+    msg_error("Couldn't write to TLS keylogfile", evt_tag_errno("error", ret_val));
+
+  fflush(keylog_file);
+  g_mutex_unlock(mutex);
+}
+
+static inline void
+_dump_tls_keylog(const SSL *ssl, const char *line)
+{
+  if(!ssl)
+    return;
+
+  TLSSession *self = SSL_get_app_data(ssl);
+  _write_line_to_keylog_file(self->ctx->keylog_file_path, line, self->ctx->keylog_file, &self->ctx->keylog_file_lock);
+}
+
+static gboolean
+tls_session_keylog_setup_file(TLSSession *self, const char *keylog_file_path)
+{
+  self->ctx->keylog_file = g_fopen(keylog_file_path, "a");
+  if(!self->ctx->keylog_file)
+    {
+      msg_error("Error opening keylog-file",
+                evt_tag_str(EVT_TAG_FILENAME, keylog_file_path),
+                evt_tag_error(EVT_TAG_OSERROR));
+      return FALSE;
+    }
+  return TRUE;
+}
+
 static TLSSession *
 tls_session_new(SSL *ssl, TLSContext *ctx)
 {
@@ -353,6 +400,15 @@ tls_session_new(SSL *ssl, TLSContext *ctx)
       tls_context_unref(self->ctx);
       g_free(self);
       return NULL;
+    }
+  if(ctx->keylog_file_path)
+    {
+      if(!tls_session_keylog_setup_file(self, self->ctx->keylog_file_path))
+        {
+          tls_context_unref(self->ctx);
+          g_free(self);
+          return NULL;
+        }
     }
 
   return self;
@@ -837,6 +893,11 @@ _tls_context_free(TLSContext *self)
   g_free(self->cipher_suite);
   g_free(self->ecdh_curve_list);
   g_free(self->sni);
+  g_free(self->keylog_file_path);
+
+  if(self->keylog_file)
+    fclose(self->keylog_file);
+
   g_free(self);
 }
 
@@ -997,6 +1058,21 @@ tls_context_set_key_file(TLSContext *self, const gchar *key_file)
   self->key_file = g_strdup(key_file);
   SSL_CTX_set_default_passwd_cb(self->ssl_ctx, _pem_passwd_callback);
   SSL_CTX_set_default_passwd_cb_userdata(self->ssl_ctx, self->key_file);
+}
+
+gboolean
+tls_context_set_keylog_file(TLSContext *self, gchar *keylog_file_path)
+{
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+  g_free(self->keylog_file_path);
+  msg_warning_once("WARNING: TLS keylog file has been set up, it should only be used during debugging sessions.",
+                   evt_tag_str("keylog-file", keylog_file_path));
+  self->keylog_file_path = g_strdup(keylog_file_path);
+  SSL_CTX_set_keylog_callback(self->ssl_ctx, _dump_tls_keylog);
+  return TRUE;
+#else
+  return FALSE;
+#endif
 }
 
 void
