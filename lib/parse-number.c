@@ -27,6 +27,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 static const gint DECIMAL_BASE = 10;
 static const gint DETECT_BASE  = 0;
@@ -253,6 +254,17 @@ parse_double(const gchar *s, gdouble *d)
 }
 
 gboolean
+parse_nan(const gchar *s)
+{
+  while (isspace(*s))
+    s++;
+
+  if (strcasecmp(s, "NaN") == 0)
+    return TRUE;
+  return FALSE;
+}
+
+gboolean
 parse_generic_number(const char *str, GenericNumber *number)
 {
   gint64 int_value;
@@ -269,6 +281,9 @@ parse_generic_number(const char *str, GenericNumber *number)
       gn_set_double(number, float_value, -1);
       return TRUE;
     }
+
+  if (parse_nan(str))
+    gn_set_nan(number);
 
   return FALSE;
 }
