@@ -1,0 +1,7 @@
+Copyright (c) 2020 Nicolas Kowenski
+
+The syslog-ng Helm chart contained in this directory is free software; you can
+redistribute it and/or modify it under the terms of the GNU Lesser General
+Public License as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version (please refer to the file
+LGPL.txt for more details).
