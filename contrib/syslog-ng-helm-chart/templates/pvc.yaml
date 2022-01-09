@@ -1,0 +1,13 @@
+{{- if .Values.storage.enable }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "syslog-ng.fullname" . }}-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.storage.size }} 
+  storageClassName: {{ .Values.storage.storageClass }} 
+{{- end }}
