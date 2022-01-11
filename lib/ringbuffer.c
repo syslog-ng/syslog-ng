@@ -44,7 +44,7 @@ ring_buffer_alloc(RingBuffer *self, guint32 element_size, guint32 capacity)
   self->count = 0;
   self->capacity = capacity;
   self->element_size = element_size;
-  self->buffer = g_malloc0(element_size * self->capacity);
+  self->buffer = g_malloc0((gsize) element_size * self->capacity);
 }
 
 gboolean
