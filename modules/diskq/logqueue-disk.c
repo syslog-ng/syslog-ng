@@ -203,6 +203,8 @@ log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, cons
   log_queue_init_instance(&self->super, persist_name);
   self->super.type = log_queue_disk_type;
 
+  self->compaction = options->compaction;
+
   self->qdisk = qdisk_new(options, qdisk_file_id);
 }
 
@@ -212,9 +214,7 @@ _serialize_msg(SerializeArchive *sa, gpointer user_data)
   LogQueueDisk *self = ((gpointer *) user_data)[0];
   LogMessage *msg = ((gpointer *) user_data)[1];
 
-  DiskQueueOptions *options = qdisk_get_options(self->qdisk);
-
-  return log_msg_serialize(msg, sa, options->compaction ? LMSF_COMPACTION : 0);
+  return log_msg_serialize(msg, sa, self->compaction ? LMSF_COMPACTION : 0);
 }
 
 gboolean

@@ -35,6 +35,11 @@ struct _LogQueueDisk
 {
   LogQueue super;
   QDisk *qdisk;         /* disk based queue */
+  /* TODO:
+   * LogQueueDisk should have a separate options class, which should only contain compaction, reliable, etc...
+   * Similarly, QDisk should have a separate options class, which should only contain disk_buf_size, mem_buf_size, etc...
+   */
+  gboolean compaction;
   gboolean (*save_queue)(LogQueueDisk *s, gboolean *persistent);
   gboolean (*load_queue)(LogQueueDisk *s, const gchar *filename);
   gboolean (*start)(LogQueueDisk *s, const gchar *filename);
