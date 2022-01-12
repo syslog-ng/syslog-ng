@@ -102,8 +102,8 @@ class SyslogNgConfig(object):
     def create_rewrite_set_pri(self, pri, **options):
         return SetPri(pri, **options)
 
-    def create_filter(self, **options):
-        return Filter([], **options)
+    def create_filter(self, expr=None, **options):
+        return Filter([expr] if expr else [], **options)
 
     def create_app_parser(self, **options):
         return Parser("app-parser", **options)
