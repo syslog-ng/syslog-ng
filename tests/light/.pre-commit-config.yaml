@@ -4,24 +4,24 @@ repos:
     rev: v2.2.1
     hooks:
     -   id: trailing-whitespace
-        files: 'tests/python_functional/'
+        files: 'tests/light/'
     -   id: end-of-file-fixer
-        files: 'tests/python_functional/'
+        files: 'tests/light/'
 -   repo: https://gitlab.com/pycqa/flake8
     rev: 3.7.7
     hooks:
     -   id: flake8
         args: [--ignore=E501]
-        files: 'tests/python_functional/'
+        files: 'tests/light/'
 -   repo: https://github.com/asottile/reorder_python_imports
     rev: v1.4.0
     hooks:
     -   id: reorder-python-imports
-        args: [--application-directories=tests/python_functional/]
-        files: 'tests/python_functional/'
+        args: [--application-directories=tests/light/]
+        files: 'tests/light/'
 -   repo: https://github.com/asottile/add-trailing-comma
     rev: v1.0.0
     hooks:
     -   id: add-trailing-comma
         args: [--py36-plus]
-        files: 'tests/python_functional/'
+        files: 'tests/light/'

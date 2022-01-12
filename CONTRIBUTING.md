@@ -154,7 +154,7 @@ See news/README.md for more information.
 
 If possible please add tests for your change. You can add unit tests in c (tests directory in most of syslog-ng modules),
 or there is an initiative so that contributors write tests in python (for now the feature set is limited).
-You can check `tests/python_functional/functional_tests/source_drivers/generator_source/` as an example.
+You can check `tests/light/functional_tests/source_drivers/generator_source/` as an example.
 
 ### CI
 
