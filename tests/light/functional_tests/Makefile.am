@@ -13,6 +13,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/destination_drivers/snmp_destination/v2c/test_snmp_destination_v2c_cisco_ios_traps.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/v2c/test_snmp_destination_v2c_custom_community.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/v2c/test_snmp_destination_v2c_using_macro_snmp_obj.py \
+	tests/light/functional_tests/filters/test_filter_reference.py \
 	tests/light/functional_tests/filters/throttle/test_throttle_filter_acceptance.py \
 	tests/light/functional_tests/logpath/test_flags_catch_all.py \
 	tests/light/functional_tests/logpath/test_flags_fallback.py \
@@ -25,14 +26,17 @@ EXTRA_DIST += \
 	tests/light/functional_tests/parsers/db_parser/test_db_parser.py \
 	tests/light/functional_tests/parsers/panos/test_panos_parser.py \
 	tests/light/functional_tests/parsers/regexp-parser/test_regexp_parser.py \
+	tests/light/functional_tests/rewrites/set-pri/test_set_pri.py \
 	tests/light/functional_tests/rewrites/set-tag/test_set_tag.py \
 	tests/light/functional_tests/rewrites/cc-mask/test_cc_mask_and_cc_hash.py \
 	tests/light/functional_tests/source_drivers/file_source/test_acceptance.py \
 	tests/light/functional_tests/source_drivers/file_source/test_follow_freq_value.py \
+	tests/light/functional_tests/source_drivers/file_source/test_no_header_flag.py \
 	tests/light/functional_tests/source_drivers/generator_source/test_generator_source.py \
 	tests/light/functional_tests/source_drivers/internal_source/test_internal_acceptance.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_acceptance.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_reload.py \
+	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_tls_passthrough.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_tls.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_tls_with_passphrase.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_multiple_clients.py \
