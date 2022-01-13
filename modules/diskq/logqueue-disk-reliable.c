@@ -317,7 +317,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 
   ScratchBuffersMarker marker;
   GString *serialized_msg = scratch_buffers_alloc_and_mark(&marker);
-  if (!qdisk_serialize_msg(self->super.qdisk, msg, serialized_msg))
+  if (!log_queue_disk_serialize_msg(&self->super, msg, serialized_msg))
     {
       msg_error("Failed to serialize message for reliable disk-buffer, dropping message",
                 evt_tag_str("filename", qdisk_get_filename(self->super.qdisk)),

@@ -108,7 +108,7 @@ _pop_disk(LogQueueDisk *self, LogMessage **msg)
       return FALSE;
     }
 
-  if (!qdisk_deserialize_msg(self->qdisk, read_serialized, msg))
+  if (!log_queue_disk_deserialize_msg(self, read_serialized, msg))
     {
       msg_error("Cannot read correct message from disk-queue file",
                 evt_tag_str("filename", qdisk_get_filename(self->qdisk)),
@@ -203,5 +203,64 @@ log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, cons
   log_queue_init_instance(&self->super, persist_name);
   self->super.type = log_queue_disk_type;
 
+  self->compaction = options->compaction;
+
   self->qdisk = qdisk_new(options, qdisk_file_id);
+}
+
+static gboolean
+_serialize_msg(SerializeArchive *sa, gpointer user_data)
+{
+  LogQueueDisk *self = ((gpointer *) user_data)[0];
+  LogMessage *msg = ((gpointer *) user_data)[1];
+
+  return log_msg_serialize(msg, sa, self->compaction ? LMSF_COMPACTION : 0);
+}
+
+gboolean
+log_queue_disk_serialize_msg(LogQueueDisk *self, LogMessage *msg, GString *serialized)
+{
+  gpointer user_data[] = { self, msg };
+  GError *error = NULL;
+
+  if (!qdisk_serialize(serialized, _serialize_msg, user_data, &error))
+    {
+      msg_error("Error serializing message for the disk-queue file",
+                evt_tag_str("error", error->message),
+                evt_tag_str("persist-name", self->super.persist_name));
+      g_error_free(error);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+_deserialize_msg(SerializeArchive *sa, gpointer user_data)
+{
+  LogMessage *msg = user_data;
+
+  return log_msg_deserialize(msg, sa);
+}
+
+gboolean
+log_queue_disk_deserialize_msg(LogQueueDisk *self, GString *serialized, LogMessage **msg)
+{
+  LogMessage *local_msg = log_msg_new_empty();
+  gpointer user_data = local_msg;
+  GError *error = NULL;
+
+  if (!qdisk_deserialize(serialized, _deserialize_msg, user_data, &error))
+    {
+      msg_error("Error deserializing message from the disk-queue file",
+                evt_tag_str("error", error->message),
+                evt_tag_str("persist-name", self->super.persist_name));
+      log_msg_unref(local_msg);
+      g_error_free(error);
+      return FALSE;
+    }
+
+  *msg = local_msg;
+
+  return TRUE;
 }
