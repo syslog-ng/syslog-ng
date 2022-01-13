@@ -29,7 +29,8 @@ import io.searchbox.client.JestClientFactory;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.cluster.NodesInfo;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.ESClient;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
@@ -52,7 +53,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.io.FileInputStream;
-import org.apache.log4j.PropertyConfigurator;
 
 import java.io.IOException;
 
@@ -62,10 +62,6 @@ public class ESHttpClient implements ESClient {
 	private JestClient client;
 	private HttpMessageProcessor messageProcessor;
 	protected Logger logger;
-
-  static  {
-      PropertyConfigurator.configure(System.getProperty("log4j.configuration"));
-  }
 
 
   public class HttpClientBuilderException extends RuntimeException {
@@ -86,7 +82,7 @@ public class ESHttpClient implements ESClient {
 
 	public ESHttpClient(ElasticSearchOptions options) {
 		this.options = options;
-		logger = Logger.getRootLogger();
+		logger = LogManager.getRootLogger();
 		messageProcessor = ESMessageProcessorFactory.getMessageProcessor(options, this);
 	}
 

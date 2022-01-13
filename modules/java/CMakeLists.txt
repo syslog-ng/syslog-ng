@@ -64,7 +64,7 @@ bison_target(ModJavaGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/java-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
 
-find_package(Java 1.7)
+find_package(Java 1.8)
 
 module_switch(ENABLE_JAVA "Enable java module" JAVA_FOUND Java_JAVAH_EXECUTABLE)
 if (ENABLE_JAVA)

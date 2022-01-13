@@ -32,7 +32,8 @@ import org.syslog_ng.elasticsearch_v2.client.UnknownESClientModeException;
 import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
 import org.syslog_ng.options.InvalidOptionException;
 import org.syslog_ng.logging.SyslogNgInternalLogger;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 public class ElasticSearchDestination extends StructuredLogDestination {
 
@@ -44,8 +45,7 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 
 	public ElasticSearchDestination(long handle) {
 		super(handle);
-		logger = Logger.getRootLogger();
-		SyslogNgInternalLogger.register(logger);
+		logger = LogManager.getRootLogger();
 		options = new ElasticSearchOptions(this);
 	}
 

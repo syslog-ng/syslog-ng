@@ -4,14 +4,17 @@ jar.baseName = 'syslog-ng-common'
 
 dependencies {
   implementation name: 'syslog-ng-core'
-  implementation 'log4j:log4j:1.2.16'
+  implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.0'
+  implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.17.0'
   testImplementation 'junit:junit:4.12'
   testImplementation 'org.hamcrest:hamcrest-core:1.3'
 }
 
 ext.jarDestDir = project.hasProperty('jarDestDir') ? project.getProperty('jarDestDir') : '/'
 task copyLog4j(type: Copy) {
-     from findJar('log4j')
+     from findJar('log4j-core')
+     into jarDestDir
+     from findJar('log4j-api')
      into jarDestDir
 }
 

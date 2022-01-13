@@ -27,7 +27,8 @@ import java.io.File;
 import java.net.URI;
 import java.nio.file.Paths;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequestBuilder;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -50,7 +51,7 @@ public abstract class ESNativeClient implements ESClient {
 
 	public ESNativeClient(ElasticSearchOptions options) {
 		this.options = options;
-		logger = Logger.getRootLogger();
+		logger = LogManager.getRootLogger();
 		messageProcessor = ESMessageProcessorFactory.getMessageProcessor(options, this);
 	}
 

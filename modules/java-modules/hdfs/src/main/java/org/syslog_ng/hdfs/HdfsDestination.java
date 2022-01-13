@@ -32,7 +32,8 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.IOException;
 import java.net.URI;
@@ -143,8 +144,7 @@ public class HdfsDestination extends StructuredLogDestination {
 
     public HdfsDestination(long handle) {
         super(handle);
-        logger = Logger.getRootLogger();
-        SyslogNgInternalLogger.register(logger);
+        logger = LogManager.getRootLogger();
         options = new HdfsOptions(this);
         lock = new ReentrantLock();
     }

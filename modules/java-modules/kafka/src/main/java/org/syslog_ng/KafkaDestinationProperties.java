@@ -25,7 +25,8 @@ package org.syslog_ng.kafka;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.syslog_ng.logging.SyslogNgInternalLogger;
 import org.syslog_ng.kafka.KafkaDestinationOptions;
 
@@ -42,7 +43,7 @@ public class KafkaDestinationProperties {
 
     public KafkaDestinationProperties(KafkaDestinationOptions options) {
         this.options = options;
-        logger = Logger.getLogger("root");
+        logger = LogManager.getLogger("root");
     }
 
     public void init() {
