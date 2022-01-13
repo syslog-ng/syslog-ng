@@ -767,26 +767,26 @@ template_def
 
 template_block
 	: KW_TEMPLATE string
-	  {
-	    last_template = log_template_new(configuration, $2);
+	  <ptr>{
+	    $$ = last_template = log_template_new(configuration, $2);
 	  }
-	  '{' template_items '}'						{ $$ = last_template; free($2); }
+	  '{' template_items '}'						{ $$ = $3; free($2); }
         ;
 
 template_simple
         : KW_TEMPLATE string
-          {
-	    last_template = log_template_new(configuration, $2);
+          <ptr>{
+	    $$ = last_template = log_template_new(configuration, $2);
           }
-          template_content_inner						{ $$ = last_template; free($2); }
+          template_content_inner						{ $$ = $3; free($2); }
 	;
 
 template_fn
         : KW_TEMPLATE_FUNCTION string
-          {
-	    last_template = log_template_new(configuration, $2);
+          <ptr>{
+	    $$ = last_template = log_template_new(configuration, $2);
           }
-          template_content_inner						{ $$ = last_template; free($2); }
+          template_content_inner						{ $$ = $3; free($2); }
 	;
 
 template_items
@@ -830,7 +830,7 @@ template_content_inner
         ;
 
 template_content
-        : { last_template = log_template_new(configuration, NULL); } template_content_inner	{ $$ = last_template; }
+        : <ptr>{ $$ = last_template = log_template_new(configuration, NULL); } template_content_inner	{ $$ = $1; }
         ;
 
 template_content_list

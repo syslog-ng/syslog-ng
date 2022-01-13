@@ -129,6 +129,7 @@ _translate_number_literals(CfgLexer *lexer, gint compare_mode, LogTemplate *expr
 %type   <num> filter_fac
 %type	<num> filter_severity_list
 %type	<num> filter_severity
+%type   <ptr> filter_re
 
 %type   <token> operator
 
@@ -191,7 +192,7 @@ filter_simple_expr
             free($3);
             free($6);
           }
-	| filter_re					{ $$ = last_filter_expr; }
+	| filter_re
 	| filter_comparison
 	| filter_plugin
 	;
@@ -253,11 +254,11 @@ operator
 	;
 
 filter_re
-        : KW_PROGRAM { last_filter_expr = filter_re_new(LM_V_PROGRAM); } filter_re_params
-	| KW_HOST    { last_filter_expr = filter_re_new(LM_V_HOST); } filter_re_params
-	| KW_MESSAGE { last_filter_expr = filter_re_new(LM_V_MESSAGE); } filter_re_params
-        | KW_SOURCE  { last_filter_expr = filter_source_new();  } filter_re_params
-	| KW_MATCH   { last_filter_expr = filter_match_new(); } filter_match_params
+        : KW_PROGRAM <ptr>{ $$ = last_filter_expr = filter_re_new(LM_V_PROGRAM); } filter_re_params     { $$ = $2; }
+	| KW_HOST    <ptr>{ $$ = last_filter_expr = filter_re_new(LM_V_HOST); } filter_re_params        { $$ = $2; }
+	| KW_MESSAGE <ptr>{ $$ = last_filter_expr = filter_re_new(LM_V_MESSAGE); } filter_re_params     { $$ = $2; }
+        | KW_SOURCE  <ptr>{ $$ = last_filter_expr = filter_source_new();  } filter_re_params            { $$ = $2; }
+	| KW_MATCH   <ptr>{ $$ = last_filter_expr = filter_match_new(); } filter_match_params           { $$ = $2; }
 	;
 
 filter_re_params
