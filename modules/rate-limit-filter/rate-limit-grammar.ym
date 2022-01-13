@@ -63,8 +63,8 @@ start
   ;
 
 rate_limit
-  : KW_RATE_LIMIT { last_filter_expr = *instance = rate_limit_new(); } '(' rate_limit_args ')' { $$ = last_filter_expr; }
-  | KW_THROTTLE { last_filter_expr = *instance = rate_limit_new(); } '(' rate_limit_args ')' { $$ = last_filter_expr; }
+  : KW_RATE_LIMIT <ptr>{ $$ = last_filter_expr = *instance = rate_limit_new(); } '(' rate_limit_args ')' { $$ = $2; }
+  | KW_THROTTLE <ptr>{ $$ = last_filter_expr = *instance = rate_limit_new(); } '(' rate_limit_args ')' { $$ = $2; }
   ;
 
 rate_limit_args
