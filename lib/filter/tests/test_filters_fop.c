@@ -102,8 +102,6 @@ Test(filter_op, cloned_filter_with_negation_should_behave_the_same)
 
   testcase(msg, filter, TRUE);
   testcase(msg, cloned_filter, TRUE);
-
-  filter_expr_unref(cloned_filter);
 }
 
 TestSuite(filter_op, .init = setup, .fini = teardown);
