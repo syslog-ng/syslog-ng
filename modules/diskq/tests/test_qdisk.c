@@ -164,6 +164,41 @@ Test(qdisk, qdisk_basic_push_pop)
   cleanup_qdisk(filename, qdisk);
 }
 
+Test(qdisk, qdisk_is_space_avail)
+{
+  const gchar *filename = "test_qdisk_is_space_avail.rqf";
+  gsize qdisk_size = MiB(1);
+  GString *data = g_string_new(NULL);
+  QDisk *qdisk = create_qdisk(filename, TDISKQ_RELIABLE, qdisk_size);
+  qdisk_start(qdisk, filename, NULL, NULL, NULL);
+
+  gsize available_space = qdisk_size - QDISK_RESERVED_SPACE;
+  cr_assert(qdisk_is_space_avail(qdisk, available_space));
+
+  gsize record_len = 600 * 1024;
+  push_dummy_record(qdisk, record_len);
+  available_space -= record_len + FRAME_LENGTH;
+  cr_assert(qdisk_is_space_avail(qdisk, available_space));
+
+  /* fill diskq (overwrite a bit) */
+  push_dummy_record(qdisk, record_len);
+  available_space -= record_len;
+  cr_assert_not(qdisk_is_space_avail(qdisk, 1));
+
+  reliable_pop_record_without_backlog(qdisk, data);
+  cr_assert_not(qdisk_is_space_avail(qdisk, record_len + FRAME_LENGTH + 1),
+                "There should not be more free space than the previously popped message size");
+
+  record_len -= 100;
+  push_dummy_record(qdisk, record_len);
+  /* 1 byte of empty space (between backlog and write head) is reserved */
+  cr_assert(qdisk_is_space_avail(qdisk, 100 - 1));
+
+  qdisk_stop(qdisk);
+  g_string_free(data, TRUE);
+  cleanup_qdisk(filename, qdisk);
+}
+
 static void
 setup(void)
 {
