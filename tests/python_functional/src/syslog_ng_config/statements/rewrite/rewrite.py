@@ -39,3 +39,13 @@ class SetTag(Rewrite):
 class SetPri(Rewrite):
     def __init__(self, pri, **options):
         super(SetPri, self).__init__("set_pri", [pri], **options)
+
+
+class CreditCardHash(Rewrite):
+    def __init__(self, **options):
+        super(CreditCardHash, self).__init__("credit-card-hash", [], **options)
+
+
+class CreditCardMask(Rewrite):
+    def __init__(self, **options):
+        super(CreditCardMask, self).__init__("credit-card-mask", [], **options)
