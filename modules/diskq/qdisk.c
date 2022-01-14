@@ -1208,8 +1208,6 @@ qdisk_stop(QDisk *self)
       close(self->fd);
       self->fd = -1;
     }
-
-  self->options = NULL;
 }
 
 static gssize
@@ -1353,6 +1351,7 @@ qdisk_is_read_only(QDisk *self)
 void
 qdisk_free(QDisk *self)
 {
+  self->options = NULL;
   g_free(self);
 }
 
