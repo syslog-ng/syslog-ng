@@ -1294,6 +1294,12 @@ qdisk_get_filename(QDisk *self)
 }
 
 gint64
+qdisk_get_file_size(QDisk *self)
+{
+  return self->file_size;
+}
+
+gint64
 qdisk_get_writer_head(QDisk *self)
 {
   return self->hdr->write_head;

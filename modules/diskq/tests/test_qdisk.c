@@ -199,6 +199,24 @@ Test(qdisk, qdisk_is_space_avail)
   cleanup_qdisk(filename, qdisk);
 }
 
+Test(qdisk, allow_writing_more_than_max_size_when_last_message_does_not_fit)
+{
+  const gchar *filename = "test_qdisk_exceed_max_size.rqf";
+  gsize qdisk_size = MiB(1);
+  QDisk *qdisk = create_qdisk(filename, TDISKQ_RELIABLE, qdisk_size);
+  qdisk_start(qdisk, filename, NULL, NULL, NULL);
+
+  push_dummy_record(qdisk, 100);
+
+  cr_assert(push_dummy_record(qdisk, MiB(2)),
+            "It should be allowed to overfill qdisk when the last message does not fit");
+
+  cr_assert_geq(qdisk_get_file_size(qdisk), qdisk_get_maximum_size(qdisk));
+
+  qdisk_stop(qdisk);
+  cleanup_qdisk(filename, qdisk);
+}
+
 static void
 setup(void)
 {
