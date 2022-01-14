@@ -189,7 +189,7 @@ _is_qdisk_overwritten(QDisk *self)
 }
 
 static inline gboolean
-_is_backlog_head_prevent_write_head(QDisk *self)
+_does_backlog_head_precede_write_head(QDisk *self)
 {
   return self->hdr->backlog_head <= self->hdr->write_head;
 }
@@ -230,7 +230,7 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
    * If neither of the above is true, the buffer is full.
    */
   return (
-           (_is_backlog_head_prevent_write_head(self)) &&
+           (_does_backlog_head_precede_write_head(self)) &&
            (_is_write_head_less_than_max_size(self) || _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
          ) || (_is_free_space_between_write_head_and_backlog_head(self, at_least));
 
