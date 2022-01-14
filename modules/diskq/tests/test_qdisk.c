@@ -217,6 +217,31 @@ Test(qdisk, allow_writing_more_than_max_size_when_last_message_does_not_fit)
   cleanup_qdisk(filename, qdisk);
 }
 
+Test(qdisk, do_not_allow_diskq_to_exceed_max_size_if_last_message_fits)
+{
+  const gchar *filename = "test_qdisk_do_not_exceed_max_size_when_msg_fits.rqf";
+  gsize qdisk_size = MiB(1);
+  GString *data = g_string_new(NULL);
+  QDisk *qdisk = create_qdisk(filename, TDISKQ_RELIABLE, qdisk_size);
+  qdisk_start(qdisk, filename, NULL, NULL, NULL);
+
+  // fill completely
+  push_dummy_record(qdisk, qdisk_size - QDISK_RESERVED_SPACE - FRAME_LENGTH);
+  cr_assert_eq(qdisk_get_writer_head(qdisk), qdisk_get_maximum_size(qdisk));
+  cr_assert_eq(qdisk_get_file_size(qdisk), qdisk_get_maximum_size(qdisk));
+
+  cr_assert_not(push_dummy_record(qdisk, 1));
+
+  reliable_pop_record_without_backlog(qdisk, data);
+
+  push_dummy_record(qdisk, 4);
+  cr_assert_leq(qdisk_get_file_size(qdisk), qdisk_get_maximum_size(qdisk));
+
+  qdisk_stop(qdisk);
+  g_string_free(data, TRUE);
+  cleanup_qdisk(filename, qdisk);
+}
+
 static void
 setup(void)
 {

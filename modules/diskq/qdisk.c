@@ -120,13 +120,13 @@ pwrite_strict(gint fd, const void *buf, size_t count, off_t offset)
 
 
 static inline gboolean
-_is_position_after_disk_buf_size(QDisk *self, gint64 position)
+_has_position_reached_max_size(QDisk *self, gint64 position)
 {
-  return position > self->options->disk_buf_size;
+  return position >= self->options->disk_buf_size;
 }
 
 static inline guint64
-_correct_position_if_after_disk_buf_size(QDisk *self, gint64 *position)
+_correct_position_if_max_size_is_reached(QDisk *self, gint64 *position)
 {
   if (G_UNLIKELY(self->hdr->use_v1_wrap_condition))
     {
@@ -139,7 +139,7 @@ _correct_position_if_after_disk_buf_size(QDisk *self, gint64 *position)
       return *position;
     }
 
-  if (_is_position_after_disk_buf_size(self, *position))
+  if (_has_position_reached_max_size(self, *position))
     {
       *position = QDISK_RESERVED_SPACE;
     }
@@ -180,12 +180,6 @@ gboolean
 qdisk_started(QDisk *self)
 {
   return self->fd >= 0;
-}
-
-static inline gboolean
-_is_qdisk_overwritten(QDisk *self)
-{
-  return _is_position_after_disk_buf_size(self, self->hdr->write_head);
 }
 
 static inline gboolean
@@ -350,7 +344,8 @@ qdisk_get_empty_space(QDisk *self)
 static inline gboolean
 _could_not_wrap_write_head_last_push_but_now_can(QDisk *self)
 {
-  return _is_qdisk_overwritten(self) && _is_able_to_reset_write_head_to_beginning_of_qdisk(self);
+  return _has_position_reached_max_size(self, self->hdr->write_head)
+         && _is_able_to_reset_write_head_to_beginning_of_qdisk(self);
 }
 
 gint64
@@ -425,7 +420,8 @@ qdisk_push_tail(QDisk *self, GString *record)
           self->file_size = self->hdr->write_head;
         }
 
-      if (_is_qdisk_overwritten(self) && _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
+      if (_has_position_reached_max_size(self, self->hdr->write_head)
+          && _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
         {
           /* we were appending to the file, we are over the limit, and space
            * is available before the read head. truncate and wrap.
@@ -529,7 +525,7 @@ _calculate_new_read_head_position(QDisk *self, guint32 record_length)
   gint64 new_read_head_position = self->hdr->read_head + record_length + sizeof(record_length);
 
   if (new_read_head_position > self->hdr->write_head)
-    new_read_head_position = _correct_position_if_after_disk_buf_size(self, &new_read_head_position);
+    new_read_head_position = _correct_position_if_max_size_is_reached(self, &new_read_head_position);
 
   return new_read_head_position;
 }
@@ -1245,7 +1241,7 @@ qdisk_skip_record(QDisk *self, guint64 position)
   new_position += record_length + sizeof(record_length);
   if (new_position > self->hdr->write_head)
     {
-      new_position = _correct_position_if_after_disk_buf_size(self, (gint64 *)&new_position);
+      new_position = _correct_position_if_max_size_is_reached(self, (gint64 *)&new_position);
     }
   return new_position;
 }
