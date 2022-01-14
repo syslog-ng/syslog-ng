@@ -213,6 +213,13 @@ _is_free_space_between_write_head_and_backlog_head(QDisk *self, gint msg_len)
   return self->hdr->write_head + msg_len < self->hdr->backlog_head;
 }
 
+static inline gboolean
+_is_free_space_at_the_beginning_of_qdisk(QDisk *self, gint msg_len)
+{
+  /* this forces 1 byte of empty space between backlog and the beginning */
+  return QDISK_RESERVED_SPACE + msg_len < self->hdr->backlog_head;
+}
+
 gboolean
 qdisk_is_file_empty(QDisk *self)
 {
@@ -230,7 +237,11 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
       if (_is_write_head_less_than_max_size(self))
         return TRUE;
 
-      return _is_able_to_reset_write_head_to_beginning_of_qdisk(self);
+      /* exact size-check is needed as we have unread/unacked data after the write head
+       * that is being reset
+       */
+      return _is_able_to_reset_write_head_to_beginning_of_qdisk(self)
+             && _is_free_space_at_the_beginning_of_qdisk(self, at_least);
     }
 
   return _is_free_space_between_write_head_and_backlog_head(self, at_least);
