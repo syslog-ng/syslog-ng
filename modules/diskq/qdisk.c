@@ -222,19 +222,18 @@ qdisk_is_file_empty(QDisk *self)
 gboolean
 qdisk_is_space_avail(QDisk *self, gint at_least)
 {
-  /* write follows read (e.g. we are appending to the file) OR
-   * there's enough space between write and read.
-   *
-   * If write follows read we need to check two things:
-   *   - either we are below the maximum limit (GINT64_FROM_BE(self->hdr->write_head) < self->options->disk_buf_size)
-   *   - or we can wrap around (GINT64_FROM_BE(self->hdr->read_head) != QDISK_RESERVED_SPACE)
-   * If neither of the above is true, the buffer is full.
-   */
-  return (
-           (_does_backlog_head_precede_write_head(self)) &&
-           (_is_write_head_less_than_max_size(self) || _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
-         ) || (_is_free_space_between_write_head_and_backlog_head(self, at_least));
+  if (_does_backlog_head_precede_write_head(self))
+    {
+      /* no exact size-check is needed in this case, because writing after
+       * disk_buf_size is allowed when the last message does not fit in
+       */
+      if (_is_write_head_less_than_max_size(self))
+        return TRUE;
 
+      return _is_able_to_reset_write_head_to_beginning_of_qdisk(self);
+    }
+
+  return _is_free_space_between_write_head_and_backlog_head(self, at_least);
 }
 
 static inline gboolean
