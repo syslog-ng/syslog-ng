@@ -209,6 +209,7 @@ _is_able_to_reset_write_head_to_beginning_of_qdisk(QDisk *self)
 static inline gboolean
 _is_free_space_between_write_head_and_backlog_head(QDisk *self, gint msg_len)
 {
+  /* this forces 1 byte of empty space between backlog and write */
   return self->hdr->write_head + msg_len < self->hdr->backlog_head;
 }
 
