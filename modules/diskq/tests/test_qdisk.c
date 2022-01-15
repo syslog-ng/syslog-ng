@@ -242,6 +242,35 @@ Test(qdisk, do_not_allow_diskq_to_exceed_max_size_if_last_message_fits)
   cleanup_qdisk(filename, qdisk);
 }
 
+Test(qdisk, completely_full_and_then_emptied_qdisk_should_update_positions_properly)
+{
+  const gchar *filename = "test_qdisk_completely_full.rqf";
+  gsize qdisk_size = MiB(1);
+  GString *popped_data = g_string_new(NULL);
+  QDisk *qdisk = create_qdisk(filename, TDISKQ_RELIABLE, qdisk_size);
+  qdisk_start(qdisk, filename, NULL, NULL, NULL);
+
+  gsize num_of_records = 4;
+
+  /* to be able to fill completely, not even leaving one single byte of space */
+  gsize record_len = ((qdisk_size - QDISK_RESERVED_SPACE) / num_of_records) - FRAME_LENGTH;
+
+  // fill completely
+  for (gsize i = 0; i < num_of_records; ++i)
+    cr_assert(push_dummy_record(qdisk, record_len));
+
+  // pop all
+  for (gsize i = 0; i < num_of_records; ++i)
+    cr_assert(reliable_pop_record_without_backlog(qdisk, popped_data));
+
+  cr_assert(push_dummy_record(qdisk, record_len));
+  cr_assert(reliable_pop_record_without_backlog(qdisk, popped_data));
+
+  qdisk_stop(qdisk);
+  g_string_free(popped_data, TRUE);
+  cleanup_qdisk(filename, qdisk);
+}
+
 static void
 setup(void)
 {
