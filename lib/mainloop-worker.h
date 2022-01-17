@@ -65,7 +65,6 @@ void main_loop_worker_register_batch_callback(WorkerBatchCallback *cb);
 void main_loop_worker_invoke_batch_callbacks(void);
 void main_loop_worker_assert_batch_callbacks_were_processed(void);
 
-typedef void (*WorkerThreadFunc)(gpointer user_data);
 typedef void (*WorkerExitNotificationFunc)(gpointer user_data);
 
 void main_loop_worker_set_thread_id(gint id);

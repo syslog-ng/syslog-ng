@@ -27,21 +27,20 @@
 
 #include <iv.h>
 
-typedef struct _MainLoopThreadedWorker
+static void
+main_loop_threaded_worker_run_method(MainLoopThreadedWorker *self)
 {
-  WorkerThreadFunc func;
-  gpointer data;
-  MainLoopWorkerType worker_type;
-} MainLoopThreadedWorker;
+  self->func(self->data);
+}
 
 static gpointer
 _worker_thread_func(gpointer st)
 {
-  MainLoopThreadedWorker *p = st;
+  MainLoopThreadedWorker *self = st;
 
   iv_init();
-  main_loop_worker_thread_start(p->worker_type);
-  p->func(p->data);
+  main_loop_worker_thread_start(self->worker_type);
+  self->run(self);
   main_loop_call((MainLoopTaskFunc) main_loop_worker_job_complete, NULL, TRUE);
   main_loop_worker_thread_stop();
   iv_deinit();
@@ -54,25 +53,71 @@ _worker_thread_func(gpointer st)
    */
   main_loop_worker_assert_batch_callbacks_were_processed();
 
-  g_free(st);
+  main_loop_threaded_worker_unref(self);
   return NULL;
 }
 
 void
-main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data,
+main_loop_threaded_worker_start(MainLoopThreadedWorker *self)
+{
+  main_loop_assert_main_thread();
+  main_loop_worker_job_start();
+  g_thread_new(NULL, _worker_thread_func, main_loop_threaded_worker_ref(self));
+}
+
+static void
+main_loop_threaded_worker_free(MainLoopThreadedWorker *self)
+{
+  /* empty for now */
+}
+
+void
+main_loop_threaded_worker_init_instance(MainLoopThreadedWorker *self, MainLoopWorkerType worker_type, gpointer data)
+{
+  g_atomic_counter_set(&self->ref_cnt, 1);
+  self->worker_type = worker_type;
+  self->run = main_loop_threaded_worker_run_method;
+  self->free_fn = main_loop_threaded_worker_free;
+
+  self->data = data;
+}
+
+MainLoopThreadedWorker *
+main_loop_threaded_worker_ref(MainLoopThreadedWorker *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+
+  if (self)
+    {
+      g_atomic_counter_inc(&self->ref_cnt);
+    }
+  return self;
+}
+
+void
+main_loop_threaded_worker_unref(MainLoopThreadedWorker *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    {
+      self->free_fn(self);
+      g_free(self);
+    }
+}
+
+void
+main_loop_create_worker_thread(MainLoopThreadedWorkerFunc func,
+                               WorkerExitNotificationFunc terminate_func, gpointer data,
                                MainLoopWorkerType worker_type)
 {
-  MainLoopThreadedWorker *p;
+  MainLoopThreadedWorker *self = g_new0(MainLoopThreadedWorker, 1);
 
-  main_loop_assert_main_thread();
+  main_loop_threaded_worker_init_instance(self, worker_type, data);
+  self->func = func;
 
-  p = g_new0(MainLoopThreadedWorker, 1);
-  p->func = func;
-  p->data = data;
-  p->worker_type = worker_type;
-
-  main_loop_worker_job_start();
   if (terminate_func)
     main_loop_worker_register_exit_notification_callback(terminate_func, data);
-  g_thread_new(NULL, _worker_thread_func, p);
+  main_loop_threaded_worker_start(self);
+  main_loop_threaded_worker_unref(self);
 }

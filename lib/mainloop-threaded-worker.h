@@ -27,8 +27,28 @@
 #define MAINLOOP_THREADED_WORKER_H_INCLUDED
 
 #include "mainloop-worker.h"
+#include "atomic.h"
 
-void main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data,
+typedef void (*MainLoopThreadedWorkerFunc)(gpointer user_data);
+typedef struct _MainLoopThreadedWorker MainLoopThreadedWorker;
+struct _MainLoopThreadedWorker
+{
+  GAtomicCounter ref_cnt;
+
+  MainLoopThreadedWorkerFunc func;
+  gpointer data;
+  MainLoopWorkerType worker_type;
+  void (*run)(MainLoopThreadedWorker *self);
+  void (*free_fn)(MainLoopThreadedWorker *self);
+};
+
+void main_loop_threaded_worker_init_instance(MainLoopThreadedWorker *self, MainLoopWorkerType worker_type);
+MainLoopThreadedWorker *main_loop_threaded_worker_ref(MainLoopThreadedWorker *self);
+void main_loop_threaded_worker_unref(MainLoopThreadedWorker *self);
+
+void main_loop_create_worker_thread(MainLoopThreadedWorkerFunc func,
+                                    WorkerExitNotificationFunc terminate_func,
+                                    gpointer data,
                                     MainLoopWorkerType worker_type);
 
 
