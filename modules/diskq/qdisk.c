@@ -120,13 +120,13 @@ pwrite_strict(gint fd, const void *buf, size_t count, off_t offset)
 
 
 static inline gboolean
-_is_position_after_disk_buf_size(QDisk *self, gint64 position)
+_has_position_reached_max_size(QDisk *self, gint64 position)
 {
-  return position > self->options->disk_buf_size;
+  return position >= self->options->disk_buf_size;
 }
 
 static inline guint64
-_correct_position_if_after_disk_buf_size(QDisk *self, gint64 *position)
+_correct_position_if_max_size_is_reached(QDisk *self, gint64 *position)
 {
   if (G_UNLIKELY(self->hdr->use_v1_wrap_condition))
     {
@@ -139,7 +139,7 @@ _correct_position_if_after_disk_buf_size(QDisk *self, gint64 *position)
       return *position;
     }
 
-  if (_is_position_after_disk_buf_size(self, *position))
+  if (_has_position_reached_max_size(self, *position))
     {
       *position = QDISK_RESERVED_SPACE;
     }
@@ -183,13 +183,7 @@ qdisk_started(QDisk *self)
 }
 
 static inline gboolean
-_is_qdisk_overwritten(QDisk *self)
-{
-  return _is_position_after_disk_buf_size(self, self->hdr->write_head);
-}
-
-static inline gboolean
-_is_backlog_head_prevent_write_head(QDisk *self)
+_does_backlog_head_precede_write_head(QDisk *self)
 {
   return self->hdr->backlog_head <= self->hdr->write_head;
 }
@@ -209,7 +203,15 @@ _is_able_to_reset_write_head_to_beginning_of_qdisk(QDisk *self)
 static inline gboolean
 _is_free_space_between_write_head_and_backlog_head(QDisk *self, gint msg_len)
 {
+  /* this forces 1 byte of empty space between backlog and write */
   return self->hdr->write_head + msg_len < self->hdr->backlog_head;
+}
+
+static inline gboolean
+_is_free_space_at_the_beginning_of_qdisk(QDisk *self, gint msg_len)
+{
+  /* this forces 1 byte of empty space between backlog and the beginning */
+  return QDISK_RESERVED_SPACE + msg_len < self->hdr->backlog_head;
 }
 
 gboolean
@@ -221,19 +223,22 @@ qdisk_is_file_empty(QDisk *self)
 gboolean
 qdisk_is_space_avail(QDisk *self, gint at_least)
 {
-  /* write follows read (e.g. we are appending to the file) OR
-   * there's enough space between write and read.
-   *
-   * If write follows read we need to check two things:
-   *   - either we are below the maximum limit (GINT64_FROM_BE(self->hdr->write_head) < self->options->disk_buf_size)
-   *   - or we can wrap around (GINT64_FROM_BE(self->hdr->read_head) != QDISK_RESERVED_SPACE)
-   * If neither of the above is true, the buffer is full.
-   */
-  return (
-           (_is_backlog_head_prevent_write_head(self)) &&
-           (_is_write_head_less_than_max_size(self) || _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
-         ) || (_is_free_space_between_write_head_and_backlog_head(self, at_least));
+  if (_does_backlog_head_precede_write_head(self))
+    {
+      /* no exact size-check is needed in this case, because writing after
+       * disk_buf_size is allowed when the last message does not fit in
+       */
+      if (_is_write_head_less_than_max_size(self))
+        return TRUE;
 
+      /* exact size-check is needed as we have unread/unacked data after the write head
+       * that is being reset
+       */
+      return _is_able_to_reset_write_head_to_beginning_of_qdisk(self)
+             && _is_free_space_at_the_beginning_of_qdisk(self, at_least);
+    }
+
+  return _is_free_space_between_write_head_and_backlog_head(self, at_least);
 }
 
 static inline gboolean
@@ -339,7 +344,8 @@ qdisk_get_empty_space(QDisk *self)
 static inline gboolean
 _could_not_wrap_write_head_last_push_but_now_can(QDisk *self)
 {
-  return _is_qdisk_overwritten(self) && _is_able_to_reset_write_head_to_beginning_of_qdisk(self);
+  return _has_position_reached_max_size(self, self->hdr->write_head)
+         && _is_able_to_reset_write_head_to_beginning_of_qdisk(self);
 }
 
 gint64
@@ -414,7 +420,8 @@ qdisk_push_tail(QDisk *self, GString *record)
           self->file_size = self->hdr->write_head;
         }
 
-      if (_is_qdisk_overwritten(self) && _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
+      if (_has_position_reached_max_size(self, self->hdr->write_head)
+          && _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
         {
           /* we were appending to the file, we are over the limit, and space
            * is available before the read head. truncate and wrap.
@@ -518,7 +525,7 @@ _calculate_new_read_head_position(QDisk *self, guint32 record_length)
   gint64 new_read_head_position = self->hdr->read_head + record_length + sizeof(record_length);
 
   if (new_read_head_position > self->hdr->write_head)
-    new_read_head_position = _correct_position_if_after_disk_buf_size(self, &new_read_head_position);
+    new_read_head_position = _correct_position_if_max_size_is_reached(self, &new_read_head_position);
 
   return new_read_head_position;
 }
@@ -553,6 +560,9 @@ qdisk_pop_head(QDisk *self, GString *record)
   if (self->hdr->read_head == self->hdr->write_head)
     return FALSE;
 
+  if (self->hdr->read_head > self->hdr->write_head)
+    self->hdr->read_head = _correct_position_if_max_size_is_reached(self, &self->hdr->read_head);
+
   guint32 record_length;
   if (!_try_reading_record_length(self, &record_length))
     return FALSE;
@@ -570,6 +580,9 @@ qdisk_remove_head(QDisk *self)
 {
   if (self->hdr->read_head == self->hdr->write_head)
     return FALSE;
+
+  if (self->hdr->read_head > self->hdr->write_head)
+    self->hdr->read_head = _correct_position_if_max_size_is_reached(self, &self->hdr->read_head);
 
   guint32 record_length;
   if (!_try_reading_record_length(self, &record_length))
@@ -1208,8 +1221,6 @@ qdisk_stop(QDisk *self)
       close(self->fd);
       self->fd = -1;
     }
-
-  self->options = NULL;
 }
 
 static gssize
@@ -1229,15 +1240,18 @@ qdisk_read(QDisk *self, gpointer buffer, gsize bytes_to_read, gint64 position)
 guint64
 qdisk_skip_record(QDisk *self, guint64 position)
 {
+  if (position > self->hdr->write_head)
+    position = _correct_position_if_max_size_is_reached(self, (gint64 *)&position);
+
   guint64 new_position = position;
   guint32 record_length;
   qdisk_read(self, (gchar *) &record_length, sizeof(record_length), position);
   record_length = GUINT32_FROM_BE(record_length);
   new_position += record_length + sizeof(record_length);
+
   if (new_position > self->hdr->write_head)
-    {
-      new_position = _correct_position_if_after_disk_buf_size(self, (gint64 *)&new_position);
-    }
+    new_position = _correct_position_if_max_size_is_reached(self, (gint64 *)&new_position);
+
   return new_position;
 }
 
@@ -1282,6 +1296,12 @@ const gchar *
 qdisk_get_filename(QDisk *self)
 {
   return self->filename;
+}
+
+gint64
+qdisk_get_file_size(QDisk *self)
+{
+  return self->file_size;
 }
 
 gint64
@@ -1353,6 +1373,7 @@ qdisk_is_read_only(QDisk *self)
 void
 qdisk_free(QDisk *self)
 {
+  self->options = NULL;
   g_free(self);
 }
 

@@ -116,7 +116,7 @@ static void
 _prepare_eof_test(LogQueueDiskReliable *dq, LogMessage **msg1, LogMessage **msg2)
 {
   LogPathOptions local_options = LOG_PATH_OPTIONS_INIT;
-  gint64 start_pos = TEST_DISKQ_SIZE;
+  gint64 start_pos = TEST_DISKQ_SIZE - 1;
 
   *msg1 = log_msg_new_mark();
   *msg2 = log_msg_new_mark();
@@ -362,7 +362,7 @@ test_rewind_backlog_use_whole_qbacklog(LogQueueDiskReliable *dq)
 Test(diskq_reliable, test_rewind_backlog)
 {
   const gchar *file_name = "test_rewind_backlog.rqf";
-  LogQueueDiskReliable *dq = _init_diskq_for_test(file_name, QDISK_RESERVED_SPACE + mark_message_serialized_size * 10,
+  LogQueueDiskReliable *dq = _init_diskq_for_test(file_name, QDISK_RESERVED_SPACE + mark_message_serialized_size * 10 + 1,
                                                   mark_message_serialized_size * 5);
   gint64 old_read_pos;
 

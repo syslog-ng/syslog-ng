@@ -84,6 +84,7 @@ void qdisk_set_backlog_count(QDisk *self, gint64 new_value);
 gint qdisk_get_memory_size(QDisk *self);
 gboolean qdisk_is_read_only(QDisk *self);
 const gchar *qdisk_get_filename(QDisk *self);
+gint64 qdisk_get_file_size(QDisk *self);
 
 guint64 qdisk_skip_record(QDisk *self, guint64 position);
 
