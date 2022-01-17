@@ -35,10 +35,6 @@ struct _MainLoopThreadedWorker
 {
   GAtomicCounter ref_cnt;
 
-  /* compatibility with non-OOP interface */
-  MainLoopThreadedWorkerFunc func;
-  WorkerExitNotificationFunc terminate_func;
-
   gpointer data;
   MainLoopWorkerType worker_type;
   void (*request_exit)(MainLoopThreadedWorker *self);
@@ -51,11 +47,5 @@ void main_loop_threaded_worker_start(MainLoopThreadedWorker *self);
 void main_loop_threaded_worker_init_instance(MainLoopThreadedWorker *self, MainLoopWorkerType worker_type, gpointer data);
 MainLoopThreadedWorker *main_loop_threaded_worker_ref(MainLoopThreadedWorker *self);
 void main_loop_threaded_worker_unref(MainLoopThreadedWorker *self);
-
-void main_loop_create_worker_thread(MainLoopThreadedWorkerFunc func,
-                                    WorkerExitNotificationFunc terminate_func,
-                                    gpointer data,
-                                    MainLoopWorkerType worker_type);
-
 
 #endif
