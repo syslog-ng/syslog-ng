@@ -226,3 +226,8 @@ The documentation of the latest released version of syslog-ng Open Source Editio
 ## Contributing
 
 If you would like to contribute to syslog-ng, to fix a bug or create a new module, the [syslog-ng gitbook](https://syslog-ng.gitbooks.io/getting-started/content/) helps you take the first steps to working with the code base.
+
+## Log4j
+
+The syslog-ng Open Source Edition does not use the affected versions of Apache Log4j, therefore it is not impacted by CVE-2021-44228, CVE-2021-4104, CVE-2021-45015. [#3876](https://github.com/syslog-ng/syslog-ng/issues/3876)
+
