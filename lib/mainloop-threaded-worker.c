@@ -28,9 +28,23 @@
 #include <iv.h>
 
 static void
+main_loop_threaded_worker_request_exit_method(MainLoopThreadedWorker *self)
+{
+  self->terminate_func(self->data);
+}
+
+static void
 main_loop_threaded_worker_run_method(MainLoopThreadedWorker *self)
 {
   self->func(self->data);
+}
+
+static void
+_request_worker_exit(gpointer st)
+{
+  MainLoopThreadedWorker *self = st;
+
+  return self->request_exit(self);
 }
 
 static gpointer
@@ -62,6 +76,7 @@ main_loop_threaded_worker_start(MainLoopThreadedWorker *self)
 {
   main_loop_assert_main_thread();
   main_loop_worker_job_start();
+  main_loop_worker_register_exit_notification_callback(_request_worker_exit, self);
   g_thread_new(NULL, _worker_thread_func, main_loop_threaded_worker_ref(self));
 }
 
@@ -76,6 +91,7 @@ main_loop_threaded_worker_init_instance(MainLoopThreadedWorker *self, MainLoopWo
 {
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->worker_type = worker_type;
+  self->request_exit = main_loop_threaded_worker_request_exit_method;
   self->run = main_loop_threaded_worker_run_method;
   self->free_fn = main_loop_threaded_worker_free;
 
@@ -115,9 +131,8 @@ main_loop_create_worker_thread(MainLoopThreadedWorkerFunc func,
 
   main_loop_threaded_worker_init_instance(self, worker_type, data);
   self->func = func;
+  self->terminate_func = terminate_func;
 
-  if (terminate_func)
-    main_loop_worker_register_exit_notification_callback(terminate_func, data);
   main_loop_threaded_worker_start(self);
   main_loop_threaded_worker_unref(self);
 }
