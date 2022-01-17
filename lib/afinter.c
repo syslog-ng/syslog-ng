@@ -175,7 +175,7 @@ afinter_sd_start_thread(LogPipe *s)
 
   main_loop_create_worker_thread((WorkerThreadFunc) afinter_source_run,
                                  (WorkerExitNotificationFunc) afinter_source_request_exit,
-                                 self->source, EXTERNAL_INPUT_THREAD);
+                                 self->source, MLW_THREADED_INPUT_WORKER);
 
   return TRUE;
 }

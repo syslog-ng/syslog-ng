@@ -103,7 +103,7 @@ get_processor_count(void)
 static void
 main_loop_io_worker_thread_start(void *cookie)
 {
-  main_loop_worker_thread_start(GENERAL_THREAD);
+  main_loop_worker_thread_start(MLW_ASYNC_WORKER);
 }
 
 static void

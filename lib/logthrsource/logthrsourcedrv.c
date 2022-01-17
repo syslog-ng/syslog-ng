@@ -280,7 +280,7 @@ log_threaded_source_driver_start_worker(LogPipe *s)
 
   main_loop_create_worker_thread((WorkerThreadFunc) log_threaded_source_worker_run,
                                  (WorkerExitNotificationFunc) log_threaded_source_worker_request_exit,
-                                 self->worker, EXTERNAL_INPUT_THREAD);
+                                 self->worker, MLW_THREADED_INPUT_WORKER);
 
   return TRUE;
 }

@@ -78,7 +78,7 @@ _allocate_thread_id(void)
 
   main_loop_worker_id = 0;
 
-  if(main_loop_worker_type != EXTERNAL_INPUT_THREAD)
+  if(main_loop_worker_type != MLW_THREADED_INPUT_WORKER)
     {
       for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
         {

@@ -944,7 +944,7 @@ _start_worker_thread(LogThreadedDestWorker *self)
 
   main_loop_create_worker_thread(_worker_thread,
                                  _request_worker_exit,
-                                 self, OUTPUT_THREAD);
+                                 self, MLW_THREADED_OUTPUT_WORKER);
   _wait_for_startup_finished(self);
   return !self->startup_failure;
 }

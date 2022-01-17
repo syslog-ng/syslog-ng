@@ -61,7 +61,7 @@ _threaded_feed(gpointer args)
   glong diff;
 
   /* emulate main loop for LogQueue */
-  main_loop_worker_thread_start(GENERAL_THREAD);
+  main_loop_worker_thread_start(MLW_ASYNC_WORKER);
 
   tmpl = log_msg_new_empty();
 
@@ -140,7 +140,7 @@ _threaded_consume(gpointer st)
 static gpointer
 _output_thread(gpointer args)
 {
-  main_loop_worker_thread_start(OUTPUT_THREAD);
+  main_loop_worker_thread_start(MLW_THREADED_OUTPUT_WORKER);
   struct timespec ns;
 
   /* sleep 1 msec */
@@ -369,7 +369,7 @@ _flow_control_feed_thread(gpointer args)
   LogPathOptions non_flow_controlled_path = LOG_PATH_OPTIONS_INIT;
   non_flow_controlled_path.flow_control_requested = FALSE;
 
-  main_loop_worker_thread_start(GENERAL_THREAD);
+  main_loop_worker_thread_start(MLW_ASYNC_WORKER);
 
   fed_messages = 0;
   acked_messages = 0;
