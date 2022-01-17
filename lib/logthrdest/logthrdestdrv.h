@@ -86,9 +86,6 @@ struct _LogThreadedDestWorker
   struct timespec last_flush_time;
   gboolean enable_batching;
   gboolean suspended;
-  gboolean startup_finished;
-  gboolean startup_failure;
-  GCond started_up;
   time_t time_reopen;
 
   gboolean (*thread_init)(LogThreadedDestWorker *s);

@@ -166,6 +166,7 @@ log_threaded_source_worker_run(MainLoopThreadedWorker *s)
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->control->super.super.id));
 
+  main_loop_threaded_worker_signal_startup_finished(s, TRUE);
   self->run(self->control);
 
   msg_debug("Worker thread finished",

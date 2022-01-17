@@ -27,6 +27,16 @@
 
 #include <iv.h>
 
+void
+main_loop_threaded_worker_signal_startup_finished(MainLoopThreadedWorker *self, gboolean startup_result)
+{
+  g_mutex_lock(&self->lock);
+  self->startup_finished = TRUE;
+  self->startup_result &= startup_result;
+  g_cond_signal(&self->started_up);
+  g_mutex_unlock(&self->lock);
+}
+
 static void
 _request_worker_exit(gpointer st)
 {
@@ -59,19 +69,35 @@ _worker_thread_func(gpointer st)
   return NULL;
 }
 
-void
+static gboolean
+_wait_for_startup_finished(MainLoopThreadedWorker *self)
+{
+  g_mutex_lock(&self->lock);
+  while (!self->startup_finished)
+    g_cond_wait(&self->started_up, &self->lock);
+  g_mutex_unlock(&self->lock);
+  return self->startup_result;
+}
+
+gboolean
 main_loop_threaded_worker_start(MainLoopThreadedWorker *self)
 {
+  /* NOTE: we can only start up once */
+  g_assert(!self->startup_finished);
+
+  self->startup_result = TRUE;
   main_loop_assert_main_thread();
   main_loop_worker_job_start();
   main_loop_worker_register_exit_notification_callback(_request_worker_exit, self);
   g_thread_new(NULL, _worker_thread_func, main_loop_threaded_worker_ref(self));
+  return _wait_for_startup_finished(self);
 }
 
 static void
 main_loop_threaded_worker_free(MainLoopThreadedWorker *self)
 {
-  /* empty for now */
+  g_cond_clear(&self->started_up);
+  g_mutex_clear(&self->lock);
 }
 
 void
@@ -80,6 +106,8 @@ main_loop_threaded_worker_init_instance(MainLoopThreadedWorker *self, MainLoopWo
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->worker_type = worker_type;
   self->free_fn = main_loop_threaded_worker_free;
+  g_cond_init(&self->started_up);
+  g_mutex_init(&self->lock);
 
   self->data = data;
 }

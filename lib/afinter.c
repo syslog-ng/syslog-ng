@@ -140,6 +140,8 @@ afinter_source_run(MainLoopThreadedWorker *s)
   iv_event_register(&self->schedule_wakeup);
   iv_event_register(&self->exit);
 
+  main_loop_threaded_worker_signal_startup_finished(s, TRUE);
+
   g_mutex_lock(&internal_msg_lock);
   self->free_to_send = TRUE;
   g_mutex_unlock(&internal_msg_lock);
@@ -422,8 +424,7 @@ afinter_sd_on_config_inited(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
 
-  afinter_source_start_thread(self->source);
-  return TRUE;
+  return afinter_source_start_thread(self->source);
 }
 
 static gboolean

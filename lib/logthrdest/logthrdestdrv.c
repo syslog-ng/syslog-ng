@@ -656,37 +656,6 @@ _init_watches(LogThreadedDestWorker *self)
 }
 
 static void
-_signal_startup_finished(LogThreadedDestWorker *self, gboolean thread_failure)
-{
-  g_mutex_lock(&self->owner->lock);
-  self->startup_finished = TRUE;
-  self->startup_failure |= thread_failure;
-  g_cond_signal(&self->started_up);
-  g_mutex_unlock(&self->owner->lock);
-}
-
-static void
-_signal_startup_success(LogThreadedDestWorker *self)
-{
-  _signal_startup_finished(self, FALSE);
-}
-
-static void
-_signal_startup_failure(LogThreadedDestWorker *self)
-{
-  _signal_startup_finished(self, TRUE);
-}
-
-static void
-_wait_for_startup_finished(LogThreadedDestWorker *self)
-{
-  g_mutex_lock(&self->owner->lock);
-  while (!self->startup_finished)
-    g_cond_wait(&self->started_up, &self->owner->lock);
-  g_mutex_unlock(&self->owner->lock);
-}
-
-static void
 _register_worker_stats(LogThreadedDestWorker *self)
 {
   StatsClusterKey sc_key;
@@ -739,7 +708,7 @@ _worker_thread(MainLoopThreadedWorker *s)
   if (!log_threaded_dest_worker_thread_init(self))
     goto error;
 
-  _signal_startup_success(self);
+  main_loop_threaded_worker_signal_startup_finished(s, TRUE);
 
   /* if we have anything on the backlog, that was a partial, potentially
    * not-flushed batch.  Rewind it, so we start with that */
@@ -763,7 +732,7 @@ _worker_thread(MainLoopThreadedWorker *s)
   goto ok;
 
 error:
-  _signal_startup_failure(self);
+  main_loop_threaded_worker_signal_startup_finished(s, FALSE);
 ok:
   iv_event_unregister(&self->wake_up_event);
   iv_event_unregister(&self->shutdown_event);
@@ -790,9 +759,7 @@ log_threaded_dest_worker_start(LogThreadedDestWorker *self)
             evt_tag_str("driver", self->owner->super.super.id),
             log_expr_node_location_tag(self->owner->super.super.super.expr_node));
 
-  main_loop_threaded_worker_start(&self->thread);
-  _wait_for_startup_finished(self);
-  return !self->startup_failure;
+  return main_loop_threaded_worker_start(&self->thread);
 }
 
 static gboolean
@@ -830,7 +797,6 @@ log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self)
 void
 log_threaded_dest_worker_free_method(LogThreadedDestWorker *self)
 {
-  g_cond_clear(&self->started_up);
 }
 
 void
@@ -845,7 +811,6 @@ log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedD
   self->free_fn = log_threaded_dest_worker_free_method;
   self->owner = owner;
   self->time_reopen = -1;
-  g_cond_init(&self->started_up);
   _init_watches(self);
 }
 
