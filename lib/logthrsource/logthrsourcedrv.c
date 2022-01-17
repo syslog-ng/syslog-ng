@@ -40,6 +40,7 @@ typedef struct _WakeupCondition
 struct _LogThreadedSourceWorker
 {
   LogSource super;
+  MainLoopThreadedWorker thread;
   LogThreadedSourceDriver *control;
   WakeupCondition wakeup_cond;
   gboolean under_termination;
@@ -158,9 +159,9 @@ log_threaded_source_wakeup(LogThreadedSourceDriver *self)
 }
 
 static void
-log_threaded_source_worker_run(gpointer s)
+log_threaded_source_worker_run(MainLoopThreadedWorker *s)
 {
-  LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s;
+  LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s->data;
 
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->control->super.super.id));
@@ -172,9 +173,9 @@ log_threaded_source_worker_run(gpointer s)
 }
 
 static void
-log_threaded_source_worker_request_exit(gpointer s)
+log_threaded_source_worker_request_exit(MainLoopThreadedWorker *s)
 {
-  LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s;
+  LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s->data;
 
   msg_debug("Requesting worker thread exit",
             evt_tag_str("driver", self->control->super.super.id));
@@ -218,6 +219,9 @@ log_threaded_source_worker_new(GlobalConfig *cfg)
 {
   LogThreadedSourceWorker *self = g_new0(LogThreadedSourceWorker, 1);
   log_source_init_instance(&self->super, cfg);
+  main_loop_threaded_worker_init_instance(&self->thread, MLW_THREADED_INPUT_WORKER, self);
+  self->thread.run = log_threaded_source_worker_run;
+  self->thread.request_exit = log_threaded_source_worker_request_exit;
 
   wakeup_cond_init(&self->wakeup_cond);
 
@@ -285,9 +289,7 @@ log_threaded_source_driver_start_worker(LogPipe *s)
 {
   LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
 
-  main_loop_create_worker_thread(log_threaded_source_worker_run,
-                                 log_threaded_source_worker_request_exit,
-                                 self->worker, MLW_THREADED_INPUT_WORKER);
+  main_loop_threaded_worker_start(&self->worker->thread);
 
   return TRUE;
 }
