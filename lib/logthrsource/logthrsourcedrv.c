@@ -158,8 +158,10 @@ log_threaded_source_wakeup(LogThreadedSourceDriver *self)
 }
 
 static void
-log_threaded_source_worker_run(LogThreadedSourceWorker *self)
+log_threaded_source_worker_run(gpointer s)
 {
+  LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s;
+
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->control->super.super.id));
 
@@ -170,8 +172,10 @@ log_threaded_source_worker_run(LogThreadedSourceWorker *self)
 }
 
 static void
-log_threaded_source_worker_request_exit(LogThreadedSourceWorker *self)
+log_threaded_source_worker_request_exit(gpointer s)
 {
+  LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s;
+
   msg_debug("Requesting worker thread exit",
             evt_tag_str("driver", self->control->super.super.id));
   self->under_termination = TRUE;
@@ -281,8 +285,8 @@ log_threaded_source_driver_start_worker(LogPipe *s)
 {
   LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
 
-  main_loop_create_worker_thread((WorkerThreadFunc) log_threaded_source_worker_run,
-                                 (WorkerExitNotificationFunc) log_threaded_source_worker_request_exit,
+  main_loop_create_worker_thread(log_threaded_source_worker_run,
+                                 log_threaded_source_worker_request_exit,
                                  self->worker, MLW_THREADED_INPUT_WORKER);
 
   return TRUE;
