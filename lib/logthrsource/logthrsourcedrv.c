@@ -160,17 +160,20 @@ log_threaded_source_wakeup(LogThreadedSourceDriver *self)
 static void
 log_threaded_source_worker_run(LogThreadedSourceWorker *self)
 {
-  msg_debug("Worker thread started", evt_tag_str("driver", self->control->super.super.id));
+  msg_debug("Worker thread started",
+            evt_tag_str("driver", self->control->super.super.id));
 
   self->run(self->control);
 
-  msg_debug("Worker thread finished", evt_tag_str("driver", self->control->super.super.id));
+  msg_debug("Worker thread finished",
+            evt_tag_str("driver", self->control->super.super.id));
 }
 
 static void
 log_threaded_source_worker_request_exit(LogThreadedSourceWorker *self)
 {
-  msg_debug("Requesting worker thread exit", evt_tag_str("driver", self->control->super.super.id));
+  msg_debug("Requesting worker thread exit",
+            evt_tag_str("driver", self->control->super.super.id));
   self->under_termination = TRUE;
   self->request_exit(self->control);
   log_threaded_source_wakeup(self->control);
