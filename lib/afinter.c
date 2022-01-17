@@ -133,8 +133,6 @@ afinter_source_run(gpointer s)
 {
   AFInterSource *self = (AFInterSource *) s;
 
-  iv_init();
-
   /* post event is used by other threads and can only be unregistered if
    * current_afinter_source is set to NULL in a thread safe manner */
   iv_event_register(&self->post);
@@ -159,8 +157,6 @@ afinter_source_run(gpointer s)
   iv_event_unregister(&self->schedule_wakeup);
 
   afinter_source_stop_watches(self);
-
-  iv_deinit();
 }
 
 static void

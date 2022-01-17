@@ -188,8 +188,6 @@ threaded_feed(gpointer args)
   GTimeVal start, end;
   glong diff;
 
-  iv_init();
-
   /* emulate main loop for LogQueue */
   main_loop_worker_thread_start(NULL);
 

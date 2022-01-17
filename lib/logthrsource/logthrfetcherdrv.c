@@ -111,8 +111,6 @@ _worker_run(LogThreadedSourceDriver *s)
 {
   LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) s;
 
-  /* iv_init() and iv_deinit() are called by LogThreadedSourceDriver */
-
   iv_event_register(&self->wakeup_event);
   iv_event_register(&self->shutdown_event);
 

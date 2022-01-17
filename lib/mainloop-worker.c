@@ -338,11 +338,12 @@ _worker_thread_func(gpointer st)
 {
   WorkerThreadParams *p = st;
 
+  iv_init();
   main_loop_worker_thread_start(p->worker_options);
   p->func(p->data);
   main_loop_call((MainLoopTaskFunc) main_loop_worker_job_complete, NULL, TRUE);
   main_loop_worker_thread_stop();
-
+  iv_deinit();
 
   /* NOTE: this assert aims to validate that the worker thread in fact
    * invokes main_loop_worker_invoke_batch_callbacks() during its operation.

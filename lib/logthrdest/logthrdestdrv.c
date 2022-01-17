@@ -727,8 +727,6 @@ _worker_thread(gpointer arg)
 {
   LogThreadedDestWorker *self = (LogThreadedDestWorker *) arg;
 
-  iv_init();
-
   msg_debug("Dedicated worker thread started",
             evt_tag_int("worker_index", self->worker_index),
             evt_tag_str("driver", self->owner->super.super.id),
@@ -768,7 +766,6 @@ error:
 ok:
   iv_event_unregister(&self->wake_up_event);
   iv_event_unregister(&self->shutdown_event);
-  iv_deinit();
 }
 
 static gboolean
