@@ -173,8 +173,8 @@ afinter_sd_start_thread(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
 
-  main_loop_create_worker_thread((WorkerThreadFunc) afinter_source_run,
-                                 (WorkerExitNotificationFunc) afinter_source_request_exit,
+  main_loop_create_worker_thread(afinter_source_run,
+                                 afinter_source_request_exit,
                                  self->source, MLW_THREADED_INPUT_WORKER);
 
   return TRUE;
