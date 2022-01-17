@@ -31,6 +31,13 @@
 #define MAIN_LOOP_MIN_WORKER_THREADS 2
 #define MAIN_LOOP_MAX_WORKER_THREADS 64
 
+typedef enum
+{
+  GENERAL_THREAD = 0,
+  OUTPUT_THREAD,
+  EXTERNAL_INPUT_THREAD,
+  MAIN_LOOP_WORKER_TYPE_MAX
+} MainLoopWorkerType;
 
 /*
  * A batch callback is registered during the processing of messages in a
@@ -47,12 +54,6 @@ typedef struct _WorkerBatchCallback
   MainLoopTaskFunc func;
   gpointer user_data;
 } WorkerBatchCallback;
-
-typedef struct _WorkerOptions
-{
-  gboolean is_output_thread;
-  gboolean is_external_input;
-} WorkerOptions;
 
 static inline void
 worker_batch_callback_init(WorkerBatchCallback *self)
@@ -72,12 +73,12 @@ gint main_loop_worker_get_thread_id(void);
 void main_loop_worker_job_start(void);
 void main_loop_worker_job_complete(void);
 
-void main_loop_worker_thread_start(void *cookie);
+void main_loop_worker_thread_start(MainLoopWorkerType worker_type);
 void main_loop_worker_thread_stop(void);
 void main_loop_worker_run_gc(void);
 
 void main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data,
-                                    WorkerOptions *worker_options);
+                                    MainLoopWorkerType worker_type);
 
 void main_loop_worker_sync_call(void (*func)(void *user_data), void *user_data);
 void main_loop_sync_worker_startup_and_teardown(void);

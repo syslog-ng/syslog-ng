@@ -153,7 +153,6 @@ struct _LogThreadedDestDriver
 
   gint32 shared_seq_num;
 
-  WorkerOptions worker_options;
   const gchar *(*format_stats_instance)(LogThreadedDestDriver *s);
 };
 

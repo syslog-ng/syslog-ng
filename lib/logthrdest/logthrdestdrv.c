@@ -944,7 +944,7 @@ _start_worker_thread(LogThreadedDestWorker *self)
 
   main_loop_create_worker_thread(_worker_thread,
                                  _request_worker_exit,
-                                 self, &self->owner->worker_options);
+                                 self, OUTPUT_THREAD);
   _wait_for_startup_finished(self);
   return !self->startup_failure;
 }
@@ -1201,8 +1201,6 @@ void
 log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig *cfg)
 {
   log_dest_driver_init_instance(&self->super, cfg);
-
-  self->worker_options.is_output_thread = TRUE;
 
   self->super.super.super.init = log_threaded_dest_driver_init_method;
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;

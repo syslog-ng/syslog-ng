@@ -173,11 +173,9 @@ afinter_sd_start_thread(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
 
-  self->worker_options.is_external_input = TRUE;
-
   main_loop_create_worker_thread((WorkerThreadFunc) afinter_source_run,
                                  (WorkerExitNotificationFunc) afinter_source_request_exit,
-                                 self->source, &self->worker_options);
+                                 self->source, EXTERNAL_INPUT_THREAD);
 
   return TRUE;
 }

@@ -30,8 +30,6 @@
 
 #include <iv.h>
 
-typedef enum { GENERAL_THREAD = 0, OUTPUT_THREAD, EXTERNAL_INPUT_THREAD, MAIN_LOOP_WORKER_TYPE_MAX} MainLoopWorkerType;
-
 TLS_BLOCK_START
 {
   /* Thread IDs are low numbered integers that can be used to index
@@ -161,19 +159,9 @@ _request_all_threads_to_exit(void)
 
 /* Call this function from worker threads, when you start up */
 void
-main_loop_worker_thread_start(void *cookie)
+main_loop_worker_thread_start(MainLoopWorkerType worker_type)
 {
-  WorkerOptions *worker_options = cookie;
-  main_loop_worker_type = GENERAL_THREAD;
-
-  if (worker_options && worker_options->is_output_thread)
-    {
-      main_loop_worker_type = OUTPUT_THREAD;
-    }
-  else if(worker_options && worker_options->is_external_input)
-    {
-      main_loop_worker_type = EXTERNAL_INPUT_THREAD;
-    }
+  main_loop_worker_type = worker_type;
 
   _allocate_thread_id();
   INIT_IV_LIST_HEAD(&batch_callbacks);
@@ -330,7 +318,7 @@ typedef struct _WorkerThreadParams
 {
   WorkerThreadFunc func;
   gpointer data;
-  WorkerOptions *worker_options;
+  MainLoopWorkerType worker_type;
 } WorkerThreadParams;
 
 static gpointer
@@ -339,7 +327,7 @@ _worker_thread_func(gpointer st)
   WorkerThreadParams *p = st;
 
   iv_init();
-  main_loop_worker_thread_start(p->worker_options);
+  main_loop_worker_thread_start(p->worker_type);
   p->func(p->data);
   main_loop_call((MainLoopTaskFunc) main_loop_worker_job_complete, NULL, TRUE);
   main_loop_worker_thread_stop();
@@ -359,7 +347,7 @@ _worker_thread_func(gpointer st)
 
 void
 main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data,
-                               WorkerOptions *worker_options)
+                               MainLoopWorkerType worker_type)
 {
   WorkerThreadParams *p;
 
@@ -368,7 +356,7 @@ main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc
   p = g_new0(WorkerThreadParams, 1);
   p->func = func;
   p->data = data;
-  p->worker_options = worker_options;
+  p->worker_type = worker_type;
 
   main_loop_worker_job_start();
   if (terminate_func)

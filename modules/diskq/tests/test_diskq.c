@@ -189,7 +189,7 @@ threaded_feed(gpointer args)
   glong diff;
 
   /* emulate main loop for LogQueue */
-  main_loop_worker_thread_start(NULL);
+  main_loop_worker_thread_start(GENERAL_THREAD);
 
   tmpl = log_msg_new_empty();
   g_get_current_time(&start);
@@ -224,8 +224,7 @@ threaded_consume(gpointer st)
   gint i;
 
   /* just to make sure time is properly cached */
-  iv_init();
-  main_loop_worker_thread_start(NULL);
+  main_loop_worker_thread_start(GENERAL_THREAD);
 
   for (i = 0; i < MESSAGES_SUM; i++)
     {

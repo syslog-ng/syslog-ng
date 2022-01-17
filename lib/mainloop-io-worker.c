@@ -100,6 +100,18 @@ get_processor_count(void)
 #endif
 }
 
+static void
+main_loop_io_worker_thread_start(void *cookie)
+{
+  main_loop_worker_thread_start(GENERAL_THREAD);
+}
+
+static void
+main_loop_io_worker_thread_stop(void *cookie)
+{
+  main_loop_worker_thread_stop();
+}
+
 void
 main_loop_io_worker_init(void)
 {
@@ -109,8 +121,8 @@ main_loop_io_worker_init(void)
                                              MAIN_LOOP_MAX_WORKER_THREADS);
     }
 
-  main_loop_io_workers.thread_start = (void (*)(void *)) main_loop_worker_thread_start;
-  main_loop_io_workers.thread_stop = (void (*)(void *)) main_loop_worker_thread_stop;
+  main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;
+  main_loop_io_workers.thread_stop = main_loop_io_worker_thread_stop;
   iv_work_pool_create(&main_loop_io_workers);
 
   log_queue_set_max_threads(MIN(main_loop_io_workers.max_threads, MAIN_LOOP_MAX_WORKER_THREADS));

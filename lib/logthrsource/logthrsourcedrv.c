@@ -42,7 +42,6 @@ struct _LogThreadedSourceWorker
   LogSource super;
   LogThreadedSourceDriver *control;
   WakeupCondition wakeup_cond;
-  WorkerOptions options;
   gboolean under_termination;
 
   LogThreadedSourceWorkerRunFunc run;
@@ -215,8 +214,6 @@ log_threaded_source_worker_new(GlobalConfig *cfg)
 
   wakeup_cond_init(&self->wakeup_cond);
 
-  self->options.is_external_input = TRUE;
-
   self->super.super.init = log_threaded_source_worker_init;
   self->super.super.free_fn = log_threaded_source_worker_free;
   self->super.wakeup = _worker_wakeup;
@@ -283,7 +280,7 @@ log_threaded_source_driver_start_worker(LogPipe *s)
 
   main_loop_create_worker_thread((WorkerThreadFunc) log_threaded_source_worker_run,
                                  (WorkerExitNotificationFunc) log_threaded_source_worker_request_exit,
-                                 self->worker, &self->worker->options);
+                                 self->worker, EXTERNAL_INPUT_THREAD);
 
   return TRUE;
 }
