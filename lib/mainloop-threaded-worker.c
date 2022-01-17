@@ -27,17 +27,17 @@
 
 #include <iv.h>
 
-typedef struct _WorkerThreadParams
+typedef struct _MainLoopThreadedWorker
 {
   WorkerThreadFunc func;
   gpointer data;
   MainLoopWorkerType worker_type;
-} WorkerThreadParams;
+} MainLoopThreadedWorker;
 
 static gpointer
 _worker_thread_func(gpointer st)
 {
-  WorkerThreadParams *p = st;
+  MainLoopThreadedWorker *p = st;
 
   iv_init();
   main_loop_worker_thread_start(p->worker_type);
@@ -62,11 +62,11 @@ void
 main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data,
                                MainLoopWorkerType worker_type)
 {
-  WorkerThreadParams *p;
+  MainLoopThreadedWorker *p;
 
   main_loop_assert_main_thread();
 
-  p = g_new0(WorkerThreadParams, 1);
+  p = g_new0(MainLoopThreadedWorker, 1);
   p->func = func;
   p->data = data;
   p->worker_type = worker_type;
