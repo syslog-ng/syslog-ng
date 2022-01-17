@@ -31,6 +31,7 @@
 #include "stats/aggregator/stats-aggregator.h"
 #include "logqueue.h"
 #include "seqnum.h"
+#include "mainloop-threaded-worker.h"
 
 #include <iv.h>
 #include <iv_event.h>
@@ -64,6 +65,7 @@ typedef struct _LogThreadedDestWorker LogThreadedDestWorker;
 
 struct _LogThreadedDestWorker
 {
+  MainLoopThreadedWorker thread;
   LogQueue *queue;
   struct iv_task  do_work;
   struct iv_event wake_up_event;
