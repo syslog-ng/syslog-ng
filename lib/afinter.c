@@ -92,6 +92,7 @@ static GMutex internal_mark_target_lock;
 struct _AFInterSource
 {
   LogSource super;
+  MainLoopThreadedWorker thread;
   gint mark_freq;
   const AFInterSourceOptions *options;
   struct iv_event post;
@@ -129,9 +130,9 @@ static void afinter_source_start_watches(AFInterSource *self);
 static void afinter_source_stop_watches(AFInterSource *self);
 
 static void
-afinter_source_run(gpointer s)
+afinter_source_run(MainLoopThreadedWorker *s)
 {
-  AFInterSource *self = (AFInterSource *) s;
+  AFInterSource *self = (AFInterSource *) s->data;
 
   /* post event is used by other threads and can only be unregistered if
    * current_afinter_source is set to NULL in a thread safe manner */
@@ -160,26 +161,21 @@ afinter_source_run(gpointer s)
 }
 
 static void
-afinter_source_request_exit(gpointer s)
+afinter_source_thread_request_exit(MainLoopThreadedWorker *s)
 {
-  AFInterSource *self = (AFInterSource *) s;
+  AFInterSource *self = (AFInterSource *) s->data;
 
   iv_event_post(&self->exit);
 }
 
-
 static gboolean
-afinter_sd_start_thread(LogPipe *s)
+afinter_source_start_thread(LogSource *s)
 {
-  AFInterSourceDriver *self = (AFInterSourceDriver *) s;
+  AFInterSource *self = (AFInterSource *) s;
 
-  main_loop_create_worker_thread(afinter_source_run,
-                                 afinter_source_request_exit,
-                                 self->source, MLW_THREADED_INPUT_WORKER);
-
+  main_loop_threaded_worker_start(&self->thread);
   return TRUE;
 }
-
 
 static void
 afinter_source_mark(gpointer s)
@@ -362,6 +358,10 @@ afinter_source_new(AFInterSourceDriver *owner, AFInterSourceOptions *options)
   log_source_init_instance(&self->super, owner->super.super.super.cfg);
   log_source_set_options(&self->super, &options->super, owner->super.super.id, NULL, FALSE,
                          owner->super.super.super.expr_node);
+  main_loop_threaded_worker_init_instance(&self->thread, MLW_THREADED_INPUT_WORKER, self);
+  self->thread.run = afinter_source_run;
+  self->thread.request_exit = afinter_source_thread_request_exit;
+
   afinter_source_init_watches(self);
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;
@@ -418,6 +418,15 @@ afinter_sd_init(LogPipe *s)
 }
 
 static gboolean
+afinter_sd_on_config_inited(LogPipe *s)
+{
+  AFInterSourceDriver *self = (AFInterSourceDriver *) s;
+
+  afinter_source_start_thread(self->source);
+  return TRUE;
+}
+
+static gboolean
 afinter_sd_deinit(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
@@ -455,7 +464,7 @@ afinter_sd_new(GlobalConfig *cfg)
   self->super.super.super.init = afinter_sd_init;
   self->super.super.super.deinit = afinter_sd_deinit;
   self->super.super.super.free_fn = afinter_sd_free;
-  self->super.super.super.on_config_inited = afinter_sd_start_thread;
+  self->super.super.super.on_config_inited = afinter_sd_on_config_inited;
 
   afinter_source_options_defaults(&self->source_options);
 
