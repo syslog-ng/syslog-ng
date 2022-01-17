@@ -130,8 +130,8 @@ typedef struct _WorkerExitNotification
 
 static GList *exit_notification_list = NULL;
 
-static void
-_register_exit_notification_callback(WorkerExitNotificationFunc func, gpointer user_data)
+void
+main_loop_worker_register_exit_notification_callback(WorkerExitNotificationFunc func, gpointer user_data)
 {
   WorkerExitNotification *cfunc = g_new(WorkerExitNotification, 1);
 
@@ -314,54 +314,10 @@ main_loop_worker_invoke_batch_callbacks(void)
   }
 }
 
-typedef struct _WorkerThreadParams
-{
-  WorkerThreadFunc func;
-  gpointer data;
-  MainLoopWorkerType worker_type;
-} WorkerThreadParams;
-
-static gpointer
-_worker_thread_func(gpointer st)
-{
-  WorkerThreadParams *p = st;
-
-  iv_init();
-  main_loop_worker_thread_start(p->worker_type);
-  p->func(p->data);
-  main_loop_call((MainLoopTaskFunc) main_loop_worker_job_complete, NULL, TRUE);
-  main_loop_worker_thread_stop();
-  iv_deinit();
-
-  /* NOTE: this assert aims to validate that the worker thread in fact
-   * invokes main_loop_worker_invoke_batch_callbacks() during its operation.
-   * Please do so every once a couple of messages, hopefully you have a
-   * natural barrier that lets you decide when, the easiest would be
-   * log-fetch-limit(), but other limits may also be applicable.
-   */
-  g_assert(iv_list_empty(&batch_callbacks));
-
-  g_free(st);
-  return NULL;
-}
-
 void
-main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data,
-                               MainLoopWorkerType worker_type)
+main_loop_worker_assert_batch_callbacks_were_processed(void)
 {
-  WorkerThreadParams *p;
-
-  main_loop_assert_main_thread();
-
-  p = g_new0(WorkerThreadParams, 1);
-  p->func = func;
-  p->data = data;
-  p->worker_type = worker_type;
-
-  main_loop_worker_job_start();
-  if (terminate_func)
-    _register_exit_notification_callback(terminate_func, data);
-  g_thread_new(NULL, _worker_thread_func, p);
+  g_assert(iv_list_empty(&batch_callbacks));
 }
 
 static void

@@ -63,6 +63,7 @@ worker_batch_callback_init(WorkerBatchCallback *self)
 
 void main_loop_worker_register_batch_callback(WorkerBatchCallback *cb);
 void main_loop_worker_invoke_batch_callbacks(void);
+void main_loop_worker_assert_batch_callbacks_were_processed(void);
 
 typedef void (*WorkerThreadFunc)(gpointer user_data);
 typedef void (*WorkerExitNotificationFunc)(gpointer user_data);
@@ -76,9 +77,7 @@ void main_loop_worker_job_complete(void);
 void main_loop_worker_thread_start(MainLoopWorkerType worker_type);
 void main_loop_worker_thread_stop(void);
 void main_loop_worker_run_gc(void);
-
-void main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data,
-                                    MainLoopWorkerType worker_type);
+void main_loop_worker_register_exit_notification_callback(WorkerExitNotificationFunc func, gpointer user_data);
 
 void main_loop_worker_sync_call(void (*func)(void *user_data), void *user_data);
 void main_loop_sync_worker_startup_and_teardown(void);

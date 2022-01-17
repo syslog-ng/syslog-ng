@@ -23,7 +23,7 @@
  */
 
 #include "logthrsourcedrv.h"
-#include "mainloop-worker.h"
+#include "mainloop-threaded-worker.h"
 #include "messages.h"
 #include "apphook.h"
 #include "ack-tracker/ack_tracker_factory.h"

@@ -27,6 +27,7 @@
 #include "libtest/cr_template.h"
 
 #include "logthrdest/logthrdestdrv.h"
+#include "mainloop-worker.h"
 #include "apphook.h"
 
 

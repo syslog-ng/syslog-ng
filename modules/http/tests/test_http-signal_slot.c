@@ -22,6 +22,8 @@
 
 #include <criterion/criterion.h>
 
+
+#include "mainloop.h"
 #include "http.h"
 #include "http-worker.h"
 #include "http-signals.h"

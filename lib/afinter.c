@@ -27,7 +27,7 @@
 #include "stats/stats-registry.h"
 #include "messages.h"
 #include "apphook.h"
-#include "mainloop.h"
+#include "mainloop-threaded-worker.h"
 
 #include <iv_event.h>
 

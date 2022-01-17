@@ -139,6 +139,7 @@ pkginclude_HEADERS			+= \
 	lib/mainloop.h			\
 	lib/mainloop-call.h		\
 	lib/mainloop-worker.h		\
+	lib/mainloop-threaded-worker.h	\
 	lib/mainloop-io-worker.h	\
 	lib/mainloop-control.h		\
 	lib/module-config.h		\
@@ -229,6 +230,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/signal-handler.c		\
 	lib/mainloop-call.c		\
 	lib/mainloop-worker.c		\
+	lib/mainloop-threaded-worker.c	\
 	lib/mainloop-io-worker.c	\
 	lib/mainloop-control.c		\
 	lib/module-config.c		\

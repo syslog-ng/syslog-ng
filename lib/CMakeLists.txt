@@ -105,6 +105,7 @@ set (LIB_HEADERS
     mainloop-call.h
     mainloop-worker.h
     mainloop-io-worker.h
+    mainloop-threaded-worker.h
     module-config.h
     memtrace.h
     messages.h
@@ -197,6 +198,7 @@ set(LIB_SOURCES
     mainloop-call.c
     mainloop-worker.c
     mainloop-io-worker.c
+    mainloop-threaded-worker.c
     module-config.c
     memtrace.c
     messages.c

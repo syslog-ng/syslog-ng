@@ -30,7 +30,6 @@
 #include "stats/stats-registry.h"
 #include "stats/aggregator/stats-aggregator.h"
 #include "logqueue.h"
-#include "mainloop-worker.h"
 #include "seqnum.h"
 
 #include <iv.h>
