@@ -1038,7 +1038,7 @@ debun_linux () {
 		"Debian"|"Ubuntu")
 			add_extra debun_extra_debian
 			;;
-		"CentOS"|"RedHatEnterpriseServer"|"RHEL"|"OracleServer"|"EnterpriseEnterpriseServer")
+		"CentOS"|"RedHatEnterprise"|"RedHatEnterpriseServer"|"RHEL"|"OracleServer"|"EnterpriseEnterpriseServer")
 			add_extra debun_extra_redhat
 			;;
 		"SUSE LINUX")
@@ -1303,7 +1303,7 @@ setup_env_linux () {
 		"Debian"|"Ubuntu")
 			setup_env_debian
 			;;
-		"CentOS"|"RedHatEnterpriseServer"|"RHEL"|"OracleServer"|"EnterpriseEnterpriseServer")
+		"CentOS"|"RedHatEnterprise"|"RedHatEnterpriseServer"|"RHEL"|"OracleServer"|"EnterpriseEnterpriseServer")
 			setup_env_redhat
 			;;
 		"SUSE LINUX")
