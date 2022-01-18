@@ -27,14 +27,33 @@
 
 #include <iv.h>
 
-void
-main_loop_threaded_worker_signal_startup_finished(MainLoopThreadedWorker *self, gboolean startup_result)
+static void
+_signal_startup_finished(MainLoopThreadedWorker *self, gboolean startup_result)
 {
   g_mutex_lock(&self->lock);
   self->startup_finished = TRUE;
   self->startup_result &= startup_result;
   g_cond_signal(&self->started_up);
   g_mutex_unlock(&self->lock);
+}
+
+static gboolean
+_thread_init(MainLoopThreadedWorker *self)
+{
+  main_loop_worker_thread_start(self->worker_type);
+
+  gboolean result = self->thread_init(self);
+
+  _signal_startup_finished(self, result);
+  return result;
+}
+
+static void
+_thread_deinit(MainLoopThreadedWorker *self)
+{
+  self->thread_deinit(self);
+  main_loop_call((MainLoopTaskFunc) main_loop_worker_job_complete, NULL, TRUE);
+  main_loop_worker_thread_stop();
 }
 
 static void
@@ -51,10 +70,11 @@ _worker_thread_func(gpointer st)
   MainLoopThreadedWorker *self = st;
 
   iv_init();
-  main_loop_worker_thread_start(self->worker_type);
-  self->run(self);
-  main_loop_call((MainLoopTaskFunc) main_loop_worker_job_complete, NULL, TRUE);
-  main_loop_worker_thread_stop();
+
+  if (_thread_init(self))
+    self->run(self);
+  _thread_deinit(self);
+
   iv_deinit();
 
   /* NOTE: this assert aims to validate that the worker thread in fact

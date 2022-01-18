@@ -129,8 +129,8 @@ afinter_source_post(gpointer s)
 static void afinter_source_start_watches(AFInterSource *self);
 static void afinter_source_stop_watches(AFInterSource *self);
 
-static void
-afinter_source_run(MainLoopThreadedWorker *s)
+static gboolean
+afinter_source_thread_init(MainLoopThreadedWorker *s)
 {
   AFInterSource *self = (AFInterSource *) s->data;
 
@@ -139,8 +139,23 @@ afinter_source_run(MainLoopThreadedWorker *s)
   iv_event_register(&self->post);
   iv_event_register(&self->schedule_wakeup);
   iv_event_register(&self->exit);
+  return TRUE;
+}
 
-  main_loop_threaded_worker_signal_startup_finished(s, TRUE);
+static void
+afinter_source_thread_deinit(MainLoopThreadedWorker *s)
+{
+  AFInterSource *self = (AFInterSource *) s->data;
+
+  iv_event_unregister(&self->exit);
+  iv_event_unregister(&self->post);
+  iv_event_unregister(&self->schedule_wakeup);
+}
+
+static void
+afinter_source_run(MainLoopThreadedWorker *s)
+{
+  AFInterSource *self = (AFInterSource *) s->data;
 
   g_mutex_lock(&internal_msg_lock);
   self->free_to_send = TRUE;
@@ -154,10 +169,6 @@ afinter_source_run(MainLoopThreadedWorker *s)
   g_mutex_lock(&internal_msg_lock);
   current_internal_source = NULL;
   g_mutex_unlock(&internal_msg_lock);
-
-  iv_event_unregister(&self->exit);
-  iv_event_unregister(&self->post);
-  iv_event_unregister(&self->schedule_wakeup);
 
   afinter_source_stop_watches(self);
 }
@@ -361,6 +372,8 @@ afinter_source_new(AFInterSourceDriver *owner, AFInterSourceOptions *options)
   log_source_set_options(&self->super, &options->super, owner->super.super.id, NULL, FALSE,
                          owner->super.super.super.expr_node);
   main_loop_threaded_worker_init_instance(&self->thread, MLW_THREADED_INPUT_WORKER, self);
+  self->thread.thread_init = afinter_source_thread_init;
+  self->thread.thread_deinit = afinter_source_thread_deinit;
   self->thread.run = afinter_source_run;
   self->thread.request_exit = afinter_source_thread_request_exit;
 

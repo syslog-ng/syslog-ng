@@ -692,6 +692,28 @@ _perform_final_flush(LogThreadedDestWorker *self)
   log_queue_rewind_backlog_all(self->queue);
 }
 
+static gboolean
+_worker_thread_init(MainLoopThreadedWorker *s)
+{
+  LogThreadedDestWorker *self = (LogThreadedDestWorker *) s->data;
+
+  iv_event_register(&self->wake_up_event);
+  iv_event_register(&self->shutdown_event);
+
+  return log_threaded_dest_worker_thread_init(self);
+}
+
+static void
+_worker_thread_deinit(MainLoopThreadedWorker *s)
+{
+  LogThreadedDestWorker *self = (LogThreadedDestWorker *) s->data;
+
+  log_threaded_dest_worker_thread_deinit(self);
+
+  iv_event_unregister(&self->wake_up_event);
+  iv_event_unregister(&self->shutdown_event);
+}
+
 static void
 _worker_thread(MainLoopThreadedWorker *s)
 {
@@ -701,14 +723,6 @@ _worker_thread(MainLoopThreadedWorker *s)
             evt_tag_int("worker_index", self->worker_index),
             evt_tag_str("driver", self->owner->super.super.id),
             log_expr_node_location_tag(self->owner->super.super.super.expr_node));
-
-  iv_event_register(&self->wake_up_event);
-  iv_event_register(&self->shutdown_event);
-
-  if (!log_threaded_dest_worker_thread_init(self))
-    goto error;
-
-  main_loop_threaded_worker_signal_startup_finished(s, TRUE);
 
   /* if we have anything on the backlog, that was a partial, potentially
    * not-flushed batch.  Rewind it, so we start with that */
@@ -722,20 +736,11 @@ _worker_thread(MainLoopThreadedWorker *s)
 
   _disconnect(self);
 
-  log_threaded_dest_worker_thread_deinit(self);
-
   msg_debug("Dedicated worker thread finished",
             evt_tag_int("worker_index", self->worker_index),
             evt_tag_str("driver", self->owner->super.super.id),
             log_expr_node_location_tag(self->owner->super.super.super.expr_node));
 
-  goto ok;
-
-error:
-  main_loop_threaded_worker_signal_startup_finished(s, FALSE);
-ok:
-  iv_event_unregister(&self->wake_up_event);
-  iv_event_unregister(&self->shutdown_event);
 }
 
 static void
@@ -803,6 +808,8 @@ void
 log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedDestDriver *owner, gint worker_index)
 {
   main_loop_threaded_worker_init_instance(&self->thread, MLW_THREADED_OUTPUT_WORKER, self);
+  self->thread.thread_init = _worker_thread_init;
+  self->thread.thread_deinit = _worker_thread_deinit;
   self->thread.run = _worker_thread;
   self->thread.request_exit = _request_worker_exit;
   self->worker_index = worker_index;

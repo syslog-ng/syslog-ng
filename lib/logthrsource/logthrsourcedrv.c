@@ -158,6 +158,17 @@ log_threaded_source_wakeup(LogThreadedSourceDriver *self)
   wakeup_cond_signal(&worker->wakeup_cond);
 }
 
+static gboolean
+log_threaded_source_worker_thread_init(MainLoopThreadedWorker *s)
+{
+  return TRUE;
+}
+
+static void
+log_threaded_source_worker_thread_deinit(MainLoopThreadedWorker *s)
+{
+}
+
 static void
 log_threaded_source_worker_run(MainLoopThreadedWorker *s)
 {
@@ -166,7 +177,7 @@ log_threaded_source_worker_run(MainLoopThreadedWorker *s)
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->control->super.super.id));
 
-  main_loop_threaded_worker_signal_startup_finished(s, TRUE);
+  /* FIXME: we have a race condition here */
   self->run(self->control);
 
   msg_debug("Worker thread finished",
@@ -221,6 +232,8 @@ log_threaded_source_worker_new(GlobalConfig *cfg)
   LogThreadedSourceWorker *self = g_new0(LogThreadedSourceWorker, 1);
   log_source_init_instance(&self->super, cfg);
   main_loop_threaded_worker_init_instance(&self->thread, MLW_THREADED_INPUT_WORKER, self);
+  self->thread.thread_init = log_threaded_source_worker_thread_init;
+  self->thread.thread_deinit = log_threaded_source_worker_thread_deinit;
   self->thread.run = log_threaded_source_worker_run;
   self->thread.request_exit = log_threaded_source_worker_request_exit;
 
