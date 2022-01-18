@@ -638,13 +638,13 @@ python_sd_init(LogPipe *s)
   if (!retval)
     return FALSE;
 
-  log_threaded_source_driver_set_worker_request_exit_func(&self->super, python_sd_request_exit);
-  log_threaded_source_driver_set_worker_run_func(&self->super, python_sd_run);
+  self->super.request_exit = python_sd_request_exit;
+  self->super.run = python_sd_run;
 
   if (self->py.suspend_method && self->py.wakeup_method)
     {
       self->post_message = _post_message_non_blocking;
-      log_threaded_source_set_wakeup_func(&self->super, python_sd_wakeup);
+      self->super.wakeup = python_sd_wakeup;
     }
 
   return TRUE;

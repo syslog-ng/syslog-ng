@@ -87,12 +87,12 @@ test_threaded_source_driver_init_method(LogPipe *s)
 
   /* mock out the hard-coded DNS lookup calls inside log_source_queue() */
   _get_source(self)->super.queue = _source_queue_mock;
-  log_threaded_source_driver_set_worker_request_exit_func(&self->super, _request_exit);
+  self->super.request_exit = _request_exit;
 
   if (self->blocking_post)
-    log_threaded_source_driver_set_worker_run_func(&self->super, _run_using_blocking_posts);
+    self->super.run = _run_using_blocking_posts;
   else
-    log_threaded_source_driver_set_worker_run_func(&self->super, _run_simple);
+    self->super.run = _run_simple;
 
   return TRUE;
 }

@@ -115,8 +115,8 @@ _init(LogPipe *s)
   if (!log_threaded_source_driver_init_method(s))
     return FALSE;
 
-  log_threaded_source_driver_set_worker_run_func(&self->super, _run);
-  log_threaded_source_driver_set_worker_request_exit_func(&self->super, _request_exit);
+  self->super.run = _run;
+  self->super.request_exit = _request_exit;
 
   return TRUE;
 }

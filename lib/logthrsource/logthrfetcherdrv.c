@@ -323,9 +323,9 @@ log_threaded_fetcher_driver_init_method(LogPipe *s)
   if (!log_threaded_source_driver_init_method(s))
     return FALSE;
 
-  log_threaded_source_set_wakeup_func(&self->super, _wakeup);
-  log_threaded_source_driver_set_worker_run_func(&self->super, _worker_run);
-  log_threaded_source_driver_set_worker_request_exit_func(&self->super, _worker_request_exit);
+  self->super.wakeup = _wakeup;
+  self->super.run = _worker_run;
+  self->super.request_exit = _worker_request_exit;
 
   g_assert(self->fetch);
 
