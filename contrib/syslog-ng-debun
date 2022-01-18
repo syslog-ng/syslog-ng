@@ -47,13 +47,15 @@ ipconfig="ip addr"
 routeconfig () { netstat -nr ; }
 netstatnlp () { netstat -nlp ; }
 netstatlunp () { netstat -lunp ; }
+netstatpunt () { netstat -punt ; }
+netstatpn () { netstat -pn ; }
 netstatsu="netstat -su"
-netstatpunt="netstat -punt"
 binprefix=/opt/syslog-ng
 absscldirs="/usr/share/syslog-ng/include/scl"
 relscldirs="share/include/scl share/syslog-ng/include/scl"
 workdir=/tmp
 lsof="lsof -p"
+no_lsof_fallback() { echo "No lsof in path."; }
 pscmd="ps auxwwwwwf"
 pseao="ps -eao"
 cpiopdL="cpio -pdL"
@@ -438,8 +440,9 @@ acquire_system_other_info () {
 	$w >${tmpdir}/sys.w
 	$dmesg >${tmpdir}/sys.dmesg
 	netstatnlp >${tmpdir}/sys.netstat.ltn
-	$netstatpunt >${tmpdir}/sys.netstat.est
 	netstatlunp >${tmpdir}/sys.netstat.lunp
+	netstatpunt >${tmpdir}/sys.netstat.est
+	netstatpn >${tmpdir}/sys.netstat.pn
 	$netstatsu >${tmpdir}/sys.netstat.su
 	[ -f /proc/net/udp ] && cp /proc/net/udp ${tmpdir}/sys.proc.net.udp
 }
@@ -766,6 +769,8 @@ acquire_syslog_info () {
 	$syslogbin --version > ${tmpdir}/syslog.version
 	head -1 ${tmpdir}/syslog.version
 
+	[ -x ${binprefix}/sbin/wec ] && ${binprefix}/sbin/wec -v 2>&1 > ${tmpdir}/wec.version
+
 	if [ -z "$debug_mode" ]; then
 		acquire_syslog_stats
 	fi
@@ -778,13 +783,13 @@ acquire_syslog_info () {
 	echo ${syslogngctlbin} credentials status
 
 	for i in ${sngallpids} ; do
-		is_available ${lsof%% *} && $lsof $i >${tmpdir}/syslog.$i.lsof 2>/dev/null || echo "No lsof in path." >${tmpdir}/syslog.$i.lsof
+		is_available ${lsof%% *} && $lsof $i >${tmpdir}/syslog.$i.lsof 2>/dev/null || no_lsof_fallback $i >${tmpdir}/syslog.$i.lsof
 		myplimit $i >${tmpdir}/syslog.$i.limits
 	done
 
 	if [ -n "$wecpid" ]; then
 		while read i; do
-			is_available ${lsof%% *} && $lsof $i >${tmpdir}/wec.$i.lsof || echo "No lsof in path." >${tmpdir}/wec.$i.lsof
+			is_available ${lsof%% *} && $lsof $i >${tmpdir}/wec.$i.lsof || no_lsof_fallback $i >${tmpdir}/wec.$i.lsof
 		done < ${tmpdir}/wec.pid
 	fi
 
@@ -991,6 +996,7 @@ debun_extra_suse() {
 		#we value our customer's sense of privacy
 		if [ -z "$privacy_mode" ]; then
 			netstat -punt >${tmpdir}/sys.netstat.est.noss
+			netstat -pn >${tmpdir}/sys.netstat.pn.noss
 		fi
 	fi
 
@@ -1278,8 +1284,9 @@ setup_env_slackware  () {
 }
 
 setup_env_genlinux () {
-	unset myplimit
+	unset myplimit no_lsof_fallback
 	myplimit () { [ -f "/proc/$1/limits" ] && cat /proc/$1/limits ; }
+	no_lsof_fallback() { ls -l /proc/${1}/fd ; }
 
 	if is_available systemctl ; then
 		service_stop="systemctl stop syslog-ng"
@@ -1329,7 +1336,8 @@ setup_env_solaris () {
 	tcpdumpopts="-P -q -o"
 	pcapifparm="-d"
 	trace="truss -r all -w all -u libc:: -f"
-	netstatpunt="netstat -n"
+	netstatpunt() { netstat -n ; }
+	netstatpn() { netstat -n ; }
 	netstatsu="netstat -s"
 	grepq="/usr/xpg4/bin/grep -q"
 	sed_equivalent_cmd="perl -p -e"
@@ -1408,7 +1416,8 @@ setup_env_solaris () {
 }
 
 setup_env_freebsd () {
-	netstatpunt="netstat -n"
+	netstatpunt() { netstat -n ; }
+	netstatpn() { netstat -n ; }
 	netstatsu="netstat -s"
 	ipconfig="ifconfig -a"
 	pseao="ps xao"
@@ -1446,7 +1455,8 @@ setup_env_hpux () {
 	lddcmd="/usr/ccs/bin/ldd"
 	trace="/usr/local/bin/tusc -p -l -u -f"
 	netstatsu="netstat -s"
-	netstatpunt="netstat -n"
+	netstatpunt() { netstat -n ; }
+	netstatpn() { netstat -n ; }
 	ipconfig="netstat -ni"
 	pscmd="ps -eaf"
 	dfh="df"
@@ -1547,7 +1557,8 @@ setup_env_aix () {
 	pscmd="ps -eaf"
 	dfh="df -k"
 	netstatsu="netstat -s"
-	netstatpunt="netstat -n"
+	netstatpunt() { netstat -n ; }
+	netstatpn() { netstat -n ; }
 	dmesg="alog -o -t boot"
 	trace="truss -r all -w all -u libc:: -f"
 	initfile=
@@ -1618,7 +1629,8 @@ setup_env_generic_post () {
 		routeconfig () { ip route show ; }
 		netstatnlp () { ss -nlp ; }
 		netstatlunp () { ss -lunp ; }
-		netstatpunt="ss -punt"
+		netstatpunt() { ss -punt ; }
+		netstatpn() { ss -pn ; }
 	fi
 	if is_available netstat; then
 		:
