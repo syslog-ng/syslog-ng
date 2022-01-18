@@ -36,10 +36,6 @@
 typedef struct _LogThreadedSourceDriver LogThreadedSourceDriver;
 typedef struct _LogThreadedSourceWorker LogThreadedSourceWorker;
 
-typedef void (*LogThreadedSourceWorkerRunFunc)(LogThreadedSourceDriver *);
-typedef void (*LogThreadedSourceWorkerRequestExitFunc)(LogThreadedSourceDriver *);
-typedef void (*LogThreadedSourceWorkerWakeupFunc)(LogThreadedSourceDriver *);
-
 typedef struct _LogThreadedSourceWorkerOptions
 {
   LogSourceOptions super;
@@ -71,9 +67,9 @@ struct _LogThreadedSourceDriver
   LogThreadedSourceWorker *worker;
 
   const gchar *(*format_stats_instance)(LogThreadedSourceDriver *self);
-  LogThreadedSourceWorkerRunFunc run;
-  LogThreadedSourceWorkerRequestExitFunc request_exit;
-  LogThreadedSourceWorkerWakeupFunc wakeup;
+  void (*run)(LogThreadedSourceDriver *self);
+  void (*request_exit)(LogThreadedSourceDriver *self);
+  void (*wakeup)(LogThreadedSourceDriver *self);
 };
 
 void log_threaded_source_worker_options_defaults(LogThreadedSourceWorkerOptions *options);
