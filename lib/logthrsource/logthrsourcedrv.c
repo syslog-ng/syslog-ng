@@ -234,7 +234,6 @@ log_threaded_source_driver_init_method(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
 
   self->worker = log_threaded_source_worker_new(cfg);
-  self->wakeup = log_threaded_source_wakeup;
 
   if (!log_src_driver_init_method(s))
     return FALSE;
@@ -352,4 +351,6 @@ log_threaded_source_driver_init_instance(LogThreadedSourceDriver *self, GlobalCo
   self->super.super.super.deinit = log_threaded_source_driver_deinit_method;
   self->super.super.super.free_fn = log_threaded_source_driver_free_method;
   self->super.super.super.on_config_inited = log_threaded_source_driver_start_worker;
+
+  self->wakeup = log_threaded_source_wakeup;
 }

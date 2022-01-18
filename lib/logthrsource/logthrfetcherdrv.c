@@ -323,9 +323,6 @@ log_threaded_fetcher_driver_init_method(LogPipe *s)
   if (!log_threaded_source_driver_init_method(s))
     return FALSE;
 
-  self->super.wakeup = _wakeup;
-  self->super.run = _worker_run;
-  self->super.request_exit = _worker_request_exit;
 
   g_assert(self->fetch);
 
@@ -363,4 +360,8 @@ log_threaded_fetcher_driver_init_instance(LogThreadedFetcherDriver *self, Global
   self->super.super.super.super.init = log_threaded_fetcher_driver_init_method;
   self->super.super.super.super.deinit = log_threaded_fetcher_driver_deinit_method;
   self->super.super.super.super.free_fn = log_threaded_fetcher_driver_free_method;
+
+  self->super.wakeup = _wakeup;
+  self->super.run = _worker_run;
+  self->super.request_exit = _worker_request_exit;
 }
