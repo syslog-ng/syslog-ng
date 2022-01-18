@@ -50,7 +50,8 @@ struct _MainLoopThreadedWorker
 
 gboolean main_loop_threaded_worker_start(MainLoopThreadedWorker *self);
 
-void main_loop_threaded_worker_init_instance(MainLoopThreadedWorker *self, MainLoopWorkerType worker_type, gpointer data);
+void main_loop_threaded_worker_init_instance(MainLoopThreadedWorker *self,
+                                             MainLoopWorkerType worker_type, gpointer data);
 MainLoopThreadedWorker *main_loop_threaded_worker_ref(MainLoopThreadedWorker *self);
 void main_loop_threaded_worker_unref(MainLoopThreadedWorker *self);
 

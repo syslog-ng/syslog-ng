@@ -121,7 +121,8 @@ main_loop_threaded_worker_free(MainLoopThreadedWorker *self)
 }
 
 void
-main_loop_threaded_worker_init_instance(MainLoopThreadedWorker *self, MainLoopWorkerType worker_type, gpointer data)
+main_loop_threaded_worker_init_instance(MainLoopThreadedWorker *self,
+                                        MainLoopWorkerType worker_type, gpointer data)
 {
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->worker_type = worker_type;
