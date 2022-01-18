@@ -3,7 +3,7 @@
 
 ### syslog-ng-debun: syslog debug bundle generator
 ### Written/Copyright: Gyorgy Pasztor <pasztor@linux.gyakg.u-szeged.hu>, (c) 2014-2016.
-### Further enhancements: Janos Szigetvari - jszigetvari at gmail dot com, (c) 2016-2019.
+### Further enhancements: Janos Szigetvari - jszigetvari at gmail dot com, (c) 2016-2022.
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ LANG=en_US
 LC_ALL=C
 export LANG LC_ALL
 
-version="0.3.19.20191111"
+version="0.3.20.20220117"
 
 ### Check for "local" variable support
 if type local | grep builtin >/dev/null; then
@@ -66,7 +66,7 @@ grepq="fgrep -q"
 lddcmd="ldd"
 topcmd () { top -b -n 1 -c >"${1}"; }
 opensslcmd="openssl"
-sed_equivalent_cmd="sed -E"
+sed_equivalent_cmd="sed -Ee"
 mount=mount
 varlimit=1000
 myplimit () { echo "Plimit query is not supported on this platform" >&3 ; }
@@ -694,7 +694,7 @@ acquire_syslog_config () {
 	for dir in ${absscldirs}; do
 		if [ -d "${dir}" ]; then
 			cd "${dir}"
-			local dirname=$( echo "${dir}" | sed -e 's/\//_/g' )
+			local dirname=$( echo "${dir}" | ${sed_equivalent_cmd} 's/\//_/g' )
 			mkdir "${tmpdir}/scl/${dirname}"
 			findL . | $cpiopdL "${tmpdir}/scl/${dirname}"
 		fi
@@ -702,7 +702,7 @@ acquire_syslog_config () {
 	for dir in ${relscldirs}; do
 		if [ -d "${binprefix}/${dir}" ]; then
 			cd "${binprefix}/${dir}"
-			local dirname=$( echo "${binprefix}/${dir}" | sed -e 's/\//_/g' )
+			local dirname=$( echo "${binprefix}/${dir}" | ${sed_equivalent_cmd} 's/\//_/g' )
 			mkdir "${tmpdir}/scl/${dirname}"
 			findL . | $cpiopdL "${tmpdir}/scl/${dirname}"
 		fi
@@ -1388,7 +1388,7 @@ setup_env_solaris () {
 		}
 	elif is_available digest; then
 		os_hash_helper () {
-			find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec digest -a md5 -v '{}' \; | sed -e 's:^md5 (\(.*\)) = \([a-z0-9]\{32\}\)$:\2  \1:'
+			find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec digest -a md5 -v '{}' \; | ${sed_equivalent_cmd} 's:^md5 (\(.*\)) = \([a-z0-9]\{32\}\)$:\2  \1:'
 		}
 	else
 		os_hash_helper () { : ; }
@@ -1437,7 +1437,7 @@ setup_env_freebsd () {
 	distpkgoffile () { : ; }
 	distpkgstatus () { : ; }
 	os_hash_helper () {
-		find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec md5 '{}' \; | sed -e 's:^MD5 (\(.*\)) = \([a-z0-9]\{32\}\)$:\2  \1:'
+		find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec md5 '{}' \; | ${sed_equivalent_cmd} 's:^MD5 (\(.*\)) = \([a-z0-9]\{32\}\)$:\2  \1:'
 	}
 }
 
@@ -1569,7 +1569,7 @@ setup_env_aix () {
 	unset -f format_ldd_output
 	unset -f os_hash_helper
 
-	format_ldd_output () { sed -e 's:^[^/]*\(.*\)$:\1:' -e 's:^\(.*\)(.*)$:\1:'; }
+	format_ldd_output () { ${sed_equivalent_cmd} 's:^[^/]*\(.*\)$:\1:' -e 's:^\(.*\)(.*)$:\1:'; }
 	netstatnlp () { netstat -na | grep -E "(Active|Proto|LISTEN)" ; }
 	netstatlunp () { netstat -na | grep -E "(Internet|Proto|udp)" ; }
 	dfk_parser () { tail -1 | while read FS ALL AVAIL UPERC IUPERC MP; do echo ${AVAIL}; done }
