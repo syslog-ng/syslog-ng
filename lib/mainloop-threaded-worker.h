@@ -27,14 +27,11 @@
 #define MAINLOOP_THREADED_WORKER_H_INCLUDED
 
 #include "mainloop-worker.h"
-#include "atomic.h"
 
 typedef void (*MainLoopThreadedWorkerFunc)(gpointer user_data);
 typedef struct _MainLoopThreadedWorker MainLoopThreadedWorker;
 struct _MainLoopThreadedWorker
 {
-  GAtomicCounter ref_cnt;
-
   gpointer data;
   MainLoopWorkerType worker_type;
   GMutex lock;
@@ -45,14 +42,12 @@ struct _MainLoopThreadedWorker
   void (*thread_deinit)(MainLoopThreadedWorker *s);
   void (*request_exit)(MainLoopThreadedWorker *self);
   void (*run)(MainLoopThreadedWorker *self);
-  void (*free_fn)(MainLoopThreadedWorker *self);
 };
 
 gboolean main_loop_threaded_worker_start(MainLoopThreadedWorker *self);
 
-void main_loop_threaded_worker_init_instance(MainLoopThreadedWorker *self,
-                                             MainLoopWorkerType worker_type, gpointer data);
-MainLoopThreadedWorker *main_loop_threaded_worker_ref(MainLoopThreadedWorker *self);
-void main_loop_threaded_worker_unref(MainLoopThreadedWorker *self);
+void main_loop_threaded_worker_init(MainLoopThreadedWorker *self,
+                                    MainLoopWorkerType worker_type, gpointer data);
+void main_loop_threaded_worker_clear(MainLoopThreadedWorker *self);
 
 #endif

@@ -802,12 +802,13 @@ log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self)
 void
 log_threaded_dest_worker_free_method(LogThreadedDestWorker *self)
 {
+  main_loop_threaded_worker_clear(&self->thread);
 }
 
 void
 log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedDestDriver *owner, gint worker_index)
 {
-  main_loop_threaded_worker_init_instance(&self->thread, MLW_THREADED_OUTPUT_WORKER, self);
+  main_loop_threaded_worker_init(&self->thread, MLW_THREADED_OUTPUT_WORKER, self);
   self->thread.thread_init = _worker_thread_init;
   self->thread.thread_deinit = _worker_thread_deinit;
   self->thread.run = _worker_thread;

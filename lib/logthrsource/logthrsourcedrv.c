@@ -211,6 +211,7 @@ log_threaded_source_worker_free(LogPipe *s)
   log_pipe_unref(&self->control->super.super.super);
   self->control = NULL;
 
+  main_loop_threaded_worker_clear(&self->thread);
   log_source_free(s);
 }
 
@@ -219,7 +220,7 @@ log_threaded_source_worker_new(GlobalConfig *cfg)
 {
   LogThreadedSourceWorker *self = g_new0(LogThreadedSourceWorker, 1);
   log_source_init_instance(&self->super, cfg);
-  main_loop_threaded_worker_init_instance(&self->thread, MLW_THREADED_INPUT_WORKER, self);
+  main_loop_threaded_worker_init(&self->thread, MLW_THREADED_INPUT_WORKER, self);
   self->thread.thread_init = log_threaded_source_worker_thread_init;
   self->thread.thread_deinit = log_threaded_source_worker_thread_deinit;
   self->thread.run = log_threaded_source_worker_run;

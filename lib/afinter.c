@@ -363,6 +363,15 @@ afinter_source_deinit(LogPipe *s)
   return log_source_deinit(&self->super.super);
 }
 
+static void
+afinter_source_free(LogPipe *s)
+{
+  AFInterSource *self = (AFInterSource *) s;
+
+  main_loop_threaded_worker_clear(&self->thread);
+  log_source_free(s);
+}
+
 static LogSource *
 afinter_source_new(AFInterSourceDriver *owner, AFInterSourceOptions *options)
 {
@@ -371,7 +380,7 @@ afinter_source_new(AFInterSourceDriver *owner, AFInterSourceOptions *options)
   log_source_init_instance(&self->super, owner->super.super.super.cfg);
   log_source_set_options(&self->super, &options->super, owner->super.super.id, NULL, FALSE,
                          owner->super.super.super.expr_node);
-  main_loop_threaded_worker_init_instance(&self->thread, MLW_THREADED_INPUT_WORKER, self);
+  main_loop_threaded_worker_init(&self->thread, MLW_THREADED_INPUT_WORKER, self);
   self->thread.thread_init = afinter_source_thread_init;
   self->thread.thread_deinit = afinter_source_thread_deinit;
   self->thread.run = afinter_source_run;
@@ -381,6 +390,7 @@ afinter_source_new(AFInterSourceDriver *owner, AFInterSourceOptions *options)
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;
   self->super.wakeup = afinter_source_wakeup;
+  self->super.super.free_fn = afinter_source_free;
 
   self->options = options;
 

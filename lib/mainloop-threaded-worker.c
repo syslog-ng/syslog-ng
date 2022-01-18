@@ -85,7 +85,6 @@ _worker_thread_func(gpointer st)
    */
   main_loop_worker_assert_batch_callbacks_were_processed();
 
-  main_loop_threaded_worker_unref(self);
   return NULL;
 }
 
@@ -109,50 +108,25 @@ main_loop_threaded_worker_start(MainLoopThreadedWorker *self)
   main_loop_assert_main_thread();
   main_loop_worker_job_start();
   main_loop_worker_register_exit_notification_callback(_request_worker_exit, self);
-  g_thread_new(NULL, _worker_thread_func, main_loop_threaded_worker_ref(self));
+  g_thread_new(NULL, _worker_thread_func, self);
   return _wait_for_startup_finished(self);
 }
 
-static void
-main_loop_threaded_worker_free(MainLoopThreadedWorker *self)
-{
-  g_cond_clear(&self->started_up);
-  g_mutex_clear(&self->lock);
-}
 
 void
-main_loop_threaded_worker_init_instance(MainLoopThreadedWorker *self,
-                                        MainLoopWorkerType worker_type, gpointer data)
+main_loop_threaded_worker_init(MainLoopThreadedWorker *self,
+                               MainLoopWorkerType worker_type, gpointer data)
 {
-  g_atomic_counter_set(&self->ref_cnt, 1);
   self->worker_type = worker_type;
-  self->free_fn = main_loop_threaded_worker_free;
   g_cond_init(&self->started_up);
   g_mutex_init(&self->lock);
 
   self->data = data;
 }
 
-MainLoopThreadedWorker *
-main_loop_threaded_worker_ref(MainLoopThreadedWorker *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
-
-  if (self)
-    {
-      g_atomic_counter_inc(&self->ref_cnt);
-    }
-  return self;
-}
-
 void
-main_loop_threaded_worker_unref(MainLoopThreadedWorker *self)
+main_loop_threaded_worker_clear(MainLoopThreadedWorker *self)
 {
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
-
-  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
-    {
-      self->free_fn(self);
-      g_free(self);
-    }
+  g_cond_clear(&self->started_up);
+  g_mutex_clear(&self->lock);
 }
