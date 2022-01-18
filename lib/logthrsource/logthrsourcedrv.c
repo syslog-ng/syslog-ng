@@ -142,12 +142,20 @@ log_threaded_source_wakeup(LogThreadedSourceDriver *self)
 static gboolean
 log_threaded_source_worker_thread_init(MainLoopThreadedWorker *s)
 {
+  LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s->data;
+
+  if (self->control->thread_init)
+    return self->control->thread_init(self->control);
   return TRUE;
 }
 
 static void
 log_threaded_source_worker_thread_deinit(MainLoopThreadedWorker *s)
 {
+  LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s->data;
+
+  if (self->control->thread_deinit)
+    self->control->thread_deinit(self->control);
 }
 
 static void
@@ -158,7 +166,6 @@ log_threaded_source_worker_run(MainLoopThreadedWorker *s)
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->control->super.super.id));
 
-  /* FIXME: we have a race condition here */
   self->control->run(self->control);
 
   msg_debug("Worker thread finished",

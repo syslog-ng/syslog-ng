@@ -67,6 +67,8 @@ struct _LogThreadedSourceDriver
   LogThreadedSourceWorker *worker;
 
   const gchar *(*format_stats_instance)(LogThreadedSourceDriver *self);
+  gboolean (*thread_init)(LogThreadedSourceDriver *self);
+  void (*thread_deinit)(LogThreadedSourceDriver *self);
   void (*run)(LogThreadedSourceDriver *self);
   void (*request_exit)(LogThreadedSourceDriver *self);
   void (*wakeup)(LogThreadedSourceDriver *self);
