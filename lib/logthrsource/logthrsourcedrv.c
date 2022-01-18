@@ -30,25 +30,6 @@
 
 #include <iv.h>
 
-typedef struct _WakeupCondition
-{
-  GMutex lock;
-  GCond cond;
-  gboolean awoken;
-} WakeupCondition;
-
-struct _LogThreadedSourceWorker
-{
-  LogSource super;
-  MainLoopThreadedWorker thread;
-  LogThreadedSourceDriver *control;
-  WakeupCondition wakeup_cond;
-  gboolean under_termination;
-
-  LogThreadedSourceWorkerRunFunc run;
-  LogThreadedSourceWorkerRequestExitFunc request_exit;
-  LogThreadedSourceWorkerWakeupFunc wakeup;
-};
 
 static void
 wakeup_cond_init(WakeupCondition *cond)

@@ -31,6 +31,7 @@
 #include "cfg.h"
 #include "logpipe.h"
 #include "logmsg/logmsg.h"
+#include "mainloop-threaded-worker.h"
 
 typedef struct _LogThreadedSourceDriver LogThreadedSourceDriver;
 typedef struct _LogThreadedSourceWorker LogThreadedSourceWorker;
@@ -45,6 +46,26 @@ typedef struct _LogThreadedSourceWorkerOptions
   MsgFormatOptions parse_options;
   AckTrackerFactory *ack_tracker_factory;
 } LogThreadedSourceWorkerOptions;
+
+typedef struct _WakeupCondition
+{
+  GMutex lock;
+  GCond cond;
+  gboolean awoken;
+} WakeupCondition;
+
+struct _LogThreadedSourceWorker
+{
+  LogSource super;
+  MainLoopThreadedWorker thread;
+  LogThreadedSourceDriver *control;
+  WakeupCondition wakeup_cond;
+  gboolean under_termination;
+
+  LogThreadedSourceWorkerRunFunc run;
+  LogThreadedSourceWorkerRequestExitFunc request_exit;
+  LogThreadedSourceWorkerWakeupFunc wakeup;
+};
 
 struct _LogThreadedSourceDriver
 {
