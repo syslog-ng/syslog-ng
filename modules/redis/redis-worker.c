@@ -196,7 +196,7 @@ exit:
 
 
 static gboolean
-redis_worker_thread_init(LogThreadedDestWorker *d)
+redis_worker_init(LogThreadedDestWorker *d)
 {
   RedisDestWorker *self = (RedisDestWorker *) d;
   RedisDriver *owner = (RedisDriver *) self->super.owner;
@@ -228,7 +228,7 @@ redis_worker_disconnect(LogThreadedDestWorker *s)
 }
 
 static void
-redis_worker_thread_deinit(LogThreadedDestWorker *d)
+redis_worker_deinit(LogThreadedDestWorker *d)
 {
   RedisDestWorker *self = (RedisDestWorker *)d;
 
@@ -361,8 +361,8 @@ LogThreadedDestWorker *redis_worker_new(LogThreadedDestDriver *o, gint worker_in
 
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
 
-  self->super.thread_init = redis_worker_thread_init;
-  self->super.thread_deinit = redis_worker_thread_deinit;
+  self->super.init = redis_worker_init;
+  self->super.deinit = redis_worker_deinit;
   self->super.connect = redis_worker_connect;
   self->super.disconnect = redis_worker_disconnect;
   self->super.insert = o->batch_lines > 0 ? redis_worker_insert_batch : redis_worker_insert;

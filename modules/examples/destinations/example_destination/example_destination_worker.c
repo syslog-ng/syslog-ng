@@ -85,7 +85,7 @@ _disconnect(LogThreadedDestWorker *s)
 }
 
 static gboolean
-_thread_init(LogThreadedDestWorker *s)
+_dw_init(LogThreadedDestWorker *s)
 {
   ExampleDestinationWorker *self = (ExampleDestinationWorker *)s;
 
@@ -99,7 +99,7 @@ _thread_init(LogThreadedDestWorker *s)
 }
 
 static void
-_thread_deinit(LogThreadedDestWorker *s)
+_dw_deinit(LogThreadedDestWorker *s)
 {
   /*
     If you created resources during _thread_init,
@@ -126,8 +126,8 @@ example_destination_dw_new(LogThreadedDestDriver *o, gint worker_index)
   ExampleDestinationWorker *self = g_new0(ExampleDestinationWorker, 1);
 
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
-  self->super.thread_init = _thread_init;
-  self->super.thread_deinit = _thread_deinit;
+  self->super.init = _dw_init;
+  self->super.deinit = _dw_deinit;
   self->super.insert = _dw_insert;
   self->super.free_fn = _dw_free;
   self->super.connect = _connect;

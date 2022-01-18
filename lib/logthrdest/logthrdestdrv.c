@@ -700,7 +700,7 @@ _worker_thread_init(MainLoopThreadedWorker *s)
   iv_event_register(&self->wake_up_event);
   iv_event_register(&self->shutdown_event);
 
-  return log_threaded_dest_worker_thread_init(self);
+  return log_threaded_dest_worker_init(self);
 }
 
 static void
@@ -708,7 +708,7 @@ _worker_thread_deinit(MainLoopThreadedWorker *s)
 {
   LogThreadedDestWorker *self = (LogThreadedDestWorker *) s->data;
 
-  log_threaded_dest_worker_thread_deinit(self);
+  log_threaded_dest_worker_deinit(self);
 
   iv_event_unregister(&self->wake_up_event);
   iv_event_unregister(&self->shutdown_event);
@@ -813,8 +813,8 @@ log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedD
   self->thread.run = _worker_thread;
   self->thread.request_exit = _request_worker_exit;
   self->worker_index = worker_index;
-  self->thread_init = log_threaded_dest_worker_init_method;
-  self->thread_deinit = log_threaded_dest_worker_deinit_method;
+  self->init = log_threaded_dest_worker_init_method;
+  self->deinit = log_threaded_dest_worker_deinit_method;
   self->free_fn = log_threaded_dest_worker_free_method;
   self->owner = owner;
   self->time_reopen = -1;
@@ -842,7 +842,7 @@ log_threaded_dest_driver_set_num_workers(LogDriver *s, gint num_workers)
 /* compatibility bridge between LogThreadedDestWorker */
 
 static gboolean
-_compat_thread_init(LogThreadedDestWorker *self)
+_compat_init(LogThreadedDestWorker *self)
 {
   if (!log_threaded_dest_worker_init_method(self))
     return FALSE;
@@ -854,7 +854,7 @@ _compat_thread_init(LogThreadedDestWorker *self)
 }
 
 static void
-_compat_thread_deinit(LogThreadedDestWorker *self)
+_compat_deinit(LogThreadedDestWorker *self)
 {
   if (self->owner->worker.thread_deinit)
     self->owner->worker.thread_deinit(self->owner);
@@ -893,8 +893,8 @@ _compat_flush(LogThreadedDestWorker *self, LogThreadedFlushMode mode)
 static void
 _init_worker_compat_layer(LogThreadedDestWorker *self)
 {
-  self->thread_init = _compat_thread_init;
-  self->thread_deinit = _compat_thread_deinit;
+  self->init = _compat_init;
+  self->deinit = _compat_deinit;
   self->connect = _compat_connect;
   self->disconnect = _compat_disconnect;
   self->insert = _compat_insert;

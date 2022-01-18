@@ -88,8 +88,8 @@ struct _LogThreadedDestWorker
   gboolean suspended;
   time_t time_reopen;
 
-  gboolean (*thread_init)(LogThreadedDestWorker *s);
-  void (*thread_deinit)(LogThreadedDestWorker *s);
+  gboolean (*init)(LogThreadedDestWorker *s);
+  void (*deinit)(LogThreadedDestWorker *s);
   gboolean (*connect)(LogThreadedDestWorker *s);
   void (*disconnect)(LogThreadedDestWorker *s);
   LogThreadedResult (*insert)(LogThreadedDestWorker *s, LogMessage *msg);
@@ -155,18 +155,18 @@ struct _LogThreadedDestDriver
 };
 
 static inline gboolean
-log_threaded_dest_worker_thread_init(LogThreadedDestWorker *self)
+log_threaded_dest_worker_init(LogThreadedDestWorker *self)
 {
-  if (self->thread_init)
-    return self->thread_init(self);
+  if (self->init)
+    return self->init(self);
   return TRUE;
 }
 
 static inline void
-log_threaded_dest_worker_thread_deinit(LogThreadedDestWorker *self)
+log_threaded_dest_worker_deinit(LogThreadedDestWorker *self)
 {
-  if (self->thread_deinit)
-    self->thread_deinit(self);
+  if (self->deinit)
+    self->deinit(self);
 }
 
 static inline gboolean

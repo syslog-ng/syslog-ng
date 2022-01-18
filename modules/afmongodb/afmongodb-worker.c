@@ -385,7 +385,7 @@ _worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
 }
 
 static gboolean
-_worker_thread_init(LogThreadedDestWorker *s)
+_worker_init(LogThreadedDestWorker *s)
 {
   MongoDBDestWorker *self = (MongoDBDestWorker *) s;
 
@@ -396,7 +396,7 @@ _worker_thread_init(LogThreadedDestWorker *s)
 }
 
 static void
-_worker_thread_deinit(LogThreadedDestWorker *s)
+_worker_deinit(LogThreadedDestWorker *s)
 {
   MongoDBDestWorker *self = (MongoDBDestWorker *) s;
 
@@ -417,8 +417,8 @@ afmongodb_dw_new(LogThreadedDestDriver *owner, gint worker_index)
 
   log_threaded_dest_worker_init_instance(&self->super, owner, worker_index);
 
-  self->super.thread_init = _worker_thread_init;
-  self->super.thread_deinit = _worker_thread_deinit;
+  self->super.init = _worker_init;
+  self->super.deinit = _worker_deinit;
   self->super.connect = _worker_connect;
   self->super.disconnect = _worker_disconnect;
   self->super.insert = _worker_insert;
