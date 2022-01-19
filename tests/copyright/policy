@@ -48,9 +48,9 @@ dbld/images/.*$
 dbld/(functions\.sh|(build|packages|pip_packages)\.manifest|tarball-changes\.ignore)$
 dbld/\.dockerignore$
 cmake/.*$
-tests/python_functional/pytest.ini
-tests/python_functional/tox.ini
-tests/python_functional/.pre-commit-config.yaml
+tests/light/pytest.ini
+tests/light/tox.ini
+tests/light/.pre-commit-config.yaml
 .github/workflows/.*$
 lib/logmsg/tests/messages/syslog-ng-(pe-)?[.0-9]*-msg.h$
  LGPLv2.1+_SSL,non-balabit
@@ -103,7 +103,7 @@ tests/build-log-cflags-propagation.sh
 tests/collect-cov.sh
 tests/commits/check.sh
 tests/copyright/check.sh
-tests/python_functional
+tests/light
 modules/java/(tools|[^/]*$)
 modules/java-modules/(dummy|elastic-v2|hdfs|http|kafka|[^/]*$)
 modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|afuser|azure-auth-header|basicfuncs|cef|confgen|cryptofuncs|csvparser|timestamp|diskq|dbparser|geoip2|graphite|json|kvformat|linux-kmsg-format|pacctformat|pseudofile|python|redis|riemann|syslogformat|systemd-journal|getent|system-source|stardate|snmptrapd-parser|xml|openbsd|examples|kafka|afsnmp|mqtt|regexp-parser|[^/]*$)

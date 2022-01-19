@@ -90,8 +90,8 @@ jobs:
         id: light
         working-directory: ./build
         run: |
-          make pytest-self-check
-          make pytest-check
+          make light-self-check
+          make light-check
 
       - name: make func-test
         working-directory: ./build
@@ -113,7 +113,7 @@ jobs:
             REPORTS_DIR=build/reports
           elif [ ${{ matrix.build-tool }} = 'cmake' ]
           then
-            REPORTS_DIR=build/tests/python_functional/reports
+            REPORTS_DIR=build/tests/light/reports
           else
             echo Unrecognized build tool: ${{ matrix.build-tool }}.
             exit 1
@@ -217,7 +217,7 @@ jobs:
         if: always()
         working-directory: ./build
         run: |
-          make pytest-linters || \
+          make light-linters || \
             (git diff > ../light-style-problems.diff ; git reset --hard HEAD && exit 1)
 
       - name: "Artifact: c-style-problems"
