@@ -16,6 +16,7 @@ USER_EMAIL=$(git config --get user.email || echo "noemail@set.any.where")
 USER_NAME=$(git config --get user.name || echo "unknown user")
 VERSION_FILE_LIST="README.md doc/man/*.xml
 	scl/syslog-ng.conf
+	docker/syslog-ng.conf
 	contrib/openbsd-packaging/syslog-ng.conf
 	packaging/debian/syslog-ng.conf
 	packaging/rhel/syslog-ng.conf"
