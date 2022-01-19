@@ -36,12 +36,9 @@ struct _ControlCommandThread
   gpointer user_data;
 
   GThread *thread;
-  struct
-  {
-    GMutex state_lock;
-    gboolean cancelled;
-    gboolean finished;
-  } real_thread;
+  GMutex state_lock;
+  gboolean cancelled;
+  gboolean finished;
   ControlCommandFunc func;
   struct iv_event thread_finished;
 };
@@ -68,13 +65,13 @@ _thread(gpointer user_data)
   msg_debug("Control command thread has started",
             evt_tag_str("control_command", self->command->str));
   self->func(self->connection, self->command, self->user_data);
-  g_mutex_lock(&self->real_thread.state_lock);
+  g_mutex_lock(&self->state_lock);
   {
-    self->real_thread.finished = TRUE;
-    if (!self->real_thread.cancelled)
+    self->finished = TRUE;
+    if (!self->cancelled)
       iv_event_post(&self->thread_finished);
   }
-  g_mutex_unlock(&self->real_thread.state_lock);
+  g_mutex_unlock(&self->state_lock);
 
   /* drop ref belonging to the thread function */
   msg_debug("Control command thread is exiting now",
@@ -103,15 +100,15 @@ control_command_thread_cancel(ControlCommandThread *self)
 {
   gboolean has_to_join = FALSE;
 
-  g_mutex_lock(&self->real_thread.state_lock);
+  g_mutex_lock(&self->state_lock);
   {
-    self->real_thread.cancelled = TRUE;
-    if (!self->real_thread.finished)
+    self->cancelled = TRUE;
+    if (!self->finished)
       {
         has_to_join = TRUE;
       }
   }
-  g_mutex_unlock(&self->real_thread.state_lock);
+  g_mutex_unlock(&self->state_lock);
 
   if (has_to_join)
     g_thread_join(self->thread);
@@ -128,7 +125,7 @@ control_command_thread_new(ControlConnection *cc, GString *cmd, ControlCommandFu
   self->func = func;
   self->user_data = user_data;
 
-  g_mutex_init(&self->real_thread.state_lock);
+  g_mutex_init(&self->state_lock);
 
   IV_EVENT_INIT(&self->thread_finished);
   self->thread_finished.handler = _on_thread_finished;
@@ -139,7 +136,7 @@ control_command_thread_new(ControlConnection *cc, GString *cmd, ControlCommandFu
 static void
 _control_command_thread_free(ControlCommandThread *self)
 {
-  g_mutex_clear(&self->real_thread.state_lock);
+  g_mutex_clear(&self->state_lock);
   secret_storage_wipe(self->command->str, self->command->len);
   g_string_free(self->command, TRUE);
   control_connection_unref(self->connection);
