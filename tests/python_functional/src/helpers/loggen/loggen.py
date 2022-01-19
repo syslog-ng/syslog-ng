@@ -76,7 +76,7 @@ class Loggen(object):
             start_parameters.append("--loop-reading")
 
         if rate is not None:
-            start_parameters.append("--rate={}".format(rate))
+            start_parameters.append("--rate={}".format(int(rate)))
 
         if interval is not None:
             start_parameters.append("--interval={}".format(interval))

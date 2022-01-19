@@ -13,6 +13,7 @@ EXTRA_DIST += \
 	tests/python_functional/functional_tests/destination_drivers/snmp_destination/v2c/test_snmp_destination_v2c_cisco_ios_traps.py \
 	tests/python_functional/functional_tests/destination_drivers/snmp_destination/v2c/test_snmp_destination_v2c_custom_community.py \
 	tests/python_functional/functional_tests/destination_drivers/snmp_destination/v2c/test_snmp_destination_v2c_using_macro_snmp_obj.py \
+	tests/python_functional/functional_tests/filters/throttle/test_throttle_filter_acceptance.py \
 	tests/python_functional/functional_tests/logpath/test_flags_catch_all.py \
 	tests/python_functional/functional_tests/logpath/test_flags_fallback.py \
 	tests/python_functional/functional_tests/logpath/test_flags_final.py \
