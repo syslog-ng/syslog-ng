@@ -39,8 +39,6 @@ An example is used to describe how syslog-ng can read logs from other containers
 Assume that you have already running an `apache2` container which exposes its logs as a mounted volume under "/var/log/apache2/". We will read the apache logs and send them to a remote host (`1.2.3.4:514`). The example syslog-ng configuration file is stored in the current directory as `syslog-ng.conf`.
 
 ```
-@version: 3.7
-
 source s_apache {
   file("/var/log/apache2/access.log");
 };
