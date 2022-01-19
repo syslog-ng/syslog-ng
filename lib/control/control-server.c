@@ -57,7 +57,6 @@ control_server_cancel_workers(ControlServer *self)
 {
   if (self->worker_threads)
     {
-      self->cancelled = TRUE; // racy, but it's okay
       msg_debug("Cancelling control server worker threads");
       g_list_foreach(self->worker_threads, _cancel_worker, NULL);
       msg_debug("Control server worker threads have been cancelled");
@@ -133,7 +132,6 @@ void
 control_server_init_instance(ControlServer *self)
 {
   self->worker_threads = NULL;
-  self->cancelled = FALSE;
   self->start = control_server_start_method;
   self->stop = control_server_stop_method;
   self->free_fn = control_server_free_method;

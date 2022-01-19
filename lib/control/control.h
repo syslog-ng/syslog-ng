@@ -31,7 +31,7 @@ typedef struct _ControlServer ControlServer;
 typedef struct _ControlConnection ControlConnection;
 typedef struct _ControlCommandThread ControlCommandThread;
 
-typedef void (*ControlCommandFunc)(ControlConnection *cc, GString *, gpointer user_data);
+typedef void (*ControlCommandFunc)(ControlConnection *cc, GString *, gpointer user_data, gboolean *cancelled);
 typedef struct _ControlCommand
 {
   const gchar *command_name;

@@ -87,18 +87,18 @@ _send_batched_response(const gchar *record, gpointer user_data)
 }
 
 static void
-control_connection_send_stats(ControlConnection *cc, GString *command, gpointer user_data)
+control_connection_send_stats(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   GString *response = NULL;
   gpointer args[] = {cc, &response};
-  stats_generate_csv(_send_batched_response, args, &cc->server->cancelled);
+  stats_generate_csv(_send_batched_response, args, cancelled);
   if (response != NULL)
     control_connection_send_batched_reply(cc, response);
   control_connection_send_close_batch(cc);
 }
 
 static void
-control_connection_reset_stats(ControlConnection *cc, GString *command, gpointer user_data)
+control_connection_reset_stats(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   GString *result = g_string_new("OK The statistics of syslog-ng have been reset to 0.");
   _reset_counters();
@@ -112,7 +112,7 @@ _is_cluster_orphaned(StatsCluster *sc, gpointer user_data)
 }
 
 static void
-control_connection_remove_orphans(ControlConnection *cc, GString *command, gpointer user_data)
+control_connection_remove_orphans(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   GString *result = g_string_new("OK Orphaned statistics have been removed.");
 

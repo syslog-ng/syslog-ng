@@ -158,7 +158,7 @@ static gboolean
 control_connection_run_command_method(ControlConnection *self, ControlCommand *command_desc, GString *command_string)
 {
   if (!command_desc->threaded)
-    command_desc->func(self, command_string, command_desc->user_data);
+    command_desc->func(self, command_string, command_desc->user_data, NULL);
   else
     control_connection_start_as_thread(self, command_desc->func, command_string, command_desc->user_data);
   return TRUE;

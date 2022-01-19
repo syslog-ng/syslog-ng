@@ -64,7 +64,7 @@ _thread(gpointer user_data)
 
   msg_debug("Control command thread has started",
             evt_tag_str("control_command", self->command->str));
-  self->func(self->connection, self->command, self->user_data);
+  self->func(self->connection, self->command, self->user_data, &self->cancelled);
   g_mutex_lock(&self->state_lock);
   {
     self->finished = TRUE;

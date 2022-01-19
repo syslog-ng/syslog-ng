@@ -33,7 +33,6 @@
 struct _ControlServer
 {
   GList *worker_threads;
-  gboolean cancelled;
   gboolean (*start)(ControlServer *s);
   void (*stop)(ControlServer *s);
   void (*free_fn)(ControlServer *self);

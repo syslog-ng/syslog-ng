@@ -35,7 +35,7 @@ gboolean
 control_connection_dummy_run_command(ControlConnection *s, ControlCommand *command_desc, GString *command_string)
 {
   /* ignore threaded execution */
-  command_desc->func(s, command_string, command_desc->user_data);
+  command_desc->func(s, command_string, command_desc->user_data, NULL);
   return TRUE;
 }
 

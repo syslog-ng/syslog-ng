@@ -221,12 +221,12 @@ Test(control_cmds, test_reset_stats)
 }
 
 static void
-_original_replace(ControlConnection *cc, GString *result, gpointer user_data)
+_original_replace(ControlConnection *cc, GString *result, gpointer user_data, gboolean *cancelled)
 {
 }
 
 static void
-_new_replace(ControlConnection *cc, GString *result, gpointer user_data)
+_new_replace(ControlConnection *cc, GString *result, gpointer user_data, gboolean *cancelled)
 {
 }
 
