@@ -142,8 +142,8 @@ r_parser_pcre(gchar *str, gint *len, const gchar *param, gpointer state, RParser
 
   if (pcre_fullinfo(self->re, self->extra, PCRE_INFO_CAPTURECOUNT, &num_matches) < 0)
     g_assert_not_reached();
-  if (num_matches > RE_MAX_MATCHES)
-    num_matches = RE_MAX_MATCHES;
+  if (num_matches > LOGMSG_MAX_MATCHES)
+    num_matches = LOGMSG_MAX_MATCHES;
 
   gsize matches_size = 3 * (num_matches + 1);
   gint *matches = g_alloca(matches_size * sizeof(gint));
@@ -610,33 +610,34 @@ r_new_pnode(gchar *key)
 
   parser_node->first = CHAR_MIN;
   parser_node->last = CHAR_MAX;
-
+  parser_node->value_type = LM_VT_STRING;
   if (strcmp(params[0], "IPv4") == 0)
     {
       parser_node->parse = r_parser_ipv4;
-      parser_node->type = RPT_IPV4;
+      parser_node->parser_type = RPT_IPV4;
       parser_node->first = '0';
       parser_node->last = '9';
     }
   else if (strcmp(params[0], "IPv6") == 0)
     {
       parser_node->parse = r_parser_ipv6;
-      parser_node->type = RPT_IPV6;
+      parser_node->parser_type = RPT_IPV6;
     }
   else if (strcmp(params[0], "IPvANY") == 0)
     {
       parser_node->parse = r_parser_ip;
-      parser_node->type = RPT_IP;
+      parser_node->parser_type = RPT_IP;
     }
   else if (strcmp(params[0], "MACADDR") == 0)
     {
       parser_node->parse = r_parser_macaddr;
-      parser_node->type = RPT_MACADDR;
+      parser_node->parser_type = RPT_MACADDR;
     }
   else if (strcmp(params[0], "NUMBER") == 0)
     {
       parser_node->parse = r_parser_number;
-      parser_node->type = RPT_NUMBER;
+      parser_node->parser_type = RPT_NUMBER;
+      parser_node->value_type = LM_VT_INT64;
       parser_node->first = '-';
       parser_node->last = '9';
     }
@@ -644,21 +645,22 @@ r_new_pnode(gchar *key)
     {
       /* DOUBLE is a deprecated alias for FLOAT */
       parser_node->parse = r_parser_float;
-      parser_node->type = RPT_FLOAT;
+      parser_node->parser_type = RPT_FLOAT;
       parser_node->first = '-';
       parser_node->last = '9';
+      parser_node->value_type = LM_VT_DOUBLE;
     }
   else if (strcmp(params[0], "STRING") == 0)
     {
       parser_node->parse = r_parser_string;
-      parser_node->type = RPT_STRING;
+      parser_node->parser_type = RPT_STRING;
     }
   else if (strcmp(params[0], "ESTRING") == 0)
     {
       if (params_len == 3)
         {
           parser_node->parse = r_parser_estring_c;
-          parser_node->type = RPT_ESTRING;
+          parser_node->parser_type = RPT_ESTRING;
 
           if (params[2] && (strlen(params[2]) > 1))
             {
@@ -681,7 +683,7 @@ r_new_pnode(gchar *key)
       if (params_len <= 2)
         {
           parser_node->parse = r_parser_nlstring;
-          parser_node->type = RPT_NLSTRING;
+          parser_node->parser_type = RPT_NLSTRING;
         }
       else
         {
@@ -693,7 +695,7 @@ r_new_pnode(gchar *key)
   else if (strcmp(params[0], "PCRE") == 0)
     {
       parser_node->parse = r_parser_pcre;
-      parser_node->type = RPT_PCRE;
+      parser_node->parser_type = RPT_PCRE;
 
       if (params[2])
         {
@@ -711,14 +713,14 @@ r_new_pnode(gchar *key)
   else if (strcmp(params[0], "ANYSTRING") == 0)
     {
       parser_node->parse = r_parser_anystring;
-      parser_node->type = RPT_ANYSTRING;
+      parser_node->parser_type = RPT_ANYSTRING;
     }
   else if (strcmp(params[0], "SET") == 0)
     {
       if (params_len == 3)
         {
           parser_node->parse = r_parser_set;
-          parser_node->type = RPT_SET;
+          parser_node->parser_type = RPT_SET;
         }
       else
         {
@@ -733,7 +735,7 @@ r_new_pnode(gchar *key)
       if (params_len == 3)
         {
           parser_node->parse = r_parser_optionalset;
-          parser_node->type = RPT_OPTIONALSET;
+          parser_node->parser_type = RPT_OPTIONALSET;
         }
       else
         {
@@ -746,17 +748,17 @@ r_new_pnode(gchar *key)
   else if (strcmp(params[0], "EMAIL") == 0)
     {
       parser_node->parse = r_parser_email;
-      parser_node->type = RPT_EMAIL;
+      parser_node->parser_type = RPT_EMAIL;
     }
   else if (strcmp(params[0], "HOSTNAME") == 0)
     {
       parser_node->parse = r_parser_hostname;
-      parser_node->type = RPT_HOSTNAME;
+      parser_node->parser_type = RPT_HOSTNAME;
     }
   else if (strcmp(params[0], "LLADDR") == 0)
     {
       parser_node->parse = r_parser_lladdr;
-      parser_node->type = RPT_LLADDR;
+      parser_node->parser_type = RPT_LLADDR;
     }
   else if (g_str_has_prefix(params[0], "QSTRING"))
     {
@@ -765,7 +767,7 @@ r_new_pnode(gchar *key)
           gchar *state = (gchar *) &(parser_node->state);
 
           parser_node->parse = r_parser_qstring;
-          parser_node->type = RPT_QSTRING;
+          parser_node->parser_type = RPT_QSTRING;
           parser_node->first = params[2][0];
           parser_node->last = params[2][0];
 
@@ -1040,7 +1042,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
                     {
                       /* FIXME: print parser type in string format */
                       msg_error("Duplicate parser node in radix tree",
-                                evt_tag_str("type", r_parser_type_name(node->parser->type)),
+                                evt_tag_str("type", r_parser_type_name(node->parser->parser_type)),
                                 evt_tag_str("name", log_msg_get_value_name(node->parser->handle, NULL)),
                                 evt_tag_str("value", value_func ? value_func(value) : "unknown"),
                                 evt_tag_str("other-value", value_func ? value_func(node->value) : "unknown"),
@@ -1333,7 +1335,7 @@ _fixup_match_offsets(RFindNodeState *state, RParserNode *parser_node, gint extra
        * REF_MATCH and we only need to duplicate the
        * result if the string is indeed modified
        */
-      match->type = parser_node->type;
+      match->type = parser_node->value_type;
       match->ofs = match->ofs + remaining_key - state->whole_key;
       match->len = (gint16) match->len + extracted_match_len;
       match->handle = parser_node->handle;

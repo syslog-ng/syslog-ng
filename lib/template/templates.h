@@ -28,7 +28,7 @@
 #include "syslog-ng.h"
 #include "eval.h"
 #include "timeutils/zoneinfo.h"
-#include "type-hinting.h"
+#include "logmsg/type-hinting.h"
 #include "common-template-typedefs.h"
 #include "atomic.h"
 
@@ -60,7 +60,7 @@ struct _LogTemplate
   GList *compiled_template;
   GlobalConfig *cfg;
   guint escape:1, def_inline:1, trivial:1;
-  TypeHint type_hint;
+  LogMessageValueType type_hint;
 };
 
 /* appends the formatted output into result */

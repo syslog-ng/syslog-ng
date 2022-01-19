@@ -1,7 +1,8 @@
-lib_logmsg_tests_TESTS =                       \
+lib_logmsg_tests_TESTS =                    \
  lib/logmsg/tests/test_logmsg_serialize     \
  lib/logmsg/tests/test_timestamp_serialize  \
- lib/logmsg/tests/test_tags
+ lib/logmsg/tests/test_tags		    \
+ lib/logmsg/tests/test_type_hints
 
 EXTRA_DIST += lib/logmsg/tests/CMakeLists.txt \
 	lib/logmsg/tests/messages/syslog-ng-3.17.1-msg.h \
@@ -25,6 +26,10 @@ lib_logmsg_tests_test_logmsg_serialize_LDADD  = $(TEST_LDADD) $(PREOPEN_SYSLOGFO
 
 lib_logmsg_tests_test_tags_CFLAGS	      = $(TEST_CFLAGS)
 lib_logmsg_tests_test_tags_LDADD	      = $(TEST_LDADD)
+
+lib_logmsg_tests_test_type_hints_CFLAGS = $(TEST_CFLAGS)
+lib_logmsg_tests_test_type_hints_LDADD	= $(TEST_LDADD)
+
 
 lib_logmsg_tests_TESTS +=				\
 	lib/logmsg/tests/test_nvtable			\

@@ -60,7 +60,7 @@ _add_matches_to_message(LogMessage *msg, GArray *matches, NVHandle ref_handle, c
         }
       else
         {
-          log_msg_set_value(msg, match->handle, input_string + match->ofs, match->len);
+          log_msg_set_value_with_type(msg, match->handle, input_string + match->ofs, match->len, match->type);
         }
     }
 }

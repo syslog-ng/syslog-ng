@@ -62,7 +62,7 @@ typedef struct _LogPathOptions LogPathOptions;
 
 typedef void (*LMAckFunc)(LogMessage *lm, AckType ack_type);
 
-#define RE_MAX_MATCHES 256
+#define LOGMSG_MAX_MATCHES 256
 
 typedef enum
 {
@@ -141,6 +141,35 @@ enum
    */
   __UNUSED_LF_LEGACY_MSGHDR    = 0x00020000,
 };
+
+typedef NVType LogMessageValueType;
+enum _LogMessageValueType
+{
+  /* Everything is represented as a string, formatted in a type specific
+   * automatically parseable format.
+   *
+   * Please note that these values are part of the serialized LogMessage
+   * format, so changing these would cause incompatibilities in type
+   * recognition. Add new types at the end.
+   */
+  LM_VT_STRING = 0,
+  LM_VT_JSON = 1,
+  LM_VT_BOOLEAN = 2,
+  LM_VT_INT32 = 3,
+  LM_VT_INT64 = 4,
+  LM_VT_DOUBLE = 5,
+  LM_VT_DATETIME = 6,
+  LM_VT_LIST = 7,
+  LM_VT_NULL = 8,
+
+  /* extremal value to indicate "unset" state.
+   *
+   * NOTE: THIS IS NOT THE DEFAULT for actual values even if type is
+   * unspecified, those cases default to LM_VT_STRING.
+   */
+  LM_VT_NONE = 255
+};
+
 
 typedef struct _LogMessageQueueNode
 {
@@ -289,30 +318,44 @@ log_msg_is_handle_settable_with_an_indirect_value(NVHandle handle)
   return (handle >= LM_V_MAX);
 }
 
-const gchar *log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len);
+const gchar *log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len, LogMessageValueType *type);
 
 static inline const gchar *
-log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
+log_msg_get_value_with_type(const LogMessage *self, NVHandle handle, gssize *value_len, LogMessageValueType *type)
 {
   guint16 flags;
 
   flags = nv_registry_get_handle_flags(logmsg_registry, handle);
   if ((flags & LM_VF_MACRO) == 0)
-    return nv_table_get_value(self->payload, handle, value_len);
+    return nv_table_get_value(self->payload, handle, value_len, type);
   else
-    return log_msg_get_macro_value(self, flags >> 8, value_len);
+    return log_msg_get_macro_value(self, flags >> 8, value_len, type);
+}
+
+static inline const gchar *
+log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
+{
+  return log_msg_get_value_with_type(self, handle, value_len, NULL);
+}
+
+static inline const gchar *
+log_msg_get_value_if_set_with_type(const LogMessage *self, NVHandle handle,
+                                   gssize *value_len,
+                                   LogMessageValueType *type)
+{
+  guint16 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  if ((flags & LM_VF_MACRO) == 0)
+    return nv_table_get_value_if_set(self->payload, handle, value_len, type);
+  else
+    return log_msg_get_macro_value(self, flags >> 8, value_len, type);
 }
 
 static inline const gchar *
 log_msg_get_value_if_set(const LogMessage *self, NVHandle handle, gssize *value_len)
 {
-  guint16 flags;
-
-  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  if ((flags & LM_VF_MACRO) == 0)
-    return nv_table_get_value_if_set(self->payload, handle, value_len);
-  else
-    return log_msg_get_macro_value(self, flags >> 8, value_len);
+  return log_msg_get_value_if_set_with_type(self, handle, value_len, NULL);
 }
 
 static inline const gchar *
@@ -320,6 +363,15 @@ log_msg_get_value_by_name(const LogMessage *self, const gchar *name, gssize *val
 {
   NVHandle handle = log_msg_get_value_handle(name);
   return log_msg_get_value(self, handle, value_len);
+}
+
+static inline const gchar *
+log_msg_get_value_by_name_with_type(const LogMessage *self,
+                                    const gchar *name, gssize *value_len,
+                                    LogMessageValueType *type)
+{
+  NVHandle handle = log_msg_get_value_handle(name);
+  return log_msg_get_value_with_type(self, handle, value_len, type);
 }
 
 static inline const gchar *
@@ -332,26 +384,39 @@ typedef gboolean (*LogMessageTagsForeachFunc)(const LogMessage *self, LogTagId t
                                               gpointer user_data);
 
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);
-void log_msg_set_value_with_type(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len, NVType type);
+void log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
+                                 const gchar *value, gssize value_len,
+                                 LogMessageValueType type);
 
 void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle,
                                 guint16 ofs, guint16 len);
 void log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle, NVHandle ref_handle,
-                                          guint16 ofs, guint16 len, NVType type);
+                                          guint16 ofs, guint16 len, LogMessageValueType type);
 void log_msg_unset_value(LogMessage *self, NVHandle handle);
 void log_msg_unset_value_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer user_data);
 void log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len);
+void log_msg_set_match_with_type(LogMessage *self, gint index,
+                                 const gchar *value, gssize value_len,
+                                 LogMessageValueType type);
 void log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint16 ofs, guint16 len);
 void log_msg_set_match_indirect_with_type(LogMessage *self, gint index, NVHandle ref_handle,
-                                          guint16 ofs, guint16 len, NVType type);
+                                          guint16 ofs, guint16 len, LogMessageValueType type);
 void log_msg_clear_matches(LogMessage *self);
+
+static inline void
+log_msg_set_value_by_name_with_type(LogMessage *self,
+                                    const gchar *name, const gchar *value, gssize length,
+                                    LogMessageValueType type)
+{
+  NVHandle handle = log_msg_get_value_handle(name);
+  log_msg_set_value_with_type(self, handle, value, length, type);
+}
 
 static inline void
 log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *value, gssize length)
 {
-  NVHandle handle = log_msg_get_value_handle(name);
-  log_msg_set_value(self, handle, value, length);
+  log_msg_set_value_by_name_with_type(self, name, value, length, LM_VT_STRING);
 }
 
 void log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to);

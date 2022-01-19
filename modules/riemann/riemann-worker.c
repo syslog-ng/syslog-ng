@@ -153,7 +153,7 @@ riemann_dd_field_add_msg_tag(const LogMessage *msg,
 /* TODO escape '\0' when passing down the value */
 static gboolean
 riemann_dd_field_add_attribute_vp(const gchar *name,
-                                  TypeHint type, const gchar *value,
+                                  LogMessageValueType type, const gchar *value,
                                   gsize value_len,
                                   gpointer user_data)
 {
@@ -181,8 +181,8 @@ riemann_add_metric_to_event(RiemannDestWorker *self, riemann_event_t *event, Log
 
   switch (owner->fields.metric->type_hint)
     {
-    case TYPE_HINT_INT32:
-    case TYPE_HINT_INT64:
+    case LM_VT_INT32:
+    case LM_VT_INT64:
     {
       gint64 i;
 
@@ -194,8 +194,8 @@ riemann_add_metric_to_event(RiemannDestWorker *self, riemann_event_t *event, Log
                                       str->str, "int");
       break;
     }
-    case TYPE_HINT_DOUBLE:
-    case TYPE_HINT_STRING:
+    case LM_VT_DOUBLE:
+    case LM_VT_STRING:
     {
       gdouble d;
 

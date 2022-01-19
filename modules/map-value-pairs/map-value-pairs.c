@@ -25,7 +25,7 @@
 
 static gboolean
 _map_name_values(const gchar *name,
-                 TypeHint type, const gchar *value, gsize value_len,
+                 LogMessageValueType type, const gchar *value, gsize value_len,
                  gpointer user_data)
 {
   LogMessage *msg = (LogMessage *) user_data;

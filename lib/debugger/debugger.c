@@ -44,7 +44,10 @@ struct _Debugger
 };
 
 static gboolean
-_format_nvpair(NVHandle handle, const gchar *name, const gchar *value, gssize length, NVType type, gpointer user_data)
+_format_nvpair(NVHandle handle,
+               const gchar *name,
+               const gchar *value, gssize length,
+               LogMessageValueType type, gpointer user_data)
 {
   printf("%s=%.*s\n", name, (gint) length, value);
   return FALSE;

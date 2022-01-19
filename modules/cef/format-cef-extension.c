@@ -130,7 +130,7 @@ tf_cef_walk_cmp(const gchar *s1, const gchar *s2)
 }
 
 static gboolean
-tf_cef_walker(const gchar *name, TypeHint type, const gchar *value, gsize value_len,
+tf_cef_walker(const gchar *name, LogMessageValueType type, const gchar *value, gsize value_len,
               gpointer user_data)
 {
   CefWalkerState *state = (CefWalkerState *)user_data;

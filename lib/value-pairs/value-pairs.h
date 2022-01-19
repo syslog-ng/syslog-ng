@@ -27,20 +27,20 @@
 
 #include "syslog-ng.h"
 #include "logmsg/nvtable.h"
+#include "logmsg/type-hinting.h"
 #include "value-pairs/transforms.h"
-#include "type-hinting.h"
 #include "template/templates.h"
 #include "atomic.h"
 
 typedef struct _ValuePairs ValuePairs;
 
 typedef gboolean
-(*VPForeachFunc) (const gchar *name, TypeHint type, const gchar *value,
+(*VPForeachFunc) (const gchar *name, LogMessageValueType type, const gchar *value,
                   gsize value_len, gpointer user_data);
 
 typedef gboolean
 (*VPWalkValueCallbackFunc) (const gchar *name, const gchar *prefix,
-                            TypeHint type, const gchar *value, gsize value_len,
+                            LogMessageValueType type, const gchar *value, gsize value_len,
                             gpointer *prefix_data, gpointer user_data);
 typedef gboolean (*VPWalkCallbackFunc)(const gchar *name,
                                        const gchar *prefix, gpointer *prefix_data,

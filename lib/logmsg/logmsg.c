@@ -380,7 +380,7 @@ log_msg_is_value_name_valid(const gchar *value)
 }
 
 const gchar *
-log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len)
+log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len, LogMessageValueType *type)
 {
   GString *value;
 
@@ -395,6 +395,8 @@ log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len)
   log_macro_expand_simple(value, id, self);
   if (value_len)
     *value_len = value->len;
+  if (type)
+    *type = LM_VT_STRING;
   return value->str;
 }
 
@@ -525,7 +527,9 @@ log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to)
 }
 
 void
-log_msg_set_value_with_type(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len, NVType type)
+log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
+                            const gchar *value, gssize value_len,
+                            LogMessageValueType type)
 {
   const gchar *name;
   gssize name_len;
@@ -590,7 +594,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle, const gchar *valu
 void
 log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len)
 {
-  log_msg_set_value_with_type(self, handle, value, value_len, 0);
+  log_msg_set_value_with_type(self, handle, value, value_len, LM_VT_STRING);
 }
 
 void
@@ -636,7 +640,7 @@ log_msg_unset_value_by_name(LogMessage *self, const gchar *name)
 void
 log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
                                      NVHandle ref_handle, guint16 ofs, guint16 len,
-                                     NVType type)
+                                     LogMessageValueType type)
 {
   const gchar *name;
   gssize name_len;
@@ -697,7 +701,7 @@ void
 log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle,
                            guint16 ofs, guint16 len)
 {
-  log_msg_set_value_indirect_with_type(self, handle, ref_handle, ofs, len, 0);
+  log_msg_set_value_indirect_with_type(self, handle, ref_handle, ofs, len, LM_VT_STRING);
 }
 
 gboolean
@@ -707,13 +711,21 @@ log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer
 }
 
 void
-log_msg_set_match(LogMessage *self, gint index_, const gchar *value, gssize value_len)
+log_msg_set_match_with_type(LogMessage *self, gint index_,
+                            const gchar *value, gssize value_len,
+                            LogMessageValueType type)
 {
-  g_assert(index_ < 256);
+  g_assert(index_ < LOGMSG_MAX_MATCHES);
 
   if (index_ >= self->num_matches)
     self->num_matches = index_ + 1;
-  log_msg_set_value(self, match_handles[index_], value, value_len);
+  log_msg_set_value_with_type(self, match_handles[index_], value, value_len, type);
+}
+
+void
+log_msg_set_match(LogMessage *self, gint index_, const gchar *value, gssize value_len)
+{
+  log_msg_set_match_with_type(self, index_, value, value_len, LM_VT_STRING);
 }
 
 void
@@ -727,7 +739,7 @@ log_msg_set_match_indirect(LogMessage *self, gint index_, NVHandle ref_handle, g
 void
 log_msg_set_match_indirect_with_type(LogMessage *self, gint index_,
                                      NVHandle ref_handle, guint16 ofs, guint16 len,
-                                     NVType type)
+                                     LogMessageValueType type)
 {
   g_assert(index_ < 256);
 
@@ -1269,7 +1281,9 @@ log_msg_alloc(gsize payload_size)
 }
 
 static gboolean
-_merge_value(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, NVType type, gpointer user_data)
+_merge_value(NVHandle handle,
+             const gchar *name, const gchar *value, gssize value_len,
+             LogMessageValueType type, gpointer user_data)
 {
   LogMessage *msg = (LogMessage *) user_data;
 

@@ -57,7 +57,7 @@ log_rewrite_set_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *
   log_template_format(self->value_template, *pmsg, &options, result);
 
   log_msg_make_writable(pmsg, path_options);
-  log_msg_set_value(*pmsg, self->super.value_handle, result->str, result->len);
+  log_msg_set_value_with_type(*pmsg, self->super.value_handle, result->str, result->len, self->value_template->type_hint);
 }
 
 static LogPipe *

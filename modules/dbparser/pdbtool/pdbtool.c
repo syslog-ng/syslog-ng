@@ -337,7 +337,7 @@ static gboolean debug_pattern_parse = FALSE;
 gboolean
 pdbtool_match_values(NVHandle handle, const gchar *name,
                      const gchar *value, gssize length,
-                     NVType type, gpointer user_data)
+                     LogMessageValueType type, gpointer user_data)
 {
   gint *ret = user_data;
 
@@ -541,7 +541,7 @@ pdbtool_match(int argc, char *argv[])
 
                       printf("%s@%s:%s=%.*s@%s",
                              colors[COLOR_PARSER],
-                             r_parser_type_name(dbg_info->pnode->type),
+                             r_parser_type_name(dbg_info->pnode->parser_type),
                              name_len ? name : "",
                              name_len ? dbg_info->match_len : 0,
                              name_len ? msg_string + dbg_info->match_off : "",
@@ -581,7 +581,7 @@ pdbtool_match(int argc, char *argv[])
 
                   printf("PDBTOOL_DEBUG=%d:%d:%d:%d:%d:%s:%s\n",
                          i, dbg_info->i, dbg_info->node->keylen, dbg_info->match_off, dbg_info->match_len,
-                         dbg_info->pnode ? r_parser_type_name(dbg_info->pnode->type) : "",
+                         dbg_info->pnode ? r_parser_type_name(dbg_info->pnode->parser_type) : "",
                          dbg_info->pnode && name_len ? name : ""
                         );
                 }
@@ -890,7 +890,7 @@ pdbtool_walk_tree(RNode *root, gint level, gboolean program)
 
   if (root->parser)
     printf("@%s:%s@ [%s]",
-           r_parser_type_name(root->parser->type),
+           r_parser_type_name(root->parser->parser_type),
            log_msg_get_value_name(root->parser->handle, NULL),
            root->pdb_location ? : "");
   printf("'%s' ", root->key ? (gchar *) root->key : "");

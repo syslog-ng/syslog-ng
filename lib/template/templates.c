@@ -235,6 +235,7 @@ log_template_new(GlobalConfig *cfg, const gchar *name)
   log_template_set_name(self, name);
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->cfg = cfg;
+  self->type_hint = LM_VT_STRING;
   return self;
 }
 

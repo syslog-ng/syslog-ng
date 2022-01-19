@@ -65,17 +65,30 @@ _reset_log_msg_registry(void)
 }
 
 static void
-_check_deserialized_message(LogMessage *msg)
+_check_deserialized_message_original_fields(LogMessage *msg)
 {
   assert_template_format_msg("${ISODATE}", "2006-10-29T01:59:59.156+01:00", msg);
 
-  assert_log_message_value(msg, LM_V_HOST, "mymachine");
-  assert_log_message_value(msg, LM_V_PROGRAM, "evntslog");
-  assert_log_message_value(msg, LM_V_MESSAGE, "An application event log entry...");
+  assert_log_message_value_and_type(msg, LM_V_HOST, "mymachine", LM_VT_STRING);
+  assert_log_message_value_and_type(msg, LM_V_PROGRAM, "evntslog", LM_VT_STRING);
+  assert_log_message_value_and_type(msg, LM_V_MESSAGE, "An application event log entry...", LM_VT_STRING);
   assert_log_message_value_unset(msg, log_msg_get_value_handle("unset_value"));
 
-  assert_log_message_value(msg, log_msg_get_value_handle(".SDATA.exampleSDID@0.eventSource"), "Application");
+  assert_log_message_value_and_type(msg,
+                                    log_msg_get_value_handle(".SDATA.exampleSDID@0.eventSource"),
+                                    "Application",
+                                    LM_VT_STRING);
   cr_assert_eq(msg->pri, 132, ERROR_MSG);
+
+}
+
+static void
+_check_deserialized_message_all_fields(LogMessage *msg)
+{
+  _check_deserialized_message_original_fields(msg);
+  assert_log_message_value(msg, log_msg_get_value_handle("indirect_1"), "val");
+  assert_log_message_value_and_type(msg, log_msg_get_value_handle("indirect_2"), "53", LM_VT_INT64);
+
 }
 
 static LogMessage *
@@ -85,10 +98,12 @@ _create_message_to_be_serialized(const gchar *raw_msg, const int raw_msg_len)
   NVHandle test_handle = log_msg_get_value_handle("aaa");
 
   LogMessage *msg = log_msg_new(raw_msg, raw_msg_len, &parse_options);
-  log_msg_set_value(msg, test_handle, "test_value", -1);
+  log_msg_set_value(msg, test_handle, "test_value53", -1);
 
   NVHandle indirect_handle = log_msg_get_value_handle("indirect_1");
   log_msg_set_value_indirect(msg, indirect_handle, test_handle, 5, 3);
+  NVHandle indirect_with_type_handle = log_msg_get_value_handle("indirect_2");
+  log_msg_set_value_indirect_with_type(msg, indirect_with_type_handle, test_handle, 10, 2, LM_VT_INT64);
 
   log_msg_set_value_by_name(msg, "unset_value", "foobar", -1);
   log_msg_unset_value_by_name(msg, "unset_value");
@@ -138,8 +153,6 @@ _deserialize_message_from_string(const guint8 *serialized, gsize serialized_len)
 
 Test(logmsg_serialize, serialize)
 {
-  NVHandle indirect_handle = 0;
-  gssize length = 0;
   GString *stream = g_string_new("");
 
   SerializeArchive *sa = _serialize_message_for_test(stream, RAW_MSG);
@@ -156,11 +169,7 @@ Test(logmsg_serialize, serialize)
   cr_assert(log_msg_is_handle_sdata(sdata_handle),
             "deserialized SDATA name-value pairs have to marked as such");
 
-  _check_deserialized_message(msg);
-
-  indirect_handle = log_msg_get_value_handle("indirect_1");
-  const gchar *indirect_value = log_msg_get_value(msg, indirect_handle, &length);
-  cr_assert(0==strncmp(indirect_value, "value", length), ERROR_MSG);
+  _check_deserialized_message_all_fields(msg);
 
   log_msg_unref(msg);
   serialize_archive_free(sa);
@@ -317,7 +326,6 @@ ParameterizedTestParameters(logmsg_serialize, test_deserialization_of_legacy_mes
 {
   static struct iovec messages[] =
   {
-    { serialized_pe_msg, sizeof(serialized_pe_msg) },
     { serialized_message_3_17_1, sizeof(serialized_message_3_17_1) },
     { serialized_message_3_18_1, sizeof(serialized_message_3_18_1) },
     { serialized_message_3_21_1, sizeof(serialized_message_3_21_1) },
@@ -332,10 +340,17 @@ ParameterizedTestParameters(logmsg_serialize, test_deserialization_of_legacy_mes
 }
 
 
+Test(logmsg_serialize, test_deserialization_of_pe_message)
+{
+  LogMessage *msg = _deserialize_message_from_string(serialized_pe_msg, sizeof(serialized_pe_msg));
+  _check_deserialized_message_original_fields(msg);
+  log_msg_unref(msg);
+}
+
 ParameterizedTest(struct iovec *param, logmsg_serialize, test_deserialization_of_legacy_messages)
 {
   LogMessage *msg = _deserialize_message_from_string(param->iov_base, param->iov_len);
-  _check_deserialized_message(msg);
+  _check_deserialized_message_all_fields(msg);
 
   log_msg_unref(msg);
 }

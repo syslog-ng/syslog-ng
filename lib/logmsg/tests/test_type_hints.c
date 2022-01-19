@@ -24,7 +24,7 @@
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 
-#include "type-hinting.h"
+#include "logmsg/type-hinting.h"
 #include "apphook.h"
 
 #include <stdlib.h>
@@ -35,7 +35,7 @@
 typedef struct _StringHintPair
 {
   gchar *string;
-  TypeHint value;
+  LogMessageValueType value;
 } StringHintPair;
 
 typedef struct _StringBoolPair
@@ -61,16 +61,17 @@ ParameterizedTestParameters(type_hints, test_type_hint_parse)
 {
   static StringHintPair string_value_pairs[] =
   {
-    {"string",    TYPE_HINT_STRING},
-    {NULL,        TYPE_HINT_STRING},
-    {"literal",   TYPE_HINT_LITERAL},
-    {"boolean",   TYPE_HINT_BOOLEAN},
-    {"int",       TYPE_HINT_INT32},
-    {"int32",     TYPE_HINT_INT32},
-    {"int64",     TYPE_HINT_INT64},
-    {"double",    TYPE_HINT_DOUBLE},
-    {"datetime",  TYPE_HINT_DATETIME},
-    {"default",   TYPE_HINT_DEFAULT}
+    {"string",    LM_VT_STRING},
+    {NULL,        LM_VT_STRING},
+    {"literal",   LM_VT_JSON},
+    {"json",      LM_VT_JSON},
+    {"boolean",   LM_VT_BOOLEAN},
+    {"int",       LM_VT_INT32},
+    {"int32",     LM_VT_INT32},
+    {"int64",     LM_VT_INT64},
+    {"float",     LM_VT_DOUBLE},
+    {"double",    LM_VT_DOUBLE},
+    {"datetime",  LM_VT_DATETIME},
   };
 
   return cr_make_param_array(StringHintPair, string_value_pairs,
@@ -79,7 +80,7 @@ ParameterizedTestParameters(type_hints, test_type_hint_parse)
 
 ParameterizedTest(StringHintPair *string_value_pair, type_hints, test_type_hint_parse)
 {
-  TypeHint type_hint;
+  LogMessageValueType type_hint;
   GError *error = NULL;
 
   cr_assert_eq(type_hint_parse(string_value_pair->string, &type_hint, &error), TRUE,
@@ -90,7 +91,7 @@ ParameterizedTest(StringHintPair *string_value_pair, type_hints, test_type_hint_
 
 Test(type_hints, test_invalid_type_hint_parse)
 {
-  TypeHint t;
+  LogMessageValueType t;
   GError *error = NULL;
   cr_assert_eq(type_hint_parse("invalid-hint", &t, &error), FALSE,
                "Parsing an invalid hint results in an error.");
