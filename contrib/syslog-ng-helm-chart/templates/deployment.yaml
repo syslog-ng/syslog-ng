@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "syslog-ng.fullname" . }}
+  labels:
+    {{- include "syslog-ng.labels" . | nindent 4 }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "syslog-ng.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ tpl (toYaml .Values.config) . | sha256sum }}
+    {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "syslog-ng.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+          - name: tcp-port
+            containerPort: 601
+            protocol: TCP
+          - name: udp-port
+            containerPort: 514
+            protocol: UDP
+          volumeMounts:
+          - mountPath: /etc/syslog-ng/syslog-ng.conf
+            name: config
+            subPath: syslog-ng.conf
+        {{- if .Values.storage.enable }}
+          - mountPath: /var/log
+            name: logs
+        {{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "syslog-ng.fullname" . }}
+      {{- if .Values.storage.enable }}
+      - name: logs
+        persistentVolumeClaim:
+          claimName: {{ include "syslog-ng.fullname" . }}-pvc
+      {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

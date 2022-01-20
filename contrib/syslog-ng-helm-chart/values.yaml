@@ -1,0 +1,108 @@
+# Default values for syslog-ng.
+
+replicaCount: 1
+
+image:
+  repository: balabit/syslog-ng
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "3.27.1"
+
+# By default, the network() driver binds to 0.0.0.0, meaning that it listens 
+# on every available IPV4 interface on the TCP/601 port.
+
+config: |
+  @version: 3.27
+  @include "scl.conf"
+  options {
+    # enable or disable directory creation for destination files
+    create_dirs(yes);
+
+    # keep hostnames from source host
+    keep_hostname(yes);
+
+    # use ISO8601 timestamps
+    ts_format(iso);
+  };
+  log {
+  	source {
+  		network();
+  	};
+  	destination { file("/var/log/${YEAR}-${MONTH}-syslog"); };
+  };
+
+storage:
+  enable: True
+  storageClass: ""
+  size: 500Gi
+  
+# Enable compressor to run a cron-job to compress files in /var/log/*-syslog older than retention_days
+# it also delete the plain-text file in order to keep the folder size as low as possible.
+# (if changes destination in server.config other than `/var/log/${YEAR}-${MONTH}-syslog` be aware you could breake this)
+compressor:
+  enabled: True
+  #“At 04:25 on day 1 and 15, every month every year”
+  schedule: "25 4 1,15 * *"
+  retention_days: 120
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+# Syslog-ng manages its own capabilities as well, just make sure the two doesn't collide.
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# syslog-ng have fixed ports tcp 601  and udp 514
+service:
+  type: ClusterIP
+  # use externalip for a pre routede exter al ip.
+  # TO-DO: LoadBalancer
+  # type: externalip
+  # externalIPs: 
+  #   - 10.205.212.12
+
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

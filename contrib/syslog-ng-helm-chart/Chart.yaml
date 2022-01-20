@@ -1,0 +1,13 @@
+apiVersion: v1
+name: syslog-ng
+description: Syslog-ng
+version: 0.2
+appVersion: 3.27.1
+maintainers:
+  - name: zakkg3
+sources:
+  - https://github.com/syslog-ng/syslog-ng
+keywords:
+  - Syslog
+  - syslog-ng
+  - logrotate

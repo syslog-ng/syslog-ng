@@ -1,0 +1,56 @@
+{{- if .Values.compressor.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: job-script
+data:
+  entrypoint.sh: |-
+      #!/bin/bash
+      ls -lh /var/log/*-syslog
+      for filename in /var/log/*-syslog; do
+       if [[ $(find "$filename" -mtime +{{ .Values.compressor.retention_days }} -print) ]]; then
+         echo "$filename is older than {{ .Values.compressor.retention_days }} days, Compressing."
+         tar -zcvf "$filename"-$(date +%d-%m-%y).tar.gz $filename
+         rm $filename
+       else
+         echo skippig $filename not older than {{ .Values.compressor.retention_days }} days.
+       fi
+      done
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ include "syslog-ng.fullname" . }}-compressor
+spec:
+  schedule: "{{ .Values.compressor.schedule }}"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: compress
+            image: "ubuntu:20.10"
+            command:
+            - /bin/entrypoint.sh
+            volumeMounts:
+            - name: configmap-volume
+              mountPath: /bin/entrypoint.sh
+              readOnly: true
+              subPath: entrypoint.sh
+          {{- if .Values.storage.enable }}
+            - mountPath: /var/log
+              name: logs
+          {{- end }}
+          volumes:
+          - name: configmap-volume
+            configMap:
+              defaultMode: 0700
+              name: job-script
+          {{- if .Values.storage.enable }}
+          - name: logs
+            persistentVolumeClaim:
+              claimName: {{ include "syslog-ng.fullname" . }}-pvc
+          {{- end }}
+{{- end }}

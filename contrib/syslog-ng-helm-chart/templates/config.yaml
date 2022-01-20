@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    {{- include "syslog-ng.labels" . | nindent 4 }}
+  name: {{ include "syslog-ng.fullname" . }}
+data:
+  syslog-ng.conf: {{  tpl (toYaml .Values.config) . | indent 4 }}
