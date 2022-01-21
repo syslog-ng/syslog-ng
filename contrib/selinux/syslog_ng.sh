@@ -95,7 +95,7 @@ extract_version_string() {
 detect_os_version() {
 	echo "Detecting RHEL/CentOS/Oracle Linux version..."
 	if [ -x "/usr/bin/lsb_release" ]; then
-		if lsb_release -d | grep -qE "Description:[[:space:]]+(CentOS|CentOS Linux|Red Hat Enterprise Linux Server|Oracle Linux Server|Enterprise Linux Enterprise Linux Server) release"; then
+		if lsb_release -d | grep -qE "Description:[[:space:]]+(CentOS|Red Hat Enterprise|Oracle|Enterprise Linux Enterprise)( Linux)?( Server)? release"; then
 			OS_VERSION=$( lsb_release -r | cut -f 2 )
 		else
 			echo "You don't seem to be running a supported Linux distribution!" >&2
