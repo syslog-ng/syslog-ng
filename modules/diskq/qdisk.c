@@ -519,33 +519,28 @@ _read_record_from_disk(QDisk *self, GString *record, guint32 record_length)
   return TRUE;
 }
 
-static inline gint64
-_calculate_new_read_head_position(QDisk *self, guint32 record_length)
+static inline void
+_maybe_apply_non_reliable_corrections(QDisk *self)
+{
+  if (self->options->reliable)
+    return;
+
+  self->hdr->backlog_head = self->hdr->read_head;
+  g_assert(self->hdr->backlog_len == 0);
+  if (!self->options->read_only)
+    qdisk_reset_file_if_empty(self);
+}
+
+
+static inline void
+_update_positions_after_read(QDisk *self, guint32 record_length)
 {
   gint64 new_read_head_position = self->hdr->read_head + record_length + sizeof(record_length);
 
   if (new_read_head_position > self->hdr->write_head)
     new_read_head_position = _correct_position_if_max_size_is_reached(self, new_read_head_position);
 
-  return new_read_head_position;
-}
-
-static inline void
-_update_positions_after_read(QDisk *self, guint32 record_length)
-{
-  self->hdr->read_head = _calculate_new_read_head_position(self, record_length);
-  self->hdr->length--;
-
-  if (!self->options->reliable)
-    {
-      self->hdr->backlog_head = self->hdr->read_head;
-
-      g_assert(self->hdr->backlog_len == 0);
-      if (!self->options->read_only)
-        {
-          qdisk_reset_file_if_empty(self);
-        }
-    }
+  self->hdr->read_head = new_read_head_position;
 }
 
 gint64
@@ -571,7 +566,9 @@ qdisk_pop_head(QDisk *self, GString *record)
     return FALSE;
 
   _update_positions_after_read(self, record_length);
+  self->hdr->length--;
 
+  _maybe_apply_non_reliable_corrections(self);
   return TRUE;
 }
 
@@ -624,7 +621,9 @@ qdisk_remove_head(QDisk *self)
     return FALSE;
 
   _update_positions_after_read(self, record_length);
+  self->hdr->length--;
 
+  _maybe_apply_non_reliable_corrections(self);
   return TRUE;
 }
 
