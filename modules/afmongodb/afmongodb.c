@@ -234,6 +234,24 @@ _init(LogPipe *s)
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_4_0) &&
+      !value_pairs_is_cast_to_strings_explicit(self->vp))
+    {
+      if (cfg_is_typing_feature_enabled(cfg))
+        {
+          msg_warning("WARNING: the mongodb() destination starts using type information "
+                      "associated with name-value pairs in " VERSION_4_0
+                      ". This can possibly cause fields in the BSON "
+                      "document to change types if no explicit type hint is "
+                      "specified. This change will cause the type in the output "
+                      "document match the original type that was parsed "
+                      "using json-parser(), add cast(yes) option to mongodb() "
+                      "to keep using strings instead of typed values",
+                      log_pipe_location_tag(s));
+        }
+      value_pairs_set_cast_to_strings(self->vp, TRUE);
+    }
+
   return TRUE;
 }
 
