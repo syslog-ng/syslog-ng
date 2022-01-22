@@ -533,7 +533,7 @@ _maybe_apply_non_reliable_corrections(QDisk *self)
 
 
 static inline void
-_update_positions_after_read(QDisk *self, guint32 record_length, gint64 *position)
+_update_position_after_read(QDisk *self, guint32 record_length, gint64 *position)
 {
   gint64 new_position = *position + record_length + sizeof(record_length);
 
@@ -565,7 +565,7 @@ qdisk_pop_head(QDisk *self, GString *record)
   if (!_read_record_from_disk(self, record, record_length))
     return FALSE;
 
-  _update_positions_after_read(self, record_length, &self->hdr->read_head);
+  _update_position_after_read(self, record_length, &self->hdr->read_head);
   self->hdr->length--;
   self->hdr->backlog_len++;
 
@@ -588,7 +588,7 @@ qdisk_skip_record(QDisk *self, gint64 position, gint64 *new_position)
   if (!_try_reading_record_length(self, *new_position, &record_length))
     return FALSE;
 
-  _update_positions_after_read(self, record_length, new_position);
+  _update_position_after_read(self, record_length, new_position);
   return TRUE;
 }
 
