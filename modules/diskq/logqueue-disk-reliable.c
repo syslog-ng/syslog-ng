@@ -204,7 +204,7 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
 static void
 _rewind_backlog_all(LogQueue *s)
 {
-  _rewind_backlog(s, -1);
+  _rewind_backlog(s, G_MAXUINT);
 }
 
 static inline gboolean
