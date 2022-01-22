@@ -594,21 +594,15 @@ qdisk_skip_record(QDisk *self, gint64 position, gint64 *new_position)
 gboolean
 qdisk_remove_head(QDisk *self)
 {
-  if (self->hdr->read_head == self->hdr->write_head)
-    return FALSE;
+  gboolean success = qdisk_skip_record(self, self->hdr->read_head, &self->hdr->read_head);
 
-  if (self->hdr->read_head > self->hdr->write_head)
-    self->hdr->read_head = _correct_position_if_max_size_is_reached(self, self->hdr->read_head);
+  if (success)
+    {
+      self->hdr->length--;
+      _maybe_apply_non_reliable_corrections(self);
+    }
 
-  guint32 record_length;
-  if (!_try_reading_record_length(self, self->hdr->read_head, &record_length))
-    return FALSE;
-
-  _update_positions_after_read(self, record_length, &self->hdr->read_head);
-  self->hdr->length--;
-
-  _maybe_apply_non_reliable_corrections(self);
-  return TRUE;
+  return success;
 }
 
 static gboolean
