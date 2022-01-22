@@ -86,7 +86,7 @@ gboolean qdisk_is_read_only(QDisk *self);
 const gchar *qdisk_get_filename(QDisk *self);
 gint64 qdisk_get_file_size(QDisk *self);
 
-guint64 qdisk_skip_record(QDisk *self, guint64 position);
+gint64 qdisk_skip_record(QDisk *self, gint64 position);
 
 gboolean qdisk_serialize(GString *serialized, QDiskSerializeFunc serialize_func, gpointer user_data, GError **error);
 gboolean qdisk_deserialize(GString *serialized, QDiskDeSerializeFunc deserialize_func, gpointer user_data,

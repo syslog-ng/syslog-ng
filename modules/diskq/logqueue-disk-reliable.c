@@ -129,7 +129,7 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
               log_msg_unref(msg);
             }
         }
-      guint64 new_backlog = qdisk_get_backlog_head(self->super.qdisk);
+      gint64 new_backlog = qdisk_get_backlog_head(self->super.qdisk);
       new_backlog = qdisk_skip_record(self->super.qdisk, new_backlog);
       qdisk_set_backlog_head(self->super.qdisk, new_backlog);
       qdisk_dec_backlog(self->super.qdisk);
