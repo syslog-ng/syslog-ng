@@ -592,6 +592,9 @@ qdisk_read(QDisk *self, gpointer buffer, gsize bytes_to_read, gint64 position)
 gboolean
 qdisk_skip_record(QDisk *self, gint64 position, gint64 *new_position)
 {
+  if (position == self->hdr->write_head)
+    return FALSE;
+
   if (position > self->hdr->write_head)
     position = _correct_position_if_max_size_is_reached(self, position);
 
