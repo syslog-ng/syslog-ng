@@ -83,6 +83,23 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
       value_pairs_add_transforms(state->vp, vpts);
     }
 
+  if (cfg_is_config_version_older(parent->cfg, VERSION_VALUE_4_0) &&
+      !value_pairs_is_cast_to_strings_explicit(state->vp))
+    {
+      if (cfg_is_config_to_be_migrated_to_post_4_0(parent->cfg))
+        {
+          msg_warning("WARNING: $(format-json) starts using type information "
+                      "associated with name-value pairs in " VERSION_4_0
+                      ". This can possibly cause fields in the formatted JSON "
+                      "document to change types if no explicit type hint is "
+                      "specified. This change will cause the type in the output "
+                      "document match the original type that was parsed "
+                      "using json-parser(), add --no-cast argument "
+                      "to $(format-json) to keep the old behavior");
+        }
+      value_pairs_set_cast_to_strings(state->vp, TRUE);
+    }
+
   return TRUE;
 }
 
