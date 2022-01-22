@@ -130,7 +130,8 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
             }
         }
       gint64 new_backlog = qdisk_get_backlog_head(self->super.qdisk);
-      new_backlog = qdisk_skip_record(self->super.qdisk, new_backlog);
+      if (!qdisk_skip_record(self->super.qdisk, new_backlog, &new_backlog))
+        msg_error("Error acking in disk-queue file", evt_tag_str("filename", qdisk_get_filename(self->super.qdisk)));
       qdisk_set_backlog_head(self->super.qdisk, new_backlog);
       qdisk_dec_backlog(self->super.qdisk);
     }
@@ -203,7 +204,11 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
   new_read_head = qdisk_get_backlog_head(self->super.qdisk);
   for (i = 0; i < number_of_messages_stay_in_backlog; i++)
     {
-      new_read_head = qdisk_skip_record(self->super.qdisk, new_read_head);
+      if (!qdisk_skip_record(self->super.qdisk, new_read_head, &new_read_head))
+        {
+          msg_error("Error rewinding backlog in disk-queue file",
+                    evt_tag_str("filename", qdisk_get_filename(self->super.qdisk)));
+        }
     }
   _rewind_from_qbacklog(self, new_read_head);
 

@@ -589,22 +589,22 @@ qdisk_read(QDisk *self, gpointer buffer, gsize bytes_to_read, gint64 position)
   return res;
 }
 
-gint64
-qdisk_skip_record(QDisk *self, gint64 position)
+gboolean
+qdisk_skip_record(QDisk *self, gint64 position, gint64 *new_position)
 {
   if (position > self->hdr->write_head)
     position = _correct_position_if_max_size_is_reached(self, position);
 
-  gint64 new_position = position;
   guint32 record_length;
   qdisk_read(self, (gchar *) &record_length, sizeof(record_length), position);
   record_length = GUINT32_FROM_BE(record_length);
-  new_position += record_length + sizeof(record_length);
+  *new_position = position;
+  *new_position += record_length + sizeof(record_length);
 
-  if (new_position > self->hdr->write_head)
-    new_position = _correct_position_if_max_size_is_reached(self, new_position);
+  if (*new_position > self->hdr->write_head)
+    *new_position = _correct_position_if_max_size_is_reached(self, *new_position);
 
-  return new_position;
+  return TRUE;
 }
 
 gboolean
