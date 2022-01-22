@@ -575,6 +575,38 @@ qdisk_pop_head(QDisk *self, GString *record)
   return TRUE;
 }
 
+static gssize
+qdisk_read(QDisk *self, gpointer buffer, gsize bytes_to_read, gint64 position)
+{
+  gssize res;
+  res = pread(self->fd, buffer, bytes_to_read, position);
+  if (res <= 0)
+    {
+      msg_error("Error reading disk-queue file",
+                evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
+                evt_tag_str("filename", self->filename));
+    }
+  return res;
+}
+
+guint64
+qdisk_skip_record(QDisk *self, guint64 position)
+{
+  if (position > self->hdr->write_head)
+    position = _correct_position_if_max_size_is_reached(self, (gint64) position);
+
+  guint64 new_position = position;
+  guint32 record_length;
+  qdisk_read(self, (gchar *) &record_length, sizeof(record_length), position);
+  record_length = GUINT32_FROM_BE(record_length);
+  new_position += record_length + sizeof(record_length);
+
+  if (new_position > self->hdr->write_head)
+    new_position = _correct_position_if_max_size_is_reached(self, (gint64) new_position);
+
+  return new_position;
+}
+
 gboolean
 qdisk_remove_head(QDisk *self)
 {
@@ -1221,38 +1253,6 @@ qdisk_stop(QDisk *self)
       close(self->fd);
       self->fd = -1;
     }
-}
-
-static gssize
-qdisk_read(QDisk *self, gpointer buffer, gsize bytes_to_read, gint64 position)
-{
-  gssize res;
-  res = pread(self->fd, buffer, bytes_to_read, position);
-  if (res <= 0)
-    {
-      msg_error("Error reading disk-queue file",
-                evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
-                evt_tag_str("filename", self->filename));
-    }
-  return res;
-}
-
-guint64
-qdisk_skip_record(QDisk *self, guint64 position)
-{
-  if (position > self->hdr->write_head)
-    position = _correct_position_if_max_size_is_reached(self, (gint64) position);
-
-  guint64 new_position = position;
-  guint32 record_length;
-  qdisk_read(self, (gchar *) &record_length, sizeof(record_length), position);
-  record_length = GUINT32_FROM_BE(record_length);
-  new_position += record_length + sizeof(record_length);
-
-  if (new_position > self->hdr->write_head)
-    new_position = _correct_position_if_max_size_is_reached(self, (gint64) new_position);
-
-  return new_position;
 }
 
 void
