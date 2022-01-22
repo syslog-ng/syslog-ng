@@ -315,13 +315,22 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
   gint64 message_position = qdisk_get_next_tail_position(self->super.qdisk);
   if (!qdisk_push_tail(self->super.qdisk, serialized_msg))
     {
+      EVTTAG *suggestion = NULL;
+      if (path_options->flow_control_requested)
+        {
+          suggestion = evt_tag_str("suggestion", "consider increasing mem-buf-size() or decreasing log-iw-size() "
+                                   "values on the source side to avoid message loss");
+        }
+
       /* we were not able to store the msg, warn */
       msg_error("Destination reliable queue full, dropping message",
                 evt_tag_str("filename", qdisk_get_filename(self->super.qdisk)),
                 evt_tag_long("queue_len", log_queue_get_length(s)),
                 evt_tag_int("mem_buf_size", qdisk_get_memory_size(self->super.qdisk)),
                 evt_tag_long("disk_buf_size", qdisk_get_maximum_size(self->super.qdisk)),
-                evt_tag_str("persist_name", s->persist_name));
+                evt_tag_str("persist_name", s->persist_name),
+                suggestion);
+
       log_queue_disk_drop_message(&self->super, msg, path_options);
       scratch_buffers_reclaim_marked(marker);
       g_mutex_unlock(&s->lock);
