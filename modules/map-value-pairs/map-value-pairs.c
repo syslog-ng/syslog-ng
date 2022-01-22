@@ -30,7 +30,7 @@ _map_name_values(const gchar *name,
 {
   LogMessage *msg = (LogMessage *) user_data;
 
-  log_msg_set_value_by_name(msg, name, value, value_len);
+  log_msg_set_value_by_name_with_type(msg, name, value, value_len, type);
   return FALSE;
 }
 
