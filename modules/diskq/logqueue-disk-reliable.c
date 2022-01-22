@@ -271,9 +271,7 @@ exit:
       return NULL;
     }
 
-  if (s->use_backlog)
-    qdisk_inc_backlog(self->super.qdisk);
-  else
+  if (!s->use_backlog)
     qdisk_empty_backlog(self->super.qdisk);
 
   log_queue_queued_messages_dec(s);

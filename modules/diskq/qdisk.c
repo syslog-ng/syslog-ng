@@ -525,7 +525,7 @@ _maybe_apply_non_reliable_corrections(QDisk *self)
   if (self->options->reliable)
     return;
 
-  self->hdr->backlog_head = self->hdr->read_head;
+  qdisk_empty_backlog(self);
   g_assert(self->hdr->backlog_len == 0);
   if (!self->options->read_only)
     qdisk_reset_file_if_empty(self);
@@ -567,6 +567,7 @@ qdisk_pop_head(QDisk *self, GString *record)
 
   _update_positions_after_read(self, record_length, &self->hdr->read_head);
   self->hdr->length--;
+  self->hdr->backlog_len++;
 
   _maybe_apply_non_reliable_corrections(self);
   return TRUE;
@@ -599,6 +600,7 @@ qdisk_remove_head(QDisk *self)
   if (success)
     {
       self->hdr->length--;
+      self->hdr->backlog_len++;
       _maybe_apply_non_reliable_corrections(self);
     }
 
@@ -649,12 +651,6 @@ qdisk_empty_backlog(QDisk *self)
 {
   self->hdr->backlog_head = self->hdr->read_head;
   self->hdr->backlog_len = 0;
-}
-
-void
-qdisk_inc_backlog(QDisk *self)
-{
-  self->hdr->backlog_len++;
 }
 
 static gboolean
@@ -1067,8 +1063,7 @@ _upgrade_header(QDisk *self)
   if (self->hdr->version == 0)
     {
       self->hdr->big_endian = TRUE;
-      self->hdr->backlog_head = self->hdr->read_head;
-      self->hdr->backlog_len = 0;
+      qdisk_empty_backlog(self);
     }
 
   if (self->hdr->version < 2)
@@ -1185,6 +1180,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
       self->hdr->read_head = QDISK_RESERVED_SPACE;
       self->hdr->write_head = QDISK_RESERVED_SPACE;
       self->hdr->backlog_head = self->hdr->read_head;
+      self->hdr->backlog_len = 0;
       self->hdr->length = 0;
       self->hdr->use_v1_wrap_condition = FALSE;
       self->file_size = self->hdr->write_head;

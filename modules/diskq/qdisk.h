@@ -59,7 +59,6 @@ gboolean qdisk_pop_head(QDisk *self, GString *record);
 gboolean qdisk_remove_head(QDisk *self);
 gboolean qdisk_ack_backlog(QDisk *self);
 gboolean qdisk_rewind_backlog(QDisk *self, guint rewind_count);
-void qdisk_inc_backlog(QDisk *self);
 void qdisk_empty_backlog(QDisk *self);
 gint64 qdisk_get_next_tail_position(QDisk *self);
 gint64 qdisk_get_head_position(QDisk *self);
