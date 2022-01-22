@@ -57,6 +57,10 @@ gint64 qdisk_get_empty_space(QDisk *self);
 gboolean qdisk_push_tail(QDisk *self, GString *record);
 gboolean qdisk_pop_head(QDisk *self, GString *record);
 gboolean qdisk_remove_head(QDisk *self);
+gboolean qdisk_ack_backlog(QDisk *self);
+gboolean qdisk_rewind_backlog(QDisk *self, guint rewind_count);
+void qdisk_inc_backlog(QDisk *self);
+void qdisk_empty_backlog(QDisk *self);
 gint64 qdisk_get_next_tail_position(QDisk *self);
 gint64 qdisk_get_head_position(QDisk *self);
 gboolean qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);
@@ -70,23 +74,15 @@ gboolean qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *q
 
 DiskQueueOptions *qdisk_get_options(QDisk *self);
 gint64 qdisk_get_length(QDisk *self);
-void qdisk_set_length(QDisk *self, gint64 new_value);
 gint64 qdisk_get_maximum_size(QDisk *self);
 gint64 qdisk_get_writer_head(QDisk *self);
 gint64 qdisk_get_reader_head(QDisk *self);
-void qdisk_set_reader_head(QDisk *self, gint64 new_value);
 gint64 qdisk_get_backlog_head(QDisk *self);
-void qdisk_set_backlog_head(QDisk *self, gint64 new_value);
-void qdisk_inc_backlog(QDisk *self);
-void qdisk_dec_backlog(QDisk *self);
 gint64 qdisk_get_backlog_count(QDisk *self);
-void qdisk_set_backlog_count(QDisk *self, gint64 new_value);
 gint qdisk_get_memory_size(QDisk *self);
 gboolean qdisk_is_read_only(QDisk *self);
 const gchar *qdisk_get_filename(QDisk *self);
 gint64 qdisk_get_file_size(QDisk *self);
-
-gboolean qdisk_skip_record(QDisk *self, gint64 position, gint64 *new_position);
 
 gboolean qdisk_serialize(GString *serialized, QDiskSerializeFunc serialize_func, gpointer user_data, GError **error);
 gboolean qdisk_deserialize(GString *serialized, QDiskDeSerializeFunc deserialize_func, gpointer user_data,

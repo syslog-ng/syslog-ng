@@ -123,7 +123,7 @@ reliable_pop_record_without_backlog(QDisk *qdisk, GString *record)
   if (!qdisk_pop_head(qdisk, record))
     return FALSE;
 
-  qdisk_set_backlog_head(qdisk, qdisk_get_head_position(qdisk));
+  qdisk_empty_backlog(qdisk);
   return TRUE;
 }
 

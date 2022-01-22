@@ -129,11 +129,8 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
               log_msg_unref(msg);
             }
         }
-      gint64 new_backlog = qdisk_get_backlog_head(self->super.qdisk);
-      if (!qdisk_skip_record(self->super.qdisk, new_backlog, &new_backlog))
-        msg_error("Error acking in disk-queue file", evt_tag_str("filename", qdisk_get_filename(self->super.qdisk)));
-      qdisk_set_backlog_head(self->super.qdisk, new_backlog);
-      qdisk_dec_backlog(self->super.qdisk);
+
+      qdisk_ack_backlog(self->super.qdisk);
     }
 exit_reliable:
   qdisk_reset_file_if_empty(self->super.qdisk);
@@ -191,30 +188,13 @@ _rewind_from_qbacklog(LogQueueDiskReliable *self, gint64 new_pos)
 static void
 _rewind_backlog(LogQueue *s, guint rewind_count)
 {
-  guint i;
-
-  guint number_of_messages_stay_in_backlog;
-  gint64 new_read_head;
   LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
 
   g_mutex_lock(&s->lock);
 
   rewind_count = MIN(rewind_count, qdisk_get_backlog_count(self->super.qdisk));
-  number_of_messages_stay_in_backlog = qdisk_get_backlog_count(self->super.qdisk) - rewind_count;
-  new_read_head = qdisk_get_backlog_head(self->super.qdisk);
-  for (i = 0; i < number_of_messages_stay_in_backlog; i++)
-    {
-      if (!qdisk_skip_record(self->super.qdisk, new_read_head, &new_read_head))
-        {
-          msg_error("Error rewinding backlog in disk-queue file",
-                    evt_tag_str("filename", qdisk_get_filename(self->super.qdisk)));
-        }
-    }
-  _rewind_from_qbacklog(self, new_read_head);
-
-  qdisk_set_backlog_count(self->super.qdisk, number_of_messages_stay_in_backlog);
-  qdisk_set_reader_head(self->super.qdisk, new_read_head);
-  qdisk_set_length(self->super.qdisk, qdisk_get_length(self->super.qdisk) + rewind_count);
+  qdisk_rewind_backlog(self->super.qdisk, rewind_count);
+  _rewind_from_qbacklog(self, qdisk_get_head_position(self->super.qdisk));
 
   log_queue_queued_messages_add(s, rewind_count);
 
@@ -294,7 +274,7 @@ exit:
   if (s->use_backlog)
     qdisk_inc_backlog(self->super.qdisk);
   else
-    qdisk_set_backlog_head(self->super.qdisk, qdisk_get_head_position(self->super.qdisk));
+    qdisk_empty_backlog(self->super.qdisk);
 
   log_queue_queued_messages_dec(s);
 

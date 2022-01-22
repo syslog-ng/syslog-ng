@@ -572,7 +572,7 @@ qdisk_pop_head(QDisk *self, GString *record)
   return TRUE;
 }
 
-gboolean
+static gboolean
 qdisk_skip_record(QDisk *self, gint64 position, gint64 *new_position)
 {
   if (position == self->hdr->write_head)
@@ -603,6 +603,58 @@ qdisk_remove_head(QDisk *self)
     }
 
   return success;
+}
+
+gboolean
+qdisk_ack_backlog(QDisk *self)
+{
+  if (!qdisk_skip_record(self, self->hdr->backlog_head, &self->hdr->backlog_head))
+    {
+      msg_error("Error acking in disk-queue file", evt_tag_str("filename", qdisk_get_filename(self)));
+      return FALSE;
+    }
+
+  self->hdr->backlog_len--;
+  return TRUE;
+}
+
+
+gboolean
+qdisk_rewind_backlog(QDisk *self, guint rewind_count)
+{
+  if (rewind_count > self->hdr->backlog_len)
+    return FALSE;
+
+  gint64 number_of_messages_stay_in_backlog = self->hdr->backlog_len - rewind_count;
+
+  gint64 new_read_head = self->hdr->backlog_head;
+  for (gint64 i = 0; i < number_of_messages_stay_in_backlog; i++)
+    {
+      if (!qdisk_skip_record(self, new_read_head, &new_read_head))
+        {
+          msg_error("Error rewinding backlog in disk-queue file",
+                    evt_tag_str("filename", qdisk_get_filename(self)));
+          return FALSE;
+        }
+    }
+
+  self->hdr->backlog_len = number_of_messages_stay_in_backlog;
+  self->hdr->read_head = new_read_head;
+  self->hdr->length = self->hdr->length + rewind_count;
+  return TRUE;
+}
+
+void
+qdisk_empty_backlog(QDisk *self)
+{
+  self->hdr->backlog_head = self->hdr->read_head;
+  self->hdr->backlog_len = 0;
+}
+
+void
+qdisk_inc_backlog(QDisk *self)
+{
+  self->hdr->backlog_len++;
 }
 
 static gboolean
@@ -1260,12 +1312,6 @@ qdisk_get_length(QDisk *self)
   return self->hdr->length;
 }
 
-void
-qdisk_set_length(QDisk *self, gint64 new_value)
-{
-  self->hdr->length = new_value;
-}
-
 gint64
 qdisk_get_maximum_size(QDisk *self)
 {
@@ -1296,40 +1342,10 @@ qdisk_get_reader_head(QDisk *self)
   return self->hdr->read_head;
 }
 
-void
-qdisk_set_reader_head(QDisk *self, gint64 new_value)
-{
-  self->hdr->read_head = new_value;
-}
-
 gint64
 qdisk_get_backlog_head(QDisk *self)
 {
   return self->hdr->backlog_head;
-}
-
-void
-qdisk_set_backlog_head(QDisk *self, gint64 new_value)
-{
-  self->hdr->backlog_head = new_value;
-}
-
-void
-qdisk_inc_backlog(QDisk *self)
-{
-  self->hdr->backlog_len++;
-}
-
-void
-qdisk_dec_backlog(QDisk *self)
-{
-  self->hdr->backlog_len--;
-}
-
-void
-qdisk_set_backlog_count(QDisk *self, gint64 new_value)
-{
-  self->hdr->backlog_len = new_value;
 }
 
 gint64
