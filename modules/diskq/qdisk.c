@@ -610,6 +610,9 @@ qdisk_remove_head(QDisk *self)
 gboolean
 qdisk_ack_backlog(QDisk *self)
 {
+  if (self->hdr->backlog_len == 0)
+    return FALSE;
+
   if (!qdisk_skip_record(self, self->hdr->backlog_head, &self->hdr->backlog_head))
     {
       msg_error("Error acking in disk-queue file", evt_tag_str("filename", qdisk_get_filename(self)));
