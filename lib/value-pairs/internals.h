@@ -40,6 +40,11 @@ struct _ValuePairs
 
   /* guint32 as CfgFlagHandler only supports 32 bit integers */
   guint32 scopes;
+
+  /* for compatibility with 3.x versions, apply automatic conversion to
+   * strings to avoid leaking type information to callers */
+  gboolean cast_to_strings;
+  gboolean explicit_cast_to_strings;
 };
 
 

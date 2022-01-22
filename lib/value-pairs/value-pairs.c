@@ -287,6 +287,10 @@ vp_msg_nvpairs_foreach(NVHandle handle, const gchar *name,
   sb = scratch_buffers_alloc();
 
   g_string_append_len(sb, value, value_len);
+
+  if (vp->cast_to_strings)
+    type = LM_VT_STRING;
+
   vp_results_insert(results, vp_transform_apply(vp, name), type, sb);
 
   return FALSE;
@@ -395,6 +399,9 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, LogTempla
         {
           continue;
         }
+
+      if (vp->cast_to_strings)
+        type = LM_VT_STRING;
 
       vp_results_insert(results, vp_transform_apply(vp, spec->name), type, sb);
     }
@@ -854,6 +861,27 @@ value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts)
 {
   g_ptr_array_add(vp->transforms, vpts);
   vp_update_builtin_list_of_values(vp);
+}
+
+void
+value_pairs_set_cast_to_strings(ValuePairs *vp, gboolean enable)
+{
+  vp->cast_to_strings = enable;
+  vp->explicit_cast_to_strings = TRUE;
+}
+
+void
+value_pairs_set_auto_cast(ValuePairs *vp)
+{
+  /* cast is based on @version, in 3.x mode we use strings, in 4.x we use
+   * types but we won't get the warning */
+  vp->explicit_cast_to_strings = TRUE;
+}
+
+gboolean
+value_pairs_is_cast_to_strings_explicit(ValuePairs *vp)
+{
+  return vp->explicit_cast_to_strings;
 }
 
 ValuePairs *
