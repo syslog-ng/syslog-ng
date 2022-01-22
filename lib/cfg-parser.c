@@ -79,6 +79,7 @@ static CfgLexerKeyword main_keywords[] =
   { "add_prefix",         KW_ADD_PREFIX },
   { "replace",            KW_REPLACE_PREFIX, KWS_OBSOLETE, "replace_prefix" },
   { "replace_prefix",     KW_REPLACE_PREFIX },
+  { "cast",               KW_CAST },
 
   /* option items */
   { "flags",              KW_FLAGS },

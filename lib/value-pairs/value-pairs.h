@@ -53,6 +53,9 @@ void value_pairs_add_glob_patterns(ValuePairs *vp, GList *patterns, gboolean inc
 void value_pairs_add_pair(ValuePairs *vp, const gchar *key, LogTemplate *value);
 
 void value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts);
+void value_pairs_set_cast_to_strings(ValuePairs *vp, gboolean enable);
+void value_pairs_set_auto_cast(ValuePairs *vp);
+gboolean value_pairs_is_cast_to_strings_explicit(ValuePairs *vp);
 
 gboolean value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func,
                                     GCompareFunc compare_func,

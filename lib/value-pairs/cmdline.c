@@ -385,6 +385,24 @@ vp_cmdline_parse_rekey_shift_levels (const gchar *option_name, const gchar *valu
   return TRUE;
 }
 
+static gboolean
+vp_cmdline_parse_cast(const gchar *option_name, const gchar *value,
+                      gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairs *vp = (ValuePairs *) args[1];
+
+  if (strcmp(option_name, "--no-cast") == 0)
+    value_pairs_set_cast_to_strings(vp, FALSE);
+  else if (strcmp(option_name, "--cast") == 0)
+    value_pairs_set_cast_to_strings(vp, TRUE);
+  else if (strcmp(option_name, "--auto-cast") == 0)
+    value_pairs_set_auto_cast(vp);
+  else
+    return FALSE;
+  return TRUE;
+}
+
 ValuePairs *
 value_pairs_new_from_cmdline (GlobalConfig *cfg,
                               gint *argc, gchar ***argv,
@@ -444,6 +462,18 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
     },
     {
       "omit-empty-values", 0, 0, G_OPTION_ARG_NONE, &vp->omit_empty_values,
+      NULL, NULL
+    },
+    {
+      "cast", 0, G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_cast,
+      NULL, NULL
+    },
+    {
+      "no-cast", 0, G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_cast,
+      NULL, NULL
+    },
+    {
+      "auto-cast", 0, G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_cast,
       NULL, NULL
     },
     {
