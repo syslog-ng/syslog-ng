@@ -367,8 +367,12 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
   log_msg_unref(msg);
 
 exit:
-  log_queue_push_notify(s);
   log_queue_queued_messages_inc(s);
+
+  /* this releases the queue's lock for a short time, which may violate the
+   * consistency of the disk-buffer, so it must be the last call under lock in this function
+   */
+  log_queue_push_notify(s);
   g_mutex_unlock(&s->lock);
 }
 
