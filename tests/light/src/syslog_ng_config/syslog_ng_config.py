@@ -41,6 +41,7 @@ from src.syslog_ng_config.statements.rewrite.rewrite import SetTag
 from src.syslog_ng_config.statements.sources.example_msg_generator_source import ExampleMsgGeneratorSource
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.sources.internal_source import InternalSource
+from src.syslog_ng_config.statements.sources.mqtt_source import MQTTSource
 from src.syslog_ng_config.statements.sources.network_source import NetworkSource
 
 logger = logging.getLogger(__name__)
@@ -143,6 +144,9 @@ class SyslogNgConfig(object):
 
     def create_rewrite_credit_card_hash(self, **options):
         return CreditCardHash(**options)
+
+    def create_mqtt_source(self, config, **options):
+        return MQTTSource(config, **options)
 
     def create_logpath(self, statements=None, flags=None):
         logpath = self.__create_logpath_with_conversion(statements, flags)
