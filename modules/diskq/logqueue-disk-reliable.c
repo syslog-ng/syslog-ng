@@ -114,7 +114,7 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
 
   for (i = 0; i < num_msg_to_ack; i++)
     {
-      if (qdisk_get_backlog_head (self->super.qdisk) == qdisk_get_head_position(self->super.qdisk))
+      if (qdisk_get_backlog_head (self->super.qdisk) == qdisk_get_next_head_position(self->super.qdisk))
         {
           goto exit_reliable;
         }
@@ -194,7 +194,7 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
 
   rewind_count = MIN(rewind_count, qdisk_get_backlog_count(self->super.qdisk));
   qdisk_rewind_backlog(self->super.qdisk, rewind_count);
-  _rewind_from_qbacklog(self, qdisk_get_head_position(self->super.qdisk));
+  _rewind_from_qbacklog(self, qdisk_get_next_head_position(self->super.qdisk));
 
   log_queue_queued_messages_add(s, rewind_count);
 
@@ -213,7 +213,7 @@ _is_next_message_in_qreliable(LogQueueDiskReliable *self)
   if (self->qreliable->length == 0)
     return FALSE;
 
-  return _peek_memory_queue_head_position(self->qreliable) == qdisk_get_head_position(self->super.qdisk);
+  return _peek_memory_queue_head_position(self->qreliable) == qdisk_get_next_head_position(self->super.qdisk);
 }
 
 static inline gboolean
@@ -222,7 +222,7 @@ _is_next_message_in_qout(LogQueueDiskReliable *self)
   if (self->qout->length == 0)
     return FALSE;
 
-  return _peek_memory_queue_head_position(self->qout) == qdisk_get_head_position(self->super.qdisk);
+  return _peek_memory_queue_head_position(self->qout) == qdisk_get_next_head_position(self->super.qdisk);
 }
 
 static LogMessage *

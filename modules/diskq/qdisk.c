@@ -544,9 +544,13 @@ _update_position_after_read(QDisk *self, guint32 record_length, gint64 *position
 }
 
 gint64
-qdisk_get_head_position(QDisk *self)
+qdisk_get_next_head_position(QDisk *self)
 {
-  return self->hdr->read_head;
+  gint64 next_read_head_position = self->hdr->read_head;
+  if (next_read_head_position > self->hdr->write_head)
+    next_read_head_position = _correct_position_if_max_size_is_reached(self, next_read_head_position);
+
+  return next_read_head_position;
 }
 
 gboolean

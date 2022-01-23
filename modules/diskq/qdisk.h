@@ -61,7 +61,7 @@ gboolean qdisk_ack_backlog(QDisk *self);
 gboolean qdisk_rewind_backlog(QDisk *self, guint rewind_count);
 void qdisk_empty_backlog(QDisk *self);
 gint64 qdisk_get_next_tail_position(QDisk *self);
-gint64 qdisk_get_head_position(QDisk *self);
+gint64 qdisk_get_next_head_position(QDisk *self);
 gboolean qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);
 void qdisk_init_instance(QDisk *self, DiskQueueOptions *options, const gchar *file_id);
 void qdisk_stop(QDisk *self);
