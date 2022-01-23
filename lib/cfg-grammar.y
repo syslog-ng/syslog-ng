@@ -1392,7 +1392,7 @@ matcher_flags
 value_pair_option
 	: KW_VALUE_PAIRS
           {
-            last_value_pairs = value_pairs_new();
+            last_value_pairs = value_pairs_new(configuration);
           }
           '(' vp_options ')'
           { $$ = last_value_pairs; }

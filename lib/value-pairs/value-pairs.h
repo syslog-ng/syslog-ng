@@ -69,7 +69,7 @@ gboolean value_pairs_walk(ValuePairs *vp,
                           LogMessage *msg, LogTemplateEvalOptions *options,
                           gpointer user_data);
 
-ValuePairs *value_pairs_new(void);
+ValuePairs *value_pairs_new(GlobalConfig *cfg);
 ValuePairs *value_pairs_new_default(GlobalConfig *cfg);
 ValuePairs *value_pairs_ref(ValuePairs *self);
 void value_pairs_unref(ValuePairs *self);

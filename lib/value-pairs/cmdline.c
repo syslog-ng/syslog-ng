@@ -394,7 +394,7 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   ValuePairs *vp;
   GOptionContext *ctx;
 
-  vp = value_pairs_new();
+  vp = value_pairs_new(cfg);
 
   GOptionEntry vp_options[] =
   {

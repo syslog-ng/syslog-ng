@@ -118,7 +118,7 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected)
   gboolean test_key_found = FALSE;
   LogTemplate *template;
 
-  vp = value_pairs_new();
+  vp = value_pairs_new(configuration);
   value_pairs_add_scope(vp, scope);
   if (exclude)
     value_pairs_add_glob_pattern(vp, exclude, FALSE);
@@ -150,7 +150,7 @@ transformers_testcase(const gchar *scope, const gchar *transformed_keys, const g
   gpointer args[2];
   gboolean test_key_found = FALSE;
 
-  vp = value_pairs_new();
+  vp = value_pairs_new(configuration);
   value_pairs_add_scope(vp, scope);
 
   if (transformers)
@@ -284,8 +284,6 @@ Test(value_pairs, test_transformer_shift_levels)
   g_ptr_array_free(transformers, TRUE);
 }
 
-GlobalConfig *cfg;
-
 void
 setup(void)
 {
@@ -293,17 +291,17 @@ setup(void)
   setenv("TZ", "MET-1METDST", TRUE);
   tzset();
 
-  cfg = cfg_new_snippet();
-  cfg_load_module(cfg, "syslogformat");
+  configuration = cfg_new_snippet();
+  cfg_load_module(configuration, "syslogformat");
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, cfg);
+  msg_format_options_init(&parse_options, configuration);
   parse_options.flags |= LP_SYSLOG_PROTOCOL;
 }
 
 void
 teardown(void)
 {
-  cfg_free(cfg);
+  cfg_free(configuration);
   app_shutdown();
 }
 
