@@ -144,6 +144,105 @@ Test(format_json, test_format_json_with_type_hints)
 
 }
 
+Test(format_json, test_v3x_value_pairs_yields_string_values)
+{
+  /* in 3.x mode, numbers remain strings */
+
+  /* template */
+  assert_template_format("$(format-json foo=$number1)",
+                         "{\"foo\":\"123\"}");
+
+  /* name value pair */
+  assert_template_format("$(format-json number1)",
+                         "{\"number1\":\"123\"}");
+
+  /* macro */
+  assert_template_format("$(format-json FACILITY_NUM)",
+                         "{\"FACILITY_NUM\":\"19\"}");
+
+
+  /* auto-cast is the same but suppresses warning */
+
+  /* name value pair */
+  assert_template_format("$(format-json --auto-cast number1)",
+                         "{\"number1\":\"123\"}");
+
+}
+
+Test(format_json, test_v40_value_pairs_yields_typed_values)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  /* in 4.x mode, numbers become numbers */
+
+  /* templates not yet supported */
+
+  /* name value pair */
+  assert_template_format("$(format-json number1)",
+                         "{\"number1\":123}");
+
+  /* macros not yet supported */
+
+  /* auto-cast is the same but suppresses warning */
+
+
+  /* name value pair */
+  assert_template_format("$(format-json --auto-cast number1)",
+                         "{\"number1\":123}");
+
+}
+
+Test(format_json, test_cast_option_always_yields_strings_regardless_of_versions)
+{
+  /* template */
+  assert_template_format("$(format-json --cast foo=$number1)",
+                         "{\"foo\":\"123\"}");
+
+  /* name value pair */
+  assert_template_format("$(format-json --cast number1)",
+                         "{\"number1\":\"123\"}");
+
+  /* macro */
+  assert_template_format("$(format-json --cast FACILITY_NUM)",
+                         "{\"FACILITY_NUM\":\"19\"}");
+
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  /* unless forced to be strings */
+
+  /* template */
+  assert_template_format("$(format-json --cast foo=$number1)",
+                         "{\"foo\":\"123\"}");
+
+  /* name value pair */
+  assert_template_format("$(format-json --cast number1)",
+                         "{\"number1\":\"123\"}");
+
+  /* macro */
+  assert_template_format("$(format-json --cast FACILITY_NUM)",
+                         "{\"FACILITY_NUM\":\"19\"}");
+}
+
+Test(format_json, test_no_cast_option_always_yields_types_regardless_of_versions)
+{
+  /* template not yet supported */
+
+  /* name value pair */
+  assert_template_format("$(format-json --no-cast number1)",
+                         "{\"number1\":123}");
+
+  /* macros not yet supported */
+
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  /* template not yet supported */
+
+  /* name value pair */
+  assert_template_format("$(format-json --no-cast number1)",
+                         "{\"number1\":123}");
+
+  /* macros not yet supported */
+}
+
 Test(format_json, test_format_json_on_error)
 {
   configuration->template_options.on_error = ON_ERROR_DROP_MESSAGE | ON_ERROR_SILENT;

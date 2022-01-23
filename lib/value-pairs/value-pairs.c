@@ -896,6 +896,16 @@ value_pairs_new(GlobalConfig *cfg)
   vp->patterns = g_ptr_array_new();
   vp->transforms = g_ptr_array_new();
 
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
+    {
+      /* we don't have an upgrade warning here, as it could only be a very
+       * generic message, not helping our users too much.  I've added this
+       * kind of warning to affected modules instead, like $(format-json)
+       * and mongo-db() */
+
+      vp->cast_to_strings = TRUE;
+    }
+
   return vp;
 }
 
