@@ -199,6 +199,89 @@ Test(qdisk, qdisk_is_space_avail)
   cleanup_qdisk(filename, qdisk);
 }
 
+Test(qdisk, qdisk_remove_head)
+{
+  const gchar *filename = "test_qdisk_remove_head.rqf";
+  QDisk *qdisk = create_qdisk(TDISKQ_RELIABLE, MiB(1));
+  qdisk_start(qdisk, filename, NULL, NULL, NULL);
+
+  push_dummy_record(qdisk, 128);
+  cr_assert(qdisk_remove_head(qdisk));
+
+  cr_assert_not(qdisk_remove_head(qdisk));
+
+  push_dummy_record(qdisk, 128);
+  push_dummy_record(qdisk, 128);
+  cr_assert(qdisk_remove_head(qdisk));
+  cr_assert(qdisk_remove_head(qdisk));
+
+  cr_assert_not(qdisk_remove_head(qdisk));
+
+  qdisk_stop(qdisk);
+  cleanup_qdisk(filename, qdisk);
+}
+
+Test(qdisk, qdisk_basic_ack_rewind)
+{
+  const gchar *filename = "test_qdisk_basic_ack_rewind.rqf";
+  QDisk *qdisk = create_qdisk(TDISKQ_RELIABLE, MiB(1));
+  qdisk_start(qdisk, filename, NULL, NULL, NULL);
+
+  gsize num_of_records = 100;
+
+  for (gsize i = 1; i <= num_of_records; ++i)
+    push_dummy_record(qdisk, 128);
+
+  cr_assert_eq(qdisk_get_backlog_count(qdisk), 0);
+
+  for (gsize i = 1; i <= num_of_records; ++i)
+    {
+      qdisk_remove_head(qdisk);
+      cr_assert_eq(qdisk_get_backlog_count(qdisk), i);
+    }
+
+  gsize to_rewind = 10;
+  for (gsize i = 1; i <= num_of_records - to_rewind; ++i)
+    {
+      cr_assert(qdisk_ack_backlog(qdisk));
+      cr_assert_eq(qdisk_get_backlog_count(qdisk), num_of_records - i);
+    }
+
+  cr_assert(qdisk_rewind_backlog(qdisk, 3));
+  to_rewind -= 3;
+  cr_assert_eq(qdisk_get_backlog_count(qdisk), to_rewind);
+
+  cr_assert(qdisk_rewind_backlog(qdisk, to_rewind));
+  cr_assert_eq(qdisk_get_backlog_count(qdisk), 0);
+  cr_assert_eq(qdisk_get_backlog_head(qdisk), qdisk_get_reader_head(qdisk));
+
+  qdisk_stop(qdisk);
+  cleanup_qdisk(filename, qdisk);
+}
+
+Test(qdisk, qdisk_empty_backlog)
+{
+  const gchar *filename = "test_qdisk_empty_backlog.rqf";
+  QDisk *qdisk = create_qdisk(TDISKQ_RELIABLE, MiB(1));
+  qdisk_start(qdisk, filename, NULL, NULL, NULL);
+
+  push_dummy_record(qdisk, 514);
+  push_dummy_record(qdisk, 514);
+
+  cr_assert_eq(qdisk_get_backlog_count(qdisk), 0);
+
+  qdisk_remove_head(qdisk);
+  qdisk_remove_head(qdisk);
+  cr_assert_eq(qdisk_get_backlog_count(qdisk), 2);
+  qdisk_empty_backlog(qdisk);
+  cr_assert_eq(qdisk_get_backlog_count(qdisk), 0);
+
+  cr_assert_eq(qdisk_get_backlog_head(qdisk), qdisk_get_reader_head(qdisk));
+
+  qdisk_stop(qdisk);
+  cleanup_qdisk(filename, qdisk);
+}
+
 Test(qdisk, allow_writing_more_than_max_size_when_last_message_does_not_fit)
 {
   const gchar *filename = "test_qdisk_exceed_max_size.rqf";
