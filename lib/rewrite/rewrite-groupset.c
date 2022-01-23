@@ -137,7 +137,7 @@ log_rewrite_groupset_new(LogTemplate *template, GlobalConfig *cfg)
   self->super.super.clone = log_rewrite_groupset_clone;
 
   self->replacement = log_template_ref(template);
-  self->query = value_pairs_new();
+  self->query = value_pairs_new(cfg);
   self->vp_func = log_rewrite_groupset_foreach_func;
 
   return &self->super;

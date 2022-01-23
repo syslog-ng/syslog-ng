@@ -855,7 +855,7 @@ value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts)
 }
 
 ValuePairs *
-value_pairs_new(void)
+value_pairs_new(GlobalConfig *cfg)
 {
   ValuePairs *vp;
 
@@ -872,7 +872,7 @@ value_pairs_new(void)
 ValuePairs *
 value_pairs_new_default(GlobalConfig *cfg)
 {
-  ValuePairs *vp = value_pairs_new();
+  ValuePairs *vp = value_pairs_new(cfg);
 
   value_pairs_add_scope(vp, "selected-macros");
   value_pairs_add_scope(vp, "nv-pairs");
