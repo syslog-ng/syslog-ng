@@ -408,6 +408,7 @@ log_macro_expand_date_time(gint id, gboolean escape,
       append_format_wall_clock_time(&wct, result, TS_FMT_FULL, options->opts->frac_digits);
       break;
     case M_UNIXTIME:
+      *type = LM_VT_DATETIME;
       append_format_unix_time(stamp, result, TS_FMT_UNIX, wct.wct_gmtoff, options->opts->frac_digits);
       break;
     case M_TZ:
@@ -446,6 +447,7 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
     }
     case M_FACILITY_NUM:
     {
+      t = LM_VT_INT32;
       format_uint32_padded(result, 0, 0, 10, (msg->pri & LOG_FACMASK) >> 3);
       break;
     }
@@ -468,6 +470,7 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
     }
     case M_SEVERITY_NUM:
     {
+      t = LM_VT_INT32;
       format_uint32_padded(result, 0, 0, 10, msg->pri & LOG_PRIMASK);
       break;
     }
@@ -478,6 +481,7 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
     }
     case M_TAGS:
     {
+      t = LM_VT_LIST;
       log_msg_print_tags(msg, result);
       break;
     }
@@ -615,11 +619,13 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
         {
           port = 0;
         }
+      t = LM_VT_INT32;
       format_uint32_padded(result, 0, 0, 10, port);
       break;
     }
     case M_PROTOCOL:
     {
+      t = LM_VT_INT32;
       format_uint32_padded(result, 0, 0, 10, msg->proto);
       break;
     }
