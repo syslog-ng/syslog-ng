@@ -40,12 +40,6 @@ type_hinting_error_quark(void)
 gboolean
 type_hint_parse(const gchar *hint, LogMessageValueType *out_type, GError **error)
 {
-  if (hint == NULL)
-    {
-      *out_type = LM_VT_STRING;
-      return TRUE;
-    }
-
   if (strcmp(hint, "string") == 0)
     *out_type = LM_VT_STRING;
   else if (strcmp(hint, "json") == 0 || strcmp(hint, "literal") == 0)

@@ -215,6 +215,11 @@ log_template_set_type_hint(LogTemplate *self, const gchar *type_hint, GError **e
 {
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
+  if (!type_hint)
+    {
+      self->type_hint = LM_VT_NONE;
+      return TRUE;
+    }
   return type_hint_parse(type_hint, &self->type_hint, error);
 }
 

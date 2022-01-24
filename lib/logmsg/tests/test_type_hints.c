@@ -62,7 +62,6 @@ ParameterizedTestParameters(type_hints, test_type_hint_parse)
   static StringHintPair string_value_pairs[] =
   {
     {"string",    LM_VT_STRING},
-    {NULL,        LM_VT_STRING},
     {"literal",   LM_VT_JSON},
     {"json",      LM_VT_JSON},
     {"boolean",   LM_VT_BOOLEAN},
