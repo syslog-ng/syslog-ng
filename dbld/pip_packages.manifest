@@ -12,6 +12,7 @@ pathlib2                [centos, fedora, debian, ubuntu, devshell]
 psutil                  [centos, fedora, debian, ubuntu, devshell]
 pytest                  [centos, fedora, debian, ubuntu, devshell]
 virtualenv              [devshell]
+paho-mqtt               [devshell]
 # pytest 4.6.9 has requirement six>=1.10.0, but ubuntu-trusty installs six 1.5.2 which is incompatible
 six>=1.10.0             [ubuntu-trusty]
 
