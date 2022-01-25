@@ -28,6 +28,7 @@ from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statement_group import StatementGroup
 from src.syslog_ng_config.statements.destinations.example_destination import ExampleDestination
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
+from src.syslog_ng_config.statements.destinations.mqtt_destination import MQTTDestination
 from src.syslog_ng_config.statements.destinations.snmp_destination import SnmpDestination
 from src.syslog_ng_config.statements.filters.filter import Filter
 from src.syslog_ng_config.statements.filters.filter import Throttle
@@ -147,6 +148,9 @@ class SyslogNgConfig(object):
 
     def create_mqtt_source(self, config, **options):
         return MQTTSource(config, **options)
+
+    def create_mqtt_destination(self, config, **options):
+        return MQTTDestination(config, **options)
 
     def create_logpath(self, statements=None, flags=None):
         logpath = self.__create_logpath_with_conversion(statements, flags)
