@@ -31,9 +31,9 @@ static void
 _signal_startup_finished(MainLoopThreadedWorker *self, gboolean startup_result)
 {
   g_mutex_lock(&self->lock);
-  self->startup_finished = TRUE;
-  self->startup_result &= startup_result;
-  g_cond_signal(&self->started_up);
+  self->startup.finished = TRUE;
+  self->startup.result &= startup_result;
+  g_cond_signal(&self->startup.cond);
   g_mutex_unlock(&self->lock);
 }
 
@@ -92,19 +92,19 @@ static gboolean
 _wait_for_startup_finished(MainLoopThreadedWorker *self)
 {
   g_mutex_lock(&self->lock);
-  while (!self->startup_finished)
-    g_cond_wait(&self->started_up, &self->lock);
+  while (!self->startup.finished)
+    g_cond_wait(&self->startup.cond, &self->lock);
   g_mutex_unlock(&self->lock);
-  return self->startup_result;
+  return self->startup.result;
 }
 
 gboolean
 main_loop_threaded_worker_start(MainLoopThreadedWorker *self)
 {
   /* NOTE: we can only start up once */
-  g_assert(!self->startup_finished);
+  g_assert(!self->startup.finished);
 
-  self->startup_result = TRUE;
+  self->startup.result = TRUE;
   main_loop_assert_main_thread();
   main_loop_worker_job_start();
   main_loop_worker_register_exit_notification_callback(_request_worker_exit, self);
@@ -118,7 +118,7 @@ main_loop_threaded_worker_init(MainLoopThreadedWorker *self,
                                MainLoopWorkerType worker_type, gpointer data)
 {
   self->worker_type = worker_type;
-  g_cond_init(&self->started_up);
+  g_cond_init(&self->startup.cond);
   g_mutex_init(&self->lock);
 
   self->data = data;
@@ -127,6 +127,6 @@ main_loop_threaded_worker_init(MainLoopThreadedWorker *self,
 void
 main_loop_threaded_worker_clear(MainLoopThreadedWorker *self)
 {
-  g_cond_clear(&self->started_up);
+  g_cond_clear(&self->startup.cond);
   g_mutex_clear(&self->lock);
 }

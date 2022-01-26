@@ -35,9 +35,12 @@ struct _MainLoopThreadedWorker
   gpointer data;
   MainLoopWorkerType worker_type;
   GMutex lock;
-  GCond started_up;
-  gboolean startup_finished;
-  gboolean startup_result;
+  struct
+  {
+    GCond cond;
+    gboolean finished;
+    gboolean result;
+  } startup;
   gboolean (*thread_init)(MainLoopThreadedWorker *s);
   void (*thread_deinit)(MainLoopThreadedWorker *s);
   void (*request_exit)(MainLoopThreadedWorker *self);
