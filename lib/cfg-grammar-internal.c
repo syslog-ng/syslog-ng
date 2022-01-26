@@ -27,6 +27,7 @@
 
 LogDriver *last_driver;
 LogParser *last_parser;
+FilterExprNode *last_filter_expr;
 LogSourceOptions *last_source_options;
 LogProtoServerOptions *last_proto_server_options;
 LogProtoClientOptions *last_proto_client_options;

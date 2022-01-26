@@ -1,5 +1,5 @@
 /*
- * Copyright (c) @YEAR_AND_AUTHOR@
+ * Copyright (c) 2021 One Identity
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,28 +20,31 @@
  *
  */
 
-#include "driver.h"
 #include "cfg-parser.h"
-#include "@PLUGIN_NAME@-grammar.h"
+#include "filter/filter-expr.h"
+#include "rate-limit-grammar.h"
 
-extern int @PLUGIN_NAME_US@_debug;
+extern int rate_limit_filter_debug;
 
-int @PLUGIN_NAME_US@_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
+int rate_limit_filter_parse(CfgLexer *lexer, FilterExprNode **instance, gpointer arg);
 
-static CfgLexerKeyword @PLUGIN_NAME_US@_keywords[] =
+static CfgLexerKeyword rate_limit_filter_keywords[] =
 {
+  { "throttle", KW_THROTTLE },
+  { "rate_limit", KW_RATE_LIMIT },
+  { "rate", KW_RATE },
   { NULL }
 };
 
-CfgParser @PLUGIN_NAME_US@_parser =
+CfgParser rate_limit_filter_parser =
 {
 #if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &@PLUGIN_NAME_US@_debug,
+  .debug_flag = &rate_limit_filter_debug,
 #endif
-  .name = "@PLUGIN_NAME@",
-  .keywords = @PLUGIN_NAME_US@_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) @PLUGIN_NAME_US@_parse,
+  .name = "rate-limit-filter",
+  .keywords = rate_limit_filter_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) rate_limit_filter_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(@PLUGIN_NAME_US@_, @PLUGIN_NAME_USUC@_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(rate_limit_filter_, RATE_LIMIT_FILTER_, FilterExprNode **)

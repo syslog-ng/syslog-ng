@@ -96,7 +96,6 @@ _is_log_pipe(Plugin *self)
     case LL_CONTEXT_SOURCE:
     case LL_CONTEXT_DESTINATION:
     case LL_CONTEXT_PARSER:
-    case LL_CONTEXT_FILTER:
     case LL_CONTEXT_REWRITE:
       return TRUE;
     default:

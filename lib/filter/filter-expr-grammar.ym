@@ -39,14 +39,12 @@
 #include "filter/filter-call.h"
 #include "filter/filter-re.h"
 #include "filter/filter-pri.h"
-#include "filter/filter-throttle.h"
 #include "messages.h"
 #include "template/templates.h"
+#include "syslog-ng.h"
 #include "syslog-names.h"
 #include "plugin.h"
 #include "cfg-grammar-internal.h"
-
-FilterExprNode *last_filter_expr;
 
 }
 
@@ -60,7 +58,6 @@ FilterExprNode *last_filter_expr;
 
 %token KW_PROGRAM
 %token KW_IN_LIST
-%token KW_RATE
 
 %left   ';'
 %left	KW_OR
@@ -73,7 +70,7 @@ FilterExprNode *last_filter_expr;
 %type	<node> filter_simple_expr
 %type	<node> filter_plugin
 %type	<node> filter_comparison
-%type	<node> filter_throttle
+%type	<cptr> filter_identifier
 
 %type   <num> filter_fac_list
 %type   <num> filter_fac
@@ -144,12 +141,10 @@ filter_simple_expr
 	| filter_re					{ $$ = last_filter_expr; }
 	| filter_plugin
 	| filter_comparison
-	| filter_throttle   { $$ = last_filter_expr; }
 	;
 
-
 filter_plugin
-        : LL_IDENTIFIER
+        : filter_identifier
           {
             Plugin *p;
             gint context = LL_CONTEXT_FILTER;
@@ -167,6 +162,17 @@ filter_plugin
             $$ = node;
           }
 	;
+
+filter_identifier
+  : LL_IDENTIFIER
+  | KW_THROTTLE
+      {
+        msg_warning_once("WARNING: the throttle() filter has been renamed to rate-limit() in " VERSION_3_36
+                         ", please update your configuration to use the name rate-limit() instead of throttle()",
+                         cfg_lexer_format_location_tag(lexer, &@0));
+        $$ = g_strdup("rate-limit");
+      }
+  ;
 
 filter_comparison
 	: LL_STRING operator LL_STRING
@@ -308,27 +314,6 @@ filter_severity
 	    $$ = 1 << $1;
 	  }
 	;
-
-filter_throttle_arg
-  : KW_TEMPLATE '(' template_content ')'
-          {
-            filter_throttle_set_key_template(last_filter_expr, $3);
-            log_template_unref($3);
-          }
-  | KW_RATE '(' positive_integer ')'
-          {
-            filter_throttle_set_rate(last_filter_expr, $3);
-          }
-  ;
-
-filter_throttle_args
-  : filter_throttle_arg filter_throttle_args
-  |
-  ;
-
-filter_throttle
-  : KW_THROTTLE { last_filter_expr = filter_throttle_new(); } '(' filter_throttle_args ')'
-  ;
 
 /* INCLUDE_RULES */
 

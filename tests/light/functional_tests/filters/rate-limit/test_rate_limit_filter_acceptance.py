@@ -39,7 +39,7 @@ def generate_messages_with_different_program_fields(bsd_formatter, number_of_all
 
 
 @pytest.mark.parametrize(
-    "message_counter, message_rate_by_sec, different_program_fields, throttle_rate_by_sec, expected_number_of_matched_messages, expected_number_of_not_matched_messages", [
+    "message_counter, message_rate_by_sec, different_program_fields, rate_limit_rate_by_sec, expected_number_of_matched_messages, expected_number_of_not_matched_messages", [
         # All incoming messages=100, which arrives in one sec where every PROGRAM field is the same. From same PROGRAM fields we accept 100 in one sec. At the end we will have 100 matched and 0 not matched messages.
         (100, 100, 1, 100, 100, 0),
         # All incoming messages=100, which arrives in one sec where every PROGRAM field is the same. From same PROGRAM fields we accept only 1 in one sec. At the end we will have 1 matched and 99 not matched messages.
@@ -48,18 +48,18 @@ def generate_messages_with_different_program_fields(bsd_formatter, number_of_all
         (100, 100, 5, 1, 5, 95),
         # All incoming messages=100, which arrives in one sec where we have 5 different PROGRAM fields. From same PROGRAM fields we accept 5 in one sec. At the end we will have 25 matched and 75 not matched messages.
         (100, 100, 5, 5, 25, 75),
-    ], ids=["throttle_filter_1", "throttle_filter_2", "throttle_filter_3", "throttle_filter_4"],
+    ], ids=["rate_limit_filter_1", "rate_limit_filter_2", "rate_limit_filter_3", "rate_limit_filter_4"],
 )
-def test_throttle_filter_acceptance(config, syslog_ng, port_allocator, bsd_formatter, message_counter, message_rate_by_sec, different_program_fields, throttle_rate_by_sec, expected_number_of_matched_messages, expected_number_of_not_matched_messages):
+def test_rate_limit_filter_acceptance(config, syslog_ng, port_allocator, bsd_formatter, message_counter, message_rate_by_sec, different_program_fields, rate_limit_rate_by_sec, expected_number_of_matched_messages, expected_number_of_not_matched_messages):
     config.update_global_options(stats_level=3)
     s_network = config.create_network_source(ip="localhost", port=port_allocator())
-    f_throttle = config.create_throttle_filter(template="'${PROGRAM}'", rate=throttle_rate_by_sec)
+    f_rate_limit = config.create_rate_limit_filter(template="'${PROGRAM}'", rate=rate_limit_rate_by_sec)
     d_file = config.create_file_destination(file_name="output.log")
-    config.create_logpath(statements=[s_network, f_throttle, d_file])
+    config.create_logpath(statements=[s_network, f_rate_limit, d_file])
 
     syslog_ng.start(config)
 
     input_messages = generate_messages_with_different_program_fields(bsd_formatter=bsd_formatter, number_of_all_messages=message_counter, different_program_fields=different_program_fields)
     s_network.write_log(input_messages, rate=message_rate_by_sec)
 
-    assert wait_until_true(lambda: f_throttle.get_stats() == {'matched': expected_number_of_matched_messages, 'not_matched': expected_number_of_not_matched_messages})
+    assert wait_until_true(lambda: f_rate_limit.get_stats() == {'matched': expected_number_of_matched_messages, 'not_matched': expected_number_of_not_matched_messages})

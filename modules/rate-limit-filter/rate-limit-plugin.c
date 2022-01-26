@@ -1,5 +1,5 @@
 /*
- * Copyright (c) @YEAR_AND_AUTHOR@
+ * Copyright (c) 2021 One Identity
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,28 +20,34 @@
  *
  */
 
-#include "driver.h"
 #include "cfg-parser.h"
-#include "@PLUGIN_NAME@-grammar.h"
+#include "plugin.h"
+#include "plugin-types.h"
 
-extern int @PLUGIN_NAME_US@_debug;
+extern CfgParser rate_limit_filter_parser;
 
-int @PLUGIN_NAME_US@_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
-
-static CfgLexerKeyword @PLUGIN_NAME_US@_keywords[] =
+static Plugin rate_limit_filter_plugins[] =
 {
-  { NULL }
+  {
+    .type = LL_CONTEXT_FILTER,
+    .name = "rate-limit",
+    .parser = &rate_limit_filter_parser,
+  },
 };
 
-CfgParser @PLUGIN_NAME_US@_parser =
+gboolean
+rate_limit_filter_module_init(PluginContext *context, CfgArgs *args)
 {
-#if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &@PLUGIN_NAME_US@_debug,
-#endif
-  .name = "@PLUGIN_NAME@",
-  .keywords = @PLUGIN_NAME_US@_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) @PLUGIN_NAME_US@_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
-};
+  plugin_register(context, rate_limit_filter_plugins, G_N_ELEMENTS(rate_limit_filter_plugins));
+  return TRUE;
+}
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(@PLUGIN_NAME_US@_, @PLUGIN_NAME_USUC@_, LogDriver **)
+const ModuleInfo module_info =
+{
+  .canonical_name = "rate_limit_filter",
+  .version = SYSLOG_NG_VERSION,
+  .description = "Rate-limiting messages based on arbitrary keys",
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
+  .plugins = rate_limit_filter_plugins,
+  .plugins_len = G_N_ELEMENTS(rate_limit_filter_plugins),
+};

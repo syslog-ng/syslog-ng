@@ -1,5 +1,5 @@
 /*
- * Copyright (c) @YEAR_AND_AUTHOR@
+ * Copyright (c) 2021 One Identity
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,28 +20,15 @@
  *
  */
 
-#include "driver.h"
-#include "cfg-parser.h"
-#include "@PLUGIN_NAME@-grammar.h"
+#ifndef RATE_LIMIT_H_INCLUDED
+#define RATE_LIMIT_H_INCLUDED
 
-extern int @PLUGIN_NAME_US@_debug;
+#include "filter/filter-expr.h"
 
-int @PLUGIN_NAME_US@_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
+FilterExprNode *rate_limit_new(void);
 
-static CfgLexerKeyword @PLUGIN_NAME_US@_keywords[] =
-{
-  { NULL }
-};
+void rate_limit_set_key_template(FilterExprNode *s, LogTemplate *template);
+void rate_limit_set_key(FilterExprNode *s, NVHandle key_handle);
+void rate_limit_set_rate(FilterExprNode *s, gint rate);
 
-CfgParser @PLUGIN_NAME_US@_parser =
-{
-#if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &@PLUGIN_NAME_US@_debug,
 #endif
-  .name = "@PLUGIN_NAME@",
-  .keywords = @PLUGIN_NAME_US@_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) @PLUGIN_NAME_US@_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
-};
-
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(@PLUGIN_NAME_US@_, @PLUGIN_NAME_USUC@_, LogDriver **)

@@ -1,18 +1,17 @@
 /*
  * Copyright (c) 2021 One Identity
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * As an additional exemption you are allowed to compile & link against the
@@ -21,32 +20,32 @@
  *
  */
 
-#include "filter-throttle.h"
+#include "rate-limit.h"
 #include "timeutils/misc.h"
 #include "scratch-buffers.h"
 #include "str-utils.h"
 
-typedef struct _FilterThrottle
+typedef struct _RateLimit
 {
   FilterExprNode super;
   LogTemplate *key_template;
   gint rate;
   GMutex map_lock;
   GHashTable *rate_limits;
-} FilterThrottle;
+} RateLimit;
 
-typedef struct _ThrottleRateLimit
+typedef struct _RateLimiter
 {
   gint tokens;
   gint rate;
   GTimeVal last_check;
   GMutex lock;
-} ThrottleRateLimit;
+} RateLimiter;
 
-static ThrottleRateLimit *
-throttle_ratelimit_new(gint rate)
+static RateLimiter *
+rate_limiter_new(gint rate)
 {
-  ThrottleRateLimit *self = g_new0(ThrottleRateLimit, 1);
+  RateLimiter *self = g_new0(RateLimiter, 1);
 
   GTimeVal now;
   g_get_current_time(&now);
@@ -59,14 +58,14 @@ throttle_ratelimit_new(gint rate)
 }
 
 static void
-throttle_ratelimit_free(ThrottleRateLimit *self)
+rate_limiter_free(RateLimiter *self)
 {
   g_mutex_clear(&self->lock);
   g_free(self);
 }
 
 static void
-throttle_ratelimit_add_new_tokens(ThrottleRateLimit *self)
+rate_limiter_add_new_tokens(RateLimiter *self)
 {
   glong usec_since_last_fill;
   gint num_new_tokens;
@@ -87,7 +86,7 @@ throttle_ratelimit_add_new_tokens(ThrottleRateLimit *self)
 }
 
 static gboolean
-throttle_ratelimit_try_consume_tokens(ThrottleRateLimit *self, gint num_tokens)
+rate_limiter_try_consume_tokens(RateLimiter *self, gint num_tokens)
 {
   gboolean within_ratelimit;
   g_mutex_lock(&self->lock);
@@ -107,16 +106,16 @@ throttle_ratelimit_try_consume_tokens(ThrottleRateLimit *self, gint num_tokens)
 }
 
 static gboolean
-throttle_ratelimit_process_new_logs(ThrottleRateLimit *self, gint num_new_logs)
+rate_limiter_process_new_logs(RateLimiter *self, gint num_new_logs)
 {
-  throttle_ratelimit_add_new_tokens(self);
-  return throttle_ratelimit_try_consume_tokens(self, num_new_logs);
+  rate_limiter_add_new_tokens(self);
+  return rate_limiter_try_consume_tokens(self, num_new_logs);
 }
 
 static const gchar *
-filter_throttle_generate_key(FilterExprNode *s, LogMessage *msg, LogTemplateEvalOptions *options, gssize *len)
+rate_limit_generate_key(FilterExprNode *s, LogMessage *msg, LogTemplateEvalOptions *options, gssize *len)
 {
-  FilterThrottle *self = (FilterThrottle *)s;
+  RateLimit *self = (RateLimit *)s;
 
   if(!self->key_template)
     {
@@ -138,16 +137,16 @@ filter_throttle_generate_key(FilterExprNode *s, LogMessage *msg, LogTemplateEval
 }
 
 static gboolean
-filter_throttle_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
+rate_limit_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
-  FilterThrottle *self = (FilterThrottle *)s;
+  RateLimit *self = (RateLimit *)s;
 
   LogMessage *msg = msgs[num_msg - 1];
   gssize len = 0;
-  const gchar *key = filter_throttle_generate_key(s, msg, options, &len);
+  const gchar *key = rate_limit_generate_key(s, msg, options, &len);
   APPEND_ZERO(key, key, len);
 
-  ThrottleRateLimit *rl;
+  RateLimiter *rl;
 
   g_mutex_lock(&self->map_lock);
   {
@@ -155,19 +154,19 @@ filter_throttle_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemp
 
     if (!rl)
       {
-        rl = throttle_ratelimit_new(self->rate);
+        rl = rate_limiter_new(self->rate);
         g_hash_table_insert(self->rate_limits, g_strdup(key), rl);
       }
   }
   g_mutex_unlock(&self->map_lock);
 
-  return throttle_ratelimit_process_new_logs(rl, num_msg) ^ s->comp;
+  return rate_limiter_process_new_logs(rl, num_msg) ^ s->comp;
 }
 
 static void
-filter_throttle_free(FilterExprNode *s)
+rate_limit_free(FilterExprNode *s)
 {
-  FilterThrottle *self = (FilterThrottle *) s;
+  RateLimit *self = (RateLimit *) s;
 
   log_template_unref(self->key_template);
   g_hash_table_destroy(self->rate_limits);
@@ -175,13 +174,13 @@ filter_throttle_free(FilterExprNode *s)
 }
 
 static gboolean
-filter_throttle_init(FilterExprNode *s, GlobalConfig *cfg)
+rate_limit_init(FilterExprNode *s, GlobalConfig *cfg)
 {
-  FilterThrottle *self = (FilterThrottle *)s;
+  RateLimit *self = (RateLimit *)s;
 
   if (self->rate <= 0)
     {
-      msg_error("throttle: the rate() argument is required, and must be non zero in throttle filters");
+      msg_error("rate-limit: the rate() argument is required, and must be non zero in rate-limit filters");
       return FALSE;
     }
 
@@ -189,44 +188,44 @@ filter_throttle_init(FilterExprNode *s, GlobalConfig *cfg)
 }
 
 void
-filter_throttle_set_key_template(FilterExprNode *s, LogTemplate *template)
+rate_limit_set_key_template(FilterExprNode *s, LogTemplate *template)
 {
-  FilterThrottle *self = (FilterThrottle *)s;
+  RateLimit *self = (RateLimit *)s;
   log_template_unref(self->key_template);
   self->key_template = log_template_ref(template);
 }
 
 void
-filter_throttle_set_rate(FilterExprNode *s, gint rate)
+rate_limit_set_rate(FilterExprNode *s, gint rate)
 {
-  FilterThrottle *self = (FilterThrottle *)s;
+  RateLimit *self = (RateLimit *)s;
   self->rate = rate;
 }
 
 static FilterExprNode *
-filter_throttle_clone(FilterExprNode *s)
+rate_limit_clone(FilterExprNode *s)
 {
-  FilterThrottle *self = (FilterThrottle *)s;
+  RateLimit *self = (RateLimit *)s;
 
-  FilterExprNode *cloned_self = filter_throttle_new();
-  filter_throttle_set_key_template(cloned_self, self->key_template);
-  filter_throttle_set_rate(cloned_self, self->rate);
+  FilterExprNode *cloned_self = rate_limit_new();
+  rate_limit_set_key_template(cloned_self, self->key_template);
+  rate_limit_set_rate(cloned_self, self->rate);
 
   return cloned_self;
 }
 
 FilterExprNode *
-filter_throttle_new(void)
+rate_limit_new(void)
 {
-  FilterThrottle *self = g_new0(FilterThrottle, 1);
+  RateLimit *self = g_new0(RateLimit, 1);
   filter_expr_node_init_instance(&self->super);
 
-  self->super.init = filter_throttle_init;
-  self->super.eval = filter_throttle_eval;
-  self->super.free_fn = filter_throttle_free;
-  self->super.clone = filter_throttle_clone;
+  self->super.init = rate_limit_init;
+  self->super.eval = rate_limit_eval;
+  self->super.free_fn = rate_limit_free;
+  self->super.clone = rate_limit_clone;
   g_mutex_init(&self->map_lock);
-  self->rate_limits = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)throttle_ratelimit_free);
+  self->rate_limits = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)rate_limiter_free);
 
   return &self->super;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) @YEAR_AND_AUTHOR@
+ * Copyright (c) 2021 One Identity
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,13 +21,14 @@
  */
 
 %code top {
-#include "@PLUGIN_NAME@-parser.h"
+#include "rate-limit-parser.h"
 
 }
 
 
 %code {
 
+#include "rate-limit.h"
 #include "cfg-grammar-internal.h"
 #include "cfg-parser.h"
 #include "syslog-names.h"
@@ -38,26 +39,49 @@
 
 }
 
-%define api.prefix {@PLUGIN_NAME_US@_}
+%define api.prefix {rate_limit_filter_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */
 
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {LogDriver **instance}
+%parse-param {FilterExprNode **instance}
 %parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */
 
+%token KW_RATE_LIMIT
+%token KW_RATE
+
+%type	<ptr> rate_limit
+
 %%
 
 start
-  : @PLUGIN_TYPE@ first_rule          { YYACCEPT; }
+  : LL_CONTEXT_FILTER rate_limit          { YYACCEPT; }
   ;
 
-first_rule
-  :
+rate_limit
+  : KW_RATE_LIMIT { last_filter_expr = *instance = rate_limit_new(); } '(' rate_limit_args ')' { $$ = last_filter_expr; }
+  | KW_THROTTLE { last_filter_expr = *instance = rate_limit_new(); } '(' rate_limit_args ')' { $$ = last_filter_expr; }
+  ;
+
+rate_limit_args
+  : rate_limit_arg rate_limit_args
+  |
+  ;
+
+rate_limit_arg
+  : KW_TEMPLATE '(' template_content ')'
+      {
+        rate_limit_set_key_template(last_filter_expr, $3);
+        log_template_unref($3);
+      }
+  | KW_RATE '(' positive_integer ')'
+      {
+        rate_limit_set_rate(last_filter_expr, $3);
+      }
   ;
 
 /* INCLUDE_RULES */

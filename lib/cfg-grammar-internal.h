@@ -32,6 +32,7 @@
 #include "logwriter.h"
 #include "logmatcher.h"
 #include "parser/parser-expr.h"
+#include "filter/filter-expr.h"
 #include "value-pairs/value-pairs.h"
 #include "rewrite/rewrite-expr.h"
 #include "logproto/logproto.h"
@@ -68,6 +69,7 @@ extern FilePermOptions *last_file_perm_options;
 extern MsgFormatOptions *last_msg_format_options;
 extern LogDriver *last_driver;
 extern LogParser *last_parser;
+extern FilterExprNode *last_filter_expr;
 extern LogTemplateOptions *last_template_options;
 extern LogTemplate *last_template;
 extern ValuePairs *last_value_pairs;
