@@ -466,3 +466,86 @@ Test(template, test_compile_literal_string)
 
   log_template_unref(template);
 }
+
+Test(template, test_result_of_concatenation_in_templates_are_typed_as_strings)
+{
+  assert_template_format_value_and_type("$HOST$PROGRAM", "bzorpsyslog-ng", LM_VT_STRING);
+  assert_template_format_value_and_type("${number1}123", "123123", LM_VT_STRING);
+  assert_template_format_value_and_type("123${number1}", "123123", LM_VT_STRING);
+  assert_template_format_value_and_type("${number1}${number2}", "123456", LM_VT_STRING);
+}
+
+Test(template, test_literals_in_templates_are_typed_as_strings)
+{
+  assert_template_format_value_and_type("", "", LM_VT_STRING);
+  assert_template_format_value_and_type("123", "123", LM_VT_STRING);
+  assert_template_format_value_and_type("foobar", "foobar", LM_VT_STRING);
+}
+
+Test(template, test_single_element_typed_value_refs_are_typed_as_the_value)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  assert_template_format_value_and_type("${number1}", "123", LM_VT_INT64);
+}
+
+Test(template, test_single_element_typed_value_refs_with_escaping_are_typed_as_strings)
+{
+  assert_template_format_value_and_type_with_escaping("${number1}", TRUE, "123", LM_VT_STRING);
+}
+
+Test(template, test_default_values_are_typed_as_strings)
+{
+  assert_template_format_value_and_type("${unset:-foo}", "foo", LM_VT_STRING);
+}
+
+Test(template, test_type_hint_overrides_the_calculated_type)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  LogTemplate *template = compile_template("${number1}");
+
+  GString *formatted_value = g_string_sized_new(64);
+  LogMessage *msg = create_sample_message();
+  LogMessageValueType type;
+
+  /* no type-hint */
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("123", formatted_value->str);
+  cr_assert_eq(type, LM_VT_INT64);
+
+  cr_assert(log_template_set_type_hint(template, "float", NULL));
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("123", formatted_value->str);
+  cr_assert_eq(type, LM_VT_DOUBLE);
+
+  cr_assert(log_template_set_type_hint(template, "string", NULL));
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("123", formatted_value->str);
+  cr_assert_eq(type, LM_VT_STRING);
+
+  log_template_unref(template);
+  template = compile_template("${HOST}");
+  cr_assert(log_template_set_type_hint(template, "int64", NULL));
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("bzorp", formatted_value->str);
+  cr_assert_eq(type, LM_VT_INT64);
+
+  /* empty string with a type uses the type hint */
+  log_template_unref(template);
+  template = compile_template("");
+  cr_assert(log_template_set_type_hint(template, "null", NULL));
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("", formatted_value->str);
+  cr_assert_eq(type, LM_VT_NULL);
+
+  log_template_unref(template);
+  /* msgref out of range */
+  template = compile_template("${HOST}@2");
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("", formatted_value->str);
+  cr_assert_eq(type, LM_VT_STRING);
+
+  log_msg_unref(msg);
+  log_template_unref(template);
+}
