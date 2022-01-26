@@ -34,6 +34,7 @@ struct _MainLoopThreadedWorker
 {
   gpointer data;
   MainLoopWorkerType worker_type;
+  GThread *thread;
   GMutex lock;
   struct
   {

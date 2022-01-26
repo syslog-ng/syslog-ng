@@ -108,7 +108,7 @@ main_loop_threaded_worker_start(MainLoopThreadedWorker *self)
   main_loop_assert_main_thread();
   main_loop_worker_job_start();
   main_loop_worker_register_exit_notification_callback(_request_worker_exit, self);
-  g_thread_new(NULL, _worker_thread_func, self);
+  self->thread = g_thread_new(NULL, _worker_thread_func, self);
   return _wait_for_startup_finished(self);
 }
 
@@ -127,6 +127,18 @@ main_loop_threaded_worker_init(MainLoopThreadedWorker *self,
 void
 main_loop_threaded_worker_clear(MainLoopThreadedWorker *self)
 {
+  /* by the time main_loop_threaded_worker_clear() is called, the mainloop
+   * should have terminated the thread with its request_exit() method.  The
+   * mainloop also ensures that these threads actually exit.  If the code
+   * hangs on this g_thread_join(), your worker probably did not respond to
+   * the request_exit() call or there's a bug in mainloop.
+   *
+   * With that in mind, g_thread_join() would return immediately and the
+   * only side effect is that it drops the reference to self->thread.
+   */
+
+  if (self->thread)
+    g_thread_join(self->thread);
   g_cond_clear(&self->startup.cond);
   g_mutex_clear(&self->lock);
 }
