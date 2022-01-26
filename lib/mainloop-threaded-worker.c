@@ -40,9 +40,12 @@ _signal_startup_finished(MainLoopThreadedWorker *self, gboolean startup_result)
 static gboolean
 _thread_init(MainLoopThreadedWorker *self)
 {
+  gboolean result = TRUE;
+
   main_loop_worker_thread_start(self->worker_type);
 
-  gboolean result = self->thread_init(self);
+  if (self->thread_init)
+    result = self->thread_init(self);
 
   _signal_startup_finished(self, result);
   return result;
@@ -51,7 +54,8 @@ _thread_init(MainLoopThreadedWorker *self)
 static void
 _thread_deinit(MainLoopThreadedWorker *self)
 {
-  self->thread_deinit(self);
+  if (self->thread_deinit)
+    self->thread_deinit(self);
   main_loop_call((MainLoopTaskFunc) main_loop_worker_job_complete, NULL, TRUE);
   main_loop_worker_thread_stop();
 }
