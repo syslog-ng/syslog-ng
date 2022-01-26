@@ -284,7 +284,6 @@ main_loop_worker_job_complete(void)
        */
 
       iv_task_register(&main_loop_workers_reenable_jobs_task);
-      _invoke_sync_call_actions();
     }
 }
 
@@ -323,6 +322,7 @@ main_loop_worker_assert_batch_callbacks_were_processed(void)
 static void
 _reenable_worker_jobs(void *s)
 {
+  _invoke_sync_call_actions();
   main_loop_workers_quit = FALSE;
   if (is_reloading_scheduled)
     msg_notice("Configuration reload finished");
@@ -336,7 +336,6 @@ main_loop_worker_sync_call(void (*func)(gpointer user_data), gpointer user_data)
 
   if (main_loop_jobs_running == 0)
     {
-      _invoke_sync_call_actions();
       _reenable_worker_jobs(NULL);
     }
   else
