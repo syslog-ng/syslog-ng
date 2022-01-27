@@ -173,7 +173,8 @@ test_log_messages_can_be_parsed(struct msgparse_params *param)
                 (gint)now, (gint)parsed_timestamp->ut_sec);
     }
 
-  cr_assert_eq(parsed_message->pri, param->expected_pri, "Unexpected message priority");
+  cr_assert_eq(parsed_message->pri, param->expected_pri, "Unexpected message priority %d != %d",
+               parsed_message->pri, param->expected_pri);
   assert_log_message_value(parsed_message, LM_V_HOST, param->expected_host);
   assert_log_message_value(parsed_message, LM_V_PROGRAM, param->expected_program);
   assert_log_message_value(parsed_message, LM_V_MESSAGE, param->expected_msg);
@@ -1195,6 +1196,23 @@ Test(msgparse, test_no_header_flag)
       .expected_program = "",
       .expected_host = "",
       .expected_msg = "some message",
+    },
+    {NULL}
+  };
+  run_parameterized_test(params);
+}
+
+Test(msgparse, test_no_rfc3164_fallback_flag)
+{
+  struct msgparse_params params[] =
+  {
+    {
+      .msg = "<189>some message",
+      .parse_flags = LP_SYSLOG_PROTOCOL | LP_NO_RFC3164_FALLBACK,
+      .expected_pri = 43,
+      .expected_program = "syslog-ng",
+      .expected_host = "",
+      .expected_msg = "Error processing log message: <189>some message",
     },
     {NULL}
   };
