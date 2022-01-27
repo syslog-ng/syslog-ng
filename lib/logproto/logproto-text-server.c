@@ -189,6 +189,7 @@ log_proto_text_server_split_buffer(LogProtoTextServer *self, LogProtoBufferedSer
   memmove(self->super.buffer, buffer_start, buffer_bytes);
   state->pending_buffer_pos = 0;
   state->pending_buffer_end = buffer_bytes;
+  buffer_start = self->super.buffer;
 
   if (G_UNLIKELY(self->super.pos_tracking))
     {
