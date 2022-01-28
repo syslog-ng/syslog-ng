@@ -433,9 +433,8 @@ tls_context_format_tls_error_tag(TLSContext *self)
 {
   gint ssl_error = ERR_get_error();
 
-  return evt_tag_printf("tls_error", "%s:%s:%s",
+  return evt_tag_printf("tls_error", "%s:%s",
                         ERR_lib_error_string(ssl_error),
-                        ERR_func_error_string(ssl_error),
                         ERR_reason_error_string(ssl_error));
 }
 
