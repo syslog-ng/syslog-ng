@@ -188,6 +188,9 @@ openssl_ctx_setup_ecdh(SSL_CTX *ctx)
 gboolean
 openssl_ctx_setup_dh(SSL_CTX *ctx)
 {
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+  return SSL_CTX_set_dh_auto(ctx, 1);
+#else
   DH *dh = DH_new();
   if (!dh)
     return 0;
@@ -214,8 +217,10 @@ openssl_ctx_setup_dh(SSL_CTX *ctx)
 
   DH_free(dh);
   return ctx_dh_success;
+#endif
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
 static long
 _is_dh_valid(DH *dh)
 {
@@ -234,6 +239,7 @@ _is_dh_valid(DH *dh)
 
   return !error_flag_is_set;
 }
+#endif
 
 gboolean
 openssl_ctx_load_dh_from_file(SSL_CTX *ctx, const gchar *dhparam_file)
@@ -242,6 +248,21 @@ openssl_ctx_load_dh_from_file(SSL_CTX *ctx, const gchar *dhparam_file)
   if (!bio)
     return 0;
 
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+  EVP_PKEY *dh_params = PEM_read_bio_Parameters(bio, NULL);
+  BIO_free(bio);
+
+  if (!dh_params)
+    return 0;
+
+  int ctx_dh_success = SSL_CTX_set0_tmp_dh_pkey(ctx, dh_params);
+
+  if (!ctx_dh_success)
+    EVP_PKEY_free(dh_params);
+
+  return ctx_dh_success;
+
+#else
   DH *dh = PEM_read_bio_DHparams(bio, NULL, NULL, NULL);
   BIO_free(bio);
 
@@ -255,6 +276,7 @@ openssl_ctx_load_dh_from_file(SSL_CTX *ctx, const gchar *dhparam_file)
 
   DH_free(dh);
   return ctx_dh_success;
+#endif
 }
 
 #if !SYSLOG_NG_HAVE_DECL_DH_SET0_PQG
