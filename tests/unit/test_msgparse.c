@@ -498,6 +498,16 @@ Test(msgparse, test_timestamp_others)
       "", // msg
       NULL, NULL, NULL, ignore_sdata_pairs
     },
+    /* some stuff forget the 'T' in the ISO timestamp */
+    {
+      "<7>2006-10-29 02:00:00.156+01:00", LP_EXPECT_HOSTNAME, NULL,
+      7,             // pri
+      1162083600, 156000, 3600,    // timestamp (sec/usec/zone)
+      "",                // host
+      "",        // openvpn
+      "", // msg
+      NULL, NULL, NULL, ignore_sdata_pairs
+    },
     {
       "<7>2006-10-29T02:00:00.156+01:00 ctld snmpd[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, "^ctld",
       7,             // pri
