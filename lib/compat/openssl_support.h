@@ -27,6 +27,7 @@
 #include "compat/compat.h"
 #include <openssl/ssl.h>
 #include <openssl/dh.h>
+#include <glib.h>
 
 #if !SYSLOG_NG_HAVE_DECL_SSL_CTX_GET0_PARAM
 X509_VERIFY_PARAM *SSL_CTX_get0_param(SSL_CTX *ctx);
@@ -65,6 +66,8 @@ BIGNUM *BN_get_rfc3526_prime_2048(BIGNUM *bn);
 void openssl_ctx_setup_session_tickets(SSL_CTX *ctx);
 
 void openssl_ctx_setup_ecdh(SSL_CTX *ctx);
+gboolean openssl_ctx_setup_dh(SSL_CTX *ctx);
+gboolean openssl_ctx_load_dh_from_file(SSL_CTX *ctx, const gchar *dhparam_file);
 
 void openssl_init(void);
 void openssl_crypto_init_threading(void);

@@ -162,7 +162,8 @@ openssl_init(void)
 #endif
 }
 
-void openssl_ctx_setup_ecdh(SSL_CTX *ctx)
+void
+openssl_ctx_setup_ecdh(SSL_CTX *ctx)
 {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 
@@ -182,6 +183,78 @@ void openssl_ctx_setup_ecdh(SSL_CTX *ctx)
   EC_KEY_free(ecdh);
 
 #endif
+}
+
+gboolean
+openssl_ctx_setup_dh(SSL_CTX *ctx)
+{
+  DH *dh = DH_new();
+  if (!dh)
+    return 0;
+
+  /*
+   * "2048-bit MODP Group" from RFC3526, Section 3.
+   *
+   * The prime is: 2^2048 - 2^1984 - 1 + 2^64 * { [2^1918 pi] + 124476 }
+   *
+   * RFC3526 specifies a generator of 2.
+   */
+
+  BIGNUM *g = NULL;
+  BN_dec2bn(&g, "2");
+
+  if (!DH_set0_pqg(dh, BN_get_rfc3526_prime_2048(NULL), NULL, g))
+    {
+      BN_free(g);
+      DH_free(dh);
+      return 0;
+    }
+
+  long ctx_dh_success = SSL_CTX_set_tmp_dh(ctx, dh);
+
+  DH_free(dh);
+  return ctx_dh_success;
+}
+
+static long
+_is_dh_valid(DH *dh)
+{
+  if (!dh)
+    return 0;
+
+  int check_flags;
+  if (!DH_check(dh, &check_flags))
+    return 0;
+
+  long error_flag_is_set = check_flags &
+                           (DH_CHECK_P_NOT_PRIME
+                            | DH_UNABLE_TO_CHECK_GENERATOR
+                            | DH_CHECK_P_NOT_SAFE_PRIME
+                            | DH_NOT_SUITABLE_GENERATOR);
+
+  return !error_flag_is_set;
+}
+
+gboolean
+openssl_ctx_load_dh_from_file(SSL_CTX *ctx, const gchar *dhparam_file)
+{
+  BIO *bio = BIO_new_file(dhparam_file, "r");
+  if (!bio)
+    return 0;
+
+  DH *dh = PEM_read_bio_DHparams(bio, NULL, NULL, NULL);
+  BIO_free(bio);
+
+  if (!_is_dh_valid(dh))
+    {
+      DH_free(dh);
+      return 0;
+    }
+
+  long ctx_dh_success = SSL_CTX_set_tmp_dh(ctx, dh);
+
+  DH_free(dh);
+  return ctx_dh_success;
 }
 
 #if !SYSLOG_NG_HAVE_DECL_DH_SET0_PQG
