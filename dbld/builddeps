@@ -10,6 +10,15 @@ APT_INSTALL="apt-get install -y --no-install-recommends"
 set -e
 set -x
 
+function workaround_rpm_repos() {
+    case "${OS_DISTRIBUTION}" in
+        fedora)
+            # Workaround for often getting 503 from mirrors.fedoraproject.org.
+            sed -i -e '/metalink=.*/s/^/#/' -e '/.*baseurl.*/c\baseurl=https://ftp.halifax.rwth-aachen.de/fedora/linux/releases/$releasever/Everything/$basearch/os/' /etc/yum.repos.d/fedora*.repo
+            ;;
+    esac
+}
+
 # this function is run first and is responsible for installing stuff that is
 # needed by this script _before_ installing packages from packages.manifest.
 #
