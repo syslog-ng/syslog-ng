@@ -66,8 +66,6 @@ typedef struct
   LogQueue *queue;
   LogTemplate *message;
   LogTemplateOptions template_options;
-  WorkerOptions worker_options;
-
 } SNMPDestDriver;
 
 LogDriver *snmpdest_dd_new(GlobalConfig *cfg);

@@ -29,6 +29,7 @@
 #include "seqnum.h"
 #include "scratch-buffers.h"
 #include "timeutils/misc.h"
+#include "mainloop-threaded-worker.h"
 
 #define MAX_RETRIES_ON_ERROR_DEFAULT 3
 #define MAX_RETRIES_BEFORE_SUSPEND_DEFAULT 3
@@ -655,37 +656,6 @@ _init_watches(LogThreadedDestWorker *self)
 }
 
 static void
-_signal_startup_finished(LogThreadedDestWorker *self, gboolean thread_failure)
-{
-  g_mutex_lock(&self->owner->lock);
-  self->startup_finished = TRUE;
-  self->startup_failure |= thread_failure;
-  g_cond_signal(&self->started_up);
-  g_mutex_unlock(&self->owner->lock);
-}
-
-static void
-_signal_startup_success(LogThreadedDestWorker *self)
-{
-  _signal_startup_finished(self, FALSE);
-}
-
-static void
-_signal_startup_failure(LogThreadedDestWorker *self)
-{
-  _signal_startup_finished(self, TRUE);
-}
-
-static void
-_wait_for_startup_finished(LogThreadedDestWorker *self)
-{
-  g_mutex_lock(&self->owner->lock);
-  while (!self->startup_finished)
-    g_cond_wait(&self->started_up, &self->owner->lock);
-  g_mutex_unlock(&self->owner->lock);
-}
-
-static void
 _register_worker_stats(LogThreadedDestWorker *self)
 {
   StatsClusterKey sc_key;
@@ -722,25 +692,37 @@ _perform_final_flush(LogThreadedDestWorker *self)
   log_queue_rewind_backlog_all(self->queue);
 }
 
-static void
-_worker_thread(gpointer arg)
+static gboolean
+_worker_thread_init(MainLoopThreadedWorker *s)
 {
-  LogThreadedDestWorker *self = (LogThreadedDestWorker *) arg;
+  LogThreadedDestWorker *self = (LogThreadedDestWorker *) s->data;
 
-  iv_init();
+  iv_event_register(&self->wake_up_event);
+  iv_event_register(&self->shutdown_event);
+
+  return log_threaded_dest_worker_init(self);
+}
+
+static void
+_worker_thread_deinit(MainLoopThreadedWorker *s)
+{
+  LogThreadedDestWorker *self = (LogThreadedDestWorker *) s->data;
+
+  log_threaded_dest_worker_deinit(self);
+
+  iv_event_unregister(&self->wake_up_event);
+  iv_event_unregister(&self->shutdown_event);
+}
+
+static void
+_worker_thread(MainLoopThreadedWorker *s)
+{
+  LogThreadedDestWorker *self = (LogThreadedDestWorker *) s->data;
 
   msg_debug("Dedicated worker thread started",
             evt_tag_int("worker_index", self->worker_index),
             evt_tag_str("driver", self->owner->super.super.id),
             log_expr_node_location_tag(self->owner->super.super.super.expr_node));
-
-  iv_event_register(&self->wake_up_event);
-  iv_event_register(&self->shutdown_event);
-
-  if (!log_threaded_dest_worker_thread_init(self))
-    goto error;
-
-  _signal_startup_success(self);
 
   /* if we have anything on the backlog, that was a partial, potentially
    * not-flushed batch.  Rewind it, so we start with that */
@@ -754,21 +736,35 @@ _worker_thread(gpointer arg)
 
   _disconnect(self);
 
-  log_threaded_dest_worker_thread_deinit(self);
-
   msg_debug("Dedicated worker thread finished",
             evt_tag_int("worker_index", self->worker_index),
             evt_tag_str("driver", self->owner->super.super.id),
             log_expr_node_location_tag(self->owner->super.super.super.expr_node));
 
-  goto ok;
+}
 
-error:
-  _signal_startup_failure(self);
-ok:
-  iv_event_unregister(&self->wake_up_event);
-  iv_event_unregister(&self->shutdown_event);
-  iv_deinit();
+static void
+_request_worker_exit(MainLoopThreadedWorker *s)
+{
+  LogThreadedDestWorker *self = (LogThreadedDestWorker *) s->data;
+
+  msg_debug("Shutting down dedicated worker thread",
+            evt_tag_int("worker_index", self->worker_index),
+            evt_tag_str("driver", self->owner->super.super.id),
+            log_expr_node_location_tag(self->owner->super.super.super.expr_node));
+  self->owner->under_termination = TRUE;
+  iv_event_post(&self->shutdown_event);
+}
+
+static gboolean
+log_threaded_dest_worker_start(LogThreadedDestWorker *self)
+{
+  msg_debug("Starting dedicated worker thread",
+            evt_tag_int("worker_index", self->worker_index),
+            evt_tag_str("driver", self->owner->super.super.id),
+            log_expr_node_location_tag(self->owner->super.super.super.expr_node));
+
+  return main_loop_threaded_worker_start(&self->thread);
 }
 
 static gboolean
@@ -806,19 +802,23 @@ log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self)
 void
 log_threaded_dest_worker_free_method(LogThreadedDestWorker *self)
 {
-  g_cond_clear(&self->started_up);
+  main_loop_threaded_worker_clear(&self->thread);
 }
 
 void
 log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedDestDriver *owner, gint worker_index)
 {
+  main_loop_threaded_worker_init(&self->thread, MLW_THREADED_OUTPUT_WORKER, self);
+  self->thread.thread_init = _worker_thread_init;
+  self->thread.thread_deinit = _worker_thread_deinit;
+  self->thread.run = _worker_thread;
+  self->thread.request_exit = _request_worker_exit;
   self->worker_index = worker_index;
-  self->thread_init = log_threaded_dest_worker_init_method;
-  self->thread_deinit = log_threaded_dest_worker_deinit_method;
+  self->init = log_threaded_dest_worker_init_method;
+  self->deinit = log_threaded_dest_worker_deinit_method;
   self->free_fn = log_threaded_dest_worker_free_method;
   self->owner = owner;
   self->time_reopen = -1;
-  g_cond_init(&self->started_up);
   _init_watches(self);
 }
 
@@ -843,7 +843,7 @@ log_threaded_dest_driver_set_num_workers(LogDriver *s, gint num_workers)
 /* compatibility bridge between LogThreadedDestWorker */
 
 static gboolean
-_compat_thread_init(LogThreadedDestWorker *self)
+_compat_init(LogThreadedDestWorker *self)
 {
   if (!log_threaded_dest_worker_init_method(self))
     return FALSE;
@@ -855,7 +855,7 @@ _compat_thread_init(LogThreadedDestWorker *self)
 }
 
 static void
-_compat_thread_deinit(LogThreadedDestWorker *self)
+_compat_deinit(LogThreadedDestWorker *self)
 {
   if (self->owner->worker.thread_deinit)
     self->owner->worker.thread_deinit(self->owner);
@@ -894,8 +894,8 @@ _compat_flush(LogThreadedDestWorker *self, LogThreadedFlushMode mode)
 static void
 _init_worker_compat_layer(LogThreadedDestWorker *self)
 {
-  self->thread_init = _compat_thread_init;
-  self->thread_deinit = _compat_thread_deinit;
+  self->init = _compat_init;
+  self->deinit = _compat_deinit;
   self->connect = _compat_connect;
   self->disconnect = _compat_disconnect;
   self->insert = _compat_insert;
@@ -924,33 +924,6 @@ _construct_worker(LogThreadedDestDriver *self, gint worker_index)
   return self->worker.construct(self, worker_index);
 }
 
-static void
-_request_worker_exit(gpointer s)
-{
-  LogThreadedDestWorker *self = (LogThreadedDestWorker *) s;
-
-  msg_debug("Shutting down dedicated worker thread",
-            evt_tag_int("worker_index", self->worker_index),
-            evt_tag_str("driver", self->owner->super.super.id),
-            log_expr_node_location_tag(self->owner->super.super.super.expr_node));
-  self->owner->under_termination = TRUE;
-  iv_event_post(&self->shutdown_event);
-}
-
-static gboolean
-_start_worker_thread(LogThreadedDestWorker *self)
-{
-  msg_debug("Starting dedicated worker thread",
-            evt_tag_int("worker_index", self->worker_index),
-            evt_tag_str("driver", self->owner->super.super.id),
-            log_expr_node_location_tag(self->owner->super.super.super.expr_node));
-
-  main_loop_create_worker_thread(_worker_thread,
-                                 _request_worker_exit,
-                                 self, &self->owner->worker_options);
-  _wait_for_startup_finished(self);
-  return !self->startup_failure;
-}
 
 void
 log_threaded_dest_driver_set_max_retries_on_error(LogDriver *s, gint max_retries)
@@ -1159,7 +1132,7 @@ log_threaded_dest_driver_start_workers(LogPipe *s)
 
   for (gint worker_index = 0; worker_index < self->num_workers; worker_index++)
     {
-      if (!_start_worker_thread(self->workers[worker_index]))
+      if (!log_threaded_dest_worker_start(self->workers[worker_index]))
         return FALSE;
     }
   return TRUE;
@@ -1204,8 +1177,6 @@ void
 log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig *cfg)
 {
   log_dest_driver_init_instance(&self->super, cfg);
-
-  self->worker_options.is_output_thread = TRUE;
 
   self->super.super.super.init = log_threaded_dest_driver_init_method;
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;

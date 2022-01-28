@@ -60,10 +60,8 @@ _threaded_feed(gpointer args)
   GTimeVal start, end;
   glong diff;
 
-  iv_init();
-
   /* emulate main loop for LogQueue */
-  main_loop_worker_thread_start(NULL);
+  main_loop_worker_thread_start(MLW_ASYNC_WORKER);
 
   tmpl = log_msg_new_empty();
 
@@ -87,7 +85,6 @@ _threaded_feed(gpointer args)
   g_mutex_unlock(&tlock);
   log_msg_unref(tmpl);
   main_loop_worker_thread_stop();
-  iv_deinit();
   return NULL;
 }
 
@@ -101,8 +98,6 @@ _threaded_consume(gpointer st)
   gint msg_count = 0;
 
   /* just to make sure time is properly cached */
-  iv_init();
-
   while (msg_count < MESSAGES_SUM)
     {
       gint slept = 0;
@@ -139,18 +134,13 @@ _threaded_consume(gpointer st)
       loops++;
     }
 
-  iv_deinit();
   return NULL;
 }
 
 static gpointer
 _output_thread(gpointer args)
 {
-  WorkerOptions wo;
-
-  iv_init();
-  wo.is_output_thread = TRUE;
-  main_loop_worker_thread_start(&wo);
+  main_loop_worker_thread_start(MLW_THREADED_OUTPUT_WORKER);
   struct timespec ns;
 
   /* sleep 1 msec */
@@ -379,9 +369,7 @@ _flow_control_feed_thread(gpointer args)
   LogPathOptions non_flow_controlled_path = LOG_PATH_OPTIONS_INIT;
   non_flow_controlled_path.flow_control_requested = FALSE;
 
-  iv_init();
-
-  main_loop_worker_thread_start(NULL);
+  main_loop_worker_thread_start(MLW_ASYNC_WORKER);
 
   fed_messages = 0;
   acked_messages = 0;
@@ -395,7 +383,6 @@ _flow_control_feed_thread(gpointer args)
 
   main_loop_worker_invoke_batch_callbacks();
   main_loop_worker_thread_stop();
-  iv_deinit();
   return NULL;
 }
 

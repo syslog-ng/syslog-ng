@@ -30,8 +30,6 @@
 
 #include <iv.h>
 
-typedef enum { GENERAL_THREAD = 0, OUTPUT_THREAD, EXTERNAL_INPUT_THREAD, MAIN_LOOP_WORKER_TYPE_MAX} MainLoopWorkerType;
-
 TLS_BLOCK_START
 {
   /* Thread IDs are low numbered integers that can be used to index
@@ -80,7 +78,7 @@ _allocate_thread_id(void)
 
   main_loop_worker_id = 0;
 
-  if(main_loop_worker_type != EXTERNAL_INPUT_THREAD)
+  if(main_loop_worker_type != MLW_THREADED_INPUT_WORKER)
     {
       for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
         {
@@ -132,8 +130,8 @@ typedef struct _WorkerExitNotification
 
 static GList *exit_notification_list = NULL;
 
-static void
-_register_exit_notification_callback(WorkerExitNotificationFunc func, gpointer user_data)
+void
+main_loop_worker_register_exit_notification_callback(WorkerExitNotificationFunc func, gpointer user_data)
 {
   WorkerExitNotification *cfunc = g_new(WorkerExitNotification, 1);
 
@@ -161,19 +159,9 @@ _request_all_threads_to_exit(void)
 
 /* Call this function from worker threads, when you start up */
 void
-main_loop_worker_thread_start(void *cookie)
+main_loop_worker_thread_start(MainLoopWorkerType worker_type)
 {
-  WorkerOptions *worker_options = cookie;
-  main_loop_worker_type = GENERAL_THREAD;
-
-  if (worker_options && worker_options->is_output_thread)
-    {
-      main_loop_worker_type = OUTPUT_THREAD;
-    }
-  else if(worker_options && worker_options->is_external_input)
-    {
-      main_loop_worker_type = EXTERNAL_INPUT_THREAD;
-    }
+  main_loop_worker_type = worker_type;
 
   _allocate_thread_id();
   INIT_IV_LIST_HEAD(&batch_callbacks);
@@ -296,7 +284,6 @@ main_loop_worker_job_complete(void)
        */
 
       iv_task_register(&main_loop_workers_reenable_jobs_task);
-      _invoke_sync_call_actions();
     }
 }
 
@@ -326,58 +313,16 @@ main_loop_worker_invoke_batch_callbacks(void)
   }
 }
 
-typedef struct _WorkerThreadParams
-{
-  WorkerThreadFunc func;
-  gpointer data;
-  WorkerOptions *worker_options;
-} WorkerThreadParams;
-
-static gpointer
-_worker_thread_func(gpointer st)
-{
-  WorkerThreadParams *p = st;
-
-  main_loop_worker_thread_start(p->worker_options);
-  p->func(p->data);
-  main_loop_call((MainLoopTaskFunc) main_loop_worker_job_complete, NULL, TRUE);
-  main_loop_worker_thread_stop();
-
-
-  /* NOTE: this assert aims to validate that the worker thread in fact
-   * invokes main_loop_worker_invoke_batch_callbacks() during its operation.
-   * Please do so every once a couple of messages, hopefully you have a
-   * natural barrier that lets you decide when, the easiest would be
-   * log-fetch-limit(), but other limits may also be applicable.
-   */
-  g_assert(iv_list_empty(&batch_callbacks));
-
-  g_free(st);
-  return NULL;
-}
-
 void
-main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data,
-                               WorkerOptions *worker_options)
+main_loop_worker_assert_batch_callbacks_were_processed(void)
 {
-  WorkerThreadParams *p;
-
-  main_loop_assert_main_thread();
-
-  p = g_new0(WorkerThreadParams, 1);
-  p->func = func;
-  p->data = data;
-  p->worker_options = worker_options;
-
-  main_loop_worker_job_start();
-  if (terminate_func)
-    _register_exit_notification_callback(terminate_func, data);
-  g_thread_new(NULL, _worker_thread_func, p);
+  g_assert(iv_list_empty(&batch_callbacks));
 }
 
 static void
 _reenable_worker_jobs(void *s)
 {
+  _invoke_sync_call_actions();
   main_loop_workers_quit = FALSE;
   if (is_reloading_scheduled)
     msg_notice("Configuration reload finished");
@@ -391,7 +336,6 @@ main_loop_worker_sync_call(void (*func)(gpointer user_data), gpointer user_data)
 
   if (main_loop_jobs_running == 0)
     {
-      _invoke_sync_call_actions();
       _reenable_worker_jobs(NULL);
     }
   else

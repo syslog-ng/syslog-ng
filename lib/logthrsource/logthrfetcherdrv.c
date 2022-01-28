@@ -48,21 +48,6 @@ _tag_driver(LogThreadedFetcherDriver *f)
   return evt_tag_str("driver", f->super.super.super.id);
 }
 
-static inline void
-_thread_init(LogThreadedFetcherDriver *self)
-{
-  msg_trace("Fetcher thread_init()", _tag_driver(self));
-  if (self->thread_init)
-    self->thread_init(self);
-}
-
-static inline void
-_thread_deinit(LogThreadedFetcherDriver *self)
-{
-  msg_trace("Fetcher thread_deinit()", _tag_driver(self));
-  if (self->thread_deinit)
-    self->thread_deinit(self);
-}
 
 static inline gboolean
 _connect(LogThreadedFetcherDriver *self)
@@ -106,17 +91,36 @@ _start_no_data_timer(LogThreadedFetcherDriver *self)
   iv_timer_register(&self->no_data_timer);
 }
 
+static gboolean
+_worker_thread_init(LogThreadedSourceDriver *s)
+{
+  LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) s;
+
+  iv_event_register(&self->shutdown_event);
+
+  msg_trace("Fetcher thread_init()", _tag_driver(self));
+  if (self->thread_init)
+    self->thread_init(self);
+  return TRUE;
+}
+
+static void
+_worker_thread_deinit(LogThreadedSourceDriver *s)
+{
+  LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) s;
+
+  msg_trace("Fetcher thread_deinit()", _tag_driver(self));
+  if (self->thread_deinit)
+    self->thread_deinit(self);
+  iv_event_unregister(&self->shutdown_event);
+}
+
 static void
 _worker_run(LogThreadedSourceDriver *s)
 {
   LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) s;
 
-  /* iv_init() and iv_deinit() are called by LogThreadedSourceDriver */
-
   iv_event_register(&self->wakeup_event);
-  iv_event_register(&self->shutdown_event);
-
-  _thread_init(self);
   if (_connect(self))
     iv_task_register(&self->fetch_task);
   else
@@ -125,7 +129,6 @@ _worker_run(LogThreadedSourceDriver *s)
   iv_main();
 
   _disconnect(self);
-  _thread_deinit(self);
 }
 
 static void
@@ -250,7 +253,6 @@ static void
 _stop_watches(LogThreadedFetcherDriver *self)
 {
   iv_event_unregister(&self->wakeup_event);
-  iv_event_unregister(&self->shutdown_event);
 
   if (iv_task_registered(&self->fetch_task))
     iv_task_unregister(&self->fetch_task);
@@ -325,9 +327,6 @@ log_threaded_fetcher_driver_init_method(LogPipe *s)
   if (!log_threaded_source_driver_init_method(s))
     return FALSE;
 
-  log_threaded_source_set_wakeup_func(&self->super, _wakeup);
-  log_threaded_source_driver_set_worker_run_func(&self->super, _worker_run);
-  log_threaded_source_driver_set_worker_request_exit_func(&self->super, _worker_request_exit);
 
   g_assert(self->fetch);
 
@@ -365,4 +364,10 @@ log_threaded_fetcher_driver_init_instance(LogThreadedFetcherDriver *self, Global
   self->super.super.super.super.init = log_threaded_fetcher_driver_init_method;
   self->super.super.super.super.deinit = log_threaded_fetcher_driver_deinit_method;
   self->super.super.super.super.free_fn = log_threaded_fetcher_driver_free_method;
+
+  self->super.wakeup = _wakeup;
+  self->super.thread_init = _worker_thread_init;
+  self->super.thread_deinit = _worker_thread_deinit;
+  self->super.run = _worker_run;
+  self->super.request_exit = _worker_request_exit;
 }

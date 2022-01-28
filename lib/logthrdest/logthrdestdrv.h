@@ -30,8 +30,8 @@
 #include "stats/stats-registry.h"
 #include "stats/aggregator/stats-aggregator.h"
 #include "logqueue.h"
-#include "mainloop-worker.h"
 #include "seqnum.h"
+#include "mainloop-threaded-worker.h"
 
 #include <iv.h>
 #include <iv_event.h>
@@ -65,6 +65,7 @@ typedef struct _LogThreadedDestWorker LogThreadedDestWorker;
 
 struct _LogThreadedDestWorker
 {
+  MainLoopThreadedWorker thread;
   LogQueue *queue;
   struct iv_task  do_work;
   struct iv_event wake_up_event;
@@ -85,13 +86,10 @@ struct _LogThreadedDestWorker
   struct timespec last_flush_time;
   gboolean enable_batching;
   gboolean suspended;
-  gboolean startup_finished;
-  gboolean startup_failure;
-  GCond started_up;
   time_t time_reopen;
 
-  gboolean (*thread_init)(LogThreadedDestWorker *s);
-  void (*thread_deinit)(LogThreadedDestWorker *s);
+  gboolean (*init)(LogThreadedDestWorker *s);
+  void (*deinit)(LogThreadedDestWorker *s);
   gboolean (*connect)(LogThreadedDestWorker *s);
   void (*disconnect)(LogThreadedDestWorker *s);
   LogThreadedResult (*insert)(LogThreadedDestWorker *s, LogMessage *msg);
@@ -153,23 +151,22 @@ struct _LogThreadedDestDriver
 
   gint32 shared_seq_num;
 
-  WorkerOptions worker_options;
   const gchar *(*format_stats_instance)(LogThreadedDestDriver *s);
 };
 
 static inline gboolean
-log_threaded_dest_worker_thread_init(LogThreadedDestWorker *self)
+log_threaded_dest_worker_init(LogThreadedDestWorker *self)
 {
-  if (self->thread_init)
-    return self->thread_init(self);
+  if (self->init)
+    return self->init(self);
   return TRUE;
 }
 
 static inline void
-log_threaded_dest_worker_thread_deinit(LogThreadedDestWorker *self)
+log_threaded_dest_worker_deinit(LogThreadedDestWorker *self)
 {
-  if (self->thread_deinit)
-    self->thread_deinit(self);
+  if (self->deinit)
+    self->deinit(self);
 }
 
 static inline gboolean

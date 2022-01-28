@@ -39,7 +39,6 @@ typedef struct _TestThreadedSourceDriver
   gint num_of_messages_to_generate;
   gboolean suspended;
   gboolean exit_requested;
-  gboolean blocking_post;
 } TestThreadedSourceDriver;
 
 MainLoopOptions main_loop_options = {0};
@@ -87,19 +86,13 @@ test_threaded_source_driver_init_method(LogPipe *s)
 
   /* mock out the hard-coded DNS lookup calls inside log_source_queue() */
   _get_source(self)->super.queue = _source_queue_mock;
-  log_threaded_source_driver_set_worker_request_exit_func(&self->super, _request_exit);
-
-  if (self->blocking_post)
-    log_threaded_source_driver_set_worker_run_func(&self->super, _run_using_blocking_posts);
-  else
-    log_threaded_source_driver_set_worker_run_func(&self->super, _run_simple);
 
   return TRUE;
 }
 
 
 static TestThreadedSourceDriver *
-test_threaded_sd_new(GlobalConfig *cfg)
+test_threaded_sd_new(GlobalConfig *cfg, gboolean blocking_post)
 {
   TestThreadedSourceDriver *self = g_new0(TestThreadedSourceDriver, 1);
 
@@ -109,13 +102,25 @@ test_threaded_sd_new(GlobalConfig *cfg)
   self->super.format_stats_instance = _format_stats_instance;
   self->super.super.super.super.generate_persist_name = _generate_persist_name;
 
+  self->super.request_exit = _request_exit;
+  if (blocking_post)
+    self->super.run = _run_using_blocking_posts;
+  else
+    self->super.run = _run_simple;
+
   return self;
 }
 
 static TestThreadedSourceDriver *
 create_threaded_source(void)
 {
-  return test_threaded_sd_new(main_loop_get_current_config(main_loop));
+  return test_threaded_sd_new(main_loop_get_current_config(main_loop), FALSE);
+}
+
+static TestThreadedSourceDriver *
+create_threaded_source_blocking(void)
+{
+  return test_threaded_sd_new(main_loop_get_current_config(main_loop), TRUE);
 }
 
 static void
@@ -201,9 +206,8 @@ TestSuite(logthrsourcedrv, .init = setup, .fini = teardown, .timeout = 10);
 
 Test(logthrsourcedrv, test_threaded_source_blocking_post)
 {
-  TestThreadedSourceDriver *s = create_threaded_source();
+  TestThreadedSourceDriver *s = create_threaded_source_blocking();
 
-  s->blocking_post = TRUE;
   s->num_of_messages_to_generate = 10;
 
   start_test_threaded_source(s);

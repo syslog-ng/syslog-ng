@@ -749,7 +749,7 @@ _insert_single(LogThreadedDestWorker *s, LogMessage *msg)
 }
 
 static gboolean
-_thread_init(LogThreadedDestWorker *s)
+_init(LogThreadedDestWorker *s)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
@@ -771,7 +771,7 @@ _thread_init(LogThreadedDestWorker *s)
 }
 
 static void
-_thread_deinit(LogThreadedDestWorker *s)
+_deinit(LogThreadedDestWorker *s)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
 
@@ -797,8 +797,8 @@ http_dw_new(LogThreadedDestDriver *o, gint worker_index)
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) o;
 
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
-  self->super.thread_init = _thread_init;
-  self->super.thread_deinit = _thread_deinit;
+  self->super.init = _init;
+  self->super.deinit = _deinit;
   self->super.flush = _flush;
   self->super.free_fn = http_dw_free;
 

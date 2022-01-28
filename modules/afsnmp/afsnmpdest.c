@@ -759,7 +759,6 @@ snmpdest_dd_new(GlobalConfig *cfg)
   self->transport = g_strdup("UDP");
 
   log_template_options_defaults(&self->template_options);
-  self->worker_options.is_output_thread = TRUE;
 
   return (LogDriver *)self;
 }
