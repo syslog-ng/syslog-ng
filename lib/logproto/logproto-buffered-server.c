@@ -22,6 +22,7 @@
  *
  */
 #include "logproto-buffered-server.h"
+#include "logproto.h"
 #include "messages.h"
 #include "serialize.h"
 #include "compat/string.h"
