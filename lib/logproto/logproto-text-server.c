@@ -40,121 +40,11 @@ log_proto_text_server_prepare_method(LogProtoServer *s, GIOCondition *cond, gint
   return avail ? LPPA_FORCE_SCHEDULE_FETCH : LPPA_POLL_IO;
 }
 
-static void
-log_proto_text_server_maybe_realloc_reverse_buffer(LogProtoTextServer *self, gsize buffer_length)
-{
-  if (self->reverse_buffer_len >= buffer_length)
-    return;
-
-  /* we free and malloc, since we never need the data still in reverse buffer */
-  g_free(self->reverse_buffer);
-  self->reverse_buffer_len = buffer_length;
-  self->reverse_buffer = g_malloc(buffer_length);
-}
-
-/*
- * returns the number of bytes that represent the UTF8 encoding buffer
- * in the original encoding that the user specified.
- *
- * NOTE: this is slow, but we only call this for the remainder of our
- * buffer (e.g. the partial line at the end of our last chunk of read
- * data). Also, this is only invoked if the file uses an encoding.
- */
-static gsize
-log_proto_text_server_get_raw_size_of_buffer(LogProtoTextServer *self, const guchar *buffer, gsize buffer_len)
-{
-  gchar *out;
-  const guchar *in;
-  gsize avail_out, avail_in;
-  gint ret;
-
-  if (self->reverse_convert == ((GIConv) -1) && !self->convert_scale)
-    {
-      /* try to speed up raw size calculation by recognizing the most
-       * prominent character encodings and in the case the encoding
-       * uses fixed size characters set that in self->convert_scale,
-       * which in turn will speed up the reversal of the UTF8 buffer
-       * size to raw buffer sizes.
-       */
-      self->convert_scale = log_proto_get_char_size_for_fixed_encoding(self->super.super.options->encoding);
-      if (self->convert_scale == 0)
-        {
-          /* this encoding is not known, do the conversion for real :( */
-          self->reverse_convert = g_iconv_open(self->super.super.options->encoding, "utf-8");
-        }
-    }
-
-  if (self->convert_scale)
-    return g_utf8_strlen((gchar *) buffer, buffer_len) * self->convert_scale;
-
-
-  /* Multiplied by 6, because 1 character can be maximum 6 bytes in UTF-8 encoding */
-  log_proto_text_server_maybe_realloc_reverse_buffer(self, buffer_len * 6);
-
-  avail_out = self->reverse_buffer_len;
-  out = self->reverse_buffer;
-
-  avail_in = buffer_len;
-  in = buffer;
-
-  ret = g_iconv(self->reverse_convert, (gchar **) &in, &avail_in, &out, &avail_out);
-  if (ret == (gsize) -1)
-    {
-      /* oops, we cannot reverse that we ourselves converted to UTF-8,
-       * this is simply impossible, but never say never */
-      msg_error("Internal error, couldn't reverse the internal UTF8 string to the original encoding",
-                evt_tag_printf("buffer", "%.*s", (gint) buffer_len, buffer));
-      return 0;
-    }
-  else
-    {
-      return self->reverse_buffer_len - avail_out;
-    }
-}
-
 static gint
 log_proto_text_server_accumulate_line_method(LogProtoTextServer *self, const guchar *msg, gsize msg_len,
                                              gssize consumed_len)
 {
   return LPT_CONSUME_LINE | LPT_EXTRACTED;
-}
-
-static void
-log_proto_text_server_split_buffer(LogProtoTextServer *self, LogProtoBufferedServerState *state,
-                                   const guchar *buffer_start, gsize buffer_bytes)
-{
-  gsize raw_split_size;
-
-  /* buffer is not full, but no EOL is present, move partial line
-   * to the beginning of the buffer to make space for new data.
-   */
-
-  memmove(self->super.buffer, buffer_start, buffer_bytes);
-  state->pending_buffer_pos = 0;
-  state->pending_buffer_end = buffer_bytes;
-  buffer_start = self->super.buffer;
-
-  if (G_UNLIKELY(self->super.pos_tracking))
-    {
-      /* NOTE: we modify the current file position _after_ updating
-         buffer_pos, since if we crash right here, at least we
-         won't lose data on the next restart, but rather we
-         duplicate some data */
-
-
-      if (self->super.super.options->encoding)
-        raw_split_size = log_proto_text_server_get_raw_size_of_buffer(self, buffer_start, buffer_bytes);
-      else
-        raw_split_size = buffer_bytes;
-
-      state->pending_raw_stream_pos += (gint64) (state->pending_raw_buffer_size - raw_split_size);
-      state->pending_raw_buffer_size = raw_split_size;
-
-      msg_trace("Buffer split",
-                evt_tag_int("raw_split_size", raw_split_size),
-                evt_tag_int("buffer_bytes", buffer_bytes));
-    }
-
 }
 
 static gboolean
@@ -328,7 +218,7 @@ log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar 
         }
       else
         {
-          log_proto_text_server_split_buffer(self, state, buffer_start, buffer_bytes);
+          log_proto_buffered_server_split_buffer(&self->super, state, buffer_start, buffer_bytes);
           goto exit;
         }
     }
@@ -340,7 +230,7 @@ log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar 
         }
       else
         {
-          log_proto_text_server_split_buffer(self, state, buffer_start, buffer_bytes);
+          log_proto_buffered_server_split_buffer(&self->super, state, buffer_start, buffer_bytes);
           goto exit;
         }
     }
@@ -367,12 +257,9 @@ void
 log_proto_text_server_free(LogProtoServer *s)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
-  if (self->reverse_convert != (GIConv) -1)
-    g_iconv_close(self->reverse_convert);
-
-  g_free(self->reverse_buffer);
   log_proto_buffered_server_free_method(&self->super.super);
 }
+
 
 void
 log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, const LogProtoServerOptions *options)
@@ -384,7 +271,6 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, co
   self->super.flush = log_proto_text_server_flush;
   self->accumulate_line = log_proto_text_server_accumulate_line_method;
   self->super.stream_based = TRUE;
-  self->reverse_convert = (GIConv) -1;
   self->consumed_len = -1;
 }
 
