@@ -624,6 +624,8 @@ log_proto_buffered_server_fetch_from_buffer(LogProtoBufferedServer *self, const 
       goto exit;
     }
 
+  /* buffer_start should not be used after the fetch_from_buffer() call as one
+   * of its implementations splits the buffer */
   success = self->fetch_from_buffer(self, buffer_start, buffer_bytes, msg, msg_len);
   if (aux)
     log_transport_aux_data_copy(aux, &self->buffer_aux);

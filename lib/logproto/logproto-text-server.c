@@ -402,6 +402,8 @@ log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar 
         }
     }
 
+  /* buffer_start should not be used after calling split_buffer() */
+
   log_proto_text_server_remove_trailing_newline(msg, msg_len);
   result = TRUE;
 
