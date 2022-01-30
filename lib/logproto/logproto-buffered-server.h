@@ -128,8 +128,4 @@ void log_proto_buffered_server_free_method(LogProtoServer *s);
 LogProtoStatus log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len,
                                                gboolean *may_read, LogTransportAuxData *aux, Bookmark *bookmark);
 
-/* protected */
-void log_proto_buffered_server_split_buffer(LogProtoBufferedServer *self, LogProtoBufferedServerState *state,
-                                            const guchar *buffer_start, gsize buffer_bytes);
-
 #endif

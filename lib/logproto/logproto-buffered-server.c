@@ -666,9 +666,9 @@ log_proto_buffered_server_get_raw_size_of_buffer(LogProtoBufferedServer *self, c
     }
 }
 
-void
+static void
 log_proto_buffered_server_split_buffer(LogProtoBufferedServer *self, LogProtoBufferedServerState *state,
-                                       const guchar *buffer_start, gsize buffer_bytes)
+                                       const guchar **buffer_start, gsize buffer_bytes)
 {
   gsize raw_split_size;
 
@@ -676,10 +676,10 @@ log_proto_buffered_server_split_buffer(LogProtoBufferedServer *self, LogProtoBuf
    * to the beginning of the buffer to make space for new data.
    */
 
-  memmove(self->buffer, buffer_start, buffer_bytes);
+  memmove(self->buffer, *buffer_start, buffer_bytes);
   state->pending_buffer_pos = 0;
   state->pending_buffer_end = buffer_bytes;
-  buffer_start = self->buffer;
+  *buffer_start = self->buffer;
 
   if (G_UNLIKELY(self->pos_tracking))
     {
@@ -690,7 +690,7 @@ log_proto_buffered_server_split_buffer(LogProtoBufferedServer *self, LogProtoBuf
 
 
       if (self->super.options->encoding)
-        raw_split_size = log_proto_buffered_server_get_raw_size_of_buffer(self, buffer_start, buffer_bytes);
+        raw_split_size = log_proto_buffered_server_get_raw_size_of_buffer(self, *buffer_start, buffer_bytes);
       else
         raw_split_size = buffer_bytes;
 
@@ -735,9 +735,13 @@ log_proto_buffered_server_fetch_from_buffer(LogProtoBufferedServer *self, const 
       goto exit;
     }
 
-  /* buffer_start should not be used after the fetch_from_buffer() call as one
-   * of its implementations splits the buffer */
   success = self->fetch_from_buffer(self, buffer_start, buffer_bytes, msg, msg_len);
+
+  if (!success)
+    {
+      log_proto_buffered_server_split_buffer(self, state, &buffer_start, buffer_bytes);
+    }
+
   if (aux)
     log_transport_aux_data_copy(aux, &self->buffer_aux);
 exit:

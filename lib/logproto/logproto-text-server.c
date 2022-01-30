@@ -206,8 +206,6 @@ _fetch_msg_from_buffer(LogProtoTextServer *self, LogProtoBufferedServerState *st
           goto success;
         }
 
-      /* buffer_start should not be used after calling split_buffer() */
-      log_proto_buffered_server_split_buffer(&self->super, state, buffer_start, buffer_bytes);-
       return FALSE;
     }
 
@@ -220,8 +218,6 @@ _fetch_msg_from_buffer(LogProtoTextServer *self, LogProtoBufferedServerState *st
       goto success;
     }
 
-  /* buffer_start should not be used after calling split_buffer() */
-  log_proto_buffered_server_split_buffer(&self->super, state, buffer_start, buffer_bytes);
   return FALSE;
 
 success:
