@@ -670,12 +670,10 @@ static void
 log_proto_buffered_server_split_buffer(LogProtoBufferedServer *self, LogProtoBufferedServerState *state,
                                        const guchar **buffer_start, gsize buffer_bytes)
 {
-  gsize raw_split_size;
+  if (*buffer_start == self->buffer)
+    return;
 
-  /* buffer is not full, but no EOL is present, move partial line
-   * to the beginning of the buffer to make space for new data.
-   */
-
+  /* move partial message to the beginning of the buffer to make space for new data */
   memmove(self->buffer, *buffer_start, buffer_bytes);
   state->pending_buffer_pos = 0;
   state->pending_buffer_end = buffer_bytes;
@@ -688,7 +686,7 @@ log_proto_buffered_server_split_buffer(LogProtoBufferedServer *self, LogProtoBuf
          won't lose data on the next restart, but rather we
          duplicate some data */
 
-
+      gsize raw_split_size;
       if (self->super.options->encoding)
         raw_split_size = log_proto_buffered_server_get_raw_size_of_buffer(self, *buffer_start, buffer_bytes);
       else
