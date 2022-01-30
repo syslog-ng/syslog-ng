@@ -190,23 +190,11 @@ log_proto_text_server_message_size_too_large(LogProtoTextServer *self, gsize buf
   return buffer_bytes >= self->super.super.options->max_msg_size;
 }
 
-/**
- * log_proto_text_server_fetch_from_buffer:
- * @self: LogReader instance
- * @saddr: socket address to be assigned to new messages (consumed!)
- * @flush: whether to flush the input buffer
- * @msg_counter: the number of messages processed in the current poll iteration
- *
- * Returns TRUE if a message was found in the buffer, FALSE if we need to read again.
- **/
-static gboolean
-log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes,
-                                        const guchar **msg, gsize *msg_len)
+static inline gboolean
+_fetch_msg_from_buffer(LogProtoTextServer *self, LogProtoBufferedServerState *state,
+                       const guchar *buffer_start, gsize buffer_bytes,
+                       const guchar **msg, gsize *msg_len)
 {
-  LogProtoTextServer *self = (LogProtoTextServer *) s;
-  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
-  gboolean result = FALSE;
-
   const guchar *eol = log_proto_text_server_locate_next_eol(self, state, buffer_start, buffer_bytes);
 
   if (!eol)
@@ -219,7 +207,7 @@ log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar 
       else
         {
           log_proto_buffered_server_split_buffer(&self->super, state, buffer_start, buffer_bytes);
-          goto exit;
+          return FALSE;
         }
     }
   else if (!log_proto_text_server_extract(self, state, buffer_start, buffer_bytes, eol, msg, msg_len))
@@ -231,16 +219,25 @@ log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar 
       else
         {
           log_proto_buffered_server_split_buffer(&self->super, state, buffer_start, buffer_bytes);
-          goto exit;
+          return FALSE;
         }
     }
 
   /* buffer_start should not be used after calling split_buffer() */
 
   log_proto_text_server_remove_trailing_newline(msg, msg_len);
-  result = TRUE;
+  return TRUE;
+}
 
-exit:
+static gboolean
+log_proto_text_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar *buffer_start, gsize buffer_bytes,
+                                        const guchar **msg, gsize *msg_len)
+{
+  LogProtoTextServer *self = (LogProtoTextServer *) s;
+  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
+
+  gboolean result = _fetch_msg_from_buffer(self, state, buffer_start, buffer_bytes, msg, msg_len);
+
   log_proto_buffered_server_put_state(&self->super);
   return result;
 }
