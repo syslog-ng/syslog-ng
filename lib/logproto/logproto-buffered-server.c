@@ -594,6 +594,116 @@ log_proto_buffered_server_read_data_method(LogProtoBufferedServer *self, guchar 
   return log_transport_read(self->super.transport, buf, len, aux);
 }
 
+static void
+log_proto_buffered_server_maybe_realloc_reverse_buffer(LogProtoBufferedServer *self, gsize buffer_length)
+{
+  if (self->reverse_buffer_len >= buffer_length)
+    return;
+
+  /* we free and malloc, since we never need the data still in reverse buffer */
+  g_free(self->reverse_buffer);
+  self->reverse_buffer_len = buffer_length;
+  self->reverse_buffer = g_malloc(buffer_length);
+}
+
+/*
+ * returns the number of bytes that represent the UTF8 encoding buffer
+ * in the original encoding that the user specified.
+ *
+ * NOTE: this is slow, but we only call this for the remainder of our
+ * buffer (e.g. the partial line at the end of our last chunk of read
+ * data). Also, this is only invoked if the file uses an encoding.
+ */
+static gsize
+log_proto_buffered_server_get_raw_size_of_buffer(LogProtoBufferedServer *self, const guchar *buffer, gsize buffer_len)
+{
+  gchar *out;
+  const guchar *in;
+  gsize avail_out, avail_in;
+  gint ret;
+
+  if (self->reverse_convert == ((GIConv) -1) && !self->convert_scale)
+    {
+      /* try to speed up raw size calculation by recognizing the most
+       * prominent character encodings and in the case the encoding
+       * uses fixed size characters set that in self->convert_scale,
+       * which in turn will speed up the reversal of the UTF8 buffer
+       * size to raw buffer sizes.
+       */
+      self->convert_scale = log_proto_get_char_size_for_fixed_encoding(self->super.options->encoding);
+      if (self->convert_scale == 0)
+        {
+          /* this encoding is not known, do the conversion for real :( */
+          self->reverse_convert = g_iconv_open(self->super.options->encoding, "utf-8");
+        }
+    }
+
+  if (self->convert_scale)
+    return g_utf8_strlen((gchar *) buffer, buffer_len) * self->convert_scale;
+
+
+  /* Multiplied by 6, because 1 character can be maximum 6 bytes in UTF-8 encoding */
+  log_proto_buffered_server_maybe_realloc_reverse_buffer(self, buffer_len * 6);
+
+  avail_out = self->reverse_buffer_len;
+  out = self->reverse_buffer;
+
+  avail_in = buffer_len;
+  in = buffer;
+
+  ret = g_iconv(self->reverse_convert, (gchar **) &in, &avail_in, &out, &avail_out);
+  if (ret == (gsize) -1)
+    {
+      /* oops, we cannot reverse that we ourselves converted to UTF-8,
+       * this is simply impossible, but never say never */
+      msg_error("Internal error, couldn't reverse the internal UTF8 string to the original encoding",
+                evt_tag_printf("buffer", "%.*s", (gint) buffer_len, buffer));
+      return 0;
+    }
+  else
+    {
+      return self->reverse_buffer_len - avail_out;
+    }
+}
+
+void
+log_proto_buffered_server_split_buffer(LogProtoBufferedServer *self, LogProtoBufferedServerState *state,
+                                       const guchar *buffer_start, gsize buffer_bytes)
+{
+  gsize raw_split_size;
+
+  /* buffer is not full, but no EOL is present, move partial line
+   * to the beginning of the buffer to make space for new data.
+   */
+
+  memmove(self->buffer, buffer_start, buffer_bytes);
+  state->pending_buffer_pos = 0;
+  state->pending_buffer_end = buffer_bytes;
+  buffer_start = self->buffer;
+
+  if (G_UNLIKELY(self->pos_tracking))
+    {
+      /* NOTE: we modify the current file position _after_ updating
+         buffer_pos, since if we crash right here, at least we
+         won't lose data on the next restart, but rather we
+         duplicate some data */
+
+
+      if (self->super.options->encoding)
+        raw_split_size = log_proto_buffered_server_get_raw_size_of_buffer(self, buffer_start, buffer_bytes);
+      else
+        raw_split_size = buffer_bytes;
+
+      state->pending_raw_stream_pos += (gint64) (state->pending_raw_buffer_size - raw_split_size);
+      state->pending_raw_buffer_size = raw_split_size;
+
+      msg_trace("Buffer split",
+                evt_tag_int("raw_split_size", raw_split_size),
+                evt_tag_int("buffer_bytes", buffer_bytes));
+    }
+
+}
+
 static gboolean
 log_proto_buffered_server_fetch_from_buffer(LogProtoBufferedServer *self, const guchar **msg, gsize *msg_len,
                                             LogTransportAuxData *aux)
@@ -913,116 +1023,6 @@ exit:
         }
     }
   return result;
-}
-
-static void
-log_proto_buffered_server_maybe_realloc_reverse_buffer(LogProtoBufferedServer *self, gsize buffer_length)
-{
-  if (self->reverse_buffer_len >= buffer_length)
-    return;
-
-  /* we free and malloc, since we never need the data still in reverse buffer */
-  g_free(self->reverse_buffer);
-  self->reverse_buffer_len = buffer_length;
-  self->reverse_buffer = g_malloc(buffer_length);
-}
-
-/*
- * returns the number of bytes that represent the UTF8 encoding buffer
- * in the original encoding that the user specified.
- *
- * NOTE: this is slow, but we only call this for the remainder of our
- * buffer (e.g. the partial line at the end of our last chunk of read
- * data). Also, this is only invoked if the file uses an encoding.
- */
-static gsize
-log_proto_buffered_server_get_raw_size_of_buffer(LogProtoBufferedServer *self, const guchar *buffer, gsize buffer_len)
-{
-  gchar *out;
-  const guchar *in;
-  gsize avail_out, avail_in;
-  gint ret;
-
-  if (self->reverse_convert == ((GIConv) -1) && !self->convert_scale)
-    {
-      /* try to speed up raw size calculation by recognizing the most
-       * prominent character encodings and in the case the encoding
-       * uses fixed size characters set that in self->convert_scale,
-       * which in turn will speed up the reversal of the UTF8 buffer
-       * size to raw buffer sizes.
-       */
-      self->convert_scale = log_proto_get_char_size_for_fixed_encoding(self->super.options->encoding);
-      if (self->convert_scale == 0)
-        {
-          /* this encoding is not known, do the conversion for real :( */
-          self->reverse_convert = g_iconv_open(self->super.options->encoding, "utf-8");
-        }
-    }
-
-  if (self->convert_scale)
-    return g_utf8_strlen((gchar *) buffer, buffer_len) * self->convert_scale;
-
-
-  /* Multiplied by 6, because 1 character can be maximum 6 bytes in UTF-8 encoding */
-  log_proto_buffered_server_maybe_realloc_reverse_buffer(self, buffer_len * 6);
-
-  avail_out = self->reverse_buffer_len;
-  out = self->reverse_buffer;
-
-  avail_in = buffer_len;
-  in = buffer;
-
-  ret = g_iconv(self->reverse_convert, (gchar **) &in, &avail_in, &out, &avail_out);
-  if (ret == (gsize) -1)
-    {
-      /* oops, we cannot reverse that we ourselves converted to UTF-8,
-       * this is simply impossible, but never say never */
-      msg_error("Internal error, couldn't reverse the internal UTF8 string to the original encoding",
-                evt_tag_printf("buffer", "%.*s", (gint) buffer_len, buffer));
-      return 0;
-    }
-  else
-    {
-      return self->reverse_buffer_len - avail_out;
-    }
-}
-
-void
-log_proto_buffered_server_split_buffer(LogProtoBufferedServer *self, LogProtoBufferedServerState *state,
-                                       const guchar *buffer_start, gsize buffer_bytes)
-{
-  gsize raw_split_size;
-
-  /* buffer is not full, but no EOL is present, move partial line
-   * to the beginning of the buffer to make space for new data.
-   */
-
-  memmove(self->buffer, buffer_start, buffer_bytes);
-  state->pending_buffer_pos = 0;
-  state->pending_buffer_end = buffer_bytes;
-  buffer_start = self->buffer;
-
-  if (G_UNLIKELY(self->pos_tracking))
-    {
-      /* NOTE: we modify the current file position _after_ updating
-         buffer_pos, since if we crash right here, at least we
-         won't lose data on the next restart, but rather we
-         duplicate some data */
-
-
-      if (self->super.options->encoding)
-        raw_split_size = log_proto_buffered_server_get_raw_size_of_buffer(self, buffer_start, buffer_bytes);
-      else
-        raw_split_size = buffer_bytes;
-
-      state->pending_raw_stream_pos += (gint64) (state->pending_raw_buffer_size - raw_split_size);
-      state->pending_raw_buffer_size = raw_split_size;
-
-      msg_trace("Buffer split",
-                evt_tag_int("raw_split_size", raw_split_size),
-                evt_tag_int("buffer_bytes", buffer_bytes));
-    }
-
 }
 
 gboolean
