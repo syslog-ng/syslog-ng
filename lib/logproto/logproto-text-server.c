@@ -203,28 +203,28 @@ _fetch_msg_from_buffer(LogProtoTextServer *self, LogProtoBufferedServerState *st
           || log_proto_buffered_server_is_input_closed(&self->super))
         {
           log_proto_text_server_yield_whole_buffer_as_message(self, state, buffer_start, buffer_bytes, msg, msg_len);
+          goto success;
         }
-      else
-        {
-          log_proto_buffered_server_split_buffer(&self->super, state, buffer_start, buffer_bytes);
-          return FALSE;
-        }
+
+      /* buffer_start should not be used after calling split_buffer() */
+      log_proto_buffered_server_split_buffer(&self->super, state, buffer_start, buffer_bytes);-
+      return FALSE;
     }
-  else if (!log_proto_text_server_extract(self, state, buffer_start, buffer_bytes, eol, msg, msg_len))
+
+  if (log_proto_text_server_extract(self, state, buffer_start, buffer_bytes, eol, msg, msg_len))
+    goto success;
+
+  if (log_proto_text_server_message_size_too_large(self, buffer_bytes))
     {
-      if (log_proto_text_server_message_size_too_large(self, buffer_bytes))
-        {
-          log_proto_text_server_yield_whole_buffer_as_message(self, state, buffer_start, buffer_bytes, msg, msg_len);
-        }
-      else
-        {
-          log_proto_buffered_server_split_buffer(&self->super, state, buffer_start, buffer_bytes);
-          return FALSE;
-        }
+      log_proto_text_server_yield_whole_buffer_as_message(self, state, buffer_start, buffer_bytes, msg, msg_len);
+      goto success;
     }
 
   /* buffer_start should not be used after calling split_buffer() */
+  log_proto_buffered_server_split_buffer(&self->super, state, buffer_start, buffer_bytes);
+  return FALSE;
 
+success:
   log_proto_text_server_remove_trailing_newline(msg, msg_len);
   return TRUE;
 }
