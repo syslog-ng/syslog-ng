@@ -193,7 +193,7 @@ __is_iso_stamp(const gchar *stamp, gint length)
   return (length >= 19
           && stamp[4] == '-'
           && stamp[7] == '-'
-          && stamp[10] == 'T'
+          && (stamp[10] == 'T' || stamp[10] == ' ')
           && stamp[13] == ':'
           && stamp[16] == ':'
          );
@@ -207,7 +207,7 @@ scan_iso_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
       !scan_positive_int(buf, left, 2, &wct->wct_mon) ||
       !scan_expect_char(buf, left, '-') ||
       !scan_positive_int(buf, left, 2, &wct->wct_mday) ||
-      !scan_expect_char(buf, left, 'T') ||
+      !(scan_expect_char(buf, left, 'T') || scan_expect_char(buf, left, ' ')) ||
       !scan_positive_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
       !scan_positive_int(buf, left, 2, &wct->wct_min) ||
