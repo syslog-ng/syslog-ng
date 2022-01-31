@@ -94,6 +94,12 @@ control_connection_config(ControlConnection *cc, GString *command, gpointer user
   GString *result = g_string_sized_new(128);
   gchar **arguments = g_strsplit(command->str, " ", 0);
 
+  if (!arguments[1])
+    {
+      g_string_assign(result, "FAIL Invalid arguments");
+      goto exit;
+    }
+
   if (g_str_equal(arguments[1], "GET"))
     {
       if (g_str_equal(arguments[2], "ORIGINAL"))
