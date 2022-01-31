@@ -131,7 +131,7 @@ function install_apt_packages {
 }
 
 function install_debian_build_deps {
-    DEBIAN_CONTROL_FILE=$DBLD_DIR/extra-files/packaging-debian-control
+    DEBIAN_CONTROL_FILE="${DBLD_DIR}/extra-files/${IMAGE_PLATFORM}/packaging-debian-control"
     if ! [ -f ${DEBIAN_CONTROL_FILE} ]; then
         echo "install_debian_build_deps() called from dockerfile but without a Debian control file, make sure that control file is copied over to ${DEBIAN_CONTROL_FILE} by the prepare step"
         exit 1
@@ -140,7 +140,7 @@ function install_debian_build_deps {
 }
 
 function install_rpm_build_deps {
-    RPM_SPEC_FILE=$DBLD_DIR/extra-files/syslog-ng.spec
+    RPM_SPEC_FILE="${DBLD_DIR}/extra-files/${IMAGE_PLATFORM}/syslog-ng.spec"
     if ! [ -f ${RPM_SPEC_FILE} ]; then
         echo "install_rpm_build_deps() called from dockerfile but without a syslog-ng.spec file, make sure that control file is copied over to ${RPM_SPEC_FILE} by the prepare step"
         exit 1
