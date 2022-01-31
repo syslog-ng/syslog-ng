@@ -117,7 +117,7 @@ Test(control_cmds, test_log)
   const gchar *response;
 
   _run_command("LOG", &response);
-  cr_assert(first_line_eq(response, "Invalid arguments received, expected at least one argument"),
+  cr_assert(first_line_eq(response, "FAIL Invalid arguments received"),
             "Bad reply: [%s]", response);
 
   _run_command("LOG fakelog", &response);
