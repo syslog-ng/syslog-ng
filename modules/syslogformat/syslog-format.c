@@ -906,7 +906,9 @@ log_msg_parse_syslog_proto(const MsgFormatOptions *parse_options, const guchar *
   if (!log_msg_parse_pri(self, &src, &left, parse_options->flags, parse_options->default_pri) ||
       !log_msg_parse_version(self, &src, &left))
     {
-      return log_msg_parse_legacy(parse_options, data, length, self, position);
+      if ((parse_options->flags & LP_NO_RFC3164_FALLBACK) == 0)
+        return log_msg_parse_legacy(parse_options, data, length, self, position);
+      return FALSE;
     }
 
   if (!log_msg_parse_skip_space(self, &src, &left))

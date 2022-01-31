@@ -243,7 +243,7 @@ CfgFlagHandler msg_format_flag_handlers[] =
   { "no-hostname",              CFH_CLEAR, offsetof(MsgFormatOptions, flags), LP_EXPECT_HOSTNAME },
   { "guess-timezone",             CFH_SET, offsetof(MsgFormatOptions, flags), LP_GUESS_TIMEZONE },
   { "no-header",                  CFH_SET, offsetof(MsgFormatOptions, flags), LP_NO_HEADER },
-
+  { "no-rfc3164-fallback",        CFH_SET, offsetof(MsgFormatOptions, flags), LP_NO_RFC3164_FALLBACK },
   { NULL },
 };
 

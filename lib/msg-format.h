@@ -58,6 +58,7 @@ enum
   LP_STORE_RAW_MESSAGE = 0x0800,
   LP_GUESS_TIMEZONE = 0x1000,
   LP_NO_HEADER = 0x2000,
+  LP_NO_RFC3164_FALLBACK = 0x4000,
 };
 
 typedef struct _MsgFormatHandler MsgFormatHandler;
