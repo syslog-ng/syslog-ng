@@ -22,8 +22,7 @@ tests_unit_test_logwriter_LDADD		= \
 tests_unit_test_logwriter_CFLAGS	= $(TEST_CFLAGS)
 
 tests_unit_test_matcher_CFLAGS		= $(TEST_CFLAGS)
-tests_unit_test_matcher_LDADD		= \
-	$(TEST_LDADD) $(PREOPEN_SYSLOGFORMAT)
+tests_unit_test_matcher_LDADD		= $(TEST_LDADD)
 
 tests_unit_test_clone_logmsg_CFLAGS	= $(TEST_CFLAGS)
 tests_unit_test_clone_logmsg_LDADD	= \
