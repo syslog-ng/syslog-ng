@@ -6,7 +6,7 @@ IMAGE_PLATFORM=$1
 OS_GROUP=$(echo ${IMAGE_PLATFORM} | cut -d"-" -f1)
 
 DBLD_DIR=dbld
-EXTRA_FILES_DIR=${DBLD_DIR}/extra-files
+EXTRA_FILES_DIR="${DBLD_DIR}/extra-files/${IMAGE_PLATFORM}"
 
 mkdir -p ${EXTRA_FILES_DIR} || true
 
