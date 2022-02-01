@@ -578,7 +578,7 @@ qdisk_pop_head(QDisk *self, GString *record)
 }
 
 static gboolean
-qdisk_skip_record(QDisk *self, gint64 position, gint64 *new_position)
+_skip_record(QDisk *self, gint64 position, gint64 *new_position)
 {
   if (position == self->hdr->write_head)
     return FALSE;
@@ -599,7 +599,7 @@ qdisk_skip_record(QDisk *self, gint64 position, gint64 *new_position)
 gboolean
 qdisk_remove_head(QDisk *self)
 {
-  gboolean success = qdisk_skip_record(self, self->hdr->read_head, &self->hdr->read_head);
+  gboolean success = _skip_record(self, self->hdr->read_head, &self->hdr->read_head);
 
   if (success)
     {
@@ -617,7 +617,7 @@ qdisk_ack_backlog(QDisk *self)
   if (self->hdr->backlog_len == 0)
     return FALSE;
 
-  if (!qdisk_skip_record(self, self->hdr->backlog_head, &self->hdr->backlog_head))
+  if (!_skip_record(self, self->hdr->backlog_head, &self->hdr->backlog_head))
     {
       msg_error("Error acking in disk-queue file", evt_tag_str("filename", qdisk_get_filename(self)));
       return FALSE;
@@ -639,7 +639,7 @@ qdisk_rewind_backlog(QDisk *self, guint rewind_count)
   gint64 new_read_head = self->hdr->backlog_head;
   for (gint64 i = 0; i < number_of_messages_stay_in_backlog; i++)
     {
-      if (!qdisk_skip_record(self, new_read_head, &new_read_head))
+      if (!_skip_record(self, new_read_head, &new_read_head))
         {
           msg_error("Error rewinding backlog in disk-queue file",
                     evt_tag_str("filename", qdisk_get_filename(self)));
