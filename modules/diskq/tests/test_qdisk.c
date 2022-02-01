@@ -54,9 +54,9 @@ construct_diskq_options(TestDiskQType dq_type, gint64 disk_buf_size)
 }
 
 static QDisk *
-create_qdisk(const gchar *filename, TestDiskQType dq_type, gint64 disk_buf_size)
+create_qdisk(TestDiskQType dq_type, gint64 disk_buf_size)
 {
-  DiskQueueOptions *opts = construct_diskq_options(TDISKQ_RELIABLE, disk_buf_size);
+  DiskQueueOptions *opts = construct_diskq_options(dq_type, disk_buf_size);
   QDisk *qdisk = qdisk_new(opts, "TEST");
 
   return qdisk;
@@ -130,7 +130,7 @@ reliable_pop_record_without_backlog(QDisk *qdisk, GString *record)
 Test(qdisk, test_qdisk_started)
 {
   const gchar *filename = "test_qdisk_started.rqf";
-  QDisk *qdisk = create_qdisk(filename, TDISKQ_RELIABLE, MiB(1));
+  QDisk *qdisk = create_qdisk(TDISKQ_RELIABLE, MiB(1));
 
   cr_assert_not(qdisk_started(qdisk));
 
@@ -146,7 +146,7 @@ Test(qdisk, test_qdisk_started)
 Test(qdisk, qdisk_basic_push_pop)
 {
   const gchar *filename = "test_qdisk_basic_push_pop.rqf";
-  QDisk *qdisk = create_qdisk(filename, TDISKQ_RELIABLE, MiB(1));
+  QDisk *qdisk = create_qdisk(TDISKQ_RELIABLE, MiB(1));
   qdisk_start(qdisk, filename, NULL, NULL, NULL);
 
   guint expected_record_len = 128;
@@ -169,7 +169,7 @@ Test(qdisk, qdisk_is_space_avail)
   const gchar *filename = "test_qdisk_is_space_avail.rqf";
   gsize qdisk_size = MiB(1);
   GString *data = g_string_new(NULL);
-  QDisk *qdisk = create_qdisk(filename, TDISKQ_RELIABLE, qdisk_size);
+  QDisk *qdisk = create_qdisk(TDISKQ_RELIABLE, qdisk_size);
   qdisk_start(qdisk, filename, NULL, NULL, NULL);
 
   gsize available_space = qdisk_size - QDISK_RESERVED_SPACE;
@@ -203,7 +203,7 @@ Test(qdisk, allow_writing_more_than_max_size_when_last_message_does_not_fit)
 {
   const gchar *filename = "test_qdisk_exceed_max_size.rqf";
   gsize qdisk_size = MiB(1);
-  QDisk *qdisk = create_qdisk(filename, TDISKQ_RELIABLE, qdisk_size);
+  QDisk *qdisk = create_qdisk(TDISKQ_RELIABLE, qdisk_size);
   qdisk_start(qdisk, filename, NULL, NULL, NULL);
 
   push_dummy_record(qdisk, 100);
@@ -222,7 +222,7 @@ Test(qdisk, do_not_allow_diskq_to_exceed_max_size_if_last_message_fits)
   const gchar *filename = "test_qdisk_do_not_exceed_max_size_when_msg_fits.rqf";
   gsize qdisk_size = MiB(1);
   GString *data = g_string_new(NULL);
-  QDisk *qdisk = create_qdisk(filename, TDISKQ_RELIABLE, qdisk_size);
+  QDisk *qdisk = create_qdisk(TDISKQ_RELIABLE, qdisk_size);
   qdisk_start(qdisk, filename, NULL, NULL, NULL);
 
   // fill completely
@@ -247,7 +247,7 @@ Test(qdisk, completely_full_and_then_emptied_qdisk_should_update_positions_prope
   const gchar *filename = "test_qdisk_completely_full.rqf";
   gsize qdisk_size = MiB(1);
   GString *popped_data = g_string_new(NULL);
-  QDisk *qdisk = create_qdisk(filename, TDISKQ_RELIABLE, qdisk_size);
+  QDisk *qdisk = create_qdisk(TDISKQ_RELIABLE, qdisk_size);
   qdisk_start(qdisk, filename, NULL, NULL, NULL);
 
   gsize num_of_records = 4;
