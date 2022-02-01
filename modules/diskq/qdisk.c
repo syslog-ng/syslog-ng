@@ -535,12 +535,12 @@ _maybe_apply_non_reliable_corrections(QDisk *self)
 static inline void
 _update_positions_after_read(QDisk *self, guint32 record_length, gint64 *position)
 {
-  gint64 new_read_head_position = *position + record_length + sizeof(record_length);
+  gint64 new_position = *position + record_length + sizeof(record_length);
 
-  if (new_read_head_position > self->hdr->write_head)
-    new_read_head_position = _correct_position_if_max_size_is_reached(self, new_read_head_position);
+  if (new_position > self->hdr->write_head)
+    new_position = _correct_position_if_max_size_is_reached(self, new_position);
 
-  *position = new_read_head_position;
+  *position = new_position;
 }
 
 gint64
