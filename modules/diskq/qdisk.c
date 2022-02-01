@@ -526,7 +526,6 @@ _maybe_apply_non_reliable_corrections(QDisk *self)
     return;
 
   qdisk_empty_backlog(self);
-  g_assert(self->hdr->backlog_len == 0);
   if (!self->options->read_only)
     qdisk_reset_file_if_empty(self);
 }
