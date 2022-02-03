@@ -27,6 +27,7 @@
 #include "libtest/proto_lib.h"
 #include "libtest/msg_parse_lib.h"
 
+#include "logproto/logproto.h"
 #include "logproto/logproto-text-server.h"
 #include "logproto/logproto-framed-server.h"
 #include "logproto/logproto-dgram-server.h"

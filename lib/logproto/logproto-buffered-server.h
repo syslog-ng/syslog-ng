@@ -92,6 +92,11 @@ struct _LogProtoBufferedServer
   GIConv convert;
   guchar *buffer;
 
+  GIConv reverse_convert;
+  gchar *reverse_buffer;
+  gsize reverse_buffer_len;
+  gint convert_scale;
+
   /* auxiliary data (e.g. GSockAddr, other transport related meta
    * data) associated with the already buffered data */
   LogTransportAuxData buffer_aux;

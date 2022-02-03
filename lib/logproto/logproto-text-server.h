@@ -48,11 +48,6 @@ struct _LogProtoTextServer
                           gsize msg_len,
                           gssize consumed_len);
 
-  GIConv reverse_convert;
-  gchar *reverse_buffer;
-  gsize reverse_buffer_len;
-  gint convert_scale;
-
   gint32 consumed_len;
   gint32 cached_eol_pos;
 };
@@ -75,8 +70,6 @@ log_proto_text_server_accumulate_line(LogProtoTextServer *self,
 {
   return self->accumulate_line(self, msg, msg_len, consumed_len);
 }
-
-gint log_proto_get_char_size_for_fixed_encoding(const gchar *encoding);
 
 static inline gboolean
 log_proto_text_server_validate_options_method(LogProtoServer *s)

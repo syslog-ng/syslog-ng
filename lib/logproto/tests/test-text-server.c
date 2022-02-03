@@ -29,6 +29,8 @@
 #include "libtest/grab-logging.h"
 
 #include "logproto/logproto-text-server.h"
+#include "ack-tracker/ack_tracker_factory.h"
+
 #include <errno.h>
 
 
@@ -588,4 +590,34 @@ Test(log_proto, test_log_proto_text_server_io_eagain)
   cr_assert_eq(log_proto_server_fetch(proto, &msg, &msg_len, &may_read, &aux, &bookmark), LPS_EOF);
 
   log_proto_server_free(proto);
+}
+
+Test(log_proto, buffer_split_with_encoding_and_position_tracking)
+{
+  GString *data = g_string_new("Lorem ipsum\xe2\x98\x83lor sit amet, consectetur adipiscing elit\n");
+  GString *data_smaller = g_string_new("muspi merol\n");
+  gsize bytes_should_not_fit = 5;
+
+  proto_server_options.max_msg_size = data->len + data_smaller->len - bytes_should_not_fit;
+  proto_server_options.max_buffer_size = proto_server_options.max_msg_size;
+  log_proto_server_options_set_encoding(&proto_server_options, "utf-8");
+  log_proto_server_options_set_ack_tracker_factory(&proto_server_options, consecutive_ack_tracker_factory_new());
+
+  gchar *full_payload = g_strconcat(data_smaller->str, data->str, NULL);
+  LogTransportMock *transport = (LogTransportMock *) log_transport_mock_records_new(full_payload, -1, LTM_EOF);
+
+  LogProtoServer *proto = log_proto_text_server_new((LogTransport *) transport, get_inited_proto_server_options());
+
+  start_grabbing_messages();
+  assert_proto_server_fetch(proto, data_smaller->str, data_smaller->len - 1);
+  assert_proto_server_fetch(proto, data->str, data->len - 1);
+  stop_grabbing_messages();
+  cr_assert_not(find_grabbed_message("Internal error"));
+
+  assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
+
+  log_proto_server_free(proto);
+  g_free(full_payload);
+  g_string_free(data_smaller, TRUE);
+  g_string_free(data, TRUE);
 }
