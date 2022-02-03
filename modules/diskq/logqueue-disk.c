@@ -97,7 +97,7 @@ _pop_disk(LogQueueDisk *self, LogMessage **msg)
   ScratchBuffersMarker marker;
   GString *read_serialized = scratch_buffers_alloc_and_mark(&marker);
 
-  gint64 read_head = qdisk_get_head_position(self->qdisk);
+  gint64 read_head = qdisk_get_next_head_position(self->qdisk);
 
   if (!qdisk_pop_head(self->qdisk, read_serialized))
     {

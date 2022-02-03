@@ -86,17 +86,15 @@ stats_counter_dec(StatsCounterItem *counter)
     }
 }
 
-/* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
 static inline void
 stats_counter_set(StatsCounterItem *counter, gsize value)
 {
   if (counter && !stats_counter_read_only(counter))
     {
-      atomic_gssize_racy_set(&counter->value, value);
+      atomic_gssize_set(&counter->value, value);
     }
 }
 
-/* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
 static inline gsize
 stats_counter_get(StatsCounterItem *counter)
 {

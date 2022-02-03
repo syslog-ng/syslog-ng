@@ -257,7 +257,7 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
 static void
 _rewind_backlog_all(LogQueue *s)
 {
-  _rewind_backlog(s, -1);
+  _rewind_backlog(s, G_MAXUINT);
 }
 
 static inline LogMessage *
@@ -463,8 +463,12 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
     }
 
 queued:
-  log_queue_push_notify(s);
   log_queue_queued_messages_inc(s);
+
+  /* this releases the queue's lock for a short time, which may violate the
+   * consistency of the disk-buffer, so it must be the last call under lock in this function
+   */
+  log_queue_push_notify(s);
 
 exit:
   g_mutex_unlock(&s->lock);
