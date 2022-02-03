@@ -1,0 +1,14 @@
+name: Trigger tests for stable APT packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'syslog-ng-*'
+
+
+jobs:
+  test_stable_packages:
+    uses: ./.github/workflows/test-apt-packages.yml
+    with:
+      pkg_type: "stable"
