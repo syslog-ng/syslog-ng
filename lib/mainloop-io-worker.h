@@ -31,17 +31,17 @@
 typedef struct _MainLoopIOWorkerJob
 {
   void (*engage)(gpointer user_data);
-  void (*work)(gpointer user_data, GIOCondition cond);
-  void (*completion)(gpointer user_data);
+  void (*work)(gpointer user_data, gpointer arg);
+  void (*completion)(gpointer user_data, gpointer arg);
   void (*release)(gpointer user_data);
   gpointer user_data;
-  gboolean working:1;
-  GIOCondition cond;
+  gpointer arg;
+  gboolean working;
   struct iv_work_item work_item;
 } MainLoopIOWorkerJob;
 
 void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
-gboolean main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond);
+gboolean main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, gpointer arg);
 
 void main_loop_io_worker_add_options(GOptionContext *ctx);
 

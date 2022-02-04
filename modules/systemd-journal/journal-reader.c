@@ -542,7 +542,7 @@ _fetch_log(JournalReader *self)
 }
 
 static void
-_work_finished(gpointer s)
+_work_finished(gpointer s, gpointer arg)
 {
   JournalReader *self = (JournalReader *) s;
   if (self->notify_code)
@@ -559,7 +559,7 @@ _work_finished(gpointer s)
 }
 
 static void
-_work_perform(gpointer s, GIOCondition cond)
+_work_perform(gpointer s, gpointer arg)
 {
   JournalReader *self = (JournalReader *) s;
   self->notify_code = _fetch_log(self);
@@ -586,15 +586,15 @@ _io_process_input(gpointer s)
   _stop_watches(self);
   if ((self->options->flags & JR_THREADED))
     {
-      main_loop_io_worker_job_submit(&self->io_job, G_IO_IN);
+      main_loop_io_worker_job_submit(&self->io_job, NULL);
     }
   else
     {
       if (!main_loop_worker_job_quit())
         {
           log_pipe_ref(&self->super.super);
-          _work_perform(s, G_IO_IN);
-          _work_finished(s);
+          _work_perform(s, NULL);
+          _work_finished(s, NULL);
           log_pipe_unref(&self->super.super);
         }
     }
@@ -837,8 +837,8 @@ _init_watches(JournalReader *self)
 
   main_loop_io_worker_job_init(&self->io_job);
   self->io_job.user_data = self;
-  self->io_job.work = (void (*)(void *, GIOCondition)) _work_perform;
-  self->io_job.completion = (void (*)(void *)) _work_finished;
+  self->io_job.work = _work_perform;
+  self->io_job.completion = _work_finished;
   self->io_job.engage = (void (*)(void *)) log_pipe_ref;
   self->io_job.release = (void (*)(void *)) log_pipe_unref;
 }
