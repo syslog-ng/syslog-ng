@@ -148,6 +148,12 @@ _release_thread_id(void)
   g_mutex_unlock(&main_loop_workers_idmap_lock);
 }
 
+gboolean
+main_loop_worker_is_worker_thread(void)
+{
+  return main_loop_worker_type > MLW_UNKNOWN;
+}
+
 typedef struct _WorkerExitNotification
 {
   WorkerExitNotificationFunc func;
