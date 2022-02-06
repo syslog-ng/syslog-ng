@@ -231,8 +231,6 @@ main_loop_worker_run_gc(void)
 void
 main_loop_worker_job_start(void)
 {
-  main_loop_assert_main_thread();
-
   g_atomic_counter_inc(&main_loop_jobs_running);
 }
 
