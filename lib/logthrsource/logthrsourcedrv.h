@@ -57,7 +57,6 @@ struct _LogThreadedSourceWorker
   LogThreadedSourceDriver *control;
   WakeupCondition wakeup_cond;
   gboolean under_termination;
-
 };
 
 struct _LogThreadedSourceDriver
@@ -65,6 +64,7 @@ struct _LogThreadedSourceDriver
   LogSrcDriver super;
   LogThreadedSourceWorkerOptions worker_options;
   LogThreadedSourceWorker *worker;
+  gboolean auto_close_batches;
 
   const gchar *(*format_stats_instance)(LogThreadedSourceDriver *self);
   gboolean (*thread_init)(LogThreadedSourceDriver *self);
@@ -99,6 +99,8 @@ log_threaded_source_driver_get_parse_options(LogDriver *s)
 
   return &self->worker_options.parse_options;
 }
+
+void log_threaded_source_close_batch(LogThreadedSourceDriver *self);
 
 /* blocking API */
 void log_threaded_source_blocking_post(LogThreadedSourceDriver *self, LogMessage *msg);
