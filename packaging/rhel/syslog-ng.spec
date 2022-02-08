@@ -29,13 +29,17 @@ Source4: syslog-ng.logrotate7
 
 %if 0%{?rhel} == 8
 %global		python_devel python39-devel
+%global         python_package  python39-libs
 %global         py_ver  3.9
 %else
 %if 0%{?rhel} == 7
 %global		python_devel python36-devel
+# There is no python36-libs package
+%global         python_package  python3-libs
 %global         py_ver  3.6
 %else
 %global		python_devel python3-devel
+%global         python_package  python3-libs
 %global         py_ver  %{python3_version}
 %endif
 %endif
@@ -46,26 +50,39 @@ Source4: syslog-ng.logrotate7
 %bcond_with java
 %endif
 
+%global glib2_ver 2.32
+%global openssl_ver 0.9.8
+%global libdbi_ver 0.9.0
+%global librabbitmq_ver 0.5.3
 %global ivykis_ver 0.36.1
+%global json_c_ver 0.9
+%global pcre_ver 6.1
+%global mongo_c_driver_ver 1.0.0
+%global riemann_c_client_ver 1.6.0
+%global java_ver 1.8
+%global hiredis_ver 0.11.0
 
+# Build tools
 BuildRequires: pkgconfig
 BuildRequires: libtool
 BuildRequires: bison
 BuildRequires: flex
 BuildRequires: libxslt
-BuildRequires: glib2-devel
-BuildRequires: ivykis-devel
-BuildRequires: json-c-devel
+
+# Core package's build dependencies
+BuildRequires: glib2-devel >= %{glib2_ver}
+BuildRequires: ivykis-devel >= %{ivykis_ver}
+BuildRequires: json-c-devel >= %{json_c_ver}
 BuildRequires: libcap-devel
-BuildRequires: libdbi-devel
 BuildRequires: libnet-devel
-BuildRequires: openssl-devel
-BuildRequires: pcre-devel
+BuildRequires: openssl-devel >= %{openssl_ver}
+BuildRequires: pcre-devel >= %{pcre_ver}
 BuildRequires: libuuid-devel
+
+# Module packages' build dependencies
 BuildRequires: libesmtp-devel
 BuildRequires: libcurl-devel
-
-BuildRequires: %{python_devel}
+BuildRequires: %{python_devel} >= %{py_ver}
 
 %if %{with amqp}
 BuildRequires: librabbitmq-devel
@@ -89,6 +106,10 @@ BuildRequires: systemd-devel
 Requires(post): systemd-units
 Requires(preun): systemd-units
 Requires(postun): systemd-units
+%endif
+
+%if %{with sql}
+BuildRequires: libdbi-devel >= %{libdbi_ver}
 %endif
 
 %if %{with mongodb}
@@ -118,8 +139,16 @@ BuildRequires: tcp_wrappers-devel
 Obsoletes: syslog-ng-json
 %endif
 
+# Core package's runtime dependencies
 Requires: logrotate
 Requires: ivykis >= %{ivykis_ver}
+Requires: glib2 >= %{glib2_ver}
+Requires: openssl-libs >= %{openssl_ver}
+Requires: json-c >= %{json_c_ver}
+Requires: pcre >= %{pcre_ver}
+Requires: libcap
+Requires: libnet
+Requires: libuuid
 
 Provides: syslog
 # merge separate syslog-vim package into one
@@ -153,6 +182,7 @@ Key features:
 Summary: SQL support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: libdbi >= %{libdbi_ver}
 
 %description sql
 This module supports a large number of SQL database systems via libdbi.
@@ -161,6 +191,7 @@ This module supports a large number of SQL database systems via libdbi.
 Summary: AMQP support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: librabbitmq >= %{librabbitmq_ver}
 
 %description amqp
 This module supports AMQP via librabbitmq
@@ -169,6 +200,8 @@ This module supports AMQP via librabbitmq
 Summary: mongodb support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: mongo-c-driver-libs >= %{mongo_c_driver_ver}
+Requires: cyrus-sasl-lib >= %{cyrus_sasl_ver}
 
 %description mongodb
 This module supports the mongodb database via libmongo-client.
@@ -177,6 +210,7 @@ This module supports the mongodb database via libmongo-client.
 Summary: smtp support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: libesmtp
 
 %description smtp
 This module supports sending e-mail alerts through an smtp server.
@@ -185,6 +219,7 @@ This module supports sending e-mail alerts through an smtp server.
 Summary: kafka support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: librdkafka >= %{librdkafka_ver}
 
 %description kafka
 This module supports sending logs to kafka through librdkafka.
@@ -193,6 +228,7 @@ This module supports sending logs to kafka through librdkafka.
 Summary: SNMP support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: net-snmp-libs
 
 %description afsnmp
 This module supports sending SNMP traps using net-snmp.
@@ -201,6 +237,7 @@ This module supports sending SNMP traps using net-snmp.
 Summary: mqtt support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: paho-c
 
 %description mqtt
 This module supports sending logs to mqtt through MQTT.
@@ -209,6 +246,7 @@ This module supports sending logs to mqtt through MQTT.
 Summary:        Java destination support for syslog-ng
 Group:          System/Libraries
 Requires:       %{name} = %{version}
+Requires:       jre-headless >= %{java_ver}
 
 %description java
 This package provides java destination support for syslog-ng. It
@@ -219,6 +257,7 @@ only contains the java bindings, no drivers.
 Summary: geoip support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: libmaxminddb
 
 %description geoip
 This package provides GeoIP support for syslog-ng
@@ -228,6 +267,7 @@ This package provides GeoIP support for syslog-ng
 Summary: redis support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: hiredis >= %{hiredis_ver}
 
 %description redis
 This module supports the redis key-value store via hiredis.
@@ -236,6 +276,7 @@ This module supports the redis key-value store via hiredis.
 Summary: riemann support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: riemann-c-client >= %{riemann_c_client_ver}
 
 %description riemann
 This module supports the riemann monitoring server.
@@ -244,6 +285,7 @@ This module supports the riemann monitoring server.
 Summary: HTTP support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: libcurl
 
 %description http
 This module supports the HTTP destination.
@@ -260,6 +302,7 @@ This module adds support for the $(slog) template function plus command line uti
 Summary:        Python destination support for syslog-ng
 Group:          System/Libraries
 Requires:       %{name} = %{version}
+Requires:       %{python_package} >= %{py_ver}
 
 %description python
 This package provides python destination support for syslog-ng.
