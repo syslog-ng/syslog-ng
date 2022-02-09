@@ -21,6 +21,7 @@
  *
  */
 #include "control-server-dummy.h"
+#include "control/control-connection.h"
 #include <string.h>
 
 typedef struct _ControlConnectionDummy
@@ -29,6 +30,14 @@ typedef struct _ControlConnectionDummy
   GString *output;
   GString *input;
 } ControlConnectionDummy;
+
+gboolean
+control_connection_dummy_run_command(ControlConnection *s, ControlCommand *command_desc, GString *command_string)
+{
+  /* ignore threaded execution */
+  command_desc->func(s, command_string, command_desc->user_data, NULL);
+  return TRUE;
+}
 
 gint
 control_connection_dummy_write(ControlConnection *s, gpointer buffer, gsize size)
@@ -64,7 +73,7 @@ control_connection_dummy_update_watches(ControlConnection *s)
 {
   if (s->waiting_for_output)
     g_assert_not_reached();
-  else if (s->output_buffer->len > s->pos)
+  else if (!g_queue_is_empty(s->response_batches) || s->output_buffer)
     s->handle_output(s);
 }
 
@@ -108,6 +117,7 @@ control_connection_dummy_new(ControlServer *server)
   ControlConnectionDummy *self = g_new0(ControlConnectionDummy, 1);
 
   control_connection_init_instance(&self->super, server);
+  self->super.run_command = control_connection_dummy_run_command;
   self->super.read = control_connection_dummy_read;
   self->super.write = control_connection_dummy_write;
   self->super.events.start_watches = control_connection_dummy_start_watches;
@@ -131,6 +141,6 @@ control_server_dummy_new(void)
 {
   ControlServerDummy *self = g_new0(ControlServerDummy, 1);
 
-  control_server_init_instance(&self->super, "dummy-socket-name");
+  control_server_init_instance(&self->super);
   return &self->super;
 }

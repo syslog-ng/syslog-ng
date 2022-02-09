@@ -23,7 +23,7 @@
  */
 #include "mainloop.h"
 #include "control/control-commands.h"
-#include "control/control-server.h"
+#include "control/control-connection.h"
 #include "messages.h"
 #include "cfg.h"
 #include "cfg-path.h"
@@ -35,7 +35,7 @@
 #include <string.h>
 
 static void
-control_connection_message_log(ControlConnection *cc, GString *command, gpointer user_data)
+control_connection_message_log(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   gchar **cmds = g_strsplit(command->str, " ", 3);
   gboolean on;
@@ -76,7 +76,7 @@ exit:
 }
 
 static void
-control_connection_stop_process(ControlConnection *cc, GString *command, gpointer user_data)
+control_connection_stop_process(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   GString *result = g_string_new("OK Shutdown initiated");
   MainLoop *main_loop = (MainLoop *) user_data;
@@ -87,7 +87,7 @@ control_connection_stop_process(ControlConnection *cc, GString *command, gpointe
 }
 
 static void
-control_connection_config(ControlConnection *cc, GString *command, gpointer user_data)
+control_connection_config(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   MainLoop *main_loop = (MainLoop *) user_data;
   GlobalConfig *config = main_loop_get_current_config(main_loop);
@@ -128,7 +128,7 @@ exit:
 }
 
 static void
-show_ose_license_info(ControlConnection *cc, GString *command, gpointer user_data)
+show_ose_license_info(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   control_connection_send_reply(cc,
                                 g_string_new("OK You are using the Open Source Edition of syslog-ng."));
@@ -151,7 +151,7 @@ _respond_config_reload_status(gint type, gpointer user_data)
 }
 
 static void
-control_connection_reload(ControlConnection *cc, GString *command, gpointer user_data)
+control_connection_reload(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   MainLoop *main_loop = (MainLoop *) user_data;
   static gpointer args[2];
@@ -174,7 +174,7 @@ control_connection_reload(ControlConnection *cc, GString *command, gpointer user
 }
 
 static void
-control_connection_reopen(ControlConnection *cc, GString *command, gpointer user_data)
+control_connection_reopen(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   GString *result = g_string_new("OK Re-open of log destination files initiated");
   app_reopen_files();
@@ -238,7 +238,7 @@ process_credentials_add(GString *result, guint argc, gchar **arguments)
 }
 
 static void
-process_credentials(ControlConnection *cc, GString *command, gpointer user_data)
+process_credentials(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   gchar **arguments = g_strsplit(command->str, " ", 4);
   guint argc = g_strv_length(arguments);
@@ -267,7 +267,7 @@ process_credentials(ControlConnection *cc, GString *command, gpointer user_data)
 }
 
 static void
-control_connection_list_files(ControlConnection *cc, GString *command, gpointer user_data)
+control_connection_list_files(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   MainLoop *main_loop = (MainLoop *) user_data;
   GlobalConfig *config = main_loop_get_current_config(main_loop);
@@ -400,7 +400,7 @@ generate_json(GHashTable *nodes, GHashTable *arcs)
 }
 
 static void
-export_config_graph(ControlConnection *cc, GString *command, gpointer user_data)
+export_config_graph(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   GHashTable *nodes;
   GHashTable *arcs;
@@ -438,6 +438,6 @@ main_loop_register_control_commands(MainLoop *main_loop)
   for (i = 0; default_commands[i].command_name != NULL; i++)
     {
       cmd = &default_commands[i];
-      control_register_command(cmd->command_name, cmd->func, main_loop);
+      control_register_command(cmd->command_name, cmd->func, main_loop, cmd->threaded);
     }
 }

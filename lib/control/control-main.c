@@ -23,13 +23,13 @@
  */
 
 #include "control-main.h"
-#include "control-server.h"
+#include "control-server-unix.h"
 #include "control-commands.h"
 
 ControlServer *
 control_init(const gchar *control_name)
 {
-  ControlServer *control_server = control_server_new(control_name);
+  ControlServer *control_server = control_server_unix_new(control_name);
   control_server_start(control_server);
   return control_server;
 }
@@ -39,5 +39,8 @@ control_deinit(ControlServer *control_server)
 {
   reset_control_command_list();
   if (control_server)
-    control_server_free(control_server);
+    {
+      control_server_stop(control_server);
+      control_server_free(control_server);
+    }
 }

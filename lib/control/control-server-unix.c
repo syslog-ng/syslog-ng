@@ -22,6 +22,7 @@
  */
 
 #include "control-server.h"
+#include "control-connection.h"
 #include "messages.h"
 
 #include "gsocket.h"
@@ -31,6 +32,7 @@
 typedef struct _ControlServerUnix
 {
   ControlServer super;
+  gchar *control_socket_name;
   gint control_socket;
   struct iv_fd control_listen;
 } ControlServerUnix;
@@ -75,6 +77,16 @@ control_connection_unix_stop_watches(ControlConnection *s)
   iv_fd_unregister(&self->control_io);
 }
 
+static gboolean
+_pending_output(ControlConnection *s)
+{
+  g_mutex_lock(&s->response_batches_lock);
+  gboolean result = (s->output_buffer && s->output_buffer->len > s->pos) ||
+                    !g_queue_is_empty(s->response_batches);
+  g_mutex_unlock(&s->response_batches_lock);
+  return result;
+}
+
 static void
 control_connection_unix_update_watches(ControlConnection *s)
 {
@@ -85,7 +97,7 @@ control_connection_unix_update_watches(ControlConnection *s)
       iv_fd_set_handler_out(&self->control_io, NULL);
       iv_fd_set_handler_in(&self->control_io, NULL);
     }
-  else if (s->output_buffer->len > s->pos)
+  else if (_pending_output(s))
     {
       iv_fd_set_handler_out(&self->control_io, s->handle_output);
       iv_fd_set_handler_in(&self->control_io, NULL);
@@ -105,7 +117,7 @@ control_connection_unix_free(ControlConnection *s)
 }
 
 ControlConnection *
-control_connection_new(ControlServer *server, gint sock)
+control_connection_unix_new(ControlServer *server, gint sock)
 {
   ControlConnectionUnix *self = g_new0(ControlConnectionUnix, 1);
 
@@ -122,7 +134,7 @@ control_connection_new(ControlServer *server, gint sock)
 }
 
 static void
-control_socket_accept(void *cookie)
+_control_socket_accept(void *cookie)
 {
   ControlServerUnix *self = (ControlServerUnix *)cookie;
   gint conn_socket;
@@ -141,7 +153,7 @@ control_socket_accept(void *cookie)
     }
 
 
-  cc = control_connection_new(&self->super, conn_socket);
+  cc = control_connection_unix_new(&self->super, conn_socket);
 
   /* NOTE: with the call below, the reference to the control connection (cc)
    * will be taken over by the various I/O callbacks, Those will return to
@@ -155,31 +167,31 @@ error:
   ;
 }
 
-void
-control_server_start(ControlServer *s)
+static gboolean
+control_server_unix_start(ControlServer *s)
 {
   ControlServerUnix *self = (ControlServerUnix *)s;
   GSockAddr *saddr;
 
-  saddr = g_sockaddr_unix_new(self->super.control_socket_name);
+  saddr = g_sockaddr_unix_new(self->control_socket_name);
   self->control_socket = socket(PF_UNIX, SOCK_STREAM, 0);
   if (self->control_socket == -1)
     {
       msg_error("Error opening control socket, external controls will not be available",
-                evt_tag_str("socket", self->super.control_socket_name));
-      return;
+                evt_tag_str("socket", self->control_socket_name));
+      goto error;
     }
   if (g_bind(self->control_socket, saddr) != G_IO_STATUS_NORMAL)
     {
       msg_error("Error opening control socket, bind() failed",
-                evt_tag_str("socket", self->super.control_socket_name),
+                evt_tag_str("socket", self->control_socket_name),
                 evt_tag_error("error"));
       goto error;
     }
   if (listen(self->control_socket, 255) < 0)
     {
       msg_error("Error opening control socket, listen() failed",
-                evt_tag_str("socket", self->super.control_socket_name),
+                evt_tag_str("socket", self->control_socket_name),
                 evt_tag_error("error"));
       goto error;
     }
@@ -187,10 +199,10 @@ control_server_start(ControlServer *s)
   self->control_listen.fd = self->control_socket;
   self->control_listen.cookie = self;
   iv_fd_register(&self->control_listen);
-  iv_fd_set_handler_in(&self->control_listen, control_socket_accept);
+  iv_fd_set_handler_in(&self->control_listen, _control_socket_accept);
 
   g_sockaddr_unref(saddr);
-  return;
+  return control_server_start_method(s);
 error:
   if (self->control_socket != -1)
     {
@@ -198,13 +210,14 @@ error:
       self->control_socket = -1;
     }
   g_sockaddr_unref(saddr);
-  return;
+  return FALSE;
 }
 
-void
-control_server_unix_free(ControlServer *s)
+static void
+control_server_unix_stop(ControlServer *s)
 {
   ControlServerUnix *self = (ControlServerUnix *)s;
+
   if (iv_fd_registered(&self->control_listen))
     {
       iv_fd_unregister(&self->control_listen);
@@ -213,15 +226,29 @@ control_server_unix_free(ControlServer *s)
     {
       close(self->control_socket);
     }
+  control_server_stop_method(s);
+}
+
+void
+control_server_unix_free(ControlServer *s)
+{
+  ControlServerUnix *self = (ControlServerUnix *)s;
+
+  g_assert(!iv_fd_registered(&self->control_listen));
+  g_free(self->control_socket_name);
+  control_server_free_method(s);
 }
 
 ControlServer *
-control_server_new(const gchar *path)
+control_server_unix_new(const gchar *path)
 {
   ControlServerUnix *self = g_new(ControlServerUnix, 1);
 
-  control_server_init_instance(&self->super, path);
-  IV_FD_INIT(&self->control_listen);
+  control_server_init_instance(&self->super);
+  self->super.start = control_server_unix_start;
+  self->super.stop = control_server_unix_stop;
   self->super.free_fn = control_server_unix_free;
+  self->control_socket_name = g_strdup(path);
+  IV_FD_INIT(&self->control_listen);
   return &self->super;
 }

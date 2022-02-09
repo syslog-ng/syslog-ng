@@ -27,6 +27,7 @@
 #include "messages.h"
 #include "control/control.h"
 #include "control/control-commands.h"
+#include "control/control-connection.h"
 #include "control-server-dummy.h"
 #include "mainloop-control.h"
 #include "stats/stats-control.h"
@@ -220,12 +221,12 @@ Test(control_cmds, test_reset_stats)
 }
 
 static void
-_original_replace(ControlConnection *cc, GString *result, gpointer user_data)
+_original_replace(ControlConnection *cc, GString *result, gpointer user_data, gboolean *cancelled)
 {
 }
 
 static void
-_new_replace(ControlConnection *cc, GString *result, gpointer user_data)
+_new_replace(ControlConnection *cc, GString *result, gpointer user_data, gboolean *cancelled)
 {
 }
 
@@ -239,7 +240,7 @@ _assert_control_command_eq(ControlCommand *cmd, ControlCommand *cmd_other)
 
 Test(control_cmds, test_replace_existing_command)
 {
-  control_register_command("REPLACE", _original_replace, (gpointer)0xbaadf00d);
+  control_register_command("REPLACE", _original_replace, (gpointer)0xbaadf00d, FALSE);
   ControlCommand *cmd = control_find_command("REPLACE");
   ControlCommand expected_original =
   {
@@ -250,7 +251,7 @@ Test(control_cmds, test_replace_existing_command)
 
   _assert_control_command_eq(cmd, &expected_original);
 
-  control_replace_command("REPLACE", _new_replace, (gpointer)0xd006f00d);
+  control_replace_command("REPLACE", _new_replace, (gpointer)0xd006f00d, FALSE);
   ControlCommand *new_cmd = control_find_command("REPLACE");
   ControlCommand expected_new =
   {
@@ -263,7 +264,7 @@ Test(control_cmds, test_replace_existing_command)
 
 Test(control_cmds, test_replace_non_existing_command)
 {
-  control_replace_command("REPLACE", _new_replace, (gpointer)0xd006f00d);
+  control_replace_command("REPLACE", _new_replace, (gpointer)0xd006f00d, FALSE);
   ControlCommand *new_cmd = control_find_command("REPLACE");
   ControlCommand expected_new =
   {

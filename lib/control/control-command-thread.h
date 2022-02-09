@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2018 Balabit
- * Copyright (c) 2018 Kokan
+ * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 2021 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,14 +22,18 @@
  *
  */
 
-#include "control/control.h"
+#ifndef CONTROL_COMMAND_THREAD_H_INCLUDED
+#define CONTROL_COMMAND_THREAD_H_INCLUDED
 
-#include "compat/glib.h"
+#include "control.h"
 
-#include <string.h>
+void control_command_thread_run(ControlCommandThread *self);
+void control_command_thread_cancel(ControlCommandThread *self);
+const gchar *control_command_thread_get_command(ControlCommandThread *self);
 
-gboolean control_command_start_with_command(const ControlCommand *cmd, const gchar *line)
-{
-  return strncmp(cmd->command_name, line, strlen(cmd->command_name));
-}
+ControlCommandThread *control_command_thread_new(ControlConnection *cc, GString *cmd,
+                                                 ControlCommandFunc func, gpointer user_data);
+ControlCommandThread *control_command_thread_ref(ControlCommandThread *self);
+void control_command_thread_unref(ControlCommandThread *self);
 
+#endif

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2019 Balabit
+ * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 2021 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,32 +21,9 @@
  * COPYING for details.
  *
  */
+#ifndef CONTROL_SERVER_UNIX_H
+#define CONTROL_SERVER_UNIX_H
 
-#ifndef SYSLOG_NG_CTL_COMMANDS_H_INCLUDED
-#define SYSLOG_NG_CTL_COMMANDS_H_INCLUDED 1
+ControlServer *control_server_unix_new(const gchar *path);
 
-#include "syslog-ng.h"
-#include "secret-storage/secret-storage.h"
-
-#include <stdio.h>
-
-extern GOptionEntry no_options[];
-
-typedef struct _CommandDescriptor
-{
-  const gchar *mode;
-  const GOptionEntry *options;
-  const gchar *description;
-  gint (*main)(gint argc, gchar *argv[], const gchar *mode, GOptionContext *ctx);
-  struct _CommandDescriptor *subcommands;
-} CommandDescriptor;
-
-typedef gint (*CommandResponseHandlerFunc)(GString *response, gpointer user_data);
-
-gint dispatch_command(const gchar *cmd);
-gint slng_run_command(const gchar *command, CommandResponseHandlerFunc cb, gpointer user_data);
-gint process_response_status(GString *response);
-gboolean is_syslog_ng_running(void);
-
-gint run(const gchar *control_name, gint argc, gchar **argv, CommandDescriptor *mode, GOptionContext *ctx);
 #endif

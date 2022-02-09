@@ -25,54 +25,43 @@
 
 #include "syslog-ng.h"
 #include "control.h"
+#include "atomic.h"
 #include <stdio.h>
 
 #define MAX_CONTROL_LINE_LENGTH 4096
 
-struct _ControlConnection
-{
-  gboolean waiting_for_output;
-  GString *input_buffer;
-  GString *output_buffer;
-  gsize pos;
-  ControlServer *server;
-  int (*read)(ControlConnection *self, gpointer buffer, gsize size);
-  int (*write)(ControlConnection *self, gpointer buffer, gsize size);
-  void (*handle_input)(gpointer s);
-  void (*handle_output)(gpointer s);
-  void (*free_fn)(ControlConnection *self);
-  struct
-  {
-    void (*start_watches)(ControlConnection *self);
-    void (*update_watches)(ControlConnection *self);
-    void (*stop_watches)(ControlConnection *self);
-  } events;
-
-};
-
 struct _ControlServer
 {
   GList *worker_threads;
-  gchar *control_socket_name;
+  gboolean (*start)(ControlServer *s);
+  void (*stop)(ControlServer *s);
   void (*free_fn)(ControlServer *self);
 };
 
 void control_server_cancel_workers(ControlServer *self);
 void control_server_connection_closed(ControlServer *self, ControlConnection *cc);
-void control_server_start(ControlServer *self);
+void control_server_worker_started(ControlServer *self, ControlCommandThread *worker);
+void control_server_worker_finished(ControlServer *self, ControlCommandThread *worker);
+
+gboolean control_server_start_method(ControlServer *self);
+void control_server_stop_method(ControlServer *self);
+void control_server_free_method(ControlServer *self);
 void control_server_free(ControlServer *self);
-void control_server_init_instance(ControlServer *self, const gchar *path);
-ControlServer *control_server_new(const gchar *path);
+void control_server_init_instance(ControlServer *self);
 
-typedef GString *(*ControlConnectionCommand)(ControlConnection *cc, GString *command, gpointer user_data);
-void control_connection_start_as_thread(ControlConnection *self, ControlConnectionCommand cmd_cb,
-                                        GString *command, gpointer user_data);
+static inline gboolean
+control_server_start(ControlServer *self)
+{
+  if (self->start)
+    return self->start(self);
+  return TRUE;
+}
 
-void control_connection_send_reply(ControlConnection *self, GString *reply);
-void control_connection_start_watches(ControlConnection *self);
-void control_connection_update_watches(ControlConnection *self);
-void control_connection_stop_watches(ControlConnection *self);
-void control_connection_free(ControlConnection *self);
-void control_connection_init_instance(ControlConnection *self, ControlServer *server);
+static inline void
+control_server_stop(ControlServer *self)
+{
+  if (self->stop)
+    self->stop(self);
+}
 
 #endif

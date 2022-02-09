@@ -29,16 +29,15 @@
 
 typedef struct _ControlServer ControlServer;
 typedef struct _ControlConnection ControlConnection;
+typedef struct _ControlCommandThread ControlCommandThread;
 
-
-typedef void (*CommandFunction)(ControlConnection *cc, GString *, gpointer user_data);
+typedef void (*ControlCommandFunc)(ControlConnection *cc, GString *, gpointer user_data, gboolean *cancelled);
 typedef struct _ControlCommand
 {
   const gchar *command_name;
-  CommandFunction func;
+  ControlCommandFunc func;
   gpointer user_data;
+  gboolean threaded;
 } ControlCommand;
-
-gboolean control_command_start_with_command(const ControlCommand *cmd, const gchar *name);
 
 #endif
