@@ -49,6 +49,7 @@ typedef struct
   gchar *cert_file;
   gchar *key_file;
   gchar *ciphers;
+  gchar *tls13_ciphers;
   gchar *proxy;
   GString *body_prefix;
   GString *body_suffix;
@@ -81,6 +82,7 @@ void http_dd_set_ca_file(LogDriver *d, const gchar *ca_file);
 void http_dd_set_cert_file(LogDriver *d, const gchar *cert_file);
 void http_dd_set_key_file(LogDriver *d, const gchar *key_file);
 void http_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers);
+gboolean http_dd_set_tls13_cipher_suite(LogDriver *d, const gchar *tls13_ciphers);
 void http_dd_set_proxy(LogDriver *d, const gchar *proxy);
 gboolean http_dd_set_ssl_version(LogDriver *d, const gchar *value);
 void http_dd_set_peer_verify(LogDriver *d, gboolean verify);
