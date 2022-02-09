@@ -648,6 +648,15 @@ tls_context_setup_dh(TLSContext *self)
   return ctx_dh_success;
 }
 
+static gboolean
+tls_context_setup_cipher_suite(TLSContext *self)
+{
+  if (self->cipher_suite && !SSL_CTX_set_cipher_list(self->ssl_ctx, self->cipher_suite))
+    return FALSE;
+
+  return TRUE;
+}
+
 static PKCS12 *
 _load_pkcs12_file(TLSContext *self, const gchar *pkcs12_file)
 {
@@ -808,11 +817,8 @@ tls_context_setup_context(TLSContext *self)
   if (!tls_context_setup_dh(self))
     goto error;
 
-  if (self->cipher_suite)
-    {
-      if (!SSL_CTX_set_cipher_list(self->ssl_ctx, self->cipher_suite))
-        goto error;
-    }
+  if (!tls_context_setup_cipher_suite(self))
+    goto error;
 
   return TLS_CONTEXT_SETUP_OK;
 
