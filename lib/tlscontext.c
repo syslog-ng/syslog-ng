@@ -1071,8 +1071,7 @@ tls_context_set_keylog_file(TLSContext *self, gchar *keylog_file_path, GError **
 {
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
   g_free(self->keylog_file_path);
-  msg_warning_once("WARNING: TLS keylog file has been set up, it should only be used during debugging sessions.",
-                   evt_tag_str("keylog-file", keylog_file_path));
+  msg_warning_once("WARNING: TLS keylog file has been set up, it should only be used during debugging sessions");
   self->keylog_file_path = g_strdup(keylog_file_path);
   SSL_CTX_set_keylog_callback(self->ssl_ctx, _dump_tls_keylog);
   return TRUE;
