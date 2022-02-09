@@ -59,6 +59,7 @@ struct _TLSContext
   gchar *crl_dir;
   gchar *ca_file;
   gchar *cipher_suite;
+  gchar *tls13_cipher_suite;
   gchar *ecdh_curve_list;
   gchar *sni;
   SSL_CTX *ssl_ctx;
@@ -654,6 +655,11 @@ tls_context_setup_cipher_suite(TLSContext *self)
   if (self->cipher_suite && !SSL_CTX_set_cipher_list(self->ssl_ctx, self->cipher_suite))
     return FALSE;
 
+#if SYSLOG_NG_HAVE_DECL_SSL_CTX_SET_CIPHERSUITES
+  if (self->tls13_cipher_suite && !SSL_CTX_set_ciphersuites(self->ssl_ctx, self->tls13_cipher_suite))
+    return FALSE;
+#endif
+
   return TRUE;
 }
 
@@ -897,6 +903,7 @@ _tls_context_free(TLSContext *self)
   g_free(self->crl_dir);
   g_free(self->ca_file);
   g_free(self->cipher_suite);
+  g_free(self->tls13_cipher_suite);
   g_free(self->ecdh_curve_list);
   g_free(self->sni);
   g_free(self->keylog_file_path);
@@ -1121,6 +1128,20 @@ tls_context_set_cipher_suite(TLSContext *self, const gchar *cipher_suite)
 {
   g_free(self->cipher_suite);
   self->cipher_suite = g_strdup(cipher_suite);
+}
+
+gboolean
+tls_context_set_tls13_cipher_suite(TLSContext *self, const gchar *tls13_cipher_suite, GError **error)
+{
+#if SYSLOG_NG_HAVE_DECL_SSL_CTX_SET_CIPHERSUITES
+  g_free(self->tls13_cipher_suite);
+  self->tls13_cipher_suite = g_strdup(tls13_cipher_suite);
+  return TRUE;
+#else
+  g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_UNSUPPORTED,
+              "Setting TLS 1.3 ciphers is not supported with the OpenSSL version syslog-ng was compiled with");
+  return FALSE;
+#endif
 }
 
 void

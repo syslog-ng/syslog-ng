@@ -1047,6 +1047,7 @@ CPPFLAGS_SAVE="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $OPENSSL_CFLAGS"
 
 AC_CHECK_DECLS([SSL_CTX_get0_param],[], [], [[#include <openssl/ssl.h>]])
+AC_CHECK_DECLS([SSL_CTX_set_ciphersuites],[], [], [[#include <openssl/ssl.h>]])
 AC_CHECK_DECLS([X509_STORE_CTX_get0_cert],[], [], [[#include <openssl/ssl.h>]])
 AC_CHECK_DECLS([X509_get_extension_flags], [], [], [[#include <openssl/x509v3.h>]])
 AC_CHECK_DECLS([EVP_MD_CTX_reset], [], [], [[#include <openssl/evp.h>]])
