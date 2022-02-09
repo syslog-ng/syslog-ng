@@ -92,6 +92,15 @@ typedef struct _TLSSession
   } peer_info;
 } TLSSession;
 
+
+#define TLSCONTEXT_ERROR tls_context_error_quark()
+GQuark tls_context_error_quark(void);
+
+enum TLSContextError
+{
+  TLSCONTEXT_UNSUPPORTED,
+};
+
 #define TMI_ALLOW_COMPRESS 0x1
 
 void tls_session_set_verifier(TLSSession *self, TLSVerifier *verifier);

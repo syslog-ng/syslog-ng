@@ -1308,3 +1308,9 @@ tls_context_get_key_file(TLSContext *self)
 {
   return self->key_file;
 }
+
+GQuark
+tls_context_error_quark(void)
+{
+  return g_quark_from_static_string("tls-context-error-quark");
+}
