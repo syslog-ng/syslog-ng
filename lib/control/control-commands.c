@@ -25,6 +25,8 @@
 #include "control/control-main.h"
 #include "messages.h"
 
+#include <string.h>
+
 static GList *command_list = NULL;
 
 void
