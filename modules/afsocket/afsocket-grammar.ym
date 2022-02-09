@@ -806,9 +806,10 @@ tls_option
           }
 	| KW_KEYLOG_FILE '(' string ')'
 	  {
-		CHECK_ERROR(tls_context_set_keylog_file(last_tls_context, $3), @3, "keylog_file() requires OpenSSL >= v1.1.1");
-            free($3);
-          }
+	    GError *error = NULL;
+	    CHECK_ERROR_GERROR(tls_context_set_keylog_file(last_tls_context, $3, &error), @3, error, "Error setting keylog-file()");
+	    free($3);
+	  }
 	| KW_CERT_FILE '(' path_check ')'
 	  {
 	    tls_context_set_cert_file(last_tls_context, $3);

@@ -1067,7 +1067,7 @@ tls_context_set_key_file(TLSContext *self, const gchar *key_file)
 }
 
 gboolean
-tls_context_set_keylog_file(TLSContext *self, gchar *keylog_file_path)
+tls_context_set_keylog_file(TLSContext *self, gchar *keylog_file_path, GError **error)
 {
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
   g_free(self->keylog_file_path);
@@ -1077,6 +1077,7 @@ tls_context_set_keylog_file(TLSContext *self, gchar *keylog_file_path)
   SSL_CTX_set_keylog_callback(self->ssl_ctx, _dump_tls_keylog);
   return TRUE;
 #else
+  g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_UNSUPPORTED, "keylog-file() requires OpenSSL >= v1.1.1");
   return FALSE;
 #endif
 }
