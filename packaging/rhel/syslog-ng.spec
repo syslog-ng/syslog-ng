@@ -65,8 +65,6 @@ Source4: syslog-ng.logrotate7
 # Build tools
 BuildRequires: pkgconfig
 BuildRequires: libtool
-BuildRequires: bison
-BuildRequires: flex
 BuildRequires: libxslt
 
 # Core package's build dependencies
