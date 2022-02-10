@@ -67,6 +67,7 @@ _append_args_with_separator(gint argc, GString *argv[], GString *result, gchar s
 #include "tf-iterate.c"
 #include "tf-map.c"
 #include "tf-filter.c"
+#include "vp-funcs.c"
 
 static Plugin basicfuncs_plugins[] =
 {
@@ -93,6 +94,10 @@ static Plugin basicfuncs_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_binary, "binary"),
   TEMPLATE_FUNCTION_PLUGIN(tf_implode, "implode"),
   TEMPLATE_FUNCTION_PLUGIN(tf_explode, "explode"),
+
+  /* vp-funcs */
+  TEMPLATE_FUNCTION_PLUGIN(tf_value_pairs, "values"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_value_pairs, "names"),
 
   /* fname-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_dirname, "dirname"),
