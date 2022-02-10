@@ -78,6 +78,9 @@ void log_template_append_format_with_context(LogTemplate *self, LogMessage **mes
 void log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
                                                             LogTemplateEvalOptions *options,
                                                             GString *result, LogMessageValueType *type);
+void log_template_format_value_and_type_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
+                                                     LogTemplateEvalOptions *options,
+                                                     GString *result, LogMessageValueType *type);
 void log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
                                       LogTemplateEvalOptions *options, GString *result);
 

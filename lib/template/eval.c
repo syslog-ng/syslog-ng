@@ -210,6 +210,15 @@ log_template_format_value_and_type(LogTemplate *self, LogMessage *lm, LogTemplat
 }
 
 void
+log_template_format_value_and_type_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
+                                                LogTemplateEvalOptions *options,
+                                                GString *result, LogMessageValueType *type)
+{
+  g_string_truncate(result, 0);
+  log_template_append_format_value_and_type_with_context(self, messages, num_messages, options, result, type);
+}
+
+void
 log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateEvalOptions *options, GString *result)
 {
   log_template_format_value_and_type(self, lm, options, result, NULL);
