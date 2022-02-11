@@ -43,6 +43,7 @@ struct _LogProtoTextServer
 {
   LogProtoBufferedServer super;
 
+  const guchar *(*find_eom)(const guchar *s, gsize n);
   gint (*accumulate_line)(LogProtoTextServer *self,
                           const guchar *msg,
                           gsize msg_len,
