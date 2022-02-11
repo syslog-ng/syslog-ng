@@ -65,6 +65,33 @@ ParameterizedTestParameters(findcrlf, test)
     { "abcdefghijklmnopqrstuvwxy\nb\nc\n", 30, 25 },
     { "abcdefghijklmnopqrstuvwxyz\nb\nc\n", 31, 26 },
 
+    { "a\0b\0c\0",  6,  1 },
+    { "ab\0b\0c\0",  7,  2 },
+    { "abc\0b\0c\0",  8,  3 },
+    { "abcd\0b\0c\0",  9,  4 },
+    { "abcde\0b\0c\0", 10,  5 },
+    { "abcdef\0b\0c\0", 11,  6 },
+    { "abcdefg\0b\0c\0", 12,  7 },
+    { "abcdefgh\0b\0c\0", 13,  8 },
+    { "abcdefghi\0b\0c\0", 14,  9 },
+    { "abcdefghij\0b\0c\0", 15, 10 },
+    { "abcdefghijk\0b\0c\0", 16, 11 },
+    { "abcdefghijkl\0b\0c\0", 17, 12 },
+    { "abcdefghijklm\0b\0c\0", 18, 13 },
+    { "abcdefghijklmn\0b\0c\0", 19, 14 },
+    { "abcdefghijklmno\0b\0c\0", 20, 15 },
+    { "abcdefghijklmnop\0b\0c\0", 21, 16 },
+    { "abcdefghijklmnopq\0b\0c\0", 22, 17 },
+    { "abcdefghijklmnopqr\0b\0c\0", 23, 18 },
+    { "abcdefghijklmnopqrs\0b\0c\0", 24, 19 },
+    { "abcdefghijklmnopqrst\0b\0c\0", 25, 20 },
+    { "abcdefghijklmnopqrstu\0b\0c\0", 26, 21 },
+    { "abcdefghijklmnopqrstuv\0b\0c\0", 27, 22 },
+    { "abcdefghijklmnopqrstuvw\0b\0c\0", 28, 23 },
+    { "abcdefghijklmnopqrstuvwx\0b\0c\0", 29, 24 },
+    { "abcdefghijklmnopqrstuvwxy\0b\0c\0", 30, 25 },
+    { "abcdefghijklmnopqrstuvwxyz\0b\0c\0", 31, 26 },
+
     { "a\rb\rc\r",  6,  1 },
     { "ab\rb\rc\r",  7,  2 },
     { "abc\rb\rc\r",  8,  3 },
@@ -125,7 +152,7 @@ ParameterizedTestParameters(findcrlf, test)
 
 ParameterizedTest(struct findcrlf_params *params, findcrlf, test)
 {
-  gchar *eom = find_cr_or_lf(params->msg, params->msg_len);
+  gchar *eom = find_cr_or_lf_or_nul(params->msg, params->msg_len);
 
   cr_expect_not(params->eom_ofs == -1 && eom != NULL,
                 "EOM returned is not NULL, which was expected. eom_ofs=%d, eom=%s\n",

@@ -91,7 +91,7 @@ msg_format_postprocess_message(MsgFormatOptions *options, LogMessage *msg,
       gchar *p;
 
       p = msg_text = (gchar *) log_msg_get_value(msg, LM_V_MESSAGE, &msg_len);
-      while ((p = find_cr_or_lf(p, msg_text + msg_len - p)))
+      while ((p = find_cr_or_lf_or_nul(p, msg_text + msg_len - p)))
         {
           *p = ' ';
           p++;
