@@ -45,6 +45,14 @@ construct_test_proto(LogTransport *transport)
 }
 
 LogProtoServer *
+construct_test_proto_with_nuls(LogTransport *transport)
+{
+  proto_server_options.max_msg_size = 32;
+
+  return log_proto_text_with_nuls_server_new(transport, get_inited_proto_server_options());
+}
+
+LogProtoServer *
 construct_test_proto_with_accumulator(gint (*accumulator)(LogProtoTextServer *, const guchar *, gsize, gssize),
                                       LogTransport *transport)
 {
@@ -142,6 +150,24 @@ Test(log_proto, test_log_proto_text_server_no_eol_before_eof)
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
   log_proto_server_free(proto);
 
+}
+
+Test(log_proto, test_log_proto_text_with_embedded_nuls)
+{
+  LogProtoServer *proto;
+
+  proto = construct_test_proto_with_nuls(
+            log_transport_mock_stream_new(
+              /* no eol before EOF */
+              "01234567\n", -1,
+              "alma\x00korte\n", 11,
+
+              LTM_EOF));
+
+  assert_proto_server_fetch(proto, "01234567", -1);
+  assert_proto_server_fetch(proto, "alma\x00korte", 10);
+  assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
+  log_proto_server_free(proto);
 }
 
 Test(log_proto, test_log_proto_text_server_eol_before_eof)
