@@ -36,7 +36,8 @@
 
 #include <string.h>
 #include <errno.h>
-#include <openssl/md5.h>
+#include "compat/openssl_support.h"
+#include <openssl/evp.h>
 
 static gboolean dbi_initialized = FALSE;
 static const char *s_oracle = "oracle";
@@ -384,18 +385,26 @@ afsql_dd_create_index(AFSqlDestDriver *self, const gchar *table, const gchar *co
   if (strcmp(self->type, s_oracle) == 0)
     {
       /* NOTE: oracle index indentifier length is max 30 characters
-       * so we use the first 30 characters of the table_column md5 hash */
+       * so we use the first 30 characters of the table_column MD5 hash */
       if ((strlen(table) + strlen(column)) > 25)
         {
 
-          guchar hash[MD5_DIGEST_LENGTH];
+          guchar hash[EVP_MAX_MD_SIZE];
           gchar hash_str[31];
           gchar *cat = g_strjoin("_", table, column, NULL);
+          guint md_len;
 
-          MD5((guchar *)cat, strlen(cat), hash);
+          const EVP_MD *md5 = EVP_get_digestbyname("md5");
+          DECLARE_EVP_MD_CTX(mdctx);
+          EVP_MD_CTX_init(mdctx);
+          EVP_DigestInit_ex(mdctx, md5, NULL);
+          EVP_DigestUpdate(mdctx, (guchar *) cat, strlen(cat));
+          EVP_DigestFinal_ex(mdctx, hash, &md_len);
+          EVP_MD_CTX_destroy(mdctx);
+
           g_free(cat);
 
-          format_hex_string(hash, sizeof(hash), hash_str, sizeof(hash_str));
+          format_hex_string(hash, md_len, hash_str, sizeof(hash_str));
           hash_str[0] = 'i';
           g_string_printf(query_string, "CREATE INDEX %s ON %s (%s)",
                           hash_str, table, column);
