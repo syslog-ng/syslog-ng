@@ -32,6 +32,10 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/params.h>
+#endif
+
 #include "messages.h"
 
 #include "slog.h"
@@ -296,9 +300,10 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
  * 4. Parameter: The current MAC
  * 5. Parameter: The resulting encrypted log entry
  * 6. Parameter: The newly updated MAC
+ * 7. Parameter: The capacity of the newly updated MAC buffer
 */
 void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey, unsigned char *inputBigMac,
-               GString *output, unsigned char *outputBigMac)
+               GString *output, unsigned char *outputBigMac, gsize outputBigMac_capacity)
 {
 
   unsigned char encKey[KEY_LENGTH];
@@ -354,13 +359,13 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
           memcpy(bigBuf, inputBigMac, AES_BLOCKSIZE);
 
           gsize outlen;
-          cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen );
+          cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen, outputBigMac_capacity);
         }
       else   // First aggregated MAC
         {
           gsize outlen = 0;
 
-          cmac(MACKey, &bigBuf[AES_BLOCKSIZE], IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen);
+          cmac(MACKey, &bigBuf[AES_BLOCKSIZE], IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen, outputBigMac_capacity);
         }
     }
   else
@@ -412,14 +417,33 @@ gchar *convertToBase64(unsigned char *input, gsize len)
  * 3. Parameter: Input length (input)
  * 4. Parameter: Pointer to output (output)
  * 5. Parameter: Length of output (output)
+ * 6. Parameter: Capacity of output buffer (input)
  *
  * Note: caller must take care of memory management.
  *
  * If Parameter 5 == 0, there was an error.
  *
  */
-void cmac(unsigned char *key, const void *input, gsize length, unsigned char *out, gsize *outlen)
+void cmac(unsigned char *key, const void *input, gsize length, unsigned char *out, gsize *outlen, gsize out_capacity)
 {
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+  EVP_MAC *mac = EVP_MAC_fetch(NULL, "CMAC", NULL);
+  OSSL_PARAM params[] =
+  {
+    OSSL_PARAM_utf8_string("cipher", "aes-256-cbc", 0),
+    OSSL_PARAM_END,
+  };
+
+  EVP_MAC_CTX *ctx = EVP_MAC_CTX_new(mac);
+
+  EVP_MAC_init(ctx, key, KEY_LENGTH, params);
+  EVP_MAC_update(ctx, input, length);
+  size_t out_len;
+  EVP_MAC_final(ctx, out, &out_len, out_capacity);
+
+  EVP_MAC_CTX_free(ctx);
+  EVP_MAC_free(mac);
+#else
   CMAC_CTX *ctx = CMAC_CTX_new();
 
   CMAC_Init(ctx, key, KEY_LENGTH, EVP_aes_256_cbc(), NULL);
@@ -429,6 +453,7 @@ void cmac(unsigned char *key, const void *input, gsize length, unsigned char *ou
   CMAC_Final(ctx, out, &out_len);
   *outlen = out_len;
   CMAC_CTX_free(ctx);
+#endif
 }
 
 
@@ -468,11 +493,12 @@ void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, 
 
   // Make sure that temporary buffer can hold at least outputLength bytes, rounded up to a multiple of AES_BLOCKSIZE
   unsigned char buf[outputLength+AES_BLOCKSIZE];
+  gsize buf_capacity = G_N_ELEMENTS(buf);
   // Prepare plaintext
   for (int i=0; i<outputLength/AES_BLOCKSIZE; i++)
     {
       gsize outlen;
-      cmac(key, input, AES_BLOCKSIZE, &buf[i*AES_BLOCKSIZE], &outlen);
+      cmac(key, input, AES_BLOCKSIZE, buf + (i*AES_BLOCKSIZE), &outlen, buf_capacity - (i*AES_BLOCKSIZE));
       input[inputLength-1]++;
     }
 
@@ -480,7 +506,7 @@ void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, 
     {
       int index = outputLength/AES_BLOCKSIZE;
       gsize outlen;
-      cmac(key, input, AES_BLOCKSIZE, &buf[(index)*AES_BLOCKSIZE], &outlen);
+      cmac(key, input, AES_BLOCKSIZE, buf + (index*AES_BLOCKSIZE), &outlen, buf_capacity - (index*AES_BLOCKSIZE));
     }
 
   memcpy(output, buf, outputLength);
@@ -613,12 +639,13 @@ int writeBigMAC(gchar *filename, char *outputBuffer)
 
   // Compute aggregated MAC
   gchar outputmacdata[CMAC_LENGTH];
+  gsize outputmacdata_capacity = G_N_ELEMENTS(outputmacdata);
   unsigned char keyBuffer[KEY_LENGTH];
   bzero(keyBuffer, KEY_LENGTH);
   unsigned char zeroBuffer[CMAC_LENGTH];
   bzero(zeroBuffer, CMAC_LENGTH);
   memcpy(keyBuffer, outputBuffer, MIN(CMAC_LENGTH, KEY_LENGTH));
-  cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, (guchar *)outputmacdata, &outlen);
+  cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, (guchar *)outputmacdata, &outlen, outputmacdata_capacity);
 
   status = g_io_channel_write_chars(macfile, outputmacdata, CMAC_LENGTH, &outlen, &error);
 
@@ -729,7 +756,8 @@ int readBigMAC(gchar *filename, char *outputBuffer)
   memcpy(keyBuffer, macdata, MIN(CMAC_LENGTH, KEY_LENGTH));
 
   unsigned char testOutput[CMAC_LENGTH];
-  cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, testOutput, &outlen);
+  gsize testOutput_capacity = G_N_ELEMENTS(testOutput);
+  cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, testOutput, &outlen, testOutput_capacity);
 
   if (0 != memcmp(testOutput, &macdata[CMAC_LENGTH], CMAC_LENGTH))
     {
@@ -852,8 +880,9 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
 
   gsize outlen=0;
   unsigned char testOutput[CMAC_LENGTH];
+  gsize testOutputCapacity = G_N_ELEMENTS(testOutput);
 
-  cmac((guchar *)keydata, &(littleEndianCounter), sizeof(littleEndianCounter), testOutput, &outlen);
+  cmac((guchar *)keydata, &(littleEndianCounter), sizeof(littleEndianCounter), testOutput, &outlen, testOutputCapacity);
 
   if (0!=memcmp(testOutput, &keydata[KEY_LENGTH], CMAC_LENGTH))
     {
@@ -922,7 +951,9 @@ int writeKey(char *key, guint64 counter, gchar *keypath)
 
   guint64 littleEndianCounter = GINT64_TO_LE(counter);
   gchar outputmacdata[CMAC_LENGTH];
-  cmac((guchar *)key, &littleEndianCounter, sizeof(littleEndianCounter), (guchar *)outputmacdata, &outlen);
+  gsize outputmacdata_capacity = G_N_ELEMENTS(outputmacdata);
+  cmac((guchar *)key, &littleEndianCounter, sizeof(littleEndianCounter), (guchar *)outputmacdata, &outlen,
+       outputmacdata_capacity);
 
   // Write CMAC
   status = g_io_channel_write_chars(keyfile, outputmacdata, CMAC_LENGTH, &outlen, &error);
@@ -975,7 +1006,7 @@ int writeKey(char *key, guint64 counter, gchar *keypath)
 
 int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntry, unsigned char *mainKey,
                   unsigned char *keyZero, guint keyNumber, GString **output, guint64 *numberOfLogEntries, unsigned char *cmac_tag,
-                  GHashTable *tab)
+                  gsize cmac_tag_capacity, GHashTable *tab)
 {
 
   int ret = 1;
@@ -1098,7 +1129,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
                       unsigned char MACKey[KEY_LENGTH];
                       deriveMACSubKey(mainKey, MACKey);
 
-                      cmac(MACKey, binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen );
+                      cmac(MACKey, binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen, cmac_tag_capacity);
                     }
                   else
                     {
@@ -1111,7 +1142,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
                       unsigned char MACKey[KEY_LENGTH];
                       deriveMACSubKey(mainKey, MACKey);
 
-                      cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen );
+                      cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen, cmac_tag_capacity);
                     }
                 }
             }
@@ -1355,6 +1386,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
     }
 
   unsigned char cmac_tag[CMAC_LENGTH];
+  gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
   memcpy(cmac_tag, previousMAC, CMAC_LENGTH);
 
   guint64 nextLogEntry = keyNumber;
@@ -1413,7 +1445,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
           g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
         }
       ret = ret * iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber, outputBuffer,
-                                &numberOfLogEntries, cmac_tag, tab);
+                                &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
 
       // ...and write to file
       for (guint64 i = 0; i < chunkLength; i++)
@@ -1485,7 +1517,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
           g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
         }
       ret = ret * iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber,
-                                outputBuffer, &numberOfLogEntries, cmac_tag, tab);
+                                outputBuffer, &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
 
       for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
         {
@@ -1660,6 +1692,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
   guint64 nextLogEntry = 0UL;
   guint64 startingEntry = 0UL;
   unsigned char cmac_tag[CMAC_LENGTH];
+  gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
   guint64 numberOfLogEntries = 0UL;
 
   if (chunkLength>entriesInFile)
@@ -1699,7 +1732,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
   ret = ret * initVerify(entriesInFile, mainKey, &nextLogEntry, &startingEntry, inputBuffer, &tab);
   ret = ret * iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
-                            &numberOfLogEntries, cmac_tag, tab);
+                            &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
 
   // Write to file
   for (guint64 i = 0; i < chunkLength; i++)
@@ -1768,7 +1801,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
           g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
         }
       ret = ret * iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
-                                &numberOfLogEntries, cmac_tag, tab);
+                                &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
 
       // ...and write to file
       for (guint64 i = 0; i < chunkLength; i++)
@@ -1837,7 +1870,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
           g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
         }
       ret = ret * iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
-                                &numberOfLogEntries, cmac_tag, tab);
+                                &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
 
       for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
         {
@@ -1957,4 +1990,3 @@ gboolean validFileNameArg(const gchar *option_name, const gchar *value, gpointer
 
   return isValid;
 }
-

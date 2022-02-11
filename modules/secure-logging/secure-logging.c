@@ -65,7 +65,6 @@ typedef struct _TFSlogState
   gboolean badKey;
   guchar key[KEY_LENGTH];
   guchar bigMAC[CMAC_LENGTH];
-
 } TFSlogState;
 
 /*
@@ -219,12 +218,14 @@ tf_slog_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
     {
       msg_error("[SLOG] ERROR: String of length 0 received");
       GString *errorString = g_string_new("[SLOG] ERROR: String of length 0 received");
-      sLogEntry(state->numberOfLogEntries, errorString, state->key, state->bigMAC, result, outputmacdata);
+      sLogEntry(state->numberOfLogEntries, errorString, state->key, state->bigMAC, result, outputmacdata,
+                G_N_ELEMENTS(outputmacdata));
       g_string_free(errorString, TRUE);
     }
   else
     {
-      sLogEntry(state->numberOfLogEntries, args->argv[0], state->key, state->bigMAC, result, outputmacdata);
+      sLogEntry(state->numberOfLogEntries, args->argv[0], state->key, state->bigMAC, result, outputmacdata,
+                G_N_ELEMENTS(outputmacdata));
     }
 
   memcpy(state->bigMAC, outputmacdata, CMAC_LENGTH);
@@ -288,9 +289,3 @@ const ModuleInfo module_info =
   .plugins = secure_logging_plugins,
   .plugins_len = G_N_ELEMENTS(secure_logging_plugins),
 };
-
-
-
-
-
-

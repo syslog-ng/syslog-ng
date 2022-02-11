@@ -114,12 +114,13 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
  * 3. Parameter: Input length (input)
  * 4. Parameter: Pointer to output (output)
  * 5. Parameter: Length of output (output)
+ * 6. Parameter: Capacity of output buffer (input)
  *
  * If Parameter 5 == 0, there was an error.
  *
  * Note: Caller must take care of memory management.
  */
-void cmac(unsigned char *key, const void *input, gsize length, unsigned char *out, gsize *outlen);
+void cmac(unsigned char *key, const void *input, gsize length, unsigned char *out, gsize *outlen, gsize out_capacity);
 
 
 gchar *convertToBase64(unsigned char *input, gsize len);
@@ -148,9 +149,10 @@ void deriveKey(unsigned char *dst, guint64 index, guint64 currentKey);
  * 4. Parameter: The current MAC
  * 5. Parameter: The resulting encrypted log entry
  * 6. Parameter: The newly updated MAC
+ * 7. Parameter: The capacity of the newly updated MAC buffer
  */
 void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *key, unsigned char *inputBigMac,
-               GString *output, unsigned char *outputBigMac);
+               GString *output, unsigned char *outputBigMac, gsize outputBigMac_capacity);
 
 /*
  * Generate a master key
@@ -217,7 +219,7 @@ int initVerify(guint64 entriesInFile, unsigned char *key, guint64 *nextLogEntry,
 
 int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntry, unsigned char *key,
                   unsigned char *keyZero, guint keyNumber, GString **output, guint64 *numberOfLogEntries, unsigned char *cmac_tag,
-                  GHashTable *tab);
+                  gsize cmac_tag_capacity, GHashTable *tab);
 
 int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *bigMac, unsigned char *cmac_tag,
                    GHashTable *tab);
