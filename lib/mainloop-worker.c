@@ -78,18 +78,15 @@ _allocate_thread_id(void)
 
   main_loop_worker_id = 0;
 
-  if(main_loop_worker_type != MLW_THREADED_INPUT_WORKER)
+  for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
     {
-      for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
+      if ((main_loop_workers_idmap & (1ULL << id)) == 0)
         {
-          if ((main_loop_workers_idmap & (1ULL << id)) == 0)
-            {
-              /* id not yet used */
+          /* id not yet used */
 
-              main_loop_worker_id = (id + 1);
-              main_loop_workers_idmap |= (1ULL << id);
-              break;
-            }
+          main_loop_worker_id = (id + 1);
+          main_loop_workers_idmap |= (1ULL << id);
+          break;
         }
     }
   g_mutex_unlock(&main_loop_workers_idmap_lock);
