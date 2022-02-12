@@ -27,6 +27,7 @@ from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 def map_transport(transport):
     mapping = {
         "tcp": NetworkIO.Transport.TCP,
+        "text-with-nuls": NetworkIO.Transport.TCP,
         "udp": NetworkIO.Transport.UDP,
         "tls": NetworkIO.Transport.TLS,
         "proxied-tcp": NetworkIO.Transport.PROXIED_TCP,
