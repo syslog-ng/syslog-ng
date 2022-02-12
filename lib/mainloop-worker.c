@@ -63,33 +63,50 @@ static struct iv_task main_loop_workers_reenable_jobs_task;
 /* thread ID allocation */
 static GMutex main_loop_workers_idmap_lock;
 
-static guint64 main_loop_workers_idmap;
+#define MAIN_LOOP_IDMAP_BITS_PER_ROW    (sizeof(guint64)*8)
+#define MAIN_LOOP_IDMAP_ROWS            (MAIN_LOOP_MAX_WORKER_THREADS / MAIN_LOOP_IDMAP_BITS_PER_ROW)
+
+static guint64 main_loop_workers_idmap[MAIN_LOOP_IDMAP_ROWS];
 
 static void
 _allocate_thread_id(void)
 {
   gint id;
-
   g_mutex_lock(&main_loop_workers_idmap_lock);
 
-  /* NOTE: this algorithm limits the number of I/O worker threads to 64,
-   * since the ID map is stored in a single 64 bit integer.  If we ever need
-   * more threads than that, we can generalize this algorithm further. */
+  /* the maximum number of threads must be dividible by 64, the array
+   * main_loop_workers_idmap is sized accordingly, e.g.  the remainder could
+   * not be represented in the array as is.  */
+
+  G_STATIC_ASSERT((MAIN_LOOP_MAX_WORKER_THREADS % MAIN_LOOP_IDMAP_BITS_PER_ROW) == 0);
 
   main_loop_worker_id = 0;
 
   for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
     {
-      if ((main_loop_workers_idmap & (1ULL << id)) == 0)
+      gint row = id / MAIN_LOOP_IDMAP_BITS_PER_ROW;
+      gint bit_in_row = id % MAIN_LOOP_IDMAP_BITS_PER_ROW;
+
+      if ((main_loop_workers_idmap[row] & (1ULL << bit_in_row)) == 0)
         {
           /* id not yet used */
 
+          main_loop_workers_idmap[row] |= (1ULL << bit_in_row);
           main_loop_worker_id = (id + 1);
-          main_loop_workers_idmap |= (1ULL << id);
           break;
         }
     }
   g_mutex_unlock(&main_loop_workers_idmap_lock);
+
+  if (main_loop_worker_id == 0)
+    {
+      msg_warning("Unable to allocate a unique thread ID. This can only "
+                  "happen if the number of syslog-ng threads exceeds the "
+                  "compile time constant MAIN_LOOP_MAX_WORKER_THREADS. "
+                  "Increase this number and recompile or contact the "
+                  "syslog-ng authors",
+                  evt_tag_int("max-worker-threads", MAIN_LOOP_MAX_WORKER_THREADS));
+    }
 }
 
 static void
@@ -98,8 +115,11 @@ _release_thread_id(void)
   g_mutex_lock(&main_loop_workers_idmap_lock);
   if (main_loop_worker_id)
     {
-      const gint id = main_loop_worker_id;
-      main_loop_workers_idmap &= ~(1ULL << (id - 1));
+      const gint id = main_loop_worker_id - 1;
+      gint row = id / MAIN_LOOP_IDMAP_BITS_PER_ROW;
+      gint bit_in_row = id % MAIN_LOOP_IDMAP_BITS_PER_ROW;
+
+      main_loop_workers_idmap[row] &= ~(1ULL << (bit_in_row));
       main_loop_worker_id = 0;
     }
   g_mutex_unlock(&main_loop_workers_idmap_lock);

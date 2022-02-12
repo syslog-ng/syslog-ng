@@ -29,7 +29,7 @@
 #include <iv_list.h>
 
 #define MAIN_LOOP_MIN_WORKER_THREADS 2
-#define MAIN_LOOP_MAX_WORKER_THREADS 64
+#define MAIN_LOOP_MAX_WORKER_THREADS 256
 
 typedef enum
 {
