@@ -441,9 +441,9 @@ static gboolean
 send_msg(int fd, char *msg, size_t msg_len)
 {
   ssize_t sent = 0;
-  while (sent < strlen(msg))
+  while (sent < msg_len)
     {
-      ssize_t rc = send_plain(fd, msg + sent, strlen(msg) - sent);
+      ssize_t rc = send_plain(fd, msg + sent, msg_len - sent);
       if (rc < 0)
         {
           ERROR("error sending buffer on %d (rc=%zd)\n", fd, rc);

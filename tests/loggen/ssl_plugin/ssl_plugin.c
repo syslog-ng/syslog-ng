@@ -389,9 +389,9 @@ active_thread_func(gpointer user_data)
         }
 
       ssize_t sent = 0;
-      while (sent < strlen(message))
+      while (sent < str_len)
         {
-          ssize_t rc = SSL_write(ssl, message + sent, strlen(message) - sent);
+          ssize_t rc = SSL_write(ssl, message + sent, str_len - sent);
           if (rc < 0)
             {
               ERROR("error sending buffer on %p (rc=%zd)\n", ssl, rc);
