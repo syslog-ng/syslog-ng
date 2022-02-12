@@ -244,7 +244,7 @@ Test(logqueue, test_with_threads)
   GThread *other_threads[FEEDERS];
   gint i, j;
 
-  log_queue_set_max_threads(FEEDERS);
+  log_queue_set_max_threads(FEEDERS * 2);
   for (i = 0; i < TEST_RUNS; i++)
     {
       fprintf(stderr, "starting testrun: %d\n", i);
