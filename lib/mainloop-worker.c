@@ -63,7 +63,7 @@ static struct iv_task main_loop_workers_reenable_jobs_task;
 /* thread ID allocation */
 static GMutex main_loop_workers_idmap_lock;
 
-static guint64 main_loop_workers_idmap[MAIN_LOOP_WORKER_TYPE_MAX];
+static guint64 main_loop_workers_idmap;
 
 static void
 _allocate_thread_id(void)
@@ -82,12 +82,12 @@ _allocate_thread_id(void)
     {
       for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
         {
-          if ((main_loop_workers_idmap[main_loop_worker_type] & (1ULL << id)) == 0)
+          if ((main_loop_workers_idmap & (1ULL << id)) == 0)
             {
               /* id not yet used */
 
-              main_loop_worker_id = (id + 1)  + (main_loop_worker_type * MAIN_LOOP_MAX_WORKER_THREADS);
-              main_loop_workers_idmap[main_loop_worker_type] |= (1ULL << id);
+              main_loop_worker_id = (id + 1);
+              main_loop_workers_idmap |= (1ULL << id);
               break;
             }
         }
@@ -101,8 +101,8 @@ _release_thread_id(void)
   g_mutex_lock(&main_loop_workers_idmap_lock);
   if (main_loop_worker_id)
     {
-      const gint id = main_loop_worker_id & (sizeof(guint64) * CHAR_BIT - 1);
-      main_loop_workers_idmap[main_loop_worker_type] &= ~(1ULL << (id - 1));
+      const gint id = main_loop_worker_id;
+      main_loop_workers_idmap &= ~(1ULL << (id - 1));
       main_loop_worker_id = 0;
     }
   g_mutex_unlock(&main_loop_workers_idmap_lock);
