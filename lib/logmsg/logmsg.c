@@ -503,7 +503,6 @@ log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPat
   node->ack_needed = path_options->ack_needed;
   node->flow_control_requested = path_options->flow_control_requested;
   node->msg = log_msg_ref(msg);
-  log_msg_write_protect(msg);
 }
 
 /*
