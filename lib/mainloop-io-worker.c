@@ -78,7 +78,8 @@ static void
 _complete(MainLoopIOWorkerJob *self)
 {
   self->working = FALSE;
-  self->completion(self->user_data, self->arg);
+  if (self->completion)
+    self->completion(self->user_data, self->arg);
   main_loop_worker_job_complete();
   _release(self);
 }
