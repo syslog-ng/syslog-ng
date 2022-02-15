@@ -104,6 +104,7 @@ stomp_connect(stomp_connection **connection_ref, char *hostname, int port)
   if (conn->socket == -1)
     {
       msg_error("Failed to create socket!");
+      g_free(conn);
       return FALSE;
     }
 
@@ -111,7 +112,7 @@ stomp_connect(stomp_connection **connection_ref, char *hostname, int port)
     {
       msg_error("Failed to resolve hostname in stomp driver",
                 evt_tag_str("hostname", hostname));
-
+      _stomp_connection_free(conn);
       return FALSE;
     }
 
