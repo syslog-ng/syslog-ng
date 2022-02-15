@@ -236,7 +236,7 @@ struct _LogPipe
    * starting worker thread, and etc. therefore, syslog-ng will terminate if
    * return value is false.
    */
-  gboolean (*on_config_inited)(LogPipe *self);
+  gboolean (*post_config_init)(LogPipe *self);
 
   const gchar *(*generate_persist_name)(const LogPipe *self);
   GList *(*arcs)(LogPipe *self);
@@ -328,10 +328,10 @@ log_pipe_deinit(LogPipe *s)
 }
 
 static inline gboolean
-log_pipe_on_config_inited(LogPipe *s)
+log_pipe_post_config_init(LogPipe *s)
 {
-  if (s->on_config_inited)
-    return s->on_config_inited(s);
+  if (s->post_config_init)
+    return s->post_config_init(s);
   return TRUE;
 }
 

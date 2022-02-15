@@ -1449,7 +1449,7 @@ cfg_tree_stop(CfgTree *self)
 }
 
 gboolean
-cfg_tree_on_inited(CfgTree *self)
+cfg_tree_post_config_init(CfgTree *self)
 {
   gint i;
 
@@ -1457,9 +1457,9 @@ cfg_tree_on_inited(CfgTree *self)
     {
       LogPipe *pipe = g_ptr_array_index(self->initialized_pipes, i);
 
-      if (!log_pipe_on_config_inited(pipe))
+      if (!log_pipe_post_config_init(pipe))
         {
-          msg_error("Error executing on_config_inited hook",
+          msg_error("Error executing post_config_init hook",
                     evt_tag_str("plugin_name", pipe->plugin_name ? pipe->plugin_name : "not a plugin"),
                     log_pipe_location_tag(pipe));
           return FALSE;

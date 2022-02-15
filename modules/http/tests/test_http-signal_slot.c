@@ -110,7 +110,7 @@ Test(test_http_signal_slot, basic)
   CONNECT(ssc, signal_http_header_request, _check, test_msg);
 
   cr_assert(log_pipe_init((LogPipe *)driver));
-  cr_assert(log_pipe_on_config_inited((LogPipe *)driver));
+  cr_assert(log_pipe_post_config_init((LogPipe *)driver));
 
   _generate_message(driver, test_msg);
 
@@ -128,7 +128,7 @@ Test(test_http_signal_slot, single_with_prefix_suffix)
   CONNECT(ssc, signal_http_header_request, _check, "[almafa]");
 
   cr_assert(log_pipe_init((LogPipe *)driver));
-  cr_assert(log_pipe_on_config_inited((LogPipe *)driver));
+  cr_assert(log_pipe_post_config_init((LogPipe *)driver));
 
   _generate_message(driver, "almafa");
 
@@ -148,7 +148,7 @@ Test(test_http_signal_slot, batch_with_prefix_suffix)
   CONNECT(ssc, signal_http_header_request, _check, "[1,2]");
 
   cr_assert(log_pipe_init((LogPipe *)driver));
-  cr_assert(log_pipe_on_config_inited((LogPipe *)driver));
+  cr_assert(log_pipe_post_config_init((LogPipe *)driver));
 
   _generate_message(driver, "1");
   _generate_message(driver, "2");

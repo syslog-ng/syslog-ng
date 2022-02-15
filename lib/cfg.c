@@ -370,7 +370,7 @@ cfg_init(GlobalConfig *cfg)
    * task/timer/fdwatch ordering in ivykis during this action).
    * See: https://github.com/syslog-ng/syslog-ng/pull/3176#issuecomment-638849597
    */
-  g_assert(cfg_tree_on_inited(&cfg->tree));
+  g_assert(cfg_tree_post_config_init(&cfg->tree));
   return TRUE;
 }
 

@@ -443,7 +443,7 @@ afinter_sd_init(LogPipe *s)
 }
 
 static gboolean
-afinter_sd_on_config_inited(LogPipe *s)
+afinter_sd_post_config_init(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
 
@@ -488,7 +488,7 @@ afinter_sd_new(GlobalConfig *cfg)
   self->super.super.super.init = afinter_sd_init;
   self->super.super.super.deinit = afinter_sd_deinit;
   self->super.super.super.free_fn = afinter_sd_free;
-  self->super.super.super.on_config_inited = afinter_sd_on_config_inited;
+  self->super.super.super.post_config_init = afinter_sd_post_config_init;
 
   afinter_source_options_defaults(&self->source_options);
 

@@ -383,7 +383,7 @@ log_threaded_source_driver_init_instance(LogThreadedSourceDriver *self, GlobalCo
   self->super.super.super.init = log_threaded_source_driver_init_method;
   self->super.super.super.deinit = log_threaded_source_driver_deinit_method;
   self->super.super.super.free_fn = log_threaded_source_driver_free_method;
-  self->super.super.super.on_config_inited = log_threaded_source_driver_start_worker;
+  self->super.super.super.post_config_init = log_threaded_source_driver_start_worker;
 
   self->wakeup = log_threaded_source_wakeup;
 
