@@ -1408,8 +1408,7 @@ cfg_tree_start(CfgTree *self)
 {
   gint i;
 
-  if (!cfg_tree_compile(self))
-    return FALSE;
+  g_assert(self->compiled);
 
   /*
    *   As there are pipes that are dynamically created during init, these
@@ -1439,6 +1438,8 @@ cfg_tree_stop(CfgTree *self)
   gboolean success = TRUE;
   gint i;
 
+  g_assert(self->compiled);
+
   for (i = 0; i < self->initialized_pipes->len; i++)
     {
       if (!log_pipe_deinit(g_ptr_array_index(self->initialized_pipes, i)))
@@ -1446,6 +1447,29 @@ cfg_tree_stop(CfgTree *self)
     }
 
   return success;
+}
+
+gboolean
+cfg_tree_pre_config_init(CfgTree *self)
+{
+  gint i;
+
+  g_assert(self->compiled);
+
+  for (i = 0; i < self->initialized_pipes->len; i++)
+    {
+      LogPipe *pipe = g_ptr_array_index(self->initialized_pipes, i);
+
+      if (!log_pipe_pre_config_init(pipe))
+        {
+          msg_error("Error executing pre_config_init hook",
+                    evt_tag_str("plugin_name", pipe->plugin_name ? pipe->plugin_name : "not a plugin"),
+                    log_pipe_location_tag(pipe));
+          return FALSE;
+        }
+    }
+
+  return TRUE;
 }
 
 gboolean

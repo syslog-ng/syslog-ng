@@ -360,6 +360,10 @@ cfg_init(GlobalConfig *cfg)
   log_template_options_init(&cfg->template_options, cfg);
   if (!cfg_init_modules(cfg))
     return FALSE;
+  if (!cfg_tree_compile(&cfg->tree))
+    return FALSE;
+  if (!cfg_tree_pre_config_init(&cfg->tree))
+    return FALSE;
   if (!cfg_tree_start(&cfg->tree))
     return FALSE;
 

@@ -181,8 +181,10 @@ LogTemplate *cfg_tree_check_inline_template(CfgTree *self, const gchar *template
 gchar *cfg_tree_get_rule_name(CfgTree *self, gint content, LogExprNode *node);
 gchar *cfg_tree_get_child_id(CfgTree *self, gint content, LogExprNode *node);
 
+gboolean cfg_tree_compile(CfgTree *self);
 gboolean cfg_tree_start(CfgTree *self);
 gboolean cfg_tree_stop(CfgTree *self);
+gboolean cfg_tree_pre_config_init(CfgTree *self);
 gboolean cfg_tree_post_config_init(CfgTree *self);
 
 void cfg_tree_init_instance(CfgTree *self, GlobalConfig *cfg);

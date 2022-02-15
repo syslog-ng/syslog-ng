@@ -124,6 +124,8 @@ ParameterizedTest(PipeParameter *test_data, cfg_tree, test_pipe_init)
 
   pipe = create_and_attach_almighty_pipe(&tree, test_data->always_pipe_value);
 
+  cr_assert(cfg_tree_compile (&tree));
+
   cr_assert_eq(cfg_tree_start(&tree), test_data->tree_start_expected,
                "cfg_tree_start() did not return the expected value");
   cr_assert_eq(cfg_tree_stop(&tree), test_data->tree_stop_expected,
@@ -147,6 +149,8 @@ Test(cfg_tree, test_pipe_init_multi_success)
   create_and_attach_almighty_pipe (&tree, TRUE);
   create_and_attach_almighty_pipe (&tree, TRUE);
 
+  cr_assert(cfg_tree_compile (&tree));
+
   cr_assert(cfg_tree_start (&tree),
             "Starting a tree of all-good nodes works");
   cr_assert(cfg_tree_stop (&tree),
@@ -165,6 +169,8 @@ Test(cfg_tree, test_pipe_init_multi_with_bad_node)
   pipe1 = create_and_attach_almighty_pipe (&tree, TRUE);
   pipe2 = create_and_attach_almighty_pipe (&tree, FALSE);
   pipe3 = create_and_attach_almighty_pipe (&tree, TRUE);
+
+  cr_assert(cfg_tree_compile (&tree));
 
   cr_assert_not(cfg_tree_start (&tree),
                 "Starting a tree of all-good nodes works");
