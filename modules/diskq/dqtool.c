@@ -440,7 +440,7 @@ _relocate_qfile(PersistState *state, const gchar *name)
       if (!relocated_qfile)
         {
           fprintf(stderr, "Invalid path. new_diskq_dir: %s, qfile: %s\n", new_diskq_path, qfile);
-          g_free(qfile);
+          goto exit;
         }
 
       if (_move_file(qfile, relocated_qfile))
@@ -452,6 +452,7 @@ _relocate_qfile(PersistState *state, const gchar *name)
         {
           fprintf(stderr, "Failed to move file to new qfile_path: %s\n", relocated_qfile);
         }
+exit:
       g_free(base);
       g_free(qfile);
       g_free(relocated_qfile);
