@@ -32,7 +32,7 @@
  * It uses an algorithm very similar to what there's in libc memchr/strchr.
  **/
 gchar *
-find_cr_or_lf(gchar *s, gsize n)
+find_cr_or_lf_or_nul(gchar *s, gsize n)
 {
   gchar *char_ptr;
   gulong *longword_ptr;
@@ -43,10 +43,8 @@ find_cr_or_lf(gchar *s, gsize n)
   /* align input to long boundary */
   for (char_ptr = s; n > 0 && ((gulong) char_ptr & (sizeof(longword) - 1)) != 0; ++char_ptr, n--)
     {
-      if (*char_ptr == CR || *char_ptr == LF)
+      if (*char_ptr == CR || *char_ptr == LF || *char_ptr == 0)
         return char_ptr;
-      else if (*char_ptr == 0)
-        return NULL;
     }
 
   longword_ptr = (gulong *) char_ptr;
@@ -74,10 +72,8 @@ find_cr_or_lf(gchar *s, gsize n)
 
           for (i = 0; i < sizeof(longword); i++)
             {
-              if (*char_ptr == CR || *char_ptr == LF)
+              if (*char_ptr == CR || *char_ptr == LF || *char_ptr == 0)
                 return char_ptr;
-              else if (*char_ptr == 0)
-                return NULL;
               char_ptr++;
             }
         }
@@ -88,10 +84,8 @@ find_cr_or_lf(gchar *s, gsize n)
 
   while (n-- > 0)
     {
-      if (*char_ptr == CR || *char_ptr == LF)
+      if (*char_ptr == CR || *char_ptr == LF || *char_ptr == 0)
         return char_ptr;
-      else if (*char_ptr == 0)
-        return NULL;
       ++char_ptr;
     }
 

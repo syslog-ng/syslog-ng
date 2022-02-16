@@ -81,6 +81,24 @@ evt_tag_str(const char *tag, const char *value)
 }
 
 EVTTAG *
+evt_tag_mem(const char *tag, const void *value, size_t len)
+{
+  char *buf = malloc(len + 1);
+
+  memcpy(buf, value, len);
+  for (int i = 0; i < len; i++)
+    {
+      if (buf[i] == 0)
+        buf[i] = '.';
+    }
+  buf[len] = 0;
+
+  EVTTAG *p = evt_tag_str(tag, buf);
+  free(buf);
+  return p;
+}
+
+EVTTAG *
 evt_tag_int(const char *tag, int value)
 {
   char buf[32]; /* a 64 bit int fits into 20 characters */

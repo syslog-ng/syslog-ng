@@ -543,16 +543,16 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
   name_len = 0;
   name = log_msg_get_value_name(handle, &name_len);
 
+  if (value_len < 0)
+    value_len = strlen(value);
+
   if (_log_name_value_updates(self))
     {
       msg_trace("Setting value",
                 evt_tag_str("name", name),
-                evt_tag_printf("value", "%.*s", (gint) value_len, value),
+                evt_tag_mem("value", value, value_len),
                 evt_tag_printf("msg", "%p", self));
     }
-
-  if (value_len < 0)
-    value_len = strlen(value);
 
   if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     {

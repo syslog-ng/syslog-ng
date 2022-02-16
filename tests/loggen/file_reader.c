@@ -334,6 +334,17 @@ parse_line(const char *line, SyslogMsgElements *elements)
 }
 
 int
+calc_linelen(const char *buf, int buflen)
+{
+  for (int i = buflen - 1; i >= 0; i--)
+    {
+      if (buf[i] != 0)
+        return i+1;
+    }
+  return 0;
+}
+
+int
 read_next_message_from_file(char *buf, int buflen, int syslog_proto, int thread_index)
 {
   static int lineno = 0;
@@ -357,6 +368,7 @@ read_next_message_from_file(char *buf, int buflen, int syslog_proto, int thread_
           else
             return -1;
         }
+      memset(buf, 0, buflen);
       char *temp = fgets(buf, buflen, source[thread_index]);
       if (!temp)
         {
@@ -382,7 +394,7 @@ read_next_message_from_file(char *buf, int buflen, int syslog_proto, int thread_
 
   if (dont_parse)
     {
-      linelen = strnlen(buf, buflen);
+      linelen = calc_linelen(buf, buflen);
       return linelen;
     }
 

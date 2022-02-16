@@ -65,7 +65,7 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
        * read further data, or the buffer already contains a
        * complete line */
 
-      eom = find_eom(self->super.buffer + next_line_pos, state->pending_buffer_end - next_line_pos);
+      eom = self->find_eom(self->super.buffer + next_line_pos, state->pending_buffer_end - next_line_pos);
       if (eom)
         next_eol_pos = eom - self->super.buffer;
     }
@@ -179,7 +179,7 @@ log_proto_text_server_locate_next_eol(LogProtoTextServer *self, LogProtoBuffered
     }
   else
     {
-      eol = find_eom(buffer_start + self->consumed_len + 1, buffer_bytes - self->consumed_len - 1);
+      eol = self->find_eom(buffer_start + self->consumed_len + 1, buffer_bytes - self->consumed_len - 1);
     }
   return eol;
 }
@@ -263,6 +263,7 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, co
   self->super.fetch_from_buffer = log_proto_text_server_fetch_from_buffer;
   self->super.flush = log_proto_text_server_flush;
   self->accumulate_line = log_proto_text_server_accumulate_line_method;
+  self->find_eom = find_eom;
   self->super.stream_based = TRUE;
   self->consumed_len = -1;
 }
@@ -273,5 +274,21 @@ log_proto_text_server_new(LogTransport *transport, const LogProtoServerOptions *
   LogProtoTextServer *self = g_new0(LogProtoTextServer, 1);
 
   log_proto_text_server_init(self, transport, options);
+  return &self->super.super;
+}
+
+static const guchar *
+_find_nl_as_eom(const guchar *s, gsize n)
+{
+  return memchr(s, '\n', n);
+}
+
+LogProtoServer *
+log_proto_text_with_nuls_server_new(LogTransport *transport, const LogProtoServerOptions *options)
+{
+  LogProtoTextServer *self = g_new0(LogProtoTextServer, 1);
+
+  log_proto_text_server_init(self, transport, options);
+  self->find_eom = _find_nl_as_eom;
   return &self->super.super;
 }
