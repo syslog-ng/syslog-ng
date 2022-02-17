@@ -236,6 +236,13 @@ log_threaded_source_worker_new(GlobalConfig *cfg)
 }
 
 gboolean
+log_threaded_source_driver_pre_config_init(LogPipe *s)
+{
+  main_loop_worker_allocate_thread_space(1);
+  return TRUE;
+}
+
+gboolean
 log_threaded_source_driver_init_method(LogPipe *s)
 {
   LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
@@ -383,6 +390,7 @@ log_threaded_source_driver_init_instance(LogThreadedSourceDriver *self, GlobalCo
   self->super.super.super.init = log_threaded_source_driver_init_method;
   self->super.super.super.deinit = log_threaded_source_driver_deinit_method;
   self->super.super.super.free_fn = log_threaded_source_driver_free_method;
+  self->super.super.super.pre_config_init = log_threaded_source_driver_pre_config_init;
   self->super.super.super.post_config_init = log_threaded_source_driver_start_worker;
 
   self->wakeup = log_threaded_source_wakeup;
