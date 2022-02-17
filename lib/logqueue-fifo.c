@@ -101,6 +101,7 @@ typedef struct _LogQueueFifo
   /* legacy: flow-controlled messages are included in the log_fifo_size limit */
   gboolean use_legacy_fifo_size;
 
+  gint num_input_queues;
   InputQueue input_queues[0];
 } LogQueueFifo;
 
@@ -152,7 +153,7 @@ log_queue_fifo_is_empty_racy(LogQueue *s)
   else
     {
       gint i;
-      for (i = 0; i < log_queue_max_threads && !has_message_in_queue; i++)
+      for (i = 0; i < self->num_input_queues && !has_message_in_queue; i++)
         {
           has_message_in_queue |= self->input_queues[i].finish_cb_registered;
         }
@@ -343,7 +344,11 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
 
   thread_id = main_loop_worker_get_thread_id();
 
-  g_assert(thread_id < 0 || log_queue_max_threads > thread_id);
+  /* if this thread has an ID than the number of input queues we have (due
+   * to a config change), handle the load via the slow path */
+
+  if (thread_id >= self->num_input_queues)
+    thread_id = -1;
 
   /* NOTE: we don't use high-water marks for now, as log_fetch_limit
    * limits the number of items placed on the per-thread input queue
@@ -638,7 +643,7 @@ log_queue_fifo_free(LogQueue *s)
   LogQueueFifo *self = (LogQueueFifo *) s;
   gint i;
 
-  for (i = 0; i < log_queue_max_threads; i++)
+  for (i = 0; i < self->num_input_queues; i++)
     {
       g_assert(self->input_queues[i].finish_cb_registered == FALSE);
       log_queue_fifo_free_queue(&self->input_queues[i].items);
@@ -673,7 +678,8 @@ log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name)
 
   self->super.free_fn = log_queue_fifo_free;
 
-  for (i = 0; i < log_queue_max_threads; i++)
+  self->num_input_queues = log_queue_max_threads;
+  for (i = 0; i < num_input_queues; i++)
     {
       INIT_IV_LIST_HEAD(&self->input_queues[i].items);
       worker_batch_callback_init(&self->input_queues[i].cb);
