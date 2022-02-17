@@ -84,6 +84,10 @@ void main_loop_sync_worker_startup_and_teardown(void);
 void main_loop_worker_init(void);
 void main_loop_worker_deinit(void);
 
+gint main_loop_worker_get_max_number_of_threads(void);
+void main_loop_worker_allocate_thread_space(gint num_threads);
+void main_loop_worker_finalize_thread_space(void);
+
 extern volatile gboolean main_loop_workers_quit;
 extern volatile gboolean is_reloading_scheduled;
 

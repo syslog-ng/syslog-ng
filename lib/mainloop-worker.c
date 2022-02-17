@@ -67,6 +67,8 @@ static GMutex main_loop_workers_idmap_lock;
 #define MAIN_LOOP_IDMAP_ROWS            (MAIN_LOOP_MAX_WORKER_THREADS / MAIN_LOOP_IDMAP_BITS_PER_ROW)
 
 static guint64 main_loop_workers_idmap[MAIN_LOOP_IDMAP_ROWS];
+static gint main_loop_max_workers = 0;
+static gint main_loop_estimated_number_of_workers = 0;
 
 static void
 _allocate_thread_id(void)
@@ -388,6 +390,25 @@ main_loop_sync_worker_startup_and_teardown(void)
   iv_task_register(&request_exit);
   _register_sync_call_action(&sync_call_actions, (void (*)(gpointer user_data)) iv_quit, NULL);
   iv_main();
+}
+
+gint
+main_loop_worker_get_max_number_of_threads(void)
+{
+  return main_loop_max_workers;
+}
+
+void
+main_loop_worker_allocate_thread_space(gint num_threads)
+{
+  main_loop_estimated_number_of_workers += num_threads;
+}
+
+void
+main_loop_worker_finalize_thread_space(void)
+{
+  main_loop_max_workers = main_loop_estimated_number_of_workers;
+  main_loop_estimated_number_of_workers = 0;
 }
 
 void

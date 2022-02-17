@@ -364,6 +364,7 @@ cfg_init(GlobalConfig *cfg)
     return FALSE;
   if (!cfg_tree_pre_config_init(&cfg->tree))
     return FALSE;
+  main_loop_worker_finalize_thread_space();
   if (!cfg_tree_start(&cfg->tree))
     return FALSE;
 

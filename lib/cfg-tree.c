@@ -1438,8 +1438,6 @@ cfg_tree_stop(CfgTree *self)
   gboolean success = TRUE;
   gint i;
 
-  g_assert(self->compiled);
-
   for (i = 0; i < self->initialized_pipes->len; i++)
     {
       if (!log_pipe_deinit(g_ptr_array_index(self->initialized_pipes, i)))
