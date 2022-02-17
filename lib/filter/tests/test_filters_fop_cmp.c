@@ -237,6 +237,21 @@ Test(filter, test_string_ordering)
   cr_assert(evaluate("11", KW_GT, "10"));
 }
 
+Test(filter, test_string_ordering_with_non_numbers)
+{
+  cr_assert(evaluate("alma", KW_LT, "korte"));
+  cr_assert(evaluate("alma", KW_LE, "korte"));
+  cr_assert_not(evaluate("alma", KW_EQ, "korte"));
+  cr_assert_not(evaluate("alma", KW_GE, "korte"));
+  cr_assert_not(evaluate("alma", KW_GT, "korte"));
+
+  cr_assert_not(evaluate("korte", KW_LT, "alma"));
+  cr_assert_not(evaluate("korte", KW_LE, "alma"));
+  cr_assert_not(evaluate("korte", KW_EQ, "alma"));
+  cr_assert(evaluate("korte", KW_GE, "alma"));
+  cr_assert(evaluate("korte", KW_GT, "alma"));
+}
+
 static void
 setup(void)
 {
