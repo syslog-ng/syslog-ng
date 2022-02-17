@@ -45,8 +45,7 @@ lib_filter_tests_test_filters_regexp_SOURCES = 			\
 
 lib_filter_tests_test_filters_fop_cmp_CFLAGS     = $(TEST_CFLAGS) \
 	-I${top_srcdir}/lib/filter/tests
-lib_filter_tests_test_filters_fop_cmp_LDADD      = $(TEST_LDADD)  \
-	$(PREOPEN_SYSLOGFORMAT)
+lib_filter_tests_test_filters_fop_cmp_LDADD      = $(TEST_LDADD)
 lib_filter_tests_test_filters_fop_cmp_SOURCES = 			\
 	lib/filter/tests/test_filters_fop_cmp.c \
 	lib/filter/tests/test_filters_common.c \
