@@ -1095,6 +1095,15 @@ _create_workers(LogThreadedDestDriver *self)
 }
 
 gboolean
+log_threaded_dest_driver_pre_config_init(LogPipe *s)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
+
+  main_loop_worker_allocate_thread_space(self->num_workers);
+  return TRUE;
+}
+
+gboolean
 log_threaded_dest_driver_init_method(LogPipe *s)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
@@ -1183,6 +1192,7 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
+  self->super.super.super.pre_config_init = log_threaded_dest_driver_pre_config_init;
   self->super.super.super.post_config_init = log_threaded_dest_driver_start_workers;
   self->time_reopen = -1;
   self->batch_lines = -1;

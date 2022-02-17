@@ -815,6 +815,9 @@ setup(void)
   main_loop = main_loop_get_instance();
   main_loop_init(main_loop, &main_loop_options);
   cfg_set_current_version(main_loop_get_current_config(main_loop));
+
+  main_loop_worker_allocate_thread_space(2);
+  main_loop_worker_finalize_thread_space();
   _setup_dd();
 }
 
