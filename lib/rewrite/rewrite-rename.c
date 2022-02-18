@@ -64,15 +64,9 @@ static gboolean
 log_rewrite_rename_init(LogPipe *s)
 {
   LogRewriteRename *self = (LogRewriteRename *) s;
-  if (!self->source_handle)
+  if (!self->source_handle || !self->destination_handle)
     {
-      msg_error("rename(): source() option is mandatory", log_pipe_location_tag(s));
-      return FALSE;
-    }
-
-  if (!self->destination_handle)
-    {
-      msg_error("rename(): destination() option is mandatory", log_pipe_location_tag(s));
+      msg_error("rename(from to): requires two non-empty arguments", log_pipe_location_tag(s));
       return FALSE;
     }
 
