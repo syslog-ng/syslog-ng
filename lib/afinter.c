@@ -406,6 +406,13 @@ afinter_source_options_defaults(AFInterSourceOptions *options)
 }
 
 static gboolean
+afinter_sd_pre_config_init(LogPipe *s)
+{
+  main_loop_worker_allocate_thread_space(1);
+  return TRUE;
+}
+
+static gboolean
 afinter_sd_init(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
@@ -485,6 +492,7 @@ afinter_sd_new(GlobalConfig *cfg)
   AFInterSourceDriver *self = g_new0(AFInterSourceDriver, 1);
 
   log_src_driver_init_instance((LogSrcDriver *)&self->super, cfg);
+  self->super.super.super.pre_config_init = afinter_sd_pre_config_init;
   self->super.super.super.init = afinter_sd_init;
   self->super.super.super.deinit = afinter_sd_deinit;
   self->super.super.super.free_fn = afinter_sd_free;
