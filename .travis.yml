@@ -15,6 +15,8 @@ matrix:
         apt:
           packages:
             - autoconf-archive
+            - cmake
+            - meson
             - docbook-xsl
             - flex
             - gradle
@@ -50,12 +52,12 @@ matrix:
         - python3 -m pip list
       script:
         - set -e
-        - git clone https://github.com/Snaipe/Criterion.git -b v2.3.3
+        - git clone https://github.com/Snaipe/Criterion.git -b v2.4.0
         - cd Criterion
-        - git submodule update --init
-        - cmake .
-        - make all
-        - sudo make install
+        - git submodule update --init --recursive
+        - unset TRAVIS_TAG
+        - meson setup build
+        - sudo meson install -C build
         - cd ..
 
         - wget https://ftp.gnu.org/gnu/bison/bison-3.7.6.tar.gz
