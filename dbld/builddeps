@@ -53,16 +53,16 @@ function install_cmake() {
 }
 
 function install_criterion() {
-    CRITERION_VERSION=2.3.3
+    CRITERION_VERSION=2.4.0
 
-    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}.tar.bz2" /tmp/criterion.tar.bz2
+    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-${CRITERION_VERSION}.tar.xz" /tmp/criterion.tar.xz
     cd /tmp/
-    tar xvf /tmp/criterion.tar.bz2
-    cd /tmp/criterion-v${CRITERION_VERSION}
-    cmake -DCMAKE_INSTALL_PREFIX=/usr .
-    make install
+    tar xf /tmp/criterion.tar.xz
+    cd /tmp/criterion-${CRITERION_VERSION}
+    meson setup --prefix /usr build
+    meson install -C build
     ldconfig
-    rm -rf /tmp/criterion.tar.bz2 /tmp/criterion-v${CRITERION_VERSION}
+    rm -rf /tmp/criterion.tar.xz /tmp/criterion-${CRITERION_VERSION}
 
 }
 

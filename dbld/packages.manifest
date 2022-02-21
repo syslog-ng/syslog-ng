@@ -13,6 +13,9 @@ ca-certificates       	        [centos, fedora, debian, ubuntu]
 # criterion compilation
 cmake                           [fedora, debian, ubuntu]
 cmake3                          [centos]
+meson                           [centos, fedora, debian, ubuntu]
+libffi-dev                      [debian, ubuntu]
+libffi-devel                    [centos, fedora]
 gcc-c++				[centos, fedora]
 
 # to unpack gradle binary package (zip file)

@@ -21,8 +21,6 @@ RUN /dbld/builddeps install_apt_packages
 RUN /dbld/builddeps install_debian_build_deps
 RUN /dbld/builddeps install_pip_packages
 
-RUN /dbld/builddeps install_criterion
-
 VOLUME /source
 VOLUME /build
 
