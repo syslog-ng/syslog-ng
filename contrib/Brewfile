@@ -1,4 +1,4 @@
-tap "snaipe/soft"
+tap "mranno/tap"
 
 brew "automake"
 brew "autoconf"
