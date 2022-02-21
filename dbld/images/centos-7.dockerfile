@@ -19,6 +19,7 @@ RUN /dbld/builddeps install_yum_packages
 RUN /dbld/builddeps install_rpm_build_deps
 RUN /dbld/builddeps install_pip_packages
 
+RUN /dbld/builddeps use_cmake3_by_default
 RUN /dbld/builddeps install_criterion
 RUN /dbld/builddeps install_gradle
 RUN /dbld/builddeps install_gosu amd64

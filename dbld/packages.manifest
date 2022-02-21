@@ -11,7 +11,8 @@ wget                            [centos, fedora, debian, ubuntu]
 ca-certificates       	        [centos, fedora, debian, ubuntu]
 
 # criterion compilation
-cmake                           [centos, fedora, debian, ubuntu]
+cmake                           [fedora, debian, ubuntu]
+cmake3                          [centos]
 gcc-c++				[centos, fedora]
 
 # to unpack gradle binary package (zip file)

@@ -161,6 +161,14 @@ function install_yum_packages {
     filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs $YUM_INSTALL
 }
 
+function use_cmake3_by_default {
+    update-alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake3 20 \
+        --slave /usr/local/bin/ctest ctest /usr/bin/ctest3 \
+        --slave /usr/local/bin/cpack cpack /usr/bin/cpack3 \
+        --slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake3 \
+        --family cmake
+}
+
 function install_pip_packages {
     case "${IMAGE_PLATFORM}" in
         ubuntu-xenial|ubuntu-bionic)
