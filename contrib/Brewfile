@@ -1,5 +1,3 @@
-tap "snaipe/soft"
-
 brew "automake"
 brew "autoconf"
 brew "autoconf-archive"
