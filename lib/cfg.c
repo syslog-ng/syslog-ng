@@ -423,11 +423,21 @@ cfg_set_version(GlobalConfig *self, gint version)
     }
   else if (version_convert_from_user(self->user_version) > VERSION_VALUE_CURRENT)
     {
-      msg_warning("WARNING: Configuration file format is newer than the current version, please specify the "
-                  "current version number ("  VERSION_STR_CURRENT ") in the @version directive. "
-                  "syslog-ng will operate at its highest supported version in this mode",
-                  cfg_format_config_version_tag(self));
-      self->user_version = VERSION_VALUE_CURRENT;
+      if (cfg_is_experimental_feature_enabled(self))
+        {
+          msg_warning("WARNING: experimental behaviors of the future " VERSION_4_0 " are now enabled. This mode of "
+                      "operation is meant to solicit feedback and allow the evaluation of the new features. USE THIS "
+                      "MODE AT YOUR OWN RISK, please share feedback via GitHub, Gitter.im or email to the authors",
+                      cfg_format_config_version_tag(self));
+        }
+      else
+        {
+          msg_warning("WARNING: Configuration file format is newer than the current version, please specify the "
+                      "current version number ("  VERSION_STR_CURRENT ") in the @version directive. "
+                      "syslog-ng will operate at its highest supported version in this mode",
+                      cfg_format_config_version_tag(self));
+          self->user_version = VERSION_VALUE_CURRENT;
+        }
     }
 
   if (cfg_is_config_version_older(self, VERSION_VALUE_3_3))
