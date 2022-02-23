@@ -142,10 +142,47 @@ Test(json_parser, test_json_parser_validate_type_representation)
   assert_log_message_value_and_type_by_name(msg, ".prefix.double", "1.230000", LM_VT_DOUBLE);
   assert_log_message_value_and_type_by_name(msg, ".prefix.object.member1", "foo", LM_VT_STRING);
   assert_log_message_value_and_type_by_name(msg, ".prefix.object.member2", "bar", LM_VT_STRING);
-  assert_log_message_value_and_type_by_name(msg, ".prefix.array[0]", "1", LM_VT_INT64);
-  assert_log_message_value_and_type_by_name(msg, ".prefix.array[1]", "2", LM_VT_INT64);
-  assert_log_message_value_and_type_by_name(msg, ".prefix.array[2]", "3", LM_VT_INT64);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.array", "1,2,3", LM_VT_LIST);
   assert_log_message_value_and_type_by_name(msg, ".prefix.null", "", LM_VT_NULL);
+  log_msg_unref(msg);
+  log_pipe_unref(&json_parser->super);
+}
+
+Test(json_parser, test_json_parser_different_type_arrays)
+{
+  LogMessage *msg;
+  LogParser *json_parser = json_parser_new(NULL);
+
+  json_parser_set_prefix(json_parser, ".prefix.");
+  msg = parse_json_into_log_message("{'intarray': [1, 2, 3],"
+                                    " 'strarray': ['foo', 'bar', 'baz'],"
+                                    " 'boolarray': [true,false,true],"
+                                    " 'dblarray': [1.234,1e6,5.6789],"
+                                    " 'nullarray': [null,null,null,null]}",
+                                    json_parser);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.intarray", "1,2,3", LM_VT_LIST);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.strarray", "foo,bar,baz", LM_VT_LIST);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.boolarray", "true,false,true", LM_VT_LIST);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.dblarray", "1.234000,1000000.000000,5.678900", LM_VT_LIST);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.nullarray", "\"\",\"\",\"\",\"\"", LM_VT_LIST);
+  log_msg_unref(msg);
+  log_pipe_unref(&json_parser->super);
+}
+
+Test(json_parser, test_json_parser_compound_types_in_arrays_are_represented_as_json_encoded_strings)
+{
+  LogMessage *msg;
+  LogParser *json_parser = json_parser_new(NULL);
+
+  json_parser_set_prefix(json_parser, ".prefix.");
+  msg = parse_json_into_log_message("{'arrayofarrays': [[1,2],[3,4],[5,6]],"
+                                    " 'arrayofmixedtypes': ['str',42,{},null],"
+                                    " 'arrayofobjects': [{'foo':'bar','bar':'foo'},{'foo':'bar','bar':'foo'}]}",
+                                    json_parser);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.arrayofarrays", "[[1,2],[3,4],[5,6]]", LM_VT_JSON);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.arrayofmixedtypes", "[\"str\",42,{},null]", LM_VT_JSON);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.arrayofobjects",
+                                            "[{\"foo\":\"bar\",\"bar\":\"foo\"},{\"foo\":\"bar\",\"bar\":\"foo\"}]", LM_VT_JSON);
   log_msg_unref(msg);
   log_pipe_unref(&json_parser->super);
 }
