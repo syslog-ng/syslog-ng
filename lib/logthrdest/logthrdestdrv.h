@@ -191,10 +191,15 @@ log_threaded_dest_worker_disconnect(LogThreadedDestWorker *self)
 static inline LogThreadedResult
 log_threaded_dest_worker_insert(LogThreadedDestWorker *self, LogMessage *msg)
 {
-  if (self->owner->num_workers > 1)
-    self->seq_num = step_sequence_number_atomic(&self->owner->shared_seq_num);
+  if (msg->flags & LF_LOCAL)
+    {
+      if (self->owner->num_workers > 1)
+        self->seq_num = step_sequence_number_atomic(&self->owner->shared_seq_num);
+      else
+        self->seq_num = step_sequence_number(&self->owner->shared_seq_num);
+    }
   else
-    self->seq_num = step_sequence_number(&self->owner->shared_seq_num);
+    self->seq_num = 0;
   return self->insert(self, msg);
 }
 
