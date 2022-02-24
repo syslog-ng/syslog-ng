@@ -26,10 +26,12 @@
 #include "transport/transport-factory-id.h"
 #include "apphook.h"
 
-TestSuite(transport_factory_id, .init = app_startup, .fini = app_shutdown);
+TestSuite(transport_factory_id, .init = transport_factory_id_global_init, .fini = transport_factory_id_global_deinit);
 
-Test(transport_factory_id, lifecycle)
+Test(transport_factory_id_lifecycle, lifecycle)
 {
+  transport_factory_id_global_init();
+
   GList *ids = _transport_factory_id_clone_registered_ids();
 
   cr_expect_null(ids);
