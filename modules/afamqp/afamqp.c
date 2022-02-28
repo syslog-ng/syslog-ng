@@ -414,11 +414,44 @@ _is_using_tls(AMQPDestDriver *self)
 }
 
 static gboolean
+_tls_socket_init(AMQPDestDriver *self)
+{
+  self->sockfd = amqp_ssl_socket_new(self->conn);
+
+  int ca_file_ret = amqp_ssl_socket_set_cacert(self->sockfd, self->ca_file);
+  if (ca_file_ret != AMQP_STATUS_OK)
+    {
+      msg_error("Error connecting to AMQP server while setting ca_file",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("error", amqp_error_string2(ca_file_ret)),
+                evt_tag_int("time_reopen", self->super.time_reopen));
+
+      return FALSE;
+    }
+
+  if (self->key_file && self->cert_file)
+    {
+      int setkey_ret = amqp_ssl_socket_set_key(self->sockfd, self->cert_file, self->key_file);
+      if (setkey_ret != AMQP_STATUS_OK)
+        {
+          msg_error("Error connecting to AMQP server while setting key_file and cert_file",
+                    evt_tag_str("driver", self->super.super.super.id),
+                    evt_tag_str("error", amqp_error_string2(setkey_ret)),
+                    evt_tag_int("time_reopen", self->super.time_reopen));
+
+          return FALSE;
+        }
+    }
+
+  amqp_compat_set_verify(self->sockfd, self->peer_verify);
+
+  return TRUE;
+}
+
+static gboolean
 afamqp_dd_socket_init(AMQPDestDriver *self)
 {
-
   self->conn = amqp_new_connection();
-
   if (self->conn == NULL)
     {
       msg_error("Error allocating AMQP connection.");
@@ -426,37 +459,7 @@ afamqp_dd_socket_init(AMQPDestDriver *self)
     }
 
   if (_is_using_tls(self))
-    {
-      int ca_file_ret;
-      self->sockfd = amqp_ssl_socket_new(self->conn);
-      ca_file_ret = amqp_ssl_socket_set_cacert(self->sockfd, self->ca_file);
-      if(ca_file_ret != AMQP_STATUS_OK)
-        {
-          msg_error("Error connecting to AMQP server while setting ca_file",
-                    evt_tag_str("driver", self->super.super.super.id),
-                    evt_tag_str("error", amqp_error_string2(ca_file_ret)),
-                    evt_tag_int("time_reopen", self->super.time_reopen));
-
-          return FALSE;
-
-        }
-
-      if (self->key_file && self->cert_file)
-        {
-          int setkey_ret = amqp_ssl_socket_set_key(self->sockfd, self->cert_file, self->key_file);
-          if(setkey_ret != AMQP_STATUS_OK)
-            {
-              msg_error("Error connecting to AMQP server while setting key_file and cert_file",
-                        evt_tag_str("driver", self->super.super.super.id),
-                        evt_tag_str("error", amqp_error_string2(setkey_ret)),
-                        evt_tag_int("time_reopen", self->super.time_reopen));
-
-              return FALSE;
-
-            }
-        }
-      amqp_compat_set_verify(self->sockfd, self->peer_verify);
-    }
+    return _tls_socket_init(self);
   else
     self->sockfd = amqp_tcp_socket_new(self->conn);
 
