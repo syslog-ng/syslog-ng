@@ -551,6 +551,20 @@ Test(basicfuncs, test_context_funcs)
                                       "\"value,with,a,comma\",\"value,with,a,comma\"");
 }
 
+Test(basicfuncs, test_vp_funcs)
+{
+  assert_template_format_with_context("$(values .unix.*)", "command,1000,1000");
+  assert_template_format_with_context("$(values .foo.*)", "");
+  assert_template_format_with_context("$(values PID PROGRAM)", "23323,syslog-ng");
+  assert_template_format_with_context("$(values PROGRAM PID)", "23323,syslog-ng");
+  assert_template_format_with_context("$(values)", "");
+  assert_template_format_with_context("$(names .unix.*)", ".unix.cmd,.unix.gid,.unix.uid");
+  assert_template_format_with_context("$(names .foo.*)", "");
+  assert_template_format_with_context("$(names PID PROGRAM)", "PID,PROGRAM");
+  assert_template_format_with_context("$(names PROGRAM PID)", "PID,PROGRAM");
+  assert_template_format_with_context("$(names)", "");
+}
+
 
 Test(basicfuncs, test_tfurlencode)
 {
