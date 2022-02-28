@@ -449,6 +449,14 @@ _tls_socket_init(AMQPDestDriver *self)
 }
 
 static gboolean
+_tcp_socket_init(AMQPDestDriver *self)
+{
+  self->sockfd = amqp_tcp_socket_new(self->conn);
+
+  return TRUE;
+}
+
+static gboolean
 afamqp_dd_socket_init(AMQPDestDriver *self)
 {
   self->conn = amqp_new_connection();
@@ -460,10 +468,8 @@ afamqp_dd_socket_init(AMQPDestDriver *self)
 
   if (_is_using_tls(self))
     return _tls_socket_init(self);
-  else
-    self->sockfd = amqp_tcp_socket_new(self->conn);
 
-  return TRUE;
+  return _tcp_socket_init(self);
 }
 
 static gboolean
