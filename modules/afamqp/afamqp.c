@@ -460,6 +460,14 @@ static gboolean
 _tcp_socket_init(AMQPDestDriver *self)
 {
   self->sockfd = amqp_tcp_socket_new(self->conn);
+  if (self->sockfd == NULL)
+    {
+      msg_error("Error connecting to AMQP server while initializing socket",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_int("time_reopen", self->super.time_reopen));
+
+      return FALSE;
+    }
 
   return TRUE;
 }
