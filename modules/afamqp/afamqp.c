@@ -417,6 +417,14 @@ static gboolean
 _tls_socket_init(AMQPDestDriver *self)
 {
   self->sockfd = amqp_ssl_socket_new(self->conn);
+  if (self->sockfd == NULL)
+    {
+      msg_error("Error connecting to AMQP server while initializing socket with TLS",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_int("time_reopen", self->super.time_reopen));
+
+      return FALSE;
+    }
 
   int ca_file_ret = amqp_ssl_socket_set_cacert(self->sockfd, self->ca_file);
   if (ca_file_ret != AMQP_STATUS_OK)
