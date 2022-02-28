@@ -408,6 +408,12 @@ afamqp_is_ok(AMQPDestDriver *self, const gchar *context, amqp_rpc_reply_t ret)
 }
 
 static gboolean
+_is_using_tls(AMQPDestDriver *self)
+{
+  return self->ca_file != NULL;
+}
+
+static gboolean
 afamqp_dd_socket_init(AMQPDestDriver *self)
 {
 
@@ -419,7 +425,7 @@ afamqp_dd_socket_init(AMQPDestDriver *self)
       return FALSE;
     }
 
-  if (self->ca_file)
+  if (_is_using_tls(self))
     {
       int ca_file_ret;
       self->sockfd = amqp_ssl_socket_new(self->conn);
