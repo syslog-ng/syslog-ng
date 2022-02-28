@@ -32,16 +32,12 @@ news_dir = Path(__file__).resolve().parent
 root_dir = news_dir.parent
 newsfile = root_dir / 'NEWS.md'
 
-team_members = [
+credit_fixed_contributors = [
     "Andras Mitzki",
     "Attila Szakacs",
-    "Balázs Barkó",
     "Balazs Scheidler",
-    "Benedek Cserhati",
     "Gabor Nagy",
-    "Laszlo Szemere",
     "László Várady",
-    "Norbert Takacs",
     "Parrag Szilárd",
     "Peter Kokai",
     "Zoltan Pallagi",
@@ -128,7 +124,7 @@ def create_credits_block():
     stdout = _exec(r'git rev-list --no-merges --format=format:%aN syslog-ng-' + get_last_version() + r'..HEAD | '
                    r'grep -Ev "^commit [a-z0-9]{40}$" | sort | uniq')
     contributors = stdout.rstrip().split('\n')
-    contributors += team_members
+    contributors += credit_fixed_contributors
     contributors = filter(lambda x : x not in exclude_contributor_list, contributors)
     contributors = sorted(set(contributors))
 
