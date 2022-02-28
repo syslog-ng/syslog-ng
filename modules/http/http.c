@@ -173,6 +173,20 @@ http_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers)
   self->ciphers = g_strdup(ciphers);
 }
 
+gboolean
+http_dd_set_tls13_cipher_suite(LogDriver *d, const gchar *tls13_ciphers)
+{
+#if SYSLOG_NG_HAVE_DECL_CURLOPT_TLS13_CIPHERS
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->tls13_ciphers);
+  self->tls13_ciphers = g_strdup(tls13_ciphers);
+  return TRUE;
+#else
+  return FALSE;
+#endif
+}
+
 void
 http_dd_set_proxy(LogDriver *d, const gchar *proxy)
 {
@@ -392,6 +406,7 @@ http_dd_free(LogPipe *s)
   g_free(self->cert_file);
   g_free(self->key_file);
   g_free(self->ciphers);
+  g_free(self->tls13_ciphers);
   g_free(self->proxy);
   g_list_free_full(self->headers, g_free);
   http_load_balancer_free(self->load_balancer);

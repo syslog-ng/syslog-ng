@@ -92,6 +92,15 @@ typedef struct _TLSSession
   } peer_info;
 } TLSSession;
 
+
+#define TLSCONTEXT_ERROR tls_context_error_quark()
+GQuark tls_context_error_quark(void);
+
+enum TLSContextError
+{
+  TLSCONTEXT_UNSUPPORTED,
+};
+
 #define TMI_ALLOW_COMPRESS 0x1
 
 void tls_session_set_verifier(TLSSession *self, TLSVerifier *verifier);
@@ -118,12 +127,13 @@ gint tls_context_get_verify_mode(const TLSContext *self);
 void tls_context_set_verify_mode(TLSContext *self, gint verify_mode);
 void tls_context_set_key_file(TLSContext *self, const gchar *key_file);
 void tls_context_set_cert_file(TLSContext *self, const gchar *cert_file);
-gboolean tls_context_set_keylog_file(TLSContext *self, gchar *keylog_file_path);
+gboolean tls_context_set_keylog_file(TLSContext *self, gchar *keylog_file_path, GError **error);
 void tls_context_set_pkcs12_file(TLSContext *self, const gchar *pkcs12_file);
 void tls_context_set_ca_dir(TLSContext *self, const gchar *ca_dir);
 void tls_context_set_crl_dir(TLSContext *self, const gchar *crl_dir);
 void tls_context_set_ca_file(TLSContext *self, const gchar *ca_file);
 void tls_context_set_cipher_suite(TLSContext *self, const gchar *cipher_suite);
+gboolean tls_context_set_tls13_cipher_suite(TLSContext *self, const gchar *tls13_cipher_suite, GError **error);
 void tls_context_set_ecdh_curve_list(TLSContext *self, const gchar *ecdh_curve_list);
 void tls_context_set_dhparam_file(TLSContext *self, const gchar *dhparam_file);
 void tls_context_set_sni(TLSContext *self, const gchar *sni);

@@ -187,6 +187,8 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_TRUSTED_KEYS
 %token KW_TRUSTED_DN
 %token KW_CIPHER_SUITE
+%token KW_TLS12_AND_OLDER
+%token KW_TLS13
 %token KW_ECDH_CURVE_LIST
 %token KW_SSL_OPTIONS
 %token KW_SNI
@@ -806,9 +808,10 @@ tls_option
           }
 	| KW_KEYLOG_FILE '(' string ')'
 	  {
-		CHECK_ERROR(tls_context_set_keylog_file(last_tls_context, $3), @3, "keylog_file() requires OpenSSL >= v1.1.1");
-            free($3);
-          }
+	    GError *error = NULL;
+	    CHECK_ERROR_GERROR(tls_context_set_keylog_file(last_tls_context, $3, &error), @3, error, "Error setting keylog-file()");
+	    free($3);
+	  }
 	| KW_CERT_FILE '(' path_check ')'
 	  {
 	    tls_context_set_cert_file(last_tls_context, $3);
@@ -847,11 +850,13 @@ tls_option
           {
             tls_session_set_trusted_dn(last_tls_context, $3);
           }
-	| KW_CIPHER_SUITE '(' string ')'
-	  {
+        | KW_CIPHER_SUITE '(' tls_cipher_suites ')'
+        | KW_CIPHER_SUITE '(' string ')'
+          {
+            /* compat for specifying TLS 1.2-or-older ciphers */
             tls_context_set_cipher_suite(last_tls_context, $3);
             free($3);
-	  }
+          }
         | KW_ECDH_CURVE_LIST '(' string ')'
           {
             tls_context_set_ecdh_curve_list(last_tls_context, $3);
@@ -870,6 +875,24 @@ tls_option
 }
         ;
 
+tls_cipher_suites
+        : tls_cipher_suite tls_cipher_suites
+        |
+        ;
+
+tls_cipher_suite
+        : KW_TLS12_AND_OLDER '(' string ')'
+          {
+            tls_context_set_cipher_suite(last_tls_context, $3);
+            free($3);
+          }
+        | KW_TLS13 '(' string ')'
+          {
+            GError *error = NULL;
+            CHECK_ERROR_GERROR(tls_context_set_tls13_cipher_suite(last_tls_context, $3, &error), @3, error, "Error setting cipher-suite(tls13())");
+            free($3);
+          }
+        ;
 
 socket_option
 	: KW_SO_SNDBUF '(' nonnegative_integer ')'

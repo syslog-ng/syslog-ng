@@ -66,6 +66,8 @@ MQTTClientOptions *last_options;
 %token KW_CERT_FILE
 %token KW_KEY_FILE
 %token KW_CIPHER_SUITE
+%token KW_TLS12_AND_OLDER
+%token KW_TLS13
 %token KW_USE_SYSTEM_CERT_STORE
 %token KW_SSL_VERSION
 %token KW_PEER_VERIFY
@@ -142,12 +144,26 @@ mqtt_tls_option
     | KW_CA_FILE    '(' path_check ')'        { mqtt_client_options_set_ca_file(last_options, $3); free($3); }
     | KW_CERT_FILE  '(' path_check ')'        { mqtt_client_options_set_cert_file(last_options, $3); free($3); }
     | KW_KEY_FILE   '(' path_secret ')'       { mqtt_client_options_set_key_file(last_options, $3); free($3); }
+    | KW_CIPHER_SUITE '(' tls_cipher_suites ')'
     | KW_CIPHER_SUITE '(' string ')'          { mqtt_client_options_set_cipher_suite(last_options, $3); free($3); }
     | KW_SSL_VERSION '(' string ')'           { CHECK_ERROR(mqtt_client_options_set_ssl_version(last_options, $3), @3,
                                                             "mqtt: unsupported SSL version: %s", $3);
                                                 free($3); }
     | KW_PEER_VERIFY '(' yesno ')'            { mqtt_client_options_set_peer_verify(last_options, $3); }
     | KW_USE_SYSTEM_CERT_STORE '(' yesno ')'  { mqtt_client_options_use_system_cert_store(last_options, $3); }
+    ;
+
+tls_cipher_suites
+    : tls_cipher_suite tls_cipher_suites
+    |
+    ;
+
+tls_cipher_suite
+    : KW_TLS12_AND_OLDER '(' string ')'
+      {
+        mqtt_client_options_set_cipher_suite(last_options, $3);
+        free($3);
+      }
     ;
 
 /* INCLUDE_RULES */

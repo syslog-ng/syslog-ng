@@ -48,6 +48,8 @@ static CfgLexerKeyword mqtt_keywords[] =
   { "cert_file", KW_CERT_FILE },
   { "key_file", KW_KEY_FILE },
   { "cipher_suite", KW_CIPHER_SUITE },
+  { "tls12_and_older", KW_TLS12_AND_OLDER },
+  { "tls13", KW_TLS13 },
   { "peer_verify", KW_PEER_VERIFY },
   { "use_system_cert_store", KW_USE_SYSTEM_CERT_STORE },
   { "ssl_version", KW_SSL_VERSION },
