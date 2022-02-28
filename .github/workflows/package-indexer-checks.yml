@@ -1,0 +1,44 @@
+name: Package indexer checks
+
+on:
+  pull_request:
+    paths:
+      - "packaging/package-indexer/**"
+      - ".github/workflows/package-indexer-checks.yml"
+  push:
+    paths:
+      - "packaging/package-indexer/**"
+      - ".github/workflows/package-indexer-checks.yml"
+
+defaults:
+  run:
+    working-directory: packaging/package-indexer
+
+jobs:
+  package-indexer-checks:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_IMAGE: package-indexer
+      DOCKER_CONTAINER_NAME: package_indexer_container
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Build docker image
+        run: |
+          docker build -t ${DOCKER_IMAGE} .
+
+      - name: Start docker container
+        run: |
+          docker run -v $PWD:$PWD -w $PWD --detach --name ${DOCKER_CONTAINER_NAME} -t ${DOCKER_IMAGE}
+
+      - name: style-check
+        run: |
+          docker exec ${DOCKER_CONTAINER_NAME} pip install black
+          docker exec ${DOCKER_CONTAINER_NAME} black --check --diff .
+
+      - name: linter
+        run: |
+          docker exec ${DOCKER_CONTAINER_NAME} pip install mypy
+          docker exec ${DOCKER_CONTAINER_NAME} mypy .

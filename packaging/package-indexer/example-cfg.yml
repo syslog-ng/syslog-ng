@@ -1,0 +1,26 @@
+storage:
+  vendor: "azure"
+  incoming:
+    all:
+      storage-name: "secret"
+      connection-string: "secret"
+  indexed:
+    stable:
+      storage-name: "secret"
+      connection-string: "secret"
+    nightly:
+      storage-name: "secret"
+      connection-string: "secret"
+
+cdn:
+  vendor: "azure"
+  all:
+    resource-group-name: "secret"
+    profile-name: "secret"
+    endpoint-name: "secret"
+    endpoint-subscription-id: "secret"
+    tenant-id: "secret"
+    client-id: "secret"
+    client-secret: "secret"
+
+gpg-key-path: "secret"
