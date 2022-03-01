@@ -80,6 +80,7 @@ def create_block(block_name, files):
 
         entry += '  * {}\n([#{}](https://github.com/syslog-ng/syslog-ng/pull/{}))'.format(f.read_text().rstrip(), pr_id, pr_id)
         entry = entry.replace('\n', '\n    ')
+        entry = entry.replace('\n    \n', '\n\n')
         block += entry + '\n'
     block += '\n'
     return block
