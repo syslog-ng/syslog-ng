@@ -16,6 +16,24 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image:
+          - centos-7
+          - fedora-33
+          - debian-bullseye
+          - debian-buster
+          - debian-sid
+          - debian-stretch
+          - debian-testing
+          - ubuntu-bionic
+          - ubuntu-focal
+          - ubuntu-impish
+          - ubuntu-xenial
+          - devshell
+          - kira
+          - tarball
+      fail-fast: false
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
@@ -29,7 +47,7 @@ jobs:
           gh_export CONTAINER_REGISTRY
 
       - name: Build the images
-        run: dbld/rules images -j $(nproc) --keep-going --output-sync
+        run: dbld/rules image-${{ matrix.image }}
 
       - name: Should we upload the images?
         if: always()
@@ -60,4 +78,4 @@ jobs:
       - name: Push the images
         if: always() && env.UPLOAD_IMAGES_INTERNAL == 'true'
         run: |
-          dbld/rules push-images -j $(nproc) --keep-going --output-sync
+          dbld/rules push-image-${{ matrix.image }}
