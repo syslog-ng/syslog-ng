@@ -22,8 +22,12 @@ bzip2                           [centos, fedora, debian, ubuntu]
 
 # Basic interactive tools
 less                            [centos, fedora, debian, ubuntu]
-vim                             [centos, fedora, debian, ubuntu]
 
+# We are not installing this on Fedora, as it causes a conflicts between vim
+# and vim-common on Fedora-35. A fix seems to have been integrated, so
+# probably it is safe to restore vim in Fedora containers later.
+# Bazsi (03/03/2022)
+vim                             [centos, debian, ubuntu]
 #############################################################################
 # Essential build tools not explicitly referenced from
 # Build-Depends/BuildRequires
