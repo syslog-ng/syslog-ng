@@ -1,0 +1,78 @@
+name: Run smoke tests on APT packages
+
+on:
+  workflow_call:
+    inputs:
+      pkg_type:
+        required: true
+        type: string
+
+jobs:
+  TestPackagesWith:
+    strategy:
+      matrix:
+        distro:
+          - "debian:stretch"
+          - "debian:buster"
+          - "debian:bullseye"
+          - "debian:testing"
+          - "debian:sid"
+          - "ubuntu:xenial"
+          - "ubuntu:bionic"
+          - "ubuntu:focal"
+          - "ubuntu:impish"
+      fail-fast: false
+    runs-on: ubuntu-latest
+    container: ${{ matrix.distro }}
+    steps:
+      - name: Install prerequisites for adding 3rd party repository
+        run: |
+          apt-get update -qq
+          apt-get install --yes wget gnupg2 ca-certificates apt-transport-https
+
+      - name: Add nightly OSE repository
+        if: inputs.pkg_type == 'nightly'
+        run: |
+          wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor > /usr/share/keyrings/ose-repo-archive-keyring.gpg
+          echo "deb [trusted=yes] https://ose-repo.syslog-ng.com/apt/ ${{ inputs.pkg_type }} $(echo ${{ matrix.distro }} | sed 's/:/-/g')" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
+
+      - name: Add stable OSE repository
+        if: inputs.pkg_type == 'stable'
+        run: |
+          wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor > /usr/share/keyrings/ose-repo-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg] https://ose-repo.syslog-ng.com/apt/ ${{ inputs.pkg_type }} $(echo ${{ matrix.distro }} | sed 's/:/-/g')" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
+
+      - name: Install the last but one syslog-ng OSE package
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes syslog-ng=$(apt-cache madison syslog-ng | sed -n 2p | awk -F"|" '{print $2}' | sed 's/ //g')
+
+      - name: Upgrade to the latest syslog-ng OSE package
+        run: |
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes syslog-ng
+
+      - name: Get syslog-ng revision
+        run: |
+          syslog-ng -V
+          echo "::set-output name=REVISION::$(syslog-ng -V | grep Revision | cut -d" " -f2)"
+        id: syslog_ng_revision
+
+      - name: Check revision
+        run: |
+          if [ ${{ inputs.pkg_type }} = "nightly" ]; then
+            echo "${{ steps.syslog_ng_revision.outputs.REVISION }}" | egrep "^[0-9]{1}.[0-9]{1,2}.[0-9]{1}.[0-9]{3}.[a-z0-9]{8}-snapshot\+[0-9]{8}T[0-9]{6}$";
+          elif [ ${{ inputs.pkg_type }} = "stable" ]; then
+            echo "${{ steps.syslog_ng_revision.outputs.REVISION }}" | egrep "^[0-9]{1}.[0-9]{1,2}.[0-9]{1}-[0-9]{1}$"
+          fi
+
+      - name: Check if installed package version matches with install revision
+        run: |
+          echo "Installed revision value: ${{ steps.syslog_ng_revision.outputs.REVISION }}"
+          dpkg-query --show | grep syslog-ng
+          dpkg-query --show | grep syslog-ng | while read installed_syslog_ng_package ; do echo $installed_syslog_ng_package | grep ${{ steps.syslog_ng_revision.outputs.REVISION }} ; done
+
+      - name: Check if syslog-ng can start with default config
+        run: |
+          nohup syslog-ng -Fe &
+          sleep 5
+          syslog-ng-ctl stop
