@@ -188,6 +188,11 @@ function install_pip_packages {
                 $python_executable -m pip install --no-cache-dir --upgrade "setuptools < 58.0.0" # Remove the version limit when funcparserlib v1.0.0 is released
                 filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
                 ;;
+            fedora-35)
+                # don't update pip/setuptools on Fedora as RPM installed
+                # instances cause an error, at least in Fedora-35
+                filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
+                ;;
             *)
                 $python_executable -m pip install --no-cache-dir --upgrade pip
                 $python_executable -m pip install --no-cache-dir --upgrade setuptools
