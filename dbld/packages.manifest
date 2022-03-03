@@ -39,6 +39,7 @@ equivs                          [debian, ubuntu]
 libdistro-info-perl		[debian, ubuntu]
 make                            [centos, fedora]
 rpm-build                       [centos, fedora]
+which				[fedora]
 
 #############################################################################
 # Tarball related tools
