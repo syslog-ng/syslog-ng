@@ -157,7 +157,7 @@ various OSes.
 
 Simply invoke the following command as root:
 
-    # apt-get install syslog-ng
+    # apt install syslog-ng
 
 The latest versions of syslog-ng are available for a wide range of Debian
 and Ubuntu releases from our APT repository.
@@ -178,7 +178,7 @@ Installation steps:
     echo "deb https://ose-repo.syslog-ng.com/apt/ stable ubuntu-focal" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
     ```
 
-3. Run `apt-get update`
+3. Run `apt update`
 
 
 syslog-ng packages are released for the following distribution versions (x86-64):
@@ -198,9 +198,9 @@ syslog-ng packages are released for the following distribution versions (x86-64)
 ### Fedora
 
 syslog-ng is available as a Fedora package that you can install using
-yum:
+dnf:
 
-    # yum install syslog-ng
+    # dnf install syslog-ng
 
 You can download packages for the latest versions from [here](https://copr.fedoraproject.org/coprs/czanik/).
 
