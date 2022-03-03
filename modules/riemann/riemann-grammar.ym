@@ -137,7 +137,7 @@ riemann_option
           }
         | KW_ATTRIBUTES
           {
-            last_value_pairs = value_pairs_new();
+            last_value_pairs = value_pairs_new(configuration);
           }
           '(' attribute_options ')'
           {

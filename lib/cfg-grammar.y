@@ -330,12 +330,13 @@
 %token KW_REKEY                       10508
 %token KW_ADD_PREFIX                  10509
 %token KW_REPLACE_PREFIX              10510
+%token KW_CAST                        10511
 
-%token KW_ON_ERROR                    10511
+%token KW_ON_ERROR                    10520
 
-%token KW_RETRIES                     10512
+%token KW_RETRIES                     10521
 
-%token KW_FETCH_NO_DATA_DELAY         10513
+%token KW_FETCH_NO_DATA_DELAY         10522
 /* END_DECLS */
 
 %type   <ptr> expr_stmt
@@ -1392,7 +1393,7 @@ matcher_flags
 value_pair_option
 	: KW_VALUE_PAIRS
           {
-            last_value_pairs = value_pairs_new();
+            last_value_pairs = value_pairs_new(configuration);
           }
           '(' vp_options ')'
           { $$ = last_value_pairs; }
@@ -1430,6 +1431,7 @@ vp_option
           vp_rekey_options ')'                           { value_pairs_add_transforms(last_value_pairs, last_vp_transset); }
         | KW_EXCLUDE '(' string_list ')'                 { value_pairs_add_glob_patterns(last_value_pairs, $3, FALSE); }
 	| KW_SCOPE '(' vp_scope_list ')'
+	| KW_CAST '(' yesno ')'                          { value_pairs_set_cast_to_strings(last_value_pairs, $3); }
 	;
 
 vp_scope_list

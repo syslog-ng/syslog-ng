@@ -83,6 +83,23 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
       value_pairs_add_transforms(state->vp, vpts);
     }
 
+  if (cfg_is_config_version_older(parent->cfg, VERSION_VALUE_4_0) &&
+      !value_pairs_is_cast_to_strings_explicit(state->vp))
+    {
+      if (cfg_is_typing_feature_enabled(parent->cfg))
+        {
+          msg_warning("WARNING: $(format-json) starts using type information "
+                      "associated with name-value pairs in " VERSION_4_0
+                      ". This can possibly cause fields in the formatted JSON "
+                      "document to change types if no explicit type hint is "
+                      "specified. This change will cause the type in the output "
+                      "document match the original type that was parsed "
+                      "using json-parser(), add --no-cast argument "
+                      "to $(format-json) to keep the old behavior");
+        }
+      value_pairs_set_cast_to_strings(state->vp, TRUE);
+    }
+
   return TRUE;
 }
 
@@ -299,6 +316,11 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
           v_len = -1;
           tf_json_append_value(name, v, v_len, state, FALSE);
         }
+      break;
+    }
+    case LM_VT_NULL:
+    {
+      tf_json_append_value(name, "null", -1, state, FALSE);
       break;
     }
     }

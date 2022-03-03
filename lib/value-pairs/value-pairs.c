@@ -287,7 +287,11 @@ vp_msg_nvpairs_foreach(NVHandle handle, const gchar *name,
   sb = scratch_buffers_alloc();
 
   g_string_append_len(sb, value, value_len);
-  vp_results_insert(results, vp_transform_apply(vp, name), LM_VT_STRING, sb);
+
+  if (vp->cast_to_strings)
+    type = LM_VT_STRING;
+
+  vp_results_insert(results, vp_transform_apply(vp, name), type, sb);
 
   return FALSE;
 }
@@ -368,6 +372,7 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, LogTempla
   for (i = 0; i < vp->builtins->len; i++)
     {
       ValuePairSpec *spec = (ValuePairSpec *) g_ptr_array_index(vp->builtins, i);
+      LogMessageValueType type;
 
       sb = scratch_buffers_alloc();
 
@@ -375,13 +380,14 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, LogTempla
         {
         case VPT_MACRO:
           log_macro_expand(sb, spec->id, FALSE, options, msg);
+          type = LM_VT_STRING;
           break;
         case VPT_NVPAIR:
         {
           const gchar *nv;
           gssize len;
 
-          nv = log_msg_get_value(msg, (NVHandle) spec->id, &len);
+          nv = log_msg_get_value_with_type(msg, (NVHandle) spec->id, &len, &type);
           g_string_append_len(sb, nv, len);
           break;
         }
@@ -394,7 +400,10 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, LogTempla
           continue;
         }
 
-      vp_results_insert(results, vp_transform_apply(vp, spec->name), LM_VT_STRING, sb);
+      if (vp->cast_to_strings)
+        type = LM_VT_STRING;
+
+      vp_results_insert(results, vp_transform_apply(vp, spec->name), type, sb);
     }
 }
 
@@ -854,8 +863,29 @@ value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts)
   vp_update_builtin_list_of_values(vp);
 }
 
+void
+value_pairs_set_cast_to_strings(ValuePairs *vp, gboolean enable)
+{
+  vp->cast_to_strings = enable;
+  vp->explicit_cast_to_strings = TRUE;
+}
+
+void
+value_pairs_set_auto_cast(ValuePairs *vp)
+{
+  /* cast is based on @version, in 3.x mode we use strings, in 4.x we use
+   * types but we won't get the warning */
+  vp->explicit_cast_to_strings = TRUE;
+}
+
+gboolean
+value_pairs_is_cast_to_strings_explicit(ValuePairs *vp)
+{
+  return vp->explicit_cast_to_strings;
+}
+
 ValuePairs *
-value_pairs_new(void)
+value_pairs_new(GlobalConfig *cfg)
 {
   ValuePairs *vp;
 
@@ -866,13 +896,23 @@ value_pairs_new(void)
   vp->patterns = g_ptr_array_new();
   vp->transforms = g_ptr_array_new();
 
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
+    {
+      /* we don't have an upgrade warning here, as it could only be a very
+       * generic message, not helping our users too much.  I've added this
+       * kind of warning to affected modules instead, like $(format-json)
+       * and mongo-db() */
+
+      vp->cast_to_strings = TRUE;
+    }
+
   return vp;
 }
 
 ValuePairs *
 value_pairs_new_default(GlobalConfig *cfg)
 {
-  ValuePairs *vp = value_pairs_new();
+  ValuePairs *vp = value_pairs_new(cfg);
 
   value_pairs_add_scope(vp, "selected-macros");
   value_pairs_add_scope(vp, "nv-pairs");
