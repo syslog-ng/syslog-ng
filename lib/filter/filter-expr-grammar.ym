@@ -64,7 +64,7 @@ _translate_number_literals(CfgLexer *lexer, gint compare_mode, LogTemplate *expr
     return expr;
   if (cfg_is_config_version_older(configuration, VERSION_VALUE_4_0))
     {
-      if (cfg_is_typing_enabled(configuration))
+      if (cfg_is_typing_feature_enabled(configuration))
         {
           msg_warning("WARNING: syslog-ng versions before " VERSION_4_0 " interpreted quoted numeric "
                       "literals as numbers when using the '<', '>' or '==' operators. Please remove "
