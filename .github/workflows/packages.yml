@@ -38,7 +38,7 @@ jobs:
         - centos-7
         - debian-bullseye
         - debian-testing
-        - fedora-33
+        - fedora-35
         - ubuntu-focal
       fail-fast: false
 
