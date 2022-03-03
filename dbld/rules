@@ -2,7 +2,6 @@
 
 BUILDER_IMAGES=		\
 	centos-7 	\
-	fedora-33	\
 	fedora-35	\
 	debian-stretch	\
 	debian-buster	\
