@@ -247,17 +247,17 @@ Test(filter, test_string_ordering)
 
 Test(filter, test_string_ordering_with_non_numbers)
 {
-  cr_assert(evaluate("alma", KW_LT, "korte"));
-  cr_assert(evaluate("alma", KW_LE, "korte"));
-  cr_assert_not(evaluate("alma", KW_EQ, "korte"));
-  cr_assert_not(evaluate("alma", KW_GE, "korte"));
-  cr_assert_not(evaluate("alma", KW_GT, "korte"));
+  cr_assert(evaluate("alma lt korte"));
+  cr_assert(evaluate("alma le korte"));
+  cr_assert_not(evaluate("alma eq korte"));
+  cr_assert_not(evaluate("alma ge korte"));
+  cr_assert_not(evaluate("alma gt korte"));
 
-  cr_assert_not(evaluate("korte", KW_LT, "alma"));
-  cr_assert_not(evaluate("korte", KW_LE, "alma"));
-  cr_assert_not(evaluate("korte", KW_EQ, "alma"));
-  cr_assert(evaluate("korte", KW_GE, "alma"));
-  cr_assert(evaluate("korte", KW_GT, "alma"));
+  cr_assert_not(evaluate("korte lt alma"));
+  cr_assert_not(evaluate("korte le alma"));
+  cr_assert_not(evaluate("korte eq alma"));
+  cr_assert(evaluate("korte ge alma"));
+  cr_assert(evaluate("korte gt alma"));
 }
 
 Test(filter, test_compare_string)
