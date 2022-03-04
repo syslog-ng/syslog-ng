@@ -1,1 +1,0 @@
-cc-mask: fix visa and mastercard and jcb card regex pattern
