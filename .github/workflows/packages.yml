@@ -1,11 +1,9 @@
-name: Packages
+name: Packages (PR / push)
 
 
 on:
   pull_request:
   push:
-  schedule:
-    - cron: '00 21 * * *'
 
 
 jobs:
