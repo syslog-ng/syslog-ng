@@ -46,9 +46,9 @@ jobs:
 
       - name: Check existing PR
         run: |
-          EXSISTS=$(hub pr list --state=open --head=${VERSION_BUMP_BRANCH} | wc -l)
+          EXISTS=$(hub pr list --state=open --head=${VERSION_BUMP_BRANCH} | wc -l)
 
-          if [ ${EXSISTS} -ne 0 ]
+          if [ ${EXISTS} -ne 0 ]
           then
             echo "There is a PR already open for this version. Please close it before running this job."
             exit 1
