@@ -60,7 +60,7 @@ jobs:
       - name: Check revision
         run: |
           if [ ${{ inputs.pkg_type }} = "nightly" ]; then
-            echo "${{ steps.syslog_ng_revision.outputs.REVISION }}" | egrep "^[0-9]{1}.[0-9]{1,2}.[0-9]{1}.[0-9]{3}.[a-z0-9]{8}-snapshot\+[0-9]{8}T[0-9]{6}$";
+            echo "${{ steps.syslog_ng_revision.outputs.REVISION }}" | egrep "^[0-9]{1}.[0-9]{1,2}.[0-9]{1}(?:.[0-9]{3}.[a-z0-9]{8})?-snapshot\+[0-9]{8}T[0-9]{6}$";
           elif [ ${{ inputs.pkg_type }} = "stable" ]; then
             echo "${{ steps.syslog_ng_revision.outputs.REVISION }}" | egrep "^[0-9]{1}.[0-9]{1,2}.[0-9]{1}-[0-9]{1}$"
           fi
