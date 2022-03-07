@@ -27,7 +27,7 @@ on:
   workflow_dispatch:
     inputs:
       release_version:
-        description: 'VERSION'
+        description: 'VERSION (<MAJOR>.<MINOR>.<PATCH>)'
         required: true
 
 jobs:
