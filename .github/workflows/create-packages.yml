@@ -1,0 +1,85 @@
+name: Create package from source tarball
+
+
+on:
+  workflow_call:
+    inputs:
+      source-tarball-artifact-name:
+        required: true
+        type: string
+      dbld-image-mode:
+        required: true
+        type: string  # cache / build
+      distros:
+        required: false
+        type: string
+        default: '[
+          "debian-stretch",
+          "debian-buster",
+          "debian-testing",
+          "debian-sid",
+          "ubuntu-xenial",
+          "ubuntu-bionic",
+          "debian-bullseye",
+          "ubuntu-focal",
+          "ubuntu-impish",
+          "centos-7",
+          "fedora-35"
+        ]'
+
+
+jobs:
+  create-packages:
+    name: ${{ matrix.distro }}
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        distro: ${{ fromJson(inputs.distros) }}
+      fail-fast: false
+
+    steps:
+      - name: Download source tarball artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ inputs.source-tarball-artifact-name }}
+
+      - name: Extract source tarball
+        run: |
+          mkdir syslog-ng
+          tar --strip-components=1 -xvf syslog-ng*.tar.gz -C syslog-ng
+
+      - name: Prepare docker image
+        working-directory: syslog-ng
+        run: |
+          if [[ "${{ inputs.dbld-image-mode }}" = "build" ]]
+          then
+            ./dbld/rules image-${{ matrix.distro }}
+          elif [[ "${{ inputs.dbld-image-mode }}" = "cache" ]]
+          then
+            ./dbld/rules cache-image-${{ matrix.distro }}
+          else
+            echo Unexpected input: dbld-image-mode=${{ inputs.dbld-image-mode }}
+            false
+          fi
+
+      - name: Create package
+        working-directory: syslog-ng
+        run: |
+          ./dbld/rules package-${{ matrix.distro }}
+
+      - name: Prepare package for artifact
+        # We want to keep the directory structure starting with ${{ matrix.distro }},
+        # but it can only be done, if we give its parent directory as `path` to upload-artifact.
+        # There are other directories in dbld/build which we do not want to upload,
+        # so let's make a temporary directory and move the ${{ matrix.distro }} directory there.
+        run: |
+          mkdir package
+          cp -r syslog-ng/dbld/build/${{ matrix.distro }} package/
+
+      - name: Store package as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: package-${{ matrix.distro }}
+          path: package/*
