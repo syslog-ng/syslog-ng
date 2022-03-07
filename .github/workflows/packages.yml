@@ -26,47 +26,19 @@ jobs:
       - name: Store source tarball as artifact
         uses: actions/upload-artifact@v2
         with:
-          name: tarball
+          name: source-tarball
           path: dbld/build/*.tar.gz
 
-  packages:
-    runs-on: ubuntu-latest
-    needs: tarball
-    strategy:
-      matrix:
-        distro: 
-        - centos-7
-        - debian-bullseye
-        - debian-testing
-        - fedora-35
-        - ubuntu-focal
-      fail-fast: false
-
-    steps:
-      - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Docker image
-        run: ./dbld/rules cache-image-${{ matrix.distro }}
-
-      - name: Cleanup git based files
-        run: rm -rf *
-
-      - name: Fetch tarball artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: tarball
-
-      - name: Extract tarball
-        run: mkdir syslog-ng && tar --strip-components=1 -xf syslog-ng*.tar.gz -C syslog-ng && ls -lR
-
-      - name: Binary for ${{ matrix.distro }}
-        run: cd syslog-ng && ./dbld/rules package-${{ matrix.distro }}
-
-      - name: Store packages as artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: package-${{ matrix.distro }}
-          path: syslog-ng/dbld/build/${{ matrix.distro }}/*
+  create-packages:
+    needs: create-source-tarball
+    uses: ./.github/workflows/create-packages.yml
+    with:
+      source-tarball-artifact-name: source-tarball
+      dbld-image-mode: cache
+      distros: '[
+        "centos-7",
+        "debian-bullseye",
+        "debian-testing",
+        "fedora-35",
+        "ubuntu-focal"
+      ]'
