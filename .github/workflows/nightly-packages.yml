@@ -24,60 +24,20 @@ jobs:
       - name: Store source tarball as artifact
         uses: actions/upload-artifact@v2
         with:
-          name: tarball
+          name: source-tarball
           path: dbld/build/*.tar.gz
 
-  packages:
-    runs-on: ubuntu-latest
-    needs: tarball
-    strategy:
-      matrix:
-        dbld-builder-images:
-        - { distro: 'debian-stretch',  pkg: 'deb', upload: 'true' }
-        - { distro: 'debian-buster',   pkg: 'deb', upload: 'true' }
-        - { distro: 'debian-bullseye', pkg: 'deb', upload: 'true' }
-        - { distro: 'debian-testing',  pkg: 'deb', upload: 'true' }
-        - { distro: 'debian-sid',      pkg: 'deb', upload: 'true' }
-        - { distro: 'ubuntu-xenial',   pkg: 'deb', upload: 'true' }
-        - { distro: 'ubuntu-bionic',   pkg: 'deb', upload: 'true' }
-        - { distro: 'ubuntu-focal',    pkg: 'deb', upload: 'true' }
-        - { distro: 'ubuntu-impish',   pkg: 'deb', upload: 'true' }
-        - { distro: 'centos-7',        pkg: 'rpm', upload: 'false' }
-        - { distro: 'fedora-35',       pkg: 'rpm', upload: 'false' }
-      fail-fast: false
-    env:
-      DISTRIBUTION: ${{ matrix.dbld-builder-images.distro }}
-      PACKAGE_FORMAT: ${{ matrix.dbld-builder-images.pkg }}
-      UPLOAD: ${{ matrix.dbld-builder-images.upload }}
+  create-packages:
+    needs: create-source-tarball
+    uses: ./.github/workflows/create-packages.yml
+    with:
+      source-tarball-artifact-name: source-tarball
+      dbld-image-mode: cache
 
-    steps:
-      - name: Create a working directory
-        run: |
-          MY_WORKSPACE=$(mktemp --tmpdir=${GITHUB_WORKSPACE} -d tarball-XXXXX)
-          MY_WORKSPACE_NAME=${MY_WORKSPACE##"${GITHUB_WORKSPACE}/"}
-          echo "MY_WORKSPACE_NAME=${MY_WORKSPACE_NAME}" >> ${GITHUB_ENV}
-
-      - name: Fetch tarball artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: tarball
-          path: ${{ env.MY_WORKSPACE_NAME }}
-
-      - name: Extract tarball
-        run: cd ${GITHUB_WORKSPACE}/${MY_WORKSPACE_NAME} && mkdir syslog-ng && tar --strip-components=1 -xf syslog-ng*.tar.gz -C syslog-ng && ls -lR
-
-      - name: Image for ${{ env.DISTRIBUTION }}
-        run: cd ${GITHUB_WORKSPACE}/${MY_WORKSPACE_NAME}/syslog-ng && ./dbld/rules image-${{ env.DISTRIBUTION }}
-
-      - name: Binary for ${{ env.DISTRIBUTION }}
-        run: cd ${GITHUB_WORKSPACE}/${MY_WORKSPACE_NAME}/syslog-ng && ./dbld/rules package-${{ env.DISTRIBUTION }}
-
-      # Note: azure/CLI docker container mounts the GITHUB_WORKSPACE folder and changes the environment variable.
-      - name: Upload the package
-        if: env.UPLOAD == 'true' && github.repository_owner == 'syslog-ng'
-        uses: azure/CLI@v1
-        env:
-          SRC_PATH: ${{ env.MY_WORKSPACE_NAME }}/syslog-ng/dbld/build/${{ env.DISTRIBUTION }}
-          DST_PATH: incoming/nightly/${{ env.DISTRIBUTION }}
-        with:
-          inlineScript: az storage blob upload-batch --sas-token '${{ secrets.AZURE_SAS_TOKEN }}' --account-name 'syslogngose' --source ${GITHUB_WORKSPACE}/${SRC_PATH} --destination ${DST_PATH}
+  upload-packages:
+    needs: create-packages
+    uses: ./.github/workflows/upload-packages.yml
+    with:
+      pkg-type: nightly
+    secrets:
+      azure-sas-token: ${{ secrets.AZURE_SAS_TOKEN }}
