@@ -14,27 +14,35 @@
 
 name: Draft release
 
+
 on:
   workflow_dispatch:
   pull_request:
     types: [closed]
 
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  WORKFLOW_NAME: "**Draft release** workflow"
+  CURRENT_WORKFLOW_RUN_URL: https://github.com/${{ github.repository_owner }}/syslog-ng/actions/runs/${{ github.run_id }}
+  COMMENT_ENDPOINT: repos/${{ github.repository_owner }}/syslog-ng/issues/${{ github.event.number }}/comments
+  RELEASES_URL: https://github.com/${{ github.repository_owner }}/syslog-ng/releases
+
+
 jobs:
-  draft-release:
+  create-release-tarball:
     runs-on: ubuntu-latest
     if: (github.event_name == 'workflow_dispatch') ||
         (github.event.pull_request.merged && contains(github.event.pull_request.labels.*.name, 'version-bump'))
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      JOB_NAME: "**Draft release** job"
-      CURRENT_JOB_URL: https://github.com/${{ github.repository_owner }}/syslog-ng/actions/runs/${{ github.run_id }}
-      COMMENT_ENDPOINT: repos/${{ github.repository_owner }}/syslog-ng/issues/${{ github.event.number }}/comments
-      RELEASES_URL: https://github.com/${{ github.repository_owner }}/syslog-ng/releases
+    outputs:
+      RELEASE_TAG: ${{ steps.setup-environment.outputs.RELEASE_TAG }}
+      RELEASE_NAME: ${{ steps.setup-environment.outputs.RELEASE_NAME }}
+      TARBALL_NAME: ${{ steps.setup-environment.outputs.TARBALL_NAME }}
     steps:
       - name: "Comment: job started"
         if: github.event_name == 'pull_request'
         run: |
-          COMMENT="${JOB_NAME} started: ${CURRENT_JOB_URL}."
+          COMMENT="${WORKFLOW_NAME} started: ${CURRENT_WORKFLOW_RUN_URL}."
 
           hub api \
             ${COMMENT_ENDPOINT} \
@@ -44,15 +52,18 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup environment
+        id: setup-environment
         run: |
           . .github/workflows/gh-tools.sh
 
           VERSION=`cat VERSION`
           RELEASE_TAG=syslog-ng-$VERSION
           RELEASE_NAME=${RELEASE_TAG}
-          TARBALL_PATH=dbld/release/${VERSION}/${RELEASE_NAME}.tar.gz
+          TARBALL_NAME=${RELEASE_NAME}.tar.gz
+          TARBALL_PATH=dbld/release/${VERSION}/${TARBALL_NAME}
 
-          gh_export VERSION RELEASE_TAG RELEASE_NAME TARBALL_PATH
+          gh_export VERSION RELEASE_TAG TARBALL_PATH
+          gh_output RELEASE_TAG RELEASE_NAME TARBALL_NAME
 
       - name: "DBLD: release"
         run: |
@@ -61,36 +72,12 @@ jobs:
       - name: Store release tarball as artifact
         uses: actions/upload-artifact@v2
         with:
-          name: tarball
+          name: release-tarball
           path: ${{ env.TARBALL_PATH }}
           if-no-files-found: error
 
-      - name: Create draft release
-        run: |
-          sed "1 i${RELEASE_NAME}\n" NEWS.md > /tmp/message
-
-          hub release create \
-            --draft \
-            --file /tmp/message \
-            --attach ${TARBALL_PATH} \
-            ${RELEASE_TAG}
-
-      - name: "Comment: job status"
-        if: github.event_name == 'pull_request' && always()
-        run: |
-          if [ ${{ job.status }} = 'success' ]
-          then
-            COMMENT="${JOB_NAME} finished successfully. Please check the Releases page: ${RELEASES_URL}"
-          else
-            COMMENT="${JOB_NAME}: ${{ job.status }}."
-          fi
-
-          hub api \
-            ${COMMENT_ENDPOINT} \
-            --field body="${COMMENT}"
-
   create-packages:
-    needs: draft-release
+    needs: create-release-tarball
     uses: ./.github/workflows/create-packages.yml
     with:
       source-tarball-artifact-name: release-tarball
@@ -103,3 +90,43 @@ jobs:
       pkg-type: stable
     secrets:
       azure-sas-token: ${{ secrets.AZURE_SAS_TOKEN }}
+
+  create-draft-release:
+    runs-on: ubuntu-latest
+    needs: [create-release-tarball, upload-packages]
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
+
+      - name: Download release tarball artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: release-tarball
+
+      - name: Create draft release
+        run: |
+          sed "1 i${{ needs.create-release-tarball.outputs.RELEASE_NAME }}\n" NEWS.md > /tmp/message
+
+          hub release create \
+            --draft \
+            --file /tmp/message \
+            --attach ${{ needs.create-release-tarball.outputs.TARBALL_NAME }} \
+            ${{ needs.create-release-tarball.outputs.RELEASE_TAG }}
+
+  comment-workflow-result:
+    runs-on: ubuntu-latest
+    needs: create-draft-release
+    if: always() && (github.event.pull_request.merged && contains(github.event.pull_request.labels.*.name, 'version-bump'))
+    steps:
+      - name: "Comment: job status"
+        run: |
+          if [[ "${{ needs.create-draft-release.result }}" = "success" ]]
+          then
+            COMMENT="${WORKFLOW_NAME} finished successfully. Please check the Releases page: ${RELEASES_URL}"
+          else
+            COMMENT="${WORKFLOW_NAME} failed."
+          fi
+
+          hub api \
+            ${COMMENT_ENDPOINT} \
+            --field body="${COMMENT}"
