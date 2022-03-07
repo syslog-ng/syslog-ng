@@ -1,16 +1,16 @@
-###########################################################################################
+###########################################################################################################
 #
-# This job creates a draft release into GitHub's releases section.
+# This workflow creates a draft release into GitHub's releases section.
 #
-# It is automatically started, when a "Release candidate" PR is merged.
-# Its progress is commented at the "Release candidate" PR.
+# It is automatically started, when a "Version: x.y.z" PR is merged.
+# Its progress is commented at the "Version: x.y.z" PR.
 #
-# The job can also be started manually, if necessary.
+# The workflow can also be started manually, if necessary.
 #
-# When the job is finished, one must visit https://github.com/syslog-ng/syslog-ng/releases,
+# When the workflow is finished, one must visit https://github.com/syslog-ng/syslog-ng/releases,
 # double check the generated draft release, and manually release it.
 #
-###########################################################################################
+###########################################################################################################
 
 name: Draft release
 
