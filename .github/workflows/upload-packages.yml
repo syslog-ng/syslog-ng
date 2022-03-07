@@ -1,0 +1,70 @@
+name: Upload package to Azure/incoming
+
+
+on:
+  workflow_call:
+    inputs:
+      pkg-type:
+        required: true
+        type: string  # stable / nightly
+      distros:
+        required: false
+        type: string
+        default: '[
+          "debian-stretch",
+          "debian-buster",
+          "debian-testing",
+          "debian-sid",
+          "ubuntu-xenial",
+          "ubuntu-bionic",
+          "debian-bullseye",
+          "ubuntu-focal",
+          "ubuntu-impish"
+        ]'
+    secrets:
+      azure-sas-token:
+        required: true
+
+
+jobs:
+  upload-packages:
+    name: ${{ matrix.distro }}
+
+    runs-on: ubuntu-latest
+
+    if: github.repository_owner == 'syslog-ng'
+
+    strategy:
+      matrix:
+        distro: ${{ fromJson(inputs.distros) }}
+      fail-fast: false
+
+    steps:
+      - name: Download package artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: package-${{ matrix.distro }}
+          path: package
+
+      - name: Calculate Azure path
+        run: |
+          if [[ "${{ inputs.pkg-type }}" = "stable" ]]; then
+            AZURE_PATH="incoming/release/${{ github.run_id }}"
+          elif [[ "${{ inputs.pkg-type }}" = "nightly" ]]; then
+            AZURE_PATH="incoming/nightly"
+          else
+            echo Unexpected input: pkg-type=${{ inputs.pkg-type }}
+            false
+          fi
+
+          echo "AZURE_PATH=${AZURE_PATH}" >> ${GITHUB_ENV}
+
+      - name: Upload packages to Azure incoming
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az storage blob upload-batch \
+              --sas-token '${{ secrets.azure-sas-token }}' \
+              --account-name 'syslogngose' \
+              --source 'package' \
+              --destination '${{ env.AZURE_PATH }}'
