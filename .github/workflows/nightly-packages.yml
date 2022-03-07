@@ -7,22 +7,21 @@ on:
 
 
 jobs:
-  tarball:
+  create-source-tarball:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: Docker image
+      - name: Prepare docker image
         run: ./dbld/rules cache-image-tarball
 
-      - name: Tarball
+      - name: Create source tarball
         run: ./dbld/rules pkg-tarball
 
-      - name: Store tarball as artifact
+      - name: Store source tarball as artifact
         uses: actions/upload-artifact@v2
         with:
           name: tarball
