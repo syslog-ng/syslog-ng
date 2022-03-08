@@ -2,7 +2,17 @@ name: Compile dbld-images
 
 on:
   pull_request:
+    paths:
+      - 'dbld/**'
+      - 'packaging/rhel/**'
+      - 'packaging/debian/**'
+      - '.github/workflows/dbld-images.yml'
   push:
+    paths:
+      - 'dbld/**'
+      - 'packaging/rhel/**'
+      - 'packaging/debian/**'
+      - '.github/workflows/dbld-images.yml'
   schedule:
     - cron: '00 03 * * *'
   workflow_dispatch:
