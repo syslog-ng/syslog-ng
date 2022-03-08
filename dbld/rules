@@ -219,7 +219,7 @@ image-%:
 
 push-images: $(foreach image,$(IMAGES), push-image-$(image))
 push-image-%:
-	@echo "Pushing image: $(image)"
+	@echo "Pushing image: $*"
 	$(DOCKER) push ${CONTAINER_REGISTRY}/dbld-$*
 
 pull-images: $(foreach image,$(BUILDER_IMAGES), pull-image-$(image))
