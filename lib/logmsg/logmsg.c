@@ -225,6 +225,35 @@ log_msg_value_type_to_str(LogMessageValueType self)
   return as_str[self];
 }
 
+gboolean
+log_msg_value_type_from_str(const gchar *in_str, LogMessageValueType *out_type)
+{
+  if (strcmp(in_str, "string") == 0)
+    *out_type = LM_VT_STRING;
+  else if (strcmp(in_str, "json") == 0 || strcmp(in_str, "literal") == 0)
+    *out_type = LM_VT_JSON;
+  else if (strcmp(in_str, "boolean") == 0)
+    *out_type = LM_VT_BOOLEAN;
+  else if (strcmp(in_str, "int32") == 0 || strcmp(in_str, "int") == 0)
+    *out_type = LM_VT_INT32;
+  else if (strcmp(in_str, "int64") == 0)
+    *out_type = LM_VT_INT64;
+  else if (strcmp(in_str, "double") == 0 || strcmp(in_str, "float") == 0)
+    *out_type = LM_VT_DOUBLE;
+  else if (strcmp(in_str, "datetime") == 0)
+    *out_type = LM_VT_DATETIME;
+  else if (strcmp(in_str, "list") == 0)
+    *out_type = LM_VT_LIST;
+  else if (strcmp(in_str, "null") == 0)
+    *out_type = LM_VT_NULL;
+  else if (strcmp(in_str, "none") == 0)
+    *out_type = LM_VT_NONE;
+  else
+    return FALSE;
+
+  return TRUE;
+};
+
 static void
 __free_macro_value(void *val)
 {

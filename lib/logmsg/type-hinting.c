@@ -40,25 +40,7 @@ type_hinting_error_quark(void)
 gboolean
 type_hint_parse(const gchar *hint, LogMessageValueType *out_type, GError **error)
 {
-  if (strcmp(hint, "string") == 0)
-    *out_type = LM_VT_STRING;
-  else if (strcmp(hint, "json") == 0 || strcmp(hint, "literal") == 0)
-    *out_type = LM_VT_JSON;
-  else if (strcmp(hint, "int32") == 0 || strcmp(hint, "int") == 0)
-    *out_type = LM_VT_INT32;
-  else if (strcmp(hint, "int64") == 0)
-    *out_type = LM_VT_INT64;
-  else if (strcmp(hint, "double") == 0 || strcmp(hint, "float") == 0)
-    *out_type = LM_VT_DOUBLE;
-  else if (strcmp(hint, "datetime") == 0)
-    *out_type = LM_VT_DATETIME;
-  else if (strcmp(hint, "list") == 0)
-    *out_type = LM_VT_LIST;
-  else if (strcmp(hint, "boolean") == 0)
-    *out_type = LM_VT_BOOLEAN;
-  else if (strcmp(hint, "null") == 0)
-    *out_type = LM_VT_NULL;
-  else
+  if (!log_msg_value_type_from_str(hint, out_type) || *out_type == LM_VT_NONE)
     {
       g_set_error(error, TYPE_HINTING_ERROR, TYPE_HINTING_INVALID_TYPE,
                   "Unknown type specified in type hinting: %s", hint);
