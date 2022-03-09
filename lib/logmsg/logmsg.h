@@ -170,6 +170,7 @@ enum _LogMessageValueType
   LM_VT_NONE = 255
 };
 
+const gchar *log_msg_value_type_to_str(LogMessageValueType self);
 
 typedef struct _LogMessageQueueNode
 {
