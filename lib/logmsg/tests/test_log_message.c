@@ -613,7 +613,7 @@ Test(log_message, test_log_message_updates_num_matches_according_to_matches_bein
   log_msg_unref(msg);
 }
 
-Test(log_message, test_format_matches_produces_a_list_of_matches)
+Test(log_message, test_format_matches_produces_a_list_of_matches_even_if_populated_via_explicit_set)
 {
   LogMessage *msg;
   GString *result = g_string_new("");
@@ -630,6 +630,41 @@ Test(log_message, test_format_matches_produces_a_list_of_matches)
   g_string_truncate(result, 0);
   log_msg_format_matches(msg, result);
   cr_assert_str_eq(result->str, "match1,match2,match3,match4");
+
+  g_string_free(result, TRUE);
+  log_msg_unref(msg);
+}
+
+Test(log_message, test_format_matches_resets_match_values_if_an_out_of_range_element_is_set)
+{
+  LogMessage *msg;
+  GString *result = g_string_new("");
+
+  msg = log_msg_new_empty();
+  log_msg_set_match(msg, 1, "match1", -1);
+  log_msg_set_match(msg, 2, "match2", -1);
+  log_msg_set_match(msg, 3, "match3", -1);
+  log_msg_set_match(msg, 4, "match4", -1);
+  msg->num_matches = 4;
+
+  log_msg_format_matches(msg, result);
+  /* $4 missing due to num_matches changed */
+  cr_assert_str_eq(result->str, "match1,match2,match3");
+
+  /* $4 was set but was not part of the array, setting $7  */
+  log_msg_set_match(msg, 7, "match7", -1);
+
+  g_string_truncate(result, 0);
+  log_msg_format_matches(msg, result);
+  /* match 4 is unset even though it did hold a value before, the other in-between elements are similarly empty */
+  cr_assert_str_eq(result->str, "match1,match2,match3,\"\",\"\",\"\",match7");
+
+  /* fill the whole */
+  log_msg_set_match(msg, 4, "updated-match4", -1);
+  g_string_truncate(result, 0);
+  log_msg_format_matches(msg, result);
+  /* match 5 still missing as the "whole" was just filled, but that does not include match 5 */
+  cr_assert_str_eq(result->str, "match1,match2,match3,updated-match4,\"\",\"\",match7");
 
   g_string_free(result, TRUE);
   log_msg_unref(msg);
