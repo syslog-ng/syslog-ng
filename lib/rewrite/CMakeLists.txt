@@ -8,6 +8,7 @@ set(REWRITE_HEADERS
     rewrite/rewrite-unset.h
     rewrite/rewrite-rename.h
     rewrite/rewrite-set-matches.h
+    rewrite/rewrite-unset-matches.h
     rewrite/rewrite-set-pri.h
     rewrite/rewrite-set-severity.h
     rewrite/rewrite-set-facility.h
@@ -24,6 +25,7 @@ set(REWRITE_SOURCES
     rewrite/rewrite-unset.c
     rewrite/rewrite-rename.c
     rewrite/rewrite-set-matches.c
+    rewrite/rewrite-unset-matches.c
     rewrite/rewrite-set-pri.c
     rewrite/rewrite-set-severity.c
     rewrite/rewrite-set-facility.c

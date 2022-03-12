@@ -28,6 +28,7 @@
 
 #include "apphook.h"
 #include "rewrite/rewrite-set-matches.h"
+#include "rewrite/rewrite-unset-matches.h"
 #include "logmsg/logmsg.h"
 #include "scratch-buffers.h"
 
@@ -54,6 +55,14 @@ _perform_set_matches(LogTemplate *template, LogMessage *msg_)
   _perform_rewrite(rewrite, msg_);
 }
 
+static void
+_perform_unset_matches(LogMessage *msg_)
+{
+  LogRewrite *rewrite = log_rewrite_unset_matches_new(configuration);
+
+  _perform_rewrite(rewrite, msg_);
+}
+
 Test(set_matches, numeric)
 {
   log_msg_set_match(msg, 0, "whatever", -1);
@@ -61,6 +70,17 @@ Test(set_matches, numeric)
   assert_log_message_value_unset_by_name(msg, "0");
   assert_log_message_match_value(msg, 1, "foo");
   assert_log_message_match_value(msg, 2, "bar");
+}
+
+Test(set_matches, unset_matches)
+{
+  log_msg_set_match(msg, 0, "whatever", -1);
+  log_msg_set_match(msg, 1, "foo", -1);
+  log_msg_set_match(msg, 2, "bar", -1);
+  _perform_unset_matches(msg);
+  assert_log_message_value_unset_by_name(msg, "0");
+  assert_log_message_value_unset_by_name(msg, "1");
+  assert_log_message_value_unset_by_name(msg, "2");
 }
 
 static void
