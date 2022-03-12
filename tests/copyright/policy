@@ -64,6 +64,9 @@ modules/secure-logging/slogencrypt
 modules/secure-logging/slogverify
 modules/secure-logging/slogkey
 lib/rewrite/rewrite-set-facility\.h
+lib/rewrite/rewrite-set-matches\.[ch]
+lib/rewrite/rewrite-unset-matches\.[ch]
+lib/rewrite/tests/test_set_matches\.c
 lib/rewrite/tests/test_set_facility\.c
 lib/rewrite/rewrite-set-pri\.h
 lib/rewrite/rewrite-set-pri\.c
