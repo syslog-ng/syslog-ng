@@ -423,6 +423,12 @@ log_msg_update_num_matches(LogMessage *self, NVHandle handle)
   if (log_msg_is_handle_match(handle))
     {
       gint index_ = handle - match_handles[0];
+
+      /* the whole between num_matches and the new index is emptied out to
+       * avoid leaking of stale values */
+
+      for (gint i = self->num_matches; i < index_; i++)
+        log_msg_unset_match(self, i);
       if (index_ >= self->num_matches)
         self->num_matches = index_ + 1;
     }
