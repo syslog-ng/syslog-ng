@@ -125,6 +125,7 @@ Test(parse_timestamp, bsd_extensions)
 {
   /* fractions of a second */
   _expect_rfc3164_timestamp_eq("Dec  3 09:10:12.987", "2017-12-03T09:10:12.987+01:00");
+  _expect_rfc3164_timestamp_eq("Dec  3 09:10:12,987", "2017-12-03T09:10:12.987+01:00");
 
   /* year added at the end (linksys) */
   _expect_rfc3164_timestamp_eq("Dec  3 09:10:12 2019 ", "2019-12-03T09:10:12.000+01:00");
@@ -137,10 +138,14 @@ Test(parse_timestamp, bsd_extensions)
 Test(parse_timestamp, accept_iso_timestamps_with_space)
 {
   _expect_rfc3164_timestamp_eq("2017-12-03 09:10:12.987+01:00", "2017-12-03T09:10:12.987+01:00");
+  _expect_rfc3164_timestamp_eq("2017-12-03 09:10:12,987+01:00", "2017-12-03T09:10:12.987+01:00");
   _expect_rfc3164_timestamp_eq("2017-12-03 09:10:12.987", "2017-12-03T09:10:12.987+01:00");
+  _expect_rfc3164_timestamp_eq("2017-12-03 09:10:12,987", "2017-12-03T09:10:12.987+01:00");
   _expect_rfc3164_timestamp_eq("2017-12-03 09:10:12", "2017-12-03T09:10:12.000+01:00");
   _expect_rfc5424_timestamp_eq("2017-12-03 09:10:12.987+01:00", "2017-12-03T09:10:12.987+01:00");
+  _expect_rfc5424_timestamp_eq("2017-12-03 09:10:12,987+01:00", "2017-12-03T09:10:12.987+01:00");
   _expect_rfc5424_timestamp_eq("2017-12-03 09:10:12.987", "2017-12-03T09:10:12.987+01:00");
+  _expect_rfc5424_timestamp_eq("2017-12-03 09:10:12,987", "2017-12-03T09:10:12.987+01:00");
   _expect_rfc5424_timestamp_eq("2017-12-03 09:10:12", "2017-12-03T09:10:12.000+01:00");
 }
 
