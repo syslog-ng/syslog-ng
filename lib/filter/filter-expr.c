@@ -98,6 +98,8 @@ filter_expr_unref(FilterExprNode *self)
 FilterExprNode *
 filter_expr_clone(FilterExprNode *self)
 {
+  if (!self)
+    return NULL;
   if (!self->clone)
     return filter_expr_ref(self);
 

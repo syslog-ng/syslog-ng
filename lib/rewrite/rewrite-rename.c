@@ -53,9 +53,7 @@ log_rewrite_rename_clone(LogPipe *s)
   LogRewriteRename *cloned;
 
   cloned = (LogRewriteRename *) log_rewrite_rename_new(s->cfg, self->source_handle, self->destination_handle);
-
-  if (self->super.condition)
-    cloned->super.condition = filter_expr_clone(self->super.condition);
+  cloned->super.condition = filter_expr_clone(self->super.condition);
 
   return &cloned->super.super;
 }

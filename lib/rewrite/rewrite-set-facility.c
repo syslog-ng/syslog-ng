@@ -116,8 +116,7 @@ log_rewrite_set_facility_clone(LogPipe *s)
   LogRewriteSetFacility *cloned = (LogRewriteSetFacility *)log_rewrite_set_facility_new(log_template_ref(self->facility),
                                   s->cfg);
 
-  if (self->super.condition)
-    cloned->super.condition = filter_expr_clone(self->super.condition);
+  cloned->super.condition = filter_expr_clone(self->super.condition);
 
   return &cloned->super.super;
 }

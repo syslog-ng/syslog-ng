@@ -87,8 +87,7 @@ log_rewrite_set_pri_clone(LogPipe *s)
   LogRewriteSetPri *cloned = (LogRewriteSetPri *) log_rewrite_set_pri_new(log_template_ref(self->pri),
                              s->cfg);
 
-  if (self->super.condition)
-    cloned->super.condition = filter_expr_clone(self->super.condition);
+  cloned->super.condition = filter_expr_clone(self->super.condition);
 
   return &cloned->super.super;
 }
