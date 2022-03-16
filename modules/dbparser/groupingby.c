@@ -37,7 +37,6 @@ typedef struct _GroupingBy
   StatefulParser super;
   GMutex lock;
   struct iv_timer tick;
-  TimerWheel *timer_wheel;
   GTimeVal last_tick;
   CorrelationState *correlation;
   LogTemplate *key_template;
@@ -125,7 +124,6 @@ static void
 _free_persist_data(GroupingByPersistData *self)
 {
   correlation_state_free(self->correlation);
-  timer_wheel_free(self->timer_wheel);
   g_free(self);
 }
 
@@ -214,9 +212,9 @@ grouping_by_set_time(GroupingBy *self, const UnixTime *ls, GPMessageEmitter *msg
   if (ls->ut_sec < now.tv_sec)
     now.tv_sec = ls->ut_sec;
 
-  timer_wheel_set_time(self->timer_wheel, now.tv_sec, msg_emitter);
+  timer_wheel_set_time(self->correlation->timer_wheel, now.tv_sec, msg_emitter);
   msg_debug("Advancing grouping-by() current time because of an incoming message",
-            evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
+            evt_tag_long("utc", timer_wheel_get_time(self->correlation->timer_wheel)),
             log_pipe_location_tag(&self->super.super.super));
 }
 
@@ -244,9 +242,9 @@ _grouping_by_timer_tick(GroupingBy *self)
     {
       glong diff_sec = (glong)(diff / 1e6);
 
-      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec, &msg_emitter);
+      timer_wheel_set_time(self->correlation->timer_wheel, timer_wheel_get_time(self->correlation->timer_wheel) + diff_sec, &msg_emitter);
       msg_debug("Advancing grouping-by() current time because of timer tick",
-                evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
+                evt_tag_long("utc", timer_wheel_get_time(self->correlation->timer_wheel)),
                 log_pipe_location_tag(&self->super.super.super));
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
 
@@ -386,7 +384,7 @@ _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
       msg_debug("Correlation context lookup failure, starting a new context",
                 evt_tag_str("key", key.session_id),
                 evt_tag_int("timeout", self->timeout),
-                evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
+                evt_tag_int("expiration", timer_wheel_get_time(self->correlation->timer_wheel) + self->timeout),
                 log_pipe_location_tag(&self->super.super.super));
 
       context = correlation_context_new(&key);
@@ -398,7 +396,7 @@ _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
       msg_debug("Correlation context lookup successful",
                 evt_tag_str("key", key.session_id),
                 evt_tag_int("timeout", self->timeout),
-                evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
+                evt_tag_int("expiration", timer_wheel_get_time(self->correlation->timer_wheel) + self->timeout),
                 evt_tag_int("num_messages", context->messages->len),
                 log_pipe_location_tag(&self->super.super.super));
     }
@@ -427,7 +425,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 
       /* close down state */
       if (context->timer)
-        timer_wheel_del_timer(self->timer_wheel, context->timer);
+        timer_wheel_del_timer(self->correlation->timer_wheel, context->timer);
 
       LogMessage *genmsg = grouping_by_update_context_and_generate_msg(self, context);
 
@@ -449,11 +447,11 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 
       if (context->timer)
         {
-          timer_wheel_mod_timer(self->timer_wheel, context->timer, self->timeout);
+          timer_wheel_mod_timer(self->correlation->timer_wheel, context->timer, self->timeout);
         }
       else
         {
-          context->timer = timer_wheel_add_timer(self->timer_wheel, self->timeout, grouping_by_expire_entry,
+          context->timer = timer_wheel_add_timer(self->correlation->timer_wheel, self->timeout, grouping_by_expire_entry,
                                                  correlation_context_ref(context), (GDestroyNotify) correlation_context_unref);
         }
     }
@@ -494,14 +492,12 @@ _load_correlation_state(GroupingBy *self, GlobalConfig *cfg)
   if (persist_data)
     {
       self->correlation = persist_data->correlation;
-      self->timer_wheel = persist_data->timer_wheel;
-      timer_wheel_set_associated_data(self->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
+      timer_wheel_set_associated_data(self->correlation->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
     }
   else
     {
       self->correlation = correlation_state_new();
-      self->timer_wheel = timer_wheel_new();
-      timer_wheel_set_associated_data(self->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
+      timer_wheel_set_associated_data(self->correlation->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
     }
   g_free(persist_data);
 }
@@ -557,12 +553,10 @@ _store_data_in_persist(GroupingBy *self, GlobalConfig *cfg)
 {
   GroupingByPersistData *persist_data = g_new0(GroupingByPersistData, 1);
   persist_data->correlation = self->correlation;
-  persist_data->timer_wheel = self->timer_wheel;
 
   cfg_persist_config_add(cfg, grouping_by_format_persist_name(&self->super.super), persist_data,
                          (GDestroyNotify) _free_persist_data, FALSE);
   self->correlation = NULL;
-  self->timer_wheel = NULL;
 }
 
 static gboolean

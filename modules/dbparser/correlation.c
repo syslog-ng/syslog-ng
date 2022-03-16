@@ -29,6 +29,7 @@ correlation_state_init_instance(CorrelationState *self)
 {
   self->state = g_hash_table_new_full(correlation_key_hash, correlation_key_equal, NULL,
                                       (GDestroyNotify) correlation_context_unref);
+  self->timer_wheel = timer_wheel_new();
 }
 
 void
@@ -36,6 +37,7 @@ correlation_state_deinit_instance(CorrelationState *self)
 {
   if (self->state)
     g_hash_table_destroy(self->state);
+  timer_wheel_free(self->timer_wheel);
 }
 
 CorrelationState *

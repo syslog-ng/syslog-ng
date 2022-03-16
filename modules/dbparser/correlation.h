@@ -25,10 +25,12 @@
 
 #include "syslog-ng.h"
 #include "correlation-key.h"
+#include "timerwheel.h"
 
 typedef struct _CorrelationState
 {
   GHashTable *state;
+  TimerWheel *timer_wheel;
 } CorrelationState;
 
 void correlation_state_init_instance(CorrelationState *self);
