@@ -313,7 +313,11 @@ __parse_usec(const guchar **data, gint *length)
 {
   guint32 usec = 0;
   const guchar *src = *data;
-  if (*length > 0 && *src == '.')
+
+  /* Fractions of a second are in most cases using a dot, but some devices
+   * use a comma (e.g.  Aruba) to separate the fractions of a seconds part */
+
+  if (*length > 0 && (*src == '.' || *src == ','))
     {
       gulong frac = 0;
       gint div = 1;
