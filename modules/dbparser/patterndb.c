@@ -446,7 +446,7 @@ pattern_db_timer_tick(PatternDB *self)
   glong diff;
   PDBProcessParams process_params = {0};
 
-  g_rw_lock_writer_lock(&self->correlation.lock);
+  g_mutex_lock(&self->correlation.lock);
   cached_g_current_time(&now);
   diff = g_time_val_diff(&now, &self->correlation.last_tick);
 
@@ -471,7 +471,7 @@ pattern_db_timer_tick(PatternDB *self)
       self->correlation.last_tick = now;
     }
 
-  g_rw_lock_writer_unlock(&self->correlation.lock);
+  g_mutex_unlock(&self->correlation.lock);
   _flush_emitted_messages(self, &process_params);
 }
 
@@ -504,10 +504,10 @@ pattern_db_advance_time(PatternDB *self, gint timeout)
   PDBProcessParams process_params= {0};
   time_t new_time;
 
-  g_rw_lock_writer_lock(&self->correlation.lock);
+  g_mutex_lock(&self->correlation.lock);
   new_time = timer_wheel_get_time(self->correlation.timer_wheel) + timeout;
   timer_wheel_set_time(self->correlation.timer_wheel, new_time, &process_params);
-  g_rw_lock_writer_unlock(&self->correlation.lock);
+  g_mutex_unlock(&self->correlation.lock);
   _flush_emitted_messages(self, &process_params);
 }
 
@@ -580,7 +580,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
   LogMessage *msg = process_params->msg;
   GString *buffer = g_string_sized_new(32);
 
-  g_rw_lock_writer_lock(&self->correlation.lock);
+  g_mutex_lock(&self->correlation.lock);
   if (rule->context.id_template)
     {
       CorrelationKey key;
@@ -643,7 +643,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
   _execute_rule_actions(self, process_params, RAT_MATCH);
 
   pdb_rule_unref(rule);
-  g_rw_lock_writer_unlock(&self->correlation.lock);
+  g_mutex_unlock(&self->correlation.lock);
 
   if (context)
     log_msg_write_protect(msg);
@@ -656,9 +656,9 @@ _pattern_db_advance_time_and_flush_expired(PatternDB *self, LogMessage *msg)
 {
   PDBProcessParams process_params = {0};
 
-  g_rw_lock_writer_lock(&self->correlation.lock);
+  g_mutex_lock(&self->correlation.lock);
   _advance_time_based_on_message(self, &process_params, &msg->timestamps[LM_TS_STAMP]);
-  g_rw_lock_writer_unlock(&self->correlation.lock);
+  g_mutex_unlock(&self->correlation.lock);
   _flush_emitted_messages(self, &process_params);
 }
 
@@ -731,9 +731,9 @@ pattern_db_expire_state(PatternDB *self)
 {
   PDBProcessParams process_params = {0};
 
-  g_rw_lock_writer_lock(&self->correlation.lock);
+  g_mutex_lock(&self->correlation.lock);
   timer_wheel_expire_all(self->correlation.timer_wheel, &process_params);
-  g_rw_lock_writer_unlock(&self->correlation.lock);
+  g_mutex_unlock(&self->correlation.lock);
   _flush_emitted_messages(self, &process_params);
 
 }

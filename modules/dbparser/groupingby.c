@@ -232,7 +232,7 @@ _grouping_by_timer_tick(GroupingBy *self)
 
   GPMessageEmitter msg_emitter = {0};
 
-  g_rw_lock_writer_lock(&self->correlation->lock);
+  g_mutex_lock(&self->correlation->lock);
   cached_g_current_time(&now);
   diff = g_time_val_diff(&now, &self->correlation->last_tick);
 
@@ -257,7 +257,7 @@ _grouping_by_timer_tick(GroupingBy *self)
        */
       self->correlation->last_tick = now;
     }
-  g_rw_lock_writer_unlock(&self->correlation->lock);
+  g_mutex_unlock(&self->correlation->lock);
   _flush_emitted_messages(self, &msg_emitter);
 }
 
@@ -407,7 +407,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 {
   GPMessageEmitter msg_emitter = {0};
 
-  g_rw_lock_writer_lock(&self->correlation->lock);
+  g_mutex_lock(&self->correlation->lock);
   grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP], &msg_emitter);
 
   CorrelationContext *context = _lookup_or_create_context(self, msg);
@@ -427,7 +427,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 
       LogMessage *genmsg = grouping_by_update_context_and_generate_msg(self, context);
 
-      g_rw_lock_writer_unlock(&self->correlation->lock);
+      g_mutex_unlock(&self->correlation->lock);
       _flush_emitted_messages(self, &msg_emitter);
 
       if (genmsg)
@@ -456,7 +456,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 
   log_msg_write_protect(msg);
 
-  g_rw_lock_writer_unlock(&self->correlation->lock);
+  g_mutex_unlock(&self->correlation->lock);
   _flush_emitted_messages(self, &msg_emitter);
 
   return TRUE;
