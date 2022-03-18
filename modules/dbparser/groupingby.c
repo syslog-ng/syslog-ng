@@ -37,7 +37,6 @@ typedef struct _GroupingBy
   StatefulParser super;
   GMutex lock;
   struct iv_timer tick;
-  GTimeVal last_tick;
   CorrelationState *correlation;
   LogTemplate *key_template;
   LogTemplate *sort_key_template;
@@ -207,7 +206,7 @@ grouping_by_set_time(GroupingBy *self, const UnixTime *ls, GPMessageEmitter *msg
    * correlation engine too much. */
 
   cached_g_current_time(&now);
-  self->last_tick = now;
+  self->correlation->last_tick = now;
 
   if (ls->ut_sec < now.tv_sec)
     now.tv_sec = ls->ut_sec;
@@ -236,7 +235,7 @@ _grouping_by_timer_tick(GroupingBy *self)
 
   g_mutex_lock(&self->lock);
   cached_g_current_time(&now);
-  diff = g_time_val_diff(&now, &self->last_tick);
+  diff = g_time_val_diff(&now, &self->correlation->last_tick);
 
   if (diff > 1e6)
     {
@@ -248,8 +247,8 @@ _grouping_by_timer_tick(GroupingBy *self)
                 log_pipe_location_tag(&self->super.super.super));
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
 
-      self->last_tick = now;
-      g_time_val_add(&self->last_tick, - (glong)(diff - diff_sec * 1e6));
+      self->correlation->last_tick = now;
+      g_time_val_add(&self->correlation->last_tick, - (glong)(diff - diff_sec * 1e6));
     }
   else if (diff < 0)
     {
@@ -257,7 +256,7 @@ _grouping_by_timer_tick(GroupingBy *self)
        * is changed.  We don't update patterndb's idea of the time now, wait
        * another tick instead to update that instead.
        */
-      self->last_tick = now;
+      self->correlation->last_tick = now;
     }
   g_mutex_unlock(&self->lock);
   _flush_emitted_messages(self, &msg_emitter);
@@ -618,7 +617,6 @@ grouping_by_new(GlobalConfig *cfg)
   self->super.super.process = grouping_by_process;
   g_mutex_init(&self->lock);
   self->scope = RCS_GLOBAL;
-  cached_g_current_time(&self->last_tick);
   self->timeout = -1;
   return &self->super.super;
 }

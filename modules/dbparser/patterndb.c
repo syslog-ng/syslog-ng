@@ -66,8 +66,6 @@ struct _PatternDB
   CorrelationState correlation;
   LogTemplate *program_template;
   GHashTable *rate_limits;
-  GTimeVal last_tick;
-
   PatternDBEmitFunc emit;
   gpointer emit_data;
 };
@@ -450,7 +448,7 @@ pattern_db_timer_tick(PatternDB *self)
 
   g_rw_lock_writer_lock(&self->lock);
   cached_g_current_time(&now);
-  diff = g_time_val_diff(&now, &self->last_tick);
+  diff = g_time_val_diff(&now, &self->correlation.last_tick);
 
   if (diff > 1e6)
     {
@@ -461,8 +459,8 @@ pattern_db_timer_tick(PatternDB *self)
                 evt_tag_long("utc", timer_wheel_get_time(self->correlation.timer_wheel)));
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
 
-      self->last_tick = now;
-      g_time_val_add(&self->last_tick, - (glong)(diff - diff_sec * 1e6));
+      self->correlation.last_tick = now;
+      g_time_val_add(&self->correlation.last_tick, - (glong)(diff - diff_sec * 1e6));
     }
   else if (diff < 0)
     {
@@ -470,7 +468,7 @@ pattern_db_timer_tick(PatternDB *self)
        * is changed.  We don't update patterndb's idea of the time now, wait
        * another tick instead to update that instead.
        */
-      self->last_tick = now;
+      self->correlation.last_tick = now;
     }
 
   g_rw_lock_writer_unlock(&self->lock);
@@ -489,7 +487,7 @@ _advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params
    * correlation engine too much. */
 
   cached_g_current_time(&now);
-  self->last_tick = now;
+  self->correlation.last_tick = now;
 
   if (ls->ut_sec < now.tv_sec)
     now.tv_sec = ls->ut_sec;
@@ -772,7 +770,6 @@ pattern_db_new(void)
 
   self->ruleset = pdb_rule_set_new();
   _init_state(self);
-  cached_g_current_time(&self->last_tick);
   g_rw_lock_init(&self->lock);
   return self;
 }

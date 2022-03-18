@@ -31,6 +31,7 @@ typedef struct _CorrelationState
 {
   GHashTable *state;
   TimerWheel *timer_wheel;
+  GTimeVal last_tick;
 } CorrelationState;
 
 void correlation_state_init_instance(CorrelationState *self);

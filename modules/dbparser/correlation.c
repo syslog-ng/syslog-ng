@@ -23,6 +23,7 @@
 #include "correlation.h"
 #include "correlation-key.h"
 #include "correlation-context.h"
+#include "timeutils/cache.h"
 
 void
 correlation_state_init_instance(CorrelationState *self)
@@ -30,6 +31,7 @@ correlation_state_init_instance(CorrelationState *self)
   self->state = g_hash_table_new_full(correlation_key_hash, correlation_key_equal, NULL,
                                       (GDestroyNotify) correlation_context_unref);
   self->timer_wheel = timer_wheel_new();
+  cached_g_current_time(&self->last_tick);
 }
 
 void
