@@ -221,7 +221,7 @@ _is_action_within_rate_limit(PatternDB *db, PDBProcessParams *process_params)
       g_string_free(buffer, TRUE);
     }
 
-  now = timer_wheel_get_time(db->correlation.timer_wheel);
+  now = correlation_state_get_time(&db->correlation);
   if (rl->last_check == 0)
     {
       rl->last_check = now;
@@ -336,7 +336,7 @@ _execute_action_create_context(PatternDB *db, PDBProcessParams *process_params)
             evt_tag_str("rule", rule->rule_id),
             evt_tag_str("context", buffer->str),
             evt_tag_int("context_timeout", syn_context->timeout),
-            evt_tag_int("context_expiration", timer_wheel_get_time(db->correlation.timer_wheel) + syn_context->timeout));
+            evt_tag_int("context_expiration", correlation_state_get_time(&db->correlation) + syn_context->timeout));
 
   correlation_key_init(&key, syn_context->scope, context_msg, buffer->str);
   new_context = pdb_context_new(&key);
@@ -418,7 +418,7 @@ pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpoi
 
   msg_debug("Expiring patterndb correlation context",
             evt_tag_str("last_rule", context->rule->rule_id),
-            evt_tag_long("utc", timer_wheel_get_time(pdb->correlation.timer_wheel)));
+            evt_tag_long("utc", correlation_state_get_time(&pdb->correlation)));
   process_params->context = context;
   process_params->rule = context->rule;
   process_params->msg = msg;
@@ -447,7 +447,7 @@ pattern_db_timer_tick(PatternDB *self)
   if (correlation_state_timer_tick(&self->correlation, &process_params))
     {
       msg_debug("Advancing patterndb current time because of timer tick",
-                evt_tag_long("utc", timer_wheel_get_time(self->correlation.timer_wheel)));
+                evt_tag_long("utc", correlation_state_get_time(&self->correlation)));
     }
   _flush_emitted_messages(self, &process_params);
 }
@@ -459,7 +459,7 @@ _advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params
   correlation_state_set_time(&self->correlation, ls->ut_sec, process_params);
 
   msg_debug("Advancing patterndb current time because of an incoming message",
-            evt_tag_long("utc", timer_wheel_get_time(self->correlation.timer_wheel)));
+            evt_tag_long("utc", correlation_state_get_time(&self->correlation)));
 }
 
 void
@@ -560,7 +560,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
                     evt_tag_str("rule", rule->rule_id),
                     evt_tag_str("context", buffer->str),
                     evt_tag_int("context_timeout", rule->context.timeout),
-                    evt_tag_int("context_expiration", timer_wheel_get_time(self->correlation.timer_wheel) + rule->context.timeout));
+                    evt_tag_int("context_expiration", correlation_state_get_time(&self->correlation) + rule->context.timeout));
           context = pdb_context_new(&key);
           g_hash_table_insert(self->correlation.state, &context->super.key, context);
           g_string_steal(buffer);
@@ -571,7 +571,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
                     evt_tag_str("rule", rule->rule_id),
                     evt_tag_str("context", buffer->str),
                     evt_tag_int("context_timeout", rule->context.timeout),
-                    evt_tag_int("context_expiration", timer_wheel_get_time(self->correlation.timer_wheel) + rule->context.timeout),
+                    evt_tag_int("context_expiration", correlation_state_get_time(&self->correlation) + rule->context.timeout),
                     evt_tag_int("num_messages", context->super.messages->len));
         }
 

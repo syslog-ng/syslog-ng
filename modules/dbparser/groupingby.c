@@ -199,7 +199,7 @@ grouping_by_set_time(GroupingBy *self, const UnixTime *ls, GPMessageEmitter *msg
 {
   correlation_state_set_time(self->correlation, ls->ut_sec, msg_emitter);
   msg_debug("Advancing grouping-by() current time because of an incoming message",
-            evt_tag_long("utc", timer_wheel_get_time(self->correlation->timer_wheel)),
+            evt_tag_long("utc", correlation_state_get_time(self->correlation)),
             log_pipe_location_tag(&self->super.super.super));
 }
 
@@ -219,7 +219,7 @@ _grouping_by_timer_tick(GroupingBy *self)
   if (correlation_state_timer_tick(self->correlation, &msg_emitter))
     {
       msg_debug("Advancing grouping-by() current time because of timer tick",
-                evt_tag_long("utc", timer_wheel_get_time(self->correlation->timer_wheel)),
+                evt_tag_long("utc", correlation_state_get_time(self->correlation)),
                 log_pipe_location_tag(&self->super.super.super));
     }
   _flush_emitted_messages(self, &msg_emitter);
@@ -306,7 +306,7 @@ grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpo
   GroupingBy *self = (GroupingBy *) timer_wheel_get_associated_data(wheel);
 
   msg_debug("Expiring grouping-by() correlation context",
-            evt_tag_long("utc", timer_wheel_get_time(wheel)),
+            evt_tag_long("utc", correlation_state_get_time(self->correlation)),
             evt_tag_str("context-id", context->key.session_id),
             log_pipe_location_tag(&self->super.super.super));
 
@@ -346,7 +346,7 @@ _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
       msg_debug("Correlation context lookup failure, starting a new context",
                 evt_tag_str("key", key.session_id),
                 evt_tag_int("timeout", self->timeout),
-                evt_tag_int("expiration", timer_wheel_get_time(self->correlation->timer_wheel) + self->timeout),
+                evt_tag_int("expiration", correlation_state_get_time(self->correlation) + self->timeout),
                 log_pipe_location_tag(&self->super.super.super));
 
       context = correlation_context_new(&key);
@@ -358,7 +358,7 @@ _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
       msg_debug("Correlation context lookup successful",
                 evt_tag_str("key", key.session_id),
                 evt_tag_int("timeout", self->timeout),
-                evt_tag_int("expiration", timer_wheel_get_time(self->correlation->timer_wheel) + self->timeout),
+                evt_tag_int("expiration", correlation_state_get_time(self->correlation) + self->timeout),
                 evt_tag_int("num_messages", context->messages->len),
                 log_pipe_location_tag(&self->super.super.super));
     }

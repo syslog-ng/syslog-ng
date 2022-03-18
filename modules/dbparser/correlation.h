@@ -37,6 +37,7 @@ typedef struct _CorrelationState
 } CorrelationState;
 
 void correlation_state_set_time(CorrelationState *self, guint64 sec, gpointer caller_context);
+guint64 correlation_state_get_time(CorrelationState *self);
 gboolean correlation_state_timer_tick(CorrelationState *self, gpointer caller_context);
 
 void correlation_state_init_instance(CorrelationState *self);

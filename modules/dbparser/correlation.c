@@ -45,6 +45,12 @@ correlation_state_set_time(CorrelationState *self, guint64 sec, gpointer caller_
   timer_wheel_set_time(self->timer_wheel, now.tv_sec, caller_context);
 }
 
+guint64
+correlation_state_get_time(CorrelationState *self)
+{
+  return timer_wheel_get_time(self->timer_wheel);
+}
+
 gboolean
 correlation_state_timer_tick(CorrelationState *self, gpointer caller_context)
 {
