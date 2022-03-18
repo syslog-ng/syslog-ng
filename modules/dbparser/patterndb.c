@@ -61,6 +61,7 @@ typedef struct _PDBProcessParams
 
 struct _PatternDB
 {
+  GMutex ruleset_lock;
   PDBRuleSet *ruleset;
   CorrelationState correlation;
   LogTemplate *program_template;
@@ -523,11 +524,11 @@ pattern_db_reload_ruleset(PatternDB *self, GlobalConfig *cfg, const gchar *pdb_f
     }
   else
     {
-      g_rw_lock_writer_lock(&self->correlation.lock);
+      g_mutex_lock(&self->ruleset_lock);
       if (self->ruleset)
         pdb_rule_set_free(self->ruleset);
       self->ruleset = new_ruleset;
-      g_rw_lock_writer_unlock(&self->correlation.lock);
+      g_mutex_unlock(&self->ruleset_lock);
       return TRUE;
     }
 }
@@ -675,15 +676,15 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
   PDBProcessParams process_params_p = {0};
   PDBProcessParams *process_params = &process_params_p;
 
-  g_rw_lock_reader_lock(&self->correlation.lock);
+  g_mutex_lock(&self->ruleset_lock);
   if (_pattern_db_is_empty(self))
     {
-      g_rw_lock_reader_unlock(&self->correlation.lock);
+      g_mutex_unlock(&self->ruleset_lock);
       return FALSE;
     }
   process_params->rule = pdb_ruleset_lookup(self->ruleset, lookup, dbg_list);
   process_params->msg = msg;
-  g_rw_lock_reader_unlock(&self->correlation.lock);
+  g_mutex_unlock(&self->ruleset_lock);
 
   _pattern_db_advance_time_and_flush_expired(self, msg);
 
@@ -769,6 +770,7 @@ pattern_db_new(void)
   PatternDB *self = g_new0(PatternDB, 1);
 
   self->ruleset = pdb_rule_set_new();
+  g_mutex_init(&self->ruleset_lock);
   _init_state(self);
   return self;
 }
@@ -780,6 +782,7 @@ pattern_db_free(PatternDB *self)
   if (self->ruleset)
     pdb_rule_set_free(self->ruleset);
   _destroy_state(self);
+  g_mutex_clear(&self->ruleset_lock);
   g_free(self);
 }
 
