@@ -29,6 +29,7 @@
 
 typedef struct _CorrelationState
 {
+  GRWLock lock;
   GHashTable *state;
   TimerWheel *timer_wheel;
   GTimeVal last_tick;

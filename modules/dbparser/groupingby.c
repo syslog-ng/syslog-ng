@@ -35,7 +35,6 @@
 typedef struct _GroupingBy
 {
   StatefulParser super;
-  GMutex lock;
   struct iv_timer tick;
   CorrelationState *correlation;
   LogTemplate *key_template;
@@ -233,7 +232,7 @@ _grouping_by_timer_tick(GroupingBy *self)
 
   GPMessageEmitter msg_emitter = {0};
 
-  g_mutex_lock(&self->lock);
+  g_rw_lock_writer_lock(&self->correlation->lock);
   cached_g_current_time(&now);
   diff = g_time_val_diff(&now, &self->correlation->last_tick);
 
@@ -258,7 +257,7 @@ _grouping_by_timer_tick(GroupingBy *self)
        */
       self->correlation->last_tick = now;
     }
-  g_mutex_unlock(&self->lock);
+  g_rw_lock_writer_unlock(&self->correlation->lock);
   _flush_emitted_messages(self, &msg_emitter);
 }
 
@@ -408,7 +407,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 {
   GPMessageEmitter msg_emitter = {0};
 
-  g_mutex_lock(&self->lock);
+  g_rw_lock_writer_lock(&self->correlation->lock);
   grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP], &msg_emitter);
 
   CorrelationContext *context = _lookup_or_create_context(self, msg);
@@ -428,7 +427,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 
       LogMessage *genmsg = grouping_by_update_context_and_generate_msg(self, context);
 
-      g_mutex_unlock(&self->lock);
+      g_rw_lock_writer_unlock(&self->correlation->lock);
       _flush_emitted_messages(self, &msg_emitter);
 
       if (genmsg)
@@ -457,7 +456,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 
   log_msg_write_protect(msg);
 
-  g_mutex_unlock(&self->lock);
+  g_rw_lock_writer_unlock(&self->correlation->lock);
   _flush_emitted_messages(self, &msg_emitter);
 
   return TRUE;
@@ -592,7 +591,6 @@ grouping_by_free(LogPipe *s)
 {
   GroupingBy *self = (GroupingBy *) s;
 
-  g_mutex_clear(&self->lock);
   log_template_unref(self->key_template);
   log_template_unref(self->sort_key_template);
   if (self->synthetic_message)
@@ -615,7 +613,6 @@ grouping_by_new(GlobalConfig *cfg)
   self->super.super.super.deinit = grouping_by_deinit;
   self->super.super.super.clone = grouping_by_clone;
   self->super.super.process = grouping_by_process;
-  g_mutex_init(&self->lock);
   self->scope = RCS_GLOBAL;
   self->timeout = -1;
   return &self->super.super;
