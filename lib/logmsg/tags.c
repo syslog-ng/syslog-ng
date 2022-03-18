@@ -170,6 +170,7 @@ log_tags_reinit_stats(void)
 {
   gint id;
 
+  g_mutex_lock(&log_tags_lock);
   stats_lock();
 
   for (id = 0; id < log_tags_num; id++)
@@ -185,6 +186,7 @@ log_tags_reinit_stats(void)
     }
 
   stats_unlock();
+  g_mutex_unlock(&log_tags_lock);
 }
 
 void
