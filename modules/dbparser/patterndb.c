@@ -479,20 +479,7 @@ pattern_db_timer_tick(PatternDB *self)
 static void
 _advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params, const UnixTime *ls)
 {
-  GTimeVal now;
-
-  /* clamp the current time between the timestamp of the current message
-   * (low limit) and the current system time (high limit).  This ensures
-   * that incorrect clocks do not skew the current time know by the
-   * correlation engine too much. */
-
-  cached_g_current_time(&now);
-  self->correlation.last_tick = now;
-
-  if (ls->ut_sec < now.tv_sec)
-    now.tv_sec = ls->ut_sec;
-
-  timer_wheel_set_time(self->correlation.timer_wheel, now.tv_sec, process_params);
+  correlation_state_set_time(&self->correlation, ls->ut_sec, process_params);
 
   msg_debug("Advancing patterndb current time because of an incoming message",
             evt_tag_long("utc", timer_wheel_get_time(self->correlation.timer_wheel)));

@@ -197,20 +197,7 @@ grouping_by_set_synthetic_message(LogParser *s, SyntheticMessage *message)
 void
 grouping_by_set_time(GroupingBy *self, const UnixTime *ls, GPMessageEmitter *msg_emitter)
 {
-  GTimeVal now;
-
-  /* clamp the current time between the timestamp of the current message
-   * (low limit) and the current system time (high limit).  This ensures
-   * that incorrect clocks do not skew the current time know by the
-   * correlation engine too much. */
-
-  cached_g_current_time(&now);
-  self->correlation->last_tick = now;
-
-  if (ls->ut_sec < now.tv_sec)
-    now.tv_sec = ls->ut_sec;
-
-  timer_wheel_set_time(self->correlation->timer_wheel, now.tv_sec, msg_emitter);
+  correlation_state_set_time(self->correlation, ls->ut_sec, msg_emitter);
   msg_debug("Advancing grouping-by() current time because of an incoming message",
             evt_tag_long("utc", timer_wheel_get_time(self->correlation->timer_wheel)),
             log_pipe_location_tag(&self->super.super.super));

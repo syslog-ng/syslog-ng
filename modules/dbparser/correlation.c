@@ -26,6 +26,25 @@
 #include "timeutils/cache.h"
 
 void
+correlation_state_set_time(CorrelationState *self, guint64 sec, gpointer caller_context)
+{
+  GTimeVal now;
+
+  /* clamp the current time between the timestamp of the current message
+   * (low limit) and the current system time (high limit).  This ensures
+   * that incorrect clocks do not skew the current time know by the
+   * correlation engine too much. */
+
+  cached_g_current_time(&now);
+  self->last_tick = now;
+
+  if (sec < now.tv_sec)
+    now.tv_sec = sec;
+
+  timer_wheel_set_time(self->timer_wheel, now.tv_sec, caller_context);
+}
+
+void
 correlation_state_init_instance(CorrelationState *self)
 {
   g_mutex_init(&self->lock);

@@ -26,6 +26,7 @@
 #include "syslog-ng.h"
 #include "correlation-key.h"
 #include "timerwheel.h"
+#include "timeutils/unixtime.h"
 
 typedef struct _CorrelationState
 {
@@ -34,6 +35,8 @@ typedef struct _CorrelationState
   TimerWheel *timer_wheel;
   GTimeVal last_tick;
 } CorrelationState;
+
+void correlation_state_set_time(CorrelationState *self, guint64 sec, gpointer caller_context);
 
 void correlation_state_init_instance(CorrelationState *self);
 void correlation_state_deinit_instance(CorrelationState *self);
