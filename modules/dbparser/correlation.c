@@ -27,6 +27,53 @@
 #include "timeutils/misc.h"
 
 void
+correlation_state_tx_begin(CorrelationState *self)
+{
+  g_mutex_lock(&self->lock);
+}
+
+void
+correlation_state_tx_end(CorrelationState *self)
+{
+  g_mutex_unlock(&self->lock);
+}
+
+CorrelationContext *
+correlation_state_tx_lookup_context(CorrelationState *self, const CorrelationKey *key)
+{
+  return g_hash_table_lookup(self->state, key);
+}
+
+void
+correlation_state_tx_store_context(CorrelationState *self, CorrelationContext *context, gint timeout, TWCallbackFunc expire)
+{
+  g_assert(context->timer == NULL);
+
+  g_hash_table_insert(self->state, &context->key, context);
+  context->timer = timer_wheel_add_timer(self->timer_wheel, timeout, expire,
+                                         correlation_context_ref(context), (GDestroyNotify) correlation_context_unref);
+}
+
+void
+correlation_state_tx_remove_context(CorrelationState *self, CorrelationContext *context)
+{
+  /* NOTE: in expire callbacks our timer is already deleted and thus it is
+   * set to NULL in which case we don't need to remove it again.  */
+
+  if (context->timer)
+    timer_wheel_del_timer(self->timer_wheel, context->timer);
+  g_hash_table_remove(self->state, &context->key);
+}
+
+void
+correlation_state_tx_update_context(CorrelationState *self, CorrelationContext *context, gint timeout)
+{
+  g_assert(context->timer != NULL);
+
+  timer_wheel_mod_timer(self->timer_wheel, context->timer, timeout);
+}
+
+void
 correlation_state_set_time(CorrelationState *self, guint64 sec, gpointer caller_context)
 {
   GTimeVal now;

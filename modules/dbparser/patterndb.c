@@ -340,14 +340,11 @@ _execute_action_create_context(PatternDB *db, PDBProcessParams *process_params)
 
   correlation_key_init(&key, syn_context->scope, context_msg, buffer->str);
   new_context = pdb_context_new(&key);
-  g_hash_table_insert(db->correlation.state, &new_context->super.key, new_context);
+  correlation_state_tx_store_context(&db->correlation, &new_context->super, rule->context.timeout, pattern_db_expire_entry);
   g_string_free(buffer, FALSE);
 
   g_ptr_array_add(new_context->super.messages, context_msg);
 
-  new_context->super.timer = timer_wheel_add_timer(db->correlation.timer_wheel, rule->context.timeout, pattern_db_expire_entry,
-                                                   correlation_context_ref(&new_context->super),
-                                                   (GDestroyNotify) correlation_context_unref);
   new_context->rule = pdb_rule_ref(rule);
 }
 
@@ -424,7 +421,8 @@ pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpoi
   process_params->msg = msg;
 
   _execute_rule_actions(pdb, process_params, RAT_TIMEOUT);
-  g_hash_table_remove(pdb->correlation.state, &context->super.key);
+  context->super.timer = NULL;
+  correlation_state_tx_remove_context(&pdb->correlation, &context->super);
 
   /* pdb_context_free is automatically called when returning from
      this function by the timerwheel code as a destroy notify
@@ -544,7 +542,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
   LogMessage *msg = process_params->msg;
   GString *buffer = g_string_sized_new(32);
 
-  g_mutex_lock(&self->correlation.lock);
+  correlation_state_tx_begin(&self->correlation);
   if (rule->context.id_template)
     {
       CorrelationKey key;
@@ -553,7 +551,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
       log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
       correlation_key_init(&key, rule->context.scope, msg, buffer->str);
-      context = g_hash_table_lookup(self->correlation.state, &key);
+      context = (PDBContext *) correlation_state_tx_lookup_context(&self->correlation, &key);
       if (!context)
         {
           msg_debug("Correlation context lookup failure, starting a new context",
@@ -562,7 +560,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
                     evt_tag_int("context_timeout", rule->context.timeout),
                     evt_tag_int("context_expiration", correlation_state_get_time(&self->correlation) + rule->context.timeout));
           context = pdb_context_new(&key);
-          g_hash_table_insert(self->correlation.state, &context->super.key, context);
+          correlation_state_tx_store_context(&self->correlation, &context->super, rule->context.timeout, pattern_db_expire_entry);
           g_string_steal(buffer);
         }
       else
@@ -577,16 +575,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
 
       g_ptr_array_add(context->super.messages, log_msg_ref(msg));
 
-      if (context->super.timer)
-        {
-          timer_wheel_mod_timer(self->correlation.timer_wheel, context->super.timer, rule->context.timeout);
-        }
-      else
-        {
-          context->super.timer = timer_wheel_add_timer(self->correlation.timer_wheel, rule->context.timeout, pattern_db_expire_entry,
-                                                       correlation_context_ref(&context->super),
-                                                       (GDestroyNotify) correlation_context_unref);
-        }
+      correlation_state_tx_update_context(&self->correlation, &context->super, rule->context.timeout);
       if (context->rule != rule)
         {
           if (context->rule)
@@ -607,7 +596,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
   _execute_rule_actions(self, process_params, RAT_MATCH);
 
   pdb_rule_unref(rule);
-  g_mutex_unlock(&self->correlation.lock);
+  correlation_state_tx_end(&self->correlation);
 
   if (context)
     log_msg_write_protect(msg);
@@ -620,9 +609,9 @@ _pattern_db_advance_time_and_flush_expired(PatternDB *self, LogMessage *msg)
 {
   PDBProcessParams process_params = {0};
 
-  g_mutex_lock(&self->correlation.lock);
+  correlation_state_tx_begin(&self->correlation);
   _advance_time_based_on_message(self, &process_params, &msg->timestamps[LM_TS_STAMP]);
-  g_mutex_unlock(&self->correlation.lock);
+  correlation_state_tx_end(&self->correlation);
   _flush_emitted_messages(self, &process_params);
 }
 

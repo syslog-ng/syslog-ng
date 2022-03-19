@@ -289,7 +289,7 @@ grouping_by_update_context_and_generate_msg(GroupingBy *self, CorrelationContext
 
   LogMessage *msg = grouping_by_generate_synthetic_msg(self, context);
 
-  g_hash_table_remove(self->correlation->state, &context->key);
+  correlation_state_tx_remove_context(self->correlation, context);
 
   /* correlation_context_free is automatically called when returning from
      this function by the timerwheel code as a destroy notify
@@ -310,6 +310,7 @@ grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpo
             evt_tag_str("context-id", context->key.session_id),
             log_pipe_location_tag(&self->super.super.super));
 
+  context->timer = NULL;
   LogMessage *msg = grouping_by_update_context_and_generate_msg(self, context);
   if (msg)
     {
@@ -340,7 +341,7 @@ _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
   log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
   correlation_key_init(&key, self->scope, msg, buffer->str);
-  context = g_hash_table_lookup(self->correlation->state, &key);
+  context = correlation_state_tx_lookup_context(self->correlation, &key);
   if (!context)
     {
       msg_debug("Correlation context lookup failure, starting a new context",
@@ -350,7 +351,7 @@ _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
                 log_pipe_location_tag(&self->super.super.super));
 
       context = correlation_context_new(&key);
-      g_hash_table_insert(self->correlation->state, &context->key, context);
+      correlation_state_tx_store_context(self->correlation, context, self->timeout, grouping_by_expire_entry);
       g_string_steal(buffer);
     }
   else
@@ -371,7 +372,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 {
   GPMessageEmitter msg_emitter = {0};
 
-  g_mutex_lock(&self->correlation->lock);
+  correlation_state_tx_begin(self->correlation);
   grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP], &msg_emitter);
 
   CorrelationContext *context = _lookup_or_create_context(self, msg);
@@ -386,12 +387,9 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
                   log_pipe_location_tag(&self->super.super.super));
 
       /* close down state */
-      if (context->timer)
-        timer_wheel_del_timer(self->correlation->timer_wheel, context->timer);
-
       LogMessage *genmsg = grouping_by_update_context_and_generate_msg(self, context);
 
-      g_mutex_unlock(&self->correlation->lock);
+      correlation_state_tx_end(self->correlation);
       _flush_emitted_messages(self, &msg_emitter);
 
       if (genmsg)
@@ -406,21 +404,12 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
     }
   else
     {
-
-      if (context->timer)
-        {
-          timer_wheel_mod_timer(self->correlation->timer_wheel, context->timer, self->timeout);
-        }
-      else
-        {
-          context->timer = timer_wheel_add_timer(self->correlation->timer_wheel, self->timeout, grouping_by_expire_entry,
-                                                 correlation_context_ref(context), (GDestroyNotify) correlation_context_unref);
-        }
+      correlation_state_tx_update_context(self->correlation, context, self->timeout);
     }
 
   log_msg_write_protect(msg);
 
-  g_mutex_unlock(&self->correlation->lock);
+  correlation_state_tx_end(self->correlation);
   _flush_emitted_messages(self, &msg_emitter);
 
   return TRUE;
