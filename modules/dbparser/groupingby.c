@@ -214,37 +214,14 @@ grouping_by_set_time(GroupingBy *self, const UnixTime *ls, GPMessageEmitter *msg
 void
 _grouping_by_timer_tick(GroupingBy *self)
 {
-  GTimeVal now;
-  glong diff;
-
   GPMessageEmitter msg_emitter = {0};
 
-  g_mutex_lock(&self->correlation->lock);
-  cached_g_current_time(&now);
-  diff = g_time_val_diff(&now, &self->correlation->last_tick);
-
-  if (diff > 1e6)
+  if (correlation_state_timer_tick(self->correlation, &msg_emitter))
     {
-      glong diff_sec = (glong)(diff / 1e6);
-
-      timer_wheel_set_time(self->correlation->timer_wheel, timer_wheel_get_time(self->correlation->timer_wheel) + diff_sec, &msg_emitter);
       msg_debug("Advancing grouping-by() current time because of timer tick",
                 evt_tag_long("utc", timer_wheel_get_time(self->correlation->timer_wheel)),
                 log_pipe_location_tag(&self->super.super.super));
-      /* update last_tick, take the fraction of the seconds not calculated into this update into account */
-
-      self->correlation->last_tick = now;
-      g_time_val_add(&self->correlation->last_tick, - (glong)(diff - diff_sec * 1e6));
     }
-  else if (diff < 0)
-    {
-      /* time moving backwards, this can only happen if the computer's time
-       * is changed.  We don't update patterndb's idea of the time now, wait
-       * another tick instead to update that instead.
-       */
-      self->correlation->last_tick = now;
-    }
-  g_mutex_unlock(&self->correlation->lock);
   _flush_emitted_messages(self, &msg_emitter);
 }
 

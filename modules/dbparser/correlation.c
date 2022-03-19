@@ -24,6 +24,7 @@
 #include "correlation-key.h"
 #include "correlation-context.h"
 #include "timeutils/cache.h"
+#include "timeutils/misc.h"
 
 void
 correlation_state_set_time(CorrelationState *self, guint64 sec, gpointer caller_context)
@@ -42,6 +43,40 @@ correlation_state_set_time(CorrelationState *self, guint64 sec, gpointer caller_
     now.tv_sec = sec;
 
   timer_wheel_set_time(self->timer_wheel, now.tv_sec, caller_context);
+}
+
+gboolean
+correlation_state_timer_tick(CorrelationState *self, gpointer caller_context)
+{
+  GTimeVal now;
+  glong diff;
+  gboolean updated = FALSE;
+
+  g_mutex_lock(&self->lock);
+  cached_g_current_time(&now);
+  diff = g_time_val_diff(&now, &self->last_tick);
+
+  if (diff > 1e6)
+    {
+      glong diff_sec = (glong)(diff / 1e6);
+
+      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec, caller_context);
+      /* update last_tick, take the fraction of the seconds not calculated into this update into account */
+
+      self->last_tick = now;
+      g_time_val_add(&self->last_tick, - (glong)(diff - diff_sec * 1e6));
+      updated = TRUE;
+    }
+  else if (diff < 0)
+    {
+      /* time moving backwards, this can only happen if the computer's time
+       * is changed.  We don't update patterndb's idea of the time now, wait
+       * another tick instead to update that instead.
+       */
+      self->last_tick = now;
+    }
+  g_mutex_unlock(&self->lock);
+  return updated;
 }
 
 void
