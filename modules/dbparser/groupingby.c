@@ -40,6 +40,7 @@ typedef struct _GroupingBy
   LogTemplate *key_template;
   LogTemplate *sort_key_template;
   gint timeout;
+  gint clone_id;
   CorrelationScope scope;
   SyntheticMessage *synthetic_message;
   FilterExprNode *trigger_condition_expr;
@@ -127,6 +128,7 @@ grouping_by_set_synthetic_message(LogParser *s, SyntheticMessage *message)
     synthetic_message_free(self->synthetic_message);
   self->synthetic_message = message;
 }
+
 
 /* This function is called to populate the emitted_messages array in
  * msg_emitter.  It only manipulates per-thread data structure so it does
@@ -420,17 +422,20 @@ _format_persist_name(const LogPipe *s)
   static gchar persist_name[512];
   GroupingBy *self = (GroupingBy *)s;
 
-  g_snprintf(persist_name, sizeof(persist_name), "grouping-by(%s)", self->key_template->template);
+  g_snprintf(persist_name, sizeof(persist_name), "grouping-by(%s,scope=%d,clone=%d)", self->key_template->template, self->scope, self->clone_id);
   return persist_name;
 }
 
 static void
 _load_correlation_state(GroupingBy *self, GlobalConfig *cfg)
 {
-  self->correlation = cfg_persist_config_fetch(cfg,
-                                               log_pipe_get_persist_name(&self->super.super.super));
-  if (!self->correlation)
-    self->correlation = correlation_state_new();
+  CorrelationState *persisted_correlation = cfg_persist_config_fetch(cfg,
+                                                                     log_pipe_get_persist_name(&self->super.super.super));
+  if (persisted_correlation)
+    {
+      correlation_state_unref(self->correlation);
+      self->correlation = persisted_correlation;
+    }
 
   timer_wheel_set_associated_data(self->correlation->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
 }
@@ -508,14 +513,23 @@ _deinit(LogPipe *s)
 static LogPipe *
 _clone(LogPipe *s)
 {
-  LogParser *cloned;
   GroupingBy *self = (GroupingBy *) s;
+  GroupingBy *cloned;
 
-  /* FIXME: share state between clones! */
-  cloned = grouping_by_new(s->cfg);
-  grouping_by_set_key_template(cloned, self->key_template);
-  grouping_by_set_timeout(cloned, self->timeout);
-  return &cloned->super;
+  cloned = (GroupingBy *) grouping_by_new(s->cfg);
+  grouping_by_set_key_template(&cloned->super.super, self->key_template);
+  grouping_by_set_sort_key_template(&cloned->super.super, self->sort_key_template);
+  grouping_by_set_timeout(&cloned->super.super, self->timeout);
+  grouping_by_set_scope(&cloned->super.super, self->scope);
+  grouping_by_set_synthetic_message(&cloned->super.super, self->synthetic_message);
+  grouping_by_set_trigger_condition(&cloned->super.super, filter_expr_clone(self->trigger_condition_expr));
+  grouping_by_set_where_condition(&cloned->super.super, filter_expr_clone(self->where_condition_expr));
+  grouping_by_set_having_condition(&cloned->super.super, filter_expr_clone(self->having_condition_expr));
+
+  correlation_state_unref(cloned->correlation);
+  cloned->correlation = correlation_state_ref(self->correlation);
+  cloned->clone_id = self->clone_id++;
+  return &cloned->super.super.super;
 }
 
 static void
@@ -549,6 +563,7 @@ grouping_by_new(GlobalConfig *cfg)
   self->super.super.process = _process;
   self->scope = RCS_GLOBAL;
   self->timeout = -1;
+  self->correlation = correlation_state_new();
   return &self->super.super;
 }
 
