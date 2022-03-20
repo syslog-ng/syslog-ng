@@ -605,9 +605,7 @@ _pattern_db_advance_time_and_flush_expired(PatternDB *self, LogMessage *msg)
 {
   PDBProcessParams process_params = {0};
 
-  correlation_state_tx_begin(&self->correlation);
   _advance_time_based_on_message(self, &process_params, &msg->timestamps[LM_TS_STAMP]);
-  correlation_state_tx_end(&self->correlation);
   _flush_emitted_messages(self, &process_params);
 }
 

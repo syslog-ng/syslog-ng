@@ -375,8 +375,9 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 {
   GPMessageEmitter msg_emitter = {0};
 
-  correlation_state_tx_begin(self->correlation);
   _advance_time_based_on_message(self, &msg->timestamps[LM_TS_STAMP], &msg_emitter);
+
+  correlation_state_tx_begin(self->correlation);
 
   CorrelationContext *context = _lookup_or_create_context(self, msg);
   g_ptr_array_add(context->messages, log_msg_ref(msg));

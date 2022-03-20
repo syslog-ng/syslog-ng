@@ -108,7 +108,9 @@ correlation_state_set_time(CorrelationState *self, guint64 sec, gpointer caller_
   if (sec < now.tv_sec)
     now.tv_sec = sec;
 
+  g_mutex_lock(&self->lock);
   timer_wheel_set_time(self->timer_wheel, now.tv_sec, caller_context);
+  g_mutex_unlock(&self->lock);
 }
 
 guint64
