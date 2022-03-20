@@ -1366,17 +1366,18 @@ cfg_tree_compile(CfgTree *self)
 static gboolean
 _verify_unique_persist_names_among_pipes(const GPtrArray *initialized_pipes)
 {
-  GHashTable *pipe_persist_names = g_hash_table_new(g_str_hash, g_str_equal);
+  GHashTable *pipe_persist_names = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   gboolean result = TRUE;
 
   for (gint i = 0; i < initialized_pipes->len; ++i)
     {
       LogPipe *current_pipe = g_ptr_array_index(initialized_pipes, i);
-      const gchar *current_pipe_name = log_pipe_get_persist_name(current_pipe);
+      const gchar *current_pipe_name = g_strdup(log_pipe_get_persist_name(current_pipe));
 
       if (current_pipe_name != NULL)
         {
-          if (g_hash_table_lookup_extended(pipe_persist_names, current_pipe_name, NULL, NULL))
+          LogPipe *other_pipe = g_hash_table_lookup(pipe_persist_names, current_pipe_name);
+          if (other_pipe)
             {
               msg_error("Error checking the uniqueness of the persist names, please override it "
                         "with persist-name option. Shutting down.",
@@ -1387,8 +1388,8 @@ _verify_unique_persist_names_among_pipes(const GPtrArray *initialized_pipes)
           else
             {
               g_hash_table_replace(pipe_persist_names,
-                                   (gpointer)current_pipe_name,
-                                   (gpointer)current_pipe_name);
+                                   (gpointer) current_pipe_name,
+                                   current_pipe);
             }
         }
     }
