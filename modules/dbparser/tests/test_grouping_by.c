@@ -28,9 +28,9 @@
 #include "cfg.h"
 
 static LogTemplate *
-_get_template(const gchar *template, GlobalConfig *cfg)
+_get_template(const gchar *template)
 {
-  LogTemplate *self = log_template_new(cfg, "dummy");
+  LogTemplate *self = log_template_new(configuration, NULL);
 
   cr_assert(log_template_compile(self, template, NULL));
 
@@ -39,14 +39,13 @@ _get_template(const gchar *template, GlobalConfig *cfg)
 
 Test(grouping_by, create_grouping_by)
 {
-  GlobalConfig *cfg = cfg_new_snippet();
-  LogParser *parser = grouping_by_new(cfg);
+  LogParser *parser = grouping_by_new(configuration);
 
   grouping_by_set_synthetic_message(parser, synthetic_message_new());
 
   grouping_by_set_timeout(parser, 1);
 
-  LogTemplate *template = _get_template("$TEMPLATE", cfg);
+  LogTemplate *template = _get_template("$TEMPLATE");
   grouping_by_set_key_template(parser, template);
   log_template_unref(template);
 
@@ -55,21 +54,19 @@ Test(grouping_by, create_grouping_by)
   cr_assert(log_pipe_deinit(&parser->super));
 
   log_pipe_unref(&parser->super);
-  cfg_free(cfg);
 }
 
 Test(grouping_by, cfg_persist_name_not_equal)
 {
-  GlobalConfig *cfg = cfg_new_snippet();
-  LogParser *parser = grouping_by_new(cfg);
+  LogParser *parser = grouping_by_new(configuration);
 
-  LogTemplate *template = _get_template("$TEMPLATE1", cfg);
+  LogTemplate *template = _get_template("$TEMPLATE1");
   grouping_by_set_key_template(parser, template);
   log_template_unref(template);
 
   gchar *persist_name1 = g_strdup(log_pipe_get_persist_name(&parser->super));
 
-  template = _get_template("$TEMPLATE2", cfg);
+  template = _get_template("$TEMPLATE2");
   grouping_by_set_key_template(parser, template);
   log_template_unref(template);
 
@@ -81,21 +78,19 @@ Test(grouping_by, cfg_persist_name_not_equal)
   g_free(persist_name2);
 
   log_pipe_unref(&parser->super);
-  cfg_free(cfg);
 }
 
 Test(grouping_by, cfg_persist_name_equal)
 {
-  GlobalConfig *cfg = cfg_new_snippet();
-  LogParser *parser = grouping_by_new(cfg);
+  LogParser *parser = grouping_by_new(configuration);
 
-  LogTemplate *template = _get_template("$TEMPLATE1", cfg);
+  LogTemplate *template = _get_template("$TEMPLATE1");
   grouping_by_set_key_template(parser, template);
   log_template_unref(template);
 
   gchar *persist_name1 = g_strdup(log_pipe_get_persist_name(&parser->super));
 
-  template = _get_template("$TEMPLATE1", cfg);
+  template = _get_template("$TEMPLATE1");
   grouping_by_set_key_template(parser, template);
   log_template_unref(template);
 
@@ -107,18 +102,19 @@ Test(grouping_by, cfg_persist_name_equal)
   g_free(persist_name2);
 
   log_pipe_unref(&parser->super);
-  cfg_free(cfg);
 }
 
 static void
 setup(void)
 {
   app_startup();
-};
+  configuration = cfg_new_snippet();
+}
 
 static void
 teardown(void)
 {
+  cfg_free(configuration);
   app_shutdown();
 }
 
