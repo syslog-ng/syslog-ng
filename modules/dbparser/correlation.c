@@ -74,6 +74,14 @@ correlation_state_tx_update_context(CorrelationState *self, CorrelationContext *
 }
 
 void
+correlation_state_expire_all(CorrelationState *self, gpointer caller_context)
+{
+  g_mutex_lock(&self->lock);
+  timer_wheel_expire_all(self->timer_wheel, caller_context);
+  g_mutex_unlock(&self->lock);
+}
+
+void
 correlation_state_set_time(CorrelationState *self, guint64 sec, gpointer caller_context)
 {
   GTimeVal now;

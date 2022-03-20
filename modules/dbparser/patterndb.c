@@ -684,9 +684,7 @@ pattern_db_expire_state(PatternDB *self)
 {
   PDBProcessParams process_params = {0};
 
-  g_mutex_lock(&self->correlation.lock);
-  timer_wheel_expire_all(self->correlation.timer_wheel, &process_params);
-  g_mutex_unlock(&self->correlation.lock);
+  correlation_state_expire_all(&self->correlation, &process_params);
   _flush_emitted_messages(self, &process_params);
 
 }
