@@ -191,7 +191,7 @@ _flush_emitted_messages(GroupingBy *self, GPMessageEmitter *msg_emitter)
 static void
 _free_persist_data(GroupingByPersistData *self)
 {
-  correlation_state_free(self->correlation);
+  correlation_state_unref(self->correlation);
   g_free(self);
 }
 

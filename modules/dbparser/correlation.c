@@ -153,37 +153,48 @@ correlation_state_timer_tick(CorrelationState *self, gpointer caller_context)
   return updated;
 }
 
-void
-correlation_state_init_instance(CorrelationState *self)
-{
-  g_mutex_init(&self->lock);
-  self->state = g_hash_table_new_full(correlation_key_hash, correlation_key_equal, NULL,
-                                      (GDestroyNotify) correlation_context_unref);
-  self->timer_wheel = timer_wheel_new();
-  cached_g_current_time(&self->last_tick);
-}
-
-void
-correlation_state_deinit_instance(CorrelationState *self)
-{
-  if (self->state)
-    g_hash_table_destroy(self->state);
-  timer_wheel_free(self->timer_wheel);
-  g_mutex_clear(&self->lock);
-}
 
 CorrelationState *
 correlation_state_new(void)
 {
   CorrelationState *self = g_new0(CorrelationState, 1);
 
-  correlation_state_init_instance(self);
+  g_mutex_init(&self->lock);
+  self->state = g_hash_table_new_full(correlation_key_hash, correlation_key_equal, NULL,
+                                      (GDestroyNotify) correlation_context_unref);
+  self->timer_wheel = timer_wheel_new();
+  cached_g_current_time(&self->last_tick);
+  g_atomic_counter_set(&self->ref_cnt, 1);
   return self;
 }
 
 void
-correlation_state_free(CorrelationState *self)
+_free(CorrelationState *self)
 {
-  correlation_state_deinit_instance(self);
+  if (self->state)
+    g_hash_table_destroy(self->state);
+  timer_wheel_free(self->timer_wheel);
+  g_mutex_clear(&self->lock);
   g_free(self);
+}
+
+CorrelationState *
+correlation_state_ref(CorrelationState *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+
+  if (self)
+    {
+      g_atomic_counter_inc(&self->ref_cnt);
+    }
+  return self;
+}
+
+void
+correlation_state_unref(CorrelationState *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    _free(self);
 }

@@ -31,6 +31,7 @@
 
 typedef struct _CorrelationState
 {
+  GAtomicCounter ref_cnt;
   GMutex lock;
   GHashTable *state;
   TimerWheel *timer_wheel;
@@ -53,6 +54,7 @@ void correlation_state_advance_time(CorrelationState *self, gint timeout, gpoint
 void correlation_state_init_instance(CorrelationState *self);
 void correlation_state_deinit_instance(CorrelationState *self);
 CorrelationState *correlation_state_new(void);
-void correlation_state_free(CorrelationState *self);
+CorrelationState *correlation_state_ref(CorrelationState *self);
+void correlation_state_unref(CorrelationState *self);
 
 #endif
