@@ -128,7 +128,6 @@ grouping_by_set_synthetic_message(LogParser *s, SyntheticMessage *message)
   self->synthetic_message = message;
 }
 
-
 /* This function is called to populate the emitted_messages array in
  * msg_emitter.  It only manipulates per-thread data structure so it does
  * not require locks but does not mind them being locked either.  */
@@ -309,16 +308,6 @@ _expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpointer calle
 }
 
 
-gchar *
-grouping_by_format_persist_name(LogParser *s)
-{
-  static gchar persist_name[512];
-  GroupingBy *self = (GroupingBy *)s;
-
-  g_snprintf(persist_name, sizeof(persist_name), "grouping-by(%s)", self->key_template->template);
-  return persist_name;
-}
-
 static CorrelationContext *
 _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
 {
@@ -425,15 +414,32 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
   return TRUE;
 }
 
+static const gchar *
+_format_persist_name(const LogPipe *s)
+{
+  static gchar persist_name[512];
+  GroupingBy *self = (GroupingBy *)s;
+
+  g_snprintf(persist_name, sizeof(persist_name), "grouping-by(%s)", self->key_template->template);
+  return persist_name;
+}
+
 static void
 _load_correlation_state(GroupingBy *self, GlobalConfig *cfg)
 {
   self->correlation = cfg_persist_config_fetch(cfg,
-                                               grouping_by_format_persist_name(&self->super.super));
+                                               log_pipe_get_persist_name(&self->super.super.super));
   if (!self->correlation)
     self->correlation = correlation_state_new();
 
   timer_wheel_set_associated_data(self->correlation->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
+}
+
+static void
+_store_data_in_persist(GroupingBy *self, GlobalConfig *cfg)
+{
+  cfg_persist_config_add(cfg, log_pipe_get_persist_name(&self->super.super.super), correlation_state_ref(self->correlation),
+                         (GDestroyNotify) correlation_state_unref, FALSE);
 }
 
 static gboolean
@@ -482,12 +488,6 @@ _init(LogPipe *s)
   return stateful_parser_init_method(s);
 }
 
-static void
-_store_data_in_persist(GroupingBy *self, GlobalConfig *cfg)
-{
-  cfg_persist_config_add(cfg, grouping_by_format_persist_name(&self->super.super), correlation_state_ref(self->correlation),
-                         (GDestroyNotify) correlation_state_unref, FALSE);
-}
 
 static gboolean
 _deinit(LogPipe *s)
@@ -545,6 +545,7 @@ grouping_by_new(GlobalConfig *cfg)
   self->super.super.super.init = _init;
   self->super.super.super.deinit = _deinit;
   self->super.super.super.clone = _clone;
+  self->super.super.super.generate_persist_name = _format_persist_name;
   self->super.super.process = _process;
   self->scope = RCS_GLOBAL;
   self->timeout = -1;

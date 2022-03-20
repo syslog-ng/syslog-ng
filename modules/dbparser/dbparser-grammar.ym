@@ -112,6 +112,7 @@ parser_db_opt
 
 stateful_parser_opt
 	: KW_INJECT_MODE '(' stateful_parser_inject_mode ')'	{ stateful_parser_set_inject_mode(((StatefulParser *) last_parser), $3); }
+        | KW_PERSIST_NAME '(' string ')'                        { log_pipe_set_persist_name(&last_driver->super, $3); free($3); }
 	| parser_opt
 	;
 
