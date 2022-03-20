@@ -47,12 +47,6 @@ typedef struct _GroupingBy
   FilterExprNode *having_condition_expr;
 } GroupingBy;
 
-typedef struct
-{
-  CorrelationState *correlation;
-  TimerWheel *timer_wheel;
-} GroupingByPersistData;
-
 static NVHandle context_id_handle = 0;
 
 
@@ -187,14 +181,6 @@ _flush_emitted_messages(GroupingBy *self, GPMessageEmitter *msg_emitter)
   msg_emitter->emitted_messages_overflow = NULL;
 
 }
-
-static void
-_free_persist_data(GroupingByPersistData *self)
-{
-  correlation_state_unref(self->correlation);
-  g_free(self);
-}
-
 
 /* NOTE: lock should be acquired for writing before calling this function. */
 void
@@ -442,19 +428,12 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
 static void
 _load_correlation_state(GroupingBy *self, GlobalConfig *cfg)
 {
-  GroupingByPersistData *persist_data = cfg_persist_config_fetch(cfg,
-                                        grouping_by_format_persist_name(&self->super.super));
-  if (persist_data)
-    {
-      self->correlation = persist_data->correlation;
-      timer_wheel_set_associated_data(self->correlation->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
-    }
-  else
-    {
-      self->correlation = correlation_state_new();
-      timer_wheel_set_associated_data(self->correlation->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
-    }
-  g_free(persist_data);
+  self->correlation = cfg_persist_config_fetch(cfg,
+                                               grouping_by_format_persist_name(&self->super.super));
+  if (!self->correlation)
+    self->correlation = correlation_state_new();
+
+  timer_wheel_set_associated_data(self->correlation->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
 }
 
 static gboolean
@@ -506,12 +485,8 @@ _init(LogPipe *s)
 static void
 _store_data_in_persist(GroupingBy *self, GlobalConfig *cfg)
 {
-  GroupingByPersistData *persist_data = g_new0(GroupingByPersistData, 1);
-  persist_data->correlation = self->correlation;
-
-  cfg_persist_config_add(cfg, grouping_by_format_persist_name(&self->super.super), persist_data,
-                         (GDestroyNotify) _free_persist_data, FALSE);
-  self->correlation = NULL;
+  cfg_persist_config_add(cfg, grouping_by_format_persist_name(&self->super.super), correlation_state_ref(self->correlation),
+                         (GDestroyNotify) correlation_state_unref, FALSE);
 }
 
 static gboolean
@@ -557,6 +532,7 @@ _free(LogPipe *s)
   filter_expr_unref(self->trigger_condition_expr);
   filter_expr_unref(self->where_condition_expr);
   filter_expr_unref(self->having_condition_expr);
+  correlation_state_unref(self->correlation);
 }
 
 LogParser *
