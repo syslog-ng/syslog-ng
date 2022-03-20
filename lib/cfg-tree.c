@@ -1379,10 +1379,14 @@ _verify_unique_persist_names_among_pipes(const GPtrArray *initialized_pipes)
           LogPipe *other_pipe = g_hash_table_lookup(pipe_persist_names, current_pipe_name);
           if (other_pipe)
             {
-              msg_error("Error checking the uniqueness of the persist names, please override it "
-                        "with persist-name option. Shutting down.",
+              msg_error("Automatic assignment of persist names failed, as "
+                        "conflicting persist-names were found. Please override "
+                        "the automatically assigned identifier using an "
+                        "explicit perist-name() option or remove the duplicated "
+                        "configuration elements",
                         evt_tag_str("persist_name", current_pipe_name),
-                        log_pipe_location_tag(current_pipe), NULL);
+                        log_pipe_location_tag(current_pipe),
+                        log_pipe_location_tag(other_pipe));
               result = FALSE;
             }
           else
