@@ -64,66 +64,7 @@ typedef struct _GPMessageEmitter
   gint num_emitted_messages;
 } GPMessageEmitter;
 
-
-/* This function is called to populate the emitted_messages array in
- * msg_emitter.  It only manipulates per-thread data structure so it does
- * not require locks but does not mind them being locked either.  */
-static void
-_emit_message(GPMessageEmitter *msg_emitter, LogMessage *msg)
-{
-  if (msg_emitter->num_emitted_messages < EXPECTED_NUMBER_OF_MESSAGES_EMITTED)
-    {
-      msg_emitter->emitted_messages[msg_emitter->num_emitted_messages++] = log_msg_ref(msg);
-      return;
-    }
-
-  if (!msg_emitter->emitted_messages_overflow)
-    msg_emitter->emitted_messages_overflow = g_ptr_array_new();
-
-  g_ptr_array_add(msg_emitter->emitted_messages_overflow, log_msg_ref(msg));
-}
-
-static void
-_send_emitted_message_array(GroupingBy *self, gpointer *values, gsize len)
-{
-  for (gint i = 0; i < len; i++)
-    {
-      LogMessage *msg = values[i];
-      stateful_parser_emit_synthetic(&self->super, msg);
-      log_msg_unref(msg);
-    }
-}
-
-/* This function is called to flush the accumulated list of messages that
- * are generated during processing.  We must not hold any locks within
- * GroupingBy when doing this, as it will cause log_pipe_queue() calls to
- * subsequent elements in the message pipeline, which in turn may recurse
- * into PatternDB.  This works as msg_emitter itself is per-thread
- * (actually an auto variable on the stack), and this is called without
- * locks held at the end of a process() invocation. */
-static void
-_flush_emitted_messages(GroupingBy *self, GPMessageEmitter *msg_emitter)
-{
-  _send_emitted_message_array(self, msg_emitter->emitted_messages, msg_emitter->num_emitted_messages);
-  msg_emitter->num_emitted_messages = 0;
-
-  if (!msg_emitter->emitted_messages_overflow)
-    return;
-
-  _send_emitted_message_array(self, msg_emitter->emitted_messages_overflow->pdata,
-                              msg_emitter->emitted_messages_overflow->len);
-
-  g_ptr_array_free(msg_emitter->emitted_messages_overflow, TRUE);
-  msg_emitter->emitted_messages_overflow = NULL;
-
-}
-
-static void
-_free_persist_data(GroupingByPersistData *self)
-{
-  correlation_state_free(self->correlation);
-  g_free(self);
-}
+/* public functions */
 
 void
 grouping_by_set_key_template(LogParser *s, LogTemplate *key_template)
@@ -192,6 +133,68 @@ grouping_by_set_synthetic_message(LogParser *s, SyntheticMessage *message)
     synthetic_message_free(self->synthetic_message);
   self->synthetic_message = message;
 }
+
+
+/* This function is called to populate the emitted_messages array in
+ * msg_emitter.  It only manipulates per-thread data structure so it does
+ * not require locks but does not mind them being locked either.  */
+static void
+_emit_message(GPMessageEmitter *msg_emitter, LogMessage *msg)
+{
+  if (msg_emitter->num_emitted_messages < EXPECTED_NUMBER_OF_MESSAGES_EMITTED)
+    {
+      msg_emitter->emitted_messages[msg_emitter->num_emitted_messages++] = log_msg_ref(msg);
+      return;
+    }
+
+  if (!msg_emitter->emitted_messages_overflow)
+    msg_emitter->emitted_messages_overflow = g_ptr_array_new();
+
+  g_ptr_array_add(msg_emitter->emitted_messages_overflow, log_msg_ref(msg));
+}
+
+static void
+_send_emitted_message_array(GroupingBy *self, gpointer *values, gsize len)
+{
+  for (gint i = 0; i < len; i++)
+    {
+      LogMessage *msg = values[i];
+      stateful_parser_emit_synthetic(&self->super, msg);
+      log_msg_unref(msg);
+    }
+}
+
+/* This function is called to flush the accumulated list of messages that
+ * are generated during processing.  We must not hold any locks within
+ * GroupingBy when doing this, as it will cause log_pipe_queue() calls to
+ * subsequent elements in the message pipeline, which in turn may recurse
+ * into PatternDB.  This works as msg_emitter itself is per-thread
+ * (actually an auto variable on the stack), and this is called without
+ * locks held at the end of a process() invocation. */
+static void
+_flush_emitted_messages(GroupingBy *self, GPMessageEmitter *msg_emitter)
+{
+  _send_emitted_message_array(self, msg_emitter->emitted_messages, msg_emitter->num_emitted_messages);
+  msg_emitter->num_emitted_messages = 0;
+
+  if (!msg_emitter->emitted_messages_overflow)
+    return;
+
+  _send_emitted_message_array(self, msg_emitter->emitted_messages_overflow->pdata,
+                              msg_emitter->emitted_messages_overflow->len);
+
+  g_ptr_array_free(msg_emitter->emitted_messages_overflow, TRUE);
+  msg_emitter->emitted_messages_overflow = NULL;
+
+}
+
+static void
+_free_persist_data(GroupingByPersistData *self)
+{
+  correlation_state_free(self->correlation);
+  g_free(self);
+}
+
 
 /* NOTE: lock should be acquired for writing before calling this function. */
 void
