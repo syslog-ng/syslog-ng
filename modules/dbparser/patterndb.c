@@ -464,12 +464,8 @@ void
 pattern_db_advance_time(PatternDB *self, gint timeout)
 {
   PDBProcessParams process_params= {0};
-  time_t new_time;
 
-  g_mutex_lock(&self->correlation.lock);
-  new_time = timer_wheel_get_time(self->correlation.timer_wheel) + timeout;
-  timer_wheel_set_time(self->correlation.timer_wheel, new_time, &process_params);
-  g_mutex_unlock(&self->correlation.lock);
+  correlation_state_advance_time(&self->correlation, timeout, &process_params);
   _flush_emitted_messages(self, &process_params);
 }
 

@@ -48,6 +48,7 @@ void correlation_state_set_time(CorrelationState *self, guint64 sec, gpointer ca
 guint64 correlation_state_get_time(CorrelationState *self);
 gboolean correlation_state_timer_tick(CorrelationState *self, gpointer caller_context);
 void correlation_state_expire_all(CorrelationState *self, gpointer caller_context);
+void correlation_state_advance_time(CorrelationState *self, gint timeout, gpointer caller_context);
 
 void correlation_state_init_instance(CorrelationState *self);
 void correlation_state_deinit_instance(CorrelationState *self);
