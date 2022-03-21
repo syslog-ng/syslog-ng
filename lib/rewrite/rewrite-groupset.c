@@ -25,6 +25,7 @@
 
 #include "rewrite-groupset.h"
 #include "scratch-buffers.h"
+#include "string-list.h"
 
 typedef struct _LogRewriteGroupSetCallbackData
 {
@@ -42,15 +43,16 @@ log_rewrite_groupset_foreach_func(const gchar *name, LogMessageValueType type,
   LogMessage *msg = callback_data->msg;
   LogTemplate *template = callback_data->template;
   GString *result;
+  ScratchBuffersMarker mark;
 
-  result = scratch_buffers_alloc();
+  result = scratch_buffers_alloc_and_mark(&mark);
 
   LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, value, type};
   log_template_format_value_and_type(template, msg, &options, result, &type);
 
-  NVHandle handle = log_msg_get_value_handle(name);
-  log_msg_set_value(msg, handle, result->str, result->len);
+  log_msg_set_value_by_name_with_type(msg, name, result->str, result->len, type);
 
+  scratch_buffers_reclaim_marked(mark);
   return FALSE;
 }
 
@@ -62,8 +64,7 @@ log_rewrite_groupunset_foreach_func(const gchar *name, LogMessageValueType type,
   LogRewriteGroupSetCallbackData *callback_data = (LogRewriteGroupSetCallbackData *) user_data;
   LogMessage *msg = callback_data->msg;
 
-  NVHandle handle = log_msg_get_value_handle(name);
-  log_msg_unset_value(msg, handle);
+  log_msg_unset_value_by_name(msg, name);
   return FALSE;
 }
 
@@ -81,25 +82,18 @@ log_rewrite_groupset_process(LogRewrite *s, LogMessage **msg, const LogPathOptio
   value_pairs_foreach(self->query, self->vp_func, *msg, &options, &userdata);
 }
 
-static void
-__free_field(gpointer field, gpointer user_data)
-{
-  g_free(field);
-}
-
-
 void
 log_rewrite_groupset_add_fields(LogRewrite *rewrite, GList *fields)
 {
   LogRewriteGroupSet *self = (LogRewriteGroupSet *) rewrite;
-  GList *head;
-  for (head = fields; head; head = head->next)
+
+  for (GList *head = fields; head; head = head->next)
     {
       value_pairs_add_glob_pattern(self->query, head->data, TRUE);
     }
-  g_list_foreach(fields, __free_field, NULL);
-  g_list_free(fields);
+  string_list_free(fields);
 }
+
 static LogPipe *
 log_rewrite_groupset_clone(LogPipe *s)
 {
@@ -114,7 +108,7 @@ log_rewrite_groupset_clone(LogPipe *s)
     cloned->super.condition = filter_expr_clone(self->super.condition);
 
   return &cloned->super.super;
-};
+}
 
 void
 log_rewrite_groupset_free(LogPipe *s)
@@ -147,6 +141,7 @@ LogRewrite *
 log_rewrite_groupunset_new(GlobalConfig *cfg)
 {
   LogRewriteGroupSet *self = (LogRewriteGroupSet *)log_rewrite_groupset_new(NULL, cfg);
+
   self->vp_func = log_rewrite_groupunset_foreach_func;
   return &self->super;
 }
