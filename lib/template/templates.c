@@ -64,12 +64,17 @@ log_template_is_trivial(LogTemplate *self)
 }
 
 const gchar *
-log_template_get_trivial_value(LogTemplate *self, LogMessage *msg, gssize *value_len)
+log_template_get_trivial_value_and_type(LogTemplate *self, LogMessage *msg, gssize *value_len,
+                                        LogMessageValueType *type)
 {
+  LogMessageValueType t = LM_VT_STRING;
+  const gchar *result = "";
+  gssize result_len = 0;
+
   g_assert(self->trivial);
 
   if (!self->compiled_template)
-    return "";
+    goto exit;
 
   LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
 
@@ -78,21 +83,38 @@ log_template_get_trivial_value(LogTemplate *self, LogMessage *msg, gssize *value
     case LTE_MACRO:
       if (e->text_len > 0)
         {
-          if (value_len)
-            *value_len = e->text_len;
-          return e->text;
+          result_len = e->text_len;
+          result = e->text;
         }
       else if (e->macro == M_MESSAGE)
-        return log_msg_get_value(msg, LM_V_MESSAGE, value_len);
+        result = log_msg_get_value_with_type(msg, LM_V_MESSAGE, &result_len, &t);
       else if (e->macro == M_HOST)
-        return log_msg_get_value(msg, LM_V_HOST, value_len);
-      g_assert_not_reached();
+        result = log_msg_get_value_with_type(msg, LM_V_HOST, &result_len, &t);
+      else
+        g_assert_not_reached();
+      break;
     case LTE_VALUE:
-      return log_msg_get_value(msg, e->value_handle, value_len);
+      result = log_msg_get_value_with_type(msg, e->value_handle, &result_len, &t);
+      break;
     default:
       g_assert_not_reached();
     }
+exit:
+  if (type)
+    {
+      *type = self->type_hint == LM_VT_NONE ? t : self->type_hint;
+    }
+  if (value_len)
+    *value_len = result_len;
+  return result;
 }
+
+const gchar *
+log_template_get_trivial_value(LogTemplate *self, LogMessage *msg, gssize *value_len)
+{
+  return log_template_get_trivial_value_and_type(self, msg, value_len, NULL);
+}
+
 
 static gboolean
 _calculate_triviality(LogTemplate *self)
@@ -193,6 +215,11 @@ log_template_set_type_hint(LogTemplate *self, const gchar *type_hint, GError **e
 {
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
+  if (!type_hint)
+    {
+      self->type_hint = LM_VT_NONE;
+      return TRUE;
+    }
   return type_hint_parse(type_hint, &self->type_hint, error);
 }
 
@@ -235,7 +262,10 @@ log_template_new(GlobalConfig *cfg, const gchar *name)
   log_template_set_name(self, name);
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->cfg = cfg;
-  self->type_hint = LM_VT_STRING;
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
+    self->type_hint = LM_VT_STRING;
+  else
+    self->type_hint = LM_VT_NONE;
   return self;
 }
 

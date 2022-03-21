@@ -78,7 +78,7 @@ _fill_template(RedisDestWorker *self, LogMessage *msg, LogTemplate *template, gc
     {
       GString *buffer = scratch_buffers_alloc();
       LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND,
-                                        owner->super.worker.instance.seq_num, NULL
+                                        owner->super.worker.instance.seq_num, NULL, LM_VT_STRING
                                        };
       log_template_format(template, msg, &options, buffer);
       *size = buffer->len;

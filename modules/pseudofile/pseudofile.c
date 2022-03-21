@@ -85,7 +85,7 @@ pseudofile_dd_set_time_reopen(LogDriver *s, time_t time_reopen)
 static void
 _format_message(PseudoFileDestDriver *self, LogMessage *msg, GString *formatted_message)
 {
-  LogTemplateEvalOptions options = {&self->template_options, LTZ_LOCAL, 0, NULL};
+  LogTemplateEvalOptions options = {&self->template_options, LTZ_LOCAL, 0, NULL, LM_VT_STRING};
   log_template_format(self->template, msg, &options, formatted_message);
 }
 

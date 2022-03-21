@@ -26,10 +26,11 @@
 #include "cfg-parser.h"
 
 static void
-tf_ipv4_to_int(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_ipv4_to_int(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gint i;
 
+  *type = LM_VT_STRING;
   for (i = 0; i < argc; i++)
     {
       struct in_addr ina;
@@ -144,12 +145,14 @@ tf_dns_resolve_ip_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *pa
 }
 
 static void
-tf_dns_resolve_ip_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_dns_resolve_ip_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+                       LogMessageValueType *type)
 {
   DnsResolveIpState *state = (DnsResolveIpState *)s;
   const gchar *hostname;
   gsize result_len;
 
+  *type = LM_VT_STRING;
   gchar *ip = args->argv[0]->str;
   GSockAddr *addr = g_sockaddr_inet_or_inet6_new(ip, 0);
   if (!addr)

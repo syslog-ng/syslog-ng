@@ -26,6 +26,7 @@ typedef struct _IterateState
   TFSimpleFuncState super;
   GMutex mutex;
   GString *current;
+  LogMessageValueType current_type;
   LogTemplate *template;
 } IterateState;
 
@@ -74,19 +75,21 @@ update_current(LogTemplateFunction *self, IterateState *state, LogMessage *msg)
   gchar *current_value = g_strdup(state->current->str);
 
   g_string_assign(state->current, "");
-  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, current_value};
-  log_template_format(state->template, msg, &options, state->current);
+  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, current_value, LM_VT_STRING};
+  log_template_format_value_and_type(state->template, msg, &options, state->current, &state->current_type);
 
   g_free(current_value);
 }
 
 static void
-tf_iterate_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_iterate_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+                LogMessageValueType *type)
 {
   IterateState *state = (IterateState *)s;
 
   g_mutex_lock(&state->mutex);
   g_string_append(result, state->current->str);
+  *type = state->current_type;
   update_current(self, state, args->messages[0]);
   g_mutex_unlock(&state->mutex);
 }

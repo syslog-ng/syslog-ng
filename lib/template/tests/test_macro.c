@@ -29,6 +29,19 @@
 #include "logmsg/logmsg.h"
 #include "syslog-names.h"
 
+static void
+assert_macro_value(gint id, LogMessage *msg, const gchar *expected_value, LogMessageValueType expected_type)
+{
+  GString *resolved = g_string_new("");
+  LogMessageValueType type;
+
+  gboolean result = log_macro_expand_simple(id, msg, resolved, &type);
+  cr_assert(result);
+  cr_assert_str_eq(resolved->str, expected_value);
+  cr_assert_eq(type, expected_type);
+
+  g_string_free(resolved, TRUE);
+}
 
 Test(macro, test_facility)
 {
@@ -38,14 +51,9 @@ Test(macro, test_facility)
   LogMessage *msg = log_msg_new_empty();
   msg->pri = facility_lpr;
 
-  GString *resolved = g_string_new("");
-  gboolean result = log_macro_expand_simple(resolved, M_FACILITY, msg);
-
-  cr_assert(result);
-  cr_assert_str_eq(resolved->str, "lpr");
+  assert_macro_value(M_FACILITY, msg, "lpr", LM_VT_STRING);
 
   log_msg_unref(msg);
-  g_string_free(resolved, TRUE);
 }
 
 Test(macro, test_date_week)
@@ -55,86 +63,57 @@ Test(macro, test_date_week)
   /* Wed Jan 1 11:20:50 GMT 2015 */
   fake_time(1420111250);
   unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
-
-  GString *resolved = g_string_new("");
-  gboolean result = log_macro_expand_simple(resolved, M_WEEK, msg);
-
-  cr_assert(result);
-  cr_assert_str_eq(resolved->str, "00");
-
-  log_msg_unref(msg);
-  g_string_free(resolved, TRUE);
-}
-
-Test(macro, test_date_iso_week_01_if_tuesday_is_in_it)
-{
-  LogMessage *msg = log_msg_new_empty();
-
-  /* Thu Jan 1 11:20:50 GMT 2015 */
-  fake_time(1420111250);
-  unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
-
-  GString *resolved = g_string_new("");
-  gboolean result = log_macro_expand_simple(resolved, M_ISOWEEK, msg);
-
-  cr_assert(result);
-  cr_assert_str_eq(resolved->str, "01");
-
-  log_msg_unref(msg);
-  g_string_free(resolved, TRUE);
-}
-
-Test(macro, test_date_iso_week_last_iso_week)
-{
-  LogMessage *msg = log_msg_new_empty();
+  assert_macro_value(M_WEEK, msg, "00", LM_VT_STRING);
 
   /* Thu Dec 31 11:20:50 GMT 2015 */
   fake_time(1451560850);
   unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
-
-  GString *resolved = g_string_new("");
-  gboolean result = log_macro_expand_simple(resolved, M_ISOWEEK, msg);
-
-  cr_assert(result);
-  cr_assert_str_eq(resolved->str, "53");
+  assert_macro_value(M_WEEK, msg, "52", LM_VT_STRING);
 
   log_msg_unref(msg);
-  g_string_free(resolved, TRUE);
 }
 
-Test(macro, test_date_iso_week_previouse_week_if_tuesday_is_not_in_it)
+Test(macro, test_date_iso_week_testcases)
 {
   LogMessage *msg = log_msg_new_empty();
 
-  /* Fri Jan 1 11:20:50 GMT 2016 */
+  /* First week: Thu Jan 1 11:20:50 GMT 2015 */
+
+  fake_time(1420111250);
+  unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
+  assert_macro_value(M_ISOWEEK, msg, "01", LM_VT_STRING);
+
+  /* Last week, still in 2015: Thu Dec 31 11:20:50 GMT 2015 */
+  fake_time(1451560850);
+  unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
+  assert_macro_value(M_ISOWEEK, msg, "53", LM_VT_STRING);
+
+  /* Already 2016, but still the same week as the previous case: Fri Jan 1 11:20:50 GMT 2016 */
   fake_time(1451647250);
   unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
-
-  GString *resolved = g_string_new("");
-  gboolean result = log_macro_expand_simple(resolved, M_ISOWEEK, msg);
-
-  cr_assert(result);
-  cr_assert_str_eq(resolved->str, "53");
-
-  log_msg_unref(msg);
-  g_string_free(resolved, TRUE);
-}
-
-Test(macro, test_date_iso_week_02)
-{
-  LogMessage *msg = log_msg_new_empty();
+  assert_macro_value(M_ISOWEEK, msg, "53", LM_VT_STRING);
 
   /* Mon Jan 5 11:20:50 GMT 2015 */
   fake_time(1420456850);
   unix_time_set_now(&msg->timestamps[LM_TS_STAMP]);
-
-  GString *resolved = g_string_new("");
-  gboolean result = log_macro_expand_simple(resolved, M_ISOWEEK, msg);
-
-  cr_assert(result);
-  cr_assert_str_eq(resolved->str, "02");
+  assert_macro_value(M_ISOWEEK, msg, "02", LM_VT_STRING);
 
   log_msg_unref(msg);
-  g_string_free(resolved, TRUE);
 }
 
+Test(macro, test_context_id_type_is_returned)
+{
+  GString *resolved = g_string_new("");
+  LogMessage *msg = log_msg_new_empty();
+  LogMessageValueType type;
+
+  LogTemplateEvalOptions options = {NULL, LTZ_SEND, 5555, "5678", LM_VT_INT64};
+
+  gboolean result = log_macro_expand(M_CONTEXT_ID, FALSE, &options, msg, resolved, &type);
+  cr_assert(result);
+  cr_assert_str_eq(resolved->str, "5678");
+  cr_assert_eq(type, LM_VT_INT64);
+
+  g_string_free(resolved, TRUE);
+  log_msg_unref(msg);
+}

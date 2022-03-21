@@ -667,7 +667,7 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   gpointer user_data[] = { &self->entries, &pos, &self->max_entries };
 
   LogTemplateEvalOptions options = {&self->template_options,
-                                    LTZ_SEND, self->super.worker.instance.seq_num, NULL
+                                    LTZ_SEND, self->super.worker.instance.seq_num, NULL, LM_VT_STRING
                                    };
   value_pairs_foreach(self->vp, afamqp_vp_foreach, msg, &options, user_data);
 
@@ -681,7 +681,7 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   props.headers = table;
 
   LogTemplateEvalOptions routing_key_options = {&self->template_options, LTZ_LOCAL,
-                                                self->super.worker.instance.seq_num, NULL
+                                                self->super.worker.instance.seq_num, NULL, LM_VT_STRING
                                                };
   log_template_format(self->routing_key_template, msg, &routing_key_options, routing_key);
 

@@ -87,7 +87,7 @@ tf_value_pairs_foreach(const gchar *name,
 
 static void
 tf_value_pairs_call(LogTemplateFunction *self, gpointer s,
-                    const LogTemplateInvokeArgs *args, GString *result)
+                    const LogTemplateInvokeArgs *args, GString *result, LogMessageValueType *type)
 {
   TFValuePairsState *state = (TFValuePairsState *)s;
   TFValuePairsIterState iter_state =
@@ -96,6 +96,7 @@ tf_value_pairs_call(LogTemplateFunction *self, gpointer s,
     .initial_len = result->len,
     .result_type = state->result_type,
   };
+  *type = LM_VT_LIST;
 
   value_pairs_foreach(state->vp,
                       tf_value_pairs_foreach,

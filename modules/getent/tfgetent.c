@@ -160,10 +160,11 @@ tf_getent_find_lookup_method(gchar *entity)
 }
 
 static gboolean
-tf_getent(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_getent(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   lookup_method lookup;
 
+  *type = LM_VT_STRING;
   if (argc != 2 && argc != 3)
     {
       msg_error("$(getent) takes either two or three arguments",

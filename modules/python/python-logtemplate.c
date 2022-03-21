@@ -78,7 +78,7 @@ py_log_template_format(PyObject *s, PyObject *args, PyObject *kwrds)
     }
 
   GString *result = scratch_buffers_alloc();
-  LogTemplateEvalOptions options = {log_template_options, tz, seqnum, NULL};
+  LogTemplateEvalOptions options = {log_template_options, tz, seqnum, NULL, LM_VT_STRING};
   log_template_format(self->template, msg->msg, &options, result);
 
   return _py_string_from_string(result->str, result->len);

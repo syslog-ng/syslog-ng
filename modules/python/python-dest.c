@@ -444,7 +444,7 @@ _py_construct_message(PythonDestDriver *self, LogMessage *msg, PyObject **msg_ob
 
   if (self->vp)
     {
-      LogTemplateEvalOptions options = {&self->template_options, LTZ_LOCAL, self->super.worker.instance.seq_num, NULL};
+      LogTemplateEvalOptions options = {&self->template_options, LTZ_LOCAL, self->super.worker.instance.seq_num, NULL, LM_VT_STRING};
       success = py_value_pairs_apply(self->vp, &options, msg, msg_object);
       if (!success && (self->template_options.on_error & ON_ERROR_DROP_MESSAGE))
         return FALSE;

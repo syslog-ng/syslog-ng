@@ -62,7 +62,7 @@ format_template_thread(gpointer s)
   g_mutex_unlock(&thread_lock);
 
   result = g_string_sized_new(0);
-  LogTemplateEvalOptions options = {NULL, LTZ_SEND, 5555, NULL};
+  LogTemplateEvalOptions options = {NULL, LTZ_SEND, 5555, NULL, LM_VT_STRING};
   for (i = 0; i < 10000; i++)
     {
       log_template_format(templ, msg, &options, result);
@@ -139,107 +139,214 @@ teardown(void)
 TestSuite(template, .init = setup, .fini = teardown);
 
 
-Test(template, test_macros)
+Test(template, test_macros_v3x)
 {
   /* pri 3, fac 19 == local3 */
 
-  assert_template_format("$FACILITY", "local3");
-  assert_template_format("$FACILITY_NUM", "19");
+  /* v3.x behavior */
 
-  assert_template_format("$SEVERITY", "err");
-  assert_template_format("$SEVERITY_NUM", "3");
+  assert_template_format_value_and_type("$FACILITY", "local3", LM_VT_STRING);
+  assert_template_format_value_and_type("$FACILITY_NUM", "19", LM_VT_STRING);
 
-  assert_template_format("$PRIORITY", "err");
-  assert_template_format("$LEVEL", "err");
-  assert_template_format("$LEVEL_NUM", "3");
+  assert_template_format_value_and_type("$SEVERITY", "err", LM_VT_STRING);
+  assert_template_format_value_and_type("$SEVERITY_NUM", "3", LM_VT_STRING);
 
-  assert_template_format("$TAG", "9b");
-  assert_template_format("$TAGS", "alma,korte,citrom,\"tag,containing,comma\"");
-  assert_template_format("$PRI", "155");
-  assert_template_format("$DATE", "Feb 11 10:34:56.000");
-  assert_template_format("$FULLDATE", "2006 Feb 11 10:34:56.000");
-  assert_template_format("$ISODATE", "2006-02-11T10:34:56.000+01:00");
-  assert_template_format("$STAMP", "Feb 11 10:34:56.000");
-  assert_template_format("$YEAR", "2006");
-  assert_template_format("$YEAR_DAY", "042");
-  assert_template_format("$MONTH", "02");
-  assert_template_format("$MONTH_WEEK", "1");
-  assert_template_format("$MONTH_ABBREV", "Feb");
-  assert_template_format("$MONTH_NAME", "February");
-  assert_template_format("$DAY", "11");
-  assert_template_format("$HOUR", "10");
-  assert_template_format("$MIN", "34");
-  assert_template_format("$SEC", "56");
-  assert_template_format("$WEEKDAY", "Sat");
-  assert_template_format("$WEEK_DAY", "7");
-  assert_template_format("$WEEK_DAY_NAME", "Saturday");
-  assert_template_format("$WEEK_DAY_ABBREV", "Sat");
-  assert_template_format("$WEEK", "06");
-  assert_template_format("$UNIXTIME", "1139650496.000");
-  assert_template_format("$TZOFFSET", "+01:00");
-  assert_template_format("$TZ", "+01:00");
-  assert_template_format("$R_DATE", "Feb 11 19:58:35.639");
-  assert_template_format("$R_FULLDATE", "2006 Feb 11 19:58:35.639");
-  assert_template_format("$R_ISODATE", "2006-02-11T19:58:35.639+01:00");
-  assert_template_format("$R_STAMP", "Feb 11 19:58:35.639");
-  assert_template_format("$R_YEAR", "2006");
-  assert_template_format("$R_YEAR_DAY", "042");
-  assert_template_format("$R_MONTH", "02");
-  assert_template_format("$R_MONTH_WEEK", "1");
-  assert_template_format("$R_MONTH_ABBREV", "Feb");
-  assert_template_format("$R_MONTH_NAME", "February");
-  assert_template_format("$R_DAY", "11");
-  assert_template_format("$R_HOUR", "19");
-  assert_template_format("$R_MIN", "58");
-  assert_template_format("$R_SEC", "35");
-  assert_template_format("$R_WEEKDAY", "Sat");
-  assert_template_format("$R_WEEK_DAY", "7");
-  assert_template_format("$R_WEEK_DAY_NAME", "Saturday");
-  assert_template_format("$R_WEEK_DAY_ABBREV", "Sat");
-  assert_template_format("$R_WEEK", "06");
-  assert_template_format("$R_UNIXTIME", "1139684315.639");
-  assert_template_format("$R_TZOFFSET", "+01:00");
-  assert_template_format("$R_TZ", "+01:00");
-  assert_template_format("$S_DATE", "Feb 11 10:34:56.000");
-  assert_template_format("$S_FULLDATE", "2006 Feb 11 10:34:56.000");
-  assert_template_format("$S_ISODATE", "2006-02-11T10:34:56.000+01:00");
-  assert_template_format("$S_STAMP", "Feb 11 10:34:56.000");
-  assert_template_format("$S_YEAR", "2006");
-  assert_template_format("$S_YEAR_DAY", "042");
-  assert_template_format("$S_MONTH", "02");
-  assert_template_format("$S_MONTH_WEEK", "1");
-  assert_template_format("$S_MONTH_ABBREV", "Feb");
-  assert_template_format("$S_MONTH_NAME", "February");
-  assert_template_format("$S_DAY", "11");
-  assert_template_format("$S_HOUR", "10");
-  assert_template_format("$S_MIN", "34");
-  assert_template_format("$S_SEC", "56");
-  assert_template_format("$S_WEEKDAY", "Sat");
-  assert_template_format("$S_WEEK_DAY", "7");
-  assert_template_format("$S_WEEK_DAY_NAME", "Saturday");
-  assert_template_format("$S_WEEK_DAY_ABBREV", "Sat");
-  assert_template_format("$S_WEEK", "06");
-  assert_template_format("$S_UNIXTIME", "1139650496.000");
-  assert_template_format("$S_TZOFFSET", "+01:00");
-  assert_template_format("$S_TZ", "+01:00");
-  assert_template_format("$HOST_FROM", "kismacska");
-  assert_template_format("$FULLHOST_FROM", "kismacska");
-  assert_template_format("$HOST", "bzorp");
-  assert_template_format("$FULLHOST", "bzorp");
-  assert_template_format("$PROGRAM", "syslog-ng");
-  assert_template_format("$PID", "23323");
-  assert_template_format("$MSGHDR", "syslog-ng[23323]:");
-  assert_template_format("$MSG", "árvíztűrőtükörfúrógép");
-  assert_template_format("$MESSAGE", "árvíztűrőtükörfúrógép");
-  assert_template_format("$SOURCEIP", "10.11.12.13");
-  assert_template_format("$RCPTID", "555");
-  assert_template_format("$DESTIP", "127.0.0.5");
-  assert_template_format("$DESTPORT", "6514");
-  assert_template_format("$PROTO", "33");
+  assert_template_format_value_and_type("$PRIORITY", "err", LM_VT_STRING);
+  assert_template_format_value_and_type("$LEVEL", "err", LM_VT_STRING);
+  assert_template_format_value_and_type("$LEVEL_NUM", "3", LM_VT_STRING);
 
-  assert_template_format("$SEQNUM", "999");
-  assert_template_format("$CONTEXT_ID", "test-context-id");
-  assert_template_format("$UNIQID", "cafebabe@000000000000022b");
+  assert_template_format_value_and_type("$TAG", "9b", LM_VT_STRING);
+  assert_template_format_value_and_type("$TAGS", "alma,korte,citrom,\"tag,containing,comma\"", LM_VT_STRING);
+  assert_template_format_value_and_type("$PRI", "155", LM_VT_STRING);
+  assert_template_format_value_and_type("$DATE", "Feb 11 10:34:56.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$FULLDATE", "2006 Feb 11 10:34:56.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$ISODATE", "2006-02-11T10:34:56.000+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$STAMP", "Feb 11 10:34:56.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$YEAR", "2006", LM_VT_STRING);
+  assert_template_format_value_and_type("$YEAR_DAY", "042", LM_VT_STRING);
+  assert_template_format_value_and_type("$MONTH", "02", LM_VT_STRING);
+  assert_template_format_value_and_type("$MONTH_WEEK", "1", LM_VT_STRING);
+  assert_template_format_value_and_type("$MONTH_ABBREV", "Feb", LM_VT_STRING);
+  assert_template_format_value_and_type("$MONTH_NAME", "February", LM_VT_STRING);
+  assert_template_format_value_and_type("$DAY", "11", LM_VT_STRING);
+  assert_template_format_value_and_type("$HOUR", "10", LM_VT_STRING);
+  assert_template_format_value_and_type("$MIN", "34", LM_VT_STRING);
+  assert_template_format_value_and_type("$SEC", "56", LM_VT_STRING);
+  assert_template_format_value_and_type("$WEEKDAY", "Sat", LM_VT_STRING);
+  assert_template_format_value_and_type("$WEEK_DAY", "7", LM_VT_STRING);
+  assert_template_format_value_and_type("$WEEK_DAY_NAME", "Saturday", LM_VT_STRING);
+  assert_template_format_value_and_type("$WEEK_DAY_ABBREV", "Sat", LM_VT_STRING);
+  assert_template_format_value_and_type("$WEEK", "06", LM_VT_STRING);
+  assert_template_format_value_and_type("$UNIXTIME", "1139650496.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$TZOFFSET", "+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$TZ", "+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_DATE", "Feb 11 19:58:35.639", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_FULLDATE", "2006 Feb 11 19:58:35.639", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_ISODATE", "2006-02-11T19:58:35.639+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_STAMP", "Feb 11 19:58:35.639", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_YEAR", "2006", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_YEAR_DAY", "042", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_MONTH", "02", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_MONTH_WEEK", "1", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_MONTH_ABBREV", "Feb", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_MONTH_NAME", "February", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_DAY", "11", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_HOUR", "19", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_MIN", "58", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_SEC", "35", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_WEEKDAY", "Sat", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_WEEK_DAY", "7", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_WEEK_DAY_NAME", "Saturday", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_WEEK_DAY_ABBREV", "Sat", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_WEEK", "06", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_UNIXTIME", "1139684315.639", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_TZOFFSET", "+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_TZ", "+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_DATE", "Feb 11 10:34:56.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_FULLDATE", "2006 Feb 11 10:34:56.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_ISODATE", "2006-02-11T10:34:56.000+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_STAMP", "Feb 11 10:34:56.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_YEAR", "2006", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_YEAR_DAY", "042", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_MONTH", "02", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_MONTH_WEEK", "1", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_MONTH_ABBREV", "Feb", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_MONTH_NAME", "February", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_DAY", "11", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_HOUR", "10", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_MIN", "34", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_SEC", "56", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_WEEKDAY", "Sat", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_WEEK_DAY", "7", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_WEEK_DAY_NAME", "Saturday", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_WEEK_DAY_ABBREV", "Sat", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_WEEK", "06", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_UNIXTIME", "1139650496.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_TZOFFSET", "+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_TZ", "+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$HOST_FROM", "kismacska", LM_VT_STRING);
+  assert_template_format_value_and_type("$FULLHOST_FROM", "kismacska", LM_VT_STRING);
+  assert_template_format_value_and_type("$HOST", "bzorp", LM_VT_STRING);
+  assert_template_format_value_and_type("$FULLHOST", "bzorp", LM_VT_STRING);
+  assert_template_format_value_and_type("$PROGRAM", "syslog-ng", LM_VT_STRING);
+  assert_template_format_value_and_type("$PID", "23323", LM_VT_STRING);
+  assert_template_format_value_and_type("$MSGHDR", "syslog-ng[23323]:", LM_VT_STRING);
+  assert_template_format_value_and_type("$MSG", "árvíztűrőtükörfúrógép", LM_VT_STRING);
+  assert_template_format_value_and_type("$MESSAGE", "árvíztűrőtükörfúrógép", LM_VT_STRING);
+  assert_template_format_value_and_type("$SOURCEIP", "10.11.12.13", LM_VT_STRING);
+  assert_template_format_value_and_type("$RCPTID", "555", LM_VT_STRING);
+  assert_template_format_value_and_type("$DESTIP", "127.0.0.5", LM_VT_STRING);
+  assert_template_format_value_and_type("$DESTPORT", "6514", LM_VT_STRING);
+  assert_template_format_value_and_type("$PROTO", "33", LM_VT_STRING);
+
+  assert_template_format_value_and_type("$SEQNUM", "999", LM_VT_STRING);
+  assert_template_format_value_and_type("$CONTEXT_ID", "test-context-id", LM_VT_STRING);
+  assert_template_format_value_and_type("$UNIQID", "cafebabe@000000000000022b", LM_VT_STRING);
+}
+
+Test(template, test_macros_v40)
+{
+  /* v4.x */
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  assert_template_format_value_and_type("$FACILITY", "local3", LM_VT_STRING);
+  assert_template_format_value_and_type("$FACILITY_NUM", "19", LM_VT_INT32);
+
+  assert_template_format_value_and_type("$SEVERITY", "err", LM_VT_STRING);
+  assert_template_format_value_and_type("$SEVERITY_NUM", "3", LM_VT_INT32);
+
+  assert_template_format_value_and_type("$PRIORITY", "err", LM_VT_STRING);
+  assert_template_format_value_and_type("$LEVEL", "err", LM_VT_STRING);
+  assert_template_format_value_and_type("$LEVEL_NUM", "3", LM_VT_INT32);
+
+  assert_template_format_value_and_type("$TAG", "9b", LM_VT_STRING);
+  assert_template_format_value_and_type("$TAGS", "alma,korte,citrom,\"tag,containing,comma\"", LM_VT_LIST);
+  assert_template_format_value_and_type("$PRI", "155", LM_VT_STRING);
+  assert_template_format_value_and_type("$DATE", "Feb 11 10:34:56.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$FULLDATE", "2006 Feb 11 10:34:56.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$ISODATE", "2006-02-11T10:34:56.000+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$STAMP", "Feb 11 10:34:56.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$YEAR", "2006", LM_VT_STRING);
+  assert_template_format_value_and_type("$YEAR_DAY", "042", LM_VT_STRING);
+  assert_template_format_value_and_type("$MONTH", "02", LM_VT_STRING);
+  assert_template_format_value_and_type("$MONTH_WEEK", "1", LM_VT_STRING);
+  assert_template_format_value_and_type("$MONTH_ABBREV", "Feb", LM_VT_STRING);
+  assert_template_format_value_and_type("$MONTH_NAME", "February", LM_VT_STRING);
+  assert_template_format_value_and_type("$DAY", "11", LM_VT_STRING);
+  assert_template_format_value_and_type("$HOUR", "10", LM_VT_STRING);
+  assert_template_format_value_and_type("$MIN", "34", LM_VT_STRING);
+  assert_template_format_value_and_type("$SEC", "56", LM_VT_STRING);
+  assert_template_format_value_and_type("$WEEKDAY", "Sat", LM_VT_STRING);
+  assert_template_format_value_and_type("$WEEK_DAY", "7", LM_VT_STRING);
+  assert_template_format_value_and_type("$WEEK_DAY_NAME", "Saturday", LM_VT_STRING);
+  assert_template_format_value_and_type("$WEEK_DAY_ABBREV", "Sat", LM_VT_STRING);
+  assert_template_format_value_and_type("$WEEK", "06", LM_VT_STRING);
+  assert_template_format_value_and_type("$UNIXTIME", "1139650496.000", LM_VT_DATETIME);
+  assert_template_format_value_and_type("$TZOFFSET", "+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$TZ", "+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_DATE", "Feb 11 19:58:35.639", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_FULLDATE", "2006 Feb 11 19:58:35.639", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_ISODATE", "2006-02-11T19:58:35.639+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_STAMP", "Feb 11 19:58:35.639", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_YEAR", "2006", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_YEAR_DAY", "042", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_MONTH", "02", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_MONTH_WEEK", "1", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_MONTH_ABBREV", "Feb", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_MONTH_NAME", "February", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_DAY", "11", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_HOUR", "19", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_MIN", "58", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_SEC", "35", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_WEEKDAY", "Sat", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_WEEK_DAY", "7", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_WEEK_DAY_NAME", "Saturday", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_WEEK_DAY_ABBREV", "Sat", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_WEEK", "06", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_UNIXTIME", "1139684315.639", LM_VT_DATETIME);
+  assert_template_format_value_and_type("$R_TZOFFSET", "+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$R_TZ", "+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_DATE", "Feb 11 10:34:56.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_FULLDATE", "2006 Feb 11 10:34:56.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_ISODATE", "2006-02-11T10:34:56.000+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_STAMP", "Feb 11 10:34:56.000", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_YEAR", "2006", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_YEAR_DAY", "042", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_MONTH", "02", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_MONTH_WEEK", "1", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_MONTH_ABBREV", "Feb", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_MONTH_NAME", "February", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_DAY", "11", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_HOUR", "10", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_MIN", "34", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_SEC", "56", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_WEEKDAY", "Sat", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_WEEK_DAY", "7", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_WEEK_DAY_NAME", "Saturday", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_WEEK_DAY_ABBREV", "Sat", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_WEEK", "06", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_UNIXTIME", "1139650496.000", LM_VT_DATETIME);
+  assert_template_format_value_and_type("$S_TZOFFSET", "+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$S_TZ", "+01:00", LM_VT_STRING);
+  assert_template_format_value_and_type("$HOST_FROM", "kismacska", LM_VT_STRING);
+  assert_template_format_value_and_type("$FULLHOST_FROM", "kismacska", LM_VT_STRING);
+  assert_template_format_value_and_type("$HOST", "bzorp", LM_VT_STRING);
+  assert_template_format_value_and_type("$FULLHOST", "bzorp", LM_VT_STRING);
+  assert_template_format_value_and_type("$PROGRAM", "syslog-ng", LM_VT_STRING);
+  assert_template_format_value_and_type("$PID", "23323", LM_VT_STRING);
+  assert_template_format_value_and_type("$MSGHDR", "syslog-ng[23323]:", LM_VT_STRING);
+  assert_template_format_value_and_type("$MSG", "árvíztűrőtükörfúrógép", LM_VT_STRING);
+  assert_template_format_value_and_type("$MESSAGE", "árvíztűrőtükörfúrógép", LM_VT_STRING);
+  assert_template_format_value_and_type("$SOURCEIP", "10.11.12.13", LM_VT_STRING);
+  assert_template_format_value_and_type("$RCPTID", "555", LM_VT_STRING);
+  assert_template_format_value_and_type("$DESTIP", "127.0.0.5", LM_VT_STRING);
+  assert_template_format_value_and_type("$DESTPORT", "6514", LM_VT_INT32);
+  assert_template_format_value_and_type("$PROTO", "33", LM_VT_INT32);
+
+  assert_template_format_value_and_type("$SEQNUM", "999", LM_VT_STRING);
+  assert_template_format_value_and_type("$CONTEXT_ID", "test-context-id", LM_VT_STRING);
+  assert_template_format_value_and_type("$UNIQID", "cafebabe@000000000000022b", LM_VT_STRING);
+
 }
 
 Test(template, test_loghost_macro)
@@ -348,19 +455,24 @@ Test(template, test_template_function_args)
 }
 
 static void
-assert_template_trivial_value(const gchar *template_code, LogMessage *msg, const gchar *expected_value)
+assert_template_trivial_value(const gchar *template_code, LogMessage *msg,
+                              const gchar *expected_value, LogMessageValueType expected_type)
 {
   LogTemplate *template = compile_template(template_code);
+  LogMessageValueType type;
 
   cr_assert(log_template_is_trivial(template));
 
-  const gchar *trivial_value = log_template_get_trivial_value(template, msg, NULL);
+  const gchar *trivial_value = log_template_get_trivial_value_and_type(template, msg, NULL, &type);
   cr_assert_str_eq(trivial_value, expected_value);
+  cr_assert_eq(type, expected_type);
 
   GString *formatted_value = g_string_sized_new(64);
-  log_template_format(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value);
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
   cr_assert_str_eq(trivial_value, formatted_value->str,
                    "Formatted and trivial value does not match: '%s' - '%s'", trivial_value, formatted_value->str);
+  cr_assert_eq(type, expected_type,
+               "Formatted and trivial type does not match: '%d' - '%d'", type, expected_type);
 
   g_string_free(formatted_value, TRUE);
   log_template_unref(template);
@@ -371,15 +483,26 @@ Test(template, test_single_values_and_literal_strings_are_considered_trivial)
 {
   LogMessage *msg = create_sample_message();
 
-  assert_template_trivial_value("", msg, "");
-  assert_template_trivial_value(" ", msg, " ");
-  assert_template_trivial_value("literal", msg, "literal");
-  assert_template_trivial_value("$1", msg, "first-match");
-  assert_template_trivial_value("$MSG", msg, "árvíztűrőtükörfúrógép");
-  assert_template_trivial_value("$HOST", msg, "bzorp");
-  assert_template_trivial_value("${APP.VALUE}", msg, "value");
+  assert_template_trivial_value("", msg, "", LM_VT_STRING);
+  assert_template_trivial_value(" ", msg, " ", LM_VT_STRING);
+  assert_template_trivial_value("literal", msg, "literal", LM_VT_STRING);
+  assert_template_trivial_value("$1", msg, "first-match", LM_VT_STRING);
+  assert_template_trivial_value("$MSG", msg, "árvíztűrőtükörfúrógép", LM_VT_STRING);
+  assert_template_trivial_value("$HOST", msg, "bzorp", LM_VT_STRING);
+  assert_template_trivial_value("${APP.VALUE}", msg, "value", LM_VT_STRING);
+  assert_template_trivial_value("${number1}", msg, "123", LM_VT_STRING);
 
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  assert_template_trivial_value("${number1}", msg, "123", LM_VT_INT64);
+
+  log_msg_unref(msg);
+}
+
+Test(template, test_invalid_templates_are_trivial)
+{
+  LogMessage *msg = create_sample_message();
   LogTemplate *template = log_template_new(configuration, NULL);
+
   cr_assert_not(log_template_compile(template, "$1 $2 ${MSG invalid", NULL));
   cr_assert(log_template_is_trivial(template), "Invalid templates are trivial");
   cr_assert(g_str_has_prefix(log_template_get_trivial_value(template, NULL, NULL), "error in template"));
@@ -464,5 +587,88 @@ Test(template, test_compile_literal_string)
 
   cr_assert_str_eq(log_template_get_literal_value(template, NULL), "test literal");
 
+  log_template_unref(template);
+}
+
+Test(template, test_result_of_concatenation_in_templates_are_typed_as_strings)
+{
+  assert_template_format_value_and_type("$HOST$PROGRAM", "bzorpsyslog-ng", LM_VT_STRING);
+  assert_template_format_value_and_type("${number1}123", "123123", LM_VT_STRING);
+  assert_template_format_value_and_type("123${number1}", "123123", LM_VT_STRING);
+  assert_template_format_value_and_type("${number1}${number2}", "123456", LM_VT_STRING);
+}
+
+Test(template, test_literals_in_templates_are_typed_as_strings)
+{
+  assert_template_format_value_and_type("", "", LM_VT_STRING);
+  assert_template_format_value_and_type("123", "123", LM_VT_STRING);
+  assert_template_format_value_and_type("foobar", "foobar", LM_VT_STRING);
+}
+
+Test(template, test_single_element_typed_value_refs_are_typed_as_the_value)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  assert_template_format_value_and_type("${number1}", "123", LM_VT_INT64);
+}
+
+Test(template, test_single_element_typed_value_refs_with_escaping_are_typed_as_strings)
+{
+  assert_template_format_value_and_type_with_escaping("${number1}", TRUE, "123", LM_VT_STRING);
+}
+
+Test(template, test_default_values_are_typed_as_strings)
+{
+  assert_template_format_value_and_type("${unset:-foo}", "foo", LM_VT_STRING);
+}
+
+Test(template, test_type_hint_overrides_the_calculated_type)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  LogTemplate *template = compile_template("${number1}");
+
+  GString *formatted_value = g_string_sized_new(64);
+  LogMessage *msg = create_sample_message();
+  LogMessageValueType type;
+
+  /* no type-hint */
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("123", formatted_value->str);
+  cr_assert_eq(type, LM_VT_INT64);
+
+  cr_assert(log_template_set_type_hint(template, "float", NULL));
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("123", formatted_value->str);
+  cr_assert_eq(type, LM_VT_DOUBLE);
+
+  cr_assert(log_template_set_type_hint(template, "string", NULL));
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("123", formatted_value->str);
+  cr_assert_eq(type, LM_VT_STRING);
+
+  log_template_unref(template);
+  template = compile_template("${HOST}");
+  cr_assert(log_template_set_type_hint(template, "int64", NULL));
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("bzorp", formatted_value->str);
+  cr_assert_eq(type, LM_VT_INT64);
+
+  /* empty string with a type uses the type hint */
+  log_template_unref(template);
+  template = compile_template("");
+  cr_assert(log_template_set_type_hint(template, "null", NULL));
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("", formatted_value->str);
+  cr_assert_eq(type, LM_VT_NULL);
+
+  log_template_unref(template);
+  /* msgref out of range */
+  template = compile_template("${HOST}@2");
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("", formatted_value->str);
+  cr_assert_eq(type, LM_VT_STRING);
+
+  log_msg_unref(msg);
   log_template_unref(template);
 }

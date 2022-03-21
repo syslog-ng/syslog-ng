@@ -104,15 +104,24 @@ parse_integer_or_float(const char *str, Number *number)
 }
 
 void
-format_number(GString *result, Number n)
+format_number(GString *result, LogMessageValueType *type, Number n)
 {
   if (n.value_type == Integer)
     {
+      *type = LM_VT_INT64;
       format_int64_padded(result, 0, ' ', 10, number_as_int(n));
       return;
     }
 
+  *type = LM_VT_DOUBLE;
   g_string_append_printf(result, "%.*f", n.precision, number_as_double(n));
+}
+
+void
+format_nan(GString *result, LogMessageValueType *type)
+{
+  g_string_append_len(result, "NaN", 3);
+  *type = LM_VT_STRING;
 }
 
 static gboolean
@@ -146,13 +155,13 @@ tf_num_parse(gint argc, GString *argv[],
 }
 
 static void
-tf_num_plus(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_num_plus(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   Number n, m, res;
 
   if (!tf_num_parse(argc, argv, "+", &n, &m))
     {
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result, type);
       return;
     }
 
@@ -165,19 +174,19 @@ tf_num_plus(LogMessage *msg, gint argc, GString *argv[], GString *result)
       number_set_double(&res, number_as_double(n) + number_as_double(m));
     }
 
-  format_number(result, res);
+  format_number(result, type, res);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_plus);
 
 static void
-tf_num_minus(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_num_minus(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   Number n, m, res;
 
   if (!tf_num_parse(argc, argv, "-", &n, &m))
     {
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result, type);
       return;
     }
 
@@ -190,19 +199,19 @@ tf_num_minus(LogMessage *msg, gint argc, GString *argv[], GString *result)
       number_set_double(&res, number_as_double(n) - number_as_double(m));
     }
 
-  format_number(result, res);
+  format_number(result, type, res);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_minus);
 
 static void
-tf_num_multi(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_num_multi(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   Number n, m, res;
 
   if (!tf_num_parse(argc, argv, "*", &n, &m))
     {
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result, type);
       return;
     }
 
@@ -215,19 +224,19 @@ tf_num_multi(LogMessage *msg, gint argc, GString *argv[], GString *result)
       number_set_double(&res, number_as_double(n) * number_as_double(m));
     }
 
-  format_number(result, res);
+  format_number(result, type, res);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_multi);
 
 static void
-tf_num_div(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_num_div(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   Number n, m, res;
 
   if (!tf_num_parse(argc, argv, "/", &n, &m) || number_is_zero(m))
     {
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result, type);
       return;
     }
 
@@ -240,19 +249,19 @@ tf_num_div(LogMessage *msg, gint argc, GString *argv[], GString *result)
       number_set_double(&res, number_as_double(n) / number_as_double(m));
     }
 
-  format_number(result, res);
+  format_number(result, type, res);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_div);
 
 static void
-tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   Number n, m, res;
 
   if (!tf_num_parse(argc, argv, "%", &n, &m) || number_is_zero(m))
     {
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result, type);
       return;
     }
 
@@ -265,13 +274,13 @@ tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result)
       number_set_double(&res, fmod(number_as_double(n), number_as_double(m)));
     }
 
-  format_number(result, res);
+  format_number(result, type, res);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_mod);
 
 static void
-tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   Number n;
   gint64 precision = 0;
@@ -280,7 +289,7 @@ tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
     {
       msg_debug("Template function requires exactly one or two arguments.",
                 evt_tag_str("function", "round"));
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result, type);
       return;
     }
 
@@ -289,7 +298,7 @@ tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
       msg_debug("Parsing failed, template function's first argument is not a number",
                 evt_tag_str("function", "round"),
                 evt_tag_str("arg1", argv[0]->str));
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result, type);
       return;
     }
 
@@ -300,7 +309,7 @@ tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
           msg_debug("Parsing failed, template function's second argument is not a number",
                     evt_tag_str("function", "round"),
                     evt_tag_str("arg2", argv[1]->str));
-          g_string_append_len(result, "NaN", 3);
+          format_nan(result, type);
           return;
         }
 
@@ -309,7 +318,7 @@ tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
           msg_debug("Parsing failed, precision is not in the supported range (0..20)",
                     evt_tag_str("function", "round"),
                     evt_tag_str("arg2", argv[1]->str));
-          g_string_append_len(result, "NaN", 3);
+          format_nan(result, type);
           return;
         }
     }
@@ -323,13 +332,13 @@ tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
    */
   n.precision = precision;
 
-  format_number(result, n);
+  format_number(result, type, n);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_round);
 
 static void
-tf_num_ceil(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_num_ceil(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   Number n;
 
@@ -337,7 +346,7 @@ tf_num_ceil(LogMessage *msg, gint argc, GString *argv[], GString *result)
     {
       msg_debug("Template function requires one argument.",
                 evt_tag_str("function", "ceil"));
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result, type);
       return;
     }
 
@@ -346,17 +355,18 @@ tf_num_ceil(LogMessage *msg, gint argc, GString *argv[], GString *result)
       msg_debug("Parsing failed, template function's first argument is not a number",
                 evt_tag_str("function", "ceil"),
                 evt_tag_str("arg1", argv[0]->str));
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result, type);
       return;
     }
 
+  *type = LM_VT_INT64;
   format_int64_padded(result, 0, ' ', 10, (gint64)ceil(number_as_double(n)));
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_ceil);
 
 static void
-tf_num_floor(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_num_floor(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   Number n;
 
@@ -364,7 +374,7 @@ tf_num_floor(LogMessage *msg, gint argc, GString *argv[], GString *result)
     {
       msg_debug("Template function requires one argument.",
                 evt_tag_str("function", "floor"));
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result, type);
       return;
     }
 
@@ -373,10 +383,11 @@ tf_num_floor(LogMessage *msg, gint argc, GString *argv[], GString *result)
       msg_debug("Parsing failed, template function's first argument is not a number",
                 evt_tag_str("function", "floor"),
                 evt_tag_str("arg1", argv[0]->str));
-      g_string_append_len(result, "NaN", 3);
+      format_nan(result, type);
       return;
     }
 
+  *type = LM_VT_INT64;
   format_int64_padded(result, 0, ' ', 10, (gint64)floor(number_as_double(n)));
 }
 
@@ -464,12 +475,18 @@ _tf_num_store_first(gpointer accumulator, gint64 element)
 
 static void
 _tf_num_aggregation(TFSimpleFuncState *state, const LogTemplateInvokeArgs *args,
-                    AggregateFunc aggregate, GString *result)
+                    AggregateFunc aggregate, GString *result, LogMessageValueType *type)
 {
   gint64 accumulator;
-  if (!_tf_num_filter(state, args, _tf_num_store_first, aggregate, &accumulator))
-    return;
 
+  if (!_tf_num_filter(state, args, _tf_num_store_first, aggregate, &accumulator))
+    {
+      /* invalid arguments, empty string */
+      *type = LM_VT_NULL;
+      return;
+    }
+
+  *type = LM_VT_INT64;
   format_int64_padded(result, 0, ' ', 10, accumulator);
 }
 
@@ -483,9 +500,9 @@ _tf_num_sum(gpointer accumulator, gint64 element)
 
 static void
 tf_num_sum_call(LogTemplateFunction *self, gpointer s,
-                const LogTemplateInvokeArgs *args, GString *result)
+                const LogTemplateInvokeArgs *args, GString *result, LogMessageValueType *type)
 {
-  _tf_num_aggregation((TFSimpleFuncState *) s, args, _tf_num_sum, result);
+  _tf_num_aggregation((TFSimpleFuncState *) s, args, _tf_num_sum, result, type);
 }
 
 TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_sum,
@@ -504,9 +521,9 @@ _tf_num_minimum(gpointer accumulator, gint64 element)
 
 static void
 tf_num_min_call(LogTemplateFunction *self, gpointer s,
-                const LogTemplateInvokeArgs *args, GString *result)
+                const LogTemplateInvokeArgs *args, GString *result, LogMessageValueType *type)
 {
-  _tf_num_aggregation((TFSimpleFuncState *) s, args, _tf_num_minimum, result);
+  _tf_num_aggregation((TFSimpleFuncState *) s, args, _tf_num_minimum, result, type);
 }
 
 TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_min,
@@ -525,9 +542,9 @@ _tf_num_maximum(gpointer accumulator, gint64 element)
 
 static void
 tf_num_max_call(LogTemplateFunction *self, gpointer s,
-                const LogTemplateInvokeArgs *args, GString *result)
+                const LogTemplateInvokeArgs *args, GString *result, LogMessageValueType *type)
 {
-  _tf_num_aggregation((TFSimpleFuncState *) s, args, _tf_num_maximum, result);
+  _tf_num_aggregation((TFSimpleFuncState *) s, args, _tf_num_maximum, result, type);
 }
 
 TEMPLATE_FUNCTION(TFSimpleFuncState, tf_num_max,
@@ -560,15 +577,22 @@ _tf_num_average(gpointer accumulator, gint64 element)
 
 static void
 tf_num_average_call(LogTemplateFunction *self, gpointer s,
-                    const LogTemplateInvokeArgs *args, GString *result)
+                    const LogTemplateInvokeArgs *args, GString *result, LogMessageValueType *type)
 {
   TFSimpleFuncState *state = (TFSimpleFuncState *)s;
   AverageState accumulator = {0, 0};
 
   if (!_tf_num_filter(state, args, _tf_num_store_average_first, _tf_num_average, &accumulator))
-    return;
+    {
+      *type = LM_VT_NULL;
+      return;
+    }
+
+  /* _tf_num_filter() would return FALSE if there are no elements, so
+   * handling this case with assert is fine */
 
   g_assert(accumulator.count > 0);
+  *type = LM_VT_INT64;
   gint64 mean = accumulator.sum / accumulator.count;
   format_int64_padded(result, 0, ' ', 10, mean);
 }

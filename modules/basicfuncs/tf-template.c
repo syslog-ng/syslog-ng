@@ -157,7 +157,8 @@ tf_template_get_template_to_be_invoked(TFTemplateState *state, const LogTemplate
 }
 
 static void
-tf_template_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_template_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+                 LogMessageValueType *type)
 {
   TFTemplateState *state = (TFTemplateState *) s;
   LogTemplate *invoked_template = NULL;
@@ -165,12 +166,13 @@ tf_template_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeA
   invoked_template = tf_template_get_template_to_be_invoked(state, args);
   if (!invoked_template)
     {
+      *type = LM_VT_STRING;
       _append_args_with_separator(state->super.argc - 1, (GString **) &args->argv[1], result, ' ');
       return;
     }
 
-  log_template_append_format_with_context(invoked_template, args->messages, args->num_messages,
-                                          args->options, result);
+  log_template_append_format_value_and_type_with_context(invoked_template, args->messages, args->num_messages,
+                                                         args->options, result, type);
   log_template_unref(invoked_template);
 }
 

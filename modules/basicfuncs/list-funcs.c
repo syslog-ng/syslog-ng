@@ -37,11 +37,12 @@ _append_comma_between_list_elements_if_needed(GString *result, gsize initial_len
 }
 
 static void
-tf_list_concat(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_list_concat(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   ListScanner scanner;
   gsize initial_len = result->len;
 
+  *type = LM_VT_LIST;
   list_scanner_init(&scanner);
   list_scanner_input_gstring_array(&scanner, argc, argv);
   while (list_scanner_scan_next(&scanner))
@@ -55,10 +56,11 @@ tf_list_concat(LogMessage *msg, gint argc, GString *argv[], GString *result)
 TEMPLATE_FUNCTION_SIMPLE(tf_list_concat);
 
 static void
-tf_list_append(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_list_append(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gsize initial_len = result->len;
 
+  *type = LM_VT_LIST;
   if (argc == 0)
     return;
   g_string_append_len(result, argv[0]->str, argv[0]->len);
@@ -182,19 +184,21 @@ _list_nth(gint argc, GString *argv[], GString *result, gint ndx)
  * Take off the first item of the list, unencoded.
  */
 static void
-tf_list_head(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_list_head(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
+  *type = LM_VT_STRING;
   _list_nth(argc, argv, result, 0);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_list_head);
 
 static void
-tf_list_nth(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_list_nth(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gint64 ndx = 0;
   const gchar *ndx_spec;
 
+  *type = LM_VT_STRING;
   if (argc < 1)
     return;
 
@@ -213,8 +217,9 @@ tf_list_nth(LogMessage *msg, gint argc, GString *argv[], GString *result)
 TEMPLATE_FUNCTION_SIMPLE(tf_list_nth);
 
 static void
-tf_list_tail(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_list_tail(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
+  *type = LM_VT_STRING;
   if (argc == 0)
     return;
 
@@ -224,9 +229,11 @@ tf_list_tail(LogMessage *msg, gint argc, GString *argv[], GString *result)
 TEMPLATE_FUNCTION_SIMPLE(tf_list_tail);
 
 static void
-tf_list_count(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_list_count(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gint count = _list_count(argc, argv);
+
+  *type = LM_VT_INT32;
   format_uint32_padded(result, -1, ' ', 10, count);
 }
 
@@ -234,12 +241,13 @@ TEMPLATE_FUNCTION_SIMPLE(tf_list_count);
 
 /* $(list-slice FIRST:LAST list ...) */
 static void
-tf_list_slice(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_list_slice(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gint64 first_ndx = 0, last_ndx = INT_MAX;
   const gchar *slice_spec, *first_spec, *last_spec;
   gchar *colon;
 
+  *type = LM_VT_LIST;
   if (argc < 1)
     return;
 
@@ -278,11 +286,12 @@ tf_list_slice(LogMessage *msg, gint argc, GString *argv[], GString *result)
 TEMPLATE_FUNCTION_SIMPLE(tf_list_slice);
 
 static void
-tf_explode(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_explode(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   gsize initial_len = result->len;
   GString *separator;
 
+  *type = LM_VT_LIST;
   if (argc < 1)
     return;
 
@@ -304,12 +313,13 @@ tf_explode(LogMessage *msg, gint argc, GString *argv[], GString *result)
 TEMPLATE_FUNCTION_SIMPLE(tf_explode);
 
 static void
-tf_implode(LogMessage *msg, gint argc, GString *argv[], GString *result)
+tf_implode(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
 {
   ListScanner scanner;
   gsize initial_len = result->len;
   GString *separator;
 
+  *type = LM_VT_STRING;
   if (argc < 1)
     return;
 
@@ -589,11 +599,14 @@ tf_list_search_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
 }
 
 static void
-tf_list_search_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_list_search_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+                    LogMessageValueType *type)
 {
   ListSearchState *state = (ListSearchState *)s;
   ListScanner scanner;
   gint index = state->start_index;
+
+  *type = LM_VT_INT32;
 
   list_scanner_init(&scanner);
   list_scanner_input_gstring_array(&scanner, state->super.argc - 1, &args->argv[1]);

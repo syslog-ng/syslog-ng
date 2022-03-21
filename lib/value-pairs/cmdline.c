@@ -209,6 +209,15 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
   template = log_template_new(cfg, NULL);
   if (!log_template_compile(template, v, error))
     goto error;
+
+  /* NOTE: t == NULL means that we disable casting, which might be in place
+   * due to compatibility with 3.x.  This means that value-pairs would
+   * _expect_ log_template_format() to return a proper type even in 3.x
+   * mode.  This is OK as value pairs is doing its own compatibility
+   * guarantees and would override type information from LogTemplate.  This
+   * happens for instance with a --no-cast option to $(format-json), which
+   * explicitly asks for the new behavior.  */
+
   if (!log_template_set_type_hint(template, t, error))
     goto error;
 

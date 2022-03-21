@@ -35,12 +35,13 @@ typedef struct _TFSimpleFuncState
   LogTemplate **argv_templates;
 } TFSimpleFuncState;
 
-typedef void (*TFSimpleFunc)(LogMessage *msg, gint argc, GString *argv[], GString *result);
+typedef void (*TFSimpleFunc)(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type);
 
 gboolean tf_simple_func_prepare(LogTemplateFunction *self, gpointer state, LogTemplate *parent, gint argc,
                                 gchar *argv[], GError **error);
 void tf_simple_func_eval(LogTemplateFunction *self, gpointer state, LogTemplateInvokeArgs *args);
-void tf_simple_func_call(LogTemplateFunction *self, gpointer state, const LogTemplateInvokeArgs *args, GString *result);
+void tf_simple_func_call(LogTemplateFunction *self, gpointer state, const LogTemplateInvokeArgs *args, GString *result,
+                         LogMessageValueType *type);
 void tf_simple_func_free_state(gpointer state);
 
 #define TEMPLATE_FUNCTION_SIMPLE(x) TEMPLATE_FUNCTION(TFSimpleFuncState, x, tf_simple_func_prepare, tf_simple_func_eval, tf_simple_func_call, tf_simple_func_free_state, x)

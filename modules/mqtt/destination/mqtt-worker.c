@@ -99,7 +99,7 @@ mqtt_dest_worker_resolve_template_topic_name(MQTTDestinationWorker *self, LogMes
 {
   MQTTDestinationDriver *owner = (MQTTDestinationDriver *) self->super.owner;
 
-  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL};
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING};
   log_template_format(owner->topic_name, msg, &options, self->topic_name_buffer);
 
   GError *error = NULL;
@@ -156,7 +156,7 @@ _format_message(LogThreadedDestWorker *s, LogMessage *msg)
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
   MQTTDestinationDriver *owner = (MQTTDestinationDriver *) self->super.owner;
 
-  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL};
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING};
 
   log_template_format(owner->message, msg, &options, self->string_to_write);
 }

@@ -244,7 +244,7 @@ __queue_native_message(JavaDestinationProxy *self, JNIEnv *env, LogMessage *msg)
 static gint
 __queue_formatted_message(JavaDestinationProxy *self, JNIEnv *env, LogMessage *msg)
 {
-  LogTemplateEvalOptions options = {NULL, LTZ_SEND, *self->seq_num, NULL};
+  LogTemplateEvalOptions options = {NULL, LTZ_SEND, *self->seq_num, NULL, LM_VT_STRING};
   log_template_format(self->template, msg, &options, self->formatted_message);
   jstring message = CALL_JAVA_FUNCTION(env, NewStringUTF, self->formatted_message->str);
   jint res = CALL_JAVA_FUNCTION(env, CallIntMethod, self->dest_impl.dest_object, self->dest_impl.mi_send,

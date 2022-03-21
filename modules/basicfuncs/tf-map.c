@@ -56,7 +56,8 @@ tf_map_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint 
 }
 
 static void
-tf_map_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+tf_map_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+            LogMessageValueType *type)
 {
   ListScanner scanner;
   gsize initial_len = result->len;
@@ -64,6 +65,7 @@ tf_map_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *
   GString *lst = args->argv[0];
   LogMessage *msg = args->messages[0];
 
+  *type = LM_VT_LIST;
   list_scanner_init(&scanner);
   list_scanner_input_string(&scanner, lst->str, lst->len);
 

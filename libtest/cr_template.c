@@ -170,10 +170,12 @@ compile_escaped_template(const gchar *template)
 void
 assert_template_format_with_escaping_and_context_msgs(const gchar *template, gboolean escaping,
                                                       const gchar *expected, gssize expected_len,
+                                                      LogMessageValueType expected_type,
                                                       LogMessage **msgs, gint num_messages)
 {
   LogTemplate *templ = compile_template_with_escaping(template, escaping);
   const gchar *prefix = "somevoodooprefix/";
+  LogMessageValueType type;
   gint prefix_len = strlen(prefix);
   if (!templ)
     return;
@@ -181,8 +183,8 @@ assert_template_format_with_escaping_and_context_msgs(const gchar *template, gbo
   GString *res = g_string_new(prefix);
   const gchar *context_id = "test-context-id";
 
-  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, context_id};
-  log_template_append_format_with_context(templ, msgs, num_messages, &options, res);
+  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, context_id, LM_VT_STRING};
+  log_template_append_format_value_and_type_with_context(templ, msgs, num_messages, &options, res, &type);
   cr_assert(strncmp(res->str, prefix, prefix_len) == 0,
             "the prefix was overwritten by the template, template=%s, res=%s, expected_prefix=%s",
             template, res->str, prefix);
@@ -195,6 +197,10 @@ assert_template_format_with_escaping_and_context_msgs(const gchar *template, gbo
   cr_assert_arr_eq(res->str + prefix_len, expected, expected_len,
                    "context template test failed, template=%s, actual=%.*s, expected=%.*s",
                    template, (gint) res->len - prefix_len, res->str + prefix_len, (gint) expected_len, expected);
+  if (expected_type != LM_VT_NONE)
+    cr_assert_eq(type, expected_type,
+                 "expected type does not match template=%s, type=%d, expected_type=%d",
+                 template, type, expected_type);
   log_template_unref(templ);
   g_string_free(res, TRUE);
 }
@@ -203,7 +209,7 @@ void
 assert_template_format_with_context_msgs(const gchar *template, const gchar *expected, LogMessage **msgs,
                                          gint num_messages)
 {
-  assert_template_format_with_escaping_and_context_msgs(template, FALSE, expected, -1, msgs, num_messages);
+  assert_template_format_with_escaping_and_context_msgs(template, FALSE, expected, -1, LM_VT_NONE, msgs, num_messages);
 }
 
 
@@ -212,7 +218,7 @@ assert_template_format_with_escaping_msg(const gchar *template, gboolean escapin
                                          const gchar *expected,
                                          LogMessage *msg)
 {
-  assert_template_format_with_escaping_and_context_msgs(template, escaping, expected, -1, &msg, 1);
+  assert_template_format_with_escaping_and_context_msgs(template, escaping, expected, -1, LM_VT_NONE, &msg, 1);
 }
 
 void
@@ -237,6 +243,25 @@ assert_template_format(const gchar *template, const gchar *expected)
 }
 
 void
+assert_template_format_value_and_type(const gchar *template, const gchar *expected, LogMessageValueType expected_type)
+{
+  LogMessage *msg = create_sample_message();
+
+  assert_template_format_with_escaping_and_context_msgs(template, FALSE, expected, -1, expected_type, &msg, 1);
+  log_msg_unref(msg);
+}
+
+void
+assert_template_format_value_and_type_with_escaping(const gchar *template, gboolean escaping, const gchar *expected,
+                                                    LogMessageValueType expected_type)
+{
+  LogMessage *msg = create_sample_message();
+
+  assert_template_format_with_escaping_and_context_msgs(template, escaping, expected, -1, expected_type, &msg, 1);
+  log_msg_unref(msg);
+}
+
+void
 assert_template_format_with_context(const gchar *template, const gchar *expected)
 {
   LogMessage *msg;
@@ -255,7 +280,7 @@ assert_template_format_with_len(const gchar *template, const gchar *expected, gs
 {
   LogMessage *msg = create_sample_message();
 
-  assert_template_format_with_escaping_and_context_msgs(template, FALSE, expected, expected_len, &msg, 1);
+  assert_template_format_with_escaping_and_context_msgs(template, FALSE, expected, expected_len, LM_VT_NONE, &msg, 1);
   log_msg_unref(msg);
 }
 

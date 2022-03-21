@@ -28,6 +28,7 @@
 #include "syslog-ng.h"
 #include "common-template-typedefs.h"
 #include "timeutils/zoneinfo.h"
+#include "logmsg/logmsg.h"
 
 #define LTZ_LOCAL 0
 #define LTZ_SEND  1
@@ -61,14 +62,25 @@ typedef struct _LogTemplateEvalOptions
   gint tz;
   gint seq_num;
   const gchar *context_id;
+  LogMessageValueType context_id_type;
 } LogTemplateEvalOptions;
 
-#define DEFAULT_TEMPLATE_EVAL_OPTIONS ((LogTemplateEvalOptions){NULL, LTZ_LOCAL, 0, NULL})
+#define DEFAULT_TEMPLATE_EVAL_OPTIONS ((LogTemplateEvalOptions){NULL, LTZ_LOCAL, 0, NULL, LM_VT_STRING})
 
 void log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateEvalOptions *options, GString *result);
+void log_template_format_value_and_type(LogTemplate *self, LogMessage *lm, LogTemplateEvalOptions *options,
+                                        GString *result, LogMessageValueType *type);
 void log_template_append_format(LogTemplate *self, LogMessage *lm, LogTemplateEvalOptions *options, GString *result);
+void log_template_append_format_value_and_type(LogTemplate *self, LogMessage *lm, LogTemplateEvalOptions *options,
+                                               GString *result, LogMessageValueType *type);
 void log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
                                              LogTemplateEvalOptions *options, GString *result);
+void log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
+                                                            LogTemplateEvalOptions *options,
+                                                            GString *result, LogMessageValueType *type);
+void log_template_format_value_and_type_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
+                                                     LogTemplateEvalOptions *options,
+                                                     GString *result, LogMessageValueType *type);
 void log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
                                       LogTemplateEvalOptions *options, GString *result);
 
