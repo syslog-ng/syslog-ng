@@ -59,6 +59,30 @@
 
 CfgArgs *last_module_args = NULL;
 
+static void
+_report_define_deprecations(const gchar *name, const gchar *value)
+{
+  if (strcmp(name, "autoload-compiled-modules") == 0 && atoi(value) == 0)
+    msg_warning("WARNING: disabling plugin discovery via the autoload-compiled-modules "
+                "@define has become unsupported in " VERSION_3_36
+                ", use the syslog-ng command line option --no-module-discovery instead");
+  else if (strcmp(name, "module-path") == 0)
+    msg_warning("WARNING: changing the path to runtime loaded modules via the module-path "
+                "@define has become unsupported in " VERSION_3_36
+                ", use the command line option --module-path instead");
+}
+
+static void
+pragma_define_global(GlobalConfig *cfg, const gchar *name, const gchar *value)
+{
+  msg_debug("Global value changed",
+            evt_tag_str("define", name),
+            evt_tag_str("value", value));
+
+  _report_define_deprecations(name, value);
+  cfg_args_set(cfg->globals, name, value);
+}
+
 }
 
 %type   <cptr> requires_message
@@ -107,10 +131,7 @@ version_stmt
 define_stmt
 	: KW_DEFINE LL_IDENTIFIER string_or_number
           {
-            msg_debug("Global value changed",
-                      evt_tag_str("define", $2),
-                      evt_tag_str("value", $3));
-	    cfg_args_set(configuration->globals, $2, $3);
+            pragma_define_global(configuration, $2, $3);
             free($2);
             free($3);
           }

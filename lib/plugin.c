@@ -425,6 +425,21 @@ plugin_is_module_available(PluginContext *context, const gchar *module_name)
   return FALSE;
 }
 
+gboolean
+plugin_is_plugin_available(PluginContext *context, gint plugin_type, const gchar *plugin_name)
+{
+  Plugin *p;
+  PluginCandidate *candidate;
+
+  p = _find_plugin_in_list(context->plugins, plugin_type, plugin_name);
+  if (p)
+    return TRUE;
+
+  candidate = (PluginCandidate *) _find_plugin_in_list(context->candidate_plugins, plugin_type, plugin_name);
+  return !!candidate;
+}
+
+
 /************************************************************
  * Candidate modules
  ************************************************************/

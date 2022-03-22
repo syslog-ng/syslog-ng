@@ -61,7 +61,7 @@ start
           {
             last_driver = *instance = afstomp_dd_new(configuration);
           }
-          '(' afstomp_options ')'		{ YYACCEPT; }
+          '(' _inner_dest_context_push afstomp_options _inner_dest_context_pop ')'		{ YYACCEPT; }
           ;
 
 afstomp_options

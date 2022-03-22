@@ -69,7 +69,7 @@ start
         ;
 
 source_afprogram
-	: KW_PROGRAM '(' source_afprogram_params ')' { $$ = $3; }
+	: KW_PROGRAM '(' _inner_src_context_push source_afprogram_params _inner_src_context_pop ')' { $$ = $4; }
 	;
 
 source_afprogram_params
@@ -93,7 +93,7 @@ source_afprogram_option
 	;
 
 dest_afprogram
-	: KW_PROGRAM '(' dest_afprogram_params ')' { $$ = $3; }
+	: KW_PROGRAM '(' _inner_dest_context_push dest_afprogram_params _inner_dest_context_pop ')' { $$ = $4; }
 	;
 
 dest_afprogram_params

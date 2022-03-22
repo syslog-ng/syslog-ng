@@ -66,7 +66,7 @@ start
 
 
 source_openbsd
-	: KW_OPENBSD '(' source_openbsd_options ')'
+	: KW_OPENBSD '(' _inner_src_context_push source_openbsd_options _inner_src_context_pop ')'
 	  {
 	    last_driver = *instance = openbsd_sd_new(configuration);
 	  }

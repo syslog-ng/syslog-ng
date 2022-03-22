@@ -111,7 +111,7 @@ http_destination
       {
         last_driver = http_dd_new(configuration);
       }
-      '(' http_options ')'  { $$ = last_driver; }
+      '(' _inner_dest_context_push http_options _inner_dest_context_pop ')'  { $$ = last_driver; }
     ;
 
 http_options

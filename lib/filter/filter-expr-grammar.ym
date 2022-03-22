@@ -139,8 +139,8 @@ filter_simple_expr
             free($6);
           }
 	| filter_re					{ $$ = last_filter_expr; }
-	| filter_plugin
 	| filter_comparison
+	| filter_plugin
 	;
 
 filter_plugin
@@ -164,15 +164,15 @@ filter_plugin
 	;
 
 filter_identifier
-  : LL_IDENTIFIER
-  | KW_THROTTLE
-      {
-        msg_warning_once("WARNING: the throttle() filter has been renamed to rate-limit() in " VERSION_3_36
-                         ", please update your configuration to use the name rate-limit() instead of throttle()",
-                         cfg_lexer_format_location_tag(lexer, &@0));
-        $$ = g_strdup("rate-limit");
-      }
-  ;
+        : LL_PLUGIN
+        | KW_THROTTLE
+            {
+              msg_warning_once("WARNING: the throttle() filter has been renamed to rate-limit() in " VERSION_3_36
+                               ", please update your configuration to use the name rate-limit() instead of throttle()",
+                               cfg_lexer_format_location_tag(lexer, &@0));
+              $$ = g_strdup("rate-limit");
+            }
+        ;
 
 filter_comparison
 	: LL_STRING operator LL_STRING

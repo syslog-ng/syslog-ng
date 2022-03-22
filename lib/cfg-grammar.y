@@ -316,6 +316,7 @@
 %token <cptr> LL_STRING               10433
 %token <token> LL_TOKEN               10434
 %token <cptr> LL_BLOCK                10435
+%token <cptr> LL_PLUGIN	              10436
 
 %destructor { free($$); } <cptr>
 
@@ -498,19 +499,12 @@ rewrite_stmt
           }
 
 log_stmt
-        : KW_LOG
-          { cfg_lexer_push_context(lexer, LL_CONTEXT_LOG, NULL, "log statement"); }
-          '{' log_content '}'
-          { cfg_lexer_pop_context(lexer); }
-          {
-            $$ = $4;
-          }
-
+        : KW_LOG _log_context_push '{' log_content '}' _log_context_pop             { $$ = $4;}
 	;
 
 
 plugin_stmt
-        : LL_IDENTIFIER
+        : LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_ROOT;
@@ -529,13 +523,7 @@ plugin_stmt
 /* START_RULES */
 
 source_content
-        :
-          { cfg_lexer_push_context(lexer, LL_CONTEXT_SOURCE, NULL, "source statement"); }
-          source_items
-          { cfg_lexer_pop_context(lexer); }
-          {
-            $$ = log_expr_node_new_junction($2, &@$);
-          }
+        : _source_context_push source_items _source_context_pop   { $$ = log_expr_node_new_junction($2, &@$); }
         ;
 
 source_items
@@ -550,7 +538,7 @@ source_item
 	;
 
 source_plugin
-        : LL_IDENTIFIER
+        : LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_SOURCE;
@@ -622,12 +610,7 @@ rewrite_content
         ;
 
 dest_content
-         : { cfg_lexer_push_context(lexer, LL_CONTEXT_DESTINATION, NULL, "destination statement"); }
-            dest_items
-           { cfg_lexer_pop_context(lexer); }
-           {
-             $$ = log_expr_node_new_junction($2, &@$);
-           }
+         : _destination_context_push dest_items _destination_context_pop               { $$ = log_expr_node_new_junction($2, &@$); }
          ;
 
 
@@ -643,7 +626,7 @@ dest_item
 	;
 
 dest_plugin
-        : LL_IDENTIFIER
+        : LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_DESTINATION;
@@ -761,10 +744,7 @@ log_flags_items
 /* END_RULES */
 
 options_stmt
-        : KW_OPTIONS
-          { cfg_lexer_push_context(lexer, LL_CONTEXT_OPTIONS, NULL, "global options"); }
-          '{' options_items '}'
-          { cfg_lexer_pop_context(lexer); }
+        : KW_OPTIONS _options_context_push '{' options_items '}' _options_context_pop
 	;
 
 template_stmt
@@ -855,18 +835,15 @@ template_item
 
 block_stmt
         : KW_BLOCK
-          { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_DEF, block_def_keywords, "block definition"); }
+          _block_def_context_push
           LL_IDENTIFIER LL_IDENTIFIER
           '(' { last_block_args = cfg_args_new(); } block_definition ')'
-          { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "block content"); }
+          _block_content_context_push
           LL_BLOCK
+          _block_content_context_pop
+          _block_def_context_pop
           {
             CfgBlockGenerator *block;
-
-            /* block content */
-            cfg_lexer_pop_context(lexer);
-            /* block definition */
-            cfg_lexer_pop_context(lexer);
 
             gint context_type = cfg_lexer_lookup_context_type_by_name($3);
             CHECK_ERROR(context_type, @3, "unknown context \"%s\"", $3);
@@ -891,15 +868,7 @@ block_args
         ;
 
 block_arg
-        : LL_IDENTIFIER
-          {
-            cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_ARG, NULL, "block argument");
-          }
-          LL_BLOCK
-          {
-            cfg_lexer_pop_context(lexer);
-            cfg_args_set(last_block_args, $1, $3); free($1); free($3);
-          }
+        : LL_IDENTIFIER _block_arg_context_push LL_BLOCK _block_arg_context_pop      { cfg_args_set(last_block_args, $1, $3); free($1); free($3); }
         ;
 
 options_items
@@ -947,7 +916,7 @@ options_item
 	| { last_stats_options = &configuration->stats_options; } stat_option
 	| { last_dns_cache_options = &configuration->dns_cache_options; } dns_cache_option
 	| { last_file_perm_options = &configuration->file_perm_options; } file_perm_option
-	| LL_IDENTIFIER
+	| LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_OPTIONS;
@@ -1131,7 +1100,7 @@ driver_option
         ;
 
 inner_source
-        : LL_IDENTIFIER
+        : LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_INNER_SRC;
@@ -1162,7 +1131,7 @@ source_driver_option
         ;
 
 inner_dest
-        : LL_IDENTIFIER
+        : LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_INNER_DEST;
@@ -1480,6 +1449,35 @@ rewrite_condition_opt
           } ')'
         ;
 
+
+_root_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_ROOT, NULL, "root context"); };
+_root_context_pop: { cfg_lexer_pop_context(lexer); };
+_destination_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_DESTINATION, NULL, "destination statement"); };
+_destination_context_pop: { cfg_lexer_pop_context(lexer); };
+_source_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_SOURCE, NULL, "source statement"); };
+_source_context_pop:  { cfg_lexer_pop_context(lexer); };
+_parser_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_PARSER, NULL, "parser statement"); };
+_parser_context_pop: { cfg_lexer_pop_context(lexer); };
+_rewrite_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_REWRITE, NULL, "rewrite statement"); };
+_rewrite_context_pop: { cfg_lexer_pop_context(lexer); };
+_filter_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_FILTER, NULL, "filter statement"); };
+_filter_context_pop: { cfg_lexer_pop_context(lexer); };
+_log_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_LOG, NULL, "log statement"); };
+_log_context_pop: { cfg_lexer_pop_context(lexer); };
+_block_def_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_DEF, block_def_keywords, "block definition"); };
+_block_def_context_pop: { cfg_lexer_pop_context(lexer); };
+_block_ref_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_REF, NULL, "block reference"); };
+_block_ref_context_pop: { cfg_lexer_pop_context(lexer); };
+_block_content_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "block content"); };
+_block_content_context_pop: { cfg_lexer_pop_context(lexer); };
+_block_arg_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_ARG, NULL, "block argument"); };
+_block_arg_context_pop: { cfg_lexer_pop_context(lexer); };
+_inner_dest_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_INNER_DEST, NULL, "within destination"); };
+_inner_dest_context_pop: { cfg_lexer_pop_context(lexer); };
+_inner_src_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_INNER_SRC, NULL, "within source"); };
+_inner_src_context_pop: { cfg_lexer_pop_context(lexer); };
+_options_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_OPTIONS, NULL, "options statement"); };
+_options_context_pop: { cfg_lexer_pop_context(lexer); };
 
 /* END_RULES */
 

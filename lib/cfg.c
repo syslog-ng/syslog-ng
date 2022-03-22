@@ -161,31 +161,9 @@ _invoke_module_deinit(gchar *key, ModuleConfig *mc, gpointer user_data)
   module_config_deinit(mc, cfg);
 }
 
-static gboolean
-_sync_plugin_module_path_with_global_define(GlobalConfig *self)
-{
-  const gchar *module_path;
-
-  /* Sync the @define module-path with the actual module search path as implemented by plugin.
-   *
-   * if @define module-path is not defined, we use whatever there's in
-   * PluginContext by default */
-  if (self->lexer)
-    {
-      module_path = cfg_args_get(self->globals, "module-path");
-      if (module_path && strcmp(module_path, self->plugin_context.module_path) != 0)
-        {
-          plugin_context_set_module_path(&self->plugin_context, module_path);
-          return TRUE;
-        }
-    }
-  return FALSE;
-}
-
 gboolean
 cfg_load_module_with_args(GlobalConfig *cfg, const gchar *module_name, CfgArgs *args)
 {
-  _sync_plugin_module_path_with_global_define(cfg);
   return plugin_load_module(&cfg->plugin_context, module_name, args);
 }
 
@@ -221,18 +199,12 @@ cfg_load_forced_modules(GlobalConfig *self)
     }
 }
 
-static gboolean
-_is_module_autoload_enabled(GlobalConfig *self)
-{
-  return atoi(cfg_args_get(self->globals, "autoload-compiled-modules") ? : "1");
-}
-
 void
 cfg_discover_candidate_modules(GlobalConfig *self)
 {
-  if (self->use_plugin_discovery && _is_module_autoload_enabled(self))
+  if (self->use_plugin_discovery)
     {
-      if (_sync_plugin_module_path_with_global_define(self) || !plugin_has_discovery_run(&self->plugin_context))
+      if (!plugin_has_discovery_run(&self->plugin_context))
         plugin_discover_candidate_modules(&self->plugin_context);
     }
 }
@@ -240,11 +212,13 @@ cfg_discover_candidate_modules(GlobalConfig *self)
 gboolean
 cfg_is_module_available(GlobalConfig *self, const gchar *module_name)
 {
-  cfg_discover_candidate_modules(self);
-  if (!_is_module_autoload_enabled(self))
-    return cfg_load_module(self, module_name);
+  /* NOTE: if plugin discovery is disabled, the only way to know if a module
+   * is available is to actually load it */
 
-  return plugin_is_module_available(&self->plugin_context, module_name);
+  if (!self->use_plugin_discovery)
+    return cfg_load_module(self, module_name);
+  else
+    return plugin_is_module_available(&self->plugin_context, module_name);
 }
 
 Plugin *
@@ -253,20 +227,22 @@ cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
   return plugin_find(&cfg->plugin_context, plugin_type, plugin_name);
 }
 
-/* construct a plugin instance by parsing its relevant portion from the
- * configuration file */
-gpointer
-cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, CFG_LTYPE *yylloc, gpointer arg)
+static CfgTokenBlock *
+_construct_plugin_prelude(GlobalConfig *cfg, Plugin *plugin, CFG_LTYPE *yylloc)
 {
   CfgTokenBlock *block;
   CFG_STYPE token;
 
-
-  /* we add two tokens to an inserted token-block:
+  /* we inject two tokens to a new token-block:
    *  1) the plugin type (in order to make it possible to support different
    *  plugins from the same grammar)
    *
    *  2) the keyword equivalent of the plugin name
+   *
+   * These tokens are automatically inserted into the token stream, so that
+   * the module specific grammar finds it there before any other token.
+   * These tokens are used to branch out for multiple different
+   * plugins within the same module, e.g. grammar.
    */
   block = cfg_token_block_new();
 
@@ -279,13 +255,20 @@ cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, CFG_LTYPE *yylloc, gpointer 
   /* start a new lexer context, so plugin specific keywords are recognized,
    * we only do this to lookup the parser name. */
   cfg_lexer_push_context(cfg->lexer, plugin->parser->context, plugin->parser->keywords, plugin->parser->name);
-  cfg_lexer_lookup_keyword(cfg->lexer, &token, yylloc, plugin->name);
+  cfg_lexer_map_word_to_token(cfg->lexer, &token, yylloc, plugin->name);
   cfg_lexer_pop_context(cfg->lexer);
 
   /* add plugin name token */
   cfg_token_block_add_and_consume_token(block, &token);
+  return block;
+}
 
-  cfg_lexer_inject_token_block(cfg->lexer, block);
+/* construct a plugin instance by parsing its relevant portion from the
+ * configuration file */
+gpointer
+cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, CFG_LTYPE *yylloc, gpointer arg)
+{
+  cfg_lexer_inject_token_block(cfg->lexer, _construct_plugin_prelude(cfg, plugin, yylloc));
 
   return plugin_construct_from_config(plugin, cfg->lexer, arg);
 }
@@ -664,6 +647,9 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
   FILE *cfg_file;
   gint res;
 
+  cfg_discover_candidate_modules(self);
+  cfg_load_forced_modules(self);
+
   self->filename = fname;
 
   if ((cfg_file = fopen(fname, "r")) != NULL)
@@ -678,6 +664,13 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
       if (preprocess_into)
         {
           cfg_dump_processed_config(self->preprocess_config, preprocess_into);
+        }
+
+      if (self->user_version == 0)
+        {
+          msg_error("ERROR: configuration files without a version number have become unsupported in " VERSION_3_13
+                    ", please specify a version number using @version as the first line in the configuration file");
+          return FALSE;
         }
 
       if (res)

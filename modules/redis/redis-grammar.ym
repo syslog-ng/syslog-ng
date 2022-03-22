@@ -53,7 +53,7 @@ start
           {
             last_driver = *instance = redis_dd_new(configuration);
           }
-          '(' redis_options ')' { YYACCEPT; }
+          '(' _inner_dest_context_push redis_options _inner_dest_context_pop ')' { YYACCEPT; }
 ;
 
 redis_options

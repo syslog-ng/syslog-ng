@@ -260,8 +260,8 @@ driver
 
 
 source_afunix
-        : KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	                                { $$ = $3; }
-	| KW_UNIX_STREAM '(' source_afunix_stream_params ')' 	                                { $$ = $3; }
+        : KW_UNIX_DGRAM '(' _inner_src_context_push source_afunix_dgram_params _inner_src_context_pop ')'	        { $$ = $4; }
+	| KW_UNIX_STREAM '(' _inner_src_context_push source_afunix_stream_params _inner_src_context_pop ')' 	        { $$ = $4; }
 	;
 
 source_afunix_dgram_params
@@ -306,10 +306,10 @@ source_afunix_option
 	;
 
 source_afinet
-	: KW_UDP '(' source_afinet_udp_params ')'		{ $$ = $3; }
-	| KW_TCP '(' source_afinet_tcp_params ')'		{ $$ = $3; }
-	| KW_UDP6 '(' source_afinet_udp6_params ')'		{ $$ = $3; }
-	| KW_TCP6 '(' source_afinet_tcp6_params ')'		{ $$ = $3; }
+	: KW_UDP '(' _inner_src_context_push source_afinet_udp_params _inner_src_context_pop ')'	{ $$ = $4; }
+	| KW_TCP '(' _inner_src_context_push source_afinet_tcp_params _inner_src_context_pop ')'	{ $$ = $4; }
+	| KW_UDP6 '(' _inner_src_context_push source_afinet_udp6_params _inner_src_context_pop ')'	{ $$ = $4; }
+	| KW_TCP6 '(' _inner_src_context_push source_afinet_tcp6_params _inner_src_context_pop ')'	{ $$ = $4; }
         ;
 
 source_afinet_udp_params
@@ -401,7 +401,7 @@ source_afsocket_stream_params
 	;
 
 source_afsyslog
-	: KW_SYSLOG '(' source_afsyslog_params ')'		{ $$ = $3; }
+	: KW_SYSLOG '(' _inner_src_context_push source_afsyslog_params _inner_src_context_pop ')'	{ $$ = $4; }
 	;
 
 source_afsyslog_params
@@ -427,7 +427,7 @@ source_afsyslog_option
 	;
 
 source_afnetwork
-	: KW_NETWORK '(' source_afnetwork_params ')'    { $$ = $3; }
+	: KW_NETWORK '(' _inner_src_context_push source_afnetwork_params _inner_src_context_pop ')'    { $$ = $4; }
 	;
 
 source_afnetwork_params
@@ -485,7 +485,7 @@ source_afsocket_transport
         ;
 
 source_systemd_syslog
-	: KW_SYSTEMD_SYSLOG '(' source_systemd_syslog_params ')'  { $$ = $3; }
+	: KW_SYSTEMD_SYSLOG '(' _inner_src_context_push source_systemd_syslog_params _inner_src_context_pop ')'  { $$ = $4; }
 	;
 
 source_systemd_syslog_params
@@ -515,8 +515,8 @@ source_systemd_syslog_option
         ;
 
 dest_afunix
-	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
-	| KW_UNIX_STREAM '(' dest_afunix_stream_params ')'	{ $$ = $3; }
+	: KW_UNIX_DGRAM '(' _inner_dest_context_push dest_afunix_dgram_params _inner_dest_context_pop ')'	{ $$ = $4; }
+	| KW_UNIX_STREAM '(' _inner_dest_context_push dest_afunix_stream_params _inner_dest_context_pop ')'	{ $$ = $4; }
 	;
 
 dest_afunix_dgram_params
@@ -552,10 +552,10 @@ dest_afunix_option
 	;
 
 dest_afinet
-	: KW_UDP '(' dest_afinet_udp_params ')'			{ $$ = $3; }
-	| KW_TCP '(' dest_afinet_tcp_params ')'			{ $$ = $3; }
-	| KW_UDP6 '(' dest_afinet_udp6_params ')'		{ $$ = $3; }
-	| KW_TCP6 '(' dest_afinet_tcp6_params ')'		{ $$ = $3; }
+	: KW_UDP '(' _inner_dest_context_push dest_afinet_udp_params _inner_dest_context_pop ')'			{ $$ = $4; }
+	| KW_TCP '(' _inner_dest_context_push dest_afinet_tcp_params _inner_dest_context_pop ')'			{ $$ = $4; }
+	| KW_UDP6 '(' _inner_dest_context_push dest_afinet_udp6_params _inner_dest_context_pop ')'		{ $$ = $4; }
+	| KW_TCP6 '(' _inner_dest_context_push dest_afinet_tcp6_params	_inner_dest_context_pop ')'		{ $$ = $4; }
 	;
 
 dest_afinet_udp_params
@@ -680,7 +680,7 @@ dest_afsocket_option
 
 
 dest_afsyslog
-        : KW_SYSLOG '(' dest_afsyslog_params ')'   { $$ = $3; }
+        : KW_SYSLOG '(' _inner_dest_context_push dest_afsyslog_params _inner_dest_context_pop ')'   { $$ = $4; }
 
 dest_afsyslog_params
         : string
@@ -704,7 +704,7 @@ dest_afsyslog_option
 	;
 
 dest_afnetwork
-	: KW_NETWORK '(' dest_afnetwork_params ')'	{ $$ = $3; }
+	: KW_NETWORK '(' _inner_dest_context_push dest_afnetwork_params _inner_dest_context_pop ')'	{ $$ = $4; }
 	;
 
 dest_afnetwork_params

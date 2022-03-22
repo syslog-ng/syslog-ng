@@ -55,7 +55,7 @@ start
         {
             last_driver = *instance = afmongodb_dd_new(configuration);
         }
-        '(' afmongodb_options ')'         { YYACCEPT; }
+        '(' _inner_dest_context_push afmongodb_options _inner_dest_context_pop ')'         { YYACCEPT; }
     ;
 
 afmongodb_options

@@ -76,7 +76,7 @@ source_msg_generator
       last_msg_generator_source_options = msg_generator_sd_get_source_options(last_driver);
       last_source_options = &last_msg_generator_source_options->super;
     }
-    '(' source_msg_generator_options ')' { $$ = last_driver; }
+    '(' _inner_src_context_push source_msg_generator_options _inner_src_context_pop ')' { $$ = last_driver; }
   ;
 
 source_msg_generator_options

@@ -68,7 +68,7 @@ start
           {
             last_driver = *instance = riemann_dd_new(configuration);
           }
-          '(' riemann_options ')'         { YYACCEPT; }
+          '(' _inner_dest_context_push riemann_options _inner_dest_context_pop ')'         { YYACCEPT; }
         ;
 
 riemann_options

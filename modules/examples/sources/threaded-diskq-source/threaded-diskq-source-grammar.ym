@@ -69,7 +69,7 @@ threaded_diskq_source
     {
       last_driver = *instance = threaded_diskq_sd_new(configuration);
     }
-    '(' threaded_diskq_source_options ')' { $$ = last_driver; }
+    '(' _inner_src_context_push threaded_diskq_source_options _inner_src_context_pop ')' { $$ = last_driver; }
   ;
 
 threaded_diskq_source_options

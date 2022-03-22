@@ -62,7 +62,7 @@ parser_expr_list
 
 
 parser_expr
-        : LL_IDENTIFIER
+        : LL_PLUGIN
           {
             Plugin *p;
             gint context = LL_CONTEXT_PARSER;

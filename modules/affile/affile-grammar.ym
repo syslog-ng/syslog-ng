@@ -119,15 +119,15 @@ start
         ;
 
 source_affile
-	: KW_FILE '(' source_affile_params ')'	{ $$ = $3; }
-	| KW_PIPE '(' source_afpipe_params ')'	{ $$ = $3; }
-	| KW_STDIN '(' source_stdin_params ')'	{ $$ = $3; }
+	: KW_FILE '(' _inner_src_context_push source_affile_params _inner_src_context_pop ')'	{ $$ = $4; }
+	| KW_PIPE '(' _inner_src_context_push source_afpipe_params _inner_src_context_pop ')'	{ $$ = $4; }
+	| KW_STDIN '(' _inner_src_context_push source_stdin_params _inner_src_context_pop ')'	{ $$ = $4; }
 	| KW_WILDCARD_FILE
 	{
 	  WildcardSourceDriver *sd = (WildcardSourceDriver *) wildcard_sd_new(configuration);;
 	  *instance = &sd->super.super;
 	  affile_grammar_set_wildcard_file_source_driver(sd);
-	} '(' source_wildcard_params ')' { $$ = last_driver; }
+	} '(' _inner_src_context_push source_wildcard_params _inner_src_context_pop ')' { $$ = last_driver; }
 	;
 
 source_wildcard_params
@@ -269,8 +269,8 @@ multi_line_timeout
 	;
 
 dest_affile
-	: KW_FILE '(' dest_affile_params ')'	{ $$ = $3; }
-	| KW_PIPE '(' dest_afpipe_params ')'    { $$ = $3; }
+	: KW_FILE '(' _inner_dest_context_push dest_affile_params _inner_dest_context_pop ')'	{ $$ = $4; }
+	| KW_PIPE '(' _inner_dest_context_push dest_afpipe_params _inner_dest_context_pop ')'   { $$ = $4; }
 	;
 
 dest_affile_params

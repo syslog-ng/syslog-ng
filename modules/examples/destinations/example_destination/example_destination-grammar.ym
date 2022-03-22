@@ -52,7 +52,7 @@ start
           {
             last_driver = *instance = example_destination_dd_new(configuration);
           }
-          '(' example_destination_option ')' { YYACCEPT; }
+          '(' _inner_dest_context_push example_destination_option _inner_dest_context_pop ')' { YYACCEPT; }
 ;
 
 example_destination_options
