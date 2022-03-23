@@ -64,11 +64,11 @@ _report_define_deprecations(const gchar *name, const gchar *value)
 {
   if (strcmp(name, "autoload-compiled-modules") == 0 && atoi(value) == 0)
     msg_warning("WARNING: disabling plugin discovery via the autoload-compiled-modules "
-                "@define has become unsupported in " VERSION_3_36
+                "@define has become unsupported in " VERSION_3_37
                 ", use the syslog-ng command line option --no-module-discovery instead");
   else if (strcmp(name, "module-path") == 0)
     msg_warning("WARNING: changing the path to runtime loaded modules via the module-path "
-                "@define has become unsupported in " VERSION_3_36
+                "@define has become unsupported in " VERSION_3_37
                 ", use the command line option --module-path instead");
 }
 
