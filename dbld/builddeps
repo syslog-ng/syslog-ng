@@ -19,6 +19,8 @@ function workaround_rpm_repos() {
             sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/releases/\$releasever/Modular/\$basearch/os/" /etc/yum.repos.d/fedora-modular.repo
             sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/updates/\$releasever/Everything/\$basearch/" /etc/yum.repos.d/fedora-updates.repo
             sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/updates/\$releasever/Modular/\$basearch/" /etc/yum.repos.d/fedora-updates-modular.repo
+            # we don't need h264 codecs
+            sed -i -e "/enabled/c\enabled=0" /etc/yum.repos.d/fedora-cisco-openh264.repo
             ;;
     esac
 }
