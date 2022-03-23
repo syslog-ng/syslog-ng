@@ -30,7 +30,6 @@
 #include "mainloop-worker.h"
 #include "apphook.h"
 
-
 typedef struct TestThreadedDestDriver
 {
   LogThreadedDestDriver super;
@@ -109,7 +108,7 @@ _spin_for_counter_value(StatsCounterItem *counter, gssize expected_value)
 }
 
 static void
-_generate_messages(TestThreadedDestDriver *dd, gint n)
+_generate_messages(TestThreadedDestDriver *dd, gint n, gboolean local)
 {
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT_NOACK;
@@ -121,6 +120,10 @@ _generate_messages(TestThreadedDestDriver *dd, gint n)
 
       g_snprintf(buf, sizeof(buf), "%d", i);
       log_msg_set_value(msg, LM_V_PID, buf, -1);
+      if (local)
+        msg->flags |= LF_LOCAL;
+      else
+        msg->flags &= ~LF_LOCAL;
 
       log_pipe_queue(&dd->super.super.super.super, msg, &path_options);
     }
@@ -129,7 +132,7 @@ _generate_messages(TestThreadedDestDriver *dd, gint n)
 static void
 _generate_messages_and_wait_for_processing(TestThreadedDestDriver *dd, gint n, StatsCounterItem *counter)
 {
-  _generate_messages(dd, n);
+  _generate_messages(dd, n, TRUE);
   _spin_for_counter_value(counter, n);
 }
 
@@ -165,6 +168,7 @@ _insert_single_message_success(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
+  cr_expect_neq(self->super.worker.instance.seq_num, 0);
   return LTR_SUCCESS;
 }
 
@@ -182,6 +186,34 @@ Test(logthrdestdrv, driver_can_be_instantiated_and_one_message_is_properly_proce
   cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
   cr_assert(dd->super.shared_seq_num == 2,
             "seq_num expected to be 1 larger than the amount of messages generated, found %d", dd->super.shared_seq_num);
+}
+
+static LogThreadedResult
+_insert_single_message_with_zero_seq_num(LogThreadedDestDriver *s, LogMessage *msg)
+{
+  TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
+
+  self->insert_counter++;
+  cr_expect_eq(self->super.worker.instance.seq_num, 0);
+  return LTR_SUCCESS;
+}
+
+Test(logthrdestdrv, non_local_messages_dont_increment_seq_num)
+{
+  dd->super.worker.insert = _insert_single_message_with_zero_seq_num;
+
+  _generate_messages(dd, 1, FALSE);
+  _spin_for_counter_value(dd->super.written_messages, 1);
+  cr_assert(dd->insert_counter == 1,
+            "insert()-ed message count expected to match the amount generated, found %d", dd->insert_counter);
+
+  cr_assert(stats_counter_get(dd->super.processed_messages) == 1);
+  cr_assert(stats_counter_get(dd->super.written_messages) == 1);
+  cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(dd->super.shared_seq_num == 1,
+            "seq_num expected to be unchanged while non-local messages get derilered, found %d, expected: %d",
+            dd->super.shared_seq_num, 1);
 }
 
 static LogThreadedResult
@@ -630,7 +662,7 @@ Test(logthrdestdrv, batch_timeout_delays_flush_to_the_specified_interval)
   dd->super.batch_timeout = 1000;
 
   start_stopwatch();
-  _generate_messages(dd, 2);
+  _generate_messages(dd, 2, TRUE);
   gint flush_counter = dd->flush_counter;
   guint64 initial_feed_time = stop_stopwatch_and_get_result();
 
@@ -671,7 +703,7 @@ Test(logthrdestdrv, batch_timeout_limits_flush_frequency)
       gint flush_counter;
 
       start_stopwatch();
-      _generate_messages(dd, 2);
+      _generate_messages(dd, 2, TRUE);
       _sleep_msec(100);
       flush_counter = dd->flush_counter;
       guint64 initial_feed_time = stop_stopwatch_and_get_result();
@@ -782,6 +814,7 @@ setup(void)
 
   main_loop = main_loop_get_instance();
   main_loop_init(main_loop, &main_loop_options);
+  cfg_set_current_version(main_loop_get_current_config(main_loop));
   _setup_dd();
 }
 
