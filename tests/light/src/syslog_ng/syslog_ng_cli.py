@@ -96,7 +96,7 @@ class SyslogNgCli(object):
 
     def __start_syslog_ng(self):
         if self.__external_tool:
-            self.__process = self.__syslog_ng_executor.run_process_with_external_tool(self.__external_tool)
+            self.__process = self.__syslog_ng_executor.run_process_with_external_tool(self.__external_tool, self.__stderr, self.__debug, self.__trace, self.__verbose, self.__startup_debug, self.__no_caps, self.__config_path, self.__persist_path, self.__pid_path, self.__control_socket_path)
         else:
             self.__process = self.__syslog_ng_executor.run_process(self.__stderr, self.__debug, self.__trace, self.__verbose, self.__startup_debug, self.__no_caps, self.__config_path, self.__persist_path, self.__pid_path, self.__control_socket_path)
         if self.__stderr and self.__debug and self.__verbose:
