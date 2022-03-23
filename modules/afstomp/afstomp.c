@@ -279,7 +279,6 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
   GString *body = NULL;
   stomp_frame frame;
   stomp_frame recv_frame;
-  gchar seq_num[16];
 
   if (!self->conn)
     {
@@ -296,8 +295,14 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
   stomp_frame_add_header(&frame, "destination", self->destination);
   if (self->ack_needed)
     {
-      g_snprintf(seq_num, sizeof(seq_num), "%i", self->super.worker.instance.seq_num);
-      stomp_frame_add_header(&frame, "receipt", seq_num);
+      /*
+       * We check the server's response before sending a new frame to it.
+       * Because of this, we do not need a unique receipt header.
+       *
+       * This changes if multiple workers and/or batching support is introduced.
+       * Make sure to use a unique receipt-id if one of the above gets implemented.
+       */
+      stomp_frame_add_header(&frame, "receipt", "0");
     };
 
   LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND, self->super.worker.instance.seq_num, NULL, LM_VT_STRING};
