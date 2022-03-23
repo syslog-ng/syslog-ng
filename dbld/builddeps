@@ -11,10 +11,14 @@ set -e
 set -x
 
 function workaround_rpm_repos() {
+    MIRROR_URL='https://ftp.halifax.rwth-aachen.de/fedora/linux'
     case "${OS_DISTRIBUTION}" in
         fedora)
             # Workaround for often getting 503 from mirrors.fedoraproject.org.
-            sed -i -e '/metalink=.*/s/^/#/' -e '/.*baseurl.*/c\baseurl=https://ftp.halifax.rwth-aachen.de/fedora/linux/releases/$releasever/Everything/$basearch/os/' /etc/yum.repos.d/fedora*.repo
+            sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/releases/\$releasever/Everything/\$basearch/os/" /etc/yum.repos.d/fedora.repo
+            sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/releases/\$releasever/Modular/\$basearch/os/" /etc/yum.repos.d/fedora-modular.repo
+            sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/updates/\$releasever/Everything/\$basearch/" /etc/yum.repos.d/fedora-updates.repo
+            sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/updates/\$releasever/Modular/\$basearch/" /etc/yum.repos.d/fedora-updates-modular.repo
             ;;
     esac
 }
