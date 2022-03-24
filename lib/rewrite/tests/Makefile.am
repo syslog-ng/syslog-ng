@@ -1,6 +1,7 @@
 lib_rewrite_tests_TESTS = \
     lib/rewrite/tests/test_rewrite \
     lib/rewrite/tests/test_set_pri \
+    lib/rewrite/tests/test_set_tag \
     lib/rewrite/tests/test_rename \
     lib/rewrite/tests/test_set_severity \
     lib/rewrite/tests/test_set_facility
@@ -34,3 +35,8 @@ lib_rewrite_tests_test_set_pri_CFLAGS = $(TEST_CFLAGS)
 lib_rewrite_tests_test_set_pri_LDADD = $(TEST_LDADD)
 lib_rewrite_tests_test_set_pri_SOURCES =    \
     lib/rewrite/tests/test_set_pri.c
+
+lib_rewrite_tests_test_set_tag_CFLAGS = $(TEST_CFLAGS)
+lib_rewrite_tests_test_set_tag_LDADD = $(TEST_LDADD)
+lib_rewrite_tests_test_set_tag_SOURCES =    \
+    lib/rewrite/tests/test_set_tag.c
