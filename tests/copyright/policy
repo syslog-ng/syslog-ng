@@ -65,6 +65,7 @@ modules/secure-logging/slogverify
 modules/secure-logging/slogkey
 lib/rewrite/rewrite-set-facility\.h
 lib/rewrite/tests/test_set_facility\.c
+lib/rewrite/tests/test_set_tag\.c
 lib/rewrite/rewrite-set-pri\.h
 lib/rewrite/rewrite-set-pri\.c
 lib/timeutils/timeutils\.h
