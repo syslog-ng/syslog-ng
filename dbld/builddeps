@@ -43,6 +43,7 @@ function install_dbld_dependencies()
             fi
             ;;
         fedora)
+            $DNF_INSTALL -y wget dnf-plugins-core
             ;;
     esac
 }
