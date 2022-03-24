@@ -37,3 +37,14 @@ def test_set_tag(config, syslog_ng):
     log_line = file_destination.read_log().strip()
     assert "SHOULDMATCH" in log_line
     assert "DONOTMATCH" not in log_line
+
+
+def test_set_tag_with_template(config, syslog_ng):
+    generator_source = config.create_example_msg_generator_source(num=1, template=config.stringify("FOO"))
+    set_tag_with_template = config.create_rewrite_set_tag(config.stringify("TAG-${MSG}"))
+    file_destination = config.create_file_destination(file_name="output.log", template=config.stringify('${TAGS}\n'))
+    config.create_logpath(statements=[generator_source, set_tag_with_template, file_destination])
+
+    syslog_ng.start(config)
+    log_line = file_destination.read_log().strip()
+    assert "TAG-FOO" in log_line
