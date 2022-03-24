@@ -203,6 +203,57 @@ const gchar *builtin_value_names[] =
   NULL,
 };
 
+const gchar *
+log_msg_value_type_to_str(LogMessageValueType self)
+{
+  g_assert(self <= LM_VT_NONE);
+
+  static const gchar *as_str[] =
+  {
+    [LM_VT_STRING] = "string",
+    [LM_VT_JSON] = "json",
+    [LM_VT_BOOLEAN] = "boolean",
+    [LM_VT_INT32] = "int32",
+    [LM_VT_INT64] = "int64",
+    [LM_VT_DOUBLE] = "double",
+    [LM_VT_DATETIME] = "datetime",
+    [LM_VT_LIST] = "list",
+    [LM_VT_NULL] = "null",
+    [LM_VT_NONE] = "none",
+  };
+
+  return as_str[self];
+}
+
+gboolean
+log_msg_value_type_from_str(const gchar *in_str, LogMessageValueType *out_type)
+{
+  if (strcmp(in_str, "string") == 0)
+    *out_type = LM_VT_STRING;
+  else if (strcmp(in_str, "json") == 0 || strcmp(in_str, "literal") == 0)
+    *out_type = LM_VT_JSON;
+  else if (strcmp(in_str, "boolean") == 0)
+    *out_type = LM_VT_BOOLEAN;
+  else if (strcmp(in_str, "int32") == 0 || strcmp(in_str, "int") == 0)
+    *out_type = LM_VT_INT32;
+  else if (strcmp(in_str, "int64") == 0)
+    *out_type = LM_VT_INT64;
+  else if (strcmp(in_str, "double") == 0 || strcmp(in_str, "float") == 0)
+    *out_type = LM_VT_DOUBLE;
+  else if (strcmp(in_str, "datetime") == 0)
+    *out_type = LM_VT_DATETIME;
+  else if (strcmp(in_str, "list") == 0)
+    *out_type = LM_VT_LIST;
+  else if (strcmp(in_str, "null") == 0)
+    *out_type = LM_VT_NULL;
+  else if (strcmp(in_str, "none") == 0)
+    *out_type = LM_VT_NONE;
+  else
+    return FALSE;
+
+  return TRUE;
+};
+
 static void
 __free_macro_value(void *val)
 {
@@ -549,6 +600,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
       msg_trace("Setting value",
                 evt_tag_str("name", name),
                 evt_tag_mem("value", value, value_len),
+                evt_tag_str("type", log_msg_value_type_to_str(type)),
                 evt_tag_printf("msg", "%p", self));
     }
 
@@ -659,6 +711,7 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
       msg_trace("Setting indirect value",
                 evt_tag_printf("msg", "%p", self),
                 evt_tag_str("name", name),
+                evt_tag_str("type", log_msg_value_type_to_str(type)),
                 evt_tag_int("ref_handle", ref_handle),
                 evt_tag_int("ofs", ofs),
                 evt_tag_int("len", len));
