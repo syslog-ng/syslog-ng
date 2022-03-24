@@ -61,6 +61,7 @@ enum
   M_RUNID,
   M_HOSTID,
   M_UNIQID,
+  M__ASTERISK,
 
   /* only touch this section if you want to add three macros, one w/o
    * prefix, and a R_ and S_ prefixed macro that relates one of the

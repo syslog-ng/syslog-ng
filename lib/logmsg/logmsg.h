@@ -319,24 +319,12 @@ log_msg_is_handle_settable_with_an_indirect_value(NVHandle handle)
 }
 
 const gchar *log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len, LogMessageValueType *type);
+const gchar *log_msg_get_match_with_type(const LogMessage *self, gint index_,
+                                         gssize *value_len, LogMessageValueType *type);
+const gchar *log_msg_get_match_if_set_with_type(const LogMessage *self, gint index_,
+                                                gssize *value_len, LogMessageValueType *type);
 
-static inline const gchar *
-log_msg_get_value_with_type(const LogMessage *self, NVHandle handle, gssize *value_len, LogMessageValueType *type)
-{
-  guint16 flags;
 
-  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  if ((flags & LM_VF_MACRO) == 0)
-    return nv_table_get_value(self->payload, handle, value_len, type);
-  else
-    return log_msg_get_macro_value(self, flags >> 8, value_len, type);
-}
-
-static inline const gchar *
-log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
-{
-  return log_msg_get_value_with_type(self, handle, value_len, NULL);
-}
 
 static inline const gchar *
 log_msg_get_value_if_set_with_type(const LogMessage *self, NVHandle handle,
@@ -346,10 +334,32 @@ log_msg_get_value_if_set_with_type(const LogMessage *self, NVHandle handle,
   guint16 flags;
 
   flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  if ((flags & LM_VF_MACRO) == 0)
-    return nv_table_get_value_if_set(self->payload, handle, value_len, type);
-  else
+  if (G_UNLIKELY((flags & LM_VF_MATCH)))
+    return log_msg_get_match_if_set_with_type(self, flags >> 8, value_len, type);
+  else if ((flags & LM_VF_MACRO))
     return log_msg_get_macro_value(self, flags >> 8, value_len, type);
+  else
+    return nv_table_get_value(self->payload, handle, value_len, type);
+}
+
+static inline const gchar *
+log_msg_get_value_with_type(const LogMessage *self, NVHandle handle, gssize *value_len, LogMessageValueType *type)
+{
+  const gchar *result = log_msg_get_value_if_set_with_type(self, handle, value_len, type);
+
+  if (result)
+    return result;
+  if (type)
+    *type = LM_VT_NULL;
+  if (value_len)
+    *value_len = 0;
+  return "";
+}
+
+static inline const gchar *
+log_msg_get_value(const LogMessage *self, NVHandle handle, gssize *value_len)
+{
+  return log_msg_get_value_with_type(self, handle, value_len, NULL);
 }
 
 static inline const gchar *
@@ -440,7 +450,8 @@ void log_msg_clear_tag_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_is_tag_by_id(LogMessage *self, LogTagId id);
 gboolean log_msg_is_tag_by_name(LogMessage *self, const gchar *name);
 void log_msg_tags_foreach(const LogMessage *self, LogMessageTagsForeachFunc callback, gpointer user_data);
-void log_msg_print_tags(const LogMessage *self, GString *result);
+void log_msg_format_tags(const LogMessage *self, GString *result);
+void log_msg_format_matches(const LogMessage *self, GString *result);
 
 LogMessageQueueNode *log_msg_alloc_queue_node(LogMessage *msg, const LogPathOptions *path_options);
 LogMessageQueueNode *log_msg_alloc_dynamic_queue_node(LogMessage *msg, const LogPathOptions *path_options);

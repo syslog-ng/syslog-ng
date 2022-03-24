@@ -11,6 +11,8 @@ rewriteinclude_HEADERS = 			\
 	lib/rewrite/rewrite-subst.h		\
 	lib/rewrite/rewrite-expr-parser.h	\
 	lib/rewrite/rewrite-groupset.h		\
+	lib/rewrite/rewrite-set-matches.h	\
+	lib/rewrite/rewrite-unset-matches.h	\
 	lib/rewrite/rewrite-set-pri.h		\
 	lib/rewrite/rewrite-set-severity.h	\
 	lib/rewrite/rewrite-set-facility.h
@@ -26,6 +28,8 @@ rewrite_sources = 				\
 	lib/rewrite/rewrite-expr-parser.c	\
 	lib/rewrite/rewrite-expr-grammar.y	\
 	lib/rewrite/rewrite-groupset.c		\
+	lib/rewrite/rewrite-set-matches.c	\
+	lib/rewrite/rewrite-unset-matches.c	\
 	lib/rewrite/rewrite-set-pri.c		\
 	lib/rewrite/rewrite-set-severity.c	\
 	lib/rewrite/rewrite-set-facility.c
