@@ -915,6 +915,11 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
   gboolean inline_tags;
 
   g_assert(!log_msg_is_write_protected(self));
+
+  msg_trace("Setting tag",
+            evt_tag_str("name", log_tags_get_by_id(id)),
+            evt_tag_int("value", on),
+            evt_tag_printf("msg", "%p", self));
   if (!log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->num_tags)
     {
       self->tags = g_memdup(self->tags, sizeof(self->tags[0]) * self->num_tags);
