@@ -41,6 +41,8 @@ typedef guint16 LogTagId;
 #define LOG_TAGS_MAX   16384
 #endif
 
+#define LOG_TAGS_UNDEF  0xFFFF
+
 LogTagId log_tags_get_by_name(const gchar *name);
 const gchar *log_tags_get_by_id(LogTagId id);
 
