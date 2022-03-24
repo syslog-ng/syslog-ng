@@ -120,16 +120,16 @@ rewrite_expr
             last_rewrite = log_rewrite_rename_new(configuration, from, to);
           }
           rewrite_rename_opts ')'              { $$ = last_rewrite; }
-	| KW_SET_TAG '(' string 
+	| KW_SET_TAG '(' template_content
 	  { 
 	    last_rewrite = log_rewrite_set_tag_new($3, TRUE, configuration);
-            free($3);
+            log_template_unref($3);
           }
 	  rewrite_settag_opts ')'             	{ $$ = last_rewrite; }
-	| KW_CLEAR_TAG '(' string
+	| KW_CLEAR_TAG '(' template_content
           {
             last_rewrite = log_rewrite_set_tag_new($3, FALSE, configuration);
-            free($3);
+            log_template_unref($3);
           }
           rewrite_settag_opts ')'               { $$ = last_rewrite; }
         | KW_GROUP_SET '(' template_content

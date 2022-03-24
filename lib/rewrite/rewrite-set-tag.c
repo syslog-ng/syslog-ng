@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,6 +24,8 @@
  */
 
 #include "rewrite-set-tag.h"
+#include "template/templates.h"
+#include "scratch-buffers.h"
 
 /* LogRewriteSetTag
  *
@@ -35,45 +38,79 @@ struct _LogRewriteSetTag
   LogRewrite super;
   LogTagId tag_id;
   gboolean value;
+  LogTemplate *tag_template;
 };
 
 static void
-log_rewrite_set_tag_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options)
+_set_tag(LogRewriteSetTag *self, LogMessage *msg)
+{
+  if (self->tag_id != LOG_TAGS_UNDEF)
+    {
+      log_msg_set_tag_by_id_onoff(msg, self->tag_id, self->value);
+      return;
+    }
+
+  GString *result = scratch_buffers_alloc();
+
+  log_template_format(self->tag_template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, result);
+
+  LogTagId tag_id = log_tags_get_by_name(result->str);
+  log_msg_set_tag_by_id_onoff(msg, tag_id, self->value);
+}
+
+static void
+_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options)
 {
   LogRewriteSetTag *self = (LogRewriteSetTag *) s;
 
   log_msg_make_writable(pmsg, path_options);
-  log_msg_set_tag_by_id_onoff(*pmsg, self->tag_id, self->value);
+
+  _set_tag(self, *pmsg);
 }
 
 static LogPipe *
-log_rewrite_set_tag_clone(LogPipe *s)
+_clone(LogPipe *s)
 {
   LogRewriteSetTag *self = (LogRewriteSetTag *) s;
   LogRewriteSetTag *cloned;
 
-  cloned = g_new0(LogRewriteSetTag, 1);
-  log_rewrite_init_instance(&cloned->super, s->cfg);
-  cloned->super.super.clone = log_rewrite_set_tag_clone;
-  cloned->super.process = log_rewrite_set_tag_process;
+  cloned = (LogRewriteSetTag *) log_rewrite_set_tag_new(self->tag_template, self->value, self->super.super.cfg);
 
   if (self->super.condition)
     cloned->super.condition = filter_expr_clone(self->super.condition);
-
-  cloned->tag_id = self->tag_id;
-  cloned->value = self->value;
   return &cloned->super.super;
 }
 
+static void
+_free(LogPipe *s)
+{
+  LogRewriteSetTag *self = (LogRewriteSetTag *) s;
+
+  log_template_unref(self->tag_template);
+  log_rewrite_free_method(s);
+}
+
 LogRewrite *
-log_rewrite_set_tag_new(const gchar *tag_name, gboolean value, GlobalConfig *cfg)
+log_rewrite_set_tag_new(LogTemplate *tag_template, gboolean value, GlobalConfig *cfg)
 {
   LogRewriteSetTag *self = g_new0(LogRewriteSetTag, 1);
 
   log_rewrite_init_instance(&self->super, cfg);
-  self->super.super.clone = log_rewrite_set_tag_clone;
-  self->super.process = log_rewrite_set_tag_process;
-  self->tag_id = log_tags_get_by_name(tag_name);
+  self->super.super.clone = _clone;
+  self->super.super.free_fn = _free;
+  self->super.process = _process;
   self->value = value;
+
+  if (log_template_is_literal_string(tag_template))
+    {
+      const gchar *tag_name = log_template_get_literal_value(tag_template, NULL);
+      self->tag_id = log_tags_get_by_name(tag_name);
+    }
+  else
+    {
+      self->tag_template = log_template_ref(tag_template);
+      self->tag_id = LOG_TAGS_UNDEF;
+    }
+
   return &self->super;
 }
