@@ -526,8 +526,6 @@ _clone(LogPipe *s)
   grouping_by_set_where_condition(&cloned->super.super, filter_expr_clone(self->where_condition_expr));
   grouping_by_set_having_condition(&cloned->super.super, filter_expr_clone(self->having_condition_expr));
 
-  correlation_state_unref(cloned->correlation);
-  cloned->correlation = correlation_state_ref(self->correlation);
   cloned->clone_id = self->clone_id++;
   return &cloned->super.super.super;
 }
