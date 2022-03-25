@@ -320,6 +320,24 @@ log_template_options_init(LogTemplateOptions *options, GlobalConfig *cfg)
 }
 
 void
+log_template_options_clone(LogTemplateOptions *source, LogTemplateOptions *dest)
+{
+  dest->ts_format = source->ts_format;
+  for (gint i = 0; i < LTZ_MAX; i++)
+    {
+      if (source->time_zone[i])
+        dest->time_zone[i] = g_strdup(source->time_zone[i]);
+    }
+  dest->frac_digits = source->frac_digits;
+  dest->on_error = source->on_error;
+  dest->use_fqdn = source->use_fqdn;
+
+  /* NOTE: this still needs to be initialized by the owner as clone results
+   * in an uninitialized state.  */
+  dest->initialized = FALSE;
+}
+
+void
 log_template_options_destroy(LogTemplateOptions *options)
 {
   gint i;
