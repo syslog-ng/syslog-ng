@@ -31,7 +31,7 @@
 debian-stretch		python2,nocriterion,nojava,nokafka,nomqtt
 debian-buster		python2,nocriterion,nojava,nokafka,nomqtt
 debian-bullseye		python3,nojava
-debian-testing		python3,nocriterion,nojava
+debian-testing		python3,nojava
 debian-sid		python3,nojava
 
 # on ubuntu, we start using Python3 at focal onwards.
