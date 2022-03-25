@@ -31,6 +31,7 @@
 #include "plugin.h"
 #include "cfg-grammar.h"
 #include "rewrite/rewrite-expr.h"
+#include "scratch-buffers.h"
 
 void
 expect_config_parse_failure(const char *raw_rewrite_rule)
@@ -347,6 +348,7 @@ setup(void)
 void
 teardown(void)
 {
+  scratch_buffers_explicit_gc();
   stop_grabbing_messages();
   app_shutdown();
 }
