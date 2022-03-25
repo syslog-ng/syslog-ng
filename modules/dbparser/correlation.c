@@ -45,7 +45,8 @@ correlation_state_tx_lookup_context(CorrelationState *self, const CorrelationKey
 }
 
 void
-correlation_state_tx_store_context(CorrelationState *self, CorrelationContext *context, gint timeout, TWCallbackFunc expire)
+correlation_state_tx_store_context(CorrelationState *self, CorrelationContext *context, gint timeout,
+                                   TWCallbackFunc expire)
 {
   g_assert(context->timer == NULL);
 

@@ -340,7 +340,8 @@ _execute_action_create_context(PatternDB *db, PDBProcessParams *process_params)
 
   correlation_key_init(&key, syn_context->scope, context_msg, buffer->str);
   new_context = pdb_context_new(&key);
-  correlation_state_tx_store_context(db->correlation, &new_context->super, rule->context.timeout, pattern_db_expire_entry);
+  correlation_state_tx_store_context(db->correlation, &new_context->super, rule->context.timeout,
+                                     pattern_db_expire_entry);
   g_string_free(buffer, FALSE);
 
   g_ptr_array_add(new_context->super.messages, context_msg);

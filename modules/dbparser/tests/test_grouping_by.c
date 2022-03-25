@@ -120,7 +120,8 @@ Test(grouping_by, grouping_by_aggregates_messages)
   log_template_unref(template);
 
   SyntheticMessage *sm = synthetic_message_new();
-  cr_assert(synthetic_message_add_value_template_string(sm, configuration, "aggr", "$(list-slice :-1 $(context-values $PROGRAM))", NULL) == TRUE);
+  cr_assert(synthetic_message_add_value_template_string(sm, configuration, "aggr",
+                                                        "$(list-slice :-1 $(context-values $PROGRAM))", NULL) == TRUE);
 
   grouping_by_set_synthetic_message(parser, sm);
   grouping_by_set_timeout(parser, 1);

@@ -407,7 +407,7 @@ _evaluate_where(GroupingBy *self, LogMessage **pmsg, const LogPathOptions *path_
 
 static gboolean
 _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const char *input,
-                    gsize input_len)
+         gsize input_len)
 {
   GroupingBy *self = (GroupingBy *) s;
 
@@ -422,7 +422,8 @@ _format_persist_name(const LogPipe *s)
   static gchar persist_name[512];
   GroupingBy *self = (GroupingBy *)s;
 
-  g_snprintf(persist_name, sizeof(persist_name), "grouping-by(%s,scope=%d,clone=%d)", self->key_template->template, self->scope, self->clone_id);
+  g_snprintf(persist_name, sizeof(persist_name), "grouping-by(%s,scope=%d,clone=%d)", self->key_template->template,
+             self->scope, self->clone_id);
   return persist_name;
 }
 
@@ -430,20 +431,22 @@ static void
 _load_correlation_state(GroupingBy *self, GlobalConfig *cfg)
 {
   CorrelationState *persisted_correlation = cfg_persist_config_fetch(cfg,
-                                                                     log_pipe_get_persist_name(&self->super.super.super));
+                                            log_pipe_get_persist_name(&self->super.super.super));
   if (persisted_correlation)
     {
       correlation_state_unref(self->correlation);
       self->correlation = persisted_correlation;
     }
 
-  timer_wheel_set_associated_data(self->correlation->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
+  timer_wheel_set_associated_data(self->correlation->timer_wheel, log_pipe_ref((LogPipe *)self),
+                                  (GDestroyNotify)log_pipe_unref);
 }
 
 static void
 _store_data_in_persist(GroupingBy *self, GlobalConfig *cfg)
 {
-  cfg_persist_config_add(cfg, log_pipe_get_persist_name(&self->super.super.super), correlation_state_ref(self->correlation),
+  cfg_persist_config_add(cfg, log_pipe_get_persist_name(&self->super.super.super),
+                         correlation_state_ref(self->correlation),
                          (GDestroyNotify) correlation_state_unref, FALSE);
 }
 

@@ -41,7 +41,8 @@ typedef struct _CorrelationState
 void correlation_state_tx_begin(CorrelationState *self);
 void correlation_state_tx_end(CorrelationState *self);
 CorrelationContext *correlation_state_tx_lookup_context(CorrelationState *self, const CorrelationKey *key);
-void correlation_state_tx_store_context(CorrelationState *self, CorrelationContext *context, gint timeout, TWCallbackFunc expire);
+void correlation_state_tx_store_context(CorrelationState *self, CorrelationContext *context, gint timeout,
+                                        TWCallbackFunc expire);
 void correlation_state_tx_remove_context(CorrelationState *self, CorrelationContext *context);
 void correlation_state_tx_update_context(CorrelationState *self, CorrelationContext *context, gint timeout);
 
