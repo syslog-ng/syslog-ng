@@ -124,8 +124,6 @@ main_loop_io_worker_init(void)
   main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;
   main_loop_io_workers.thread_stop = main_loop_io_worker_thread_stop;
   iv_work_pool_create(&main_loop_io_workers);
-
-  log_queue_set_max_threads(MIN(main_loop_io_workers.max_threads, MAIN_LOOP_MAX_WORKER_THREADS));
   main_loop_worker_allocate_thread_space(main_loop_io_workers.max_threads);
 }
 

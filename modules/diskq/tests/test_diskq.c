@@ -269,7 +269,9 @@ Test(diskq, testcase_with_threads)
   GString *filename;
   gint i, j;
 
-  log_queue_set_max_threads(FEEDERS);
+  main_loop_worker_allocate_thread_space(FEEDERS);
+  main_loop_worker_finalize_thread_space();
+
   for (i = 0; i < TEST_RUNS; i++)
     {
       DiskQueueOptions options = {0};

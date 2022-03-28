@@ -659,9 +659,9 @@ LogQueue *
 log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name)
 {
   LogQueueFifo *self;
-  gint i;
 
-  self = g_malloc0(sizeof(LogQueueFifo) + log_queue_max_threads * sizeof(self->input_queues[0]));
+  gint max_threads = main_loop_worker_get_max_number_of_threads();
+  self = g_malloc0(sizeof(LogQueueFifo) + max_threads * sizeof(self->input_queues[0]));
 
   log_queue_init_instance(&self->super, persist_name);
   self->super.type = log_queue_fifo_type;
@@ -678,8 +678,8 @@ log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name)
 
   self->super.free_fn = log_queue_fifo_free;
 
-  self->num_input_queues = log_queue_max_threads;
-  for (i = 0; i < num_input_queues; i++)
+  self->num_input_queues = max_threads;
+  for (gint i = 0; i < self->num_input_queues; i++)
     {
       INIT_IV_LIST_HEAD(&self->input_queues[i].items);
       worker_batch_callback_init(&self->input_queues[i].cb);
