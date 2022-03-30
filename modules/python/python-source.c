@@ -65,6 +65,7 @@ typedef struct _PyLogSource
   PyObject_HEAD
   PythonSourceDriver *driver;
   gchar *persist_name;
+  char auto_close_batches;
 } PyLogSource;
 
 static PyTypeObject py_log_source_type;
@@ -245,6 +246,7 @@ _py_init_instance(PythonSourceDriver *self)
     }
 
   ((PyLogSource *) self->py.instance)->driver = self;
+  ((PyLogSource *) self->py.instance)->auto_close_batches = TRUE;
 
   return TRUE;
 }
@@ -579,6 +581,30 @@ py_log_source_post(PyObject *s, PyObject *args, PyObject *kwrds)
   Py_RETURN_NONE;
 }
 
+static PyObject *
+py_log_source_close_batch(PyObject *s)
+{
+  PyLogSource *self = (PyLogSource *) s;
+
+  if (self->driver->thread_id != get_thread_id())
+    {
+      /*
+         Message posting and batch closing must happen in a syslog-ng thread
+         that was initialized by main_loop_call_thread_init(), which is not
+         exposed to python.  Hence posting from a python thread can crash
+         syslog-ng.
+      */
+
+      PyErr_Format(PyExc_RuntimeError, "close_batch() must be called from main thread");
+      return NULL;
+    }
+
+  PythonSourceDriver *sd = self->driver;
+  log_threaded_source_close_batch(&sd->super);
+
+  Py_RETURN_NONE;
+}
+
 static void
 python_sd_run(LogThreadedSourceDriver *s)
 {
@@ -645,6 +671,8 @@ python_sd_init(LogPipe *s)
       self->super.wakeup = python_sd_wakeup;
     }
 
+  self->super.auto_close_batches = ((PyLogSource *) self->py.instance)->auto_close_batches;
+
   return TRUE;
 }
 
@@ -708,12 +736,14 @@ python_sd_new(GlobalConfig *cfg)
 static PyMethodDef py_log_source_methods[] =
 {
   { "post_message", (PyCFunction) py_log_source_post, METH_VARARGS | METH_KEYWORDS, "Post message" },
+  { "close_batch", (PyCFunction) py_log_source_close_batch, METH_NOARGS, "Close input batch" },
   {NULL}
 };
 
 static PyMemberDef py_log_source_members[] =
 {
   { "persist_name", T_STRING, offsetof(PyLogSource, persist_name), READONLY },
+  { "auto_close_batches", T_BOOL, offsetof(PyLogSource, auto_close_batches), 0 },
   {NULL}
 };
 
