@@ -85,7 +85,7 @@ _client_init(MQTTSourceDriver *self)
     {
       msg_error("Error creating mqtt client",
                 evt_tag_str("address", mqtt_client_options_get_address(&self->options)),
-                evt_tag_str("error code", MQTTClient_strerror(rc)),
+                evt_tag_str("error_code", MQTTClient_strerror(rc)),
                 evt_tag_str("client_id", mqtt_client_options_get_client_id(&self->options)),
                 log_pipe_location_tag(&self->super.super.super.super.super));
       return FALSE;
@@ -113,7 +113,7 @@ _subscribe_topic(MQTTSourceDriver *self)
       msg_error("mqtt: Error while subscribing to topic",
                 evt_tag_str("topic", self->topic),
                 evt_tag_int("qos", mqtt_client_options_get_qos(&self->options)),
-                evt_tag_str("error code", MQTTClient_strerror(rc)),
+                evt_tag_str("error_code", MQTTClient_strerror(rc)),
                 evt_tag_str("driver", self->super.super.super.super.id),
                 log_pipe_location_tag(&self->super.super.super.super.super));
       return FALSE;
@@ -151,7 +151,7 @@ _connect(LogThreadedFetcherDriver *s)
   if ((rc = MQTTClient_connect(self->client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
       msg_error("Error connecting mqtt client",
-                evt_tag_str("error code", MQTTClient_strerror(rc)),
+                evt_tag_str("error_code", MQTTClient_strerror(rc)),
                 evt_tag_str("client_id", mqtt_client_options_get_client_id(&self->options)),
                 log_pipe_location_tag(&self->super.super.super.super.super));
       return FALSE;
@@ -210,7 +210,7 @@ _fetch(LogThreadedFetcherDriver *s)
   if (result == THREADED_FETCH_ERROR)
     {
       msg_error("Error while receiving msg",
-                evt_tag_str("error code", MQTTClient_strerror(rc)),
+                evt_tag_str("error_code", MQTTClient_strerror(rc)),
                 evt_tag_str("client_id", mqtt_client_options_get_client_id(&self->options)),
                 log_pipe_location_tag(&self->super.super.super.super.super));
     }
