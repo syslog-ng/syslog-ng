@@ -122,6 +122,7 @@ afinter_source_post(gpointer s)
 
       stats_counter_dec(internal_queue_length);
       log_source_post(&self->super, msg);
+      main_loop_worker_invoke_batch_callbacks();
     }
   afinter_source_update_watches(self);
 }
