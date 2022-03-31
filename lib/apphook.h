@@ -42,9 +42,11 @@ enum
 
   /* these happen from time to time and don't update the current state of
    * the process */
-  AH_CONFIG_STOPPED,   /* configuration is deinitialized, threads have stopped */
-  AH_CONFIG_CHANGED,   /* configuration changed, threads are running again */
-  AH_REOPEN_FILES,     /* reopen files signal from syslog-ng-ctl */
+  AH_CONFIG_PRE_PRE_INIT,  /* configuration pre_init() is to be called */
+  AH_CONFIG_PRE_INIT,      /* configuration init() is to be called */
+  AH_CONFIG_STOPPED,       /* configuration is deinitialized, threads have stopped */
+  AH_CONFIG_CHANGED,       /* configuration changed, threads are running again */
+  AH_REOPEN_FILES,         /* reopen files signal from syslog-ng-ctl */
 };
 
 typedef enum
@@ -61,6 +63,8 @@ void app_pre_shutdown(void);
 void app_shutdown(void);
 
 /* stateless entry points */
+void app_config_pre_pre_init(void);
+void app_config_pre_init(void);
 void app_config_stopped(void);
 void app_config_changed(void);
 void app_reopen_files(void);

@@ -43,6 +43,7 @@
 #include "resolved-configurable-paths.h"
 #include "mainloop.h"
 #include "timeutils/format.h"
+#include "apphook.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -362,8 +363,10 @@ cfg_init(GlobalConfig *cfg)
     return FALSE;
   if (!cfg_tree_compile(&cfg->tree))
     return FALSE;
+  app_config_pre_pre_init();
   if (!cfg_tree_pre_config_init(&cfg->tree))
     return FALSE;
+  app_config_pre_init();
   main_loop_worker_finalize_thread_space();
   if (!cfg_tree_start(&cfg->tree))
     return FALSE;
