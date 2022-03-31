@@ -60,6 +60,14 @@ _reverse(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
 {
   log_msg_make_writable(pmsg, path_options);
 
+  gssize len = 0;
+  const gchar *message = log_msg_get_value(*pmsg, LM_V_MESSAGE, &len);
+
+  gchar *egassem = g_strreverse((gchar *)message);
+
+  log_msg_set_value(*pmsg, LM_V_MESSAGE, egassem, len);
+
+
   return TRUE;
 }
 
