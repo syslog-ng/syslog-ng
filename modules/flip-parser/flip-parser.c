@@ -133,12 +133,27 @@ flip_parser_set_flip_text(LogParser *s, gboolean flip)
 }
 
 
+gboolean
+flip_parser_init(LogPipe *s)
+{
+  FlipParser *self = (FlipParser *)s;
+
+  if (!self->flip && !self->reverse)
+    {
+      msg_warning("flip-parser(): flip_text(no) reverse_text(no) does nothing with the message at all");
+    }
+
+  return log_parser_init_method(s);
+}
+
+
 LogParser *
 flip_parser_new(GlobalConfig *cfg)
 {
   FlipParser *self = g_new0(FlipParser, 1);
 
   log_parser_init_instance(&self->super, cfg);
+  self->super.super.init = flip_parser_init;
   self->super.super.clone = flip_parser_clone;
   self->super.process = flip_parser_process;
 
