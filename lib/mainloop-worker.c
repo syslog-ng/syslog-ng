@@ -424,12 +424,18 @@ main_loop_worker_finalize_thread_space(void)
   main_loop_estimated_number_of_workers = 0;
 }
 
+static void
+__pre_init_hook(gint type, gpointer user_data)
+{
+  main_loop_worker_finalize_thread_space();
+}
+
 void
 main_loop_worker_init(void)
 {
   IV_TASK_INIT(&main_loop_workers_reenable_jobs_task);
   main_loop_workers_reenable_jobs_task.handler = _reenable_worker_jobs;
-
+  register_application_hook(AH_CONFIG_PRE_INIT, __pre_init_hook, NULL, AHM_RUN_REPEAT);
 }
 
 void

@@ -25,6 +25,7 @@
 #include "mainloop-worker.h"
 #include "mainloop-call.h"
 #include "logqueue.h"
+#include "apphook.h"
 
 /************************************************************************************
  * I/O worker threads
@@ -112,6 +113,12 @@ main_loop_io_worker_thread_stop(void *cookie)
   main_loop_worker_thread_stop();
 }
 
+static void
+__pre_pre_init_hook(gint type, gpointer user_data)
+{
+  main_loop_worker_allocate_thread_space(main_loop_io_workers.max_threads);
+}
+
 void
 main_loop_io_worker_init(void)
 {
@@ -124,7 +131,7 @@ main_loop_io_worker_init(void)
   main_loop_io_workers.thread_start = main_loop_io_worker_thread_start;
   main_loop_io_workers.thread_stop = main_loop_io_worker_thread_stop;
   iv_work_pool_create(&main_loop_io_workers);
-  main_loop_worker_allocate_thread_space(main_loop_io_workers.max_threads);
+  register_application_hook(AH_CONFIG_PRE_PRE_INIT, __pre_pre_init_hook, NULL, AHM_RUN_REPEAT);
 }
 
 void
