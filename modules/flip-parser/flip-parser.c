@@ -45,11 +45,47 @@ _flip_and_reverse(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_op
   return TRUE;
 }
 
+static gint
+_alphabet_to_index(gchar c)
+{
+
+  gint cint = (int)c;
+  if (cint < 97 || cint > (97+26))
+    {
+      return -1;
+    }
+
+  return (c-97);
+}
+
 static gboolean
 _flip(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
       gsize input_len)
 {
   log_msg_make_writable(pmsg, path_options);
+
+  static const gchar *upside_map[] =
+  {
+    //"z", "ʎ", "x", "ʍ", "ʌ", "n", "ʇ", "s", "ɹ", "b", "d", "o", "u", "ɯ", "ꞁ", "ʞ", "ſ̣", "ᴉ", "ɥ", "ᵷ", "ɟ", "ǝ", "p", "ɔ", "q", "ɐ"
+    "ɐ", "q", "ɔ", "p", "ǝ", "ɟ", "ᵷ", "ɥ", "ᴉ", "ſ",  "ʞ", "ꞁ", "ɯ", "u", "o", "d", "b", "ɹ", "s", "ʇ", "n", "ʌ", "ʍ", "x", "ʎ", "z"
+  };
+
+  gssize len = 0;
+  const gchar *message = log_msg_get_value(*pmsg, LM_V_MESSAGE, &len);
+
+  GString *ɯǝssɐƃǝ = g_string_new("");
+
+  for (gssize i = 0; i < len; ++i)
+    {
+      gchar c = message[i];
+      gint index = _alphabet_to_index(c);
+      if (index  > 0)
+        g_string_append(ɯǝssɐƃǝ, upside_map[index]);
+      else
+        g_string_append_c(ɯǝssɐƃǝ, c);
+    }
+
+  log_msg_set_value(*pmsg, LM_V_MESSAGE, ɯǝssɐƃǝ->str, ɯǝssɐƃǝ->len);
 
   return TRUE;
 }
