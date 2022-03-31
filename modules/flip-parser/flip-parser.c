@@ -36,15 +36,6 @@ typedef struct _FlipParser
 } FlipParser;
 
 
-static gboolean
-_flip_and_reverse(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
-                  gsize input_len)
-{
-  log_msg_make_writable(pmsg, path_options);
-
-  return TRUE;
-}
-
 static gint
 _alphabet_to_index(gchar c)
 {
@@ -105,6 +96,13 @@ _reverse(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
 
 
   return TRUE;
+}
+
+static gboolean
+_flip_and_reverse(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
+                  gsize input_len)
+{
+  return _reverse(s, pmsg, path_options, input, input_len) && _flip(s, pmsg, path_options, input, input_len);
 }
 
 static gboolean
