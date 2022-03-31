@@ -49,6 +49,7 @@ include modules/system-source/Makefile.am
 include modules/tagsparser/Makefile.am
 include modules/xml/Makefile.am
 include modules/regexp-parser/Makefile.am
+include modules/flip-parser/Makefile.am
 include modules/rate-limit-filter/Makefile.am
 
 SYSLOG_NG_CORE_JAR=$(top_builddir)/modules/java/syslog-ng-core/libs/syslog-ng-core.jar

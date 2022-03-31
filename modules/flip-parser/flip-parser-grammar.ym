@@ -1,0 +1,81 @@
+/*
+ * Copyright (c) 2022 One Identity
+ * Copyright (c) 2022 Kokan
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "flip-parser-parser.h"
+}
+
+%code {
+
+#include "flip-parser.h"
+#include "flip-parser-parser.h"
+#include "cfg-parser.h"
+#include "cfg-grammar-internal.h"
+
+}
+
+%define api.prefix {flip_parser_}
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogParser **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_FLIP_PARSER
+%token KW_REVERSE_TEXT
+%token KW_FLIP_TEXT
+
+%type	<ptr> parser_expr_flip
+
+%%
+
+start
+	: LL_CONTEXT_PARSER parser_expr_flip                  { YYACCEPT; }
+	;
+
+parser_expr_flip
+	: KW_FLIP_PARSER '('
+	  {
+	    last_parser = *instance = (LogParser *) flip_parser_new(configuration);
+	  }
+	  parser_flip_opts ')'
+	;
+
+parser_flip_opts
+	: parser_flip_opt parser_flip_opts
+	|
+	;
+
+parser_flip_opt
+	: KW_REVERSE_TEXT '(' yesno ')' { flip_parser_set_reverse_text( last_parser, $3); };
+	| KW_FLIP_TEXT '(' yesno ')' { flip_parser_set_flip_text( last_parser, $3); };
+	;
+
+/* INCLUDE_RULES */
+
+%%
