@@ -105,7 +105,7 @@ jobs:
         - { distro: 'ubuntu-focal',    pkg: 'deb', upload: 'true' }
         - { distro: 'ubuntu-impish',   pkg: 'deb', upload: 'true' }
         - { distro: 'centos-7',        pkg: 'rpm', upload: 'false' }
-        - { distro: 'fedora-33',       pkg: 'rpm', upload: 'false' }
+        - { distro: 'fedora-35',       pkg: 'rpm', upload: 'false' }
       fail-fast: false
     env:
       DISTRIBUTION: ${{ matrix.dbld-builder-images.distro }}

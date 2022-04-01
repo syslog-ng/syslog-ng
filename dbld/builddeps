@@ -11,10 +11,16 @@ set -e
 set -x
 
 function workaround_rpm_repos() {
+    MIRROR_URL='https://ftp.halifax.rwth-aachen.de/fedora/linux'
     case "${OS_DISTRIBUTION}" in
         fedora)
             # Workaround for often getting 503 from mirrors.fedoraproject.org.
-            sed -i -e '/metalink=.*/s/^/#/' -e '/.*baseurl.*/c\baseurl=https://ftp.halifax.rwth-aachen.de/fedora/linux/releases/$releasever/Everything/$basearch/os/' /etc/yum.repos.d/fedora*.repo
+            sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/releases/\$releasever/Everything/\$basearch/os/" /etc/yum.repos.d/fedora.repo
+            sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/releases/\$releasever/Modular/\$basearch/os/" /etc/yum.repos.d/fedora-modular.repo
+            sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/updates/\$releasever/Everything/\$basearch/" /etc/yum.repos.d/fedora-updates.repo
+            sed -i -e "/baseurl/c\baseurl=${MIRROR_URL}/updates/\$releasever/Modular/\$basearch/" /etc/yum.repos.d/fedora-updates-modular.repo
+            # we don't need h264 codecs
+            sed -i -e "/enabled/c\enabled=0" /etc/yum.repos.d/fedora-cisco-openh264.repo
             ;;
     esac
 }
@@ -37,6 +43,7 @@ function install_dbld_dependencies()
             fi
             ;;
         fedora)
+            $DNF_INSTALL -y wget dnf-plugins-core
             ;;
     esac
 }
@@ -186,6 +193,11 @@ function install_pip_packages {
             kira|devshell)
                 $python_executable -m pip install --no-cache-dir --upgrade pip
                 $python_executable -m pip install --no-cache-dir --upgrade "setuptools < 58.0.0" # Remove the version limit when funcparserlib v1.0.0 is released
+                filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
+                ;;
+            fedora-*)
+                # don't update pip/setuptools on Fedora as RPM installed
+                # instances cause an error, at least in Fedora-35
                 filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
                 ;;
             *)
