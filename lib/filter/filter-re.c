@@ -49,7 +49,7 @@ filter_re_eval_string(FilterExprNode *s, LogMessage *msg, gint value_handle, con
             evt_tag_str("input", str),
             evt_tag_str("pattern", self->matcher->pattern),
             evt_tag_str("value", log_msg_get_value_name(value_handle, NULL)),
-            evt_tag_printf("msg", "%p", msg));
+            evt_tag_msg_reference(msg));
   result = log_matcher_match(self->matcher, msg, value_handle, str, str_len);
   return result ^ s->comp;
 }

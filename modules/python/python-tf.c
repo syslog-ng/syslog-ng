@@ -64,7 +64,7 @@ _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint a
 
   msg_debug("$(python): Invoking Python template function",
             evt_tag_str("function", function_name),
-            evt_tag_printf("msg", "%p", msg));
+            evt_tag_msg_reference(msg));
 
   args = _py_construct_args_tuple(msg, argc, argv);
   ret = PyObject_CallObject(callable, args);

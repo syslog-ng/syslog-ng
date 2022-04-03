@@ -86,7 +86,7 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   msg_trace(">>>>>> parser rule evaluation begin",
             evt_tag_str("rule", self->name),
             log_pipe_location_tag(s),
-            evt_tag_printf("msg", "%p", msg));
+            evt_tag_msg_reference(msg));
 
   success = log_parser_process_message(self, &msg, path_options);
 
@@ -106,7 +106,7 @@ log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
             evt_tag_str("result", parser_result),
             evt_tag_str("rule", self->name),
             log_pipe_location_tag(s),
-            evt_tag_printf("msg", "%p", msg));
+            evt_tag_msg_reference(msg));
 }
 
 gboolean
