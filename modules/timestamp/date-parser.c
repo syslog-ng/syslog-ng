@@ -142,8 +142,8 @@ date_parser_process(LogParser *s,
   DateParser *self = (DateParser *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
   msg_trace("date-parser message processing started",
-            evt_tag_str ("input", input),
-            evt_tag_printf("msg", "%p", *pmsg));
+            evt_tag_str("input", input),
+            evt_tag_msg_reference(*pmsg));
 
   /* this macro ensures zero termination by copying input to a
    * g_alloca()-d buffer if necessary. In most cases it's not though.

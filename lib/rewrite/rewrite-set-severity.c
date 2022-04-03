@@ -103,7 +103,7 @@ log_rewrite_set_severity_process(LogRewrite *s, LogMessage **pmsg, const LogPath
   msg_trace("Setting syslog severity",
             evt_tag_int("old_severity", LOG_PRI((*pmsg)->pri)),
             evt_tag_int("new_severity", severity),
-            evt_tag_printf("msg", "%p", *pmsg));
+            evt_tag_msg_reference(*pmsg));
   _set_msg_severity(*pmsg, severity);
 
 error:

@@ -142,7 +142,7 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
   msg_trace("csv-parser message processing started",
             evt_tag_str ("input", input),
             evt_tag_str ("prefix", self->prefix),
-            evt_tag_printf("msg", "%p", *pmsg));
+            evt_tag_msg_reference(*pmsg));
   CSVScanner scanner;
   csv_scanner_init(&scanner, &self->options, input);
 

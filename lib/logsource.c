@@ -611,7 +611,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   msg_diagnostics(">>>>>> Source side message processing begin",
                   evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
                   log_pipe_location_tag(s),
-                  evt_tag_printf("msg", "%p", msg));
+                  evt_tag_msg_reference(msg));
 
   /* $HOST setup */
   log_source_mangle_hostname(self, msg);
@@ -660,7 +660,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   msg_diagnostics("<<<<<< Source side message processing finish",
                   evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
                   log_pipe_location_tag(s),
-                  evt_tag_printf("msg", "%p", msg));
+                  evt_tag_msg_reference(msg));
 
   msg_set_context(NULL);
 }

@@ -601,7 +601,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
                 evt_tag_str("name", name),
                 evt_tag_mem("value", value, value_len),
                 evt_tag_str("type", log_msg_value_type_to_str(type)),
-                evt_tag_printf("msg", "%p", self));
+                evt_tag_msg_reference(self));
     }
 
   if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
@@ -709,12 +709,12 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
   if (_log_name_value_updates(self))
     {
       msg_trace("Setting indirect value",
-                evt_tag_printf("msg", "%p", self),
                 evt_tag_str("name", name),
                 evt_tag_str("type", log_msg_value_type_to_str(type)),
                 evt_tag_int("ref_handle", ref_handle),
                 evt_tag_int("ofs", ofs),
-                evt_tag_int("len", len));
+                evt_tag_int("len", len),
+                evt_tag_msg_reference(self));
     }
 
   if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
@@ -1412,7 +1412,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 
   msg_trace("Message was cloned",
             evt_tag_printf("original_msg", "%p", msg),
-            evt_tag_printf("new_msg", "%p", self));
+            evt_tag_msg_reference(self));
 
   /* every field _must_ be initialized explicitly if its direct
    * copying would cause problems (like copying a pointer by value) */

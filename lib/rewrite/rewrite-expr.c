@@ -40,14 +40,14 @@ log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
   msg_trace(">>>>>> rewrite rule evaluation begin",
             evt_tag_str("rule", self->name),
             log_pipe_location_tag(s),
-            evt_tag_printf("msg", "%p", msg));
+            evt_tag_msg_reference(msg));
   if (self->condition && !filter_expr_eval_root(self->condition, &msg, path_options))
     {
       msg_trace("Rewrite condition unmatched, skipping rewrite",
                 evt_tag_str("value", log_msg_get_value_name(self->value_handle, NULL)),
                 evt_tag_str("rule", self->name),
                 log_pipe_location_tag(s),
-                evt_tag_printf("msg", "%p", msg));
+                evt_tag_msg_reference(msg));
     }
   else
     {
@@ -56,7 +56,7 @@ log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
   msg_trace("<<<<<< rewrite rule evaluation finished",
             evt_tag_str("rule", self->name),
             log_pipe_location_tag(s),
-            evt_tag_printf("msg", "%p", msg));
+            evt_tag_msg_reference(msg));
   log_pipe_forward_msg(s, msg, path_options);
 }
 
