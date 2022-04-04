@@ -390,6 +390,12 @@ main_loop_get_current_config(MainLoop *self)
   return self->current_configuration;
 }
 
+GlobalConfig *
+main_loop_get_pending_new_config(MainLoop *self)
+{
+  return self->new_config;
+}
+
 /* main_loop_verify_config
  * compares active configuration versus config file */
 
