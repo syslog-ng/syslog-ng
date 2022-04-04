@@ -805,6 +805,12 @@ void register_source_mangle_callback(GlobalConfig *src, mangle_callback cb)
   src->source_mangle_callback_list = g_list_append(src->source_mangle_callback_list, cb);
 }
 
+gboolean
+is_source_mangle_callback_registered(GlobalConfig *src, mangle_callback cb)
+{
+  return !!g_list_find(src->source_mangle_callback_list, cb);
+}
+
 void uregister_source_mangle_callback(GlobalConfig *src, mangle_callback cb)
 {
   src->source_mangle_callback_list = g_list_remove(src->source_mangle_callback_list, cb);
@@ -815,4 +821,3 @@ cfg_get_filename(const GlobalConfig *cfg)
 {
   return cfg->filename;
 }
-
