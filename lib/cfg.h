@@ -170,6 +170,7 @@ gpointer cfg_persist_config_fetch(GlobalConfig *cfg, const gchar *name);
 typedef gboolean(* mangle_callback)(GlobalConfig *cfg, LogMessage *msg, gpointer user_data);
 
 void register_source_mangle_callback(GlobalConfig *src, mangle_callback cb);
+gboolean is_source_mangle_callback_registered(GlobalConfig *src, mangle_callback cb);
 void uregister_source_mangle_callback(GlobalConfig *src, mangle_callback cb);
 
 static inline gboolean
