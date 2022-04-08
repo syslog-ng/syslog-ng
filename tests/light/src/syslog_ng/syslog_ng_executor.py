@@ -38,16 +38,16 @@ class SyslogNgExecutor(object):
             stderr_path=self.__instance_paths.get_stderr_path(),
         )
 
-    def run_process_with_external_tool(self, external_tool):
+    def run_process_with_external_tool(self, external_tool, stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path):
         self.__instance_paths.register_external_tool_output_path(external_tool)
         if external_tool == "valgrind":
-            return self.run_process_with_valgrind()
+            return self.run_process_with_valgrind(stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path)
         elif external_tool == "strace":
-            return self.run_process_with_strace()
+            return self.run_process_with_strace(stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path)
         else:
             raise Exception("Unknown external tool was selected: {}".format(external_tool))
 
-    def run_process_with_valgrind(self):
+    def run_process_with_valgrind(self, stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path):
         valgrind_command_args = [
             "valgrind",
             "--show-leak-kinds=all",
@@ -61,14 +61,14 @@ class SyslogNgExecutor(object):
             "--verbose",
             "--log-file={}".format(self.__instance_paths.get_external_tool_output_path("valgrind")),
         ]
-        full_command_args = valgrind_command_args + self.__construct_syslog_ng_process()
+        full_command_args = valgrind_command_args + self.__construct_syslog_ng_process(stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path)
         return self.__process_executor.start(
             command=full_command_args,
             stdout_path=self.__instance_paths.get_stdout_path(),
             stderr_path=self.__instance_paths.get_stderr_path(),
         )
 
-    def run_process_with_strace(self):
+    def run_process_with_strace(self, stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path):
         strace_command_args = [
             "strace",
             "-s",
@@ -79,7 +79,7 @@ class SyslogNgExecutor(object):
             "-o",
             self.__instance_paths.get_external_tool_output_path("strace"),
         ]
-        full_command_args = strace_command_args + self.__construct_syslog_ng_process()
+        full_command_args = strace_command_args + self.__construct_syslog_ng_process(stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path)
         return self.__process_executor.start(
             command=full_command_args,
             stdout_path=self.__instance_paths.get_stdout_path(),
