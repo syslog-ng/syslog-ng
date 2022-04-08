@@ -258,8 +258,7 @@ json_parser_process_array(struct json_object *jso,
 {
   gint i;
 
-  msg->num_matches = 0;
-  log_msg_unset_match(msg, 0);
+  log_msg_clear_matches(msg);
   for (i = 0; i < json_object_array_length(jso) && i < LOGMSG_MAX_MATCHES; i++)
     {
       struct json_object *el = json_object_array_get_idx(jso, i);
