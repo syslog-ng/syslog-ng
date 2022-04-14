@@ -160,8 +160,6 @@ _map_key_value_pairs_to_syslog_macros(LogMessage *msg, gchar *key, gchar *value,
   if (strcmp(key, "MESSAGE") == 0)
     {
       log_msg_set_value(msg, LM_V_MESSAGE, value, value_len);
-      msg_debug("Incoming log entry from journal",
-                evt_tag_printf("message", "%.*s", (int)value_len, value));
     }
   else if (strcmp(key, "_HOSTNAME") == 0)
     {
@@ -268,6 +266,10 @@ _handle_message(JournalReader *self)
 
   _set_message_timestamp(self, msg);
   _set_program(self->options, msg);
+
+  msg_debug("Incoming log entry from journal",
+            evt_tag_printf("input", "%s", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
+            evt_tag_msg_reference(msg));
 
   log_source_post(&self->super, msg);
   return log_source_free_to_send(&self->super);
