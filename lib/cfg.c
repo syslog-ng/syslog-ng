@@ -504,6 +504,11 @@ cfg_new(gint version)
 
   self->use_uniqid = FALSE;
 
+  /* The rcptid part of use_uniqid() is used in trace messages, enable it
+   * explicitly.  We don't care about performance if trace is enabled.  */
+  if (trace_flag)
+    self->use_uniqid = TRUE;
+
   stats_options_defaults(&self->stats_options);
 
   self->min_iw_size_per_reader = 100;
