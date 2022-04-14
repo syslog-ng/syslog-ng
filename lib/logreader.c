@@ -388,6 +388,10 @@ log_reader_work_finished(void *s)
 
       self->notify_code = 0;
       log_pipe_notify(self->control, notify_code, self);
+      if (notify_code == NC_CLOSE)
+        {
+          return;
+        }
     }
   if (self->super.super.flags & PIF_INITIALIZED)
     {
