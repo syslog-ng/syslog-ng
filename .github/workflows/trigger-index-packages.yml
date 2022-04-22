@@ -1,0 +1,24 @@
+name: Trigger index-packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      pkg-type:
+        required: true
+        type: choice
+        options:
+          - nightly
+          - stable
+      run-id:
+        required: true
+
+jobs:
+  index-packages:
+    uses: ./.github/workflows/index-packages.yml
+    with:
+      pkg-type: ${{ github.event.inputs.pkg-type }}
+      run-id: ${{ github.event.inputs.run-id }}
+    secrets:
+      config-base64: ${{ secrets.PACKAGE_INDEXER_CONFIG_BASE64 }}
+      gpg-key-base64: ${{ secrets.PACKAGE_INDEXER_GPG_KEY_BASE64 }}
+      gpg-key-passphrase: ${{ secrets.PACKAGE_INDEXER_GPG_KEY_PASSPHRASE }}
