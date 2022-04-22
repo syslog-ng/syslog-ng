@@ -127,6 +127,7 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
                 incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
                 indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
                 cdn=cdn,
+                run_id=args["run_id"],
             )
         )
     elif suite == "stable":

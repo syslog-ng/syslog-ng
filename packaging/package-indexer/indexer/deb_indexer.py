@@ -231,11 +231,12 @@ class NightlyDebIndexer(DebIndexer):
         incoming_remote_storage_synchronizer: RemoteStorageSynchronizer,
         indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
         cdn: CDN,
+        run_id: str,
     ) -> None:
         super().__init__(
             incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
             indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
-            incoming_sub_dir=Path("nightly"),
+            incoming_sub_dir=Path("nightly", run_id),
             dist_dir=Path("nightly"),
             cdn=cdn,
             apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "nightly.conf"),
