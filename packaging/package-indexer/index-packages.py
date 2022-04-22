@@ -44,6 +44,13 @@ def add_common_required_arguments(required_argument_group: _ArgumentGroup) -> No
         help="The raw content of the config in yaml format. Cannot be used with `--config-file-path`.",
     )
 
+    required_argument_group.add_argument(
+        "--run-id",
+        type=str,
+        required=True,
+        help='The "run-id" of the "draft-release" or "nightly-packages" GitHub Actions job.',
+    )
+
 
 def add_common_optional_arguments(parser: ArgumentParser) -> None:
     parser.add_argument(
@@ -58,41 +65,23 @@ def add_common_optional_arguments(parser: ArgumentParser) -> None:
     )
 
 
-def prepare_nightly_subparser(subparsers: _SubParsersAction) -> None:
+def prepare_suite_subparser(subparsers: _SubParsersAction, suite_name: str) -> None:
     parser = subparsers.add_parser(
-        "nightly",
-        help="Index nightly packages.",
+        suite_name,
+        help="Index {} packages.".format(suite_name),
     )
     add_common_optional_arguments(parser)
 
     required_argument_group = parser.add_argument_group("required arguments")
     add_common_required_arguments(required_argument_group)
-
-
-def prepare_stable_subparser(subparsers: _SubParsersAction) -> None:
-    parser = subparsers.add_parser(
-        "stable",
-        help="Index stable packages.",
-    )
-    add_common_optional_arguments(parser)
-
-    required_argument_group = parser.add_argument_group("required arguments")
-    add_common_required_arguments(required_argument_group)
-
-    required_argument_group.add_argument(
-        "--run-id",
-        type=str,
-        required=True,
-        help='The "run-id" of the "draft-release" GitHub Actions job.',
-    )
 
 
 def parse_args() -> dict:
     parser = ArgumentParser()
     subparsers = parser.add_subparsers(metavar="suite", dest="suite", required=True)
 
-    prepare_nightly_subparser(subparsers)
-    prepare_stable_subparser(subparsers)
+    prepare_suite_subparser(subparsers, "nightly")
+    prepare_suite_subparser(subparsers, "stable")
 
     return vars(parser.parse_args())
 
