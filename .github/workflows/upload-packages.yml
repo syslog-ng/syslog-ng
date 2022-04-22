@@ -48,14 +48,12 @@ jobs:
 
       - name: Calculate Azure path
         run: |
-          if [[ "${{ inputs.pkg-type }}" = "stable" ]]; then
-            AZURE_PATH="incoming/release/${{ github.run_id }}"
-          elif [[ "${{ inputs.pkg-type }}" = "nightly" ]]; then
-            AZURE_PATH="incoming/nightly/${{ github.run_id }}"
-          else
+          if [[ ! "${{ inputs.pkg-type }}" =~ ^(stable|nightly)$ ]]; then
             echo Unexpected input: pkg-type=${{ inputs.pkg-type }}
             false
           fi
+
+          AZURE_PATH="incoming/${{ inputs.pkg-type }}/${{ github.run_id }}"
 
           echo "AZURE_PATH=${AZURE_PATH}" >> ${GITHUB_ENV}
 
