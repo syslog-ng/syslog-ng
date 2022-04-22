@@ -36,7 +36,7 @@ jobs:
       VERBOSE_LOG_PATH: index-packages-verbose.log
       GPG_KEY_PATH: syslog_ng_ose_signing_key.sub.priv.asc
 
-    if: github.repository_owner == 'syslog-ng'
+    if: github.repository_owner == 'alltilla'
 
     steps:
       - name: Checkout source code

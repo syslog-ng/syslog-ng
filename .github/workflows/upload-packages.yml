@@ -32,7 +32,7 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    if: github.repository_owner == 'syslog-ng'
+    if: github.repository_owner == 'alltilla'
 
     strategy:
       matrix:
@@ -53,7 +53,7 @@ jobs:
             false
           fi
 
-          AZURE_PATH="incoming/${{ inputs.pkg-type }}/${{ github.run_id }}"
+          AZURE_PATH="alltilla-test-incoming/${{ inputs.pkg-type }}/${{ github.run_id }}"
 
           echo "AZURE_PATH=${AZURE_PATH}" >> ${GITHUB_ENV}
 

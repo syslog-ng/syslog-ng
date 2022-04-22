@@ -2,7 +2,7 @@ name: CI @ devshell
 
 on:
   pull_request:
-  push:
+  #push:
   schedule:
     - cron: '00 21 * * *'
 

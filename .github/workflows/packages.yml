@@ -3,7 +3,7 @@ name: Packages (PR / push)
 
 on:
   pull_request:
-  push:
+  #push:
 
 
 jobs:

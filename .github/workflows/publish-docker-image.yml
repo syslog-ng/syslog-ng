@@ -13,17 +13,17 @@ on:
 jobs:
   publish-docker-image:
     name: Publish syslog-ng Docker image
-    if: github.repository_owner == 'syslog-ng'
+    if: github.repository_owner == 'alltilla'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.dockerhub-username }}
-          password: ${{ secrets.dockerhub-password }}
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v1
+      #   with:
+      #     username: ${{ secrets.dockerhub-username }}
+      #     password: ${{ secrets.dockerhub-password }}
 
       - name: Extract metadata (syslog-ng version) for Docker
         id: meta
@@ -36,5 +36,5 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: docker/
-          push: true
+          # push: true
           tags: ${{ steps.meta.outputs.tags }}
