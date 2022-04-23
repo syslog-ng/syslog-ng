@@ -16,6 +16,7 @@ set(SCL_DIRS
     iptables
     junos
     kafka
+    kubernetes
     linux-audit
     loadbalancer
     loggly
