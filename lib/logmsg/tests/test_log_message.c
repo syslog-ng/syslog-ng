@@ -689,6 +689,28 @@ Test(log_message, test_changing_num_matches_causes_numbered_matches_to_become_un
   log_msg_unref(msg);
 }
 
+Test(log_message, test_clear_matches_call_resets_all_matches_to_unset)
+{
+  LogMessage *msg;
+
+  msg = log_msg_new_empty();
+  log_msg_set_match(msg, 0, "match0", -1);
+  log_msg_set_match(msg, 1, "match1", -1);
+  log_msg_set_match(msg, 2, "match2", -1);
+  log_msg_set_match(msg, 3, "match3", -1);
+
+  cr_assert_eq(msg->num_matches, 4);
+  log_msg_clear_matches(msg);
+  cr_assert_eq(msg->num_matches, 0);
+
+  assert_log_message_match_value(msg, 0, "");
+  assert_log_message_match_value(msg, 1, "");
+  assert_log_message_match_value(msg, 2, "");
+  assert_log_message_match_value(msg, 3, "");
+
+  log_msg_unref(msg);
+}
+
 #define DEFUN_KEY_VALUE(name, key, value, size) \
   gchar name ## _key[size]; \
   gchar name ## _value[size]; \
