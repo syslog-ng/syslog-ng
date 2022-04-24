@@ -408,7 +408,7 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
 
   if (_evaluate_where(self, pmsg, path_options))
     _perform_groupby(self, log_msg_make_writable(pmsg, path_options));
-  return TRUE;
+  return (self->super.inject_mode != LDBP_IM_AGGREGATE_ONLY);
 }
 
 static const gchar *
