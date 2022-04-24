@@ -30,8 +30,6 @@
 #include "scratch-buffers.h"
 #include "rcptid.h"
 
-MsgFormatOptions parse_options;
-
 typedef struct _LogMessageTestParams
 {
   LogMessage *message;
@@ -47,7 +45,7 @@ _construct_log_message(void)
   const gchar *raw_msg = "foo";
   LogMessage *msg;
 
-  msg = msg_format_parse(&parse_options, (const guchar *) raw_msg, strlen(raw_msg));
+  msg = log_msg_new_empty();
   log_msg_set_value(msg, LM_V_HOST, raw_msg, -1);
   return msg;
 }
@@ -156,7 +154,6 @@ void
 setup(void)
 {
   app_startup();
-  init_parse_options_and_load_syslogformat(&parse_options);
 }
 
 void
