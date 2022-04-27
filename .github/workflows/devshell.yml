@@ -216,9 +216,14 @@ jobs:
         id: light-style-check
         if: always()
         working-directory: ./build
+        shell: bash
         run: |
+          python3.9 -m venv venv
+          source venv/bin/activate
+          python -m pip install -r "${GITHUB_WORKSPACE}/requirements.txt"
           make light-linters || \
             (git diff > ../light-style-problems.diff ; git reset --hard HEAD && exit 1)
+          deactivate
 
       - name: "Artifact: c-style-problems"
         uses: actions/upload-artifact@v2
