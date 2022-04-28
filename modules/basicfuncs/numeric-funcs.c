@@ -360,7 +360,8 @@ tf_num_ceil(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMes
     }
 
   *type = LM_VT_INT64;
-  format_int64_padded(result, 0, ' ', 10, (gint64)ceil(number_as_double(n)));
+  gdouble number=ceil(number_as_double(n))
+  format_int64_padded(result, 0, ' ', 10, (gint64)number);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_ceil);
