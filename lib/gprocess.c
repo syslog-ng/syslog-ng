@@ -1572,6 +1572,13 @@ g_process_process_mode_arg(const gchar *option_name G_GNUC_UNUSED, const gchar *
   return TRUE;
 }
 
+void
+g_process_disable_caps(void)
+{
+  process_opts.caps = NULL;
+  process_opts.enable_caps = FALSE;
+}
+
 static gboolean
 g_process_process_no_caps(const gchar *option_name G_GNUC_UNUSED, const gchar *value G_GNUC_UNUSED,
                           gpointer data G_GNUC_UNUSED, GError *error)
