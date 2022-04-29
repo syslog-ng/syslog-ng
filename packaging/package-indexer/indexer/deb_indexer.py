@@ -181,9 +181,13 @@ class ReleaseDebIndexer(DebIndexer):
         gnupghome = TemporaryDirectory(dir=CURRENT_DIR)
         release_file_path = Path(indexed_dir, "Release")
 
-        self.__add_gpg_key_to_chain(gnupghome.name)
-        self.__create_release_gpg_file(release_file_path, gnupghome.name)
-        self.__create_inrelease_file(release_file_path, gnupghome.name)
+        try:
+            self.__add_gpg_key_to_chain(gnupghome.name)
+            self.__create_release_gpg_file(release_file_path, gnupghome.name)
+            self.__create_inrelease_file(release_file_path, gnupghome.name)
+        finally:
+            self._log_info("Cleaning up `GNUPGHOME` directory.", gnupghome=gnupghome.name)
+            gnupghome.cleanup()
 
 
 class NightlyDebIndexer(DebIndexer):
