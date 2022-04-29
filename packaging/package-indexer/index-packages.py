@@ -117,6 +117,7 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
     indexed_remote_storage_synchronizer = cfg.create_indexed_remote_storage_synchronizer(suite)
     cdn = cfg.create_cdn(suite)
 
+    gpg_key_path = Path(cfg.get_gpg_key_path())
     gpg_key_passphrase = stdin.read() if args["gpg_key_passphrase_from_stdin"] else None
 
     indexers: List[Indexer] = []
@@ -128,6 +129,8 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
                 indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
                 cdn=cdn,
                 run_id=args["run_id"],
+                gpg_key_path=gpg_key_path,
+                gpg_key_passphrase=gpg_key_passphrase,
             )
         )
     elif suite == "stable":
@@ -137,7 +140,7 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
                 indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
                 cdn=cdn,
                 run_id=args["run_id"],
-                gpg_key_path=Path(cfg.get_gpg_key_path()),
+                gpg_key_path=gpg_key_path,
                 gpg_key_passphrase=gpg_key_passphrase,
             )
         )

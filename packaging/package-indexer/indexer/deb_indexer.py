@@ -44,8 +44,12 @@ class DebIndexer(Indexer):
         dist_dir: Path,
         cdn: CDN,
         apt_conf_file_path: Path,
+        gpg_key_path: Path,
+        gpg_key_passphrase: Optional[str],
     ) -> None:
         self.__apt_conf_file_path = apt_conf_file_path
+        self.__gpg_key_path = gpg_key_path.expanduser()
+        self.__gpg_key_passphrase = gpg_key_passphrase
         super().__init__(
             incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
             indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
@@ -101,28 +105,6 @@ class DebIndexer(Indexer):
     def _index_pkgs(self, indexed_dir: Path) -> None:
         self.__create_packages_files(indexed_dir)
         self.__create_release_file(indexed_dir)
-
-
-class ReleaseDebIndexer(DebIndexer):
-    def __init__(
-        self,
-        incoming_remote_storage_synchronizer: RemoteStorageSynchronizer,
-        indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
-        run_id: str,
-        cdn: CDN,
-        gpg_key_path: Path,
-        gpg_key_passphrase: Optional[str],
-    ) -> None:
-        self.__gpg_key_path = gpg_key_path.expanduser()
-        self.__gpg_key_passphrase = gpg_key_passphrase
-        super().__init__(
-            incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
-            indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
-            incoming_sub_dir=Path("release", run_id),
-            dist_dir=Path("stable"),
-            cdn=cdn,
-            apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "stable.conf"),
-        )
 
     @staticmethod
     def __add_gpg_security_params(command: list) -> list:
@@ -223,6 +205,28 @@ class ReleaseDebIndexer(DebIndexer):
             gnupghome.cleanup()
 
 
+class ReleaseDebIndexer(DebIndexer):
+    def __init__(
+        self,
+        incoming_remote_storage_synchronizer: RemoteStorageSynchronizer,
+        indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
+        run_id: str,
+        cdn: CDN,
+        gpg_key_path: Path,
+        gpg_key_passphrase: Optional[str],
+    ) -> None:
+        super().__init__(
+            incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
+            indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
+            incoming_sub_dir=Path("release", run_id),
+            dist_dir=Path("stable"),
+            cdn=cdn,
+            apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "stable.conf"),
+            gpg_key_path=gpg_key_path,
+            gpg_key_passphrase=gpg_key_passphrase,
+        )
+
+
 class NightlyDebIndexer(DebIndexer):
     PKGS_TO_KEEP = 10
 
@@ -232,6 +236,8 @@ class NightlyDebIndexer(DebIndexer):
         indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
         cdn: CDN,
         run_id: str,
+        gpg_key_path: Path,
+        gpg_key_passphrase: Optional[str],
     ) -> None:
         super().__init__(
             incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
@@ -240,6 +246,8 @@ class NightlyDebIndexer(DebIndexer):
             dist_dir=Path("nightly"),
             cdn=cdn,
             apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "nightly.conf"),
+            gpg_key_path=gpg_key_path,
+            gpg_key_passphrase=gpg_key_passphrase,
         )
 
     def __get_pkg_timestamps_in_dir(self, dir: Path) -> List[str]:
@@ -274,6 +282,3 @@ class NightlyDebIndexer(DebIndexer):
     def _prepare_indexed_dir(self, incoming_dir: Path, indexed_dir: Path) -> None:
         super()._prepare_indexed_dir(incoming_dir, indexed_dir)
         self.__remove_old_pkgs(indexed_dir)
-
-    def _sign_pkgs(self, indexed_dir: Path) -> None:
-        pass  # We do not sign the nightly package
