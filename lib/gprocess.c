@@ -949,8 +949,7 @@ g_process_change_caps(void)
       if (cap == NULL)
         {
           g_process_message("Error parsing capabilities: %s", process_opts.caps);
-          process_opts.caps = NULL;
-          process_opts.enable_caps = FALSE;
+          g_process_disable_caps();
           return FALSE;
         }
       else
@@ -958,8 +957,7 @@ g_process_change_caps(void)
           if (cap_set_proc(cap) == -1)
             {
               g_process_message("Error setting capabilities, capability management disabled; error='%s'", g_strerror(errno));
-              process_opts.caps = NULL;
-              process_opts.enable_caps = FALSE;
+              g_process_disable_caps();
 
             }
           cap_free(cap);
@@ -1583,8 +1581,7 @@ static gboolean
 g_process_process_no_caps(const gchar *option_name G_GNUC_UNUSED, const gchar *value G_GNUC_UNUSED,
                           gpointer data G_GNUC_UNUSED, GError *error)
 {
-  process_opts.caps = NULL;
-  process_opts.enable_caps = FALSE;
+  g_process_disable_caps();
   return TRUE;
 }
 
