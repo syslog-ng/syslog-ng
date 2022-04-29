@@ -21,10 +21,10 @@
 #############################################################################
 
 from .indexer import Indexer
-from .deb_indexer import ReleaseDebIndexer, NightlyDebIndexer
+from .deb_indexer import StableDebIndexer, NightlyDebIndexer
 
 __all__ = [
     "Indexer",
-    "ReleaseDebIndexer",
+    "StableDebIndexer",
     "NightlyDebIndexer",
 ]

@@ -205,7 +205,7 @@ class DebIndexer(Indexer):
             gnupghome.cleanup()
 
 
-class ReleaseDebIndexer(DebIndexer):
+class StableDebIndexer(DebIndexer):
     def __init__(
         self,
         incoming_remote_storage_synchronizer: RemoteStorageSynchronizer,

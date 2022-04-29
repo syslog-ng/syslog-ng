@@ -27,7 +27,7 @@ from pathlib import Path
 from sys import stdin
 from typing import List
 
-from indexer import Indexer, NightlyDebIndexer, ReleaseDebIndexer
+from indexer import Indexer, NightlyDebIndexer, StableDebIndexer
 from config import Config
 
 
@@ -135,7 +135,7 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
         )
     elif suite == "stable":
         indexers.append(
-            ReleaseDebIndexer(
+            StableDebIndexer(
                 incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
                 indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
                 cdn=cdn,
