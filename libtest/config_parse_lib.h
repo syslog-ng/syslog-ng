@@ -26,7 +26,7 @@
 #ifndef CONFIG_PARSE_LIB_H_INCLUDED
 #define CONFIG_PARSE_LIB_H_INCLUDED 1
 
-#include <glib.h>
+#include "syslog-ng.h"
 
 gboolean parse_config(const gchar *config_to_parse, gint context, gpointer arg, gpointer *result);
 
