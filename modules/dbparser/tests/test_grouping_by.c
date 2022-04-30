@@ -107,13 +107,14 @@ Test(grouping_by, grouping_by_produces_aggregate_as_the_trigger_is_received)
 {
   TestCapturePipe *capture = test_capture_pipe_new(configuration);
   LogParser *parser = _compile_grouping_by(
-      "grouping-by(key(\"$key\")"
-      "    aggregate("
-      "        value(\"aggr\" \"$(list-slice :-1 $(context-values $PROGRAM))\")"
-      "    )"
-      "    timeout(1)"
-      "    trigger(\"$(context-length)\" == \"3\")"
-      ");");
+                        "grouping-by(key(\"$key\")"
+                        "    aggregate("
+                        "        value(\"aggr\" \"$(list-slice :-1 $(context-values $PROGRAM))\")"
+                        "    )"
+                        "    timeout(1)"
+                        "    inject-mode(pass-through)"
+                        "    trigger(\"$(context-length)\" == \"3\")"
+                        ");");
 
   log_pipe_append(&parser->super, &capture->super);
   cr_assert(log_pipe_init(&capture->super) == TRUE);
@@ -129,6 +130,34 @@ Test(grouping_by, grouping_by_produces_aggregate_as_the_trigger_is_received)
   /* the aggregate comes before the triggering message */
   assert_log_message_value_by_name(test_capture_pipe_get_message(capture, 2), "aggr", "first,second,third");
   assert_log_message_value_by_name(test_capture_pipe_get_message(capture, 3), "PROGRAM", "third");
+
+  log_pipe_unref(&parser->super);
+  log_pipe_unref(&capture->super);
+}
+
+Test(grouping_by, grouping_by_drops_original_messages_if_inject_mode_is_aggregate_only)
+{
+  TestCapturePipe *capture = test_capture_pipe_new(configuration);
+  LogParser *parser = _compile_grouping_by(
+                        "grouping-by(key(\"$key\")"
+                        "    aggregate("
+                        "        value(\"aggr\" \"$(list-slice :-1 $(context-values $PROGRAM))\")"
+                        "    )"
+                        "    timeout(1)"
+                        "    inject-mode(aggregate-only)"
+                        "    trigger(\"$(context-length)\" == \"3\")"
+                        ");");
+
+  log_pipe_append(&parser->super, &capture->super);
+  cr_assert(log_pipe_init(&capture->super) == TRUE);
+  cr_assert(log_pipe_init(&parser->super) == TRUE);
+
+  _process_msg(parser, "first");
+  _process_msg(parser, "second");
+  _process_msg(parser, "third");
+
+  cr_assert(capture->captured_messages->len == 1);
+  assert_log_message_value_by_name(test_capture_pipe_get_message(capture, 0), "aggr", "first,second,third");
 
   log_pipe_unref(&parser->super);
   log_pipe_unref(&capture->super);
