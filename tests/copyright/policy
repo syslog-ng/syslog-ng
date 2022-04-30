@@ -72,6 +72,7 @@ lib/rewrite/rewrite-set-pri\.h
 lib/rewrite/rewrite-set-pri\.c
 lib/timeutils/timeutils\.h
 lib/logmsg/tests/dump_logmsg\.c
+libtest/mock-logpipe\.[ch]
  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$
