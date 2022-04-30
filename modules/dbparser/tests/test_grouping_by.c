@@ -25,6 +25,7 @@
 #include "libtest/cr_template.h"
 #include "libtest/msg_parse_lib.h"
 #include "libtest/config_parse_lib.h"
+#include "libtest/mock-logpipe.h"
 
 #include "groupingby.h"
 #include "filter/filter-expr-parser.h"
@@ -60,48 +61,6 @@ _process_msg(LogParser *parser, const gchar *prog)
   log_pipe_queue(&parser->super, msg, &path_options);
 }
 
-typedef struct _TestCapturePipe
-{
-  LogPipe super;
-  GPtrArray *captured_messages;
-} TestCapturePipe;
-
-static LogMessage *
-test_capture_pipe_get_message(TestCapturePipe *self, gint ndx)
-{
-  g_assert(ndx >= 0 && ndx < self->captured_messages->len);
-  return (LogMessage *) g_ptr_array_index(self->captured_messages, ndx);
-}
-
-static void
-test_capture_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
-{
-  TestCapturePipe *self = (TestCapturePipe *) s;
-
-  g_ptr_array_add(self->captured_messages, log_msg_ref(msg));
-  log_pipe_forward_msg(s, msg, path_options);
-}
-
-static void
-test_capture_pipe_free(LogPipe *s)
-{
-  TestCapturePipe *self = (TestCapturePipe *) s;
-
-  g_ptr_array_free(self->captured_messages, TRUE);
-  log_pipe_free_method(s);
-}
-
-TestCapturePipe *
-test_capture_pipe_new(GlobalConfig *cfg)
-{
-  TestCapturePipe *self = g_new0(TestCapturePipe, 1);
-
-  log_pipe_init_instance(&self->super, cfg);
-  self->captured_messages = g_ptr_array_new_full(0, (GDestroyNotify) log_msg_unref);
-  self->super.queue = test_capture_pipe_queue;
-  self->super.free_fn = test_capture_pipe_free;
-  return self;
-}
 
 Test(grouping_by, grouping_by_produces_aggregate_as_the_trigger_is_received)
 {
