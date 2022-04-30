@@ -50,20 +50,45 @@ _create_input_msg(const gchar *prog)
   return msg;
 }
 
+void
+_process_msg(LogParser *parser, const gchar *prog)
+{
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+  LogMessage *msg = _create_input_msg(prog);
+  /* NOTE: log_pipe_queue() consumes a reference */
+  log_pipe_queue(&parser->super, msg, &path_options);
+}
+
 typedef struct _TestCapturePipe
 {
   LogPipe super;
-  LogMessage *captured_message;
+  GPtrArray *captured_messages;
 } TestCapturePipe;
+
+static LogMessage *
+test_capture_pipe_get_message(TestCapturePipe *self, gint ndx)
+{
+  g_assert(ndx >= 0 && ndx < self->captured_messages->len);
+  return (LogMessage *) g_ptr_array_index(self->captured_messages, ndx);
+}
 
 static void
 test_capture_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   TestCapturePipe *self = (TestCapturePipe *) s;
 
-  log_msg_unref(self->captured_message);
-  self->captured_message = log_msg_ref(msg);
+  g_ptr_array_add(self->captured_messages, log_msg_ref(msg));
   log_pipe_forward_msg(s, msg, path_options);
+}
+
+static void
+test_capture_pipe_free(LogPipe *s)
+{
+  TestCapturePipe *self = (TestCapturePipe *) s;
+
+  g_ptr_array_free(self->captured_messages, TRUE);
+  log_pipe_free_method(s);
 }
 
 TestCapturePipe *
@@ -72,11 +97,13 @@ test_capture_pipe_new(GlobalConfig *cfg)
   TestCapturePipe *self = g_new0(TestCapturePipe, 1);
 
   log_pipe_init_instance(&self->super, cfg);
+  self->captured_messages = g_ptr_array_new_full(0, (GDestroyNotify) log_msg_unref);
   self->super.queue = test_capture_pipe_queue;
+  self->super.free_fn = test_capture_pipe_free;
   return self;
 }
 
-Test(grouping_by, grouping_by_aggregates_messages)
+Test(grouping_by, grouping_by_produces_aggregate_as_the_trigger_is_received)
 {
   TestCapturePipe *capture = test_capture_pipe_new(configuration);
   LogParser *parser = _compile_grouping_by(
@@ -87,28 +114,21 @@ Test(grouping_by, grouping_by_aggregates_messages)
       "    timeout(1)"
       "    trigger(\"$(context-length)\" == \"3\")"
       ");");
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   log_pipe_append(&parser->super, &capture->super);
   cr_assert(log_pipe_init(&capture->super) == TRUE);
   cr_assert(log_pipe_init(&parser->super) == TRUE);
 
-  LogMessage *msg = _create_input_msg("first");
-  gboolean success = log_parser_process_message(parser, &msg, &path_options);
-  cr_assert(success == TRUE);
-  log_msg_unref(msg);
+  _process_msg(parser, "first");
+  _process_msg(parser, "second");
+  _process_msg(parser, "third");
 
-  msg = _create_input_msg("second");
-  success = log_parser_process_message(parser, &msg, &path_options);
-  cr_assert(success == TRUE);
-  log_msg_unref(msg);
-
-  msg = _create_input_msg("third");
-  success = log_parser_process_message(parser, &msg, &path_options);
-  cr_assert(success == TRUE);
-  log_msg_unref(msg);
-
-  assert_log_message_value_by_name(capture->captured_message, "aggr", "first,second,third");
+  cr_assert(capture->captured_messages->len == 4);
+  assert_log_message_value_by_name(test_capture_pipe_get_message(capture, 0), "PROGRAM", "first");
+  assert_log_message_value_by_name(test_capture_pipe_get_message(capture, 1), "PROGRAM", "second");
+  /* the aggregate comes before the triggering message */
+  assert_log_message_value_by_name(test_capture_pipe_get_message(capture, 2), "aggr", "first,second,third");
+  assert_log_message_value_by_name(test_capture_pipe_get_message(capture, 3), "PROGRAM", "third");
 
   log_pipe_unref(&parser->super);
   log_pipe_unref(&capture->super);
