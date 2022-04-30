@@ -24,6 +24,7 @@
 #include <criterion/criterion.h>
 #include "libtest/cr_template.h"
 #include "libtest/msg_parse_lib.h"
+#include "libtest/config_parse_lib.h"
 
 #include "groupingby.h"
 #include "filter/filter-expr-parser.h"
@@ -53,6 +54,14 @@ _compile_filter_expr(gchar *expr)
   cr_assert(cfg_run_parser(configuration, lexer, &filter_expr_parser, (gpointer *) &expr_node, NULL));
 
   return expr_node;
+}
+
+static LogParser *
+_compile_grouping_by(gchar *expr)
+{
+  LogParser *gby;
+  cr_assert(parse_config(expr, LL_CONTEXT_PARSER, NULL, (gpointer *) &gby) == TRUE);
+  return gby;
 }
 
 static LogMessage *
@@ -156,26 +165,19 @@ Test(grouping_by, grouping_by_aggregates_messages)
 
 Test(grouping_by, cfg_persist_name_not_equal)
 {
-  LogParser *parser = grouping_by_new(configuration);
-
-  LogTemplate *template = _get_template("$TEMPLATE1");
-  grouping_by_set_key_template(parser, template);
-  log_template_unref(template);
+  LogParser *parser = _compile_grouping_by("grouping-by(key(\"$TEMPLATE1\"));");
 
   gchar *persist_name1 = g_strdup(log_pipe_get_persist_name(&parser->super));
+  log_pipe_unref(&parser->super);
 
-  template = _get_template("$TEMPLATE2");
-  grouping_by_set_key_template(parser, template);
-  log_template_unref(template);
-
+  parser = _compile_grouping_by("grouping-by(key(\"$TEMPLATE2\"));");
   gchar *persist_name2 = g_strdup(log_pipe_get_persist_name(&parser->super));
+  log_pipe_unref(&parser->super);
 
   cr_assert_str_neq(persist_name1, persist_name2);
 
   g_free(persist_name1);
   g_free(persist_name2);
-
-  log_pipe_unref(&parser->super);
 }
 
 Test(grouping_by, cfg_persist_name_equal)
@@ -208,6 +210,7 @@ setup(void)
   app_startup();
   configuration = cfg_new_snippet();
   cfg_load_module(configuration, "basicfuncs");
+  cfg_load_module(configuration, "dbparser");
 }
 
 static void
