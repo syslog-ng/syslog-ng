@@ -25,13 +25,13 @@
 
 #include "logpipe.h"
 
-typedef struct _TestCapturePipe
+typedef struct _LogPipeMock
 {
   LogPipe super;
   GPtrArray *captured_messages;
-} TestCapturePipe;
+} LogPipeMock;
 
-LogMessage *test_capture_pipe_get_message(TestCapturePipe *self, gint ndx);
-TestCapturePipe *test_capture_pipe_new(GlobalConfig *cfg);
+LogMessage *log_pipe_mock_get_message(LogPipeMock *self, gint ndx);
+LogPipeMock *log_pipe_mock_new(GlobalConfig *cfg);
 
 #endif

@@ -64,7 +64,7 @@ _process_msg(LogParser *parser, const gchar *prog)
 
 Test(grouping_by, grouping_by_produces_aggregate_as_the_trigger_is_received)
 {
-  TestCapturePipe *capture = test_capture_pipe_new(configuration);
+  LogPipeMock *capture = log_pipe_mock_new(configuration);
   LogParser *parser = _compile_grouping_by(
                         "grouping-by(key(\"$key\")"
                         "    aggregate("
@@ -84,11 +84,11 @@ Test(grouping_by, grouping_by_produces_aggregate_as_the_trigger_is_received)
   _process_msg(parser, "third");
 
   cr_assert(capture->captured_messages->len == 4);
-  assert_log_message_value_by_name(test_capture_pipe_get_message(capture, 0), "PROGRAM", "first");
-  assert_log_message_value_by_name(test_capture_pipe_get_message(capture, 1), "PROGRAM", "second");
+  assert_log_message_value_by_name(log_pipe_mock_get_message(capture, 0), "PROGRAM", "first");
+  assert_log_message_value_by_name(log_pipe_mock_get_message(capture, 1), "PROGRAM", "second");
   /* the aggregate comes before the triggering message */
-  assert_log_message_value_by_name(test_capture_pipe_get_message(capture, 2), "aggr", "first,second,third");
-  assert_log_message_value_by_name(test_capture_pipe_get_message(capture, 3), "PROGRAM", "third");
+  assert_log_message_value_by_name(log_pipe_mock_get_message(capture, 2), "aggr", "first,second,third");
+  assert_log_message_value_by_name(log_pipe_mock_get_message(capture, 3), "PROGRAM", "third");
 
   log_pipe_unref(&parser->super);
   log_pipe_unref(&capture->super);
@@ -96,7 +96,7 @@ Test(grouping_by, grouping_by_produces_aggregate_as_the_trigger_is_received)
 
 Test(grouping_by, grouping_by_drops_original_messages_if_inject_mode_is_aggregate_only)
 {
-  TestCapturePipe *capture = test_capture_pipe_new(configuration);
+  LogPipeMock *capture = log_pipe_mock_new(configuration);
   LogParser *parser = _compile_grouping_by(
                         "grouping-by(key(\"$key\")"
                         "    aggregate("
@@ -116,7 +116,7 @@ Test(grouping_by, grouping_by_drops_original_messages_if_inject_mode_is_aggregat
   _process_msg(parser, "third");
 
   cr_assert(capture->captured_messages->len == 1);
-  assert_log_message_value_by_name(test_capture_pipe_get_message(capture, 0), "aggr", "first,second,third");
+  assert_log_message_value_by_name(log_pipe_mock_get_message(capture, 0), "aggr", "first,second,third");
 
   log_pipe_unref(&parser->super);
   log_pipe_unref(&capture->super);
