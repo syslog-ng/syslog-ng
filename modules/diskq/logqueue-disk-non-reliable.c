@@ -138,7 +138,7 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
   while (_qoverflow_has_movable_message(self))
     {
       msg = g_queue_pop_head(self->qoverflow);
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), &path_options);
+      POINTER_TO_LOG_PATH_OPTIONS(msg, &path_options);
 
       if (_can_push_to_qout(self))
         {
@@ -223,7 +223,7 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
       if (self->qbacklog->length < ITEM_NUMBER_PER_MESSAGE)
         return;
       msg = g_queue_pop_head(self->qbacklog);
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qbacklog), &path_options);
+      POINTER_TO_LOG_PATH_OPTIONS(msg, &path_options);
       log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
     }
@@ -263,8 +263,12 @@ _rewind_backlog_all(LogQueue *s)
 static inline LogMessage *
 _pop_head_qout(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
 {
+  gint pi;
+  gpointer ptr_opt;
   LogMessage *msg = g_queue_pop_head(self->qout);
-  POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qout), path_options);
+  ptr_opt = g_queue_pop_head(self->qout);
+  pi = GPOINTER_TO_INT(ptr_opt);
+  (path_options)->ack_needed = (pi & ~0x80000000);
   log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
 
   return msg;
@@ -273,8 +277,12 @@ _pop_head_qout(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
 static inline LogMessage *
 _pop_head_qoverflow(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
 {
+  gint pi;
+  gpointer ptr_opt;
   LogMessage *msg = g_queue_pop_head(self->qoverflow);
-  POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), path_options);
+  ptr_opt = g_queue_pop_head(self->qoverflow);
+  pi = GPOINTER_TO_INT(ptr_opt);
+  (path_options)->ack_needed = (pi & ~0x80000000);
   log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
 
   return msg;
@@ -485,7 +493,7 @@ _free_queue(GQueue *q)
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
       lm = g_queue_pop_head(q);
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(q), &path_options);
+      POINTER_TO_LOG_PATH_OPTIONS(lm, &path_options);
       log_msg_ack(lm, &path_options, AT_PROCESSED);
       log_msg_unref(lm);
     }

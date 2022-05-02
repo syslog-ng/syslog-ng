@@ -64,12 +64,16 @@ log_tags_get_by_name(const gchar *name)
      In both cases the return value is 0.
    */
   guint id;
+  gpointer key;
 
   g_assert(log_tags_hash != NULL);
 
   g_mutex_lock(&log_tags_lock);
 
-  id = GPOINTER_TO_UINT(g_hash_table_lookup(log_tags_hash, name)) - 1;
+  key = g_hash_table_lookup(log_tags_hash, name);
+
+  id = GPOINTER_TO_UINT(key) - 1;
+
   if (id == 0xffffffff)
     {
       if (log_tags_num < LOG_TAGS_MAX - 1)

@@ -52,7 +52,8 @@ _pop_from_memory_queue_head(GQueue *queue, gint64 *position, LogMessage **msg, L
   g_free(allocated_position);
 
   *msg = g_queue_pop_head(queue);
-  POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(queue), path_options);
+  gpointer path_options_ptr = g_queue_pop_head(queue);
+  POINTER_TO_LOG_PATH_OPTIONS(path_options_ptr, path_options);
 }
 
 static inline gint64

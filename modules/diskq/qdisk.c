@@ -977,7 +977,7 @@ _save_queue(QDisk *self, GQueue *q, QDiskQueuePosition *q_pos)
        * non-flow-controlled entries later, but then we've saved them to
        * disk anyway. */
 
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(q), &path_options);
+      POINTER_TO_LOG_PATH_OPTIONS(msg, &path_options);
       log_msg_serialize(msg, sa, 0);
       log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
