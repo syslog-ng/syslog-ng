@@ -189,6 +189,8 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_CIPHER_SUITE
 %token KW_TLS12_AND_OLDER
 %token KW_TLS13
+%token KW_SIGALGS
+%token KW_CLIENT_SIGALGS
 %token KW_ECDH_CURVE_LIST
 %token KW_SSL_OPTIONS
 %token KW_SNI
@@ -855,6 +857,16 @@ tls_option
           {
             /* compat for specifying TLS 1.2-or-older ciphers */
             tls_context_set_cipher_suite(last_tls_context, $3);
+            free($3);
+          }
+        | KW_SIGALGS '(' string ')'
+          {
+            tls_context_set_sigalgs(last_tls_context, $3);
+            free($3);
+          }
+        | KW_CLIENT_SIGALGS '(' string ')'
+          {
+            tls_context_set_client_sigalgs(last_tls_context, $3);
             free($3);
           }
         | KW_ECDH_CURVE_LIST '(' string ')'
