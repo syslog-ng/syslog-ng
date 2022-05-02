@@ -69,6 +69,7 @@ void g_process_set_chroot(const gchar *chroot);
 void g_process_set_pidfile(const gchar *pidfile);
 void g_process_set_pidfile_dir(const gchar *pidfile_dir);
 void g_process_set_working_dir(const gchar *cwd);
+void g_process_disable_caps(void);
 void g_process_set_caps(const gchar *caps);
 void g_process_set_argv_space(gint argc, gchar **argv);
 void g_process_set_use_fdlimit(gboolean use);
