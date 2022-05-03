@@ -771,10 +771,31 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
   log_msg_set_value_indirect_with_type(self, handle, ref_handle, ofs, len, LM_VT_STRING);
 }
 
+static gboolean
+log_msg_nvtable_foreach_callback(NVHandle handle, const gchar *name,
+                                 const gchar *value, gssize value_len,
+                                 NVType type, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  const LogMessage *self = args[0];
+  NVTableForeachFunc func = args[1];
+  gpointer func_data = args[2];
+
+  if (log_msg_is_handle_match(handle))
+    {
+      gint index_ = handle - match_handles[0];
+      if (index_ >= self->num_matches)
+        return FALSE;
+    }
+
+  return func(handle, name, value, value_len, type, func_data);
+}
+
 gboolean
 log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer user_data)
 {
-  return nv_table_foreach(self->payload, logmsg_registry, func, user_data);
+  gpointer args[3] = { (gpointer) self, func, user_data };
+  return nv_table_foreach(self->payload, logmsg_registry, log_msg_nvtable_foreach_callback, args);
 }
 
 void
