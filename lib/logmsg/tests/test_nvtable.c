@@ -1051,6 +1051,45 @@ Test(nvtable, test_nvtable_unset_copies_indirect_references)
   nv_table_unref(tab);
 }
 
+Test(nvtable, test_nvtable_indirect_references_unset_and_then_set_again_are_present)
+{
+  NVTable *tab;
+  gssize size = 9999;
+  const gchar *value;
+  const gchar *indirect_nv_name = "indirect-name";
+
+  tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 1024);
+  nv_table_add_value(tab, STATIC_HANDLE, STATIC_NAME, strlen(DYN_NAME), "static-foo", 10, 0, NULL);
+  nv_table_add_value_indirect(tab, DYN_HANDLE, indirect_nv_name, strlen(indirect_nv_name),
+                              &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 5
+  }, 0, NULL);
+
+  value = nv_table_get_value(tab, DYN_HANDLE, &size, NULL);
+  cr_assert_not_null(value);
+  cr_assert(strncmp(value, "tatic", 5) == 0);
+  cr_assert_eq(size, 5);
+
+  nv_table_unset_value(tab, DYN_HANDLE);
+
+  value = nv_table_get_value(tab, DYN_HANDLE, &size, NULL);
+  cr_assert_null(value);
+
+  nv_table_add_value_indirect(tab, DYN_HANDLE, indirect_nv_name, strlen(indirect_nv_name),
+                              &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 2, 4
+  }, 0, NULL);
+
+  value = nv_table_get_value(tab, DYN_HANDLE, &size, NULL);
+  cr_assert_not_null(value);
+  cr_assert(strncmp(value, "atic", 4) == 0);
+  cr_assert_eq(size, 4);
+
+  nv_table_unref(tab);
+}
+
 Test(nvtable, test_nvtable_compact_copies_name_value_pairs)
 {
   NVTable *tab1, *tab2;
