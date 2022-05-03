@@ -642,7 +642,7 @@ Test(log_message, test_format_matches_resets_match_values_if_an_out_of_range_ele
   log_msg_set_match(msg, 2, "match2", -1);
   log_msg_set_match(msg, 3, "match3", -1);
   log_msg_set_match(msg, 4, "match4", -1);
-  msg->num_matches = 4;
+  log_msg_truncate_matches(msg, 4);
 
   log_msg_format_matches(msg, result);
   /* $4 missing due to num_matches changed */
@@ -679,7 +679,7 @@ Test(log_message, test_changing_num_matches_causes_numbered_matches_to_become_un
 
   cr_assert_eq(msg->num_matches, 4);
   assert_log_message_match_value(msg, 3, "match3");
-  msg->num_matches = 3;
+  log_msg_truncate_matches(msg, 3);
   assert_log_message_match_value(msg, 3, "");
 
   log_msg_format_matches(msg, result);

@@ -398,7 +398,6 @@ log_matcher_pcre_re_feed_backrefs(LogMatcher *s, LogMessage *msg, gint value_han
   gint i;
   gboolean indirect = _shall_set_values_indirectly(value_handle);
 
-  log_msg_clear_matches(msg);
   for (i = 0; i < (LOGMSG_MAX_MATCHES) && i < match_num; i++)
     {
       gint begin_index = matches[2 * i];
@@ -416,6 +415,7 @@ log_matcher_pcre_re_feed_backrefs(LogMatcher *s, LogMessage *msg, gint value_han
           log_msg_set_match(msg, i, &value[begin_index], end_index - begin_index);
         }
     }
+  log_msg_truncate_matches(msg, match_num);
 }
 
 static inline void

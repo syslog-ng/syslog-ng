@@ -771,31 +771,10 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
   log_msg_set_value_indirect_with_type(self, handle, ref_handle, ofs, len, LM_VT_STRING);
 }
 
-static gboolean
-log_msg_nvtable_foreach_callback(NVHandle handle, const gchar *name,
-                                 const gchar *value, gssize value_len,
-                                 NVType type, gpointer user_data)
-{
-  gpointer *args = (gpointer *) user_data;
-  const LogMessage *self = args[0];
-  NVTableForeachFunc func = args[1];
-  gpointer func_data = args[2];
-
-  if (log_msg_is_handle_match(handle))
-    {
-      gint index_ = handle - match_handles[0];
-      if (index_ >= self->num_matches)
-        return FALSE;
-    }
-
-  return func(handle, name, value, value_len, type, func_data);
-}
-
 gboolean
 log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer user_data)
 {
-  gpointer args[3] = { (gpointer) self, func, user_data };
-  return nv_table_foreach(self->payload, logmsg_registry, log_msg_nvtable_foreach_callback, args);
+  return nv_table_foreach(self->payload, logmsg_registry, func, user_data);
 }
 
 NVHandle
@@ -849,9 +828,6 @@ log_msg_get_match_if_set_with_type(const LogMessage *self, gint index_, gssize *
 {
   g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
 
-  if (index_ >= self->num_matches)
-    return NULL;
-
   return nv_table_get_value(self->payload, match_handles[index_], value_len, type);
 }
 
@@ -888,9 +864,17 @@ log_msg_unset_match(LogMessage *self, gint index_)
 }
 
 void
+log_msg_truncate_matches(LogMessage *self, gint n)
+{
+  for (gint i = n; i < self->num_matches; i++)
+    log_msg_unset_match(self, i);
+  self->num_matches = n;
+}
+
+void
 log_msg_clear_matches(LogMessage *self)
 {
-  self->num_matches = 0;
+  log_msg_truncate_matches(self, 0);
 }
 
 #if GLIB_SIZEOF_LONG != GLIB_SIZEOF_VOID_P
@@ -1381,7 +1365,7 @@ log_msg_clear(LogMessage *self)
       self->num_tags = 0;
     }
 
-  self->num_matches = 0;
+  log_msg_clear_matches(self);
   if (!log_msg_chk_flag(self, LF_STATE_OWN_SDATA))
     {
       self->sdata = NULL;

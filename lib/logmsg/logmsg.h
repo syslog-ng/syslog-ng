@@ -335,9 +335,7 @@ log_msg_get_value_if_set_with_type(const LogMessage *self, NVHandle handle,
   guint16 flags;
 
   flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  if (G_UNLIKELY((flags & LM_VF_MATCH)))
-    return log_msg_get_match_if_set_with_type(self, flags >> 8, value_len, type);
-  else if ((flags & LM_VF_MACRO))
+  if (G_UNLIKELY((flags & LM_VF_MACRO)))
     return log_msg_get_macro_value(self, flags >> 8, value_len, type);
   else
     return nv_table_get_value(self->payload, handle, value_len, type);
@@ -419,6 +417,7 @@ const gchar *log_msg_get_match_with_type(const LogMessage *self, gint index_, gs
                                          LogMessageValueType *type);
 const gchar *log_msg_get_match(const LogMessage *self, gint index_, gssize *value_len);
 void log_msg_clear_matches(LogMessage *self);
+void log_msg_truncate_matches(LogMessage *self, gint n);
 
 static inline void
 log_msg_set_value_by_name_with_type(LogMessage *self,

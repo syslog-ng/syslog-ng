@@ -258,7 +258,7 @@ json_parser_process_array(struct json_object *jso,
 {
   gint i;
 
-  log_msg_clear_matches(msg);
+  log_msg_unset_match(msg, 0);
   for (i = 0; i < json_object_array_length(jso) && i < LOGMSG_MAX_MATCHES; i++)
     {
       struct json_object *el = json_object_array_get_idx(jso, i);
@@ -275,6 +275,7 @@ json_parser_process_array(struct json_object *jso,
           log_msg_set_match_with_type(msg, i + 1, json_object_to_json_string_ext(el, JSON_C_TO_STRING_PLAIN), -1, LM_VT_JSON);
         }
     }
+  log_msg_truncate_matches(msg, i + 1);
 }
 
 static gboolean
