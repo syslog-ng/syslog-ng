@@ -703,6 +703,53 @@ log_matcher_pcre_set_nv_prefix(LogMatcher *s, const gchar *prefix)
 
 typedef LogMatcher *(*LogMatcherConstructFunc)(const LogMatcherOptions *options);
 
+gboolean
+log_matcher_match_value(LogMatcher *s, LogMessage *msg, gint value_handle)
+{
+  NVTable *payload = nv_table_ref(msg->payload);
+  gssize value_len;
+  const gchar *value = log_msg_get_value(msg, value_handle, &value_len);
+
+  APPEND_ZERO(value, value, value_len);
+
+  gboolean result = log_matcher_match(s, msg, value_handle, value, value_len);
+  nv_table_unref(payload);
+  return result;
+}
+
+gboolean
+log_matcher_match_buffer(LogMatcher *s, LogMessage *msg, const gchar *value, gssize value_len)
+{
+  return log_matcher_match(s, msg, LM_V_NONE, value, value_len);
+}
+
+gboolean
+log_matcher_match_template(LogMatcher *s, LogMessage *msg, LogTemplate *template, LogTemplateEvalOptions *options)
+{
+  gboolean result;
+
+  if (log_template_is_trivial(template))
+    {
+      NVTable *payload = nv_table_ref(msg->payload);
+      gssize len;
+      const gchar *value = log_template_get_trivial_value(template, msg, &len);
+
+      APPEND_ZERO(value, value, len);
+      result = log_matcher_match_buffer(s, msg, value, len);
+
+      nv_table_unref(payload);
+    }
+  else
+    {
+      GString *buffer = scratch_buffers_alloc();
+
+      log_template_format(template, msg, options, buffer);
+      result = log_matcher_match_buffer(s, msg, buffer->str, buffer->len);
+    }
+  return result;
+}
+
+
 struct
 {
   const gchar *name;
