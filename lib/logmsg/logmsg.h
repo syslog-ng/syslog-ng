@@ -32,6 +32,7 @@
 #include "timeutils/unixtime.h"
 #include "logmsg/nvtable.h"
 #include "logmsg/tags.h"
+#include "messages.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -491,5 +492,22 @@ gssize log_msg_get_size(LogMessage *self);
 #define evt_tag_msg_reference(msg)             \
     evt_tag_printf("msg", "%p", (msg)),        \
     evt_tag_printf("rcptid", "%" G_GUINT64_FORMAT, (msg)->rcptid)
+
+static inline EVTTAG *
+evt_tag_msg_value(const gchar *name, LogMessage *msg, NVHandle value_handle)
+{
+  gssize value_len;
+  const gchar *value = log_msg_get_value(msg, value_handle, &value_len);
+
+  return evt_tag_printf(name, "%.*s", (gint) value_len, value);
+}
+
+static inline EVTTAG *
+evt_tag_msg_value_name(const gchar *name, NVHandle value_handle)
+{
+  const gchar *value_name = log_msg_get_value_name(value_handle, NULL);
+
+  return evt_tag_str(name, value_name);
+}
 
 #endif
