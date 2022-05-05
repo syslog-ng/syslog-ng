@@ -1,4 +1,4 @@
-add_unit_test(CRITERION TARGET test_csvparser DEPENDS csvparser syslogformat)
-add_unit_test(LIBTEST CRITERION TARGET test_csvparser_from_config DEPENDS csvparser syslogformat)
+add_unit_test(CRITERION TARGET test_csvparser DEPENDS csvparser)
+add_unit_test(LIBTEST CRITERION TARGET test_csvparser_from_config DEPENDS csvparser)
 add_unit_test(CRITERION TARGET test_csvparser_perf DEPENDS csvparser)
 add_unit_test(CRITERION TARGET test_csvparser_statistics DEPENDS csvparser)
