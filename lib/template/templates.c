@@ -32,19 +32,13 @@
 gboolean
 log_template_is_literal_string(const LogTemplate *self)
 {
-  if (!self->compiled_template)
-    return TRUE;
-
-  if (self->escape || self->compiled_template->next)
-    return FALSE;
-
-  return log_template_elem_is_literal_string((LogTemplateElem *) self->compiled_template->data);
+  return self->literal;
 }
 
 const gchar *
 log_template_get_literal_value(const LogTemplate *self, gssize *value_len)
 {
-  g_assert(log_template_is_literal_string(self));
+  g_assert(self->literal);
 
   if (!self->compiled_template)
     return "";
@@ -115,9 +109,20 @@ log_template_get_trivial_value(LogTemplate *self, LogMessage *msg, gssize *value
   return log_template_get_trivial_value_and_type(self, msg, value_len, NULL);
 }
 
+static gboolean
+_calculate_if_literal(LogTemplate *self)
+{
+  if (!self->compiled_template)
+    return TRUE;
+
+  if (self->escape || self->compiled_template->next)
+    return FALSE;
+
+  return log_template_elem_is_literal_string((LogTemplateElem *) self->compiled_template->data);
+}
 
 static gboolean
-_calculate_triviality(LogTemplate *self)
+_calculate_if_trivial(LogTemplate *self)
 {
   /* if we need to escape, that's not trivial */
   if (self->escape)
@@ -188,7 +193,11 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
   result = log_template_compiler_compile(&compiler, &self->compiled_template, error);
   log_template_compiler_clear(&compiler);
 
-  self->trivial = _calculate_triviality(self);
+  self->literal = _calculate_if_literal(self);
+  if (!self->literal)
+    self->trivial = _calculate_if_trivial(self);
+  else
+    self->trivial = TRUE;
   return result;
 }
 
@@ -201,7 +210,11 @@ log_template_compile_literal_string(LogTemplate *self, const gchar *literal)
   self->compiled_template = g_list_append(self->compiled_template,
                                           log_template_elem_new_macro(literal, M_NONE, NULL, 0));
 
-  self->trivial = _calculate_triviality(self);
+  /* double check that the representation here is actually considered trivial. It should be. */
+  g_assert(_calculate_if_trivial(self));
+
+  self->literal = TRUE;
+  self->trivial = TRUE;
 }
 
 void

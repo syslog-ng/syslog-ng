@@ -59,7 +59,7 @@ struct _LogTemplate
   gchar *template;
   GList *compiled_template;
   GlobalConfig *cfg;
-  guint escape:1, def_inline:1, trivial:1;
+  guint escape:1, def_inline:1, trivial:1, literal:1;
   LogMessageValueType type_hint;
 };
 
