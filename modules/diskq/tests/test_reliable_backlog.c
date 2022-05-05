@@ -29,14 +29,12 @@
 #include "logqueue-disk-reliable.h"
 #include "apphook.h"
 #include "plugin.h"
-#include "msg-format.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 
-MsgFormatOptions parse_options;
 
 #define TEST_DISKQ_SIZE QDISK_RESERVED_SPACE + 1000 /* 4096 + 1000 */
 
@@ -47,8 +45,6 @@ static gint mark_message_serialized_size;
 DiskQueueOptions options;
 
 #define NUMBER_MESSAGES_IN_QUEUE(n) (n * 3)
-
-MsgFormatOptions parse_options;
 
 static void
 _dummy_ack(LogMessage *lm,  AckType ack_type)
@@ -386,10 +382,7 @@ setup(void)
   tzset();
 
   configuration = cfg_new_snippet();
-  cfg_load_module(configuration, "syslogformat");
   cfg_load_module(configuration, "disk-buffer");
-  msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, configuration);
 
   set_mark_message_serialized_size();
 }
