@@ -72,6 +72,7 @@ void log_template_compile_literal_string(LogTemplate *self, const gchar *literal
 gboolean log_template_is_literal_string(const LogTemplate *self);
 const gchar *log_template_get_literal_value(const LogTemplate *self, gssize *value_len);
 gboolean log_template_is_trivial(LogTemplate *self);
+NVHandle log_template_get_trivial_value_handle(LogTemplate *self);
 const gchar *log_template_get_trivial_value(LogTemplate *self, LogMessage *msg, gssize *value_len);
 const gchar *log_template_get_trivial_value_and_type(LogTemplate *self, LogMessage *msg, gssize *value_len,
                                                      LogMessageValueType *type);

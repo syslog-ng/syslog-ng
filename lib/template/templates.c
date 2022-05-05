@@ -57,6 +57,33 @@ log_template_is_trivial(LogTemplate *self)
   return self->trivial;
 }
 
+NVHandle
+log_template_get_trivial_value_handle(LogTemplate *self)
+{
+  g_assert(self->trivial);
+
+  if (self->literal)
+    return LM_V_NONE;
+
+  LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
+
+  switch (e->type)
+    {
+    case LTE_MACRO:
+      if (e->macro == M_MESSAGE)
+        return LM_V_MESSAGE;
+      else if (e->macro == M_HOST)
+        return LM_V_HOST;
+      else
+        g_assert_not_reached();
+      break;
+    case LTE_VALUE:
+      return e->value_handle;
+    default:
+      g_assert_not_reached();
+    }
+}
+
 const gchar *
 log_template_get_trivial_value_and_type(LogTemplate *self, LogMessage *msg, gssize *value_len,
                                         LogMessageValueType *type)
@@ -67,33 +94,18 @@ log_template_get_trivial_value_and_type(LogTemplate *self, LogMessage *msg, gssi
 
   g_assert(self->trivial);
 
-  if (!self->compiled_template)
-    goto exit;
-
-  LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
-
-  switch (e->type)
+  if (self->literal)
     {
-    case LTE_MACRO:
-      if (e->text_len > 0)
-        {
-          result_len = e->text_len;
-          result = e->text;
-        }
-      else if (e->macro == M_MESSAGE)
-        result = log_msg_get_value_with_type(msg, LM_V_MESSAGE, &result_len, &t);
-      else if (e->macro == M_HOST)
-        result = log_msg_get_value_with_type(msg, LM_V_HOST, &result_len, &t);
-      else
-        g_assert_not_reached();
-      break;
-    case LTE_VALUE:
-      result = log_msg_get_value_with_type(msg, e->value_handle, &result_len, &t);
-      break;
-    default:
-      g_assert_not_reached();
+      result = log_template_get_literal_value(self, &result_len);
     }
-exit:
+  else
+    {
+      NVHandle handle = log_template_get_trivial_value_handle(self);
+      g_assert(handle != LM_V_NONE);
+
+      result = log_msg_get_value_with_type(msg, handle, &result_len, &t);
+    }
+
   if (type)
     {
       *type = self->type_hint == LM_VT_NONE ? t : self->type_hint;
@@ -194,10 +206,7 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
   log_template_compiler_clear(&compiler);
 
   self->literal = _calculate_if_literal(self);
-  if (!self->literal)
-    self->trivial = _calculate_if_trivial(self);
-  else
-    self->trivial = TRUE;
+  self->trivial = _calculate_if_trivial(self);
   return result;
 }
 
