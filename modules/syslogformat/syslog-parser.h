@@ -24,6 +24,7 @@
 #define SYSLOG_PARSER_H_INCLUDED
 
 #include "parser/parser-expr.h"
+#include "msg-format.h"
 
 typedef struct _SyslogParser
 {

@@ -97,7 +97,7 @@ _create_message_to_be_serialized(const gchar *raw_msg, const int raw_msg_len)
   parse_options.flags |= LP_SYSLOG_PROTOCOL;
   NVHandle test_handle = log_msg_get_value_handle("aaa");
 
-  LogMessage *msg = log_msg_new(raw_msg, raw_msg_len, &parse_options);
+  LogMessage *msg = msg_format_parse(&parse_options, (const guchar *) raw_msg, raw_msg_len);
   log_msg_set_value(msg, test_handle, "test_value53", -1);
 
   NVHandle indirect_handle = log_msg_get_value_handle("indirect_1");

@@ -27,6 +27,7 @@
 
 #include "cfg.h"
 #include "logmsg/logmsg.h"
+#include "msg-format.h"
 
 void init_parse_options_and_load_syslogformat(MsgFormatOptions *parse_options);
 void deinit_syslogformat_module(void);

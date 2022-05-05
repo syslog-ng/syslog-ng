@@ -31,6 +31,7 @@
 #include "logproto/logproto-server.h"
 #include "poll-events.h"
 #include "mainloop-io-worker.h"
+#include "msg-format.h"
 #include <iv_event.h>
 
 /* flags */

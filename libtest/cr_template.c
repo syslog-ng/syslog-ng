@@ -76,9 +76,9 @@ LogMessage *
 create_empty_message(void)
 {
   LogMessage *msg;
-  const char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
+  const gchar *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
 
-  msg = log_msg_new(msg_str, strlen(msg_str), &parse_options);
+  msg = msg_format_parse(&parse_options, (const guchar *) msg_str, strlen(msg_str));
   log_msg_set_saddr_ref(msg, g_sockaddr_inet_new("10.11.12.13", 1010));
   log_msg_set_daddr_ref(msg, g_sockaddr_inet_new("127.0.0.5", 6514));
   log_msg_set_match(msg, 0, "whole-match", -1);

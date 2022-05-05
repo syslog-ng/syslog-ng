@@ -30,6 +30,7 @@
 #include "apphook.h"
 #include "cfg.h"
 #include "plugin.h"
+#include "msg-format.h"
 
 #include <stdlib.h>
 
@@ -71,7 +72,7 @@ create_message(void)
     "<134>1 2009-10-16T11:51:56+02:00 exchange.macartney.esbjerg MSExchange_ADAccess 20208 _MSGID_ [origin ip=\"exchange.macartney.esbjerg\"][meta sequenceId=\"191732\" sysUpTime=\"68807696\"][EventData@18372.4 Data=\"MSEXCHANGEOWAAPPPOOL.CONFIG\\\" -W \\\"\\\" -M 1 -AP \\\"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 \"][Keywords@18372.4 Keyword=\"Classic\"] ApplicationMSExchangeADAccess: message";
   const gchar *unset_nvpair = "unset_value";
 
-  msg = log_msg_new(text, strlen(text), &parse_options);
+  msg = msg_format_parse(&parse_options, (const guchar *) text, strlen(text));
   log_msg_set_tag_by_name(msg, "almafa");
   log_msg_set_value_by_name(msg, unset_nvpair, "value that has been unset", -1);
   log_msg_unset_value_by_name(msg, unset_nvpair);
