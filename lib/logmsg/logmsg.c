@@ -1441,47 +1441,19 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   return self;
 }
 
-static gsize
-_determine_payload_size(gint length, MsgFormatOptions *parse_options)
-{
-  gsize payload_size;
-
-  if ((parse_options->flags & LP_STORE_RAW_MESSAGE))
-    payload_size = length * 4;
-  else
-    payload_size = length * 2;
-
-  return MAX(payload_size, 256);
-}
-
-/**
- * log_msg_new:
- * @msg: message to parse
- * @length: length of @msg
- * @flags: parse flags (LP_*)
- *
- * This function allocates, parses and returns a new LogMessage instance.
- **/
 LogMessage *
-log_msg_new(const gchar *msg, gint length,
-            MsgFormatOptions *parse_options)
+log_msg_sized_new(gsize payload_size)
 {
-  LogMessage *self = log_msg_alloc(_determine_payload_size(length, parse_options));
+  LogMessage *self = log_msg_alloc(payload_size);
 
   log_msg_init(self);
-
-  msg_trace("Initial message parsing follows");
-  msg_format_parse_into(parse_options, self, (guchar *) msg, length);
   return self;
 }
 
 LogMessage *
 log_msg_new_empty(void)
 {
-  LogMessage *self = log_msg_alloc(256);
-
-  log_msg_init(self);
-  return self;
+  return log_msg_sized_new(256);
 }
 
 /* This function creates a new log message that should be considered local */

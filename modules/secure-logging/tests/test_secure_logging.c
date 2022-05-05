@@ -93,7 +93,7 @@ LogMessage *create_random_sample_message(void)
       g_string_append_c(msg_str, randomNumber(65, 90));
     }
 
-  msg = log_msg_new(msg_str->str, msg_str->len, &test_parse_options);
+  msg = msg_format_parse(&test_parse_options, (const guchar *) msg_str->str, msg_str->len);
   log_msg_set_saddr_ref(msg, g_sockaddr_inet_new("10.11.12.13", 1010));
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
@@ -251,7 +251,7 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
   for (int i=0; i<totalNumberOfMessages; i++)
     {
       char *plaintextMessage = (outputBuffer[i]->str) + CTR_LEN_SIMPLE + COLON + BLANK;
-      LogMessage *result = log_msg_new(plaintextMessage, strlen(plaintextMessage), &test_parse_options);
+      LogMessage *result = msg_format_parse(&test_parse_options, (const guchar *) plaintextMessage, strlen(plaintextMessage));
       log_msg_set_saddr(result, original[i]->saddr);
       assert_log_messages_equal(original[i], result);
       g_string_free(outputBuffer[i], TRUE);
@@ -572,7 +572,7 @@ void test_slog_corrupted_key(void)
       output[i] = applyTemplate(slog_templ, logs[i]);
 
       // Create new message from the text content of the original message
-      LogMessage *myOut = log_msg_new(output[i]->str, output[i]->len, &test_parse_options);
+      LogMessage *myOut = msg_format_parse(&test_parse_options, (const guchar *) output[i]->str, output[i]->len);
 
       // Initialize the new message with value from the original
       log_msg_set_saddr(myOut, logs[i]->saddr);

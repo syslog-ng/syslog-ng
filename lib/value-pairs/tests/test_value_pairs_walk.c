@@ -29,6 +29,7 @@
 #include "plugin.h"
 #include "cfg.h"
 #include "logmsg/logmsg.h"
+#include "msg-format.h"
 
 MsgFormatOptions parse_options;
 LogTemplateOptions template_options;
@@ -119,7 +120,7 @@ Test(value_pairs_walker, prefix_dat)
 
   vp = value_pairs_new(cfg);
   value_pairs_add_glob_pattern(vp, "root.*", TRUE);
-  msg = log_msg_new("test", 4, &parse_options);
+  msg = msg_format_parse(&parse_options, (const guchar *) "test", 4);
 
   log_msg_set_value_by_name(msg, "root.test.alma", value, strlen(value));
   log_msg_set_value_by_name(msg, "root.test.korte", value, strlen(value));

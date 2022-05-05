@@ -31,6 +31,7 @@
 #include "cfg.h"
 #include "plugin.h"
 #include "scratch-buffers.h"
+#include "msg-format.h"
 
 #include <time.h>
 #include <string.h>
@@ -869,7 +870,7 @@ ParameterizedTest(CsvParserTestParam *param, parser, test_csv_parser)
     }
 
   parse_options.flags = param->parse_flags;
-  logmsg = log_msg_new(param->msg, strlen(param->msg), &parse_options);
+  logmsg = msg_format_parse(&parse_options, (const guchar *) param->msg, strlen(param->msg));
 
   p = csv_parser_new(NULL);
   csv_parser_set_drop_invalid(p, param->drop_invalid);

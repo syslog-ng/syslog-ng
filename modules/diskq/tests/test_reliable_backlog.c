@@ -29,6 +29,7 @@
 #include "logqueue-disk-reliable.h"
 #include "apphook.h"
 #include "plugin.h"
+#include "msg-format.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

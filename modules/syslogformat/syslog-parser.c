@@ -22,7 +22,6 @@
  */
 
 #include "syslog-parser.h"
-#include "syslog-format.h"
 
 void
 syslog_parser_set_drop_invalid(LogParser *s, gboolean drop_invalid)
