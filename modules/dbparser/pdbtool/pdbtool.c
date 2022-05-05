@@ -515,7 +515,7 @@ pdbtool_match(int argc, char *argv[])
         {
           log_msg_unref(msg);
           msg = log_msg_new_empty();
-          msg_format_parse(&parse_options, msg, buf, buflen);
+          msg_format_parse_into(&parse_options, msg, buf, buflen);
         }
 
       if (G_UNLIKELY(debug_pattern))
