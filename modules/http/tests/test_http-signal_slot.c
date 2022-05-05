@@ -28,10 +28,8 @@
 #include "http-worker.h"
 #include "http-signals.h"
 #include "apphook.h"
-#include "msg-format.h"
 
 MainLoop *main_loop;
-MsgFormatOptions parse_options;
 MainLoopOptions main_loop_options;
 
 HTTPDestinationDriver *driver;
