@@ -47,11 +47,11 @@ syslog_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
   if (self->drop_invalid)
     {
       gsize problem_position = 0;
-      return msg_format_parse_conditional(&self->parse_options, msg, (guchar *) input, input_len, &problem_position);
+      return msg_format_try_parse_into(&self->parse_options, msg, (guchar *) input, input_len, &problem_position);
     }
   else
     {
-      msg_format_parse(&self->parse_options, msg, (guchar *) input, input_len);
+      msg_format_parse_into(&self->parse_options, msg, (guchar *) input, input_len);
       return TRUE;
     }
 }

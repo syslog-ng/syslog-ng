@@ -1471,7 +1471,7 @@ log_msg_new(const gchar *msg, gint length,
   log_msg_init(self);
 
   msg_trace("Initial message parsing follows");
-  msg_format_parse(parse_options, self, (guchar *) msg, length);
+  msg_format_parse_into(parse_options, self, (guchar *) msg, length);
   return self;
 }
 
