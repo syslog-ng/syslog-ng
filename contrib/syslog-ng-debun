@@ -820,13 +820,13 @@ acquire_syslog_var () {
 				findL . | grep -v "syslog-ng*\.ctl" | $cpiopdL ${tmpdir}/var
 			else
 				printf "Only copying most important files on user request.\n"
-				findL . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
+				findL . \( -name "*.persist" -o -name "*.state" -o -name "*.pid" -o -path "*/reports/*" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
 			fi
 		fi
 	else
 		printf "TOO LOW free disk space on the filesystem holding ${tmpdir}\n"
 		printf "to create a full copy of ${vardir}!\nOnly copying most important files.\n"
-		findL . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
+		findL . \( -name "*.persist" -o -name "*.state" -o -name "*.pid" -o -path "*/reports/*" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
 	fi
 }
 
