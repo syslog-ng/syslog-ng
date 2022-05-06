@@ -178,7 +178,7 @@ class ReleaseDebIndexer(DebIndexer):
         utils.execute_command(command, env=env)
 
     def _sign_pkgs(self, indexed_dir: Path) -> None:
-        gnupghome = TemporaryDirectory()
+        gnupghome = TemporaryDirectory(dir=CURRENT_DIR)
         release_file_path = Path(indexed_dir, "Release")
 
         self.__add_gpg_key_to_chain(gnupghome.name)
