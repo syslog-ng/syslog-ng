@@ -22,7 +22,7 @@
 
 import logging
 from pathlib import Path
-from subprocess import call
+from subprocess import run
 from typing import Dict, List, TextIO, Optional
 
 logger = logging.getLogger("utils")
@@ -33,17 +33,19 @@ def execute_command(
     command: List[str],
     dir: Optional[Path] = None,
     env: Optional[Dict[str, str]] = None,
+    input: Optional[str] = None,
     stdout: Optional[TextIO] = None,
 ) -> None:
-    log_extras = {k: str(v) for k, v in filter(lambda kv: kv[1] is not None, locals().items())}
+    log_extras = {k: str(v) for k, v in filter(lambda kv: kv[1] is not None and kv[0] != "input", locals().items())}
     logger.info("Executing command.\t{}".format(log_extras))
 
-    rc = call(
+    rc = run(
         command,
+        input=bytes(input, "utf-8") if input is not None else None,
         stdout=stdout,
         cwd=dir,
         env=env,
-    )
+    ).returncode
     if rc != 0:
         raise ChildProcessError("`{}` failed. dir={} env={} rc={}.".format(" ".join(command), dir, env, rc))
 
