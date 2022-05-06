@@ -141,7 +141,7 @@ def main() -> None:
     args = parse_args()
     init_logging(args)
 
-    cfg = Config(Path(args["config"]))
+    cfg = Config.from_file(Path(args["config"]))
 
     indexers = construct_indexers(cfg, args)
     for indexer in indexers:
