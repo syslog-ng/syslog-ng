@@ -88,7 +88,10 @@ class Config:
     """
 
     def __init__(self, config_content: str):
-        self.__cfg: dict = yaml.safe_load(config_content)
+        try:
+            self.__cfg: dict = yaml.safe_load(config_content)
+        except yaml.YAMLError:
+            raise Exception("Failed to load config content.")
 
     @classmethod
     def from_file(cls: Type, file_path: Path) -> Config:
