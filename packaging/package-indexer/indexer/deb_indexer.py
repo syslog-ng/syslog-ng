@@ -124,12 +124,28 @@ class ReleaseDebIndexer(DebIndexer):
             apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "stable.conf"),
         )
 
+    def __add_gpg_passphrase_params_if_needed(self, command: list) -> list:
+        if self.__gpg_key_passphrase is None:
+            return command
+
+        assert command[0] == "gpg"
+
+        return [
+            "gpg",
+            "--batch",
+            "--pinentry-mode",
+            "loopback",
+            "--passphrase-fd",
+            "0",
+        ] + command[1:]
+
     def __add_gpg_key_to_chain(self, gnupghome: str) -> None:
         command = ["gpg", "--import", str(self.__gpg_key_path)]
+        command = self.__add_gpg_passphrase_params_if_needed(command)
         env = {"GNUPGHOME": gnupghome}
 
         self._log_info("Adding GPG key to chain.", gpg_key_path=str(self.__gpg_key_path))
-        utils.execute_command(command, env=env)
+        utils.execute_command(command, env=env, input=self.__gpg_key_passphrase)
 
     def __create_release_gpg_file(self, release_file_path: Path, gnupghome: str) -> None:
         release_gpg_file_path = Path(release_file_path.parent, "Release.gpg")
@@ -142,6 +158,7 @@ class ReleaseDebIndexer(DebIndexer):
             "--sign",
             str(release_file_path),
         ]
+        command = self.__add_gpg_passphrase_params_if_needed(command)
         env = {"GNUPGHOME": gnupghome}
 
         if release_gpg_file_path.exists():
@@ -153,7 +170,7 @@ class ReleaseDebIndexer(DebIndexer):
             release_file_path=str(release_file_path),
             release_gpg_file_path=str(release_gpg_file_path),
         )
-        utils.execute_command(command, env=env)
+        utils.execute_command(command, env=env, input=self.__gpg_key_passphrase)
 
     def __create_inrelease_file(self, release_file_path: Path, gnupghome: str) -> None:
         inrelease_file_path = Path(release_file_path.parent, "InRelease")
@@ -166,6 +183,7 @@ class ReleaseDebIndexer(DebIndexer):
             "--clearsign",
             str(release_file_path),
         ]
+        command = self.__add_gpg_passphrase_params_if_needed(command)
         env = {"GNUPGHOME": gnupghome}
 
         if inrelease_file_path.exists():
@@ -177,7 +195,7 @@ class ReleaseDebIndexer(DebIndexer):
             release_file_path=str(release_file_path),
             inrelease_file_path=str(inrelease_file_path),
         )
-        utils.execute_command(command, env=env)
+        utils.execute_command(command, env=env, input=self.__gpg_key_passphrase)
 
     def _sign_pkgs(self, indexed_dir: Path) -> None:
         gnupghome = TemporaryDirectory(dir=CURRENT_DIR)
