@@ -97,6 +97,10 @@ class Config:
 
         return cls(config_content)
 
+    @classmethod
+    def from_string(cls: Type, config_content: str) -> Config:
+        return cls(config_content)
+
     def create_incoming_remote_storage_synchronizer(
         self,
         suite: str,

@@ -31,11 +31,16 @@ from config import Config
 
 
 def add_common_required_arguments(required_argument_group: _ArgumentGroup) -> None:
-    required_argument_group.add_argument(
-        "--config",
+    mutually_exclusive_group = required_argument_group.add_mutually_exclusive_group(required=True)
+    mutually_exclusive_group.add_argument(
+        "--config-file-path",
         type=str,
-        required=True,
-        help="The path of the config file in yaml format.",
+        help="The path of the config file in yaml format. Cannot be used with `--config-content`.",
+    )
+    mutually_exclusive_group.add_argument(
+        "--config-content",
+        type=str,
+        help="The raw content of the config in yaml format. Cannot be used with `--config-file-path`.",
     )
 
 
@@ -104,6 +109,15 @@ def init_logging(args: dict) -> None:
     )
 
 
+def load_config(args: dict) -> Config:
+    if "config_file_path" in args.keys() and args["config_file_path"] is not None:
+        return Config.from_file(Path(args["config_file_path"]))
+    elif "config_content" in args.keys() and args["config_content"] is not None:
+        return Config.from_string(args["config_content"])
+    else:
+        raise KeyError("Missing config related option.")
+
+
 def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
     suite = args["suite"]
 
@@ -141,7 +155,7 @@ def main() -> None:
     args = parse_args()
     init_logging(args)
 
-    cfg = Config.from_file(Path(args["config"]))
+    cfg = load_config(args)
 
     indexers = construct_indexers(cfg, args)
     for indexer in indexers:
