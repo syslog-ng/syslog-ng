@@ -24,6 +24,7 @@
 import logging
 from argparse import ArgumentParser, _ArgumentGroup, _SubParsersAction
 from pathlib import Path
+from sys import stdin
 from typing import List
 
 from indexer import Indexer, NightlyDebIndexer, ReleaseDebIndexer
@@ -45,6 +46,11 @@ def add_common_required_arguments(required_argument_group: _ArgumentGroup) -> No
 
 
 def add_common_optional_arguments(parser: ArgumentParser) -> None:
+    parser.add_argument(
+        "--gpg-key-passphrase-from-stdin",
+        action="store_true",
+        help="If this option is set, the passphrase of the GPG-key file will be read from STDIN.",
+    )
     parser.add_argument(
         "--log-file",
         type=str,
@@ -125,6 +131,8 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
     indexed_remote_storage_synchronizer = cfg.create_indexed_remote_storage_synchronizer(suite)
     cdn = cfg.create_cdn(suite)
 
+    gpg_key_passphrase = stdin.read() if args["gpg_key_passphrase_from_stdin"] else None
+
     indexers: List[Indexer] = []
 
     if suite == "nightly":
@@ -143,6 +151,7 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
                 cdn=cdn,
                 run_id=args["run_id"],
                 gpg_key_path=Path(cfg.get_gpg_key_path()),
+                gpg_key_passphrase=gpg_key_passphrase,
             )
         )
     else:

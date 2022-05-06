@@ -23,7 +23,7 @@
 import re
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List
+from typing import List, Optional
 
 from cdn import CDN
 from remote_storage_synchronizer import RemoteStorageSynchronizer
@@ -111,8 +111,10 @@ class ReleaseDebIndexer(DebIndexer):
         run_id: str,
         cdn: CDN,
         gpg_key_path: Path,
+        gpg_key_passphrase: Optional[str],
     ) -> None:
         self.__gpg_key_path = gpg_key_path.expanduser()
+        self.__gpg_key_passphrase = gpg_key_passphrase
         super().__init__(
             incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
             indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
