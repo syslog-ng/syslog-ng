@@ -53,7 +53,9 @@ _pop_from_memory_queue_head(GQueue *queue, gint64 *position, LogMessage **msg, L
 
   *msg = g_queue_pop_head(queue);
   gpointer path_options_ptr = g_queue_pop_head(queue);
-  POINTER_TO_LOG_PATH_OPTIONS(path_options_ptr, path_options);
+  gint seqnum = GPOINTER_TO_INT(path_options_ptr) & ~0x80000000;
+  (path_options)->ack_needed = seqnum;
+  //POINTER_TO_LOG_PATH_OPTIONS(path_options_ptr, path_options);
 }
 
 static inline gint64

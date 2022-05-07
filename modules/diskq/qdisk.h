@@ -35,7 +35,8 @@
  * uses this breaks, as it passes the result of a g_queue_pop_head call,
  * which has side effects.
  */
-#define POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) (lpo)->ack_needed = (GPOINTER_TO_INT(ptr) & ~0x80000000)
+//convert ptr to GPOINTER_TO_INT(ptr) then pass it to this macro to eliminate -Wbad-function-cast
+//#define POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) (lpo)->ack_needed = (GPOINTER_TO_INT(ptr) & ~0x80000000)
 
 typedef gboolean (*QDiskSerializeFunc)(SerializeArchive *sa, gpointer user_data);
 typedef gboolean (*QDiskDeSerializeFunc)(SerializeArchive *sa, gpointer user_data);

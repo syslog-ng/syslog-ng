@@ -976,8 +976,10 @@ _save_queue(QDisk *self, GQueue *q, QDiskQueuePosition *q_pos)
        * saving them to disk, we ack them, they are restored as
        * non-flow-controlled entries later, but then we've saved them to
        * disk anyway. */
-
-      POINTER_TO_LOG_PATH_OPTIONS(msg, &path_options);
+      gpointer data= msg;
+      gint seqnum = GPOINTER_TO_INT(data) & ~0x80000000;
+      (&path_options)->ack_needed = seqnum;
+      //POINTER_TO_LOG_PATH_OPTIONS(msg, &path_options);
       log_msg_serialize(msg, sa, 0);
       log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);

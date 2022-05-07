@@ -138,7 +138,11 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
   while (_qoverflow_has_movable_message(self))
     {
       msg = g_queue_pop_head(self->qoverflow);
-      POINTER_TO_LOG_PATH_OPTIONS(msg, &path_options);
+      gpointer data= g_queue_pop_head(self->qoverflow);
+      gint seqnum = GPOINTER_TO_INT(data) & ~0x80000000;
+      (&path_options)->ack_needed = seqnum;
+    //  POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) (lpo)->ack_needed = (GPOINTER_TO_INT(ptr) & ~0x80000000)
+    //  POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), &path_options);
 
       if (_can_push_to_qout(self))
         {
@@ -223,7 +227,10 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
       if (self->qbacklog->length < ITEM_NUMBER_PER_MESSAGE)
         return;
       msg = g_queue_pop_head(self->qbacklog);
-      POINTER_TO_LOG_PATH_OPTIONS(msg, &path_options);
+      gpointer data= g_queue_pop_head(self->qbacklog);
+      gint seqnum = GPOINTER_TO_INT(data) & ~0x80000000;
+      (&path_options)->ack_needed = seqnum;
+      //POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qbacklog), &path_options);
       log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
     }
@@ -493,7 +500,10 @@ _free_queue(GQueue *q)
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
       lm = g_queue_pop_head(q);
-      POINTER_TO_LOG_PATH_OPTIONS(lm, &path_options);
+      gpointer data= g_queue_pop_head(q);
+      gint seqnum = GPOINTER_TO_INT(data) & ~0x80000000;
+      (&path_options)->ack_needed = seqnum;
+      //POINTER_TO_LOG_PATH_OPTIONS(lm, &path_options);
       log_msg_ack(lm, &path_options, AT_PROCESSED);
       log_msg_unref(lm);
     }
