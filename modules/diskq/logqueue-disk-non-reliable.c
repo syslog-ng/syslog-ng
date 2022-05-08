@@ -141,8 +141,8 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
       gpointer data= g_queue_pop_head(self->qoverflow);
       gint seqnum = GPOINTER_TO_INT(data) & ~0x80000000;
       (&path_options)->ack_needed = seqnum;
-    //  POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) (lpo)->ack_needed = (GPOINTER_TO_INT(ptr) & ~0x80000000)
-    //  POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), &path_options);
+      //  POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) (lpo)->ack_needed = (GPOINTER_TO_INT(ptr) & ~0x80000000)
+      //  POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), &path_options);
 
       if (_can_push_to_qout(self))
         {
