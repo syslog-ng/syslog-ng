@@ -419,23 +419,11 @@ log_matcher_pcre_re_feed_backrefs(LogMatcher *s, LogMessage *msg, gint value_han
 }
 
 static inline void
-log_matcher_pcre_re_feed_value_by_name(LogMatcherPcreRe *s, LogMessage *msg, GString *formatted_name, gchar *tabptr,
+log_matcher_pcre_re_feed_value_by_name(LogMatcherPcreRe *s, LogMessage *msg, GString *formatted_name,
                                        const gchar *value, gint begin_index, gint end_index)
 {
-  if(s->nv_prefix != NULL)
-    {
-      if (formatted_name->len > 0)
-        g_string_truncate(formatted_name, s->nv_prefix_len);
-      else
-        g_string_assign(formatted_name, s->nv_prefix);
-      g_string_append(formatted_name, tabptr + 2);
-
-      log_msg_set_value_by_name(msg, formatted_name->str, value + begin_index, end_index - begin_index);
-    }
-  else
-    {
-      log_msg_set_value_by_name(msg, tabptr + 2, value + begin_index, end_index - begin_index);
-    }
+  NVHandle target_handle = log_msg_get_value_handle(formatted_name->str);
+  log_msg_set_value(msg, target_handle, value + begin_index, end_index - begin_index);
 }
 
 static void
@@ -460,17 +448,22 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcher *s, LogMessage *msg, int *m
          and the substring itself.
        */
       GString *formatted_name = scratch_buffers_alloc();
+      g_string_assign_len(formatted_name, self->nv_prefix, self->nv_prefix_len);
       tabptr = name_table;
       for (i = 0; i < namecount; i++, tabptr += name_entry_size)
         {
           int n = (tabptr[0] << 8) | tabptr[1];
           gint begin_index = matches[2 * n];
           gint end_index = matches[2 * n + 1];
+          const gchar *namedgroup_name = tabptr + 2;
 
           if (begin_index < 0 || end_index < 0)
             continue;
 
-          log_matcher_pcre_re_feed_value_by_name(self, msg, formatted_name, tabptr, value, begin_index, end_index);
+          g_string_truncate(formatted_name, self->nv_prefix_len);
+          g_string_append(formatted_name, namedgroup_name);
+
+          log_matcher_pcre_re_feed_value_by_name(self, msg, formatted_name, value, begin_index, end_index);
         }
     }
 }
