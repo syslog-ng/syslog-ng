@@ -798,6 +798,14 @@ log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer
   return nv_table_foreach(self->payload, logmsg_registry, log_msg_nvtable_foreach_callback, args);
 }
 
+NVHandle
+log_msg_get_match_handle(gint index_)
+{
+  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
+
+  return match_handles[index_];
+}
+
 void
 log_msg_set_match_with_type(LogMessage *self, gint index_,
                             const gchar *value, gssize value_len,
