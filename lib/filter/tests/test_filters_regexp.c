@@ -356,7 +356,20 @@ Test(filter, test_match_with_value)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter, TRUE);
 }
 
-Test(filter, test_match_with_template)
+Test(filter, test_match_with_template_literal)
+{
+  FilterExprNode *filter;
+
+  filter = create_pcre_regexp_match("^PTHREAD", 0);
+  filter_match_set_template_ref(filter, compile_template("PTHREAD"));
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter, TRUE);
+
+  filter = create_pcre_regexp_match("^2499", 0);
+  filter_match_set_template_ref(filter, compile_template("2499"));
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter, TRUE);
+}
+
+Test(filter, test_match_with_template_trivial)
 {
   FilterExprNode *filter;
 
@@ -367,6 +380,11 @@ Test(filter, test_match_with_template)
   filter = create_pcre_regexp_match("^2499", 0);
   filter_match_set_template_ref(filter, compile_template("$PID"));
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter, TRUE);
+}
+
+Test(filter, test_match_with_template_non_trivial)
+{
+  FilterExprNode *filter;
 
   filter = create_pcre_regexp_match("^2499 openvpn", 0);
   filter_match_set_template_ref(filter, compile_template("$PID $PROGRAM"));

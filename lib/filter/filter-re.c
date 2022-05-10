@@ -36,42 +36,20 @@ typedef struct _FilterRE
   LogMatcher *matcher;
 } FilterRE;
 
-
-static gboolean
-filter_re_eval_string(FilterExprNode *s, LogMessage *msg, gint value_handle, const gchar *str, gssize str_len)
-{
-  FilterRE *self = (FilterRE *) s;
-  gboolean result;
-
-  if (str_len < 0)
-    str_len = strlen(str);
-  msg_trace("match() evaluation started",
-            evt_tag_str("input", str),
-            evt_tag_str("pattern", self->matcher->pattern),
-            evt_tag_str("value", log_msg_get_value_name(value_handle, NULL)),
-            evt_tag_msg_reference(msg));
-  result = log_matcher_match(self->matcher, msg, value_handle, str, str_len);
-  return result ^ s->comp;
-}
-
 static gboolean
 filter_re_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterRE *self = (FilterRE *) s;
-  NVTable *payload;
-  const gchar *value;
   LogMessage *msg = msgs[num_msg - 1];
-  gssize len = 0;
-  gboolean rc;
+  gboolean result;
 
-  payload = nv_table_ref(msg->payload);
-  value = log_msg_get_value(msg, self->value_handle, &len);
-  APPEND_ZERO(value, value, len);
-
-  rc = filter_re_eval_string(s, msg, self->value_handle, value, len);
-
-  nv_table_unref(payload);
-  return rc;
+  msg_trace("match() evaluation started against a name-value pair",
+            evt_tag_msg_value_name("name", self->value_handle),
+            evt_tag_msg_value("value", msg, self->value_handle),
+            evt_tag_str("pattern", self->matcher->pattern),
+            evt_tag_msg_reference(msg));
+  result = log_matcher_match_value(self->matcher, msg, self->value_handle);
+  return result ^ s->comp;
 }
 
 static void
@@ -187,7 +165,7 @@ filter_match_eval_against_program_pid_msg(FilterExprNode *s, LogMessage **msgs, 
   const gchar *pid;
   gssize pid_len;
   gchar *str;
-  gboolean res;
+  gboolean result;
   LogMessage *msg = msgs[num_msg - 1];
 
   pid = log_msg_get_value(msg, LM_V_PID, &pid_len);
@@ -199,45 +177,31 @@ filter_match_eval_against_program_pid_msg(FilterExprNode *s, LogMessage **msgs, 
                         pid,
                         pid_len > 0 ? "]" : "",
                         log_msg_get_value(msg, LM_V_MESSAGE, NULL));
-  res = filter_re_eval_string(&self->super.super, msg, LM_V_NONE, str, -1);
+
+  msg_trace("match() evaluation started against constructed $PROGRAM[$PID]: $MESSAGE string for compatibility",
+            evt_tag_printf("input", "%s", str),
+            evt_tag_str("pattern", self->super.matcher->pattern),
+            evt_tag_msg_reference(msg));
+
+  result = log_matcher_match_buffer(self->super.matcher, msg, str, -1);
+
   g_free(str);
-  return res;
+  return result ^ s->comp;
 }
 
 static gboolean
 filter_match_eval_against_template(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterMatch *self = (FilterMatch *) s;
-
   LogMessage *msg = msgs[num_msg - 1];
-  GString *buffer;
 
-  buffer = scratch_buffers_alloc();
-
-  log_template_format(self->template, msg, options, buffer);
-  return filter_re_eval_string(&self->super.super, msg, LM_V_NONE, buffer->str, buffer->len);
-}
-
-static gboolean
-filter_match_eval_against_trivial_template(FilterExprNode *s, LogMessage **msgs, gint num_msg,
-                                           LogTemplateEvalOptions *options)
-{
-  FilterMatch *self = (FilterMatch *) s;
-
-  LogMessage *msg = msgs[num_msg - 1];
-  NVTable *payload;
-  const gchar *value;
-  gssize len = 0;
-  gboolean rc;
-
-  payload = nv_table_ref(msg->payload);
-  value = log_template_get_trivial_value(self->template, msg, &len);
-  APPEND_ZERO(value, value, len);
-
-  rc = filter_re_eval_string(&self->super.super, msg, LM_V_NONE, value, len);
-
-  nv_table_unref(payload);
-  return rc;
+  msg_trace("match() evaluation started against template",
+            evt_tag_template("input", self->template, msg, options),
+            evt_tag_str("pattern", self->super.matcher->pattern),
+            evt_tag_str("template", self->template->template),
+            evt_tag_msg_reference(msg));
+  gboolean result = log_matcher_match_template(self->super.matcher, msg, self->template, options);
+  return result ^ s->comp;
 }
 
 static void
@@ -245,8 +209,6 @@ filter_match_determine_eval_function(FilterMatch *self)
 {
   if (self->super.value_handle)
     self->super.super.eval = filter_re_eval;
-  else if (self->template && log_template_is_trivial(self->template))
-    self->super.super.eval = filter_match_eval_against_trivial_template;
   else if (self->template)
     self->super.super.eval = filter_match_eval_against_template;
   else
