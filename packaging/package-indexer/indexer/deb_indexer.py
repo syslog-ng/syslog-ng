@@ -124,6 +124,16 @@ class ReleaseDebIndexer(DebIndexer):
             apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "stable.conf"),
         )
 
+    @staticmethod
+    def __add_gpg_security_params(command: list) -> list:
+        assert command[0] == "gpg"
+
+        return [
+            "gpg",
+            "--no-tty",
+            "--no-options",
+        ] + command[1:]
+
     def __add_gpg_passphrase_params_if_needed(self, command: list) -> list:
         if self.__gpg_key_passphrase is None:
             return command
@@ -141,6 +151,7 @@ class ReleaseDebIndexer(DebIndexer):
 
     def __add_gpg_key_to_chain(self, gnupghome: str) -> None:
         command = ["gpg", "--import", str(self.__gpg_key_path)]
+        command = self.__add_gpg_security_params(command)
         command = self.__add_gpg_passphrase_params_if_needed(command)
         env = {"GNUPGHOME": gnupghome}
 
@@ -158,6 +169,7 @@ class ReleaseDebIndexer(DebIndexer):
             "--sign",
             str(release_file_path),
         ]
+        command = self.__add_gpg_security_params(command)
         command = self.__add_gpg_passphrase_params_if_needed(command)
         env = {"GNUPGHOME": gnupghome}
 
@@ -183,6 +195,7 @@ class ReleaseDebIndexer(DebIndexer):
             "--clearsign",
             str(release_file_path),
         ]
+        command = self.__add_gpg_security_params(command)
         command = self.__add_gpg_passphrase_params_if_needed(command)
         env = {"GNUPGHOME": gnupghome}
 
