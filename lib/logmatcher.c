@@ -431,8 +431,13 @@ log_matcher_pcre_re_feed_value_by_name(LogMatcherPcreRe *s, LogMessage *msg, GSt
                                        LogMatcherPcreMatchResult *result,
                                        gint begin_index, gint end_index)
 {
+  gboolean indirect = _shall_set_values_indirectly(result->source_handle);
   NVHandle target_handle = log_msg_get_value_handle(formatted_name->str);
-  log_msg_set_value(msg, target_handle, &result->source_value[begin_index], end_index - begin_index);
+
+  if (indirect)
+    log_msg_set_value_indirect(msg, target_handle, result->source_handle, begin_index, end_index - begin_index);
+  else
+    log_msg_set_value(msg, target_handle, &result->source_value[begin_index], end_index - begin_index);
 }
 
 static void
