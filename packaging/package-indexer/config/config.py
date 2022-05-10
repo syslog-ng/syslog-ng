@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from __future__ import annotations
 from pathlib import Path
 
 import yaml
@@ -86,9 +87,22 @@ class Config:
     ```
     """
 
-    def __init__(self, file_path: Path) -> None:
+    def __init__(self, config_content: str):
+        try:
+            self.__cfg: dict = yaml.safe_load(config_content)
+        except yaml.YAMLError:
+            raise Exception("Failed to load config content.")
+
+    @classmethod
+    def from_file(cls: Type, file_path: Path) -> Config:
         with Path(file_path).open("r") as f:
-            self.__cfg: dict = yaml.safe_load(f)
+            config_content = f.read()
+
+        return cls(config_content)
+
+    @classmethod
+    def from_string(cls: Type, config_content: str) -> Config:
+        return cls(config_content)
 
     def create_incoming_remote_storage_synchronizer(
         self,

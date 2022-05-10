@@ -24,6 +24,7 @@
 import logging
 from argparse import ArgumentParser, _ArgumentGroup, _SubParsersAction
 from pathlib import Path
+from sys import stdin
 from typing import List
 
 from indexer import Indexer, NightlyDebIndexer, ReleaseDebIndexer
@@ -31,15 +32,25 @@ from config import Config
 
 
 def add_common_required_arguments(required_argument_group: _ArgumentGroup) -> None:
-    required_argument_group.add_argument(
-        "--config",
+    mutually_exclusive_group = required_argument_group.add_mutually_exclusive_group(required=True)
+    mutually_exclusive_group.add_argument(
+        "--config-file-path",
         type=str,
-        required=True,
-        help="The path of the config file in yaml format.",
+        help="The path of the config file in yaml format. Cannot be used with `--config-content`.",
+    )
+    mutually_exclusive_group.add_argument(
+        "--config-content",
+        type=str,
+        help="The raw content of the config in yaml format. Cannot be used with `--config-file-path`.",
     )
 
 
 def add_common_optional_arguments(parser: ArgumentParser) -> None:
+    parser.add_argument(
+        "--gpg-key-passphrase-from-stdin",
+        action="store_true",
+        help="If this option is set, the passphrase of the GPG-key file will be read from STDIN.",
+    )
     parser.add_argument(
         "--log-file",
         type=str,
@@ -104,12 +115,23 @@ def init_logging(args: dict) -> None:
     )
 
 
+def load_config(args: dict) -> Config:
+    if "config_file_path" in args.keys() and args["config_file_path"] is not None:
+        return Config.from_file(Path(args["config_file_path"]))
+    elif "config_content" in args.keys() and args["config_content"] is not None:
+        return Config.from_string(args["config_content"])
+    else:
+        raise KeyError("Missing config related option.")
+
+
 def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
     suite = args["suite"]
 
     incoming_remote_storage_synchronizer = cfg.create_incoming_remote_storage_synchronizer(suite)
     indexed_remote_storage_synchronizer = cfg.create_indexed_remote_storage_synchronizer(suite)
     cdn = cfg.create_cdn(suite)
+
+    gpg_key_passphrase = stdin.read() if args["gpg_key_passphrase_from_stdin"] else None
 
     indexers: List[Indexer] = []
 
@@ -129,6 +151,7 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
                 cdn=cdn,
                 run_id=args["run_id"],
                 gpg_key_path=Path(cfg.get_gpg_key_path()),
+                gpg_key_passphrase=gpg_key_passphrase,
             )
         )
     else:
@@ -141,7 +164,7 @@ def main() -> None:
     args = parse_args()
     init_logging(args)
 
-    cfg = Config(Path(args["config"]))
+    cfg = load_config(args)
 
     indexers = construct_indexers(cfg, args)
     for indexer in indexers:

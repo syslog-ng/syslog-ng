@@ -23,7 +23,7 @@
 import re
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List
+from typing import List, Optional
 
 from cdn import CDN
 from remote_storage_synchronizer import RemoteStorageSynchronizer
@@ -111,8 +111,10 @@ class ReleaseDebIndexer(DebIndexer):
         run_id: str,
         cdn: CDN,
         gpg_key_path: Path,
+        gpg_key_passphrase: Optional[str],
     ) -> None:
         self.__gpg_key_path = gpg_key_path.expanduser()
+        self.__gpg_key_passphrase = gpg_key_passphrase
         super().__init__(
             incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
             indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
@@ -122,12 +124,39 @@ class ReleaseDebIndexer(DebIndexer):
             apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "stable.conf"),
         )
 
+    @staticmethod
+    def __add_gpg_security_params(command: list) -> list:
+        assert command[0] == "gpg"
+
+        return [
+            "gpg",
+            "--no-tty",
+            "--no-options",
+        ] + command[1:]
+
+    def __add_gpg_passphrase_params_if_needed(self, command: list) -> list:
+        if self.__gpg_key_passphrase is None:
+            return command
+
+        assert command[0] == "gpg"
+
+        return [
+            "gpg",
+            "--batch",
+            "--pinentry-mode",
+            "loopback",
+            "--passphrase-fd",
+            "0",
+        ] + command[1:]
+
     def __add_gpg_key_to_chain(self, gnupghome: str) -> None:
         command = ["gpg", "--import", str(self.__gpg_key_path)]
+        command = self.__add_gpg_security_params(command)
+        command = self.__add_gpg_passphrase_params_if_needed(command)
         env = {"GNUPGHOME": gnupghome}
 
         self._log_info("Adding GPG key to chain.", gpg_key_path=str(self.__gpg_key_path))
-        utils.execute_command(command, env=env)
+        utils.execute_command(command, env=env, input=self.__gpg_key_passphrase)
 
     def __create_release_gpg_file(self, release_file_path: Path, gnupghome: str) -> None:
         release_gpg_file_path = Path(release_file_path.parent, "Release.gpg")
@@ -140,6 +169,8 @@ class ReleaseDebIndexer(DebIndexer):
             "--sign",
             str(release_file_path),
         ]
+        command = self.__add_gpg_security_params(command)
+        command = self.__add_gpg_passphrase_params_if_needed(command)
         env = {"GNUPGHOME": gnupghome}
 
         if release_gpg_file_path.exists():
@@ -151,7 +182,7 @@ class ReleaseDebIndexer(DebIndexer):
             release_file_path=str(release_file_path),
             release_gpg_file_path=str(release_gpg_file_path),
         )
-        utils.execute_command(command, env=env)
+        utils.execute_command(command, env=env, input=self.__gpg_key_passphrase)
 
     def __create_inrelease_file(self, release_file_path: Path, gnupghome: str) -> None:
         inrelease_file_path = Path(release_file_path.parent, "InRelease")
@@ -164,6 +195,8 @@ class ReleaseDebIndexer(DebIndexer):
             "--clearsign",
             str(release_file_path),
         ]
+        command = self.__add_gpg_security_params(command)
+        command = self.__add_gpg_passphrase_params_if_needed(command)
         env = {"GNUPGHOME": gnupghome}
 
         if inrelease_file_path.exists():
@@ -175,15 +208,19 @@ class ReleaseDebIndexer(DebIndexer):
             release_file_path=str(release_file_path),
             inrelease_file_path=str(inrelease_file_path),
         )
-        utils.execute_command(command, env=env)
+        utils.execute_command(command, env=env, input=self.__gpg_key_passphrase)
 
     def _sign_pkgs(self, indexed_dir: Path) -> None:
-        gnupghome = TemporaryDirectory()
+        gnupghome = TemporaryDirectory(dir=CURRENT_DIR)
         release_file_path = Path(indexed_dir, "Release")
 
-        self.__add_gpg_key_to_chain(gnupghome.name)
-        self.__create_release_gpg_file(release_file_path, gnupghome.name)
-        self.__create_inrelease_file(release_file_path, gnupghome.name)
+        try:
+            self.__add_gpg_key_to_chain(gnupghome.name)
+            self.__create_release_gpg_file(release_file_path, gnupghome.name)
+            self.__create_inrelease_file(release_file_path, gnupghome.name)
+        finally:
+            self._log_info("Cleaning up `GNUPGHOME` directory.", gnupghome=gnupghome.name)
+            gnupghome.cleanup()
 
 
 class NightlyDebIndexer(DebIndexer):
