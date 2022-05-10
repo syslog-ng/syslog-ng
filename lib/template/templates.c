@@ -422,3 +422,16 @@ log_template_options_set_on_error(LogTemplateOptions *options, gint on_error)
 {
   options->on_error = on_error;
 }
+
+EVTTAG *
+evt_tag_template(const gchar *name, LogTemplate *template, LogMessage *msg, LogTemplateEvalOptions *options)
+{
+  /* trying to avoid scratch-buffers here, this is only meant to be used in trace messages */
+  GString *buf = g_string_sized_new(256);
+
+  log_template_format(template, msg, options, buf);
+
+  EVTTAG *result = evt_tag_str(name, buf->str);
+  g_string_free(buf, TRUE);
+  return result;
+}

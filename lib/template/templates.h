@@ -92,4 +92,6 @@ void log_template_global_deinit(void);
 gboolean log_template_on_error_parse(const gchar *on_error, gint *out);
 void log_template_options_set_on_error(LogTemplateOptions *options, gint on_error);
 
+EVTTAG *evt_tag_template(const gchar *name, LogTemplate *template, LogMessage *msg, LogTemplateEvalOptions *options);
+
 #endif
