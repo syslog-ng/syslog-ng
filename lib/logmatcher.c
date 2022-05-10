@@ -728,16 +728,20 @@ log_matcher_match_template(LogMatcher *s, LogMessage *msg, LogTemplate *template
 {
   gboolean result;
 
-  if (log_template_is_trivial(template))
+  if (log_template_is_literal_string(template))
     {
-      NVTable *payload = nv_table_ref(msg->payload);
       gssize len;
-      const gchar *value = log_template_get_trivial_value(template, msg, &len);
+      const gchar *value = log_template_get_literal_value(template, &len);
 
-      APPEND_ZERO(value, value, len);
       result = log_matcher_match_buffer(s, msg, value, len);
 
-      nv_table_unref(payload);
+    }
+  else if (log_template_is_trivial(template))
+    {
+      NVHandle handle = log_template_get_trivial_value_handle(template);
+
+      g_assert(handle != LM_V_NONE);
+      result = log_matcher_match_value(s, msg, handle);
     }
   else
     {
