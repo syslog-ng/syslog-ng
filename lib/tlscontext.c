@@ -60,6 +60,8 @@ struct _TLSContext
   gchar *ca_file;
   gchar *cipher_suite;
   gchar *tls13_cipher_suite;
+  gchar *sigalgs;
+  gchar *client_sigalgs;
   gchar *ecdh_curve_list;
   gchar *sni;
   SSL_CTX *ssl_ctx;
@@ -663,6 +665,18 @@ tls_context_setup_cipher_suite(TLSContext *self)
   return TRUE;
 }
 
+static gboolean
+tls_context_setup_sigalgs(TLSContext *self)
+{
+  if (self->sigalgs && !SSL_CTX_set1_sigalgs_list(self->ssl_ctx, self->sigalgs))
+    return FALSE;
+
+  if (self->client_sigalgs && !SSL_CTX_set1_client_sigalgs_list(self->ssl_ctx, self->client_sigalgs))
+    return FALSE;
+
+  return TRUE;
+}
+
 static PKCS12 *
 _load_pkcs12_file(TLSContext *self, const gchar *pkcs12_file)
 {
@@ -826,6 +840,9 @@ tls_context_setup_context(TLSContext *self)
   if (!tls_context_setup_cipher_suite(self))
     goto error;
 
+  if (!tls_context_setup_sigalgs(self))
+    goto error;
+
   return TLS_CONTEXT_SETUP_OK;
 
 error:
@@ -904,6 +921,8 @@ _tls_context_free(TLSContext *self)
   g_free(self->ca_file);
   g_free(self->cipher_suite);
   g_free(self->tls13_cipher_suite);
+  g_free(self->sigalgs);
+  g_free(self->client_sigalgs);
   g_free(self->ecdh_curve_list);
   g_free(self->sni);
   g_free(self->keylog_file_path);
@@ -1142,6 +1161,20 @@ tls_context_set_tls13_cipher_suite(TLSContext *self, const gchar *tls13_cipher_s
               "Setting TLS 1.3 ciphers is not supported with the OpenSSL version syslog-ng was compiled with");
   return FALSE;
 #endif
+}
+
+void
+tls_context_set_sigalgs(TLSContext *self, const gchar *sigalgs)
+{
+  g_free(self->sigalgs);
+  self->sigalgs = g_strdup(sigalgs);
+}
+
+void
+tls_context_set_client_sigalgs(TLSContext *self, const gchar *sigalgs)
+{
+  g_free(self->client_sigalgs);
+  self->client_sigalgs = g_strdup(sigalgs);
 }
 
 void

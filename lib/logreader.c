@@ -572,8 +572,10 @@ log_reader_io_handle_in(gpointer s)
        */
       if (!main_loop_worker_job_quit())
         {
+          log_pipe_ref(&self->super.super);
           log_reader_work_perform(s, G_IO_IN);
           log_reader_work_finished(s);
+          log_pipe_unref(&self->super.super);
         }
     }
 }

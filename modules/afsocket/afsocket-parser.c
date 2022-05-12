@@ -58,6 +58,8 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "cipher_suite",       KW_CIPHER_SUITE },
   { "tls12_and_older",    KW_TLS12_AND_OLDER },
   { "tls13",              KW_TLS13 },
+  { "sigalgs",            KW_SIGALGS },
+  { "client_sigalgs",     KW_CLIENT_SIGALGS },
   { "ecdh_curve_list",    KW_ECDH_CURVE_LIST },
   { "curve_list",         KW_ECDH_CURVE_LIST, KWS_OBSOLETE, "ecdh_curve_list"},
   { "ssl_options",        KW_SSL_OPTIONS },

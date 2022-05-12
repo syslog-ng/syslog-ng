@@ -20,6 +20,7 @@ set(SCL_DIRS
     loadbalancer
     loggly
     logmatic
+    mariadb
     mbox
     netskope
     nodejs

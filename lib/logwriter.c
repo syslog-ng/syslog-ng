@@ -279,8 +279,10 @@ log_writer_io_handler(gpointer s, GIOCondition cond)
 
       if (!main_loop_worker_job_quit())
         {
+          log_pipe_ref(&self->super);
           log_writer_work_perform(s, cond);
           log_writer_work_finished(s);
+          log_pipe_unref(&self->super);
         }
     }
 }

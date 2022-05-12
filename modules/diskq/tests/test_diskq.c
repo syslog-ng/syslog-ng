@@ -393,20 +393,11 @@ is_valid_msg_size(guint32 one_msg_size)
   return (one_msg_size == empty_msg_size);
 }
 
-struct diskq_tester_parameters;
-
-typedef LogQueue *(*queue_constructor_t)(DiskQueueOptions *, const gchar *);
-typedef void (*first_msg_asserter_t)(LogQueue *q, struct diskq_tester_parameters *parameters);
-typedef void (*second_msg_asserter_t)(LogQueue *q, struct diskq_tester_parameters *parameters, gssize one_msg_size);
-
 typedef struct diskq_tester_parameters
 {
   guint32 disk_size;
   gboolean reliable;
   gboolean overflow_expected;
-  queue_constructor_t constructor;
-  first_msg_asserter_t first_msg_asserter;
-  second_msg_asserter_t second_msg_asserter;
   guint32 qout_size;
   const gchar *filename;
 } diskq_tester_parameters_t;
@@ -454,7 +445,10 @@ testcase_diskq_prepare(DiskQueueOptions *options, diskq_tester_parameters_t *par
   _construct_options(options, parameters->disk_size, 100000, parameters->reliable);
   options->qout_size = parameters->qout_size;
 
-  q = parameters->constructor(options, NULL);
+  if (parameters->reliable)
+    q = log_queue_disk_reliable_new(options, NULL);
+  else
+    q = log_queue_disk_non_reliable_new(options, NULL);
 
   init_statistics(q);
   cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: line: %d", __LINE__);
@@ -466,108 +460,73 @@ testcase_diskq_prepare(DiskQueueOptions *options, diskq_tester_parameters_t *par
   return q;
 }
 
-static void
-assert_first_message_reliable(LogQueue *q, diskq_tester_parameters_t *parameters)
+ParameterizedTestParameters(diskq, test_diskq_statistics)
 {
-  feed_some_messages(q, 1);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 1, "queued messages: line: %d", __LINE__);
-  /* For reliable queue we have qout = 0, so messages go to the overflow area.
-     But qreliable pushes 3 elements per message: msg, options, position */
-  if (parameters->overflow_expected)
-    cr_assert_eq(((LogQueueDiskReliable *)q)->qreliable->length, 3, "one message on overflow area: line: %d", __LINE__);
+  static diskq_tester_parameters_t test_cases[] =
+  {
+    // small enough to trigger overflow
+    { .disk_size = 10*1024, .reliable = TRUE, .overflow_expected = TRUE, .qout_size = 0, .filename = "file1.qf" },
+
+    // no overflow
+    { .disk_size = 500*1024, .reliable = TRUE, .overflow_expected = FALSE, .qout_size = 0, .filename = "file2.qf" },
+
+    // nonreliable version moves msgs from qoverflow only if there is free space in qout: qout_size must be 1
+    { .disk_size = 1*1024, .reliable = FALSE, .overflow_expected = TRUE, .qout_size = 1, .filename = "file3.qf" }
+  };
+
+  return cr_make_param_array(diskq_tester_parameters_t, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
 }
 
-static void
-assert_first_message_non_reliable(LogQueue *q, diskq_tester_parameters_t *parameters)
+static inline void
+assert_overflow_queue_length(diskq_tester_parameters_t *parameters, LogQueue *q, gsize sent_msgs)
 {
-  LogQueueDiskNonReliable *queue = (LogQueueDiskNonReliable *)q;
-  feed_some_messages(q, 1);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 1, "queued messages: line: %d", __LINE__);
-  cr_assert_eq(queue->qoverflow->length, 0, "one message on overflow area: line: %d", __LINE__);
+  gsize expected_length = sent_msgs - parameters->qout_size;
+
+  if (parameters->reliable)
+    {
+      cr_assert_eq(((LogQueueDiskReliable *)q)->qreliable->length, 3 * expected_length,
+                   "%"G_GSIZE_FORMAT" message on overflow area: line: %d", expected_length, __LINE__);
+      return;
+    }
+
+  cr_assert_eq(((LogQueueDiskNonReliable *)q)->qoverflow->length, 2 * expected_length,
+               "%"G_GSIZE_FORMAT" message on overflow area: line: %d", expected_length, __LINE__);
 }
 
-static void
-assert_second_message_reliable(LogQueue *q, diskq_tester_parameters_t *parameters, gssize one_msg_size)
-{
-  LogQueueDiskReliable *queue = (LogQueueDiskReliable *)q;
-  feed_some_messages(q, 1);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 2, "queued messages: line: %d", __LINE__);
-  cr_assert_eq(stats_counter_get(q->memory_usage), one_msg_size*2, "memory_usage: line: %d", __LINE__);
-
-  if (parameters->overflow_expected)
-    cr_assert_eq(queue->qreliable->length, 6, "one message on overflow area: line: %d", __LINE__);
-}
-
-static void
-assert_second_message_non_reliable(LogQueue *q, diskq_tester_parameters_t *parameters, gssize one_msg_size)
-{
-  feed_some_messages(q, 1);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 2, "queued messages: line: %d", __LINE__);
-  cr_assert_eq(stats_counter_get(q->memory_usage), one_msg_size*2, "memory_usage: line: %d", __LINE__);
-
-  /* qout must be 1 for nonreliable case so we have only one message. But nonreliable pushes two elements: msg + options */
-  cr_assert_eq(((LogQueueDiskNonReliable *)q)->qoverflow->length, 2, "one message on overflow area: line: %d", __LINE__);
-}
-
-
-static void
-testcase_diskq_statistics(diskq_tester_parameters_t parameters)
+ParameterizedTest(diskq_tester_parameters_t *parameters, diskq, test_diskq_statistics)
 {
   LogQueue *q;
   DiskQueueOptions options = {0};
 
-  q = testcase_diskq_prepare(&options, &parameters);
+  q = testcase_diskq_prepare(&options, parameters);
 
-  parameters.first_msg_asserter(q, &parameters);
+  feed_some_messages(q, 1);
+  cr_assert_eq(stats_counter_get(q->queued_messages), 1, "queued messages: line: %d", __LINE__);
+
+  if (parameters->overflow_expected)
+    assert_overflow_queue_length(parameters, q, 1);
 
   guint32 one_msg_size = stats_counter_get(q->memory_usage);
-  if (parameters.overflow_expected)
+  if (parameters->overflow_expected)
     /* Only when overflow. If there is no overflow, the first
        msg is put to the output queue so statistics is not increased: one_msg_size == 0 */
     cr_assert(is_valid_msg_size(one_msg_size), "one_msg_size %d: line: %d", one_msg_size, __LINE__);
   else
     cr_assert_eq(stats_counter_get(q->memory_usage), 0, "queued messages: line: %d", __LINE__);
 
-  parameters.second_msg_asserter(q, &parameters, one_msg_size);
+  feed_some_messages(q, 1);
+  cr_assert_eq(stats_counter_get(q->queued_messages), 2, "queued messages: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->memory_usage), one_msg_size*2, "memory_usage: line: %d", __LINE__);
+
+  if (parameters->overflow_expected)
+    assert_overflow_queue_length(parameters, q, 2);
 
   assert_general_message_flow(q, one_msg_size);
 
-  unlink(parameters.filename);
+  unlink(parameters->filename);
 
   log_queue_unref(q);
   disk_queue_options_destroy(&options);
-}
-
-ParameterizedTestParameters(diskq, test_diskq_statistics)
-{
-  static diskq_tester_parameters_t test_cases[] =
-  {
-    // small enough to trigger overflow
-    { 10*1024, TRUE, TRUE, log_queue_disk_reliable_new, assert_first_message_reliable, assert_second_message_reliable, 0, "file1.qf" },
-
-    // no overflow
-    { 500*1024, TRUE, FALSE, log_queue_disk_reliable_new, assert_first_message_reliable, assert_second_message_reliable, 0, "file2.qf" },
-
-    // nonreliable version moves msgs from qoverflow only if there is free space in qout: qout_size must be 1
-    { 1*1024, FALSE, TRUE, log_queue_disk_non_reliable_new, assert_first_message_non_reliable, assert_second_message_non_reliable, 1, "file3.qf" }
-  };
-
-  return cr_make_param_array(diskq_tester_parameters_t, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
-}
-
-ParameterizedTest(diskq_tester_parameters_t *test_cases, diskq, test_diskq_statistics)
-{
-  testcase_diskq_statistics((diskq_tester_parameters_t)
-  {
-    .disk_size = test_cases->disk_size,
-    .reliable = test_cases->reliable,
-    .overflow_expected = test_cases->overflow_expected,
-    .constructor = test_cases->constructor,
-    .first_msg_asserter = test_cases->first_msg_asserter,
-    .second_msg_asserter = test_cases->second_msg_asserter,
-    .qout_size = test_cases->qout_size,
-    .filename = test_cases->filename
-  });
 }
 
 static void

@@ -555,8 +555,10 @@ _io_process_input(gpointer s)
     {
       if (!main_loop_worker_job_quit())
         {
+          log_pipe_ref(&self->super.super);
           _work_perform(s, G_IO_IN);
           _work_finished(s);
+          log_pipe_unref(&self->super.super);
         }
     }
 }
