@@ -31,6 +31,7 @@
 #include "apphook.h"
 #include "plugin.h"
 #include "filter/filter-in-list.h"
+#include "msg-format.h"
 
 #include <stdlib.h>
 #include <glib.h>
@@ -54,7 +55,7 @@ evaluate_testcase(const gchar *msg,
   gboolean result;
 
   cr_assert_not_null(filter_node, "Constructing an in-list filter");
-  log_msg = log_msg_new(msg, strlen(msg), &parse_options);
+  log_msg = msg_format_parse(&parse_options, (const guchar *) msg, strlen(msg));
   result = filter_expr_eval(filter_node, log_msg);
 
   log_msg_unref(log_msg);

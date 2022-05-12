@@ -121,9 +121,9 @@ msg_format_process_message(MsgFormatOptions *options, LogMessage *msg,
 }
 
 gboolean
-msg_format_parse_conditional(MsgFormatOptions *options, LogMessage *msg,
-                             const guchar *data, gsize length,
-                             gsize *problem_position)
+msg_format_try_parse_into(MsgFormatOptions *options, LogMessage *msg,
+                          const guchar *data, gsize length,
+                          gsize *problem_position)
 {
   if (G_UNLIKELY(!options->format_handler))
     {
@@ -144,18 +144,48 @@ msg_format_parse_conditional(MsgFormatOptions *options, LogMessage *msg,
 }
 
 void
-msg_format_parse(MsgFormatOptions *options, LogMessage *msg,
-                 const guchar *data, gsize length)
+msg_format_parse_into(MsgFormatOptions *options, LogMessage *msg,
+                      const guchar *data, gsize length)
 {
   gsize problem_position = 0;
 
-  if (!msg_format_parse_conditional(options, msg, data, length, &problem_position))
+  if (!msg_format_try_parse_into(options, msg, data, length, &problem_position))
     {
       msg_format_inject_parse_error(msg, data, _rstripped_message_length(data, length), problem_position);
 
       /* the injected error message needs to be postprocessed too */
       msg_format_postprocess_message(options, msg, data, length);
     }
+}
+
+static gsize
+_determine_payload_size(MsgFormatOptions *parse_options, const guchar *data, gsize length)
+{
+  gsize payload_size;
+
+  if ((parse_options->flags & LP_STORE_RAW_MESSAGE))
+    payload_size = length * 4;
+  else
+    payload_size = length * 2;
+
+  return MAX(payload_size, 256);
+}
+
+LogMessage *
+msg_format_construct_message(MsgFormatOptions *options, const guchar *data, gsize length)
+{
+  LogMessage *msg = log_msg_sized_new(_determine_payload_size(options, data, length));
+  return msg;
+}
+
+LogMessage *
+msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length)
+{
+  LogMessage *msg = msg_format_construct_message(options, data, length);
+
+  msg_trace("Initial message parsing follows");
+  msg_format_parse_into(options, msg, data, length);
+  return msg;
 }
 
 void

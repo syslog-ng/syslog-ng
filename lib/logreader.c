@@ -449,11 +449,12 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
 {
   LogMessage *m;
 
+  m = msg_format_construct_message(&self->options->parse_options, line, length);
   msg_debug("Incoming log entry",
-            evt_tag_printf("line", "%.*s", length, line));
-  /* use the current time to get the time zone offset */
-  m = log_msg_new((gchar *) line, length,
-                  &self->options->parse_options);
+            evt_tag_printf("input", "%.*s", length, line),
+            evt_tag_msg_reference(m));
+
+  msg_format_parse_into(&self->options->parse_options, m, line, length);
 
   _log_reader_insert_msg_length_stats(self, length);
   if (aux)

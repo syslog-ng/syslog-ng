@@ -30,6 +30,7 @@
 #include "str-utils.h"
 #include "timeutils/unixtime.h"
 #include "timeutils/misc.h"
+#include "msg-format.h"
 
 #include <datetime.h>
 
@@ -408,7 +409,7 @@ py_log_message_parse(PyObject *_none, PyObject *args, PyObject *kwrds)
       return NULL;
     }
 
-  py_msg->msg = log_msg_new(raw_msg, raw_msg_length, parse_options);
+  py_msg->msg = msg_format_parse(parse_options, (const guchar *) raw_msg, raw_msg_length);
   py_msg->bookmark_data = NULL;
 
   return (PyObject *) py_msg;

@@ -31,7 +31,6 @@
 #include "serialize.h"
 #include "timeutils/unixtime.h"
 #include "logmsg/nvtable.h"
-#include "msg-format.h"
 #include "logmsg/tags.h"
 
 #include <sys/types.h>
@@ -451,8 +450,7 @@ void log_msg_free_queue_node(LogMessageQueueNode *node);
 void log_msg_clear(LogMessage *self);
 void log_msg_merge_context(LogMessage *self, LogMessage **context, gsize context_len);
 
-LogMessage *log_msg_new(const gchar *msg, gint length,
-                        MsgFormatOptions *parse_options);
+LogMessage *log_msg_sized_new(gsize payload_size);
 LogMessage *log_msg_new_mark(void);
 LogMessage *log_msg_new_internal(gint prio, const gchar *msg);
 LogMessage *log_msg_new_empty(void);
@@ -478,5 +476,9 @@ void log_msg_registry_foreach(GHFunc func, gpointer user_data);
 gint log_msg_lookup_time_stamp_name(const gchar *name);
 
 gssize log_msg_get_size(LogMessage *self);
+
+#define evt_tag_msg_reference(msg)             \
+    evt_tag_printf("msg", "%p", (msg)),        \
+    evt_tag_printf("rcptid", "%" G_GUINT64_FORMAT, (msg)->rcptid)
 
 #endif

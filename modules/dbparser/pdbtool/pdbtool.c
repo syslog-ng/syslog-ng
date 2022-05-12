@@ -46,6 +46,7 @@
 #include "scratch-buffers.h"
 #include "timeutils/cache.h"
 #include "mainloop.h"
+#include "msg-format.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -514,8 +515,7 @@ pdbtool_match(int argc, char *argv[])
       if (G_LIKELY(proto))
         {
           log_msg_unref(msg);
-          msg = log_msg_new_empty();
-          msg_format_parse(&parse_options, msg, buf, buflen);
+          msg = msg_format_parse(&parse_options, buf, buflen);
         }
 
       if (G_UNLIKELY(debug_pattern))

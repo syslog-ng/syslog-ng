@@ -31,6 +31,7 @@
 #include "plugin.h"
 #include "logqueue-fifo.h"
 #include "timeutils/misc.h"
+#include "msg-format.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -122,7 +123,7 @@ init_msg(const gchar *msg_string, gboolean use_syslog_protocol)
     parse_options.flags |= LP_SYSLOG_PROTOCOL;
   else
     parse_options.flags &= ~LP_SYSLOG_PROTOCOL;
-  msg = log_msg_new(msg_string, strlen(msg_string), &parse_options);
+  msg = msg_format_parse(&parse_options, (const guchar *) msg_string, strlen(msg_string));
   log_msg_set_value_by_name(msg, "APP.VALUE", "value", 5);
   log_msg_set_match(msg, 0, "whole-match", 11);
   log_msg_set_match(msg, 1, "first-match", 11);

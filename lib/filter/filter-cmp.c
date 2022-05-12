@@ -93,7 +93,7 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEval
             evt_tag_str("left", left_buf->str),
             evt_tag_str("operator", self->super.type),
             evt_tag_str("right", right_buf->str),
-            evt_tag_printf("msg", "%p", msgs[num_msg - 1]));
+            evt_tag_msg_reference(msgs[num_msg - 1]));
 
   scratch_buffers_reclaim_marked(marker);
   return result ^ s->comp;

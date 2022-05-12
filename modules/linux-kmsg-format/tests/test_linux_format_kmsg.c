@@ -36,7 +36,7 @@ kmsg_parse_message(const gchar *raw_message_str)
 {
   LogMessage *message;
 
-  message = log_msg_new(raw_message_str, strlen(raw_message_str), &parse_options);
+  message = msg_format_parse(&parse_options, (const guchar *) raw_message_str, strlen(raw_message_str));
   return message;
 }
 

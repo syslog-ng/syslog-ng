@@ -123,7 +123,7 @@ _process(LogParser *s, LogMessage **pmsg,
             evt_tag_str("message", input),
             evt_tag_str("resolved_selector", resolved_selector),
             evt_tag_str("selector", selector),
-            evt_tag_printf("msg", "%p", *pmsg));
+            evt_tag_msg_reference(*pmsg));
 
   if (selector)
     context_info_db_foreach_record(self->context_info_db, selector,

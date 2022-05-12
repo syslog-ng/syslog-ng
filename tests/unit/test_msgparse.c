@@ -82,7 +82,7 @@ _parse_log_message(gchar *raw_message_str, gint parse_flags, gchar *bad_hostname
       parse_options.bad_hostname = &bad_hostname;
     }
 
-  message = log_msg_new(raw_message_str, strlen(raw_message_str), &parse_options);
+  message = msg_format_parse(&parse_options, (const guchar *) raw_message_str, strlen(raw_message_str));
 
   if (bad_hostname_re)
     {

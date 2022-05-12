@@ -89,11 +89,14 @@ struct _MsgFormatHandler
                     gsize *problem_position);
 };
 
-gboolean msg_format_parse_conditional(MsgFormatOptions *options, LogMessage *msg,
-                                      const guchar *data, gsize length,
-                                      gsize *problem_position);
-void msg_format_parse(MsgFormatOptions *options, LogMessage *msg,
-                      const guchar *data, gsize length);
+gboolean msg_format_try_parse_into(MsgFormatOptions *options, LogMessage *msg,
+                                   const guchar *data, gsize length,
+                                   gsize *problem_position);
+void msg_format_parse_into(MsgFormatOptions *options, LogMessage *msg,
+                           const guchar *data, gsize length);
+
+LogMessage *msg_format_construct_message(MsgFormatOptions *options, const guchar *data, gsize length);
+LogMessage *msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length);
 
 void msg_format_options_defaults(MsgFormatOptions *options);
 void msg_format_options_init(MsgFormatOptions *parse_options, GlobalConfig *cfg);

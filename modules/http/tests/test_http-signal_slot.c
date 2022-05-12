@@ -30,7 +30,6 @@
 #include "apphook.h"
 
 MainLoop *main_loop;
-MsgFormatOptions parse_options;
 MainLoopOptions main_loop_options;
 
 HTTPDestinationDriver *driver;

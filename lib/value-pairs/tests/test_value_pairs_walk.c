@@ -30,7 +30,6 @@
 #include "cfg.h"
 #include "logmsg/logmsg.h"
 
-MsgFormatOptions parse_options;
 LogTemplateOptions template_options;
 GlobalConfig *cfg;
 
@@ -115,11 +114,11 @@ Test(value_pairs_walker, prefix_dat)
   const char *value = "value";
 
   log_template_options_init(&template_options, cfg);
-  msg_format_options_init(&parse_options, cfg);
 
   vp = value_pairs_new(cfg);
   value_pairs_add_glob_pattern(vp, "root.*", TRUE);
-  msg = log_msg_new("test", 4, &parse_options);
+  msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, "PROGRAM", "test", -1);
 
   log_msg_set_value_by_name(msg, "root.test.alma", value, strlen(value));
   log_msg_set_value_by_name(msg, "root.test.korte", value, strlen(value));
@@ -138,9 +137,6 @@ setup(void)
   app_startup();
 
   cfg = cfg_new_snippet();
-  cfg_load_module(cfg, "syslogformat");
-  msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, cfg);
 }
 
 void

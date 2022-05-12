@@ -314,7 +314,9 @@ _apply_default_priority_and_facility(LogThreadedSourceDriver *self, LogMessage *
 void
 log_threaded_source_post(LogThreadedSourceDriver *self, LogMessage *msg)
 {
-  msg_debug("Incoming log message", evt_tag_str("msg", log_msg_get_value(msg, LM_V_MESSAGE, NULL)));
+  msg_debug("Incoming log message",
+            evt_tag_str("input", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
+            evt_tag_msg_reference(msg));
   _apply_default_priority_and_facility(self, msg);
   log_source_post(&self->worker->super, msg);
 }

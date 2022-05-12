@@ -31,6 +31,7 @@
 #include "cfg.h"
 #include "plugin.h"
 #include "scratch-buffers.h"
+#include "msg-format.h"
 
 #include <time.h>
 #include <string.h>
@@ -42,7 +43,6 @@ MsgFormatOptions parse_options;
 typedef struct _csvparser_test_param
 {
   const gchar *msg;
-  guint parse_flags;
   gint max_columns;
   gboolean drop_invalid;
   gint dialect;
@@ -60,8 +60,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
   {
     // string delim & single char & a char is in the string
     {
-      .msg = "<15> openvpn[2499]: PTHREAD support :initialized",
-      .parse_flags = 0,
+      .msg = "PTHREAD support :initialized",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -75,8 +74,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     // empty message
     {
-      .msg = "<15> openvpn[2499]:",
-      .parse_flags = 0,
+      .msg = "",
       .max_columns = -1,
       .drop_invalid = TRUE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -90,8 +88,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     // string delim & single char & a char not in the string
     {
-      .msg = "<15> openvpn[2499]: PTHREAD,support :initialized",
-      .parse_flags = 0,
+      .msg = "PTHREAD,support :initialized",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -105,9 +102,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     // string delim & multi char & a char is in the string
     {
-      .msg = "<15> openvpn[2499]: PTHREAD support :initialized",
-      .parse_flags = 0,
-      .max_columns = -1,
+      .msg = "PTHREAD support :initialized",
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
       .flags = 0,
@@ -120,8 +115,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     // string delim & multi char & a char not in the string
     {
-      .msg = "<15> openvpn[2499]: PTHREAD,support :initialized",
-      .parse_flags = 0,
+      .msg = "PTHREAD,support :initialized",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -135,8 +129,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     // quote + string delim & multi char & char is in the string too
     {
-      .msg = "<15> openvpn[2499]: 'PTHREAD' 'support' :'initialized'",
-      .parse_flags = 0,
+      .msg = "'PTHREAD' 'support' :'initialized'",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -150,8 +143,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     // BE + quote + string delim & multi char & char is in the string too
     {
-      .msg = "<15> openvpn[2499]: 'PTHRE\\\'AD' 'support' :'initialized'",
-      .parse_flags = 0,
+      .msg = "'PTHRE\\\'AD' 'support' :'initialized'",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -165,8 +157,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     // DCE + quote + string delim & multi char & char not in the string
     {
-      .msg = "<15> openvpn[2499]: 'PTHREAD','sup''port' :'initialized'",
-      .parse_flags = 0,
+      .msg = "'PTHREAD','sup''port' :'initialized'",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
@@ -179,8 +170,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: PTHREAD support initialized",
-      .parse_flags = 0,
+      .msg = "PTHREAD support initialized",
       .max_columns = 3,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -193,8 +183,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<16> openvpn[2499]: PTHREAD support initialized",
-      .parse_flags = 0,
+      .msg = "PTHREAD support initialized",
       .max_columns = 2,
       .drop_invalid = TRUE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -207,8 +196,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<17> openvpn[2499]: PTHREAD support initialized",
-      .parse_flags = 0,
+      .msg = "PTHREAD support initialized",
       .max_columns = 2,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -221,8 +209,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<18> openvpn[2499]: PTHREAD support initialized",
-      .parse_flags = 0,
+      .msg = "PTHREAD support initialized",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -235,8 +222,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<19> openvpn[2499]: PTHREAD support initialized",
-      .parse_flags = 0,
+      .msg = "PTHREAD support initialized",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -249,8 +235,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD\" \"support\" \"initialized\"",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -263,8 +248,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"  PTHREAD  \" \" support\" \"initialized \"",
-      .parse_flags = 0,
+      .msg = "\"  PTHREAD  \" \" support\" \"initialized \"",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -277,8 +261,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD support\" \"initialized\"",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -291,8 +274,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD support initialized\"",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD support initialized\"",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -305,8 +287,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD support initialized",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD support initialized",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -319,8 +300,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<20> openvpn[2499]: PTHREAD support initialized",
-      .parse_flags = 0,
+      .msg = "PTHREAD support initialized",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -333,8 +313,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<21> openvpn[2499]: PTHREAD support initialized",
-      .parse_flags = 0,
+      .msg = "PTHREAD support initialized",
       .max_columns = 2,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -347,8 +326,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<22> openvpn[2499]: PTHREAD support initialized",
-      .parse_flags = 0,
+      .msg = "PTHREAD support initialized",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -361,8 +339,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD\" \"support\" \"initialized\"",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -375,8 +352,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD\" \"support\" \"initialized\"",
       .max_columns = 2,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -389,8 +365,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"",
-      .parse_flags = 0,
+      .msg = "\"  PTHREAD \" \"  support\" \"initialized  \"",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -403,8 +378,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD support\" \"initialized\"",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -417,8 +391,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD \\\"support initialized\"",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD \\\"support initialized\"",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -431,8 +404,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD support initialized",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD support initialized",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -445,8 +417,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<23> openvpn[2499]: PTHREAD support initialized",
-      .parse_flags = 0,
+      .msg = "PTHREAD support initialized",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
@@ -459,8 +430,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD\" \"support\" \"initialized\"",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
@@ -473,8 +443,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD\" \"support\" \"initialized\"",
       .max_columns = 2,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
@@ -487,8 +456,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"",
-      .parse_flags = 0,
+      .msg = "\"  PTHREAD \" \"  support\" \"initialized  \"",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
@@ -501,8 +469,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"",
-      .parse_flags = 0,
+      .msg = "\"  PTHREAD \" \"  support\" \"initialized  \"",
       .max_columns = 2,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
@@ -515,8 +482,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD support\" \"initialized\"",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
@@ -529,8 +495,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD \"\"support initialized\"",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD \"\"support initialized\"",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
@@ -543,8 +508,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "<15> openvpn[2499]: \"PTHREAD support initialized",
-      .parse_flags = 0,
+      .msg = "\"PTHREAD support initialized",
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
@@ -558,7 +522,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "postfix/smtpd",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 2,
       .drop_invalid = TRUE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -572,7 +535,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "postfix",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 3,
       .drop_invalid = TRUE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -586,7 +548,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "postfix/smtpd/ququ",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 2,
       .drop_invalid = TRUE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -599,8 +560,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     },
 
     {
-      .msg = "Jul 27 19:55:33 myhost zabbix: ZabbixConnector.log : 19:55:32,782 INFO  [Thread-2834]     - [ZabbixEventSyncCommand] Processing   message <?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-      .parse_flags = LP_EXPECT_HOSTNAME,
+      .msg = "ZabbixConnector.log : 19:55:32,782 INFO  [Thread-2834]     - [ZabbixEventSyncCommand] Processing   message <?xml version=\"1.0\" encoding=\"UTF-8\"?>",
       .max_columns = 2,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -616,7 +576,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit",
-      .parse_flags = LP_NOPARSE,
       .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -642,7 +601,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 11,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -666,7 +624,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 10,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -691,7 +648,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 12,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -718,7 +674,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit almafa",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 11,
       .drop_invalid = TRUE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -732,7 +687,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 5,
       .drop_invalid = TRUE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -746,7 +700,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 5,
       .drop_invalid = TRUE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -761,7 +714,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
     /* greedy column can be empty */
     {
       .msg = "random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 6,
       .drop_invalid = TRUE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
@@ -775,7 +727,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 6,
       .drop_invalid = TRUE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -789,7 +740,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "random.vhost\t10.0.0.1\t-\t\"GET /index.html HTTP/1.1\"\t200",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 6,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -803,7 +753,6 @@ ParameterizedTestParameters(parser, test_csv_parser)
 
     {
       .msg = "random.vhost\t10.0.0.1\t-\t\"GET /index.html HTTP/1.1\"\t\t200",
-      .parse_flags = LP_NOPARSE,
       .max_columns = 7,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
@@ -868,8 +817,8 @@ ParameterizedTest(CsvParserTestParam *param, parser, test_csv_parser)
       column_array[param->max_columns] = NULL;
     }
 
-  parse_options.flags = param->parse_flags;
-  logmsg = log_msg_new(param->msg, strlen(param->msg), &parse_options);
+  logmsg = log_msg_new_empty();
+  log_msg_set_value(logmsg, LM_V_MESSAGE, param->msg, -1);
 
   p = csv_parser_new(NULL);
   csv_parser_set_drop_invalid(p, param->drop_invalid);

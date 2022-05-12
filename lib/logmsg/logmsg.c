@@ -601,7 +601,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
                 evt_tag_str("name", name),
                 evt_tag_mem("value", value, value_len),
                 evt_tag_str("type", log_msg_value_type_to_str(type)),
-                evt_tag_printf("msg", "%p", self));
+                evt_tag_msg_reference(self));
     }
 
   if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
@@ -709,12 +709,12 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
   if (_log_name_value_updates(self))
     {
       msg_trace("Setting indirect value",
-                evt_tag_printf("msg", "%p", self),
                 evt_tag_str("name", name),
                 evt_tag_str("type", log_msg_value_type_to_str(type)),
                 evt_tag_int("ref_handle", ref_handle),
                 evt_tag_int("ofs", ofs),
-                evt_tag_int("len", len));
+                evt_tag_int("len", len),
+                evt_tag_msg_reference(self));
     }
 
   if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
@@ -1412,7 +1412,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 
   msg_trace("Message was cloned",
             evt_tag_printf("original_msg", "%p", msg),
-            evt_tag_printf("new_msg", "%p", self));
+            evt_tag_msg_reference(self));
 
   /* every field _must_ be initialized explicitly if its direct
    * copying would cause problems (like copying a pointer by value) */
@@ -1441,47 +1441,19 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   return self;
 }
 
-static gsize
-_determine_payload_size(gint length, MsgFormatOptions *parse_options)
-{
-  gsize payload_size;
-
-  if ((parse_options->flags & LP_STORE_RAW_MESSAGE))
-    payload_size = length * 4;
-  else
-    payload_size = length * 2;
-
-  return MAX(payload_size, 256);
-}
-
-/**
- * log_msg_new:
- * @msg: message to parse
- * @length: length of @msg
- * @flags: parse flags (LP_*)
- *
- * This function allocates, parses and returns a new LogMessage instance.
- **/
 LogMessage *
-log_msg_new(const gchar *msg, gint length,
-            MsgFormatOptions *parse_options)
+log_msg_sized_new(gsize payload_size)
 {
-  LogMessage *self = log_msg_alloc(_determine_payload_size(length, parse_options));
+  LogMessage *self = log_msg_alloc(payload_size);
 
   log_msg_init(self);
-
-  msg_trace("Initial message parsing follows");
-  msg_format_parse(parse_options, self, (guchar *) msg, length);
   return self;
 }
 
 LogMessage *
 log_msg_new_empty(void)
 {
-  LogMessage *self = log_msg_alloc(256);
-
-  log_msg_init(self);
-  return self;
+  return log_msg_sized_new(256);
 }
 
 /* This function creates a new log message that should be considered local */

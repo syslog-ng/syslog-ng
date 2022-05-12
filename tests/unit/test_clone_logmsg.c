@@ -103,9 +103,9 @@ ParameterizedTest(const gchar *msg, clone_logmsg, test_cloning_with_log_message)
   parse_options.flags = LP_SYSLOG_PROTOCOL;
   parse_options.bad_hostname = &bad_hostname;
 
-  original_log_message = log_msg_new(msg, strlen(msg), &parse_options);
+  original_log_message = msg_format_parse(&parse_options, (const guchar *) msg, strlen(msg));
   log_msg_set_saddr(original_log_message, addr);
-  log_message = log_msg_new(msg, strlen(msg), &parse_options);
+  log_message = msg_format_parse(&parse_options, (const guchar *) msg, strlen(msg));
   log_msg_set_saddr(log_message, addr);
 
   log_msg_set_tag_by_name(log_message, "newtag");

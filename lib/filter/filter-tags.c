@@ -48,14 +48,14 @@ filter_tags_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplate
           res = TRUE;
           msg_trace("tags() evaluation started",
                     evt_tag_str("tag", log_tags_get_by_id(tag_id)),
-                    evt_tag_printf("msg", "%p", msg));
+                    evt_tag_msg_reference(msg));
           return res ^ s->comp;
         }
     }
 
   res = FALSE;
   msg_trace("tags() evaluation started",
-            evt_tag_printf("msg", "%p", msg));
+            evt_tag_msg_reference(msg));
   return res ^ s->comp;
 }
 

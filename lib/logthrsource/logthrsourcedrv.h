@@ -31,6 +31,7 @@
 #include "cfg.h"
 #include "logpipe.h"
 #include "logmsg/logmsg.h"
+#include "msg-format.h"
 #include "mainloop-threaded-worker.h"
 
 typedef struct _LogThreadedSourceDriver LogThreadedSourceDriver;

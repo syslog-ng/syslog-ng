@@ -102,16 +102,16 @@ regexp_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
 
   log_msg_make_writable(pmsg, path_options);
   msg_trace("regexp-parser message processing started",
-            evt_tag_str ("input", input),
-            evt_tag_str ("prefix", self->prefix),
-            evt_tag_printf("msg", "%p", *pmsg));
+            evt_tag_str("input", input),
+            evt_tag_str("prefix", self->prefix),
+            evt_tag_msg_reference(*pmsg));
 
   gboolean result = FALSE;
   for (GList *item = self->matchers; item; item = item->next)
     {
       msg_trace("regexp-parser message processing for",
-                evt_tag_str ("input", input),
-                evt_tag_str ("pattern", ((LogMatcher *)item->data)->pattern));
+                evt_tag_str("input", input),
+                evt_tag_str("pattern", ((LogMatcher *)item->data)->pattern));
 
       gint value_handle = LM_V_MESSAGE;
       if (G_UNLIKELY(self->super.template))

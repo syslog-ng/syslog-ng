@@ -24,6 +24,7 @@
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "uuid.h"
+#include "msg-format.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -617,7 +618,7 @@ ptz_load_file(Patternizer *self, gchar *input_file, gboolean no_parse, GError **
       if (line[len-1] == '\n')
         line[len-1] = 0;
 
-      msg = log_msg_new(line, len, &parse_options);
+      msg = msg_format_parse(&parse_options, (const guchar *) line, len);
       g_ptr_array_add(self->logs, msg);
     }
 

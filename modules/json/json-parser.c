@@ -317,17 +317,17 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
   struct json_tokener *tok;
 
   msg_trace("json-parser message processing started",
-            evt_tag_str ("input", input),
-            evt_tag_str ("prefix", self->prefix),
-            evt_tag_str ("marker", self->marker),
-            evt_tag_printf("msg", "%p", *pmsg));
+            evt_tag_str("input", input),
+            evt_tag_str("prefix", self->prefix),
+            evt_tag_str("marker", self->marker),
+            evt_tag_msg_reference(*pmsg));
   if (self->marker)
     {
       if (strncmp(input, self->marker, self->marker_len) != 0)
         {
           msg_debug("json-parser(): no marker at the beginning of the message, skipping JSON parsing ",
-                    evt_tag_str ("input", input),
-                    evt_tag_str ("marker", self->marker));
+                    evt_tag_str("input", input),
+                    evt_tag_str("marker", self->marker));
           return FALSE;
         }
       input += self->marker_len;
@@ -341,7 +341,7 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
   if (tok->err != json_tokener_success || !jso)
     {
       msg_debug("json-parser(): failed to parse JSON payload",
-                evt_tag_str ("input", input),
+                evt_tag_str("input", input),
                 tok->err != json_tokener_success ? evt_tag_str ("json_error", json_tokener_error_desc(tok->err)) : NULL);
       json_tokener_free (tok);
       return FALSE;

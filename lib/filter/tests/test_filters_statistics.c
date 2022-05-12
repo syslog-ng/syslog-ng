@@ -29,6 +29,7 @@
 #include "stats/stats-registry.h"
 #include "filter/filter-pipe.h"
 #include "filter/filter-pri.h"
+#include "msg-format.h"
 
 static gint
 level_bits(gchar *lev)
@@ -55,7 +56,7 @@ static void
 queue_and_assert_statistics(LogFilterPipe *pipe, gchar *msg, guint32 matched_expected, guint32 not_matched_expected)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  LogMessage *logmsg = log_msg_new(msg, strlen(msg), &parse_options);
+  LogMessage *logmsg = msg_format_parse(&parse_options, (const guchar *) msg, strlen(msg));
   LogPipe *p = (LogPipe *)pipe;
   p->queue(p, logmsg, &path_options);
   cr_assert_eq(stats_counter_get(pipe->not_matched), not_matched_expected);

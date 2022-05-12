@@ -28,7 +28,6 @@
 #include "python-helpers.h"
 #include "python-logmsg.h"
 #include "apphook.h"
-#include "msg-format.h"
 #include "logmsg/logmsg.h"
 
 static PyObject *_python_main;
@@ -118,8 +117,7 @@ TestSuite(python_log_message, .init = setup, .fini = teardown);
 
 Test(python_log_message, test_python_logmessage_set_value)
 {
-  const gchar *raw_msg = "test_msg";
-  LogMessage *msg = log_msg_new(raw_msg, strlen(raw_msg), &parse_options);
+  LogMessage *msg = log_msg_new_empty();
 
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
@@ -144,10 +142,9 @@ Test(python_log_message, test_python_logmessage_set_value)
 
 Test(python_log_message, test_python_logmessage_set_value_indirect)
 {
-  const gchar *raw_msg = "test_msg";
   const gchar *test_value = "test_value";
   const gchar *test_key = "test_key";
-  LogMessage *msg = log_msg_new(raw_msg, strlen(raw_msg), &parse_options);
+  LogMessage *msg = log_msg_new_empty();
   NVHandle test_key_handle = log_msg_get_value_handle(test_key);
   log_msg_set_value(msg, test_key_handle, test_value, -1);
 
