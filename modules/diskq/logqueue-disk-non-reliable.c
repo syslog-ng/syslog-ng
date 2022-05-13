@@ -36,6 +36,10 @@ typedef struct
   LogQueue *queue;
 } DiskqMemusageLoaderState;
 
+
+/* helper function for _ack_backlog() */
+void _ack_backlog_one_message(LogQueueDiskNonReliable *self, gpointer data, LogPathOptions *path_options);
+
 static gboolean
 _object_is_message_in_position(guint index_in_queue, guint item_number_per_message)
 {
@@ -216,7 +220,7 @@ static void
 _ack_backlog(LogQueue *s, gint num_msg_to_ack)
 {
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
-  LogMessage *msg, *next_msg;
+  LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   guint i;
 
@@ -225,12 +229,18 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
       if (self->qbacklog->length < ITEM_NUMBER_PER_MESSAGE)
         return;
       msg = g_queue_pop_head(self->qbacklog);
-      next_msg = g_queue_pop_head(self->qbacklog);
-      gint size = GPOINTER_TO_INT(next_msg);
-      POINTER_TO_LOG_PATH_OPTIONS(size, &path_options);
+      _ack_backlog_one_message(self, msg, &path_options);
       log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
     }
+}
+
+/* helper function for _ack_backlog() */
+void
+_ack_backlog_one_message(LogQueueDiskNonReliable *self, gpointer data, LogPathOptions *path_options)
+{
+  gint size = GPOINTER_TO_INT(data);
+  POINTER_TO_LOG_PATH_OPTIONS(size, path_options);
 }
 
 static void
