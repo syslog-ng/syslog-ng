@@ -146,6 +146,9 @@ development libraries are present. The configure script displays a
 summary of enabled features at the end of its run.
 For details, see the [syslog-ng compiling instructions](https://support.oneidentity.com/technical-documents/syslog-ng-open-source-edition/administration-guide/installing-syslog-ng).
 
+ ## DOC FOR INSTALL FROM SOURCE
+	https://syslog-ng.gitbooks.io/getting-started/content/
+
 
 ## Installation from binaries
 
