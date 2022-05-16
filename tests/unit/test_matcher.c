@@ -27,6 +27,7 @@
 #include "apphook.h"
 #include "plugin.h"
 #include "cfg.h"
+#include "scratch-buffers.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -318,4 +319,41 @@ Test(matcher, test_matcher_sets_num_matches_upon_successful_matching)
 
   log_matcher_unref(m);
   log_msg_unref(msg);
+}
+
+Test(matcher, test_replace_works_on_matches_input_with_store_matches_too)
+{
+  gssize value_len;
+  gssize result_len;
+  LogTemplate *replace_template;
+  const gchar *test_message = "foo bar baz";
+  const gchar *expected_result = "oo bar baz";
+  const gchar *match_pattern = "^(\\w)";
+  const gchar *replace_pattern = "";
+
+  LogMatcher *m = _construct_matcher(0, log_matcher_pcre_re_new);
+  log_matcher_compile(m, match_pattern, NULL);
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, "1", test_message, -1);
+
+  GlobalConfig *cfg = cfg_new_snippet();
+  replace_template = log_template_new(cfg, NULL);
+  cr_assert(log_template_compile(replace_template, replace_pattern, NULL));
+
+  NVHandle input_handle = log_msg_get_value_handle("1");
+  const gchar *input = log_msg_get_value(msg, input_handle, &value_len);
+
+  const gchar *result = log_matcher_replace(m, msg, input_handle, input, value_len,
+                                            replace_template, &result_len);
+  cr_log_info("replace result value: %s, length(%ld)", result, result_len);
+  cr_assert_arr_eq(result, expected_result, strlen(expected_result),
+                   "replace failed; result: %s (length %ld), expected: %s (length %d)",
+                   result, result_len, expected_result, strlen(expected_result));
+
+  scratch_buffers_reclaim_allocations();
+  log_template_unref(replace_template);
+  log_matcher_unref(m);
+  log_msg_unref(msg);
+  cfg_free(cfg);
 }
