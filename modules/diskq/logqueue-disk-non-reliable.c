@@ -142,9 +142,7 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
   while (_qoverflow_has_movable_message(self))
     {
       msg = g_queue_pop_head(self->qoverflow);
-      gpointer data = g_queue_pop_head(self->qoverflow);
-      gint size = GPOINTER_TO_INT(data);
-      POINTER_TO_LOG_PATH_OPTIONS(size, &path_options);
+      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), &path_options);
 
       if (_can_push_to_qout(self))
         {
@@ -229,18 +227,10 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
       if (self->qbacklog->length < ITEM_NUMBER_PER_MESSAGE)
         return;
       msg = g_queue_pop_head(self->qbacklog);
-      _ack_backlog_one_message(self, msg, &path_options);
+      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qbacklog), &path_options);
       log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
     }
-}
-
-/* helper function for _ack_backlog() */
-void
-_ack_backlog_one_message(LogQueueDiskNonReliable *self, gpointer data, LogPathOptions *path_options)
-{
-  gint size = GPOINTER_TO_INT(data);
-  POINTER_TO_LOG_PATH_OPTIONS(size, path_options);
 }
 
 static void
@@ -277,10 +267,8 @@ _rewind_backlog_all(LogQueue *s)
 static inline LogMessage *
 _pop_head_qout(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
 {
-  LogMessage *msg = g_queue_pop_head(self->qout), *next_msg;
-  next_msg =g_queue_pop_head(self->qout);
-  gint size = GPOINTER_TO_INT(next_msg);
-  POINTER_TO_LOG_PATH_OPTIONS(size, path_options);
+  LogMessage *msg = g_queue_pop_head(self->qout);
+  POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qout), path_options);
   log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
 
   return msg;
@@ -289,10 +277,8 @@ _pop_head_qout(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
 static inline LogMessage *
 _pop_head_qoverflow(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
 {
-  LogMessage *msg = g_queue_pop_head(self->qoverflow), *next_msg;
-  next_msg =g_queue_pop_head(self->qoverflow);
-  gint size = GPOINTER_TO_INT(next_msg);
-  POINTER_TO_LOG_PATH_OPTIONS(size, path_options);
+  LogMessage *msg = g_queue_pop_head(self->qoverflow);
+  POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), path_options);
   log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
 
   return msg;
@@ -503,9 +489,7 @@ _free_queue(GQueue *q)
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
       lm = g_queue_pop_head(q);
-      LogMessage *msg = g_queue_pop_head(q);
-      gint size = GPOINTER_TO_INT(msg);
-      POINTER_TO_LOG_PATH_OPTIONS(size, &path_options);
+      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(q), &path_options);
       log_msg_ack(lm, &path_options, AT_PROCESSED);
       log_msg_unref(lm);
     }
