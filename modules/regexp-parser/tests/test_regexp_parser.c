@@ -108,7 +108,9 @@ ParameterizedTest(RegexpParserTestParam *parser_param, regexp_parser, test_regex
     {
       gssize len = -1;
       const gchar *value = log_msg_get_value_by_name(msg, parser_param->name, &len);
-      cr_assert_str_eq(value, parser_param->value, "name: %s | value: %.*s, should be %s", parser_param->name, (gint) len, value,
+      cr_assert_str_eq(value, parser_param->value, "name: %s | value: %.*s, should be %s",
+                       parser_param->name,
+                       (gint) len, value,
                        parser_param->value);
     }
 
@@ -133,9 +135,11 @@ Test(regexp_parser, test_regexp_parser_with_multiple_patterns)
 
   gssize len;
   const gchar *value = log_msg_get_value_by_name(msg, "key", &len);
-  cr_assert(strncmp(value, "abc", 3) == 0, "Test regexp parser with multiple patterns failed: name: %s | value: %.*s, should be %s",
-                   "key", (gint) len, value,
-                   "abc");
+  cr_assert(strncmp(value, "abc", 3) == 0,
+            "Test regexp parser with multiple patterns failed: name: %s | value: %.*s, should be %s",
+            "key",
+            (gint) len, value,
+            "abc");
 
   log_pipe_unref((LogPipe *)p);
   log_msg_unref(msg);

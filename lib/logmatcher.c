@@ -486,7 +486,8 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcherPcreRe *self, LogMessage *ms
           g_string_truncate(formatted_name, self->nv_prefix_len);
           g_string_append(formatted_name, namedgroup_name);
 
-          log_matcher_pcre_re_feed_value(self, msg, log_msg_get_value_handle(formatted_name->str), result, begin_index, end_index);
+          log_matcher_pcre_re_feed_value(self, msg, log_msg_get_value_handle(formatted_name->str),
+                                         result, begin_index, end_index);
         }
     }
 }
