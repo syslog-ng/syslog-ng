@@ -660,9 +660,9 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
           log_matcher_pcre_re_feed_named_substrings(self, msg, &result);
 
           if (!new_value)
-            new_value = g_string_sized_new(value_len);
+            new_value = g_string_sized_new(result.source_value_len);
           /* append non-matching portion */
-          g_string_append_len(new_value, &value[last_offset], result.matches[0] - last_offset);
+          g_string_append_len(new_value, &result.source_value[last_offset], result.matches[0] - last_offset);
           /* replacement */
           log_template_append_format(replacement, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, new_value);
 
@@ -675,7 +675,7 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
   if (new_value)
     {
       /* append the last literal */
-      g_string_append_len(new_value, &value[last_offset], value_len - last_offset);
+      g_string_append_len(new_value, &result.source_value[last_offset], result.source_value_len - last_offset);
       if (new_length)
         *new_length = new_value->len;
       return g_string_free(new_value, FALSE);
