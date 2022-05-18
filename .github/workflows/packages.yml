@@ -38,5 +38,5 @@ jobs:
         "debian-bullseye",
         "debian-testing",
         "fedora-35",
-        "ubuntu-focal"
+        "ubuntu-jammy"
       ]'

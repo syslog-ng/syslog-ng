@@ -20,6 +20,7 @@ on:
           "debian-bullseye",
           "ubuntu-focal",
           "ubuntu-impish"
+          "ubuntu-jammy"
         ]'
     secrets:
       azure-sas-token:
