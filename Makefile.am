@@ -88,8 +88,8 @@ AM_CFLAGS += \
 	-Wundef \
 	-Wignored-qualifiers \
 	-Woverride-init \
-    -Wfloat-conversion \
-        -Wbad-function-cast
+	-Wfloat-conversion \
+	-Wbad-function-cast
 endif
 
 if ENABLE_DEBUG
