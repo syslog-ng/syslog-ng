@@ -35,7 +35,12 @@
  * uses this breaks, as it passes the result of a g_queue_pop_head call,
  * which has side effects.
  */
-#define POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) ({gpointer p = ptr; LogPathOptions *opts = lpo; (lpo)->ack_needed = (GPOINTER_TO_INT(p) & ~0x80000000); opts;})
+#define POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) \
+({ \
+  gpointer p = ptr; \
+  LogPathOptions *opts = lpo; \
+  (lpo)->ack_needed = (GPOINTER_TO_INT(p) & ~0x80000000); opts; \
+})
 
 typedef gboolean (*QDiskSerializeFunc)(SerializeArchive *sa, gpointer user_data);
 typedef gboolean (*QDiskDeSerializeFunc)(SerializeArchive *sa, gpointer user_data);
