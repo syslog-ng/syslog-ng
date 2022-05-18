@@ -55,6 +55,10 @@ uint32_t X509_get_extension_flags(X509 *x);
 #define ASN1_STRING_get0_data ASN1_STRING_data
 #endif
 
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#define SYSLOG_NG_HAVE_DECL_DIGEST_MD4 1
+#endif
+
 #if !SYSLOG_NG_HAVE_DECL_DH_SET0_PQG
 int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g);
 #endif
