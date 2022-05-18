@@ -36,10 +36,6 @@ typedef struct
   LogQueue *queue;
 } DiskqMemusageLoaderState;
 
-
-/* helper function for _ack_backlog() */
-void _ack_backlog_one_message(LogQueueDiskNonReliable *self, gpointer data, LogPathOptions *path_options);
-
 static gboolean
 _object_is_message_in_position(guint index_in_queue, guint item_number_per_message)
 {
