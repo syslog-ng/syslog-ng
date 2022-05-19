@@ -246,12 +246,13 @@ static void
 _calc_sum(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
 {
   gsize diff = _get_count(self) - _get_last_count(logic);
+  gdouble elapsed_time_since_last;
   _set_last_count(logic, _get_count(self));
 
   if (!_is_less_then_duration(self, logic, now))
     {
-      gsize elapsed_time_since_last = (gsize)_calc_sec_between_time(&self->last_add_time, now);
-      diff -= _get_average(logic) * elapsed_time_since_last;
+      elapsed_time_since_last = _calc_sec_between_time(&self->last_add_time, now);
+      diff -= _get_average(logic) * (gsize)elapsed_time_since_last;
     }
 
   _add_to_sum(logic, diff);
@@ -261,8 +262,11 @@ _calc_sum(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
 static void
 _calc_average(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
 {
-  gsize elapsed_time = (gsize)_calc_sec_between_time(&self->init_time, now);
-  gsize divisor = (_is_less_then_duration(self, logic, now)) ? elapsed_time : logic->duration;
+  gdouble elapsed_time;
+  gsize divisor;
+
+  elapsed_time = _calc_sec_between_time(&self->init_time, now);
+  divisor = (_is_less_then_duration(self, logic, now)) ? (gsize)elapsed_time : logic->duration;
   if (divisor <= 0) divisor = 1;
   gsize sum = _get_sum(logic);
 
@@ -274,7 +278,7 @@ _calc_average(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
             evt_tag_long("sum", sum),
             evt_tag_long("divisor", divisor),
             evt_tag_long("cps", (sum/divisor)),
-            evt_tag_long("delta_time_since_start", elapsed_time));
+            evt_tag_long("delta_time_since_start", (gsize)elapsed_time));
 }
 
 static void

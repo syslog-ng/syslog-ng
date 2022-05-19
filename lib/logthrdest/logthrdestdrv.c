@@ -1097,6 +1097,7 @@ _create_workers(LogThreadedDestDriver *self)
 gboolean
 log_threaded_dest_driver_init_method(LogPipe *s)
 {
+  gpointer value;
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
@@ -1108,8 +1109,9 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
-  self->shared_seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
-                                         _format_seqnum_persist_name(self)));
+  value = cfg_persist_config_fetch(cfg, _format_seqnum_persist_name(self));
+  self->shared_seq_num = GPOINTER_TO_INT(value);
+
   if (!self->shared_seq_num)
     init_sequence_number(&self->shared_seq_num);
 
