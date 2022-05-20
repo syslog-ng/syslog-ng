@@ -780,9 +780,10 @@ log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer
 NVHandle
 log_msg_get_match_handle(gint index_)
 {
-  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
+  if (index_ >= 0 && index_ < LOGMSG_MAX_MATCHES)
+    return match_handles[index_];
 
-  return match_handles[index_];
+  return LM_V_NONE;
 }
 
 void
@@ -790,16 +791,13 @@ log_msg_set_match_with_type(LogMessage *self, gint index_,
                             const gchar *value, gssize value_len,
                             LogMessageValueType type)
 {
-  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
-
-  log_msg_set_value_with_type(self, match_handles[index_], value, value_len, type);
+  if (index_ >= 0 && index_ < LOGMSG_MAX_MATCHES)
+    log_msg_set_value_with_type(self, match_handles[index_], value, value_len, type);
 }
 
 void
 log_msg_set_match(LogMessage *self, gint index_, const gchar *value, gssize value_len)
 {
-  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
-
   log_msg_set_match_with_type(self, index_, value, value_len, LM_VT_STRING);
 }
 
@@ -809,16 +807,13 @@ log_msg_set_match_indirect_with_type(LogMessage *self, gint index_,
                                      NVHandle ref_handle, guint16 ofs, guint16 len,
                                      LogMessageValueType type)
 {
-  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
-
-  log_msg_set_value_indirect_with_type(self, match_handles[index_], ref_handle, ofs, len, type);
+  if (index_ >= 0 && index_ < LOGMSG_MAX_MATCHES)
+    log_msg_set_value_indirect_with_type(self, match_handles[index_], ref_handle, ofs, len, type);
 }
 
 void
 log_msg_set_match_indirect(LogMessage *self, gint index_, NVHandle ref_handle, guint16 ofs, guint16 len)
 {
-  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
-
   log_msg_set_match_indirect_with_type(self, index_, ref_handle, ofs, len, LM_VT_STRING);
 }
 
@@ -826,9 +821,9 @@ const gchar *
 log_msg_get_match_if_set_with_type(const LogMessage *self, gint index_, gssize *value_len,
                                    LogMessageValueType *type)
 {
-  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
-
-  return nv_table_get_value(self->payload, match_handles[index_], value_len, type);
+  if (index_ >= 0 && index_ < LOGMSG_MAX_MATCHES)
+    return nv_table_get_value(self->payload, match_handles[index_], value_len, type);
+  return NULL;
 }
 
 const gchar *
@@ -850,22 +845,21 @@ log_msg_get_match_with_type(const LogMessage *self, gint index_, gssize *value_l
 const gchar *
 log_msg_get_match(const LogMessage *self, gint index_, gssize *value_len)
 {
-  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
-
   return log_msg_get_match_with_type(self, index_, value_len, NULL);
 }
 
 void
 log_msg_unset_match(LogMessage *self, gint index_)
 {
-  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
-
-  log_msg_unset_value(self, match_handles[index_]);
+  if (index_ >= 0 && index_ < LOGMSG_MAX_MATCHES)
+    log_msg_unset_value(self, match_handles[index_]);
 }
 
 void
 log_msg_truncate_matches(LogMessage *self, gint n)
 {
+  if (n < 0)
+    n = 0;
   for (gint i = n; i < self->num_matches; i++)
     log_msg_unset_match(self, i);
   self->num_matches = n;

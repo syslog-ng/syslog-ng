@@ -594,6 +594,48 @@ Test(log_message, test_match_alias_numbered_macros)
   log_msg_unref(msg);
 }
 
+Test(log_message, test_set_match_access_out_of_range_are_ignored)
+{
+  LogMessage *msg;
+
+  msg = log_msg_new_empty();
+  log_msg_set_value(msg, LM_V_MESSAGE, "dummy-value", -1);
+
+  /* set $0 */
+  log_msg_set_match(msg, 0, "match0", -1);
+  log_msg_set_match(msg, 1, "match1", -1);
+  log_msg_set_match(msg, 255, "match255", -1);
+  assert_log_message_match_value(msg, 0, "match0");
+  assert_log_message_match_value(msg, 1, "match1");
+  assert_log_message_match_value(msg, 255, "match255");
+
+  log_msg_set_match(msg, 256, "match256", -1);
+  assert_log_message_match_value(msg, 256, "");
+
+  log_msg_set_match_indirect(msg, 256, LM_V_MESSAGE, 0, 1);
+  assert_log_message_match_value(msg, 256, "");
+
+  log_msg_set_value_indirect(msg, log_msg_get_value_handle("256"), LM_V_MESSAGE, 0, 5);
+  assert_log_message_value_by_name(msg, "256", "dummy");
+
+  log_msg_unref(msg);
+}
+
+Test(log_message,
+     test_value_that_looks_like_out_of_range_match_behaves_like_a_regular_nv_pair_and_cannot_be_accessed_as_a_match)
+{
+  LogMessage *msg;
+
+  msg = log_msg_new_empty();
+  log_msg_set_value(msg, LM_V_MESSAGE, "dummy-value", -1);
+
+  log_msg_set_value_indirect(msg, log_msg_get_value_handle("256"), LM_V_MESSAGE, 0, 5);
+  assert_log_message_value_by_name(msg, "256", "dummy");
+  assert_log_message_match_value(msg, 256, "");
+
+  log_msg_unref(msg);
+}
+
 Test(log_message, test_log_message_updates_num_matches_according_to_matches_being_set)
 {
   LogMessage *msg;
