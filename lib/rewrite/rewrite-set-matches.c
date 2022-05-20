@@ -64,7 +64,7 @@ log_rewrite_set_matches_process(LogRewrite *s, LogMessage **pmsg, const LogPathO
   list_scanner_init(&scanner);
   list_scanner_input_string(&scanner, result->str, result->len);
   log_msg_clear_matches(*pmsg);
-  for (gint i = 1; list_scanner_scan_next(&scanner); i++)
+  for (gint i = 1; list_scanner_scan_next(&scanner) && i < LOGMSG_MAX_MATCHES; i++)
     {
       log_msg_set_match(*pmsg, i,
                         list_scanner_get_current_value(&scanner), list_scanner_get_current_value_len(&scanner));
