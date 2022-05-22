@@ -422,7 +422,7 @@ log_msg_update_num_matches(LogMessage *self, NVHandle handle)
 {
   if (log_msg_is_handle_match(handle))
     {
-      gint index_ = handle - match_handles[0];
+      gint index_ = log_msg_get_match_index(handle);
 
       /* the whole between num_matches and the new index is emptied out to
        * avoid leaking of stale values */
@@ -784,6 +784,15 @@ log_msg_get_match_handle(gint index_)
     return match_handles[index_];
 
   return LM_V_NONE;
+}
+
+gint
+log_msg_get_match_index(NVHandle handle)
+{
+  gint index_ = handle - match_handles[0];
+
+  g_assert(index_ >= 0 && index_ < LOGMSG_MAX_MATCHES);
+  return index_;
 }
 
 void
