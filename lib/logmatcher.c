@@ -401,6 +401,16 @@ typedef struct _LogMatcherPcreMatchResult
 } LogMatcherPcreMatchResult;
 
 static inline void
+log_matcher_pcre_re_save_source_value_to_avoid_clobbering(LogMatcherPcreMatchResult *result)
+{
+  GString *source_value_scratch = scratch_buffers_alloc();
+  g_string_assign_len(source_value_scratch, result->source_value, result->source_value_len);
+  result->source_value = source_value_scratch->str;
+
+  /* source_value_scratch will be freed automatically by the scratch-buffers GC */
+}
+
+static inline void
 log_matcher_pcre_re_feed_value(LogMatcherPcreRe *self, LogMessage *msg,
                                NVHandle target_handle,
                                LogMatcherPcreMatchResult *result,
@@ -417,12 +427,7 @@ log_matcher_pcre_re_feed_value(LogMatcherPcreRe *self, LogMessage *msg,
        * memory area that "value" points to (to add to the injury and to
        * make it less appearent, this is not always the case: it does not
        * happen if the new value does not fit the old NVEntry).  */
-
-      GString *source_value_scratch = scratch_buffers_alloc();
-      g_string_assign_len(source_value_scratch, result->source_value, result->source_value_len);
-      result->source_value = source_value_scratch->str;
-
-      /* source_value_scratch will be freed automatically by the scratch-buffers GC */
+      log_matcher_pcre_re_save_source_value_to_avoid_clobbering(result);
     }
 
   if (indirect)
