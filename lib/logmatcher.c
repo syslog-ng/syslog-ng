@@ -451,6 +451,11 @@ log_matcher_pcre_re_feed_backrefs(LogMatcherPcreRe *self, LogMessage *msg, LogMa
 
       log_matcher_pcre_re_feed_value(self, msg, log_msg_get_match_handle(i), result, begin_index, end_index);
     }
+  if (log_msg_is_handle_match(result->source_handle) &&
+      log_msg_get_match_index(result->source_handle) >= result->num_matches)
+    {
+      log_matcher_pcre_re_save_source_value_to_avoid_clobbering(result);
+    }
   log_msg_truncate_matches(msg, result->num_matches);
 }
 
