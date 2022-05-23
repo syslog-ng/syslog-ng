@@ -843,13 +843,12 @@ _sd_open_stream(AFSocketSourceDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
   gint sock = -1;
-  gpointer fd;
   if (self->connections_kept_alive_across_reloads)
     {
       /* NOTE: this assumes that fd 0 will never be used for listening fds,
        * main.c opens fd 0 so this assumption can hold */
-      fd = cfg_persist_config_fetch(cfg, afsocket_sd_format_listener_name(self));
-      sock = GPOINTER_TO_UINT(fd) - 1;
+      gpointer config_result = cfg_persist_config_fetch(cfg, afsocket_sd_format_listener_name(self));
+      sock = GPOINTER_TO_UINT(config_result) - 1;
 
     }
 

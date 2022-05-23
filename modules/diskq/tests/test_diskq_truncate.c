@@ -96,12 +96,11 @@ _calculate_full_disk_message_num(LogQueueDisk *queue_disk)
    * Assumes that only empty messages are stored.
    */
   QDisk *qdisk = queue_disk->qdisk;
-  gdouble num_messages;
 
   gsize msg_size = _calculate_serialized_empty_message_size(queue_disk);
-  num_messages = ceil((qdisk->options->disk_buf_size - QDISK_RESERVED_SPACE) / (double) msg_size);
+  gint num_messages = llrint(ceil((qdisk->options->disk_buf_size - QDISK_RESERVED_SPACE) / (double) msg_size));
 
-  return (gint64)num_messages;
+  return num_messages;
 }
 
 static gint64

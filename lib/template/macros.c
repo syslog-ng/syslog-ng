@@ -725,12 +725,11 @@ log_macro_lookup(const gchar *macro, gint len)
 {
   gchar buf[256];
   gint macro_id;
-  gpointer p;
 
   g_assert(macro_hash);
   g_strlcpy(buf, macro, MIN(sizeof(buf), len+1));
-  p = g_hash_table_lookup(macro_hash, buf);
-  macro_id = GPOINTER_TO_INT(p);
+  gpointer hash_key = g_hash_table_lookup(macro_hash, buf);
+  macro_id = GPOINTER_TO_INT(hash_key);
 
   return macro_id;
 }
