@@ -207,9 +207,14 @@ timer_wheel_del_timer(TimerWheel *self, TWEntry *entry)
 void
 timer_wheel_mod_timer(TimerWheel *self, TWEntry *entry, gint new_timeout)
 {
-  tw_entry_unlink(entry);
-  entry->target = self->now + new_timeout;
-  timer_wheel_add_timer_entry(self, entry);
+  guint64 new_target = self->now + new_timeout;
+
+  if (new_target != entry->target)
+    {
+      tw_entry_unlink(entry);
+      entry->target = new_target;
+      timer_wheel_add_timer_entry(self, entry);
+    }
 }
 
 guint64

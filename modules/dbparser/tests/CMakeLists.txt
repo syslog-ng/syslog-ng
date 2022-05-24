@@ -9,4 +9,4 @@ target_compile_options(test_radix PRIVATE "-Wno-error=pointer-sign")
 add_unit_test(CRITERION TARGET test_parsers INCLUDES ${PATTERNDB_INCLUDE_DIR})
 target_compile_options(test_parsers PRIVATE "-Wno-error=pointer-sign")
 
-add_unit_test(CRITERION TARGET test_grouping_by DEPENDS dbparser)
+add_unit_test(CRITERION LIBTEST TARGET test_grouping_by DEPENDS dbparser basicfuncs)

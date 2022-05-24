@@ -25,15 +25,37 @@
 
 #include "syslog-ng.h"
 #include "correlation-key.h"
+#include "correlation-context.h"
+#include "timerwheel.h"
+#include "timeutils/unixtime.h"
 
 typedef struct _CorrelationState
 {
+  GAtomicCounter ref_cnt;
+  GMutex lock;
   GHashTable *state;
+  TimerWheel *timer_wheel;
+  GTimeVal last_tick;
 } CorrelationState;
+
+void correlation_state_tx_begin(CorrelationState *self);
+void correlation_state_tx_end(CorrelationState *self);
+CorrelationContext *correlation_state_tx_lookup_context(CorrelationState *self, const CorrelationKey *key);
+void correlation_state_tx_store_context(CorrelationState *self, CorrelationContext *context, gint timeout,
+                                        TWCallbackFunc expire);
+void correlation_state_tx_remove_context(CorrelationState *self, CorrelationContext *context);
+void correlation_state_tx_update_context(CorrelationState *self, CorrelationContext *context, gint timeout);
+
+void correlation_state_set_time(CorrelationState *self, guint64 sec, gpointer caller_context);
+guint64 correlation_state_get_time(CorrelationState *self);
+gboolean correlation_state_timer_tick(CorrelationState *self, gpointer caller_context);
+void correlation_state_expire_all(CorrelationState *self, gpointer caller_context);
+void correlation_state_advance_time(CorrelationState *self, gint timeout, gpointer caller_context);
 
 void correlation_state_init_instance(CorrelationState *self);
 void correlation_state_deinit_instance(CorrelationState *self);
 CorrelationState *correlation_state_new(void);
-void correlation_state_free(CorrelationState *self);
+CorrelationState *correlation_state_ref(CorrelationState *self);
+void correlation_state_unref(CorrelationState *self);
 
 #endif
