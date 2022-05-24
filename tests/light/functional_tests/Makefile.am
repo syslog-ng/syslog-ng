@@ -23,6 +23,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/parsers/app-parser/test_topic_syslog.py \
 	tests/light/functional_tests/parsers/app-parser/test_topic_syslog_raw.py \
 	tests/light/functional_tests/parsers/checkpoint/test_checkpoint.py \
+	tests/light/functional_tests/parsers/cisco-parser/test_cisco_parser.py \
 	tests/light/functional_tests/parsers/db_parser/test_db_parser.py \
 	tests/light/functional_tests/parsers/panos/test_panos_parser.py \
 	tests/light/functional_tests/parsers/regexp-parser/test_regexp_parser.py \
