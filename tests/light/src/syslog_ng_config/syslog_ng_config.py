@@ -126,6 +126,9 @@ class SyslogNgConfig(object):
     def create_syslog_parser(self, **options):
         return Parser("syslog-parser", **options)
 
+    def create_cisco_parser(self, **options):
+        return Parser("cisco-parser", **options)
+
     def create_file_destination(self, **options):
         return FileDestination(**options)
 
