@@ -289,10 +289,10 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
     }
     case LM_VT_DATETIME:
     {
-      guint64 i;
+      gint64 msec;
 
-      if (type_cast_to_datetime_int(value, &i, NULL))
-        bson_append_date_time(o, name, -1, (gint64)i);
+      if (type_cast_to_datetime_msec(value, &msec, NULL))
+        bson_append_date_time(o, name, -1, msec);
       else
         {
           gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, "datetime");
