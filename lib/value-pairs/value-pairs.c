@@ -253,7 +253,7 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
 
   if (vp->omit_empty_values && sb->len == 0)
     return;
-  if (vp->cast_to_strings && type != vpc->template->type_hint)
+  if (vp->cast_to_strings && vpc->template->explicit_type_hint == LM_VT_NONE)
     type = LM_VT_STRING;
   vp_results_insert(results, vp_transform_apply(vp, vpc->name), type, sb);
 }

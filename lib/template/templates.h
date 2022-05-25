@@ -60,6 +60,17 @@ struct _LogTemplate
   GList *compiled_template;
   GlobalConfig *cfg;
   guint escape:1, def_inline:1, trivial:1, literal:1;
+
+
+  /* This value stores the type-hint the user _explicitly_ specified.  If
+   * this is an automatic cast to string (in compat mode), this would be
+   * LM_VT_NONE while "type_hint" would be LM_VT_STRING */
+  LogMessageValueType explicit_type_hint;
+
+  /* This is the type-cast we do perform as we evaluate this template.  It
+   * might differ from explicit_type_hint in case we are in compatibility
+   * mode where the template would be cast to a string when the type-hint is
+   * unspecified.  */
   LogMessageValueType type_hint;
 };
 
