@@ -182,6 +182,18 @@ _evaluate_typed(FilterCmp *self,
   return _evaluate_comparison(self, gn_compare(&l, &r));
 }
 
+static const gchar *
+_compare_mode_to_string(gint compare_mode)
+{
+  if (compare_mode & FCMP_TYPE_AWARE)
+    return "type-aware";
+  else if (compare_mode & FCMP_STRING_BASED)
+    return "string";
+  else if (compare_mode & FCMP_NUM_BASED)
+    return "numeric";
+  g_assert_not_reached();
+}
+
 static gboolean
 fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
@@ -209,6 +221,9 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEval
             evt_tag_str("left", left_buf->str),
             evt_tag_str("operator", self->super.type),
             evt_tag_str("right", right_buf->str),
+            evt_tag_str("compare_mode", _compare_mode_to_string(self->compare_mode)),
+            evt_tag_str("left_type", log_msg_value_type_to_str(left_type)),
+            evt_tag_str("right_type", log_msg_value_type_to_str(right_type)),
             evt_tag_int("result", result),
             evt_tag_msg_reference(msgs[num_msg - 1]));
 
