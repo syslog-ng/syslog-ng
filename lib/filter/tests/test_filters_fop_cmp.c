@@ -320,6 +320,28 @@ Test(filter, test_type_aware_comparison_null_equals_to_null_and_converts_to_zero
   cr_assert(evaluate("'$nullvalue' > -1"));
 }
 
+Test(filter, test_compat_mode_numeric_comparisons_are_compared_as_numbers)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_3_36);
+
+  /* strings are converted to "0" before comparison */
+  cr_assert(evaluate("'alma' == 'korte'"));
+  cr_assert_not(evaluate("'alma' != 'korte'"));
+  cr_assert_not(evaluate("'alma' < 'korte'"));
+  cr_assert_not(evaluate("'korte' > 'alma'"));
+
+  cr_assert(evaluate("'$strvalue' == 'string'"));
+  cr_assert(evaluate("'$strvalue' == '$strvalue'"));
+  cr_assert_not(evaluate("'$strvalue' != '$strvalue'"));
+
+  /* strings containing numbers are converted to numbers and compared numerically */
+  cr_assert(evaluate("'10' != '11'"));
+  cr_assert_not(evaluate("'10' == '11'"));
+  cr_assert(evaluate("'10' > '7'"));
+  cr_assert(evaluate("'7' < '10'"));
+
+}
+
 Test(filter, test_type_aware_comparisons_mixed_types_or_numbers_are_compared_as_numbers_after_conversion)
 {
   cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);

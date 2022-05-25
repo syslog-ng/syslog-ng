@@ -252,11 +252,40 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compa
 
   filter_expr_node_init_instance(&self->super);
   self->super.type = g_strdup(type);
+  self->super.eval = fop_cmp_eval;
+  self->super.free_fn = fop_cmp_free;
+  self->super.clone = fop_cmp_clone;
   self->compare_mode = compare_mode;
+  self->left = left;
+  self->right = right;
 
-  if (self->compare_mode & FCMP_TYPE_AWARE && cfg_is_config_version_older(left->cfg, VERSION_VALUE_3_8))
+  if ((self->compare_mode & FCMP_TYPE_AWARE) &&
+      cfg_is_config_version_older(left->cfg, VERSION_VALUE_4_0))
     {
-      msg_warning("WARNING: due to a bug in versions before " VERSION_3_8
+      if (self->left->explicit_type_hint != LM_VT_NONE || self->right->explicit_type_hint != LM_VT_NONE)
+        {
+          /* the user has used explicit types in this expression, so let's
+           * keep it type aware and suppress any warnings.  */
+        }
+      else
+        {
+          if (cfg_is_typing_feature_enabled(configuration))
+            {
+              msg_warning("WARNING: syslog-ng comparisons became type-aware starting with " VERSION_4_0 " "
+                          "which means that syslog-ng attempts to infer the intended type of an "
+                          "expression automatically and performs comparisons according to the types detected, "
+                          "similarly how JavaScript evaluates the comparison of potentially mismatching types. "
+                          "You seem to be using numeric operators in this filter expression, so "
+                          "please make sure that once the type-aware behavior is turned on it remains correct, "
+                          "see this blog post for more information: https://syslog-ng-future.blog/syslog-ng-4-theme-typing/");
+            }
+          self->compare_mode = (self->compare_mode & ~FCMP_TYPE_AWARE) | FCMP_NUM_BASED;
+        }
+    }
+
+  if ((self->compare_mode & FCMP_NUM_BASED) && cfg_is_config_version_older(left->cfg, VERSION_VALUE_3_8))
+    {
+      msg_warning("WARNING: due to a bug in versions before " VERSION_3_8 ", "
                   "numeric comparison operators like '!=' in filter "
                   "expressions were evaluated as string operators. This is fixed in " VERSION_3_8 ". "
                   "As we are operating in compatibility mode, syslog-ng will exhibit the buggy "
@@ -268,11 +297,6 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compa
 
 
   g_assert((self->compare_mode & FCMP_MODE_MASK) != 0);
-  self->super.eval = fop_cmp_eval;
-  self->super.free_fn = fop_cmp_free;
-  self->super.clone = fop_cmp_clone;
-  self->left = left;
-  self->right = right;
 
   return &self->super;
 }
