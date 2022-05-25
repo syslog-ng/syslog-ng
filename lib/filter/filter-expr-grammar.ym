@@ -233,7 +233,7 @@ filter_comparison
 	  {
             $1 = _translate_number_literals(lexer, $2, $1, &@1);
             $4 = _translate_number_literals(lexer, $2, $4, &@4);
-	    $$ = fop_cmp_new($1, $4, $3, $2);
+	    $$ = fop_cmp_new($1, $4, $3, $2, cfg_lexer_format_location_tag(lexer, &@0));
             free($3);
           }
         ;

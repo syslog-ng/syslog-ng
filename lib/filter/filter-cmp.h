@@ -37,6 +37,8 @@
 
 #define FCMP_MODE_MASK    0x0070
 
-FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compare_mode);
+FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right,
+                            const gchar *type, gint compare_mode,
+                            EVTTAG *location);
 
 #endif
