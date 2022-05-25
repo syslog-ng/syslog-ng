@@ -58,7 +58,7 @@ fop_compare_string(const gchar *left, const gchar *right)
 static gint
 fop_compare(FilterCmp *self, const gchar *left, const gchar *right)
 {
-  if (self->cmp_op & FCMP_NUM)
+  if (self->compare_mode & FCMP_NUM_BASED)
     return fop_compare_numeric(left, right);
   else
     return fop_compare_string(left, right);
@@ -141,7 +141,7 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compa
   self->super.type = g_strdup(type);
   self->compare_mode = compare_mode;
 
-  if (self->compare_mode & FCMP_NUM && cfg_is_config_version_older(left->cfg, VERSION_VALUE_3_8))
+  if (self->compare_mode & FCMP_TYPE_AWARE && cfg_is_config_version_older(left->cfg, VERSION_VALUE_3_8))
     {
       msg_warning("WARNING: due to a bug in versions before " VERSION_3_8
                   "numeric comparison operators like '!=' in filter "
@@ -149,9 +149,11 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compa
                   "As we are operating in compatibility mode, syslog-ng will exhibit the buggy "
                   "behaviour as previous versions until you bump the @version value in your "
                   "configuration file");
-      self->compare_mode &= ~FCMP_NUM;
+      self->compare_mode &= ~FCMP_TYPE_AWARE;
+      self->compare_mode |= FCMP_STRING_BASED;
     }
 
+  g_assert((self->compare_mode & FCMP_MODE_MASK) != 0);
   self->super.eval = fop_cmp_eval;
   self->super.free_fn = fop_cmp_free;
   self->super.clone = fop_cmp_clone;

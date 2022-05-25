@@ -63,8 +63,8 @@
 %left	KW_OR
 %left	KW_AND
 %left   KW_NOT
-%left   KW_LT KW_LE KW_EQ KW_NE KW_GE KW_GT
-%left   KW_NUM_LT KW_NUM_LE KW_NUM_EQ KW_NUM_NE KW_NUM_GE KW_NUM_GT
+%left   KW_STR_LT KW_STR_LE KW_STR_EQ KW_STR_NE KW_STR_GE KW_STR_GT
+%left   KW_TA_LT KW_TA_LE KW_TA_EQ KW_TA_NE KW_TA_GE KW_TA_GT
 
 %type	<node> filter_expr
 %type	<node> filter_simple_expr
@@ -179,18 +179,18 @@ filter_comparison
         ;
 
 operator
-	: KW_NUM_LT	{ $$ = FCMP_NUM | FCMP_LT; }
-	| KW_NUM_LE	{ $$ = FCMP_NUM | FCMP_LT | FCMP_EQ; }
-	| KW_NUM_EQ     { $$ = FCMP_NUM | FCMP_EQ; }
-	| KW_NUM_NE     { $$ = FCMP_NUM | FCMP_LT | FCMP_GT; }
-	| KW_NUM_GE     { $$ = FCMP_NUM | FCMP_EQ | FCMP_GT; }
-	| KW_NUM_GT     { $$ = FCMP_NUM | FCMP_GT; }
-	| KW_LT		{ $$ = FCMP_LT; }
-	| KW_LE		{ $$ = FCMP_LT | FCMP_EQ; }
-	| KW_EQ         { $$ = FCMP_EQ; }
-	| KW_NE         { $$ = FCMP_LT | FCMP_GT; }
-	| KW_GE         { $$ = FCMP_EQ | FCMP_GT; }
-	| KW_GT         { $$ = FCMP_GT; }
+	: KW_TA_LT	    { $$ = FCMP_TYPE_AWARE | FCMP_LT; }
+	| KW_TA_LE	    { $$ = FCMP_TYPE_AWARE | FCMP_LT | FCMP_EQ; }
+	| KW_TA_EQ          { $$ = FCMP_TYPE_AWARE | FCMP_EQ; }
+	| KW_TA_NE          { $$ = FCMP_TYPE_AWARE | FCMP_LT | FCMP_GT; }
+	| KW_TA_GE          { $$ = FCMP_TYPE_AWARE | FCMP_EQ | FCMP_GT; }
+	| KW_TA_GT          { $$ = FCMP_TYPE_AWARE | FCMP_GT; }
+	| KW_STR_LT	    { $$ = FCMP_STRING_BASED | FCMP_LT; }
+	| KW_STR_LE         { $$ = FCMP_STRING_BASED | FCMP_LT | FCMP_EQ; }
+	| KW_STR_EQ         { $$ = FCMP_STRING_BASED | FCMP_EQ; }
+	| KW_STR_NE         { $$ = FCMP_STRING_BASED | FCMP_LT | FCMP_GT; }
+	| KW_STR_GE         { $$ = FCMP_STRING_BASED | FCMP_EQ | FCMP_GT; }
+	| KW_STR_GT         { $$ = FCMP_STRING_BASED | FCMP_GT; }
 	;
 
 filter_re
