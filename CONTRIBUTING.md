@@ -52,7 +52,7 @@ submit your own.
 ### Testing
 
 An incredibly useful way to contribute is to test patches and pull
-requests - there's only so much [automated testing][ar:travis] can do.
+requests - there's only so much [automated testing][ar:CI] can do.
 For example, you can help testing on platforms the developers do not
 have access to, or try configurations not thought of before.
 
@@ -204,11 +204,11 @@ audience.
 We also have a [Gitter channel][ar:gitter], where developers hang out.
 
 We use [GitHub issues][ar:issue-tracker] to track issues, feature requests
-and patches. We are also using [Travis CI][ar:travis] for automatic
+and patches. We are also using [GitHub Actions][ar:CI] for automatic
 testing.
 
  [ar:gitter]: https://gitter.im/syslog-ng/syslog-ng
  [ar:mailing-list]: http://lists.balabit.com/mailman/listinfo/syslog-ng
  [ar:issue-tracker]: https://github.com/syslog-ng/syslog-ng/issues
  [ar:issues:good-first-issue]: https://github.com/syslog-ng/syslog-ng/labels/good%20first%20issue
- [ar:travis]: https://travis-ci.org/syslog-ng/syslog-ng/
+ [ar:CI]: https://github.com/syslog-ng/syslog-ng/actions

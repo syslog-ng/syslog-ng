@@ -1,0 +1,100 @@
+name: arm-docker
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: '00 21 * * *'
+
+jobs:
+  test-arm64:
+    runs-on: ubuntu-latest
+    name: 
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
+
+      - name: Build on multiarch ARM docker image
+        uses: uraimo/run-on-arch-action@v2.1.1
+        with:
+          arch: aarch64
+          distro: bullseye
+          githubToken: ${{ github.token }}
+          install: |
+            set -x
+            apt-get update -q -y
+            apt-get install -q -y \
+              autoconf-archive \
+              docbook-xsl \
+              flex \
+              gradle \
+              libcap-dev \
+              libcurl4-openssl-dev \
+              libdbd-sqlite3 \
+              libdbi0-dev \
+              libesmtp-dev \
+              libglib2.0-dev \
+              libhiredis-dev \
+              libivykis-dev \
+              librabbitmq-dev \
+              libmongoc-dev \
+              libjson-c-dev \
+              m4 \
+              python3-dev \
+              python3-pip \
+              python3-setuptools \
+              libnet1-dev \
+              libriemann-client-dev \
+              librdkafka-dev \
+              libwrap0-dev \
+              pkg-config \
+              sqlite3 \
+              xsltproc \
+              libmaxminddb-dev \
+              libxml2-utils \
+              doxygen \
+              libsnmp-dev \
+              autopoint \
+              gcc \
+              git \
+              cmake \
+              make \
+              automake \
+              autoconf \
+              wget \
+              ca-certificates \
+              bzip2 \
+              make \
+              libbson-dev \
+              libpcre3-dev \
+              libssl-dev \
+              libpaho-mqtt-dev
+
+              cd /tmp && wget -q https://github.com/Snaipe/Criterion/releases/download/v2.3.3/criterion-v2.3.3.tar.bz2
+              tar xf criterion-v2.3.3.tar.bz2
+              pushd criterion-v2.3.3
+              cmake .
+              make -j $(nproc) all
+              make -j $(nproc) install
+              popd
+              rm -rf /tmp/criterion-v2.3.3 /tmp/criterion-v2.3.3.tar.bz2
+
+              cd /tmp && wget -q https://ftp.gnu.org/gnu/bison/bison-3.7.6.tar.gz
+              tar xf bison-3.7.6.tar.gz
+              pushd bison-3.7.6
+              ./configure --disable-nls
+              make -j $(nproc) all
+              make -j $(nproc) install
+              popd
+              rm -rf /tmp/bison-3.7.6 /tmp/bison-3.7.6.tar.gz
+          run: |
+            python3 -m pip install -q --user --cache-dir=$PWD/pip-cache -r requirements.txt
+            python3 -m pip list
+
+            set -e
+            cd "${GITHUB_WORKSPACE}"
+            mkdir build && cd build
+            cmake -DCMAKE_C_FLAGS=-Werror -DPYTHON_VERSION=3 -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng ..
+            make --keep-going -j $(nproc) all install
+            ctest -j $(nproc) --output-on-failure
