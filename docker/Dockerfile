@@ -15,6 +15,7 @@ RUN apt-get update -qq && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 ADD syslog-ng.conf /etc/syslog-ng/syslog-ng.conf
+ADD logrotate_syslog-ng /etc/logrotate.d/syslog-ng
 
 EXPOSE 514/udp
 EXPOSE 601/tcp
