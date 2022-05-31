@@ -119,10 +119,6 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
  *
  * Note: Caller must take care of memory management.
  */
-int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *tag, unsigned char *key,
-                unsigned char *iv,
-                unsigned char *plaintext);
-
 void cmac(unsigned char *key, const void *input, gsize length, unsigned char *out, gsize *outlen);
 
 
