@@ -348,14 +348,13 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
 
   g_assert(self->transport_mapper->transport);
   g_assert(self->bind_addr);
+  g_assert(self->dest_addr);
 
   if (!transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, self->dest_addr,
                                     AFSOCKET_DIR_SEND, &sock))
     {
       return FALSE;
     }
-
-  g_assert(self->dest_addr);
 
   rc = g_connect(sock, self->dest_addr);
   if (rc == G_IO_STATUS_NORMAL)
