@@ -2,13 +2,10 @@ name: Trigger tests for nightly APT packages
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '00 3 * * *'
 
 
 jobs:
   test_nightly_packages:
-    if: (github.event_name == 'schedule' && github.repository_owner == 'syslog-ng') || (github.event_name != 'schedule')
     uses: ./.github/workflows/test-apt-packages.yml
     with:
       pkg_type: "nightly"
