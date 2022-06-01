@@ -60,3 +60,10 @@ jobs:
     uses: ./.github/workflows/test-apt-packages.yml
     with:
       pkg_type: stable
+
+  publish-docker-image:
+    needs: test-packages
+    uses: ./.github/workflows/publish-docker-image.yml
+    secrets:
+      dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
+      dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}

@@ -8,9 +8,6 @@ on:
         required: true
       dockerhub-password:
         required: true
-  push:
-    tags:
-      - 'syslog-ng-*'
 
 
 jobs:
