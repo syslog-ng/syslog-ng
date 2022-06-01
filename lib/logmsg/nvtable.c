@@ -186,7 +186,7 @@ nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *length)
   g_assert(entry->indirect);
 
   referenced_value = nv_table_get_value(self, entry->vindirect.handle, &referenced_length, NULL);
-  if (entry->vindirect.ofs > referenced_length)
+  if (!referenced_value || entry->vindirect.ofs > referenced_length)
     {
       if (length)
         *length = 0;
@@ -526,6 +526,7 @@ nv_table_set_indirect_entry(NVTable *self, NVHandle handle, NVEntry *entry, cons
   entry->vindirect.len = referenced_slice->len;
   entry->vindirect.__deprecated_type_field = 0;
   entry->type = type;
+  entry->unset = FALSE;
 
   if (entry->indirect)
     return;

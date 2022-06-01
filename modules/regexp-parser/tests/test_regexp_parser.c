@@ -106,8 +106,11 @@ ParameterizedTest(RegexpParserTestParam *parser_param, regexp_parser, test_regex
 
   if (parser_param->name)
     {
-      const gchar *value = log_msg_get_value_by_name(msg, parser_param->name, NULL);
-      cr_assert_str_eq(value, parser_param->value, "name: %s | value: %s, should be %s", parser_param->name, value,
+      gssize len = -1;
+      const gchar *value = log_msg_get_value_by_name(msg, parser_param->name, &len);
+      cr_assert_str_eq(value, parser_param->value, "name: %s | value: %.*s, should be %s",
+                       parser_param->name,
+                       (gint) len, value,
                        parser_param->value);
     }
 
@@ -129,10 +132,14 @@ Test(regexp_parser, test_regexp_parser_with_multiple_patterns)
 
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   log_parser_process_message(p, &msg, &path_options);
-  const gchar *value = log_msg_get_value_by_name(msg, "key", NULL);
-  cr_assert_str_eq(value, "abc", "Test regexp parser with multiple patterns failed: name: %s | value: %s, should be %s",
-                   "key", value,
-                   "abc");
+
+  gssize len;
+  const gchar *value = log_msg_get_value_by_name(msg, "key", &len);
+  cr_assert(strncmp(value, "abc", 3) == 0,
+            "Test regexp parser with multiple patterns failed: name: %s | value: %.*s, should be %s",
+            "key",
+            (gint) len, value,
+            "abc");
 
   log_pipe_unref((LogPipe *)p);
   log_msg_unref(msg);

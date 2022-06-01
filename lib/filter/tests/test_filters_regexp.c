@@ -24,6 +24,7 @@
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 #include "libtest/cr_template.h"
+#include "libtest/msg_parse_lib.h"
 #include "test_filters_common.h"
 
 #include "filter/filter-expr.h"
@@ -304,6 +305,44 @@ ParameterizedTest(FilterParamRegexp *param, filter, test_filter_regexp_match)
   testcase(param->msg, filter, param->expected_result);
 }
 
+Test(filter, test_match_with_overwritten_match_as_source)
+{
+  FilterExprNode *filter;
+
+  filter = create_pcre_regexp_match("^(PTHREAD)( )(support)", LMF_STORE_MATCHES);
+  filter_match_set_value_handle(filter, log_msg_get_value_handle("1"));
+  cr_assert(filter_expr_init(filter, configuration) == TRUE);
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_match(msg, 1, "PTHREAD support initialized", -1);
+
+  gboolean res = filter_expr_eval(filter, msg);
+  cr_assert(res == TRUE);
+  /* $1 reset to the capture group's value */
+  assert_log_message_match_value(msg, 1, "PTHREAD");
+  assert_log_message_match_value(msg, 2, " ");
+  assert_log_message_match_value(msg, 3, "support");
+}
+
+Test(filter, test_match_with_overwritten_trivial_template_as_source)
+{
+  FilterExprNode *filter;
+
+  filter = create_pcre_regexp_match("^(PTHREAD)( )(support) initialized", LMF_STORE_MATCHES);
+  filter_match_set_template_ref(filter, compile_template("$1"));
+  cr_assert(filter_expr_init(filter, configuration) == TRUE);
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_match(msg, 1, "PTHREAD support initialized", -1);
+
+  gboolean res = filter_expr_eval(filter, msg);
+  cr_assert(res == TRUE);
+  /* $1 reset to the capture group's value */
+  assert_log_message_match_value(msg, 1, "PTHREAD");
+  assert_log_message_match_value(msg, 2, " ");
+  assert_log_message_match_value(msg, 3, "support");
+}
+
 Test(filter, test_match_with_value)
 {
   FilterExprNode *filter;
@@ -317,7 +356,20 @@ Test(filter, test_match_with_value)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter, TRUE);
 }
 
-Test(filter, test_match_with_template)
+Test(filter, test_match_with_template_literal)
+{
+  FilterExprNode *filter;
+
+  filter = create_pcre_regexp_match("^PTHREAD", 0);
+  filter_match_set_template_ref(filter, compile_template("PTHREAD"));
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter, TRUE);
+
+  filter = create_pcre_regexp_match("^2499", 0);
+  filter_match_set_template_ref(filter, compile_template("2499"));
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter, TRUE);
+}
+
+Test(filter, test_match_with_template_trivial)
 {
   FilterExprNode *filter;
 
@@ -328,6 +380,11 @@ Test(filter, test_match_with_template)
   filter = create_pcre_regexp_match("^2499", 0);
   filter_match_set_template_ref(filter, compile_template("$PID"));
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter, TRUE);
+}
+
+Test(filter, test_match_with_template_non_trivial)
+{
+  FilterExprNode *filter;
 
   filter = create_pcre_regexp_match("^2499 openvpn", 0);
   filter_match_set_template_ref(filter, compile_template("$PID $PROGRAM"));

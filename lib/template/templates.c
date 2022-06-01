@@ -32,19 +32,13 @@
 gboolean
 log_template_is_literal_string(const LogTemplate *self)
 {
-  if (!self->compiled_template)
-    return TRUE;
-
-  if (self->escape || self->compiled_template->next)
-    return FALSE;
-
-  return log_template_elem_is_literal_string((LogTemplateElem *) self->compiled_template->data);
+  return self->literal;
 }
 
 const gchar *
 log_template_get_literal_value(const LogTemplate *self, gssize *value_len)
 {
-  g_assert(log_template_is_literal_string(self));
+  g_assert(self->literal);
 
   if (!self->compiled_template)
     return "";
@@ -63,6 +57,33 @@ log_template_is_trivial(LogTemplate *self)
   return self->trivial;
 }
 
+NVHandle
+log_template_get_trivial_value_handle(LogTemplate *self)
+{
+  g_assert(self->trivial);
+
+  if (self->literal)
+    return LM_V_NONE;
+
+  LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
+
+  switch (e->type)
+    {
+    case LTE_MACRO:
+      if (e->macro == M_MESSAGE)
+        return LM_V_MESSAGE;
+      else if (e->macro == M_HOST)
+        return LM_V_HOST;
+      else
+        g_assert_not_reached();
+      break;
+    case LTE_VALUE:
+      return e->value_handle;
+    default:
+      g_assert_not_reached();
+    }
+}
+
 const gchar *
 log_template_get_trivial_value_and_type(LogTemplate *self, LogMessage *msg, gssize *value_len,
                                         LogMessageValueType *type)
@@ -73,33 +94,18 @@ log_template_get_trivial_value_and_type(LogTemplate *self, LogMessage *msg, gssi
 
   g_assert(self->trivial);
 
-  if (!self->compiled_template)
-    goto exit;
-
-  LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
-
-  switch (e->type)
+  if (self->literal)
     {
-    case LTE_MACRO:
-      if (e->text_len > 0)
-        {
-          result_len = e->text_len;
-          result = e->text;
-        }
-      else if (e->macro == M_MESSAGE)
-        result = log_msg_get_value_with_type(msg, LM_V_MESSAGE, &result_len, &t);
-      else if (e->macro == M_HOST)
-        result = log_msg_get_value_with_type(msg, LM_V_HOST, &result_len, &t);
-      else
-        g_assert_not_reached();
-      break;
-    case LTE_VALUE:
-      result = log_msg_get_value_with_type(msg, e->value_handle, &result_len, &t);
-      break;
-    default:
-      g_assert_not_reached();
+      result = log_template_get_literal_value(self, &result_len);
     }
-exit:
+  else
+    {
+      NVHandle handle = log_template_get_trivial_value_handle(self);
+      g_assert(handle != LM_V_NONE);
+
+      result = log_msg_get_value_with_type(msg, handle, &result_len, &t);
+    }
+
   if (type)
     {
       *type = self->type_hint == LM_VT_NONE ? t : self->type_hint;
@@ -115,9 +121,20 @@ log_template_get_trivial_value(LogTemplate *self, LogMessage *msg, gssize *value
   return log_template_get_trivial_value_and_type(self, msg, value_len, NULL);
 }
 
+static gboolean
+_calculate_if_literal(LogTemplate *self)
+{
+  if (!self->compiled_template)
+    return TRUE;
+
+  if (self->escape || self->compiled_template->next)
+    return FALSE;
+
+  return log_template_elem_is_literal_string((LogTemplateElem *) self->compiled_template->data);
+}
 
 static gboolean
-_calculate_triviality(LogTemplate *self)
+_calculate_if_trivial(LogTemplate *self)
 {
   /* if we need to escape, that's not trivial */
   if (self->escape)
@@ -188,7 +205,8 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
   result = log_template_compiler_compile(&compiler, &self->compiled_template, error);
   log_template_compiler_clear(&compiler);
 
-  self->trivial = _calculate_triviality(self);
+  self->literal = _calculate_if_literal(self);
+  self->trivial = _calculate_if_trivial(self);
   return result;
 }
 
@@ -201,7 +219,11 @@ log_template_compile_literal_string(LogTemplate *self, const gchar *literal)
   self->compiled_template = g_list_append(self->compiled_template,
                                           log_template_elem_new_macro(literal, M_NONE, NULL, 0));
 
-  self->trivial = _calculate_triviality(self);
+  /* double check that the representation here is actually considered trivial. It should be. */
+  g_assert(_calculate_if_trivial(self));
+
+  self->literal = TRUE;
+  self->trivial = TRUE;
 }
 
 void
@@ -399,4 +421,17 @@ void
 log_template_options_set_on_error(LogTemplateOptions *options, gint on_error)
 {
   options->on_error = on_error;
+}
+
+EVTTAG *
+evt_tag_template(const gchar *name, LogTemplate *template, LogMessage *msg, LogTemplateEvalOptions *options)
+{
+  /* trying to avoid scratch-buffers here, this is only meant to be used in trace messages */
+  GString *buf = g_string_sized_new(256);
+
+  log_template_format(template, msg, options, buf);
+
+  EVTTAG *result = evt_tag_str(name, buf->str);
+  g_string_free(buf, TRUE);
+  return result;
 }

@@ -59,7 +59,7 @@ struct _LogTemplate
   gchar *template;
   GList *compiled_template;
   GlobalConfig *cfg;
-  guint escape:1, def_inline:1, trivial:1;
+  guint escape:1, def_inline:1, trivial:1, literal:1;
   LogMessageValueType type_hint;
 };
 
@@ -72,6 +72,7 @@ void log_template_compile_literal_string(LogTemplate *self, const gchar *literal
 gboolean log_template_is_literal_string(const LogTemplate *self);
 const gchar *log_template_get_literal_value(const LogTemplate *self, gssize *value_len);
 gboolean log_template_is_trivial(LogTemplate *self);
+NVHandle log_template_get_trivial_value_handle(LogTemplate *self);
 const gchar *log_template_get_trivial_value(LogTemplate *self, LogMessage *msg, gssize *value_len);
 const gchar *log_template_get_trivial_value_and_type(LogTemplate *self, LogMessage *msg, gssize *value_len,
                                                      LogMessageValueType *type);
@@ -90,5 +91,7 @@ void log_template_global_deinit(void);
 
 gboolean log_template_on_error_parse(const gchar *on_error, gint *out);
 void log_template_options_set_on_error(LogTemplateOptions *options, gint on_error);
+
+EVTTAG *evt_tag_template(const gchar *name, LogTemplate *template, LogMessage *msg, LogTemplateEvalOptions *options);
 
 #endif

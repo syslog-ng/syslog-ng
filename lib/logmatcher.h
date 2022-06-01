@@ -87,6 +87,11 @@ log_matcher_match(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar
   return s->match(s, msg, value_handle, value, value_len);
 }
 
+gboolean log_matcher_match_value(LogMatcher *s, LogMessage *msg, gint value_handle);
+gboolean log_matcher_match_buffer(LogMatcher *s, LogMessage *msg, const gchar *value, gssize value_len);
+gboolean log_matcher_match_template(LogMatcher *s, LogMessage *msg,
+                                    LogTemplate *template, LogTemplateEvalOptions *options);
+
 static inline gchar *
 log_matcher_replace(LogMatcher *s, LogMessage *msg, gint value_handle, const gchar *value, gssize value_len,
                     LogTemplate *replacement, gssize *new_length)

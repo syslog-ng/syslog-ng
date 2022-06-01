@@ -28,6 +28,7 @@
 #include "template/macros.h"
 #include "logmsg/logmsg.h"
 #include "syslog-names.h"
+#include "apphook.h"
 
 static void
 assert_macro_value(gint id, LogMessage *msg, const gchar *expected_value, LogMessageValueType expected_type)
@@ -117,3 +118,30 @@ Test(macro, test_context_id_type_is_returned)
   g_string_free(resolved, TRUE);
   log_msg_unref(msg);
 }
+
+Test(macro, test__asterisk_returns_the_matches_as_a_list)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  log_msg_set_match(msg, 1, "foo", -1);
+  log_msg_set_match(msg, 2, "bar", -1);
+  assert_macro_value(M__ASTERISK, msg, "foo,bar", LM_VT_LIST);
+  log_msg_unref(msg);
+}
+
+void
+setup(void)
+{
+  app_startup();
+
+  setenv("TZ", "MET-1METDST", TRUE);
+  tzset();
+}
+
+void
+teardown(void)
+{
+  app_shutdown();
+}
+
+TestSuite(macro, .init = setup, .fini = teardown);

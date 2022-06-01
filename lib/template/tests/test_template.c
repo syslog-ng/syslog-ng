@@ -498,6 +498,26 @@ Test(template, test_single_values_and_literal_strings_are_considered_trivial)
   log_msg_unref(msg);
 }
 
+Test(template, test_get_trivial_handle_returns_the_handle_associated_with_the_trivial_template)
+{
+  LogTemplate *template;
+
+  template = compile_template("$MESSAGE");
+  cr_assert(log_template_is_trivial(template) == TRUE);
+  cr_assert(log_template_get_trivial_value_handle(template) == LM_V_MESSAGE);
+  log_template_unref(template);
+
+  template = compile_template("$1");
+  cr_assert(log_template_is_trivial(template) == TRUE);
+  cr_assert(log_template_get_trivial_value_handle(template) == log_msg_get_match_handle(1));
+  log_template_unref(template);
+
+  template = compile_template("literal");
+  cr_assert(log_template_is_trivial(template) == TRUE);
+  cr_assert(log_template_get_trivial_value_handle(template) == LM_V_NONE);
+  log_template_unref(template);
+}
+
 Test(template, test_invalid_templates_are_trivial)
 {
   LogMessage *msg = create_sample_message();
