@@ -133,6 +133,19 @@ test_parameters = [
             "MSG": r"%FTD-6-305012: Teardown dynamic TCP translation from FOO-WAN_IN:10.44.60.80/59877 to FOO-OUTSIDE:6.7.8.9/59877 duration 0:01:01",
         },
     ),
+    (
+        r"<190>123030: some-remote-host: %SYS-5-LOGGINGHOST_STARTSTOP: Logging to host 192.168.1.239 stopped - CLI initiated",
+        {
+            "PRI": "190",
+            "HOST": "some-remote-host",
+            "_cisco": {
+                "facility": "SYS",
+                "severity": "5",
+                "mnemonic": "LOGGINGHOST_STARTSTOP",
+            },
+            "MSG": r"%SYS-5-LOGGINGHOST_STARTSTOP: Logging to host 192.168.1.239 stopped - CLI initiated",
+        },
+    ),
 ]
 
 
@@ -158,8 +171,10 @@ def test_cisco_parser(config, syslog_ng, input_message, expected_kv_pairs):
 
     assert output_json["PRI"] == expected_kv_pairs["PRI"]
     assert output_json["HOST"] == expected_kv_pairs["HOST"]
-    assert output_json["DATE"] == expected_kv_pairs["DATE"]
-    assert output_json["MSEC"] == expected_kv_pairs["MSEC"]
+    if "DATE" in expected_kv_pairs.keys():
+        assert output_json["DATE"] == expected_kv_pairs["DATE"]
+    if "MSEC" in expected_kv_pairs.keys():
+        assert output_json["MSEC"] == expected_kv_pairs["MSEC"]
     assert output_json["_cisco"]["facility"] == expected_kv_pairs["_cisco"]["facility"]
     assert output_json["_cisco"]["severity"] == expected_kv_pairs["_cisco"]["severity"]
     assert output_json["_cisco"]["mnemonic"] == expected_kv_pairs["_cisco"]["mnemonic"]
