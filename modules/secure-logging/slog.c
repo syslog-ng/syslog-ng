@@ -425,9 +425,9 @@ void cmac(unsigned char *key, const void *input, gsize length, unsigned char *ou
   CMAC_Init(ctx, key, KEY_LENGTH, EVP_aes_256_cbc(), NULL);
   CMAC_Update(ctx, input, length);
 
-  size_t outsize;
-  CMAC_Final(ctx, out, &outsize);
-  *outlen = outsize;
+  size_t out_len;
+  CMAC_Final(ctx, out, &out_len);
+  *outlen = out_len;
   CMAC_CTX_free(ctx);
 }
 
