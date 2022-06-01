@@ -197,12 +197,13 @@ GString **verifyMaliciousMessages(guchar *hostkey, gchar *macFileName, GString *
   cr_assert(ret == 1, "Unable to read aggregated MAC from file %s", macFileName);
   int problemsFound = 0;
   unsigned char cmac_tag[CMAC_LENGTH];
+  gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
   initVerify(totalNumberOfMessages, hostkey, &next, &start, templateOutput, &tab);
 
   for (int i = 0; i<totalNumberOfMessages; i++)
     {
       ret = iterateBuffer(1, &templateOutput[i], &next, hostkey, keyZero, 0, &outputBuffer[i], &numberOfLogEntries, cmac_tag,
-                          tab);
+                          cmac_tag_capacity, tab);
       if (ret == 0)
         {
           brokenEntries[problemsFound] = i;
@@ -237,11 +238,12 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
   cr_assert(ret == 1, "Unable to read aggregated MAC from file %s", macFileName);
 
   unsigned char cmac_tag[CMAC_LENGTH];
+  gsize cmac_tag_capacity = G_N_ELEMENTS(cmac_tag);
   ret = initVerify(totalNumberOfMessages, hostkey, &next, &start, templateOutput, &tab);
   cr_assert(ret == 1, "initVerify failed");
 
   ret = iterateBuffer(totalNumberOfMessages, templateOutput, &next, hostkey, keyZero, 0, outputBuffer,
-                      &numberOfLogEntries, cmac_tag, tab);
+                      &numberOfLogEntries, cmac_tag, cmac_tag_capacity, tab);
   cr_assert(ret == 1, "iterateBuffer failed");
 
   ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, tab);

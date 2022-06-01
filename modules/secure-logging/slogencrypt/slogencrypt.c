@@ -182,7 +182,9 @@ int main(int argc, char *argv[])
       // Remove trailing '\n' from string
       g_string_truncate(inputGString, (inputGString->len)-1);
 
-      sLogEntry(counter, inputGString, (unsigned char *)key, (unsigned char *)mac, result, (unsigned char *)outputmacdata);
+      gsize outputmacdata_capacity = G_N_ELEMENTS(outputmacdata);
+      sLogEntry(counter, inputGString, (unsigned char *)key, (unsigned char *)mac, result, (unsigned char *)outputmacdata,
+                outputmacdata_capacity);
 
       fprintf(outputFile, "%s\n", result->str);
 

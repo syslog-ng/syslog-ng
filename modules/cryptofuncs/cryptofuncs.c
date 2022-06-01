@@ -60,6 +60,17 @@ typedef struct _TFHashState
 } TFHashState;
 
 static gboolean
+tf_hash_md4_is_available(void)
+{
+#ifdef SYSLOG_NG_HAVE_DECL_DIGEST_MD4
+  msg_warning_once("WARNING: MD4 hash template function is deprecated and will be removed in future versions");
+  return TRUE;
+#else
+  return FALSE;
+#endif
+}
+
+static gboolean
 tf_hash_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
 {
   TFHashState *state = (TFHashState *) s;
@@ -94,7 +105,14 @@ tf_hash_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
       return FALSE;
     }
   state->length = length;
-  md = EVP_get_digestbyname(strcmp(argv[0], "hash") == 0 ? "sha256" : argv[0]);
+  const char *digest_name = strcmp(argv[0], "hash") == 0 ? "sha256" : argv[0];
+  if (strcmp(digest_name, "md4") == 0 && !tf_hash_md4_is_available())
+    {
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "MD4 hash function is not available starting with OpenSSL 3.0.");
+      return FALSE;
+    }
+  md = EVP_get_digestbyname(digest_name);
   if (!md)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(hash) parsing failed, unknown digest type");

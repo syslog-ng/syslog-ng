@@ -36,8 +36,6 @@
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
-#include <openssl/dh.h>
-#include <openssl/bn.h>
 #include <openssl/pkcs12.h>
 
 struct _TLSContext
@@ -433,10 +431,10 @@ tls_context_format_tls_error_tag(TLSContext *self)
 {
   gint ssl_error = ERR_get_error();
 
-  return evt_tag_printf("tls_error", "%s:%s:%s",
-                        ERR_lib_error_string(ssl_error),
-                        ERR_func_error_string(ssl_error),
-                        ERR_reason_error_string(ssl_error));
+  char buf[256];
+  ERR_error_string_n(ssl_error, buf, sizeof(buf));
+
+  return evt_tag_str("tls_error", buf);
 }
 
 EVTTAG *
@@ -554,79 +552,6 @@ _set_optional_ecdh_curve_list(SSL_CTX *ctx, const gchar *ecdh_curve_list)
 }
 
 static gboolean
-_is_dh_valid(DH *dh)
-{
-  if (!dh)
-    return FALSE;
-
-  gint check_flags;
-  if (!DH_check(dh, &check_flags))
-    return FALSE;
-
-  gboolean error_flag_is_set = check_flags &
-                               (DH_CHECK_P_NOT_PRIME
-                                | DH_UNABLE_TO_CHECK_GENERATOR
-                                | DH_CHECK_P_NOT_SAFE_PRIME
-                                | DH_NOT_SUITABLE_GENERATOR);
-
-  return !error_flag_is_set;
-}
-
-static DH *
-_load_dh_from_file(TLSContext *self, const gchar *dhparam_file)
-{
-  if (!_is_file_accessible(self, dhparam_file))
-    return NULL;
-
-  BIO *bio = BIO_new_file(dhparam_file, "r");
-  if (!bio)
-    return NULL;
-
-  DH *dh = PEM_read_bio_DHparams(bio, NULL, NULL, NULL);
-  BIO_free(bio);
-
-  if (!_is_dh_valid(dh))
-    {
-      msg_error("Error setting up TLS session context, invalid DH parameters",
-                evt_tag_str("dhparam_file", dhparam_file));
-
-      DH_free(dh);
-      return NULL;
-    }
-
-  return dh;
-}
-
-static DH *
-_load_dh_fallback(TLSContext *self)
-{
-  DH *dh = DH_new();
-
-  if (!dh)
-    return NULL;
-
-  /*
-   * "2048-bit MODP Group" from RFC3526, Section 3.
-   *
-   * The prime is: 2^2048 - 2^1984 - 1 + 2^64 * { [2^1918 pi] + 124476 }
-   *
-   * RFC3526 specifies a generator of 2.
-   */
-
-  BIGNUM *g = NULL;
-  BN_dec2bn(&g, "2");
-
-  if (!DH_set0_pqg(dh, BN_get_rfc3526_prime_2048(NULL), NULL, g))
-    {
-      BN_free(g);
-      DH_free(dh);
-      return NULL;
-    }
-
-  return dh;
-}
-
-static gboolean
 tls_context_setup_ecdh(TLSContext *self)
 {
   if (!_set_optional_ecdh_curve_list(self->ssl_ctx, self->ecdh_curve_list))
@@ -640,15 +565,20 @@ tls_context_setup_ecdh(TLSContext *self)
 static gboolean
 tls_context_setup_dh(TLSContext *self)
 {
-  DH *dh = self->dhparam_file ? _load_dh_from_file(self, self->dhparam_file) : _load_dh_fallback(self);
+  if (!self->dhparam_file)
+    return openssl_ctx_setup_dh(self->ssl_ctx);
 
-  if (!dh)
+  if(!_is_file_accessible(self, self->dhparam_file))
     return FALSE;
 
-  gboolean ctx_dh_success = SSL_CTX_set_tmp_dh(self->ssl_ctx, dh);
+  if (!openssl_ctx_load_dh_from_file(self->ssl_ctx, self->dhparam_file))
+    {
+      msg_error("Error setting up TLS session context, invalid DH parameters",
+                evt_tag_str("dhparam_file", self->dhparam_file));
+      return FALSE;
+    }
 
-  DH_free(dh);
-  return ctx_dh_success;
+  return TRUE;
 }
 
 static gboolean
