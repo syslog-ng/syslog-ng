@@ -1,0 +1,62 @@
+name: Stable release
+
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'syslog-ng-*'
+
+
+jobs:
+  pre-check:
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'syslog-ng'
+    steps:
+      - name: Validate tag
+        run: |
+          if [[ "${{ github.ref }}" != refs/tags/syslog-ng-* ]]; then
+            echo "Please start the workflow on a 'syslog-ng-*' tag"
+            false
+          fi
+
+  find-draft-release-run:
+    needs: pre-check
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      DRAFT_RELEASE_RUN_ID: ${{ steps.find-and-export-run-id.outputs.DRAFT_RELEASE_RUN_ID }}
+    steps:
+      - name: Find and export run-id
+        id: find-and-export-run-id
+        run: |
+          DRAFT_RELEASE_RUN_ID=$(gh run list \
+            --repo "${{ github.repository_owner }}/syslog-ng" \
+            --workflow "Draft release" \
+            --json "status,conclusion,updatedAt,databaseId" \
+            --jq '[ .[] | select(.status=="completed") | select(.conclusion=="success") ] | max_by(.updatedAt) | .databaseId')
+
+          if [[ -z "${DRAFT_RELEASE_RUN_ID}" ]]; then
+            echo "Failed to find the run-id of the last successful 'Draft release' workflow run."
+            false
+          fi
+
+          echo "::set-output name=DRAFT_RELEASE_RUN_ID::${DRAFT_RELEASE_RUN_ID}"
+
+  index-packages:
+    needs: find-draft-release-run
+    uses: ./.github/workflows/index-packages.yml
+    with:
+      pkg-type: stable
+      run-id: ${{ needs.find-draft-release-run.outputs.DRAFT_RELEASE_RUN_ID }}
+    secrets:
+      config-base64: ${{ secrets.PACKAGE_INDEXER_CONFIG_BASE64 }}
+      gpg-key-base64: ${{ secrets.PACKAGE_INDEXER_GPG_KEY_BASE64 }}
+      gpg-key-passphrase: ${{ secrets.PACKAGE_INDEXER_GPG_KEY_PASSPHRASE }}
+
+  test-packages:
+    needs: index-packages
+    uses: ./.github/workflows/test-apt-packages.yml
+    with:
+      pkg_type: stable

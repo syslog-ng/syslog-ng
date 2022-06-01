@@ -2,9 +2,6 @@ name: Trigger tests for stable APT packages
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'syslog-ng-*'
 
 
 jobs:
