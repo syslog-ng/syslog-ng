@@ -1,11 +1,14 @@
-# When started manually, a syslog-ng-* tag has to be selected
 name: Publish Docker image
 
+
 on:
-  workflow_dispatch:
-  push:
-    tags:
-      - 'syslog-ng-*'
+  workflow_call:
+    secrets:
+      dockerhub-username:
+        required: true
+      dockerhub-password:
+        required: true
+
 
 jobs:
   publish-docker-image:
@@ -19,8 +22,8 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v1
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          username: ${{ secrets.dockerhub-username }}
+          password: ${{ secrets.dockerhub-password }}
 
       - name: Extract metadata (syslog-ng version) for Docker
         id: meta

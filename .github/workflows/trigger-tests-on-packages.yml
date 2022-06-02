@@ -1,0 +1,19 @@
+name: Trigger tests for APT packages
+
+
+on:
+  workflow_dispatch:
+    inputs:
+      pkg-type:
+        required: true
+        type: choice
+        options:
+          - nightly
+          - stable
+
+
+jobs:
+  test-packages:
+    uses: ./.github/workflows/test-apt-packages.yml
+    with:
+      pkg_type: ${{ github.event.inputs.pkg-type }}

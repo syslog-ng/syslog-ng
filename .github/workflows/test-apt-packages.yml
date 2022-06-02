@@ -30,14 +30,7 @@ jobs:
           apt-get update -qq
           apt-get install --yes wget gnupg2 ca-certificates apt-transport-https
 
-      - name: Add nightly OSE repository
-        if: inputs.pkg_type == 'nightly'
-        run: |
-          wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor > /usr/share/keyrings/ose-repo-archive-keyring.gpg
-          echo "deb [trusted=yes] https://ose-repo.syslog-ng.com/apt/ ${{ inputs.pkg_type }} $(echo ${{ matrix.distro }} | sed 's/:/-/g')" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
-
-      - name: Add stable OSE repository
-        if: inputs.pkg_type == 'stable'
+      - name: Add OSE repository
         run: |
           wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor > /usr/share/keyrings/ose-repo-archive-keyring.gpg
           echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg] https://ose-repo.syslog-ng.com/apt/ ${{ inputs.pkg_type }} $(echo ${{ matrix.distro }} | sed 's/:/-/g')" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list

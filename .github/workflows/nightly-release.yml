@@ -1,4 +1,4 @@
-name: Nightly packages
+name: Nightly release
 
 on:
   workflow_dispatch:
@@ -41,3 +41,19 @@ jobs:
       pkg-type: nightly
     secrets:
       azure-sas-token: ${{ secrets.AZURE_SAS_TOKEN }}
+
+  index-packages:
+    needs: upload-packages
+    uses: ./.github/workflows/index-packages.yml
+    with:
+      pkg-type: nightly
+    secrets:
+      config-base64: ${{ secrets.PACKAGE_INDEXER_CONFIG_BASE64 }}
+      gpg-key-base64: ${{ secrets.PACKAGE_INDEXER_GPG_KEY_BASE64 }}
+      gpg-key-passphrase: ${{ secrets.PACKAGE_INDEXER_GPG_KEY_PASSPHRASE }}
+
+  test-packages:
+    needs: index-packages
+    uses: ./.github/workflows/test-apt-packages.yml
+    with:
+      pkg_type: nightly

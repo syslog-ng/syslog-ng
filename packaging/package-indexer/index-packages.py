@@ -22,17 +22,19 @@
 #############################################################################
 
 import logging
-from argparse import ArgumentParser, _ArgumentGroup, _SubParsersAction
+from argparse import ArgumentParser
 from pathlib import Path
 from sys import stdin
 from typing import List
 
-from indexer import Indexer, NightlyDebIndexer, ReleaseDebIndexer
+from indexer import Indexer, NightlyDebIndexer, StableDebIndexer
 from config import Config
 
 
-def add_common_required_arguments(required_argument_group: _ArgumentGroup) -> None:
+def add_required_arguments(parser: ArgumentParser) -> None:
+    required_argument_group = parser.add_argument_group("required arguments")
     mutually_exclusive_group = required_argument_group.add_mutually_exclusive_group(required=True)
+
     mutually_exclusive_group.add_argument(
         "--config-file-path",
         type=str,
@@ -44,8 +46,23 @@ def add_common_required_arguments(required_argument_group: _ArgumentGroup) -> No
         help="The raw content of the config in yaml format. Cannot be used with `--config-file-path`.",
     )
 
+    required_argument_group.add_argument(
+        "--run-id",
+        type=str,
+        required=True,
+        help='The "run-id" of the "draft-release" or "nightly-packages" GitHub Actions job.',
+    )
+    required_argument_group.add_argument(
+        "--suite",
+        type=str,
+        required=True,
+        metavar="SUITE",
+        choices=["stable", "nightly"],
+        help='"stable" or "nightly".',
+    )
 
-def add_common_optional_arguments(parser: ArgumentParser) -> None:
+
+def add_optional_arguments(parser: ArgumentParser) -> None:
     parser.add_argument(
         "--gpg-key-passphrase-from-stdin",
         action="store_true",
@@ -58,41 +75,10 @@ def add_common_optional_arguments(parser: ArgumentParser) -> None:
     )
 
 
-def prepare_nightly_subparser(subparsers: _SubParsersAction) -> None:
-    parser = subparsers.add_parser(
-        "nightly",
-        help="Index nightly packages.",
-    )
-    add_common_optional_arguments(parser)
-
-    required_argument_group = parser.add_argument_group("required arguments")
-    add_common_required_arguments(required_argument_group)
-
-
-def prepare_stable_subparser(subparsers: _SubParsersAction) -> None:
-    parser = subparsers.add_parser(
-        "stable",
-        help="Index stable packages.",
-    )
-    add_common_optional_arguments(parser)
-
-    required_argument_group = parser.add_argument_group("required arguments")
-    add_common_required_arguments(required_argument_group)
-
-    required_argument_group.add_argument(
-        "--run-id",
-        type=str,
-        required=True,
-        help='The "run-id" of the "draft-release" GitHub Actions job.',
-    )
-
-
 def parse_args() -> dict:
     parser = ArgumentParser()
-    subparsers = parser.add_subparsers(metavar="suite", dest="suite", required=True)
-
-    prepare_nightly_subparser(subparsers)
-    prepare_stable_subparser(subparsers)
+    add_required_arguments(parser)
+    add_optional_arguments(parser)
 
     return vars(parser.parse_args())
 
@@ -131,6 +117,7 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
     indexed_remote_storage_synchronizer = cfg.create_indexed_remote_storage_synchronizer(suite)
     cdn = cfg.create_cdn(suite)
 
+    gpg_key_path = Path(cfg.get_gpg_key_path())
     gpg_key_passphrase = stdin.read() if args["gpg_key_passphrase_from_stdin"] else None
 
     indexers: List[Indexer] = []
@@ -141,16 +128,19 @@ def construct_indexers(cfg: Config, args: dict) -> List[Indexer]:
                 incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
                 indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
                 cdn=cdn,
+                run_id=args["run_id"],
+                gpg_key_path=gpg_key_path,
+                gpg_key_passphrase=gpg_key_passphrase,
             )
         )
     elif suite == "stable":
         indexers.append(
-            ReleaseDebIndexer(
+            StableDebIndexer(
                 incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
                 indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
                 cdn=cdn,
                 run_id=args["run_id"],
-                gpg_key_path=Path(cfg.get_gpg_key_path()),
+                gpg_key_path=gpg_key_path,
                 gpg_key_passphrase=gpg_key_passphrase,
             )
         )

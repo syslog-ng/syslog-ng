@@ -22,7 +22,7 @@ on:
 
 
 env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.PAT_FOR_ACTIONS }}
   WORKFLOW_NAME: "**Draft release** workflow"
   CURRENT_WORKFLOW_RUN_URL: https://github.com/${{ github.repository_owner }}/syslog-ng/actions/runs/${{ github.run_id }}
   COMMENT_ENDPOINT: repos/${{ github.repository_owner }}/syslog-ng/issues/${{ github.event.number }}/comments

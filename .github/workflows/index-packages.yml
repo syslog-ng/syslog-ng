@@ -1,0 +1,89 @@
+name: Index packages in Azure/incoming
+
+
+on:
+  workflow_call:
+    inputs:
+      pkg-type:
+        required: true
+        type: string  # stable / nightly
+      run-id:
+        required: false
+        type: string
+    secrets:
+      config-base64:
+        required: true
+      gpg-key-base64:
+        required: true
+      gpg-key-passphrase:
+        required: true
+
+
+defaults:
+  run:
+    working-directory: packaging/package-indexer
+
+
+jobs:
+  index-packages:
+    name: ${{ inputs.pkg-type }}
+
+    runs-on: ubuntu-latest
+
+    env:
+      DOCKER_IMAGE: package-indexer
+      DOCKER_CONTAINER_NAME: package_indexer_container
+      VERBOSE_LOG_PATH: index-packages-verbose.log
+      GPG_KEY_PATH: syslog_ng_ose_signing_key.sub.priv.asc
+
+    if: github.repository_owner == 'syslog-ng'
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Prepare environment
+        run: |
+          . "${GITHUB_WORKSPACE}/.github/workflows/gh-tools.sh"
+
+          if [[ -n "${{ inputs.run-id }}" ]]; then
+            RUN_ID="${{ inputs.run-id }}"
+          else
+            RUN_ID="${{ github.run_id }}"
+          fi
+          gh_export RUN_ID
+
+          echo "${{ secrets.gpg-key-base64 }}" | base64 --decode > "${GPG_KEY_PATH}"
+
+      - name: Build docker image
+        run: |
+          docker build -t "${DOCKER_IMAGE}" .
+
+      - name: Start docker container
+        run: |
+          docker run -v "${PWD}:${PWD}" -w "${PWD}" --detach --name "${DOCKER_CONTAINER_NAME}" -t "${DOCKER_IMAGE}"
+
+      - name: Index packages
+        run: |
+          echo "${{ secrets.gpg-key-passphrase }}" | \
+          docker exec \
+            --interactive \
+            ${DOCKER_CONTAINER_NAME} \
+            ./index-packages.py \
+              --suite "${{ inputs.pkg-type }}" \
+              --config-content "$(echo '${{ secrets.config-base64 }}' | base64 --decode)" \
+              --run-id "${RUN_ID}" \
+              --gpg-key-passphrase-from-stdin \
+              --log-file "${VERBOSE_LOG_PATH}"
+
+      - name: Cleanup
+        if: always()
+        run:
+          rm -f "${GPG_KEY_PATH}"
+
+      - name: "Artifact: verbose run log"
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: ${{ env.VERBOSE_LOG_PATH }}
+          path: packaging/package-indexer/${{ env.VERBOSE_LOG_PATH }}

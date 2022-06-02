@@ -1,0 +1,24 @@
+name: Trigger Publish Docker image
+
+
+on:
+  workflow_call:
+
+
+jobs:
+  pre-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate tag
+        run: |
+          if [[ "${{ github.ref }}" != refs/tags/syslog-ng-* ]]; then
+            echo "Please start the workflow on a 'syslog-ng-*' tag"
+            false
+          fi
+
+  publish-docker-image:
+    needs: pre-check
+    uses: ./.github/workflows/publish-docker-image.yml
+    secrets:
+      dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
+      dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}
