@@ -99,6 +99,7 @@ modules/basicfuncs/vp-funcs\.[ch]$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/mariadb/.*\.conf$
+scl/kubernetes/.*\.conf$
  GPLv2+_SSL
 contib/config_option_database
 news/create-newsfile.py
