@@ -131,6 +131,7 @@
 #define VERSION_3_34 "syslog-ng 3.34"
 #define VERSION_3_35 "syslog-ng 3.35"
 #define VERSION_3_36 "syslog-ng 3.36"
+#define VERSION_3_74 "syslog-ng 3.74"
 #define VERSION_3_37 "syslog-ng 3.37"
 
 #define VERSION_4_0 "syslog-ng 4.0"
@@ -175,6 +176,7 @@
 #define VERSION_VALUE_3_34 0x0322
 #define VERSION_VALUE_3_35 0x0323
 #define VERSION_VALUE_3_36 0x0324
+#define VERSION_VALUE_3_74 0x034a
 #define VERSION_VALUE_3_37 0x0325
 
 /* these are defined to allow 4.0 related changes to be introduced while we
@@ -182,9 +184,9 @@
 #define VERSION_VALUE_4_0     0x0400
 
 /* config version code, in the same format as GlobalConfig->version */
-#define VERSION_VALUE_CURRENT   VERSION_VALUE_3_36
-#define VERSION_STR_CURRENT     "3.36"
-#define VERSION_PRODUCT_CURRENT VERSION_3_36
+#define VERSION_VALUE_CURRENT   VERSION_VALUE_3_74
+#define VERSION_STR_CURRENT     "3.74"
+#define VERSION_PRODUCT_CURRENT VERSION_3_74
 
 /* this value points to the last syslog-ng version where we changed the
  * meaning of any setting in the configuration file.  Basically, it is the

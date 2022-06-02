@@ -1,3 +1,9 @@
+syslog-ng (3.74.74-1) unstable; urgency=medium
+
+  * New upstream release 3.74.74
+
+ -- github-actions <github-actions@github.com>  Thu, 02 Jun 2022 09:41:37 +0000
+
 syslog-ng (3.36.1-1) unstable; urgency=medium
 
   * New upstream release 3.36.1
