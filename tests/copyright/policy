@@ -68,6 +68,7 @@ lib/rewrite/rewrite-set-matches\.[ch]
 lib/rewrite/rewrite-unset-matches\.[ch]
 lib/rewrite/tests/test_set_matches\.c
 lib/rewrite/tests/test_set_facility\.c
+lib/rewrite/tests/test_set_tag\.c
 lib/rewrite/rewrite-set-pri\.h
 lib/rewrite/rewrite-set-pri\.c
 lib/timeutils/timeutils\.h

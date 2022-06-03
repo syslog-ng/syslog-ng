@@ -82,6 +82,7 @@ LogTemplate *log_template_new(GlobalConfig *cfg, const gchar *name);
 LogTemplate *log_template_ref(LogTemplate *s);
 void log_template_unref(LogTemplate *s);
 
+void log_template_options_clone(LogTemplateOptions *source, LogTemplateOptions *dest);
 void log_template_options_init(LogTemplateOptions *options, GlobalConfig *cfg);
 void log_template_options_destroy(LogTemplateOptions *options);
 void log_template_options_defaults(LogTemplateOptions *options);
