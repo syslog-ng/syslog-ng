@@ -366,9 +366,11 @@ csv_scanner_scan_next(CSVScanner *self)
 
   if (_is_last_column(self) && (self->options->flags & CSV_SCANNER_GREEDY))
     {
+      _parse_left_whitespace(self);
       g_string_assign(self->current_value, self->src);
       self->src += self->current_value->len;
       self->state = CSV_STATE_GREEDY_COLUMN;
+      _translate_value(self);
       return TRUE;
     }
   else if (self->src[0] == 0)
