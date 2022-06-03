@@ -182,9 +182,9 @@
 #define VERSION_VALUE_4_0     0x0400
 
 /* config version code, in the same format as GlobalConfig->version */
-#define VERSION_VALUE_CURRENT   VERSION_VALUE_3_36
-#define VERSION_STR_CURRENT     "3.36"
-#define VERSION_PRODUCT_CURRENT VERSION_3_36
+#define VERSION_VALUE_CURRENT   VERSION_VALUE_3_37
+#define VERSION_STR_CURRENT     "3.37"
+#define VERSION_PRODUCT_CURRENT VERSION_3_37
 
 /* this value points to the last syslog-ng version where we changed the
  * meaning of any setting in the configuration file.  Basically, it is the
