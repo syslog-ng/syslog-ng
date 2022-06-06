@@ -1282,9 +1282,9 @@ main(int argc, char *argv[])
   ret = modes[mode].main(argc, argv);
   scratch_buffers_allocator_deinit();
   scratch_buffers_global_deinit();
-  stats_destroy();
   log_tags_global_deinit();
   log_msg_global_deinit();
+  stats_destroy();
 
   cfg_free(configuration);
   configuration = NULL;
