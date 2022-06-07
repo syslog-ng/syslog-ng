@@ -131,15 +131,16 @@ synthetic_message_apply(SyntheticMessage *self, CorrelationContext *context, Log
       GString *buffer = scratch_buffers_alloc_and_mark(&marker);
       for (i = 0; i < self->values->len; i++)
         {
+          LogMessageValueType type;
           LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, context ? context->key.session_id : NULL, LM_VT_STRING};
-          log_template_format_with_context(g_ptr_array_index(self->values, i),
-                                           context ? (LogMessage **) context->messages->pdata : &msg,
-                                           context ? context->messages->len : 1,
-                                           &options, buffer);
-          log_msg_set_value_by_name(msg,
-                                    ((LogTemplate *) g_ptr_array_index(self->values, i))->name,
-                                    buffer->str,
-                                    buffer->len);
+
+          log_template_format_value_and_type_with_context(g_ptr_array_index(self->values, i),
+                                                          context ? (LogMessage **) context->messages->pdata : &msg,
+                                                          context ? context->messages->len : 1,
+                                                          &options, buffer, &type);
+          log_msg_set_value_by_name_with_type(msg,
+                                              ((LogTemplate *) g_ptr_array_index(self->values, i))->name,
+                                              buffer->str, buffer->len, type);
         }
       scratch_buffers_reclaim_marked(marker);
     }
