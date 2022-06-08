@@ -347,7 +347,7 @@ _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
   return context;
 }
 
-static gboolean
+static void
 _perform_groupby(GroupingBy *self, LogMessage *msg)
 {
   GPMessageEmitter msg_emitter = {0};
@@ -380,20 +380,15 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
         }
 
       log_msg_write_protect(msg);
-
-      return TRUE;
     }
   else
     {
       correlation_state_tx_update_context(self->correlation, context, self->timeout);
+      log_msg_write_protect(msg);
+
+      correlation_state_tx_end(self->correlation);
+      _flush_emitted_messages(self, &msg_emitter);
     }
-
-  log_msg_write_protect(msg);
-
-  correlation_state_tx_end(self->correlation);
-  _flush_emitted_messages(self, &msg_emitter);
-
-  return TRUE;
 }
 
 static gboolean
@@ -412,8 +407,8 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
   GroupingBy *self = (GroupingBy *) s;
 
   if (_evaluate_where(self, pmsg, path_options))
-    return _perform_groupby(self, log_msg_make_writable(pmsg, path_options));
-  return TRUE;
+    _perform_groupby(self, log_msg_make_writable(pmsg, path_options));
+  return (self->super.inject_mode != LDBP_IM_AGGREGATE_ONLY);
 }
 
 static const gchar *

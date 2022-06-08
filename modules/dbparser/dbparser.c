@@ -238,6 +238,8 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
     }
   if (!self->drop_unmatched)
     matched = TRUE;
+  if (self->super.inject_mode == LDBP_IM_AGGREGATE_ONLY)
+    matched = FALSE;
   return matched;
 }
 

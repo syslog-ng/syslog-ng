@@ -30,6 +30,7 @@ typedef enum
 {
   LDBP_IM_PASSTHROUGH = 0,
   LDBP_IM_INTERNAL = 1,
+  LDBP_IM_AGGREGATE_ONLY
 } LogDBParserInjectMode;
 
 typedef struct _StatefulParser

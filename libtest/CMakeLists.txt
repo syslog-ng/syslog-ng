@@ -3,6 +3,7 @@ set(LIBTEST_HEADERS
     fake-time.h
     mock-transport.h
     mock-cfg-parser.h
+    mock-logpipe.h
     msg_parse_lib.h
     persist_lib.h
     proto_lib.h
@@ -18,6 +19,7 @@ set(LIBTEST_SOURCES
     libtest.c
     mock-transport.c
     mock-cfg-parser.c
+    mock-logpipe.c
     msg_parse_lib.c
     persist_lib.c
     proto_lib.c

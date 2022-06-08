@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2014 Balabit
- * Copyright (c) 2014 Viktor Juhász <viktor.juhasz@balabit.com>
- * Copyright (c) 2014 Viktor Tusa <viktor.tusa@balabit.com>
+ * Copyright (c) 2022 Balázs Scheidler <bazsi77@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,13 +20,18 @@
  * COPYING for details.
  *
  */
+#ifndef MOCK_LOGPIPE_H_INCLUDED
+#define MOCK_LOGPIPE_H_INCLUDED
 
-#ifndef CONFIG_PARSE_LIB_H_INCLUDED
-#define CONFIG_PARSE_LIB_H_INCLUDED 1
+#include "logpipe.h"
 
-#include "syslog-ng.h"
-#include "plugin-types.h"
+typedef struct _LogPipeMock
+{
+  LogPipe super;
+  GPtrArray *captured_messages;
+} LogPipeMock;
 
-gboolean parse_config(const gchar *config_to_parse, gint context, gpointer arg, gpointer *result);
+LogMessage *log_pipe_mock_get_message(LogPipeMock *self, gint ndx);
+LogPipeMock *log_pipe_mock_new(GlobalConfig *cfg);
 
 #endif

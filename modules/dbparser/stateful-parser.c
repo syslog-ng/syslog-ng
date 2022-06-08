@@ -34,7 +34,7 @@ stateful_parser_set_inject_mode(StatefulParser *self, LogDBParserInjectMode inje
 void
 stateful_parser_emit_synthetic(StatefulParser *self, LogMessage *msg)
 {
-  if (self->inject_mode == LDBP_IM_PASSTHROUGH)
+  if (self->inject_mode != LDBP_IM_INTERNAL)
     {
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
@@ -67,5 +67,7 @@ stateful_parser_lookup_inject_mode(const gchar *inject_mode)
     return LDBP_IM_INTERNAL;
   else if (strcasecmp(inject_mode, "pass-through") == 0 || strcasecmp(inject_mode, "pass_through") == 0)
     return LDBP_IM_PASSTHROUGH;
+  else if (strcasecmp(inject_mode, "aggregate-only") == 0 || strcasecmp(inject_mode, "aggregate_only") == 0)
+    return LDBP_IM_AGGREGATE_ONLY;
   return -1;
 }
