@@ -23,6 +23,7 @@ on:
           "debian-bullseye",
           "ubuntu-focal",
           "ubuntu-impish",
+          "ubuntu-jammy",
           "centos-7",
           "fedora-35"
         ]'

@@ -40,6 +40,7 @@ ubuntu-xenial		python2,nocriterion,nokafka,nojava,nomqtt
 ubuntu-bionic		python2,nocriterion,nokafka,nomqtt
 ubuntu-focal		python3,nocriterion,nomqtt
 ubuntu-impish		python3
+ubuntu-jammy		python3
 
 centos-7		python2
 fedora			python3
