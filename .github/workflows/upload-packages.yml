@@ -19,7 +19,7 @@ on:
           "ubuntu-bionic",
           "debian-bullseye",
           "ubuntu-focal",
-          "ubuntu-impish"
+          "ubuntu-impish",
           "ubuntu-jammy"
         ]'
     secrets:
