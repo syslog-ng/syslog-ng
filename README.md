@@ -164,22 +164,7 @@ and Ubuntu releases from our APT repository.
 
 The packages and the APT repository are provided "as is" without warranty of any kind, on a best-effort level.
 
-Installation steps:
-
-1. Download and install the release signing key:
-
-    ```
-    wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | sudo apt-key add -
-    ```
-
-2. Add the repository containing the latest stable build of syslog-ng to the APT sources. For example, on Ubuntu 20.04:
-
-    ```
-    echo "deb https://ose-repo.syslog-ng.com/apt/ stable ubuntu-focal" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
-    ```
-
-3. Run `apt update`
-
+#### Supported distributions
 
 syslog-ng packages are released for the following distribution versions (x86-64):
 
@@ -195,6 +180,34 @@ syslog-ng packages are released for the following distribution versions (x86-64)
 | Debian 9 | debian-stretch |
 | Debian Unstable | debian-sid |
 | Debian Testing | debian-testing |
+
+#### Adding the APT repository
+
+1. Download and install the release signing key:
+
+    ```
+    wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | sudo apt-key add -
+    ```
+
+2. Add the repository containing the latest build of syslog-ng to the APT sources. For example, stable releases on Ubuntu 20.04:
+
+    ```
+    echo "deb https://ose-repo.syslog-ng.com/apt/ stable ubuntu-focal" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
+    ```
+
+3. Run `apt update`
+
+#### Nightly builds
+
+Nightly packages are built and released from the git `master` branch everyday.
+
+Use `nightly` instead of `stable` in step 2 to use the nightly APT repository. E.g.:
+
+```
+echo "deb https://ose-repo.syslog-ng.com/apt/ nightly ubuntu-jammy" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
+```
+
+Nightly builds can be used for testing purposes (obtaining new features and bugfixes) at the risk of breakage.
 
 ### Fedora
 
@@ -227,8 +240,3 @@ The documentation of the latest released version of syslog-ng Open Source Editio
 ## Contributing
 
 If you would like to contribute to syslog-ng, to fix a bug or create a new module, the [syslog-ng gitbook](https://syslog-ng.gitbooks.io/getting-started/content/) helps you take the first steps to working with the code base.
-
-## Log4j
-
-The syslog-ng Open Source Edition does not use the affected versions of Apache Log4j, therefore it is not impacted by CVE-2021-44228, CVE-2021-4104, CVE-2021-45015. [#3876](https://github.com/syslog-ng/syslog-ng/issues/3876)
-
