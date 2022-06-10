@@ -129,6 +129,9 @@ class SyslogNgConfig(object):
     def create_cisco_parser(self, **options):
         return Parser("cisco-parser", **options)
 
+    def create_mariadb_audit_parser(self, **options):
+        return Parser("mariadb-audit-parser", **options)
+
     def create_file_destination(self, **options):
         return FileDestination(**options)
 
