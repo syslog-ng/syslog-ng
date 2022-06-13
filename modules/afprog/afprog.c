@@ -544,7 +544,14 @@ afprogram_dd_init(LogPipe *s)
     }
   log_pipe_append(&self->super.super.super, (LogPipe *) self->writer);
 
-  return restore_successful ? TRUE : afprogram_dd_reopen(self);
+  if (restore_successful)
+    {
+      LogProtoClient *proto = log_writer_steal_proto(self->writer);
+      log_writer_reopen(self->writer, proto);
+      return TRUE;
+    }
+
+  return afprogram_dd_reopen(self);
 }
 
 static inline void

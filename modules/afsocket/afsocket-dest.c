@@ -482,12 +482,12 @@ afsocket_dd_setup_addresses_method(AFSocketDestDriver *self)
   return TRUE;
 }
 
-static void
+static gboolean
 _afsocket_dd_try_to_restore_writer(AFSocketDestDriver *self)
 {
   /* If we are reinitializing an old config, an existing writer may be present */
   if (self->writer)
-    return;
+    return TRUE;
 
   ReloadStoreItem *item = cfg_persist_config_fetch(
                             log_pipe_get_config(&self->super.super.super),
@@ -496,12 +496,13 @@ _afsocket_dd_try_to_restore_writer(AFSocketDestDriver *self)
   /* We don't have an item stored in the reload cache, which means */
   /* it is the first time when we try to initialize the writer */
   if (!item)
-    return;
+    return FALSE;
 
   if (_is_protocol_compatible_with_writer_after_reload(self, item))
     self->writer = _reload_store_item_release_writer(item);
 
   _reload_store_item_free(item);
+  return TRUE;
 }
 
 LogWriter *
@@ -519,7 +520,7 @@ afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
 static gboolean
 afsocket_dd_setup_writer(AFSocketDestDriver *self)
 {
-  _afsocket_dd_try_to_restore_writer(self);
+  gboolean kept_alive_connection = _afsocket_dd_try_to_restore_writer(self);
 
   if (!self->writer)
     {
@@ -541,8 +542,18 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
       log_pipe_unref((LogPipe *) self->writer);
       return FALSE;
     }
-
   log_pipe_append(&self->super.super.super, (LogPipe *) self->writer);
+
+  if (kept_alive_connection)
+    {
+      LogProtoClient *proto = log_writer_steal_proto(self->writer);
+
+      if (proto)
+        {
+          self->fd = log_proto_client_get_fd(proto);
+          log_writer_reopen(self->writer, proto);
+        }
+    }
   return TRUE;
 }
 
