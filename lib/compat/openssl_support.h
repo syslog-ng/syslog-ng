@@ -59,7 +59,7 @@ uint32_t X509_get_extension_flags(X509 *x);
 #define SYSLOG_NG_HAVE_DECL_DIGEST_MD4 1
 #endif
 
-#if !SYSLOG_NG_HAVE_DECL_DH_SET0_PQG
+#if !SYSLOG_NG_HAVE_DECL_DH_SET0_PQG && OPENSSL_VERSION_NUMBER < 0x30000000L
 int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g);
 #endif
 
