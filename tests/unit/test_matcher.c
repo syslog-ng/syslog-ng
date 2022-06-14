@@ -22,6 +22,7 @@
 
 #include <criterion/criterion.h>
 #include "libtest/msg_parse_lib.h"
+#include "libtest/cr_template.h"
 
 #include "logmatcher.h"
 #include "apphook.h"
@@ -320,6 +321,129 @@ Test(matcher, test_matcher_sets_num_matches_upon_successful_matching)
   assert_log_message_match_value(msg, 1, "kiwi");
   cr_assert_eq(msg->num_matches, 2);
 
+  log_matcher_unref(m);
+  log_msg_unref(msg);
+}
+
+Test(matcher, test_matcher_captures_into_indirect_values)
+{
+  LogMatcherOptions matcher_options;
+  LogMessage *msg;
+  gboolean result;
+  const gchar *msg_payload = "kiwi-wiki";
+
+  msg = _create_log_message(msg_payload);
+
+  log_matcher_options_defaults(&matcher_options);
+  matcher_options.flags = LMF_STORE_MATCHES;
+  LogMatcher *m = log_matcher_pcre_re_new(&matcher_options);
+  log_matcher_compile(m, "^(?<foobar>kiwi).*", NULL);
+
+  result = log_matcher_match_value(m, msg, LM_V_MESSAGE);
+  cr_assert(result);
+
+  assert_log_message_match_value(msg, 1, "kiwi");
+  assert_log_message_value_by_name(msg, "foobar", "kiwi");
+  assert_log_message_value_is_indirect(msg, log_msg_get_value_handle("foobar"));
+  assert_log_message_value_is_indirect(msg, log_msg_get_value_handle("1"));
+  log_matcher_unref(m);
+  log_msg_unref(msg);
+}
+
+Test(matcher, test_matcher_builtins_are_captured_into_direct_values)
+{
+  LogMatcherOptions matcher_options;
+  LogMessage *msg;
+  gboolean result;
+  const gchar *msg_payload = "kiwi-wiki";
+
+  msg = _create_log_message(msg_payload);
+
+  log_matcher_options_defaults(&matcher_options);
+  matcher_options.flags = LMF_STORE_MATCHES;
+  LogMatcher *m = log_matcher_pcre_re_new(&matcher_options);
+  log_matcher_compile(m, "^(?<PID>kiwi).*", NULL);
+
+  result = log_matcher_match_value(m, msg, LM_V_MESSAGE);
+  cr_assert(result);
+
+  assert_log_message_match_value(msg, 1, "kiwi");
+  assert_log_message_value_by_name(msg, "PID", "kiwi");
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("PID"));
+  assert_log_message_value_is_indirect(msg, log_msg_get_value_handle("1"));
+  log_matcher_unref(m);
+  log_msg_unref(msg);
+}
+
+Test(matcher, test_matcher_matches_against_macros_are_captured_directly)
+{
+  LogMatcherOptions matcher_options;
+  LogMessage *msg;
+  gboolean result;
+
+  msg = create_empty_message();
+
+  log_matcher_options_defaults(&matcher_options);
+  matcher_options.flags = LMF_STORE_MATCHES;
+  LogMatcher *m = log_matcher_pcre_re_new(&matcher_options);
+  log_matcher_compile(m, "^(?<foobar>10\\.11\\.)12\\.13", NULL);
+
+  result = log_matcher_match_value(m, msg, log_msg_get_value_handle("SOURCEIP"));
+  cr_assert(result);
+
+  assert_log_message_match_value(msg, 1, "10.11.");
+  assert_log_message_value_by_name(msg, "foobar", "10.11.");
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("foobar"));
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("1"));
+  log_matcher_unref(m);
+  log_msg_unref(msg);
+}
+
+Test(matcher, test_matcher_matches_against_matches_are_captured_directly)
+{
+  LogMatcherOptions matcher_options;
+  LogMessage *msg;
+  gboolean result;
+
+  msg = create_empty_message();
+  log_msg_set_match(msg, 1, "kiwi-wiki", -1);
+
+  log_matcher_options_defaults(&matcher_options);
+  matcher_options.flags = LMF_STORE_MATCHES;
+  LogMatcher *m = log_matcher_pcre_re_new(&matcher_options);
+  log_matcher_compile(m, "^(?<foobar>kiwi).*", NULL);
+
+  result = log_matcher_match_value(m, msg, log_msg_get_value_handle("1"));
+  cr_assert(result);
+
+  assert_log_message_match_value(msg, 1, "kiwi");
+  assert_log_message_value_by_name(msg, "foobar", "kiwi");
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("foobar"));
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("1"));
+  log_matcher_unref(m);
+  log_msg_unref(msg);
+}
+
+Test(matcher, test_matcher_matches_against_buffers_are_captured_directly)
+{
+  LogMatcherOptions matcher_options;
+  LogMessage *msg;
+  gboolean result;
+
+  msg = create_empty_message();
+
+  log_matcher_options_defaults(&matcher_options);
+  matcher_options.flags = LMF_STORE_MATCHES;
+  LogMatcher *m = log_matcher_pcre_re_new(&matcher_options);
+  log_matcher_compile(m, "^(?<foobar>kiwi).*", NULL);
+
+  result = log_matcher_match_buffer(m, msg, "kiwi-wiki", 9);
+  cr_assert(result);
+
+  assert_log_message_match_value(msg, 1, "kiwi");
+  assert_log_message_value_by_name(msg, "foobar", "kiwi");
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("foobar"));
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("1"));
   log_matcher_unref(m);
   log_msg_unref(msg);
 }
