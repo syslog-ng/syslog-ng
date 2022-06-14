@@ -134,8 +134,8 @@ setup(void)
 void
 teardown(void)
 {
-  app_shutdown();
   scratch_buffers_explicit_gc();
+  app_shutdown();
   cfg_free(configuration);
 }
 
