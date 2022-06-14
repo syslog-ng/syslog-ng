@@ -74,6 +74,18 @@ lib/rewrite/rewrite-set-pri\.c
 lib/timeutils/timeutils\.h
 lib/logmsg/tests/dump_logmsg\.c
 libtest/mock-logpipe\.[ch]
+  GPLv2+_SSL
+lib/tests/test_clone_logmsg\.c
+lib/tests/test_dnscache\.c
+lib/tests/test_findcrlf\.c
+lib/tests/test_hostid\.c
+lib/tests/test_logwriter\.c
+lib/tests/test_matcher\.c
+lib/tests/test_msgparse\.c
+lib/tests/test_ringbuffer\.c
+lib/tests/test_serialize\.c
+lib/tests/test_thread_wakeup\.c
+lib/tests/test_zone\.c
  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$

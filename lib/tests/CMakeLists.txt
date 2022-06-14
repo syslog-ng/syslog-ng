@@ -24,6 +24,17 @@ add_unit_test(CRITERION TARGET test_apphook)
 add_unit_test(CRITERION TARGET test_dynamic_window)
 add_unit_test(CRITERION TARGET test_logsource)
 add_unit_test(CRITERION LIBTEST TARGET test_persist_state)
+add_unit_test(LIBTEST CRITERION TARGET test_matcher)
+add_unit_test(LIBTEST CRITERION TARGET test_clone_logmsg)
+add_unit_test(CRITERION TARGET test_serialize)
+add_unit_test(LIBTEST CRITERION TARGET test_msgparse DEPENDS syslogformat)
+add_unit_test(CRITERION TARGET test_dnscache)
+add_unit_test(CRITERION TARGET test_findcrlf)
+add_unit_test(CRITERION TARGET test_ringbuffer)
+add_unit_test(CRITERION TARGET test_hostid)
+add_unit_test(CRITERION TARGET test_zone)
+add_unit_test(CRITERION TARGET test_logwriter DEPENDS syslogformat)
+add_unit_test(CRITERION TARGET test_thread_wakeup)
 
 SET_DIRECTORY_PROPERTIES(PROPERTIES
   ADDITIONAL_MAKE_CLEAN_FILES
