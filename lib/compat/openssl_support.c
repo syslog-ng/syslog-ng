@@ -279,7 +279,7 @@ openssl_ctx_load_dh_from_file(SSL_CTX *ctx, const gchar *dhparam_file)
 #endif
 }
 
-#if !SYSLOG_NG_HAVE_DECL_DH_SET0_PQG
+#if !SYSLOG_NG_HAVE_DECL_DH_SET0_PQG && OPENSSL_VERSION_NUMBER < 0x30000000L
 int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g)
 {
   if ((dh->p == NULL && p == NULL)
