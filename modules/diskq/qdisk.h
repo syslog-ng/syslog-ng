@@ -38,8 +38,7 @@
 #define POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) \
 ({ \
   gpointer p = ptr; \
-  LogPathOptions *opts = lpo; \
-  (lpo)->ack_needed = (GPOINTER_TO_INT(p) & ~0x80000000); opts; \
+  (lpo)->ack_needed = (GPOINTER_TO_INT(p) & ~0x80000000); \
 })
 
 typedef gboolean (*QDiskSerializeFunc)(SerializeArchive *sa, gpointer user_data);
