@@ -915,7 +915,7 @@ afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *t
   g_string_free(value, TRUE);
   if (need_drop)
     {
-      free(insert_command);
+      g_string_free(insert_command, TRUE);
       return NULL;
     }
   return insert_command;
