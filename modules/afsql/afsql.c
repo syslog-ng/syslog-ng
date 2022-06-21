@@ -775,12 +775,115 @@ afsql_dd_ensure_accessible_database_table(AFSqlDestDriver *self, LogMessage *msg
   return table;
 }
 
+static gboolean
+afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
+                                     AFSqlField *field, GString *value, LogMessageValueType type,
+                                     GString *insert_command)
+{
+  gchar *quoted = NULL;
+  gchar *escaped = NULL;
+  gboolean need_drop = FALSE;
+  gboolean fallback = self->template_options.on_error & ON_ERROR_FALLBACK_TO_STRING;
+
+  if (self->null_value && strcmp(self->null_value, value->str) == 0)
+    {
+      g_string_append(insert_command, "NULL");
+    }
+  else
+    {
+      switch(type)
+        {
+        case LM_VT_INT32:
+        case LM_VT_INT64:
+        {
+          gint64 k;
+          if (type_cast_to_int64(value->str, &k, NULL))
+            {
+              dbi_conn_escape_string_copy(self->dbi_ctx, value->str, &escaped);
+              g_string_append_printf(insert_command, "%ld", k);
+            }
+          else
+            {
+              need_drop = type_cast_drop_helper(self->template_options.on_error,
+                                                value->str, "int");
+
+              if (fallback)
+                {
+                  dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
+                }
+            }
+          break;
+        }
+        case LM_VT_DOUBLE:
+        {
+          gdouble d;
+          if (type_cast_to_double(value->str, &d, NULL))
+            {
+              dbi_conn_escape_string_copy(self->dbi_ctx, value->str, &escaped);
+              g_string_append_printf(insert_command, "%f", d);
+            }
+          else
+            {
+              need_drop = type_cast_drop_helper(self->template_options.on_error,
+                                                value->str, "double");
+              if (fallback)
+                {
+                  dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
+                }
+            }
+          break;
+        }
+        case LM_VT_BOOLEAN:
+        {
+          gboolean b;
+          if (type_cast_to_boolean(value->str, &b, NULL))
+            {
+              if (b)
+                {
+                  dbi_conn_escape_string_copy(self->dbi_ctx, "TRUE", &escaped);
+                }
+              else
+                {
+                  dbi_conn_escape_string_copy(self->dbi_ctx, "FALSE", &escaped);
+                }
+            }
+          else
+            {
+              need_drop = type_cast_drop_helper(self->template_options.on_error,
+                                                value->str, "boolean");
+              if (fallback)
+                {
+                  dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
+                }
+            }
+        }
+        default:
+          dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
+        }
+      if (quoted)
+        {
+          g_string_append(insert_command, quoted);
+          free(quoted);
+        }
+      else if (escaped)
+        {
+          free(escaped);
+        }
+      else
+        {
+          g_string_append(insert_command, "''");
+        }
+    }
+  if (need_drop)
+    return FALSE;
+  return TRUE;
+}
+
 static GString *
 afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *table)
 {
   GString *insert_command = g_string_sized_new(256);
   GString *value = g_string_sized_new(512);
-  gboolean fallback = self->template_options.on_error & ON_ERROR_FALLBACK_TO_STRING;
   gint i, j;
 
   g_string_printf(insert_command, "INSERT INTO %s (", table->str);
@@ -801,106 +904,20 @@ afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *t
     }
 
   g_string_append(insert_command, ") VALUES (");
-  gboolean need_drop = FALSE;
 
   for (i = 0; i < self->fields_len; i++)
     {
-      gchar *quoted = NULL;
-      gchar *escaped = NULL;
       if ((self->fields[i].flags & AFSQL_FF_DEFAULT) == 0 && self->fields[i].value != NULL)
         {
           LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND, self->super.worker.instance.seq_num, NULL, LM_VT_STRING};
-          log_template_format(self->fields[i].value, msg, &options, value);
-          if (self->null_value && strcmp(self->null_value, value->str) == 0)
-            {
-              g_string_append(insert_command, "NULL");
-            }
-          else
-            {
-              TypeHint type = self->fields[i].value->type_hint;
-              switch(type)
-                {
-                case TYPE_HINT_INT32:
-                case TYPE_HINT_INT64:
-                {
-                  gint64 k;
-                  if (type_cast_to_int64(value->str, &k, NULL))
-                    {
-                      dbi_conn_escape_string_copy(self->dbi_ctx, value->str, &escaped);
-                      g_string_append_printf(insert_command, "%ld", k);
-                    }
-                  else
-                    {
-                      need_drop = type_cast_drop_helper(self->template_options.on_error,
-                                                        value->str, "int");
+          LogMessageValueType type;
 
-                      if (fallback)
-                        {
-                          dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-                        }
-                    }
-                  break;
-                }
-                case TYPE_HINT_DOUBLE:
-                {
-                  gdouble d;
-                  if (type_cast_to_double(value->str, &d, NULL))
-                    {
-                      dbi_conn_escape_string_copy(self->dbi_ctx, value->str, &escaped);
-                      g_string_append_printf(insert_command, "%f", d);
-                    }
-                  else
-                    {
-                      need_drop = type_cast_drop_helper(self->template_options.on_error,
-                                                        value->str, "double");
-                      if (fallback)
-                        {
-                          dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-                        }
-                    }
-                  break;
-                }
-                case TYPE_HINT_BOOLEAN:
-                {
-                  gboolean b;
-                  if (type_cast_to_boolean(value->str, &b, NULL))
-                    {
-                      if (b)
-                        {
-                          dbi_conn_escape_string_copy(self->dbi_ctx, "TRUE", &escaped);
-                        }
-                      else
-                        {
-                          dbi_conn_escape_string_copy(self->dbi_ctx, "FALSE", &escaped);
-                        }
-                    }
-                  else
-                    {
-                      need_drop = type_cast_drop_helper(self->template_options.on_error,
-                                                        value->str, "boolean");
-                      if (fallback)
-                        {
-                          dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-                        }
-                    }
-                }
-                default:
-                  dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-                }
-              if (quoted)
-                {
-                  g_string_append(insert_command, quoted);
-                  free(quoted);
-                }
-              else if (escaped)
-                {
-                  free(escaped);
-                }
-              else
-                {
-                  g_string_append(insert_command, "''");
-                }
-            }
+          log_template_format_value_and_type(self->fields[i].value, msg, &options, value, &type);
+
+          if (!afsql_dd_append_value_to_be_inserted(self,
+                                                    &self->fields[i], value, type,
+                                                    insert_command))
+            goto drop;
 
           j = i + 1;
           while (j < self->fields_len && (self->fields[j].flags & AFSQL_FF_DEFAULT) == AFSQL_FF_DEFAULT)
@@ -911,14 +928,14 @@ afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *t
     }
 
   g_string_append(insert_command, ")");
-
   g_string_free(value, TRUE);
-  if (need_drop)
-    {
-      g_string_free(insert_command, TRUE);
-      return NULL;
-    }
+
   return insert_command;
+
+drop:
+  g_string_free(value, TRUE);
+  g_string_free(insert_command, TRUE);
+  return NULL;
 }
 
 static inline gboolean
