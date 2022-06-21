@@ -992,23 +992,38 @@ afsql_dd_flush(LogThreadedDestDriver *s)
   return LTR_SUCCESS;
 }
 
-static gboolean
+static LogThreadedResult
 afsql_dd_run_insert_query(AFSqlDestDriver *self, GString *table, LogMessage *msg)
 {
   GString *insert_command;
+  gboolean drop_silently = self->template_options.on_error & ON_ERROR_SILENT;
 
   insert_command = afsql_dd_build_insert_command(self, msg, table);
-  if(insert_command)
+  if (insert_command)
     {
       gboolean success = afsql_dd_run_query(self, insert_command->str, FALSE, NULL);
       g_string_free(insert_command, TRUE);
-      return success;
+      if (!success)
+        return afsql_dd_handle_insert_row_error_depending_on_connection_availability(self);
+
+      return afsql_dd_is_transaction_handling_enabled(self)
+             ? LTR_QUEUED
+             : LTR_SUCCESS;
     }
   else
     {
-      msg_error("INSERT statement dropped as drop is enabled and value isn't okay");
+      if (!drop_silently)
+        {
+          msg_error("Failed to format message for SQL, dropping message",
+                    evt_tag_str("type", self->type),
+                    evt_tag_str("host", self->host),
+                    evt_tag_str("port", self->port),
+                    evt_tag_str("username", self->user),
+                    evt_tag_str("database", self->database),
+                    evt_tag_str("error", "error converting name-value pair to the requested type"));
+        }
+      return LTR_DROP;
     }
-  return FALSE;
 }
 
 /**
@@ -1033,18 +1048,9 @@ afsql_dd_insert(LogThreadedDestDriver *s, LogMessage *msg)
   if (afsql_dd_should_begin_new_transaction(self) && !afsql_dd_begin_transaction(self))
     goto error;
 
-  if (!afsql_dd_run_insert_query(self, table, msg))
-    {
-      retval = afsql_dd_handle_insert_row_error_depending_on_connection_availability(self);
-      goto error;
-    }
-
-  retval = afsql_dd_is_transaction_handling_enabled(self)
-           ? LTR_QUEUED
-           : LTR_SUCCESS;
+  retval = afsql_dd_run_insert_query(self, table, msg);
 
 error:
-
   if (table != NULL)
     g_string_free(table, TRUE);
 
