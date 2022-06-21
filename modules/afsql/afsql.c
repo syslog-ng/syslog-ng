@@ -775,13 +775,23 @@ afsql_dd_ensure_accessible_database_table(AFSqlDestDriver *self, LogMessage *msg
   return table;
 }
 
+static void
+afsql_dd_append_quoted_value(AFSqlDestDriver *self, GString *value, GString *insert_command)
+{
+  gchar *quoted = NULL;
+  dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
+  if (quoted)
+    g_string_append(insert_command, quoted);
+  else
+    g_string_append(insert_command, "''");
+  free(quoted);
+}
+
 static gboolean
 afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
                                      AFSqlField *field, GString *value, LogMessageValueType type,
                                      GString *insert_command)
 {
-  gchar *quoted = NULL;
-  gchar *escaped = NULL;
   gboolean need_drop = FALSE;
   gboolean fallback = self->template_options.on_error & ON_ERROR_FALLBACK_TO_STRING;
 
@@ -799,18 +809,14 @@ afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
       gint64 k;
       if (type_cast_to_int64(value->str, &k, NULL))
         {
-          dbi_conn_escape_string_copy(self->dbi_ctx, value->str, &escaped);
-          g_string_append_printf(insert_command, "%ld", k);
+          g_string_append_len(insert_command, value->str, value->len);
         }
       else
         {
           need_drop = type_cast_drop_helper(self->template_options.on_error,
                                             value->str, "int");
-
           if (fallback)
-            {
-              dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-            }
+            afsql_dd_append_quoted_value(self, value, insert_command);
         }
       break;
     }
@@ -819,17 +825,14 @@ afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
       gdouble d;
       if (type_cast_to_double(value->str, &d, NULL))
         {
-          dbi_conn_escape_string_copy(self->dbi_ctx, value->str, &escaped);
-          g_string_append_printf(insert_command, "%f", d);
+          g_string_append_len(insert_command, value->str, value->len);
         }
       else
         {
           need_drop = type_cast_drop_helper(self->template_options.on_error,
                                             value->str, "double");
           if (fallback)
-            {
-              dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-            }
+            afsql_dd_append_quoted_value(self, value, insert_command);
         }
       break;
     }
@@ -839,39 +842,20 @@ afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
       if (type_cast_to_boolean(value->str, &b, NULL))
         {
           if (b)
-            {
-              dbi_conn_escape_string_copy(self->dbi_ctx, "TRUE", &escaped);
-            }
+            g_string_append(insert_command, "TRUE");
           else
-            {
-              dbi_conn_escape_string_copy(self->dbi_ctx, "FALSE", &escaped);
-            }
+            g_string_append(insert_command, "FALSE");
         }
       else
         {
           need_drop = type_cast_drop_helper(self->template_options.on_error,
                                             value->str, "boolean");
           if (fallback)
-            {
-              dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-            }
+            afsql_dd_append_quoted_value(self, value, insert_command);
         }
     }
     default:
-      dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-    }
-  if (quoted)
-    {
-      g_string_append(insert_command, quoted);
-      free(quoted);
-    }
-  else if (escaped)
-    {
-      free(escaped);
-    }
-  else
-    {
-      g_string_append(insert_command, "''");
+      afsql_dd_append_quoted_value(self, value, insert_command);
     }
 
   if (need_drop)
