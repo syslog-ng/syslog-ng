@@ -138,6 +138,7 @@ _is_jvm_option_predefined(const gchar *option)
 {
   static const gchar *predefined_options[] =
   {
+    "Djava.system.class.loader",
     "Djava.class.path",
     "Djava.library.path",
     "Dlog4j.configurationFactory",
@@ -186,6 +187,9 @@ static void
 _setup_jvm_options_array(JavaVMSingleton *self, const gchar *jvm_options_str)
 {
   GArray *jvm_options_array = _jvm_options_split(jvm_options_str);
+
+  jvm_options_array = _jvm_options_array_append(jvm_options_array,
+                                                g_strdup_printf("-Djava.system.class.loader=org.syslog_ng.SyslogNgClassLoader"));
 
   jvm_options_array = _jvm_options_array_append(jvm_options_array,
                                                 g_strdup_printf("-Djava.class.path=%s",
