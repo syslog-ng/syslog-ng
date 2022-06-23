@@ -847,9 +847,9 @@ _sd_open_stream(AFSocketSourceDriver *self)
     {
       /* NOTE: this assumes that fd 0 will never be used for listening fds,
        * main.c opens fd 0 so this assumption can hold */
-      sock = GPOINTER_TO_UINT(
-               cfg_persist_config_fetch(cfg, afsocket_sd_format_listener_name(self))) -
-             1;
+      gpointer config_result = cfg_persist_config_fetch(cfg, afsocket_sd_format_listener_name(self));
+      sock = GPOINTER_TO_UINT(config_result) - 1;
+
     }
 
   if (sock == -1)

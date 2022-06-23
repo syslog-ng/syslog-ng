@@ -728,7 +728,9 @@ log_macro_lookup(const gchar *macro, gint len)
 
   g_assert(macro_hash);
   g_strlcpy(buf, macro, MIN(sizeof(buf), len+1));
-  macro_id = GPOINTER_TO_INT(g_hash_table_lookup(macro_hash, buf));
+  gpointer hash_key = g_hash_table_lookup(macro_hash, buf);
+  macro_id = GPOINTER_TO_INT(hash_key);
+
   return macro_id;
 }
 

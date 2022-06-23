@@ -227,10 +227,11 @@ _unregister(StatsAggregator *s)
   self->registered = FALSE;
 }
 
-static inline gdouble
+static inline time_t
 _calc_sec_between_time(time_t *start, time_t *end)
 {
-  return (difftime(*end, *start));
+  gdouble diff = difftime(*end, *start);
+  return (time_t)diff;
 }
 
 static gboolean
@@ -250,8 +251,7 @@ _calc_sum(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
 
   if (!_is_less_then_duration(self, logic, now))
     {
-      gsize elapsed_time_since_last = (gsize)_calc_sec_between_time(&self->last_add_time, now);
-      diff -= _get_average(logic) * elapsed_time_since_last;
+      diff -= _get_average(logic) * _calc_sec_between_time(&self->last_add_time, now);
     }
 
   _add_to_sum(logic, diff);
@@ -261,8 +261,11 @@ _calc_sum(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
 static void
 _calc_average(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
 {
-  gsize elapsed_time = (gsize)_calc_sec_between_time(&self->init_time, now);
-  gsize divisor = (_is_less_then_duration(self, logic, now)) ? elapsed_time : logic->duration;
+  time_t elapsed_time;
+  gsize divisor;
+
+  elapsed_time = _calc_sec_between_time(&self->init_time, now);
+  divisor = (_is_less_then_duration(self, logic, now)) ? elapsed_time : logic->duration;
   if (divisor <= 0) divisor = 1;
   gsize sum = _get_sum(logic);
 
