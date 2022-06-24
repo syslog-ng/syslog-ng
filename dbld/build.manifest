@@ -36,7 +36,6 @@ debian-sid		python3,nojava
 
 # on ubuntu, we start using Python3 at focal onwards.
 # libcriterion-dev is available starting with 21.04
-ubuntu-xenial		python3,nocriterion,nokafka,nojava,nomqtt
 ubuntu-bionic		python3,nocriterion,nokafka,nomqtt
 ubuntu-focal		python3,nocriterion,nomqtt
 ubuntu-jammy		python3

@@ -33,7 +33,6 @@ debhelper                       [debian, ubuntu]
 devscripts                      [debian, ubuntu]
 dh-autoreconf                   [debian, ubuntu]
 dh-exec                         [debian, ubuntu]
-dh-systemd                      [ubuntu-xenial]
 dpkg-dev                        [debian, ubuntu]
 equivs                          [debian, ubuntu]
 libdistro-info-perl		[debian, ubuntu]
@@ -85,13 +84,13 @@ automake                    [centos, fedora]
 #
 # We are now using the same version for both.
 
-python-dev                  [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic]
+python-dev                  [debian-stretch, debian-buster, ubuntu-bionic]
 python3-dev                 [debian-sid]
 python-devel                [centos, fedora]
 python3-devel               [fedora]
 python-unversioned-command  [fedora]
 python3-dev                 [ubuntu-focal]
-python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic]
+python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-bionic]
 python3-pip                     [debian, ubuntu]
 
 # python 3.10 has issues on Debian Testing
@@ -104,8 +103,8 @@ python3.11-venv              [devshell]
 # Because we are using fixed version of libmongoc on Bionic, we need to
 # specify non versioned packages on other platforms to continiously support
 
-libbson-dev                 [debian, ubuntu-xenial]
-libmongoc-dev               [debian, ubuntu-xenial]
+libbson-dev                 [debian]
+libmongoc-dev               [debian]
 
 
 #############################################################################

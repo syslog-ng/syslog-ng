@@ -38,9 +38,6 @@ function install_dbld_dependencies()
         debian|ubuntu)
             apt-get update
             $APT_INSTALL wget gnupg2
-            if [ "${OS_DISTRIBUTION_CODE_NAME}" = "xenial" ]; then
-                $APT_INSTALL -t xenial-backports debhelper dh-systemd
-            fi
             ;;
         fedora)
             $DNF_INSTALL -y wget dnf-plugins-core

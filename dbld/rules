@@ -8,7 +8,6 @@ BUILDER_IMAGES=		\
 	debian-bullseye	\
 	debian-testing	\
 	debian-sid	\
-	ubuntu-xenial	\
 	ubuntu-bionic	\
 	ubuntu-focal	\
 	ubuntu-jammy \
