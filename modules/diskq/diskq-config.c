@@ -32,18 +32,18 @@ disk_queue_config_free(ModuleConfig *s)
 }
 
 static void
-_set_default_values(DiskQueueConfig *self)
+_set_default_values(DiskQueueConfig *self, GlobalConfig *cfg)
 {
-  self->truncate_size_ratio = 0.1;
+  self->truncate_size_ratio = cfg_is_config_version_older(cfg, VERSION_VALUE_4_0) ? 0.1 : 1;
 }
 
 DiskQueueConfig *
-disk_queue_config_new(void)
+disk_queue_config_new(GlobalConfig *cfg)
 {
   DiskQueueConfig *self = g_new0(DiskQueueConfig, 1);
 
   self->super.free_fn = disk_queue_config_free;
-  _set_default_values(self);
+  _set_default_values(self, cfg);
   return self;
 }
 
@@ -53,7 +53,7 @@ disk_queue_config_get(GlobalConfig *cfg)
   DiskQueueConfig *dqc = g_hash_table_lookup(cfg->module_config, MODULE_CONFIG_KEY);
   if (!dqc)
     {
-      dqc = disk_queue_config_new();
+      dqc = disk_queue_config_new(cfg);
       g_hash_table_insert(cfg->module_config, g_strdup(MODULE_CONFIG_KEY), dqc);
     }
   return dqc;
