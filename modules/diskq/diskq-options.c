@@ -77,6 +77,12 @@ disk_queue_options_set_truncate_size_ratio(DiskQueueOptions *self, gdouble trunc
 }
 
 void
+disk_queue_options_set_prealloc(DiskQueueOptions *self, gboolean prealloc)
+{
+  self->prealloc = prealloc;
+}
+
+void
 disk_queue_options_check_plugin_settings(DiskQueueOptions *self)
 {
   if (self->reliable)
@@ -127,6 +133,7 @@ disk_queue_options_set_default_options(DiskQueueOptions *self)
   self->qout_size = -1;
   self->dir = g_strdup(get_installation_path_for(SYSLOG_NG_PATH_LOCALSTATEDIR));
   self->truncate_size_ratio = -1;
+  self->prealloc = -1;
 }
 
 void

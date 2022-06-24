@@ -35,6 +35,7 @@ static void
 _set_default_values(DiskQueueConfig *self, GlobalConfig *cfg)
 {
   self->truncate_size_ratio = cfg_is_config_version_older(cfg, VERSION_VALUE_4_0) ? 0.1 : 1;
+  self->prealloc = FALSE;
 }
 
 DiskQueueConfig *
@@ -71,4 +72,18 @@ disk_queue_config_get_truncate_size_ratio(GlobalConfig *cfg)
 {
   DiskQueueConfig *dqc = disk_queue_config_get(cfg);
   return dqc->truncate_size_ratio;
+}
+
+void
+disk_queue_config_set_prealloc(GlobalConfig *cfg, gboolean prealloc)
+{
+  DiskQueueConfig *dqc = disk_queue_config_get(cfg);
+  dqc->prealloc = prealloc;
+}
+
+gboolean
+disk_queue_config_get_prealloc(GlobalConfig *cfg)
+{
+  DiskQueueConfig *dqc = disk_queue_config_get(cfg);
+  return dqc->prealloc;
 }

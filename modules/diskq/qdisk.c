@@ -292,6 +292,29 @@ _maybe_truncate_file(QDisk *self, gint64 expected_size)
             evt_tag_int("fd", self->fd));
 }
 
+static gboolean
+_preallocate(QDisk *self)
+{
+  gint64 size = qdisk_get_maximum_size(self);
+
+  msg_debug("Preallocating queue file",
+            evt_tag_str("filename", self->filename),
+            evt_tag_long("size", size));
+
+  gint result = posix_fallocate(self->fd, 0, (off_t) size);
+  if (result == 0)
+    {
+      self->file_size = size;
+      return TRUE;
+    }
+
+  msg_error("Failed to preallocate queue file",
+            evt_tag_str("filename", self->filename),
+            evt_tag_errno("error", result));
+
+  return FALSE;
+}
+
 static inline gint64
 qdisk_get_lowest_used_queue_offset(QDisk *self)
 {
@@ -1167,6 +1190,11 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 
   if (new_file)
     {
+      if (self->options->prealloc && !_preallocate(self))
+        {
+          return FALSE;
+        }
+
       QDiskFileHeader tmp;
       memset(&tmp, 0, sizeof(tmp));
       if (!pwrite_strict(self->fd, &tmp, sizeof(tmp), 0))

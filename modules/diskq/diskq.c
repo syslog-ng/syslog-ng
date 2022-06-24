@@ -175,6 +175,8 @@ _attach(LogDriverPlugin *s, LogDriver *d)
     self->options.qout_size = 1000;
   if (self->options.truncate_size_ratio < 0)
     _set_default_truncate_size_ratio(self, cfg);
+  if (self->options.prealloc < 0)
+    self->options.prealloc = disk_queue_config_get_prealloc(cfg);
 
   dd->acquire_queue = _acquire_queue;
   dd->release_queue = _release_queue;
