@@ -38,6 +38,7 @@
 typedef struct _ReloadStoreItem
 {
   LogProtoClientFactory *proto_factory;
+  GSockAddr *dest_addr;
   LogWriter *writer;
 } ReloadStoreItem;
 
@@ -47,6 +48,7 @@ _reload_store_item_new(AFSocketDestDriver *afsocket_dd)
   ReloadStoreItem *item = g_new(ReloadStoreItem, 1);
   item->proto_factory = afsocket_dd->proto_factory;
   item->writer = afsocket_dd->writer;
+  item->dest_addr = g_sockaddr_ref(afsocket_dd->dest_addr);
   return item;
 }
 
@@ -59,6 +61,7 @@ _reload_store_item_free(ReloadStoreItem *self)
   if (self->writer)
     log_pipe_unref((LogPipe *) self->writer);
 
+  g_sockaddr_unref(self->dest_addr);
   g_free(self);
 }
 
@@ -483,7 +486,7 @@ afsocket_dd_setup_addresses_method(AFSocketDestDriver *self)
 }
 
 static gboolean
-_afsocket_dd_try_to_restore_writer(AFSocketDestDriver *self)
+_afsocket_dd_try_to_restore_connection_state(AFSocketDestDriver *self)
 {
   /* If we are reinitializing an old config, an existing writer may be present */
   if (self->writer)
@@ -501,6 +504,7 @@ _afsocket_dd_try_to_restore_writer(AFSocketDestDriver *self)
   if (_is_protocol_compatible_with_writer_after_reload(self, item))
     self->writer = _reload_store_item_release_writer(item);
 
+  self->dest_addr = g_sockaddr_ref(item->dest_addr);
   _reload_store_item_free(item);
   return TRUE;
 }
@@ -520,7 +524,7 @@ afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
 static gboolean
 afsocket_dd_setup_writer(AFSocketDestDriver *self)
 {
-  gboolean kept_alive_connection = _afsocket_dd_try_to_restore_writer(self);
+  gboolean kept_alive_connection = _afsocket_dd_try_to_restore_connection_state(self);
 
   if (!self->writer)
     {

@@ -314,8 +314,17 @@ _setup_bind_addr(AFInetDestDriver *self)
 }
 
 static gboolean
+_already_connected_to_destination(AFInetDestDriver *self)
+{
+  return log_writer_opened(self->super.writer);
+}
+
+static gboolean
 _setup_dest_addr(AFInetDestDriver *self)
 {
+  if (_already_connected_to_destination(self))
+    return TRUE;
+
   g_sockaddr_unref(self->super.dest_addr);
   self->super.dest_addr = NULL;
 
