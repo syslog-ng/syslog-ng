@@ -42,4 +42,4 @@ def test_secure_logging(config, syslog_ng, slog):
     assert not any(map(lambda x: message_base in x, logs))
 
     decrypted = slog.decrypt(output_file_name)
-    assert decrypted == ["{}: {}: {}".format(str(i).zfill(16), message_base, i) for i in range(num_of_messages)]
+    assert decrypted == ["{}: {}: {}".format(str(i).zfill(20), message_base, i) for i in range(num_of_messages)]
