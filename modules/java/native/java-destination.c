@@ -96,7 +96,9 @@ JNIEXPORT jlong JNICALL
 Java_org_syslog_1ng_LogPipe_getConfigHandle(JNIEnv *env, jobject obj, jlong handle)
 {
   JavaDestDriver *self = (JavaDestDriver *)handle;
-  return (jlong)log_pipe_get_config(&self->super.super.super.super);
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
+
+  return (jlong) cfg;
 }
 
 void java_dd_set_option(LogDriver *s, const gchar *key, const gchar *value)
