@@ -36,7 +36,7 @@ Build-Depends: debhelper (>= 10~),
                libsnappy-dev,
                libsnmp-dev [linux-any hurd-i386],
                librdkafka-dev (>= 1.1.0) <!sng-nokafka>,
-               openjdk-8-jdk <!nojava>,
+               default-jdk-headless <!nojava>,
                gradle (>= 3.5.1~) <!nojava>,
                libpaho-mqtt-dev <!sng-nomqtt>
 Build-Conflicts: autoconf2.13
@@ -789,6 +789,5 @@ Description: Enhanced system logging daemon (MQTT plugins)
   * hand on messages for further processing using message queues (like
     AMQP), files or databases (like PostgreSQL or MongoDB).
  .
- This package provides the MQTT plugin, that allows receiving and sending 
+ This package provides the MQTT plugin, that allows receiving and sending
  MQTT messages.
- 
