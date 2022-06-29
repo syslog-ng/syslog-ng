@@ -84,24 +84,15 @@ _utmp_entry_matches(UtmpEntry *ut, GString *username)
   if (strcmp(username->str, "*") == 0)
     return TRUE;
 
+  /* ut_user/ut_name may not be null-terminated */
 #ifdef SYSLOG_NG_HAVE_MODERN_UTMP
-  if (strncmp(username->str, ut->ut_user, sizeof(ut->ut_user)) == 0)
+  if (strncmp(username->str, ut->ut_user, G_N_ELEMENTS(ut->ut_user)) == 0)
 #else
-  if (strncmp(username->str, ut->ut_name, sizeof(ut->ut_name)) == 0)
+  if (strncmp(username->str, ut->ut_name, G_N_ELEMENTS(ut->ut_name)) == 0)
 #endif
     return TRUE;
 
   return FALSE;
-}
-
-static gchar *
-_get_utmp_username(UtmpEntry *ut)
-{
-#ifdef SYSLOG_NG_HAVE_MODERN_UTMP
-  return ut->ut_user;
-#else
-  return ut->ut_name;
-#endif
 }
 
 G_LOCK_DEFINE_STATIC(utmp_lock);
@@ -112,6 +103,17 @@ afuser_dd_set_time_reopen(LogDriver *s, time_t time_reopen)
   AFUserDestDriver *self = (AFUserDestDriver *) s;
 
   self->time_reopen = time_reopen;
+}
+
+static EVTTAG *
+_evt_tag_utmp_username(UtmpEntry *ut)
+{
+  /* ut_user/ut_name may not be null-terminated */
+#ifdef SYSLOG_NG_HAVE_MODERN_UTMP
+  return evt_tag_mem("user", ut->ut_user, G_N_ELEMENTS(ut->ut_user));
+#else
+  return evt_tag_mem("user", ut->ut_name, G_N_ELEMENTS(ut->ut_name));
+#endif
 }
 
 static void
@@ -154,14 +156,15 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
           strncpy(p, ut->ut_line, G_N_ELEMENTS(ut->ut_line));
           p[G_N_ELEMENTS(ut->ut_line)] = 0;
 
+
           msg_debug("Posting message to user terminal",
-                    evt_tag_str("user", _get_utmp_username(ut)),
+                    _evt_tag_utmp_username(ut),
                     evt_tag_str("line", line));
           fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY | O_NONBLOCK);
           if (fd == -1)
             {
               msg_error("Opening tty device failed, disabling usertty() for time-reopen seconds",
-                        evt_tag_str("user", _get_utmp_username(ut)),
+                        _evt_tag_utmp_username(ut),
                         evt_tag_str("line", line),
                         evt_tag_int("time_reopen", self->time_reopen),
                         evt_tag_error("errno"));
