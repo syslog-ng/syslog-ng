@@ -156,7 +156,6 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
           strncpy(p, ut->ut_line, G_N_ELEMENTS(ut->ut_line));
           p[G_N_ELEMENTS(ut->ut_line)] = 0;
 
-
           msg_debug("Posting message to user terminal",
                     _evt_tag_utmp_username(ut),
                     evt_tag_str("line", line));
