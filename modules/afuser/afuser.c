@@ -140,7 +140,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
     {
       if (_utmp_entry_matches(ut, self->username))
         {
-          gchar line[128];
+          gchar line[5 + G_N_ELEMENTS(ut->ut_line) + 1]; /* /dev/ prefix, line device name, null terminator */
           gchar *p = line;
           int fd;
 
@@ -149,9 +149,11 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
               strcpy(line, "/dev/");
               p = line + 5;
             }
-          else
-            line[0] = 0;
-          strncpy(p, ut->ut_line, MIN(sizeof(ut->ut_line), sizeof(line) - (p - line)));
+
+          /* ut_line may not be null-terminated. Copy it and ensure it's null-terminated. */
+          strncpy(p, ut->ut_line, G_N_ELEMENTS(ut->ut_line));
+          p[G_N_ELEMENTS(ut->ut_line)] = 0;
+
           msg_debug("Posting message to user terminal",
                     evt_tag_str("user", _get_utmp_username(ut)),
                     evt_tag_str("line", line));
