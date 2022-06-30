@@ -87,6 +87,42 @@ Test(set_tag, templates_in_set_tag)
   assert_log_message_doesnt_have_tag(msg, "tag-BARFOO");
 }
 
+Test(set_tag, clone_template)
+{
+  LogTemplate *template = log_template_new(cfg, "dummy");
+  cr_assert(log_template_compile(template, "not literal $MESSAGE", NULL));
+  LogRewrite *rewrite = log_rewrite_set_tag_new(template, true, cfg);
+
+  LogRewrite *clone = (LogRewrite *)log_pipe_clone(&rewrite->super);
+
+  cr_assert(log_pipe_init(&rewrite->super));
+  cr_assert(log_pipe_init(&clone->super));
+
+  cr_assert(log_pipe_deinit(&rewrite->super));
+  cr_assert(log_pipe_deinit(&clone->super));
+
+  log_pipe_unref(&rewrite->super);
+  log_pipe_unref(&clone->super);
+}
+
+Test(set_tag, clone_tag_id)
+{
+  LogTemplate *template = log_template_new(cfg, "dummy");
+  cr_assert(log_template_compile(template, "syslog", NULL));
+  LogRewrite *rewrite = log_rewrite_set_tag_new(template, true, cfg);
+
+  LogRewrite *clone = (LogRewrite *)log_pipe_clone(&rewrite->super);
+
+  cr_assert(log_pipe_init(&rewrite->super));
+  cr_assert(log_pipe_init(&clone->super));
+
+  cr_assert(log_pipe_deinit(&rewrite->super));
+  cr_assert(log_pipe_deinit(&clone->super));
+
+  log_pipe_unref(&rewrite->super);
+  log_pipe_unref(&clone->super);
+}
+
 static void
 setup(void)
 {
