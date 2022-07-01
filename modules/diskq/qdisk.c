@@ -389,7 +389,7 @@ qdisk_get_lowest_used_queue_offset(QDisk *self)
 }
 
 static void
-_truncate_file_to_minimal(QDisk *self)
+_maybe_truncate_file_to_minimal(QDisk *self)
 {
   if (qdisk_is_file_empty(self))
     {
@@ -967,7 +967,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
       self->file_size = QDISK_RESERVED_SPACE;
       if (!self->options->read_only)
         {
-          _truncate_file_to_minimal(self);
+          _maybe_truncate_file_to_minimal(self);
         }
 
       msg_info("Disk-buffer state loaded",
