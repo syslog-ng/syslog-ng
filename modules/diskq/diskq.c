@@ -180,6 +180,14 @@ _attach(LogDriverPlugin *s, LogDriver *d)
   if (self->options.prealloc < 0)
     self->options.prealloc = disk_queue_config_get_prealloc(cfg);
 
+  if (self->options.truncate_size_ratio < 1 && self->options.prealloc)
+    {
+      msg_error("Cannot enable preallocation and truncation at the same time. "
+                "Please disable either the truncation (truncate-size-ratio(1)) or the preallocation (prealloc(no))",
+                log_pipe_location_tag(&dd->super.super));
+      return FALSE;
+    }
+
   dd->acquire_queue = _acquire_queue;
   dd->release_queue = _release_queue;
   return TRUE;
