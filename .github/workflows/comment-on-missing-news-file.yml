@@ -1,0 +1,36 @@
+##################################################################################
+# If a new PR is opened and it lacks news file, then give them a gentle reminder.#
+##################################################################################
+
+name: Comment on missing news file
+
+on:
+  # For workflows that are triggered by the pull_request_target event,
+  # the GITHUB_TOKEN is granted read/write repository permission
+  # unless the permissions key is specified and the workflow can access secrets,
+  # even when it is triggered from a fork
+  # See: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target
+  pull_request_target:
+    types: [opened]
+    paths-ignore:
+      - 'news/*-*.md'
+
+jobs:
+  comment-on-missing-news-file:
+    runs-on: ubuntu-latest
+
+    permissions:
+      pull-requests: write
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Comment
+        run: |
+          COMMENT_ENDPOINT=repos/${{ github.repository_owner }}/syslog-ng/issues/${{ github.event.number }}/comments
+          COMMENT="No news file has been detected. Please write one, if applicable."
+
+          hub api \
+            ${COMMENT_ENDPOINT} \
+            --field body="${COMMENT}"
+
