@@ -100,6 +100,8 @@ log_rewrite_set_tag_new(LogTemplate *tag_template, gboolean value, GlobalConfig 
   self->super.process = _process;
   self->value = value;
 
+  self->tag_template = log_template_ref(tag_template);
+
   if (log_template_is_literal_string(tag_template))
     {
       const gchar *tag_name = log_template_get_literal_value(tag_template, NULL);
@@ -107,7 +109,6 @@ log_rewrite_set_tag_new(LogTemplate *tag_template, gboolean value, GlobalConfig 
     }
   else
     {
-      self->tag_template = log_template_ref(tag_template);
       self->tag_id = LOG_TAGS_UNDEF;
     }
 
