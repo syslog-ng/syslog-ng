@@ -805,6 +805,7 @@ AC_CHECK_FUNCS(strdup		\
 	getutxent		\
 	pread			\
 	pwrite			\
+	posix_fallocate		\
 	strcasestr		\
 	memrchr			\
 	localtime_r		\

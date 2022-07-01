@@ -292,14 +292,11 @@ _maybe_truncate_file(QDisk *self, gint64 expected_size)
             evt_tag_int("fd", self->fd));
 }
 
+#if SYSLOG_NG_HAVE_POSIX_FALLOCATE
 static gboolean
-_preallocate(QDisk *self)
+_posix_preallocate(QDisk *self)
 {
   gint64 size = qdisk_get_maximum_size(self);
-
-  msg_debug("Preallocating queue file",
-            evt_tag_str("filename", self->filename),
-            evt_tag_long("size", size));
 
   gint result = posix_fallocate(self->fd, 0, (off_t) size);
   if (result == 0)
@@ -313,6 +310,65 @@ _preallocate(QDisk *self)
             evt_tag_errno("error", result));
 
   return FALSE;
+}
+
+#else
+static gboolean
+_compat_preallocate(QDisk *self)
+{
+  const size_t buf_size = QDISK_RESERVED_SPACE;
+
+  gint64 size = qdisk_get_maximum_size(self);
+  gint64 buf_write_iterations = size / buf_size;
+  gint64 additional_write_size = size - buf_write_iterations * buf_size;
+
+  gchar buf[buf_size];
+  for (gint i = 0; i < buf_size; i++)
+    {
+      buf[i] = '\0';
+    }
+  off_t pos = 0;
+
+  for (gint i = 0; i < buf_write_iterations; i++)
+    {
+      if (!pwrite_strict(self->fd, buf, buf_size, pos))
+        {
+          msg_error("Failed to preallocate queue file",
+                    evt_tag_str("filename", self->filename),
+                    evt_tag_error("error"));
+          return FALSE;
+        }
+      pos += buf_size;
+      self->file_size = pos;
+    }
+
+  if (!pwrite_strict(self->fd, buf, additional_write_size, pos))
+    {
+      msg_error("Failed to preallocate queue file",
+                evt_tag_str("filename", self->filename),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+
+  self->file_size = pos + additional_write_size;
+  g_assert(self->file_size == size);
+
+  return TRUE;
+}
+#endif
+
+static gboolean
+_preallocate(QDisk *self)
+{
+  msg_debug("Preallocating queue file",
+            evt_tag_str("filename", self->filename),
+            evt_tag_long("size", qdisk_get_maximum_size(self)));
+
+#if SYSLOG_NG_HAVE_POSIX_FALLOCATE
+  return _posix_preallocate(self);
+#else
+  return _compat_preallocate(self);
+#endif
 }
 
 static inline gint64
