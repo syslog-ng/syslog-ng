@@ -390,6 +390,8 @@ parse_expected_licenses() {
  grep --invert-match --extended-regexp "^\s*$" |
  sed "s~[\\]~&&~g" |
  sed "
+  s~^#.*$~# ~
+  t e
   s~^ ~L ~
   t e
   s~^~P ~
@@ -428,6 +430,8 @@ parse_expected_licenses() {
      echo "error: ignored unknowned licensed path '${LINE}' in $POLICY" >&2
      local ERR=1
     fi
+    ;;
+   '#')
     ;;
    *)
     echo "error: assertion failed in parse_expected_licenses: unknown key '$KIND $LINE'" >&2

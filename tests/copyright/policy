@@ -1,4 +1,7 @@
- ignore
+###########################################################################
+# generated files are ignored                                             #
+###########################################################################
+                                                 ignore
 \.ctags
 \.mailmap
 scl/syslogconf/convert-syslogconf.awk$
@@ -56,7 +59,14 @@ tests/light/tox.ini
 tests/light/.pre-commit-config.yaml
 .github/workflows/.*$
 lib/logmsg/tests/messages/syslog-ng-(pe-)?[.0-9]*-msg.h$
- LGPLv2.1+_SSL,non-balabit
+
+
+###########################################################################
+# These files are LGPLd and are external contributions _without_ a Balabit
+# related copyright statement.
+###########################################################################
+                                                 LGPLv2.1+_SSL,non-balabit
+
 lib/timeutils/zonecache.[ch]$
 modules/secure-logging
 modules/secure-logging/tests
@@ -74,7 +84,12 @@ lib/rewrite/rewrite-set-pri\.c
 lib/timeutils/timeutils\.h
 lib/logmsg/tests/dump_logmsg\.c
 libtest/mock-logpipe\.[ch]
-  GPLv2+_SSL
+
+###########################################################################
+# These tests are GPLd even though they reside under lib/ and are excluded
+# from the LGPL declaration of lib/ below.
+###########################################################################
+                                                 GPLv2+_SSL
 lib/tests/test_clone_logmsg\.c
 lib/tests/test_dnscache\.c
 lib/tests/test_findcrlf\.c
@@ -86,7 +101,11 @@ lib/tests/test_ringbuffer\.c
 lib/tests/test_serialize\.c
 lib/tests/test_thread_wakeup\.c
 lib/tests/test_zone\.c
- LGPLv2.1+_SSL
+
+###########################################################################
+# These files are LGPLd, they are intended to be reusable.
+###########################################################################
+                                                 LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$
 configure\.ac$
@@ -101,7 +120,13 @@ modules/native
 modules/http/http-signals.h
 tests/loggen
 persist-tool
- GPLv2+_SSL,non-balabit
+
+
+###########################################################################
+# These files are GPLd and non-balabit contributions.
+###########################################################################
+                                                 GPLv2+_SSL,non-balabit
+
 modules/http/(http|http-parser|http-plugin|)\.[ch]
 modules/http/http-grammar.ym
 modules/timestamp/rewrite-.*$
@@ -114,7 +139,12 @@ scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/mariadb/.*\.conf$
 scl/kubernetes/.*\.conf$
- GPLv2+_SSL
+
+###########################################################################
+# These files are GPLd with Balabit origin.
+###########################################################################
+                                                 GPLv2+_SSL
+
 contib/config_option_database
 news/create-newsfile.py
 news/next-pr-id.py
