@@ -23,6 +23,8 @@
 #include "context-info-db.h"
 #include "atomic.h"
 #include "messages.h"
+#include "scratch-buffers.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -320,10 +322,15 @@ context_info_db_import(ContextInfoDB *self, FILE *fp, const gchar *filename,
 
   while (_get_line_without_eol(&line_buf, &line_buf_len, fp))
     {
+      ScratchBuffersMarker marker;
+
       lineno++;
       if (line_buf_len == 0)
         continue;
+
+      scratch_buffers_mark(&marker);
       next_record = contextual_data_record_scanner_get_next(scanner, line_buf, filename, lineno);
+      scratch_buffers_reclaim_marked(marker);
       if (!next_record)
         {
           context_info_db_purge(self);
