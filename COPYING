@@ -3,6 +3,23 @@ Copyright (c) 1996-2015 Balázs Scheidler
 
 syslog-ng is licensed under the combination of the GPL and LGPL licenses.
 
+Our intention with the choice of our licenses is to:
+ 1) license reusable/extendable code under the LGPL,
+ 2) license code implementing a specific function, not intended to be extended, under the GPL
+
+Although the location of a file wthin the source tree is closely related to
+how it is licensed (lib/ is LGPL by default, for instance), there are
+exceptions.  One example is: some of the tests are GPLed while they are
+related to LGPLed library code.
+
+With that in mind, before assuming the licensing of a specific file based
+solely on its location, please check its licensing in its copyright header, i.e.
+the very first comment block of the source code file.
+
+Alternatively, you can also use the contents of the `tests/copyright/policy`
+file, this is an input to our automated test suite that checks licenses
+against our intents.
+
 The syslog-ng core contained in the following subdirectories
 is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -23,8 +40,6 @@ redistribute it and/or modify it under the terms of the GNU General Public
 License version 2 as published by the Free Software Foundation,
 or (at your option) any later version
 (please refer to the file GPL.txt for more details).
-
-For file-level license details, check tests/copyright/policy.
 
 FAQ:
 ====
