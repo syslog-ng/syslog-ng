@@ -1163,7 +1163,7 @@ _init_fields_from_columns_and_values(AFSqlDestDriver *self)
                     evt_tag_str("column", self->fields[i].name));
           return FALSE;
         }
-      if (value->data == AFSQL_COLUMN_DEFAULT)
+      if (value->data == NULL)
         {
           self->fields[i].flags |= AFSQL_FF_DEFAULT;
         }

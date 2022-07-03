@@ -130,7 +130,7 @@ dest_afsql_values
 
 dest_afsql_values_build
         : template_content dest_afsql_values_build	{ $$ = g_list_append($2, log_template_ref($1)); log_template_unref($1); }
-        | KW_DEFAULT dest_afsql_values_build	{ $$ = g_list_append($2, AFSQL_COLUMN_DEFAULT); } 
+        | KW_DEFAULT dest_afsql_values_build	{ $$ = g_list_append($2, NULL); }
         |					{ $$ = NULL; }
         ;
 
