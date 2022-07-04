@@ -91,8 +91,6 @@ BUILT_SOURCES					+= \
 	modules/python/python-grammar.h
 
 EXTRA_DIST					+= \
-	modules/python/compat/compat-python-v2.c   \
-	modules/python/compat/compat-python-v3.c   \
 	modules/python/python-grammar.ym	   \
 	modules/python/python-example.conf	   \
 	modules/python/sngexample.py	\

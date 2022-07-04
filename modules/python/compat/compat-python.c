@@ -22,11 +22,62 @@
  */
 
 #include "python-module.h"
+#include "compat-python.h"
+#include "python-helpers.h"
+#include "syslog-ng.h"
+#include "reloc.h"
 
-#if SYSLOG_NG_ENABLE_PYTHONv2
-#include "compat-python-v2.c"
-#endif
+void
+_set_python_home(const gchar *python_home)
+{
+  Py_SetPythonHome(Py_DecodeLocale(python_home, NULL));
+}
 
-#if SYSLOG_NG_ENABLE_PYTHONv3
-#include "compat-python-v3.c"
+void
+_force_python_home(const gchar *python_home)
+{
+  const gchar *resolved_python_home = get_installation_path_for(python_home);
+  _set_python_home(resolved_python_home);
+}
+
+void
+py_setup_python_home(void)
+{
+#ifdef SYSLOG_NG_PYTHON3_HOME_DIR
+  if (strlen(SYSLOG_NG_PYTHON3_HOME_DIR) > 0)
+    _force_python_home(SYSLOG_NG_PYTHON3_HOME_DIR);
 #endif
+}
+
+void
+py_init_argv(void)
+{
+  static wchar_t *argv[] = {L"syslog-ng"};
+  PySys_SetArgvEx(1, argv, 0);
+}
+
+void
+py_init_threads(void)
+{
+#if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 7)
+  PyEval_InitThreads();
+#endif
+}
+
+PyObject *
+int_as_pyobject(gint num)
+{
+  return PyLong_FromLong(num);
+};
+
+gint
+pyobject_as_int(PyObject *object)
+{
+  return PyLong_AsLong(object);
+};
+
+gboolean
+py_object_is_integer(PyObject *object)
+{
+  return PyLong_Check(object);
+}
