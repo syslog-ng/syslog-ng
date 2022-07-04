@@ -397,26 +397,13 @@ _py_get_string_as_string(PyObject *object)
 {
   if (PyBytes_Check(object))
     return PyBytes_AsString(object);
-#if PY_MAJOR_VERSION >= 3
   else if (PyUnicode_Check(object))
     return PyUnicode_AsUTF8(object);
-#elif PY_MAJOR_VERSION < 3
-  else if (PyUnicode_Check(object))
-    {
-      PyObject *utf8_bytes = PyUnicode_AsUTF8String(object);
-      GString *buffer = scratch_buffers_alloc();
-      g_string_assign_len(buffer, PyBytes_AsString(utf8_bytes), PyBytes_Size(utf8_bytes));
-      Py_XDECREF(utf8_bytes);
-      return buffer->str;
-    }
-#endif
-  g_assert_not_reached();
 }
 
 PyObject *
 _py_string_from_string(const gchar *str, gssize len)
 {
-#if PY_MAJOR_VERSION >= 3
   const gchar *charset;
 
   /* NOTE: g_get_charset() returns if the current character set is utf8 */
@@ -450,12 +437,6 @@ _py_string_from_string(const gchar *str, gssize len)
             return PyBytes_FromString(str);
         }
     }
-#elif PY_MAJOR_VERSION < 3
-  if (len >= 0)
-    return PyBytes_FromStringAndSize(str, len);
-  else
-    return PyBytes_FromString(str);
-#endif
 }
 
 void

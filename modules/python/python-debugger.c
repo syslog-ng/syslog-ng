@@ -59,8 +59,6 @@ static PyMethodDef _syslogngdbg_functions[] =
   { NULL,            NULL, 0, NULL }   /* sentinel*/
 };
 
-#if PY_MAJOR_VERSION >= 3
-
 static struct PyModuleDef syslogngdbgmodule =
 {
   .m_base    = PyModuleDef_HEAD_INIT,
@@ -78,18 +76,6 @@ PyInit_syslogngdbg(void)
 
   return module;
 }
-
-#else
-
-static void
-PyInit_syslogngdbg(void)
-{
-  PyGILState_STATE gstate = PyGILState_Ensure();
-  Py_InitModule("_syslogngdbg", _syslogngdbg_functions);
-  PyGILState_Release(gstate);
-}
-
-#endif
 
 void
 python_debugger_append_inittab(void)
