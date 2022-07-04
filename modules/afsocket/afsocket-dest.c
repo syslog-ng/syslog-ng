@@ -176,7 +176,6 @@ afsocket_dd_stats_instance(AFSocketDestDriver *self)
 }
 
 static void _afsocket_dd_connection_in_progress(AFSocketDestDriver *self);
-static void afsocket_dd_try_connect(AFSocketDestDriver *self);
 
 static void
 afsocket_dd_init_watches(AFSocketDestDriver *self)
@@ -187,10 +186,7 @@ afsocket_dd_init_watches(AFSocketDestDriver *self)
 
   IV_TIMER_INIT(&self->reconnect_timer);
   self->reconnect_timer.cookie = self;
-  /* Using reinit as a handler before establishing the first successful connection.
-   * We'll change this to afsocket_dd_reconnect when the initialization of the
-   * connection succeeds.*/
-  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_try_connect;
+  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_reconnect;
 }
 
 static void
@@ -417,12 +413,6 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
   _dd_reconnect_with_setup_addresses(self);
 }
 
-static void
-afsocket_dd_try_connect(AFSocketDestDriver *self)
-{
-  afsocket_dd_reconnect(self);
-}
-
 static gboolean
 afsocket_dd_setup_proto_factory(AFSocketDestDriver *self)
 {
@@ -555,7 +545,7 @@ static gboolean
 _finalize_init(gpointer arg)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *)arg;
-  afsocket_dd_try_connect(self);
+  afsocket_dd_reconnect(self);
   return TRUE;
 }
 
