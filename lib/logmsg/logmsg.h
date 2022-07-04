@@ -519,7 +519,7 @@ evt_tag_msg_value(const gchar *name, LogMessage *msg, NVHandle value_handle)
   gssize value_len;
   const gchar *value = log_msg_get_value(msg, value_handle, &value_len);
 
-  return evt_tag_printf(name, "%.*s", (gint) value_len, value);
+  return evt_tag_mem(name, value, value_len);
 }
 
 static inline EVTTAG *

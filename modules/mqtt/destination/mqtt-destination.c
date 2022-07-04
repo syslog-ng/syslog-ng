@@ -112,7 +112,7 @@ _log_ssl_errors(const gchar *str, gsize len, gpointer u)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *) u;
 
-  msg_error("MQTT TLS error", evt_tag_printf("line", "%.*s", (gint) len, str),
+  msg_error("MQTT TLS error", evt_tag_mem("line", str, len),
             log_pipe_location_tag(&self->super.super.super.super));
   return TRUE;
 }

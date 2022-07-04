@@ -137,7 +137,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
                 {
                   msg_error("Incoming byte stream requires a too large conversion buffer, probably invalid character sequence",
                             evt_tag_str("encoding", self->super.options->encoding),
-                            evt_tag_printf("buffer", "%.*s", (gint) state->pending_buffer_end, self->buffer));
+                            evt_tag_mem("buffer", self->buffer, state->pending_buffer_end));
                   goto error;
                 }
               break;
@@ -657,7 +657,7 @@ log_proto_buffered_server_get_raw_size_of_buffer(LogProtoBufferedServer *self, c
       /* oops, we cannot reverse that we ourselves converted to UTF-8,
        * this is simply impossible, but never say never */
       msg_error("Internal error, couldn't reverse the internal UTF8 string to the original encoding",
-                evt_tag_printf("buffer", "%.*s", (gint) buffer_len, buffer));
+                evt_tag_mem("buffer", buffer, buffer_len));
       return 0;
     }
   else

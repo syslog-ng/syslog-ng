@@ -94,7 +94,7 @@ _parse_unknown_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize 
     return TRUE;
 
   msg_warning("PROXY UNKNOWN header contains unexpected paramters",
-              evt_tag_printf("parameters", "%.*s", (gint) msg_len, msg));
+              evt_tag_mem("parameters", msg, msg_len));
 
   return TRUE;
 }
@@ -275,8 +275,8 @@ _log_proto_proxied_text_server_handshake(LogProtoServer *s)
   gboolean parsable = _log_proto_proxied_text_server_parse_header(self, self->proxy_header_buff,
                       self->proxy_header_buff_len);
 
-  msg_debug("PROXY protocol header received", evt_tag_printf("line", "%.*s",
-                                                             (gint) self->proxy_header_buff_len, self->proxy_header_buff));
+  msg_debug("PROXY protocol header received",
+            evt_tag_mem("line", self->proxy_header_buff, self->proxy_header_buff_len));
 
   if (parsable)
     {
