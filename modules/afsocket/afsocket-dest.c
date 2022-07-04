@@ -177,7 +177,6 @@ afsocket_dd_stats_instance(AFSocketDestDriver *self)
 
 static void _afsocket_dd_connection_in_progress(AFSocketDestDriver *self);
 static void afsocket_dd_try_connect(AFSocketDestDriver *self);
-static gboolean afsocket_dd_setup_connection(AFSocketDestDriver *self);
 
 static void
 afsocket_dd_init_watches(AFSocketDestDriver *self)
@@ -421,14 +420,7 @@ afsocket_dd_reconnect(AFSocketDestDriver *self)
 static void
 afsocket_dd_try_connect(AFSocketDestDriver *self)
 {
-  if ((!afsocket_dd_setup_addresses(self)) || !afsocket_dd_setup_connection(self))
-    {
-      msg_error("Initiating connection failed, reconnecting",
-                evt_tag_int("time_reopen", self->writer_options.time_reopen));
-      afsocket_dd_start_reconnect_timer(self);
-      return;
-    }
-  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_reconnect;
+  afsocket_dd_reconnect(self);
 }
 
 static gboolean
@@ -556,12 +548,6 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
         }
     }
   self->connection_initialized = TRUE;
-  return TRUE;
-}
-
-static gboolean
-afsocket_dd_setup_connection(AFSocketDestDriver *self)
-{
   return TRUE;
 }
 
