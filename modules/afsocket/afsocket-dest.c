@@ -349,6 +349,9 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
 
   main_loop_assert_main_thread();
 
+  if (log_writer_opened(self->writer))
+    return TRUE;
+
   g_assert(self->transport_mapper->transport);
   g_assert(self->bind_addr);
   g_assert(self->dest_addr);
@@ -407,12 +410,6 @@ static void
 _dd_reconnect_with_setup_addresses(AFSocketDestDriver *self)
 {
   _dd_reconnect(self, TRUE);
-}
-
-static void
-_dd_reconnect_with_current_addresses(AFSocketDestDriver *self)
-{
-  _dd_reconnect(self, FALSE);
 }
 
 void
@@ -565,9 +562,6 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
 static gboolean
 afsocket_dd_setup_connection(AFSocketDestDriver *self)
 {
-  if (!log_writer_opened(self->writer))
-    _dd_reconnect_with_current_addresses(self);
-
   return TRUE;
 }
 
