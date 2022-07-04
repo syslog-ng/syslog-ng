@@ -48,7 +48,7 @@ TARBALL_BASENAME=syslog-ng-$(VERSION).tar.gz
 TARBALL=$(BUILD_DIR)/$(TARBALL_BASENAME)
 GIT=$(shell which git || echo false)
 GIT_RELEASE_TAG=syslog-ng-$(VERSION)
-CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install $(CONFIGURE_ADD)
+CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=3 --prefix=/install $(CONFIGURE_ADD)
 DBLD_RULES=$(MAKE) --no-print-directory -f $(DBLD_DIR)/rules
 
 DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti ${CONTAINER_REGISTRY}/dbld-$* /dbld/shell
