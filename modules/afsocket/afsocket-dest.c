@@ -558,6 +558,7 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
           log_writer_reopen(self->writer, proto);
         }
     }
+  self->connection_initialized = TRUE;
   return TRUE;
 }
 
@@ -567,7 +568,6 @@ afsocket_dd_setup_connection(AFSocketDestDriver *self)
   if (!log_writer_opened(self->writer))
     _dd_reconnect_with_current_addresses(self);
 
-  self->connection_initialized = TRUE;
   return TRUE;
 }
 
