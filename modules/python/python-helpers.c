@@ -463,21 +463,3 @@ py_init_argv(void)
   static wchar_t *argv[] = {L"syslog-ng"};
   PySys_SetArgvEx(1, argv, 0);
 }
-
-PyObject *
-int_as_pyobject(gint num)
-{
-  return PyLong_FromLong(num);
-};
-
-gint
-pyobject_as_int(PyObject *object)
-{
-  return PyLong_AsLong(object);
-};
-
-gboolean
-py_object_is_integer(PyObject *object)
-{
-  return PyLong_Check(object);
-}

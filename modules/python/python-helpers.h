@@ -57,8 +57,4 @@ void py_slng_generic_dealloc(PyObject *self);
 void py_setup_python_home(void);
 void py_init_argv(void);
 
-PyObject *int_as_pyobject(gint num);
-gint pyobject_as_int(PyObject *object);
-gboolean py_object_is_integer(PyObject *object);
-
 #endif

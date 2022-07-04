@@ -415,7 +415,7 @@ _py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
     type = ENTRY_TYPE_BYTES;
   else if (_py_is_string(v))
     type = ENTRY_TYPE_STRING;
-  else if (py_object_is_integer(v))
+  else if (PyLong_Check(v))
     type = ENTRY_TYPE_LONG;
   else
     {

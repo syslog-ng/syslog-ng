@@ -25,6 +25,7 @@
 #include <criterion/criterion.h>
 
 #include "python-helpers.h"
+#include "python-types.h"
 #include "python-logmsg.h"
 #include "python-logtemplate.h"
 #include "python-logtemplate-options.h"
@@ -169,7 +170,7 @@ Test(python_log_logtemplate, format_all_parameters)
   PyLogMessage *py_log_msg = create_parsed_message("<38>2018-07-20T00:00:00+00:00 localhost prg00000[1234]: test\n");
   PyLogTemplate *py_template = create_py_log_template("${S_STAMP} | ${SEQNUM}");
   cr_assert(py_template);
-  PyObject *args = PyTuple_Pack(4, py_log_msg, py_template_options, int_as_pyobject(1), int_as_pyobject(10));
+  PyObject *args = PyTuple_Pack(4, py_log_msg, py_template_options, py_long_from_long(1), py_long_from_long(10));
   PyObject *result = py_log_template_format((PyObject *)py_template, args, NULL);
   Py_DECREF(args);
 

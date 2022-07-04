@@ -29,6 +29,7 @@
 #include "python-logtemplate-options.h"
 #include "python-integerpointer.h"
 #include "python-helpers.h"
+#include "python-types.h"
 #include "logthrdest/logthrdestdrv.h"
 #include "stats/stats.h"
 #include "string-list.h"
@@ -224,8 +225,8 @@ _py_invoke_close(PythonDestDriver *self)
 static LogThreadedResult
 _as_int(PyObject *obj)
 {
-  int result = pyobject_as_int(obj);
-  if (result == -1 && PyErr_Occurred())
+  gint64 result;
+  if (!py_long_to_long(obj, &result) && PyErr_Occurred())
     {
       gchar buf[256];
       _py_format_exception_text(buf, sizeof(buf));
@@ -314,7 +315,7 @@ _py_clear(PyObject *self)
 static void
 _inject_const(PythonDestDriver *self, const gchar *field_name, gint value)
 {
-  PyObject *pyint = int_as_pyobject(value);
+  PyObject *pyint = py_long_from_long(value);
   PyObject_SetAttrString(self->py.class, field_name, pyint);
   g_ptr_array_add(self->py._refs_to_clean, pyint);
 };
