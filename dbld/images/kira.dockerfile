@@ -11,3 +11,4 @@ RUN /dbld/builddeps install_apt_packages
 RUN /dbld/builddeps install_bison_from_source
 RUN /dbld/builddeps install_pip2
 RUN /dbld/builddeps install_pip_packages
+RUN /dbld/builddeps set_jvm_paths
