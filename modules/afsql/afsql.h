@@ -30,11 +30,6 @@
 
 #include <dbi.h>
 
-enum
-{
-  AFSQL_COLUMN_DEFAULT = 1,
-};
-
 /* field flags */
 enum
 {

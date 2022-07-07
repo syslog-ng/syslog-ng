@@ -775,6 +775,97 @@ afsql_dd_ensure_accessible_database_table(AFSqlDestDriver *self, LogMessage *msg
   return table;
 }
 
+static void
+afsql_dd_append_quoted_value(AFSqlDestDriver *self, GString *value, GString *insert_command)
+{
+  gchar *quoted = NULL;
+  dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
+  if (quoted)
+    g_string_append(insert_command, quoted);
+  else
+    g_string_append(insert_command, "''");
+  free(quoted);
+}
+
+static gboolean
+afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
+                                     AFSqlField *field, GString *value, LogMessageValueType type,
+                                     GString *insert_command)
+{
+  gboolean need_drop = FALSE;
+  gboolean fallback = self->template_options.on_error & ON_ERROR_FALLBACK_TO_STRING;
+
+  if (self->null_value && strcmp(self->null_value, value->str) == 0)
+    {
+      g_string_append(insert_command, "NULL");
+      return TRUE;
+    }
+
+  switch(type)
+    {
+    case LM_VT_INT32:
+    case LM_VT_INT64:
+    {
+      gint64 k;
+      if (type_cast_to_int64(value->str, &k, NULL))
+        {
+          g_string_append_len(insert_command, value->str, value->len);
+        }
+      else
+        {
+          need_drop = type_cast_drop_helper(self->template_options.on_error,
+                                            value->str, "int");
+          if (fallback)
+            afsql_dd_append_quoted_value(self, value, insert_command);
+        }
+      break;
+    }
+    case LM_VT_DOUBLE:
+    {
+      gdouble d;
+      if (type_cast_to_double(value->str, &d, NULL))
+        {
+          g_string_append_len(insert_command, value->str, value->len);
+        }
+      else
+        {
+          need_drop = type_cast_drop_helper(self->template_options.on_error,
+                                            value->str, "double");
+          if (fallback)
+            afsql_dd_append_quoted_value(self, value, insert_command);
+        }
+      break;
+    }
+    case LM_VT_BOOLEAN:
+    {
+      gboolean b;
+      if (type_cast_to_boolean(value->str, &b, NULL))
+        {
+          if (b)
+            g_string_append(insert_command, "TRUE");
+          else
+            g_string_append(insert_command, "FALSE");
+        }
+      else
+        {
+          need_drop = type_cast_drop_helper(self->template_options.on_error,
+                                            value->str, "boolean");
+          if (fallback)
+            afsql_dd_append_quoted_value(self, value, insert_command);
+        }
+    }
+    case LM_VT_NULL:
+      g_string_append(insert_command, "NULL");
+      break;
+    default:
+      afsql_dd_append_quoted_value(self, value, insert_command);
+    }
+
+  if (need_drop)
+    return FALSE;
+  return TRUE;
+}
+
 static GString *
 afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *table)
 {
@@ -803,29 +894,17 @@ afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *t
 
   for (i = 0; i < self->fields_len; i++)
     {
-      gchar *quoted;
-
       if ((self->fields[i].flags & AFSQL_FF_DEFAULT) == 0 && self->fields[i].value != NULL)
         {
           LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND, self->super.worker.instance.seq_num, NULL, LM_VT_STRING};
-          log_template_format(self->fields[i].value, msg, &options, value);
-          if (self->null_value && strcmp(self->null_value, value->str) == 0)
-            {
-              g_string_append(insert_command, "NULL");
-            }
-          else
-            {
-              dbi_conn_quote_string_copy(self->dbi_ctx, value->str, &quoted);
-              if (quoted)
-                {
-                  g_string_append(insert_command, quoted);
-                  free(quoted);
-                }
-              else
-                {
-                  g_string_append(insert_command, "''");
-                }
-            }
+          LogMessageValueType type;
+
+          log_template_format_value_and_type(self->fields[i].value, msg, &options, value, &type);
+
+          if (!afsql_dd_append_value_to_be_inserted(self,
+                                                    &self->fields[i], value, type,
+                                                    insert_command))
+            goto drop;
 
           j = i + 1;
           while (j < self->fields_len && (self->fields[j].flags & AFSQL_FF_DEFAULT) == AFSQL_FF_DEFAULT)
@@ -836,10 +915,14 @@ afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *t
     }
 
   g_string_append(insert_command, ")");
-
   g_string_free(value, TRUE);
 
   return insert_command;
+
+drop:
+  g_string_free(value, TRUE);
+  g_string_free(insert_command, TRUE);
+  return NULL;
 }
 
 static inline gboolean
@@ -912,15 +995,38 @@ afsql_dd_flush(LogThreadedDestDriver *s)
   return LTR_SUCCESS;
 }
 
-static gboolean
+static LogThreadedResult
 afsql_dd_run_insert_query(AFSqlDestDriver *self, GString *table, LogMessage *msg)
 {
   GString *insert_command;
+  gboolean drop_silently = self->template_options.on_error & ON_ERROR_SILENT;
 
   insert_command = afsql_dd_build_insert_command(self, msg, table);
-  gboolean success = afsql_dd_run_query(self, insert_command->str, FALSE, NULL);
-  g_string_free(insert_command, TRUE);
-  return success;
+  if (insert_command)
+    {
+      gboolean success = afsql_dd_run_query(self, insert_command->str, FALSE, NULL);
+      g_string_free(insert_command, TRUE);
+      if (!success)
+        return afsql_dd_handle_insert_row_error_depending_on_connection_availability(self);
+
+      return afsql_dd_is_transaction_handling_enabled(self)
+             ? LTR_QUEUED
+             : LTR_SUCCESS;
+    }
+  else
+    {
+      if (!drop_silently)
+        {
+          msg_error("Failed to format message for SQL, dropping message",
+                    evt_tag_str("type", self->type),
+                    evt_tag_str("host", self->host),
+                    evt_tag_str("port", self->port),
+                    evt_tag_str("username", self->user),
+                    evt_tag_str("database", self->database),
+                    evt_tag_str("error", "error converting name-value pair to the requested type"));
+        }
+      return LTR_DROP;
+    }
 }
 
 /**
@@ -945,18 +1051,9 @@ afsql_dd_insert(LogThreadedDestDriver *s, LogMessage *msg)
   if (afsql_dd_should_begin_new_transaction(self) && !afsql_dd_begin_transaction(self))
     goto error;
 
-  if (!afsql_dd_run_insert_query(self, table, msg))
-    {
-      retval = afsql_dd_handle_insert_row_error_depending_on_connection_availability(self);
-      goto error;
-    }
-
-  retval = afsql_dd_is_transaction_handling_enabled(self)
-           ? LTR_QUEUED
-           : LTR_SUCCESS;
+  retval = afsql_dd_run_insert_query(self, table, msg);
 
 error:
-
   if (table != NULL)
     g_string_free(table, TRUE);
 
@@ -1021,7 +1118,6 @@ _update_legacy_persist_name_if_exists(AFSqlDestDriver *self)
 static gboolean
 _init_fields_from_columns_and_values(AFSqlDestDriver *self)
 {
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
   GList *col, *value;
   gint len_cols, len_values;
   gint i;
@@ -1067,23 +1163,14 @@ _init_fields_from_columns_and_values(AFSqlDestDriver *self)
                     evt_tag_str("column", self->fields[i].name));
           return FALSE;
         }
-
-      if (GPOINTER_TO_UINT(value->data) > 4096)
+      if (value->data == NULL)
         {
-          self->fields[i].value = log_template_new(cfg, NULL);
-          log_template_compile(self->fields[i].value, (gchar *) value->data, NULL);
+          self->fields[i].flags |= AFSQL_FF_DEFAULT;
         }
       else
         {
-          switch (GPOINTER_TO_UINT(value->data))
-            {
-            case AFSQL_COLUMN_DEFAULT:
-              self->fields[i].flags |= AFSQL_FF_DEFAULT;
-              break;
-            default:
-              g_assert_not_reached();
-              break;
-            }
+          log_template_unref(self->fields[i].value);
+          self->fields[i].value = log_template_ref(value->data);
         }
     }
   return TRUE;
@@ -1183,7 +1270,7 @@ afsql_dd_free(LogPipe *s)
     g_free(self->null_value);
   string_list_free(self->columns);
   string_list_free(self->indexes);
-  string_list_free(self->values);
+  g_list_free_full(self->values, (GDestroyNotify)log_template_unref);
   log_template_unref(self->table);
   g_hash_table_destroy(self->syslogng_conform_tables);
   g_hash_table_destroy(self->dbd_options);

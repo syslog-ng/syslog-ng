@@ -129,8 +129,8 @@ dest_afsql_values
         ;
 
 dest_afsql_values_build
-        : string dest_afsql_values_build	{ $$ = g_list_append($2, g_strdup($1)); free($1); }
-        | KW_DEFAULT dest_afsql_values_build	{ $$ = g_list_append($2, GUINT_TO_POINTER(AFSQL_COLUMN_DEFAULT)); }
+        : template_content dest_afsql_values_build	{ $$ = g_list_append($2, log_template_ref($1)); log_template_unref($1); }
+        | KW_DEFAULT dest_afsql_values_build	{ $$ = g_list_append($2, NULL); }
         |					{ $$ = NULL; }
         ;
 
@@ -142,3 +142,4 @@ dest_afsql_flags
 /* INCLUDE_RULES */
 
 %%
+

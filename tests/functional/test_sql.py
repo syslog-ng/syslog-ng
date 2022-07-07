@@ -37,8 +37,8 @@ destination d_sql {
     sql(type(sqlite3) database("%(current_dir)s/test-sql.db") host(dummy) port(1234) username(dummy) password(dummy)
         table("logs")
         null("@NULL@")
-        columns("date datetime", "host", "program", "pid", "msg")
-        values("$DATE", "$HOST", "$PROGRAM", "${PID:-@NULL@}", "$MSG")
+        columns("date datetime", "host", "program", "pid", "msg", "dummy int default 5678")
+        values("$DATE", "$HOST", "$PROGRAM", "${PID:-@NULL@}", "$MSG", default)
         indexes("date", "host", "program")
         flags(explicit-commits)
         flush-lines(25) flush_timeout(100));
