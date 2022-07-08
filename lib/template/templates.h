@@ -68,6 +68,7 @@ struct _LogTemplate
 void log_template_set_escape(LogTemplate *self, gboolean enable);
 gboolean log_template_set_type_hint(LogTemplate *self, const gchar *hint, GError **error);
 gboolean log_template_compile(LogTemplate *self, const gchar *template, GError **error);
+gboolean log_template_compile_with_type_hint(LogTemplate *self, const gchar *template_and_typehint, GError **error);
 void log_template_compile_literal_string(LogTemplate *self, const gchar *literal);
 gboolean log_template_is_literal_string(const LogTemplate *self);
 const gchar *log_template_get_literal_value(const LogTemplate *self, gssize *value_len);

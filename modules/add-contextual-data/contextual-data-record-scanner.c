@@ -112,7 +112,7 @@ _fetch_value(ContextualDataRecordScanner *self, ContextualDataRecord *record)
     {
       GError *error = NULL;
 
-      if (!log_template_compile(record->value, value_template, &error))
+      if (!log_template_compile_with_type_hint(record->value, value_template, &error))
         {
           msg_error("add-contextual-data(): error compiling template",
                     evt_tag_str("selector", record->selector->str),

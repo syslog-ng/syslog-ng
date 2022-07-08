@@ -692,3 +692,51 @@ Test(template, test_type_hint_overrides_the_calculated_type)
   log_msg_unref(msg);
   log_template_unref(template);
 }
+
+Test(template, test_log_template_compile_with_type_hint_sets_the_type_hint_member_too)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  LogTemplate *template = log_template_new(configuration, NULL);
+  GError *error = NULL;
+  gboolean result;
+
+  cr_assert_eq(template->type_hint, LM_VT_NONE);
+
+  result = log_template_compile_with_type_hint(template, "int64(1234)", &error);
+  cr_assert(result);
+  cr_assert_eq(error, NULL);
+  cr_assert_eq(template->type_hint, LM_VT_INT64);
+  result = log_template_compile_with_type_hint(template, "string(1234)", &error);
+  cr_assert(result);
+  cr_assert_eq(error, NULL);
+  cr_assert_eq(template->type_hint, LM_VT_STRING);
+  result = log_template_compile_with_type_hint(template, "list(foo,bar,baz)", &error);
+  cr_assert(result);
+  cr_assert_eq(error, NULL);
+  cr_assert_eq(template->type_hint, LM_VT_LIST);
+  result = log_template_compile_with_type_hint(template, "generic-string", &error);
+  cr_assert(result);
+  cr_assert_eq(error, NULL);
+  cr_assert_eq(template->type_hint, LM_VT_NONE);
+  log_template_unref(template);
+}
+
+Test(template, test_log_template_compile_with_invalid_type_hint_resets_the_type_hint_to_none)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  LogTemplate *template = log_template_new(configuration, NULL);
+  GError *error = NULL;
+  gboolean result;
+
+  cr_assert_eq(template->type_hint, LM_VT_NONE);
+
+  result = log_template_compile_with_type_hint(template, "int64(1234)", &error);
+  cr_assert(result);
+  cr_assert_eq(error, NULL);
+  cr_assert_eq(template->type_hint, LM_VT_INT64);
+  result = log_template_compile_with_type_hint(template, "unknown(generic-string)", &error);
+  cr_assert_not(result);
+  cr_assert_neq(error, NULL);
+  cr_assert_eq(template->type_hint, LM_VT_NONE);
+  log_template_unref(template);
+}

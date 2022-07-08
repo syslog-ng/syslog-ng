@@ -210,6 +210,64 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
   return result;
 }
 
+static void
+_split_type_and_template(gchar *spec, gchar **value, gchar **type)
+{
+  char *sp, *ep;
+
+  *type = NULL;
+  sp = spec;
+
+  while (g_ascii_isalnum(*sp) || (*sp) == '_')
+    sp++;
+
+  while (*sp == ' ' || *sp == '\t')
+    sp++;
+
+  if (*sp != '(' ||
+      !((g_ascii_toupper(spec[0]) >= 'A' &&
+         g_ascii_toupper(spec[0]) <= 'Z') ||
+        spec[0] == '_'))
+    {
+      *value = spec;
+      return;
+    }
+
+  ep = strrchr(sp, ')');
+  if (ep == NULL || ep[1] != '\0')
+    {
+      *value = spec;
+      return;
+    }
+
+  *value = sp + 1;
+  *type = spec;
+  sp[0] = '\0';
+  ep[0] = '\0';
+}
+
+gboolean
+log_template_compile_with_type_hint(LogTemplate *self, const gchar *template_and_typehint, GError **error)
+{
+  gchar *buf = g_strdup(template_and_typehint);
+  gchar *template_string = NULL;
+  gchar *typehint_string = NULL;
+  gboolean result = FALSE;
+
+  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+  _split_type_and_template(buf, &template_string, &typehint_string);
+  if (!log_template_compile(self, template_string, error))
+    goto exit;
+  if (!log_template_set_type_hint(self, typehint_string, error))
+    goto exit;
+
+  result = TRUE;
+exit:
+  g_free(buf);
+  return result;
+}
+
 void
 log_template_compile_literal_string(LogTemplate *self, const gchar *literal)
 {
@@ -242,7 +300,12 @@ log_template_set_type_hint(LogTemplate *self, const gchar *type_hint, GError **e
       self->type_hint = LM_VT_NONE;
       return TRUE;
     }
-  return type_hint_parse(type_hint, &self->type_hint, error);
+  if (!type_hint_parse(type_hint, &self->type_hint, error))
+    {
+      self->type_hint = LM_VT_NONE;
+      return FALSE;
+    }
+  return TRUE;
 }
 
 /* NOTE: we should completely get rid off the name property of templates,

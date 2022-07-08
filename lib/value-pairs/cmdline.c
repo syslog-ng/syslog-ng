@@ -147,42 +147,6 @@ vp_cmdline_parse_rekey(const gchar *option_name, const gchar *value,
   return TRUE;
 }
 
-static void
-value_pairs_parse_type(gchar *spec, gchar **value, gchar **type)
-{
-  char *sp, *ep;
-
-  *type = NULL;
-  sp = spec;
-
-  while (g_ascii_isalnum(*sp) || (*sp) == '_')
-    sp++;
-
-  while (*sp == ' ' || *sp == '\t')
-    sp++;
-
-  if (*sp != '(' ||
-      !((g_ascii_toupper(spec[0]) >= 'A' &&
-         g_ascii_toupper(spec[0]) <= 'Z') ||
-        spec[0] == '_'))
-    {
-      *value = spec;
-      return;
-    }
-
-  ep = strrchr(sp, ')');
-  if (ep == NULL || ep[1] != '\0')
-    {
-      *value = spec;
-      return;
-    }
-
-  *value = sp + 1;
-  *type = spec;
-  sp[0] = '\0';
-  ep[0] = '\0';
-}
-
 static gboolean
 vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
                        gpointer data, GError **error)
@@ -190,7 +154,7 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
   gpointer *args = (gpointer *) data;
   ValuePairs *vp = (ValuePairs *) args[1];
   GlobalConfig *cfg = (GlobalConfig *) args[0];
-  gchar **kv, *v, *t;
+  gchar **kv;
   gboolean res = FALSE;
   LogTemplate *template;
 
@@ -204,21 +168,9 @@ vp_cmdline_parse_pair (const gchar *option_name, const gchar *value,
     }
 
   kv = g_strsplit(value, "=", 2);
-  value_pairs_parse_type(kv[1], &v, &t);
 
   template = log_template_new(cfg, NULL);
-  if (!log_template_compile(template, v, error))
-    goto error;
-
-  /* NOTE: t == NULL means that we disable casting, which might be in place
-   * due to compatibility with 3.x.  This means that value-pairs would
-   * _expect_ log_template_format() to return a proper type even in 3.x
-   * mode.  This is OK as value pairs is doing its own compatibility
-   * guarantees and would override type information from LogTemplate.  This
-   * happens for instance with a --no-cast option to $(format-json), which
-   * explicitly asks for the new behavior.  */
-
-  if (!log_template_set_type_hint(template, t, error))
+  if (!log_template_compile_with_type_hint(template, kv[1], error))
     goto error;
 
   value_pairs_add_pair(vp, kv[0], template);
