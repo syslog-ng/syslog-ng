@@ -93,7 +93,7 @@ _parse_unknown_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize 
   if (msg_len == 0)
     return TRUE;
 
-  msg_warning("PROXY UNKNOWN header contains unexpected paramters",
+  msg_warning("PROXY UNKNOWN header contains unexpected parameters",
               evt_tag_mem("parameters", msg, msg_len));
 
   return TRUE;
