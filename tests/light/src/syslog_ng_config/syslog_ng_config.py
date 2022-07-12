@@ -31,6 +31,7 @@ from src.syslog_ng_config.statements.destinations.file_destination import FileDe
 from src.syslog_ng_config.statements.destinations.network_destination import NetworkDestination
 from src.syslog_ng_config.statements.destinations.snmp_destination import SnmpDestination
 from src.syslog_ng_config.statements.destinations.unix_dgram_destination import UnixDgramDestination
+from src.syslog_ng_config.statements.destinations.unix_stream_destination import UnixStreamDestination
 from src.syslog_ng_config.statements.filters.filter import Filter
 from src.syslog_ng_config.statements.filters.filter import RateLimit
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
@@ -44,6 +45,7 @@ from src.syslog_ng_config.statements.sources.example_msg_generator_source import
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.sources.internal_source import InternalSource
 from src.syslog_ng_config.statements.sources.network_source import NetworkSource
+
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +150,9 @@ class SyslogNgConfig(object):
 
     def create_unix_dgram_destination(self, **options):
         return UnixDgramDestination(**options)
+
+    def create_unix_stream_destination(self, **options):
+        return UnixStreamDestination(**options)
 
     def create_db_parser(self, config, **options):
         return DBParser(config, **options)
