@@ -6,6 +6,10 @@ add_unit_test(TARGET test_evtfmt
   INCLUDES "${Eventlog_INCLUDE_DIR}"
   SOURCES evtfmt.c)
 
+add_unit_test(CRITERION TARGET test_evt_tag_mem
+  INCLUDES "${Eventlog_INCLUDE_DIR}"
+  SOURCES evt_tag_mem.c)
+
 add_unit_test(TARGET test_evtsyslog
   INCLUDES "${Eventlog_INCLUDE_DIR}"
   SOURCES evtsyslog.c)
