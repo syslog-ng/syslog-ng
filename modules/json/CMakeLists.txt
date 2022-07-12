@@ -26,8 +26,4 @@ add_module(
   SOURCES ${JSON_SOURCES}
 )
 
-if (JSONC_INTERNAL)
-    add_dependencies(json-plugin JSONC)
-endif()
-
 add_test_subdirectory(tests)

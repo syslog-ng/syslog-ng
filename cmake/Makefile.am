@@ -7,7 +7,6 @@ EXTRA_DIST +=	\
 	cmake/Modules/CheckSockaddrStorage.cmake	\
 	cmake/Modules/CheckStructMember.cmake	\
 	cmake/Modules/ExternalIVYKIS.cmake	\
-	cmake/Modules/ExternalJSONC.cmake	\
 	cmake/Modules/Findcriterion.cmake	\
 	cmake/Modules/FindCurl.cmake	\
 	cmake/Modules/FindESMTP.cmake	\

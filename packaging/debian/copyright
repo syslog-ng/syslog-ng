@@ -117,28 +117,6 @@ License: ivykis-man
  and in case of nontrivial modification author and date
  of the modification is added to the header.
 
-Files: lib/jsonc/*
-Copyright: Copyright (C) Metaparadigm Pte. Ltd
-           Copyright (C) Eric Haszlakiewicz
-License: Expat
-
-Files: lib/jsonc/debug.h
-       lib/jsonc/json.h
-       lib/jsonc/json_object.*
-       lib/jsonc/json_object_iterator.*
-       lib/jsonc/linkhash.*
-Copyright: Copyright (C) Hewlett-Packard Development Company, L.P
-           Copyright (C) Metaparadigm Pte. Ltd
-           Copyright (C) Eric Haszlakiewicz
-License: Expat
-
-Files: lib/jsonc/json_tokener.c
-       lib/jsonc/printbuf.*
-Copyright: Copyright (C) Yahoo! Inc.
-           Copyright (C) Metaparadigm Pte. Ltd
-           Copyright (C) Eric Haszlakiewicz
-License: Expat
-
 Files: modules/*
 Copyright: Copyright (C) Balázs Scheidler
            Copyright (C) BalaBit IT Security Ltd.

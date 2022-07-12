@@ -27,6 +27,5 @@
 # on Travis these submodules are not checked out when cheking the style
 --ignore-exclude-errors
 --exclude="lib/ivykis"
---exclude="lib/jsonc"
 --exclude="lib/compat/strcasestr.c"
 --exclude="dbld"
