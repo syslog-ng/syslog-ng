@@ -62,8 +62,11 @@
 /* branch starting with this pipe wants hard flow control */
 #define PIF_HARD_FLOW_CONTROL 0x0020
 
+/* LogPipe as the joining element of a junction */
+#define PIF_JUNCTION_END      0x0080
+
 /* node created directly by the user */
-#define PIF_CONFIG_RELATED    0x0080
+#define PIF_CONFIG_RELATED    0x0100
 
 /* private flags range, to be used by other LogPipe instances for their own purposes */
 

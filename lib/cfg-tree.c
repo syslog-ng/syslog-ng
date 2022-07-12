@@ -1206,6 +1206,7 @@ cfg_tree_compile_junction(CfgTree *self,
           if (!join_pipe)
             {
               join_pipe = cfg_tree_new_pipe(self, node, "junction-end");
+              join_pipe->flags |= PIF_JUNCTION_END;
             }
           log_pipe_append(sub_pipe_tail, join_pipe);
 
