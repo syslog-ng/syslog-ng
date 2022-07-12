@@ -30,6 +30,7 @@ from src.syslog_ng_config.statements.destinations.example_destination import Exa
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
 from src.syslog_ng_config.statements.destinations.network_destination import NetworkDestination
 from src.syslog_ng_config.statements.destinations.snmp_destination import SnmpDestination
+from src.syslog_ng_config.statements.destinations.unix_dgram_destination import UnixDgramDestination
 from src.syslog_ng_config.statements.filters.filter import Filter
 from src.syslog_ng_config.statements.filters.filter import RateLimit
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
@@ -144,6 +145,9 @@ class SyslogNgConfig(object):
 
     def create_network_destination(self, **options):
         return NetworkDestination(**options)
+
+    def create_unix_dgram_destination(self, **options):
+        return UnixDgramDestination(**options)
 
     def create_db_parser(self, config, **options):
         return DBParser(config, **options)
