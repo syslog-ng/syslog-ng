@@ -119,7 +119,7 @@ confgen_exec_generate(CfgBlockGenerator *s, GlobalConfig *cfg, gpointer args, GS
       return FALSE;
     }
   msg_debug("confgen: output from the executed program to be included is",
-            evt_tag_printf("block", "%.*s", (gint) result->len, result->str));
+            evt_tag_mem("block", result->str, result->len));
   return TRUE;
 }
 

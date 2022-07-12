@@ -451,7 +451,7 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
 
   m = msg_format_construct_message(&self->options->parse_options, line, length);
   msg_debug("Incoming log entry",
-            evt_tag_printf("input", "%.*s", length, line),
+            evt_tag_mem("input", line, length),
             evt_tag_msg_reference(m));
 
   msg_format_parse_into(&self->options->parse_options, m, line, length);

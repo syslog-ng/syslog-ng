@@ -358,17 +358,17 @@ afsmtp_dd_cb_monitor(const gchar *buf, gint buflen, gint writing,
     case SMTP_CB_READING:
       msg_debug ("SMTP Session: SERVER",
                  evt_tag_str("driver", self->super.super.super.id),
-                 evt_tag_printf("message", "%.*s", buflen, buf));
+                 evt_tag_mem("message", buf, buflen));
       break;
     case SMTP_CB_WRITING:
       msg_debug("SMTP Session: CLIENT",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_printf("message", "%.*s", buflen, buf));
+                evt_tag_mem("message", buf, buflen));
       break;
     case SMTP_CB_HEADERS:
       msg_debug("SMTP Session: HEADERS",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_printf("data", "%.*s", buflen, buf));
+                evt_tag_mem("data", buf, buflen));
       break;
     }
 }
