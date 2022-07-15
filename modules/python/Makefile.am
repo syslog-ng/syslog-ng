@@ -67,7 +67,9 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-bookmark.h \
 	modules/python/python-bookmark.c \
 	modules/python/python-ack-tracker.h \
-	modules/python/python-ack-tracker.c
+	modules/python/python-ack-tracker.c \
+	modules/python/python-types.h \
+	modules/python/python-types.c
 
 
 modules_python_libmod_python_la_LDFLAGS		 = \
