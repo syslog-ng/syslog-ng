@@ -390,27 +390,15 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
   return TRUE;
 }
 
-static void
-_dd_reconnect(AFSocketDestDriver *self, gboolean request_setup_addr)
+void
+afsocket_dd_reconnect(AFSocketDestDriver *self)
 {
-  if ((request_setup_addr && !afsocket_dd_setup_addresses(self)) || !afsocket_dd_start_connect(self))
+  if (!afsocket_dd_setup_addresses(self) || !afsocket_dd_start_connect(self))
     {
       msg_error("Initiating connection failed, reconnecting",
                 evt_tag_int("time_reopen", self->writer_options.time_reopen));
       afsocket_dd_start_reconnect_timer(self);
     }
-}
-
-static void
-_dd_reconnect_with_setup_addresses(AFSocketDestDriver *self)
-{
-  _dd_reconnect(self, TRUE);
-}
-
-void
-afsocket_dd_reconnect(AFSocketDestDriver *self)
-{
-  _dd_reconnect_with_setup_addresses(self);
 }
 
 static gboolean
