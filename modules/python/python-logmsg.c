@@ -24,6 +24,7 @@
 #include "python-logmsg.h"
 #include "compat/compat-python.h"
 #include "python-helpers.h"
+#include "python-types.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "timeutils/cache.h"
@@ -75,13 +76,14 @@ _is_key_blacklisted(const gchar *key)
 static PyObject *
 _py_log_message_subscript(PyObject *o, PyObject *key)
 {
-  if (!_py_is_string(key))
+  if (!is_py_obj_bytes_or_string_type(key))
     {
       PyErr_SetString(PyExc_TypeError, "key is not a string object");
       return NULL;
     }
 
-  const gchar *name = _py_get_string_as_string(key);
+  const gchar *name;
+  py_bytes_or_string_to_string(key, &name);
 
   if (_is_key_blacklisted(name))
     {
@@ -107,7 +109,7 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
 static int
 _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
 {
-  if (!_py_is_string(key))
+  if (!is_py_obj_bytes_or_string_type(key))
     {
       PyErr_SetString(PyExc_TypeError, "key is not a string object");
       return -1;
@@ -115,7 +117,8 @@ _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
 
   PyLogMessage *py_msg = (PyLogMessage *) o;
   LogMessage *msg = py_msg->msg;
-  const gchar *name = _py_get_string_as_string(key);
+  const gchar *name;
+  py_bytes_or_string_to_string(key, &name);
 
   if (log_msg_is_write_protected(msg))
     {
@@ -128,9 +131,11 @@ _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
 
   NVHandle handle = log_msg_get_value_handle(name);
 
-  if (value && _py_is_string(value))
+  if (value && is_py_obj_bytes_or_string_type(value))
     {
-      log_msg_set_value(py_msg->msg, handle, _py_get_string_as_string(value), -1);
+      const gchar *str;
+      py_bytes_or_string_to_string(value, &str);
+      log_msg_set_value(py_msg->msg, handle, str, -1);
     }
   else
     {

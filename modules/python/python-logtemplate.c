@@ -23,7 +23,6 @@
 #include "python-logtemplate.h"
 #include "python-logtemplate-options.h"
 #include "python-logmsg.h"
-#include "python-helpers.h"
 #include "python-types.h"
 #include "scratch-buffers.h"
 #include "messages.h"
@@ -82,7 +81,7 @@ py_log_template_format(PyObject *s, PyObject *args, PyObject *kwrds)
   LogTemplateEvalOptions options = {log_template_options, tz, seqnum, NULL, LM_VT_STRING};
   log_template_format(self->template, msg->msg, &options, result);
 
-  return _py_string_from_string(result->str, result->len);
+  return py_string_from_string(result->str, result->len);
 }
 
 PyObject *

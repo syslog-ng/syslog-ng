@@ -26,6 +26,7 @@
 #include "libtest/msg_parse_lib.h"
 
 #include "python-helpers.h"
+#include "python-types.h"
 #include "python-logmsg.h"
 #include "apphook.h"
 #include "logmsg/logmsg.h"
@@ -66,13 +67,16 @@ _dict_clone_value(PyObject *dict, const gchar *key)
   if (!res_obj)
     return NULL;
 
-  if (!_py_is_string(res_obj))
+  if (!is_py_obj_bytes_or_string_type(res_obj))
     {
       Py_XDECREF(res_obj);
       return NULL;
     }
 
-  gchar *res = g_strdup(_py_get_string_as_string(res_obj));
+  const gchar *str;
+  py_bytes_or_string_to_string(res_obj, &str);
+  gchar *res = g_strdup(str);
+
   Py_XDECREF(res_obj);
   return res;
 }
@@ -300,7 +304,8 @@ Test(python_log_message, test_python_logmessage_keys)
   for (Py_ssize_t i = 0; i < PyList_Size(keys); ++i)
     {
       PyObject *py_key = PyList_GetItem(keys, i);
-      const gchar *key = _py_get_string_as_string(py_key);
+      const gchar *key;
+      py_bytes_or_string_to_string(py_key, &key);
       cr_assert_not_null(key);
 
       NVHandle handle = log_msg_get_value_handle(key);

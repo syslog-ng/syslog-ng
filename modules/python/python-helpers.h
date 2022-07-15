@@ -48,9 +48,6 @@ gboolean _py_invoke_bool_method_by_name_with_args(PyObject *instance, const gcha
 gboolean _py_invoke_bool_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class,
                                         const gchar *module);
 void _py_perform_imports(GList *imports);
-gboolean _py_is_string(PyObject *object);
-const gchar *_py_get_string_as_string(PyObject *object);
-PyObject *_py_string_from_string(const gchar *str, gssize len);
 
 void py_slng_generic_dealloc(PyObject *self);
 

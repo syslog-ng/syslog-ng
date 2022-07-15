@@ -22,6 +22,7 @@
  *
  */
 #include "python-helpers.h"
+#include "python-types.h"
 #include "scratch-buffers.h"
 #include "str-utils.h"
 #include "messages.h"
@@ -32,9 +33,11 @@ _py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
 {
   PyObject *name = PyObject_GetAttrString(callable, "__name__");
 
-  if (name && _py_is_string(name))
+  if (name && is_py_obj_bytes_or_string_type(name))
     {
-      g_strlcpy(buf, _py_get_string_as_string(name), buf_len);
+      const gchar *str;
+      py_bytes_or_string_to_string(name, &str);
+      g_strlcpy(buf, str, buf_len);
     }
   else
     {
@@ -99,9 +102,11 @@ _py_format_exception_text(gchar *buf, gsize buf_len)
   if (!str)
     PyErr_Clear();
 
-  if (str && _py_is_string(str))
+  if (str && is_py_obj_bytes_or_string_type(str))
     {
-      g_snprintf(buf, buf_len, "%s: %s", ((PyTypeObject *) exc)->tp_name, _py_get_string_as_string(str));
+      const gchar *str_as_c_str;
+      py_bytes_or_string_to_string(str, &str_as_c_str);
+      g_snprintf(buf, buf_len, "%s: %s", ((PyTypeObject *) exc)->tp_name, str_as_c_str);
     }
   else
     {
@@ -210,8 +215,8 @@ exit:
 static void
 _insert_to_dict(gpointer key, gpointer value, gpointer dict)
 {
-  PyObject *key_pyobj = _py_string_from_string((gchar *) key, -1);
-  PyObject *value_pyobj = _py_string_from_string((gchar *) value, -1);
+  PyObject *key_pyobj = py_string_from_string((gchar *) key, -1);
+  PyObject *value_pyobj = py_string_from_string((gchar *) value, -1);
   PyDict_SetItem( (PyObject *) dict, key_pyobj, value_pyobj);
   Py_XDECREF(key_pyobj);
   Py_XDECREF(value_pyobj);
@@ -370,73 +375,6 @@ void
 _py_perform_imports(GList *imports)
 {
   g_list_foreach(imports, _foreach_import, NULL);
-}
-
-gboolean
-_py_is_string(PyObject *object)
-{
-  return PyBytes_Check(object) || PyUnicode_Check(object);
-}
-
-
-/* NOTE: this function returns a managed memory area pointing to an utf8
- * representation of the string, with the following constraints:
- *
- *   1) we basically assume that non-unicode strings (both in Python2 and
- *   Python3) are in utf8 or at least utf8 compatible (e.g.  ascii).  It
- *   doesn't really make sense otherwise.  If we don't the resulting string
- *   is not going to be utf8, rather it would be the system codepage.
- *
- *   2) in the case of Python3 we are using the utf8 cache in the unicode
- *   instance.  In the case of Python2 we are allocating a scratch buffer to
- *   hold the data for us.
- **/
-
-const gchar *
-_py_get_string_as_string(PyObject *object)
-{
-  if (PyBytes_Check(object))
-    return PyBytes_AsString(object);
-  else if (PyUnicode_Check(object))
-    return PyUnicode_AsUTF8(object);
-}
-
-PyObject *
-_py_string_from_string(const gchar *str, gssize len)
-{
-  const gchar *charset;
-
-  /* NOTE: g_get_charset() returns if the current character set is utf8 */
-  if (g_get_charset(&charset))
-    {
-      if (len < 0)
-        return PyUnicode_FromString(str);
-      else
-        return PyUnicode_FromStringAndSize(str, len);
-    }
-  else
-    {
-      GError *error = NULL;
-      gsize bytes_read, bytes_written;
-      gchar *utf8_string;
-      PyObject *res;
-
-      utf8_string = g_locale_to_utf8(str, len, &bytes_read, &bytes_written, &error);
-      if (utf8_string)
-        {
-          res = PyUnicode_FromStringAndSize(utf8_string, bytes_written);
-          g_free(utf8_string);
-          return res;
-        }
-      else
-        {
-          g_error_free(error);
-          if (len >= 0)
-            return PyBytes_FromStringAndSize(str, len);
-          else
-            return PyBytes_FromString(str);
-        }
-    }
 }
 
 void

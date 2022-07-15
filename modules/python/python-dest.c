@@ -335,7 +335,7 @@ _inject_worker_insert_result_consts(PythonDestDriver *self)
 static PyObject *
 py_get_persist_name(PythonDestDriver *self)
 {
-  return _py_string_from_string(python_dd_format_persist_name(&self->super.super.super.super), -1);
+  return py_string_from_string(python_dd_format_persist_name(&self->super.super.super.super), -1);
 }
 
 static gboolean

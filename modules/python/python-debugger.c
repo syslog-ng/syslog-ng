@@ -24,6 +24,7 @@
 #include "python-debugger.h"
 #include "python-module.h"
 #include "python-helpers.h"
+#include "python-types.h"
 #include "messages.h"
 #include "debugger/debugger.h"
 #include "logmsg/logmsg.h"
@@ -34,7 +35,7 @@ _add_nv_keys_to_list(gpointer key, gpointer value, gpointer user_data)
   PyObject *list = (PyObject *) user_data;
   const gchar *name = (const gchar *) key;
 
-  PyObject *py_name = _py_string_from_string(name, -1);
+  PyObject *py_name = py_string_from_string(name, -1);
 
   PyList_Append(list, py_name);
   Py_XDECREF(py_name);
@@ -111,7 +112,7 @@ python_fetch_debugger_command(void)
       _py_finish_exception_handling();
       goto exit;
     }
-  if (!_py_is_string(ret))
+  if (!is_py_obj_bytes_or_string_type(ret))
     {
       msg_error("Return value from debugger fetch_command is not a string",
                 evt_tag_str("function", DEBUGGER_FETCH_COMMAND),
@@ -119,7 +120,9 @@ python_fetch_debugger_command(void)
       Py_DECREF(ret);
       goto exit;
     }
-  command = g_strdup(_py_get_string_as_string(ret));
+  const gchar *str;
+  py_bytes_or_string_to_string(ret, &str);
+  command = g_strdup(str);
   Py_DECREF(ret);
 exit:
   PyGILState_Release(gstate);

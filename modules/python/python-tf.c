@@ -23,6 +23,7 @@
  */
 #include "python-tf.h"
 #include "python-helpers.h"
+#include "python-types.h"
 #include "python-main.h"
 #include "template/simple-function.h"
 #include "python-logmsg.h"
@@ -89,7 +90,7 @@ _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint a
 static gboolean
 _py_convert_return_value_to_result(const gchar *function_name, PyObject *ret, GString *result)
 {
-  if (!_py_is_string(ret))
+  if (!is_py_obj_bytes_or_string_type(ret))
     {
       msg_error("$(python): The return value is not str or unicode",
                 evt_tag_str("function", function_name),
@@ -97,7 +98,9 @@ _py_convert_return_value_to_result(const gchar *function_name, PyObject *ret, GS
       Py_DECREF(ret);
       return FALSE;
     }
-  g_string_append(result, _py_get_string_as_string(ret));
+  const gchar *ret_as_c_str;
+  py_bytes_or_string_to_string(ret, &ret_as_c_str);
+  g_string_append(result, ret_as_c_str);
   Py_DECREF(ret);
   return TRUE;
 }

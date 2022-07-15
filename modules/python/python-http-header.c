@@ -22,6 +22,7 @@
 
 #include "python-http-header.h"
 #include "python-helpers.h"
+#include "python-types.h"
 
 #include "driver.h"
 #include "str-utils.h"
@@ -74,15 +75,15 @@ _py_append_pylist_to_list(PyObject *py_list, GList **list)
   for (int i = 0; i < len; i++)
     {
       py_str = PyList_GetItem(py_list, i); // Borrowed reference
-      if (!_py_is_string(py_str))
+      if (!is_py_obj_bytes_or_string_type(py_str))
         {
           msg_debug("PyList contained a non-string object when trying to append to GList");
           goto exit;
         }
 
-      if (!(str = _py_get_string_as_string(py_str)))
+      if (!py_bytes_or_string_to_string(py_str, &str))
         {
-          msg_debug("_py_get_string_as_string failed when trying to append PyList to GList");
+          msg_debug("py_bytes_or_string_to_string failed when trying to append PyList to GList");
           goto exit;
         }
 
@@ -98,7 +99,7 @@ exit:
 static void
 _py_append_str_to_pylist(gconstpointer data, gpointer user_data)
 {
-  PyObject *py_str = _py_string_from_string((gchar *) data, -1);
+  PyObject *py_str = py_string_from_string((gchar *) data, -1);
   if (!py_str)
     {
       gchar buf[256];
