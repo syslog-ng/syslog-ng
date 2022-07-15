@@ -329,7 +329,8 @@ py_datetime_to_logstamp(PyObject *py_timestamp, UnixTime *logstamp)
   if (!py_posix_timestamp)
     return FALSE;
 
-  gdouble posix_timestamp = PyFloat_AsDouble(py_posix_timestamp);
+  gdouble posix_timestamp;
+  py_double_to_double(py_posix_timestamp, &posix_timestamp);
 
   Py_XDECREF(py_posix_timestamp);
 
