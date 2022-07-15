@@ -627,32 +627,33 @@ log_expr_node_lookup_flag(const gchar *flag)
   return 0;
 }
 
-LogPipe *
-cfg_tree_new_pipe(CfgTree *self, LogExprNode *related_expr)
+static LogPipe *
+cfg_tree_assoc_pipe(CfgTree *self, LogExprNode *node, LogPipe *pipe, const gchar *info)
 {
-  LogPipe *pipe = log_pipe_new(self->cfg);
-  pipe->expr_node = related_expr;
+  pipe->expr_node = node;
   g_ptr_array_add(self->initialized_pipes, pipe);
-  log_pipe_add_info(pipe, "cfg_tree_pipe");
+  log_pipe_add_info(pipe, info);
   return pipe;
 }
 
-LogMultiplexer *
-cfg_tree_new_mpx(CfgTree *self, LogExprNode *related_expr)
+static LogPipe *
+cfg_tree_new_pipe(CfgTree *self, LogExprNode *related_expr)
 {
-  LogMultiplexer *pipe = log_multiplexer_new(self->cfg);
-  pipe->super.expr_node = related_expr;
-  g_ptr_array_add(self->initialized_pipes, pipe);
-  return pipe;
+  return cfg_tree_assoc_pipe(self, related_expr, log_pipe_new(self->cfg), "cfg_tree_pipe");
+}
+
+static LogMultiplexer *
+cfg_tree_new_mpx(CfgTree *self, LogExprNode *related_expr, const gchar *info)
+{
+  return (LogMultiplexer *) cfg_tree_assoc_pipe(self, related_expr, &log_multiplexer_new(self->cfg)->super, info);
 }
 
 MetricsPipe *
 cfg_tree_new_metrics_pipe(CfgTree *self, LogExprNode *related_expr)
 {
-  MetricsPipe *pipe = metrics_pipe_new(self->cfg, related_expr->name);
-  pipe->super.expr_node = related_expr;
-  g_ptr_array_add(self->initialized_pipes, pipe);
-  return pipe;
+  return (MetricsPipe *) cfg_tree_assoc_pipe(self, related_expr,
+                                             &metrics_pipe_new(self->cfg, related_expr->name)->super,
+                                             "metrics-pipe");
 }
 
 static gchar *
@@ -830,8 +831,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
 
           if (!sub_pipe_tail->pipe_next)
             {
-              mpx = cfg_tree_new_mpx(self, referenced_node);
-              log_pipe_add_info(&mpx->super, "mpx(source)");
+              mpx = cfg_tree_new_mpx(self, referenced_node, "mpx(source)");
               log_pipe_append(sub_pipe_tail, &mpx->super);
             }
           else
@@ -871,8 +871,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
          our next chain
       */
 
-      mpx = cfg_tree_new_mpx(self, node);
-      log_pipe_add_info(&mpx->super, "mpx(destination-reference)");
+      mpx = cfg_tree_new_mpx(self, node, "mpx(destination-reference)");
 
       if (sub_pipe_head)
         {
@@ -1185,8 +1184,7 @@ cfg_tree_compile_junction(CfgTree *self,
             }
           if (!fork_mpx)
             {
-              fork_mpx = cfg_tree_new_mpx(self, node);
-              log_pipe_add_info(&fork_mpx->super, "mpx(junction)");
+              fork_mpx = cfg_tree_new_mpx(self, node, "mpx(junction)");
               *outer_pipe_head = &fork_mpx->super;
             }
           log_multiplexer_add_next_hop(fork_mpx, sub_pipe_head);

@@ -116,7 +116,6 @@ metrics_pipe_new(GlobalConfig *cfg, const gchar *log_path_name)
 
   self->log_path_name = g_strdup(log_path_name);
 
-  log_pipe_add_info(&self->super, "metrics-pipe");
   log_pipe_add_info(&self->super, self->log_path_name);
 
   return self;
