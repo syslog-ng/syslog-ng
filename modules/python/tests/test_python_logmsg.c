@@ -59,26 +59,24 @@ _init_python_main(void)
   PyGILState_Release(gstate);
 }
 
-static gchar *
-_dict_clone_value(PyObject *dict, const gchar *key)
+static void
+_assert_python_variable_value(const gchar *variable_name, const gchar *expected_value)
 {
-  PyObject *res_obj = PyDict_GetItemString(dict, key);
-
-  if (!res_obj)
-    return NULL;
-
-  if (!is_py_obj_bytes_or_string_type(res_obj))
+  gchar *script = g_strdup_printf("assert %s == %s", variable_name, expected_value);
+  if (!PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict))
     {
-      Py_XDECREF(res_obj);
-      return NULL;
+      gchar buf[256];
+      _py_format_exception_text(buf, sizeof(buf));
+      msg_error("Error in _assert_python_variable_value()",
+                evt_tag_str("script", script),
+                evt_tag_str("exception", buf));
+      _py_finish_exception_handling();
+
+      g_free(script);
+      cr_assert(FALSE);
     }
 
-  const gchar *str;
-  py_bytes_or_string_to_string(res_obj, &str);
-  gchar *res = g_strdup(str);
-
-  Py_XDECREF(res_obj);
-  return res;
+  g_free(script);
 }
 
 static PyLogMessage *
@@ -132,9 +130,7 @@ Test(python_log_message, test_python_logmessage_set_value)
     const gchar *set_value = "test_msg['test_field'] = 'test_value'\nresult=test_msg['test_field']";
     PyRun_String(set_value, Py_file_input, _python_main_dict, _python_main_dict);
 
-    gchar *res = _dict_clone_value(_python_main_dict, "result");
-    cr_assert_str_eq(res, "test_value");
-    g_free(res);
+    _assert_python_variable_value("result", "b'test_value'");
 
     const gchar *test_value=log_msg_get_value_by_name(msg, "test_field", NULL);
     cr_assert_str_eq(test_value, "test_value");
@@ -166,9 +162,7 @@ Test(python_log_message, test_python_logmessage_set_value_indirect)
     const gchar *get_value_indirect = "indirect = test_msg['indirect']";
     PyRun_String(get_value_indirect, Py_file_input, _python_main_dict, _python_main_dict);
 
-    gchar *res_indirect = _dict_clone_value(_python_main_dict, "indirect");
-    cr_assert_str_eq(res_indirect, "test_value");
-    g_free(res_indirect);
+    _assert_python_variable_value("indirect", "b'test_value'");
 
     Py_XDECREF(msg_object);
   }
