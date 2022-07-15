@@ -23,6 +23,7 @@
 #include "python-module.h"
 
 #include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 #include "libtest/msg_parse_lib.h"
 
 #include "python-helpers.h"
@@ -30,6 +31,7 @@
 #include "python-logmsg.h"
 #include "apphook.h"
 #include "logmsg/logmsg.h"
+#include "scratch-buffers.h"
 
 static PyObject *_python_main;
 static PyObject *_python_main_dict;
@@ -111,13 +113,73 @@ void setup(void)
 
 void teardown(void)
 {
+  scratch_buffers_explicit_gc();
   deinit_syslogformat_module();
   app_shutdown();
 }
 
 TestSuite(python_log_message, .init = setup, .fini = teardown);
 
-Test(python_log_message, test_python_logmessage_set_value)
+typedef struct _PyLogMessageSetValueTestParams
+{
+  const gchar *py_value_to_set;
+  const gchar *py_value_to_check;
+  const gchar *expected_log_msg_value;
+  LogMessageValueType expected_log_msg_type;
+} PyLogMessageSetValueTestParams;
+
+ParameterizedTestParameters(python_log_message, test_python_logmessage_set_value)
+{
+  static PyLogMessageSetValueTestParams test_data_list[] =
+  {
+    {
+      .py_value_to_set = "'almafa'",
+      .py_value_to_check = "b'almafa'",
+      .expected_log_msg_value = "almafa",
+      .expected_log_msg_type = LM_VT_STRING
+    },
+    {
+      .py_value_to_set = "b'kortefa'",
+      .py_value_to_check = "b'kortefa'",
+      .expected_log_msg_value = "kortefa",
+      .expected_log_msg_type = LM_VT_STRING
+    },
+    {
+      .py_value_to_set = "42",
+      .py_value_to_check = "42",
+      .expected_log_msg_value = "42",
+      .expected_log_msg_type = LM_VT_INTEGER
+    },
+    {
+      .py_value_to_set = "6.9",
+      .py_value_to_check = "6.9",
+      .expected_log_msg_value = "6.900000",
+      .expected_log_msg_type = LM_VT_DOUBLE
+    },
+    {
+      .py_value_to_set = "True",
+      .py_value_to_check = "True",
+      .expected_log_msg_value = "true",
+      .expected_log_msg_type = LM_VT_BOOLEAN
+    },
+    {
+      .py_value_to_set = "None",
+      .py_value_to_check = "None",
+      .expected_log_msg_value = "",
+      .expected_log_msg_type = LM_VT_NULL
+    },
+    {
+      .py_value_to_set = "['a,', ' b', b'c']",
+      .py_value_to_check = "[b'a,', b' b', b'c']",
+      .expected_log_msg_value = "\"a,\",\" b\",c",
+      .expected_log_msg_type = LM_VT_LIST
+    },
+  };
+
+  return cr_make_param_array(PyLogMessageSetValueTestParams, test_data_list, G_N_ELEMENTS(test_data_list));
+}
+
+ParameterizedTest(PyLogMessageSetValueTestParams *params, python_log_message, test_python_logmessage_set_value)
 {
   LogMessage *msg = log_msg_new_empty();
 
@@ -127,13 +189,21 @@ Test(python_log_message, test_python_logmessage_set_value)
     PyObject *msg_object = py_log_message_new(msg);
 
     PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
-    const gchar *set_value = "test_msg['test_field'] = 'test_value'\nresult=test_msg['test_field']";
-    PyRun_String(set_value, Py_file_input, _python_main_dict, _python_main_dict);
 
-    _assert_python_variable_value("result", "b'test_value'");
+    gchar *script = g_strdup_printf(
+                      "test_msg['test_field'] = %s\n"
+                      "result = test_msg['test_field']\n",
+                      params->py_value_to_set
+                    );
+    cr_assert(PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict));
+    g_free(script);
 
-    const gchar *test_value=log_msg_get_value_by_name(msg, "test_field", NULL);
-    cr_assert_str_eq(test_value, "test_value");
+    _assert_python_variable_value("result", params->py_value_to_check);
+
+    LogMessageValueType type;
+    const gchar *value = log_msg_get_value_by_name_with_type(msg, "test_field", NULL, &type);
+    cr_assert_str_eq(value, params->expected_log_msg_value);
+    cr_assert(type == params->expected_log_msg_type);
 
     Py_XDECREF(msg_object);
   }

@@ -32,6 +32,7 @@
 #include "timeutils/unixtime.h"
 #include "timeutils/misc.h"
 #include "msg-format.h"
+#include "scratch-buffers.h"
 
 #include <datetime.h>
 
@@ -91,7 +92,8 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
   NVHandle handle = log_msg_get_value_handle(name);
   PyLogMessage *py_msg = (PyLogMessage *)o;
   gssize value_len = 0;
-  const gchar *value = log_msg_get_value(py_msg->msg, handle, &value_len);
+  LogMessageValueType type;
+  const gchar *value = log_msg_get_value_with_type(py_msg->msg, handle, &value_len, &type);
 
   if (!value)
     {
@@ -101,7 +103,7 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
 
   APPEND_ZERO(value, value, value_len);
 
-  return PyBytes_FromString(value);
+  return py_obj_from_log_msg_value(value, value_len, type);
 }
 
 static int
@@ -128,22 +130,22 @@ _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
 
   NVHandle handle = log_msg_get_value_handle(name);
 
-  if (value && is_py_obj_bytes_or_string_type(value))
+  if (!value)
+    return -1;
+
+  ScratchBuffersMarker marker;
+  GString *log_msg_value = scratch_buffers_alloc_and_mark(&marker);
+  LogMessageValueType type;
+
+  if (!py_obj_to_log_msg_value(value, log_msg_value, &type))
     {
-      const gchar *str;
-      py_bytes_or_string_to_string(value, &str);
-      log_msg_set_value(py_msg->msg, handle, str, -1);
-    }
-  else
-    {
-      PyErr_Format(PyExc_ValueError,
-                   "str or unicode object expected as log message values, got type %s (key %s). "
-                   "Earlier syslog-ng accepted any type, implicitly converting it to a string. "
-                   "With this version please convert it explicitly to a string using str()",
-                   value->ob_type->tp_name, name);
+      scratch_buffers_reclaim_marked(marker);
       return -1;
     }
 
+  log_msg_set_value_with_type(py_msg->msg, handle, log_msg_value->str, -1, type);
+
+  scratch_buffers_reclaim_marked(marker);
   return 0;
 }
 
