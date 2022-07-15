@@ -27,46 +27,8 @@
 #include "python-types.h"
 #include "messages.h"
 
+
 /** Value pairs **/
-
-static void
-add_long_to_dict(PyObject *dict, const gchar *name, long num)
-{
-  PyObject *pyobject_to_add = py_long_from_long(num);
-  if (!pyobject_to_add)
-    {
-      gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
-
-      msg_error("Error while constructing python object",
-                evt_tag_str("exception", buf));
-      _py_finish_exception_handling();
-      return;
-    }
-
-  PyDict_SetItemString(dict, name, pyobject_to_add);
-  Py_DECREF(pyobject_to_add);
-}
-
-static void
-add_string_to_dict(PyObject *dict, const gchar *name, const char *value, gsize value_len)
-{
-  PyObject *pyobject_to_add = PyBytes_FromStringAndSize(value, value_len);
-  if (!pyobject_to_add)
-    {
-      gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
-
-      msg_error("Error while constructing python object",
-                evt_tag_str("exception", buf));
-      _py_finish_exception_handling();
-      return;
-    }
-
-  PyDict_SetItemString(dict, name, pyobject_to_add);
-  Py_DECREF(pyobject_to_add);
-}
-
 static gboolean
 python_worker_vp_add_one(const gchar *name,
                          LogMessageValueType type, const gchar *value, gsize value_len,
@@ -74,41 +36,23 @@ python_worker_vp_add_one(const gchar *name,
 {
   const LogTemplateOptions *template_options = (const LogTemplateOptions *)((gpointer *)user_data)[0];
   PyObject *dict = (PyObject *)((gpointer *)user_data)[1];
-  gboolean need_drop = FALSE;
   gboolean fallback = template_options->on_error & ON_ERROR_FALLBACK_TO_STRING;
 
-  switch (type)
+  PyObject *obj = py_obj_from_log_msg_value(value, value_len, type);
+  if (!obj && fallback)
     {
-    case LM_VT_INTEGER:
-    {
-      gint64 i;
-
-      if (type_cast_to_int64(value, &i, NULL))
-        {
-          add_long_to_dict(dict, name, i);
-        }
-      else
-        {
-          need_drop = type_cast_drop_helper(template_options->on_error,
-                                            value, "int");
-
-          if (fallback)
-            {
-              add_string_to_dict(dict, name, value, value_len);
-            }
-        }
-      break;
-    }
-    case LM_VT_STRING:
-      add_string_to_dict(dict, name, value, value_len);
-      break;
-    default:
-      need_drop = type_cast_drop_helper(template_options->on_error,
-                                        value, "<unknown>");
-      break;
+      obj = py_obj_from_log_msg_value(value, value_len, LM_VT_STRING);
     }
 
-  return need_drop;
+  if (!obj)
+    {
+      return type_cast_drop_helper(template_options->on_error, value, log_msg_value_type_to_str(type));
+    }
+
+  PyDict_SetItemString(dict, name, obj);
+  Py_DECREF(obj);
+
+  return FALSE;
 }
 
 /** Main code **/
