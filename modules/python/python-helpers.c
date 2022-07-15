@@ -25,6 +25,7 @@
 #include "scratch-buffers.h"
 #include "str-utils.h"
 #include "messages.h"
+#include "reloc.h"
 
 void
 _py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
@@ -461,4 +462,41 @@ void
 py_slng_generic_dealloc(PyObject *self)
 {
   Py_TYPE(self)->tp_free(self);
+}
+
+void
+py_setup_python_home(void)
+{
+#ifdef SYSLOG_NG_PYTHON3_HOME_DIR
+  if (strlen(SYSLOG_NG_PYTHON3_HOME_DIR) > 0)
+    {
+      const gchar *resolved_python_home = get_installation_path_for(SYSLOG_NG_PYTHON3_HOME_DIR);
+      Py_SetPythonHome(Py_DecodeLocale(resolved_python_home, NULL));
+    }
+#endif
+}
+
+void
+py_init_argv(void)
+{
+  static wchar_t *argv[] = {L"syslog-ng"};
+  PySys_SetArgvEx(1, argv, 0);
+}
+
+PyObject *
+int_as_pyobject(gint num)
+{
+  return PyLong_FromLong(num);
+};
+
+gint
+pyobject_as_int(PyObject *object)
+{
+  return PyLong_AsLong(object);
+};
+
+gboolean
+py_object_is_integer(PyObject *object)
+{
+  return PyLong_Check(object);
 }

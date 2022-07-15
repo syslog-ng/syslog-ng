@@ -23,6 +23,7 @@
  */
 
 #include "python-module.h"
+#include "python-helpers.h"
 #include "python-parser.h"
 #include "python-dest.h"
 #include "python-tf.h"

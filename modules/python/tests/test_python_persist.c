@@ -26,6 +26,7 @@
 #include "libtest/persist_lib.h"
 
 #include "python-persist.h"
+#include "python-helpers.h"
 #include "python-main.h"
 #include "apphook.h"
 
