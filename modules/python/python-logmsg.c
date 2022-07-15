@@ -53,7 +53,7 @@ _populate_blacklisted_keys(const gchar ***blacklist, size_t *n)
 {
   static const gchar *keys[] =
   {
-    "S_STAMP", "_", "C_STAMP"
+    "S_STAMP", "_", "C_STAMP", "R_STAMP", "P_STAMP", "STAMP"
   };
   static gboolean keys_sorted = FALSE;
   if (!keys_sorted)
