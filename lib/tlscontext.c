@@ -598,11 +598,15 @@ tls_context_setup_cipher_suite(TLSContext *self)
 static gboolean
 tls_context_setup_sigalgs(TLSContext *self)
 {
+#if SYSLOG_NG_HAVE_DECL_SSL_CTX_SET1_SIGALGS_LIST
   if (self->sigalgs && !SSL_CTX_set1_sigalgs_list(self->ssl_ctx, self->sigalgs))
     return FALSE;
+#endif
 
+#if SYSLOG_NG_HAVE_DECL_SSL_CTX_SET1_CLIENT_SIGALGS_LIST
   if (self->client_sigalgs && !SSL_CTX_set1_client_sigalgs_list(self->ssl_ctx, self->client_sigalgs))
     return FALSE;
+#endif
 
   return TRUE;
 }
