@@ -670,12 +670,19 @@ tls_context_load_pkcs12(TLSContext *self)
 
   PKCS12_free(pkcs12);
 
+  gboolean loaded = FALSE;
   if (ca_list && !tls_context_add_certs(self, ca_list))
-    return FALSE;
+    goto error;
 
-  return SSL_CTX_use_certificate(self->ssl_ctx, cert)
-         && SSL_CTX_use_PrivateKey(self->ssl_ctx, private_key)
-         && SSL_CTX_check_private_key(self->ssl_ctx);
+  loaded = SSL_CTX_use_certificate(self->ssl_ctx, cert)
+           && SSL_CTX_use_PrivateKey(self->ssl_ctx, private_key)
+           && SSL_CTX_check_private_key(self->ssl_ctx);
+
+error:
+  X509_free(cert);
+  EVP_PKEY_free(private_key);
+  sk_X509_pop_free(ca_list, X509_free);
+  return loaded;
 }
 
 static gboolean
