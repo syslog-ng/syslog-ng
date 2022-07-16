@@ -46,21 +46,21 @@
 /* indicates that this LogPipe got cloned into the tree already */
 #define PIF_INLINED           0x0002
 
-/* log statement flags that are copied to the head of a branch */
-#define PIF_BRANCH_FINAL      0x0004
-#define PIF_BRANCH_FALLBACK   0x0008
-#define PIF_BRANCH_PROPERTIES (PIF_BRANCH_FINAL + PIF_BRANCH_FALLBACK)
-
-/* branch starting with this pipe wants hard flow control */
-#define PIF_HARD_FLOW_CONTROL 0x0020
-
 /* this pipe is a source for messages, it is not meant to be used to
  * forward messages, syslog-ng will only use these pipes for the
  * left-hand side of the processing graph, e.g. no other pipes may be
  * sending messages to these pipes and these are expected to generate
  * messages "automatically". */
 
-#define PIF_SOURCE            0x0040
+#define PIF_SOURCE            0x0004
+
+/* log statement flags that are copied to the head of a branch */
+#define PIF_BRANCH_FINAL      0x0008
+#define PIF_BRANCH_FALLBACK   0x0010
+#define PIF_BRANCH_PROPERTIES (PIF_BRANCH_FINAL + PIF_BRANCH_FALLBACK)
+
+/* branch starting with this pipe wants hard flow control */
+#define PIF_HARD_FLOW_CONTROL 0x0020
 
 /* node created directly by the user */
 #define PIF_CONFIG_RELATED    0x0080
