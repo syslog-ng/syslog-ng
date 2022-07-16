@@ -541,7 +541,7 @@ log_expr_node_new_conditional_with_filter(LogExprNode *filter_pipe, LogExprNode 
   LogExprNode *true_branch = log_expr_node_new_log(
                                log_expr_node_append_tail(
                                  filter_node,
-                                 log_expr_node_new_log(true_expr, LC_DROP_UNMATCHED, NULL)
+                                 log_expr_node_new_log(true_expr, 0, NULL)
                                ),
                                LC_FINAL,
                                NULL
@@ -618,7 +618,11 @@ log_expr_node_lookup_flag(const gchar *flag)
   else if (strcmp(flag, "flow-control") == 0)
     return LC_FLOW_CONTROL;
   else if (strcmp(flag, "drop-unmatched") == 0)
-    return LC_DROP_UNMATCHED;
+    {
+      msg_warning_once("WARNING: The drop-unmatched flag has been removed starting with " VERSION_4_1 ". "
+                       "Setting it has no effect on the log path");
+      return 0;
+    }
   msg_error("Unknown log statement flag", evt_tag_str("flag", flag));
   return 0;
 }
@@ -899,9 +903,6 @@ cfg_tree_propagate_expr_node_properties_to_pipe(LogExprNode *node, LogPipe *pipe
 
   if (node->flags & LC_FLOW_CONTROL)
     pipe->flags |= PIF_HARD_FLOW_CONTROL;
-
-  if (node->flags & LC_DROP_UNMATCHED)
-    pipe->flags |= PIF_DROP_UNMATCHED;
 
   if (!pipe->expr_node)
     pipe->expr_node = node;

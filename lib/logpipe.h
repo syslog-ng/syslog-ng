@@ -51,8 +51,6 @@
 #define PIF_BRANCH_FALLBACK   0x0008
 #define PIF_BRANCH_PROPERTIES (PIF_BRANCH_FINAL + PIF_BRANCH_FALLBACK)
 
-#define PIF_DROP_UNMATCHED    0x0010
-
 /* branch starting with this pipe wants hard flow control */
 #define PIF_HARD_FLOW_CONTROL 0x0020
 
@@ -397,10 +395,6 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
       log_pipe_forward_msg(s, msg, path_options);
     }
 
-  if (path_options->matched && !(*path_options->matched) && (s->flags & PIF_DROP_UNMATCHED))
-    {
-      (*path_options->matched) = TRUE;
-    }
 }
 
 static inline LogPipe *
