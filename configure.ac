@@ -1372,7 +1372,7 @@ if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
         if test "$enable_http" = "yes"; then
            old_CFLAGS=$CFLAGS
            CFLAGS=$LIBCURL_CFLAGS
-           AC_CHECK_DECLS([CURL_SSLVERSION_TLSv1_0, CURL_SSLVERSION_TLSv1_1, CURL_SSLVERSION_TLSv1_2, CURL_SSLVERSION_TLSv1_3, CURLOPT_TLS13_CIPHERS],
+           AC_CHECK_DECLS([CURL_SSLVERSION_TLSv1_0, CURL_SSLVERSION_TLSv1_1, CURL_SSLVERSION_TLSv1_2, CURL_SSLVERSION_TLSv1_3, CURLOPT_TLS13_CIPHERS, CURLOPT_SSL_VERIFYSTATUS],
                           [], [],
                           [[#include <curl/curl.h>]])
            CFLAGS=$old_CFLAGS

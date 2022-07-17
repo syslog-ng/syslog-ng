@@ -58,6 +58,7 @@ curl_detect_compile_option(CURL_SSLVERSION_TLSv1_1)
 curl_detect_compile_option(CURL_SSLVERSION_TLSv1_2)
 curl_detect_compile_option(CURL_SSLVERSION_TLSv1_3)
 curl_detect_compile_option(CURLOPT_TLS13_CIPHERS)
+curl_detect_compile_option(CURLOPT_SSL_VERIFYSTATUS)
 
 install(FILES ${HTTP_MODULE_DEV_HEADERS} DESTINATION include/syslog-ng/modules/http/)
 
