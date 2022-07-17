@@ -37,6 +37,7 @@
 #include <openssl/err.h>
 #include <openssl/rand.h>
 #include <openssl/pkcs12.h>
+#include <openssl/ocsp.h>
 
 struct _TLSContext
 {
@@ -62,6 +63,8 @@ struct _TLSContext
   gchar *client_sigalgs;
   gchar *ecdh_curve_list;
   gchar *sni;
+  gboolean ocsp_stapling_verify;
+
   SSL_CTX *ssl_ctx;
   GList *trusted_fingerprint_list;
   GList *trusted_dn_list;
@@ -320,6 +323,181 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
   return ok;
 }
 
+static inline gboolean
+_ocsp_client_retrieve_response(SSL *ssl, OCSP_RESPONSE **response, OCSP_BASICRESP **basic_response, GError **error)
+{
+  const unsigned char *ocsp_response_der;
+  long ocsp_response_der_length = SSL_get_tlsext_status_ocsp_resp(ssl, &ocsp_response_der);
+  if (!ocsp_response_der || ocsp_response_der_length <= 0)
+    {
+      g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_INTERNAL_ERROR,
+                  "no OCSP response was received from the server");
+      return FALSE;
+    }
+
+  OCSP_RESPONSE *ocsp_response = d2i_OCSP_RESPONSE(NULL, &ocsp_response_der, ocsp_response_der_length);
+  if (!ocsp_response)
+    {
+      g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_INTERNAL_ERROR,
+                  "OCSP response received from server can not be parsed");
+      return FALSE;
+    }
+
+  if (OCSP_response_status(ocsp_response) != OCSP_RESPONSE_STATUS_SUCCESSFUL)
+    {
+      g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_INTERNAL_ERROR, "OCSP response is unsuccessful");
+      OCSP_RESPONSE_free(ocsp_response);
+      return FALSE;
+    }
+
+  OCSP_BASICRESP *ocsp_basic_resp = OCSP_response_get1_basic(ocsp_response);
+  if (!ocsp_basic_resp)
+    {
+      g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_INTERNAL_ERROR, "can not extract OCSP basic response");
+      OCSP_RESPONSE_free(ocsp_response);
+      return FALSE;
+    }
+
+  *response = ocsp_response;
+  *basic_response = ocsp_basic_resp;
+  return TRUE;
+}
+
+static inline OCSP_CERTID *
+_get_ocsp_certid(TLSSession *self, X509 *cert, GError **error)
+{
+  X509 *issuer = tls_session_find_issuer(self, cert);
+  if (!issuer)
+    {
+      g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_INTERNAL_ERROR, "failed to find certificate issuer");
+      return FALSE;
+    }
+
+  OCSP_CERTID *cert_id = OCSP_cert_to_id(NULL, cert, issuer);
+  if (!cert_id)
+    {
+      g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_INTERNAL_ERROR, "failed to retrieve certificate ID");
+      X509_free(issuer);
+      return FALSE;
+    }
+
+  X509_free(issuer);
+
+  return cert_id;
+}
+
+static gboolean
+tls_session_ocsp_client_check_cert_validity(TLSSession *self, OCSP_BASICRESP *ocsp_basic_resp, X509 *cert,
+                                            GError **error)
+{
+  OCSP_CERTID *cert_id = _get_ocsp_certid(self, cert, error);
+  if (!cert_id)
+    return FALSE;
+
+  int status, reason;
+  ASN1_GENERALIZEDTIME *rev_time = NULL;
+  ASN1_GENERALIZEDTIME *this_upd = NULL;
+  ASN1_GENERALIZEDTIME *next_upd = NULL;
+  if (OCSP_resp_find_status(ocsp_basic_resp, cert_id, &status, &reason, &rev_time, &this_upd, &next_upd) != 1)
+    {
+      g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_INTERNAL_ERROR, "failed to retrieve OCSP response status");
+      OCSP_CERTID_free(cert_id);
+      return FALSE;
+    }
+
+  OCSP_CERTID_free(cert_id);
+
+  switch (status)
+    {
+    case V_OCSP_CERTSTATUS_GOOD:
+      break;
+    case V_OCSP_CERTSTATUS_REVOKED:
+      g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_INTERNAL_ERROR,
+                  "certificate is revoked (reason: %s (%d))", OCSP_crl_reason_str(reason), reason);
+      return FALSE;
+    default:
+      g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_INTERNAL_ERROR, "certificate status is unknown");
+      return FALSE;
+    }
+
+  if (OCSP_check_validity(this_upd, next_upd, 300L, -1L) != 1)
+    {
+      g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_INTERNAL_ERROR,
+                  "OCSP response is outside its time validity period");
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+tls_session_ocsp_client_verify(TLSSession *self, OCSP_BASICRESP *ocsp_basic_resp, GError **error)
+{
+  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX(self->ssl);
+  X509_STORE *trusted_cert_store = SSL_CTX_get_cert_store(ssl_ctx);
+  STACK_OF(X509) *untrusted_intermediate_certs = SSL_get_peer_cert_chain(self->ssl);
+
+  if (OCSP_basic_verify(ocsp_basic_resp, untrusted_intermediate_certs, trusted_cert_store, 0) != 1)
+    {
+      g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_INTERNAL_ERROR, "failed to verify OCSP response signature");
+      return FALSE;
+    }
+
+  X509 *cert = SSL_get_peer_certificate(self->ssl);
+  if (!cert)
+    {
+      g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_INTERNAL_ERROR, "no certificate was presented by server");
+      return FALSE;
+    }
+
+  if (!tls_session_ocsp_client_check_cert_validity(self, ocsp_basic_resp, cert, error))
+    {
+      X509_free(cert);
+      return FALSE;
+    }
+
+  X509_free(cert);
+
+  /* TODO: The server MAY send multiple OCSP responses, one for each cert in the chain,
+   * those have to be validated by tls_session_ocsp_client_check_cert_validity(), _if_ they exist.
+   */
+
+  return TRUE;
+}
+
+static int
+tls_session_ocsp_client_verify_callback(SSL *ssl, void *user_data)
+{
+  TLSSession *self = SSL_get_app_data(ssl);
+
+  OCSP_RESPONSE *ocsp_response = NULL;
+  OCSP_BASICRESP *ocsp_basic_resp = NULL;
+  GError *error = NULL;
+
+  if (!_ocsp_client_retrieve_response(ssl, &ocsp_response, &ocsp_basic_resp, &error))
+    goto err;
+
+  if (!tls_session_ocsp_client_verify(self, ocsp_basic_resp, &error))
+    goto err;
+
+  OCSP_BASICRESP_free(ocsp_basic_resp);
+  OCSP_RESPONSE_free(ocsp_response);
+
+  msg_debug("OCSP stapling verification succeeded", tls_context_format_location_tag(self->ctx));
+  return 1;
+
+err:
+  msg_error("OCSP stapling verification failed",
+            evt_tag_str("error", error->message),
+            tls_context_format_location_tag(self->ctx));
+
+  g_clear_error(&error);
+  OCSP_BASICRESP_free(ocsp_basic_resp);
+  OCSP_RESPONSE_free(ocsp_response);
+
+  return 0;
+}
+
 void
 tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints)
 {
@@ -539,6 +717,23 @@ tls_context_setup_verify_mode(TLSContext *self)
     }
 
   SSL_CTX_set_verify(self->ssl_ctx, verify_mode, tls_session_verify_callback);
+}
+
+static void
+tls_context_setup_ocsp_stapling(TLSContext *self)
+{
+  if (self->mode == TM_CLIENT && self->ocsp_stapling_verify)
+    {
+      long status_cb_set = SSL_CTX_set_tlsext_status_cb(self->ssl_ctx, tls_session_ocsp_client_verify_callback);
+      g_assert(status_cb_set);
+      return;
+    }
+
+  if (self->mode == TM_SERVER)
+    {
+      g_assert(!self->ocsp_stapling_verify
+               && "OCSP stapling and its verification are currently not implemented on the server side");
+    }
 }
 
 static void
@@ -807,6 +1002,8 @@ tls_context_setup_context(TLSContext *self)
     tls_context_setup_session_tickets(self);
 
   tls_context_setup_verify_mode(self);
+  tls_context_setup_ocsp_stapling(self);
+
   tls_context_setup_ssl_options(self);
   if (!tls_context_setup_ecdh(self))
     {
@@ -851,6 +1048,12 @@ tls_context_setup_session(TLSContext *self)
     SSL_set_connect_state(ssl);
   else
     SSL_set_accept_state(ssl);
+
+  if (self->mode == TM_CLIENT && self->ocsp_stapling_verify)
+    {
+      long ocsp_enabled = SSL_set_tlsext_status_type(ssl, TLSEXT_STATUSTYPE_ocsp);
+      g_assert(ocsp_enabled);
+    }
 
   TLSSession *session = tls_session_new(ssl, self);
   if (!session)
@@ -1191,6 +1394,12 @@ tls_context_set_sni(TLSContext *self, const gchar *sni)
 {
   g_free(self->sni);
   self->sni = g_strdup(sni);
+}
+
+void
+tls_context_set_ocsp_stapling_verify(TLSContext *self, gboolean ocsp_stapling_verify)
+{
+  self->ocsp_stapling_verify = ocsp_stapling_verify;
 }
 
 void

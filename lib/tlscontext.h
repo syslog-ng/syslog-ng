@@ -99,6 +99,7 @@ GQuark tls_context_error_quark(void);
 enum TLSContextError
 {
   TLSCONTEXT_UNSUPPORTED,
+  TLSCONTEXT_INTERNAL_ERROR,
 };
 
 #define TMI_ALLOW_COMPRESS 0x1
@@ -139,6 +140,7 @@ gboolean tls_context_set_client_sigalgs(TLSContext *self, const gchar *sigalgs, 
 void tls_context_set_ecdh_curve_list(TLSContext *self, const gchar *ecdh_curve_list);
 void tls_context_set_dhparam_file(TLSContext *self, const gchar *dhparam_file);
 void tls_context_set_sni(TLSContext *self, const gchar *sni);
+void tls_context_set_ocsp_stapling_verify(TLSContext *self, gboolean ocsp_stapling_verify);
 const gchar *tls_context_get_key_file(TLSContext *self);
 EVTTAG *tls_context_format_tls_error_tag(TLSContext *self);
 EVTTAG *tls_context_format_location_tag(TLSContext *self);
