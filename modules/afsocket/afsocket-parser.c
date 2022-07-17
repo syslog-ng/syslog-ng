@@ -65,6 +65,7 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "ssl_options",        KW_SSL_OPTIONS },
   { "sni",                KW_SNI },
   { "allow_compress",     KW_ALLOW_COMPRESS },
+  { "ocsp_stapling_verify", KW_OCSP_STAPLING_VERIFY },
 
   { "localip",            KW_LOCALIP },
   { "ip",                 KW_IP },
