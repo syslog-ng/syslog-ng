@@ -108,6 +108,46 @@ tls_get_x509_digest(X509 *x, GString *hash_string)
   return TRUE;
 }
 
+static X509 *
+tls_session_find_issuer(TLSSession *self, X509 *cert)
+{
+  STACK_OF(X509) *intermediate_certs = SSL_get_peer_cert_chain(self->ssl);
+
+  for (int i = 0; intermediate_certs && i < sk_X509_num(intermediate_certs); ++i)
+    {
+      X509 *issuer = sk_X509_value(intermediate_certs, i);
+      if (X509_check_issued(issuer, cert) == X509_V_OK)
+        {
+          return X509_dup(issuer);
+        }
+    }
+
+  X509_STORE *store = SSL_CTX_get_cert_store(self->ctx->ssl_ctx);
+  if (!store)
+    return NULL;
+
+  X509_STORE_CTX *store_ctx = X509_STORE_CTX_new();
+  if (!store_ctx)
+    return NULL;
+
+  if (X509_STORE_CTX_init(store_ctx, store, NULL, NULL) != 1)
+    {
+      X509_STORE_CTX_free(store_ctx);
+      return NULL;
+    }
+
+  X509 *issuer = NULL;
+  if (X509_STORE_CTX_get1_issuer(&issuer, store_ctx, cert) != 1)
+    {
+      X509_STORE_CTX_free(store_ctx);
+      return NULL;
+    }
+
+  X509_STORE_CTX_free(store_ctx);
+
+  return issuer;
+}
+
 int
 tls_session_verify_fingerprint(X509_STORE_CTX *ctx)
 {
