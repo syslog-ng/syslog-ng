@@ -2,9 +2,8 @@
 ply                     [centos, fedora, debian, ubuntu, devshell, tarball]
 
 # pip packages for kira tests
-# 0.17: Last version that suppports python2
 distro                  [kira]
-hy==0.17                [devshell, kira]
+hy                      [devshell, kira]
 requests                [kira]
 
 # pip packages for python functional tests
