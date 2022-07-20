@@ -1,4 +1,4 @@
-DIST_SUBDIRS				+= @IVYKIS_SUBDIRS@ @JSON_SUBDIRS@
+DIST_SUBDIRS				+= @IVYKIS_SUBDIRS@
 
 include lib/ack-tracker/Makefile.am
 include lib/eventlog/src/Makefile.am
@@ -83,14 +83,6 @@ INSTALL_EXEC_HOOKS			+= install-ivykis
 UNINSTALL_HOOKS				+= uninstall-ivykis
 endif
 
-
-
-if JSON_INTERNAL
-lib/jsonc/libjson-c.la:
-	${MAKE} CFLAGS="${CFLAGS} -Wno-error" -C lib/jsonc
-
-CLEAN_SUBDIRS				+= @JSON_SUBDIRS@
-endif
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 pkginclude_HEADERS			+= \
@@ -318,10 +310,6 @@ if IVYKIS_INTERNAL
 lib/ivykis/ ivykis: lib/ivykis/src/libivykis.la
 endif
 
-if JSON_INTERNAL
-lib/jsonc/ jsonc: lib/jsonc/libjson-c.la
-endif
-
-.PHONY: lib/ libsyslog-ng ivykis lib/ivykis/ lib/jsonc/ jsonc
+.PHONY: lib/ libsyslog-ng ivykis lib/ivykis/
 
 include lib/tests/Makefile.am

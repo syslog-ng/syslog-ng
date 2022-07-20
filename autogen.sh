@@ -25,7 +25,7 @@
 # This script is needed to setup build environment from checked out
 # source tree.
 #
-SUBMODULES="lib/ivykis lib/jsonc"
+SUBMODULES="lib/ivykis"
 GIT=`which git`
 # bootstrap syslog-ng itself
 case `uname -s` in

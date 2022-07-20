@@ -44,8 +44,6 @@ which				[fedora]
 #############################################################################
 # Tarball related tools
 #############################################################################
-# needed to create a tarball from libjson-c
-doxygen                         [tarball]
 
 # docbook to generate man pages
 docbook-xsl                     [tarball]
