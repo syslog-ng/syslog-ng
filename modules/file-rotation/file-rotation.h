@@ -24,4 +24,12 @@
 #ifndef FILE_ROTATION_H_INCLUDED
 #define FILE_ROTATION_H_INCLUDED
 
+#include "syslog-ng.h"
+
+typedef struct _FileRotationPlugin FileRotationPlugin;
+
+FileRotationPlugin *file_rotation_new(void);
+
+void file_rotation_set_size(FileRotationPlugin *self, gsize size);
+
 #endif

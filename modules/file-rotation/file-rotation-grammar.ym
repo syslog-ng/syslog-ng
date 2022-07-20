@@ -35,8 +35,11 @@
 #include "messages.h"
 #include "plugin.h"
 #include "driver.h"
+#include "file-rotation.h"
 
 #include <string.h>
+
+FileRotationPlugin *last_file_rotation_plugin;
 
 }
 
@@ -62,7 +65,12 @@ start
   ;
 
 file_rotation
-  : KW_FILE_ROTATION '(' file_rotation_options ')'
+  : KW_FILE_ROTATION
+    {
+      last_file_rotation_plugin = file_rotation_new();
+      *instance = (LogDriverPlugin *) last_file_rotation_plugin;
+    }
+    '(' file_rotation_options ')'
   ;
 
 file_rotation_options
@@ -71,7 +79,7 @@ file_rotation_options
   ;
 
 file_rotation_option
-  : KW_SIZE '(' nonnegative_integer ')'
+  : KW_SIZE '(' nonnegative_integer ')' { file_rotation_set_size(last_file_rotation_plugin, $3); }
   ;
 
 /* INCLUDE_RULES */

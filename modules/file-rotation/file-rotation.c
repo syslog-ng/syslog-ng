@@ -22,3 +22,45 @@
  */
 
 #include "file-rotation.h"
+#include "driver.h"
+
+struct _FileRotationPlugin
+{
+  LogDriverPlugin super;
+  gsize size;
+};
+
+static gboolean
+file_rotation_attach_to_driver(LogDriverPlugin *s, LogDriver *driver)
+{
+  msg_debug("File rotation plugin has been attached", evt_tag_str("to", driver->id));
+
+  return TRUE;
+}
+
+static void
+file_rotation_free(LogDriverPlugin *s)
+{
+  FileRotationPlugin *self = (FileRotationPlugin *) s;
+
+  log_driver_plugin_free_method(s);
+}
+
+void
+file_rotation_set_size(FileRotationPlugin *self, gsize size)
+{
+  self->size = size;
+}
+
+FileRotationPlugin *
+file_rotation_new(void)
+{
+  FileRotationPlugin *self = g_new0(FileRotationPlugin, 1);
+
+  log_driver_plugin_init_instance(&self->super, "file-rotation");
+
+  self->super.attach = file_rotation_attach_to_driver;
+  self->super.free_fn = file_rotation_free;
+
+  return self;
+}

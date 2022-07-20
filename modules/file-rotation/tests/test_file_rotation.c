@@ -22,10 +22,15 @@
  */
 
 #include "file-rotation.h"
+#include "driver.h"
 
 #include <criterion/criterion.h>
 
 Test(file_rotation, test_example)
 {
+  FileRotationPlugin *fr = file_rotation_new();
+  file_rotation_set_size(fr, 100);
+  log_driver_plugin_free((LogDriverPlugin *) fr);
+
   cr_assert(0);
 }
