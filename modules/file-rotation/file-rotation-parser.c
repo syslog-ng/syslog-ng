@@ -31,6 +31,8 @@ int file_rotation_parse(CfgLexer *lexer, LogDriverPlugin **instance, gpointer ar
 
 static CfgLexerKeyword file_rotation_keywords[] =
 {
+  { "file_rotation", KW_FILE_ROTATION },
+  { "size", KW_SIZE },
   { NULL }
 };
 

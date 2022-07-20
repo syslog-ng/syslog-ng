@@ -52,14 +52,26 @@
 
 /* INCLUDE_DECLS */
 
+%token KW_FILE_ROTATION
+%token KW_SIZE
+
 %%
 
 start
-  : LL_CONTEXT_INNER_DEST first_rule          { YYACCEPT; }
+  : LL_CONTEXT_INNER_DEST file_rotation { YYACCEPT; }
   ;
 
-first_rule
-  :
+file_rotation
+  : KW_FILE_ROTATION '(' file_rotation_options ')'
+  ;
+
+file_rotation_options
+  : file_rotation_option file_rotation_options
+  |
+  ;
+
+file_rotation_option
+  : KW_SIZE '(' nonnegative_integer ')'
   ;
 
 /* INCLUDE_RULES */
