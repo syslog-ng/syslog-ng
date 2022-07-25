@@ -19,7 +19,6 @@ on:
           "ubuntu-bionic",
           "debian-bullseye",
           "ubuntu-focal",
-          "ubuntu-impish",
           "ubuntu-jammy"
         ]'
     secrets:

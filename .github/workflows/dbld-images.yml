@@ -38,7 +38,6 @@ jobs:
           - debian-testing
           - ubuntu-bionic
           - ubuntu-focal
-          - ubuntu-impish
           - ubuntu-jammy
           - ubuntu-xenial
           - devshell

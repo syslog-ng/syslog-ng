@@ -171,7 +171,6 @@ syslog-ng packages are released for the following distribution versions (x86-64)
 | Distro version | sources.list component name |
 |---|---|
 | Ubuntu 22.04 | ubuntu-jammy |
-| Ubuntu 21.10 | ubuntu-impish |
 | Ubuntu 20.04 | ubuntu-focal |
 | Ubuntu 18.04 | ubuntu-bionic |
 | Ubuntu 16.04 | ubuntu-xenial |

@@ -20,7 +20,6 @@ jobs:
           - "ubuntu:xenial"
           - "ubuntu:bionic"
           - "ubuntu:focal"
-          - "ubuntu:impish"
           - "ubuntu:jammy"
       fail-fast: false
     runs-on: ubuntu-latest
