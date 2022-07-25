@@ -4,6 +4,7 @@ ply                     [centos, fedora, debian, ubuntu, devshell, tarball]
 # pip packages for kira tests
 distro                  [kira]
 hy                      [devshell, kira]
+hyrule                  [devshell, kira]
 requests                [kira]
 
 # pip packages for python functional tests
