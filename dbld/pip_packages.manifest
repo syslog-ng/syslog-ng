@@ -1,22 +1,22 @@
 # pip packages for successful run unit tests
-ply                     [centos, fedora, debian, ubuntu, devshell, tarball]
+ply                     [centos, fedora, debian, ubuntu, devshell, tarball]    [python3]
 
 # pip packages for kira tests
-distro                  [kira]
-hy                      [devshell, kira]
-hyrule                  [devshell, kira]
-requests                [kira]
+distro                  [kira]                                                 [python2, python3]
+hy                      [devshell, kira]                                       [python3]
+hyrule                  [devshell, kira]                                       [python3]
+requests                [kira]                                                 [python2, python3]
 
 # pip packages for python functional tests
-pathlib2                [centos, fedora, debian, ubuntu, devshell]
-psutil                  [centos, fedora, debian, ubuntu, devshell]
-pytest                  [centos, fedora, debian, ubuntu, devshell]
-virtualenv              [devshell]
+pathlib2                [centos, fedora, debian, ubuntu, devshell]             [python3]
+psutil                  [centos, fedora, debian, ubuntu, devshell]             [python3]
+pytest                  [centos, fedora, debian, ubuntu, devshell]             [python3]
+virtualenv              [devshell]                                             [python3]
 # pytest 4.6.9 has requirement six>=1.10.0, but ubuntu-trusty installs six 1.5.2 which is incompatible
-six>=1.10.0             [ubuntu-trusty]
+six>=1.10.0             [ubuntu-trusty]                                        [python3]
 
 # linters and code formatting
-pep8                    [devshell]
-pylint                  [devshell]
-pre-commit              [devshell]
-pre-commit-hooks        [devshell]
+pep8                    [devshell]                                             [python3]
+pylint                  [devshell]                                             [python3]
+pre-commit              [devshell]                                             [python3]
+pre-commit-hooks        [devshell]                                             [python3]

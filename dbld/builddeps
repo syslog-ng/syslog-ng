@@ -108,6 +108,12 @@ function filter_packages_by_platform {
     grep -v "#" ${FILENAME} | grep -e "${IMAGE_PLATFORM}" -e "${OS_DISTRIBUTION}[^-]" | cut -d"[" -f1
 }
 
+function filter_pip_packages_by_platform_and_python_version {
+    FILENAME=$1
+    PYTHON_VERSION=$2
+    grep -v "#" ${FILENAME} | grep -e "${IMAGE_PLATFORM}" -e "${OS_DISTRIBUTION}[^-]" | grep -e "${PYTHON_VERSION}" | cut -d"[" -f1
+}
+
 function add_copr_repo {
 
     # NOTE: we are removing dnf/yum plugins after enabling copr as they
@@ -179,12 +185,12 @@ function install_pip_packages {
             fedora-*)
                 # don't update pip/setuptools on Fedora as RPM installed
                 # instances cause an error, at least in Fedora-35
-                filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
+                filter_pip_packages_by_platform_and_python_version $DBLD_DIR/pip_packages.manifest $python_executable| xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
                 ;;
             *)
                 $python_executable -m pip install --no-cache-dir --upgrade pip
                 $python_executable -m pip install --no-cache-dir --upgrade setuptools
-                filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
+                filter_pip_packages_by_platform_and_python_version $DBLD_DIR/pip_packages.manifest $python_executable | xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
                 ;;
         esac
     done
