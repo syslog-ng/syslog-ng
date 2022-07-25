@@ -16,4 +16,5 @@ StandardError=journal
 Restart=on-failure
 
 [Install]
+DefaultInstance=default
 WantedBy=multi-user.target
