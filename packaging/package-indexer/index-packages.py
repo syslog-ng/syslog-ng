@@ -50,7 +50,7 @@ def add_required_arguments(parser: ArgumentParser) -> None:
         "--run-id",
         type=str,
         required=True,
-        help='The "run-id" of the "draft-release" or "nightly-packages" GitHub Actions job.',
+        help='The "run-id" of the "draft-release" or "nightly-release" GitHub Actions job.',
     )
     required_argument_group.add_argument(
         "--suite",
