@@ -34,13 +34,11 @@ newsfile = root_dir / 'NEWS.md'
 
 credit_fixed_contributors = [
     "Andras Mitzki",
-    "Attila Szakacs",
     "Balazs Scheidler",
     "Gabor Nagy",
     "László Várady",
     "Parrag Szilárd",
     "Peter Kokai",
-    "Zoltan Pallagi",
 ]
 exclude_contributor_list = [
     "github-actions",
