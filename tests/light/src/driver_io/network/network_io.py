@@ -20,21 +20,34 @@
 # COPYING for details.
 #
 #############################################################################
+import atexit
+import socket
 from enum import Enum
+from enum import IntEnum
 
 from pathlib2 import Path
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
+from src.common.asynchronous import BackgroundEventLoop
+from src.common.blocking import DEFAULT_TIMEOUT
 from src.common.file import File
+from src.common.network import SingleConnectionTCPServer
+from src.common.network import UDPServer
 from src.common.random_id import get_unique_id
+from src.driver_io import message_readers
 from src.helpers.loggen.loggen import Loggen
 
 
 class NetworkIO():
-    def __init__(self, ip, port, transport):
+    def __init__(self, ip, port, transport, ip_proto_version=None):
         self.__ip = ip
         self.__port = port
         self.__transport = transport
+        self.__ip_proto_version = NetworkIO.IPProtoVersion.V4 if ip_proto_version is None else ip_proto_version
+        self.__server = None
+        self.__message_reader = None
+
+        atexit.register(self.stop_listener)
 
     def write(self, content, rate=None):
         loggen_input_file_path = Path(tc_parameters.WORKING_DIR, "loggen_input_{}.txt".format(get_unique_id()))
@@ -46,6 +59,26 @@ class NetworkIO():
 
         Loggen().start(self.__ip, self.__port, read_file=str(loggen_input_file_path), dont_parse=True, permanent=True, rate=rate, **self.__transport.value)
 
+    def start_listener(self):
+        self.__message_reader, self.__server = self.__transport.construct(self.__port, self.__ip, self.__ip_proto_version)
+        BackgroundEventLoop().wait_async_result(self.__server.start(), timeout=DEFAULT_TIMEOUT)
+
+    def stop_listener(self):
+        if self.__message_reader is not None:
+            BackgroundEventLoop().wait_async_result(self.__server.stop(), timeout=DEFAULT_TIMEOUT)
+            self.__message_reader = None
+            self.__server = None
+
+    def read_number_of_messages(self, counter, timeout=DEFAULT_TIMEOUT):
+        return self.__message_reader.wait_for_number_of_messages(counter, timeout)
+
+    def read_until_messages(self, lines, timeout=DEFAULT_TIMEOUT):
+        return self.__message_reader.wait_for_messages(lines, timeout)
+
+    class IPProtoVersion(IntEnum):
+        V4 = socket.AF_INET
+        V6 = socket.AF_INET6
+
     class Transport(Enum):
         TCP = {"inet": True, "stream": True}
         UDP = {"dgram": True}
@@ -53,3 +86,13 @@ class NetworkIO():
         PROXIED_TCP = {"inet": True, "stream": True}
         PROXIED_TLS = {"use_ssl": True}
         PROXIED_TLS_PASSTHROUGH = {"use_ssl": True, "proxied_tls_passthrough": True}
+
+        def construct(self, port, host=None, ip_proto_version=None):
+            def _construct(server, reader_class):
+                return reader_class(server), server
+
+            transport_mapping = {
+                NetworkIO.Transport.TCP: lambda: _construct(SingleConnectionTCPServer(port, host, ip_proto_version), message_readers.SingleLineStreamReader),
+                NetworkIO.Transport.UDP: lambda: _construct(UDPServer(port, host, ip_proto_version), message_readers.DatagramReader),
+            }
+            return transport_mapping[self]()

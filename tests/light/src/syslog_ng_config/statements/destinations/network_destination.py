@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2022 One Identity
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,22 +20,38 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
-
-import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.driver_io.file.file_io import FileIO
+from src.driver_io.network.network_io import NetworkIO
 from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
 
 
-class FileDestination(DestinationDriver):
-    def __init__(self, file_name, **options):
-        self.driver_name = "file"
-        self.path = Path(tc_parameters.WORKING_DIR, file_name)
-        self.io = FileIO(self.path)
-        super(FileDestination, self).__init__([self.path], options)
+def map_transport(transport):
+    mapping = {
+        "tcp": NetworkIO.Transport.TCP,
+        "udp": NetworkIO.Transport.UDP,
+    }
+    transport = transport.replace("_", "-").replace("'", "").replace('"', "").lower()
 
-    def get_path(self):
-        return self.path
+    return mapping[transport]
+
+
+def create_io(ip, options):
+    transport = options["transport"] if "transport" in options else "tcp"
+
+    return NetworkIO(ip, options["port"], map_transport(transport))
+
+
+class NetworkDestination(DestinationDriver):
+    def __init__(self, ip, **options):
+        self.driver_name = "network"
+        self.ip = ip
+        self.io = create_io(self.ip, options)
+        super(NetworkDestination, self).__init__([self.ip], options)
+
+    def start_listener(self):
+        self.io.start_listener()
+
+    def stop_listener(self):
+        self.io.stop_listener()
 
     def read_log(self):
         return self.read_logs(1)[0]

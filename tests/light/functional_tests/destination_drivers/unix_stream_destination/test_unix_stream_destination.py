@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2022 One Identity
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,19 +20,22 @@
 # COPYING for details.
 #
 #############################################################################
-from src.driver_io.file.file_io import FileIO
+from pathlib2 import Path
+
+import src.testcase_parameters.testcase_parameters as tc_parameters
 
 
-def test_file_io_write_read(temp_file, test_message):
-    fileio = FileIO(temp_file)
-    fileio.write(test_message)
-    output = fileio.read_number_of_messages(1)
-    assert [test_message] == output
+def test_unix_stream_destination(config, syslog_ng):
+    counter = 100
+    message = "message text"
 
+    generator_source = config.create_example_msg_generator_source(num=counter, freq=0.0001, template=config.stringify(message))
+    # NOTE: In this iteration testcase is responsible for generating proper output path (because of socket path length), this will be changed in the future
+    relative_unix_stream_path = Path(tc_parameters.WORKING_DIR, "output_unix_stream").relative_to(Path.cwd())
+    unix_stream_destination = config.create_unix_stream_destination(file_name=relative_unix_stream_path)
+    config.create_logpath(statements=[generator_source, unix_stream_destination])
 
-def test_file_io_multiple_write_read(temp_file, test_message):
-    fileio = FileIO(temp_file)
-    fileio.write(test_message)
-    fileio.write(test_message)
-    output = fileio.read_number_of_messages(2)
-    assert [test_message, test_message] == output
+    unix_stream_destination.start_listener()
+    syslog_ng.start(config)
+    assert unix_stream_destination.read_until_logs([message] * counter)
+    assert unix_stream_destination.get_stats()["written"] == counter

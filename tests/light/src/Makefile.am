@@ -1,9 +1,11 @@
 
 #find -name '*.py'|awk '{ print "\ttests/light/src/"substr($0,3); }'|sort
 EXTRA_DIST += \
+	tests/light/src/common/asynchronous.py \
 	tests/light/src/common/blocking.py \
 	tests/light/src/common/__init__.py \
 	tests/light/src/common/file.py \
+	tests/light/src/common/network.py \
 	tests/light/src/common/network_operations.py \
 	tests/light/src/common/operations.py \
 	tests/light/src/common/pytest_operations.py \
@@ -18,6 +20,7 @@ EXTRA_DIST += \
 	tests/light/src/driver_io/__init__.py \
 	tests/light/src/driver_io/network/__init__.py \
 	tests/light/src/driver_io/network/network_io.py \
+	tests/light/src/driver_io/message_readers.py \
 	tests/light/src/executors/command_executor.py \
 	tests/light/src/executors/__init__.py \
 	tests/light/src/executors/process_executor.py \
@@ -43,7 +46,10 @@ EXTRA_DIST += \
 	tests/light/src/syslog_ng_config/statements/destinations/example_destination.py \
 	tests/light/src/syslog_ng_config/statements/destinations/file_destination.py \
 	tests/light/src/syslog_ng_config/statements/destinations/__init__.py \
+	tests/light/src/syslog_ng_config/statements/destinations/network_destination.py \
 	tests/light/src/syslog_ng_config/statements/destinations/snmp_destination.py \
+	tests/light/src/syslog_ng_config/statements/destinations/unix_dgram_destination.py \
+	tests/light/src/syslog_ng_config/statements/destinations/unix_stream_destination.py \
 	tests/light/src/syslog_ng_config/statements/filters/filter.py \
 	tests/light/src/syslog_ng_config/statements/filters/__init__.py \
 	tests/light/src/syslog_ng_config/statements/__init__.py \

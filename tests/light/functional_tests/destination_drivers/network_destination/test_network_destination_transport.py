@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2022 One Identity
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,19 +20,27 @@
 # COPYING for details.
 #
 #############################################################################
-from src.driver_io.file.file_io import FileIO
+import pytest
 
 
-def test_file_io_write_read(temp_file, test_message):
-    fileio = FileIO(temp_file)
-    fileio.write(test_message)
-    output = fileio.read_number_of_messages(1)
-    assert [test_message] == output
+@pytest.mark.parametrize(
+    "transport", [
+        None,
+        "tcp",
+        "udp",
+    ], ids=["default", "tcp", "udp"],
+)
+def test_network_destination_transport(config, syslog_ng, port_allocator, transport):
+    counter = 100
+    message = "message text"
 
+    generator_source = config.create_example_msg_generator_source(num=counter, freq=0.0001, template=config.stringify(message))
+    if transport is not None:
+        network_destination = config.create_network_destination(ip="localhost", port=port_allocator(), transport=transport)
+    else:
+        network_destination = config.create_network_destination(ip="localhost", port=port_allocator())
+    config.create_logpath(statements=[generator_source, network_destination])
 
-def test_file_io_multiple_write_read(temp_file, test_message):
-    fileio = FileIO(temp_file)
-    fileio.write(test_message)
-    fileio.write(test_message)
-    output = fileio.read_number_of_messages(2)
-    assert [test_message, test_message] == output
+    network_destination.start_listener()
+    syslog_ng.start(config)
+    assert network_destination.read_until_logs([message] * counter)

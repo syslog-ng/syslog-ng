@@ -20,6 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
+import atexit
 import logging
 import shutil
 
@@ -59,7 +60,9 @@ class File(object):
         self.path = Path(file_path)
         self.__opened_file = None
 
-    def __del__(self):
+        atexit.register(self.deinit)
+
+    def deinit(self):
         if self.is_opened():
             self.close()
 
