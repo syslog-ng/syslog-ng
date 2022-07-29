@@ -47,6 +47,12 @@ void msg_event_print_event_to_stderr(EVTREC *e);
 
 
 void msg_set_post_func(MsgPostFunc func);
+gint msg_map_string_to_log_level(const gchar *log_level);
+void msg_set_log_level(gint new_log_level);
+gint msg_get_log_level(void);
+void msg_apply_cmdline_log_level(gint new_log_level);
+void msg_apply_config_log_level(gint new_log_level);
+
 void msg_init(gboolean interactive);
 void msg_deinit(void);
 
