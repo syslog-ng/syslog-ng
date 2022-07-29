@@ -20,9 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
-
-import src.testcase_parameters.testcase_parameters as tc_parameters
 
 
 def test_unix_dgram_destination(config, syslog_ng):
@@ -30,9 +27,7 @@ def test_unix_dgram_destination(config, syslog_ng):
     message = "message text"
 
     generator_source = config.create_example_msg_generator_source(num=counter, freq=0.0001, template=config.stringify(message))
-    # NOTE: In this iteration testcase is responsible for generating proper output path (because of socket path length), this will be changed in the future
-    relative_unix_dgram_path = Path(tc_parameters.WORKING_DIR, "output_unix_dgram").relative_to(Path.cwd())
-    unix_dgram_destination = config.create_unix_dgram_destination(file_name=relative_unix_dgram_path)
+    unix_dgram_destination = config.create_unix_dgram_destination(file_name="output_unix_dgram")
     config.create_logpath(statements=[generator_source, unix_dgram_destination])
 
     unix_dgram_destination.start_listener()

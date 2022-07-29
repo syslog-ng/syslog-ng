@@ -22,7 +22,6 @@
 #############################################################################
 from pathlib2 import Path
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.blocking import wait_until_true
 from src.common.file import copy_shared_file
 from src.common.file import File
@@ -55,7 +54,7 @@ def test_pp_tls_passthrough(config, syslog_ng, port_allocator, loggen, testcase_
 
     syslog_ng.start(config)
 
-    loggen_input_file_path = Path(tc_parameters.WORKING_DIR, "loggen_input_{}.txt".format(get_unique_id()))
+    loggen_input_file_path = Path("loggen_input_{}.txt".format(get_unique_id()))
     loggen_input_file = File(loggen_input_file_path)
     loggen_input_file.open(mode="w")
     loggen_input_file.write(INPUT_MESSAGES)
