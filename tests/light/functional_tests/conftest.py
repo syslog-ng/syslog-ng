@@ -65,9 +65,9 @@ def light_extra_files(target_dir):
 def setup(request):
     testcase_parameters = request.getfixturevalue("testcase_parameters")
 
-    copy_file(testcase_parameters.get_testcase_file(), testcase_parameters.get_working_dir())
-    light_extra_files(testcase_parameters.get_working_dir())
-    request.addfinalizer(lambda: logger.info("Report file path\n{}\n".format(calculate_report_file_path(testcase_parameters.get_working_dir()))))
+    copy_file(testcase_parameters.get_testcase_file(), Path.cwd())
+    light_extra_files(Path.cwd())
+    request.addfinalizer(lambda: logger.info("Report file path\n{}\n".format(calculate_report_file_path(Path.cwd()))))
 
 
 class PortAllocator():

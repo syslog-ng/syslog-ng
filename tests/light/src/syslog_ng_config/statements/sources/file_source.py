@@ -24,7 +24,6 @@ import logging
 
 from pathlib2 import Path
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 
@@ -42,7 +41,7 @@ class FileSource(SourceDriver):
         return self.path
 
     def set_path(self, pathname):
-        self.path = Path(tc_parameters.WORKING_DIR, pathname)
+        self.path = Path(pathname)
 
     def write_log(self, formatted_log, counter=1):
         for _ in range(counter):

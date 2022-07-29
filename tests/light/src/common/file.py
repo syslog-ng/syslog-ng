@@ -26,7 +26,6 @@ import shutil
 
 from pathlib2 import Path
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.blocking import DEFAULT_TIMEOUT
 from src.common.blocking import wait_until_true
 from src.common.blocking import wait_until_true_custom
@@ -46,12 +45,12 @@ def copy_file(src_file_path, dst_dir):
 
 def copy_shared_file(testcase_parameters, shared_file_name):
     shared_dir = testcase_parameters.get_shared_dir()
-    copy_file(Path(shared_dir, shared_file_name), testcase_parameters.get_working_dir())
-    return Path(testcase_parameters.get_working_dir(), shared_file_name)
+    copy_file(Path(shared_dir, shared_file_name), Path.cwd())
+    return Path(Path.cwd(), shared_file_name)
 
 
 def delete_session_file(shared_file_name):
-    shared_file_name = Path(tc_parameters.WORKING_DIR, shared_file_name)
+    shared_file_name = Path(shared_file_name)
     shared_file_name.unlink()
 
 

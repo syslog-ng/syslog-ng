@@ -27,7 +27,6 @@ import pytest
 from pathlib2 import Path
 from psutil import TimeoutExpired
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.blocking import wait_until_true
 from src.common.file import File
 from src.executors.process_executor import ProcessExecutor
@@ -40,9 +39,9 @@ class SNMPtrapd(object):
         self.snmptrapd_proc = None
         self.port = port
 
-        self.snmptrapd_log = Path(tc_parameters.WORKING_DIR, "snmptrapd_log")
-        self.snmptrapd_stdout_path = Path(tc_parameters.WORKING_DIR, "snmptrapd_stdout")
-        self.snmptrapd_stderr_path = Path(tc_parameters.WORKING_DIR, "snmptrapd_stderr")
+        self.snmptrapd_log = Path("snmptrapd_log")
+        self.snmptrapd_stdout_path = Path("snmptrapd_stdout")
+        self.snmptrapd_stderr_path = Path("snmptrapd_stderr")
 
     def wait_for_snmptrapd_log_creation(self):
         return self.snmptrapd_log.exists()

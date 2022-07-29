@@ -151,8 +151,8 @@ class Loggen(object):
             raise Exception("Loggen is already running, you shouldn't call start")
 
         instanceIndex = Loggen.__get_new_instance_index()
-        self.loggen_stdout_path = Path(tc_parameters.WORKING_DIR, "loggen_stdout_{}".format(instanceIndex))
-        self.loggen_stderr_path = Path(tc_parameters.WORKING_DIR, "loggen_stderr_{}".format(instanceIndex))
+        self.loggen_stdout_path = Path("loggen_stdout_{}".format(instanceIndex))
+        self.loggen_stderr_path = Path("loggen_stderr_{}".format(instanceIndex))
 
         self.parameters = self.__decode_start_parameters(
             inet, unix, stream, dgram, use_ssl, dont_parse, read_file, skip_tokens, loop_reading,

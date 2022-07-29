@@ -22,7 +22,6 @@
 #############################################################################
 from pathlib2 import Path
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
 
@@ -30,7 +29,7 @@ from src.syslog_ng_config.statements.destinations.destination_driver import Dest
 class ExampleDestination(DestinationDriver):
     def __init__(self, filename, **options):
         self.driver_name = "example-destination"
-        self.path = Path(tc_parameters.WORKING_DIR, filename)
+        self.path = Path(filename)
         self.io = FileIO(self.path)
         super(ExampleDestination, self).__init__(None, dict({"filename": self.path.resolve()}, **options))
 
