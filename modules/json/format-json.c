@@ -40,23 +40,23 @@ typedef struct _TFJsonState
 } TFJsonState;
 
 static gboolean
-_parse_additional_options(gint argc, gchar **argv, gboolean *transform_initial_dot, GError **error)
+_parse_additional_options(gint *argc, gchar **argv[], gboolean *transform_initial_dot, GError **error)
 {
-  *transform_initial_dot = TRUE;
-  for (gint i = 1; i < argc; i++)
-    {
-      if (argv[i][0] != '-')
-        continue;
+  GOptionEntry format_json_options[] =
+  {
+    { "leave-initial-dot", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, transform_initial_dot, NULL, NULL },
+    { NULL },
+  };
 
-      if (strcmp(argv[i], "--leave-initial-dot") == 0)
-        *transform_initial_dot = FALSE;
-      else
-        {
-          g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_UNKNOWN_OPTION, "$(format-json) unknown option: %s", argv[i]);
-          return FALSE;
-        }
-    }
-  return TRUE;
+  GOptionContext *ctx = g_option_context_new("format-json");
+  GOptionGroup *og = g_option_group_new(NULL, NULL, NULL, NULL, NULL);
+  g_option_group_add_entries(og, format_json_options);
+  g_option_context_set_main_group(ctx, og);
+
+  gboolean success = g_option_context_parse(ctx, argc, argv, error);
+  g_option_context_free(ctx);
+
+  return success;
 }
 
 static gboolean
@@ -66,13 +66,13 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
 {
   TFJsonState *state = (TFJsonState *)s;
   ValuePairsTransformSet *vpts;
-  gboolean transform_initial_dot;
+  gboolean transform_initial_dot = TRUE;
 
   state->vp = value_pairs_new_from_cmdline (parent->cfg, &argc, &argv, TRUE, error);
   if (!state->vp)
     return FALSE;
 
-  if (!_parse_additional_options(argc, argv, &transform_initial_dot, error))
+  if (!_parse_additional_options(&argc, &argv, &transform_initial_dot, error))
     return FALSE;
 
   if (transform_initial_dot)
