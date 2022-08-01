@@ -37,7 +37,27 @@ typedef struct _TFJsonState
 {
   TFSimpleFuncState super;
   ValuePairs *vp;
+  gchar key_delimiter;
 } TFJsonState;
+
+static gboolean
+_parse_key_delimiter(const gchar *option_name,
+                     const gchar *value,
+                     gpointer data,
+                     GError **error)
+{
+  TFJsonState *state = (TFJsonState *) data;
+
+  if (strlen(value) > 1 || strlen(value) == 0)
+    {
+      g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_UNKNOWN_OPTION,
+                  "$(format-json) --key-delimiter only accepts a single character, found: '%s'", value);
+      return FALSE;
+    }
+  /* take off the first character */
+  state->key_delimiter = value[0];
+  return TRUE;
+}
 
 static gboolean
 tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
@@ -48,22 +68,26 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
   ValuePairsTransformSet *vpts;
   gboolean transform_initial_dot = TRUE;
 
+  state->key_delimiter = '.';
   GOptionEntry format_json_options[] =
   {
     { "leave-initial-dot", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &transform_initial_dot, NULL, NULL },
+    { "key-delimiter", 0, 0, G_OPTION_ARG_CALLBACK, _parse_key_delimiter, NULL, NULL },
     { NULL },
   };
 
-  GOptionGroup *og = g_option_group_new("format-json", "", "", NULL, NULL);
+  GOptionGroup *og = g_option_group_new("format-json", "", "", state, NULL);
   g_option_group_add_entries(og, format_json_options);
 
-  state->vp = value_pairs_new_from_cmdline (parent->cfg, &argc, &argv, og, error);
+  state->vp = value_pairs_new_from_cmdline(parent->cfg, &argc, &argv, og, error);
   if (!state->vp)
     return FALSE;
 
-  if (transform_initial_dot)
+  if (transform_initial_dot && state->key_delimiter == '.')
     {
-      /* Always replace a leading dot with an underscore. */
+      /* Always replace a leading dot with an underscore, unless something
+       * other than a dot is specified as key-delimiter.  */
+
       vpts = value_pairs_transform_set_new(".*");
       value_pairs_transform_set_add_func(vpts, value_pairs_new_transform_replace_prefix(".", "_"));
       value_pairs_add_transforms(state->vp, vpts);
@@ -328,17 +352,17 @@ tf_json_value(const gchar *name, const gchar *prefix,
 }
 
 static gboolean
-tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg, LogTemplateEvalOptions *options)
+tf_json_append(TFJsonState *state, GString *result, LogMessage *msg, LogTemplateEvalOptions *options)
 {
-  json_state_t state;
+  json_state_t invocation_state;
 
-  state.need_comma = FALSE;
-  state.buffer = result;
-  state.template_options = options->opts;
+  invocation_state.need_comma = FALSE;
+  invocation_state.buffer = result;
+  invocation_state.template_options = options->opts;
 
-  return value_pairs_walk(vp,
+  return value_pairs_walk(state->vp,
                           tf_json_obj_start, tf_json_value, tf_json_obj_end,
-                          msg, options, 0, &state);
+                          msg, options, state->key_delimiter, &invocation_state);
 }
 
 static void
@@ -351,7 +375,7 @@ tf_json_call(LogTemplateFunction *self, gpointer s,
   *type = LM_VT_JSON;
   for (gint i = 0; i < args->num_messages; i++)
     {
-      gboolean r = tf_json_append(result, state->vp, args->messages[i], args->options);
+      gboolean r = tf_json_append(state, result, args->messages[i], args->options);
       if (!r && (args->options->opts->on_error & ON_ERROR_DROP_MESSAGE))
         {
           g_string_set_size(result, orig_size);
@@ -420,22 +444,23 @@ tf_flat_json_value(const gchar *name, const gchar *prefix,
 }
 
 static gboolean
-tf_flat_json_append(GString *result, ValuePairs *vp, LogMessage *msg, LogTemplateEvalOptions *options)
+tf_flat_json_append(TFJsonState *state, GString *result, LogMessage *msg, LogTemplateEvalOptions *options)
 {
-  json_state_t state;
+  json_state_t invocation_state;
 
-  state.need_comma = FALSE;
-  state.buffer = result;
-  state.template_options = options->opts;
+  invocation_state.need_comma = FALSE;
+  invocation_state.buffer = result;
+  invocation_state.template_options = options->opts;
 
-  g_string_append_c(state.buffer, '{');
+  g_string_append_c(invocation_state.buffer, '{');
 
-  gboolean success = value_pairs_walk(vp,
+  gboolean success = value_pairs_walk(state->vp,
                                       tf_flat_json_obj_start, tf_flat_json_value, tf_flat_json_obj_end,
-                                      msg, options, 0,
-                                      &state);
+                                      msg, options,
+                                      state->key_delimiter,
+                                      &invocation_state);
 
-  g_string_append_c(state.buffer, '}');
+  g_string_append_c(invocation_state.buffer, '}');
 
   return success;
 }
@@ -450,7 +475,7 @@ tf_flat_json_call(LogTemplateFunction *self, gpointer s,
   *type = LM_VT_JSON;
   for (gint i = 0; i < args->num_messages; i++)
     {
-      gboolean r = tf_flat_json_append(result, state->vp, args->messages[i], args->options);
+      gboolean r = tf_flat_json_append(state, result, args->messages[i], args->options);
       if (!r && (args->options->opts->on_error & ON_ERROR_DROP_MESSAGE))
         {
           g_string_set_size(result, orig_size);

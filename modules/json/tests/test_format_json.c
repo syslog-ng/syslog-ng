@@ -396,3 +396,13 @@ Test(format_json, test_format_json_performance)
                     "..RSTAMP='${R_UNIXTIME}${R_TZ}' "
                     "..TAGS=${TAGS})\n");
 }
+
+Test(format_json, test_format_json_with_key_delimiter)
+{
+  assert_template_format("$(format-json --key-delimiter \"\t\" \".foo\t.b.a.r.\"=\"baz\")",
+                         "{\".foo\":{\".b.a.r.\":\"baz\"}}");
+  assert_template_format("$(format-json --key-delimiter \".\" \".foo.bar\"=\"baz\")",
+                         "{\"_foo\":{\"bar\":\"baz\"}}");
+  assert_template_format("$(format-json \".foo.bar\"=\"baz\")",
+                         "{\"_foo\":{\"bar\":\"baz\"}}");
+}
