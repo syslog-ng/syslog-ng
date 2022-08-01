@@ -338,7 +338,7 @@ tf_json_append(GString *result, ValuePairs *vp, LogMessage *msg, LogTemplateEval
 
   return value_pairs_walk(vp,
                           tf_json_obj_start, tf_json_value, tf_json_obj_end,
-                          msg, options, &state);
+                          msg, options, 0, &state);
 }
 
 static void
@@ -432,7 +432,7 @@ tf_flat_json_append(GString *result, ValuePairs *vp, LogMessage *msg, LogTemplat
 
   gboolean success = value_pairs_walk(vp,
                                       tf_flat_json_obj_start, tf_flat_json_value, tf_flat_json_obj_end,
-                                      msg, options,
+                                      msg, options, 0,
                                       &state);
 
   g_string_append_c(state.buffer, '}');

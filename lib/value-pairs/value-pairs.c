@@ -552,6 +552,7 @@ typedef struct
 
   gpointer user_data;
   vp_stack_t stack;
+  gchar key_delimiter;
 } vp_walk_state_t;
 
 static vp_walk_stack_data_t *
@@ -652,24 +653,54 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 
   while (*token_end)
     {
-      switch (*token_end)
+      if (state->key_delimiter == '.')
         {
-        case '@':
-          token_end = vp_walker_skip_sdata_enterprise_id(token_end);
-          break;
-        case '.':
-          if (token_start != token_end)
+          switch (*token_end)
             {
-              g_ptr_array_add(array, g_strndup(token_start, token_end - token_start));
+            case '@':
+              token_end = vp_walker_skip_sdata_enterprise_id(token_end);
+              break;
+            case '.':
+              if (token_start != token_end)
+                {
+                  g_ptr_array_add(array, g_strndup(token_start, token_end - token_start));
+                  ++token_end;
+                  token_start = token_end;
+                  break;
+                }
+            /* fall through, zero length token is not considered a separate token */
+            default:
               ++token_end;
-              token_start = token_end;
+              token_end += strcspn(token_end, "@.");
               break;
             }
-        /* fall through, zero length token is not considered a separate token */
-        default:
-          ++token_end;
-          token_end += strcspn(token_end, "@.");
-          break;
+        }
+      else
+        {
+          if (*token_end == state->key_delimiter)
+            {
+              if (token_start != token_end)
+                {
+                  g_ptr_array_add(array, g_strndup(token_start, token_end - token_start));
+                  ++token_end;
+                  token_start = token_end;
+                }
+              else
+                {
+                  ++token_end;
+                  token_end = strchr(token_end, state->key_delimiter);
+                }
+            }
+          else
+            {
+              ++token_end;
+              token_end = strchr(token_end, state->key_delimiter);
+            }
+          if (!token_end)
+            {
+              token_end = token_start + strlen(token_start);
+              break;
+            }
         }
     }
 
@@ -788,7 +819,7 @@ value_pairs_walk(ValuePairs *vp,
                  VPWalkValueCallbackFunc process_value_func,
                  VPWalkCallbackFunc obj_end_func,
                  LogMessage *msg, LogTemplateEvalOptions *options,
-                 gpointer user_data)
+                 gchar key_delimiter, gpointer user_data)
 {
   vp_walk_state_t state;
   gboolean result;
@@ -797,6 +828,7 @@ value_pairs_walk(ValuePairs *vp,
   state.obj_start = obj_start_func;
   state.obj_end = obj_end_func;
   state.process_value = process_value_func;
+  state.key_delimiter = key_delimiter ? : '.';
   vp_stack_init(&state.stack);
 
   state.obj_start(NULL, NULL, NULL, NULL, NULL, user_data);

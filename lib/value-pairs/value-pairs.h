@@ -70,6 +70,7 @@ gboolean value_pairs_walk(ValuePairs *vp,
                           VPWalkValueCallbackFunc process_value_func,
                           VPWalkCallbackFunc obj_end_func,
                           LogMessage *msg, LogTemplateEvalOptions *options,
+                          gchar key_delimiter,
                           gpointer user_data);
 
 ValuePairs *value_pairs_new(GlobalConfig *cfg);
