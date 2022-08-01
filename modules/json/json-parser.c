@@ -43,6 +43,7 @@ typedef struct _JSONParser
   gchar *marker;
   gint marker_len;
   gchar *extract_prefix;
+  gchar key_delimiter;
 } JSONParser;
 
 void
@@ -71,6 +72,14 @@ json_parser_set_extract_prefix(LogParser *s, const gchar *extract_prefix)
 
   g_free(self->extract_prefix);
   self->extract_prefix = g_strdup(extract_prefix);
+}
+
+void
+json_parser_set_key_delimiter(LogParser *s, gchar delimiter)
+{
+  JSONParser *self = (JSONParser *) s;
+
+  self->key_delimiter = delimiter;
 }
 
 static void
@@ -182,8 +191,8 @@ json_parser_extract_values_from_complex_json_object(JSONParser *self,
       if (prefix)
         g_string_assign(key, prefix);
       g_string_append(key, obj_key);
-      g_string_append_c(key, '.');
-      json_parser_process_object(jso, key->str, msg);
+      g_string_append_c(key, self->key_delimiter);
+      json_parser_process_object(self, jso, key->str, msg);
       return TRUE;
     }
     case json_type_array:
@@ -382,6 +391,7 @@ json_parser_clone(LogPipe *s)
   json_parser_set_prefix(cloned, self->prefix);
   json_parser_set_marker(cloned, self->marker);
   json_parser_set_extract_prefix(cloned, self->extract_prefix);
+  json_parser_set_key_delimiter(cloned, self->key_delimiter);
   log_parser_set_template(cloned, log_template_ref(self->super.template));
 
   return &cloned->super;
@@ -407,6 +417,7 @@ json_parser_new(GlobalConfig *cfg)
   self->super.super.free_fn = json_parser_free;
   self->super.super.clone = json_parser_clone;
   self->super.process = json_parser_process;
+  self->key_delimiter = '.';
 
   return &self->super;
 }
