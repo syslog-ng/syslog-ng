@@ -897,6 +897,7 @@ value_pairs_new(GlobalConfig *cfg)
   vp->vpairs = g_ptr_array_new();
   vp->patterns = g_ptr_array_new();
   vp->transforms = g_ptr_array_new();
+  vp->cfg = cfg;
 
   if (cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
     {

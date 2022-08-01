@@ -31,6 +31,7 @@
 struct _ValuePairs
 {
   GAtomicCounter ref_cnt;
+  GlobalConfig *cfg;
   GPtrArray *builtins;
   GPtrArray *patterns;
   GPtrArray *vpairs;

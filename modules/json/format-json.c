@@ -40,26 +40,6 @@ typedef struct _TFJsonState
 } TFJsonState;
 
 static gboolean
-_parse_additional_options(gint *argc, gchar **argv[], gboolean *transform_initial_dot, GError **error)
-{
-  GOptionEntry format_json_options[] =
-  {
-    { "leave-initial-dot", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, transform_initial_dot, NULL, NULL },
-    { NULL },
-  };
-
-  GOptionContext *ctx = g_option_context_new("format-json");
-  GOptionGroup *og = g_option_group_new(NULL, NULL, NULL, NULL, NULL);
-  g_option_group_add_entries(og, format_json_options);
-  g_option_context_set_main_group(ctx, og);
-
-  gboolean success = g_option_context_parse(ctx, argc, argv, error);
-  g_option_context_free(ctx);
-
-  return success;
-}
-
-static gboolean
 tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
                 gint argc, gchar *argv[],
                 GError **error)
@@ -68,11 +48,17 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
   ValuePairsTransformSet *vpts;
   gboolean transform_initial_dot = TRUE;
 
-  state->vp = value_pairs_new_from_cmdline (parent->cfg, &argc, &argv, TRUE, error);
-  if (!state->vp)
-    return FALSE;
+  GOptionEntry format_json_options[] =
+  {
+    { "leave-initial-dot", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &transform_initial_dot, NULL, NULL },
+    { NULL },
+  };
 
-  if (!_parse_additional_options(&argc, &argv, &transform_initial_dot, error))
+  GOptionGroup *og = g_option_group_new("format-json", "", "", NULL, NULL);
+  g_option_group_add_entries(og, format_json_options);
+
+  state->vp = value_pairs_new_from_cmdline (parent->cfg, &argc, &argv, og, error);
+  if (!state->vp)
     return FALSE;
 
   if (transform_initial_dot)
