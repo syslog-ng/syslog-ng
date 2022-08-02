@@ -714,25 +714,43 @@ _extract_and_find_next_token_with_custom_delimiter(vp_walk_state_t *state, const
   *token_end_p = token_end;
 }
 
-static GPtrArray *
-vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
+static void
+_extract_tokens_with_default_delimiter(vp_walk_state_t *state, const gchar *name)
 {
   const gchar *token_start = name;
   const gchar *token_end = name;
 
-  state->tokens = g_ptr_array_sized_new(VP_STACK_INITIAL_SIZE);
-
   while (*token_end)
-    {
-      if (state->key_delimiter == '.')
-        _extract_and_find_next_token(state, &token_start, &token_end);
-      else
-        _extract_and_find_next_token_with_custom_delimiter(state, &token_start, &token_end);
-    }
+    _extract_and_find_next_token(state, &token_start, &token_end);
 
   /* extract last token at the end */
   if (token_start != token_end)
     _extract_token(state, token_start, token_end - token_start);
+}
+
+static void
+_extract_tokens_with_custom_delimiter(vp_walk_state_t *state, const gchar *name)
+{
+  const gchar *token_start = name;
+  const gchar *token_end = name;
+
+  while (*token_end)
+    _extract_and_find_next_token_with_custom_delimiter(state, &token_start, &token_end);
+
+  /* extract last token at the end */
+  if (token_start != token_end)
+    _extract_token(state, token_start, token_end - token_start);
+}
+
+static GPtrArray *
+vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
+{
+  state->tokens = g_ptr_array_sized_new(VP_STACK_INITIAL_SIZE);
+
+  if (state->key_delimiter == '.')
+    _extract_tokens_with_default_delimiter(state, name);
+  else
+    _extract_tokens_with_custom_delimiter(state, name);
 
   if (state->tokens->len == 0)
     {
