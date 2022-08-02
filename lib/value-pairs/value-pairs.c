@@ -553,6 +553,9 @@ typedef struct
   gpointer user_data;
   vp_stack_t stack;
   gchar key_delimiter;
+
+  /* tokenizer state */
+  GPtrArray *tokens;
 } vp_walk_state_t;
 
 static vp_walk_stack_data_t *
@@ -643,37 +646,60 @@ vp_walker_skip_sdata_enterprise_id(const gchar *name)
   return name;
 }
 
+static void
+_extract_token(vp_walk_state_t *state, const gchar *token_start, gsize token_len)
+{
+  g_ptr_array_add(state->tokens, g_strndup(token_start, token_len));
+}
+
+static void
+_start_new_token(vp_walk_state_t *state, const gchar **token_start, const gchar **token_end)
+{
+  ++(*token_end);
+  *token_start = *token_end;
+}
+
+static void
+_extract_and_find_next_token(vp_walk_state_t *state, const gchar **token_start_p, const gchar **token_end_p)
+{
+  const gchar *token_start = *token_start_p;
+  const gchar *token_end = *token_end_p;
+
+  switch (*token_end)
+    {
+    case '@':
+      token_end = vp_walker_skip_sdata_enterprise_id(token_end);
+      break;
+    case '.':
+      if (token_start != token_end)
+        {
+          _extract_token(state, token_start, token_end - token_start);
+          _start_new_token(state, &token_start, &token_end);
+          break;
+        }
+    /* fall through, zero length token is not considered a separate token */
+    default:
+      token_end++;
+      token_end += strcspn(token_end, "@.");
+      break;
+    }
+  *token_start_p = token_start;
+  *token_end_p = token_end;
+}
+
 static GPtrArray *
 vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 {
   const gchar *token_start = name;
   const gchar *token_end = name;
 
-  GPtrArray *array = g_ptr_array_sized_new(VP_STACK_INITIAL_SIZE);
+  state->tokens = g_ptr_array_sized_new(VP_STACK_INITIAL_SIZE);
 
   while (*token_end)
     {
       if (state->key_delimiter == '.')
         {
-          switch (*token_end)
-            {
-            case '@':
-              token_end = vp_walker_skip_sdata_enterprise_id(token_end);
-              break;
-            case '.':
-              if (token_start != token_end)
-                {
-                  g_ptr_array_add(array, g_strndup(token_start, token_end - token_start));
-                  ++token_end;
-                  token_start = token_end;
-                  break;
-                }
-            /* fall through, zero length token is not considered a separate token */
-            default:
-              ++token_end;
-              token_end += strcspn(token_end, "@.");
-              break;
-            }
+          _extract_and_find_next_token(state, &token_start, &token_end);
         }
       else
         {
@@ -681,7 +707,7 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
             {
               if (token_start != token_end)
                 {
-                  g_ptr_array_add(array, g_strndup(token_start, token_end - token_start));
+                  g_ptr_array_add(state->tokens, g_strndup(token_start, token_end - token_start));
                   ++token_end;
                   token_start = token_end;
                 }
@@ -705,15 +731,15 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
     }
 
   if (token_start != token_end)
-    g_ptr_array_add(array, g_strndup(token_start, token_end - token_start));
+    _extract_token(state, token_start, token_end - token_start);
 
-  if (array->len == 0)
+  if (state->tokens->len == 0)
     {
-      g_ptr_array_free(array, TRUE);
+      g_ptr_array_free(state->tokens, TRUE);
       return NULL;
     }
 
-  return array;
+  return state->tokens;
 }
 
 static gchar *
