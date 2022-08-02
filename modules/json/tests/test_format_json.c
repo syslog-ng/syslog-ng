@@ -381,6 +381,7 @@ Test(format_json, test_format_flat_json_with_type_hints)
 Test(format_json, test_format_json_performance)
 {
   perftest_template("$(format-json APP.*)\n");
+  perftest_template("$(format-flat-json APP.*)\n");
   perftest_template("<$PRI>1 $ISODATE $LOGHOST @syslog-ng - - ${SDATA:--} $(format-json --scope all-nv-pairs "
                     "--exclude 0* --exclude 1* --exclude 2* --exclude 3* --exclude 4* --exclude 5* "
                     "--exclude 6* --exclude 7* --exclude 8* --exclude 9* "

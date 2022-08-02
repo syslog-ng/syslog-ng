@@ -386,61 +386,23 @@ tf_json_call(LogTemplateFunction *self, gpointer s,
 }
 
 static gboolean
-tf_flat_json_obj_start(const gchar *name,
-                       const gchar *prefix, gpointer *prefix_data,
-                       const gchar *prev, gpointer *prev_data,
-                       gpointer user_data)
+tf_flat_json_value(const gchar *name,
+                   LogMessageValueType type,
+                   const gchar *value, gsize value_len,
+                   gpointer user_data)
 {
-  json_state_t *state = (json_state_t *)user_data;
+  json_state_t *state = (json_state_t *) user_data;
 
-  if (state->need_comma)
-    g_string_append_c(state->buffer, ',');
-
-  state->need_comma = FALSE;
-
-  return FALSE;
-}
-
-static gboolean
-tf_flat_json_obj_end(const gchar *name,
-                     const gchar *prefix, gpointer *prefix_data,
-                     const gchar *prev, gpointer *prev_data,
-                     gpointer user_data)
-{
-  json_state_t *state = (json_state_t *)user_data;
-
-  state->need_comma = TRUE;
-
-  return FALSE;
-}
-
-static GString *
-_join_name(const gchar *prefix, const gchar  *subfix)
-{
-  GString *full_name = scratch_buffers_alloc();
-  if (prefix)
-    g_string_append_printf(full_name, "%s.%s", prefix, subfix);
-  else
-    g_string_append(full_name, subfix);
-
-  return full_name;
-}
-
-static gboolean
-tf_flat_json_value(const gchar *name, const gchar *prefix,
-                   LogMessageValueType type, const gchar *value, gsize value_len,
-                   gpointer *prefix_data, gpointer user_data)
-{
-  json_state_t *state = (json_state_t *)user_data;
-
-  GString *full_name = _join_name(prefix, name);
-
-  gboolean result = tf_json_append_with_type_hint(full_name->str, type, state, value, value_len,
+  gboolean result = tf_json_append_with_type_hint(name, type, state, value, value_len,
                                                   state->template_options->on_error);
-
   state->need_comma = TRUE;
-
   return result;
+}
+
+static gint
+tf_flat_value_pairs_sort(const gchar *s1, const gchar *s2)
+{
+  return strcmp(s2, s1);
 }
 
 static gboolean
@@ -454,11 +416,10 @@ tf_flat_json_append(TFJsonState *state, GString *result, LogMessage *msg, LogTem
 
   g_string_append_c(invocation_state.buffer, '{');
 
-  gboolean success = value_pairs_walk(state->vp,
-                                      tf_flat_json_obj_start, tf_flat_json_value, tf_flat_json_obj_end,
-                                      msg, options,
-                                      state->key_delimiter,
-                                      &invocation_state);
+  gboolean success = value_pairs_foreach_sorted(state->vp,
+                                                tf_flat_json_value,
+                                                (GCompareFunc) tf_flat_value_pairs_sort, msg, options,
+                                                &invocation_state);
 
   g_string_append_c(invocation_state.buffer, '}');
 
