@@ -687,6 +687,33 @@ _extract_and_find_next_token(vp_walk_state_t *state, const gchar **token_start_p
   *token_end_p = token_end;
 }
 
+static void
+_extract_and_find_next_token_with_custom_delimiter(vp_walk_state_t *state, const gchar **token_start_p,
+                                                   const gchar **token_end_p)
+{
+  const gchar *token_start = *token_start_p;
+  const gchar *token_end = *token_end_p;
+
+  if (*token_end == state->key_delimiter && token_start != token_end)
+    {
+      _extract_token(state, token_start, token_end - token_start);
+      _start_new_token(state, &token_start, &token_end);
+    }
+  else
+    {
+      const gchar *sep = strchr(token_end + 1, state->key_delimiter);
+
+      /* position to end of the string if sep is unset */
+      if (sep)
+        token_end = sep;
+      else
+        token_end += strlen(token_end);
+    }
+
+  *token_start_p = token_start;
+  *token_end_p = token_end;
+}
+
 static GPtrArray *
 vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 {
@@ -698,38 +725,12 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
   while (*token_end)
     {
       if (state->key_delimiter == '.')
-        {
-          _extract_and_find_next_token(state, &token_start, &token_end);
-        }
+        _extract_and_find_next_token(state, &token_start, &token_end);
       else
-        {
-          if (*token_end == state->key_delimiter)
-            {
-              if (token_start != token_end)
-                {
-                  g_ptr_array_add(state->tokens, g_strndup(token_start, token_end - token_start));
-                  ++token_end;
-                  token_start = token_end;
-                }
-              else
-                {
-                  ++token_end;
-                  token_end = strchr(token_end, state->key_delimiter);
-                }
-            }
-          else
-            {
-              ++token_end;
-              token_end = strchr(token_end, state->key_delimiter);
-            }
-          if (!token_end)
-            {
-              token_end = token_start + strlen(token_start);
-              break;
-            }
-        }
+        _extract_and_find_next_token_with_custom_delimiter(state, &token_start, &token_end);
     }
 
+  /* extract last token at the end */
   if (token_start != token_end)
     _extract_token(state, token_start, token_end - token_start);
 
