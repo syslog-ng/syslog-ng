@@ -80,7 +80,7 @@ jobs:
       - name: make check
         id: make_check
         working-directory: ./build
-        run: make V=1 check || (cat test-suite.log && false)
+        run: make V=1 check || (mkdir -p ${COREFILES_DIR} && find . -executable -a -type f | tar -cf ${COREFILES_DIR}/test-binaries.tar  --files-from=- && cat test-suite.log && false)
 
       - name: make install
         working-directory: ./build
