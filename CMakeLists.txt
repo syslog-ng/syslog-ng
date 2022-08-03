@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.14)
 
 # use, i.e. don't skip the full RPATH for the build tree
 set(CMAKE_SKIP_BUILD_RPATH  FALSE)
@@ -24,7 +24,6 @@ include(CheckIncludeFiles)
 include(ExternalProject)
 include(external_or_find_package)
 include(add_module)
-include(add_tests)
 include(module_switch)
 
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/tests/valgrind/unit-test-leak.supp")
@@ -331,6 +330,8 @@ endif()
 if (BUILD_TESTING AND NOT CRITERION_FOUND)
   message(FATAL_ERROR "BUILD_TESTING enabled without criterion detected!")
 endif()
+
+include(add_tests)
 
 if (CRITERION_FOUND)
   set(CTEST_ENVIRONMENT
