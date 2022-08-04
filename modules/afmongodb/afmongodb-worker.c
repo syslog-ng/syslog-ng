@@ -333,6 +333,7 @@ _worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
                              _vp_process_value,
                              _vp_obj_end,
                              msg, &options,
+                             0,
                              self);
 
   if (!success)

@@ -43,6 +43,7 @@ typedef struct _JSONParser
   gchar *marker;
   gint marker_len;
   gchar *extract_prefix;
+  gchar key_delimiter;
 } JSONParser;
 
 void
@@ -73,8 +74,17 @@ json_parser_set_extract_prefix(LogParser *s, const gchar *extract_prefix)
   self->extract_prefix = g_strdup(extract_prefix);
 }
 
+void
+json_parser_set_key_delimiter(LogParser *s, gchar delimiter)
+{
+  JSONParser *self = (JSONParser *) s;
+
+  self->key_delimiter = delimiter;
+}
+
 static void
-json_parser_store_value(const gchar *prefix, const gchar *obj_key,
+json_parser_store_value(JSONParser *self,
+                        const gchar *prefix, const gchar *obj_key,
                         GString *value, LogMessageValueType type,
                         LogMessage *msg)
 {
@@ -92,13 +102,17 @@ json_parser_store_value(const gchar *prefix, const gchar *obj_key,
 }
 
 static void
-json_parser_process_object(struct json_object *jso,
+json_parser_process_object(JSONParser *self,
+                           struct json_object *jso,
                            const gchar *prefix,
                            LogMessage *msg);
 
 
 static gboolean
-json_parser_extract_string_from_simple_json_object(struct json_object *jso, GString *value, LogMessageValueType *type)
+json_parser_extract_string_from_simple_json_object(JSONParser *self,
+                                                   struct json_object *jso,
+                                                   GString *value,
+                                                   LogMessageValueType *type)
 {
   switch (json_object_get_type(jso))
     {
@@ -149,21 +163,23 @@ json_parser_extract_string_from_simple_json_object(struct json_object *jso, GStr
 }
 
 static gboolean
-json_parser_extract_value_from_simple_json_object(struct json_object *jso,
+json_parser_extract_value_from_simple_json_object(JSONParser *self,
+                                                  struct json_object *jso,
                                                   const gchar *prefix, const gchar *obj_key,
                                                   LogMessage *msg)
 {
   GString *value = scratch_buffers_alloc();
   LogMessageValueType type = LM_VT_STRING;
 
-  if (!json_parser_extract_string_from_simple_json_object(jso, value, &type))
+  if (!json_parser_extract_string_from_simple_json_object(self, jso, value, &type))
     return FALSE;
-  json_parser_store_value(prefix, obj_key, value, type, msg);
+  json_parser_store_value(self, prefix, obj_key, value, type, msg);
   return TRUE;
 }
 
 static gboolean
-json_parser_extract_values_from_complex_json_object(struct json_object *jso,
+json_parser_extract_values_from_complex_json_object(JSONParser *self,
+                                                    struct json_object *jso,
                                                     const gchar *prefix, const gchar *obj_key,
                                                     LogMessage *msg)
 {
@@ -175,8 +191,8 @@ json_parser_extract_values_from_complex_json_object(struct json_object *jso,
       if (prefix)
         g_string_assign(key, prefix);
       g_string_append(key, obj_key);
-      g_string_append_c(key, '.');
-      json_parser_process_object(jso, key->str, msg);
+      g_string_append_c(key, self->key_delimiter);
+      json_parser_process_object(self, jso, key->str, msg);
       return TRUE;
     }
     case json_type_array:
@@ -192,7 +208,7 @@ json_parser_extract_values_from_complex_json_object(struct json_object *jso,
           GString *element_value = scratch_buffers_alloc();
           LogMessageValueType element_type;
 
-          if (json_parser_extract_string_from_simple_json_object(el, element_value, &element_type))
+          if (json_parser_extract_string_from_simple_json_object(self, el, element_value, &element_type))
             {
               if (i != 0)
                 g_string_append_c(value, ',');
@@ -207,7 +223,7 @@ json_parser_extract_values_from_complex_json_object(struct json_object *jso,
             }
         }
 
-      json_parser_store_value(prefix, obj_key, value, type, msg);
+      json_parser_store_value(self, prefix, obj_key, value, type, msg);
       return TRUE;
     }
     default:
@@ -218,7 +234,8 @@ json_parser_extract_values_from_complex_json_object(struct json_object *jso,
 
 
 static void
-json_parser_process_attribute(struct json_object *jso,
+json_parser_process_attribute(JSONParser *self,
+                              struct json_object *jso,
                               const gchar *prefix,
                               const gchar *obj_key,
                               LogMessage *msg)
@@ -226,8 +243,8 @@ json_parser_process_attribute(struct json_object *jso,
   ScratchBuffersMarker marker;
   scratch_buffers_mark(&marker);
 
-  if (!json_parser_extract_value_from_simple_json_object(jso, prefix, obj_key, msg) &&
-      !json_parser_extract_values_from_complex_json_object(jso, prefix, obj_key, msg))
+  if (!json_parser_extract_value_from_simple_json_object(self, jso, prefix, obj_key, msg) &&
+      !json_parser_extract_values_from_complex_json_object(self, jso, prefix, obj_key, msg))
     {
       msg_debug("JSON parser encountered an unknown type, skipping",
                 evt_tag_str("key", obj_key),
@@ -239,7 +256,8 @@ json_parser_process_attribute(struct json_object *jso,
 }
 
 static void
-json_parser_process_object(struct json_object *jso,
+json_parser_process_object(JSONParser *self,
+                           struct json_object *jso,
                            const gchar *prefix,
                            LogMessage *msg)
 {
@@ -247,12 +265,13 @@ json_parser_process_object(struct json_object *jso,
 
   json_object_object_foreachC(jso, itr)
   {
-    json_parser_process_attribute(itr.val, prefix, itr.key, msg);
+    json_parser_process_attribute(self, itr.val, prefix, itr.key, msg);
   }
 }
 
 static void
-json_parser_process_array(struct json_object *jso,
+json_parser_process_array(JSONParser *self,
+                          struct json_object *jso,
                           const gchar *prefix,
                           LogMessage *msg)
 {
@@ -265,7 +284,7 @@ json_parser_process_array(struct json_object *jso,
       GString *element_value = scratch_buffers_alloc();
       LogMessageValueType element_type;
 
-      if (json_parser_extract_string_from_simple_json_object(el, element_value, &element_type))
+      if (json_parser_extract_string_from_simple_json_object(self, el, element_value, &element_type))
         {
           log_msg_set_match_with_type(msg, i + 1, element_value->str, element_value->len, element_type);
         }
@@ -289,12 +308,12 @@ json_parser_extract(JSONParser *self, struct json_object *jso, LogMessage *msg)
 
   if (json_object_is_type(jso, json_type_object))
     {
-      json_parser_process_object(jso, self->prefix, msg);
+      json_parser_process_object(self, jso, self->prefix, msg);
       return TRUE;
     }
   if (json_object_is_type(jso, json_type_array))
     {
-      json_parser_process_array(jso, self->prefix, msg);
+      json_parser_process_array(self, jso, self->prefix, msg);
       return TRUE;
     }
   return FALSE;
@@ -372,6 +391,7 @@ json_parser_clone(LogPipe *s)
   json_parser_set_prefix(cloned, self->prefix);
   json_parser_set_marker(cloned, self->marker);
   json_parser_set_extract_prefix(cloned, self->extract_prefix);
+  json_parser_set_key_delimiter(cloned, self->key_delimiter);
   log_parser_set_template(cloned, log_template_ref(self->super.template));
 
   return &cloned->super;
@@ -397,6 +417,7 @@ json_parser_new(GlobalConfig *cfg)
   self->super.super.free_fn = json_parser_free;
   self->super.super.clone = json_parser_clone;
   self->super.process = json_parser_process;
+  self->key_delimiter = '.';
 
   return &self->super;
 }

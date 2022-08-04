@@ -101,6 +101,19 @@ Test(json_parser, test_json_parser_adds_prefix_to_name_value_pairs_when_instruct
   log_pipe_unref(&json_parser->super);
 }
 
+Test(json_parser, test_json_parser_uses_key_delimiter_when_its_specified)
+{
+  LogMessage *msg;
+  LogParser *json_parser = json_parser_new(NULL);
+
+  json_parser_set_key_delimiter(json_parser, '\t');
+  msg = parse_json_into_log_message("{'foo': 'bar', 'embed': {'foo': 'bar'}}", json_parser);
+  assert_log_message_value(msg, log_msg_get_value_handle("foo"), "bar");
+  assert_log_message_value(msg, log_msg_get_value_handle("embed\tfoo"), "bar");
+  log_msg_unref(msg);
+  log_pipe_unref(&json_parser->super);
+}
+
 Test(json_parser, test_json_parser_skips_marker_when_set_in_the_input)
 {
   LogMessage *msg;

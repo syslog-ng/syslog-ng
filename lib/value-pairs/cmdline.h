@@ -28,7 +28,7 @@
 
 ValuePairs *value_pairs_new_from_cmdline(GlobalConfig *cfg,
                                          gint *argc, gchar ***argv,
-                                         gboolean ignore_unknown_options,
+                                         GOptionGroup *custom_options,
                                          GError **error);
 
 #endif
