@@ -94,7 +94,7 @@ synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig
 
   /* NOTE: we shouldn't use the name property for LogTemplate structs, see the comment at log_template_set_name() */
   value_template = log_template_new(cfg, name);
-  if (log_template_compile(value_template, value, error))
+  if (log_template_compile_with_type_hint(value_template, value, error))
     {
       synthetic_message_add_value_template(self, name, value_template);
       result = TRUE;
