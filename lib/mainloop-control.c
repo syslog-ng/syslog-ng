@@ -34,12 +34,33 @@
 
 #include <string.h>
 
+static gboolean
+_control_process_compat_log_command(const gchar *level, const gchar *onoff, GString *result)
+{
+  if (!level)
+    return FALSE;
+
+  gint ll = msg_map_string_to_log_level(level);
+  if (ll < 0)
+    return FALSE;
+
+  if (onoff)
+    {
+      gboolean on = g_str_equal(onoff, "ON");
+      if (!on)
+        ll = ll - 1;
+
+      msg_set_log_level(ll);
+    }
+  return TRUE;
+}
+
 static void
 control_connection_message_log(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   gchar **cmds = g_strsplit(command->str, " ", 3);
-  gboolean on;
   GString *result = g_string_sized_new(128);
+  gboolean success;
 
   if (!cmds[1])
     {
@@ -47,24 +68,16 @@ control_connection_message_log(ControlConnection *cc, GString *command, gpointer
       goto exit;
     }
 
-  gint ll = msg_map_string_to_log_level(cmds[1]);
-  if (ll >= 0)
-    {
-      if (cmds[2])
-        {
-          on = g_str_equal(cmds[2], "ON");
-          if (!on)
-            ll = ll - 1;
+  gint orig_log_level = msg_get_log_level();
 
-          gint orig_log_level = msg_get_log_level();
-          msg_set_log_level(ll);
+  success = _control_process_compat_log_command(cmds[1], cmds[2], result);
 
-          if (orig_log_level != msg_get_log_level())
-            msg_info("Verbosity changed",
-                     evt_tag_int("log_level", msg_get_log_level()));
-        }
-      g_string_printf(result, "OK syslog-ng log level set to %d", msg_get_log_level());
-    }
+  if (orig_log_level != msg_get_log_level())
+    msg_info("Verbosity changed",
+             evt_tag_int("log_level", msg_get_log_level()));
+
+  if (success)
+    g_string_printf(result, "OK syslog-ng log level set to %d", msg_get_log_level());
   else
     g_string_assign(result, "FAIL Invalid arguments received");
 exit:
