@@ -708,8 +708,9 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
     }
 
     }
-  if (type && !escape)
-    *type = t;
+  if (type)
+    *type = escape ? LM_VT_STRING : t;
+
   return TRUE;
 }
 
