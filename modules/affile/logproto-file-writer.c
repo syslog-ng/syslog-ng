@@ -23,7 +23,8 @@
 
 #include "logproto-file-writer.h"
 #include "messages.h"
-
+#include "affile-dest.h"
+#include "file-signals.h"
 #include <string.h>
 #include <errno.h>
 #include <sys/uio.h>
@@ -32,6 +33,8 @@
 typedef struct _LogProtoFileWriter
 {
   LogProtoClient super;
+  SignalSlotConnector *signal_slot_connector;
+  AFFileDestDriver *signal_slot_connector_driver;
   guchar *partial;
   gsize partial_len, partial_pos;
   gint partial_messages;
@@ -145,9 +148,26 @@ write_error:
                 evt_tag_error(EVT_TAG_OSERROR));
       return LPS_ERROR;
     }
+  // emit a "flush" signal to the transport, so that it can react to the error
+  GString *request_body = g_string_new("");
+  g_string_append_printf(request_body, "%d", self->buf_size);
+  GString *file_name = g_string_new("");
+  g_string_append_printf(file_name, "%s", self->super.transport->name);
+  FileFlushSignalData signal_data =
+  {
+    .filename = file_name,
+    .size = self->buf_size, // implementation yet to be decided
+    .interval = 0, // implementation yet to be decided
+  };
+  //pass the AFFileDestDriver's signal_slot_connector to LogProtoFileWriter's signal_slot_connector
+  LogProtoFileWriter *self_cast = (LogProtoFileWriter *)self;
+  SignalSlotConnector *signal_slot_connector = (SignalSlotConnector *)
+                                               self->signal_slot_connector_driver->super.super.super.signal_slot_connector;
+  self_cast->signal_slot_connector = signal_slot_connector;
+
+  EMIT(signal_slot_connector, signal_file_flush, &signal_data);
 
   return LPS_SUCCESS;
-
 }
 
 /*
@@ -234,6 +254,7 @@ log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *
       struct iovec)*flush_lines);
 
   log_proto_client_init(&self->super, transport, options);
+  self->signal_slot_connector = signal_slot_connector_new();
   self->fd = transport->fd;
   self->buf_size = flush_lines;
   self->fsync = fsync_;
