@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2022 Shikhar Vashistha
- * Copyright (c) 2022 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,17 +20,11 @@
  *
  */
 
-#include "file-rotation.h"
-#include "driver.h"
+#ifndef FILE_SIGNALS_H_INCLUDED
+#define FILE_SIGNALS_H_INCLUDED
 
-#include <criterion/criterion.h>
+typedef struct _FileFlushSignalData FileFlushSignalData;
 
-Test(file_rotation, test_example)
-{
-  FileRotationPlugin *fr = file_rotation_new();
-  file_rotation_set_size(fr, 100);
-  log_rotation_set_interval(fr, "daily");
-  log_driver_plugin_free((LogDriverPlugin *) fr);
+#define signal_file_flush SIGNAL(file_rotation, rotation_request, FileFlushSignalData *)
 
-  cr_assert(0);
-}
+#endif
