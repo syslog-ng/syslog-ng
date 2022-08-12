@@ -740,3 +740,36 @@ Test(template, test_log_template_compile_with_invalid_type_hint_resets_the_type_
   cr_assert_eq(template->type_hint, LM_VT_NONE);
   log_template_unref(template);
 }
+
+Test(template, test_log_template_with_escaping_produces_string_even_if_the_value_would_otherwise_be_numeric)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  GString *formatted_value = g_string_sized_new(64);
+  LogMessage *msg = create_sample_message();
+  LogMessageValueType type;
+
+  LogTemplate *template = compile_template("$FACILITY_NUM");
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("19", formatted_value->str);
+  cr_assert_eq(type, LM_VT_INT32);
+
+  template = compile_escaped_template("$FACILITY_NUM");
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("19", formatted_value->str);
+  cr_assert_eq(type, LM_VT_STRING);
+
+  template = compile_template("$number1");
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("123", formatted_value->str);
+  cr_assert_eq(type, LM_VT_INT64);
+
+  template = compile_escaped_template("$number1");
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("123", formatted_value->str);
+  cr_assert_eq(type, LM_VT_STRING);
+
+  log_msg_unref(msg);
+  log_template_unref(template);
+  g_string_free(formatted_value, TRUE);
+}
