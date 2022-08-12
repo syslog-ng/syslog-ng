@@ -35,7 +35,7 @@
 #define COLON 1
 #define BLANK 1
 #define COUNTER_LENGTH 12 // We use an 8 byte counter resulting in 12 byte BASE64 encoding
-#define CTR_LEN_SIMPLE 16 // This is for 8 byte (=2^64) counters; simple encoding by doubling
+#define CTR_LEN_SIMPLE 20 // This is for the string representation of 8 byte (=2^64) counters
 
 // These are arbitrary constants (with mean) Hamming distance.
 #define IPAD 0x36
