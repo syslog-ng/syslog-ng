@@ -96,8 +96,9 @@ python3-pip                     [debian, ubuntu]
 
 # python 3.10 has issues on Debian Testing
 # Nevertheless we should only downgrade for Light style-check tests, which uses pre-commit
-python3.9                   [devshell]
-python3.9-venv              [devshell]
+python3.11                   [devshell]
+python3.11-dev               [devshell]
+python3.11-venv              [devshell]
 
 # libmongoc and libbson packages on various platforms
 # Because we are using fixed version of libmongoc on Bionic, we need to
