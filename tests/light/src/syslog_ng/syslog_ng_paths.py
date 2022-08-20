@@ -22,7 +22,6 @@
 #############################################################################
 from pathlib2 import Path
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.random_id import get_unique_id
 
 
@@ -36,8 +35,6 @@ class SyslogNgPaths(object):
         if self.__instance_name is not None:
             raise Exception("Instance already configured")
         self.__instance_name = instance_name
-        working_dir = tc_parameters.WORKING_DIR
-        relative_working_dir = self.__testcase_parameters.get_relative_working_dir()
         install_dir = self.__testcase_parameters.get_install_dir()
         if not install_dir:
             raise ValueError("Missing --installdir start parameter")
@@ -45,12 +42,12 @@ class SyslogNgPaths(object):
         self.__syslog_ng_paths = {
             "dirs": {"install_dir": Path(install_dir)},
             "file_paths": {
-                "config_path": Path(working_dir, "syslog_ng_{}.conf".format(instance_name)),
-                "persist_path": Path(working_dir, "syslog_ng_{}.persist".format(instance_name)),
-                "pid_path": Path(working_dir, "syslog_ng_{}.pid".format(instance_name)),
-                "control_socket_path": Path(relative_working_dir, "syslog_ng_{}.ctl".format(instance_name)),
-                "stderr": Path(working_dir, "syslog_ng_{}_stderr".format(instance_name)),
-                "stdout": Path(working_dir, "syslog_ng_{}_stdout".format(instance_name)),
+                "config_path": Path("syslog_ng_{}.conf".format(instance_name)),
+                "persist_path": Path("syslog_ng_{}.persist".format(instance_name)),
+                "pid_path": Path("syslog_ng_{}.pid".format(instance_name)),
+                "control_socket_path": Path("syslog_ng_{}.ctl".format(instance_name)),
+                "stderr": Path("syslog_ng_{}_stderr".format(instance_name)),
+                "stdout": Path("syslog_ng_{}_stdout".format(instance_name)),
             },
             "binary_file_paths": {
                 "slogkey": Path(install_dir, "bin", "slogkey"),
@@ -110,7 +107,7 @@ class SyslogNgPaths(object):
     def register_external_tool_output_path(self, external_tool):
         self.__syslog_ng_paths['file_paths'].update(
             {
-                external_tool: Path(tc_parameters.WORKING_DIR, "{}_{}.log".format(external_tool, get_unique_id())),
+                external_tool: Path("{}_{}.log".format(external_tool, get_unique_id())),
             },
         )
 

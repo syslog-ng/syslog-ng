@@ -24,7 +24,6 @@ from enum import Enum  # noreorder
 
 from pathlib2 import Path
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.executors.command_executor import CommandExecutor
 
 
@@ -51,7 +50,7 @@ class SyslogNgCtlExecutor(object):
 
     def __construct_std_file_path(self, command_short_name, std_type):
         instance_name = self.__instance_paths.get_instance_name()
-        return Path(tc_parameters.WORKING_DIR, "syslog_ng_ctl_{}_{}_{}".format(instance_name, command_short_name, std_type))
+        return Path("syslog_ng_ctl_{}_{}_{}".format(instance_name, command_short_name, std_type))
 
     def __construct_ctl_command(self, command):
         ctl_command = [self.__syslog_ng_control_tool_path]

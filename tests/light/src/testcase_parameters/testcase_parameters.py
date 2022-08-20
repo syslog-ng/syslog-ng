@@ -25,20 +25,12 @@ from pathlib2 import Path
 from src.common.pytest_operations import calculate_testcase_name
 
 
-WORKING_DIR = None
 INSTANCE_PATH = None
 
 
 class TestcaseParameters(object):
     def __init__(self, pytest_request):
         testcase_name = calculate_testcase_name(pytest_request.node.name)
-        for item in pytest_request.node.user_properties:
-            if item[0] == "working_dir":
-                self.working_dir = None
-                self.set_working_dir(item[1])
-            elif item[0] == "relative_working_dir":
-                self.relative_working_dir = None
-                self.set_relative_working_dir(item[1])
         absolute_framework_dir = Path(__file__).parents[2]
         self.testcase_parameters = {
             "dirs": {
@@ -51,18 +43,6 @@ class TestcaseParameters(object):
             "testcase_name": testcase_name,
             "external_tool": pytest_request.config.getoption("--run-under"),
         }
-
-    def set_working_dir(self, working_dir):
-        self.working_dir = working_dir
-
-    def set_relative_working_dir(self, relative_working_dir):
-        self.relative_working_dir = relative_working_dir
-
-    def get_working_dir(self):
-        return self.working_dir
-
-    def get_relative_working_dir(self):
-        return self.relative_working_dir
 
     def get_install_dir(self):
         return self.testcase_parameters["dirs"]["install_dir"]

@@ -27,7 +27,6 @@ from enum import IntEnum
 
 from pathlib2 import Path
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.asynchronous import BackgroundEventLoop
 from src.common.blocking import DEFAULT_TIMEOUT
 from src.common.file import File
@@ -50,7 +49,7 @@ class NetworkIO():
         atexit.register(self.stop_listener)
 
     def write(self, content, rate=None):
-        loggen_input_file_path = Path(tc_parameters.WORKING_DIR, "loggen_input_{}.txt".format(get_unique_id()))
+        loggen_input_file_path = Path("loggen_input_{}.txt".format(get_unique_id()))
 
         loggen_input_file = File(loggen_input_file_path)
         loggen_input_file.open(mode="w")

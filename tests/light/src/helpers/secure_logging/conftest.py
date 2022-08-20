@@ -23,7 +23,6 @@
 import pytest
 from pathlib2 import Path
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.file import copy_file
 from src.executors.command_executor import CommandExecutor
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
@@ -43,10 +42,10 @@ class SecureLogging():
         self.create_decryption_key()
 
     def create_master_key(self):
-        slogkey_stdout = Path(tc_parameters.WORKING_DIR, "slogkey_stdout_master")
-        slogkey_stderr = Path(tc_parameters.WORKING_DIR, "slogkey_stderr_master")
+        slogkey_stdout = Path("slogkey_stdout_master")
+        slogkey_stderr = Path("slogkey_stderr_master")
 
-        self.master_key = Path(tc_parameters.WORKING_DIR, "master.key")
+        self.master_key = Path("master.key")
 
         CommandExecutor().run(
             [self.slogkey, "-m", self.master_key],
@@ -55,11 +54,11 @@ class SecureLogging():
         )
 
     def create_derived_key(self):
-        slogkey_stdout = Path(tc_parameters.WORKING_DIR, "slogkey_stdout_derived")
-        slogkey_stderr = Path(tc_parameters.WORKING_DIR, "slogkey_stderr_derived")
+        slogkey_stdout = Path("slogkey_stdout_derived")
+        slogkey_stderr = Path("slogkey_stderr_derived")
 
-        self.derived_key = Path(tc_parameters.WORKING_DIR, "derived.key")
-        self.cmac = Path(tc_parameters.WORKING_DIR, "cmac")
+        self.derived_key = Path("derived.key")
+        self.cmac = Path("cmac")
 
         CommandExecutor().run(
             [self.slogkey, "-d", self.master_key, "foo", "bar", self.derived_key],
@@ -68,14 +67,14 @@ class SecureLogging():
         )
 
     def create_decryption_key(self):
-        self.decryption_key = Path(tc_parameters.WORKING_DIR, "decryption.key")
+        self.decryption_key = Path("decryption.key")
         copy_file(self.derived_key, self.decryption_key)
 
     def decrypt(self, input_file):
-        slogverify_stdout = Path(tc_parameters.WORKING_DIR, "slogverify_stdout")
-        slogverify_stderr = Path(tc_parameters.WORKING_DIR, "slogverify_stderr")
-        encrypted = Path(tc_parameters.WORKING_DIR, input_file)
-        decrypted = Path(tc_parameters.WORKING_DIR, "decrypted.txt")
+        slogverify_stdout = Path("slogverify_stdout")
+        slogverify_stderr = Path("slogverify_stderr")
+        encrypted = Path(input_file)
+        decrypted = Path("decrypted.txt")
 
         CommandExecutor().run(
             [

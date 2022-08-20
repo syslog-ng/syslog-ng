@@ -26,7 +26,6 @@ from xml.etree.ElementTree import tostring
 
 from pathlib2 import Path
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.syslog_ng_config.statements.parsers.parser import Parser
 
 
@@ -59,7 +58,7 @@ class DBParser(Parser):
     index = 0
 
     def __init__(self, config, **options):
-        path = Path(tc_parameters.WORKING_DIR, "patterndb-{}.xml".format(self.index))
+        path = Path("patterndb-{}.xml".format(self.index))
         config.write_to(path)
         self.index += 1
         super(DBParser, self).__init__("db-parser", file=path.resolve(), **options)
