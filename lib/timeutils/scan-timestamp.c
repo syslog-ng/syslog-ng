@@ -34,41 +34,43 @@ scan_day_abbrev(const gchar **buf, gint *left, gint *wday)
 {
   *wday = -1;
 
-  if (*left < 3)
+  const gsize abbrev_length = 3;
+
+  if (*left < abbrev_length)
     return FALSE;
 
   switch (**buf)
     {
     case 'S':
-      if (strncasecmp(*buf, "Sun", 3) == 0)
+      if (strncasecmp(*buf, "Sun", abbrev_length) == 0)
         *wday = 0;
-      else if (strncasecmp(*buf, "Sat", 3) == 0)
+      else if (strncasecmp(*buf, "Sat", abbrev_length) == 0)
         *wday = 6;
       else
         return FALSE;
       break;
     case 'M':
-      if (strncasecmp(*buf, "Mon", 3) == 0)
+      if (strncasecmp(*buf, "Mon", abbrev_length) == 0)
         *wday = 1;
       else
         return FALSE;
       break;
     case 'T':
-      if (strncasecmp(*buf, "Tue", 3) == 0)
+      if (strncasecmp(*buf, "Tue", abbrev_length) == 0)
         *wday = 2;
-      else if (strncasecmp(*buf, "Thu", 3) == 0)
+      else if (strncasecmp(*buf, "Thu", abbrev_length) == 0)
         *wday = 4;
       else
         return FALSE;
       break;
     case 'W':
-      if (strncasecmp(*buf, "Wed", 3) == 0)
+      if (strncasecmp(*buf, "Wed", abbrev_length) == 0)
         *wday = 3;
       else
         return FALSE;
       break;
     case 'F':
-      if (strncasecmp(*buf, "Fri", 3) == 0)
+      if (strncasecmp(*buf, "Fri", abbrev_length) == 0)
         *wday = 5;
       else
         return FALSE;
@@ -77,8 +79,8 @@ scan_day_abbrev(const gchar **buf, gint *left, gint *wday)
       return FALSE;
     }
 
-  (*buf) += 3;
-  (*left) -= 3;
+  (*buf) += abbrev_length;
+  (*left) -= abbrev_length;
   return TRUE;
 }
 
@@ -87,63 +89,65 @@ scan_month_abbrev(const gchar **buf, gint *left, gint *mon)
 {
   *mon = -1;
 
-  if (*left < 3)
+  const gsize abbrev_length = 3;
+
+  if (*left < abbrev_length)
     return FALSE;
 
   switch (**buf)
     {
     case 'J':
-      if (strncasecmp(*buf, "Jan", 3) == 0)
+      if (strncasecmp(*buf, "Jan", abbrev_length) == 0)
         *mon = 0;
-      else if (strncasecmp(*buf, "Jun", 3) == 0)
+      else if (strncasecmp(*buf, "Jun", abbrev_length) == 0)
         *mon = 5;
-      else if (strncasecmp(*buf, "Jul", 3) == 0)
+      else if (strncasecmp(*buf, "Jul", abbrev_length) == 0)
         *mon = 6;
       else
         return FALSE;
       break;
     case 'F':
-      if (strncasecmp(*buf, "Feb", 3) == 0)
+      if (strncasecmp(*buf, "Feb", abbrev_length) == 0)
         *mon = 1;
       else
         return FALSE;
       break;
     case 'M':
-      if (strncasecmp(*buf, "Mar", 3) == 0)
+      if (strncasecmp(*buf, "Mar", abbrev_length) == 0)
         *mon = 2;
-      else if (strncasecmp(*buf, "May", 3) == 0)
+      else if (strncasecmp(*buf, "May", abbrev_length) == 0)
         *mon = 4;
       else
         return FALSE;
       break;
     case 'A':
-      if (strncasecmp(*buf, "Apr", 3) == 0)
+      if (strncasecmp(*buf, "Apr", abbrev_length) == 0)
         *mon = 3;
-      else if (strncasecmp(*buf, "Aug", 3) == 0)
+      else if (strncasecmp(*buf, "Aug", abbrev_length) == 0)
         *mon = 7;
       else
         return FALSE;
       break;
     case 'S':
-      if (strncasecmp(*buf, "Sep", 3) == 0)
+      if (strncasecmp(*buf, "Sep", abbrev_length) == 0)
         *mon = 8;
       else
         return FALSE;
       break;
     case 'O':
-      if (strncasecmp(*buf, "Oct", 3) == 0)
+      if (strncasecmp(*buf, "Oct", abbrev_length) == 0)
         *mon = 9;
       else
         return FALSE;
       break;
     case 'N':
-      if (strncasecmp(*buf, "Nov", 3) == 0)
+      if (strncasecmp(*buf, "Nov", abbrev_length) == 0)
         *mon = 10;
       else
         return FALSE;
       break;
     case 'D':
-      if (strncasecmp(*buf, "Dec", 3) == 0)
+      if (strncasecmp(*buf, "Dec", abbrev_length) == 0)
         *mon = 11;
       else
         return FALSE;
@@ -152,8 +156,8 @@ scan_month_abbrev(const gchar **buf, gint *left, gint *mon)
       return FALSE;
     }
 
-  (*buf) += 3;
-  (*left) -= 3;
+  (*buf) += abbrev_length;
+  (*left) -= abbrev_length;
   return TRUE;
 }
 
