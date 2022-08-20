@@ -431,7 +431,7 @@ __parse_bsd_timestamp(const guchar **data, gint *length, WallClockTime *wct)
       if (!scan_pix_timestamp((const gchar **) &src, &left, wct))
         return FALSE;
 
-      if (*src == ':')
+      if (left && *src == ':')
         {
           src++;
           left--;
@@ -482,7 +482,7 @@ scan_rfc3164_timestamp(const guchar **data, gint *length, WallClockTime *wct)
    * looking at you, skip that as well, so we can reliably detect IPv6
    * addresses as hostnames, which would be using ":" as well. */
 
-  if (*src == ':')
+  if (left && *src == ':')
     {
       ++src;
       --left;
