@@ -350,19 +350,21 @@ __parse_usec(const guchar **data, gint *length)
 static gboolean
 __has_iso_timezone(const guchar *src, gint length)
 {
-  return (length >= 5) &&
+  return (length >= 6) &&
          (*src == '+' || *src == '-') &&
          isdigit(*(src+1)) &&
          isdigit(*(src+2)) &&
          *(src+3) == ':' &&
          isdigit(*(src+4)) &&
          isdigit(*(src+5)) &&
-         !isdigit(*(src+6));
+         (length < 7 || !isdigit(*(src+6)));
 }
 
 static guint32
 __parse_iso_timezone(const guchar **data, gint *length)
 {
+  g_assert(*length >= 6);
+
   gint hours, mins;
   const guchar *src = *data;
   guint32 tz = 0;
@@ -372,8 +374,10 @@ __parse_iso_timezone(const guchar **data, gint *length)
   hours = (*(src + 1) - '0') * 10 + *(src + 2) - '0';
   mins = (*(src + 4) - '0') * 10 + *(src + 5) - '0';
   tz = sign * (hours * 3600 + mins * 60);
+
   src += 6;
   (*length) -= 6;
+
   *data = src;
   return tz;
 }

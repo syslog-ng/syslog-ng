@@ -264,6 +264,13 @@ Test(parse_timestamp, non_zero_terminated_rfc5424_input_is_handled_properly)
 
 }
 
+Test(parse_timestamp, non_zero_terminated_rfc5424_timestamp_only)
+{
+  const gchar *ts = "2022-08-17T05:02:28.417+03:00";
+  gint ts_len = strlen(ts);
+  _expect_rfc5424_timestamp_len_eq(ts, ts_len, ts);
+}
+
 
 Test(parse_timestamp, daylight_saving_behavior_at_spring_with_explicit_timezones)
 {
