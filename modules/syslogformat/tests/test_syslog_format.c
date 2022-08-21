@@ -70,3 +70,35 @@ Test(syslog_format, parser_should_not_spin_on_non_zero_terminated_input, .timeou
   msg_format_options_destroy(&parse_options);
   log_msg_unref(msg);
 }
+
+Test(syslog_format, cisco_sequence_id_non_zero_termination)
+{
+  const gchar *data = "<189>65536: ";
+  gsize data_length = strlen(data);
+
+  msg_format_options_init(&parse_options, cfg);
+  LogMessage *msg = msg_format_construct_message(&parse_options, (const guchar *) data, data_length);
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  cr_assert_str_eq(log_msg_get_value_by_name(msg, ".SDATA.meta.sequenceId", NULL), "65536");
+
+  msg_format_options_destroy(&parse_options);
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, minimal_non_zero_terminated_numeric_message_is_parsed_as_program_name)
+{
+  const gchar *data = "<189>65536";
+  gsize data_length = strlen(data);
+
+  msg_format_options_init(&parse_options, cfg);
+  LogMessage *msg = msg_format_construct_message(&parse_options, (const guchar *) data, data_length);
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  cr_assert_str_eq(log_msg_get_value_by_name(msg, "PROGRAM", NULL), "65536");
+
+  msg_format_options_destroy(&parse_options);
+  log_msg_unref(msg);
+}

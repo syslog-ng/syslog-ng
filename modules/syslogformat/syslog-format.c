@@ -207,7 +207,7 @@ log_msg_parse_cisco_sequence_id(LogMessage *self, const guchar **data, gint *len
 
   /* if the next char is not space, then we may try to read a date */
 
-  if (*src != ' ')
+  if (!left || *src != ' ')
     return;
 
   log_msg_set_value(self, handles.cisco_seqid, (gchar *) *data, *length - left - 1);
