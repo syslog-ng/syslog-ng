@@ -1097,18 +1097,32 @@ tls_context_set_tls13_cipher_suite(TLSContext *self, const gchar *tls13_cipher_s
 #endif
 }
 
-void
-tls_context_set_sigalgs(TLSContext *self, const gchar *sigalgs)
+gboolean
+tls_context_set_sigalgs(TLSContext *self, const gchar *sigalgs, GError **error)
 {
+#if SYSLOG_NG_HAVE_DECL_SSL_CTX_SET1_SIGALGS_LIST
   g_free(self->sigalgs);
   self->sigalgs = g_strdup(sigalgs);
+  return TRUE;
+#else
+  g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_UNSUPPORTED,
+              "Setting sigalgs is not supported with the OpenSSL version syslog-ng was compiled with");
+  return FALSE;
+#endif
 }
 
-void
-tls_context_set_client_sigalgs(TLSContext *self, const gchar *sigalgs)
+gboolean
+tls_context_set_client_sigalgs(TLSContext *self, const gchar *sigalgs, GError **error)
 {
+#if SYSLOG_NG_HAVE_DECL_SSL_CTX_SET1_CLIENT_SIGALGS_LIST
   g_free(self->client_sigalgs);
   self->client_sigalgs = g_strdup(sigalgs);
+  return TRUE;
+#else
+  g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_UNSUPPORTED,
+              "Setting client sigalgs is not supported with the OpenSSL version syslog-ng was compiled with");
+  return FALSE;
+#endif
 }
 
 void
