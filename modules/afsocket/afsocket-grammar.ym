@@ -861,12 +861,14 @@ tls_option
           }
         | KW_SIGALGS '(' string ')'
           {
-            tls_context_set_sigalgs(last_tls_context, $3);
+            GError *error = NULL;
+            CHECK_ERROR_GERROR(tls_context_set_sigalgs(last_tls_context, $3, &error), @3, error, "Error setting sigalgs()");
             free($3);
           }
         | KW_CLIENT_SIGALGS '(' string ')'
           {
-            tls_context_set_client_sigalgs(last_tls_context, $3);
+            GError *error = NULL;
+            CHECK_ERROR_GERROR(tls_context_set_client_sigalgs(last_tls_context, $3, &error), @3, error, "Error setting client-sigalgs()");
             free($3);
           }
         | KW_ECDH_CURVE_LIST '(' string ')'
