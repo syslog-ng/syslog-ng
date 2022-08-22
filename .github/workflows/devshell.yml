@@ -219,7 +219,7 @@ jobs:
         working-directory: ./build
         shell: bash
         run: |
-          python3.9 -m venv venv
+          python3.11 -m venv venv
           source venv/bin/activate
           python -m pip install -r "${GITHUB_WORKSPACE}/requirements.txt"
           make light-linters || \
