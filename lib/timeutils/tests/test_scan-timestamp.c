@@ -50,17 +50,21 @@ fake_time_add(time_t diff)
 }
 
 static gboolean
-_parse_rfc3164(const gchar *ts, gchar isotimestamp[32])
+_parse_rfc3164(const gchar *ts, gint len, gchar isotimestamp[32])
 {
   UnixTime stamp;
-  const guchar *data = (const guchar *) ts;
-  gint length = strlen(ts);
+  const guchar *tsu = (const guchar *) ts;
+  gint tsu_len = len < 0 ? strlen(ts) : len;
   GString *result = g_string_new("");
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
-
+  const guchar *data = tsu;
+  gint length = tsu_len;
   gboolean success = scan_rfc3164_timestamp(&data, &length, &wct);
 
+  cr_assert(length >= 0);
+  cr_assert(data == &tsu[tsu_len - length]);
+
   unix_time_unset(&stamp);
   convert_wall_clock_time_to_unix_time(&wct, &stamp);
 
@@ -71,15 +75,20 @@ _parse_rfc3164(const gchar *ts, gchar isotimestamp[32])
 }
 
 static gboolean
-_parse_rfc5424(const gchar *ts, gchar isotimestamp[32])
+_parse_rfc5424(const gchar *ts, gint len, gchar isotimestamp[32])
 {
   UnixTime stamp;
-  const guchar *data = (const guchar *) ts;
-  gint length = strlen(ts);
+  const guchar *tsu = (const guchar *) ts;
+  gint tsu_len = len < 0 ? strlen(ts) : len;
   GString *result = g_string_new("");
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
+  const guchar *data = tsu;
+  gint length = tsu_len;
   gboolean success = scan_rfc5424_timestamp(&data, &length, &wct);
+
+  cr_assert(length >= 0);
+  cr_assert(data == &tsu[tsu_len - length]);
 
   unix_time_unset(&stamp);
   convert_wall_clock_time_to_unix_time(&wct, &stamp);
@@ -91,30 +100,59 @@ _parse_rfc5424(const gchar *ts, gchar isotimestamp[32])
 }
 
 static gboolean
-_rfc3164_timestamp_eq(const gchar *ts, const gchar *expected, gchar converted[32])
+_rfc3164_timestamp_eq(const gchar *ts, gint len, const gchar *expected, gchar converted[32])
 {
-  cr_assert(_parse_rfc3164(ts, converted));
+  cr_assert(_parse_rfc3164(ts, len, converted));
   return strcmp(converted, expected) == 0;
 }
 
 static gboolean
-_rfc5424_timestamp_eq(const gchar *ts, const gchar *expected, gchar converted[32])
+_rfc5424_timestamp_eq(const gchar *ts, gint len, const gchar *expected, gchar converted[32])
 {
-  cr_assert(_parse_rfc5424(ts, converted));
+  cr_assert(_parse_rfc5424(ts, len, converted));
   return strcmp(converted, expected) == 0;
 }
 
 #define _expect_rfc3164_timestamp_eq(ts, expected) \
   ({ \
     gchar converted[32]; \
-    cr_expect(_rfc3164_timestamp_eq(ts, expected, converted), "Parsed RFC3164 timestamp does not equal expected, ts=%s, converted=%s, expected=%s", ts, converted, expected); \
+    cr_expect(_rfc3164_timestamp_eq(ts, -1, expected, converted), "Parsed RFC3164 timestamp does not equal expected, ts=%s, converted=%s, expected=%s", ts, converted, expected); \
+  })
+
+#define _expect_rfc3164_timestamp_len_eq(ts, len, expected) \
+  ({ \
+    gchar converted[32]; \
+    cr_expect(_rfc3164_timestamp_eq(ts, len, expected, converted), "Parsed RFC3164 timestamp does not equal expected, ts=%s, converted=%s, expected=%s", ts, converted, expected); \
+  })
+
+#define _expect_rfc3164_fails(ts, len) \
+  ({  \
+    WallClockTime wct = WALL_CLOCK_TIME_INIT; \
+    const guchar *data = (guchar *) ts; \
+    gint length = len < 0 ? strlen(ts) : len; \
+    cr_assert_not(scan_rfc3164_timestamp(&data, &length, &wct)); \
   })
 
 #define _expect_rfc5424_timestamp_eq(ts, expected) \
   ({ \
     gchar converted[32]; \
-    cr_expect(_rfc5424_timestamp_eq(ts, expected, converted), "Parsed RFC5424 timestamp does not equal expected, ts=%s, converted=%s, expected=%s", ts, converted, expected); \
+    cr_expect(_rfc5424_timestamp_eq(ts, -1, expected, converted), "Parsed RFC5424 timestamp does not equal expected, ts=%s, converted=%s, expected=%s", ts, converted, expected); \
   })
+
+#define _expect_rfc5424_timestamp_len_eq(ts, len, expected) \
+  ({ \
+    gchar converted[32]; \
+    cr_expect(_rfc5424_timestamp_eq(ts, len, expected, converted), "Parsed RFC5424 timestamp does not equal expected, ts=%s, converted=%s, expected=%s", ts, converted, expected); \
+  })
+
+#define _expect_rfc5424_fails(ts, len) \
+  ({  \
+    WallClockTime wct = WALL_CLOCK_TIME_INIT; \
+    const guchar *data = (guchar *) ts; \
+    gint length = len < 0 ? strlen(ts) : len; \
+    cr_assert_not(scan_rfc5424_timestamp(&data, &length, &wct)); \
+  })
+
 
 Test(parse_timestamp, standard_bsd_format)
 {
@@ -162,6 +200,75 @@ Test(parse_timestamp, standard_bsd_format_year_in_the_past)
 
   /* compared to 2018-03-03, this timestamp is from the past, so in the year 2017 */
   _expect_rfc3164_timestamp_eq("Dec 31 17:46:12", "2017-12-31T17:46:12.000+01:00");
+}
+
+Test(parse_timestamp, non_zero_terminated_rfc3164_iso_input_is_handled_properly)
+{
+  gchar *ts = "2022-08-17T05:02:28.417Z whatever";
+  gint ts_len = 24;
+
+  _expect_rfc3164_timestamp_len_eq(ts, strlen(ts), "2022-08-17T05:02:28.417+00:00");
+  _expect_rfc3164_timestamp_len_eq(ts, ts_len + 5, "2022-08-17T05:02:28.417+00:00");
+  _expect_rfc3164_timestamp_len_eq(ts, ts_len, "2022-08-17T05:02:28.417+00:00");
+
+  /* no "Z" parsed, timezone defaults to local, forced CET */
+  _expect_rfc3164_timestamp_len_eq(ts, ts_len - 1, "2022-08-17T05:02:28.417+02:00");
+
+  /* msec is partially parsed as we trim the string from the right */
+  _expect_rfc3164_timestamp_len_eq(ts, ts_len - 2, "2022-08-17T05:02:28.410+02:00");
+  _expect_rfc3164_timestamp_len_eq(ts, ts_len - 3, "2022-08-17T05:02:28.400+02:00");
+  _expect_rfc3164_timestamp_len_eq(ts, ts_len - 4, "2022-08-17T05:02:28.000+02:00");
+  _expect_rfc3164_timestamp_len_eq(ts, ts_len - 5, "2022-08-17T05:02:28.000+02:00");
+
+  for (gint i = 6; i < ts_len; i++)
+    _expect_rfc3164_fails(ts, ts_len - i);
+
+}
+
+Test(parse_timestamp, non_zero_terminated_rfc3164_bsd_pix_or_asa_input_is_handled_properly)
+{
+  gchar *ts = "Aug 17 2022 05:02:28: whatever";
+  gint ts_len = 21;
+
+  _expect_rfc3164_timestamp_len_eq(ts, strlen(ts), "2022-08-17T05:02:28.000+02:00");
+  _expect_rfc3164_timestamp_len_eq(ts, ts_len + 5, "2022-08-17T05:02:28.000+02:00");
+  _expect_rfc3164_timestamp_len_eq(ts, ts_len, "2022-08-17T05:02:28.000+02:00");
+
+  /* no ":" at the end, that's a problem, unrecognized */
+  _expect_rfc3164_fails(ts, ts_len - 1);
+
+  for (gint i = 1; i < ts_len; i++)
+    _expect_rfc3164_fails(ts, ts_len - i);
+}
+
+Test(parse_timestamp, non_zero_terminated_rfc5424_input_is_handled_properly)
+{
+  gchar *ts = "2022-08-17T05:02:28.417Z whatever";
+  gint ts_len = 24;
+
+  _expect_rfc5424_timestamp_len_eq(ts, strlen(ts), "2022-08-17T05:02:28.417+00:00");
+  _expect_rfc5424_timestamp_len_eq(ts, ts_len + 5, "2022-08-17T05:02:28.417+00:00");
+  _expect_rfc5424_timestamp_len_eq(ts, ts_len, "2022-08-17T05:02:28.417+00:00");
+
+  /* no "Z" parsed, timezone defaults to local, forced CET */
+  _expect_rfc5424_timestamp_len_eq(ts, ts_len - 1, "2022-08-17T05:02:28.417+02:00");
+
+  /* msec is partially parsed as we trim the string from the right */
+  _expect_rfc5424_timestamp_len_eq(ts, ts_len - 2, "2022-08-17T05:02:28.410+02:00");
+  _expect_rfc5424_timestamp_len_eq(ts, ts_len - 3, "2022-08-17T05:02:28.400+02:00");
+  _expect_rfc5424_timestamp_len_eq(ts, ts_len - 4, "2022-08-17T05:02:28.000+02:00");
+  _expect_rfc5424_timestamp_len_eq(ts, ts_len - 5, "2022-08-17T05:02:28.000+02:00");
+
+  for (gint i = 6; i < ts_len; i++)
+    _expect_rfc5424_fails(ts, ts_len - i);
+
+}
+
+Test(parse_timestamp, non_zero_terminated_rfc5424_timestamp_only)
+{
+  const gchar *ts = "2022-08-17T05:02:28.417+03:00";
+  gint ts_len = strlen(ts);
+  _expect_rfc5424_timestamp_len_eq(ts, ts_len, ts);
 }
 
 

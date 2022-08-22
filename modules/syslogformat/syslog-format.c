@@ -207,7 +207,7 @@ log_msg_parse_cisco_sequence_id(LogMessage *self, const guchar **data, gint *len
 
   /* if the next char is not space, then we may try to read a date */
 
-  if (*src != ' ')
+  if (!left || *src != ' ')
     return;
 
   log_msg_set_value(self, handles.cisco_seqid, (gchar *) *data, *length - left - 1);
@@ -222,6 +222,9 @@ log_msg_parse_cisco_timestamp_attributes(LogMessage *self, const guchar **data, 
 {
   const guchar *src = *data;
   gint left = *length;
+
+  if (!left)
+    return;
 
   /* Cisco timestamp extensions, the first '*' indicates that the clock is
    * unsynced, '.' if it is known to be synced */
@@ -562,7 +565,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
       open_sd++;
       do
         {
-          if (!isascii(*src) || *src == '=' || *src == ' ' || *src == ']' || *src == '"')
+          if (!left || !isascii(*src) || *src == '=' || *src == ' ' || *src == ']' || *src == '"')
             goto error;
           /* read sd_id */
           pos = 0;
@@ -595,7 +598,8 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
           sd_id_len = pos;
           strcpy(sd_value_name, logmsg_sd_prefix);
           strncpy(sd_value_name + logmsg_sd_prefix_len, sd_id_name, sizeof(sd_value_name) - logmsg_sd_prefix_len);
-          if (*src == ']')
+
+          if (left && *src == ']')
             {
               log_msg_set_value_by_name(self, sd_value_name, "", 0);
             }
@@ -612,7 +616,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
               else
                 goto error;
 
-              if (!isascii(*src) || *src == '=' || *src == ' ' || *src == ']' || *src == '"')
+              if (!left || !isascii(*src) || *src == '=' || *src == ' ' || *src == ']' || *src == '"')
                 goto error;
 
               /* read sd-param */
