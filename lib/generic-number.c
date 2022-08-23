@@ -72,7 +72,10 @@ gn_is_zero(const GenericNumber *number)
   if (number->type == GN_INT64)
     return number->value.raw_int64 == 0;
 
-  return fabs(number->value.raw_double) < DBL_EPSILON;
+  if (number->type == GN_DOUBLE)
+    return fabs(number->value.raw_double) < DBL_EPSILON;
+
+  g_assert_not_reached();
 }
 
 void
@@ -118,7 +121,10 @@ gn_compare(const GenericNumber *left, const GenericNumber *right)
         return _compare_int64(gn_as_int64(left), gn_as_int64(right));
       else if (left->type == GN_DOUBLE)
         return _compare_double(gn_as_double(left), gn_as_double(right));
-      g_assert_not_reached();
+    }
+  else if (left->type == GN_NAN || right->type == GN_NAN)
+    {
+      ;
     }
   else if (left->type == GN_DOUBLE || right->type == GN_DOUBLE)
     {
@@ -128,4 +134,6 @@ gn_compare(const GenericNumber *left, const GenericNumber *right)
     {
       return _compare_int64(gn_as_int64(left), gn_as_int64(right));
     }
+  /* NaNs cannot be compared */
+  g_assert_not_reached();
 }
