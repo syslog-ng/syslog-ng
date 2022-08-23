@@ -94,8 +94,12 @@ _evaluate_comparison(FilterCmp *self, gint cmp)
 /* NOTE: this function mimics JavaScript when converting a value to a
  * number.  As described here:
  *
- *   Primitive types: https://javascript.info/type-conversions
- *   Objects: https://javascript.info/object-toprimitive
+ * Primitive types: https://javascript.info/type-conversions
+ *
+ * Objects are always converted to NaNs as we can't evaluate the
+ * toPrimitive() method, even if the Object had one.  Here's is how it is
+ * dealt with in JavaScript: https://javascript.info/object-toprimitive
+ *
  */
 static void
 _convert_to_number(const gchar *value, LogMessageValueType type, GenericNumber *number)
@@ -141,6 +145,32 @@ _convert_to_number(const gchar *value, LogMessageValueType type, GenericNumber *
     }
 }
 
+/*
+ * The "new" 4.0 comparison operators have become type aware, e.g.  when
+ * doing comparisons they consult with the types associated with the arguments.
+ *
+ * The algorithm took an inspiration from JavaScript, but it deviates
+ * somewhat, here is how it works.
+ *
+ * 1) if both arguments are the same type, then strings and objects/lists are
+ *    compared as their string representation (in JavaScript objects would
+ *    not be equal as they each are separate instances and JS compares
+ *    references in this case)
+ *
+ * 2) if both arguments are of the NULL type, they would evaluate to TRUE if
+ *    both sides are NULL (e.g.  we can compare NULLs to NULLs)
+ *
+ * 3) otherwise the arguments are converted to numbers (as per JavaScript
+ *    behavior) and compared numerically.
+ *
+ *    3.a) If any or both sides becomes a NaN (ie: not-a-number) the
+ *    evaluation is always FALSE to match JavaScript behavior
+ *
+ *    3.b) If one side is a NaN and we check for not-equal, then the
+ *    evaluation is always TRUE, again to match JavaScript behaviour.
+ *    (<anything> != NaN is always TRUE even if <anything> is NaN too)
+ *
+ */
 static gboolean
 _evaluate_typed(FilterCmp *self,
                 const gchar *left, LogMessageValueType left_type,
