@@ -152,7 +152,7 @@ redis_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
   RedisDriver *owner = (RedisDriver *) self->super.owner;
   LogThreadedResult status = LTR_ERROR;
 
-  g_assert(owner->super.batch_lines == 0);
+  g_assert(owner->super.batch_lines <= 0);
 
   ScratchBuffersMarker marker;
   scratch_buffers_mark(&marker);
