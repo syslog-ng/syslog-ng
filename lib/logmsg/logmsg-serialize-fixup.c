@@ -283,6 +283,8 @@ _update_entry(LogMessageSerializationState *state, NVEntry *entry)
       else
         entry->type = LM_VT_STRING;
     }
+  if (entry->type_present && entry->type == LM_VT_INT32)
+    entry->type = LM_VT_INT64;
   return TRUE;
 }
 
