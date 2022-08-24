@@ -407,6 +407,27 @@ Test(filter, test_type_aware_comparison_nan_is_always_different_from_anything)
   cr_assert_not(evaluate("'$nanvalue' > '$nanvalue'"));
 }
 
+Test(filter, test_type_and_value_comparison_checks_whether_type_and_value_match_completely)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  cr_assert(evaluate("$strvalue === $strvalue"));
+  cr_assert(evaluate("$strvalue === string"));
+  cr_assert(evaluate("string(64) === string(64)"));
+  cr_assert_not(evaluate("string(64) !== string(64)"));
+  cr_assert_not(evaluate("string(64) === int64(64)"));
+  cr_assert(evaluate("string(64) !== int64(64)"));
+  cr_assert(evaluate("int32(64) !== int64(64)"));
+  cr_assert_not(evaluate("int32(64) === int64(64)"));
+
+  /* types match, values don't */
+  cr_assert_not(evaluate("foo === bar"));
+  cr_assert_not(evaluate("int64(123) === int64(256)"));
+  cr_assert_not(evaluate("123 === 456"));
+
+  /* string conversion */
+  cr_assert(evaluate("double(  1e1  ) === double(10)"));
+}
+
 static void
 setup(void)
 {
