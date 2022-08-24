@@ -131,7 +131,7 @@ json_parser_extract_string_from_simple_json_object(JSONParser *self,
     case json_type_int:
       g_string_printf(value, "%"PRId64,
                       json_object_get_int64(jso));
-      *type = LM_VT_INT64;
+      *type = LM_VT_INTEGER;
       return TRUE;
     case json_type_string:
       g_string_assign(value,

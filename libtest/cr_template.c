@@ -132,8 +132,8 @@ create_sample_message(void)
   log_msg_set_value_by_name(msg, "comma_value", "value,with,a,comma", -1);
   log_msg_set_value_by_name(msg, "empty_value", "", -1);
   log_msg_set_value_by_name(msg, "template_name", "dummy", -1);
-  log_msg_set_value_by_name_with_type(msg, "number1", "123", -1, LM_VT_INT64);
-  log_msg_set_value_by_name_with_type(msg, "number2", "456", -1, LM_VT_INT64);
+  log_msg_set_value_by_name_with_type(msg, "number1", "123", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, "number2", "456", -1, LM_VT_INTEGER);
 
   return msg;
 }

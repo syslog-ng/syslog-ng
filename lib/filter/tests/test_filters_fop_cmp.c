@@ -42,10 +42,10 @@ _construct_sample_message(void)
   log_msg_set_value_by_name_with_type(msg, "jsonvalue", "{\"foo\":\"foovalue\"}", -1, LM_VT_JSON);
   log_msg_set_value_by_name_with_type(msg, "truevalue", "1", -1, LM_VT_BOOLEAN);
   log_msg_set_value_by_name_with_type(msg, "falsevalue", "0", -1, LM_VT_BOOLEAN);
-  log_msg_set_value_by_name_with_type(msg, "int32value", "32", -1, LM_VT_INT32);
-  log_msg_set_value_by_name_with_type(msg, "int64value", "64", -1, LM_VT_INT64);
+  log_msg_set_value_by_name_with_type(msg, "int32value", "32", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, "int64value", "4294967296", -1, LM_VT_INTEGER);
   log_msg_set_value_by_name_with_type(msg, "nanvalue", "nan", -1, LM_VT_DOUBLE);
-  log_msg_set_value_by_name_with_type(msg, "dblvalue", "3.1415", -1, LM_VT_INT64);
+  log_msg_set_value_by_name_with_type(msg, "dblvalue", "3.1415", -1, LM_VT_DOUBLE);
   log_msg_set_value_by_name_with_type(msg, "datevalue", "1653246684.123", -1, LM_VT_DATETIME);
   log_msg_set_value_by_name_with_type(msg, "listvalue", "foo,bar,baz", -1, LM_VT_LIST);
   log_msg_set_value_by_name_with_type(msg, "nullvalue", "", -1, LM_VT_NULL);
@@ -416,8 +416,6 @@ Test(filter, test_type_and_value_comparison_checks_whether_type_and_value_match_
   cr_assert_not(evaluate("string(64) !== string(64)"));
   cr_assert_not(evaluate("string(64) === int64(64)"));
   cr_assert(evaluate("string(64) !== int64(64)"));
-  cr_assert(evaluate("int32(64) !== int64(64)"));
-  cr_assert_not(evaluate("int32(64) === int64(64)"));
 
   /* types match, values don't */
   cr_assert_not(evaluate("foo === bar"));
@@ -426,6 +424,14 @@ Test(filter, test_type_and_value_comparison_checks_whether_type_and_value_match_
 
   /* string conversion */
   cr_assert(evaluate("double(  1e1  ) === double(10)"));
+}
+
+Test(filter, test_int32_and_int64_are_aliases_to_int)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  cr_assert(evaluate("int32(64) === int64(64)"));
+  cr_assert(evaluate("int32(64) === int(64)"));
+  cr_assert(evaluate("int64(64) === int(64)"));
 }
 
 static void

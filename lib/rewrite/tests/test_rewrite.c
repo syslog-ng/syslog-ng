@@ -150,7 +150,7 @@ Test(rewrite, set_field_not_exist_and_set_typed_template_string)
   LogRewrite *test_rewrite = create_rewrite_rule("set(int64(\"$PID\") value(\"field1\") );");
   LogMessage *msg = create_message_with_fields("PID", "123", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
-  assert_log_message_value_and_type_by_name(msg, "field1", "123", LM_VT_INT64);
+  assert_log_message_value_and_type_by_name(msg, "field1", "123", LM_VT_INTEGER);
   rewrite_teardown(msg);
 }
 

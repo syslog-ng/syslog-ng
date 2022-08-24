@@ -64,7 +64,7 @@ log_msg_map_legacy_dbparser_type_to_generic_type(guint8 dbparser_type)
   switch (dbparser_type)
     {
     case LEGACY_DBPARSER_TYPE_NUMBER:
-      return LM_VT_INT64;
+      return LM_VT_INTEGER;
     case LEGACY_DBPARSER_TYPE_FLOAT:
       return LM_VT_DOUBLE;
     case LEGACY_DBPARSER_TYPE_STRING:
@@ -283,8 +283,8 @@ _update_entry(LogMessageSerializationState *state, NVEntry *entry)
       else
         entry->type = LM_VT_STRING;
     }
-  if (entry->type_present && entry->type == LM_VT_INT32)
-    entry->type = LM_VT_INT64;
+  if (entry->type_present && entry->type == __COMPAT_LM_VT_INT32)
+    entry->type = LM_VT_INTEGER;
   return TRUE;
 }
 

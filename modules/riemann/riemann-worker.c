@@ -186,8 +186,7 @@ riemann_add_metric_to_event(RiemannDestWorker *self, riemann_event_t *event, Log
 
   switch (type)
     {
-    case LM_VT_INT32:
-    case LM_VT_INT64:
+    case LM_VT_INTEGER:
     {
       gint64 i;
 

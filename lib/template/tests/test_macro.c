@@ -108,12 +108,12 @@ Test(macro, test_context_id_type_is_returned)
   LogMessage *msg = log_msg_new_empty();
   LogMessageValueType type;
 
-  LogTemplateEvalOptions options = {NULL, LTZ_SEND, 5555, "5678", LM_VT_INT64};
+  LogTemplateEvalOptions options = {NULL, LTZ_SEND, 5555, "5678", LM_VT_INTEGER};
 
   gboolean result = log_macro_expand(M_CONTEXT_ID, FALSE, &options, msg, resolved, &type);
   cr_assert(result);
   cr_assert_str_eq(resolved->str, "5678");
-  cr_assert_eq(type, LM_VT_INT64);
+  cr_assert_eq(type, LM_VT_INTEGER);
 
   g_string_free(resolved, TRUE);
   log_msg_unref(msg);

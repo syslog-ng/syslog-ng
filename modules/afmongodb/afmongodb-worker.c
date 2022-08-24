@@ -235,8 +235,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
         }
       break;
     }
-    case LM_VT_INT32:
-    case LM_VT_INT64:
+    case LM_VT_INTEGER:
     {
       gint64 i;
 
@@ -249,7 +248,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
         }
       else
         {
-          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, "int64");
+          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, "integer");
 
           if (fallback)
             bson_append_utf8(o, name, -1, value, value_len);

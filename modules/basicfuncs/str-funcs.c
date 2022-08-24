@@ -39,7 +39,7 @@ tf_length(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessa
 {
   gint i;
 
-  *type = LM_VT_INT32;
+  *type = LM_VT_INTEGER;
   for (i = 0; i < argc; i++)
     {
       format_uint32_padded(result, 0, 0, 10, argv[i]->len);

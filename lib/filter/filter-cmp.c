@@ -108,8 +108,7 @@ _convert_to_number(const gchar *value, LogMessageValueType type, GenericNumber *
   switch (type)
     {
     case LM_VT_STRING:
-    case LM_VT_INT32:
-    case LM_VT_INT64:
+    case LM_VT_INTEGER:
     case LM_VT_DOUBLE:
       if (!parse_generic_number(value, number))
         gn_set_nan(number);

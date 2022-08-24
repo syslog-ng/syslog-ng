@@ -34,7 +34,7 @@ tf_context_length_call(LogTemplateFunction *self, gpointer s,
                        GString *result, LogMessageValueType *type)
 {
   g_string_append_printf(result, "%d", args->num_messages);
-  *type = LM_VT_INT32;
+  *type = LM_VT_INTEGER;
 }
 
 static void

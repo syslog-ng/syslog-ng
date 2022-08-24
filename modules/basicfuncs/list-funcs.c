@@ -233,7 +233,7 @@ tf_list_count(LogMessage *msg, gint argc, GString *argv[], GString *result, LogM
 {
   gint count = _list_count(argc, argv);
 
-  *type = LM_VT_INT32;
+  *type = LM_VT_INTEGER;
   format_uint32_padded(result, -1, ' ', 10, count);
 }
 
@@ -606,7 +606,7 @@ tf_list_search_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvo
   ListScanner scanner;
   gint index = state->start_index;
 
-  *type = LM_VT_INT32;
+  *type = LM_VT_INTEGER;
 
   list_scanner_init(&scanner);
   list_scanner_input_gstring_array(&scanner, state->super.argc - 1, &args->argv[1]);

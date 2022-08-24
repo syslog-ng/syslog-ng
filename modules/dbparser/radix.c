@@ -637,7 +637,7 @@ r_new_pnode(gchar *key)
     {
       parser_node->parse = r_parser_number;
       parser_node->parser_type = RPT_NUMBER;
-      parser_node->value_type = LM_VT_INT64;
+      parser_node->value_type = LM_VT_INTEGER;
       parser_node->first = '-';
       parser_node->last = '9';
     }
