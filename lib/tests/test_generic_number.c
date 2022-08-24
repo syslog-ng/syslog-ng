@@ -97,7 +97,7 @@ Test(generic_number, test_set_nan_becomes_a_nan)
   cr_assert(gn_is_nan(&gn));
 
   /* NAN requires _GNU_SOURCE */
-  gn_set_double(&gn, NAN, -1);
+  gn_set_double(&gn, (gdouble) NAN, -1);
   cr_assert(gn_is_nan(&gn));
 }
 
