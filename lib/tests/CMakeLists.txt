@@ -35,6 +35,7 @@ add_unit_test(CRITERION TARGET test_hostid)
 add_unit_test(CRITERION TARGET test_zone)
 add_unit_test(CRITERION TARGET test_logwriter DEPENDS syslogformat)
 add_unit_test(CRITERION TARGET test_thread_wakeup)
+add_unit_test(CRITERION TARGET test_generic_number)
 
 SET_DIRECTORY_PROPERTIES(PROPERTIES
   ADDITIONAL_MAKE_CLEAN_FILES

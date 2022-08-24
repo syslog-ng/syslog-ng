@@ -294,18 +294,25 @@ gboolean
 log_template_set_type_hint(LogTemplate *self, const gchar *type_hint, GError **error)
 {
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+  gboolean result;
 
   if (!type_hint)
     {
-      self->type_hint = LM_VT_NONE;
-      return TRUE;
+      self->explicit_type_hint = LM_VT_NONE;
+      result = TRUE;
     }
-  if (!type_hint_parse(type_hint, &self->type_hint, error))
+  else if (!type_hint_parse(type_hint, &self->explicit_type_hint, error))
     {
-      self->type_hint = LM_VT_NONE;
-      return FALSE;
+      self->explicit_type_hint = LM_VT_NONE;
+      result = FALSE;
     }
-  return TRUE;
+  else
+    {
+      result = TRUE;
+    }
+
+  self->type_hint = self->explicit_type_hint;
+  return result;
 }
 
 /* NOTE: we should completely get rid off the name property of templates,
@@ -351,6 +358,7 @@ log_template_new(GlobalConfig *cfg, const gchar *name)
     self->type_hint = LM_VT_STRING;
   else
     self->type_hint = LM_VT_NONE;
+  self->explicit_type_hint = LM_VT_NONE;
   return self;
 }
 

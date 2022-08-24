@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2021 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,27 +18,36 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
- *
  */
 
-#ifndef FILTER_CMP_H_INCLUDED
-#define FILTER_CMP_H_INCLUDED
+#ifndef SYSLOG_NG_GENERIC_NUMBER_H_INCLUDED
+#define SYSLOG_NG_GENERIC_NUMBER_H_INCLUDED
 
-#include "filter-expr.h"
-#include "template/templates.h"
+#include "syslog-ng.h"
 
-#define FCMP_EQ           0x0001
-#define FCMP_LT           0x0002
-#define FCMP_GT           0x0004
-#define FCMP_TYPE_AWARE   0x0010
-#define FCMP_STRING_BASED 0x0020
-#define FCMP_NUM_BASED    0x0040
+typedef struct _GenericNumber
+{
+  enum
+  {
+    GN_INT64,
+    GN_DOUBLE,
+    GN_NAN,
+  } type;
+  union
+  {
+    gint64 raw_int64;
+    gdouble raw_double;
+  } value;
+  gint precision;
+} GenericNumber;
 
-#define FCMP_OP_MASK      0x0007
-#define FCMP_MODE_MASK    0x0070
-
-FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right,
-                            const gchar *type, gint compare_mode,
-                            EVTTAG *location);
+void gn_set_double(GenericNumber *number, double value, gint precision);
+gdouble gn_as_double(const GenericNumber *number);
+void gn_set_int64(GenericNumber *number, gint64 value);
+gint64 gn_as_int64(const GenericNumber *number);
+gboolean gn_is_zero(const GenericNumber *number);
+void gn_set_nan(GenericNumber *number);
+gboolean gn_is_nan(const GenericNumber *number);
+gint gn_compare(const GenericNumber *left, const GenericNumber *right);
 
 #endif

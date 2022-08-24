@@ -87,14 +87,14 @@ gboolean
 parse_integer_or_float(const char *str, Number *number)
 {
   gint64 int_value;
-  if (parse_dec_number(str, &int_value))
+  if (parse_int64(str, &int_value))
     {
       number_set_int(number, int_value);
       return TRUE;
     }
 
   double float_value;
-  if (parse_float(str, &float_value))
+  if (parse_double(str, &float_value))
     {
       number_set_double(number, float_value);
       return TRUE;
@@ -304,7 +304,7 @@ tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMe
 
   if (argc > 1)
     {
-      if (!parse_dec_number(argv[1]->str, &precision))
+      if (!parse_int64(argv[1]->str, &precision))
         {
           msg_debug("Parsing failed, template function's second argument is not a number",
                     evt_tag_str("function", "round"),
@@ -410,7 +410,7 @@ _tf_num_parse_arg_with_message(const TFSimpleFuncState *state,
 
   log_template_format(state->argv_templates[0], message, args->options, formatted_template);
 
-  if (!parse_dec_number(formatted_template->str, number))
+  if (!parse_int64(formatted_template->str, number))
     {
       if (!(on_error & ON_ERROR_SILENT))
         msg_error("Parsing failed, template function's argument is not a number",

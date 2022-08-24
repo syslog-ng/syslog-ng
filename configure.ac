@@ -784,6 +784,7 @@ fi
 
 dnl ***************************************************************************
 dnl Checks for libraries
+AC_CHECK_LIB(m, round, BASE_LIBS="$BASE_LIBS -lm")
 AC_CHECK_LIB(door, door_create, BASE_LIBS="$BASE_LIBS -ldoor")
 AC_CHECK_LIB(socket, socket, BASE_LIBS="$BASE_LIBS -lsocket")
 AC_CHECK_LIB(rt, nanosleep, BASE_LIBS="$BASE_LIBS -lrt")

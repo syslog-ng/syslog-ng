@@ -114,6 +114,7 @@ pkginclude_HEADERS			+= \
 	lib/fdhelpers.h			\
 	lib/file-perms.h		\
 	lib/find-crlf.h			\
+	lib/generic-number.h		\
 	lib/gprocess.h			\
 	lib/gsockaddr.h			\
 	lib/gsocket.h			\
@@ -203,6 +204,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/fdhelpers.c			\
 	lib/file-perms.c		\
 	lib/find-crlf.c			\
+	lib/generic-number.c		\
 	lib/globals.c			\
 	lib/gprocess.c			\
 	lib/gsockaddr.c			\

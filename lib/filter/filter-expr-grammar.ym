@@ -45,6 +45,59 @@
 #include "syslog-names.h"
 #include "plugin.h"
 #include "cfg-grammar-internal.h"
+#include "parse-number.h"
+
+/* NOTE: this function translates a literal value enclosed in quotes to
+ * numeric, if they represent a number. This is needed as older versions of
+ * syslog-ng only allowed "strings" as arguments to comparison operators and
+ * used the operator to denote numeric/string comparisons.
+ *
+ * In the post-4.0 world, we want to use type-aware operators by default,
+ * which means that type information should not be lost due to having to
+ * quote number literals earlier.
+ *
+ * So if we are using type-aware operators (<, > and ==) and our argument is
+ * a quoted number, we turn it into a numeric value and warn the user to
+ * remove the quotes.
+ *
+ */
+static LogTemplate *
+_translate_number_literals(CfgLexer *lexer, gint compare_mode, LogTemplate *expr, YYLTYPE *location)
+{
+  /* with string based operators we do nothing */
+  if ((compare_mode & FCMP_STRING_BASED))
+    return expr;
+
+  /* if there's an explicit type-hint we use that */
+  if (expr->type_hint != LM_VT_NONE)
+    return expr;
+
+  /* if the argument is not literal we don't do anything */
+  if (!log_template_is_literal_string(expr))
+    return expr;
+
+  /* let's check if the argument is a numeric value represented as a string,
+   * turn it into a numberic value and warn the user. */
+
+  gint64 v;
+  if (!parse_int64_with_suffix(log_template_get_literal_value(expr, NULL), &v))
+    return expr;
+  if (cfg_is_config_version_older(configuration, VERSION_VALUE_4_0))
+    {
+      if (cfg_is_typing_feature_enabled(configuration))
+        {
+          msg_warning("WARNING: syslog-ng versions before " VERSION_4_0 " interpreted quoted numeric "
+                      "literals as numbers when using the '<', '>' or '==' operators. Please remove "
+                      "the quotes around the numeric literal when upgrading to " VERSION_4_0 " format, "
+                      "otherwise your comparison will become string based "
+                      "instead. Alternatively if your intention is string based "
+                      "comparison add a string() type cast around the expression",
+                      cfg_lexer_format_location_tag(lexer, location));
+        }
+      log_template_set_type_hint(expr, "int64", NULL);
+    }
+  return expr;
+}
 
 }
 
@@ -63,8 +116,8 @@
 %left	KW_OR
 %left	KW_AND
 %left   KW_NOT
-%left   KW_LT KW_LE KW_EQ KW_NE KW_GE KW_GT
-%left   KW_NUM_LT KW_NUM_LE KW_NUM_EQ KW_NUM_NE KW_NUM_GE KW_NUM_GT
+%left   KW_STR_LT KW_STR_LE KW_STR_EQ KW_STR_NE KW_STR_GE KW_STR_GT
+%left   KW_TA_LT KW_TA_LE KW_TA_EQ KW_TA_NE KW_TA_GE KW_TA_GT
 
 %type	<node> filter_expr
 %type	<node> filter_simple_expr
@@ -76,6 +129,7 @@
 %type   <num> filter_fac
 %type	<num> filter_severity_list
 %type	<num> filter_severity
+%type   <ptr> filter_re
 
 %type   <token> operator
 
@@ -101,14 +155,14 @@ filter_simple_expr
 	| KW_SEVERITY '(' filter_severity_list ')' { $$ = filter_severity_new($3); }
 	| KW_FILTER '(' string ')'		{ $$ = filter_call_new($3, configuration); free($3); }
 	| KW_NETMASK '(' string ')'    { $$ = filter_netmask_new($3); free($3); }
-  | KW_NETMASK6 '(' string ')'   {
+        | KW_NETMASK6 '(' string ')'   {
   #if SYSLOG_NG_ENABLE_IPV6
-                                    $$ = filter_netmask6_new($3);
+                                         $$ = filter_netmask6_new($3);
   #else
-                                    YYERROR;
+                                         YYERROR;
   #endif
-                                    free($3);
-                                  }
+                                         free($3);
+                                       }
         | KW_TAGS '(' string_list ')'           { $$ = filter_tags_new($3); }
         | KW_IN_LIST '(' string string ')'
           {
@@ -138,7 +192,7 @@ filter_simple_expr
             free($3);
             free($6);
           }
-	| filter_re					{ $$ = last_filter_expr; }
+	| filter_re
 	| filter_comparison
 	| filter_plugin
 	;
@@ -175,43 +229,36 @@ filter_identifier
         ;
 
 filter_comparison
-	: LL_STRING operator LL_STRING
-          {
-            LogTemplate *left, *right;
-            GError *error = NULL;
-
-            left = log_template_new(configuration, NULL);
-            right = log_template_new(configuration, NULL);
-            CHECK_ERROR_GERROR(log_template_compile(left, $1, &error), @1, error, "compiling the left-hand-side template failed");
-            CHECK_ERROR_GERROR(log_template_compile(right, $3, &error), @3, error, "compiling the right-hand-side template failed");
-
-            free($1);
+	: template_content operator <cptr>{ $$ = strdup(lexer->token_text->str); } template_content
+	  {
+            $1 = _translate_number_literals(lexer, $2, $1, &@1);
+            $4 = _translate_number_literals(lexer, $2, $4, &@4);
+	    $$ = fop_cmp_new($1, $4, $3, $2, cfg_lexer_format_location_tag(lexer, &@0));
             free($3);
-            $$ = fop_cmp_new(left, right, $2);
           }
         ;
 
 operator
-	: KW_NUM_LT	{ $$ = yylval.token; }
-	| KW_NUM_LE	{ $$ = yylval.token; }
-	| KW_NUM_EQ     { $$ = yylval.token; }
-	| KW_NUM_NE     { $$ = yylval.token; }
-	| KW_NUM_GE     { $$ = yylval.token; }
-	| KW_NUM_GT     { $$ = yylval.token; }
-	| KW_LT		{ $$ = yylval.token; }
-	| KW_LE		{ $$ = yylval.token; }
-	| KW_EQ         { $$ = yylval.token; }
-	| KW_NE         { $$ = yylval.token; }
-	| KW_GE         { $$ = yylval.token; }
-	| KW_GT         { $$ = yylval.token; }
+	: KW_TA_LT	    { $$ = FCMP_TYPE_AWARE | FCMP_LT; }
+	| KW_TA_LE	    { $$ = FCMP_TYPE_AWARE | FCMP_LT | FCMP_EQ; }
+	| KW_TA_EQ          { $$ = FCMP_TYPE_AWARE | FCMP_EQ; }
+	| KW_TA_NE          { $$ = FCMP_TYPE_AWARE | FCMP_LT | FCMP_GT; }
+	| KW_TA_GE          { $$ = FCMP_TYPE_AWARE | FCMP_EQ | FCMP_GT; }
+	| KW_TA_GT          { $$ = FCMP_TYPE_AWARE | FCMP_GT; }
+	| KW_STR_LT	    { $$ = FCMP_STRING_BASED | FCMP_LT; }
+	| KW_STR_LE         { $$ = FCMP_STRING_BASED | FCMP_LT | FCMP_EQ; }
+	| KW_STR_EQ         { $$ = FCMP_STRING_BASED | FCMP_EQ; }
+	| KW_STR_NE         { $$ = FCMP_STRING_BASED | FCMP_LT | FCMP_GT; }
+	| KW_STR_GE         { $$ = FCMP_STRING_BASED | FCMP_EQ | FCMP_GT; }
+	| KW_STR_GT         { $$ = FCMP_STRING_BASED | FCMP_GT; }
 	;
 
 filter_re
-        : KW_PROGRAM { last_filter_expr = filter_re_new(LM_V_PROGRAM); } filter_re_params
-	| KW_HOST    { last_filter_expr = filter_re_new(LM_V_HOST); } filter_re_params
-	| KW_MESSAGE { last_filter_expr = filter_re_new(LM_V_MESSAGE); } filter_re_params
-        | KW_SOURCE  { last_filter_expr = filter_source_new();  } filter_re_params
-	| KW_MATCH   { last_filter_expr = filter_match_new(); } filter_match_params
+        : KW_PROGRAM <ptr>{ $$ = last_filter_expr = filter_re_new(LM_V_PROGRAM); } filter_re_params     { $$ = $2; }
+	| KW_HOST    <ptr>{ $$ = last_filter_expr = filter_re_new(LM_V_HOST); } filter_re_params        { $$ = $2; }
+	| KW_MESSAGE <ptr>{ $$ = last_filter_expr = filter_re_new(LM_V_MESSAGE); } filter_re_params     { $$ = $2; }
+        | KW_SOURCE  <ptr>{ $$ = last_filter_expr = filter_source_new();  } filter_re_params            { $$ = $2; }
+	| KW_MATCH   <ptr>{ $$ = last_filter_expr = filter_match_new(); } filter_match_params           { $$ = $2; }
 	;
 
 filter_re_params

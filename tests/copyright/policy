@@ -83,6 +83,8 @@ lib/rewrite/rewrite-set-pri\.c
 lib/timeutils/timeutils\.h
 lib/logmsg/tests/dump_logmsg\.c
 libtest/mock-logpipe\.[ch]
+lib/generic-number\.[ch]
+lib/tests/test_generic_number\.c
 
 ###########################################################################
 # These tests are GPLd even though they reside under lib/ and are excluded

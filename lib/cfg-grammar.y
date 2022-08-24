@@ -767,26 +767,26 @@ template_def
 
 template_block
 	: KW_TEMPLATE string
-	  {
-	    last_template = log_template_new(configuration, $2);
+	  <ptr>{
+	    $$ = last_template = log_template_new(configuration, $2);
 	  }
-	  '{' template_items '}'						{ $$ = last_template; free($2); }
+	  '{' template_items '}'						{ $$ = $3; free($2); }
         ;
 
 template_simple
         : KW_TEMPLATE string
-          {
-	    last_template = log_template_new(configuration, $2);
+          <ptr>{
+	    $$ = last_template = log_template_new(configuration, $2);
           }
-          template_content_inner						{ $$ = last_template; free($2); }
+          template_content_inner						{ $$ = $3; free($2); }
 	;
 
 template_fn
         : KW_TEMPLATE_FUNCTION string
-          {
-	    last_template = log_template_new(configuration, $2);
+          <ptr>{
+	    $$ = last_template = log_template_new(configuration, $2);
           }
-          template_content_inner						{ $$ = last_template; free($2); }
+          template_content_inner						{ $$ = $3; free($2); }
 	;
 
 template_items
@@ -814,10 +814,23 @@ template_content_inner
           CHECK_ERROR_GERROR(log_template_set_type_hint(last_template, $1, &error), @1, error, "Error setting the template type-hint \"%s\"", $1);
           free($1);
         }
+        | LL_NUMBER
+        {
+          gchar decimal[32];
+
+          g_snprintf(decimal, sizeof(decimal), "%" G_GINT64_FORMAT, $1);
+          log_template_compile_literal_string(last_template, decimal);
+          log_template_set_type_hint(last_template, "int64", NULL);
+        }
+        | LL_FLOAT
+        {
+          log_template_compile_literal_string(last_template, lexer->token_text->str);
+          log_template_set_type_hint(last_template, "float", NULL);
+        }
         ;
 
 template_content
-        : { last_template = log_template_new(configuration, NULL); } template_content_inner	{ $$ = last_template; }
+        : <ptr>{ $$ = last_template = log_template_new(configuration, NULL); } template_content_inner	{ $$ = $1; }
         ;
 
 template_content_list
