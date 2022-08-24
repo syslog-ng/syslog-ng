@@ -311,11 +311,33 @@ Test(filter, test_type_aware_comparison_strings_are_compared_as_strings_if_types
   cr_assert(evaluate("'$strvalue' < 'zabkasa')"));
 }
 
-Test(filter, test_type_aware_comparison_null_equals_to_null_and_converts_to_zero)
+Test(filter, test_type_aware_comparison_null_equals_to_null_and_does_not_equal_to_anything_else)
 {
   cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  cr_assert(evaluate("null('') == null('')"));
+  cr_assert_not(evaluate("null('') != null('')"));
   cr_assert(evaluate("'$nullvalue' == null('')"));
-  cr_assert(evaluate("'$nullvalue' == 0"));
+  cr_assert_not(evaluate("'$nullvalue' != null('')"));
+  cr_assert(evaluate("string('') != null('')"));
+  cr_assert(evaluate("int64('0') != null('')"));
+  cr_assert(evaluate("double('0.0') != null('')"));
+  cr_assert(evaluate("list('') != null('')"));
+  cr_assert(evaluate("json('') != null('')"));
+  cr_assert(evaluate("datetime('') != null('')"));
+}
+
+
+Test(filter, test_non_existing_macro_has_a_null_value_so_it_equals_to_null)
+{
+  /* not existing macro is null */
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+  cr_assert(evaluate("'$doesnotexist' == null('')"));
+  cr_assert_not(evaluate("'$doesnotexist' != null('')"));
+}
+
+Test(filter, test_type_aware_comparison_null_converts_to_zero_when_compared_with_less_than_or_greater_than)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
   cr_assert(evaluate("'$nullvalue' < 1"));
   cr_assert(evaluate("'$nullvalue' > -1"));
 }
@@ -358,7 +380,8 @@ Test(filter, test_type_aware_comparisons_mixed_types_or_numbers_are_compared_as_
   cr_assert(evaluate("'$dblvalue' > 0.314e1"));
   cr_assert(evaluate("'$dblvalue' < 0.314e2"));
   cr_assert(evaluate("'$datevalue' == 1653246684123"));
-  cr_assert(evaluate("'$nullvalue' == 0"));
+  cr_assert(evaluate("'$nullvalue' < 1"));
+  cr_assert(evaluate("'$nullvalue' > -1"));
 
   /* JSON objects/lists are always NaN values, which produce FALSE comparisons */
   cr_assert_not(evaluate("'$listvalue' < 01234"));

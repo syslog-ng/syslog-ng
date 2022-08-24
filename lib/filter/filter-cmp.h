@@ -35,6 +35,7 @@
 #define FCMP_STRING_BASED 0x0020
 #define FCMP_NUM_BASED    0x0040
 
+#define FCMP_OP_MASK      0x0007
 #define FCMP_MODE_MASK    0x0070
 
 FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right,

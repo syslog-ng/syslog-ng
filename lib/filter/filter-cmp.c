@@ -187,8 +187,17 @@ _evaluate_typed(FilterCmp *self,
       (_is_string(left_type) || _is_object(left_type)))
     return _evaluate_comparison(self, fop_compare_string(left, right));
 
-  if (left_type == right_type && left_type == LM_VT_NULL)
-    return _evaluate_comparison(self, 0);
+  if (left_type == LM_VT_NULL || right_type == LM_VT_NULL)
+    {
+      /* != */
+      if ((self->compare_mode & FCMP_OP_MASK) == (FCMP_LT + FCMP_GT))
+        return left_type != right_type;
+      /* == */
+      if ((self->compare_mode & FCMP_OP_MASK) == FCMP_EQ)
+        return left_type == right_type;
+
+      /* fallback to numeric comparisons */
+    }
 
   /* ok, we need to convert to numbers and compare that way */
 
