@@ -142,10 +142,19 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
                 }
               break;
             case EILSEQ:
-            default:
-              msg_notice("Invalid byte sequence or other error while converting input, skipping character",
+              msg_notice("Invalid byte sequence, skipping character",
                          evt_tag_str("encoding", self->super.options->encoding),
                          evt_tag_printf("char", "0x%02x", *(guchar *) raw_buffer));
+              raw_buffer++;
+              avail_in--;
+
+              state->pending_buffer_end = state->buffer_size - avail_out;
+              break;
+            default:
+              msg_error("Unknown error while converting input",
+                        evt_tag_error("errno"),
+                        evt_tag_str("encoding", self->super.options->encoding),
+                        evt_tag_printf("char", "0x%02x", *(guchar *) raw_buffer));
               goto error;
             }
         }

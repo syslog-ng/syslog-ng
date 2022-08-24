@@ -221,6 +221,22 @@ Test(log_proto, test_log_proto_text_server_partial_chars_before_eof)
   log_proto_server_free(proto);
 }
 
+Test(log_proto, test_log_proto_text_server_invalid_char_with_encoding)
+{
+  LogProtoServer *proto;
+
+  log_proto_server_options_set_encoding(&proto_server_options, "GB18030");
+  proto = construct_test_proto(
+            log_transport_mock_stream_new(
+              "foo" "\x80" "bar" "\x80" "baz", -1,
+              LTM_EOF));
+
+  cr_assert(log_proto_server_validate_options(proto),
+            "validate_options() returned failure but it should have succeeded");
+  assert_proto_server_fetch(proto, "foobarbaz", -1);
+  log_proto_server_free(proto);
+}
+
 Test(log_proto, test_log_proto_text_server_not_fixed_encoding)
 {
   LogProtoServer *proto;
