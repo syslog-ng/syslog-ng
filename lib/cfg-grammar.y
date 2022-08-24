@@ -804,7 +804,7 @@ template_content_inner
           CHECK_ERROR_GERROR(log_template_compile(last_template, $1, &error), @1, error, "Error compiling template");
           free($1);
         }
-        | LL_IDENTIFIER '(' string ')'
+        | LL_IDENTIFIER '(' string_or_number ')'
         {
           GError *error = NULL;
 

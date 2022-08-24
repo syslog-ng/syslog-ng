@@ -118,6 +118,7 @@ _translate_number_literals(CfgLexer *lexer, gint compare_mode, LogTemplate *expr
 %left   KW_NOT
 %left   KW_STR_LT KW_STR_LE KW_STR_EQ KW_STR_NE KW_STR_GE KW_STR_GT
 %left   KW_TA_LT KW_TA_LE KW_TA_EQ KW_TA_NE KW_TA_GE KW_TA_GT
+%left   KW_TAV_EQ KW_TAV_NE
 
 %type	<node> filter_expr
 %type	<node> filter_simple_expr
@@ -251,6 +252,8 @@ operator
 	| KW_STR_NE         { $$ = FCMP_STRING_BASED | FCMP_LT | FCMP_GT; }
 	| KW_STR_GE         { $$ = FCMP_STRING_BASED | FCMP_EQ | FCMP_GT; }
 	| KW_STR_GT         { $$ = FCMP_STRING_BASED | FCMP_GT; }
+	| KW_TAV_EQ	    { $$ = FCMP_TYPE_AND_VALUE_BASED | FCMP_EQ; }
+	| KW_TAV_NE         { $$ = FCMP_TYPE_AND_VALUE_BASED | FCMP_LT | FCMP_GT; }
 	;
 
 filter_re
