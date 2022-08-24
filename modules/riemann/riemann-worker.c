@@ -25,6 +25,8 @@
 #include "riemann.h"
 #include "riemann-worker.h"
 #include "scratch-buffers.h"
+#include "generic-number.h"
+#include "parse-number.h"
 
 #include <riemann/simple.h>
 #include <stdlib.h>
@@ -124,8 +126,10 @@ riemann_dd_field_integer_maybe_add(riemann_event_t *event, LogMessage *msg,
 
   if (target->len != 0)
     {
-      gint64 as_int = g_ascii_strtoll(target->str, NULL, 10);
-      riemann_event_set(event, ftype, as_int, RIEMANN_EVENT_FIELD_NONE);
+      GenericNumber gn;
+
+      if (parse_generic_number(target->str, &gn))
+        riemann_event_set(event, ftype, gn_as_int64(&gn), RIEMANN_EVENT_FIELD_NONE);
     }
 }
 
