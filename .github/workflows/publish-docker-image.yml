@@ -3,6 +3,10 @@ name: Publish Docker image
 
 on:
   workflow_call:
+    inputs:
+      pkg-type:
+        required: true
+        type: string  # stable / nightly
     secrets:
       dockerhub-username:
         required: true
