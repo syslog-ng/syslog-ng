@@ -34,15 +34,31 @@ jobs:
           password: ${{ secrets.dockerhub-password }}
 
       - name: Extract metadata (syslog-ng version) for Docker
-        id: meta
+        if: inputs.pkg-type == 'stable'
+        id: stable-tags
         uses: docker/metadata-action@v3
         with:
           images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: type=match,pattern=syslog-ng-(.*),group=1
+
+      - name: Compose Docker image tags
+        id: tags
+        run: |
+          if [[ '${{ inputs.pkg-type }}' = 'stable' ]]; then
+            TAGS='${{ steps.stable-tags.outputs.tag }}'
+          elif [[ '${{ inputs.pkg-type }}' = 'nightly' ]]; then
+            TAGS="${DOCKER_IMAGE_NAME}:nightly"
+          else
+            echo Unexpected input: pkg-type=${{ inputs.pkg-type }}
+            false
+          fi
+
+          . .github/workflows/gh-tools.sh
+          gh_output TAGS
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
           context: docker/
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.tags.outputs.TAGS }}
