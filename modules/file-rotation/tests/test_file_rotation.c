@@ -30,8 +30,9 @@ Test(file_rotation, test_example)
 {
   FileRotationPlugin *fr = file_rotation_new();
   file_rotation_set_size(fr, 100);
-  log_rotation_set_interval(fr, "daily");
+  file_rotation_set_interval(fr, "daily");
   log_driver_plugin_free((LogDriverPlugin *) fr);
 
-  cr_assert(0);
+  cr_assert_eq(fr->size, 100);
+  cr_assert_str_eq(fr->interval, "daily");
 }

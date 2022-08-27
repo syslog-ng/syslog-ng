@@ -29,13 +29,7 @@
 #include "signal-slot-connector/signal-slot-connector.h"
 
 typedef struct _FileRotationPlugin FileRotationPlugin;
-typedef struct _LogDriver LogDriver;
 typedef struct _FileRotationResponseData FileRotationResponseData;
-typedef enum
-{
-  FILE_ROTATION_INTERVAL,
-  FILE_ROTATION_SIZE,
-} FileRotationOption;
 
 typedef enum
 {
@@ -43,20 +37,13 @@ typedef enum
   FILE_ROTATION_FAILURE,
 } FileRotationResult;
 
-struct _FileFlushSignalData
-{
-  GString *filename;
-  gchar *interval;
-  gsize size;
-};
-
 struct _FileRotationPlugin
 {
   LogDriverPlugin super;
   SignalSlotConnector *ssc;
   gchar *interval;
   gsize size;
-  GString *filename;
+  gchar *filename;
 };
 
 struct _FileRotationResponseData
@@ -68,13 +55,9 @@ struct _FileRotationResponseData
   gint64 last_interval_check;
 };
 
-
-
-#define signal_file_rotation_response SIGNAL(file_rotation, rotation_response, FileRotationResponseData *)
-
 FileRotationPlugin *file_rotation_new(void);
 
 void file_rotation_set_size(FileRotationPlugin *self, gsize size);
-void log_rotation_set_interval(FileRotationPlugin *self, gchar *interval);
+void file_rotation_set_interval(FileRotationPlugin *self, gchar *interval);
 
 #endif

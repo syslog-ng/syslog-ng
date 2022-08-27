@@ -163,7 +163,7 @@ affile_dw_reopen(AFFileDestWriter *self)
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
 
       proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
-                                              &self->owner->writer_options.proto_options.super);
+                                              &self->owner->writer_options.proto_options.super, self->owner->super.super.super.signal_slot_connector);
     }
   else if (open_result == FILE_OPENER_RESULT_ERROR_PERMANENT)
     {

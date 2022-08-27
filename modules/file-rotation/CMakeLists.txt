@@ -14,7 +14,7 @@ set(FILE_ROTATION_SOURCES
 add_module(
   TARGET file_rotation
   GRAMMAR file-rotation-grammar
+  INCLUDES ${PROJECT_SOURCE_DIR}
   SOURCES ${FILE_ROTATION_SOURCES}
 )
-
 add_test_subdirectory(tests)

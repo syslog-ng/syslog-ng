@@ -118,6 +118,7 @@ libtest
 syslog-ng(-ctl)?
 modules/java-modules/common
 modules/java/(native|proxies|src)
+modules/affile/file-signals.h
 modules/native
 modules/http/http-signals.h
 tests/loggen

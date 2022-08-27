@@ -92,7 +92,8 @@ _construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderO
 }
 
 static LogProtoClient *
-_construct_dst_proto(FileOpener *self, LogTransport *transport, LogProtoClientOptions *proto_options)
+_construct_dst_proto(FileOpener *self, LogTransport *transport, LogProtoClientOptions *proto_options,
+                     SignalSlotConnector *connector)
 {
   return log_proto_text_client_new(transport, proto_options);
 }

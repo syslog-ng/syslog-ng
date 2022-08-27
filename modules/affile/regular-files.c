@@ -85,13 +85,14 @@ typedef struct _FileOpenerRegularDestFiles
 } FileOpenerRegularDestFiles;
 
 static LogProtoClient *
-_construct_dst_proto(FileOpener *s, LogTransport *transport, LogProtoClientOptions *proto_options)
+_construct_dst_proto(FileOpener *s, LogTransport *transport, LogProtoClientOptions *proto_options,
+                     SignalSlotConnector *connector)
 {
   FileOpenerRegularDestFiles *self = (FileOpenerRegularDestFiles *) s;
 
   return log_proto_file_writer_new(transport, proto_options,
                                    self->writer_options->flush_lines,
-                                   *self->use_fsync);
+                                   *self->use_fsync, connector);
 }
 
 static LogTransport *
