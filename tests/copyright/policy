@@ -67,6 +67,7 @@ lib/logmsg/tests/messages/syslog-ng-(pe-)?[.0-9]*-msg.h$
                                                  LGPLv2.1+_SSL,non-balabit
 
 lib/timeutils/zonecache.[ch]$
+modules/affile/file-signals\.h
 modules/secure-logging
 modules/secure-logging/tests
 modules/secure-logging/slogencrypt
@@ -118,7 +119,6 @@ libtest
 syslog-ng(-ctl)?
 modules/java-modules/common
 modules/java/(native|proxies|src)
-modules/affile/file-signals.h
 modules/native
 modules/http/http-signals.h
 tests/loggen
