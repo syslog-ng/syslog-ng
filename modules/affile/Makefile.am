@@ -43,6 +43,7 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/affile-plugin.c \
 	modules/affile/file-list.h				\
 	modules/affile/file-list.c				\
+	modules/affile/file-signals.h			\
   modules/affile/affile-dest-internal-queue-filter.h
 
 if HAVE_INOTIFY
