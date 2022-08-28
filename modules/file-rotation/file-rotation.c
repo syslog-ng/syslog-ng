@@ -68,19 +68,24 @@ file_rotation_set_size(FileRotationPlugin *self, gsize size)
 void
 file_rotation_set_date_format(FileRotationPlugin *self, gchar *date_format)
 {
-  if(self->last_rotation_time == NULL)
+  if (date_format[0] != '-')
     {
-      self->last_rotation_time = g_new(time_t, 1);
-      *self->last_rotation_time = time(NULL);
+      msg_error("Date format must start with '-'", evt_tag_str("date_format", date_format));
+      return;
     }
-  time_t formatted_date = strftime(NULL, 0, date_format, localtime(self->last_rotation_time));
-
-  GString *formatted_date_string = g_string_new(NULL);
-
-  g_string_printf(formatted_date_string, "%ld", formatted_date);
-  msg_debug("Formatted date: %ld", evt_tag_str("formatted_date", formatted_date_string->str));
-
-  self->date_format = g_new(gchar, formatted_date);
+  else if (date_format[1] == '\0')
+    {
+      msg_error("Date format must not be empty", evt_tag_str("date_format", date_format));
+      return;
+    }
+  else
+    {
+      msg_error("Date format already set", evt_tag_str("date_format", date_format));
+      return;
+    }
+  strftime(self->date_format, sizeof(self->date_format), date_format, localtime(self->last_rotation_time));
+  msg_debug("Formatted date: %s", evt_tag_str("formatted_date", self->date_format));
+  self->date_format = date_format;
 }
 
 FileRotationPlugin *
@@ -93,5 +98,25 @@ file_rotation_new(void)
   self->super.attach = file_rotation_attach_to_driver;
   self->super.free_fn = file_rotation_free;
 
+  self->connections = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+  GList *flush_slot_data = g_hash_table_lookup(self->connections, self->filename);
+
+  if(flush_slot_data != NULL)
+    {
+      FileFlushSignalData *data = (FileFlushSignalData *)flush_slot_data->data;
+      if(data->size >= self->size)
+        {
+          msg_debug("File size reached the limit", evt_tag_str("filename", self->filename));
+          msg_debug("Sending file rotation signal", evt_tag_str("filename", self->filename));
+          gchar *new_filename = g_strconcat(self->filename, self->date_format, NULL);
+          rename(self->filename, new_filename);
+          g_free(new_filename);
+          data->reopen = g_new0(gboolean, 1);
+          *data->reopen = TRUE;
+          data->size = 0;
+          data->last_rotation_time = g_new0(time_t, 1);
+          *data->last_rotation_time = time(NULL);
+        }
+    }
   return self;
 }

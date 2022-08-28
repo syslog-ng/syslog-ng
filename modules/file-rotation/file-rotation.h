@@ -41,6 +41,7 @@ struct _FileRotationPlugin
 {
   LogDriverPlugin super;
   SignalSlotConnector *ssc;
+  GHashTable *connections;
   gchar *interval;
   gchar *date_format;
   gsize size;
@@ -51,7 +52,7 @@ struct _FileRotationPlugin
 struct _FileRotationResponseData
 {
   FileRotationResult result;
-  GString *filename;
+  gchar *filename;
   gint64 last_rotation;
   gint64 last_size_check;
   gint64 last_interval_check;

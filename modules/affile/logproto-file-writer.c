@@ -22,6 +22,7 @@
  */
 
 #include "logproto-file-writer.h"
+#include "affile-dest.h"
 #include "messages.h"
 #include "file-signals.h"
 #include <string.h>
@@ -135,13 +136,21 @@ log_proto_file_writer_flush(LogProtoClient *s)
   self->buf_count = 0;
   self->sum_len = 0;
 
-  //self->super.transport->name is const gchar * store it in a non const way
   gchar *file_name = g_strdup(self->super.transport->name);
+  gsize file_size = lseek(self->fd, 0, SEEK_END);
 
   FileFlushSignalData signal_data =
   {
-    .filename = file_name
+    .filename = file_name,
+    .size = file_size
   };
+  if (signal_data.reopen)
+    {
+      msg_debug("FileWriter: Reopening file",
+                evt_tag_str("filename", file_name),
+                evt_tag_int("size", file_size));
+      //reopen file
+    }
 
   EMIT(self->signal_slot_connector, signal_file_flush, &signal_data);
 
