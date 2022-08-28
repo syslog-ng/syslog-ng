@@ -135,7 +135,13 @@ log_proto_file_writer_flush(LogProtoClient *s)
   self->buf_count = 0;
   self->sum_len = 0;
 
-  FileFlushSignalData signal_data = {};
+  //self->super.transport->name is const gchar * store it in a non const way
+  gchar *file_name = g_strdup(self->super.transport->name);
+
+  FileFlushSignalData signal_data =
+  {
+    .filename = file_name
+  };
 
   EMIT(self->signal_slot_connector, signal_file_flush, &signal_data);
 

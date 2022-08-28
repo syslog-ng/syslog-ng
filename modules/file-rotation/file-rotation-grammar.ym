@@ -58,6 +58,7 @@ FileRotationPlugin *last_file_rotation_plugin;
 %token KW_FILE_ROTATION
 %token KW_SIZE
 %token KW_INTERVAL
+%token KW_DATE_FORMAT
 
 %%
 
@@ -82,6 +83,7 @@ file_rotation_options
 file_rotation_option
   : KW_SIZE '(' nonnegative_integer ')' { file_rotation_set_size(last_file_rotation_plugin, $3); }
   | KW_INTERVAL '(' string ')' { file_rotation_set_interval(last_file_rotation_plugin, $3); free($3); }
+  | KW_DATE_FORMAT '(' string ')' { file_rotation_set_date_format(last_file_rotation_plugin, $3); free($3); }
   ;
 
 /* INCLUDE_RULES */

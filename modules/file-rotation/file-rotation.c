@@ -24,6 +24,7 @@
 #include "file-rotation.h"
 #include "modules/affile/file-signals.h"
 #include "driver.h"
+#include "time.h"
 
 static void
 _slot_file_rotation(FileRotationPlugin *self, FileFlushSignalData *data)
@@ -54,6 +55,7 @@ file_rotation_free(LogDriverPlugin *s)
 void
 file_rotation_set_interval(FileRotationPlugin *self, gchar *interval)
 {
+  g_free(self->interval);
   self->interval = interval;
 }
 
@@ -61,6 +63,24 @@ void
 file_rotation_set_size(FileRotationPlugin *self, gsize size)
 {
   self->size = size;
+}
+
+void
+file_rotation_set_date_format(FileRotationPlugin *self, gchar *date_format)
+{
+  if(self->last_rotation_time == NULL)
+    {
+      self->last_rotation_time = g_new(time_t, 1);
+      *self->last_rotation_time = time(NULL);
+    }
+  time_t formatted_date = strftime(NULL, 0, date_format, localtime(self->last_rotation_time));
+
+  GString *formatted_date_string = g_string_new(NULL);
+
+  g_string_printf(formatted_date_string, "%ld", formatted_date);
+  msg_debug("Formatted date: %ld", evt_tag_str("formatted_date", formatted_date_string->str));
+
+  self->date_format = g_new(gchar, formatted_date);
 }
 
 FileRotationPlugin *
