@@ -57,3 +57,12 @@ jobs:
     uses: ./.github/workflows/test-apt-packages.yml
     with:
       pkg_type: nightly
+
+  publish-docker-image:
+    needs: test-packages
+    uses: ./.github/workflows/publish-docker-image.yml
+    with:
+      pkg-type: nightly
+    secrets:
+      dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
+      dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}

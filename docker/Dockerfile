@@ -1,6 +1,8 @@
 FROM debian:testing
 LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, László Várady <laszlo.varady@balabit.com>"
 
+ARG PKG_TYPE=stable
+
 RUN apt-get update -qq && apt-get install -y \
     wget \
     ca-certificates \
@@ -8,7 +10,7 @@ RUN apt-get update -qq && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor > /usr/share/keyrings/ose-repo-archive-keyring.gpg && \
-  echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg] https://ose-repo.syslog-ng.com/apt/ stable debian-testing" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
+  echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg] https://ose-repo.syslog-ng.com/apt/ ${PKG_TYPE} debian-testing" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
 
 RUN apt-get update -qq && apt-get install -y \
     libdbd-mysql libdbd-pgsql libdbd-sqlite3 syslog-ng \

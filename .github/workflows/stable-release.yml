@@ -64,6 +64,8 @@ jobs:
   publish-docker-image:
     needs: test-packages
     uses: ./.github/workflows/publish-docker-image.yml
+    with:
+      pkg-type: stable
     secrets:
       dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
       dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}

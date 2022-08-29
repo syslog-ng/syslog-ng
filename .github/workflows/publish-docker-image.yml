@@ -3,11 +3,19 @@ name: Publish Docker image
 
 on:
   workflow_call:
+    inputs:
+      pkg-type:
+        required: true
+        type: string  # stable / nightly
     secrets:
       dockerhub-username:
         required: true
       dockerhub-password:
         required: true
+
+
+env:
+  DOCKER_IMAGE_NAME: balabit/syslog-ng
 
 
 jobs:
@@ -26,15 +34,32 @@ jobs:
           password: ${{ secrets.dockerhub-password }}
 
       - name: Extract metadata (syslog-ng version) for Docker
-        id: meta
+        if: inputs.pkg-type == 'stable'
+        id: stable-tags
         uses: docker/metadata-action@v3
         with:
-          images: balabit/syslog-ng
+          images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: type=match,pattern=syslog-ng-(.*),group=1
+
+      - name: Compose Docker image tags
+        id: tags
+        run: |
+          if [[ '${{ inputs.pkg-type }}' = 'stable' ]]; then
+            TAGS='${{ steps.stable-tags.outputs.tag }}'
+          elif [[ '${{ inputs.pkg-type }}' = 'nightly' ]]; then
+            TAGS="${DOCKER_IMAGE_NAME}:nightly"
+          else
+            echo Unexpected input: pkg-type=${{ inputs.pkg-type }}
+            false
+          fi
+
+          . .github/workflows/gh-tools.sh
+          gh_output TAGS
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
           context: docker/
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.tags.outputs.TAGS }}
+          build-args: PKG_TYPE=${{ inputs.pkg-type }}
