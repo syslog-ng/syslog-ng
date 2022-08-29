@@ -34,6 +34,8 @@ typedef struct _LogProtoFileWriter
 {
   LogProtoClient super;
   SignalSlotConnector *signal_slot_connector;
+  LogWriter *writer;
+  const gchar *filename;
   guchar *partial;
   gsize partial_len, partial_pos;
   gint partial_messages;
@@ -136,7 +138,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
   self->buf_count = 0;
   self->sum_len = 0;
 
-  gchar *file_name = g_strdup(self->super.transport->name);
+  gchar *file_name = g_strdup_printf("%s", self->filename);
   gsize file_size = lseek(self->fd, 0, SEEK_END);
 
   FileFlushSignalData signal_data =
@@ -144,15 +146,16 @@ log_proto_file_writer_flush(LogProtoClient *s)
     .filename = file_name,
     .size = file_size
   };
+
+  EMIT(self->signal_slot_connector, signal_file_flush, &signal_data);
+
   if (signal_data.reopen)
     {
       msg_debug("FileWriter: Reopening file",
-                evt_tag_str("filename", file_name),
+                evt_tag_str("filename", self->filename),
                 evt_tag_int("size", file_size));
-      //reopen file
+      log_writer_reopen(self->writer, &self->super);
     }
-
-  EMIT(self->signal_slot_connector, signal_file_flush, &signal_data);
 
   return LPS_SUCCESS;
 
@@ -238,7 +241,7 @@ log_proto_file_writer_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, g
 
 LogProtoClient *
 log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options, gint flush_lines, gint fsync_,
-                          SignalSlotConnector *connector)
+                          SignalSlotConnector *connector, const gchar *filename, LogWriter *writer)
 {
   if (flush_lines == 0)
     /* the flush-lines option has not been specified, use a default value */
@@ -259,6 +262,8 @@ log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *
 
   self->signal_slot_connector = connector;
   self->fd = transport->fd;
+  self->writer = writer;
+  self->filename = g_strdup(filename);
   self->buf_size = flush_lines;
   self->fsync = fsync_;
   self->super.prepare = log_proto_file_writer_prepare;

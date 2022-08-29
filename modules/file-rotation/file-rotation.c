@@ -30,6 +30,34 @@ static void
 _slot_file_rotation(FileRotationPlugin *self, FileFlushSignalData *data)
 {
   msg_trace("File rotation signal received", evt_tag_str("filename", data->filename));
+
+  if(data != NULL)
+    {
+      if(data->size >= self->size)
+        {
+          msg_debug("File size reached the limit", evt_tag_str("filename", data->filename));
+          msg_debug("Sending file rotation signal", evt_tag_str("filename", data->filename));
+
+          time_t now = time(NULL);
+          struct tm *tm = localtime(&now);
+          gchar *date = g_new0(gchar, 100);
+
+          strftime(date, 100, self->date_format, tm);
+          data->last_rotation_time = g_new0(gchar, 100);
+          gchar *new_filename = g_strconcat(data->filename, date, NULL);
+
+          data->persist_name = g_strdup(new_filename);
+          rename(data->filename, new_filename);
+
+          g_free(new_filename);
+          g_strlcpy(data->last_rotation_time, date, 100);
+
+          data->reopen = g_new0(gboolean, 1);
+          *data->reopen = TRUE;
+
+          data->size = 0;
+        }
+    }
 }
 
 static gboolean
@@ -78,14 +106,11 @@ file_rotation_set_date_format(FileRotationPlugin *self, gchar *date_format)
       msg_error("Date format must not be empty", evt_tag_str("date_format", date_format));
       return;
     }
-  else
-    {
-      msg_error("Date format already set", evt_tag_str("date_format", date_format));
-      return;
-    }
-  strftime(self->date_format, sizeof(self->date_format), date_format, localtime(self->last_rotation_time));
-  msg_debug("Formatted date: %s", evt_tag_str("formatted_date", self->date_format));
-  self->date_format = date_format;
+
+  g_free(self->date_format);
+  self->date_format = g_strconcat("", date_format, NULL);
+  printf("%s", self->date_format);
+
 }
 
 FileRotationPlugin *
@@ -98,25 +123,5 @@ file_rotation_new(void)
   self->super.attach = file_rotation_attach_to_driver;
   self->super.free_fn = file_rotation_free;
 
-  self->connections = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
-  GList *flush_slot_data = g_hash_table_lookup(self->connections, self->filename);
-
-  if(flush_slot_data != NULL)
-    {
-      FileFlushSignalData *data = (FileFlushSignalData *)flush_slot_data->data;
-      if(data->size >= self->size)
-        {
-          msg_debug("File size reached the limit", evt_tag_str("filename", self->filename));
-          msg_debug("Sending file rotation signal", evt_tag_str("filename", self->filename));
-          gchar *new_filename = g_strconcat(self->filename, self->date_format, NULL);
-          rename(self->filename, new_filename);
-          g_free(new_filename);
-          data->reopen = g_new0(gboolean, 1);
-          *data->reopen = TRUE;
-          data->size = 0;
-          data->last_rotation_time = g_new0(time_t, 1);
-          *data->last_rotation_time = time(NULL);
-        }
-    }
   return self;
 }

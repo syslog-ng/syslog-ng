@@ -31,9 +31,10 @@ typedef struct _FileFlushSignalData FileFlushSignalData;
 struct _FileFlushSignalData
 {
   gchar *filename;
+  gchar *persist_name;
   gsize size;
   gboolean *reopen;
-  time_t *last_rotation_time;
+  gchar *last_rotation_time;
 };
 
 #define signal_file_flush SIGNAL(file_rotation, rotation_request, FileFlushSignalData *)

@@ -35,6 +35,7 @@ static void _ack_callback(gint num_acked, gpointer user_data);
 static LogProtoClientOptions options = {0};
 static LogMessage *msg;
 static LogTransport *transport;
+static LogWriter *writer;
 static SignalSlotConnector *connector;
 static LogProtoClientFlowControlFuncs flow_control_funcs =
 {
@@ -42,6 +43,7 @@ static LogProtoClientFlowControlFuncs flow_control_funcs =
 };
 static gchar output_buffer[8192];
 static LogProtoStatus status;
+static gchar *filename="test_file_writer.log";
 static gint messages_acked = 0;
 static gboolean consumed;
 static const gchar *payload = "PAYLOAD";
@@ -56,7 +58,7 @@ _ack_callback(gint num_acked, gpointer user_data)
 Test(file_writer, write_single_message_and_flush_is_expected_to_dump_the_payload_to_the_output)
 {
   connector = signal_slot_connector_new();
-  LogProtoClient *fw = log_proto_file_writer_new(transport, &options, 100, FALSE, connector);
+  LogProtoClient *fw = log_proto_file_writer_new(transport, &options, 100, FALSE, connector, filename, writer);
 
   log_proto_client_set_client_flow_control(fw, &flow_control_funcs);
 
@@ -80,7 +82,7 @@ Test(file_writer, batches_of_messages_should_be_flushed_to_the_output)
   const gint MESSAGE_COUNT = BATCH_SIZE * 3;
   connector = signal_slot_connector_new();
 
-  LogProtoClient *fw = log_proto_file_writer_new(transport, &options, BATCH_SIZE, FALSE, connector);
+  LogProtoClient *fw = log_proto_file_writer_new(transport, &options, BATCH_SIZE, FALSE, connector, filename, writer);
 
   log_proto_client_set_client_flow_control(fw, &flow_control_funcs);
   for (gint i = 0; i < MESSAGE_COUNT; i++)
@@ -111,7 +113,7 @@ Test(file_writer, messages_should_be_flushed_automatically_once_we_reach_batch_s
   const gint BATCH_SIZE = 10;
   connector = signal_slot_connector_new();
 
-  LogProtoClient *fw = log_proto_file_writer_new(transport, &options, BATCH_SIZE, FALSE, connector);
+  LogProtoClient *fw = log_proto_file_writer_new(transport, &options, BATCH_SIZE, FALSE, connector, filename, writer);
 
   log_proto_client_set_client_flow_control(fw, &flow_control_funcs);
   for (gint i = 0; i < BATCH_SIZE - 1; i++)
@@ -141,7 +143,7 @@ Test(file_writer, batches_of_messages_are_flushed_even_if_the_underlying_transpo
   const gint BATCH_SIZE = 10;
   connector = signal_slot_connector_new();
 
-  LogProtoClient *fw = log_proto_file_writer_new(transport, &options, BATCH_SIZE, FALSE, connector);
+  LogProtoClient *fw = log_proto_file_writer_new(transport, &options, BATCH_SIZE, FALSE, connector, filename, writer);
 
   log_transport_mock_set_write_chunk_limit((LogTransportMock *) transport, 2);
   log_proto_client_set_client_flow_control(fw, &flow_control_funcs);

@@ -32,13 +32,10 @@ Test(file_rotation, test_example)
   file_rotation_set_size(fr, 100);
   file_rotation_set_interval(fr, "daily");
   file_rotation_set_date_format(fr, "-%Y-%m-%d");
-  time_t formatted_date = strftime(NULL, 0, "-%Y-%m-%d", localtime(fr->last_rotation_time));
-  GString *formatted_date_string = g_string_new(NULL);
-  g_string_printf(formatted_date_string, "%ld", formatted_date);
   log_driver_plugin_free((LogDriverPlugin *) fr);
 
   cr_assert_eq(fr->size, 100);
   cr_assert_str_eq(fr->interval, "daily");
-  printf("%s\n", formatted_date_string->str);
-  cr_assert_str_eq(formatted_date_string->str, "0");
+  printf("%s\n", fr->date_format);
+  cr_assert_str_eq(fr->date_format, "-%Y-%m-%d");
 }

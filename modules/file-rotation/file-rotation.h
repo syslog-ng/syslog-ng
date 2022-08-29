@@ -41,7 +41,6 @@ struct _FileRotationPlugin
 {
   LogDriverPlugin super;
   SignalSlotConnector *ssc;
-  GHashTable *connections;
   gchar *interval;
   gchar *date_format;
   gsize size;
