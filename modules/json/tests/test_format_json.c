@@ -406,4 +406,7 @@ Test(format_json, test_format_json_with_key_delimiter)
                          "{\"_foo\":{\"bar\":\"baz\"}}");
   assert_template_format("$(format-json \".foo.bar\"=\"baz\")",
                          "{\"_foo\":{\"bar\":\"baz\"}}");
+
+  assert_template_format("$(format-json --key-delimiter ~ top~foo=1 top~bar=2 top~baz=3 top~sub~key1=val1 top~sub~key2=val2)",
+                         "{\"top\":{\"sub\":{\"key2\":\"val2\",\"key1\":\"val1\"},\"foo\":\"1\",\"baz\":\"3\",\"bar\":\"2\"}}");
 }

@@ -762,7 +762,7 @@ vp_walker_split_name_to_tokens(vp_walk_state_t *state, const gchar *name)
 }
 
 static gchar *
-vp_walker_name_combine_prefix(GPtrArray *tokens, gint until)
+vp_walker_name_combine_prefix(vp_walk_state_t *state, GPtrArray *tokens, gint until)
 {
   GString *s = scratch_buffers_alloc();
   gchar *str;
@@ -771,7 +771,7 @@ vp_walker_name_combine_prefix(GPtrArray *tokens, gint until)
   for (i = 0; i < until; i++)
     {
       g_string_append(s, g_ptr_array_index(tokens, i));
-      g_string_append_c(s, '.');
+      g_string_append_c(s, state->key_delimiter);
     }
   g_string_append(s, g_ptr_array_index(tokens, until));
 
@@ -797,7 +797,7 @@ vp_walker_start_containers_for_name(vp_walk_state_t *state,
       p = vp_walker_stack_peek(&state->stack);
       nt = vp_walker_stack_push(&state->stack,
                                 g_strdup(g_ptr_array_index(tokens, i)),
-                                vp_walker_name_combine_prefix(tokens, i));
+                                vp_walker_name_combine_prefix(state, tokens, i));
 
       if (p)
         state->obj_start(nt->key, nt->prefix, &nt->data,
