@@ -283,7 +283,6 @@ tf_num_ceil(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMes
     }
 
   *type = LM_VT_INTEGER;
-  gdouble number;
 
   gdouble number = ceil(gn_as_double(&n));
   gn_set_int64(&n, (gint64) number);
@@ -315,7 +314,6 @@ tf_num_floor(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMe
     }
 
   *type = LM_VT_INTEGER;
-  gdouble number;
 
   gdouble number = floor(gn_as_double(&n));
   gn_set_int64(&n, (gint64) number);

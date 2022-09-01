@@ -224,16 +224,15 @@ _evaluate_typed(FilterCmp *self,
 static gboolean
 _evaluate_type_and_value_comparison(FilterCmp *self,
                                     const gchar *left, LogMessageValueType left_type,
-                                    const gchar *right, LogMessageValueType right_type,
-                                    gint compare_mode)
+                                    const gchar *right, LogMessageValueType right_type)
 {
-  if ((compare_mode & FCMP_OP_MASK) == FCMP_EQ)
+  if ((self->compare_mode & FCMP_OP_MASK) == FCMP_EQ)
     {
       /* === */
       if (left_type != right_type)
         return FALSE;
     }
-  else if ((compare_mode & FCMP_OP_MASK) == (FCMP_LT + FCMP_GT))
+  else if ((self->compare_mode & FCMP_OP_MASK) == (FCMP_LT + FCMP_GT))
     {
       /* !== */
       if (left_type != right_type)
@@ -278,8 +277,7 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEval
   else if (self->compare_mode & FCMP_NUM_BASED)
     result = _evaluate_comparison(self, fop_compare_numeric(left_buf->str, right_buf->str));
   else if (self->compare_mode & FCMP_TYPE_AND_VALUE_BASED)
-    result = _evaluate_type_and_value_comparison(self, left_buf->str, left_type, right_buf->str, right_type,
-                                                 self->compare_mode);
+    result = _evaluate_type_and_value_comparison(self, left_buf->str, left_type, right_buf->str, right_type);
   else
     g_assert_not_reached();
 
