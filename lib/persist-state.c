@@ -305,7 +305,8 @@ _free_value(PersistState *self, PersistEntryHandle handle)
       PersistValueHeader *header;
 
       header = _map_header_of_entry_from_handle(self, handle);
-      header->in_use = 0;
+      if (header)
+        header->in_use = 0;
       persist_state_unmap_entry(self, handle);
     }
 }
