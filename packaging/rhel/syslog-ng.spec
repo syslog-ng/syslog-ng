@@ -465,6 +465,7 @@ fi
 %{_libdir}/%{name}/libcef.so
 %{_libdir}/%{name}/libconfgen.so
 %{_libdir}/%{name}/libcryptofuncs.so
+%{_libdir}/%{name}/libfile-rotation.so
 %{_libdir}/%{name}/libcsvparser.so
 %{_libdir}/%{name}/libtimestamp.so
 %{_libdir}/%{name}/libdbparser.so

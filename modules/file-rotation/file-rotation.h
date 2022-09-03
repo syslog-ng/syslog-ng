@@ -29,7 +29,6 @@
 #include "signal-slot-connector/signal-slot-connector.h"
 
 typedef struct _FileRotationPlugin FileRotationPlugin;
-typedef struct _FileRotationResponseData FileRotationResponseData;
 
 typedef enum
 {
@@ -46,15 +45,6 @@ struct _FileRotationPlugin
   gsize size;
   gchar *filename;
   time_t *last_rotation_time;
-};
-
-struct _FileRotationResponseData
-{
-  FileRotationResult result;
-  gchar *filename;
-  gint64 last_rotation;
-  gint64 last_size_check;
-  gint64 last_interval_check;
 };
 
 FileRotationPlugin *file_rotation_new(void);
