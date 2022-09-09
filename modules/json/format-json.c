@@ -251,26 +251,7 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
     case LM_VT_LIST:
       tf_json_append_list(name, value, value_len, state);
       break;
-    case LM_VT_INT32:
-    {
-      gint32 i32;
-      const gchar *v = value;
-      gsize v_len = value_len;
-
-      if (!type_cast_to_int32(value, &i32, NULL))
-        {
-          if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
-            tf_json_append_value(name, v, v_len, state, TRUE);
-          else
-            return type_cast_drop_helper(on_error, value, "int32");
-        }
-      else
-        {
-          tf_json_append_value(name, v, v_len, state, FALSE);
-        }
-      break;
-    }
-    case LM_VT_INT64:
+    case LM_VT_INTEGER:
     {
       gint64 i64;
       const gchar *v = value;
@@ -281,7 +262,7 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
           if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
             tf_json_append_value(name, v, v_len, state, TRUE);
           else
-            return type_cast_drop_helper(on_error, value, "int64");
+            return type_cast_drop_helper(on_error, value, "integer");
         }
       else
         {

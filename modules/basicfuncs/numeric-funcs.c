@@ -31,7 +31,7 @@ format_number(GString *result, LogMessageValueType *type, const GenericNumber *n
 {
   if (n->type == GN_INT64)
     {
-      *type = LM_VT_INT64;
+      *type = LM_VT_INTEGER;
       format_int64_padded(result, 0, ' ', 10, gn_as_int64(n));
       return;
     }
@@ -282,7 +282,7 @@ tf_num_ceil(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMes
       return;
     }
 
-  *type = LM_VT_INT64;
+  *type = LM_VT_INTEGER;
 
   gdouble number = ceil(gn_as_double(&n));
   gn_set_int64(&n, (gint64) number);
@@ -313,7 +313,7 @@ tf_num_floor(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMe
       return;
     }
 
-  *type = LM_VT_INT64;
+  *type = LM_VT_INTEGER;
 
   gdouble number = floor(gn_as_double(&n));
   gn_set_int64(&n, (gint64) number);
@@ -415,7 +415,7 @@ _tf_num_aggregation(TFSimpleFuncState *state, const LogTemplateInvokeArgs *args,
       return;
     }
 
-  *type = LM_VT_INT64;
+  *type = LM_VT_INTEGER;
   format_int64_padded(result, 0, ' ', 10, accumulator);
 }
 
@@ -521,7 +521,7 @@ tf_num_average_call(LogTemplateFunction *self, gpointer s,
    * handling this case with assert is fine */
 
   g_assert(accumulator.count > 0);
-  *type = LM_VT_INT64;
+  *type = LM_VT_INTEGER;
   gint64 mean = accumulator.sum / accumulator.count;
   format_int64_padded(result, 0, ' ', 10, mean);
 }

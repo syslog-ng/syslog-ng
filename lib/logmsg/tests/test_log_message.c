@@ -481,10 +481,10 @@ Test(log_message, test_value_retains_type_information)
   cr_assert(type == LM_VT_JSON);
 
   /* changed with a specific type */
-  log_msg_set_value_by_name_with_type(msg, "nvpair", "123", -1, LM_VT_INT32);
+  log_msg_set_value_by_name_with_type(msg, "nvpair", "123", -1, LM_VT_INTEGER);
   value = log_msg_get_value_by_name_with_type(msg, "nvpair", NULL, &type);
   cr_assert_str_eq(value, "123");
-  cr_assert(type == LM_VT_INT32);
+  cr_assert(type == LM_VT_INTEGER);
 
   /* unset becomes string again */
   log_msg_unset_value_by_name(msg, "nvpair");

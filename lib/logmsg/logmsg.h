@@ -155,8 +155,9 @@ enum _LogMessageValueType
   LM_VT_STRING = 0,
   LM_VT_JSON = 1,
   LM_VT_BOOLEAN = 2,
-  LM_VT_INT32 = 3,
-  LM_VT_INT64 = 4,
+  __COMPAT_LM_VT_INT32 = 3,
+  __COMPAT_LM_VT_INT64 = 4,
+  LM_VT_INTEGER = 4,  /* equals to LM_VT_INT64 */
   LM_VT_DOUBLE = 5,
   LM_VT_DATETIME = 6,
   LM_VT_LIST = 7,

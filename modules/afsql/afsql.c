@@ -803,8 +803,7 @@ afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
 
   switch(type)
     {
-    case LM_VT_INT32:
-    case LM_VT_INT64:
+    case LM_VT_INTEGER:
     {
       gint64 k;
       if (type_cast_to_int64(value->str, &k, NULL))

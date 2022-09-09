@@ -447,7 +447,7 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
     }
     case M_FACILITY_NUM:
     {
-      t = LM_VT_INT32;
+      t = LM_VT_INTEGER;
       format_uint32_padded(result, 0, 0, 10, (msg->pri & LOG_FACMASK) >> 3);
       break;
     }
@@ -470,7 +470,7 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
     }
     case M_SEVERITY_NUM:
     {
-      t = LM_VT_INT32;
+      t = LM_VT_INTEGER;
       format_uint32_padded(result, 0, 0, 10, msg->pri & LOG_PRIMASK);
       break;
     }
@@ -625,13 +625,13 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
         {
           port = 0;
         }
-      t = LM_VT_INT32;
+      t = LM_VT_INTEGER;
       format_uint32_padded(result, 0, 0, 10, port);
       break;
     }
     case M_PROTOCOL:
     {
-      t = LM_VT_INT32;
+      t = LM_VT_INTEGER;
       format_uint32_padded(result, 0, 0, 10, msg->proto);
       break;
     }

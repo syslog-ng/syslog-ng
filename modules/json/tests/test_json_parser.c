@@ -149,7 +149,7 @@ Test(json_parser, test_json_parser_validate_type_representation)
   json_parser_set_prefix(json_parser, ".prefix.");
   msg = parse_json_into_log_message("{'int': 123, 'booltrue': true, 'boolfalse': false, 'double': 1.23, 'object': {'member1': 'foo', 'member2': 'bar'}, 'array': [1, 2, 3], 'null': null}",
                                     json_parser);
-  assert_log_message_value_and_type_by_name(msg, ".prefix.int", "123", LM_VT_INT64);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.int", "123", LM_VT_INTEGER);
   assert_log_message_value_and_type_by_name(msg, ".prefix.booltrue", "true", LM_VT_BOOLEAN);
   assert_log_message_value_and_type_by_name(msg, ".prefix.boolfalse", "false", LM_VT_BOOLEAN);
   assert_log_message_value_and_type_by_name(msg, ".prefix.double", "1.230000", LM_VT_DOUBLE);
@@ -258,7 +258,7 @@ Test(json_parser, test_json_parser_extracts_array_elements_into_matches)
 
   msg = parse_json_into_log_message("[42,true,null,{'foo':'bar'}, {'bar':'foo'}]", json_parser);
   assert_log_message_value_unset_by_name(msg, "0");
-  assert_log_message_value_and_type_by_name(msg, "1", "42", LM_VT_INT64);
+  assert_log_message_value_and_type_by_name(msg, "1", "42", LM_VT_INTEGER);
   assert_log_message_value_and_type_by_name(msg, "2", "true", LM_VT_BOOLEAN);
   assert_log_message_value_and_type_by_name(msg, "3", "", LM_VT_NULL);
   assert_log_message_value_and_type_by_name(msg, "4", "{\"foo\":\"bar\"}", LM_VT_JSON);

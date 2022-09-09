@@ -87,7 +87,7 @@ _check_deserialized_message_all_fields(LogMessage *msg)
 {
   _check_deserialized_message_original_fields(msg);
   assert_log_message_value(msg, log_msg_get_value_handle("indirect_1"), "val");
-  assert_log_message_value_and_type(msg, log_msg_get_value_handle("indirect_2"), "53", LM_VT_INT64);
+  assert_log_message_value_and_type(msg, log_msg_get_value_handle("indirect_2"), "53", LM_VT_INTEGER);
 
 }
 
@@ -103,7 +103,7 @@ _create_message_to_be_serialized(const gchar *raw_msg, const int raw_msg_len)
   NVHandle indirect_handle = log_msg_get_value_handle("indirect_1");
   log_msg_set_value_indirect(msg, indirect_handle, test_handle, 5, 3);
   NVHandle indirect_with_type_handle = log_msg_get_value_handle("indirect_2");
-  log_msg_set_value_indirect_with_type(msg, indirect_with_type_handle, test_handle, 10, 2, LM_VT_INT64);
+  log_msg_set_value_indirect_with_type(msg, indirect_with_type_handle, test_handle, 10, 2, LM_VT_INTEGER);
 
   log_msg_set_value_by_name(msg, "unset_value", "foobar", -1);
   log_msg_unset_value_by_name(msg, "unset_value");

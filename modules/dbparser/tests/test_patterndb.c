@@ -592,8 +592,8 @@ Test(pattern_db, test_patterndb_context_length_works_and_is_typed)
   gchar *filename;
   PatternDB *patterndb = _create_pattern_db(pdb_msg_count_skeleton, &filename);
 
-  assert_msg_matches_and_output_message_nvpair_equals(patterndb, "pattern13", 1, "CONTEXT_LENGTH", "2", LM_VT_INT32);
-  assert_msg_matches_and_output_message_nvpair_equals(patterndb, "pattern14", 1, "CONTEXT_LENGTH", "2", LM_VT_INT32);
+  assert_msg_matches_and_output_message_nvpair_equals(patterndb, "pattern13", 1, "CONTEXT_LENGTH", "2", LM_VT_INTEGER);
+  assert_msg_matches_and_output_message_nvpair_equals(patterndb, "pattern14", 1, "CONTEXT_LENGTH", "2", LM_VT_INTEGER);
 
   assert_msg_with_program_matches_and_nvpair_equals(patterndb, "prog2", "pattern15-a", "p15", "-a");
 

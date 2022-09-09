@@ -79,8 +79,7 @@ python_worker_vp_add_one(const gchar *name,
 
   switch (type)
     {
-    case LM_VT_INT32:
-    case LM_VT_INT64:
+    case LM_VT_INTEGER:
     {
       gint64 i;
 

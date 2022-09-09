@@ -235,32 +235,20 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
         }
       break;
     }
-    case LM_VT_INT32:
-    {
-      gint32 i;
-
-      if (type_cast_to_int32(value, &i, NULL))
-        bson_append_int32(o, name, -1, i);
-      else
-        {
-          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, "int32");
-
-          if (fallback)
-            bson_append_utf8(o, name, -1, value, value_len);
-          else
-            return r;
-        }
-      break;
-    }
-    case LM_VT_INT64:
+    case LM_VT_INTEGER:
     {
       gint64 i;
 
       if (type_cast_to_int64(value, &i, NULL))
-        bson_append_int64(o, name, -1, i);
+        {
+          if (G_MININT32 <= i && i <= G_MAXINT32)
+            bson_append_int32(o, name, -1, i);
+          else
+            bson_append_int64(o, name, -1, i);
+        }
       else
         {
-          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, "int64");
+          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, "integer");
 
           if (fallback)
             bson_append_utf8(o, name, -1, value, value_len);
