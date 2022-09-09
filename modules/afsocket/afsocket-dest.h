@@ -48,7 +48,6 @@ struct _AFSocketDestDriver
 
   GSockAddr *bind_addr;
   GSockAddr *dest_addr;
-  gint time_reopen;
   gboolean connection_initialized;
   struct iv_fd connect_fd;
   struct iv_timer reconnect_timer;

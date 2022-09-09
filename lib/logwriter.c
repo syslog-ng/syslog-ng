@@ -1484,14 +1484,6 @@ log_writer_init(LogPipe *s)
   if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
     _register_counters(self);
 
-  if (self->proto)
-    {
-      LogProtoClient *proto;
-
-      proto = self->proto;
-      log_writer_set_proto(self, NULL);
-      log_writer_reopen(self, proto);
-    }
 
   if (self->options->mark_mode == MM_PERIODICAL)
     {
@@ -1634,6 +1626,18 @@ log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto, gboolean pr
   self->pending_proto = proto;
   self->pending_proto_present = present;
 }
+
+LogProtoClient *
+log_writer_steal_proto(LogWriter *self)
+{
+  if (self->proto == NULL)
+    return NULL;
+
+  LogProtoClient *proto = self->proto;
+  log_writer_set_proto(self, NULL);
+  return proto;
+}
+
 
 /* run in the main thread in reaction to a log_writer_reopen to change
  * the destination LogProtoClient instance. It needs to be ran in the main

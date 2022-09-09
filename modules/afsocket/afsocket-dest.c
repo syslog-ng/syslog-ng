@@ -38,6 +38,7 @@
 typedef struct _ReloadStoreItem
 {
   LogProtoClientFactory *proto_factory;
+  GSockAddr *dest_addr;
   LogWriter *writer;
 } ReloadStoreItem;
 
@@ -47,6 +48,7 @@ _reload_store_item_new(AFSocketDestDriver *afsocket_dd)
   ReloadStoreItem *item = g_new(ReloadStoreItem, 1);
   item->proto_factory = afsocket_dd->proto_factory;
   item->writer = afsocket_dd->writer;
+  item->dest_addr = g_sockaddr_ref(afsocket_dd->dest_addr);
   return item;
 }
 
@@ -59,6 +61,7 @@ _reload_store_item_free(ReloadStoreItem *self)
   if (self->writer)
     log_pipe_unref((LogPipe *) self->writer);
 
+  g_sockaddr_unref(self->dest_addr);
   g_free(self);
 }
 
@@ -173,8 +176,6 @@ afsocket_dd_stats_instance(AFSocketDestDriver *self)
 }
 
 static void _afsocket_dd_connection_in_progress(AFSocketDestDriver *self);
-static void afsocket_dd_try_connect(AFSocketDestDriver *self);
-static gboolean afsocket_dd_setup_connection(AFSocketDestDriver *self);
 
 static void
 afsocket_dd_init_watches(AFSocketDestDriver *self)
@@ -185,10 +186,7 @@ afsocket_dd_init_watches(AFSocketDestDriver *self)
 
   IV_TIMER_INIT(&self->reconnect_timer);
   self->reconnect_timer.cookie = self;
-  /* Using reinit as a handler before establishing the first successful connection.
-   * We'll change this to afsocket_dd_reconnect when the initialization of the
-   * connection succeeds.*/
-  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_try_connect;
+  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_reconnect;
 }
 
 static void
@@ -346,16 +344,18 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
 
   main_loop_assert_main_thread();
 
+  if (log_writer_opened(self->writer))
+    return TRUE;
+
   g_assert(self->transport_mapper->transport);
   g_assert(self->bind_addr);
+  g_assert(self->dest_addr);
 
   if (!transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, self->dest_addr,
                                     AFSOCKET_DIR_SEND, &sock))
     {
       return FALSE;
     }
-
-  g_assert(self->dest_addr);
 
   rc = g_connect(sock, self->dest_addr);
   if (rc == G_IO_STATUS_NORMAL)
@@ -390,46 +390,15 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
   return TRUE;
 }
 
-static void
-_dd_reconnect(AFSocketDestDriver *self, gboolean request_setup_addr)
-{
-  if ((request_setup_addr && !afsocket_dd_setup_addresses(self)) || !afsocket_dd_start_connect(self))
-    {
-      msg_error("Initiating connection failed, reconnecting",
-                evt_tag_int("time_reopen", self->writer_options.time_reopen));
-      afsocket_dd_start_reconnect_timer(self);
-    }
-}
-
-static void
-_dd_reconnect_with_setup_addresses(AFSocketDestDriver *self)
-{
-  _dd_reconnect(self, TRUE);
-}
-
-static void
-_dd_reconnect_with_current_addresses(AFSocketDestDriver *self)
-{
-  _dd_reconnect(self, FALSE);
-}
-
 void
 afsocket_dd_reconnect(AFSocketDestDriver *self)
 {
-  _dd_reconnect_with_setup_addresses(self);
-}
-
-static void
-afsocket_dd_try_connect(AFSocketDestDriver *self)
-{
-  if ((!afsocket_dd_setup_addresses(self)) || !afsocket_dd_setup_connection(self))
+  if (!afsocket_dd_setup_addresses(self) || !afsocket_dd_start_connect(self))
     {
       msg_error("Initiating connection failed, reconnecting",
                 evt_tag_int("time_reopen", self->writer_options.time_reopen));
       afsocket_dd_start_reconnect_timer(self);
-      return;
     }
-  self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_reconnect;
 }
 
 static gboolean
@@ -483,12 +452,12 @@ afsocket_dd_setup_addresses_method(AFSocketDestDriver *self)
   return TRUE;
 }
 
-static void
-_afsocket_dd_try_to_restore_writer(AFSocketDestDriver *self)
+static gboolean
+_afsocket_dd_try_to_restore_connection_state(AFSocketDestDriver *self)
 {
   /* If we are reinitializing an old config, an existing writer may be present */
   if (self->writer)
-    return;
+    return TRUE;
 
   ReloadStoreItem *item = cfg_persist_config_fetch(
                             log_pipe_get_config(&self->super.super.super),
@@ -497,12 +466,14 @@ _afsocket_dd_try_to_restore_writer(AFSocketDestDriver *self)
   /* We don't have an item stored in the reload cache, which means */
   /* it is the first time when we try to initialize the writer */
   if (!item)
-    return;
+    return FALSE;
 
   if (_is_protocol_compatible_with_writer_after_reload(self, item))
     self->writer = _reload_store_item_release_writer(item);
 
+  self->dest_addr = g_sockaddr_ref(item->dest_addr);
   _reload_store_item_free(item);
+  return TRUE;
 }
 
 LogWriter *
@@ -520,7 +491,7 @@ afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
 static gboolean
 afsocket_dd_setup_writer(AFSocketDestDriver *self)
 {
-  _afsocket_dd_try_to_restore_writer(self);
+  gboolean kept_alive_connection = _afsocket_dd_try_to_restore_connection_state(self);
 
   if (!self->writer)
     {
@@ -542,17 +513,18 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
       log_pipe_unref((LogPipe *) self->writer);
       return FALSE;
     }
-
   log_pipe_append(&self->super.super.super, (LogPipe *) self->writer);
-  return TRUE;
-}
 
-static gboolean
-afsocket_dd_setup_connection(AFSocketDestDriver *self)
-{
-  if (!log_writer_opened(self->writer))
-    _dd_reconnect_with_current_addresses(self);
+  if (kept_alive_connection)
+    {
+      LogProtoClient *proto = log_writer_steal_proto(self->writer);
 
+      if (proto)
+        {
+          self->fd = log_proto_client_get_fd(proto);
+          log_writer_reopen(self->writer, proto);
+        }
+    }
   self->connection_initialized = TRUE;
   return TRUE;
 }
@@ -561,7 +533,7 @@ static gboolean
 _finalize_init(gpointer arg)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *)arg;
-  afsocket_dd_try_connect(self);
+  afsocket_dd_reconnect(self);
   return TRUE;
 }
 
