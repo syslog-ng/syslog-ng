@@ -291,22 +291,28 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
 static void
 affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
 {
-  GlobalConfig *cfg = log_pipe_get_config(&owner->super.super.super);
-
   if (self->owner)
     log_pipe_unref(&self->owner->super.super.super);
-  log_pipe_ref(&owner->super.super.super);
-  self->owner = owner;
-  self->super.expr_node = owner->super.super.super.expr_node;
 
-  log_pipe_set_options(&self->super, &owner->super.super.super.options);
+  self->owner = owner;
+  if (!self->owner)
+    return;
+
+  GlobalConfig *cfg = log_pipe_get_config(&self->owner->super.super.super);
   log_pipe_set_config(&self->super, cfg);
+
+  log_pipe_ref(&self->owner->super.super.super);
+  log_pipe_set_options(&self->super, &self->owner->super.super.super.options);
+
+  log_pipe_detach_expr_node(&self->super);
+  log_pipe_attach_expr_node(&self->super, self->owner->super.super.super.expr_node);
+
   if (self->writer)
     {
       log_pipe_set_config((LogPipe *) self->writer, cfg);
       log_writer_set_options(self->writer,
                              &self->super,
-                             &owner->writer_options,
+                             &self->owner->writer_options,
                              self->owner->super.super.id,
                              self->filename);
     }
