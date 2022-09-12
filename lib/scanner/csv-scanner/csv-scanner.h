@@ -74,6 +74,7 @@ typedef struct
     CSV_STATE_GREEDY_COLUMN,
     CSV_STATE_PARTIAL_INPUT,
     CSV_STATE_FINISH,
+    CSV_STATE_COLUMNLESS,
   } state;
   GList *current_column;
   const gchar *src;

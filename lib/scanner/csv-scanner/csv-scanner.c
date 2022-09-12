@@ -340,12 +340,17 @@ _switch_to_next_column(CSVScanner *self)
       self->current_column = self->options->columns;
       if (self->current_column)
         return TRUE;
-      self->state = CSV_STATE_FINISH;
-      return FALSE;
+      self->state = CSV_STATE_COLUMNLESS;
+      return TRUE;
     case CSV_STATE_COLUMNS:
     case CSV_STATE_GREEDY_COLUMN:
       self->current_column = self->current_column->next;
       if (self->current_column)
+        return TRUE;
+      self->state = CSV_STATE_FINISH;
+      return FALSE;
+    case CSV_STATE_COLUMNLESS:
+      if(self->current_value)
         return TRUE;
       self->state = CSV_STATE_FINISH;
       return FALSE;
@@ -356,6 +361,13 @@ _switch_to_next_column(CSVScanner *self)
       break;
     }
   g_assert_not_reached();
+}
+static gboolean
+csv_scanner_options_validate(CSVScanner *self)
+{
+  if(self->current_column && (self->options->flags & CSV_SCANNER_GREEDY))
+    return FALSE;
+  return TRUE;
 }
 
 gboolean

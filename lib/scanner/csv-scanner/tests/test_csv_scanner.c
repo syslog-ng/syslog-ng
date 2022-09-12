@@ -275,6 +275,34 @@ Test(csv_scanner, greedy_column_null_value)
   csv_scanner_deinit(&scanner);
 }
 
+Test(csv_scanner, columnless_no_flags)
+{
+  const gchar *columns[] = { NULL };
+
+  csv_scanner_init(&scanner, _default_options(columns), "val1,val2,val3");
+
+  cr_expect(_column_name_unset());
+  cr_expect(!_scan_complete()); 
+
+  cr_expect(_scan_next());
+  cr_expect(strcmp(csv_scanner_get_current_value(&scanner),"val1")==0);
+  cr_expect(!_scan_complete());
+
+  cr_expect(_scan_next());
+  cr_expect(strcmp(csv_scanner_get_current_value(&scanner),"val2")==0);
+  cr_expect(!_scan_complete());
+
+  cr_expect(_scan_next());
+  cr_expect(strcmp(csv_scanner_get_current_value(&scanner),"val3")==0);
+  cr_expect(!_scan_complete());
+
+  /* go past the last column */
+  cr_expect(!_scan_next());
+  cr_expect(_scan_complete());
+  cr_expect(_column_name_unset());
+  csv_scanner_deinit(&scanner);
+}
+
 static void
 setup(void)
 {
