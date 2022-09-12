@@ -37,14 +37,25 @@ extern gint8 CURL_COMPRESSION_DEFAULT;
 extern gchar *CURL_COMPRESSION_LITERAL_ALL;
 
 extern gchar *curl_compression_types[];
-gboolean http_dd_compress_string(GString *compression_destination, const GString *message, const gint compression);
 gboolean http_dd_curl_compression_string_match(const gchar *string, gint curl_compression_index);
 gboolean http_dd_check_curl_compression(const gchar *type);
 
 typedef struct Compressor Compressor;
 
-Compressor get_gzip_compressor(void);
+void compressor_init_instance(Compressor *self);
 
-Compressor get_deflate_compressor(void);
+gboolean compressor_compress(Compressor *self, GString *compressed, const GString *message);
+
+void compressor_free(Compressor *self);
+
+void compressor_free_method(Compressor *self);
+
+typedef struct GzipCompressor GzipCompressor;
+
+Compressor *gzip_compressor_new(void);
+
+typedef struct DeflateCompressor DeflateCompressor;
+
+Compressor *deflate_compressor_new(void);
 
 #endif //SYSLOG_NG_COMPRESSION_H
