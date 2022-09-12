@@ -1,6 +1,6 @@
 /*
+ * Copyright (c) 2018-2022 One Identity LLC.
  * Copyright (c) 2018 Balazs Scheidler
- * Copyright (c) 2018 One Identity
  * Copyright (c) 2016 Marc Falzon
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -171,6 +171,8 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
 
   if (owner->method_type == METHOD_TYPE_PUT)
     curl_easy_setopt(self->curl, CURLOPT_CUSTOMREQUEST, "PUT");
+
+  g_assert(curl_easy_setopt(self->curl, CURLOPT_ACCEPT_ENCODING, owner->accept_encoding->str) == CURLE_OK);
 }
 
 
@@ -422,6 +424,7 @@ _reinit_request_body(HTTPDestinationWorker *self)
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
   g_string_truncate(self->request_body, 0);
+  if(self->request_body_compressed != NULL) g_string_truncate(self->request_body_compressed, 0);
   if (owner->body_prefix->len > 0)
     g_string_append_len(self->request_body, owner->body_prefix->str, owner->body_prefix->len);
 
@@ -520,8 +523,23 @@ _curl_perform_request(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *targe
             evt_tag_str("url", target->url));
 
   curl_easy_setopt(self->curl, CURLOPT_URL, target->url);
+  if (owner->message_compression != CURL_COMPRESSION_UNCOMPRESSED)
+    {
+      if(compressor_compress(self->compressor, self->request_body_compressed, self->request_body))
+        {
+          curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body_compressed->str);
+          curl_easy_setopt(self->curl, CURLOPT_POSTFIELDSIZE, self->request_body_compressed->len);
+        }
+      else
+        {
+          msg_warning("http-worker", evt_tag_error("Compression failed, sending uncompressed data."));
+          curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
+        }
+
+    }
+  else
+    curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
   curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, http_curl_header_list_as_slist(self->request_headers));
-  curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
 
   CURLcode ret = curl_easy_perform(self->curl);
   if (ret != CURLE_OK)
@@ -770,6 +788,23 @@ _init(LogThreadedDestWorker *s)
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
   self->request_body = g_string_sized_new(32768);
+  if (owner->message_compression != CURL_COMPRESSION_UNCOMPRESSED)
+    {
+      self->request_body_compressed = g_string_sized_new(32768);
+      switch (owner->message_compression)
+        {
+        case CURL_COMPRESSION_GZIP:
+          self->compressor = gzip_compressor_new();
+          break;
+        case CURL_COMPRESSION_DEFLATE:
+          self->compressor = deflate_compressor_new();
+          break;
+        default:
+          g_assert_not_reached();
+        }
+      gchar *buffer = g_strdup_printf("Content-Encoding: %s", curl_compression_types[owner->message_compression]);
+      owner->headers= g_list_append(owner->headers,  buffer);
+    }
   self->request_headers = http_curl_header_list_new();
   if (!(self->curl = curl_easy_init()))
     {
@@ -789,8 +824,12 @@ static void
 _deinit(LogThreadedDestWorker *s)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
   g_string_free(self->request_body, TRUE);
+  g_string_free(self->request_body_compressed, TRUE);
+  if (owner->message_compression != CURL_COMPRESSION_UNCOMPRESSED)
+    compressor_free(self->compressor);
   list_free(self->request_headers);
   curl_easy_cleanup(self->curl);
   log_threaded_dest_worker_deinit_method(s);

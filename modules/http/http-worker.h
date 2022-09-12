@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 One Identity
+ * Copyright (c) 2018-2022 One Identity LLC.
  * Copyright (c) 2018 Balazs Scheidler
  * Copyright (c) 2016 Marc Falzon
  *
@@ -28,6 +28,7 @@
 #include "logthrdest/logthrdestdrv.h"
 #include "http-loadbalancer.h"
 #include "http-curl-header-list.h"
+#include "compression.h"
 
 typedef struct _HTTPDestinationWorker
 {
@@ -35,6 +36,8 @@ typedef struct _HTTPDestinationWorker
   HTTPLoadBalancerClient lbc;
   CURL *curl;
   GString *request_body;
+  GString *request_body_compressed;
+  Compressor *compressor;
   List *request_headers;
 } HTTPDestinationWorker;
 
