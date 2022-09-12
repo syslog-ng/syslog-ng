@@ -41,4 +41,10 @@ gboolean http_dd_compress_string(GString *compression_destination, const GString
 gboolean http_dd_curl_compression_string_match(const gchar *string, gint curl_compression_index);
 gboolean http_dd_check_curl_compression(const gchar *type);
 
+typedef struct Compressor Compressor;
+
+Compressor get_gzip_compressor(void);
+
+Compressor get_deflate_compressor(void);
+
 #endif //SYSLOG_NG_COMPRESSION_H
