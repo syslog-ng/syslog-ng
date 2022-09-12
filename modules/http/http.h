@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022 One Identity LLC.
  * Copyright (c) 2018 Balazs Scheidler
  * Copyright (c) 2016 Marc Falzon
  *

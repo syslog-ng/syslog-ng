@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022 One Identity LLC.
  * Copyright (c) 2016 Marc Falzon
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -73,6 +74,8 @@ HttpResponseHandler last_response_handler;
 %token KW_TIMEOUT
 %token KW_OCSP_STAPLING_VERIFY
 %token KW_TLS
+%token KW_ACCEPT_ENCODING
+%token KW_CONTENT_COMPRESSION
 %token KW_BATCH_BYTES
 %token KW_BODY_PREFIX
 %token KW_BODY_SUFFIX
@@ -159,6 +162,8 @@ http_option
     | threaded_dest_driver_workers_option
     | http_tls_option
     | KW_TLS '(' http_tls_options ')'
+    | KW_ACCEPT_ENCODING '(' string ')' { http_dd_set_accept_encoding(last_driver, $3); free($3); }
+    | KW_CONTENT_COMPRESSION '(' string ')' { http_dd_set_message_compression(last_driver, $3); free($3); }
     | { last_template_options = http_dd_get_template_options(last_driver); } template_option
     | KW_RESPONSE_ACTION '(' response_action_items ')'
     ;
