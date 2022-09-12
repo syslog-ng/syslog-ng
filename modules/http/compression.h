@@ -38,5 +38,7 @@ extern gchar *CURL_COMPRESSION_LITERAL_ALL;
 
 extern gchar *curl_compression_types[];
 gboolean http_dd_compress_string(GString *compression_destination, const GString *message, const gint compression);
+gboolean http_dd_curl_compression_string_match(const gchar *string, gint curl_compression_index);
+gboolean http_dd_check_curl_compression(const gchar *type);
 
 #endif //SYSLOG_NG_COMPRESSION_H

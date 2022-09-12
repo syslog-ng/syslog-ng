@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022 One Identity LLC.
  * Copyright (c) 2016 Marc Falzon
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -22,6 +23,7 @@
 
 #include "http.h"
 #include "http-worker.h"
+#include "compression.h"
 
 /* HTTPDestinationDriver */
 void
@@ -262,6 +264,38 @@ http_dd_set_ssl_version(LogDriver *d, const gchar *value)
 }
 
 void
+http_dd_set_accept_encoding(LogDriver *d, const gchar *encoding)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  if(self->accept_encoding != NULL) g_string_free(self->accept_encoding, TRUE);
+  if(strcmp(encoding, CURL_COMPRESSION_LITERAL_ALL) == 0) self->accept_encoding = g_string_new("");
+  else self->accept_encoding = g_string_new(encoding);
+}
+
+void
+http_dd_set_message_compression(LogDriver *d, const gchar *encoding)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  gboolean _encoding_valid = FALSE;
+  _encoding_valid = http_dd_check_curl_compression(encoding);
+  g_assert(_encoding_valid);
+
+  if(http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_UNCOMPRESSED))
+    {
+      self->message_compression = CURL_COMPRESSION_UNCOMPRESSED;
+      return;
+    }
+  else if(http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_GZIP))
+    self->message_compression = CURL_COMPRESSION_GZIP;
+  else if(http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_DEFLATE))
+    self->message_compression = CURL_COMPRESSION_DEFLATE;
+  else
+    self->message_compression = CURL_COMPRESSION_DEFAULT;
+}
+
+void
 http_dd_set_peer_verify(LogDriver *d, gboolean verify)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
@@ -406,6 +440,7 @@ http_dd_free(LogPipe *s)
   g_string_free(self->delimiter, TRUE);
   g_string_free(self->body_prefix, TRUE);
   g_string_free(self->body_suffix, TRUE);
+  g_string_free(self->accept_encoding, TRUE);
   log_template_unref(self->body_template);
 
   curl_global_cleanup();
@@ -454,6 +489,7 @@ http_dd_new(GlobalConfig *cfg)
   self->body_prefix = g_string_new("");
   self->body_suffix = g_string_new("");
   self->delimiter = g_string_new("\n");
+  self->accept_encoding = g_string_new("");
   self->load_balancer = http_load_balancer_new();
   curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
   if (!self->user_agent)

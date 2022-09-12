@@ -28,6 +28,25 @@ gchar *CURL_COMPRESSION_LITERAL_ALL = "all";
 gchar *curl_compression_types[] = {"identity", "gzip", "deflate"};
 
 gboolean
+http_dd_curl_compression_string_match(const gchar *string, gint curl_compression_index)
+{
+  return (strcmp(string, curl_compression_types[curl_compression_index]) == 0);
+}
+
+gboolean
+http_dd_check_curl_compression(const gchar *type)
+{
+  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_UNCOMPRESSED)) return TRUE;
+#ifdef ZLIB_AVAILABLE
+  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_GZIP)) return TRUE;
+#endif
+#ifdef ZLIB_AVAILABLE
+  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_DEFLATE)) return TRUE;
+#endif
+  return FALSE;
+}
+
+gboolean
 http_dd_compress_string(GString *compression_destination, const GString *message, const gint compression)
 {
   return FALSE;

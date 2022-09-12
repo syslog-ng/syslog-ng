@@ -55,7 +55,7 @@ typedef struct
   GString *body_suffix;
   GString *delimiter;
   int ssl_version;
-  gchar *accept_encoding;
+  GString *accept_encoding;
   gint8 message_compression;
   gboolean peer_verify;
   gboolean ocsp_stapling_verify;
@@ -97,5 +97,7 @@ void http_dd_set_body_suffix(LogDriver *d, const gchar *body_suffix);
 void http_dd_set_delimiter(LogDriver *d, const gchar *delimiter);
 void http_dd_insert_response_handler(LogDriver *d, HttpResponseHandler *response_handler);
 LogTemplateOptions *http_dd_get_template_options(LogDriver *d);
+void http_dd_set_accept_encoding(LogDriver *d, const gchar *encoding);
+void http_dd_set_message_compression(LogDriver *d, const gchar *encoding);
 
 #endif
