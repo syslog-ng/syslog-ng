@@ -40,6 +40,7 @@ extern gchar *curl_compression_types[];
 gboolean http_dd_curl_compression_string_match(const gchar *string, gint curl_compression_index);
 gboolean http_dd_check_curl_compression(const gchar *type);
 
+
 typedef struct Compressor Compressor;
 
 void compressor_init_instance(Compressor *self);
