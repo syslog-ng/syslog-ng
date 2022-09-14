@@ -130,29 +130,11 @@ log_db_parser_init(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
 
   self->db = cfg_persist_config_fetch(cfg, log_db_parser_format_persist_name(self));
-  if (self->db)
-    {
-      struct stat st;
 
-      if (stat(self->db_file, &st) < 0)
-        {
-          msg_error("Error stating pattern database file, no automatic reload will be performed",
-                    evt_tag_str("file", self->db_file),
-                    evt_tag_str("error", g_strerror(errno)),
-                    log_pipe_location_tag(&self->super.super.super));
-        }
-      else if (self->db_file_inode != st.st_ino || self->db_file_mtime != st.st_mtime)
-        {
-          log_db_parser_reload_database(self);
-          self->db_file_inode = st.st_ino;
-          self->db_file_mtime = st.st_mtime;
-        }
-    }
-  else
-    {
-      self->db = pattern_db_new();
-      log_db_parser_reload_database(self);
-    }
+  if (!self->db)
+    self->db = pattern_db_new();
+
+  log_db_parser_reload_database(self);
   if (self->db)
     {
       pattern_db_set_emit_func(self->db, log_db_parser_emit, self);
