@@ -198,6 +198,17 @@ csv_parser_free(LogPipe *s)
   log_parser_free_method(s);
 }
 
+static gboolean
+csv_parser_init(LogPipe *s)
+{
+  CSVParser *self = (CSVParser *) s;
+
+  if (!csv_scanner_options_validate(&self->options))
+    return FALSE;
+
+  return log_parser_init_method(s);
+}
+
 /*
  * Parse comma-separated values from a log message.
  */
@@ -207,6 +218,7 @@ csv_parser_new(GlobalConfig *cfg)
   CSVParser *self = g_new0(CSVParser, 1);
 
   log_parser_init_instance(&self->super, cfg);
+  self->super.super.init = csv_parser_init;
   self->super.super.free_fn = csv_parser_free;
   self->super.super.clone = csv_parser_clone;
   self->super.process = csv_parser_process;
