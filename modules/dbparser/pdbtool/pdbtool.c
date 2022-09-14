@@ -985,7 +985,7 @@ pdbtool_dictionary_walk(RNode *root, const gchar *progname)
             {
               for (i = 0; i < rule->msg.values->len; i++)
                 {
-                  SyntheticMessageValue *smv = &g_array_index(rule->msg.values, SyntheticMessageValue, i);
+                  SyntheticMessageValue *smv = synthetic_message_values_index(&rule->msg, i);
                   printf("%s\n", log_msg_get_value_name(smv->value_handle, NULL));
                 }
             }
@@ -994,7 +994,7 @@ pdbtool_dictionary_walk(RNode *root, const gchar *progname)
             {
               for (i = 0; i < rule->msg.tags->len; i++)
                 {
-                  tag_id = g_array_index(rule->msg.tags, guint, i);
+                  tag_id = synthetic_message_tags_index(&rule->msg, i);
                   printf("%s\n", log_tags_get_by_id(tag_id));
                 }
             }
