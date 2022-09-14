@@ -25,6 +25,7 @@
 #include "str-utils.h"
 #include "string-list.h"
 #include "scratch-buffers.h"
+#include "messages.h"
 
 #include <string.h>
 
@@ -130,6 +131,12 @@ csv_scanner_options_clean(CSVScannerOptions *options)
   g_free(options->delimiters);
   string_list_free(options->string_delimiters);
   string_list_free(options->columns);
+}
+
+gboolean
+csv_scanner_options_validate(CSVScannerOptions *options)
+{
+  return TRUE;
 }
 
 /************************************************************************
