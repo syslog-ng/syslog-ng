@@ -459,7 +459,7 @@ pdbtool_match(int argc, char *argv[])
   proto_options.max_msg_size = 65536;
   log_proto_server_options_init(&proto_options, configuration);
 
-  patterndb = pattern_db_new();
+  patterndb = pattern_db_new(NULL);
   if (!pattern_db_reload_ruleset(patterndb, configuration, patterndb_file))
     {
       goto error;
@@ -773,7 +773,7 @@ pdbtool_test(int argc, char *argv[])
             }
         }
 
-      patterndb = pattern_db_new();
+      patterndb = pattern_db_new(NULL);
       if (!pdb_rule_set_load(pattern_db_get_ruleset(patterndb), configuration, argv[arg_pos], &examples))
         {
           failed_to_load = TRUE;
@@ -917,7 +917,7 @@ pdbtool_dump(int argc, char *argv[])
 {
   PatternDB *patterndb;
 
-  patterndb = pattern_db_new();
+  patterndb = pattern_db_new(NULL);
   if (!pattern_db_reload_ruleset(patterndb, configuration, patterndb_file))
     return 1;
 

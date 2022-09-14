@@ -363,7 +363,8 @@ _populate_ruleset_radix(gpointer key, gpointer value, gpointer user_data)
   gchar *pattern = key;
   PDBProgram *program = (PDBProgram *) value;
 
-  r_insert_node(state->ruleset->programs, pattern, pdb_program_ref(program), NULL, NULL, program->pdb_location);
+  r_insert_node(state->ruleset->programs, pattern, pdb_program_ref(program),
+                state->ruleset->prefix, NULL, program->pdb_location);
 }
 
 static void
@@ -439,7 +440,7 @@ _pdbl_ruleset_end(PDBLoader *state, const gchar *element_name, GError **error)
           r_insert_node(program->rules,
                         program_pattern->pattern,
                         pdb_rule_ref(program_pattern->rule),
-                        NULL,
+                        state->ruleset->prefix,
                         (RNodeGetValueFunc) pdb_rule_get_name,
                         program_pattern->pdb_location);
           pdb_program_pattern_clear(program_pattern);
@@ -538,6 +539,7 @@ _pdbl_rules_start(PDBLoader *state, const gchar *element_name, const gchar **att
         }
 
       state->current_message = &state->current_rule->msg;
+      synthetic_message_set_prefix(state->current_message, state->ruleset->prefix);
       state->action_id = 0;
       _push_state(state, PDBL_RULE);
     }

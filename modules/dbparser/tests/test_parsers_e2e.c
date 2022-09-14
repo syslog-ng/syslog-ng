@@ -79,7 +79,7 @@ _assert_pattern(PatternDB *patterndb, const gchar *pattern, const gchar *rule, g
 static PatternDB *
 _load_pattern_db_from_string(const gchar *pdb, gchar **filename)
 {
-  PatternDB *patterndb = pattern_db_new();
+  PatternDB *patterndb = pattern_db_new(NULL);
 
   g_file_open_tmp("patterndbXXXXXX.xml", filename, NULL);
   g_file_set_contents(*filename, pdb, strlen(pdb), NULL);

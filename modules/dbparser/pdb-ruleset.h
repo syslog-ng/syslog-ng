@@ -34,11 +34,12 @@ typedef struct _PDBRuleSet
   RNode *programs;
   gchar *version;
   gchar *pub_date;
+  gchar *prefix;
   gboolean is_empty;
 } PDBRuleSet;
 
 PDBRule *pdb_ruleset_lookup(PDBRuleSet *rule_set, PDBLookupParams *lookup, GArray *dbg_list);
-PDBRuleSet *pdb_rule_set_new(void);
+PDBRuleSet *pdb_rule_set_new(const gchar *prefix);
 void pdb_rule_set_free(PDBRuleSet *self);
 
 void pdb_rule_set_global_init(void);

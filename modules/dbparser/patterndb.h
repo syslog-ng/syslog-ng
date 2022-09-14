@@ -48,7 +48,7 @@ void pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list
 void pattern_db_expire_state(PatternDB *self);
 void pattern_db_forget_state(PatternDB *self);
 
-PatternDB *pattern_db_new(void);
+PatternDB *pattern_db_new(const gchar *prefix);
 void pattern_db_free(PatternDB *self);
 
 void pattern_db_global_init(void);
