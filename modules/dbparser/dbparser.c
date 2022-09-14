@@ -246,8 +246,7 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
 void
 log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file)
 {
-  if (self->db_file)
-    g_free(self->db_file);
+  g_free(self->db_file);
   self->db_file = g_strdup(db_file);
 }
 
@@ -293,8 +292,7 @@ log_db_parser_free(LogPipe *s)
   if (self->db)
     pattern_db_free(self->db);
 
-  if (self->db_file)
-    g_free(self->db_file);
+  g_free(self->db_file);
   stateful_parser_free_method(s);
 }
 
