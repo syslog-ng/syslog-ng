@@ -155,7 +155,8 @@ r_parser_type_name(guint8 type)
 
 RNode *r_new_node(const gchar *key, gpointer value);
 void r_free_node(RNode *node, void (*free_fn)(gpointer data));
-void r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_func, const gchar *location);
+void r_insert_node(RNode *root, gchar *key, gpointer value,
+                   const gchar *capture_prefix, RNodeGetValueFunc value_func, const gchar *location);
 RNode *r_find_node(RNode *root, gchar *key, gint keylen, GArray *matches);
 RNode *r_find_node_dbg(RNode *root, gchar *key, gint keylen, GArray *matches, GArray *dbg_list);
 gchar **r_find_all_applicable_nodes(RNode *root, gchar *key, gint keylen, RNodeGetValueFunc value_func);
