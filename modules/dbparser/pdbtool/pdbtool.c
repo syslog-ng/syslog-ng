@@ -979,15 +979,14 @@ pdbtool_dictionary_walk(RNode *root, const gchar *progname)
       else
         {
           PDBRule *rule = (PDBRule *)root->value;
-          LogTemplate *template;
           guint tag_id;
 
           if (!dictionary_tags && rule->msg.values)
             {
               for (i = 0; i < rule->msg.values->len; i++)
                 {
-                  template = (LogTemplate *)g_ptr_array_index(rule->msg.values, i);
-                  printf("%s\n", template->name);
+                  SyntheticMessageValue *smv = &g_array_index(rule->msg.values, SyntheticMessageValue, i);
+                  printf("%s\n", log_msg_get_value_name(smv->value_handle, NULL));
                 }
             }
 

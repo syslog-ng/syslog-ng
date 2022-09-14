@@ -34,11 +34,17 @@ typedef enum
   RAC_MSG_INHERIT_CONTEXT
 } SyntheticMessageInheritMode;
 
+typedef struct _SyntheticMessageValue
+{
+  NVHandle value_handle;
+  LogTemplate *value_template;
+} SyntheticMessageValue;
+
 typedef struct _SyntheticMessage
 {
   SyntheticMessageInheritMode inherit_mode;
   GArray *tags;
-  GPtrArray *values;
+  GArray *values;
 } SyntheticMessage;
 
 LogMessage *synthetic_message_generate_without_context(SyntheticMessage *self, LogMessage *msg);
