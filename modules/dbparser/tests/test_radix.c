@@ -54,7 +54,20 @@ insert_node_with_value(RNode *root, const gchar *key, const gpointer value)
    * and it might be a read-only string literal */
 
   dup = g_strdup(key);
-  r_insert_node(root, dup, value ? : (gpointer)key, NULL, NULL);
+  r_insert_node(root, dup, value ? : (gpointer)key, NULL, NULL, NULL);
+  g_free(dup);
+}
+
+void
+insert_node_with_prefix(RNode *root, const gchar *key, const gchar *prefix)
+{
+  gchar *dup;
+
+  /* NOTE: we need to duplicate the key as r_insert_node modifies its input
+   * and it might be a read-only string literal */
+
+  dup = g_strdup(key);
+  r_insert_node(root, dup, (gpointer) key, prefix, NULL, NULL);
   g_free(dup);
 }
 
@@ -1064,6 +1077,17 @@ ParameterizedTest(RadixTestParam *param, dbparser, test_radix_search_matches, .i
     insert_node(root, param->node_to_insert[i]);
 
   test_search_matches(root, param->key, param->expected_pattern);
+  r_free_node(root, NULL);
+}
+
+Test(dbparser, test_radix_prefix, .init = test_setup, .fini = test_teardown)
+{
+  RNode *root = r_new_node("", NULL);
+
+  insert_node_with_prefix(root, "@NLSTRING:value@\n", "prefix.");
+
+  const gchar *expected_pattern[] = { "prefix.value", "string", NULL };
+  test_search_matches(root, "string\n", expected_pattern);
   r_free_node(root, NULL);
 }
 
