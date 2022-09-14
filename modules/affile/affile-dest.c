@@ -112,6 +112,7 @@ affile_dw_format_persist_name(AFFileDestWriter *self)
 }
 
 static void affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw);
+static gboolean affile_dw_reopen(AFFileDestWriter *self);
 
 static void
 affile_dw_reap(AFFileDestWriter *self)
@@ -129,6 +130,12 @@ affile_dw_reap(AFFileDestWriter *self)
       affile_dd_reap_writer(self->owner, self);
     }
   g_mutex_unlock(&owner->lock);
+}
+
+static void
+_file_reopen_cb(gpointer cookie)
+{
+  main_loop_call((MainLoopTaskFunc) affile_dw_reopen, cookie, FALSE);
 }
 
 static gboolean
@@ -162,9 +169,10 @@ affile_dw_reopen(AFFileDestWriter *self)
 
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
 
+      FileReopener reopener = { .request_reopen = _file_reopen_cb, .cookie = self};
       proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
                                               &self->owner->writer_options.proto_options.super, self->owner->super.super.super.signal_slot_connector, self->filename,
-                                              self->writer);
+                                              reopener);
     }
   else if (open_result == FILE_OPENER_RESULT_ERROR_PERMANENT)
     {

@@ -26,9 +26,10 @@
 
 #include "logproto/logproto-client.h"
 #include "logwriter.h"
+#include "file-signals.h"
 #include "signal-slot-connector/signal-slot-connector.h"
 
 LogProtoClient *log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options,
-                                          gint flush_lines, gboolean fsync, SignalSlotConnector *connector, const gchar *filename, LogWriter *writer);
+                                          gint flush_lines, gboolean fsync, SignalSlotConnector *connector, const gchar *filename, FileReopener reopene);
 
 #endif

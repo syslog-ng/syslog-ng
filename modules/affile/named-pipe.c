@@ -93,7 +93,7 @@ _construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderO
 
 static LogProtoClient *
 _construct_dst_proto(FileOpener *self, LogTransport *transport, LogProtoClientOptions *proto_options,
-                     SignalSlotConnector *connector, const gchar *filename, LogWriter *writer)
+                     SignalSlotConnector *connector, const gchar *filename, FileReopener reopener)
 {
   return log_proto_text_client_new(transport, proto_options);
 }

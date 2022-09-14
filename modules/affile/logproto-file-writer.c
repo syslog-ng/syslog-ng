@@ -34,7 +34,7 @@ typedef struct _LogProtoFileWriter
 {
   LogProtoClient super;
   SignalSlotConnector *signal_slot_connector;
-  LogWriter *writer;
+  FileReopener reopener;
   const gchar *filename;
   guchar *partial;
   gsize partial_len, partial_pos;
@@ -55,6 +55,9 @@ typedef struct _LogProtoFileWriter
  * or from log_proto_flush (foced flush: flush time, exit, etc)
  *
  */
+gboolean
+affile_dw_reopen(AFFileDestWriter *self);
+
 static LogProtoStatus
 log_proto_file_writer_flush(LogProtoClient *s)
 {
@@ -145,19 +148,10 @@ log_proto_file_writer_flush(LogProtoClient *s)
   {
     .filename = file_name,
     .size = file_size,
-    .reopen = FALSE
+    .reopener = &self->reopener
   };
 
   EMIT(self->signal_slot_connector, signal_file_flush, &signal_data);
-
-  if (signal_data.reopen)
-    {
-      msg_debug("FileWriter: Reopening file",
-                evt_tag_str("filename", self->filename),
-                evt_tag_int("size", file_size));
-      log_writer_reopen(self->writer, &self->super);
-      signal_data.reopen = FALSE;
-    }
 
   return LPS_SUCCESS;
 
@@ -243,7 +237,7 @@ log_proto_file_writer_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, g
 
 LogProtoClient *
 log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options, gint flush_lines, gint fsync_,
-                          SignalSlotConnector *connector, const gchar *filename, LogWriter *writer)
+                          SignalSlotConnector *connector, const gchar *filename, FileReopener reopener)
 {
   if (flush_lines == 0)
     /* the flush-lines option has not been specified, use a default value */
@@ -264,7 +258,7 @@ log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *
 
   self->signal_slot_connector = connector;
   self->fd = transport->fd;
-  self->writer = writer;
+  self->reopener = reopener;
   self->filename = g_strdup(filename);
   self->buf_size = flush_lines;
   self->fsync = fsync_;
