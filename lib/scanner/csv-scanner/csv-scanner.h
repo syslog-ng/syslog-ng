@@ -52,6 +52,7 @@ typedef struct _CSVScannerOptions
 
 void csv_scanner_options_clean(CSVScannerOptions *options);
 void csv_scanner_options_copy(CSVScannerOptions *dst, CSVScannerOptions *src);
+gboolean csv_scanner_options_validate(CSVScannerOptions *options);
 
 void csv_scanner_options_set_dialect(CSVScannerOptions *options, CSVScannerDialect dialect);
 void csv_scanner_options_set_flags(CSVScannerOptions *options, guint32 flags);

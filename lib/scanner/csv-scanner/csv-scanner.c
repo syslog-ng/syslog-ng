@@ -25,6 +25,7 @@
 #include "str-utils.h"
 #include "string-list.h"
 #include "scratch-buffers.h"
+#include "messages.h"
 
 #include <string.h>
 
@@ -130,6 +131,18 @@ csv_scanner_options_clean(CSVScannerOptions *options)
   g_free(options->delimiters);
   string_list_free(options->string_delimiters);
   string_list_free(options->columns);
+}
+
+gboolean
+csv_scanner_options_validate(CSVScannerOptions *options)
+{
+  if(!options->columns && (options->flags & CSV_SCANNER_GREEDY))
+    {
+      msg_error("The greedy flag of csv-parser can not be used without specifying the columns() option");
+      return FALSE;
+    }
+
+  return TRUE;
 }
 
 /************************************************************************
