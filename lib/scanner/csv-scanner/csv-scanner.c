@@ -346,6 +346,9 @@ _switch_to_next_column(CSVScanner *self)
 {
   g_string_truncate(self->current_value, 0);
 
+  if (self->columnless)
+    return TRUE;
+
   switch (self->state)
     {
     case CSV_STATE_INITIAL:
@@ -389,7 +392,7 @@ csv_scanner_scan_next(CSVScanner *self)
   else if (self->src[0] == 0)
     {
       /* no more input data and a real column, not a greedy one */
-      self->state = CSV_STATE_PARTIAL_INPUT;
+      self->state = self->columnless ? CSV_STATE_FINISH : CSV_STATE_PARTIAL_INPUT;
       return FALSE;
     }
   else
@@ -432,6 +435,9 @@ csv_scanner_init(CSVScanner *scanner, CSVScannerOptions *options, const gchar *i
   scanner->current_value = scratch_buffers_alloc();
   scanner->current_column = NULL;
   scanner->options = options;
+
+  if (!scanner->options->columns)
+    scanner->columnless = TRUE;
 }
 
 void

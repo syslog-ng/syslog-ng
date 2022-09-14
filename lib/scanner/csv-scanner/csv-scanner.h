@@ -80,6 +80,7 @@ typedef struct
   const gchar *src;
   GString *current_value;
   gchar current_quote;
+  gboolean columnless;
 } CSVScanner;
 
 const gchar *csv_scanner_get_current_name(CSVScanner *pstate);
