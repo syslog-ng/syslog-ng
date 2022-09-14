@@ -158,7 +158,7 @@ synthetic_message_apply(SyntheticMessage *self, CorrelationContext *context, Log
   if (self->tags)
     {
       for (i = 0; i < self->tags->len; i++)
-        log_msg_set_tag_by_id(msg, g_array_index(self->tags, LogTagId, i));
+        log_msg_set_tag_by_id(msg, synthetic_message_tags_index(self, i));
     }
 
   if (self->values)
@@ -169,7 +169,7 @@ synthetic_message_apply(SyntheticMessage *self, CorrelationContext *context, Log
         {
           LogMessageValueType type;
           LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, context ? context->key.session_id : NULL, LM_VT_STRING};
-          SyntheticMessageValue *smv = &g_array_index(self->values, SyntheticMessageValue, i);
+          SyntheticMessageValue *smv = synthetic_message_values_index(self, i);
 
           log_template_format_value_and_type_with_context(smv->value_template,
                                                           context ? (LogMessage **) context->messages->pdata : &msg,
@@ -305,7 +305,7 @@ synthetic_message_deinit(SyntheticMessage *self)
     {
       for (i = 0; i < self->values->len; i++)
         {
-          SyntheticMessageValue *smv = &g_array_index(self->values, SyntheticMessageValue, i);
+          SyntheticMessageValue *smv = synthetic_message_values_index(self, i);
           log_template_unref(smv->value_template);
         }
 

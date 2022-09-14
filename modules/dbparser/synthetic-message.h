@@ -68,4 +68,16 @@ void synthetic_message_free(SyntheticMessage *self);
 
 gint synthetic_message_lookup_inherit_mode(const gchar *inherit_mode);
 
+static inline SyntheticMessageValue *
+synthetic_message_values_index(SyntheticMessage *self, gint index_)
+{
+  return &g_array_index(self->values, SyntheticMessageValue, index_);
+}
+
+static inline guint
+synthetic_message_tags_index(SyntheticMessage *self, gint index_)
+{
+  return g_array_index(self->tags, LogTagId, index_);
+}
+
 #endif
