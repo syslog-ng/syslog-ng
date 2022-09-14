@@ -43,19 +43,13 @@ _slot_file_rotation(FileRotationPlugin *self, FileFlushSignalData *data)
           gchar *date = g_new0(gchar, 100);
 
           strftime(date, 100, self->date_format, tm);
-          data->last_rotation_time = g_new0(gchar, 100);
           gchar *new_filename = g_strconcat(data->filename, date, NULL);
 
-          data->persist_name = g_strdup(new_filename);
           rename(data->filename, new_filename);
 
           g_free(new_filename);
-          g_strlcpy(data->last_rotation_time, date, 100);
 
-          data->reopen = g_new0(gboolean, 1);
-          *data->reopen = TRUE;
-
-          data->size = 0;
+          file_reopener_request_reopen(data->reopener);
         }
     }
 }
