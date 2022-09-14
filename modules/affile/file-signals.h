@@ -27,16 +27,30 @@
 #include "signal-slot-connector/signal-slot-connector.h"
 
 typedef struct _FileFlushSignalData FileFlushSignalData;
+typedef struct _FileReopener FileReopener;
 
 struct _FileFlushSignalData
 {
   gchar *filename;
   gchar *persist_name;
   gsize size;
-  gboolean *reopen;
+  FileReopener *reopener;
   gchar *last_rotation_time;
 };
 
 #define signal_file_flush SIGNAL(file_rotation, rotation_request, FileFlushSignalData *)
+
+
+struct _FileReopener
+{
+  void (*request_reopen)(gpointer cookie);
+  gpointer cookie;
+};
+
+static inline void
+file_reopener_request_reopen(FileReopener *self)
+{
+  self->request_reopen(self->cookie);
+}
 
 #endif
