@@ -71,7 +71,7 @@ assert_pdb_file_valid(const gchar *filename_)
 static PatternDB *
 _create_pattern_db(const gchar *pdb, gchar **filename)
 {
-  PatternDB *patterndb = pattern_db_new();
+  PatternDB *patterndb = pattern_db_new(NULL);
   messages = g_ptr_array_new();
 
   pattern_db_set_emit_func(patterndb, _emit_func, NULL);
@@ -678,7 +678,7 @@ ParameterizedTest(PatternDBTestParam *param, pattern_db, test_rules)
 
 Test(pattern_db, test_tag_outside_of_rule_skeleton)
 {
-  PatternDB *patterndb = pattern_db_new();
+  PatternDB *patterndb = pattern_db_new(NULL);
 
   char *filename;
   g_file_open_tmp("patterndbXXXXXX.xml", &filename, NULL);

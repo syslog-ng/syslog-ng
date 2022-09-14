@@ -132,7 +132,7 @@ log_db_parser_init(LogPipe *s)
   self->db = cfg_persist_config_fetch(cfg, log_db_parser_format_persist_name(self));
 
   if (!self->db)
-    self->db = pattern_db_new();
+    self->db = pattern_db_new(NULL);
 
   log_db_parser_reload_database(self);
   if (self->db)
