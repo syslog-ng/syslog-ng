@@ -28,6 +28,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/uio.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 typedef struct _LogProtoFileWriter
@@ -141,13 +142,15 @@ log_proto_file_writer_flush(LogProtoClient *s)
   self->buf_count = 0;
   self->sum_len = 0;
 
-  gchar *file_name = g_strdup_printf("%s", self->filename);
-  gsize file_size = lseek(self->fd, 0, SEEK_END);
+  const gchar *file_name = self->filename;
+  struct stat st;
+  //gsize file_size = lseek(self->fd, 0, SEEK_END);
+  stat(file_name, &st);
 
   FileFlushSignalData signal_data =
   {
     .filename = file_name,
-    .size = file_size,
+    .size = st.st_size,
     .reopener = &self->reopener
   };
 
@@ -259,7 +262,7 @@ log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *
   self->signal_slot_connector = connector;
   self->fd = transport->fd;
   self->reopener = reopener;
-  self->filename = g_strdup(filename);
+  self->filename = filename;
   self->buf_size = flush_lines;
   self->fsync = fsync_;
   self->super.prepare = log_proto_file_writer_prepare;

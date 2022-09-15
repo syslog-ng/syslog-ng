@@ -31,27 +31,69 @@ _slot_file_rotation(FileRotationPlugin *self, FileFlushSignalData *data)
 {
   msg_trace("File rotation signal received", evt_tag_str("filename", data->filename));
 
-  if(data != NULL)
+  g_assert(data);
+
+  if(self->number_of_time_rotated > self->number_of_file_rotations)
     {
-      if(data->size >= self->size)
-        {
-          msg_debug("File size reached the limit", evt_tag_str("filename", data->filename));
-          msg_debug("Sending file rotation signal", evt_tag_str("filename", data->filename));
-
-          time_t now = time(NULL);
-          struct tm *tm = localtime(&now);
-          gchar *date = g_new0(gchar, 100);
-
-          strftime(date, 100, self->date_format, tm);
-          gchar *new_filename = g_strconcat(data->filename, date, NULL);
-
-          rename(data->filename, new_filename);
-
-          g_free(new_filename);
-
-          file_reopener_request_reopen(data->reopener);
-        }
+      process_file_removal(self, data->filename);
     }
+
+  if(data->size >= self->size)
+    {
+      time_t now = time(NULL);
+      struct tm *tm = localtime(&now);
+      gchar date[101];
+
+      strftime(date, 100, self->date_format, tm);
+      gchar *new_filename = g_strdup_printf("%s%s.%ld", data->filename, date, self->number_of_time_rotated);
+
+      msg_info("File size reached the limit, rotating file",
+               evt_tag_str("filename", data->filename),
+               evt_tag_str("new_filename", new_filename));
+
+      rename(data->filename, new_filename);
+
+      self->file_names = g_list_append(self->file_names, new_filename);
+      self->filename= new_filename;
+
+      if(g_file_test(new_filename, G_FILE_TEST_EXISTS))
+        {
+          process_file_removal(self, new_filename);
+        }
+
+      g_free(new_filename);
+
+      self->number_of_time_rotated++;
+
+      file_reopener_request_reopen(data->reopener);
+    }
+
+}
+
+void
+process_file_removal(FileRotationPlugin *self, const gchar *filename)
+{
+  gchar *file = g_strdup_printf("%s.%ld", self->filename, self->number_of_file_rotations-1);
+  if(remove(file) == 0)
+    {
+      msg_trace("File deleted successfully", evt_tag_str("filename", file));
+    }
+  else
+    {
+      msg_trace("Error: unable to delete the file", evt_tag_str("filename", file));
+    }
+  g_free(file);
+  for(gsize i = self->number_of_file_rotations; i > 0; i--)
+    {
+      gchar *file_name = g_strdup_printf("%s.%ld", self->filename, i);
+      gchar *new_filename = g_strdup_printf("%s.%ld", self->filename, i+1);
+      rename(file_name, new_filename);
+      g_free(file_name);
+      g_free(new_filename);
+    }
+  self->number_of_file_rotations=0;
+  gchar *new_filename = g_strdup_printf("%s.%d", self->filename, 0);
+  rename(filename, new_filename);
 }
 
 static gboolean
@@ -63,7 +105,22 @@ file_rotation_attach_to_driver(LogDriverPlugin *s, LogDriver *driver)
 
   CONNECT(ssc, signal_file_flush, _slot_file_rotation, s);
 
+  FileRotationPlugin *self = (FileRotationPlugin *) s;
+
+  //if(self->size == 0)
+  //  {
+  //    msg_error("File rotation size cannot be zero");
+  //    return FALSE;
+  //  }
+
+  if(self->number_of_file_rotations == 0)
+    {
+      msg_error("File rotation number cannot be zero");
+      return FALSE;
+    }
+
   return TRUE;
+
 }
 
 static void
@@ -74,11 +131,20 @@ file_rotation_free(LogDriverPlugin *s)
   g_free(self->filename);
   log_driver_plugin_free_method(s);
 }
+
 void
 file_rotation_set_interval(FileRotationPlugin *self, gchar *interval)
 {
   g_free(self->interval);
-  self->interval = interval;
+  self->interval = g_strdup(interval);
+  msg_debug("File rotation interval has been set", evt_tag_str("interval", self->interval));
+}
+
+void
+file_rotation_set_number_of_file_rotatations(FileRotationPlugin *self, gsize rotate)
+{
+  self->number_of_file_rotations = rotate;
+  self->number_of_time_rotated = 0;
 }
 
 void
@@ -90,20 +156,13 @@ file_rotation_set_size(FileRotationPlugin *self, gsize size)
 void
 file_rotation_set_date_format(FileRotationPlugin *self, gchar *date_format)
 {
-  if (date_format[0] != '-')
-    {
-      msg_error("Date format must start with '-'", evt_tag_str("date_format", date_format));
-      return;
-    }
-  else if (date_format[1] == '\0')
-    {
-      msg_error("Date format must not be empty", evt_tag_str("date_format", date_format));
-      return;
-    }
-
   g_free(self->date_format);
+  g_strdup(self->date_format);
+  if(self->date_format == NULL)
+    {
+      self->date_format = g_strdup("");
+    }
   self->date_format = g_strconcat("", date_format, NULL);
-  printf("%s", self->date_format);
 
 }
 

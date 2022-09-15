@@ -35,6 +35,7 @@ static CfgLexerKeyword file_rotation_keywords[] =
   { "size", KW_SIZE },
   { "interval", KW_INTERVAL },
   { "dateformat", KW_DATE_FORMAT},
+  { "rotate", KW_ROTATE },
   { NULL }
 };
 

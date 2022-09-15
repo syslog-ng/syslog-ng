@@ -41,10 +41,12 @@ struct _FileRotationPlugin
   LogDriverPlugin super;
   SignalSlotConnector *ssc;
   gchar *interval;
+  GList *file_names;
+  gsize number_of_file_rotations;
+  gsize number_of_time_rotated;
   gchar *date_format;
   gsize size;
   gchar *filename;
-  time_t *last_rotation_time;
 };
 
 FileRotationPlugin *file_rotation_new(void);
@@ -52,5 +54,7 @@ FileRotationPlugin *file_rotation_new(void);
 void file_rotation_set_size(FileRotationPlugin *self, gsize size);
 void file_rotation_set_interval(FileRotationPlugin *self, gchar *interval);
 void file_rotation_set_date_format(FileRotationPlugin *self, gchar *date_format);
+void file_rotation_set_number_of_file_rotatations(FileRotationPlugin *self, gsize rotate);
+void process_file_removal(FileRotationPlugin *self, const gchar *filename);
 
 #endif

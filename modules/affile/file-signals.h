@@ -31,11 +31,9 @@ typedef struct _FileReopener FileReopener;
 
 struct _FileFlushSignalData
 {
-  gchar *filename;
-  gchar *persist_name;
+  const gchar *filename;
   gsize size;
   FileReopener *reopener;
-  gchar *last_rotation_time;
 };
 
 #define signal_file_flush SIGNAL(file_rotation, rotation_request, FileFlushSignalData *)

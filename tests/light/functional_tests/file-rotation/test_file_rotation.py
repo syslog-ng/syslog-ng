@@ -25,7 +25,7 @@ import pytest
 
 @pytest.mark.parametrize(
     "file_rotation", [
-        "size(1), interval(daily), dateformat(-%Y-%m-%d)",
+        "size(1KB), interval(daily), dateformat(-%Y-%m-%d), rotate(10)",
     ], ids=["file-rotation"],
 )
 def test_file_rotation(config, syslog_ng, port_allocator, file_rotation):
