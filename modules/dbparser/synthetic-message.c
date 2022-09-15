@@ -143,11 +143,38 @@ synthetic_message_add_value_template(SyntheticMessage *self, const gchar *name, 
   if (!self->values)
     self->values = g_array_new(FALSE, FALSE, sizeof(SyntheticMessageValue));
 
-  SyntheticMessageValue smv = {
-    .value_handle = log_msg_get_value_handle(name),
+  SyntheticMessageValue smv =
+  {
+    .name = g_strdup(name),
+    .handle = 0,
     .value_template = log_template_ref(value_template)
   };
   g_array_append_val(self->values, smv);
+}
+
+void
+synthetic_message_set_prefix(SyntheticMessage *self, const gchar *prefix)
+{
+  g_free(self->prefix);
+  self->prefix = g_strdup(prefix);
+}
+
+static NVHandle
+_allocate_and_get_value_handle(SyntheticMessage *self, SyntheticMessageValue *smv)
+{
+  if (smv->handle)
+    return smv->handle;
+
+  if (!self->prefix)
+    {
+      smv->handle = log_msg_get_value_handle(smv->name);
+      return smv->handle;
+    }
+
+  gchar *prefixed_name = g_strdup_printf("%s%s", self->prefix, smv->name);
+  smv->handle = log_msg_get_value_handle(prefixed_name);
+  g_free(prefixed_name);
+  return smv->handle;
 }
 
 void
@@ -176,7 +203,7 @@ synthetic_message_apply(SyntheticMessage *self, CorrelationContext *context, Log
                                                           context ? context->messages->len : 1,
                                                           &options, buffer, &type);
           log_msg_set_value_with_type(msg,
-                                      smv->value_handle,
+                                      _allocate_and_get_value_handle(self, smv),
                                       buffer->str, buffer->len, type);
         }
       scratch_buffers_reclaim_marked(marker);
@@ -306,18 +333,21 @@ synthetic_message_deinit(SyntheticMessage *self)
       for (i = 0; i < self->values->len; i++)
         {
           SyntheticMessageValue *smv = synthetic_message_values_index(self, i);
+          g_free(smv->name);
           log_template_unref(smv->value_template);
         }
 
       g_array_free(self->values, TRUE);
     }
+  g_free(self->prefix);
 }
 
 SyntheticMessage *
 synthetic_message_new(void)
 {
-  SyntheticMessage *self = g_new0(SyntheticMessage, 1);
+  SyntheticMessage *self = g_new(SyntheticMessage, 1);
 
+  synthetic_message_init(self);
   self->inherit_mode = RAC_MSG_INHERIT_CONTEXT;
   return self;
 }

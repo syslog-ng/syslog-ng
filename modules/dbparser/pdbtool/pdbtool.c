@@ -986,7 +986,7 @@ pdbtool_dictionary_walk(RNode *root, const gchar *progname)
               for (i = 0; i < rule->msg.values->len; i++)
                 {
                   SyntheticMessageValue *smv = synthetic_message_values_index(&rule->msg, i);
-                  printf("%s\n", log_msg_get_value_name(smv->value_handle, NULL));
+                  printf("%s\n", smv->name);
                 }
             }
 

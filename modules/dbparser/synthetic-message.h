@@ -36,7 +36,8 @@ typedef enum
 
 typedef struct _SyntheticMessageValue
 {
-  NVHandle value_handle;
+  gchar *name;
+  NVHandle handle;
   LogTemplate *value_template;
 } SyntheticMessageValue;
 
@@ -45,6 +46,7 @@ typedef struct _SyntheticMessage
   SyntheticMessageInheritMode inherit_mode;
   GArray *tags;
   GArray *values;
+  gchar *prefix;
 } SyntheticMessage;
 
 LogMessage *synthetic_message_generate_without_context(SyntheticMessage *self, LogMessage *msg);
@@ -61,6 +63,7 @@ gboolean synthetic_message_set_inherit_mode_string(SyntheticMessage *self, const
                                                    GError **error);
 void synthetic_message_add_value_template(SyntheticMessage *self, const gchar *name, LogTemplate *value);
 void synthetic_message_add_tag(SyntheticMessage *self, const gchar *text);
+void synthetic_message_set_prefix(SyntheticMessage *self, const gchar *prefix);
 void synthetic_message_init(SyntheticMessage *self);
 void synthetic_message_deinit(SyntheticMessage *self);
 SyntheticMessage *synthetic_message_new(void);
