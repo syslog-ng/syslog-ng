@@ -101,6 +101,9 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
       return NULL;
     }
 
+  if (py_msg->cast_to_strings)
+    type = LM_VT_STRING;
+
   APPEND_ZERO(value, value, value_len);
 
   return py_obj_from_log_msg_value(value, value_len, type);
@@ -132,6 +135,17 @@ _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
 
   if (!value)
     return -1;
+
+  if (py_msg->cast_to_strings && !is_py_obj_bytes_or_string_type(value))
+    {
+      PyErr_Format(PyExc_ValueError,
+                   "str or unicode object expected as log message values, got type %s (key %s). "
+                   "Earlier syslog-ng accepted any type, implicitly converting it to a string. "
+                   "Later syslog-ng (at least 4.0) will store the value with the correct type. "
+                   "With this version please convert it explicitly to a string using str()",
+                   value->ob_type->tp_name, name);
+      return -1;
+    }
 
   ScratchBuffersMarker marker;
   GString *log_msg_value = scratch_buffers_alloc_and_mark(&marker);
@@ -168,6 +182,7 @@ py_log_message_new(LogMessage *msg)
 
   self->msg = log_msg_ref(msg);
   self->bookmark_data = NULL;
+  self->cast_to_strings = FALSE;
   return (PyObject *) self;
 }
 

@@ -210,6 +210,59 @@ ParameterizedTest(PyLogMessageSetValueTestParams *params, python_log_message, te
   PyGILState_Release(gstate);
 }
 
+Test(python_log_message, test_python_logmessage_set_value_no_typing_support)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  {
+    PyObject *msg_object = py_log_message_new(msg);
+    ((PyLogMessage *) msg_object)->cast_to_strings = TRUE;
+
+    PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
+
+    const gchar *script = "test_msg['test_field'] = 42\n";
+    cr_assert_not(PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict));
+
+    Py_XDECREF(msg_object);
+  }
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_python_logmessage_get_value_no_typing_support)
+{
+  const gchar *test_key = "test_field";
+  const gchar *test_value = "42";
+
+  LogMessage *msg = log_msg_new_empty();
+
+  // set from C code as INTEGER
+  log_msg_set_value_by_name_with_type(msg, test_key, test_value, strlen(test_value), LM_VT_INTEGER);
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  {
+    PyObject *msg_object = py_log_message_new(msg);
+    ((PyLogMessage *) msg_object)->cast_to_strings = TRUE;
+
+    PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
+
+    // in python code it shows up as bytes
+    _assert_python_variable_value("test_msg['test_field']", "b'42'");
+
+    LogMessageValueType type;
+    const gchar *value = log_msg_get_value_by_name_with_type(msg, "test_field", NULL, &type);
+
+    // in LogMessage it is INTEGER
+    cr_assert(type == LM_VT_INTEGER);
+    cr_assert_str_eq(value, "42");
+
+    Py_XDECREF(msg_object);
+  }
+  PyGILState_Release(gstate);
+}
+
 Test(python_log_message, test_python_logmessage_set_value_indirect)
 {
   const gchar *test_value = "test_value";
