@@ -35,6 +35,22 @@
 #include <string.h>
 
 static gboolean
+_control_process_log_level(const gchar *level, GString *result)
+{
+  if (!level)
+    {
+      /* query current log level */
+      return TRUE;
+    }
+  gint ll = msg_map_string_to_log_level(level);
+  if (ll < 0)
+    return FALSE;
+
+  msg_set_log_level(ll);
+  return TRUE;
+}
+
+static gboolean
 _control_process_compat_log_command(const gchar *level, const gchar *onoff, GString *result)
 {
   if (!level)
@@ -70,7 +86,10 @@ control_connection_message_log(ControlConnection *cc, GString *command, gpointer
 
   gint orig_log_level = msg_get_log_level();
 
-  success = _control_process_compat_log_command(cmds[1], cmds[2], result);
+  if (g_str_equal(cmds[1], "LEVEL"))
+    success = _control_process_log_level(cmds[2], result);
+  else
+    success = _control_process_compat_log_command(cmds[1], cmds[2], result);
 
   if (orig_log_level != msg_get_log_level())
     msg_info("Verbosity changed",

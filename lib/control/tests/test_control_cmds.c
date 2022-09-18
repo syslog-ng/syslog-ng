@@ -173,6 +173,27 @@ Test(control_cmds, test_log)
 
 }
 
+Test(control_cmds, test_log_level)
+{
+  const gchar *response;
+
+  msg_set_log_level(0);
+  _run_command("LOG LEVEL foo", &response);
+  cr_assert(first_line_eq(response, "FAIL Invalid arguments received"),
+            "Bad reply: [%s]", response);
+
+  msg_set_log_level(0);
+  _run_command("LOG LEVEL debug", &response);
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 2"),
+            "Bad reply: [%s]", response);
+
+  msg_set_log_level(1);
+  _run_command("LOG LEVEL", &response);
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 1"),
+            "Bad reply: [%s]", response);
+
+}
+
 Test(control_cmds, test_stats)
 {
   StatsCounterItem *counter = NULL;
