@@ -165,6 +165,7 @@ grouping_by_opt
             CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1);
             grouping_by_set_trigger_condition(last_parser, filter_expr);
           } ')'
+	| KW_PREFIX '(' string ')'				{ grouping_by_set_prefix(last_parser, $3); free($3); };
 	| stateful_parser_opt
 	;
 
