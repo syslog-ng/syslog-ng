@@ -31,6 +31,7 @@ CSVScannerOptions *csv_parser_get_scanner_options(LogParser *s);
 gboolean csv_parser_set_flags(LogParser *s, guint32 flags);
 void csv_parser_set_drop_invalid(LogParser *s, gboolean drop_invalid);
 void csv_parser_set_prefix(LogParser *s, const gchar *prefix);
+void csv_parser_set_list_name(LogParser *s, const gchar *list_name);
 LogParser *csv_parser_new(GlobalConfig *cfg);
 
 guint32 csv_parser_lookup_flag(const gchar *flag);

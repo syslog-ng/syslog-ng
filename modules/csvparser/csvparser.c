@@ -151,13 +151,29 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
     g_string_assign(key_scratch, self->prefix);
 
   key_formatter_t _key_formatter = dispatch_key_formatter(self->prefix);
+  gint match_index = 1;
+
   while (csv_scanner_scan_next(&scanner))
     {
+      const gchar *current_name = csv_scanner_get_current_name(&scanner);
 
-      log_msg_set_value_by_name(msg,
-                                _key_formatter(key_scratch, csv_scanner_get_current_name(&scanner), self->prefix_len),
-                                csv_scanner_get_current_value(&scanner),
-                                csv_scanner_get_current_value_len(&scanner));
+      if (current_name)
+        {
+          log_msg_set_value_by_name(msg,
+                                    _key_formatter(key_scratch, csv_scanner_get_current_name(&scanner), self->prefix_len),
+                                    csv_scanner_get_current_value(&scanner),
+                                    csv_scanner_get_current_value_len(&scanner));
+        }
+      else
+        {
+          if (match_index == 1)
+            log_msg_unset_match(msg, 0);
+          log_msg_set_match_with_type(msg,
+                                      match_index, csv_scanner_get_current_value(&scanner),
+                                      csv_scanner_get_current_value_len(&scanner),
+                                      LM_VT_STRING);
+        }
+      match_index++;
     }
 
   gboolean result = TRUE;

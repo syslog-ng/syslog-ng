@@ -94,6 +94,17 @@ Test(parser, condition_success)
   assert_log_message_value_by_name(msg, "c", "baz");
 }
 
+Test(parser, test_index_macros)
+{
+  LogParser *test_parser = create_parser_rule("csv-parser();");
+
+  invoke_parser_rule(test_parser, msg);
+  assert_log_message_value_by_name(msg, "1", "foo");
+  assert_log_message_value_by_name(msg, "2", "bar");
+  assert_log_message_value_by_name(msg, "3", "baz");
+  assert_template_format_msg("$*", "foo,bar,baz", msg);
+}
+
 void
 setup(void)
 {
