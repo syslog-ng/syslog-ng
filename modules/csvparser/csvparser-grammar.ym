@@ -60,6 +60,7 @@
 %token KW_CHARS
 %token KW_STRINGS
 %token KW_DROP_INVALID
+%token KW_LIST_NAME
 
 %type	<ptr> parser_expr_csv
 %type   <cptr> parser_csv_flag
@@ -100,6 +101,7 @@ parser_csv_opt
         | KW_QUOTE_PAIRS '(' string ')'         { csv_scanner_options_set_quote_pairs(csv_parser_get_scanner_options(last_parser), $3); free($3); }
         | KW_NULL '(' string ')'                { csv_scanner_options_set_null_value(csv_parser_get_scanner_options(last_parser), $3); free($3); }
         | KW_COLUMNS '(' string_list ')'        { csv_scanner_options_set_columns(csv_parser_get_scanner_options(last_parser), $3); }
+        | KW_LIST_NAME '(' string ')'           { csv_parser_set_list_name(last_parser, $3); free($3); }
         | parser_opt
         ;
 
