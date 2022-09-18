@@ -39,7 +39,6 @@ control_connection_message_log(ControlConnection *cc, GString *command, gpointer
 {
   gchar **cmds = g_strsplit(command->str, " ", 3);
   gboolean on;
-  int *type = NULL;
   GString *result = g_string_sized_new(128);
 
   if (!cmds[1])
@@ -48,25 +47,23 @@ control_connection_message_log(ControlConnection *cc, GString *command, gpointer
       goto exit;
     }
 
-  if (g_str_equal(cmds[1], "DEBUG"))
-    type = &debug_flag;
-  else if (g_str_equal(cmds[1], "VERBOSE"))
-    type = &verbose_flag;
-  else if (g_str_equal(cmds[1], "TRACE"))
-    type = &trace_flag;
-
-  if (type)
+  gint ll = msg_map_string_to_log_level(cmds[1]);
+  if (ll >= 0)
     {
       if (cmds[2])
         {
           on = g_str_equal(cmds[2], "ON");
-          if (*type != on)
-            {
-              msg_info("Verbosity changed", evt_tag_str("type", cmds[1]), evt_tag_int("on", on));
-              *type = on;
-            }
+          if (!on)
+            ll = ll - 1;
+
+          gint orig_log_level = msg_get_log_level();
+          msg_set_log_level(ll);
+
+          if (orig_log_level != msg_get_log_level())
+            msg_info("Verbosity changed",
+                     evt_tag_int("log_level", msg_get_log_level()));
         }
-      g_string_printf(result, "OK %s=%d", cmds[1], *type);
+      g_string_printf(result, "OK syslog-ng log level set to %d", msg_get_log_level());
     }
   else
     g_string_assign(result, "FAIL Invalid arguments received");
