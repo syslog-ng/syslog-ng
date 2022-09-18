@@ -252,7 +252,8 @@ assert_template_format_value_and_type(const gchar *template, const gchar *expect
 }
 
 void
-assert_template_format_value_and_type_msg(const gchar *template, const gchar *expected, LogMessageValueType expected_type, LogMessage *msg)
+assert_template_format_value_and_type_msg(const gchar *template, const gchar *expected,
+                                          LogMessageValueType expected_type, LogMessage *msg)
 {
   assert_template_format_with_escaping_and_context_msgs(template, FALSE, expected, -1, expected_type, &msg, 1);
 }
