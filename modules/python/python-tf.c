@@ -32,16 +32,21 @@
 typedef struct _PythonTfState
 {
   TFSimpleFuncState super;
+  GlobalConfig *cfg;
 } PythonTfState;
 
 static PyObject *
-_py_construct_args_tuple(LogMessage *msg, gint argc, GString *const *argv)
+_py_construct_args_tuple(PythonTfState *state, LogMessage *msg, gint argc, GString *const *argv)
 {
   PyObject *args;
   gint i;
 
   args = PyTuple_New(1 + argc - 1);
-  PyTuple_SetItem(args, 0, py_log_message_new(msg));
+
+  PyObject *py_msg = py_log_message_new(msg);
+  ((PyLogMessage *) py_msg)->cast_to_strings = !cfg_is_typing_feature_enabled(state->cfg);
+
+  PyTuple_SetItem(args, 0, py_msg);
   for (i = 1; i < argc; i++)
     {
       PyTuple_SetItem(args, i, PyBytes_FromString(argv[i]->str));
@@ -51,7 +56,8 @@ _py_construct_args_tuple(LogMessage *msg, gint argc, GString *const *argv)
 
 /* returns NULL or reference, exception is handled */
 static PyObject *
-_py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint argc, GString *const *argv)
+_py_invoke_template_function(PythonTfState *state, const gchar *function_name, LogMessage *msg, gint argc,
+                             GString *const *argv)
 {
   PyObject *callable, *ret, *args;
 
@@ -72,7 +78,7 @@ _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint a
             evt_tag_str("function", function_name),
             evt_tag_msg_reference(msg));
 
-  args = _py_construct_args_tuple(msg, argc, argv);
+  args = _py_construct_args_tuple(state, msg, argc, argv);
   ret = PyObject_CallObject(callable, args);
   Py_DECREF(args);
   Py_DECREF(callable);
@@ -114,6 +120,8 @@ static gboolean
 tf_python_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[],
                   GError **error)
 {
+  PythonTfState *state = (PythonTfState *) s;
+  state->cfg = parent->cfg;
   return tf_simple_func_prepare(self, s, parent, argc, argv, error);
 }
 
@@ -134,7 +142,7 @@ tf_python_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArg
 
   gstate = PyGILState_Ensure();
 
-  if (!(ret = _py_invoke_template_function(function_name, msg, state->super.argc, args->argv)) ||
+  if (!(ret = _py_invoke_template_function(state, function_name, msg, state->super.argc, args->argv)) ||
       !_py_convert_return_value_to_result(function_name, ret, result))
     {
       g_string_append(result, "<error>");
