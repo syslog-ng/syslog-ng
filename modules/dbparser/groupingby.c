@@ -46,6 +46,7 @@ typedef struct _GroupingBy
   FilterExprNode *trigger_condition_expr;
   FilterExprNode *where_condition_expr;
   FilterExprNode *having_condition_expr;
+  gchar *prefix;
 } GroupingBy;
 
 static NVHandle context_id_handle = 0;
@@ -129,6 +130,14 @@ grouping_by_set_synthetic_message(LogParser *s, SyntheticMessage *message)
   self->synthetic_message = message;
 }
 
+void
+grouping_by_set_prefix(LogParser *s, const gchar *prefix)
+{
+  GroupingBy *self = (GroupingBy *) s;
+
+  g_free(self->prefix);
+  self->prefix = g_strdup(prefix);
+}
 
 /* This function is called to populate the emitted_messages array in
  * msg_emitter.  It only manipulates per-thread data structure so it does
@@ -470,6 +479,8 @@ _init(LogPipe *s)
       return FALSE;
     }
 
+  synthetic_message_set_prefix(self->synthetic_message, self->prefix);
+
   _load_correlation_state(self, cfg);
 
   iv_validate_now();
@@ -523,6 +534,7 @@ _clone(LogPipe *s)
   grouping_by_set_trigger_condition(&cloned->super.super, filter_expr_clone(self->trigger_condition_expr));
   grouping_by_set_where_condition(&cloned->super.super, filter_expr_clone(self->where_condition_expr));
   grouping_by_set_having_condition(&cloned->super.super, filter_expr_clone(self->having_condition_expr));
+  grouping_by_set_prefix(&cloned->super.super, self->prefix);
 
   cloned->clone_id = self->clone_id++;
   return &cloned->super.super.super;
@@ -533,6 +545,7 @@ _free(LogPipe *s)
 {
   GroupingBy *self = (GroupingBy *) s;
 
+  g_free(self->prefix);
   log_template_unref(self->key_template);
   log_template_unref(self->sort_key_template);
   if (self->synthetic_message)
