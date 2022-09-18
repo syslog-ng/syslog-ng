@@ -34,6 +34,7 @@ typedef struct _CSVParser
   CSVScannerOptions options;
   gboolean drop_invalid;
   gchar *prefix;
+  gchar *list_name;
   gint prefix_len;
 } CSVParser;
 
@@ -103,6 +104,21 @@ csv_parser_set_prefix(LogParser *s, const gchar *prefix)
 }
 
 void
+csv_parser_set_list_name(LogParser *s, const gchar *list_name)
+{
+  CSVParser *self = (CSVParser *) s;
+
+  g_free(self->list_name);
+  if(list_name)
+  {
+    self->list_name = g_strdup(list_name);
+  }
+  else
+  {
+    self->list_name = NULL;
+  }
+}
+void
 csv_parser_set_drop_invalid(LogParser *s, gboolean drop_invalid)
 {
   CSVParser *self = (CSVParser *) s;
@@ -142,6 +158,7 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
   msg_trace("csv-parser message processing started",
             evt_tag_str ("input", input),
             evt_tag_str ("prefix", self->prefix),
+            evt_tag_str ("list_name", self->list_name),
             evt_tag_msg_reference(*pmsg));
   CSVScanner scanner;
   csv_scanner_init(&scanner, &self->options, input);
@@ -184,6 +201,7 @@ csv_parser_clone(LogPipe *s)
   csv_scanner_options_copy(&cloned->options, &self->options);
   cloned->super.template = log_template_ref(self->super.template);
   csv_parser_set_prefix(&cloned->super, self->prefix);
+  csv_parser_set_list_name(&cloned->super, self->list_name);
   csv_parser_set_drop_invalid(&cloned->super, self->drop_invalid);
   return &cloned->super.super;
 }
@@ -195,6 +213,7 @@ csv_parser_free(LogPipe *s)
 
   csv_scanner_options_clean(&self->options);
   g_free(self->prefix);
+  g_free(self->list_name);
   log_parser_free_method(s);
 }
 
