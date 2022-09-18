@@ -29,8 +29,13 @@
 #include "python-logmsg.h"
 #include <time.h>
 
+typedef struct _PythonTfState
+{
+  TFSimpleFuncState super;
+} PythonTfState;
+
 static PyObject *
-_py_construct_args_tuple(LogMessage *msg, gint argc, GString *argv[])
+_py_construct_args_tuple(LogMessage *msg, gint argc, GString *const *argv)
 {
   PyObject *args;
   gint i;
@@ -46,7 +51,7 @@ _py_construct_args_tuple(LogMessage *msg, gint argc, GString *argv[])
 
 /* returns NULL or reference, exception is handled */
 static PyObject *
-_py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint argc, GString *argv[])
+_py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint argc, GString *const *argv)
 {
   PyObject *callable, *ret, *args;
 
@@ -105,21 +110,31 @@ _py_convert_return_value_to_result(const gchar *function_name, PyObject *ret, GS
   return TRUE;
 }
 
-static void
-tf_python(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
+static gboolean
+tf_python_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[],
+                  GError **error)
 {
+  return tf_simple_func_prepare(self, s, parent, argc, argv, error);
+}
+
+static void
+tf_python_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+               LogMessageValueType *type)
+{
+  PythonTfState *state = (PythonTfState *) s;
   PyGILState_STATE gstate;
   const gchar *function_name;
   PyObject *ret;
+  LogMessage *msg = args->messages[args->num_messages-1];
 
   *type = LM_VT_STRING;
-  if (argc == 0)
+  if (state->super.argc == 0)
     return;
-  function_name = argv[0]->str;
+  function_name = args->argv[0]->str;
 
   gstate = PyGILState_Ensure();
 
-  if (!(ret = _py_invoke_template_function(function_name, msg, argc, argv)) ||
+  if (!(ret = _py_invoke_template_function(function_name, msg, state->super.argc, args->argv)) ||
       !_py_convert_return_value_to_result(function_name, ret, result))
     {
       g_string_append(result, "<error>");
@@ -128,4 +143,5 @@ tf_python(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessa
   PyGILState_Release(gstate);
 }
 
-TEMPLATE_FUNCTION_SIMPLE(tf_python);
+TEMPLATE_FUNCTION(TFSimpleFuncState, tf_python, tf_python_prepare, tf_simple_func_eval,
+                  tf_python_call, tf_simple_func_free_state, NULL);
