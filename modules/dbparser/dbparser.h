@@ -34,6 +34,7 @@ typedef struct _LogDBParser LogDBParser;
 void log_db_parser_set_drop_unmatched(LogDBParser *self, gboolean setting);
 void log_db_parser_set_program_template_ref(LogParser *s, LogTemplate *program_template);
 void log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file);
+void log_db_parser_set_prefix(LogDBParser *self, const gchar *prefix);
 LogParser *log_db_parser_new(GlobalConfig *cfg);
 
 void log_pattern_database_init(void);

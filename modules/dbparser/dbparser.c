@@ -40,6 +40,7 @@ struct _LogDBParser
   struct iv_timer tick;
   PatternDB *db;
   gchar *db_file;
+  gchar *prefix;
   time_t db_file_last_check;
   ino_t db_file_inode;
   time_t db_file_mtime;
@@ -132,7 +133,7 @@ log_db_parser_init(LogPipe *s)
   self->db = cfg_persist_config_fetch(cfg, log_db_parser_format_persist_name(self));
 
   if (!self->db)
-    self->db = pattern_db_new(NULL);
+    self->db = pattern_db_new(self->prefix);
 
   log_db_parser_reload_database(self);
   if (self->db)
@@ -233,6 +234,13 @@ log_db_parser_set_db_file(LogDBParser *self, const gchar *db_file)
 }
 
 void
+log_db_parser_set_prefix(LogDBParser *self, const gchar *prefix)
+{
+  g_free(self->prefix);
+  self->prefix = g_strdup(prefix);
+}
+
+void
 log_db_parser_set_drop_unmatched(LogDBParser *self, gboolean setting)
 {
   self->drop_unmatched = setting;
@@ -249,6 +257,7 @@ log_db_parser_clone(LogPipe *s)
 
   cloned = (LogDBParser *) log_db_parser_new(s->cfg);
   log_db_parser_set_db_file(cloned, self->db_file);
+  log_db_parser_set_prefix(cloned, self->prefix);
   log_db_parser_set_drop_unmatched(cloned, self->drop_unmatched);
   log_db_parser_set_program_template_ref(&cloned->super.super, log_template_ref(self->program_template));
   log_parser_set_template(&cloned->super.super, log_template_ref(self->super.super.template));
@@ -275,6 +284,7 @@ log_db_parser_free(LogPipe *s)
     pattern_db_free(self->db);
 
   g_free(self->db_file);
+  g_free(self->prefix);
   stateful_parser_free_method(s);
 }
 
