@@ -27,6 +27,7 @@
 #include "python-main.h"
 #include "template/simple-function.h"
 #include "python-logmsg.h"
+#include "scratch-buffers.h"
 #include <time.h>
 
 typedef struct _PythonTfState
@@ -99,19 +100,25 @@ _py_invoke_template_function(PythonTfState *state, const gchar *function_name, L
 
 /* NOTE: consumes ret */
 static gboolean
-_py_convert_return_value_to_result(const gchar *function_name, PyObject *ret, GString *result)
+_py_convert_return_value_to_result(PythonTfState *state, const gchar *function_name, PyObject *ret, GString *result,
+                                   LogMessageValueType *type)
 {
-  if (!is_py_obj_bytes_or_string_type(ret))
+  if (!cfg_is_typing_feature_enabled(state->cfg) && !is_py_obj_bytes_or_string_type(ret))
     {
-      msg_error("$(python): The return value is not str or unicode",
-                evt_tag_str("function", function_name),
-                evt_tag_str("type", ret->ob_type->tp_name));
+      msg_error("$(python): The current config version does not support returning non-string values from Python "
+                "functions. Please return str or bytes values from your Python function, use an explicit syslog-ng "
+                "level cast to string() or set the config version to post 4.0",
+                cfg_format_config_version_tag(state->cfg));
       Py_DECREF(ret);
       return FALSE;
     }
-  const gchar *ret_as_c_str;
-  py_bytes_or_string_to_string(ret, &ret_as_c_str);
-  g_string_append(result, ret_as_c_str);
+
+  if (!py_obj_to_log_msg_value(ret, result, type))
+    {
+      Py_DECREF(ret);
+      return FALSE;
+    }
+
   Py_DECREF(ret);
   return TRUE;
 }
@@ -135,7 +142,6 @@ tf_python_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArg
   PyObject *ret;
   LogMessage *msg = args->messages[args->num_messages-1];
 
-  *type = LM_VT_STRING;
   if (state->super.argc == 0)
     return;
   function_name = args->argv[0]->str;
@@ -143,9 +149,10 @@ tf_python_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArg
   gstate = PyGILState_Ensure();
 
   if (!(ret = _py_invoke_template_function(state, function_name, msg, state->super.argc, args->argv)) ||
-      !_py_convert_return_value_to_result(function_name, ret, result))
+      !_py_convert_return_value_to_result(state, function_name, ret, result, type))
     {
       g_string_append(result, "<error>");
+      *type = LM_VT_STRING;
     }
 
   PyGILState_Release(gstate);
