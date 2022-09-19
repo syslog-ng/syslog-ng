@@ -504,11 +504,7 @@ cfg_new(gint version)
   self->threaded = TRUE;
   self->pass_unix_credentials = -1;
 
-  log_template_options_defaults(&self->template_options);
-  self->template_options.ts_format = TS_FMT_BSD;
-  self->template_options.frac_digits = 0;
-  self->template_options.on_error = ON_ERROR_DROP_MESSAGE;
-
+  log_template_options_global_defaults(&self->template_options);
   host_resolve_options_global_defaults(&self->host_resolve_options);
 
   self->recv_time_zone = NULL;
