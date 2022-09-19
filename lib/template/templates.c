@@ -27,6 +27,7 @@
 #include "template/macros.h"
 #include "template/escaping.h"
 #include "template/repr.h"
+#include "timeutils/format.h"
 #include "cfg.h"
 
 gboolean
@@ -453,6 +454,15 @@ log_template_options_defaults(LogTemplateOptions *options)
   options->ts_format = -1;
   options->on_error = -1;
   options->use_fqdn = FALSE;
+}
+
+void
+log_template_options_global_defaults(LogTemplateOptions *options)
+{
+  log_template_options_defaults(options);
+  options->ts_format = TS_FMT_BSD;
+  options->frac_digits = 0;
+  options->on_error = ON_ERROR_DROP_MESSAGE;
 }
 
 GQuark
