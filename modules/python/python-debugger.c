@@ -112,7 +112,9 @@ python_fetch_debugger_command(void)
       _py_finish_exception_handling();
       goto exit;
     }
-  if (!is_py_obj_bytes_or_string_type(ret))
+
+  const gchar *str;
+  if (!py_bytes_or_string_to_string(ret, &str))
     {
       msg_error("Return value from debugger fetch_command is not a string",
                 evt_tag_str("function", DEBUGGER_FETCH_COMMAND),
@@ -120,9 +122,6 @@ python_fetch_debugger_command(void)
       Py_DECREF(ret);
       goto exit;
     }
-  const gchar *str;
-  py_bytes_or_string_to_string(ret, &str);
-  command = g_strdup(str);
   Py_DECREF(ret);
 exit:
   PyGILState_Release(gstate);

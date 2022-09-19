@@ -386,14 +386,13 @@ _py_persist_type_get(PyObject *o, PyObject *key)
 {
   PyPersist *self = (PyPersist *)o;
 
-  if (!is_py_obj_bytes_or_string_type(key))
+  const gchar *name;
+  if (!py_bytes_or_string_to_string(key, &name))
     {
       PyErr_SetString(PyExc_TypeError, "key is not a string object");
       return NULL;
     }
 
-  const gchar *name;
-  py_bytes_or_string_to_string(key, &name);
   guint8 type;
   gchar *value = _lookup_entry(self, name, &type);
 
@@ -421,7 +420,8 @@ _py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
   PyPersist *self = (PyPersist *)o;
   guint8 type;
 
-  if (!is_py_obj_bytes_or_string_type(k))
+  const gchar *key;
+  if (!py_bytes_or_string_to_string(k, &key))
     {
       PyErr_SetString(PyExc_TypeError, "key is not a string object");
       return -1;
@@ -438,9 +438,6 @@ _py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
       PyErr_SetString(PyExc_TypeError, "Value must be either string, integer or bytes");
       return -1;
     }
-
-  const gchar *key;
-  py_bytes_or_string_to_string(k, &key);
 
   if (!_store_entry(self, key, type, v))
     {

@@ -75,12 +75,6 @@ _py_append_pylist_to_list(PyObject *py_list, GList **list)
   for (int i = 0; i < len; i++)
     {
       py_str = PyList_GetItem(py_list, i); // Borrowed reference
-      if (!is_py_obj_bytes_or_string_type(py_str))
-        {
-          msg_debug("PyList contained a non-string object when trying to append to GList");
-          goto exit;
-        }
-
       if (!py_bytes_or_string_to_string(py_str, &str))
         {
           msg_debug("py_bytes_or_string_to_string failed when trying to append PyList to GList");

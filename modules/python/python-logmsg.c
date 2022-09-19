@@ -76,14 +76,12 @@ _is_key_blacklisted(const gchar *key)
 static PyObject *
 _py_log_message_subscript(PyObject *o, PyObject *key)
 {
-  if (!is_py_obj_bytes_or_string_type(key))
+  const gchar *name;
+  if (!py_bytes_or_string_to_string(key, &name))
     {
       PyErr_SetString(PyExc_TypeError, "key is not a string object");
       return NULL;
     }
-
-  const gchar *name;
-  py_bytes_or_string_to_string(key, &name);
 
   if (_is_key_blacklisted(name))
     {
@@ -109,7 +107,8 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
 static int
 _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
 {
-  if (!is_py_obj_bytes_or_string_type(key))
+  const gchar *name;
+  if (!py_bytes_or_string_to_string(key, &name))
     {
       PyErr_SetString(PyExc_TypeError, "key is not a string object");
       return -1;
@@ -117,8 +116,6 @@ _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
 
   PyLogMessage *py_msg = (PyLogMessage *) o;
   LogMessage *msg = py_msg->msg;
-  const gchar *name;
-  py_bytes_or_string_to_string(key, &name);
 
   if (log_msg_is_write_protected(msg))
     {
