@@ -742,7 +742,7 @@ log_macros_global_init(void)
 
   /* init the uptime (SYSUPTIME macro) */
   g_get_current_time(&app_uptime);
-  log_template_options_defaults(&template_options_for_macro_expand);
+  log_template_options_global_defaults(&template_options_for_macro_expand);
 
   macro_hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   for (i = 0; macros[i].name; i++)
