@@ -143,6 +143,17 @@ cfg_set_mark_mode(GlobalConfig *self, const gchar *mark_mode)
   self->mark_mode = cfg_lookup_mark_mode(mark_mode);
 }
 
+gboolean
+cfg_set_log_level(GlobalConfig *self, const gchar *log_level)
+{
+  gint ll = msg_map_string_to_log_level(log_level);
+
+  if (ll < 0)
+    return FALSE;
+  configuration->log_level = ll;
+  return TRUE;
+}
+
 static void
 _invoke_module_init(gchar *key, ModuleConfig *mc, gpointer *args)
 {
@@ -314,6 +325,7 @@ cfg_init(GlobalConfig *cfg)
 {
   gint regerr;
 
+  msg_apply_config_log_level(cfg->log_level);
   if (cfg->file_template_name && !(cfg->file_template = cfg_tree_lookup_template(&cfg->tree, cfg->file_template_name)))
     msg_error("Error resolving file template",
               evt_tag_str("name", cfg->file_template_name));
@@ -501,6 +513,7 @@ cfg_new(gint version)
 
   self->recv_time_zone = NULL;
   self->keep_timestamp = TRUE;
+  self->log_level = -1;
 
   self->use_uniqid = FALSE;
 

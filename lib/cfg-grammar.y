@@ -192,6 +192,7 @@
 %token KW_KEEP_HOSTNAME               10092
 %token KW_CHECK_HOSTNAME              10093
 %token KW_BAD_HOSTNAME                10094
+%token KW_LOG_LEVEL                   10095
 
 %token KW_KEEP_TIMESTAMP              10100
 
@@ -924,6 +925,7 @@ options_item
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = g_strdup($3); free($3); }
 	| KW_RECV_TIME_ZONE '(' string ')'	{ configuration->recv_time_zone = g_strdup($3); free($3); }
 	| KW_MIN_IW_SIZE_PER_READER '(' positive_integer ')' { configuration->min_iw_size_per_reader = $3; }
+	| KW_LOG_LEVEL '(' string ')'		{ CHECK_ERROR(cfg_set_log_level(configuration, $3), @3, "Unknown log-level() option"); free($3); }
 	| { last_template_options = &configuration->template_options; } template_option
 	| { last_host_resolve_options = &configuration->host_resolve_options; } host_resolve_option
 	| { last_stats_options = &configuration->stats_options; } stat_option

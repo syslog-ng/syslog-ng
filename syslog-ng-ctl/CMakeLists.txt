@@ -7,6 +7,8 @@ set(SYSLOG_NG_CTL_SOURCES
     commands/credentials.c
     commands/verbose.h
     commands/verbose.c
+    commands/log-level.h
+    commands/log-level.c
     commands/ctl-stats.h
     commands/ctl-stats.c
     commands/query.h

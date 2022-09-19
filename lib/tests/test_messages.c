@@ -74,3 +74,67 @@ Test(test_messages, test_errno_capture)
   msg_set_post_func(test_errno_capture_asserter);
   msg_error("test errno capture", (errno=10, evt_tag_error("error")));
 }
+
+Test(test_messages, test_msg_set_log_level_sets_flags_correctly)
+{
+  verbose_flag = FALSE;
+  debug_flag = FALSE;
+  trace_flag = FALSE;
+
+  msg_set_log_level(0);
+  cr_assert_not(verbose_flag);
+  cr_assert_not(debug_flag);
+  cr_assert_not(trace_flag);
+  cr_assert_eq(msg_get_log_level(), 0);
+
+  msg_set_log_level(1);
+  cr_assert(verbose_flag);
+  cr_assert_not(debug_flag);
+  cr_assert_not(trace_flag);
+  cr_assert_eq(msg_get_log_level(), 1);
+
+  msg_set_log_level(2);
+  cr_assert(verbose_flag);
+  cr_assert(debug_flag);
+  cr_assert_not(trace_flag);
+  cr_assert_eq(msg_get_log_level(), 2);
+
+  msg_set_log_level(3);
+  cr_assert(verbose_flag);
+  cr_assert(debug_flag);
+  cr_assert(trace_flag);
+  cr_assert_eq(msg_get_log_level(), 3);
+
+  /* this does nothing */
+  msg_set_log_level(-1);
+  cr_assert(verbose_flag);
+  cr_assert(debug_flag);
+  cr_assert(trace_flag);
+  cr_assert_eq(msg_get_log_level(), 3);
+
+  msg_set_log_level(0);
+  cr_assert_not(verbose_flag);
+  cr_assert_not(debug_flag);
+  cr_assert_not(trace_flag);
+  cr_assert_eq(msg_get_log_level(), 0);
+
+  /* this does nothing */
+  msg_set_log_level(-1);
+  cr_assert_not(verbose_flag);
+  cr_assert_not(debug_flag);
+  cr_assert_not(trace_flag);
+  cr_assert_eq(msg_get_log_level(), 0);
+}
+
+Test(test_messages, test_msg_apply_config_log_level_sets_log_level_if_unset)
+{
+  msg_apply_config_log_level(3);
+  cr_assert_eq(msg_get_log_level(), 3);
+}
+
+Test(test_messages, test_msg_apply_config_log_level_is_ignored_if_already_set)
+{
+  msg_apply_cmdline_log_level(1);
+  msg_apply_config_log_level(3);
+  cr_assert_eq(msg_get_log_level(), 1);
+}

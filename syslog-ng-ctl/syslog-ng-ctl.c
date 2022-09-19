@@ -32,6 +32,7 @@
 #include "commands/config.h"
 #include "commands/credentials.h"
 #include "commands/verbose.h"
+#include "commands/log-level.h"
 #include "commands/ctl-stats.h"
 #include "commands/query.h"
 #include "commands/license.h"
@@ -113,6 +114,7 @@ static CommandDescriptor modes[] =
   { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose, NULL },
   { "debug", verbose_options, "Enable/query debug messages", slng_verbose, NULL },
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose, NULL },
+  { "log-level", log_level_options, "Set syslog-ng loglevel (verbose, debug, trace)", slng_log_level, NULL },
   { "stop", no_options, "Stop syslog-ng process", slng_stop, NULL },
   { "reload", no_options, "Reload syslog-ng", slng_reload, NULL },
   { "reopen", no_options, "Re-open of log destination files", slng_reopen, NULL },

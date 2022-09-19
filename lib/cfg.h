@@ -91,6 +91,7 @@ struct _GlobalConfig
   gint log_fifo_size;
   gint log_msg_size;
   gboolean trim_large_messages;
+  gint log_level;
 
   gboolean create_dirs;
   FilePermOptions file_perm_options;
@@ -136,6 +137,7 @@ gboolean cfg_allow_config_dups(GlobalConfig *self);
 void cfg_bad_hostname_set(GlobalConfig *self, gchar *bad_hostname_re);
 gint cfg_lookup_mark_mode(const gchar *mark_mode);
 void cfg_set_mark_mode(GlobalConfig *self, const gchar *mark_mode);
+gboolean cfg_set_log_level(GlobalConfig *self, const gchar *log_level);
 
 gint cfg_tz_convert_value(gchar *convert);
 gint cfg_ts_format_value(gchar *format);

@@ -52,6 +52,8 @@ typedef struct _MsgContext
   gchar recurse_trigger[128];
 } MsgContext;
 
+static gint active_log_level = -1;
+static gint cmdline_log_level = -1;
 gboolean startup_debug_flag = 0;
 gboolean debug_flag = 0;
 gboolean verbose_flag = 0;
@@ -274,6 +276,61 @@ msg_post_message(LogMessage *msg)
     log_msg_unref(msg);
 }
 
+gint
+msg_map_string_to_log_level(const gchar *log_level)
+{
+  if (strcasecmp(log_level, "default") == 0)
+    return 0;
+  else if (strcasecmp(log_level, "verbose") == 0 || strcmp(log_level, "v") == 0)
+    return 1;
+  else if (strcasecmp(log_level, "debug") == 0 || strcmp(log_level, "d") == 0)
+    return 2;
+  else if (strcasecmp(log_level, "trace") == 0 || strcmp(log_level, "t") == 0)
+    return 3;
+  return -1;
+}
+
+void
+msg_set_log_level(gint new_log_level)
+{
+  if (new_log_level < 0)
+    return;
+
+  verbose_flag = FALSE;
+  debug_flag = FALSE;
+  trace_flag = FALSE;
+
+  if (new_log_level >= 1)
+    verbose_flag = TRUE;
+  if (new_log_level >= 2)
+    debug_flag = TRUE;
+  if (new_log_level >= 3)
+    trace_flag = TRUE;
+  active_log_level = new_log_level;
+}
+
+gint
+msg_get_log_level(void)
+{
+  if (active_log_level < 0)
+    return 0;
+  return active_log_level;
+}
+
+void
+msg_apply_cmdline_log_level(gint new_log_level)
+{
+  msg_set_log_level(new_log_level);
+  cmdline_log_level = new_log_level;
+}
+
+void
+msg_apply_config_log_level(gint new_log_level)
+{
+  if (cmdline_log_level < 0)
+    msg_set_log_level(new_log_level);
+}
+
 static guint g_log_handler_id;
 static guint glib_handler_id;
 
@@ -316,13 +373,45 @@ msg_deinit(void)
     }
 }
 
+static gboolean
+_process_compat_log_level_option(const gchar *option_name,
+                                 const gchar *value,
+                                 gpointer data,
+                                 GError **error)
+{
+  while (*option_name == '-') option_name++;
+  gint ll = msg_map_string_to_log_level(option_name);
+
+  if (ll < 0)
+    return FALSE;
+  if (ll > cmdline_log_level)
+    msg_apply_cmdline_log_level(ll);
+  return TRUE;
+}
+
+static gboolean
+_process_log_level_value(const gchar *option_name,
+                         const gchar *value,
+                         gpointer data,
+                         GError **error)
+{
+  gint ll = msg_map_string_to_log_level(value);
+
+  if (ll < 0)
+    return FALSE;
+  if (ll > cmdline_log_level)
+    msg_apply_cmdline_log_level(ll);
+  return TRUE;
+}
+
 static GOptionEntry msg_option_entries[] =
 {
-  { "startup-debug",     'r',         0, G_OPTION_ARG_NONE, &startup_debug_flag, "Enable debug logging during startup", NULL},
-  { "verbose",           'v',         0, G_OPTION_ARG_NONE, &verbose_flag, "Be a bit more verbose", NULL },
-  { "debug",             'd',         0, G_OPTION_ARG_NONE, &debug_flag, "Enable debug messages", NULL},
-  { "trace",             't',         0, G_OPTION_ARG_NONE, &trace_flag, "Enable trace messages", NULL },
-  { "stderr",            'e',         0, G_OPTION_ARG_NONE, &log_stderr,  "Log messages to stderr", NULL},
+  { "startup-debug",     'r', 0,                    G_OPTION_ARG_NONE, &startup_debug_flag, "Enable debug logging during startup", NULL},
+  { "verbose",           'v', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, _process_compat_log_level_option, "Be a bit more verbose", NULL },
+  { "debug",             'd', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, _process_compat_log_level_option, "Enable debug messages", NULL},
+  { "trace",             't', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, _process_compat_log_level_option, "Enable trace messages", NULL },
+  { "log-level",         'L', 0,                    G_OPTION_ARG_CALLBACK, _process_log_level_value, "Set log level to verbose|debug|trace", NULL },
+  { "stderr",            'e', 0,                    G_OPTION_ARG_NONE, &log_stderr,  "Log messages to stderr", NULL},
   { NULL }
 };
 

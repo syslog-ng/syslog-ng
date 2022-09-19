@@ -125,57 +125,72 @@ Test(control_cmds, test_log)
   cr_assert(first_line_eq(response, "FAIL Invalid arguments received"),
             "Bad reply: [%s]", response);
 
-  verbose_flag = 0;
-  debug_flag = 1;
-  trace_flag = 1;
+  msg_set_log_level(0);
   _run_command("LOG VERBOSE", &response);
-  cr_assert(first_line_eq(response, "OK VERBOSE=0"),
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 0"),
             "Bad reply: [%s]", response);
 
   _run_command("LOG VERBOSE ON", &response);
-  cr_assert(first_line_eq(response, "OK VERBOSE=1"),
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 1"),
             "Bad reply: [%s]", response);
   cr_assert_eq(verbose_flag, 1, "Flag isn't changed");
 
   _run_command("LOG VERBOSE OFF", &response);
-  cr_assert(first_line_eq(response, "OK VERBOSE=0"),
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 0"),
             "Bad reply: [%s]", response);
   cr_assert_eq(verbose_flag, 0, "Flag isn't changed");
 
 
-  debug_flag = 0;
-  verbose_flag = 1;
-  trace_flag = 1;
+  msg_set_log_level(1);
   _run_command("LOG DEBUG", &response);
-  cr_assert(first_line_eq(response, "OK DEBUG=0"),
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 1"),
             "Bad reply: [%s]", response);
 
   _run_command("LOG DEBUG ON", &response);
-  cr_assert(first_line_eq(response, "OK DEBUG=1"),
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 2"),
             "Bad reply: [%s]", response);
   cr_assert_eq(debug_flag, 1, "Flag isn't changed");
 
   _run_command("LOG DEBUG OFF", &response);
-  cr_assert(first_line_eq(response, "OK DEBUG=0"),
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 1"),
             "Bad reply: [%s]", response);
   cr_assert_eq(debug_flag, 0, "Flag isn't changed");
 
-  debug_flag = 1;
-  verbose_flag = 1;
-  trace_flag = 0;
+  msg_set_log_level(2);
   _run_command("LOG TRACE", &response);
-  cr_assert(first_line_eq(response, "OK TRACE=0"),
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 2"),
             "Bad reply: [%s]", response);
 
   _run_command("LOG TRACE ON", &response);
-  cr_assert(first_line_eq(response, "OK TRACE=1"),
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 3"),
             "Bad reply: [%s]", response);
   cr_assert_eq(trace_flag, 1, "Flag isn't changed");
 
   _run_command("LOG TRACE OFF", &response);
-  cr_assert(first_line_eq(response, "OK TRACE=0"),
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 2"),
             "Bad reply: [%s]", response);
   cr_assert_eq(trace_flag, 0, "Flag isn't changed");
+
+}
+
+Test(control_cmds, test_log_level)
+{
+  const gchar *response;
+
+  msg_set_log_level(0);
+  _run_command("LOG LEVEL foo", &response);
+  cr_assert(first_line_eq(response, "FAIL Invalid arguments received"),
+            "Bad reply: [%s]", response);
+
+  msg_set_log_level(0);
+  _run_command("LOG LEVEL debug", &response);
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 2"),
+            "Bad reply: [%s]", response);
+
+  msg_set_log_level(1);
+  _run_command("LOG LEVEL", &response);
+  cr_assert(first_line_eq(response, "OK syslog-ng log level set to 1"),
+            "Bad reply: [%s]", response);
 
 }
 

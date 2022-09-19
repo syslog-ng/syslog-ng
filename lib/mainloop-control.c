@@ -34,13 +34,49 @@
 
 #include <string.h>
 
+static gboolean
+_control_process_log_level(const gchar *level, GString *result)
+{
+  if (!level)
+    {
+      /* query current log level */
+      return TRUE;
+    }
+  gint ll = msg_map_string_to_log_level(level);
+  if (ll < 0)
+    return FALSE;
+
+  msg_set_log_level(ll);
+  return TRUE;
+}
+
+static gboolean
+_control_process_compat_log_command(const gchar *level, const gchar *onoff, GString *result)
+{
+  if (!level)
+    return FALSE;
+
+  gint ll = msg_map_string_to_log_level(level);
+  if (ll < 0)
+    return FALSE;
+
+  if (onoff)
+    {
+      gboolean on = g_str_equal(onoff, "ON");
+      if (!on)
+        ll = ll - 1;
+
+      msg_set_log_level(ll);
+    }
+  return TRUE;
+}
+
 static void
 control_connection_message_log(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   gchar **cmds = g_strsplit(command->str, " ", 3);
-  gboolean on;
-  int *type = NULL;
   GString *result = g_string_sized_new(128);
+  gboolean success;
 
   if (!cmds[1])
     {
@@ -48,26 +84,19 @@ control_connection_message_log(ControlConnection *cc, GString *command, gpointer
       goto exit;
     }
 
-  if (g_str_equal(cmds[1], "DEBUG"))
-    type = &debug_flag;
-  else if (g_str_equal(cmds[1], "VERBOSE"))
-    type = &verbose_flag;
-  else if (g_str_equal(cmds[1], "TRACE"))
-    type = &trace_flag;
+  gint orig_log_level = msg_get_log_level();
 
-  if (type)
-    {
-      if (cmds[2])
-        {
-          on = g_str_equal(cmds[2], "ON");
-          if (*type != on)
-            {
-              msg_info("Verbosity changed", evt_tag_str("type", cmds[1]), evt_tag_int("on", on));
-              *type = on;
-            }
-        }
-      g_string_printf(result, "OK %s=%d", cmds[1], *type);
-    }
+  if (g_str_equal(cmds[1], "LEVEL"))
+    success = _control_process_log_level(cmds[2], result);
+  else
+    success = _control_process_compat_log_command(cmds[1], cmds[2], result);
+
+  if (orig_log_level != msg_get_log_level())
+    msg_info("Verbosity changed",
+             evt_tag_int("log_level", msg_get_log_level()));
+
+  if (success)
+    g_string_printf(result, "OK syslog-ng log level set to %d", msg_get_log_level());
   else
     g_string_assign(result, "FAIL Invalid arguments received");
 exit:
