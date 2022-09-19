@@ -963,7 +963,10 @@ debun_extra_debian () {
 	printf "\nDebian specific checks\n"
 	printf "Check package files integrity\n"
 	cd /
-	md5sum --quiet -c /var/lib/dpkg/info/syslog-ng*.md5sums && printf "Package files are intact\n"
+	for package in $(dpkg -l syslog-ng\* | grep "ii" | awk -F " " '{print $2}')
+	do
+		dpkg --verify ${package} && printf "Package ${package} files are intact\n"
+	done
 	printf "list syslog-related packages\n"
 	dpkg -l |grep syslog > ${tmpdir}/deb.packages
 }
