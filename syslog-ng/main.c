@@ -87,6 +87,26 @@ static GOptionEntry syslogng_options[] =
   { NULL },
 };
 
+
+static void
+resolve_paths_in_help_texts(void)
+{
+  for (GOptionEntry *oe = syslogng_options; oe->long_name; oe++)
+    {
+      oe->description = resolve_path_variables_in_text(oe->description);
+    }
+}
+
+static void
+free_help_texts(void)
+{
+  for (GOptionEntry *oe = syslogng_options; oe->long_name; oe++)
+    {
+      g_free((gpointer) oe->description);
+    }
+}
+
+
 #define INSTALL_DAT_INSTALLER_VERSION "INSTALLER_VERSION"
 
 static void
@@ -217,6 +237,7 @@ main(int argc, char *argv[])
   g_process_set_argv_space(argc, (gchar **) argv);
 
   resolved_configurable_paths_init(&resolvedConfigurablePaths);
+  resolve_paths_in_help_texts();
 
   ctx = g_option_context_new("syslog-ng");
   g_process_add_option_group(ctx);
@@ -231,6 +252,8 @@ main(int argc, char *argv[])
       return 1;
     }
   g_option_context_free(ctx);
+  free_help_texts();
+
   if (argc > 1)
     {
       fprintf(stderr, "Excess number of arguments\n");
