@@ -32,7 +32,6 @@ typedef struct _FileReopener FileReopener;
 struct _FileFlushSignalData
 {
   const gchar *filename;
-  gsize size;
   FileReopener *reopener;
 };
 

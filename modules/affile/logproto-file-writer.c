@@ -28,7 +28,6 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/uio.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 typedef struct _LogProtoFileWriter
@@ -143,14 +142,10 @@ log_proto_file_writer_flush(LogProtoClient *s)
   self->sum_len = 0;
 
   const gchar *file_name = self->filename;
-  struct stat st;
-  //gsize file_size = lseek(self->fd, 0, SEEK_END);
-  stat(file_name, &st);
 
   FileFlushSignalData signal_data =
   {
     .filename = file_name,
-    .size = st.st_size,
     .reopener = &self->reopener
   };
 

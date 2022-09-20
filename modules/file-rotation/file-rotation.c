@@ -25,6 +25,7 @@
 #include "modules/affile/file-signals.h"
 #include "driver.h"
 #include "time.h"
+#include <sys/stat.h>
 
 static void
 _slot_file_rotation(FileRotationPlugin *self, FileFlushSignalData *data)
@@ -38,7 +39,10 @@ _slot_file_rotation(FileRotationPlugin *self, FileFlushSignalData *data)
       process_file_removal(self, data->filename);
     }
 
-  if(data->size >= self->size)
+  struct stat st;
+  stat(data->filename, &st);
+
+  if(st.st_size > self->size)
     {
       time_t now = time(NULL);
       struct tm *tm = localtime(&now);
@@ -63,7 +67,19 @@ _slot_file_rotation(FileRotationPlugin *self, FileFlushSignalData *data)
 
       g_free(new_filename);
 
-      self->number_of_time_rotated++;
+      gsize max_index = 0;
+      for(gsize i = 0; i < self->number_of_file_rotations; i++)
+        {
+          gchar *filename = g_strdup_printf("%s%s.%ld", data->filename, date, i);
+          if(g_file_test(filename, G_FILE_TEST_EXISTS))
+            {
+              max_index = i;
+            }
+          g_free(filename);
+        }
+
+      self->number_of_time_rotated= max_index + 1;
+
 
       file_reopener_request_reopen(data->reopener);
     }
