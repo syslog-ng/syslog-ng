@@ -25,10 +25,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.dockerhub-username }}
           password: ${{ secrets.dockerhub-password }}
@@ -36,7 +36,7 @@ jobs:
       - name: Extract metadata (syslog-ng version) for Docker
         if: inputs.pkg-type == 'stable'
         id: stable-tags
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         with:
           images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: type=match,pattern=syslog-ng-(.*),group=1
@@ -56,10 +56,19 @@ jobs:
           . .github/workflows/gh-tools.sh
           gh_output TAGS
 
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: arm64
+
+      - name: Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
       - name: Build and push Docker image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: docker/
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.tags.outputs.TAGS }}
           build-args: PKG_TYPE=${{ inputs.pkg-type }}
