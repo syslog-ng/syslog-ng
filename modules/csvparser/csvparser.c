@@ -169,6 +169,8 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
 
   key_formatter_t _key_formatter = dispatch_key_formatter(self->prefix);
   gint i = 0;
+  GString *parsed_values;
+  parsed_values = scratch_buffers_alloc();
 
   while (csv_scanner_scan_next(&scanner))
     {
@@ -182,8 +184,32 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
                                   i, csv_scanner_get_current_value(&scanner),
                                   csv_scanner_get_current_value_len(&scanner),
                                   LM_VT_STRING);
+      if(self->list_name)
+      {
+        if(i==0)
+        {
+          g_string_assign(parsed_values, csv_scanner_get_current_value(&scanner));
+        }
+        else
+        {
+          g_string_append_c(parsed_values, ',');
+          g_string_append(parsed_values, csv_scanner_get_current_value(&scanner));
+        }
+      }
+      
       i++;
+
     }
+
+  
+  if(self->list_name)
+  {
+    log_msg_set_value_by_name_with_type(msg,
+                                        self->list_name,
+                                        parsed_values->str,
+                                        strlen(parsed_values->str),
+                                        LM_VT_STRING);
+  }
 
   gboolean result = TRUE;
   if (self->drop_invalid && !csv_scanner_is_scan_complete(&scanner))

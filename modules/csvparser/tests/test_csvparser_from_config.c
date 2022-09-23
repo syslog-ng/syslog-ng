@@ -104,6 +104,16 @@ Test(parser, test_index_macros)
   assert_log_message_value_by_name(msg, "2", "baz");
 }
 
+
+Test(parser, test_named_list)
+{
+  LogParser *test_parser = create_parser_rule("csv-parser(list_name('list2'));");
+
+  invoke_parser_rule(test_parser, msg);
+  assert_log_message_value_by_name(msg, "list2", "foo,bar,baz");
+  //assert_template_format("$(list-nth 0 '\"foo,\",\"bar\",\"baz\"')", "foo,");
+}
+
 void
 setup(void)
 {
