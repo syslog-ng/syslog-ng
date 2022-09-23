@@ -285,15 +285,15 @@ Test(csv_scanner, columnless_no_flags)
   cr_expect(!_scan_complete());
 
   cr_expect(_scan_next());
-  cr_expect(strcmp(csv_scanner_get_current_value(&scanner),"val1")==0);
+  cr_expect(strcmp(csv_scanner_get_current_value(&scanner), "val1")==0);
   cr_expect(!_scan_complete());
 
   cr_expect(_scan_next());
-  cr_expect(strcmp(csv_scanner_get_current_value(&scanner),"val2")==0);
+  cr_expect(strcmp(csv_scanner_get_current_value(&scanner), "val2")==0);
   cr_expect(!_scan_complete());
 
   cr_expect(_scan_next());
-  cr_expect(strcmp(csv_scanner_get_current_value(&scanner),"val3")==0);
+  cr_expect(strcmp(csv_scanner_get_current_value(&scanner), "val3")==0);
   cr_expect(!_scan_complete());
 
   /* go past the last column */

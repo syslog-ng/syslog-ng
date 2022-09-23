@@ -98,7 +98,7 @@ Test(parser, test_index_macros)
 {
   LogParser *test_parser = create_parser_rule("csv-parser(list_name('list1'));");
 
-  invoke_parser_rule(test_parser,msg);
+  invoke_parser_rule(test_parser, msg);
   assert_log_message_value_by_name(msg, "0", "foo");
   assert_log_message_value_by_name(msg, "1", "bar");
   assert_log_message_value_by_name(msg, "2", "baz");

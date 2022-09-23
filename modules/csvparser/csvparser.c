@@ -110,13 +110,13 @@ csv_parser_set_list_name(LogParser *s, const gchar *list_name)
 
   g_free(self->list_name);
   if(list_name)
-  {
-    self->list_name = g_strdup(list_name);
-  }
+    {
+      self->list_name = g_strdup(list_name);
+    }
   else
-  {
-    self->list_name = NULL;
-  }
+    {
+      self->list_name = NULL;
+    }
 }
 void
 csv_parser_set_drop_invalid(LogParser *s, gboolean drop_invalid)
@@ -176,40 +176,40 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
     {
       if(!self->list_name)
         log_msg_set_value_by_name(msg,
-                                _key_formatter(key_scratch, csv_scanner_get_current_name(&scanner), self->prefix_len),
-                                csv_scanner_get_current_value(&scanner),
-                                csv_scanner_get_current_value_len(&scanner));
+                                  _key_formatter(key_scratch, csv_scanner_get_current_name(&scanner), self->prefix_len),
+                                  csv_scanner_get_current_value(&scanner),
+                                  csv_scanner_get_current_value_len(&scanner));
 
       log_msg_set_match_with_type(msg,
                                   i, csv_scanner_get_current_value(&scanner),
                                   csv_scanner_get_current_value_len(&scanner),
                                   LM_VT_STRING);
       if(self->list_name)
-      {
-        if(i==0)
         {
-          g_string_assign(parsed_values, csv_scanner_get_current_value(&scanner));
+          if(i==0)
+            {
+              g_string_assign(parsed_values, csv_scanner_get_current_value(&scanner));
+            }
+          else
+            {
+              g_string_append_c(parsed_values, ',');
+              g_string_append(parsed_values, csv_scanner_get_current_value(&scanner));
+            }
         }
-        else
-        {
-          g_string_append_c(parsed_values, ',');
-          g_string_append(parsed_values, csv_scanner_get_current_value(&scanner));
-        }
-      }
-      
+
       i++;
 
     }
 
-  
+
   if(self->list_name)
-  {
-    log_msg_set_value_by_name_with_type(msg,
-                                        self->list_name,
-                                        parsed_values->str,
-                                        strlen(parsed_values->str),
-                                        LM_VT_STRING);
-  }
+    {
+      log_msg_set_value_by_name_with_type(msg,
+                                          self->list_name,
+                                          parsed_values->str,
+                                          strlen(parsed_values->str),
+                                          LM_VT_STRING);
+    }
 
   gboolean result = TRUE;
   if (self->drop_invalid && !csv_scanner_is_scan_complete(&scanner))
