@@ -340,6 +340,7 @@ context_info_db_import(ContextInfoDB *self, FILE *fp, const gchar *filename,
       msg_trace("add-contextual-data(): adding database entry",
                 evt_tag_str("selector", next_record->selector->str),
                 evt_tag_str("name", log_msg_get_value_name(next_record->value_handle, NULL)),
+                evt_tag_str("type", log_msg_value_type_to_str(next_record->value->type_hint)),
                 evt_tag_str("value", next_record->value->template));
       context_info_db_insert(self, next_record);
     }
