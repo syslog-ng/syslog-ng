@@ -29,6 +29,7 @@
 typedef struct _PythonConfig
 {
   ModuleConfig super;
+  GlobalConfig *cfg;
   PyObject *main_module;
 } PythonConfig;
 
