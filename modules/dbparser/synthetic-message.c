@@ -90,17 +90,52 @@ synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig
                                             const gchar *value, GError **error)
 {
   LogTemplate *value_template;
-  gboolean result = FALSE;
+  gboolean success = FALSE;
 
   /* NOTE: we shouldn't use the name property for LogTemplate structs, see the comment at log_template_set_name() */
   value_template = log_template_new(cfg, name);
-  if (log_template_compile_with_type_hint(value_template, value, error))
+
+  if (!cfg_is_typing_feature_enabled(cfg))
     {
-      synthetic_message_add_value_template(self, name, value_template);
-      result = TRUE;
+      if (strchr(value, '(') != NULL)
+        {
+          success = log_template_compile_with_type_hint(value_template, value, error);
+          if (!success)
+            {
+              log_template_set_type_hint(value_template, "string", NULL);
+
+              msg_warning("WARNING: the template specified in value()/<value> options for your grouping-by() or "
+                          "db-parser() configuration has been changed to support typing from "
+                          "" FEATURE_TYPING_VERSION ". You are using an older config "
+                          "version and your template contains an unrecognized type-cast, probably a "
+                          "parenthesis in the value field. This will be interpreted in the `type(value)' "
+                          "format in future versions. Please add an "
+                          "explicit string() cast as shown in the 'fixed-value' tag of this log message "
+                          "or remove the parenthesis. The value will be processed as a 'string' "
+                          "expression",
+                          cfg_format_config_version_tag(cfg),
+                          evt_tag_str("name", name),
+                          evt_tag_str("value", value),
+                          evt_tag_printf("fixed-value", "string(%s)", value));
+              g_clear_error(error);
+              success = log_template_compile(value_template, value, error);
+            }
+        }
+      else
+        {
+          success = log_template_compile(value_template, value, error);
+        }
     }
+  else
+    {
+      success = log_template_compile_with_type_hint(value_template, value, error);
+    }
+
+  if (success)
+    synthetic_message_add_value_template(self, name, value_template);
+
   log_template_unref(value_template);
-  return result;
+  return success;
 }
 
 void
