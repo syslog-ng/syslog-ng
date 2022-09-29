@@ -328,7 +328,7 @@ main_loop_reload_config_prepare(MainLoop *self, GError **error)
 
   self->old_config = self->current_configuration;
   self->new_config = cfg_new(0);
-  if (!cfg_read_config(self->new_config, resolvedConfigurablePaths.cfgfilename, NULL))
+  if (!cfg_read_config(self->new_config, resolved_configurable_paths.cfgfilename, NULL))
     {
       cfg_free(self->new_config);
       self->new_config = NULL;
@@ -402,7 +402,7 @@ main_loop_get_pending_new_config(MainLoop *self)
 void
 main_loop_verify_config(GString *result, MainLoop *self)
 {
-  const gchar *file_path = resolvedConfigurablePaths.cfgfilename;
+  const gchar *file_path = resolved_configurable_paths.cfgfilename;
   gchar *config_mem = self -> current_configuration -> original_config -> str;
   GError *err = NULL;
   gchar *file_contents;
@@ -615,7 +615,7 @@ main_loop_read_and_init_config(MainLoop *self)
 {
   MainLoopOptions *options = self->options;
 
-  if (!cfg_read_config(self->current_configuration, resolvedConfigurablePaths.cfgfilename, options->preprocess_into))
+  if (!cfg_read_config(self->current_configuration, resolved_configurable_paths.cfgfilename, options->preprocess_into))
     {
       return 1;
     }
@@ -626,11 +626,11 @@ main_loop_read_and_init_config(MainLoop *self)
     }
 
   app_config_stopped();
-  if (!main_loop_initialize_state(self->current_configuration, resolvedConfigurablePaths.persist_file))
+  if (!main_loop_initialize_state(self->current_configuration, resolved_configurable_paths.persist_file))
     {
       return 2;
     }
-  self->control_server = control_init(resolvedConfigurablePaths.ctlfilename);
+  self->control_server = control_init(resolved_configurable_paths.ctlfilename);
   main_loop_register_control_commands(self);
   stats_register_control_commands();
   return 0;

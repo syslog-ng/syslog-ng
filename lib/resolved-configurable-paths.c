@@ -25,13 +25,13 @@
 #include "resolved-configurable-paths.h"
 #include "reloc.h"
 
-ResolvedConfigurablePaths resolvedConfigurablePaths;
+ResolvedConfigurablePaths resolved_configurable_paths;
 
 void
 resolved_configurable_paths_init(ResolvedConfigurablePaths *self)
 {
-  resolvedConfigurablePaths.cfgfilename = get_installation_path_for(PATH_SYSLOG_NG_CONF);
-  resolvedConfigurablePaths.persist_file = get_installation_path_for(PATH_PERSIST_CONFIG);
-  resolvedConfigurablePaths.ctlfilename = get_installation_path_for(PATH_CONTROL_SOCKET);
-  resolvedConfigurablePaths.initial_module_path = get_installation_path_for(SYSLOG_NG_MODULE_PATH);
+  resolved_configurable_paths.cfgfilename = get_installation_path_for(PATH_SYSLOG_NG_CONF);
+  resolved_configurable_paths.persist_file = get_installation_path_for(PATH_PERSIST_CONFIG);
+  resolved_configurable_paths.ctlfilename = get_installation_path_for(PATH_CONTROL_SOCKET);
+  resolved_configurable_paths.initial_module_path = get_installation_path_for(SYSLOG_NG_MODULE_PATH);
 }

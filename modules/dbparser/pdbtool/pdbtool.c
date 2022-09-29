@@ -1178,7 +1178,7 @@ static GOptionEntry pdbtool_options[] =
     "Load the module specified as parameter", "<module>"
   },
   {
-    "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path,
+    "module-path",         0,         0, G_OPTION_ARG_STRING, &resolved_configurable_paths.initial_module_path,
     "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>"
   },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
@@ -1252,7 +1252,7 @@ main(int argc, char *argv[])
 
   main_loop_thread_resource_init();
   msg_init(TRUE);
-  resolved_configurable_paths_init(&resolvedConfigurablePaths);
+  resolved_configurable_paths_init(&resolved_configurable_paths);
   stats_init();
   scratch_buffers_global_init();
   scratch_buffers_allocator_init();

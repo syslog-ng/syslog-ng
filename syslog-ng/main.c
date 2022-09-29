@@ -71,18 +71,18 @@ extern int cfg_parser_debug;
 static GOptionEntry syslogng_options[] =
 {
   { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION ")", NULL },
-  { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
+  { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolved_configurable_paths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
   { "no-module-discovery", 0,         0, G_OPTION_ARG_NONE, &main_loop_options.disable_module_discovery, "Disable module auto-discovery, all modules need to be loaded explicitly by the configuration", NULL },
   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
 #ifdef YYDEBUG
   { "yydebug",           'y',         0, G_OPTION_ARG_NONE, &cfg_parser_debug, "Enable configuration parser debugging", NULL },
 #endif
-  { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
-  { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
+  { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &resolved_configurable_paths.cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
+  { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &resolved_configurable_paths.persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &main_loop_options.preprocess_into, "Write the preprocessed configuration file to the file specified and quit", "output" },
   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &main_loop_options.syntax_only, "Only read and parse config file", NULL},
-  { "control",           'c',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
+  { "control",           'c',         0, G_OPTION_ARG_STRING, &resolved_configurable_paths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
   { "interactive",       'i',         0, G_OPTION_ARG_NONE, &main_loop_options.interactive_mode, "Enable interactive mode" },
   { NULL },
 };
@@ -167,7 +167,7 @@ version(void)
 #endif
 
   printf("Module-Directory: %s\n", get_installation_path_for(SYSLOG_NG_PATH_MODULEDIR));
-  printf("Module-Path: %s\n", resolvedConfigurablePaths.initial_module_path);
+  printf("Module-Path: %s\n", resolved_configurable_paths.initial_module_path);
   printf("Include-Path: %s\n", get_installation_path_for(SYSLOG_NG_PATH_CONFIG_INCLUDEDIR));
   printf("Available-Modules: ");
   plugin_list_modules(stdout, FALSE);
@@ -236,7 +236,7 @@ main(int argc, char *argv[])
   g_process_set_name("syslog-ng");
   g_process_set_argv_space(argc, (gchar **) argv);
 
-  resolved_configurable_paths_init(&resolvedConfigurablePaths);
+  resolved_configurable_paths_init(&resolved_configurable_paths);
   resolve_paths_in_help_texts();
 
   ctx = g_option_context_new("syslog-ng");
