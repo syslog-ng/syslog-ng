@@ -574,7 +574,7 @@ void
 plugin_context_init_instance(PluginContext *context)
 {
   memset(context, 0, sizeof(*context));
-  plugin_context_set_module_path(context, resolvedConfigurablePaths.initial_module_path);
+  plugin_context_set_module_path(context, resolved_configurable_paths.initial_module_path);
 }
 
 void
@@ -596,7 +596,7 @@ plugin_list_modules(FILE *out, gboolean verbose)
   gint i, j, k;
   gboolean first = TRUE;
 
-  mod_paths = g_strsplit(resolvedConfigurablePaths.initial_module_path, ":", 0);
+  mod_paths = g_strsplit(resolved_configurable_paths.initial_module_path, ":", 0);
   for (i = 0; mod_paths[i]; i++)
     {
       GDir *dir;

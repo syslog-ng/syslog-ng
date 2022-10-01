@@ -36,7 +36,7 @@ typedef struct _ResolvedConfigurablePaths
   const gchar *initial_module_path;
 } ResolvedConfigurablePaths;
 
-extern ResolvedConfigurablePaths resolvedConfigurablePaths;
+extern ResolvedConfigurablePaths resolved_configurable_paths;
 void resolved_configurable_paths_init(ResolvedConfigurablePaths *self);
 
 #endif

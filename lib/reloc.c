@@ -172,9 +172,22 @@ lookup_sysprefix(void)
 const gchar *
 get_installation_path_for(const gchar *template)
 {
+  reloc_init();
+  return cache_lookup(path_cache, template);
+}
+
+gchar *
+resolve_path_variables_in_text(const gchar *text)
+{
+  reloc_init();
+  return cache_resolve(path_cache, text);
+}
+
+void
+reloc_init(void)
+{
   if (!path_cache)
     path_cache = cache_new(path_resolver_new(lookup_sysprefix()));
-  return cache_lookup(path_cache, template);
 }
 
 void

@@ -60,6 +60,7 @@ cache_resolver_free(CacheResolver *self)
   g_free(self);
 }
 
+void *cache_resolve(Cache *self, const gchar *key);
 gpointer cache_lookup(Cache *self, const gchar *key);
 void cache_clear(Cache *self);
 

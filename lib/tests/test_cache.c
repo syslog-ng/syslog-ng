@@ -53,6 +53,20 @@ dummy_cache_resolver(void)
 }
 
 static void
+assert_cache_resolve(Cache *c, const gchar *key)
+{
+  gchar *value;
+  gchar *expected_value = g_strdup_printf("almafa_%s", key);
+
+  value = cache_resolve(c, key);
+  cr_assert_str_eq(value, expected_value, "Lookup key: %s, Expected value: %s, Actual value: %s",
+                   key, value, expected_value);
+
+  g_free(value);
+  g_free(expected_value);
+}
+
+static void
 assert_cache_lookup(Cache *c, const gchar *key)
 {
   gchar *value;
@@ -118,6 +132,17 @@ Test(cache, cache_clear_drops_cached_elements)
   assert_cache_lookup_uncached(c, "key");
   assert_cache_lookup_uncached(c, "key2");
   cache_free(c);
+}
+
+Test(cache, cache_resolve_does_not_store_element)
+{
+  Cache *c;
+
+  c = cache_new(dummy_cache_resolver());
+
+  assert_cache_resolve(c, "key");
+  assert_cache_lookup_uncached(c, "key");
+  assert_cache_lookup_cached(c, "key");
 }
 
 Test(cache, test_free_calls_resolver_free_fn)
