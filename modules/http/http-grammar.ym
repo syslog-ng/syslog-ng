@@ -71,6 +71,7 @@ HttpResponseHandler last_response_handler;
 %token KW_SSL_VERSION
 %token KW_PEER_VERIFY
 %token KW_TIMEOUT
+%token KW_OCSP_STAPLING_VERIFY
 %token KW_TLS
 %token KW_BATCH_BYTES
 %token KW_BODY_PREFIX
@@ -189,6 +190,11 @@ http_tls_option
           }
       }
     | KW_PEER_VERIFY '(' yesno ')'            { http_dd_set_peer_verify(last_driver, $3); }
+    | KW_OCSP_STAPLING_VERIFY '(' yesno ')'
+      {
+        CHECK_ERROR(http_dd_set_ocsp_stapling_verify(last_driver, $3), @3,
+                    "Error setting ocsp-stapling-verify(), OCSP stapling is not supported with this libcurl version");
+      }
     ;
 
 tls_cipher_suites

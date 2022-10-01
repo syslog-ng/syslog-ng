@@ -196,6 +196,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_SNI
 %token KW_ALLOW_COMPRESS
 %token KW_KEYLOG_FILE
+%token KW_OCSP_STAPLING_VERIFY
 
 /* INCLUDE_DECLS */
 
@@ -780,6 +781,10 @@ dest_tls_option
           {
             if ($3)
               tls_context_set_sni(last_tls_context, ((AFInetDestDriver *)last_driver)->primary);
+          }
+        | KW_OCSP_STAPLING_VERIFY '(' yesno ')'
+          {
+            tls_context_set_ocsp_stapling_verify(last_tls_context, $3);
           }
         ;
 

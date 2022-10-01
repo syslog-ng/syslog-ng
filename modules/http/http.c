@@ -269,6 +269,19 @@ http_dd_set_peer_verify(LogDriver *d, gboolean verify)
   self->peer_verify = verify;
 }
 
+gboolean
+http_dd_set_ocsp_stapling_verify(LogDriver *d, gboolean verify)
+{
+#if SYSLOG_NG_HAVE_DECL_CURLOPT_SSL_VERIFYSTATUS
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->ocsp_stapling_verify = verify;
+  return TRUE;
+#else
+  return FALSE;
+#endif
+}
+
 void
 http_dd_set_accept_redirects(LogDriver *d, gboolean accept_redirects)
 {

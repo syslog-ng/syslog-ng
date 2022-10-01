@@ -140,6 +140,11 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
     curl_easy_setopt(self->curl, CURLOPT_TLS13_CIPHERS, owner->tls13_ciphers);
 #endif
 
+#if SYSLOG_NG_HAVE_DECL_CURLOPT_SSL_VERIFYSTATUS
+  if (owner->ocsp_stapling_verify)
+    curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYSTATUS, 1L);
+#endif
+
   if (owner->proxy)
     curl_easy_setopt(self->curl, CURLOPT_PROXY, owner->proxy);
 
