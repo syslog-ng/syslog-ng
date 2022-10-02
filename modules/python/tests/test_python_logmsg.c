@@ -29,6 +29,7 @@
 #include "python-helpers.h"
 #include "python-types.h"
 #include "python-logmsg.h"
+#include "python-main.h"
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "scratch-buffers.h"
@@ -55,7 +56,8 @@ _init_python_main(void)
 {
   PyGILState_STATE gstate = PyGILState_Ensure();
   {
-    _python_main = PyImport_AddModule("__main__");
+    PythonConfig *pc = python_config_get(configuration);
+    _python_main = _py_get_main_module(pc);
     _python_main_dict = PyModule_GetDict(_python_main);
   }
   PyGILState_Release(gstate);
@@ -186,6 +188,7 @@ ParameterizedTest(PyLogMessageSetValueTestParams *params, python_log_message, te
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   {
+    cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
     PyObject *msg_object = py_log_message_new(msg);
 
     PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);

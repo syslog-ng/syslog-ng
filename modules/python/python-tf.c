@@ -45,8 +45,6 @@ _py_construct_args_tuple(PythonTfState *state, LogMessage *msg, gint argc, GStri
   args = PyTuple_New(1 + argc - 1);
 
   PyObject *py_msg = py_log_message_new(msg);
-  ((PyLogMessage *) py_msg)->cast_to_strings = !cfg_is_typing_feature_enabled(state->cfg);
-
   PyTuple_SetItem(args, 0, py_msg);
   for (i = 1; i < argc; i++)
     {

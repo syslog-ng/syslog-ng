@@ -191,11 +191,6 @@ python_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
               evt_tag_msg_reference(msg));
 
     PyObject *msg_object = py_log_message_new(msg);
-
-    GlobalConfig *cfg = log_pipe_get_config(&s->super);
-    if (!cfg_is_typing_feature_enabled(cfg))
-      ((PyLogMessage *) msg_object)->cast_to_strings = TRUE;
-
     result = _py_invoke_parser_process(self, msg_object);
     Py_DECREF(msg_object);
   }

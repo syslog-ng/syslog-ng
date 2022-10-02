@@ -25,6 +25,7 @@
 #include "compat/compat-python.h"
 #include "python-helpers.h"
 #include "python-types.h"
+#include "python-main.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "timeutils/cache.h"
@@ -33,6 +34,7 @@
 #include "timeutils/misc.h"
 #include "msg-format.h"
 #include "scratch-buffers.h"
+#include "cfg.h"
 
 #include <datetime.h>
 
@@ -145,7 +147,12 @@ py_log_message_new(LogMessage *msg)
 
   self->msg = log_msg_ref(msg);
   self->bookmark_data = NULL;
-  self->cast_to_strings = FALSE;
+
+  GlobalConfig *cfg = python_get_associated_config();
+  if (!cfg_is_typing_feature_enabled(cfg))
+    self->cast_to_strings = TRUE;
+  else
+    self->cast_to_strings = FALSE;
   return (PyObject *) self;
 }
 

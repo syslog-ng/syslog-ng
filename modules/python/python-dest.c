@@ -453,10 +453,6 @@ _py_construct_message(PythonDestDriver *self, LogMessage *msg, PyObject **msg_ob
   else
     {
       *msg_object = py_log_message_new(msg);
-
-      GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
-      if (!cfg_is_typing_feature_enabled(cfg))
-        ((PyLogMessage *) *msg_object)->cast_to_strings = TRUE;
     }
 
   return TRUE;
