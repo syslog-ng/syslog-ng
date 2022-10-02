@@ -49,7 +49,7 @@
  */
 
 static PyObject *
-_py_construct_main_module(void)
+_py_construct_main_module(PythonConfig *pc)
 {
   PyObject *module;
   PyObject *module_dict;
@@ -83,6 +83,9 @@ _py_construct_main_module(void)
         g_assert_not_reached();
       Py_XDECREF(builtins_module);
     }
+
+  /* there's a circular reference between GlobalConfig -> PythonConfig -> main_module -> main_module.__config__ -> GlobalConfig */
+  PyDict_SetItemString(module_dict, "__config__", PyCapsule_New(pc->cfg, "_syslogng_main.__config__", NULL));
 
   /* return a reference */
   Py_INCREF(module);
@@ -124,7 +127,7 @@ PyObject *
 _py_get_main_module(PythonConfig *pc)
 {
   if (!pc->main_module)
-    pc->main_module = _py_construct_main_module();
+    pc->main_module = _py_construct_main_module(pc);
   return pc->main_module;
 }
 
@@ -132,8 +135,6 @@ gboolean
 _py_evaluate_global_code(PythonConfig *pc, const gchar *filename, const gchar *code)
 {
   PyObject *module;
-  PyObject *dict;
-  PyObject *code_object;
 
   module = _py_get_main_module(pc);
   if (!module)
@@ -153,11 +154,10 @@ _py_evaluate_global_code(PythonConfig *pc, const gchar *filename, const gchar *c
    * the python-global-code-loader.c, that simply returns the source when
    * its get_source() method is called.
    */
-
-  dict = PyModule_GetDict(module);
+  PyObject *dict = PyModule_GetDict(module);
   PyDict_SetItemString(dict, "__loader__", py_global_code_loader_new(code));
 
-  code_object = Py_CompileString((char *) code, filename, Py_file_input);
+  PyObject *code_object = Py_CompileString((char *) code, filename, Py_file_input);
   if (!code_object)
     {
       gchar buf[256];
@@ -184,6 +184,16 @@ _py_evaluate_global_code(PythonConfig *pc, const gchar *filename, const gchar *c
   return TRUE;
 }
 
+GlobalConfig *
+python_get_associated_config(void)
+{
+  GlobalConfig *cfg;
+
+  cfg = (GlobalConfig *) PyCapsule_Import("_syslogng_main.__config__", FALSE);
+  g_assert(cfg != NULL);
+  return cfg;
+}
+
 gboolean
 python_evaluate_global_code(GlobalConfig *cfg, const gchar *code, CFG_LTYPE *yylloc)
 {
@@ -198,15 +208,4 @@ python_evaluate_global_code(GlobalConfig *cfg, const gchar *code, CFG_LTYPE *yyl
   PyGILState_Release(gstate);
 
   return result;
-}
-
-void
-propagate_persist_state(GlobalConfig *cfg)
-{
-  g_assert(cfg->state);
-  PyGILState_STATE gstate = PyGILState_Ensure();
-  g_assert(PyModule_AddObject(PyImport_AddModule("_syslogng"),
-                              "persist_state",
-                              PyCapsule_New(cfg->state, "_syslogng.persist_state", NULL)) == 0);
-  PyGILState_Release(gstate);
 }

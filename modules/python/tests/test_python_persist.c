@@ -64,8 +64,6 @@ _py_init_interpreter(void)
 static void
 _load_code(const gchar *code)
 {
-  propagate_persist_state(cfg);
-
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   cr_assert(python_evaluate_global_code(cfg, code, &yyltype));

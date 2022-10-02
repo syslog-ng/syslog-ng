@@ -24,6 +24,7 @@
 #include "persistable-state-header.h"
 #include "python-helpers.h"
 #include "python-types.h"
+#include "python-main.h"
 #include "syslog-ng.h"
 #include "driver.h"
 #include "mainloop.h"
@@ -229,10 +230,11 @@ prepare_master_entry(PersistState *persist_state, const gchar *persist_name)
 static int
 _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
 {
-  PyPersist *self =(PyPersist *)s;
-  const gchar *persist_name=NULL;
+  PyPersist *self = (PyPersist *) s;
+  const gchar *persist_name = NULL;
+  GlobalConfig *cfg = python_get_associated_config();
 
-  self->persist_state = PyCapsule_Import("_syslogng.persist_state", FALSE);
+  self->persist_state = cfg->state;
   if (!self->persist_state)
     {
       gchar buf[256];
