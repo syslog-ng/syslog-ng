@@ -30,7 +30,7 @@
 typedef struct _PyLogTemplateOptions
 {
   PyObject_HEAD
-  LogTemplateOptions *template_options;
+  LogTemplateOptions template_options;
 } PyLogTemplateOptions;
 
 extern PyTypeObject py_log_template_options_type;

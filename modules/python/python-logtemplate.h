@@ -25,13 +25,14 @@
 #define _SNG_PYTHON_TEMPLATE_H
 
 #include "python-module.h"
+#include "python-logtemplate-options.h"
 #include "template/templates.h"
 
 typedef struct _PyLogTemplate
 {
   PyObject_HEAD
   LogTemplate *template;
-  LogTemplateOptions *template_options;
+  PyLogTemplateOptions *py_template_options;
 } PyLogTemplate;
 
 extern PyTypeObject py_log_template_type;

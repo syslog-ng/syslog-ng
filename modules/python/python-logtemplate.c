@@ -31,13 +31,6 @@
 PyTypeObject py_log_template_type;
 PyObject *PyExc_LogTemplate;
 
-void
-py_log_template_free(PyLogTemplate *self)
-{
-  log_template_unref(self->template);
-  g_free(self->template_options);
-  Py_TYPE(self)->tp_free((PyObject *) self);
-}
 
 PyObject *
 py_log_template_format(PyObject *s, PyObject *args, PyObject *kwrds)
@@ -45,14 +38,14 @@ py_log_template_format(PyObject *s, PyObject *args, PyObject *kwrds)
   PyLogTemplate *self = (PyLogTemplate *)s;
 
   PyLogMessage *msg;
-  PyLogTemplateOptions *py_log_template_options = NULL;
+  PyLogTemplateOptions *py_template_options = NULL;
   gint tz = LTZ_SEND;
   gint seqnum = 0;
 
   static const gchar *kwlist[] = {"msg", "options", "tz", "seqnum", NULL};
 
   if (!PyArg_ParseTupleAndKeywords(args, kwrds, "O|Oii", (gchar **)kwlist,
-                                   &msg, &py_log_template_options, &tz, &seqnum))
+                                   &msg, &py_template_options, &tz, &seqnum))
     return NULL;
 
   if (!py_is_log_message((PyObject *)msg))
@@ -62,16 +55,23 @@ py_log_template_format(PyObject *s, PyObject *args, PyObject *kwrds)
       return NULL;
     }
 
-  if (py_log_template_options && !py_is_log_template_options((PyObject *)py_log_template_options))
+  if (py_template_options && !py_is_log_template_options((PyObject *)py_template_options))
     {
       PyErr_Format(PyExc_TypeError,
                    "LogTemplateOptions expected in the second parameter");
       return NULL;
     }
 
-  LogTemplateOptions *log_template_options = py_log_template_options ? py_log_template_options->template_options :
-                                             self->template_options;
-  if (!log_template_options)
+  LogTemplateOptions *template_options;
+
+  if (py_template_options)
+    template_options = &py_template_options->template_options;
+  else if (self->py_template_options)
+    template_options = &self->py_template_options->template_options;
+  else
+    template_options = NULL;
+
+  if (!template_options)
     {
       PyErr_Format(PyExc_RuntimeError,
                    "LogTemplateOptions must be provided either in the LogTemplate constructor or as parameter of format");
@@ -79,7 +79,7 @@ py_log_template_format(PyObject *s, PyObject *args, PyObject *kwrds)
     }
 
   GString *result = scratch_buffers_alloc();
-  LogTemplateEvalOptions options = {log_template_options, tz, seqnum, NULL, LM_VT_STRING};
+  LogTemplateEvalOptions options = { template_options, tz, seqnum, NULL, LM_VT_STRING };
   log_template_format(self->template, msg->msg, &options, result);
 
   return py_string_from_string(result->str, result->len);
@@ -89,11 +89,11 @@ PyObject *
 py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
   const gchar *template_string;
-  PyLogTemplateOptions *py_log_template_options = NULL;
-  if (!PyArg_ParseTuple(args, "s|O", &template_string, &py_log_template_options))
+  PyLogTemplateOptions *py_template_options = NULL;
+  if (!PyArg_ParseTuple(args, "s|O", &template_string, &py_template_options))
     return NULL;
 
-  if (py_log_template_options && !py_is_log_template_options((PyObject *)py_log_template_options))
+  if (py_template_options && !py_is_log_template_options((PyObject *)py_template_options))
     {
       PyErr_Format(PyExc_TypeError,
                    "LogTemplateOptions expected in the second parameter");
@@ -111,7 +111,7 @@ py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
       return NULL;
     }
 
-  PyLogTemplate *self = (PyLogTemplate *)type->tp_alloc(type, 0);
+  PyLogTemplate *self = PyObject_New(PyLogTemplate, &py_log_template_type);
   if (!self)
     {
       log_template_unref(template);
@@ -119,10 +119,18 @@ py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     }
 
   self->template = template;
-  if (py_log_template_options)
-    self->template_options = py_log_template_options->template_options;
+  self->py_template_options = py_template_options;
+  Py_XINCREF(py_template_options);
 
   return (PyObject *)self;
+}
+
+void
+py_log_template_free(PyLogTemplate *self)
+{
+  log_template_unref(self->template);
+  Py_XDECREF(self->py_template_options);
+  Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 static PyMethodDef py_log_template_methods[] =

@@ -22,6 +22,7 @@
  */
 
 #include "python-logtemplate-options.h"
+#include "python-main.h"
 
 int
 py_is_log_template_options(PyObject *obj)
@@ -33,10 +34,14 @@ PyObject *
 py_log_template_options_new(LogTemplateOptions *template_options)
 {
   PyLogTemplateOptions *self = PyObject_New(PyLogTemplateOptions, &py_log_template_options_type);
+
   if (!self)
     return NULL;
 
-  self->template_options = template_options;
+  GlobalConfig *cfg = python_get_associated_config();
+  memset(&self->template_options, 0, sizeof(self->template_options));
+  log_template_options_clone(template_options, &self->template_options);
+  log_template_options_init(&self->template_options, cfg);
 
   return (PyObject *) self;
 }
