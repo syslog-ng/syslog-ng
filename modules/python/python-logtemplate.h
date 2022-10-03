@@ -38,9 +38,10 @@ extern PyTypeObject py_log_template_type;
 extern PyObject *PyExc_LogTemplate;
 
 
-void py_log_template_init(void);
 PyObject *py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
 void py_log_template_free(PyLogTemplate *self);
 PyObject *py_log_template_format(PyObject *s, PyObject *args, PyObject *kwds);
+
+void py_log_template_global_init(void);
 
 #endif

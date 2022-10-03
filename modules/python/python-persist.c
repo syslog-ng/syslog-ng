@@ -513,7 +513,7 @@ PyTypeObject py_persist_type =
 };
 
 void
-py_persist_init(void)
+py_persist_global_init(void)
 {
   PyType_Ready(&py_persist_type);
   PyModule_AddObject(PyImport_AddModule("_syslogng"), "Persist", (PyObject *) &py_persist_type);

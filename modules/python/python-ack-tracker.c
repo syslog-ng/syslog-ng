@@ -203,7 +203,7 @@ PyTypeObject py_batched_ack_tracker_factory_type =
 };
 
 void
-py_ack_tracker_init(void)
+py_ack_tracker_global_init(void)
 {
   PyType_Ready(&py_ack_tracker_factory_type);
 

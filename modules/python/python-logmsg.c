@@ -430,7 +430,7 @@ PyTypeObject py_log_message_type =
 };
 
 void
-py_log_message_init(void)
+py_log_message_global_init(void)
 {
   PyDateTime_IMPORT;
   PyType_Ready(&py_log_message_type);

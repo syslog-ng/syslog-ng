@@ -27,7 +27,6 @@
 
 #include "python-module.h"
 
-
-void py_logger_init(void);
+void py_logger_global_init(void);
 
 #endif

@@ -62,9 +62,9 @@ _py_init_interpreter(void)
   PyGILState_Release(gstate);
 
   py_init_threads();
-  py_log_message_init();
-  py_log_template_init();
-  py_integer_pointer_init();
+  py_log_message_global_init();
+  py_log_template_global_init();
+  py_integer_pointer_global_init();
   PyEval_SaveThread();
 }
 

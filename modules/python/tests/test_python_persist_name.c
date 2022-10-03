@@ -54,10 +54,10 @@ _py_init_interpreter(void)
   py_init_argv();
 
   py_init_threads();
-  py_log_fetcher_init();
-  py_log_source_init();
-  py_bookmark_init();
-  py_ack_tracker_init();
+  py_log_fetcher_global_init();
+  py_log_source_global_init();
+  py_bookmark_global_init();
+  py_ack_tracker_global_init();
   PyEval_SaveThread();
 }
 

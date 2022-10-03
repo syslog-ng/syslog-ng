@@ -57,7 +57,7 @@ _py_init_interpreter(void)
   py_init_argv();
 
   py_init_threads();
-  py_persist_init();
+  py_persist_global_init();
   PyEval_SaveThread();
 }
 

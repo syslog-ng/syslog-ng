@@ -116,7 +116,7 @@ PyTypeObject py_bookmark_type =
 };
 
 void
-py_bookmark_init(void)
+py_bookmark_global_init(void)
 {
   PyType_Ready(&py_bookmark_type);
 }

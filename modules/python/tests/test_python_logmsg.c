@@ -47,7 +47,7 @@ _py_init_interpreter(void)
   py_init_argv();
 
   py_init_threads();
-  py_log_message_init();
+  py_log_message_global_init();
   PyEval_SaveThread();
 }
 

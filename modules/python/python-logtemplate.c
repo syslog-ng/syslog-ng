@@ -145,9 +145,9 @@ PyTypeObject py_log_template_type =
 };
 
 void
-py_log_template_init(void)
+py_log_template_global_init(void)
 {
-  py_log_template_options_init();
+  py_log_template_options_global_init();
 
   PyType_Ready(&py_log_template_type);
   PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogTemplate", (PyObject *) &py_log_template_type);

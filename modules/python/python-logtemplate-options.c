@@ -54,7 +54,7 @@ PyTypeObject py_log_template_options_type =
 };
 
 void
-py_log_template_options_init(void)
+py_log_template_options_global_init(void)
 {
   PyType_Ready(&py_log_template_options_type);
 }
