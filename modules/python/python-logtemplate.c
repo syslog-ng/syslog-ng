@@ -24,6 +24,7 @@
 #include "python-logtemplate-options.h"
 #include "python-logmsg.h"
 #include "python-types.h"
+#include "python-main.h"
 #include "scratch-buffers.h"
 #include "messages.h"
 
@@ -99,7 +100,7 @@ py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
       return NULL;
     }
 
-  LogTemplate *template = log_template_new(NULL, NULL);
+  LogTemplate *template = log_template_new(python_get_associated_config(), NULL);
   GError *error = NULL;
   if (!log_template_compile(template, template_string, &error))
     {
