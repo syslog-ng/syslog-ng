@@ -41,56 +41,52 @@ py_ack_tracker_factory_free(PyAckTrackerFactory *self)
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
-static PyObject *
-py_instant_ack_tracker_factory_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
+static int
+py_instant_ack_tracker_factory_init(PyObject *s, PyObject *args, PyObject *kwds)
 {
+  PyAckTrackerFactory *self = (PyAckTrackerFactory *) s;
   PyObject *ack_callback;
+
   static const gchar *kwlist[] = {"ack_callback", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O", (gchar **) kwlist, &ack_callback))
-    return NULL;
+    return -1;
 
   if (!PyCallable_Check(ack_callback))
     {
       PyErr_Format(PyExc_TypeError, "A callable object is expected (ack_callback)");
-      return NULL;
+      return -1;
     }
-
-  PyAckTrackerFactory *self = (PyAckTrackerFactory *) subtype->tp_alloc(subtype, 0);
-  if (!self)
-    return NULL;
 
   Py_XINCREF(ack_callback);
   self->ack_callback = ack_callback;
 
   self->ack_tracker_factory = instant_ack_tracker_factory_new();
 
-  return (PyObject *) self;
+  return 0;
 }
 
-static PyObject *
-py_consecutive_ack_tracker_factory_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
+static int
+py_consecutive_ack_tracker_factory_init(PyObject *s, PyObject *args, PyObject *kwds)
 {
+  PyAckTrackerFactory *self = (PyAckTrackerFactory *) s;
   PyObject *ack_callback;
+
   static const gchar *kwlist[] = {"ack_callback", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O", (gchar **) kwlist, &ack_callback))
-    return NULL;
+    return -1;
 
   if (!PyCallable_Check(ack_callback))
     {
       PyErr_Format(PyExc_TypeError, "A callable object is expected (ack_callback)");
-      return NULL;
+      return -1;
     }
-
-  PyAckTrackerFactory *self = (PyAckTrackerFactory *) subtype->tp_alloc(subtype, 0);
-  if (!self)
-    return NULL;
 
   Py_XINCREF(ack_callback);
   self->ack_callback = ack_callback;
 
   self->ack_tracker_factory = consecutive_ack_tracker_factory_new();
 
-  return (PyObject *) self;
+  return 0;
 }
 
 static void
@@ -120,32 +116,29 @@ _invoke_batched_ack_callback(GList *ack_records, gpointer user_data)
   PyGILState_Release(gstate);
 }
 
-static PyObject *
-py_batched_ack_tracker_factory_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
+static int
+py_batched_ack_tracker_factory_init(PyObject *s, PyObject *args, PyObject *kwds)
 {
+  PyAckTrackerFactory *self = (PyAckTrackerFactory *) s;
   guint timeout, batch_size;
   PyObject *batched_ack_callback;
 
   static const gchar *kwlist[] = {"timeout", "batch_size", "batched_ack_callback", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "IIO", (gchar **) kwlist, &timeout, &batch_size, &batched_ack_callback))
-    return NULL;
+    return -1;
 
   if (!PyCallable_Check(batched_ack_callback))
     {
       PyErr_Format(PyExc_TypeError, "A callable object is expected (batched_ack_callback)");
-      return NULL;
+      return -1;
     }
-
-  PyAckTrackerFactory *self = (PyAckTrackerFactory *) subtype->tp_alloc(subtype, 0);
-  if (!self)
-    return NULL;
 
   Py_XINCREF(batched_ack_callback);
   self->ack_callback = batched_ack_callback;
 
   self->ack_tracker_factory = batched_ack_tracker_factory_new(timeout, batch_size, _invoke_batched_ack_callback, self);
 
-  return (PyObject *) self;
+  return 0;
 }
 
 int
@@ -174,7 +167,8 @@ PyTypeObject py_instant_ack_tracker_factory_type =
   .tp_dealloc = (destructor) py_ack_tracker_factory_free,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "InstantAckTrackerFactory",
-  .tp_new = py_instant_ack_tracker_factory_new,
+  .tp_new = PyType_GenericNew,
+  .tp_init = py_instant_ack_tracker_factory_init,
   0,
 };
 
@@ -186,7 +180,8 @@ PyTypeObject py_consecutive_ack_tracker_factory_type =
   .tp_dealloc = (destructor) py_ack_tracker_factory_free,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "ConsecutiveAckTrackerFactory",
-  .tp_new = py_consecutive_ack_tracker_factory_new,
+  .tp_new = PyType_GenericNew,
+  .tp_init = py_consecutive_ack_tracker_factory_init,
   0,
 };
 
@@ -198,7 +193,8 @@ PyTypeObject py_batched_ack_tracker_factory_type =
   .tp_dealloc = (destructor) py_ack_tracker_factory_free,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "BatchedAckTrackerFactory",
-  .tp_new = py_batched_ack_tracker_factory_new,
+  .tp_new = PyType_GenericNew,
+  .tp_init = py_batched_ack_tracker_factory_init,
   0,
 };
 

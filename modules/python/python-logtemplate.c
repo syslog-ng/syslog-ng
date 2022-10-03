@@ -85,19 +85,21 @@ py_log_template_format(PyObject *s, PyObject *args, PyObject *kwrds)
   return py_string_from_string(result->str, result->len);
 }
 
-PyObject *
-py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+int
+py_log_template_init(PyObject *s, PyObject *args, PyObject *kwds)
 {
+  PyLogTemplate *self = (PyLogTemplate *)s;
   const gchar *template_string;
   PyLogTemplateOptions *py_template_options = NULL;
+
   if (!PyArg_ParseTuple(args, "s|O", &template_string, &py_template_options))
-    return NULL;
+    return -1;
 
   if (py_template_options && !py_is_log_template_options((PyObject *)py_template_options))
     {
       PyErr_Format(PyExc_TypeError,
                    "LogTemplateOptions expected in the second parameter");
-      return NULL;
+      return -1;
     }
 
   LogTemplate *template = log_template_new(python_get_associated_config(), NULL);
@@ -108,21 +110,14 @@ py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
                    "Error compiling template: %s", error->message);
       g_clear_error(&error);
       log_template_unref(template);
-      return NULL;
-    }
-
-  PyLogTemplate *self = PyObject_New(PyLogTemplate, &py_log_template_type);
-  if (!self)
-    {
-      log_template_unref(template);
-      return NULL;
+      return -1;
     }
 
   self->template = template;
   self->py_template_options = py_template_options;
   Py_XINCREF(py_template_options);
 
-  return (PyObject *)self;
+  return 0;
 }
 
 void
@@ -148,7 +143,8 @@ PyTypeObject py_log_template_type =
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "LogTemplate class encapsulating a syslog-ng template",
   .tp_methods = py_log_template_methods,
-  .tp_new = py_log_template_new,
+  .tp_new = PyType_GenericNew,
+  .tp_init = py_log_template_init,
   0,
 };
 

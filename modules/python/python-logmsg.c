@@ -156,20 +156,17 @@ py_log_message_new(LogMessage *msg)
   return (PyObject *) self;
 }
 
-static PyObject *
-py_log_message_new_empty(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
+static int
+py_log_message_init(PyObject *s, PyObject *args, PyObject *kwds)
 {
+  PyLogMessage *self = (PyLogMessage *) s;
   PyObject *bookmark_data = NULL;
   const gchar *message = NULL;
   Py_ssize_t message_length = 0;
 
   static const gchar *kwlist[] = {"message", "bookmark", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z#O", (gchar **) kwlist, &message, &message_length, &bookmark_data))
-    return NULL;
-
-  PyLogMessage *self = (PyLogMessage *) subtype->tp_alloc(subtype, 0);
-  if (!self)
-    return NULL;
+    return -1;
 
   self->msg = log_msg_new_empty();
   self->bookmark_data = NULL;
@@ -181,7 +178,7 @@ py_log_message_new_empty(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
   Py_XINCREF(bookmark_data);
   self->bookmark_data = bookmark_data;
 
-  return (PyObject *) self;
+  return 0;
 }
 
 static PyMappingMethods py_log_message_mapping =
@@ -423,7 +420,8 @@ PyTypeObject py_log_message_type =
   .tp_dealloc = (destructor) py_log_message_free,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "LogMessage class encapsulating a syslog-ng log message",
-  .tp_new = py_log_message_new_empty,
+  .tp_new = PyType_GenericNew,
+  .tp_init = py_log_message_init,
   .tp_as_mapping = &py_log_message_mapping,
   .tp_methods = py_log_message_methods,
   0,

@@ -127,7 +127,7 @@ create_py_log_template(const gchar *template)
 {
   PyObject *template_str = py_string_from_string(template, -1);
   PyObject *args = PyTuple_Pack(1, template_str);
-  PyLogTemplate *py_template = (PyLogTemplate *)py_log_template_new(&py_log_template_type, args, NULL);
+  PyLogTemplate *py_template = (PyLogTemplate *) PyObject_Call((PyObject *) &py_log_template_type, args, NULL);
   Py_DECREF(template_str);
   Py_DECREF(args);
 
@@ -241,7 +241,7 @@ Test(python_log_logtemplate, test_py_is_log_template_options)
   cr_assert_not(py_is_log_template_options((PyObject *)template_str));
 
   PyObject *args = PyTuple_Pack(2, template_str, Py_None); /* Second argument must be PyLogTemplateOptions */
-  PyLogTemplate *py_template = (PyLogTemplate *)py_log_template_new(&py_log_template_type, args, NULL);
+  PyLogTemplate *py_template = (PyLogTemplate *)PyObject_Call((PyObject *) &py_log_template_type, args, NULL);
   Py_DECREF(template_str);
   Py_DECREF(args);
   cr_assert_null(py_template);
