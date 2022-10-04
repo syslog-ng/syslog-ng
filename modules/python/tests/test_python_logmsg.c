@@ -415,6 +415,17 @@ Test(python_log_message, test_py_log_message_set_timestamp)
   cr_assert_eq(py_msg->msg->timestamps[LM_TS_STAMP].ut_sec, 1664890194);
   cr_assert_eq(py_msg->msg->timestamps[LM_TS_STAMP].ut_usec, 123000);
 
+  UnixTime ut;
+
+  py_msg->msg->timestamps[LM_TS_STAMP].ut_sec++;
+  ret = _py_invoke_method_by_name((PyObject *) py_msg, "get_timestamp", NULL, NULL, NULL);
+  cr_assert(ret);
+  py_datetime_to_unix_time(ret, &ut);
+
+  cr_assert_eq(ut.ut_sec, 1664890195);
+  cr_assert_eq(ut.ut_usec, 123000);
+  Py_XDECREF(ret);
+
   Py_DECREF(py_msg);
   Py_DECREF(arg);
   PyGILState_Release(gstate);
