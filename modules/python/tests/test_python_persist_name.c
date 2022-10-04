@@ -57,6 +57,7 @@ _py_init_interpreter(void)
   py_log_fetcher_global_init();
   py_log_source_global_init();
   py_bookmark_global_init();
+  py_log_destination_global_init();
   py_ack_tracker_global_init();
   PyEval_SaveThread();
 }
@@ -109,7 +110,8 @@ _load_code(const gchar *code)
 TestSuite(python_persist_name, .init = setup, .fini = teardown);
 
 const gchar *python_destination_code = "\n\
-class Dest(object):\n\
+from _syslogng import LogDestination\n\
+class Dest(LogDestination):\n\
     @staticmethod\n\
     def generate_persist_name(options):\n\
         return options['key']\n\
