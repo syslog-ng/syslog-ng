@@ -61,6 +61,14 @@ typedef struct
   } py;
 } PythonDestDriver;
 
+typedef struct _PyLogDestination
+{
+  PyObject_HEAD
+} PyLogDestination;
+
+static PyTypeObject py_log_destination_type;
+
+
 /** Setters & config glue **/
 
 void
@@ -650,4 +658,23 @@ python_dd_new(GlobalConfig *cfg)
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
   return (LogDriver *)self;
+}
+
+static PyTypeObject py_log_destination_type =
+{
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  .tp_name = "LogDestination",
+  .tp_basicsize = sizeof(PyLogDestination),
+  .tp_dealloc = py_slng_generic_dealloc,
+  .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+  .tp_doc = "The LogDestination class is a base class for custom Python sources.",
+  .tp_new = PyType_GenericNew,
+  0,
+};
+
+void
+py_log_destination_global_init(void)
+{
+  PyType_Ready(&py_log_destination_type);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogDestination", (PyObject *) &py_log_destination_type);
 }

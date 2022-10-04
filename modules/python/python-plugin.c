@@ -119,6 +119,7 @@ _py_init_interpreter(void)
       py_log_message_global_init();
       py_log_template_global_init();
       py_integer_pointer_global_init();
+      py_log_destination_global_init();
       py_log_source_global_init();
       py_log_fetcher_global_init();
       py_persist_global_init();
