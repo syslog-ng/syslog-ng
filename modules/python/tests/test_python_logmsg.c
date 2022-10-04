@@ -383,6 +383,18 @@ Test(python_log_message, test_py_log_message_set_pri)
 
   cr_assert_eq(py_msg->msg->pri, pri);
 
+  ret = _py_invoke_method_by_name((PyObject *) py_msg, "get_pri", NULL, NULL, NULL);
+  pri = PyLong_AsLong(ret);
+  Py_XDECREF(ret);
+
+  cr_assert_eq(py_msg->msg->pri, pri);
+  py_msg->msg->pri = 55;
+
+  ret = _py_invoke_method_by_name((PyObject *) py_msg, "get_pri", NULL, NULL, NULL);
+  pri = PyLong_AsLong(ret);
+  Py_XDECREF(ret);
+  cr_assert_eq(py_msg->msg->pri, pri);
+
   Py_DECREF(py_msg);
   Py_DECREF(arg);
   PyGILState_Release(gstate);

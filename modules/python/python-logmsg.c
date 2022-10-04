@@ -248,6 +248,14 @@ py_log_message_set_pri(PyLogMessage *self, PyObject *args, PyObject *kwrds)
 }
 
 static PyObject *
+py_log_message_get_pri(PyLogMessage *self, PyObject *args, PyObject *kwrds)
+{
+  if (!PyArg_ParseTuple(args, ""))
+    return NULL;
+  return PyLong_FromLong(self->msg->pri);
+}
+
+static PyObject *
 py_log_message_set_timestamp(PyLogMessage *self, PyObject *args, PyObject *kwrds)
 {
   PyObject *py_timestamp;
@@ -324,7 +332,8 @@ py_log_message_parse(PyObject *_none, PyObject *args, PyObject *kwrds)
 static PyMethodDef py_log_message_methods[] =
 {
   { "keys", (PyCFunction)_logmessage_get_keys_method, METH_NOARGS, "Return keys." },
-  { "set_pri", (PyCFunction)py_log_message_set_pri, METH_VARARGS | METH_KEYWORDS, "Set priority" },
+  { "set_pri", (PyCFunction)py_log_message_set_pri, METH_VARARGS | METH_KEYWORDS, "Set syslog priority" },
+  { "get_pri", (PyCFunction)py_log_message_get_pri, METH_VARARGS | METH_KEYWORDS, "Get syslog priority" },
   { "set_timestamp", (PyCFunction)py_log_message_set_timestamp, METH_VARARGS | METH_KEYWORDS, "Set timestamp" },
   { "set_bookmark", (PyCFunction)py_log_message_set_bookmark, METH_VARARGS | METH_KEYWORDS, "Set bookmark" },
   { "parse", (PyCFunction)py_log_message_parse, METH_STATIC|METH_VARARGS|METH_KEYWORDS, "Parse and create LogMessage" },
