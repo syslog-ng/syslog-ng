@@ -24,7 +24,12 @@
 #include "python-helpers.h"
 #include "scanner/list-scanner/list-scanner.h"
 #include "str-repr/encode.h"
+#include "timeutils/conv.h"
+#include "timeutils/misc.h"
 #include "messages.h"
+
+/* Python datetime API */
+#include <datetime.h>
 
 PyObject *
 py_bytes_from_string(const char *value, gssize len)
@@ -120,6 +125,30 @@ py_list_from_list(const gchar *list, gssize list_len)
 }
 
 PyObject *
+py_datetime_from_unix_time(UnixTime *ut)
+{
+  WallClockTime wct;
+
+  convert_unix_time_to_wall_clock_time(ut, &wct);
+
+  return PyDateTime_FromDateAndTimeAndFold(
+           wct.wct_year + 1900, wct.wct_mon + 1, wct.wct_mday,
+           wct.wct_hour, wct.wct_min, wct.wct_sec,
+           wct.wct_usec, wct.wct_isdst > 0);
+}
+
+PyObject *
+py_datetime_from_msec(gint64 msec)
+{
+  UnixTime ut;
+
+  ut.ut_sec = msec / 1000;
+  ut.ut_usec = (msec % 1000) * 1000;
+  ut.ut_gmtoff = get_local_timezone_ofs(ut.ut_sec);
+  return py_datetime_from_unix_time(&ut);
+}
+
+PyObject *
 py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueType type)
 {
   switch (type)
@@ -154,6 +183,14 @@ py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueT
     case LM_VT_LIST:
       return py_list_from_list(value, value_len);
 
+    case LM_VT_DATETIME:
+    {
+      gint64 msec = 0;
+
+      if (type_cast_to_datetime_msec(value, &msec, NULL))
+        return py_datetime_from_msec(msec);
+      return NULL;
+    }
     case LM_VT_STRING:
     default:
       return py_bytes_from_string(value, value_len);
@@ -296,6 +333,63 @@ py_list_to_list(PyObject *obj, GString *list)
   return TRUE;
 }
 
+static gboolean
+_datetime_get_gmtoff(PyObject *py_datetime, glong *utcoffset)
+{
+  *utcoffset = -1;
+  PyObject *py_utcoffset = _py_invoke_method_by_name(py_datetime, "utcoffset", NULL, "PyDateTime",
+                                                     "py_datetime_to_datetime");
+  if (!py_utcoffset)
+    return FALSE;
+
+  if (py_utcoffset != Py_None)
+    *utcoffset = PyDateTime_DELTA_GET_SECONDS(py_utcoffset);
+
+  Py_XDECREF(py_utcoffset);
+  return TRUE;
+}
+
+gboolean
+py_datetime_to_unix_time(PyObject *obj, UnixTime *ut)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+
+  if (!PyDateTime_Check(obj))
+    {
+      return FALSE;
+    }
+
+  if (!_datetime_get_gmtoff(obj, &wct.wct_gmtoff))
+    {
+      return FALSE;
+    }
+
+  wct.wct_year = PyDateTime_GET_YEAR(obj) - 1900;
+  wct.wct_mon = PyDateTime_GET_MONTH(obj) - 1;
+  wct.wct_mday = PyDateTime_GET_DAY(obj);
+  wct.wct_hour = PyDateTime_DATE_GET_HOUR(obj);
+  wct.wct_min = PyDateTime_DATE_GET_MINUTE(obj);
+  wct.wct_sec = PyDateTime_DATE_GET_SECOND(obj);
+  wct.wct_usec = PyDateTime_DATE_GET_MICROSECOND(obj);
+  wct.wct_isdst = PyDateTime_DATE_GET_FOLD(obj);
+  convert_wall_clock_time_to_unix_time(&wct, ut);
+
+  if (ut->ut_gmtoff == -1)
+    ut->ut_gmtoff = get_local_timezone_ofs(ut->ut_sec);
+  return TRUE;
+}
+
+gboolean
+py_datetime_to_datetime(PyObject *obj, GString *dt)
+{
+  UnixTime ut;
+
+  if (!py_datetime_to_unix_time(obj, &ut))
+    return FALSE;
+  g_string_printf(dt, "%ld.%03d", ut.ut_sec, ut.ut_usec / 1000);
+  return TRUE;
+}
+
 /* Appends to the end of `value`. */
 gboolean
 py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type)
@@ -365,8 +459,22 @@ py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type
       return TRUE;
     }
 
+  if (PyDateTime_Check(obj))
+    {
+      if (!py_datetime_to_datetime(obj, value))
+        return FALSE;
+      *type = LM_VT_DATETIME;
+      return TRUE;
+    }
+
   *type = LM_VT_NONE;
 
   msg_error("Unexpected python object type", evt_tag_str("type", Py_TYPE(obj)->tp_name));
   return FALSE;
+}
+
+void
+py_init_types(void)
+{
+  PyDateTime_IMPORT;
 }

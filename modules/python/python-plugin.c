@@ -24,6 +24,7 @@
 
 #include "python-module.h"
 #include "python-helpers.h"
+#include "python-types.h"
 #include "python-parser.h"
 #include "python-dest.h"
 #include "python-tf.h"
@@ -113,6 +114,8 @@ _py_init_interpreter(void)
       py_init_argv();
 
       py_init_threads();
+      py_init_types();
+
       py_log_message_global_init();
       py_log_template_global_init();
       py_integer_pointer_global_init();

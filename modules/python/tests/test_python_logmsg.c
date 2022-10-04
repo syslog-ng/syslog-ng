@@ -47,6 +47,7 @@ _py_init_interpreter(void)
   py_init_argv();
 
   py_init_threads();
+  py_init_types();
   py_log_message_global_init();
   PyEval_SaveThread();
 }
@@ -59,6 +60,7 @@ _init_python_main(void)
     PythonConfig *pc = python_config_get(configuration);
     _python_main = _py_get_main_module(pc);
     _python_main_dict = PyModule_GetDict(_python_main);
+    g_assert(PyRun_String("import datetime", Py_file_input, _python_main_dict, _python_main_dict));
   }
   PyGILState_Release(gstate);
 }
@@ -103,7 +105,8 @@ _construct_py_parse_options(void)
   return py_parse_options;
 }
 
-void setup(void)
+void
+setup(void)
 {
   app_startup();
 
@@ -113,7 +116,8 @@ void setup(void)
   _init_python_main();
 }
 
-void teardown(void)
+void
+teardown(void)
 {
   scratch_buffers_explicit_gc();
   deinit_syslogformat_module();
@@ -176,6 +180,12 @@ ParameterizedTestParameters(python_log_message, test_python_logmessage_set_value
       .expected_log_msg_value = "\"a,\",\" b\",c",
       .expected_log_msg_type = LM_VT_LIST
     },
+    {
+      .py_value_to_set = "datetime.datetime(2022, 10, 4, 14, 48, 12, 123000)",
+      .py_value_to_check = "datetime.datetime(2022, 10, 4, 14, 48, 12, 123000)",
+      .expected_log_msg_value = "1664894892.123",
+      .expected_log_msg_type = LM_VT_DATETIME
+    },
   };
 
   return cr_make_param_array(PyLogMessageSetValueTestParams, test_data_list, G_N_ELEMENTS(test_data_list));
@@ -198,7 +208,12 @@ ParameterizedTest(PyLogMessageSetValueTestParams *params, python_log_message, te
                       "result = test_msg['test_field']\n",
                       params->py_value_to_set
                     );
-    cr_assert(PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict));
+    if (!PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict))
+      {
+        PyErr_Print();
+        cr_assert(FALSE, "Error running Python script >>>%s<<<", script);
+      }
+
     g_free(script);
 
     _assert_python_variable_value("result", params->py_value_to_check);
