@@ -377,7 +377,6 @@ Test(python_log_message, test_py_log_message_set_pri)
 
   PyObject *arg = Py_BuildValue("i", pri);
   PyLogMessage *py_msg = _construct_py_log_msg(NULL);
-  Py_DECREF(arg);
 
   PyObject *ret = _py_invoke_method_by_name((PyObject *) py_msg, "set_pri", arg, NULL, NULL);
   Py_XDECREF(ret);
@@ -385,6 +384,27 @@ Test(python_log_message, test_py_log_message_set_pri)
   cr_assert_eq(py_msg->msg->pri, pri);
 
   Py_DECREF(py_msg);
+  Py_DECREF(arg);
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_py_log_message_set_timestamp)
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyObject *arg = Py_BuildValue("O", py_datetime_from_msec(1664890194123));
+  PyLogMessage *py_msg = _construct_py_log_msg(NULL);
+
+  PyObject *ret = _py_invoke_method_by_name((PyObject *) py_msg, "set_timestamp", arg, NULL, NULL);
+  cr_assert(ret);
+  Py_XDECREF(ret);
+
+  cr_assert_eq(py_msg->msg->timestamps[LM_TS_STAMP].ut_sec, 1664890194);
+  cr_assert_eq(py_msg->msg->timestamps[LM_TS_STAMP].ut_usec, 123000);
+
+  Py_DECREF(py_msg);
+  Py_DECREF(arg);
   PyGILState_Release(gstate);
 }
 
