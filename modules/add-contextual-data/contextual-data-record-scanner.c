@@ -94,6 +94,10 @@ _fetch_value(ContextualDataRecordScanner *self, ContextualDataRecord *record)
 
   record->value = log_template_new(self->cfg, NULL);
 
+
+  GError *error = NULL;
+  gboolean success;
+
   if (cfg_is_config_version_older(self->cfg, VERSION_VALUE_3_21) &&
       strchr(value_template, '$') != NULL)
     {
@@ -103,26 +107,59 @@ _fetch_value(ContextualDataRecordScanner *self, ContextualDataRecord *record)
                   "to be escaped as '$$' once you change your @version declaration in the "
                   "configuration. This message means that this string is now assumed to be a "
                   "literal (non-template) string for compatibility",
+                  cfg_format_config_version_tag(self->cfg),
                   evt_tag_str("selector", record->selector->str),
                   evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
                   evt_tag_str("value", value_template));
       log_template_compile_literal_string(record->value, value_template);
+      success = TRUE;
+    }
+  else if (!cfg_is_typing_feature_enabled(self->cfg))
+    {
+      if (strchr(value_template, '(') != NULL)
+        {
+          success = log_template_compile_with_type_hint(record->value, value_template, &error);
+          if (!success)
+            {
+              log_template_set_type_hint(record->value, "string", NULL);
+              msg_warning("WARNING: the value field in add-contextual-data() CSV files has been changed "
+                          "to support typing from " FEATURE_TYPING_VERSION ". You are using an older config "
+                          "version and your CSV file contains an unrecognized type-cast, probably a "
+                          "parenthesis in the value field. This will be interpreted in the `type(value)' "
+                          "format in future versions. Please add an "
+                          "explicit string() cast as shown in the 'fixed-value' tag of this log message "
+                          "or remove the parenthesis. The value column will be processed as a 'string' "
+                          "expression",
+                          cfg_format_config_version_tag(self->cfg),
+                          evt_tag_str("selector", record->selector->str),
+                          evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
+                          evt_tag_str("value", value_template),
+                          evt_tag_printf("fixed-value", "string(%s)", value_template));
+              g_clear_error(&error);
+              success = log_template_compile(record->value, value_template, &error);
+            }
+        }
+      else
+        {
+          success = log_template_compile(record->value, value_template, &error);
+        }
     }
   else
     {
-      GError *error = NULL;
-
-      if (!log_template_compile_with_type_hint(record->value, value_template, &error))
-        {
-          msg_error("add-contextual-data(): error compiling template",
-                    evt_tag_str("selector", record->selector->str),
-                    evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
-                    evt_tag_str("value", value_template),
-                    evt_tag_str("error", error->message));
-          g_clear_error(&error);
-          return FALSE;
-        }
+      success = log_template_compile_with_type_hint(record->value, value_template, &error);
     }
+
+  if (!success)
+    {
+      msg_error("add-contextual-data(): error compiling template",
+                evt_tag_str("selector", record->selector->str),
+                evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
+                evt_tag_str("value", value_template),
+                evt_tag_str("error", error->message));
+      g_clear_error(&error);
+      return FALSE;
+    }
+
   return TRUE;
 }
 

@@ -200,6 +200,7 @@
 /* version based feature flips */
 #define VERSION_VALUE_NEXT_MAJOR         VERSION_VALUE_4_0
 #define FEATURE_TYPING_MIN_VERSION       VERSION_VALUE_4_0
+#define FEATURE_TYPING_VERSION           "syslog-ng 4.0"
 
 #include "pe-versioning.h"
 #endif
