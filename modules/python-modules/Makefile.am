@@ -1,4 +1,5 @@
 EXTRA_DIST += \
+	modules/python-modules/example/scl/example.conf	\
 	modules/python-modules/example/__init__.py	\
 	modules/python-modules/setup.py
 
