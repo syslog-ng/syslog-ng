@@ -584,9 +584,11 @@ fi
 %{_mandir}/man7/secure-logging.7*
 
 %files python
+%{_libdir}/%{name}/python/syslogng-1.0-py%{py_ver}.egg-info
 %{_libdir}/%{name}/python/syslogng/*
-%{_libdir}/%{name}/python/syslogng_modules/*
 %{_libdir}/%{name}/libmod-python.so
+%dir %{_sysconfdir}/%{name}/python
+%{_sysconfdir}/%{name}/python/README.md
 
 %files devel
 %{_libdir}/libsyslog-ng.so
