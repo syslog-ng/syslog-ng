@@ -1,1 +1,2 @@
 usr/lib/syslog-ng/*/libexamples.so
+usr/lib/syslog-ng/*/python/syslogng_modules/example/*
