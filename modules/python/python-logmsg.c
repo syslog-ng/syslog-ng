@@ -137,7 +137,7 @@ py_log_message_free(PyLogMessage *self)
 }
 
 PyObject *
-py_log_message_new(LogMessage *msg)
+py_log_message_new(LogMessage *msg, GlobalConfig *cfg)
 {
   PyLogMessage *self;
 
@@ -148,7 +148,6 @@ py_log_message_new(LogMessage *msg)
   self->msg = log_msg_ref(msg);
   self->bookmark_data = NULL;
 
-  GlobalConfig *cfg = python_get_associated_config();
   if (!cfg_is_typing_feature_enabled(cfg))
     self->cast_to_strings = TRUE;
   else

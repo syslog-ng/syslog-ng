@@ -71,7 +71,7 @@ _init_python_main(void)
     _python_main = _py_get_main_module(pc);
     _python_main_dict = PyModule_GetDict(_python_main);
 
-    py_template_options = py_log_template_options_new(&log_template_options);
+    py_template_options = py_log_template_options_new(&log_template_options, configuration);
   }
   PyGILState_Release(gstate);
 }
@@ -116,7 +116,7 @@ create_parsed_message(const gchar *raw_msg)
 {
   LogMessage *msg = msg_format_parse(&parse_options, (const guchar *) raw_msg, strlen(raw_msg));
 
-  PyLogMessage *py_log_msg = (PyLogMessage *)py_log_message_new(msg);
+  PyLogMessage *py_log_msg = (PyLogMessage *)py_log_message_new(msg, configuration);
   log_msg_unref(msg);
 
   return py_log_msg;

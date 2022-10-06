@@ -36,7 +36,7 @@ typedef struct _PyLogTemplateOptions
 extern PyTypeObject py_log_template_options_type;
 
 int py_is_log_template_options(PyObject *obj);
-PyObject *py_log_template_options_new(LogTemplateOptions *template_options);
+PyObject *py_log_template_options_new(LogTemplateOptions *template_options, GlobalConfig *cfg);
 
 void py_log_template_options_global_init(void);
 
