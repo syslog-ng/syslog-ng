@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #############################################################################
-# Copyright (c) 2015-2016 Balabit
+# Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -21,12 +21,19 @@
 #
 #############################################################################
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
-setup(name='syslogng',
+PACKAGE_PREFIX = "syslogng_modules"
+
+setup(name='syslogng-modules',
       version='1.0',
-      description='syslog-ng Python extensions',
+      description='syslog-ng Python extension Modules',
       author='Balazs Scheidler',
-      author_email='balazs.scheidler@balabit.com',
+      author_email='bazsi77@gmail.com',
       url='https://www.syslog-ng.org',
-      packages=['syslogng', 'syslogng.debuggercli'])
+      package_dir={
+        PACKAGE_PREFIX: "."
+      },
+      exclude_package_data={"": ["*~"]},
+      packages=list(map(lambda mod: PACKAGE_PREFIX + "." + mod, find_packages())),
+      install_requires=["setuptools"])
