@@ -191,7 +191,7 @@ _py_fetcher_fill_bookmark(PythonFetcherDriver *self, PyLogMessage *pymsg)
 {
   if (!self->py.ack_tracker_factory)
     {
-      msg_error("Error in Python fetcher, bookmarks can not be used without creating an AckTracker instance (self.ack_tracker)",
+      msg_error("python-fetcher: Error in Python fetcher, bookmarks can not be used without creating an AckTracker instance (self.ack_tracker)",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class));
       return FALSE;
@@ -252,7 +252,7 @@ _py_invoke_fetch(PythonFetcherDriver *self, LogMessage **msg)
   return fetch_result;
 
 error:
-  msg_error("Error in Python fetcher, fetch() must return a tuple (FetchResult, LogMessage)",
+  msg_error("python-fetcher: Error in Python fetcher, fetch() must return a tuple (FetchResult, LogMessage)",
             evt_tag_str("driver", self->super.super.super.super.id),
             evt_tag_str("class", self->class));
 
@@ -294,7 +294,7 @@ _py_resolve_class(PythonFetcherDriver *self)
     {
       gchar buf[256];
 
-      msg_error("Error looking Python driver class",
+      msg_error("python-fetcher: Error looking up Python driver class",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
@@ -314,7 +314,7 @@ _py_init_instance(PythonFetcherDriver *self)
     {
       gchar buf[256];
 
-      msg_error("Error instantiating Python driver class",
+      msg_error("python-fetcher: Error instantiating Python driver class",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
@@ -324,7 +324,7 @@ _py_init_instance(PythonFetcherDriver *self)
 
   if (!_py_is_log_fetcher(self->py.instance))
     {
-      msg_error("Error initializing Python fetcher, class is not a subclass of LogFetcher",
+      msg_error("python-fetcher: Error initializing Python fetcher, class is not a subclass of LogFetcher",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class));
       return FALSE;
@@ -342,7 +342,7 @@ _py_lookup_fetch_method(PythonFetcherDriver *self)
 
   if (!self->py.fetch_method)
     {
-      msg_error("Error initializing Python fetcher, class does not have a fetch() method",
+      msg_error("python-fetcher: Error initializing Python fetcher, class does not have a fetch() method",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class));
       return FALSE;
@@ -394,7 +394,7 @@ _py_init_object(PythonFetcherDriver *self)
 {
   if (!_py_get_attr_or_null(self->py.instance, "init"))
     {
-      msg_debug("Missing Python method, init()",
+      msg_debug("python-fetcher: Missing Python method, init()",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class));
       return TRUE;
@@ -402,7 +402,7 @@ _py_init_object(PythonFetcherDriver *self)
 
   if (!_py_invoke_init(self))
     {
-      msg_error("Error initializing Python driver object, init() returned FALSE",
+      msg_error("python-fetcher: Error initializing Python driver object, init() returned FALSE",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class));
       return FALSE;
@@ -419,7 +419,7 @@ _py_parse_options_new(PythonFetcherDriver *self, MsgFormatOptions *parse_options
     {
       gchar buf[256];
 
-      msg_error("Error creating capsule for message parse options",
+      msg_error("python-fetcher: Error creating capsule for message parse options",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
@@ -440,7 +440,7 @@ _py_init_ack_tracker_factory(PythonFetcherDriver *self)
 
   if (!py_is_ack_tracker_factory(py_ack_tracker_factory))
     {
-      msg_error("Python source attribute ack_tracker needs to be an AckTracker subtype",
+      msg_error("python-fetcher: Python source attribute ack_tracker needs to be an AckTracker subtype",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class));
       return FALSE;
@@ -467,7 +467,7 @@ _py_set_parse_options(PythonFetcherDriver *self)
     {
       gchar buf[256];
 
-      msg_error("Error setting attribute message parse options",
+      msg_error("python-fetcher: Error setting attribute message parse options",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
@@ -592,7 +592,7 @@ python_fetcher_init(LogPipe *s)
 
   if (!self->class)
     {
-      msg_error("Error initializing Python fetcher: no script specified!",
+      msg_error("python-fetcher: Error initializing Python fetcher, no class() option is specified",
                 evt_tag_str("driver", self->super.super.super.super.id));
       return FALSE;
     }
@@ -602,7 +602,7 @@ python_fetcher_init(LogPipe *s)
   if (!_py_fetcher_init(self))
     return FALSE;
 
-  msg_verbose("Python fetcher initialized",
+  msg_verbose("python-fetcher: Python fetcher initialized",
               evt_tag_str("driver", self->super.super.super.super.id),
               evt_tag_str("class", self->class));
 
