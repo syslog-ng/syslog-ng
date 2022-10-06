@@ -207,7 +207,7 @@ _py_resolve_class(PythonSourceDriver *self)
     {
       gchar buf[256];
 
-      msg_error("Error looking Python driver class",
+      msg_error("python-source: Error looking up Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
@@ -221,15 +221,15 @@ _py_resolve_class(PythonSourceDriver *self)
 static gboolean
 _py_init_instance(PythonSourceDriver *self)
 {
-  self->py.instance = _py_invoke_function(self->py.class, NULL, self->class, self->super.super.super.id);
+  gchar buf[256];
 
+  self->py.instance = _py_invoke_function(self->py.class, NULL, self->class, self->super.super.super.id);
   if (!self->py.instance)
     {
-      gchar buf[256];
-
-      msg_error("Error instantiating Python driver class",
+      msg_error("python-source: Error instantiating Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
+                evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return FALSE;
@@ -237,9 +237,10 @@ _py_init_instance(PythonSourceDriver *self)
 
   if (!_py_is_log_source(self->py.instance))
     {
-      msg_error("Error initializing Python source, class is not a subclass of LogSource",
+      msg_error("python-source: Error instantiating Python driver calss, class is not a subclass of LogSource",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class));
+                evt_tag_str("class", self->class),
+                evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
       return FALSE;
     }
 
@@ -255,7 +256,7 @@ _py_lookup_run_method(PythonSourceDriver *self)
 
   if (!self->py.run_method)
     {
-      msg_error("Error initializing Python source, class does not have a run() method",
+      msg_error("python-source: Error initializing Python source, class does not have a run() method",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
       return FALSE;
@@ -271,7 +272,7 @@ _py_lookup_request_exit_method(PythonSourceDriver *self)
 
   if (!self->py.request_exit_method)
     {
-      msg_error("Error initializing Python source, class does not have a request_exit() method",
+      msg_error("python-source: Error initializing Python source, class does not have a request_exit() method",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
       return FALSE;
@@ -290,7 +291,7 @@ _py_lookup_suspend_and_wakeup_methods(PythonSourceDriver *self)
       self->py.wakeup_method = _py_get_attr_or_null(self->py.instance, "wakeup");
       if (!self->py.wakeup_method)
         {
-          msg_error("Error initializing Python source, class implements suspend() but wakeup() is missing",
+          msg_error("python-source: Error initializing Python source, class implements suspend() but wakeup() is missing",
                     evt_tag_str("driver", self->super.super.super.id),
                     evt_tag_str("class", self->class));
           return FALSE;
@@ -345,7 +346,7 @@ _py_init_object(PythonSourceDriver *self)
 {
   if (!_py_get_attr_or_null(self->py.instance, "init"))
     {
-      msg_debug("Missing Python method, init()",
+      msg_debug("python-source: Missing Python method, init()",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
       return TRUE;
@@ -353,7 +354,7 @@ _py_init_object(PythonSourceDriver *self)
 
   if (!_py_invoke_init(self))
     {
-      msg_error("Error initializing Python driver object, init() returned FALSE",
+      msg_error("python-source: Error initializing Python driver object, init() returned FALSE",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
       return FALSE;
@@ -370,7 +371,7 @@ _py_parse_options_new(PythonSourceDriver *self, MsgFormatOptions *parse_options)
     {
       gchar buf[256];
 
-      msg_error("Error creating capsule for message parse options",
+      msg_error("python-source: Error creating capsule for message parse options",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
@@ -391,7 +392,7 @@ _py_init_ack_tracker_factory(PythonSourceDriver *self)
 
   if (!py_is_ack_tracker_factory(py_ack_tracker_factory))
     {
-      msg_error("Python source attribute ack_tracker needs to be an AckTracker subtype",
+      msg_error("python-source: Python source attribute ack_tracker needs to be an AckTracker subtype",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
       return FALSE;
@@ -418,7 +419,7 @@ _py_set_parse_options(PythonSourceDriver *self)
     {
       gchar buf[256];
 
-      msg_error("Error setting attribute message parse options",
+      msg_error("python-source: Error setting attribute message parse options",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
@@ -556,7 +557,7 @@ py_log_source_post(PyObject *s, PyObject *args, PyObject *kwrds)
 
   if (!log_threaded_source_free_to_send(&sd->super))
     {
-      msg_error("Incorrectly suspended source, dropping message",
+      msg_error("python-source: Incorrectly suspended source, dropping message",
                 evt_tag_str("driver", sd->super.super.super.id));
       Py_RETURN_NONE;
     }
@@ -618,7 +619,7 @@ python_sd_init(LogPipe *s)
 
   if (!self->class)
     {
-      msg_error("Error initializing Python source: no script specified!",
+      msg_error("python-source: Error initializing Python source, the class() option is not specified",
                 evt_tag_str("driver", self->super.super.super.id));
       return FALSE;
     }
@@ -626,7 +627,7 @@ python_sd_init(LogPipe *s)
   if(!_py_sd_init(self))
     return FALSE;
 
-  msg_verbose("Python source initialized",
+  msg_verbose("python-source: Python source initialized",
               evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("class", self->class));
 

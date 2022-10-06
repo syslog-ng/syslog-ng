@@ -208,8 +208,9 @@ _py_invoke_open(PythonDestDriver *self)
     {
       if (ret == Py_None)
         {
-          msg_warning_once("Since " VERSION_3_25 ", the return value of open method in python destination "
-                           "is used as success/failure indicator. Please use return True or return False explicitly",
+          msg_warning_once("python-dest: Since " VERSION_3_25 ", the return value of the open() method "
+                           "is used as success/failure indicator. Please use return True or return False explicitly "
+                           "instead of returning None",
                            evt_tag_str("class", self->class));
           result = TRUE;
         }
@@ -242,17 +243,16 @@ _as_int(PyObject *obj)
   if (!py_long_to_long(obj, &result) && PyErr_Occurred())
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
-      msg_error("Error converting PyObject to int. Retrying message later",
-                evt_tag_str("exception", buf));
+      msg_error("python-dest: Error converting the result of send() to a LogDestinationResult enum. Retrying message later",
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return LTR_ERROR;
     }
 
   if (result < 0 || result >= LTR_MAX)
     {
-      msg_error("Python: worker insert result out of range. Retrying message later",
+      msg_error("python-dest: The result of send() is out of range, please use the LogDestinationResult enum (or a bool) as return value. Retrying message later",
                 evt_tag_int("result", result));
       return LTR_ERROR;
     }
@@ -363,7 +363,7 @@ _py_init_bindings(PythonDestDriver *self)
     {
       gchar buf[256];
 
-      msg_error("Error looking Python driver class",
+      msg_error("python-dest: Error looking up Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
@@ -384,12 +384,13 @@ _py_init_bindings(PythonDestDriver *self)
   self->py.instance = _py_invoke_function(self->py.class, NULL, self->class, self->super.super.super.id);
   if (!self->py.instance)
     {
-      gchar buf[256];
+      gchar buf1[256], buf2[256];
 
-      msg_error("Error instantiating Python driver class",
+      msg_error("python-dest: Error instantiating Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("class-repr", _py_object_repr(self->py.class, buf1, sizeof(buf1))),
+                evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))));
       _py_finish_exception_handling();
       return FALSE;
     }
@@ -400,7 +401,7 @@ _py_init_bindings(PythonDestDriver *self)
 
       if (!cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
         {
-          msg_error("Error initializing Python source, class is not a subclass of LogDestination",
+          msg_error("python-dest: Error initializing Python destination, class is not a subclass of LogDestination",
                     evt_tag_str("driver", self->super.super.super.id),
                     evt_tag_str("class", self->class),
                     evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
@@ -423,7 +424,7 @@ _py_init_bindings(PythonDestDriver *self)
   self->py.generate_persist_name = _py_get_attr_or_null(self->py.instance, "generate_persist_name");
   if (!self->py.send)
     {
-      msg_error("Error initializing Python destination, class does not have a send() method",
+      msg_error("python-dest: Error initializing Python destination, class does not have a send() method",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
       return FALSE;
@@ -455,7 +456,7 @@ _py_init_object(PythonDestDriver *self)
 {
   if (!_py_get_attr_or_null(self->py.instance, "init"))
     {
-      msg_debug("Missing Python method, init()",
+      msg_debug("python-dest: Missing Python method, init()",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
       return TRUE;
@@ -463,7 +464,7 @@ _py_init_object(PythonDestDriver *self)
 
   if (!_py_invoke_init(self))
     {
-      msg_error("Error initializing Python driver object, init() returned FALSE",
+      msg_error("python-dest: Error initializing Python driver object, init() returned FALSE",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
       return FALSE;
@@ -590,7 +591,7 @@ python_dd_init(LogPipe *d)
 
   if (!self->class)
     {
-      msg_error("Error initializing Python destination: no script specified!",
+      msg_error("python-dest: Error initializing Python destination, the class() option is not specified",
                 evt_tag_str("driver", self->super.super.super.id));
       return FALSE;
     }
@@ -612,7 +613,7 @@ python_dd_init(LogPipe *d)
     goto fail;
   PyGILState_Release(gstate);
 
-  msg_verbose("Python destination initialized",
+  msg_verbose("python-dest: Python destination initialized",
               evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("class", self->class));
 
