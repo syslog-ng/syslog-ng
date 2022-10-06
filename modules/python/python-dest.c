@@ -68,6 +68,11 @@ typedef struct _PyLogDestination
 
 static PyTypeObject py_log_destination_type;
 
+static gboolean
+_py_is_log_destination(PyObject *obj)
+{
+  return PyType_IsSubtype(Py_TYPE(obj), &py_log_destination_type);
+}
 
 /** Setters & config glue **/
 
@@ -387,6 +392,27 @@ _py_init_bindings(PythonDestDriver *self)
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return FALSE;
+    }
+
+  if (!_py_is_log_destination(self->py.instance))
+    {
+      gchar buf[256];
+
+      if (!cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
+        {
+          msg_error("Error initializing Python source, class is not a subclass of LogDestination",
+                    evt_tag_str("driver", self->super.super.super.id),
+                    evt_tag_str("class", self->class),
+                    evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
+          return FALSE;
+        }
+      msg_warning("WARNING: " VERSION_4_0 " requires that your python() destination class derives "
+                  "from syslogng.LogDestination. Please change the class declaration to explicitly "
+                  "inherit from syslogng.LogDestination. syslog-ng now operates in compatibility mode",
+                  evt_tag_str("driver", self->super.super.super.id),
+                  evt_tag_str("class", self->class),
+                  evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
+
     }
 
   /* these are fast paths, store references to be faster */
