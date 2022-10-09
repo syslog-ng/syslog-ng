@@ -125,6 +125,7 @@ _py_invoke_deinit(PythonParser *self)
 static gboolean
 _py_init_bindings(PythonParser *self)
 {
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
   self->py.class = _py_resolve_qualified_name(self->class);
   if (!self->py.class)
     {
@@ -150,6 +151,28 @@ _py_init_bindings(PythonParser *self)
       _py_finish_exception_handling();
       return FALSE;
     }
+
+  if (!_py_is_log_parser(self->py.instance))
+    {
+      gchar buf[256];
+
+      if (!cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
+        {
+          msg_error("python-parser: Error initializing Python parser, class is not a subclass of LogParser",
+                    evt_tag_str("parser", self->super.name),
+                    evt_tag_str("class", self->class),
+                    evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
+          return FALSE;
+        }
+      msg_warning("WARNING: " VERSION_4_0 " requires that your python() parser class derives "
+                  "from syslogng.LogParser. Please change the class declaration to explicitly "
+                  "inherit from syslogng.LogParser. syslog-ng now operates in compatibility mode",
+                  evt_tag_str("parser", self->super.name),
+                  evt_tag_str("class", self->class),
+                  evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
+
+    }
+
 
   /* these are fast paths, store references to be faster */
   self->py.parser_process = _py_get_attr_or_null(self->py.instance, "parse");
