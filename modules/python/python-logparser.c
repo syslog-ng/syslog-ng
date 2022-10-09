@@ -44,6 +44,19 @@ typedef struct
   } py;
 } PythonParser;
 
+typedef struct _PyLogParser
+{
+  PyObject_HEAD
+} PyLogParser;
+
+static PyTypeObject py_log_parser_type;
+
+static gboolean
+_py_is_log_parser(PyObject *obj)
+{
+  return PyType_IsSubtype(Py_TYPE(obj), &py_log_parser_type);
+}
+
 void
 python_parser_set_class(LogParser *d, gchar *class)
 {
@@ -295,4 +308,23 @@ python_parser_new(GlobalConfig *cfg)
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
   return (LogParser *)self;
+}
+
+static PyTypeObject py_log_parser_type =
+{
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  .tp_name = "LogDestination",
+  .tp_basicsize = sizeof(PyLogParser),
+  .tp_dealloc = py_slng_generic_dealloc,
+  .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+  .tp_doc = "The LogDestination class is a base class for custom Python sources.",
+  .tp_new = PyType_GenericNew,
+  0,
+};
+
+void
+py_log_parser_global_init(void)
+{
+  PyType_Ready(&py_log_parser_type);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogParser", (PyObject *) &py_log_parser_type);
 }
