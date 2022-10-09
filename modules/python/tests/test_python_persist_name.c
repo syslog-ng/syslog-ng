@@ -303,7 +303,6 @@ Test(python_persist_name, test_python_source_readonly)
   start_grabbing_messages();
   cr_assert_eq(log_pipe_init((LogPipe *)d), 0);
   stop_grabbing_messages();
-  display_grabbed_messages();
 
   // Python2: TypeError: readonly attribute
   // Python3: AttributeError: readonly attribute
@@ -336,7 +335,6 @@ Test(python_persist_name, test_python_fetcher_readonly)
   start_grabbing_messages();
   cr_assert_eq(log_pipe_init((LogPipe *)d), 0);
   stop_grabbing_messages();
-  display_grabbed_messages();
 
   // Python2: TypeError: readonly attribute
   // Python3: AttributeError: readonly attribute
