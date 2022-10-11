@@ -410,6 +410,27 @@ _py_object_repr(PyObject *s, gchar *buf, gsize buflen)
   return buf;
 }
 
+PyObject *
+_py_construct_enum(const gchar *name, PyObject *sequence)
+{
+  PyObject *enum_module = PyImport_ImportModule("enum");
+
+  if (!enum_module)
+    return NULL;
+
+  PyObject *enum_dict = PyModule_GetDict(enum_module);
+  PyObject *enum_new = PyDict_GetItemString(enum_dict, "IntEnum");
+
+  if (!enum_new)
+    return NULL;
+
+  PyObject *result = PyObject_CallFunction(enum_new, "sO", name, sequence);
+  Py_XDECREF(enum_module);
+
+  return result;
+}
+
+
 void
 py_slng_generic_dealloc(PyObject *self)
 {
