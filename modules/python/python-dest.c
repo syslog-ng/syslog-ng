@@ -702,6 +702,17 @@ static PyTypeObject py_log_destination_type =
 void
 py_log_destination_global_init(void)
 {
+  PyObject *module = PyImport_AddModule("_syslogng");
+  PyObject *enum_seq = PyList_New(6);
+
+  PyList_SetItem(enum_seq, 0, Py_BuildValue("(si)", "DROP", LTR_DROP));
+  PyList_SetItem(enum_seq, 1, Py_BuildValue("(si)", "ERROR", LTR_ERROR));
+  PyList_SetItem(enum_seq, 2, Py_BuildValue("(si)", "EXPLICIT_ACK_MGMT", LTR_EXPLICIT_ACK_MGMT));
+  PyList_SetItem(enum_seq, 3, Py_BuildValue("(si)", "SUCCESS", LTR_SUCCESS));
+  PyList_SetItem(enum_seq, 4, Py_BuildValue("(si)", "QUEUED", LTR_QUEUED));
+  PyList_SetItem(enum_seq, 5, Py_BuildValue("(si)", "NOT_CONNECTED", LTR_NOT_CONNECTED));
+  PyModule_AddObject(module, "LogDestinationResult", _py_construct_enum("LogDestinationResult", enum_seq));
+
   PyType_Ready(&py_log_destination_type);
-  PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogDestination", (PyObject *) &py_log_destination_type);
+  PyModule_AddObject(module, "LogDestination", (PyObject *) &py_log_destination_type);
 }

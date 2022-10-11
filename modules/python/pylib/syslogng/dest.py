@@ -21,22 +21,30 @@
 #
 #############################################################################
 try:
-    from _syslogng import LogDestination
+    from _syslogng import LogDestination, LogDestinationResult
 
 except ImportError:
     import warnings
+    from enum import Enum, auto
+
     warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
 
     LogDestination = object
 
+    class LogDestinationResult(Enum):
+        DROP = auto(),
+        ERROR = auto(),
+        SUCCESS = auto(),
+        QUEUED = auto(),
+        NOT_CONNECTED = auto(),
+
+
 class LogDestination(LogDestination):
-    LTR_DROP = 0
-    LTR_ERROR = 1
-    LTR_EXPLICIT_ACK_MGMT = 2
-    LTR_SUCCESS = 3
-    LTR_QUEUED = 4
-    LTR_NOT_CONNECTED = 5
-    LTR_RETRY = 6
+    DROP = LogDestinationResult.DROP
+    ERROR = LogDestinationResult.ERROR
+    SUCCESS = LogDestinationResult.SUCCESS
+    QUEUED = LogDestinationResult.QUEUED
+    NOT_CONNECTED = LogDestinationResult.NOT_CONNECTED
 
     def open(self):
         """Open a connection to the target service"""
@@ -93,5 +101,6 @@ class LogDestination(LogDestination):
             msg (LogMessage): message to be sent
 
         Returns:
+            int: one value from the LogDestinationResult enum
         """
-        return self.LTR_SUCCESS
+        return self.SUCCESS
