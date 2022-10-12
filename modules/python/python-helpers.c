@@ -160,7 +160,23 @@ _py_do_import(const gchar *modname)
 
   modobj = PyImport_Import(module);
   Py_DECREF(module);
-  if (!modobj)
+  if (modobj)
+    {
+      PyObject  *mod_filename = PyModule_GetFilenameObject(modobj);
+
+      if (!mod_filename)
+        {
+          /* this exception only means that this module does not have a
+           * __name__ attribute */
+          PyErr_Clear();
+        }
+
+      msg_debug("python: importing Python module",
+                evt_tag_str("module", modname),
+                evt_tag_str("filename", mod_filename ? PyUnicode_AsUTF8(mod_filename) : "unknown"));
+      Py_XDECREF(mod_filename);
+    }
+  else
     {
       gchar buf[256];
 
