@@ -51,7 +51,7 @@ You can find the resulting debs in `$HOME/syslog-ng/dbld/build`.
 
 You can also use the docker based shell to hack on syslog-ng by configuring
 and building manually. You can use any of the supported OSes as shells (e.g.
-shell-ubuntu-xenial or shell-centos-7) and there's "devshell" that contains
+shell-ubuntu-jammy or shell-centos-7) and there's "devshell" that contains
 a few extra tools, often needed during development.
 
 Steps for the manual build after entering into the containers shell:

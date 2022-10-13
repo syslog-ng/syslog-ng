@@ -24,6 +24,7 @@
 #include "python-fetcher.h"
 #include "python-logmsg.h"
 #include "python-helpers.h"
+#include "python-types.h"
 #include "logthrsource/logthrfetcherdrv.h"
 #include "str-utils.h"
 #include "string-list.h"
@@ -687,15 +688,15 @@ py_log_fetcher_init(void)
 {
   py_log_fetcher_type.tp_dict = PyDict_New();
   PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_ERROR",
-                       PyLong_FromLong(THREADED_FETCH_ERROR));
+                       py_long_from_long(THREADED_FETCH_ERROR));
   PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_NOT_CONNECTED",
-                       PyLong_FromLong(THREADED_FETCH_NOT_CONNECTED));
+                       py_long_from_long(THREADED_FETCH_NOT_CONNECTED));
   PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_SUCCESS",
-                       PyLong_FromLong(THREADED_FETCH_SUCCESS));
+                       py_long_from_long(THREADED_FETCH_SUCCESS));
   PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_TRY_AGAIN",
-                       PyLong_FromLong(THREADED_FETCH_TRY_AGAIN));
+                       py_long_from_long(THREADED_FETCH_TRY_AGAIN));
   PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_NO_DATA",
-                       PyLong_FromLong(THREADED_FETCH_NO_DATA));
+                       py_long_from_long(THREADED_FETCH_NO_DATA));
 
   PyType_Ready(&py_log_fetcher_type);
   PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogFetcher", (PyObject *) &py_log_fetcher_type);

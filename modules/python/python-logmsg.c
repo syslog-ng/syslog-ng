@@ -24,6 +24,7 @@
 #include "python-logmsg.h"
 #include "compat/compat-python.h"
 #include "python-helpers.h"
+#include "python-types.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "timeutils/cache.h"
@@ -31,6 +32,7 @@
 #include "timeutils/unixtime.h"
 #include "timeutils/misc.h"
 #include "msg-format.h"
+#include "scratch-buffers.h"
 
 #include <datetime.h>
 
@@ -51,7 +53,7 @@ _populate_blacklisted_keys(const gchar ***blacklist, size_t *n)
 {
   static const gchar *keys[] =
   {
-    "S_STAMP", "_", "C_STAMP"
+    "S_STAMP", "_", "C_STAMP", "R_STAMP", "P_STAMP", "STAMP"
   };
   static gboolean keys_sorted = FALSE;
   if (!keys_sorted)
@@ -75,13 +77,12 @@ _is_key_blacklisted(const gchar *key)
 static PyObject *
 _py_log_message_subscript(PyObject *o, PyObject *key)
 {
-  if (!_py_is_string(key))
+  const gchar *name;
+  if (!py_bytes_or_string_to_string(key, &name))
     {
       PyErr_SetString(PyExc_TypeError, "key is not a string object");
       return NULL;
     }
-
-  const gchar *name = _py_get_string_as_string(key);
 
   if (_is_key_blacklisted(name))
     {
@@ -91,7 +92,8 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
   NVHandle handle = log_msg_get_value_handle(name);
   PyLogMessage *py_msg = (PyLogMessage *)o;
   gssize value_len = 0;
-  const gchar *value = log_msg_get_value(py_msg->msg, handle, &value_len);
+  LogMessageValueType type;
+  const gchar *value = log_msg_get_value_with_type(py_msg->msg, handle, &value_len, &type);
 
   if (!value)
     {
@@ -99,15 +101,19 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
       return NULL;
     }
 
+  if (py_msg->cast_to_strings)
+    type = LM_VT_STRING;
+
   APPEND_ZERO(value, value, value_len);
 
-  return PyBytes_FromString(value);
+  return py_obj_from_log_msg_value(value, value_len, type);
 }
 
 static int
 _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
 {
-  if (!_py_is_string(key))
+  const gchar *name;
+  if (!py_bytes_or_string_to_string(key, &name))
     {
       PyErr_SetString(PyExc_TypeError, "key is not a string object");
       return -1;
@@ -115,7 +121,6 @@ _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
 
   PyLogMessage *py_msg = (PyLogMessage *) o;
   LogMessage *msg = py_msg->msg;
-  const gchar *name = _py_get_string_as_string(key);
 
   if (log_msg_is_write_protected(msg))
     {
@@ -128,20 +133,33 @@ _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
 
   NVHandle handle = log_msg_get_value_handle(name);
 
-  if (value && _py_is_string(value))
-    {
-      log_msg_set_value(py_msg->msg, handle, _py_get_string_as_string(value), -1);
-    }
-  else
+  if (!value)
+    return -1;
+
+  if (py_msg->cast_to_strings && !is_py_obj_bytes_or_string_type(value))
     {
       PyErr_Format(PyExc_ValueError,
                    "str or unicode object expected as log message values, got type %s (key %s). "
                    "Earlier syslog-ng accepted any type, implicitly converting it to a string. "
+                   "Later syslog-ng (at least 4.0) will store the value with the correct type. "
                    "With this version please convert it explicitly to a string using str()",
                    value->ob_type->tp_name, name);
       return -1;
     }
 
+  ScratchBuffersMarker marker;
+  GString *log_msg_value = scratch_buffers_alloc_and_mark(&marker);
+  LogMessageValueType type;
+
+  if (!py_obj_to_log_msg_value(value, log_msg_value, &type))
+    {
+      scratch_buffers_reclaim_marked(marker);
+      return -1;
+    }
+
+  log_msg_set_value_with_type(py_msg->msg, handle, log_msg_value->str, -1, type);
+
+  scratch_buffers_reclaim_marked(marker);
   return 0;
 }
 
@@ -164,6 +182,7 @@ py_log_message_new(LogMessage *msg)
 
   self->msg = log_msg_ref(msg);
   self->bookmark_data = NULL;
+  self->cast_to_strings = FALSE;
   return (PyObject *) self;
 }
 
@@ -327,7 +346,8 @@ py_datetime_to_logstamp(PyObject *py_timestamp, UnixTime *logstamp)
   if (!py_posix_timestamp)
     return FALSE;
 
-  gdouble posix_timestamp = PyFloat_AsDouble(py_posix_timestamp);
+  gdouble posix_timestamp;
+  py_double_to_double(py_posix_timestamp, &posix_timestamp);
 
   Py_XDECREF(py_posix_timestamp);
 

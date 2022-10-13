@@ -23,12 +23,15 @@
 #include "python-module.h"
 
 #include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 #include "libtest/msg_parse_lib.h"
 
 #include "python-helpers.h"
+#include "python-types.h"
 #include "python-logmsg.h"
 #include "apphook.h"
 #include "logmsg/logmsg.h"
+#include "scratch-buffers.h"
 
 static PyObject *_python_main;
 static PyObject *_python_main_dict;
@@ -58,23 +61,24 @@ _init_python_main(void)
   PyGILState_Release(gstate);
 }
 
-static gchar *
-_dict_clone_value(PyObject *dict, const gchar *key)
+static void
+_assert_python_variable_value(const gchar *variable_name, const gchar *expected_value)
 {
-  PyObject *res_obj = PyDict_GetItemString(dict, key);
-
-  if (!res_obj)
-    return NULL;
-
-  if (!_py_is_string(res_obj))
+  gchar *script = g_strdup_printf("assert %s == %s", variable_name, expected_value);
+  if (!PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict))
     {
-      Py_XDECREF(res_obj);
-      return NULL;
+      gchar buf[256];
+      _py_format_exception_text(buf, sizeof(buf));
+      msg_error("Error in _assert_python_variable_value()",
+                evt_tag_str("script", script),
+                evt_tag_str("exception", buf));
+      _py_finish_exception_handling();
+
+      g_free(script);
+      cr_assert(FALSE);
     }
 
-  gchar *res = g_strdup(_py_get_string_as_string(res_obj));
-  Py_XDECREF(res_obj);
-  return res;
+  g_free(script);
 }
 
 static PyLogMessage *
@@ -109,13 +113,73 @@ void setup(void)
 
 void teardown(void)
 {
+  scratch_buffers_explicit_gc();
   deinit_syslogformat_module();
   app_shutdown();
 }
 
 TestSuite(python_log_message, .init = setup, .fini = teardown);
 
-Test(python_log_message, test_python_logmessage_set_value)
+typedef struct _PyLogMessageSetValueTestParams
+{
+  const gchar *py_value_to_set;
+  const gchar *py_value_to_check;
+  const gchar *expected_log_msg_value;
+  LogMessageValueType expected_log_msg_type;
+} PyLogMessageSetValueTestParams;
+
+ParameterizedTestParameters(python_log_message, test_python_logmessage_set_value)
+{
+  static PyLogMessageSetValueTestParams test_data_list[] =
+  {
+    {
+      .py_value_to_set = "'almafa'",
+      .py_value_to_check = "b'almafa'",
+      .expected_log_msg_value = "almafa",
+      .expected_log_msg_type = LM_VT_STRING
+    },
+    {
+      .py_value_to_set = "b'kortefa'",
+      .py_value_to_check = "b'kortefa'",
+      .expected_log_msg_value = "kortefa",
+      .expected_log_msg_type = LM_VT_STRING
+    },
+    {
+      .py_value_to_set = "42",
+      .py_value_to_check = "42",
+      .expected_log_msg_value = "42",
+      .expected_log_msg_type = LM_VT_INTEGER
+    },
+    {
+      .py_value_to_set = "6.9",
+      .py_value_to_check = "6.9",
+      .expected_log_msg_value = "6.900000",
+      .expected_log_msg_type = LM_VT_DOUBLE
+    },
+    {
+      .py_value_to_set = "True",
+      .py_value_to_check = "True",
+      .expected_log_msg_value = "true",
+      .expected_log_msg_type = LM_VT_BOOLEAN
+    },
+    {
+      .py_value_to_set = "None",
+      .py_value_to_check = "None",
+      .expected_log_msg_value = "",
+      .expected_log_msg_type = LM_VT_NULL
+    },
+    {
+      .py_value_to_set = "['a,', ' b', b'c']",
+      .py_value_to_check = "[b'a,', b' b', b'c']",
+      .expected_log_msg_value = "\"a,\",\" b\",c",
+      .expected_log_msg_type = LM_VT_LIST
+    },
+  };
+
+  return cr_make_param_array(PyLogMessageSetValueTestParams, test_data_list, G_N_ELEMENTS(test_data_list));
+}
+
+ParameterizedTest(PyLogMessageSetValueTestParams *params, python_log_message, test_python_logmessage_set_value)
 {
   LogMessage *msg = log_msg_new_empty();
 
@@ -125,15 +189,74 @@ Test(python_log_message, test_python_logmessage_set_value)
     PyObject *msg_object = py_log_message_new(msg);
 
     PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
-    const gchar *set_value = "test_msg['test_field'] = 'test_value'\nresult=test_msg['test_field']";
-    PyRun_String(set_value, Py_file_input, _python_main_dict, _python_main_dict);
 
-    gchar *res = _dict_clone_value(_python_main_dict, "result");
-    cr_assert_str_eq(res, "test_value");
-    g_free(res);
+    gchar *script = g_strdup_printf(
+                      "test_msg['test_field'] = %s\n"
+                      "result = test_msg['test_field']\n",
+                      params->py_value_to_set
+                    );
+    cr_assert(PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict));
+    g_free(script);
 
-    const gchar *test_value=log_msg_get_value_by_name(msg, "test_field", NULL);
-    cr_assert_str_eq(test_value, "test_value");
+    _assert_python_variable_value("result", params->py_value_to_check);
+
+    LogMessageValueType type;
+    const gchar *value = log_msg_get_value_by_name_with_type(msg, "test_field", NULL, &type);
+    cr_assert_str_eq(value, params->expected_log_msg_value);
+    cr_assert(type == params->expected_log_msg_type);
+
+    Py_XDECREF(msg_object);
+  }
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_python_logmessage_set_value_no_typing_support)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  {
+    PyObject *msg_object = py_log_message_new(msg);
+    ((PyLogMessage *) msg_object)->cast_to_strings = TRUE;
+
+    PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
+
+    const gchar *script = "test_msg['test_field'] = 42\n";
+    cr_assert_not(PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict));
+
+    Py_XDECREF(msg_object);
+  }
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_python_logmessage_get_value_no_typing_support)
+{
+  const gchar *test_key = "test_field";
+  const gchar *test_value = "42";
+
+  LogMessage *msg = log_msg_new_empty();
+
+  // set from C code as INTEGER
+  log_msg_set_value_by_name_with_type(msg, test_key, test_value, strlen(test_value), LM_VT_INTEGER);
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  {
+    PyObject *msg_object = py_log_message_new(msg);
+    ((PyLogMessage *) msg_object)->cast_to_strings = TRUE;
+
+    PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
+
+    // in python code it shows up as bytes
+    _assert_python_variable_value("test_msg['test_field']", "b'42'");
+
+    LogMessageValueType type;
+    const gchar *value = log_msg_get_value_by_name_with_type(msg, "test_field", NULL, &type);
+
+    // in LogMessage it is INTEGER
+    cr_assert(type == LM_VT_INTEGER);
+    cr_assert_str_eq(value, "42");
 
     Py_XDECREF(msg_object);
   }
@@ -162,9 +285,7 @@ Test(python_log_message, test_python_logmessage_set_value_indirect)
     const gchar *get_value_indirect = "indirect = test_msg['indirect']";
     PyRun_String(get_value_indirect, Py_file_input, _python_main_dict, _python_main_dict);
 
-    gchar *res_indirect = _dict_clone_value(_python_main_dict, "indirect");
-    cr_assert_str_eq(res_indirect, "test_value");
-    g_free(res_indirect);
+    _assert_python_variable_value("indirect", "b'test_value'");
 
     Py_XDECREF(msg_object);
   }
@@ -300,7 +421,8 @@ Test(python_log_message, test_python_logmessage_keys)
   for (Py_ssize_t i = 0; i < PyList_Size(keys); ++i)
     {
       PyObject *py_key = PyList_GetItem(keys, i);
-      const gchar *key = _py_get_string_as_string(py_key);
+      const gchar *key;
+      py_bytes_or_string_to_string(py_key, &key);
       cr_assert_not_null(key);
 
       NVHandle handle = log_msg_get_value_handle(key);

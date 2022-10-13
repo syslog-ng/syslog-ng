@@ -39,7 +39,6 @@ jobs:
           - ubuntu-bionic
           - ubuntu-focal
           - ubuntu-jammy
-          - ubuntu-xenial
           - devshell
           - kira
           - tarball

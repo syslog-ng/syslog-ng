@@ -23,19 +23,31 @@
  */
 #include "python-tf.h"
 #include "python-helpers.h"
+#include "python-types.h"
 #include "python-main.h"
 #include "template/simple-function.h"
 #include "python-logmsg.h"
+#include "scratch-buffers.h"
 #include <time.h>
 
+typedef struct _PythonTfState
+{
+  TFSimpleFuncState super;
+  GlobalConfig *cfg;
+} PythonTfState;
+
 static PyObject *
-_py_construct_args_tuple(LogMessage *msg, gint argc, GString *argv[])
+_py_construct_args_tuple(PythonTfState *state, LogMessage *msg, gint argc, GString *const *argv)
 {
   PyObject *args;
   gint i;
 
   args = PyTuple_New(1 + argc - 1);
-  PyTuple_SetItem(args, 0, py_log_message_new(msg));
+
+  PyObject *py_msg = py_log_message_new(msg);
+  ((PyLogMessage *) py_msg)->cast_to_strings = !cfg_is_typing_feature_enabled(state->cfg);
+
+  PyTuple_SetItem(args, 0, py_msg);
   for (i = 1; i < argc; i++)
     {
       PyTuple_SetItem(args, i, PyBytes_FromString(argv[i]->str));
@@ -45,7 +57,8 @@ _py_construct_args_tuple(LogMessage *msg, gint argc, GString *argv[])
 
 /* returns NULL or reference, exception is handled */
 static PyObject *
-_py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint argc, GString *argv[])
+_py_invoke_template_function(PythonTfState *state, const gchar *function_name, LogMessage *msg, gint argc,
+                             GString *const *argv)
 {
   PyObject *callable, *ret, *args;
 
@@ -66,7 +79,7 @@ _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint a
             evt_tag_str("function", function_name),
             evt_tag_msg_reference(msg));
 
-  args = _py_construct_args_tuple(msg, argc, argv);
+  args = _py_construct_args_tuple(state, msg, argc, argv);
   ret = PyObject_CallObject(callable, args);
   Py_DECREF(args);
   Py_DECREF(callable);
@@ -87,42 +100,63 @@ _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint a
 
 /* NOTE: consumes ret */
 static gboolean
-_py_convert_return_value_to_result(const gchar *function_name, PyObject *ret, GString *result)
+_py_convert_return_value_to_result(PythonTfState *state, const gchar *function_name, PyObject *ret, GString *result,
+                                   LogMessageValueType *type)
 {
-  if (!_py_is_string(ret))
+  if (!cfg_is_typing_feature_enabled(state->cfg) && !is_py_obj_bytes_or_string_type(ret))
     {
-      msg_error("$(python): The return value is not str or unicode",
-                evt_tag_str("function", function_name),
-                evt_tag_str("type", ret->ob_type->tp_name));
+      msg_error("$(python): The current config version does not support returning non-string values from Python "
+                "functions. Please return str or bytes values from your Python function, use an explicit syslog-ng "
+                "level cast to string() or set the config version to post 4.0",
+                cfg_format_config_version_tag(state->cfg));
       Py_DECREF(ret);
       return FALSE;
     }
-  g_string_append(result, _py_get_string_as_string(ret));
+
+  if (!py_obj_to_log_msg_value(ret, result, type))
+    {
+      Py_DECREF(ret);
+      return FALSE;
+    }
+
   Py_DECREF(ret);
   return TRUE;
 }
 
-static void
-tf_python(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
+static gboolean
+tf_python_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[],
+                  GError **error)
 {
+  PythonTfState *state = (PythonTfState *) s;
+  state->cfg = parent->cfg;
+  return tf_simple_func_prepare(self, s, parent, argc, argv, error);
+}
+
+static void
+tf_python_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result,
+               LogMessageValueType *type)
+{
+  PythonTfState *state = (PythonTfState *) s;
   PyGILState_STATE gstate;
   const gchar *function_name;
   PyObject *ret;
+  LogMessage *msg = args->messages[args->num_messages-1];
 
-  *type = LM_VT_STRING;
-  if (argc == 0)
+  if (state->super.argc == 0)
     return;
-  function_name = argv[0]->str;
+  function_name = args->argv[0]->str;
 
   gstate = PyGILState_Ensure();
 
-  if (!(ret = _py_invoke_template_function(function_name, msg, argc, argv)) ||
-      !_py_convert_return_value_to_result(function_name, ret, result))
+  if (!(ret = _py_invoke_template_function(state, function_name, msg, state->super.argc, args->argv)) ||
+      !_py_convert_return_value_to_result(state, function_name, ret, result, type))
     {
       g_string_append(result, "<error>");
+      *type = LM_VT_STRING;
     }
 
   PyGILState_Release(gstate);
 }
 
-TEMPLATE_FUNCTION_SIMPLE(tf_python);
+TEMPLATE_FUNCTION(TFSimpleFuncState, tf_python, tf_python_prepare, tf_simple_func_eval,
+                  tf_python_call, tf_simple_func_free_state, NULL);

@@ -347,10 +347,6 @@ AC_ARG_WITH(python3-home,
               [  --with-python3-home=path Use path as a hard-coded Python home directory that can not be overwritten by the PYTHONHOME environment variable],
               python3_home_dir=$with_python3_home)
 
-AC_ARG_WITH(python2-home,
-              [  --with-python2-home=path Use path as a hard-coded Python home directory that can not be overwritten by the PYTHONHOME environment variable],
-              python2_home_dir=$with_python2_home)
-
 AC_ARG_WITH(pylint,
               [  --with-pylint=ABSOLUTE_PATH    Specify pylint location])
 
@@ -1494,12 +1490,6 @@ if test "x$enable_python" != "xno"; then
     PKG_CHECK_MODULES(PYTHON, python3-embed, python_found="yes", [
       PKG_CHECK_MODULES(PYTHON, python3, python_found="yes", python_found="no")
     ])
-    if test "$python_found" = "no"; then
-      PKG_CHECK_MODULES(PYTHON, python2, python_found="yes", python_found="no")
-      if test "$python_found" = "no"; then
-        PKG_CHECK_MODULES(PYTHON, python, python_found="yes", python_found="no")
-      fi
-    fi
   else
     case "$with_python" in
       [[0-9]])
@@ -1518,23 +1508,10 @@ if test "x$enable_python" != "xno"; then
     ])
   fi
 
-  if test "x$python_found" = "xyes"; then
-    old_LIBS=$LIBS
-    LIBS="$LIBS $PYTHON_LIBS"
-    AC_CHECK_FUNCS(PyUnicode_AsUTF8, with_python=python3, with_python=python2)
-    LIBS=$old_LIBS
-  fi
-
   if test "x$enable_python" = "xyes" -a "x$python_found" = "xno"; then
     AC_MSG_ERROR([Could not find the requested Python development libraries])
   fi
   enable_python="$python_found"
-
-  if (echo "$with_python" | grep -Eq "python-?3.*"); then
-    python_version=3
-  else
-    python_version=2
-  fi
 else
   with_python=""
 fi
@@ -1547,14 +1524,10 @@ if test "x$with_pylint" != "x"; then
     PYLINT=$with_pylint
 else
     if test "$python_found" = "yes"; then
-      if test "$python_version" = "3"; then
-          AC_CHECK_PROG(PYLINT, pylint3, pylint3)
-          if test "x$PYLINT" = "x"; then
-            AC_CHECK_PROG(PYLINT, pylint, pylint)
-          fi
-      else
+        AC_CHECK_PROG(PYLINT, pylint3, pylint3)
+        if test "x$PYLINT" = "x"; then
           AC_CHECK_PROG(PYLINT, pylint, pylint)
-      fi
+        fi
     fi
 fi
 
@@ -1936,7 +1909,6 @@ fi
 AC_DEFINE_UNQUOTED(PATH_MODULEDIR, "$moduledir", [module installation directory])
 AC_DEFINE_UNQUOTED(PYTHON_MODULE_DIR, "$python_moduledir", [Python module installation directory])
 AC_DEFINE_UNQUOTED(PYTHON3_HOME_DIR, "$python3_home_dir", [Hard-coded Python 3 home directory])
-AC_DEFINE_UNQUOTED(PYTHON2_HOME_DIR, "$python2_home_dir", [Hard-coded Python 2 home directory])
 AC_DEFINE_UNQUOTED(PATH_LOGGENPLUGINDIR, "$loggenplugindir", [loggenplugin installation directory])
 AC_DEFINE_UNQUOTED(MODULE_PATH, "$module_path", [module search path])
 AC_DEFINE_UNQUOTED(JAVA_MODULE_PATH, "$java_module_path", [java module search path])
@@ -1958,8 +1930,6 @@ AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable syste
 AC_DEFINE_UNQUOTED(ENABLE_KAFKA, `enable_value $enable_kafka`, [Enable kafka support])
 AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
-AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `(test "$python_version" = "2" ) && echo 1 || echo 0`, [Python2 c api])
-AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `(test "$python_version" = "3" ) && echo 1 || echo 0`, [Python3 c api])
 AC_DEFINE_UNQUOTED(USE_CONST_IVYKIS_MOCK, `enable_value $IVYKIS_VERSION_UPDATED`, [ivykis version is greater than $IVYKIS_UPDATED_VERSION])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])

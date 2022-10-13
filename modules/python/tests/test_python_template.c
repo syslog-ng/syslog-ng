@@ -25,6 +25,7 @@
 #include <criterion/criterion.h>
 
 #include "python-helpers.h"
+#include "python-types.h"
 #include "python-logmsg.h"
 #include "python-logtemplate.h"
 #include "python-logtemplate-options.h"
@@ -124,7 +125,7 @@ create_parsed_message(const gchar *raw_msg)
 static PyLogTemplate *
 create_py_log_template(const gchar *template)
 {
-  PyObject *template_str = _py_string_from_string(template, -1);
+  PyObject *template_str = py_string_from_string(template, -1);
   PyObject *args = PyTuple_Pack(1, template_str);
   PyLogTemplate *py_template = (PyLogTemplate *)py_log_template_new(&py_log_template_type, args, NULL);
   Py_DECREF(template_str);
@@ -142,7 +143,9 @@ assert_format(gchar *expected, PyLogTemplate *template, PyLogMessage *msg)
   Py_DECREF(args);
 
   cr_assert(result);
-  cr_assert_str_eq(_py_get_string_as_string(result), expected);
+  const gchar *result_as_str;
+  py_bytes_or_string_to_string(result, &result_as_str);
+  cr_assert_str_eq(result_as_str, expected);
   Py_DECREF(result);
 }
 
@@ -169,12 +172,14 @@ Test(python_log_logtemplate, format_all_parameters)
   PyLogMessage *py_log_msg = create_parsed_message("<38>2018-07-20T00:00:00+00:00 localhost prg00000[1234]: test\n");
   PyLogTemplate *py_template = create_py_log_template("${S_STAMP} | ${SEQNUM}");
   cr_assert(py_template);
-  PyObject *args = PyTuple_Pack(4, py_log_msg, py_template_options, int_as_pyobject(1), int_as_pyobject(10));
+  PyObject *args = PyTuple_Pack(4, py_log_msg, py_template_options, py_long_from_long(1), py_long_from_long(10));
   PyObject *result = py_log_template_format((PyObject *)py_template, args, NULL);
   Py_DECREF(args);
 
   cr_assert(result);
-  cr_assert_str_eq(_py_get_string_as_string(result), "Jul 20 05:00:00 | 10");
+  const gchar *result_as_str;
+  py_bytes_or_string_to_string(result, &result_as_str);
+  cr_assert_str_eq(result_as_str, "Jul 20 05:00:00 | 10");
   Py_DECREF(result);
 
 
@@ -208,7 +213,7 @@ Test(python_log_logtemplate, test_py_is_log_template_options)
 
   cr_assert(py_is_log_template_options((PyObject *)py_template_options));
 
-  PyObject *template_str = _py_string_from_string("${PROGRAM}", -1);
+  PyObject *template_str = py_string_from_string("${PROGRAM}", -1);
   cr_assert_not(py_is_log_template_options((PyObject *)template_str));
 
   PyObject *args = PyTuple_Pack(2, template_str, Py_None); /* Second argument must be PyLogTemplateOptions */

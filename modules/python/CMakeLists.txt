@@ -52,6 +52,8 @@ set(PYTHON_SOURCES
     python-bookmark.c
     python-ack-tracker.h
     python-ack-tracker.c
+    python-types.h
+    python-types.c
     compat/compat-python.c
 )
 

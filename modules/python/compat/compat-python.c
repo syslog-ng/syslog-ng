@@ -22,11 +22,15 @@
  */
 
 #include "python-module.h"
+#include "compat-python.h"
+#include "python-helpers.h"
+#include "syslog-ng.h"
+#include "reloc.h"
 
-#if SYSLOG_NG_ENABLE_PYTHONv2
-#include "compat-python-v2.c"
+void
+py_init_threads(void)
+{
+#if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 7)
+  PyEval_InitThreads();
 #endif
-
-#if SYSLOG_NG_ENABLE_PYTHONv3
-#include "compat-python-v3.c"
-#endif
+}
