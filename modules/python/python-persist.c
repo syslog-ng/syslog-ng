@@ -234,22 +234,21 @@ _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
   const gchar *persist_name = NULL;
   GlobalConfig *cfg = python_get_associated_config();
 
-  self->persist_state = cfg->state;
-  if (!self->persist_state)
-    {
-      gchar buf[256];
-
-      msg_error("Error importing persist_state",
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-      _py_finish_exception_handling();
-
-      g_assert_not_reached();
-    }
-
   static char *kwlist[] = {"persist_name", NULL};
 
   if (! PyArg_ParseTupleAndKeywords(args, kwds, "s", kwlist, &persist_name))
     return -1;
+
+  self->persist_state = cfg->state;
+  if (!self->persist_state)
+    {
+      msg_error("Attempting to use persist_state while the configuration is not yet initialized, please use Persist() in or after the init() method",
+                evt_tag_str("name", persist_name));
+      _py_finish_exception_handling();
+      PyErr_SetString(PyExc_RuntimeError, "persist_state is not yet available");
+      return -1;
+    }
+
 
   if (g_strstr_len(persist_name, -1, SUBKEY_DELIMITER))
     {
