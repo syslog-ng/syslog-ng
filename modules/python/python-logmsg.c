@@ -42,38 +42,6 @@ py_is_log_message(PyObject *obj)
   return PyType_IsSubtype(Py_TYPE(obj), &py_log_message_type);
 }
 
-static int
-_str_cmp(const void *s1, const void *s2)
-{
-  return strcmp(*(const gchar **)s1, *(const gchar **)s2);
-}
-
-static void
-_populate_blacklisted_keys(const gchar ***blacklist, size_t *n)
-{
-  static const gchar *keys[] =
-  {
-    "S_STAMP", "_", "C_STAMP", "R_STAMP", "P_STAMP", "STAMP"
-  };
-  static gboolean keys_sorted = FALSE;
-  if (!keys_sorted)
-    {
-      keys_sorted = TRUE;
-      qsort(&keys[0], sizeof(keys)/sizeof(keys[0]), sizeof(gchar *), _str_cmp);
-    }
-  *blacklist = keys;
-  *n = sizeof(keys)/sizeof(keys[0]);
-}
-
-static gboolean
-_is_key_blacklisted(const gchar *key)
-{
-  const gchar **blacklist = NULL;
-  size_t n = 0;
-  _populate_blacklisted_keys(&blacklist, &n);
-  return (bsearch(&key, blacklist, n, sizeof(gchar *), _str_cmp) != NULL);
-}
-
 static PyObject *
 _py_log_message_subscript(PyObject *o, PyObject *key)
 {
@@ -84,11 +52,6 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
       return NULL;
     }
 
-  if (_is_key_blacklisted(name))
-    {
-      PyErr_Format(PyExc_KeyError, "Blacklisted attribute %s was requested", name);
-      return NULL;
-    }
   NVHandle handle = log_msg_get_value_handle(name);
   PyLogMessage *py_msg = (PyLogMessage *)o;
   gssize value_len = 0;
@@ -237,7 +200,7 @@ _collect_nvpair_names_from_logmsg(NVHandle handle, const gchar *name, const gcha
 static gboolean
 _is_macro_name_visible_to_user(const gchar *name, NVHandle handle)
 {
-  return log_msg_is_handle_macro(handle) && !_is_key_blacklisted(name);
+  return log_msg_is_handle_macro(handle);
 }
 
 static void
