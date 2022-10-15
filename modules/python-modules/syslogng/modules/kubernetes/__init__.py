@@ -41,7 +41,7 @@ class KubernetesAPIEnrichment(LogParser):
         self.__metadata = {}
         self.__prefix = options["prefix"]
 
-        if options["in_pod"] == "yes":
+        if options.get("in_pod", "yes") == "yes":
             config.load_incluster_config()
         else:
             config.load_kube_config()
