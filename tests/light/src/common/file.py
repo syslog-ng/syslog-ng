@@ -34,13 +34,11 @@ logger = logging.getLogger(__name__)
 
 
 def open_file(file_path, mode):
-    # Python 2 compatibility note: open() can work only with string representation of path
-    return open(str(file_path), mode)
+    return open(file_path, mode)
 
 
 def copy_file(src_file_path, dst_dir):
-    # Python 2 compatibility note: shutil.copy() can work only with string representation of path
-    shutil.copy(str(src_file_path), str(dst_dir))
+    shutil.copy(src_file_path, dst_dir)
 
 
 def copy_shared_file(testcase_parameters, shared_file_name):

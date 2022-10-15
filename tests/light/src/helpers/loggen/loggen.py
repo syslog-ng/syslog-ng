@@ -186,7 +186,7 @@ class Loggen(object):
             return 0
 
         # loggen puts the count= messages to the stderr
-        f = open(str(self.loggen_stderr_path), "r")
+        f = open(self.loggen_stderr_path, "r")
         content = f.read()
         f.close()
 
