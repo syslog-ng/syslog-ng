@@ -33,7 +33,7 @@
 typedef struct _LogProtoFileWriter
 {
   LogProtoClient super;
-  SignalSlotConnector *signal_slot_connector;
+  SignalSlotConnector *file_rotation_signal;
   FileReopener reopener;
   const gchar *filename;
   guchar *partial;
@@ -149,7 +149,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
     .reopener = &self->reopener
   };
 
-  EMIT(self->signal_slot_connector, signal_file_flush, &signal_data);
+  EMIT(self->file_rotation_signal, signal_file_flush, &signal_data);
 
   return LPS_SUCCESS;
 
@@ -254,7 +254,7 @@ log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *
 
   log_proto_client_init(&self->super, transport, options);
 
-  self->signal_slot_connector = connector;
+  self->file_rotation_signal = connector;
   self->fd = transport->fd;
   self->reopener = reopener;
   self->filename = filename;
