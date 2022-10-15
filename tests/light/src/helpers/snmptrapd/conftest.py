@@ -24,7 +24,7 @@ import os
 import re
 
 import pytest
-from pathlib2 import Path
+from pathlib import Path
 from psutil import TimeoutExpired
 
 from src.common.blocking import wait_until_true

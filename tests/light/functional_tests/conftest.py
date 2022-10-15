@@ -24,7 +24,7 @@ import logging
 import os
 
 import pytest
-from pathlib2 import Path
+from pathlib import Path
 
 from src.common.file import copy_file
 from src.common.pytest_operations import calculate_testcase_name

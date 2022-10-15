@@ -24,7 +24,7 @@ import atexit
 import logging
 import shutil
 
-from pathlib2 import Path
+from pathlib import Path
 
 from src.common.blocking import DEFAULT_TIMEOUT
 from src.common.blocking import wait_until_true

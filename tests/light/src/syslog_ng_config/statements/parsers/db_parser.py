@@ -24,7 +24,7 @@ from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import SubElement
 from xml.etree.ElementTree import tostring
 
-from pathlib2 import Path
+from pathlib import Path
 
 from src.syslog_ng_config.statements.parsers.parser import Parser
 

@@ -21,7 +21,7 @@
 #
 #############################################################################
 import pytest
-from pathlib2 import PosixPath
+from pathlib import PosixPath
 
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 

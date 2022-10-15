@@ -21,7 +21,7 @@
 #
 #############################################################################
 import pytest
-from pathlib2 import Path
+from pathlib import Path
 
 from src.common.file import copy_file
 from src.executors.command_executor import CommandExecutor

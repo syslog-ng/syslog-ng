@@ -20,7 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
+from pathlib import Path
 from psutil import TimeoutExpired
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
