@@ -34,6 +34,7 @@ setup(name='syslogng-modules',
       package_dir={
         PACKAGE_PREFIX: "."
       },
+      package_data={"": ["scl/*"]},
       exclude_package_data={"": ["*~"]},
       packages=list(map(lambda mod: PACKAGE_PREFIX + "." + mod, find_packages())),
       install_requires=["setuptools"])
