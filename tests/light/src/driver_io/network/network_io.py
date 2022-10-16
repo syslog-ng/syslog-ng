@@ -24,7 +24,6 @@ import atexit
 import socket
 from enum import Enum
 from enum import IntEnum
-
 from pathlib import Path
 
 from src.common.asynchronous import BackgroundEventLoop

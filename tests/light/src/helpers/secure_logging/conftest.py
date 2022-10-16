@@ -20,8 +20,9 @@
 # COPYING for details.
 #
 #############################################################################
-import pytest
 from pathlib import Path
+
+import pytest
 
 from src.common.file import copy_file
 from src.executors.command_executor import CommandExecutor

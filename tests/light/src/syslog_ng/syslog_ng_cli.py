@@ -21,7 +21,6 @@
 #
 #############################################################################
 import logging
-
 from pathlib import Path
 
 from src.common.blocking import wait_until_false

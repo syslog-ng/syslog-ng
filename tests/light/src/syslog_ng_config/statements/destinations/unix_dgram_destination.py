@@ -21,7 +21,6 @@
 #
 #############################################################################
 import atexit
-
 from pathlib import Path
 
 from src.common.asynchronous import BackgroundEventLoop

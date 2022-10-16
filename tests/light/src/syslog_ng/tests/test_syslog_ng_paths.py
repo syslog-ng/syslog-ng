@@ -20,8 +20,9 @@
 # COPYING for details.
 #
 #############################################################################
-import pytest
 from pathlib import PosixPath
+
+import pytest
 
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 

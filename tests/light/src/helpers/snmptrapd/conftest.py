@@ -22,9 +22,9 @@
 #############################################################################
 import os
 import re
+from pathlib import Path
 
 import pytest
-from pathlib import Path
 from psutil import TimeoutExpired
 
 from src.common.blocking import wait_until_true

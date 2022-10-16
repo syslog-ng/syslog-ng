@@ -24,9 +24,9 @@ import argparse
 import logging
 import subprocess
 from datetime import datetime
+from pathlib import Path
 
 import pytest
-from pathlib import Path
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.helpers.loggen.loggen import Loggen
