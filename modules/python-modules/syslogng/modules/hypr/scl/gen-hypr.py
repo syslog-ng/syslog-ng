@@ -104,7 +104,7 @@ sources = ""
 for application in applications:
     sources = sources + """
     python-fetcher(
-        class("hypr.Hypr")
+        class("syslogng.modules.hypr.HyprAuditSource")
         options(
             "url","%s"
             "rp_app_id","%s"

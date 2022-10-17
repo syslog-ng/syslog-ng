@@ -22,7 +22,7 @@ import requests
 
 import syslogng
 
-class Hypr(syslogng.LogFetcher):
+class HyprAuditSource(syslogng.LogFetcher):
     """
     class for python syslog-ng log fetcher
     """
