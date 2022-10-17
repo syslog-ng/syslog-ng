@@ -261,7 +261,7 @@ _py_invoke_function(PyObject *func, PyObject *arg, const gchar *class, const gch
 
       msg_error("Exception while calling a Python function",
                 evt_tag_str("caller", caller_context),
-                evt_tag_str("class", class),
+                evt_tag_str("class", class ? : "unknown"),
                 evt_tag_str("function", _py_get_callable_name(func, buf1, sizeof(buf1))),
                 evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))));
       _py_finish_exception_handling();
