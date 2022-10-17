@@ -40,6 +40,7 @@
 #include "python-bookmark.h"
 #include "python-ack-tracker.h"
 #include "python-debugger.h"
+#include "python-confgen.h"
 
 #include "cfg.h"
 #include "messages.h"
@@ -552,6 +553,7 @@ _py_initialize_builtin_modules(void)
 {
   py_init_threads();
   py_init_types();
+  py_init_confgen();
 
   py_log_message_global_init();
   py_log_template_global_init();
