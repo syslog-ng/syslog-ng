@@ -214,7 +214,7 @@ class HyprAuditSource(syslogng.LogFetcher):
         if self.logs:
             log = self.logs.pop(0)
             msg = self.parse_log(log)
-            return syslogng.LogFetcher.FETCH_SUCCESS, msg
+            return self.SUCCESS, msg
 
         # Get current time in milliseconds since epoch
         self.end_time = int(time.time() * 1000)
@@ -236,7 +236,7 @@ class HyprAuditSource(syslogng.LogFetcher):
         # Ingore 504 errors
         if response.status_code == 504:
             self.logger.info("Gateway Timeout from Hypr")
-            return syslogng.LogFetcher.FETCH_TRY_AGAIN, "Gateway Timeout from Hypr"
+            return self.TRY_AGAIN, None
 
         # If the API call returns successfully, parse the retrieved json data
         if response.status_code == 200:
@@ -252,8 +252,8 @@ class HyprAuditSource(syslogng.LogFetcher):
                 self.logger.debug("%i events available from Hypr API %s fetch" \
                     , total_records, self.rp_app_id)
             except Exception as e_all:
-                return syslogng.LogFetcher.FETCH_ERROR, "%s - %s access failure : %s\n%s", \
-                    self.url, self.rp_app_id, e_all, response.text
+                self.logger.error("%s - %s access failure : %s\n%s" % (self.url, self.rp_app_id, e_all, response.text))
+                return self.ERROR, None
 
             # If there are more pages of events to process
             while current_page < total_pages:
@@ -281,8 +281,8 @@ class HyprAuditSource(syslogng.LogFetcher):
                     try:
                         result = response.json()
                     except Exception as e_all:
-                        return syslogng.LogFetcher.FETCH_ERROR, "%s - %s access failure : %s\n%s", \
-                            self.url, self.rp_app_id, e_all, response.text
+                        self.logger.error("%s - %s access failure : %s\n%s" % (self.url, self.rp_app_id, e_all, response.text))
+                        return self.ERROR, None
 
                     # Add each event to our internal logs list
                     for entry in result['data']:
@@ -290,8 +290,8 @@ class HyprAuditSource(syslogng.LogFetcher):
 
                 # If something went wrong with the query
                 else:
-                    return syslogng.LogFetcher.FETCH_ERROR, "%s - %s access failure : %s\n%s", \
-                        self.url, self.rp_app_id, e_all, response.text
+                    self.logger.error("%s - %s access failure : %s\n%s" % (self.url, self.rp_app_id, response.status_code, response.text))
+                    return self.ERROR, None
 
             # Set start time to end time
             self.start_time = self.end_time
@@ -302,22 +302,21 @@ class HyprAuditSource(syslogng.LogFetcher):
                 # Process each log message
                 log = self.logs.pop(0)
                 msg = self.parse_log(log)
-                return syslogng.LogFetcher.FETCH_SUCCESS, msg
+                return self.SUCCESS, msg
 
             # If there aren't new logs
             self.persist["last_read"] = self.end_time
-            return syslogng.LogFetcher.FETCH_NO_DATA, "No new Hypr events available"
+            self.logger.debug("No new Hypr events available")
+            return self.NO_DATA, None
 
         # If the bearer token is invalid
         if response.status_code == 403:
-            self.logger.error("Bearer token invalid for %s", self.rp_app_id)
-            return syslogng.LogFetcher.FETCH_ERROR, "Hypr API bearer token expired or invalid - %s", \
-                response.text
+            self.logger.error("Bearer token invalid for %s [%s]" % (self.rp_app_id, response.text))
+            return self.ERROR, None
 
         # If the response code isn't 504 or 200 (or isn't even set)
-        return syslogng.LogFetcher.FETCH_ERROR, "%s - %s access failure : %s\n%s", \
-            self.url, self.rp_app_id, e_all, response.text
-
+        self.logger.error("%s - %s access failure : %s\n%s" % (self.url, self.rp_app_id, response.status_code, response.text))
+        return self.ERROR, None
 
     def open(self):
         """
