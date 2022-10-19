@@ -11,11 +11,9 @@ PYMODULES_SRCDIR = $(top_srcdir)/modules/python-modules
 
 # PYTHON_ROOT is exported by modules/python/pylib/Makefile
 
-INSTALL_EXEC_HOOKS += install-pymodules
-UNINSTALL_HOOKS += uninstall-pymodules
-CLEAN_HOOKS += clean-pymodules
-
-PYMODULES_SETUP_OPTIONS ?= --root="$(PYTHON_ROOT)" --install-lib="$(python_moduledir)"
+INSTALL_EXEC_HOOKS += pymodules-install
+UNINSTALL_HOOKS += pymodules-uninstall
+CLEAN_HOOKS += pymodules-clean
 
 #
 # syslogng_modules is installed into ${prefix}/lib/syslog-ng, while its
@@ -23,32 +21,28 @@ PYMODULES_SETUP_OPTIONS ?= --root="$(PYTHON_ROOT)" --install-lib="$(python_modul
 #
 # Therefore we need to separate the installation of both.
 #
-install-pymodules: install-pymodules-requirements
+pymodules-install: pymodules-install-requirements
 	(cd $(PYMODULES_SRCDIR) && $(PYTHON) -m pip install --no-deps --upgrade --target="$(PYTHON_ROOT)/$(python_moduledir)" .)
 
-# install requirements where pip otherwise would install it (e.g.
-# venv if that's set or system site-packages otherwise)
+# install requirements where pip otherwise would install it (e.g.  no
+# --target option).  This means we are using the venv if one is active or
+# system site-packages otherwise)
 #
-# Unfortunately I couldn't use the install_requires option in setup.py to
-# describe these dependencies as pip insists on installing requirements
-# along with the package itself and we are installing the requirements to
-# the standard locations, while installing our own modules into
-# ${prefix}/lib/syslog-ng/python
-#
-install-pymodules-requirements:
+pymodules-install-requirements:
 	(cd $(PYMODULES_SRCDIR) && \
+	 mkdir -p $(PYMODULES_BUILDDIR) && \
          $(PYTHON) setup.py egg_info --egg-base $(PYMODULES_BUILDDIR)  && \
          $(PYTHON) -m pip install -r $(PYMODULES_BUILDDIR)/syslogng_modules.egg-info/requires.txt)
 
-uninstall-pymodules:
+pymodules-uninstall:
 	(cd $(PYMODULES_SRCDIR) && PYTHONPATH="$(PYTHON_ROOT)/$(python_moduledir):$$PYTHONPATH" $(PYTHON) -m pip uninstall -y syslogng-modules)
 
-clean-pymodules:
+pymodules-clean:
 	rm -rf "$(PYMODULES_BUILDDIR)/build"
 
 endif
 
-.PHONY: install-pymodules
-.PHONY: uninstall-pymodules
-.PHONY: clean-pymodules
-.PHONY: install-pymodules-requirements
+.PHONY: pymodules-install
+.PHONY: pymodules-uninstall
+.PHONY: pymodules-clean
+.PHONY: pymodules-install-requirements

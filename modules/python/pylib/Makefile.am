@@ -55,38 +55,37 @@ PYLIB_SRCDIR = $(top_srcdir)/modules/python/pylib
 PYLIB_MANIFEST = $(PYLIB_BUILDDIR)/install-manifest.txt
 PYTHON_ROOT = $(if $(DESTDIR),$(DESTDIR),/)
 
-INSTALL_EXEC_HOOKS += install-pylib
-UNINSTALL_HOOKS += uninstall-pylib
-CLEAN_HOOKS += clean-pylib
+INSTALL_EXEC_HOOKS += pylib-install
+UNINSTALL_HOOKS += pylib-uninstall
+CLEAN_HOOKS += pylib-clean
 
-PYLIB_SETUP_OPTIONS ?= --root="$(PYTHON_ROOT)" --install-lib="$(python_moduledir)"
 IS_PYTEST_INSTALLED := $(shell ${PYTHON} -m pytest --version > /dev/null 2>&1 ; echo $$?)
 
-install-pylib:
+pylib-install:
 	(cd $(PYLIB_SRCDIR) && $(PYTHON) -m pip install --upgrade --target="$(PYTHON_ROOT)/$(python_moduledir)" .)
 
-uninstall-pylib:
+pylib-uninstall:
 	(cd $(PYLIB_SRCDIR) && PYTHONPATH="$(PYTHON_ROOT)/$(python_moduledir):$$PYTHONPATH" $(PYTHON) -m pip uninstall -y syslogng)
 
 
-python-checks: python-unit python-pep8 python-pylint
+pylib-checks: pylib-unit pylib-pep8 pylib-pylint
 
-python-unit:
+pylib-unit:
 	@if [ $(IS_PYTEST_INSTALLED) -eq 0 ]; then \
 			echo "pytest is installed"; \
-			${PYTHON} -m pytest --showlocals --verbosity=3 $(PYLIB_SRCDIR)/syslogng; \
+			${PYTHON} -m pytest --showlocals --verbosity=3 $(PYLIB_SRCDIR)/syslogng -W ignore::UserWarning; \
 	else \
 			echo "pytest is not installed, can not run tests"; \
 	fi;
 
-python-pep8:
+pylib-pep8:
 	pep8 --ignore=E501 $(PYLIB_SRCDIR)/syslogng
 
 if PYLINT
-python-pylint:
+pylib-pylint:
 	@PYLINT@ -r n --rcfile=$(PYLIB_SRCDIR)/pylintrc $(PYLIB_SRCDIR)/syslogng
 else
-python-pylint:
+pylib-pylint:
 	$(error "missing pylint")
 endif
 
@@ -96,7 +95,7 @@ check_SCRIPTS += $(modules_python_pylib_tests_TESTS)
 
 endif
 
-.PHONY: install-pylib
-.PHONY: uninstall-pylib
-.PHONY: clean-pylib
+.PHONY: pylib-install
+.PHONY: pylib-uninstall
+.PHONY: pylib-clean
 .PHONY: python-checks python-unit python-pep8 python-pylint
