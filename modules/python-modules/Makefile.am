@@ -40,6 +40,14 @@ pymodules-uninstall:
 pymodules-clean:
 	rm -rf "$(PYMODULES_BUILDDIR)/build"
 
+pymodules-unit:
+	@if [ $(IS_PYTEST_INSTALLED) -eq 0 ]; then \
+		echo "pytest is installed"; \
+		${PYTHON} -m pytest --showlocals --verbosity=3 $(PYMODULES_SRCDIR) -W ignore::UserWarning; \
+	else \
+		echo "pytest is not installed, can not run tests"; \
+	fi;
+
 endif
 
 .PHONY: pymodules-install
