@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #############################################################################
 # Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
 #
@@ -20,27 +19,26 @@
 # COPYING for details.
 #
 #############################################################################
+from syslogng.modules import hypr
+import base64
 
-from setuptools import setup
+def test_config_generator_generates_a_config_snippet_with_all_apps(mocker):
+    m = mocker.patch("requests.get",
+        return_value=mocker.Mock(**{
+            'status_code': 200,
+            'json': mocker.Mock(return_value=[{"appID": "rp_foo"}, {"appID": "rp_bar"}])
+        })
+    )
 
-setup(name='syslogng',
-      version='1.0',
-      description='syslog-ng Python Core & Modules',
-      author='Balazs Scheidler',
-      author_email='bazsi77@gmail.com',
-      url='https://www.syslog-ng.org',
-      package_data={"": ["scl/*"]},
-      exclude_package_data={"": ["*~"]},
-      packages=[
-        "syslogng",
-        "syslogng.debuggercli",
-        "syslogng.modules.example",
-        "syslogng.modules.kubernetes",
-        "syslogng.modules.hypr",
-      ],
-      install_requires=[
-          # kubernetes
-          "kubernetes",
-          # hypr
-          "requests",
-      ])
+    bearer_token = b'bearer_token'
+    base64_encoded_bearer_token = base64.b64encode(bearer_token).decode('utf8')
+    hypr_args = {
+        'url': 'https://dummy.hypr.com/',
+        'bearer_token': base64_encoded_bearer_token,
+    }
+    snippet = hypr._hypr_config_generator(hypr_args)
+    assert 'syslogng.modules.hypr.HyprAuditSource' in snippet
+    assert '"url" => "https://dummy.hypr.com/"' in snippet
+    assert '"bearer_token" => "{}"'.format(base64_encoded_bearer_token) in snippet
+    assert '"rp_app_id" => "rp_foo"' in snippet
+    assert '"rp_app_id" => "rp_bar"' in snippet

@@ -50,6 +50,7 @@ EXTRA_DIST += \
 	modules/python-modules/syslogng/modules/example/__init__.py		\
 	modules/python-modules/syslogng/modules/kubernetes/scl/kubernetes.conf	\
 	modules/python-modules/syslogng/modules/kubernetes/__init__.py		\
+	modules/python-modules/syslogng/modules/hypr/tests/test_confgen.py	\
 	modules/python-modules/syslogng/modules/hypr/scl/hypr.conf		\
 	modules/python-modules/syslogng/modules/hypr/__init__.py		\
 	modules/python-modules/setup.py						\
