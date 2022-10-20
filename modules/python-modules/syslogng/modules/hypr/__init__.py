@@ -353,7 +353,7 @@ class HyprError(Exception):
     pass
 
 def _hypr_config_generator(args):
-    logger = syslogng.Logger()
+    logger = logging.getLogger("Hypr-Confgen")
 
     def sanitize(variable):
         """Filter out characters that would break syslog-ng configuration"""
