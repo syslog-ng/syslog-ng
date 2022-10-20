@@ -92,7 +92,7 @@ class HyprAuditSource(syslogng.LogFetcher):
                 ignore_persistence = True
             # Extract decimal value from initial_hours setting
             try:
-                initial_hours = int(re.search('.*?(\d+).*', options["initial_hours"]).group(1))
+                initial_hours = int(re.search(r'.*?(\d+).*', options["initial_hours"]).group(1))
             except Exception as ex:
                 self.logger.error("Invalid value (%s) for initial_hours : %s", options["initial_hours"], ex)
 
