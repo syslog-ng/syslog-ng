@@ -20,11 +20,49 @@
 # COPYING for details.
 #
 #############################################################################
+
+import logging
+
 try:
     from _syslogng import Logger
 
+    fake_logger = False
 except ImportError:
-    import warnings, logging
+    import warnings
     warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
 
-    Logger = logging.Logger
+    fake_logger = True
+
+    def Logger():
+        return logging.getLogger()
+    logging.basicConfig()
+
+
+class SyslogNGInternalLogHandler(logging.Handler):
+    syslogng_logger = Logger()
+
+    def emit(self, record):
+
+        msg = self.format(record)
+        if record.levelno >= logging.ERROR:
+            self.syslogng_logger.error(msg)
+        elif record.levelno >= logging.WARNING:
+            self.syslogng_logger.warning(msg)
+        elif record.levelno >= logging.INFO:
+            self.syslogng_logger.info(msg)
+        elif record.levelno >= logging.DEBUG:
+            self.syslogng_logger.debug(msg)
+        else:
+            self.syslogng_logger.trace(msg)
+
+
+def setup_logging():
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    sh = SyslogNGInternalLogHandler()
+    formatter = logging.Formatter('python-%(name)s: %(message)s')
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
+
+if not fake_logger:
+    setup_logging()
