@@ -38,7 +38,6 @@ class HyprAuditSource(syslogng.LogFetcher):
             self.rp_app_id = options["rp_app_id"]
         else:
             print("Missing rp_app_id configuration option for Hypr driver")
-            self.exit = True
             return False
 
         # Initialize logger for driver
@@ -88,7 +87,6 @@ class HyprAuditSource(syslogng.LogFetcher):
                 , self.rp_app_id, self.url)
         else:
             self.logger.error("Missing url configuration option for %s", self.rp_app_id)
-            self.exit = True
             return False
 
         # Ensure bearer_token parameter is defined
@@ -98,7 +96,6 @@ class HyprAuditSource(syslogng.LogFetcher):
                 self.token, self.rp_app_id)
         else:
             self.logger.error("Missing bearer_token configuration option for %s", self.rp_app_id)
-            self.exit = True
             return False
 
         # Set page size if defined
@@ -328,7 +325,6 @@ class HyprAuditSource(syslogng.LogFetcher):
             self.bearer_token = base64.b64decode(self.token).decode("utf-8")
         except Exception as e_all:
             self.logger.error("Unable to decode bearer_token %s : %s", self.token, e_all)
-            self.exit = True
             return False
 
         return True
