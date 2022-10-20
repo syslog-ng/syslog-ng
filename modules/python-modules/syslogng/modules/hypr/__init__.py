@@ -42,35 +42,6 @@ class HyprAuditSource(syslogng.LogFetcher):
 
         # Initialize logger for driver
         self.logger = logging.getLogger('Hypr-' + self.rp_app_id)
-        stream_logger = logging.StreamHandler()
-
-        # Standard log format
-        log_format = " - ".join((
-            "Hypr-%s" % self.rp_app_id,
-            "%(levelname)s",
-            "%(message)s"
-        ))
-
-        # Configure logging for standard log format
-        formatter = logging.Formatter(log_format)
-        stream_logger.setFormatter(formatter)
-        self.logger.addHandler(stream_logger)
-
-        # Check for valid log level and set loggers
-        if "log_level" in options:
-            if options["log_level"].upper() == "DEBUG":
-                self.logger.setLevel(logging.DEBUG)
-            elif options["log_level"].upper() == "INFO":
-                self.logger.setLevel(logging.INFO)
-            elif options["log_level"].upper() == "WARN":
-                self.logger.setLevel(logging.WARNING)
-            elif options["log_level"].upper() == "ERROR":
-                self.logger.setLevel(logging.ERROR)
-            elif options["log_level"].upper() == "CRIT":
-                self.logger.setLevel(logging.CRITICAL)
-        else:
-            self.logger.setLevel(logging.INFO)
-            self.logger.warning("Invalid or no log level specified, setting log level to INFO")
 
         self.logger.info("Starting Hypr API fetch driver for %s", self.rp_app_id)
 
@@ -429,7 +400,6 @@ def _hypr_config_generator(args):
                 "bearer_token" => "%s"
                 "page_size" => "%s"
                 "initial_hours" => "%s"
-                "log_level" => "%s"
                 "max_performance" => "%s"
             )
             flags(no-parse)
@@ -437,7 +407,7 @@ def _hypr_config_generator(args):
             fetch-no-data-delay(%s)
         );
     """ % (url, application, args['bearer_token'], page_size, \
-        initial_hours, log_level, max_performance, \
+        initial_hours, max_performance, \
         persist_name, application, sleep)
 
     logger.debug("Final configuration is: %s" % sources)
