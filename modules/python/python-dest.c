@@ -341,6 +341,8 @@ py_get_persist_name(PythonDestDriver *self)
 static gboolean
 _py_init_bindings(PythonDestDriver *self)
 {
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
+
   self->py._refs_to_clean = g_ptr_array_new_with_free_func((GDestroyNotify)_py_clear);
 
   self->py.class = _py_resolve_qualified_name(self->class);
@@ -359,7 +361,7 @@ _py_init_bindings(PythonDestDriver *self)
 
   _inject_worker_insert_result_consts(self);
 
-  PyObject *py_log_template_options = py_log_template_options_new(&self->template_options);
+  PyObject *py_log_template_options = py_log_template_options_new(&self->template_options, cfg);
   PyObject_SetAttrString(self->py.class, "template_options", py_log_template_options);
   Py_DECREF(py_log_template_options);
 
@@ -440,6 +442,7 @@ _py_init_object(PythonDestDriver *self)
 static gboolean
 _py_construct_message(PythonDestDriver *self, LogMessage *msg, PyObject **msg_object)
 {
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
   gboolean success;
   *msg_object = NULL;
 
@@ -452,11 +455,7 @@ _py_construct_message(PythonDestDriver *self, LogMessage *msg, PyObject **msg_ob
     }
   else
     {
-      *msg_object = py_log_message_new(msg);
-
-      GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
-      if (!cfg_is_typing_feature_enabled(cfg))
-        ((PyLogMessage *) *msg_object)->cast_to_strings = TRUE;
+      *msg_object = py_log_message_new(msg, cfg);
     }
 
   return TRUE;

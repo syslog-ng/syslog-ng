@@ -29,6 +29,7 @@
 #include "python-helpers.h"
 #include "python-types.h"
 #include "python-logmsg.h"
+#include "python-main.h"
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "scratch-buffers.h"
@@ -46,7 +47,7 @@ _py_init_interpreter(void)
   py_init_argv();
 
   py_init_threads();
-  py_log_message_init();
+  py_log_message_global_init();
   PyEval_SaveThread();
 }
 
@@ -55,7 +56,8 @@ _init_python_main(void)
 {
   PyGILState_STATE gstate = PyGILState_Ensure();
   {
-    _python_main = PyImport_AddModule("__main__");
+    PythonConfig *pc = python_config_get(configuration);
+    _python_main = _py_get_main_module(pc);
     _python_main_dict = PyModule_GetDict(_python_main);
   }
   PyGILState_Release(gstate);
@@ -186,7 +188,8 @@ ParameterizedTest(PyLogMessageSetValueTestParams *params, python_log_message, te
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   {
-    PyObject *msg_object = py_log_message_new(msg);
+    cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+    PyObject *msg_object = py_log_message_new(msg, configuration);
 
     PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
 
@@ -217,7 +220,7 @@ Test(python_log_message, test_python_logmessage_set_value_no_typing_support)
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   {
-    PyObject *msg_object = py_log_message_new(msg);
+    PyObject *msg_object = py_log_message_new(msg, configuration);
     ((PyLogMessage *) msg_object)->cast_to_strings = TRUE;
 
     PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
@@ -243,7 +246,7 @@ Test(python_log_message, test_python_logmessage_get_value_no_typing_support)
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   {
-    PyObject *msg_object = py_log_message_new(msg);
+    PyObject *msg_object = py_log_message_new(msg, configuration);
     ((PyLogMessage *) msg_object)->cast_to_strings = TRUE;
 
     PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
@@ -274,7 +277,7 @@ Test(python_log_message, test_python_logmessage_set_value_indirect)
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   {
-    PyObject *msg_object = py_log_message_new(msg);
+    PyObject *msg_object = py_log_message_new(msg, configuration);
 
     PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
 
@@ -298,7 +301,7 @@ Test(python_log_message, test_py_is_log_message)
   gstate = PyGILState_Ensure();
 
   LogMessage *msg = log_msg_new_empty();
-  PyObject *msg_object = py_log_message_new(msg);
+  PyObject *msg_object = py_log_message_new(msg, configuration);
 
   cr_assert(py_is_log_message(msg_object));
   cr_assert_not(py_is_log_message(_python_main));
@@ -412,7 +415,7 @@ Test(python_log_message, test_python_logmessage_keys)
   log_msg_get_value_handle("unused_value");
 
   PyGILState_STATE gstate = PyGILState_Ensure();
-  PyObject *py_msg = py_log_message_new(msg);
+  PyObject *py_msg = py_log_message_new(msg, configuration);
 
   PyObject *keys = _py_invoke_method_by_name(py_msg, "keys", NULL, "PyLogMessageTest", NULL);
   cr_assert_not_null(keys);

@@ -45,7 +45,7 @@ _py_init_interpreter(void)
   py_init_argv();
 
   py_init_threads();
-  py_bookmark_init();
+  py_bookmark_global_init();
   PyEval_SaveThread();
 }
 

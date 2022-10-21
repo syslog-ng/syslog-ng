@@ -32,8 +32,6 @@ python_config_init(ModuleConfig *s, GlobalConfig *cfg)
 {
   PythonConfig *self = (PythonConfig *) s;
 
-  propagate_persist_state(cfg);
-
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   _py_switch_main_module(self);
@@ -54,12 +52,13 @@ python_config_free(ModuleConfig *s)
 }
 
 PythonConfig *
-python_config_new(void)
+python_config_new(GlobalConfig *cfg)
 {
   PythonConfig *self = g_new0(PythonConfig, 1);
 
   self->super.init = python_config_init;
   self->super.free_fn = python_config_free;
+  self->cfg = cfg;
   return self;
 }
 
@@ -69,7 +68,7 @@ python_config_get(GlobalConfig *cfg)
   PythonConfig *pc = g_hash_table_lookup(cfg->module_config, MODULE_CONFIG_KEY);
   if (!pc)
     {
-      pc = python_config_new();
+      pc = python_config_new(cfg);
       g_hash_table_insert(cfg->module_config, g_strdup(MODULE_CONFIG_KEY), pc);
     }
   return pc;

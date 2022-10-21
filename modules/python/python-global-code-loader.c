@@ -94,7 +94,7 @@ static PyTypeObject py_global_code_loader_type =
 };
 
 void
-py_global_code_loader_init(void)
+py_global_code_loader_global_init(void)
 {
   PyType_Ready(&py_global_code_loader_type);
 }

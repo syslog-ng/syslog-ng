@@ -22,6 +22,7 @@
  */
 
 #include "python-logtemplate-options.h"
+#include "python-main.h"
 
 int
 py_is_log_template_options(PyObject *obj)
@@ -30,17 +31,35 @@ py_is_log_template_options(PyObject *obj)
 }
 
 PyObject *
-py_log_template_options_new(LogTemplateOptions *template_options)
+py_log_template_options_new(LogTemplateOptions *template_options, GlobalConfig *cfg)
 {
   PyLogTemplateOptions *self = PyObject_New(PyLogTemplateOptions, &py_log_template_options_type);
+
   if (!self)
     return NULL;
 
-  self->template_options = template_options;
+  memset(&self->template_options, 0, sizeof(self->template_options));
+  log_template_options_clone(template_options, &self->template_options);
+  log_template_options_init(&self->template_options, cfg);
 
   return (PyObject *) self;
 }
 
+int
+py_log_template_options_init(PyObject *s, PyObject *args, PyObject *kwds)
+{
+  PyLogTemplateOptions *self = (PyLogTemplateOptions *) s;
+
+  if (!PyArg_ParseTuple(args, ""))
+    return -1;
+
+  GlobalConfig *cfg = python_get_associated_config();
+  memset(&self->template_options, 0, sizeof(self->template_options));
+  log_template_options_defaults(&self->template_options);
+  log_template_options_init(&self->template_options, cfg);
+
+  return 0;
+}
 
 PyTypeObject py_log_template_options_type =
 {
@@ -50,11 +69,14 @@ PyTypeObject py_log_template_options_type =
   .tp_dealloc = (destructor) PyObject_Del,
   .tp_flags = Py_TPFLAGS_DEFAULT,
   .tp_doc = "LogTemplateOptions class encapsulating a syslog-ng LogTemplateOptions",
+  .tp_init = py_log_template_options_init,
+  .tp_new = PyType_GenericNew,
   0,
 };
 
 void
-py_log_template_options_init(void)
+py_log_template_options_global_init(void)
 {
   PyType_Ready(&py_log_template_options_type);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogTemplateOptions", (PyObject *) &py_log_template_options_type);
 }

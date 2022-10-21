@@ -40,7 +40,8 @@ extern PyTypeObject py_instant_ack_tracker_factory_type;
 extern PyTypeObject py_consecutive_ack_tracker_factory_type;
 extern PyTypeObject py_batched_ack_tracker_factory_type;
 
-void py_ack_tracker_init(void);
 int py_is_ack_tracker_factory(PyObject *obj);
+
+void py_ack_tracker_global_init(void);
 
 #endif

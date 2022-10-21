@@ -32,6 +32,7 @@
 #include "python-logtemplate.h"
 #include "python-logtemplate-options.h"
 #include "python-integerpointer.h"
+#include "python-main.h"
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "scratch-buffers.h"
@@ -46,7 +47,8 @@ _init_python_main(void)
 {
   PyGILState_STATE gstate = PyGILState_Ensure();
   {
-    _python_main = PyImport_AddModule("_syslogng_main");
+    PythonConfig *pc = python_config_get(configuration);
+    _python_main = _py_get_main_module(pc);
     _python_main_dict = PyModule_GetDict(_python_main);
   }
   PyGILState_Release(gstate);

@@ -35,6 +35,7 @@ typedef struct _PyIntegerPointer
 extern PyTypeObject py_integer_pointer_type;
 
 PyObject *py_integer_pointer_new(gpointer ptr);
-void py_integer_pointer_init(void);
+
+void py_integer_pointer_global_init(void);
 
 #endif

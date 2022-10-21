@@ -113,16 +113,16 @@ _py_init_interpreter(void)
       py_init_argv();
 
       py_init_threads();
-      py_log_message_init();
-      py_log_template_init();
-      py_integer_pointer_init();
-      py_log_source_init();
-      py_log_fetcher_init();
-      py_persist_init();
-      py_bookmark_init();
-      py_ack_tracker_init();
-      py_global_code_loader_init();
-      py_logger_init();
+      py_log_message_global_init();
+      py_log_template_global_init();
+      py_integer_pointer_global_init();
+      py_log_source_global_init();
+      py_log_fetcher_global_init();
+      py_persist_global_init();
+      py_bookmark_global_init();
+      py_ack_tracker_global_init();
+      py_global_code_loader_global_init();
+      py_logger_global_init();
       PyEval_SaveThread();
 
       interpreter_initialized = TRUE;

@@ -37,12 +37,12 @@ typedef struct _PyBookmark
 
 extern PyTypeObject py_bookmark_type;
 
+int py_is_bookmark(PyObject *obj);
 PyBookmark *py_bookmark_new(PyObject *data, PyObject *save);
 void py_bookmark_fill(Bookmark *bookmark, PyBookmark *py_bookmark);
 
-void py_bookmark_init(void);
-
-int py_is_bookmark(PyObject *obj);
 PyBookmark *bookmark_to_py_bookmark(Bookmark *bookmark);
+
+void py_bookmark_global_init(void);
 
 #endif

@@ -64,7 +64,7 @@ PyTypeObject py_integer_pointer_type =
 };
 
 void
-py_integer_pointer_init(void)
+py_integer_pointer_global_init(void)
 {
   PyType_Ready(&py_integer_pointer_type);
 }

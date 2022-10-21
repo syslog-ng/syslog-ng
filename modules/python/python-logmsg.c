@@ -25,6 +25,7 @@
 #include "compat/compat-python.h"
 #include "python-helpers.h"
 #include "python-types.h"
+#include "python-main.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "timeutils/cache.h"
@@ -33,6 +34,7 @@
 #include "timeutils/misc.h"
 #include "msg-format.h"
 #include "scratch-buffers.h"
+#include "cfg.h"
 
 #include <datetime.h>
 
@@ -135,7 +137,7 @@ py_log_message_free(PyLogMessage *self)
 }
 
 PyObject *
-py_log_message_new(LogMessage *msg)
+py_log_message_new(LogMessage *msg, GlobalConfig *cfg)
 {
   PyLogMessage *self;
 
@@ -145,24 +147,25 @@ py_log_message_new(LogMessage *msg)
 
   self->msg = log_msg_ref(msg);
   self->bookmark_data = NULL;
-  self->cast_to_strings = FALSE;
+
+  if (!cfg_is_typing_feature_enabled(cfg))
+    self->cast_to_strings = TRUE;
+  else
+    self->cast_to_strings = FALSE;
   return (PyObject *) self;
 }
 
-static PyObject *
-py_log_message_new_empty(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
+static int
+py_log_message_init(PyObject *s, PyObject *args, PyObject *kwds)
 {
+  PyLogMessage *self = (PyLogMessage *) s;
   PyObject *bookmark_data = NULL;
   const gchar *message = NULL;
   Py_ssize_t message_length = 0;
 
   static const gchar *kwlist[] = {"message", "bookmark", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z#O", (gchar **) kwlist, &message, &message_length, &bookmark_data))
-    return NULL;
-
-  PyLogMessage *self = (PyLogMessage *) subtype->tp_alloc(subtype, 0);
-  if (!self)
-    return NULL;
+    return -1;
 
   self->msg = log_msg_new_empty();
   self->bookmark_data = NULL;
@@ -174,7 +177,7 @@ py_log_message_new_empty(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
   Py_XINCREF(bookmark_data);
   self->bookmark_data = bookmark_data;
 
-  return (PyObject *) self;
+  return 0;
 }
 
 static PyMappingMethods py_log_message_mapping =
@@ -416,14 +419,15 @@ PyTypeObject py_log_message_type =
   .tp_dealloc = (destructor) py_log_message_free,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "LogMessage class encapsulating a syslog-ng log message",
-  .tp_new = py_log_message_new_empty,
+  .tp_new = PyType_GenericNew,
+  .tp_init = py_log_message_init,
   .tp_as_mapping = &py_log_message_mapping,
   .tp_methods = py_log_message_methods,
   0,
 };
 
 void
-py_log_message_init(void)
+py_log_message_global_init(void)
 {
   PyDateTime_IMPORT;
   PyType_Ready(&py_log_message_type);

@@ -57,15 +57,13 @@ _py_init_interpreter(void)
   py_init_argv();
 
   py_init_threads();
-  py_persist_init();
+  py_persist_global_init();
   PyEval_SaveThread();
 }
 
 static void
 _load_code(const gchar *code)
 {
-  propagate_persist_state(cfg);
-
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   cr_assert(python_evaluate_global_code(cfg, code, &yyltype));

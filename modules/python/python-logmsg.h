@@ -37,9 +37,10 @@ typedef struct _PyLogMessage
 
 extern PyTypeObject py_log_message_type;
 
-PyObject *py_log_message_new(LogMessage *msg);
-void py_log_message_init(void);
-
 int py_is_log_message(PyObject *obj);
+PyObject *py_log_message_new(LogMessage *msg, GlobalConfig *cfg);
+
+void py_log_message_global_init(void);
+
 
 #endif

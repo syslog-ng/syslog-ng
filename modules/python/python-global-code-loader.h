@@ -28,6 +28,7 @@
 #include "python-module.h"
 
 PyObject *py_global_code_loader_new(const gchar *source);
-void py_global_code_loader_init(void);
+
+void py_global_code_loader_global_init(void);
 
 #endif

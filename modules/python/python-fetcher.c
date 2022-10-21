@@ -684,7 +684,7 @@ static PyTypeObject py_log_fetcher_type =
 };
 
 void
-py_log_fetcher_init(void)
+py_log_fetcher_global_init(void)
 {
   py_log_fetcher_type.tp_dict = PyDict_New();
   PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_ERROR",
