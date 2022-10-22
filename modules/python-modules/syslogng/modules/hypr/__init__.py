@@ -27,6 +27,7 @@ class HyprAuditSource(syslogng.LogFetcher):
     class for python syslog-ng log fetcher
     """
 
+    logger = logging.getLogger('hypr')
     def init(self, options):
         """
         Initialize Hypr driver
@@ -37,12 +38,11 @@ class HyprAuditSource(syslogng.LogFetcher):
         if "rp_app_id" in options:
             self.rp_app_id = options["rp_app_id"]
         else:
-            print("Missing rp_app_id configuration option for Hypr driver")
+            self.logger.error("Missing rp_app_id configuration option for Hypr driver")
             return False
 
-        # Initialize logger for driver
-        self.logger = logging.getLogger('Hypr-' + self.rp_app_id)
-
+        # Initialize rp_app_id specific logger
+        self.logger = logging.getLogger('hypr.' + self.rp_app_id)
         self.logger.info("Starting Hypr API fetch driver for %s", self.rp_app_id)
 
         # Initialize empty array of log messages
