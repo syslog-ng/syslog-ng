@@ -21,11 +21,12 @@
 #
 #############################################################################
 try:
-    from _syslogng import LogSource, LogFetcher
+    from _syslogng import LogSource, LogFetcher, LogFetcherResult
     from _syslogng import InstantAckTracker, ConsecutiveAckTracker, BatchedAckTracker
 
 except ImportError:
     import warnings
+    from enum import Enum, auto
 
     warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
 
@@ -34,6 +35,14 @@ except ImportError:
     InstantAckTracker = object
     ConsecutiveAckTracker = object
     BatchedAckTracker = object
+
+    class LogFetcherResult(Enum):
+        ERROR = auto()
+        NOT_CONNECTED = auto()
+        SUCCESS = auto()
+        TRY_AGAIN = auto()
+        NO_DATA = auto()
+
 
 class LogSource(LogSource):
     """Base class for building an asynchronous source driver
@@ -110,6 +119,7 @@ class LogSource(LogSource):
         """
         pass
 
+
 class LogFetcher(LogFetcher):
     """Base class for building synchronous (blocking) source driver
 
@@ -121,11 +131,12 @@ class LogFetcher(LogFetcher):
     It easily maps to any source mechanism that you need to poll regularly
     for new messages (e.g.  HTTP based log access APIs).
     """
+    ERROR = FETCH_ERROR = LogFetcherResult.ERROR
+    NOT_CONNECTED = FETCH_NOT_CONNECTED = LogFetcherResult.NOT_CONNECTED
+    SUCCESS = FETCH_SUCCESS = LogFetcherResult.SUCCESS
+    TRY_AGAIN = FETCH_TRY_AGAIN = LogFetcherResult.TRY_AGAIN
+    NO_DATA = FETCH_NO_DATA = LogFetcherResult.NO_DATA
 
-    # LogFetcher.FETCH_ERROR,
-    # LogFetcher.FETCH_NOT_CONNECTED,
-    # LogFetcher.FETCH_TRY_AGAIN,
-    # LogFetcher.FETCH_NO_DATA,
     def init(self, options):
         """Initialize this LogFetcher instance
 
@@ -158,6 +169,8 @@ class LogFetcher(LogFetcher):
         Returns:
             (result, message): (LogFetcherResult, LogMessage)
                 the function needs to return a 2-tuple, which comprises of a
-                status code and a message instance.
+                status code and a message instance.  Possible status codes
+                are defined as members in the LogFetcher class or as values
+                in the LogFetchrResult enum.
         """
-        return self.FETCH_TRY_AGAIN
+        return self.TRY_AGAIN, None
