@@ -31,6 +31,10 @@
 const gchar *
 _py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
 {
+  PyObject *exc, *value, *tb;
+
+  PyErr_Fetch(&exc, &value, &tb);
+
   PyObject *name = PyObject_GetAttrString(callable, "__name__");
 
   const gchar *str;
@@ -44,6 +48,8 @@ _py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len)
       g_strlcpy(buf, "<unknown>", buf_len);
     }
   Py_XDECREF(name);
+
+  PyErr_Restore(exc, value, tb);
   return buf;
 }
 
