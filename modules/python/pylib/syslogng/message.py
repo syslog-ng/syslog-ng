@@ -27,4 +27,7 @@ except ImportError:
     import warnings
     warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
 
-    LogMessage = dict
+    class LogMessage(dict):
+        def __init__(self, msg):
+            super().__init__()
+            self['MESSAGE'] = msg
