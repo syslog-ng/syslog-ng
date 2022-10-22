@@ -86,6 +86,7 @@ libtest/mock-logpipe\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
 syslog-ng-ctl/commands/log-level.[ch]
+modules/python/pylib/syslogng/[^/.]*\.py
 
 ###########################################################################
 # These tests are GPLd even though they reside under lib/ and are excluded
@@ -141,6 +142,8 @@ scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/mariadb/.*\.conf$
 scl/kubernetes/.*\.conf$
+modules/python-modules/.*\.py
+modules/python-modules/.*\.conf
 
 ###########################################################################
 # These files are GPLd with Balabit origin.
