@@ -27,7 +27,25 @@ class HyprAuditSource(syslogng.LogFetcher):
     class for python syslog-ng log fetcher
     """
 
+    # mandatory settings
+    url = None
+    bearer_token = None
+    rp_app_id = None
+    persist_name = None
+
+    # optional settings
+    page_size = 100
+    max_performance = True
+    initial_hours = 4
+
+    # state
+    start_time = 0
+    end_time = 0
+
+    #
     logger = logging.getLogger('hypr')
+    persist = None
+
     def init(self, options):
         """
         Initialize Hypr driver
@@ -103,9 +121,7 @@ class HyprAuditSource(syslogng.LogFetcher):
         self.start_time = int(time.time()* 1000) - (initial_hours * 3600000)
 
         # Setup persist_name with defined persist_name or use URL and rpAppId if none specified
-        try:
-            self.persist_name
-        except:
+        if self.persist_name is None:
             self.persist_name = "hypr-%s-%s" % (self.url, self.rp_app_id)
 
         # Initialize persistence
