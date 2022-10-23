@@ -347,3 +347,108 @@ class HyprAuditSource(syslogng.LogFetcher):
                 len(self.logs), self.rp_app_id)
         else:
             self.persist["last_read"] = self.end_time
+
+
+class HyprError(Exception):
+    pass
+
+def _hypr_config_generator(args):
+    logger = syslogng.Logger()
+
+    def sanitize(variable):
+        """Filter out characters that would break syslog-ng configuration"""
+        return variable.translate({ord(i): None for i in '\'\"\r'})
+
+
+    # Capture environment variables for syslog-ng configuration
+    url = sanitize(args.get('url', ""))
+    bearer_token = sanitize(args.get('bearer_token', ""))
+    page_size = sanitize(args.get('page_size',"100"))
+    initial_hours = sanitize(args.get('initial_hours', "4"))
+    sleep = sanitize(args.get('sleep', "60"))
+    log_level = sanitize(args.get('log_level', "INFO"))
+    application_skiplist = args.get('application_skiplist', \
+        "HYPRDefaultApplication,HYPRDefaultWorkstationApplication")
+    persist_name = sanitize(args.get('persist_name', ""))
+    max_performance = sanitize(args.get('max_performance', "False"))
+
+    # Log environment variables
+    logger.debug("url : %s" % url)
+    logger.debug("bearer_token : %s" %  bearer_token)
+    logger.debug("page_size : %s" %  page_size)
+    logger.debug("initial_hours : %s" %  initial_hours)
+    logger.debug("sleep : %s" %  sleep)
+    logger.debug("log_level : %s" %  log_level)
+    logger.debug("application_skiplist : %s" %  application_skiplist)
+    logger.debug("persist_name : %s" %  persist_name)
+    logger.debug("max_performance : %s" %  max_performance)
+
+    # Deobfuscate
+    try:
+        bearer_token = base64.b64decode(bearer_token).decode("utf-8")
+    except Exception as e_all:
+        raise ValueError("Unable to decode bearer_token %s : %s\n" % (bearer_token, e_all))
+
+    # Start with empty list of applications
+    applications = []
+
+    # Get list of available applications from Hypr through API
+    get_url = url + "/cc/api/application"
+    headers = {
+        "Content-Type": "application/application-json",
+        "Authorization": "Bearer %s" % bearer_token
+    }
+
+    response = requests.get(get_url, headers=headers)
+
+    # Check for valid response
+    if response.status_code != 200:
+        logger.debug("Hypr API fetch returned:%s" % response.text)
+        logger.debug("Unable to retrieve applications from Hypr : HTTP %s" % response.status_code)
+        logger.debug("Decoded bearer_token is %s" % bearer_token)
+        logger.debug("Requested URL is %s" % get_url)
+        raise HyprError("Unable to process hypr() source, HTTP error while retrieving application list: HTTP {} [{}]".format(response.status_code, response.text))
+
+    # Loop through json response to pull all appIDs
+    try:
+        result = response.json()
+
+        # Add appID to class list
+        for entry in result:
+            if entry['appID'] not in application_skiplist:
+                applications.append(entry['appID'])
+                logger.debug("Adding %s to monitored Hypr applications" % entry['appID'])
+
+    except Exception as e_all:
+        raise HyprError("Unable to retrieve list of applications from Hypr : %s" % e_all)
+
+    # Setup source for each Hypr application
+    sources = ""
+    for application in applications:
+        sources = sources + """
+        python-fetcher(
+            class("syslogng.modules.hypr.HyprAuditSource")
+            options(
+                "url" => "%s"
+                "rp_app_id" => "%s"
+                "bearer_token" => "%s"
+                "page_size" => "%s"
+                "initial_hours" => "%s"
+                "log_level" => "%s"
+                "max_performance" => "%s"
+            )
+            flags(no-parse)
+            persist-name(%s-%s)
+            fetch-no-data-delay(%s)
+        );
+    """ % (url, application, args['bearer_token'], page_size, \
+        initial_hours, log_level, max_performance, \
+        persist_name, application, sleep)
+
+    logger.debug("Final configuration is: %s" % sources)
+
+    return sources
+
+
+def register_hypr_config_generator():
+    syslogng.register_config_generator(context="source", name="hypr", config_generator=_hypr_config_generator)
