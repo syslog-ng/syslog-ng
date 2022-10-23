@@ -188,8 +188,8 @@ function install_pip_packages {
                 filter_pip_packages_by_platform_and_python_version $DBLD_DIR/pip_packages.manifest $python_executable| xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
                 ;;
             *)
-                $python_executable -m pip install --no-cache-dir --upgrade pip
-                $python_executable -m pip install --no-cache-dir --upgrade setuptools
+                $python_executable -m pip install --ignore-installed --no-cache-dir --upgrade pip
+                $python_executable -m pip install --ignore-installed --no-cache-dir --upgrade setuptools
                 filter_pip_packages_by_platform_and_python_version $DBLD_DIR/pip_packages.manifest $python_executable | xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
                 ;;
         esac
