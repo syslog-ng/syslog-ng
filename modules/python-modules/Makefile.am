@@ -1,9 +1,12 @@
 EXTRA_DIST += \
 	modules/python-modules/example/scl/example.conf	\
 	modules/python-modules/example/__init__.py	\
-	modules/python-modules/setup.py
+	modules/python-modules/setup.py			\
+	modules/python-modules/README.md
 
 if ENABLE_PYTHON
+
+python_sysconf_module_DATA = modules/python-modules/README.md
 
 PYMODULES_PATH = modules/python-modules
 PYMODULES_BUILDDIR = $(abs_builddir)/$(PYMODULES_PATH)
