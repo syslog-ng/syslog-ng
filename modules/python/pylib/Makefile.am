@@ -59,14 +59,22 @@ INSTALL_EXEC_HOOKS += pylib-install
 UNINSTALL_HOOKS += pylib-uninstall
 CLEAN_HOOKS += pylib-clean
 
+PYLIB_SETUP_OPTIONS ?= --root="$(PYTHON_ROOT)" --install-lib="$(python_moduledir)"
 IS_PYTEST_INSTALLED := $(shell ${PYTHON} -m pytest --version > /dev/null 2>&1 ; echo $$?)
 
 pylib-install:
-	(cd $(PYLIB_SRCDIR) && $(PYTHON) -m pip install --upgrade --target="$(PYTHON_ROOT)/$(python_moduledir)" .)
+	(cd $(PYLIB_SRCDIR) && $(PYTHON) setup.py \
+		build --build-base="$(PYLIB_BUILDDIR)/build" \
+		egg_info --egg-base="$(PYLIB_BUILDDIR)" \
+		install --record=$(PYLIB_MANIFEST) ${PYLIB_SETUP_OPTIONS})
 
 pylib-uninstall:
-	(cd $(PYLIB_SRCDIR) && PYTHONPATH="$(PYTHON_ROOT)/$(python_moduledir):$$PYTHONPATH" $(PYTHON) -m pip uninstall -y syslogng)
+	sed -e 's,^,$(PYTHON_ROOT),g' $(PYLIB_MANIFEST) | tr '\n' '\0' | xargs -0 rm -f
 
+pylib-clean:
+	rm -rf "$(PYLIB_BUILDDIR)/build"
+	rm -rf "$(PYLIB_BUILDDIR)/syslogng.egg-info"
+	rm -rf "$(PYLIB_MANIFEST)"
 
 pylib-checks: pylib-unit pylib-pep8 pylib-pylint
 
