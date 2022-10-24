@@ -35,4 +35,8 @@ setup(name='syslogng',
         "syslogng",
         "syslogng.debuggercli",
         "syslogng.modules.example",
+        "syslogng.modules.kubernetes",
+      ],
+      install_requires=[
+          "kubernetes"
       ])
