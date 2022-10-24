@@ -21,8 +21,7 @@
 #
 #############################################################################
 import atexit
-
-from pathlib2 import Path
+from pathlib import Path
 
 from src.common.asynchronous import BackgroundEventLoop
 from src.common.blocking import DEFAULT_TIMEOUT

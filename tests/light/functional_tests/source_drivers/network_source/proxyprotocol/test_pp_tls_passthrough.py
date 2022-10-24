@@ -20,7 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
+from pathlib import Path
 
 from src.common.blocking import wait_until_true
 from src.common.file import copy_shared_file

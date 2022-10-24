@@ -21,8 +21,7 @@
 #
 #############################################################################
 import logging
-
-from pathlib2 import Path
+from pathlib import Path
 
 from src.common.blocking import wait_until_false
 from src.common.blocking import wait_until_true

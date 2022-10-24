@@ -20,7 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
+from pathlib import Path
 
 from src.common.pytest_operations import calculate_testcase_name
 

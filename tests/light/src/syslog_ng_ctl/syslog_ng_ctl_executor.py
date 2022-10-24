@@ -22,7 +22,7 @@
 #############################################################################
 from enum import Enum  # noreorder
 
-from pathlib2 import Path
+from pathlib import Path
 
 from src.executors.command_executor import CommandExecutor
 

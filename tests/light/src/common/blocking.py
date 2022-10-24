@@ -31,9 +31,8 @@ def wait_until_true(func, *args):
 
 
 def wait_until_true_custom(func, args=(), timeout=DEFAULT_TIMEOUT, poll_freq=POLL_FREQ):
-    # Python 2 compatibility note: time.monotonic() is missing
-    t_end = time.time() + timeout
-    while time.time() <= t_end:
+    t_end = time.monotonic() + timeout
+    while time.monotonic() <= t_end:
         result = func(*args)
         if result:
             return result

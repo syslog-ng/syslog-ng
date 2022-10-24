@@ -20,7 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
+from pathlib import Path
+
 from psutil import TimeoutExpired
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
@@ -186,7 +187,7 @@ class Loggen(object):
             return 0
 
         # loggen puts the count= messages to the stderr
-        f = open(str(self.loggen_stderr_path), "r")
+        f = open(self.loggen_stderr_path, "r")
         content = f.read()
         f.close()
 
