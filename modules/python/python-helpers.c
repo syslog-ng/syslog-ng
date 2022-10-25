@@ -436,22 +436,3 @@ py_slng_generic_dealloc(PyObject *self)
 {
   Py_TYPE(self)->tp_free(self);
 }
-
-void
-py_setup_python_home(void)
-{
-#ifdef SYSLOG_NG_PYTHON3_HOME_DIR
-  if (strlen(SYSLOG_NG_PYTHON3_HOME_DIR) > 0)
-    {
-      const gchar *resolved_python_home = get_installation_path_for(SYSLOG_NG_PYTHON3_HOME_DIR);
-      Py_SetPythonHome(Py_DecodeLocale(resolved_python_home, NULL));
-    }
-#endif
-}
-
-void
-py_init_argv(void)
-{
-  static wchar_t *argv[] = {L"syslog-ng"};
-  PySys_SetArgvEx(1, argv, 0);
-}

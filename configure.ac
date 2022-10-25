@@ -1783,6 +1783,7 @@ fi
 
 python_moduledir="$moduledir"/python
 python_sysconf_moduledir="${sysconfdir}/python"
+python_venvdir="${localstatedir}/python-venv"
 
 CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS $LIBCAP_CFLAGS -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
@@ -1910,6 +1911,7 @@ if test -n "$env_ld_library_path"; then
 fi
 AC_DEFINE_UNQUOTED(PATH_MODULEDIR, "$moduledir", [module installation directory])
 AC_DEFINE_UNQUOTED(PYTHON_MODULE_DIR, "$python_moduledir", [Python module installation directory])
+AC_DEFINE_UNQUOTED(PYTHON_VENV_DIR, "$python_venvdir", [Python virtualenv for hosting Python dependencies])
 AC_DEFINE_UNQUOTED(PYTHON3_HOME_DIR, "$python3_home_dir", [Hard-coded Python 3 home directory])
 AC_DEFINE_UNQUOTED(PYTHON_SYSCONF_MODULE_DIR, "$python_sysconf_moduledir", [Python module installation directory])
 AC_DEFINE_UNQUOTED(PATH_LOGGENPLUGINDIR, "$loggenplugindir", [loggenplugin installation directory])
@@ -1981,6 +1983,7 @@ AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
 AC_SUBST(python_moduledir)
+AC_SUBST(python_venvdir)
 AC_SUBST(python_sysconf_moduledir)
 AC_SUBST(loggenplugindir)
 AC_SUBST(toolsdir)

@@ -73,7 +73,8 @@ static Plugin python_plugins[] =
 gboolean
 python_module_init(PluginContext *context, CfgArgs *args G_GNUC_UNUSED)
 {
-  _py_init_interpreter();
+  if (!_py_init_interpreter())
+    return FALSE;
   python_debugger_init();
   plugin_register(context, python_plugins, G_N_ELEMENTS(python_plugins));
   return TRUE;
