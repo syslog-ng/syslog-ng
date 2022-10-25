@@ -275,17 +275,50 @@ _py_set_python_home(PyConfig *config)
   return TRUE;
 }
 
+static gboolean
+_py_is_virtualenv_valid(const gchar *path)
+{
+  gchar *python_venv_binary = g_strdup_printf("%s/bin/python", path);
+  gboolean result = FALSE;
+
+  /* check if the virtualenv is populated */
+  if (g_file_test(path, G_FILE_TEST_IS_DIR) &&
+      g_file_test(python_venv_binary, G_FILE_TEST_IS_EXECUTABLE))
+    {
+      result = TRUE;
+    }
+
+  g_free(python_venv_binary);
+  return result;
+}
 
 static gboolean
 _py_activate_venv(PyConfig *config)
 {
-  const gchar *python_venv_path = get_installation_path_for(SYSLOG_NG_PYTHON_VENV_DIR);
-  const gchar *python_venv_binary = get_installation_path_for(SYSLOG_NG_PYTHON_VENV_DIR "/bin/python");
+  const gchar *env_virtual_env = getenv("VIRTUAL_ENV");
 
-  /* check if the virtualenv is populated */
-  if (!(g_file_test(python_venv_path, G_FILE_TEST_IS_DIR) &&
-        g_file_test(python_venv_binary, G_FILE_TEST_IS_EXECUTABLE)))
-    return TRUE;
+  /* check if VIRTUAL_ENV points to a valid virtualenv */
+  if (env_virtual_env &&
+      !_py_is_virtualenv_valid(env_virtual_env))
+    {
+      msg_error("python: environment variable VIRTUAL_ENV is set, but does not point to a valid virtualenv, Python executable not found",
+                evt_tag_str("path", env_virtual_env));
+      return FALSE;
+    }
+
+  const gchar *python_venv_path = get_installation_path_for(SYSLOG_NG_PYTHON_VENV_DIR);
+  if (!_py_is_virtualenv_valid(python_venv_path))
+    {
+      msg_debug("python: private virtualenv is not initialized, relying on system-installed Python packages",
+                evt_tag_str("path", python_venv_path));
+      return TRUE;
+    }
+
+  gchar *python_venv_binary = g_strdup_printf("%s/bin/python", python_venv_path);
+
+  msg_info("python: activating virtualenv",
+           evt_tag_str("path", python_venv_path),
+           evt_tag_str("executable", python_venv_binary));
 
   /* Python will detect the virtual env based on its sys.executable value,
    * which we are setting through PyConfig_SetBytesArgv().  The algorithm is
@@ -297,6 +330,8 @@ _py_activate_venv(PyConfig *config)
 
   char *argv[] = { (char *) python_venv_binary };
   PyStatus status = PyConfig_SetBytesArgv(config, 1, argv);
+  g_free(python_venv_binary);
+
   if (PyStatus_Exception(status))
     {
       msg_error("Error initializing Python, PyConfig_SetBytesArgv() failed",
