@@ -114,6 +114,24 @@ def syslog_ng(request, testcase_parameters):
     return syslog_ng
 
 
+class TeardownRegistry:
+    teardown_callbacks = []
+
+    def register(self, teardown_callback):
+        TeardownRegistry.teardown_callbacks.append(teardown_callback)
+
+    def execute_teardown_callbacks(self):
+        for teardown_callback in TeardownRegistry.teardown_callbacks:
+            teardown_callback()
+
+
+@pytest.fixture(scope="function")
+def teardown():
+    teardown_registry = TeardownRegistry()
+    yield teardown_registry
+    teardown_registry.execute_teardown_callbacks()
+
+
 @pytest.fixture
 def syslog_ng_ctl(syslog_ng):
     return SyslogNgCtl(syslog_ng.instance_paths)
