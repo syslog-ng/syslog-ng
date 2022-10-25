@@ -48,21 +48,6 @@ CFG_LTYPE yyltype;
 GlobalConfig *empty_cfg;
 
 static void
-_py_init_interpreter(void)
-{
-  Py_Initialize();
-  py_init_argv();
-
-  py_init_threads();
-  py_log_fetcher_global_init();
-  py_log_source_global_init();
-  py_bookmark_global_init();
-  py_log_destination_global_init();
-  py_ack_tracker_global_init();
-  PyEval_SaveThread();
-}
-
-static void
 _init_python_main(void)
 {
   PyGILState_STATE gstate = PyGILState_Ensure();
