@@ -38,18 +38,6 @@ const gchar *test_bookmark_data = "test-bookmark-data";
 const gchar *bookmark_saved_marker = "bookmark-saved";
 
 static void
-_py_init_interpreter(void)
-{
-  py_setup_python_home();
-  Py_Initialize();
-  py_init_argv();
-
-  py_init_threads();
-  py_bookmark_global_init();
-  PyEval_SaveThread();
-}
-
-static void
 _init_python_main(void)
 {
   PyGILState_STATE gstate = PyGILState_Ensure();

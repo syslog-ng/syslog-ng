@@ -106,13 +106,12 @@ _set_python_path(void)
   g_string_free(python_path, TRUE);
 }
 
-static void
+void
 _py_init_interpreter(void)
 {
   if (!interpreter_initialized)
     {
       python_debugger_append_inittab();
-
       py_setup_python_home();
       _set_python_path();
       Py_Initialize();

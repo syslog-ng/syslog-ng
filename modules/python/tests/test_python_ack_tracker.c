@@ -41,20 +41,6 @@ static PyObject *_python_main_dict;
 
 MsgFormatOptions parse_options;
 
-
-static void
-_py_init_interpreter(void)
-{
-  py_setup_python_home();
-  Py_Initialize();
-  py_init_argv();
-
-  py_init_threads();
-  py_ack_tracker_global_init();
-  py_bookmark_global_init();
-  PyEval_SaveThread();
-}
-
 static void
 _init_python_main(void)
 {

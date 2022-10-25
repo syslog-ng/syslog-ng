@@ -51,17 +51,6 @@ _init_python_main(void)
 }
 
 static void
-_py_init_interpreter(void)
-{
-  Py_Initialize();
-  py_init_argv();
-
-  py_init_threads();
-  py_persist_global_init();
-  PyEval_SaveThread();
-}
-
-static void
 _load_code(const gchar *code)
 {
   PyGILState_STATE gstate;

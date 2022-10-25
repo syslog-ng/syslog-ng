@@ -49,20 +49,6 @@ LogTemplateOptions log_template_options;
 PyObject *py_template_options;
 
 static void
-_py_init_interpreter(void)
-{
-  py_setup_python_home();
-  Py_Initialize();
-  py_init_argv();
-
-  py_init_threads();
-  py_log_message_global_init();
-  py_log_template_global_init();
-  py_integer_pointer_global_init();
-  PyEval_SaveThread();
-}
-
-static void
 _init_python_main(void)
 {
   PyGILState_STATE gstate = PyGILState_Ensure();
