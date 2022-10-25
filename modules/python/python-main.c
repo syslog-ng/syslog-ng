@@ -25,8 +25,24 @@
 #include "python-module.h"
 #include "python-helpers.h"
 #include "python-global-code-loader.h"
+#include "python-types.h"
+#include "python-dest.h"
+#include "python-source.h"
+#include "python-fetcher.h"
+#include "python-logparser.h"
+#include "python-tf.h"
+#include "python-logmsg.h"
+#include "python-logtemplate.h"
+#include "python-integerpointer.h"
+#include "python-logger.h"
+#include "python-persist.h"
+#include "python-bookmark.h"
+#include "python-ack-tracker.h"
+#include "python-debugger.h"
+
 #include "cfg.h"
 #include "messages.h"
+#include "reloc.h"
 
 /*
  * Some information about how we embed the Python interpreter:
@@ -205,4 +221,57 @@ python_evaluate_global_code(GlobalConfig *cfg, const gchar *code, CFG_LTYPE *yyl
   PyGILState_Release(gstate);
 
   return result;
+}
+
+static gboolean interpreter_initialized = FALSE;
+
+static void
+_set_python_path(void)
+{
+  const gchar *current_python_path = getenv("PYTHONPATH");
+  GString *python_path = g_string_new("");
+
+  g_string_printf(python_path, "%s:%s",
+                  get_installation_path_for(SYSLOG_NG_PYTHON_SYSCONF_MODULE_DIR),
+                  get_installation_path_for(SYSLOG_NG_PYTHON_MODULE_DIR));
+
+  if (current_python_path)
+    g_string_append_printf(python_path, ":%s", current_python_path);
+
+  setenv("PYTHONPATH", python_path->str, 1);
+
+  g_string_free(python_path, TRUE);
+}
+
+void
+_py_init_interpreter(void)
+{
+  if (!interpreter_initialized)
+    {
+      python_debugger_append_inittab();
+
+      py_setup_python_home();
+      _set_python_path();
+      Py_Initialize();
+      py_init_argv();
+
+      py_init_threads();
+      py_init_types();
+
+      py_log_message_global_init();
+      py_log_template_global_init();
+      py_integer_pointer_global_init();
+      py_log_destination_global_init();
+      py_log_parser_global_init();
+      py_log_source_global_init();
+      py_log_fetcher_global_init();
+      py_persist_global_init();
+      py_bookmark_global_init();
+      py_ack_tracker_global_init();
+      py_global_code_loader_global_init();
+      py_logger_global_init();
+      PyEval_SaveThread();
+
+      interpreter_initialized = TRUE;
+    }
 }
