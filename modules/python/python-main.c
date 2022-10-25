@@ -26,6 +26,7 @@
 #include "python-helpers.h"
 #include "python-global-code-loader.h"
 #include "python-types.h"
+
 #include "python-dest.h"
 #include "python-source.h"
 #include "python-fetcher.h"
@@ -225,8 +226,8 @@ python_evaluate_global_code(GlobalConfig *cfg, const gchar *code, CFG_LTYPE *yyl
 
 static gboolean interpreter_initialized = FALSE;
 
-static void
-_set_python_path(void)
+static gboolean
+_py_set_python_path(PyConfig *config)
 {
   const gchar *current_python_path = getenv("PYTHONPATH");
   GString *python_path = g_string_new("");
@@ -238,22 +239,148 @@ _set_python_path(void)
   if (current_python_path)
     g_string_append_printf(python_path, ":%s", current_python_path);
 
-  setenv("PYTHONPATH", python_path->str, 1);
-
+  PyStatus status = PyConfig_SetBytesString(config, &config->pythonpath_env, python_path->str);
   g_string_free(python_path, TRUE);
+
+  if (PyStatus_Exception(status))
+    {
+      msg_error("Error initializing Python, setting PYTHONPATH failed",
+                evt_tag_str("func", status.func),
+                evt_tag_str("error", status.err_msg),
+                evt_tag_int("exitcode", status.exitcode));
+      return FALSE;
+    }
+
+  return TRUE;
 }
 
-void
+static gboolean
+_py_set_python_home(PyConfig *config)
+{
+#ifdef SYSLOG_NG_PYTHON3_HOME_DIR
+  if (strlen(SYSLOG_NG_PYTHON3_HOME_DIR) > 0)
+    {
+      const gchar *resolved_python_home = get_installation_path_for(SYSLOG_NG_PYTHON3_HOME_DIR);
+      PyStatus status = PyConfig_SetBytesString(config, &config->home, resolved_python_home);
+      if (PyStatus_Exception(status))
+        {
+          msg_error("Error initializing Python, setting PYTHONHOME failed",
+                    evt_tag_str("func", status.func),
+                    evt_tag_str("error", status.err_msg),
+                    evt_tag_int("exitcode", status.exitcode));
+          return FALSE;
+        }
+    }
+#endif
+  return TRUE;
+}
+
+
+static gboolean
+_py_activate_venv(PyConfig *config)
+{
+  const gchar *python_venv_path = get_installation_path_for(SYSLOG_NG_PYTHON_VENV_DIR);
+  const gchar *python_venv_binary = get_installation_path_for(SYSLOG_NG_PYTHON_VENV_DIR "/bin/python");
+
+  /* check if the virtualenv is populated */
+  if (!(g_file_test(python_venv_path, G_FILE_TEST_IS_DIR) &&
+        g_file_test(python_venv_binary, G_FILE_TEST_IS_EXECUTABLE)))
+    return TRUE;
+
+  /* Python will detect the virtual env based on its sys.executable value,
+   * which we are setting through PyConfig_SetBytesArgv().  The algorithm is
+   * described in site.py (and various PEPs and documentation).
+   *
+   * We basically behave as if the user executed
+   * ${python_venvdir}/bin/python when it started syslog-ng.
+   */
+
+  char *argv[] = { (char *) python_venv_binary };
+  PyStatus status = PyConfig_SetBytesArgv(config, 1, argv);
+  if (PyStatus_Exception(status))
+    {
+      msg_error("Error initializing Python, PyConfig_SetBytesArgv() failed",
+                evt_tag_str("func", status.func),
+                evt_tag_str("error", status.err_msg),
+                evt_tag_int("exitcode", status.exitcode));
+      return FALSE;
+    }
+  return TRUE;
+}
+
+/*
+ * NOTE: we can have the following embedded Python deployment:
+ *
+ *   1) private Python installation: we have a complete Python installation
+ *      (from source) usually compiled in the same ${prefix} as we are.  In
+ *      this case, PYTHONHOME needs to point to the Python prefix.
+ *      syslog-ng supports this case via the PYTHON3_HOME_DIR configure
+ *      option which you need to set in this case.
+ *
+ *      In this case we are not using any Python binaries (libpython.so) nor
+ *      Python packages from the system. Everything is private.
+ *
+ *       - Python binaries are private, using a custom prefix
+ *       - Python packages are in ${PYTHONHOME}/lib/pythonX.Y
+ *       - syslog-ng Python code is in ${moduledir}/python
+ *
+ *   2) system Python + system installed Python packages: we are relying on
+ *      the system Python installation both for binaries and packages.  This
+ *      roughly match the distribution model: all Python packages are
+ *      installed via system packages (to /usr/lib/pythonX.Y) OR by using pip
+ *      to augment the system installation (/usr/local/lib/pythonX.Y)
+ *
+ *       - Python binaries are the system ones, usually /usr/bin/python and
+ *         /usr/lib/libpython.so (or their versioned equivalents)
+ *       - Python packages are in /usr/lib/pythonX.Y/
+ *         and their /usr/local counterparts (e.g.  the standard paths for
+ *         system Python)
+ *       - syslog-ng Python code is in ${moduledir}/python
+ *       - all imports performed by syslog-ng Python modules will be
+ *         satisfied through system paths, which you can populate either by
+ *         install python packages or via the installation of pip packages
+ *         into /usr/local
+ *
+ *   3) system Python + virtualenv: in this mode, we have our own private
+ *      virtualenv where you can deploy packages privately, without making
+ *      them visible globally on the system.
+ *
+ *       - Python binaries are the system ones, usually /usr/bin/python and
+ *         /usr/lib/libpython.so (or their versioned equivalents)
+ *       - Python packages are in our virtualenv folder, system Python
+ *         packages are either accessible or isolated (depending on the
+ *         virtualenv's --system-site-packages option)
+ *       - syslog-ng Python code is in ${moduledir}/python
+ *
+ * PYTHONPATH is popuolated as follows
+ *   1. /etc/syslog-ng/python      (${sysconfdir}/python)
+ *   2. /usr/lib/syslog-ng/python  (${exec_prefix}/lib/syslog-ng/python)
+ *   3. $PYTHONPATH as passed by the user in the environment
+ *   4. automatic Python path set by the interpreter (venv or system)
+ */
+static gboolean
+_py_init_embedded_python_environment(void)
+{
+  PyConfig config;
+  PyConfig_InitIsolatedConfig(&config);
+  if (!_py_set_python_path(&config) ||
+      !_py_set_python_home(&config) ||
+      !_py_activate_venv(&config))
+    return FALSE;
+
+  Py_InitializeFromConfig(&config);
+  PyConfig_Clear(&config);
+  return TRUE;
+}
+
+gboolean
 _py_init_interpreter(void)
 {
   if (!interpreter_initialized)
     {
       python_debugger_append_inittab();
-
-      py_setup_python_home();
-      _set_python_path();
-      Py_Initialize();
-      py_init_argv();
+      if (!_py_init_embedded_python_environment())
+        return FALSE;
 
       py_init_threads();
       py_init_types();
@@ -274,4 +401,5 @@ _py_init_interpreter(void)
 
       interpreter_initialized = TRUE;
     }
+  return TRUE;
 }
