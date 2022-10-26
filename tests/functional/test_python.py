@@ -29,6 +29,8 @@ import os
 
 config = """@version: %(syslog_ng_version)s
 
+@module mod-python use-virtualenv(no)
+
 options { keep-hostname(yes); };
 
 source s_int { internal(); };
