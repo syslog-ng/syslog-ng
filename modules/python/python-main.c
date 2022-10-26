@@ -426,6 +426,23 @@ _py_configure_system_python(PyConfig *config)
   return TRUE;
 }
 
+static gboolean
+_py_configure_interpreter(gboolean use_virtualenv)
+{
+  PyConfig config;
+  PyConfig_InitIsolatedConfig(&config);
+
+  gboolean success = use_virtualenv ? _py_configure_virtualenv_python(&config)
+                     : _py_configure_system_python(&config);
+  if (success)
+    {
+      Py_InitializeFromConfig(&config);
+      PyConfig_Clear(&config);
+      return TRUE;
+    }
+  return FALSE;
+}
+
 static void
 _py_initialize_builtin_modules(void)
 {
@@ -453,16 +470,8 @@ _py_init_interpreter(gboolean use_virtualenv)
     {
       python_debugger_append_inittab();
 
-      PyConfig config;
-      PyConfig_InitIsolatedConfig(&config);
-
-      gboolean success = use_virtualenv ? _py_configure_virtualenv_python(&config)
-                         : _py_configure_system_python(&config);
-      if (!success)
+      if (!_py_configure_interpreter(use_virtualenv))
         return FALSE;
-
-      Py_InitializeFromConfig(&config);
-      PyConfig_Clear(&config);
 
       _py_initialize_builtin_modules();
 
