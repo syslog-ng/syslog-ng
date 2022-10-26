@@ -92,6 +92,7 @@ python-unversioned-command  [fedora]
 python3-dev                 [ubuntu-focal]
 python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-bionic]
 python3-pip                     [debian, ubuntu]
+python3-venv			[debian, ubuntu, devshell]
 
 # python 3.10 has issues on Debian Testing
 # Nevertheless we should only downgrade for Light style-check tests, which uses pre-commit
