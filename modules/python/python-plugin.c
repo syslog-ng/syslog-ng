@@ -71,9 +71,10 @@ static Plugin python_plugins[] =
 };
 
 gboolean
-python_module_init(PluginContext *context, CfgArgs *args G_GNUC_UNUSED)
+python_module_init(PluginContext *context, CfgArgs *args)
 {
-  if (!_py_init_interpreter())
+  gboolean use_virtualenv = args ? cfg_args_get_as_boolean(args, "use-virtualenv") : TRUE;
+  if (!_py_init_interpreter(use_virtualenv))
     return FALSE;
   python_debugger_init();
   plugin_register(context, python_plugins, G_N_ELEMENTS(python_plugins));

@@ -75,7 +75,7 @@ setup(void)
 
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
-  _py_init_interpreter();
+  _py_init_interpreter(FALSE);
   _init_python_main();
 }
 
