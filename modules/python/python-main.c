@@ -293,6 +293,23 @@ _py_is_virtualenv_valid(const gchar *path)
 }
 
 static gboolean
+_py_set_argv(PyConfig *config, const gchar *binary)
+{
+  char *argv[] = { (char *) binary };
+  PyStatus status = PyConfig_SetBytesArgv(config, 1, argv);
+
+  if (PyStatus_Exception(status))
+    {
+      msg_error("Error initializing Python, PyConfig_SetBytesArgv() failed",
+                evt_tag_str("func", status.func),
+                evt_tag_str("error", status.err_msg),
+                evt_tag_int("exitcode", status.exitcode));
+      return FALSE;
+    }
+  return TRUE;
+}
+
+static gboolean
 _py_activate_venv(PyConfig *config)
 {
   const gchar *env_virtual_env = getenv("VIRTUAL_ENV");
@@ -328,19 +345,9 @@ _py_activate_venv(PyConfig *config)
    * ${python_venvdir}/bin/python when it started syslog-ng.
    */
 
-  char *argv[] = { (char *) python_venv_binary };
-  PyStatus status = PyConfig_SetBytesArgv(config, 1, argv);
+  gboolean success = _py_set_argv(config, python_venv_binary);
   g_free(python_venv_binary);
-
-  if (PyStatus_Exception(status))
-    {
-      msg_error("Error initializing Python, PyConfig_SetBytesArgv() failed",
-                evt_tag_str("func", status.func),
-                evt_tag_str("error", status.err_msg),
-                evt_tag_int("exitcode", status.exitcode));
-      return FALSE;
-    }
-  return TRUE;
+  return success;
 }
 
 /*
