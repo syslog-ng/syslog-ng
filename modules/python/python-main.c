@@ -226,8 +226,8 @@ python_evaluate_global_code(GlobalConfig *cfg, const gchar *code, CFG_LTYPE *yyl
 
 static gboolean interpreter_initialized = FALSE;
 
-static gboolean
-_py_set_python_path(PyConfig *config)
+static gchar *
+_format_python_path(void)
 {
   const gchar *current_python_path = getenv("PYTHONPATH");
   GString *python_path = g_string_new("");
@@ -238,9 +238,15 @@ _py_set_python_path(PyConfig *config)
 
   if (current_python_path)
     g_string_append_printf(python_path, ":%s", current_python_path);
+  return g_string_free(python_path, FALSE);
+}
 
-  PyStatus status = PyConfig_SetBytesString(config, &config->pythonpath_env, python_path->str);
-  g_string_free(python_path, TRUE);
+static gboolean
+_py_set_python_path(PyConfig *config)
+{
+  gchar *python_path = _format_python_path();
+  PyStatus status = PyConfig_SetBytesString(config, &config->pythonpath_env, python_path);
+  g_free(python_path);
 
   if (PyStatus_Exception(status))
     {
