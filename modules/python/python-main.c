@@ -408,6 +408,26 @@ _py_init_embedded_python_environment(void)
   return TRUE;
 }
 
+static void
+_py_initialize_builtin_modules(void)
+{
+  py_init_threads();
+  py_init_types();
+
+  py_log_message_global_init();
+  py_log_template_global_init();
+  py_integer_pointer_global_init();
+  py_log_destination_global_init();
+  py_log_parser_global_init();
+  py_log_source_global_init();
+  py_log_fetcher_global_init();
+  py_persist_global_init();
+  py_bookmark_global_init();
+  py_ack_tracker_global_init();
+  py_global_code_loader_global_init();
+  py_logger_global_init();
+}
+
 gboolean
 _py_init_interpreter(void)
 {
@@ -417,21 +437,7 @@ _py_init_interpreter(void)
       if (!_py_init_embedded_python_environment())
         return FALSE;
 
-      py_init_threads();
-      py_init_types();
-
-      py_log_message_global_init();
-      py_log_template_global_init();
-      py_integer_pointer_global_init();
-      py_log_destination_global_init();
-      py_log_parser_global_init();
-      py_log_source_global_init();
-      py_log_fetcher_global_init();
-      py_persist_global_init();
-      py_bookmark_global_init();
-      py_ack_tracker_global_init();
-      py_global_code_loader_global_init();
-      py_logger_global_init();
+      _py_initialize_builtin_modules();
       PyEval_SaveThread();
 
       interpreter_initialized = TRUE;
