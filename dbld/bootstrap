@@ -7,4 +7,4 @@ cd /source
 
 cd /build
 echo "Running configure with: ${CONFIGURE_OPTS}"
-/source/configure ${CONFIGURE_OPTS}
+/source/configure ${CONFIGURE_OPTS} --with-python-packages=venv
