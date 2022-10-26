@@ -84,13 +84,9 @@ automake                    [centos, fedora]
 #
 # We are now using the same version for both.
 
-python-dev                  [debian-stretch, debian-buster, ubuntu-bionic]
 python3-dev                 [debian-sid]
-python-devel                [centos, fedora]
 python3-devel               [fedora]
-python-unversioned-command  [fedora]
 python3-dev                 [ubuntu-focal]
-python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-bionic]
 python3-pip                     [debian, ubuntu]
 python3-venv			[debian, ubuntu, devshell]
 
