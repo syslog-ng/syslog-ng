@@ -212,6 +212,7 @@ install_loggenpluginLTLIBRARIES	= install-loggenpluginLTLIBRARIES
 $(install_loggenpluginLTLIBRARIES): install-libLTLIBRARIES
 
 include Mk/lex-rules.am
+include Mk/python-venv.am
 include Mk/Makefile.am
 if ENABLE_TESTING
 include libtest/Makefile.am

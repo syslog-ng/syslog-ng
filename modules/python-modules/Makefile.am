@@ -64,7 +64,6 @@ UNINSTALL_HOOKS += pymodules-uninstall
 CLEAN_HOOKS += pymodules-clean
 
 PYMODULES_SETUP_OPTIONS ?= --root="$(PYTHON_ROOT)" --install-lib="$(python_moduledir)"
-IS_PYTEST_INSTALLED := $(shell ${PYTHON} -m pytest --version > /dev/null 2>&1 ; echo $$?)
 
 
 #
@@ -73,17 +72,17 @@ IS_PYTEST_INSTALLED := $(shell ${PYTHON} -m pytest --version > /dev/null 2>&1 ; 
 #
 # Therefore we need to separate the installation of both.
 #
-pymodules-install: pymodules-install-requirements
-	(cd $(PYMODULES_SRCDIR) && $(PYTHON) setup.py \
+pymodules-install: pymodules-install-requirements python-venv
+	(cd $(PYMODULES_SRCDIR) && $(PYTHON_VENV) setup.py \
 		build --build-base="$(PYMODULES_BUILDDIR)/build" \
 		egg_info --egg-base="$(PYMODULES_BUILDDIR)" \
 		install --record=$(PYMODULES_MANIFEST) ${PYMODULES_SETUP_OPTIONS})
 
-pymodules-install-requirements:
+pymodules-install-requirements: python-venv
 	(cd $(PYMODULES_SRCDIR) && \
 	 mkdir -p $(PYMODULES_BUILDDIR) && \
-         $(PYTHON) setup.py egg_info --egg-base="$(PYMODULES_BUILDDIR)"  && \
-         if [ -f $(PYMODULES_BUILDDIR)/$(PYMODULES_ROOT_MODULE).egg-info/requires.txt ]; then $(PYTHON) -m pip install -r $(PYMODULES_BUILDDIR)/$(PYMODULES_ROOT_MODULE).egg-info/requires.txt; fi)
+         $(PYTHON_VENV) setup.py egg_info --egg-base="$(PYMODULES_BUILDDIR)"  && \
+         if [ -f $(PYMODULES_BUILDDIR)/$(PYMODULES_ROOT_MODULE).egg-info/requires.txt ]; then $(PYTHON_VENV) -m pip install -r $(PYMODULES_BUILDDIR)/$(PYMODULES_ROOT_MODULE).egg-info/requires.txt; fi)
 
 pymodules-uninstall:
 	sed -e 's,^,$(PYTHON_ROOT),g' $(PYMODULES_MANIFEST) | tr '\n' '\0' | xargs -0 rm -f
@@ -93,26 +92,16 @@ pymodules-clean:
 	rm -rf "$(PYMODULES_BUILDDIR)/$(PYMODULES_ROOT_MODULE).egg-info"
 	rm -rf "$(PYMODULES_MANIFEST)"
 
-pymodules-unit:
-	@if [ $(IS_PYTEST_INSTALLED) -eq 0 ]; then \
-		echo "pytest is installed"; \
-		${PYTHON} -m pytest --showlocals --verbosity=3 $(PYMODULES_SRCDIR) -W ignore::UserWarning; \
-	else \
-		echo "pytest is not installed, can not run tests"; \
-	fi;
+pymodules-unit: python-venv
+	$(PYTHON_VENV) -m pytest --showlocals --verbosity=3 $(PYMODULES_SRCDIR) -W ignore::UserWarning
 
 pymodules-checks: pymodules-unit pymodules-pep8 pymodules-pylint
 
-pymodules-pep8:
-	pep8 --ignore=E501 $(PYMODULES_SRCDIR)/$(PYMODULES_ROOT_MODULE)
+pymodules-pep8: python-venv
+	$(PYTHON_VENV) -m pep8 --ignore=E501 $(PYMODULES_SRCDIR)/$(PYMODULES_ROOT_MODULE)
 
-if PYLINT
-pymodules-pylint:
-	@PYLINT@ -r n --rcfile=$(PYMODULES_SRCDIR)/pylintrc $(PYMODULES_SRCDIR)/$(PYMODULES_ROOT_MODULE)
-else
-pymodules-pylint:
-	$(error "missing pylint")
-endif
+pymodules-pylint: python-venv
+	$(PYTHON_VENV) -m pylint -r n --rcfile=$(PYMODULES_SRCDIR)/pylintrc $(PYMODULES_SRCDIR)/$(PYMODULES_ROOT_MODULE)
 
 check_SCRIPTS += modules/python-modules/test_pymodules.sh
 
