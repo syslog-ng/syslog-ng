@@ -241,6 +241,8 @@ _format_python_path(void)
   return g_string_free(python_path, FALSE);
 }
 
+#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 8 || PY_MAJOR_VERSION > 3
+
 static gboolean
 _py_set_python_path(PyConfig *config)
 {
@@ -501,6 +503,49 @@ _py_configure_interpreter(gboolean use_virtualenv)
     }
   return FALSE;
 }
+
+#else
+
+/* Python older than v3.8 lacks the PyConfig based API */
+
+static void
+_py_setup_python_home(void)
+{
+#ifdef SYSLOG_NG_PYTHON3_HOME_DIR
+  if (strlen(SYSLOG_NG_PYTHON3_HOME_DIR) > 0)
+    {
+      const gchar *resolved_python_home = get_installation_path_for(SYSLOG_NG_PYTHON3_HOME_DIR);
+      Py_SetPythonHome(Py_DecodeLocale(resolved_python_home, NULL));
+    }
+#endif
+}
+
+static void
+_py_set_python_path(void)
+{
+  gchar *python_path = _format_python_path();
+  setenv("PYTHONPATH", python_path, 1);
+  g_free(python_path);
+}
+
+static void
+_py_init_argv(void)
+{
+  static wchar_t *argv[] = {L"syslog-ng"};
+  PySys_SetArgvEx(1, argv, 0);
+}
+
+static gboolean
+_py_configure_interpreter(gboolean use_virtualenv)
+{
+  _py_setup_python_home();
+  _py_set_python_path();
+  Py_Initialize();
+  _py_init_argv();
+  return TRUE;
+}
+
+#endif
 
 static void
 _py_initialize_builtin_modules(void)
