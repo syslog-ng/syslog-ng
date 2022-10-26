@@ -407,17 +407,22 @@ _py_activate_venv(PyConfig *config)
  *   4. automatic Python path set by the interpreter (venv or system)
  */
 static gboolean
-_py_init_embedded_python_environment(void)
+_py_configure_virtualenv_python(PyConfig *config)
 {
-  PyConfig config;
-  PyConfig_InitIsolatedConfig(&config);
-  if (!_py_set_python_path(&config) ||
-      !_py_set_python_home(&config) ||
-      !_py_activate_venv(&config))
+  if (!_py_set_python_path(config) ||
+      !_py_set_python_home(config) ||
+      !_py_activate_venv(config))
     return FALSE;
+  return TRUE;
+}
 
-  Py_InitializeFromConfig(&config);
-  PyConfig_Clear(&config);
+static gboolean
+_py_configure_system_python(PyConfig *config)
+{
+  if (!_py_set_python_path(config) ||
+      !_py_set_python_home(config) ||
+      !_py_set_argv(config, "syslog-ng"))
+    return FALSE;
   return TRUE;
 }
 
@@ -442,15 +447,25 @@ _py_initialize_builtin_modules(void)
 }
 
 gboolean
-_py_init_interpreter(void)
+_py_init_interpreter(gboolean use_virtualenv)
 {
   if (!interpreter_initialized)
     {
       python_debugger_append_inittab();
-      if (!_py_init_embedded_python_environment())
+
+      PyConfig config;
+      PyConfig_InitIsolatedConfig(&config);
+
+      gboolean success = use_virtualenv ? _py_configure_virtualenv_python(&config)
+                         : _py_configure_system_python(&config);
+      if (!success)
         return FALSE;
 
+      Py_InitializeFromConfig(&config);
+      PyConfig_Clear(&config);
+
       _py_initialize_builtin_modules();
+
       PyEval_SaveThread();
 
       interpreter_initialized = TRUE;

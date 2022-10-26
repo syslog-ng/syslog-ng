@@ -30,6 +30,7 @@
 #include "python-helpers.h"
 #include "python-ack-tracker.h"
 #include "python-bookmark.h"
+#include "python-main.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "ack-tracker/instant_ack_tracker.h"
@@ -52,17 +53,19 @@ _init_python_main(void)
   PyGILState_Release(gstate);
 }
 
-void setup(void)
+void
+setup(void)
 {
   app_startup();
 
   init_parse_options_and_load_syslogformat(&parse_options);
 
-  _py_init_interpreter();
+  _py_init_interpreter(FALSE);
   _init_python_main();
 }
 
-void teardown(void)
+void
+teardown(void)
 {
   deinit_syslogformat_module();
   app_shutdown();

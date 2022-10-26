@@ -54,15 +54,22 @@ _init_python_main(void)
   PyGILState_Release(gstate);
 }
 
-void setup(void)
+void
+setup(void)
 {
   app_startup();
   init_template_tests();
-  cfg_load_module(configuration, "python");
+
+  CfgArgs *args = cfg_args_new();
+
+  cfg_args_set(args, "use-virtualenv", "no");
+  cfg_load_module_with_args(configuration, "python", args);
+  cfg_args_unref(args);
   _init_python_main();
 }
 
-void teardown(void)
+void
+teardown(void)
 {
   deinit_template_tests();
   scratch_buffers_explicit_gc();

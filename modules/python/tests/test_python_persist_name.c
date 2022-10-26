@@ -58,20 +58,22 @@ _init_python_main(void)
   PyGILState_Release(gstate);
 }
 
-void setup(void)
+void
+setup(void)
 {
   app_startup();
 
   main_loop = main_loop_get_instance();
   main_loop_init(main_loop, &main_loop_options);
 
-  _py_init_interpreter();
+  _py_init_interpreter(FALSE);
   _init_python_main();
 
   empty_cfg = cfg_new_snippet();
 }
 
-void teardown(void)
+void
+teardown(void)
 {
   cfg_free(empty_cfg);
   main_loop_deinit(main_loop);

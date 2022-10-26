@@ -99,7 +99,7 @@ setup(void)
 
   init_parse_options_and_load_syslogformat(&parse_options);
 
-  _py_init_interpreter();
+  _py_init_interpreter(FALSE);
   _init_python_main();
 }
 

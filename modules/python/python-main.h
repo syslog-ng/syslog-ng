@@ -32,6 +32,6 @@ void _py_switch_main_module(PythonConfig *pc);
 GlobalConfig *python_get_associated_config(void);
 gboolean python_evaluate_global_code(GlobalConfig *cfg, const gchar *code, CFG_LTYPE *yylloc);
 
-gboolean _py_init_interpreter(void);
+gboolean _py_init_interpreter(gboolean use_virtualenv);
 
 #endif
