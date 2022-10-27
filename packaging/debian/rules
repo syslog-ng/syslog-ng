@@ -62,11 +62,7 @@ else
 export GRADLE_USER_HOME = /tmp/gradle
 endif
 
-ifneq ($(filter sng-python2,$(DEB_BUILD_PROFILES)),)
-PYTHON_VERSION = 2
-else
 PYTHON_VERSION = 3
-endif
 
 ifneq ($(filter sng-nokafka,$(DEB_BUILD_PROFILES)),)
 DH_OPTIONS += -Nsyslog-ng-mod-rdkafka
@@ -206,11 +202,6 @@ override_dh_makeshlibs:
 override_dh_gencontrol:
 	dh_gencontrol -- -Vsng:Modules=$(shell debian/tools/list-modules.sh optional) \
 			 -Vsng:CoreModules=$(shell debian/tools/list-modules.sh core)
-
-# Sadly, dh_python2 barfs on --dbg-package=, so we work it around by
-# clearing DH_OPTIONS here.
-override_dh_python2:
-	DH_OPTIONS="" dh_python2
 
 # Sadly, dh_python3 barfs on --dbg-package=, so we work it around by
 # clearing DH_OPTIONS here.
