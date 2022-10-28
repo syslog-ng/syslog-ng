@@ -1,141 +1,86 @@
-# syslogng-hypr
+# hypr-audit-trail() and hypr-app-audit-trail() source drivers
 
-## Purpose
+This package implements a syslog-ng source driver for the Hypr Audit Trail
 
-This is a python syslogng.LogFetcher implementation designed to fetch events from Hypr via their [REST API](https://apidocs.hypr.com/) for ingestion by syslog-ng.
+Events are fetched from Hypr via their [REST API](https://apidocs.hypr.com/)
 
-## Components
+## Usage
 
-### hypr.py
+There are two drivers published by this package:
 
-This is the syslogng.LogFetcher implementation which can be configured as a standalone source in syslog-ng. To install and configure it, copy it to a location on the syslog-ng system and set the the parent directory int /etc/sysconfig/syslog-ng:
+  * hypr-audit-trail(): is a source driver that pulls messages from the Hypr
+    API, associated to any RP Application ID.
+  * hypr-app-audit-trail(): is a source driver that pulls messages from the
+    Hypr API, but only those associated to a specific RP Application ID.
 
-    PYTHONPATH="<path/to/parent/directory>"
 
-As an example, if you store hypr.py in /opt/syslog-ng/etc/hypr.py you would add this to /etc/sysconfig/syslog-ng:
+### hypr-audit-trail()
 
-    PYTHONPATH="/opt/syslog-ng/etc"
+The hypr-audit-trail() source would query the Hypr API for the list of
+potential applications at startup and then would monitor the audit trail for
+each of the detected applications.
 
-To configure the source, certain parameters are required:
+Applications that are registered after syslog-ng is started will not be
+recognized. To start following those audit trails, a restart of syslog-ng is
+needed.
 
+Example:
+
+```
     source s_hypr {
-      python-fetcher(
-		  class("hypr.Hypr")
-		  options(
-			  "url","https://<domain>.hypr.com"
-			  "rp_app_id" "<rpAppId>"
-			  "bearer_token" "<base64 encoded bearer token>"
-			  )
-		  flags(no-parse)
-	    );
-    };
-
-Additional options can also be specified:
-
-    source s_hypr {
-      python-fetcher(
-		  class("hypr.Hypr")
-		  options(
-			  "url","https://<domain>.hypr.com"
-			  "rp_app_id","<rpAppId>"
-			  "bearer_token","<base64 encoded bearer token>"
-			  "page_size","<number of results to return in a single page>"
-			  "initial_hours","<number of hours to search backward on initial fetch>"
-			  "log_level","<DEBUG|INFO|WARN|ERROR>"
-              "max_performance","<True|False>"
-			  )
-		  flags(no-parse)
-		  fetch-no-data-delay(<seconds to wait before attempting a fetch after no results are returned>)
-	    );
-    };
-
-Here are sample values as a reference:
-
-    source s_hypr {
-      python-fetcher(
-		  class("hypr.Hypr")
-		  options(
-			  "url","https://my-domain.hypr.com"
-			  "rp_app_id","WindowsLogin"
-			  "bearer_token","xxxx"
-			  "page_size","1000"
-			  "initial_hours","24"
-			  "log_level","DEBUG"
-              "max_performance","False"
-			  )
-		  flags(no-parse)
-		  fetch-no-data-delay(60)
-	    );
-    };
-
-### gen-hypr.py
-
-This Python script can be used to dynamically generate a syslog-ng configuration for a Hypr API that will fetch events from all rpAppIds not specifically blocked by configuration. Each configuration will fall under the same top level source and include a Hypr driver configured for a specific rpAppId that is independent of all other Hypr drivers. This is only required for runtime detection or available rpAppId values, to statically configure the Hypr driver for an rpAppId(s) the gen-hypr confgen utility is not needed.
-
-To utilize the gen-hypr.py configuration generator, the following steps are needed:
-1. Create a new SCL directory named hypr (e.g., /opt/syslog-ng/share/syslog-ng/include/scl/hypr/)
-2. Save gen-hypr.py to /opt/syslog-ng/share/syslog-ng/include/scl/hypr/gen-hypr.py
-3. Save plugin.conf to /opt/syslog-ng/share/syslog-ng/include/scl/hypr/plugin.conf
-4. Create a new syslog-ng source with the required parameters
-
-Required minimum parameters:
-
-    source s_hypr {
-        hypr(
+        hypr-audit-trail(
             url('https://<custom domain>.hypr.com')
             bearer_token('<base64 encoded bearer token>')
-            persist_name('<unique name>')
         );
     };
+```
 
-or with full options:
+A more complete example:
 
+```
     source s_hypr {
-        hypr(
+        hypr-audit-trail(
             url('https://<custom domain>.hypr.com')
             bearer_token('<base64 encoded bearer token>')
             page_size(<number of results to return in a single page>)
             initial_hours(<number of hours to search backward on initial fetch>)
-            persist_name('<unique name>')
-            log_level('<DEBUG|INFO|WARN|ERROR>')
-            sleep(<seconds to wait before attempting a fetch after no results are returned>)
             application_skip_list('HYPRDefaultApplication,HYPRDefaultWorkstationApplication')
             max_performance('<True|False>')
         );
     };
+```
 
-As a configured example:
 
-    source s_hypr {
-        hypr(
-            url('https://my-domain.hypr.com')
-            bearer_token('xxxx')
-            page_size(1000)
-            initial_hours(24)
-            persist_name('s_hypr')
-            log_level('debug')
-            sleep(60)
-            application_skip_list('HYPRDefaultApplication,HYPRDefaultWorkstationApplication')
-            max_performance('False')
-        );
-    };
+Options:
+  url: custom URL for Hypr API access ('https://<custom domain>.hypr.com')
+  bearer_token: base64 encoded authentication token from Hypr
+  page_size: number of results to return in a single page (optional - defaults to 100)
+  initial_hours: number of hours to search backward on initial fetch (optional - defaults to 4)
+  application_skip_list - list of rpAppIds not to retrieve from Hypr (optional - defaults to 'HYPRDefaultApplication,HYPRDefaultWorkstationApplication')
+  max_performance - Disables json parsing of message for timestamp extraction if True (optional - defaults to False)
 
-### Driver options
+### hypr-app-audit-trail()
 
-url - custom URL for Hypr API access ('https://<custom domain>.hypr.com')
+The hypr-app-audit-trail() monitors the audit trail for one specific RP
+Application ID. This driver requires the rp_app_id() parameter in order to
+operate.
 
-bearer_token - base64 encoded authentication token from Hypr
+Options:
+  url: custom URL for Hypr API access ('https://<custom domain>.hypr.com')
+  bearer_token: base64 encoded authentication token from Hypr
+  rp_app_id: the RP Application ID for the application to monitor
+  page_size: number of results to return in a single page (optional - defaults to 100)
+  initial_hours: number of hours to search backward on initial fetch (optional - defaults to 4)
+  max_performance - Disables json parsing of message for timestamp extraction if True (optional - defaults to False)
 
-page_size - number of results to return in a single page (optional - defaults to 100)
 
-initial_hours - number of hours to search backward on initial fetch (optional - defaults to 4)
+### Implementation
 
-persist_name - a unique name for this driver (optional - defaults to include rp_app_id)
+This source driver is implemented in Python and is part of the
+syslogng.modules.hypr Python package that is installed by syslog-ng in the
+/usr/lib/syslog-ng/python/ directory.
 
-log_level - the logging level (DEBUG, INFO, WARN, ERROR, or CRIT) to output from syslog-ng (optional - defaults to INFO)
-
-sleep - seconds to wait before attempting a fetch after no results are returned (optional, defaults to 60)
-
-application_skip_list - list of rpAppIds not to retrieve from Hypr (optional - defaults to 'HYPRDefaultApplication,HYPRDefaultWorkstationApplication')
-
-max_performance - Disables json parsing of message for timestamp extraction if True (optional - defaults to False)
+The driver is packaged into the syslog-ng-mod-python (Debian/Ubuntu and
+derivatives) or syslog-ng-python (rpm based distros) package and is ready to
+use if you installed those packages. In the future this might become a
+dedicated OS level package (e.g. syslog-ng-mod-hypr).
