@@ -1,5 +1,6 @@
 EXTRA_DIST += \
 	modules/python-modules/syslogng/__init__.py				\
+	modules/python-modules/syslogng/confgen.py				\
 	modules/python-modules/syslogng/dest.py					\
 	modules/python-modules/syslogng/logger.py				\
 	modules/python-modules/syslogng/message.py				\
