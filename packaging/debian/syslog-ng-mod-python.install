@@ -1,4 +1,6 @@
 usr/lib/syslog-ng/*/libmod-python.so
+usr/lib/syslog-ng/*/python/requirements.txt
 usr/lib/syslog-ng/*/python/syslogng/*.py
 usr/lib/syslog-ng/*/python/syslogng/debuggercli/*.py
 usr/lib/syslog-ng/*/python/syslogng*.egg-info/*
+usr/bin/syslog-ng-update-virtualenv
