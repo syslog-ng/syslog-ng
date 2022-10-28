@@ -432,4 +432,4 @@ def _hypr_config_generator(args):
 
 
 def register_hypr_config_generator():
-    syslogng.register_config_generator(context="source", name="hypr", config_generator=_hypr_config_generator)
+    syslogng.register_config_generator(context="source", name="hypr-audit-trail", config_generator=_hypr_config_generator)
