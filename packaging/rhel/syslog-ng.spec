@@ -592,6 +592,9 @@ fi
 %{_sysconfdir}/%{name}/python/README.md
 %{_bindir}/syslog-ng-update-virtualenv
 
+%post python
+/usr/bin/syslog-ng-update-virtualenv -y
+
 %files devel
 %{_libdir}/libsyslog-ng.so
 %{_libdir}/libevtlog.so
