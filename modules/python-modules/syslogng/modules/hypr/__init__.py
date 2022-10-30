@@ -133,7 +133,7 @@ class HyprAuditSource(syslogng.LogFetcher):
         try:
             last_run = datetime.utcfromtimestamp(int(self.persist["last_read"])/1000)
             self.logger.debug("Read %s from persistence as last run time", last_run)
-        except:
+        except (OverflowError, OSError):
             self.logger.error("Invalid last_read detected in persistence, resetting to %s hours ago", initial_hours)
             ignore_persistence = True
 
