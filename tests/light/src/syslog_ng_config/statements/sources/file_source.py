@@ -50,3 +50,6 @@ class FileSource(SourceDriver):
             "number of times: {}\n"
             "content: {}\n".format(self.get_path(), counter, formatted_log),
         )
+
+    def close_file(self):
+        self.io.close_writeable_file()

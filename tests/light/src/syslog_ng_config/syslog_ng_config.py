@@ -93,7 +93,9 @@ class SyslogNgConfig(object):
         self.__syslog_ng_config["global_options"].update(options)
 
     def create_file_source(self, **options):
-        return FileSource(**options)
+        file_source = FileSource(**options)
+        self.teardown.register(file_source.close_file)
+        return file_source
 
     def create_example_msg_generator_source(self, **options):
         return ExampleMsgGeneratorSource(**options)
@@ -138,10 +140,14 @@ class SyslogNgConfig(object):
         return Parser("mariadb-audit-parser", **options)
 
     def create_file_destination(self, **options):
-        return FileDestination(**options)
+        file_destination = FileDestination(**options)
+        self.teardown.register(file_destination.close_file)
+        return file_destination
 
     def create_example_destination(self, **options):
-        return ExampleDestination(**options)
+        example_destination = ExampleDestination(**options)
+        self.teardown.register(example_destination.close_file)
+        return example_destination
 
     def create_snmp_destination(self, **options):
         return SnmpDestination(**options)

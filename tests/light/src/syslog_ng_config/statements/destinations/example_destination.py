@@ -44,3 +44,6 @@ class ExampleDestination(DestinationDriver):
 
     def read_until_logs(self, logs):
         return self.io.read_until_messages(logs)
+
+    def close_file(self):
+        self.io.close_readable_file()
