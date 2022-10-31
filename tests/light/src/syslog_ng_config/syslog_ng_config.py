@@ -153,13 +153,19 @@ class SyslogNgConfig(object):
         return SnmpDestination(**options)
 
     def create_network_destination(self, **options):
-        return NetworkDestination(**options)
+        network_destination = NetworkDestination(**options)
+        self.teardown.register(network_destination.stop_listener)
+        return network_destination
 
     def create_unix_dgram_destination(self, **options):
-        return UnixDgramDestination(**options)
+        unix_dgram_destination = UnixDgramDestination(**options)
+        self.teardown.register(unix_dgram_destination.stop_listener)
+        return unix_dgram_destination
 
     def create_unix_stream_destination(self, **options):
-        return UnixStreamDestination(**options)
+        unix_stream_source = UnixStreamDestination(**options)
+        self.teardown.register(unix_stream_source.stop_listener)
+        return unix_stream_source
 
     def create_db_parser(self, config, **options):
         return DBParser(config, **options)
