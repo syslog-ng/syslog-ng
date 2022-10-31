@@ -24,6 +24,7 @@ import logging
 import os
 from pathlib import Path
 
+import psutil
 import pytest
 
 from src.common.file import copy_file
@@ -63,6 +64,8 @@ def light_extra_files(target_dir):
 
 @pytest.fixture(autouse=True)
 def setup(request):
+    assert len(psutil.Process().open_files()) == 1, "Previous testcase has unclosed opened fds"
+    assert len(psutil.Process().connections(kind="inet")) == 0, "Previous testcase has unclosed opened sockets"
     testcase_parameters = request.getfixturevalue("testcase_parameters")
 
     copy_file(testcase_parameters.get_testcase_file(), Path.cwd())
