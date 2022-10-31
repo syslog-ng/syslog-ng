@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-import atexit
 import socket
 from enum import Enum
 from enum import IntEnum
@@ -44,8 +43,6 @@ class NetworkIO():
         self.__ip_proto_version = NetworkIO.IPProtoVersion.V4 if ip_proto_version is None else ip_proto_version
         self.__server = None
         self.__message_reader = None
-
-        atexit.register(self.stop_listener)
 
     def write(self, content, rate=None):
         loggen_input_file_path = Path("loggen_input_{}.txt".format(get_unique_id()))
