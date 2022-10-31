@@ -221,7 +221,7 @@ jobs:
         run: |
           python3.11 -m venv venv
           source venv/bin/activate
-          python -m pip install -r "${GITHUB_WORKSPACE}/requirements.txt"
+          python -m pip install -r "${GITHUB_WORKSPACE}/dev-requirements.txt"
           make light-linters || \
             (git diff > ../light-style-problems.diff ; git reset --hard HEAD && exit 1)
           deactivate
