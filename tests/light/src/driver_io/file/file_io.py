@@ -49,3 +49,9 @@ class FileIO():
             self.__writeable_file.open("a+")
 
         self.__writeable_file.write(content)
+
+    def close_readable_file(self):
+        self.__readable_file.close()
+
+    def close_writeable_file(self):
+        self.__writeable_file.close()
