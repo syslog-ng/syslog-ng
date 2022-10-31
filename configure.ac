@@ -1531,21 +1531,6 @@ if test "x$enable_python" = "xyes"; then
     fi
 fi
 
-dnl ***************************************************************************
-dnl pylint
-dnl ***************************************************************************
-
-if test "x$with_pylint" != "x"; then
-    PYLINT=$with_pylint
-else
-    if test "$python_found" = "yes"; then
-        AC_CHECK_PROG(PYLINT, pylint3, pylint3)
-        if test "x$PYLINT" = "x"; then
-          AC_CHECK_PROG(PYLINT, pylint, pylint)
-        fi
-    fi
-fi
-
 
 dnl ***************************************************************************
 dnl docbook
@@ -1987,10 +1972,8 @@ AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
 AM_CONDITIONAL([HAVE_GETRANDOM], [test x$ac_cv_func_getrandom = xyes])
 AM_CONDITIONAL([HAVE_FMEMOPEN], [test x$ac_cv_func_fmemopen = xyes])
 AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
-AM_CONDITIONAL(PYLINT, [test "x$PYLINT" != "x"])
 
 
-AC_SUBST(PYLINT)
 AC_SUBST(PYTHON_VENV)
 AC_SUBST(PYTHON_VENV_DIR)
 AC_SUBST(with_python_packages)
