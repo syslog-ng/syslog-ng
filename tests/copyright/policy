@@ -86,7 +86,7 @@ libtest/mock-logpipe\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
 syslog-ng-ctl/commands/log-level.[ch]
-modules/python/pylib/syslogng/[^/.]*\.py
+modules/python-modules/syslogng/[^/.]*\.py
 
 ###########################################################################
 # These tests are GPLd even though they reside under lib/ and are excluded
@@ -142,8 +142,9 @@ scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/mariadb/.*\.conf$
 scl/kubernetes/.*\.conf$
-modules/python-modules/.*\.py
-modules/python-modules/.*\.conf
+modules/python-modules/syslogng/modules/example/.*
+modules/python-modules/setup\.py
+scripts/build-python-venv\.sh
 
 ###########################################################################
 # These files are GPLd with Balabit origin.
@@ -164,7 +165,7 @@ tests/copyright/check.sh
 tests/light
 modules/java/(tools|[^/]*$)
 modules/java-modules/(dummy|elastic-v2|hdfs|http|kafka|[^/]*$)
-modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|afuser|azure-auth-header|basicfuncs|cef|confgen|cryptofuncs|csvparser|timestamp|diskq|dbparser|geoip2|graphite|json|kvformat|linux-kmsg-format|pacctformat|pseudofile|python|redis|riemann|syslogformat|systemd-journal|getent|system-source|stardate|snmptrapd-parser|xml|openbsd|examples|kafka|afsnmp|mqtt|regexp-parser|rate-limit-filter|[^/]*$)
+modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|afuser|azure-auth-header|basicfuncs|cef|confgen|cryptofuncs|csvparser|timestamp|diskq|dbparser|geoip2|graphite|json|kvformat|linux-kmsg-format|pacctformat|pseudofile|python|python-modules|redis|riemann|syslogformat|systemd-journal|getent|system-source|stardate|snmptrapd-parser|xml|openbsd|examples|kafka|afsnmp|mqtt|regexp-parser|rate-limit-filter|[^/]*$)
 modules/(add-contextual-data|tagsparser|map-value-pairs|hook-commands|appmodel|[^/]*$)
 modules/cryptofuncs/cryptofuncs\.c$
 modules/cryptofuncs/tests/test_cryptofuncs\.c$
