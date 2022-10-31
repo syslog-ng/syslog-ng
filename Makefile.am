@@ -42,6 +42,7 @@ EXTRA_DIST		= ${BUILT_SOURCES} VERSION NEWS.md autogen.sh \
 			  syslog-ng-native-connector.pc.cmake	\
 			  syslog-ng-ctl/CMakeLists.txt	\
 			  requirements.txt	\
+			  dev-requirements.txt  \
 			  README.md	\
 			  .astylerc
 

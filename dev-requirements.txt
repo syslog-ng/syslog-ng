@@ -1,0 +1,11 @@
+-r requirements.txt
+
+ply==3.10
+pep8==1.7.1
+isort==4.3.4
+pylint==1.8.2
+astroid==1.6.1
+logilab-common<=0.63.0
+psutil
+pytest
+pre-commit
