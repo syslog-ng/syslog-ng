@@ -102,8 +102,8 @@ def testcase_parameters(request):
 
 
 @pytest.fixture
-def config(request):
-    return SyslogNgConfig(request.getfixturevalue("version"))
+def config(request, teardown):
+    return SyslogNgConfig(request.getfixturevalue("version"), teardown)
 
 
 @pytest.fixture
