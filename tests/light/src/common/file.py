@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-import atexit
 import logging
 import shutil
 from pathlib import Path
@@ -56,12 +55,6 @@ class File(object):
         self.path = Path(file_path)
         self.__opened_file = None
 
-        atexit.register(self.deinit)
-
-    def deinit(self):
-        if self.is_opened():
-            self.close()
-
     def wait_for_creation(self):
         file_created = wait_until_true(self.path.exists)
         if file_created:
@@ -75,8 +68,9 @@ class File(object):
         return self.__opened_file
 
     def close(self):
-        self.__opened_file.close()
-        self.__opened_file = None
+        if self.is_opened():
+            self.__opened_file.close()
+            self.__opened_file = None
 
     def is_opened(self):
         return self.__opened_file is not None
