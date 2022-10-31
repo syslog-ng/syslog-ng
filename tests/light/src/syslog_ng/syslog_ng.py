@@ -25,8 +25,9 @@ from src.syslog_ng.syslog_ng_cli import SyslogNgCli
 
 
 class SyslogNg(object):
-    def __init__(self, instance_paths, testcase_parameters):
+    def __init__(self, instance_paths, testcase_parameters, teardown):
         self.instance_paths = instance_paths
+        self.teardown = teardown
         self.__syslog_ng_cli = SyslogNgCli(instance_paths, testcase_parameters)
 
     def start(self, config, stderr=True, debug=True, trace=True, verbose=True, startup_debug=True, no_caps=True, config_path=None, persist_path=None, pid_path=None, control_socket_path=None):
