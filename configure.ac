@@ -2046,6 +2046,7 @@ AC_OUTPUT(dist.conf
 	  syslog-ng.pc
           libtest/syslog-ng-test.pc
 	  scripts/update-patterndb
+	  scripts/syslog-ng-update-virtualenv
           )
 
 echo

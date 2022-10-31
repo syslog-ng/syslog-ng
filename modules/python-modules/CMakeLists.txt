@@ -17,6 +17,8 @@ install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/install/ DESTINATION ${CMAKE_INSTA
     PATTERN "*.py"
 )
 
+install(FILES ${PROJECT_SOURCE_DIR}/requirements.txt DESTINATION "${CMAKE_INSTALL_PREFIX}/${SYSLOG_NG_PYTHON_MODULE_DIR}")
+
 if (BUILD_TESTING)
     add_custom_target(pymodules-unit
                       COMMAND ${CMAKE_COMMAND} -E env ${PYTHON_VENV_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/syslogng

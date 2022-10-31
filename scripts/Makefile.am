@@ -1,4 +1,4 @@
-bin_SCRIPTS	+= scripts/update-patterndb
+bin_SCRIPTS	+= scripts/update-patterndb scripts/syslog-ng-update-virtualenv
 EXTRA_DIST	+= scripts/update-patterndb.in \
 	scripts/CMakeLists.txt	\
 	scripts/get-libjvm-path.sh	\
@@ -7,7 +7,9 @@ EXTRA_DIST	+= scripts/update-patterndb.in \
 	scripts/version.sh	\
 	scripts/test-grep.sh	\
 	scripts/style-checker.sh	\
-	scripts/build-python-venv.sh
+	scripts/build-python-venv.sh \
+	scripts/syslog-ng-update-virtualenv.in
+
 
 install-exec-local:
 	$(mkinstalldirs) $(DESTDIR)/$(sysconfdir)/patterndb.d
