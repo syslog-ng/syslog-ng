@@ -211,7 +211,7 @@ jobs:
         working-directory: ./build
         continue-on-error: true # Fix errors from pylint
         run: |
-          make python-pep8 && make python-pylint || (git reset --hard HEAD && exit 1)
+          make pymodules-checks || (git reset --hard HEAD && exit 1)
 
       - name: Style check (Light)
         id: light-style-check
@@ -219,12 +219,8 @@ jobs:
         working-directory: ./build
         shell: bash
         run: |
-          python3.11 -m venv venv
-          source venv/bin/activate
-          python -m pip install -r "${GITHUB_WORKSPACE}/dev-requirements.txt"
           make light-linters || \
             (git diff > ../light-style-problems.diff ; git reset --hard HEAD && exit 1)
-          deactivate
 
       - name: "Artifact: c-style-problems"
         uses: actions/upload-artifact@v2
