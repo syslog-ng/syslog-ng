@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+. /dbld/functions.sh
+
+cd /source
+SYSLOGNG_DIR=syslog-ng-${VERSION}
+SYSLOGNG_TARBALL=${SYSLOGNG_DIR}.tar.gz
+
+./autogen.sh
+
+# dist-build might be set to read-only by distcheck
+[ -d /build/dist-build ] && chmod +w -R /build/dist-build
+rm -rf /build/dist-build
+mkdir /build/dist-build
+cd /build/dist-build
+/source/configure --enable-manpages --disable-all-modules
+
+rm -rf /install/dist-check
+export DISTCHECK_CONFIGURE_FLAGS="CFLAGS=-Werror --prefix=/install/dist-check --with-ivykis=internal --with-jsonc=system --enable-tcp-wrapper --enable-linux-caps --enable-manpages --enable-all-modules --disable-java --disable-java-modules --with-python=3"
+make -j V=1 distcheck || echo "FAILED to run distcheck"
