@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 
 class SyslogNgConfig(object):
-    def __init__(self, version):
+    def __init__(self, version, teardown):
         self.__raw_config = None
         self.__syslog_ng_config = {
             "version": version,
@@ -60,6 +60,7 @@ class SyslogNgConfig(object):
             "statement_groups": [],
             "logpath_groups": [],
         }
+        self.teardown = teardown
 
     @staticmethod
     def stringify(s):
