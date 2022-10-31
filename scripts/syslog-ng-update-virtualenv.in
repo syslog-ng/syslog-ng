@@ -1,0 +1,87 @@
+#!/bin/sh
+#############################################################################
+# Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 2 as published
+# by the Free Software Foundation, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# As an additional exemption you are allowed to compile & link against the
+# OpenSSL libraries as published by the OpenSSL project. See the file
+# COPYING for details.
+#
+#############################################################################
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+sysconfdir=@sysconfdir@
+localstatedir=@localstatedir@
+python_venvdir=@python_venvdir@
+python_moduledir=@python_moduledir@
+
+
+# read the options
+TEMP=`getopt -n $0 -o yh --long ,help -- "$@"`
+eval set -- "$TEMP"
+
+# extract options and their arguments into variables.
+display_prompt=1
+while true ; do
+    case "$1" in
+        -y)
+            display_prompt=0
+            break
+            ;;
+        -h|--help)
+            echo "Usage:"
+            echo "  $0 [options]"
+            echo ""
+            echo "Fetch and install/upgrade syslog-ng Python requirements"
+            echo "into our private virtualenv at ${python_venvdir}"
+            echo ""
+            echo "Options:"
+            echo "  -h or --help    This help screen"
+            echo "  -y              Continue automatically at interactive prompts"
+            exit 0
+            ;;
+        --) shift ; break ;;
+        *) echo "Error parsing arguments" ; exit 1 ;;
+    esac
+done
+
+set -e
+
+REQUIREMENTS_FILE=${python_moduledir}/requirements.txt
+SYSTEM_PYTHON=@PYTHON@
+VENV_PYTHON=${python_venvdir}/bin/python
+
+if [ "$display_prompt" -ne 0 ]; then
+    cat <<EOF
+This script will download 3rd party packages from the Python Package Index
+(PyPI) using the pip tool.  The installation of these packages will cause
+build/postinst scripts to be executed as the `whoami` user on this system.
+
+Press [ENTER] to confirm or Ctrl-C to terminate this script.
+EOF
+    read enter
+fi
+
+
+echo "Creating or updating syslog-ng Python virtualenv in ${python_venvdir}"
+echo "Running python -m venv..."
+${SYSTEM_PYTHON} -m venv ${python_venvdir}
+
+echo "Running python -m pip install..."
+${VENV_PYTHON} -m pip install --upgrade -r "${REQUIREMENTS_FILE}"
+cp "${REQUIREMENTS_FILE}" "${python_venvdir}"
+echo "Finished."

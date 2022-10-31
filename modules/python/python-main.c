@@ -316,43 +316,102 @@ _py_set_argv(PyConfig *config, const gchar *binary)
 }
 
 static gboolean
+_py_requirements_up_to_date(const gchar *python_venv_path)
+{
+  const gchar *my_requirements_file = get_installation_path_for(SYSLOG_NG_PYTHON_MODULE_DIR "/requirements.txt");
+  gchar *installed_requirements_file = g_strdup_printf("%s/requirements.txt", python_venv_path);
+  gchar *installed_requirements = NULL;
+  gsize installed_requirements_len;
+  gchar *my_requirements = NULL;
+  gsize my_requirements_len;
+  gboolean result = FALSE;
+
+  if (!g_file_get_contents(installed_requirements_file, &installed_requirements, &installed_requirements_len, NULL))
+    goto mismatch;
+
+  if (!g_file_get_contents(my_requirements_file, &my_requirements, &my_requirements_len, NULL))
+    goto mismatch;
+
+  if (my_requirements_len != installed_requirements_len ||
+      strcmp(my_requirements, installed_requirements) != 0)
+    goto mismatch;
+
+  result = TRUE;
+mismatch:
+  g_free(installed_requirements);
+  g_free(my_requirements);
+  g_free(installed_requirements_file);
+  return result;
+}
+
+static gboolean
 _py_activate_venv(PyConfig *config)
 {
-  const gchar *env_virtual_env = getenv("VIRTUAL_ENV");
+  const gchar *python_venv_path = NULL;
 
   /* check if VIRTUAL_ENV points to a valid virtualenv */
-  if (env_virtual_env &&
-      !_py_is_virtualenv_valid(env_virtual_env))
+  const gchar *env_virtual_env = getenv("VIRTUAL_ENV");
+  if (env_virtual_env)
     {
-      msg_error("python: environment variable VIRTUAL_ENV is set, but does not point to a valid virtualenv, Python executable not found",
-                evt_tag_str("path", env_virtual_env));
-      return FALSE;
+      if (!_py_is_virtualenv_valid(env_virtual_env))
+        {
+          msg_error("python: environment variable VIRTUAL_ENV is set, but does not point to a valid virtualenv, Python executable not found",
+                    evt_tag_str("path", env_virtual_env));
+        }
+      else
+        {
+          /* let's use the virtualenv specified by the user */
+          msg_debug("python: using virtualenv pointed to by $VIRTUAL_ENV",
+                    evt_tag_str("path", env_virtual_env));
+          python_venv_path = env_virtual_env;
+        }
+    }
+  else
+    {
+      const gchar *private_venv_path = get_installation_path_for(SYSLOG_NG_PYTHON_VENV_DIR);
+      if (!_py_is_virtualenv_valid(private_venv_path))
+        {
+          msg_warning("python: private virtualenv is not initialized, use the `syslog-ng-update-virtualenv' "
+                      "script to initialize it or make sure all required Python dependencies are available in "
+                      "the system Python installation",
+                      evt_tag_str("path", private_venv_path));
+        }
+      else if (!_py_requirements_up_to_date(private_venv_path))
+        {
+          msg_warning("python: the current set of requirements installed in our virtualenv seems to be out of date, "
+                      "use the `syslog-ng-update-virtualenv' script to upgrade Python dependencies",
+                      evt_tag_str("path", private_venv_path));
+        }
+      else
+        {
+          msg_debug("python: the virtualenv validation successful");
+          python_venv_path = private_venv_path;
+        }
     }
 
-  const gchar *python_venv_path = get_installation_path_for(SYSLOG_NG_PYTHON_VENV_DIR);
-  if (!_py_is_virtualenv_valid(python_venv_path))
+  gboolean success;
+  if (python_venv_path)
     {
-      msg_debug("python: private virtualenv is not initialized, relying on system-installed Python packages",
-                evt_tag_str("path", python_venv_path));
-      return TRUE;
+      /* Python will detect the virtual env based on its sys.executable value,
+       * which we are setting through PyConfig_SetBytesArgv().  The algorithm is
+       * described in site.py (and various PEPs and documentation).
+       *
+       * We basically behave as if the user executed
+       * ${python_venvdir}/bin/python when it started syslog-ng.
+       */
+      gchar *python_venv_binary = g_strdup_printf("%s/bin/python", python_venv_path);
+
+      msg_info("python: activating virtualenv",
+               evt_tag_str("path", python_venv_path),
+               evt_tag_str("executable", python_venv_binary));
+      success = _py_set_argv(config, python_venv_binary);
+      g_free(python_venv_binary);
+    }
+  else
+    {
+      success = _py_set_argv(config, "syslog-ng");
     }
 
-  gchar *python_venv_binary = g_strdup_printf("%s/bin/python", python_venv_path);
-
-  msg_info("python: activating virtualenv",
-           evt_tag_str("path", python_venv_path),
-           evt_tag_str("executable", python_venv_binary));
-
-  /* Python will detect the virtual env based on its sys.executable value,
-   * which we are setting through PyConfig_SetBytesArgv().  The algorithm is
-   * described in site.py (and various PEPs and documentation).
-   *
-   * We basically behave as if the user executed
-   * ${python_venvdir}/bin/python when it started syslog-ng.
-   */
-
-  gboolean success = _py_set_argv(config, python_venv_binary);
-  g_free(python_venv_binary);
   return success;
 }
 
