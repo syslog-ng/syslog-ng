@@ -26,6 +26,7 @@
 
 if [ "$1" = "" ]; then
     echo "build-python-venv: <path to python> <python-virtualenv> <path to syslog-ng source>"
+    echo "$@"
     exit 1
 fi
 

@@ -257,6 +257,7 @@ else ()
 endif ()
 
 MESSAGE(STATUS "Detected pythonlib version: ${PYTHONLIBS_VERSION_STRING}")
+include(python_build_venv)
 
 set (PYLINT "" CACHE STRING "pylint binary")
 
