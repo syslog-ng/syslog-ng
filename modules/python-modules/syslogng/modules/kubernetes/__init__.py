@@ -83,7 +83,10 @@ class KubernetesAPIEnrichment(LogParser):
 
         pod_metadata = self.get_pod_metadata(namespace_name, pod_name)
         for name, value in pod_metadata.items():
-            if msg[name] == b"":
+            try:
+                if not msg[name]:
+                    msg[name] = value
+            except KeyError:
                 msg[name] = value
 
         return True
