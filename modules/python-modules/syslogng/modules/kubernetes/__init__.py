@@ -21,32 +21,22 @@
 #############################################################################
 
 from syslogng import Logger, LogParser
-import importlib
+import kubernetes
 
 
 class KubernetesAPIEnrichment(LogParser):
     logger = Logger()
 
     def init(self, options):
-        try:
-            config = importlib.import_module("kubernetes.config")
-            client = importlib.import_module("kubernetes.client")
-        except ModuleNotFoundError:
-            logger.warning("Unable to import kubernetes libraries for Python, no data enrichment is performed. Please install the kubernetes package via pip")
-            self.has_kubernetes_module = False
-            return True
-
-        self.has_kubernetes_module = True
-
         self.__metadata = {}
         self.__prefix = options["prefix"]
 
         if options.get("in_pod", "yes") == "yes":
-            config.load_incluster_config()
+            kubernetes.config.load_incluster_config()
         else:
-            config.load_kube_config()
+            kubernetes.config.load_kube_config()
 
-        self.__client_api = client.CoreV1Api()
+        self.__client_api = kubernetes.client.CoreV1Api()
 
         return True
 
@@ -87,9 +77,6 @@ class KubernetesAPIEnrichment(LogParser):
             return self.__query_pod_metadata_from_kubernetes_api_server(namespace_name, pod_name)
 
     def parse(self, msg):
-        if not self.has_kubernetes_module:
-            return True
-
         namespace_name = msg[self.add_prefix("namespace_name")].decode()
         pod_name = msg[self.add_prefix("pod_name")].decode()
 
