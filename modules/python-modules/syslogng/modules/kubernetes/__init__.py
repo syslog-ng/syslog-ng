@@ -22,10 +22,11 @@
 
 from syslogng import Logger, LogParser
 import kubernetes
+import logging
 
 
 class KubernetesAPIEnrichment(LogParser):
-    logger = Logger()
+    logger = logging.getLogger(__name__)
 
     def init(self, options):
         self.__metadata = {}
