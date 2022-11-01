@@ -47,6 +47,7 @@ _py_init_interpreter(void)
   py_init_argv();
 
   py_init_threads();
+  py_init_types();
   py_log_message_global_init();
   PyEval_SaveThread();
 }
@@ -59,6 +60,7 @@ _init_python_main(void)
     PythonConfig *pc = python_config_get(configuration);
     _python_main = _py_get_main_module(pc);
     _python_main_dict = PyModule_GetDict(_python_main);
+    g_assert(PyRun_String("import datetime", Py_file_input, _python_main_dict, _python_main_dict));
   }
   PyGILState_Release(gstate);
 }
@@ -70,10 +72,10 @@ _assert_python_variable_value(const gchar *variable_name, const gchar *expected_
   if (!PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict))
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
+
       msg_error("Error in _assert_python_variable_value()",
                 evt_tag_str("script", script),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
       g_free(script);
@@ -103,7 +105,8 @@ _construct_py_parse_options(void)
   return py_parse_options;
 }
 
-void setup(void)
+void
+setup(void)
 {
   app_startup();
 
@@ -113,7 +116,8 @@ void setup(void)
   _init_python_main();
 }
 
-void teardown(void)
+void
+teardown(void)
 {
   scratch_buffers_explicit_gc();
   deinit_syslogformat_module();
@@ -176,6 +180,12 @@ ParameterizedTestParameters(python_log_message, test_python_logmessage_set_value
       .expected_log_msg_value = "\"a,\",\" b\",c",
       .expected_log_msg_type = LM_VT_LIST
     },
+    {
+      .py_value_to_set = "datetime.datetime(2022, 10, 4, 14, 48, 12, 123000)",
+      .py_value_to_check = "datetime.datetime(2022, 10, 4, 14, 48, 12, 123000)",
+      .expected_log_msg_value = "1664894892.123",
+      .expected_log_msg_type = LM_VT_DATETIME
+    },
   };
 
   return cr_make_param_array(PyLogMessageSetValueTestParams, test_data_list, G_N_ELEMENTS(test_data_list));
@@ -198,7 +208,12 @@ ParameterizedTest(PyLogMessageSetValueTestParams *params, python_log_message, te
                       "result = test_msg['test_field']\n",
                       params->py_value_to_set
                     );
-    cr_assert(PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict));
+    if (!PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict))
+      {
+        PyErr_Print();
+        cr_assert(FALSE, "Error running Python script >>>%s<<<", script);
+      }
+
     g_free(script);
 
     _assert_python_variable_value("result", params->py_value_to_check);
@@ -362,14 +377,57 @@ Test(python_log_message, test_py_log_message_set_pri)
 
   PyObject *arg = Py_BuildValue("i", pri);
   PyLogMessage *py_msg = _construct_py_log_msg(NULL);
-  Py_DECREF(arg);
 
   PyObject *ret = _py_invoke_method_by_name((PyObject *) py_msg, "set_pri", arg, NULL, NULL);
   Py_XDECREF(ret);
 
   cr_assert_eq(py_msg->msg->pri, pri);
 
+  ret = _py_invoke_method_by_name((PyObject *) py_msg, "get_pri", NULL, NULL, NULL);
+  pri = PyLong_AsLong(ret);
+  Py_XDECREF(ret);
+
+  cr_assert_eq(py_msg->msg->pri, pri);
+  py_msg->msg->pri = 55;
+
+  ret = _py_invoke_method_by_name((PyObject *) py_msg, "get_pri", NULL, NULL, NULL);
+  pri = PyLong_AsLong(ret);
+  Py_XDECREF(ret);
+  cr_assert_eq(py_msg->msg->pri, pri);
+
   Py_DECREF(py_msg);
+  Py_DECREF(arg);
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_py_log_message_set_timestamp)
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyObject *arg = Py_BuildValue("O", py_datetime_from_msec(1664890194123));
+  PyLogMessage *py_msg = _construct_py_log_msg(NULL);
+
+  PyObject *ret = _py_invoke_method_by_name((PyObject *) py_msg, "set_timestamp", arg, NULL, NULL);
+  cr_assert(ret);
+  Py_XDECREF(ret);
+
+  cr_assert_eq(py_msg->msg->timestamps[LM_TS_STAMP].ut_sec, 1664890194);
+  cr_assert_eq(py_msg->msg->timestamps[LM_TS_STAMP].ut_usec, 123000);
+
+  UnixTime ut;
+
+  py_msg->msg->timestamps[LM_TS_STAMP].ut_sec++;
+  ret = _py_invoke_method_by_name((PyObject *) py_msg, "get_timestamp", NULL, NULL, NULL);
+  cr_assert(ret);
+  py_datetime_to_unix_time(ret, &ut);
+
+  cr_assert_eq(ut.ut_sec, 1664890195);
+  cr_assert_eq(ut.ut_usec, 123000);
+  Py_XDECREF(ret);
+
+  Py_DECREF(py_msg);
+  Py_DECREF(arg);
   PyGILState_Release(gstate);
 }
 

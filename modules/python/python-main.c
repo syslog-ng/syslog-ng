@@ -64,10 +64,9 @@ _py_construct_main_module(PythonConfig *pc)
   if (!module)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error creating syslog-ng main module",
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return NULL;
     }
@@ -161,10 +160,9 @@ _py_evaluate_global_code(PythonConfig *pc, const gchar *filename, const gchar *c
   if (!code_object)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error compiling Python global code block",
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return FALSE;
     }
@@ -174,10 +172,9 @@ _py_evaluate_global_code(PythonConfig *pc, const gchar *filename, const gchar *c
   if (!module)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error evaluating global Python block",
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return FALSE;
     }

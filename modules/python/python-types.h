@@ -33,6 +33,8 @@ PyObject *py_long_from_long(gint64 l);
 PyObject *py_double_from_double(gdouble d);
 PyObject *py_boolean_from_boolean(gboolean b);
 PyObject *py_list_from_list(const gchar *list, gssize list_len);
+PyObject *py_datetime_from_unix_time(UnixTime *ut);
+PyObject *py_datetime_from_msec(gint64 msec);
 PyObject *py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueType type);
 
 gboolean is_py_obj_bytes_or_string_type(PyObject *obj);
@@ -42,6 +44,11 @@ gboolean py_long_to_long(PyObject *obj, gint64 *l);
 gboolean py_double_to_double(PyObject *obj, gdouble *d);
 gboolean py_boolean_to_boolean(PyObject *obj, gboolean *b);
 gboolean py_list_to_list(PyObject *obj, GString *list);
+gboolean py_datetime_to_unix_time(PyObject *obj, UnixTime *ut);
+gboolean py_datetime_to_datetime(PyObject *obj, GString *dt);
 gboolean py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type);
+
+
+void py_init_types(void);
 
 #endif
