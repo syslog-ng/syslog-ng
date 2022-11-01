@@ -28,6 +28,26 @@ except ImportError:
     warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
 
     class LogMessage(dict):
+
+        # syslog-ng internally stores everything as a sequence of bytes that
+        # is strongly "preferred" to be an utf8 string.  It takes a bytes
+        # and stores it verbatim.  Strings are converted to utf8 (not the
+        # local character set!)
+
         def __init__(self, msg):
-            super().__init__()
-            self['MESSAGE'] = msg
+            super().__init__([('MESSAGE', msg)])
+
+        def __getitem__(self, key):
+            if isinstance(key, str):
+                key = key.encode('utf8')
+            return super().__getitem__(key)
+
+        def __setitem__(self, key, value):
+            if isinstance(key, str):
+                key = key.encode('utf8')
+            if isinstance(value, str):
+                value = value.encode('utf8')
+            super().__setitem__(key, value)
+
+        def __eq__(self):
+            return False
