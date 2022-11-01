@@ -42,9 +42,8 @@ python_worker_vp_add_one(const gchar *name,
     {
       gchar buf[256];
 
-      _py_format_exception_text(buf, sizeof(buf));
       msg_error("python-value-pairs: error converting a name-value pair to a Python object",
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
       return type_cast_drop_helper(template_options->on_error, value, log_msg_value_type_to_str(type));

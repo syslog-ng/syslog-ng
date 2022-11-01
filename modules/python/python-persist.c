@@ -238,10 +238,9 @@ _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
   if (!self->persist_state)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error importing persist_state",
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
       g_assert_not_reached();

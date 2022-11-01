@@ -84,7 +84,7 @@ exit:
   PyErr_Restore(exc, value, tb);
 }
 
-void
+const gchar *
 _py_format_exception_text(gchar *buf, gsize buf_len)
 {
   PyObject *exc, *value, *tb, *str;
@@ -93,7 +93,7 @@ _py_format_exception_text(gchar *buf, gsize buf_len)
   if (!exc)
     {
       g_strlcpy(buf, "None", buf_len);
-      return;
+      return buf;
     }
   PyErr_NormalizeException(&exc, &value, &tb);
 
@@ -112,7 +112,7 @@ _py_format_exception_text(gchar *buf, gsize buf_len)
     }
   Py_XDECREF(str);
   PyErr_Restore(exc, value, tb);
-  return;
+  return buf;
 }
 
 void
@@ -157,11 +157,10 @@ _py_do_import(const gchar *modname)
   if (!modobj)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error loading Python module",
                 evt_tag_str("module", modname),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return NULL;
     }
@@ -237,14 +236,13 @@ _py_invoke_function(PyObject *func, PyObject *arg, const gchar *class, const gch
   if (!ret)
     {
       gchar buf1[256], buf2[256];
-      _py_format_exception_text(buf2, sizeof(buf2));
-      _py_get_callable_name(func, buf1, sizeof(buf1));
 
+      _py_get_callable_name(func, buf1, sizeof(buf1));
       msg_error("Exception while calling a Python function",
                 evt_tag_str("caller", caller_context),
                 evt_tag_str("class", class),
                 evt_tag_str("function", buf1),
-                evt_tag_str("exception", buf2));
+                evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))));
       _py_finish_exception_handling();
       return NULL;
     }
@@ -260,14 +258,13 @@ _py_invoke_function_with_args(PyObject *func, PyObject *args, const gchar *class
   if (!ret)
     {
       gchar buf1[256], buf2[256];
-      _py_format_exception_text(buf2, sizeof(buf2));
       _py_get_callable_name(func, buf1, sizeof(buf1));
 
       msg_error("Exception while calling a Python function",
                 evt_tag_str("caller", caller_context),
                 evt_tag_str("class", class),
                 evt_tag_str("function", buf1),
-                evt_tag_str("exception", buf2));
+                evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))));
       _py_finish_exception_handling();
       return NULL;
     }

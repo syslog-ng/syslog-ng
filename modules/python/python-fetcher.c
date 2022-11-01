@@ -288,12 +288,11 @@ _py_resolve_class(PythonFetcherDriver *self)
   if (!self->py.class)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error looking Python driver class",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return FALSE;
     }
@@ -309,12 +308,11 @@ _py_init_instance(PythonFetcherDriver *self)
   if (!self->py.instance)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error instantiating Python driver class",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return FALSE;
     }
@@ -415,12 +413,11 @@ _py_parse_options_new(PythonFetcherDriver *self, MsgFormatOptions *parse_options
   if (!py_parse_options)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error creating capsule for message parse options",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return NULL;
     }
@@ -464,12 +461,11 @@ _py_set_parse_options(PythonFetcherDriver *self)
   if (PyObject_SetAttrString(self->py.instance, "parse_options", py_parse_options) == -1)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error setting attribute message parse options",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
       Py_DECREF(py_parse_options);

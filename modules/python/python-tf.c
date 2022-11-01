@@ -64,11 +64,10 @@ _py_invoke_template_function(PythonTfState *state, const gchar *function_name, L
   if (!callable)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("$(python): Error looking up Python function",
                 evt_tag_str("function", function_name),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return NULL;
     }
@@ -85,11 +84,10 @@ _py_invoke_template_function(PythonTfState *state, const gchar *function_name, L
   if (!ret)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("$(python): Error invoking Python function",
                 evt_tag_str("function", function_name),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return NULL;
     }
@@ -116,10 +114,9 @@ _py_convert_return_value_to_result(PythonTfState *state, const gchar *function_n
     {
       gchar buf[256];
 
-      _py_format_exception_text(buf, sizeof(buf));
       msg_error("$(python): error converting the return value of a Python template function to a typed name-value pair",
                 evt_tag_str("function", function_name),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
       Py_DECREF(ret);

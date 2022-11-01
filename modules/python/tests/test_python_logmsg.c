@@ -72,10 +72,10 @@ _assert_python_variable_value(const gchar *variable_name, const gchar *expected_
   if (!PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict))
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
+
       msg_error("Error in _assert_python_variable_value()",
                 evt_tag_str("script", script),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
       g_free(script);

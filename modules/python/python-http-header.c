@@ -97,10 +97,9 @@ _py_append_str_to_pylist(gconstpointer data, gpointer user_data)
   if (!py_str)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error creating Python String object from C string",
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
       goto exit;
@@ -110,10 +109,9 @@ _py_append_str_to_pylist(gconstpointer data, gpointer user_data)
   if (PyList_Append(py_list, py_str) != 0)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error adding new item to Python List",
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
     }
 
@@ -140,11 +138,10 @@ _py_attach_class(PythonHttpHeaderPlugin *self)
   if (!self->py.class)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error looking up Python class",
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
       return FALSE;
@@ -160,11 +157,10 @@ _create_arg_dict_from_options(PythonHttpHeaderPlugin *self)
   if (!py_args)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error creating argument dictionary",
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
       return NULL;
@@ -185,11 +181,10 @@ _py_instantiate_class(PythonHttpHeaderPlugin *self)
   if (!self->py.instance)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error instantiating Python class",
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
       goto exit;
@@ -282,11 +277,10 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
   if (!py_args)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error creating Python arguments",
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
       goto cleanup;
@@ -296,12 +290,11 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
   if (!py_ret_list)
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Invalid response returned by Python call",
                 evt_tag_str("class", self->class),
                 evt_tag_str("method", "get_headers"),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
       goto cleanup;
@@ -315,12 +308,11 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
   if (!_py_append_pylist_to_list(py_ret_list, &headers))
     {
       gchar buf[256];
-      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Converting Python List failed",
                 evt_tag_str("class", self->class),
                 evt_tag_str("method", "get_headers"),
-                evt_tag_str("exception", buf));
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       goto cleanup;
     }
@@ -354,11 +346,10 @@ _on_http_response_received(PythonHttpHeaderPlugin *self, HttpResponseReceivedSig
     if (!py_arg)
       {
         gchar buf[256];
-        _py_format_exception_text(buf, sizeof(buf));
 
         msg_error("Error creating Python argument",
                   evt_tag_str("class", self->class),
-                  evt_tag_str("exception", buf));
+                  evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
         _py_finish_exception_handling();
         return;
       }
