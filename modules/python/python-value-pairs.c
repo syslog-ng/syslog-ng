@@ -36,16 +36,17 @@ python_worker_vp_add_one(const gchar *name,
 {
   const LogTemplateOptions *template_options = (const LogTemplateOptions *)((gpointer *)user_data)[0];
   PyObject *dict = (PyObject *)((gpointer *)user_data)[1];
-  gboolean fallback = template_options->on_error & ON_ERROR_FALLBACK_TO_STRING;
 
   PyObject *obj = py_obj_from_log_msg_value(value, value_len, type);
-  if (!obj && fallback)
-    {
-      obj = py_obj_from_log_msg_value(value, value_len, LM_VT_STRING);
-    }
-
   if (!obj)
     {
+      gchar buf[256];
+
+      _py_format_exception_text(buf, sizeof(buf));
+      msg_error("python-value-pairs: error converting a name-value pair to a Python object",
+                evt_tag_str("exception", buf));
+      _py_finish_exception_handling();
+
       return type_cast_drop_helper(template_options->on_error, value, log_msg_value_type_to_str(type));
     }
 

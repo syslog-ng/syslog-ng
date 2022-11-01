@@ -106,6 +106,7 @@ _py_convert_return_value_to_result(PythonTfState *state, const gchar *function_n
       msg_error("$(python): The current config version does not support returning non-string values from Python "
                 "functions. Please return str or bytes values from your Python function, use an explicit syslog-ng "
                 "level cast to string() or set the config version to post 4.0",
+                evt_tag_str("function", function_name),
                 cfg_format_config_version_tag(state->cfg));
       Py_DECREF(ret);
       return FALSE;
@@ -113,6 +114,14 @@ _py_convert_return_value_to_result(PythonTfState *state, const gchar *function_n
 
   if (!py_obj_to_log_msg_value(ret, result, type))
     {
+      gchar buf[256];
+
+      _py_format_exception_text(buf, sizeof(buf));
+      msg_error("$(python): error converting the return value of a Python template function to a typed name-value pair",
+                evt_tag_str("function", function_name),
+                evt_tag_str("exception", buf));
+      _py_finish_exception_handling();
+
       Py_DECREF(ret);
       return FALSE;
     }

@@ -148,6 +148,7 @@ py_datetime_from_msec(gint64 msec)
   return py_datetime_from_unix_time(&ut);
 }
 
+/* in case we return NULL a Python exception needs to be raised */
 PyObject *
 py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueType type)
 {
@@ -158,7 +159,7 @@ py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueT
       gint64 l;
       if (type_cast_to_int64(value, &l, NULL))
         return py_long_from_long(l);
-      return NULL;
+      goto type_cast_error;
     }
 
     case LM_VT_DOUBLE:
@@ -166,7 +167,7 @@ py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueT
       gdouble d;
       if (type_cast_to_double(value, &d, NULL))
         return py_double_from_double(d);
-      return NULL;
+      goto type_cast_error;
     }
 
     case LM_VT_BOOLEAN:
@@ -174,7 +175,7 @@ py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueT
       gboolean b;
       if (type_cast_to_boolean(value, &b, NULL))
         return py_boolean_from_boolean(b);
-      return NULL;
+      goto type_cast_error;
     }
 
     case LM_VT_NULL:
@@ -189,7 +190,7 @@ py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueT
 
       if (type_cast_to_datetime_msec(value, &msec, NULL))
         return py_datetime_from_msec(msec);
-      return NULL;
+      goto type_cast_error;
     }
     case LM_VT_STRING:
     default:
@@ -197,6 +198,11 @@ py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueT
     }
 
   g_assert_not_reached();
+type_cast_error:
+
+  /* if we can't cast the value (e.g.  in contrast with the type-hint the
+   * value was invalid), fall back to using a string */
+  return py_bytes_from_string(value, value_len);
 }
 
 gboolean
@@ -220,6 +226,7 @@ py_bytes_or_string_to_string(PyObject *obj, const gchar **string)
 {
   if (!is_py_obj_bytes_or_string_type(obj))
     {
+      PyErr_Format(PyExc_ValueError, "Error extracting value from str/bytes");
       return FALSE;
     }
 
@@ -253,6 +260,7 @@ py_long_to_long(PyObject *obj, gint64 *l)
 {
   if (!PyLong_Check(obj))
     {
+      PyErr_Format(PyExc_ValueError, "Error extracting value from long");
       return FALSE;
     }
 
@@ -271,6 +279,7 @@ py_double_to_double(PyObject *obj, gdouble *d)
 {
   if (!PyFloat_Check(obj))
     {
+      PyErr_Format(PyExc_ValueError, "Error extracting value from float");
       return FALSE;
     }
 
@@ -289,6 +298,7 @@ py_boolean_to_boolean(PyObject *obj, gboolean *b)
 {
   if (!PyBool_Check(obj))
     {
+      PyErr_Format(PyExc_ValueError, "Error extracting value from bool");
       return FALSE;
     }
 
@@ -313,6 +323,7 @@ py_list_to_list(PyObject *obj, GString *list)
 {
   if (!PyList_Check(obj))
     {
+      PyErr_Format(PyExc_ValueError, "Error extracting value from list");
       return FALSE;
     }
 
@@ -356,6 +367,7 @@ py_datetime_to_unix_time(PyObject *obj, UnixTime *ut)
 
   if (!PyDateTime_Check(obj))
     {
+      PyErr_Format(PyExc_ValueError, "Error extracting value from datetime");
       return FALSE;
     }
 
@@ -391,6 +403,8 @@ py_datetime_to_datetime(PyObject *obj, GString *dt)
 }
 
 /* Appends to the end of `value`. */
+
+/* in case we return FALSE a Python exception needs to be raised */
 gboolean
 py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type)
 {
@@ -470,6 +484,7 @@ py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type
   *type = LM_VT_NONE;
 
   msg_error("Unexpected python object type", evt_tag_str("type", Py_TYPE(obj)->tp_name));
+  PyErr_Format(PyExc_ValueError, "Error extracting value from Python object");
   return FALSE;
 }
 
