@@ -38,6 +38,7 @@ include modules/openbsd/Makefile.am
 include modules/pacctformat/Makefile.am
 include modules/pseudofile/Makefile.am
 include modules/python/Makefile.am
+include modules/python-modules/Makefile.am
 include modules/redis/Makefile.am
 include modules/riemann/Makefile.am
 include modules/afsnmp/Makefile.am
