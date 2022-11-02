@@ -61,6 +61,9 @@ class KubernetesAPIEnrichment(LogParser):
         for label_name, label_value in pod.metadata.labels.items():
             pod_metadata[self.add_prefix("labels.{}".format(label_name))] = label_value
 
+        for annotation_name, annotation_value in pod.metadata.annotations.items():
+            pod_metadata[self.add_prefix("annotations.{}".format(annotation_name))] = annotation_value
+
         pod_metadata[self.add_prefix("namespace_name")] = namespace_name
         pod_metadata[self.add_prefix("pod_name")] = pod_name
 

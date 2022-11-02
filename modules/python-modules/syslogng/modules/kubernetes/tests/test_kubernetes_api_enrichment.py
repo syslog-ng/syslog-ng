@@ -240,6 +240,7 @@ def test_message_from_var_log_pods_is_enriched(minimal_config, mock_kube_config,
 
     # fields extracted from the metadata
     assert msg['myk8s.labels.app'] == b'nginx'
+    assert msg['myk8s.annotations.cni.projectcalico.org/podIP'] == b'10.1.71.91/32'
     assert msg['myk8s.container_image'] == b'docker.io/library/nginx:latest'
 
 def test_message_from_var_log_containers_is_enriched(minimal_config, mock_kube_config, mock_api_response_nginx):
@@ -267,5 +268,6 @@ def test_message_from_var_log_containers_is_enriched(minimal_config, mock_kube_c
 
     # fields extracted from the metadata
     assert msg['myk8s.labels.app'] == b'nginx'
+    assert msg['myk8s.annotations.cni.projectcalico.org/podIP'] == b'10.1.71.91/32'
     assert msg['myk8s.container_image'] == b'docker.io/library/nginx:latest'
     assert msg['myk8s.pod_uuid'] == b'd7a782cf-cfaa-45e6-8f22-950b2df5bf82'
