@@ -1,6 +1,5 @@
 #############################################################################
 # Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
-# Copyright (c) 2015-2016 Balabit
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -21,11 +20,11 @@
 # COPYING for details.
 #
 #############################################################################
+try:
+    from _syslogng import Logger
 
-from .dest import LogDestination
-from .source import LogSource, LogFetcher, InstantAckTracker, ConsecutiveAckTracker, BatchedAckTracker
-from .parser import LogParser
-from .template import LogTemplate, LogTemplateOptions, LogTemplateException, LTZ_SEND, LTZ_LOCAL
-from .message import LogMessage
-from .logger import Logger
-from .persist import Persist
+except ImportError:
+    import warnings, logging
+    warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
+
+    Logger = logging.Logger

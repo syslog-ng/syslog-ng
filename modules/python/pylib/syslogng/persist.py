@@ -21,11 +21,20 @@
 # COPYING for details.
 #
 #############################################################################
+try:
+    from _syslogng import Persist
 
-from .dest import LogDestination
-from .source import LogSource, LogFetcher, InstantAckTracker, ConsecutiveAckTracker, BatchedAckTracker
-from .parser import LogParser
-from .template import LogTemplate, LogTemplateOptions, LogTemplateException, LTZ_SEND, LTZ_LOCAL
-from .message import LogMessage
-from .logger import Logger
-from .persist import Persist
+except ImportError:
+    import warnings
+    warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
+
+    Persist = object
+
+class Persist(Persist):
+    def __init__(self, persist_name, defaults=None):
+        super(Persist, self).__init__(persist_name)
+
+        if defaults:
+            for key, value in defaults.items():
+                if key not in self:
+                    self[key] = value
