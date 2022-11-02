@@ -48,6 +48,7 @@ gboolean _py_invoke_bool_method_by_name_with_args(PyObject *instance, const gcha
 gboolean _py_invoke_bool_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class,
                                         const gchar *module);
 void _py_perform_imports(GList *imports);
+const gchar *_py_object_repr(PyObject *s, gchar *buf, gsize buflen);
 
 void py_slng_generic_dealloc(PyObject *self);
 
