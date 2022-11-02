@@ -21,6 +21,7 @@
 #############################################################################
 from syslogng.modules.kubernetes import KubernetesAPIEnrichment
 from syslogng.message import LogMessage
+from syslogng.template import LogTemplate
 import pytest
 import json
 
@@ -270,3 +271,21 @@ def test_message_from_var_log_containers_is_enriched(minimal_config, mock_kube_c
     assert msg['myk8s.annotations.cni.projectcalico.org/podIP'] == b'10.1.71.91/32'
     assert msg['myk8s.container_image'] == b'docker.io/library/nginx:latest'
     assert msg['myk8s.pod_uuid'] == b'd7a782cf-cfaa-45e6-8f22-950b2df5bf82'
+
+def test_key_delimiter_would_replace_dot(minimal_config, mock_kube_config, mock_api_response_nginx):
+    p = KubernetesAPIEnrichment()
+    minimal_config['key_delimiter'] = '~'
+    minimal_config['prefix'] = 'k8s.'
+    p.init(minimal_config)
+
+    msg = LogMessage("This is the MESSAGE payload")
+
+    msg['k8s.pod_name'] = 'nginx-85b98978db-2dpdh'
+    msg['k8s.namespace_name'] = 'default'
+    p.parse(msg)
+
+    # fields extracted from the metadata
+    assert msg['k8s.labels~app'] == b'nginx'
+    assert msg['k8s.annotations~cni.projectcalico.org/podIP'] == b'10.1.71.91/32'
+    assert msg['k8s.container_image'] == b'docker.io/library/nginx:latest'
+    assert msg['k8s.pod_uuid'] == b'd7a782cf-cfaa-45e6-8f22-950b2df5bf82'

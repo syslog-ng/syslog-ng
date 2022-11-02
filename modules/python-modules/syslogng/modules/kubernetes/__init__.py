@@ -34,6 +34,8 @@ class KubernetesAPIEnrichment(LogParser):
         self.__prefix = options["prefix"]
 
         kubernetes.config.load_config()
+        self.key_delimiter = options.get('key_delimiter', '.')
+
         self.__client_api = kubernetes.client.CoreV1Api()
 
         return True
@@ -63,10 +65,10 @@ class KubernetesAPIEnrichment(LogParser):
             self.logger.warning("Error querying pod.metadata.uid for pod {}/{} from the Kubernetes API".format(namespace_name, pod_name))
 
         for name, value in (pod.metadata.labels or {}).items():
-            cached_pod_metadata[self.add_prefix("labels.{}".format(name))] = value
+            cached_pod_metadata[self.add_prefix("labels{}{}".format(self.key_delimiter, name))] = value
 
         for name, value in (pod.metadata.annotations or {}).items():
-            cached_pod_metadata[self.add_prefix("annotations.{}".format(name))] = value
+            cached_pod_metadata[self.add_prefix("annotations{}{}".format(self.key_delimiter, name))] = value
 
         try:
             container_status = pod.status.container_statuses[0]
