@@ -198,7 +198,12 @@ _py_fetcher_fill_bookmark(PythonFetcherDriver *self, PyLogMessage *pymsg)
     }
 
   AckTracker *ack_tracker = _py_fetcher_get_ack_tracker(self);
-  Bookmark *bookmark = ack_tracker_request_bookmark(ack_tracker);
+
+  Bookmark *bookmark;
+
+  Py_BEGIN_ALLOW_THREADS
+  bookmark = ack_tracker_request_bookmark(ack_tracker);
+  Py_END_ALLOW_THREADS
 
   PyBookmark *py_bookmark = py_bookmark_new(pymsg->bookmark_data, self->py.ack_tracker_factory->ack_callback);
   py_bookmark_fill(bookmark, py_bookmark);
