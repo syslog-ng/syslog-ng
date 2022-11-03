@@ -587,6 +587,8 @@ fi
 %{_libdir}/%{name}/python/syslogng-1.0-py%{py_ver}.egg-info
 %{_libdir}/%{name}/python/syslogng/*
 %{_libdir}/%{name}/libmod-python.so
+%dir %{_sysconfdir}/%{name}/python
+%{_sysconfdir}/%{name}/python/README.md
 
 %files devel
 %{_libdir}/libsyslog-ng.so

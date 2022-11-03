@@ -52,6 +52,8 @@ EXTRA_DIST += \
 
 if ENABLE_PYTHON
 
+python_sysconf_module_DATA = modules/python-modules/README.md
+
 PYMODULES_PATH = modules/python-modules
 PYMODULES_BUILDDIR = $(abs_builddir)/$(PYMODULES_PATH)
 PYMODULES_SRCDIR = $(top_srcdir)/modules/python-modules

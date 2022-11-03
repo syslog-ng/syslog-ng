@@ -92,7 +92,11 @@ static void
 _set_python_path(void)
 {
   const gchar *current_python_path = getenv("PYTHONPATH");
-  GString *python_path = g_string_new(get_installation_path_for(SYSLOG_NG_PYTHON_MODULE_DIR));
+  GString *python_path = g_string_new("");
+
+  g_string_printf(python_path, "%s:%s",
+                  get_installation_path_for(SYSLOG_NG_PYTHON_SYSCONF_MODULE_DIR),
+                  get_installation_path_for(SYSLOG_NG_PYTHON_MODULE_DIR));
 
   if (current_python_path)
     g_string_append_printf(python_path, ":%s", current_python_path);
