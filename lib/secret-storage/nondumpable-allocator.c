@@ -28,6 +28,11 @@
 #include <unistd.h>
 #include <stdio.h>
 
+/* For compatibility with e.g. older macOS. */
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
 #include "nondumpable-allocator.h"
 
 #define ALLOCATION_HEADER_SIZE offsetof(Allocation, user_data)
