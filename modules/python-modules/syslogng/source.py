@@ -82,7 +82,7 @@ class LogSource(LogSource):
         Returns:
             None
         """
-        raise NotImplementedError
+        pass
 
     def post_message(self, msg):
         """Post a message as an output for this source
@@ -117,7 +117,7 @@ class LogSource(LogSource):
         source should stop executing.  The expected result of this function
         is that its run() method returns to its caller.
         """
-        raise NotImplementedError
+        pass
 
 
 class LogFetcher(LogFetcher):
@@ -173,4 +173,4 @@ class LogFetcher(LogFetcher):
                 are defined as members in the LogFetcher class or as values
                 in the LogFetchrResult enum.
         """
-        raise NotImplementedError
+        return self.TRY_AGAIN, None

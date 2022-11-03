@@ -1,5 +1,6 @@
+#!/bin/sh
 #############################################################################
-# Copyright (c) 2022 Balazs Scheidler
+# Copyright (c) 2015 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,12 +21,4 @@
 #
 #############################################################################
 
-
-block destination python_example(options(my_sample_option => option_value)) {
-
-    python(
-        class("syslogng_modules.example.ExampleDestination")
-        options(`options`)
-    );
-
-};
+${MAKE} MAKEFLAGS= pymodules-unit

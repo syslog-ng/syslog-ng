@@ -52,7 +52,7 @@ class MyEditLineCompleter(lineeditor.Completer):
         super().__init__(subeditor, namespace)
         self._default_display_matches = self.subeditor.display_matches
         self.subeditor.display_matches = self.display_matches
-        self.completer = completer 
+        self.completer = completer
         self.subeditor.completer = self.complete
 
     def complete(self, text):

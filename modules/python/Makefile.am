@@ -85,8 +85,6 @@ else
 modules/python mod-python:
 endif
 
-include modules/python/pylib/Makefile.am
-
 BUILT_SOURCES					+= \
 	modules/python/python-grammar.y		   \
 	modules/python/python-grammar.c		   \

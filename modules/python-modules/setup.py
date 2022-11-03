@@ -21,20 +21,18 @@
 #
 #############################################################################
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
-PACKAGE_PREFIX = "syslogng_modules"
-
-setup(name='syslogng-modules',
+setup(name='syslogng',
       version='1.0',
-      description='syslog-ng Python extension Modules',
+      description='syslog-ng Python Core & Modules',
       author='Balazs Scheidler',
       author_email='bazsi77@gmail.com',
       url='https://www.syslog-ng.org',
-      package_dir={
-        PACKAGE_PREFIX: "."
-      },
       package_data={"": ["scl/*"]},
       exclude_package_data={"": ["*~"]},
-      packages=list(map(lambda mod: PACKAGE_PREFIX + "." + mod, find_packages())),
-      install_requires=["setuptools"])
+      packages=[
+        "syslogng",
+        "syslogng.debuggercli",
+        "syslogng.modules.example",
+      ])
