@@ -59,4 +59,4 @@ class LogParser(LogParser):
         Returns:
             bool: True if parsing was successful, False to drop the message
         """
-        pass
+        raise NotImplementedError
