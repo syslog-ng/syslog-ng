@@ -109,7 +109,7 @@ main_logged() {
   -iname '.git' -prune \
   -o \
  -type f \
- -exec grep -Iq . {} \; -print |
+ -size +0 -print |
  sed "s~^\./~~" |
  prune_ignored_paths |
  sort |
@@ -121,6 +121,10 @@ main_logged() {
     echo "debug: ignoring $FILE" >&2
    fi
   else
+   if not grep -Iq . {} ; then
+    continue
+   fi
+
    cat "$FILE" |
    escape |
    join_lines |
@@ -480,7 +484,9 @@ prune_ignored_paths() {
    s~$~(/.*)?$~
   " |
   cat > "$IGNORE"
-  echo "*~" >> "$IGNORE"
+  echo "~$" >> "$IGNORE"
+  echo "dbld/((build)|(install)|(release))" >> "$IGNORE"
+  cat $IGNORE >&2
  fi
 
  grep --invert-match --extended-regexp --file "$IGNORE"
