@@ -32,4 +32,6 @@ void python_parser_set_loaders(LogParser *s, GList *loaders);
 void python_parser_set_class(LogParser *s, gchar *class_name);
 void python_parser_set_option(LogParser  *s, gchar *key, gchar *value);
 
+void py_log_parser_global_init(void);
+
 #endif

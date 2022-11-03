@@ -30,6 +30,7 @@
 #include "python-tf.h"
 #include "python-logmsg.h"
 #include "python-logtemplate.h"
+#include "python-logparser.h"
 #include "python-integerpointer.h"
 #include "python-logger.h"
 #include "python-source.h"
@@ -119,6 +120,8 @@ _py_init_interpreter(void)
       py_log_message_global_init();
       py_log_template_global_init();
       py_integer_pointer_global_init();
+      py_log_destination_global_init();
+      py_log_parser_global_init();
       py_log_source_global_init();
       py_log_fetcher_global_init();
       py_persist_global_init();

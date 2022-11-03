@@ -25,6 +25,8 @@ from __future__ import print_function
 try:
     from _syslogng import LogMessage
     from _syslogng import LogSource, LogFetcher
+    from _syslogng import LogDestination
+    from _syslogng import LogParser
     from _syslogng import LogTemplate, LogTemplateException, LogTemplateOptions
     from _syslogng import Logger
     from _syslogng import Persist as SlngPersist

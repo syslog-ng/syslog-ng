@@ -44,6 +44,19 @@ typedef struct
   } py;
 } PythonParser;
 
+typedef struct _PyLogParser
+{
+  PyObject_HEAD
+} PyLogParser;
+
+static PyTypeObject py_log_parser_type;
+
+static gboolean
+_py_is_log_parser(PyObject *obj)
+{
+  return PyType_IsSubtype(Py_TYPE(obj), &py_log_parser_type);
+}
+
 void
 python_parser_set_class(LogParser *d, gchar *class)
 {
@@ -112,6 +125,7 @@ _py_invoke_deinit(PythonParser *self)
 static gboolean
 _py_init_bindings(PythonParser *self)
 {
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
   self->py.class = _py_resolve_qualified_name(self->class);
   if (!self->py.class)
     {
@@ -137,6 +151,28 @@ _py_init_bindings(PythonParser *self)
       _py_finish_exception_handling();
       return FALSE;
     }
+
+  if (!_py_is_log_parser(self->py.instance))
+    {
+      gchar buf[256];
+
+      if (!cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
+        {
+          msg_error("python-parser: Error initializing Python parser, class is not a subclass of LogParser",
+                    evt_tag_str("parser", self->super.name),
+                    evt_tag_str("class", self->class),
+                    evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
+          return FALSE;
+        }
+      msg_warning("WARNING: " VERSION_4_0 " requires that your python() parser class derives "
+                  "from syslogng.LogParser. Please change the class declaration to explicitly "
+                  "inherit from syslogng.LogParser. syslog-ng now operates in compatibility mode",
+                  evt_tag_str("parser", self->super.name),
+                  evt_tag_str("class", self->class),
+                  evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
+
+    }
+
 
   /* these are fast paths, store references to be faster */
   self->py.parser_process = _py_get_attr_or_null(self->py.instance, "parse");
@@ -295,4 +331,23 @@ python_parser_new(GlobalConfig *cfg)
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
   return (LogParser *)self;
+}
+
+static PyTypeObject py_log_parser_type =
+{
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  .tp_name = "LogDestination",
+  .tp_basicsize = sizeof(PyLogParser),
+  .tp_dealloc = py_slng_generic_dealloc,
+  .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+  .tp_doc = "The LogDestination class is a base class for custom Python sources.",
+  .tp_new = PyType_GenericNew,
+  0,
+};
+
+void
+py_log_parser_global_init(void)
+{
+  PyType_Ready(&py_log_parser_type);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogParser", (PyObject *) &py_log_parser_type);
 }

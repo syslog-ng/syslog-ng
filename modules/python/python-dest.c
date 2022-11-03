@@ -61,6 +61,19 @@ typedef struct
   } py;
 } PythonDestDriver;
 
+typedef struct _PyLogDestination
+{
+  PyObject_HEAD
+} PyLogDestination;
+
+static PyTypeObject py_log_destination_type;
+
+static gboolean
+_py_is_log_destination(PyObject *obj)
+{
+  return PyType_IsSubtype(Py_TYPE(obj), &py_log_destination_type);
+}
+
 /** Setters & config glue **/
 
 void
@@ -381,6 +394,27 @@ _py_init_bindings(PythonDestDriver *self)
       return FALSE;
     }
 
+  if (!_py_is_log_destination(self->py.instance))
+    {
+      gchar buf[256];
+
+      if (!cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
+        {
+          msg_error("Error initializing Python source, class is not a subclass of LogDestination",
+                    evt_tag_str("driver", self->super.super.super.id),
+                    evt_tag_str("class", self->class),
+                    evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
+          return FALSE;
+        }
+      msg_warning("WARNING: " VERSION_4_0 " requires that your python() destination class derives "
+                  "from syslogng.LogDestination. Please change the class declaration to explicitly "
+                  "inherit from syslogng.LogDestination. syslog-ng now operates in compatibility mode",
+                  evt_tag_str("driver", self->super.super.super.id),
+                  evt_tag_str("class", self->class),
+                  evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
+
+    }
+
   /* these are fast paths, store references to be faster */
   self->py.is_opened = _py_get_attr_or_null(self->py.instance, "is_opened");
   self->py.open = _py_get_attr_or_null(self->py.instance, "open");
@@ -650,4 +684,23 @@ python_dd_new(GlobalConfig *cfg)
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
   return (LogDriver *)self;
+}
+
+static PyTypeObject py_log_destination_type =
+{
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  .tp_name = "LogDestination",
+  .tp_basicsize = sizeof(PyLogDestination),
+  .tp_dealloc = py_slng_generic_dealloc,
+  .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+  .tp_doc = "The LogDestination class is a base class for custom Python sources.",
+  .tp_new = PyType_GenericNew,
+  0,
+};
+
+void
+py_log_destination_global_init(void)
+{
+  PyType_Ready(&py_log_destination_type);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogDestination", (PyObject *) &py_log_destination_type);
 }

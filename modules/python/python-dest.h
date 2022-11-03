@@ -37,4 +37,6 @@ void python_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
 void python_dd_set_option(LogDriver  *d, gchar *key, gchar *value);
 LogTemplateOptions *python_dd_get_template_options(LogDriver *d);
 
+void py_log_destination_global_init(void);
+
 #endif

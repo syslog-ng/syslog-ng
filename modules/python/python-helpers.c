@@ -376,6 +376,24 @@ _py_perform_imports(GList *imports)
   g_list_foreach(imports, _foreach_import, NULL);
 }
 
+const gchar *
+_py_object_repr(PyObject *s, gchar *buf, gsize buflen)
+{
+  const gchar *res;
+
+  PyObject *r = PyObject_Repr(s);
+  if (!r)
+    {
+      _py_finish_exception_handling();
+      g_strlcpy(buf, "<unknown object>", buflen);
+      return buf;
+    }
+  if (py_bytes_or_string_to_string(r, &res))
+    g_strlcpy(buf, res, buflen);
+  Py_XDECREF(r);
+  return buf;
+}
+
 void
 py_slng_generic_dealloc(PyObject *self)
 {
