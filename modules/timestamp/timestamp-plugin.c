@@ -22,6 +22,7 @@
  */
 
 #include "timestamp-parser.h"
+#include "tf-format-date.h"
 
 #include "plugin.h"
 #include "plugin-types.h"
@@ -50,6 +51,7 @@ static Plugin timestamp_plugins[] =
     .name = "guess-time-zone",
     .parser = &timestamp_parser,
   },
+  TEMPLATE_FUNCTION_PLUGIN(tf_format_date, "format-date"),
 };
 
 gboolean

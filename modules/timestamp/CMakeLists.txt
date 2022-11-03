@@ -10,6 +10,8 @@ set(TIMESTAMP_SOURCES
     rewrite-set-timezone.h
     rewrite-guess-timezone.c
     rewrite-guess-timezone.h
+    tf-format-date.c
+    tf-format-date.h
 )
 
 add_module(
