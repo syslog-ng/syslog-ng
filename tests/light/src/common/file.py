@@ -93,6 +93,12 @@ class File(object):
         self.__opened_file.write(content)
         self.__opened_file.flush()
 
+    def write_content_and_close(self, content):
+        if not self.is_opened():
+            self.open(mode="w+")
+        self.write(content)
+        self.close()
+
     def wait_for_lines(self, lines, timeout=DEFAULT_TIMEOUT):
         def find_lines_in_file(lines_to_find, lines_found, f):
             line_read = f.readline()

@@ -48,9 +48,7 @@ class NetworkIO():
         loggen_input_file_path = Path("loggen_input_{}.txt".format(get_unique_id()))
 
         loggen_input_file = File(loggen_input_file_path)
-        loggen_input_file.open(mode="w")
-        loggen_input_file.write(content)
-        loggen_input_file.close()
+        loggen_input_file.write_content_and_close(content)
 
         Loggen().start(self.__ip, self.__port, read_file=str(loggen_input_file_path), dont_parse=True, permanent=True, rate=rate, **self.__transport.value)
 
