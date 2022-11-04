@@ -1,114 +1,115 @@
-3.38.1
-======
+4.0.0
+=====
 
 ## Highlights
 
-### Sneak peek into syslog-ng v4.0
-
-syslog-ng v4.0 is right around the corner.
-
-This release (v3.38.1) contains all major changes, however, they are
-currently all hidden behind a feature flag.
-To enable and try those features, you need to specify `@version: 4.0` at the
-top of the configuration file.
-
-You can find out more about the 4.0 changes and features
-[here](https://github.com/syslog-ng/syslog-ng/blob/master/NEWS-4.0.md).
-
-Read our practical introduction to typing at
-[syslog-ng-future.blog](https://syslog-ng-future.blog/syslog-ng-4-progress-3-38-1-release/).
+<Fill this block manually from the blocks below>
 
 ## Features
 
-  * `grouping-by()`: added `inject-mode(aggregate-only)`
+  * `$(format-json)`: fix a bug in the --key-delimiter option introduced in
+    3.38, which causes the generated JSON to contain multiple values for the
+    same key in case the key in question contains a nested object and
+    key-delimiter specified is not the dot character.
+    ([#4127](https://github.com/syslog-ng/syslog-ng/pull/4127))
+  * `log-level()`: added a new global option to control syslog-ng's own internal
+    log level.  This augments the existing support for doing the same via the
+    command line (via -d, -v and -t options) and via syslog-ng-ctl.  This change
+    also causes higher log-levels to include messages from lower log-levels,
+    e.g.  "trace" also implies "debug" and "verbose".  By adding this capability
+    to the configuration, it becomes easier to control logging in containerized
+    environments where changing command line options is more challenging.
 
-    This inject mode will drop individual messages that make up the correlation
-    context (`key()` groups) and would only yield the aggregate messages
-    (e.g. the results of the correlation).
-    ([#3998](https://github.com/syslog-ng/syslog-ng/pull/3998))
-  * `add-contextual-data()`: add support for type propagation, e.g. set the
-    type of name-value pairs as they are created/updated to the value returned
-    by the template expression that we use to set the value.
+    `syslog-ng-ctl log-level`: this new subcommand in syslog-ng-ctl allows
+    setting the log level in a more intuitive way, compared to the existing
+    `syslog-ng-ctl verbose|debug|trace -s` syntax.
 
-    The 3rd column in the CSV file (e.g. the template expression) now supports
-    specifying a type-hint, in the format of "type-hint(template-expr)".
+    `syslog-ng --log-level`: this new command line option for the syslog-ng
+    main binary allows you to set the desired log-level similar to how you
+    can control it from the configuration or through `syslog-ng-ctl`.
+    ([#4091](https://github.com/syslog-ng/syslog-ng/pull/4091))
+  * `network`/`syslog`/`http` destination: OCSP stapling support
 
-    Example line in the CSV database:
+    OCSP stapling support for network destinations and for the `http()` module has been added.
 
-    selector-value,name-value-pair-to-be-created,list(foo,bar,baz)
-    ([#4051](https://github.com/syslog-ng/syslog-ng/pull/4051))
-  * `$(format-json)`: add --key-delimiter option to reconstruct JSON objects
-    using an alternative structure separator, that was created using the
-    key-delimiter() option of json-parser().
-    ([#4093](https://github.com/syslog-ng/syslog-ng/pull/4093))
-  * `json-parser()`: add key-delimiter() option to extract JSON structure
-    members into name-value pairs, so that the names are flattened using the
-    character specified, instead of dot.
+    When OCSP stapling verification is enabled, the server will be requested to send back OCSP status responses.
+    This status response will be verified using the trust store configured by the user (`ca-file()`, `ca-dir()`, `pkcs12-file()`).
 
-    Example:
-      Input: {"foo":{"key":"value"}}
+    Note: RFC 6961 multi-stapling and TLS 1.3-provided multiple responses are currently not validated, only the peer certificate is verified.
 
-      Using json-parser() without key-delimiter() this is extracted to:
+    Example config:
+    ```
+    destination {
 
-          foo.key="value"
+        network("test.tld" transport(tls)
+            tls(
+                pkcs12-file("/path/to/test.p12")
+                peer-verify(yes)
+                ocsp-stapling-verify(yes)
+            )
+        );
 
-      Using json-parser(key-delimiter("~")) this is extracted to:
-
-          foo~key="value"
-
-    This feature is useful in case the JSON keys contain dots themselves, in
-    those cases the syslog-ng representation is ambigious.
-    ([#4093](https://github.com/syslog-ng/syslog-ng/pull/4093))
+        http(url("https://test.tld") method("POST") tls(peer-verify(yes) ocsp-stapling-verify(yes)));
+    };
+    ```
+    ([#4082](https://github.com/syslog-ng/syslog-ng/pull/4082))
 
 ## Bugfixes
 
-  * Fixed buffer handling of syslog and timestamp parsers
+  * afsocket-dest: fixed a crash when a kept-alive connection after reload which was not initalized properly (e.g. due to name resolution issues of the remote hostname) receives a connection close from the remote.
+    ([#4044](https://github.com/syslog-ng/syslog-ng/pull/4044))
+  * `grouping-by()` persist-name() option: fixed a segmentation fault in the
+    grammar.
+    ([#4180](https://github.com/syslog-ng/syslog-ng/pull/4180))
+  * `add-contextual-data()`: add compatibility warnings and update advise in
+    case of the value field of the add-contextual-data() database contains an
+    expression that resembles the new type-hinting syntax: type(value).
 
-    Multiple buffer out-of-bounds issues have been fixed, which could cause
-    hangs, high CPU usage, or other undefined behavior.
-    ([#4110](https://github.com/syslog-ng/syslog-ng/pull/4110))
-  * Fixed building with LibreSSL
-    ([#4081](https://github.com/syslog-ng/syslog-ng/pull/4081))
-  * `network()`: Fixed a bug, where syslog-ng halted the input instead of skipping a character
-    in case of a character conversion error.
-    ([#4084](https://github.com/syslog-ng/syslog-ng/pull/4084))
-  * `redis()`: Fixed bug where using redis driver without the `batch-lines` option caused program crash.
-    ([#4114](https://github.com/syslog-ng/syslog-ng/pull/4114))
-  * `pdbtool`: fix a SIGABRT on FreeBSD that was triggered right before pdbtool
-    exits. Apart from being an ugly crash that produces a core file,
-    functionally the tool behaved correctly and this case does not affect
-    syslog-ng itself.
-    ([#4037](https://github.com/syslog-ng/syslog-ng/pull/4037))
-  * `regexp-parser()`: due to a change introduced in 3.37, named capture groups
-    are stored indirectly in the LogMessage to avoid copying of the value.  In
-    this case the name-value pair created with the regexp is only stored as a
-    reference (name + length of the original value), which improves performance
-    and makes such name-value pairs use less memory.  One omission in the
-    original change in 3.37 is that syslog-ng does not allow builtin values to
-    be stored indirectly (e.g.  $MESSAGE and a few of others) and this case
-    causes an assertion to fail and syslog-ng to crash with a SIGABRT. This
-    abort is now fixed. Here's a sample config that reproduces the issue:
+    `db-parser()`: add compatibility warnings and update advise in case the
+    <value>  element in the pattern database contains an expression that
+    resembles the new type-hinting syntax: type(value).
+    ([#4158](https://github.com/syslog-ng/syslog-ng/pull/4158))
+  * `syslog-ng --help` screen: the output for the --help command line option has
+    included sample paths to various files that contained autoconf style
+    directory references (e.g. ${prefix}/etc for instance). This is now fixed,
+    these paths will contain the expanded path. Fixes Debian Bug report #962839:
+    https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=962839
+    ([#4143](https://github.com/syslog-ng/syslog-ng/pull/4143))
+  * `python`: Fixed a crash, when trying to get "R_STAMP", "P_STAMP" or "STAMP" from the log message.
+    ([#4057](https://github.com/syslog-ng/syslog-ng/pull/4057))
 
-        regexp-parser(patterns('(?<MESSAGE>.*)'));
-    ([#4043](https://github.com/syslog-ng/syslog-ng/pull/4043))
-  * set-tag: fix cloning issue when string literal were used (see #4062)
-    ([#4065](https://github.com/syslog-ng/syslog-ng/pull/4065))
-  * `add-contextual-data()`: fix high memory usage when using large CSV files
-    ([#4067](https://github.com/syslog-ng/syslog-ng/pull/4067))
+## Packaging
+
+  * `python`: python2 support is now completely removed. `syslog-ng` can no longer be configured with `--with-python=2`.
+    ([#4057](https://github.com/syslog-ng/syslog-ng/pull/4057))
+  * `python`: Python 2 support is now completely removed from Light too. Light will support only Python 3.
+    ([#4174](https://github.com/syslog-ng/syslog-ng/pull/4174))
 
 ## Other changes
 
-  * The `json-c` library is no longer bundled in the syslog-ng source tarball
+  * `sumologic-http()` improvements
 
-    Since all known OS package managers provide json-c packages nowadays, the json-c
-    submodule has been removed from the source tarball.
+    Breaking change: `sumologic-http()` originally sent incomplete messages (only the `$MESSAGE` part) to Sumo Logic by default.
+    The new default is a JSON object, containing all name-value pairs.
 
-    The `--with-jsonc=internal` option of the `configure` script has been removed
-    accordingly, system libraries will be used instead. For special cases, the JSON
-    support can be disabled by specifying `--with-jsonc=no`.
-    ([#4078](https://github.com/syslog-ng/syslog-ng/pull/4078))
-  * platforms: Dropped support for ubuntu-impish as it became EOL
-    ([#4088](https://github.com/syslog-ng/syslog-ng/pull/4088))
+    To override the new message format, the `template()` option can be used.
+
+    `sumologic-http()` now supports batching, which is enabled by default to increase the destination's performance.
+
+    The `tls()` became optional, Sumo Logic servers will be verified using the system's certificate store by default.
+    ([#4124](https://github.com/syslog-ng/syslog-ng/pull/4124))
+  * docker image: Nightly production docker images are now available as `balabit/syslog-ng:nightly`
+    ([#4117](https://github.com/syslog-ng/syslog-ng/pull/4117))
+  * `make dist`: fixed make dist of FreeBSD so that source tarballs can
+    easily be produced even if running on FreeBSD.
+    ([#4163](https://github.com/syslog-ng/syslog-ng/pull/4163))
+  * `dbld`: Removed support for `ubuntu-xenial`.
+    ([#4057](https://github.com/syslog-ng/syslog-ng/pull/4057))
+  * `dbld`: The `syslog-ng-mod-python` package is now built with `python3` on the following platforms:
+      * `debian-stretch`
+      * `debian-buster`
+      * `ubuntu-bionic`
+    ([#4057](https://github.com/syslog-ng/syslog-ng/pull/4057))
 
 ## Credits
 
@@ -121,7 +122,5 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 
-Alvin Šipraga, Andras Mitzki, Attila Szakacs, Balazs Scheidler,
-Bálint Horváth, Daniel Klauer, Fabrice Fontaine, Gabor Nagy,
-HenryTheSir, László Várady, Parrag Szilárd, Peter Kokai, Shikhar Vashistha,
-Szilárd Parrag, Vivin Peris
+Andras Mitzki, Attila Szakacs, Attila Szalay, Balazs Scheidler,
+Bálint Horváth, Gabor Nagy, Joshua Root, László Várady, Szilárd Parrag

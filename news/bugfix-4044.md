@@ -1,1 +1,0 @@
-afsocket-dest: fixed a crash when a kept-alive connection after reload which was not initalized properly (e.g. due to name resolution issues of the remote hostname) receives a connection close from the remote.
