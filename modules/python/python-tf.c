@@ -162,5 +162,5 @@ tf_python_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArg
   PyGILState_Release(gstate);
 }
 
-TEMPLATE_FUNCTION(TFSimpleFuncState, tf_python, tf_python_prepare, tf_simple_func_eval,
+TEMPLATE_FUNCTION(PythonTfState, tf_python, tf_python_prepare, tf_simple_func_eval,
                   tf_python_call, tf_simple_func_free_state, NULL);

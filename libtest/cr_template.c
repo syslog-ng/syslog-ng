@@ -199,8 +199,8 @@ assert_template_format_with_escaping_and_context_msgs(const gchar *template, gbo
                    template, (gint) res->len - prefix_len, res->str + prefix_len, (gint) expected_len, expected);
   if (expected_type != LM_VT_NONE)
     cr_assert_eq(type, expected_type,
-                 "expected type does not match template=%s, type=%d, expected_type=%d",
-                 template, type, expected_type);
+                 "expected type does not match template=%s, type=%d, expected_type=%d (value was %.*s)",
+                 template, type, expected_type, (gint) expected_len, expected);
   log_template_unref(templ);
   g_string_free(res, TRUE);
 }
