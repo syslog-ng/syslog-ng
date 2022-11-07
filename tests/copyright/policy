@@ -86,6 +86,12 @@ libtest/mock-logpipe\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
 syslog-ng-ctl/commands/log-level.[ch]
+modules/python/pylib/syslogng/dest\.py
+modules/python/pylib/syslogng/logger\.py
+modules/python/pylib/syslogng/message\.py
+modules/python/pylib/syslogng/parser\.py
+modules/python/pylib/syslogng/source\.py
+modules/python/pylib/syslogng/template\.py
 
 ###########################################################################
 # These tests are GPLd even though they reside under lib/ and are excluded
@@ -122,7 +128,8 @@ modules/native
 modules/http/http-signals.h
 tests/loggen
 persist-tool
-
+modules/python/pylib/syslogng/__init__\.py
+modules/python/pylib/syslogng/persist\.py
 
 ###########################################################################
 # These files are GPLd and non-balabit contributions.

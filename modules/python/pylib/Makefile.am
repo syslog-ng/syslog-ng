@@ -1,5 +1,12 @@
 EXTRA_DIST += \
 	modules/python/pylib/syslogng/__init__.py				\
+	modules/python/pylib/syslogng/dest.py					\
+	modules/python/pylib/syslogng/logger.py					\
+	modules/python/pylib/syslogng/message.py				\
+	modules/python/pylib/syslogng/parser.py					\
+	modules/python/pylib/syslogng/persist.py				\
+	modules/python/pylib/syslogng/source.py					\
+	modules/python/pylib/syslogng/template.py				\
 	modules/python/pylib/syslogng/debuggercli/__init__.py			\
 	modules/python/pylib/syslogng/debuggercli/choicecompleter.py		\
 	modules/python/pylib/syslogng/debuggercli/commandlinelexer.py		\

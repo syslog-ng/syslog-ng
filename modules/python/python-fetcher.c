@@ -687,18 +687,16 @@ static PyTypeObject py_log_fetcher_type =
 void
 py_log_fetcher_global_init(void)
 {
-  py_log_fetcher_type.tp_dict = PyDict_New();
-  PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_ERROR",
-                       py_long_from_long(THREADED_FETCH_ERROR));
-  PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_NOT_CONNECTED",
-                       py_long_from_long(THREADED_FETCH_NOT_CONNECTED));
-  PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_SUCCESS",
-                       py_long_from_long(THREADED_FETCH_SUCCESS));
-  PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_TRY_AGAIN",
-                       py_long_from_long(THREADED_FETCH_TRY_AGAIN));
-  PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_NO_DATA",
-                       py_long_from_long(THREADED_FETCH_NO_DATA));
+  PyObject *module = PyImport_AddModule("_syslogng");
+  PyObject *enum_seq = PyList_New(5);
+
+  PyList_SetItem(enum_seq, 0, Py_BuildValue("(si)", "ERROR", THREADED_FETCH_ERROR));
+  PyList_SetItem(enum_seq, 1, Py_BuildValue("(si)", "NOT_CONNECTED", THREADED_FETCH_NOT_CONNECTED));
+  PyList_SetItem(enum_seq, 2, Py_BuildValue("(si)", "SUCCESS", THREADED_FETCH_SUCCESS));
+  PyList_SetItem(enum_seq, 3, Py_BuildValue("(si)", "TRY_AGAIN", THREADED_FETCH_TRY_AGAIN));
+  PyList_SetItem(enum_seq, 4, Py_BuildValue("(si)", "NO_DATA", THREADED_FETCH_NO_DATA));
+  PyModule_AddObject(module, "LogFetcherResult", _py_construct_enum("LogFetcherResult", enum_seq));
 
   PyType_Ready(&py_log_fetcher_type);
-  PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogFetcher", (PyObject *) &py_log_fetcher_type);
+  PyModule_AddObject(module, "LogFetcher", (PyObject *) &py_log_fetcher_type);
 }
