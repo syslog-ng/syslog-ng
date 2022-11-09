@@ -503,6 +503,7 @@ tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints)
 {
   g_assert(fingerprints);
 
+  g_list_foreach(self->trusted_fingerprint_list, (GFunc) g_free, NULL);
   self->trusted_fingerprint_list = fingerprints;
 }
 
@@ -511,6 +512,7 @@ tls_session_set_trusted_dn(TLSContext *self, GList *dn)
 {
   g_assert(dn);
 
+  g_list_foreach(self->trusted_dn_list, (GFunc) g_free, NULL);
   self->trusted_dn_list = dn;
 }
 
