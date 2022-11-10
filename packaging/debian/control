@@ -125,8 +125,7 @@ Package: syslog-ng-core
 Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, util-linux (>= 2.12-10), lsb-base (>= 3.0-6)
-Recommends: logrotate
-Suggests: ${sng:CoreModules}, ${sng:Modules}
+Suggests: ${sng:CoreModules}, ${sng:Modules}, logrotate
 Provides: system-log-daemon, linux-kernel-log-daemon, libsyslog-ng-dev, syslog-ng-mod-journal, syslog-ng-mod-pacctformat, syslog-ng-mod-tag-parser, syslog-ng-mod-extra
 Conflicts: system-log-daemon, linux-kernel-log-daemon
 Replaces: syslog-ng (<< 3.3.0~), libsyslog-ng-dev, syslog-ng-mod-json (<< 3.19.1~), syslog-ng-mod-journal (<< 3.25.1~), syslog-ng-mod-pacctformat (<< 3.26.1~), syslog-ng-mod-tag-parser (<< 3.26.1~), syslog-ng-mod-extra (<< 3.26.1-2~)
