@@ -223,7 +223,7 @@ __cfg_is_config_version_older(GlobalConfig *cfg, gint req)
 #define cfg_is_feature_enabled(cfg, topic)        __cfg_is_feature_enabled(cfg, FEATURE_ ## topic ## _MIN_VERSION)
 #define cfg_is_typing_feature_enabled(cfg)        cfg_is_feature_enabled(cfg, TYPING)
 
-#define cfg_is_experimental_feature_enabled(cfg)  (cfg_is_typing_feature_enabled(cfg))
+#define cfg_is_experimental_feature_enabled(cfg)  0
 
 static inline void
 cfg_set_use_uniqid(gboolean flag)

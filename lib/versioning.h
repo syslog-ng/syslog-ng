@@ -193,14 +193,19 @@
  * meaning of any setting in the configuration file.  Basically, it is the
  * highest value passed to any cfg_is_config_version_older() call.
  */
-#define VERSION_VALUE_LAST_SEMANTIC_CHANGE  VERSION_VALUE_3_35
-#define VERSION_STR_LAST_SEMANTIC_CHANGE    "3.35"
+#define VERSION_VALUE_LAST_SEMANTIC_CHANGE  VERSION_VALUE_4_0
+#define VERSION_STR_LAST_SEMANTIC_CHANGE    "4.0"
 
 #define version_convert_from_user(v)  (v)
 
 /* version based feature flips */
 #define VERSION_VALUE_NEXT_MAJOR         VERSION_VALUE_4_0
-#define FEATURE_TYPING_MIN_VERSION       VERSION_VALUE_4_0
+
+/* we are already past 4.0 which introduced FEATURE_TYPING_MIN_VERSION, so
+ * set min_version to an extremal value.  We should remove this macro if all
+ * derived works introduce typing support.  Until that point we keep it
+ * here, so the same codebase can execute with typing disabled. */
+#define FEATURE_TYPING_MIN_VERSION       0
 #define FEATURE_TYPING_VERSION           "syslog-ng 4.0"
 
 #include "pe-versioning.h"
