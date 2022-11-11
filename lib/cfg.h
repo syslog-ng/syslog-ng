@@ -216,7 +216,7 @@ __cfg_is_config_version_older(GlobalConfig *cfg, gint req)
  */
 #define __cfg_is_feature_enabled(cfg, min_version) \
   ({ \
-    /* the flip-over for min_version reached, set min_version to 0 */ G_STATIC_ASSERT(VERSION_VALUE_CURRENT < ((min_version) - 1));       \
+    /* the flip-over for min_version reached, set min_version to 0 */ G_STATIC_ASSERT(min_version == 0 || VERSION_VALUE_CURRENT < ((min_version) - 1));       \
     version_convert_from_user(cfg->user_version) >= (min_version) - 1;  \
   })
 
