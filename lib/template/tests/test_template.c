@@ -144,6 +144,7 @@ Test(template, test_macros_v3x)
   /* pri 3, fac 19 == local3 */
 
   /* v3.x behavior */
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
 
   assert_template_format_value_and_type("$FACILITY", "local3", LM_VT_STRING);
   assert_template_format_value_and_type("$FACILITY_NUM", "19", LM_VT_STRING);
@@ -483,6 +484,7 @@ Test(template, test_single_values_and_literal_strings_are_considered_trivial)
 {
   LogMessage *msg = create_sample_message();
 
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
   assert_template_trivial_value("", msg, "", LM_VT_STRING);
   assert_template_trivial_value(" ", msg, " ", LM_VT_STRING);
   assert_template_trivial_value("literal", msg, "literal", LM_VT_STRING);
@@ -490,10 +492,11 @@ Test(template, test_single_values_and_literal_strings_are_considered_trivial)
   assert_template_trivial_value("$MSG", msg, "árvíztűrőtükörfúrógép", LM_VT_STRING);
   assert_template_trivial_value("$HOST", msg, "bzorp", LM_VT_STRING);
   assert_template_trivial_value("${APP.VALUE}", msg, "value", LM_VT_STRING);
-  assert_template_trivial_value("${number1}", msg, "123", LM_VT_STRING);
-
-  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
   assert_template_trivial_value("${number1}", msg, "123", LM_VT_INTEGER);
+
+
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
+  assert_template_trivial_value("${number1}", msg, "123", LM_VT_STRING);
 
   log_msg_unref(msg);
 }
