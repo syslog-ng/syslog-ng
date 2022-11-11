@@ -51,7 +51,7 @@ TestSuite(format_json, .init = setup, .fini = teardown);
 
 Test(format_json, test_format_json)
 {
-  /* version 3.x behavior, should be changed once VERSION_VALUE becomes 4.0 */
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
   assert_template_format("$(format-json MSG=$MSG)", "{\"MSG\":\"árvíztűrőtükörfúrógép\"}");
   assert_template_format("$(format-json MSG=$escaping)",
                          "{\"MSG\":\"binary stuff follows \\\"\\\\xad árvíztűrőtükörfúrógép\"}");
@@ -73,8 +73,10 @@ Test(format_json, test_format_json)
   assert_template_format("$(format-json sdata.win@18372.4.fruit=\"pear\" sdata.win@18372.4.taste=\"good\")",
                          "{\"sdata\":{\"win@18372.4\":{\"taste\":\"good\",\"fruit\":\"pear\"}}}");
 
+
   assert_template_format("$(format-json --scope selected_macros)",
-                         "{\"TAGS\":\"alma,korte,citrom,\\\"tag,containing,comma\\\"\",\"SOURCEIP\":\"10.11.12.13\",\"SEQNUM\":\"999\",\"PROGRAM\":\"syslog-ng\",\"PRIORITY\":\"err\",\"PID\":\"23323\",\"MESSAGE\":\"árvíztűrőtükörfúrógép\",\"HOST\":\"bzorp\",\"FACILITY\":\"local3\",\"DATE\":\"Feb 11 10:34:56\"}");
+                         "{\"TAGS\":[\"alma\",\"korte\",\"citrom\",\"tag,containing,comma\"],\"SOURCEIP\":\"10.11.12.13\",\"SEQNUM\":\"999\",\"PROGRAM\":\"syslog-ng\",\"PRIORITY\":\"err\",\"PID\":\"23323\",\"MESSAGE\":\"árvíztűrőtükörfúrógép\",\"HOST\":\"bzorp\",\"FACILITY\":\"local3\",\"DATE\":\"Feb 11 10:34:56\"}");
+
   assert_template_format("$(format-json --scope rfc3164 --key *.*)",
                          "{\"_unix\":{\"uid\":\"1000\",\"gid\":\"1000\",\"cmd\":\"command\"},\"_json\":{\"sub\":{\"value2\":\"subvalue2\",\"value1\":\"subvalue1\"},\"foo\":\"bar\"},\"PROGRAM\":\"syslog-ng\",\"PRIORITY\":\"err\",\"PID\":\"23323\",\"MESSAGE\":\"árvíztűrőtükörfúrógép\",\"HOST\":\"bzorp\",\"FACILITY\":\"local3\",\"DATE\":\"Feb 11 10:34:56\",\"APP\":{\"VALUE7\":\"value\",\"VALUE6\":\"value\",\"VALUE5\":\"value\",\"VALUE4\":\"value\",\"VALUE3\":\"value\",\"VALUE2\":\"value\",\"VALUE\":\"value\",\"STRIP5\":\"\",\"STRIP4\":\"value\",\"STRIP3\":\"     value     \",\"STRIP2\":\"value     \",\"STRIP1\":\"     value\",\"QVALUE\":\"\\\"value\\\"\"}}");
 
@@ -94,10 +96,10 @@ Test(format_json, test_format_json)
   assert_template_format("$(format-json .program.@name=${PROGRAM} .program.foo .program.bar --key .program.* --shift-levels 2 --add-prefix _)",
                          "{\"_@name\":\"syslog-ng\"}");
 
-  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
-
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
   assert_template_format("$(format-json --scope selected_macros)",
-                         "{\"TAGS\":[\"alma\",\"korte\",\"citrom\",\"tag,containing,comma\"],\"SOURCEIP\":\"10.11.12.13\",\"SEQNUM\":\"999\",\"PROGRAM\":\"syslog-ng\",\"PRIORITY\":\"err\",\"PID\":\"23323\",\"MESSAGE\":\"árvíztűrőtükörfúrógép\",\"HOST\":\"bzorp\",\"FACILITY\":\"local3\",\"DATE\":\"Feb 11 10:34:56\"}");
+                         "{\"TAGS\":\"alma,korte,citrom,\\\"tag,containing,comma\\\"\",\"SOURCEIP\":\"10.11.12.13\",\"SEQNUM\":\"999\",\"PROGRAM\":\"syslog-ng\",\"PRIORITY\":\"err\",\"PID\":\"23323\",\"MESSAGE\":\"árvíztűrőtükörfúrógép\",\"HOST\":\"bzorp\",\"FACILITY\":\"local3\",\"DATE\":\"Feb 11 10:34:56\"}");
+
 }
 
 Test(format_json, test_format_json_key)
@@ -158,6 +160,7 @@ Test(format_json, test_format_json_with_type_hints)
 
 Test(format_json, test_v3x_value_pairs_yields_string_values)
 {
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
   /* in 3.x mode, numbers remain strings */
 
   /* template */
