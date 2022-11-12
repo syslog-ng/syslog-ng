@@ -21,6 +21,8 @@
  *
  */
 
+#include <math.h>
+
 #include "diskq.h"
 #include "diskq-config.h"
 
@@ -131,20 +133,19 @@ _release_queue(LogDestDriver *dd, LogQueue *queue)
     }
 }
 
-static void
-_set_default_truncate_size_ratio(DiskQDestPlugin *self, GlobalConfig *cfg)
+static gboolean
+_is_truncate_size_ratio_set_explicitly(DiskQDestPlugin *self, LogDestDriver *dd)
 {
-  if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_33))
-    {
-      msg_warning_once("WARNING: the truncation of the disk-buffer files is changed starting with "
-                       VERSION_3_33 ". You are using an older config version and your config does not "
-                       "set the truncate-size-ratio() option. We will not use the new truncating logic "
-                       "with this config for compatibility.");
-      self->options.truncate_size_ratio = 0;
-      return;
-    }
+  GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
+  return fabs(self->options.truncate_size_ratio - (-1)) >= DBL_EPSILON
+         || disk_queue_config_is_truncate_size_ratio_set_explicitly(cfg);
+}
 
-  self->options.truncate_size_ratio = disk_queue_config_get_truncate_size_ratio(cfg);
+static gboolean
+_is_prealloc_set_explicitly(DiskQDestPlugin *self, LogDestDriver *dd)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
+  return self->options.prealloc != -1 || disk_queue_config_is_prealloc_set_explicitly(cfg);
 }
 
 static gboolean
@@ -152,13 +153,39 @@ _set_truncate_size_ratio_and_prealloc(DiskQDestPlugin *self, LogDestDriver *dd)
 {
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
 
-  if (self->options.truncate_size_ratio < 0)
-    _set_default_truncate_size_ratio(self, cfg);
+  gdouble truncate_size_ratio = self->options.truncate_size_ratio;
+  if (truncate_size_ratio < 0)
+    {
+      if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_33))
+        {
+          msg_warning_once("WARNING: the truncation of the disk-buffer files is changed starting with "
+                           VERSION_3_33 ". You are using an older config version and your config does not "
+                           "set the truncate-size-ratio() option. We will not use the new truncating logic "
+                           "with this config for compatibility.");
+          /* Handle it as truncate-size-ratio(0) was set explicitly by the user. */
+          disk_queue_options_set_truncate_size_ratio(&self->options, 0);
+          truncate_size_ratio = 0;
+        }
+      else
+        {
+          truncate_size_ratio = disk_queue_config_get_truncate_size_ratio(cfg);
+        }
+    }
 
-  if (self->options.prealloc < 0)
-    self->options.prealloc = disk_queue_config_get_prealloc(cfg);
+  gboolean prealloc = self->options.prealloc;
+  if (prealloc < 0)
+    {
+      prealloc = disk_queue_config_get_prealloc(cfg);
+    }
 
-  if (self->options.truncate_size_ratio < 1 && self->options.prealloc)
+  if (!(prealloc && truncate_size_ratio < 1))
+    {
+      self->options.truncate_size_ratio = truncate_size_ratio;
+      self->options.prealloc = prealloc;
+      return TRUE;
+    }
+
+  if (_is_truncate_size_ratio_set_explicitly(self, dd) && _is_prealloc_set_explicitly(self, dd))
     {
       msg_error("Cannot enable preallocation and truncation at the same time. "
                 "Please disable either the truncation (truncate-size-ratio(1)) or the preallocation (prealloc(no))",
@@ -166,7 +193,31 @@ _set_truncate_size_ratio_and_prealloc(DiskQDestPlugin *self, LogDestDriver *dd)
       return FALSE;
     }
 
-  return TRUE;
+  if (_is_truncate_size_ratio_set_explicitly(self, dd))
+    {
+      msg_warning("Cannot enable preallocation and truncation at the same time. "
+                  "Preallocation disabled",
+                  log_pipe_location_tag(&dd->super.super));
+      self->options.truncate_size_ratio = truncate_size_ratio;
+      self->options.prealloc = FALSE;
+      return TRUE;
+    }
+
+  if (_is_prealloc_set_explicitly(self, dd))
+    {
+      msg_warning("Cannot enable preallocation and truncation at the same time. "
+                  "Truncation disabled",
+                  log_pipe_location_tag(&dd->super.super));
+      self->options.truncate_size_ratio = 1;
+      self->options.prealloc = prealloc;
+      return TRUE;
+    }
+
+  /*
+   * This means that our hard coded default values enabled preallocation and truncation at the same time,
+   * which is a coding error.
+   */
+  g_assert_not_reached();
 }
 
 static gboolean
