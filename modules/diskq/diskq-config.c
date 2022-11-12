@@ -72,7 +72,7 @@ disk_queue_config_get_truncate_size_ratio(GlobalConfig *cfg)
 {
   DiskQueueConfig *dqc = disk_queue_config_get(cfg);
 
-  if (fabs(dqc->truncate_size_ratio - (-1)) < DBL_EPSILON)
+  if (!disk_queue_config_is_truncate_size_ratio_set_explicitly(cfg))
     {
       if (cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
         return DEFAULT_TRUNCATE_SIZE_RATIO_V3_X;
@@ -80,6 +80,13 @@ disk_queue_config_get_truncate_size_ratio(GlobalConfig *cfg)
     }
 
   return dqc->truncate_size_ratio;
+}
+
+gboolean
+disk_queue_config_is_truncate_size_ratio_set_explicitly(GlobalConfig *cfg)
+{
+  DiskQueueConfig *dqc = disk_queue_config_get(cfg);
+  return fabs(dqc->truncate_size_ratio - (-1)) >= DBL_EPSILON;
 }
 
 void
@@ -94,8 +101,15 @@ disk_queue_config_get_prealloc(GlobalConfig *cfg)
 {
   DiskQueueConfig *dqc = disk_queue_config_get(cfg);
 
-  if (dqc->prealloc == -1)
+  if (!disk_queue_config_is_prealloc_set_explicitly(cfg))
     return DEFAULT_PREALLOC;
 
   return dqc->prealloc;
+}
+
+gboolean
+disk_queue_config_is_prealloc_set_explicitly(GlobalConfig *cfg)
+{
+  DiskQueueConfig *dqc = disk_queue_config_get(cfg);
+  return dqc->prealloc != -1;
 }

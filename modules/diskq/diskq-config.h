@@ -33,10 +33,14 @@ typedef struct _DiskQueueConfig
 } DiskQueueConfig;
 
 DiskQueueConfig *disk_queue_config_get(GlobalConfig *cfg);
+
 void disk_queue_config_set_truncate_size_ratio(GlobalConfig *cfg, gdouble truncate_size_ratio);
 gdouble disk_queue_config_get_truncate_size_ratio(GlobalConfig *cfg);
+gboolean disk_queue_config_is_truncate_size_ratio_set_explicitly(GlobalConfig *cfg);
+
 void disk_queue_config_set_prealloc(GlobalConfig *cfg, gboolean prealloc);
 gboolean disk_queue_config_get_prealloc(GlobalConfig *cfg);
+gboolean disk_queue_config_is_prealloc_set_explicitly(GlobalConfig *cfg);
 
 #endif
 
