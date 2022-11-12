@@ -148,6 +148,28 @@ _set_default_truncate_size_ratio(DiskQDestPlugin *self, GlobalConfig *cfg)
 }
 
 static gboolean
+_set_truncate_size_ratio_and_prealloc(DiskQDestPlugin *self, LogDestDriver *dd)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
+
+  if (self->options.truncate_size_ratio < 0)
+    _set_default_truncate_size_ratio(self, cfg);
+
+  if (self->options.prealloc < 0)
+    self->options.prealloc = disk_queue_config_get_prealloc(cfg);
+
+  if (self->options.truncate_size_ratio < 1 && self->options.prealloc)
+    {
+      msg_error("Cannot enable preallocation and truncation at the same time. "
+                "Please disable either the truncation (truncate-size-ratio(1)) or the preallocation (prealloc(no))",
+                log_pipe_location_tag(&dd->super.super));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
 _attach(LogDriverPlugin *s, LogDriver *d)
 {
   DiskQDestPlugin *self = (DiskQDestPlugin *) s;
@@ -175,18 +197,9 @@ _attach(LogDriverPlugin *s, LogDriver *d)
     self->options.mem_buf_length = cfg->log_fifo_size;
   if (self->options.qout_size < 0)
     self->options.qout_size = 1000;
-  if (self->options.truncate_size_ratio < 0)
-    _set_default_truncate_size_ratio(self, cfg);
-  if (self->options.prealloc < 0)
-    self->options.prealloc = disk_queue_config_get_prealloc(cfg);
 
-  if (self->options.truncate_size_ratio < 1 && self->options.prealloc)
-    {
-      msg_error("Cannot enable preallocation and truncation at the same time. "
-                "Please disable either the truncation (truncate-size-ratio(1)) or the preallocation (prealloc(no))",
-                log_pipe_location_tag(&dd->super.super));
-      return FALSE;
-    }
+  if (!_set_truncate_size_ratio_and_prealloc(self, dd))
+    return FALSE;
 
   dd->acquire_queue = _acquire_queue;
   dd->release_queue = _release_queue;
