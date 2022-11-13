@@ -31,8 +31,16 @@
 #include "str-utils.h"
 
 #define IP_BUF_SIZE 64
-#define PROXY_PROTO_HDR_MAX_LEN_RFC 108
-#define PROXY_PROTO_HDR_MAX_LEN 1500
+
+/* This file implements: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt */
+
+/* PROXYv1 line without newlines or terminating zero character.  The
+ * protocol specification contains the number 108 that includes both the
+ * CRLF sequence and the NUL */
+#define PROXY_PROTO_HDR_MAX_LEN_RFC 105
+
+/* the size of the buffer we use to fetch the PROXY header into */
+#define PROXY_PROTO_HDR_BUFFER_SIZE 1500
 
 typedef struct _LogProtoProxiedTextServer
 {
@@ -66,7 +74,7 @@ typedef struct _LogProtoProxiedTextServer
 
   /* 0 unknown, 1 or 2 indicate proxy header version */
   gint proxy_header_version;
-  guchar proxy_header_buff[PROXY_PROTO_HDR_MAX_LEN + 1];
+  guchar proxy_header_buff[PROXY_PROTO_HDR_BUFFER_SIZE];
   gsize proxy_header_buff_len;
 } LogProtoProxiedTextServer;
 
@@ -113,16 +121,7 @@ _check_proxy_v1_header_length(const guchar *msg, gsize msg_len)
 {
   if (msg_len > PROXY_PROTO_HDR_MAX_LEN_RFC)
     {
-      msg_warning("PROXY proto header length exceeds max. length defined by specification",
-                  evt_tag_long("length", msg_len),
-                  evt_tag_str("header", (const gchar *)msg));
-    }
-
-  if (msg_len > PROXY_PROTO_HDR_MAX_LEN)
-    {
-      msg_error("PROXY proto header with invalid header length",
-                evt_tag_int("max_parsable_length", PROXY_PROTO_HDR_MAX_LEN),
-                evt_tag_int("max_length_by_spec", PROXY_PROTO_HDR_MAX_LEN_RFC),
+      msg_error("PROXY proto header length exceeds max length defined by the specification",
                 evt_tag_long("length", msg_len),
                 evt_tag_str("header", (const gchar *)msg));
       return FALSE;
@@ -212,10 +211,30 @@ ret:
 }
 
 static gboolean
+_extract_proxy_v1_header(LogProtoProxiedTextServer *self, guchar **msg, gsize *msg_len)
+{
+  if (self->proxy_header_buff[self->proxy_header_buff_len - 1] == '\n')
+    self->proxy_header_buff_len--;
+
+  if (self->proxy_header_buff[self->proxy_header_buff_len - 1] == '\r')
+    self->proxy_header_buff_len--;
+
+  self->proxy_header_buff[self->proxy_header_buff_len] = 0;
+  *msg = self->proxy_header_buff;
+  *msg_len = self->proxy_header_buff_len;
+  return TRUE;
+}
+
+static gboolean
 _parse_proxy_v1_header(LogProtoProxiedTextServer *self)
 {
-  const guchar *proxy_line = self->proxy_header_buff;
-  gsize proxy_line_len = self->proxy_header_buff_len;
+  guchar *proxy_line;
+  gsize proxy_line_len;
+
+  if (!_extract_proxy_v1_header(self, &proxy_line, &proxy_line_len))
+    return FALSE;
+
+
   gsize header_len = 0;
 
   if (!_check_proxy_v1_header_length(proxy_line, proxy_line_len))
@@ -352,14 +371,17 @@ _fetch_chunk(LogProtoProxiedTextServer *self, gsize upto_bytes)
 static inline LogProtoStatus
 _fetch_until_newline(LogProtoProxiedTextServer *self)
 {
-  while(self->proxy_header_buff_len < PROXY_PROTO_HDR_MAX_LEN)
+  /* leave 1 character for terminating zero.  We should have plenty of space
+   * in our buffer, as the longest line we need to fetch is 107 bytes
+   * including the line terminator characters. */
+
+  while (self->proxy_header_buff_len < sizeof(self->proxy_header_buff) - 1)
     {
       LogProtoStatus status = _fetch_chunk(self, self->proxy_header_buff_len + 1);
 
       if (status != LPS_SUCCESS)
         return status;
 
-      self->proxy_header_buff[self->proxy_header_buff_len] = 0;
       if (self->proxy_header_buff[self->proxy_header_buff_len - 1] == '\n')
         {
           return LPS_SUCCESS;
@@ -367,7 +389,7 @@ _fetch_until_newline(LogProtoProxiedTextServer *self)
     }
 
   msg_error("PROXY proto header with invalid header length",
-            evt_tag_int("max_parsable_length", PROXY_PROTO_HDR_MAX_LEN),
+            evt_tag_int("max_parsable_length", sizeof(self->proxy_header_buff)-1),
             evt_tag_int("max_length_by_spec", PROXY_PROTO_HDR_MAX_LEN_RFC),
             evt_tag_long("length", self->proxy_header_buff_len),
             evt_tag_str("header", (const gchar *)self->proxy_header_buff));
