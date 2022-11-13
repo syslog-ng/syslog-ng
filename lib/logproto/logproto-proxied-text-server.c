@@ -58,6 +58,12 @@ typedef struct _LogProtoProxiedTextServer
   gboolean handshake_done;
   gboolean has_to_switch_to_tls;
 
+  enum {
+    LPPTS_INITIAL,
+    LPPTS_DETERMINE_VERSION,
+    LPPTS_PROXY_V1_READ_LINE,
+  } header_fetch_state;
+
   guchar proxy_header_buff[PROXY_PROTO_HDR_MAX_LEN + 1];
   gsize proxy_header_buff_len;
 } LogProtoProxiedTextServer;
@@ -238,38 +244,55 @@ log_proto_proxied_text_server_prepare(LogProtoServer *s, GIOCondition *cond, gin
   return LPPA_POLL_IO;
 }
 
-static inline LogProtoStatus
-_fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
+static LogProtoStatus
+_fetch_chunk(LogProtoProxiedTextServer *self, gsize upto_bytes)
 {
-  while(self->proxy_header_buff_len < PROXY_PROTO_HDR_MAX_LEN)
+  g_assert(upto_bytes < sizeof(self->proxy_header_buff));
+  if (self->proxy_header_buff_len < upto_bytes)
     {
       gssize rc = log_transport_read(self->super.super.super.transport,
                                      &(self->proxy_header_buff[self->proxy_header_buff_len]),
-                                     sizeof(gchar), NULL);
-      if(rc < 0)
+                                     upto_bytes - self->proxy_header_buff_len, NULL);
+      if (rc < 0)
         {
           if (errno == EAGAIN)
             return LPS_AGAIN;
           else
             {
-              msg_error("I/O error occurred while reading proxy header", evt_tag_int(EVT_TAG_FD,
-                        self->super.super.super.transport->fd),
+              msg_error("I/O error occurred while reading proxy header",
+                        evt_tag_int(EVT_TAG_FD, self->super.super.super.transport->fd),
                         evt_tag_error(EVT_TAG_OSERROR));
               return LPS_ERROR;
             }
         }
+      /* EOF without data */
+      if (rc == 0)
+        {
+          return LPS_EOF;
+        }
 
-      /* permissive termination */
-      if(rc == 0)
-        return LPS_SUCCESS;
+      self->proxy_header_buff_len += rc;
+    }
+  if (self->proxy_header_buff_len == upto_bytes)
+    return LPS_SUCCESS;
+  return LPS_AGAIN;
+}
 
-      self->proxy_header_buff_len++;
-      self->proxy_header_buff[self->proxy_header_buff_len] = '\0';
+static inline LogProtoStatus
+_fetch_until_newline(LogProtoProxiedTextServer *self)
+{
+  while(self->proxy_header_buff_len < PROXY_PROTO_HDR_MAX_LEN)
+    {
+      LogProtoStatus status = _fetch_chunk(self, self->proxy_header_buff_len + 1);
+
+      if (status != LPS_SUCCESS)
+        return status;
+
+      self->proxy_header_buff[self->proxy_header_buff_len] = 0;
       if (self->proxy_header_buff[self->proxy_header_buff_len - 1] == '\n')
         {
           return LPS_SUCCESS;
         }
-
     }
 
   msg_error("PROXY proto header with invalid header length",
@@ -278,6 +301,54 @@ _fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
             evt_tag_long("length", self->proxy_header_buff_len),
             evt_tag_str("header", (const gchar *)self->proxy_header_buff));
   return LPS_ERROR;
+}
+
+static gboolean
+_is_proxy_version_v1(LogProtoProxiedTextServer *self)
+{
+  if (self->proxy_header_buff_len < 5)
+    return FALSE;
+
+  return memcmp(self->proxy_header_buff, "PROXY", 5) == 0;
+}
+
+
+static inline LogProtoStatus
+_fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
+{
+  LogProtoStatus status;
+
+  switch (self->header_fetch_state)
+    {
+    case LPPTS_INITIAL:
+      self->header_fetch_state = LPPTS_DETERMINE_VERSION;
+      /* fallthrough */
+    case LPPTS_DETERMINE_VERSION:
+      status = _fetch_chunk(self, 5);
+
+      if (status != LPS_SUCCESS)
+        return status;
+
+      if (_is_proxy_version_v1(self))
+        {
+          self->header_fetch_state = LPPTS_PROXY_V1_READ_LINE;
+          goto process_proxy_v1;
+        }
+      else
+        {
+          msg_error("Unable to determine PROXY protocol version",
+                    evt_tag_int(EVT_TAG_FD, self->super.super.super.transport->fd));
+          return LPS_ERROR;
+        }
+      g_assert_not_reached();
+
+    case LPPTS_PROXY_V1_READ_LINE:
+
+process_proxy_v1:
+      return _fetch_until_newline(self);
+    default:
+      g_assert_not_reached();
+    }
 }
 
 static gboolean
