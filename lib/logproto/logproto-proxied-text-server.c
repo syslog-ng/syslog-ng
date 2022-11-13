@@ -111,7 +111,7 @@ union proxy_addr {
 #define PROXY_HDR_UNKNOWN "PROXY UNKNOWN"
 
 static gboolean
-_check_header_length(const guchar *msg, gsize msg_len)
+_check_proxy_v1_header_length(const guchar *msg, gsize msg_len)
 {
   if (msg_len > PROXY_PROTO_HDR_MAX_LEN_RFC)
     {
@@ -134,7 +134,7 @@ _check_header_length(const guchar *msg, gsize msg_len)
 }
 
 static gboolean
-_check_header(const guchar *msg, gsize msg_len, const gchar *expected_header, gsize *header_len)
+_check_proxy_v1_header(const guchar *msg, gsize msg_len, const gchar *expected_header, gsize *header_len)
 {
   gsize expected_header_length = strlen(expected_header);
 
@@ -146,25 +146,25 @@ _check_header(const guchar *msg, gsize msg_len, const gchar *expected_header, gs
 }
 
 static gboolean
-_is_proxy_proto_tcp4(const guchar *msg, gsize msg_len, gsize *header_len)
+_is_proxy_v1_proto_tcp4(const guchar *msg, gsize msg_len, gsize *header_len)
 {
-  return _check_header(msg, msg_len, PROXY_HDR_TCP4, header_len);
+  return _check_proxy_v1_header(msg, msg_len, PROXY_HDR_TCP4, header_len);
 }
 
 static gboolean
-_is_proxy_proto_tcp6(const guchar *msg, gsize msg_len, gsize *header_len)
+_is_proxy_v1_proto_tcp6(const guchar *msg, gsize msg_len, gsize *header_len)
 {
-  return _check_header(msg, msg_len, PROXY_HDR_TCP6, header_len);
+  return _check_proxy_v1_header(msg, msg_len, PROXY_HDR_TCP6, header_len);
 }
 
 static gboolean
-_is_proxy_unknown(const guchar *msg, gsize msg_len, gsize *header_len)
+_is_proxy_v1_unknown(const guchar *msg, gsize msg_len, gsize *header_len)
 {
-  return _check_header(msg, msg_len, PROXY_HDR_UNKNOWN, header_len);
+  return _check_proxy_v1_header(msg, msg_len, PROXY_HDR_UNKNOWN, header_len);
 }
 
 static gboolean
-_parse_unknown_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
+_parse_proxy_v1_unknown_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
 {
   if (msg_len == 0)
     return TRUE;
@@ -176,7 +176,7 @@ _parse_unknown_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize 
 }
 
 static gboolean
-_parse_tcp_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
+_parse_proxy_v1_tcp_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
 {
   if (msg_len == 0)
     return FALSE;
@@ -214,36 +214,38 @@ ret:
 }
 
 static gboolean
-_proxy_v1_log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
+_parse_proxy_v1_header(LogProtoProxiedTextServer *self)
 {
+  const guchar *proxy_line = self->proxy_header_buff;
+  gsize proxy_line_len = self->proxy_header_buff_len;
   gsize header_len = 0;
 
-  if (!_check_header_length(msg, msg_len))
+  if (!_check_proxy_v1_header_length(proxy_line, proxy_line_len))
     return FALSE;
 
-  if (_is_proxy_unknown(msg, msg_len, &header_len))
+  if (_is_proxy_v1_unknown(proxy_line, proxy_line_len, &header_len))
     {
       self->info->unknown = TRUE;
-      return _parse_unknown_header(self, msg + header_len, msg_len - header_len);
+      return _parse_proxy_v1_unknown_header(self, proxy_line + header_len, proxy_line_len - header_len);
     }
 
-  if (_is_proxy_proto_tcp4(msg, msg_len, &header_len))
+  if (_is_proxy_v1_proto_tcp4(proxy_line, proxy_line_len, &header_len))
     {
       self->info->ip_version = 4;
-      return _parse_tcp_header(self, msg + header_len, msg_len - header_len);
+      return _parse_proxy_v1_tcp_header(self, proxy_line + header_len, proxy_line_len - header_len);
     }
 
-  if (_is_proxy_proto_tcp6(msg, msg_len, &header_len))
+  if (_is_proxy_v1_proto_tcp6(proxy_line, proxy_line_len, &header_len))
     {
       self->info->ip_version = 6;
-      return _parse_tcp_header(self, msg + header_len, msg_len - header_len);
+      return _parse_proxy_v1_tcp_header(self, proxy_line + header_len, proxy_line_len - header_len);
     }
 
   return FALSE;
 }
 
 static gboolean
-_proxy_v2_parse_proxy_header(LogProtoProxiedTextServer *self, struct proxy_hdr_v2 *proxy_hdr, union proxy_addr *proxy_addr)
+_parse_proxy_v2_proxy_address(LogProtoProxiedTextServer *self, struct proxy_hdr_v2 *proxy_hdr, union proxy_addr *proxy_addr)
 {
   gint address_family = (proxy_hdr->fam & 0xF0) >> 4;
   gint proxy_header_len = ntohs(proxy_hdr->len);
@@ -281,9 +283,9 @@ _proxy_v2_parse_proxy_header(LogProtoProxiedTextServer *self, struct proxy_hdr_v
 }
 
 static gboolean
-_proxy_v2_log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
+_parse_proxy_v2_header(LogProtoProxiedTextServer *self)
 {
-  struct proxy_hdr_v2 *proxy_hdr = (struct proxy_hdr_v2 *) msg;
+  struct proxy_hdr_v2 *proxy_hdr = (struct proxy_hdr_v2 *) self->proxy_header_buff;
   union proxy_addr *proxy_addr = (union proxy_addr *)(proxy_hdr + 1);
 
   /* is this proxy v2 */
@@ -298,61 +300,21 @@ _proxy_v2_log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *
   else if ((proxy_hdr->ver_cmd & 0xF) == 1)
     {
       /* PROXY connection */
-      return _proxy_v2_parse_proxy_header(self, proxy_hdr, proxy_addr);
+      return _parse_proxy_v2_proxy_address(self, proxy_hdr, proxy_addr);
     }
 
   return FALSE;
 }
 
 static gboolean
-_log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
+_parse_proxy_header(LogProtoProxiedTextServer *self)
 {
   if (self->proxy_header_version == 1)
-    return _proxy_v1_log_proto_proxied_text_server_parse_header(self, msg, msg_len);
+    return _parse_proxy_v1_header(self);
   else if (self->proxy_header_version == 2)
-    return _proxy_v2_log_proto_proxied_text_server_parse_header(self, msg, msg_len);
+    return _parse_proxy_v2_header(self);
   else
     g_assert_not_reached();
-}
-
-static void
-_log_proto_proxied_text_server_add_aux_data(LogProtoProxiedTextServer *self, LogTransportAuxData *aux)
-{
-  gchar buf1[8];
-  gchar buf2[8];
-  gchar buf3[8];
-
-  if (self->info->unknown)
-    return;
-
-  snprintf(buf1, 8, "%i", self->info->src_port);
-  snprintf(buf2, 8, "%i", self->info->dst_port);
-  snprintf(buf3, 8, "%i", self->info->ip_version);
-
-  log_transport_aux_data_add_nv_pair(aux, "PROXIED_SRCIP", self->info->src_ip);
-  log_transport_aux_data_add_nv_pair(aux, "PROXIED_DSTIP", self->info->dst_ip);
-  log_transport_aux_data_add_nv_pair(aux, "PROXIED_SRCPORT", buf1);
-  log_transport_aux_data_add_nv_pair(aux, "PROXIED_DSTPORT", buf2);
-  log_transport_aux_data_add_nv_pair(aux, "PROXIED_IP_VERSION", buf3);
-
-  return;
-}
-
-static LogProtoPrepareAction
-log_proto_proxied_text_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
-{
-  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
-
-  *cond = s->transport->cond;
-
-  if(self->handshake_done)
-    return log_proto_text_server_prepare_method(s, cond, timeout);
-
-  /* if there's no pending I/O in the transport layer, then we want to do a read */
-  if (*cond == 0)
-    *cond = G_IO_IN;
-
-  return LPPA_POLL_IO;
 }
 
 static LogProtoStatus
@@ -413,7 +375,6 @@ _fetch_until_newline(LogProtoProxiedTextServer *self)
             evt_tag_str("header", (const gchar *)self->proxy_header_buff));
   return LPS_ERROR;
 }
-
 
 static LogProtoStatus
 _fetch_proxy_v2_payload(LogProtoProxiedTextServer *self)
@@ -506,7 +467,7 @@ process_proxy_v2:
 }
 
 static gboolean
-_log_proto_proxied_text_server_switch_to_tls(LogProtoProxiedTextServer *self)
+_switch_to_tls(LogProtoProxiedTextServer *self)
 {
   if (!multitransport_switch((MultiTransport *)self->super.super.super.transport, transport_factory_tls_id()))
     {
@@ -518,8 +479,25 @@ _log_proto_proxied_text_server_switch_to_tls(LogProtoProxiedTextServer *self)
   return TRUE;
 }
 
+static LogProtoPrepareAction
+log_proto_proxied_text_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
+{
+  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
+
+  *cond = s->transport->cond;
+
+  if(self->handshake_done)
+    return log_proto_text_server_prepare_method(s, cond, timeout);
+
+  /* if there's no pending I/O in the transport layer, then we want to do a read */
+  if (*cond == 0)
+    *cond = G_IO_IN;
+
+  return LPPA_POLL_IO;
+}
+
 static LogProtoStatus
-_log_proto_proxied_text_server_handshake(LogProtoServer *s)
+log_proto_proxied_text_server_handshake(LogProtoServer *s)
 {
   LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
 
@@ -529,8 +507,7 @@ _log_proto_proxied_text_server_handshake(LogProtoServer *s)
   if (status != LPS_SUCCESS)
     return status;
 
-  gboolean parsable = _log_proto_proxied_text_server_parse_header(self, self->proxy_header_buff,
-                      self->proxy_header_buff_len);
+  gboolean parsable = _parse_proxy_header(self);
 
   msg_debug("PROXY protocol header received",
             evt_tag_mem("line", self->proxy_header_buff, self->proxy_header_buff_len));
@@ -539,7 +516,7 @@ _log_proto_proxied_text_server_handshake(LogProtoServer *s)
     {
       msg_info("PROXY protocol header parsed successfully");
 
-      if (self->has_to_switch_to_tls && !_log_proto_proxied_text_server_switch_to_tls(self))
+      if (self->has_to_switch_to_tls && !_switch_to_tls(self))
         return LPS_ERROR;
 
       return LPS_SUCCESS;
@@ -552,14 +529,37 @@ _log_proto_proxied_text_server_handshake(LogProtoServer *s)
 }
 
 static gboolean
-_log_proto_proxied_text_server_handshake_in_progress(LogProtoServer *s)
+log_proto_proxied_text_server_handshake_in_progress(LogProtoServer *s)
 {
   LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
   return !self->handshake_done;
 }
 
+static void
+_augment_aux_data(LogProtoProxiedTextServer *self, LogTransportAuxData *aux)
+{
+  gchar buf1[8];
+  gchar buf2[8];
+  gchar buf3[8];
+
+  if (self->info->unknown)
+    return;
+
+  snprintf(buf1, 8, "%i", self->info->src_port);
+  snprintf(buf2, 8, "%i", self->info->dst_port);
+  snprintf(buf3, 8, "%i", self->info->ip_version);
+
+  log_transport_aux_data_add_nv_pair(aux, "PROXIED_SRCIP", self->info->src_ip);
+  log_transport_aux_data_add_nv_pair(aux, "PROXIED_DSTIP", self->info->dst_ip);
+  log_transport_aux_data_add_nv_pair(aux, "PROXIED_SRCPORT", buf1);
+  log_transport_aux_data_add_nv_pair(aux, "PROXIED_DSTPORT", buf2);
+  log_transport_aux_data_add_nv_pair(aux, "PROXIED_IP_VERSION", buf3);
+
+  return;
+}
+
 static LogProtoStatus
-_log_proto_proxied_text_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
+log_proto_proxied_text_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                                      LogTransportAuxData *aux, Bookmark *bookmark)
 {
   LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
@@ -570,13 +570,13 @@ _log_proto_proxied_text_server_fetch(LogProtoServer *s, const guchar **msg, gsiz
   if (status != LPS_SUCCESS)
     return status;
 
-  _log_proto_proxied_text_server_add_aux_data(self, aux);
+  _augment_aux_data(self, aux);
 
   return LPS_SUCCESS;
 }
 
 static void
-_log_proto_proxied_text_server_free(LogProtoServer *s)
+log_proto_proxied_text_server_free(LogProtoServer *s)
 {
   LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
 
@@ -590,18 +590,18 @@ _log_proto_proxied_text_server_free(LogProtoServer *s)
 }
 
 static void
-_log_proto_proxied_text_server_init(LogProtoProxiedTextServer *self, LogTransport *transport,
+log_proto_proxied_text_server_init(LogProtoProxiedTextServer *self, LogTransport *transport,
                                     const LogProtoServerOptions *options)
 {
   msg_info("Initializing PROXY protocol source driver", evt_tag_printf("driver", "%p", self));
 
   log_proto_text_server_init(&self->super, transport, options);
 
-  self->super.super.super.fetch = _log_proto_proxied_text_server_fetch;
-  self->super.super.super.free_fn = _log_proto_proxied_text_server_free;
-  self->super.super.super.handshake_in_progess = _log_proto_proxied_text_server_handshake_in_progress;
-  self->super.super.super.handshake = _log_proto_proxied_text_server_handshake;
   self->super.super.super.prepare = log_proto_proxied_text_server_prepare;
+  self->super.super.super.handshake_in_progess = log_proto_proxied_text_server_handshake_in_progress;
+  self->super.super.super.handshake = log_proto_proxied_text_server_handshake;
+  self->super.super.super.fetch = log_proto_proxied_text_server_fetch;
+  self->super.super.super.free_fn = log_proto_proxied_text_server_free;
 
   return;
 }
@@ -612,7 +612,7 @@ log_proto_proxied_text_server_new(LogTransport *transport, const LogProtoServerO
   LogProtoProxiedTextServer *self = g_new0(LogProtoProxiedTextServer, 1);
   self->info = g_new0(struct ProxyProtoInfo, 1);
 
-  _log_proto_proxied_text_server_init(self, transport, options);
+  log_proto_proxied_text_server_init(self, transport, options);
 
   return &self->super.super.super;
 }
