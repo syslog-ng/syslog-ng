@@ -34,25 +34,23 @@
 #define PROXY_PROTO_HDR_MAX_LEN_RFC 108
 #define PROXY_PROTO_HDR_MAX_LEN 1500
 
-struct ProxyProtoInfo
-{
-  gboolean unknown;
-
-  gchar src_ip[IP_BUF_SIZE];
-  gchar dst_ip[IP_BUF_SIZE];
-
-  int ip_version;
-  int src_port;
-  int dst_port;
-};
-
 typedef struct _LogProtoProxiedTextServer
 {
   LogProtoTextServer super;
 
   // Info received from the proxied that should be added as LogTransportAuxData to
   // any message received through this server instance.
-  struct ProxyProtoInfo *info;
+  struct
+  {
+    gboolean unknown;
+
+    gchar src_ip[IP_BUF_SIZE];
+    gchar dst_ip[IP_BUF_SIZE];
+
+    int ip_version;
+    int src_port;
+    int dst_port;
+  } info;
 
   // Flag to only run handshake() once
   gboolean handshake_done;
@@ -190,15 +188,15 @@ _parse_proxy_v1_tcp_header(LogProtoProxiedTextServer *self, const guchar *msg, g
   if (params_n < 4)
     goto ret;
 
-  strncpy(self->info->src_ip, params[0], IP_BUF_SIZE - 1);
-  strncpy(self->info->dst_ip, params[1], IP_BUF_SIZE - 1);
+  strncpy(self->info.src_ip, params[0], IP_BUF_SIZE - 1);
+  strncpy(self->info.dst_ip, params[1], IP_BUF_SIZE - 1);
 
-  self->info->src_port = atoi(params[2]);
-  if (self->info->src_port > 65535 || self->info->src_port < 0)
+  self->info.src_port = atoi(params[2]);
+  if (self->info.src_port > 65535 || self->info.src_port < 0)
     msg_warning("PROXT TCP header contains invalid src port", evt_tag_str("src port", params[2]));
 
-  self->info->dst_port = atoi(params[3]);
-  if (self->info->dst_port > 65535 || self->info->dst_port < 0)
+  self->info.dst_port = atoi(params[3]);
+  if (self->info.dst_port > 65535 || self->info.dst_port < 0)
     msg_warning("PROXT TCP header contains invalid dst port", evt_tag_str("dst port", params[2]));
 
   if (params_n > 4)
@@ -225,19 +223,19 @@ _parse_proxy_v1_header(LogProtoProxiedTextServer *self)
 
   if (_is_proxy_v1_unknown(proxy_line, proxy_line_len, &header_len))
     {
-      self->info->unknown = TRUE;
+      self->info.unknown = TRUE;
       return _parse_proxy_v1_unknown_header(self, proxy_line + header_len, proxy_line_len - header_len);
     }
 
   if (_is_proxy_v1_proto_tcp4(proxy_line, proxy_line_len, &header_len))
     {
-      self->info->ip_version = 4;
+      self->info.ip_version = 4;
       return _parse_proxy_v1_tcp_header(self, proxy_line + header_len, proxy_line_len - header_len);
     }
 
   if (_is_proxy_v1_proto_tcp6(proxy_line, proxy_line_len, &header_len))
     {
-      self->info->ip_version = 6;
+      self->info.ip_version = 6;
       return _parse_proxy_v1_tcp_header(self, proxy_line + header_len, proxy_line_len - header_len);
     }
 
@@ -253,26 +251,26 @@ _parse_proxy_v2_proxy_address(LogProtoProxiedTextServer *self, struct proxy_hdr_
   if (address_family == 1 && proxy_header_len >= sizeof(proxy_addr->ipv4_addr))
     {
       /* AF_INET */
-      inet_ntop(AF_INET, (gchar *) &proxy_addr->ipv4_addr.src_addr, self->info->src_ip, sizeof(self->info->src_ip));
-      inet_ntop(AF_INET, (gchar *) &proxy_addr->ipv4_addr.dst_addr, self->info->dst_ip, sizeof(self->info->dst_ip));
-      self->info->src_port = ntohs(proxy_addr->ipv4_addr.src_port);
-      self->info->dst_port = ntohs(proxy_addr->ipv4_addr.dst_port);
-      self->info->ip_version = 4;
+      inet_ntop(AF_INET, (gchar *) &proxy_addr->ipv4_addr.src_addr, self->info.src_ip, sizeof(self->info.src_ip));
+      inet_ntop(AF_INET, (gchar *) &proxy_addr->ipv4_addr.dst_addr, self->info.dst_ip, sizeof(self->info.dst_ip));
+      self->info.src_port = ntohs(proxy_addr->ipv4_addr.src_port);
+      self->info.dst_port = ntohs(proxy_addr->ipv4_addr.dst_port);
+      self->info.ip_version = 4;
       return TRUE;
     }
   else if (address_family == 2 && proxy_header_len >= sizeof(proxy_addr->ipv6_addr))
     {
       /* AF_INET6 */
-      inet_ntop(AF_INET6, (gchar *) &proxy_addr->ipv6_addr.src_addr, self->info->src_ip, sizeof(self->info->src_ip));
-      inet_ntop(AF_INET6, (gchar *) &proxy_addr->ipv6_addr.dst_addr, self->info->dst_ip, sizeof(self->info->dst_ip));
-      self->info->src_port = ntohs(proxy_addr->ipv6_addr.src_port);
-      self->info->dst_port = ntohs(proxy_addr->ipv6_addr.dst_port);
-      self->info->ip_version = 6;
+      inet_ntop(AF_INET6, (gchar *) &proxy_addr->ipv6_addr.src_addr, self->info.src_ip, sizeof(self->info.src_ip));
+      inet_ntop(AF_INET6, (gchar *) &proxy_addr->ipv6_addr.dst_addr, self->info.dst_ip, sizeof(self->info.dst_ip));
+      self->info.src_port = ntohs(proxy_addr->ipv6_addr.src_port);
+      self->info.dst_port = ntohs(proxy_addr->ipv6_addr.dst_port);
+      self->info.ip_version = 6;
     }
   else if (address_family == 0)
     {
       /* AF_UNSPEC */
-      self->info->unknown = TRUE;
+      self->info.unknown = TRUE;
       return TRUE;
     }
 
@@ -542,15 +540,15 @@ _augment_aux_data(LogProtoProxiedTextServer *self, LogTransportAuxData *aux)
   gchar buf2[8];
   gchar buf3[8];
 
-  if (self->info->unknown)
+  if (self->info.unknown)
     return;
 
-  snprintf(buf1, 8, "%i", self->info->src_port);
-  snprintf(buf2, 8, "%i", self->info->dst_port);
-  snprintf(buf3, 8, "%i", self->info->ip_version);
+  snprintf(buf1, 8, "%i", self->info.src_port);
+  snprintf(buf2, 8, "%i", self->info.dst_port);
+  snprintf(buf3, 8, "%i", self->info.ip_version);
 
-  log_transport_aux_data_add_nv_pair(aux, "PROXIED_SRCIP", self->info->src_ip);
-  log_transport_aux_data_add_nv_pair(aux, "PROXIED_DSTIP", self->info->dst_ip);
+  log_transport_aux_data_add_nv_pair(aux, "PROXIED_SRCIP", self->info.src_ip);
+  log_transport_aux_data_add_nv_pair(aux, "PROXIED_DSTIP", self->info.dst_ip);
   log_transport_aux_data_add_nv_pair(aux, "PROXIED_SRCPORT", buf1);
   log_transport_aux_data_add_nv_pair(aux, "PROXIED_DSTPORT", buf2);
   log_transport_aux_data_add_nv_pair(aux, "PROXIED_IP_VERSION", buf3);
@@ -582,8 +580,6 @@ log_proto_proxied_text_server_free(LogProtoServer *s)
 
   msg_debug("Freeing PROXY protocol source driver", evt_tag_printf("driver", "%p", self));
 
-  g_free(self->info);
-
   log_proto_text_server_free(&self->super.super.super);
 
   return;
@@ -610,8 +606,6 @@ LogProtoServer *
 log_proto_proxied_text_server_new(LogTransport *transport, const LogProtoServerOptions *options)
 {
   LogProtoProxiedTextServer *self = g_new0(LogProtoProxiedTextServer, 1);
-  self->info = g_new0(struct ProxyProtoInfo, 1);
-
   log_proto_proxied_text_server_init(self, transport, options);
 
   return &self->super.super.super;
