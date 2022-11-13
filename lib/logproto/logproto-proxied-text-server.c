@@ -64,7 +64,8 @@ typedef struct _LogProtoProxiedTextServer
   gboolean handshake_done;
   gboolean has_to_switch_to_tls;
 
-  enum {
+  enum
+  {
     LPPTS_INITIAL,
     LPPTS_DETERMINE_VERSION,
     LPPTS_PROXY_V1_READ_LINE,
@@ -87,7 +88,8 @@ struct proxy_hdr_v2
   uint16_t len;     /* number of following bytes part of the header */
 };
 
-union proxy_addr {
+union proxy_addr
+{
   struct
   {
     /* for TCP/UDP over IPv4, len = 12 */
@@ -262,7 +264,8 @@ _parse_proxy_v1_header(LogProtoProxiedTextServer *self)
 }
 
 static gboolean
-_parse_proxy_v2_proxy_address(LogProtoProxiedTextServer *self, struct proxy_hdr_v2 *proxy_hdr, union proxy_addr *proxy_addr)
+_parse_proxy_v2_proxy_address(LogProtoProxiedTextServer *self, struct proxy_hdr_v2 *proxy_hdr,
+                              union proxy_addr *proxy_addr)
 {
   gint address_family = (proxy_hdr->fam & 0xF0) >> 4;
   gint proxy_header_len = ntohs(proxy_hdr->len);
@@ -440,7 +443,7 @@ _fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
     {
     case LPPTS_INITIAL:
       self->header_fetch_state = LPPTS_DETERMINE_VERSION;
-      /* fallthrough */
+    /* fallthrough */
     case LPPTS_DETERMINE_VERSION:
       status = _fetch_chunk(self, 5);
 
@@ -478,7 +481,7 @@ process_proxy_v2:
         return status;
 
       self->header_fetch_state = LPPTS_PROXY_V2_READ_PAYLOAD;
-      /* fallthrough */
+    /* fallthrough */
     case LPPTS_PROXY_V2_READ_PAYLOAD:
       return _fetch_proxy_v2_payload(self);
     default:
@@ -581,7 +584,7 @@ _augment_aux_data(LogProtoProxiedTextServer *self, LogTransportAuxData *aux)
 
 static LogProtoStatus
 log_proto_proxied_text_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
-                                     LogTransportAuxData *aux, Bookmark *bookmark)
+                                    LogTransportAuxData *aux, Bookmark *bookmark)
 {
   LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
 
@@ -610,7 +613,7 @@ log_proto_proxied_text_server_free(LogProtoServer *s)
 
 static void
 log_proto_proxied_text_server_init(LogProtoProxiedTextServer *self, LogTransport *transport,
-                                    const LogProtoServerOptions *options)
+                                   const LogProtoServerOptions *options)
 {
   msg_info("Initializing PROXY protocol source driver", evt_tag_printf("driver", "%p", self));
 
