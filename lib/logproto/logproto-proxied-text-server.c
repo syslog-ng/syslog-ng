@@ -508,11 +508,12 @@ log_proto_proxied_text_server_handshake(LogProtoServer *s)
   gboolean parsable = _parse_proxy_header(self);
 
   msg_debug("PROXY protocol header received",
-            evt_tag_mem("line", self->proxy_header_buff, self->proxy_header_buff_len));
+            evt_tag_int("version", self->proxy_header_version),
+            evt_tag_mem("header", self->proxy_header_buff, self->proxy_header_buff_len));
 
   if (parsable)
     {
-      msg_info("PROXY protocol header parsed successfully");
+      msg_trace("PROXY protocol header parsed successfully");
 
       if (self->has_to_switch_to_tls && !_switch_to_tls(self))
         return LPS_ERROR;
