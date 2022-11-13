@@ -32,7 +32,7 @@
 
 #define IP_BUF_SIZE 64
 #define PROXY_PROTO_HDR_MAX_LEN_RFC 108
-#define PROXY_PROTO_HDR_MAX_LEN (PROXY_PROTO_HDR_MAX_LEN_RFC * 2)
+#define PROXY_PROTO_HDR_MAX_LEN 1500
 
 struct ProxyProtoInfo
 {
@@ -62,11 +62,49 @@ typedef struct _LogProtoProxiedTextServer
     LPPTS_INITIAL,
     LPPTS_DETERMINE_VERSION,
     LPPTS_PROXY_V1_READ_LINE,
+    LPPTS_PROXY_V2_READ_HEADER,
+    LPPTS_PROXY_V2_READ_PAYLOAD,
   } header_fetch_state;
 
+  /* 0 unknown, 1 or 2 indicate proxy header version */
+  gint proxy_header_version;
   guchar proxy_header_buff[PROXY_PROTO_HDR_MAX_LEN + 1];
   gsize proxy_header_buff_len;
 } LogProtoProxiedTextServer;
+
+
+struct proxy_hdr_v2
+{
+  uint8_t sig[12];  /* hex 0D 0A 0D 0A 00 0D 0A 51 55 49 54 0A */
+  uint8_t ver_cmd;  /* protocol version and command */
+  uint8_t fam;      /* protocol family and address */
+  uint16_t len;     /* number of following bytes part of the header */
+};
+
+union proxy_addr {
+  struct
+  {
+    /* for TCP/UDP over IPv4, len = 12 */
+    uint32_t src_addr;
+    uint32_t dst_addr;
+    uint16_t src_port;
+    uint16_t dst_port;
+  } ipv4_addr;
+  struct
+  {
+    /* for TCP/UDP over IPv6, len = 36 */
+    uint8_t  src_addr[16];
+    uint8_t  dst_addr[16];
+    uint16_t src_port;
+    uint16_t dst_port;
+  } ipv6_addr;
+  struct
+  {
+    /* for AF_UNIX sockets, len = 216 */
+    uint8_t src_addr[108];
+    uint8_t dst_addr[108];
+  } unix_addr;
+};
 
 #define PROXY_HDR_TCP4 "PROXY TCP4 "
 #define PROXY_HDR_TCP6 "PROXY TCP6 "
@@ -176,7 +214,7 @@ ret:
 }
 
 static gboolean
-_log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
+_proxy_v1_log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
 {
   gsize header_len = 0;
 
@@ -202,6 +240,79 @@ _log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, con
     }
 
   return FALSE;
+}
+
+static gboolean
+_proxy_v2_parse_proxy_header(LogProtoProxiedTextServer *self, struct proxy_hdr_v2 *proxy_hdr, union proxy_addr *proxy_addr)
+{
+  gint address_family = (proxy_hdr->fam & 0xF0) >> 4;
+  gint proxy_header_len = ntohs(proxy_hdr->len);
+
+  if (address_family == 1 && proxy_header_len >= sizeof(proxy_addr->ipv4_addr))
+    {
+      /* AF_INET */
+      inet_ntop(AF_INET, (gchar *) &proxy_addr->ipv4_addr.src_addr, self->info->src_ip, sizeof(self->info->src_ip));
+      inet_ntop(AF_INET, (gchar *) &proxy_addr->ipv4_addr.dst_addr, self->info->dst_ip, sizeof(self->info->dst_ip));
+      self->info->src_port = ntohs(proxy_addr->ipv4_addr.src_port);
+      self->info->dst_port = ntohs(proxy_addr->ipv4_addr.dst_port);
+      self->info->ip_version = 4;
+      return TRUE;
+    }
+  else if (address_family == 2 && proxy_header_len >= sizeof(proxy_addr->ipv6_addr))
+    {
+      /* AF_INET6 */
+      inet_ntop(AF_INET6, (gchar *) &proxy_addr->ipv6_addr.src_addr, self->info->src_ip, sizeof(self->info->src_ip));
+      inet_ntop(AF_INET6, (gchar *) &proxy_addr->ipv6_addr.dst_addr, self->info->dst_ip, sizeof(self->info->dst_ip));
+      self->info->src_port = ntohs(proxy_addr->ipv6_addr.src_port);
+      self->info->dst_port = ntohs(proxy_addr->ipv6_addr.dst_port);
+      self->info->ip_version = 6;
+    }
+  else if (address_family == 0)
+    {
+      /* AF_UNSPEC */
+      self->info->unknown = TRUE;
+      return TRUE;
+    }
+
+  msg_error("PROXYv2 header does not have enough bytes to represent endpoint addresses or unknown address_family",
+            evt_tag_int("proxy_header_len", proxy_header_len),
+            evt_tag_int("address_family", address_family));
+  return FALSE;
+}
+
+static gboolean
+_proxy_v2_log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
+{
+  struct proxy_hdr_v2 *proxy_hdr = (struct proxy_hdr_v2 *) msg;
+  union proxy_addr *proxy_addr = (union proxy_addr *)(proxy_hdr + 1);
+
+  /* is this proxy v2 */
+  if ((proxy_hdr->ver_cmd & 0xF0) != 0x20)
+    return FALSE;
+
+  if ((proxy_hdr->ver_cmd & 0xF) == 0)
+    {
+      /* LOCAL connection */
+      return TRUE;
+    }
+  else if ((proxy_hdr->ver_cmd & 0xF) == 1)
+    {
+      /* PROXY connection */
+      return _proxy_v2_parse_proxy_header(self, proxy_hdr, proxy_addr);
+    }
+
+  return FALSE;
+}
+
+static gboolean
+_log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
+{
+  if (self->proxy_header_version == 1)
+    return _proxy_v1_log_proto_proxied_text_server_parse_header(self, msg, msg_len);
+  else if (self->proxy_header_version == 2)
+    return _proxy_v2_log_proto_proxied_text_server_parse_header(self, msg, msg_len);
+  else
+    g_assert_not_reached();
 }
 
 static void
@@ -303,6 +414,24 @@ _fetch_until_newline(LogProtoProxiedTextServer *self)
   return LPS_ERROR;
 }
 
+
+static LogProtoStatus
+_fetch_proxy_v2_payload(LogProtoProxiedTextServer *self)
+{
+  struct proxy_hdr_v2 *hdr = (struct proxy_hdr_v2 *) self->proxy_header_buff;
+  gint proxy_header_len = ntohs(hdr->len);
+
+  if (self->proxy_header_buff_len + proxy_header_len > sizeof(self->proxy_header_buff))
+    {
+      msg_error("PROXYv2 proto header with invalid header length",
+                evt_tag_int("max_parsable_length", sizeof(self->proxy_header_buff)),
+                evt_tag_long("length", proxy_header_len));
+      return LPS_ERROR;
+    }
+
+  return _fetch_chunk(self, self->proxy_header_buff_len + proxy_header_len);
+}
+
 static gboolean
 _is_proxy_version_v1(LogProtoProxiedTextServer *self)
 {
@@ -312,6 +441,14 @@ _is_proxy_version_v1(LogProtoProxiedTextServer *self)
   return memcmp(self->proxy_header_buff, "PROXY", 5) == 0;
 }
 
+static gboolean
+_is_proxy_version_v2(LogProtoProxiedTextServer *self)
+{
+  if (self->proxy_header_buff_len < 5)
+    return FALSE;
+
+  return memcmp(self->proxy_header_buff, "\x0D\x0A\x0D\x0A\x00", 5) == 0;
+}
 
 static inline LogProtoStatus
 _fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
@@ -332,7 +469,14 @@ _fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
       if (_is_proxy_version_v1(self))
         {
           self->header_fetch_state = LPPTS_PROXY_V1_READ_LINE;
+          self->proxy_header_version = 1;
           goto process_proxy_v1;
+        }
+      else if (_is_proxy_version_v2(self))
+        {
+          self->header_fetch_state = LPPTS_PROXY_V2_READ_HEADER;
+          self->proxy_header_version = 2;
+          goto process_proxy_v2;
         }
       else
         {
@@ -346,6 +490,16 @@ _fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
 
 process_proxy_v1:
       return _fetch_until_newline(self);
+    case LPPTS_PROXY_V2_READ_HEADER:
+process_proxy_v2:
+      status = _fetch_chunk(self, 16);
+      if (status != LPS_SUCCESS)
+        return status;
+
+      self->header_fetch_state = LPPTS_PROXY_V2_READ_PAYLOAD;
+      /* fallthrough */
+    case LPPTS_PROXY_V2_READ_PAYLOAD:
+      return _fetch_proxy_v2_payload(self);
     default:
       g_assert_not_reached();
     }
