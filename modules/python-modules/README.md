@@ -7,12 +7,11 @@ functionality.
 ## When to use Python
 
 These Python bindinds are useful if the facilities provided by the
-syslog-ng configuration language is not sufficient, that is if there's no
-native functionality that would:
+syslog-ng configuration language is not sufficient, that is:
 
-  * implement the integration with a specific service (e.g. API based log
-    sources or information sources that you want to use for data enrichment
-    purposes)
+  * if there's no native functionality that would implement the integration with
+    a specific service (e.g. API based log sources or information sources that
+    you want to use for data enrichment purposes)
   * if the configuration language does not have the features to do some
     specific transformation need (but in that case, please let me know about
     your usecase)
@@ -37,7 +36,7 @@ main configuration file or to work with Python modules.
 ### Embedding Python into syslog-ng configuration
 
 
-You can simply use a top-level python {} block to embed your Python code,
+You can simply use a top-level `python {}` block to embed your Python code,
 like this:
 ```
 @version: 4.0
@@ -59,17 +58,14 @@ log {
 ### Using Python modules
 
 You can also put your code into a proper Python module and then use it
-from there. syslog-ng automatically adds ${sysconfdir}/python to your
-PYTHONPATH (normally /etc/syslog-ng/python), with that in mind
+from there. syslog-ng automatically adds `${sysconfdir}/python` to your
+PYTHONPATH (normally `/etc/syslog-ng/python`), with that in mind
 add the following code to `/etc/syslog-ng/python/mytemplate.py`:
 
 
 ```python
-
 def template_function(msg):
     return b"Hello World from Python! Original message: " + msg['MSGHDR'] + msg['MESSAGE']
-
-
 ```
 
 The Python glue in syslog-ng will automatically import modules when it
@@ -128,7 +124,7 @@ importlib.reload(mymodule)
 
 ### Destination driver
 
-A destination driver in Python needs to be derived from the LogDestination
+A destination driver in Python needs to be derived from the `LogDestination`
 class, as defined by the syslogng module, like the example below:
 
 `mydestination.py`:
@@ -150,14 +146,12 @@ Once all required methods are implemented, you can use this using the
 "python" destination in the syslog-ng configuration language.
 
 ```
-
 destination whatever {
     python(class(mydestination.MyDestination));
 };
-
 ```
 
-There's a more complete example destination in the python_example()
+There's a more complete example destination in the `python_example()`
 destination plugin, that is located in the directory
 `modules/python-modules/example/` within the source tree or the same files
 installed under `${exec_prefix}/syslog-ng/python/syslogng/modules` in a
@@ -166,11 +160,11 @@ production deployment.
 ### Template Function plugin
 
 Template functions extend the syslog-ng template language. They get a
-LogMessage object and return a string which gets embedded into the
+`LogMessage` object and return a string which gets embedded into the
 output of the template.
 
 You can have syslog-ng call a Python function from the template language
-using the $(python) template function, as you have seen in the previous
+using the `$(python)` template function, as you have seen in the previous
 chapter.
 
 ```
@@ -191,14 +185,14 @@ destination d_file {
 ```
 
 The Python function needs to be any kind of callable, it receives a
-LogMessage instance and returns a string (str or bytes).
+`LogMessage` instance and returns a string (`str` or `bytes`).
 
 The message passed to a template function is read-only, if you are trying to
 change a name-value pair, you will receive an exception.
 
 ### Parser plugin
 
-A parser plugin in Python needs to be derived from the LogParser class as
+A parser plugin in Python needs to be derived from the `LogParser` class as
 this example shows:
 
 
@@ -214,7 +208,7 @@ class MyParser(LogParser):
 ```
 
 In contrast to template functions, parsers receive a read-writable
-LogMessage object, so you are free to modify its contents.
+`LogMessage` object, so you are free to modify its contents.
 
 ### Source driver based on LogFetcher
 
@@ -255,7 +249,7 @@ string that is parsed as a syslog message.
 Our source in this case is running in a dedicated thread, so it is free to
 block.
 
-Please note the "time.sleep(1)" call as the very first line in our fetch()
+Please note the `time.sleep(1)` call as the very first line in our `fetch()`
 method.  As you can see we were sleeping 1 second between invocations of our
 method, thereby limiting the rate the source is producing messages.  If that
 sleep wasn't there, we would be producing somewhere between 100-110k
@@ -271,7 +265,7 @@ factor.
 Usually, if we are fetching messages from an API, we will need to keep track
 where we are in fetching messages. If we were to store the position in a
 variable, that value would be lost when syslog-ng is reloaded or restarted
-(depending on where we store that variable, in our python {} block or in a
+(depending on where we store that variable, in our `python {}` block or in a
 module).
 
 A better option is to use the `Persist()` class that ties into syslog-ng's
@@ -297,16 +291,16 @@ class MyFetcher(LogFetcher):
 ```
 
 Once initialized, a `Persist()` instance behaves as a dict where you can
-store Python values (currently only str, bytes and long are supported).
+store Python values (currently only `str`, `bytes` and `int` are supported).
 
 Anything you store in a persist instance will be remembered even across
 restarts.
 
 The entries themselves are backed up to disk immediately after changing
-them (using an mmap()-ped file), so no need to care about committing them to
+them (using an `mmap()`-ped file), so no need to care about committing them to
 disk explicitly.
 
-Albeit you can store position information in a Persist() entry, it's not
+Albeit you can store position information in a `Persist()` entry, it's not
 always the best choice.  In syslog-ng, producing of messages and their
 delivery is decoupled: sometimes a message is still in-flight for a while
 before being delivered.  This time can be significant, if a destination
@@ -386,20 +380,20 @@ As mentioned some APIs will provide simple others somewhat more complex ways
 to track messages that are processed. There are three strategies within
 syslog-ng to cope with them.
 
-  * instant tracking (InstantAckTracker): messages are considered delivered
+  * instant tracking (`InstantAckTracker`): messages are considered delivered
     as soon as our destination driver (or the disk based queue) acknowledges
     them.  Out-of-order deliveries are reported as they happen, so an
     earlier message may be acknowledged later than a message originally
     encountered later in the source stream.
 
-  * consecutive tracking (ConsecutiveAckTracker): messages are assumed to
+  * consecutive tracking (`ConsecutiveAckTracker`): messages are assumed to
     form a stream and the bookmark to be a position in that stream.
     Unordered deliveries are properly handled by only acknowledging messages
     that were delivered in order.  If an unordered delivery happens, the
     tracker waits for the sequence to fill up, e.g.  waits all preceeding
     messages to be delivered as well.
 
-  * batched tracking (BatchedAckTracker): messages are assumed to be
+  * batched tracking (`BatchedAckTracker`): messages are assumed to be
     independent, not forming a sequence of events.  Each message is
     individually tracked, the source driver has the means to get delivery
     notifications of each and every message independently.  The
@@ -429,12 +423,12 @@ class MyFetcher(LogFetcher):
 
 ```
 
-In the case above, we were using ConsecutiveAckTracker, e.g.  we would only
+In the case above, we were using `ConsecutiveAckTracker`, e.g.  we would only
 get acknowledgements in the order messages were generated.  The argument of
 the `message_acked` callback would be the "bookmark" value that we set using
-set_bookmark().
+`set_bookmark()`.
 
-Using InstantAckTracker is very similar, just replace
+Using `InstantAckTracker` is very similar, just replace
 `ConsecutiveAckTracker` with `InstantAckTracker`. In this case you'd get a
 callback as soon as a message is delivered without preserving the original
 ordering.
@@ -453,11 +447,11 @@ class MyFetcher(LogFetcher):
         pass
 ```
 
-While ConsecutiveAckTracker() seems to provide a much more useful service,
-but InstantAckTracker() performs better, as it does not have to track
+While `ConsecutiveAckTracker()` seems to provide a much more useful service,
+but `InstantAckTracker()` performs better, as it does not have to track
 acknowledgements of individual messages.
 
-The most complex scenario is implemented by BatchedAckTracker, this allows
+The most complex scenario is implemented by `BatchedAckTracker`, this allows
 you to track the acks for individual messages, as they happen, not enforcing
 any kind of ordering.
 
@@ -476,26 +470,26 @@ class MyFetcher(LogFetcher):
         pass
 ```
 
-BatchedAckTracker would call your callback every now and then, as specified
+`BatchedAckTracker` would call your callback every now and then, as specified
 by the `timeout` argument in milliseconds. `batch_size` specifies the number of
 outstanding messages at a time. With this interface it's quite easy to
 perform acknowledgements back to the source interface where per-message
 acknowledgements are needed (e.g. Google PubSub).
 
-### Creating a syslog-ng a LogSource based Source plugin
+### Creating a syslog-ng LogSource based Source plugin
 
-While LogFetcher gives us a convinient interface for fetching messages from
+While `LogFetcher` gives us a convinient interface for fetching messages from
 backend services via blocking APIs, it is limited to performing the fetching
 operation in a sequential manner: you fetch a batch of messages, feed the
 syslog-ng pipeline with those messages and then repeat.
 
-LogSource is more low-level but allows the use of an asynchronous framework
-(asyncio, etc) to perform message fetching along multiple threads of
+`LogSource` is more low-level but allows the use of an asynchronous framework
+(`asyncio`, etc) to perform message fetching along multiple threads of
 execution.
 
-This sample uses asyncio to generate two independent sequences of messages,
+This sample uses `asyncio` to generate two independent sequences of messages,
 one is generated every second, the other is every 1.5 seconds, running
-concurrently via an asyncio event loop.
+concurrently via an `asyncio` event loop.
 
 It is also pretty easy to create a source that implements a HTTP server,
 and which injects messages coming via HTTP to the syslog-ng pipeline.
@@ -530,12 +524,12 @@ class MySource(LogSource):
 
 ```
 
-Acknowledgement mechanisms (ConsecutiveAckTracker, BatchedAckTracker) can be
-used similarly to how it was described at LogFetcher.
+Acknowledgement mechanisms (`ConsecutiveAckTracker`, `BatchedAckTracker`) can be
+used similarly to how it was described at `LogFetcher`.
 
-## Making it more native
+## Making it more native config-wise
 
-All the examples above used some form of python() driver to be actually
+All the examples above used some form of `python()` driver to be actually
 used, for instance, this was our Python based destination driver:
 
 ```
@@ -566,8 +560,6 @@ block destination my-destination(option1(value)
     python(class(mydestination.MyDestination)
                  options(option1 => `option1`,
                          option2 => `option2`));
-
-
 };
 ```
 
@@ -582,7 +574,7 @@ files along the rest of the SCL.
 ## Adding the code to syslog-ng
 
 To add Python based modules to syslog-ng, create a Python package (e.g.  a
-directory with __init__.py and anything that file references).  Add these
+directory with `__init__.py` and anything that file references).  Add these
 files to `modules/python-modules/<subdirectory>` and open a pull request.
 
 With that a "make install" command should install your module along the
@@ -611,7 +603,7 @@ Python directory would contain all the dependencies that you require.
 ## Adding Python code to syslog-ng deb package
 
 To add your module to the syslog-ng deb package, create a new file in
-packaging/debian/ with a name like `syslog-ng-mod-<yourmodule>.install`.
+`packaging/debian/` with a name like `syslog-ng-mod-<yourmodule>.install`.
 Populate this file with wildcard patterns that capture the files of your
 package after installation.
 
