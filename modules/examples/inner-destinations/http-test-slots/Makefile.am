@@ -12,7 +12,9 @@ BUILT_SOURCES += \
   modules/examples/inner-destinations/http-test-slots/http-test-slots-grammar.c \
   modules/examples/inner-destinations/http-test-slots/http-test-slots-grammar.h
 
-EXTRA_DIST += modules/examples/inner-destinations/http-test-slots/http-test-slots-grammar.ym
+EXTRA_DIST += \
+  modules/examples/inner-destinations/http-test-slots/CMakeLists.txt \
+  modules/examples/inner-destinations/http-test-slots/http-test-slots-grammar.ym
 
 modules_examples_inner_destinations_http_test_slots_libhttp_test_slots_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/modules/examples/inner-destinations/http-test-slots -I$(top_builddir)/modules/examples/inner-destinations/http-test-slots
 modules_examples_inner_destinations_http_test_slots_libhttp_test_slots_la_LIBADD = $(MODULE_DEPS_LIBS)
