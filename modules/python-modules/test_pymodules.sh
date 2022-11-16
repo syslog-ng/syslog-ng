@@ -1,5 +1,6 @@
+#!/bin/sh
 #############################################################################
-# Copyright (c) 2010-2014 Balabit
+# Copyright (c) 2015 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -19,17 +20,5 @@
 # COPYING for details.
 #
 #############################################################################
-#
-# This file is placed into /etc/syslog-ng in order to make it trivial to
-# include in user written syslog-ng.conf files.  It sets up 'scl-root' and
-# `include-path`, then includes all SCL supplied plugins.
-#
 
-@module appmodel
-
-@include 'scl/*/*.conf'
-
-@define java-module-dir "`module-install-dir`/java-modules"
-@define python-module-dir "`module-install-dir`/python/syslogng/modules"
-
-@include '`python-module-dir`/*/scl/*.conf'
+${MAKE} MAKEFLAGS= pymodules-unit

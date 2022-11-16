@@ -68,7 +68,4 @@ add_module(
   SOURCES ${PYTHON_SOURCES}
 )
 
-add_subdirectory(pylib)
-add_dependencies(mod-python SetupPylib)
-
 add_test_subdirectory(tests)

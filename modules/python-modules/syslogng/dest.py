@@ -103,4 +103,4 @@ class LogDestination(LogDestination):
         Returns:
             int: one value from the LogDestinationResult enum
         """
-        raise NotImplementedError
+        return self.SUCCESS

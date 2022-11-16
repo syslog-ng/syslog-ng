@@ -2,3 +2,6 @@ lib/systemd/system/syslog-ng@.service
 usr/lib/syslog-ng/*/java-modules/dummy.jar
 usr/lib/syslog-ng/syslog-ng/libtest/libsyslog-ng-test.a
 usr/lib/*/pkgconfig/syslog-ng-test.pc
+usr/lib/syslog-ng/*/python/syslogng/__pycache__/*.pyc
+usr/lib/syslog-ng/*/python/syslogng/modules/example/__pycache__/*.pyc
+usr/lib/syslog-ng/*/python/syslogng/debuggercli/__pycache__/*.pyc

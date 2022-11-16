@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env python3
 #############################################################################
-# Copyright (c) 2015 Balabit
+# Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -21,4 +21,18 @@
 #
 #############################################################################
 
-${MAKE} MAKEFLAGS= python-unit
+from setuptools import setup
+
+setup(name='syslogng',
+      version='1.0',
+      description='syslog-ng Python Core & Modules',
+      author='Balazs Scheidler',
+      author_email='bazsi77@gmail.com',
+      url='https://www.syslog-ng.org',
+      package_data={"": ["scl/*"]},
+      exclude_package_data={"": ["*~"]},
+      packages=[
+        "syslogng",
+        "syslogng.debuggercli",
+        "syslogng.modules.example",
+      ])
