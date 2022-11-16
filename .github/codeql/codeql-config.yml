@@ -1,0 +1,4 @@
+# Disable LGTM's built-in query to detect unsafe uses of gmtime; there's a
+# custom query to check for that
+queries:
+  - uses: .github/codeql/cpp-queries/call-to-gmtime-without-lock.ql
