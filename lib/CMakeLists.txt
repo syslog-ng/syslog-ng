@@ -139,7 +139,6 @@ set (LIB_HEADERS
     string-list.h
     tls-support.h
     thread-utils.h
-    tlscontext.h
     uuid.h
     userdb.h
     utf8utils.h
@@ -227,7 +226,6 @@ set(LIB_SOURCES
     string-list.c
     ringbuffer.c
     crypto.c
-    tlscontext.c
     uuid.c
     userdb.c
     utf8utils.c

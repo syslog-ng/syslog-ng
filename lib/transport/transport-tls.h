@@ -25,8 +25,7 @@
 #define TLSTRANSPORT_H_INCLUDED
 
 #include "transport/logtransport.h"
-
-#include "tlscontext.h"
+#include "transport/tls-context.h"
 
 LogTransport *log_transport_tls_new(TLSSession *tls_session, gint fd);
 

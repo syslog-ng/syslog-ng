@@ -27,7 +27,7 @@
 #include "afinet.h"
 #include "afsocket-dest.h"
 #include "afinet-dest-failover.h"
-#include "tlscontext.h"
+#include "transport/tls-context.h"
 
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
 
