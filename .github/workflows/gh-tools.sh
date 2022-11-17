@@ -16,7 +16,7 @@ gh_path()
 gh_output()
 {
     while [ "x$1" != "x" ]; do
-        echo "::set-output name=$1::$(eval echo \$$1)"
+        echo "$1=$(eval echo \$$1)" >> $GITHUB_OUTPUT
         shift;
     done
 }
