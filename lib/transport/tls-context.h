@@ -24,10 +24,8 @@
 #ifndef TLSCONTEXT_H_INCLUDED
 #define TLSCONTEXT_H_INCLUDED
 
-#include "syslog-ng.h"
+#include "transport/tls-verifier.h"
 #include "messages.h"
-#include "atomic.h"
-#include <openssl/ssl.h>
 
 typedef enum
 {
@@ -63,20 +61,12 @@ typedef enum
   TLS_CONTEXT_SETUP_BAD_PASSWORD
 } TLSContextSetupResult;
 
-typedef gint (*TLSSessionVerifyFunc)(gint ok, X509_STORE_CTX *ctx, gpointer user_data);
 typedef struct _TLSContext TLSContext;
 
 #define X509_MAX_CN_LEN 64
 #define X509_MAX_O_LEN 64
 #define X509_MAX_OU_LEN 32
 
-typedef struct _TLSVerifier
-{
-  GAtomicCounter ref_cnt;
-  TLSSessionVerifyFunc verify_func;
-  gpointer verify_data;
-  GDestroyNotify verify_data_destroy;
-} TLSVerifier;
 
 typedef struct _TLSSession
 {

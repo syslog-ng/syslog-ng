@@ -81,54 +81,6 @@ typedef enum
   TLS_CONTEXT_PASSWORD_ERROR
 } TLSContextLoadResult;
 
-/* TLSVerifier */
-
-TLSVerifier *
-tls_verifier_new(TLSSessionVerifyFunc verify_func, gpointer verify_data,
-                 GDestroyNotify verify_data_destroy)
-{
-  TLSVerifier *self = g_new0(TLSVerifier, 1);
-
-  g_atomic_counter_set(&self->ref_cnt, 1);
-  self->verify_func = verify_func;
-  self->verify_data = verify_data;
-  self->verify_data_destroy = verify_data_destroy;
-  return self;
-}
-
-TLSVerifier *
-tls_verifier_ref(TLSVerifier *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
-
-  if (self)
-    g_atomic_counter_inc(&self->ref_cnt);
-
-  return self;
-}
-
-static void
-_tls_verifier_free(TLSVerifier *self)
-{
-  g_assert(self);
-
-  if (self)
-    {
-      if (self->verify_data && self->verify_data_destroy)
-        self->verify_data_destroy(self->verify_data);
-      g_free(self);
-    }
-}
-
-void
-tls_verifier_unref(TLSVerifier *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
-
-  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
-    _tls_verifier_free(self);
-}
-
 /* TLSSession */
 
 void
