@@ -534,7 +534,9 @@ log_proto_proxied_text_server_handshake(LogProtoServer *s)
 
   msg_debug("PROXY protocol header received",
             evt_tag_int("version", self->proxy_header_version),
-            evt_tag_mem("header", self->proxy_header_buff, self->proxy_header_buff_len));
+            self->proxy_header_version == 1
+            ? evt_tag_mem("header", self->proxy_header_buff, self->proxy_header_buff_len)
+            : evt_tag_str("header", "<binary_data>"));
 
   if (parsable)
     {
