@@ -67,6 +67,7 @@ SyntheticMessage *last_message;
 %token KW_PROGRAM_TEMPLATE
 %token KW_MESSAGE_TEMPLATE
 %token KW_SORT_KEY
+%token KW_PREFIX
 
 %type <num> stateful_parser_inject_mode
 %type <ptr> synthetic_message
@@ -107,6 +108,7 @@ parser_db_opt
              log_db_parser_set_program_template_ref(last_parser, $3);
           }
         | KW_MESSAGE_TEMPLATE '(' template_content ')'    { log_parser_set_template(last_parser, $3); }
+	| KW_PREFIX '(' string ')'				{ log_db_parser_set_prefix(((LogDBParser *) last_parser), $3); free($3); };
 	| stateful_parser_opt
         ;
 
@@ -163,6 +165,7 @@ grouping_by_opt
             CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1);
             grouping_by_set_trigger_condition(last_parser, filter_expr);
           } ')'
+	| KW_PREFIX '(' string ')'				{ grouping_by_set_prefix(last_parser, $3); free($3); };
 	| stateful_parser_opt
 	;
 

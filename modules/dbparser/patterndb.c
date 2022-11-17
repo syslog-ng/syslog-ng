@@ -68,6 +68,7 @@ struct _PatternDB
   GHashTable *rate_limits;
   PatternDBEmitFunc emit;
   gpointer emit_data;
+  gchar *prefix;
 };
 
 static inline gpointer
@@ -475,7 +476,7 @@ pattern_db_reload_ruleset(PatternDB *self, GlobalConfig *cfg, const gchar *pdb_f
 {
   PDBRuleSet *new_ruleset;
 
-  new_ruleset = pdb_rule_set_new();
+  new_ruleset = pdb_rule_set_new(self->prefix);
   if (!pdb_rule_set_load(new_ruleset, cfg, pdb_file, NULL))
     {
       pdb_rule_set_free(new_ruleset);
@@ -712,11 +713,12 @@ pattern_db_forget_state(PatternDB *self)
 }
 
 PatternDB *
-pattern_db_new(void)
+pattern_db_new(const gchar *prefix)
 {
   PatternDB *self = g_new0(PatternDB, 1);
 
-  self->ruleset = pdb_rule_set_new();
+  self->prefix = g_strdup(prefix);
+  self->ruleset = pdb_rule_set_new(self->prefix);
   g_mutex_init(&self->ruleset_lock);
   _init_state(self);
   return self;
@@ -725,6 +727,7 @@ pattern_db_new(void)
 void
 pattern_db_free(PatternDB *self)
 {
+  g_free(self->prefix);
   log_template_unref(self->program_template);
   if (self->ruleset)
     pdb_rule_set_free(self->ruleset);

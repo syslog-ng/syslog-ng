@@ -34,11 +34,19 @@ typedef enum
   RAC_MSG_INHERIT_CONTEXT
 } SyntheticMessageInheritMode;
 
+typedef struct _SyntheticMessageValue
+{
+  gchar *name;
+  NVHandle handle;
+  LogTemplate *value_template;
+} SyntheticMessageValue;
+
 typedef struct _SyntheticMessage
 {
   SyntheticMessageInheritMode inherit_mode;
   GArray *tags;
-  GPtrArray *values;
+  GArray *values;
+  gchar *prefix;
 } SyntheticMessage;
 
 LogMessage *synthetic_message_generate_without_context(SyntheticMessage *self, LogMessage *msg);
@@ -55,11 +63,24 @@ gboolean synthetic_message_set_inherit_mode_string(SyntheticMessage *self, const
                                                    GError **error);
 void synthetic_message_add_value_template(SyntheticMessage *self, const gchar *name, LogTemplate *value);
 void synthetic_message_add_tag(SyntheticMessage *self, const gchar *text);
+void synthetic_message_set_prefix(SyntheticMessage *self, const gchar *prefix);
 void synthetic_message_init(SyntheticMessage *self);
 void synthetic_message_deinit(SyntheticMessage *self);
 SyntheticMessage *synthetic_message_new(void);
 void synthetic_message_free(SyntheticMessage *self);
 
 gint synthetic_message_lookup_inherit_mode(const gchar *inherit_mode);
+
+static inline SyntheticMessageValue *
+synthetic_message_values_index(SyntheticMessage *self, gint index_)
+{
+  return &g_array_index(self->values, SyntheticMessageValue, index_);
+}
+
+static inline guint
+synthetic_message_tags_index(SyntheticMessage *self, gint index_)
+{
+  return g_array_index(self->tags, LogTagId, index_);
+}
 
 #endif

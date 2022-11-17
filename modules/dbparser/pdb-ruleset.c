@@ -174,11 +174,11 @@ pdb_ruleset_lookup(PDBRuleSet *rule_set, PDBLookupParams *lookup, GArray *dbg_li
 
 
 PDBRuleSet *
-pdb_rule_set_new(void)
+pdb_rule_set_new(const gchar *prefix)
 {
   PDBRuleSet *self = g_new0(PDBRuleSet, 1);
   self->is_empty = TRUE;
-
+  self->prefix = g_strdup(prefix);
   return self;
 }
 
@@ -187,14 +187,9 @@ pdb_rule_set_free(PDBRuleSet *self)
 {
   if (self->programs)
     r_free_node(self->programs, (GDestroyNotify) pdb_program_unref);
-  if (self->version)
-    g_free(self->version);
-  if (self->pub_date)
-    g_free(self->pub_date);
-  self->programs = NULL;
-  self->version = NULL;
-  self->pub_date = NULL;
-
+  g_free(self->version);
+  g_free(self->pub_date);
+  g_free(self->prefix);
   g_free(self);
 }
 

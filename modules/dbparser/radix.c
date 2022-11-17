@@ -602,7 +602,7 @@ r_parser_number(gchar *str, gint *len, const gchar *param, gpointer state, RPars
  * Create a new parsing node.
  **/
 static RParserNode *
-r_new_pnode(gchar *key)
+r_new_pnode(gchar *key, const gchar *capture_prefix)
 {
   RParserNode *parser_node = g_new0(RParserNode, 1);
   gchar **params = g_strsplit(key, ":", 3);
@@ -795,7 +795,11 @@ r_new_pnode(gchar *key)
   if (parser_node && params[1])
     {
       if (params[1][0])
-        parser_node->handle = log_msg_get_value_handle(params[1]);
+        {
+          gchar *value_name = g_strdup_printf("%s%s", capture_prefix ? : "", params[1]);
+          parser_node->handle = log_msg_get_value_handle(value_name);
+          g_free(value_name);
+        }
 
       if (params[2])
         parser_node->param = g_strdup(params[2]);
@@ -860,7 +864,8 @@ r_add_child(RNode *parent, RNode *child)
 }
 
 static inline void
-r_add_child_check(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_func, const gchar *location)
+r_add_child_check(RNode *root, gchar *key, gpointer value,
+                  const gchar *capture_prefix, RNodeGetValueFunc value_func, const gchar *location)
 {
   gchar *at;
 
@@ -877,12 +882,12 @@ r_add_child_check(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc val
 
           /* and insert the rest beginning from @ under the newly created literal node */
           *at = '@';
-          r_insert_node(child, at, value, value_func, location);
+          r_insert_node(child, at, value, capture_prefix, value_func, location);
         }
       else
         {
           /* @ is the first so let's insert it simply and let insert_node handle @ */
-          r_insert_node(root, key, value, value_func, location);
+          r_insert_node(root, key, value, capture_prefix, value_func, location);
         }
     }
   else
@@ -956,7 +961,8 @@ r_find_child_by_first_character(RNode *root, char key)
 }
 
 void
-r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_func, const gchar *location)
+r_insert_node(RNode *root, gchar *key, gpointer value,
+              const gchar *capture_prefix, RNodeGetValueFunc value_func, const gchar *location)
 {
   RNode *node;
   gint keylen = strlen(key);
@@ -997,7 +1003,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
 
           /* go down building the tree if there is key left */
           if (keylen > 2)
-            r_insert_node(node, key + 2, value, value_func, location);
+            r_insert_node(node, key + 2, value, capture_prefix, value_func, location);
 
         }
       else if ((keylen >= 2) && (end = strchr((const gchar *)key + 1, '@')) != NULL)
@@ -1005,7 +1011,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
           /* we are a parser node */
           *end = '\0';
 
-          RParserNode *parser_node = r_new_pnode(key + 1);
+          RParserNode *parser_node = r_new_pnode(key + 1, capture_prefix);
 
           if (parser_node)
             {
@@ -1028,7 +1034,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
               if ((end - key) < (keylen - 1))
                 {
                   /* the key is not over so go on building the tree */
-                  r_insert_node(node, end + 1, value, value_func, location);
+                  r_insert_node(node, end + 1, value, capture_prefix, value_func, location);
                 }
               else
                 {
@@ -1083,13 +1089,13 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
             {
               /* @ is always a singel node, and we also have an @ so insert us under root */
               if (key[i] == '@')
-                r_insert_node(root, key + i, value, value_func, location);
+                r_insert_node(root, key + i, value, capture_prefix, value_func, location);
               else
-                r_insert_node(node, key + i, value, value_func, location);
+                r_insert_node(node, key + i, value, capture_prefix, value_func, location);
             }
           else
             {
-              r_add_child_check(root, key + i, value, value_func, location);
+              r_add_child_check(root, key + i, value, capture_prefix, value_func, location);
             }
         }
       else if (i == keylen && i == nodelen)
@@ -1138,7 +1144,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
           if (i < keylen)
             {
               /* we add a new sub tree */
-              r_add_child_check(root, key + i, value, value_func, location);
+              r_add_child_check(root, key + i, value, capture_prefix, value_func, location);
             }
           else
             {
@@ -1149,7 +1155,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
       else
         {
           /* simply a new children */
-          r_add_child_check(root, key + i, value, value_func, location);
+          r_add_child_check(root, key + i, value, capture_prefix, value_func, location);
         }
     }
 }

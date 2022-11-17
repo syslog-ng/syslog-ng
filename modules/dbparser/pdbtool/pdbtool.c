@@ -459,7 +459,7 @@ pdbtool_match(int argc, char *argv[])
   proto_options.max_msg_size = 65536;
   log_proto_server_options_init(&proto_options, configuration);
 
-  patterndb = pattern_db_new();
+  patterndb = pattern_db_new(NULL);
   if (!pattern_db_reload_ruleset(patterndb, configuration, patterndb_file))
     {
       goto error;
@@ -773,7 +773,7 @@ pdbtool_test(int argc, char *argv[])
             }
         }
 
-      patterndb = pattern_db_new();
+      patterndb = pattern_db_new(NULL);
       if (!pdb_rule_set_load(pattern_db_get_ruleset(patterndb), configuration, argv[arg_pos], &examples))
         {
           failed_to_load = TRUE;
@@ -917,7 +917,7 @@ pdbtool_dump(int argc, char *argv[])
 {
   PatternDB *patterndb;
 
-  patterndb = pattern_db_new();
+  patterndb = pattern_db_new(NULL);
   if (!pattern_db_reload_ruleset(patterndb, configuration, patterndb_file))
     return 1;
 
@@ -979,15 +979,14 @@ pdbtool_dictionary_walk(RNode *root, const gchar *progname)
       else
         {
           PDBRule *rule = (PDBRule *)root->value;
-          LogTemplate *template;
           guint tag_id;
 
           if (!dictionary_tags && rule->msg.values)
             {
               for (i = 0; i < rule->msg.values->len; i++)
                 {
-                  template = (LogTemplate *)g_ptr_array_index(rule->msg.values, i);
-                  printf("%s\n", template->name);
+                  SyntheticMessageValue *smv = synthetic_message_values_index(&rule->msg, i);
+                  printf("%s\n", smv->name);
                 }
             }
 
@@ -995,7 +994,7 @@ pdbtool_dictionary_walk(RNode *root, const gchar *progname)
             {
               for (i = 0; i < rule->msg.tags->len; i++)
                 {
-                  tag_id = g_array_index(rule->msg.tags, guint, i);
+                  tag_id = synthetic_message_tags_index(&rule->msg, i);
                   printf("%s\n", log_tags_get_by_id(tag_id));
                 }
             }

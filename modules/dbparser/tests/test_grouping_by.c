@@ -94,6 +94,36 @@ Test(grouping_by, grouping_by_produces_aggregate_as_the_trigger_is_received)
   log_pipe_unref(&capture->super);
 }
 
+Test(grouping_by, grouping_by_adds_prefix_to_name_value_pairs_if_specified)
+{
+  LogPipeMock *capture = log_pipe_mock_new(configuration);
+  LogParser *parser = _compile_grouping_by(
+                        "grouping-by(key(\"$key\")"
+                        "    aggregate("
+                        "        value(\"aggr\" \"$(list-slice :-1 $(context-values $PROGRAM))\")"
+                        "    )"
+                        "    timeout(1)"
+                        "    inject-mode(aggregate-only)"
+                        "    prefix('prefix.')"
+                        "    trigger(\"$(context-length)\" == \"3\")"
+                        ");");
+
+  log_pipe_append(&parser->super, &capture->super);
+  cr_assert(log_pipe_init(&capture->super) == TRUE);
+  cr_assert(log_pipe_init(&parser->super) == TRUE);
+
+  _process_msg(parser, "first");
+  _process_msg(parser, "second");
+  _process_msg(parser, "third");
+
+  cr_assert(capture->captured_messages->len == 1);
+  /* the aggregate comes before the triggering message */
+  assert_log_message_value_by_name(log_pipe_mock_get_message(capture, 0), "prefix.aggr", "first,second,third");
+
+  log_pipe_unref(&parser->super);
+  log_pipe_unref(&capture->super);
+}
+
 Test(grouping_by, grouping_by_drops_original_messages_if_inject_mode_is_aggregate_only)
 {
   LogPipeMock *capture = log_pipe_mock_new(configuration);
