@@ -44,7 +44,9 @@ static gint
 log_proto_text_server_accumulate_line_method(LogProtoTextServer *self, const guchar *msg, gsize msg_len,
                                              gssize consumed_len)
 {
-  return LPT_CONSUME_LINE | LPT_EXTRACTED;
+  if (self->multi_line)
+    return multi_line_logic_accumulate_line(self->multi_line, msg, msg_len, consumed_len);
+  return MLL_CONSUME_LINE | MLL_EXTRACTED;
 }
 
 static gboolean
@@ -74,18 +76,18 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
   *msg = buffer_start;
 
   verdict = log_proto_text_server_accumulate_line(self, *msg, *msg_len, self->consumed_len);
-  if (verdict & LPT_EXTRACTED)
+  if (verdict & MLL_EXTRACTED)
     {
-      if (verdict & LPT_CONSUME_LINE)
+      if (verdict & MLL_CONSUME_LINE)
         {
-          gint drop_length = (verdict & LPT_CONSUME_PARTIAL_AMOUNT_MASK) >> LPT_CONSUME_PARTIAL_AMOUNT_SHIFT;
+          gint drop_length = (verdict & MLL_CONSUME_PARTIAL_AMOUNT_MASK) >> MLL_CONSUME_PARTIAL_AMOUNT_SHIFT;
 
           state->pending_buffer_pos = next_line_pos;
           self->cached_eol_pos = next_eol_pos;
           if (drop_length)
             *msg_len -= drop_length;
         }
-      else if (verdict & LPT_REWIND_LINE)
+      else if (verdict & MLL_REWIND_LINE)
         {
           if (self->consumed_len >= 0)
             *msg_len = self->consumed_len;
@@ -99,11 +101,11 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
         g_assert_not_reached();
       self->consumed_len = -1;
     }
-  else if (verdict & LPT_WAITING)
+  else if (verdict & MLL_WAITING)
     {
       *msg = NULL;
       *msg_len = 0;
-      if (verdict & LPT_CONSUME_LINE)
+      if (verdict & MLL_CONSUME_LINE)
         {
           self->cached_eol_pos = next_eol_pos;
           self->consumed_len = eol - buffer_start;
@@ -111,7 +113,7 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
       else
         {
           /* when we are waiting for another line, the current one
-           * can't be rewinded, so LPT_REWIND_LINE is not valid */
+           * can't be rewinded, so MLL_REWIND_LINE is not valid */
           g_assert_not_reached();
         }
       return FALSE;
@@ -250,9 +252,10 @@ void
 log_proto_text_server_free(LogProtoServer *s)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
+  if (self->multi_line)
+    multi_line_logic_free(self->multi_line);
   log_proto_buffered_server_free_method(&self->super.super);
 }
-
 
 void
 log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, const LogProtoServerOptions *options)

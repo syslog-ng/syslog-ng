@@ -145,9 +145,9 @@ _accumulate_initial_line(LogProtoREMultiLineServer *self,
 {
   gint offset_of_garbage = self->get_offset_of_garbage(self, line, line_len);
   if (offset_of_garbage >= 0)
-    return LPT_CONSUME_PARTIALLY(line_len - offset_of_garbage) | LPT_EXTRACTED;
+    return MLL_CONSUME_PARTIALLY(line_len - offset_of_garbage) | MLL_EXTRACTED;
   else
-    return LPT_CONSUME_LINE | LPT_WAITING;
+    return MLL_CONSUME_LINE | MLL_WAITING;
 
 }
 
@@ -159,11 +159,11 @@ _accumulate_continuation_line(LogProtoREMultiLineServer *self,
 {
   gint offset_of_garbage = self->get_offset_of_garbage(self, line, line_len);
   if (offset_of_garbage >= 0)
-    return LPT_CONSUME_PARTIALLY(line_len - offset_of_garbage) | LPT_EXTRACTED;
+    return MLL_CONSUME_PARTIALLY(line_len - offset_of_garbage) | MLL_EXTRACTED;
   else if (_regexp_matches(self->prefix, line, line_len))
-    return LPT_REWIND_LINE | LPT_EXTRACTED;
+    return MLL_REWIND_LINE | MLL_EXTRACTED;
   else
-    return LPT_CONSUME_LINE | LPT_WAITING;
+    return MLL_CONSUME_LINE | MLL_WAITING;
 }
 
 static gint

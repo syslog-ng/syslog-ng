@@ -53,23 +53,28 @@ construct_test_proto_with_nuls(LogTransport *transport)
 }
 
 LogProtoServer *
-construct_test_proto_with_accumulator(gint (*accumulator)(LogProtoTextServer *, const guchar *, gsize, gssize),
+construct_test_proto_with_accumulator(gint (*accumulator)(MultiLineLogic *, const guchar *, gsize, gssize),
                                       LogTransport *transport)
 {
+  MultiLineLogic *multi_line = g_new0(MultiLineLogic, 1);
+
+  multi_line_logic_init_instance(multi_line);
+  multi_line->accumulate_line = accumulator;
+
   LogProtoServer *proto = construct_test_proto(transport);
 
-  ((LogProtoTextServer *) proto)->accumulate_line = accumulator;
+  ((LogProtoTextServer *) proto)->multi_line = multi_line;
   return proto;
 }
 
 static gint
-accumulator_delay_lines(LogProtoTextServer *self, const guchar *msg, gsize msg_len, gssize consumed_len)
+accumulator_delay_lines(MultiLineLogic *self, const guchar *msg, gsize msg_len, gssize consumed_len)
 {
   accumulate_seq++;
   if ((accumulate_seq % 2) == 0)
-    return LPT_REWIND_LINE | LPT_EXTRACTED;
+    return MLL_REWIND_LINE | MLL_EXTRACTED;
   else
-    return LPT_CONSUME_LINE | LPT_WAITING;
+    return MLL_CONSUME_LINE | MLL_WAITING;
 }
 
 static void
@@ -390,7 +395,7 @@ Test(log_proto, test_log_proto_text_server_is_not_fetching_input_as_long_as_ther
 }
 
 static gint
-accumulator_assert_that_lines_are_starting_with_sequence_number(LogProtoTextServer *self, const guchar *msg,
+accumulator_assert_that_lines_are_starting_with_sequence_number(MultiLineLogic *self, const guchar *msg,
     gsize msg_len, gssize consumed_len)
 {
   cr_assert_eq((msg[0] - '0'), accumulate_seq,
@@ -398,7 +403,7 @@ accumulator_assert_that_lines_are_starting_with_sequence_number(LogProtoTextServ
                (int)msg_len, msg, accumulate_seq);
   cr_assert_eq(consumed_len, -1, "Initial invocation of the accumulator expects -1 as consumed_len");
   accumulate_seq++;
-  return LPT_CONSUME_LINE | LPT_EXTRACTED;
+  return MLL_CONSUME_LINE | MLL_EXTRACTED;
 }
 
 static void
@@ -433,13 +438,13 @@ Test(log_proto, test_log_proto_text_server_accumulate_line_is_called_for_each_li
 }
 
 static gint
-accumulator_extract_pairs(LogProtoTextServer *self, const guchar *msg, gsize msg_len, gssize consumed_len)
+accumulator_extract_pairs(MultiLineLogic *self, const guchar *msg, gsize msg_len, gssize consumed_len)
 {
   accumulate_seq++;
   if ((accumulate_seq % 2) == 0)
-    return LPT_CONSUME_LINE | LPT_EXTRACTED;
+    return MLL_CONSUME_LINE | MLL_EXTRACTED;
   else
-    return LPT_CONSUME_LINE | LPT_WAITING;
+    return MLL_CONSUME_LINE | MLL_WAITING;
 }
 
 static void
@@ -472,20 +477,20 @@ Test(log_proto, test_log_proto_text_server_accumulate_line_can_consume_lines_wit
 }
 
 static gint
-accumulator_join_continuation_lines(LogProtoTextServer *self, const guchar *msg, gsize msg_len, gssize consumed_len)
+accumulator_join_continuation_lines(MultiLineLogic *self, const guchar *msg, gsize msg_len, gssize consumed_len)
 {
   if (consumed_len >= 0 && msg_len > consumed_len + 1)
     {
       gchar first_char = msg[consumed_len + 1];
 
       if (first_char == ' ')
-        return LPT_CONSUME_LINE | LPT_WAITING;
+        return MLL_CONSUME_LINE | MLL_WAITING;
       else
-        return LPT_REWIND_LINE | LPT_EXTRACTED;
+        return MLL_REWIND_LINE | MLL_EXTRACTED;
     }
   else
     {
-      return LPT_CONSUME_LINE | LPT_WAITING;
+      return MLL_CONSUME_LINE | MLL_WAITING;
     }
 }
 
@@ -572,12 +577,12 @@ Test(log_proto, test_log_proto_text_server_accumulation_terminated_if_buffer_ful
 }
 
 static gint
-accumulator_rewind_initial(LogProtoTextServer *self, const guchar *msg, gsize msg_len, gssize consumed_len)
+accumulator_rewind_initial(MultiLineLogic *self, const guchar *msg, gsize msg_len, gssize consumed_len)
 {
   accumulate_seq++;
   if (accumulate_seq == 1)
-    return LPT_REWIND_LINE | LPT_EXTRACTED;
-  return LPT_CONSUME_LINE | LPT_EXTRACTED;
+    return MLL_REWIND_LINE | MLL_EXTRACTED;
+  return MLL_CONSUME_LINE | MLL_EXTRACTED;
 }
 
 static void

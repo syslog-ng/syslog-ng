@@ -25,23 +25,13 @@
 #define LOGPROTO_TEXT_SERVER_INCLUDED
 
 #include "logproto-buffered-server.h"
-
-enum
-{
-  LPT_EXTRACTED    = 0x0001,
-  LPT_WAITING      = 0x0002,
-  LPT_CONSUME_LINE = 0x0010,
-  LPT_REWIND_LINE  = 0x0020,
-};
-
-#define LPT_CONSUME_PARTIAL_AMOUNT_SHIFT     8
-#define LPT_CONSUME_PARTIAL_AMOUNT_MASK      ~0xFF
-#define LPT_CONSUME_PARTIALLY(drop_length) (LPT_CONSUME_LINE | ((drop_length) << LPT_CONSUME_PARTIAL_AMOUNT_SHIFT))
+#include "multi-line/multi-line-logic.h"
 
 typedef struct _LogProtoTextServer LogProtoTextServer;
 struct _LogProtoTextServer
 {
   LogProtoBufferedServer super;
+  MultiLineLogic *multi_line;
 
   const guchar *(*find_eom)(const guchar *s, gsize n);
   gint (*accumulate_line)(LogProtoTextServer *self,

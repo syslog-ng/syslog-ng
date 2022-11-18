@@ -61,15 +61,15 @@ log_proto_indented_multiline_accumulate_line(LogProtoTextServer *s,
 
       if (log_proto_indented_multiline_is_continuation(first_character_of_the_current_line))
         {
-          return LPT_CONSUME_LINE | LPT_WAITING;
+          return MLL_CONSUME_LINE | MLL_WAITING;
         }
       else
         {
-          return LPT_REWIND_LINE | LPT_EXTRACTED;
+          return MLL_REWIND_LINE | MLL_EXTRACTED;
         }
     }
 
-  return LPT_CONSUME_LINE | LPT_WAITING;
+  return MLL_CONSUME_LINE | MLL_WAITING;
 }
 
 void
