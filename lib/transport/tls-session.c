@@ -552,20 +552,6 @@ _set_sni_in_client_mode(TLSSession *self)
   return FALSE;
 }
 
-static gboolean
-tls_session_keylog_setup_file(TLSSession *self, const char *keylog_file_path)
-{
-  self->ctx->keylog_file = g_fopen(keylog_file_path, "a");
-  if(!self->ctx->keylog_file)
-    {
-      msg_error("Error opening keylog-file",
-                evt_tag_str(EVT_TAG_FILENAME, keylog_file_path),
-                evt_tag_error(EVT_TAG_OSERROR));
-      return FALSE;
-    }
-  return TRUE;
-}
-
 TLSSession *
 tls_session_new(SSL *ssl, TLSContext *ctx)
 {
@@ -584,15 +570,6 @@ tls_session_new(SSL *ssl, TLSContext *ctx)
       tls_context_unref(self->ctx);
       g_free(self);
       return NULL;
-    }
-  if(ctx->keylog_file_path)
-    {
-      if(!tls_session_keylog_setup_file(self, self->ctx->keylog_file_path))
-        {
-          tls_context_unref(self->ctx);
-          g_free(self);
-          return NULL;
-        }
     }
 
   return self;

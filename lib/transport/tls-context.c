@@ -90,6 +90,52 @@ _print_and_clear_tls_session_error(TLSContext *self)
   ERR_clear_error();
 }
 
+void
+_write_line_to_keylog_file(const char *file_path, const char *line, FILE *keylog_file, GMutex *mutex)
+{
+  if(!keylog_file)
+    return;
+
+
+  g_mutex_lock(mutex);
+  gint ret_val = fprintf(keylog_file, "%s\n", line);
+  if (ret_val != strlen(line)+1)
+    msg_error("Couldn't write to TLS keylogfile", evt_tag_errno("error", ret_val));
+
+  fflush(keylog_file);
+  g_mutex_unlock(mutex);
+}
+
+static void
+_dump_tls_keylog(const SSL *ssl, const char *line)
+{
+  if(!ssl)
+    return;
+
+  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX(ssl);
+  TLSContext *self = SSL_CTX_get_app_data(ssl_ctx);
+  _write_line_to_keylog_file(self->keylog_file_path, line, self->keylog_file, &self->keylog_file_lock);
+}
+
+static gboolean
+_setup_keylog_file(TLSContext *self)
+{
+  if (!self->keylog_file_path)
+    return TRUE;
+
+  self->keylog_file = fopen(self->keylog_file_path, "a");
+  if(!self->keylog_file)
+    {
+      msg_error("Error opening keylog-file",
+                evt_tag_str(EVT_TAG_FILENAME, self->keylog_file_path),
+                evt_tag_error(EVT_TAG_OSERROR));
+      return FALSE;
+    }
+  SSL_CTX_set_keylog_callback(self->ssl_ctx, _dump_tls_keylog);
+
+  return TRUE;
+}
+
 static void
 tls_context_setup_session_tickets(TLSContext *self)
 {
@@ -403,6 +449,9 @@ tls_context_setup_context(TLSContext *self)
   if (!self->ssl_ctx)
     goto error;
 
+  if (!_setup_keylog_file(self))
+    goto error;
+
   if (self->pkcs12_file)
     {
       if (self->cert_file || self->key_file)
@@ -598,32 +647,6 @@ tls_context_set_key_file(TLSContext *self, const gchar *key_file)
   SSL_CTX_set_default_passwd_cb_userdata(self->ssl_ctx, self->key_file);
 }
 
-void
-_write_line_to_keylog_file(const char *file_path, const char *line, FILE *keylog_file, GMutex *mutex)
-{
-  if(!keylog_file)
-    return;
-
-
-  g_mutex_lock(mutex);
-  gint ret_val = fprintf(keylog_file, "%s\n", line);
-  if (ret_val != strlen(line)+1)
-    msg_error("Couldn't write to TLS keylogfile", evt_tag_errno("error", ret_val));
-
-  fflush(keylog_file);
-  g_mutex_unlock(mutex);
-}
-
-static void
-_dump_tls_keylog(const SSL *ssl, const char *line)
-{
-  if(!ssl)
-    return;
-
-  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX(ssl);
-  TLSContext *self = SSL_CTX_get_app_data(ssl_ctx);
-  _write_line_to_keylog_file(self->keylog_file_path, line, self->keylog_file, &self->keylog_file_lock);
-}
 
 gboolean
 tls_context_set_keylog_file(TLSContext *self, gchar *keylog_file_path, GError **error)
@@ -632,7 +655,6 @@ tls_context_set_keylog_file(TLSContext *self, gchar *keylog_file_path, GError **
   g_free(self->keylog_file_path);
   msg_warning_once("WARNING: TLS keylog file has been set up, it should only be used during debugging sessions");
   self->keylog_file_path = g_strdup(keylog_file_path);
-  SSL_CTX_set_keylog_callback(self->ssl_ctx, _dump_tls_keylog);
   return TRUE;
 #else
   g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_UNSUPPORTED, "keylog-file() requires OpenSSL >= v1.1.1");
