@@ -235,6 +235,41 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
   return ok;
 }
 
+static void
+_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx)
+{
+  X509 *xs;
+  GString *subject_name, *issuer_name;
+
+  xs = X509_STORE_CTX_get_current_cert(ctx);
+
+  subject_name = g_string_sized_new(128);
+  issuer_name = g_string_sized_new(128);
+  tls_x509_format_dn(X509_get_subject_name(xs), subject_name);
+  tls_x509_format_dn(X509_get_issuer_name(xs), issuer_name);
+
+  if (ok)
+    {
+      msg_debug("Certificate validation progress",
+                evt_tag_str("subject", subject_name->str),
+                evt_tag_str("issuer", issuer_name->str));
+    }
+  else
+    {
+      gint errnum, errdepth;
+
+      errnum = X509_STORE_CTX_get_error(ctx);
+      errdepth = X509_STORE_CTX_get_error_depth(ctx);
+      msg_error("Certificate validation failed",
+                evt_tag_str("subject", subject_name->str),
+                evt_tag_str("issuer", issuer_name->str),
+                evt_tag_str("error", X509_verify_cert_error_string(errnum)),
+                evt_tag_int("depth", errdepth));
+    }
+  g_string_free(subject_name, TRUE);
+  g_string_free(issuer_name, TRUE);
+}
+
 int
 tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
 {
@@ -269,7 +304,7 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
     {
       ok = tls_session_verify(self, ok, ctx);
 
-      tls_log_certificate_validation_progress(ok, ctx);
+      _log_certificate_validation_progress(ok, ctx);
 
       if (self->verifier && self->verifier->verify_func)
         return self->verifier->verify_func(ok, ctx, self->verifier->verify_data);

@@ -140,9 +140,6 @@ TLSContext *tls_context_new(TLSMode mode, const gchar *config_location);
 TLSContext *tls_context_ref(TLSContext *self);
 void tls_context_unref(TLSContext *self);
 
-void tls_log_certificate_validation_progress(int ok, X509_STORE_CTX *ctx);
-gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);
-
 void tls_x509_format_dn(X509_NAME *name, GString *dn);
 
 #endif
