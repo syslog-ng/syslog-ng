@@ -34,11 +34,6 @@ struct _LogProtoTextServer
   MultiLineLogic *multi_line;
 
   const guchar *(*find_eom)(const guchar *s, gsize n);
-  gint (*accumulate_line)(LogProtoTextServer *self,
-                          const guchar *msg,
-                          gsize msg_len,
-                          gssize consumed_len);
-
   gint32 consumed_len;
   gint32 cached_eol_pos;
 };
@@ -54,15 +49,6 @@ void log_proto_text_server_free(LogProtoServer *self);
 void log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport,
                                 const LogProtoServerOptions *options);
 LogProtoPrepareAction log_proto_text_server_prepare_method(LogProtoServer *s, GIOCondition *cond, gint *timeout);
-
-static inline gint
-log_proto_text_server_accumulate_line(LogProtoTextServer *self,
-                                      const guchar *msg,
-                                      gsize msg_len,
-                                      gssize consumed_len)
-{
-  return self->accumulate_line(self, msg, msg_len, consumed_len);
-}
 
 static inline gboolean
 log_proto_text_server_validate_options_method(LogProtoServer *s)

@@ -41,11 +41,12 @@ log_proto_text_server_prepare_method(LogProtoServer *s, GIOCondition *cond, gint
 }
 
 static gint
-log_proto_text_server_accumulate_line_method(LogProtoTextServer *self, const guchar *msg, gsize msg_len,
-                                             gssize consumed_len)
+log_proto_text_server_accumulate_line(LogProtoTextServer *self, const guchar *msg, gsize msg_len,
+                                      gssize consumed_len)
 {
   if (self->multi_line)
     return multi_line_logic_accumulate_line(self->multi_line, msg, msg_len, consumed_len);
+
   return MLL_CONSUME_LINE | MLL_EXTRACTED;
 }
 
@@ -265,7 +266,6 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, co
   self->super.super.free_fn = log_proto_text_server_free;
   self->super.fetch_from_buffer = log_proto_text_server_fetch_from_buffer;
   self->super.flush = log_proto_text_server_flush;
-  self->accumulate_line = log_proto_text_server_accumulate_line_method;
   self->find_eom = find_eom;
   self->super.stream_based = TRUE;
   self->consumed_len = -1;
