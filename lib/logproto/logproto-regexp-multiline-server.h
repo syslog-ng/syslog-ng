@@ -25,12 +25,9 @@
 #define LOGPROTO_REGEXP_MULTILINE_SERVER_INCLUDED
 
 #include "logproto-text-server.h"
+#include "multi-line/regexp-multi-line.h"
 
-typedef struct _MultiLineRegexp MultiLineRegexp;
 typedef struct _LogProtoREMultiLineServer LogProtoREMultiLineServer;
-
-MultiLineRegexp *multi_line_regexp_compile(const gchar *regexp, GError **error);
-void multi_line_regexp_free(MultiLineRegexp *self);
 
 /* LogProtoREMultiLineServer
  *
@@ -41,16 +38,12 @@ void multi_line_regexp_free(MultiLineRegexp *self);
  */
 LogProtoServer *log_proto_prefix_garbage_multiline_server_new(LogTransport *transport,
     const LogProtoServerOptions *options,
-    MultiLineRegexp *prefix,
-    MultiLineRegexp *garbage);
-void log_proto_regexp_multiline_server_init(LogProtoREMultiLineServer *self,
-                                            LogTransport *transport,
-                                            const LogProtoServerOptions *options,
-                                            MultiLineRegexp *prefix,
-                                            MultiLineRegexp *garbage);
+    MultiLinePattern *prefix,
+    MultiLinePattern *garbage);
+
 LogProtoServer *log_proto_prefix_suffix_multiline_server_new(LogTransport *transport,
     const LogProtoServerOptions *options,
-    MultiLineRegexp *prefix,
-    MultiLineRegexp *suffix);
+    MultiLinePattern *prefix,
+    MultiLinePattern *suffix);
 
 #endif

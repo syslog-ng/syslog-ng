@@ -78,7 +78,7 @@ gboolean
 log_proto_multi_line_server_options_set_prefix(LogProtoMultiLineServerOptions *options, const gchar *prefix_regexp,
                                                GError **error)
 {
-  options->prefix = multi_line_regexp_compile(prefix_regexp, error);
+  options->prefix = multi_line_pattern_compile(prefix_regexp, error);
   return options->prefix != NULL;
 }
 
@@ -86,7 +86,7 @@ gboolean
 log_proto_multi_line_server_options_set_garbage(LogProtoMultiLineServerOptions *options, const gchar *garbage_regexp,
                                                 GError **error)
 {
-  options->garbage = multi_line_regexp_compile(garbage_regexp, error);
+  options->garbage = multi_line_pattern_compile(garbage_regexp, error);
   return options->garbage != NULL;
 }
 
@@ -104,6 +104,6 @@ log_proto_multi_line_server_options_init(LogProtoMultiLineServerOptions *options
 void
 log_proto_multi_line_server_options_destroy(LogProtoMultiLineServerOptions *options)
 {
-  multi_line_regexp_free(options->prefix);
-  multi_line_regexp_free(options->garbage);
+  multi_line_pattern_free(options->prefix);
+  multi_line_pattern_free(options->garbage);
 }

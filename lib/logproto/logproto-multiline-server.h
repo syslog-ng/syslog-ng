@@ -38,8 +38,8 @@ typedef struct _LogProtoMultiLineServerOptions
 {
   LogProtoServerOptions super;
   gint mode;
-  MultiLineRegexp *prefix;
-  MultiLineRegexp *garbage;
+  MultiLinePattern *prefix;
+  MultiLinePattern *garbage;
 } LogProtoMultiLineServerOptions;
 
 LogProtoServer *
