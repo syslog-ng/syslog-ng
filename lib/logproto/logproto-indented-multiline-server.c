@@ -22,70 +22,14 @@
  */
 
 #include "logproto-indented-multiline-server.h"
-#include "messages.h"
-
-static inline gboolean
-log_proto_indented_multiline_is_continuation(guchar first_char)
-{
-  return (first_char == ' ' || first_char == '\t');
-}
-
-static gint
-log_proto_indented_multiline_accumulate_line(LogProtoTextServer *s,
-                                             const guchar *msg,
-                                             gsize msg_len,
-                                             gssize consumed_len)
-{
-
-  /* NOTES:
-   *
-   *    msg
-   *      points to the beginning of the line _repeatedly_, e.g. as
-   *      long as we return the we couldn't extract a message.
-   *
-   *    msg_len
-   *      This is getting longer and longer as lines get accumulated
-   *      in the message.
-   *
-   *    consumed_len
-   *      Is the length of the message starting with "msg" that was already
-   *      consumed by this function.  In practice this points to the EOL
-   *      character of the last consumed line.
-   *
-   */
-
-  /* let's check if the current line is a continuation line or not */
-  if (consumed_len >= 0 && msg_len > consumed_len + 1)
-    {
-      guchar first_character_of_the_current_line = msg[consumed_len + 1];
-
-      if (log_proto_indented_multiline_is_continuation(first_character_of_the_current_line))
-        {
-          return MLL_CONSUME_LINE | MLL_WAITING;
-        }
-      else
-        {
-          return MLL_REWIND_LINE | MLL_EXTRACTED;
-        }
-    }
-
-  return MLL_CONSUME_LINE | MLL_WAITING;
-}
-
-void
-log_proto_indented_multiline_server_init(LogProtoIMultiLineServer *self,
-                                         LogTransport *transport,
-                                         const LogProtoServerOptions *options)
-{
-  log_proto_text_server_init(&self->super, transport, options);
-  self->super.accumulate_line = log_proto_indented_multiline_accumulate_line;
-}
+#include "multi-line/indented-multi-line.h"
 
 LogProtoServer *
 log_proto_indented_multiline_server_new(LogTransport *transport, const LogProtoServerOptions *options)
 {
-  LogProtoIMultiLineServer *self = g_new0(LogProtoIMultiLineServer, 1);
+  LogProtoTextServer *self = g_new0(LogProtoTextServer, 1);
 
-  log_proto_indented_multiline_server_init(self, transport, options);
-  return &self->super.super.super;
+  log_proto_text_server_init(self, transport, options);
+  self->multi_line = indented_multi_line_new();
+  return &self->super.super;
 }

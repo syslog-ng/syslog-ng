@@ -26,12 +26,6 @@
 
 #include "logproto-text-server.h"
 
-typedef struct _LogProtoIMultiLineServer LogProtoIMultiLineServer;
-struct _LogProtoIMultiLineServer
-{
-  LogProtoTextServer super;
-};
-
 /* LogProtoIMultiLineServer
  *
  * This class processes indented multiline text files/streams.  Each
@@ -41,8 +35,5 @@ struct _LogProtoIMultiLineServer
  */
 LogProtoServer *log_proto_indented_multiline_server_new(LogTransport *transport,
                                                         const LogProtoServerOptions *options);
-void log_proto_indented_multiline_server_init(LogProtoIMultiLineServer *self,
-                                              LogTransport *transport,
-                                              const LogProtoServerOptions *options);
 
 #endif
