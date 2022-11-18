@@ -28,7 +28,8 @@
 #include "libtest/proto_lib.h"
 #include "libtest/msg_parse_lib.h"
 
-#include "logproto/logproto-indented-multiline-server.h"
+#include "multi-line/indented-multi-line.h"
+#include "logproto/logproto-text-server.h"
 
 
 static void
