@@ -14,6 +14,7 @@ set(TRANSPORT_HEADERS
     transport/transport-factory-socket.h
     transport/tls-context.h
     transport/tls-verifier.h
+    transport/tls-session.h
     PARENT_SCOPE)
 
 set(TRANSPORT_SOURCES
@@ -31,6 +32,7 @@ set(TRANSPORT_SOURCES
     transport/transport-factory-socket.c
     transport/tls-context.c
     transport/tls-verifier.c
+    transport/tls-session.c
     PARENT_SCOPE)
 
 add_test_subdirectory(tests)

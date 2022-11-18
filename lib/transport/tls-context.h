@@ -25,6 +25,7 @@
 #define TLSCONTEXT_H_INCLUDED
 
 #include "transport/tls-verifier.h"
+#include "transport/tls-session.h"
 #include "messages.h"
 
 typedef enum
@@ -61,26 +62,40 @@ typedef enum
   TLS_CONTEXT_SETUP_BAD_PASSWORD
 } TLSContextSetupResult;
 
-typedef struct _TLSContext TLSContext;
-
-#define X509_MAX_CN_LEN 64
-#define X509_MAX_O_LEN 64
-#define X509_MAX_OU_LEN 32
-
-
-typedef struct _TLSSession
+struct _TLSContext
 {
-  SSL *ssl;
-  TLSContext *ctx;
-  TLSVerifier *verifier;
+  GAtomicCounter ref_cnt;
+  TLSMode mode;
+  gint verify_mode;
+  gchar *key_file;
   struct
   {
-    int found;
-    gchar o[X509_MAX_O_LEN];
-    gchar ou[X509_MAX_OU_LEN];
-    gchar cn[X509_MAX_CN_LEN];
-  } peer_info;
-} TLSSession;
+    gchar *keylog_file_path;
+    FILE *keylog_file;
+    GMutex keylog_file_lock;
+  };
+  gchar *cert_file;
+  gchar *dhparam_file;
+  gchar *pkcs12_file;
+  gchar *ca_dir;
+  gchar *crl_dir;
+  gchar *ca_file;
+  gchar *cipher_suite;
+  gchar *tls13_cipher_suite;
+  gchar *sigalgs;
+  gchar *client_sigalgs;
+  gchar *ecdh_curve_list;
+  gchar *sni;
+  gboolean ocsp_stapling_verify;
+
+  SSL_CTX *ssl_ctx;
+  GList *conf_cmds_list;
+  GList *trusted_fingerprint_list;
+  GList *trusted_dn_list;
+  gint ssl_options;
+  gchar *location;
+};
+
 
 
 #define TLSCONTEXT_ERROR tls_context_error_quark()
@@ -94,17 +109,7 @@ enum TLSContextError
 
 #define TMI_ALLOW_COMPRESS 0x1
 
-TLSVerifier *tls_verifier_new(TLSSessionVerifyFunc verify_func, gpointer verify_data,
-                              GDestroyNotify verify_data_destroy);
-TLSVerifier *tls_verifier_ref(TLSVerifier *self);
-void tls_verifier_unref(TLSVerifier *self);
 
-
-void tls_session_configure_allow_compress(TLSSession *tls_session, gboolean allow_compress);
-void tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints);
-void tls_session_set_trusted_dn(TLSContext *self, GList *dns);
-void tls_session_set_verifier(TLSSession *self, TLSVerifier *verifier);
-void tls_session_free(TLSSession *self);
 
 gboolean tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str);
 gboolean tls_context_set_ssl_options_by_name(TLSContext *self, GList *options);
