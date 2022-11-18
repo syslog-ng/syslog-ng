@@ -503,7 +503,6 @@ tls_context_setup_session(TLSContext *self)
   return session;
 }
 
-
 gboolean
 tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str)
 {
@@ -559,7 +558,8 @@ tls_context_get_verify_mode(const TLSContext *self)
   return self->verify_mode;
 }
 
-void tls_context_set_verify_mode(TLSContext *self, gint verify_mode)
+void
+tls_context_set_verify_mode(TLSContext *self, gint verify_mode)
 {
   self->verify_mode = verify_mode;
 }
