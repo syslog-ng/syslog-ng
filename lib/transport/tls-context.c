@@ -620,8 +620,9 @@ _dump_tls_keylog(const SSL *ssl, const char *line)
   if(!ssl)
     return;
 
-  TLSSession *self = SSL_get_app_data(ssl);
-  _write_line_to_keylog_file(self->ctx->keylog_file_path, line, self->ctx->keylog_file, &self->ctx->keylog_file_lock);
+  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX(ssl);
+  TLSContext *self = SSL_CTX_get_app_data(ssl_ctx);
+  _write_line_to_keylog_file(self->keylog_file_path, line, self->keylog_file, &self->keylog_file_lock);
 }
 
 gboolean
