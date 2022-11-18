@@ -777,6 +777,7 @@ tls_context_new(TLSMode mode, const gchar *location)
       self->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
       SSL_CTX_set_session_id_context(self->ssl_ctx, (const unsigned char *) "syslog", 6);
     }
+  SSL_CTX_set_app_data(self->ssl_ctx, self);
 
   return self;
 }
