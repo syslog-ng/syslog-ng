@@ -90,6 +90,8 @@ _print_and_clear_tls_session_error(TLSContext *self)
   ERR_clear_error();
 }
 
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+
 void
 _write_line_to_keylog_file(const char *file_path, const char *line, FILE *keylog_file, GMutex *mutex)
 {
@@ -135,6 +137,16 @@ _setup_keylog_file(TLSContext *self)
 
   return TRUE;
 }
+
+#else
+
+static gboolean
+_setup_keylog_file(TLSContext *self)
+{
+  return TRUE;
+}
+
+#endif
 
 static void
 tls_context_setup_session_tickets(TLSContext *self)

@@ -22,6 +22,7 @@
  */
 #include "tls-verifier.h"
 #include "messages.h"
+#include "compat/openssl_support.h"
 #include <openssl/x509v3.h>
 
 /* TLSVerifier */
