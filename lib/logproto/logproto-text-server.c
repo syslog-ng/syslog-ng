@@ -108,13 +108,38 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
       *msg_len = 0;
       if (verdict & MLL_CONSUME_LINE)
         {
+          gint drop_length = (verdict & MLL_CONSUME_PARTIAL_AMOUNT_MASK) >> MLL_CONSUME_PARTIAL_AMOUNT_SHIFT;
+
+          /* NOTE: we can't partially consume a line at the middle of a
+           * multi-line construct, as that would mean we would have to copy
+           * stuff to a separate buffer, which we don't at the moment for
+           * performance reasons.
+           *
+           * No implementation of the MultiLineLogic interface does that and
+           * honestly I can't even see a use-case at the moment: we only use
+           * MLL_CONSUME_PARTIALLY() to truncate the end of the last line
+           * (when "garbage" is found).  Should we ever want to add an
+           * implementation that extracts only parts of the incoming lines,
+           * even in the middle, we would probably have to check the
+           * interface, and validate at init() time that LogProtoTextBuffer
+           * is unable to work with something that does that.
+           *
+           * At the moment we will violently crash if this happens with a
+           * SIGABRT.
+           */
+
+          g_assert(drop_length == 0);
           self->cached_eol_pos = next_eol_pos;
           self->consumed_len = eol - buffer_start;
         }
-      else
+      else if (verdict & MLL_REWIND_LINE)
         {
           /* when we are waiting for another line, the current one
            * can't be rewinded, so MLL_REWIND_LINE is not valid */
+          g_assert_not_reached();
+        }
+      else
+        {
           g_assert_not_reached();
         }
       return FALSE;
