@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-import atexit
 from pathlib import Path
 
 from src.common.asynchronous import BackgroundEventLoop
@@ -38,7 +37,6 @@ class UnixStreamDestination(DestinationDriver):
         self.__server = None
         self.__message_reader = None
 
-        atexit.register(self.stop_listener)
         super(UnixStreamDestination, self).__init__([self.path], options)
 
     def start_listener(self):

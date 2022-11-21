@@ -56,9 +56,7 @@ def test_pp_tls_passthrough(config, syslog_ng, port_allocator, loggen, testcase_
 
     loggen_input_file_path = Path("loggen_input_{}.txt".format(get_unique_id()))
     loggen_input_file = File(loggen_input_file_path)
-    loggen_input_file.open(mode="w")
-    loggen_input_file.write(INPUT_MESSAGES)
-    loggen_input_file.close()
+    loggen_input_file.write_content_and_close(INPUT_MESSAGES)
 
     loggen.start(
         network_source.options["ip"], network_source.options["port"], number=NUMBER_OF_MESSAGES,

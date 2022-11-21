@@ -102,16 +102,34 @@ def testcase_parameters(request):
 
 
 @pytest.fixture
-def config(request):
-    return SyslogNgConfig(request.getfixturevalue("version"))
+def config(request, teardown):
+    return SyslogNgConfig(request.getfixturevalue("version"), teardown)
 
 
 @pytest.fixture
-def syslog_ng(request, testcase_parameters):
+def syslog_ng(request, testcase_parameters, teardown):
     tc_parameters.INSTANCE_PATH = SyslogNgPaths(testcase_parameters).set_syslog_ng_paths("server")
-    syslog_ng = SyslogNg(tc_parameters.INSTANCE_PATH, testcase_parameters)
-    request.addfinalizer(lambda: syslog_ng.stop())
+    syslog_ng = SyslogNg(tc_parameters.INSTANCE_PATH, testcase_parameters, teardown)
+    teardown.register(syslog_ng.stop)
     return syslog_ng
+
+
+class TeardownRegistry:
+    teardown_callbacks = []
+
+    def register(self, teardown_callback):
+        TeardownRegistry.teardown_callbacks.append(teardown_callback)
+
+    def execute_teardown_callbacks(self):
+        for teardown_callback in TeardownRegistry.teardown_callbacks:
+            teardown_callback()
+
+
+@pytest.fixture(scope="function")
+def teardown():
+    teardown_registry = TeardownRegistry()
+    yield teardown_registry
+    teardown_registry.execute_teardown_callbacks()
 
 
 @pytest.fixture
