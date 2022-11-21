@@ -53,6 +53,23 @@ struct _MultiLineLogic
 void multi_line_logic_init_instance(MultiLineLogic *self);
 void multi_line_logic_free_method(MultiLineLogic *s);
 
+/*
+ * multi_line_logic_accumulate_line():
+ *
+ * Accumulate a multi-line message into an internal buffer.
+ *    msg
+ *      points to the beginning of the line _repeatedly_, e.g. as
+ *      long as we return the we couldn't extract a message.
+ *
+ *    msg_len
+ *      This is getting longer and longer as lines get accumulated
+ *      in the message.
+ *
+ *    consumed_len
+ *      Is the length of the message starting with "msg" that was already
+ *      consumed by this function.  In practice this points to the EOL
+ *      character of the last consumed line.
+ */
 static inline gint
 multi_line_logic_accumulate_line(MultiLineLogic *self,
                                  const guchar *msg,

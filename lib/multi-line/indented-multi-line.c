@@ -36,23 +36,6 @@ _accumulate_line(MultiLineLogic *s,
                  gssize consumed_len)
 {
 
-  /* NOTES:
-   *
-   *    msg
-   *      points to the beginning of the line _repeatedly_, e.g. as
-   *      long as we return the we couldn't extract a message.
-   *
-   *    msg_len
-   *      This is getting longer and longer as lines get accumulated
-   *      in the message.
-   *
-   *    consumed_len
-   *      Is the length of the message starting with "msg" that was already
-   *      consumed by this function.  In practice this points to the EOL
-   *      character of the last consumed line.
-   *
-   */
-
   /* let's check if the current line is a continuation line or not */
   if (consumed_len >= 0 && msg_len > consumed_len + 1)
     {

@@ -162,23 +162,6 @@ regexp_multi_line_accumulate_line(MultiLineLogic *s,
   RegexpMultiLine *self = (RegexpMultiLine *) s;
   gboolean initial_line;
 
-  /* NOTES:
-   *
-   *    msg
-   *      points to the beginning of the line _repeatedly_, e.g. as
-   *      long as we return the we couldn't extract a message.
-   *
-   *    msg_len
-   *      This is getting longer and longer as lines get accumulated
-   *      in the message.
-   *
-   *    consumed_len
-   *      Is the length of the message starting with "msg" that was already
-   *      consumed by this function.  In practice this points to the EOL
-   *      character of the last consumed line.
-   *
-   */
-
   initial_line = (consumed_len < 0) || (msg_len <= consumed_len + 1);
   if (initial_line)
     {
