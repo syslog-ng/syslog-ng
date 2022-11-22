@@ -3,7 +3,9 @@ xsd_DATA	= \
 		doc/xsd/patterndb-2.xsd \
 		doc/xsd/patterndb-3.xsd \
 		doc/xsd/patterndb-4.xsd \
-		doc/xsd/patterndb-5.xsd
+		doc/xsd/patterndb-5.xsd \
+		doc/xsd/patterndb-6.xsd
+
 
 EXTRA_DIST	+=  \
 		doc/man/dqtool.1.xml \

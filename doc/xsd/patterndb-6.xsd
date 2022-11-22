@@ -1,0 +1,598 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:element name="patterndb">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="ruleset" type="rulesetType" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>
+                            A container to group log patterns for an application/program.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="version" type="xs:NMTOKEN" use="required" fixed="6">
+                <xs:annotation>
+                    <xs:documentation>
+                        The schema version of the pattern database.
+                        The current version is '6'.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="pub_date" type="xs:date" use="required">
+                <xs:annotation>
+                    <xs:documentation>
+                        The publication date of the XML file.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+        <xs:unique name="ruleset_name">
+            <xs:selector xpath="ruleset"/>
+            <xs:field xpath="@name"/>
+        </xs:unique>
+        <xs:unique name="ids">
+            <xs:selector xpath=".//*"/>
+            <xs:field xpath="@id"/>
+        </xs:unique>
+    </xs:element>
+
+    <xs:complexType name="rulesetType">
+        <xs:all>
+            <xs:element name="description" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        An optional element to attach description to a ruleset.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="url" type="xs:anyURI" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        An optional element to point to a URL related to the ruleset.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="urls" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Optional elements to point to some external resource for disposition.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="url" type="xs:anyURI" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="ruleset_urls">
+                    <xs:selector xpath="url"/>
+                    <xs:field xpath="."/>
+                </xs:unique>
+            </xs:element>
+            <xs:element name="patterns" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        If an application uses multiple values for its
+                        program name, then you can list them all in a
+                        patterns element containing multiple  pattern
+                        elements.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="pattern" type="patternType" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation>
+                                  An optional element with a pattern representing the name of the application related
+                                  to the ruleset in the syslog program field.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pattern" type="patternType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        An optional element with a pattern representing the name of the application related
+                        to the ruleset in the syslog program field.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="rules">
+                <xs:annotation>
+                    <xs:documentation>
+                        The rules in the ruleset.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="rule" type="ruleType" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    A rule describes one log event with classifications and details.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="patterns">
+                    <xs:selector xpath="rule/patterns/pattern"/>
+                    <xs:field xpath="."/>
+                </xs:unique>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The name of the application.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="id" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="ruleType">
+        <xs:all>
+            <xs:element name="description" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        An optional element to describe the log disposition.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="urls" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Optional elements to point to some external resource for disposition.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="url" type="xs:anyURI" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="rule_urls">
+                    <xs:selector xpath="url"/>
+                    <xs:field xpath="."/>
+                </xs:unique>
+            </xs:element>
+            <xs:element name="values" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Optional values that are added after template
+                        evaluation to messages.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="value" minOccurs="0"  maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:simpleContent>
+                                    <xs:extension base="xs:string">
+                                        <xs:attribute name="name" type="xs:string" use="required">
+                                            <xs:annotation>
+                                                <xs:documentation>
+                                                  Specifies the name of the
+                                                  name-value pair to be
+                                                  added to the message once
+                                                  the rule matches.  The
+                                                  value can be a template
+                                                  expression, which is
+                                                  expanded using the
+                                                  matching message.
+                                                </xs:documentation>
+                                            </xs:annotation>
+                                        </xs:attribute>
+                                        <xs:attribute name="type" type="xs:string">
+                                            <xs:annotation>
+                                                <xs:documentation>
+                                                   Specifies the type-hint
+                                                   for the new name-value
+                                                   pair.  Can be any
+                                                   syslog-ng supported type:
+                                                   string, integer, double,
+                                                   datetime, json
+                                                </xs:documentation>
+                                            </xs:annotation>
+                                        </xs:attribute>
+                                    </xs:extension>
+                                </xs:simpleContent>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="rule_values">
+                    <xs:selector xpath="value"/>
+                    <xs:field xpath="@name"/>
+                </xs:unique>
+            </xs:element>
+             <xs:element name="examples" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Optional examples to test rule patterns and configuration
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="example" type="exampleType" minOccurs="0"  maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="examples">
+                    <xs:selector xpath="example"/>
+                    <xs:field xpath="test_message"/>
+                    <xs:field xpath="@program"/>
+                </xs:unique>
+            </xs:element>
+
+            <xs:element name="tags" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Optional keywords that can be used for a freeform grouping of the rules.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="tag" type="xs:token" minOccurs="0"  maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="rule_tags">
+                    <xs:selector xpath="tag"/>
+                    <xs:field xpath="."/>
+                </xs:unique>
+            </xs:element>
+            <xs:element name="actions" minOccurs="0" maxOccurs="1">
+                 <xs:complexType>
+                     <xs:sequence>
+                         <xs:element name="action" type="actionType" minOccurs="1" maxOccurs="unbounded"/>
+                     </xs:sequence>
+                 </xs:complexType>
+            </xs:element>
+            <xs:element name="patterns">
+                <xs:annotation>
+                    <xs:documentation>
+                        Patterns representing the rule. Log messages matching any one of the patterns
+                        are classified to this rule.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="pattern" type="patternType" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    A pattern representing the log message.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="provider" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The provider of the rule. To distinguish between who supplied the rule,
+                    or if it has been added to the xml by a local user.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="id" type="xs:string" use="required"/>
+        <xs:attribute name="context-id" type="xs:string"/>
+        <xs:attribute name="context-scope">
+          <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="process">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="program">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="host">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="global">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="context-timeout" type="xs:integer"/>
+        <xs:attribute name="class" type="classType">
+            <xs:annotation>
+                <xs:documentation>
+                    The class of the rule.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="actionType">
+        <xs:all>
+            <xs:element name="message" type="messageType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The message to be generated when the action
+                        triggers.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="create-context" type="createContextType" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The context to be created when the action is
+                        triggered.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+
+        <xs:attribute name="condition" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    A filter expression guarding the triggering of this
+                    action. If the filter evaluates to TRUE the action is
+                    executed, otherwise it is skipped.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="rate" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>
+                    The maximum rate at which this action is executed.
+                    Excess actions are ignored.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="trigger">
+            <xs:annotation>
+                <xs:documentation>
+                    Specifies when the action is to be executed.
+                </xs:documentation>
+            </xs:annotation>
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="timeout">
+                        <xs:annotation>
+                            <xs:documentation>
+                                Specifies that the action is to be executed when
+                                the correlation timeout elapses without
+                                matching a further rule.
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="match">
+                        <xs:annotation>
+                            <xs:documentation>
+                                Specifies that the action is to be executed
+                                immediately as the rule matches.
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="messageType">
+        <xs:all>
+            <xs:element name="values" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Name-value pairs that make up the message to be
+                        generated.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="value" minOccurs="0"  maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:simpleContent>
+                                    <xs:extension base="xs:string">
+                                        <xs:attribute name="name" type="xs:string" use="required"/>
+                                    </xs:extension>
+                                </xs:simpleContent>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="message_values">
+                    <xs:selector xpath="value"/>
+                    <xs:field xpath="@name"/>
+                </xs:unique>
+            </xs:element>
+
+            <xs:element name="tags" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>
+                        Optional keywords that can be used for a freeform grouping of the rules.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="tag" type="xs:token" minOccurs="0"  maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="message_tags">
+                    <xs:selector xpath="tag"/>
+                    <xs:field xpath="."/>
+                </xs:unique>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="inherit-properties">
+          <xs:annotation>
+            <xs:documentation>
+              If set to TRUE, the original message that triggered the action is
+              cloned, including its name-value pairs and tags.
+              For details, see Section 13.4, Triggering actions for identified messages.
+              NOTE: This attribute is deprecated in favour of inherit-mode.
+            </xs:documentation>
+          </xs:annotation>
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="context"/>
+              <xs:enumeration value="TRUE"/>
+              <xs:enumeration value="FALSE"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+
+        <xs:attribute name="inherit-mode">
+          <xs:annotation>
+            <xs:documentation>
+              This attribute is used to control which set of name-value
+              pairs are propagated to the newly generated message. "context"
+              means that the new message is populated with a union of all
+              name-value pairs present in messages in the context.
+              "last-message" means that only name-value pairs of the last
+              message is copied. "none" means that the new message becomes
+              empty initially.
+              For details, see Section 13.4, Triggering actions for identified messages.
+            </xs:documentation>
+          </xs:annotation>
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="none"/>
+              <xs:enumeration value="context"/>
+              <xs:enumeration value="last-message"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+
+    </xs:complexType>
+
+    <xs:complexType name="createContextType">
+        <xs:all>
+            <xs:element name="message" type="messageType" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The message that gets added to the new context to be
+                        created.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="context-id" type="xs:string"/>
+        <xs:attribute name="context-scope">
+          <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="process">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="program">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="host">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="global">
+                        <xs:annotation>
+                            <xs:documentation>
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="context-timeout" type="xs:integer"/>
+    </xs:complexType>
+
+    <xs:simpleType name="uuidType">
+        <xs:annotation>
+            <xs:documentation>
+                This describes a UUID syntax. Currently it is not used for
+                the IDing to avoid enforcing the use of UUIDs, which some
+                users complained about. Once the decision on the rule id
+                format happens this may completely be removed.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[a-zA-Z0-9]{8}-([a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{12}"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="patternType">
+        <xs:annotation>
+            <xs:documentation>
+                This type describes a radix/parser pattern which is used to match
+                a program name or a whole log message.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="classType">
+        <xs:annotation>
+            <xs:documentation>
+                The classification class for a single rule.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[\-a-zA-Z0-9_\.%:@\+!\^\\/]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="exampleType">
+        <xs:all>
+            <xs:element name="test_message">
+                <xs:annotation>
+                    <xs:documentation>
+                        The example message to test rule patterns
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:simpleContent>
+                        <xs:extension base="xs:string">
+                            <xs:attribute name="program" type="xs:string" use="optional"/>
+                        </xs:extension>
+                    </xs:simpleContent>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="test_values" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="test_value" minOccurs="0"  maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:simpleContent>
+                                    <xs:extension base="xs:string">
+                                        <xs:attribute name="name" type="xs:string" use="required"/>
+                                        <xs:attribute name="type" type="xs:string"/>
+                                    </xs:extension>
+                                </xs:simpleContent>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="test-values">
+                    <xs:selector xpath="test_value"/>
+                    <xs:field xpath="@name"/>
+                </xs:unique>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
+</xs:schema>
+
+<!-- vim:expandtab:ts=4:ft=xml
+  -->

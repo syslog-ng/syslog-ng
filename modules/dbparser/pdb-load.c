@@ -321,13 +321,13 @@ _pdbl_initial_start(PDBLoader *state, const gchar *element_name, const gchar **a
       else if (state->ruleset->version && atoi(state->ruleset->version) < 2)
         {
           pdb_loader_set_error(state, error,
-                               "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
+                               "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool merge");
           return;
         }
-      else if (state->ruleset->version && atoi(state->ruleset->version) > 5)
+      else if (state->ruleset->version && atoi(state->ruleset->version) > 6)
         {
           pdb_loader_set_error(state, error,
-                               "patterndb version too new, this version of syslog-ng supports v3, v4 & v5 formatted patterndb files.");
+                               "patterndb version too new, this version of syslog-ng supports v3..v6 formatted patterndb files.");
           return;
         }
       _push_state(state, PDBL_PATTERNDB);
