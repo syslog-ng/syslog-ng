@@ -94,8 +94,8 @@ synthetic_message_add_value_template_string_and_type(SyntheticMessage *self, Glo
 
   value_template = log_template_new(cfg, NULL);
   success = log_template_compile(value_template, value, error);
-  if (success)
-    success = log_template_set_type_hint(value_template, type_hint ? : "string", error);
+  if (success && type_hint)
+    success = log_template_set_type_hint(value_template, type_hint, error);
   if (success)
     synthetic_message_add_value_template(self, name, value_template);
 
