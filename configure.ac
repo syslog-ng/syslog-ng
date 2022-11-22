@@ -331,17 +331,22 @@ AC_ARG_WITH(systemd-journal,
                                          Link against the system supplied or the wrapper library. (default: auto)]
               ,,with_systemd_journal="auto")
 
-AC_ARG_ENABLE(python,
-              [  --disable-python       Disable Python module]
-              ,,enable_python="auto")
-
 AC_ARG_ENABLE(kafka,
               [  --enable-kafka         Enable rdkafka support]
               ,,enable_kafka="auto")
 
+AC_ARG_ENABLE(python,
+              [  --disable-python       Disable Python module]
+              ,,enable_python="auto")
+
+
 AC_ARG_WITH(python,
               [  --with-python=VERSION    Build with a specific version of python]
               ,,with_python="auto")
+
+AC_ARG_WITH(python-packages,
+              [  --with-python-packages=[system|venv]    Use Python packages from the system or a private virtualenv (default: venv)]
+              ,,with_python_packages="venv")
 
 AC_ARG_WITH(python3-home,
               [  --with-python3-home=path Use path as a hard-coded Python home directory that can not be overwritten by the PYTHONHOME environment variable],
@@ -1516,20 +1521,16 @@ else
   with_python=""
 fi
 
-dnl ***************************************************************************
-dnl pylint
-dnl ***************************************************************************
-
-if test "x$with_pylint" != "x"; then
-    PYLINT=$with_pylint
-else
-    if test "$python_found" = "yes"; then
-        AC_CHECK_PROG(PYLINT, pylint3, pylint3)
-        if test "x$PYLINT" = "x"; then
-          AC_CHECK_PROG(PYLINT, pylint, pylint)
-        fi
+if test "x$enable_python" = "xyes"; then
+    if test "x$with_python_packages" = "xvenv"; then
+        PYTHON_VENV_DIR=`pwd`/venv
+        PYTHON_VENV=${PYTHON_VENV_DIR}/bin/python
+    else
+        with_python_packages="system"
+        PYTHON_VENV=$PYTHON
     fi
 fi
+
 
 dnl ***************************************************************************
 dnl docbook
@@ -1969,10 +1970,11 @@ AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
 AM_CONDITIONAL([HAVE_GETRANDOM], [test x$ac_cv_func_getrandom = xyes])
 AM_CONDITIONAL([HAVE_FMEMOPEN], [test x$ac_cv_func_fmemopen = xyes])
 AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
-AM_CONDITIONAL(PYLINT, [test "x$PYLINT" != "x"])
 
 
-AC_SUBST(PYLINT)
+AC_SUBST(PYTHON_VENV)
+AC_SUBST(PYTHON_VENV_DIR)
+AC_SUBST(with_python_packages)
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
@@ -2093,7 +2095,7 @@ echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Kafka support (module)      : ${enable_kafka:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}, microseconds: ${riemann_micros:=no}"
-echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none})"
+echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none}, packages: ${with_python_packages})"
 echo "  java                        : ${enable_java:=no}"
 echo "  java modules                : ${enable_java_modules:=no}"
 echo "  afsnmp module               : ${enable_afsnmp:=no}"

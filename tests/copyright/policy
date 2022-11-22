@@ -150,6 +150,7 @@ scl/mariadb/.*\.conf$
 scl/kubernetes/.*\.conf$
 modules/python-modules/syslogng/modules/example/.*
 modules/python-modules/setup\.py
+scripts/build-python-venv\.sh
 
 ###########################################################################
 # These files are GPLd with Balabit origin.

@@ -1,0 +1,16 @@
+
+PYTHON_VENV_TOUCHFILE=$(abs_builddir)/.python-venv-built
+
+$(PYTHON_VENV_TOUCHFILE): Makefile
+	if [ "$(with_python_packages)" = "venv" ]; then \
+	    $(top_srcdir)/scripts/build-python-venv.sh "$(PYTHON)" "$(PYTHON_VENV_DIR)" "$(top_srcdir)"; \
+	fi
+	touch $@
+
+python-venv: $(PYTHON_VENV_TOUCHFILE)
+
+python-venv-clean:
+	rm -rf "$(PYTHON_VENV_DIR)"
+	rm -rf "$(PYTHON_VENV_TOUCHFILE)"
+
+CLEAN_HOOKS += python-venv-clean

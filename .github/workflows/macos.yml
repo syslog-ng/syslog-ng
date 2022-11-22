@@ -24,7 +24,6 @@ jobs:
         run: |
           brew update --preinstall
           brew bundle --file=contrib/Brewfile
-          pip3 install --user -r requirements.txt
 
       - name: Set ENV variables
         run: |

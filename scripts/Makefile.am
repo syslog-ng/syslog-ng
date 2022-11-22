@@ -6,7 +6,8 @@ EXTRA_DIST	+= scripts/update-patterndb.in \
 	scripts/rm-extra-msg-sentinel.sh	\
 	scripts/version.sh	\
 	scripts/test-grep.sh	\
-	scripts/style-checker.sh
+	scripts/style-checker.sh	\
+	scripts/build-python-venv.sh
 
 install-exec-local:
 	$(mkinstalldirs) $(DESTDIR)/$(sysconfdir)/patterndb.d

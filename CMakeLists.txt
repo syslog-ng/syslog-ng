@@ -257,17 +257,7 @@ else ()
 endif ()
 
 MESSAGE(STATUS "Detected pythonlib version: ${PYTHONLIBS_VERSION_STRING}")
-
-set (PYLINT "" CACHE STRING "pylint binary")
-
-if (PYLINT)
-  set(PYLINT_BIN ${PYLINT})
-else ()
-  find_program(PYLINT_BIN "pylint3")
-    if (NOT PYLINT_BIN)
-      find_program(PYLINT_BIN "pylint")
-    endif()
-endif()
+include(python_build_venv)
 
 include(openssl_functions)
 openssl_set_defines()
