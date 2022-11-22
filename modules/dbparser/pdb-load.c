@@ -88,6 +88,7 @@ typedef struct _PDBLoader
   gboolean load_examples;
   GList *examples;
   gchar *value_name;
+  gchar *value_type;
   gchar *test_value_name;
   gchar *test_value_type;
   GlobalConfig *cfg;
@@ -217,9 +218,17 @@ _process_value_element(PDBLoader *state,
                        const gchar **attribute_names, const gchar **attribute_values,
                        GError **error)
 {
-  if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
-    state->value_name = g_strdup(attribute_values[0]);
-  else
+  for (gint i = 0; attribute_names[i]; i++)
+    {
+      const gchar *attr = attribute_names[i];
+      const gchar *value = attribute_values[i];
+
+      if (g_str_equal(attr, "name"))
+        state->value_name = g_strdup(value);
+      else if (g_str_equal(attr, "type"))
+        state->value_type = g_strdup(value);
+    }
+  if (!state->value_name)
     {
       pdb_loader_set_error(state, error, "<value> misses name attribute in rule %s", state->current_rule->rule_id);
       return;
@@ -933,10 +942,11 @@ _pdbl_value_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
   if (_pop_state_for_closing_tag(state, element_name, "value", error))
     {
-      if (state->value_name)
-        g_free(state->value_name);
+      g_free(state->value_name);
+      g_free(state->value_type);
 
       state->value_name = NULL;
+      state->value_type = NULL;
     }
 }
 
@@ -946,7 +956,8 @@ _pdbl_value_text(PDBLoader *state, const gchar *text, gsize text_len, GError **e
   GError *err = NULL;
 
   g_assert(state->value_name != NULL);
-  if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
+  if (!synthetic_message_add_value_template_string_and_type(state->current_message, state->cfg, state->value_name, text,
+                                                            state->value_type, &err))
     {
       pdb_loader_set_error(state, error, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
                            state->current_rule->rule_id, state->value_name, text, err->message);
