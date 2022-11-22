@@ -127,52 +127,47 @@ _get_offset_of_garbage(RegexpMultiLine *self, const guchar *line, gsize line_len
 static gint
 _accumulate_initial_line(RegexpMultiLine *self,
                          const guchar *line,
-                         gsize line_len,
-                         gssize consumed_len)
+                         gsize line_len)
 {
   gint offset_of_garbage = _get_offset_of_garbage(self, line, line_len);
   if (offset_of_garbage >= 0)
     return MLL_CONSUME_PARTIALLY(line_len - offset_of_garbage) | MLL_EXTRACTED;
   else
-    return MLL_CONSUME_LINE | MLL_WAITING;
+    return MLL_CONSUME_SEGMENT | MLL_WAITING;
 
 }
 
 static gint
 _accumulate_continuation_line(RegexpMultiLine *self,
                               const guchar *line,
-                              gsize line_len,
-                              gssize consumed_len)
+                              gsize line_len)
 {
   gint offset_of_garbage = _get_offset_of_garbage(self, line, line_len);
   if (offset_of_garbage >= 0)
     return MLL_CONSUME_PARTIALLY(line_len - offset_of_garbage) | MLL_EXTRACTED;
   else if (_regexp_matches(self->prefix, line, line_len))
-    return MLL_REWIND_LINE | MLL_EXTRACTED;
+    return MLL_REWIND_SEGMENT | MLL_EXTRACTED;
   else
-    return MLL_CONSUME_LINE | MLL_WAITING;
+    return MLL_CONSUME_SEGMENT | MLL_WAITING;
 }
 
 static gint
 regexp_multi_line_accumulate_line(MultiLineLogic *s,
                                   const guchar *msg,
                                   gsize msg_len,
-                                  gssize consumed_len)
+                                  const guchar *segment,
+                                  gsize segment_len)
 {
   RegexpMultiLine *self = (RegexpMultiLine *) s;
   gboolean initial_line;
 
-  initial_line = (consumed_len < 0) || (msg_len <= consumed_len + 1);
-  if (initial_line)
+  if (msg_len == 0)
     {
-      return _accumulate_initial_line(self, msg, msg_len, consumed_len);
+      return _accumulate_initial_line(self, segment, segment_len);
     }
   else
     {
-      const guchar *start_of_the_current_line = &msg[consumed_len + 1];
-      gint length_of_the_current_line = msg_len - (start_of_the_current_line - msg);
-
-      return _accumulate_continuation_line(self, start_of_the_current_line, length_of_the_current_line, consumed_len);
+      return _accumulate_continuation_line(self, segment, segment_len);
     }
 }
 

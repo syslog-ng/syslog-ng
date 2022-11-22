@@ -53,7 +53,8 @@ construct_test_proto_with_nuls(LogTransport *transport)
 }
 
 LogProtoServer *
-construct_test_proto_with_accumulator(gint (*accumulator)(MultiLineLogic *, const guchar *, gsize, gssize),
+construct_test_proto_with_accumulator(gint (*accumulator)(MultiLineLogic *, const guchar *, gsize, const guchar *,
+                                                          gsize),
                                       LogTransport *transport)
 {
   MultiLineLogic *multi_line = g_new0(MultiLineLogic, 1);
@@ -68,13 +69,14 @@ construct_test_proto_with_accumulator(gint (*accumulator)(MultiLineLogic *, cons
 }
 
 static gint
-accumulator_delay_lines(MultiLineLogic *self, const guchar *msg, gsize msg_len, gssize consumed_len)
+accumulator_delay_lines(MultiLineLogic *self, const guchar *msg, gsize msg_len, const guchar *segment,
+                        gsize segment_len)
 {
   accumulate_seq++;
   if ((accumulate_seq % 2) == 0)
-    return MLL_REWIND_LINE | MLL_EXTRACTED;
+    return MLL_REWIND_SEGMENT | MLL_EXTRACTED;
   else
-    return MLL_CONSUME_LINE | MLL_WAITING;
+    return MLL_CONSUME_SEGMENT | MLL_WAITING;
 }
 
 static void
@@ -395,15 +397,16 @@ Test(log_proto, test_log_proto_text_server_is_not_fetching_input_as_long_as_ther
 }
 
 static gint
-accumulator_assert_that_lines_are_starting_with_sequence_number(MultiLineLogic *self, const guchar *msg,
-    gsize msg_len, gssize consumed_len)
+accumulator_assert_that_lines_are_starting_with_sequence_number(MultiLineLogic *self,
+    const guchar *msg, gsize msg_len,
+    const guchar *segment, gsize segment_len)
 {
   cr_assert_eq((msg[0] - '0'), accumulate_seq,
                "accumulate_line: Message doesn't start with sequence number, msg=%.*s, seq=%d",
                (int)msg_len, msg, accumulate_seq);
-  cr_assert_eq(consumed_len, -1, "Initial invocation of the accumulator expects -1 as consumed_len");
+  cr_assert_eq(msg_len, 0, "Initial invocation of the accumulator expects 0 as msg_len");
   accumulate_seq++;
-  return MLL_CONSUME_LINE | MLL_EXTRACTED;
+  return MLL_CONSUME_SEGMENT | MLL_EXTRACTED;
 }
 
 static void
@@ -438,13 +441,14 @@ Test(log_proto, test_log_proto_text_server_accumulate_line_is_called_for_each_li
 }
 
 static gint
-accumulator_extract_pairs(MultiLineLogic *self, const guchar *msg, gsize msg_len, gssize consumed_len)
+accumulator_extract_pairs(MultiLineLogic *self, const guchar *msg, gsize msg_len, const guchar *segment,
+                          gsize segment_len)
 {
   accumulate_seq++;
   if ((accumulate_seq % 2) == 0)
-    return MLL_CONSUME_LINE | MLL_EXTRACTED;
+    return MLL_CONSUME_SEGMENT | MLL_EXTRACTED;
   else
-    return MLL_CONSUME_LINE | MLL_WAITING;
+    return MLL_CONSUME_SEGMENT | MLL_WAITING;
 }
 
 static void
@@ -477,20 +481,21 @@ Test(log_proto, test_log_proto_text_server_accumulate_line_can_consume_lines_wit
 }
 
 static gint
-accumulator_join_continuation_lines(MultiLineLogic *self, const guchar *msg, gsize msg_len, gssize consumed_len)
+accumulator_join_continuation_lines(MultiLineLogic *self, const guchar *msg, gsize msg_len, const guchar *segment,
+                                    gsize segment_len)
 {
-  if (consumed_len >= 0 && msg_len > consumed_len + 1)
+  if (msg_len > 0 && segment_len > 0)
     {
-      gchar first_char = msg[consumed_len + 1];
+      gchar first_char = segment[0];
 
       if (first_char == ' ')
-        return MLL_CONSUME_LINE | MLL_WAITING;
+        return MLL_CONSUME_SEGMENT | MLL_WAITING;
       else
-        return MLL_REWIND_LINE | MLL_EXTRACTED;
+        return MLL_REWIND_SEGMENT | MLL_EXTRACTED;
     }
   else
     {
-      return MLL_CONSUME_LINE | MLL_WAITING;
+      return MLL_CONSUME_SEGMENT | MLL_WAITING;
     }
 }
 
@@ -577,12 +582,13 @@ Test(log_proto, test_log_proto_text_server_accumulation_terminated_if_buffer_ful
 }
 
 static gint
-accumulator_rewind_initial(MultiLineLogic *self, const guchar *msg, gsize msg_len, gssize consumed_len)
+accumulator_rewind_initial(MultiLineLogic *self, const guchar *msg, gsize msg_len, const guchar *segment,
+                           gsize segment_len)
 {
   accumulate_seq++;
   if (accumulate_seq == 1)
-    return MLL_REWIND_LINE | MLL_EXTRACTED;
-  return MLL_CONSUME_LINE | MLL_EXTRACTED;
+    return MLL_REWIND_SEGMENT | MLL_EXTRACTED;
+  return MLL_CONSUME_SEGMENT | MLL_EXTRACTED;
 }
 
 static void

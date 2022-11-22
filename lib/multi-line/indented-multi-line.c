@@ -33,25 +33,25 @@ static gint
 _accumulate_line(MultiLineLogic *s,
                  const guchar *msg,
                  gsize msg_len,
-                 gssize consumed_len)
+                 const guchar *segment,
+                 gsize segment_len)
 {
-
   /* let's check if the current line is a continuation line or not */
-  if (consumed_len >= 0 && msg_len > consumed_len + 1)
+  if (msg_len > 0 && segment_len > 0)
     {
-      guchar first_character_of_the_current_line = msg[consumed_len + 1];
+      guchar first_character_of_the_current_line = *segment;
 
       if (_is_line_a_continuation_line(first_character_of_the_current_line))
         {
-          return MLL_CONSUME_LINE | MLL_WAITING;
+          return MLL_CONSUME_SEGMENT | MLL_WAITING;
         }
       else
         {
-          return MLL_REWIND_LINE | MLL_EXTRACTED;
+          return MLL_REWIND_SEGMENT | MLL_EXTRACTED;
         }
     }
 
-  return MLL_CONSUME_LINE | MLL_WAITING;
+  return MLL_CONSUME_SEGMENT | MLL_WAITING;
 }
 
 MultiLineLogic *

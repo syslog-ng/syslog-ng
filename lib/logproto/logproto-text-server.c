@@ -45,9 +45,16 @@ log_proto_text_server_accumulate_line(LogProtoTextServer *self, const guchar *ms
                                       gssize consumed_len)
 {
   if (self->multi_line)
-    return multi_line_logic_accumulate_line(self->multi_line, msg, msg_len, consumed_len);
+    {
+      const guchar *segment = &msg[consumed_len + 1];
+      gsize segment_len = msg_len - (segment - msg);
 
-  return MLL_CONSUME_LINE | MLL_EXTRACTED;
+      return multi_line_logic_accumulate_line(self->multi_line,
+                                              msg, consumed_len < 0 ? 0 : consumed_len,
+                                              segment, segment_len);
+    }
+
+  return MLL_CONSUME_SEGMENT | MLL_EXTRACTED;
 }
 
 static gboolean
@@ -79,7 +86,7 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
   verdict = log_proto_text_server_accumulate_line(self, *msg, *msg_len, self->consumed_len);
   if (verdict & MLL_EXTRACTED)
     {
-      if (verdict & MLL_CONSUME_LINE)
+      if (verdict & MLL_CONSUME_SEGMENT)
         {
           gint drop_length = (verdict & MLL_CONSUME_PARTIAL_AMOUNT_MASK) >> MLL_CONSUME_PARTIAL_AMOUNT_SHIFT;
 
@@ -88,7 +95,7 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
           if (drop_length)
             *msg_len -= drop_length;
         }
-      else if (verdict & MLL_REWIND_LINE)
+      else if (verdict & MLL_REWIND_SEGMENT)
         {
           if (self->consumed_len >= 0)
             *msg_len = self->consumed_len;
@@ -106,7 +113,7 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
     {
       *msg = NULL;
       *msg_len = 0;
-      if (verdict & MLL_CONSUME_LINE)
+      if (verdict & MLL_CONSUME_SEGMENT)
         {
           gint drop_length = (verdict & MLL_CONSUME_PARTIAL_AMOUNT_MASK) >> MLL_CONSUME_PARTIAL_AMOUNT_SHIFT;
 
@@ -132,10 +139,10 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
           self->cached_eol_pos = next_eol_pos;
           self->consumed_len = eol - buffer_start;
         }
-      else if (verdict & MLL_REWIND_LINE)
+      else if (verdict & MLL_REWIND_SEGMENT)
         {
           /* when we are waiting for another line, the current one
-           * can't be rewinded, so MLL_REWIND_LINE is not valid */
+           * can't be rewinded, so MLL_REWIND_SEGMENT is not valid */
           g_assert_not_reached();
         }
       else
