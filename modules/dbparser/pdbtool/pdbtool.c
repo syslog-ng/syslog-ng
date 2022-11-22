@@ -679,24 +679,36 @@ static gboolean test_validate = FALSE;
 static gchar *test_ruleid = NULL;
 
 static gboolean
-pdbtool_test_value(LogMessage *msg, const gchar *name, const gchar *test_value)
+pdbtool_test_value(LogMessage *msg, const gchar *name, const gchar *test_value, const gchar *test_type)
 {
   const gchar *value;
+  const gchar *type;
   gssize value_len;
+  LogMessageValueType t;
   gboolean ret = TRUE;
 
-  value = log_msg_get_value_by_name(msg, name, &value_len);
-  if (!(value && strncmp(value, test_value, value_len) == 0 && value_len == strlen(test_value)))
+  value = log_msg_get_value_by_name_with_type(msg, name, &value_len, &t);
+  type = log_msg_value_type_to_str(t);
+
+  if (!test_type)
+    {
+      /* not interested in validating the type */
+      test_type = type;
+    }
+
+  if (!(value && strncmp(value, test_value, value_len) == 0 && value_len == strlen(test_value)
+        && strcmp(type, test_type) == 0))
     {
       if (value)
-        printf(" Wrong match name='%s', value='%.*s', expected='%s'\n", name, (gint) value_len, value, test_value);
+        printf(" Wrong match name='%s', value='%.*s', type='%s', expected='%s', expected_type='%s'\n", name, (gint) value_len,
+               value, type, test_value, test_type);
       else
         printf(" No value to match name='%s', expected='%s'\n", name, test_value);
 
       ret = FALSE;
     }
   else if (verbose_flag)
-    printf(" Match name='%s', value='%.*s', expected='%s'\n", name, (gint) value_len, value, test_value);
+    printf(" Match name='%s', value='%.*s', type='%s', expected='%s'\n", name, (gint) value_len, value, type, test_value);
 
   return ret;
 }
@@ -808,7 +820,7 @@ pdbtool_test(int argc, char *argv[])
               pdbtool_test_find_conflicts(patterndb, msg);
               pattern_db_process(patterndb, msg);
 
-              if (!pdbtool_test_value(msg, ".classifier.rule_id", example->rule->rule_id))
+              if (!pdbtool_test_value(msg, ".classifier.rule_id", example->rule->rule_id, "string"))
                 {
                   failed_to_match = TRUE;
                   if (debug_pattern)
@@ -823,7 +835,7 @@ pdbtool_test(int argc, char *argv[])
               for (i = 0; example->values && i < example->values->len; i++)
                 {
                   gchar **nv = g_ptr_array_index(example->values, i);
-                  if (!pdbtool_test_value(msg, nv[0], nv[1]))
+                  if (!pdbtool_test_value(msg, nv[0], nv[1], nv[2] ? : "string"))
                     failed_to_match = TRUE;
                 }
 
