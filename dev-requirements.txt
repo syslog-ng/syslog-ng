@@ -9,3 +9,4 @@ logilab-common<=0.63.0
 psutil
 pytest
 pre-commit
+networkx
