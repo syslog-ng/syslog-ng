@@ -45,7 +45,9 @@ log { source(s_tcp); destination(d_python); };
 
 python {
 
-class MyParser(object):
+from syslogng import LogParser
+
+class MyParser(LogParser):
   def init(self, options):
       return True
 

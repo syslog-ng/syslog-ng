@@ -20,7 +20,9 @@
 #
 #############################################################################
 
-class DestTest(object):
+from syslogng import LogDestination
+
+class DestTest(LogDestination):
 
     def init(self, options):
         return True
