@@ -242,6 +242,8 @@ csv_parser_lookup_dialect(const gchar *flag)
     return CSV_SCANNER_ESCAPE_NONE;
   else if (strcmp(flag, "escape-backslash") == 0)
     return CSV_SCANNER_ESCAPE_BACKSLASH;
+  else if (strcmp(flag, "escape-backslash-with-sequences") == 0)
+    return CSV_SCANNER_ESCAPE_BACKSLASH_WITH_SEQUENCES;
   else if (strcmp(flag, "escape-double-char") == 0)
     return CSV_SCANNER_ESCAPE_DOUBLE_CHAR;
   return -1;
