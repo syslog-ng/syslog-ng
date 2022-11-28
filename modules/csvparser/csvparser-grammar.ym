@@ -139,6 +139,7 @@ parser_csv_dialect
                                                   gint mode = csv_parser_lookup_dialect($1);
                                                   CHECK_ERROR(mode >= 0, @1, "unknown dialect() argument for csv-parser()");
                                                   free($1);
+						  $$ = mode;
                                                 }
 
 /* INCLUDE_RULES */
