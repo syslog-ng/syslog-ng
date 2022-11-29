@@ -275,14 +275,14 @@ Test(csv_scanner, greedy_column_null_value)
   csv_scanner_deinit(&scanner);
 }
 
-Test(csv_scanner, escape_backslash)
+Test(csv_scanner, escape_double_char)
 {
   const gchar *columns[] = { "foo", "bar", NULL };
 
   _default_options_with_flags(columns, CSV_SCANNER_STRIP_WHITESPACE);
 
-  csv_scanner_options_set_dialect(&options, CSV_SCANNER_ESCAPE_BACKSLASH_WITH_SEQUENCES);
-  csv_scanner_init(&scanner, &options, "foo,\"\\a\\t\\v\\r\\n\"");
+  csv_scanner_options_set_dialect(&options, CSV_SCANNER_ESCAPE_DOUBLE_CHAR);
+  csv_scanner_init(&scanner, &options, "foo,\"this is a single quote \"\" character\"");
 
   cr_expect(_column_name_equals("foo"));
   cr_expect(!_scan_complete());
@@ -293,7 +293,63 @@ Test(csv_scanner, escape_backslash)
 
   cr_expect(_scan_next());
   cr_expect(_column_name_equals("bar"));
-  cr_expect(_column_nv_equals("bar", "\a\t\v\r\n"));
+  cr_expect(_column_nv_equals("bar", "this is a single quote \" character"));
+  cr_expect(!_scan_complete());
+
+  /* go past the last column */
+  cr_expect(!_scan_next());
+  cr_expect(_scan_complete());
+  cr_expect(_column_name_unset());
+  csv_scanner_deinit(&scanner);
+}
+
+Test(csv_scanner, escape_backslash)
+{
+  const gchar *columns[] = { "foo", "bar", NULL };
+
+  _default_options_with_flags(columns, CSV_SCANNER_STRIP_WHITESPACE);
+
+  csv_scanner_options_set_dialect(&options, CSV_SCANNER_ESCAPE_BACKSLASH);
+  csv_scanner_init(&scanner, &options, "foo,\"this is a single quote \\\" character\\n\"");
+
+  cr_expect(_column_name_equals("foo"));
+  cr_expect(!_scan_complete());
+
+  cr_expect(_scan_next());
+  cr_expect(_column_name_equals("foo"));
+  cr_expect(!_scan_complete());
+
+  cr_expect(_scan_next());
+  cr_expect(_column_name_equals("bar"));
+  cr_expect(_column_nv_equals("bar", "this is a single quote \" charactern"));
+  cr_expect(!_scan_complete());
+
+  /* go past the last column */
+  cr_expect(!_scan_next());
+  cr_expect(_scan_complete());
+  cr_expect(_column_name_unset());
+  csv_scanner_deinit(&scanner);
+}
+
+Test(csv_scanner, escape_backslash_sequences)
+{
+  const gchar *columns[] = { "foo", "bar", NULL };
+
+  _default_options_with_flags(columns, CSV_SCANNER_STRIP_WHITESPACE);
+
+  csv_scanner_options_set_dialect(&options, CSV_SCANNER_ESCAPE_BACKSLASH_WITH_SEQUENCES);
+  csv_scanner_init(&scanner, &options, "foo,\"\\\"\\a\\t\\v\\r\\n\\\"\"");
+
+  cr_expect(_column_name_equals("foo"));
+  cr_expect(!_scan_complete());
+
+  cr_expect(_scan_next());
+  cr_expect(_column_name_equals("foo"));
+  cr_expect(!_scan_complete());
+
+  cr_expect(_scan_next());
+  cr_expect(_column_name_equals("bar"));
+  cr_expect(_column_nv_equals("bar", "\"\a\t\v\r\n\""));
   cr_expect(!_scan_complete());
 
   /* go past the last column */
