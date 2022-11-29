@@ -129,6 +129,9 @@ class SyslogNgConfig(object):
     def create_regexp_parser(self, **options):
         return Parser("regexp-parser", **options)
 
+    def create_csv_parser(self, **options):
+        return Parser("csv-parser", **options)
+
     def create_syslog_parser(self, **options):
         return Parser("syslog-parser", **options)
 
