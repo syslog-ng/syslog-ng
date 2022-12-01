@@ -294,8 +294,10 @@ send_plaintext_proxy_header(ThreadData *thread_context, int sock_fd, char *buf, 
 {
   PluginOption *option = thread_context->option;
 
-  int proxy_header_len = generate_proxy_header(buf, buf_size, thread_context->index, option->proxy_src_ip,
-                                               option->proxy_dst_ip, option->proxy_src_port, option->proxy_dst_port);
+  int proxy_header_len = generate_proxy_header(buf, buf_size, thread_context->index,
+                                               option->proxy_version,
+                                               option->proxy_src_ip, option->proxy_dst_ip,
+                                               option->proxy_src_port, option->proxy_dst_port);
 
   DEBUG("Generated PROXY protocol v1 header; len=%d\n", proxy_header_len);
 

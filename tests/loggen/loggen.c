@@ -59,6 +59,7 @@ static PluginOption global_plugin_option =
   .rate = 1000,
   .reconnect = 0,
   .proxied = FALSE,
+  .proxy_version = 1,
   .proxy_src_ip = NULL,
   .proxy_dst_ip = NULL,
   .proxy_src_port = NULL,
@@ -79,6 +80,17 @@ static gint64 *thread_stat_count_last = NULL;
 
 static GMutex message_counter_lock;
 
+static gboolean
+_process_proxied_arg(const gchar *option_name,
+                     const gchar *value,
+                     gpointer data,
+                     GError **error)
+{
+  global_plugin_option.proxied = TRUE;
+  global_plugin_option.proxy_version = atoi(value ? : "1");
+  return global_plugin_option.proxy_version == 1 || global_plugin_option.proxy_version == 2;
+}
+
 static GOptionEntry loggen_options[] =
 {
   { "rate", 'r', 0, G_OPTION_ARG_INT, &global_plugin_option.rate, "Number of messages to generate per second", "<msg/sec/active connection>" },
@@ -86,11 +98,11 @@ static GOptionEntry loggen_options[] =
   { "interval", 'I', 0, G_OPTION_ARG_INT, &global_plugin_option.interval, "Number of seconds to run the test for", "<sec>" },
   { "permanent", 'T', 0, G_OPTION_ARG_NONE, &global_plugin_option.permanent, "Send logs without time limit", NULL},
   { "syslog-proto", 'P', 0, G_OPTION_ARG_NONE, &syslog_proto, "Use the new syslog-protocol message format (see also framing)", NULL },
-  { "proxied", 'H', 0, G_OPTION_ARG_NONE, &global_plugin_option.proxied, "Generate PROXY protocol v1 header", NULL },
-  { "proxy-src-ip", 0, 0, G_OPTION_ARG_STRING, &global_plugin_option.proxy_src_ip, "Source IP for the PROXY protocol v1 header", "<ip address>" },
-  { "proxy-dst-ip", 0, 0, G_OPTION_ARG_STRING, &global_plugin_option.proxy_dst_ip, "Destination IP for the PROXY protocol v1 header", "<ip address>" },
-  { "proxy-src-port", 0, 0, G_OPTION_ARG_STRING, &global_plugin_option.proxy_src_port, "Source port for the PROXY protocol v1 header", "<port>" },
-  { "proxy-dst-port", 0, 0, G_OPTION_ARG_STRING, &global_plugin_option.proxy_dst_port, "Destination port for the PROXY protocol v1 header", "<port>" },
+  { "proxied", 'H', G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK, _process_proxied_arg, "Generate PROXY protocol header", "<protocol version 1 or 2>" },
+  { "proxy-src-ip", 0, 0, G_OPTION_ARG_STRING, &global_plugin_option.proxy_src_ip, "Source IP for the PROXY protocol header", "<ip address>" },
+  { "proxy-dst-ip", 0, 0, G_OPTION_ARG_STRING, &global_plugin_option.proxy_dst_ip, "Destination IP for the PROXY protocol header", "<ip address>" },
+  { "proxy-src-port", 0, 0, G_OPTION_ARG_STRING, &global_plugin_option.proxy_src_port, "Source port for the PROXY protocol header", "<port>" },
+  { "proxy-dst-port", 0, 0, G_OPTION_ARG_STRING, &global_plugin_option.proxy_dst_port, "Destination port for the PROXY protocol header", "<port>" },
   { "sdata", 'p', 0, G_OPTION_ARG_STRING, &sdata_value, "Send the given sdata (e.g. \"[test name=\\\"value\\\"]\") in case of syslog-proto", NULL },
   { "no-framing", 'F', G_OPTION_ARG_NONE, G_OPTION_ARG_NONE, &noframing, "Don't use syslog-protocol style framing, even if syslog-proto is set", NULL },
   { "active-connections", 0, 0, G_OPTION_ARG_INT, &global_plugin_option.active_connections, "Number of active connections to the server (default = 1)", "<number>" },
@@ -113,9 +125,10 @@ generate_message(char *buffer, int buffer_size, ThreadData *thread_context, unsi
 
   if (global_plugin_option.proxied && !thread_context->proxy_header_sent)
     {
-      str_len = generate_proxy_header(buffer, buffer_size, thread_context->index, global_plugin_option.proxy_src_ip,
-                                      global_plugin_option.proxy_dst_ip, global_plugin_option.proxy_src_port,
-                                      global_plugin_option.proxy_dst_port);
+      str_len = generate_proxy_header(buffer, buffer_size, thread_context->index,
+                                      global_plugin_option.proxy_version,
+                                      global_plugin_option.proxy_src_ip, global_plugin_option.proxy_dst_ip,
+                                      global_plugin_option.proxy_src_port, global_plugin_option.proxy_dst_port);
       thread_context->proxy_header_sent = TRUE;
       DEBUG("Generated PROXY protocol v1 header; len=%d\n", str_len);
       return str_len;

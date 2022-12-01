@@ -46,6 +46,7 @@ typedef struct _plugin_option
   int  rate;
   int reconnect;
   gboolean proxied;
+  gint proxy_version;
   char *proxy_src_ip;
   char *proxy_dst_ip;
   char *proxy_src_port;
