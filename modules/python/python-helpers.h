@@ -53,7 +53,4 @@ PyObject *_py_construct_enum(const gchar *name, PyObject *sequence);
 
 void py_slng_generic_dealloc(PyObject *self);
 
-void py_setup_python_home(void);
-void py_init_argv(void);
-
 #endif

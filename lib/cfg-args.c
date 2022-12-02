@@ -95,6 +95,20 @@ cfg_args_get(CfgArgs *self, const gchar *name)
 }
 
 gboolean
+cfg_args_get_as_boolean(CfgArgs *self, const gchar *name)
+{
+  const gchar *value = cfg_args_get(self, name);
+
+  if (strcmp(value, "yes") == 0)
+    return TRUE;
+  else if (strcmp(value, "no") == 0)
+    return FALSE;
+
+  gint n = atoi(value);
+  return n != 0;
+}
+
+gboolean
 cfg_args_contains(CfgArgs *self, const gchar *name)
 {
   gchar *normalized_name = __normalize_key(name);

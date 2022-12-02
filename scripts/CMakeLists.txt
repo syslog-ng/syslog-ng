@@ -7,3 +7,12 @@ set(localstatedir ${SYSLOG_NG_PATH_LOCALSTATEDIR})
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/update-patterndb.in ${CMAKE_CURRENT_BINARY_DIR}/update-patterndb)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/update-patterndb DESTINATION bin)
 install(DIRECTORY DESTINATION etc/patterndb.d)
+
+set(python_venvdir ${SYSLOG_NG_PYTHON_VENV_DIR})
+set(python_moduledir ${SYSLOG_NG_PYTHON_MODULE_DIR})
+set(PYTHON ${PYTHON_EXECUTABLE})
+
+configure_file (${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-update-virtualenv.in
+                ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-update-virtualenv
+                @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-update-virtualenv DESTINATION bin PERMISSIONS OWNER_EXECUTE)

@@ -30,6 +30,7 @@
 #include "python-helpers.h"
 #include "python-ack-tracker.h"
 #include "python-bookmark.h"
+#include "python-main.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "ack-tracker/instant_ack_tracker.h"
@@ -40,20 +41,6 @@ static PyObject *_python_main;
 static PyObject *_python_main_dict;
 
 MsgFormatOptions parse_options;
-
-
-static void
-_py_init_interpreter(void)
-{
-  py_setup_python_home();
-  Py_Initialize();
-  py_init_argv();
-
-  py_init_threads();
-  py_ack_tracker_global_init();
-  py_bookmark_global_init();
-  PyEval_SaveThread();
-}
 
 static void
 _init_python_main(void)
@@ -66,17 +53,19 @@ _init_python_main(void)
   PyGILState_Release(gstate);
 }
 
-void setup(void)
+void
+setup(void)
 {
   app_startup();
 
   init_parse_options_and_load_syslogformat(&parse_options);
 
-  _py_init_interpreter();
+  _py_init_interpreter(FALSE);
   _init_python_main();
 }
 
-void teardown(void)
+void
+teardown(void)
 {
   deinit_syslogformat_module();
   app_shutdown();

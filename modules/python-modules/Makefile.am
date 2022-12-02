@@ -52,6 +52,8 @@ EXTRA_DIST += \
 
 if ENABLE_PYTHON
 
+python_sysconf_module_DATA = modules/python-modules/README.md
+
 PYMODULES_PATH = modules/python-modules
 PYMODULES_BUILDDIR = $(abs_builddir)/$(PYMODULES_PATH)
 PYMODULES_SRCDIR = $(top_srcdir)/modules/python-modules
@@ -77,6 +79,7 @@ pymodules-install: pymodules-install-requirements python-venv
 		build --build-base="$(PYMODULES_BUILDDIR)/build" \
 		egg_info --egg-base="$(PYMODULES_BUILDDIR)" \
 		install --record=$(PYMODULES_MANIFEST) ${PYMODULES_SETUP_OPTIONS})
+	$(install_sh_DATA) $(top_srcdir)/requirements.txt "$(PYTHON_ROOT)/$(python_moduledir)/requirements.txt"
 
 pymodules-install-requirements: python-venv
 	(cd $(PYMODULES_SRCDIR) && \
@@ -86,6 +89,7 @@ pymodules-install-requirements: python-venv
 
 pymodules-uninstall:
 	sed -e 's,^,$(PYTHON_ROOT),g' $(PYMODULES_MANIFEST) | tr '\n' '\0' | xargs -0 rm -f
+	rm $(PYTHON_ROOT)/$(python_moduledir)/requirements.txt
 
 pymodules-clean:
 	rm -rf "$(PYMODULES_BUILDDIR)/build"

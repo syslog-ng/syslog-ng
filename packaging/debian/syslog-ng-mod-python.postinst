@@ -1,0 +1,7 @@
+#! /bin/sh
+
+/usr/bin/syslog-ng-update-virtualenv -y
+
+#DEBHELPER#
+
+exit 0

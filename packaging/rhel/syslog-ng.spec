@@ -586,7 +586,14 @@ fi
 %files python
 %{_libdir}/%{name}/python/syslogng-1.0-py%{py_ver}.egg-info
 %{_libdir}/%{name}/python/syslogng/*
+%{_libdir}/%{name}/python/requirements.txt
 %{_libdir}/%{name}/libmod-python.so
+%dir %{_sysconfdir}/%{name}/python
+%{_sysconfdir}/%{name}/python/README.md
+%{_bindir}/syslog-ng-update-virtualenv
+
+%post python
+/usr/bin/syslog-ng-update-virtualenv -y
 
 %files devel
 %{_libdir}/libsyslog-ng.so

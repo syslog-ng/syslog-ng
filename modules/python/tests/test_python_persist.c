@@ -51,17 +51,6 @@ _init_python_main(void)
 }
 
 static void
-_py_init_interpreter(void)
-{
-  Py_Initialize();
-  py_init_argv();
-
-  py_init_threads();
-  py_persist_global_init();
-  PyEval_SaveThread();
-}
-
-static void
 _load_code(const gchar *code)
 {
   PyGILState_STATE gstate;
@@ -70,17 +59,19 @@ _load_code(const gchar *code)
   PyGILState_Release(gstate);
 }
 
-void setup(void)
+void
+setup(void)
 {
   app_startup();
 
-  _py_init_interpreter();
+  _py_init_interpreter(FALSE);
   _init_python_main();
 
   cfg = cfg_new_snippet();
 }
 
-void teardown(void)
+void
+teardown(void)
 {
   cfg_free(cfg);
   app_shutdown();

@@ -40,19 +40,6 @@ static PyObject *_python_main_dict;
 MsgFormatOptions parse_options;
 
 static void
-_py_init_interpreter(void)
-{
-  py_setup_python_home();
-  Py_Initialize();
-  py_init_argv();
-
-  py_init_threads();
-  py_init_types();
-  py_log_message_global_init();
-  PyEval_SaveThread();
-}
-
-static void
 _init_python_main(void)
 {
   PyGILState_STATE gstate = PyGILState_Ensure();
@@ -112,7 +99,7 @@ setup(void)
 
   init_parse_options_and_load_syslogformat(&parse_options);
 
-  _py_init_interpreter();
+  _py_init_interpreter(FALSE);
   _init_python_main();
 }
 
