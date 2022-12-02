@@ -876,6 +876,7 @@ tls_context_setup_cmd_context(TLSContext *self)
                       tls_context_format_location_tag(self));
           result = result && (add_result >= 1);
         }
+      result = result && (SSL_CONF_CTX_finish(ssl_conf_ctx) == 1);
     }
 
   SSL_CONF_CTX_free(ssl_conf_ctx);
