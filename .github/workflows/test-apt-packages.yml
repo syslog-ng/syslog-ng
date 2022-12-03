@@ -54,7 +54,7 @@ jobs:
       - name: Get syslog-ng revision
         run: |
           syslog-ng -V
-          echo "::set-output name=REVISION::$(syslog-ng -V | grep Revision | cut -d" " -f2)"
+          echo "{REVISION}={$(syslog-ng -V | grep Revision | cut -d" " -f2)}" >> $GITHUB_OUTPUT
         id: syslog_ng_revision
 
       - name: Check revision

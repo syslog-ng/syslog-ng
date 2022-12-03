@@ -42,7 +42,7 @@ jobs:
             false
           fi
 
-          echo "::set-output name=DRAFT_RELEASE_RUN_ID::${DRAFT_RELEASE_RUN_ID}"
+          echo "{DRAFT_RELEASE_RUN_ID}=${DRAFT_RELEASE_RUN_ID}" >> $GITHUB_OUTPUT
 
   index-packages:
     needs: find-draft-release-run
