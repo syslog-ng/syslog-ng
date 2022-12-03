@@ -38,7 +38,7 @@ class KubernetesAPIEnrichment(LogParser):
         return True
 
     def add_prefix(self, string):
-        return "{}{}".format(self.__prefix, string)
+        return self.__prefix + string
 
     def __get_cached_pod_metadata(self, namespace_name, pod_name):
         self.logger.debug("Trying to find cached metadata for pod {}".format(pod_name))
