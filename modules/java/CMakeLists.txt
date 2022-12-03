@@ -64,8 +64,8 @@ if (ENABLE_JAVA)
       ${CMAKE_CURRENT_SOURCE_DIR}
       ${CMAKE_CURRENT_SOURCE_DIR}/native
   )
-  target_include_directories (mod-java SYSTEM PRIVATE ${JNI_INCLUDE_DIRS})
-  target_link_libraries(mod-java PRIVATE syslog-ng ${JNI_LIBRARIES} syslog-ng-core-java-native)
+  target_include_directories (mod-java SYSTEM PRIVATE ${JAVA_INCLUDE_PATH} ${JAVA_INCLUDE_PATH2})
+  target_link_libraries(mod-java PRIVATE syslog-ng ${JAVA_JVM_LIBRARY} syslog-ng-core-java-native)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-core.jar DESTINATION lib/syslog-ng/java-modules)
   install(TARGETS mod-java LIBRARY DESTINATION lib/syslog-ng COMPONENT java)
 endif()
