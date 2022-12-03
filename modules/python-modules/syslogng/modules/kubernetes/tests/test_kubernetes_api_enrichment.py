@@ -30,7 +30,6 @@ import kubernetes.client
 def minimal_config():
     return {
         'prefix': 'myk8s.',
-        'in_pod': 'no'
     }
 
 @pytest.fixture
@@ -40,7 +39,7 @@ def mock_kube_config(mocker):
     client_configuration.api_key = "bearer dummytoken"
     kubernetes.client.Configuration.set_default(client_configuration)
 
-    yield mocker.patch('kubernetes.config.load_kube_config', return_value=None)
+    yield mocker.patch('kubernetes.config.load_config', return_value=None)
 
     kubernetes.client.Configuration.set_default(None)
 

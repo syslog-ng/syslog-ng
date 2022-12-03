@@ -32,11 +32,7 @@ class KubernetesAPIEnrichment(LogParser):
         self.__metadata = {}
         self.__prefix = options["prefix"]
 
-        if options.get("in_pod", "yes") == "yes":
-            kubernetes.config.load_incluster_config()
-        else:
-            kubernetes.config.load_kube_config()
-
+        kubernetes.config.load_config()
         self.__client_api = kubernetes.client.CoreV1Api()
 
         return True
