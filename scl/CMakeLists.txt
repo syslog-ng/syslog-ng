@@ -28,6 +28,7 @@ set(SCL_DIRS
     osquery
     pacct
     paloalto
+    python
     rewrite
     slack
     snmptrap

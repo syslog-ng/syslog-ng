@@ -28,6 +28,7 @@ SCL_SUBDIRS	= \
 	osquery	\
 	pacct		\
 	paloalto 	\
+	python		\
 	rewrite	\
 	slack \
 	snmptrap	\
