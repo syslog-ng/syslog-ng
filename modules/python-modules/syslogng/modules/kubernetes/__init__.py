@@ -62,9 +62,6 @@ class KubernetesAPIEnrichment(LogParser):
         for name, value in (pod.metadata.annotations or {}).items():
             cached_pod_metadata[self.add_prefix("annotations.{}".format(name))] = value
 
-        cached_pod_metadata[self.add_prefix("namespace_name")] = namespace_name
-        cached_pod_metadata[self.add_prefix("pod_name")] = pod_name
-
         try:
             container_status = pod.status.container_statuses[0]
             cached_pod_metadata[self.add_prefix("container_name")] = container_status.name
