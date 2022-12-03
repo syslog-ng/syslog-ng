@@ -11,7 +11,7 @@ jobs:
     runs-on: macOS-latest
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Unlinking preinstalled Python 2 (workaround)
         # The python@3 brew package has to be installed and linked system-wide (it's a dependency of glib and syslog-ng)

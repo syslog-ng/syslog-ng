@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup environment
         run: |
@@ -154,7 +154,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set ENV variables
         run: |
@@ -194,7 +194,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Prepare
         run: |
@@ -248,7 +248,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Copyright check
         run: tests/copyright/check.sh . .
@@ -267,7 +267,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 

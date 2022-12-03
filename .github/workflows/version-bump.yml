@@ -40,7 +40,7 @@ jobs:
       CURRENT_RUN_URL: https://github.com/${{ github.repository_owner }}/syslog-ng/actions/runs/${{ github.run_id }}
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 

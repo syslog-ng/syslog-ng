@@ -21,7 +21,7 @@ jobs:
       COMMIT_URL: https://github.com/${{ github.repository_owner }}/syslog-ng/commit/${{ github.sha }}
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Check if version bump PR is open
         run: |

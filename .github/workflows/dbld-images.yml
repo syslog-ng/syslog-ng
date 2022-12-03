@@ -44,7 +44,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set container registry
         run: |
