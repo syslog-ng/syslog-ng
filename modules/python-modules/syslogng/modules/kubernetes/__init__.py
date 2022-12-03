@@ -45,29 +45,34 @@ class KubernetesAPIEnrichment(LogParser):
         return self.__metadata[namespace_name][pod_name]
 
     def __query_pod_metadata_from_kubernetes_api_server(self, namespace_name, pod_name):
-        self.logger.debug("Trying to query metadata for pod {} from the Kubernetes API".format(pod_name))
-        pod = self.__client_api.list_namespaced_pod(namespace_name, field_selector="metadata.name=={}".format(pod_name)).items[0]
-        container_status = pod.status.container_statuses[0]
+        self.logger.debug("Trying to query metadata for pod {}/{} from the Kubernetes API".format(namespace_name, pod_name))
 
         cached_namespace = self.__metadata.setdefault(namespace_name, {})
         cached_pod_metadata = cached_namespace.setdefault(pod_name, {})
 
-        cached_pod_metadata[self.add_prefix("pod_uuid")] = pod.metadata.uid
+        pod = self.__client_api.list_namespaced_pod(namespace_name, field_selector="metadata.name=={}".format(pod_name)).items[0]
+        try:
+            cached_pod_metadata[self.add_prefix("pod_uuid")] = pod.metadata.uid
+        except (AttributeError, IndexError, TypeError):
+            self.logger.warning("Error querying pod.metadata.uid for pod {}/{} from the Kubernetes API".format(namespace_name, pod_name))
 
-        for label_name, label_value in pod.metadata.labels.items():
-            cached_pod_metadata[self.add_prefix("labels.{}".format(label_name))] = label_value
+        for name, value in (pod.metadata.labels or {}).items():
+            cached_pod_metadata[self.add_prefix("labels.{}".format(name))] = value
 
-        for annotation_name, annotation_value in pod.metadata.annotations.items():
-            cached_pod_metadata[self.add_prefix("annotations.{}".format(annotation_name))] = annotation_value
+        for name, value in (pod.metadata.annotations or {}).items():
+            cached_pod_metadata[self.add_prefix("annotations.{}".format(name))] = value
 
         cached_pod_metadata[self.add_prefix("namespace_name")] = namespace_name
         cached_pod_metadata[self.add_prefix("pod_name")] = pod_name
 
-        cached_pod_metadata[self.add_prefix("container_name")] = container_status.name
-        cached_pod_metadata[self.add_prefix("container_image")] = container_status.image
-        cached_pod_metadata[self.add_prefix("container_hash")] = container_status.image_id.replace("docker-pullable://", "", 1)
-        cached_pod_metadata[self.add_prefix("docker_id")] = container_status.container_id.replace("docker://", "", 1)
-
+        try:
+            container_status = pod.status.container_statuses[0]
+            cached_pod_metadata[self.add_prefix("container_name")] = container_status.name
+            cached_pod_metadata[self.add_prefix("container_image")] = container_status.image
+            cached_pod_metadata[self.add_prefix("container_hash")] = container_status.image_id.replace("docker-pullable://", "", 1)
+            cached_pod_metadata[self.add_prefix("docker_id")] = container_status.container_id.replace("docker://", "", 1)
+        except (AttributeError, IndexError, TypeError):
+            self.logger.warning("Error querying container_status for pod {}/{} from the Kubernetes API".format(namespace_name, pod_name))
         return cached_pod_metadata
 
     def get_pod_metadata(self, namespace_name, pod_name):
