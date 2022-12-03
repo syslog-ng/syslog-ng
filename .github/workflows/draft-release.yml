@@ -70,7 +70,7 @@ jobs:
           ./dbld/rules release VERSION=${VERSION}
 
       - name: Store release tarball as artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: release-tarball
           path: ${{ env.TARBALL_PATH }}

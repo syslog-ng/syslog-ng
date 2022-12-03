@@ -22,7 +22,7 @@ jobs:
         run: ./dbld/rules pkg-tarball
 
       - name: Store source tarball as artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: source-tarball
           path: dbld/build/*.tar.gz
