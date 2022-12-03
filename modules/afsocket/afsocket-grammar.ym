@@ -197,6 +197,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_ALLOW_COMPRESS
 %token KW_KEYLOG_FILE
 %token KW_OCSP_STAPLING_VERIFY
+%token KW_CONF_CMDS
 
 /* INCLUDE_DECLS */
 
@@ -236,6 +237,9 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 
 %type <ptr> dest_failover_options
 %type <ptr> dest_failover_modes_options
+
+%type <ptr> tls_conf_cmds
+%type <ptr> tls_conf_cmd_list_build
 
 %%
 
@@ -890,9 +894,37 @@ tls_option
           {
              transport_mapper_inet_set_allow_compress(last_transport_mapper, $3);
           }
+	| KW_CONF_CMDS '(' tls_conf_cmds ')'
+		{
+			GError *error = NULL;
+			CHECK_ERROR_GERROR(tls_context_set_conf_cmds(last_tls_context, $3, &error), @3, error, "Error setting conf-cmds()");
+		}
         | KW_ENDIF {
 }
         ;
+
+tls_conf_cmds
+	: tls_conf_cmd_list_build
+		{
+			$$ = $1;
+		}
+	;
+
+tls_conf_cmd_list_build
+	: string LL_ARROW string tls_conf_cmd_list_build
+		{
+			/* Revers order is important here as this is inside of a bison right recursion */
+			$$ = g_list_prepend($4, g_strdup($3));
+			$$ = g_list_prepend($$, g_strdup($1));
+
+			free($1);
+			free($3);
+		}
+	|
+		{
+			$$ = NULL;
+		}
+  ;
 
 tls_cipher_suites
         : tls_cipher_suite tls_cipher_suites

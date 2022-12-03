@@ -137,6 +137,7 @@ void tls_context_set_cipher_suite(TLSContext *self, const gchar *cipher_suite);
 gboolean tls_context_set_tls13_cipher_suite(TLSContext *self, const gchar *tls13_cipher_suite, GError **error);
 gboolean tls_context_set_sigalgs(TLSContext *self, const gchar *sigalgs, GError **error);
 gboolean tls_context_set_client_sigalgs(TLSContext *self, const gchar *sigalgs, GError **error);
+gboolean tls_context_set_conf_cmds(TLSContext *self, GList *cmds, GError **error);
 void tls_context_set_ecdh_curve_list(TLSContext *self, const gchar *ecdh_curve_list);
 void tls_context_set_dhparam_file(TLSContext *self, const gchar *dhparam_file);
 void tls_context_set_sni(TLSContext *self, const gchar *sni);

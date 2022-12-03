@@ -66,6 +66,7 @@ struct _TLSContext
   gboolean ocsp_stapling_verify;
 
   SSL_CTX *ssl_ctx;
+  GList *conf_cmds_list;
   GList *trusted_fingerprint_list;
   GList *trusted_dn_list;
   gint ssl_options;
@@ -503,6 +504,7 @@ tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints)
 {
   g_assert(fingerprints);
 
+  g_list_foreach(self->trusted_fingerprint_list, (GFunc) g_free, NULL);
   self->trusted_fingerprint_list = fingerprints;
 }
 
@@ -511,6 +513,7 @@ tls_session_set_trusted_dn(TLSContext *self, GList *dn)
 {
   g_assert(dn);
 
+  g_list_foreach(self->trusted_dn_list, (GFunc) g_free, NULL);
   self->trusted_dn_list = dn;
 }
 
@@ -846,6 +849,40 @@ tls_context_setup_sigalgs(TLSContext *self)
   return TRUE;
 }
 
+static gboolean
+tls_context_setup_cmd_context(TLSContext *self)
+{
+  SSL_CONF_CTX *ssl_conf_ctx = SSL_CONF_CTX_new();
+  const int ctx_flags = SSL_CONF_FLAG_FILE | SSL_CONF_FLAG_CLIENT | SSL_CONF_FLAG_SERVER |
+                        SSL_CONF_FLAG_CERTIFICATE | SSL_CONF_FLAG_SHOW_ERRORS;
+  int set_flags = SSL_CONF_CTX_set_flags(ssl_conf_ctx, ctx_flags);
+
+  gboolean result = (set_flags == ctx_flags);
+  if (result)
+    {
+      SSL_CONF_CTX_set_ssl_ctx(ssl_conf_ctx, self->ssl_ctx);
+
+      for (GList *next_pair = self->conf_cmds_list; next_pair; next_pair = next_pair->next)
+        {
+          gchar *cmd = next_pair->data;
+          next_pair = next_pair->next;
+          gchar *value = next_pair->data;
+
+          int add_result = SSL_CONF_cmd(ssl_conf_ctx, cmd, value);
+          if (add_result < 1)
+            msg_error("Error setting up SSL conf context, invalid cmd or value in config list",
+                      evt_tag_str("cmd", cmd),
+                      evt_tag_str("value", value),
+                      tls_context_format_location_tag(self));
+          result = result && (add_result >= 1);
+        }
+      result = result && (SSL_CONF_CTX_finish(ssl_conf_ctx) == 1);
+    }
+
+  SSL_CONF_CTX_free(ssl_conf_ctx);
+  return result;
+}
+
 static PKCS12 *
 _load_pkcs12_file(TLSContext *self, const gchar *pkcs12_file)
 {
@@ -1006,11 +1043,7 @@ tls_context_setup_context(TLSContext *self)
 
   tls_context_setup_ssl_options(self);
   if (!tls_context_setup_ecdh(self))
-    {
-      SSL_CTX_free(self->ssl_ctx);
-      self->ssl_ctx = NULL;
-      return TLS_CONTEXT_SETUP_ERROR;
-    }
+    goto error_no_print;
 
   if (!tls_context_setup_dh(self))
     goto error;
@@ -1021,10 +1054,14 @@ tls_context_setup_context(TLSContext *self)
   if (!tls_context_setup_sigalgs(self))
     goto error;
 
+  if (!tls_context_setup_cmd_context(self))
+    goto error;
+
   return TLS_CONTEXT_SETUP_OK;
 
 error:
   _print_and_clear_tls_session_error(self);
+error_no_print:
   if (self->ssl_ctx)
     {
       SSL_CTX_free(self->ssl_ctx);
@@ -1094,6 +1131,7 @@ _tls_context_free(TLSContext *self)
 {
   g_free(self->location);
   SSL_CTX_free(self->ssl_ctx);
+  g_list_foreach(self->conf_cmds_list, (GFunc) g_free, NULL);
   g_list_foreach(self->trusted_fingerprint_list, (GFunc) g_free, NULL);
   g_list_foreach(self->trusted_dn_list, (GFunc) g_free, NULL);
   g_free(self->key_file);
@@ -1373,6 +1411,14 @@ tls_context_set_client_sigalgs(TLSContext *self, const gchar *sigalgs, GError **
               "Setting client sigalgs is not supported with the OpenSSL version syslog-ng was compiled with");
   return FALSE;
 #endif
+}
+
+gboolean
+tls_context_set_conf_cmds(TLSContext *self, GList *cmds, GError **error)
+{
+  g_list_foreach(self->conf_cmds_list, (GFunc) g_free, NULL);
+  self->conf_cmds_list = cmds;
+  return TRUE;
 }
 
 void
