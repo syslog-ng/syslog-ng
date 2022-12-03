@@ -49,26 +49,26 @@ class KubernetesAPIEnrichment(LogParser):
         pod = self.__client_api.list_namespaced_pod(namespace_name, field_selector="metadata.name=={}".format(pod_name)).items[0]
         container_status = pod.status.container_statuses[0]
 
-        namespace = self.__metadata.setdefault(namespace_name, {})
-        pod_metadata = namespace.setdefault(pod_name, {})
+        cached_namespace = self.__metadata.setdefault(namespace_name, {})
+        cached_pod_metadata = cached_namespace.setdefault(pod_name, {})
 
-        pod_metadata[self.add_prefix("pod_uuid")] = pod.metadata.uid
+        cached_pod_metadata[self.add_prefix("pod_uuid")] = pod.metadata.uid
 
         for label_name, label_value in pod.metadata.labels.items():
-            pod_metadata[self.add_prefix("labels.{}".format(label_name))] = label_value
+            cached_pod_metadata[self.add_prefix("labels.{}".format(label_name))] = label_value
 
         for annotation_name, annotation_value in pod.metadata.annotations.items():
-            pod_metadata[self.add_prefix("annotations.{}".format(annotation_name))] = annotation_value
+            cached_pod_metadata[self.add_prefix("annotations.{}".format(annotation_name))] = annotation_value
 
-        pod_metadata[self.add_prefix("namespace_name")] = namespace_name
-        pod_metadata[self.add_prefix("pod_name")] = pod_name
+        cached_pod_metadata[self.add_prefix("namespace_name")] = namespace_name
+        cached_pod_metadata[self.add_prefix("pod_name")] = pod_name
 
-        pod_metadata[self.add_prefix("container_name")] = container_status.name
-        pod_metadata[self.add_prefix("container_image")] = container_status.image
-        pod_metadata[self.add_prefix("container_hash")] = container_status.image_id.replace("docker-pullable://", "", 1)
-        pod_metadata[self.add_prefix("docker_id")] = container_status.container_id.replace("docker://", "", 1)
+        cached_pod_metadata[self.add_prefix("container_name")] = container_status.name
+        cached_pod_metadata[self.add_prefix("container_image")] = container_status.image
+        cached_pod_metadata[self.add_prefix("container_hash")] = container_status.image_id.replace("docker-pullable://", "", 1)
+        cached_pod_metadata[self.add_prefix("docker_id")] = container_status.container_id.replace("docker://", "", 1)
 
-        return pod_metadata
+        return cached_pod_metadata
 
     def get_pod_metadata(self, namespace_name, pod_name):
         try:
