@@ -314,6 +314,7 @@ send_plaintext_proxy_header(ThreadData *thread_context, int sock_fd, char *buf, 
       sent += rc;
     }
 
+  thread_context->proxy_header_sent = TRUE;
   DEBUG("Sent PROXY protocol v%d header; len=%d\n", option->proxy_version, proxy_header_len);
 }
 
