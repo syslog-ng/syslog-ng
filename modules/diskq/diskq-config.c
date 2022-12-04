@@ -20,10 +20,15 @@
  *
  */
 
+#include <math.h>
+
 #include "diskq-config.h"
 #include "cfg.h"
 
 #define MODULE_CONFIG_KEY "disk-buffer"
+#define DEFAULT_TRUNCATE_SIZE_RATIO_V3_X (0.1)
+#define DEFAULT_TRUNCATE_SIZE_RATIO_V4_X (1)
+#define DEFAULT_PREALLOC FALSE
 
 static void
 disk_queue_config_free(ModuleConfig *s)
@@ -31,19 +36,15 @@ disk_queue_config_free(ModuleConfig *s)
   module_config_free_method(s);
 }
 
-static void
-_set_default_values(DiskQueueConfig *self)
-{
-  self->truncate_size_ratio = 0.1;
-}
-
 DiskQueueConfig *
-disk_queue_config_new(void)
+disk_queue_config_new(GlobalConfig *cfg)
 {
   DiskQueueConfig *self = g_new0(DiskQueueConfig, 1);
 
+  self->truncate_size_ratio = -1;
+  self->prealloc = -1;
+
   self->super.free_fn = disk_queue_config_free;
-  _set_default_values(self);
   return self;
 }
 
@@ -53,7 +54,7 @@ disk_queue_config_get(GlobalConfig *cfg)
   DiskQueueConfig *dqc = g_hash_table_lookup(cfg->module_config, MODULE_CONFIG_KEY);
   if (!dqc)
     {
-      dqc = disk_queue_config_new();
+      dqc = disk_queue_config_new(cfg);
       g_hash_table_insert(cfg->module_config, g_strdup(MODULE_CONFIG_KEY), dqc);
     }
   return dqc;
@@ -70,5 +71,45 @@ gdouble
 disk_queue_config_get_truncate_size_ratio(GlobalConfig *cfg)
 {
   DiskQueueConfig *dqc = disk_queue_config_get(cfg);
+
+  if (!disk_queue_config_is_truncate_size_ratio_set_explicitly(cfg))
+    {
+      if (cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
+        return DEFAULT_TRUNCATE_SIZE_RATIO_V3_X;
+      return DEFAULT_TRUNCATE_SIZE_RATIO_V4_X;
+    }
+
   return dqc->truncate_size_ratio;
+}
+
+gboolean
+disk_queue_config_is_truncate_size_ratio_set_explicitly(GlobalConfig *cfg)
+{
+  DiskQueueConfig *dqc = disk_queue_config_get(cfg);
+  return fabs(dqc->truncate_size_ratio - (-1)) >= DBL_EPSILON;
+}
+
+void
+disk_queue_config_set_prealloc(GlobalConfig *cfg, gboolean prealloc)
+{
+  DiskQueueConfig *dqc = disk_queue_config_get(cfg);
+  dqc->prealloc = prealloc;
+}
+
+gboolean
+disk_queue_config_get_prealloc(GlobalConfig *cfg)
+{
+  DiskQueueConfig *dqc = disk_queue_config_get(cfg);
+
+  if (!disk_queue_config_is_prealloc_set_explicitly(cfg))
+    return DEFAULT_PREALLOC;
+
+  return dqc->prealloc;
+}
+
+gboolean
+disk_queue_config_is_prealloc_set_explicitly(GlobalConfig *cfg)
+{
+  DiskQueueConfig *dqc = disk_queue_config_get(cfg);
+  return dqc->prealloc != -1;
 }
