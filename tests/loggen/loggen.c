@@ -130,7 +130,7 @@ generate_message(char *buffer, int buffer_size, ThreadData *thread_context, unsi
                                       global_plugin_option.proxy_src_ip, global_plugin_option.proxy_dst_ip,
                                       global_plugin_option.proxy_src_port, global_plugin_option.proxy_dst_port);
       thread_context->proxy_header_sent = TRUE;
-      DEBUG("Generated PROXY protocol v1 header; len=%d\n", str_len);
+      DEBUG("Generated PROXY protocol v%d header; len=%d\n", global_plugin_option.proxy_version, str_len);
       return str_len;
     }
 
