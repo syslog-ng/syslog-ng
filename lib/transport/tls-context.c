@@ -81,6 +81,56 @@ typedef enum
   TLS_CONTEXT_PASSWORD_ERROR
 } TLSContextLoadResult;
 
+/* TLSVerifier */
+
+TLSVerifier *
+tls_verifier_new(TLSSessionVerifyFunc verify_func, gpointer verify_data,
+                 GDestroyNotify verify_data_destroy)
+{
+  TLSVerifier *self = g_new0(TLSVerifier, 1);
+
+  g_atomic_counter_set(&self->ref_cnt, 1);
+  self->verify_func = verify_func;
+  self->verify_data = verify_data;
+  self->verify_data_destroy = verify_data_destroy;
+  return self;
+}
+
+TLSVerifier *
+tls_verifier_ref(TLSVerifier *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+
+  if (self)
+    g_atomic_counter_inc(&self->ref_cnt);
+
+  return self;
+}
+
+static void
+_tls_verifier_free(TLSVerifier *self)
+{
+  g_assert(self);
+
+  if (self)
+    {
+      if (self->verify_data && self->verify_data_destroy)
+        self->verify_data_destroy(self->verify_data);
+      g_free(self);
+    }
+}
+
+void
+tls_verifier_unref(TLSVerifier *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    _tls_verifier_free(self);
+}
+
+/* TLSSession */
+
 void
 tls_session_configure_allow_compress(TLSSession *tls_session, gboolean allow_compress)
 {
@@ -94,7 +144,7 @@ tls_session_configure_allow_compress(TLSSession *tls_session, gboolean allow_com
     }
 }
 
-gboolean
+static gboolean
 tls_get_x509_digest(X509 *x, GString *hash_string)
 {
   gint j;
@@ -647,6 +697,8 @@ tls_session_free(TLSSession *self)
   g_free(self);
 }
 
+/* TLSContext */
+
 EVTTAG *
 tls_context_format_tls_error_tag(TLSContext *self)
 {
@@ -1103,122 +1155,6 @@ tls_context_setup_session(TLSContext *self)
   return session;
 }
 
-/* NOTE: location is a string description where this tls context was defined, e.g. the location in the config */
-TLSContext *
-tls_context_new(TLSMode mode, const gchar *location)
-{
-  TLSContext *self = g_new0(TLSContext, 1);
-
-  g_atomic_counter_set(&self->ref_cnt, 1);
-  self->mode = mode;
-  self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
-  self->ssl_options = TSO_NOSSLv2;
-  self->location = g_strdup(location ? : "n/a");
-
-  if (self->mode == TM_CLIENT)
-    self->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
-  else
-    {
-      self->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
-      SSL_CTX_set_session_id_context(self->ssl_ctx, (const unsigned char *) "syslog", 6);
-    }
-
-  return self;
-}
-
-static void
-_tls_context_free(TLSContext *self)
-{
-  g_free(self->location);
-  SSL_CTX_free(self->ssl_ctx);
-  g_list_foreach(self->conf_cmds_list, (GFunc) g_free, NULL);
-  g_list_foreach(self->trusted_fingerprint_list, (GFunc) g_free, NULL);
-  g_list_foreach(self->trusted_dn_list, (GFunc) g_free, NULL);
-  g_free(self->key_file);
-  g_free(self->pkcs12_file);
-  g_free(self->cert_file);
-  g_free(self->dhparam_file);
-  g_free(self->ca_dir);
-  g_free(self->crl_dir);
-  g_free(self->ca_file);
-  g_free(self->cipher_suite);
-  g_free(self->tls13_cipher_suite);
-  g_free(self->sigalgs);
-  g_free(self->client_sigalgs);
-  g_free(self->ecdh_curve_list);
-  g_free(self->sni);
-  g_free(self->keylog_file_path);
-
-  if(self->keylog_file)
-    fclose(self->keylog_file);
-
-  g_free(self);
-}
-
-TLSContext *
-tls_context_ref(TLSContext *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
-
-  if (self)
-    g_atomic_counter_inc(&self->ref_cnt);
-
-  return self;
-}
-
-void
-tls_context_unref(TLSContext *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
-  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
-    _tls_context_free(self);
-}
-
-TLSVerifier *
-tls_verifier_new(TLSSessionVerifyFunc verify_func, gpointer verify_data,
-                 GDestroyNotify verify_data_destroy)
-{
-  TLSVerifier *self = g_new0(TLSVerifier, 1);
-
-  g_atomic_counter_set(&self->ref_cnt, 1);
-  self->verify_func = verify_func;
-  self->verify_data = verify_data;
-  self->verify_data_destroy = verify_data_destroy;
-  return self;
-}
-
-TLSVerifier *
-tls_verifier_ref(TLSVerifier *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
-
-  if (self)
-    g_atomic_counter_inc(&self->ref_cnt);
-
-  return self;
-}
-
-static void
-_tls_verifier_free(TLSVerifier *self)
-{
-  g_assert(self);
-
-  if (self)
-    {
-      if (self->verify_data && self->verify_data_destroy)
-        self->verify_data_destroy(self->verify_data);
-      g_free(self);
-    }
-}
-
-void
-tls_verifier_unref(TLSVerifier *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
-
-  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
-    _tls_verifier_free(self);
-}
 
 gboolean
 tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str)
@@ -1446,6 +1382,77 @@ void
 tls_context_set_ocsp_stapling_verify(TLSContext *self, gboolean ocsp_stapling_verify)
 {
   self->ocsp_stapling_verify = ocsp_stapling_verify;
+}
+
+/* NOTE: location is a string description where this tls context was defined, e.g. the location in the config */
+TLSContext *
+tls_context_new(TLSMode mode, const gchar *location)
+{
+  TLSContext *self = g_new0(TLSContext, 1);
+
+  g_atomic_counter_set(&self->ref_cnt, 1);
+  self->mode = mode;
+  self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
+  self->ssl_options = TSO_NOSSLv2;
+  self->location = g_strdup(location ? : "n/a");
+
+  if (self->mode == TM_CLIENT)
+    self->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+  else
+    {
+      self->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
+      SSL_CTX_set_session_id_context(self->ssl_ctx, (const unsigned char *) "syslog", 6);
+    }
+
+  return self;
+}
+
+static void
+_tls_context_free(TLSContext *self)
+{
+  g_free(self->location);
+  SSL_CTX_free(self->ssl_ctx);
+  g_list_foreach(self->conf_cmds_list, (GFunc) g_free, NULL);
+  g_list_foreach(self->trusted_fingerprint_list, (GFunc) g_free, NULL);
+  g_list_foreach(self->trusted_dn_list, (GFunc) g_free, NULL);
+  g_free(self->key_file);
+  g_free(self->pkcs12_file);
+  g_free(self->cert_file);
+  g_free(self->dhparam_file);
+  g_free(self->ca_dir);
+  g_free(self->crl_dir);
+  g_free(self->ca_file);
+  g_free(self->cipher_suite);
+  g_free(self->tls13_cipher_suite);
+  g_free(self->sigalgs);
+  g_free(self->client_sigalgs);
+  g_free(self->ecdh_curve_list);
+  g_free(self->sni);
+  g_free(self->keylog_file_path);
+
+  if(self->keylog_file)
+    fclose(self->keylog_file);
+
+  g_free(self);
+}
+
+TLSContext *
+tls_context_ref(TLSContext *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+
+  if (self)
+    g_atomic_counter_inc(&self->ref_cnt);
+
+  return self;
+}
+
+void
+tls_context_unref(TLSContext *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    _tls_context_free(self);
 }
 
 void
