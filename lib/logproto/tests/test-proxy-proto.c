@@ -181,6 +181,32 @@ Test(log_proto, test_proxy_protocol_aux_data)
   log_proto_server_free(proto);
 }
 
+Test(log_proto, test_proxy_protocol_v2_parse_header)
+{
+  const gchar *expected = "PROXIED_SRCIP:1.1.1.1 PROXIED_DSTIP:2.2.2.2 "
+                          "PROXIED_SRCPORT:33333 PROXIED_DSTPORT:44444 "
+                          "PROXIED_IP_VERSION:4 ";
+  LogProtoServer *proto = log_proto_proxied_text_server_new(log_transport_mock_records_new(
+                                                              "\r\n\r\n\0\r\nQUIT\n!\21\0\f\1\1\1\1\2\2\2\2\2025\255\234", 28,
+                                                              "test_message\n", -1,
+                                                              LTM_EOF
+                                                            ),
+                                                            get_inited_proto_server_options());
+
+  cr_assert_eq(log_proto_server_handshake(proto), LPS_SUCCESS, "Proxy protocol v2 parsing failed");
+
+  LogTransportAuxData aux;
+  log_transport_aux_data_init(&aux);
+  get_aux_data_from_next_message(proto, &aux);
+
+  GString *aux_nv_concated = g_string_new(NULL);
+  log_transport_aux_data_foreach(&aux, concat_nv, aux_nv_concated);
+  cr_assert_str_eq(aux_nv_concated->str, expected);
+
+  g_string_free(aux_nv_concated, TRUE);
+  log_transport_aux_data_destroy(&aux);
+  log_proto_server_free(proto);
+}
 
 static void
 assert_handshake_is_taking_place(LogProtoServer *proto)
@@ -193,7 +219,6 @@ assert_handshake_is_taking_place(LogProtoServer *proto)
   cr_assert_eq(cond, G_IO_IN);
 
   cr_assert(log_proto_server_handshake_in_progress(proto));
-
 }
 
 Test(log_proto, test_proxy_protocol_header_partial_read)
@@ -213,7 +238,7 @@ Test(log_proto, test_proxy_protocol_header_partial_read)
   LogProtoServer *proto = log_proto_proxied_text_server_new((LogTransport *) transport,
                                                             get_inited_proto_server_options());
 
-  for(size_t i = 0; i < length - 1; i++)
+  for(size_t i = 0; i < length; i++)
     {
       assert_handshake_is_taking_place(proto);
       cr_assert_eq(log_proto_server_handshake(proto), LPS_AGAIN);
@@ -237,9 +262,6 @@ Test(log_proto, test_proxy_protocol_header_partial_read)
 
   g_string_free(aux_nv_concated, TRUE);
   log_transport_aux_data_destroy(&aux);
-
-
-
 
   log_proto_server_free(proto);
 
