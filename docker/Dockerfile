@@ -13,7 +13,7 @@ RUN wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --
   echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg] https://ose-repo.syslog-ng.com/apt/ ${PKG_TYPE} debian-testing" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
 
 RUN apt-get update -qq && apt-get install -y \
-    libdbd-mysql libdbd-pgsql libdbd-sqlite3 syslog-ng \
+    libdbd-mysql libdbd-pgsql libdbd-sqlite3 syslog-ng libjemalloc2 \
     && rm -rf /var/lib/apt/lists/*
 
 ADD syslog-ng.conf /etc/syslog-ng/syslog-ng.conf
@@ -23,5 +23,5 @@ EXPOSE 601/tcp
 EXPOSE 6514/tcp
 
 HEALTHCHECK --interval=2m --timeout=3s --start-period=30s CMD /usr/sbin/syslog-ng-ctl stats || exit 1
-
+ENV LD_PRELOAD /usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 ENTRYPOINT ["/usr/sbin/syslog-ng", "-F"]
