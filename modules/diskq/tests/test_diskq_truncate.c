@@ -313,10 +313,12 @@ _assert_cursors_are_at_start(LogQueue *q)
   cr_assert_eq(qdisk_get_backlog_head(qdisk), QDISK_RESERVED_SPACE, "Backlog head was not reset!");
 }
 
-Test(diskq_truncate, test_diskq_truncate_size_ratio_default)
+Test(diskq_truncate, test_diskq_truncate_size_ratio_default_3_x)
 {
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
+
   LogQueue *q;
-  GString *filename = g_string_new("test_dq_truncate_size_ratio_default.rqf");
+  GString *filename = g_string_new("test_dq_truncate_size_ratio_default_3_x.rqf");
 
   DiskQueueOptions options;
   q = _create_reliable_diskqueue(filename->str, &options, TRUE, -1);
