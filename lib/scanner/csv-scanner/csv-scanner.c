@@ -179,18 +179,51 @@ _parse_left_whitespace(CSVScanner *self)
 static void
 _parse_character_with_quotation(CSVScanner *self)
 {
+  gchar ch;
   /* quoted character */
   if (self->options->dialect == CSV_SCANNER_ESCAPE_BACKSLASH &&
       *self->src == '\\' &&
       *(self->src + 1))
     {
       self->src++;
+      ch = *self->src;
+    }
+  else if (self->options->dialect == CSV_SCANNER_ESCAPE_BACKSLASH_WITH_SEQUENCES &&
+           *self->src == '\\' &&
+           *(self->src + 1))
+    {
+      self->src++;
+      ch = *self->src;
+      if (ch != self->current_quote)
+        {
+          switch (ch)
+            {
+            case 'a':
+              ch = '\a';
+              break;
+            case 'n':
+              ch = '\n';
+              break;
+            case 'r':
+              ch = '\r';
+              break;
+            case 't':
+              ch = '\t';
+              break;
+            case 'v':
+              ch = '\v';
+              break;
+            default:
+              break;
+            }
+        }
     }
   else if (self->options->dialect == CSV_SCANNER_ESCAPE_DOUBLE_CHAR &&
            *self->src == self->current_quote &&
            *(self->src+1) == self->current_quote)
     {
       self->src++;
+      ch = *self->src;
     }
   else if (*self->src == self->current_quote)
     {
@@ -198,7 +231,11 @@ _parse_character_with_quotation(CSVScanner *self)
       self->src++;
       return;
     }
-  g_string_append_c(self->current_value, *self->src);
+  else
+    {
+      ch = *self->src;
+    }
+  g_string_append_c(self->current_value, ch);
   self->src++;
 }
 
