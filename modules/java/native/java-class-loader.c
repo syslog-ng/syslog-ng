@@ -66,7 +66,7 @@ class_loader_new(JNIEnv *java_env)
       goto error;
     }
 
-  self->mi_loadclass = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->syslogng_class_loader, "loadClass",
+  self->mi_loadclass = CALL_JAVA_FUNCTION(java_env, GetStaticMethodID, self->syslogng_class_loader, "loadClass",
                                           "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Class;");
   if (!self->mi_loadclass)
     {
@@ -76,7 +76,7 @@ class_loader_new(JNIEnv *java_env)
       goto error;
     }
 
-  self->mi_init_current_thread = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->syslogng_class_loader,
+  self->mi_init_current_thread = CALL_JAVA_FUNCTION(java_env, GetStaticMethodID, self->syslogng_class_loader,
                                                     "initCurrentThread", "()V");
   if (!self->mi_init_current_thread)
     {
@@ -85,13 +85,6 @@ class_loader_new(JNIEnv *java_env)
                 evt_tag_str("method", "void initCurrentThread()"));
     }
 
-
-  self->loader_object = CALL_JAVA_FUNCTION(java_env, NewObject, self->syslogng_class_loader, self->loader_constructor);
-  if (!self->loader_object)
-    {
-      msg_error("Can't create SyslogNgClassLoader");
-      goto error;
-    }
   return self;
 error:
   class_loader_free(self, java_env);
@@ -103,10 +96,6 @@ void class_loader_free(ClassLoader *self, JNIEnv *java_env)
   if (!self)
     {
       return;
-    }
-  if (self->loader_object)
-    {
-      CALL_JAVA_FUNCTION(java_env, DeleteLocalRef, self->loader_object);
     }
   if (self->syslogng_class_loader)
     {
@@ -124,8 +113,8 @@ class_loader_load_class(ClassLoader *self, JNIEnv *java_env, const gchar *class_
   jstring str_class_path = __create_class_path(self, java_env, class_path);
 
 
-  result = CALL_JAVA_FUNCTION(java_env, CallObjectMethod, self->loader_object, self->mi_loadclass, str_class_name,
-                              str_class_path);
+  result = CALL_JAVA_FUNCTION(java_env, CallStaticObjectMethod, self->syslogng_class_loader, self->mi_loadclass,
+                              str_class_name, str_class_path);
 
   CALL_JAVA_FUNCTION(java_env, DeleteLocalRef, str_class_name);
   CALL_JAVA_FUNCTION(java_env, DeleteLocalRef, str_class_path);
@@ -135,5 +124,5 @@ class_loader_load_class(ClassLoader *self, JNIEnv *java_env, const gchar *class_
 void
 class_loader_init_current_thread(ClassLoader *self, JNIEnv *java_env)
 {
-  CALL_JAVA_FUNCTION(java_env, CallVoidMethod, self->loader_object, self->mi_init_current_thread);
+  CALL_JAVA_FUNCTION(java_env, CallStaticVoidMethod, self->syslogng_class_loader, self->mi_init_current_thread);
 }

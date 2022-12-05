@@ -36,35 +36,39 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.lang.reflect.Method;
+import java.lang.ClassLoader;
 
 
-public class SyslogNgClassLoader {
+public class SyslogNgClassLoader extends URLClassLoader {
 
   static {
     System.loadLibrary("mod-java");
   }
 
-  private ClassLoader classLoader;
-
   public SyslogNgClassLoader() {
-    classLoader = ClassLoader.getSystemClassLoader();
+    super(new URL[]{});
   }
 
-  public void initCurrentThread() {
-    java.lang.Thread.currentThread().setContextClassLoader(
-      java.lang.ClassLoader.getSystemClassLoader()
-    );
+  public SyslogNgClassLoader(ClassLoader parent) {
+    super(new URL[]{}, parent);
   }
 
-  public Class loadClass(String className, String pathList) {
+  public static void initCurrentThread() {
+    java.lang.Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
+  }
+
+  public static Class loadClass(String className, String pathList) {
     Class result = null;
     URL[] urls = createUrls(pathList);
 
     try {
+      SyslogNgClassLoader systemClassLoader = (SyslogNgClassLoader) ClassLoader.getSystemClassLoader();
+
       if (urls.length > 0) {
-        expandClassPath(urls);
+        systemClassLoader.expandClassPath(urls);
       }
-      result = Class.forName(className, true, classLoader);
+
+      result = Class.forName(className, true, systemClassLoader);
     }
     catch (ClassNotFoundException e) {
       InternalMessageSender.error("Exception: " + e.getMessage());
@@ -82,7 +86,7 @@ public class SyslogNgClassLoader {
     return result;
   }
 
-  private List<String> resolveWildCardFileName(String path) {
+  private static List<String> resolveWildCardFileName(String path) {
     List<String> result = new ArrayList<String>();
     File f = new File(path);
     final String basename = f.getName();
@@ -104,7 +108,7 @@ public class SyslogNgClassLoader {
     return result;
   }
 
-  private String[] parsePathList(String pathList) {
+  private static String[] parsePathList(String pathList) {
     String[] pathes = pathList.split(":");
     List<String> result = new ArrayList<String>();
 
@@ -121,7 +125,7 @@ public class SyslogNgClassLoader {
   }
 
 
-  private URL[] createUrls(String pathList) {
+  private static URL[] createUrls(String pathList) {
     String[] pathes = parsePathList(pathList);
     URL[] urls = new URL[pathes.length];
     int i = 0;
@@ -137,11 +141,9 @@ public class SyslogNgClassLoader {
     return urls;
   }
 
-  private void expandClassPath(URL[] urls) throws Exception {
-      Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[]{URL.class});
-      method.setAccessible(true);
-      for (URL url:urls) {
-          method.invoke(classLoader, new Object[]{url});
+  public void expandClassPath(URL[] urls) throws Exception {
+      for (URL url : urls) {
+          this.addURL(url);
       }
   }
 }
