@@ -138,9 +138,9 @@ _capture_timezone_state_from_variables(void)
    * static, as we are either just starting up or being reloaded.
    **/
 
+  global_state.timezone = _get_system_tzofs();
   global_state.tzname[0] = g_strdup(tzname[0]);
   global_state.tzname[1] = g_strdup(tzname[1]);
-  global_state.timezone = _get_system_tzofs();
 }
 
 /* NOTE: copy the contents of the global cache to thread local variables */
