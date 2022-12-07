@@ -16,7 +16,6 @@ set(SCL_DIRS
     iptables
     junos
     kafka
-    kubernetes
     linux-audit
     loadbalancer
     loggly
@@ -28,6 +27,7 @@ set(SCL_DIRS
     osquery
     pacct
     paloalto
+    python
     rewrite
     slack
     snmptrap

@@ -16,7 +16,6 @@ SCL_SUBDIRS	= \
 	iptables	\
 	junos		\
 	kafka		\
-	kubernetes	\
 	linux-audit	\
 	loadbalancer	\
 	loggly		\
@@ -28,6 +27,7 @@ SCL_SUBDIRS	= \
 	osquery	\
 	pacct		\
 	paloalto 	\
+	python		\
 	rewrite	\
 	slack \
 	snmptrap	\

@@ -58,6 +58,7 @@ tests/light/tox.ini
 tests/light/.pre-commit-config.yaml
 .github/workflows/.*$
 lib/logmsg/tests/messages/syslog-ng-(pe-)?[.0-9]*-msg.h$
+modules/python-modules/requirements\.lock
 
 
 ###########################################################################
@@ -147,7 +148,8 @@ modules/basicfuncs/vp-funcs\.[ch]$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/mariadb/.*\.conf$
-scl/kubernetes/.*\.conf$
+scl/python/python-modules\.conf$
+modules/python-modules/syslogng/modules/kubernetes/.*
 modules/python-modules/syslogng/modules/example/.*
 modules/python-modules/setup\.py
 scripts/build-python-venv\.sh

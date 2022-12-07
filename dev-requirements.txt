@@ -8,4 +8,5 @@ astroid==1.6.1
 logilab-common<=0.63.0
 psutil
 pytest
+pytest-mock
 pre-commit
