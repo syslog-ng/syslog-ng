@@ -351,22 +351,29 @@ riemann_worker_flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
       return LTR_ERROR;
     }
 
-  msg_trace("riemann: flushing messages to Riemann server",
-            evt_tag_str("server", owner->server),
-            evt_tag_int("port", owner->port),
-            evt_tag_int("batch_size", self->event.n),
-            evt_tag_int("ok", r->ok),
-            evt_tag_str("error", r->error),
-            evt_tag_str("driver", owner->super.super.super.id),
-            log_pipe_location_tag(&owner->super.super.super.super));
-
   if ((r->error) || (r->has_ok && !r->ok))
     {
+      msg_error("riemann: flushing messages to Riemann server failed",
+                evt_tag_str("server", owner->server),
+                evt_tag_int("port", owner->port),
+                evt_tag_int("batch_size", self->event.n),
+                evt_tag_int("ok", r->ok),
+                evt_tag_str("error", r->error),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
       riemann_message_free(r);
       return LTR_ERROR;
     }
   else
     {
+      msg_debug("riemann: flushing messages to Riemann server successful",
+                evt_tag_str("server", owner->server),
+                evt_tag_int("port", owner->port),
+                evt_tag_int("batch_size", self->event.n),
+                evt_tag_int("ok", r->ok),
+                evt_tag_str("error", r->error),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
       riemann_message_free(r);
       return LTR_SUCCESS;
     }
