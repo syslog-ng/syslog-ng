@@ -348,6 +348,13 @@ riemann_worker_flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
                                                  MAX(1, owner->super.batch_lines));
   if (!r)
     {
+      msg_error("riemann: error calling riemann_communicate()",
+                evt_tag_str("server", owner->server),
+                evt_tag_int("port", owner->port),
+                evt_tag_int("batch_size", self->event.n),
+                evt_tag_str("errno", g_strerror(errno)),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_ERROR;
     }
 
