@@ -339,6 +339,9 @@ AC_ARG_ENABLE(python,
               [  --disable-python       Disable Python module]
               ,,enable_python="auto")
 
+AC_ARG_ENABLE(python-modules,
+              [  --disable-python-modules  Disable Python based syslog-ng modules]
+              ,,enable_python_modules="auto")
 
 AC_ARG_WITH(python,
               [  --with-python=VERSION    Build with a specific version of python]
@@ -1532,6 +1535,13 @@ if test "x$enable_python" = "xyes"; then
     fi
 fi
 
+dnl ***************************************************************************
+dnl python modules
+dnl ***************************************************************************
+
+if test "x$enable_python_modules" = "xauto"; then
+    enable_python_modules=$enable_python
+fi
 
 dnl ***************************************************************************
 dnl docbook
@@ -1961,6 +1971,7 @@ AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$with_librabbitmq_client" = "xinter
 AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])
 AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
 AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
+AM_CONDITIONAL(ENABLE_PYTHON_MODULES, [test "$enable_python_modules" != "no"])
 AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
 AM_CONDITIONAL(ENABLE_JAVA_MODULES, [test "$enable_java_modules" = "yes"])
 AM_CONDITIONAL(ENABLE_AFSNMP, [test "$enable_afsnmp" = "yes"])
@@ -2104,8 +2115,9 @@ echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Kafka support (module)      : ${enable_kafka:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}, microseconds: ${riemann_micros:=no}"
-echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none}, packages: ${with_python_packages})"
-echo "  java                        : ${enable_java:=no}"
-echo "  java modules                : ${enable_java_modules:=no}"
+echo "  Python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none}, packages: ${with_python_packages})"
+echo "  Python modules              : ${enable_python_modules:=no}"
+echo "  Java                        : ${enable_java:=no}"
+echo "  Java modules                : ${enable_java_modules:=no}"
 echo "  afsnmp module               : ${enable_afsnmp:=no}"
 echo "  native bindings             : ${enable_native:=no}"
