@@ -2,7 +2,7 @@
 
 BUILDER_IMAGES=		\
 	centos-7 	\
-	fedora-35	\
+	fedora-37	\
 	debian-stretch	\
 	debian-buster	\
 	debian-bullseye	\

@@ -189,7 +189,7 @@ function install_pip_packages {
         case "${IMAGE_PLATFORM}" in
             fedora-*)
                 # don't update pip/setuptools on Fedora as RPM installed
-                # instances cause an error, at least in Fedora-35
+                # instances cause an error, at least in Fedora-37
                 filter_pip_packages_by_platform_and_python_version $DBLD_DIR/pip_packages.manifest $python_executable| xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
                 ;;
             *)

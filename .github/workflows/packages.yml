@@ -37,6 +37,6 @@ jobs:
         "centos-7",
         "debian-bullseye",
         "debian-testing",
-        "fedora-35",
+        "fedora-37",
         "ubuntu-jammy"
       ]'

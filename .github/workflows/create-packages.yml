@@ -23,7 +23,7 @@ on:
           "ubuntu-focal",
           "ubuntu-jammy",
           "centos-7",
-          "fedora-35"
+          "fedora-37"
         ]'
 
 
