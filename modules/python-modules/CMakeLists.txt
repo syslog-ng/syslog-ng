@@ -1,3 +1,12 @@
+module_switch(ENABLE_PYTHON_MODULES "Enable Python based modules" ENABLE_PYTHON)
+
+if (NOT ENABLE_PYTHON_MODULES)
+  return()
+endif ()
+
+if (NOT ENABLE_PYTHON)
+  message(FATAL_ERROR "Python based modules enabled, but the required syslog-ng Python plugin is disabled.")
+endif()
 
 add_custom_target(BuildPyModules
     COMMAND ${PYTHON_VENV_EXECUTABLE} setup.py build --build-base=${CMAKE_CURRENT_BINARY_DIR}/build
