@@ -24,37 +24,12 @@
 #ifndef LOGPROTO_MULTILINE_SERVER_INCLUDED
 #define LOGPROTO_MULTILINE_SERVER_INCLUDED
 
-#include "logproto/logproto-regexp-multiline-server.h"
-
-enum
-{
-  MLM_NONE,
-  MLM_INDENTED,
-  MLM_PREFIX_GARBAGE,
-  MLM_PREFIX_SUFFIX,
-};
-
-typedef struct _LogProtoMultiLineServerOptions
-{
-  LogProtoServerOptions super;
-  gint mode;
-  MultiLinePattern *prefix;
-  MultiLinePattern *garbage;
-} LogProtoMultiLineServerOptions;
+#include "logproto/logproto-server.h"
+#include "multi-line/multi-line-logic.h"
 
 LogProtoServer *
 log_proto_multiline_server_new(LogTransport *transport,
-                               const LogProtoMultiLineServerOptions *options);
-
-gboolean log_proto_multi_line_server_options_set_mode(LogProtoMultiLineServerOptions *options, const gchar *mode);
-gboolean log_proto_multi_line_server_options_set_prefix(LogProtoMultiLineServerOptions *options,
-                                                        const gchar *prefix_regexp, GError **error);
-gboolean log_proto_multi_line_server_options_set_garbage(LogProtoMultiLineServerOptions *options,
-                                                         const gchar *garbage_regexp, GError **error);
-
-void log_proto_multi_line_server_options_defaults(LogProtoMultiLineServerOptions *options);
-void log_proto_multi_line_server_options_init(LogProtoMultiLineServerOptions *options);
-void log_proto_multi_line_server_options_destroy(LogProtoMultiLineServerOptions *options);
-
+                               const LogProtoServerOptions *options,
+                               MultiLineLogic *multi_line);
 
 #endif

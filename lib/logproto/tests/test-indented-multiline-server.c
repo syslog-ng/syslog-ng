@@ -29,8 +29,13 @@
 #include "libtest/msg_parse_lib.h"
 
 #include "multi-line/indented-multi-line.h"
-#include "logproto/logproto-text-server.h"
+#include "logproto/logproto-multiline-server.h"
 
+LogProtoServer *
+log_proto_indented_multiline_server_new(LogTransport *transport, const LogProtoServerOptions *options)
+{
+  return log_proto_multiline_server_new(transport, options, indented_multi_line_new());
+}
 
 static void
 test_proper_multiline(LogTransportMockConstructor log_transport_mock_new)

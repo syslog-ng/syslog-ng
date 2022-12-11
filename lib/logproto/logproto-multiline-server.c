@@ -22,8 +22,8 @@
  *
  */
 #include "logproto/logproto-multiline-server.h"
-#include "logproto/logproto-regexp-multiline-server.h"
-#include "logproto/logproto-indented-multiline-server.h"
+#include "logproto/logproto-text-server.h"
+#include "multi-line/multi-line-logic.h"
 
 /*
  * This is basically a factory that takes multi-line related options and
@@ -32,78 +32,10 @@
 
 LogProtoServer *
 log_proto_multiline_server_new(LogTransport *transport,
-                               const LogProtoMultiLineServerOptions *options)
+                               const LogProtoServerOptions *options,
+                               MultiLineLogic *multi_line)
 {
-  switch (options->mode)
-    {
-    case MLM_INDENTED:
-      return log_proto_indented_multiline_server_new(transport, &options->super);
-    case MLM_PREFIX_GARBAGE:
-      return log_proto_prefix_garbage_multiline_server_new(transport, &options->super,
-                                                           options->prefix,
-                                                           options->garbage);
-    case MLM_PREFIX_SUFFIX:
-      return log_proto_prefix_suffix_multiline_server_new(transport, &options->super,
-                                                          options->prefix,
-                                                          options->garbage);
-    case MLM_NONE:
-      return log_proto_text_server_new(transport, &options->super);
-
-    default:
-      g_assert_not_reached();
-      break;
-    }
-  g_assert_not_reached();
-}
-
-gboolean
-log_proto_multi_line_server_options_set_mode(LogProtoMultiLineServerOptions *options, const gchar *mode)
-{
-  if (strcasecmp(mode, "indented") == 0)
-    options->mode = MLM_INDENTED;
-  else if (strcasecmp(mode, "regexp") == 0)
-    options->mode = MLM_PREFIX_GARBAGE;
-  else if (strcasecmp(mode, "prefix-garbage") == 0)
-    options->mode = MLM_PREFIX_GARBAGE;
-  else if (strcasecmp(mode, "prefix-suffix") == 0)
-    options->mode = MLM_PREFIX_SUFFIX;
-  else if (strcasecmp(mode, "none") == 0)
-    options->mode = MLM_NONE;
-  else
-    return FALSE;
-  return TRUE;
-}
-
-gboolean
-log_proto_multi_line_server_options_set_prefix(LogProtoMultiLineServerOptions *options, const gchar *prefix_regexp,
-                                               GError **error)
-{
-  options->prefix = multi_line_pattern_compile(prefix_regexp, error);
-  return options->prefix != NULL;
-}
-
-gboolean
-log_proto_multi_line_server_options_set_garbage(LogProtoMultiLineServerOptions *options, const gchar *garbage_regexp,
-                                                GError **error)
-{
-  options->garbage = multi_line_pattern_compile(garbage_regexp, error);
-  return options->garbage != NULL;
-}
-
-void
-log_proto_multi_line_server_options_defaults(LogProtoMultiLineServerOptions *options)
-{
-  options->mode = MLM_NONE;
-}
-
-void
-log_proto_multi_line_server_options_init(LogProtoMultiLineServerOptions *options)
-{
-}
-
-void
-log_proto_multi_line_server_options_destroy(LogProtoMultiLineServerOptions *options)
-{
-  multi_line_pattern_unref(options->prefix);
-  multi_line_pattern_unref(options->garbage);
+  LogProtoServer *server = log_proto_text_server_new(transport, options);
+  log_proto_text_server_set_multi_line(server, multi_line);
+  return server;
 }

@@ -44,6 +44,7 @@
 
 FileReaderOptions *last_file_reader_options;
 LogProtoFileReaderOptions *last_log_proto_options;
+MultiLineOptions *last_multi_line_options;
 WildcardSourceDriver *last_legacy_wildcard_src_driver;
 
 static void
@@ -54,6 +55,7 @@ affile_grammar_set_file_source_driver(AFFileSourceDriver *sd)
   last_reader_options = &last_file_reader_options->reader_options;
   last_file_perm_options = &sd->file_opener_options.file_perm_options;
   last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+  last_multi_line_options = &last_log_proto_options->multi_line_options;
 }
 
 static void
@@ -64,6 +66,7 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
   last_reader_options = &last_file_reader_options->reader_options;
   last_file_perm_options = &sd->file_opener_options.file_perm_options;
   last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+  last_multi_line_options = &last_log_proto_options->multi_line_options;
 }
 
 }
@@ -242,22 +245,21 @@ source_afpipe_option
 multi_line_option
 	: KW_MULTI_LINE_MODE '(' string ')'
           {
-            CHECK_ERROR(log_proto_multi_line_server_options_set_mode(&last_log_proto_options->super, $3), @3, "Invalid multi-line mode");
+            CHECK_ERROR(multi_line_options_set_mode(last_multi_line_options, $3), @3, "Invalid multi-line mode");
 	    free($3);
           }
 	| KW_MULTI_LINE_PREFIX '(' string ')'
           {
             GError *error = NULL;
-
-            CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_prefix(&last_log_proto_options->super, $3, &error), @3, error, "error compiling multi-line regexp");
+            CHECK_ERROR_GERROR(multi_line_options_set_prefix(last_multi_line_options, $3, &error), @3, error, "error compiling multi-line regexp");
             free($3);
           }
 	| KW_MULTI_LINE_GARBAGE '(' string ')'
 	  {
             GError *error = NULL;
 
-	    	CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_garbage(&last_log_proto_options->super, $3, &error), @3, error, "error compiling multi-line regexp");
-	    	free($3);
+            CHECK_ERROR_GERROR(multi_line_options_set_garbage(last_multi_line_options, $3, &error), @3, error, "error compiling multi-line regexp");
+            free($3);
 	  }
 	;
 

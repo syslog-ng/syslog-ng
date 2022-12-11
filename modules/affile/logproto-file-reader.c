@@ -30,56 +30,44 @@ LogProtoServer *
 log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptions *options)
 {
   if (options->pad_size > 0)
-    return log_proto_padded_record_server_new(transport, &options->super.super, options->pad_size);
+    return log_proto_padded_record_server_new(transport, &options->super, options->pad_size);
   else
-    return log_proto_multiline_server_new(transport, &options->super);
+    return log_proto_multiline_server_new(transport, &options->super,
+                                          multi_line_factory_construct(&options->multi_line_options));
 }
 
 void
 log_proto_file_reader_options_defaults(LogProtoFileReaderOptions *options)
 {
-  log_proto_multi_line_server_options_defaults(&options->super);
+  log_proto_server_options_defaults(&options->super);
+  multi_line_options_defaults(&options->multi_line_options);
   options->pad_size = 0;
-}
-
-static gboolean
-_are_multi_line_settings_invalid(LogProtoFileReaderOptions *options)
-{
-  gboolean is_garbage_mode = options->super.mode == MLM_PREFIX_GARBAGE;
-  gboolean is_suffix_mode = options->super.mode == MLM_PREFIX_SUFFIX;
-
-  return (!is_garbage_mode && !is_suffix_mode) && (options->super.prefix
-                                                   || options->super.garbage);
 }
 
 static gboolean
 log_proto_file_reader_options_validate(LogProtoFileReaderOptions *options)
 {
-  if (_are_multi_line_settings_invalid(options))
-    {
-      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based "
-                "(prefix-garbage or prefix-suffix), please set multi-line-mode() properly");
-      return FALSE;
-    }
-
-  if (options->pad_size > 0 && options->super.mode != MLM_NONE)
+  if (options->pad_size > 0 && options->multi_line_options.mode != MLM_NONE)
     {
       msg_error("pad-size() and multi-line-mode() can not be used together");
       return FALSE;
     }
 
-  return TRUE;
+  return multi_line_options_validate(&options->multi_line_options);
 }
 
 gboolean
-log_proto_file_reader_options_init(LogProtoFileReaderOptions *options)
+log_proto_file_reader_options_init(LogProtoFileReaderOptions *options, GlobalConfig *cfg)
 {
-  log_proto_multi_line_server_options_init(&options->super);
-  return log_proto_file_reader_options_validate(options);
+  if (!log_proto_file_reader_options_validate(options))
+    return FALSE;
+
+  log_proto_server_options_init(&options->super, cfg);
+  return multi_line_options_init(&options->multi_line_options);
 }
 
 void
 log_proto_file_reader_options_destroy(LogProtoFileReaderOptions *options)
 {
-  log_proto_multi_line_server_options_destroy(&options->super);
+  log_proto_server_options_destroy(&options->super);
 }
