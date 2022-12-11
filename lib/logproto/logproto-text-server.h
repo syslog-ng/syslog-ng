@@ -38,6 +38,8 @@ struct _LogProtoTextServer
   gint32 cached_eol_pos;
 };
 
+void log_proto_text_server_set_multi_line(LogProtoServer *s, MultiLineLogic *multi_line);
+
 /* LogProtoTextServer
  *
  * This class processes text files/streams. Each record is terminated via an EOL character.

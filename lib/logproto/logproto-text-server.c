@@ -275,6 +275,16 @@ log_proto_text_server_flush(LogProtoBufferedServer *s)
 }
 
 void
+log_proto_text_server_set_multi_line(LogProtoServer *s, MultiLineLogic *multi_line)
+{
+  LogProtoTextServer *self = (LogProtoTextServer *) s;
+
+  if (self->multi_line)
+    multi_line_logic_free(self->multi_line);
+  self->multi_line = multi_line;
+}
+
+void
 log_proto_text_server_free(LogProtoServer *s)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
