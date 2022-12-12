@@ -1,6 +1,5 @@
 #############################################################################
 # Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
-# Copyright (c) 2015-2016 Balabit
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -22,11 +21,8 @@
 #
 #############################################################################
 
-from .dest import LogDestination
-from .source import LogSource, LogFetcher, InstantAckTracker, ConsecutiveAckTracker, BatchedAckTracker
-from .parser import LogParser
-from .template import LogTemplate, LogTemplateOptions, LogTemplateException, LTZ_SEND, LTZ_LOCAL
-from .message import LogMessage
-from .logger import Logger
-from .persist import Persist
-from .confgen import register_config_generator
+try:
+    from _syslogng import register_config_generator
+except ImportError:
+    def register_config_generator(context, name, config_generator):
+        pass

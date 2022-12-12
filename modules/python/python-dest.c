@@ -111,12 +111,6 @@ python_dd_set_loaders(LogDriver *d, GList *loaders)
   self->loaders = loaders;
 }
 
-PyObject *
-python_dd_create_arg_dict(PythonDestDriver *self)
-{
-  return _py_create_arg_dict(self->options);
-}
-
 LogTemplateOptions *
 python_dd_get_template_options(LogDriver *d)
 {

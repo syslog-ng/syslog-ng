@@ -87,12 +87,14 @@ libtest/mock-logpipe\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
 syslog-ng-ctl/commands/log-level.[ch]
+modules/python-modules/syslogng/confgen\.py
 modules/python-modules/syslogng/dest\.py
 modules/python-modules/syslogng/logger\.py
 modules/python-modules/syslogng/message\.py
 modules/python-modules/syslogng/parser\.py
 modules/python-modules/syslogng/source\.py
 modules/python-modules/syslogng/template\.py
+modules/python/python-confgen\.[ch]
 
 ###########################################################################
 # These tests are GPLd even though they reside under lib/ and are excluded

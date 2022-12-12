@@ -25,6 +25,7 @@
 #define PYTHON_HELPERS_H_INCLUDED 1
 
 #include "python-module.h"
+#include "cfg-args.h"
 
 const gchar *_py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len);
 const gchar *_py_format_exception_text(gchar *buf, gsize buf_len);
@@ -33,6 +34,7 @@ PyObject *_py_get_attr_or_null(PyObject *o, const gchar *attr);
 PyObject *_py_do_import(const gchar *modname);
 PyObject *_py_resolve_qualified_name(const gchar *name);
 PyObject *_py_create_arg_dict(GHashTable *args);
+PyObject *_py_construct_cfg_args(CfgArgs *args);
 PyObject *_py_invoke_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *caller_context);
 PyObject *_py_invoke_function_with_args(PyObject *func, PyObject *args, const gchar *class,
                                         const gchar *caller_context);
