@@ -53,7 +53,7 @@ EXTRA_DIST += \
 	modules/python-modules/setup.py						\
 	modules/python-modules/README.md
 
-if ENABLE_PYTHON
+if ENABLE_PYTHON_MODULES
 
 python_sysconf_module_DATA = modules/python-modules/README.md
 
