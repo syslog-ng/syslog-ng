@@ -85,10 +85,14 @@ pymodules-install: pymodules-install-requirements python-venv
 	$(install_sh_DATA) $(top_srcdir)/requirements.txt "$(PYTHON_ROOT)/$(python_moduledir)/requirements.txt"
 
 pymodules-install-requirements: python-venv
-	(cd $(PYMODULES_SRCDIR) && \
-	 mkdir -p $(PYMODULES_BUILDDIR) && \
-         $(PYTHON_VENV) setup.py egg_info --egg-base="$(PYMODULES_BUILDDIR)"  && \
-         if [ -f $(PYMODULES_BUILDDIR)/$(PYMODULES_ROOT_MODULE).egg-info/requires.txt ]; then $(PYTHON_VENV) -m pip install -r $(PYMODULES_BUILDDIR)/$(PYMODULES_ROOT_MODULE).egg-info/requires.txt; fi)
+	if [ "$(with_python_packages)" != "none" ]; then \
+		(cd $(PYMODULES_SRCDIR) && \
+		 mkdir -p $(PYMODULES_BUILDDIR) && \
+	         $(PYTHON_VENV) setup.py egg_info --egg-base="$(PYMODULES_BUILDDIR)"  && \
+		 if [ -f $(PYMODULES_BUILDDIR)/$(PYMODULES_ROOT_MODULE).egg-info/requires.txt ]; then \
+			$(PYTHON_VENV) -m pip install -r $(PYMODULES_BUILDDIR)/$(PYMODULES_ROOT_MODULE).egg-info/requires.txt; \
+		 fi) \
+	fi
 
 pymodules-uninstall:
 	sed -e 's,^,$(PYTHON_ROOT),g' $(PYMODULES_MANIFEST) | tr '\n' '\0' | xargs -0 rm -f
