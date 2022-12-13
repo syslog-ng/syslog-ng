@@ -42,9 +42,7 @@ pdb_example_free(PDBExample *self)
         {
           gchar **nv = g_ptr_array_index(self->values, i);
 
-          g_free(nv[0]);
-          g_free(nv[1]);
-          g_free(nv);
+          g_strfreev(nv);
         }
 
       g_ptr_array_free(self->values, TRUE);

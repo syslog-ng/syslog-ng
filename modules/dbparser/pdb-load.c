@@ -88,7 +88,9 @@ typedef struct _PDBLoader
   gboolean load_examples;
   GList *examples;
   gchar *value_name;
+  gchar *value_type;
   gchar *test_value_name;
+  gchar *test_value_type;
   GlobalConfig *cfg;
   gint action_id;
   GHashTable *ruleset_patterns;
@@ -216,9 +218,17 @@ _process_value_element(PDBLoader *state,
                        const gchar **attribute_names, const gchar **attribute_values,
                        GError **error)
 {
-  if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
-    state->value_name = g_strdup(attribute_values[0]);
-  else
+  for (gint i = 0; attribute_names[i]; i++)
+    {
+      const gchar *attr = attribute_names[i];
+      const gchar *value = attribute_values[i];
+
+      if (g_str_equal(attr, "name"))
+        state->value_name = g_strdup(value);
+      else if (g_str_equal(attr, "type"))
+        state->value_type = g_strdup(value);
+    }
+  if (!state->value_name)
     {
       pdb_loader_set_error(state, error, "<value> misses name attribute in rule %s", state->current_rule->rule_id);
       return;
@@ -321,13 +331,13 @@ _pdbl_initial_start(PDBLoader *state, const gchar *element_name, const gchar **a
       else if (state->ruleset->version && atoi(state->ruleset->version) < 2)
         {
           pdb_loader_set_error(state, error,
-                               "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool");
+                               "patterndb version too old, this version of syslog-ng only supports v3 and v4 formatted patterndb files, please upgrade it using pdbtool merge");
           return;
         }
-      else if (state->ruleset->version && atoi(state->ruleset->version) > 5)
+      else if (state->ruleset->version && atoi(state->ruleset->version) > 6)
         {
           pdb_loader_set_error(state, error,
-                               "patterndb version too new, this version of syslog-ng supports v3, v4 & v5 formatted patterndb files.");
+                               "patterndb version too new, this version of syslog-ng supports v3..v6 formatted patterndb files.");
           return;
         }
       _push_state(state, PDBL_PATTERNDB);
@@ -716,9 +726,16 @@ _pdbl_rule_example_test_values_start(PDBLoader *state, const gchar *element_name
 {
   if (strcmp(element_name, "test_value") == 0)
     {
-      if (attribute_names[0] && g_str_equal(attribute_names[0], "name"))
-        state->test_value_name = g_strdup(attribute_values[0]);
-      else
+      for (gint i = 0; attribute_names[i]; i++)
+        {
+          const gchar *attr = attribute_names[i];
+          const gchar *value = attribute_values[i];
+          if (g_str_equal(attr, "name"))
+            state->test_value_name = g_strdup(value);
+          else if (g_str_equal(attr, "type"))
+            state->test_value_type = g_strdup(value);
+        }
+      if (!state->test_value_name)
         {
           msg_error("No name is specified for test_value",
                     evt_tag_str("rule_id", state->current_rule->rule_id));
@@ -740,10 +757,11 @@ _pdbl_rule_example_test_value_end(PDBLoader *state, const gchar *element_name, G
 {
   if (_pop_state_for_closing_tag(state, element_name, "test_value", error))
     {
-      if (state->test_value_name)
-        g_free(state->test_value_name);
+      g_free(state->test_value_name);
+      g_free(state->test_value_type);
 
       state->test_value_name = NULL;
+      state->test_value_type = NULL;
     }
 }
 
@@ -755,10 +773,13 @@ _pdbl_rule_example_test_value_text(PDBLoader *state, const gchar *text, gsize te
   if (!state->current_example->values)
     state->current_example->values = g_ptr_array_new();
 
-  nv = g_new(gchar *, 2);
+  nv = g_new(gchar *, 4);
   nv[0] = state->test_value_name;
-  state->test_value_name = NULL;
   nv[1] = g_strdup(text);
+  nv[2] = g_strdup(state->test_value_type);
+  nv[3] = NULL;
+  state->test_value_name = NULL;
+  state->test_value_type = NULL;
 
   g_ptr_array_add(state->current_example->values, nv);
 
@@ -921,10 +942,11 @@ _pdbl_value_end(PDBLoader *state, const gchar *element_name, GError **error)
 {
   if (_pop_state_for_closing_tag(state, element_name, "value", error))
     {
-      if (state->value_name)
-        g_free(state->value_name);
+      g_free(state->value_name);
+      g_free(state->value_type);
 
       state->value_name = NULL;
+      state->value_type = NULL;
     }
 }
 
@@ -934,7 +956,8 @@ _pdbl_value_text(PDBLoader *state, const gchar *text, gsize text_len, GError **e
   GError *err = NULL;
 
   g_assert(state->value_name != NULL);
-  if (!synthetic_message_add_value_template_string(state->current_message, state->cfg, state->value_name, text, &err))
+  if (!synthetic_message_add_value_template_string_and_type(state->current_message, state->cfg, state->value_name, text,
+                                                            state->value_type, &err))
     {
       pdb_loader_set_error(state, error, "Error compiling value template, rule=%s, name=%s, value=%s, error=%s",
                            state->current_rule->rule_id, state->value_name, text, err->message);

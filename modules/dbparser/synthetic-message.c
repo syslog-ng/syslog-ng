@@ -86,6 +86,24 @@ synthetic_message_add_tag(SyntheticMessage *self, const gchar *text)
 }
 
 gboolean
+synthetic_message_add_value_template_string_and_type(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name,
+                                                     const gchar *value, const gchar *type_hint, GError **error)
+{
+  LogTemplate *value_template;
+  gboolean success = FALSE;
+
+  value_template = log_template_new(cfg, NULL);
+  success = log_template_compile(value_template, value, error);
+  if (success && type_hint)
+    success = log_template_set_type_hint(value_template, type_hint, error);
+  if (success)
+    synthetic_message_add_value_template(self, name, value_template);
+
+  log_template_unref(value_template);
+  return success;
+}
+
+gboolean
 synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name,
                                             const gchar *value, GError **error)
 {

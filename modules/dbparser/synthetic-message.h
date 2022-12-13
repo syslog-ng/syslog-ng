@@ -56,6 +56,10 @@ LogMessage *synthetic_message_generate_with_context(SyntheticMessage *self, Corr
 void synthetic_message_apply(SyntheticMessage *self, CorrelationContext *context, LogMessage *msg);
 gboolean synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig *cfg, const gchar *name,
                                                      const gchar *value, GError **error);
+gboolean synthetic_message_add_value_template_string_and_type(SyntheticMessage *self, GlobalConfig *cfg,
+    const gchar *name,
+    const gchar *value, const gchar *type_hint, GError **error);
+
 void synthetic_message_set_inherit_mode(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode);
 void synthetic_message_set_inherit_properties_string(SyntheticMessage *self, const gchar *inherit_properties,
                                                      GError **error);
