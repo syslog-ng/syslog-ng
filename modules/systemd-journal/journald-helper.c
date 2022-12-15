@@ -22,6 +22,7 @@
  */
 
 #include "journald-helper.h"
+#include "messages.h"
 #include <string.h>
 
 static void
@@ -61,4 +62,31 @@ journald_foreach_data(sd_journal *journal, FOREACH_DATA_CALLBACK func, gpointer 
           func(key, key_len, value, value_len, user_data);
         }
     }
+}
+
+#define BOOT_ID_BUFF_LEN 33
+#define MATCH_BUFF_LEN 64
+
+int
+journald_filter_this_boot(sd_journal *journal)
+{
+  char match[MATCH_BUFF_LEN + 1] = {0};
+
+  sd_id128_t boot_id;
+  int ret = sd_id128_get_boot(&boot_id);
+  if (ret != 0)
+    {
+      msg_error("systemd-journal: Failed read boot_id",
+                evt_tag_errno("sd_id128_get_boot", -ret));
+      return ret;
+    }
+
+  char boot_id_string[BOOT_ID_BUFF_LEN];
+  sd_id128_to_string(boot_id, boot_id_string);
+
+  g_snprintf(match, sizeof(match), "_BOOT_ID=%s", boot_id_string);
+  msg_debug("systemd-journal: filtering journal to the current boot",
+            evt_tag_str("match", match));
+
+  return sd_journal_add_match(journal, match, 0);
 }

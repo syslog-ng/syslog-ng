@@ -691,10 +691,27 @@ _journal_apply_matches_list(JournalReader *self)
   return TRUE;
 }
 
+static gboolean
+_journal_apply_match_boot(JournalReader *self)
+{
+  if (self->options->match_boot)
+    {
+      gint rc = journald_filter_this_boot(self->journal);
+      if (rc < 0)
+        {
+          msg_error("Error applying the filter to the current boot",
+                    evt_tag_str("error", g_strerror(-rc)));
+        }
+    }
+  return TRUE;
+}
+
 static gint
 _journal_apply_matches(JournalReader *self)
 {
   if (!_journal_apply_matches_list(self))
+    return FALSE;
+  if (!_journal_apply_match_boot(self))
     return FALSE;
   return TRUE;
 }
@@ -941,6 +958,12 @@ journal_reader_options_set_matches(JournalReaderOptions *self, GList *matches)
 }
 
 void
+journal_reader_options_set_match_boot(JournalReaderOptions *self, gboolean enable)
+{
+  self->match_boot = enable;
+}
+
+void
 journal_reader_options_defaults(JournalReaderOptions *options)
 {
   log_source_options_defaults(&options->super);
@@ -949,6 +972,7 @@ journal_reader_options_defaults(JournalReaderOptions *options)
   options->fetch_limit = DEFAULT_FETCH_LIMIT;
   options->default_pri = DEFAULT_PRIO;
   options->max_field_size = DEFAULT_FIELD_SIZE;
+  options->match_boot = FALSE;
   options->super.read_old_records = TRUE;
 }
 

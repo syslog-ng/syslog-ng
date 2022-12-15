@@ -58,6 +58,7 @@ JournalReaderOptions *last_journal_reader_options;
 %token KW_MAX_FIELD_SIZE
 %token KW_NAMESPACE
 %token KW_MATCHES
+%token KW_MATCH_BOOT
 
 %type   <ptr> source_systemd_journal
 %type   <ptr> source_systemd_journal_params
@@ -125,6 +126,10 @@ source_systemd_journal_option
         | KW_MATCHES '(' source_systemd_journal_matches ')'
           {
             journal_reader_options_set_matches(last_journal_reader_options, $3);
+          }
+        | KW_MATCH_BOOT '(' yesno ')'
+          {
+            journal_reader_options_set_match_boot(last_journal_reader_options, $3);
           }
         | source_option
 	| source_driver_option
