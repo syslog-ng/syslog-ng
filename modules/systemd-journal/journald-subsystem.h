@@ -66,6 +66,7 @@ extern int (*sd_journal_test_cursor)(sd_journal *j, const char *cursor);
 extern int (*sd_journal_get_fd)(sd_journal *j);
 extern int (*sd_journal_process)(sd_journal *j);
 extern int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec);
+extern int (*sd_journal_add_match)(sd_journal *j, const void *data, size_t size);
 
 int load_journald_subsystem(void);
 
