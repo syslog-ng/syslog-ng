@@ -31,7 +31,6 @@ struct _TestSource
   LogPipe super;
   JournalReaderOptions options;
   JournalReader *reader;
-  Journald *journald_mock;
   GList *tests;
   GList *current_test;
   TestCase *current_test_case;
@@ -47,11 +46,11 @@ __init(LogPipe *s)
   TestSource *self = (TestSource *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  self->reader = journal_reader_new(cfg, self->journald_mock);
+  self->reader = journal_reader_new(cfg);
   journal_reader_options_defaults(&self->options);
   if (self->current_test_case && self->current_test_case->init)
     {
-      self->current_test_case->init(self->current_test_case, self, self->journald_mock, self->reader, &self->options);
+      self->current_test_case->init(self->current_test_case, self, self->reader, &self->options);
     }
   journal_reader_options_init(&self->options, cfg, "test");
   journal_reader_set_options((LogPipe *)self->reader, &self->super, &self->options, "test", "1");
@@ -74,7 +73,6 @@ static void
 __free(LogPipe *s)
 {
   TestSource *self = (TestSource *)s;
-  journald_free(self->journald_mock);
   g_list_free(self->tests);
 }
 
@@ -117,7 +115,6 @@ test_source_new(GlobalConfig *cfg)
   self->super.deinit = __deinit;
   self->super.free_fn = __free;
   self->super.queue = __queue;
-  self->journald_mock = journald_mock_new();
   journal_reader_options_defaults(&self->options);
 
   IV_TASK_INIT(&self->start);

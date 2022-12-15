@@ -64,7 +64,7 @@ struct _JournalReader
   LogSource super;
   LogPipe *control;
   JournalReaderOptions *options;
-  Journald *journal;
+  sd_journal *journal;
   PollEvents *poll_events;
   struct iv_event schedule_wakeup;
   struct iv_task restart_task;
@@ -242,7 +242,7 @@ _set_message_timestamp(JournalReader *self, LogMessage *msg)
 {
   guint64 ts;
 
-  journald_get_realtime_usec(self->journal, &ts);
+  sd_journal_get_realtime_usec(self->journal, &ts);
   msg->timestamps[LM_TS_STAMP].ut_sec = ts / 1000000;
   msg->timestamps[LM_TS_STAMP].ut_usec = ts % 1000000;
   msg->timestamps[LM_TS_STAMP].ut_gmtoff = time_zone_info_get_offset(self->options->recv_time_zone_info,
@@ -307,7 +307,7 @@ _load_state(JournalReader *self)
 static inline gboolean
 _seek_to_head(JournalReader *self)
 {
-  gint rc = journald_seek_head(self->journal);
+  gint rc = sd_journal_seek_head(self->journal);
   if (rc != 0)
     {
       msg_error("Failed to seek to the start position of the journal",
@@ -324,7 +324,7 @@ _seek_to_head(JournalReader *self)
 static gboolean
 _seek_to_tail(JournalReader *self)
 {
-  gint rc = journald_seek_tail(self->journal);
+  gint rc = sd_journal_seek_tail(self->journal);
 
   if (rc != 0)
     {
@@ -343,7 +343,7 @@ _skip_old_records(JournalReader *self)
 {
   if (!_seek_to_tail(self))
     return FALSE;
-  if (journald_next(self->journal) <= 0)
+  if (sd_journal_next(self->journal) <= 0)
     {
       msg_error("Can't move cursor to the next position after seek to tail.");
       return FALSE;
@@ -352,9 +352,9 @@ _skip_old_records(JournalReader *self)
 }
 
 static gboolean
-_journal_seek(Journald *journal, const gchar *cursor)
+_journal_seek(sd_journal *journal, const gchar *cursor)
 {
-  gint rc = journald_seek_cursor(journal, cursor);
+  gint rc = sd_journal_seek_cursor(journal, cursor);
 
   if (rc != 0)
     {
@@ -368,9 +368,9 @@ _journal_seek(Journald *journal, const gchar *cursor)
 }
 
 static gboolean
-_journal_next(Journald *journal)
+_journal_next(sd_journal *journal)
 {
-  gint rc = journald_next(journal);
+  gint rc = sd_journal_next(journal);
 
   if (rc != 1)
     {
@@ -383,9 +383,9 @@ _journal_next(Journald *journal)
 }
 
 static gboolean
-_journal_test_cursor(Journald *journal, const gchar *cursor)
+_journal_test_cursor(sd_journal *journal, const gchar *cursor)
 {
-  gint rc = journald_test_cursor(journal, cursor);
+  gint rc = sd_journal_test_cursor(journal, cursor);
 
   if (rc <= 0)
     {
@@ -441,7 +441,7 @@ static gchar *
 _get_cursor(JournalReader *self)
 {
   gchar *cursor;
-  journald_get_cursor(self->journal, &cursor);
+  sd_journal_get_cursor(self->journal, &cursor);
   return cursor;
 }
 
@@ -479,7 +479,7 @@ _fetch_log(JournalReader *self)
   self->immediate_check = TRUE;
   while (msg_count < self->options->fetch_limit && !main_loop_worker_job_quit())
     {
-      gint rc = journald_next(self->journal);
+      gint rc = sd_journal_next(self->journal);
       if (rc > 0)
         {
           Bookmark *bookmark = ack_tracker_request_bookmark(self->super.ack_tracker);
@@ -569,19 +569,19 @@ static void
 _io_process_async_input(gpointer s)
 {
   JournalReader *self = (JournalReader *)s;
-  journald_process(self->journal);
+  sd_journal_process(self->journal);
   _io_process_input(s);
 }
 
 static gboolean
 _add_poll_events(JournalReader *self)
 {
-  gint fd = journald_get_fd(self->journal);
+  gint fd = sd_journal_get_fd(self->journal);
   if (fd < 0)
     {
-      msg_error("Error setting up journal polling, journald_get_fd() returned failure",
+      msg_error("Error setting up journal polling, sd_journal_get_fd() returned failure",
                 evt_tag_errno("error", -fd));
-      journald_close(self->journal);
+      sd_journal_close(self->journal);
       return FALSE;
     }
 
@@ -628,9 +628,9 @@ _journal_open(JournalReader *self)
 #if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
   gchar *journal_namespace = NULL;
   _journal_process_namespace(self->options->namespace, &journal_namespace, &journal_flags);
-  return journald_open_namespace(self->journal, journal_namespace, journal_flags);
+  return sd_journal_open_namespace(&self->journal, journal_namespace, journal_flags);
 #else
-  return journald_open(self->journal, journal_flags);
+  return sd_journal_open(&self->journal, journal_flags);
 #endif
 }
 
@@ -673,7 +673,7 @@ _init(LogPipe *s)
 
   if (!_set_starting_position(self))
     {
-      journald_close(self->journal);
+      sd_journal_close(self->journal);
       return FALSE;
     }
 
@@ -694,7 +694,7 @@ _deinit(LogPipe *s)
 {
   JournalReader *self = (JournalReader *)s;
   _stop_watches(self);
-  journald_close(self->journal);
+  sd_journal_close(self->journal);
   poll_events_free(self->poll_events);
   journal_reader_initialized = FALSE;
   return TRUE;
@@ -708,6 +708,12 @@ _free(LogPipe *s)
   log_source_free(&self->super.super);
   g_free(self->persist_name);
   return;
+}
+
+sd_journal *
+journal_reader_get_sd_journal(JournalReader *self)
+{
+  return self->journal;
 }
 
 void
@@ -747,7 +753,7 @@ _init_watches(JournalReader *self)
 }
 
 JournalReader *
-journal_reader_new(GlobalConfig *cfg, Journald *journal)
+journal_reader_new(GlobalConfig *cfg)
 {
   JournalReader *self = g_new0(JournalReader, 1);
   log_source_init_instance(&self->super, cfg);
@@ -756,7 +762,6 @@ journal_reader_new(GlobalConfig *cfg, Journald *journal)
   self->super.super.deinit = _deinit;
   self->super.super.free_fn = _free;
   self->persist_name = NULL;
-  self->journal = journal;
   _init_watches(self);
   return self;
 }

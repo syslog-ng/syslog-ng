@@ -26,7 +26,7 @@
 #include <string.h>
 
 #define JOURNALD_FOREACH_DATA(j, data, l)                             \
-        for (journald_restart_data(j); journald_enumerate_data((j), &(data), &(l)) > 0; )
+        for (sd_journal_restart_data(j); sd_journal_enumerate_data((j), &(data), &(l)) > 0; )
 
 static void
 __parse_data(gchar *data, size_t length, gchar **key, gchar **value)
@@ -45,12 +45,13 @@ __parse_data(gchar *data, size_t length, gchar **key, gchar **value)
     }
 }
 
-void journald_foreach_data(Journald *self, FOREACH_DATA_CALLBACK func, gpointer user_data)
+void
+journald_foreach_data(sd_journal *journal, FOREACH_DATA_CALLBACK func, gpointer user_data)
 {
   const void *data;
   size_t l = 0;
 
-  JOURNALD_FOREACH_DATA(self, data, l)
+  JOURNALD_FOREACH_DATA(journal, data, l)
   {
     gchar *key;
     gchar *value;

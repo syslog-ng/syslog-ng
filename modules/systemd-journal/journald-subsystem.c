@@ -27,10 +27,6 @@
 
 #if SYSLOG_NG_SYSTEMD_JOURNAL_MODE == SYSLOG_NG_JOURNALD_SYSTEM
 
-struct _Journald
-{
-  sd_journal *journal;
-};
 
 gboolean
 load_journald_subsystem(void)
@@ -39,6 +35,24 @@ load_journald_subsystem(void)
 }
 
 #else
+
+int (*sd_journal_open)(sd_journal **ret, int flags);
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+int (*sd_journal_open_namespace)(sd_journal **ret, const char *namespace, int flags);
+#endif
+void (*sd_journal_close)(sd_journal *j);
+int (*sd_journal_seek_head)(sd_journal *j);
+int (*sd_journal_seek_tail)(sd_journal *j);
+int (*sd_journal_get_cursor)(sd_journal *j, char **cursor);
+int (*sd_journal_next)(sd_journal *j);
+void (*sd_journal_restart_data)(sd_journal *j);
+int (*sd_journal_enumerate_data)(sd_journal *j, const void **data, size_t *length);
+int (*sd_journal_seek_cursor)(sd_journal *j, const char *cursor);
+int (*sd_journal_test_cursor)(sd_journal *j, const char *cursor);
+int (*sd_journal_get_fd)(sd_journal *j);
+int (*sd_journal_process)(sd_journal *j);
+int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec);
+int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec);
 
 
 #define LOAD_SYMBOL(library, symbol) g_module_symbol(library, #symbol, (gpointer*)&symbol)
@@ -51,29 +65,6 @@ const char *journald_libraries[] = {JOURNAL_LIBRARY_NAME, SYSTEMD_LIBRARY_NAME, 
 static GModule *journald_module;
 
 typedef struct sd_journal sd_journal;
-
-struct _Journald
-{
-  sd_journal *journal;
-};
-
-static int (*sd_journal_open)(sd_journal **ret, int flags);
-#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
-static int (*sd_journal_open_namespace)(sd_journal **ret, const char *namespace, int flags);
-#endif
-static void (*sd_journal_close)(sd_journal *j);
-static int (*sd_journal_seek_head)(sd_journal *j);
-static int (*sd_journal_seek_tail)(sd_journal *j);
-static int (*sd_journal_get_cursor)(sd_journal *j, char **cursor);
-static int (*sd_journal_next)(sd_journal *j);
-static void (*sd_journal_restart_data)(sd_journal *j);
-static int (*sd_journal_enumerate_data)(sd_journal *j, const void **data, size_t *length);
-static int (*sd_journal_seek_cursor)(sd_journal *j, const char *cursor);
-static int (*sd_journal_test_cursor)(sd_journal *j, const char *cursor);
-static int (*sd_journal_get_fd)(sd_journal *j);
-static int (*sd_journal_process)(sd_journal *j);
-static int (*sd_journal_get_realtime_usec)(sd_journal *j, guint64 *usec);
-static int (*sd_journal_get_realtime_usec)(sd_journal *j, guint64 *usec);
 
 static GModule *
 _journald_module_open(void)
@@ -155,105 +146,3 @@ load_journald_subsystem(void)
 }
 
 #endif
-
-
-int
-journald_open(Journald *self, int flags)
-{
-  return sd_journal_open(&self->journal, flags);
-}
-
-#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
-int
-journald_open_namespace(Journald *self, const gchar *namespace, int flags)
-{
-  return sd_journal_open_namespace(&self->journal, namespace, flags);
-}
-#endif
-
-void
-journald_close(Journald *self)
-{
-  sd_journal_close(self->journal);
-  self->journal = NULL;
-}
-
-int
-journald_seek_head(Journald *self)
-{
-  return sd_journal_seek_head(self->journal);
-}
-
-int
-journald_seek_tail(Journald *self)
-{
-  return sd_journal_seek_tail(self->journal);
-}
-
-int
-journald_get_cursor(Journald *self, gchar **cursor)
-{
-  return sd_journal_get_cursor(self->journal, cursor);
-}
-
-int
-journald_next(Journald *self)
-{
-  return sd_journal_next(self->journal);
-}
-
-void
-journald_restart_data(Journald *self)
-{
-  sd_journal_restart_data(self->journal);
-}
-
-int
-journald_enumerate_data(Journald *self, const void **data, gsize *length)
-{
-  return sd_journal_enumerate_data(self->journal, data, length);
-}
-
-int
-journald_seek_cursor(Journald *self, const gchar *cursor)
-{
-  return sd_journal_seek_cursor(self->journal, cursor);
-}
-
-int
-journald_test_cursor(Journald *self, const gchar *cursor)
-{
-  return sd_journal_test_cursor(self->journal, cursor);
-}
-
-int
-journald_get_fd(Journald *self)
-{
-  return sd_journal_get_fd(self->journal);
-}
-
-int
-journald_process(Journald *self)
-{
-  return sd_journal_process(self->journal);
-}
-
-int
-journald_get_realtime_usec(Journald *self, guint64 *usec)
-{
-  return sd_journal_get_realtime_usec(self->journal, usec);
-}
-
-Journald *
-journald_new(void)
-{
-  Journald *self = g_new0(Journald, 1);
-  return self;
-}
-
-void
-journald_free(Journald *self)
-{
-  g_free(self);
-  return;
-}

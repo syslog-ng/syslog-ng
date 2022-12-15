@@ -43,7 +43,7 @@ typedef struct _JournalReaderOptions
   gchar *namespace;
 } JournalReaderOptions;
 
-JournalReader *journal_reader_new(GlobalConfig *cfg, Journald *journal);
+JournalReader *journal_reader_new(GlobalConfig *cfg);
 void journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *options, const gchar *stats_id,
                                 const gchar *stats_instance);
 

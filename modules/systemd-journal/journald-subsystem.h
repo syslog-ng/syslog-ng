@@ -38,35 +38,32 @@ enum
   SD_JOURNAL_RUNTIME_ONLY = 2,
   SD_JOURNAL_SYSTEM_ONLY = 4
 };
+
+typedef struct sd_journal sd_journal;
+
+extern int (*sd_journal_open)(sd_journal **ret, int flags);
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+extern int (*sd_journal_open_namespace)(sd_journal **ret, const char *namespace, int flags);
+#endif
+extern void (*sd_journal_close)(sd_journal *j);
+extern int (*sd_journal_seek_head)(sd_journal *j);
+extern int (*sd_journal_seek_tail)(sd_journal *j);
+extern int (*sd_journal_get_cursor)(sd_journal *j, char **cursor);
+extern int (*sd_journal_next)(sd_journal *j);
+extern void (*sd_journal_restart_data)(sd_journal *j);
+extern int (*sd_journal_enumerate_data)(sd_journal *j, const void **data, size_t *length);
+extern int (*sd_journal_seek_cursor)(sd_journal *j, const char *cursor);
+extern int (*sd_journal_test_cursor)(sd_journal *j, const char *cursor);
+extern int (*sd_journal_get_fd)(sd_journal *j);
+extern int (*sd_journal_process)(sd_journal *j);
+extern int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec);
+
 #endif
 
-
-typedef struct _Journald Journald;
+gboolean load_journald_subsystem(void);
 
 typedef void (*FOREACH_DATA_CALLBACK)(gchar *key, gchar *value, gpointer user_data);
 
-void journald_foreach_data(Journald *self, FOREACH_DATA_CALLBACK func, gpointer user_data);
-
-
-gboolean load_journald_subsystem(void);
-Journald *journald_new(void);
-void journald_free(Journald *self);
-
-int journald_open(Journald *self, int flags);
-#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
-int journald_open_namespace(Journald *self, const gchar *namespace, int flags);
-#endif
-void journald_close(Journald *self);
-int journald_seek_head(Journald *self);
-int journald_seek_tail(Journald *self);
-int journald_get_cursor(Journald *self, gchar **cursor);
-int journald_next(Journald *self);
-void journald_restart_data(Journald *self);
-int journald_enumerate_data(Journald *self, const void **data, gsize *length);
-int journald_seek_cursor(Journald *self, const gchar *cursor);
-int journald_test_cursor(Journald *self, const gchar *cursor);
-int journald_get_fd(Journald *self);
-int journald_process(Journald *self);
-int journald_get_realtime_usec(Journald *self, guint64 *usec);
+void journald_foreach_data(sd_journal *self, FOREACH_DATA_CALLBACK func, gpointer user_data);
 
 #endif /* JOURNAL_SOURCE_INTERFACE_H_ */
