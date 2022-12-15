@@ -57,53 +57,23 @@ struct _Journald
   sd_journal *journal;
 };
 
-typedef int
-(*SD_JOURNAL_OPEN)(sd_journal **ret, int flags);
+static int (*sd_journal_open)(sd_journal **ret, int flags);
 #if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
-typedef int
-(*SD_JOURNAL_OPEN_NAMESPACE)(sd_journal **ret, const char *namespace, int flags);
+static int (*sd_journal_open_namespace)(sd_journal **ret, const char *namespace, int flags);
 #endif
-typedef void
-(*SD_JOURNAL_CLOSE)(sd_journal *j);
-typedef int
-(*SD_JOURNAL_SEEK_HEAD)(sd_journal *j);
-typedef int
-(*SD_JOURNAL_SEEK_TAIL)(sd_journal *j);
-typedef int
-(*SD_JOURNAL_GET_CURSOR)(sd_journal *j, char **cursor);
-typedef int
-(*SD_JOURNAL_NEXT)(sd_journal *j);
-typedef void
-(*SD_JOURNAL_RESTART_DATA)(sd_journal *j);
-typedef int
-(*SD_JOURNAL_ENUMERATE_DATA)(sd_journal *j, const void **data, size_t *length);
-typedef int
-(*SD_JOURNAL_SEEK_CURSOR)(sd_journal *j, const char *cursor);
-typedef int
-(*SD_JOURNAL_TEST_CURSOR)(sd_journal *j, const char *cursor);
-typedef int
-(*SD_JOURNAL_GET_FD)(sd_journal *j);
-typedef int
-(*SD_JOURNAL_PROCESS)(sd_journal *j);
-typedef int
-(*SD_JOURNAL_GET_REALTIME_USEC)(sd_journal *j, guint64 *usec);
-
-static SD_JOURNAL_OPEN sd_journal_open;
-#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
-static SD_JOURNAL_OPEN_NAMESPACE sd_journal_open_namespace;
-#endif
-static SD_JOURNAL_CLOSE sd_journal_close;
-static SD_JOURNAL_SEEK_HEAD sd_journal_seek_head;
-static SD_JOURNAL_SEEK_TAIL sd_journal_seek_tail;
-static SD_JOURNAL_GET_CURSOR sd_journal_get_cursor;
-static SD_JOURNAL_NEXT sd_journal_next;
-static SD_JOURNAL_RESTART_DATA sd_journal_restart_data;
-static SD_JOURNAL_ENUMERATE_DATA sd_journal_enumerate_data;
-static SD_JOURNAL_SEEK_CURSOR sd_journal_seek_cursor;
-static SD_JOURNAL_TEST_CURSOR sd_journal_test_cursor;
-static SD_JOURNAL_GET_FD sd_journal_get_fd;
-static SD_JOURNAL_PROCESS sd_journal_process;
-static SD_JOURNAL_GET_REALTIME_USEC sd_journal_get_realtime_usec;
+static void (*sd_journal_close)(sd_journal *j);
+static int (*sd_journal_seek_head)(sd_journal *j);
+static int (*sd_journal_seek_tail)(sd_journal *j);
+static int (*sd_journal_get_cursor)(sd_journal *j, char **cursor);
+static int (*sd_journal_next)(sd_journal *j);
+static void (*sd_journal_restart_data)(sd_journal *j);
+static int (*sd_journal_enumerate_data)(sd_journal *j, const void **data, size_t *length);
+static int (*sd_journal_seek_cursor)(sd_journal *j, const char *cursor);
+static int (*sd_journal_test_cursor)(sd_journal *j, const char *cursor);
+static int (*sd_journal_get_fd)(sd_journal *j);
+static int (*sd_journal_process)(sd_journal *j);
+static int (*sd_journal_get_realtime_usec)(sd_journal *j, guint64 *usec);
+static int (*sd_journal_get_realtime_usec)(sd_journal *j, guint64 *usec);
 
 static GModule *
 _journald_module_open(void)
