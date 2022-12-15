@@ -207,6 +207,12 @@ echo "deb https://ose-repo.syslog-ng.com/apt/ nightly ubuntu-jammy" | sudo tee -
 
 Nightly builds can be used for testing purposes (obtaining new features and bugfixes) at the risk of breakage.
 
+### Arch Linux
+
+```
+# pacman -S syslog-ng
+```
+
 ### Fedora
 
 syslog-ng is available as a Fedora package that you can install using
@@ -219,6 +225,12 @@ You can download packages for the latest versions from [here](https://copr.fedor
 For instructions on how to install syslog-ng on RPM distributions, see the blog post [Installing latest syslog-ng on RHEL and other RPM distributions](https://syslog-ng.com/blog/installing-latest-syslog-ng-on-rhel-and-other-rpm-distributions/).
 
 If you wish to install the latest RPM package that comes from a recent commit in Git for testing purposes, read the blog post, [RPM packages from syslog-ng Git HEAD](https://syslog-ng.com/blog/rpm-packages-from-syslog-ng-git-head/).
+
+### macOS
+
+```
+# brew install syslog-ng
+```
 
 ### Others
 
