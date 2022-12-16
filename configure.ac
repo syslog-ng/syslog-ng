@@ -383,7 +383,7 @@ if test "x$enable_all_modules" != "xauto"; then
    state="$enable_all_modules"
 
    MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
-            redis systemd geoip2 riemann ipv6 smtp native python java java_modules \
+            redis systemd geoip2 riemann ipv6 smtp native python python_modules java java_modules \
             http afsnmp kafka mqtt"
    for mod in ${MODULES}; do
        modstate=$(eval echo \$enable_${mod})
