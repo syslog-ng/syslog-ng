@@ -49,6 +49,8 @@ int (*sd_journal_process)(sd_journal *j);
 int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec);
 int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec);
 int (*sd_journal_add_match)(sd_journal *j, const void *data, size_t size);
+char *(*sd_id128_to_string)(sd_id128_t id, char s[SD_ID128_STRING_MAX]);
+int (*sd_id128_get_boot)(sd_id128_t *ret);
 
 
 #define LOAD_SYMBOL(library, symbol) g_module_symbol(library, #symbol, (gpointer*)&symbol)
@@ -119,6 +121,12 @@ _load_journald_symbols(void)
     return FALSE;
 
   if (!LOAD_SYMBOL(journald_module, sd_journal_add_match))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_id128_to_string))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_id128_get_boot))
     return FALSE;
 
   return TRUE;

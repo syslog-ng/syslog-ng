@@ -36,6 +36,10 @@ load_journald_subsystem(void)
 }
 
 #else
+
+#include <stddef.h>
+#include <stdint.h>
+
 /* Open flags */
 enum
 {
@@ -47,6 +51,17 @@ enum
   SD_JOURNAL_ALL_NAMESPACES = 32,
   SD_JOURNAL_INCLUDE_DEFAULT_NAMESPACE = 64
 };
+
+typedef union sd_id128 sd_id128_t;
+
+union sd_id128
+{
+  uint8_t bytes[16];
+  uint64_t qwords[2];
+};
+
+#define SD_ID128_STRING_MAX 33
+
 
 typedef struct sd_journal sd_journal;
 
@@ -67,6 +82,8 @@ extern int (*sd_journal_get_fd)(sd_journal *j);
 extern int (*sd_journal_process)(sd_journal *j);
 extern int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec);
 extern int (*sd_journal_add_match)(sd_journal *j, const void *data, size_t size);
+extern char *(*sd_id128_to_string)(sd_id128_t id, char s[SD_ID128_STRING_MAX]);
+extern int (*sd_id128_get_boot)(sd_id128_t *ret);
 
 int load_journald_subsystem(void);
 
