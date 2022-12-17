@@ -33,6 +33,7 @@
 #include "journal-reader.h"
 #include "timeutils/misc.h"
 #include "ack-tracker/ack_tracker_factory.h"
+#include "string-list.h"
 
 #include <stdlib.h>
 #include <iv_event.h>
@@ -664,6 +665,40 @@ _journal_open(JournalReader *self)
 #endif
 }
 
+static gboolean
+_journal_apply_matches_list(JournalReader *self)
+{
+  gint rc;
+
+  for (GList *l = self->options->matches; l && l->next; l = l->next->next)
+    {
+      const gchar *field = l->data;
+      const gchar *value = l->next->data;
+      gchar *match_expr;
+
+      match_expr = g_strdup_printf("%s=%s", field, value);
+      rc = sd_journal_add_match(self->journal, match_expr, 0);
+      if (rc < 0)
+        {
+          msg_error("Error applying filtering matches to systemd-journal()",
+                    evt_tag_str("match_expr", match_expr),
+                    evt_tag_str("error", g_strerror(-rc)));
+          g_free(match_expr);
+          return FALSE;
+        }
+      g_free(match_expr);
+    }
+  return TRUE;
+}
+
+static gint
+_journal_apply_matches(JournalReader *self)
+{
+  if (!_journal_apply_matches_list(self))
+    return FALSE;
+  return TRUE;
+}
+
 static void
 _init_persist_name(JournalReader *self)
 {
@@ -698,6 +733,11 @@ _init(LogPipe *s)
     {
       msg_error("Error opening the journal",
                 evt_tag_errno("error", -res));
+      return FALSE;
+    }
+  if (!_journal_apply_matches(self))
+    {
+      sd_journal_close(self->journal);
       return FALSE;
     }
 
@@ -894,6 +934,13 @@ journal_reader_options_set_log_fetch_limit(JournalReaderOptions *self, gint log_
 }
 
 void
+journal_reader_options_set_matches(JournalReaderOptions *self, GList *matches)
+{
+  string_list_free(self->matches);
+  self->matches = matches;
+}
+
+void
 journal_reader_options_defaults(JournalReaderOptions *options)
 {
   log_source_options_defaults(&options->super);
@@ -929,5 +976,6 @@ journal_reader_options_destroy(JournalReaderOptions *options)
       g_free(options->namespace);
       options->namespace = NULL;
     }
+  string_list_free(options->matches);
   options->initialized = FALSE;
 }

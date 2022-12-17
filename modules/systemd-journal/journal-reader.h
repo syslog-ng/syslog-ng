@@ -42,6 +42,7 @@ typedef struct _JournalReaderOptions
   gchar *prefix;
   guint32 max_field_size;
   gchar *namespace;
+  GList *matches;
 } JournalReaderOptions;
 
 JournalReader *journal_reader_new(GlobalConfig *cfg);
@@ -56,6 +57,7 @@ void journal_reader_options_set_prefix(JournalReaderOptions *self, gchar *prefix
 void journal_reader_options_set_max_field_size(JournalReaderOptions *self, gint max_field_size);
 void journal_reader_options_set_namespace(JournalReaderOptions *self, gchar *namespace);
 void journal_reader_options_set_log_fetch_limit(JournalReaderOptions *self, gint log_fetch_limit);
+void journal_reader_options_set_matches(JournalReaderOptions *self, GList *matches);
 void journal_reader_options_defaults(JournalReaderOptions *options);
 void journal_reader_options_destroy(JournalReaderOptions *options);
 
