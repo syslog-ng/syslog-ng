@@ -261,10 +261,10 @@ _set_program(JournalReaderOptions *options, LogMessage *msg)
       value_ref = _get_value_from_message(options, msg, "_COMM", -1, &value_length);
     }
 
-  /* we need to strdup the value_ref: referred value can change during log_msg_set_value if nvtable realloc needed */
-  gchar *value = g_strdup(value_ref);
-  log_msg_set_value(msg, LM_V_PROGRAM, value, value_length);
-  g_free(value);
+  /* we need to reference the payload: referred value can change during log_msg_set_value if nvtable realloc needed */
+  NVTable *nvtable = nv_table_ref(msg->payload);
+  log_msg_set_value(msg, LM_V_PROGRAM, value_ref, value_length);
+  nv_table_unref(nvtable);
 }
 
 static void
