@@ -348,7 +348,7 @@ AC_ARG_WITH(python,
               ,,with_python="auto")
 
 AC_ARG_WITH(python-packages,
-              [  --with-python-packages=[system|venv]    Use Python packages from the system or a private virtualenv (default: venv)]
+              [  --with-python-packages=[system|venv|none]    Use Python packages from the system or a private virtualenv or skip their installation (default: venv)]
               ,,with_python_packages="venv")
 
 AC_ARG_WITH(python3-home,
@@ -1529,6 +1529,8 @@ if test "x$enable_python" = "xyes"; then
     if test "x$with_python_packages" = "xvenv"; then
         PYTHON_VENV_DIR=`pwd`/venv
         PYTHON_VENV=${PYTHON_VENV_DIR}/bin/python
+    elif test "x$with_python_packages" = "xnone"; then
+        PYTHON_VENV=$PYTHON
     else
         with_python_packages="system"
         PYTHON_VENV=$PYTHON
