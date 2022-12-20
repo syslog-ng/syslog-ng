@@ -95,6 +95,7 @@ _construct_py_parse_options(void)
 void
 setup(void)
 {
+  setenv("TZ", "UTC", TRUE);
   app_startup();
 
   init_parse_options_and_load_syslogformat(&parse_options);
