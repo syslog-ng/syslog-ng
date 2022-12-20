@@ -178,28 +178,34 @@
 #define VERSION_VALUE_3_36 0x0324
 #define VERSION_VALUE_3_37 0x0325
 #define VERSION_VALUE_3_38 0x0326
+#define VERSION_VALUE_4_0 0x0400
 
 /* these are defined to allow 4.0 related changes to be introduced while we
  * are still producing 3.x releases. */
 #define VERSION_VALUE_4_0     0x0400
 
 /* config version code, in the same format as GlobalConfig->version */
-#define VERSION_VALUE_CURRENT   VERSION_VALUE_3_38
-#define VERSION_STR_CURRENT     "3.38"
-#define VERSION_PRODUCT_CURRENT VERSION_3_38
+#define VERSION_VALUE_CURRENT   VERSION_VALUE_4_0
+#define VERSION_STR_CURRENT     "4.0"
+#define VERSION_PRODUCT_CURRENT VERSION_4_0
 
 /* this value points to the last syslog-ng version where we changed the
  * meaning of any setting in the configuration file.  Basically, it is the
  * highest value passed to any cfg_is_config_version_older() call.
  */
-#define VERSION_VALUE_LAST_SEMANTIC_CHANGE  VERSION_VALUE_3_35
-#define VERSION_STR_LAST_SEMANTIC_CHANGE    "3.35"
+#define VERSION_VALUE_LAST_SEMANTIC_CHANGE  VERSION_VALUE_4_0
+#define VERSION_STR_LAST_SEMANTIC_CHANGE    "4.0"
 
 #define version_convert_from_user(v)  (v)
 
 /* version based feature flips */
 #define VERSION_VALUE_NEXT_MAJOR         VERSION_VALUE_4_0
-#define FEATURE_TYPING_MIN_VERSION       VERSION_VALUE_4_0
+
+/* we are already past 4.0 which introduced FEATURE_TYPING_MIN_VERSION, so
+ * set min_version to an extremal value.  We should remove this macro if all
+ * derived works introduce typing support.  Until that point we keep it
+ * here, so the same codebase can execute with typing disabled. */
+#define FEATURE_TYPING_MIN_VERSION       0
 #define FEATURE_TYPING_VERSION           "syslog-ng 4.0"
 
 #include "pe-versioning.h"
