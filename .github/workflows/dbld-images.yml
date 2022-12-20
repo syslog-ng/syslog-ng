@@ -34,7 +34,6 @@ jobs:
           - debian-bullseye
           - debian-buster
           - debian-sid
-          - debian-stretch
           - debian-testing
           - ubuntu-bionic
           - ubuntu-focal

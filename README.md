@@ -175,7 +175,6 @@ syslog-ng packages are released for the following distribution versions (x86-64)
 | Ubuntu 18.04 | ubuntu-bionic |
 | Debian 11 | debian-bullseye |
 | Debian 10 | debian-buster |
-| Debian 9 | debian-stretch |
 | Debian Unstable | debian-sid |
 | Debian Testing | debian-testing |
 
