@@ -370,7 +370,7 @@ Description: Enhanced system logging daemon (graphite plugin)
 Package: syslog-ng-mod-python
 Architecture: any
 Multi-Arch: foreign
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, syslog-ng-core (>= ${source:Version}), syslog-ng-core (<< ${source:Version}.1~)
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, python3-venv, syslog-ng-core (>= ${source:Version}), syslog-ng-core (<< ${source:Version}.1~)
 XB-Python-Version: ${python:Versions}
 Description: Enhanced system logging daemon (Python plugin)
  syslog-ng is an enhanced log daemon, supporting a wide range of input
