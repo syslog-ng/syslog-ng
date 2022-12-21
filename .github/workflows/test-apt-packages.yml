@@ -32,7 +32,7 @@ jobs:
           apt-get install --yes wget gnupg2 ca-certificates apt-transport-https
 
       - name: Install the Debian official syslog-ng OSE package
-        if: matrix.upgrade-from == "debian-official"
+        if: matrix.upgrade-from == 'debian-official'
         run: |
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install --yes syslog-ng
@@ -43,7 +43,7 @@ jobs:
           echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg] https://ose-repo.syslog-ng.com/apt/ ${{ inputs.pkg_type }} $(echo ${{ matrix.distro }} | sed 's/:/-/g')" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
 
       - name: Install the last but one syslog-ng OSE package
-        if: matrix.upgrade-from == "syslog-ng-last"
+        if: matrix.upgrade-from == 'syslog-ng-last'
         run: |
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install --yes syslog-ng=$(apt-cache madison syslog-ng | sed -n 2p | awk -F"|" '{print $2}' | sed 's/ //g')
