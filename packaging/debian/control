@@ -589,6 +589,8 @@ Package: syslog-ng-scl
 Architecture: all
 Multi-Arch: foreign
 Depends: ${misc:Depends}, syslog-ng-core (>= ${source:Version}), syslog-ng-core (<< ${source:Version}.1~)
+Replaces: syslog-ng-mod-extra (<< 3.38.1~), syslog-ng-core (<< 3.38.1~), syslog-ng-mod-graphite (<< 3.38.1~), syslog-ng-mod-rdkafka (<< 3.38.1~), syslog-ng-mod-snmp (<< 3.38.1~)
+Breaks: syslog-ng-mod-extra (<< 3.38.1~), syslog-ng-core (<< 3.38.1~), syslog-ng-mod-graphite (<< 3.38.1~), syslog-ng-mod-rdkafka (<< 3.38.1~), syslog-ng-mod-snmp (<< 3.38.1~)
 Description: Enhanced system logging daemon (scl files)
  syslog-ng is an enhanced log daemon, supporting a wide range of input
  and output methods: syslog, unstructured text, message queues,
