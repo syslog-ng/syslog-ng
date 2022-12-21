@@ -35,11 +35,9 @@ usr/lib/syslog-ng/libloggen_helper.so
 usr/lib/syslog-ng/libloggen_plugin.so
 usr/lib/syslog-ng/libloggen_helper-*.so.*
 usr/lib/syslog-ng/libloggen_plugin-*.so.*
-usr/share/syslog-ng/include/scl/*
 usr/share/syslog-ng/xsd/*
 [linux-any] usr/lib/syslog-ng/*/libsdjournal.so
 [linux-any] usr/lib/syslog-ng/*/libpacctformat.so
-[linux-any] usr/share/syslog-ng/include/scl/pacct/*
 
 #[!kfreebsd-any] lib/systemd/system/*
 [!kfreebsd-any] debian/syslog-ng.systemd =>  lib/systemd/system/syslog-ng.service
