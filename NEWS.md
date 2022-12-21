@@ -1,5 +1,7 @@
-4.0.0
+4.0.1
 =====
+
+_This is the combination of the news entries of 4.0.0 and 4.0.1._
 
 This is a new major version of syslog-ng, ending the 3.x series which
 started roughly 13 years ago, on 17th February 2009.
@@ -597,6 +599,10 @@ The framework consists of these changes:
 
   * Debian packaging: logrotate became Suggested instead of Recommended to
     avoid installing logrotate by default.
+
+  * `scl`: To match the way `scl`s are packaged in debian, we have added a `syslog-ng-scl` package.
+    This makes it possible to upgrade from the official debian `syslog-ng` package to the ose-repo provided one.
+    ([#4252](https://github.com/syslog-ng/syslog-ng/pull/4252)) ([#4256](https://github.com/syslog-ng/syslog-ng/pull/4256))
 
 ## Other changes
 
