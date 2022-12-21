@@ -68,8 +68,8 @@ jobs:
       - name: Check if installed package version matches with install revision
         run: |
           echo "Installed revision value: ${{ steps.syslog_ng_revision.outputs.REVISION }}"
-          dpkg-query --show | grep syslog-ng
-          dpkg-query --show | grep syslog-ng | while read installed_syslog_ng_package ; do echo $installed_syslog_ng_package | grep ${{ steps.syslog_ng_revision.outputs.REVISION }} ; done
+          dpkg-query --show syslog-ng\*
+          dpkg-query -f='${db:Status-Status}\t${package}\t${version}\t\n' --show syslog-ng\* | grep ^installed | while read installed_syslog_ng_package ; do echo $installed_syslog_ng_package | grep ${{ steps.syslog_ng_revision.outputs.REVISION }} ; done
 
       - name: Check if syslog-ng can start with default config
         run: |
