@@ -1,5 +1,8 @@
-name: Run smoke tests on APT packages
+# Please note that the syslog-ng git repository is not available in this workflow.
+# It means that certain convenience/helper functions are not available (e.g. gh_output).
+# This is intentional as syslog-ng will be acquired from the APT repository.
 
+name: Run smoke tests on APT packages
 on:
   workflow_call:
     inputs:
@@ -54,7 +57,7 @@ jobs:
       - name: Get syslog-ng revision
         run: |
           syslog-ng -V
-          echo "::set-output name=REVISION::$(syslog-ng -V | grep Revision | cut -d" " -f2)"
+          echo "{REVISION}={$(syslog-ng -V | grep Revision | cut -d" " -f2)}" >> $GITHUB_OUTPUT
         id: syslog_ng_revision
 
       - name: Check revision

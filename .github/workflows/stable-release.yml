@@ -1,5 +1,8 @@
-name: Stable release
+# Please note that the syslog-ng git repository is not available in this workflow.
+# It means that certain convenience/helper functions are not available (e.g. gh_output).
+# This is intentional as syslog-ng will be acquired from the tarball.
 
+name: Stable release
 
 on:
   workflow_dispatch:
@@ -42,7 +45,7 @@ jobs:
             false
           fi
 
-          echo "::set-output name=DRAFT_RELEASE_RUN_ID::${DRAFT_RELEASE_RUN_ID}"
+          echo "{DRAFT_RELEASE_RUN_ID}=${DRAFT_RELEASE_RUN_ID}" >> $GITHUB_OUTPUT
 
   index-packages:
     needs: find-draft-release-run

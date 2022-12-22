@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup environment
         run: |
@@ -101,7 +101,7 @@ jobs:
         run: make VERBOSE=1 func-test
 
       - name: "Artifact: test-suite.log"
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: always() && steps.make_check.outcome == 'failure'
         with:
           name: test-suite-${{ matrix.build-tool }}-${{ matrix.cc }}
@@ -126,7 +126,7 @@ jobs:
           rm -f `find /tmp/light-reports -type p,s`
 
       - name: "Artifact: light-reports"
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: always() && steps.prepare-light-reports.outcome == 'success'
         with:
           name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}
@@ -140,7 +140,7 @@ jobs:
             gdb --ex="thread apply all bt full" --ex="quit" ${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng --core {} \;
 
       - name: "Artifact: corefiles"
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: corefiles-${{ matrix.build-tool }}-${{ matrix.cc }}
@@ -154,7 +154,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set ENV variables
         run: |
@@ -194,7 +194,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Prepare
         run: |
@@ -226,14 +226,14 @@ jobs:
             (git diff > ../light-style-problems.diff ; git reset --hard HEAD && exit 1)
 
       - name: "Artifact: c-style-problems"
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: always() && steps.c-style-check.outcome == 'failure'
         with:
           name: c-style-problems
           path: c-style-problems.diff
 
       - name: "Artifact: light-style-problems"
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: always() && steps.light-style-check.outcome == 'failure'
         with:
           name: light-style-problems
@@ -248,13 +248,13 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Copyright check
         run: tests/copyright/check.sh . .
 
       - name: "Artifact: copyright-run.log"
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: copyright-run.log
@@ -267,7 +267,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 

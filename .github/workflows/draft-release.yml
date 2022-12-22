@@ -49,7 +49,7 @@ jobs:
             --field body="${COMMENT}"
 
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup environment
         id: setup-environment
@@ -70,7 +70,7 @@ jobs:
           ./dbld/rules release VERSION=${VERSION}
 
       - name: Store release tarball as artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: release-tarball
           path: ${{ env.TARBALL_PATH }}
@@ -96,10 +96,10 @@ jobs:
     needs: [create-release-tarball, upload-packages]
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Download release tarball artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: release-tarball
 

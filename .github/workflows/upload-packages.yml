@@ -39,7 +39,7 @@ jobs:
 
     steps:
       - name: Download package artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: package-${{ matrix.distro }}
           path: package
