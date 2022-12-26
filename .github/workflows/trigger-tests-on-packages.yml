@@ -16,4 +16,4 @@ jobs:
   test-packages:
     uses: ./.github/workflows/test-apt-packages.yml
     with:
-      pkg_type: ${{ github.event.inputs.pkg-type }}
+      pkg-type: ${{ github.event.inputs.pkg-type }}
