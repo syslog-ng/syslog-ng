@@ -56,7 +56,7 @@ jobs:
     needs: index-packages
     uses: ./.github/workflows/test-apt-packages.yml
     with:
-      pkg_type: nightly
+      pkg-type: nightly
 
   publish-docker-image:
     needs: test-packages

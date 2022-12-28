@@ -45,7 +45,7 @@ jobs:
             false
           fi
 
-          echo "{DRAFT_RELEASE_RUN_ID}=${DRAFT_RELEASE_RUN_ID}" >> $GITHUB_OUTPUT
+          echo "DRAFT_RELEASE_RUN_ID=${DRAFT_RELEASE_RUN_ID}" >> $GITHUB_OUTPUT
 
   index-packages:
     needs: find-draft-release-run
@@ -62,7 +62,7 @@ jobs:
     needs: index-packages
     uses: ./.github/workflows/test-apt-packages.yml
     with:
-      pkg_type: stable
+      pkg-type: stable
 
   publish-docker-image:
     needs: test-packages
