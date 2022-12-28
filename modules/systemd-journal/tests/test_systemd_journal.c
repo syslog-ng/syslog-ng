@@ -29,8 +29,6 @@
 #include "journal-reader.c"
 #include "apphook.h"
 
-static gboolean task_called;
-static gboolean poll_triggered;
 
 static GlobalConfig *cfg;
 
@@ -51,110 +49,6 @@ _deinit_cfg(const gchar *persist_file)
   persist_state_cancel(cfg->state);
   unlink(persist_file);
   cfg_free(cfg);
-}
-
-void
-add_mock_entries(gpointer user_data)
-{
-  Journald *journald = user_data;
-  MockEntry *entry = mock_entry_new("test_data3");
-  mock_entry_add_data(entry, "MESSAGE=test message3");
-  mock_entry_add_data(entry, "KEY=VALUE3");
-  mock_entry_add_data(entry, "HOST=testhost3");
-  journald_mock_add_entry(journald, entry);
-
-  entry = mock_entry_new("test_data4");
-  mock_entry_add_data(entry, "MESSAGE=test message4");
-  mock_entry_add_data(entry, "KEY=VALUE4");
-  mock_entry_add_data(entry, "HOST=testhost4");
-  journald_mock_add_entry(journald, entry);
-}
-
-void
-handle_new_entry(gpointer user_data)
-{
-  Journald *journald = user_data;
-  journald_process(journald);
-  cr_assert_not(poll_triggered, "%s", "Should called only once");
-  poll_triggered = TRUE;
-}
-
-void
-stop_timer_expired(gpointer user_data)
-{
-  iv_quit();
-}
-
-void
-__test_seeks(Journald *journald)
-{
-  gint result = journald_seek_head(journald);
-  cr_assert_eq(result, 0, "%s", "Can't seek in empty journald mock");
-  result = journald_next(journald);
-  cr_assert_eq(result, 0, "%s", "Bad next step result");
-
-  MockEntry *entry = mock_entry_new("test_data1");
-  mock_entry_add_data(entry, "MESSAGE=test message");
-  mock_entry_add_data(entry, "KEY=VALUE");
-  mock_entry_add_data(entry, "HOST=testhost");
-
-  journald_mock_add_entry(journald, entry);
-
-  entry = mock_entry_new("test_data2");
-  mock_entry_add_data(entry, "MESSAGE=test message2");
-  mock_entry_add_data(entry, "KEY=VALUE2");
-  mock_entry_add_data(entry, "HOST=testhost2");
-
-  journald_mock_add_entry(journald, entry);
-
-  result = journald_seek_head(journald);
-  cr_assert_eq(result, 0, "%s", "Can't seek in journald mock");
-  result = journald_next(journald);
-  cr_assert_eq(result, 1, "%s", "Bad next step result");
-
-  result = journald_seek_tail(journald);
-  cr_assert_eq(result, 0, "%s", "Can't seek in journald mock");
-  result = journald_next(journald);
-  cr_assert_eq(result, 1, "%s", "Bad next step result");
-  result = journald_next(journald);
-  cr_assert_eq(result, 0, "%s", "Bad next step result");
-}
-
-void
-__test_cursors(Journald *journald)
-{
-  gchar *cursor;
-  journald_seek_head(journald);
-  journald_next(journald);
-  gint result = journald_get_cursor(journald, &cursor);
-  cr_assert_str_eq(cursor, "test_data1", "%s", "Bad cursor fetched");
-  \
-  g_free(cursor);
-
-  result = journald_next(journald);
-  cr_assert_eq(result, 1, "%s", "Bad next step result");
-  result = journald_get_cursor(journald, &cursor);
-  cr_assert_str_eq(cursor, "test_data2", "%s", "Bad cursor fetched");
-  g_free(cursor);
-
-  result = journald_next(journald);
-  cr_assert_eq(result, 0, "%s", "Should not contain more elements");
-
-  result = journald_seek_cursor(journald, "test_data1");
-  cr_assert_eq(result, 0, "%s", "Should find cursor");
-  result = journald_next(journald);
-  cr_assert_eq(result, 1, "%s", "Bad next step result");
-  result = journald_get_cursor(journald, &cursor);
-  cr_assert_str_eq(cursor, "test_data1", "%s", "Bad cursor fetched");
-  g_free(cursor);
-
-  result = journald_seek_cursor(journald, "test_data2");
-  cr_assert_eq(result, 0, "%s", "Should find cursor");
-  result = journald_next(journald);
-  cr_assert_eq(result, 1, "%s", "Bad next step result");
-  result = journald_get_cursor(journald, &cursor);
-  cr_assert_str_eq(cursor, "test_data2", "%s", "Bad cursor fetched");
-  g_free(cursor);
 }
 
 void
@@ -192,65 +86,6 @@ __test_enumerate(Journald *journald)
   cr_assert_eq(result, 0, "%s", "Should not contain more elements");
 }
 
-void
-__test_fd_handling(Journald *journald)
-{
-  gint fd = journald_get_fd(journald);
-  journald_process(journald);
-
-  task_called = FALSE;
-  poll_triggered = FALSE;
-  struct iv_task add_entry_task;
-  struct iv_fd fd_to_poll;
-  struct iv_timer stop_timer;
-
-  IV_TASK_INIT(&add_entry_task);
-  add_entry_task.cookie = journald;
-  add_entry_task.handler = add_mock_entries;
-
-  IV_FD_INIT(&fd_to_poll);
-  fd_to_poll.fd = fd;
-  fd_to_poll.cookie = journald;
-  fd_to_poll.handler_in = handle_new_entry;
-
-  iv_validate_now();
-  IV_TIMER_INIT(&stop_timer);
-  stop_timer.cookie = NULL;
-  stop_timer.expires = iv_now;
-  stop_timer.expires.tv_sec++;
-  stop_timer.handler = stop_timer_expired;
-
-  iv_task_register(&add_entry_task);
-  iv_fd_register(&fd_to_poll);
-  iv_timer_register(&stop_timer);
-
-  iv_main();
-
-  cr_assert(poll_triggered, "%s", "Poll event isn't triggered");
-}
-
-Test(systemd_journal, test_journald_mock)
-{
-  const gchar *persist_file = "test_systemd_journal3.persist";
-
-  _init_cfg_with_persist_file(persist_file);
-
-  Journald *journald = journald_mock_new();
-  gint result = journald_open(journald, 0);
-
-  cr_assert_eq(result, 0, "%s", "Can't open journald mock");
-
-  __test_seeks(journald);
-
-  __test_cursors(journald);
-
-  __test_fd_handling(journald);
-
-  journald_close(journald);
-  journald_free(journald);
-
-  _deinit_cfg(persist_file);
-}
 
 void
 __helper_test(gchar *key, gchar *value, gpointer user_data)
