@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 Balabit
- * Copyright (c) 2018 Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 1998-2011 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,30 +19,30 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
- *
  */
 
-#ifndef TRANSPORT_FACTORY_TLS_H_INCLUDED
-#define TRANSPORT_FACTORY_TLS_H_INCLUDED
+#ifndef TRANSPORT_TLS_VERIFIER_H_INCLUDED
+#define TRANSPORT_TLS_VERIFIER_H_INCLUDED
 
-#include "transport/transport-factory.h"
-#include "transport/tls-context.h"
+#include "syslog-ng.h"
+#include "atomic.h"
+#include <openssl/ssl.h>
 
-typedef struct _TransportFactoryTLS TransportFactoryTLS;
-
-struct _TransportFactoryTLS
+typedef gint (*TLSSessionVerifyFunc)(gint ok, X509_STORE_CTX *ctx, gpointer user_data);
+typedef struct _TLSVerifier
 {
-  TransportFactory super;
-  TLSContext *tls_context;
-  TLSVerifier *tls_verifier;
-  gboolean allow_compress;
-};
+  GAtomicCounter ref_cnt;
+  TLSSessionVerifyFunc verify_func;
+  gpointer verify_data;
+  GDestroyNotify verify_data_destroy;
+} TLSVerifier;
 
-TransportFactory *transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags);
+TLSVerifier *tls_verifier_new(TLSSessionVerifyFunc verify_func, gpointer verify_data,
+                              GDestroyNotify verify_data_destroy);
+TLSVerifier *tls_verifier_ref(TLSVerifier *self);
+void tls_verifier_unref(TLSVerifier *self);
 
-void transport_factory_tls_enable_compression(TransportFactory *);
-void transport_factory_tls_disable_compression(TransportFactory *);
+gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);
 
-const TransportFactoryId *transport_factory_tls_id(void);
 
 #endif

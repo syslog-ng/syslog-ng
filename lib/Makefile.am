@@ -168,7 +168,6 @@ pkginclude_HEADERS			+= \
 	lib/string-list.h		\
 	lib/tls-support.h		\
 	lib/thread-utils.h		\
-	lib/tlscontext.h  		\
 	lib/uuid.h			\
 	lib/userdb.h			\
 	lib/utf8utils.h			\
@@ -252,7 +251,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/string-list.c		\
 	lib/ringbuffer.c		\
 	lib/crypto.c			\
-	lib/tlscontext.c		\
 	lib/uuid.c			\
 	lib/userdb.c			\
 	lib/utf8utils.c			\

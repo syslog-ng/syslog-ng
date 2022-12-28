@@ -24,7 +24,6 @@
 #include "afsocket-parser.h"
 #include "cfg-parser.h"
 #include "plugin.h"
-#include "tlscontext.h"
 #include "plugin-types.h"
 
 static Plugin afsocket_plugins[] =

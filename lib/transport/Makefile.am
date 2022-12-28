@@ -15,7 +15,10 @@ transportinclude_HEADERS = \
 	lib/transport/transport-factory-registry.h \
 	lib/transport/multitransport.h \
 	lib/transport/transport-factory-tls.h \
-	lib/transport/transport-factory-socket.h
+	lib/transport/transport-factory-socket.h \
+	lib/transport/tls-context.h \
+	lib/transport/tls-verifier.h \
+	lib/transport/tls-session.h
 
 transport_sources = \
 	lib/transport/logtransport.c	\
@@ -28,7 +31,10 @@ transport_sources = \
 	lib/transport/transport-factory-registry.c \
 	lib/transport/multitransport.c \
 	lib/transport/transport-factory-tls.c \
-	lib/transport/transport-factory-socket.c
+	lib/transport/transport-factory-socket.c \
+	lib/transport/tls-context.c \
+	lib/transport/tls-verifier.c \
+	lib/transport/tls-session.c
 
 transport_crypto_sources = \
 	lib/transport/transport-tls.c
