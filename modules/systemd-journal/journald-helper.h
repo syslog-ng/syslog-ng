@@ -26,7 +26,7 @@
 #include "syslog-ng.h"
 #include "journald-subsystem.h"
 
-typedef void (*FOREACH_DATA_CALLBACK)(gchar *key, gchar *value, gpointer user_data);
+typedef void (*FOREACH_DATA_CALLBACK)(gchar *key, gsize key_len, gchar *value, gsize value_len, gpointer user_data);
 
 void journald_foreach_data(sd_journal *self, FOREACH_DATA_CALLBACK func, gpointer user_data);
 

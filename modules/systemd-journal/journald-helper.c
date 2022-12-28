@@ -24,18 +24,16 @@
 #include "journald-helper.h"
 #include <string.h>
 
-#define JOURNALD_FOREACH_DATA(j, data, l)                             \
-        for (sd_journal_restart_data(j); sd_journal_enumerate_data((j), &(data), &(l)) > 0; )
-
 static void
-__parse_data(gchar *data, size_t length, gchar **key, gchar **value)
+__parse_data(gchar *data, size_t length, gchar **key, gsize *key_len, gchar **value, gsize *value_len)
 {
   gchar *pos = strchr(data, '=');
   if (pos)
     {
-      guint32 max_value_len = length - (pos - data + 1);
-      *key = g_strndup(data, pos - data);
-      *value = g_strndup(pos + 1, max_value_len);
+      *key = data;
+      *key_len = pos - data;
+      *value = pos + 1;
+      *value_len = length - (pos - data + 1);
     }
   else
     {
@@ -50,17 +48,17 @@ journald_foreach_data(sd_journal *journal, FOREACH_DATA_CALLBACK func, gpointer 
   const void *data;
   size_t l = 0;
 
-  JOURNALD_FOREACH_DATA(journal, data, l)
-  {
-    gchar *key;
-    gchar *value;
+  for (sd_journal_restart_data(journal); sd_journal_enumerate_data(journal, &data, &l) > 0; )
+    {
+      gchar *key;
+      gsize key_len;
+      gchar *value;
+      gsize value_len;
 
-    __parse_data((gchar *)data, l, &key, &value);
-    if (key && value)
-      {
-        func(key, value, user_data);
-        g_free(key);
-        g_free(value);
-      }
-  }
+      __parse_data((gchar *)data, l, &key, &key_len, &value, &value_len);
+      if (key && value)
+        {
+          func(key, key_len, value, value_len, user_data);
+        }
+    }
 }

@@ -154,81 +154,111 @@ _reader_wakeup(LogSource *s)
     iv_event_post(&self->schedule_wakeup);
 }
 
-static void
-_map_key_value_pairs_to_syslog_macros(LogMessage *msg, gchar *key, gchar *value, gssize value_len)
+
+static inline gboolean
+_key_matches(const gchar *key, gsize key_len, const gchar *exp)
 {
-  if (strcmp(key, "MESSAGE") == 0)
+  gsize exp_len = strlen(exp);
+  if (key_len != exp_len)
+    return FALSE;
+
+  if (strncmp(key, exp, key_len) != 0)
+    return FALSE;
+
+  return TRUE;
+}
+
+static void
+_map_key_value_pairs_to_syslog_macros(LogMessage *msg, gchar *key, gsize key_len, gchar *value, gssize value_len)
+{
+  if (_key_matches(key, key_len, "MESSAGE"))
     {
       log_msg_set_value(msg, LM_V_MESSAGE, value, value_len);
     }
-  else if (strcmp(key, "_HOSTNAME") == 0)
+  else if (_key_matches(key, key_len, "_HOSTNAME"))
     {
       log_msg_set_value(msg, LM_V_HOST, value, value_len);
     }
-  else if (strcmp(key, "_PID") == 0)
+  else if (_key_matches(key, key_len, "_PID"))
     {
       log_msg_set_value(msg, LM_V_PID, value, value_len);
     }
-  else if (strcmp(key, "SYSLOG_FACILITY") == 0)
+  else if (_key_matches(key, key_len, "SYSLOG_FACILITY"))
     {
       msg->pri = (msg->pri & 7) | atoi(value) << 3;
     }
-  else if (strcmp(key, "PRIORITY") == 0)
+  else if (_key_matches(key, key_len, "PRIORITY"))
     {
       msg->pri = (msg->pri & ~7) | atoi(value);
     }
 }
 
 static void
-_format_value_name_with_prefix(gchar *buf, gsize buf_len, JournalReaderOptions *options, const gchar *key)
+_format_value_name_with_prefix(gchar *buf, gsize buf_len,
+                               JournalReaderOptions *options,
+                               const gchar *key, gssize key_len)
 {
   gsize cont = 0;
 
+  if (key_len < 0)
+    key_len = strlen(key);
+
   if (options->prefix)
     cont = g_strlcpy(buf, options->prefix, buf_len);
-  g_strlcpy(buf + cont, key, buf_len - cont);
+  gsize left = buf_len - cont;
+  if (left >= key_len + 1)
+    {
+      strncpy(buf + cont, key, key_len);
+      buf[cont + key_len] = 0;
+    }
+  else
+    {
+      g_strlcpy(buf + cont, key, buf_len - cont);
+    }
 }
 
 static void
-_set_value_in_message(JournalReaderOptions *options, LogMessage *msg, gchar *key, gchar *value, gssize value_len)
+_set_value_in_message(JournalReaderOptions *options, LogMessage *msg,
+                      gchar *key, gsize key_len, gchar *value, gssize value_len)
 {
   gchar name_with_prefix[256];
 
-  _format_value_name_with_prefix(name_with_prefix, sizeof(name_with_prefix), options, key);
+  _format_value_name_with_prefix(name_with_prefix, sizeof(name_with_prefix), options, key, key_len);
   log_msg_set_value_by_name(msg, name_with_prefix, value, value_len);
 }
 
 static const gchar *
-_get_value_from_message(JournalReaderOptions *options, LogMessage *msg,  const gchar *key, gssize *value_length)
+_get_value_from_message(JournalReaderOptions *options, LogMessage *msg,
+                        const gchar *key, gssize key_len, gssize *value_length)
 {
   gchar name_with_prefix[256];
 
-  _format_value_name_with_prefix(name_with_prefix, sizeof(name_with_prefix), options, key);
+  _format_value_name_with_prefix(name_with_prefix, sizeof(name_with_prefix), options, key, key_len);
   return log_msg_get_value_by_name(msg, name_with_prefix, value_length);
 }
 
 static void
-_handle_data(gchar *key, gchar *value, gpointer user_data)
+_handle_data(gchar *key, gsize key_len, gchar *value, gsize value_len, gpointer user_data)
 {
   gpointer *args = user_data;
 
   LogMessage *msg = args[0];
   JournalReaderOptions *options = args[1];
-  gssize value_len = MIN(strlen(value), options->max_field_size);
+  value_len = MIN(value_len, options->max_field_size);
 
-  _map_key_value_pairs_to_syslog_macros(msg, key, value, value_len);
-  _set_value_in_message(options, msg, key, value, value_len);
+  _map_key_value_pairs_to_syslog_macros(msg, key, key_len, value, value_len);
+  _set_value_in_message(options, msg, key, key_len, value, value_len);
 }
 
 static void
 _set_program(JournalReaderOptions *options, LogMessage *msg)
 {
   gssize value_length = 0;
-  const gchar *value_ref = _get_value_from_message(options, msg, "SYSLOG_IDENTIFIER", &value_length);
+  const gchar *value_ref = _get_value_from_message(options, msg, "SYSLOG_IDENTIFIER", -1, &value_length);
 
   if (value_length <= 0)
     {
-      value_ref = _get_value_from_message(options, msg, "_COMM", &value_length);
+      value_ref = _get_value_from_message(options, msg, "_COMM", -1, &value_length);
     }
 
   /* we need to strdup the value_ref: referred value can change during log_msg_set_value if nvtable realloc needed */

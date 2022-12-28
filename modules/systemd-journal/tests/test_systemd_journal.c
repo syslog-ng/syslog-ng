@@ -87,10 +87,10 @@ __test_enumerate(sd_journal *journal)
 
 
 void
-__helper_test(gchar *key, gchar *value, gpointer user_data)
+__helper_test(gchar *key, gsize key_len, gchar *value, gsize value_len, gpointer user_data)
 {
   GHashTable *result = user_data;
-  g_hash_table_insert(result, g_strdup(key), g_strdup(value));
+  g_hash_table_insert(result, g_strndup(key, key_len), g_strndup(value, value_len));
   return;
 }
 
