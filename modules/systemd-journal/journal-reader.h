@@ -26,6 +26,7 @@
 
 #include "logsource.h"
 #include "journald-subsystem.h"
+#include "journald-helper.h"
 
 typedef struct _JournalReader JournalReader;
 

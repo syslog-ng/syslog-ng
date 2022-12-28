@@ -20,47 +20,17 @@
  * COPYING for details.
  *
  */
+#ifndef JOURNALD_HELPER_H_INCLUDED
+#define JOURNALD_HELPER_H_INCLUDED
 
-#include "journald-helper.h"
-#include <string.h>
+#include "syslog-ng.h"
+#include "journald-subsystem.h"
 
-#define JOURNALD_FOREACH_DATA(j, data, l)                             \
-        for (sd_journal_restart_data(j); sd_journal_enumerate_data((j), &(data), &(l)) > 0; )
+typedef void (*FOREACH_DATA_CALLBACK)(gchar *key, gchar *value, gpointer user_data);
 
-static void
-__parse_data(gchar *data, size_t length, gchar **key, gchar **value)
-{
-  gchar *pos = strchr(data, '=');
-  if (pos)
-    {
-      guint32 max_value_len = length - (pos - data + 1);
-      *key = g_strndup(data, pos - data);
-      *value = g_strndup(pos + 1, max_value_len);
-    }
-  else
-    {
-      *key = NULL;
-      *value = NULL;
-    }
-}
+void journald_foreach_data(sd_journal *self, FOREACH_DATA_CALLBACK func, gpointer user_data);
 
-void
-journald_foreach_data(sd_journal *journal, FOREACH_DATA_CALLBACK func, gpointer user_data)
-{
-  const void *data;
-  size_t l = 0;
+void journald_foreach_data(sd_journal *journal, FOREACH_DATA_CALLBACK func, gpointer user_data);
+int journald_filter_this_boot(sd_journal *journal);
 
-  JOURNALD_FOREACH_DATA(journal, data, l)
-  {
-    gchar *key;
-    gchar *value;
-
-    __parse_data((gchar *)data, l, &key, &value);
-    if (key && value)
-      {
-        func(key, value, user_data);
-        g_free(key);
-        g_free(value);
-      }
-  }
-}
+#endif

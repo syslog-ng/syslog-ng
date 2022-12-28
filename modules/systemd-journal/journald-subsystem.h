@@ -66,8 +66,4 @@ extern int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec);
 
 gboolean load_journald_subsystem(void);
 
-typedef void (*FOREACH_DATA_CALLBACK)(gchar *key, gchar *value, gpointer user_data);
-
-void journald_foreach_data(sd_journal *self, FOREACH_DATA_CALLBACK func, gpointer user_data);
-
 #endif /* JOURNAL_SOURCE_INTERFACE_H_ */

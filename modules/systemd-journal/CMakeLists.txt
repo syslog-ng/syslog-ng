@@ -10,6 +10,7 @@ set (JOURNALD_SOURCES
     journald-subsystem.c
     journald-subsystem.h
     journald-helper.c
+    journald-helper.h
     ${CMAKE_CURRENT_BINARY_DIR}/systemd-journal-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/systemd-journal-grammar.h
 )
