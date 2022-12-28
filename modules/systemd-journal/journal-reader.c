@@ -339,15 +339,15 @@ static inline gboolean
 _seek_to_head(JournalReader *self)
 {
   gint rc = sd_journal_seek_head(self->journal);
-  if (rc != 0)
+  if (rc < 0)
     {
-      msg_error("Failed to seek to the start position of the journal",
+      msg_error("systemd-journal: Failed to seek to the start position of the journal",
                 evt_tag_errno("error", -rc));
       return FALSE;
     }
   else
     {
-      msg_debug("Seeking the journal to the start position");
+      msg_debug("systemd-journal: Seeking journal to the start position");
     }
   return TRUE;
 }
@@ -357,14 +357,14 @@ _seek_to_tail(JournalReader *self)
 {
   gint rc = sd_journal_seek_tail(self->journal);
 
-  if (rc != 0)
+  if (rc < 0)
     {
-      msg_error("Failed to seek to the end position of the journal",
+      msg_error("systemd-journal: Failed to seek to the end position of the journal",
                 evt_tag_errno("error", -rc));
       return FALSE;
     }
 
-  msg_debug("Seeking to the journal to the end position");
+  msg_debug("systemd-journal: Seeking journal to the end position");
 
   return TRUE;
 }
@@ -374,9 +374,11 @@ _skip_old_records(JournalReader *self)
 {
   if (!_seek_to_tail(self))
     return FALSE;
-  if (sd_journal_next(self->journal) <= 0)
+  int rc = sd_journal_next(self->journal);
+  if (rc < 0)
     {
-      msg_error("Can't move cursor to the next position after seek to tail.");
+      msg_error("systemd-journal: Error processing read-old-records(no), sd_journal_next() failed after sd_journal_seek_tail()",
+                evt_tag_errno("error", -rc));
       return FALSE;
     }
   return TRUE;
@@ -387,9 +389,9 @@ _journal_seek(sd_journal *journal, const gchar *cursor)
 {
   gint rc = sd_journal_seek_cursor(journal, cursor);
 
-  if (rc != 0)
+  if (rc < 0)
     {
-      msg_warning("Failed to seek journal to the saved cursor position",
+      msg_warning("systemd-journal: Failed to seek journal to the saved cursor position",
                   evt_tag_str("cursor", cursor),
                   evt_tag_errno("error", -rc));
       return FALSE;
@@ -405,8 +407,9 @@ _journal_next(sd_journal *journal)
 
   if (rc != 1)
     {
-      msg_warning("Failed to step cursor",
-                  evt_tag_errno("error", -rc));
+      msg_warning("systemd-journal: Failed to step cursor",
+                  evt_tag_int("rc", rc),
+                  evt_tag_errno("error", rc < 0 ? -rc : 0));
       return FALSE;
     }
 
@@ -420,9 +423,10 @@ _journal_test_cursor(sd_journal *journal, const gchar *cursor)
 
   if (rc <= 0)
     {
-      msg_warning("Current position not matches to the saved cursor position, seek to head",
+      msg_warning("systemd-journal: Current position does not match the previously restored cursor position, seeking to head",
                   evt_tag_str("cursor", cursor),
-                  evt_tag_errno("error", -rc));
+                  evt_tag_int("rc", rc),
+                  evt_tag_errno("error", rc < 0 ? -rc : 0));
       return FALSE;
     }
 
@@ -443,7 +447,7 @@ _seek_to_saved_state(JournalReader *self)
       return _seek_to_head(self);
     }
 
-  msg_debug("Seeking the journal to the last cursor position",
+  msg_debug("systemd-journal: Seeking the journal to the last cursor position",
             evt_tag_str("cursor", state->cursor));
 
   persist_state_unmap_entry(self->persist_state, self->persist_handle);
@@ -458,7 +462,7 @@ _set_starting_position(JournalReader *self)
     {
       if (!_alloc_state(self))
         {
-          msg_error("JournalReader: Failed to allocate state");
+          msg_error("systemd-journal: Failed to allocate persistent state");
           return FALSE;
         }
       if (self->super.options->read_old_records)
