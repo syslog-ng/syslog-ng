@@ -142,6 +142,8 @@ main_loop_call_thread_init(void)
 void
 main_loop_call_thread_deinit(void)
 {
+  main_loop_wait_for_pending_call_to_finish();
+
   g_cond_clear(&call_info.cond);
   g_mutex_clear(&call_info.lock);
 }
