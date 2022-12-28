@@ -215,7 +215,7 @@ _detect_linux_proc_kmsg(void)
 static void
 system_sysblock_add_systemd_source(GString *sysblock)
 {
-  g_string_append(sysblock, "systemd-journal();\n");
+  g_string_append(sysblock, "systemd-journal(match-boot(yes));\n");
 }
 
 static void
