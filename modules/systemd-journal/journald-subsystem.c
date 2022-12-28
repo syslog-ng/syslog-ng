@@ -28,11 +28,6 @@
 #if SYSLOG_NG_SYSTEMD_JOURNAL_MODE == SYSLOG_NG_JOURNALD_SYSTEM
 
 
-gboolean
-load_journald_subsystem(void)
-{
-  return TRUE;
-}
 
 #else
 
@@ -125,7 +120,7 @@ _load_journald_symbols(void)
   return TRUE;
 }
 
-gboolean
+int
 load_journald_subsystem(void)
 {
   if (!journald_module)

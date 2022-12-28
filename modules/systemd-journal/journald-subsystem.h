@@ -24,12 +24,17 @@
 #ifndef JOURNAL_SOURCE_INTERFACE_H_
 #define JOURNAL_SOURCE_INTERFACE_H_
 
-#include <stdlib.h>
-#include <glib.h>
 #include "syslog-ng-config.h"
 
 #if SYSLOG_NG_SYSTEMD_JOURNAL_MODE == SYSLOG_NG_JOURNALD_SYSTEM
 #include <systemd/sd-journal.h>
+
+static inline int
+load_journald_subsystem(void)
+{
+  return 1;
+}
+
 #else
 /* Open flags */
 enum
@@ -62,8 +67,8 @@ extern int (*sd_journal_get_fd)(sd_journal *j);
 extern int (*sd_journal_process)(sd_journal *j);
 extern int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec);
 
-#endif
+int load_journald_subsystem(void);
 
-gboolean load_journald_subsystem(void);
+#endif
 
 #endif /* JOURNAL_SOURCE_INTERFACE_H_ */
