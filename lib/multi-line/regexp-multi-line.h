@@ -33,12 +33,14 @@
 typedef struct _MultiLinePattern MultiLinePattern;
 struct _MultiLinePattern
 {
+  gint ref_cnt;
   pcre *pattern;
   pcre_extra *extra;
 };
 
 MultiLinePattern *multi_line_pattern_compile(const gchar *regexp, GError **error);
-void multi_line_pattern_free(MultiLinePattern *self);
+MultiLinePattern *multi_line_pattern_ref(MultiLinePattern *self);
+void multi_line_pattern_unref(MultiLinePattern *self);
 
 
 typedef struct _RegexpMultiLine

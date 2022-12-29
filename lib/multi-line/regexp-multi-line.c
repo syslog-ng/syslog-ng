@@ -33,6 +33,7 @@ multi_line_pattern_compile(const gchar *regexp, GError **error)
   gint erroffset;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+  self->ref_cnt = 1;
 
   /* compile the regexp */
   self->pattern = pcre_compile2(regexp, 0, &rc, &errptr, &erroffset, NULL);
@@ -63,10 +64,18 @@ error:
   return NULL;
 }
 
-void
-multi_line_pattern_free(MultiLinePattern *self)
+MultiLinePattern *
+multi_line_pattern_ref(MultiLinePattern *self)
 {
   if (self)
+    self->ref_cnt++;
+  return self;
+}
+
+void
+multi_line_pattern_unref(MultiLinePattern *self)
+{
+  if (self && (--self->ref_cnt == 0))
     {
       if (self->pattern)
         pcre_free(self->pattern);
@@ -159,8 +168,6 @@ regexp_multi_line_accumulate_line(MultiLineLogic *s,
                                   gsize segment_len)
 {
   RegexpMultiLine *self = (RegexpMultiLine *) s;
-  gboolean initial_line;
-
   if (msg_len == 0)
     {
       return _accumulate_initial_line(self, segment, segment_len);
@@ -176,8 +183,8 @@ regexp_multi_line_free(MultiLineLogic *s)
 {
   RegexpMultiLine *self = (RegexpMultiLine *) s;
 
-//  multi_line_pattern_free(self->prefix);
-//  multi_line_pattern_free(self->garbage);
+  multi_line_pattern_unref(self->prefix);
+  multi_line_pattern_unref(self->garbage);
   multi_line_logic_free_method(s);
 }
 
@@ -190,7 +197,7 @@ regexp_multi_line_new(gint mode, MultiLinePattern *prefix, MultiLinePattern *gar
   self->super.accumulate_line = regexp_multi_line_accumulate_line;
   self->super.free_fn = regexp_multi_line_free;
   self->mode = mode;
-  self->prefix = prefix;
-  self->garbage = garbage_or_suffix;
+  self->prefix = multi_line_pattern_ref(prefix);
+  self->garbage = multi_line_pattern_ref(garbage_or_suffix);
   return &self->super;
 }

@@ -104,6 +104,6 @@ log_proto_multi_line_server_options_init(LogProtoMultiLineServerOptions *options
 void
 log_proto_multi_line_server_options_destroy(LogProtoMultiLineServerOptions *options)
 {
-  multi_line_pattern_free(options->prefix);
-  multi_line_pattern_free(options->garbage);
+  multi_line_pattern_unref(options->prefix);
+  multi_line_pattern_unref(options->garbage);
 }
