@@ -51,6 +51,10 @@ static CfgLexerKeyword correlation_keywords[] =
   { "prefix",             KW_PREFIX },
   { "program_template",   KW_PROGRAM_TEMPLATE },
   { "message_template",   KW_MESSAGE_TEMPLATE },
+
+  /* group lines */
+  { "group_lines",        KW_GROUP_LINES },
+  { "line_separator",     KW_LINE_SEPARATOR },
   { NULL }
 };
 
