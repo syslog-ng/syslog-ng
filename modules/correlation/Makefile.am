@@ -55,10 +55,10 @@ modules_correlation_libdbparser_la_SOURCES			=	\
 	modules/correlation/stateful-parser.h			\
 	modules/correlation/dbparser.c				\
 	modules/correlation/dbparser.h				\
-	modules/correlation/dbparser-grammar.y			\
-	modules/correlation/dbparser-parser.c			\
-	modules/correlation/dbparser-parser.h			\
-	modules/correlation/dbparser-plugin.c			\
+	modules/correlation/correlation-grammar.y		\
+	modules/correlation/correlation-parser.c		\
+	modules/correlation/correlation-parser.h		\
+	modules/correlation/correlation-plugin.c		\
 	modules/correlation/groupingby.c			\
 	modules/correlation/groupingby.h			\
 	$(modules_correlation_libsyslog_ng_patterndb_la_SOURCES)
@@ -74,11 +74,11 @@ modules_correlation_libdbparser_la_DEPENDENCIES		=	\
 	$(MODULE_DEPS_LIBS)
 
 BUILT_SOURCES						+=	\
-	modules/correlation/dbparser-grammar.y			\
-	modules/correlation/dbparser-grammar.c			\
-	modules/correlation/dbparser-grammar.h
+	modules/correlation/correlation-grammar.y			\
+	modules/correlation/correlation-grammar.c			\
+	modules/correlation/correlation-grammar.h
 EXTRA_DIST						+=	\
-	modules/correlation/dbparser-grammar.ym	\
+	modules/correlation/correlation-grammar.ym	\
 	modules/correlation/CMakeLists.txt
 
 modules/correlation modules/correlation/ mod-correlation: modules/correlation/libdbparser.la \

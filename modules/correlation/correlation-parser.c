@@ -23,7 +23,7 @@
 
 #include "dbparser.h"
 #include "cfg-parser.h"
-#include "dbparser-grammar.h"
+#include "correlation-grammar.h"
 
 extern int dbparser_debug;
 
