@@ -55,7 +55,7 @@ static NVHandle context_id_handle = 0;
 #define EXPECTED_NUMBER_OF_MESSAGES_EMITTED 32
 typedef struct _GPMessageEmitter
 {
-  gpointer emitted_messages[EXPECTED_NUMBER_OF_MESSAGES_EMITTED];
+  LogMessage *emitted_messages[EXPECTED_NUMBER_OF_MESSAGES_EMITTED];
   GPtrArray *emitted_messages_overflow;
   gint num_emitted_messages;
 } GPMessageEmitter;
@@ -157,17 +157,6 @@ _emit_message(GPMessageEmitter *msg_emitter, LogMessage *msg)
   g_ptr_array_add(msg_emitter->emitted_messages_overflow, log_msg_ref(msg));
 }
 
-static void
-_send_emitted_message_array(GroupingBy *self, gpointer *values, gsize len)
-{
-  for (gint i = 0; i < len; i++)
-    {
-      LogMessage *msg = values[i];
-      stateful_parser_emit_synthetic(&self->super, msg);
-      log_msg_unref(msg);
-    }
-}
-
 /* This function is called to flush the accumulated list of messages that
  * are generated during processing.  We must not hold any locks within
  * GroupingBy when doing this, as it will cause log_pipe_queue() calls to
@@ -178,14 +167,15 @@ _send_emitted_message_array(GroupingBy *self, gpointer *values, gsize len)
 static void
 _flush_emitted_messages(GroupingBy *self, GPMessageEmitter *msg_emitter)
 {
-  _send_emitted_message_array(self, msg_emitter->emitted_messages, msg_emitter->num_emitted_messages);
+  stateful_parser_emit_synthetic_list(&self->super,
+                                      msg_emitter->emitted_messages, msg_emitter->num_emitted_messages);
   msg_emitter->num_emitted_messages = 0;
 
   if (!msg_emitter->emitted_messages_overflow)
     return;
 
-  _send_emitted_message_array(self, msg_emitter->emitted_messages_overflow->pdata,
-                              msg_emitter->emitted_messages_overflow->len);
+  stateful_parser_emit_synthetic_list(&self->super, (LogMessage **) msg_emitter->emitted_messages_overflow->pdata,
+                                      msg_emitter->emitted_messages_overflow->len);
 
   g_ptr_array_free(msg_emitter->emitted_messages_overflow, TRUE);
   msg_emitter->emitted_messages_overflow = NULL;

@@ -53,6 +53,7 @@ stateful_parser_deinit_method(LogPipe *s)
 
 void stateful_parser_set_inject_mode(StatefulParser *self, LogDBParserInjectMode inject_mode);
 void stateful_parser_emit_synthetic(StatefulParser *self, LogMessage *msg);
+void stateful_parser_emit_synthetic_list(StatefulParser *self, LogMessage **values, gsize len);
 void stateful_parser_init_instance(StatefulParser *self, GlobalConfig *cfg);
 void stateful_parser_free_method(LogPipe *s);
 

@@ -24,7 +24,6 @@
 #include "stateful-parser.h"
 #include <string.h>
 
-
 void
 stateful_parser_set_inject_mode(StatefulParser *self, LogDBParserInjectMode inject_mode)
 {
@@ -44,6 +43,17 @@ stateful_parser_emit_synthetic(StatefulParser *self, LogMessage *msg)
   else
     {
       msg_post_message(log_msg_ref(msg));
+    }
+}
+
+void
+stateful_parser_emit_synthetic_list(StatefulParser *self, LogMessage **values, gsize len)
+{
+  for (gint i = 0; i < len; i++)
+    {
+      LogMessage *msg = values[i];
+      stateful_parser_emit_synthetic(self, msg);
+      log_msg_unref(msg);
     }
 }
 
