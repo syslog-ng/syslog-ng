@@ -25,11 +25,11 @@
 #include "cfg-parser.h"
 #include "correlation-grammar.h"
 
-extern int dbparser_debug;
+extern int correlation_debug;
 
-int dbparser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
+int correlation_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 
-static CfgLexerKeyword dbparser_keywords[] =
+static CfgLexerKeyword correlation_keywords[] =
 {
   { "db_parser",          KW_DB_PARSER },
   { "grouping_by",        KW_GROUPING_BY },
@@ -54,15 +54,15 @@ static CfgLexerKeyword dbparser_keywords[] =
   { NULL }
 };
 
-CfgParser dbparser_parser =
+CfgParser correlation_parser =
 {
 #if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &dbparser_debug,
+  .debug_flag = &correlation_debug,
 #endif
-  .name = "dbparser",
-  .keywords = dbparser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) dbparser_parse,
+  .name = "correlation",
+  .keywords = correlation_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) correlation_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(dbparser_, DBPARSER_, LogParser **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(correlation_, CORRELATION_, LogParser **)

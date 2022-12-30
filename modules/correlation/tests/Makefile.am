@@ -74,7 +74,7 @@ modules_correlation_tests_test_grouping_by_CFLAGS	=	\
 	-I$(top_srcdir)/modules/correlation
 modules_correlation_tests_test_grouping_by_LDADD		=	\
 	$(TEST_LDADD)					\
-	$(top_builddir)/modules/correlation/libdbparser.la
+	$(top_builddir)/modules/correlation/libcorrelation.la
 modules_correlation_tests_test_grouping_by_LDFLAGS	=	\
 	$(PREOPEN_CORE)					\
-	-dlpreopen $(top_builddir)/modules/correlation/libdbparser.la
+	-dlpreopen $(top_builddir)/modules/correlation/libcorrelation.la

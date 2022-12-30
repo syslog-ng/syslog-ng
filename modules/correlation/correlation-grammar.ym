@@ -22,7 +22,7 @@
  */
 
 %code top {
-#include "dbparser-parser.h"
+#include "correlation-parser.h"
 
 }
 
@@ -41,7 +41,7 @@
 SyntheticMessage *last_message;
 }
 
-%define api.prefix {dbparser_}
+%define api.prefix {correlation_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

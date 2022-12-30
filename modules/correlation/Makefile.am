@@ -49,8 +49,8 @@ modules_correlation_libsyslog_ng_patterndb_la_LIBADD	=	\
 modules_correlation_libsyslog_ng_patterndb_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
-module_LTLIBRARIES					+= modules/correlation/libdbparser.la
-modules_correlation_libdbparser_la_SOURCES			=	\
+module_LTLIBRARIES					+= modules/correlation/libcorrelation.la
+modules_correlation_libcorrelation_la_SOURCES			=	\
 	modules/correlation/stateful-parser.c			\
 	modules/correlation/stateful-parser.h			\
 	modules/correlation/dbparser.c				\
@@ -62,15 +62,15 @@ modules_correlation_libdbparser_la_SOURCES			=	\
 	modules/correlation/groupingby.c			\
 	modules/correlation/groupingby.h			\
 	$(modules_correlation_libsyslog_ng_patterndb_la_SOURCES)
-modules_correlation_libdbparser_la_CPPFLAGS		=	\
+modules_correlation_libcorrelation_la_CPPFLAGS		=	\
 	$(AM_CPPFLAGS)						\
 	-I$(top_srcdir)/modules/correlation			\
 	-I$(top_builddir)/modules/correlation
-modules_correlation_libdbparser_la_LIBADD			=	\
+modules_correlation_libcorrelation_la_LIBADD			=	\
 	$(MODULE_DEPS_LIBS)
-modules_correlation_libdbparser_la_LDFLAGS			=	\
+modules_correlation_libcorrelation_la_LDFLAGS			=	\
 	$(MODULE_LDFLAGS)
-modules_correlation_libdbparser_la_DEPENDENCIES		=	\
+modules_correlation_libcorrelation_la_DEPENDENCIES		=	\
 	$(MODULE_DEPS_LIBS)
 
 BUILT_SOURCES						+=	\
@@ -81,9 +81,9 @@ EXTRA_DIST						+=	\
 	modules/correlation/correlation-grammar.ym	\
 	modules/correlation/CMakeLists.txt
 
-modules/correlation modules/correlation/ mod-correlation: modules/correlation/libdbparser.la \
+modules/correlation modules/correlation/ mod-correlation: modules/correlation/libcorrelation.la \
 						 modules/correlation/pdbtool/pdbtool
-.PHONY: modules/correlation/ mod-dbparser
+.PHONY: modules/correlation/ mod-correlation
 
 include modules/correlation/pdbtool/Makefile.am
 include modules/correlation/tests/Makefile.am

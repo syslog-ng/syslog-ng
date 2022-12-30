@@ -27,8 +27,8 @@
 #include "cfg-parser.h"
 #include "parser/parser-expr.h"
 
-extern CfgParser dbparser_parser;
+extern CfgParser correlation_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(dbparser_, DBPARSER_, LogParser **)
+CFG_PARSER_DECLARE_LEXER_BINDING(correlation_, CORRELATION_, LogParser **)
 
 #endif

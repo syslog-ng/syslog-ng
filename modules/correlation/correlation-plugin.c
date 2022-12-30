@@ -27,37 +27,37 @@
 #include "plugin.h"
 #include "plugin-types.h"
 
-extern CfgParser dbparser_parser;
+extern CfgParser correlation_parser;
 
-static Plugin dbparser_plugins[] =
+static Plugin correlation_plugins[] =
 {
   {
     .type = LL_CONTEXT_PARSER,
     .name = "db-parser",
-    .parser = &dbparser_parser,
+    .parser = &correlation_parser,
   },
   {
     .type = LL_CONTEXT_PARSER,
     .name = "grouping-by",
-    .parser = &dbparser_parser,
+    .parser = &correlation_parser,
   },
 };
 
 gboolean
-dbparser_module_init(PluginContext *context, CfgArgs *args)
+correlation_module_init(PluginContext *context, CfgArgs *args)
 {
   pattern_db_global_init();
   grouping_by_global_init();
-  plugin_register(context, dbparser_plugins, G_N_ELEMENTS(dbparser_plugins));
+  plugin_register(context, correlation_plugins, G_N_ELEMENTS(correlation_plugins));
   return TRUE;
 }
 
 const ModuleInfo module_info =
 {
-  .canonical_name = "dbparser",
+  .canonical_name = "correlation",
   .version = SYSLOG_NG_VERSION,
-  .description = "The db-parser() module implements sample database based parsing for syslog-ng.",
+  .description = "The correlation module implements db-parser(), grouping-by() and other correlation based functionality for syslog-ng.",
   .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = dbparser_plugins,
-  .plugins_len = G_N_ELEMENTS(dbparser_plugins),
+  .plugins = correlation_plugins,
+  .plugins_len = G_N_ELEMENTS(correlation_plugins),
 };
