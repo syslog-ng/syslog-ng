@@ -90,9 +90,6 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
 %token KW_FOLLOW_FREQ
 %token KW_OVERWRITE_IF_OLDER
 %token KW_SYMLINK_AS
-%token KW_MULTI_LINE_MODE
-%token KW_MULTI_LINE_PREFIX
-%token KW_MULTI_LINE_GARBAGE
 %token KW_MULTI_LINE_TIMEOUT
 %token KW_TIME_REAP
 
@@ -237,30 +234,6 @@ source_afpipe_option
 	| file_perm_option
 	| source_reader_option
 	| source_driver_option
-	;
-
-/* NOTE: don't copy this to other drivers blindly, but make it general and
- * move it to cfg-grammar.y instead */
-
-multi_line_option
-	: KW_MULTI_LINE_MODE '(' string ')'
-          {
-            CHECK_ERROR(multi_line_options_set_mode(last_multi_line_options, $3), @3, "Invalid multi-line mode");
-	    free($3);
-          }
-	| KW_MULTI_LINE_PREFIX '(' string ')'
-          {
-            GError *error = NULL;
-            CHECK_ERROR_GERROR(multi_line_options_set_prefix(last_multi_line_options, $3, &error), @3, error, "error compiling multi-line regexp");
-            free($3);
-          }
-	| KW_MULTI_LINE_GARBAGE '(' string ')'
-	  {
-            GError *error = NULL;
-
-            CHECK_ERROR_GERROR(multi_line_options_set_garbage(last_multi_line_options, $3, &error), @3, error, "error compiling multi-line regexp");
-            free($3);
-	  }
 	;
 
 multi_line_timeout

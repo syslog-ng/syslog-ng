@@ -49,10 +49,6 @@ static CfgLexerKeyword affile_keywords[] =
   { "overwrite_if_older", KW_OVERWRITE_IF_OLDER },
   { "symlink_as",         KW_SYMLINK_AS },
   { "follow_freq",        KW_FOLLOW_FREQ },
-  { "multi_line_mode",    KW_MULTI_LINE_MODE  },
-  { "multi_line_prefix",  KW_MULTI_LINE_PREFIX },
-  { "multi_line_garbage", KW_MULTI_LINE_GARBAGE },
-  { "multi_line_suffix",  KW_MULTI_LINE_GARBAGE },
   { "multi_line_timeout", KW_MULTI_LINE_TIMEOUT },
   { "time_reap",          KW_TIME_REAP },
   { NULL }
