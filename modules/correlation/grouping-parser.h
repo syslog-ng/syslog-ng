@@ -40,6 +40,7 @@ struct _GroupingParser
   CorrelationScope scope;
   gboolean (*filter_messages)(GroupingParser *self, LogMessage **pmsg, const LogPathOptions *path_options);
   void (*perform_grouping)(GroupingParser *self, LogMessage *msg);
+  LogMessage *(*aggregate_context)(GroupingParser *self, CorrelationContext *context);
 };
 
 static inline gboolean
@@ -56,10 +57,19 @@ grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg)
   return self->perform_grouping(self, msg);
 }
 
+static inline LogMessage *
+grouping_parser_aggregate_context(GroupingParser *self, CorrelationContext *context)
+{
+  return self->aggregate_context(self, context);
+}
+
 void grouping_parser_set_key_template(LogParser *s, LogTemplate *key_template);
 void grouping_parser_set_sort_key_template(LogParser *s, LogTemplate *sort_key);
 void grouping_parser_set_scope(LogParser *s, CorrelationScope scope);
 void grouping_parser_set_timeout(LogParser *s, gint timeout);
+
+
+CorrelationContext *grouping_parser_lookup_or_create_context(GroupingParser *self, LogMessage *msg);
 
 gboolean
 grouping_parser_process_method(LogParser *s,

@@ -43,8 +43,6 @@ typedef struct _GroupingBy
   gint clone_id;
 } GroupingBy;
 
-static NVHandle context_id_handle = 0;
-
 /* public functions */
 
 void
@@ -145,8 +143,9 @@ _generate_synthetic_msg(GroupingBy *self, CorrelationContext *context)
 }
 
 static LogMessage *
-_aggregate_context(GroupingBy *self, CorrelationContext *context)
+_aggregate_context(GroupingParser *s, CorrelationContext *context)
 {
+  GroupingBy *self = (GroupingBy *) s;
   if (self->super.sort_key_template)
     correlation_context_sort(context, self->super.sort_key_template);
 
@@ -162,65 +161,6 @@ _aggregate_context(GroupingBy *self, CorrelationContext *context)
 }
 
 static void
-_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpointer caller_context)
-{
-  CorrelationContext *context = user_data;
-  StatefulParserEmittedMessages *emitted_messages = caller_context;
-  GroupingBy *self = (GroupingBy *) timer_wheel_get_associated_data(wheel);
-
-  msg_debug("Expiring grouping-by() correlation context",
-            evt_tag_long("utc", correlation_state_get_time(self->super.correlation)),
-            evt_tag_str("context-id", context->key.session_id),
-            log_pipe_location_tag(&self->super.super.super.super));
-
-  context->timer = NULL;
-  LogMessage *msg = _aggregate_context(self, context);
-  if (msg)
-    {
-      stateful_parser_emitted_messages_add(emitted_messages, msg);
-      log_msg_unref(msg);
-    }
-}
-
-
-static CorrelationContext *
-_lookup_or_create_context(GroupingBy *self, LogMessage *msg)
-{
-  CorrelationContext *context;
-  CorrelationKey key;
-  GString *buffer = scratch_buffers_alloc();
-
-  log_template_format(self->super.key_template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, buffer);
-  log_msg_set_value(msg, context_id_handle, buffer->str, -1);
-
-  correlation_key_init(&key, self->super.scope, msg, buffer->str);
-  context = correlation_state_tx_lookup_context(self->super.correlation, &key);
-  if (!context)
-    {
-      msg_debug("Correlation context lookup failure, starting a new context",
-                evt_tag_str("key", key.session_id),
-                evt_tag_int("timeout", self->super.timeout),
-                evt_tag_int("expiration", correlation_state_get_time(self->super.correlation) + self->super.timeout),
-                log_pipe_location_tag(&self->super.super.super.super));
-
-      context = correlation_context_new(&key);
-      correlation_state_tx_store_context(self->super.correlation, context, self->super.timeout, _expire_entry);
-      g_string_steal(buffer);
-    }
-  else
-    {
-      msg_debug("Correlation context lookup successful",
-                evt_tag_str("key", key.session_id),
-                evt_tag_int("timeout", self->super.timeout),
-                evt_tag_int("expiration", correlation_state_get_time(self->super.correlation) + self->super.timeout),
-                evt_tag_int("num_messages", context->messages->len),
-                log_pipe_location_tag(&self->super.super.super.super));
-    }
-
-  return context;
-}
-
-static void
 _perform_groupby(GroupingParser *s, LogMessage *msg)
 {
   GroupingBy *self = (GroupingBy *) s;
@@ -230,7 +170,7 @@ _perform_groupby(GroupingParser *s, LogMessage *msg)
 
   correlation_state_tx_begin(self->super.correlation);
 
-  CorrelationContext *context = _lookup_or_create_context(self, msg);
+  CorrelationContext *context = grouping_parser_lookup_or_create_context(&self->super, msg);
   g_ptr_array_add(context->messages, log_msg_ref(msg));
 
   if (_evaluate_trigger(self, context))
@@ -242,7 +182,7 @@ _perform_groupby(GroupingParser *s, LogMessage *msg)
                   log_pipe_location_tag(&self->super.super.super.super));
 
       /* close down state */
-      LogMessage *genmsg = _aggregate_context(self, context);
+      LogMessage *genmsg = grouping_parser_aggregate_context(&self->super, context);
 
       correlation_state_tx_end(self->super.correlation);
       stateful_parser_emitted_messages_flush(&emitted_messages, &self->super.super);
@@ -364,11 +304,6 @@ grouping_by_new(GlobalConfig *cfg)
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.filter_messages = _evaluate_where;
   self->super.perform_grouping = _perform_groupby;
+  self->super.aggregate_context = _aggregate_context;
   return &self->super.super.super;
-}
-
-void
-grouping_by_global_init(void)
-{
-  context_id_handle = log_msg_get_value_handle(".classifier.context_id");
 }

@@ -21,6 +21,10 @@
  *
  */
 #include "grouping-parser.h"
+#include "scratch-buffers.h"
+#include "str-utils.h"
+
+static NVHandle context_id_handle = 0;
 
 void
 grouping_parser_set_key_template(LogParser *s, LogTemplate *key_template)
@@ -114,6 +118,67 @@ _store_data_in_persist(GroupingParser *self, GlobalConfig *cfg)
                          (GDestroyNotify) correlation_state_unref);
 }
 
+
+static void
+_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpointer caller_context)
+{
+  CorrelationContext *context = user_data;
+  StatefulParserEmittedMessages *emitted_messages = caller_context;
+  GroupingParser *self = (GroupingParser *) timer_wheel_get_associated_data(wheel);
+
+  msg_debug("Expiring grouping-by() correlation context",
+            evt_tag_long("utc", correlation_state_get_time(self->correlation)),
+            evt_tag_str("context-id", context->key.session_id),
+            log_pipe_location_tag(&self->super.super.super));
+
+  context->timer = NULL;
+  LogMessage *msg = grouping_parser_aggregate_context(self, context);
+  if (msg)
+    {
+      stateful_parser_emitted_messages_add(emitted_messages, msg);
+      log_msg_unref(msg);
+    }
+}
+
+
+CorrelationContext *
+grouping_parser_lookup_or_create_context(GroupingParser *self, LogMessage *msg)
+{
+  CorrelationContext *context;
+  CorrelationKey key;
+  GString *buffer = scratch_buffers_alloc();
+
+  log_template_format(self->key_template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, buffer);
+  log_msg_set_value(msg, context_id_handle, buffer->str, -1);
+
+  correlation_key_init(&key, self->scope, msg, buffer->str);
+  context = correlation_state_tx_lookup_context(self->correlation, &key);
+  if (!context)
+    {
+      msg_debug("Correlation context lookup failure, starting a new context",
+                evt_tag_str("key", key.session_id),
+                evt_tag_int("timeout", self->timeout),
+                evt_tag_int("expiration", correlation_state_get_time(self->correlation) + self->timeout),
+                log_pipe_location_tag(&self->super.super.super));
+
+      context = correlation_context_new(&key);
+      correlation_state_tx_store_context(self->correlation, context, self->timeout, _expire_entry);
+      g_string_steal(buffer);
+    }
+  else
+    {
+      msg_debug("Correlation context lookup successful",
+                evt_tag_str("key", key.session_id),
+                evt_tag_int("timeout", self->timeout),
+                evt_tag_int("expiration", correlation_state_get_time(self->correlation) + self->timeout),
+                evt_tag_int("num_messages", context->messages->len),
+                log_pipe_location_tag(&self->super.super.super));
+    }
+
+  return context;
+}
+
+
 gboolean
 grouping_parser_process_method(LogParser *s,
                                LogMessage **pmsg, const LogPathOptions *path_options,
@@ -199,4 +264,10 @@ grouping_parser_init_instance(GroupingParser *self, GlobalConfig *cfg)
   self->scope = RCS_GLOBAL;
   self->timeout = -1;
   self->correlation = correlation_state_new();
+}
+
+void
+grouping_parser_global_init(void)
+{
+  context_id_handle = log_msg_get_value_handle(".classifier.context_id");
 }
