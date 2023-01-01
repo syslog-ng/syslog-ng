@@ -57,11 +57,7 @@ grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg)
   return self->perform_grouping(self, msg);
 }
 
-static inline LogMessage *
-grouping_parser_aggregate_context(GroupingParser *self, CorrelationContext *context)
-{
-  return self->aggregate_context(self, context);
-}
+LogMessage *grouping_parser_aggregate_context(GroupingParser *self, CorrelationContext *context);
 
 void grouping_parser_set_key_template(LogParser *s, LogTemplate *key_template);
 void grouping_parser_set_sort_key_template(LogParser *s, LogTemplate *sort_key);

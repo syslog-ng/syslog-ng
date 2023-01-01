@@ -116,8 +116,9 @@ _evaluate_trigger(GroupingBy *self, CorrelationContext *context)
 }
 
 static LogMessage *
-_generate_synthetic_msg(GroupingBy *self, CorrelationContext *context)
+_aggregate_context(GroupingParser *s, CorrelationContext *context)
 {
+  GroupingBy *self = (GroupingBy *) s;
   LogMessage *msg = NULL;
 
   if (!_evaluate_having(self, context))
@@ -129,24 +130,6 @@ _generate_synthetic_msg(GroupingBy *self, CorrelationContext *context)
     }
 
   msg = synthetic_message_generate_with_context(self->synthetic_message, context);
-
-  return msg;
-}
-
-static LogMessage *
-_aggregate_context(GroupingParser *s, CorrelationContext *context)
-{
-  GroupingBy *self = (GroupingBy *) s;
-  if (self->super.sort_key_template)
-    correlation_context_sort(context, self->super.sort_key_template);
-
-  LogMessage *msg = _generate_synthetic_msg(self, context);
-
-  correlation_state_tx_remove_context(self->super.correlation, context);
-
-  /* correlation_context_free is automatically called when returning from
-     this function by the timerwheel code as a destroy notify
-     callback. */
 
   return msg;
 }

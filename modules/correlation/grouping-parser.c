@@ -129,6 +129,23 @@ _store_data_in_persist(GroupingParser *self, GlobalConfig *cfg)
 }
 
 
+LogMessage *
+grouping_parser_aggregate_context(GroupingParser *self, CorrelationContext *context)
+{
+  if (self->sort_key_template)
+    correlation_context_sort(context, self->sort_key_template);
+
+  LogMessage *msg = self->aggregate_context(self, context);
+
+  correlation_state_tx_remove_context(self->correlation, context);
+
+  /* correlation_context_free is automatically called when returning from
+     this function by the timerwheel code as a destroy notify
+     callback. */
+
+  return msg;
+}
+
 static void
 _expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpointer caller_context)
 {
