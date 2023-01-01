@@ -81,6 +81,6 @@ gboolean grouping_parser_deinit_method(LogPipe *s);
 void grouping_parser_free_method(LogPipe *s);
 void grouping_parser_init_instance(GroupingParser *self, GlobalConfig *cfg);
 
-
+void grouping_parser_global_init(void);
 
 #endif

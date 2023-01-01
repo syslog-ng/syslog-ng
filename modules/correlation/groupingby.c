@@ -88,15 +88,6 @@ grouping_by_set_prefix(LogParser *s, const gchar *prefix)
   self->prefix = g_strdup(prefix);
 }
 
-/* NOTE: lock should be acquired for writing before calling this function. */
-void
-_advance_time_based_on_message(GroupingBy *self, const UnixTime *ls, StatefulParserEmittedMessages *emitted_messages)
-{
-  correlation_state_set_time(self->super.correlation, ls->ut_sec, emitted_messages);
-  msg_debug("Advancing grouping-by() current time because of an incoming message",
-            evt_tag_long("utc", correlation_state_get_time(self->super.correlation)),
-            log_pipe_location_tag(&self->super.super.super.super));
-}
 
 static gboolean
 _evaluate_filter(FilterExprNode *expr, CorrelationContext *context)
@@ -164,9 +155,6 @@ static void
 _perform_groupby(GroupingParser *s, LogMessage *msg)
 {
   GroupingBy *self = (GroupingBy *) s;
-  StatefulParserEmittedMessages emitted_messages = STATEFUL_PARSER_EMITTED_MESSAGES_INIT;
-
-  _advance_time_based_on_message(self, &msg->timestamps[LM_TS_STAMP], &emitted_messages);
 
   correlation_state_tx_begin(self->super.correlation);
 
@@ -185,8 +173,6 @@ _perform_groupby(GroupingParser *s, LogMessage *msg)
       LogMessage *genmsg = grouping_parser_aggregate_context(&self->super, context);
 
       correlation_state_tx_end(self->super.correlation);
-      stateful_parser_emitted_messages_flush(&emitted_messages, &self->super.super);
-
       if (genmsg)
         {
           stateful_parser_emit_synthetic(&self->super.super, genmsg);
@@ -201,7 +187,6 @@ _perform_groupby(GroupingParser *s, LogMessage *msg)
       log_msg_write_protect(msg);
 
       correlation_state_tx_end(self->super.correlation);
-      stateful_parser_emitted_messages_flush(&emitted_messages, &self->super.super);
     }
 }
 

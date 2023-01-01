@@ -94,6 +94,16 @@ _timer_tick(gpointer s)
   iv_timer_register(&self->tick);
 }
 
+/* NOTE: lock is acquired within correlation_state_set_time() */
+void
+_advance_time_based_on_message(GroupingParser *self, const UnixTime *ls,
+                               StatefulParserEmittedMessages *emitted_messages)
+{
+  correlation_state_set_time(self->correlation, ls->ut_sec, emitted_messages);
+  msg_debug("Advancing grouping-by() current time because of an incoming message",
+            evt_tag_long("utc", correlation_state_get_time(self->correlation)),
+            log_pipe_location_tag(&self->super.super.super));
+}
 
 static void
 _load_correlation_state(GroupingParser *self, GlobalConfig *cfg)
@@ -187,7 +197,15 @@ grouping_parser_process_method(LogParser *s,
   GroupingParser *self = (GroupingParser *) s;
 
   if (grouping_parser_filter_messages(self, pmsg, path_options))
-    grouping_parser_perform_grouping(self, log_msg_make_writable(pmsg, path_options));
+    {
+      StatefulParserEmittedMessages emitted_messages = STATEFUL_PARSER_EMITTED_MESSAGES_INIT;
+      LogMessage *msg = log_msg_make_writable(pmsg, path_options);
+
+      _advance_time_based_on_message(self, &msg->timestamps[LM_TS_STAMP], &emitted_messages);
+      stateful_parser_emitted_messages_flush(&emitted_messages, &self->super);
+
+      grouping_parser_perform_grouping(self, msg);
+    }
   return (self->super.inject_mode != LDBP_IM_AGGREGATE_ONLY);
 }
 
