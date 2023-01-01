@@ -115,6 +115,18 @@ _store_data_in_persist(GroupingParser *self, GlobalConfig *cfg)
 }
 
 gboolean
+grouping_parser_process_method(LogParser *s,
+                               LogMessage **pmsg, const LogPathOptions *path_options,
+                               const char *input, gsize input_len)
+{
+  GroupingParser *self = (GroupingParser *) s;
+
+  if (grouping_parser_filter_messages(self, pmsg, path_options))
+    grouping_parser_perform_grouping(self, log_msg_make_writable(pmsg, path_options));
+  return (self->super.inject_mode != LDBP_IM_AGGREGATE_ONLY);
+}
+
+gboolean
 grouping_parser_init_method(LogPipe *s)
 {
   GroupingParser *self = (GroupingParser *) s;
@@ -183,7 +195,7 @@ grouping_parser_init_instance(GroupingParser *self, GlobalConfig *cfg)
   self->super.super.super.deinit = grouping_parser_deinit_method;
 //  self->super.super.super.clone = _clone;
 //  self->super.super.super.generate_persist_name = _format_persist_name;
-//  self->super.super.process = _process;
+  self->super.super.process = grouping_parser_process_method;
   self->scope = RCS_GLOBAL;
   self->timeout = -1;
   self->correlation = correlation_state_new();

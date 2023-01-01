@@ -38,13 +38,33 @@ struct _GroupingParser
   LogTemplate *sort_key_template;
   gint timeout;
   CorrelationScope scope;
+  gboolean (*filter_messages)(GroupingParser *self, LogMessage **pmsg, const LogPathOptions *path_options);
+  void (*perform_grouping)(GroupingParser *self, LogMessage *msg);
 };
+
+static inline gboolean
+grouping_parser_filter_messages(GroupingParser *self, LogMessage **pmsg, const LogPathOptions *path_options)
+{
+  if (self->filter_messages)
+    return self->filter_messages(self, pmsg, path_options);
+  return TRUE;
+}
+
+static inline void
+grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg)
+{
+  return self->perform_grouping(self, msg);
+}
 
 void grouping_parser_set_key_template(LogParser *s, LogTemplate *key_template);
 void grouping_parser_set_sort_key_template(LogParser *s, LogTemplate *sort_key);
 void grouping_parser_set_scope(LogParser *s, CorrelationScope scope);
 void grouping_parser_set_timeout(LogParser *s, gint timeout);
 
+gboolean
+grouping_parser_process_method(LogParser *s,
+                               LogMessage **pmsg, const LogPathOptions *path_options,
+                               const char *input, gsize input_len);
 gboolean grouping_parser_init_method(LogPipe *s);
 gboolean grouping_parser_deinit_method(LogPipe *s);
 

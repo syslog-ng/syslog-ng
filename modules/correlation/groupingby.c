@@ -276,17 +276,6 @@ _evaluate_where(GroupingParser *s, LogMessage **pmsg, const LogPathOptions *path
   return filter_expr_eval_root(self->where_condition_expr, pmsg, path_options);
 }
 
-static gboolean
-_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const char *input,
-         gsize input_len)
-{
-  GroupingBy *self = (GroupingBy *) s;
-
-  if (_evaluate_where(&self->super, pmsg, path_options))
-    _perform_groupby(&self->super, log_msg_make_writable(pmsg, path_options));
-  return (self->super.super.inject_mode != LDBP_IM_AGGREGATE_ONLY);
-}
-
 static const gchar *
 _format_persist_name(const LogPipe *s)
 {
@@ -373,7 +362,8 @@ grouping_by_new(GlobalConfig *cfg)
   self->super.super.super.super.init = _init;
   self->super.super.super.super.clone = _clone;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
-  self->super.super.super.process = _process;
+  self->super.filter_messages = _evaluate_where;
+  self->super.perform_grouping = _perform_groupby;
   return &self->super.super.super;
 }
 
