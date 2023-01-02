@@ -70,10 +70,17 @@ static guint64 main_loop_workers_idmap[MAIN_LOOP_IDMAP_ROWS];
 static gint main_loop_max_workers = 0;
 static gint main_loop_estimated_number_of_workers = 0;
 
+/* NOTE: return a zero based index for the current thread, to be used in
+ * array indexes.  -1 means that the thread does not have an ID */
+gint
+main_loop_worker_get_thread_index(void)
+{
+  return main_loop_worker_id - 1;
+}
+
 static void
 _allocate_thread_id(void)
 {
-  gint id;
   g_mutex_lock(&main_loop_workers_idmap_lock);
 
   /* the maximum number of threads must be dividible by 64, the array
@@ -84,17 +91,17 @@ _allocate_thread_id(void)
 
   main_loop_worker_id = 0;
 
-  for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
+  for (gint thread_index = 0; thread_index < MAIN_LOOP_MAX_WORKER_THREADS; thread_index++)
     {
-      gint row = id / MAIN_LOOP_IDMAP_BITS_PER_ROW;
-      gint bit_in_row = id % MAIN_LOOP_IDMAP_BITS_PER_ROW;
+      gint row = thread_index / MAIN_LOOP_IDMAP_BITS_PER_ROW;
+      gint bit_in_row = thread_index % MAIN_LOOP_IDMAP_BITS_PER_ROW;
 
       if ((main_loop_workers_idmap[row] & (1ULL << bit_in_row)) == 0)
         {
-          /* id not yet used */
+          /* thread_index not yet used */
 
           main_loop_workers_idmap[row] |= (1ULL << bit_in_row);
-          main_loop_worker_id = (id + 1);
+          main_loop_worker_id = (thread_index + 1);
           break;
         }
     }
@@ -130,20 +137,14 @@ _release_thread_id(void)
   g_mutex_lock(&main_loop_workers_idmap_lock);
   if (main_loop_worker_id)
     {
-      const gint id = main_loop_worker_id - 1;
-      gint row = id / MAIN_LOOP_IDMAP_BITS_PER_ROW;
-      gint bit_in_row = id % MAIN_LOOP_IDMAP_BITS_PER_ROW;
+      const gint thread_index = main_loop_worker_get_thread_index();
+      gint row = thread_index / MAIN_LOOP_IDMAP_BITS_PER_ROW;
+      gint bit_in_row = thread_index % MAIN_LOOP_IDMAP_BITS_PER_ROW;
 
       main_loop_workers_idmap[row] &= ~(1ULL << (bit_in_row));
       main_loop_worker_id = 0;
     }
   g_mutex_unlock(&main_loop_workers_idmap_lock);
-}
-
-gint
-main_loop_worker_get_thread_id(void)
-{
-  return main_loop_worker_id - 1;
 }
 
 typedef struct _WorkerExitNotification
