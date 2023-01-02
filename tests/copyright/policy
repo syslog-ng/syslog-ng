@@ -142,6 +142,8 @@ modules/python-modules/syslogng/persist\.py
 modules/http/(http|http-parser|http-plugin|)\.[ch]
 modules/http/http-grammar.ym
 modules/timestamp/rewrite-.*$
+modules/timestamp/tf-format-date.*$
+modules/timestamp/tests/test_format_date.*$
 modules/add-contextual-data/add-contextual-data-glob-selector\.[ch]$
 modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
