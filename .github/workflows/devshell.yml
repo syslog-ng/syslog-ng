@@ -23,6 +23,9 @@ jobs:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v3
 
+      - name: Setup Git safedir
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
       - name: Setup environment
         run: |
           . .github/workflows/gh-tools.sh
@@ -156,6 +159,9 @@ jobs:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v3
 
+      - name: Setup Git safedir
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
       - name: Set ENV variables
         run: |
           . .github/workflows/gh-tools.sh
@@ -195,6 +201,9 @@ jobs:
     steps:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v3
+
+      - name: Setup Git safedir
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
       - name: Prepare
         run: |
