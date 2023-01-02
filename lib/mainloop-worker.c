@@ -140,14 +140,6 @@ _release_thread_id(void)
   g_mutex_unlock(&main_loop_workers_idmap_lock);
 }
 
-/* NOTE: only used by the unit test program to emulate worker threads with
- * LogQueue, other threads acquire a thread id when they start up. */
-void
-main_loop_worker_set_thread_id(gint id)
-{
-  main_loop_worker_id = id + 1;
-}
-
 gint
 main_loop_worker_get_thread_id(void)
 {
