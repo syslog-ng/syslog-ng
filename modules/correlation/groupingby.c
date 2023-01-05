@@ -107,8 +107,10 @@ _evaluate_having(GroupingBy *self, CorrelationContext *context)
 }
 
 static gboolean
-_evaluate_trigger(GroupingBy *self, CorrelationContext *context)
+_evaluate_trigger(GroupingParser *s, CorrelationContext *context)
 {
+  GroupingBy *self = (GroupingBy *) s;
+
   if (!self->trigger_condition_expr)
     return FALSE;
 
@@ -132,45 +134,6 @@ _aggregate_context(GroupingParser *s, CorrelationContext *context)
   msg = synthetic_message_generate_with_context(self->synthetic_message, context);
 
   return msg;
-}
-
-static void
-_perform_groupby(GroupingParser *s, LogMessage *msg)
-{
-  GroupingBy *self = (GroupingBy *) s;
-
-  correlation_state_tx_begin(self->super.correlation);
-
-  CorrelationContext *context = grouping_parser_lookup_or_create_context(&self->super, msg);
-  g_ptr_array_add(context->messages, log_msg_ref(msg));
-
-  if (_evaluate_trigger(self, context))
-    {
-      msg_verbose("Correlation trigger() met, closing state",
-                  evt_tag_str("key", context->key.session_id),
-                  evt_tag_int("timeout", self->super.timeout),
-                  evt_tag_int("num_messages", context->messages->len),
-                  log_pipe_location_tag(&self->super.super.super.super));
-
-      /* close down state */
-      LogMessage *genmsg = grouping_parser_aggregate_context(&self->super, context);
-
-      correlation_state_tx_end(self->super.correlation);
-      if (genmsg)
-        {
-          stateful_parser_emit_synthetic(&self->super.super, genmsg);
-          log_msg_unref(genmsg);
-        }
-
-      log_msg_write_protect(msg);
-    }
-  else
-    {
-      correlation_state_tx_update_context(self->super.correlation, context, self->super.timeout);
-      log_msg_write_protect(msg);
-
-      correlation_state_tx_end(self->super.correlation);
-    }
 }
 
 static gboolean
@@ -271,7 +234,7 @@ grouping_by_new(GlobalConfig *cfg)
   self->super.super.super.super.clone = _clone;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.filter_messages = _evaluate_where;
-  self->super.perform_grouping = _perform_groupby;
+  self->super.is_context_complete = _evaluate_trigger;
   self->super.aggregate_context = _aggregate_context;
   return &self->super.super.super;
 }

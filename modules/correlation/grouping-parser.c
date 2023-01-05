@@ -205,6 +205,43 @@ grouping_parser_lookup_or_create_context(GroupingParser *self, LogMessage *msg)
   return context;
 }
 
+void
+grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg)
+{
+  correlation_state_tx_begin(self->correlation);
+
+  CorrelationContext *context = grouping_parser_lookup_or_create_context(self, msg);
+  g_ptr_array_add(context->messages, log_msg_ref(msg));
+
+  if (grouping_parser_is_context_complete(self, context))
+    {
+      msg_verbose("Correlation trigger() met, closing state",
+                  evt_tag_str("key", context->key.session_id),
+                  evt_tag_int("timeout", self->timeout),
+                  evt_tag_int("num_messages", context->messages->len),
+                  log_pipe_location_tag(&self->super.super.super));
+
+      /* close down state */
+      LogMessage *genmsg = grouping_parser_aggregate_context(self, context);
+
+      correlation_state_tx_end(self->correlation);
+      if (genmsg)
+        {
+          stateful_parser_emit_synthetic(&self->super, genmsg);
+          log_msg_unref(genmsg);
+        }
+
+      log_msg_write_protect(msg);
+    }
+  else
+    {
+      correlation_state_tx_update_context(self->correlation, context, self->timeout);
+      log_msg_write_protect(msg);
+
+      correlation_state_tx_end(self->correlation);
+    }
+}
+
 
 gboolean
 grouping_parser_process_method(LogParser *s,
