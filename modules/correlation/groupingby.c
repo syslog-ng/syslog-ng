@@ -21,16 +21,6 @@
  */
 
 #include "groupingby.h"
-#include "correlation.h"
-#include "correlation-context.h"
-#include "synthetic-message.h"
-#include "messages.h"
-#include "str-utils.h"
-#include "scratch-buffers.h"
-#include "filter/filter-expr.h"
-#include "timeutils/cache.h"
-#include "timeutils/misc.h"
-#include <iv.h>
 
 typedef struct _GroupingBy
 {
