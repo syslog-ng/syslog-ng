@@ -134,7 +134,7 @@ grouping_parser_opt
         | KW_SCOPE '(' context_scope ')'                        { grouping_parser_set_scope(last_parser, $3); }
 	| KW_TIMEOUT '(' nonnegative_integer ')'
           {
-            CHECK_ERROR($3 >= 1, @1, "timeout() needs to be greater than 1 second");
+            CHECK_ERROR($3 >= 1, @1, "timeout() needs to be greater than zero");
 
             grouping_parser_set_timeout(last_parser, $3);
           }
