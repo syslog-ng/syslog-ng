@@ -158,7 +158,7 @@ Test(test_snmp_dest, set_time_zone)
   LogDriver *driver = (LogDriver *)snmp_driver;
 
   snmpdest_dd_set_time_zone(driver, "time_zone");
-  cr_assert_str_eq(snmp_driver->template_options.time_zone[LTZ_LOCAL], "time_zone");
+  cr_assert_str_eq(snmpdest_dd_get_template_options(driver)->time_zone[LTZ_LOCAL], "time_zone");
 }
 
 Test(test_snmp_dest, check_required_params)
