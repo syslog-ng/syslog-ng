@@ -107,9 +107,11 @@ _evaluate_having(GroupingBy *self, CorrelationContext *context)
 }
 
 static gboolean
-_evaluate_trigger(GroupingParser *s, CorrelationContext *context)
+_update_context(GroupingParser *s, CorrelationContext *context, LogMessage *msg)
 {
   GroupingBy *self = (GroupingBy *) s;
+
+  g_ptr_array_add(context->messages, log_msg_ref(msg));
 
   if (!self->trigger_condition_expr)
     return FALSE;
@@ -234,7 +236,7 @@ grouping_by_new(GlobalConfig *cfg)
   self->super.super.super.super.clone = _clone;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.filter_messages = _evaluate_where;
-  self->super.is_context_complete = _evaluate_trigger;
+  self->super.update_context = _update_context;
   self->super.aggregate_context = _aggregate_context;
   return &self->super.super.super;
 }

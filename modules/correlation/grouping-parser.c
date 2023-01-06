@@ -212,9 +212,7 @@ grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg)
 
   CorrelationContext *context = grouping_parser_lookup_or_create_context(self, msg);
 
-  grouping_parser_update_context(self, context, msg);
-
-  if (grouping_parser_is_context_complete(self, context))
+  if (grouping_parser_update_context(self, context, msg))
     {
       msg_verbose("Correlation trigger() met, closing state",
                   evt_tag_str("key", context->key.session_id),

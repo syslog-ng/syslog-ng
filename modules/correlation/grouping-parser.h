@@ -40,8 +40,7 @@ struct _GroupingParser
   CorrelationScope scope;
   gboolean (*filter_messages)(GroupingParser *self, LogMessage **pmsg, const LogPathOptions *path_options);
   CorrelationContext *(*construct_context)(GroupingParser *self, CorrelationKey *key);
-  void (*update_context)(GroupingParser *self, CorrelationContext *context, LogMessage *msg);
-  gboolean (*is_context_complete)(GroupingParser *self, CorrelationContext *context);
+  gboolean (*update_context)(GroupingParser *self, CorrelationContext *context, LogMessage *msg);
   LogMessage *(*aggregate_context)(GroupingParser *self, CorrelationContext *context);
 };
 
@@ -62,21 +61,10 @@ grouping_parser_construct_context(GroupingParser *self, CorrelationKey *key)
   return correlation_context_new(key);
 }
 
-static inline void
+static inline gboolean
 grouping_parser_update_context(GroupingParser *self, CorrelationContext *context, LogMessage *msg)
 {
-  if (self->update_context)
-    self->update_context(self, context, msg);
-  else
-    g_ptr_array_add(context->messages, log_msg_ref(msg));
-}
-
-static inline gboolean
-grouping_parser_is_context_complete(GroupingParser *self, CorrelationContext *context)
-{
-  if (self->is_context_complete)
-    return self->is_context_complete(self, context);
-  return FALSE;
+  return self->update_context(self, context, msg);
 }
 
 LogMessage *grouping_parser_aggregate_context(GroupingParser *self, CorrelationContext *context);
