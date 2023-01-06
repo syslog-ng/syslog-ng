@@ -249,6 +249,18 @@ app_shutdown(void)
 }
 
 void
+app_config_pre_pre_init(void)
+{
+  run_application_hook(AH_CONFIG_PRE_PRE_INIT);
+}
+
+void
+app_config_pre_init(void)
+{
+  run_application_hook(AH_CONFIG_PRE_INIT);
+}
+
+void
 app_config_stopped(void)
 {
   run_application_hook(AH_CONFIG_STOPPED);

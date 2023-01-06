@@ -27,8 +27,6 @@
 #include "messages.h"
 #include "timeutils/misc.h"
 
-gint log_queue_max_threads = 0;
-
 void
 log_queue_memory_usage_add(LogQueue *self, gsize value)
 {
@@ -274,10 +272,4 @@ log_queue_free_method(LogQueue *self)
   g_mutex_clear(&self->lock);
   g_free(self->persist_name);
   g_free(self);
-}
-
-void
-log_queue_set_max_threads(gint max_threads)
-{
-  log_queue_max_threads = max_threads;
 }

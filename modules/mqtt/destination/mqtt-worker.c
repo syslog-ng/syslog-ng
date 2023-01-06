@@ -66,7 +66,7 @@ _publish_result_evaluation (LogThreadedDestWorker *self, gint result)
     case MQTTCLIENT_NULL_PARAMETER:
     case MQTTCLIENT_BAD_UTF8_STRING:
       msg_error("An unrecoverable error occurred during publish, dropping message.",
-                evt_tag_str("error code", MQTTClient_strerror(result)),
+                evt_tag_str("error_code", MQTTClient_strerror(result)),
                 log_pipe_location_tag(&self->owner->super.super.super));
       return LTR_DROP;
     }
@@ -88,7 +88,7 @@ _wait_result_evaluation(LogThreadedDestWorker *self, gint result)
     case MQTTCLIENT_FAILURE:
     default:
       msg_error("Error while waiting the response!",
-                evt_tag_str("error code", MQTTClient_strerror(result)),
+                evt_tag_str("error_code", MQTTClient_strerror(result)),
                 log_pipe_location_tag(&self->owner->super.super.super));
       return LTR_ERROR;
     }
@@ -112,7 +112,7 @@ mqtt_dest_worker_resolve_template_topic_name(MQTTDestinationWorker *self, LogMes
   msg_error("Error constructing topic", evt_tag_str("topic_name", self->topic_name_buffer->str),
             evt_tag_str("driver", owner->super.super.super.id),
             log_pipe_location_tag(&owner->super.super.super.super),
-            evt_tag_str("error message", error->message));
+            evt_tag_str("error_message", error->message));
 
   g_error_free(error);
 
@@ -197,7 +197,7 @@ _connect(LogThreadedDestWorker *s)
   if ((rc = MQTTClient_connect(self->client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
       msg_error("Error connecting mqtt client",
-                evt_tag_str("error code", MQTTClient_strerror(rc)),
+                evt_tag_str("error_code", MQTTClient_strerror(rc)),
                 evt_tag_str("client_id", mqtt_client_options_get_client_id(&owner->options)),
                 log_pipe_location_tag(&owner->super.super.super.super));
       return FALSE;
@@ -228,7 +228,7 @@ _init(LogThreadedDestWorker *s)
     {
       msg_error("Error creating mqtt client",
                 evt_tag_str("address", mqtt_client_options_get_address(&owner->options)),
-                evt_tag_str("error code", MQTTClient_strerror(rc)),
+                evt_tag_str("error_code", MQTTClient_strerror(rc)),
                 evt_tag_str("client_id", mqtt_client_options_get_client_id(&owner->options)),
                 log_pipe_location_tag(&owner->super.super.super.super));
       return FALSE;

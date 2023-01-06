@@ -43,6 +43,7 @@
 #include "resolved-configurable-paths.h"
 #include "mainloop.h"
 #include "timeutils/format.h"
+#include "apphook.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -360,6 +361,12 @@ cfg_init(GlobalConfig *cfg)
   log_template_options_init(&cfg->template_options, cfg);
   if (!cfg_init_modules(cfg))
     return FALSE;
+  if (!cfg_tree_compile(&cfg->tree))
+    return FALSE;
+  app_config_pre_pre_init();
+  if (!cfg_tree_pre_config_init(&cfg->tree))
+    return FALSE;
+  app_config_pre_init();
   if (!cfg_tree_start(&cfg->tree))
     return FALSE;
 
@@ -370,7 +377,7 @@ cfg_init(GlobalConfig *cfg)
    * task/timer/fdwatch ordering in ivykis during this action).
    * See: https://github.com/syslog-ng/syslog-ng/pull/3176#issuecomment-638849597
    */
-  g_assert(cfg_tree_on_inited(&cfg->tree));
+  g_assert(cfg_tree_post_config_init(&cfg->tree));
   return TRUE;
 }
 

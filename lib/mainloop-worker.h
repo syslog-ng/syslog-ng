@@ -29,7 +29,7 @@
 #include <iv_list.h>
 
 #define MAIN_LOOP_MIN_WORKER_THREADS 2
-#define MAIN_LOOP_MAX_WORKER_THREADS 64
+#define MAIN_LOOP_MAX_WORKER_THREADS 256
 
 typedef enum
 {
@@ -67,8 +67,7 @@ void main_loop_worker_assert_batch_callbacks_were_processed(void);
 
 typedef void (*WorkerExitNotificationFunc)(gpointer user_data);
 
-void main_loop_worker_set_thread_id(gint id);
-gint main_loop_worker_get_thread_id(void);
+gint main_loop_worker_get_thread_index(void);
 
 void main_loop_worker_job_start(void);
 void main_loop_worker_job_complete(void);
@@ -83,6 +82,10 @@ void main_loop_sync_worker_startup_and_teardown(void);
 
 void main_loop_worker_init(void);
 void main_loop_worker_deinit(void);
+
+gint main_loop_worker_get_max_number_of_threads(void);
+void main_loop_worker_allocate_thread_space(gint num_threads);
+void main_loop_worker_finalize_thread_space(void);
 
 extern volatile gboolean main_loop_workers_quit;
 extern volatile gboolean is_reloading_scheduled;

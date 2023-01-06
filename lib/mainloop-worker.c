@@ -63,36 +63,72 @@ static struct iv_task main_loop_workers_reenable_jobs_task;
 /* thread ID allocation */
 static GMutex main_loop_workers_idmap_lock;
 
-static guint64 main_loop_workers_idmap[MAIN_LOOP_WORKER_TYPE_MAX];
+#define MAIN_LOOP_IDMAP_BITS_PER_ROW    (sizeof(guint64)*8)
+#define MAIN_LOOP_IDMAP_ROWS            (MAIN_LOOP_MAX_WORKER_THREADS / MAIN_LOOP_IDMAP_BITS_PER_ROW)
+
+static guint64 main_loop_workers_idmap[MAIN_LOOP_IDMAP_ROWS];
+static gint main_loop_max_workers = 0;
+static gint main_loop_estimated_number_of_workers = 0;
+
+/* NOTE: return a zero based index for the current thread, to be used in
+ * array indexes.  -1 means that the thread does not have an ID */
+gint
+main_loop_worker_get_thread_index(void)
+{
+  return main_loop_worker_id - 1;
+}
 
 static void
 _allocate_thread_id(void)
 {
-  gint id;
-
   g_mutex_lock(&main_loop_workers_idmap_lock);
 
-  /* NOTE: this algorithm limits the number of I/O worker threads to 64,
-   * since the ID map is stored in a single 64 bit integer.  If we ever need
-   * more threads than that, we can generalize this algorithm further. */
+  /* the maximum number of threads must be dividible by 64, the array
+   * main_loop_workers_idmap is sized accordingly, e.g.  the remainder could
+   * not be represented in the array as is.  */
+
+  G_STATIC_ASSERT((MAIN_LOOP_MAX_WORKER_THREADS % MAIN_LOOP_IDMAP_BITS_PER_ROW) == 0);
 
   main_loop_worker_id = 0;
 
-  if(main_loop_worker_type != MLW_THREADED_INPUT_WORKER)
+  for (gint thread_index = 0; thread_index < MAIN_LOOP_MAX_WORKER_THREADS; thread_index++)
     {
-      for (id = 0; id < MAIN_LOOP_MAX_WORKER_THREADS; id++)
-        {
-          if ((main_loop_workers_idmap[main_loop_worker_type] & (1ULL << id)) == 0)
-            {
-              /* id not yet used */
+      gint row = thread_index / MAIN_LOOP_IDMAP_BITS_PER_ROW;
+      gint bit_in_row = thread_index % MAIN_LOOP_IDMAP_BITS_PER_ROW;
 
-              main_loop_worker_id = (id + 1)  + (main_loop_worker_type * MAIN_LOOP_MAX_WORKER_THREADS);
-              main_loop_workers_idmap[main_loop_worker_type] |= (1ULL << id);
-              break;
-            }
+      if ((main_loop_workers_idmap[row] & (1ULL << bit_in_row)) == 0)
+        {
+          /* thread_index not yet used */
+
+          main_loop_workers_idmap[row] |= (1ULL << bit_in_row);
+          main_loop_worker_id = (thread_index + 1);
+          break;
         }
     }
   g_mutex_unlock(&main_loop_workers_idmap_lock);
+
+  if (main_loop_worker_id == 0)
+    {
+      msg_warning_once("Unable to allocate a unique thread ID. This can only "
+                       "happen if the number of syslog-ng worker threads exceeds the "
+                       "compile time constant MAIN_LOOP_MAX_WORKER_THREADS. "
+                       "This is not a fatal problem but can be a cause for "
+                       "decreased performance. Increase this number and recompile "
+                       "or contact the syslog-ng authors",
+                       evt_tag_int("max-worker-threads-hard-limit", MAIN_LOOP_MAX_WORKER_THREADS));
+    }
+
+  if (main_loop_worker_id >= main_loop_max_workers)
+    {
+      msg_warning_once("The actual number of worker threads exceeds the number of threads "
+                       "estimated at startup. This indicates a bug in thread estimation, "
+                       "which is not fatal but could cause decreased performance. Please "
+                       "contact the syslog-ng authors with your config to help troubleshoot "
+                       "this issue",
+                       evt_tag_int("worker-id", main_loop_worker_id),
+                       evt_tag_int("max-worker-threads", main_loop_max_workers));
+      main_loop_worker_id = 0;
+    }
 }
 
 static void
@@ -101,25 +137,14 @@ _release_thread_id(void)
   g_mutex_lock(&main_loop_workers_idmap_lock);
   if (main_loop_worker_id)
     {
-      const gint id = main_loop_worker_id & (sizeof(guint64) * CHAR_BIT - 1);
-      main_loop_workers_idmap[main_loop_worker_type] &= ~(1ULL << (id - 1));
+      const gint thread_index = main_loop_worker_get_thread_index();
+      gint row = thread_index / MAIN_LOOP_IDMAP_BITS_PER_ROW;
+      gint bit_in_row = thread_index % MAIN_LOOP_IDMAP_BITS_PER_ROW;
+
+      main_loop_workers_idmap[row] &= ~(1ULL << (bit_in_row));
       main_loop_worker_id = 0;
     }
   g_mutex_unlock(&main_loop_workers_idmap_lock);
-}
-
-/* NOTE: only used by the unit test program to emulate worker threads with
- * LogQueue, other threads acquire a thread id when they start up. */
-void
-main_loop_worker_set_thread_id(gint id)
-{
-  main_loop_worker_id = id + 1;
-}
-
-gint
-main_loop_worker_get_thread_id(void)
-{
-  return main_loop_worker_id - 1;
 }
 
 typedef struct _WorkerExitNotification
@@ -373,12 +398,37 @@ main_loop_sync_worker_startup_and_teardown(void)
   iv_main();
 }
 
+gint
+main_loop_worker_get_max_number_of_threads(void)
+{
+  return main_loop_max_workers;
+}
+
+void
+main_loop_worker_allocate_thread_space(gint num_threads)
+{
+  main_loop_estimated_number_of_workers += num_threads;
+}
+
+void
+main_loop_worker_finalize_thread_space(void)
+{
+  main_loop_max_workers = main_loop_estimated_number_of_workers;
+  main_loop_estimated_number_of_workers = 0;
+}
+
+static void
+__pre_init_hook(gint type, gpointer user_data)
+{
+  main_loop_worker_finalize_thread_space();
+}
+
 void
 main_loop_worker_init(void)
 {
   IV_TASK_INIT(&main_loop_workers_reenable_jobs_task);
   main_loop_workers_reenable_jobs_task.handler = _reenable_worker_jobs;
-
+  register_application_hook(AH_CONFIG_PRE_INIT, __pre_init_hook, NULL, AHM_RUN_REPEAT);
 }
 
 void

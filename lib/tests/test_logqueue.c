@@ -244,7 +244,8 @@ Test(logqueue, test_with_threads)
   GThread *other_threads[FEEDERS];
   gint i, j;
 
-  log_queue_set_max_threads(FEEDERS);
+  main_loop_worker_allocate_thread_space(FEEDERS * 2);
+  main_loop_worker_finalize_thread_space();
   for (i = 0; i < TEST_RUNS; i++)
     {
       fprintf(stderr, "starting testrun: %d\n", i);
@@ -390,7 +391,10 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages_thre
      .description = "Flow-controlled messages should never be dropped (using input queues with threads")
 {
   gint fifo_size = 5;
-  log_queue_set_max_threads(1);
+
+  main_loop_worker_allocate_thread_space(1);
+  main_loop_worker_finalize_thread_space();
+
   LogQueue *q = log_queue_fifo_new(fifo_size, NULL);
   log_queue_set_use_backlog(q, TRUE);
   _register_stats_counters(q);
