@@ -106,17 +106,17 @@ _evaluate_having(GroupingBy *self, CorrelationContext *context)
   return _evaluate_filter(self->having_condition_expr, context);
 }
 
-static gboolean
+static GroupingParserUpdateContextResult
 _update_context(GroupingParser *s, CorrelationContext *context, LogMessage *msg)
 {
   GroupingBy *self = (GroupingBy *) s;
 
   g_ptr_array_add(context->messages, log_msg_ref(msg));
 
-  if (!self->trigger_condition_expr)
-    return FALSE;
-
-  return _evaluate_filter(self->trigger_condition_expr, context);
+  if (self->trigger_condition_expr &&
+      _evaluate_filter(self->trigger_condition_expr, context))
+    return GP_CONTEXT_COMPLETE;
+  return GP_CONTEXT_UPDATED;
 }
 
 static LogMessage *

@@ -212,7 +212,16 @@ grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg)
 
   CorrelationContext *context = grouping_parser_lookup_or_create_context(self, msg);
 
-  if (grouping_parser_update_context(self, context, msg))
+  GroupingParserUpdateContextResult r = grouping_parser_update_context(self, context, msg);
+
+  if (r == GP_CONTEXT_UPDATED)
+    {
+      correlation_state_tx_update_context(self->correlation, context, self->timeout);
+      log_msg_write_protect(msg);
+
+      correlation_state_tx_end(self->correlation);
+    }
+  else if (r == GP_CONTEXT_COMPLETE || r == GP_STARTS_NEW_CONTEXT)
     {
       msg_verbose("Correlation trigger() met, closing state",
                   evt_tag_str("key", context->key.session_id),
@@ -231,13 +240,11 @@ grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg)
         }
 
       log_msg_write_protect(msg);
-    }
-  else
-    {
-      correlation_state_tx_update_context(self->correlation, context, self->timeout);
-      log_msg_write_protect(msg);
 
-      correlation_state_tx_end(self->correlation);
+      if (r == GP_STARTS_NEW_CONTEXT)
+        {
+          grouping_parser_perform_grouping(self, msg);
+        }
     }
 }
 

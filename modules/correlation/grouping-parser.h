@@ -29,6 +29,13 @@
 
 typedef struct _GroupingParser GroupingParser;
 
+typedef enum
+{
+  GP_CONTEXT_UPDATED,
+  GP_CONTEXT_COMPLETE,
+  GP_STARTS_NEW_CONTEXT,
+} GroupingParserUpdateContextResult;
+
 struct _GroupingParser
 {
   StatefulParser super;
@@ -40,7 +47,7 @@ struct _GroupingParser
   CorrelationScope scope;
   gboolean (*filter_messages)(GroupingParser *self, LogMessage **pmsg, const LogPathOptions *path_options);
   CorrelationContext *(*construct_context)(GroupingParser *self, CorrelationKey *key);
-  gboolean (*update_context)(GroupingParser *self, CorrelationContext *context, LogMessage *msg);
+  GroupingParserUpdateContextResult (*update_context)(GroupingParser *self, CorrelationContext *context, LogMessage *msg);
   LogMessage *(*aggregate_context)(GroupingParser *self, CorrelationContext *context);
 };
 
