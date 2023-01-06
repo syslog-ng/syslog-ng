@@ -211,7 +211,8 @@ grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg)
   correlation_state_tx_begin(self->correlation);
 
   CorrelationContext *context = grouping_parser_lookup_or_create_context(self, msg);
-  g_ptr_array_add(context->messages, log_msg_ref(msg));
+
+  grouping_parser_update_context(self, context, msg);
 
   if (grouping_parser_is_context_complete(self, context))
     {
