@@ -128,13 +128,8 @@ stateful_parser_inject_mode
 	| KW_INTERNAL				{ $$ = stateful_parser_lookup_inject_mode("internal"); }
 	;
 
-grouping_by_opts
-	: grouping_by_opt grouping_by_opts
-	|
-	;
-
-grouping_by_opt
-	: KW_KEY '(' template_content ')'                       { grouping_parser_set_key_template(last_parser, $3); log_template_unref($3); }
+grouping_parser_opt
+        : KW_KEY '(' template_content ')'                       { grouping_parser_set_key_template(last_parser, $3); log_template_unref($3); }
         | KW_SORT_KEY '(' template_content ')'			{ grouping_parser_set_sort_key_template(last_parser, $3); log_template_unref($3); }
         | KW_SCOPE '(' context_scope ')'                        { grouping_parser_set_scope(last_parser, $3); }
 	| KW_TIMEOUT '(' nonnegative_integer ')'
@@ -143,7 +138,16 @@ grouping_by_opt
 
             grouping_parser_set_timeout(last_parser, $3);
           }
-        | KW_WHERE '('
+        ;
+
+
+grouping_by_opts
+	: grouping_by_opt grouping_by_opts
+	|
+	;
+
+grouping_by_opt
+        : KW_WHERE '('
           {
             FilterExprNode *filter_expr;
 
@@ -167,6 +171,7 @@ grouping_by_opt
           } ')'
 	| KW_PREFIX '(' string ')'				{ grouping_by_set_prefix(last_parser, $3); free($3); };
 	| stateful_parser_opt
+        | grouping_parser_opt
 	;
 
 synthetic_message
