@@ -39,6 +39,7 @@ struct _GroupingParser
   gint timeout;
   CorrelationScope scope;
   gboolean (*filter_messages)(GroupingParser *self, LogMessage **pmsg, const LogPathOptions *path_options);
+  CorrelationContext *(*construct_context)(GroupingParser *self, CorrelationKey *key);
   gboolean (*is_context_complete)(GroupingParser *self, CorrelationContext *context);
   LogMessage *(*aggregate_context)(GroupingParser *self, CorrelationContext *context);
 };
@@ -57,6 +58,14 @@ grouping_parser_is_context_complete(GroupingParser *self, CorrelationContext *co
   if (self->is_context_complete)
     return self->is_context_complete(self, context);
   return FALSE;
+}
+
+static inline CorrelationContext *
+grouping_parser_construct_context(GroupingParser *self, CorrelationKey *key)
+{
+  if (self->construct_context)
+    return self->construct_context(self, key);
+  return correlation_context_new(key);
 }
 
 LogMessage *grouping_parser_aggregate_context(GroupingParser *self, CorrelationContext *context);

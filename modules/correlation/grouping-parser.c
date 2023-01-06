@@ -188,7 +188,7 @@ grouping_parser_lookup_or_create_context(GroupingParser *self, LogMessage *msg)
                 evt_tag_int("expiration", correlation_state_get_time(self->correlation) + self->timeout),
                 log_pipe_location_tag(&self->super.super.super));
 
-      context = correlation_context_new(&key);
+      context = grouping_parser_construct_context(self, &key);
       correlation_state_tx_store_context(self->correlation, context, self->timeout, _expire_entry);
       g_string_steal(buffer);
     }
