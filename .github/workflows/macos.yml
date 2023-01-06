@@ -44,7 +44,7 @@ jobs:
           "
 
           gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS
-          gh_path "/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:${PYTHONUSERBASE}/bin"
+          gh_path "/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:${PYTHONUSERBASE}/bin:/usr/local/opt/net-snmp/bin"
 
       - name: autogen.sh
         run: |
