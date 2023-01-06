@@ -58,6 +58,7 @@ gboolean multi_line_options_set_garbage(MultiLineOptions *options,
                                         const gchar *garbage_regexp, GError **error);
 
 gboolean multi_line_options_validate(MultiLineOptions *options);
+void multi_line_options_copy(MultiLineOptions *dest, MultiLineOptions *source);
 void multi_line_options_defaults(MultiLineOptions *options);
 gboolean multi_line_options_init(MultiLineOptions *options);
 void multi_line_options_destroy(MultiLineOptions *options);

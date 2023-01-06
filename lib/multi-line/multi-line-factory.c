@@ -107,6 +107,17 @@ multi_line_options_defaults(MultiLineOptions *options)
   options->mode = MLM_NONE;
 }
 
+void
+multi_line_options_copy(MultiLineOptions *dest, MultiLineOptions *source)
+{
+  dest->mode = source->mode;
+  if (dest->mode == MLM_REGEXP_PREFIX_GARBAGE || dest->mode == MLM_REGEXP_PREFIX_SUFFIX)
+    {
+      dest->regexp.prefix = multi_line_pattern_ref(source->regexp.prefix);
+      dest->regexp.garbage = multi_line_pattern_ref(source->regexp.garbage);
+    }
+}
+
 gboolean
 multi_line_options_init(MultiLineOptions *options)
 {
