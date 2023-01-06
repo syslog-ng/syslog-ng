@@ -13,24 +13,24 @@ check_PROGRAMS						+= \
 modules_afsnmp_tests_test_afsnmp_dest_CFLAGS  = \
 	$(TEST_CFLAGS) -I$(top_srcdir)/modules/afsnmp
 
-modules_afsnmp_tests_test_afsnmp_dest_LDADD   = \
-	$(TEST_LDADD) \
-	-dlpreopen $(top_builddir)/modules/afsnmp/libafsnmp.la
+modules_afsnmp_tests_test_afsnmp_dest_LDADD = $(TEST_LDADD)
 
 modules_afsnmp_tests_test_afsnmp_dest_LDFLAGS = \
-	$(PREOPEN_CORE)
-	
+  -dlpreopen $(top_builddir)/modules/afsnmp/libafsnmp.la
+
 modules_afsnmp_tests_test_afsnmp_dest_DEPENDENCIES = \
 	$(top_builddir)/modules/afsnmp/libafsnmp.la
 
 modules_afsnmp_tests_test_varbindlist_scanner_CFLAGS   = \
   $(TEST_CFLAGS) -I$(top_srcdir)/modules/afsnmp
-modules_afsnmp_tests_test_varbindlist_scanner_LDADD    = $(TEST_LDADD) \
+modules_afsnmp_tests_test_varbindlist_scanner_LDADD = $(TEST_LDADD)
+modules_afsnmp_tests_test_varbindlist_scanner_LDFLAGS = \
   -dlpreopen $(top_builddir)/modules/afsnmp/libafsnmp.la
 
 modules_afsnmp_tests_test_snmptrapd_parser_CFLAGS   = \
   $(TEST_CFLAGS) -I$(top_srcdir)/modules/afsnmp
-modules_afsnmp_tests_test_snmptrapd_parser_LDADD    = $(TEST_LDADD) \
+modules_afsnmp_tests_test_snmptrapd_parser_LDADD = $(TEST_LDADD)
+modules_afsnmp_tests_test_snmptrapd_parser_LDFLAGS = \
   -dlpreopen $(top_builddir)/modules/afsnmp/libafsnmp.la
 
 endif
