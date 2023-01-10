@@ -45,7 +45,7 @@ jobs:
         id: tags
         run: |
           if [[ '${{ inputs.pkg-type }}' = 'stable' ]]; then
-            TAGS='${{ steps.stable-tags.outputs.tag }}'
+            TAGS='${{ steps.stable-tags.outputs.tags }}'
           elif [[ '${{ inputs.pkg-type }}' = 'nightly' ]]; then
             TAGS="${DOCKER_IMAGE_NAME}:nightly"
           else
