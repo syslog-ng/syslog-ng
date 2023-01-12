@@ -29,8 +29,9 @@ jobs:
         run: |
           . .github/workflows/gh-tools.sh
 
+          HOMEBREW_PREFIX="$(brew --prefix)"
           PYTHONUSERBASE="${HOME}/python_packages"
-          PKG_CONFIG_PATH="$(brew --prefix)/opt/openssl@1.1/lib/pkgconfig:$PKG_CONFIG_PATH"
+          PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@1.1/lib/pkgconfig:$PKG_CONFIG_PATH"
           THREADS="$(sysctl -n hw.physicalcpu)"
           CONFIGURE_FLAGS="
             --with-ivykis=system
@@ -44,7 +45,7 @@ jobs:
           "
 
           gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS
-          gh_path "/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:${PYTHONUSERBASE}/bin:/usr/local/opt/net-snmp/bin"
+          gh_path "${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${PYTHONUSERBASE}/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin"
 
       - name: autogen.sh
         run: |
