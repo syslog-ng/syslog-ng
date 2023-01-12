@@ -809,6 +809,14 @@ gchar *snmpdest_dd_get_version(LogDriver *d)
   return self->version;
 }
 
+const LogTemplateOptions *
+snmpdest_dd_get_template_options(LogDriver *d)
+{
+  SNMPDestDriver *self = (SNMPDestDriver *) d;
+
+  return &self->template_options;
+}
+
 gboolean snmpdest_dd_check_auth_algorithm(gchar *algo)
 {
   if (strcasecmp(algo, s_sha) == 0)

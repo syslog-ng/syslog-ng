@@ -89,6 +89,7 @@ void snmpdest_dd_set_time_zone(LogDriver *d, const gchar *Time_zone);
 
 gboolean snmpdest_check_required_params(LogDriver *, gchar *err_msg);
 gchar *snmpdest_dd_get_version(LogDriver *);
+const LogTemplateOptions *snmpdest_dd_get_template_options(LogDriver *d);
 gboolean snmpdest_dd_check_auth_algorithm(gchar *algo);
 gboolean snmpdest_dd_check_enc_algorithm(gchar *algo);
 
