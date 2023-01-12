@@ -219,6 +219,13 @@ tls_context_setup_ssl_options(TLSContext *self)
       if(self->ssl_options & TSO_NOTLSv13)
         ssl_options |= SSL_OP_NO_TLSv1_3;
 #endif
+
+#ifdef SSL_OP_IGNORE_UNEXPECTED_EOF
+      if (self->ssl_options & TSO_IGNORE_UNEXPECTED_EOF)
+        ssl_options |= SSL_OP_IGNORE_UNEXPECTED_EOF;
+#endif
+
+
 #ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
       if (self->mode == TM_SERVER)
         ssl_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
@@ -605,6 +612,10 @@ tls_context_set_ssl_options_by_name(TLSContext *self, GList *options)
 #ifdef SSL_OP_NO_TLSv1_3
       else if (strcasecmp(l->data, "no-tlsv13") == 0 || strcasecmp(l->data, "no_tlsv13") == 0)
         self->ssl_options |= TSO_NOTLSv13;
+#endif
+#ifdef SSL_OP_IGNORE_UNEXPECTED_EOF
+      else if (strcasecmp(l->data, "ignore-unexpected-eof") == 0 || strcasecmp(l->data, "ignore_unexpected_eof") == 0)
+        self->ssl_options |= TSO_IGNORE_UNEXPECTED_EOF;
 #endif
       else
         return FALSE;
