@@ -50,17 +50,14 @@ struct _LogDBParser
 };
 
 static void
-log_db_parser_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
+log_db_parser_emit(LogMessage *msg, gpointer user_data)
 {
   LogDBParser *self = (LogDBParser *) user_data;
 
-  if (synthetic)
-    {
-      stateful_parser_emit_synthetic(&self->super, msg);
-      msg_debug("db-parser: emitting synthetic message",
-                evt_tag_str("msg", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
-                log_pipe_location_tag(&self->super.super.super));
-    }
+  stateful_parser_emit_synthetic(&self->super, msg);
+  msg_debug("db-parser: emitting synthetic message",
+            evt_tag_str("msg", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
+            log_pipe_location_tag(&self->super.super.super));
 }
 
 static void
