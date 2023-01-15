@@ -572,7 +572,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
           while (left && *src != ' ' && *src != ']')
             {
               /* the sd_id_name is max 255, the other chars are only stored in the self->sd_str*/
-              if (pos < sizeof(sd_id_name) - 1 - logmsg_sd_prefix_len)
+              if (pos < sizeof(sd_id_name) - 1 - options->sdata_prefix_len)
                 {
                   if (isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
                     {
@@ -596,8 +596,8 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
 
           sd_id_name[pos] = 0;
           sd_id_len = pos;
-          strcpy(sd_value_name, logmsg_sd_prefix);
-          strncpy(sd_value_name + logmsg_sd_prefix_len, sd_id_name, sizeof(sd_value_name) - logmsg_sd_prefix_len);
+          strcpy(sd_value_name, options->sdata_prefix);
+          strncpy(sd_value_name + options->sdata_prefix_len, sd_id_name, sizeof(sd_value_name) - options->sdata_prefix_len);
 
           if (left && *src == ']')
             {
@@ -605,7 +605,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
             }
           else
             {
-              sd_value_name[logmsg_sd_prefix_len + pos] = '.';
+              sd_value_name[options->sdata_prefix_len + pos] = '.';
             }
 
           /* read sd-element */
@@ -640,8 +640,8 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
                   _process_any_char(&src, &left);
                 }
               sd_param_name[pos] = 0;
-              strncpy(&sd_value_name[logmsg_sd_prefix_len + 1 + sd_id_len], sd_param_name,
-                      sizeof(sd_value_name) - logmsg_sd_prefix_len - 1 - sd_id_len);
+              strncpy(&sd_value_name[options->sdata_prefix_len + 1 + sd_id_len], sd_param_name,
+                      sizeof(sd_value_name) - options->sdata_prefix_len - 1 - sd_id_len);
 
               if (left && *src == '=')
                 _process_any_char(&src, &left);

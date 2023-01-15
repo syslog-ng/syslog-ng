@@ -87,7 +87,6 @@ _get_logmessages(const gchar *logs)
       g_free(logline);
     }
 
-  msg_format_options_destroy(&parse_options);
   g_strfreev(input_lines);
   return self;
 }
