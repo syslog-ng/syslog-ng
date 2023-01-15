@@ -64,6 +64,7 @@ parser_expr_syslog
         : KW_SYSLOG_PARSER '('
           {
             last_parser = *instance = syslog_parser_new(configuration);
+            last_msg_format_options = &((SyslogParser *) last_parser)->parse_options;
           }
           parser_syslog_opts
           ')'					{ $$ = last_parser; }
@@ -79,7 +80,7 @@ parser_syslog_opt
 	: parser_opt
 	| KW_FLAGS '(' parser_syslog_opt_flags ')'
 	| KW_DROP_INVALID '(' yesno ')'			{ syslog_parser_set_drop_invalid(last_parser, $3); }
-	| { last_msg_format_options = &((SyslogParser *) last_parser)->parse_options; } msg_format_option
+	| msg_format_option
         ;
 
 parser_syslog_opt_flags
