@@ -517,7 +517,7 @@ log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
  * message for structured data elements and store the parsed information
  * in @self.values and dup the SD string. Parsing is affected by the bits set @flags argument.
  **/
-static gboolean
+gboolean
 log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgFormatOptions *options)
 {
   /*
