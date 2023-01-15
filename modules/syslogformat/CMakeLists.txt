@@ -6,6 +6,8 @@ set(SYSLOGFORMAT_SOURCES
     syslog-parser-parser.h
     syslog-parser.c
     syslog-parser.h
+    sdata-parser.c
+    sdata-parser.h
 )
 
 add_module(

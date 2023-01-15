@@ -157,6 +157,7 @@ modules/python-modules/syslogng/modules/kubernetes/.*
 modules/python-modules/syslogng/modules/example/.*
 modules/python-modules/setup\.py
 scripts/build-python-venv\.sh
+modules/syslogformat/sdata-parser\.[ch]
 
 ###########################################################################
 # These files are GPLd with Balabit origin.

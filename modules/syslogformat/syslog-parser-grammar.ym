@@ -30,6 +30,7 @@
 %code {
 
 #include "syslog-parser.h"
+#include "sdata-parser.h"
 #include "syslog-names.h"
 #include "cfg-grammar-internal.h"
 
@@ -49,6 +50,8 @@
 
 %token KW_SYSLOG_PARSER
 %token KW_DROP_INVALID
+%token KW_SDATA_PARSER
+%token KW_PREFIX
 
 %type	<ptr> parser_expr_syslog
 
@@ -67,6 +70,13 @@ parser_expr_syslog
             last_msg_format_options = &((SyslogParser *) last_parser)->parse_options;
           }
           parser_syslog_opts
+          ')'					{ $$ = last_parser; }
+        | KW_SDATA_PARSER '('
+          {
+            last_parser = *instance = sdata_parser_new(configuration);
+            last_msg_format_options = &((SDataParser *) last_parser)->parse_options;
+          }
+          parser_sdata_opts
           ')'					{ $$ = last_parser; }
         ;
 
@@ -88,6 +98,21 @@ parser_syslog_opt_flags
         | KW_CHECK_HOSTNAME parser_syslog_opt_flags     { msg_format_options_process_flag(&((SyslogParser *) last_parser)->parse_options, "check-hostname");  }
         |
 	;
+
+parser_sdata_opts
+        : parser_sdata_opt parser_sdata_opts
+        |
+        ;
+
+parser_sdata_opt
+	: parser_opt
+	| KW_PREFIX '(' string ')'
+          {
+            msg_format_options_set_sdata_prefix(last_msg_format_options, $3);
+            free($3);
+          }
+        ;
+
 
 /* INCLUDE_RULES */
 
