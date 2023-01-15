@@ -230,12 +230,11 @@
 
 %token KW_THROTTLE                    10170
 %token KW_THREADED                    10171
-%token KW_PASS_UNIX_CREDENTIALS       10231
 
-%token KW_PERSIST_NAME                10302
-
-%token KW_READ_OLD_RECORDS            10304
-%token KW_USE_SYSLOGNG_PID            10305
+%token KW_PASS_UNIX_CREDENTIALS       10180
+%token KW_PERSIST_NAME                10181
+%token KW_READ_OLD_RECORDS            10182
+%token KW_USE_SYSLOGNG_PID            10183
 
 /* log statement options */
 %token KW_FLAGS                       10190
