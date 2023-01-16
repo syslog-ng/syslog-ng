@@ -28,8 +28,6 @@
 #include "logmsg/logmsg.h"
 #include "stats/stats-registry.h"
 
-extern gint log_queue_max_threads;
-
 typedef void (*LogQueuePushNotifyFunc)(gpointer user_data);
 
 typedef struct _LogQueue LogQueue;
@@ -226,7 +224,5 @@ void log_queue_register_stats_counters(LogQueue *self, gint stats_level, const S
 void log_queue_unregister_stats_counters(LogQueue *self, const StatsClusterKey *sc_key);
 
 void log_queue_free_method(LogQueue *self);
-
-void log_queue_set_max_threads(gint max_threads);
 
 #endif
