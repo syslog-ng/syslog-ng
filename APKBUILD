@@ -17,15 +17,26 @@ makedepends="
 	curl-dev
 	file
 	flex
+	geoip-dev
 	glib-dev
 	hiredis-dev
 	ivykis-dev>=0.42.4
 	json-c-dev
 	libdbi-dev
+	libmaxminddb-dev
+	libnet-dev
+	librdkafka-dev
+	libtool
+	libxml2-utils
+	mongo-c-driver-dev
+	net-snmp-dev
 	openssl-dev>3
+	paho-mqtt-c-dev
 	pcre-dev
 	python3-dev
 	rabbitmq-c-dev
+	riemann-c-client-dev
+	tzdata
 	"
 subpackages="
 	$pkgname-scl::noarch
@@ -40,11 +51,17 @@ _modules="
 	add-contextual-data
 	amqp:afamqp
 	examples
+	geoip2:geoip2-plugin
 	graphite
 	http
 	json:json-plugin
+	kafka
 	map-value-pairs
+	mongodb:afmongodb
+	mqtt
 	redis
+	riemann
+	snmp:afsnmp
 	sql:afsql
 	stardate
 	stomp:afstomp
@@ -64,28 +81,15 @@ build() {
 		--enable-extra-warnings \
 		--enable-ipv6 \
 		--enable-manpages \
-		\
-		--enable-sql \
-		--disable-linux-caps \
-		--disable-mongodb \
-		--enable-json \
-		--enable-amqp \
-		--enable-stomp \
-		--disable-smtp \
-		--enable-http \
-		--enable-redis \
-		--enable-geoip \
-		--disable-geoip2 \
-		--disable-riemann \
-		--disable-systemd \
-		--enable-python \
-		--disable-java \
-		--disable-java-modules \
-		--enable-native \
-		--enable-rdrand \
 		--with-ivykis=system \
 		--with-jsonc=system \
-		--with-librabbitmq-client=system
+		\
+		--enable-all-modules \
+		--disable-linux-caps \
+		--disable-smtp \
+		--disable-systemd \
+		--disable-java \
+		--disable-java-modules
 	make
 }
 

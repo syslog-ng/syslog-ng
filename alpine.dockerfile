@@ -40,17 +40,25 @@ RUN apk add --repository /axoflow -U --upgrade --no-cache \
     syslog-ng \
     syslog-ng-add-contextual-data \
     syslog-ng-amqp \
+    syslog-ng-examples \
+    syslog-ng-geoip2 \
     syslog-ng-graphite \
     syslog-ng-http \
     syslog-ng-json \
+    syslog-ng-kafka \
     syslog-ng-map-value-pairs \
+    syslog-ng-mongodb \
+    syslog-ng-mqtt \
     syslog-ng-redis \
+    syslog-ng-riemann \
     syslog-ng-scl \
+    syslog-ng-snmp \
     syslog-ng-sql \
     syslog-ng-stardate \
     syslog-ng-stomp \
     syslog-ng-tags-parser \
-    syslog-ng-xml
+    syslog-ng-xml \
+    py3-syslog-ng
 
 EXPOSE 514/udp
 EXPOSE 601/tcp
