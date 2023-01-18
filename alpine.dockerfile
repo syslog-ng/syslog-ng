@@ -16,6 +16,7 @@ ADD --chown=builder:builder APKBUILD axoflow/syslog-ng/
 ADD --chown=builder:builder rootbld-repositories axoflow/.rootbld-repositories
 RUN mkdir packages \
     && abuild-keygen -n -a \
+    && printf 'export JOBS=$(nproc)\nexport MAKEFLAGS=-j$JOBS\n' >> .abuild/abuild.conf \
     && cd axoflow/syslog-ng \
     && if [ "$PKG_TYPE" = "nightly" ]; then \
         tarball_filename="$(ls *.tar.*)"; \
