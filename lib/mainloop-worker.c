@@ -118,7 +118,7 @@ _allocate_thread_id(void)
                        evt_tag_int("max-worker-threads-hard-limit", MAIN_LOOP_MAX_WORKER_THREADS));
     }
 
-  if (main_loop_worker_id >= main_loop_max_workers)
+  if (main_loop_worker_id > main_loop_max_workers)
     {
       msg_warning_once("The actual number of worker threads exceeds the number of threads "
                        "estimated at startup. This indicates a bug in thread estimation, "
