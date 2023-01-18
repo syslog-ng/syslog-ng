@@ -74,6 +74,7 @@ done
 
 build() {
 	CFLAGS="$CFLAGS -flto=auto" \
+	SOURCE_REVISION="$pkgver" \
 	./configure \
 		--prefix=/usr \
 		--sysconfdir=/etc/syslog-ng \
