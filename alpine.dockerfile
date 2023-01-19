@@ -12,8 +12,7 @@ RUN apk add --update-cache \
 
 USER builder
 WORKDIR /home/builder
-ADD --chown=builder:builder APKBUILD axoflow/syslog-ng/
-ADD --chown=builder:builder rootbld-repositories axoflow/.rootbld-repositories
+ADD --chown=builder:builder apkbuild .
 RUN mkdir packages \
     && abuild-keygen -n -a \
     && printf 'export JOBS=$(nproc)\nexport MAKEFLAGS=-j$JOBS\n' >> .abuild/abuild.conf \
@@ -50,6 +49,7 @@ RUN apk add --repository /axoflow -U --upgrade --no-cache \
     syslog-ng-map-value-pairs \
     syslog-ng-mongodb \
     syslog-ng-mqtt \
+    syslog-ng-python3 \
     syslog-ng-redis \
     syslog-ng-riemann \
     syslog-ng-scl \
@@ -58,8 +58,7 @@ RUN apk add --repository /axoflow -U --upgrade --no-cache \
     syslog-ng-stardate \
     syslog-ng-stomp \
     syslog-ng-tags-parser \
-    syslog-ng-xml \
-    py3-syslog-ng
+    syslog-ng-xml
 
 EXPOSE 514/udp
 EXPOSE 601/tcp

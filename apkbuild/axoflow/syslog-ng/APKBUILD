@@ -42,7 +42,7 @@ subpackages="
 	$pkgname-scl::noarch
 	$pkgname-dev
 	$pkgname-doc
-	py3-$pkgname:_python3
+	$pkgname-python3:_python3
 	"
 source="https://github.com/balabit/syslog-ng/releases/download/syslog-ng-$pkgver/syslog-ng-$pkgver.tar.gz"
 builddir="$srcdir/$pkgname-$pkgver"
@@ -78,7 +78,7 @@ build() {
 	./configure \
 		--prefix=/usr \
 		--sysconfdir=/etc/syslog-ng \
-		--localstatedir=/run \
+		--localstatedir=/var/lib/syslog-ng \
 		--enable-extra-warnings \
 		--enable-ipv6 \
 		--enable-manpages \
@@ -111,8 +111,6 @@ package() {
 
 	install -d -m 755 etc/$pkgname/conf.d
 	install -d -m 700 "$pkgdir"/var/lib/syslog-ng
-
-	rm "$pkgdir"/usr/lib/syslog-ng/python/requirements.txt
 }
 
 scl() {
@@ -131,14 +129,10 @@ dev() {
 
 _python3() {
 	pkgdesc="$pkgdesc (python3 module)"
+	depends="$pkgname=$pkgver-r$pkgrel python3"
+	install="$subpkgname.post-install"
 
-	_submv usr/lib/syslog-ng/libmod-python.so
-
-	local site_pkgs="$(python3 -c 'import site; print(site.getsitepackages()[0])')"
-
-	mkdir -p "$subpkgdir"/"$site_pkgs"
-	mv "$pkgdir"/usr/lib/syslog-ng/python/* \
-		"$subpkgdir"/"$site_pkgs"
+	_submv usr/lib/syslog-ng/libmod-python.so usr/lib/syslog-ng/python usr/bin/syslog-ng-update-virtualenv
 }
 
 _module() {

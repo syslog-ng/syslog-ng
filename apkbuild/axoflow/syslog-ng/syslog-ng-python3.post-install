@@ -1,0 +1,5 @@
+#!/bin/sh
+
+/usr/bin/syslog-ng-update-virtualenv -y
+
+exit 0
