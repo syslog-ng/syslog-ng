@@ -1,0 +1,13 @@
+name: Stable
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'syslog-ng-*'
+
+jobs:
+  publish-image:
+    uses: ./.github/workflows/docker.yml
+    with:
+      pkg-type: stable
