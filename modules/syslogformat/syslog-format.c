@@ -61,7 +61,7 @@ _process_any_char(const guchar **data, gint *left)
 
 
 static gboolean
-log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint flags, guint16 default_pri)
+log_msg_parse_pri(LogMessage *msg, const guchar **data, gint *length, guint flags, guint16 default_pri)
 {
   int pri;
   gboolean success = TRUE;
@@ -84,7 +84,7 @@ log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint fla
             }
           _process_any_char(&src, &left);
         }
-      self->pri = pri;
+      msg->pri = pri;
       if (left)
         {
           _process_any_char(&src, &left);
@@ -93,7 +93,7 @@ log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint fla
   /* No priority info in the buffer? Just assign a default. */
   else
     {
-      self->pri = default_pri != 0xFFFF ? default_pri : (EVT_FAC_USER | EVT_PRI_NOTICE);
+      msg->pri = default_pri != 0xFFFF ? default_pri : (EVT_FAC_USER | EVT_PRI_NOTICE);
     }
 
   *data = src;
@@ -102,7 +102,7 @@ log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint fla
 }
 
 static gint
-log_msg_parse_skip_chars(LogMessage *self, const guchar **data, gint *length, const gchar *chars, gint max_len)
+log_msg_parse_skip_chars(LogMessage *msg, const guchar **data, gint *length, const gchar *chars, gint max_len)
 {
   const guchar *src = *data;
   gint left = *length;
@@ -121,7 +121,7 @@ log_msg_parse_skip_chars(LogMessage *self, const guchar **data, gint *length, co
 }
 
 static gboolean
-log_msg_parse_skip_space(LogMessage *self, const guchar **data, gint *length)
+log_msg_parse_skip_space(LogMessage *msg, const guchar **data, gint *length)
 {
   const guchar *src = *data;
   gint left = *length;
@@ -141,7 +141,7 @@ log_msg_parse_skip_space(LogMessage *self, const guchar **data, gint *length)
 }
 
 static gint
-log_msg_parse_skip_chars_until(LogMessage *self, const guchar **data, gint *length, const gchar *delims)
+log_msg_parse_skip_chars_until(LogMessage *msg, const guchar **data, gint *length, const gchar *delims)
 {
   const guchar *src = *data;
   gint left = *length;
@@ -158,7 +158,7 @@ log_msg_parse_skip_chars_until(LogMessage *self, const guchar **data, gint *leng
 }
 
 static void
-log_msg_parse_column(LogMessage *self, NVHandle handle, const guchar **data, gint *length, gint max_length)
+log_msg_parse_column(LogMessage *msg, NVHandle handle, const guchar **data, gint *length, gint max_length)
 {
   const guchar *src, *space;
   gint left;
@@ -181,7 +181,7 @@ log_msg_parse_column(LogMessage *self, NVHandle handle, const guchar **data, gin
       if ((*length - left) > 1 || (*data)[0] != '-')
         {
           gint len = (*length - left) > max_length ? max_length : (*length - left);
-          log_msg_set_value(self, handle, (gchar *) *data, len);
+          log_msg_set_value(msg, handle, (gchar *) *data, len);
         }
     }
   *data = src;
@@ -189,7 +189,7 @@ log_msg_parse_column(LogMessage *self, NVHandle handle, const guchar **data, gin
 }
 
 static void
-log_msg_parse_cisco_sequence_id(LogMessage *self, const guchar **data, gint *length)
+log_msg_parse_cisco_sequence_id(LogMessage *msg, const guchar **data, gint *length)
 {
   const guchar *src = *data;
   gint left = *length;
@@ -210,7 +210,7 @@ log_msg_parse_cisco_sequence_id(LogMessage *self, const guchar **data, gint *len
   if (!left || *src != ' ')
     return;
 
-  log_msg_set_value(self, handles.cisco_seqid, (gchar *) *data, *length - left - 1);
+  log_msg_set_value(msg, handles.cisco_seqid, (gchar *) *data, *length - left - 1);
 
   *data = src;
   *length = left;
@@ -218,7 +218,7 @@ log_msg_parse_cisco_sequence_id(LogMessage *self, const guchar **data, gint *len
 }
 
 static void
-log_msg_parse_cisco_timestamp_attributes(LogMessage *self, const guchar **data, gint *length, gint parse_flags)
+log_msg_parse_cisco_timestamp_attributes(LogMessage *msg, const guchar **data, gint *length, gint parse_flags)
 {
   const guchar *src = *data;
   gint left = *length;
@@ -231,13 +231,13 @@ log_msg_parse_cisco_timestamp_attributes(LogMessage *self, const guchar **data, 
   if (G_UNLIKELY(src[0] == '*'))
     {
       if (!(parse_flags & LP_NO_PARSE_DATE))
-        log_msg_set_value(self, handles.is_synced, "0", 1);
+        log_msg_set_value(msg, handles.is_synced, "0", 1);
       _process_any_char(&src, &left);
     }
   else if (G_UNLIKELY(src[0] == '.'))
     {
       if (!(parse_flags & LP_NO_PARSE_DATE))
-        log_msg_set_value(self, handles.is_synced, "1", 1);
+        log_msg_set_value(msg, handles.is_synced, "1", 1);
       _process_any_char(&src, &left);
     }
   *data = src;
@@ -276,14 +276,14 @@ log_msg_parse_timestamp(UnixTime *stamp, const guchar **data, gint *length, guin
 }
 
 static gboolean
-log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
+log_msg_parse_date(LogMessage *msg, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
 {
-  UnixTime *stamp = &self->timestamps[LM_TS_STAMP];
+  UnixTime *stamp = &msg->timestamps[LM_TS_STAMP];
 
   unix_time_unset(stamp);
   if (!log_msg_parse_timestamp(stamp, data, length, parse_flags, recv_timezone_ofs))
     {
-      *stamp = self->timestamps[LM_TS_RECVD];
+      *stamp = msg->timestamps[LM_TS_RECVD];
       unix_time_set_timezone(stamp, recv_timezone_ofs);
       return FALSE;
     }
@@ -292,7 +292,7 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
 }
 
 static gboolean
-log_msg_parse_version(LogMessage *self, const guchar **data, gint *length)
+log_msg_parse_version(LogMessage *msg, const guchar **data, gint *length)
 {
   const guchar *src = *data;
   gint left = *length;
@@ -319,7 +319,7 @@ log_msg_parse_version(LogMessage *self, const guchar **data, gint *length)
 }
 
 static void
-log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *length, guint flags)
+log_msg_parse_legacy_program_name(LogMessage *msg, const guchar **data, gint *length, guint flags)
 {
   /* the data pointer will not change */
   const guchar *src, *prog_start;
@@ -332,7 +332,7 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
     {
       _process_any_char(&src, &left);
     }
-  log_msg_set_value(self, LM_V_PROGRAM, (gchar *) prog_start, src - prog_start);
+  log_msg_set_value(msg, LM_V_PROGRAM, (gchar *) prog_start, src - prog_start);
   if (left > 0 && *src == '[')
     {
       const guchar *pid_start = src + 1;
@@ -342,7 +342,7 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
         }
       if (left)
         {
-          log_msg_set_value(self, LM_V_PID, (gchar *) pid_start, src - pid_start);
+          log_msg_set_value(msg, LM_V_PID, (gchar *) pid_start, src - pid_start);
         }
       if (left > 0 && *src == ']')
         {
@@ -359,7 +359,7 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
     }
   if ((flags & LP_STORE_LEGACY_MSGHDR))
     {
-      log_msg_set_value(self, LM_V_LEGACY_MSGHDR, (gchar *) *data, *length - left);
+      log_msg_set_value(msg, LM_V_LEGACY_MSGHDR, (gchar *) *data, *length - left);
     }
   *data = src;
   *length = left;
@@ -440,7 +440,7 @@ ipv6_heuristics_feed_gchar(IPv6Heuristics *self, gchar c)
 }
 
 static void
-log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
+log_msg_parse_hostname(LogMessage *msg, const guchar **data, gint *length,
                        const guchar **hostname_start, int *hostname_len,
                        guint flags, regex_t *bad_hostname)
 {
@@ -508,17 +508,17 @@ log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
 
 /**
  * log_msg_parse:
- * @self: LogMessage instance to store parsed information into
+ * @msg: LogMessage instance to store parsed information into
  * @data: message
  * @length: length of the message pointed to by @data
  * @flags: value affecting how the message is parsed (bits from LP_*)
  *
  * Parse an http://www.syslog.cc/ietf/drafts/draft-ietf-syslog-protocol-23.txt formatted log
  * message for structured data elements and store the parsed information
- * in @self.values and dup the SD string. Parsing is affected by the bits set @flags argument.
+ * in @msg.values and dup the SD string. Parsing is affected by the bits set @flags argument.
  **/
 gboolean
-log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgFormatOptions *options)
+log_msg_parse_sd(LogMessage *msg, const guchar **data, gint *length, const MsgFormatOptions *options)
 {
   /*
    * STRUCTURED-DATA = NILVALUE / 1*SD-ELEMENT
@@ -571,7 +571,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
           pos = 0;
           while (left && *src != ' ' && *src != ']')
             {
-              /* the sd_id_name is max 255, the other chars are only stored in the self->sd_str*/
+              /* the sd_id_name is max 255, the other chars are only stored in the msg->sd_str*/
               if (pos < sizeof(sd_id_name) - 1 - options->sdata_prefix_len)
                 {
                   if (isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
@@ -601,7 +601,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
 
           if (left && *src == ']')
             {
-              log_msg_set_value_by_name(self, sd_value_name, "", 0);
+              log_msg_set_value_by_name(msg, sd_value_name, "", 0);
             }
           else
             {
@@ -697,7 +697,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
                   goto error;
                 }
 
-              log_msg_set_value_by_name(self, sd_value_name, sd_param_value, sd_param_value_len);
+              log_msg_set_value_by_name(msg, sd_value_name, sd_param_value, sd_param_value_len);
             }
 
           if (left && *src == ']')
@@ -733,18 +733,18 @@ error:
 }
 
 static gboolean
-log_msg_parse_legacy_header(LogMessage *self, const guchar **data, gint *length, const MsgFormatOptions *parse_options)
+log_msg_parse_legacy_header(LogMessage *msg, const guchar **data, gint *length, const MsgFormatOptions *parse_options)
 {
   const guchar *src = *data;
   gint left = *length;
   GTimeVal now;
 
-  log_msg_parse_cisco_sequence_id(self, &src, &left);
-  log_msg_parse_skip_chars(self, &src, &left, " ", -1);
-  log_msg_parse_cisco_timestamp_attributes(self, &src, &left, parse_options->flags);
+  log_msg_parse_cisco_sequence_id(msg, &src, &left);
+  log_msg_parse_skip_chars(msg, &src, &left, " ", -1);
+  log_msg_parse_cisco_timestamp_attributes(msg, &src, &left, parse_options->flags);
 
   cached_g_current_time(&now);
-  if (log_msg_parse_date(self, &src, &left, parse_options->flags & ~LP_SYSLOG_PROTOCOL,
+  if (log_msg_parse_date(msg, &src, &left, parse_options->flags & ~LP_SYSLOG_PROTOCOL,
                          time_zone_info_get_offset(parse_options->recv_time_zone_info, (time_t)now.tv_sec)))
     {
       /* Expected format: hostname program[pid]: */
@@ -752,7 +752,7 @@ log_msg_parse_legacy_header(LogMessage *self, const guchar **data, gint *length,
       const guchar *hostname_start = NULL;
       int hostname_len = 0;
 
-      log_msg_parse_skip_chars(self, &src, &left, " ", -1);
+      log_msg_parse_skip_chars(msg, &src, &left, " ", -1);
 
       /* Detect funny AIX syslogd forwarded message. */
       if (G_UNLIKELY(left >= (sizeof(aix_fwd_string) - 1) &&
@@ -761,8 +761,8 @@ log_msg_parse_legacy_header(LogMessage *self, const guchar **data, gint *length,
           src += sizeof(aix_fwd_string) - 1;
           left -= sizeof(aix_fwd_string) - 1;
           hostname_start = src;
-          hostname_len = log_msg_parse_skip_chars_until(self, &src, &left, ":");
-          log_msg_parse_skip_chars(self, &src, &left, " :", -1);
+          hostname_len = log_msg_parse_skip_chars_until(msg, &src, &left, ":");
+          log_msg_parse_skip_chars(msg, &src, &left, " :", -1);
         }
 
       /* Now, try to tell if it's a "last message repeated" line */
@@ -777,21 +777,21 @@ log_msg_parse_legacy_header(LogMessage *self, const guchar **data, gint *length,
             {
               /* Don't parse a hostname if it is local */
               /* It's a regular ol' message. */
-              log_msg_parse_hostname(self, &src, &left, &hostname_start, &hostname_len, parse_options->flags,
+              log_msg_parse_hostname(msg, &src, &left, &hostname_start, &hostname_len, parse_options->flags,
                                      parse_options->bad_hostname);
 
               /* Skip whitespace. */
-              log_msg_parse_skip_chars(self, &src, &left, " ", -1);
+              log_msg_parse_skip_chars(msg, &src, &left, " ", -1);
             }
 
           /* Try to extract a program name */
-          log_msg_parse_legacy_program_name(self, &src, &left, parse_options->flags);
+          log_msg_parse_legacy_program_name(msg, &src, &left, parse_options->flags);
         }
 
       /* If we did manage to find a hostname, store it. */
       if (hostname_start)
         {
-          log_msg_set_value(self, LM_V_HOST, (gchar *) hostname_start, hostname_len);
+          log_msg_set_value(msg, LM_V_HOST, (gchar *) hostname_start, hostname_len);
         }
     }
   else
@@ -800,15 +800,15 @@ log_msg_parse_legacy_header(LogMessage *self, const guchar **data, gint *length,
       /* Different format */
 
       /* A kernel message? Use 'kernel' as the program name. */
-      if (((self->pri & LOG_FACMASK) == LOG_KERN && (parse_options->flags & LP_LOCAL) != 0))
+      if (((msg->pri & LOG_FACMASK) == LOG_KERN && (parse_options->flags & LP_LOCAL) != 0))
         {
-          log_msg_set_value(self, LM_V_PROGRAM, "kernel", 6);
+          log_msg_set_value(msg, LM_V_PROGRAM, "kernel", 6);
         }
       /* No, not a kernel message. */
       else
         {
           /* Capture the program name */
-          log_msg_parse_legacy_program_name(self, &src, &left, parse_options->flags);
+          log_msg_parse_legacy_program_name(msg, &src, &left, parse_options->flags);
         }
     }
   *data = src;
@@ -818,18 +818,18 @@ log_msg_parse_legacy_header(LogMessage *self, const guchar **data, gint *length,
 
 /**
  * log_msg_parse_legacy:
- * @self: LogMessage instance to store parsed information into
+ * @msg: LogMessage instance to store parsed information into
  * @data: message
  * @length: length of the message pointed to by @data
  * @flags: value affecting how the message is parsed (bits from LP_*)
  *
  * Parse an RFC3164 formatted log message and store the parsed information
- * in @self. Parsing is affected by the bits set @flags argument.
+ * in @msg. Parsing is affected by the bits set @flags argument.
  **/
 static gboolean
 log_msg_parse_legacy(const MsgFormatOptions *parse_options,
                      const guchar *data, gint length,
-                     LogMessage *self, gsize *position)
+                     LogMessage *msg, gsize *position)
 {
   const guchar *src;
   gint left;
@@ -837,13 +837,13 @@ log_msg_parse_legacy(const MsgFormatOptions *parse_options,
   src = (const guchar *) data;
   left = length;
 
-  if (!log_msg_parse_pri(self, &src, &left, parse_options->flags, parse_options->default_pri))
+  if (!log_msg_parse_pri(msg, &src, &left, parse_options->flags, parse_options->default_pri))
     {
       goto error;
     }
 
   if ((parse_options->flags & LP_NO_HEADER) == 0)
-    log_msg_parse_legacy_header(self, &src, &left, parse_options);
+    log_msg_parse_legacy_header(msg, &src, &left, parse_options);
 
   if (parse_options->flags & LP_SANITIZE_UTF8 && !g_utf8_validate((gchar *) src, left, NULL))
     {
@@ -859,18 +859,18 @@ log_msg_parse_legacy(const MsgFormatOptions *parse_options,
 
       /* MUST NEVER BE REALLOCATED */
       g_assert(sanitized_message.str == buf);
-      log_msg_set_value(self, LM_V_MESSAGE, sanitized_message.str, sanitized_message.len);
-      self->flags |= LF_UTF8;
+      log_msg_set_value(msg, LM_V_MESSAGE, sanitized_message.str, sanitized_message.len);
+      msg->flags |= LF_UTF8;
     }
   else
     {
-      log_msg_set_value(self, LM_V_MESSAGE, (gchar *) src, left);
+      log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) src, left);
 
       /* we don't need revalidation if sanitize already said it was valid utf8 */
       if ((parse_options->flags & LP_VALIDATE_UTF8) &&
           ((parse_options->flags & LP_SANITIZE_UTF8) == 0) &&
           g_utf8_validate((gchar *) src, left, NULL))
-        self->flags |= LF_UTF8;
+        msg->flags |= LF_UTF8;
     }
 
   return TRUE;
@@ -885,7 +885,7 @@ error:
  * Parse a message according to the latest syslog-protocol drafts.
  **/
 static gboolean
-log_msg_parse_syslog_proto(const MsgFormatOptions *parse_options, const guchar *data, gint length, LogMessage *self,
+log_msg_parse_syslog_proto(const MsgFormatOptions *parse_options, const guchar *data, gint length, LogMessage *msg,
                            gsize *position)
 {
   /**
@@ -907,30 +907,30 @@ log_msg_parse_syslog_proto(const MsgFormatOptions *parse_options, const guchar *
   left = length;
 
 
-  if (!log_msg_parse_pri(self, &src, &left, parse_options->flags, parse_options->default_pri) ||
-      !log_msg_parse_version(self, &src, &left))
+  if (!log_msg_parse_pri(msg, &src, &left, parse_options->flags, parse_options->default_pri) ||
+      !log_msg_parse_version(msg, &src, &left))
     {
       if ((parse_options->flags & LP_NO_RFC3164_FALLBACK) == 0)
-        return log_msg_parse_legacy(parse_options, data, length, self, position);
+        return log_msg_parse_legacy(parse_options, data, length, msg, position);
       return FALSE;
     }
 
-  if (!log_msg_parse_skip_space(self, &src, &left))
+  if (!log_msg_parse_skip_space(msg, &src, &left))
     {
       goto error;
     }
 
   /* ISO time format */
-  if (!log_msg_parse_date(self, &src, &left, parse_options->flags,
+  if (!log_msg_parse_date(msg, &src, &left, parse_options->flags,
                           time_zone_info_get_offset(parse_options->recv_time_zone_info, time(NULL))))
     goto error;
 
-  if (!log_msg_parse_skip_space(self, &src, &left))
+  if (!log_msg_parse_skip_space(msg, &src, &left))
     goto error;
 
   /* hostname 255 ascii */
-  log_msg_parse_hostname(self, &src, &left, &hostname_start, &hostname_len, parse_options->flags, NULL);
-  if (!log_msg_parse_skip_space(self, &src, &left))
+  log_msg_parse_hostname(msg, &src, &left, &hostname_start, &hostname_len, parse_options->flags, NULL);
+  if (!log_msg_parse_skip_space(msg, &src, &left))
     {
       src++;
       goto error;
@@ -940,33 +940,33 @@ log_msg_parse_syslog_proto(const MsgFormatOptions *parse_options, const guchar *
     ;
   else if (hostname_start)
     {
-      log_msg_set_value(self, LM_V_HOST, (gchar *) hostname_start, hostname_len);
+      log_msg_set_value(msg, LM_V_HOST, (gchar *) hostname_start, hostname_len);
     }
 
   /* application name 48 ascii*/
-  log_msg_parse_column(self, LM_V_PROGRAM, &src, &left, 48);
-  if (!log_msg_parse_skip_space(self, &src, &left))
+  log_msg_parse_column(msg, LM_V_PROGRAM, &src, &left, 48);
+  if (!log_msg_parse_skip_space(msg, &src, &left))
     goto error;
 
   /* process id 128 ascii */
-  log_msg_parse_column(self, LM_V_PID, &src, &left, 128);
-  if (!log_msg_parse_skip_space(self, &src, &left))
+  log_msg_parse_column(msg, LM_V_PID, &src, &left, 128);
+  if (!log_msg_parse_skip_space(msg, &src, &left))
     goto error;
 
   /* message id 32 ascii */
-  log_msg_parse_column(self, LM_V_MSGID, &src, &left, 32);
-  if (!log_msg_parse_skip_space(self, &src, &left))
+  log_msg_parse_column(msg, LM_V_MSGID, &src, &left, 32);
+  if (!log_msg_parse_skip_space(msg, &src, &left))
     goto error;
 
   /* structured data part */
-  if (!log_msg_parse_sd(self, &src, &left, parse_options))
+  if (!log_msg_parse_sd(msg, &src, &left, parse_options))
     goto error;
 
   /* checking if there are remaining data in log message */
   if (left != 0)
     {
       /* optional part of the log message [SP MSG] */
-      if (!log_msg_parse_skip_space(self, &src, &left))
+      if (!log_msg_parse_skip_space(msg, &src, &left))
         {
           goto error;
         }
@@ -974,16 +974,16 @@ log_msg_parse_syslog_proto(const MsgFormatOptions *parse_options, const guchar *
       if (left >= 3 && memcmp(src, "\xEF\xBB\xBF", 3) == 0)
         {
           /* we have a BOM, this is UTF8 */
-          self->flags |= LF_UTF8;
+          msg->flags |= LF_UTF8;
           src += 3;
           left -= 3;
         }
       else if ((parse_options->flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
         {
-          self->flags |= LF_UTF8;
+          msg->flags |= LF_UTF8;
         }
     }
-  log_msg_set_value(self, LM_V_MESSAGE, (gchar *) src, left);
+  log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) src, left);
   return TRUE;
 error:
   *position = src - data;
