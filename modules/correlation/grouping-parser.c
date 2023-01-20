@@ -24,8 +24,6 @@
 #include "scratch-buffers.h"
 #include "str-utils.h"
 
-static NVHandle context_id_handle = 0;
-
 void
 grouping_parser_set_key_template(LogParser *s, LogTemplate *key_template)
 {
@@ -176,7 +174,6 @@ grouping_parser_lookup_or_create_context(GroupingParser *self, LogMessage *msg)
   GString *buffer = scratch_buffers_alloc();
 
   log_template_format(self->key_template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, buffer);
-  log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
   correlation_key_init(&key, self->scope, msg, buffer->str);
   context = correlation_state_tx_lookup_context(self->correlation, &key);
@@ -254,13 +251,12 @@ grouping_parser_process_method(LogParser *s,
 
   if (grouping_parser_filter_messages(self, pmsg, path_options))
     {
-      StatefulParserEmittedMessages emitted_messages = STATEFUL_PARSER_EMITTED_MESSAGES_INIT;
-      LogMessage *msg = log_msg_make_writable(pmsg, path_options);
+      LogMessage *msg = *pmsg;
 
+      StatefulParserEmittedMessages emitted_messages = STATEFUL_PARSER_EMITTED_MESSAGES_INIT;
       _advance_time_based_on_message(self, &msg->timestamps[LM_TS_STAMP], &emitted_messages);
 
       grouping_parser_perform_grouping(self, msg, &emitted_messages);
-      log_msg_write_protect(msg);
       stateful_parser_emitted_messages_flush(&emitted_messages, &self->super);
     }
   return (self->super.inject_mode != LDBP_IM_AGGREGATE_ONLY);
@@ -344,5 +340,4 @@ grouping_parser_init_instance(GroupingParser *self, GlobalConfig *cfg)
 void
 grouping_parser_global_init(void)
 {
-  context_id_handle = log_msg_get_value_handle(".classifier.context_id");
 }
