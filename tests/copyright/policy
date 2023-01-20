@@ -158,6 +158,7 @@ modules/python-modules/syslogng/modules/example/.*
 modules/python-modules/setup\.py
 scripts/build-python-venv\.sh
 modules/syslogformat/sdata-parser\.[ch]
+tests/light/functional_tests/parsers/sdata-parser/test_sdata_parser\.py
 
 ###########################################################################
 # These files are GPLd with Balabit origin.
