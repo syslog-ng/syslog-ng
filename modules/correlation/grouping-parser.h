@@ -83,7 +83,8 @@ void grouping_parser_set_timeout(LogParser *s, gint timeout);
 
 
 CorrelationContext *grouping_parser_lookup_or_create_context(GroupingParser *self, LogMessage *msg);
-void grouping_parser_perform_grouping(GroupingParser *s, LogMessage *msg);
+void grouping_parser_perform_grouping(GroupingParser *s, LogMessage *msg,
+                                      StatefulParserEmittedMessages *emitted_mesages);
 
 gboolean
 grouping_parser_process_method(LogParser *s,

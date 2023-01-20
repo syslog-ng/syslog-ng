@@ -206,7 +206,7 @@ grouping_parser_lookup_or_create_context(GroupingParser *self, LogMessage *msg)
 }
 
 void
-grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg)
+grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg, StatefulParserEmittedMessages *emitted_messages)
 {
   correlation_state_tx_begin(self->correlation);
 
@@ -217,8 +217,6 @@ grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg)
   if (r == GP_CONTEXT_UPDATED)
     {
       correlation_state_tx_update_context(self->correlation, context, self->timeout);
-      log_msg_write_protect(msg);
-
       correlation_state_tx_end(self->correlation);
     }
   else if (r == GP_CONTEXT_COMPLETE || r == GP_STARTS_NEW_CONTEXT)
@@ -235,15 +233,13 @@ grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg)
       correlation_state_tx_end(self->correlation);
       if (genmsg)
         {
-          stateful_parser_emit_synthetic(&self->super, genmsg);
+          stateful_parser_emitted_messages_add(emitted_messages, genmsg);
           log_msg_unref(genmsg);
         }
 
-      log_msg_write_protect(msg);
-
       if (r == GP_STARTS_NEW_CONTEXT)
         {
-          grouping_parser_perform_grouping(self, msg);
+          grouping_parser_perform_grouping(self, msg, emitted_messages);
         }
     }
 }
@@ -262,9 +258,10 @@ grouping_parser_process_method(LogParser *s,
       LogMessage *msg = log_msg_make_writable(pmsg, path_options);
 
       _advance_time_based_on_message(self, &msg->timestamps[LM_TS_STAMP], &emitted_messages);
-      stateful_parser_emitted_messages_flush(&emitted_messages, &self->super);
 
-      grouping_parser_perform_grouping(self, msg);
+      grouping_parser_perform_grouping(self, msg, &emitted_messages);
+      log_msg_write_protect(msg);
+      stateful_parser_emitted_messages_flush(&emitted_messages, &self->super);
     }
   return (self->super.inject_mode != LDBP_IM_AGGREGATE_ONLY);
 }
