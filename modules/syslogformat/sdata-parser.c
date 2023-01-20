@@ -38,7 +38,7 @@ sdata_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path
 
   const guchar *data = (const guchar *) input;
   gint data_len = input_len;
-  return log_msg_parse_sd(msg, &data, &data_len, &self->parse_options);
+  return _syslog_format_parse_sd(msg, &data, &data_len, &self->parse_options);
 }
 
 static gboolean

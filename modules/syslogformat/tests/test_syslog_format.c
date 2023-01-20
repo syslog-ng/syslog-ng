@@ -113,7 +113,7 @@ _extract_sdata_into_message(const gchar *sdata, LogMessage **pmsg)
 
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, cfg);
-  gboolean result = log_msg_parse_sd(msg, &data, &data_length, &parse_options);
+  gboolean result = _syslog_format_parse_sd(msg, &data, &data_length, &parse_options);
   msg_format_options_destroy(&parse_options);
 
   if (pmsg)
