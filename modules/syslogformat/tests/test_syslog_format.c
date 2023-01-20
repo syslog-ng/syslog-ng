@@ -175,9 +175,29 @@ Test(syslog_format, test_sdata_invalid_param)
 
 Test(syslog_format, test_sdata_invalid_value)
 {
-  cr_assert_not(_extract_sdata_into_message("[foo bar=baz]", NULL));
   cr_assert_not(_extract_sdata_into_message("[foo bar=\"]", NULL));
+}
 
+Test(syslog_format, test_sdata_unquoted_value)
+{
+  LogMessage *msg;
+
+  /* VMWare spits out SDATA like this: [Originator@6876 sub=Vimsvc.ha-eventmgr opID=esxui-13c6-6b16 sid=5214bde6 user=root] */
+  cr_assert(_extract_sdata_into_message("[foo bar=baz]", &msg));
+  assert_log_message_value_by_name(msg, "SDATA", "[foo bar=\"baz\"]");
+  assert_log_message_value_by_name(msg, ".SDATA.foo.bar", "baz");
+  log_msg_unref(msg);
+
+  cr_assert(
+    _extract_sdata_into_message("[Originator@6876 sub=Vimsvc.ha-eventmgr opID=esxui-13c6-6b16 sid=5214bde6 user=root]",
+                                &msg));
+  assert_log_message_value_by_name(msg, "SDATA",
+                                   "[Originator@6876 sub=\"Vimsvc.ha-eventmgr\" opID=\"esxui-13c6-6b16\" sid=\"5214bde6\" user=\"root\"]");
+  assert_log_message_value_by_name(msg, ".SDATA.Originator@6876.sub", "Vimsvc.ha-eventmgr");
+  assert_log_message_value_by_name(msg, ".SDATA.Originator@6876.opID", "esxui-13c6-6b16");
+  assert_log_message_value_by_name(msg, ".SDATA.Originator@6876.sid", "5214bde6");
+  assert_log_message_value_by_name(msg, ".SDATA.Originator@6876.user", "root");
+  log_msg_unref(msg);
 }
 
 Test(syslog_format, test_sdata_param_value_invalid_escape)

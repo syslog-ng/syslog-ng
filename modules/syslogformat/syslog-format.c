@@ -693,6 +693,23 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
                   else
                     goto error;
                 }
+              else if (left)
+                {
+                  pos = 0;
+
+                  while (left && (*src != ' ' && *src != ']'))
+                    {
+                      if (pos < sizeof(sd_param_value) - 1)
+                        {
+                          sd_param_value[pos] = *src;
+                          pos++;
+                        }
+                      _skip_char(&src, &left);
+                    }
+                  sd_param_value[pos] = 0;
+                  sd_param_value_len = pos;
+
+                }
               else
                 {
                   goto error;
