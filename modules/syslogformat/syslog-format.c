@@ -48,7 +48,7 @@ static struct
 } handles;
 
 static inline gboolean
-_process_any_char(const guchar **data, gint *left)
+_skip_char(const guchar **data, gint *left)
 {
   if (*left < 1)
     return FALSE;
@@ -59,50 +59,8 @@ _process_any_char(const guchar **data, gint *left)
   return TRUE;
 }
 
-
-static gboolean
-_syslog_format_parse_pri(LogMessage *msg, const guchar **data, gint *length, guint flags, guint16 default_pri)
-{
-  int pri;
-  gboolean success = TRUE;
-  const guchar *src = *data;
-  gint left = *length;
-
-  if (left && src[0] == '<')
-    {
-      _process_any_char(&src, &left);
-      pri = 0;
-      while (left && *src != '>')
-        {
-          if (isdigit(*src))
-            {
-              pri = pri * 10 + ((*src) - '0');
-            }
-          else
-            {
-              return FALSE;
-            }
-          _process_any_char(&src, &left);
-        }
-      msg->pri = pri;
-      if (left)
-        {
-          _process_any_char(&src, &left);
-        }
-    }
-  /* No priority info in the buffer? Just assign a default. */
-  else
-    {
-      msg->pri = default_pri != 0xFFFF ? default_pri : (EVT_FAC_USER | EVT_PRI_NOTICE);
-    }
-
-  *data = src;
-  *length = left;
-  return success;
-}
-
 static gint
-_syslog_format_parse_skip_chars(LogMessage *msg, const guchar **data, gint *length, const gchar *chars, gint max_len)
+_skip_chars(const guchar **data, gint *length, const gchar *chars, gint max_len)
 {
   const guchar *src = *data;
   gint left = *length;
@@ -110,7 +68,7 @@ _syslog_format_parse_skip_chars(LogMessage *msg, const guchar **data, gint *leng
 
   while (max_len && left && _strchr_optimized_for_single_char_haystack(chars, *src))
     {
-      _process_any_char(&src, &left);
+      _skip_char(&src, &left);
       num_skipped++;
       if (max_len >= 0)
         max_len--;
@@ -121,14 +79,14 @@ _syslog_format_parse_skip_chars(LogMessage *msg, const guchar **data, gint *leng
 }
 
 static gboolean
-_syslog_format_parse_skip_space(LogMessage *msg, const guchar **data, gint *length)
+_skip_space(const guchar **data, gint *length)
 {
   const guchar *src = *data;
   gint left = *length;
 
   if (left > 0 && *src == ' ')
     {
-      _process_any_char(&src, &left);
+      _skip_char(&src, &left);
     }
   else
     {
@@ -141,7 +99,7 @@ _syslog_format_parse_skip_space(LogMessage *msg, const guchar **data, gint *leng
 }
 
 static gint
-_syslog_format_parse_skip_chars_until(LogMessage *msg, const guchar **data, gint *length, const gchar *delims)
+_skip_chars_until(const guchar **data, gint *length, const gchar *delims)
 {
   const guchar *src = *data;
   gint left = *length;
@@ -149,12 +107,53 @@ _syslog_format_parse_skip_chars_until(LogMessage *msg, const guchar **data, gint
 
   while (left && _strchr_optimized_for_single_char_haystack(delims, *src) == 0)
     {
-      _process_any_char(&src, &left);
+      _skip_char(&src, &left);
       num_skipped++;
     }
   *data = src;
   *length = left;
   return num_skipped;
+}
+
+static gboolean
+_syslog_format_parse_pri(LogMessage *msg, const guchar **data, gint *length, guint flags, guint16 default_pri)
+{
+  int pri;
+  gboolean success = TRUE;
+  const guchar *src = *data;
+  gint left = *length;
+
+  if (left && src[0] == '<')
+    {
+      _skip_char(&src, &left);
+      pri = 0;
+      while (left && *src != '>')
+        {
+          if (isdigit(*src))
+            {
+              pri = pri * 10 + ((*src) - '0');
+            }
+          else
+            {
+              return FALSE;
+            }
+          _skip_char(&src, &left);
+        }
+      msg->pri = pri;
+      if (left)
+        {
+          _skip_char(&src, &left);
+        }
+    }
+  /* No priority info in the buffer? Just assign a default. */
+  else
+    {
+      msg->pri = default_pri != 0xFFFF ? default_pri : (EVT_FAC_USER | EVT_PRI_NOTICE);
+    }
+
+  *data = src;
+  *length = left;
+  return success;
 }
 
 static void
@@ -199,10 +198,10 @@ _syslog_format_parse_cisco_sequence_id(LogMessage *msg, const guchar **data, gin
     {
       if (!isdigit(*src))
         return;
-      if (!_process_any_char(&src, &left))
+      if (!_skip_char(&src, &left))
         return;
     }
-  if (!_process_any_char(&src, &left))
+  if (!_skip_char(&src, &left))
     return;
 
   /* if the next char is not space, then we may try to read a date */
@@ -232,13 +231,13 @@ _syslog_format_parse_cisco_timestamp_attributes(LogMessage *msg, const guchar **
     {
       if (!(parse_flags & LP_NO_PARSE_DATE))
         log_msg_set_value(msg, handles.is_synced, "0", 1);
-      _process_any_char(&src, &left);
+      _skip_char(&src, &left);
     }
   else if (G_UNLIKELY(src[0] == '.'))
     {
       if (!(parse_flags & LP_NO_PARSE_DATE))
         log_msg_set_value(msg, handles.is_synced, "1", 1);
-      _process_any_char(&src, &left);
+      _skip_char(&src, &left);
     }
   *data = src;
   *length = left;
@@ -310,7 +309,7 @@ _syslog_format_parse_version(LogMessage *msg, const guchar **data, gint *length)
         {
           return FALSE;
         }
-      _process_any_char(&src, &left);
+      _skip_char(&src, &left);
     }
   if (version != 1)
     return FALSE;
@@ -332,7 +331,7 @@ _syslog_format_parse_legacy_program_name(LogMessage *msg, const guchar **data, g
   prog_start = src;
   while (left && *src != ' ' && *src != '[' && *src != ':')
     {
-      _process_any_char(&src, &left);
+      _skip_char(&src, &left);
     }
   log_msg_set_value(msg, LM_V_PROGRAM, (gchar *) prog_start, src - prog_start);
   if (left > 0 && *src == '[')
@@ -340,7 +339,7 @@ _syslog_format_parse_legacy_program_name(LogMessage *msg, const guchar **data, g
       const guchar *pid_start = src + 1;
       while (left && *src != ' ' && *src != ']' && *src != ':')
         {
-          _process_any_char(&src, &left);
+          _skip_char(&src, &left);
         }
       if (left)
         {
@@ -348,16 +347,16 @@ _syslog_format_parse_legacy_program_name(LogMessage *msg, const guchar **data, g
         }
       if (left > 0 && *src == ']')
         {
-          _process_any_char(&src, &left);
+          _skip_char(&src, &left);
         }
     }
   if (left > 0 && *src == ':')
     {
-      _process_any_char(&src, &left);
+      _skip_char(&src, &left);
     }
   if (left > 0 && *src == ' ')
     {
-      _process_any_char(&src, &left);
+      _skip_char(&src, &left);
     }
   if ((flags & LP_STORE_LEGACY_MSGHDR))
     {
@@ -477,7 +476,7 @@ _syslog_format_parse_hostname(LogMessage *msg, const guchar **data, gint *length
           break;
         }
       hostname_buf[dst++] = *src;
-      _process_any_char(&src, &left);
+      _skip_char(&src, &left);
     }
   hostname_buf[dst] = 0;
 
@@ -559,11 +558,11 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
   if (left && src[0] == '-')
     {
       /* Nothing to do here */
-      _process_any_char(&src, &left);
+      _skip_char(&src, &left);
     }
   else if (left && src[0] == '[')
     {
-      _process_any_char(&src, &left);
+      _skip_char(&src, &left);
       open_sd++;
       do
         {
@@ -590,7 +589,7 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
                 {
                   goto error;
                 }
-              _process_any_char(&src, &left);
+              _skip_char(&src, &left);
             }
 
           if (pos == 0)
@@ -614,7 +613,7 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
           while (left && *src != ']')
             {
               if (left && *src == ' ') /* skip the ' ' before the parameter name */
-                _process_any_char(&src, &left);
+                _skip_char(&src, &left);
               else
                 goto error;
 
@@ -639,14 +638,14 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
                     {
                       goto error;
                     }
-                  _process_any_char(&src, &left);
+                  _skip_char(&src, &left);
                 }
               sd_param_name[pos] = 0;
               strncpy(&sd_value_name[options->sdata_prefix_len + 1 + sd_id_len], sd_param_name,
                       sizeof(sd_value_name) - options->sdata_prefix_len - 1 - sd_id_len);
 
               if (left && *src == '=')
-                _process_any_char(&src, &left);
+                _skip_char(&src, &left);
               else
                 goto error;
 
@@ -656,7 +655,7 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
                 {
                   gboolean quote = FALSE;
                   /* opening quote */
-                  _process_any_char(&src, &left);
+                  _skip_char(&src, &left);
                   pos = 0;
 
                   while (left && (*src != '"' || quote))
@@ -674,7 +673,7 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
                             }
                           else if (!quote &&  *src == ']')
                             {
-                              _process_any_char(&src, &left);
+                              _skip_char(&src, &left);
                               goto error;
                             }
                           if (pos < sizeof(sd_param_value) - 1)
@@ -684,13 +683,13 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
                             }
                           quote = FALSE;
                         }
-                      _process_any_char(&src, &left);
+                      _skip_char(&src, &left);
                     }
                   sd_param_value[pos] = 0;
                   sd_param_value_len = pos;
 
                   if (left && *src == '"')/* closing quote */
-                    _process_any_char(&src, &left);
+                    _skip_char(&src, &left);
                   else
                     goto error;
                 }
@@ -704,7 +703,7 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
 
           if (left && *src == ']')
             {
-              _process_any_char(&src, &left);
+              _skip_char(&src, &left);
               open_sd--;
             }
           else
@@ -716,7 +715,7 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
           if (left && *src == '[')
             {
               /* new structured data begins, thus continue iteration */
-              _process_any_char(&src, &left);
+              _skip_char(&src, &left);
               open_sd++;
             }
         }
@@ -743,7 +742,7 @@ _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *l
   GTimeVal now;
 
   _syslog_format_parse_cisco_sequence_id(msg, &src, &left);
-  _syslog_format_parse_skip_chars(msg, &src, &left, " ", -1);
+  _skip_chars(&src, &left, " ", -1);
   _syslog_format_parse_cisco_timestamp_attributes(msg, &src, &left, parse_options->flags);
 
   cached_g_current_time(&now);
@@ -755,7 +754,7 @@ _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *l
       const guchar *hostname_start = NULL;
       int hostname_len = 0;
 
-      _syslog_format_parse_skip_chars(msg, &src, &left, " ", -1);
+      _skip_chars(&src, &left, " ", -1);
 
       /* Detect funny AIX syslogd forwarded message. */
       if (G_UNLIKELY(left >= (sizeof(aix_fwd_string) - 1) &&
@@ -764,8 +763,8 @@ _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *l
           src += sizeof(aix_fwd_string) - 1;
           left -= sizeof(aix_fwd_string) - 1;
           hostname_start = src;
-          hostname_len = _syslog_format_parse_skip_chars_until(msg, &src, &left, ":");
-          _syslog_format_parse_skip_chars(msg, &src, &left, " :", -1);
+          hostname_len = _skip_chars_until(&src, &left, ":");
+          _skip_chars(&src, &left, " :", -1);
         }
 
       /* Now, try to tell if it's a "last message repeated" line */
@@ -784,7 +783,7 @@ _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *l
                                             parse_options->bad_hostname);
 
               /* Skip whitespace. */
-              _syslog_format_parse_skip_chars(msg, &src, &left, " ", -1);
+              _skip_chars(&src, &left, " ", -1);
             }
 
           /* Try to extract a program name */
@@ -919,7 +918,7 @@ _syslog_format_parse_syslog_proto(const MsgFormatOptions *parse_options, const g
       return FALSE;
     }
 
-  if (!_syslog_format_parse_skip_space(msg, &src, &left))
+  if (!_skip_space(&src, &left))
     {
       goto error;
     }
@@ -929,12 +928,12 @@ _syslog_format_parse_syslog_proto(const MsgFormatOptions *parse_options, const g
                                  time_zone_info_get_offset(parse_options->recv_time_zone_info, time(NULL))))
     goto error;
 
-  if (!_syslog_format_parse_skip_space(msg, &src, &left))
+  if (!_skip_space(&src, &left))
     goto error;
 
   /* hostname 255 ascii */
   _syslog_format_parse_hostname(msg, &src, &left, &hostname_start, &hostname_len, parse_options->flags, NULL);
-  if (!_syslog_format_parse_skip_space(msg, &src, &left))
+  if (!_skip_space(&src, &left))
     {
       src++;
       goto error;
@@ -949,17 +948,17 @@ _syslog_format_parse_syslog_proto(const MsgFormatOptions *parse_options, const g
 
   /* application name 48 ascii*/
   _syslog_format_parse_column(msg, LM_V_PROGRAM, &src, &left, 48);
-  if (!_syslog_format_parse_skip_space(msg, &src, &left))
+  if (!_skip_space(&src, &left))
     goto error;
 
   /* process id 128 ascii */
   _syslog_format_parse_column(msg, LM_V_PID, &src, &left, 128);
-  if (!_syslog_format_parse_skip_space(msg, &src, &left))
+  if (!_skip_space(&src, &left))
     goto error;
 
   /* message id 32 ascii */
   _syslog_format_parse_column(msg, LM_V_MSGID, &src, &left, 32);
-  if (!_syslog_format_parse_skip_space(msg, &src, &left))
+  if (!_skip_space(&src, &left))
     goto error;
 
   /* structured data part */
@@ -970,7 +969,7 @@ _syslog_format_parse_syslog_proto(const MsgFormatOptions *parse_options, const g
   if (left != 0)
     {
       /* optional part of the log message [SP MSG] */
-      if (!_syslog_format_parse_skip_space(msg, &src, &left))
+      if (!_skip_space(&src, &left))
         {
           goto error;
         }
