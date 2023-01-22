@@ -73,7 +73,7 @@ _advance_time_by_timer_tick(GroupingParser *self)
 
   if (correlation_state_timer_tick(self->correlation, &emitted_messages))
     {
-      msg_debug("Advancing grouping-by() current time because of timer tick",
+      msg_debug("grouping-parser: advancing current time because of timer tick",
                 evt_tag_long("utc", correlation_state_get_time(self->correlation)),
                 log_pipe_location_tag(&self->super.super.super));
     }
@@ -98,7 +98,7 @@ _advance_time_based_on_message(GroupingParser *self, const UnixTime *ls,
                                StatefulParserEmittedMessages *emitted_messages)
 {
   correlation_state_set_time(self->correlation, ls->ut_sec, emitted_messages);
-  msg_debug("Advancing grouping-by() current time because of an incoming message",
+  msg_debug("grouping-parser: advancing current time because of an incoming message",
             evt_tag_long("utc", correlation_state_get_time(self->correlation)),
             log_pipe_location_tag(&self->super.super.super));
 }
@@ -151,7 +151,7 @@ _expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpointer calle
   StatefulParserEmittedMessages *emitted_messages = caller_context;
   GroupingParser *self = (GroupingParser *) timer_wheel_get_associated_data(wheel);
 
-  msg_debug("Expiring grouping-by() correlation context",
+  msg_debug("grouping-parser: Expiring correlation context",
             evt_tag_long("utc", correlation_state_get_time(self->correlation)),
             evt_tag_str("context-id", context->key.session_id),
             log_pipe_location_tag(&self->super.super.super));
@@ -179,7 +179,7 @@ grouping_parser_lookup_or_create_context(GroupingParser *self, LogMessage *msg)
   context = correlation_state_tx_lookup_context(self->correlation, &key);
   if (!context)
     {
-      msg_debug("Correlation context lookup failure, starting a new context",
+      msg_debug("grouping-parser: Correlation context lookup failure, starting a new context",
                 evt_tag_str("key", key.session_id),
                 evt_tag_int("timeout", self->timeout),
                 evt_tag_int("expiration", correlation_state_get_time(self->correlation) + self->timeout),
@@ -191,7 +191,7 @@ grouping_parser_lookup_or_create_context(GroupingParser *self, LogMessage *msg)
     }
   else
     {
-      msg_debug("Correlation context lookup successful",
+      msg_debug("grouping-parser: Correlation context lookup successful",
                 evt_tag_str("key", key.session_id),
                 evt_tag_int("timeout", self->timeout),
                 evt_tag_int("expiration", correlation_state_get_time(self->correlation) + self->timeout),
@@ -200,6 +200,18 @@ grouping_parser_lookup_or_create_context(GroupingParser *self, LogMessage *msg)
     }
 
   return context;
+}
+
+static void
+_aggregate_and_emit(GroupingParser *self, CorrelationContext *context, StatefulParserEmittedMessages *emitted_messages)
+{
+  LogMessage *genmsg = grouping_parser_aggregate_context(self, context);
+  correlation_state_tx_end(self->correlation);
+  if (genmsg)
+    {
+      stateful_parser_emitted_messages_add(emitted_messages, genmsg);
+      log_msg_unref(genmsg);
+    }
 }
 
 void
@@ -213,34 +225,34 @@ grouping_parser_perform_grouping(GroupingParser *self, LogMessage *msg, Stateful
 
   if (r == GP_CONTEXT_UPDATED)
     {
+      msg_debug("grouping-parser: Correlation context update successful",
+                evt_tag_str("key", context->key.session_id),
+                evt_tag_int("num_messages", context->messages->len),
+                evt_tag_int("expiration", correlation_state_get_time(self->correlation) + self->timeout),
+                log_pipe_location_tag(&self->super.super.super));
       correlation_state_tx_update_context(self->correlation, context, self->timeout);
       correlation_state_tx_end(self->correlation);
     }
-  else if (r == GP_CONTEXT_COMPLETE || r == GP_STARTS_NEW_CONTEXT)
+  else if (r == GP_CONTEXT_COMPLETE)
     {
-      msg_verbose("Correlation trigger() met, closing state",
-                  evt_tag_str("key", context->key.session_id),
-                  evt_tag_int("timeout", self->timeout),
-                  evt_tag_int("num_messages", context->messages->len),
-                  log_pipe_location_tag(&self->super.super.super));
-
-      /* close down state */
-      LogMessage *genmsg = grouping_parser_aggregate_context(self, context);
-
-      correlation_state_tx_end(self->correlation);
-      if (genmsg)
-        {
-          stateful_parser_emitted_messages_add(emitted_messages, genmsg);
-          log_msg_unref(genmsg);
-        }
-
-      if (r == GP_STARTS_NEW_CONTEXT)
-        {
-          grouping_parser_perform_grouping(self, msg, emitted_messages);
-        }
+      msg_debug("grouping-parser: Correlation finished, aggregating context",
+                evt_tag_str("key", context->key.session_id),
+                evt_tag_int("num_messages", context->messages->len),
+                evt_tag_int("expiration", correlation_state_get_time(self->correlation) + self->timeout),
+                log_pipe_location_tag(&self->super.super.super));
+      _aggregate_and_emit(self, context, emitted_messages);
+    }
+  else if (r == GP_STARTS_NEW_CONTEXT)
+    {
+      msg_debug("grouping-parser: Correlation finished, aggregating and starting a new context",
+                evt_tag_str("key", context->key.session_id),
+                evt_tag_int("num_messages", context->messages->len),
+                evt_tag_int("expiration", correlation_state_get_time(self->correlation) + self->timeout),
+                log_pipe_location_tag(&self->super.super.super));
+      _aggregate_and_emit(self, context, emitted_messages);
+      grouping_parser_perform_grouping(self, msg, emitted_messages);
     }
 }
-
 
 gboolean
 grouping_parser_process_method(LogParser *s,
