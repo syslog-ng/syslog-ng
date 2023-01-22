@@ -268,19 +268,6 @@ grouping_parser_init_method(LogPipe *s)
   GroupingParser *self = (GroupingParser *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (self->timeout < 1)
-    {
-      msg_error("timeout() needs to be specified explicitly and must be greater than 0 in the grouping-by() parser",
-                log_pipe_location_tag(s));
-      return FALSE;
-    }
-  if (!self->key_template)
-    {
-      msg_error("The key() option is mandatory for the grouping-by() parser",
-                log_pipe_location_tag(s));
-      return FALSE;
-    }
-
   iv_validate_now();
   IV_TIMER_INIT(&self->tick);
   self->tick.cookie = self;

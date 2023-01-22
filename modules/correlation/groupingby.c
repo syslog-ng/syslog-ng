@@ -160,6 +160,19 @@ _init(LogPipe *s)
   GroupingBy *self = (GroupingBy *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
+  if (self->super.timeout < 1)
+    {
+      msg_error("timeout() needs to be specified explicitly and must be greater than 0 in the grouping-by() parser",
+                log_pipe_location_tag(s));
+      return FALSE;
+    }
+  if (!self->super.key_template)
+    {
+      msg_error("The key() option is mandatory for the grouping-by() parser",
+                log_pipe_location_tag(s));
+      return FALSE;
+    }
+
   if (!self->synthetic_message)
     {
       msg_error("The aggregate() option for grouping-by() is mandatory",
