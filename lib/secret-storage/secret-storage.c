@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2023 One Identity LLC
  * Copyright (c) 2018 Balabit
  *
  * This library is free software; you can redistribute it and/or
@@ -79,6 +80,8 @@ void
 secret_storage_deinit(void)
 {
   g_assert(!secret_manager_uninitialized);
+  g_atomic_int_inc(&secret_manager_uninitialized);
+  g_assert(secret_manager_uninitialized == 1);
   g_hash_table_destroy(secret_manager);
   secret_manager = NULL;
 }
