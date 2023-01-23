@@ -21,22 +21,20 @@
  *
  */
 
-#include "journald-subsystem.h"
-
+#include "journald-helper.h"
+#include "messages.h"
 #include <string.h>
 
-#define JOURNALD_FOREACH_DATA(j, data, l)                             \
-        for (journald_restart_data(j); journald_enumerate_data((j), &(data), &(l)) > 0; )
-
 static void
-__parse_data(gchar *data, size_t length, gchar **key, gchar **value)
+__parse_data(gchar *data, size_t length, gchar **key, gsize *key_len, gchar **value, gsize *value_len)
 {
   gchar *pos = strchr(data, '=');
   if (pos)
     {
-      guint32 max_value_len = length - (pos - data + 1);
-      *key = g_strndup(data, pos - data);
-      *value = g_strndup(pos + 1, max_value_len);
+      *key = data;
+      *key_len = pos - data;
+      *value = pos + 1;
+      *value_len = length - (pos - data + 1);
     }
   else
     {
@@ -45,22 +43,50 @@ __parse_data(gchar *data, size_t length, gchar **key, gchar **value)
     }
 }
 
-void journald_foreach_data(Journald *self, FOREACH_DATA_CALLBACK func, gpointer user_data)
+void
+journald_foreach_data(sd_journal *journal, FOREACH_DATA_CALLBACK func, gpointer user_data)
 {
   const void *data;
   size_t l = 0;
 
-  JOURNALD_FOREACH_DATA(self, data, l)
-  {
-    gchar *key;
-    gchar *value;
+  for (sd_journal_restart_data(journal); sd_journal_enumerate_data(journal, &data, &l) > 0; )
+    {
+      gchar *key;
+      gsize key_len;
+      gchar *value;
+      gsize value_len;
 
-    __parse_data((gchar *)data, l, &key, &value);
-    if (key && value)
-      {
-        func(key, value, user_data);
-        g_free(key);
-        g_free(value);
-      }
-  }
+      __parse_data((gchar *)data, l, &key, &key_len, &value, &value_len);
+      if (key && value)
+        {
+          func(key, key_len, value, value_len, user_data);
+        }
+    }
+}
+
+#define BOOT_ID_BUFF_LEN 33
+#define MATCH_BUFF_LEN 64
+
+int
+journald_filter_this_boot(sd_journal *journal)
+{
+  char match[MATCH_BUFF_LEN + 1] = {0};
+
+  sd_id128_t boot_id;
+  int ret = sd_id128_get_boot(&boot_id);
+  if (ret != 0)
+    {
+      msg_error("systemd-journal: Failed read boot_id",
+                evt_tag_errno("sd_id128_get_boot", -ret));
+      return ret;
+    }
+
+  char boot_id_string[BOOT_ID_BUFF_LEN];
+  sd_id128_to_string(boot_id, boot_id_string);
+
+  g_snprintf(match, sizeof(match), "_BOOT_ID=%s", boot_id_string);
+  msg_debug("systemd-journal: filtering journal to the current boot",
+            evt_tag_str("match", match));
+
+  return sd_journal_add_match(journal, match, 0);
 }

@@ -57,9 +57,13 @@ JournalReaderOptions *last_journal_reader_options;
 %token KW_PREFIX
 %token KW_MAX_FIELD_SIZE
 %token KW_NAMESPACE
+%token KW_MATCHES
+%token KW_MATCH_BOOT
 
 %type   <ptr> source_systemd_journal
 %type   <ptr> source_systemd_journal_params
+%type	<ptr> source_systemd_journal_matches
+%type	<ptr> source_systemd_journal_matches_build
 
 %%
 
@@ -119,9 +123,41 @@ source_systemd_journal_option
           {
             journal_reader_options_set_log_fetch_limit(last_journal_reader_options, $3);
           }
+        | KW_MATCHES '(' source_systemd_journal_matches ')'
+          {
+            journal_reader_options_set_matches(last_journal_reader_options, $3);
+          }
+        | KW_MATCH_BOOT '(' yesno ')'
+          {
+            journal_reader_options_set_match_boot(last_journal_reader_options, $3);
+          }
         | source_option
 	| source_driver_option
         ;
+
+
+source_systemd_journal_matches
+        : source_systemd_journal_matches_build
+          {
+            $$ = g_list_reverse($1);
+          }
+        ;
+
+source_systemd_journal_matches_build
+        : string LL_ARROW string source_systemd_journal_matches_build
+          {
+            $$ = g_list_prepend($4, g_strdup($1));
+            $$ = g_list_prepend($$, g_strdup($3));
+
+            free($1);
+            free($3);
+          }
+        |
+          {
+            $$ = NULL;
+          }
+        ;
+
 
 
 /* INCLUDE_RULES */

@@ -20,32 +20,17 @@
  * COPYING for details.
  *
  */
-
-#ifndef TEST_SOURCE_H_
-#define TEST_SOURCE_H_
+#ifndef JOURNALD_HELPER_H_INCLUDED
+#define JOURNALD_HELPER_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "journal-reader.h"
-#include "journald-mock.h"
-#include <iv.h>
+#include "journald-subsystem.h"
 
-typedef struct _TestSource TestSource;
-typedef struct _TestCase TestCase;
+typedef void (*FOREACH_DATA_CALLBACK)(gchar *key, gsize key_len, gchar *value, gsize value_len, gpointer user_data);
 
-struct _TestCase
-{
-  void (*init)(TestCase *self, TestSource *src, JournalReader *reader, JournalReaderOptions *options);
-  void (*checker)(TestCase *self, TestSource *src, LogMessage *msg);
-  void (*finish)(TestCase *self);
-  gpointer user_data;
-};
+void journald_foreach_data(sd_journal *self, FOREACH_DATA_CALLBACK func, gpointer user_data);
 
+void journald_foreach_data(sd_journal *journal, FOREACH_DATA_CALLBACK func, gpointer user_data);
+int journald_filter_this_boot(sd_journal *journal);
 
-TestSource *test_source_new(GlobalConfig *cfg);
-
-void test_source_add_test_case(TestSource *s, TestCase *tc);
-void test_source_run_tests(TestSource *s);
-void test_source_finish_tc(TestSource *s);
-
-
-#endif /* TEST_SOURCE_H_ */
+#endif

@@ -24,49 +24,69 @@
 #ifndef JOURNAL_SOURCE_INTERFACE_H_
 #define JOURNAL_SOURCE_INTERFACE_H_
 
-#include <stdlib.h>
-#include <glib.h>
 #include "syslog-ng-config.h"
 
 #if SYSLOG_NG_SYSTEMD_JOURNAL_MODE == SYSLOG_NG_JOURNALD_SYSTEM
 #include <systemd/sd-journal.h>
+
+static inline int
+load_journald_subsystem(void)
+{
+  return 1;
+}
+
 #else
+
+#include <stddef.h>
+#include <stdint.h>
+
 /* Open flags */
 enum
 {
   SD_JOURNAL_LOCAL_ONLY = 1,
   SD_JOURNAL_RUNTIME_ONLY = 2,
-  SD_JOURNAL_SYSTEM_ONLY = 4
+  SD_JOURNAL_SYSTEM = 4,
+  SD_JOURNAL_CURRENT_USER = 8,
+  SD_JOURNAL_OS_ROOT = 16,
+  SD_JOURNAL_ALL_NAMESPACES = 32,
+  SD_JOURNAL_INCLUDE_DEFAULT_NAMESPACE = 64
 };
-#endif
+
+typedef union sd_id128 sd_id128_t;
+
+union sd_id128
+{
+  uint8_t bytes[16];
+  uint64_t qwords[2];
+};
+
+#define SD_ID128_STRING_MAX 33
 
 
-typedef struct _Journald Journald;
+typedef struct sd_journal sd_journal;
 
-typedef void (*FOREACH_DATA_CALLBACK)(gchar *key, gchar *value, gpointer user_data);
-
-void journald_foreach_data(Journald *self, FOREACH_DATA_CALLBACK func, gpointer user_data);
-
-
-gboolean load_journald_subsystem(void);
-Journald *journald_new(void);
-void journald_free(Journald *self);
-
-int journald_open(Journald *self, int flags);
+extern int (*sd_journal_open)(sd_journal **ret, int flags);
 #if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
-int journald_open_namespace(Journald *self, const gchar *namespace, int flags);
+extern int (*sd_journal_open_namespace)(sd_journal **ret, const char *namespace, int flags);
 #endif
-void journald_close(Journald *self);
-int journald_seek_head(Journald *self);
-int journald_seek_tail(Journald *self);
-int journald_get_cursor(Journald *self, gchar **cursor);
-int journald_next(Journald *self);
-void journald_restart_data(Journald *self);
-int journald_enumerate_data(Journald *self, const void **data, gsize *length);
-int journald_seek_cursor(Journald *self, const gchar *cursor);
-int journald_test_cursor(Journald *self, const gchar *cursor);
-int journald_get_fd(Journald *self);
-int journald_process(Journald *self);
-int journald_get_realtime_usec(Journald *self, guint64 *usec);
+extern void (*sd_journal_close)(sd_journal *j);
+extern int (*sd_journal_seek_head)(sd_journal *j);
+extern int (*sd_journal_seek_tail)(sd_journal *j);
+extern int (*sd_journal_get_cursor)(sd_journal *j, char **cursor);
+extern int (*sd_journal_next)(sd_journal *j);
+extern void (*sd_journal_restart_data)(sd_journal *j);
+extern int (*sd_journal_enumerate_data)(sd_journal *j, const void **data, size_t *length);
+extern int (*sd_journal_seek_cursor)(sd_journal *j, const char *cursor);
+extern int (*sd_journal_test_cursor)(sd_journal *j, const char *cursor);
+extern int (*sd_journal_get_fd)(sd_journal *j);
+extern int (*sd_journal_process)(sd_journal *j);
+extern int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec);
+extern int (*sd_journal_add_match)(sd_journal *j, const void *data, size_t size);
+extern char *(*sd_id128_to_string)(sd_id128_t id, char s[SD_ID128_STRING_MAX]);
+extern int (*sd_id128_get_boot)(sd_id128_t *ret);
+
+int load_journald_subsystem(void);
+
+#endif
 
 #endif /* JOURNAL_SOURCE_INTERFACE_H_ */

@@ -28,13 +28,8 @@
 
 typedef struct _MockEntry MockEntry;
 
-Journald *journald_mock_new(void);
-
-MockEntry *mock_entry_new(const gchar *cursor);
-
-void mock_entry_add_data(MockEntry *self, gchar *data);
-
-void journald_mock_add_entry(Journald *self, MockEntry *entry);
-
+MockEntry *mock_entry_new(const char *cursor);
+void mock_entry_add_data(MockEntry *self, char *data);
+void mock_journal_add_entry(MockEntry *entry);
 
 #endif /* JOURNALD_MOCK_H_ */

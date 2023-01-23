@@ -29,9 +29,6 @@
 #include "journal-reader.c"
 #include "apphook.h"
 
-static gboolean task_called;
-static gboolean poll_triggered;
-
 static GlobalConfig *cfg;
 
 static void
@@ -54,111 +51,7 @@ _deinit_cfg(const gchar *persist_file)
 }
 
 void
-add_mock_entries(gpointer user_data)
-{
-  Journald *journald = user_data;
-  MockEntry *entry = mock_entry_new("test_data3");
-  mock_entry_add_data(entry, "MESSAGE=test message3");
-  mock_entry_add_data(entry, "KEY=VALUE3");
-  mock_entry_add_data(entry, "HOST=testhost3");
-  journald_mock_add_entry(journald, entry);
-
-  entry = mock_entry_new("test_data4");
-  mock_entry_add_data(entry, "MESSAGE=test message4");
-  mock_entry_add_data(entry, "KEY=VALUE4");
-  mock_entry_add_data(entry, "HOST=testhost4");
-  journald_mock_add_entry(journald, entry);
-}
-
-void
-handle_new_entry(gpointer user_data)
-{
-  Journald *journald = user_data;
-  journald_process(journald);
-  cr_assert_not(poll_triggered, "%s", "Should called only once");
-  poll_triggered = TRUE;
-}
-
-void
-stop_timer_expired(gpointer user_data)
-{
-  iv_quit();
-}
-
-void
-__test_seeks(Journald *journald)
-{
-  gint result = journald_seek_head(journald);
-  cr_assert_eq(result, 0, "%s", "Can't seek in empty journald mock");
-  result = journald_next(journald);
-  cr_assert_eq(result, 0, "%s", "Bad next step result");
-
-  MockEntry *entry = mock_entry_new("test_data1");
-  mock_entry_add_data(entry, "MESSAGE=test message");
-  mock_entry_add_data(entry, "KEY=VALUE");
-  mock_entry_add_data(entry, "HOST=testhost");
-
-  journald_mock_add_entry(journald, entry);
-
-  entry = mock_entry_new("test_data2");
-  mock_entry_add_data(entry, "MESSAGE=test message2");
-  mock_entry_add_data(entry, "KEY=VALUE2");
-  mock_entry_add_data(entry, "HOST=testhost2");
-
-  journald_mock_add_entry(journald, entry);
-
-  result = journald_seek_head(journald);
-  cr_assert_eq(result, 0, "%s", "Can't seek in journald mock");
-  result = journald_next(journald);
-  cr_assert_eq(result, 1, "%s", "Bad next step result");
-
-  result = journald_seek_tail(journald);
-  cr_assert_eq(result, 0, "%s", "Can't seek in journald mock");
-  result = journald_next(journald);
-  cr_assert_eq(result, 1, "%s", "Bad next step result");
-  result = journald_next(journald);
-  cr_assert_eq(result, 0, "%s", "Bad next step result");
-}
-
-void
-__test_cursors(Journald *journald)
-{
-  gchar *cursor;
-  journald_seek_head(journald);
-  journald_next(journald);
-  gint result = journald_get_cursor(journald, &cursor);
-  cr_assert_str_eq(cursor, "test_data1", "%s", "Bad cursor fetched");
-  \
-  g_free(cursor);
-
-  result = journald_next(journald);
-  cr_assert_eq(result, 1, "%s", "Bad next step result");
-  result = journald_get_cursor(journald, &cursor);
-  cr_assert_str_eq(cursor, "test_data2", "%s", "Bad cursor fetched");
-  g_free(cursor);
-
-  result = journald_next(journald);
-  cr_assert_eq(result, 0, "%s", "Should not contain more elements");
-
-  result = journald_seek_cursor(journald, "test_data1");
-  cr_assert_eq(result, 0, "%s", "Should find cursor");
-  result = journald_next(journald);
-  cr_assert_eq(result, 1, "%s", "Bad next step result");
-  result = journald_get_cursor(journald, &cursor);
-  cr_assert_str_eq(cursor, "test_data1", "%s", "Bad cursor fetched");
-  g_free(cursor);
-
-  result = journald_seek_cursor(journald, "test_data2");
-  cr_assert_eq(result, 0, "%s", "Should find cursor");
-  result = journald_next(journald);
-  cr_assert_eq(result, 1, "%s", "Bad next step result");
-  result = journald_get_cursor(journald, &cursor);
-  cr_assert_str_eq(cursor, "test_data2", "%s", "Bad cursor fetched");
-  g_free(cursor);
-}
-
-void
-__test_enumerate(Journald *journald)
+__test_enumerate(sd_journal *journal)
 {
   const void *data;
   const void *prev_data;
@@ -166,97 +59,38 @@ __test_enumerate(Journald *journald)
   gsize prev_len;
   gint result;
 
-  journald_restart_data(journald);
-  result = journald_enumerate_data(journald, &data, &length);
+  sd_journal_restart_data(journal);
+  result = sd_journal_enumerate_data(journal, &data, &length);
   cr_assert_eq(result, 1, "%s", "Data should exist");
 
   prev_data = data;
   prev_len = length;
 
-  result = journald_enumerate_data(journald, &data, &length);
+  result = sd_journal_enumerate_data(journal, &data, &length);
   cr_assert_eq(result, 1, "%s", "Data should exist");
-  result = journald_enumerate_data(journald, &data, &length);
+  result = sd_journal_enumerate_data(journal, &data, &length);
   cr_assert_eq(result, 1, "%s", "Data should exist");
-  result = journald_enumerate_data(journald, &data, &length);
+  result = sd_journal_enumerate_data(journal, &data, &length);
   cr_assert_eq(result, 0, "%s", "Data should not exist");
 
-  journald_restart_data(journald);
+  sd_journal_restart_data(journal);
 
-  result = journald_enumerate_data(journald, &data, &length);
+  result = sd_journal_enumerate_data(journal, &data, &length);
   cr_assert_eq(result, 1, "%s", "Data should exist");
   cr_assert_eq((gpointer )data, (gpointer )prev_data,
                "%s", "restart data should seek the start of the data");
   cr_assert_eq(length, prev_len, "%s", "Bad length after restart data");
 
-  result = journald_next(journald);
+  result = sd_journal_next(journal);
   cr_assert_eq(result, 0, "%s", "Should not contain more elements");
 }
 
-void
-__test_fd_handling(Journald *journald)
-{
-  gint fd = journald_get_fd(journald);
-  journald_process(journald);
-
-  task_called = FALSE;
-  poll_triggered = FALSE;
-  struct iv_task add_entry_task;
-  struct iv_fd fd_to_poll;
-  struct iv_timer stop_timer;
-
-  IV_TASK_INIT(&add_entry_task);
-  add_entry_task.cookie = journald;
-  add_entry_task.handler = add_mock_entries;
-
-  IV_FD_INIT(&fd_to_poll);
-  fd_to_poll.fd = fd;
-  fd_to_poll.cookie = journald;
-  fd_to_poll.handler_in = handle_new_entry;
-
-  iv_validate_now();
-  IV_TIMER_INIT(&stop_timer);
-  stop_timer.cookie = NULL;
-  stop_timer.expires = iv_now;
-  stop_timer.expires.tv_sec++;
-  stop_timer.handler = stop_timer_expired;
-
-  iv_task_register(&add_entry_task);
-  iv_fd_register(&fd_to_poll);
-  iv_timer_register(&stop_timer);
-
-  iv_main();
-
-  cr_assert(poll_triggered, "%s", "Poll event isn't triggered");
-}
-
-Test(systemd_journal, test_journald_mock)
-{
-  const gchar *persist_file = "test_systemd_journal3.persist";
-
-  _init_cfg_with_persist_file(persist_file);
-
-  Journald *journald = journald_mock_new();
-  gint result = journald_open(journald, 0);
-
-  cr_assert_eq(result, 0, "%s", "Can't open journald mock");
-
-  __test_seeks(journald);
-
-  __test_cursors(journald);
-
-  __test_fd_handling(journald);
-
-  journald_close(journald);
-  journald_free(journald);
-
-  _deinit_cfg(persist_file);
-}
 
 void
-__helper_test(gchar *key, gchar *value, gpointer user_data)
+__helper_test(gchar *key, gsize key_len, gchar *value, gsize value_len, gpointer user_data)
 {
   GHashTable *result = user_data;
-  g_hash_table_insert(result, g_strdup(key), g_strdup(value));
+  g_hash_table_insert(result, g_strndup(key, key_len), g_strndup(value, value_len));
   return;
 }
 
@@ -266,20 +100,20 @@ Test(systemd_journal, test_journald_helper)
   const gchar *persist_file = "test_systemd_journal2.persist";
 
   _init_cfg_with_persist_file(persist_file);
-  Journald *journald = journald_mock_new();
-  journald_open(journald, 0);
+  sd_journal *journal;
+  sd_journal_open(&journal, 0);
 
   MockEntry *entry = mock_entry_new("test_data1");
   mock_entry_add_data(entry, "MESSAGE=test message");
   mock_entry_add_data(entry, "KEY=VALUE");
   mock_entry_add_data(entry, "HOST=testhost");
 
-  journald_mock_add_entry(journald, entry);
-  journald_seek_head(journald);
-  journald_next(journald);
+  mock_journal_add_entry(entry);
+  sd_journal_seek_head(journal);
+  sd_journal_next(journal);
 
   GHashTable *result = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
-  journald_foreach_data(journald, __helper_test, result);
+  journald_foreach_data(journal, __helper_test, result);
 
   gchar *message = g_hash_table_lookup(result, "MESSAGE");
   gchar *key = g_hash_table_lookup(result, "KEY");
@@ -289,15 +123,14 @@ Test(systemd_journal, test_journald_helper)
   cr_assert_str_eq(key, "VALUE", "%s", "Bad item");
   cr_assert_str_eq(host, "testhost", "%s", "Bad item");
 
-  journald_close(journald);
-  journald_free(journald);
+  sd_journal_close(journal);
   g_hash_table_unref(result);
 
   _deinit_cfg(persist_file);
 }
 
 MockEntry *
-__create_real_entry(Journald *journal, gchar *cursor_name)
+__create_real_entry(gchar *cursor_name)
 {
   MockEntry *entry = mock_entry_new(cursor_name);
   mock_entry_add_data(entry, "PRIORITY=6");
@@ -330,7 +163,7 @@ __create_real_entry(Journald *journal, gchar *cursor_name)
 }
 
 MockEntry *
-__create_dummy_entry(Journald *journal, gchar *cursor_name)
+__create_dummy_entry(gchar *cursor_name)
 {
   MockEntry *entry = mock_entry_new(cursor_name);
   mock_entry_add_data(entry, "MESSAGE=Dummy message");
@@ -340,13 +173,14 @@ __create_dummy_entry(Journald *journal, gchar *cursor_name)
 }
 
 void
-_test_default_working_init(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader,
+_test_default_working_init(TestCase *self, TestSource *src, JournalReader *reader,
                            JournalReaderOptions *options)
 {
-  MockEntry *entry = __create_dummy_entry(journal, "default_test");
-  journald_mock_add_entry(journal, entry);
   cfg->recv_time_zone = g_strdup("+06:00");
   self->user_data = options;
+
+  MockEntry *entry = __create_dummy_entry("default_test");
+  mock_journal_add_entry(entry);
 }
 
 void
@@ -364,14 +198,12 @@ _test_default_working_test(TestCase *self, TestSource *src, LogMessage *msg)
 }
 
 void
-_test_prefix_init(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader,
+_test_prefix_init(TestCase *self, TestSource *src, JournalReader *reader,
                   JournalReaderOptions *options)
 {
-  MockEntry *entry = __create_real_entry(journal, "prefix_test");
-
   options->prefix = g_strdup((gchar *)self->user_data);
-
-  journald_mock_add_entry(journal, entry);
+  MockEntry *entry = __create_real_entry("prefix_test");
+  mock_journal_add_entry(entry);
 }
 
 void
@@ -397,12 +229,12 @@ _test_prefix_test(TestCase *self, TestSource *src, LogMessage *msg)
 }
 
 void
-_test_field_size_init(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader,
+_test_field_size_init(TestCase *self, TestSource *src, JournalReader *reader,
                       JournalReaderOptions *options)
 {
-  MockEntry *entry = __create_real_entry(journal, "field_size_test");
   options->max_field_size = GPOINTER_TO_INT(self->user_data);
-  journald_mock_add_entry(journal, entry);
+  MockEntry *entry = __create_real_entry("field_size_test");
+  mock_journal_add_entry(entry);
 }
 
 gboolean
@@ -429,12 +261,13 @@ _test_field_size_test(TestCase *self, TestSource *src, LogMessage *msg)
 }
 
 void
-_test_timezone_init(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader,
+_test_timezone_init(TestCase *self, TestSource *src, JournalReader *reader,
                     JournalReaderOptions *options)
 {
-  MockEntry *entry = __create_real_entry(journal, "time_zone_test");
   options->recv_time_zone = g_strdup("+09:00");
-  journald_mock_add_entry(journal, entry);
+
+  MockEntry *entry = __create_real_entry("time_zone_test");
+  mock_journal_add_entry(entry);
 }
 
 void
@@ -445,16 +278,16 @@ _test_timezone_test(TestCase *self, TestSource *src, LogMessage *msg)
 }
 
 void
-_test_default_level_init(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader,
+_test_default_level_init(TestCase *self, TestSource *src, JournalReader *reader,
                          JournalReaderOptions *options)
 {
-  MockEntry *entry = __create_dummy_entry(journal, "test default level");
+  MockEntry *entry = __create_dummy_entry("test default level");
   gint level = GPOINTER_TO_INT(self->user_data);
   if (options->default_pri == 0xFFFF)
     options->default_pri = LOG_USER;
   options->default_pri = (options->default_pri & ~7) | level;
 
-  journald_mock_add_entry(journal, entry);
+  mock_journal_add_entry(entry);
 }
 
 void
@@ -466,15 +299,15 @@ _test_default_level_test(TestCase *self, TestSource *src, LogMessage *msg)
 }
 
 void
-_test_default_facility_init(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader,
+_test_default_facility_init(TestCase *self, TestSource *src, JournalReader *reader,
                             JournalReaderOptions *options)
 {
-  MockEntry *entry = __create_dummy_entry(journal, "test default facility");
+  MockEntry *entry = __create_dummy_entry("test default facility");
   gint facility = GPOINTER_TO_INT(self->user_data);
   if(options->default_pri == 0xFFFF)
     options->default_pri = LOG_NOTICE;
   options->default_pri = (options->default_pri & 7) | facility;
-  journald_mock_add_entry(journal, entry);
+  mock_journal_add_entry(entry);
 }
 
 void
@@ -486,32 +319,33 @@ _test_default_facility_test(TestCase *self, TestSource *src, LogMessage *msg)
 }
 
 void
-_test_program_field_init(TestCase *self, TestSource *src, Journald *journal, JournalReader *reader,
+_test_program_field_init(TestCase *self, TestSource *src, JournalReader *reader,
                          JournalReaderOptions *options)
 {
   MockEntry *entry = mock_entry_new("test _COMM first win");
   mock_entry_add_data(entry, "_COMM=comm_program");
   mock_entry_add_data(entry, "SYSLOG_IDENTIFIER=syslog_program");
-  journald_mock_add_entry(journal, entry);
+  mock_journal_add_entry(entry);
 
   entry = mock_entry_new("test _COMM second win");
   mock_entry_add_data(entry, "SYSLOG_IDENTIFIER=syslog_program");
   mock_entry_add_data(entry, "_COMM=comm_program");
-  journald_mock_add_entry(journal, entry);
+  mock_journal_add_entry(entry);
 
   entry = mock_entry_new("no SYSLOG_IDENTIFIER");
   mock_entry_add_data(entry, "_COMM=comm_program");
-  journald_mock_add_entry(journal, entry);
+  mock_journal_add_entry(entry);
 
-  self->user_data = journal;
+  self->user_data = reader;
 }
 
 void
 _test_program_field_test(TestCase *self, TestSource *src, LogMessage *msg)
 {
-  Journald *journal = self->user_data;
+  JournalReader *reader = self->user_data;
+  sd_journal *journal = journal_reader_get_sd_journal(reader);
   gchar *cursor;
-  journald_get_cursor(journal, &cursor);
+  sd_journal_get_cursor(journal, &cursor);
   if (strcmp(cursor, "no SYSLOG_IDENTIFIER") != 0)
     {
       cr_assert_str_eq(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "syslog_program", "%s", "Bad program name");
@@ -527,7 +361,7 @@ _test_program_field_test(TestCase *self, TestSource *src, LogMessage *msg)
 
 Test(systemd_journal, test_journal_reader)
 {
-  const gchar *persist_file = "test_systemd_journal1.persist";
+  const gchar *persist_file = "test_systemd_journal55.persist";
 
   _init_cfg_with_persist_file(persist_file);
 

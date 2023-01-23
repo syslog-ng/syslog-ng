@@ -26,6 +26,7 @@
 
 #include "logsource.h"
 #include "journald-subsystem.h"
+#include "journald-helper.h"
 
 typedef struct _JournalReader JournalReader;
 
@@ -41,9 +42,11 @@ typedef struct _JournalReaderOptions
   gchar *prefix;
   guint32 max_field_size;
   gchar *namespace;
+  GList *matches;
+  gboolean match_boot;
 } JournalReaderOptions;
 
-JournalReader *journal_reader_new(GlobalConfig *cfg, Journald *journal);
+JournalReader *journal_reader_new(GlobalConfig *cfg);
 void journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *options, const gchar *stats_id,
                                 const gchar *stats_instance);
 
@@ -55,6 +58,8 @@ void journal_reader_options_set_prefix(JournalReaderOptions *self, gchar *prefix
 void journal_reader_options_set_max_field_size(JournalReaderOptions *self, gint max_field_size);
 void journal_reader_options_set_namespace(JournalReaderOptions *self, gchar *namespace);
 void journal_reader_options_set_log_fetch_limit(JournalReaderOptions *self, gint log_fetch_limit);
+void journal_reader_options_set_matches(JournalReaderOptions *self, GList *matches);
+void journal_reader_options_set_match_boot(JournalReaderOptions *self, gboolean enable);
 void journal_reader_options_defaults(JournalReaderOptions *options);
 void journal_reader_options_destroy(JournalReaderOptions *options);
 
