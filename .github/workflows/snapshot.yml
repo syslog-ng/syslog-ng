@@ -1,0 +1,81 @@
+name: Snapshot
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: 'syslog-ng repository'
+        required: true
+        default: 'syslog-ng/syslog-ng'
+        type: string
+      ref:
+        description: 'syslog-ng ref (branch, tag, commit id)'
+        required: true
+        default: 'master'
+        type: string
+  pull_request:
+  push:
+  schedule:
+    - cron: '00 23 * * *'
+
+jobs:
+  create-source-tarball:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repo || 'syslog-ng/syslog-ng' }}
+          ref: ${{ inputs.ref || 'master' }}
+          fetch-depth: 0
+
+      - name: Prepare docker image
+        run: ./dbld/rules cache-image-tarball
+
+      - name: Create source tarball
+        run: ./dbld/rules pkg-tarball
+
+      - name: Store source tarball as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: source-tarball
+          path: dbld/build/*.tar.*
+
+  build-and-test:
+    runs-on: ubuntu-latest
+    needs: create-source-tarball
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Download source tarball artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: source-tarball
+          path: apkbuild/axoflow/syslog-ng
+
+      - name: Build and export Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: alpine.dockerfile
+          load: true
+          tags: syslog-ng:test
+          build-args: PKG_TYPE=nightly
+
+      - name: Smoke test
+        run: |
+          docker run --rm syslog-ng:test --syntax-only
+          docker run --rm syslog-ng:test --module-registry
+          docker run --rm syslog-ng:test -V | grep 'Revision: .*\.g'
+
+          printf "@version: 4.0\n log { source { stdin(); }; destination { file("/dev/stdout"); }; };" > test.conf
+          echo "test msg" | docker run -i --rm -v $(realpath test.conf):/etc/syslog-ng/syslog-ng.conf syslog-ng:test -F | grep "test msg"
+
+
+  publish-image:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/docker.yml
+    needs: build-and-test
+    with:
+      pkg-type: nightly
