@@ -49,6 +49,7 @@ jobs:
         with:
           images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: type=match,pattern=syslog-ng-(.*),group=1
+          sep-tags: ','
 
       - name: Compose Docker image tags
         id: tags
