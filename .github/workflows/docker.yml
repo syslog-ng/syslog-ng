@@ -6,6 +6,9 @@ on:
       pkg-type:
         required: true
         type: string  # stable / nightly
+      tarball-artifact:
+        required: false
+        type: string
 
 env:
   DOCKER_IMAGE_NAME: ghcr.io/axoflow/syslog-ng
@@ -19,6 +22,13 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
+
+      - name: Download source tarball artifact
+        if: inputs.tarball-artifact != ''
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.tarball-artifact }}
+          path: apkbuild/axoflow/syslog-ng
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2

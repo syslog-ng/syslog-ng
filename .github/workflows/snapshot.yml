@@ -79,3 +79,4 @@ jobs:
     needs: build-and-test
     with:
       pkg-type: nightly
+      tarball-artifact: source-tarball
