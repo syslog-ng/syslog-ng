@@ -74,7 +74,6 @@ done
 
 build() {
 	CFLAGS="$CFLAGS -flto=auto" \
-	SOURCE_REVISION="$pkgver" \
 	./configure \
 		--prefix=/usr \
 		--sysconfdir=/etc/syslog-ng \
@@ -122,6 +121,9 @@ scl() {
 
 dev() {
 	default_dev
+
+	# fix snapshot version
+	sed -i -e "s|^Version: .*|Version: $pkgver|g" "$subpkgdir/usr/lib/pkgconfig/syslog-ng.pc"
 
 	_submv usr/share/syslog-ng/tools \
 		usr/share/syslog-ng/xsd
