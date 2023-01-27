@@ -20,6 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
+import shlex
+
 from src.common.random_id import get_unique_id
 from src.executors.command_executor import CommandExecutor
 from src.executors.process_executor import ProcessExecutor
@@ -44,6 +46,8 @@ class SyslogNgExecutor(object):
             return self.run_process_with_valgrind(stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path)
         elif external_tool == "strace":
             return self.run_process_with_strace(stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path)
+        elif external_tool == "gdb":
+            return self.run_process_with_gdb(stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path)
         else:
             raise Exception("Unknown external tool was selected: {}".format(external_tool))
 
@@ -66,6 +70,19 @@ class SyslogNgExecutor(object):
             command=full_command_args,
             stdout_path=self.__instance_paths.get_stdout_path(),
             stderr_path=self.__instance_paths.get_stderr_path(),
+        )
+
+    def run_process_with_gdb(self, stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path):
+        syslog_ng_bin, *syslog_ng_args = self.__construct_syslog_ng_process(stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path)
+        gdb_command_args = [
+            "gdb",
+            "-ex", "r {} > {} 2> {}".format(shlex.join(syslog_ng_args), self.__instance_paths.get_stdout_path(), self.__instance_paths.get_stderr_path()),
+            syslog_ng_bin,
+        ]
+        return self.__process_executor.start(
+            command=["xterm", "-e", shlex.join(gdb_command_args)],
+            stdout_path="/dev/null",
+            stderr_path="/dev/null",
         )
 
     def run_process_with_strace(self, stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path):
@@ -123,7 +140,7 @@ class SyslogNgExecutor(object):
         pid_path,
         control_socket_path,
     ):
-        syslog_ng_process_args = [self.__instance_paths.get_syslog_ng_bin()]
+        syslog_ng_process_args = [str(self.__instance_paths.get_syslog_ng_bin())]
         syslog_ng_process_args += ["--foreground", "--enable-core"]
         if stderr:
             syslog_ng_process_args += ["--stderr"]
