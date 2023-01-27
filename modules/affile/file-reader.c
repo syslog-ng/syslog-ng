@@ -426,5 +426,4 @@ void
 file_reader_options_deinit(FileReaderOptions *options)
 {
   log_reader_options_destroy(&options->reader_options);
-  log_proto_file_reader_options_destroy(file_reader_options_get_log_proto_options(options));
 }

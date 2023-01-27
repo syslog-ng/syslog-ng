@@ -36,10 +36,42 @@ log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptio
                                           multi_line_factory_construct(&options->multi_line_options));
 }
 
+/* these functions only initialize the fields added on top of
+ * LogProtoServerOptions, the rest is the responsibility of the LogReader.
+ * This whole Options structure has become very messy. There are a lot of them.
+ *
+ *   FileReaderOptions ->
+ *       LogReaderOptions ->
+ *           LogProtoServerOptions
+ *              This is actually a LogProtoServerOptionsStorage structure
+ *              which holds a LogProtoFileReaderOptions instance and the
+ *              LogReader only stores it.
+ *
+ * FileOpenerOptions is fortunately independent of this mess.
+ *
+ * LogProtoFileReaderOptions only needs to take care about its "extra"
+ * fields on top of LogProtoServerOptions, that's why we don't call anything
+ * from the "inherited" class.  This is because that class is
+ * defaulted/initialized/destroyed by LogReader.  This layer just manages
+ * what we happen to store in addition to LogProtoServerOptions.
+ *
+ * You have been warned!
+ *
+ * PS: I attempted to refactor this, but at first try it became more messy, so I
+ * abandoned it, but it should be done eventually.
+ **/
+
+void
+_destroy_callback(LogProtoServerOptions *o)
+{
+  LogProtoFileReaderOptions *options = (LogProtoFileReaderOptions *) o;
+  multi_line_options_destroy(&options->multi_line_options);
+}
+
 void
 log_proto_file_reader_options_defaults(LogProtoFileReaderOptions *options)
 {
-  log_proto_server_options_defaults(&options->super);
+  options->super.destroy = _destroy_callback;
   multi_line_options_defaults(&options->multi_line_options);
   options->pad_size = 0;
 }
@@ -62,12 +94,8 @@ log_proto_file_reader_options_init(LogProtoFileReaderOptions *options, GlobalCon
   if (!log_proto_file_reader_options_validate(options))
     return FALSE;
 
-  log_proto_server_options_init(&options->super, cfg);
-  return multi_line_options_init(&options->multi_line_options);
-}
+  if (!multi_line_options_init(&options->multi_line_options))
+    return FALSE;
 
-void
-log_proto_file_reader_options_destroy(LogProtoFileReaderOptions *options)
-{
-  log_proto_server_options_destroy(&options->super);
+  return TRUE;
 }
