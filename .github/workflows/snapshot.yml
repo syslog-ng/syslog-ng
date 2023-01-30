@@ -67,7 +67,7 @@ jobs:
         run: |
           docker run --rm syslog-ng:test --syntax-only
           docker run --rm syslog-ng:test --module-registry
-          docker run --rm syslog-ng:test -V | grep 'Revision: .*\.g'
+          docker run --rm syslog-ng:test -V | grep 'Installer-Version: .*\.g'
 
           printf "@version: 4.0\n log { source { stdin(); }; destination { file("/dev/stdout"); }; };" > test.conf
           echo "test msg" | docker run -i --rm -v $(realpath test.conf):/etc/syslog-ng/syslog-ng.conf syslog-ng:test -F | grep "test msg"
