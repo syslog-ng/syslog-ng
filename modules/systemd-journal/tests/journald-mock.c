@@ -31,10 +31,18 @@
 #include <string.h>
 #include <stdio.h>
 
+#if SYSLOG_NG_SYSTEMD_JOURNAL_MODE == SYSLOG_NG_JOURNALD_SYSTEM
+# define MOCK_FUNC(f) f
+# define MOCK_STATIC
+#else
+# define MOCK_FUNC(f) _##f
+# define MOCK_STATIC static
+#endif /* #if SYSLOG_NG_SYSTEMD_JOURNAL_MODE == SYSLOG_NG_JOURNALD_SYSTEM */
+
 typedef struct _sd_journal_mock sd_journal_mock;
 typedef struct _MockJournal MockJournal;
 
-void sd_journal_mock_journal_updated(sd_journal_mock *self);
+static void sd_journal_mock_journal_updated(sd_journal_mock *self);
 
 struct _MockEntry
 {
@@ -118,7 +126,7 @@ sd_journal_mock_new(void)
   return self;
 }
 
-void
+static void
 sd_journal_mock_journal_updated(sd_journal_mock *self)
 {
   gboolean first_element = g_list_length(self->journal_contents->entries) == 1;
@@ -134,8 +142,8 @@ sd_journal_mock_journal_updated(sd_journal_mock *self)
 }
 
 
-int
-sd_journal_open(sd_journal **s, int flags)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_open)(sd_journal **s, int flags)
 {
   sd_journal_mock *self = (sd_journal_mock *) sd_journal_mock_new();
   self->opened = TRUE;
@@ -143,14 +151,14 @@ sd_journal_open(sd_journal **s, int flags)
   return 0;
 }
 
-int
-sd_journal_open_namespace(sd_journal **s, const gchar *namespace, int flags)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_open_namespace)(sd_journal **s, const gchar *namespace, int flags)
 {
   return sd_journal_open(s, flags);
 }
 
-void
-sd_journal_close(sd_journal *s)
+MOCK_STATIC void
+MOCK_FUNC(sd_journal_close)(sd_journal *s)
 {
   sd_journal_mock *self = (sd_journal_mock *) s;
   self->opened = FALSE;
@@ -162,8 +170,8 @@ sd_journal_close(sd_journal *s)
   sd_journal_under_test = NULL;
 }
 
-int
-sd_journal_seek_head(sd_journal *s)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_seek_head)(sd_journal *s)
 {
   sd_journal_mock *self = (sd_journal_mock *) s;
 
@@ -172,8 +180,8 @@ sd_journal_seek_head(sd_journal *s)
   return 0;
 }
 
-int
-sd_journal_seek_tail(sd_journal *s)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_seek_tail)(sd_journal *s)
 {
   sd_journal_mock *self = (sd_journal_mock *) s;
 
@@ -182,8 +190,8 @@ sd_journal_seek_tail(sd_journal *s)
   return 0;
 }
 
-int
-sd_journal_get_cursor(sd_journal *s, gchar **cursor)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_get_cursor)(sd_journal *s, gchar **cursor)
 {
   sd_journal_mock *self = (sd_journal_mock *) s;
 
@@ -193,8 +201,8 @@ sd_journal_get_cursor(sd_journal *s, gchar **cursor)
   return 0;
 }
 
-int
-sd_journal_next(sd_journal *s)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_next)(sd_journal *s)
 {
   sd_journal_mock *self = (sd_journal_mock *) s;
 
@@ -208,8 +216,8 @@ sd_journal_next(sd_journal *s)
   return 0;
 }
 
-void
-sd_journal_restart_data(sd_journal *s)
+MOCK_STATIC void
+MOCK_FUNC(sd_journal_restart_data)(sd_journal *s)
 {
   sd_journal_mock *self = (sd_journal_mock *) s;
 
@@ -218,8 +226,8 @@ sd_journal_restart_data(sd_journal *s)
   entry->index = 0;
 }
 
-int
-sd_journal_enumerate_data(sd_journal *s, const void **data, gsize *length)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_enumerate_data)(sd_journal *s, const void **data, gsize *length)
 {
   sd_journal_mock *self = (sd_journal_mock *) s;
 
@@ -243,8 +251,8 @@ _compare_mock_entries(gconstpointer a, gconstpointer b)
   return strcmp(entry->cursor, cursor);
 }
 
-int
-sd_journal_seek_cursor(sd_journal *s, const gchar *cursor)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_seek_cursor)(sd_journal *s, const gchar *cursor)
 {
   sd_journal_mock *self = (sd_journal_mock *) s;
 
@@ -262,22 +270,22 @@ sd_journal_seek_cursor(sd_journal *s, const gchar *cursor)
     }
 }
 
-int
-sd_journal_test_cursor(sd_journal *self, const gchar *cursor)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_test_cursor)(sd_journal *self, const gchar *cursor)
 {
   return 1;
 }
 
-int
-sd_journal_get_fd(sd_journal *s)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_get_fd)(sd_journal *s)
 {
   sd_journal_mock *self = (sd_journal_mock *) s;
   g_assert(self->opened);
   return self->fds[0];
 }
 
-int
-sd_journal_process(sd_journal *s)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_process)(sd_journal *s)
 {
   sd_journal_mock *self = (sd_journal_mock *) s;
 
@@ -295,27 +303,49 @@ sd_journal_process(sd_journal *s)
   return 0;
 }
 
-int
-sd_journal_get_realtime_usec(sd_journal *s, guint64 *usec)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_get_realtime_usec)(sd_journal *s, guint64 *usec)
 {
   *usec = 1408967385496986;
   return 0;
 }
 
-int
-sd_journal_add_match(sd_journal *s, const void *match, size_t match_len)
+MOCK_STATIC int
+MOCK_FUNC(sd_journal_add_match)(sd_journal *s, const void *match, size_t match_len)
 {
   return 0;
 }
 
-char *
-sd_id128_to_string(sd_id128_t id, char s[SD_ID128_STRING_MAX])
+MOCK_STATIC char *
+MOCK_FUNC(sd_id128_to_string)(sd_id128_t id, char s[SD_ID128_STRING_MAX])
 {
   return s;
 }
 
-int
-sd_id128_get_boot(sd_id128_t *ret)
+MOCK_STATIC int
+MOCK_FUNC(sd_id128_get_boot)(sd_id128_t *ret)
 {
   return 0;
 }
+
+#if SYSLOG_NG_SYSTEMD_JOURNAL_MODE != SYSLOG_NG_JOURNALD_SYSTEM
+
+int (*sd_journal_open)(sd_journal **ret, int flags) = _sd_journal_open;
+int (*sd_journal_open_namespace)(sd_journal **ret, const char *namespace, int flags) = _sd_journal_open_namespace;
+void (*sd_journal_close)(sd_journal *j) = _sd_journal_close;
+int (*sd_journal_seek_head)(sd_journal *j) = _sd_journal_seek_head;
+int (*sd_journal_seek_tail)(sd_journal *j) = _sd_journal_seek_tail;
+int (*sd_journal_get_cursor)(sd_journal *j, char **cursor) = _sd_journal_get_cursor;
+int (*sd_journal_next)(sd_journal *j) = _sd_journal_next;
+void (*sd_journal_restart_data)(sd_journal *j) = _sd_journal_restart_data;
+int (*sd_journal_enumerate_data)(sd_journal *j, const void **data, size_t *length) = _sd_journal_enumerate_data;
+int (*sd_journal_seek_cursor)(sd_journal *j, const char *cursor) = _sd_journal_seek_cursor;
+int (*sd_journal_test_cursor)(sd_journal *j, const char *cursor) = _sd_journal_test_cursor;
+int (*sd_journal_get_fd)(sd_journal *j) = _sd_journal_get_fd;
+int (*sd_journal_process)(sd_journal *j) = _sd_journal_process;
+int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec) = _sd_journal_get_realtime_usec;
+int (*sd_journal_add_match)(sd_journal *j, const void *data, size_t size) = _sd_journal_add_match;
+char *(*sd_id128_to_string)(sd_id128_t id, char s[SD_ID128_STRING_MAX]) = _sd_id128_to_string;
+int (*sd_id128_get_boot)(sd_id128_t *ret) = _sd_id128_get_boot;
+
+#endif // #if SYSLOG_NG_SYSTEMD_JOURNAL_MODE == SYSLOG_NG_JOURNALD_SYSTEM
