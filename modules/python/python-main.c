@@ -492,8 +492,15 @@ static gboolean
 _py_configure_interpreter(gboolean use_virtualenv)
 {
   PyConfig config;
-  PyConfig_InitIsolatedConfig(&config);
+  PyConfig_InitPythonConfig(&config);
 
+  /* NOTE: to pick up PYTHONPATH, work around https://github.com/python/cpython/issues/101471 */
+  config.configure_c_stdio = 0;
+  config.install_signal_handlers = 0;
+  config.parse_argv = 0;
+  config.pathconfig_warnings = 0;
+  config.user_site_directory = 0;
+  config.use_environment = 1;
   gboolean success = use_virtualenv ? _py_configure_virtualenv_python(&config)
                      : _py_configure_system_python(&config);
   if (success)
