@@ -216,7 +216,7 @@ append_unsafe_utf8_as_escaped_text(GString *escaped_string, const gchar *str,
                                    gssize str_len, const gchar *unsafe_chars)
 {
   _append_unsafe_utf8_as_escaped(escaped_string, str, str_len, unsafe_chars,
-                                 "\\u%04x", "\\\\x%02x");
+                                 "\\x%02x", "\\\\x%02x");
 }
 
 gchar *
