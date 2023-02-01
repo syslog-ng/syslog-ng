@@ -65,25 +65,44 @@ union sd_id128
 
 typedef struct sd_journal sd_journal;
 
-extern int (*sd_journal_open)(sd_journal **ret, int flags);
+/*
+ * attribute((visibility("hidden")) is needed to avoid these variables to be
+ * overridden with symbols of the same name from libsystemd.so.
+ *
+ * It may happen that libsyslog-ng.so itself is linked against libsystemd.so
+ * (due to service management being used).  In this case these names would
+ * map to actual functions in libsystemd.so, resulting in a nasty crash
+ * whenever we try to use these as pointers to functions.
+ *
+ * By using "hidden" visibility, we tell the linker that these symbols are
+ * internal to the current .so, meaning that any code that references these
+ * from this module will happily use these as pointers while other modules
+ * of syslog-ng can still use them as functions.
+ *
+ * See https://github.com/syslog-ng/syslog-ng/issues/4300 for more details.
+ */
+
+#define VISIBILITY_HIDDEN __attribute__((visibility("hidden")))
+
+VISIBILITY_HIDDEN extern int (*sd_journal_open)(sd_journal **ret, int flags);
 #if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
-extern int (*sd_journal_open_namespace)(sd_journal **ret, const char *namespace, int flags);
+VISIBILITY_HIDDEN extern int (*sd_journal_open_namespace)(sd_journal **ret, const char *namespace, int flags);
 #endif
-extern void (*sd_journal_close)(sd_journal *j);
-extern int (*sd_journal_seek_head)(sd_journal *j);
-extern int (*sd_journal_seek_tail)(sd_journal *j);
-extern int (*sd_journal_get_cursor)(sd_journal *j, char **cursor);
-extern int (*sd_journal_next)(sd_journal *j);
-extern void (*sd_journal_restart_data)(sd_journal *j);
-extern int (*sd_journal_enumerate_data)(sd_journal *j, const void **data, size_t *length);
-extern int (*sd_journal_seek_cursor)(sd_journal *j, const char *cursor);
-extern int (*sd_journal_test_cursor)(sd_journal *j, const char *cursor);
-extern int (*sd_journal_get_fd)(sd_journal *j);
-extern int (*sd_journal_process)(sd_journal *j);
-extern int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec);
-extern int (*sd_journal_add_match)(sd_journal *j, const void *data, size_t size);
-extern char *(*sd_id128_to_string)(sd_id128_t id, char s[SD_ID128_STRING_MAX]);
-extern int (*sd_id128_get_boot)(sd_id128_t *ret);
+VISIBILITY_HIDDEN extern void (*sd_journal_close)(sd_journal *j);
+VISIBILITY_HIDDEN extern int (*sd_journal_seek_head)(sd_journal *j);
+VISIBILITY_HIDDEN extern int (*sd_journal_seek_tail)(sd_journal *j);
+VISIBILITY_HIDDEN extern int (*sd_journal_get_cursor)(sd_journal *j, char **cursor);
+VISIBILITY_HIDDEN extern int (*sd_journal_next)(sd_journal *j);
+VISIBILITY_HIDDEN extern void (*sd_journal_restart_data)(sd_journal *j);
+VISIBILITY_HIDDEN extern int (*sd_journal_enumerate_data)(sd_journal *j, const void **data, size_t *length);
+VISIBILITY_HIDDEN extern int (*sd_journal_seek_cursor)(sd_journal *j, const char *cursor);
+VISIBILITY_HIDDEN extern int (*sd_journal_test_cursor)(sd_journal *j, const char *cursor);
+VISIBILITY_HIDDEN extern int (*sd_journal_get_fd)(sd_journal *j);
+VISIBILITY_HIDDEN extern int (*sd_journal_process)(sd_journal *j);
+VISIBILITY_HIDDEN extern int (*sd_journal_get_realtime_usec)(sd_journal *j, uint64_t *usec);
+VISIBILITY_HIDDEN extern int (*sd_journal_add_match)(sd_journal *j, const void *data, size_t size);
+VISIBILITY_HIDDEN extern char *(*sd_id128_to_string)(sd_id128_t id, char s[SD_ID128_STRING_MAX]);
+VISIBILITY_HIDDEN extern int (*sd_id128_get_boot)(sd_id128_t *ret);
 
 int load_journald_subsystem(void);
 
