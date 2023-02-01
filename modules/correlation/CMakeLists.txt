@@ -54,24 +54,24 @@ set_target_properties(patterndb PROPERTIES COMPILE_FLAGS "-fPIC -Wno-pointer-sig
 target_include_directories(patterndb INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(patterndb PUBLIC syslog-ng)
 
-set(DBPARSER_SOURCES
+set(CORRELATION_SOURCES
     stateful-parser.c
     stateful-parser.h
     dbparser.c
     dbparser.h
-    dbparser-parser.c
-    dbparser-parser.h
-    dbparser-plugin.c
+    correlation-parser.c
+    correlation-parser.h
+    correlation-plugin.c
     groupingby.c
     groupingby.h
 )
 
 add_module(
-  TARGET dbparser
-  GRAMMAR dbparser-grammar
+  TARGET correlation
+  GRAMMAR correlation-grammar
   INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${PATTERNDB_INCLUDE_DIR}
   DEPENDS patterndb
-  SOURCES ${DBPARSER_SOURCES}
+  SOURCES ${CORRELATION_SOURCES}
 )
 
 add_subdirectory(pdbtool)

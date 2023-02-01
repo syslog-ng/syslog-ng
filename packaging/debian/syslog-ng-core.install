@@ -14,7 +14,7 @@ usr/lib/syslog-ng/*/libbasicfuncs.so
 usr/lib/syslog-ng/*/libconfgen.so
 usr/lib/syslog-ng/*/libcryptofuncs.so
 usr/lib/syslog-ng/*/libcsvparser.so
-usr/lib/syslog-ng/*/libdbparser.so
+usr/lib/syslog-ng/*/libcorrelation.so
 usr/lib/syslog-ng/*/libjson-plugin.so
 usr/lib/syslog-ng/*/libhook-commands.so
 usr/lib/syslog-ng/*/libkvformat.so

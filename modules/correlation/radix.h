@@ -162,4 +162,3 @@ RNode *r_find_node_dbg(RNode *root, gchar *key, gint keylen, GArray *matches, GA
 gchar **r_find_all_applicable_nodes(RNode *root, gchar *key, gint keylen, RNodeGetValueFunc value_func);
 
 #endif
-

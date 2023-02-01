@@ -17,7 +17,7 @@ include modules/confgen/Makefile.am
 include modules/cryptofuncs/Makefile.am
 include modules/csvparser/Makefile.am
 include modules/timestamp/Makefile.am
-include modules/dbparser/Makefile.am
+include modules/correlation/Makefile.am
 include modules/diskq/Makefile.am
 include modules/examples/Makefile.am
 include modules/geoip2/Makefile.am
@@ -58,7 +58,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-afsocket mod-afstreams mod-affile mod-afprog \
 	mod-usertty mod-amqp mod-mongodb mod-smtp mod-http mod-json \
 	mod-syslogformat mod-linux-kmsg mod-pacctformat \
-	mod-confgen mod-system-source mod-csvparser mod-dbparser \
+	mod-confgen mod-system-source mod-csvparser mod-correlation \
 	mod-basicfuncs mod-cryptofuncs mod-geoip2 mod-afstomp \
 	mod-redis mod-pseudofile mod-graphite mod-riemann \
 	mod-python mod-java mod-java-modules mod-kvformat mod-date \
@@ -75,7 +75,7 @@ modules_test_subdirs	=	\
 	modules_afmongodb modules_afsmtp modules_http modules_json \
 	modules_syslogformat modules_linux_kmsg \
 	modules_pacctformat modules_confgen modules_system_source \
-	modules_csvparser modules_dbparser modules_basicfuncs \
+	modules_csvparser modules_correlation modules_basicfuncs \
 	modules_cryptofuncs modules_geoip2 modules_afstomp \
 	modules_graphite modules_riemann modules_python \
 	modules_secure-logging modules_systemd_journal modules_kvformat modules_date \

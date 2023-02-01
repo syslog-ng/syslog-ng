@@ -467,7 +467,7 @@ fi
 %{_libdir}/%{name}/libcryptofuncs.so
 %{_libdir}/%{name}/libcsvparser.so
 %{_libdir}/%{name}/libtimestamp.so
-%{_libdir}/%{name}/libdbparser.so
+%{_libdir}/%{name}/libcorrelation.so
 %{_libdir}/%{name}/libdisk-buffer.so
 %{_libdir}/%{name}/libexamples.so
 %{_libdir}/%{name}/libgraphite.so

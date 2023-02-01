@@ -191,7 +191,7 @@ setup(void)
   app_startup();
   configuration = cfg_new_snippet();
   cfg_load_module(configuration, "basicfuncs");
-  cfg_load_module(configuration, "dbparser");
+  cfg_load_module(configuration, "correlation");
 }
 
 static void
