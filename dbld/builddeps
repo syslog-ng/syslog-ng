@@ -193,8 +193,12 @@ function install_pip_packages {
                 filter_pip_packages_by_platform_and_python_version $DBLD_DIR/pip_packages.manifest $python_executable| xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
                 ;;
             *)
+                # pip can fail with setuptools>=66 if there are system packages installed which do not comply with PEP440:
+                # https://github.com/pypa/setuptools/issues/3772#issuecomment-1398809718
+                #
+                # As long as our supported distros have invalidly named packages, this will be an issue.
                 $python_executable -m pip install --ignore-installed --no-cache-dir --upgrade pip
-                $python_executable -m pip install --ignore-installed --no-cache-dir --upgrade setuptools
+                $python_executable -m pip install --ignore-installed --no-cache-dir --upgrade "setuptools<66.0"
                 filter_pip_packages_by_platform_and_python_version $DBLD_DIR/pip_packages.manifest $python_executable | xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
                 ;;
         esac
