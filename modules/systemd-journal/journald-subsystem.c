@@ -22,6 +22,8 @@
  */
 
 #include "journald-subsystem.h"
+#include "messages.h"
+
 #include <glib.h>
 #include <gmodule.h>
 
@@ -53,24 +55,44 @@ char *(*sd_id128_to_string)(sd_id128_t id, char s[SD_ID128_STRING_MAX]);
 int (*sd_id128_get_boot)(sd_id128_t *ret);
 
 
-#define LOAD_SYMBOL(library, symbol) g_module_symbol(library, #symbol, (gpointer*)&symbol)
+#define LOAD_SYMBOL(library, symbol) _load_module_symbols(library, #symbol, (gpointer *)&symbol)
 
 #define JOURNAL_LIBRARY_NAME "libsystemd-journal.so.0"
 #define SYSTEMD_LIBRARY_NAME "libsystemd.so.0"
+#define ID128_LIBRARY_NAME "libsystemd-id128.so.0"
 
 const char *journald_libraries[] = {JOURNAL_LIBRARY_NAME, SYSTEMD_LIBRARY_NAME, NULL};
+const char *journald_ext_libraries[] = {ID128_LIBRARY_NAME, JOURNAL_LIBRARY_NAME, SYSTEMD_LIBRARY_NAME, NULL};
 
 static GModule *journald_module;
+static GModule *journald_ext_module;
 
 typedef struct sd_journal sd_journal;
 
 static GModule *
-_journald_module_open(void)
+_journald_module_open(char **libraries)
 {
-  for (gint i = 0; (journald_libraries[i] != NULL) && !journald_module; i++)
-    journald_module = g_module_open(journald_libraries[i], 0);
+  GModule *module = NULL;
 
-  return journald_module;
+  for (gint i = 0; (libraries[i] != NULL) && !module; i++)
+    {
+      module = g_module_open(libraries[i], 0);
+      if (!module)
+        msg_debug("No module by name", evt_tag_str("module", libraries[i]));
+    }
+
+  return module;
+}
+
+static gboolean
+_load_module_symbols(GModule *library, gchar *symbol_name, gpointer *symbol)
+{
+  if (!g_module_symbol(library, symbol_name, symbol))
+    {
+      msg_error("Could not find symbol", evt_tag_str("symbol", symbol_name));
+      return FALSE;
+    }
+  return TRUE;
 }
 
 static gboolean
@@ -123,29 +145,53 @@ _load_journald_symbols(void)
   if (!LOAD_SYMBOL(journald_module, sd_journal_add_match))
     return FALSE;
 
-  if (!LOAD_SYMBOL(journald_module, sd_id128_to_string))
+  if (!LOAD_SYMBOL(journald_ext_module, sd_id128_to_string))
     return FALSE;
 
-  if (!LOAD_SYMBOL(journald_module, sd_id128_get_boot))
+  if (!LOAD_SYMBOL(journald_ext_module, sd_id128_get_boot))
     return FALSE;
 
   return TRUE;
 }
 
+void
+unload_journald_subsystem(void)
+{
+  if (journald_module)
+    {
+      g_module_close(journald_module);
+      journald_module = NULL;
+    }
+
+  if (journald_ext_module)
+    {
+      g_module_close(journald_ext_module);
+      journald_module = NULL;
+    }
+}
+
 int
 load_journald_subsystem(void)
 {
-  if (!journald_module)
+  if (!journald_module && !journald_ext_module)
     {
-      journald_module = _journald_module_open();
+      journald_module = _journald_module_open(journald_libraries);
       if (!journald_module)
         {
+          msg_error("Could not find journald_module");
           return FALSE;
         }
+
+      journald_ext_module = _journald_module_open(journald_ext_libraries);
+      if (!journald_ext_module)
+        {
+          msg_error("Could not find journald_ext_module");
+          return FALSE;
+        }
+
       if (!_load_journald_symbols())
         {
-          g_module_close(journald_module);
-          journald_module = NULL;
+          unload_journald_subsystem();
           return FALSE;
         }
     }
