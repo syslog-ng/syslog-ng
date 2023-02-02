@@ -557,7 +557,7 @@ _table_create(AFSqlDestDriver *self, const gchar *table)
       return FALSE;
     }
 
-  g_string_printf(query_string, "CREATE TABLE %s (", table);
+  g_string_printf(query_string, "CREATE TABLE `%s` (`time` timestamp NOT NULL DEFAULT current_timestamp(), ", table);
   for (i = 0; i < self->fields_len; i++)
     {
       g_string_append_printf(query_string, "%s %s", self->fields[i].name, self->fields[i].type);
@@ -872,7 +872,7 @@ afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *t
   GString *value = g_string_sized_new(512);
   gint i, j;
 
-  g_string_printf(insert_command, "INSERT INTO %s (", table->str);
+  g_string_printf(insert_command, "INSERT INTO `%s` (", table->str);
 
   for (i = 0; i < self->fields_len; i++)
     {
