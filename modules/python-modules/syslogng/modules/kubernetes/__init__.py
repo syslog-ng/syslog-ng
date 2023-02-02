@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from kubernetes.client.rest import ApiException
 from syslogng import Logger, LogParser
 import kubernetes
 import logging
@@ -50,7 +51,12 @@ class KubernetesAPIEnrichment(LogParser):
         cached_namespace = self.__metadata.setdefault(namespace_name, {})
         cached_pod_metadata = cached_namespace.setdefault(pod_name, {})
 
-        pod = self.__client_api.list_namespaced_pod(namespace_name, field_selector="metadata.name=={}".format(pod_name)).items[0]
+        try:
+            pod = self.__client_api.list_namespaced_pod(namespace_name, field_selector="metadata.name=={}".format(pod_name)).items[0]
+        except (ApiException, IndexError) as e:
+            self.logger.warning("Error querying pod status for pod {}/{}: {}".format(namespace_name, pod_name, e))
+            return cached_pod_metadata
+
         try:
             cached_pod_metadata[self.add_prefix("pod_uuid")] = pod.metadata.uid
         except (AttributeError, IndexError, TypeError):
