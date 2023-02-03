@@ -135,10 +135,14 @@ log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options)
         {
           msg_error("Error reading from disk-queue file, dropping disk queue",
                     evt_tag_str("filename", qdisk_get_filename(self->qdisk)));
-          log_queue_disk_restart_corrupted(self);
+
+          if (!qdisk_is_read_only(self->qdisk))
+            log_queue_disk_restart_corrupted(self);
+
           if (msg)
             log_msg_unref(msg);
           msg = NULL;
+
           return NULL;
         }
     }
