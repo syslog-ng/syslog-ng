@@ -557,7 +557,7 @@ _table_create(AFSqlDestDriver *self, const gchar *table)
       return FALSE;
     }
 
-  g_string_printf(query_string, "CREATE TABLE `%s` (`time` timestamp NOT NULL DEFAULT current_timestamp(), ", table);
+  g_string_printf(query_string, "CREATE TABLE `%s` (", table);
   for (i = 0; i < self->fields_len; i++)
     {
       g_string_append_printf(query_string, "%s %s", self->fields[i].name, self->fields[i].type);
