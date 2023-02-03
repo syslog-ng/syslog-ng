@@ -294,10 +294,8 @@ _maybe_truncate_file(QDisk *self, gint64 expected_size)
 
 #if SYSLOG_NG_HAVE_POSIX_FALLOCATE
 static gboolean
-_posix_preallocate(QDisk *self)
+_posix_preallocate(QDisk *self, gint64 size)
 {
-  gint64 size = qdisk_get_maximum_size(self);
-
   gint result = posix_fallocate(self->fd, 0, (off_t) size);
   if (result == 0)
     {
@@ -314,11 +312,9 @@ _posix_preallocate(QDisk *self)
 
 #else
 static gboolean
-_compat_preallocate(QDisk *self)
+_compat_preallocate(QDisk *self, gint64 size)
 {
   const size_t buf_size = QDISK_RESERVED_SPACE;
-
-  gint64 size = qdisk_get_maximum_size(self);
   gint64 buf_write_iterations = size / buf_size;
   gint64 additional_write_size = size - buf_write_iterations * buf_size;
 
@@ -358,16 +354,16 @@ _compat_preallocate(QDisk *self)
 #endif
 
 static gboolean
-_preallocate(QDisk *self)
+_preallocate(QDisk *self, gint64 size)
 {
   msg_debug("Preallocating queue file",
             evt_tag_str("filename", self->filename),
-            evt_tag_long("size", qdisk_get_maximum_size(self)));
+            evt_tag_long("size", size));
 
 #if SYSLOG_NG_HAVE_POSIX_FALLOCATE
-  return _posix_preallocate(self);
+  return _posix_preallocate(self, size);
 #else
-  return _compat_preallocate(self);
+  return _compat_preallocate(self, size);
 #endif
 }
 
@@ -1246,7 +1242,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 
   if (new_file)
     {
-      if (self->options->prealloc && !_preallocate(self))
+      if (self->options->prealloc && !_preallocate(self, self->options->disk_buf_size))
         {
           return FALSE;
         }
