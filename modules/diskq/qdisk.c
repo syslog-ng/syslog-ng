@@ -1179,9 +1179,6 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
    */
   g_assert(!qdisk_started(self));
 
-  if (self->options->disk_buf_size <= 0)
-    return TRUE;
-
   if (self->options->read_only && !filename)
     return FALSE;
 
@@ -1250,6 +1247,12 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 
   if (new_file)
     {
+      if (self->options->disk_buf_size == -1)
+        {
+          msg_error("disk-buf-size for new disk-queue files must be set");
+          return FALSE;
+        }
+
       if (self->options->prealloc && !_preallocate(self, self->options->disk_buf_size))
         {
           return FALSE;
@@ -1340,8 +1343,14 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           return FALSE;
         }
 
+      if (self->hdr->disk_buf_size == -1)
+        {
+          msg_error("Failed to load disk-buf-size from disk-queue, and it was not set explicitly",
+                    evt_tag_str("filename", self->filename));
+          return FALSE;
+        }
 
-      if (self->hdr->disk_buf_size != self->options->disk_buf_size)
+      if (self->options->disk_buf_size != -1 && self->hdr->disk_buf_size != self->options->disk_buf_size)
         {
           msg_warning("WARNING: disk-buf-size() has changed since the last syslog-ng run. syslog-ng currently does "
                       "not support changing the disk-buf-size() of existing disk-queues. Continuing with the old one",
