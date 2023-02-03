@@ -123,7 +123,7 @@ pwrite_strict(gint fd, const void *buf, size_t count, off_t offset)
 static inline gboolean
 _has_position_reached_max_size(QDisk *self, gint64 position)
 {
-  return position >= self->options->disk_buf_size;
+  return position >= self->hdr->disk_buf_size;
 }
 
 static inline guint64
@@ -192,7 +192,7 @@ _does_backlog_head_precede_write_head(QDisk *self)
 static inline gboolean
 _is_write_head_less_than_max_size(QDisk *self)
 {
-  return self->hdr->write_head < self->options->disk_buf_size;
+  return self->hdr->write_head < self->hdr->disk_buf_size;
 }
 
 static inline gboolean
@@ -1153,7 +1153,7 @@ _upgrade_header(QDisk *self)
   if (self->hdr->version < 2)
     {
       struct stat st;
-      gboolean file_was_overwritten = (fstat(self->fd, &st) != 0 || st.st_size > self->options->disk_buf_size);
+      gboolean file_was_overwritten = (fstat(self->fd, &st) != 0 || st.st_size > self->hdr->disk_buf_size);
       self->hdr->use_v1_wrap_condition = file_was_overwritten;
     }
 
@@ -1340,7 +1340,17 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           return FALSE;
         }
 
+
+      if (self->hdr->disk_buf_size != self->options->disk_buf_size)
+        {
+          msg_warning("WARNING: disk-buf-size() has changed since the last syslog-ng run. syslog-ng currently does "
+                      "not support changing the disk-buf-size() of existing disk-queues. Continuing with the old one",
+                      evt_tag_str("filename", self->filename),
+                      evt_tag_long("active_old_disk_buf_size", self->hdr->disk_buf_size),
+                      evt_tag_long("ignored_new_disk_buf_size", self->options->disk_buf_size));
+        }
     }
+
   return TRUE;
 }
 
@@ -1407,7 +1417,7 @@ qdisk_get_length(QDisk *self)
 gint64
 qdisk_get_maximum_size(QDisk *self)
 {
-  return self->options->disk_buf_size;
+  return self->hdr->disk_buf_size;
 }
 
 const gchar *
