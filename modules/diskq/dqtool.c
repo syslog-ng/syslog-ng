@@ -123,13 +123,11 @@ open_queue(char *filename, LogQueue **lq, DiskQueueOptions *options)
 
   if (options->reliable)
     {
-      options->disk_buf_size = 128;
       options->mem_buf_size = 1024 * 1024;
       *lq = log_queue_disk_reliable_new(options, NULL);
     }
   else
     {
-      options->disk_buf_size = 1;
       options->mem_buf_size = 128;
       options->qout_size = 1000;
       *lq = log_queue_disk_non_reliable_new(options, NULL);
@@ -152,6 +150,7 @@ dqtool_cat(int argc, char *argv[])
   GError *error = NULL;
   LogTemplate *template = NULL;
   DiskQueueOptions options = {0};
+  disk_queue_options_set_default_options(&options);
   gint i;
 
   if (template_string)
@@ -211,6 +210,7 @@ dqtool_info(int argc, char *argv[])
     {
       LogQueue *lq;
       DiskQueueOptions options = {0};
+      disk_queue_options_set_default_options(&options);
 
       if (!open_queue(argv[i], &lq, &options))
         continue;
