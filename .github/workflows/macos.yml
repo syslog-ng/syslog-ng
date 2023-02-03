@@ -44,6 +44,10 @@ jobs:
             --with-python=3
           "
 
+          # rabbitmq-c 0.12.0 broke the pc file version, which breaks our minimum version check. Once it is fixed, we should reenable amqp.
+          # https://github.com/alanxz/rabbitmq-c/issues/755
+          CONFIGURE_FLAGS="${CONFIGURE_FLAGS} --disable-amqp"
+
           gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS
           gh_path "${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${PYTHONUSERBASE}/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin"
 
