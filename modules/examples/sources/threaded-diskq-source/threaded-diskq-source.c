@@ -74,13 +74,11 @@ _load_queue(ThreadedDiskqSourceDriver *self)
 
   if (self->diskq_options.reliable)
     {
-      self->diskq_options.disk_buf_size = 128;
       self->diskq_options.mem_buf_size = 1024 * 1024;
       self->queue = log_queue_disk_reliable_new(&self->diskq_options, NULL);
     }
   else
     {
-      self->diskq_options.disk_buf_size = 1;
       self->diskq_options.mem_buf_size = 128;
       self->diskq_options.qout_size = 1000;
       self->queue = log_queue_disk_non_reliable_new(&self->diskq_options, NULL);
@@ -222,6 +220,8 @@ threaded_diskq_sd_new(GlobalConfig *cfg)
 {
   ThreadedDiskqSourceDriver *self = g_new0(ThreadedDiskqSourceDriver, 1);
   log_threaded_fetcher_driver_init_instance(&self->super, cfg);
+
+  disk_queue_options_set_default_options(&self->diskq_options);
 
   self->super.connect = _open_diskq;
   self->super.disconnect = _close_diskq;
