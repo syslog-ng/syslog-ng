@@ -406,15 +406,15 @@ afsql_dd_create_index(AFSqlDestDriver *self, const gchar *table, const gchar *co
 
           format_hex_string(hash, md_len, hash_str, sizeof(hash_str));
           hash_str[0] = 'i';
-          g_string_printf(query_string, "CREATE INDEX %s ON %s (%s)",
+          g_string_printf(query_string, "CREATE INDEX %s ON `%s` (%s)",
                           hash_str, table, column);
         }
       else
-        g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s (%s)",
+        g_string_printf(query_string, "CREATE INDEX `%s_%s_idx` ON `%s` (%s)",
                         table, column, table, column);
     }
   else
-    g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s (%s)",
+    g_string_printf(query_string, "CREATE INDEX `%s_%s_idx` ON `%s` (%s)",
                     table, column, table, column);
   if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
     {
@@ -453,7 +453,7 @@ _is_table_present(AFSqlDestDriver *self, const gchar *table, dbi_result *metadat
     }
 
   query_string = g_string_sized_new(32);
-  g_string_printf(query_string, "SELECT * FROM %s WHERE 0=1", table);
+  g_string_printf(query_string, "SELECT * FROM `%s` WHERE 0=1", table);
   res = afsql_dd_run_query(self, query_string->str, TRUE, metadata);
   g_string_free(query_string, TRUE);
 
@@ -487,7 +487,7 @@ _ensure_table_is_syslogng_conform(AFSqlDestDriver *self, dbi_result db_res, cons
               new_transaction_started = TRUE;
             }
           /* field does not exist, add this column */
-          g_string_printf(query_string, "ALTER TABLE %s ADD %s %s", table, self->fields[i].name, self->fields[i].type);
+          g_string_printf(query_string, "ALTER TABLE `%s` ADD %s %s", table, self->fields[i].name, self->fields[i].type);
           if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
             {
               msg_error("Error adding missing column, giving up",
