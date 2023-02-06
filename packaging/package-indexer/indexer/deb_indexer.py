@@ -20,6 +20,9 @@
 #
 #############################################################################
 
+import bz2
+import gzip
+import lzma
 import re
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -88,6 +91,21 @@ class DebIndexer(Indexer):
             with packages_file_path.open("w") as packages_file:
                 self._log_info("Creating `Packages` file.", packages_file_path=str(packages_file_path))
                 utils.execute_command(command, dir=dir, stdout=packages_file)
+
+            packages_gz_file_path = Path(pkg_dir, "Packages.gz")
+            with packages_gz_file_path.open("wb") as packages_gz_file:
+                gz_compressed_data = gzip.compress(packages_file_path.read_bytes())
+                packages_gz_file.write(gz_compressed_data)
+
+            packages_xz_file_path = Path(pkg_dir, "Packages.xz")
+            with packages_xz_file_path.open("wb") as packages_xz_file:
+                xz_compressed_data = lzma.compress(packages_file_path.read_bytes(), lzma.FORMAT_XZ)
+                packages_xz_file.write(xz_compressed_data)
+
+            packages_bz2_file_path = Path(pkg_dir, "Packages.bz2")
+            with packages_bz2_file_path.open("wb") as packages_bz2_file:
+                bz2_compressed_data = bz2.compress(packages_file_path.read_bytes())
+                packages_bz2_file.write(bz2_compressed_data)
 
     def __create_release_file(self, indexed_dir: Path) -> None:
         command = ["apt-ftparchive", "release", "."]
