@@ -1166,6 +1166,47 @@ _upgrade_header(QDisk *self)
 }
 
 gboolean
+_autodetect_disk_buf_size(QDisk *self)
+{
+  struct stat st;
+  if (fstat(self->fd, &st) < 0)
+    {
+      msg_error("Autodetect disk-buf-size(): cannot stat",
+                evt_tag_str("filename", self->filename),
+                evt_tag_error("error"));
+
+      return FALSE;
+    }
+
+  if (qdisk_is_file_empty(self))
+    {
+      self->hdr->disk_buf_size = MAX(MIN_DISK_BUF_SIZE, st.st_size);
+
+      msg_debug("Autodetected empty disk-queue's disk-buf-size()",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
+
+      return TRUE;
+    }
+
+  if (self->hdr->write_head > MAX(self->hdr->backlog_head, self->hdr->read_head))
+    {
+      self->hdr->disk_buf_size = (gint64) st.st_size;
+
+      msg_debug("Autodetected disk-buf-size()",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
+
+      return TRUE;
+    }
+
+  msg_error("Failed to autodetect disk-buf-size() as the disk-queue file is wrapped",
+            evt_tag_str("filename", self->filename));
+
+  return FALSE;
+}
+
+gboolean
 qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
   gboolean new_file = FALSE;
@@ -1345,9 +1386,12 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 
       if (self->hdr->disk_buf_size == -1)
         {
-          msg_error("Failed to load disk-buf-size from disk-queue, and it was not set explicitly",
-                    evt_tag_str("filename", self->filename));
-          return FALSE;
+          if (!_autodetect_disk_buf_size(self))
+            {
+              msg_error("Failed to load disk-buf-size from disk-queue, and it was not set explicitly",
+                        evt_tag_str("filename", self->filename));
+              return FALSE;
+            }
         }
 
       if (self->options->disk_buf_size != -1 && self->hdr->disk_buf_size != self->options->disk_buf_size)
