@@ -48,6 +48,7 @@
 /* INCLUDE_DECLS */
 
 %token KW_METRICS_PROBE
+%token KW_KEY
 
 %type	<ptr> parser_expr_metrics_probe
 
@@ -67,17 +68,12 @@ parser_expr_metrics_probe
         ;
 
 metrics_probe_opts
-/*
- * Causes shift-reduce error until we add an opt.
- *
- *         : metrics_probe_opt metrics_probe_opts
- *         |
- */
-        :
+        : metrics_probe_opt metrics_probe_opts
+        |
         ;
 
 metrics_probe_opt
-        :
+        : KW_KEY '(' string ')' { metrics_probe_set_key(last_parser, $3); g_free($3); }
         ;
 
 /* INCLUDE_RULES */

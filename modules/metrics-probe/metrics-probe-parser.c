@@ -31,6 +31,7 @@ int metrics_probe_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 static CfgLexerKeyword metrics_probe_keywords[] =
 {
   { "metrics_probe",               KW_METRICS_PROBE },
+  { "key",                         KW_KEY },
   { NULL }
 };
 

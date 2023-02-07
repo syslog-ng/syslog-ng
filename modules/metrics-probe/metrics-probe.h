@@ -27,4 +27,6 @@
 
 LogParser *metrics_probe_new(GlobalConfig *cfg);
 
+void metrics_probe_set_key(LogParser *s, const gchar *key);
+
 #endif

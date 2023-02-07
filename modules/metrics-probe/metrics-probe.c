@@ -25,12 +25,26 @@
 typedef struct _MetricsProbe
 {
   LogParser super;
+
+  gchar *key;
 } MetricsProbe;
+
+void
+metrics_probe_set_key(LogParser *s, const gchar *key)
+{
+  MetricsProbe *self = (MetricsProbe *) s;
+
+  g_free(self->key);
+  self->key = g_strdup(key);
+}
 
 static gboolean
 _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
+  MetricsProbe *self = (MetricsProbe *) s;
+
   msg_trace("metrics-probe message processing started",
+            evt_tag_str("key", self->key),
             evt_tag_msg_reference(*pmsg));
 
   return TRUE;
@@ -39,6 +53,13 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
 static gboolean
 _init(LogPipe *s)
 {
+  MetricsProbe *self = (MetricsProbe *) s;
+
+  if (!self->key)
+    {
+      metrics_probe_set_key(&self->super, "classified_events_total");
+    }
+
   return log_parser_init_method(s);
 }
 
@@ -49,6 +70,7 @@ _clone(LogPipe *s)
   MetricsProbe *cloned = (MetricsProbe *) metrics_probe_new(s->cfg);
 
   log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
+  metrics_probe_set_key(&cloned->super, self->key);
 
   return &cloned->super.super;
 }
@@ -56,6 +78,10 @@ _clone(LogPipe *s)
 static void
 _free(LogPipe *s)
 {
+  MetricsProbe *self = (MetricsProbe *) s;
+
+  g_free(self->key);
+
   log_parser_free_method(s);
 }
 
