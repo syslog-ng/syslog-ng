@@ -22,6 +22,10 @@
 
 #include "metrics-probe.h"
 #include "label-template.h"
+#include "stats/stats-cluster-single.h"
+#include "scratch-buffers.h"
+#include "apphook.h"
+#include "tls-support.h"
 
 #define NUM_OF_LABELS_MAX (128)
 
@@ -35,6 +39,40 @@ typedef struct _MetricsProbe
 
   LogTemplateOptions template_options;
 } MetricsProbe;
+
+TLS_BLOCK_START
+{
+  GHashTable *clusters;
+}
+TLS_BLOCK_END;
+
+#define clusters __tls_deref(clusters)
+
+static StatsCluster *
+_register_single_cluster_locked(StatsClusterKey *key)
+{
+  StatsCluster *cluster;
+
+  stats_lock();
+  {
+    StatsCounterItem *counter;
+    cluster = stats_register_dynamic_counter(0, key, SC_TYPE_SINGLE_VALUE, &counter);
+  }
+  stats_unlock();
+
+  return cluster;
+}
+
+static void
+_unregister_single_cluster_locked(StatsCluster *cluster)
+{
+  stats_lock();
+  {
+    StatsCounterItem *counter = stats_cluster_single_get_counter(cluster);
+    stats_unregister_dynamic_counter(cluster, SC_TYPE_SINGLE_VALUE, &counter);
+  }
+  stats_unlock();
+}
 
 void
 metrics_probe_set_key(LogParser *s, const gchar *key)
@@ -67,6 +105,44 @@ metrics_probe_get_template_options(LogParser *s)
   return &self->template_options;
 }
 
+static void
+_calculate_stats_cluster_key(MetricsProbe *self, LogMessage *msg, StatsClusterLabel *labels, StatsClusterKey *key)
+{
+  gint label_idx = 0;
+  for (GList *elem = g_list_first(self->label_templates); elem; elem = elem->next)
+    {
+      LabelTemplate *label_template = (LabelTemplate *) elem->data;
+      GString *value_buffer = scratch_buffers_alloc();
+
+      label_template_format(label_template, &self->template_options, msg, value_buffer, &labels[label_idx++]);
+    }
+
+  stats_cluster_single_key_set(key, self->key, labels, label_idx);
+}
+
+static StatsCounterItem *
+_lookup_stats_counter(MetricsProbe *self, LogMessage *msg)
+{
+  StatsClusterLabel *labels = g_alloca(self->num_of_labels * sizeof(StatsClusterLabel));
+  StatsClusterKey key;
+  ScratchBuffersMarker marker;
+
+  scratch_buffers_mark(&marker);
+  _calculate_stats_cluster_key(self, msg, labels, &key);
+
+  StatsCluster *cluster = g_hash_table_lookup(clusters, &key);
+  if (!cluster)
+    {
+      cluster = _register_single_cluster_locked(&key);
+      if (cluster)
+        g_hash_table_insert(clusters, &cluster->key, cluster);
+    }
+
+  scratch_buffers_reclaim_marked(marker);
+
+  return stats_cluster_single_get_counter(cluster);
+}
+
 static gboolean
 _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
@@ -75,6 +151,9 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
   msg_trace("metrics-probe message processing started",
             evt_tag_str("key", self->key),
             evt_tag_msg_reference(*pmsg));
+
+  StatsCounterItem *counter = _lookup_stats_counter(self, *pmsg);
+  stats_counter_inc(counter);
 
   return TRUE;
 }
@@ -86,6 +165,50 @@ _add_default_label_template(MetricsProbe *self, const gchar *label, const gchar 
   log_template_compile(value_template, value_template_str, NULL);
   metrics_probe_add_label_template(&self->super, label, value_template);
   log_template_unref(value_template);
+}
+
+static void
+_init_tls_clusters_map_thread_init_hook(gpointer user_data)
+{
+  g_assert(!clusters);
+
+  clusters = g_hash_table_new_full((GHashFunc) stats_cluster_key_hash,
+                                   (GEqualFunc) stats_cluster_key_equal,
+                                   NULL,
+                                   (GDestroyNotify) _unregister_single_cluster_locked);
+}
+
+static void
+_deinit_tls_clusters_map_thread_init_hook(gpointer user_data)
+{
+  g_hash_table_destroy(clusters);
+}
+
+static void
+_init_tls_clusters_map_apphook(gint type, gpointer user_data)
+{
+  _init_tls_clusters_map_thread_init_hook(user_data);
+}
+
+static void
+_deinit_tls_clusters_map_apphook(gint type, gpointer user_data)
+{
+  _deinit_tls_clusters_map_thread_init_hook(user_data);
+}
+
+static void
+_register_global_initializers(void)
+{
+  static gboolean initialized = FALSE;
+
+  if (!initialized)
+    {
+      register_application_thread_init_hook(_init_tls_clusters_map_thread_init_hook, NULL);
+      register_application_thread_deinit_hook(_deinit_tls_clusters_map_thread_init_hook, NULL);
+      register_application_hook(AH_STARTUP, _init_tls_clusters_map_apphook, NULL, AHM_RUN_ONCE);
+      register_application_hook(AH_SHUTDOWN, _deinit_tls_clusters_map_apphook, NULL, AHM_RUN_ONCE);
+      initialized = TRUE;
+    }
 }
 
 static gboolean
@@ -114,6 +237,8 @@ _init(LogPipe *s)
     }
 
   self->label_templates = g_list_sort(self->label_templates, (GCompareFunc) label_template_compare);
+
+  _register_global_initializers();
 
   return log_parser_init_method(s);
 }
