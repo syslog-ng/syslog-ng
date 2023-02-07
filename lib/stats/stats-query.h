@@ -29,7 +29,6 @@
 
 typedef gboolean (*StatsFormatCb)(StatsCounterItem *ctr, gpointer user_data);
 typedef gboolean (*StatsSumFormatCb)(gpointer user_data);
-typedef void (*AggregatedMetricsCb)(GList *counters, StatsCounterItem **result);
 
 gboolean stats_query_list(const gchar *expr, StatsFormatCb format_cb, gpointer result);
 gboolean stats_query_list_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, gpointer result);
@@ -41,7 +40,6 @@ gboolean stats_query_get_sum_and_reset_counters(const gchar *expr, StatsSumForma
 void stats_query_init(void);
 void stats_query_deinit(void);
 
-void stats_register_view(gchar *name, GList *queries, const AggregatedMetricsCb aggregate);
 void stats_query_index_counter(StatsCluster *cluster, gint type);
 void stats_query_deindex_cluster(StatsCluster *cluster);
 #endif

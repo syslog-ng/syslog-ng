@@ -67,38 +67,6 @@ setup(void)
 }
 
 static void
-_add_two_to_value(GList *counters, StatsCounterItem **result)
-{
-  for (GList *it = counters; it; it = it->next)
-    {
-      StatsCounterItem *c = it->data;
-      stats_counter_add(*result, stats_counter_get(c) + 2);
-    }
-}
-
-static gchar *
-_construct_view_name(const gchar *counter_id)
-{
-  GString *aliased_name = g_string_new("");
-  aliased_name = g_string_append(aliased_name, counter_id);
-  aliased_name = g_string_append(aliased_name, ".aliased");
-  return g_string_free(aliased_name, FALSE);
-}
-
-static GList *
-_construct_view_query_list(const gchar *counter_instance)
-{
-  GList *queries = NULL;
-  GString *query = g_string_new("*");
-  query = g_string_append(query, counter_instance);
-  query = g_string_append(query, ".*");
-  gchar *q = g_string_free(query, FALSE);
-  queries = g_list_append(queries, q);
-  return queries;
-}
-
-
-static void
 _register_counters(const CounterHashContent *counters, size_t n, ClusterKeySet key_set)
 {
   stats_lock();
@@ -116,9 +84,6 @@ _register_counters(const CounterHashContent *counters, size_t n, ClusterKeySet k
           StatsCounterItem *item = NULL;
           stats_register_counter(0, &sc_key, counters[i].type, &item);
         }
-      gchar *name = _construct_view_name(counters[i].id);
-      GList *queries = _construct_view_query_list(counters[i].instance);
-      stats_register_view(name, queries, _add_two_to_value);
     }
   stats_unlock();
 }
@@ -300,37 +265,6 @@ ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_s
   g_string_free(result, TRUE);
 }
 
-
-Test(stats_query, test_stats_query_get_str_out_with_multiple_matching_counters)
-{
-  const gchar *pattern = "*.aliased";
-
-  GString *result = g_string_new("");
-  stats_query_get(pattern, _test_format_str_get, (gpointer)result);
-
-  const gchar *expected_results[] =
-  {
-    /* add_two is called for each; .aliased means *guba.
-     * 0+2, 2+12+2, 16+0+2, 18+0+2, 20+0+2, 22+0+2, 24+0+2=26 */
-    ".aliased: 26\n",
-    "guba.frizbi.aliased: 2\n",
-    "guba.gumi.diszno.aliased: 18\n", // *frozen.*
-    "guba.polo.aliased: 18\n", // *frozen.*
-    "guba.aliased: 2\n",
-    "guba.gumi.disz.aliased: 18\n", // *frozen.*
-    "guba.labda.aliased: 2\n"
-  };
-
-  for (gsize i = 0; i < G_N_ELEMENTS(expected_results); ++i)
-    {
-      cr_assert_not_null(strstr(result->str, expected_results[i]),
-                         "Pattern: '%s'; expected key and value: '%s' in output: '%s';", pattern, expected_results[i], result->str);
-    }
-
-  g_string_free(result, TRUE);
-}
-
-
 ParameterizedTestParameters(stats_query, test_stats_query_get_sum_log_msg_out)
 {
   static QueryTestCase test_cases[] =
@@ -357,27 +291,9 @@ ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_s
 
 ParameterizedTestParameters(stats_query, test_stats_query_get_sum_str_out)
 {
-  /* 98...
-    sum:0; inc:0; ctr-name: src.pipe.guba.gumi.disz.frozen.suppressed
-    sum:0; inc:12; ctr-name: center.guba.polo.frozen.suppressed
-    sum:12; inc:0; ctr-name: src.tcp.guba.frizbi.left.queued
-    sum:12; inc:0; ctr-name: global.id.instance.name
-    sum:12; inc:0; ctr-name: src.file.guba.processed.processed
-    sum:12; inc:0; ctr-name: global.guba.gumi.diszno.frozen.suppressed
-    sum:12; inc:0; ctr-name: global.guba.value
-    sum:12; inc:0; ctr-name: dst.tcp.guba.labda.received.dropped
-    sum:12; inc:18; ctr-name: guba.polo.aliased
-    sum:30; inc:2; ctr-name: guba.frizbi.aliased
-    sum:32; inc:2; ctr-name: guba.labda.aliased
-    sum:34; inc:18; ctr-name: guba.gumi.diszno.aliased
-    sum:52; inc:2; ctr-name: guba.aliased
-    sum:54; inc:18; ctr-name: guba.gumi.disz.aliased
-    sum:72; inc:26; ctr-name: .aliased
-    98 = 72+26
-  */
   static QueryTestCase test_cases[] =
   {
-    {"*", "98"},
+    {"*", "12"},
     {"center.*.*", "12"},
     {"cent*", "12"},
     {"src.pipe.guba.gumi.disz.*.*", "0"},
