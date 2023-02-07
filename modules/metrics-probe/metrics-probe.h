@@ -31,4 +31,6 @@ LogParser *metrics_probe_new(GlobalConfig *cfg);
 void metrics_probe_set_key(LogParser *s, const gchar *key);
 gboolean metrics_probe_add_label_template(LogParser *s, const gchar *label, LogTemplate *value_template);
 
+LogTemplateOptions *metrics_probe_get_template_options(LogParser *s);
+
 #endif

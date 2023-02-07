@@ -32,6 +32,8 @@ typedef struct _MetricsProbe
   gchar *key;
   GList *label_templates;
   guint8 num_of_labels;
+
+  LogTemplateOptions template_options;
 } MetricsProbe;
 
 void
@@ -55,6 +57,14 @@ metrics_probe_add_label_template(LogParser *s, const gchar *label, LogTemplate *
   self->num_of_labels++;
 
   return TRUE;
+}
+
+LogTemplateOptions *
+metrics_probe_get_template_options(LogParser *s)
+{
+  MetricsProbe *self = (MetricsProbe *) s;
+
+  return &self->template_options;
 }
 
 static gboolean
@@ -82,6 +92,9 @@ static gboolean
 _init(LogPipe *s)
 {
   MetricsProbe *self = (MetricsProbe *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  log_template_options_init(&self->template_options, cfg);
 
   if (!self->key && !self->label_templates)
     {
@@ -120,6 +133,8 @@ _clone(LogPipe *s)
       cloned->label_templates = g_list_append(cloned->label_templates, label_template_clone(label_template));
     }
 
+  log_template_options_clone(&self->template_options, &cloned->template_options);
+
   return &cloned->super.super;
 }
 
@@ -130,6 +145,7 @@ _free(LogPipe *s)
 
   g_free(self->key);
   g_list_free_full(self->label_templates, (GDestroyNotify) label_template_free);
+  log_template_options_destroy(&self->template_options);
 
   log_parser_free_method(s);
 }
@@ -144,6 +160,8 @@ metrics_probe_new(GlobalConfig *cfg)
   self->super.super.free_fn = _free;
   self->super.super.clone = _clone;
   self->super.process = _process;
+
+  log_template_options_defaults(&self->template_options);
 
   return &self->super;
 }

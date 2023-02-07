@@ -76,6 +76,7 @@ metrics_probe_opts
 metrics_probe_opt
         : KW_KEY '(' string ')' { metrics_probe_set_key(last_parser, $3); g_free($3); }
         | KW_LABELS '(' metrics_probe_label_templates ')'
+        | { last_template_options = metrics_probe_get_template_options(last_parser); } template_option
         ;
 
 metrics_probe_label_templates
