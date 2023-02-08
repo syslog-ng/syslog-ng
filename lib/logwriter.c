@@ -1412,16 +1412,16 @@ _register_aggregated_stats(LogWriter *self, StatsClusterKey *sc_key_input, gint 
   stats_aggregator_lock();
   StatsClusterKey sc_key;
 
-  stats_cluster_single_key_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                         self->stats_instance, "msg_size_max");
+  stats_cluster_single_key_legacy_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+                                                self->stats_instance, "msg_size_max");
   stats_register_aggregator_maximum(self->options->stats_level, &sc_key, &self->max_message_size);
 
-  stats_cluster_single_key_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                         self->stats_instance, "msg_size_avg");
+  stats_cluster_single_key_legacy_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+                                                self->stats_instance, "msg_size_avg");
   stats_register_aggregator_average(self->options->stats_level, &sc_key, &self->average_messages_size);
 
-  stats_cluster_single_key_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                         self->stats_instance, "eps");
+  stats_cluster_single_key_legacy_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+                                                self->stats_instance, "eps");
   stats_register_aggregator_cps(self->options->stats_level, &sc_key, sc_key_input, stats_type, &self->CPS);
 
   stats_aggregator_unlock();
@@ -1444,8 +1444,8 @@ _register_counters(LogWriter *self)
 {
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                self->stats_instance);
+  stats_cluster_logpipe_key_legacy_set(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+                                       self->stats_instance);
 
   if (self->options->suppress > 0)
     stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
@@ -1455,14 +1455,14 @@ _register_counters(LogWriter *self)
   log_queue_register_stats_counters(self->queue, self->options->stats_level, &sc_key);
 
   StatsClusterKey sc_key_truncated_count;
-  stats_cluster_single_key_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
-                                         self->stats_id, self->stats_instance, "truncated_count");
+  stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
+                                                self->stats_id, self->stats_instance, "truncated_count");
   stats_register_counter(self->options->stats_level, &sc_key_truncated_count, SC_TYPE_SINGLE_VALUE,
                          &self->truncated.count);
 
   StatsClusterKey sc_key_truncated_bytes;
-  stats_cluster_single_key_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
-                                         self->stats_id, self->stats_instance, "truncated_bytes");
+  stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
+                                                self->stats_id, self->stats_instance, "truncated_bytes");
   stats_register_counter(self->options->stats_level, &sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE,
                          &self->truncated.bytes);
 
@@ -1502,8 +1502,8 @@ _unregister_counters(LogWriter *self)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                  self->stats_instance);
+    stats_cluster_logpipe_key_legacy_set(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+                                         self->stats_instance);
 
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
@@ -1511,13 +1511,13 @@ _unregister_counters(LogWriter *self)
     stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
 
     StatsClusterKey sc_key_truncated_count;
-    stats_cluster_single_key_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
-                                           self->stats_id, self->stats_instance, "truncated_count");
+    stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
+                                                  self->stats_id, self->stats_instance, "truncated_count");
     stats_unregister_counter(&sc_key_truncated_count, SC_TYPE_SINGLE_VALUE, &self->truncated.count);
 
     StatsClusterKey sc_key_truncated_bytes;
-    stats_cluster_single_key_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
-                                           self->stats_id, self->stats_instance, "truncated_bytes");
+    stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
+                                                  self->stats_id, self->stats_instance, "truncated_bytes");
     stats_unregister_counter(&sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE, &self->truncated.bytes);
 
     log_queue_unregister_stats_counters(self->queue, &sc_key);

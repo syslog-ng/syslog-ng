@@ -95,7 +95,7 @@ _register_single_counter_with_name(void)
   {
     StatsClusterKey sc_key;
     StatsCounterItem *ctr_item;
-    stats_cluster_single_key_set_with_name(&sc_key, SCS_GLOBAL, "id", "instance", "name");
+    stats_cluster_single_key_legacy_set_with_name(&sc_key, SCS_GLOBAL, "id", "instance", "name");
     stats_register_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &ctr_item);
   }
   stats_unlock();
@@ -122,8 +122,9 @@ _initialize_counter_hash(void)
     {SCS_GLOBAL, "", "guba", SC_TYPE_SINGLE_VALUE, NULL, 0}
   };
 
-  _register_counters(logpipe_cluster_counters, ARRAY_SIZE(logpipe_cluster_counters), stats_cluster_logpipe_key_set);
-  _register_counters(single_cluster_counters, ARRAY_SIZE(single_cluster_counters), stats_cluster_single_key_set);
+  _register_counters(logpipe_cluster_counters, ARRAY_SIZE(logpipe_cluster_counters),
+                     stats_cluster_logpipe_key_legacy_set);
+  _register_counters(single_cluster_counters, ARRAY_SIZE(single_cluster_counters), stats_cluster_single_key_legacy_set);
   _register_single_counter_with_name();
 }
 
@@ -198,7 +199,7 @@ Test(cluster_query_key, test_global_key)
 {
   const gchar *expected_key = "dst.file.d_file.instance";
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION|SCS_FILE, "d_file", "instance" );
+  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION|SCS_FILE, "d_file", "instance" );
   StatsCluster *sc = stats_cluster_new(&sc_key);
   cr_assert_str_eq(sc->query_key, expected_key,
                    "generated query key(%s) does not match to the expected key(%s)",

@@ -1006,11 +1006,11 @@ _make_connection_conter_stats_queryable(AFSocketSourceDriver *self)
       stats_lock();
       {
         StatsClusterKey sc_key;
-        stats_cluster_single_key_set_with_name(&sc_key,
-                                               self->transport_mapper->stats_source | SCS_SOURCE,
-                                               self->super.super.group,
-                                               afsocket_sd_format_name(&self->super.super.super),
-                                               "connections");
+        stats_cluster_single_key_legacy_set_with_name(&sc_key,
+                                                      self->transport_mapper->stats_source | SCS_SOURCE,
+                                                      self->super.super.group,
+                                                      afsocket_sd_format_name(&self->super.super.super),
+                                                      "connections");
         stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
         _connections_count_set(self, 0);
       }
@@ -1026,11 +1026,11 @@ _stop_connection_counter_stats_queryable(AFSocketSourceDriver *self)
       stats_lock();
       {
         StatsClusterKey sc_key;
-        stats_cluster_single_key_set_with_name(&sc_key,
-                                               self->transport_mapper->stats_source | SCS_SOURCE,
-                                               self->super.super.group,
-                                               afsocket_sd_format_name(&self->super.super.super),
-                                               "connections");
+        stats_cluster_single_key_legacy_set_with_name(&sc_key,
+                                                      self->transport_mapper->stats_source | SCS_SOURCE,
+                                                      self->super.super.group,
+                                                      afsocket_sd_format_name(&self->super.super.super),
+                                                      "connections");
         stats_unregister_external_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
       }
       stats_unlock();

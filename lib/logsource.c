@@ -418,15 +418,15 @@ _register_window_stats(LogSource *self)
   const gchar *instance_name = self->name ? : self->stats_instance;
 
   StatsClusterKey sc_key;
-  stats_cluster_single_key_set_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                         instance_name, "free_window");
+  stats_cluster_single_key_legacy_set_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
+                                                instance_name, "free_window");
   self->stat_window_size_cluster = stats_register_dynamic_counter(4, &sc_key, SC_TYPE_SINGLE_VALUE,
                                    &self->stat_window_size);
   stats_counter_set(self->stat_window_size, window_size_counter_get(&self->window_size, NULL));
 
 
-  stats_cluster_single_key_set_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                         instance_name, "full_window");
+  stats_cluster_single_key_legacy_set_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
+                                                instance_name, "full_window");
   self->stat_full_window_cluster = stats_register_dynamic_counter(4, &sc_key, SC_TYPE_SINGLE_VALUE,
                                    &self->stat_full_window);
   stats_counter_set(self->stat_full_window, self->full_window_size);
@@ -468,7 +468,8 @@ log_source_init(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance);
+  stats_cluster_logpipe_key_legacy_set(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
+                                       self->stats_instance);
   stats_register_counter(self->options->stats_level, &sc_key,
                          SC_TYPE_PROCESSED, &self->recvd_messages);
   stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_STAMP, &self->last_message_seen);
@@ -488,7 +489,8 @@ log_source_deinit(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id, self->stats_instance);
+  stats_cluster_logpipe_key_legacy_set(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
+                                       self->stats_instance);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->recvd_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_STAMP, &self->last_message_seen);
 

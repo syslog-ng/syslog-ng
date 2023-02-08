@@ -46,9 +46,9 @@ _counter_group_init(StatsCounterGroupInit *self, StatsCounterGroup *counter_grou
 }
 
 void
-stats_cluster_single_key_set(StatsClusterKey *key, guint16 component, const gchar *id, const gchar *instance)
+stats_cluster_single_key_legacy_set(StatsClusterKey *key, guint16 component, const gchar *id, const gchar *instance)
 {
-  stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
+  stats_cluster_key_legacy_set(key, component, id, instance, (StatsCounterGroupInit)
   {
     .counter.names = tag_names, .init = _counter_group_init, .equals = NULL
   });
@@ -100,10 +100,11 @@ _group_init_equals(const StatsCounterGroupInit *self, const StatsCounterGroupIni
 }
 
 void
-stats_cluster_single_key_set_with_name(StatsClusterKey *key, guint16 component, const gchar *id, const gchar *instance,
-                                       const gchar *name)
+stats_cluster_single_key_legacy_set_with_name(StatsClusterKey *key, guint16 component, const gchar *id,
+                                              const gchar *instance,
+                                              const gchar *name)
 {
-  stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
+  stats_cluster_key_legacy_set(key, component, id, instance, (StatsCounterGroupInit)
   {
     .counter.name = name, .init = _counter_group_init_with_name, .equals = _group_init_equals,
     .clone = _clone_with_name, .cloned_free = _cloned_free_with_name

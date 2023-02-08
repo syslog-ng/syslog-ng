@@ -45,9 +45,9 @@ Test(stats_alias_counter, register_ctr)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
+    stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
     stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &counter);
-    stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr.alias", NULL);
+    stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "test_ctr.alias", NULL);
     StatsCluster *sc = stats_register_alias_counter(0, &sc_key, SC_TYPE_PROCESSED, counter);
     cr_assert_not_null(sc);
     alias_counter = stats_cluster_get_counter(sc, SC_TYPE_PROCESSED);
@@ -62,7 +62,7 @@ Test(stats_alias_counter, register_ctr)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr.alias", NULL);
+    stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "test_ctr.alias", NULL);
     stats_unregister_alias_counter(&sc_key, SC_TYPE_PROCESSED, counter);
     stats_counter_dec(counter);
     cr_expect_eq(stats_counter_get(counter), 11);
@@ -70,7 +70,7 @@ Test(stats_alias_counter, register_ctr)
     alias_counter = stats_cluster_get_counter(sc, SC_TYPE_PROCESSED);
     cr_expect(alias_counter->external);
     cr_expect_eq(&counter->value, alias_counter->value_ref);
-    stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
+    stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &counter);
     cr_expect_eq(stats_counter_get(alias_counter), 11);
     stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &counter);

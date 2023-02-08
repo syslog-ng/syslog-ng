@@ -94,8 +94,8 @@ stats_cluster_key_clone(StatsClusterKey *dst, const StatsClusterKey *src)
 }
 
 void
-stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
-                      StatsCounterGroupInit counter_group_init)
+stats_cluster_key_legacy_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
+                             StatsCounterGroupInit counter_group_init)
 {
   self->legacy.component = component;
   self->id = (id?id:"");

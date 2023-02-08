@@ -45,7 +45,7 @@ Test(stats_external_counter, register_logpipe_cluster_ctr)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
+    stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
     StatsCluster *sc = stats_register_external_counter(0, &sc_key, SC_TYPE_PROCESSED, &test_ctr);
     cr_assert_not_null(sc);
     counter = stats_cluster_get_counter(sc, SC_TYPE_PROCESSED);
@@ -66,7 +66,7 @@ _register_external_stats_counter(atomic_gssize *ctr, gssize initial_value)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
+    stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
     StatsCluster *sc = stats_register_external_counter(0, &sc_key, SC_TYPE_PROCESSED, ctr);
     counter = stats_cluster_get_counter(sc, SC_TYPE_PROCESSED);
     cr_assert_not_null(sc);
@@ -121,7 +121,7 @@ Test(stats_external_counter, reset_counter_is_disabled_for_external_counters)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
+    stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
     StatsCluster *sc = stats_register_external_counter(0, &sc_key, SC_TYPE_PROCESSED, &test_ctr);
     counter = stats_cluster_get_counter(sc, SC_TYPE_PROCESSED);
     cr_expect_eq(&sc->counter_group.counters[SC_TYPE_PROCESSED], counter);
@@ -150,7 +150,7 @@ Test(stats_external_counter, register_same_ctr_as_internal_after_external_unregi
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
+    stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
     stats_register_external_counter(0, &sc_key, SC_TYPE_PROCESSED, &test_ctr);
     counter = stats_get_counter(&sc_key, SC_TYPE_PROCESSED);
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &counter);
@@ -171,7 +171,7 @@ Test(stats_external_counter, register_same_ctr_as_external_after_internal_unregi
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
+    stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
     stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &counter);
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &counter);
     // assert, SIGABRT:
@@ -197,7 +197,7 @@ Test(stats_external_counter, re_register_internal_ctr_as_external, .signal = SIG
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
+    stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
     stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_counter);
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &internal_counter);
     cr_expect_null(internal_counter);
@@ -218,7 +218,7 @@ Test(stats_external_counter, re_register_external_ctr_as_internal)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr", "counter");
+    stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "test_ctr", "counter");
     stats_register_external_counter(0, &sc_key, SC_TYPE_PROCESSED, &test_ctr);
     tmp_counter = external_counter = stats_get_counter(&sc_key, SC_TYPE_PROCESSED);
     stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_counter);
@@ -246,7 +246,7 @@ Test(stats_external_counter, re_register_external_ctr)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
+    stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
     stats_register_external_counter(0, &sc_key, SC_TYPE_PROCESSED, &test_ctr);
     stats_register_external_counter(0, &sc_key, SC_TYPE_PROCESSED, &test_ctr);
     counter1 = stats_get_counter(&sc_key, SC_TYPE_PROCESSED);
