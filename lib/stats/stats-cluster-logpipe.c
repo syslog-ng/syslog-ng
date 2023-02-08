@@ -55,6 +55,15 @@ _counter_group_logpipe_init(StatsCounterGroupInit *self, StatsCounterGroup *coun
 }
 
 void
+stats_cluster_logpipe_key_set(StatsClusterKey *key, const gchar *id, StatsClusterLabel *labels, gsize labels_len)
+{
+  stats_cluster_key_set(key, id, labels, labels_len, (StatsCounterGroupInit)
+  {
+    .counter.names = tag_names, .init = _counter_group_logpipe_init, .equals = NULL
+  });
+}
+
+void
 stats_cluster_logpipe_key_legacy_set(StatsClusterKey *key, guint16 component, const gchar *id, const gchar *instance)
 {
   stats_cluster_key_legacy_set(key, component, id, instance, (StatsCounterGroupInit)

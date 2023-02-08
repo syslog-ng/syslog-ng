@@ -111,3 +111,12 @@ stats_cluster_single_key_legacy_set_with_name(StatsClusterKey *key, guint16 comp
   });
 }
 
+
+void
+stats_cluster_single_key_set(StatsClusterKey *key, const gchar *id, StatsClusterLabel *labels, gsize labels_len)
+{
+  stats_cluster_key_set(key, id, labels, labels_len, (StatsCounterGroupInit)
+  {
+    .counter.names = tag_names, .init = _counter_group_init, .equals = NULL
+  });
+}

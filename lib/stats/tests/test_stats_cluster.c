@@ -163,6 +163,56 @@ Test(stats_cluster, test_stats_cluster_key_equal_when_custom_tags_are_the_same)
   stats_cluster_free(sc2);
 }
 
+static inline void
+assert_key_equal(StatsClusterKey k1, StatsClusterKey k2, gboolean equal)
+{
+  StatsClusterKey key1, key2;
+  stats_cluster_logpipe_key_set(&key1, k1.name, k1.labels, k1.labels_len);
+  stats_cluster_logpipe_key_set(&key2, k2.name, k2.labels, k2.labels_len);
+  cr_assert_eq(stats_cluster_key_equal(&key1, &key2), equal);
+  cr_assert_eq(stats_cluster_key_hash(&key1) == stats_cluster_key_hash(&key2), equal);
+}
+
+static inline StatsClusterKey
+test_cluster_key(const gchar *name, StatsClusterLabel *labels, gsize labels_len)
+{
+  return (StatsClusterKey)
+  {
+    .name = name,
+    .labels = labels,
+    .labels_len = labels_len
+  };
+}
+
+Test(stats_cluster, test_stats_cluster_key)
+{
+  StatsClusterLabel labels1[] =
+  {
+    stats_cluster_label("app", "cisco"),
+    stats_cluster_label("sourceip", "127.0.0.1"),
+    stats_cluster_label("customlabel", "value"),
+  };
+  StatsClusterLabel labels2[] = { stats_cluster_label("app", "cisco") };
+
+  assert_key_equal(test_cluster_key("name", NULL, 0), test_cluster_key("name", NULL, 0), TRUE);
+  assert_key_equal(test_cluster_key("name", labels1, G_N_ELEMENTS(labels1)),
+                   test_cluster_key("name", labels1, G_N_ELEMENTS(labels1)), TRUE);
+  assert_key_equal(test_cluster_key("name", labels2, G_N_ELEMENTS(labels2)),
+                   test_cluster_key("name", labels2, G_N_ELEMENTS(labels2)), TRUE);
+  assert_key_equal(test_cluster_key("name", labels1, G_N_ELEMENTS(labels1)),
+                   test_cluster_key("name", NULL, 0), FALSE);
+  assert_key_equal(test_cluster_key("name", labels1, G_N_ELEMENTS(labels1)),
+                   test_cluster_key("name", labels2, G_N_ELEMENTS(labels2)), FALSE);
+
+  assert_key_equal(test_cluster_key("name", NULL, 0), test_cluster_key("name2", NULL, 0), FALSE);
+  assert_key_equal(test_cluster_key("name", labels1, G_N_ELEMENTS(labels1)),
+                   test_cluster_key("name2", labels1, G_N_ELEMENTS(labels1)), FALSE);
+  assert_key_equal(test_cluster_key("name", labels1, G_N_ELEMENTS(labels1)),
+                   test_cluster_key("name2", NULL, 0), FALSE);
+  assert_key_equal(test_cluster_key("name", labels1, G_N_ELEMENTS(labels1)),
+                   test_cluster_key("name2", labels2, G_N_ELEMENTS(labels2)), FALSE);
+}
+
 typedef struct _ValidateCountersState
 {
   gint type1;
