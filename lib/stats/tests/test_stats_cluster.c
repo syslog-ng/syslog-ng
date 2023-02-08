@@ -76,7 +76,7 @@ Test(stats_cluster, test_stats_cluster_new_replaces_NULL_with_an_empty_string)
 
   sc = stats_cluster_new(&sc_key);
   cr_assert_str_eq(sc->key.id, "", "StatsCluster->id is not properly defaulted to an empty string");
-  cr_assert_str_eq(sc->key.instance, "", "StatsCluster->instance is not properly defaulted to an empty string");
+  cr_assert_str_eq(sc->key.legacy.instance, "", "StatsCluster->instance is not properly defaulted to an empty string");
   stats_cluster_free(sc);
 }
 

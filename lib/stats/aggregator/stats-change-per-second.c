@@ -149,17 +149,20 @@ _register_CPSs(StatsAggregatorCPS *self)
   StatsClusterKey sc_key;
 
   self->hour.name = g_strconcat(self->super.key.counter_group_init.counter.name, "_last_1h", NULL);
-  stats_cluster_single_key_set_with_name(&sc_key, self->super.key.component, self->super.key.id, self->super.key.instance,
+  stats_cluster_single_key_set_with_name(&sc_key, self->super.key.legacy.component, self->super.key.id,
+                                         self->super.key.legacy.instance,
                                          self->hour.name);
   _register_CPS(&self->hour, &sc_key, self->super.stats_level, SC_TYPE_SINGLE_VALUE);
 
   self->day.name = g_strconcat(self->super.key.counter_group_init.counter.name, "_last_24h", NULL);
-  stats_cluster_single_key_set_with_name(&sc_key, self->super.key.component, self->super.key.id, self->super.key.instance,
+  stats_cluster_single_key_set_with_name(&sc_key, self->super.key.legacy.component, self->super.key.id,
+                                         self->super.key.legacy.instance,
                                          self->day.name);
   _register_CPS(&self->day, &sc_key, self->super.stats_level, SC_TYPE_SINGLE_VALUE);
 
   self->start.name = g_strconcat(self->super.key.counter_group_init.counter.name, "_since_start", NULL);
-  stats_cluster_single_key_set_with_name(&sc_key, self->super.key.component, self->super.key.id, self->super.key.instance,
+  stats_cluster_single_key_set_with_name(&sc_key, self->super.key.legacy.component, self->super.key.id,
+                                         self->super.key.legacy.instance,
                                          self->start.name);
   _register_CPS(&self->start, &sc_key, self->super.stats_level, SC_TYPE_SINGLE_VALUE);
 
@@ -192,19 +195,22 @@ _unregister_CPSs(StatsAggregatorCPS *self)
   stats_lock();
   StatsClusterKey sc_key;
 
-  stats_cluster_single_key_set_with_name(&sc_key, self->super.key.component, self->super.key.id, self->super.key.instance,
+  stats_cluster_single_key_set_with_name(&sc_key, self->super.key.legacy.component, self->super.key.id,
+                                         self->super.key.legacy.instance,
                                          self->hour.name);
   _unregister_CPS(&self->hour, &sc_key, SC_TYPE_SINGLE_VALUE);
   g_free(self->hour.name);
   self->hour.name = NULL;
 
-  stats_cluster_single_key_set_with_name(&sc_key, self->super.key.component, self->super.key.id, self->super.key.instance,
+  stats_cluster_single_key_set_with_name(&sc_key, self->super.key.legacy.component, self->super.key.id,
+                                         self->super.key.legacy.instance,
                                          self->day.name);
   _unregister_CPS(&self->day, &sc_key, SC_TYPE_SINGLE_VALUE);
   g_free(self->day.name);
   self->day.name = NULL;
 
-  stats_cluster_single_key_set_with_name(&sc_key, self->super.key.component, self->super.key.id, self->super.key.instance,
+  stats_cluster_single_key_set_with_name(&sc_key, self->super.key.legacy.component, self->super.key.id,
+                                         self->super.key.legacy.instance,
                                          self->start.name);
   _unregister_CPS(&self->start, &sc_key, SC_TYPE_SINGLE_VALUE);
   g_free(self->start.name);
@@ -272,8 +278,7 @@ _calc_average(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
   _set_average(logic, (sum / divisor));
 
   msg_trace("stats-aggregator-cps",
-            evt_tag_printf("name", "%s_%s_%s", self->super.key.id, (self->super.key.instance) ? self->super.key.instance : "",
-                           logic->name),
+            evt_tag_printf("name", "%s_%s", self->super.key.id, logic->name),
             evt_tag_long("sum", sum),
             evt_tag_long("divisor", divisor),
             evt_tag_long("cps", (sum/divisor)),

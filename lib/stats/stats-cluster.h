@@ -76,10 +76,13 @@ void stats_counter_group_free(StatsCounterGroup *self);
 
 struct _StatsClusterKey
 {
-  /* syslog-ng component/driver/subsystem that registered this cluster */
-  guint16 component;
   const gchar *id;
-  const gchar *instance;
+  struct
+  {
+    /* syslog-ng component/driver/subsystem that registered this cluster */
+    guint16 component;
+    const gchar *instance;
+  } legacy;
   StatsCounterGroupInit counter_group_init;
 };
 

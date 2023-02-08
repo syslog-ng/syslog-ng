@@ -70,7 +70,7 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
   GString *csv = g_string_sized_new(512);
 
   s_id = stats_format_csv_escapevar(sc->key.id);
-  s_instance = stats_format_csv_escapevar(sc->key.instance);
+  s_instance = stats_format_csv_escapevar(sc->key.legacy.instance);
 
   if (sc->dynamic)
     state = 'd';
