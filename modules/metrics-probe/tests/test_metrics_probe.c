@@ -36,6 +36,15 @@ _create_metrics_probe(void)
   return metrics_probe;
 }
 
+static void
+_add_label(LogParser *s, const gchar *label, const gchar *value_template_str)
+{
+  LogTemplate *value_template = log_template_new(s->super.cfg, NULL);
+  log_template_compile(value_template, value_template_str, NULL);
+  metrics_probe_add_label_template(s, label, value_template);
+  log_template_unref(value_template);
+}
+
 static gsize
 _get_stats_counter_value(const gchar *key, StatsClusterLabel *labels, gsize labels_len)
 {
@@ -139,6 +148,97 @@ Test(metrics_probe, test_metrics_probe_defaults)
 
   cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
   _assert_counter_value("classified_events_total",
+                        expected_labels_2,
+                        G_N_ELEMENTS(expected_labels_2),
+                        1);
+
+  log_msg_unref(msg);
+  log_pipe_deinit(&metrics_probe->super);
+  log_pipe_unref(&metrics_probe->super);
+}
+
+Test(metrics_probe, test_metrics_probe_custom_labels_only)
+{
+  LogParser *metrics_probe = _create_metrics_probe();
+  _add_label(metrics_probe, "test_label", "foo");
+
+  cr_assert_not(log_pipe_init(&metrics_probe->super), "metrics-probe should have failed to init");
+
+  log_pipe_unref(&metrics_probe->super);
+}
+
+Test(metrics_probe, test_metrics_probe_custom_key_only)
+{
+  LogParser *metrics_probe = _create_metrics_probe();
+  metrics_probe_set_key(metrics_probe, "custom_key");
+  cr_assert(log_pipe_init(&metrics_probe->super), "Failed to init metrics-probe");
+
+  LogMessage *msg = log_msg_new_empty();
+  StatsClusterLabel expected_labels[] = {};
+
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  _assert_counter_value("custom_key",
+                        expected_labels,
+                        G_N_ELEMENTS(expected_labels),
+                        1);
+
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  _assert_counter_value("custom_key",
+                        expected_labels,
+                        G_N_ELEMENTS(expected_labels),
+                        2);
+
+  log_msg_unref(msg);
+  log_pipe_deinit(&metrics_probe->super);
+  log_pipe_unref(&metrics_probe->super);
+}
+
+Test(metrics_probe, test_metrics_probe_custom_full)
+{
+  LogParser *metrics_probe = _create_metrics_probe();
+  metrics_probe_set_key(metrics_probe, "custom_key");
+  _add_label(metrics_probe, "test_label_3", "foo");
+  _add_label(metrics_probe, "test_label_1", "${test_field_1}");
+  _add_label(metrics_probe, "test_label_2", "${test_field_2}");
+  cr_assert(log_pipe_init(&metrics_probe->super), "Failed to init metrics-probe");
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, "test_field_1", "test_value_1", -1);
+  log_msg_set_value_by_name(msg, "test_field_2", "test_value_2", -1);
+
+  StatsClusterLabel expected_labels_1[] =
+  {
+    stats_cluster_label("test_label_1", "test_value_1"),
+    stats_cluster_label("test_label_2", "test_value_2"),
+    stats_cluster_label("test_label_3", "foo"),
+  };
+
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  _assert_counter_value("custom_key",
+                        expected_labels_1,
+                        G_N_ELEMENTS(expected_labels_1),
+                        1);
+
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  _assert_counter_value("custom_key",
+                        expected_labels_1,
+                        G_N_ELEMENTS(expected_labels_1),
+                        2);
+
+  log_msg_unref(msg);
+  msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, "test_field_1", "test_value_3", -1);
+  log_msg_set_value_by_name(msg, "test_field_2", "test_value_4", -1);
+
+  StatsClusterLabel expected_labels_2[] =
+  {
+    stats_cluster_label("test_label_1", "test_value_3"),
+    stats_cluster_label("test_label_2", "test_value_4"),
+    stats_cluster_label("test_label_3", "foo"),
+  };
+
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  _assert_counter_value("custom_key",
                         expected_labels_2,
                         G_N_ELEMENTS(expected_labels_2),
                         1);
