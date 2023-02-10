@@ -16,6 +16,7 @@ add_subdirectory(debugger)
 add_subdirectory(filter)
 add_subdirectory(logmsg)
 add_subdirectory(logproto)
+add_subdirectory(multi-line)
 add_subdirectory(parser)
 add_subdirectory(rewrite)
 add_subdirectory(stats)
@@ -39,6 +40,7 @@ set(LIB_SUBDIR_HEADERS
     ${FILTER_HEADERS}
     ${LOGMSG_HEADERS}
     ${LOGPROTO_HEADERS}
+    ${MULTI_LINE_HEADERS}
     ${PARSER_HEADERS}
     ${REWRITE_HEADERS}
     ${STATS_HEADERS}
@@ -239,6 +241,7 @@ set(LIB_SOURCES
     ${FILTER_SOURCES}
     ${LOGMSG_SOURCES}
     ${LOGPROTO_SOURCES}
+    ${MULTI_LINE_SOURCES}
     ${PARSER_SOURCES}
     ${REWRITE_SOURCES}
     ${STATS_SOURCES}

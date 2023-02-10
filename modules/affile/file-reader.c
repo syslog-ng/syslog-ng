@@ -99,7 +99,7 @@ _construct_poll_events(FileReader *self, gint fd)
     {
       LogProtoFileReaderOptions *proto_opts = file_reader_options_get_log_proto_options(self->options);
 
-      if (proto_opts->super.mode == MLM_NONE)
+      if (proto_opts->multi_line_options.mode == MLM_NONE)
         return poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
       else
         return poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
@@ -137,9 +137,9 @@ _construct_proto(FileReader *self, gint fd)
   format_handler = reader_options->parse_options.format_handler;
   if ((format_handler && format_handler->construct_proto))
     {
-      log_proto_server_options_set_ack_tracker_factory(&proto_options->super.super,
+      log_proto_server_options_set_ack_tracker_factory(&proto_options->super,
                                                        consecutive_ack_tracker_factory_new());
-      return format_handler->construct_proto(&reader_options->parse_options, transport, &proto_options->super.super);
+      return format_handler->construct_proto(&reader_options->parse_options, transport, &proto_options->super);
     }
 
   return file_opener_construct_src_proto(self->opener, transport, proto_options);
@@ -419,12 +419,11 @@ file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gc
   if (!file_reader_options_validate(options))
     return FALSE;
 
-  return log_proto_file_reader_options_init(file_reader_options_get_log_proto_options(options));
+  return log_proto_file_reader_options_init(file_reader_options_get_log_proto_options(options), cfg);
 }
 
 void
 file_reader_options_deinit(FileReaderOptions *options)
 {
   log_reader_options_destroy(&options->reader_options);
-  log_proto_file_reader_options_destroy(file_reader_options_get_log_proto_options(options));
 }

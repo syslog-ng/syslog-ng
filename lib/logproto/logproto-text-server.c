@@ -41,10 +41,20 @@ log_proto_text_server_prepare_method(LogProtoServer *s, GIOCondition *cond, gint
 }
 
 static gint
-log_proto_text_server_accumulate_line_method(LogProtoTextServer *self, const guchar *msg, gsize msg_len,
-                                             gssize consumed_len)
+log_proto_text_server_accumulate_line(LogProtoTextServer *self, const guchar *msg, gsize msg_len,
+                                      gssize consumed_len)
 {
-  return LPT_CONSUME_LINE | LPT_EXTRACTED;
+  if (self->multi_line)
+    {
+      const guchar *segment = &msg[consumed_len + 1];
+      gsize segment_len = msg_len - (segment - msg);
+
+      return multi_line_logic_accumulate_line(self->multi_line,
+                                              msg, consumed_len < 0 ? 0 : consumed_len,
+                                              segment, segment_len);
+    }
+
+  return MLL_CONSUME_SEGMENT | MLL_EXTRACTED;
 }
 
 static gboolean
@@ -74,18 +84,18 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
   *msg = buffer_start;
 
   verdict = log_proto_text_server_accumulate_line(self, *msg, *msg_len, self->consumed_len);
-  if (verdict & LPT_EXTRACTED)
+  if (verdict & MLL_EXTRACTED)
     {
-      if (verdict & LPT_CONSUME_LINE)
+      if (verdict & MLL_CONSUME_SEGMENT)
         {
-          gint drop_length = (verdict & LPT_CONSUME_PARTIAL_AMOUNT_MASK) >> LPT_CONSUME_PARTIAL_AMOUNT_SHIFT;
+          gint drop_length = (verdict & MLL_CONSUME_PARTIAL_AMOUNT_MASK) >> MLL_CONSUME_PARTIAL_AMOUNT_SHIFT;
 
           state->pending_buffer_pos = next_line_pos;
           self->cached_eol_pos = next_eol_pos;
           if (drop_length)
             *msg_len -= drop_length;
         }
-      else if (verdict & LPT_REWIND_LINE)
+      else if (verdict & MLL_REWIND_SEGMENT)
         {
           if (self->consumed_len >= 0)
             *msg_len = self->consumed_len;
@@ -99,19 +109,44 @@ log_proto_text_server_try_extract(LogProtoTextServer *self, LogProtoBufferedServ
         g_assert_not_reached();
       self->consumed_len = -1;
     }
-  else if (verdict & LPT_WAITING)
+  else if (verdict & MLL_WAITING)
     {
       *msg = NULL;
       *msg_len = 0;
-      if (verdict & LPT_CONSUME_LINE)
+      if (verdict & MLL_CONSUME_SEGMENT)
         {
+          gint drop_length = (verdict & MLL_CONSUME_PARTIAL_AMOUNT_MASK) >> MLL_CONSUME_PARTIAL_AMOUNT_SHIFT;
+
+          /* NOTE: we can't partially consume a line at the middle of a
+           * multi-line construct, as that would mean we would have to copy
+           * stuff to a separate buffer, which we don't at the moment for
+           * performance reasons.
+           *
+           * No implementation of the MultiLineLogic interface does that and
+           * honestly I can't even see a use-case at the moment: we only use
+           * MLL_CONSUME_PARTIALLY() to truncate the end of the last line
+           * (when "garbage" is found).  Should we ever want to add an
+           * implementation that extracts only parts of the incoming lines,
+           * even in the middle, we would probably have to check the
+           * interface, and validate at init() time that LogProtoTextBuffer
+           * is unable to work with something that does that.
+           *
+           * At the moment we will violently crash if this happens with a
+           * SIGABRT.
+           */
+
+          g_assert(drop_length == 0);
           self->cached_eol_pos = next_eol_pos;
           self->consumed_len = eol - buffer_start;
         }
-      else
+      else if (verdict & MLL_REWIND_SEGMENT)
         {
           /* when we are waiting for another line, the current one
-           * can't be rewinded, so LPT_REWIND_LINE is not valid */
+           * can't be rewinded, so MLL_REWIND_SEGMENT is not valid */
+          g_assert_not_reached();
+        }
+      else
+        {
           g_assert_not_reached();
         }
       return FALSE;
@@ -247,12 +282,23 @@ log_proto_text_server_flush(LogProtoBufferedServer *s)
 }
 
 void
+log_proto_text_server_set_multi_line(LogProtoServer *s, MultiLineLogic *multi_line)
+{
+  LogProtoTextServer *self = (LogProtoTextServer *) s;
+
+  if (self->multi_line)
+    multi_line_logic_free(self->multi_line);
+  self->multi_line = multi_line;
+}
+
+void
 log_proto_text_server_free(LogProtoServer *s)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
+  if (self->multi_line)
+    multi_line_logic_free(self->multi_line);
   log_proto_buffered_server_free_method(&self->super.super);
 }
-
 
 void
 log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, const LogProtoServerOptions *options)
@@ -262,7 +308,6 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, co
   self->super.super.free_fn = log_proto_text_server_free;
   self->super.fetch_from_buffer = log_proto_text_server_fetch_from_buffer;
   self->super.flush = log_proto_text_server_flush;
-  self->accumulate_line = log_proto_text_server_accumulate_line_method;
   self->find_eom = find_eom;
   self->super.stream_based = TRUE;
   self->consumed_len = -1;

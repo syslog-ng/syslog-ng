@@ -29,7 +29,49 @@
 #include "libtest/proto_lib.h"
 #include "libtest/msg_parse_lib.h"
 
-#include "logproto/logproto-regexp-multiline-server.h"
+#include "multi-line/multi-line-factory.h"
+#include "logproto/logproto-multiline-server.h"
+
+
+static LogProtoServer *
+log_proto_prefix_garbage_multiline_server_new(LogTransport *transport,
+                                              const gchar *prefix,
+                                              const gchar *garbage)
+{
+  MultiLineOptions multi_line_options;
+
+  multi_line_options_defaults(&multi_line_options);
+  multi_line_options_set_mode(&multi_line_options, "prefix-garbage");
+  if (prefix)
+    multi_line_options_set_prefix(&multi_line_options, prefix, NULL);
+  if (garbage)
+    multi_line_options_set_garbage(&multi_line_options, garbage, NULL);
+
+  LogProtoServer *server = log_proto_multiline_server_new(transport, get_inited_proto_server_options(),
+                                                          multi_line_factory_construct(&multi_line_options));
+  multi_line_options_destroy(&multi_line_options);
+  return server;
+}
+
+static LogProtoServer *
+log_proto_prefix_suffix_multiline_server_new(LogTransport *transport,
+                                             const gchar *prefix,
+                                             const gchar *suffix)
+{
+  MultiLineOptions multi_line_options;
+
+  multi_line_options_defaults(&multi_line_options);
+  multi_line_options_set_mode(&multi_line_options, "prefix-suffix");
+  if (prefix)
+    multi_line_options_set_prefix(&multi_line_options, prefix, NULL);
+  if (suffix)
+    multi_line_options_set_garbage(&multi_line_options, suffix, NULL);
+
+  LogProtoServer *server = log_proto_multiline_server_new(transport, get_inited_proto_server_options(),
+                                                          multi_line_factory_construct(&multi_line_options));
+  multi_line_options_destroy(&multi_line_options);
+  return server;
+}
 
 
 ParameterizedTestParameters(log_proto, test_lines_separated_with_prefix)
@@ -49,7 +91,6 @@ ParameterizedTestParameters(log_proto, test_lines_separated_with_prefix)
 ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto, test_lines_separated_with_prefix)
 {
   LogProtoServer *proto;
-  MultiLineRegexp *re;
 
   proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
@@ -64,8 +105,7 @@ ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto
               "Foo final\n", -1,
               LTM_PADDING,
               LTM_EOF),
-            get_inited_proto_server_options(),
-            re = multi_line_regexp_compile("^Foo", NULL), NULL);
+            "^Foo", NULL);
 
   assert_proto_server_fetch(proto, "Foo First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);
@@ -73,7 +113,6 @@ ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto
   assert_proto_server_fetch(proto, "Foo Multiline\nmulti", -1);
 
   log_proto_server_free(proto);
-  multi_line_regexp_free(re);
 }
 
 ParameterizedTestParameters(log_proto, test_lines_separated_with_prefix_and_garbage)
@@ -94,7 +133,6 @@ ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto
                   test_lines_separated_with_prefix_and_garbage)
 {
   LogProtoServer *proto;
-  MultiLineRegexp *re1, *re2;
 
   proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
@@ -109,9 +147,7 @@ ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto
               "Foo final\n", -1,
               LTM_PADDING,
               LTM_EOF),
-            get_inited_proto_server_options(),
-            re1 = multi_line_regexp_compile("^Foo", NULL),
-            re2 = multi_line_regexp_compile(" Bar$", NULL));
+            "^Foo", " Bar$");
 
   assert_proto_server_fetch(proto, "Foo First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);
@@ -119,8 +155,6 @@ ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto
   assert_proto_server_fetch(proto, "Foo Multiline\nmulti", -1);
 
   log_proto_server_free(proto);
-  multi_line_regexp_free(re1);
-  multi_line_regexp_free(re2);
 }
 
 ParameterizedTestParameters(log_proto, test_lines_separated_with_prefix_and_suffix)
@@ -141,7 +175,6 @@ ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto
                   test_lines_separated_with_prefix_and_suffix)
 {
   LogProtoServer *proto;
-  MultiLineRegexp *re1, *re2;
 
   proto = log_proto_prefix_suffix_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
@@ -154,16 +187,12 @@ ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto
               "prefix final\n", -1,
               LTM_PADDING,
               LTM_EOF),
-            get_inited_proto_server_options(),
-            re1 = multi_line_regexp_compile("^prefix", NULL),
-            re2 = multi_line_regexp_compile("suffix", NULL));
+            "^prefix", "suffix");
 
   assert_proto_server_fetch(proto, "prefix first suffix", -1);
   assert_proto_server_fetch(proto, "prefix multi\nsuffix", -1);
 
   log_proto_server_free(proto);
-  multi_line_regexp_free(re1);
-  multi_line_regexp_free(re2);
 }
 
 ParameterizedTestParameters(log_proto, test_lines_separated_with_garbage)
@@ -183,7 +212,6 @@ ParameterizedTestParameters(log_proto, test_lines_separated_with_garbage)
 ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto, test_lines_separated_with_garbage)
 {
   LogProtoServer *proto;
-  MultiLineRegexp *re;
 
   proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
@@ -198,9 +226,7 @@ ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto
               "Foo final\n", -1,
               LTM_PADDING,
               LTM_EOF),
-            get_inited_proto_server_options(),
-            NULL,
-            re = multi_line_regexp_compile(" Bar$", NULL));
+            NULL, " Bar$");
 
   assert_proto_server_fetch(proto, "Foo First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);
@@ -208,7 +234,6 @@ ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto
   assert_proto_server_fetch(proto, "Foo Multiline\nmulti", -1);
 
   log_proto_server_free(proto);
-  multi_line_regexp_free(re);
 }
 
 ParameterizedTestParameters(log_proto, test_first_line_without_prefix)
@@ -228,7 +253,6 @@ ParameterizedTestParameters(log_proto, test_first_line_without_prefix)
 ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto, test_first_line_without_prefix)
 {
   LogProtoServer *proto;
-  MultiLineRegexp *re;
 
   proto = log_proto_prefix_garbage_multiline_server_new(
             /* 32 bytes max line length, which means that the complete
@@ -243,9 +267,7 @@ ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto
               "Foo final\n", -1,
               LTM_PADDING,
               LTM_EOF),
-            get_inited_proto_server_options(),
-            re = multi_line_regexp_compile("^Foo", NULL),
-            NULL);
+            "^Foo", NULL);
 
   assert_proto_server_fetch(proto, "First Line", -1);
   assert_proto_server_fetch(proto, "Foo Second Line", -1);
@@ -253,5 +275,4 @@ ParameterizedTest(LogTransportMockConstructor *log_transport_mock_new, log_proto
   assert_proto_server_fetch(proto, "Foo Multiline\nmulti", -1);
 
   log_proto_server_free(proto);
-  multi_line_regexp_free(re);
 }

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2012 Balabit
  * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,30 +20,12 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
- *
  */
-#ifndef LOGPROTO_INDENTED_MULTILINE_SERVER_INCLUDED
-#define LOGPROTO_INDENTED_MULTILINE_SERVER_INCLUDED
+#ifndef MULTI_LINE_INDENTED_MULTI_LINE_INCLUDED
+#define MULTI_LINE_INDENTED_MULTI_LINE_INCLUDED
 
-#include "logproto-text-server.h"
+#include "multi-line-logic.h"
 
-typedef struct _LogProtoIMultiLineServer LogProtoIMultiLineServer;
-struct _LogProtoIMultiLineServer
-{
-  LogProtoTextServer super;
-};
-
-/* LogProtoIMultiLineServer
- *
- * This class processes indented multiline text files/streams.  Each
- * record consists of one line that starts with non-whitespace, with
- * zero or more lines starting with whitespace. A record is terminated
- * when we reach a line that starts with non-whitespace, or EOF.
- */
-LogProtoServer *log_proto_indented_multiline_server_new(LogTransport *transport,
-                                                        const LogProtoServerOptions *options);
-void log_proto_indented_multiline_server_init(LogProtoIMultiLineServer *self,
-                                              LogTransport *transport,
-                                              const LogProtoServerOptions *options);
+MultiLineLogic *indented_multi_line_new(void);
 
 #endif

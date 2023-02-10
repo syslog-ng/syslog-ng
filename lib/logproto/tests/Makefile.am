@@ -8,7 +8,8 @@ check_PROGRAMS				+= ${lib_logproto_tests_TESTS}
 
 lib_logproto_tests_test_logproto_CFLAGS  = $(TEST_CFLAGS) \
 	-I${top_srcdir}/lib/logproto/tests
-lib_logproto_tests_test_logproto_LDADD	 = $(TEST_LDADD)
+lib_logproto_tests_test_logproto_LDADD	 = $(TEST_LDADD) \
+	$(PREOPEN_SYSLOGFORMAT)
 lib_logproto_tests_test_logproto_SOURCES = 			\
 	lib/logproto/tests/test_logproto.c 			\
 	lib/logproto/tests/test-server-options.c		\

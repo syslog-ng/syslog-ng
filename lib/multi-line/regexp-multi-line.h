@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2017 Balabit
- * Copyright (c) 2017 Balazs Scheidler <bazsi@balabit.hu>
+ * Copyright (c) 2013 Balabit
+ * Copyright (c) 2013 Balazs Scheidler <bazsi@balabit.hu>
+ * Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,15 +22,39 @@
  * COPYING for details.
  *
  */
-#ifndef LOGPROTO_MULTILINE_SERVER_INCLUDED
-#define LOGPROTO_MULTILINE_SERVER_INCLUDED
 
-#include "logproto/logproto-server.h"
+#ifndef MULTI_LINE_REGEXP_MULTI_LINE_H_INCLUDED
+#define MULTI_LINE_REGEXP_MULTI_LINE_H_INCLUDED
+
 #include "multi-line/multi-line-logic.h"
+#include "compat/pcre.h"
 
-LogProtoServer *
-log_proto_multiline_server_new(LogTransport *transport,
-                               const LogProtoServerOptions *options,
-                               MultiLineLogic *multi_line);
+
+typedef struct _MultiLinePattern MultiLinePattern;
+struct _MultiLinePattern
+{
+  gint ref_cnt;
+  pcre *pattern;
+  pcre_extra *extra;
+};
+
+MultiLinePattern *multi_line_pattern_compile(const gchar *regexp, GError **error);
+MultiLinePattern *multi_line_pattern_ref(MultiLinePattern *self);
+void multi_line_pattern_unref(MultiLinePattern *self);
+
+
+typedef struct _RegexpMultiLine
+{
+  MultiLineLogic super;
+  enum
+  {
+    RML_PREFIX_GARBAGE,
+    RML_PREFIX_SUFFIX,
+  } mode;
+  MultiLinePattern *prefix;
+  MultiLinePattern *garbage;
+} RegexpMultiLine;
+
+MultiLineLogic *regexp_multi_line_new(gint mode, MultiLinePattern *prefix, MultiLinePattern *garbage_or_suffix);
 
 #endif

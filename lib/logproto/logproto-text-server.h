@@ -25,33 +25,20 @@
 #define LOGPROTO_TEXT_SERVER_INCLUDED
 
 #include "logproto-buffered-server.h"
-
-enum
-{
-  LPT_EXTRACTED    = 0x0001,
-  LPT_WAITING      = 0x0002,
-  LPT_CONSUME_LINE = 0x0010,
-  LPT_REWIND_LINE  = 0x0020,
-};
-
-#define LPT_CONSUME_PARTIAL_AMOUNT_SHIFT     8
-#define LPT_CONSUME_PARTIAL_AMOUNT_MASK      ~0xFF
-#define LPT_CONSUME_PARTIALLY(drop_length) (LPT_CONSUME_LINE | ((drop_length) << LPT_CONSUME_PARTIAL_AMOUNT_SHIFT))
+#include "multi-line/multi-line-logic.h"
 
 typedef struct _LogProtoTextServer LogProtoTextServer;
 struct _LogProtoTextServer
 {
   LogProtoBufferedServer super;
+  MultiLineLogic *multi_line;
 
   const guchar *(*find_eom)(const guchar *s, gsize n);
-  gint (*accumulate_line)(LogProtoTextServer *self,
-                          const guchar *msg,
-                          gsize msg_len,
-                          gssize consumed_len);
-
   gint32 consumed_len;
   gint32 cached_eol_pos;
 };
+
+void log_proto_text_server_set_multi_line(LogProtoServer *s, MultiLineLogic *multi_line);
 
 /* LogProtoTextServer
  *
@@ -64,15 +51,6 @@ void log_proto_text_server_free(LogProtoServer *self);
 void log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport,
                                 const LogProtoServerOptions *options);
 LogProtoPrepareAction log_proto_text_server_prepare_method(LogProtoServer *s, GIOCondition *cond, gint *timeout);
-
-static inline gint
-log_proto_text_server_accumulate_line(LogProtoTextServer *self,
-                                      const guchar *msg,
-                                      gsize msg_len,
-                                      gssize consumed_len)
-{
-  return self->accumulate_line(self, msg, msg_len, consumed_len);
-}
 
 static inline gboolean
 log_proto_text_server_validate_options_method(LogProtoServer *s)

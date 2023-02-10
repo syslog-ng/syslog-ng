@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2017 Balabit
- * Copyright (c) 2017 Balazs Scheidler <bazsi@balabit.hu>
+ * Copyright (c) 2013 Balabit
+ * Copyright (c) 2013 Balazs Scheidler <bazsi@balabit.hu>
+ * Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,15 +22,17 @@
  * COPYING for details.
  *
  */
-#ifndef LOGPROTO_MULTILINE_SERVER_INCLUDED
-#define LOGPROTO_MULTILINE_SERVER_INCLUDED
 
-#include "logproto/logproto-server.h"
 #include "multi-line/multi-line-logic.h"
 
-LogProtoServer *
-log_proto_multiline_server_new(LogTransport *transport,
-                               const LogProtoServerOptions *options,
-                               MultiLineLogic *multi_line);
+void
+multi_line_logic_free_method(MultiLineLogic *s)
+{
+  g_free(s);
+}
 
-#endif
+void
+multi_line_logic_init_instance(MultiLineLogic *self)
+{
+  self->free_fn = multi_line_logic_free_method;
+}
