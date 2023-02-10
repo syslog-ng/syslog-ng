@@ -170,6 +170,9 @@ _register_external_counter(gint stats_level, const StatsClusterKey *sc_key, gint
 {
   StatsCluster *sc;
 
+  if (!external_counter)
+    return NULL;
+
   g_assert(stats_locked);
 
   sc = _grab_cluster(stats_level, sc_key, dynamic);
@@ -311,6 +314,9 @@ stats_unregister_external_counter(const StatsClusterKey *sc_key, gint type,
                                   atomic_gssize *external_counter)
 {
   StatsCluster *sc;
+
+  if (!external_counter)
+    return;
 
   g_assert(stats_locked);
 
