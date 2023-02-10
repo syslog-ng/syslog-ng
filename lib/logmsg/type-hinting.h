@@ -48,7 +48,6 @@ gboolean type_cast_to_int32(const gchar *value, gint32 *out, GError **error);
 gboolean type_cast_to_int64(const gchar *value, gint64 *out, GError **error);
 gboolean type_cast_to_double(const gchar *value, gdouble *out, GError **error);
 gboolean type_cast_to_datetime_msec(const gchar *value, gint64 *out, GError **error);
-gboolean type_cast_to_datetime_str(const gchar *value, const char *format,
-                                   gchar **out, GError **error);
+gboolean type_cast_to_datetime_unixtime(const gchar *value, UnixTime *ut, GError **error);
 
 #endif

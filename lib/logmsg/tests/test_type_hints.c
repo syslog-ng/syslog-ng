@@ -278,7 +278,9 @@ ParameterizedTestParameters(type_hints, test_datetime_cast)
     {"12345.543", 12345543},
     {"12345.54321", 12345543},
     {"12345.987654", 12345987},
-    {"12345.987654321", 12345987}
+    {"12345.987654321", 12345987},
+    {"12345+05:00", 12345000},
+    {"12345-05:00", 12345000},
   };
 
   return cr_make_param_array(StringUInt64Pair, string_value_pairs,
@@ -292,7 +294,9 @@ ParameterizedTest(StringUInt64Pair *string_value_pair, type_hints, test_datetime
 
   cr_assert_eq(type_cast_to_datetime_msec(string_value_pair->string, &value, &error), TRUE,
                "Type cast of \"%s\" to msecs failed", string_value_pair->string);
-  cr_assert_eq(value, string_value_pair->value, "datetime cast failed %lld != %lld", value, string_value_pair->value);
+  cr_assert_eq(value, string_value_pair->value,
+               "datetime cast failed %" G_GINT64_FORMAT " != %" G_GINT64_FORMAT,
+               value, string_value_pair->value);
   cr_assert_null(error);
 }
 
@@ -304,6 +308,9 @@ ParameterizedTestParameters(type_hints, test_invalid_datetime_cast)
     {"12345T", },
     {"12345.", },
     {"12345.1234567890", },
+    {"12345+XX:YY", 12345000},
+    {"12345-05", 12345000},
+    {"12345-XX:YY", 12345000}
 
   };
 

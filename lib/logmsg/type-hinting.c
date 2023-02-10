@@ -25,6 +25,7 @@
 #include "messages.h"
 #include "type-hinting.h"
 #include "template/templates.h"
+#include "timeutils/scan-timestamp.h"
 
 #include <errno.h>
 #include <math.h>
@@ -142,14 +143,9 @@ type_cast_to_double(const gchar *value, gdouble *out, GError **error)
 static gboolean
 _parse_fixed_point_timestamp_in_nsec(const gchar *value, gchar **endptr, gint64 *sec, gint64 *nsec)
 {
+  *nsec = 0;
+
   *sec = (gint64) strtoll(value, endptr, 10);
-
-  if (**endptr == 0)
-    {
-      *nsec = 0;
-      return TRUE;
-    }
-
   if (**endptr == '.')
     {
       const gchar *nsec_start = (*endptr) + 1;
@@ -166,22 +162,30 @@ _parse_fixed_point_timestamp_in_nsec(const gchar *value, gchar **endptr, gint64 
         *nsec *= 10;
       return TRUE;
     }
-  return FALSE;
+  return TRUE;
 }
 
 gboolean
-type_cast_to_datetime_msec(const gchar *value, gint64 *out, GError **error)
+type_cast_to_datetime_unixtime(const gchar *value, UnixTime *ut, GError **error)
 {
   gchar *endptr;
   gint64 sec, nsec;
+  gint tzofs = -1;
 
   if (!_parse_fixed_point_timestamp_in_nsec(value, &endptr, &sec, &nsec))
     goto error;
 
-  if (*endptr != 0)
-    goto error;
+  const guchar *tz_start = (guchar *) endptr;
+  if (*tz_start != 0)
+    {
+      gint tz_length = strlen(endptr);
+      if (!scan_iso_timezone(&tz_start, &tz_length, &tzofs))
+        goto error;
+    }
 
-  *out = sec * 1000 + nsec / 1000000;
+  ut->ut_sec = sec;
+  ut->ut_usec = nsec / 1000;
+  ut->ut_gmtoff = tzofs;
   return TRUE;
 error:
 
@@ -193,11 +197,13 @@ error:
 }
 
 gboolean
-type_cast_to_datetime_str(const gchar *value, const char *format,
-                          gchar **out, GError **error)
+type_cast_to_datetime_msec(const gchar *value, gint64 *out, GError **error)
 {
-  if (error)
-    g_set_error(error, TYPE_HINTING_ERROR, TYPE_HINTING_INVALID_CAST,
-                "datetime_str is not supported yet");
-  return FALSE;
+  UnixTime ut;
+
+  if (!type_cast_to_datetime_unixtime(value, &ut, error))
+    return FALSE;
+
+  *out = ut.ut_sec * 1000 + ut.ut_usec / 1000;
+  return TRUE;
 }
