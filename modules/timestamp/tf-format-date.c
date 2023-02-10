@@ -112,16 +112,16 @@ tf_format_date_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvo
   UnixTime ut;
 
   *type = LM_VT_STRING;
-  gint64 msec;
 
   if (state->super.argc != 0)
     {
       const gchar *ts = args->argv[0]->str;
-      if (!type_cast_to_datetime_msec(ts, &msec, NULL))
-        msec = 0;
-      ut.ut_sec = msec / 1000;
-      ut.ut_usec = (msec % 1000) * 1000;
-      ut.ut_gmtoff = -1;
+      if (!type_cast_to_datetime_unixtime(ts, &ut, NULL))
+        {
+          ut.ut_sec = 0;
+          ut.ut_usec = 0;
+          ut.ut_gmtoff = -1;
+        }
     }
   else
     {
