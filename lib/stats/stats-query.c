@@ -44,13 +44,7 @@ _setup_filter_expression(const gchar *expr)
 static gchar *
 _construct_counter_item_name(StatsCluster *sc, gint type)
 {
-  GString *name = g_string_new("");
-
-  g_string_append(name, sc->query_key);
-  g_string_append(name, ".");
-  g_string_append(name, stats_cluster_get_type_name(sc, type));
-
-  return g_string_free(name, FALSE);
+  return g_strdup_printf("%s.%s", sc->query_key, stats_cluster_get_type_name(sc, type));
 }
 
 /* stats_query_mutex must be held */
