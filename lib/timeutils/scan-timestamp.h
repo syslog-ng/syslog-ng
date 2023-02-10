@@ -29,6 +29,8 @@
 #include "timeutils/wallclocktime.h"
 #include "timeutils/unixtime.h"
 
+gboolean scan_iso_timezone(const guchar **buf, gint *length, gint *gmtoff);
+
 gboolean scan_iso_timestamp(const gchar **buf, gint *left, WallClockTime *wct);
 gboolean scan_pix_timestamp(const gchar **buf, gint *left, WallClockTime *wct);
 gboolean scan_linksys_timestamp(const gchar **buf, gint *left, WallClockTime *wct);
