@@ -53,6 +53,7 @@ _construct_counter_item_name(StatsCluster *sc, gint type)
   return g_string_free(name, FALSE);
 }
 
+/* stats_query_mutex must be held */
 static void
 _add_counter_to_index(StatsCluster *sc, gint type)
 {
@@ -69,6 +70,7 @@ _add_counter_to_index(StatsCluster *sc, gint type)
   sc->indexed_mask |= (1 << type);
 }
 
+/* stats_query_mutex must be held */
 static void
 _remove_counter_from_index(StatsCluster *sc, gint type)
 {
@@ -77,6 +79,7 @@ _remove_counter_from_index(StatsCluster *sc, gint type)
   sc->indexed_mask &= ~(1 << type);
 }
 
+/* stats_query_mutex must be held */
 static void
 _index_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
@@ -90,6 +93,7 @@ _index_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer 
     }
 }
 
+/* stats_query_mutex must be held */
 static void
 _update_indexes_of_cluster_if_needed(StatsCluster *sc, gpointer user_data)
 {
@@ -321,7 +325,9 @@ stats_query_deinit(void)
 void
 stats_query_index_counter(StatsCluster *cluster, gint type)
 {
+  g_mutex_lock(&stats_query_mutex);
   _add_counter_to_index(cluster, type);
+  g_mutex_unlock(&stats_query_mutex);
 }
 
 static void
@@ -334,5 +340,7 @@ _deindex_cluster_helper(StatsCluster *cluster, gint type, StatsCounterItem *item
 void
 stats_query_deindex_cluster(StatsCluster *cluster)
 {
+  g_mutex_lock(&stats_query_mutex);
   stats_cluster_foreach_counter(cluster, _deindex_cluster_helper, NULL);
+  g_mutex_unlock(&stats_query_mutex);
 }
