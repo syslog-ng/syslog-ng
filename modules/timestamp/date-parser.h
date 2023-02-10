@@ -32,6 +32,7 @@ void date_parser_set_offset(LogParser *s, goffset offset);
 void date_parser_set_formats(LogParser *s, GList *formats);
 void date_parser_set_timezone(LogParser *s, gchar *tz);
 void date_parser_set_time_stamp(LogParser *s, LogMessageTimeStamp timestamp);
+void date_parser_set_value(LogParser *s, const gchar *value_name);
 gboolean date_parser_process_flag(LogParser *s, gchar *flag);
 
 #endif

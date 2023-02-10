@@ -27,6 +27,8 @@
 #include "timeutils/wallclocktime.h"
 #include "timeutils/cache.h"
 #include "timeutils/conv.h"
+#include "scratch-buffers.h"
+#include "str-format.h"
 
 enum
 {
@@ -41,6 +43,7 @@ typedef struct _DateParser
   LogMessageTimeStamp time_stamp;
   TimeZoneInfo *date_tz_info;
   guint32 flags;
+  NVHandle value_handle;
 } DateParser;
 
 void
@@ -67,6 +70,14 @@ date_parser_set_time_stamp(LogParser *s, LogMessageTimeStamp time_stamp)
   DateParser *self = (DateParser *) s;
 
   self->time_stamp = time_stamp;
+}
+
+void
+date_parser_set_value(LogParser *s, const gchar *value_name)
+{
+  DateParser *self = (DateParser *) s;
+
+  self->value_handle = log_msg_get_value_handle(value_name);
 }
 
 static gboolean
@@ -132,6 +143,22 @@ _convert_timestamp_to_logstamp(DateParser *self, time_t now, UnixTime *target, c
   return TRUE;
 }
 
+static void
+_store_timestamp(DateParser *self, LogMessage *msg, UnixTime *time_stamp)
+{
+  if (!self->value_handle)
+    {
+      msg->timestamps[self->time_stamp] = *time_stamp;
+      return;
+    }
+
+  GString *time_stamp_repr = scratch_buffers_alloc();
+  format_int64_padded(time_stamp_repr, -1, ' ', 10, time_stamp->ut_sec);
+  g_string_append_c(time_stamp_repr, '.');
+  format_uint64_padded(time_stamp_repr, 6, '0', 10, time_stamp->ut_usec);
+  log_msg_set_value_with_type(msg, self->value_handle, time_stamp_repr->str, time_stamp_repr->len, LM_VT_DATETIME);
+}
+
 static gboolean
 date_parser_process(LogParser *s,
                     LogMessage **pmsg,
@@ -141,6 +168,8 @@ date_parser_process(LogParser *s,
 {
   DateParser *self = (DateParser *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
+  UnixTime time_stamp;
+
   msg_trace("date-parser message processing started",
             evt_tag_str("input", input),
             evt_tag_msg_reference(*pmsg));
@@ -152,8 +181,11 @@ date_parser_process(LogParser *s,
   APPEND_ZERO(input, input, input_len);
   gboolean res = _convert_timestamp_to_logstamp(self,
                                                 msg->timestamps[LM_TS_RECVD].ut_sec,
-                                                &msg->timestamps[self->time_stamp],
+                                                &time_stamp,
                                                 input);
+  if (res)
+    _store_timestamp(self, msg, &time_stamp);
+
 
   return res;
 }
