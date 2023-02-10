@@ -139,48 +139,57 @@ type_cast_to_double(const gchar *value, gdouble *out, GError **error)
   return success;
 }
 
+static gboolean
+_parse_fixed_point_timestamp_in_nsec(const gchar *value, gchar **endptr, gint64 *sec, gint64 *nsec)
+{
+  *sec = (gint64) strtoll(value, endptr, 10);
+
+  if (**endptr == 0)
+    {
+      *nsec = 0;
+      return TRUE;
+    }
+
+  if (**endptr == '.')
+    {
+      const gchar *nsec_start = (*endptr) + 1;
+
+      *nsec = (gint64) strtoll(nsec_start, endptr, 10);
+      gint nsec_length = (*endptr) - nsec_start;
+      if (nsec_length == 0)
+        return FALSE;
+
+      if (nsec_length > 9)
+        return FALSE;
+
+      for (gint i = 0; i < 9 - nsec_length; i++)
+        *nsec *= 10;
+      return TRUE;
+    }
+  return FALSE;
+}
+
 gboolean
 type_cast_to_datetime_msec(const gchar *value, gint64 *out, GError **error)
 {
   gchar *endptr;
+  gint64 sec, nsec;
 
-  *out = (gint64)strtoll(value, &endptr, 10) * 1000;
+  if (!_parse_fixed_point_timestamp_in_nsec(value, &endptr, &sec, &nsec))
+    goto error;
 
-  if (endptr[0] == '.')
-    {
-      gsize len = strlen(endptr) - 1, p;
-      gchar *e, tmp[4];
-      glong i;
+  if (*endptr != 0)
+    goto error;
 
-      if (len > 3)
-        len = 3;
-
-      memcpy(tmp, endptr + 1, len);
-      tmp[len] = '\0';
-
-      i = strtoll(tmp, &e, 10);
-
-      if (e[0] != '\0')
-        {
-          if (error)
-            g_set_error(error, TYPE_HINTING_ERROR, TYPE_HINTING_INVALID_CAST,
-                        "datetime(%s)", value);
-          return FALSE;
-        }
-
-      for (p = 3 - len; p > 0; p--)
-        i *= 10;
-
-      *out += i;
-    }
-  else if (endptr[0] != '\0')
-    {
-      if (error)
-        g_set_error(error, TYPE_HINTING_ERROR, TYPE_HINTING_INVALID_CAST,
-                    "datetime(%s)", value);
-      return FALSE;
-    }
+  *out = sec * 1000 + nsec / 1000000;
   return TRUE;
+error:
+
+  if (error)
+    g_set_error(error, TYPE_HINTING_ERROR, TYPE_HINTING_INVALID_CAST,
+                "datetime(%s)", value);
+  return FALSE;
+
 }
 
 gboolean

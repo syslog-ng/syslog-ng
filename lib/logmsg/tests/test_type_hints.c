@@ -276,7 +276,9 @@ ParameterizedTestParameters(type_hints, test_datetime_cast)
     {"12345.5", 12345500},
     {"12345.54", 12345540},
     {"12345.543", 12345543},
-    {"12345.54321", 12345543}
+    {"12345.54321", 12345543},
+    {"12345.987654", 12345987},
+    {"12345.987654321", 12345987}
   };
 
   return cr_make_param_array(StringUInt64Pair, string_value_pairs,
@@ -290,20 +292,35 @@ ParameterizedTest(StringUInt64Pair *string_value_pair, type_hints, test_datetime
 
   cr_assert_eq(type_cast_to_datetime_msec(string_value_pair->string, &value, &error), TRUE,
                "Type cast of \"%s\" to msecs failed", string_value_pair->string);
-  cr_assert_eq(value, string_value_pair->value);
+  cr_assert_eq(value, string_value_pair->value, "datetime cast failed %lld != %lld", value, string_value_pair->value);
   cr_assert_null(error);
 }
 
-Test(type_hints, test_invalid_datetime_cast)
+ParameterizedTestParameters(type_hints, test_invalid_datetime_cast)
+{
+  static StringUInt64Pair string_value_pairs[] =
+  {
+    {"invalid", },
+    {"12345T", },
+    {"12345.", },
+    {"12345.1234567890", },
+
+  };
+
+  return cr_make_param_array(StringUInt64Pair, string_value_pairs,
+                             sizeof(string_value_pairs) / sizeof(string_value_pairs[0]));
+}
+
+
+ParameterizedTest(StringUInt64Pair *string_value_pair, type_hints, test_invalid_datetime_cast)
 {
   GError *error = NULL;
   gint64 value;
 
-  cr_assert_eq(type_cast_to_datetime_msec("invalid", &value, &error), FALSE,
-               "Type cast of invalid string to gint64 should be failed");
+  cr_assert_eq(type_cast_to_datetime_msec(string_value_pair->string, &value, &error), FALSE,
+               "Type cast of invalid string to gint64 should have failed %s", string_value_pair->string);
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
   cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);
-
   g_clear_error(&error);
 }
