@@ -44,5 +44,6 @@ stats_log_format_counter(StatsCluster *sc, gint type, StatsCounterItem *item, gp
 void
 stats_log_format_cluster(StatsCluster *sc, EVTREC *e)
 {
-  stats_cluster_foreach_counter(sc, stats_log_format_counter, e);
+  if (stats_cluster_key_is_legacy(&sc->key))
+    stats_cluster_foreach_counter(sc, stats_log_format_counter, e);
 }

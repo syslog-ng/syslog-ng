@@ -141,4 +141,10 @@ void stats_cluster_free(StatsCluster *self);
 void stats_cluster_key_legacy_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
                                   StatsCounterGroupInit counter_group_ctor);
 
+static inline gboolean
+stats_cluster_key_is_legacy(const StatsClusterKey *self)
+{
+  return self->legacy.component && !self->labels_len;
+}
+
 #endif

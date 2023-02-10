@@ -101,6 +101,6 @@ stats_generate_csv(StatsCSVRecordFunc process_record, gpointer user_data, gboole
   g_string_free(csv, TRUE);
   gpointer format_csv_args[] = {process_record, user_data};
   stats_lock();
-  stats_foreach_counter(stats_format_csv, format_csv_args, cancelled);
+  stats_foreach_legacy_counter(stats_format_csv, format_csv_args, cancelled);
   stats_unlock();
 }
