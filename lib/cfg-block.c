@@ -177,8 +177,10 @@ cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, gpointer args, GStri
       g_clear_error(&error);
       return FALSE;
     }
-
+  if (cfg->lexer && !cfg->lexer->ignore_pragma)
+    g_string_append_printf(result, "@line \"%s\" %d %d\n", self->filename, self->line, self->column);
   g_string_append_len(result, value, length);
+
   g_free(value);
   return TRUE;
 }
