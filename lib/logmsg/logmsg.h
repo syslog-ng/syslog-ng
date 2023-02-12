@@ -126,6 +126,7 @@ enum
 
   /* part of the state that is kept across clones */
   LF_STATE_CLONED_MASK = 0xFE00,
+  LF_STATE_TRACING     = 0x0200,
 
   LF_CHAINED_HOSTNAME  = 0x00010000,
 
