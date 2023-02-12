@@ -142,6 +142,7 @@ static void
 log_driver_init_instance(LogDriver *self, GlobalConfig *cfg)
 {
   log_pipe_init_instance(&self->super, cfg);
+  self->super.flags |= PIF_CONFIG_RELATED;
   self->super.free_fn = log_driver_free;
   self->super.pre_init = log_driver_pre_init_method;
   self->super.init = log_driver_init_method;
