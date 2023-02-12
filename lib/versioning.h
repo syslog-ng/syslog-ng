@@ -92,7 +92,7 @@
  * to make it relatively simple to explain PE/OSE version numbers to users. */
 
 #define PRODUCT_DOCUMENTATION "https://www.syslog-ng.com/technical-documents/list/syslog-ng-open-source-edition"
-#define PRODUCT_CONTACT "https://lists.balabit.hu/mailman/listinfo/syslog-ng"
+#define PRODUCT_CONTACT "\n\tGitHub Project: https://github.com/syslog-ng/syslog-ng\n\tChat with the Developers: https://gitter.im/syslog-ng/syslog-ng\n\tMailing List: https://lists.balabit.hu/mailman/listinfo/syslog-ng"
 
 #define VERSION_3_0 "syslog-ng 3.0"
 #define VERSION_3_1 "syslog-ng 3.1"
