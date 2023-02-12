@@ -291,6 +291,14 @@ cfg_lexer_alloc_include_level(CfgLexer *self)
   return &self->include_stack[self->include_depth];
 }
 
+void
+cfg_lexer_drop_include_level(CfgLexer *self, CfgIncludeLevel *level)
+{
+  g_assert(&self->include_stack[self->include_depth] == level);
+  cfg_lexer_clear_include_level(self, level);
+  self->include_depth--;
+}
+
 gboolean
 cfg_lexer_start_next_include(CfgLexer *self)
 {
@@ -427,7 +435,8 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
                     evt_tag_str("filename", filename),
                     evt_tag_str("error", error->message));
           g_error_free(error);
-          goto drop_level;
+          cfg_lexer_drop_include_level(self, level);
+          return FALSE;
         }
       while ((entry = g_dir_read_name(dir)))
         {
@@ -473,7 +482,7 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
           /* no include files in the specified directory */
           msg_debug("No files in this include directory",
                     evt_tag_str("dir", filename));
-          self->include_depth--;
+          cfg_lexer_drop_include_level(self, level);
           return TRUE;
         }
     }
@@ -483,12 +492,6 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
       level->file.files = g_slist_prepend(level->file.files, g_strdup(filename));
     }
   return cfg_lexer_start_next_include(self);
-drop_level:
-  g_slist_foreach(level->file.files, (GFunc) g_free, NULL);
-  g_slist_free(level->file.files);
-  level->file.files = NULL;
-
-  return FALSE;
 }
 
 static int
