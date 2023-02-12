@@ -281,6 +281,26 @@ cfg_lexer_include_level_file_add(CfgLexer *self, CfgIncludeLevel *level, const g
 }
 
 void
+cfg_lexer_init_include_level_buffer(CfgLexer *self, CfgIncludeLevel *level,
+                                    const gchar *buffer,
+                                    gsize length)
+{
+  level->include_type = CFGI_BUFFER;
+
+  gint lexer_buffer_len = length + 2;
+  gchar *lexer_buffer = g_malloc(lexer_buffer_len);
+  memcpy(lexer_buffer, buffer, length);
+
+  /* need two NUL characters for flex */
+  lexer_buffer[length] = 0;
+  lexer_buffer[length + 1] = 0;
+
+  level->buffer.content = lexer_buffer;
+  level->buffer.content_length = lexer_buffer_len;
+  level->buffer.original_content = g_strdup(lexer_buffer);
+}
+
+void
 cfg_lexer_clear_include_level(CfgLexer *self, CfgIncludeLevel *level)
 {
   g_free(level->name);
@@ -684,12 +704,10 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
 }
 
 gboolean
-cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gchar *name, const gchar *buffer,
-                                                       gsize length)
+cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gchar *name,
+                                                       const gchar *buffer, gsize length)
 {
   CfgIncludeLevel *level;
-  gchar *lexer_buffer;
-  gsize lexer_buffer_len;
 
   g_assert(length >= 0);
 
@@ -702,18 +720,10 @@ cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gch
     }
 
   /* lex requires two NUL characters at the end of the input */
-  lexer_buffer_len = length + 2;
-  lexer_buffer = g_malloc(lexer_buffer_len);
-  memcpy(lexer_buffer, buffer, length);
-  lexer_buffer[length] = 0;
-  lexer_buffer[length + 1] = 0;
 
   level = cfg_lexer_alloc_include_level(self);
+  cfg_lexer_init_include_level_buffer(self, level, buffer, length);
 
-  level->include_type = CFGI_BUFFER;
-  level->buffer.content = lexer_buffer;
-  level->buffer.content_length = lexer_buffer_len;
-  level->buffer.original_content = g_strdup(lexer_buffer);
   level->name = g_strdup(name);
 
   return cfg_lexer_start_next_include(self);
@@ -1147,14 +1157,10 @@ cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length)
   self->ignore_pragma = TRUE;
 
   level = &self->include_stack[0];
-  level->include_type = CFGI_BUFFER;
-  level->buffer.original_content = g_strdup(buffer);
-  level->buffer.content = g_malloc(length + 2);
-  memcpy(level->buffer.content, buffer, length);
-  level->buffer.content[length] = 0;
-  level->buffer.content[length + 1] = 0;
-  level->buffer.content_length = length + 2;
+  cfg_lexer_init_include_level_buffer(self, level, buffer, length);
+
   level->name = g_strdup("<string>");
+
   level->yybuf = _cfg_lexer__scan_buffer(level->buffer.content, level->buffer.content_length, self->state);
   _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
 
