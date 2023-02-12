@@ -694,7 +694,15 @@ cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
       cfg_lexer_drop_include_level(self, level);
       return TRUE;
     }
-  return cfg_lexer_start_next_include(self);
+  if (!cfg_lexer_start_next_include(self))
+    {
+      msg_error("Include file/directory not found",
+                evt_tag_str("filename", filename_),
+                evt_tag_str("include-path", _get_include_path(self)),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+  return TRUE;
 }
 
 gboolean
@@ -721,14 +729,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
       if (filename)
         g_free(filename);
 
-      if (cfg_lexer_include_file_glob(self, filename_))
-        return TRUE;
-
-      msg_error("Include file/directory not found",
-                evt_tag_str("filename", filename_),
-                evt_tag_str("include-path", _get_include_path(self)),
-                evt_tag_error("error"));
-      return FALSE;
+      return cfg_lexer_include_file_glob(self, filename_);
     }
   else
     {
