@@ -280,6 +280,38 @@ cfg_lexer_include_level_file_add(CfgLexer *self, CfgIncludeLevel *level, const g
             evt_tag_int("depth", self->include_depth));
 }
 
+gboolean
+cfg_lexer_include_level_file_open_buffer(CfgLexer *self, CfgIncludeLevel *level)
+{
+  FILE *include_file;
+  gchar *filename;
+
+  g_assert(level->include_type == CFGI_FILE);
+
+  filename = (gchar *) level->file.files->data;
+  level->file.files = g_slist_delete_link(level->file.files, level->file.files);
+
+  include_file = fopen(filename, "r");
+  if (!include_file)
+    {
+      msg_error("Error opening include file",
+                evt_tag_str("filename", filename),
+                evt_tag_int("depth", self->include_depth));
+      g_free(filename);
+      return FALSE;
+    }
+  msg_debug("Starting to read include file",
+            evt_tag_str("filename", filename),
+            evt_tag_int("depth", self->include_depth));
+
+  g_free(level->name);
+  level->name = filename;
+
+  level->file.include_file = include_file;
+  level->yybuf = _cfg_lexer__create_buffer(level->file.include_file, YY_BUF_SIZE, self->state);
+  return TRUE;
+}
+
 void
 cfg_lexer_init_include_level_buffer(CfgLexer *self, CfgIncludeLevel *level,
                                     const gchar *name,
@@ -299,6 +331,34 @@ cfg_lexer_init_include_level_buffer(CfgLexer *self, CfgIncludeLevel *level,
   level->buffer.content = lexer_buffer;
   level->buffer.content_length = lexer_buffer_len;
   level->buffer.original_content = g_strdup(lexer_buffer);
+}
+
+gboolean
+cfg_lexer_include_level_buffer_open_buffer(CfgLexer *self, CfgIncludeLevel *level)
+{
+  g_assert(level->include_type == CFGI_BUFFER);
+
+  level->yybuf = _cfg_lexer__scan_buffer(level->buffer.content, level->buffer.content_length, self->state);
+  return TRUE;
+}
+
+gboolean
+cfg_lexer_include_level_open_buffer(CfgLexer *self, CfgIncludeLevel *level)
+{
+  g_assert(level->include_type == CFGI_BUFFER || level->include_type == CFGI_FILE);
+
+  if (level->include_type == CFGI_BUFFER &&
+      !cfg_lexer_include_level_buffer_open_buffer(self, level))
+    return FALSE;
+
+  if (level->include_type == CFGI_FILE &&
+      !cfg_lexer_include_level_file_open_buffer(self, level))
+    return FALSE;
+
+  level->lloc.first_line = level->lloc.last_line = 1;
+  level->lloc.first_column = level->lloc.last_column = 1;
+  level->lloc.level = level;
+  return TRUE;
 }
 
 void
@@ -342,7 +402,6 @@ gboolean
 cfg_lexer_start_next_include(CfgLexer *self)
 {
   CfgIncludeLevel *level = &self->include_stack[self->include_depth];
-  gchar *filename;
   gboolean buffer_processed = FALSE;
 
   if (self->include_depth == 0)
@@ -405,43 +464,10 @@ cfg_lexer_start_next_include(CfgLexer *self)
     }
 
   /* now populate "level" with the new include information */
-  if (level->include_type == CFGI_BUFFER)
-    {
-      level->yybuf = _cfg_lexer__scan_buffer(level->buffer.content, level->buffer.content_length, self->state);
-    }
-  else if (level->include_type == CFGI_FILE)
-    {
-      FILE *include_file;
 
-      filename = (gchar *) level->file.files->data;
-      level->file.files = g_slist_delete_link(level->file.files, level->file.files);
+  if (!cfg_lexer_include_level_open_buffer(self, level))
+    return FALSE;
 
-      include_file = fopen(filename, "r");
-      if (!include_file)
-        {
-          msg_error("Error opening include file",
-                    evt_tag_str("filename", filename),
-                    evt_tag_int("depth", self->include_depth));
-          g_free(filename);
-          return FALSE;
-        }
-      msg_debug("Starting to read include file",
-                evt_tag_str("filename", filename),
-                evt_tag_int("depth", self->include_depth));
-      g_free(level->name);
-      level->name = filename;
-
-      level->file.include_file = include_file;
-      level->yybuf = _cfg_lexer__create_buffer(level->file.include_file, YY_BUF_SIZE, self->state);
-    }
-  else
-    {
-      g_assert_not_reached();
-    }
-
-  level->lloc.first_line = level->lloc.last_line = 1;
-  level->lloc.first_column = level->lloc.last_column = 1;
-  level->lloc.level = level;
 
   _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
   return TRUE;
@@ -719,8 +745,6 @@ cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gch
                 evt_tag_int("depth", self->include_depth));
       return FALSE;
     }
-
-  /* lex requires two NUL characters at the end of the input */
 
   level = cfg_lexer_alloc_include_level(self);
   cfg_lexer_init_include_level_buffer(self, level, name, buffer, length);
