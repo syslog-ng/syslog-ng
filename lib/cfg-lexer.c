@@ -487,6 +487,63 @@ cfg_lexer_start_next_include(CfgLexer *self)
 }
 
 static gboolean
+cfg_lexer_include_directory(CfgLexer *self, CfgIncludeLevel *level, const gchar *filename)
+{
+  GDir *dir;
+  GError *error = NULL;
+  const gchar *entry;
+
+  dir = g_dir_open(filename, 0, &error);
+  if (!dir)
+    {
+      msg_error("Error opening directory for reading",
+                evt_tag_str("filename", filename),
+                evt_tag_str("error", error->message));
+      g_error_free(error);
+      return FALSE;
+    }
+  while ((entry = g_dir_read_name(dir)))
+    {
+      const gchar *p;
+      if (entry[0] == '.')
+        {
+          msg_debug("Skipping include file, it cannot begin with .",
+                    evt_tag_str("filename", entry));
+          continue;
+        }
+      for (p = entry; *p; p++)
+        {
+          if (!((*p >= 'a' && *p <= 'z') ||
+                (*p >= 'A' && *p <= 'Z') ||
+                (*p >= '0' && *p <= '9') ||
+                (*p == '_') || (*p == '-') || (*p == '.')))
+            {
+              msg_debug("Skipping include file, does not match pattern [\\-_a-zA-Z0-9]+",
+                        evt_tag_str("filename", entry));
+              p = NULL;
+              break;
+            }
+        }
+      if (p)
+        {
+          struct stat st;
+          gchar *full_filename = g_build_filename(filename, entry, NULL);
+          if (stat(full_filename, &st) < 0 || S_ISDIR(st.st_mode))
+            {
+              msg_debug("Skipping include file as it is a directory",
+                        evt_tag_str("filename", entry));
+              g_free(full_filename);
+              continue;
+            }
+          cfg_lexer_include_level_file_add(self, level, full_filename);
+          g_free(full_filename);
+        }
+    }
+  g_dir_close(dir);
+  return TRUE;
+}
+
+static gboolean
 cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
 {
   CfgIncludeLevel *level;
@@ -504,57 +561,11 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
 
   if (S_ISDIR(st.st_mode))
     {
-      GDir *dir;
-      GError *error = NULL;
-      const gchar *entry;
-
-      dir = g_dir_open(filename, 0, &error);
-      if (!dir)
+      if (!cfg_lexer_include_directory(self, level, filename))
         {
-          msg_error("Error opening directory for reading",
-                    evt_tag_str("filename", filename),
-                    evt_tag_str("error", error->message));
-          g_error_free(error);
           cfg_lexer_drop_include_level(self, level);
           return FALSE;
         }
-      while ((entry = g_dir_read_name(dir)))
-        {
-          const gchar *p;
-          if (entry[0] == '.')
-            {
-              msg_debug("Skipping include file, it cannot begin with .",
-                        evt_tag_str("filename", entry));
-              continue;
-            }
-          for (p = entry; *p; p++)
-            {
-              if (!((*p >= 'a' && *p <= 'z') ||
-                    (*p >= 'A' && *p <= 'Z') ||
-                    (*p >= '0' && *p <= '9') ||
-                    (*p == '_') || (*p == '-') || (*p == '.')))
-                {
-                  msg_debug("Skipping include file, does not match pattern [\\-_a-zA-Z0-9]+",
-                            evt_tag_str("filename", entry));
-                  p = NULL;
-                  break;
-                }
-            }
-          if (p)
-            {
-              gchar *full_filename = g_build_filename(filename, entry, NULL);
-              if (stat(full_filename, &st) < 0 || S_ISDIR(st.st_mode))
-                {
-                  msg_debug("Skipping include file as it is a directory",
-                            evt_tag_str("filename", entry));
-                  g_free(full_filename);
-                  continue;
-                }
-              cfg_lexer_include_level_file_add(self, level, full_filename);
-              g_free(full_filename);
-            }
-        }
-      g_dir_close(dir);
       if (!level->file.files)
         {
           /* no include files in the specified directory */
