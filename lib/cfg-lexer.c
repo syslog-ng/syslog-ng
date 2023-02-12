@@ -1166,10 +1166,9 @@ cfg_lexer_new(GlobalConfig *cfg, FILE *file, const gchar *filename, GString *pre
 
   level = &self->include_stack[0];
   cfg_lexer_init_include_level_file(self, level);
-
-  level->name = g_strdup(filename);
-  level->yybuf = _cfg_lexer__create_buffer(file, YY_BUF_SIZE, self->state);
-  _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
+  cfg_lexer_include_level_file_add(self, level, filename);
+  cfg_lexer_include_level_open_buffer(self, level);
+  cfg_lexer_include_level_resume_from_buffer(self, level);
 
   return self;
 }
@@ -1186,9 +1185,8 @@ cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length)
 
   level = &self->include_stack[0];
   cfg_lexer_init_include_level_buffer(self, level, "<string>", buffer, length);
-
-  level->yybuf = _cfg_lexer__scan_buffer(level->buffer.content, level->buffer.content_length, self->state);
-  _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
+  cfg_lexer_include_level_open_buffer(self, level);
+  cfg_lexer_include_level_resume_from_buffer(self, level);
 
   return self;
 }
