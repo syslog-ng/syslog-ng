@@ -313,6 +313,16 @@ cfg_lexer_include_level_file_open_buffer(CfgLexer *self, CfgIncludeLevel *level)
 }
 
 void
+cfg_lexer_include_level_file_close_buffer(CfgLexer *self, CfgIncludeLevel *level)
+{
+  if (level->file.include_file)
+    {
+      fclose(level->file.include_file);
+      level->file.include_file = NULL;
+    }
+}
+
+void
 cfg_lexer_init_include_level_buffer(CfgLexer *self, CfgIncludeLevel *level,
                                     const gchar *name,
                                     const gchar *buffer,
@@ -359,6 +369,18 @@ cfg_lexer_include_level_open_buffer(CfgLexer *self, CfgIncludeLevel *level)
   level->lloc.first_column = level->lloc.last_column = 1;
   level->lloc.level = level;
   return TRUE;
+}
+
+void
+cfg_lexer_include_level_close_buffer(CfgLexer *self, CfgIncludeLevel *level)
+{
+  g_assert(level->yybuf);
+
+  _cfg_lexer__delete_buffer(level->yybuf, self->state);
+  level->yybuf = NULL;
+
+  if (level->include_type == CFGI_FILE)
+    cfg_lexer_include_level_file_close_buffer(self, level);
 }
 
 void
@@ -429,22 +451,7 @@ cfg_lexer_start_next_include(CfgLexer *self)
                 evt_tag_str((level->include_type == CFGI_FILE ? "filename" : "content"), level->name),
                 evt_tag_int("depth", self->include_depth));
       buffer_processed = TRUE;
-    }
-
-  /* reset the include state, should also handle initial invocations, in which case everything is NULL */
-  if (level->yybuf)
-    {
-      _cfg_lexer__delete_buffer(level->yybuf, self->state);
-      level->yybuf = NULL;
-    }
-
-  if (level->include_type == CFGI_FILE)
-    {
-      if (level->file.include_file)
-        {
-          fclose(level->file.include_file);
-          level->file.include_file = NULL;
-        }
+      cfg_lexer_include_level_close_buffer(self, level);
     }
 
   if ((level->include_type == CFGI_BUFFER && buffer_processed) ||
