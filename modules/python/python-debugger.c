@@ -121,6 +121,7 @@ python_fetch_debugger_command(void)
       Py_DECREF(ret);
       goto exit;
     }
+  command = g_strdup(str);
   Py_DECREF(ret);
 exit:
   PyGILState_Release(gstate);
