@@ -284,6 +284,13 @@ cfg_lexer_clear_include_level(CfgLexer *self, CfgIncludeLevel *level)
   memset(level, 0, sizeof(*level));
 }
 
+CfgIncludeLevel *
+cfg_lexer_alloc_include_level(CfgLexer *self)
+{
+  self->include_depth++;
+  return &self->include_stack[self->include_depth];
+}
+
 gboolean
 cfg_lexer_start_next_include(CfgLexer *self)
 {
@@ -404,8 +411,8 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
       return FALSE;
     }
 
-  self->include_depth++;
-  level = &self->include_stack[self->include_depth];
+  level = cfg_lexer_alloc_include_level(self);
+
   level->include_type = CFGI_FILE;
   if (S_ISDIR(st.st_mode))
     {
@@ -535,13 +542,9 @@ __glob_pattern_p (const char *pattern)
 #endif
 
 static gboolean
-cfg_lexer_include_file_add(CfgLexer *self, const gchar *fn)
+cfg_lexer_include_file_add(CfgLexer *self, CfgIncludeLevel *level, const gchar *fn)
 {
-  CfgIncludeLevel *level;
-
-  level = &self->include_stack[self->include_depth];
   level->include_type = CFGI_FILE;
-
   level->file.files = g_slist_insert_sorted(level->file.files,
                                             strdup(fn),
                                             (GCompareFunc) strcmp);
@@ -554,7 +557,7 @@ cfg_lexer_include_file_add(CfgLexer *self, const gchar *fn)
 }
 
 static gboolean
-cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
+cfg_lexer_include_file_glob_at(CfgLexer *self, CfgIncludeLevel *level, const gchar *pattern)
 {
   glob_t globbuf;
   size_t i;
@@ -570,7 +573,7 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
 #ifndef SYSLOG_NG_HAVE_GLOB_NOMAGIC
           if (!__glob_pattern_p (pattern))
             {
-              return cfg_lexer_include_file_add(self, pattern);
+              return cfg_lexer_include_file_add(self, level, pattern);
             }
 #endif
           return FALSE;
@@ -580,7 +583,7 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
 
   for (i = 0; i < globbuf.gl_pathc; i++)
     {
-      cfg_lexer_include_file_add(self, globbuf.gl_pathv[i]);
+      cfg_lexer_include_file_add(self, level, globbuf.gl_pathv[i]);
     }
 
   globfree(&globbuf);
@@ -599,11 +602,12 @@ cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
 {
   const gchar *path = _get_include_path(self);
   gboolean process = FALSE;
+  CfgIncludeLevel *level;
 
-  self->include_depth++;
+  level = cfg_lexer_alloc_include_level(self);
 
   if (filename_[0] == '/' || !path)
-    process = cfg_lexer_include_file_glob_at(self, filename_);
+    process = cfg_lexer_include_file_glob_at(self, level, filename_);
   else
     {
       gchar **dirs;
@@ -614,7 +618,7 @@ cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
       while (dirs && dirs[i])
         {
           cf = g_build_filename(dirs[i], filename_, NULL);
-          process |= cfg_lexer_include_file_glob_at(self, cf);
+          process |= cfg_lexer_include_file_glob_at(self, level, cf);
           g_free(cf);
           i++;
         }
@@ -699,8 +703,7 @@ cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gch
   lexer_buffer[length] = 0;
   lexer_buffer[length + 1] = 0;
 
-  self->include_depth++;
-  level = &self->include_stack[self->include_depth];
+  level = cfg_lexer_alloc_include_level(self);
 
   level->include_type = CFGI_BUFFER;
   level->buffer.content = lexer_buffer;
