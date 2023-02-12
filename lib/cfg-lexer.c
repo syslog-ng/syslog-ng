@@ -362,6 +362,12 @@ cfg_lexer_include_level_open_buffer(CfgLexer *self, CfgIncludeLevel *level)
 }
 
 void
+cfg_lexer_include_level_resume_from_buffer(CfgLexer *self, CfgIncludeLevel *level)
+{
+  _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
+}
+
+void
 cfg_lexer_clear_include_level(CfgLexer *self, CfgIncludeLevel *level)
 {
   g_free(level->name);
@@ -458,7 +464,7 @@ cfg_lexer_start_next_include(CfgLexer *self)
       memset(level, 0, sizeof(*level));
 
       self->include_depth--;
-      _cfg_lexer__switch_to_buffer(self->include_stack[self->include_depth].yybuf, self->state);
+      cfg_lexer_include_level_resume_from_buffer(self, &self->include_stack[self->include_depth]);
 
       return TRUE;
     }
@@ -468,8 +474,7 @@ cfg_lexer_start_next_include(CfgLexer *self)
   if (!cfg_lexer_include_level_open_buffer(self, level))
     return FALSE;
 
-
-  _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
+  cfg_lexer_include_level_resume_from_buffer(self, level);
   return TRUE;
 }
 
