@@ -453,25 +453,7 @@ cfg_lexer_start_next_include(CfgLexer *self)
       /* we finished with an include statement that included a series of
        * files (e.g.  directory include). */
 
-
-      /* NOTE: this couple of lines should become just a call to
-       * cfg_lexer_clear_include_level(), however this entire function is
-       * playing nasty tricks with the data members within the
-       * CfgIncludeLevel, which I can't decipher right now, so I am leaving
-       * this as is. Memory management in the lexer is clearly messed
-       * up.  */
-
-      g_free(level->name);
-
-      if (level->include_type == CFGI_BUFFER)
-        {
-          g_free(level->buffer.content);
-          g_free(level->buffer.original_content);
-        }
-
-      memset(level, 0, sizeof(*level));
-
-      self->include_depth--;
+      cfg_lexer_drop_include_level(self, &self->include_stack[self->include_depth]);
       cfg_lexer_include_level_resume_from_buffer(self, &self->include_stack[self->include_depth]);
 
       return TRUE;
