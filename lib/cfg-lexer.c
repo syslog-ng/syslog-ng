@@ -262,6 +262,24 @@ cfg_lexer_map_word_to_token(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc
   return tok;
 }
 
+
+void
+cfg_lexer_init_include_level_file(CfgLexer *self, CfgIncludeLevel *level)
+{
+  level->include_type = CFGI_FILE;
+}
+
+void
+cfg_lexer_include_level_file_add(CfgLexer *self, CfgIncludeLevel *level, const gchar *filename)
+{
+  g_assert(level->include_type == CFGI_FILE);
+  level->file.files = g_slist_insert_sorted(level->file.files, g_strdup(filename), (GCompareFunc) strcmp);
+
+  msg_debug("Adding include file",
+            evt_tag_str("filename", filename),
+            evt_tag_int("depth", self->include_depth));
+}
+
 void
 cfg_lexer_clear_include_level(CfgLexer *self, CfgIncludeLevel *level)
 {
@@ -420,8 +438,8 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
     }
 
   level = cfg_lexer_alloc_include_level(self);
+  cfg_lexer_init_include_level_file(self, level);
 
-  level->include_type = CFGI_FILE;
   if (S_ISDIR(st.st_mode))
     {
       GDir *dir;
@@ -470,10 +488,8 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
                   g_free(full_filename);
                   continue;
                 }
-              level->file.files = g_slist_insert_sorted(level->file.files, full_filename, (GCompareFunc) strcmp);
-              msg_debug("Adding include file",
-                        evt_tag_str("filename", entry),
-                        evt_tag_int("depth", self->include_depth));
+              cfg_lexer_include_level_file_add(self, level, full_filename);
+              g_free(full_filename);
             }
         }
       g_dir_close(dir);
@@ -488,8 +504,7 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
     }
   else
     {
-      g_assert(level->file.files == NULL);
-      level->file.files = g_slist_prepend(level->file.files, g_strdup(filename));
+      cfg_lexer_include_level_file_add(self, level, filename);
     }
   return cfg_lexer_start_next_include(self);
 }
@@ -545,21 +560,6 @@ __glob_pattern_p (const char *pattern)
 #endif
 
 static gboolean
-cfg_lexer_include_file_add(CfgLexer *self, CfgIncludeLevel *level, const gchar *fn)
-{
-  level->include_type = CFGI_FILE;
-  level->file.files = g_slist_insert_sorted(level->file.files,
-                                            strdup(fn),
-                                            (GCompareFunc) strcmp);
-
-  msg_debug("Adding include file",
-            evt_tag_str("filename", fn),
-            evt_tag_int("depth", self->include_depth));
-
-  return TRUE;
-}
-
-static gboolean
 cfg_lexer_include_file_glob_at(CfgLexer *self, CfgIncludeLevel *level, const gchar *pattern)
 {
   glob_t globbuf;
@@ -576,7 +576,8 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, CfgIncludeLevel *level, const gch
 #ifndef SYSLOG_NG_HAVE_GLOB_NOMAGIC
           if (!__glob_pattern_p (pattern))
             {
-              return cfg_lexer_include_file_add(self, level, pattern);
+              cfg_lexer_include_level_file_add(self, level, pattern);
+              return TRUE;
             }
 #endif
           return FALSE;
@@ -586,7 +587,7 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, CfgIncludeLevel *level, const gch
 
   for (i = 0; i < globbuf.gl_pathc; i++)
     {
-      cfg_lexer_include_file_add(self, level, globbuf.gl_pathv[i]);
+      cfg_lexer_include_level_file_add(self, level, globbuf.gl_pathv[i]);
     }
 
   globfree(&globbuf);
@@ -608,6 +609,7 @@ cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
   CfgIncludeLevel *level;
 
   level = cfg_lexer_alloc_include_level(self);
+  cfg_lexer_init_include_level_file(self, level);
 
   if (filename_[0] == '/' || !path)
     process = cfg_lexer_include_file_glob_at(self, level, filename_);
@@ -1125,7 +1127,8 @@ cfg_lexer_new(GlobalConfig *cfg, FILE *file, const gchar *filename, GString *pre
   self->preprocess_output = preprocess_output;
 
   level = &self->include_stack[0];
-  level->include_type = CFGI_FILE;
+  cfg_lexer_init_include_level_file(self, level);
+
   level->name = g_strdup(filename);
   level->yybuf = _cfg_lexer__create_buffer(file, YY_BUF_SIZE, self->state);
   _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
