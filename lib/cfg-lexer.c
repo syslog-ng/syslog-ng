@@ -282,11 +282,12 @@ cfg_lexer_include_level_file_add(CfgLexer *self, CfgIncludeLevel *level, const g
 
 void
 cfg_lexer_init_include_level_buffer(CfgLexer *self, CfgIncludeLevel *level,
+                                    const gchar *name,
                                     const gchar *buffer,
                                     gsize length)
 {
   level->include_type = CFGI_BUFFER;
-
+  level->name = g_strdup(name);
   gint lexer_buffer_len = length + 2;
   gchar *lexer_buffer = g_malloc(lexer_buffer_len);
   memcpy(lexer_buffer, buffer, length);
@@ -722,9 +723,7 @@ cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gch
   /* lex requires two NUL characters at the end of the input */
 
   level = cfg_lexer_alloc_include_level(self);
-  cfg_lexer_init_include_level_buffer(self, level, buffer, length);
-
-  level->name = g_strdup(name);
+  cfg_lexer_init_include_level_buffer(self, level, name, buffer, length);
 
   return cfg_lexer_start_next_include(self);
 }
@@ -1157,9 +1156,7 @@ cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length)
   self->ignore_pragma = TRUE;
 
   level = &self->include_stack[0];
-  cfg_lexer_init_include_level_buffer(self, level, buffer, length);
-
-  level->name = g_strdup("<string>");
+  cfg_lexer_init_include_level_buffer(self, level, "<string>", buffer, length);
 
   level->yybuf = _cfg_lexer__scan_buffer(level->buffer.content, level->buffer.content_length, self->state);
   _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
