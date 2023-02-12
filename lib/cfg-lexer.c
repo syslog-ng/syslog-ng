@@ -390,8 +390,16 @@ cfg_lexer_clear_include_level(CfgLexer *self, CfgIncludeLevel *level)
 }
 
 CfgIncludeLevel *
-cfg_lexer_alloc_include_level(CfgLexer *self)
+cfg_lexer_alloc_include_level(CfgLexer *self, const gchar *include_target)
 {
+  if (self->include_depth >= MAX_INCLUDE_DEPTH - 1)
+    {
+      msg_error("Include file depth is too deep, increase MAX_INCLUDE_DEPTH and recompile",
+                evt_tag_str("include", include_target),
+                evt_tag_int("depth", self->include_depth));
+      return NULL;
+    }
+
   self->include_depth++;
   return &self->include_stack[self->include_depth];
 }
@@ -489,7 +497,9 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
       return FALSE;
     }
 
-  level = cfg_lexer_alloc_include_level(self);
+  level = cfg_lexer_alloc_include_level(self, filename);
+  if (!level)
+    return FALSE;
   cfg_lexer_init_include_level_file(self, level);
 
   if (S_ISDIR(st.st_mode))
@@ -681,7 +691,9 @@ cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
   gboolean process = FALSE;
   CfgIncludeLevel *level;
 
-  level = cfg_lexer_alloc_include_level(self);
+  level = cfg_lexer_alloc_include_level(self, filename_);
+  if (!level)
+    return FALSE;
   cfg_lexer_init_include_level_file(self, level);
 
   if (filename_[0] == '/' || !path)
@@ -715,13 +727,6 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
             evt_tag_str("filename", filename_),
             evt_tag_str("include-path", _get_include_path(self)));
 
-  if (self->include_depth >= MAX_INCLUDE_DEPTH - 1)
-    {
-      msg_error("Include file depth is too deep, increase MAX_INCLUDE_DEPTH and recompile",
-                evt_tag_str("filename", filename_),
-                evt_tag_int("depth", self->include_depth));
-      return FALSE;
-    }
 
   filename = find_file_in_path(_get_include_path(self), filename_, G_FILE_TEST_EXISTS);
   if (!filename || stat(filename, &st) < 0)
@@ -749,15 +754,9 @@ cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gch
 
   g_assert(length >= 0);
 
-  if (self->include_depth >= MAX_INCLUDE_DEPTH - 1)
-    {
-      msg_error("Include file depth is too deep, increase MAX_INCLUDE_DEPTH and recompile",
-                evt_tag_str("buffer", name),
-                evt_tag_int("depth", self->include_depth));
-      return FALSE;
-    }
-
-  level = cfg_lexer_alloc_include_level(self);
+  level = cfg_lexer_alloc_include_level(self, name);
+  if (!level)
+    return FALSE;
   cfg_lexer_init_include_level_buffer(self, level, name, buffer, length);
 
   return cfg_lexer_start_next_include(self);
