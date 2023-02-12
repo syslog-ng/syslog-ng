@@ -654,6 +654,27 @@ _get_include_path(CfgLexer *self)
 }
 
 static gboolean
+cfg_lexer_include_file_glob_along_include_path(CfgLexer *self, CfgIncludeLevel *level,
+                                               const gchar *path, const gchar *filename_)
+{
+  gboolean result = FALSE;
+  gchar **dirs;
+  gchar *cf;
+  gint i = 0;
+
+  dirs = g_strsplit(path, G_SEARCHPATH_SEPARATOR_S, 0);
+  while (dirs && dirs[i])
+    {
+      cf = g_build_filename(dirs[i], filename_, NULL);
+      result |= cfg_lexer_include_file_glob_at(self, level, cf);
+      g_free(cf);
+      i++;
+    }
+  g_strfreev(dirs);
+  return result;
+}
+
+static gboolean
 cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
 {
   const gchar *path = _get_include_path(self);
@@ -666,30 +687,14 @@ cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
   if (filename_[0] == '/' || !path)
     process = cfg_lexer_include_file_glob_at(self, level, filename_);
   else
-    {
-      gchar **dirs;
-      gchar *cf;
-      gint i = 0;
+    process = cfg_lexer_include_file_glob_along_include_path(self, level, path, filename_);
 
-      dirs = g_strsplit(path, G_SEARCHPATH_SEPARATOR_S, 0);
-      while (dirs && dirs[i])
-        {
-          cf = g_build_filename(dirs[i], filename_, NULL);
-          process |= cfg_lexer_include_file_glob_at(self, level, cf);
-          g_free(cf);
-          i++;
-        }
-      g_strfreev(dirs);
-    }
-  if (process)
+  if (!process)
     {
-      return cfg_lexer_start_next_include(self);
-    }
-  else
-    {
-      self->include_depth--;
+      cfg_lexer_drop_include_level(self, level);
       return TRUE;
     }
+  return cfg_lexer_start_next_include(self);
 }
 
 gboolean
