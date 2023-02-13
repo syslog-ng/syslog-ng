@@ -117,7 +117,7 @@ void stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc f
 StatsClusterKey *stats_cluster_key_clone(StatsClusterKey *dst, const StatsClusterKey *src);
 void stats_cluster_key_cloned_free(StatsClusterKey *self);
 gboolean stats_cluster_key_equal(const StatsClusterKey *key1, const StatsClusterKey *key2);
-guint stats_cluster_hash(const StatsCluster *self);
+guint stats_cluster_key_hash(const StatsClusterKey *self);
 
 StatsCounterItem *stats_cluster_track_counter(StatsCluster *self, gint type);
 StatsCounterItem *stats_cluster_get_counter(StatsCluster *self, gint type);

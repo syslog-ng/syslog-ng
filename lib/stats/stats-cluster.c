@@ -199,9 +199,9 @@ stats_cluster_key_equal(const StatsClusterKey *key1, const StatsClusterKey *key2
 }
 
 guint
-stats_cluster_hash(const StatsCluster *self)
+stats_cluster_key_hash(const StatsClusterKey *self)
 {
-  return g_str_hash(self->key.id) + g_str_hash(self->key.instance) + self->key.component;
+  return g_str_hash(self->id) + g_str_hash(self->instance) + self->component;
 }
 
 StatsCounterItem *

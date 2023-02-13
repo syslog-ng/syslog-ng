@@ -457,10 +457,10 @@ stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data, gboolean
 void
 stats_registry_init(void)
 {
-  stats_cluster_container.static_clusters = g_hash_table_new_full((GHashFunc) stats_cluster_hash,
+  stats_cluster_container.static_clusters = g_hash_table_new_full((GHashFunc) stats_cluster_key_hash,
                                             (GEqualFunc) stats_cluster_key_equal, NULL,
                                             (GDestroyNotify) stats_cluster_free);
-  stats_cluster_container.dynamic_clusters = g_hash_table_new_full((GHashFunc) stats_cluster_hash,
+  stats_cluster_container.dynamic_clusters = g_hash_table_new_full((GHashFunc) stats_cluster_key_hash,
                                              (GEqualFunc) stats_cluster_key_equal, NULL,
                                              (GDestroyNotify) stats_cluster_free);
 
