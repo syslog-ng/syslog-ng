@@ -83,13 +83,13 @@ Test(stats_cluster, test_stats_cluster_new_replaces_NULL_with_an_empty_string)
 static void
 assert_stats_cluster_equals(StatsCluster *sc1, StatsCluster *sc2)
 {
-  cr_assert(stats_cluster_equal(sc1, sc2), "unexpected unequal StatsClusters");
+  cr_assert(stats_cluster_key_equal(&sc1->key, &sc2->key), "unexpected unequal StatsClusters");
 }
 
 static void
 assert_stats_cluster_mismatches(StatsCluster *sc1, StatsCluster *sc2)
 {
-  cr_assert_not(stats_cluster_equal(sc1, sc2), "unexpected equal StatsClusters");
+  cr_assert_not(stats_cluster_key_equal(&sc1->key, &sc2->key), "unexpected equal StatsClusters");
 }
 
 static void

@@ -198,12 +198,6 @@ stats_cluster_key_equal(const StatsClusterKey *key1, const StatsClusterKey *key2
          && stats_counter_group_init_equals(&key1->counter_group_init, &key2->counter_group_init);
 }
 
-gboolean
-stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2)
-{
-  return stats_cluster_key_equal(&sc1->key, &sc2->key);
-}
-
 guint
 stats_cluster_hash(const StatsCluster *self)
 {

@@ -458,10 +458,10 @@ void
 stats_registry_init(void)
 {
   stats_cluster_container.static_clusters = g_hash_table_new_full((GHashFunc) stats_cluster_hash,
-                                            (GEqualFunc) stats_cluster_equal, NULL,
+                                            (GEqualFunc) stats_cluster_key_equal, NULL,
                                             (GDestroyNotify) stats_cluster_free);
   stats_cluster_container.dynamic_clusters = g_hash_table_new_full((GHashFunc) stats_cluster_hash,
-                                             (GEqualFunc) stats_cluster_equal, NULL,
+                                             (GEqualFunc) stats_cluster_key_equal, NULL,
                                              (GDestroyNotify) stats_cluster_free);
 
   g_mutex_init(&stats_mutex);
