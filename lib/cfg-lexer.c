@@ -390,7 +390,7 @@ cfg_lexer_include_level_resume_from_buffer(CfgLexer *self, CfgIncludeLevel *leve
 }
 
 void
-cfg_lexer_clear_include_level(CfgLexer *self, CfgIncludeLevel *level)
+cfg_lexer_include_level_clear(CfgLexer *self, CfgIncludeLevel *level)
 {
   g_free(level->name);
   if (level->yybuf)
@@ -430,7 +430,7 @@ void
 cfg_lexer_drop_include_level(CfgLexer *self, CfgIncludeLevel *level)
 {
   g_assert(&self->include_stack[self->include_depth] == level);
-  cfg_lexer_clear_include_level(self, level);
+  cfg_lexer_include_level_clear(self, level);
   self->include_depth--;
 }
 
@@ -1208,7 +1208,7 @@ cfg_lexer_free(CfgLexer *self)
   gint i;
 
   for (i = 0; i <= self->include_depth; i++)
-    cfg_lexer_clear_include_level(self, &self->include_stack[i]);
+    cfg_lexer_include_level_clear(self, &self->include_stack[i]);
 
   self->include_depth = 0;
   _cfg_lexer_lex_destroy(self->state);
