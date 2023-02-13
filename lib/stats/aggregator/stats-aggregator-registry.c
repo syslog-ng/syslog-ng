@@ -23,6 +23,7 @@
 
 #include "stats/aggregator/stats-aggregator-registry.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster.h"
 #include "stats/stats-query.h"
 #include "cfg.h"
 #include "iv.h"
@@ -155,16 +156,10 @@ stats_aggregator_remove_stats(void)
   g_hash_table_foreach_remove(stats_container.aggregators, _remove_helper, NULL);
 }
 
-static guint
-_stats_cluster_key_hash(const StatsClusterKey *self)
-{
-  return g_str_hash(self->id) + g_str_hash(self->instance) + self->component;
-}
-
 void
 stats_aggregator_registry_init(void)
 {
-  stats_container.aggregators = g_hash_table_new_full((GHashFunc) _stats_cluster_key_hash,
+  stats_container.aggregators = g_hash_table_new_full((GHashFunc) stats_cluster_key_hash,
                                                       (GEqualFunc) stats_cluster_key_equal, NULL, NULL);
   _init_timer();
   g_mutex_init(&stats_aggregator_mutex);
