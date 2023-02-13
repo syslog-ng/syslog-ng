@@ -1444,8 +1444,14 @@ _register_counters(LogWriter *self)
 {
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_legacy_set(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                       self->stats_instance);
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("id", self->stats_id),
+    stats_cluster_label("driver_instance", self->stats_instance),
+  };
+  stats_cluster_logpipe_key_set(&sc_key, "output_events_total", labels, G_N_ELEMENTS(labels));
+  stats_cluster_logpipe_key_add_legacy_alias(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+                                             self->stats_instance);
 
   if (self->options->suppress > 0)
     stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
@@ -1502,8 +1508,14 @@ _unregister_counters(LogWriter *self)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_legacy_set(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                         self->stats_instance);
+    StatsClusterLabel labels[] =
+    {
+      stats_cluster_label("id", self->stats_id),
+      stats_cluster_label("driver_instance", self->stats_instance),
+    };
+    stats_cluster_logpipe_key_set(&sc_key, "output_events_total", labels, G_N_ELEMENTS(labels));
+    stats_cluster_logpipe_key_add_legacy_alias(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+                                               self->stats_instance);
 
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);

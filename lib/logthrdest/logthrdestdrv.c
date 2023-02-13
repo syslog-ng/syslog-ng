@@ -34,6 +34,7 @@
 #define MAX_RETRIES_ON_ERROR_DEFAULT 3
 #define MAX_RETRIES_BEFORE_SUSPEND_DEFAULT 3
 
+static void _init_stats_legacy_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key);
 static void _init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key);
 
 const gchar *
@@ -966,11 +967,25 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
 }
 
 static void
-_init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key)
+_init_stats_legacy_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key)
 {
   stats_cluster_logpipe_key_legacy_set(sc_key, self->stats_source | SCS_DESTINATION,
                                        self->super.super.id,
                                        self->format_stats_instance(self));
+}
+
+static void
+_init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key)
+{
+  enum { labels_len = 2 };
+  static StatsClusterLabel labels[labels_len];
+
+  labels[0] = stats_cluster_label("id", self->super.super.id ? : "");
+  labels[1] = stats_cluster_label("driver_instance", self->format_stats_instance(self));
+  stats_cluster_logpipe_key_set(sc_key, "output_events_total", labels, labels_len);
+  stats_cluster_logpipe_key_add_legacy_alias(sc_key, self->stats_source | SCS_DESTINATION,
+                                             self->super.super.id,
+                                             self->format_stats_instance(self));
 }
 
 void
@@ -991,7 +1006,7 @@ void
 log_threaded_dest_driver_register_aggregated_stats(LogThreadedDestDriver *self)
 {
   StatsClusterKey sc_key_eps_input;
-  _init_stats_key(self, &sc_key_eps_input);
+  _init_stats_legacy_key(self, &sc_key_eps_input);
   stats_aggregator_lock();
   StatsClusterKey sc_key;
 
