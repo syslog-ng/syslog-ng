@@ -128,6 +128,7 @@ _cmd_help(Debugger *self, gint argc, gchar *argv[])
 {
   printf("syslog-ng interactive console, the following commands are available\n\n"
          "  help, h, or ?            Display this help\n"
+         "  info                     Display information about the current execution state\n"
          "  continue or c            Continue until the next breakpoint\n"
          "  trace                    Display timing information as the message traverses the config\n"
          "  print, p                 Print the current log message\n"
@@ -201,6 +202,31 @@ _cmd_quit(Debugger *self, gint argc, gchar *argv[])
   return FALSE;
 }
 
+static gboolean
+_cmd_info_pipe(Debugger *self, LogPipe *pipe)
+{
+  gchar buf[1024];
+
+  printf("LogPipe %p at %s\n", pipe, log_expr_node_format_location(pipe->expr_node, buf, sizeof(buf)));
+  _display_source_line(pipe->expr_node);
+
+  return TRUE;
+}
+
+static gboolean
+_cmd_info(Debugger *self, gint argc, gchar *argv[])
+{
+  if (argc >= 2)
+    {
+      if (strcmp(argv[1], "pipe") == 0)
+        return _cmd_info_pipe(self, self->current_pipe);
+    }
+
+  printf("info: List of info subcommands\n"
+         "info pipe -- display information about the current pipe\n");
+  return TRUE;
+}
+
 typedef gboolean (*DebuggerCommandFunc)(Debugger *self, gint argc, gchar *argv[]);
 
 struct
@@ -221,6 +247,8 @@ struct
   { "quit",     _cmd_quit },
   { "q",        _cmd_quit },
   { "trace",    _cmd_trace },
+  { "info",     _cmd_info },
+  { "i",        _cmd_info },
   { NULL, NULL }
 };
 
