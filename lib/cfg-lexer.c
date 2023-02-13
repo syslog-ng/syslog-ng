@@ -160,7 +160,7 @@ _find_closest_file_inclusion(CfgLexer *self, CFG_LTYPE *yylloc)
 }
 
 const gchar *
-cfg_lexer_format_location(CfgLexer *self, CFG_LTYPE *yylloc, gchar *buf, gsize buf_len)
+cfg_lexer_format_location(CfgLexer *self, const CFG_LTYPE *yylloc, gchar *buf, gsize buf_len)
 {
   CfgIncludeLevel *level;
 
@@ -175,7 +175,7 @@ cfg_lexer_format_location(CfgLexer *self, CFG_LTYPE *yylloc, gchar *buf, gsize b
 }
 
 EVTTAG *
-cfg_lexer_format_location_tag(CfgLexer *self, CFG_LTYPE *yylloc)
+cfg_lexer_format_location_tag(CfgLexer *self, const CFG_LTYPE *yylloc)
 {
   gchar buf[256];
 
@@ -183,7 +183,7 @@ cfg_lexer_format_location_tag(CfgLexer *self, CFG_LTYPE *yylloc)
 }
 
 static int
-cfg_lexer_lookup_keyword(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc, const char *token)
+cfg_lexer_lookup_keyword(CfgLexer *self, CFG_STYPE *yylval, const CFG_LTYPE *yylloc, const char *token)
 {
   GList *l;
 
@@ -245,7 +245,7 @@ cfg_lexer_lookup_keyword(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc, c
 }
 
 int
-cfg_lexer_map_word_to_token(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc, const char *token)
+cfg_lexer_map_word_to_token(CfgLexer *self, CFG_STYPE *yylval, const CFG_LTYPE *yylloc, const char *token)
 {
   int tok = cfg_lexer_lookup_keyword(self, yylval, yylloc, token);
 

@@ -190,7 +190,7 @@ void cfg_lexer_append_char(CfgLexer *self, char c);
 /* keyword handling */
 void cfg_lexer_set_current_keywords(CfgLexer *self, CfgLexerKeyword *keywords);
 char *cfg_lexer_get_keyword_string(CfgLexer *self, int kw);
-int cfg_lexer_map_word_to_token(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc, const char *token);
+int cfg_lexer_map_word_to_token(CfgLexer *self, CFG_STYPE *yylval, const CFG_LTYPE *yylloc, const char *token);
 
 /* include files */
 gboolean cfg_lexer_start_next_include(CfgLexer *self);
@@ -198,8 +198,8 @@ gboolean cfg_lexer_include_file(CfgLexer *self, const gchar *filename);
 gboolean cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar *buffer, gssize length);
 gboolean cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self,
     const gchar *name, const gchar *buffer, gsize length);
-const gchar *cfg_lexer_format_location(CfgLexer *self, CFG_LTYPE *yylloc, gchar *buf, gsize buf_len);
-EVTTAG *cfg_lexer_format_location_tag(CfgLexer *self, CFG_LTYPE *yylloc);
+const gchar *cfg_lexer_format_location(CfgLexer *self, const CFG_LTYPE *yylloc, gchar *buf, gsize buf_len);
+EVTTAG *cfg_lexer_format_location_tag(CfgLexer *self, const CFG_LTYPE *yylloc);
 
 /* context tracking */
 void cfg_lexer_push_context(CfgLexer *self, gint context, CfgLexerKeyword *keywords, const gchar *desc);
