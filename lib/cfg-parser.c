@@ -304,7 +304,8 @@ _report_file_location(const gchar *filename, const CFG_LTYPE *yylloc)
       g_ptr_array_add(context, NULL);
       fclose(f);
     }
-  _print_underlined_source_block(yylloc, (gchar **) context->pdata, error_index);
+  if (context->len > 0)
+    _print_underlined_source_block(yylloc, (gchar **) context->pdata, error_index);
 
 exit:
   g_free(buf);
