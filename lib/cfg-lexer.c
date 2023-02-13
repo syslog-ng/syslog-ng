@@ -438,7 +438,7 @@ gboolean
 cfg_lexer_start_next_include(CfgLexer *self)
 {
   CfgIncludeLevel *level = &self->include_stack[self->include_depth];
-  gboolean buffer_processed = FALSE;
+  gboolean level_finished = FALSE;
 
   if (self->include_depth == 0)
     {
@@ -450,29 +450,35 @@ cfg_lexer_start_next_include(CfgLexer *self)
       msg_debug("Finishing include",
                 evt_tag_str((level->include_type == CFGI_FILE ? "filename" : "content"), level->name),
                 evt_tag_int("depth", self->include_depth));
-      buffer_processed = TRUE;
+
+      if ((level->include_type == CFGI_BUFFER) ||
+          (level->include_type == CFGI_FILE && !level->file.files))
+        level_finished = TRUE;
+
       cfg_lexer_include_level_close_buffer(self, level);
     }
 
-  if ((level->include_type == CFGI_BUFFER && buffer_processed) ||
-      (level->include_type == CFGI_FILE && !level->file.files))
+  if (level_finished)
     {
       /* we finished with an include statement that included a series of
-       * files (e.g.  directory include). */
+       * files (e.g.  directory include).  We need to terminate the current
+       * level and resume from our parent. */
 
       cfg_lexer_drop_include_level(self, &self->include_stack[self->include_depth]);
       cfg_lexer_include_level_resume_from_buffer(self, &self->include_stack[self->include_depth]);
 
       return TRUE;
     }
+  else
+    {
+      /* the level is not yet finished, let's go open the buffer and restart from there */
 
-  /* now populate "level" with the new include information */
+      if (!cfg_lexer_include_level_open_buffer(self, level))
+        return FALSE;
 
-  if (!cfg_lexer_include_level_open_buffer(self, level))
-    return FALSE;
-
-  cfg_lexer_include_level_resume_from_buffer(self, level);
-  return TRUE;
+      cfg_lexer_include_level_resume_from_buffer(self, level);
+      return TRUE;
+    }
 }
 
 static gboolean
