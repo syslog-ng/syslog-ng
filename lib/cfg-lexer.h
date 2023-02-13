@@ -83,13 +83,15 @@ typedef struct _CfgTokenBlock CfgTokenBlock;
  */
 
 /* the location type to carry location information from the lexer to the grammar */
+
 typedef struct CFG_LTYPE
 {
   int first_line;
   int first_column;
   int last_line;
   int last_column;
-  CfgIncludeLevel *level;
+
+  const gchar *name;
 } CFG_LTYPE;
 
 /* symbol type that carries token related information to the grammar */
@@ -132,8 +134,6 @@ struct _CfgIncludeLevel
     CFGI_FILE,
     CFGI_BUFFER,
   } include_type;
-  /* include file or block name */
-  gchar *name;
   union
   {
     struct

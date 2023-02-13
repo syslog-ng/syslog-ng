@@ -45,7 +45,7 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size, g
     {
       msg_error("Error performing backtick substitution in configuration file",
                 evt_tag_str("error", error->message),
-                evt_tag_str("filename", cur_lloc->level->name),
+                evt_tag_str("filename", cur_lloc->name),
                 evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column));
       g_clear_error(&error);
       goto error;
@@ -56,7 +56,7 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size, g
         {
           msg_error("Error performing backtick substitution in configuration file, the target buffer is too small",
                     evt_tag_int("buf_size", buf_size),
-                    evt_tag_str("filename", cur_lloc->level->name),
+                    evt_tag_str("filename", cur_lloc->name),
                     evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column));
           goto error;
         }
@@ -94,7 +94,7 @@ yy_patch_include_statement(CfgLexer *self, gchar *buf, gsize buf_size, gsize *le
       msg_error("Error parsing old style include statement (e.g. the one without the '@' prefix), "
                 "support for it was removed in " VERSION_3_20 ", just add a '@' in front or revert to @version "
                 VERSION_3_19 " or older",
-                evt_tag_str("filename", cur_lloc->level->name),
+                evt_tag_str("filename", cur_lloc->name),
                 evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column));
 
       return FALSE;
@@ -104,7 +104,7 @@ yy_patch_include_statement(CfgLexer *self, gchar *buf, gsize buf_size, gsize *le
     {
       msg_error("Error performing the `include' patching to @include, the target buffer is too small",
                 evt_tag_int("buf_size", buf_size),
-                evt_tag_str("filename", cur_lloc->level->name),
+                evt_tag_str("filename", cur_lloc->name),
                 evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column));
       return FALSE;
     }
@@ -117,7 +117,7 @@ yy_patch_include_statement(CfgLexer *self, gchar *buf, gsize buf_size, gsize *le
               "character in front) has been removed in " VERSION_3_20 ". Please prepend a '@' "
               "character in front of your include statement while updating your configuration "
               "to match the new version",
-              evt_tag_str("filename", cur_lloc->level->name),
+              evt_tag_str("filename", cur_lloc->name),
               evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column));
   return TRUE;
 }

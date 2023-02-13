@@ -38,9 +38,9 @@ setup(void)
 {
   result = g_string_sized_new(100);
 
-  CfgIncludeLevel *level = g_new0(CfgIncludeLevel, 1);
-  level->name = "";
-  yyloc.level = level;
+  yyloc.name = "config-file";
+  yyloc.first_line = yyloc.first_column = 1;
+  yyloc.last_line = yyloc.last_column = 1;
 
   configuration = cfg_new_snippet();
   msg_init(TRUE);
@@ -51,7 +51,6 @@ teardown(void)
 {
   msg_deinit();
   cfg_free(configuration);
-  g_free(yyloc.level);
   g_string_free(result, TRUE);
 }
 

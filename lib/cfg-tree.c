@@ -268,7 +268,7 @@ log_expr_node_new(gint layout, gint content, const gchar *name, LogExprNode *chi
   self->flags = flags;
   if (yylloc)
     {
-      self->filename = g_strdup(yylloc->level->name);
+      self->filename = g_strdup(yylloc->name);
       self->line = yylloc->first_line;
       self->column = yylloc->first_column;
     }

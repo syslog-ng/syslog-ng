@@ -145,32 +145,10 @@ cfg_lexer_get_context_description(CfgLexer *self)
   return "configuration";
 }
 
-/* this can only be called from the grammar */
-static CfgIncludeLevel *
-_find_closest_file_inclusion(CfgLexer *self, CFG_LTYPE *yylloc)
-{
-  for (gint level_ndx = self->include_depth; level_ndx >= 0; level_ndx--)
-    {
-      CfgIncludeLevel *level = &self->include_stack[level_ndx];
-
-      if (level->include_type == CFGI_FILE)
-        return level;
-    }
-  return NULL;
-}
-
 const gchar *
 cfg_lexer_format_location(CfgLexer *self, const CFG_LTYPE *yylloc, gchar *buf, gsize buf_len)
 {
-  CfgIncludeLevel *level;
-
-  level = _find_closest_file_inclusion(self, yylloc);
-  if (level)
-    g_snprintf(buf, buf_len, "%s:%d:%d",
-               level->name,
-               level->lloc.first_line, level->lloc.first_column);
-  else
-    g_snprintf(buf, buf_len, "%s:%d:%d", "#buffer", yylloc->first_line, yylloc->first_column);
+  g_snprintf(buf, buf_len, "%s:%d:%d", yylloc->name ? : "#buffer", yylloc->first_line, yylloc->first_column);
   return buf;
 }
 
@@ -304,9 +282,8 @@ cfg_lexer_include_level_file_open_buffer(CfgLexer *self, CfgIncludeLevel *level)
             evt_tag_str("filename", filename),
             evt_tag_int("depth", self->include_depth));
 
-  g_free(level->name);
-  level->name = filename;
-
+  level->lloc.name = g_intern_string(filename);
+  g_free(filename);
   level->file.include_file = include_file;
   level->yybuf = _cfg_lexer__create_buffer(level->file.include_file, YY_BUF_SIZE, self->state);
   return TRUE;
@@ -329,7 +306,7 @@ cfg_lexer_init_include_level_buffer(CfgLexer *self, CfgIncludeLevel *level,
                                     gsize length)
 {
   level->include_type = CFGI_BUFFER;
-  level->name = g_strdup(name);
+  level->lloc.name = g_intern_string(name);
   gint lexer_buffer_len = length + 2;
   gchar *lexer_buffer = g_malloc(lexer_buffer_len);
   memcpy(lexer_buffer, buffer, length);
@@ -367,7 +344,6 @@ cfg_lexer_include_level_open_buffer(CfgLexer *self, CfgIncludeLevel *level)
 
   level->lloc.first_line = level->lloc.last_line = 1;
   level->lloc.first_column = level->lloc.last_column = 1;
-  level->lloc.level = level;
   return TRUE;
 }
 
@@ -392,7 +368,6 @@ cfg_lexer_include_level_resume_from_buffer(CfgLexer *self, CfgIncludeLevel *leve
 void
 cfg_lexer_include_level_clear(CfgLexer *self, CfgIncludeLevel *level)
 {
-  g_free(level->name);
   if (level->yybuf)
     _cfg_lexer__delete_buffer(level->yybuf, self->state);
 
@@ -448,7 +423,7 @@ cfg_lexer_start_next_include(CfgLexer *self)
   if (level->yybuf)
     {
       msg_debug("Finishing include",
-                evt_tag_str((level->include_type == CFGI_FILE ? "filename" : "content"), level->name),
+                evt_tag_str((level->include_type == CFGI_FILE ? "filename" : "content"), level->lloc.name),
                 evt_tag_int("depth", self->include_depth));
 
       if ((level->include_type == CFGI_BUFFER) ||
@@ -1157,7 +1132,6 @@ cfg_lexer_init(CfgLexer *self, GlobalConfig *cfg)
   level = &self->include_stack[0];
   level->lloc.first_line = level->lloc.last_line = 1;
   level->lloc.first_column = level->lloc.last_column = 1;
-  level->lloc.level = level;
 }
 
 
