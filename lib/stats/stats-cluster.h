@@ -92,15 +92,17 @@ stats_cluster_label(const gchar *name, const gchar *value)
 
 struct _StatsClusterKey
 {
-  const gchar *id;
+  const gchar *name;
   StatsClusterLabel *labels;
   gsize labels_len;
 
   struct
   {
+    const gchar *id;
     /* syslog-ng component/driver/subsystem that registered this cluster */
     guint16 component;
     const gchar *instance;
+    gboolean set:1;
   } legacy;
   StatsCounterGroupInit counter_group_init;
 };
@@ -166,15 +168,18 @@ StatsCluster *stats_cluster_new(const StatsClusterKey *key);
 StatsCluster *stats_cluster_dynamic_new(const StatsClusterKey *key);
 void stats_cluster_free(StatsCluster *self);
 
-void stats_cluster_key_set(StatsClusterKey *self, const gchar *id, StatsClusterLabel *labels, gsize labels_len,
+void stats_cluster_key_set(StatsClusterKey *self, const gchar *name, StatsClusterLabel *labels, gsize labels_len,
                            StatsCounterGroupInit counter_group_ctor);
 void stats_cluster_key_legacy_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
                                   StatsCounterGroupInit counter_group_ctor);
+void stats_cluster_key_add_legacy_alias(StatsClusterKey *self, guint16 component, const gchar *id,
+                                        const gchar *instance,
+                                        StatsCounterGroupInit counter_group_ctor);
 
 static inline gboolean
 stats_cluster_key_is_legacy(const StatsClusterKey *self)
 {
-  return self->legacy.component && !self->labels_len;
+  return self->legacy.set;
 }
 
 #endif

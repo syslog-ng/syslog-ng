@@ -33,9 +33,13 @@ typedef enum
   SC_TYPE_SINGLE_MAX
 } StatsCounterGroupSingle;
 
-void stats_cluster_single_key_set(StatsClusterKey *key, const gchar *id, StatsClusterLabel *labels, gsize labels_len);
+void stats_cluster_single_key_set(StatsClusterKey *key, const gchar *name, StatsClusterLabel *labels, gsize labels_len);
 
 
+/*
+ * The legacy functions should not be used for new code.
+ * When transforming a legacy stats key to a new metric key, aliases should be specified consistently at all call sites.
+ */
 void stats_cluster_single_key_legacy_set(StatsClusterKey *key, guint16 component, const gchar *id,
                                          const gchar *instance);
 void stats_cluster_single_key_legacy_set_with_name(StatsClusterKey *key, guint16 component, const gchar *id,

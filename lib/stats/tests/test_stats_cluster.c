@@ -75,7 +75,7 @@ Test(stats_cluster, test_stats_cluster_new_replaces_NULL_with_an_empty_string)
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_SOURCE | SCS_FILE, NULL, NULL );
 
   sc = stats_cluster_new(&sc_key);
-  cr_assert_str_eq(sc->key.id, "", "StatsCluster->id is not properly defaulted to an empty string");
+  cr_assert_str_eq(sc->key.legacy.id, "", "StatsCluster->id is not properly defaulted to an empty string");
   cr_assert_str_eq(sc->key.legacy.instance, "", "StatsCluster->instance is not properly defaulted to an empty string");
   stats_cluster_free(sc);
 }
@@ -211,6 +211,27 @@ Test(stats_cluster, test_stats_cluster_key)
                    test_cluster_key("name2", NULL, 0), FALSE);
   assert_key_equal(test_cluster_key("name", labels1, G_N_ELEMENTS(labels1)),
                    test_cluster_key("name2", labels2, G_N_ELEMENTS(labels2)), FALSE);
+}
+
+Test(stats_cluster, test_stats_cluster_key_legacy_alias)
+{
+  StatsClusterKey key1, key2, key3;
+  stats_cluster_logpipe_key_set(&key1, "name", NULL, 0);
+  stats_cluster_logpipe_key_add_legacy_alias(&key1, SCS_FILE, "id", "instance");
+
+  stats_cluster_logpipe_key_set(&key2, "name2", NULL, 0);
+  stats_cluster_logpipe_key_add_legacy_alias(&key2, SCS_FILE, "id2", "instance");
+
+  stats_cluster_logpipe_key_set(&key3, "name", NULL, 0);
+
+  cr_assert(stats_cluster_key_equal(&key1, &key1));
+  cr_assert_eq(stats_cluster_key_hash(&key1), stats_cluster_key_hash(&key1));
+
+  cr_assert_not(stats_cluster_key_equal(&key1, &key2));
+  cr_assert_neq(stats_cluster_key_hash(&key1), stats_cluster_key_hash(&key2));
+
+  cr_assert_not(stats_cluster_key_equal(&key1, &key3));
+  cr_assert_neq(stats_cluster_key_hash(&key1), stats_cluster_key_hash(&key3));
 }
 
 typedef struct _ValidateCountersState
