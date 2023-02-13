@@ -89,14 +89,15 @@ python_debugger_append_inittab(void)
 static gchar *
 python_fetch_debugger_command(void)
 {
-  PyObject *fetch_command;
+  static PyObject *fetch_command;
   PyObject *ret;
   gchar *command = NULL;
 
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
 
-  fetch_command = _py_resolve_qualified_name(DEBUGGER_FETCH_COMMAND);
+  if (!fetch_command)
+    fetch_command = _py_resolve_qualified_name(DEBUGGER_FETCH_COMMAND);
   if (!fetch_command)
     goto exit;
 
@@ -121,6 +122,7 @@ python_fetch_debugger_command(void)
       Py_DECREF(ret);
       goto exit;
     }
+  command = g_strdup(str);
   Py_DECREF(ret);
 exit:
   PyGILState_Release(gstate);
