@@ -178,10 +178,6 @@ ParameterizedTestParameters(log_source, test_mangle_hostname)
       .keep_hostname = FALSE, .chain_hostnames = TRUE, "msg-test-host", TEST_SOURCE_GROUP "@resolved-test-host",
       .msg_flags = LF_LOCAL
     },
-    {
-      .keep_hostname = FALSE, .chain_hostnames = TRUE, "msg-test-host", "resolved-test-host",
-      .msg_flags = LF_LOCAL | LF_SIMPLE_HOSTNAME
-    },
   };
 
   return cr_make_param_array(MangleHostnameParams, test_params, G_N_ELEMENTS(test_params));

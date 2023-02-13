@@ -123,8 +123,6 @@ enum
   LF_STATE_OWN_SDATA   = 0x0100,
   LF_STATE_OWN_MASK    = 0x01F0,
 
-  /* In the log header the hostname shall be printed individually (no group name, no chain hosts)*/
-  LF_SIMPLE_HOSTNAME = 0x0200,
 
   LF_CHAINED_HOSTNAME  = 0x00010000,
 
