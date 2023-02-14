@@ -382,6 +382,16 @@ __parse_iso_timezone(const guchar **data, gint *length)
   return tz;
 }
 
+gboolean
+scan_iso_timezone(const guchar **data, gint *length, gint *gmtoff)
+{
+  if (__has_iso_timezone(*data, *length))
+    {
+      *gmtoff = __parse_iso_timezone(data, length);
+      return TRUE;
+    }
+  return FALSE;
+}
 
 static gboolean
 __parse_iso_stamp(WallClockTime *wct, const guchar **data, gint *length)

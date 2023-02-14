@@ -81,6 +81,11 @@ Test(format_date, test_format_date_with_timestamp_argument_formats_it_using_strf
   assert_template_format("$(format-date %Y-%m-%dT%H:%M:%S 1667500613)", "2022-11-03T19:36:53");
 }
 
+Test(format_date, test_format_date_with_timestamp_argument_using_fractions_and_timezone_works)
+{
+  assert_template_format("$(format-date %Y-%m-%dT%H:%M:%S 1667500613.613+05:00)", "2022-11-03T23:36:53");
+}
+
 Test(format_date, test_format_date_with_time_zone_option_overrrides_timezone)
 {
   assert_template_format("$(format-date --time-zone PST8PDT %Y-%m-%dT%H:%M:%S 1667500613)", "2022-11-03T11:36:53");
