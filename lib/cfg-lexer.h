@@ -131,6 +131,7 @@ struct _CfgIncludeLevel
 {
   enum
   {
+    CFGI_NONE,
     CFGI_FILE,
     CFGI_BUFFER,
   } include_type;
