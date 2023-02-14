@@ -45,10 +45,12 @@ _reset_counter_if_needed(StatsCluster *sc, gint type, StatsCounterItem *counter,
   if (stats_counter_read_only(counter))
     return;
 
+  if (strcmp(stats_cluster_get_type_name(sc, type), "memory_usage") == 0)
+    return;
+
   switch (type)
     {
     case SC_TYPE_QUEUED:
-    case SC_TYPE_MEMORY_USAGE:
       return;
     default:
       _reset_counter(sc, type, counter, user_data);

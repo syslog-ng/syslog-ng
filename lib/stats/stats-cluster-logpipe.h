@@ -34,7 +34,6 @@ typedef enum
   SC_TYPE_QUEUED,    /* number of messages on disk */
   SC_TYPE_SUPPRESSED,/* number of messages suppressed */
   SC_TYPE_STAMP,     /* timestamp */
-  SC_TYPE_MEMORY_USAGE,
   SC_TYPE_DISCARDED, /* discarded messages of filter */
   SC_TYPE_MATCHED, /* discarded messages of filter */
   SC_TYPE_NOT_MATCHED, /* discarded messages of filter */

@@ -34,6 +34,7 @@
 #include "mainloop.h"
 #include "mainloop-io-worker.h"
 #include "timeutils/misc.h"
+#include "stats/stats-cluster-single.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -183,7 +184,8 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
   stats_lock();
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
   stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &q->queued_messages);
-  stats_register_counter(1, &sc_key, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
+  stats_cluster_single_key_legacy_set_with_name(&sc_key, SCS_DESTINATION, q->persist_name, NULL, "memory_usage");
+  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &q->memory_usage);
   stats_unlock();
 
   log_queue_set_use_backlog(q, TRUE);
@@ -281,8 +283,8 @@ Test(logqueue, log_queue_fifo_rewind_all_and_memory_usage)
 
   StatsClusterKey sc_key;
   stats_lock();
-  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
-  stats_register_counter(1, &sc_key, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
+  stats_cluster_single_key_legacy_set_with_name(&sc_key, SCS_DESTINATION, q->persist_name, NULL, "memory_usage");
+  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &q->memory_usage);
   stats_unlock();
 
   feed_some_messages(q, 1);

@@ -32,7 +32,6 @@ static const gchar *tag_names[SC_TYPE_MAX] =
   /* [SC_TYPE_QUEUED]   = */  "queued",
   /* [SC_TYPE_SUPPRESSED] = */ "suppressed",
   /* [SC_TYPE_STAMP] = */ "stamp",
-  /* [SC_TYPE_MEMORY_USAGE] = */ "memory_usage",
   /* [SC_TYPE_DISCARDED] = */ "discarded",
   /* [SC_TYPE_MATCHED] = */ "matched",
   /* [SC_TYPE_NOT_MATCHED] = */ "not_matched",
