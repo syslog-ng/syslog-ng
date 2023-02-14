@@ -241,6 +241,13 @@ log_expr_node_set_aux(LogExprNode *self, gpointer aux, GDestroyNotify destroy)
   self->aux_destroy = destroy;
 }
 
+void
+log_expr_node_set_name(LogExprNode *self, const gchar *name)
+{
+  g_free(self->name);
+  self->name = g_strdup(name);
+}
+
 /**
  * log_expr_node_new:
  * @layout: layout of the children (ENL_*)
@@ -1262,7 +1269,7 @@ cfg_tree_add_object(CfgTree *self, LogExprNode *rule)
 {
   gboolean res = TRUE;
 
-  if (rule->name)
+  if (rule->name && rule->content != ENC_PIPE)
     {
       /* only named rules can be stored as objects to be referenced later */
 
