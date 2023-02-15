@@ -7,11 +7,11 @@ configurations {
 }
 
 dependencies {
+    implementation project(':common')
     implementation 'org.elasticsearch:elasticsearch:2.4.0'
     implementation 'com.floragunn:search-guard-ssl:2.4.0.16'
     implementation 'io.searchbox:jest:2.0.2'
     implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.13'
-    implementation name: 'syslog-ng-common'
     implementation name: 'syslog-ng-core'
     implementation 'junit:junit:4.12'
     implementation 'org.hamcrest:hamcrest-core:1.3'

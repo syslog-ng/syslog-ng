@@ -1,6 +1,11 @@
 project.buildDir = syslogBuildDir + '/common/gradle'
 
-jar.baseName = 'syslog-ng-common'
+if (jar.hasProperty('baseName')) {
+  jar.baseName = 'syslog-ng-common'
+}
+else {
+  jar.archiveBaseName = 'syslog-ng-common'
+}
 
 dependencies {
   implementation name: 'syslog-ng-core'
