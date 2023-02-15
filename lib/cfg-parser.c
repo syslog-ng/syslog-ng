@@ -378,7 +378,10 @@ report_syntax_error(CfgLexer *lexer, const CFG_LTYPE *yylloc, const char *what, 
         }
       else if (from->include_type == CFGI_BUFFER)
         {
-          _report_buffer_location(from->buffer.original_content, from_lloc);
+          if (from->lloc_changed_by_at_line)
+            _report_file_location(from_lloc->name, from_lloc);
+          else
+            _report_buffer_location(from->buffer.original_content, from_lloc);
         }
       fprintf(stderr, "\n");
     }

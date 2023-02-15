@@ -151,6 +151,10 @@ struct _CfgIncludeLevel
       gsize content_length;
     } buffer;
   };
+
+  /* this value indicates that @line was used which changed lloc relative to
+   * an actual file */
+  gboolean lloc_changed_by_at_line;
   CFG_LTYPE lloc;
   struct yy_buffer_state *yybuf;
 };
@@ -200,6 +204,7 @@ gboolean cfg_lexer_include_buffer(CfgLexer *self, const gchar *name, const gchar
 gboolean cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self,
     const gchar *name, const gchar *buffer, gsize length);
 const gchar *cfg_lexer_format_location(CfgLexer *self, const CFG_LTYPE *yylloc, gchar *buf, gsize buf_len);
+void cfg_lexer_set_file_location(CfgLexer *self, const gchar *filename, gint line, gint column);
 EVTTAG *cfg_lexer_format_location_tag(CfgLexer *self, const CFG_LTYPE *yylloc);
 
 /* context tracking */

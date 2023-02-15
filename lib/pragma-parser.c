@@ -72,6 +72,7 @@ static CfgLexerKeyword pragma_keywords[] =
   { "module",             KW_MODULE, },
   { "define",             KW_DEFINE, },
   { "requires",           KW_REQUIRES, },
+  { "line",               KW_LINE },
   { CFG_KEYWORD_STOP },
 };
 

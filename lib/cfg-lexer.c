@@ -160,6 +160,17 @@ cfg_lexer_format_location_tag(CfgLexer *self, const CFG_LTYPE *yylloc)
   return evt_tag_str("location", cfg_lexer_format_location(self, yylloc, buf, sizeof(buf)));
 }
 
+void
+cfg_lexer_set_file_location(CfgLexer *self, const gchar *filename, gint line, gint column)
+{
+  CfgIncludeLevel *level = &self->include_stack[self->include_depth];
+
+  level->lloc.name = g_intern_string(filename);
+  level->lloc.first_line = level->lloc.last_line = line;
+  level->lloc.first_column = level->lloc.last_column = column;
+  level->lloc_changed_by_at_line = TRUE;
+}
+
 static int
 cfg_lexer_lookup_keyword(CfgLexer *self, CFG_STYPE *yylval, const CFG_LTYPE *yylloc, const char *token)
 {
