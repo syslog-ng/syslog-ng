@@ -23,24 +23,24 @@
  *
  */
 
-#ifndef MULTI_LINE_REGEXP_MULTI_LINE_H_INCLUDED
-#define MULTI_LINE_REGEXP_MULTI_LINE_H_INCLUDED
+#ifndef MULTI_LINE_MULTI_LINE_PATTERN_H_INCLUDED
+#define MULTI_LINE_MULTI_LINE_PATTERN_H_INCLUDED
 
-#include "multi-line/multi-line-logic.h"
-#include "multi-line/multi-line-pattern.h"
+#include "syslog-ng.h"
+#include "compat/pcre.h"
 
-typedef struct _RegexpMultiLine
+typedef struct _MultiLinePattern MultiLinePattern;
+struct _MultiLinePattern
 {
-  MultiLineLogic super;
-  enum
-  {
-    RML_PREFIX_GARBAGE,
-    RML_PREFIX_SUFFIX,
-  } mode;
-  MultiLinePattern *prefix;
-  MultiLinePattern *garbage;
-} RegexpMultiLine;
+  gint ref_cnt;
+  pcre *pattern;
+  pcre_extra *extra;
+};
 
-MultiLineLogic *regexp_multi_line_new(gint mode, MultiLinePattern *prefix, MultiLinePattern *garbage_or_suffix);
+gint multi_line_pattern_find(MultiLinePattern *re, const guchar *str, gsize len, gint *matches, gint matches_num);
+gboolean multi_line_pattern_match(MultiLinePattern *re, const guchar *str, gsize len);
+MultiLinePattern *multi_line_pattern_compile(const gchar *regexp, GError **error);
+MultiLinePattern *multi_line_pattern_ref(MultiLinePattern *self);
+void multi_line_pattern_unref(MultiLinePattern *self);
 
 #endif
