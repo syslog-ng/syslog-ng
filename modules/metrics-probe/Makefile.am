@@ -5,7 +5,9 @@ modules_metrics_probe_libmetrics_probe_la_SOURCES	=	\
 	modules/metrics-probe/metrics-probe-grammar.y		\
 	modules/metrics-probe/metrics-probe-parser.c		\
 	modules/metrics-probe/metrics-probe-parser.h		\
-	modules/metrics-probe/metrics-probe-plugin.c
+	modules/metrics-probe/metrics-probe-plugin.c		\
+	modules/metrics-probe/label-template.c			\
+	modules/metrics-probe/label-template.h
 
 modules_metrics_probe_libmetrics_probe_la_CPPFLAGS	=	\
 	$(AM_CPPFLAGS)					\

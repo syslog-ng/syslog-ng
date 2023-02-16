@@ -4,6 +4,8 @@ set(METRICS_PROBE_SOURCES
     metrics-probe-parser.c
     metrics-probe-parser.h
     metrics-probe-plugin.c
+    label-template.c
+    label-template.h
 )
 
 add_module(

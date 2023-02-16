@@ -153,6 +153,7 @@ modules/affile/tests/test_file_writer\.c$
 modules/afsocket/socket-options-unix\.[ch]$
 modules/basicfuncs/vp-funcs\.[ch]$
 modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
+modules/metrics-probe/label-template\.(c|h)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
