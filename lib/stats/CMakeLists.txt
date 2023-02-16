@@ -7,6 +7,7 @@ set(STATS_HEADERS
     stats/stats-cluster.h
     stats/stats-csv.h
     stats/stats-log.h
+    stats/stats-prometheus.h
     stats/stats-registry.h
     stats/stats-query.h
     stats/stats-query-commands.h
@@ -21,6 +22,7 @@ set(STATS_SOURCES
     stats/stats-cluster.c
     stats/stats-csv.c
     stats/stats-log.c
+    stats/stats-prometheus.c
     stats/stats-registry.c
     stats/stats-query.c
     stats/stats-query-commands.c

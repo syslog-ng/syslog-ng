@@ -81,6 +81,8 @@ lib/rewrite/tests/test_set_facility\.c
 lib/rewrite/tests/test_set_tag\.c
 lib/rewrite/rewrite-set-pri\.h
 lib/rewrite/rewrite-set-pri\.c
+lib/stats/stats-prometheus\.c
+lib/stats/stats-prometheus\.h
 lib/timeutils/timeutils\.h
 lib/logmsg/tests/dump_logmsg\.c
 libtest/mock-logpipe\.[ch]
