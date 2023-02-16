@@ -45,12 +45,23 @@ _counter_group_logpipe_free(StatsCounterGroup *counter_group)
   g_free(counter_group->counters);
 }
 
+static gboolean
+_counter_group_logpipe_get_type_label(StatsCounterGroup *self, gint type, StatsClusterLabel *label)
+{
+  if (type >= SC_TYPE_MAX)
+    return FALSE;
+
+  *label = stats_cluster_label("result", tag_names[type]);
+  return TRUE;
+}
+
 static void
 _counter_group_logpipe_init(StatsCounterGroupInit *self, StatsCounterGroup *counter_group)
 {
   counter_group->counters = g_new0(StatsCounterItem, SC_TYPE_MAX);
   counter_group->capacity = SC_TYPE_MAX;
   counter_group->counter_names = self->counter.names;
+  counter_group->get_type_label = _counter_group_logpipe_get_type_label;
   counter_group->free_fn = _counter_group_logpipe_free;
 }
 

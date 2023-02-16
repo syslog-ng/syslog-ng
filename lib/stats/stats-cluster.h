@@ -54,6 +54,7 @@ struct _StatsCounterGroup
   StatsCounterItem *counters;
   const gchar **counter_names;
   guint16 capacity;
+  gboolean (*get_type_label)(StatsCounterGroup *self, gint type, StatsClusterLabel *label);
   void (*free_fn)(StatsCounterGroup *self);
 };
 
@@ -150,6 +151,15 @@ static inline gboolean
 stats_cluster_is_orphaned(StatsCluster *self)
 {
   return self->use_count == 0;
+}
+
+static inline gboolean
+stats_cluster_get_type_label(StatsCluster *self, gint type, StatsClusterLabel *label)
+{
+  if (!self->counter_group.get_type_label)
+    return FALSE;
+
+  return self->counter_group.get_type_label(&self->counter_group, type, label);
 }
 
 StatsCluster *stats_cluster_new(const StatsClusterKey *key);
