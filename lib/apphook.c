@@ -45,6 +45,7 @@
 #include "transport/transport-factory-id.h"
 #include "timeutils/timeutils.h"
 #include "msg-stats.h"
+#include "timeutils/cache.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -292,4 +293,5 @@ app_thread_stop(void)
   main_loop_call_thread_deinit();
   dns_caching_thread_deinit();
   scratch_buffers_allocator_deinit();
+  timeutils_cache_deinit();
 }

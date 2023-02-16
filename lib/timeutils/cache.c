@@ -164,6 +164,11 @@ _clean_timeutils_cache(void)
   memset(&cache.mktime.key, 0, sizeof(cache.mktime.key));
   if (cache.tzinfo.zones)
     cache_clear(cache.tzinfo.zones);
+
+  g_free(state.tzname[0]);
+  state.tzname[0] = NULL;
+  g_free(state.tzname[1]);
+  state.tzname[1] = NULL;
 }
 
 static void
@@ -181,6 +186,12 @@ _validate_timeutils_cache(void)
 
       local_gencounter = gencounter;
     }
+}
+
+void
+timeutils_cache_deinit()
+{
+  _clean_timeutils_cache();
 }
 
 void
