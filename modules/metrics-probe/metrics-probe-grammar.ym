@@ -49,6 +49,7 @@
 
 %token KW_METRICS_PROBE
 %token KW_KEY
+%token KW_LABELS
 
 %type	<ptr> parser_expr_metrics_probe
 
@@ -74,6 +75,21 @@ metrics_probe_opts
 
 metrics_probe_opt
         : KW_KEY '(' string ')' { metrics_probe_set_key(last_parser, $3); g_free($3); }
+        | KW_LABELS '(' metrics_probe_label_templates ')'
+        ;
+
+metrics_probe_label_templates
+        : metrics_probe_label_template metrics_probe_label_templates
+        |
+        ;
+
+metrics_probe_label_template
+        : string LL_ARROW template_content
+          {
+            CHECK_ERROR(metrics_probe_add_label_template(last_parser, $1, $3), @1, "Error adding label: maximum number of labels reached");
+            free($1);
+            log_template_unref($3);
+          }
         ;
 
 /* INCLUDE_RULES */

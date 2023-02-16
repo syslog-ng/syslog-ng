@@ -24,9 +24,11 @@
 #define METRICS_PROBE_H_INCLUDED
 
 #include "parser/parser-expr.h"
+#include "template/templates.h"
 
 LogParser *metrics_probe_new(GlobalConfig *cfg);
 
 void metrics_probe_set_key(LogParser *s, const gchar *key);
+gboolean metrics_probe_add_label_template(LogParser *s, const gchar *label, LogTemplate *value_template);
 
 #endif
