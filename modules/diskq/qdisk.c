@@ -1237,6 +1237,43 @@ _create_file(QDisk *self, const gchar *filename)
   return TRUE;
 }
 
+static gboolean
+_create_header(QDisk *self)
+{
+  self->hdr = (QDiskFileHeader *) mmap(0, sizeof(QDiskFileHeader), (PROT_READ | PROT_WRITE), MAP_SHARED, self->fd, 0);
+
+  if (self->hdr == MAP_FAILED)
+    {
+      msg_error("Error returned by mmap", evt_tag_error("errno"));
+      return FALSE;
+    }
+
+  madvise(self->hdr, sizeof(QDiskFileHeader), MADV_RANDOM);
+
+  QDiskFileHeader nulled_hdr;
+  memset(&nulled_hdr, 0, sizeof(nulled_hdr));
+  if (!pwrite_strict(self->fd, &nulled_hdr, sizeof(nulled_hdr), 0))
+    {
+      msg_error("Error occurred while allocating the header for a new queue file",
+                evt_tag_str("filename", self->filename),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+
+  self->hdr->version = QDISK_HDR_VERSION_CURRENT;
+  self->hdr->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
+
+  self->hdr->read_head = QDISK_RESERVED_SPACE;
+  self->hdr->write_head = QDISK_RESERVED_SPACE;
+  self->hdr->backlog_head = QDISK_RESERVED_SPACE;
+  self->hdr->backlog_len = 0;
+  self->hdr->length = 0;
+  self->hdr->use_v1_wrap_condition = FALSE;
+  self->hdr->disk_buf_size = self->options->disk_buf_size;
+
+  return TRUE;
+}
+
 static inline gboolean
 _is_header_version_current(QDisk *self)
 {
@@ -1265,6 +1302,40 @@ _upgrade_header(QDisk *self)
     }
 
   self->hdr->version = QDISK_HDR_VERSION_CURRENT;
+}
+
+static gboolean
+_load_header(QDisk *self)
+{
+  QDiskFileHeader *hdr_mmapped = (QDiskFileHeader *) mmap(0, sizeof(QDiskFileHeader),
+                                                          self->options->read_only ? (PROT_READ) : (PROT_READ | PROT_WRITE),
+                                                          MAP_SHARED, self->fd, 0);
+  if (hdr_mmapped == MAP_FAILED)
+    {
+      msg_error("Error returned by mmap", evt_tag_error("errno"));
+      return FALSE;
+    }
+
+  madvise(hdr_mmapped, sizeof(QDiskFileHeader), MADV_RANDOM);
+
+  if (self->options->read_only)
+    {
+      QDiskFileHeader *hdr_allocated = g_malloc(sizeof(QDiskFileHeader));
+      memcpy(hdr_allocated, hdr_mmapped, sizeof(QDiskFileHeader));
+      munmap(hdr_mmapped, sizeof(QDiskFileHeader));
+      self->hdr = hdr_allocated;
+    }
+  else
+    {
+      self->hdr = hdr_mmapped;
+    }
+
+  if (!_is_header_version_current(self))
+    _upgrade_header(self);
+
+  _ensure_header_byte_order(self);
+
+  return TRUE;
 }
 
 gboolean
@@ -1311,8 +1382,6 @@ _autodetect_disk_buf_size(QDisk *self)
 gboolean
 qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
-  gpointer p = NULL;
-
   /*
    * If qdisk_start is called for already initialized qdisk file
    * it can cause message loosing.
@@ -1346,56 +1415,14 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
         }
     }
 
-  p = mmap(0, sizeof(QDiskFileHeader),  self->options->read_only ? (PROT_READ) : (PROT_READ | PROT_WRITE), MAP_SHARED,
-           self->fd, 0);
-
-  if (p == MAP_FAILED)
-    {
-      msg_error("Error returned by mmap",
-                evt_tag_error("errno"),
-                evt_tag_str("filename", self->filename));
-      return FALSE;
-    }
-  else
-    {
-      madvise(p, sizeof(QDiskFileHeader), MADV_RANDOM);
-    }
-
-  if (self->options->read_only)
-    {
-      self->hdr = g_malloc(sizeof(QDiskFileHeader));
-      memcpy(self->hdr, p, sizeof(QDiskFileHeader));
-      munmap(p, sizeof(QDiskFileHeader));
-      p = NULL;
-    }
-  else
-    {
-      self->hdr = p;
-    }
-  /* initialize new file */
-
   if (!file_exists)
     {
-      QDiskFileHeader tmp;
-      memset(&tmp, 0, sizeof(tmp));
-      if (!pwrite_strict(self->fd, &tmp, sizeof(tmp), 0))
+      if (!_create_header(self))
         {
-          msg_error("Error occurred while initializing the new queue file",
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_error("error"));
           _close_file(self);
           return FALSE;
         }
-      self->hdr->version = QDISK_HDR_VERSION_CURRENT;
-      self->hdr->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
 
-      self->hdr->read_head = QDISK_RESERVED_SPACE;
-      self->hdr->write_head = QDISK_RESERVED_SPACE;
-      self->hdr->backlog_head = self->hdr->read_head;
-      self->hdr->backlog_len = 0;
-      self->hdr->length = 0;
-      self->hdr->use_v1_wrap_condition = FALSE;
-      self->hdr->disk_buf_size = self->options->disk_buf_size;
       self->file_size = self->hdr->write_head;
 
       if (!qdisk_save_state(self, qout, qbacklog, qoverflow))
@@ -1416,12 +1443,12 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           return FALSE;
         }
 
-      if (!_is_header_version_current(self))
+      if (!_load_header(self))
         {
-          _upgrade_header(self);
+          _close_file(self);
+          return FALSE;
         }
 
-      _ensure_header_byte_order(self);
       if (!_load_state(self, qout, qbacklog, qoverflow))
         {
           _close_file(self);
