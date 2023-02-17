@@ -48,7 +48,7 @@
 
 #define PATH_QDISK              PATH_LOCALSTATEDIR
 
-#define QDISK_HDR_VERSION_CURRENT 2
+#define QDISK_HDR_VERSION_CURRENT 3
 
 typedef union _QDiskFileHeader
 {
@@ -70,6 +70,7 @@ typedef union _QDiskFileHeader
     gint64 backlog_len;
 
     guint8 use_v1_wrap_condition;
+    gint64 disk_buf_size;
   };
   gchar _pad2[QDISK_RESERVED_SPACE];
 } QDiskFileHeader;
@@ -122,7 +123,7 @@ pwrite_strict(gint fd, const void *buf, size_t count, off_t offset)
 static inline gboolean
 _has_position_reached_max_size(QDisk *self, gint64 position)
 {
-  return position >= self->options->disk_buf_size;
+  return position >= self->hdr->disk_buf_size;
 }
 
 static inline guint64
@@ -191,7 +192,7 @@ _does_backlog_head_precede_write_head(QDisk *self)
 static inline gboolean
 _is_write_head_less_than_max_size(QDisk *self)
 {
-  return self->hdr->write_head < self->options->disk_buf_size;
+  return self->hdr->write_head < self->hdr->disk_buf_size;
 }
 
 static inline gboolean
@@ -294,10 +295,8 @@ _maybe_truncate_file(QDisk *self, gint64 expected_size)
 
 #if SYSLOG_NG_HAVE_POSIX_FALLOCATE
 static gboolean
-_posix_preallocate(QDisk *self)
+_posix_preallocate(QDisk *self, gint64 size)
 {
-  gint64 size = qdisk_get_maximum_size(self);
-
   gint result = posix_fallocate(self->fd, 0, (off_t) size);
   if (result == 0)
     {
@@ -314,11 +313,9 @@ _posix_preallocate(QDisk *self)
 
 #else
 static gboolean
-_compat_preallocate(QDisk *self)
+_compat_preallocate(QDisk *self, gint64 size)
 {
   const size_t buf_size = QDISK_RESERVED_SPACE;
-
-  gint64 size = qdisk_get_maximum_size(self);
   gint64 buf_write_iterations = size / buf_size;
   gint64 additional_write_size = size - buf_write_iterations * buf_size;
 
@@ -358,16 +355,16 @@ _compat_preallocate(QDisk *self)
 #endif
 
 static gboolean
-_preallocate(QDisk *self)
+_preallocate(QDisk *self, gint64 size)
 {
   msg_debug("Preallocating queue file",
             evt_tag_str("filename", self->filename),
-            evt_tag_long("size", qdisk_get_maximum_size(self)));
+            evt_tag_long("size", size));
 
 #if SYSLOG_NG_HAVE_POSIX_FALLOCATE
-  return _posix_preallocate(self);
+  return _posix_preallocate(self, size);
 #else
-  return _compat_preallocate(self);
+  return _compat_preallocate(self, size);
 #endif
 }
 
@@ -981,7 +978,8 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
                 evt_tag_long("qoverflow_length", self->hdr->qoverflow_pos.count),
                 evt_tag_long("qdisk_length", self->hdr->length),
                 evt_tag_long("read_head", self->hdr->read_head),
-                evt_tag_long("write_head", self->hdr->write_head));
+                evt_tag_long("write_head", self->hdr->write_head),
+                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
 
       _reset_queue_pointers(self);
     }
@@ -1000,7 +998,8 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
                 evt_tag_long("backlog_len", self->hdr->backlog_len),
                 evt_tag_long("backlog_head", self->hdr->backlog_head),
                 evt_tag_long("read_head", self->hdr->read_head),
-                evt_tag_long("write_head", self->hdr->write_head));
+                evt_tag_long("write_head", self->hdr->write_head),
+                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
     }
 
   return TRUE;
@@ -1154,11 +1153,57 @@ _upgrade_header(QDisk *self)
   if (self->hdr->version < 2)
     {
       struct stat st;
-      gboolean file_was_overwritten = (fstat(self->fd, &st) != 0 || st.st_size > self->options->disk_buf_size);
+      gboolean file_was_overwritten = (fstat(self->fd, &st) != 0 || st.st_size > self->hdr->disk_buf_size);
       self->hdr->use_v1_wrap_condition = file_was_overwritten;
     }
 
+  if (self->hdr->version < 3)
+    {
+      self->hdr->disk_buf_size = self->options->disk_buf_size;
+    }
+
   self->hdr->version = QDISK_HDR_VERSION_CURRENT;
+}
+
+gboolean
+_autodetect_disk_buf_size(QDisk *self)
+{
+  struct stat st;
+  if (fstat(self->fd, &st) < 0)
+    {
+      msg_error("Autodetect disk-buf-size(): cannot stat",
+                evt_tag_str("filename", self->filename),
+                evt_tag_error("error"));
+
+      return FALSE;
+    }
+
+  if (qdisk_is_file_empty(self))
+    {
+      self->hdr->disk_buf_size = MAX(MIN_DISK_BUF_SIZE, st.st_size);
+
+      msg_debug("Autodetected empty disk-queue's disk-buf-size()",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
+
+      return TRUE;
+    }
+
+  if (self->hdr->write_head > MAX(self->hdr->backlog_head, self->hdr->read_head))
+    {
+      self->hdr->disk_buf_size = (gint64) st.st_size;
+
+      msg_debug("Autodetected disk-buf-size()",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
+
+      return TRUE;
+    }
+
+  msg_error("Failed to autodetect disk-buf-size() as the disk-queue file is wrapped",
+            evt_tag_str("filename", self->filename));
+
+  return FALSE;
 }
 
 gboolean
@@ -1174,9 +1219,6 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
    * We need this assert to detect programming error as soon as possible.
    */
   g_assert(!qdisk_started(self));
-
-  if (self->options->disk_buf_size <= 0)
-    return TRUE;
 
   if (self->options->read_only && !filename)
     return FALSE;
@@ -1246,7 +1288,13 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 
   if (new_file)
     {
-      if (self->options->prealloc && !_preallocate(self))
+      if (self->options->disk_buf_size == -1)
+        {
+          msg_error("disk-buf-size for new disk-queue files must be set");
+          return FALSE;
+        }
+
+      if (self->options->prealloc && !_preallocate(self, self->options->disk_buf_size))
         {
           return FALSE;
         }
@@ -1273,6 +1321,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
       self->hdr->backlog_len = 0;
       self->hdr->length = 0;
       self->hdr->use_v1_wrap_condition = FALSE;
+      self->hdr->disk_buf_size = self->options->disk_buf_size;
       self->file_size = self->hdr->write_head;
 
       if (!qdisk_save_state(self, qout, qbacklog, qoverflow))
@@ -1323,6 +1372,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           self->hdr->qoverflow_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qoverflow_pos.count);
           self->hdr->backlog_head = GUINT64_SWAP_LE_BE(self->hdr->backlog_head);
           self->hdr->backlog_len = GUINT64_SWAP_LE_BE(self->hdr->backlog_len);
+          self->hdr->disk_buf_size = GUINT64_SWAP_LE_BE(self->hdr->disk_buf_size);
           self->hdr->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
         }
       if (!_load_state(self, qout, qbacklog, qoverflow))
@@ -1334,7 +1384,26 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           return FALSE;
         }
 
+      if (self->hdr->disk_buf_size == -1)
+        {
+          if (!_autodetect_disk_buf_size(self))
+            {
+              msg_error("Failed to load disk-buf-size from disk-queue, and it was not set explicitly",
+                        evt_tag_str("filename", self->filename));
+              return FALSE;
+            }
+        }
+
+      if (self->options->disk_buf_size != -1 && self->hdr->disk_buf_size != self->options->disk_buf_size)
+        {
+          msg_warning("WARNING: disk-buf-size() has changed since the last syslog-ng run. syslog-ng currently does "
+                      "not support changing the disk-buf-size() of existing disk-queues. Continuing with the old one",
+                      evt_tag_str("filename", self->filename),
+                      evt_tag_long("active_old_disk_buf_size", self->hdr->disk_buf_size),
+                      evt_tag_long("ignored_new_disk_buf_size", self->options->disk_buf_size));
+        }
     }
+
   return TRUE;
 }
 
@@ -1401,7 +1470,7 @@ qdisk_get_length(QDisk *self)
 gint64
 qdisk_get_maximum_size(QDisk *self)
 {
-  return self->options->disk_buf_size;
+  return self->hdr->disk_buf_size;
 }
 
 const gchar *

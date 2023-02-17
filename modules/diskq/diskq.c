@@ -227,14 +227,7 @@ _attach(LogDriverPlugin *s, LogDriver *d)
   LogDestDriver *dd = (LogDestDriver *) d;
   GlobalConfig *cfg = log_pipe_get_config(&d->super);
 
-  if (self->options.disk_buf_size == -1)
-    {
-      msg_error("The required 'disk_buf_size()' parameter of diskq module has not been set.",
-                log_pipe_location_tag(&dd->super.super));
-      return FALSE;
-    }
-
-  if (self->options.disk_buf_size < MIN_DISK_BUF_SIZE && self->options.disk_buf_size != 0)
+  if (self->options.disk_buf_size < MIN_DISK_BUF_SIZE && self->options.disk_buf_size > 0)
     {
       msg_warning("The value of 'disk_buf_size()' is too low, setting to the smallest acceptable value",
                   evt_tag_long("min_space", MIN_DISK_BUF_SIZE),
