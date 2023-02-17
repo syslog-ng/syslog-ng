@@ -45,6 +45,25 @@ _add_label(LogParser *s, const gchar *label, const gchar *value_template_str)
   log_template_unref(value_template);
 }
 
+static gboolean
+_stats_cluster_exists(const gchar *key, StatsClusterLabel *labels, gsize labels_len)
+{
+  StatsCluster *cluster = NULL;
+
+  StatsClusterKey sc_key;
+  stats_cluster_single_key_set(&sc_key, key, labels, labels_len);
+
+  stats_lock();
+  {
+    StatsCounterItem *counter;
+    cluster = stats_register_dynamic_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &counter);
+    stats_unregister_dynamic_counter(cluster, SC_TYPE_SINGLE_VALUE, &counter);
+  }
+  stats_unlock();
+
+  return cluster != NULL;
+}
+
 static gsize
 _get_stats_counter_value(const gchar *key, StatsClusterLabel *labels, gsize labels_len)
 {
@@ -56,6 +75,7 @@ _get_stats_counter_value(const gchar *key, StatsClusterLabel *labels, gsize labe
   {
     StatsCounterItem *counter;
     StatsCluster *cluster = stats_register_dynamic_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &counter);
+    cr_assert(cluster, "Cluster does not exist, probably we have reached max-stats-dynamics().");
 
     value = stats_counter_get(counter);
 
@@ -242,6 +262,47 @@ Test(metrics_probe, test_metrics_probe_custom_full)
                         expected_labels_2,
                         G_N_ELEMENTS(expected_labels_2),
                         1);
+
+  log_msg_unref(msg);
+  log_pipe_deinit(&metrics_probe->super);
+  log_pipe_unref(&metrics_probe->super);
+}
+
+Test(metrics_probe, test_metrics_probe_stats_max_dynamics)
+{
+  configuration->stats_options.max_dynamic = 1;
+  stats_reinit(&configuration->stats_options);
+
+  LogParser *metrics_probe = _create_metrics_probe();
+  metrics_probe_set_key(metrics_probe, "custom_key");
+  _add_label(metrics_probe, "test_label", "${test_field}");
+  cr_assert(log_pipe_init(&metrics_probe->super), "Failed to init metrics-probe");
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, "test_field", "test_value_1", -1);
+
+  StatsClusterLabel expected_labels_1[] =
+  {
+    stats_cluster_label("test_label", "test_value_1"),
+  };
+
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  _assert_counter_value("custom_key",
+                        expected_labels_1,
+                        G_N_ELEMENTS(expected_labels_1),
+                        1);
+
+  log_msg_unref(msg);
+  msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, "test_field", "test_value_2", -1);
+
+  StatsClusterLabel expected_labels_2[] =
+  {
+    stats_cluster_label("test_label", "test_value_2"),
+  };
+
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  cr_assert_not(_stats_cluster_exists("custom_key", expected_labels_2, G_N_ELEMENTS(expected_labels_2)));
 
   log_msg_unref(msg);
   log_pipe_deinit(&metrics_probe->super);
