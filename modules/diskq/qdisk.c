@@ -1205,6 +1205,12 @@ _create_file(QDisk *self, const gchar *filename)
   g_assert(!self->options->read_only);
   g_assert(filename);
 
+  if (self->options->disk_buf_size == -1)
+    {
+      msg_error("disk-buf-size for new disk-queue files must be set");
+      return FALSE;
+    }
+
   if (!_create_path(filename))
     {
       msg_error("Error creating dir for disk-queue file",
@@ -1224,6 +1230,9 @@ _create_file(QDisk *self, const gchar *filename)
 
   self->fd = fd;
   self->filename = g_strdup(filename);
+
+  if (self->options->prealloc)
+    return _preallocate(self, self->options->disk_buf_size);
 
   return TRUE;
 }
@@ -1367,17 +1376,6 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 
   if (!file_exists)
     {
-      if (self->options->disk_buf_size == -1)
-        {
-          msg_error("disk-buf-size for new disk-queue files must be set");
-          return FALSE;
-        }
-
-      if (self->options->prealloc && !_preallocate(self, self->options->disk_buf_size))
-        {
-          return FALSE;
-        }
-
       QDiskFileHeader tmp;
       memset(&tmp, 0, sizeof(tmp));
       if (!pwrite_strict(self->fd, &tmp, sizeof(tmp), 0))
