@@ -1396,43 +1396,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
     {
       if (!_open_file(self, filename))
         return FALSE;
-    }
-  else
-    {
-      if (filename)
-        {
-          if (!_create_file(self, filename))
-            return FALSE;
-        }
-      else
-        {
-          gchar next_filename[256];
-          if (_next_filename(self, next_filename, sizeof(next_filename)))
-            {
-              if (!_create_file(self, next_filename))
-                return FALSE;
-            }
-        }
-    }
 
-  if (!file_exists)
-    {
-      if (!_create_header(self))
-        {
-          _close_file(self);
-          return FALSE;
-        }
-
-      self->file_size = self->hdr->write_head;
-
-      if (!qdisk_save_state(self, qout, qbacklog, qoverflow))
-        {
-          _close_file(self);
-          return FALSE;
-        }
-    }
-  else
-    {
       if (fstat(self->fd, &st) != 0 || st.st_size == 0)
         {
           msg_error("Error loading disk-queue file",
@@ -1461,6 +1425,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
             {
               msg_error("Failed to load disk-buf-size from disk-queue, and it was not set explicitly",
                         evt_tag_str("filename", self->filename));
+              _close_file(self);
               return FALSE;
             }
         }
@@ -1472,6 +1437,37 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
                       evt_tag_str("filename", self->filename),
                       evt_tag_long("active_old_disk_buf_size", self->hdr->disk_buf_size),
                       evt_tag_long("ignored_new_disk_buf_size", self->options->disk_buf_size));
+        }
+    }
+  else
+    {
+      if (filename)
+        {
+          if (!_create_file(self, filename))
+            return FALSE;
+        }
+      else
+        {
+          gchar next_filename[256];
+          if (_next_filename(self, next_filename, sizeof(next_filename)))
+            {
+              if (!_create_file(self, next_filename))
+                return FALSE;
+            }
+        }
+
+      if (!_create_header(self))
+        {
+          _close_file(self);
+          return FALSE;
+        }
+
+      self->file_size = self->hdr->write_head;
+
+      if (!qdisk_save_state(self, qout, qbacklog, qoverflow))
+        {
+          _close_file(self);
+          return FALSE;
         }
     }
 
