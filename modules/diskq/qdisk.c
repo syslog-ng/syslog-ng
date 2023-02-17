@@ -1147,6 +1147,31 @@ _close_file(QDisk *self)
     }
 }
 
+static void
+_ensure_header_byte_order(QDisk *self)
+{
+  if ((self->hdr->big_endian && G_BYTE_ORDER == G_LITTLE_ENDIAN) ||
+      (!self->hdr->big_endian && G_BYTE_ORDER == G_BIG_ENDIAN))
+    {
+      self->hdr->read_head = GUINT64_SWAP_LE_BE(self->hdr->read_head);
+      self->hdr->write_head = GUINT64_SWAP_LE_BE(self->hdr->write_head);
+      self->hdr->length = GUINT64_SWAP_LE_BE(self->hdr->length);
+      self->hdr->qout_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->qout_pos.ofs);
+      self->hdr->qout_pos.len = GUINT32_SWAP_LE_BE(self->hdr->qout_pos.len);
+      self->hdr->qout_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qout_pos.count);
+      self->hdr->qbacklog_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->qbacklog_pos.ofs);
+      self->hdr->qbacklog_pos.len = GUINT32_SWAP_LE_BE(self->hdr->qbacklog_pos.len);
+      self->hdr->qbacklog_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qbacklog_pos.count);
+      self->hdr->qoverflow_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->qoverflow_pos.ofs);
+      self->hdr->qoverflow_pos.len = GUINT32_SWAP_LE_BE(self->hdr->qoverflow_pos.len);
+      self->hdr->qoverflow_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qoverflow_pos.count);
+      self->hdr->backlog_head = GUINT64_SWAP_LE_BE(self->hdr->backlog_head);
+      self->hdr->backlog_len = GUINT64_SWAP_LE_BE(self->hdr->backlog_len);
+      self->hdr->disk_buf_size = GUINT64_SWAP_LE_BE(self->hdr->disk_buf_size);
+      self->hdr->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
+    }
+}
+
 static gboolean
 _create_path(const gchar *filename)
 {
@@ -1366,26 +1391,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           _upgrade_header(self);
         }
 
-      if ((self->hdr->big_endian && G_BYTE_ORDER == G_LITTLE_ENDIAN) ||
-          (!self->hdr->big_endian && G_BYTE_ORDER == G_BIG_ENDIAN))
-        {
-          self->hdr->read_head = GUINT64_SWAP_LE_BE(self->hdr->read_head);
-          self->hdr->write_head = GUINT64_SWAP_LE_BE(self->hdr->write_head);
-          self->hdr->length = GUINT64_SWAP_LE_BE(self->hdr->length);
-          self->hdr->qout_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->qout_pos.ofs);
-          self->hdr->qout_pos.len = GUINT32_SWAP_LE_BE(self->hdr->qout_pos.len);
-          self->hdr->qout_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qout_pos.count);
-          self->hdr->qbacklog_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->qbacklog_pos.ofs);
-          self->hdr->qbacklog_pos.len = GUINT32_SWAP_LE_BE(self->hdr->qbacklog_pos.len);
-          self->hdr->qbacklog_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qbacklog_pos.count);
-          self->hdr->qoverflow_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->qoverflow_pos.ofs);
-          self->hdr->qoverflow_pos.len = GUINT32_SWAP_LE_BE(self->hdr->qoverflow_pos.len);
-          self->hdr->qoverflow_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qoverflow_pos.count);
-          self->hdr->backlog_head = GUINT64_SWAP_LE_BE(self->hdr->backlog_head);
-          self->hdr->backlog_len = GUINT64_SWAP_LE_BE(self->hdr->backlog_len);
-          self->hdr->disk_buf_size = GUINT64_SWAP_LE_BE(self->hdr->disk_buf_size);
-          self->hdr->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
-        }
+      _ensure_header_byte_order(self);
       if (!_load_state(self, qout, qbacklog, qoverflow))
         {
           _close_file(self);
