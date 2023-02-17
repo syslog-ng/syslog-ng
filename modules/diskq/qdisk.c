@@ -1180,6 +1180,53 @@ _create_path(const gchar *filename)
   return file_perm_options_create_containing_directory(&fpermoptions, filename);
 }
 
+static gboolean
+_open_file(QDisk *self, const gchar *filename)
+{
+  gint fd = open(filename, O_LARGEFILE | (self->options->read_only ? O_RDONLY : O_RDWR), 0600);
+  if (fd < 0)
+    {
+      msg_error("Error opening disk-queue file",
+                evt_tag_str("filename", filename),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+
+  self->fd = fd;
+  self->filename = g_strdup(filename);
+
+  return TRUE;
+}
+
+static gboolean
+_create_file(QDisk *self, const gchar *filename)
+{
+  if (self->options->read_only)
+    return FALSE;
+
+  if (!_create_path(filename))
+    {
+      msg_error("Error creating dir for disk-queue file",
+                evt_tag_str("filename", filename),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+
+  gint fd = open(filename, O_RDWR | O_LARGEFILE | O_CREAT, 0600);
+  if (fd < 0)
+    {
+      msg_error("Error creating disk-queue file",
+                evt_tag_str("filename", filename),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+
+  self->fd = fd;
+  self->filename = g_strdup(filename);
+
+  return TRUE;
+}
+
 static inline gboolean
 _is_header_version_current(QDisk *self)
 {
@@ -1256,7 +1303,6 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 {
   gboolean new_file = FALSE;
   gpointer p = NULL;
-  int openflags = 0;
 
   /*
    * If qdisk_start is called for already initialized qdisk file
@@ -1264,9 +1310,6 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
    * We need this assert to detect programming error as soon as possible.
    */
   g_assert(!qdisk_started(self));
-
-  if (self->options->read_only && !filename)
-    return FALSE;
 
   if (!filename)
     {
@@ -1282,25 +1325,16 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           new_file = TRUE;
         }
     }
-  if (!_create_path(filename))
+
+  if (new_file)
     {
-      msg_error("Error creating dir for disk-queue file",
-                evt_tag_str("filename", filename),
-                evt_tag_error("error"));
-      return FALSE;
+      if (!_create_file(self, filename))
+        return FALSE;
     }
-
-  self->filename = g_strdup(filename);
-  /* assumes self is zero initialized */
-  openflags = self->options->read_only ? (O_RDONLY | O_LARGEFILE) : (O_RDWR | O_LARGEFILE | (new_file ? O_CREAT : 0));
-
-  self->fd = open(filename, openflags, 0600);
-  if (self->fd < 0)
+  else
     {
-      msg_error("Error opening disk-queue file",
-                evt_tag_str("filename", self->filename),
-                evt_tag_error("error"));
-      return FALSE;
+      if (!_open_file(self, filename))
+        return FALSE;
     }
 
   p = mmap(0, sizeof(QDiskFileHeader),  self->options->read_only ? (PROT_READ) : (PROT_READ | PROT_WRITE), MAP_SHARED,
