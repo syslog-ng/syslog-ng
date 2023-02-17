@@ -1127,6 +1127,26 @@ qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   return TRUE;
 }
 
+static void
+_close_file(QDisk *self)
+{
+  if (self->hdr)
+    {
+      if (self->options->read_only)
+        g_free(self->hdr);
+      else
+        munmap((void *) self->hdr, sizeof(QDiskFileHeader));
+
+      self->hdr = NULL;
+    }
+
+  if (self->fd != -1)
+    {
+      close(self->fd);
+      self->fd = -1;
+    }
+}
+
 static gboolean
 _create_path(const gchar *filename)
 {
@@ -1306,10 +1326,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           msg_error("Error occurred while initializing the new queue file",
                     evt_tag_str("filename", self->filename),
                     evt_tag_error("error"));
-          munmap((void *)self->hdr, sizeof(QDiskFileHeader));
-          self->hdr = NULL;
-          close(self->fd);
-          self->fd = -1;
+          _close_file(self);
           return FALSE;
         }
       self->hdr->version = QDISK_HDR_VERSION_CURRENT;
@@ -1326,10 +1343,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 
       if (!qdisk_save_state(self, qout, qbacklog, qoverflow))
         {
-          munmap((void *)self->hdr, sizeof(QDiskFileHeader));
-          self->hdr = NULL;
-          close(self->fd);
-          self->fd = -1;
+          _close_file(self);
           return FALSE;
         }
     }
@@ -1343,10 +1357,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
                     evt_tag_str("filename", self->filename),
                     evt_tag_error("fstat error"),
                     evt_tag_int("size", st.st_size));
-          munmap((void *)self->hdr, sizeof(QDiskFileHeader));
-          self->hdr = NULL;
-          close(self->fd);
-          self->fd = -1;
+          _close_file(self);
           return FALSE;
         }
 
@@ -1377,10 +1388,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
         }
       if (!_load_state(self, qout, qbacklog, qoverflow))
         {
-          munmap((void *)self->hdr, sizeof(QDiskFileHeader));
-          self->hdr = NULL;
-          close(self->fd);
-          self->fd = -1;
+          _close_file(self);
           return FALSE;
         }
 
@@ -1426,20 +1434,7 @@ qdisk_stop(QDisk *self)
       self->filename = NULL;
     }
 
-  if (self->hdr)
-    {
-      if (self->options->read_only)
-        g_free(self->hdr);
-      else
-        munmap((void *)self->hdr, sizeof(QDiskFileHeader));
-      self->hdr = NULL;
-    }
-
-  if (self->fd != -1)
-    {
-      close(self->fd);
-      self->fd = -1;
-    }
+  _close_file(self);
 }
 
 void
