@@ -1428,11 +1428,8 @@ qdisk_init_instance(QDisk *self, DiskQueueOptions *options, const gchar *file_id
 void
 qdisk_stop(QDisk *self)
 {
-  if (self->filename)
-    {
-      g_free(self->filename);
-      self->filename = NULL;
-    }
+  g_free(self->filename);
+  self->filename = NULL;
 
   _close_file(self);
 }
