@@ -147,12 +147,11 @@ _correct_position_if_max_size_is_reached(QDisk *self, gint64 position)
   return position;
 }
 
-static gchar *
-_next_filename(QDisk *self)
+static gboolean
+_next_filename(QDisk *self, gchar *filename, gsize filename_len)
 {
   gint i = 0;
   gboolean success = FALSE;
-  gchar tmpfname[256];
   gchar qdir[256];
 
   g_snprintf(qdir, sizeof(qdir), "%s", self->options->dir);
@@ -163,18 +162,20 @@ _next_filename(QDisk *self)
       struct stat st;
 
       if (self->options->reliable)
-        g_snprintf(tmpfname, sizeof(tmpfname), "%s/syslog-ng-%05d.rqf", qdir, i);
+        g_snprintf(filename, filename_len, "%s/syslog-ng-%05d.rqf", qdir, i);
       else
-        g_snprintf(tmpfname, sizeof(tmpfname), "%s/syslog-ng-%05d.qf", qdir, i);
-      success = (stat(tmpfname, &st) < 0);
+        g_snprintf(filename, filename_len, "%s/syslog-ng-%05d.qf", qdir, i);
+      success = (stat(filename, &st) < 0);
       i++;
     }
+
   if (!success)
     {
       msg_error("Error generating unique queue filename, not using disk queue");
-      return NULL;
+      return FALSE;
     }
-  return g_strdup(tmpfname);
+
+  return TRUE;
 }
 
 gboolean
@@ -1301,7 +1302,6 @@ _autodetect_disk_buf_size(QDisk *self)
 gboolean
 qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
-  gboolean new_file = FALSE;
   gpointer p = NULL;
 
   /*
@@ -1311,30 +1311,30 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
    */
   g_assert(!qdisk_started(self));
 
-  if (!filename)
-    {
-      new_file = TRUE;
-      /* NOTE: this'd be a security problem if we were not in our private directory. But we are. */
-      filename = _next_filename(self);
-    }
-  else
-    {
-      struct stat st;
-      if (stat(filename, &st) == -1)
-        {
-          new_file = TRUE;
-        }
-    }
+  struct stat st;
+  gboolean file_exists = filename && stat(filename, &st) != -1;
 
-  if (new_file)
-    {
-      if (!_create_file(self, filename))
-        return FALSE;
-    }
-  else
+  if (file_exists)
     {
       if (!_open_file(self, filename))
         return FALSE;
+    }
+  else
+    {
+      if (filename)
+        {
+          if (!_create_file(self, filename))
+            return FALSE;
+        }
+      else
+        {
+          gchar next_filename[256];
+          if (_next_filename(self, next_filename, sizeof(next_filename)))
+            {
+              if (!_create_file(self, next_filename))
+                return FALSE;
+            }
+        }
     }
 
   p = mmap(0, sizeof(QDiskFileHeader),  self->options->read_only ? (PROT_READ) : (PROT_READ | PROT_WRITE), MAP_SHARED,
@@ -1365,7 +1365,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
     }
   /* initialize new file */
 
-  if (new_file)
+  if (!file_exists)
     {
       if (self->options->disk_buf_size == -1)
         {
@@ -1408,8 +1408,6 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
     }
   else
     {
-      struct stat st;
-
       if (fstat(self->fd, &st) != 0 || st.st_size == 0)
         {
           msg_error("Error loading disk-queue file",
