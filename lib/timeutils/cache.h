@@ -38,6 +38,7 @@ time_t cached_mktime(struct tm *tm);
 void cached_localtime(time_t *when, struct tm *tm);
 void cached_gmtime(time_t *when, struct tm *tm);
 
+void timeutils_cache_deinit(void);
 
 static inline void
 cached_localtime_wct(time_t *when, WallClockTime *wct)
