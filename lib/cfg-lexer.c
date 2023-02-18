@@ -262,8 +262,135 @@ cfg_lexer_map_word_to_token(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc
   return tok;
 }
 
+
 void
-cfg_lexer_clear_include_level(CfgLexer *self, CfgIncludeLevel *level)
+cfg_lexer_init_include_level_file(CfgLexer *self, CfgIncludeLevel *level)
+{
+  level->include_type = CFGI_FILE;
+}
+
+void
+cfg_lexer_include_level_file_add(CfgLexer *self, CfgIncludeLevel *level, const gchar *filename)
+{
+  g_assert(level->include_type == CFGI_FILE);
+  level->file.files = g_slist_insert_sorted(level->file.files, g_strdup(filename), (GCompareFunc) strcmp);
+
+  msg_debug("Adding include file",
+            evt_tag_str("filename", filename),
+            evt_tag_int("depth", self->include_depth));
+}
+
+gboolean
+cfg_lexer_include_level_file_open_buffer(CfgLexer *self, CfgIncludeLevel *level)
+{
+  FILE *include_file;
+  gchar *filename;
+
+  g_assert(level->include_type == CFGI_FILE);
+
+  filename = (gchar *) level->file.files->data;
+  level->file.files = g_slist_delete_link(level->file.files, level->file.files);
+
+  include_file = fopen(filename, "r");
+  if (!include_file)
+    {
+      msg_error("Error opening include file",
+                evt_tag_str("filename", filename),
+                evt_tag_int("depth", self->include_depth));
+      g_free(filename);
+      return FALSE;
+    }
+  msg_debug("Starting to read include file",
+            evt_tag_str("filename", filename),
+            evt_tag_int("depth", self->include_depth));
+
+  g_free(level->name);
+  level->name = filename;
+
+  level->file.include_file = include_file;
+  level->yybuf = _cfg_lexer__create_buffer(level->file.include_file, YY_BUF_SIZE, self->state);
+  return TRUE;
+}
+
+void
+cfg_lexer_include_level_file_close_buffer(CfgLexer *self, CfgIncludeLevel *level)
+{
+  if (level->file.include_file)
+    {
+      fclose(level->file.include_file);
+      level->file.include_file = NULL;
+    }
+}
+
+void
+cfg_lexer_init_include_level_buffer(CfgLexer *self, CfgIncludeLevel *level,
+                                    const gchar *name,
+                                    const gchar *buffer,
+                                    gsize length)
+{
+  level->include_type = CFGI_BUFFER;
+  level->name = g_strdup(name);
+  gint lexer_buffer_len = length + 2;
+  gchar *lexer_buffer = g_malloc(lexer_buffer_len);
+  memcpy(lexer_buffer, buffer, length);
+
+  /* need two NUL characters for flex */
+  lexer_buffer[length] = 0;
+  lexer_buffer[length + 1] = 0;
+
+  level->buffer.content = lexer_buffer;
+  level->buffer.content_length = lexer_buffer_len;
+  level->buffer.original_content = g_strdup(lexer_buffer);
+}
+
+gboolean
+cfg_lexer_include_level_buffer_open_buffer(CfgLexer *self, CfgIncludeLevel *level)
+{
+  g_assert(level->include_type == CFGI_BUFFER);
+
+  level->yybuf = _cfg_lexer__scan_buffer(level->buffer.content, level->buffer.content_length, self->state);
+  return TRUE;
+}
+
+gboolean
+cfg_lexer_include_level_open_buffer(CfgLexer *self, CfgIncludeLevel *level)
+{
+  g_assert(level->include_type == CFGI_BUFFER || level->include_type == CFGI_FILE);
+
+  if (level->include_type == CFGI_BUFFER &&
+      !cfg_lexer_include_level_buffer_open_buffer(self, level))
+    return FALSE;
+
+  if (level->include_type == CFGI_FILE &&
+      !cfg_lexer_include_level_file_open_buffer(self, level))
+    return FALSE;
+
+  level->lloc.first_line = level->lloc.last_line = 1;
+  level->lloc.first_column = level->lloc.last_column = 1;
+  level->lloc.level = level;
+  return TRUE;
+}
+
+void
+cfg_lexer_include_level_close_buffer(CfgLexer *self, CfgIncludeLevel *level)
+{
+  g_assert(level->yybuf);
+
+  _cfg_lexer__delete_buffer(level->yybuf, self->state);
+  level->yybuf = NULL;
+
+  if (level->include_type == CFGI_FILE)
+    cfg_lexer_include_level_file_close_buffer(self, level);
+}
+
+void
+cfg_lexer_include_level_resume_from_buffer(CfgLexer *self, CfgIncludeLevel *level)
+{
+  _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
+}
+
+void
+cfg_lexer_include_level_clear(CfgLexer *self, CfgIncludeLevel *level)
 {
   g_free(level->name);
   if (level->yybuf)
@@ -284,12 +411,34 @@ cfg_lexer_clear_include_level(CfgLexer *self, CfgIncludeLevel *level)
   memset(level, 0, sizeof(*level));
 }
 
+CfgIncludeLevel *
+cfg_lexer_alloc_include_level(CfgLexer *self, const gchar *include_target)
+{
+  if (self->include_depth >= MAX_INCLUDE_DEPTH - 1)
+    {
+      msg_error("Include file depth is too deep, increase MAX_INCLUDE_DEPTH and recompile",
+                evt_tag_str("include", include_target),
+                evt_tag_int("depth", self->include_depth));
+      return NULL;
+    }
+
+  self->include_depth++;
+  return &self->include_stack[self->include_depth];
+}
+
+void
+cfg_lexer_drop_include_level(CfgLexer *self, CfgIncludeLevel *level)
+{
+  g_assert(&self->include_stack[self->include_depth] == level);
+  cfg_lexer_include_level_clear(self, level);
+  self->include_depth--;
+}
+
 gboolean
 cfg_lexer_start_next_include(CfgLexer *self)
 {
   CfgIncludeLevel *level = &self->include_stack[self->include_depth];
-  gchar *filename;
-  gboolean buffer_processed = FALSE;
+  gboolean level_finished = FALSE;
 
   if (self->include_depth == 0)
     {
@@ -301,95 +450,91 @@ cfg_lexer_start_next_include(CfgLexer *self)
       msg_debug("Finishing include",
                 evt_tag_str((level->include_type == CFGI_FILE ? "filename" : "content"), level->name),
                 evt_tag_int("depth", self->include_depth));
-      buffer_processed = TRUE;
+
+      if ((level->include_type == CFGI_BUFFER) ||
+          (level->include_type == CFGI_FILE && !level->file.files))
+        level_finished = TRUE;
+
+      cfg_lexer_include_level_close_buffer(self, level);
     }
 
-  /* reset the include state, should also handle initial invocations, in which case everything is NULL */
-  if (level->yybuf)
-    {
-      _cfg_lexer__delete_buffer(level->yybuf, self->state);
-      level->yybuf = NULL;
-    }
-
-  if (level->include_type == CFGI_FILE)
-    {
-      if (level->file.include_file)
-        {
-          fclose(level->file.include_file);
-          level->file.include_file = NULL;
-        }
-    }
-
-  if ((level->include_type == CFGI_BUFFER && buffer_processed) ||
-      (level->include_type == CFGI_FILE && !level->file.files))
+  if (level_finished)
     {
       /* we finished with an include statement that included a series of
-       * files (e.g.  directory include). */
+       * files (e.g.  directory include).  We need to terminate the current
+       * level and resume from our parent. */
 
-
-      /* NOTE: this couple of lines should become just a call to
-       * cfg_lexer_clear_include_level(), however this entire function is
-       * playing nasty tricks with the data members within the
-       * CfgIncludeLevel, which I can't decipher right now, so I am leaving
-       * this as is. Memory management in the lexer is clearly messed
-       * up.  */
-
-      g_free(level->name);
-
-      if (level->include_type == CFGI_BUFFER)
-        {
-          g_free(level->buffer.content);
-          g_free(level->buffer.original_content);
-        }
-
-      memset(level, 0, sizeof(*level));
-
-      self->include_depth--;
-      _cfg_lexer__switch_to_buffer(self->include_stack[self->include_depth].yybuf, self->state);
+      cfg_lexer_drop_include_level(self, &self->include_stack[self->include_depth]);
+      cfg_lexer_include_level_resume_from_buffer(self, &self->include_stack[self->include_depth]);
 
       return TRUE;
     }
-
-  /* now populate "level" with the new include information */
-  if (level->include_type == CFGI_BUFFER)
-    {
-      level->yybuf = _cfg_lexer__scan_buffer(level->buffer.content, level->buffer.content_length, self->state);
-    }
-  else if (level->include_type == CFGI_FILE)
-    {
-      FILE *include_file;
-
-      filename = (gchar *) level->file.files->data;
-      level->file.files = g_slist_delete_link(level->file.files, level->file.files);
-
-      include_file = fopen(filename, "r");
-      if (!include_file)
-        {
-          msg_error("Error opening include file",
-                    evt_tag_str("filename", filename),
-                    evt_tag_int("depth", self->include_depth));
-          g_free(filename);
-          return FALSE;
-        }
-      msg_debug("Starting to read include file",
-                evt_tag_str("filename", filename),
-                evt_tag_int("depth", self->include_depth));
-      g_free(level->name);
-      level->name = filename;
-
-      level->file.include_file = include_file;
-      level->yybuf = _cfg_lexer__create_buffer(level->file.include_file, YY_BUF_SIZE, self->state);
-    }
   else
     {
-      g_assert_not_reached();
+      /* the level is not yet finished, let's go open the buffer and restart from there */
+
+      if (!cfg_lexer_include_level_open_buffer(self, level))
+        return FALSE;
+
+      cfg_lexer_include_level_resume_from_buffer(self, level);
+      return TRUE;
     }
+}
 
-  level->lloc.first_line = level->lloc.last_line = 1;
-  level->lloc.first_column = level->lloc.last_column = 1;
-  level->lloc.level = level;
+static gboolean
+cfg_lexer_include_directory(CfgLexer *self, CfgIncludeLevel *level, const gchar *filename)
+{
+  GDir *dir;
+  GError *error = NULL;
+  const gchar *entry;
 
-  _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
+  dir = g_dir_open(filename, 0, &error);
+  if (!dir)
+    {
+      msg_error("Error opening directory for reading",
+                evt_tag_str("filename", filename),
+                evt_tag_str("error", error->message));
+      g_error_free(error);
+      return FALSE;
+    }
+  while ((entry = g_dir_read_name(dir)))
+    {
+      const gchar *p;
+      if (entry[0] == '.')
+        {
+          msg_debug("Skipping include file, it cannot begin with .",
+                    evt_tag_str("filename", entry));
+          continue;
+        }
+      for (p = entry; *p; p++)
+        {
+          if (!((*p >= 'a' && *p <= 'z') ||
+                (*p >= 'A' && *p <= 'Z') ||
+                (*p >= '0' && *p <= '9') ||
+                (*p == '_') || (*p == '-') || (*p == '.')))
+            {
+              msg_debug("Skipping include file, does not match pattern [\\-_a-zA-Z0-9]+",
+                        evt_tag_str("filename", entry));
+              p = NULL;
+              break;
+            }
+        }
+      if (p)
+        {
+          struct stat st;
+          gchar *full_filename = g_build_filename(filename, entry, NULL);
+          if (stat(full_filename, &st) < 0 || S_ISDIR(st.st_mode))
+            {
+              msg_debug("Skipping include file as it is a directory",
+                        evt_tag_str("filename", entry));
+              g_free(full_filename);
+              continue;
+            }
+          cfg_lexer_include_level_file_add(self, level, full_filename);
+          g_free(full_filename);
+        }
+    }
+  g_dir_close(dir);
   return TRUE;
 }
 
@@ -404,84 +549,32 @@ cfg_lexer_include_file_simple(CfgLexer *self, const gchar *filename)
       return FALSE;
     }
 
-  self->include_depth++;
-  level = &self->include_stack[self->include_depth];
-  level->include_type = CFGI_FILE;
+  level = cfg_lexer_alloc_include_level(self, filename);
+  if (!level)
+    return FALSE;
+  cfg_lexer_init_include_level_file(self, level);
+
   if (S_ISDIR(st.st_mode))
     {
-      GDir *dir;
-      GError *error = NULL;
-      const gchar *entry;
-
-      dir = g_dir_open(filename, 0, &error);
-      if (!dir)
+      if (!cfg_lexer_include_directory(self, level, filename))
         {
-          msg_error("Error opening directory for reading",
-                    evt_tag_str("filename", filename),
-                    evt_tag_str("error", error->message));
-          g_error_free(error);
-          goto drop_level;
+          cfg_lexer_drop_include_level(self, level);
+          return FALSE;
         }
-      while ((entry = g_dir_read_name(dir)))
-        {
-          const gchar *p;
-          if (entry[0] == '.')
-            {
-              msg_debug("Skipping include file, it cannot begin with .",
-                        evt_tag_str("filename", entry));
-              continue;
-            }
-          for (p = entry; *p; p++)
-            {
-              if (!((*p >= 'a' && *p <= 'z') ||
-                    (*p >= 'A' && *p <= 'Z') ||
-                    (*p >= '0' && *p <= '9') ||
-                    (*p == '_') || (*p == '-') || (*p == '.')))
-                {
-                  msg_debug("Skipping include file, does not match pattern [\\-_a-zA-Z0-9]+",
-                            evt_tag_str("filename", entry));
-                  p = NULL;
-                  break;
-                }
-            }
-          if (p)
-            {
-              gchar *full_filename = g_build_filename(filename, entry, NULL);
-              if (stat(full_filename, &st) < 0 || S_ISDIR(st.st_mode))
-                {
-                  msg_debug("Skipping include file as it is a directory",
-                            evt_tag_str("filename", entry));
-                  g_free(full_filename);
-                  continue;
-                }
-              level->file.files = g_slist_insert_sorted(level->file.files, full_filename, (GCompareFunc) strcmp);
-              msg_debug("Adding include file",
-                        evt_tag_str("filename", entry),
-                        evt_tag_int("depth", self->include_depth));
-            }
-        }
-      g_dir_close(dir);
       if (!level->file.files)
         {
           /* no include files in the specified directory */
           msg_debug("No files in this include directory",
                     evt_tag_str("dir", filename));
-          self->include_depth--;
+          cfg_lexer_drop_include_level(self, level);
           return TRUE;
         }
     }
   else
     {
-      g_assert(level->file.files == NULL);
-      level->file.files = g_slist_prepend(level->file.files, g_strdup(filename));
+      cfg_lexer_include_level_file_add(self, level, filename);
     }
   return cfg_lexer_start_next_include(self);
-drop_level:
-  g_slist_foreach(level->file.files, (GFunc) g_free, NULL);
-  g_slist_free(level->file.files);
-  level->file.files = NULL;
-
-  return FALSE;
 }
 
 static int
@@ -535,26 +628,7 @@ __glob_pattern_p (const char *pattern)
 #endif
 
 static gboolean
-cfg_lexer_include_file_add(CfgLexer *self, const gchar *fn)
-{
-  CfgIncludeLevel *level;
-
-  level = &self->include_stack[self->include_depth];
-  level->include_type = CFGI_FILE;
-
-  level->file.files = g_slist_insert_sorted(level->file.files,
-                                            strdup(fn),
-                                            (GCompareFunc) strcmp);
-
-  msg_debug("Adding include file",
-            evt_tag_str("filename", fn),
-            evt_tag_int("depth", self->include_depth));
-
-  return TRUE;
-}
-
-static gboolean
-cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
+cfg_lexer_include_file_glob_at(CfgLexer *self, CfgIncludeLevel *level, const gchar *pattern)
 {
   glob_t globbuf;
   size_t i;
@@ -570,7 +644,8 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
 #ifndef SYSLOG_NG_HAVE_GLOB_NOMAGIC
           if (!__glob_pattern_p (pattern))
             {
-              return cfg_lexer_include_file_add(self, pattern);
+              cfg_lexer_include_level_file_add(self, level, pattern);
+              return TRUE;
             }
 #endif
           return FALSE;
@@ -580,7 +655,7 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, const gchar *pattern)
 
   for (i = 0; i < globbuf.gl_pathc; i++)
     {
-      cfg_lexer_include_file_add(self, globbuf.gl_pathv[i]);
+      cfg_lexer_include_level_file_add(self, level, globbuf.gl_pathv[i]);
     }
 
   globfree(&globbuf);
@@ -595,40 +670,57 @@ _get_include_path(CfgLexer *self)
 }
 
 static gboolean
+cfg_lexer_include_file_glob_along_include_path(CfgLexer *self, CfgIncludeLevel *level,
+                                               const gchar *path, const gchar *filename_)
+{
+  gboolean result = FALSE;
+  gchar **dirs;
+  gchar *cf;
+  gint i = 0;
+
+  dirs = g_strsplit(path, G_SEARCHPATH_SEPARATOR_S, 0);
+  while (dirs && dirs[i])
+    {
+      cf = g_build_filename(dirs[i], filename_, NULL);
+      result |= cfg_lexer_include_file_glob_at(self, level, cf);
+      g_free(cf);
+      i++;
+    }
+  g_strfreev(dirs);
+  return result;
+}
+
+static gboolean
 cfg_lexer_include_file_glob(CfgLexer *self, const gchar *filename_)
 {
   const gchar *path = _get_include_path(self);
   gboolean process = FALSE;
+  CfgIncludeLevel *level;
 
-  self->include_depth++;
+  level = cfg_lexer_alloc_include_level(self, filename_);
+  if (!level)
+    return FALSE;
+  cfg_lexer_init_include_level_file(self, level);
 
   if (filename_[0] == '/' || !path)
-    process = cfg_lexer_include_file_glob_at(self, filename_);
+    process = cfg_lexer_include_file_glob_at(self, level, filename_);
   else
-    {
-      gchar **dirs;
-      gchar *cf;
-      gint i = 0;
+    process = cfg_lexer_include_file_glob_along_include_path(self, level, path, filename_);
 
-      dirs = g_strsplit(path, G_SEARCHPATH_SEPARATOR_S, 0);
-      while (dirs && dirs[i])
-        {
-          cf = g_build_filename(dirs[i], filename_, NULL);
-          process |= cfg_lexer_include_file_glob_at(self, cf);
-          g_free(cf);
-          i++;
-        }
-      g_strfreev(dirs);
-    }
-  if (process)
+  if (!process)
     {
-      return cfg_lexer_start_next_include(self);
-    }
-  else
-    {
-      self->include_depth--;
+      cfg_lexer_drop_include_level(self, level);
       return TRUE;
     }
+  if (!cfg_lexer_start_next_include(self))
+    {
+      msg_error("Include file/directory not found",
+                evt_tag_str("filename", filename_),
+                evt_tag_str("include-path", _get_include_path(self)),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+  return TRUE;
 }
 
 gboolean
@@ -641,13 +733,6 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
             evt_tag_str("filename", filename_),
             evt_tag_str("include-path", _get_include_path(self)));
 
-  if (self->include_depth >= MAX_INCLUDE_DEPTH - 1)
-    {
-      msg_error("Include file depth is too deep, increase MAX_INCLUDE_DEPTH and recompile",
-                evt_tag_str("filename", filename_),
-                evt_tag_int("depth", self->include_depth));
-      return FALSE;
-    }
 
   filename = find_file_in_path(_get_include_path(self), filename_, G_FILE_TEST_EXISTS);
   if (!filename || stat(filename, &st) < 0)
@@ -655,14 +740,7 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
       if (filename)
         g_free(filename);
 
-      if (cfg_lexer_include_file_glob(self, filename_))
-        return TRUE;
-
-      msg_error("Include file/directory not found",
-                evt_tag_str("filename", filename_),
-                evt_tag_str("include-path", _get_include_path(self)),
-                evt_tag_error("error"));
-      return FALSE;
+      return cfg_lexer_include_file_glob(self, filename_);
     }
   else
     {
@@ -675,38 +753,17 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
 }
 
 gboolean
-cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gchar *name, const gchar *buffer,
-                                                       gsize length)
+cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self, const gchar *name,
+                                                       const gchar *buffer, gsize length)
 {
   CfgIncludeLevel *level;
-  gchar *lexer_buffer;
-  gsize lexer_buffer_len;
 
   g_assert(length >= 0);
 
-  if (self->include_depth >= MAX_INCLUDE_DEPTH - 1)
-    {
-      msg_error("Include file depth is too deep, increase MAX_INCLUDE_DEPTH and recompile",
-                evt_tag_str("buffer", name),
-                evt_tag_int("depth", self->include_depth));
-      return FALSE;
-    }
-
-  /* lex requires two NUL characters at the end of the input */
-  lexer_buffer_len = length + 2;
-  lexer_buffer = g_malloc(lexer_buffer_len);
-  memcpy(lexer_buffer, buffer, length);
-  lexer_buffer[length] = 0;
-  lexer_buffer[length + 1] = 0;
-
-  self->include_depth++;
-  level = &self->include_stack[self->include_depth];
-
-  level->include_type = CFGI_BUFFER;
-  level->buffer.content = lexer_buffer;
-  level->buffer.content_length = lexer_buffer_len;
-  level->buffer.original_content = g_strdup(lexer_buffer);
-  level->name = g_strdup(name);
+  level = cfg_lexer_alloc_include_level(self, name);
+  if (!level)
+    return FALSE;
+  cfg_lexer_init_include_level_buffer(self, level, name, buffer, length);
 
   return cfg_lexer_start_next_include(self);
 }
@@ -1119,10 +1176,10 @@ cfg_lexer_new(GlobalConfig *cfg, FILE *file, const gchar *filename, GString *pre
   self->preprocess_output = preprocess_output;
 
   level = &self->include_stack[0];
-  level->include_type = CFGI_FILE;
-  level->name = g_strdup(filename);
-  level->yybuf = _cfg_lexer__create_buffer(file, YY_BUF_SIZE, self->state);
-  _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
+  cfg_lexer_init_include_level_file(self, level);
+  cfg_lexer_include_level_file_add(self, level, filename);
+  cfg_lexer_include_level_open_buffer(self, level);
+  cfg_lexer_include_level_resume_from_buffer(self, level);
 
   return self;
 }
@@ -1138,16 +1195,9 @@ cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length)
   self->ignore_pragma = TRUE;
 
   level = &self->include_stack[0];
-  level->include_type = CFGI_BUFFER;
-  level->buffer.original_content = g_strdup(buffer);
-  level->buffer.content = g_malloc(length + 2);
-  memcpy(level->buffer.content, buffer, length);
-  level->buffer.content[length] = 0;
-  level->buffer.content[length + 1] = 0;
-  level->buffer.content_length = length + 2;
-  level->name = g_strdup("<string>");
-  level->yybuf = _cfg_lexer__scan_buffer(level->buffer.content, level->buffer.content_length, self->state);
-  _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
+  cfg_lexer_init_include_level_buffer(self, level, "<string>", buffer, length);
+  cfg_lexer_include_level_open_buffer(self, level);
+  cfg_lexer_include_level_resume_from_buffer(self, level);
 
   return self;
 }
@@ -1158,7 +1208,7 @@ cfg_lexer_free(CfgLexer *self)
   gint i;
 
   for (i = 0; i <= self->include_depth; i++)
-    cfg_lexer_clear_include_level(self, &self->include_stack[i]);
+    cfg_lexer_include_level_clear(self, &self->include_stack[i]);
 
   self->include_depth = 0;
   _cfg_lexer_lex_destroy(self->state);
