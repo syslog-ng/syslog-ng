@@ -1351,7 +1351,6 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   return TRUE;
 }
 
-
 gboolean
 _autodetect_disk_buf_size(QDisk *self)
 {
@@ -1393,6 +1392,24 @@ _autodetect_disk_buf_size(QDisk *self)
   return FALSE;
 }
 
+static gboolean
+_ensure_disk_buf_size(QDisk *self)
+{
+  if (self->hdr->disk_buf_size == -1 && !_autodetect_disk_buf_size(self))
+    return FALSE;
+
+  if (self->options->disk_buf_size != -1 && self->hdr->disk_buf_size != self->options->disk_buf_size)
+    {
+      msg_warning("WARNING: disk-buf-size() has changed since the last syslog-ng run. syslog-ng currently does "
+                  "not support changing the disk-buf-size() of existing disk-queues. Continuing with the old one",
+                  evt_tag_str("filename", self->filename),
+                  evt_tag_long("active_old_disk_buf_size", self->hdr->disk_buf_size),
+                  evt_tag_long("ignored_new_disk_buf_size", self->options->disk_buf_size));
+    }
+
+  return TRUE;
+}
+
 gboolean
 qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
@@ -1417,24 +1434,10 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           return FALSE;
         }
 
-      if (self->hdr->disk_buf_size == -1)
+      if (!_ensure_disk_buf_size(self))
         {
-          if (!_autodetect_disk_buf_size(self))
-            {
-              msg_error("Failed to load disk-buf-size from disk-queue, and it was not set explicitly",
-                        evt_tag_str("filename", self->filename));
-              _close_file(self);
-              return FALSE;
-            }
-        }
-
-      if (self->options->disk_buf_size != -1 && self->hdr->disk_buf_size != self->options->disk_buf_size)
-        {
-          msg_warning("WARNING: disk-buf-size() has changed since the last syslog-ng run. syslog-ng currently does "
-                      "not support changing the disk-buf-size() of existing disk-queues. Continuing with the old one",
-                      evt_tag_str("filename", self->filename),
-                      evt_tag_long("active_old_disk_buf_size", self->hdr->disk_buf_size),
-                      evt_tag_long("ignored_new_disk_buf_size", self->options->disk_buf_size));
+          _close_file(self);
+          return FALSE;
         }
     }
   else
