@@ -54,6 +54,16 @@ stats_cluster_single_key_legacy_set(StatsClusterKey *key, guint16 component, con
   });
 }
 
+void
+stats_cluster_single_key_add_legacy_alias(StatsClusterKey *key, guint16 component, const gchar *id,
+                                          const gchar *instance)
+{
+  stats_cluster_key_add_legacy_alias(key, component, id, instance, (StatsCounterGroupInit)
+  {
+    .counter.names = tag_names, .init = _counter_group_init, .equals = NULL
+  });
+}
+
 static void
 _counter_group_with_name_free(StatsCounterGroup *counter_group)
 {

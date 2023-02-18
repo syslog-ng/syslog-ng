@@ -42,6 +42,8 @@ void stats_cluster_single_key_set(StatsClusterKey *key, const gchar *name, Stats
  */
 void stats_cluster_single_key_legacy_set(StatsClusterKey *key, guint16 component, const gchar *id,
                                          const gchar *instance);
+void stats_cluster_single_key_add_legacy_alias(StatsClusterKey *key, guint16 component, const gchar *id,
+                                               const gchar *instance);
 void stats_cluster_single_key_legacy_set_with_name(StatsClusterKey *key, guint16 component, const gchar *id,
                                                    const gchar *instance, const gchar *name);
 void stats_cluster_single_key_add_legacy_alias_with_name(StatsClusterKey *key, guint16 component, const gchar *id,

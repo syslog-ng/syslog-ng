@@ -2043,7 +2043,8 @@ log_msg_register_stats(void)
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "sdata_updates", NULL );
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_sdata_updates);
 
-  stats_cluster_single_key_legacy_set(&sc_key, SCS_GLOBAL, "msg_allocated_bytes", NULL);
+  stats_cluster_single_key_set(&sc_key, "events_allocated_bytes", NULL, 0);
+  stats_cluster_single_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "msg_allocated_bytes", NULL);
   stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &count_allocated_bytes);
   stats_unlock();
 }
