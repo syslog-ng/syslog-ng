@@ -25,6 +25,12 @@ modules_examples_libexamples_la_LIBADD = $(MODULE_DEPS_LIBS) $(EXAMPLE_PLUGINS)
 modules_examples_libexamples_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(EXAMPLE_PLUGINS)
 modules_examples_libexamples_la_LDFLAGS = $(MODULE_LDFLAGS)
 
+if ENABLE_libexamples
+lib_LTLIBRARIES = libexamples.la
+libexamples_la_SOURCES = mymodule.c mymodule.h
+endif
+AM_CPPFLAGS = -DENABLE_MYMODULE
+
 EXTRA_DIST += modules/examples/CMakeLists.txt
 
 modules/examples modules/examples/ mod-examples: modules/examples/libexamples.la
