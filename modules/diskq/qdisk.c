@@ -1470,12 +1470,6 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 
   self->file_size = self->hdr->write_head;
 
-  if (!qdisk_save_state(self, qout, qbacklog, qoverflow))
-    {
-      _close_file(self);
-      return FALSE;
-    }
-
   return TRUE;
 }
 
