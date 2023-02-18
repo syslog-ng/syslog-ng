@@ -1126,6 +1126,17 @@ _open_file(QDisk *self, const gchar *filename)
   self->fd = fd;
   self->filename = g_strdup(filename);
 
+  struct stat st;
+  if (fstat(self->fd, &st) != 0 || st.st_size == 0)
+    {
+      msg_error("Error loading disk-queue file. Cannot stat",
+                evt_tag_str("filename", self->filename),
+                evt_tag_error("fstat error"),
+                evt_tag_int("size", st.st_size));
+      _close_file(self);
+      return FALSE;
+    }
+
   return TRUE;
 }
 
@@ -1399,16 +1410,6 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
     {
       if (!_open_file(self, filename))
         return FALSE;
-
-      if (fstat(self->fd, &st) != 0 || st.st_size == 0)
-        {
-          msg_error("Error loading disk-queue file",
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_error("fstat error"),
-                    evt_tag_int("size", st.st_size));
-          _close_file(self);
-          return FALSE;
-        }
 
       if (!_load_state(self, qout, qbacklog, qoverflow))
         {
