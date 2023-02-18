@@ -936,76 +936,6 @@ qdisk_header_is_inconsistent(QDisk *self)
           (self->hdr->read_head == self->hdr->write_head && self->hdr->length != 0));
 }
 
-
-static gboolean
-_load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
-{
-  if (memcmp(self->hdr->magic, self->file_id, 4) != 0)
-    {
-      msg_error("Error reading disk-queue file header",
-                evt_tag_str("filename", self->filename));
-      return FALSE;
-    }
-
-  if (qdisk_header_is_inconsistent(self))
-    {
-      msg_error("Inconsistent header data in disk-queue file, ignoring",
-                evt_tag_str("filename", self->filename),
-                evt_tag_long("read_head", self->hdr->read_head),
-                evt_tag_long("write_head", self->hdr->write_head),
-                evt_tag_long("qdisk_length",  self->hdr->length));
-      return FALSE;
-    }
-
-  if (!self->options->reliable)
-    {
-      if (!_load_non_reliable_queues(self, qout, qbacklog, qoverflow))
-        return FALSE;
-
-      self->file_size = QDISK_RESERVED_SPACE;
-      if (!self->options->read_only)
-        {
-          _maybe_truncate_file_to_minimal(self);
-        }
-
-      msg_info("Disk-buffer state loaded",
-               evt_tag_str("filename", self->filename),
-               evt_tag_long("number_of_messages", _number_of_messages(self)));
-
-      msg_debug("Disk-buffer internal state",
-                evt_tag_str("filename", self->filename),
-                evt_tag_long("qout_length", self->hdr->qout_pos.count),
-                evt_tag_long("qbacklog_length", self->hdr->qbacklog_pos.count),
-                evt_tag_long("qoverflow_length", self->hdr->qoverflow_pos.count),
-                evt_tag_long("qdisk_length", self->hdr->length),
-                evt_tag_long("read_head", self->hdr->read_head),
-                evt_tag_long("write_head", self->hdr->write_head),
-                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
-
-      _reset_queue_pointers(self);
-    }
-  else
-    {
-      struct stat st;
-      fstat(self->fd, &st);
-      self->file_size = st.st_size;
-      msg_info("Reliable disk-buffer state loaded",
-               evt_tag_str("filename", self->filename),
-               evt_tag_long("number_of_messages", _number_of_messages(self)));
-
-      msg_debug("Reliable disk-buffer internal state",
-                evt_tag_str("filename", self->filename),
-                evt_tag_long("queue_length", self->hdr->length),
-                evt_tag_long("backlog_len", self->hdr->backlog_len),
-                evt_tag_long("backlog_head", self->hdr->backlog_head),
-                evt_tag_long("read_head", self->hdr->read_head),
-                evt_tag_long("write_head", self->hdr->write_head),
-                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
-    }
-
-  return TRUE;
-}
-
 #define STRING_BUFFER_MEMORY_LIMIT (8 * 1024)
 static inline gboolean
 string_reached_memory_limit(GString *string)
@@ -1338,6 +1268,79 @@ _load_header(QDisk *self)
   return TRUE;
 }
 
+static gboolean
+_load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+{
+  if (!_load_header(self))
+    return FALSE;
+
+  if (memcmp(self->hdr->magic, self->file_id, 4) != 0)
+    {
+      msg_error("Error reading disk-queue file header",
+                evt_tag_str("filename", self->filename));
+      return FALSE;
+    }
+
+  if (qdisk_header_is_inconsistent(self))
+    {
+      msg_error("Inconsistent header data in disk-queue file, ignoring",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("read_head", self->hdr->read_head),
+                evt_tag_long("write_head", self->hdr->write_head),
+                evt_tag_long("qdisk_length",  self->hdr->length));
+      return FALSE;
+    }
+
+  if (!self->options->reliable)
+    {
+      if (!_load_non_reliable_queues(self, qout, qbacklog, qoverflow))
+        return FALSE;
+
+      self->file_size = QDISK_RESERVED_SPACE;
+      if (!self->options->read_only)
+        {
+          _maybe_truncate_file_to_minimal(self);
+        }
+
+      msg_info("Disk-buffer state loaded",
+               evt_tag_str("filename", self->filename),
+               evt_tag_long("number_of_messages", _number_of_messages(self)));
+
+      msg_debug("Disk-buffer internal state",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("qout_length", self->hdr->qout_pos.count),
+                evt_tag_long("qbacklog_length", self->hdr->qbacklog_pos.count),
+                evt_tag_long("qoverflow_length", self->hdr->qoverflow_pos.count),
+                evt_tag_long("qdisk_length", self->hdr->length),
+                evt_tag_long("read_head", self->hdr->read_head),
+                evt_tag_long("write_head", self->hdr->write_head),
+                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
+
+      _reset_queue_pointers(self);
+    }
+  else
+    {
+      struct stat st;
+      fstat(self->fd, &st);
+      self->file_size = st.st_size;
+      msg_info("Reliable disk-buffer state loaded",
+               evt_tag_str("filename", self->filename),
+               evt_tag_long("number_of_messages", _number_of_messages(self)));
+
+      msg_debug("Reliable disk-buffer internal state",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("queue_length", self->hdr->length),
+                evt_tag_long("backlog_len", self->hdr->backlog_len),
+                evt_tag_long("backlog_head", self->hdr->backlog_head),
+                evt_tag_long("read_head", self->hdr->read_head),
+                evt_tag_long("write_head", self->hdr->write_head),
+                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
+    }
+
+  return TRUE;
+}
+
+
 gboolean
 _autodetect_disk_buf_size(QDisk *self)
 {
@@ -1403,12 +1406,6 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
                     evt_tag_str("filename", self->filename),
                     evt_tag_error("fstat error"),
                     evt_tag_int("size", st.st_size));
-          _close_file(self);
-          return FALSE;
-        }
-
-      if (!_load_header(self))
-        {
           _close_file(self);
           return FALSE;
         }
