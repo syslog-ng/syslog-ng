@@ -1410,6 +1410,25 @@ _ensure_disk_buf_size(QDisk *self)
   return TRUE;
 }
 
+static gboolean
+_load_qdisk_file(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+{
+  if (!_open_file(self, filename))
+    goto error;
+
+  if (!_load_state(self, qout, qbacklog, qoverflow))
+    goto error;
+
+  if (!_ensure_disk_buf_size(self))
+    goto error;
+
+  return TRUE;
+
+error:
+  _close_file(self);
+  return FALSE;
+}
+
 gboolean
 qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
@@ -1425,20 +1444,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 
   if (file_exists)
     {
-      if (!_open_file(self, filename))
-        return FALSE;
-
-      if (!_load_state(self, qout, qbacklog, qoverflow))
-        {
-          _close_file(self);
-          return FALSE;
-        }
-
-      if (!_ensure_disk_buf_size(self))
-        {
-          _close_file(self);
-          return FALSE;
-        }
+      return _load_qdisk_file(self, filename, qout, qbacklog, qoverflow);
     }
   else
     {
