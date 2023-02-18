@@ -1443,39 +1443,35 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
   gboolean file_exists = filename && stat(filename, &st) != -1;
 
   if (file_exists)
+    return _load_qdisk_file(self, filename, qout, qbacklog, qoverflow);
+
+  if (filename)
     {
-      return _load_qdisk_file(self, filename, qout, qbacklog, qoverflow);
+      if (!_create_file(self, filename))
+        return FALSE;
     }
   else
     {
-      if (filename)
+      gchar next_filename[256];
+      if (_next_filename(self, next_filename, sizeof(next_filename)))
         {
-          if (!_create_file(self, filename))
+          if (!_create_file(self, next_filename))
             return FALSE;
         }
-      else
-        {
-          gchar next_filename[256];
-          if (_next_filename(self, next_filename, sizeof(next_filename)))
-            {
-              if (!_create_file(self, next_filename))
-                return FALSE;
-            }
-        }
+    }
 
-      if (!_create_header(self))
-        {
-          _close_file(self);
-          return FALSE;
-        }
+  if (!_create_header(self))
+    {
+      _close_file(self);
+      return FALSE;
+    }
 
-      self->file_size = self->hdr->write_head;
+  self->file_size = self->hdr->write_head;
 
-      if (!qdisk_save_state(self, qout, qbacklog, qoverflow))
-        {
-          _close_file(self);
-          return FALSE;
-        }
+  if (!qdisk_save_state(self, qout, qbacklog, qoverflow))
+    {
+      _close_file(self);
+      return FALSE;
     }
 
   return TRUE;
