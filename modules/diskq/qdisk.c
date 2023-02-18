@@ -1037,7 +1037,7 @@ qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
         return FALSE;
     }
 
-  memcpy(self->hdr->magic, self->file_id, 4);
+  memcpy(self->hdr->magic, self->file_id, sizeof(self->hdr->magic));
 
   self->hdr->qout_pos = qout_pos;
   self->hdr->qbacklog_pos = qbacklog_pos;
@@ -1200,6 +1200,8 @@ _create_header(QDisk *self)
                 evt_tag_error("error"));
       return FALSE;
     }
+
+  memcpy(self->hdr->magic, self->file_id, sizeof(self->hdr->magic));
 
   self->hdr->version = QDISK_HDR_VERSION_CURRENT;
   self->hdr->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
