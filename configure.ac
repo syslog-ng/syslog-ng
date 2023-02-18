@@ -289,6 +289,10 @@ AC_ARG_ENABLE(mqtt,
               [  --disable-mqtt          Disable MQTT support (default: auto)]
               ,,enable_mqtt="auto")
 
+AC_ARG_LIB(curl, curl_easy_init, 
+                [have_curl=yes], [have_curl=no])
+
+
 AC_ARG_WITH(libpaho-mqtt,
              AC_HELP_STRING([--with-libpaho-mqtt=DIR],
                             [use libpaho-mqtt library from (prefix) directory DIR]),,)
