@@ -1438,6 +1438,22 @@ _init_qdisk_file(QDisk *self)
   return _create_header(self);
 }
 
+static gboolean
+_create_qdisk_file(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+{
+  if (!_create_file(self, filename))
+    goto error;
+
+  if (!_init_qdisk_file(self))
+    goto error;
+
+  return TRUE;
+
+error:
+  _close_file(self);
+  return FALSE;
+}
+
 gboolean
 qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
@@ -1455,27 +1471,13 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
     return _load_qdisk_file(self, filename, qout, qbacklog, qoverflow);
 
   if (filename)
-    {
-      if (!_create_file(self, filename))
-        return FALSE;
-    }
-  else
-    {
-      gchar next_filename[256];
-      if (_next_filename(self, next_filename, sizeof(next_filename)))
-        {
-          if (!_create_file(self, next_filename))
-            return FALSE;
-        }
-    }
+    return _create_qdisk_file(self, filename, qout, qbacklog, qoverflow);
 
-  if (!_init_qdisk_file(self))
-    {
-      _close_file(self);
-      return FALSE;
-    }
+  gchar next_filename[256];
+  if (_next_filename(self, next_filename, sizeof(next_filename)))
+    return _create_qdisk_file(self, next_filename, qout, qbacklog, qoverflow);
 
-  return TRUE;
+  return FALSE;
 }
 
 void
