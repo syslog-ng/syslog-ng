@@ -1457,11 +1457,6 @@ error:
 gboolean
 qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
-  /*
-   * If qdisk_start is called for already initialized qdisk file
-   * it can cause message loosing.
-   * We need this assert to detect programming error as soon as possible.
-   */
   g_assert(!qdisk_started(self));
 
   struct stat st;
