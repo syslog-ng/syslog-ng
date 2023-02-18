@@ -1265,18 +1265,9 @@ _load_header(QDisk *self)
 
   _ensure_header_byte_order(self);
 
-  return TRUE;
-}
-
-static gboolean
-_load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
-{
-  if (!_load_header(self))
-    return FALSE;
-
   if (memcmp(self->hdr->magic, self->file_id, 4) != 0)
     {
-      msg_error("Error reading disk-queue file header",
+      msg_error("Error reading disk-queue file header. Invalid magic",
                 evt_tag_str("filename", self->filename));
       return FALSE;
     }
@@ -1290,6 +1281,15 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
                 evt_tag_long("qdisk_length",  self->hdr->length));
       return FALSE;
     }
+
+  return TRUE;
+}
+
+static gboolean
+_load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+{
+  if (!_load_header(self))
+    return FALSE;
 
   if (!self->options->reliable)
     {
