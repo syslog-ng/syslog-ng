@@ -1431,6 +1431,13 @@ error:
   return FALSE;
 }
 
+static gboolean
+_init_qdisk_file(QDisk *self)
+{
+  self->file_size = QDISK_RESERVED_SPACE;
+  return _create_header(self);
+}
+
 gboolean
 qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
@@ -1462,13 +1469,11 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
         }
     }
 
-  if (!_create_header(self))
+  if (!_init_qdisk_file(self))
     {
       _close_file(self);
       return FALSE;
     }
-
-  self->file_size = self->hdr->write_head;
 
   return TRUE;
 }
