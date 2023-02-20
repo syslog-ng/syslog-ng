@@ -191,6 +191,7 @@
 %token KW_LEVEL                       10402
 %token KW_LIFETIME                    10403
 %token KW_MAX_DYNAMIC                 10404
+%token KW_SYSLOG_STATS                10405
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -969,6 +970,7 @@ stats_group_option
 	| KW_LEVEL '(' nonnegative_integer ')'         { last_stats_options->level = $3; }
 	| KW_LIFETIME '(' positive_integer ')'      { last_stats_options->lifetime = $3; }
 	| KW_MAX_DYNAMIC '(' nonnegative_integer ')'   { last_stats_options->max_dynamic = $3; }
+	| KW_SYSLOG_STATS '(' yesnoauto ')'     { last_stats_options->syslog_stats = $3; }
 	;
 
 dns_cache_option
