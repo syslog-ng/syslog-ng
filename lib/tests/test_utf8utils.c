@@ -84,7 +84,7 @@ ParameterizedTestParameters(test_utf8utils, test_escaped_text)
     {"árvíztűrőtükörfúrógép", "árvíztűrőtükörfúrógép", NULL, -1},
     {"árvíztűrőtükörfúrógép\n", "árvíztűrőtükörfúrógép\\n", NULL, -1},
     {"\x41", "A", NULL, -1},
-    {"\x7", "\\u0007", NULL, -1},
+    {"\x7", "\\x07", NULL, -1},
     {"\xad", "\\\\xad", NULL, -1},
     {"Á\xadÉ", "Á\\\\xadÉ", NULL, -1},
     {"\"text\"", "\\\"text\\\"", "\"", -1},
