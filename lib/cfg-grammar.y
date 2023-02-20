@@ -300,6 +300,7 @@
 
 %token KW_YES                         10380
 %token KW_NO                          10381
+%token KW_AUTO                        10382
 
 %token KW_IFDEF                       10410
 %token KW_ENDIF                       10411
@@ -390,6 +391,7 @@
 %type   <ptr> value_pair_option
 
 %type	<num> yesno
+%type	<num> yesnoauto
 %type   <num> dnsmode
 %type	<num> dest_writer_options_flags
 
@@ -972,6 +974,12 @@ yesno
 	: KW_YES				{ $$ = 1; }
 	| KW_NO					{ $$ = 0; }
 	| LL_NUMBER				{ $$ = $1; }
+	;
+
+yesnoauto
+	: KW_YES  { $$ = CYNA_YES; }
+	| KW_NO   { $$ = CYNA_NO; }
+	| KW_AUTO { $$ = CYNA_AUTO; }
 	;
 
 dnsmode

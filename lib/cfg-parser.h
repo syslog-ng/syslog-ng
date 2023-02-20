@@ -65,6 +65,13 @@ typedef struct _CfgFlagHandler
   guint32 mask;
 } CfgFlagHandler;
 
+typedef enum _CfgYesNoAuto
+{
+  CYNA_AUTO = -1,
+  CYNA_NO = 0,
+  CYNA_YES = 1,
+} CfgYesNoAuto;
+
 gboolean cfg_process_flag(CfgFlagHandler *handlers, gpointer base, const gchar *flag);
 gboolean cfg_process_yesno(const gchar *yesno);
 
