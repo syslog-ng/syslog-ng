@@ -1,6 +1,7 @@
 FROM alpine:3.17 as apkbuilder
 
 ARG PKG_TYPE=stable
+ARG SNAPSHOT_VERSION
 
 RUN apk add --update-cache \
       alpine-conf \
@@ -21,9 +22,7 @@ RUN mkdir packages \
         tarball_filename="$(ls *.tar.*)"; \
         [ -z "$tarball_filename" ] && echo "Tarball for nightly can not be found" && exit 1; \
         tarball_name="${tarball_filename/\.tar.*}"; \
-        tarball_version="${tarball_name/syslog-ng-}"; \
-        pkg_version="$(echo $tarball_version | sed -E 's|(([0-9]+\.){2}[0-9]+).*|\1|')_git$(date +%Y%m%d)"; \
-        sed -i -e "s|^pkgver=.*|pkgver=$pkg_version|" -e "s|^builddir=.*|builddir=\"\$srcdir/$tarball_name\"|" APKBUILD; \
+        sed -i -e "s|^pkgver=.*|pkgver=$SNAPSHOT_VERSION|" -e "s|^builddir=.*|builddir=\"\$srcdir/$tarball_name\"|" APKBUILD; \
         sed -i -e "s|^source=.*|source=\"$tarball_filename\"|" APKBUILD; \
        fi \
     && abuild checksum \
