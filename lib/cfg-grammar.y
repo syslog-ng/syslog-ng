@@ -186,6 +186,11 @@
 %token KW_BATCH_LINES                 10087
 %token KW_BATCH_TIMEOUT               10088
 %token KW_TRIM_LARGE_MESSAGES         10089
+%token KW_STATS                       10400
+%token KW_FREQ                        10401
+%token KW_LEVEL                       10402
+%token KW_LIFETIME                    10403
+%token KW_MAX_DYNAMIC                 10404
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -951,6 +956,19 @@ stat_option
 	| KW_STATS_LEVEL '(' nonnegative_integer ')'         { last_stats_options->level = $3; }
 	| KW_STATS_LIFETIME '(' positive_integer ')'      { last_stats_options->lifetime = $3; }
   | KW_STATS_MAX_DYNAMIC '(' nonnegative_integer ')'   { last_stats_options->max_dynamic = $3; }
+	| KW_STATS '(' stats_group_options ')'
+	;
+
+stats_group_options
+	: stats_group_option stats_group_options
+	|
+	;
+
+stats_group_option
+	: KW_FREQ '(' nonnegative_integer ')'          { last_stats_options->log_freq = $3; }
+	| KW_LEVEL '(' nonnegative_integer ')'         { last_stats_options->level = $3; }
+	| KW_LIFETIME '(' positive_integer ')'      { last_stats_options->lifetime = $3; }
+	| KW_MAX_DYNAMIC '(' nonnegative_integer ')'   { last_stats_options->max_dynamic = $3; }
 	;
 
 dns_cache_option
