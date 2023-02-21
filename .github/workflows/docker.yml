@@ -9,6 +9,9 @@ on:
       tarball-artifact:
         required: false
         type: string
+      snapshot-version:
+        required: false
+        type: string
 
 env:
   DOCKER_IMAGE_NAME: ghcr.io/axoflow/syslog-ng
@@ -57,7 +60,7 @@ jobs:
           if [[ '${{ inputs.pkg-type }}' = 'stable' ]]; then
             TAGS='${{ steps.stable-tags.outputs.tags }}'
           elif [[ '${{ inputs.pkg-type }}' = 'nightly' ]]; then
-            TAGS="${DOCKER_IMAGE_NAME}:nightly"
+            TAGS="${DOCKER_IMAGE_NAME}:nightly,${DOCKER_IMAGE_NAME}:${{ inputs.snapshot-version }}"
           else
             echo Unexpected input: pkg-type=${{ inputs.pkg-type }}
             false
@@ -72,4 +75,6 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           push: true
           tags: ${{ steps.tags.outputs.TAGS }}
-          build-args: PKG_TYPE=${{ inputs.pkg-type }}
+          build-args: |
+            PKG_TYPE=${{ inputs.pkg-type }}
+            SNAPSHOT_VERSION=${{ inputs.snapshot-version }}
