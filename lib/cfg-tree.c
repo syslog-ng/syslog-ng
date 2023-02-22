@@ -25,6 +25,7 @@
 #include "cfg-tree.h"
 #include "logmpx.h"
 #include "logpipe.h"
+#include "metrics-pipe.h"
 
 #include <string.h>
 
@@ -641,6 +642,15 @@ cfg_tree_new_mpx(CfgTree *self, LogExprNode *related_expr)
   return pipe;
 }
 
+MetricsPipe *
+cfg_tree_new_metrics_pipe(CfgTree *self, LogExprNode *related_expr)
+{
+  MetricsPipe *pipe = metrics_pipe_new(self->cfg, related_expr->name);
+  pipe->super.expr_node = related_expr;
+  g_ptr_array_add(self->initialized_pipes, pipe);
+  return pipe;
+}
+
 static gchar *
 _format_anon_rule_name(CfgTree *self, gint content)
 {
@@ -1040,12 +1050,26 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
 
           if (!source_join_pipe)
             {
-              source_join_pipe = last_pipe = cfg_tree_new_pipe(self, node);
+              if (node->content == ENC_PIPE && node->name)
+                {
+                  MetricsPipe *metrics_pipe = cfg_tree_new_metrics_pipe(self, node);
+                  source_join_pipe = last_pipe = &metrics_pipe->super;
+                }
+              else
+                {
+                  source_join_pipe = last_pipe = cfg_tree_new_pipe(self, node);
+                }
             }
           log_pipe_append(sub_pipe_tail, source_join_pipe);
         }
     }
 
+  if (node->content == ENC_PIPE && node->name && first_pipe)
+    {
+      MetricsPipe *metrics_pipe = cfg_tree_new_metrics_pipe(self, node);
+      log_pipe_append(&metrics_pipe->super, first_pipe);
+      first_pipe = &metrics_pipe->super;
+    }
 
   if (!first_pipe && !last_pipe)
     {
