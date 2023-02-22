@@ -130,7 +130,10 @@ def render_logpath_groups(logpath_groups):
     config_snippet = ""
 
     for logpath_group in logpath_groups:
-        config_snippet += "\nlog {\n"
+        if logpath_group.name:
+            config_snippet += "\nlog " + logpath_group.name + " {\n"
+        else:
+            config_snippet += "\nlog {\n"
         for statement_group in logpath_group.logpath:
             if statement_group.group_type == "log":
                 config_snippet += render_logpath_groups(logpath_groups=[statement_group])

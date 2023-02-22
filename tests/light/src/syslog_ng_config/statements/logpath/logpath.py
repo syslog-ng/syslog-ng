@@ -23,14 +23,19 @@
 
 
 class LogPath(object):
-    def __init__(self):
+    def __init__(self, name=None):
         self.__group_type = "log"
+        self.__name = name
         self.__logpath = []
         self.__flags = []
 
     @property
     def group_type(self):
         return self.__group_type
+
+    @property
+    def name(self):
+        return self.__name
 
     @property
     def logpath(self):

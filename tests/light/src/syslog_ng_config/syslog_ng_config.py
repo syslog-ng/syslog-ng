@@ -181,13 +181,13 @@ class SyslogNgConfig(object):
     def create_rewrite_credit_card_hash(self, **options):
         return CreditCardHash(**options)
 
-    def create_logpath(self, statements=None, flags=None):
-        logpath = self.__create_logpath_with_conversion(statements, flags)
+    def create_logpath(self, name=None, statements=None, flags=None):
+        logpath = self.__create_logpath_with_conversion(name, statements, flags)
         self.__syslog_ng_config["logpath_groups"].append(logpath)
         return logpath
 
-    def create_inner_logpath(self, statements=None, flags=None):
-        inner_logpath = self.__create_logpath_with_conversion(statements, flags)
+    def create_inner_logpath(self, name=None, statements=None, flags=None):
+        inner_logpath = self.__create_logpath_with_conversion(name, statements, flags)
         return inner_logpath
 
     def create_statement_group(self, statements):
@@ -201,15 +201,16 @@ class SyslogNgConfig(object):
         else:
             return self.create_statement_group(item)
 
-    def __create_logpath_with_conversion(self, items, flags):
+    def __create_logpath_with_conversion(self, name, items, flags):
         return self.__create_logpath_group(
+            name,
             map(self.__create_statement_group_if_needed, cast_to_list(items)),
             flags,
         )
 
     @staticmethod
-    def __create_logpath_group(statements=None, flags=None):
-        logpath = LogPath()
+    def __create_logpath_group(name=None, statements=None, flags=None):
+        logpath = LogPath(name)
         if statements:
             logpath.add_groups(statements)
         if flags:
