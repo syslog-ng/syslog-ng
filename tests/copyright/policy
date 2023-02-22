@@ -73,6 +73,7 @@ modules/secure-logging/tests
 modules/secure-logging/slogencrypt
 modules/secure-logging/slogverify
 modules/secure-logging/slogkey
+lib/metrics-pipe\.[ch]
 lib/rewrite/rewrite-set-facility\.h
 lib/rewrite/rewrite-set-matches\.[ch]
 lib/rewrite/rewrite-unset-matches\.[ch]

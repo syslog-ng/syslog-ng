@@ -139,6 +139,7 @@ pkginclude_HEADERS			+= \
 	lib/module-config.h		\
 	lib/memtrace.h			\
 	lib/messages.h			\
+	lib/metrics-pipe.h			\
 	lib/ml-batched-timer.h		\
 	lib/msg-format.h		\
 	lib/msg-stats.h			\
@@ -229,6 +230,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/module-config.c		\
 	lib/memtrace.c			\
 	lib/messages.c			\
+	lib/metrics-pipe.c			\
 	lib/ml-batched-timer.c		\
 	lib/msg-format.c		\
 	lib/msg-stats.c			\
