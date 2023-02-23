@@ -125,15 +125,10 @@ _format_labels(StatsCluster *sc, gint type)
   return serialized_labels->str;
 }
 
-static void
-_format_legacy(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
+static GString *
+_format_legacy(StatsCluster *sc, gint type, StatsCounterItem *counter)
 {
-  gpointer *args = (gpointer *) user_data;
-  StatsPrometheusRecordFunc process_record = (StatsPrometheusRecordFunc) args[0];
-  gpointer process_record_arg = args[1];
-
-  ScratchBuffersMarker marker;
-  GString *record = scratch_buffers_alloc_and_mark(&marker);
+  GString *record = scratch_buffers_alloc();
   GString *labels = scratch_buffers_alloc();
 
   gchar component[64];
@@ -170,8 +165,28 @@ _format_legacy(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer 
 
   g_string_append_printf(record, " %"G_GSIZE_FORMAT"\n", stats_counter_get(&sc->counter_group.counters[type]));
 
-  process_record(record->str, process_record_arg);
-  scratch_buffers_reclaim_marked(marker);
+  return record;
+}
+
+GString *
+stats_prometheus_format_counter(StatsCluster *sc, gint type, StatsCounterItem *counter)
+{
+  if (_is_timestamp(sc, type))
+    return NULL;
+
+  if (!sc->key.name)
+    return _format_legacy(sc, type, counter);
+
+  GString *record = scratch_buffers_alloc();
+  g_string_append_printf(record, PROMETHEUS_METRIC_PREFIX"_%s", stats_format_prometheus_sanitize_name(sc->key.name));
+
+  const gchar *labels = _format_labels(sc, type);
+  if (labels)
+    g_string_append_printf(record, "{%s}", labels);
+
+  g_string_append_printf(record, " %"G_GSIZE_FORMAT"\n", stats_counter_get(&sc->counter_group.counters[type]));
+
+  return record;
 }
 
 static void
@@ -182,23 +197,15 @@ stats_format_prometheus(StatsCluster *sc, gint type, StatsCounterItem *counter, 
   gpointer process_record_arg = args[1];
   gboolean with_legacy = GPOINTER_TO_INT(args[2]);
 
-  if (_is_timestamp(sc, type))
-    return;
-
   if (!sc->key.name && !with_legacy)
     return;
 
-  if (!sc->key.name)
-    return _format_legacy(sc, type, counter, user_data);
-
   ScratchBuffersMarker marker;
-  GString *record = scratch_buffers_alloc_and_mark(&marker);
+  scratch_buffers_mark(&marker);
 
-  g_string_append_printf(record, PROMETHEUS_METRIC_PREFIX"_%s", stats_format_prometheus_sanitize_name(sc->key.name));
-  const gchar *labels = _format_labels(sc, type);
-  if (labels)
-    g_string_append_printf(record, "{%s}", labels);
-  g_string_append_printf(record, " %"G_GSIZE_FORMAT"\n", stats_counter_get(&sc->counter_group.counters[type]));
+  GString *record = stats_prometheus_format_counter(sc, type, counter);
+  if (!record)
+    return;
 
   process_record(record->str, process_record_arg);
   scratch_buffers_reclaim_marked(marker);

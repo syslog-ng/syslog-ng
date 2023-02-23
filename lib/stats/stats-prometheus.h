@@ -28,6 +28,8 @@
 
 typedef void (*StatsPrometheusRecordFunc)(const char *record, gpointer user_data);
 
+GString *stats_prometheus_format_counter(StatsCluster *sc, gint type, StatsCounterItem *counter);
+
 void stats_generate_prometheus(StatsPrometheusRecordFunc process_record, gpointer user_data, gboolean with_legacy,
                                gboolean *cancelled);
 
