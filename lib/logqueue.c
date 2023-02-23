@@ -238,9 +238,6 @@ void
 log_queue_register_stats_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key)
 {
   _register_common_counters(self, stats_level, sc_key);
-
-  if (self->register_stats_counters)
-    self->register_stats_counters(self, stats_level, sc_key);
 }
 
 static void
@@ -261,9 +258,6 @@ void
 log_queue_unregister_stats_counters(LogQueue *self, const StatsClusterKey *sc_key)
 {
   _unregister_common_counters(self, sc_key);
-
-  if (self->unregister_stats_counters)
-    self->unregister_stats_counters(self, sc_key);
 }
 
 void

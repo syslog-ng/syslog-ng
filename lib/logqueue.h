@@ -70,8 +70,6 @@ struct _LogQueue
   void (*ack_backlog)(LogQueue *self, gint n);
   void (*rewind_backlog)(LogQueue *self, guint rewind_count);
   void (*rewind_backlog_all)(LogQueue *self);
-  void (*register_stats_counters)(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key);
-  void (*unregister_stats_counters)(LogQueue *self, const StatsClusterKey *sc_key);
 
   void (*free_fn)(LogQueue *self);
 };
