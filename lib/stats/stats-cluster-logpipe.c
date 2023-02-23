@@ -51,7 +51,12 @@ _counter_group_logpipe_get_type_label(StatsCounterGroup *self, gint type, StatsC
   if (type >= SC_TYPE_MAX)
     return FALSE;
 
-  *label = stats_cluster_label("result", tag_names[type]);
+  const gchar *type_name = tag_names[type];
+
+  if (type == SC_TYPE_WRITTEN)
+    type_name = "delivered";
+
+  *label = stats_cluster_label("result", type_name);
   return TRUE;
 }
 
