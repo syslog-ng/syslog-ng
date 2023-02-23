@@ -1456,9 +1456,14 @@ _register_counters(LogWriter *self)
   if (self->options->suppress > 0)
     stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
   stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
   stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
   log_queue_register_stats_counters(self->queue, self->options->stats_level, &sc_key);
+
+  StatsClusterKey sc_legacy_processed;
+  stats_cluster_single_key_legacy_set_with_name(&sc_legacy_processed, self->options->stats_source | SCS_DESTINATION,
+                                                self->stats_id, self->stats_instance, "processed");
+  stats_register_counter(self->options->stats_level, &sc_legacy_processed, SC_TYPE_SINGLE_VALUE,
+                         &self->processed_messages);
 
   StatsClusterKey sc_key_truncated_count;
   stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
@@ -1519,8 +1524,12 @@ _unregister_counters(LogWriter *self)
 
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
-    stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+
+    StatsClusterKey sc_legacy_processed;
+    stats_cluster_single_key_legacy_set_with_name(&sc_legacy_processed, self->options->stats_source | SCS_DESTINATION,
+                                                  self->stats_id, self->stats_instance, "processed");
+    stats_unregister_counter(&sc_legacy_processed, SC_TYPE_SINGLE_VALUE, &self->processed_messages);
 
     StatsClusterKey sc_key_truncated_count;
     stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
