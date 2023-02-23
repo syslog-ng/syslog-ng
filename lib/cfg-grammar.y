@@ -186,6 +186,12 @@
 %token KW_BATCH_LINES                 10087
 %token KW_BATCH_TIMEOUT               10088
 %token KW_TRIM_LARGE_MESSAGES         10089
+%token KW_STATS                       10400
+%token KW_FREQ                        10401
+%token KW_LEVEL                       10402
+%token KW_LIFETIME                    10403
+%token KW_MAX_DYNAMIC                 10404
+%token KW_SYSLOG_STATS                10405
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -300,6 +306,7 @@
 
 %token KW_YES                         10380
 %token KW_NO                          10381
+%token KW_AUTO                        10382
 
 %token KW_IFDEF                       10410
 %token KW_ENDIF                       10411
@@ -390,6 +397,7 @@
 %type   <ptr> value_pair_option
 
 %type	<num> yesno
+%type	<num> yesnoauto
 %type   <num> dnsmode
 %type	<num> dest_writer_options_flags
 
@@ -949,6 +957,20 @@ stat_option
 	| KW_STATS_LEVEL '(' nonnegative_integer ')'         { last_stats_options->level = $3; }
 	| KW_STATS_LIFETIME '(' positive_integer ')'      { last_stats_options->lifetime = $3; }
   | KW_STATS_MAX_DYNAMIC '(' nonnegative_integer ')'   { last_stats_options->max_dynamic = $3; }
+	| KW_STATS '(' stats_group_options ')'
+	;
+
+stats_group_options
+	: stats_group_option stats_group_options
+	|
+	;
+
+stats_group_option
+	: KW_FREQ '(' nonnegative_integer ')'          { last_stats_options->log_freq = $3; }
+	| KW_LEVEL '(' nonnegative_integer ')'         { last_stats_options->level = $3; }
+	| KW_LIFETIME '(' positive_integer ')'      { last_stats_options->lifetime = $3; }
+	| KW_MAX_DYNAMIC '(' nonnegative_integer ')'   { last_stats_options->max_dynamic = $3; }
+	| KW_SYSLOG_STATS '(' yesnoauto ')'     { last_stats_options->syslog_stats = $3; }
 	;
 
 dns_cache_option
@@ -972,6 +994,12 @@ yesno
 	: KW_YES				{ $$ = 1; }
 	| KW_NO					{ $$ = 0; }
 	| LL_NUMBER				{ $$ = $1; }
+	;
+
+yesnoauto
+	: KW_YES  { $$ = CYNA_YES; }
+	| KW_NO   { $$ = CYNA_NO; }
+	| KW_AUTO { $$ = CYNA_AUTO; }
 	;
 
 dnsmode

@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "stats/stats-cluster.h"
+#include "cfg-parser.h"
 
 typedef struct _StatsOptions
 {
@@ -34,6 +35,7 @@ typedef struct _StatsOptions
   gint level;
   gint lifetime;
   gint max_dynamic;
+  CfgYesNoAuto syslog_stats;
 } StatsOptions;
 
 enum

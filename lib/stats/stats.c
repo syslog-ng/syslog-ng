@@ -30,6 +30,7 @@
 #include "stats/stats.h"
 #include "timeutils/cache.h"
 #include "timeutils/misc.h"
+#include "cfg-parser.h"
 
 #include <string.h>
 #include <iv.h>
@@ -259,6 +260,7 @@ stats_options_defaults(StatsOptions *options)
   options->log_freq = 600;
   options->lifetime = 600;
   options->max_dynamic = -1;
+  options->syslog_stats = CYNA_AUTO;
 }
 
 gboolean
@@ -286,4 +288,12 @@ stats_number_of_dynamic_clusters_limit(void)
   if (!stats_options)
     return -1;
   return stats_options->max_dynamic;
+}
+
+CfgYesNoAuto
+stats_syslog_stats(void)
+{
+  if (stats_options)
+    return (stats_options->syslog_stats);
+  return CYNA_AUTO;
 }

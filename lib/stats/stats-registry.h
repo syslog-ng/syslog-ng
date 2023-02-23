@@ -66,5 +66,6 @@ void stats_registry_deinit(void);
 
 gboolean stats_check_dynamic_clusters_limit(guint number_of_clusters);
 gint stats_number_of_dynamic_clusters_limit(void);
+CfgYesNoAuto stats_syslog_stats(void);
 
 #endif
