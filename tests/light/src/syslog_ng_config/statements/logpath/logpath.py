@@ -20,6 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_ctl.prometheus_stats_handler import MetricFilter
+from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
 
 
 class LogPath(object):
@@ -28,6 +30,15 @@ class LogPath(object):
         self.__name = name
         self.__logpath = []
         self.__flags = []
+
+        metric_filters = []
+        if name:
+            metric_filters += [
+                MetricFilter("syslogng_log_path_ingress", {"id": name}),
+                MetricFilter("syslogng_log_path_egress", {"id": name}),
+            ]
+
+        self.__prometheus_stats_handler = PrometheusStatsHandler(metric_filters)
 
     @property
     def group_type(self):
@@ -58,3 +69,6 @@ class LogPath(object):
     def add_flags(self, flags):
         for flag in flags:
             self.add_flag(flag)
+
+    def get_prometheus_stats(self):
+        return self.__prometheus_stats_handler.get_samples()
