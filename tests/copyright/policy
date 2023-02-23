@@ -166,6 +166,7 @@ modules/python-modules/setup\.py
 scripts/build-python-venv\.sh
 modules/syslogformat/sdata-parser\.[ch]
 tests/light/functional_tests/parsers/sdata-parser/test_sdata_parser\.py
+tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py
 
 ###########################################################################
 # These files are GPLd with Balabit origin.
