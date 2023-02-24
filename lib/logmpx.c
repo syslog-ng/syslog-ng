@@ -79,6 +79,7 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   gboolean delivered = FALSE;
   gint fallback;
 
+  local_options.outer_matched = path_options->matched;
   local_options.matched = &matched;
 
   if (_has_multiple_arcs(self))
