@@ -10,4 +10,4 @@ DBLD_DIR="./${BUILD_PATH}"
 
 ARG_IMAGE_PLATFORM=$(basename $DOCKERFILE_PATH .dockerfile)
 ${DBLD_DIR}/prepare-image-build $ARG_IMAGE_PLATFORM
-docker build --build-arg=COMMIT=$(git rev-parse --short HEAD) --build-arg=ARG_IMAGE_PLATFORM=${ARG_IMAGE_PLATFORM} -t $IMAGE_NAME -f ${DBLD_DIR}/$DOCKERFILE_PATH ${DBLD_DIR}
+docker build ${DOCKER_BUILD_ARGS} --build-arg=COMMIT=$(git rev-parse --short HEAD) --build-arg=ARG_IMAGE_PLATFORM=${ARG_IMAGE_PLATFORM} -t $IMAGE_NAME -f ${DBLD_DIR}/$DOCKERFILE_PATH ${DBLD_DIR}
