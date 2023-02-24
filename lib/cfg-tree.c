@@ -98,6 +98,8 @@ log_expr_node_get_layout_name(gint layout)
       return "sequence";
     case ENL_JUNCTION:
       return "junction";
+    case ENL_CONDITIONAL:
+      return "conditional";
     default:
       g_assert_not_reached();
       break;
@@ -396,6 +398,30 @@ log_expr_node_new_junction(LogExprNode *children, CFG_LTYPE *yylloc)
   return log_expr_node_new(ENL_JUNCTION, ENC_PIPE, NULL, children, 0, yylloc);
 }
 
+LogExprNode *
+log_expr_node_new_source_junction(LogExprNode *children, CFG_LTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_JUNCTION, ENC_SOURCE, NULL, children, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_destination_junction(LogExprNode *children, CFG_LTYPE *yylloc)
+{
+  return log_expr_node_new(ENL_JUNCTION, ENC_DESTINATION, NULL, children, 0, yylloc);
+}
+
+LogExprNode *
+log_expr_node_new_conditional(LogExprNode *filter_expr,
+                              LogExprNode *true_expr, LogExprNode *false_expr,
+                              CFG_LTYPE *yylloc)
+{
+  LogExprNode *children = true_expr;
+
+  log_expr_node_append(true_expr, false_expr);
+  log_expr_node_append(false_expr, filter_expr);
+  return log_expr_node_new(ENL_CONDITIONAL, ENC_PIPE, NULL, children, 0, yylloc);
+}
+
 /****************************************************************************
  * Functions related to conditional nodes
  *
@@ -440,13 +466,12 @@ log_expr_node_new_junction(LogExprNode *children, CFG_LTYPE *yylloc)
 static LogExprNode *
 log_expr_node_conditional_get_true_branch(LogExprNode *node)
 {
-  g_assert(node->layout == ENL_JUNCTION);
+  g_assert(node->layout == ENL_CONDITIONAL);
 
   LogExprNode *branches = node->children;
 
   g_assert(branches != NULL);
   g_assert(branches->next != NULL);
-  g_assert(branches->next->next == NULL);
 
   /* first child */
   return branches;
@@ -455,12 +480,11 @@ log_expr_node_conditional_get_true_branch(LogExprNode *node)
 static LogExprNode *
 log_expr_node_conditional_get_false_branch(LogExprNode *node)
 {
-  g_assert(node->layout == ENL_JUNCTION);
+  g_assert(node->layout == ENL_CONDITIONAL);
 
   LogExprNode *branches = node->children;
   g_assert(branches != NULL);
   g_assert(branches->next != NULL);
-  g_assert(branches->next->next == NULL);
 
   /* second child */
   return branches->next;
@@ -499,7 +523,7 @@ log_expr_node_conditional_set_false_branch_of_the_last_if(LogExprNode *condition
   LogExprNode *conditional_node = _locate_last_conditional_along_nested_else_blocks(conditional_head_node);
   LogExprNode *branches = conditional_node->children;
 
-  /* a conditional branch always have two children (see the constructor
+  /* a conditional branch always have three children (see the constructor
    * below), the first one is the "true" branch and the second one is the
    * "false" branch, as they are constructed as final log channels with
    * filter statement in the first one as the "if" expression.  */
@@ -507,45 +531,42 @@ log_expr_node_conditional_set_false_branch_of_the_last_if(LogExprNode *condition
   /* assert that we only have two children */
   g_assert(branches != NULL);
   g_assert(branches->next != NULL);
-  g_assert(branches->next->next == NULL);
 
+  LogExprNode *true_expr = branches;
+  LogExprNode *old_false_expr = branches->next;
+  LogExprNode *filter_expr = branches->next->next;
 
   /* construct the new false branch */
-  LogExprNode *false_branch = log_expr_node_new_log(
-                                false_expr,
-                                log_expr_node_lookup_flag("final"),
-                                NULL
-                              );
+  LogExprNode *new_false_expr = log_expr_node_new_log(
+                                  false_expr,
+                                  LC_FINAL,
+                                  NULL
+                                );
 
   /* unlink and free the old one */
-  LogExprNode *old_false_branch = branches->next;
-  branches->next = false_branch;
-  false_branch->parent = conditional_node;
-  log_expr_node_unref(old_false_branch);
+
+  g_assert(!filter_expr || filter_expr->parent == conditional_node);
+  new_false_expr->parent = conditional_node;
+
+  log_expr_node_append(true_expr, new_false_expr);
+  log_expr_node_append(new_false_expr, filter_expr);
+
+  log_expr_node_unref(old_false_expr);
 }
 
 /*
  */
 LogExprNode *
-log_expr_node_new_conditional_with_filter(LogExprNode *filter_pipe, LogExprNode *true_expr, CFG_LTYPE *yylloc)
+log_expr_node_new_simple_conditional(LogExprNode *filter_expr, LogExprNode *true_expr, CFG_LTYPE *yylloc)
 {
-  LogExprNode *filter_node = log_expr_node_new_filter(NULL, filter_pipe, NULL);
 
   /*
    *  channel {
-   *    filter { EXPRESSION };
    *    true_expr;
    *    flags(final);
    *  };
    */
-  LogExprNode *true_branch = log_expr_node_new_log(
-                               log_expr_node_append_tail(
-                                 filter_node,
-                                 log_expr_node_new_log(true_expr, 0, NULL)
-                               ),
-                               LC_FINAL,
-                               NULL
-                             );
+  true_expr->flags |= LC_FINAL;
 
   /*
    *  channel {
@@ -557,19 +578,18 @@ log_expr_node_new_conditional_with_filter(LogExprNode *filter_pipe, LogExprNode 
    * log_expr_node_conditional_set_false_branch_of_the_last_if() function
    * above.
    */
-  LogExprNode *false_branch = log_expr_node_new_log(
-                                NULL,
-                                LC_FINAL,
-                                NULL
-                              );
-  return log_expr_node_new_junction(
-           log_expr_node_append_tail(true_branch, false_branch),
-           yylloc
-         );
+
+  LogExprNode *false_expr = log_expr_node_new_log(
+                              NULL,
+                              LC_FINAL,
+                              NULL
+                            );
+  return log_expr_node_new_conditional(log_expr_node_new_filter(NULL, filter_expr, yylloc),
+                                       true_expr, false_expr, yylloc);
 }
 
 LogExprNode *
-log_expr_node_new_conditional_with_block(LogExprNode *block, CFG_LTYPE *yylloc)
+log_expr_node_new_compound_conditional(LogExprNode *block, CFG_LTYPE *yylloc)
 {
   /*
    *  channel {
@@ -577,11 +597,10 @@ log_expr_node_new_conditional_with_block(LogExprNode *block, CFG_LTYPE *yylloc)
    *    flags(final);
    *  };
    */
-  LogExprNode *true_branch = log_expr_node_new_log(
-                               block,
-                               LC_FINAL,
-                               NULL
-                             );
+
+  LogExprNode *true_expr = block;
+
+  true_expr->flags |= LC_FINAL;
 
   /*
    *  channel {
@@ -593,15 +612,14 @@ log_expr_node_new_conditional_with_block(LogExprNode *block, CFG_LTYPE *yylloc)
    * log_expr_node_conditional_set_false_branch_of_the_last_if() function
    * above.
    */
-  LogExprNode *false_branch = log_expr_node_new_log(
-                                NULL,
-                                LC_FINAL,
-                                NULL
-                              );
-  return log_expr_node_new_junction(
-           log_expr_node_append_tail(true_branch, false_branch),
-           yylloc
-         );
+
+  LogExprNode *false_expr = log_expr_node_new_log(
+                              NULL,
+                              LC_FINAL,
+                              NULL
+                            );
+  return log_expr_node_new_conditional(NULL, true_expr, false_expr, yylloc);
+
 }
 
 /****************************************************************************/
@@ -1224,6 +1242,76 @@ error:
   return FALSE;
 }
 
+/**
+ * cfg_tree_compile_conditional():
+ **/
+static gboolean
+cfg_tree_compile_conditional(CfgTree *self,
+                             LogExprNode *node,
+                             LogPipe **outer_pipe_head, LogPipe **outer_pipe_tail)
+{
+  LogPipe *join_pipe = NULL;    /* the pipe where parallel branches are joined in a junction */
+  LogPipe *midpoint_pipe = NULL;
+  LogMultiplexer *fork_mpx = NULL;
+
+  /* LC_XXX flags are currently only implemented for sequences, ensure that the grammar enforces this. */
+  g_assert(node->flags == 0);
+
+  LogExprNode *true_branch = node->children;
+  LogExprNode *false_branch = node->children->next;
+  LogExprNode *filter_expr = node->children->next->next;
+
+
+  LogPipe *true_pipe_head, *true_pipe_tail;
+  if (!cfg_tree_compile_node(self, true_branch, &true_pipe_head, &true_pipe_tail))
+    goto error;
+
+  LogPipe *false_pipe_head, *false_pipe_tail;
+  if (!cfg_tree_compile_node(self, false_branch, &false_pipe_head, &false_pipe_tail))
+    goto error;
+
+
+  fork_mpx = cfg_tree_new_mpx(self, node, "mpx(conditional)");
+
+  join_pipe = cfg_tree_new_pipe(self, node, "conditional-end");
+  join_pipe->flags |= PIF_JUNCTION_END;
+
+
+  if (filter_expr)
+    {
+      LogPipe *filter_pipe_head, *filter_pipe_tail;
+
+      if (!cfg_tree_compile_node(self, filter_expr, &filter_pipe_head, &filter_pipe_tail))
+        goto error;
+
+      midpoint_pipe = cfg_tree_new_pipe(self, node, "conditional-midpoint");
+      midpoint_pipe->flags |= PIF_CONDITIONAL_MIDPOINT;
+
+      log_pipe_append(filter_pipe_tail, midpoint_pipe);
+      log_pipe_append(midpoint_pipe, true_pipe_head);
+      true_pipe_head = filter_pipe_head;
+    }
+
+
+  log_multiplexer_add_next_hop(fork_mpx, true_pipe_head);
+  log_multiplexer_add_next_hop(fork_mpx, false_pipe_head);
+  log_pipe_append(true_pipe_tail, join_pipe);
+  log_pipe_append(false_pipe_tail, join_pipe);
+
+  if (outer_pipe_head)
+    *outer_pipe_head = &fork_mpx->super;
+  if (outer_pipe_tail)
+    *outer_pipe_tail = join_pipe;
+
+  return TRUE;
+error:
+
+  /* we don't need to free anything, everything we allocated is recorded in
+   * @self, thus will be freed whenever cfg_tree_free is called */
+
+  return FALSE;
+}
+
 /*
  * cfg_tree_compile_node:
  *
@@ -1266,6 +1354,9 @@ cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
       break;
     case ENL_JUNCTION:
       result = cfg_tree_compile_junction(self, node, outer_pipe_head, outer_pipe_tail);
+      break;
+    case ENL_CONDITIONAL:
+      result = cfg_tree_compile_conditional(self, node, outer_pipe_head, outer_pipe_tail);
       break;
     default:
       g_assert_not_reached();

@@ -737,17 +737,17 @@ log_conditional
 log_if
         : KW_IF '(' filter_content ')' '{' log_content '}'
           {
-            $$ = log_expr_node_new_conditional_with_filter($3, $6, &@$);
+            $$ = log_expr_node_new_simple_conditional($3, $6, &@$);
           }
         | KW_IF '{' log_content '}'
           {
-            $$ = log_expr_node_new_conditional_with_block($3, &@$);
+            $$ = log_expr_node_new_compound_conditional($3, &@$);
           }
         | log_if KW_ELIF '(' filter_content ')' '{' log_content '}'
           {
             LogExprNode *false_branch;
 
-            false_branch = log_expr_node_new_conditional_with_filter($4, $7, &@$);
+            false_branch = log_expr_node_new_simple_conditional($4, $7, &@$);
             log_expr_node_conditional_set_false_branch_of_the_last_if($1, false_branch);
             $$ = $1;
           }
@@ -755,7 +755,7 @@ log_if
           {
             LogExprNode *false_branch;
 
-            false_branch = log_expr_node_new_conditional_with_block($4, &@$);
+            false_branch = log_expr_node_new_compound_conditional($4, &@$);
             log_expr_node_conditional_set_false_branch_of_the_last_if($1, false_branch);
             $$ = $1;
           }
