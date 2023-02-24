@@ -721,6 +721,10 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
         }
       while (left && open_sd != 0);
     }
+  else
+    {
+      goto error;
+    }
   ret = TRUE;
 error:
   /* FIXME: what happens if an error occurs? there's no way to return a
@@ -731,6 +735,23 @@ error:
   *data = src;
   *length = left;
   return ret;
+}
+
+gboolean
+_syslog_format_parse_sd_column(LogMessage *msg, const guchar **data, gint *length, const MsgFormatOptions *options)
+{
+  if (*length == 0)
+    return TRUE;
+
+  guchar first_char = (*data)[0];
+  if (first_char == '-' || first_char == '[')
+    return _syslog_format_parse_sd(msg, data, length, options);
+
+  /* the SDATA block is not there, skip parsing it as this is how we have
+   * processed SDATA blocks since we added RFC5424.  This is more forgiving
+   * than strict RFC5424 but apps have a bad history of conforming to it
+   * anyway.  */
+  return TRUE;
 }
 
 static gboolean
@@ -962,7 +983,7 @@ _syslog_format_parse_syslog_proto(const MsgFormatOptions *parse_options, const g
     goto error;
 
   /* structured data part */
-  if (!_syslog_format_parse_sd(msg, &src, &left, parse_options))
+  if (!_syslog_format_parse_sd_column(msg, &src, &left, parse_options))
     goto error;
 
   /* checking if there are remaining data in log message */
