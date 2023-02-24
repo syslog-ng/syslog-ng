@@ -230,12 +230,11 @@
 
 %token KW_THROTTLE                    10170
 %token KW_THREADED                    10171
-%token KW_PASS_UNIX_CREDENTIALS       10231
 
-%token KW_PERSIST_NAME                10302
-
-%token KW_READ_OLD_RECORDS            10304
-%token KW_USE_SYSLOGNG_PID            10305
+%token KW_PASS_UNIX_CREDENTIALS       10180
+%token KW_PERSIST_NAME                10181
+%token KW_READ_OLD_RECORDS            10182
+%token KW_USE_SYSLOGNG_PID            10183
 
 /* log statement options */
 %token KW_FLAGS                       10190
@@ -279,6 +278,7 @@
 
 %token KW_DEFAULT_FACILITY            10300
 %token KW_DEFAULT_SEVERITY            10301
+%token KW_SDATA_PREFIX                10302
 
 %token KW_PORT                        10323
 /* misc options */
@@ -1318,6 +1318,11 @@ msg_format_option
 	    if (last_msg_format_options->default_pri == 0xFFFF)
 	      last_msg_format_options->default_pri = LOG_NOTICE;
 	    last_msg_format_options->default_pri = (last_msg_format_options->default_pri & LOG_PRIMASK) | $3;
+          }
+        | KW_SDATA_PREFIX '(' string ')'
+          {
+            msg_format_options_set_sdata_prefix(last_msg_format_options, $3);
+            free($3);
           }
         ;
 

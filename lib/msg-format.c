@@ -189,6 +189,13 @@ msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length)
 }
 
 void
+msg_format_options_set_sdata_prefix(MsgFormatOptions *options, const gchar *prefix)
+{
+  g_free(options->sdata_prefix);
+  options->sdata_prefix = g_strdup(prefix);
+}
+
+void
 msg_format_options_defaults(MsgFormatOptions *options)
 {
   options->flags = LP_EXPECT_HOSTNAME | LP_STORE_LEGACY_MSGHDR;
@@ -197,6 +204,8 @@ msg_format_options_defaults(MsgFormatOptions *options)
   options->bad_hostname = NULL;
   options->default_pri = 0xFFFF;
   options->sdata_param_value_max = 65535;
+  options->sdata_prefix = NULL;
+  options->sdata_prefix_len = 0;
 }
 
 /* NOTE: _init needs to be idempotent when called multiple times w/o invoking _destroy */
@@ -221,6 +230,10 @@ msg_format_options_init(MsgFormatOptions *options, GlobalConfig *cfg)
   p = cfg_find_plugin(cfg, LL_CONTEXT_FORMAT, options->format);
   if (p)
     options->format_handler = plugin_construct(p);
+
+  if (!options->sdata_prefix)
+    options->sdata_prefix = g_strdup(logmsg_sd_prefix);
+  options->sdata_prefix_len = strlen(options->sdata_prefix);
   options->initialized = TRUE;
 }
 
@@ -234,6 +247,7 @@ msg_format_options_copy(MsgFormatOptions *options, const MsgFormatOptions *sourc
   options->default_pri = source->default_pri;
   options->recv_time_zone = g_strdup(source->recv_time_zone);
   options->sdata_param_value_max = source->sdata_param_value_max;
+  options->sdata_prefix = g_strdup(source->sdata_prefix);
 }
 
 void
@@ -254,6 +268,7 @@ msg_format_options_destroy(MsgFormatOptions *options)
       time_zone_info_free(options->recv_time_zone_info);
       options->recv_time_zone_info = NULL;
     }
+  g_free(options->sdata_prefix);
   options->initialized = FALSE;
 }
 

@@ -7,7 +7,10 @@ modules_syslogformat_libsyslogformat_la_SOURCES	=	\
 	modules/syslogformat/syslog-parser-parser.c	\
 	modules/syslogformat/syslog-parser-parser.h	\
 	modules/syslogformat/syslog-parser.c		\
-	modules/syslogformat/syslog-parser.h
+	modules/syslogformat/syslog-parser.h		\
+	modules/syslogformat/sdata-parser.c		\
+	modules/syslogformat/sdata-parser.h
+
 
 BUILT_SOURCES					+=	\
 	modules/syslogformat/syslog-parser-grammar.c	\

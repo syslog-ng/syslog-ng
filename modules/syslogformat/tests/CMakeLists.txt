@@ -1,1 +1,1 @@
-add_unit_test(CRITERION TARGET test_syslog_format DEPENDS syslogformat)
+add_unit_test(LIBTEST CRITERION TARGET test_syslog_format DEPENDS syslogformat)

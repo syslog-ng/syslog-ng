@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2012 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2023 Balázs Scheidler <bazsi77@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,20 +19,19 @@
  * COPYING for details.
  *
  */
+#ifndef SDATA_PARSER_H_INCLUDED
+#define SDATA_PARSER_H_INCLUDED
 
-#ifndef SYSLOG_FORMAT_H_INCLUDED
-#define SYSLOG_FORMAT_H_INCLUDED
-
+#include "parser/parser-expr.h"
 #include "msg-format.h"
 
-gboolean syslog_format_handler(const MsgFormatOptions *parse_options,
-                               LogMessage *msg,
-                               const guchar *data, gsize length,
-                               gsize *problem_position);
+typedef struct _SDataParser
+{
+  LogParser super;
+  MsgFormatOptions parse_options;
+} SDataParser;
 
-void syslog_format_init(void);
 
-gboolean _syslog_format_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgFormatOptions *options);
-
+LogParser *sdata_parser_new(GlobalConfig *cfg);
 
 #endif

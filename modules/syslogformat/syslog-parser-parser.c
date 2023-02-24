@@ -32,7 +32,9 @@ int syslog_parser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
 static CfgLexerKeyword syslog_parser_keywords[] =
 {
   { "syslog_parser",          KW_SYSLOG_PARSER },
+  { "sdata_parser",           KW_SDATA_PARSER },
   { "drop_invalid",           KW_DROP_INVALID },
+  { "prefix",                 KW_PREFIX },
   { NULL }
 };
 

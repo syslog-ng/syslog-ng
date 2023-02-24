@@ -49,6 +49,11 @@ static Plugin syslog_format_plugins[] =
     .type = LL_CONTEXT_PARSER,
     .name = "syslog-parser",
     .parser = &syslog_parser_parser,
+  },
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "sdata-parser",
+    .parser = &syslog_parser_parser,
   }
 };
 

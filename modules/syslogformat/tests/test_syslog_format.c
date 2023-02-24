@@ -22,6 +22,7 @@
  */
 
 #include <criterion/criterion.h>
+#include "libtest/msg_parse_lib.h"
 
 #include "apphook.h"
 #include "cfg.h"
@@ -101,4 +102,173 @@ Test(syslog_format, minimal_non_zero_terminated_numeric_message_is_parsed_as_pro
 
   msg_format_options_destroy(&parse_options);
   log_msg_unref(msg);
+}
+
+static gboolean
+_extract_sdata_into_message(const gchar *sdata, LogMessage **pmsg)
+{
+  const guchar *data = (const guchar *) sdata;
+  gint data_length = strlen(sdata);
+  LogMessage *msg = log_msg_new_empty();
+
+  msg_format_options_defaults(&parse_options);
+  msg_format_options_init(&parse_options, cfg);
+  gboolean result = _syslog_format_parse_sd(msg, &data, &data_length, &parse_options);
+  msg_format_options_destroy(&parse_options);
+
+  if (pmsg)
+    *pmsg = msg;
+  else
+    log_msg_unref(msg);
+
+  return result;
+}
+
+Test(syslog_format, test_sdata_dash_means_there_are_no_sdata_elements)
+{
+  LogMessage *msg;
+
+  cr_assert(_extract_sdata_into_message("-", &msg));
+  assert_log_message_value_by_name(msg, "SDATA", "");
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, test_sdata_parsing_invalid_brackets_are_returned_as_failures)
+{
+  cr_assert_not(_extract_sdata_into_message("<", NULL));
+  cr_assert_not(_extract_sdata_into_message("[", NULL));
+  cr_assert_not(_extract_sdata_into_message("[]", NULL));
+  cr_assert_not(_extract_sdata_into_message("]", NULL));
+  cr_assert_not(_extract_sdata_into_message("[foobar", NULL));
+}
+
+Test(syslog_format, test_sdata_id_without_param_is_accepted_and_represented_in_sdata)
+{
+  LogMessage *msg;
+  cr_assert(_extract_sdata_into_message("[foobar]", &msg));
+  assert_log_message_value_by_name(msg, "SDATA", "[foobar]");
+  assert_log_message_value_by_name(msg, ".SDATA.foobar", "");
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, test_sdata_simple_id_and_param)
+{
+  LogMessage *msg;
+  cr_assert(_extract_sdata_into_message("[foo bar=\"baz\"]", &msg));
+  assert_log_message_value_by_name(msg, "SDATA", "[foo bar=\"baz\"]");
+  assert_log_message_value_by_name(msg, ".SDATA.foo.bar", "baz");
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, test_sdata_invalid_sd_id_and_param)
+{
+  cr_assert_not(_extract_sdata_into_message("[foo= bar=\"baz\"]", NULL));
+  cr_assert_not(_extract_sdata_into_message("[foo\" bar=\"baz\"]", NULL));
+}
+
+Test(syslog_format, test_sdata_invalid_param)
+{
+  cr_assert_not(_extract_sdata_into_message("[foo bar\"=\"baz\"]", NULL));
+  cr_assert_not(_extract_sdata_into_message("[foo bar]", NULL));
+  cr_assert_not(_extract_sdata_into_message("[foo bar baz]", NULL));
+}
+
+Test(syslog_format, test_sdata_invalid_value)
+{
+  cr_assert_not(_extract_sdata_into_message("[foo bar=\"]", NULL));
+}
+
+Test(syslog_format, test_sdata_unquoted_value)
+{
+  LogMessage *msg;
+
+  /* VMWare spits out SDATA like this: [Originator@6876 sub=Vimsvc.ha-eventmgr opID=esxui-13c6-6b16 sid=5214bde6 user=root] */
+  cr_assert(_extract_sdata_into_message("[foo bar=baz]", &msg));
+  assert_log_message_value_by_name(msg, "SDATA", "[foo bar=\"baz\"]");
+  assert_log_message_value_by_name(msg, ".SDATA.foo.bar", "baz");
+  log_msg_unref(msg);
+
+  cr_assert(
+    _extract_sdata_into_message("[Originator@6876 sub=Vimsvc.ha-eventmgr opID=esxui-13c6-6b16 sid=5214bde6 user=root]",
+                                &msg));
+  assert_log_message_value_by_name(msg, "SDATA",
+                                   "[Originator@6876 sub=\"Vimsvc.ha-eventmgr\" opID=\"esxui-13c6-6b16\" sid=\"5214bde6\" user=\"root\"]");
+  assert_log_message_value_by_name(msg, ".SDATA.Originator@6876.sub", "Vimsvc.ha-eventmgr");
+  assert_log_message_value_by_name(msg, ".SDATA.Originator@6876.opID", "esxui-13c6-6b16");
+  assert_log_message_value_by_name(msg, ".SDATA.Originator@6876.sid", "5214bde6");
+  assert_log_message_value_by_name(msg, ".SDATA.Originator@6876.user", "root");
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, test_sdata_param_value_invalid_escape)
+{
+  LogMessage *msg;
+  cr_assert(_extract_sdata_into_message("[foo bar=\"\\a\"]", &msg));
+
+  /* non-special character follows a backslash.  We extract as if they were
+   * normal characters (as the spec), however when we reconstruct the SDATA
+   * string, we regenerate it from our internal value, which "fixes" it.
+   * This is against the spec, but our approach is to parse and reconstruct
+   * and there's no way we can encode errors into our internal
+   * representation. There would be not too much value either. */
+  assert_log_message_value_by_name(msg, "SDATA", "[foo bar=\"\\\\a\"]");
+  assert_log_message_value_by_name(msg, ".SDATA.foo.bar", "\\a");
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, test_sdata_param_value_escape_quote)
+{
+  LogMessage *msg;
+  cr_assert(_extract_sdata_into_message("[foo bar=\"\\\"\"]", &msg));
+
+  assert_log_message_value_by_name(msg, "SDATA", "[foo bar=\"\\\"\"]");
+  assert_log_message_value_by_name(msg, ".SDATA.foo.bar", "\"");
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, test_sdata_param_value_escape_bracket)
+{
+  LogMessage *msg;
+  cr_assert(_extract_sdata_into_message("[foo bar=\"\\]\"]", &msg));
+
+  assert_log_message_value_by_name(msg, "SDATA", "[foo bar=\"\\]\"]");
+  assert_log_message_value_by_name(msg, ".SDATA.foo.bar", "]");
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, test_sdata_param_value_escape_backslash)
+{
+  LogMessage *msg;
+  cr_assert(_extract_sdata_into_message("[foo bar=\"\\\\\"]", &msg));
+
+  assert_log_message_value_by_name(msg, "SDATA", "[foo bar=\"\\\\\"]");
+  assert_log_message_value_by_name(msg, ".SDATA.foo.bar", "\\");
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, test_sdata_simple_id_and_multiple_params)
+{
+  LogMessage *msg;
+  cr_assert(_extract_sdata_into_message("[foo bar=\"baz\" chew=\"chow\" peek=\"poke\"]", &msg));
+  assert_log_message_value_by_name(msg, "SDATA", "[foo bar=\"baz\" chew=\"chow\" peek=\"poke\"]");
+  assert_log_message_value_by_name(msg, ".SDATA.foo.bar", "baz");
+  assert_log_message_value_by_name(msg, ".SDATA.foo.chew", "chow");
+  assert_log_message_value_by_name(msg, ".SDATA.foo.peek", "poke");
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, test_sdata_enterprise_qualified_id_with_and_multiple_params)
+{
+  LogMessage *msg;
+  cr_assert(_extract_sdata_into_message("[foo@1.2.3.4 bar=\"baz\" chew=\"chow\" peek=\"poke\"]", &msg));
+  assert_log_message_value_by_name(msg, "SDATA", "[foo@1.2.3.4 bar=\"baz\" chew=\"chow\" peek=\"poke\"]");
+  assert_log_message_value_by_name(msg, ".SDATA.foo@1.2.3.4.bar", "baz");
+  assert_log_message_value_by_name(msg, ".SDATA.foo@1.2.3.4.chew", "chow");
+  assert_log_message_value_by_name(msg, ".SDATA.foo@1.2.3.4.peek", "poke");
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, test_sdata_missing_closing_bracket)
+{
+  cr_assert_not(_extract_sdata_into_message("[foo bar=\"baz\"", NULL));
 }
