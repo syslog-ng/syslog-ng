@@ -28,6 +28,9 @@
 #include "multi-line/indented-multi-line.h"
 #include "messages.h"
 
+#include <string.h>
+#include <strings.h>
+
 MultiLineLogic *
 multi_line_factory_construct(const MultiLineOptions *options)
 {
