@@ -168,6 +168,7 @@ modules/syslogformat/sdata-parser\.[ch]
 tests/light/functional_tests/logpath/__init__.py
 tests/light/functional_tests/logpath/test_named_logpaths.py
 tests/light/functional_tests/logpath/test_named_logpaths_with_catchall_flag.py
+tests/light/functional_tests/logpath/test_named_logpaths_with_fallback_flag.py
 tests/light/functional_tests/parsers/sdata-parser/test_sdata_parser\.py
 tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py
 
