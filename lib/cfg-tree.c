@@ -637,9 +637,9 @@ cfg_tree_assoc_pipe(CfgTree *self, LogExprNode *node, LogPipe *pipe, const gchar
 }
 
 static LogPipe *
-cfg_tree_new_pipe(CfgTree *self, LogExprNode *related_expr)
+cfg_tree_new_pipe(CfgTree *self, LogExprNode *related_expr, const gchar *info)
 {
-  return cfg_tree_assoc_pipe(self, related_expr, log_pipe_new(self->cfg), "cfg_tree_pipe");
+  return cfg_tree_assoc_pipe(self, related_expr, log_pipe_new(self->cfg), info);
 }
 
 static LogMultiplexer *
@@ -821,7 +821,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
           sub_pipe_tail = referenced_node->aux;
         }
 
-      attach_pipe = cfg_tree_new_pipe(self, node);
+      attach_pipe = cfg_tree_new_pipe(self, node, "source-attach");
 
       if (sub_pipe_tail)
         {
@@ -1057,7 +1057,7 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
                 }
               else
                 {
-                  source_join_pipe = last_pipe = cfg_tree_new_pipe(self, node);
+                  source_join_pipe = last_pipe = cfg_tree_new_pipe(self, node, "source-join");
                 }
             }
           log_pipe_append(sub_pipe_tail, source_join_pipe);
@@ -1074,7 +1074,7 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
   if (!first_pipe && !last_pipe)
     {
       /* this is an empty sequence, insert a do-nothing LogPipe */
-      first_pipe = last_pipe = cfg_tree_new_pipe(self, node);
+      first_pipe = last_pipe = cfg_tree_new_pipe(self, node, "noop");
     }
 
 
@@ -1205,7 +1205,7 @@ cfg_tree_compile_junction(CfgTree *self,
         {
           if (!join_pipe)
             {
-              join_pipe = cfg_tree_new_pipe(self, node);
+              join_pipe = cfg_tree_new_pipe(self, node, "junction-end");
             }
           log_pipe_append(sub_pipe_tail, join_pipe);
 
