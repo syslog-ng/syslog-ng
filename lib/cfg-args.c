@@ -26,6 +26,8 @@
 #include "str-utils.h"
 #include "str-repr/encode.h"
 
+#include <stdlib.h>
+
 struct _CfgArgs
 {
   gint ref_cnt;
