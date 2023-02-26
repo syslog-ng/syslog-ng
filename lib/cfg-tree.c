@@ -1202,7 +1202,11 @@ cfg_tree_compile_junction(CfgTree *self,
             }
           if (!fork_mpx)
             {
-              fork_mpx = cfg_tree_new_mpx(self, node, "mpx(junction)");
+              fork_mpx = cfg_tree_new_mpx(self, node,
+                                          node->content == ENC_DESTINATION
+                                          ? "mpx(destination-junction)"
+                                          : (node->content == ENC_SOURCE ? "mpx(source-junction)" : "mpx(junction)"));
+
               *outer_pipe_head = &fork_mpx->super;
             }
           log_multiplexer_add_next_hop(fork_mpx, sub_pipe_head);
