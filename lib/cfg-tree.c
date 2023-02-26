@@ -890,6 +890,7 @@ cfg_tree_compile_reference(CfgTree *self, LogExprNode *node,
       */
 
       mpx = cfg_tree_new_mpx(self, node, "mpx(destination-reference)");
+      log_multiplexer_disable_delivery_propagation(mpx);
 
       if (sub_pipe_head)
         {
@@ -1207,6 +1208,8 @@ cfg_tree_compile_junction(CfgTree *self,
                                           ? "mpx(destination-junction)"
                                           : (node->content == ENC_SOURCE ? "mpx(source-junction)" : "mpx(junction)"));
 
+              if (node->content == ENC_DESTINATION)
+                log_multiplexer_disable_delivery_propagation(fork_mpx);
               *outer_pipe_head = &fork_mpx->super;
             }
           log_multiplexer_add_next_hop(fork_mpx, sub_pipe_head);
