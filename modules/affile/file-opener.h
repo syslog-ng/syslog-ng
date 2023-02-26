@@ -28,6 +28,9 @@
 #include "compat/lfs.h"
 
 #include "file-perms.h"
+#include "file-signals.h"
+#include "logwriter.h"
+#include "signal-slot-connector/signal-slot-connector.h"
 #include "transport/logtransport.h"
 #include "logproto/logproto-server.h"
 #include "logproto/logproto-client.h"
@@ -64,7 +67,8 @@ struct _FileOpener
   LogTransport *(*construct_transport)(FileOpener *self, gint fd);
   LogProtoServer *(*construct_src_proto)(FileOpener *self, LogTransport *transport,
                                          LogProtoFileReaderOptions *proto_options);
-  LogProtoClient *(*construct_dst_proto)(FileOpener *self, LogTransport *transport, LogProtoClientOptions *proto_options);
+  LogProtoClient *(*construct_dst_proto)(FileOpener *self, LogTransport *transport, LogProtoClientOptions *proto_options,
+                                         SignalSlotConnector *connector, const gchar *filename, FileReopener opener);
 };
 
 static inline LogTransport *
@@ -80,9 +84,10 @@ file_opener_construct_src_proto(FileOpener *self, LogTransport *transport, LogPr
 }
 
 static inline LogProtoClient *
-file_opener_construct_dst_proto(FileOpener *self, LogTransport *transport, LogProtoClientOptions *proto_options)
+file_opener_construct_dst_proto(FileOpener *self, LogTransport *transport, LogProtoClientOptions *proto_options,
+                                SignalSlotConnector *connector, const gchar *filename, FileReopener reopener)
 {
-  return self->construct_dst_proto(self, transport, proto_options);
+  return self->construct_dst_proto(self, transport, proto_options, connector, filename, reopener);
 }
 
 FileOpenerResult file_opener_open_fd(FileOpener *self, const gchar *name, FileDirection dir, gint *fd);

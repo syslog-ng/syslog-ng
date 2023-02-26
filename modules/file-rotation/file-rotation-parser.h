@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2022 Shikhar Vashistha
+ * Copyright (c) 2022 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,15 +21,14 @@
  *
  */
 
-#ifndef LOG_PROTO_FILE_WRITER_H_INCLUDED
-#define LOG_PROTO_FILE_WRITER_H_INCLUDED
+#ifndef FILE_ROTATION_PARSER_H_INCLUDED
+#define FILE_ROTATION_PARSER_H_INCLUDED
 
-#include "logproto/logproto-client.h"
-#include "logwriter.h"
-#include "file-signals.h"
-#include "signal-slot-connector/signal-slot-connector.h"
+#include "cfg-parser.h"
+#include "driver.h"
 
-LogProtoClient *log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options,
-                                          gint flush_lines, gboolean fsync, SignalSlotConnector *connector, const gchar *filename, FileReopener reopene);
+extern CfgParser file_rotation_parser;
+
+CFG_PARSER_DECLARE_LEXER_BINDING(file_rotation_, FILE_ROTATION_, LogDriverPlugin **)
 
 #endif

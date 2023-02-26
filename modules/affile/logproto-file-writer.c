@@ -22,8 +22,9 @@
  */
 
 #include "logproto-file-writer.h"
+#include "affile-dest.h"
 #include "messages.h"
-
+#include "file-signals.h"
 #include <string.h>
 #include <errno.h>
 #include <sys/uio.h>
@@ -32,6 +33,9 @@
 typedef struct _LogProtoFileWriter
 {
   LogProtoClient super;
+  SignalSlotConnector *file_rotation_signal;
+  FileReopener reopener;
+  const gchar *filename;
   guchar *partial;
   gsize partial_len, partial_pos;
   gint partial_messages;
@@ -51,6 +55,9 @@ typedef struct _LogProtoFileWriter
  * or from log_proto_flush (foced flush: flush time, exit, etc)
  *
  */
+gboolean
+affile_dw_reopen(AFFileDestWriter *self);
+
 static LogProtoStatus
 log_proto_file_writer_flush(LogProtoClient *s)
 {
@@ -134,6 +141,16 @@ log_proto_file_writer_flush(LogProtoClient *s)
   self->buf_count = 0;
   self->sum_len = 0;
 
+  const gchar *file_name = self->filename;
+
+  FileFlushSignalData signal_data =
+  {
+    .filename = file_name,
+    .reopener = &self->reopener
+  };
+
+  EMIT(self->file_rotation_signal, signal_file_flush, &signal_data);
+
   return LPS_SUCCESS;
 
 write_error:
@@ -147,7 +164,6 @@ write_error:
     }
 
   return LPS_SUCCESS;
-
 }
 
 /*
@@ -218,7 +234,8 @@ log_proto_file_writer_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, g
 }
 
 LogProtoClient *
-log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options, gint flush_lines, gint fsync_)
+log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options, gint flush_lines, gint fsync_,
+                          SignalSlotConnector *connector, const gchar *filename, FileReopener reopener)
 {
   if (flush_lines == 0)
     /* the flush-lines option has not been specified, use a default value */
@@ -233,8 +250,14 @@ log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *
   LogProtoFileWriter *self = (LogProtoFileWriter *)g_malloc0(sizeof(LogProtoFileWriter) + sizeof(
       struct iovec)*flush_lines);
 
+
+
   log_proto_client_init(&self->super, transport, options);
+
+  self->file_rotation_signal = connector;
   self->fd = transport->fd;
+  self->reopener = reopener;
+  self->filename = filename;
   self->buf_size = flush_lines;
   self->fsync = fsync_;
   self->super.prepare = log_proto_file_writer_prepare;

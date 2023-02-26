@@ -1,0 +1,1 @@
+add_unit_test(CRITERION LIBTEST TARGET test_file_rotation DEPENDS file_rotation)

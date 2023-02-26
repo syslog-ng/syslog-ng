@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2022 Shikhar Vashistha
+ * Copyright (c) 2022 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,15 +21,21 @@
  *
  */
 
-#ifndef LOG_PROTO_FILE_WRITER_H_INCLUDED
-#define LOG_PROTO_FILE_WRITER_H_INCLUDED
+#include "file-rotation.h"
+#include "driver.h"
 
-#include "logproto/logproto-client.h"
-#include "logwriter.h"
-#include "file-signals.h"
-#include "signal-slot-connector/signal-slot-connector.h"
+#include <criterion/criterion.h>
 
-LogProtoClient *log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options,
-                                          gint flush_lines, gboolean fsync, SignalSlotConnector *connector, const gchar *filename, FileReopener reopene);
+Test(file_rotation, test_example)
+{
+  FileRotationPlugin *fr = file_rotation_new();
+  file_rotation_set_size(fr, 100);
+  file_rotation_set_interval(fr, "daily");
+  file_rotation_set_date_format(fr, "-%Y-%m-%d");
+  log_driver_plugin_free((LogDriverPlugin *) fr);
 
-#endif
+  cr_assert_eq(fr->size, 100);
+  cr_assert_str_eq(fr->interval, "daily");
+  printf("%s\n", fr->date_format);
+  cr_assert_str_eq(fr->date_format, "-%Y-%m-%d");
+}

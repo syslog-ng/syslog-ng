@@ -1,0 +1,93 @@
+/*
+ * Copyright (c) 2022 Shikhar Vashistha
+ * Copyright (c) 2022 László Várady
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "file-rotation-parser.h"
+
+}
+
+
+%code {
+
+#include "cfg-grammar-internal.h"
+#include "cfg-parser.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "plugin.h"
+#include "driver.h"
+#include "file-rotation.h"
+
+#include <string.h>
+
+FileRotationPlugin *last_file_rotation_plugin;
+
+}
+
+%define api.prefix {file_rotation_}
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriverPlugin **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_FILE_ROTATION
+%token KW_SIZE
+%token KW_INTERVAL
+%token KW_DATE_FORMAT
+%token KW_ROTATE
+
+%%
+
+start
+  : LL_CONTEXT_INNER_DEST file_rotation { YYACCEPT; }
+  ;
+
+file_rotation
+  : KW_FILE_ROTATION
+    {
+      last_file_rotation_plugin = file_rotation_new();
+      *instance = (LogDriverPlugin *) last_file_rotation_plugin;
+    }
+    '(' file_rotation_options ')'
+  ;
+
+file_rotation_options
+  : file_rotation_option file_rotation_options
+  |
+  ;
+
+file_rotation_option
+  : KW_SIZE '(' nonnegative_integer ')' { file_rotation_set_size(last_file_rotation_plugin, $3); }
+  | KW_INTERVAL '(' string ')' { file_rotation_set_interval(last_file_rotation_plugin, $3); free($3); }
+  | KW_DATE_FORMAT '(' string ')' { file_rotation_set_date_format(last_file_rotation_plugin, $3); free($3); }
+  | KW_ROTATE '(' nonnegative_integer ')' { file_rotation_set_number_of_file_rotatations(last_file_rotation_plugin, $3); }
+  ;
+
+/* INCLUDE_RULES */
+
+%%

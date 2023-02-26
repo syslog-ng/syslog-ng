@@ -68,6 +68,7 @@ modules/python-modules/requirements\.lock
                                                  LGPLv2.1+_SSL,non-balabit
 
 lib/timeutils/zonecache.[ch]$
+modules/affile/file-signals\.h
 modules/secure-logging
 modules/secure-logging/tests
 modules/secure-logging/slogencrypt
@@ -149,6 +150,7 @@ modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
 modules/afsocket/socket-options-unix\.[ch]$
 modules/basicfuncs/vp-funcs\.[ch]$
+modules/file-rotation
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/mariadb/.*\.conf$

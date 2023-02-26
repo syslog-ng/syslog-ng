@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2012 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2022 Shikhar Vashistha
+ * Copyright (c) 2022 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,15 +21,34 @@
  *
  */
 
-#ifndef LOG_PROTO_FILE_WRITER_H_INCLUDED
-#define LOG_PROTO_FILE_WRITER_H_INCLUDED
+#include "cfg-parser.h"
+#include "plugin.h"
+#include "plugin-types.h"
 
-#include "logproto/logproto-client.h"
-#include "logwriter.h"
-#include "file-signals.h"
-#include "signal-slot-connector/signal-slot-connector.h"
+extern CfgParser file_rotation_parser;
 
-LogProtoClient *log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options,
-                                          gint flush_lines, gboolean fsync, SignalSlotConnector *connector, const gchar *filename, FileReopener reopene);
+static Plugin file_rotation_plugins[] =
+{
+  {
+    .type = LL_CONTEXT_INNER_DEST,
+    .name = "file-rotation",
+    .parser = &file_rotation_parser,
+  },
+};
 
-#endif
+gboolean
+file_rotation_module_init(PluginContext *context, CfgArgs *args)
+{
+  plugin_register(context, file_rotation_plugins, G_N_ELEMENTS(file_rotation_plugins));
+  return TRUE;
+}
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "file_rotation",
+  .version = SYSLOG_NG_VERSION,
+  .description = "This module provides file rotation support for file-based destinations",
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
+  .plugins = file_rotation_plugins,
+  .plugins_len = G_N_ELEMENTS(file_rotation_plugins),
+};

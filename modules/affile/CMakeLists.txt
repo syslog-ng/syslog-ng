@@ -20,6 +20,7 @@ set(AFFILE_SOURCES
     "wildcard-source.h"
     "wildcard-file-reader.h"
     "file-list.h"
+    "file-signals.h"
     "affile-dest.c"
     "affile-parser.c"
     "affile-plugin.c"
