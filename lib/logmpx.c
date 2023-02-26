@@ -32,6 +32,12 @@ log_multiplexer_add_next_hop(LogMultiplexer *self, LogPipe *next_hop)
   g_ptr_array_add(self->next_hops, next_hop);
 }
 
+void
+log_multiplexer_disable_delivery_propagation(LogMultiplexer *self)
+{
+  self->delivery_propagation = FALSE;
+}
+
 static gboolean
 log_multiplexer_init(LogPipe *s)
 {
@@ -154,16 +160,20 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
    * "matched" will be determined by all filtering elements on the log
    * path and we are not one of them.
    *
-   * We differentiate between 1, 2 and 3 by checking pipe_next.  If
-   * pipe_next is non-NULL, we are just here for dispatching to
-   * destinations, otherwise we perform a filtering function, which means we
-   * need to push our filtering responsibility to the next pipe element.
+   * We differentiate between 1, 2 and 3 based on the value of
+   * self->delivery_propagation which is set during compilation.  If
+   * delivery_propagation is not set, we are just here for dispatching to
+   * destinations (e.g.  we need to ignore their outcome), otherwise we
+   * perform a filtering function, which means we need to push our filtering
+   * responsibility to the next pipe element.
    *
    */
 
-  if (!s->pipe_next && !delivered && path_options->matched)
-    *path_options->matched = FALSE;
-
+  if (self->delivery_propagation)
+    {
+      if (!delivered && path_options->matched)
+        *path_options->matched = FALSE;
+    }
   log_pipe_forward_msg(s, msg, path_options);
 }
 
@@ -212,6 +222,7 @@ log_multiplexer_new(GlobalConfig *cfg)
   self->super.free_fn = log_multiplexer_free;
   self->next_hops = g_ptr_array_new();
   self->super.arcs = _arcs;
+  self->delivery_propagation = TRUE;
   log_pipe_add_info(&self->super, "multiplexer");
   return self;
 }
