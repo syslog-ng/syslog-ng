@@ -541,7 +541,7 @@ plugin_stmt
 /* START_RULES */
 
 source_content
-        : _source_context_push source_items _source_context_pop   { $$ = log_expr_node_new_junction($2, &@$); }
+        : _source_context_push source_items _source_context_pop   { $$ = log_expr_node_new_source_junction($2, &@$); }
         ;
 
 source_items
@@ -628,7 +628,7 @@ rewrite_content
         ;
 
 dest_content
-         : _destination_context_push dest_items _destination_context_pop               { $$ = log_expr_node_new_junction($2, &@$); }
+         : _destination_context_push dest_items _destination_context_pop               { $$ = log_expr_node_new_destination_junction($2, &@$); }
          ;
 
 
