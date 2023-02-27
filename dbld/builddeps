@@ -177,31 +177,12 @@ function install_yum_packages {
 }
 
 function install_pip_packages {
-    case "${IMAGE_PLATFORM}" in
-        kira)
-            python_executables="python2 python3"
-            ;;
-        *)
-            python_executables="python3"
-            ;;
-    esac
+    local python_executables="python2 python3"
     for python_executable in ${python_executables}; do
-        case "${IMAGE_PLATFORM}" in
-            fedora-*)
-                # don't update pip/setuptools on Fedora as RPM installed
-                # instances cause an error, at least in Fedora-37
-                filter_pip_packages_by_platform_and_python_version $DBLD_DIR/pip_packages.manifest $python_executable| xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
-                ;;
-            *)
-                # pip can fail with setuptools>=66 if there are system packages installed which do not comply with PEP440:
-                # https://github.com/pypa/setuptools/issues/3772#issuecomment-1398809718
-                #
-                # As long as our supported distros have invalidly named packages, this will be an issue.
-                $python_executable -m pip install --ignore-installed --no-cache-dir --upgrade pip
-                $python_executable -m pip install --ignore-installed --no-cache-dir --upgrade "setuptools<66.0"
-                filter_pip_packages_by_platform_and_python_version $DBLD_DIR/pip_packages.manifest $python_executable | xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
-                ;;
-        esac
+        local pip_install="${python_executable} -m pip install --ignore-installed --no-cache-dir --upgrade"
+        ${pip_install} "pip"
+        ${pip_install} "setuptools<66.0"
+        filter_pip_packages_by_platform_and_python_version $DBLD_DIR/pip_packages.manifest ${python_executable} | xargs ${pip_install}
     done
 }
 
