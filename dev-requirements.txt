@@ -9,3 +9,4 @@ psutil
 pytest
 pytest-mock
 pre-commit
+virtualenv

@@ -3,14 +3,13 @@ ply                     [centos, fedora, debian, ubuntu, devshell, tarball]    [
 
 # pip packages for kira tests
 distro                  [kira]                                                 [python2, python3]
-hy                      [devshell, kira]                                       [python3]
-hyrule                  [devshell, kira]                                       [python3]
+hy                      [kira]                                                 [python3]
+hyrule                  [kira]                                                 [python3]
 requests                [kira]                                                 [python2, python3]
 
 # pip packages for python functional tests
 psutil                  [centos, fedora, debian, ubuntu, devshell]             [python3]
 pytest                  [centos, fedora, debian, ubuntu, devshell]             [python3]
-virtualenv              [devshell]                                             [python3]
 # pytest 4.6.9 has requirement six>=1.10.0, but ubuntu-trusty installs six 1.5.2 which is incompatible
 six>=1.10.0             [ubuntu-trusty]                                        [python3]
 
