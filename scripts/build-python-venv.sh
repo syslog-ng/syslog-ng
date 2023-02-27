@@ -41,4 +41,6 @@ echo "Building dev virtualenv for syslog-ng at ${PYTHON_VENV_DIR} from ${REQUIRE
 
 rm -rf ${PYTHON_VENV_DIR}
 ${PYTHON} -m venv ${PYTHON_VENV_DIR}
+${PYTHON_VENV_DIR}/bin/python -m pip install --upgrade pip
+${PYTHON_VENV_DIR}/bin/python -m pip install --upgrade setuptools
 ${PYTHON_VENV_DIR}/bin/python -m pip install -r $REQUIREMENTS_FILE
