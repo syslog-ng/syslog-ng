@@ -81,8 +81,41 @@ function install_gosu() {
     chmod +x /usr/local/bin/gosu
 }
 
+# NOTE: libjvm.so is not anymore in the java lib dir itself, a better choice could be to use libnio.so to find the real lib dir
+#       for backward compatibility the libjvm.so is kept as the default search base
+function get_jvm_paths() {
+    LIB_FILE=libjvm.so
+    if [ $# -gt 0 ]; then
+        LIB_FILE=$1
+    fi
+    find / -name "${LIB_FILE}" 2>/dev/null | sed "s@/${LIB_FILE}@@g"
+}
+
+function set_jvm_envs() {
+	if [ "${JAVA_HOME}" == "" ]; then
+		JAVA_LIBRARY_PATH=$(get_jvm_paths $@)
+
+		if [ "${JAVA_LIBRARY_PATH}" != "" ]; then
+			OLD_LIB_PATH=${LD_LIBRARY_PATH}
+			if [ "${OLD_LIB_PATH}" != "" ]; then
+				export LD_LIBRARY_PATH=${JAVA_LIBRARY_PATH}:${OLD_LIB_PATH}
+			else
+				export LD_LIBRARY_PATH=${JAVA_LIBRARY_PATH}
+			fi
+
+			for i in {1..4}; do
+				if [ "$(basename $(dirname \"${JAVA_LIBRARY_PATH}\"))" == "jvm" ]; then
+					break
+				fi
+				JAVA_LIBRARY_PATH=$(dirname "${JAVA_LIBRARY_PATH}")
+            done
+            export JAVA_HOME=${JAVA_LIBRARY_PATH}
+		fi
+	fi
+}
+
 function set_jvm_paths() {
-    find / -name 'libjvm.so' | sed 's@/libjvm.so@@g' | tee --append /etc/ld.so.conf.d/openjdk-libjvm.conf
+    get_jvm_paths $@ | tee --append /etc/ld.so.conf.d/openjdk-libjvm.conf
     ldconfig
 }
 
@@ -92,9 +125,9 @@ function install_gradle {
     mkdir -p /opt/gradle
     unzip -d /opt/gradle /tmp/gradle.zip
     rm -rf /tmp/gradle.zip
+    rm -rf /usr/bin/gradle
     ln -s /opt/gradle/gradle-${GRADLE_VERSION}/bin/gradle /usr/bin/gradle
-    find / -name 'libjvm.so' | sed 's@/libjvm.so@@g' | tee --append /etc/ld.so.conf.d/openjdk-libjvm.conf
-    ldconfig
+    set_jvm_paths $@
 }
 
 function install_pip2 {
