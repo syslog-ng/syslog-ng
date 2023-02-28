@@ -144,7 +144,8 @@ _format_location_tag_message(void)
     char *msg = _format_location_tag_message(); \
     const gchar *tag_repr;        \
     tag_repr = strstr(msg, "; ");                 \
-    cr_assert_str_eq(tag_repr ? tag_repr + 2 : NULL, expected, "Formatted location tag does not match");  \
+    tag_repr = tag_repr ? tag_repr + 2 : NULL;    \
+    cr_assert_str_eq(tag_repr, expected, "Formatted location tag does not match %s <> %s", tag_repr, expected);  \
     free(msg);                    \
                                                                                         \
   })
@@ -385,7 +386,7 @@ Test(lexer, test_location_tracking)
   _next_token();
   assert_location(3, 1);
 
-  assert_location_tag("location='#buffer:3:1'");
+  assert_location_tag("location='#test-buffer:3:1'");
 }
 
 Test(lexer, test_multiline_string_literals)

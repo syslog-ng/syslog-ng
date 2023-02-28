@@ -81,7 +81,6 @@ parse_plugin_config(const gchar *config_to_parse, gint context, gpointer arg)
   yylloc->first_line = 1;
   yylloc->last_column = 1;
   yylloc->last_line = 1;
-  yylloc->level = &lexer->include_stack[0];
 
   plugin = cfg_find_plugin(configuration, context, delimited[0]);
   if (!plugin)

@@ -311,7 +311,8 @@ _report_file_location(const gchar *filename, const CFG_LTYPE *yylloc)
       g_ptr_array_add(context, NULL);
       fclose(f);
     }
-  _print_underlined_source_block(yylloc, (gchar **) context->pdata, error_index);
+  if (context->len > 0)
+    _print_underlined_source_block(yylloc, (gchar **) context->pdata, error_index);
 
 exit:
   g_free(buf);
@@ -345,7 +346,7 @@ void
 report_syntax_error(CfgLexer *lexer, const CFG_LTYPE *yylloc, const char *what, const char *msg,
                     gboolean in_main_grammar)
 {
-  CfgIncludeLevel *level = yylloc->level, *from;
+  CfgIncludeLevel *level = &lexer->include_stack[lexer->include_depth], *from;
 
   for (from = level; from >= lexer->include_stack; from--)
     {
@@ -363,7 +364,7 @@ report_syntax_error(CfgLexer *lexer, const CFG_LTYPE *yylloc, const char *what, 
           fprintf(stderr, "Error parsing %s, %s in %s:%d:%d-%d:%d:\n",
                   what,
                   msg,
-                  from_lloc->level->name,
+                  from_lloc->name,
                   from_lloc->first_line,
                   from_lloc->first_column,
                   from_lloc->last_line,
@@ -372,7 +373,7 @@ report_syntax_error(CfgLexer *lexer, const CFG_LTYPE *yylloc, const char *what, 
       else
         {
           from_lloc = &from->lloc;
-          fprintf(stderr, "Included from %s:%d:%d-%d:%d:\n", from->name,
+          fprintf(stderr, "Included from %s:%d:%d-%d:%d:\n", from_lloc->name,
                   from_lloc->first_line,
                   from_lloc->first_column,
                   from_lloc->last_line,
@@ -380,11 +381,14 @@ report_syntax_error(CfgLexer *lexer, const CFG_LTYPE *yylloc, const char *what, 
         }
       if (from->include_type == CFGI_FILE)
         {
-          _report_file_location(from->name, from_lloc);
+          _report_file_location(from_lloc->name, from_lloc);
         }
       else if (from->include_type == CFGI_BUFFER)
         {
-          _report_buffer_location(from->buffer.original_content, from_lloc);
+          if (from->lloc_changed_by_at_line)
+            _report_file_location(from_lloc->name, from_lloc);
+          else
+            _report_buffer_location(from->buffer.original_content, from_lloc);
         }
       fprintf(stderr, "\n");
     }

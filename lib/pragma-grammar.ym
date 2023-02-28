@@ -48,6 +48,7 @@
 %token KW_DEFINE
 %token KW_MODULE
 %token KW_REQUIRES
+%token KW_LINE
 
 %code {
 
@@ -110,6 +111,7 @@ stmt_without_eol
 stmt_with_eol
         : include_stmt
         | requires_stmt
+        | line_stmt
         ;
 
 version_stmt
@@ -197,6 +199,13 @@ requires_message
 	: string		{ $$ = $1; }
 	| 			{ $$ = NULL; }
 	;
+
+line_stmt
+	: KW_LINE string positive_integer positive_integer LL_EOL
+          {
+            cfg_lexer_set_file_location(lexer, $2, $3, $4);
+            free($2);
+          }
 
 /* INCLUDE_RULES */
 
