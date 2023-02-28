@@ -1497,7 +1497,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
       self->ack_func = log_msg_clone_ack;
     }
 
-  self->flags &= ~LF_STATE_MASK;
+  self->flags &= ~(LF_STATE_MASK - LF_STATE_CLONED_MASK);
 
   if (self->num_tags == 0)
     self->flags |= LF_STATE_OWN_TAGS;

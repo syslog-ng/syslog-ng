@@ -124,6 +124,7 @@ log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg)
   LogFilterPipe *self = g_new0(LogFilterPipe, 1);
 
   log_pipe_init_instance(&self->super, cfg);
+  self->super.flags |= PIF_CONFIG_RELATED;
   self->super.init = log_filter_pipe_init;
   self->super.queue = log_filter_pipe_queue;
   self->super.free_fn = log_filter_pipe_free;

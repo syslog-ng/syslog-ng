@@ -113,6 +113,7 @@ enum
   LF_LOCAL             = 0x0004,
   /* message is a MARK mode */
   LF_MARK              = 0x0008,
+
   /* state flags that only matter during syslog-ng runtime and never
    * when a message is serialized */
   LF_STATE_MASK        = 0xFFF0,
@@ -123,6 +124,9 @@ enum
   LF_STATE_OWN_SDATA   = 0x0100,
   LF_STATE_OWN_MASK    = 0x01F0,
 
+  /* part of the state that is kept across clones */
+  LF_STATE_CLONED_MASK = 0xFE00,
+  LF_STATE_TRACING     = 0x0200,
 
   LF_CHAINED_HOSTNAME  = 0x00010000,
 

@@ -90,6 +90,7 @@ log_rewrite_init_instance(LogRewrite *self, GlobalConfig *cfg)
 {
   log_pipe_init_instance(&self->super, cfg);
   /* indicate that the rewrite rule is changing the message */
+  self->super.flags |= PIF_CONFIG_RELATED;
   self->super.free_fn = log_rewrite_free_method;
   self->super.queue = log_rewrite_queue;
   self->super.init = log_rewrite_init_method;

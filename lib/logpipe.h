@@ -64,6 +64,9 @@
 
 #define PIF_SOURCE            0x0040
 
+/* node created directly by the user */
+#define PIF_CONFIG_RELATED    0x0080
+
 /* private flags range, to be used by other LogPipe instances for their own purposes */
 
 #define PIF_PRIVATE(x)       ((x) << 16)
