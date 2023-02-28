@@ -140,3 +140,9 @@ stats_cluster_single_key_set(StatsClusterKey *key, const gchar *name, StatsClust
     .counter.names = tag_names, .init = _counter_group_init, .equals = NULL
   });
 }
+
+StatsCounterItem *
+stats_cluster_single_get_counter(StatsCluster *self)
+{
+  return self ? &self->counter_group.counters[0] : NULL;
+}

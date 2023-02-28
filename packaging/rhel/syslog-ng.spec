@@ -486,6 +486,7 @@ fi
 %{_libdir}/%{name}/libtfgetent.so
 %{_libdir}/%{name}/libxml.so
 %{_libdir}/%{name}/libpacctformat.so
+%{_libdir}/%{name}/libmetrics-probe.so
 
 %if %{with systemd}
 %{_unitdir}/%{name}.service

@@ -70,6 +70,7 @@ void app_config_changed(void);
 void app_reopen_files(void);
 
 typedef void (*ApplicationHookFunc)(gint type, gpointer user_data);
+typedef void (*ApplicationThreadHookFunc)(gpointer user_data);
 
 gboolean app_is_starting_up(void);
 gboolean app_is_shutting_down(void);
@@ -77,6 +78,9 @@ gboolean app_is_shutting_down(void);
 void register_application_hook(gint type,
                                ApplicationHookFunc func, gpointer user_data,
                                ApplicationHookRunMode run_mode);
+
+void register_application_thread_init_hook(ApplicationThreadHookFunc func, gpointer user_data);
+void register_application_thread_deinit_hook(ApplicationThreadHookFunc func, gpointer user_data);
 
 void app_thread_start(void);
 void app_thread_stop(void);

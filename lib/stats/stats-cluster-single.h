@@ -26,6 +26,7 @@
 #define STATS_CLUSTER_SINGLE_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "stats-cluster.h"
 
 typedef enum
 {
@@ -48,5 +49,7 @@ void stats_cluster_single_key_legacy_set_with_name(StatsClusterKey *key, guint16
                                                    const gchar *instance, const gchar *name);
 void stats_cluster_single_key_add_legacy_alias_with_name(StatsClusterKey *key, guint16 component, const gchar *id,
                                                          const gchar *instance, const gchar *name);
+
+StatsCounterItem *stats_cluster_single_get_counter(StatsCluster *self);
 
 #endif
