@@ -213,11 +213,33 @@ struct _LogPathOptions
 
   gboolean flow_control_requested;
 
-  gboolean *matched, *outer_matched;
+  gboolean *matched;
+  const LogPathOptions *parent;
 };
 
 #define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL, NULL }
 #define LOG_PATH_OPTIONS_INIT_NOACK { FALSE, FALSE, NULL, NULL }
+
+static inline void
+log_path_options_push_junction(LogPathOptions *local_path_options, gboolean *matched, const LogPathOptions *parent)
+{
+  *local_path_options = *parent;
+  local_path_options->matched = matched;
+  local_path_options->parent = parent;
+}
+
+static inline void
+log_path_options_pop_conditional(LogPathOptions *local_path_options)
+{
+  local_path_options->matched = local_path_options->parent->matched;
+}
+
+static inline void
+log_path_options_pop_junction(LogPathOptions *local_path_options)
+{
+  log_path_options_pop_conditional(local_path_options);
+  local_path_options->parent = local_path_options->parent->parent;
+}
 
 struct _LogPipe
 {
@@ -385,7 +407,6 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT)))
     {
       local_path_options = *path_options;
-
       if (s->flags & PIF_HARD_FLOW_CONTROL)
         {
           local_path_options.flow_control_requested = 1;
@@ -393,12 +414,11 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
         }
       if (s->flags & PIF_JUNCTION_END)
         {
-          local_path_options.matched = path_options->outer_matched;
-          local_path_options.outer_matched = NULL;
+          log_path_options_pop_junction(&local_path_options);
         }
       if (s->flags & PIF_CONDITIONAL_MIDPOINT)
         {
-          local_path_options.matched = path_options->outer_matched;
+          log_path_options_pop_conditional(&local_path_options);
         }
       path_options = &local_path_options;
     }

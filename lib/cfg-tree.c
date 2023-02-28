@@ -1231,11 +1231,34 @@ cfg_tree_compile_junction(CfgTree *self,
           if (!join_pipe)
             {
               join_pipe = cfg_tree_new_pipe(self, node, "junction-end");
-              join_pipe->flags |= PIF_JUNCTION_END;
             }
           log_pipe_append(sub_pipe_tail, join_pipe);
 
         }
+    }
+
+  if (fork_mpx)
+    {
+
+      /* Groups of source drivers are enclosed into junctions, so that we
+       * can attach to their tail end and do additional processing on the
+       * emitted messages.
+       *
+       * In the case of sources, messages do not enter the junction in the
+       * front, through the multiplexer, rather these messages originate from
+       * one of the source drivers.
+       *
+       * In this scenario, the junction does not have a multiplexer in front
+       * (hence fork_mpx == NULL) and this also means that we don't have to
+       * close the loop.
+       *
+       * This conditional is only executed for non-source junctions, in
+       * which case we do have a fork_mpx and we need to set
+       * PIF_JUNCTION_END on the tail of the junction.
+       */
+
+      g_assert(node->content != ENC_SOURCE);
+      join_pipe->flags |= PIF_JUNCTION_END;
     }
 
   if (outer_pipe_tail)

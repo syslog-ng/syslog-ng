@@ -80,14 +80,12 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
 {
   LogMultiplexer *self = (LogMultiplexer *) s;
   gint i;
-  LogPathOptions local_options = *path_options;
   gboolean matched;
+  LogPathOptions local_options;
   gboolean delivered = FALSE;
   gint fallback;
 
-  local_options.outer_matched = path_options->matched;
-  local_options.matched = &matched;
-
+  log_path_options_push_junction(&local_options, &matched, path_options);
   if (_has_multiple_arcs(self))
     {
       log_msg_write_protect(msg);
