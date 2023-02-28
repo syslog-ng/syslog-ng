@@ -31,6 +31,7 @@
 #include "logqueue-disk.h"
 #include "logqueue-disk-reliable.h"
 #include "logqueue-disk-non-reliable.h"
+#include "stats/stats-cluster-single.h"
 #include "diskq.h"
 #include "logpipe.h"
 #include "apphook.h"
@@ -132,7 +133,7 @@ Test(diskq, testcase_ack_and_rewind_messages)
   log_queue_set_use_backlog(q, TRUE);
 
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, "queued messages", NULL);
+  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION, "queued messages", NULL);
   stats_lock();
   stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &q->queued_messages);
   stats_unlock();
@@ -410,10 +411,10 @@ init_statistics(LogQueue *q)
 
   StatsClusterKey sc_key1, sc_key2;
   stats_lock();
-  stats_cluster_logpipe_key_set(&sc_key1, SCS_DESTINATION, "queued messages", NULL);
+  stats_cluster_logpipe_key_legacy_set(&sc_key1, SCS_DESTINATION, "queued messages", NULL);
   stats_register_counter(0, &sc_key1, SC_TYPE_QUEUED, &q->queued_messages);
-  stats_cluster_logpipe_key_set(&sc_key2, SCS_DESTINATION, "memory usage", NULL);
-  stats_register_counter(1, &sc_key2, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
+  stats_cluster_single_key_legacy_set_with_name(&sc_key2, SCS_DESTINATION, "memory usage", NULL, "memory_usage");
+  stats_register_counter(1, &sc_key2, SC_TYPE_SINGLE_VALUE, &q->memory_usage);
   stats_unlock();
   stats_counter_set(q->queued_messages, 0);
   stats_counter_set(q->memory_usage, 0);

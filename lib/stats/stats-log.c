@@ -33,9 +33,9 @@ stats_log_format_counter(StatsCluster *sc, gint type, StatsCounterItem *item, gp
 
   tag = evt_tag_printf(stats_cluster_get_type_name(sc, type), "%s(%s%s%s)=%"G_GSIZE_FORMAT,
                        stats_cluster_get_component_name(sc, buf, sizeof(buf)),
-                       sc->key.id,
-                       (sc->key.id[0] && sc->key.instance[0]) ? "," : "",
-                       sc->key.instance,
+                       sc->key.legacy.id,
+                       (sc->key.legacy.id[0] && sc->key.legacy.instance[0]) ? "," : "",
+                       sc->key.legacy.instance,
                        stats_counter_get(&sc->counter_group.counters[type]));
   evt_rec_add_tag(e, tag);
 }
@@ -44,5 +44,6 @@ stats_log_format_counter(StatsCluster *sc, gint type, StatsCounterItem *item, gp
 void
 stats_log_format_cluster(StatsCluster *sc, EVTREC *e)
 {
-  stats_cluster_foreach_counter(sc, stats_log_format_counter, e);
+  if (stats_cluster_key_is_legacy(&sc->key))
+    stats_cluster_foreach_counter(sc, stats_log_format_counter, e);
 }

@@ -24,6 +24,7 @@
 
 #include "logqueue.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-single.h"
 #include "messages.h"
 #include "timeutils/misc.h"
 
@@ -222,9 +223,14 @@ _register_common_counters(LogQueue *self, gint stats_level, const StatsClusterKe
 {
   stats_register_counter(stats_level, sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_register_counter(stats_level, sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_register_counter_and_index(STATS_LEVEL1, sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   atomic_gssize_set(&self->stats_cache.queued_messages, log_queue_get_length(self));
   stats_counter_add(self->queued_messages, atomic_gssize_get_unsigned(&self->stats_cache.queued_messages));
+
+
+  StatsClusterKey sc_mem_key;
+  stats_cluster_single_key_legacy_set_with_name(&sc_mem_key, sc_key->legacy.component,
+                                                sc_key->legacy.id, sc_key->legacy.instance, "memory_usage");
+  stats_register_counter_and_index(STATS_LEVEL1, &sc_mem_key, SC_TYPE_SINGLE_VALUE, &self->memory_usage);
   stats_counter_add(self->memory_usage, atomic_gssize_get_unsigned(&self->stats_cache.memory_usage));
 }
 
@@ -232,28 +238,26 @@ void
 log_queue_register_stats_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key)
 {
   _register_common_counters(self, stats_level, sc_key);
-
-  if (self->register_stats_counters)
-    self->register_stats_counters(self, stats_level, sc_key);
 }
 
 static void
 _unregister_common_counters(LogQueue *self, const StatsClusterKey *sc_key)
 {
   stats_counter_sub(self->queued_messages, atomic_gssize_get(&self->stats_cache.queued_messages));
-  stats_counter_sub(self->memory_usage, atomic_gssize_get(&self->stats_cache.memory_usage));
   stats_unregister_counter(sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-  stats_unregister_counter(sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   stats_unregister_counter(sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+
+  StatsClusterKey sc_mem_key;
+  stats_cluster_single_key_legacy_set_with_name(&sc_mem_key, sc_key->legacy.component,
+                                                sc_key->legacy.id, sc_key->legacy.instance, "memory_usage");
+  stats_counter_sub(self->memory_usage, atomic_gssize_get(&self->stats_cache.memory_usage));
+  stats_unregister_counter(&sc_mem_key, SC_TYPE_SINGLE_VALUE, &self->memory_usage);
 }
 
 void
 log_queue_unregister_stats_counters(LogQueue *self, const StatsClusterKey *sc_key)
 {
   _unregister_common_counters(self, sc_key);
-
-  if (self->unregister_stats_counters)
-    self->unregister_stats_counters(self, sc_key);
 }
 
 void

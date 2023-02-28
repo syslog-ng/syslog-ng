@@ -110,7 +110,7 @@ slng_export_config_graph(int argc, char *argv[], const gchar *mode, GOptionConte
 
 static CommandDescriptor modes[] =
 {
-  { "stats", stats_options, "Get syslog-ng statistics in CSV format", slng_stats, NULL },
+  { "stats", stats_options, "Get syslog-ng statistics. Possible commands: csv, prometheus; default: csv", slng_stats, NULL },
   { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose, NULL },
   { "debug", verbose_options, "Enable/query debug messages", slng_verbose, NULL },
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose, NULL },

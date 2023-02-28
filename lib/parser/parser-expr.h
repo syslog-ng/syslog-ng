@@ -38,6 +38,7 @@ struct _LogParser
 {
   LogPipe super;
   LogTemplate *template;
+  StatsCounterItem *processed_messages;
   gboolean (*process)(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
                       gsize input_len);
   gchar *name;

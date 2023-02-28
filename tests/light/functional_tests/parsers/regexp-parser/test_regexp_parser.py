@@ -59,9 +59,9 @@ def test_regexp_parser(config, syslog_ng, input_message, prefix, patterns, flags
         syslog_ng.start(config)
         if expected_result:
             assert file_destination.read_log().strip() == expected_value
-            assert regexp_parser.get_query() == {'discarded': 0}
+            assert regexp_parser.get_query().get('discarded', -1) == 0
         else:
-            assert regexp_parser.get_query() == {'discarded': 1}
+            assert regexp_parser.get_query().get('discarded', -1) == 1
     else:
         with pytest.raises(Exception):
             syslog_ng.start(config)

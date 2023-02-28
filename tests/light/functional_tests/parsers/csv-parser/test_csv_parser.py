@@ -135,8 +135,6 @@ def test_csv_parser(config, syslog_ng, testcase):
     config.create_logpath(statements=[generator_source, csv_parser, file_destination])
 
     syslog_ng.start(config)
-    if True:
-        assert file_destination.read_log().strip() == testcase['expected_value']
-        assert csv_parser.get_query() == {'discarded': 0}
-    else:
-        assert csv_parser.get_query() == {'discarded': 1}
+
+    assert file_destination.read_log().strip() == testcase['expected_value']
+    assert csv_parser.get_query().get('discarded', -1) == 0

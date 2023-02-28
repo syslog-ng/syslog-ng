@@ -54,6 +54,7 @@ typedef struct _AckTracker AckTracker;
 typedef struct _AckRecord AckRecord;
 typedef struct _AckTrackerFactory AckTrackerFactory;
 typedef struct _StatsClusterKey StatsClusterKey;
+typedef struct _StatsClusterLabel StatsClusterLabel;
 
 /* configuration being parsed, used by the bison generated code, NULL whenever parsing is finished. */
 extern GlobalConfig *configuration;

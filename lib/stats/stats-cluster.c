@@ -78,12 +78,75 @@ stats_cluster_deinit(void)
   stats_types = NULL;
 }
 
+gboolean
+stats_cluster_key_labels_equal(StatsClusterLabel *l1, gsize l1_len, StatsClusterLabel *l2, gsize l2_len)
+{
+  if (l1_len != l2_len)
+    return FALSE;
+
+  for (gsize i = 0; i < l1_len; ++i)
+    {
+      if (strcmp(l1[i].name, l2[i].name) != 0 || g_strcmp0(l1[i].value, l2[i].value) != 0)
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
+guint
+stats_cluster_key_labels_hash(StatsClusterLabel *labels, gsize labels_len)
+{
+  guint hash = 0;
+  for (gsize i = 0; i < labels_len; ++i)
+    {
+      StatsClusterLabel *label = &labels[i];
+      hash += g_str_hash(label->name);
+      if (label->value)
+        hash += g_str_hash(label->value);
+    }
+
+  return hash;
+}
+
+StatsClusterLabel *
+stats_cluster_key_labels_clone(StatsClusterLabel *labels, gsize labels_len)
+{
+  StatsClusterLabel *cloned = g_new(StatsClusterLabel, labels_len);
+
+  for (gsize i = 0; i < labels_len; ++i)
+    {
+      StatsClusterLabel *label = &labels[i];
+      g_assert(label->name);
+
+      cloned[i] = stats_cluster_label(g_strdup(label->name), g_strdup(label->value));
+    }
+
+  return cloned;
+}
+
+void
+stats_cluster_key_labels_free(StatsClusterLabel *labels, gsize labels_len)
+{
+  for (gsize i = 0; i < labels_len; ++i)
+    {
+      g_free((gchar *) labels[i].name);
+      g_free((gchar *) labels[i].value);
+    }
+
+  g_free(labels);
+}
+
 StatsClusterKey *
 stats_cluster_key_clone(StatsClusterKey *dst, const StatsClusterKey *src)
 {
-  dst->component = src->component;
-  dst->id = g_strdup(src->id ? : "");
-  dst->instance = g_strdup(src->instance ? : "");
+  dst->name = g_strdup(src->name);
+  dst->labels = stats_cluster_key_labels_clone(src->labels, src->labels_len);
+  dst->labels_len = src->labels_len;
+
+  dst->legacy.id = g_strdup(src->legacy.id ? : "");
+  dst->legacy.component = src->legacy.component;
+  dst->legacy.instance = g_strdup(src->legacy.instance ? : "");
+  dst->legacy.set = src->legacy.set;
 
   if (src->counter_group_init.clone)
     src->counter_group_init.clone(&dst->counter_group_init, &src->counter_group_init);
@@ -94,20 +157,56 @@ stats_cluster_key_clone(StatsClusterKey *dst, const StatsClusterKey *src)
 }
 
 void
-stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
+stats_cluster_key_set(StatsClusterKey *self, const gchar *name, StatsClusterLabel *labels, gsize labels_len,
                       StatsCounterGroupInit counter_group_init)
 {
-  self->component = component;
-  self->id = (id?id:"");
-  self->instance = (instance?instance:"");
+  *self = (StatsClusterKey)
+  {
+    0
+  };
+  self->name = name;
+  self->labels = labels;
+  self->labels_len = labels_len;
   self->counter_group_init = counter_group_init;
+}
+
+static inline void
+_legacy_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
+            StatsCounterGroupInit counter_group_init)
+{
+  self->legacy.id = (id?id:"");
+  self->legacy.component = component;
+  self->legacy.instance = (instance?instance:"");
+  self->legacy.set = 1;
+  self->counter_group_init = counter_group_init;
+}
+
+void
+stats_cluster_key_legacy_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
+                             StatsCounterGroupInit counter_group_ctor)
+{
+  *self = (StatsClusterKey)
+  {
+    0
+  };
+  _legacy_set(self, component, id, instance, counter_group_ctor);
+}
+
+void
+stats_cluster_key_add_legacy_alias(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
+                                   StatsCounterGroupInit counter_group_ctor)
+{
+  _legacy_set(self, component, id, instance, counter_group_ctor);
 }
 
 void
 stats_cluster_key_cloned_free(StatsClusterKey *self)
 {
-  g_free((gchar *)(self->id));
-  g_free((gchar *)(self->instance));
+  g_free((gchar *)(self->name));
+  stats_cluster_key_labels_free(self->labels, self->labels_len);
+
+  g_free((gchar *)(self->legacy.id));
+  g_free((gchar *)(self->legacy.instance));
 
   if (self->counter_group_init.cloned_free)
     self->counter_group_init.cloned_free(&self->counter_group_init);
@@ -156,11 +255,11 @@ _get_component_prefix(gint source)
 const gchar *
 stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
 {
-  if ((self->key.component & SCS_SOURCE_MASK) == SCS_GROUP)
+  if ((self->key.legacy.component & SCS_SOURCE_MASK) == SCS_GROUP)
     {
-      if (self->key.component & SCS_SOURCE)
+      if (self->key.legacy.component & SCS_SOURCE)
         return "source";
-      else if (self->key.component & SCS_DESTINATION)
+      else if (self->key.legacy.component & SCS_DESTINATION)
         return "destination";
       else
         g_assert_not_reached();
@@ -168,8 +267,8 @@ stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
   else
     {
       g_snprintf(buf, buf_len, "%s%s",
-                 _get_component_prefix(self->key.component),
-                 _get_module_name(self->key.component));
+                 _get_component_prefix(self->key.legacy.component),
+                 _get_module_name(self->key.legacy.component));
       return buf;
     }
 }
@@ -192,22 +291,29 @@ stats_counter_group_init_equals(const StatsCounterGroupInit *self, const StatsCo
 gboolean
 stats_cluster_key_equal(const StatsClusterKey *key1, const StatsClusterKey *key2)
 {
-  return key1->component == key2->component
-         && strcmp(key1->id, key2->id) == 0
-         && strcmp(key1->instance, key2->instance) == 0
+  if (stats_cluster_key_is_legacy(key1) != stats_cluster_key_is_legacy(key2))
+    return FALSE;
+
+  if (stats_cluster_key_is_legacy(key1))
+    {
+      return key1->legacy.component == key2->legacy.component
+             && strcmp(key1->legacy.id, key2->legacy.id) == 0
+             && strcmp(key1->legacy.instance, key2->legacy.instance) == 0
+             && stats_counter_group_init_equals(&key1->counter_group_init, &key2->counter_group_init);
+    }
+
+  return strcmp(key1->name, key2->name) == 0
+         && stats_cluster_key_labels_equal(key1->labels, key1->labels_len, key2->labels, key2->labels_len)
          && stats_counter_group_init_equals(&key1->counter_group_init, &key2->counter_group_init);
 }
 
-gboolean
-stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2)
-{
-  return stats_cluster_key_equal(&sc1->key, &sc2->key);
-}
-
 guint
-stats_cluster_hash(const StatsCluster *self)
+stats_cluster_key_hash(const StatsClusterKey *self)
 {
-  return g_str_hash(self->key.id) + g_str_hash(self->key.instance) + self->key.component;
+  if (stats_cluster_key_is_legacy(self))
+    return g_str_hash(self->legacy.id) + g_str_hash(self->legacy.instance) + self->legacy.component;
+
+  return g_str_hash(self->name) + stats_cluster_key_labels_hash(self->labels, self->labels_len);
 }
 
 StatsCounterItem *
@@ -262,13 +368,13 @@ _stats_build_query_key(StatsCluster *self)
 
   g_string_append(key, component_name);
 
-  if (self->key.id && self->key.id[0])
+  if (self->key.legacy.id && self->key.legacy.id[0])
     {
-      g_string_append_printf(key, ".%s", self->key.id);
+      g_string_append_printf(key, ".%s", self->key.legacy.id);
     }
-  if (self->key.instance && self->key.instance[0])
+  if (self->key.legacy.instance && self->key.legacy.instance[0])
     {
-      g_string_append_printf(key, ".%s", self->key.instance);
+      g_string_append_printf(key, ".%s", self->key.legacy.instance);
     }
 
   return g_string_free(key, FALSE);

@@ -22,14 +22,19 @@
  */
 
 #include "ctl-stats.h"
+#include "syslog-ng.h"
 
 static gboolean stats_options_reset_is_set = FALSE;
 static gboolean stats_options_remove_orphans = FALSE;
+static gboolean stats_options_legacy_metrics = FALSE;
+static gchar **stats_commands = NULL;
 
 GOptionEntry stats_options[] =
 {
   { "reset", 'r', 0, G_OPTION_ARG_NONE, &stats_options_reset_is_set, "reset counters", NULL },
   { "remove-orphans", 'o', 0, G_OPTION_ARG_NONE, &stats_options_remove_orphans, "remove orphaned statistics", NULL},
+  { "with-legacy-metrics", 'l', 0, G_OPTION_ARG_NONE, &stats_options_legacy_metrics, "show legacy metrics", NULL},
+  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &stats_commands, NULL, NULL },
   { NULL,    0,   0, G_OPTION_ARG_NONE, NULL,                        NULL,             NULL }
 };
 
@@ -42,11 +47,27 @@ _stats_command_builder(void)
   if (stats_options_remove_orphans)
     return "REMOVE_ORPHANED_STATS";
 
-  return "STATS";
+  const gchar *stats_command = stats_commands ? stats_commands[0] : NULL;
+  if (!stats_command || g_str_equal(stats_command, "csv"))
+    return "STATS CSV";
+
+  if (g_str_equal(stats_command, "prometheus"))
+    {
+      if (stats_options_legacy_metrics)
+        return "STATS PROMETHEUS WITH_LEGACY";
+      else
+        return "STATS PROMETHEUS";
+    }
+
+  return NULL;
 }
 
 gint
 slng_stats(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
-  return dispatch_command(_stats_command_builder());
+  const gchar *command = _stats_command_builder();
+  if (!command)
+    return 1;
+
+  return dispatch_command(command);
 }

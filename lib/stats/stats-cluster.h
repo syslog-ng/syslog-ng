@@ -54,6 +54,7 @@ struct _StatsCounterGroup
   StatsCounterItem *counters;
   const gchar **counter_names;
   guint16 capacity;
+  gboolean (*get_type_label)(StatsCounterGroup *self, gint type, StatsClusterLabel *label);
   void (*free_fn)(StatsCounterGroup *self);
 };
 
@@ -74,12 +75,35 @@ gboolean stats_counter_group_init_equals(const StatsCounterGroupInit *self, cons
 
 void stats_counter_group_free(StatsCounterGroup *self);
 
+struct _StatsClusterLabel
+{
+  const gchar *name;
+  const gchar *value;
+};
+
+static inline StatsClusterLabel
+stats_cluster_label(const gchar *name, const gchar *value)
+{
+  return (StatsClusterLabel)
+  {
+    .name = name, .value = value
+  };
+}
+
 struct _StatsClusterKey
 {
-  /* syslog-ng component/driver/subsystem that registered this cluster */
-  guint16 component;
-  const gchar *id;
-  const gchar *instance;
+  const gchar *name;
+  StatsClusterLabel *labels;
+  gsize labels_len;
+
+  struct
+  {
+    const gchar *id;
+    /* syslog-ng component/driver/subsystem that registered this cluster */
+    guint16 component;
+    const gchar *instance;
+    gboolean set:1;
+  } legacy;
   StatsCounterGroupInit counter_group_init;
 };
 
@@ -117,8 +141,7 @@ void stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc f
 StatsClusterKey *stats_cluster_key_clone(StatsClusterKey *dst, const StatsClusterKey *src);
 void stats_cluster_key_cloned_free(StatsClusterKey *self);
 gboolean stats_cluster_key_equal(const StatsClusterKey *key1, const StatsClusterKey *key2);
-gboolean stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2);
-guint stats_cluster_hash(const StatsCluster *self);
+guint stats_cluster_key_hash(const StatsClusterKey *self);
 
 StatsCounterItem *stats_cluster_track_counter(StatsCluster *self, gint type);
 StatsCounterItem *stats_cluster_get_counter(StatsCluster *self, gint type);
@@ -132,11 +155,31 @@ stats_cluster_is_orphaned(StatsCluster *self)
   return self->use_count == 0;
 }
 
+static inline gboolean
+stats_cluster_get_type_label(StatsCluster *self, gint type, StatsClusterLabel *label)
+{
+  if (!self->counter_group.get_type_label)
+    return FALSE;
+
+  return self->counter_group.get_type_label(&self->counter_group, type, label);
+}
+
 StatsCluster *stats_cluster_new(const StatsClusterKey *key);
 StatsCluster *stats_cluster_dynamic_new(const StatsClusterKey *key);
 void stats_cluster_free(StatsCluster *self);
 
-void stats_cluster_key_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
+void stats_cluster_key_set(StatsClusterKey *self, const gchar *name, StatsClusterLabel *labels, gsize labels_len,
                            StatsCounterGroupInit counter_group_ctor);
+void stats_cluster_key_legacy_set(StatsClusterKey *self, guint16 component, const gchar *id, const gchar *instance,
+                                  StatsCounterGroupInit counter_group_ctor);
+void stats_cluster_key_add_legacy_alias(StatsClusterKey *self, guint16 component, const gchar *id,
+                                        const gchar *instance,
+                                        StatsCounterGroupInit counter_group_ctor);
+
+static inline gboolean
+stats_cluster_key_is_legacy(const StatsClusterKey *self)
+{
+  return self->legacy.set;
+}
 
 #endif

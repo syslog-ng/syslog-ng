@@ -26,6 +26,7 @@
 #include "control-server.h"
 #include "messages.h"
 #include "secret-storage/secret-storage.h"
+#include "scratch-buffers.h"
 #include <iv_event.h>
 
 struct _ControlCommandThread
@@ -62,6 +63,8 @@ _thread(gpointer user_data)
 {
   ControlCommandThread *self = (ControlCommandThread *) user_data;
 
+  scratch_buffers_allocator_init();
+
   msg_debug("Control command thread has started",
             evt_tag_str("control_command", self->command->str));
   self->func(self->connection, self->command, self->user_data, &self->cancelled);
@@ -76,6 +79,9 @@ _thread(gpointer user_data)
   /* drop ref belonging to the thread function */
   msg_debug("Control command thread is exiting now",
             evt_tag_str("control_command", self->command->str));
+
+  scratch_buffers_explicit_gc();
+  scratch_buffers_allocator_deinit();
   control_command_thread_unref(self);
 }
 

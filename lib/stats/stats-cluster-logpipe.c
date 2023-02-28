@@ -32,7 +32,6 @@ static const gchar *tag_names[SC_TYPE_MAX] =
   /* [SC_TYPE_QUEUED]   = */  "queued",
   /* [SC_TYPE_SUPPRESSED] = */ "suppressed",
   /* [SC_TYPE_STAMP] = */ "stamp",
-  /* [SC_TYPE_MEMORY_USAGE] = */ "memory_usage",
   /* [SC_TYPE_DISCARDED] = */ "discarded",
   /* [SC_TYPE_MATCHED] = */ "matched",
   /* [SC_TYPE_NOT_MATCHED] = */ "not_matched",
@@ -45,19 +44,54 @@ _counter_group_logpipe_free(StatsCounterGroup *counter_group)
   g_free(counter_group->counters);
 }
 
+static gboolean
+_counter_group_logpipe_get_type_label(StatsCounterGroup *self, gint type, StatsClusterLabel *label)
+{
+  if (type >= SC_TYPE_MAX)
+    return FALSE;
+
+  const gchar *type_name = tag_names[type];
+
+  if (type == SC_TYPE_WRITTEN)
+    type_name = "delivered";
+
+  *label = stats_cluster_label("result", type_name);
+  return TRUE;
+}
+
 static void
 _counter_group_logpipe_init(StatsCounterGroupInit *self, StatsCounterGroup *counter_group)
 {
   counter_group->counters = g_new0(StatsCounterItem, SC_TYPE_MAX);
   counter_group->capacity = SC_TYPE_MAX;
   counter_group->counter_names = self->counter.names;
+  counter_group->get_type_label = _counter_group_logpipe_get_type_label;
   counter_group->free_fn = _counter_group_logpipe_free;
 }
 
 void
-stats_cluster_logpipe_key_set(StatsClusterKey *key, guint16 component, const gchar *id, const gchar *instance)
+stats_cluster_logpipe_key_set(StatsClusterKey *key, const gchar *name, StatsClusterLabel *labels, gsize labels_len)
 {
-  stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
+  stats_cluster_key_set(key, name, labels, labels_len, (StatsCounterGroupInit)
+  {
+    .counter.names = tag_names, .init = _counter_group_logpipe_init, .equals = NULL
+  });
+}
+
+void
+stats_cluster_logpipe_key_legacy_set(StatsClusterKey *key, guint16 component, const gchar *id, const gchar *instance)
+{
+  stats_cluster_key_legacy_set(key, component, id, instance, (StatsCounterGroupInit)
+  {
+    .counter.names = tag_names, .init = _counter_group_logpipe_init, .equals = NULL
+  });
+}
+
+void
+stats_cluster_logpipe_key_add_legacy_alias(StatsClusterKey *key, guint16 component, const gchar *id,
+                                           const gchar *instance)
+{
+  stats_cluster_key_add_legacy_alias(key, component, id, instance, (StatsCounterGroupInit)
   {
     .counter.names = tag_names, .init = _counter_group_logpipe_init, .equals = NULL
   });

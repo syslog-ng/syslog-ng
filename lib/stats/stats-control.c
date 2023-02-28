@@ -24,6 +24,7 @@
 
 #include "stats/stats-control.h"
 #include "stats/stats-csv.h"
+#include "stats/stats-prometheus.h"
 #include "stats/stats-counter.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster.h"
@@ -45,10 +46,12 @@ _reset_counter_if_needed(StatsCluster *sc, gint type, StatsCounterItem *counter,
   if (stats_counter_read_only(counter))
     return;
 
+  if (strcmp(stats_cluster_get_type_name(sc, type), "memory_usage") == 0)
+    return;
+
   switch (type)
     {
     case SC_TYPE_QUEUED:
-    case SC_TYPE_MEMORY_USAGE:
       return;
     default:
       _reset_counter(sc, type, counter, user_data);
@@ -89,12 +92,25 @@ _send_batched_response(const gchar *record, gpointer user_data)
 static void
 control_connection_send_stats(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
+  gchar **cmds = g_strsplit(command->str, " ", 3);
+  g_assert(g_str_equal(cmds[0], "STATS"));
+
   GString *response = NULL;
   gpointer args[] = {cc, &response};
-  stats_generate_csv(_send_batched_response, args, cancelled);
+
+  if (g_strcmp0(cmds[1], "PROMETHEUS") == 0)
+    {
+      gboolean with_legacy = g_strcmp0(cmds[2], "WITH_LEGACY") == 0;
+      stats_generate_prometheus(_send_batched_response, args, with_legacy, cancelled);
+    }
+  else
+    stats_generate_csv(_send_batched_response, args, cancelled);
+
   if (response != NULL)
     control_connection_send_batched_reply(cc, response);
   control_connection_send_close_batch(cc);
+
+  g_strfreev(cmds);
 }
 
 static void

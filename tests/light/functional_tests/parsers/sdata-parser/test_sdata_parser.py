@@ -32,4 +32,4 @@ def test_sdata_parser(config, syslog_ng):
 
     syslog_ng.start(config)
     assert file_destination.read_log().strip() == '[Originator@6876 sub="Vimsvc.ha-eventmgr" opID="esxui-13c6-6b16" sid="5214bde6" user="root"]'
-    assert sdata_parser.get_query() == {'discarded': 0}
+    assert sdata_parser.get_query().get('discarded', -1) == 0
