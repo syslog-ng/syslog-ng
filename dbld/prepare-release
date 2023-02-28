@@ -48,24 +48,24 @@ function update_versioning_h() {
 	echo Updating versioning.h
 	VERSIONING_H="lib/versioning.h"
 
-	if grep "^#define VERSION_${NEW_MAJOR}_${NEW_MINOR} \"syslog-ng ${NEW_MAJOR}.${NEW_MINOR}\"$" ${VERSIONING_H}; then
+	if grep -E "^#define VERSION_${NEW_MAJOR}_${NEW_MINOR} +\"syslog-ng ${NEW_MAJOR}.${NEW_MINOR}\"$" ${VERSIONING_H}; then
 		echo "VERSION_${NEW_MAJOR}_${NEW_MINOR} is already defined."
 	else
-		sed -i "/^#define VERSION_${OLD_MAJOR}_${OLD_MINOR} \"syslog-ng ${OLD_MAJOR}.${OLD_MINOR}\"$/a#define VERSION_${NEW_MAJOR}_${NEW_MINOR} \"syslog-ng ${NEW_MAJOR}.${NEW_MINOR}\"" ${VERSIONING_H}
+		sed -E -i "/^#define VERSION_${OLD_MAJOR}_${OLD_MINOR} +\"syslog-ng ${OLD_MAJOR}.${OLD_MINOR}\"$/a#define VERSION_${NEW_MAJOR}_${NEW_MINOR} \"syslog-ng ${NEW_MAJOR}.${NEW_MINOR}\"" ${VERSIONING_H}
 	fi
 
 	OLD_HEX=$(grep "#define VERSION_VALUE_${OLD_MAJOR}_${OLD_MINOR}" ${VERSIONING_H} | grep -o "0x.*$")
 	NEW_HEX=$(printf "0x%04X" $((${NEW_MAJOR} * 256 + ${NEW_MINOR})) | tr "[:upper:]" "[:lower:]")
 
-	if grep "^#define VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR} ${NEW_HEX}$" ${VERSIONING_H}; then
+	if grep -E "^#define VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR} +${NEW_HEX}$" ${VERSIONING_H}; then
 		echo "VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR} is already defined."
 	else
-		sed -i "/^#define VERSION_VALUE_${OLD_MAJOR}_${OLD_MINOR} ${OLD_HEX}$/a#define VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR} ${NEW_HEX}" ${VERSIONING_H}
+		sed -E -i "/^#define VERSION_VALUE_${OLD_MAJOR}_${OLD_MINOR} +${OLD_HEX}$/a#define VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR} ${NEW_HEX}" ${VERSIONING_H}
 	fi
 
-	sed -i "s/^#define VERSION_VALUE_CURRENT   VERSION_VALUE_${OLD_MAJOR}_${OLD_MINOR}$/#define VERSION_VALUE_CURRENT   VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR}/g" ${VERSIONING_H}
-	sed -i "s/^#define VERSION_STR_CURRENT     \"${OLD_MAJOR}.${OLD_MINOR}\"$/#define VERSION_STR_CURRENT     \"${NEW_MAJOR}.${NEW_MINOR}\"/g" ${VERSIONING_H}
-	sed -i "s/^#define VERSION_PRODUCT_CURRENT VERSION_${OLD_MAJOR}_${OLD_MINOR}$/#define VERSION_PRODUCT_CURRENT VERSION_${NEW_MAJOR}_${NEW_MINOR}/g" ${VERSIONING_H}
+	sed -E -i "s/^#define VERSION_VALUE_CURRENT +VERSION_VALUE_${OLD_MAJOR}_${OLD_MINOR}$/#define VERSION_VALUE_CURRENT   VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR}/g" ${VERSIONING_H}
+	sed -E -i "s/^#define VERSION_STR_CURRENT +\"${OLD_MAJOR}.${OLD_MINOR}\"$/#define VERSION_STR_CURRENT     \"${NEW_MAJOR}.${NEW_MINOR}\"/g" ${VERSIONING_H}
+	sed -E -i "s/^#define VERSION_PRODUCT_CURRENT +VERSION_${OLD_MAJOR}_${OLD_MINOR}$/#define VERSION_PRODUCT_CURRENT VERSION_${NEW_MAJOR}_${NEW_MINOR}/g" ${VERSIONING_H}
 }
 
 function perform_updates()
