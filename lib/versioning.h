@@ -180,11 +180,12 @@
 #define VERSION_VALUE_3_37 0x0325
 #define VERSION_VALUE_3_38 0x0326
 #define VERSION_VALUE_4_0 0x0400
+#define VERSION_VALUE_4_1 0x0401
 
 /* config version code, in the same format as GlobalConfig->version */
-#define VERSION_VALUE_CURRENT   VERSION_VALUE_4_0
-#define VERSION_STR_CURRENT     "4.0"
-#define VERSION_PRODUCT_CURRENT VERSION_4_0
+#define VERSION_VALUE_CURRENT   VERSION_VALUE_4_1
+#define VERSION_STR_CURRENT     "4.1"
+#define VERSION_PRODUCT_CURRENT VERSION_4_1
 
 /* this value points to the last syslog-ng version where we changed the
  * meaning of any setting in the configuration file.  Basically, it is the
