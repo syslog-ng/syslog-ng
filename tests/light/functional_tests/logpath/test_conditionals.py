@@ -256,3 +256,208 @@ log {
 
     assert file_true.read_log() == "foobar\n"
     assert file_fallback.read_log() == "foobar\n"
+
+
+def test_three_levels_of_conditionals_drop_after_the_innermost_if(config, syslog_ng):
+    test_config = """
+
+log {
+    source(genmsg);
+    if {
+        if {
+            if {
+                destination(dest_true);
+            } else {
+                destination(dest_false);
+            };
+            filter { false(); };
+            destination(dest_false);
+        } else {
+            destination(dest_true);
+        };
+    } else {
+        destination(dest_false);
+    };
+    destination(dest_after);
+};
+"""
+    (file_true, file_false, file_after, file_fallback) = create_config(config, test_config)
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 2
+    assert "processed" not in file_false.get_stats()
+    assert file_after.get_stats()["processed"] == 1
+
+    assert file_true.read_log() == "foobar\n"
+    assert file_after.read_log() == "foobar\n"
+
+
+def test_three_levels_of_conditionals_drop_after_the_middle_if(config, syslog_ng):
+    test_config = """
+
+log {
+    source(genmsg);
+    if {
+        if {
+            if {
+                destination(dest_true);
+            } else {
+                destination(dest_false);
+            };
+        } else {
+            destination(dest_false);
+        };
+        filter { false(); };
+        destination(dest_false);
+    } else {
+        destination(dest_true);
+    };
+    destination(dest_after);
+};
+"""
+    (file_true, file_false, file_after, file_fallback) = create_config(config, test_config)
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 2
+    assert "processed" not in file_false.get_stats()
+    assert file_after.get_stats()["processed"] == 1
+
+    assert file_true.read_log() == "foobar\n"
+    assert file_after.read_log() == "foobar\n"
+
+
+def test_three_levels_of_simple_conditionals_drop_after_the_middle_if(config, syslog_ng):
+    test_config = """
+
+log {
+    source(genmsg);
+    if {
+        if (true()) {
+            if (true()) {
+                if (true()) {
+                    destination(dest_true);
+                } else {
+                    destination(dest_false);
+                };
+            } else {
+                destination(dest_false);
+            };
+            filter { false(); };
+            destination(dest_false);
+        } else {
+            destination(dest_false);
+        };
+    } else {
+        destination(dest_true);
+    };
+    destination(dest_after);
+};
+"""
+    (file_true, file_false, file_after, file_fallback) = create_config(config, test_config)
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 2
+    assert "processed" not in file_false.get_stats()
+    assert file_after.get_stats()["processed"] == 1
+
+    assert file_true.read_log() == "foobar\n"
+    assert file_after.read_log() == "foobar\n"
+
+
+def test_three_levels_of_conditionals_drop_after_the_innermost_junction(config, syslog_ng):
+    test_config = """
+
+log {
+    source(genmsg);
+    junction {
+        channel {
+            junction {
+                channel {
+                    junction {
+                        channel {
+                            destination(dest_true);
+                            flags(final);
+                        };
+                        channel {
+                            destination(dest_false);
+                            flags(final);
+                        };
+                    };
+                    filter { false(); };
+                    destination(dest_false);
+                    flags(final);
+                };
+                channel {
+                    destination(dest_after);
+                    flags(final);
+                };
+            };
+            flags(final);
+        };
+        channel {
+            destination(dest_false);
+            flags(final);
+        };
+    };
+};
+"""
+    (file_true, file_false, file_after, file_fallback) = create_config(config, test_config)
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_after.get_stats()["processed"] == 1
+    assert "processed" not in file_fallback.get_stats()
+
+    assert file_true.read_log() == "foobar\n"
+    assert file_after.read_log() == "foobar\n"
+
+
+def test_three_levels_of_conditionals_drop_after_the_middle_junction(config, syslog_ng):
+    test_config = """
+
+log {
+    source(genmsg);
+    junction {
+        channel {
+            junction {
+                channel {
+                    junction {
+                        channel {
+                            destination(dest_true);
+                            flags(final);
+                        };
+                        channel {
+                            destination(dest_false);
+                            flags(final);
+                        };
+                    };
+                    flags(final);
+                };
+                channel {
+                    destination(dest_false);
+                    flags(final);
+                };
+            };
+            filter { false(); };
+            destination(dest_false);
+            flags(final);
+        };
+        channel {
+            destination(dest_true);
+            flags(final);
+        };
+    };
+    destination(dest_after);
+};
+"""
+    (file_true, file_false, file_after, file_fallback) = create_config(config, test_config)
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 2
+    assert "processed" not in file_false.get_stats()
+    assert file_after.get_stats()["processed"] == 1
+    assert "processed" not in file_fallback.get_stats()
+
+    assert file_true.read_log() == "foobar\n"
+    assert file_after.read_log() == "foobar\n"
