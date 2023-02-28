@@ -57,7 +57,7 @@ jobs:
       - name: Configure git user
         run: |
           git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          git config user.email "41898282+github-actions@users.noreply.github.com"
 
       - name: Create git branch
         run: |
