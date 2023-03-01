@@ -408,14 +408,113 @@ qdisk_get_empty_space(QDisk *self)
 {
   gint64 wpos = qdisk_get_writer_head(self);
   gint64 bpos = qdisk_get_backlog_head(self);
+  gint64 disk_buf_size = qdisk_get_maximum_size(self);
 
-  if (wpos > bpos)
+  if (wpos < disk_buf_size && bpos < disk_buf_size)
     {
-      return (qdisk_get_maximum_size(self) - wpos) +
-             (bpos - QDISK_RESERVED_SPACE);
+      if (wpos < bpos)
+        {
+          // 0   RESERVED    W   B         DBS   FS
+          // |---|-----------|---|---------|-----|
+          //                  ^^^
+          return bpos - wpos;
+        }
+      else if (bpos < wpos)
+        {
+          // 0   RESERVED    B   W         DBS   FS
+          // |---|--- ... ---|---|---------|-----|
+          //      ^^^^^^^^^^^     ^^^^^^^^^
+          return (bpos - QDISK_RESERVED_SPACE) + (disk_buf_size - wpos);
+        }
+      else
+        {
+          // 0   RESERVED            B=W   DBS   FS
+          // |---|------- ... -------|-----|-----|
+          //      ^^^^^^^^^^^^^^^^^^^^^^^^^
+          g_assert(self->hdr->length == 0);
+          return disk_buf_size - QDISK_RESERVED_SPACE;
+        }
     }
-
-  return bpos - wpos;
+  else if (wpos >= disk_buf_size && bpos >= disk_buf_size)
+    {
+      if (wpos < bpos)
+        {
+          // 0   RESERVED          DBS   W   B   FS
+          // |---|------ ... ------|-----|---|---|
+          //
+          // or
+          //
+          // 0   RESERVED          DBS=W     B   FS
+          // |---|------ ... ------|---------|---|
+          return 0;
+        }
+      else if (bpos < wpos)
+        {
+          // 0   RESERVED          DBS   B   W   FS
+          // |---|------ ... ------|-----|---|---|
+          //      ^^^^^^^^^^^^^^^^^
+          //
+          // or
+          //
+          // 0   RESERVED          DBS=B     W   FS
+          // |---|------ ... ------|---------|---|
+          //      ^^^^^^^^^^^^^^^^^
+          return disk_buf_size - QDISK_RESERVED_SPACE;
+        }
+      else
+        {
+          // 0   RESERVED          DBS   B=W     FS
+          // |---|------ ... ------|-----|-------|
+          //      ^^^^^^^^^^^^^^^^^
+          //
+          // or
+          //
+          // 0   RESERVED          DBS=B=W       FS
+          // |---|------ ... ------|-------------|
+          //      ^^^^^^^^^^^^^^^^^
+          g_assert(self->hdr->length == 0);
+          return disk_buf_size - QDISK_RESERVED_SPACE;
+        }
+    }
+  else if ((wpos >= disk_buf_size && bpos < disk_buf_size) || (bpos >= disk_buf_size && wpos < disk_buf_size))
+    {
+      if (wpos < bpos)
+        {
+          // 0   RESERVED      W        DBS   B   FS
+          // |---|---- ... ----|--------|-----|---|
+          //                    ^^^^^^^^
+          //
+          // or
+          //
+          // 0   RESERVED      W        DBS=B     FS
+          // |---|---- ... ----|--------|---------|
+          //                    ^^^^^^^^
+          return disk_buf_size - wpos;
+        }
+      else if (bpos < wpos)
+        {
+          // 0   RESERVED      B        DBS   W   FS
+          // |---|---- ... ----|--------|-----|---|
+          //      ^^^^^^^^^^^^^
+          //
+          // or
+          //
+          // 0   RESERVED      B        DBS=W     FS
+          // |---|---- ... ----|--------|---------|
+          //      ^^^^^^^^^^^^^
+          return bpos - QDISK_RESERVED_SPACE;
+        }
+      else
+        {
+          /* Not possible by the laws of logic :) */
+          g_assert_not_reached();
+        }
+    }
+  else
+    {
+      /* Not possible by the laws of logic :) */
+      g_assert_not_reached();
+    }
 }
 
 static inline gboolean
