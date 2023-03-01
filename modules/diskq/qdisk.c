@@ -402,6 +402,11 @@ _maybe_truncate_file_to_minimal(QDisk *self)
   _maybe_truncate_file(self, file_end_offset);
 }
 
+gint64
+qdisk_get_max_useful_space(QDisk *self)
+{
+  return qdisk_get_maximum_size(self) - QDISK_RESERVED_SPACE;
+}
 
 gint64
 qdisk_get_empty_space(QDisk *self)
@@ -515,6 +520,12 @@ qdisk_get_empty_space(QDisk *self)
       /* Not possible by the laws of logic :) */
       g_assert_not_reached();
     }
+}
+
+gint64
+qdisk_get_used_useful_space(QDisk *self)
+{
+  return qdisk_get_max_useful_space(self) - qdisk_get_empty_space(self);
 }
 
 static inline gboolean
