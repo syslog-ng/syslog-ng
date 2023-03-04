@@ -115,11 +115,36 @@ py_list_from_list(const gchar *list, gssize list_len)
         {
           list_scanner_deinit(&scanner);
           Py_DECREF(obj);
+          Py_XDECREF(element);
           return NULL;
         }
     }
 
   list_scanner_deinit(&scanner);
+
+  return obj;
+}
+
+PyObject
+*py_string_list_from_string_list(const GList *string_list)
+{
+  PyObject *obj = PyList_New(0);
+  if (!obj)
+    {
+      return NULL;
+    }
+
+  for (const GList *elem = string_list; elem; elem = elem->next)
+    {
+      const gchar *string = (const gchar *) elem->data;
+      PyObject *py_string = py_string_from_string(string, -1);
+      if (!py_string || PyList_Append(obj, py_string) != 0)
+        {
+          Py_DECREF(obj);
+          Py_XDECREF(py_string);
+          return NULL;
+        }
+    }
 
   return obj;
 }
@@ -340,6 +365,35 @@ py_list_to_list(PyObject *obj, GString *list)
         g_string_append_c(list, ',');
 
       str_repr_encode_append(list, element_as_str, -1, ",");
+    }
+
+  return TRUE;
+}
+
+gboolean
+py_string_list_to_string_list(PyObject *obj, GList **string_list)
+{
+  *string_list = NULL;
+
+  if (!PyList_Check(obj))
+    {
+      PyErr_Format(PyExc_ValueError, "Error extracting value from list");
+      return FALSE;
+    }
+
+  for (Py_ssize_t i = 0; i < PyList_GET_SIZE(obj); i++)
+    {
+      PyObject *element = PyList_GET_ITEM(obj, i);
+
+      const gchar *element_as_str;
+      if (!py_bytes_or_string_to_string(element, &element_as_str))
+        {
+          g_list_free_full(*string_list, g_free);
+          *string_list = NULL;
+          return FALSE;
+        }
+
+      *string_list = g_list_append(*string_list, g_strdup(element_as_str));
     }
 
   return TRUE;
