@@ -26,6 +26,7 @@
 #include "apphook.h"
 #include "cfg.h"
 #include "scratch-buffers.h"
+#include "string-list.h"
 
 #include <criterion/criterion.h>
 
@@ -115,5 +116,20 @@ Test(python_options, test_python_option_boolean)
 {
   PythonOption *option = python_option_boolean_new("boolean", TRUE);
   _assert_python_option(option, "boolean", "True");
+  python_option_free(option);
+}
+
+Test(python_options, test_python_option_string_list)
+{
+  const gchar *string_array[] =
+  {
+    "example-value-1",
+    "example-value-2",
+    NULL,
+  };
+  GList *string_list = string_array_to_list(string_array);
+  PythonOption *option = python_option_string_list_new("string-list", string_list);
+  string_list_free(string_list);
+  _assert_python_option(option, "string_list", "['example-value-1', 'example-value-2']");
   python_option_free(option);
 }
