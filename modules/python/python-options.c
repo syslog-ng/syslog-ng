@@ -21,6 +21,7 @@
  */
 
 #include "python-options.h"
+#include "python-types.h"
 #include "str-utils.h"
 
 /* Python Option */
@@ -77,4 +78,39 @@ python_option_free(PythonOption *s)
 
   g_free(s->name);
   g_free(s);
+}
+
+/* String */
+
+typedef struct _PythonOptionString
+{
+  PythonOption super;
+  gchar *value;
+} PythonOptionString;
+
+static PyObject *
+_string_create_value_py_object(const PythonOption *s)
+{
+  PythonOptionString *self = (PythonOptionString *) s;
+  return py_string_from_string(self->value, -1);
+}
+
+static void
+_string_free_fn(PythonOption *s)
+{
+  PythonOptionString *self = (PythonOptionString *) s;
+  g_free(self->value);
+}
+
+PythonOption *
+python_option_string_new(const gchar *name, const gchar *value)
+{
+  PythonOptionString *self = g_new0(PythonOptionString, 1);
+  python_option_init_instance(&self->super, name);
+
+  self->super.create_value_py_object = _string_create_value_py_object;
+  self->super.free_fn = _string_free_fn;
+  self->value = g_strdup(value);
+
+  return &self->super;
 }

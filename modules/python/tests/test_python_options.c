@@ -87,3 +87,12 @@ _assert_python_option(const PythonOption *option, const gchar *expected_name, co
   }
   PyGILState_Release(gstate);
 }
+
+Test(python_options, test_python_option_string)
+{
+  gchar *string = g_strdup("example-value");
+  PythonOption *option = python_option_string_new("string", string);
+  g_free(string);
+  _assert_python_option(option, "string", "'example-value'");
+  python_option_free(option);
+}
