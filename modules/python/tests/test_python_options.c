@@ -110,3 +110,10 @@ Test(python_options, test_python_option_double)
   _assert_python_option(option, "double", "-13.37");
   python_option_free(option);
 }
+
+Test(python_options, test_python_option_boolean)
+{
+  PythonOption *option = python_option_boolean_new("boolean", TRUE);
+  _assert_python_option(option, "boolean", "True");
+  python_option_free(option);
+}
