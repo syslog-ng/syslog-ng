@@ -56,6 +56,8 @@ set(PYTHON_SOURCES
     python-ack-tracker.c
     python-types.h
     python-types.c
+    python-options.h
+    python-options.c
     compat/compat-python.c
 )
 

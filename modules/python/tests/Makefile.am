@@ -11,7 +11,8 @@ modules_python_tests_TESTS = \
   modules/python/tests/test_python_persist_name \
   modules/python/tests/test_python_persist \
   modules/python/tests/test_python_bookmark \
-  modules/python/tests/test_python_ack_tracker
+  modules/python/tests/test_python_ack_tracker \
+  modules/python/tests/test_python_options
 
 modules_python_tests_test_python_logmsg_CFLAGS = $(TEST_CFLAGS) $(PYTHON_CFLAGS) -I$(top_srcdir)/modules/python
 modules_python_tests_test_python_logmsg_LDADD = $(TEST_LDADD) \
@@ -53,5 +54,11 @@ modules_python_tests_test_python_ack_tracker_CFLAGS = $(TEST_CFLAGS) $(PYTHON_CF
 modules_python_tests_test_python_ack_tracker_LDADD = $(TEST_LDADD) \
 	-dlpreopen $(top_builddir)/modules/python/libmod-python.la \
 	$(PYTHON_LIBS) $(PREOPEN_SYSLOGFORMAT)
+
+modules_python_tests_test_python_options_CFLAGS = $(TEST_CFLAGS) $(PYTHON_CFLAGS) \
+	-I$(top_srcdir)/modules/python
+modules_python_tests_test_python_options_LDADD = $(TEST_LDADD) \
+	-dlpreopen $(top_builddir)/modules/python/libmod-python.la \
+	$(PYTHON_LIBS)
 
 EXTRA_DIST += modules/python/tests/CMakeLists.txt
