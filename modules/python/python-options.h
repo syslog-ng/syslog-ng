@@ -28,6 +28,7 @@
 typedef struct _PythonOption PythonOption;
 
 PythonOption *python_option_string_new(const gchar *name, const gchar *value);
+PythonOption *python_option_long_new(const gchar *name, gint64 value);
 
 const gchar *python_option_get_name(const PythonOption *self);
 PyObject *python_option_create_value_py_object(const PythonOption *self);

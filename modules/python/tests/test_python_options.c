@@ -96,3 +96,10 @@ Test(python_options, test_python_option_string)
   _assert_python_option(option, "string", "'example-value'");
   python_option_free(option);
 }
+
+Test(python_options, test_python_option_long)
+{
+  PythonOption *option = python_option_long_new("long", -42);
+  _assert_python_option(option, "long", "-42");
+  python_option_free(option);
+}
