@@ -141,3 +141,30 @@ python_option_long_new(const gchar *name, gint64 value)
 
   return &self->super;
 }
+
+/* Double */
+
+typedef struct _PythonOptionDouble
+{
+  PythonOption super;
+  gdouble value;
+} PythonOptionDouble;
+
+static PyObject *
+_double_create_value_py_object(const PythonOption *s)
+{
+  PythonOptionDouble *self = (PythonOptionDouble *) s;
+  return py_double_from_double(self->value);
+}
+
+PythonOption *
+python_option_double_new(const gchar *name, gdouble value)
+{
+  PythonOptionDouble *self = g_new0(PythonOptionDouble, 1);
+  python_option_init_instance(&self->super, name);
+
+  self->super.create_value_py_object = _double_create_value_py_object;
+  self->value = value;
+
+  return &self->super;
+}

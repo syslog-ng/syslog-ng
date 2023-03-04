@@ -103,3 +103,10 @@ Test(python_options, test_python_option_long)
   _assert_python_option(option, "long", "-42");
   python_option_free(option);
 }
+
+Test(python_options, test_python_option_double)
+{
+  PythonOption *option = python_option_double_new("double", -13.37);
+  _assert_python_option(option, "double", "-13.37");
+  python_option_free(option);
+}
