@@ -40,7 +40,7 @@ typedef struct _PythonFetcherDriver
 
   gchar *class;
   GList *loaders;
-  GHashTable *options;
+  PythonOptions *options;
 
   struct
   {
@@ -75,11 +75,12 @@ python_fetcher_set_class(LogDriver *s, gchar *filename)
 }
 
 void
-python_fetcher_set_option(LogDriver *s, gchar *key, gchar *value)
+python_fetcher_set_options(LogDriver *s, PythonOptions *options)
 {
   PythonFetcherDriver *self = (PythonFetcherDriver *) s;
-  gchar *normalized_key = __normalize_key(key);
-  g_hash_table_insert(self->options, normalized_key, g_strdup(value));
+
+  python_options_free(self->options);
+  self->options = options;
 }
 
 void
@@ -637,7 +638,7 @@ python_fetcher_free(LogPipe *s)
   PyGILState_Release(gstate);
 
   g_free(self->class);
-  g_hash_table_unref(self->options);
+  python_options_free(self->options);
   string_list_free(self->loaders);
 
   log_threaded_fetcher_driver_free_method(s);
@@ -660,7 +661,7 @@ python_fetcher_new(GlobalConfig *cfg)
 
   self->super.fetch = python_fetcher_fetch;
 
-  self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  self->options = python_options_new();
 
   return &self->super.super.super.super;
 }

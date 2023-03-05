@@ -45,7 +45,7 @@ typedef struct
   GList *loaders;
 
   LogTemplateOptions template_options;
-  GHashTable *options;
+  PythonOptions *options;
   ValuePairs *vp;
 
   struct
@@ -86,11 +86,12 @@ python_dd_set_class(LogDriver *d, gchar *class_name)
 }
 
 void
-python_dd_set_option(LogDriver *d, gchar *key, gchar *value)
+python_dd_set_options(LogDriver *d, PythonOptions *options)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
-  gchar *normalized_key = __normalize_key(key);
-  g_hash_table_insert(self->options, normalized_key, g_strdup(value));
+
+  python_options_free(self->options);
+  self->options = options;
 }
 
 void
@@ -639,8 +640,7 @@ python_dd_free(LogPipe *d)
 
   value_pairs_unref(self->vp);
 
-  if (self->options)
-    g_hash_table_unref(self->options);
+  python_options_free(self->options);
 
   string_list_free(self->loaders);
 
@@ -668,7 +668,7 @@ python_dd_new(GlobalConfig *cfg)
   self->super.format_stats_instance = python_dd_format_stats_instance;
   self->super.stats_source = stats_register_type("python");
 
-  self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  self->options = python_options_new();
 
   return (LogDriver *)self;
 }

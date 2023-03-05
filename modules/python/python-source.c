@@ -42,7 +42,7 @@ struct _PythonSourceDriver
 
   gchar *class;
   GList *loaders;
-  GHashTable *options;
+  PythonOptions *options;
   ThreadId thread_id;
 
   void (*post_message)(PythonSourceDriver *self, LogMessage *msg);
@@ -82,11 +82,12 @@ python_sd_set_class(LogDriver *s, gchar *filename)
 }
 
 void
-python_sd_set_option(LogDriver *s, gchar *key, gchar *value)
+python_sd_set_options(LogDriver *s, PythonOptions *options)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
-  gchar *normalized_key = __normalize_key(key);
-  g_hash_table_insert(self->options, normalized_key, g_strdup(value));
+
+  python_options_free(self->options);
+  self->options = options;
 }
 
 void
@@ -702,7 +703,7 @@ python_sd_free(LogPipe *s)
   PyGILState_Release(gstate);
 
   g_free(self->class);
-  g_hash_table_unref(self->options);
+  python_options_free(self->options);
   string_list_free(self->loaders);
 
   log_threaded_source_driver_free_method(s);
@@ -726,7 +727,7 @@ python_sd_new(GlobalConfig *cfg)
   self->super.request_exit = python_sd_request_exit;
   self->super.run = python_sd_run;
 
-  self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  self->options = python_options_new();
   self->post_message = _post_message_blocking;
 
   return &self->super.super.super;

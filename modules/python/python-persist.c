@@ -73,7 +73,7 @@ entry_to_pyobject(guint8 type, gchar *value)
 static PyObject *
 _call_generate_persist_name_method(PythonPersistMembers *options)
 {
-  PyObject *py_options = options->options ? _py_create_arg_dict(options->options) : NULL;
+  PyObject *py_options = options->options ? python_options_create_py_dict(options->options) : NULL;
   PyObject *ret = _py_invoke_function(options->generate_persist_name_method, py_options,
                                       options->class, options->id);
   Py_XDECREF(py_options);

@@ -120,7 +120,10 @@ python_dd_option
           }
         | KW_LOADERS python_dd_loaders
         | KW_IMPORTS python_dd_loaders
-        | KW_OPTIONS '(' python_dd_custom_options ')'
+        | python_options_block
+          {
+            python_dd_set_options(last_driver, $1);
+          }
         | threaded_dest_driver_general_option
         | threaded_dest_driver_batch_option
         | value_pair_option
@@ -130,25 +133,6 @@ python_dd_option
         | { last_template_options = python_dd_get_template_options(last_driver); } template_option
         ;
 
-python_dd_custom_options
-        : python_dd_custom_option python_dd_custom_options
-        |
-        ;
-
-python_dd_custom_option
-        : string string_or_number
-        {
-          python_dd_set_option(last_driver, $1, $2);
-          free($1);
-          free($2);
-        }
-	| string LL_ARROW string_or_number
-        {
-          python_dd_set_option(last_driver, $1, $3);
-          free($1);
-          free($3);
-        }
-        ;
 
 python_sd_options
         : python_sd_option python_sd_options
@@ -162,28 +146,11 @@ python_sd_option
             free($3);
           }
         | KW_LOADERS python_sd_loaders
-        | KW_OPTIONS '(' python_sd_custom_options ')'
+        | python_options_block
+          {
+            python_sd_set_options(last_driver, $1);
+          }
         | threaded_source_driver_option
-        ;
-
-python_sd_custom_options
-        : python_sd_custom_option python_sd_custom_options
-        |
-        ;
-
-python_sd_custom_option
-        : string string_or_number
-        {
-          python_sd_set_option(last_driver, $1, $2);
-          free($1);
-          free($2);
-        }
-        | string LL_ARROW string_or_number
-        {
-          python_sd_set_option(last_driver, $1, $3);
-          free($1);
-          free($3);
-        }
         ;
 
 
@@ -199,29 +166,12 @@ python_fetcher_option
             free($3);
           }
         | KW_LOADERS python_fetcher_loaders
-        | KW_OPTIONS '(' python_fetcher_custom_options ')'
+        | python_options_block
+          {
+            python_fetcher_set_options(last_driver, $1);
+          }
         | threaded_source_driver_option
         | threaded_fetcher_driver_option
-        ;
-
-python_fetcher_custom_options
-        : python_fetcher_custom_option python_fetcher_custom_options
-        |
-        ;
-
-python_fetcher_custom_option
-        : string string_or_number
-        {
-          python_fetcher_set_option(last_driver, $1, $2);
-          free($1);
-          free($2);
-        }
-        | string LL_ARROW string_or_number
-        {
-          python_fetcher_set_option(last_driver, $1, $3);
-          free($1);
-          free($3);
-        }
         ;
 
 
@@ -238,29 +188,11 @@ python_parser_option
           }
         | KW_LOADERS python_parser_loaders
         | KW_IMPORTS python_parser_loaders
-        | KW_OPTIONS '(' python_parser_custom_options ')'
-        ;
-
-python_parser_custom_options
-        : python_parser_custom_option python_parser_custom_options
-        |
-        ;
-
-python_parser_custom_option
-        : string string_or_number
-        {
-          python_parser_set_option(last_parser, $1, $2);
-          free($1);
-          free($2);
-        }
-        | string LL_ARROW string_or_number
-        {
-          python_parser_set_option(last_parser, $1, $3);
-          free($1);
-          free($3);
-        }
-
-        ;
+        | python_options_block
+          {
+            python_parser_set_options(last_parser, $1);
+          }
+          ;
 
 
 python_http_header_options
@@ -275,32 +207,14 @@ python_http_header_option
             free($3);
           }
         | KW_LOADERS python_http_header_loaders
-        | KW_OPTIONS '(' python_http_header_custom_options ')'
+        | python_options_block
+          {
+            python_http_header_set_options(last_header, $1);
+          }
         | KW_MARK_ERRORS_AS_CRITICAL '(' yesno ')'
           {
             python_http_header_set_mark_errors_as_critical(last_header, $3);
           }
-        ;
-
-python_http_header_custom_options
-        : python_http_header_custom_option python_http_header_custom_options
-        |
-        ;
-
-python_http_header_custom_option
-        : string string_or_number
-        {
-          python_http_header_set_option(last_header, $1, $2);
-          free($1);
-          free($2);
-        }
-        |
-        string LL_ARROW string_or_number
-        {
-          python_http_header_set_option(last_header, $1, $3);
-          free($1);
-          free($3);
-        }
         ;
 
 

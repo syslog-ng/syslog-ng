@@ -34,7 +34,7 @@ typedef struct
   gchar *class;
   GList *loaders;
 
-  GHashTable *options;
+  PythonOptions *options;
 
   struct
   {
@@ -67,11 +67,12 @@ python_parser_set_class(LogParser *d, gchar *class)
 }
 
 void
-python_parser_set_option(LogParser *d, gchar *key, gchar *value)
+python_parser_set_options(LogParser *d, PythonOptions *options)
 {
   PythonParser *self = (PythonParser *)d;
-  gchar *normalized_key = __normalize_key(key);
-  g_hash_table_insert(self->options, normalized_key, g_strdup(value));
+
+  python_options_free(self->options);
+  self->options = options;
 }
 
 void
@@ -294,8 +295,7 @@ python_parser_free(LogPipe *d)
 
   g_free(self->class);
 
-  if (self->options)
-    g_hash_table_unref(self->options);
+  python_options_free(self->options);
 
   string_list_free(self->loaders);
 
@@ -307,10 +307,9 @@ python_parser_clone(LogPipe *s)
 {
   PythonParser *self = (PythonParser *) s;
   PythonParser *cloned = (PythonParser *) python_parser_new(log_pipe_get_config(s));
-  g_hash_table_unref(cloned->options);
   python_parser_set_class(&cloned->super, self->class);
   cloned->loaders = string_list_clone(self->loaders);
-  cloned->options = g_hash_table_ref(self->options);
+  python_parser_set_options(&cloned->super, self->options);
 
   return &cloned->super.super;
 }
@@ -328,7 +327,7 @@ python_parser_new(GlobalConfig *cfg)
   self->super.process = python_parser_process;
   self->py.class = self->py.instance = self->py.parser_process = NULL;
 
-  self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  self->options = python_options_new();
 
   return (LogParser *)self;
 }

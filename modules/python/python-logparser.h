@@ -24,13 +24,14 @@
 #define _SNG_PYTHON_LOGPARSER_H
 
 #include "python-module.h"
+#include "python-options.h"
 #include "parser/parser-expr.h"
 #include "value-pairs/value-pairs.h"
 
 LogParser *python_parser_new(GlobalConfig *cfg);
 void python_parser_set_loaders(LogParser *s, GList *loaders);
 void python_parser_set_class(LogParser *s, gchar *class_name);
-void python_parser_set_option(LogParser  *s, gchar *key, gchar *value);
+void python_parser_set_options(LogParser  *s, PythonOptions *options);
 
 void py_log_parser_global_init(void);
 

@@ -25,6 +25,7 @@
 #define PYTHON_HELPERS_H_INCLUDED 1
 
 #include "python-module.h"
+#include "python-options.h"
 #include "cfg-args.h"
 
 const gchar *_py_get_callable_name(PyObject *callable, gchar *buf, gsize buf_len);
@@ -45,8 +46,9 @@ PyObject *_py_invoke_method_by_name(PyObject *instance, const gchar *method_name
                                     const gchar *module);
 void _py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class,
                                     const gchar *module);
-gboolean _py_invoke_bool_method_by_name_with_options(PyObject *instance, const gchar *method_name, GHashTable *options,
-                                                     const gchar *class, const gchar *module);
+gboolean _py_invoke_bool_method_by_name_with_options(PyObject *instance, const gchar *method_name,
+                                                     const PythonOptions *options, const gchar *class,
+                                                     const gchar *module);
 gboolean _py_invoke_bool_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class,
                                         const gchar *module);
 void _py_perform_imports(GList *imports);
