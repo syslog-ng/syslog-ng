@@ -172,13 +172,6 @@ _dd_py_invoke_bool_method_by_name_with_args(PythonDestDriver *self, const gchar 
                                                   self->super.super.super.id);
 }
 
-static gboolean G_GNUC_UNUSED
-_dd_py_invoke_bool_method_by_name(PythonDestDriver *self, const gchar *method_name)
-{
-  return _py_invoke_bool_method_by_name_with_args(self->py.instance, method_name, NULL, self->class,
-                                                  self->super.super.super.id);
-}
-
 static gboolean
 _py_invoke_is_opened(PythonDestDriver *self)
 {
