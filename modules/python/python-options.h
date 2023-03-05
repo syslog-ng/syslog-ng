@@ -38,4 +38,11 @@ PyObject *python_option_create_value_py_object(const PythonOption *self);
 
 void python_option_free(PythonOption *self);
 
+typedef struct _PythonOptions PythonOptions;
+
+PythonOptions *python_options_new(void);
+void python_options_add_option(PythonOptions *self, PythonOption *option);
+PyObject *python_options_create_py_dict(const PythonOptions *self);
+void python_options_free(PythonOptions *self);
+
 #endif

@@ -22,6 +22,7 @@
 
 #include "python-options.h"
 #include "python-types.h"
+#include "python-helpers.h"
 #include "str-utils.h"
 #include "string-list.h"
 
@@ -230,4 +231,67 @@ python_option_string_list_new(const gchar *name, const GList *value)
   self->value = string_list_clone(value);
 
   return &self->super;
+}
+
+/* Python Options */
+
+struct _PythonOptions
+{
+  GList *options;
+};
+
+PythonOptions *
+python_options_new(void)
+{
+  PythonOptions *self = g_new0(PythonOptions, 1);
+  return self;
+}
+
+void
+python_options_add_option(PythonOptions *self, PythonOption *option)
+{
+  self->options = g_list_append(self->options, option);
+}
+
+PyObject *
+python_options_create_py_dict(const PythonOptions *self)
+{
+  PyObject *py_dict;
+
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  {
+    py_dict = PyDict_New();
+    if (!py_dict)
+      {
+        PyGILState_Release(gstate);
+        return NULL;
+      }
+
+    for (GList *elem = self->options; elem; elem = elem->next)
+      {
+        const PythonOption *option = (const PythonOption *) elem->data;
+        const gchar *name = python_option_get_name(option);
+        PyObject *value = python_option_create_value_py_object(option);
+
+        if (!value)
+          continue;
+
+        if (PyDict_SetItemString(py_dict, name, value) < 0)
+          msg_error("python-options: Failed to add option to dict", evt_tag_str("name", name));
+        Py_DECREF(value);
+      }
+  }
+  PyGILState_Release(gstate);
+
+  return py_dict;
+}
+
+void
+python_options_free(PythonOptions *self)
+{
+  if (!self)
+    return;
+
+  g_list_free_full(self->options, (GDestroyNotify) python_option_free);
+  g_free(self);
 }

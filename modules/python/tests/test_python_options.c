@@ -133,3 +133,56 @@ Test(python_options, test_python_option_string_list)
   _assert_python_option(option, "string_list", "['example-value-1', 'example-value-2']");
   python_option_free(option);
 }
+
+Test(python_options, test_python_options)
+{
+  PythonOptions *options = python_options_new();
+  PythonOption *option;
+
+  option = python_option_string_new("string", "example-value");
+  python_options_add_option(options, option);
+
+  option = python_option_long_new("long", -42);
+  python_options_add_option(options, option);
+
+  option = python_option_double_new("double", -13.37);
+  python_options_add_option(options, option);
+
+  option = python_option_boolean_new("boolean", TRUE);
+  python_options_add_option(options, option);
+
+  const gchar *string_array[] =
+  {
+    "example-value-1",
+    "example-value-2",
+    NULL,
+  };
+  GList *string_list = string_array_to_list(string_array);
+  option = python_option_string_list_new("string-list", string_list);
+  string_list_free(string_list);
+  python_options_add_option(options, option);
+
+  PyObject *options_dict = python_options_create_py_dict(options);
+
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  {
+    PyDict_SetItemString(_python_main_dict, "options", options_dict);
+
+    const gchar *script = "assert options['string'] == 'example-value', 'Actual: {}'.format(options['string'])\n"
+                          "assert options['long'] == -42, 'Actual: {}'.format(options['long'])\n"
+                          "assert options['double'] == -13.37, 'Actual: {}'.format(options['double'])\n"
+                          "assert options['boolean'] == True, 'Actual: {}'.format(options['string'])\n"
+                          "assert options['string_list'] == ['example-value-1', 'example-value-2'], "
+                          "'Actual: {}'.format(options['string_list'])\n";
+    if (!PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict))
+      {
+        PyErr_Print();
+        PyGILState_Release(gstate);
+        cr_assert(FALSE, "Error running Python script >>>%s<<<", script);
+      }
+  }
+  Py_DECREF(options_dict);
+  PyGILState_Release(gstate);
+
+  python_options_free(options);
+}
