@@ -96,9 +96,9 @@ _pp_py_invoke_void_method_by_name(PythonParser *self, PyObject *instance, const 
 }
 
 static gboolean
-_pp_py_invoke_bool_method_by_name_with_args(PythonParser *self, PyObject *instance, const gchar *method_name)
+_pp_py_invoke_bool_method_by_name_with_options(PythonParser *self, PyObject *instance, const gchar *method_name)
 {
-  return _py_invoke_bool_method_by_name_with_args(instance, method_name, self->options, self->class, self->super.name);
+  return _py_invoke_bool_method_by_name_with_options(instance, method_name, self->options, self->class, self->super.name);
 }
 
 static gboolean
@@ -112,7 +112,7 @@ _py_invoke_init(PythonParser *self)
 {
   if (_py_get_attr_or_null(self->py.instance, "init") == NULL)
     return TRUE;
-  return _pp_py_invoke_bool_method_by_name_with_args(self, self->py.instance, "init");
+  return _pp_py_invoke_bool_method_by_name_with_options(self, self->py.instance, "init");
 }
 
 static void

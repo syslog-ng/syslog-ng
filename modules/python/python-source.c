@@ -121,10 +121,10 @@ _ps_py_invoke_void_method_by_name(PythonSourceDriver *self, const gchar *method_
 }
 
 static gboolean
-_ps_py_invoke_bool_method_by_name_with_args(PythonSourceDriver *self, const gchar *method_name)
+_ps_py_invoke_bool_method_by_name_with_options(PythonSourceDriver *self, const gchar *method_name)
 {
-  return _py_invoke_bool_method_by_name_with_args(self->py.instance, method_name, self->options, self->class,
-                                                  self->super.super.super.id);
+  return _py_invoke_bool_method_by_name_with_options(self->py.instance, method_name, self->options, self->class,
+                                                     self->super.super.super.id);
 }
 
 static void
@@ -136,7 +136,7 @@ _ps_py_invoke_void_function(PythonSourceDriver *self, PyObject *func, PyObject *
 static gboolean
 _py_invoke_init(PythonSourceDriver *self)
 {
-  return _ps_py_invoke_bool_method_by_name_with_args(self, "init");
+  return _ps_py_invoke_bool_method_by_name_with_options(self, "init");
 }
 
 static void

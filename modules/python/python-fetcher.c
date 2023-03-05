@@ -114,10 +114,10 @@ _pf_py_invoke_void_method_by_name(PythonFetcherDriver *self, const gchar *method
 }
 
 static gboolean
-_pf_py_invoke_bool_method_by_name_with_args(PythonFetcherDriver *self, const gchar *method_name)
+_pf_py_invoke_bool_method_by_name_with_options(PythonFetcherDriver *self, const gchar *method_name)
 {
-  return _py_invoke_bool_method_by_name_with_args(self->py.instance, method_name, self->options, self->class,
-                                                  self->super.super.super.super.id);
+  return _py_invoke_bool_method_by_name_with_options(self->py.instance, method_name, self->options, self->class,
+                                                     self->super.super.super.super.id);
 }
 
 static void
@@ -135,7 +135,7 @@ _pf_py_invoke_bool_function(PythonFetcherDriver *self, PyObject *func, PyObject 
 static gboolean
 _py_invoke_init(PythonFetcherDriver *self)
 {
-  return _pf_py_invoke_bool_method_by_name_with_args(self, "init");
+  return _pf_py_invoke_bool_method_by_name_with_options(self, "init");
 }
 
 static void
