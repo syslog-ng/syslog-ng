@@ -403,6 +403,7 @@
 
 %type	<cptr> string
 %type	<cptr> string_or_number
+%type	<cptr> optional_string
 %type	<cptr> normalized_flag
 %type   <ptr> string_list
 %type   <ptr> string_list_build
@@ -508,7 +509,15 @@ rewrite_stmt
           }
 
 log_stmt
-        : KW_LOG _log_context_push '{' log_content '}' _log_context_pop             { $$ = $4;}
+        : KW_LOG optional_string _log_context_push '{' log_content '}' _log_context_pop
+          {
+            if ($2)
+              {
+                log_expr_node_set_name($5, $2);
+                free($2);
+              }
+            $$ = $5;
+          }
 	;
 
 
@@ -696,8 +705,24 @@ log_forks
         ;
 
 log_fork
-        : KW_LOG '{' log_content '}'            { $$ = $3; }
-        | KW_CHANNEL '{' log_content '}'        { $$ = $3; }
+        : KW_LOG optional_string '{' log_content '}'
+          {
+            if ($2)
+              {
+                log_expr_node_set_name($4, $2);
+                free($2);
+              }
+            $$ = $4;
+          }
+        | KW_CHANNEL optional_string '{' log_content '}'
+          {
+            if ($2)
+              {
+                log_expr_node_set_name($4, $2);
+                free($2);
+              }
+            $$ = $4;
+          }
         ;
 
 log_conditional
@@ -1061,6 +1086,11 @@ string_or_number
         : string                                { $$ = $1; }
         | LL_NUMBER                             { $$ = strdup(lexer->token_text->str); }
         | LL_FLOAT                              { $$ = strdup(lexer->token_text->str); }
+        ;
+
+optional_string
+        : string                                { $$ = $1; }
+        |                                       { $$ = NULL; }
         ;
 
 path

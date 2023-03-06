@@ -25,6 +25,7 @@
 #include "cfg-tree.h"
 #include "logmpx.h"
 #include "logpipe.h"
+#include "metrics-pipe.h"
 
 #include <string.h>
 
@@ -239,6 +240,13 @@ log_expr_node_set_aux(LogExprNode *self, gpointer aux, GDestroyNotify destroy)
 {
   self->aux = aux;
   self->aux_destroy = destroy;
+}
+
+void
+log_expr_node_set_name(LogExprNode *self, const gchar *name)
+{
+  g_free(self->name);
+  self->name = g_strdup(name);
 }
 
 /**
@@ -634,6 +642,15 @@ cfg_tree_new_mpx(CfgTree *self, LogExprNode *related_expr)
   return pipe;
 }
 
+MetricsPipe *
+cfg_tree_new_metrics_pipe(CfgTree *self, LogExprNode *related_expr)
+{
+  MetricsPipe *pipe = metrics_pipe_new(self->cfg, related_expr->name);
+  pipe->super.expr_node = related_expr;
+  g_ptr_array_add(self->initialized_pipes, pipe);
+  return pipe;
+}
+
 static gchar *
 _format_anon_rule_name(CfgTree *self, gint content)
 {
@@ -890,6 +907,16 @@ cfg_tree_propagate_expr_node_properties_to_pipe(LogExprNode *node, LogPipe *pipe
     pipe->expr_node = node;
 }
 
+static gboolean
+_is_log_path_name_unique(CfgTree *self, const LogExprNode *node)
+{
+  if (g_hash_table_contains(self->log_path_names, node->name))
+    return FALSE;
+
+  g_hash_table_insert(self->log_path_names, g_strdup(node->name), NULL);
+  return TRUE;
+}
+
 /**
  * cfg_tree_compile_sequence:
  *
@@ -935,6 +962,14 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
       /* the catch-all resolution code clears this flag */
 
       msg_error("Error in configuration, catch-all flag can only be specified for top-level log statements");
+      goto error;
+    }
+
+  if (node->content == ENC_PIPE && node->name && !_is_log_path_name_unique(self, node))
+    {
+      msg_error("Error in configuration, duplicate log path definition",
+                evt_tag_str("log_path_name", node->name),
+                log_expr_node_location_tag(node));
       goto error;
     }
 
@@ -1015,12 +1050,26 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
 
           if (!source_join_pipe)
             {
-              source_join_pipe = last_pipe = cfg_tree_new_pipe(self, node);
+              if (node->content == ENC_PIPE && node->name)
+                {
+                  MetricsPipe *metrics_pipe = cfg_tree_new_metrics_pipe(self, node);
+                  source_join_pipe = last_pipe = &metrics_pipe->super;
+                }
+              else
+                {
+                  source_join_pipe = last_pipe = cfg_tree_new_pipe(self, node);
+                }
             }
           log_pipe_append(sub_pipe_tail, source_join_pipe);
         }
     }
 
+  if (node->content == ENC_PIPE && node->name && first_pipe)
+    {
+      MetricsPipe *metrics_pipe = cfg_tree_new_metrics_pipe(self, node);
+      log_pipe_append(&metrics_pipe->super, first_pipe);
+      first_pipe = &metrics_pipe->super;
+    }
 
   if (!first_pipe && !last_pipe)
     {
@@ -1262,7 +1311,7 @@ cfg_tree_add_object(CfgTree *self, LogExprNode *rule)
 {
   gboolean res = TRUE;
 
-  if (rule->name)
+  if (rule->name && rule->content != ENC_PIPE)
     {
       /* only named rules can be stored as objects to be referenced later */
 
@@ -1499,6 +1548,7 @@ cfg_tree_init_instance(CfgTree *self, GlobalConfig *cfg)
   self->objects = g_hash_table_new_full(cfg_tree_objects_hash, cfg_tree_objects_equal, NULL,
                                         (GDestroyNotify) log_expr_node_unref);
   self->templates = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_template_unref);
+  self->log_path_names = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   self->rules = g_ptr_array_new();
   self->cfg = cfg;
 }
@@ -1514,5 +1564,7 @@ cfg_tree_free_instance(CfgTree *self)
 
   g_hash_table_destroy(self->objects);
   g_hash_table_destroy(self->templates);
+  g_hash_table_destroy(self->log_path_names);
+
   self->cfg = NULL;
 }

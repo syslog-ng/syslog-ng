@@ -66,6 +66,10 @@ class SyslogNgCtlExecutor(object):
         return stats_command
 
     @staticmethod
+    def construct_ctl_stats_prometheus_command():
+        return ["stats", "prometheus"]
+
+    @staticmethod
     def construct_ctl_credentials_command(credential, secret):
         return ["credentials", "add", credential, secret]
 

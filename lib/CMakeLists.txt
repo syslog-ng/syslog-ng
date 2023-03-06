@@ -112,6 +112,7 @@ set (LIB_HEADERS
     module-config.h
     memtrace.h
     messages.h
+    metrics-pipe.h
     ml-batched-timer.h
     mainloop-control.h
     msg-format.h
@@ -204,6 +205,7 @@ set(LIB_SOURCES
     module-config.c
     memtrace.c
     messages.c
+    metrics-pipe.c
     ml-batched-timer.c
     mainloop-control.c
     msg-format.c

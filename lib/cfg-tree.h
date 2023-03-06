@@ -129,6 +129,7 @@ gint log_expr_node_lookup_flag(const gchar *flag);
 
 LogExprNode *log_expr_node_append_tail(LogExprNode *a, LogExprNode *b);
 void log_expr_node_set_object(LogExprNode *self, gpointer object, GDestroyNotify destroy);
+void log_expr_node_set_name(LogExprNode *self, const gchar *name);
 const gchar *log_expr_node_format_location(LogExprNode *self, gchar *buf, gsize buf_len);
 EVTTAG *log_expr_node_location_tag(LogExprNode *self);
 
@@ -168,6 +169,7 @@ typedef struct _CfgTree
   GPtrArray *rules;
   GHashTable *templates;
   gboolean compiled;
+  GHashTable *log_path_names;
 } CfgTree;
 
 gboolean cfg_tree_add_object(CfgTree *self, LogExprNode *rule);

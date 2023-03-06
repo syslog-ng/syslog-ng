@@ -40,6 +40,9 @@ class SyslogNgCtl(object):
     def stats(self, reset=False):
         return self.__syslog_ng_ctl_cli.stats(reset)
 
+    def stats_prometheus(self):
+        return self.__syslog_ng_ctl_cli.stats_prometheus()
+
     def query(self, pattern="*", query_type=QueryTypes.QUERY_GET):
         return self.__syslog_ng_ctl_cli.query(pattern, query_type)
 
