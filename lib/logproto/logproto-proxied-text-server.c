@@ -43,6 +43,9 @@
 /* the size of the buffer we use to fetch the PROXY header into */
 #define PROXY_PROTO_HDR_BUFFER_SIZE 1500
 
+/* the amount of bytes we need from the client to detect protocol version */
+#define PROXY_PROTO_HDR_MAGIC_LEN   5
+
 typedef struct _LogProtoProxiedTextServer
 {
   LogProtoTextServer super;
@@ -420,19 +423,19 @@ _fetch_proxy_v2_payload(LogProtoProxiedTextServer *self)
 static gboolean
 _is_proxy_version_v1(LogProtoProxiedTextServer *self)
 {
-  if (self->proxy_header_buff_len < 5)
+  if (self->proxy_header_buff_len < PROXY_PROTO_HDR_MAGIC_LEN)
     return FALSE;
 
-  return memcmp(self->proxy_header_buff, "PROXY", 5) == 0;
+  return memcmp(self->proxy_header_buff, "PROXY", PROXY_PROTO_HDR_MAGIC_LEN) == 0;
 }
 
 static gboolean
 _is_proxy_version_v2(LogProtoProxiedTextServer *self)
 {
-  if (self->proxy_header_buff_len < 5)
+  if (self->proxy_header_buff_len < PROXY_PROTO_HDR_MAGIC_LEN)
     return FALSE;
 
-  return memcmp(self->proxy_header_buff, "\x0D\x0A\x0D\x0A\x00", 5) == 0;
+  return memcmp(self->proxy_header_buff, "\x0D\x0A\x0D\x0A\x00", PROXY_PROTO_HDR_MAGIC_LEN) == 0;
 }
 
 static inline LogProtoStatus
@@ -446,7 +449,7 @@ _fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
       self->header_fetch_state = LPPTS_DETERMINE_VERSION;
     /* fallthrough */
     case LPPTS_DETERMINE_VERSION:
-      status = _fetch_chunk(self, 5);
+      status = _fetch_chunk(self, PROXY_PROTO_HDR_MAGIC_LEN);
 
       if (status != LPS_SUCCESS)
         return status;
