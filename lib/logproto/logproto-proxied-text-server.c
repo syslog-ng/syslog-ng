@@ -480,7 +480,7 @@ process_proxy_v1:
       return _fetch_until_newline(self);
     case LPPTS_PROXY_V2_READ_HEADER:
 process_proxy_v2:
-      status = _fetch_chunk(self, 16);
+      status = _fetch_chunk(self, sizeof(struct proxy_hdr_v2));
       if (status != LPS_SUCCESS)
         return status;
 
