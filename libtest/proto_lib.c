@@ -171,7 +171,6 @@ void
 init_proto_tests(void)
 {
   configuration = cfg_new_snippet();
-  cfg_load_module(configuration, "syslogformat");
   log_proto_server_options_defaults(&proto_server_options);
 }
 

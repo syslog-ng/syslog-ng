@@ -305,8 +305,9 @@ close_ssl_connection(SSL *ssl)
 }
 
 int
-generate_proxy_header(char *buffer, int buffer_size, int thread_id, const char *proxy_src_ip, const char *proxy_dst_ip,
-                      const char *proxy_src_port, const char *proxy_dst_port)
+generate_proxy_header_v1(char *buffer, int buffer_size, int thread_id,
+                         const char *proxy_src_ip, const char *proxy_dst_ip,
+                         const char *proxy_src_port, const char *proxy_dst_port)
 {
   gchar header[HEADER_BUF_SIZE];
 
@@ -344,4 +345,102 @@ generate_proxy_header(char *buffer, int buffer_size, int thread_id, const char *
   memcpy(buffer, header, header_len);
 
   return header_len;
+}
+
+struct proxy_hdr_v2
+{
+  uint8_t sig[12];  /* hex 0D 0A 0D 0A 00 0D 0A 51 55 49 54 0A */
+  uint8_t ver_cmd;  /* protocol version and command */
+  uint8_t fam;      /* protocol family and address */
+  uint16_t len;     /* number of following bytes part of the header */
+};
+
+union proxy_addr
+{
+  struct          /* for TCP/UDP over IPv4, len = 12 */
+  {
+    uint32_t src_addr;
+    uint32_t dst_addr;
+    uint16_t src_port;
+    uint16_t dst_port;
+  } ipv4_addr;
+  struct          /* for TCP/UDP over IPv6, len = 36 */
+  {
+    uint8_t  src_addr[16];
+    uint8_t  dst_addr[16];
+    uint16_t src_port;
+    uint16_t dst_port;
+  } ipv6_addr;
+  struct          /* for AF_UNIX sockets, len = 216 */
+  {
+    uint8_t src_addr[108];
+    uint8_t dst_addr[108];
+  } unix_addr;
+};
+
+
+int
+generate_proxy_header_v2(char *buffer, int buffer_size, int thread_id, const char *proxy_src_ip,
+                         const char *proxy_dst_ip,
+                         const char *proxy_src_port, const char *proxy_dst_port)
+{
+  gchar ip_src_random[IP_ADDRESS_MAX_LENGTH + 1];
+  gchar ip_dst_random[IP_ADDRESS_MAX_LENGTH + 1];
+  gint src_port, dst_port;
+
+  struct proxy_hdr_v2 *proxy_hdr = (struct proxy_hdr_v2 *) buffer;
+  union proxy_addr *proxy_adr = (union proxy_addr *) (proxy_hdr+1);
+
+  g_assert(buffer_size > sizeof(*proxy_hdr) + sizeof(*proxy_adr));
+
+  memcpy(proxy_hdr->sig, "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A\x02", 12);
+  proxy_hdr->ver_cmd = 0x21;
+  proxy_hdr->fam = 0x11;
+  proxy_hdr->len = htons(sizeof(proxy_adr->ipv4_addr));
+
+  if (proxy_src_ip == NULL)
+    {
+      gint oct1 = g_random_int_range(1, 100);
+      g_snprintf(ip_src_random, IP_ADDRESS_MAX_LENGTH + 1, "192.168.1.%d", oct1);
+      proxy_src_ip = ip_src_random;
+    }
+
+  if (proxy_dst_ip == NULL)
+    {
+      gint oct2 = g_random_int_range(1, 100);
+      g_snprintf(ip_dst_random, IP_ADDRESS_MAX_LENGTH + 1, "192.168.1.%d", oct2);
+      proxy_dst_ip = ip_dst_random;
+    }
+
+  if (proxy_src_port == NULL)
+    src_port = g_random_int_range(5000, 10000);
+  else
+    src_port = atoi(proxy_src_port);
+
+  if (proxy_dst_port == NULL)
+    dst_port = 514;
+  else
+    dst_port = atoi(proxy_dst_port);
+
+  inet_aton(proxy_src_ip, (struct in_addr *) &proxy_adr->ipv4_addr.src_addr);
+  inet_aton(proxy_dst_ip, (struct in_addr *) &proxy_adr->ipv4_addr.dst_addr);
+  proxy_adr->ipv4_addr.src_port = htons(src_port);
+  proxy_adr->ipv4_addr.dst_port = htons(dst_port);
+
+  char *end_of_header = ((char *) proxy_adr) + sizeof(proxy_adr->ipv4_addr);
+  return end_of_header - buffer;
+}
+
+int
+generate_proxy_header(char *buffer, int buffer_size, int thread_id,
+                      int proxy_version,
+                      const char *proxy_src_ip, const char *proxy_dst_ip,
+                      const char *proxy_src_port, const char *proxy_dst_port)
+{
+  if (proxy_version == 1)
+    return generate_proxy_header_v1(buffer, buffer_size, thread_id, proxy_src_ip, proxy_dst_ip, proxy_src_port,
+                                    proxy_dst_port);
+  else
+    return generate_proxy_header_v2(buffer, buffer_size, thread_id, proxy_src_ip, proxy_dst_ip, proxy_src_port,
+                                    proxy_dst_port);
 }

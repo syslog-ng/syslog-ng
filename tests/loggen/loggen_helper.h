@@ -52,7 +52,7 @@ int connect_ip_socket(int sock_type, const char *target, const char *port, int u
 int connect_unix_domain_socket(int sock_type, const char *path);
 SSL *open_ssl_connection(int sock_fd);
 void close_ssl_connection(SSL *ssl);
-int generate_proxy_header(char *buffer, int buffer_size, int thread_id, const char *proxy_src_ip,
+int generate_proxy_header(char *buffer, int buffer_size, int thread_id, int proxy_version, const char *proxy_src_ip,
                           const char *proxy_dst_ip, const char *proxy_src_port, const char *proxy_dst_port);
 
 #define ERROR(format,...) do {\

@@ -67,7 +67,7 @@ static int proxied_tls_passthrough = 0;
 static GOptionEntry loggen_options[] =
 {
   { "use-ssl", 'U', 0, G_OPTION_ARG_NONE, &use_ssl,  "Use ssl layer", NULL },
-  { "proxied-tls-passthrough", 0, 0, G_OPTION_ARG_NONE, &proxied_tls_passthrough, "Send the PROXY protocol v1 header before the encrypted payload", NULL },
+  { "proxied-tls-passthrough", 0, 0, G_OPTION_ARG_NONE, &proxied_tls_passthrough, "Send the PROXY protocol header before the encrypted payload", NULL },
   { NULL }
 };
 
@@ -294,10 +294,12 @@ send_plaintext_proxy_header(ThreadData *thread_context, int sock_fd, char *buf, 
 {
   PluginOption *option = thread_context->option;
 
-  int proxy_header_len = generate_proxy_header(buf, buf_size, thread_context->index, option->proxy_src_ip,
-                                               option->proxy_dst_ip, option->proxy_src_port, option->proxy_dst_port);
+  int proxy_header_len = generate_proxy_header(buf, buf_size, thread_context->index,
+                                               option->proxy_version,
+                                               option->proxy_src_ip, option->proxy_dst_ip,
+                                               option->proxy_src_port, option->proxy_dst_port);
 
-  DEBUG("Generated PROXY protocol v1 header; len=%d\n", proxy_header_len);
+  DEBUG("Generated PROXY protocol v%d header; len=%d\n", option->proxy_version, proxy_header_len);
 
   size_t sent = 0;
   while (sent < proxy_header_len)
@@ -312,7 +314,8 @@ send_plaintext_proxy_header(ThreadData *thread_context, int sock_fd, char *buf, 
       sent += rc;
     }
 
-  DEBUG("Sent PROXY protocol v1 header; len=%d\n", proxy_header_len);
+  thread_context->proxy_header_sent = TRUE;
+  DEBUG("Sent PROXY protocol v%d header; len=%d\n", option->proxy_version, proxy_header_len);
 }
 
 gpointer
