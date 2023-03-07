@@ -526,9 +526,9 @@ dqtool_relocate(int argc, char *argv[])
 }
 
 static gboolean
-_assign_validate_options(void)
+_assign_validate_options(const gchar *persist_file, const gchar *diskq_file)
 {
-  return _validate_persist_file_path(persist_file_path) && _file_is_diskq(persist_file_path);
+  return _validate_persist_file_path(persist_file) && _file_is_diskq(diskq_file);
 }
 
 static void
@@ -548,14 +548,18 @@ _assign_print_help(void)
 static gint
 dqtool_assign(int argc, char *argv[])
 {
-  if (assign_help)
+  if (optind >= argc || assign_help)
     {
       _assign_print_help();
       return 0;
     }
 
-  if (!_assign_validate_options())
-    return 1;
+  const gchar *diskq_file = argv[optind];
+
+  gchar *diskq_full_path = g_canonicalize_filename(diskq_file, NULL);
+
+  if (!_assign_validate_options(persist_file_path, diskq_full_path))
+    goto error;
 
   main_thread_handle = get_thread_id();
 
@@ -563,17 +567,14 @@ dqtool_assign(int argc, char *argv[])
   if (!state)
     {
       fprintf(stderr, "Failed to create PersistState from file %s\n", persist_file_path);
-      return 1;
+      goto error;
     }
 
   if (!persist_state_start_edit(state))
     {
       fprintf(stderr, "Failed to load persist file for editing.");
-      return 1;
+      goto error;
     }
-
-  const gchar *diskq_file = argv[optind];
-  gchar *diskq_full_path = g_canonicalize_filename(diskq_file, NULL);
 
   gchar *old_entry = persist_state_lookup_string(state, assign_persist_name, NULL, NULL);
   if (old_entry)
@@ -589,6 +590,10 @@ dqtool_assign(int argc, char *argv[])
   persist_state_free(state);
 
   return 0;
+
+error:
+  g_free(diskq_full_path);
+  return 1;
 }
 
 static GOptionEntry dqtool_options[] =
