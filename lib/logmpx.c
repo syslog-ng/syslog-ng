@@ -32,6 +32,12 @@ log_multiplexer_add_next_hop(LogMultiplexer *self, LogPipe *next_hop)
   g_ptr_array_add(self->next_hops, next_hop);
 }
 
+void
+log_multiplexer_disable_delivery_propagation(LogMultiplexer *self)
+{
+  self->delivery_propagation = FALSE;
+}
+
 static gboolean
 log_multiplexer_init(LogPipe *s)
 {
@@ -74,13 +80,12 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
 {
   LogMultiplexer *self = (LogMultiplexer *) s;
   gint i;
-  LogPathOptions local_options = *path_options;
   gboolean matched;
+  LogPathOptions local_options;
   gboolean delivered = FALSE;
   gint fallback;
 
-  local_options.matched = &matched;
-
+  log_path_options_push_junction(&local_options, &matched, path_options);
   if (_has_multiple_arcs(self))
     {
       log_msg_write_protect(msg);
@@ -113,24 +118,60 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
         }
     }
 
-  /* NOTE: non of our multiplexed destinations delivered this message, let's
+  /* NOTE: non of our multiplexed next-hops delivered this message, let's
    * propagate this result.  But only if we don't have a "next".  If we do,
    * that would be responsible for doing the same, for instance if it is a
    * filter.
    *
-   * In case where this matters most (e.g.  the multiplexer attached to the
-   * source LogPipe), "next" will always be NULL.  I am not sure if there's
-   * ever a case, where a LogMpx has both "next" set, and have branches as
-   * well.
+   * There are three distinct cases where LogMultiplexer is used:
    *
-   * If there's such a case, then from a conceptual point of view, this Mpx
-   * instance should transfer the responsibility for setting "matched" to
-   * the next pipeline element, which is what we do here.
+   *   1) at the tail of a LogSource, where the multiplexer is used to
+   *   dispatch messages along all log statements that reference the
+   *   specific source.  In this case pipe_next is NULL, only next_hops are
+   *   used to connect parallel branches
+   *
+   *   2) as the head element of a junction, in this case pipe_next is NULL,
+   *   next_hops contain the branches of the junction.  Subsequent LogPipes
+   *   in the current sequence are attached at the "join_pipe" which is
+   *   connected to all parallel branches of the junction.
+   *
+   *   3) when we connect the logpath to destinations.  In this case
+   *   next_hops contain the destinations we want to deliver to.  pipe_next
+   *   is used to continue along the current logpath.
+   *
+   * Conceptually, the matched value we propagate to our parent logpath
+   * determines if our parent considers this message matched or not matched
+   * by this element.
+   *
+   *   - If we did match (e.g. delivered == TRUE), nothing is to be done.
+   *
+   *   - If we did not match (e.g.  delivered == FALSE), we may need to
+   *   propagate this result to our parent by setting
+   *   (*path_options->matched) to FALSE.
+   *
+   * In the cases of 1) and 2) we perform a filtering function and we want
+   * to tell our parent that we did NOT match so it can attempt another
+   * route. We need to set matched to FALSE;
+   *
+   * In the case of 3) we dispatched to one or more destinations and even if
+   * those destinations drop our message on the floor, we are not interested.
+   * "matched" will be determined by all filtering elements on the log
+   * path and we are not one of them.
+   *
+   * We differentiate between 1, 2 and 3 based on the value of
+   * self->delivery_propagation which is set during compilation.  If
+   * delivery_propagation is not set, we are just here for dispatching to
+   * destinations (e.g.  we need to ignore their outcome), otherwise we
+   * perform a filtering function, which means we need to push our filtering
+   * responsibility to the next pipe element.
+   *
    */
 
-  if (!s->pipe_next && !delivered && path_options->matched)
-    *path_options->matched = FALSE;
-
+  if (self->delivery_propagation)
+    {
+      if (!delivered && path_options->matched)
+        *path_options->matched = FALSE;
+    }
   log_pipe_forward_msg(s, msg, path_options);
 }
 
@@ -179,6 +220,7 @@ log_multiplexer_new(GlobalConfig *cfg)
   self->super.free_fn = log_multiplexer_free;
   self->next_hops = g_ptr_array_new();
   self->super.arcs = _arcs;
+  self->delivery_propagation = TRUE;
   log_pipe_add_info(&self->super, "multiplexer");
   return self;
 }

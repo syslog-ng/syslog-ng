@@ -46,26 +46,30 @@
 /* indicates that this LogPipe got cloned into the tree already */
 #define PIF_INLINED           0x0002
 
-/* log statement flags that are copied to the head of a branch */
-#define PIF_BRANCH_FINAL      0x0004
-#define PIF_BRANCH_FALLBACK   0x0008
-#define PIF_BRANCH_PROPERTIES (PIF_BRANCH_FINAL + PIF_BRANCH_FALLBACK)
-
-#define PIF_DROP_UNMATCHED    0x0010
-
-/* branch starting with this pipe wants hard flow control */
-#define PIF_HARD_FLOW_CONTROL 0x0020
-
 /* this pipe is a source for messages, it is not meant to be used to
  * forward messages, syslog-ng will only use these pipes for the
  * left-hand side of the processing graph, e.g. no other pipes may be
  * sending messages to these pipes and these are expected to generate
  * messages "automatically". */
 
-#define PIF_SOURCE            0x0040
+#define PIF_SOURCE            0x0004
+
+/* log statement flags that are copied to the head of a branch */
+#define PIF_BRANCH_FINAL      0x0008
+#define PIF_BRANCH_FALLBACK   0x0010
+#define PIF_BRANCH_PROPERTIES (PIF_BRANCH_FINAL + PIF_BRANCH_FALLBACK)
+
+/* branch starting with this pipe wants hard flow control */
+#define PIF_HARD_FLOW_CONTROL 0x0020
+
+/* LogPipe right after the filter in an "if (filter)" expression */
+#define PIF_CONDITIONAL_MIDPOINT  0x0040
+
+/* LogPipe as the joining element of a junction */
+#define PIF_JUNCTION_END          0x0080
 
 /* node created directly by the user */
-#define PIF_CONFIG_RELATED    0x0080
+#define PIF_CONFIG_RELATED    0x0100
 
 /* private flags range, to be used by other LogPipe instances for their own purposes */
 
@@ -210,10 +214,32 @@ struct _LogPathOptions
   gboolean flow_control_requested;
 
   gboolean *matched;
+  const LogPathOptions *parent;
 };
 
-#define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL }
-#define LOG_PATH_OPTIONS_INIT_NOACK { FALSE, FALSE, NULL }
+#define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL, NULL }
+#define LOG_PATH_OPTIONS_INIT_NOACK { FALSE, FALSE, NULL, NULL }
+
+static inline void
+log_path_options_push_junction(LogPathOptions *local_path_options, gboolean *matched, const LogPathOptions *parent)
+{
+  *local_path_options = *parent;
+  local_path_options->matched = matched;
+  local_path_options->parent = parent;
+}
+
+static inline void
+log_path_options_pop_conditional(LogPathOptions *local_path_options)
+{
+  local_path_options->matched = local_path_options->parent->matched;
+}
+
+static inline void
+log_path_options_pop_junction(LogPathOptions *local_path_options)
+{
+  log_path_options_pop_conditional(local_path_options);
+  local_path_options->parent = local_path_options->parent->parent;
+}
 
 struct _LogPipe
 {
@@ -378,14 +404,23 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
         }
     }
 
-  if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL)))
+  if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT)))
     {
       local_path_options = *path_options;
-
-      local_path_options.flow_control_requested = 1;
+      if (s->flags & PIF_HARD_FLOW_CONTROL)
+        {
+          local_path_options.flow_control_requested = 1;
+          msg_trace("Requesting flow control", log_pipe_location_tag(s));
+        }
+      if (s->flags & PIF_JUNCTION_END)
+        {
+          log_path_options_pop_junction(&local_path_options);
+        }
+      if (s->flags & PIF_CONDITIONAL_MIDPOINT)
+        {
+          log_path_options_pop_conditional(&local_path_options);
+        }
       path_options = &local_path_options;
-
-      msg_trace("Requesting flow control", log_pipe_location_tag(s));
     }
 
   if (s->queue)
@@ -397,10 +432,6 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
       log_pipe_forward_msg(s, msg, path_options);
     }
 
-  if (path_options->matched && !(*path_options->matched) && (s->flags & PIF_DROP_UNMATCHED))
-    {
-      (*path_options->matched) = TRUE;
-    }
 }
 
 static inline LogPipe *

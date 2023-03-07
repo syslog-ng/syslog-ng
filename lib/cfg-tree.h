@@ -37,7 +37,6 @@ const gchar *log_expr_node_get_content_name(gint content);
 #define LC_FALLBACK       2
 #define LC_FINAL          4
 #define LC_FLOW_CONTROL   8
-#define LC_DROP_UNMATCHED 16
 
 enum
 {
@@ -56,6 +55,7 @@ enum
   ENL_REFERENCE,
   ENL_SEQUENCE,
   ENL_JUNCTION,
+  ENL_CONDITIONAL,
 };
 
 
@@ -86,6 +86,7 @@ typedef struct _LogExprNode LogExprNode;
  *   - reference:      used to reference log expressions defined elsewhere, no children
  *   - sequence:       holds a sequence of LogExprNodes
  *   - junction:       holds a junction
+ *   - conditional:    holds a conditional (simple or compound if), three children: filter, true_expr, false_expr
  *
  * Sometimes syslog-ng needs to know what kind of object the user
  * originally defined, this is stored in the "content" member.
@@ -153,10 +154,12 @@ LogExprNode *log_expr_node_new_rewrite_reference(const gchar *name, CFG_LTYPE *y
 LogExprNode *log_expr_node_new_log(LogExprNode *children, guint32 flags, CFG_LTYPE *yylloc);
 LogExprNode *log_expr_node_new_sequence(LogExprNode *children, CFG_LTYPE *yylloc);
 LogExprNode *log_expr_node_new_junction(LogExprNode *children, CFG_LTYPE *yylloc);
+LogExprNode *log_expr_node_new_source_junction(LogExprNode *children, CFG_LTYPE *yylloc);
+LogExprNode *log_expr_node_new_destination_junction(LogExprNode *children, CFG_LTYPE *yylloc);
+
 void log_expr_node_conditional_set_false_branch_of_the_last_if(LogExprNode *conditional_node, LogExprNode *false_expr);
-LogExprNode *log_expr_node_new_conditional_with_filter(LogExprNode *filter_pipe, LogExprNode *true_expr,
-                                                       CFG_LTYPE *yylloc);
-LogExprNode *log_expr_node_new_conditional_with_block(LogExprNode *block, CFG_LTYPE *yylloc);
+LogExprNode *log_expr_node_new_simple_conditional(LogExprNode *filter_expr, LogExprNode *true_expr, CFG_LTYPE *yylloc);
+LogExprNode *log_expr_node_new_compound_conditional(LogExprNode *block, CFG_LTYPE *yylloc);
 
 typedef struct _CfgTree
 {

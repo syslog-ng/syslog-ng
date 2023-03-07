@@ -41,10 +41,13 @@ typedef struct _LogMultiplexer
   LogPipe super;
   GPtrArray *next_hops;
   gboolean fallback_exists;
+  gboolean delivery_propagation;
 } LogMultiplexer;
 
-LogMultiplexer *log_multiplexer_new(GlobalConfig *cfg);
 void log_multiplexer_add_next_hop(LogMultiplexer *self, LogPipe *next_hop);
+void log_multiplexer_disable_delivery_propagation(LogMultiplexer *self);
+
+LogMultiplexer *log_multiplexer_new(GlobalConfig *cfg);
 
 
 #endif

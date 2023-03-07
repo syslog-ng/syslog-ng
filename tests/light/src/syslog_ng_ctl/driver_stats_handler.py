@@ -27,7 +27,7 @@ from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 
 
 class DriverStatsHandler(object):
-    def __init__(self, group_type, driver_name):
+    def __init__(self, group_type, driver_name, instance=""):
         if group_type == "destination":
             statement_short_name = "dst"
             self.component = "{}.{}".format(statement_short_name, driver_name)
@@ -41,6 +41,7 @@ class DriverStatsHandler(object):
         else:
             raise Exception("Unknown group_type: {}".format(group_type))
 
+        self.instance = instance
         self.syslog_ng_ctl = SyslogNgCtl(tc_parameters.INSTANCE_PATH)
 
     def build_query_pattern(self):
@@ -85,7 +86,7 @@ class DriverStatsHandler(object):
     def filter_stats_result(self, stats_result, stats_pattern):
         filtered_list = []
         for stats_line in stats_result:
-            if stats_pattern in stats_line:
+            if stats_pattern in stats_line and self.instance in stats_line:
                 filtered_list.append(stats_line)
         return filtered_list
 
