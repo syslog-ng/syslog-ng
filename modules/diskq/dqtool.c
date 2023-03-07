@@ -548,13 +548,14 @@ _assign_print_help(void)
 static gint
 dqtool_assign(int argc, char *argv[])
 {
-  if (assign_help)
+  if (optind >= argc || assign_help)
     {
       _assign_print_help();
       return 0;
     }
 
   const gchar *diskq_file = argv[optind];
+
   gchar *diskq_full_path = g_canonicalize_filename(diskq_file, NULL);
 
   if (!_assign_validate_options(persist_file_path, diskq_full_path))
