@@ -150,6 +150,7 @@ modules/python-modules/syslogng/persist\.py
 ###########################################################################
                                                  GPLv2+_SSL,non-balabit
 
+modules/diskq/tests/test_diskq_counters\.c
 modules/http/(http|http-parser|http-plugin|)\.[ch]
 modules/http/http-grammar.ym
 modules/timestamp/rewrite-.*$
