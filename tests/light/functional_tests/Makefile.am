@@ -16,24 +16,33 @@ EXTRA_DIST += \
 	tests/light/functional_tests/destination_drivers/snmp_destination/v2c/test_snmp_destination_v2c_using_macro_snmp_obj.py \
 	tests/light/functional_tests/destination_drivers/unix_dgram_destination/test_unix_dgram_destination.py \
 	tests/light/functional_tests/destination_drivers/unix_stream_destination/test_unix_stream_destination.py \
-	tests/light/functional_tests/filters/test_filter_reference.py \
 	tests/light/functional_tests/filters/rate-limit/test_rate_limit_filter_acceptance.py \
+	tests/light/functional_tests/filters/test_filter_reference.py \
+	tests/light/functional_tests/logpath/__init__.py \
+	tests/light/functional_tests/logpath/test_conditionals.py \
 	tests/light/functional_tests/logpath/test_flags_catch_all.py \
 	tests/light/functional_tests/logpath/test_flags_fallback.py \
 	tests/light/functional_tests/logpath/test_flags_final.py \
+	tests/light/functional_tests/logpath/test_midpoint_destinations.py \
 	tests/light/functional_tests/logpath/test_multiple_embedded_logpaths.py \
 	tests/light/functional_tests/logpath/test_multiple_flags.py \
+	tests/light/functional_tests/logpath/test_named_logpaths.py \
+	tests/light/functional_tests/logpath/test_named_logpaths_with_catchall_flag.py \
+	tests/light/functional_tests/logpath/test_named_logpaths_with_fallback_flag.py \
+	tests/light/functional_tests/logpath/test_named_logpaths_with_final_flag.py \
 	tests/light/functional_tests/parsers/app-parser/test_topic_syslog.py \
 	tests/light/functional_tests/parsers/app-parser/test_topic_syslog_raw.py \
 	tests/light/functional_tests/parsers/checkpoint/test_checkpoint.py \
 	tests/light/functional_tests/parsers/cisco-parser/test_cisco_parser.py \
-	tests/light/functional_tests/parsers/mariadb-parser/test_mariadb_audit_parser.py \
+	tests/light/functional_tests/parsers/csv-parser/test_csv_parser.py \
 	tests/light/functional_tests/parsers/db_parser/test_db_parser.py \
+	tests/light/functional_tests/parsers/mariadb-parser/test_mariadb_audit_parser.py \
 	tests/light/functional_tests/parsers/panos/test_panos_parser.py \
 	tests/light/functional_tests/parsers/regexp-parser/test_regexp_parser.py \
+	tests/light/functional_tests/parsers/sdata-parser/test_sdata_parser.py \
+	tests/light/functional_tests/rewrites/cc-mask/test_cc_mask_and_cc_hash.py \
 	tests/light/functional_tests/rewrites/set-pri/test_set_pri.py \
 	tests/light/functional_tests/rewrites/set-tag/test_set_tag.py \
-	tests/light/functional_tests/rewrites/cc-mask/test_cc_mask_and_cc_hash.py \
 	tests/light/functional_tests/source_drivers/file_source/test_acceptance.py \
 	tests/light/functional_tests/source_drivers/file_source/test_follow_freq_value.py \
 	tests/light/functional_tests/source_drivers/file_source/test_no_header_flag.py \
@@ -48,6 +57,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_simple_tcp_connection.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_syslog_proto.py \
 	tests/light/functional_tests/source_drivers/network_source/test_syslog_parser_timestamp_spinning.py \
+	tests/light/functional_tests/source_drivers/network_source/text_with_nuls/test_nul_acceptance.py \
 	tests/light/functional_tests/source_options/test_use_syslogng_pid.py \
 	tests/light/functional_tests/template_functions/graphite-output/test_graphite_output.py \
 	tests/light/functional_tests/template_functions/slog/test_secure_logging.py \

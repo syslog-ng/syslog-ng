@@ -3,10 +3,10 @@
 EXTRA_DIST += \
 	tests/light/src/common/asynchronous.py \
 	tests/light/src/common/blocking.py \
-	tests/light/src/common/__init__.py \
 	tests/light/src/common/file.py \
-	tests/light/src/common/network.py \
+	tests/light/src/common/__init__.py \
 	tests/light/src/common/network_operations.py \
+	tests/light/src/common/network.py \
 	tests/light/src/common/operations.py \
 	tests/light/src/common/pytest_operations.py \
 	tests/light/src/common/random_id.py \
@@ -18,9 +18,9 @@ EXTRA_DIST += \
 	tests/light/src/driver_io/file/tests/__init__.py \
 	tests/light/src/driver_io/file/tests/test_file_io.py \
 	tests/light/src/driver_io/__init__.py \
+	tests/light/src/driver_io/message_readers.py \
 	tests/light/src/driver_io/network/__init__.py \
 	tests/light/src/driver_io/network/network_io.py \
-	tests/light/src/driver_io/message_readers.py \
 	tests/light/src/executors/command_executor.py \
 	tests/light/src/executors/__init__.py \
 	tests/light/src/executors/process_executor.py \
@@ -70,6 +70,7 @@ EXTRA_DIST += \
 	tests/light/src/syslog_ng/console_log_reader.py \
 	tests/light/src/syslog_ng_ctl/driver_stats_handler.py \
 	tests/light/src/syslog_ng_ctl/__init__.py \
+	tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py \
 	tests/light/src/syslog_ng_ctl/syslog_ng_ctl_cli.py \
 	tests/light/src/syslog_ng_ctl/syslog_ng_ctl_executor.py \
 	tests/light/src/syslog_ng_ctl/syslog_ng_ctl.py \
