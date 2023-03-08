@@ -839,6 +839,16 @@ _finalize_init(gpointer arg)
 }
 
 static gboolean
+afsocket_sd_open_socket(AFSocketSourceDriver *self, gint *sock)
+{
+  if (!transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr,
+                                    self->bind_addr, AFSOCKET_DIR_RECV, sock))
+    return FALSE;
+
+  return TRUE;
+}
+
+static gboolean
 _sd_open_stream(AFSocketSourceDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
@@ -856,9 +866,7 @@ _sd_open_stream(AFSocketSourceDriver *self)
     {
       if (!afsocket_sd_acquire_socket(self, &sock))
         return self->super.super.optional;
-      if (sock == -1
-          && !transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr,
-                                           self->bind_addr, AFSOCKET_DIR_RECV, &sock))
+      if (sock == -1 && !afsocket_sd_open_socket(self, &sock))
         return self->super.super.optional;
     }
   self->fd = sock;
@@ -873,9 +881,7 @@ _sd_open_dgram(AFSocketSourceDriver *self)
     {
       if (!afsocket_sd_acquire_socket(self, &sock))
         return self->super.super.optional;
-      if (sock == -1
-          && !transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr,
-                                           self->bind_addr, AFSOCKET_DIR_RECV, &sock))
+      if (sock == -1 && !afsocket_sd_open_socket(self, &sock))
         return self->super.super.optional;
     }
   self->fd = -1;
