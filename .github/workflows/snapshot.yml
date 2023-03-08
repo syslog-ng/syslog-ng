@@ -92,3 +92,16 @@ jobs:
       pkg-type: nightly
       tarball-artifact: source-tarball
       snapshot-version: ${{ needs.tarball.outputs.snapshot-version }}
+
+  ghcr-cleanup:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: publish-image
+    steps:
+      - name: Remove untagged package versions
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: syslog-ng
+          package-type: container
+          delete-only-untagged-versions: true
+          min-versions-to-keep: 0
