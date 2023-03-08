@@ -31,51 +31,51 @@
 void
 log_queue_memory_usage_add(LogQueue *self, gsize value)
 {
-  stats_counter_add(self->memory_usage, value);
-  atomic_gssize_add(&self->stats_cache.memory_usage, value);
+  stats_counter_add(self->metrics.shared.memory_usage, value);
+  atomic_gssize_add(&self->metrics.owned.memory_usage, value);
 }
 
 void
 log_queue_memory_usage_sub(LogQueue *self, gsize value)
 {
-  stats_counter_sub(self->memory_usage, value);
-  atomic_gssize_sub(&self->stats_cache.memory_usage, value);
+  stats_counter_sub(self->metrics.shared.memory_usage, value);
+  atomic_gssize_sub(&self->metrics.owned.memory_usage, value);
 }
 
 void
 log_queue_queued_messages_add(LogQueue *self, gsize value)
 {
-  stats_counter_add(self->queued_messages, value);
-  atomic_gssize_add(&self->stats_cache.queued_messages, value);
+  stats_counter_add(self->metrics.shared.queued_messages, value);
+  atomic_gssize_add(&self->metrics.owned.queued_messages, value);
 }
 
 void
 log_queue_queued_messages_sub(LogQueue *self, gsize value)
 {
-  stats_counter_sub(self->queued_messages, value);
-  atomic_gssize_sub(&self->stats_cache.queued_messages, value);
+  stats_counter_sub(self->metrics.shared.queued_messages, value);
+  atomic_gssize_sub(&self->metrics.owned.queued_messages, value);
 }
 
 void
 log_queue_queued_messages_inc(LogQueue *self)
 {
-  stats_counter_inc(self->queued_messages);
-  atomic_gssize_inc(&self->stats_cache.queued_messages);
+  stats_counter_inc(self->metrics.shared.queued_messages);
+  atomic_gssize_inc(&self->metrics.owned.queued_messages);
 }
 
 void
 log_queue_queued_messages_dec(LogQueue *self)
 {
-  stats_counter_dec(self->queued_messages);
-  atomic_gssize_dec(&self->stats_cache.queued_messages);
+  stats_counter_dec(self->metrics.shared.queued_messages);
+  atomic_gssize_dec(&self->metrics.owned.queued_messages);
 }
 
 void
 log_queue_queued_messages_reset(LogQueue *self)
 {
   const gssize queue_length = log_queue_get_length(self);
-  stats_counter_set(self->queued_messages, queue_length);
-  atomic_gssize_set_and_get(&self->stats_cache.queued_messages, queue_length);
+  stats_counter_set(self->metrics.shared.queued_messages, queue_length);
+  atomic_gssize_set_and_get(&self->metrics.owned.queued_messages, queue_length);
 }
 
 /*
@@ -221,17 +221,18 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
 static void
 _register_common_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key)
 {
-  stats_register_counter(stats_level, sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-  stats_register_counter(stats_level, sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-  atomic_gssize_set(&self->stats_cache.queued_messages, log_queue_get_length(self));
-  stats_counter_add(self->queued_messages, atomic_gssize_get_unsigned(&self->stats_cache.queued_messages));
+  stats_register_counter(stats_level, sc_key, SC_TYPE_QUEUED, &self->metrics.shared.queued_messages);
+  stats_register_counter(stats_level, sc_key, SC_TYPE_DROPPED, &self->metrics.shared.dropped_messages);
+  atomic_gssize_set(&self->metrics.owned.queued_messages, log_queue_get_length(self));
+  stats_counter_add(self->metrics.shared.queued_messages,
+                    atomic_gssize_get_unsigned(&self->metrics.owned.queued_messages));
 
 
   StatsClusterKey sc_mem_key;
   stats_cluster_single_key_legacy_set_with_name(&sc_mem_key, sc_key->legacy.component,
                                                 sc_key->legacy.id, sc_key->legacy.instance, "memory_usage");
-  stats_register_counter_and_index(STATS_LEVEL1, &sc_mem_key, SC_TYPE_SINGLE_VALUE, &self->memory_usage);
-  stats_counter_add(self->memory_usage, atomic_gssize_get_unsigned(&self->stats_cache.memory_usage));
+  stats_register_counter_and_index(STATS_LEVEL1, &sc_mem_key, SC_TYPE_SINGLE_VALUE, &self->metrics.shared.memory_usage);
+  stats_counter_add(self->metrics.shared.memory_usage, atomic_gssize_get_unsigned(&self->metrics.owned.memory_usage));
 }
 
 void
@@ -243,15 +244,15 @@ log_queue_register_stats_counters(LogQueue *self, gint stats_level, const StatsC
 static void
 _unregister_common_counters(LogQueue *self, const StatsClusterKey *sc_key)
 {
-  stats_counter_sub(self->queued_messages, atomic_gssize_get(&self->stats_cache.queued_messages));
-  stats_unregister_counter(sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-  stats_unregister_counter(sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_counter_sub(self->metrics.shared.queued_messages, atomic_gssize_get(&self->metrics.owned.queued_messages));
+  stats_unregister_counter(sc_key, SC_TYPE_QUEUED, &self->metrics.shared.queued_messages);
+  stats_unregister_counter(sc_key, SC_TYPE_DROPPED, &self->metrics.shared.dropped_messages);
 
   StatsClusterKey sc_mem_key;
   stats_cluster_single_key_legacy_set_with_name(&sc_mem_key, sc_key->legacy.component,
                                                 sc_key->legacy.id, sc_key->legacy.instance, "memory_usage");
-  stats_counter_sub(self->memory_usage, atomic_gssize_get(&self->stats_cache.memory_usage));
-  stats_unregister_counter(&sc_mem_key, SC_TYPE_SINGLE_VALUE, &self->memory_usage);
+  stats_counter_sub(self->metrics.shared.memory_usage, atomic_gssize_get(&self->metrics.owned.memory_usage));
+  stats_unregister_counter(&sc_mem_key, SC_TYPE_SINGLE_VALUE, &self->metrics.shared.memory_usage);
 }
 
 void

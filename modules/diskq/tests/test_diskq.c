@@ -140,10 +140,10 @@ Test(diskq, testcase_ack_and_rewind_messages)
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION, "queued messages", NULL);
   stats_lock();
-  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &q->queued_messages);
+  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &q->metrics.shared.queued_messages);
   stats_unlock();
 
-  cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 0, "queued messages: %d", __LINE__);
 
   filename = g_string_sized_new(32);
   g_string_printf(filename, "test-rewind_and_acks.qf");
@@ -153,22 +153,22 @@ Test(diskq, testcase_ack_and_rewind_messages)
   fed_messages = 0;
   acked_messages = 0;
   feed_some_messages(q, 1000);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 1000, "queued messages: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 1000, "queued messages: %d", __LINE__);
 
   for (i = 0; i < 10; i++)
     {
       send_some_messages(q, 1);
-      cr_assert_eq(stats_counter_get(q->queued_messages), 999, "queued messages wrong number %d", __LINE__);
+      cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 999, "queued messages wrong number %d", __LINE__);
       log_queue_rewind_backlog(q, 1);
-      cr_assert_eq(stats_counter_get(q->queued_messages), 1000, "queued messages wrong number: %d", __LINE__);
+      cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 1000, "queued messages wrong number: %d", __LINE__);
     }
   send_some_messages(q, 1000);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 0, "queued messages: %d", __LINE__);
   log_queue_ack_backlog(q, 500);
   log_queue_rewind_backlog(q, 500);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 500, "queued messages: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 500, "queued messages: %d", __LINE__);
   send_some_messages(q, 500);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 0, "queued messages: %d", __LINE__);
   log_queue_ack_backlog(q, 500);
 
   gboolean persistent;
@@ -424,32 +424,32 @@ init_statistics(LogQueue *q)
   StatsClusterKey sc_key1, sc_key2;
   stats_lock();
   stats_cluster_logpipe_key_legacy_set(&sc_key1, SCS_DESTINATION, "queued messages", NULL);
-  stats_register_counter(0, &sc_key1, SC_TYPE_QUEUED, &q->queued_messages);
+  stats_register_counter(0, &sc_key1, SC_TYPE_QUEUED, &q->metrics.shared.queued_messages);
   stats_cluster_single_key_legacy_set_with_name(&sc_key2, SCS_DESTINATION, "memory usage", NULL, "memory_usage");
-  stats_register_counter(1, &sc_key2, SC_TYPE_SINGLE_VALUE, &q->memory_usage);
+  stats_register_counter(1, &sc_key2, SC_TYPE_SINGLE_VALUE, &q->metrics.shared.memory_usage);
   stats_unlock();
-  stats_counter_set(q->queued_messages, 0);
-  stats_counter_set(q->memory_usage, 0);
+  stats_counter_set(q->metrics.shared.queued_messages, 0);
+  stats_counter_set(q->metrics.shared.memory_usage, 0);
 }
 
 static void
 assert_general_message_flow(LogQueue *q, gssize one_msg_size)
 {
   send_some_messages(q, 1);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 1, "queued messages: line: %d", __LINE__);
-  cr_assert_eq(stats_counter_get(q->memory_usage), one_msg_size, "memory_usage: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 1, "queued messages: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), one_msg_size, "memory_usage: line: %d", __LINE__);
 
   send_some_messages(q, 1);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: line: %d", __LINE__);
-  cr_assert_eq(stats_counter_get(q->memory_usage), 0, "memory_usage: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 0, "queued messages: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 0, "memory_usage: line: %d", __LINE__);
 
   feed_some_messages(q, 10);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 10, "queued messages: line: %d", __LINE__);
-  cr_assert_eq(stats_counter_get(q->memory_usage), one_msg_size*10, "memory_usage: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 10, "queued messages: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), one_msg_size*10, "memory_usage: line: %d", __LINE__);
 
   send_some_messages(q, 5);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 5, "queued messages: line: %d", __LINE__);
-  cr_assert_eq(stats_counter_get(q->memory_usage), one_msg_size*5, "memory_usage: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 5, "queued messages: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), one_msg_size*5, "memory_usage: line: %d", __LINE__);
 }
 
 static LogQueue *
@@ -466,8 +466,8 @@ testcase_diskq_prepare(DiskQueueOptions *options, diskq_tester_parameters_t *par
     q = log_queue_disk_non_reliable_new(options, NULL);
 
   init_statistics(q);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: line: %d", __LINE__);
-  cr_assert_eq(stats_counter_get(q->memory_usage), 0, "memory_usage: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 0, "queued messages: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 0, "memory_usage: line: %d", __LINE__);
 
   unlink(parameters->filename);
   log_queue_disk_start(q, parameters->filename);
@@ -516,22 +516,22 @@ ParameterizedTest(diskq_tester_parameters_t *parameters, diskq, test_diskq_stati
   q = testcase_diskq_prepare(&options, parameters);
 
   feed_some_messages(q, 1);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 1, "queued messages: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 1, "queued messages: line: %d", __LINE__);
 
   if (parameters->overflow_expected)
     assert_overflow_queue_length(parameters, q, 1);
 
-  guint32 one_msg_size = stats_counter_get(q->memory_usage);
+  guint32 one_msg_size = stats_counter_get(q->metrics.shared.memory_usage);
   if (parameters->overflow_expected)
     /* Only when overflow. If there is no overflow, the first
        msg is put to the output queue so statistics is not increased: one_msg_size == 0 */
     cr_assert(is_valid_msg_size(one_msg_size), "one_msg_size %d: line: %d", one_msg_size, __LINE__);
   else
-    cr_assert_eq(stats_counter_get(q->memory_usage), 0, "queued messages: line: %d", __LINE__);
+    cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 0, "queued messages: line: %d", __LINE__);
 
   feed_some_messages(q, 1);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 2, "queued messages: line: %d", __LINE__);
-  cr_assert_eq(stats_counter_get(q->memory_usage), one_msg_size*2, "memory_usage: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 2, "queued messages: line: %d", __LINE__);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), one_msg_size*2, "memory_usage: line: %d", __LINE__);
 
   if (parameters->overflow_expected)
     assert_overflow_queue_length(parameters, q, 2);

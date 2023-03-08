@@ -155,7 +155,7 @@ log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options)
 void
 log_queue_disk_drop_message(LogQueueDisk *self, LogMessage *msg, const LogPathOptions *path_options)
 {
-  stats_counter_inc(self->super.dropped_messages);
+  stats_counter_inc(self->super.metrics.shared.dropped_messages);
 
   if (path_options->flow_control_requested)
     log_msg_drop(msg, path_options, AT_SUSPENDED);

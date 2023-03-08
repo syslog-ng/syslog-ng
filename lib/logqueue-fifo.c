@@ -190,7 +190,7 @@ log_queue_fifo_drop_messages_from_input_queue(LogQueueFifo *self, InputQueue *in
 
       iv_list_del(&node->list);
       input_queue->len--;
-      stats_counter_inc(self->super.dropped_messages);
+      stats_counter_inc(self->super.metrics.shared.dropped_messages);
       log_msg_free_queue_node(node);
 
       LogMessage *msg = node->msg;
@@ -394,7 +394,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
 
   if (_message_has_to_be_dropped(self, path_options))
     {
-      stats_counter_inc(self->super.dropped_messages);
+      stats_counter_inc(self->super.metrics.shared.dropped_messages);
       g_mutex_unlock(&self->super.lock);
 
       _drop_message(msg, path_options);

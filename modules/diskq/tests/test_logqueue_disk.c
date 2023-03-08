@@ -74,13 +74,13 @@ _assert_log_queue_disk_reliable_is_empty(LogQueue *q)
   cr_assert_eq(g_queue_get_length(queue->qbacklog), 0);
   cr_assert_eq(qdisk_get_length(queue->super.qdisk), 0);
 
-  cr_assert(q->memory_usage);
-  cr_assert(q->queued_messages);
+  cr_assert(q->metrics.shared.memory_usage);
+  cr_assert(q->metrics.shared.queued_messages);
 
-  cr_assert_eq(stats_counter_get(q->memory_usage), 0);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 0);
-  cr_assert_eq(atomic_gssize_get_unsigned(&q->stats_cache.memory_usage), 0);
-  cr_assert_eq(atomic_gssize_get_unsigned(&q->stats_cache.queued_messages), 0);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 0);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 0);
+  cr_assert_eq(atomic_gssize_get_unsigned(&q->metrics.owned.memory_usage), 0);
+  cr_assert_eq(atomic_gssize_get_unsigned(&q->metrics.owned.queued_messages), 0);
 }
 
 static void
@@ -172,13 +172,13 @@ _assert_log_queue_disk_non_reliable_is_empty(LogQueue *q)
   cr_assert_eq(g_queue_get_length(queue->qbacklog), 0);
   cr_assert_eq(qdisk_get_length(queue->super.qdisk), 0);
 
-  cr_assert(q->memory_usage);
-  cr_assert(q->queued_messages);
+  cr_assert(q->metrics.shared.memory_usage);
+  cr_assert(q->metrics.shared.queued_messages);
 
-  cr_assert_eq(stats_counter_get(q->memory_usage), 0);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 0);
-  cr_assert_eq(atomic_gssize_get_unsigned(&q->stats_cache.memory_usage), 0);
-  cr_assert_eq(atomic_gssize_get_unsigned(&q->stats_cache.queued_messages), 0);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 0);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 0);
+  cr_assert_eq(atomic_gssize_get_unsigned(&q->metrics.owned.memory_usage), 0);
+  cr_assert_eq(atomic_gssize_get_unsigned(&q->metrics.owned.queued_messages), 0);
 }
 
 Test(logqueue_disk, restart_corrupted_non_reliable)
@@ -262,13 +262,13 @@ _assert_log_queue_disk_non_reliable_has_messages_in_qout(LogQueue *q, guint num_
   cr_assert_eq(g_queue_get_length(queue->qbacklog), 0);
   cr_assert_eq(qdisk_get_length(queue->super.qdisk), 0);
 
-  cr_assert(q->memory_usage);
-  cr_assert(q->queued_messages);
+  cr_assert(q->metrics.shared.memory_usage);
+  cr_assert(q->metrics.shared.queued_messages);
 
-  cr_assert_eq(stats_counter_get(q->memory_usage), num_of_messages * log_msg_size);
-  cr_assert_eq(stats_counter_get(q->queued_messages), num_of_messages);
-  cr_assert_eq(atomic_gssize_get_unsigned(&q->stats_cache.memory_usage), num_of_messages * log_msg_size);
-  cr_assert_eq(atomic_gssize_get_unsigned(&q->stats_cache.queued_messages), num_of_messages);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), num_of_messages * log_msg_size);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), num_of_messages);
+  cr_assert_eq(atomic_gssize_get_unsigned(&q->metrics.owned.memory_usage), num_of_messages * log_msg_size);
+  cr_assert_eq(atomic_gssize_get_unsigned(&q->metrics.owned.queued_messages), num_of_messages);
 }
 
 Test(logqueue_disk, restart_corrupted_non_reliable_with_qout)
