@@ -413,13 +413,6 @@ _free(LogQueue *s)
 }
 
 static gboolean
-_load_queue(LogQueueDisk *s, const gchar *filename)
-{
-  LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
-  return qdisk_start(s->qdisk, filename, NULL, NULL, NULL);
-}
-
-static gboolean
 _save_queue(LogQueueDisk *s, gboolean *persistent)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
@@ -455,7 +448,6 @@ _set_logqueue_virtual_functions(LogQueue *s)
 static inline void
 _set_logqueue_disk_virtual_functions(LogQueueDisk *s)
 {
-  s->load_queue = _load_queue;
   s->start = _start;
   s->save_queue = _save_queue;
 }

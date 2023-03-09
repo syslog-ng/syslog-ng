@@ -67,8 +67,8 @@ log_queue_disk_load_queue(LogQueue *s, const gchar *filename)
   /* qdisk portion is not yet started when this happens */
   g_assert(!qdisk_started(self->qdisk));
 
-  if (self->load_queue)
-    return self->load_queue(self, filename);
+  if (self->start)
+    return self->start(self, filename);
   return FALSE;
 }
 
