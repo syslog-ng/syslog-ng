@@ -231,14 +231,25 @@ log_path_options_push_junction(LogPathOptions *local_path_options, gboolean *mat
 static inline void
 log_path_options_pop_conditional(LogPathOptions *local_path_options)
 {
-  local_path_options->matched = local_path_options->parent->matched;
+  if (local_path_options->parent)
+    local_path_options->matched = local_path_options->parent->matched;
 }
 
+/*
+ * NOTE: we need to be optional about ->parent being set, as synthetic
+ * messages (e.g.  the likes emitted by db-parser/grouping-by() may arrive
+ * at the end of a junction without actually crossing the beginning of the
+ * same junction.  But this is ok, in these cases we don't need to propagate
+ * our matched state to anywhere, we can assume that the synthetic message
+ * will just follow the same route as the one it was created from.
+ */
 static inline void
 log_path_options_pop_junction(LogPathOptions *local_path_options)
 {
   log_path_options_pop_conditional(local_path_options);
-  local_path_options->parent = local_path_options->parent->parent;
+
+  if (local_path_options->parent)
+    local_path_options->parent = local_path_options->parent->parent;
 }
 
 struct _LogPipe
