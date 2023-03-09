@@ -1,6 +1,7 @@
 set(HEALTHCHECK_HEADERS
     healthcheck/healthcheck.h
     healthcheck/healthcheck-control.h
+    healthcheck/stopwatch.h
     PARENT_SCOPE)
 
 set(HEALTHCHECK_SOURCES
