@@ -27,11 +27,39 @@
 #include "control/control.h"
 #include "control/control-connection.h"
 #include "control/control-commands.h"
+#include "stats/stats-prometheus.h"
+
+static void
+_send_healthcheck_reply(HealthCheckResult result, gpointer c)
+{
+  ControlConnection *cc = (ControlConnection *) c;
+
+  GString *reply = g_string_new("OK ");
+
+  g_string_append_printf(reply, PROMETHEUS_METRIC_PREFIX
+                         "io_worker_latency_nanoseconds %" G_GUINT64_FORMAT"\n",
+                         result.io_worker_latency);
+  g_string_append_printf(reply, PROMETHEUS_METRIC_PREFIX
+                         "mainloop_io_worker_roundtrip_latency_nanoseconds %" G_GUINT64_FORMAT"\n",
+                         result.mainloop_io_worker_roundtrip_latency);
+
+  control_connection_send_reply(cc, reply);
+  control_connection_unref(cc);
+}
 
 static void
 control_connection_healthcheck(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
+  HealthCheck *hc = healthcheck_new();
 
+  if (!healthcheck_run(hc, _send_healthcheck_reply, control_connection_ref(cc)))
+    {
+      GString *reply = g_string_new("FAIL Another healthcheck command is already running");
+      control_connection_send_reply(cc, reply);
+      control_connection_unref(cc);
+    }
+
+  healthcheck_unref(hc);
 }
 
 void
