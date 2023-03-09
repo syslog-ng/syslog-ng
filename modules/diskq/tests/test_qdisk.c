@@ -29,6 +29,8 @@
 #include "scratch-buffers.h"
 
 #include <unistd.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 /* QDisk-internal: the frame is a 4-byte integer */
 #define FRAME_LENGTH 4
@@ -351,6 +353,27 @@ Test(qdisk, completely_full_and_then_emptied_qdisk_should_update_positions_prope
 
   qdisk_stop(qdisk);
   g_string_free(popped_data, TRUE);
+  cleanup_qdisk(filename, qdisk);
+}
+
+Test(qdisk, prealloc)
+{
+  const gchar *filename = "test_prealloc.rqf";
+
+  DiskQueueOptions *opts = construct_diskq_options(TDISKQ_RELIABLE, MIN_DISK_BUF_SIZE);
+  disk_queue_options_set_prealloc(opts, TRUE);
+  QDisk *qdisk = qdisk_new(opts, "TEST");
+
+  qdisk_start(qdisk, filename, NULL, NULL, NULL);
+
+  struct stat file_stats;
+  cr_assert(stat(filename, &file_stats) == 0, "Stat call failed, errno: %d", errno);
+  gint64 real_size = file_stats.st_size;
+
+  cr_assert_eq(qdisk_get_file_size(qdisk), MIN_DISK_BUF_SIZE);
+  cr_assert_eq(qdisk_get_file_size(qdisk), real_size);
+
+  qdisk_stop(qdisk);
   cleanup_qdisk(filename, qdisk);
 }
 
