@@ -78,15 +78,16 @@ _skip_message(LogQueueDisk *self)
 }
 
 static void
-_empty_queue(GQueue *self)
+_empty_queue(LogQueueDiskReliable *self, GQueue *queue)
 {
-  while (self && self->length > 0)
+  while (queue && queue->length > 0)
     {
       gint64 temppos;
       LogMessage *msg;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-      _pop_from_memory_queue_head(self, &temppos, &msg, &path_options);
+      _pop_from_memory_queue_head(queue, &temppos, &msg, &path_options);
 
+      log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
       log_msg_drop(msg, &path_options, AT_PROCESSED);
     }
 }
@@ -433,9 +434,9 @@ _stop(LogQueueDisk *s, gboolean *persistent)
       result = TRUE;
     }
 
-  _empty_queue(self->qreliable);
-  _empty_queue(self->qout);
-  _empty_queue(self->qbacklog);
+  _empty_queue(self, self->qreliable);
+  _empty_queue(self, self->qout);
+  _empty_queue(self, self->qbacklog);
 
   return result;
 }

@@ -484,7 +484,7 @@ exit:
 }
 
 static void
-_empty_queue(GQueue *q)
+_empty_queue(LogQueueDiskNonReliable *self, GQueue *q)
 {
   while (q && !g_queue_is_empty(q))
     {
@@ -493,6 +493,9 @@ _empty_queue(GQueue *q)
 
       lm = g_queue_pop_head(q);
       POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(q), &path_options);
+
+      log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(lm));
+
       log_msg_ack(lm, &path_options, AT_PROCESSED);
       log_msg_unref(lm);
     }
@@ -541,9 +544,9 @@ _stop(LogQueueDisk *s, gboolean *persistent)
       result = TRUE;
     }
 
-  _empty_queue(self->qoverflow);
-  _empty_queue(self->qout);
-  _empty_queue(self->qbacklog);
+  _empty_queue(self, self->qoverflow);
+  _empty_queue(self, self->qout);
+  _empty_queue(self, self->qbacklog);
 
   return result;
 }
