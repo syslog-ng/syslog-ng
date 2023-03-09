@@ -20,6 +20,7 @@ include modules/timestamp/Makefile.am
 include modules/correlation/Makefile.am
 include modules/diskq/Makefile.am
 include modules/examples/Makefile.am
+include modules/ebpf/Makefile.am
 include modules/geoip2/Makefile.am
 include modules/getent/Makefile.am
 include modules/graphite/Makefile.am

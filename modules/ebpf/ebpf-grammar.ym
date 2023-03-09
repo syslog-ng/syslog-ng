@@ -1,0 +1,80 @@
+/*
+ * Copyright (c) 2023 Balazs Scheidler <bazsi77@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "driver.h"
+#include "cfg-lexer.h"
+#include "ebpf-parser.h"
+}
+
+%code {
+
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
+#include "ebpf-reuseport.h"
+
+LogDriverPlugin *last_reuseport;
+
+}
+
+%define api.prefix {ebpf_}
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriverPlugin **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_EBPF
+%token KW_REUSEPORT
+%token KW_SOCKETS
+
+%type <ptr> ebpf_program
+
+%%
+
+start
+	: LL_CONTEXT_INNER_SRC KW_EBPF '(' ebpf_program ')' { *instance = $4; YYACCEPT; }
+	;
+
+ebpf_program
+	: KW_REUSEPORT
+	{ last_reuseport = ebpf_reuseport_new(); }
+	'(' ebpf_reuseport_options ')'                    { $$ = last_reuseport; }
+	;
+
+ebpf_reuseport_options
+	: ebpf_reuseport_option ebpf_reuseport_options
+	|
+	;
+
+ebpf_reuseport_option
+        : KW_SOCKETS '(' positive_integer ')'		  { ebpf_reuseport_set_sockets(last_reuseport, $3); }
+        ;
+
+/* INCLUDE_RULES */
+
+%%

@@ -163,6 +163,7 @@ scl/cee/.*\.conf$
 scl/mariadb/.*\.conf$
 scl/python/python-modules\.conf$
 modules/python-modules/syslogng/modules/kubernetes/.*
+modules/ebpf/.*
 modules/python-modules/syslogng/modules/example/.*
 modules/python-modules/setup\.py
 scripts/build-python-venv\.sh
