@@ -68,7 +68,7 @@ Test(diskq, testcase_zero_diskbuf_and_normal_acks)
   filename = g_string_sized_new(32);
   g_string_printf(filename, "test-normal_acks.qf");
   unlink(filename->str);
-  log_queue_disk_load_queue(q, filename->str);
+  log_queue_disk_start(q, filename->str);
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
@@ -101,7 +101,7 @@ Test(diskq, testcase_zero_diskbuf_alternating_send_acks)
   filename = g_string_sized_new(32);
   g_string_printf(filename, "test-send_acks.qf");
   unlink(filename->str);
-  log_queue_disk_load_queue(q, filename->str);
+  log_queue_disk_start(q, filename->str);
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
@@ -143,7 +143,7 @@ Test(diskq, testcase_ack_and_rewind_messages)
   filename = g_string_sized_new(32);
   g_string_printf(filename, "test-rewind_and_acks.qf");
   unlink(filename->str);
-  log_queue_disk_load_queue(q, filename->str);
+  log_queue_disk_start(q, filename->str);
 
   fed_messages = 0;
   acked_messages = 0;
@@ -283,7 +283,7 @@ Test(diskq, testcase_with_threads)
       filename = g_string_sized_new(32);
       g_string_printf(filename, "test-%04d.qf", i);
       unlink(filename->str);
-      log_queue_disk_load_queue(q, filename->str);
+      log_queue_disk_start(q, filename->str);
 
       for (j = 0; j < FEEDERS; j++)
         {
@@ -347,7 +347,7 @@ ParameterizedTest(restart_test_parameters *test_case, diskq, testcase_diskbuffer
   unlink(filename);
   unlink(filename_corrupted_dq);
 
-  log_queue_disk_load_queue(q, filename);
+  log_queue_disk_start(q, filename);
   fed_messages = 0;
   feed_some_messages(q, 100);
   cr_assert_eq(fed_messages, 100, "Failed to push all messages to the disk-queue!\n");
@@ -458,7 +458,7 @@ testcase_diskq_prepare(DiskQueueOptions *options, diskq_tester_parameters_t *par
   cr_assert_eq(stats_counter_get(q->memory_usage), 0, "memory_usage: line: %d", __LINE__);
 
   unlink(parameters->filename);
-  log_queue_disk_load_queue(q, parameters->filename);
+  log_queue_disk_start(q, parameters->filename);
 
   return q;
 }

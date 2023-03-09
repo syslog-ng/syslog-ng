@@ -76,7 +76,7 @@ test_diskq_become_full(gboolean reliable, const gchar *filename)
   stats_counter_set(q->dropped_messages, 0);
   stats_unlock();
   unlink(filename);
-  log_queue_disk_load_queue(q, filename);
+  log_queue_disk_start(q, filename);
   feed_some_messages(q, 1000);
 
   cr_assert_eq(atomic_gssize_racy_get(&q->dropped_messages->value), 1000, "Bad dropped message number (reliable: %s)",

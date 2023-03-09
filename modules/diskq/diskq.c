@@ -84,10 +84,10 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
                   evt_tag_str("dir", self->options.dir));
     }
 
-  success = log_queue_disk_load_queue(queue, qfile_name);
+  success = log_queue_disk_start(queue, qfile_name);
   if (!success)
     {
-      if (qfile_name && log_queue_disk_load_queue(queue, NULL))
+      if (qfile_name && log_queue_disk_start(queue, NULL))
         {
           msg_error("Error opening disk-queue file, a new one started",
                     evt_tag_str("old_filename", qfile_name),
@@ -122,7 +122,7 @@ _release_queue(LogDestDriver *dd, LogQueue *queue)
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
   gboolean persistent;
 
-  log_queue_disk_save_queue(queue, &persistent);
+  log_queue_disk_stop(queue, &persistent);
   if (queue->persist_name)
     {
       cfg_persist_config_add(cfg, queue->persist_name, queue, (GDestroyNotify) log_queue_unref, FALSE);

@@ -84,7 +84,7 @@ _load_queue(ThreadedDiskqSourceDriver *self)
       self->queue = log_queue_disk_non_reliable_new(&self->diskq_options, NULL);
     }
 
-  if (!log_queue_disk_load_queue(self->queue, self->filename))
+  if (!log_queue_disk_start(self->queue, self->filename))
     {
       msg_error("Error loading diskq", evt_tag_str("file", self->filename));
       return FALSE;

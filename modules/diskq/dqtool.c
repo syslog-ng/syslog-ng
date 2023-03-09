@@ -133,7 +133,7 @@ open_queue(char *filename, LogQueue **lq, DiskQueueOptions *options)
       *lq = log_queue_disk_non_reliable_new(options, NULL);
     }
 
-  if (!log_queue_disk_load_queue(*lq, filename))
+  if (!log_queue_disk_start(*lq, filename))
     {
       fprintf(stderr, "Error restoring disk buffer file.\n");
       return FALSE;

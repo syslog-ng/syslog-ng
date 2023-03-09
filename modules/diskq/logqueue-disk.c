@@ -44,7 +44,7 @@
 QueueType log_queue_disk_type = "DISK";
 
 gboolean
-log_queue_disk_save_queue(LogQueue *s, gboolean *persistent)
+log_queue_disk_stop(LogQueue *s, gboolean *persistent)
 {
   LogQueueDisk *self = (LogQueueDisk *) s;
 
@@ -60,7 +60,7 @@ log_queue_disk_save_queue(LogQueue *s, gboolean *persistent)
 }
 
 gboolean
-log_queue_disk_load_queue(LogQueue *s, const gchar *filename)
+log_queue_disk_start(LogQueue *s, const gchar *filename)
 {
   LogQueueDisk *self = (LogQueueDisk *) s;
 
