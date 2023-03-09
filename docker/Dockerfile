@@ -1,5 +1,6 @@
 FROM debian:testing
 LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, László Várady <laszlo.varady@balabit.com>"
+LABEL org.opencontainers.image.source="https://github.com/syslog-ng/syslog-ng"
 
 ARG PKG_TYPE=stable
 
