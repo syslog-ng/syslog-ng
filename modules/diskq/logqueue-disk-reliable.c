@@ -412,9 +412,15 @@ _load_queue(LogQueueDisk *s, const gchar *filename)
 static gboolean
 _save_queue(LogQueueDisk *s, gboolean *persistent)
 {
-  *persistent = TRUE;
-  qdisk_stop(s->qdisk);
-  return TRUE;
+  LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
+
+  if (qdisk_stop(s->qdisk, NULL, NULL, NULL))
+    {
+      *persistent = TRUE;
+      return TRUE;
+    }
+
+  return FALSE;
 }
 
 static inline void

@@ -191,7 +191,10 @@ static void
 _restart_diskq(LogQueueDisk *self)
 {
   gchar *filename = g_strdup(qdisk_get_filename(self->qdisk));
-  qdisk_stop(self->qdisk);
+
+  gboolean persistent;
+  if (self->save_queue)
+    self->save_queue(self, &persistent);
 
   gchar *new_file = _get_next_corrupted_filename(filename);
   if (!new_file || rename(filename, new_file) < 0)

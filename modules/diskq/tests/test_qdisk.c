@@ -139,7 +139,7 @@ Test(qdisk, test_qdisk_started)
   qdisk_start(qdisk, filename, NULL, NULL, NULL);
   cr_assert(qdisk_started(qdisk));
 
-  qdisk_stop(qdisk);
+  qdisk_stop(qdisk, NULL, NULL, NULL);
   cr_assert_not(qdisk_started(qdisk));
 
   cleanup_qdisk(filename, qdisk);
@@ -162,7 +162,7 @@ Test(qdisk, qdisk_basic_push_pop)
 
   cr_assert_eq(qdisk_get_length(qdisk), 0);
 
-  qdisk_stop(qdisk);
+  qdisk_stop(qdisk, NULL, NULL, NULL);
   cleanup_qdisk(filename, qdisk);
 }
 
@@ -196,7 +196,7 @@ Test(qdisk, qdisk_is_space_avail)
   /* 1 byte of empty space (between backlog and write head) is reserved */
   cr_assert(qdisk_is_space_avail(qdisk, 100 - 1));
 
-  qdisk_stop(qdisk);
+  qdisk_stop(qdisk, NULL, NULL, NULL);
   g_string_free(data, TRUE);
   cleanup_qdisk(filename, qdisk);
 }
@@ -219,7 +219,7 @@ Test(qdisk, qdisk_remove_head)
 
   cr_assert_not(qdisk_remove_head(qdisk));
 
-  qdisk_stop(qdisk);
+  qdisk_stop(qdisk, NULL, NULL, NULL);
   cleanup_qdisk(filename, qdisk);
 }
 
@@ -257,7 +257,7 @@ Test(qdisk, qdisk_basic_ack_rewind)
   cr_assert_eq(qdisk_get_backlog_count(qdisk), 0);
   cr_assert_eq(qdisk_get_backlog_head(qdisk), qdisk_get_reader_head(qdisk));
 
-  qdisk_stop(qdisk);
+  qdisk_stop(qdisk, NULL, NULL, NULL);
   cleanup_qdisk(filename, qdisk);
 }
 
@@ -280,7 +280,7 @@ Test(qdisk, qdisk_empty_backlog)
 
   cr_assert_eq(qdisk_get_backlog_head(qdisk), qdisk_get_reader_head(qdisk));
 
-  qdisk_stop(qdisk);
+  qdisk_stop(qdisk, NULL, NULL, NULL);
   cleanup_qdisk(filename, qdisk);
 }
 
@@ -298,7 +298,7 @@ Test(qdisk, allow_writing_more_than_max_size_when_last_message_does_not_fit)
 
   cr_assert_geq(qdisk_get_file_size(qdisk), qdisk_get_maximum_size(qdisk));
 
-  qdisk_stop(qdisk);
+  qdisk_stop(qdisk, NULL, NULL, NULL);
   cleanup_qdisk(filename, qdisk);
 }
 
@@ -322,7 +322,7 @@ Test(qdisk, do_not_allow_diskq_to_exceed_max_size_if_last_message_fits)
   push_dummy_record(qdisk, 4);
   cr_assert_leq(qdisk_get_file_size(qdisk), qdisk_get_maximum_size(qdisk));
 
-  qdisk_stop(qdisk);
+  qdisk_stop(qdisk, NULL, NULL, NULL);
   g_string_free(data, TRUE);
   cleanup_qdisk(filename, qdisk);
 }
@@ -351,7 +351,7 @@ Test(qdisk, completely_full_and_then_emptied_qdisk_should_update_positions_prope
   cr_assert(push_dummy_record(qdisk, record_len));
   cr_assert(reliable_pop_record_without_backlog(qdisk, popped_data));
 
-  qdisk_stop(qdisk);
+  qdisk_stop(qdisk, NULL, NULL, NULL);
   g_string_free(popped_data, TRUE);
   cleanup_qdisk(filename, qdisk);
 }
@@ -373,7 +373,7 @@ Test(qdisk, prealloc)
   cr_assert_eq(qdisk_get_file_size(qdisk), MIN_DISK_BUF_SIZE);
   cr_assert_eq(qdisk_get_file_size(qdisk), real_size);
 
-  qdisk_stop(qdisk);
+  qdisk_stop(qdisk, NULL, NULL, NULL);
   cleanup_qdisk(filename, qdisk);
 }
 

@@ -1018,8 +1018,8 @@ error:
   return success;
 }
 
-gboolean
-qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+static gboolean
+_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
   QDiskQueuePosition qout_pos = { 0 };
   QDiskQueuePosition qbacklog_pos = { 0 };
@@ -1498,10 +1498,17 @@ qdisk_init_instance(QDisk *self, DiskQueueOptions *options, const gchar *file_id
   self->file_id = file_id;
 }
 
-void
-qdisk_stop(QDisk *self)
+gboolean
+qdisk_stop(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
+  gboolean result = TRUE;
+
+  if (!self->options->read_only)
+    result = _save_state(self, qout, qbacklog, qoverflow);
+
   _close_file(self);
+
+  return result;
 }
 
 void
