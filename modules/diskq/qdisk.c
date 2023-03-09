@@ -1440,8 +1440,13 @@ error:
 static gboolean
 _init_qdisk_file(QDisk *self)
 {
-  self->file_size = QDISK_RESERVED_SPACE;
-  return _create_header(self);
+  if (!_create_header(self))
+    return FALSE;
+
+  if (!self->file_size)
+    self->file_size = QDISK_RESERVED_SPACE;
+
+  return TRUE;
 }
 
 static gboolean
