@@ -28,8 +28,6 @@
 
 #include <string.h>
 
-#define PROMETHEUS_METRIC_PREFIX "syslogng"
-
 static gchar *
 stats_format_prometheus_sanitize_value(const gchar *value)
 {
@@ -133,7 +131,7 @@ _format_legacy(StatsCluster *sc, gint type, StatsCounterItem *counter)
 
   gchar component[64];
 
-  g_string_append_printf(record, PROMETHEUS_METRIC_PREFIX"_%s",
+  g_string_append_printf(record, PROMETHEUS_METRIC_PREFIX "%s",
                          stats_format_prometheus_sanitize_name(stats_cluster_get_component_name(sc, component, sizeof(component))));
 
   if (!sc->key.legacy.component || sc->key.legacy.component == SCS_GLOBAL)
@@ -178,7 +176,7 @@ stats_prometheus_format_counter(StatsCluster *sc, gint type, StatsCounterItem *c
     return _format_legacy(sc, type, counter);
 
   GString *record = scratch_buffers_alloc();
-  g_string_append_printf(record, PROMETHEUS_METRIC_PREFIX"_%s", stats_format_prometheus_sanitize_name(sc->key.name));
+  g_string_append_printf(record, PROMETHEUS_METRIC_PREFIX "%s", stats_format_prometheus_sanitize_name(sc->key.name));
 
   const gchar *labels = _format_labels(sc, type);
   if (labels)

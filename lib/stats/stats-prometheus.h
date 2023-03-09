@@ -26,6 +26,8 @@
 #include "syslog-ng.h"
 #include "stats-cluster.h"
 
+#define PROMETHEUS_METRIC_PREFIX "syslogng_"
+
 typedef void (*StatsPrometheusRecordFunc)(const char *record, gpointer user_data);
 
 GString *stats_prometheus_format_counter(StatsCluster *sc, gint type, StatsCounterItem *counter);
