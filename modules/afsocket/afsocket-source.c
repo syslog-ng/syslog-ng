@@ -30,6 +30,7 @@
 #include "mainloop.h"
 #include "poll-fd-events.h"
 #include "timeutils/misc.h"
+#include "afsocket-signals.h"
 
 #include <string.h>
 #include <sys/types.h>
@@ -845,7 +846,11 @@ afsocket_sd_open_socket(AFSocketSourceDriver *self, gint *sock)
                                     self->bind_addr, AFSOCKET_DIR_RECV, sock))
     return FALSE;
 
-  return TRUE;
+  AFSocketSetupSocketSignalData signal_data = {0};
+
+  signal_data.sock = *sock;
+  EMIT(self->super.super.super.signal_slot_connector, signal_afsocket_setup_socket, &signal_data);
+  return !signal_data.failure;
 }
 
 static gboolean

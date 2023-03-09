@@ -91,6 +91,7 @@ libtest/mock-logpipe\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
 syslog-ng-ctl/commands/log-level.[ch]
+modules/afsocket/afsocket-signals.h
 modules/python-modules/syslogng/confgen\.py
 modules/python-modules/syslogng/dest\.py
 modules/python-modules/syslogng/logger\.py
