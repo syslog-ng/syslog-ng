@@ -153,6 +153,7 @@ modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
 modules/afsocket/socket-options-unix\.[ch]$
 modules/basicfuncs/vp-funcs\.[ch]$
+modules/diskq/tests/test_logqueue_disk\.c$
 modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
 modules/metrics-probe/label-template\.(c|h)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
