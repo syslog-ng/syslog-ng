@@ -165,14 +165,37 @@ log_queue_disk_drop_message(LogQueueDisk *self, LogMessage *msg, const LogPathOp
     log_msg_drop(msg, path_options, AT_PROCESSED);
 }
 
+static gchar *
+_get_next_corrupted_filename(const gchar *filename)
+{
+  GString *corrupted_filename = g_string_new(NULL);
+
+  for (gint i = 1; i < 10000; i++)
+    {
+      if (i == 1)
+        g_string_printf(corrupted_filename, "%s.corrupted", filename);
+      else
+        g_string_printf(corrupted_filename, "%s.corrupted-%d", filename, i);
+
+      struct stat st;
+      if (stat(corrupted_filename->str, &st) < 0)
+        return g_string_free(corrupted_filename, FALSE);
+    }
+
+  msg_error("Failed to calculate filename for corrupted disk-queue",
+            evt_tag_str(EVT_TAG_FILENAME, filename));
+
+  return NULL;
+}
+
 static void
 _restart_diskq(LogQueueDisk *self)
 {
   gchar *filename = g_strdup(qdisk_get_filename(self->qdisk));
   qdisk_stop(self->qdisk);
 
-  gchar *new_file = g_strdup_printf("%s.corrupted", filename);
-  if (rename(filename, new_file) < 0)
+  gchar *new_file = _get_next_corrupted_filename(filename);
+  if (!new_file || rename(filename, new_file) < 0)
     {
       msg_error("Moving corrupt disk-queue failed",
                 evt_tag_str(EVT_TAG_FILENAME, filename),
