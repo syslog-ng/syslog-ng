@@ -47,6 +47,7 @@ gboolean
 log_queue_disk_stop(LogQueue *s, gboolean *persistent)
 {
   LogQueueDisk *self = (LogQueueDisk *) s;
+  g_assert(self->stop);
 
   if (!qdisk_started(self->qdisk))
     {
@@ -54,9 +55,7 @@ log_queue_disk_stop(LogQueue *s, gboolean *persistent)
       return TRUE;
     }
 
-  if (self->stop)
-    return self->stop(self, persistent);
-  return FALSE;
+  return self->stop(self, persistent);
 }
 
 gboolean
@@ -66,10 +65,9 @@ log_queue_disk_start(LogQueue *s, const gchar *filename)
 
   /* qdisk portion is not yet started when this happens */
   g_assert(!qdisk_started(self->qdisk));
+  g_assert(self->start);
 
-  if (self->start)
-    return self->start(self, filename);
-  return FALSE;
+  return self->start(self, filename);
 }
 
 const gchar *
@@ -191,11 +189,13 @@ _get_next_corrupted_filename(const gchar *filename)
 static void
 _restart_diskq(LogQueueDisk *self)
 {
+  g_assert(self->start);
+  g_assert(self->stop);
+
   gchar *filename = g_strdup(qdisk_get_filename(self->qdisk));
 
   gboolean persistent;
-  if (self->stop)
-    self->stop(self, &persistent);
+  self->stop(self, &persistent);
 
   gchar *new_file = _get_next_corrupted_filename(filename);
   if (!new_file || rename(filename, new_file) < 0)
@@ -206,10 +206,8 @@ _restart_diskq(LogQueueDisk *self)
     }
   g_free(new_file);
 
-  if (self->start)
-    {
-      self->start(self, filename);
-    }
+  self->start(self, filename);
+
   g_free(filename);
 }
 
