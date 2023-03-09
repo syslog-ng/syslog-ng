@@ -30,6 +30,8 @@ typedef struct _HealthCheck HealthCheck;
 
 typedef struct _HealthCheckResult
 {
+  guint64 io_worker_latency;
+  guint64 mainloop_io_worker_roundtrip_latency;
 } HealthCheckResult;
 
 typedef void(*HealthCheckCompletionCB)(HealthCheckResult, gpointer);

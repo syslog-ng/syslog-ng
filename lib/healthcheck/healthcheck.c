@@ -25,6 +25,7 @@
 
 #include "atomic.h"
 #include "mainloop-io-worker.h"
+#include "stopwatch.h"
 
 struct _HealthCheck
 {
@@ -34,7 +35,40 @@ struct _HealthCheck
 
   HealthCheckCompletionCB completion;
   gpointer user_data;
+
+  struct
+  {
+    MainLoopIOWorkerJob job;
+    Stopwatch stopwatch;
+  } io_worker_latency;
 };
+
+static void
+healthcheck_complete(HealthCheck *self)
+{
+  self->running = FALSE;
+  self->completion(self->result, self->user_data);
+
+  self->completion = NULL;
+  self->user_data = NULL;
+  healthcheck_unref(self);
+}
+
+static inline void
+_start_io_worker_latency(HealthCheck *self)
+{
+  stopwatch_start(&self->io_worker_latency.stopwatch);
+  main_loop_io_worker_job_submit(&self->io_worker_latency.job, G_IO_IN);
+}
+
+static void
+_start_health_checks(HealthCheck *self)
+{
+  g_assert(!self->running);
+  self->running = TRUE;
+
+  _start_io_worker_latency(self);
+}
 
 gboolean
 healthcheck_run(HealthCheck *self, HealthCheckCompletionCB completion, gpointer user_data)
@@ -44,9 +78,33 @@ healthcheck_run(HealthCheck *self, HealthCheckCompletionCB completion, gpointer 
 
   self->completion = completion;
   self->user_data = user_data;
-  self->result = (HealthCheckResult){0};
+  self->result = (HealthCheckResult)
+  {
+    0
+  };
+  healthcheck_ref(self);
 
+  _start_health_checks(self);
   return TRUE;
+}
+
+static void
+_io_worker_latency(gpointer s, GIOCondition cond)
+{
+  HealthCheck *self = (HealthCheck *) s;
+
+  self->result.io_worker_latency = stopwatch_get_elapsed_nsec(&self->io_worker_latency.stopwatch);
+}
+
+static void
+_io_worker_latency_finished(gpointer s)
+{
+  HealthCheck *self = (HealthCheck *) s;
+
+  self->result.mainloop_io_worker_roundtrip_latency = stopwatch_get_elapsed_nsec(&self->io_worker_latency.stopwatch);
+
+  /* currently, the IO worker check is our only health check */
+  healthcheck_complete(self);
 }
 
 static void
@@ -83,6 +141,13 @@ healthcheck_new(void)
   g_atomic_counter_set(&self->ref_cnt, 1);
 
   self->running = FALSE;
+
+  main_loop_io_worker_job_init(&self->io_worker_latency.job);
+  self->io_worker_latency.job.user_data = self;
+  self->io_worker_latency.job.work = _io_worker_latency;
+  self->io_worker_latency.job.completion = _io_worker_latency_finished;
+  self->io_worker_latency.job.engage = (void (*)(gpointer)) healthcheck_ref;
+  self->io_worker_latency.job.release = (void (*)(gpointer)) healthcheck_unref;
 
   return self;
 }
