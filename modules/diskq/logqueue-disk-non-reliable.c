@@ -530,13 +530,6 @@ _save_queue(LogQueueDisk *s, gboolean *persistent)
   return success;
 }
 
-static void
-_restart(LogQueueDisk *s, DiskQueueOptions *options)
-{
-  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
-  qdisk_init_instance(self->super.qdisk, options, "SLQF");
-}
-
 static inline void
 _set_logqueue_virtual_functions(LogQueue *s)
 {
@@ -556,7 +549,6 @@ _set_logqueue_disk_virtual_functions(LogQueueDisk *s)
   s->start = _start;
   s->load_queue = _load_queue;
   s->save_queue = _save_queue;
-  s->restart = _restart;
 }
 
 static inline void

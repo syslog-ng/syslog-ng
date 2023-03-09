@@ -43,7 +43,6 @@ struct _LogQueueDisk
   gboolean (*save_queue)(LogQueueDisk *s, gboolean *persistent);
   gboolean (*load_queue)(LogQueueDisk *s, const gchar *filename);
   gboolean (*start)(LogQueueDisk *s, const gchar *filename);
-  void (*restart)(LogQueueDisk *self, DiskQueueOptions *options);
 };
 
 extern QueueType log_queue_disk_type;

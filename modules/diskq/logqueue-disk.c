@@ -169,8 +169,6 @@ static void
 _restart_diskq(LogQueueDisk *self)
 {
   gchar *filename = g_strdup(qdisk_get_filename(self->qdisk));
-  DiskQueueOptions *options = qdisk_get_options(self->qdisk);
-
   qdisk_stop(self->qdisk);
 
   gchar *new_file = g_strdup_printf("%s.corrupted", filename);
@@ -181,9 +179,6 @@ _restart_diskq(LogQueueDisk *self)
                 evt_tag_error(EVT_TAG_OSERROR));
     }
   g_free(new_file);
-
-  if (self->restart)
-    self->restart(self, options);
 
   if (self->start)
     {
