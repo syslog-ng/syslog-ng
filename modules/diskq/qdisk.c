@@ -1076,6 +1076,9 @@ _close_file(QDisk *self)
       close(self->fd);
       self->fd = -1;
     }
+
+  g_free(self->filename);
+  self->filename = NULL;
 }
 
 static void
@@ -1488,9 +1491,6 @@ qdisk_init_instance(QDisk *self, DiskQueueOptions *options, const gchar *file_id
 void
 qdisk_stop(QDisk *self)
 {
-  g_free(self->filename);
-  self->filename = NULL;
-
   _close_file(self);
 }
 
