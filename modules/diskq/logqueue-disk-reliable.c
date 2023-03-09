@@ -230,6 +230,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
   LogMessage *msg = NULL;
+  gboolean qdisk_corrupt = FALSE;
 
   g_mutex_lock(&s->lock);
 
@@ -239,7 +240,8 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
       _pop_from_memory_queue_head(self->qreliable, &position, &msg, path_options);
       log_queue_memory_usage_sub(s, log_msg_get_size(msg));
 
-      _skip_message(&self->super);
+      if (!_skip_message(&self->super))
+        qdisk_corrupt = TRUE;
 
       if (s->use_backlog)
         {
@@ -258,7 +260,10 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
       gint64 position;
       _pop_from_memory_queue_head(self->qout, &position, &msg, path_options);
       log_queue_memory_usage_sub(s, log_msg_get_size(msg));
-      _skip_message(&self->super);
+
+      if (!_skip_message(&self->super))
+        qdisk_corrupt = TRUE;
+
       goto exit;
     }
 
@@ -275,6 +280,9 @@ exit:
     qdisk_empty_backlog(self->super.qdisk);
 
   log_queue_queued_messages_dec(s);
+
+  if (qdisk_corrupt)
+    log_queue_disk_restart_corrupted(&self->super);
 
   g_mutex_unlock(&s->lock);
   return msg;
