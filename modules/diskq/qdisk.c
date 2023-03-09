@@ -1175,8 +1175,11 @@ _create_file(QDisk *self, const gchar *filename)
   self->fd = fd;
   self->filename = g_strdup(filename);
 
-  if (self->options->prealloc)
-    return _preallocate(self, self->options->disk_buf_size);
+  if (self->options->prealloc && !_preallocate(self, self->options->disk_buf_size))
+    {
+      _close_file(self);
+      return FALSE;
+    }
 
   return TRUE;
 }
