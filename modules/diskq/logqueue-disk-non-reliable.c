@@ -522,7 +522,7 @@ _free(LogQueue *s)
 }
 
 static gboolean
-_save_queue(LogQueueDisk *s, gboolean *persistent)
+_stop(LogQueueDisk *s, gboolean *persistent)
 {
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
 
@@ -558,7 +558,7 @@ static inline void
 _set_logqueue_disk_virtual_functions(LogQueueDisk *s)
 {
   s->start = _start;
-  s->save_queue = _save_queue;
+  s->stop = _stop;
 }
 
 static inline void
