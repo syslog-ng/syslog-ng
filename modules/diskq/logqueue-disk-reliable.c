@@ -387,15 +387,27 @@ _free(LogQueue *s)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
 
-  _empty_queue(self->qreliable);
-  _empty_queue(self->qbacklog);
-  _empty_queue(self->qout);
-  g_queue_free(self->qreliable);
-  self->qreliable = NULL;
-  g_queue_free(self->qbacklog);
-  self->qbacklog = NULL;
-  g_queue_free(self->qout);
-  self->qout = NULL;
+
+  if (self->qreliable)
+    {
+      g_assert(g_queue_is_empty(self->qreliable));
+      g_queue_free(self->qreliable);
+      self->qreliable = NULL;
+    }
+
+  if (self->qbacklog)
+    {
+      g_assert(g_queue_is_empty(self->qbacklog));
+      g_queue_free(self->qbacklog);
+      self->qbacklog = NULL;
+    }
+
+  if (self->qout)
+    {
+      g_assert(g_queue_is_empty(self->qout));
+      g_queue_free(self->qout);
+      self->qout = NULL;
+    }
 
   log_queue_disk_free_method(&self->super);
 }
@@ -404,8 +416,6 @@ static gboolean
 _load_queue(LogQueueDisk *s, const gchar *filename)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
-  _empty_queue(self->qreliable);
-  _empty_queue(self->qout);
   return qdisk_start(s->qdisk, filename, NULL, NULL, NULL);
 }
 
@@ -414,13 +424,19 @@ _save_queue(LogQueueDisk *s, gboolean *persistent)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
 
+  gboolean result = FALSE;
+
   if (qdisk_stop(s->qdisk, NULL, NULL, NULL))
     {
       *persistent = TRUE;
-      return TRUE;
+      result = TRUE;
     }
 
-  return FALSE;
+  _empty_queue(self->qreliable);
+  _empty_queue(self->qout);
+  _empty_queue(self->qbacklog);
+
+  return result;
 }
 
 static inline void
