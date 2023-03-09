@@ -1201,8 +1201,8 @@ _open_file(QDisk *self, const gchar *filename)
 static gboolean
 _create_file(QDisk *self, const gchar *filename)
 {
-  if (self->options->read_only)
-    return FALSE;
+  g_assert(!self->options->read_only);
+  g_assert(filename);
 
   if (!_create_path(filename))
     {
