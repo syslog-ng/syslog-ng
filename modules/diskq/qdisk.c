@@ -1079,6 +1079,8 @@ _close_file(QDisk *self)
 
   g_free(self->filename);
   self->filename = NULL;
+
+  self->file_size = 0;
 }
 
 static void
