@@ -36,6 +36,7 @@
 #include "commands/ctl-stats.h"
 #include "commands/query.h"
 #include "commands/license.h"
+#include "commands/healthcheck.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -124,6 +125,7 @@ static CommandDescriptor modes[] =
   { "config", config_options, "Print current config", slng_config, NULL },
   { "list-files", no_options, "Print files present in config", slng_listfiles, NULL },
   { "export-config-graph", no_options, "export configuration graph", slng_export_config_graph, NULL },
+  { "healthcheck", healthcheck_options, "Health check", slng_healthcheck, NULL },
   { NULL, NULL },
 };
 
