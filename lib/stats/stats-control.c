@@ -34,6 +34,8 @@
 #include "control/control-server.h"
 #include "control/control-connection.h"
 
+#include <string.h>
+
 static void
 _reset_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
