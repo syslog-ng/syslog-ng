@@ -78,8 +78,8 @@ log_parser_process_message(LogParser *self, LogMessage **pmsg, const LogPathOpti
   return success;
 }
 
-static void
-log_parser_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+void
+log_parser_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogParser *self = (LogParser *) s;
   gboolean success;
@@ -160,5 +160,5 @@ log_parser_init_instance(LogParser *self, GlobalConfig *cfg)
   self->super.init = log_parser_init_method;
   self->super.deinit = log_parser_deinit_method;
   self->super.free_fn = log_parser_free_method;
-  self->super.queue = log_parser_queue;
+  self->super.queue = log_parser_queue_method;
 }
