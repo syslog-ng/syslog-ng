@@ -106,7 +106,7 @@ _create_persist_file_with_hostid(const gchar *persist_file, guint32 hostid)
 }
 
 
-TestSuite(hostid, .init = app_startup, .fini = app_shutdown);
+TestSuite(hostid, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 #ifndef __hpux
 

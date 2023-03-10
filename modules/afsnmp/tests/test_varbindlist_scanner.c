@@ -200,4 +200,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(varbindlist_scanner, .init = setup, .fini = teardown);
+TestSuite(varbindlist_scanner, .init = setup, .fini = teardown, .timeout = 300);

@@ -85,7 +85,7 @@ teardown(void)
   g_free(test_filter_conf);
 }
 
-TestSuite(add_contextual_data_filter_selector, .init = setup, .fini = teardown);
+TestSuite(add_contextual_data_filter_selector, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(add_contextual_data_filter_selector, test_clone_selector_with_filters)
 {

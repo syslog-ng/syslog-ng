@@ -66,4 +66,4 @@ Test(template_on_error, test_fail)
   cr_assert_not(log_template_on_error_parse(pattern, &r), "Parsing '%s' works", pattern);
 }
 
-TestSuite(template_on_error, .init = app_startup, .fini = app_shutdown);
+TestSuite(template_on_error, .init = app_startup, .fini = app_shutdown, .timeout = 300);

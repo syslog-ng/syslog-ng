@@ -104,7 +104,7 @@ create_clone(LogMessage *msg, LogPathOptions *path_options)
   return cloned;
 }
 
-TestSuite(msg_ack, .init = setup, .fini = teardown);
+TestSuite(msg_ack, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(msg_ack, normal_ack)
 {

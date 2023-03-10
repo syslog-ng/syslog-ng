@@ -73,7 +73,7 @@
     return &self->super; \
   } \
 
-TestSuite(multitransport, .init = app_startup, .fini = app_shutdown);
+TestSuite(multitransport, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 DEFINE_TEST_TRANSPORT_WITH_FACTORY(Fake, fake);
 DEFINE_TEST_TRANSPORT_WITH_FACTORY(Default, default);

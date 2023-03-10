@@ -110,7 +110,7 @@ _report_possible_parse_error(GError *error, gint line)
     }
 }
 
-TestSuite(xml_scanner, .init = setup, .fini = teardown);
+TestSuite(xml_scanner, .init = setup, .fini = teardown, .timeout = 300);
 
 
 Test(xml_scanner, shouldreverse)

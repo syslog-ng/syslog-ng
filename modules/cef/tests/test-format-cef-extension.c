@@ -96,7 +96,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(format_cef, .init = setup, .fini = teardown);
+TestSuite(format_cef, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(format_cef, test_null_in_value)
 {

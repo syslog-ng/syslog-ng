@@ -336,4 +336,4 @@ teardown(void)
 {
 }
 
-TestSuite(http_loadbalancer, .init = setup, .fini = teardown);
+TestSuite(http_loadbalancer, .init = setup, .fini = teardown, .timeout = 300);

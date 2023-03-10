@@ -42,7 +42,7 @@ teardown(void)
   cfg_free(configuration);
 }
 
-TestSuite(tagsparser, .init = setup, .fini = teardown);
+TestSuite(tagsparser, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(tagsparser, input_list_is_transferred_to_a_list_of_tags)
 {

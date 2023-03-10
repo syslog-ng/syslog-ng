@@ -52,7 +52,7 @@ _log_msg_set_recvd_time(LogMessage *msg, time_t t)
   msg->timestamps[LM_TS_RECVD].ut_gmtoff = get_local_timezone_ofs(t);
 }
 
-TestSuite(graphite_output, .init = setup, .fini = teardown);
+TestSuite(graphite_output, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(graphite_output, test_graphite_plaintext_proto_simple)
 {

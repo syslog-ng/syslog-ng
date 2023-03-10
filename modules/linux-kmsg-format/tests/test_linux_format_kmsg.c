@@ -186,4 +186,4 @@ Test(linux_kmsg_format, test_kmsg_device_parsing)
   log_msg_unref(parsed_message);
 }
 
-TestSuite(linux_kmsg_format, .init = setup, .fini = teardown);
+TestSuite(linux_kmsg_format, .init = setup, .fini = teardown, .timeout = 300);

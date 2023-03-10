@@ -136,7 +136,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(template, .init = setup, .fini = teardown);
+TestSuite(template, .init = setup, .fini = teardown, .timeout = 300);
 
 
 Test(template, test_macros_v3x)

@@ -35,7 +35,7 @@
 #include <limits.h>
 #include <time.h>
 
-TestSuite(stats_alias_counter, .init = app_startup, .fini = app_shutdown);
+TestSuite(stats_alias_counter, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 Test(stats_alias_counter, register_ctr)
 {

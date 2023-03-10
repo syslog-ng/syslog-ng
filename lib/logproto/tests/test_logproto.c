@@ -100,4 +100,4 @@ Test(log_proto, test_log_proto, .disabled = true)
    */
 }
 
-TestSuite(log_proto, .init = setup, .fini = teardown);
+TestSuite(log_proto, .init = setup, .fini = teardown, .timeout = 300);

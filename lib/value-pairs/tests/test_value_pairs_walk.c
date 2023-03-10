@@ -145,4 +145,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(value_pairs_walker, .init = setup, .fini = teardown);
+TestSuite(value_pairs_walker, .init = setup, .fini = teardown, .timeout = 300);

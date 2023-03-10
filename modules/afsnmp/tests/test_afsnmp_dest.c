@@ -48,7 +48,7 @@ _teardown(void)
   cfg_free(cfg);
 }
 
-TestSuite(test_snmp_dest, .init = _init, .fini = _teardown);
+TestSuite(test_snmp_dest, .init = _init, .fini = _teardown, .timeout = 300);
 
 Test(test_snmp_dest, set_version)
 {

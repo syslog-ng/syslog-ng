@@ -134,4 +134,4 @@ Test(geoip2, test_basic)
   log_msg_unref(msg);
 }
 
-TestSuite(geoip2, .init = setup, .fini = teardown);
+TestSuite(geoip2, .init = setup, .fini = teardown, .timeout = 300);

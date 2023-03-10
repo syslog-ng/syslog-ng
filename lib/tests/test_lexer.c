@@ -537,4 +537,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(lexer, .init = setup, .fini = teardown);
+TestSuite(lexer, .init = setup, .fini = teardown, .timeout = 300);

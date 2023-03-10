@@ -266,4 +266,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(resolve_hostname, .init = setup, .fini = teardown);
+TestSuite(resolve_hostname, .init = setup, .fini = teardown, .timeout = 300);

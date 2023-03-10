@@ -47,7 +47,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(format_welf, .init = setup, .fini = teardown);
+TestSuite(format_welf, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(format_welf, test_format_welf)
 {

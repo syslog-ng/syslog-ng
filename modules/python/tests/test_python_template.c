@@ -95,7 +95,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(python_log_logtemplate, .init = setup, .fini = teardown);
+TestSuite(python_log_logtemplate, .init = setup, .fini = teardown, .timeout = 300);
 
 static PyLogMessage *
 create_parsed_message(const gchar *raw_msg)

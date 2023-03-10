@@ -135,7 +135,7 @@ teardown(void)
   cfg_free(configuration);
 }
 
-TestSuite(snmptrapd_parser, .init = setup, .fini = teardown);
+TestSuite(snmptrapd_parser, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(snmptrapd_parser, test_general_v2_message_with_oids)
 {

@@ -71,7 +71,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(python_ack_tracker, .init = setup, .fini = teardown);
+TestSuite(python_ack_tracker, .init = setup, .fini = teardown, .timeout = 300);
 
 static PyObject *
 ack_callback(PyObject *self, PyObject *args)

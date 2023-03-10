@@ -139,4 +139,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(set_matches, .init = setup, .fini = teardown);
+TestSuite(set_matches, .init = setup, .fini = teardown, .timeout = 300);

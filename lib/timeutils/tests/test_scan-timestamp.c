@@ -589,4 +589,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(parse_timestamp, .init = setup, .fini = teardown);
+TestSuite(parse_timestamp, .init = setup, .fini = teardown, .timeout = 300);

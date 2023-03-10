@@ -202,4 +202,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(grouping_by, .init = setup, .fini = teardown);
+TestSuite(grouping_by, .init = setup, .fini = teardown, .timeout = 300);

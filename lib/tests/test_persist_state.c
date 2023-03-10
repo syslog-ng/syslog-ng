@@ -68,7 +68,7 @@ _foreach_callback_assertions(gchar *name, gint size, gpointer entry, gpointer us
   cr_assert_eq(size, sizeof(TestState), "Size of state does not match!");
 }
 
-TestSuite(persist_state, .init = app_startup, .fini = app_shutdown);
+TestSuite(persist_state, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 #ifndef __hpux
 

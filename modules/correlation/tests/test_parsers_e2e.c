@@ -203,4 +203,4 @@ void teardown(void)
   app_shutdown();
 }
 
-TestSuite(parsers_e2e, .init = setup, .fini = teardown);
+TestSuite(parsers_e2e, .init = setup, .fini = teardown, .timeout = 300);

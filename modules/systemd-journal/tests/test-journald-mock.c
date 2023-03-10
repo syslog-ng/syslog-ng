@@ -214,4 +214,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(journald_mock, .init = setup, .fini = teardown);
+TestSuite(journald_mock, .init = setup, .fini = teardown, .timeout = 300);

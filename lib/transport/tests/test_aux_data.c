@@ -160,4 +160,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(aux_data, .init = setup, .fini = teardown);
+TestSuite(aux_data, .init = setup, .fini = teardown, .timeout = 300);

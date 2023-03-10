@@ -206,4 +206,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(cfg_tree, .init = setup, .fini = teardown);
+TestSuite(cfg_tree, .init = setup, .fini = teardown, .timeout = 300);

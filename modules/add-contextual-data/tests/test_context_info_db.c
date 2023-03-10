@@ -557,4 +557,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(add_contextual_data, .init=setup, .fini=teardown);
+TestSuite(add_contextual_data, .init=setup, .fini=teardown, .timeout = 300);

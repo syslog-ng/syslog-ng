@@ -44,7 +44,7 @@ teardown(void)
   cfg_free(configuration);
 }
 
-TestSuite(regexp_parser, .init = setup, .fini = teardown);
+TestSuite(regexp_parser, .init = setup, .fini = teardown, .timeout = 300);
 
 typedef struct _RegexpParserTestParam
 {

@@ -145,4 +145,4 @@ Test(csvparser_perf, test_escaped_parsers_performance)
 
 }
 
-TestSuite(csvparser_perf, .init = app_startup, .fini = app_shutdown);
+TestSuite(csvparser_perf, .init = app_startup, .fini = app_shutdown, .timeout = 300);

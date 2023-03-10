@@ -168,4 +168,4 @@ teardown(void)
 {
 }
 
-TestSuite(file_opener, .init = setup, .fini = teardown);
+TestSuite(file_opener, .init = setup, .fini = teardown, .timeout = 300);

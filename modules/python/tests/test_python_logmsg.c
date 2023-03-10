@@ -112,7 +112,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(python_log_message, .init = setup, .fini = teardown);
+TestSuite(python_log_message, .init = setup, .fini = teardown, .timeout = 300);
 
 typedef struct _PyLogMessageSetValueTestParams
 {

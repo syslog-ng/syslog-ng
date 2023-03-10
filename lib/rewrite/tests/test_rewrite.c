@@ -353,5 +353,5 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(rewrite, .init = setup, .fini = teardown);
+TestSuite(rewrite, .init = setup, .fini = teardown, .timeout = 300);
 

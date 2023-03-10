@@ -38,7 +38,7 @@
 #include <stdio.h>
 #include <pcre.h>
 
-TestSuite(filter, .init = setup, .fini = teardown);
+TestSuite(filter, .init = setup, .fini = teardown, .timeout = 300);
 
 typedef struct _FilterParamRegexp
 {

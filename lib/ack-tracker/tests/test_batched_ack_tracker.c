@@ -140,7 +140,7 @@ _teardown(void)
   cfg_free(cfg);
 }
 
-TestSuite(batched_ack_tracker, .init = _setup, .fini = _teardown);
+TestSuite(batched_ack_tracker, .init = _setup, .fini = _teardown, .timeout = 300);
 
 static void
 _dummy_on_batch_acked(GList *ack_records, gpointer user_data)

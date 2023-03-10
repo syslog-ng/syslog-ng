@@ -161,4 +161,4 @@ Test(kv_parser, test_extract_stray_words)
 
 }
 
-TestSuite(kv_parser, .init = setup, .fini = teardown);
+TestSuite(kv_parser, .init = setup, .fini = teardown, .timeout = 300);

@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-TestSuite(filter, .init = setup, .fini = teardown);
+TestSuite(filter, .init = setup, .fini = teardown, .timeout = 300);
 
 typedef struct _FilterParamNetmask
 {

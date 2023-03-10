@@ -388,4 +388,4 @@ Test(systemd_journal, test_journal_reader)
   _deinit_cfg(persist_file);
 }
 
-TestSuite(systemd_journal, .init = app_startup, .fini = app_shutdown);
+TestSuite(systemd_journal, .init = app_startup, .fini = app_shutdown, .timeout = 300);

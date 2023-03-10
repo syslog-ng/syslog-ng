@@ -406,4 +406,4 @@ teardown(void)
 {
 }
 
-TestSuite(wallclocktime, .init = setup, .fini = teardown);
+TestSuite(wallclocktime, .init = setup, .fini = teardown, .timeout = 300);

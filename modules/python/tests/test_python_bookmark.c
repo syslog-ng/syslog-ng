@@ -63,7 +63,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(python_bookmark, .init = setup, .fini = teardown);
+TestSuite(python_bookmark, .init = setup, .fini = teardown, .timeout = 300);
 
 static PyObject *
 test_save_bookmark(PyObject *self, PyObject *args)

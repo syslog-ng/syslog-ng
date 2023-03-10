@@ -80,7 +80,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(clone_logmsg, .init = setup, .fini = teardown);
+TestSuite(clone_logmsg, .init = setup, .fini = teardown, .timeout = 300);
 
 ParameterizedTestParameters(clone_logmsg, test_cloning_with_log_message)
 {

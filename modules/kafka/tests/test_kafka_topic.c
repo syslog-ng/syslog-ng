@@ -78,7 +78,7 @@ _init_topic_names(LogDriver *driver, const gchar *topic, const gchar *fallback_t
   kafka_dd_set_fallback_topic(driver, fallback_topic);
 }
 
-TestSuite(kafka_topic, .init = setup, .fini = teardown);
+TestSuite(kafka_topic, .init = setup, .fini = teardown, .timeout = 300);
 
 ParameterizedTestParameters(kafka_topic, valid_topic_tests)
 {

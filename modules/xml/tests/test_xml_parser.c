@@ -72,7 +72,7 @@ _construct_xml_parser(XMLParserTestOptions options)
   return (LogParser *)cloned;
 }
 
-TestSuite(xmlparser, .init = setup, .fini = teardown);
+TestSuite(xmlparser, .init = setup, .fini = teardown, .timeout = 300);
 
 typedef struct
 {

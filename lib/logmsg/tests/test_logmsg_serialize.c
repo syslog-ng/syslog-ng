@@ -433,4 +433,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(logmsg_serialize, .init = setup, .fini = teardown);
+TestSuite(logmsg_serialize, .init = setup, .fini = teardown, .timeout = 300);

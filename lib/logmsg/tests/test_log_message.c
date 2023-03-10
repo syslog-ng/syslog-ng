@@ -164,7 +164,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(log_message, .init = setup, .fini = teardown);
+TestSuite(log_message, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(log_message, test_log_message_can_be_created_and_freed)
 {

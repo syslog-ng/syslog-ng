@@ -51,5 +51,5 @@ teardown(void)
   cfg_free(configuration);
 }
 
-TestSuite(filter_call, .init = setup, .fini = teardown);
+TestSuite(filter_call, .init = setup, .fini = teardown, .timeout = 300);
 

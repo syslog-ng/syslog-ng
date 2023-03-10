@@ -300,4 +300,4 @@ Test(app_parser_generator, app_parser_includes_and_excludes_apps)
 }
 
 
-TestSuite(app_parser_generator, .init = startup, .fini = teardown);
+TestSuite(app_parser_generator, .init = startup, .fini = teardown, .timeout = 300);

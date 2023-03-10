@@ -158,7 +158,7 @@ assert_forget_all(DNSCache *cache, gint cache_size)
 }
 
 
-TestSuite(dnscache, .init = app_startup, .fini = app_shutdown);
+TestSuite(dnscache, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 Test(dnscache, test_expiration)
 {

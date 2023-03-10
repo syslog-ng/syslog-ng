@@ -499,4 +499,4 @@ Test(log_source, test_dynamic_window_reclaim)
   test_source_destroy(source);
 }
 
-TestSuite(log_source, .init = setup, .fini = teardown);
+TestSuite(log_source, .init = setup, .fini = teardown, .timeout = 300);

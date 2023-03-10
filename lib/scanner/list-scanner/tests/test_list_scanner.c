@@ -67,7 +67,7 @@ teardown(void)
   list_scanner_free(list_scanner);
 }
 
-TestSuite(list_scanner, .init = setup, .fini = teardown);
+TestSuite(list_scanner, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(list_scanner, individual_items_are_scanned)
 {

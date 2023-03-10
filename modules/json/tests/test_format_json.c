@@ -46,7 +46,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(format_json, .init = setup, .fini = teardown);
+TestSuite(format_json, .init = setup, .fini = teardown, .timeout = 300);
 
 
 Test(format_json, test_format_json)

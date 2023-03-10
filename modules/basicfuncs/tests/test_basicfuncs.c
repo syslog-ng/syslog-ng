@@ -124,7 +124,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(basicfuncs, .init = setup, .fini = teardown);
+TestSuite(basicfuncs, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(basicfuncs, test_cond_funcs)
 {

@@ -128,7 +128,7 @@ _teardown(void)
   cfg_free(cfg);
 }
 
-TestSuite(instant_ack_tracker_bookmarkless, .init = _setup, .fini = _teardown);
+TestSuite(instant_ack_tracker_bookmarkless, .init = _setup, .fini = _teardown, .timeout = 300);
 
 Test(instant_ack_tracker_bookmarkless, request_bookmark_returns_the_same_bookmark)
 {
@@ -185,7 +185,7 @@ Test(instant_ack_tracker_bookmarkless, same_bookmark_for_all_messages)
 }
 
 
-TestSuite(instant_ack_tracker, .init = _setup, .fini = _teardown);
+TestSuite(instant_ack_tracker, .init = _setup, .fini = _teardown, .timeout = 300);
 
 Test(instant_ack_tracker, request_bookmark_returns_same_bookmarks_until_pending_not_assigned)
 {

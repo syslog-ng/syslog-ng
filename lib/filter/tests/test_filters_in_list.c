@@ -148,4 +148,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(template_filters, .init = setup, .fini = teardown);
+TestSuite(template_filters, .init = setup, .fini = teardown, .timeout = 300);

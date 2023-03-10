@@ -51,7 +51,7 @@ teardown(void)
   main_loop_thread_resource_deinit();
 }
 
-TestSuite(stats_prometheus, .init = setup, .fini = teardown);
+TestSuite(stats_prometheus, .init = setup, .fini = teardown, .timeout = 300);
 
 static inline StatsCluster *
 test_single_cluster(const gchar *name, StatsClusterLabel *labels, gsize labels_len)

@@ -95,7 +95,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(date, .init = setup, .fini = teardown);
+TestSuite(date, .init = setup, .fini = teardown, .timeout = 300);
 
 ParameterizedTestParameters(date, test_date_parser)
 {

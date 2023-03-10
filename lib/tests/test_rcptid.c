@@ -59,7 +59,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(rcptid, .init = setup, .fini = teardown);
+TestSuite(rcptid, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(rcptid, test_rcptid_is_persistent_across_persist_backend_reinits)
 {

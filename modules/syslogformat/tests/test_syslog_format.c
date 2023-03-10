@@ -54,7 +54,7 @@ teardown(void)
   cfg_free(cfg);
 }
 
-TestSuite(syslog_format, .init = setup, .fini = teardown);
+TestSuite(syslog_format, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(syslog_format, parser_should_not_spin_on_non_zero_terminated_input, .timeout = 10)
 {

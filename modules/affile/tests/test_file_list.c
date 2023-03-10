@@ -25,7 +25,7 @@
 #include "file-list.h"
 
 
-TestSuite(hashed_queue, .init = NULL, .fini = NULL);
+TestSuite(hashed_queue, .init = NULL, .fini = NULL, .timeout = 300);
 
 
 Test(hashed_queue, normal)

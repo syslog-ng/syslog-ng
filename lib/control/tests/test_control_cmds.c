@@ -67,7 +67,7 @@ teardown(void)
   reset_control_command_list();
 }
 
-TestSuite(control_cmds, .init = setup, .fini = teardown);
+TestSuite(control_cmds, .init = setup, .fini = teardown, .timeout = 300);
 
 static void
 _send_request(const gchar *request)

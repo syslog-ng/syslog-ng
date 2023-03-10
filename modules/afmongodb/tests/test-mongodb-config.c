@@ -139,4 +139,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(mongodb_config,  .init = setup, .fini = teardown);
+TestSuite(mongodb_config,  .init = setup, .fini = teardown, .timeout = 300);

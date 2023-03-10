@@ -127,7 +127,7 @@ assert_timestamp_format(GString *target, UnixTime *stamp, TimestampFormatTestCas
   cr_assert_str_eq(target->str, c.expected_format, "Actual: %s, Expected: %s", target->str, c.expected_format);
 }
 
-TestSuite(zone, .init = app_startup, .fini = app_shutdown);
+TestSuite(zone, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 Test(zone, test_time_zone_offset)
 {

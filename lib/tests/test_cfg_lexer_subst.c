@@ -293,4 +293,4 @@ Test(cfg_lexer_subst, test_tracking_string_state)
   cfg_lexer_subst_free(subst);
 }
 
-TestSuite(cfg_lexer_subst, .init = app_startup, .fini = app_shutdown);
+TestSuite(cfg_lexer_subst, .init = app_startup, .fini = app_shutdown, .timeout = 300);

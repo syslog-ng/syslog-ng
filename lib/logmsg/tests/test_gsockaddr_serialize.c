@@ -29,7 +29,7 @@
 
 #include <string.h>
 
-TestSuite(gsockaddr_serialize, .init = app_startup, .fini = app_shutdown);
+TestSuite(gsockaddr_serialize, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 Test(gsockaddr_serialize, test_empty)
 {

@@ -159,4 +159,4 @@ teardown(void)
   cfg_free(configuration);
 }
 
-TestSuite(kafka_config, .init = setup, .fini = teardown);
+TestSuite(kafka_config, .init = setup, .fini = teardown, .timeout = 300);

@@ -363,4 +363,4 @@ Test(stats_cluster, test_register_type)
   cr_assert_eq(first, same);
 }
 
-TestSuite(stats_cluster, .init=setup, .fini = app_shutdown);
+TestSuite(stats_cluster, .init=setup, .fini = app_shutdown, .timeout = 300);

@@ -30,7 +30,7 @@
 #include "logthrdest/logthrdestdrv.h"
 
 
-TestSuite(http, .init = app_startup, .fini = app_shutdown);
+TestSuite(http, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 struct http_action_test_params
 {

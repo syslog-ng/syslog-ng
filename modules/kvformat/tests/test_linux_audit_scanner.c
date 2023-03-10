@@ -122,4 +122,4 @@ Test(linux_audit_scanner, test_audit_style_hex_dump_is_not_decoded_odd, .descrip
   assert_no_more_tokens();
 }
 
-TestSuite(linux_audit_scanner, .init = setup, .fini = teardown);
+TestSuite(linux_audit_scanner, .init = setup, .fini = teardown, .timeout = 300);

@@ -177,4 +177,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(file_writer, .init = startup, .fini = teardown);
+TestSuite(file_writer, .init = startup, .fini = teardown, .timeout = 300);

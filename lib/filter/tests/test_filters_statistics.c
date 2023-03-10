@@ -82,7 +82,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(test_filters_statistics, .init = setup, .fini = teardown);
+TestSuite(test_filters_statistics, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(test_filters_statistics, filter_stastistics)
 {

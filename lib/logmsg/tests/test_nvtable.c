@@ -56,7 +56,7 @@ assert_nvtable(NVTable *tab, NVHandle handle, gchar *expected_value, gssize expe
 }
 
 
-TestSuite(nvtable, .init = app_startup, .fini = app_shutdown);
+TestSuite(nvtable, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 /* NVRegistry */
 /* testcases:

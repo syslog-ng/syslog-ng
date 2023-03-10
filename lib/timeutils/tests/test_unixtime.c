@@ -486,4 +486,4 @@ teardown(void)
 {
 }
 
-TestSuite(unixtime, .init = setup, .fini = teardown);
+TestSuite(unixtime, .init = setup, .fini = teardown, .timeout = 300);

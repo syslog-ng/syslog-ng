@@ -140,4 +140,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(set_tag, .init = setup, .fini = teardown);
+TestSuite(set_tag, .init = setup, .fini = teardown, .timeout = 300);

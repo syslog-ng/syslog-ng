@@ -26,7 +26,8 @@
 #include "transport/transport-factory-id.h"
 #include "apphook.h"
 
-TestSuite(transport_factory_id, .init = transport_factory_id_global_init, .fini = transport_factory_id_global_deinit);
+TestSuite(transport_factory_id, .init = transport_factory_id_global_init, .fini = transport_factory_id_global_deinit,
+          .timeout = 300);
 
 Test(transport_factory_id_lifecycle, lifecycle)
 {

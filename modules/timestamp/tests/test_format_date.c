@@ -54,7 +54,7 @@ _log_msg_set_recvd_time(LogMessage *msg, time_t t)
   msg->timestamps[LM_TS_STAMP].ut_gmtoff = get_local_timezone_ofs(t);
 }
 
-TestSuite(format_date, .init = setup, .fini = teardown);
+TestSuite(format_date, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(format_date, test_format_date_without_argument_takes_the_timestamp_and_formats_it_using_strftime)
 {

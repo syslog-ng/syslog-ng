@@ -87,4 +87,4 @@ teardown(void)
   msg_deinit();
 }
 
-TestSuite(kafka_props, .init = setup, .fini = teardown);
+TestSuite(kafka_props, .init = setup, .fini = teardown, .timeout = 300);

@@ -119,4 +119,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(add_contextual_data_glob_selector, .init = startup, .fini = teardown);
+TestSuite(add_contextual_data_glob_selector, .init = startup, .fini = teardown, .timeout = 300);

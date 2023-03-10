@@ -428,4 +428,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(csv_scanner, .init = setup, .fini = teardown);
+TestSuite(csv_scanner, .init = setup, .fini = teardown, .timeout = 300);

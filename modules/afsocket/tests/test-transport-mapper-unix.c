@@ -67,4 +67,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(transport_mapper_unix, .init = setup, .fini = teardown);
+TestSuite(transport_mapper_unix, .init = setup, .fini = teardown, .timeout = 300);

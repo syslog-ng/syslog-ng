@@ -90,7 +90,7 @@ _fake_transport_factory_new(void)
   return &instance->super;
 }
 
-TestSuite(transport_factory, .init = app_startup, .fini = app_shutdown);
+TestSuite(transport_factory, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 Test(transport_factory, fake_transport_factory)
 {

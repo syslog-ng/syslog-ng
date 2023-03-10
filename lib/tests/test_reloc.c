@@ -72,4 +72,4 @@ teardown(void)
   cache_free(path_cache);
 }
 
-TestSuite(reloc, .init = setup, .fini = teardown);
+TestSuite(reloc, .init = setup, .fini = teardown, .timeout = 300);

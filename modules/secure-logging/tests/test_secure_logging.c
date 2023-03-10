@@ -433,7 +433,7 @@ void teardown(void)
 /*************************************************************************/
 /* Test suite                                                            */
 /*************************************************************************/
-TestSuite(secure_logging, .init = setup, .fini = teardown);
+TestSuite(secure_logging, .init = setup, .fini = teardown, .timeout = 300);
 
 void test_slog_template_format(void)
 {

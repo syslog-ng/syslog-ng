@@ -34,7 +34,7 @@
 #include <limits.h>
 #include <time.h>
 
-TestSuite(stats_dynamic_clusters, .init = app_startup, .fini = app_shutdown);
+TestSuite(stats_dynamic_clusters, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 Test(stats_dynamic_clusters, unlimited_by_default)
 {

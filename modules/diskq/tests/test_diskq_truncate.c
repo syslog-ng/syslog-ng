@@ -607,4 +607,4 @@ teardown(void)
   cfg_free(configuration);
 }
 
-TestSuite(diskq_truncate, .init = setup, .fini = teardown);
+TestSuite(diskq_truncate, .init = setup, .fini = teardown, .timeout = 300);

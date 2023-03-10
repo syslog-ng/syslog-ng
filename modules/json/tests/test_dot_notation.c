@@ -87,7 +87,7 @@ void teardown(void)
   app_shutdown();
 }
 
-TestSuite(json, .init = setup, .fini = teardown);
+TestSuite(json, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(json, test_dot_notation_eval_empty_subscript_returns_the_object)
 {

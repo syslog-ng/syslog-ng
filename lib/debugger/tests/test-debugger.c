@@ -40,7 +40,7 @@ teardown(void)
   cfg_free(configuration);
 }
 
-TestSuite(debugger, .init = setup, .fini = teardown);
+TestSuite(debugger, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(debugger, test_debugger)
 {

@@ -112,4 +112,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(diskq_full, .init = setup, .fini = teardown);
+TestSuite(diskq_full, .init = setup, .fini = teardown, .timeout = 300);

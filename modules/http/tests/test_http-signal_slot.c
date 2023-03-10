@@ -58,7 +58,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(test_http_signal_slot, .init = setup, .fini = teardown);
+TestSuite(test_http_signal_slot, .init = setup, .fini = teardown, .timeout = 300);
 
 static void
 _generate_message(HTTPDestinationDriver *dd, const gchar *msg_str)

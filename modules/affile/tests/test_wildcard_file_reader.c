@@ -120,7 +120,7 @@ _teardown(void)
   app_shutdown();
 }
 
-TestSuite(test_wildcard_file_reader, .init = _init, .fini = _teardown);
+TestSuite(test_wildcard_file_reader, .init = _init, .fini = _teardown, .timeout = 300);
 
 Test(test_wildcard_file_reader, constructor)
 {

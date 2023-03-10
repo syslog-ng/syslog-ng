@@ -320,4 +320,4 @@ void teardown(void)
   app_shutdown();
 }
 
-TestSuite(metrics_probe, .init = setup, .fini = teardown);
+TestSuite(metrics_probe, .init = setup, .fini = teardown, .timeout = 300);

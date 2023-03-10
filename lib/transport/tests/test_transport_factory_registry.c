@@ -43,7 +43,7 @@ _test_transport_factory_new(void)
   return instance;
 }
 
-TestSuite(transport_factory_registry, .init = app_startup, .fini = app_shutdown);
+TestSuite(transport_factory_registry, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 Test(transport_factory_registry, basic_functionality)
 {

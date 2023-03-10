@@ -68,7 +68,7 @@ _create_wildcard_filesource(const gchar *wildcard_config)
   return driver;
 }
 
-TestSuite(wildcard_source, .init = _init, .fini = _deinit);
+TestSuite(wildcard_source, .init = _init, .fini = _deinit, .timeout = 300);
 
 Test(wildcard_source, initial_test)
 {

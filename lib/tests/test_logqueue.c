@@ -171,7 +171,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(logqueue, .init = setup, .fini = teardown);
+TestSuite(logqueue, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(logqueue, test_zero_diskbuf_and_normal_acks)
 {

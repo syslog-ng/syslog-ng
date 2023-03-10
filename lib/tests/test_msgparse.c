@@ -142,7 +142,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(msgparse, .init = setup, .fini = teardown);
+TestSuite(msgparse, .init = setup, .fini = teardown, .timeout = 300);
 
 void
 test_log_messages_can_be_parsed(struct msgparse_params *param)

@@ -49,7 +49,8 @@ secret_storage_testsuite_deinit(void)
 }
 
 
-TestSuite(secretstorage, .init = secret_storage_testsuite_init, .fini = secret_storage_testsuite_deinit);
+TestSuite(secretstorage, .init = secret_storage_testsuite_init, .fini = secret_storage_testsuite_deinit,
+          .timeout = 300);
 
 Test(secretstorage, simple_store_get)
 {

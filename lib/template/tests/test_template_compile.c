@@ -402,4 +402,4 @@ teardown(void)
   stop_grabbing_messages();
 }
 
-TestSuite(template_compile, .init = setup, .fini = teardown);
+TestSuite(template_compile, .init = setup, .fini = teardown, .timeout = 300);

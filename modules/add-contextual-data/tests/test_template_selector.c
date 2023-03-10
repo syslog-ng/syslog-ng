@@ -29,7 +29,7 @@
 #include "apphook.h"
 #include <unistd.h>
 
-TestSuite(add_contextual_data_template_selector, .init = app_startup, .fini = app_shutdown);
+TestSuite(add_contextual_data_template_selector, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 static LogMessage *
 _create_log_msg(const gchar *message, const gchar *host)

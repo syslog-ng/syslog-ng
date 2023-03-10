@@ -32,7 +32,7 @@
 
 PersistState *create_persist_state(gchar *persist_file_name);
 
-TestSuite(test_run_id, .init = app_startup, .fini = app_shutdown);
+TestSuite(test_run_id, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 #define RUN_ID_FIRST 1
 
 PersistState *

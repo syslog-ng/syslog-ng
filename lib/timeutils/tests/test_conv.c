@@ -287,4 +287,4 @@ teardown(void)
 {
 }
 
-TestSuite(conv, .init = setup, .fini = teardown);
+TestSuite(conv, .init = setup, .fini = teardown, .timeout = 300);

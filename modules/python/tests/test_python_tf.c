@@ -76,7 +76,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(python_tf, .init = setup, .fini = teardown);
+TestSuite(python_tf, .init = setup, .fini = teardown, .timeout = 300);
 
 typedef struct _PyTfTestParams
 {

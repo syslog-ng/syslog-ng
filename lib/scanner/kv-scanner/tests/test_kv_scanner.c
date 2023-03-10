@@ -1024,4 +1024,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(kv_scanner, .init = setup, .fini = teardown);
+TestSuite(kv_scanner, .init = setup, .fini = teardown, .timeout = 300);

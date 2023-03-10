@@ -829,4 +829,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(logthrdestdrv, .init = setup, .fini = teardown);
+TestSuite(logthrdestdrv, .init = setup, .fini = teardown, .timeout = 300);

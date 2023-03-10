@@ -94,7 +94,7 @@ _load_code(const gchar *code)
   PyGILState_Release(gstate);
 }
 
-TestSuite(python_persist_name, .init = setup, .fini = teardown);
+TestSuite(python_persist_name, .init = setup, .fini = teardown, .timeout = 300);
 
 const gchar *python_destination_code = "\n\
 from _syslogng import LogDestination\n\

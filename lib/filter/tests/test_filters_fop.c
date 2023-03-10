@@ -104,4 +104,4 @@ Test(filter_op, cloned_filter_with_negation_should_behave_the_same)
   testcase(msg, cloned_filter, TRUE);
 }
 
-TestSuite(filter_op, .init = setup, .fini = teardown);
+TestSuite(filter_op, .init = setup, .fini = teardown, .timeout = 300);

@@ -139,7 +139,7 @@ teardown(void)
   cfg_free(configuration);
 }
 
-TestSuite(matcher, .init = setup, .fini = teardown);
+TestSuite(matcher, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(matcher, pcre_regexp, .description = "PCRE regexp")
 {

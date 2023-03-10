@@ -805,4 +805,4 @@ void teardown(void)
   app_shutdown();
 }
 
-TestSuite(pattern_db, .init = setup, .fini = teardown);
+TestSuite(pattern_db, .init = setup, .fini = teardown, .timeout = 300);

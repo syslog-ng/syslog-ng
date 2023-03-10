@@ -306,4 +306,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(value_pairs, .init = setup, .fini = teardown);
+TestSuite(value_pairs, .init = setup, .fini = teardown, .timeout = 300);

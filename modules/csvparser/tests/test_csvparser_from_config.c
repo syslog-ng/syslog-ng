@@ -117,4 +117,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(parser, .init = setup, .fini = teardown);
+TestSuite(parser, .init = setup, .fini = teardown, .timeout = 300);

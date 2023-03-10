@@ -24,7 +24,7 @@
 #include "serialize.h"
 #include "apphook.h"
 
-TestSuite(serialize, .init = app_startup, .fini = app_shutdown);
+TestSuite(serialize, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 Test(serialize, test_serialize)
 {

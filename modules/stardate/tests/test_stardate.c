@@ -72,7 +72,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(stardate, .init = setup, .fini = teardown);
+TestSuite(stardate, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(stardate, test_stardate)
 {

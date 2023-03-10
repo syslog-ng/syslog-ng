@@ -54,7 +54,7 @@ teardown(void)
   g_string_free(result, TRUE);
 }
 
-TestSuite(test_block, .init = setup, .fini = teardown);
+TestSuite(test_block, .init = setup, .fini = teardown, .timeout = 300);
 
 Test(test_block, mandatory_arguments)
 {

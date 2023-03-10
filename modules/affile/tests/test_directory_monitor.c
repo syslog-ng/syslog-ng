@@ -34,7 +34,7 @@
 #include <glib/gstdio.h>
 #include <unistd.h>
 
-TestSuite(directory_monitor, .init = app_startup, .fini = app_shutdown);
+TestSuite(directory_monitor, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 static void
 _callback(const DirectoryMonitorEvent *event, gpointer user_data)
@@ -89,7 +89,7 @@ Test(directory_monitor, non_existing_directory)
   directory_monitor_free(monitor);
 }
 
-TestSuite(directory_monitor_tools, .init = app_startup, .fini = app_shutdown);
+TestSuite(directory_monitor_tools, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 Test(directory_monitor_tools, build_filename)
 {
@@ -105,7 +105,7 @@ Test(directory_monitor_tools, build_filename)
   cr_assert_eq(NULL, built_path);
 }
 
-TestSuite(directory_monitor_factory, .init = app_startup, .fini = app_shutdown);
+TestSuite(directory_monitor_factory, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 Test(directory_monitor_factory, check_monitor_method)
 {

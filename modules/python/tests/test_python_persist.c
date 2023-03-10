@@ -77,7 +77,7 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(python_persist, .init = setup, .fini = teardown);
+TestSuite(python_persist, .init = setup, .fini = teardown, .timeout = 300);
 
 const gchar *simple_persist = "\n\
 from _syslogng import Persist\n\

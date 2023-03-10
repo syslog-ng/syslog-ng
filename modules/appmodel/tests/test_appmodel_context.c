@@ -83,4 +83,4 @@ Test(appmodel_context, iter_applications_enumerates_apps_in_the_order_of_registr
   g_string_free(result, TRUE);
 }
 
-TestSuite(appmodel_context, .init = startup, .fini = teardown);
+TestSuite(appmodel_context, .init = startup, .fini = teardown, .timeout = 300);

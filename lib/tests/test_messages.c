@@ -29,7 +29,7 @@
 
 #include <errno.h>
 
-TestSuite(test_messages, .init = app_startup, .fini = app_shutdown);
+TestSuite(test_messages, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 void simple_test_asserter(LogMessage *msg)
 {

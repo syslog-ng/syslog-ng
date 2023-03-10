@@ -367,4 +367,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(qdisk, .init = setup, .fini = teardown);
+TestSuite(qdisk, .init = setup, .fini = teardown, .timeout = 300);

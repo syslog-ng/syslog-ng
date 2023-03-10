@@ -193,7 +193,7 @@ _test_format_list(StatsCounterItem *ctr, gpointer user_data)
   return TRUE;
 }
 
-TestSuite(cluster_query_key, .init = setup, .fini = app_shutdown);
+TestSuite(cluster_query_key, .init = setup, .fini = app_shutdown, .timeout = 300);
 
 Test(cluster_query_key, test_global_key)
 {
@@ -207,7 +207,7 @@ Test(cluster_query_key, test_global_key)
   stats_cluster_free(sc);
 }
 
-TestSuite(stats_query, .init = _initialize_counter_hash, .fini = app_shutdown);
+TestSuite(stats_query, .init = _initialize_counter_hash, .fini = app_shutdown, .timeout = 300);
 
 ParameterizedTestParameters(stats_query, test_stats_query_get_log_msg_out)
 {

@@ -114,4 +114,4 @@ teardown(void)
   app_shutdown();
 }
 
-TestSuite(appmodel, .init = setup, .fini = teardown);
+TestSuite(appmodel, .init = setup, .fini = teardown, .timeout = 300);

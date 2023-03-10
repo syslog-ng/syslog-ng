@@ -34,7 +34,7 @@
 #include <limits.h>
 #include <time.h>
 
-TestSuite(stats_external_counter, .init = app_startup, .fini = app_shutdown);
+TestSuite(stats_external_counter, .init = app_startup, .fini = app_shutdown, .timeout = 300);
 
 Test(stats_external_counter, register_logpipe_cluster_ctr)
 {

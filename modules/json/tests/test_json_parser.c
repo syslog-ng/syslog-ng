@@ -76,7 +76,7 @@ void teardown(void)
   app_shutdown();
 }
 
-TestSuite(json_parser,  .init = setup, .fini = teardown);
+TestSuite(json_parser,  .init = setup, .fini = teardown, .timeout = 300);
 
 Test(json_parser, test_json_parser_parses_well_formed_json_and_puts_results_in_message)
 {

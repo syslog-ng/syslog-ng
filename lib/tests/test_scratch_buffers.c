@@ -208,5 +208,5 @@ stats_test_teardown(void)
   stats_destroy();
 }
 
-TestSuite(scratch_buffers, .init = setup, .fini = teardown);
-TestSuite(scratch_buffers_stats, .init = setup, .fini = stats_test_teardown);
+TestSuite(scratch_buffers, .init = setup, .fini = teardown, .timeout = 300);
+TestSuite(scratch_buffers_stats, .init = setup, .fini = stats_test_teardown, .timeout = 300);
