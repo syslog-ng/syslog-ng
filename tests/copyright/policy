@@ -171,6 +171,7 @@ modules/diskq/tests/test_logqueue_disk\.c$
 modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
 modules/metrics-probe/label-template\.(c|h)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
+modules/darwinosl/darwinosl(|-parser|-plugin|-grammar|-source|-source-oslog|-source-persist)\.(c|h|m|ym)$
 modules/examples/inner-destinations/tls-test-validation
 modules/examples/sources/random-choice-generator
 modules/python/python-options.(c|h)$
@@ -181,6 +182,7 @@ scl/cee/.*\.conf$
 scl/logscale/logscale\.conf$
 scl/mariadb/.*\.conf$
 scl/python/python-modules\.conf$
+scl/darwinosl/plugin\.conf$
 scl/splunk/splunk\.conf$
 modules/python-modules/syslogng/modules/kubernetes/.*
 modules/ebpf/.*
