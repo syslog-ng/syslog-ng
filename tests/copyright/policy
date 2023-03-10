@@ -157,10 +157,12 @@ modules/diskq/tests/test_logqueue_disk\.c$
 modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
 modules/metrics-probe/label-template\.(c|h)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
+modules/darwinosl/darwinosl(|-parser|-plugin|-grammar|-source|-source-persist)\.(c|h|m|ym)$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/mariadb/.*\.conf$
 scl/python/python-modules\.conf$
+scl/darwinosl/plugin\.conf$
 modules/python-modules/syslogng/modules/kubernetes/.*
 modules/python-modules/syslogng/modules/example/.*
 modules/python-modules/setup\.py

@@ -1,0 +1,101 @@
+/*
+ * Copyright (c) 2023 Hofi <hofione@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "darwinosl-parser.h"
+}
+
+%code {
+
+#include "darwinosl-source.h"
+#include "cfg-parser.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "plugin.h"
+#include "cfg-grammar-internal.h"
+
+#include <string.h>
+
+}
+
+%define api.prefix {darwinosl_}
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_DARWIN_OSL
+%token KW_FILTER_PREDICATE
+%token KW_RESET_BOOKMARK_ON_FILTER_PREDICATE_CHANGE
+%token KW_START_FROM_NOW
+%token KW_ALWAYS_START_FROM_NOW
+%token KW_DO_NOT_USE_BOOKMARK
+%token KW_GO_REVERSE
+%token KW_LOG_FETCH_REOPEN_DELAY
+
+%type   <ptr> source_darwinosl
+%type   <ptr> source_darwinosl_params
+
+%%
+
+start
+  : LL_CONTEXT_SOURCE source_darwinosl { YYACCEPT; }
+  ;
+
+source_darwinosl
+	: KW_DARWIN_OSL
+    {
+      last_driver = *instance = darwinosl_sd_new(configuration);
+    }
+    '(' _inner_src_context_push source_darwinosl_options _inner_src_context_pop ')' { $$ = last_driver; }
+	;
+
+source_darwinosl_options
+	: source_darwinosl_option source_darwinosl_options
+	|
+	;
+
+/* implies threaded_source_driver_option, source_driver_option, source_option, msg_format_option, inner_source and driver_option */
+source_darwinosl_option
+  : KW_FILTER_PREDICATE '(' string ')'
+    {
+      darwinosl_sd_set_filter_predicate(last_driver, $3);
+      free($3);
+    }
+  | KW_RESET_BOOKMARK_ON_FILTER_PREDICATE_CHANGE '(' yesno ')'	{ darwinosl_sd_set_reset_postion_on_filter_change(last_driver, $3); }
+  | KW_START_FROM_NOW '(' yesno ')'	{ darwinosl_sd_set_start_from_now(last_driver, $3); }
+  | KW_ALWAYS_START_FROM_NOW '(' yesno ')'	{ darwinosl_sd_set_always_start_from_now(last_driver, $3); }
+  | KW_DO_NOT_USE_BOOKMARK '(' yesno ')'	{ darwinosl_sd_set_do_not_use_bookmark(last_driver, $3); }
+  | KW_GO_REVERSE '(' yesno ')'	{ darwinosl_sd_set_go_reverse(last_driver, $3); }
+  | KW_LOG_FETCH_REOPEN_DELAY '(' positive_integer ')'	{ darwinosl_sd_set_log_fetch_reopen_delay(last_driver, $3); }
+  | threaded_source_driver_option
+  ;
+
+/* INCLUDE_RULES */
+
+%%

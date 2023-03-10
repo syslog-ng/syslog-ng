@@ -231,6 +231,10 @@ AC_ARG_ENABLE(sun-streams,
               [  --enable-sun-streams    Enable support for Solaris /dev/log STREAMS device.]
               ,,enable_sun_streams="auto")
 
+AC_ARG_ENABLE(darwin-osl,
+              [  --enable-darwin-osl    Enable support for Darwin OS Log source. (default: auto)]
+              ,,enable_darwin_osl="auto")
+
 AC_ARG_ENABLE(openbsd-system-source,
               [  --enable-openbsd-system-source    Enable support for OpenBSD /dev/klog device.]
               ,,enable_openbsd_system_source="auto")
@@ -419,6 +423,7 @@ AM_PROG_CC_C_O
 if test "x$ac_cv_prog_cc_c99" = "xno"; then
 	AC_MSG_ERROR("C99 standard compliant C compiler required. Try GCC 3.x or later.")
 fi
+AC_PROG_OBJC([clang gcc cc])
 AC_PROG_YACC
 AM_PROG_LEX
 AC_PROG_MAKE_SET
@@ -1599,6 +1604,20 @@ else
 fi
 
 dnl ***************************************************************************
+dnl darwin osl headers/libraries
+dnl ***************************************************************************
+
+if test "x$enable_darwin_osl" = "xauto" || test "x$enable_darwin_osl" = "xyes"; then
+        if test $ostype = "Darwin"; then
+                AC_LANG_PUSH([Objective C])
+                AC_CHECK_HEADERS([OSLog/OSLog.h], [enable_darwin_osl=yes], [enable_darwin_osl=no])
+                AC_LANG_POP([Objective C])
+        else
+                enable_darwin_osl=no
+        fi
+fi
+
+dnl ***************************************************************************
 dnl misc features to be enabled
 dnl ***************************************************************************
 
@@ -1955,6 +1974,7 @@ AM_CONDITIONAL(ENABLE_SYSTEMD, [test "$enable_systemd" = "yes"])
 AM_CONDITIONAL(ENABLE_SYSTEMD_UNIT_INSTALL, [test "$systemdsystemunitdir" != ""])
 AM_CONDITIONAL(ENABLE_SQL, [test "$enable_sql" = "yes"])
 AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
+AM_CONDITIONAL(ENABLE_DARWIN_OSL, [test "$enable_darwin_osl" = "yes"])
 AM_CONDITIONAL(ENABLE_OPENBSD_SYSTEM_SOURCE, [test "$enable_openbsd_system_source" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
@@ -2103,6 +2123,7 @@ echo "  Install manual pages        : ${enable_manpages_install:=no}"
 echo " Modules:"
 echo "  Module search path          : ${module_path}"
 echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"
+echo "  Darwin OSL support (module) : ${enable_darwin_osl:=no}"
 echo "  OpenBSD syslog (module)     : ${enable_openbsd_system_source:=no}"
 echo "  SQL support (module)        : ${enable_sql:=no}"
 echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"
@@ -2116,10 +2137,10 @@ echo "  MQTT (module)               : ${enable_mqtt:=no}"
 echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Kafka support (module)      : ${enable_kafka:=no}"
+echo "  afsnmp support (module)     : ${enable_afsnmp:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}, microseconds: ${riemann_micros:=no}"
 echo "  Python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none}, packages: ${with_python_packages})"
 echo "  Python modules              : ${enable_python_modules:=no}"
 echo "  Java                        : ${enable_java:=no}"
 echo "  Java modules                : ${enable_java_modules:=no}"
-echo "  afsnmp module               : ${enable_afsnmp:=no}"
 echo "  native bindings             : ${enable_native:=no}"
