@@ -13,12 +13,13 @@ include tests/light/src/Makefile.am
 
 PYTEST_SUBDIR=
 PYTEST_VERBOSE=false
+PYTEST_OPTS=
 
 light-self-check pytest-self-check: python-venv
 	@$(PYTHON_VENV) -m pytest $(top_srcdir)/tests/light/src --showlocals --verbosity=3
 
 light-check pytest-check: python-venv
-	@$(PYTHON_VENV) -m pytest -o log_cli=$(PYTEST_VERBOSE) $(top_srcdir)/tests/light/functional_tests/$(PYTEST_SUBDIR) --installdir=${prefix} --showlocals --verbosity=3 --show-capture=no
+	@$(PYTHON_VENV) -m pytest -o log_cli=$(PYTEST_VERBOSE) $(top_srcdir)/tests/light/functional_tests/$(PYTEST_SUBDIR) $(PYTEST_OPTS) --installdir=${prefix} --showlocals --verbosity=3 --show-capture=no
 
 light-linters pytest-linters: python-venv
 	@find $(top_srcdir)/tests/light/ -name "*.py" \
