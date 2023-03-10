@@ -53,6 +53,7 @@ include modules/xml/Makefile.am
 include modules/regexp-parser/Makefile.am
 include modules/rate-limit-filter/Makefile.am
 include modules/metrics-probe/Makefile.am
+include modules/darwinosl/Makefile.am
 include modules/grpc/Makefile.am
 include modules/cloud-auth/Makefile.am
 
@@ -70,6 +71,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-map-value-pairs mod-tags-parser mod-xml \
 	mod-appmodel mod-openbsd mod-snmp mod-secure-logging \
 	mod-mqtt mod-regexp-parser mod-rate-limit-filter mod-metrics-probe \
+	mod-darwinosl
 	mod-grpc mod-cloud-auth
 
 modules modules/: ${SYSLOG_NG_MODULES}
