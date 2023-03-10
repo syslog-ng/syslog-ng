@@ -48,9 +48,28 @@ stateful_parser_emit_synthetic(StatefulParser *self, LogMessage *msg)
 }
 
 void
+_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+{
+  StatefulParser *self = (StatefulParser *) s;
+  LogPathOptions local_path_options = *path_options;
+  gboolean matched = TRUE;
+
+  /* if we consume messages into our state, then let's consider these
+   * messages matched, even though we are dropping them */
+
+  local_path_options.matched = &matched;
+  log_parser_queue_method(s, msg, &local_path_options);
+
+  /* propagate our "matched" state */
+  if (path_options->matched && !matched && self->inject_mode != LDBP_IM_AGGREGATE_ONLY)
+    *path_options->matched = FALSE;
+}
+
+void
 stateful_parser_init_instance(StatefulParser *self, GlobalConfig *cfg)
 {
   log_parser_init_instance(&self->super, cfg);
+  self->super.super.queue = _queue;
   self->inject_mode = LDBP_IM_PASSTHROUGH;
 }
 
