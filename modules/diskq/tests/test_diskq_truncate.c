@@ -200,7 +200,7 @@ _test_diskq_truncate(TruncateTestParams params)
 
   unlink(params.filename);
 
-  log_queue_unref(q);
+  _save_diskqueue(q);
   disk_queue_options_destroy(&options);
 }
 

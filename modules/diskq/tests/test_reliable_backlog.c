@@ -76,6 +76,8 @@ _init_diskq_for_test(const gchar *filename, gint64 size, gint64 membuf_size)
 static void
 _common_cleanup(LogQueueDiskReliable *dq, const gchar *file_name)
 {
+  gboolean persistent;
+  log_queue_disk_stop(&dq->super.super, &persistent);
   log_queue_unref(&dq->super.super);
   unlink(file_name);
   disk_queue_options_destroy(&options);

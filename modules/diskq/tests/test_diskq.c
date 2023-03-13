@@ -80,6 +80,8 @@ Test(diskq, testcase_zero_diskbuf_and_normal_acks)
                "%s: did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", __FUNCTION__, fed_messages,
                acked_messages);
 
+  gboolean persistent;
+  log_queue_disk_stop(q, &persistent);
   log_queue_unref(q);
   unlink(filename->str);
   g_string_free(filename, TRUE);
@@ -114,6 +116,9 @@ Test(diskq, testcase_zero_diskbuf_alternating_send_acks)
   cr_assert_eq(fed_messages, acked_messages,
                "%s: did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", __FUNCTION__, fed_messages,
                acked_messages);
+
+  gboolean persistent;
+  log_queue_disk_stop(q, &persistent);
   log_queue_unref(q);
   unlink(filename->str);
   g_string_free(filename, TRUE);
@@ -165,6 +170,9 @@ Test(diskq, testcase_ack_and_rewind_messages)
   send_some_messages(q, 500);
   cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: %d", __LINE__);
   log_queue_ack_backlog(q, 500);
+
+  gboolean persistent;
+  log_queue_disk_stop(q, &persistent);
   log_queue_unref(q);
   unlink(filename->str);
   g_string_free(filename, TRUE);
@@ -298,6 +306,8 @@ Test(diskq, testcase_with_threads)
         }
       g_thread_join(thread_consume);
 
+      gboolean persistent;
+      log_queue_disk_stop(q, &persistent);
       log_queue_unref(q);
       unlink(filename->str);
       g_string_free(filename, TRUE);
@@ -375,6 +385,8 @@ ParameterizedTest(restart_test_parameters *test_case, diskq, testcase_diskbuffer
   cr_assert_eq(qdisk_get_reader_head(disk_queue->qdisk), QDISK_RESERVED_SPACE,
                "Invalid read pointer!\n");
 
+  gboolean persistent;
+  log_queue_disk_stop(q, &persistent);
   log_queue_unref(q);
   unlink(filename);
   unlink(filename_corrupted_dq);
@@ -528,6 +540,8 @@ ParameterizedTest(diskq_tester_parameters_t *parameters, diskq, test_diskq_stati
 
   unlink(parameters->filename);
 
+  gboolean persistent;
+  log_queue_disk_stop(q, &persistent);
   log_queue_unref(q);
   disk_queue_options_destroy(&options);
 }
