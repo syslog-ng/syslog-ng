@@ -195,6 +195,8 @@ dqtool_cat(int argc, char *argv[])
           printf("%s", msg->str);
         }
 
+      gboolean persistent;
+      log_queue_disk_stop(lq, &persistent);
       log_queue_unref(lq);
     }
   g_string_free(msg, TRUE);
@@ -214,6 +216,9 @@ dqtool_info(int argc, char *argv[])
 
       if (!open_queue(argv[i], &lq, &options))
         continue;
+
+      gboolean persistent;
+      log_queue_disk_stop(lq, &persistent);
       log_queue_unref(lq);
     }
   return 0;
