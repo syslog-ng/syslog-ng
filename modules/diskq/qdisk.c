@@ -978,18 +978,17 @@ _save_queue(QDisk *self, GQueue *q, QDiskQueuePosition *q_pos)
 
   serialized = g_string_sized_new(4096);
   sa = serialize_string_archive_new(serialized);
-  while ((msg = g_queue_pop_head(q)))
+  for (gint i = 0; i < g_queue_get_length(q); i+=2)
     {
-
       /* NOTE: we might have some flow-controlled events on qout, when
        * saving them to disk, we ack them, they are restored as
        * non-flow-controlled entries later, but then we've saved them to
        * disk anyway. */
 
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(q), &path_options);
+      msg = g_queue_peek_nth(q, i);
+      POINTER_TO_LOG_PATH_OPTIONS(g_queue_peek_nth(q, i+1), &path_options);
       log_msg_serialize(msg, sa, 0);
-      log_msg_ack(msg, &path_options, AT_PROCESSED);
-      log_msg_unref(msg);
+
       if (string_reached_memory_limit(serialized))
         {
           if (!qdisk_write_serialized_string_to_file(self, serialized, &current_offset))
