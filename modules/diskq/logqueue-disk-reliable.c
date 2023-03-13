@@ -125,6 +125,7 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
               gint64 position;
               _pop_from_memory_queue_head(self->qbacklog, &position, &msg, &path_options);
 
+              log_queue_memory_usage_sub(s, log_msg_get_size(msg));
               log_msg_ack(msg, &path_options, AT_PROCESSED);
               log_msg_unref(msg);
             }
@@ -167,8 +168,6 @@ _move_message_from_qbacklog_to_qreliable(LogQueueDiskReliable *self)
   g_queue_push_head(self->qreliable, ptr_opt);
   g_queue_push_head(self->qreliable, ptr_msg);
   g_queue_push_head(self->qreliable, ptr_pos);
-
-  log_queue_memory_usage_add(&self->super.super, log_msg_get_size(ptr_msg));
 }
 
 static void
@@ -247,6 +246,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
         {
           log_msg_ref(msg);
           _push_to_memory_queue_tail(self->qbacklog, position, msg, path_options);
+          log_queue_memory_usage_add(s, log_msg_get_size(msg));
         }
 
       goto exit;
