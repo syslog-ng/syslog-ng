@@ -477,9 +477,9 @@ exit:
 }
 
 static void
-_free_queue(GQueue *q)
+_empty_queue(GQueue *q)
 {
-  while (!g_queue_is_empty(q))
+  while (q && !g_queue_is_empty(q))
     {
       LogMessage *lm;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -489,7 +489,6 @@ _free_queue(GQueue *q)
       log_msg_ack(lm, &path_options, AT_PROCESSED);
       log_msg_unref(lm);
     }
-  g_queue_free(q);
 }
 
 static void
@@ -497,12 +496,27 @@ _free(LogQueue *s)
 {
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
 
-  _free_queue(self->qoverflow);
-  self->qoverflow = NULL;
-  _free_queue(self->qout);
-  self->qout = NULL;
-  _free_queue(self->qbacklog);
-  self->qbacklog = NULL;
+
+  if (self->qout)
+    {
+      g_assert(g_queue_is_empty(self->qout));
+      g_queue_free(self->qout);
+      self->qout = NULL;
+    }
+
+  if (self->qbacklog)
+    {
+      g_assert(g_queue_is_empty(self->qbacklog));
+      g_queue_free(self->qbacklog);
+      self->qbacklog = NULL;
+    }
+
+  if (self->qoverflow)
+    {
+      g_assert(g_queue_is_empty(self->qoverflow));
+      g_queue_free(self->qoverflow);
+      self->qoverflow = NULL;
+    }
 
   log_queue_disk_free_method(&self->super);
 }
@@ -521,13 +535,19 @@ _save_queue(LogQueueDisk *s, gboolean *persistent)
 {
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
 
+  gboolean result = FALSE;
+
   if (qdisk_stop(s->qdisk, self->qout, self->qbacklog, self->qoverflow))
     {
       *persistent = TRUE;
-      return TRUE;
+      result = TRUE;
     }
 
-  return FALSE;
+  _empty_queue(self->qoverflow);
+  _empty_queue(self->qout);
+  _empty_queue(self->qbacklog);
+
+  return result;
 }
 
 static inline void
