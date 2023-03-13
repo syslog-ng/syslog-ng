@@ -72,8 +72,14 @@ _start(LogQueueDisk *s, const gchar *filename)
                                             .queue = &self->super.super
                                           };
 
+  DiskqMemusageLoaderState backlog_sum = { .index_in_queue = 0,
+                                            .item_number_per_message = ITEM_NUMBER_PER_MESSAGE,
+                                            .queue = &self->super.super
+                                          };
+
   g_queue_foreach(self->qout, _update_memory_usage_during_load, &qout_sum);
   g_queue_foreach(self->qoverflow, _update_memory_usage_during_load, &overflow_sum);
+  g_queue_foreach(self->qbacklog, _update_memory_usage_during_load, &backlog_sum);
 
   return retval;
 }
@@ -224,6 +230,7 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
         return;
       msg = g_queue_pop_head(self->qbacklog);
       POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qbacklog), &path_options);
+      log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
       log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
     }
@@ -248,7 +255,6 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
       g_queue_push_head(self->qout, ptr_msg);
 
       log_queue_queued_messages_inc(s);
-      log_queue_memory_usage_add(s, log_msg_get_size((LogMessage *)ptr_msg));
     }
 
   g_mutex_unlock(&s->lock);
@@ -287,6 +293,7 @@ _push_tail_qbacklog(LogQueueDiskNonReliable *self, LogMessage *msg, LogPathOptio
   log_msg_ref(msg);
   g_queue_push_tail(self->qbacklog, msg);
   g_queue_push_tail(self->qbacklog, LOG_PATH_OPTIONS_TO_POINTER(path_options));
+  log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
 }
 
 static LogMessage *
