@@ -82,6 +82,7 @@ log_queue_disk_get_filename(LogQueue *s)
 void
 log_queue_disk_free_method(LogQueueDisk *self)
 {
+  g_assert(!qdisk_started(self->qdisk));
   qdisk_free(self->qdisk);
 
   log_queue_free_method(&self->super);
