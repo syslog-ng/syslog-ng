@@ -58,9 +58,6 @@ healthcheck_stats_update(HealthCheckResult result, gpointer c)
 static void
 healthcheck_stats_timer_start(HealthCheckStats *self)
 {
-  if (self->options.freq <= 0)
-    return;
-
   iv_validate_now();
   self->timer.expires = iv_now;
   timespec_add_msec(&self->timer.expires, self->options.freq * 1000);
@@ -83,7 +80,8 @@ healthcheck_stats_run(gpointer c)
   healthcheck_run(hc, healthcheck_stats_update, self);
   healthcheck_unref(hc);
 
-  healthcheck_stats_timer_start(self);
+  if (self->options.freq > 0)
+    healthcheck_stats_timer_start(self);
 }
 
 static void
@@ -128,7 +126,8 @@ healthcheck_stats_init(HealthCheckStatsOptions *options)
   healthcheck_stats.timer.handler = healthcheck_stats_run;
   healthcheck_stats.timer.cookie = &healthcheck_stats;
 
-  healthcheck_stats_run(&healthcheck_stats);
+  if (healthcheck_stats.mainloop_io_worker_roundtrip_latency)
+    healthcheck_stats_run(&healthcheck_stats);
 }
 
 void

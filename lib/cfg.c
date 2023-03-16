@@ -526,6 +526,7 @@ cfg_new(gint version)
     self->use_uniqid = TRUE;
 
   stats_options_defaults(&self->stats_options);
+  healthcheck_stats_options_defaults(&self->healthcheck_options);
 
   self->min_iw_size_per_reader = 100;
 

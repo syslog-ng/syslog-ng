@@ -43,6 +43,7 @@ ValuePairsTransformSet *last_vp_transset;
 LogMatcherOptions *last_matcher_options;
 HostResolveOptions *last_host_resolve_options;
 StatsOptions *last_stats_options;
+HealthCheckStatsOptions *last_healthcheck_options;
 DNSCacheOptions *last_dns_cache_options;
 LogRewrite *last_rewrite;
 CfgArgs *last_block_args;

@@ -51,6 +51,9 @@
 #include "logthrsource/logthrfetcherdrv.h"
 #include "logthrdest/logthrdestdrv.h"
 
+#include "stats/stats.h"
+#include "healthcheck/healthcheck-stats.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -77,6 +80,7 @@ extern ValuePairsTransformSet *last_vp_transset;
 extern LogMatcherOptions *last_matcher_options;
 extern HostResolveOptions *last_host_resolve_options;
 extern StatsOptions *last_stats_options;
+extern HealthCheckStatsOptions *last_healthcheck_options;
 extern LogRewrite *last_rewrite;
 extern CfgArgs *last_block_args;
 extern DNSCacheOptions *last_dns_cache_options;
