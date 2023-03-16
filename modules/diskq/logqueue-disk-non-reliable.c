@@ -551,6 +551,12 @@ _stop(LogQueueDisk *s, gboolean *persistent)
   return result;
 }
 
+static gboolean
+_stop_corrupted(LogQueueDisk *s)
+{
+  return qdisk_stop(s->qdisk, NULL, NULL, NULL);
+}
+
 static inline void
 _set_logqueue_virtual_functions(LogQueue *s)
 {
@@ -569,6 +575,7 @@ _set_logqueue_disk_virtual_functions(LogQueueDisk *s)
 {
   s->start = _start;
   s->stop = _stop;
+  s->stop_corrupted = _stop_corrupted;
 }
 
 static inline void

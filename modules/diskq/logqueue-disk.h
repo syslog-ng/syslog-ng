@@ -42,6 +42,7 @@ struct _LogQueueDisk
   gboolean compaction;
   gboolean (*start)(LogQueueDisk *s, const gchar *filename);
   gboolean (*stop)(LogQueueDisk *s, gboolean *persistent);
+  gboolean (*stop_corrupted)(LogQueueDisk *s);
 };
 
 extern QueueType log_queue_disk_type;
