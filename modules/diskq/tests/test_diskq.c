@@ -68,7 +68,7 @@ Test(diskq, testcase_zero_diskbuf_and_normal_acks)
   filename = g_string_sized_new(32);
   g_string_printf(filename, "test-normal_acks.qf");
   unlink(filename->str);
-  log_queue_disk_load_queue(q, filename->str);
+  log_queue_disk_start(q, filename->str);
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
@@ -80,6 +80,8 @@ Test(diskq, testcase_zero_diskbuf_and_normal_acks)
                "%s: did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", __FUNCTION__, fed_messages,
                acked_messages);
 
+  gboolean persistent;
+  log_queue_disk_stop(q, &persistent);
   log_queue_unref(q);
   unlink(filename->str);
   g_string_free(filename, TRUE);
@@ -101,7 +103,7 @@ Test(diskq, testcase_zero_diskbuf_alternating_send_acks)
   filename = g_string_sized_new(32);
   g_string_printf(filename, "test-send_acks.qf");
   unlink(filename->str);
-  log_queue_disk_load_queue(q, filename->str);
+  log_queue_disk_start(q, filename->str);
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
@@ -114,6 +116,9 @@ Test(diskq, testcase_zero_diskbuf_alternating_send_acks)
   cr_assert_eq(fed_messages, acked_messages,
                "%s: did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", __FUNCTION__, fed_messages,
                acked_messages);
+
+  gboolean persistent;
+  log_queue_disk_stop(q, &persistent);
   log_queue_unref(q);
   unlink(filename->str);
   g_string_free(filename, TRUE);
@@ -143,7 +148,7 @@ Test(diskq, testcase_ack_and_rewind_messages)
   filename = g_string_sized_new(32);
   g_string_printf(filename, "test-rewind_and_acks.qf");
   unlink(filename->str);
-  log_queue_disk_load_queue(q, filename->str);
+  log_queue_disk_start(q, filename->str);
 
   fed_messages = 0;
   acked_messages = 0;
@@ -165,6 +170,9 @@ Test(diskq, testcase_ack_and_rewind_messages)
   send_some_messages(q, 500);
   cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: %d", __LINE__);
   log_queue_ack_backlog(q, 500);
+
+  gboolean persistent;
+  log_queue_disk_stop(q, &persistent);
   log_queue_unref(q);
   unlink(filename->str);
   g_string_free(filename, TRUE);
@@ -283,7 +291,7 @@ Test(diskq, testcase_with_threads)
       filename = g_string_sized_new(32);
       g_string_printf(filename, "test-%04d.qf", i);
       unlink(filename->str);
-      log_queue_disk_load_queue(q, filename->str);
+      log_queue_disk_start(q, filename->str);
 
       for (j = 0; j < FEEDERS; j++)
         {
@@ -298,6 +306,8 @@ Test(diskq, testcase_with_threads)
         }
       g_thread_join(thread_consume);
 
+      gboolean persistent;
+      log_queue_disk_stop(q, &persistent);
       log_queue_unref(q);
       unlink(filename->str);
       g_string_free(filename, TRUE);
@@ -347,7 +357,7 @@ ParameterizedTest(restart_test_parameters *test_case, diskq, testcase_diskbuffer
   unlink(filename);
   unlink(filename_corrupted_dq);
 
-  log_queue_disk_load_queue(q, filename);
+  log_queue_disk_start(q, filename);
   fed_messages = 0;
   feed_some_messages(q, 100);
   cr_assert_eq(fed_messages, 100, "Failed to push all messages to the disk-queue!\n");
@@ -375,6 +385,8 @@ ParameterizedTest(restart_test_parameters *test_case, diskq, testcase_diskbuffer
   cr_assert_eq(qdisk_get_reader_head(disk_queue->qdisk), QDISK_RESERVED_SPACE,
                "Invalid read pointer!\n");
 
+  gboolean persistent;
+  log_queue_disk_stop(q, &persistent);
   log_queue_unref(q);
   unlink(filename);
   unlink(filename_corrupted_dq);
@@ -458,7 +470,7 @@ testcase_diskq_prepare(DiskQueueOptions *options, diskq_tester_parameters_t *par
   cr_assert_eq(stats_counter_get(q->memory_usage), 0, "memory_usage: line: %d", __LINE__);
 
   unlink(parameters->filename);
-  log_queue_disk_load_queue(q, parameters->filename);
+  log_queue_disk_start(q, parameters->filename);
 
   return q;
 }
@@ -528,6 +540,8 @@ ParameterizedTest(diskq_tester_parameters_t *parameters, diskq, test_diskq_stati
 
   unlink(parameters->filename);
 
+  gboolean persistent;
+  log_queue_disk_stop(q, &persistent);
   log_queue_unref(q);
   disk_queue_options_destroy(&options);
 }

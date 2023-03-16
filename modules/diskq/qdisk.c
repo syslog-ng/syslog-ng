@@ -978,18 +978,17 @@ _save_queue(QDisk *self, GQueue *q, QDiskQueuePosition *q_pos)
 
   serialized = g_string_sized_new(4096);
   sa = serialize_string_archive_new(serialized);
-  while ((msg = g_queue_pop_head(q)))
+  for (gint i = 0; i < g_queue_get_length(q); i+=2)
     {
-
       /* NOTE: we might have some flow-controlled events on qout, when
        * saving them to disk, we ack them, they are restored as
        * non-flow-controlled entries later, but then we've saved them to
        * disk anyway. */
 
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(q), &path_options);
+      msg = g_queue_peek_nth(q, i);
+      POINTER_TO_LOG_PATH_OPTIONS(g_queue_peek_nth(q, i+1), &path_options);
       log_msg_serialize(msg, sa, 0);
-      log_msg_ack(msg, &path_options, AT_PROCESSED);
-      log_msg_unref(msg);
+
       if (string_reached_memory_limit(serialized))
         {
           if (!qdisk_write_serialized_string_to_file(self, serialized, &current_offset))
@@ -1018,22 +1017,31 @@ error:
   return success;
 }
 
-gboolean
-qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+static gboolean
+_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
   QDiskQueuePosition qout_pos = { 0 };
   QDiskQueuePosition qbacklog_pos = { 0 };
   QDiskQueuePosition qoverflow_pos = { 0 };
 
-  if (!self->options->reliable)
+  if (qout)
     {
       qout_pos.count = qout->length / 2;
-      qbacklog_pos.count = qbacklog->length / 2;
-      qoverflow_pos.count = qoverflow->length / 2;
+      if (!_save_queue(self, qout, &qout_pos))
+        return FALSE;
+    }
 
-      if (!_save_queue(self, qout, &qout_pos) ||
-          !_save_queue(self, qbacklog, &qbacklog_pos) ||
-          !_save_queue(self, qoverflow, &qoverflow_pos))
+  if (qbacklog)
+    {
+      qbacklog_pos.count = qbacklog->length / 2;
+      if (!_save_queue(self, qbacklog, &qbacklog_pos))
+        return FALSE;
+    }
+
+  if (qoverflow)
+    {
+      qoverflow_pos.count = qoverflow->length / 2;
+      if (!_save_queue(self, qoverflow, &qoverflow_pos))
         return FALSE;
     }
 
@@ -1079,6 +1087,8 @@ _close_file(QDisk *self)
 
   g_free(self->filename);
   self->filename = NULL;
+
+  self->file_size = 0;
 }
 
 static void
@@ -1486,7 +1496,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
   return FALSE;
 }
 
-void
+static void
 qdisk_init_instance(QDisk *self, DiskQueueOptions *options, const gchar *file_id)
 {
   self->fd = -1;
@@ -1496,10 +1506,17 @@ qdisk_init_instance(QDisk *self, DiskQueueOptions *options, const gchar *file_id
   self->file_id = file_id;
 }
 
-void
-qdisk_stop(QDisk *self)
+gboolean
+qdisk_stop(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
+  gboolean result = TRUE;
+
+  if (!self->options->read_only)
+    result = _save_state(self, qout, qbacklog, qoverflow);
+
   _close_file(self);
+
+  return result;
 }
 
 void

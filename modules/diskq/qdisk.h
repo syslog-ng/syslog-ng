@@ -67,13 +67,10 @@ void qdisk_empty_backlog(QDisk *self);
 gint64 qdisk_get_next_tail_position(QDisk *self);
 gint64 qdisk_get_next_head_position(QDisk *self);
 gboolean qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);
-void qdisk_init_instance(QDisk *self, DiskQueueOptions *options, const gchar *file_id);
-void qdisk_stop(QDisk *self);
+gboolean qdisk_stop(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);
 void qdisk_reset_file_if_empty(QDisk *self);
 gboolean qdisk_started(QDisk *self);
 void qdisk_free(QDisk *self);
-
-gboolean qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);
 
 DiskQueueOptions *qdisk_get_options(QDisk *self);
 gint64 qdisk_get_length(QDisk *self);

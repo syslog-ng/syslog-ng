@@ -45,7 +45,7 @@ _get_non_reliable_diskqueue(gchar *filename, DiskQueueOptions *options)
 {
   LogQueue *q = log_queue_disk_non_reliable_new(options, NULL);
   log_queue_set_use_backlog(q, FALSE);
-  log_queue_disk_load_queue(q, filename);
+  log_queue_disk_start(q, filename);
   return q;
 }
 
@@ -71,7 +71,7 @@ static void
 _save_diskqueue(LogQueue *q)
 {
   gboolean persistent;
-  log_queue_disk_save_queue(q, &persistent);
+  log_queue_disk_stop(q, &persistent);
   log_queue_unref(q);
 }
 
@@ -200,7 +200,7 @@ _test_diskq_truncate(TruncateTestParams params)
 
   unlink(params.filename);
 
-  log_queue_unref(q);
+  _save_diskqueue(q);
   disk_queue_options_destroy(&options);
 }
 
@@ -244,7 +244,7 @@ _create_reliable_diskqueue(gchar *filename, DiskQueueOptions *options, gboolean 
 
   q = log_queue_disk_reliable_new(options, "persist-name");
   log_queue_set_use_backlog(q, use_backlog);
-  log_queue_disk_load_queue(q, filename);
+  log_queue_disk_start(q, filename);
   return q;
 }
 

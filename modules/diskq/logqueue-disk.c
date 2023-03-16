@@ -44,9 +44,10 @@
 QueueType log_queue_disk_type = "DISK";
 
 gboolean
-log_queue_disk_save_queue(LogQueue *s, gboolean *persistent)
+log_queue_disk_stop(LogQueue *s, gboolean *persistent)
 {
   LogQueueDisk *self = (LogQueueDisk *) s;
+  g_assert(self->stop);
 
   if (!qdisk_started(self->qdisk))
     {
@@ -54,22 +55,19 @@ log_queue_disk_save_queue(LogQueue *s, gboolean *persistent)
       return TRUE;
     }
 
-  if (self->save_queue)
-    return self->save_queue(self, persistent);
-  return FALSE;
+  return self->stop(self, persistent);
 }
 
 gboolean
-log_queue_disk_load_queue(LogQueue *s, const gchar *filename)
+log_queue_disk_start(LogQueue *s, const gchar *filename)
 {
   LogQueueDisk *self = (LogQueueDisk *) s;
 
   /* qdisk portion is not yet started when this happens */
   g_assert(!qdisk_started(self->qdisk));
+  g_assert(self->start);
 
-  if (self->load_queue)
-    return self->load_queue(self, filename);
-  return FALSE;
+  return self->start(self, filename);
 }
 
 const gchar *
@@ -82,7 +80,7 @@ log_queue_disk_get_filename(LogQueue *s)
 void
 log_queue_disk_free_method(LogQueueDisk *self)
 {
-  qdisk_stop(self->qdisk);
+  g_assert(!qdisk_started(self->qdisk));
   qdisk_free(self->qdisk);
 
   log_queue_free_method(&self->super);
@@ -165,16 +163,49 @@ log_queue_disk_drop_message(LogQueueDisk *self, LogMessage *msg, const LogPathOp
     log_msg_drop(msg, path_options, AT_PROCESSED);
 }
 
+static gchar *
+_get_next_corrupted_filename(const gchar *filename)
+{
+  GString *corrupted_filename = g_string_new(NULL);
+
+  for (gint i = 1; i < 10000; i++)
+    {
+      if (i == 1)
+        g_string_printf(corrupted_filename, "%s.corrupted", filename);
+      else
+        g_string_printf(corrupted_filename, "%s.corrupted-%d", filename, i);
+
+      struct stat st;
+      if (stat(corrupted_filename->str, &st) < 0)
+        return g_string_free(corrupted_filename, FALSE);
+    }
+
+  msg_error("Failed to calculate filename for corrupted disk-queue",
+            evt_tag_str(EVT_TAG_FILENAME, filename));
+
+  return NULL;
+}
+
 static void
 _restart_diskq(LogQueueDisk *self)
 {
+  g_assert(self->start);
+  g_assert(self->stop);
+
   gchar *filename = g_strdup(qdisk_get_filename(self->qdisk));
-  DiskQueueOptions *options = qdisk_get_options(self->qdisk);
 
-  qdisk_stop(self->qdisk);
+  if (self->stop_corrupted)
+    {
+      self->stop_corrupted(self);
+    }
+  else
+    {
+      gboolean persistent;
+      self->stop(self, &persistent);
+    }
 
-  gchar *new_file = g_strdup_printf("%s.corrupted", filename);
-  if (rename(filename, new_file) < 0)
+  gchar *new_file = _get_next_corrupted_filename(filename);
+  if (!new_file || rename(filename, new_file) < 0)
     {
       msg_error("Moving corrupt disk-queue failed",
                 evt_tag_str(EVT_TAG_FILENAME, filename),
@@ -182,13 +213,8 @@ _restart_diskq(LogQueueDisk *self)
     }
   g_free(new_file);
 
-  if (self->restart)
-    self->restart(self, options);
+  self->start(self, filename);
 
-  if (self->start)
-    {
-      self->start(self, filename);
-    }
   g_free(filename);
 }
 

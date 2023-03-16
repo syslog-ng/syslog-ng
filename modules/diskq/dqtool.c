@@ -133,7 +133,7 @@ open_queue(char *filename, LogQueue **lq, DiskQueueOptions *options)
       *lq = log_queue_disk_non_reliable_new(options, NULL);
     }
 
-  if (!log_queue_disk_load_queue(*lq, filename))
+  if (!log_queue_disk_start(*lq, filename))
     {
       fprintf(stderr, "Error restoring disk buffer file.\n");
       return FALSE;
@@ -195,6 +195,8 @@ dqtool_cat(int argc, char *argv[])
           printf("%s", msg->str);
         }
 
+      gboolean persistent;
+      log_queue_disk_stop(lq, &persistent);
       log_queue_unref(lq);
     }
   g_string_free(msg, TRUE);
@@ -214,6 +216,9 @@ dqtool_info(int argc, char *argv[])
 
       if (!open_queue(argv[i], &lq, &options))
         continue;
+
+      gboolean persistent;
+      log_queue_disk_stop(lq, &persistent);
       log_queue_unref(lq);
     }
   return 0;

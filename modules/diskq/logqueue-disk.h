@@ -40,17 +40,16 @@ struct _LogQueueDisk
    * Similarly, QDisk should have a separate options class, which should only contain disk_buf_size, mem_buf_size, etc...
    */
   gboolean compaction;
-  gboolean (*save_queue)(LogQueueDisk *s, gboolean *persistent);
-  gboolean (*load_queue)(LogQueueDisk *s, const gchar *filename);
   gboolean (*start)(LogQueueDisk *s, const gchar *filename);
-  void (*restart)(LogQueueDisk *self, DiskQueueOptions *options);
+  gboolean (*stop)(LogQueueDisk *s, gboolean *persistent);
+  gboolean (*stop_corrupted)(LogQueueDisk *s);
 };
 
 extern QueueType log_queue_disk_type;
 
 const gchar *log_queue_disk_get_filename(LogQueue *self);
-gboolean log_queue_disk_save_queue(LogQueue *self, gboolean *persistent);
-gboolean log_queue_disk_load_queue(LogQueue *self, const gchar *filename);
+gboolean log_queue_disk_stop(LogQueue *self, gboolean *persistent);
+gboolean log_queue_disk_start(LogQueue *self, const gchar *filename);
 void log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, const gchar *qdisk_file_id,
                                   const gchar *persist_name);
 void log_queue_disk_restart_corrupted(LogQueueDisk *self);

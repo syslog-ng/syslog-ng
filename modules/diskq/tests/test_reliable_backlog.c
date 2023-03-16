@@ -62,7 +62,7 @@ _init_diskq_for_test(const gchar *filename, gint64 size, gint64 membuf_size)
   struct stat st;
   num_of_ack = 0;
   unlink(filename);
-  log_queue_disk_load_queue(q, filename);
+  log_queue_disk_start(q, filename);
   dq = (LogQueueDiskReliable *)q;
   lseek(dq->super.qdisk->fd, size - 1, SEEK_SET);
   ssize_t written = write(dq->super.qdisk->fd, "", 1);
@@ -76,6 +76,8 @@ _init_diskq_for_test(const gchar *filename, gint64 size, gint64 membuf_size)
 static void
 _common_cleanup(LogQueueDiskReliable *dq, const gchar *file_name)
 {
+  gboolean persistent;
+  log_queue_disk_stop(&dq->super.super, &persistent);
   log_queue_unref(&dq->super.super);
   unlink(file_name);
   disk_queue_options_destroy(&options);
