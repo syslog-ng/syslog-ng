@@ -1024,15 +1024,24 @@ _save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   QDiskQueuePosition qbacklog_pos = { 0 };
   QDiskQueuePosition qoverflow_pos = { 0 };
 
-  if (!self->options->reliable)
+  if (qout)
     {
       qout_pos.count = qout->length / 2;
-      qbacklog_pos.count = qbacklog->length / 2;
-      qoverflow_pos.count = qoverflow->length / 2;
+      if (!_save_queue(self, qout, &qout_pos))
+        return FALSE;
+    }
 
-      if (!_save_queue(self, qout, &qout_pos) ||
-          !_save_queue(self, qbacklog, &qbacklog_pos) ||
-          !_save_queue(self, qoverflow, &qoverflow_pos))
+  if (qbacklog)
+    {
+      qbacklog_pos.count = qbacklog->length / 2;
+      if (!_save_queue(self, qbacklog, &qbacklog_pos))
+        return FALSE;
+    }
+
+  if (qoverflow)
+    {
+      qoverflow_pos.count = qoverflow->length / 2;
+      if (!_save_queue(self, qoverflow, &qoverflow_pos))
         return FALSE;
     }
 
