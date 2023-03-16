@@ -20,6 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
+from src.common.blocking import wait_until_true
 from src.syslog_ng_config.renderer import render_statement
 
 
@@ -461,3 +462,44 @@ log {
 
     assert file_true.read_log() == "foobar\n"
     assert file_after.read_log() == "foobar\n"
+
+
+def test_consuming_messages_into_correlation_state_does_not_cause_else_branches_to_be_processed(config, syslog_ng):
+    test_config = """
+
+log {
+    # generate two messages
+    source(genmsg);
+    source(genmsg);
+
+    rewrite {
+        set("PROG" value("PROGRAM"));
+    };
+
+    if {
+        parser {
+            grouping-by(key("$PROGRAM")
+                timeout(1)
+                trigger("$(context-length)" == 2)
+                aggregate(value("MESSAGE", "$MSG correlated\n"))
+                inject-mode(aggregate-only));
+        };
+        destination(dest_true);
+    } else {
+        destination(dest_false);
+    };
+    destination(dest_after);
+};
+"""
+    (file_true, file_false, file_after, file_fallback) = create_config(config, test_config)
+    syslog_ng.start(config)
+
+    assert wait_until_true(lambda: "processed" in file_true.get_stats() and file_true.get_stats()["processed"] == 1)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_after.get_stats()["processed"] == 1
+    assert "processed" not in file_fallback.get_stats()
+
+    assert file_true.read_log() == "foobar correlated\n"
+    assert file_after.read_log() == "foobar correlated\n"
