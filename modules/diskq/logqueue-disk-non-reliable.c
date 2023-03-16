@@ -29,30 +29,18 @@
 
 #define ITEM_NUMBER_PER_MESSAGE 2
 
-typedef struct
-{
-  guint index_in_queue;
-  guint item_number_per_message;
-  LogQueue *queue;
-} DiskqMemusageLoaderState;
-
-static gboolean
-_object_is_message_in_position(guint index_in_queue, guint item_number_per_message)
-{
-  return !(index_in_queue % item_number_per_message);
-}
-
 static void
-_update_memory_usage_during_load(gpointer data, gpointer s)
+_update_memory_usage_during_load(LogQueueDiskNonReliable *s, GQueue *memory_queue, guint offset)
 {
-  DiskqMemusageLoaderState *state = (DiskqMemusageLoaderState *)s;
+  if (g_queue_get_length(memory_queue) == offset)
+    return;
 
-  if (_object_is_message_in_position(state->index_in_queue, state->item_number_per_message))
+  GList *first_link = g_queue_peek_nth_link(memory_queue, offset);
+  for (GList *msg_link = first_link; msg_link; msg_link = msg_link->next->next)
     {
-      LogMessage *msg = (LogMessage *)data;
-      log_queue_memory_usage_add(state->queue, log_msg_get_size(msg));
+      LogMessage *msg = (LogMessage *) msg_link->data;
+      log_queue_memory_usage_add(&s->super.super, log_msg_get_size(msg));
     }
-  state->index_in_queue++;
 }
 
 static gboolean
@@ -60,26 +48,15 @@ _start(LogQueueDisk *s, const gchar *filename)
 {
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
 
+  guint qout_length_before_start = g_queue_get_length(self->qout);
+  guint qbacklog_length_before_start = g_queue_get_length(self->qbacklog);
+  guint qoverflow_length_before_start = g_queue_get_length(self->qoverflow);
+
   gboolean retval = qdisk_start(s->qdisk, filename, self->qout, self->qbacklog, self->qoverflow);
 
-  DiskqMemusageLoaderState qout_sum = { .index_in_queue = 0,
-                                        .item_number_per_message = ITEM_NUMBER_PER_MESSAGE,
-                                        .queue = &self->super.super
-                                      };
-
-  DiskqMemusageLoaderState overflow_sum = { .index_in_queue = 0,
-                                            .item_number_per_message = ITEM_NUMBER_PER_MESSAGE,
-                                            .queue = &self->super.super
-                                          };
-
-  DiskqMemusageLoaderState backlog_sum = { .index_in_queue = 0,
-                                            .item_number_per_message = ITEM_NUMBER_PER_MESSAGE,
-                                            .queue = &self->super.super
-                                          };
-
-  g_queue_foreach(self->qout, _update_memory_usage_during_load, &qout_sum);
-  g_queue_foreach(self->qoverflow, _update_memory_usage_during_load, &overflow_sum);
-  g_queue_foreach(self->qbacklog, _update_memory_usage_during_load, &backlog_sum);
+  _update_memory_usage_during_load(self, self->qout, qout_length_before_start);
+  _update_memory_usage_during_load(self, self->qbacklog, qbacklog_length_before_start);
+  _update_memory_usage_during_load(self, self->qoverflow, qoverflow_length_before_start);
 
   return retval;
 }
