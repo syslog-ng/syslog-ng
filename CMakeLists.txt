@@ -376,10 +376,15 @@ add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNING
 # Sanatizer configuration
 set(SANITIZER "OFF" CACHE STRING "Enable clang sanitizer")
 
-set_property(CACHE SANITIZER PROPERTY STRINGS OFF address undefined)
+set_property(CACHE SANITIZER PROPERTY STRINGS OFF address thread undefined address-all)
 
 if (SANITIZER)
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -fsanitize=${SANITIZER} -fno-omit-frame-pointer")
+  SET(SANITIZE_MODE "${SANITIZER}")
+  if (SANITIZER MATCHES address-all)
+    SET(SANITIZE_MODE "address")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize-address-use-after-scope -fsanitize-address-use-after-return=runtime")
+  endif()
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -fsanitize=${SANITIZE_MODE} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 endif()
 
 
