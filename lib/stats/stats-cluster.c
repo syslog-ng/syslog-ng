@@ -215,6 +215,13 @@ stats_cluster_key_cloned_free(StatsClusterKey *self)
 }
 
 void
+stats_cluster_key_free(StatsClusterKey *self)
+{
+  stats_cluster_key_cloned_free(self);
+  g_free(self);
+}
+
+void
 stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data)
 {
   gint type;

@@ -16,7 +16,8 @@ statsinclude_HEADERS = \
 	lib/stats/stats-query.h			\
 	lib/stats/stats-query-commands.h \
 	lib/stats/stats-cluster-logpipe.h \
-	lib/stats/stats-cluster-single.h
+	lib/stats/stats-cluster-single.h \
+	lib/stats/stats-cluster-key-builder.h
 
 stats_sources = \
 	lib/stats/stats.c			\
@@ -30,6 +31,7 @@ stats_sources = \
 	lib/stats/stats-query-commands.c \
 	lib/stats/stats-cluster-logpipe.c \
 	lib/stats/stats-cluster-single.c \
+	lib/stats/stats-cluster-key-builder.c \
 	$(statsaggregator_sources)
 
 include lib/stats/tests/Makefile.am
