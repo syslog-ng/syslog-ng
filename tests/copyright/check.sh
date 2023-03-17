@@ -301,7 +301,7 @@ extract_holder_license() {
 
  local EXT="`echo "$FILE" | sed -r "s~^.*\.([^.]+)$~\1~"`"
  case "$EXT" in
-  c|h|ym|java)
+  c|h|m|ym|java)
     extract_holder_license_c
     ;;
   ac|am|cmake|conf|sh|pl|py)
