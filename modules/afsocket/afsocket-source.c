@@ -1073,11 +1073,21 @@ afsocket_sd_register_stats(AFSocketSourceDriver *self)
       stats_lock();
       {
         StatsClusterKey sc_key;
-        stats_cluster_single_key_legacy_set_with_name(&sc_key,
-                                                      self->transport_mapper->stats_source | SCS_SOURCE,
-                                                      self->super.super.group,
-                                                      afsocket_sd_format_name(&self->super.super.super),
-                                                      "connections");
+
+        StatsClusterLabel labels[] =
+        {
+          stats_cluster_label("id", self->super.super.id),
+          stats_cluster_label("direction", "input"),
+          stats_cluster_label("driver_instance", afsocket_sd_format_name(&self->super.super.super)),
+        };
+
+        stats_cluster_single_key_set(&sc_key, "socket_connections", labels, G_N_ELEMENTS(labels));
+
+        stats_cluster_single_key_add_legacy_alias_with_name(&sc_key,
+                                                            self->transport_mapper->stats_source | SCS_SOURCE,
+                                                            self->super.super.group,
+                                                            afsocket_sd_format_name(&self->super.super.super),
+                                                            "connections");
         stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
         _connections_count_set(self, 0);
       }
@@ -1093,11 +1103,19 @@ afsocket_sd_unregister_stats(AFSocketSourceDriver *self)
       stats_lock();
       {
         StatsClusterKey sc_key;
-        stats_cluster_single_key_legacy_set_with_name(&sc_key,
-                                                      self->transport_mapper->stats_source | SCS_SOURCE,
-                                                      self->super.super.group,
-                                                      afsocket_sd_format_name(&self->super.super.super),
-                                                      "connections");
+        StatsClusterLabel labels[] =
+        {
+          stats_cluster_label("id", self->super.super.id),
+          stats_cluster_label("direction", "input"),
+          stats_cluster_label("driver_instance", afsocket_sd_format_name(&self->super.super.super)),
+        };
+
+        stats_cluster_single_key_set(&sc_key, "socket_connections", labels, G_N_ELEMENTS(labels));
+        stats_cluster_single_key_add_legacy_alias_with_name(&sc_key,
+                                                            self->transport_mapper->stats_source | SCS_SOURCE,
+                                                            self->super.super.group,
+                                                            afsocket_sd_format_name(&self->super.super.super),
+                                                            "connections");
         stats_unregister_external_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
       }
       stats_unlock();
