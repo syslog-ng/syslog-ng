@@ -1010,7 +1010,7 @@ afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
 }
 
 static void
-_make_connection_conter_stats_queryable(AFSocketSourceDriver *self)
+afsocket_sd_register_stats(AFSocketSourceDriver *self)
 {
   if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
@@ -1030,7 +1030,7 @@ _make_connection_conter_stats_queryable(AFSocketSourceDriver *self)
 }
 
 static void
-_stop_connection_counter_stats_queryable(AFSocketSourceDriver *self)
+afsocket_sd_unregister_stats(AFSocketSourceDriver *self)
 {
   if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
@@ -1070,7 +1070,7 @@ afsocket_sd_init_method(LogPipe *s)
 
   gboolean success = afsocket_sd_restore_kept_alive_connections(self) && afsocket_sd_open_listener(self);
   if (success)
-    _make_connection_conter_stats_queryable(self);
+    afsocket_sd_register_stats(self);
 
   return success;
 }
@@ -1083,7 +1083,7 @@ afsocket_sd_deinit_method(LogPipe *s)
   afsocket_sd_save_connections(self);
   afsocket_sd_save_listener(self);
 
-  _stop_connection_counter_stats_queryable(self);
+  afsocket_sd_unregister_stats(self);
 
   if (self->dynamic_window_pool)
     afsocket_sd_save_dynamic_window_pool(self);
