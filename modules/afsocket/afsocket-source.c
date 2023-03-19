@@ -548,7 +548,9 @@ static void
 _listen_fd_init(AFSocketSourceDriver *self)
 {
   IV_FD_INIT(&self->listen_fd);
-  self->listen_fd.fd = self->fd;
+
+  /* the fd is initialized only when the listening socket is opened */
+  self->listen_fd.fd = -1;
   self->listen_fd.cookie = self;
   self->listen_fd.handler_in = afsocket_sd_accept;
 }
@@ -556,7 +558,8 @@ _listen_fd_init(AFSocketSourceDriver *self)
 static void
 _listen_fd_start(AFSocketSourceDriver *self)
 {
-  iv_fd_register(&self->listen_fd);
+  if (self->listen_fd.fd != -1)
+    iv_fd_register(&self->listen_fd);
 }
 
 static void
@@ -671,6 +674,7 @@ static void
 _init_watches(AFSocketSourceDriver *self)
 {
   _dynamic_window_timer_init(self);
+  _listen_fd_init(self);
 }
 
 static void
@@ -832,7 +836,7 @@ _sd_open_stream_finalize(gpointer arg)
       return FALSE;
     }
 
-  _listen_fd_init(self);
+  self->listen_fd.fd = self->fd;
   afsocket_sd_start_watches(self);
   char buf[256];
   msg_info("Accepting connections",
