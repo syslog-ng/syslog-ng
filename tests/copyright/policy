@@ -67,6 +67,7 @@ modules/python-modules/requirements\.lock
 ###########################################################################
                                                  LGPLv2.1+_SSL,non-balabit
 
+cmake/Modules/FindLIBBPF\.cmake
 lib/timeutils/zonecache.[ch]$
 modules/secure-logging
 modules/secure-logging/tests

@@ -1,13 +1,10 @@
+find_package(LIBBPF)
+
 module_switch(ENABLE_EBPF "Enable ebpf module (requires ebpf toolchain)" LIBBPF_FOUND)
 
 if (NOT ENABLE_EBPF)
   return()
 endif()
-
-find_program(BPF_CC clang)
-find_program(BPFTOOL bpftool)
-pkg_get_variable(LIBBPF_INCLUDE libbpf includedir)
-set(BPF_CFLAGS -nostdinc -isystem `${BPF_CC} -print-file-name=include` -target bpf -I${CMAKE_CURRENT_BINARY_DIR} -I${LIBBPF_INCLUDE} -fPIC -O2 -g)
 
 add_custom_command(OUTPUT vmlinux.h
                    COMMAND ${BPFTOOL} btf dump file /sys/kernel/btf/vmlinux format c >vmlinux.h)
