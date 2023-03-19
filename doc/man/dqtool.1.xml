@@ -25,7 +25,7 @@
     <refsection xml:id="dqtool-mandescription">
       <title>Description</title>
       <para>NOTE: The dqtool application is distributed with the  system logging application, and is usually part of the syslog-ng package. The latest version of the syslog-ng application is available at the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/log-management">official syslog-ng website</link>.</para>
-      <para>This manual page is only an abstract, for the complete documentation of syslog-ng, see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/support/documentation/">The  Administrator Guide</link>.</para>
+      <para>This manual page is only an abstract, for the complete documentation of syslog-ng, see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.syslog-ng.com/technical-documents/doc/syslog-ng-open-source-edition/3.37/administration-guide">The  Administrator Guide</link>.</para>
       <para>The <command>dqtool</command> application is a utility that can be used to display and format the messages stored in a disk-buffer file.</para>
     </refsection>
     <refsection xml:id="dqtool-cat">
@@ -95,7 +95,7 @@ Mar  3 10:52:05 tristram localprg[1234]: seq: 0000011631, runid: 1267609923, sta
         <link linkend="syslog-ng.8"><command>syslog-ng</command>(8)</link>
       </para>
       <note version="5.0">
-        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  4.1 Administrator Guide</command></link></para>
+        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.syslog-ng.com/technical-documents/doc/syslog-ng-open-source-edition/3.37/administration-guide"><command>The  4.1 Administrator Guide</command></link></para>
         <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
         <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
       </note>
