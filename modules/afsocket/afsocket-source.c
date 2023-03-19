@@ -1013,6 +1013,15 @@ afsocket_sd_restore_dynamic_window_pool(AFSocketSourceDriver *self)
   return TRUE;
 }
 
+static void
+afsocket_sd_create_dynamic_window_pool(AFSocketSourceDriver *self)
+{
+  if (self->dynamic_window_size != 0)
+    {
+      self->dynamic_window_pool = dynamic_window_pool_new(self->dynamic_window_size);
+      dynamic_window_pool_init(self->dynamic_window_pool);
+    }
+}
 
 static void
 afsocket_sd_drop_dynamic_window_pool(AFSocketSourceDriver *self)
@@ -1081,13 +1090,7 @@ afsocket_sd_init_method(LogPipe *s)
     return FALSE;
 
   if (!afsocket_sd_restore_dynamic_window_pool(self))
-    {
-      if (self->dynamic_window_size != 0)
-        {
-          self->dynamic_window_pool = dynamic_window_pool_new(self->dynamic_window_size);
-          dynamic_window_pool_init(self->dynamic_window_pool);
-        }
-    }
+    afsocket_sd_create_dynamic_window_pool(self);
 
   afsocket_sd_restore_kept_alive_connections(self);
   afsocket_sd_register_stats(self);
