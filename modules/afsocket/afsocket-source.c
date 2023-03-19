@@ -900,7 +900,11 @@ _sd_open_dgram(AFSocketSourceDriver *self)
   if (!(self->connections || afsocket_sd_process_connection(self, NULL, self->bind_addr, sock)))
     return FALSE;
 
-  return transport_mapper_init(self->transport_mapper);
+  if (!transport_mapper_init(self->transport_mapper))
+    return FALSE;
+
+  afsocket_sd_start_watches(self);
+  return TRUE;
 }
 
 static gboolean
@@ -954,9 +958,9 @@ afsocket_sd_save_listener(AFSocketSourceDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
+  afsocket_sd_stop_watches(self);
   if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
-      afsocket_sd_stop_watches(self);
       if (!self->connections_kept_alive_across_reloads)
         {
           msg_verbose("Closing listener fd",
