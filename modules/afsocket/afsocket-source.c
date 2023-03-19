@@ -819,7 +819,7 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
 }
 
 static gboolean
-_finalize_init(gpointer arg)
+_sd_open_stream_finalize(gpointer arg)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *)arg;
   /* set up listening source */
@@ -876,7 +876,7 @@ _sd_open_stream(AFSocketSourceDriver *self)
         return self->super.super.optional;
     }
   self->fd = sock;
-  return transport_mapper_async_init(self->transport_mapper, _finalize_init, self);
+  return transport_mapper_async_init(self->transport_mapper, _sd_open_stream_finalize, self);
 }
 
 static gboolean
