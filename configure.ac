@@ -247,6 +247,10 @@ AC_ARG_ENABLE(linux-caps,
               [  --enable-linux-caps     Enable support for managing Linux capabilities (default: auto)]
               ,,enable_linux_caps="auto")
 
+AC_ARG_ENABLE(ebpf,
+              [  --enable-ebpf           Enable support for loading of eBPF programs (default: no)]
+              ,,enable_ebpf="no")
+
 AC_ARG_ENABLE(gcov,
               [  --enable-gcov           Enable coverage profiling (default: no)]
               ,,enable_gcov="no")
@@ -1760,6 +1764,26 @@ if test "x$enable_systemd" = "xyes"; then
         fi
 fi
 
+
+if test "x$enable_ebpf" = "xyes"; then
+	PKG_CHECK_MODULES(LIBBPF, libbpf >= "1.1.0")
+
+	# we are using a distinct C compiler for compiling BPF code and
+	# pkg-config removes builtin paths from its output.  Reference it
+	# directly.
+
+	LIBBPF_INCLUDE=`$PKG_CONFIG --variable includedir libbpf`
+        AC_PATH_PROG(BPFTOOL, bpftool)
+        AC_PATH_PROG(BPF_CC, clang)
+
+	if test "$BPFTOOL" = "" -o "$BPF_CC" = ""; then
+		AC_MSG_ERROR([eBPF toolchain is required to build with eBPF (bpftool and clang)])
+	fi
+
+        AC_SUBST(BPFTOOL)
+        AC_SUBST(BPF_CC)
+fi
+
 dnl ***************************************************************************
 dnl check if we have timezone variable in <time.h>
 dnl ***************************************************************************
@@ -1943,6 +1967,7 @@ AC_DEFINE_UNQUOTED(ENABLE_SPOOF_SOURCE, `enable_value $enable_spoof_source`, [En
 AC_DEFINE_UNQUOTED(ENABLE_IPV6, `enable_value $enable_ipv6`, [Enable IPv6 support])
 AC_DEFINE_UNQUOTED(ENABLE_TCP_WRAPPER, `enable_value $enable_tcp_wrapper`, [Enable TCP wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable Linux capability management support])
+AC_DEFINE_UNQUOTED(ENABLE_EBPF, `enable_value $enable_ebpf`, [Enable Linux eBPF support])
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
 AC_DEFINE_UNQUOTED(ENABLE_KAFKA, `enable_value $enable_kafka`, [Enable kafka support])
@@ -1956,6 +1981,7 @@ AM_CONDITIONAL(ENABLE_SYSTEMD_UNIT_INSTALL, [test "$systemdsystemunitdir" != ""]
 AM_CONDITIONAL(ENABLE_SQL, [test "$enable_sql" = "yes"])
 AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 AM_CONDITIONAL(ENABLE_OPENBSD_SYSTEM_SOURCE, [test "$enable_openbsd_system_source" = "yes"])
+AM_CONDITIONAL(ENABLE_EBPF, [test "$enable_ebpf" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
@@ -2042,6 +2068,7 @@ AC_SUBST(JSON_CFLAGS)
 AC_SUBST(JSON_DEPENDENCY)
 AC_SUBST(IVYKIS_SUBDIRS)
 AC_SUBST(RESOLV_LIBS)
+AC_SUBST(LIBBPF_INCLUDE)
 
 AC_SUBST(CURRDATE)
 AC_SUBST(RELEASE_TAG)
@@ -2122,4 +2149,5 @@ echo "  Python modules              : ${enable_python_modules:=no}"
 echo "  Java                        : ${enable_java:=no}"
 echo "  Java modules                : ${enable_java_modules:=no}"
 echo "  afsnmp module               : ${enable_afsnmp:=no}"
+echo "  eBPF module                 : ${enable_ebpf:=no}"
 echo "  native bindings             : ${enable_native:=no}"

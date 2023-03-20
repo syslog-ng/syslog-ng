@@ -113,7 +113,7 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot, gpointe
 
   if (_slot_lookup(slots, slot, object))
     {
-      msg_debug("SignalSlotConnector::connect",
+      msg_trace("SignalSlotConnector::connect",
                 evt_tag_printf("already_connected",
                                "connect(connector=%p,signal=%s,slot=%p, object=%p)",
                                self, signal, slot, object));
@@ -127,7 +127,7 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot, gpointe
       g_hash_table_insert(self->connections, (gpointer)signal, new_slots);
     }
 
-  msg_debug("SignalSlotConnector::connect",
+  msg_trace("SignalSlotConnector::connect",
             evt_tag_printf("new connection registered",
                            "connect(connector=%p,signal=%s,slot=%p,object=%p)",
                            self, signal, slot, object));
@@ -156,7 +156,7 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot, gpoi
   if (!slots)
     goto exit_;
 
-  msg_debug("SignalSlotConnector::disconnect",
+  msg_trace("SignalSlotConnector::disconnect",
             evt_tag_printf("connector", "%p", self),
             evt_tag_str("signal", signal),
             evt_tag_printf("slot", "%p", slot),
@@ -171,7 +171,7 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot, gpoi
   GList *slotfunctor_node = g_list_find_custom(slots, &slotfunctor, _slot_functor_cmp);
   if (!slotfunctor_node)
     {
-      msg_debug("SignalSlotConnector::disconnect slot object not found",
+      msg_trace("SignalSlotConnector::disconnect slot object not found",
                 evt_tag_printf("connector", "%p", self),
                 evt_tag_str("signal", signal),
                 evt_tag_printf("slot", "%p", slot),
@@ -184,7 +184,7 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot, gpoi
   if (!new_slots)
     {
       g_hash_table_remove(self->connections, signal);
-      msg_debug("SignalSlotConnector::disconnect last slot is disconnected, unregister signal",
+      msg_trace("SignalSlotConnector::disconnect last slot is disconnected, unregister signal",
                 evt_tag_printf("connector", "%p", self),
                 evt_tag_str("signal", signal),
                 evt_tag_printf("slot", "%p", slot),
@@ -217,7 +217,7 @@ signal_slot_emit(SignalSlotConnector *self, Signal signal, gpointer user_data)
 {
   g_assert(signal != NULL);
 
-  msg_debug("SignalSlotConnector::emit",
+  msg_trace("SignalSlotConnector::emit",
             evt_tag_printf("connector", "%p", self),
             evt_tag_str("signal", signal),
             evt_tag_printf("user_data", "%p", user_data));
@@ -226,7 +226,7 @@ signal_slot_emit(SignalSlotConnector *self, Signal signal, gpointer user_data)
 
   if (!slots)
     {
-      msg_debug("SignalSlotConnector: unregistered signal emitted",
+      msg_trace("SignalSlotConnector: unregistered signal emitted",
                 evt_tag_printf("connector", "%p", self),
                 evt_tag_str("signal", signal));
       return;

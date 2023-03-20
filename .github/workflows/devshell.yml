@@ -46,6 +46,7 @@ jobs:
             --enable-all-modules
             --disable-java
             --disable-java-modules
+            --enable-ebpf
             --with-python=3
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
           "

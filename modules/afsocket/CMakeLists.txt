@@ -5,6 +5,7 @@ set(AFSOCKET_SOURCES
     afsocket-source.h
     afsocket-dest.c
     afsocket-dest.h
+    afsocket-signals.h
     socket-options.c
     socket-options.h
     transport-mapper.c

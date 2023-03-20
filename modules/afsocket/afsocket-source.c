@@ -30,6 +30,7 @@
 #include "mainloop.h"
 #include "poll-fd-events.h"
 #include "timeutils/misc.h"
+#include "afsocket-signals.h"
 
 #include <string.h>
 #include <sys/types.h>
@@ -839,6 +840,20 @@ _finalize_init(gpointer arg)
 }
 
 static gboolean
+afsocket_sd_open_socket(AFSocketSourceDriver *self, gint *sock)
+{
+  if (!transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr,
+                                    self->bind_addr, AFSOCKET_DIR_RECV, sock))
+    return FALSE;
+
+  AFSocketSetupSocketSignalData signal_data = {0};
+
+  signal_data.sock = *sock;
+  EMIT(self->super.super.super.signal_slot_connector, signal_afsocket_setup_socket, &signal_data);
+  return !signal_data.failure;
+}
+
+static gboolean
 _sd_open_stream(AFSocketSourceDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
@@ -856,9 +871,7 @@ _sd_open_stream(AFSocketSourceDriver *self)
     {
       if (!afsocket_sd_acquire_socket(self, &sock))
         return self->super.super.optional;
-      if (sock == -1
-          && !transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr,
-                                           self->bind_addr, AFSOCKET_DIR_RECV, &sock))
+      if (sock == -1 && !afsocket_sd_open_socket(self, &sock))
         return self->super.super.optional;
     }
   self->fd = sock;
@@ -873,9 +886,7 @@ _sd_open_dgram(AFSocketSourceDriver *self)
     {
       if (!afsocket_sd_acquire_socket(self, &sock))
         return self->super.super.optional;
-      if (sock == -1
-          && !transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr,
-                                           self->bind_addr, AFSOCKET_DIR_RECV, &sock))
+      if (sock == -1 && !afsocket_sd_open_socket(self, &sock))
         return self->super.super.optional;
     }
   self->fd = -1;

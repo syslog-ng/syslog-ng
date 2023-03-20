@@ -67,6 +67,7 @@ modules/python-modules/requirements\.lock
 ###########################################################################
                                                  LGPLv2.1+_SSL,non-balabit
 
+cmake/Modules/FindLIBBPF\.cmake
 lib/timeutils/zonecache.[ch]$
 modules/secure-logging
 modules/secure-logging/tests
@@ -91,6 +92,7 @@ libtest/mock-logpipe\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
 syslog-ng-ctl/commands/log-level.[ch]
+modules/afsocket/afsocket-signals.h
 modules/python-modules/syslogng/confgen\.py
 modules/python-modules/syslogng/dest\.py
 modules/python-modules/syslogng/logger\.py
@@ -162,6 +164,7 @@ scl/cee/.*\.conf$
 scl/mariadb/.*\.conf$
 scl/python/python-modules\.conf$
 modules/python-modules/syslogng/modules/kubernetes/.*
+modules/ebpf/.*
 modules/python-modules/syslogng/modules/example/.*
 modules/python-modules/setup\.py
 scripts/build-python-venv\.sh
