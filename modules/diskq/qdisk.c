@@ -1242,6 +1242,8 @@ _ensure_header_byte_order(QDisk *self)
 static gboolean
 _open_file(QDisk *self, const gchar *filename)
 {
+  g_assert(filename);
+
   gint fd = open(filename, O_LARGEFILE | (self->options->read_only ? O_RDONLY : O_RDWR), 0600);
   if (fd < 0)
     {
