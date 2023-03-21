@@ -78,6 +78,12 @@ log_queue_queued_messages_reset(LogQueue *self)
   atomic_gssize_set_and_get(&self->metrics.owned.queued_messages, queue_length);
 }
 
+void
+log_queue_dropped_messages_inc(LogQueue *self)
+{
+  stats_counter_inc(self->metrics.shared.dropped_messages);
+}
+
 /*
  * When this is called, it is assumed that the output thread is currently
  * not running (since this is the function that wakes it up), thus we can
