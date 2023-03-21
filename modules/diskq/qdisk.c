@@ -304,10 +304,6 @@ _posix_preallocate(QDisk *self, gint64 size)
       return TRUE;
     }
 
-  msg_error("Failed to preallocate queue file",
-            evt_tag_str("filename", self->filename),
-            evt_tag_errno("error", result));
-
   return FALSE;
 }
 
@@ -325,22 +321,12 @@ _compat_preallocate(QDisk *self, gint64 size)
   for (gint i = 0; i < buf_write_iterations; i++)
     {
       if (!pwrite_strict(self->fd, buf, buf_size, pos))
-        {
-          msg_error("Failed to preallocate queue file",
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_error("error"));
-          return FALSE;
-        }
+        return FALSE;
       pos += buf_size;
     }
 
   if (!pwrite_strict(self->fd, buf, additional_write_size, pos))
-    {
-      msg_error("Failed to preallocate queue file",
-                evt_tag_str("filename", self->filename),
-                evt_tag_error("error"));
-      return FALSE;
-    }
+    return FALSE;
 
   g_assert(pos + additional_write_size == size);
 
@@ -365,6 +351,9 @@ _preallocate_qdisk_file(QDisk *self, gint64 size)
 
   if (!result)
     {
+      msg_error("Failed to preallocate queue file",
+                evt_tag_str("filename", self->filename),
+                evt_tag_error("error"));
       return FALSE;
     }
 
