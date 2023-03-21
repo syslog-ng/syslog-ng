@@ -34,6 +34,22 @@ typedef struct _LogQueue LogQueue;
 
 typedef const char *QueueType;
 
+typedef struct _LogQueueMetrics
+{
+  struct
+  {
+    StatsCounterItem *queued_messages;
+    StatsCounterItem *dropped_messages;
+    StatsCounterItem *memory_usage;
+  } shared;
+
+  struct
+  {
+    atomic_gssize memory_usage;
+    atomic_gssize queued_messages;
+  } owned;
+} LogQueueMetrics;
+
 struct _LogQueue
 {
   QueueType type;
@@ -45,15 +61,8 @@ struct _LogQueue
   GTimeVal last_throttle_check;
 
   gchar *persist_name;
-  StatsCounterItem *queued_messages;
-  StatsCounterItem *dropped_messages;
-  StatsCounterItem *memory_usage;
 
-  struct
-  {
-    atomic_gssize memory_usage;
-    atomic_gssize queued_messages;
-  } stats_cache;
+  LogQueueMetrics metrics;
 
   GMutex lock;
   LogQueuePushNotifyFunc parallel_push_notify;
@@ -210,6 +219,8 @@ void log_queue_queued_messages_sub(LogQueue *self, gsize value);
 void log_queue_queued_messages_inc(LogQueue *self);
 void log_queue_queued_messages_dec(LogQueue *self);
 void log_queue_queued_messages_reset(LogQueue *self);
+
+void log_queue_dropped_messages_inc(LogQueue *self);
 
 void log_queue_push_notify(LogQueue *self);
 void log_queue_reset_parallel_push(LogQueue *self);

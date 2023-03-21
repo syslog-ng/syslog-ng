@@ -183,27 +183,27 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
   StatsClusterKey sc_key;
   stats_lock();
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
-  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &q->queued_messages);
+  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &q->metrics.shared.queued_messages);
   stats_cluster_single_key_legacy_set_with_name(&sc_key, SCS_DESTINATION, q->persist_name, NULL, "memory_usage");
-  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &q->memory_usage);
+  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &q->metrics.shared.memory_usage);
   stats_unlock();
 
   log_queue_set_use_backlog(q, TRUE);
 
-  cr_assert_eq(atomic_gssize_racy_get(&q->queued_messages->value), 0);
+  cr_assert_eq(atomic_gssize_racy_get(&q->metrics.shared.queued_messages->value), 0);
 
   fed_messages = 0;
   acked_messages = 0;
   feed_some_messages(q, 1);
-  cr_assert_eq(stats_counter_get(q->queued_messages), 1);
-  cr_assert_neq(stats_counter_get(q->memory_usage), 0);
-  gint size_when_single_msg = stats_counter_get(q->memory_usage);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 1);
+  cr_assert_neq(stats_counter_get(q->metrics.shared.memory_usage), 0);
+  gint size_when_single_msg = stats_counter_get(q->metrics.shared.memory_usage);
 
   for (i = 0; i < 10; i++)
     feed_some_messages(q, 10);
 
-  cr_assert_eq(stats_counter_get(q->queued_messages), 101);
-  cr_assert_eq(stats_counter_get(q->memory_usage), 101*size_when_single_msg);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 101);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 101*size_when_single_msg);
 
   send_some_messages(q, fed_messages);
   log_queue_ack_backlog(q, fed_messages);
@@ -284,19 +284,19 @@ Test(logqueue, log_queue_fifo_rewind_all_and_memory_usage)
   StatsClusterKey sc_key;
   stats_lock();
   stats_cluster_single_key_legacy_set_with_name(&sc_key, SCS_DESTINATION, q->persist_name, NULL, "memory_usage");
-  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &q->memory_usage);
+  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &q->metrics.shared.memory_usage);
   stats_unlock();
 
   feed_some_messages(q, 1);
-  gint size_when_single_msg = stats_counter_get(q->memory_usage);
+  gint size_when_single_msg = stats_counter_get(q->metrics.shared.memory_usage);
 
   feed_some_messages(q, 9);
-  cr_assert_eq(stats_counter_get(q->memory_usage), 10*size_when_single_msg);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 10*size_when_single_msg);
 
   send_some_messages(q, 10);
-  cr_assert_eq(stats_counter_get(q->memory_usage), 0);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 0);
   log_queue_rewind_backlog_all(q);
-  cr_assert_eq(stats_counter_get(q->memory_usage), 10*size_when_single_msg);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 10*size_when_single_msg);
 
   log_queue_unref(q);
 }
@@ -347,9 +347,9 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages,
   feed_empty_messages(q, &non_flow_controlled_path, 2);
   feed_empty_messages(q, &flow_controlled_path, fifo_size);
 
-  cr_assert_eq(stats_counter_get(q->dropped_messages), 3);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.dropped_messages), 3);
 
-  gint queued_messages = stats_counter_get(q->queued_messages);
+  gint queued_messages = stats_counter_get(q->metrics.shared.queued_messages);
   send_some_messages(q, queued_messages);
   log_queue_ack_backlog(q, queued_messages);
 
@@ -404,9 +404,9 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages_thre
   GThread *thread = g_thread_new(NULL, _flow_control_feed_thread, q);
   g_thread_join(thread);
 
-  cr_assert_eq(stats_counter_get(q->dropped_messages), 3);
+  cr_assert_eq(stats_counter_get(q->metrics.shared.dropped_messages), 3);
 
-  gint queued_messages = stats_counter_get(q->queued_messages);
+  gint queued_messages = stats_counter_get(q->metrics.shared.queued_messages);
   send_some_messages(q, queued_messages);
   log_queue_ack_backlog(q, queued_messages);
 

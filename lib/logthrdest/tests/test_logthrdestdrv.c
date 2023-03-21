@@ -183,7 +183,7 @@ Test(logthrdestdrv, driver_can_be_instantiated_and_one_message_is_properly_proce
   cr_assert(stats_counter_get(dd->super.processed_messages) == 1);
   cr_assert(stats_counter_get(dd->super.written_messages) == 1);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->metrics.shared.memory_usage) == 0);
   cr_assert(dd->super.shared_seq_num == 2,
             "seq_num expected to be 1 larger than the amount of messages generated, found %d", dd->super.shared_seq_num);
 }
@@ -210,7 +210,7 @@ Test(logthrdestdrv, non_local_messages_dont_increment_seq_num)
   cr_assert(stats_counter_get(dd->super.processed_messages) == 1);
   cr_assert(stats_counter_get(dd->super.written_messages) == 1);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->metrics.shared.memory_usage) == 0);
   cr_assert(dd->super.shared_seq_num == 1,
             "seq_num expected to be unchanged while non-local messages get derilered, found %d, expected: %d",
             dd->super.shared_seq_num, 1);
@@ -367,7 +367,7 @@ Test(logthrdestdrv, batched_set_of_messages_are_successfully_delivered)
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 10);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->metrics.shared.memory_usage) == 0);
   cr_assert(dd->super.shared_seq_num == 11,
             "seq_num expected to be 1 larger than the number of insert attempts, found %d", dd->super.shared_seq_num);
 }
@@ -409,7 +409,7 @@ Test(logthrdestdrv, batched_set_of_messages_are_dropped_as_a_whole)
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 0);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 10);
-  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->metrics.shared.memory_usage) == 0);
   cr_assert(dd->super.shared_seq_num == 11, "%d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("dropped while sending message");
 }
@@ -474,7 +474,7 @@ Test(logthrdestdrv,
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 0);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 10);
-  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->metrics.shared.memory_usage) == 0);
   cr_assert(dd->super.shared_seq_num == dd->super.retries_on_error_max * 10 + 1,
             "seq_num needs to be one larger than the number of insert attempts, found %d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("Error occurred while");
@@ -547,7 +547,7 @@ Test(logthrdestdrv,
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 10);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->metrics.shared.memory_usage) == 0);
   cr_assert(dd->super.shared_seq_num == total_attempts * 10 + 1, "%d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("Error occurred while");
 }
@@ -621,7 +621,7 @@ Test(logthrdestdrv,
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 10);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->metrics.shared.memory_usage) == 0);
   cr_assert(dd->super.shared_seq_num == total_attempts * 10 + 1, "%d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("Server disconnected");
 }
@@ -649,7 +649,7 @@ Test(logthrdestdrv, throttle_is_applied_to_delivery_and_causes_flush_to_be_calle
   cr_assert(stats_counter_get(dd->super.processed_messages) == 20);
   cr_assert(stats_counter_get(dd->super.written_messages) == 20);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->metrics.shared.memory_usage) == 0);
   cr_assert(dd->super.shared_seq_num == 21, "%d", dd->super.shared_seq_num);
 }
 
@@ -799,9 +799,9 @@ Test(logthrdestdrv, test_explicit_ack_accept)
 
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 10);
-  cr_assert(stats_counter_get(dd->super.worker.instance.queue->queued_messages) == 0);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->metrics.shared.queued_messages) == 0);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->metrics.shared.memory_usage) == 0);
   cr_assert(dd->super.shared_seq_num == 11, "%d", dd->super.shared_seq_num);
 }
 

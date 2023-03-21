@@ -72,14 +72,15 @@ test_diskq_become_full(gboolean reliable, const gchar *filename)
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL);
-  stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &q->dropped_messages);
-  stats_counter_set(q->dropped_messages, 0);
+  stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &q->metrics.shared.dropped_messages);
+  stats_counter_set(q->metrics.shared.dropped_messages, 0);
   stats_unlock();
   unlink(filename);
   log_queue_disk_start(q, filename);
   feed_some_messages(q, 1000);
 
-  cr_assert_eq(atomic_gssize_racy_get(&q->dropped_messages->value), 1000, "Bad dropped message number (reliable: %s)",
+  cr_assert_eq(atomic_gssize_racy_get(&q->metrics.shared.dropped_messages->value), 1000,
+               "Bad dropped message number (reliable: %s)",
                reliable ? "TRUE" : "FALSE");
 
   gboolean persistent;
