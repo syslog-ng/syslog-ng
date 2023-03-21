@@ -57,7 +57,9 @@ typedef struct _QDisk QDisk;
 QDisk *qdisk_new(DiskQueueOptions *options, const gchar *file_id);
 
 gboolean qdisk_is_space_avail(QDisk *self, gint at_least);
+gint64 qdisk_get_max_useful_space(QDisk *self);
 gint64 qdisk_get_empty_space(QDisk *self);
+gint64 qdisk_get_used_useful_space(QDisk *self);
 gboolean qdisk_push_tail(QDisk *self, GString *record);
 gboolean qdisk_pop_head(QDisk *self, GString *record);
 gboolean qdisk_remove_head(QDisk *self);

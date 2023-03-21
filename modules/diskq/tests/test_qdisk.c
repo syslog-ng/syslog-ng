@@ -377,6 +377,203 @@ Test(qdisk, prealloc)
   cleanup_qdisk(filename, qdisk);
 }
 
+static gboolean
+_serialize_len_of_zeroes(SerializeArchive *sa, gpointer user_data)
+{
+  const gsize len = GPOINTER_TO_UINT(user_data);
+  gchar *data = g_malloc0(len);
+
+  gint result = serialize_archive_write_bytes(sa, data, len);
+
+  g_free(data);
+  return result;
+}
+
+static void
+_push_data_to_qdisk(QDisk *qdisk, gsize len)
+{
+  cr_assert(len > sizeof(guint32));
+
+  gsize len_to_serialize = len - sizeof(guint32);
+  GString *buffer = g_string_new(NULL);
+  GError *error = NULL;
+
+  cr_assert(qdisk_serialize(buffer, _serialize_len_of_zeroes, GUINT_TO_POINTER(len_to_serialize), &error));
+  cr_assert(qdisk_push_tail(qdisk, buffer));
+
+  g_string_free(buffer, TRUE);
+}
+
+static void
+_pop_and_ack(QDisk *qdisk)
+{
+  GString *buffer = g_string_new(NULL);
+
+  cr_assert(qdisk_pop_head(qdisk, buffer));
+  cr_assert(qdisk_ack_backlog(qdisk));
+
+  g_string_free(buffer, TRUE);
+}
+
+static void
+_assert_backlog_and_write_head_pos(QDisk *qdisk, gint64 backlog_head_pos, gint64 write_head_pos)
+{
+  cr_assert_eq(qdisk_get_backlog_head(qdisk), QDISK_RESERVED_SPACE + backlog_head_pos,
+               "Backlog head positions does not match. Expected: %ld Actual: %ld",
+               QDISK_RESERVED_SPACE + backlog_head_pos, qdisk_get_backlog_head(qdisk));
+  cr_assert_eq(qdisk_get_writer_head(qdisk), QDISK_RESERVED_SPACE + write_head_pos,
+               "Write head positions does not match. Expected: %ld Actual: %ld",
+               QDISK_RESERVED_SPACE + backlog_head_pos, qdisk_get_writer_head(qdisk));
+}
+
+Test(qdisk, get_empty_space_non_wrapped)
+{
+  const gsize small_amount_of_data = 32;
+  const gsize useful_size = MIN_DISK_BUF_SIZE - QDISK_RESERVED_SPACE;
+
+  const gchar *filename = "test_get_empty_space_non_wrapped.rqf";
+  DiskQueueOptions *opts = construct_diskq_options(TDISKQ_RELIABLE, MIN_DISK_BUF_SIZE);
+  disk_queue_options_set_truncate_size_ratio(opts, 1);
+  QDisk *qdisk = qdisk_new(opts, "TEST");
+  cr_assert(qdisk_start(qdisk, filename, NULL, NULL, NULL));
+
+  // 0   RESERVED=B=W              DBS
+  // |---|------- ... -------------|
+  //      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  _assert_backlog_and_write_head_pos(qdisk, 0, 0);
+  cr_assert_eq(qdisk_get_empty_space(qdisk), useful_size);
+
+  _push_data_to_qdisk(qdisk, small_amount_of_data);
+  // 0   RESERVED=B      W         DBS
+  // |---|--- ... -------|---------|
+  //                      ^^^^^^^^^
+  _assert_backlog_and_write_head_pos(qdisk, 0, small_amount_of_data);
+  cr_assert_eq(qdisk_get_empty_space(qdisk), useful_size - small_amount_of_data);
+
+  _pop_and_ack(qdisk);
+  // 0   RESERVED           B=W    DBS
+  // |---|------- ... ------|------|
+  //      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  _assert_backlog_and_write_head_pos(qdisk, small_amount_of_data, small_amount_of_data);
+  cr_assert_eq(qdisk_get_empty_space(qdisk), useful_size);
+
+  qdisk_reset_file_if_empty(qdisk);
+  _push_data_to_qdisk(qdisk, small_amount_of_data);
+  _push_data_to_qdisk(qdisk, useful_size - small_amount_of_data);
+  _pop_and_ack(qdisk);
+  // 0   RESERVED      B           DBS=W
+  // |---|---- ... ----|-----------|
+  //      ^^^^^^^^^^^^^
+  _assert_backlog_and_write_head_pos(qdisk, small_amount_of_data, useful_size);
+  cr_assert_eq(qdisk_get_empty_space(qdisk), small_amount_of_data);
+  _pop_and_ack(qdisk);
+  qdisk_reset_file_if_empty(qdisk);
+
+  _push_data_to_qdisk(qdisk, small_amount_of_data);
+  _push_data_to_qdisk(qdisk, useful_size);
+  _pop_and_ack(qdisk);
+  // 0   RESERVED      B           DBS    W
+  // |---|---- ... ----|-----------|------|
+  //      ^^^^^^^^^^^^^
+  _assert_backlog_and_write_head_pos(qdisk, small_amount_of_data, small_amount_of_data + useful_size);
+  cr_assert_eq(qdisk_get_empty_space(qdisk), small_amount_of_data);
+  _pop_and_ack(qdisk);
+  qdisk_reset_file_if_empty(qdisk);
+
+  _push_data_to_qdisk(qdisk, useful_size);
+  _pop_and_ack(qdisk);
+  // 0   RESERVED                  DBS=B=W
+  // |---|------ ... --------------|
+  //      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  _assert_backlog_and_write_head_pos(qdisk, useful_size, useful_size);
+  cr_assert_eq(qdisk_get_empty_space(qdisk), useful_size);
+  qdisk_reset_file_if_empty(qdisk);
+
+  _push_data_to_qdisk(qdisk, useful_size + small_amount_of_data);
+  _pop_and_ack(qdisk);
+  // 0   RESERVED                  DBS    B=W
+  // |---|------ ... --------------|------|
+  //      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  _assert_backlog_and_write_head_pos(qdisk, useful_size + small_amount_of_data, useful_size + small_amount_of_data);
+  cr_assert_eq(qdisk_get_empty_space(qdisk), useful_size);
+  qdisk_reset_file_if_empty(qdisk);
+
+  // These cases cannot be achieved with recent qdisk logic, only with older versions:
+  //
+  // 0   RESERVED                  DBS   B   W
+  // |---|------ ... --------------|-----|---|
+  //      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  //
+  // and
+  //
+  // 0   RESERVED                  DBS=B     W
+  // |---|------ ... --------------|---------|
+  //      ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  cr_assert(qdisk_stop(qdisk, NULL, NULL, NULL));
+  cleanup_qdisk(filename, qdisk);
+}
+
+Test(qdisk, get_empty_space_wrapped)
+{
+  const gsize small_amount_of_data = 32;
+  const gsize useful_size = MIN_DISK_BUF_SIZE - QDISK_RESERVED_SPACE;
+
+  const gchar *filename = "test_get_empty_space_wrapped.rqf";
+  DiskQueueOptions *opts = construct_diskq_options(TDISKQ_RELIABLE, MIN_DISK_BUF_SIZE);
+  disk_queue_options_set_truncate_size_ratio(opts, 1);
+  QDisk *qdisk = qdisk_new(opts, "TEST");
+  cr_assert(qdisk_start(qdisk, filename, NULL, NULL, NULL));
+
+  _push_data_to_qdisk(qdisk, small_amount_of_data * 2);
+  _push_data_to_qdisk(qdisk, useful_size);
+  _pop_and_ack(qdisk);
+  _push_data_to_qdisk(qdisk, small_amount_of_data);
+  // 0   RESERVED    W   B         DBS   FS
+  // |---|--- ... ---|---|---------|-----|
+  //                  ^^^
+  _assert_backlog_and_write_head_pos(qdisk, small_amount_of_data * 2, small_amount_of_data);
+  cr_assert_eq(qdisk_get_empty_space(qdisk), small_amount_of_data);
+  _pop_and_ack(qdisk);
+  _pop_and_ack(qdisk);
+  qdisk_reset_file_if_empty(qdisk);
+
+  _push_data_to_qdisk(qdisk, useful_size);
+  _pop_and_ack(qdisk);
+  _push_data_to_qdisk(qdisk, small_amount_of_data);
+  // 0   RESERVED      W           DBS=B
+  // |---|---- ... ----|-----------|
+  //                    ^^^^^^^^^^^
+  _assert_backlog_and_write_head_pos(qdisk, useful_size, small_amount_of_data);
+  cr_assert_eq(qdisk_get_empty_space(qdisk), useful_size - small_amount_of_data);
+  _pop_and_ack(qdisk);
+  qdisk_reset_file_if_empty(qdisk);
+
+  _push_data_to_qdisk(qdisk, useful_size + small_amount_of_data);
+  _pop_and_ack(qdisk);
+  _push_data_to_qdisk(qdisk, small_amount_of_data);
+  // 0   RESERVED      W           DBS   B
+  // |---|---- ... ----|-----------|-----|
+  //                    ^^^^^^^^^^^
+  _assert_backlog_and_write_head_pos(qdisk, useful_size + small_amount_of_data, small_amount_of_data);
+  cr_assert_eq(qdisk_get_empty_space(qdisk), useful_size - small_amount_of_data);
+  _pop_and_ack(qdisk);
+  qdisk_reset_file_if_empty(qdisk);
+
+  // These cases cannot be achieved with recent qdisk logic, only with older versions:
+  //
+  // 0   RESERVED                  DBS   W   B
+  // |---|------ ... --------------|-----|---|
+  //
+  // or
+  //
+  // 0   RESERVED                  DBS=W     B
+  // |---|------ ... --------------|---------|
+
+  cr_assert(qdisk_stop(qdisk, NULL, NULL, NULL));
+  cleanup_qdisk(filename, qdisk);
+}
+
 static void
 setup(void)
 {
