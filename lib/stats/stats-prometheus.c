@@ -29,7 +29,7 @@
 #include <string.h>
 
 static gchar *
-stats_format_prometheus_sanitize_value(const gchar *value)
+stats_format_prometheus_sanitize_label_value(const gchar *value)
 {
   GString *sanitized_value = scratch_buffers_alloc();
   append_unsafe_utf8_as_escaped_binary(sanitized_value, value, -1, "\"");
@@ -74,7 +74,7 @@ _append_formatted_label(GString *serialized_labels, const StatsClusterLabel *lab
 
   g_string_append_printf(serialized_labels, "%s=\"%s\"",
                          stats_format_prometheus_sanitize_name(label->name),
-                         stats_format_prometheus_sanitize_value(label->value));
+                         stats_format_prometheus_sanitize_label_value(label->value));
 }
 
 static inline gboolean
@@ -143,14 +143,14 @@ _format_legacy(StatsCluster *sc, gint type, StatsCounterItem *counter)
     {
       gboolean has_id = !_is_str_empty(sc->key.legacy.id);
       if (has_id)
-        g_string_append_printf(labels, "%s=\"%s\"", "id", stats_format_prometheus_sanitize_value(sc->key.legacy.id));
+        g_string_append_printf(labels, "%s=\"%s\"", "id", stats_format_prometheus_sanitize_label_value(sc->key.legacy.id));
 
       if (!_is_str_empty(sc->key.legacy.instance))
         {
           if (has_id)
             g_string_append_c(labels, ',');
           g_string_append_printf(labels, "%s=\"%s\"", "stat_instance",
-                                 stats_format_prometheus_sanitize_value(sc->key.legacy.instance));
+                                 stats_format_prometheus_sanitize_label_value(sc->key.legacy.instance));
         }
     }
 
