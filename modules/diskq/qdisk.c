@@ -1545,7 +1545,7 @@ _init_qdisk_file(QDisk *self)
 }
 
 static gboolean
-_create_qdisk_file(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+_create_qdisk_file(QDisk *self, const gchar *filename)
 {
   if (!_create_file(self, filename))
     goto error;
@@ -1572,11 +1572,11 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
     return _load_qdisk_file(self, filename, qout, qbacklog, qoverflow);
 
   if (filename)
-    return _create_qdisk_file(self, filename, qout, qbacklog, qoverflow);
+    return _create_qdisk_file(self, filename);
 
   gchar next_filename[256];
   if (_next_filename(self, next_filename, sizeof(next_filename)))
-    return _create_qdisk_file(self, next_filename, qout, qbacklog, qoverflow);
+    return _create_qdisk_file(self, next_filename);
 
   return FALSE;
 }
