@@ -80,7 +80,7 @@ struct _QDisk
   gchar *filename;
   const gchar *file_id;
   gint fd;
-  gint64 file_size;
+  gint64 cached_file_size;
   QDiskFileHeader *hdr;
   DiskQueueOptions *options;
 };
@@ -131,7 +131,7 @@ _correct_position_if_max_size_is_reached(QDisk *self, gint64 position)
 {
   if (G_UNLIKELY(self->hdr->use_v1_wrap_condition))
     {
-      gboolean position_is_eof = position >= self->file_size;
+      gboolean position_is_eof = position >= self->cached_file_size;
       if (position_is_eof)
         {
           position = QDISK_RESERVED_SPACE;
@@ -246,14 +246,14 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
 static inline gboolean
 _ftruncate_would_reduce_file(QDisk *self, gint64 expected_size)
 {
-  gint64 expected_size_change = expected_size - self->file_size;
+  gint64 expected_size_change = expected_size - self->cached_file_size;
   return expected_size_change < 0;
 }
 
 static inline gboolean
 _possible_size_reduction_reaches_truncate_threshold(QDisk *self, gint64 expected_size)
 {
-  gint64 possible_size_reduction = self->file_size - expected_size;
+  gint64 possible_size_reduction = self->cached_file_size - expected_size;
   gint64 truncate_threshold = (gint64)(qdisk_get_maximum_size(self) * self->options->truncate_size_ratio);
   return possible_size_reduction >= truncate_threshold;
 }
@@ -272,7 +272,7 @@ _maybe_truncate_file(QDisk *self, gint64 expected_size)
 
   if (ftruncate(self->fd, (off_t) expected_size) == 0)
     {
-      self->file_size = expected_size;
+      self->cached_file_size = expected_size;
       return;
     }
 
@@ -283,14 +283,14 @@ _maybe_truncate_file(QDisk *self, gint64 expected_size)
     }
   else
     {
-      self->file_size = (gint64) st.st_size;
+      self->cached_file_size = (gint64) st.st_size;
     }
 
   msg_error("Error truncating disk-queue file",
             evt_tag_error("error"),
             evt_tag_str("filename", self->filename),
             evt_tag_long("expected-size", expected_size),
-            evt_tag_long("file-size", self->file_size),
+            evt_tag_long("file-size", self->cached_file_size),
             evt_tag_int("fd", self->fd));
 }
 
@@ -301,7 +301,7 @@ _posix_preallocate(QDisk *self, gint64 size)
   gint result = posix_fallocate(self->fd, 0, (off_t) size);
   if (result == 0)
     {
-      self->file_size = size;
+      self->cached_file_size = size;
       return TRUE;
     }
 
@@ -337,7 +337,7 @@ _compat_preallocate(QDisk *self, gint64 size)
           return FALSE;
         }
       pos += buf_size;
-      self->file_size = pos;
+      self->cached_file_size = pos;
     }
 
   if (!pwrite_strict(self->fd, buf, additional_write_size, pos))
@@ -348,8 +348,8 @@ _compat_preallocate(QDisk *self, gint64 size)
       return FALSE;
     }
 
-  self->file_size = pos + additional_write_size;
-  g_assert(self->file_size == size);
+  self->cached_file_size = pos + additional_write_size;
+  g_assert(self->cached_file_size == size);
 
   return TRUE;
 }
@@ -488,13 +488,13 @@ qdisk_push_tail(QDisk *self, GString *record)
 
   if (self->hdr->write_head > MAX(self->hdr->backlog_head, self->hdr->read_head))
     {
-      if (self->file_size > self->hdr->write_head)
+      if (self->cached_file_size > self->hdr->write_head)
         {
           _maybe_truncate_file(self, self->hdr->write_head);
         }
       else
         {
-          self->file_size = self->hdr->write_head;
+          self->cached_file_size = self->hdr->write_head;
         }
 
       if (_has_position_reached_max_size(self, self->hdr->write_head)
@@ -1088,7 +1088,7 @@ _close_file(QDisk *self)
   g_free(self->filename);
   self->filename = NULL;
 
-  self->file_size = 0;
+  self->cached_file_size = 0;
 }
 
 static void
@@ -1325,7 +1325,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
       if (!_load_non_reliable_queues(self, qout, qbacklog, qoverflow))
         return FALSE;
 
-      self->file_size = QDISK_RESERVED_SPACE;
+      self->cached_file_size = QDISK_RESERVED_SPACE;
       if (!self->options->read_only)
         {
           _maybe_truncate_file_to_minimal(self);
@@ -1351,7 +1351,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
     {
       struct stat st;
       fstat(self->fd, &st);
-      self->file_size = st.st_size;
+      self->cached_file_size = st.st_size;
       msg_info("Reliable disk-buffer state loaded",
                evt_tag_str("filename", self->filename),
                evt_tag_long("number_of_messages", _number_of_messages(self)));
@@ -1453,8 +1453,8 @@ _init_qdisk_file(QDisk *self)
   if (!_create_header(self))
     return FALSE;
 
-  if (!self->file_size)
-    self->file_size = QDISK_RESERVED_SPACE;
+  if (!self->cached_file_size)
+    self->cached_file_size = QDISK_RESERVED_SPACE;
 
   return TRUE;
 }
@@ -1500,7 +1500,7 @@ static void
 qdisk_init_instance(QDisk *self, DiskQueueOptions *options, const gchar *file_id)
 {
   self->fd = -1;
-  self->file_size = 0;
+  self->cached_file_size = 0;
   self->options = options;
 
   self->file_id = file_id;
@@ -1559,7 +1559,7 @@ qdisk_get_filename(QDisk *self)
 gint64
 qdisk_get_file_size(QDisk *self)
 {
-  return self->file_size;
+  return self->cached_file_size;
 }
 
 gint64
