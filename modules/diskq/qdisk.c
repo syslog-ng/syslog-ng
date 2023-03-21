@@ -295,20 +295,14 @@ _maybe_truncate_file(QDisk *self, gint64 expected_size)
 }
 
 #if SYSLOG_NG_HAVE_POSIX_FALLOCATE
-static gboolean
+static gint
 _posix_preallocate(QDisk *self, gint64 size)
 {
-  gint result = posix_fallocate(self->fd, 0, (off_t) size);
-  if (result == 0)
-    {
-      return TRUE;
-    }
-
-  return FALSE;
+  return posix_fallocate(self->fd, 0, (off_t) size);
 }
 
 #else
-static gboolean
+static gint
 _compat_preallocate(QDisk *self, gint64 size)
 {
   enum { buf_size = QDISK_RESERVED_SPACE };
@@ -321,16 +315,16 @@ _compat_preallocate(QDisk *self, gint64 size)
   for (gint i = 0; i < buf_write_iterations; i++)
     {
       if (!pwrite_strict(self->fd, buf, buf_size, pos))
-        return FALSE;
+        return -1;
       pos += buf_size;
     }
 
   if (!pwrite_strict(self->fd, buf, additional_write_size, pos))
-    return FALSE;
+    return -1;
 
   g_assert(pos + additional_write_size == size);
 
-  return TRUE;
+  return 0;
 }
 #endif
 
@@ -341,7 +335,7 @@ _preallocate_qdisk_file(QDisk *self, gint64 size)
             evt_tag_str("filename", self->filename),
             evt_tag_long("size", size));
 
-  gboolean result;
+  gint result;
 
 #if SYSLOG_NG_HAVE_POSIX_FALLOCATE
   result = _posix_preallocate(self, size);
@@ -349,7 +343,7 @@ _preallocate_qdisk_file(QDisk *self, gint64 size)
   result = _compat_preallocate(self, size);
 #endif
 
-  if (!result)
+  if (result < 0)
     {
       msg_error("Failed to preallocate queue file",
                 evt_tag_str("filename", self->filename),
