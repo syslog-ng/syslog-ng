@@ -12,6 +12,7 @@ include lib/template/Makefile.am
 include lib/value-pairs/Makefile.am
 include lib/stats/Makefile.am
 include lib/control/Makefile.am
+include lib/healthcheck/Makefile.am
 include lib/debugger/Makefile.am
 include lib/compat/Makefile.am
 include lib/logmsg/Makefile.am
@@ -280,6 +281,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(value_pairs_sources)		\
 	$(stats_sources)		\
 	$(control_sources)		\
+	$(healthcheck_sources) \
 	$(debugger_sources)		\
 	$(compat_sources)     		\
 	$(logmsg_sources)		\

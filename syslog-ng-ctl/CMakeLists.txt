@@ -17,6 +17,8 @@ set(SYSLOG_NG_CTL_SOURCES
     commands/license.c
     commands/config.h
     commands/config.c
+    commands/healthcheck.h
+    commands/healthcheck.c
     control-client.c
 )
 

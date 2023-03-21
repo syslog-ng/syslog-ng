@@ -192,6 +192,7 @@
 %token KW_LIFETIME                    10403
 %token KW_MAX_DYNAMIC                 10404
 %token KW_SYSLOG_STATS                10405
+%token KW_HEALTHCHECK_FREQ            10406
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -961,7 +962,7 @@ options_item
 	| KW_LOG_LEVEL '(' string ')'		{ CHECK_ERROR(cfg_set_log_level(configuration, $3), @3, "Unknown log-level() option"); free($3); }
 	| { last_template_options = &configuration->template_options; } template_option
 	| { last_host_resolve_options = &configuration->host_resolve_options; } host_resolve_option
-	| { last_stats_options = &configuration->stats_options; } stat_option
+	| { last_stats_options = &configuration->stats_options; last_healthcheck_options = &configuration->healthcheck_options; } stat_option
 	| { last_dns_cache_options = &configuration->dns_cache_options; } dns_cache_option
 	| { last_file_perm_options = &configuration->file_perm_options; } file_perm_option
 	| LL_PLUGIN
@@ -996,6 +997,7 @@ stats_group_option
 	| KW_LIFETIME '(' positive_integer ')'      { last_stats_options->lifetime = $3; }
 	| KW_MAX_DYNAMIC '(' nonnegative_integer ')'   { last_stats_options->max_dynamic = $3; }
 	| KW_SYSLOG_STATS '(' yesnoauto ')'     { last_stats_options->syslog_stats = $3; }
+	| KW_HEALTHCHECK_FREQ '(' nonnegative_integer ')' { last_healthcheck_options->freq = $3; }
 	;
 
 dns_cache_option

@@ -50,6 +50,8 @@ void stats_cluster_single_key_legacy_set_with_name(StatsClusterKey *key, guint16
 void stats_cluster_single_key_add_legacy_alias_with_name(StatsClusterKey *key, guint16 component, const gchar *id,
                                                          const gchar *instance, const gchar *name);
 
+void stats_cluster_single_key_add_unit(StatsClusterKey *key, StatsClusterUnit stored_unit);
+
 StatsCounterItem *stats_cluster_single_get_counter(StatsCluster *self);
 
 #endif

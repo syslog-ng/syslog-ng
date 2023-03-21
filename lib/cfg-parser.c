@@ -98,6 +98,7 @@ static CfgLexerKeyword main_keywords[] =
   { "lifetime",           KW_LIFETIME },
   { "max_dynamics",       KW_MAX_DYNAMIC },
   { "syslog_stats",       KW_SYSLOG_STATS },
+  { "healthcheck_freq",   KW_HEALTHCHECK_FREQ},
   { "min_iw_size_per_reader", KW_MIN_IW_SIZE_PER_READER },
   { "flush_lines",        KW_FLUSH_LINES },
   { "flush_timeout",      KW_FLUSH_TIMEOUT, KWS_OBSOLETE, "Some drivers support batch-timeout() instead that you can specify at the destination level." },

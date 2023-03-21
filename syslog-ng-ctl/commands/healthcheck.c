@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2023 László Várady <laszlo.varady93@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,31 +20,45 @@
  * COPYING for details.
  *
  */
-#ifndef MAINLOOP_IO_WORKER_H_INCLUDED
-#define MAINLOOP_IO_WORKER_H_INCLUDED 1
 
-#include "mainloop-worker.h"
+#include "healthcheck.h"
+#include "syslog-ng.h"
 
-#include <iv_work.h>
+#include <unistd.h>
+#include <signal.h>
+#include <string.h>
 
-typedef struct _MainLoopIOWorkerJob
+static gint healthcheck_options_timeout = 15;
+
+GOptionEntry healthcheck_options[] =
 {
-  void (*engage)(gpointer user_data);
-  void (*work)(gpointer user_data, GIOCondition cond);
-  void (*completion)(gpointer user_data);
-  void (*release)(gpointer user_data);
-  gpointer user_data;
-  gboolean working:1;
-  GIOCondition cond;
-  struct iv_work_item work_item;
-} MainLoopIOWorkerJob;
+  {
+    "timeout", 't', 0, G_OPTION_ARG_INT, &healthcheck_options_timeout,
+    "maximum seconds to wait for healthcheck results (default: 15)"
+  },
+  { NULL }
+};
 
-void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
-gboolean main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond);
+static void
+_healthcheck_exit(int signo)
+{
+  _exit(1);
+}
 
-void main_loop_io_worker_add_options(GOptionContext *ctx);
+static void
+_setup_timeout(gint timeout)
+{
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = _healthcheck_exit;
+  sigaction(SIGALRM, &sa, NULL);
 
-void main_loop_io_worker_init(void);
-void main_loop_io_worker_deinit(void);
+  alarm(timeout);
+}
 
-#endif
+gint
+slng_healthcheck(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
+{
+  _setup_timeout(healthcheck_options_timeout);
+  return dispatch_command("HEALTHCHECK");
+}

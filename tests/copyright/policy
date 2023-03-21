@@ -74,6 +74,8 @@ modules/secure-logging/tests
 modules/secure-logging/slogencrypt
 modules/secure-logging/slogverify
 modules/secure-logging/slogkey
+lib/healthcheck
+lib/healthcheck/tests
 lib/metrics-pipe\.[ch]
 lib/rewrite/rewrite-set-facility\.h
 lib/rewrite/rewrite-set-matches\.[ch]
@@ -93,6 +95,7 @@ lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
 syslog-ng-ctl/commands/log-level.[ch]
 modules/afsocket/afsocket-signals.h
+syslog-ng-ctl/commands/healthcheck.[ch]
 modules/python-modules/syslogng/confgen\.py
 modules/python-modules/syslogng/dest\.py
 modules/python-modules/syslogng/logger\.py

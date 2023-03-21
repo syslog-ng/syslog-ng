@@ -12,6 +12,7 @@ add_flex_bison_dependency(CfgLexer CfgGrammar)
 add_subdirectory(ack-tracker)
 add_subdirectory(compat)
 add_subdirectory(control)
+add_subdirectory(healthcheck)
 add_subdirectory(debugger)
 add_subdirectory(filter)
 add_subdirectory(logmsg)
@@ -36,6 +37,7 @@ set(LIB_SUBDIR_HEADERS
     ${ACK_TRACKER_HEADERS}
     ${COMPAT_HEADERS}
     ${CONTROL_HEADERS}
+    ${HEALTHCHECK_HEADERS}
     ${DEBUGGER_HEADERS}
     ${FILTER_HEADERS}
     ${LOGMSG_HEADERS}
@@ -239,6 +241,7 @@ set(LIB_SOURCES
     ${ACK_TRACKER_SOURCES}
     ${COMPAT_SOURCES}
     ${CONTROL_SOURCES}
+    ${HEALTHCHECK_SOURCES}
     ${DEBUGGER_SOURCES}
     ${FILTER_SOURCES}
     ${LOGMSG_SOURCES}
@@ -355,6 +358,7 @@ install(FILES ${LIB_HEADERS} DESTINATION include/syslog-ng)
 install(FILES ${VALUE_PAIRS_HEADERS} DESTINATION include/syslog-ng/value-pairs)
 install(FILES ${COMPAT_HEADERS} DESTINATION include/syslog-ng/compat)
 install(FILES ${CONTROL_HEADERS} DESTINATION include/syslog-ng/control)
+install(FILES ${HEALTHCHECK_HEADERS} DESTINATION include/syslog-ng/healthcheck)
 install(FILES ${DEBUGGER_HEADERS} DESTINATION include/syslog-ng/debugger)
 install(FILES ${FILTER_HEADERS} DESTINATION include/syslog-ng/filter)
 install(FILES ${LOGMSG_HEADERS} DESTINATION include/syslog-ng/logmsg)

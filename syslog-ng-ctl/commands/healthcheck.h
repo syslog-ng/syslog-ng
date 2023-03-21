@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2023 László Várady <laszlo.varady93@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,31 +20,13 @@
  * COPYING for details.
  *
  */
-#ifndef MAINLOOP_IO_WORKER_H_INCLUDED
-#define MAINLOOP_IO_WORKER_H_INCLUDED 1
 
-#include "mainloop-worker.h"
+#ifndef SYSLOG_NG_CTL_HEALTHCHECK_H
+#define SYSLOG_NG_CTL_HEALTHCHECK_H
 
-#include <iv_work.h>
+#include "commands.h"
 
-typedef struct _MainLoopIOWorkerJob
-{
-  void (*engage)(gpointer user_data);
-  void (*work)(gpointer user_data, GIOCondition cond);
-  void (*completion)(gpointer user_data);
-  void (*release)(gpointer user_data);
-  gpointer user_data;
-  gboolean working:1;
-  GIOCondition cond;
-  struct iv_work_item work_item;
-} MainLoopIOWorkerJob;
-
-void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
-gboolean main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond);
-
-void main_loop_io_worker_add_options(GOptionContext *ctx);
-
-void main_loop_io_worker_init(void);
-void main_loop_io_worker_deinit(void);
+extern GOptionEntry healthcheck_options[];
+gint slng_healthcheck(int argc, char *argv[], const gchar *mode, GOptionContext *ctx);
 
 #endif

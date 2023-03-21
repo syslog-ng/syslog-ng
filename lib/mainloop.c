@@ -43,6 +43,7 @@
 #include "scratch-buffers.h"
 #include "timeutils/misc.h"
 #include "stats/stats-control.h"
+#include "healthcheck/healthcheck-control.h"
 #include "signal-handler.h"
 
 #include <sys/types.h>
@@ -633,6 +634,7 @@ main_loop_read_and_init_config(MainLoop *self)
   self->control_server = control_init(resolved_configurable_paths.ctlfilename);
   main_loop_register_control_commands(self);
   stats_register_control_commands();
+  healthcheck_register_control_commands();
   return 0;
 }
 

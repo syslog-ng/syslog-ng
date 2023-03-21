@@ -46,6 +46,23 @@ enum
   SCS_SOURCE_MASK    = 0xff
 };
 
+typedef enum _StatsClusterUnit
+{
+  SCU_NONE = 0,
+
+  SCU_SECONDS,
+  SCU_MINUTES,
+  SCU_HOURS,
+  SCU_MILLISECONDS,
+  SCU_NANOSECONDS,
+
+  SCU_BYTES,
+  SCU_KIB,
+  SCU_MIB,
+  SCU_GIB,
+
+} StatsClusterUnit;
+
 typedef struct _StatsCounterGroup StatsCounterGroup;
 typedef struct _StatsCounterGroupInit StatsCounterGroupInit;
 
@@ -95,6 +112,8 @@ struct _StatsClusterKey
   const gchar *name;
   StatsClusterLabel *labels;
   gsize labels_len;
+
+  StatsClusterUnit stored_unit;
 
   struct
   {

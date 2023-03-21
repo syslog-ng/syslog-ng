@@ -23,6 +23,6 @@ EXPOSE 514/udp
 EXPOSE 601/tcp
 EXPOSE 6514/tcp
 
-HEALTHCHECK --interval=2m --timeout=3s --start-period=30s CMD /usr/sbin/syslog-ng-ctl stats || exit 1
+HEALTHCHECK --interval=2m --timeout=5s --start-period=30s CMD /usr/sbin/syslog-ng-ctl healthcheck --timeout 5
 ENV LD_PRELOAD /usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 ENTRYPOINT ["/usr/sbin/syslog-ng", "-F"]

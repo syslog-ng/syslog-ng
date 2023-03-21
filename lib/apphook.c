@@ -28,6 +28,7 @@
 #include "dnscache.h"
 #include "alarms.h"
 #include "stats/stats-registry.h"
+#include "healthcheck/healthcheck-stats.h"
 #include "logmsg/logmsg.h"
 #include "logsource.h"
 #include "logwriter.h"
@@ -224,6 +225,7 @@ app_startup(void)
   alarm_init();
   main_loop_thread_resource_init();
   stats_init();
+  healthcheck_stats_global_init();
   tzset();
   log_msg_global_init();
   log_tags_global_init();

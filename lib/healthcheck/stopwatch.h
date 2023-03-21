@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2023 László Várady <laszlo.varady93@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,31 +20,32 @@
  * COPYING for details.
  *
  */
-#ifndef MAINLOOP_IO_WORKER_H_INCLUDED
-#define MAINLOOP_IO_WORKER_H_INCLUDED 1
 
-#include "mainloop-worker.h"
+#ifndef STOPWATCH_H
+#define STOPWATCH_H
 
-#include <iv_work.h>
+#include "syslog-ng.h"
+#include "compat/time.h"
 
-typedef struct _MainLoopIOWorkerJob
+typedef struct _Stopwatch
 {
-  void (*engage)(gpointer user_data);
-  void (*work)(gpointer user_data, GIOCondition cond);
-  void (*completion)(gpointer user_data);
-  void (*release)(gpointer user_data);
-  gpointer user_data;
-  gboolean working:1;
-  GIOCondition cond;
-  struct iv_work_item work_item;
-} MainLoopIOWorkerJob;
+  struct timespec start_time;
+} Stopwatch;
 
-void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
-gboolean main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond);
+static inline void
+stopwatch_start(Stopwatch *self)
+{
+  clock_gettime(CLOCK_MONOTONIC, &self->start_time);
+}
 
-void main_loop_io_worker_add_options(GOptionContext *ctx);
+static inline guint64
+stopwatch_get_elapsed_nsec(Stopwatch *self)
+{
+  struct timespec stop_time;
+  clock_gettime(CLOCK_MONOTONIC, &stop_time);
 
-void main_loop_io_worker_init(void);
-void main_loop_io_worker_deinit(void);
+  return (stop_time.tv_sec - self->start_time.tv_sec) * 1000000000
+         + (stop_time.tv_nsec - self->start_time.tv_nsec);
+}
 
 #endif

@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2023 László Várady <laszlo.varady93@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,31 +20,26 @@
  * COPYING for details.
  *
  */
-#ifndef MAINLOOP_IO_WORKER_H_INCLUDED
-#define MAINLOOP_IO_WORKER_H_INCLUDED 1
 
-#include "mainloop-worker.h"
+#ifndef HEALTHCHECK_H
+#define HEALTHCHECK_H
 
-#include <iv_work.h>
+#include "syslog-ng.h"
 
-typedef struct _MainLoopIOWorkerJob
+typedef struct _HealthCheck HealthCheck;
+
+typedef struct _HealthCheckResult
 {
-  void (*engage)(gpointer user_data);
-  void (*work)(gpointer user_data, GIOCondition cond);
-  void (*completion)(gpointer user_data);
-  void (*release)(gpointer user_data);
-  gpointer user_data;
-  gboolean working:1;
-  GIOCondition cond;
-  struct iv_work_item work_item;
-} MainLoopIOWorkerJob;
+  guint64 io_worker_latency;
+  guint64 mainloop_io_worker_roundtrip_latency;
+} HealthCheckResult;
 
-void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
-gboolean main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond);
+typedef void(*HealthCheckCompletionCB)(HealthCheckResult, gpointer);
 
-void main_loop_io_worker_add_options(GOptionContext *ctx);
+HealthCheck *healthcheck_new(void);
+HealthCheck *healthcheck_ref(HealthCheck *self);
+void healthcheck_unref(HealthCheck *self);
 
-void main_loop_io_worker_init(void);
-void main_loop_io_worker_deinit(void);
+gboolean healthcheck_run(HealthCheck *self, HealthCheckCompletionCB completion, gpointer user_data);
 
 #endif

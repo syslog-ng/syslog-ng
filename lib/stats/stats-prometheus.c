@@ -23,15 +23,14 @@
 #include "stats/stats-prometheus.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster.h"
+#include "stats/stats-counter.h"
 #include "utf8utils.h"
 #include "scratch-buffers.h"
 
 #include <string.h>
 
-#define PROMETHEUS_METRIC_PREFIX "syslogng"
-
 static gchar *
-stats_format_prometheus_sanitize_value(const gchar *value)
+stats_format_prometheus_sanitize_label_value(const gchar *value)
 {
   GString *sanitized_value = scratch_buffers_alloc();
   append_unsafe_utf8_as_escaped_binary(sanitized_value, value, -1, "\"");
@@ -68,6 +67,54 @@ stats_format_prometheus_sanitize_name(const gchar *name)
   return sanitized_name->str;
 }
 
+gchar *
+stats_format_prometheus_format_value(const StatsClusterKey *key, StatsCounterItem *counter)
+{
+  GString *value = scratch_buffers_alloc();
+
+  gsize stored_value = stats_counter_get(counter);
+
+  guint64 converted_int = stored_value;
+  gdouble converted_double = stored_value;
+  gchar double_buf[G_ASCII_DTOSTR_BUF_SIZE];
+
+  switch (key->stored_unit)
+    {
+    case SCU_GIB:
+      converted_int *= 1024;
+    case SCU_MIB:
+      converted_int *= 1024;
+    case SCU_KIB:
+      converted_int *= 1024;
+      g_string_printf(value, "%"G_GUINT64_FORMAT, converted_int);
+      break;
+
+    case SCU_HOURS:
+      converted_int *= 60;
+    case SCU_MINUTES:
+      converted_int *= 60;
+      g_string_printf(value, "%"G_GUINT64_FORMAT, converted_int);
+      break;
+
+    case SCU_NANOSECONDS:
+      converted_double /= 1e9;
+      g_string_assign(value, g_ascii_dtostr(double_buf, G_N_ELEMENTS(double_buf), converted_double));
+      break;
+
+    case SCU_MILLISECONDS:
+      converted_double /= 1e3;
+      g_string_assign(value, g_ascii_dtostr(double_buf, G_N_ELEMENTS(double_buf), converted_double));
+      break;
+
+    default:
+      /* no conversion */
+      g_string_printf(value, "%"G_GSIZE_FORMAT, stored_value);
+      break;
+    }
+
+  return value->str;
+}
+
 static inline void
 _append_formatted_label(GString *serialized_labels, const StatsClusterLabel *label)
 {
@@ -76,7 +123,7 @@ _append_formatted_label(GString *serialized_labels, const StatsClusterLabel *lab
 
   g_string_append_printf(serialized_labels, "%s=\"%s\"",
                          stats_format_prometheus_sanitize_name(label->name),
-                         stats_format_prometheus_sanitize_value(label->value));
+                         stats_format_prometheus_sanitize_label_value(label->value));
 }
 
 static inline gboolean
@@ -133,7 +180,7 @@ _format_legacy(StatsCluster *sc, gint type, StatsCounterItem *counter)
 
   gchar component[64];
 
-  g_string_append_printf(record, PROMETHEUS_METRIC_PREFIX"_%s",
+  g_string_append_printf(record, PROMETHEUS_METRIC_PREFIX "%s",
                          stats_format_prometheus_sanitize_name(stats_cluster_get_component_name(sc, component, sizeof(component))));
 
   if (!sc->key.legacy.component || sc->key.legacy.component == SCS_GLOBAL)
@@ -145,14 +192,14 @@ _format_legacy(StatsCluster *sc, gint type, StatsCounterItem *counter)
     {
       gboolean has_id = !_is_str_empty(sc->key.legacy.id);
       if (has_id)
-        g_string_append_printf(labels, "%s=\"%s\"", "id", stats_format_prometheus_sanitize_value(sc->key.legacy.id));
+        g_string_append_printf(labels, "%s=\"%s\"", "id", stats_format_prometheus_sanitize_label_value(sc->key.legacy.id));
 
       if (!_is_str_empty(sc->key.legacy.instance))
         {
           if (has_id)
             g_string_append_c(labels, ',');
           g_string_append_printf(labels, "%s=\"%s\"", "stat_instance",
-                                 stats_format_prometheus_sanitize_value(sc->key.legacy.instance));
+                                 stats_format_prometheus_sanitize_label_value(sc->key.legacy.instance));
         }
     }
 
@@ -163,7 +210,8 @@ _format_legacy(StatsCluster *sc, gint type, StatsCounterItem *counter)
   if (labels->len != 0)
     g_string_append_printf(record, "{%s}", labels->str);
 
-  g_string_append_printf(record, " %"G_GSIZE_FORMAT"\n", stats_counter_get(&sc->counter_group.counters[type]));
+  const gchar *metric_value = stats_format_prometheus_format_value(&sc->key, &sc->counter_group.counters[type]);
+  g_string_append_printf(record, " %s\n", metric_value);
 
   return record;
 }
@@ -178,13 +226,14 @@ stats_prometheus_format_counter(StatsCluster *sc, gint type, StatsCounterItem *c
     return _format_legacy(sc, type, counter);
 
   GString *record = scratch_buffers_alloc();
-  g_string_append_printf(record, PROMETHEUS_METRIC_PREFIX"_%s", stats_format_prometheus_sanitize_name(sc->key.name));
+  g_string_append_printf(record, PROMETHEUS_METRIC_PREFIX "%s", stats_format_prometheus_sanitize_name(sc->key.name));
 
   const gchar *labels = _format_labels(sc, type);
   if (labels)
     g_string_append_printf(record, "{%s}", labels);
 
-  g_string_append_printf(record, " %"G_GSIZE_FORMAT"\n", stats_counter_get(&sc->counter_group.counters[type]));
+  const gchar *metric_value = stats_format_prometheus_format_value(&sc->key, &sc->counter_group.counters[type]);
+  g_string_append_printf(record, " %s\n", metric_value);
 
   return record;
 }

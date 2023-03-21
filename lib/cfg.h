@@ -35,6 +35,7 @@
 #include "host-resolve.h"
 #include "logmsg/type-hinting.h"
 #include "stats/stats.h"
+#include "healthcheck/healthcheck-stats.h"
 #include "dnscache.h"
 #include "file-perms.h"
 
@@ -70,6 +71,7 @@ struct _GlobalConfig
   CfgArgs *globals;
 
   StatsOptions stats_options;
+  HealthCheckStatsOptions healthcheck_options;
   gint mark_freq;
   gint flush_lines;
   gint mark_mode;

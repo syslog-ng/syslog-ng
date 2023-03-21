@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2023 László Várady <laszlo.varady93@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,31 +20,26 @@
  * COPYING for details.
  *
  */
-#ifndef MAINLOOP_IO_WORKER_H_INCLUDED
-#define MAINLOOP_IO_WORKER_H_INCLUDED 1
 
-#include "mainloop-worker.h"
+#ifndef HEALTHCHECK_STATS_H
+#define HEALTHCHECK_STATS_H
 
-#include <iv_work.h>
+#include "syslog-ng.h"
 
-typedef struct _MainLoopIOWorkerJob
+typedef struct _HealthCheckStatsOptions
 {
-  void (*engage)(gpointer user_data);
-  void (*work)(gpointer user_data, GIOCondition cond);
-  void (*completion)(gpointer user_data);
-  void (*release)(gpointer user_data);
-  gpointer user_data;
-  gboolean working:1;
-  GIOCondition cond;
-  struct iv_work_item work_item;
-} MainLoopIOWorkerJob;
+  gint freq;
+} HealthCheckStatsOptions;
 
-void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
-gboolean main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond);
+static inline void
+healthcheck_stats_options_defaults(HealthCheckStatsOptions *options)
+{
+  options->freq = 300;
+}
 
-void main_loop_io_worker_add_options(GOptionContext *ctx);
+void healthcheck_stats_init(HealthCheckStatsOptions *options);
+void healthcheck_stats_deinit(void);
 
-void main_loop_io_worker_init(void);
-void main_loop_io_worker_deinit(void);
+void healthcheck_stats_global_init(void);
 
 #endif
