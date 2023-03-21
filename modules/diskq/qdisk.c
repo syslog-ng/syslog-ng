@@ -1247,12 +1247,6 @@ _create_file(QDisk *self, const gchar *filename)
 {
   g_assert(filename);
 
-  if (self->options->disk_buf_size == -1)
-    {
-      msg_error("disk-buf-size for new disk-queue files must be set");
-      return FALSE;
-    }
-
   if (!_create_path(filename))
     {
       msg_error("Error creating dir for disk-queue file",
@@ -1547,6 +1541,12 @@ static gboolean
 _create_qdisk_file(QDisk *self, const gchar *filename)
 {
   g_assert(!self->options->read_only);
+
+  if (self->options->disk_buf_size == -1)
+    {
+      msg_error("disk-buf-size for new disk-queue files must be set");
+      return FALSE;
+    }
 
   if (!_create_file(self, filename))
     goto error;
