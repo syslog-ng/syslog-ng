@@ -356,7 +356,7 @@ _compat_preallocate(QDisk *self, gint64 size)
 #endif
 
 static gboolean
-_preallocate(QDisk *self, gint64 size)
+_preallocate_qdisk_file(QDisk *self, gint64 size)
 {
   msg_debug("Preallocating queue file",
             evt_tag_str("filename", self->filename),
@@ -1185,7 +1185,7 @@ _create_file(QDisk *self, const gchar *filename)
   self->fd = fd;
   self->filename = g_strdup(filename);
 
-  if (self->options->prealloc && !_preallocate(self, self->options->disk_buf_size))
+  if (self->options->prealloc && !_preallocate_qdisk_file(self, self->options->disk_buf_size))
     {
       _close_file(self);
       return FALSE;
