@@ -37,6 +37,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/file.h>
 
 /* MADV_RANDOM not defined on legacy Linux systems. Could be removed in the
  * future, when support for Glibc 2.1.X drops.*/
@@ -49,6 +50,10 @@
 #define PATH_QDISK              PATH_LOCALSTATEDIR
 
 #define QDISK_HDR_VERSION_CURRENT 3
+
+#define DIRLOCK_FILENAME "syslog-ng-disk-buffer.dirlock"
+
+static GMutex filename_lock;
 
 typedef union _QDiskFileHeader
 {
@@ -182,6 +187,55 @@ _create_file(const gchar *filename)
 }
 
 static gboolean
+_grab_dirlock(const gchar *dir, gint *fd)
+{
+  gchar *dirlock_file_path = g_build_path(G_DIR_SEPARATOR_S, dir, DIRLOCK_FILENAME, NULL);
+
+  if (!_create_path(dirlock_file_path))
+    {
+      msg_error("Error creating dir for disk-buffer dirlock file",
+                evt_tag_str("filename", dirlock_file_path),
+                evt_tag_error("error"));
+      g_free(dirlock_file_path);
+      return FALSE;
+    }
+
+  g_mutex_lock(&filename_lock);
+
+  *fd = open(dirlock_file_path, O_RDONLY | O_CREAT, 0600);
+  if (*fd < 0)
+    {
+      msg_error("Failed to open disk-buffer dirlock file",
+                evt_tag_str("filename", dirlock_file_path),
+                evt_tag_error("error"));
+      g_mutex_unlock(&filename_lock);
+      g_free(dirlock_file_path);
+      return FALSE;
+    }
+
+  if (flock(*fd, LOCK_EX) < 0)
+    {
+      msg_error("Failed to grab disk-buffer dirlock",
+                evt_tag_str("filename", dirlock_file_path),
+                evt_tag_error("error"));
+      close(*fd);
+      g_mutex_unlock(&filename_lock);
+      g_free(dirlock_file_path);
+      return FALSE;
+    }
+
+  g_free(dirlock_file_path);
+  return TRUE;
+}
+
+static void
+_release_dirlock(gint fd)
+{
+  flock(fd, LOCK_UN);
+  g_mutex_unlock(&filename_lock);
+}
+
+static gboolean
 _next_filename(QDisk *self, gchar *filename, gsize filename_len)
 {
   gint i = 0;
@@ -189,6 +243,10 @@ _next_filename(QDisk *self, gchar *filename, gsize filename_len)
   gchar qdir[256];
 
   g_snprintf(qdir, sizeof(qdir), "%s", self->options->dir);
+
+  gint dirlock_fd = -1;
+  if (!_grab_dirlock(self->options->dir, &dirlock_fd))
+    return FALSE;
 
   /* NOTE: this'd be a security problem if we were not in our private directory. But we are. */
   while (!success && i < 100000)
@@ -206,12 +264,17 @@ _next_filename(QDisk *self, gchar *filename, gsize filename_len)
   if (!success)
     {
       msg_error("Error generating unique queue filename, not using disk queue");
+      _release_dirlock(dirlock_fd);
       return FALSE;
     }
 
   if (!_create_file(filename))
-    return FALSE;
+    {
+      _release_dirlock(dirlock_fd);
+      return FALSE;
+    }
 
+  _release_dirlock(dirlock_fd);
   return TRUE;
 }
 
