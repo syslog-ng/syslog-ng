@@ -33,15 +33,19 @@ static void
 _send_healthcheck_reply(HealthCheckResult result, gpointer c)
 {
   ControlConnection *cc = (ControlConnection *) c;
+  gchar double_buf[G_ASCII_DTOSTR_BUF_SIZE];
+
+  gdouble io_worker_latency = result.io_worker_latency / 1e9;
+  gdouble mainloop_io_worker_roundtrip_latency = result.mainloop_io_worker_roundtrip_latency / 1e9;
 
   GString *reply = g_string_new("OK ");
+  g_string_append_printf(reply, PROMETHEUS_METRIC_PREFIX
+                         "io_worker_latency_seconds %s\n",
+                         g_ascii_dtostr(double_buf, G_N_ELEMENTS(double_buf), io_worker_latency));
+  g_string_append_printf(reply, PROMETHEUS_METRIC_PREFIX
+                         "mainloop_io_worker_roundtrip_latency_seconds %s\n",
+                         g_ascii_dtostr(double_buf, G_N_ELEMENTS(double_buf), mainloop_io_worker_roundtrip_latency));
 
-  g_string_append_printf(reply, PROMETHEUS_METRIC_PREFIX
-                         "io_worker_latency_nanoseconds %" G_GUINT64_FORMAT"\n",
-                         result.io_worker_latency);
-  g_string_append_printf(reply, PROMETHEUS_METRIC_PREFIX
-                         "mainloop_io_worker_roundtrip_latency_nanoseconds %" G_GUINT64_FORMAT"\n",
-                         result.mainloop_io_worker_roundtrip_latency);
 
   control_connection_send_reply(cc, reply);
   control_connection_unref(cc);
