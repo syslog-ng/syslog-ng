@@ -138,9 +138,9 @@ _assert_diskq_actual_file_size_with_stored(LogQueue *q)
   QDisk *qdisk = ((LogQueueDisk *)q)->qdisk;
 
   gint64 actual_file_size = _get_file_size(q);
-  cr_assert_eq(qdisk->file_size, actual_file_size,
+  cr_assert_eq(qdisk->cached_file_size, actual_file_size,
                "File size does not match with stored size; Actual file size: %ld, Expected file size: %ld\n", actual_file_size,
-               qdisk->file_size);
+               qdisk->cached_file_size);
 }
 
 static void
@@ -506,7 +506,7 @@ Test(diskq_truncate, test_diskq_no_truncate_wrap)
   _feed_one_large_message(q);
   QDisk *qdisk = ((LogQueueDisk *)q)->qdisk;
   cr_assert(qdisk_get_writer_head(qdisk) < qdisk_get_reader_head(qdisk), "write_head should have wrapped");
-  cr_assert(qdisk->file_size > TEST_DISKQ_SIZE, "file_size should be bigger than max size");
+  cr_assert(qdisk->cached_file_size > TEST_DISKQ_SIZE, "file_size should be bigger than max size");
   unprocessed_messages_in_buffer += 1;
 
   // 4. send and ack all messages
