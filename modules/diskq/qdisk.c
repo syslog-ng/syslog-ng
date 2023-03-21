@@ -331,9 +331,9 @@ _preallocate_qdisk_file(QDisk *self, off_t size)
   gint result;
 
 #if SYSLOG_NG_HAVE_POSIX_FALLOCATE
-  result = posix_fallocate(self->fd, 0, size);
+  result = posix_fallocate(self->fd, QDISK_RESERVED_SPACE, size - QDISK_RESERVED_SPACE);
 #else
-  result = _compat_preallocate(self->fd, 0, size);
+  result = _compat_preallocate(self->fd, QDISK_RESERVED_SPACE, size - QDISK_RESERVED_SPACE);
 #endif
 
   if (result < 0)
@@ -1164,12 +1164,6 @@ _create_file(QDisk *self, const gchar *filename)
   self->fd = fd;
   self->filename = g_strdup(filename);
 
-  if (self->options->prealloc && !_preallocate_qdisk_file(self, self->options->disk_buf_size))
-    {
-      _close_file(self);
-      return FALSE;
-    }
-
   return TRUE;
 }
 
@@ -1195,6 +1189,8 @@ _create_header(QDisk *self)
                 evt_tag_error("error"));
       return FALSE;
     }
+
+  self->cached_file_size = QDISK_RESERVED_SPACE;
 
   memcpy(self->hdr->magic, self->file_id, sizeof(self->hdr->magic));
 
@@ -1432,8 +1428,8 @@ _init_qdisk_file(QDisk *self)
   if (!_create_header(self))
     return FALSE;
 
-  if (!self->cached_file_size)
-    self->cached_file_size = QDISK_RESERVED_SPACE;
+  if (self->options->prealloc && !_preallocate_qdisk_file(self, self->options->disk_buf_size))
+    return FALSE;
 
   return TRUE;
 }
