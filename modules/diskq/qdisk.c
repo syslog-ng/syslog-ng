@@ -148,6 +148,40 @@ _correct_position_if_max_size_is_reached(QDisk *self, gint64 position)
 }
 
 static gboolean
+_create_path(const gchar *filename)
+{
+  FilePermOptions fpermoptions;
+  file_perm_options_defaults(&fpermoptions);
+  return file_perm_options_create_containing_directory(&fpermoptions, filename);
+}
+
+static gboolean
+_create_file(const gchar *filename)
+{
+  g_assert(filename);
+
+  if (!_create_path(filename))
+    {
+      msg_error("Error creating dir for disk-queue file",
+                evt_tag_str("filename", filename),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+
+  gint fd = open(filename, O_RDWR | O_LARGEFILE | O_CREAT, 0600);
+  if (fd < 0)
+    {
+      msg_error("Error creating disk-queue file",
+                evt_tag_str("filename", filename),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+
+  close(fd);
+  return TRUE;
+}
+
+static gboolean
 _next_filename(QDisk *self, gchar *filename, gsize filename_len)
 {
   gint i = 0;
@@ -1206,14 +1240,6 @@ _ensure_header_byte_order(QDisk *self)
 }
 
 static gboolean
-_create_path(const gchar *filename)
-{
-  FilePermOptions fpermoptions;
-  file_perm_options_defaults(&fpermoptions);
-  return file_perm_options_create_containing_directory(&fpermoptions, filename);
-}
-
-static gboolean
 _open_file(QDisk *self, const gchar *filename)
 {
   gint fd = open(filename, O_LARGEFILE | (self->options->read_only ? O_RDONLY : O_RDWR), 0600);
@@ -1239,32 +1265,6 @@ _open_file(QDisk *self, const gchar *filename)
       return FALSE;
     }
 
-  return TRUE;
-}
-
-static gboolean
-_create_file(const gchar *filename)
-{
-  g_assert(filename);
-
-  if (!_create_path(filename))
-    {
-      msg_error("Error creating dir for disk-queue file",
-                evt_tag_str("filename", filename),
-                evt_tag_error("error"));
-      return FALSE;
-    }
-
-  gint fd = open(filename, O_RDWR | O_LARGEFILE | O_CREAT, 0600);
-  if (fd < 0)
-    {
-      msg_error("Error creating disk-queue file",
-                evt_tag_str("filename", filename),
-                evt_tag_error("error"));
-      return FALSE;
-    }
-
-  close(fd);
   return TRUE;
 }
 
