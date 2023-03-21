@@ -48,18 +48,19 @@ _engage(MainLoopIOWorkerJob *self)
 }
 
 /* NOTE: runs in the main thread */
-void
+gboolean
 main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond)
 {
   g_assert(self->working == FALSE);
   if (main_loop_workers_quit)
-    return;
+    return FALSE;
 
   _engage(self);
   main_loop_worker_job_start();
   self->working = TRUE;
   self->cond = cond;
   iv_work_pool_submit_work(&main_loop_io_workers, &self->work_item);
+  return TRUE;
 }
 
 /* NOTE: runs in the actual worker thread spawned by the

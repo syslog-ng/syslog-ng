@@ -41,7 +41,7 @@ typedef struct _MainLoopIOWorkerJob
 } MainLoopIOWorkerJob;
 
 void main_loop_io_worker_job_init(MainLoopIOWorkerJob *self);
-void main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond);
+gboolean main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond);
 
 void main_loop_io_worker_add_options(GOptionContext *ctx);
 
