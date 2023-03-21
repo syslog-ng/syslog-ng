@@ -44,6 +44,15 @@ struct _HealthCheck
 };
 
 static void
+healthcheck_incomplete(HealthCheck *self)
+{
+  self->running = FALSE;
+  self->completion = NULL;
+  self->user_data = NULL;
+  healthcheck_unref(self);
+}
+
+static void
 healthcheck_complete(HealthCheck *self)
 {
   self->running = FALSE;
@@ -54,20 +63,28 @@ healthcheck_complete(HealthCheck *self)
   healthcheck_unref(self);
 }
 
-static inline void
+static inline gboolean
 _start_io_worker_latency(HealthCheck *self)
 {
   stopwatch_start(&self->io_worker_latency.stopwatch);
-  main_loop_io_worker_job_submit(&self->io_worker_latency.job, G_IO_IN);
+
+  if (!main_loop_io_worker_job_submit(&self->io_worker_latency.job, G_IO_IN))
+    {
+      /* currently, the IO worker check is our only health check */
+      healthcheck_incomplete(self);
+      return FALSE;
+    }
+
+  return TRUE;
 }
 
-static void
+static gboolean
 _start_health_checks(HealthCheck *self)
 {
   g_assert(!self->running);
   self->running = TRUE;
 
-  _start_io_worker_latency(self);
+  return _start_io_worker_latency(self);
 }
 
 gboolean
@@ -84,8 +101,7 @@ healthcheck_run(HealthCheck *self, HealthCheckCompletionCB completion, gpointer 
   };
   healthcheck_ref(self);
 
-  _start_health_checks(self);
-  return TRUE;
+  return _start_health_checks(self);
 }
 
 static void
