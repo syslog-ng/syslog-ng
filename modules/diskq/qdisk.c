@@ -294,14 +294,7 @@ _maybe_truncate_file(QDisk *self, gint64 expected_size)
             evt_tag_int("fd", self->fd));
 }
 
-#if SYSLOG_NG_HAVE_POSIX_FALLOCATE
-static gint
-_posix_preallocate(QDisk *self, gint64 size)
-{
-  return posix_fallocate(self->fd, 0, (off_t) size);
-}
-
-#else
+#if !SYSLOG_NG_HAVE_POSIX_FALLOCATE
 static gint
 _compat_preallocate(QDisk *self, gint64 size)
 {
@@ -338,7 +331,7 @@ _preallocate_qdisk_file(QDisk *self, off_t size)
   gint result;
 
 #if SYSLOG_NG_HAVE_POSIX_FALLOCATE
-  result = _posix_preallocate(self, size);
+  result = posix_fallocate(self->fd, 0, size);
 #else
   result = _compat_preallocate(self, size);
 #endif
