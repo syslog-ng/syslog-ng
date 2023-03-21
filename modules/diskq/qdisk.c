@@ -209,6 +209,9 @@ _next_filename(QDisk *self, gchar *filename, gsize filename_len)
       return FALSE;
     }
 
+  if (!_create_file(filename))
+    return FALSE;
+
   return TRUE;
 }
 
@@ -1564,6 +1567,22 @@ error:
   return FALSE;
 }
 
+static gboolean
+_init_qdisk_file_from_empty_file(QDisk *self, const gchar *filename)
+{
+  if (!_open_file(self, filename))
+    goto error;
+
+  if (!_init_qdisk_file(self))
+    goto error;
+
+  return TRUE;
+
+error:
+  _close_file(self);
+  return FALSE;
+}
+
 gboolean
 qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
@@ -1573,14 +1592,18 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
   gboolean file_exists = filename && stat(filename, &st) != -1;
 
   if (file_exists)
-    return _load_qdisk_file(self, filename, qout, qbacklog, qoverflow);
+    {
+      if (st.st_size != 0)
+        return _load_qdisk_file(self, filename, qout, qbacklog, qoverflow);
+      return _init_qdisk_file_from_empty_file(self, filename);
+    }
 
   if (filename)
     return _create_qdisk_file(self, filename);
 
   gchar next_filename[256];
   if (_next_filename(self, next_filename, sizeof(next_filename)))
-    return _create_qdisk_file(self, next_filename);
+    return _init_qdisk_file_from_empty_file(self, next_filename);
 
   return FALSE;
 }
