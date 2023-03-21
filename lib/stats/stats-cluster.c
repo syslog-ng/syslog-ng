@@ -143,6 +143,8 @@ stats_cluster_key_clone(StatsClusterKey *dst, const StatsClusterKey *src)
   dst->labels = stats_cluster_key_labels_clone(src->labels, src->labels_len);
   dst->labels_len = src->labels_len;
 
+  dst->stored_unit = src->stored_unit;
+
   dst->legacy.id = g_strdup(src->legacy.id ? : "");
   dst->legacy.component = src->legacy.component;
   dst->legacy.instance = g_strdup(src->legacy.instance ? : "");
