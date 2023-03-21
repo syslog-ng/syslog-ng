@@ -1170,16 +1170,6 @@ _create_file(QDisk *self, const gchar *filename)
 static gboolean
 _create_header(QDisk *self)
 {
-  self->hdr = (QDiskFileHeader *) mmap(0, sizeof(QDiskFileHeader), (PROT_READ | PROT_WRITE), MAP_SHARED, self->fd, 0);
-
-  if (self->hdr == MAP_FAILED)
-    {
-      msg_error("Error returned by mmap", evt_tag_error("errno"));
-      return FALSE;
-    }
-
-  madvise(self->hdr, sizeof(QDiskFileHeader), MADV_RANDOM);
-
   QDiskFileHeader nulled_hdr;
   memset(&nulled_hdr, 0, sizeof(nulled_hdr));
   if (!pwrite_strict(self->fd, &nulled_hdr, sizeof(nulled_hdr), 0))
@@ -1191,6 +1181,16 @@ _create_header(QDisk *self)
     }
 
   self->cached_file_size = QDISK_RESERVED_SPACE;
+
+  self->hdr = (QDiskFileHeader *) mmap(0, sizeof(QDiskFileHeader), (PROT_READ | PROT_WRITE), MAP_SHARED, self->fd, 0);
+
+  if (self->hdr == MAP_FAILED)
+    {
+      msg_error("Error returned by mmap", evt_tag_error("errno"));
+      return FALSE;
+    }
+
+  madvise(self->hdr, sizeof(QDiskFileHeader), MADV_RANDOM);
 
   memcpy(self->hdr->magic, self->file_id, sizeof(self->hdr->magic));
 
