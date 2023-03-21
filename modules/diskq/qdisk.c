@@ -316,15 +316,11 @@ _posix_preallocate(QDisk *self, gint64 size)
 static gboolean
 _compat_preallocate(QDisk *self, gint64 size)
 {
-  const size_t buf_size = QDISK_RESERVED_SPACE;
+  enum { buf_size = QDISK_RESERVED_SPACE };
   gint64 buf_write_iterations = size / buf_size;
   gint64 additional_write_size = size - buf_write_iterations * buf_size;
 
-  gchar buf[buf_size];
-  for (gint i = 0; i < buf_size; i++)
-    {
-      buf[i] = '\0';
-    }
+  gchar buf[buf_size] = { 0 };
   off_t pos = 0;
 
   for (gint i = 0; i < buf_write_iterations; i++)
