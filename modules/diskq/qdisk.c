@@ -1265,7 +1265,6 @@ _create_file(QDisk *self, const gchar *filename)
     }
 
   self->fd = fd;
-  self->filename = g_strdup(filename);
 
   return TRUE;
 }
@@ -1550,6 +1549,8 @@ _create_qdisk_file(QDisk *self, const gchar *filename)
 
   if (!_create_file(self, filename))
     goto error;
+
+  self->filename = g_strdup(filename);
 
   if (!_init_qdisk_file(self))
     goto error;
