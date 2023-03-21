@@ -301,7 +301,6 @@ _posix_preallocate(QDisk *self, gint64 size)
   gint result = posix_fallocate(self->fd, 0, (off_t) size);
   if (result == 0)
     {
-      self->cached_file_size = size;
       return TRUE;
     }
 
@@ -333,7 +332,6 @@ _compat_preallocate(QDisk *self, gint64 size)
           return FALSE;
         }
       pos += buf_size;
-      self->cached_file_size = pos;
     }
 
   if (!pwrite_strict(self->fd, buf, additional_write_size, pos))
@@ -344,8 +342,7 @@ _compat_preallocate(QDisk *self, gint64 size)
       return FALSE;
     }
 
-  self->cached_file_size = pos + additional_write_size;
-  g_assert(self->cached_file_size == size);
+  g_assert(pos + additional_write_size == size);
 
   return TRUE;
 }
@@ -358,11 +355,21 @@ _preallocate_qdisk_file(QDisk *self, gint64 size)
             evt_tag_str("filename", self->filename),
             evt_tag_long("size", size));
 
+  gboolean result;
+
 #if SYSLOG_NG_HAVE_POSIX_FALLOCATE
-  return _posix_preallocate(self, size);
+  result = _posix_preallocate(self, size);
 #else
-  return _compat_preallocate(self, size);
+  result = _compat_preallocate(self, size);
 #endif
+
+  if (!result)
+    {
+      return FALSE;
+    }
+
+  self->cached_file_size = size;
+  return TRUE;
 }
 
 static inline gint64
