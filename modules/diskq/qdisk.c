@@ -1303,32 +1303,31 @@ _ensure_header_byte_order(QDisk *self)
 }
 
 static gboolean
-_open_file(QDisk *self)
+_open_file(const gchar *filename, gboolean read_only, gint *fd)
 {
-  g_assert(self->filename);
+  g_assert(filename);
 
-  gint fd = open(self->filename, O_LARGEFILE | (self->options->read_only ? O_RDONLY : O_RDWR), 0600);
-  if (fd < 0)
+  gint local_fd = open(filename, O_LARGEFILE | (read_only ? O_RDONLY : O_RDWR), 0600);
+  if (local_fd < 0)
     {
       msg_error("Error opening disk-queue file",
-                evt_tag_str("filename", self->filename),
+                evt_tag_str("filename", filename),
                 evt_tag_error("error"));
       return FALSE;
     }
 
-  self->fd = fd;
-
   struct stat st;
-  if (fstat(self->fd, &st) != 0)
+  if (fstat(local_fd, &st) != 0)
     {
       msg_error("Error loading disk-queue file. Cannot stat",
-                evt_tag_str("filename", self->filename),
+                evt_tag_str("filename", filename),
                 evt_tag_error("fstat error"),
                 evt_tag_int("size", st.st_size));
-      _close_file(self);
+      close(local_fd);
       return FALSE;
     }
 
+  *fd = local_fd;
   return TRUE;
 }
 
@@ -1571,7 +1570,7 @@ _ensure_disk_buf_size(QDisk *self)
 static gboolean
 _load_qdisk_file(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
-  if (!_open_file(self))
+  if (!_open_file(self->filename, self->options->read_only, &self->fd))
     goto error;
 
   if (!_load_state(self, qout, qbacklog, qoverflow))
@@ -1613,7 +1612,7 @@ _create_qdisk_file(QDisk *self)
   if (!_create_file(self->filename))
     goto error;
 
-  if (!_open_file(self))
+  if (!_open_file(self->filename, self->options->read_only, &self->fd))
     goto error;
 
   if (!_init_qdisk_file(self))
@@ -1629,7 +1628,7 @@ error:
 static gboolean
 _init_qdisk_file_from_empty_file(QDisk *self)
 {
-  if (!_open_file(self))
+  if (!_open_file(self->filename, self->options->read_only, &self->fd))
     goto error;
 
   if (!_init_qdisk_file(self))
