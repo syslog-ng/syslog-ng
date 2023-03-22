@@ -37,6 +37,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/file.h>
 
 /* MADV_RANDOM not defined on legacy Linux systems. Could be removed in the
  * future, when support for Glibc 2.1.X drops.*/
@@ -49,6 +50,10 @@
 #define PATH_QDISK              PATH_LOCALSTATEDIR
 
 #define QDISK_HDR_VERSION_CURRENT 3
+
+#define DIRLOCK_FILENAME "syslog-ng-disk-buffer.dirlock"
+
+static GMutex filename_lock;
 
 typedef union _QDiskFileHeader
 {
@@ -148,6 +153,89 @@ _correct_position_if_max_size_is_reached(QDisk *self, gint64 position)
 }
 
 static gboolean
+_create_path(const gchar *filename)
+{
+  FilePermOptions fpermoptions;
+  file_perm_options_defaults(&fpermoptions);
+  return file_perm_options_create_containing_directory(&fpermoptions, filename);
+}
+
+static gboolean
+_create_file(const gchar *filename)
+{
+  g_assert(filename);
+
+  if (!_create_path(filename))
+    {
+      msg_error("Error creating dir for disk-queue file",
+                evt_tag_str("filename", filename),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+
+  gint fd = open(filename, O_RDWR | O_LARGEFILE | O_CREAT, 0600);
+  if (fd < 0)
+    {
+      msg_error("Error creating disk-queue file",
+                evt_tag_str("filename", filename),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+
+  close(fd);
+  return TRUE;
+}
+
+static gboolean
+_grab_dirlock(const gchar *dir, gint *fd)
+{
+  gchar *dirlock_file_path = g_build_path(G_DIR_SEPARATOR_S, dir, DIRLOCK_FILENAME, NULL);
+
+  if (!_create_path(dirlock_file_path))
+    {
+      msg_error("Error creating dir for disk-buffer dirlock file",
+                evt_tag_str("filename", dirlock_file_path),
+                evt_tag_error("error"));
+      g_free(dirlock_file_path);
+      return FALSE;
+    }
+
+  g_mutex_lock(&filename_lock);
+
+  *fd = open(dirlock_file_path, O_RDONLY | O_CREAT, 0600);
+  if (*fd < 0)
+    {
+      msg_error("Failed to open disk-buffer dirlock file",
+                evt_tag_str("filename", dirlock_file_path),
+                evt_tag_error("error"));
+      g_mutex_unlock(&filename_lock);
+      g_free(dirlock_file_path);
+      return FALSE;
+    }
+
+  if (flock(*fd, LOCK_EX) < 0)
+    {
+      msg_error("Failed to grab disk-buffer dirlock",
+                evt_tag_str("filename", dirlock_file_path),
+                evt_tag_error("error"));
+      close(*fd);
+      g_mutex_unlock(&filename_lock);
+      g_free(dirlock_file_path);
+      return FALSE;
+    }
+
+  g_free(dirlock_file_path);
+  return TRUE;
+}
+
+static void
+_release_dirlock(gint fd)
+{
+  flock(fd, LOCK_UN);
+  g_mutex_unlock(&filename_lock);
+}
+
+static gboolean
 _next_filename(QDisk *self, gchar *filename, gsize filename_len)
 {
   gint i = 0;
@@ -155,6 +243,10 @@ _next_filename(QDisk *self, gchar *filename, gsize filename_len)
   gchar qdir[256];
 
   g_snprintf(qdir, sizeof(qdir), "%s", self->options->dir);
+
+  gint dirlock_fd = -1;
+  if (!_grab_dirlock(self->options->dir, &dirlock_fd))
+    return FALSE;
 
   /* NOTE: this'd be a security problem if we were not in our private directory. But we are. */
   while (!success && i < 100000)
@@ -172,9 +264,17 @@ _next_filename(QDisk *self, gchar *filename, gsize filename_len)
   if (!success)
     {
       msg_error("Error generating unique queue filename, not using disk queue");
+      _release_dirlock(dirlock_fd);
       return FALSE;
     }
 
+  if (!_create_file(filename))
+    {
+      _release_dirlock(dirlock_fd);
+      return FALSE;
+    }
+
+  _release_dirlock(dirlock_fd);
   return TRUE;
 }
 
@@ -1206,16 +1306,10 @@ _ensure_header_byte_order(QDisk *self)
 }
 
 static gboolean
-_create_path(const gchar *filename)
-{
-  FilePermOptions fpermoptions;
-  file_perm_options_defaults(&fpermoptions);
-  return file_perm_options_create_containing_directory(&fpermoptions, filename);
-}
-
-static gboolean
 _open_file(QDisk *self, const gchar *filename)
 {
+  g_assert(filename);
+
   gint fd = open(filename, O_LARGEFILE | (self->options->read_only ? O_RDONLY : O_RDWR), 0600);
   if (fd < 0)
     {
@@ -1229,7 +1323,7 @@ _open_file(QDisk *self, const gchar *filename)
   self->filename = g_strdup(filename);
 
   struct stat st;
-  if (fstat(self->fd, &st) != 0 || st.st_size == 0)
+  if (fstat(self->fd, &st) != 0)
     {
       msg_error("Error loading disk-queue file. Cannot stat",
                 evt_tag_str("filename", self->filename),
@@ -1238,41 +1332,6 @@ _open_file(QDisk *self, const gchar *filename)
       _close_file(self);
       return FALSE;
     }
-
-  return TRUE;
-}
-
-static gboolean
-_create_file(QDisk *self, const gchar *filename)
-{
-  g_assert(!self->options->read_only);
-  g_assert(filename);
-
-  if (self->options->disk_buf_size == -1)
-    {
-      msg_error("disk-buf-size for new disk-queue files must be set");
-      return FALSE;
-    }
-
-  if (!_create_path(filename))
-    {
-      msg_error("Error creating dir for disk-queue file",
-                evt_tag_str("filename", filename),
-                evt_tag_error("error"));
-      return FALSE;
-    }
-
-  gint fd = open(filename, O_RDWR | O_LARGEFILE | O_CREAT, 0600);
-  if (fd < 0)
-    {
-      msg_error("Error creating disk-queue file",
-                evt_tag_str("filename", filename),
-                evt_tag_error("error"));
-      return FALSE;
-    }
-
-  self->fd = fd;
-  self->filename = g_strdup(filename);
 
   return TRUE;
 }
@@ -1545,9 +1604,36 @@ _init_qdisk_file(QDisk *self)
 }
 
 static gboolean
-_create_qdisk_file(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+_create_qdisk_file(QDisk *self, const gchar *filename)
 {
-  if (!_create_file(self, filename))
+  g_assert(!self->options->read_only);
+
+  if (self->options->disk_buf_size == -1)
+    {
+      msg_error("disk-buf-size for new disk-queue files must be set");
+      return FALSE;
+    }
+
+  if (!_create_file(filename))
+    goto error;
+
+  if (!_open_file(self, filename))
+    goto error;
+
+  if (!_init_qdisk_file(self))
+    goto error;
+
+  return TRUE;
+
+error:
+  _close_file(self);
+  return FALSE;
+}
+
+static gboolean
+_init_qdisk_file_from_empty_file(QDisk *self, const gchar *filename)
+{
+  if (!_open_file(self, filename))
     goto error;
 
   if (!_init_qdisk_file(self))
@@ -1569,14 +1655,18 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
   gboolean file_exists = filename && stat(filename, &st) != -1;
 
   if (file_exists)
-    return _load_qdisk_file(self, filename, qout, qbacklog, qoverflow);
+    {
+      if (st.st_size != 0)
+        return _load_qdisk_file(self, filename, qout, qbacklog, qoverflow);
+      return _init_qdisk_file_from_empty_file(self, filename);
+    }
 
   if (filename)
-    return _create_qdisk_file(self, filename, qout, qbacklog, qoverflow);
+    return _create_qdisk_file(self, filename);
 
   gchar next_filename[256];
   if (_next_filename(self, next_filename, sizeof(next_filename)))
-    return _create_qdisk_file(self, next_filename, qout, qbacklog, qoverflow);
+    return _init_qdisk_file_from_empty_file(self, next_filename);
 
   return FALSE;
 }
