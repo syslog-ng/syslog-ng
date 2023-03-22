@@ -52,11 +52,19 @@ log_queue_disk_is_file_in_directory(const gchar *file, const gchar *directory)
 }
 
 static LogQueue *
+_create_disk_queue(DiskQDestPlugin *self, const gchar *persist_name)
+{
+  if (self->options.reliable)
+    return log_queue_disk_reliable_new(&self->options, persist_name);
+  return log_queue_disk_non_reliable_new(&self->options, persist_name);
+}
+
+static LogQueue *
 _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
 {
   DiskQDestPlugin *self = log_driver_get_plugin(&dd->super, DiskQDestPlugin, DISKQ_PLUGIN_NAME);
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
-  LogQueue *queue = NULL;
+  LogQueue *queue;
   gchar *qfile_name;
   gboolean success;
 
@@ -69,14 +77,9 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
       queue = NULL;
     }
 
-  if (self->options.reliable)
-    queue = log_queue_disk_reliable_new(&self->options, persist_name);
-  else
-    queue = log_queue_disk_non_reliable_new(&self->options, persist_name);
-  log_queue_set_throttle(queue, dd->throttle);
+  queue = _create_disk_queue(self, persist_name);
 
   qfile_name = persist_state_lookup_string(cfg->state, persist_name, NULL, NULL);
-
   if (qfile_name && !log_queue_disk_is_file_in_directory(qfile_name, self->options.dir))
     {
       msg_warning("The disk buffer directory has changed in the configuration, but the disk queue file cannot be moved",
@@ -100,6 +103,8 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
           return NULL;
         }
     }
+
+  log_queue_set_throttle(queue, dd->throttle);
 
   g_free(qfile_name);
 
