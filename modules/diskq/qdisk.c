@@ -235,47 +235,47 @@ _release_dirlock(gint fd)
   g_mutex_unlock(&filename_lock);
 }
 
-gboolean
-qdisk_get_next_filename(const gchar *dir, gchar *filename, gsize filename_len, gboolean reliable)
+gchar *
+qdisk_get_next_filename(const gchar *dir, gboolean reliable)
 {
-  gint i = 0;
-  gboolean success = FALSE;
-  gchar qdir[256];
-
-  g_snprintf(qdir, sizeof(qdir), "%s", dir);
-
   gint dirlock_fd = -1;
   if (!_grab_dirlock(dir, &dirlock_fd))
     return FALSE;
 
-  /* NOTE: this'd be a security problem if we were not in our private directory. But we are. */
-  while (!success && i < 100000)
+  gchar *filename = NULL;
+  for (gint i = 0; i < 10000; i++)
     {
-      struct stat st;
-
+      gchar filename_buffer[256];
       if (reliable)
-        g_snprintf(filename, filename_len, "%s/syslog-ng-%05d.rqf", qdir, i);
+        g_snprintf(filename_buffer, sizeof(filename_buffer), "syslog-ng-%05d.rqf", i);
       else
-        g_snprintf(filename, filename_len, "%s/syslog-ng-%05d.qf", qdir, i);
-      success = (stat(filename, &st) < 0);
-      i++;
+        g_snprintf(filename_buffer, sizeof(filename_buffer), "syslog-ng-%05d.qf", i);
+
+      filename = g_build_path(G_DIR_SEPARATOR_S, dir, filename_buffer, NULL);
+
+      struct stat st;
+      if (stat(filename, &st) < 0)
+        break;
+
+      g_free(filename);
+      filename = NULL;
     }
 
-  if (!success)
+  if (!filename)
     {
       msg_error("Error generating unique queue filename, not using disk queue");
       _release_dirlock(dirlock_fd);
-      return FALSE;
+      return NULL;
     }
 
   if (!_create_file(filename))
     {
       _release_dirlock(dirlock_fd);
-      return FALSE;
+      return NULL;
     }
 
   _release_dirlock(dirlock_fd);
-  return TRUE;
+  return filename;
 }
 
 gboolean
@@ -1664,11 +1664,15 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
   if (filename)
     return _create_qdisk_file(self, filename);
 
-  gchar next_filename[256];
-  if (qdisk_get_next_filename(self->options->dir, next_filename, sizeof(next_filename), self->options->reliable))
-    return _init_qdisk_file_from_empty_file(self, next_filename);
+  gchar *next_filename = qdisk_get_next_filename(self->options->dir, self->options->reliable);
+  if (!next_filename || !_init_qdisk_file_from_empty_file(self, next_filename))
+    {
+      g_free(next_filename);
+      return FALSE;
+    }
 
-  return FALSE;
+  g_free(next_filename);
+  return TRUE;
 }
 
 static void
