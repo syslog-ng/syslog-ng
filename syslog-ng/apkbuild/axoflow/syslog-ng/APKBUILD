@@ -108,7 +108,6 @@ package() {
 	# Remove static file
 	rm -f usr/lib/libsyslog-ng-native-connector.a
 
-	install -d -m 755 etc/$pkgname/conf.d
 	install -d -m 700 "$pkgdir"/var/lib/syslog-ng
 }
 
