@@ -1,4 +1,4 @@
-name: Snapshot
+name: syslog-ng snapshot
 
 on:
   workflow_dispatch:
@@ -14,7 +14,13 @@ on:
         default: 'master'
         type: string
   pull_request:
+    paths:
+      - 'syslog-ng/**'
+      - '.github/workflows/**'
   push:
+    paths:
+      - 'syslog-ng/**'
+      - '.github/workflows/**'
   schedule:
     - cron: '00 23 * * *'
 
@@ -64,13 +70,13 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: source-tarball
-          path: apkbuild/axoflow/syslog-ng
+          path: syslog-ng/apkbuild/axoflow/syslog-ng
 
       - name: Build and export Docker image
         uses: docker/build-push-action@v3
         with:
-          context: .
-          file: alpine.dockerfile
+          context: syslog-ng
+          file: syslog-ng/alpine.dockerfile
           load: true
           tags: syslog-ng:test
           build-args: |
@@ -81,12 +87,12 @@ jobs:
         run: |
           export SYSLOG_NG_IMAGE="syslog-ng:test"
           export SYSLOG_NG_VERSION="${{ needs.tarball.outputs.snapshot-version }}"
-          tests/smoke.sh
+          syslog-ng/tests/smoke.sh
 
 
   publish-image:
     if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/docker.yml
+    uses: ./.github/workflows/syslog-ng-docker.yml
     needs: [tarball, build-and-test]
     with:
       pkg-type: nightly
