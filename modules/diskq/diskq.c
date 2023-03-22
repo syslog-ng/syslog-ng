@@ -64,7 +64,6 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
 {
   DiskQDestPlugin *self = log_driver_get_plugin(&dd->super, DiskQDestPlugin, DISKQ_PLUGIN_NAME);
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
-  gboolean success;
 
   if (persist_name)
     log_queue_unref(cfg_persist_config_fetch(cfg, persist_name));
@@ -79,8 +78,7 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
                   evt_tag_str("dir", self->options.dir));
     }
 
-  success = log_queue_disk_start(queue, qfile_name);
-  if (!success)
+  if (!log_queue_disk_start(queue, qfile_name))
     {
       if (qfile_name && log_queue_disk_start(queue, NULL))
         {
