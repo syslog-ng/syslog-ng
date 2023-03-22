@@ -64,22 +64,14 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
 {
   DiskQDestPlugin *self = log_driver_get_plugin(&dd->super, DiskQDestPlugin, DISKQ_PLUGIN_NAME);
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
-  LogQueue *queue;
-  gchar *qfile_name;
   gboolean success;
 
   if (persist_name)
-    queue = cfg_persist_config_fetch(cfg, persist_name);
+    log_queue_unref(cfg_persist_config_fetch(cfg, persist_name));
 
-  if (queue)
-    {
-      log_queue_unref(queue);
-      queue = NULL;
-    }
+  LogQueue *queue = _create_disk_queue(self, persist_name);
 
-  queue = _create_disk_queue(self, persist_name);
-
-  qfile_name = persist_state_lookup_string(cfg->state, persist_name, NULL, NULL);
+  gchar *qfile_name = persist_state_lookup_string(cfg->state, persist_name, NULL, NULL);
   if (qfile_name && !log_queue_disk_is_file_in_directory(qfile_name, self->options.dir))
     {
       msg_warning("The disk buffer directory has changed in the configuration, but the disk queue file cannot be moved",
