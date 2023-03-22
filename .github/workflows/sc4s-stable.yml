@@ -1,0 +1,150 @@
+name: SC4S stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: 'SC4S repository owner'
+        required: true
+        default: 'splunk'
+        type: string
+      repo:
+        description: 'SC4S repository'
+        required: true
+        default: 'splunk-connect-for-syslog'
+        type: string
+      ref:
+        description: 'SC4S ref (branch, tag, commit id)'
+        required: false
+        type: string
+      syslog-ng-image-version:
+        description: 'syslog-ng image version'
+        required: true
+        default: 'latest'
+        type: string
+  pull_request:
+    paths:
+      - 'sc4s/**'
+      - '.github/workflows/**'
+  push:
+    paths:
+      - 'sc4s/**'
+      - '.github/workflows/**'
+    branches:
+      - '**'
+    tags:
+      - 'sc4s-*'
+
+env:
+  DOCKER_IMAGE_NAME: ghcr.io/axoflow/syslog-ng-splunk-connector
+  PLATFORMS: linux/amd64,linux/arm64
+
+jobs:
+  detect-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.ref }}
+    steps:
+      - name: Detect SC4S version
+        id: version
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const input_ref = '${{ inputs.ref }}';
+            if (input_ref) {
+              console.log('Version from workflow input: ' + input_ref);
+              core.setOutput('ref', input_ref);
+              return;
+            }
+
+            if (context.ref.startsWith('refs/tags/sc4s-')) {
+              const tag = "v" + context.ref.replace("refs/tags/sc4s-", "");
+              console.log('Version from tag: ' + tag);
+              core.setOutput('ref', tag);
+              return;
+            }
+
+            const owner = '${{ inputs.owner || 'splunk' }}';
+            const repo = '${{ inputs.repo || 'splunk-connect-for-syslog' }}';
+            const latest_release = await github.rest.repos.getLatestRelease({
+              owner: owner,
+              repo: repo,
+            });
+
+            if (!/^v[0-9]/.test(latest_release.data.tag_name)) {
+              core.setFailed('Latest release tag mismatch');
+              return;
+            }
+
+            console.log('Version (latest): ' + latest_release.data.tag_name);
+            core.setOutput('ref', latest_release.data.tag_name)
+
+  build-and-test:
+    runs-on: ubuntu-latest
+    needs: detect-version
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Checkout SC4S source
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.owner || 'splunk' }}/${{ inputs.repo || 'splunk-connect-for-syslog' }}
+          ref: ${{ needs.detect-version.outputs.version }}
+          path: sc4s/splunk-connect-for-syslog
+
+      - name: Build and export Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: sc4s
+          file: sc4s/Dockerfile
+          load: true
+          tags: sc4s:test
+          build-args: |
+            SYSLOGNG_VERSION=${{ inputs.syslog-ng-image-version || 'latest' }}
+
+  publish-image:
+    if: github.repository_owner == 'axoflow' && startsWith(github.ref, 'refs/tags/sc4s-')
+    needs: [detect-version, build-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Checkout SC4S source
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.owner || 'splunk' }}/${{ inputs.repo || 'splunk-connect-for-syslog' }}
+          ref: ${{ needs.detect-version.outputs.version }}
+          path: sc4s/splunk-connect-for-syslog
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (SC4S version) for Docker
+        id: tags
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.DOCKER_IMAGE_NAME }}
+          tags: type=match,pattern=sc4s-(.*),group=1
+          sep-tags: ','
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: sc4s
+          file: sc4s/Dockerfile
+          platforms: ${{ env.PLATFORMS }}
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            SYSLOGNG_VERSION=${{ inputs.syslog-ng-image-version || 'latest' }}
