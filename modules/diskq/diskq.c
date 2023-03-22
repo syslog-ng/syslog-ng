@@ -52,11 +52,11 @@ log_queue_disk_is_file_in_directory(const gchar *file, const gchar *directory)
 }
 
 static LogQueue *
-_create_disk_queue(DiskQDestPlugin *self, const gchar *persist_name)
+_create_disk_queue(DiskQDestPlugin *self, const gchar *filename, const gchar *persist_name)
 {
   if (self->options.reliable)
-    return log_queue_disk_reliable_new(&self->options, persist_name);
-  return log_queue_disk_non_reliable_new(&self->options, persist_name);
+    return log_queue_disk_reliable_new(&self->options, filename, persist_name);
+  return log_queue_disk_non_reliable_new(&self->options, filename, persist_name);
 }
 
 static void
@@ -70,48 +70,57 @@ _warn_if_dir_changed(const gchar *qfile_name, const gchar *dir)
     }
 }
 
-static gboolean
-_start_disk_queue_with_filename_from_persist(DiskQDestPlugin *self, LogQueue *queue, const gchar *persist_qfile_name)
+static LogQueue *
+_create_and_start_disk_queue_with_filename_from_persist(DiskQDestPlugin *self, const gchar *persist_qfile_name,
+                                                        const gchar *persist_name)
 {
   if (!persist_qfile_name)
     return FALSE;
 
   _warn_if_dir_changed(persist_qfile_name, self->options.dir);
 
-  if (log_queue_disk_start(queue, persist_qfile_name))
-    return TRUE;
+  LogQueue *queue = _create_disk_queue(self, persist_qfile_name, persist_name);
+  if (log_queue_disk_start(queue))
+    return queue;
+
+  log_queue_unref(queue);
 
   gchar *new_qfile_name = qdisk_get_next_filename(self->options.dir, self->options.reliable);
   if (!new_qfile_name)
-    return FALSE;
+    return NULL;
 
-  if (log_queue_disk_start(queue, new_qfile_name))
+  queue = _create_disk_queue(self, persist_qfile_name, persist_name);
+  if (log_queue_disk_start(queue))
     {
       msg_error("Error opening disk-queue file, a new one started",
                 evt_tag_str("old_filename", persist_qfile_name),
                 evt_tag_str("new_filename", log_queue_disk_get_filename(queue)));
       g_free(new_qfile_name);
-      return TRUE;
+      return queue;
     }
 
   msg_error("Error initializing log queue");
 
+  log_queue_unref(queue);
   g_free(new_qfile_name);
-  return FALSE;
+  return NULL;
 }
 
-static gboolean
-_start_disk_queue_with_new_filename(DiskQDestPlugin *self, LogQueue *queue, const gchar *new_qfile_name)
+static LogQueue *
+_create_and_start_disk_queue_with_new_filename(DiskQDestPlugin *self, const gchar *new_qfile_name,
+                                               const gchar *persist_name)
 {
   if (!new_qfile_name)
-    return FALSE;
+    return NULL;
 
-  if (log_queue_disk_start(queue, new_qfile_name))
-    return TRUE;
+  LogQueue *queue = _create_disk_queue(self, new_qfile_name, persist_name);
+  if (log_queue_disk_start(queue))
+    return queue;
 
   msg_error("Error initializing log queue");
 
-  return FALSE;
+  log_queue_unref(queue);
+  return NULL;
 }
 
 static LogQueue *
@@ -119,23 +128,19 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
 {
   DiskQDestPlugin *self = log_driver_get_plugin(&dd->super, DiskQDestPlugin, DISKQ_PLUGIN_NAME);
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
+  LogQueue *queue;
   gchar *persist_qfile_name, *new_qfile_name = NULL;
 
   if (persist_name)
     log_queue_unref(cfg_persist_config_fetch(cfg, persist_name));
 
-  LogQueue *queue = _create_disk_queue(self, persist_name);
-
   persist_qfile_name = persist_state_lookup_string(cfg->state, persist_name, NULL, NULL);
-  if (_start_disk_queue_with_filename_from_persist(self, queue, persist_qfile_name))
+  queue = _create_and_start_disk_queue_with_filename_from_persist(self, persist_qfile_name, persist_name);
+  if (queue)
     goto exit;
 
   new_qfile_name = qdisk_get_next_filename(self->options.dir, self->options.reliable);
-  if (_start_disk_queue_with_new_filename(self, queue, new_qfile_name))
-    goto exit;
-
-  log_queue_unref(queue);
-  queue = NULL;
+  queue = _create_and_start_disk_queue_with_new_filename(self, new_qfile_name, persist_name);
 
 exit:
   if (queue)

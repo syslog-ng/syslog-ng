@@ -36,6 +36,6 @@ typedef struct _LogQueueDiskNonReliable
   gint qout_size;
 } LogQueueDiskNonReliable;
 
-LogQueue *log_queue_disk_non_reliable_new(DiskQueueOptions *options, const gchar *persist_name);
+LogQueue *log_queue_disk_non_reliable_new(DiskQueueOptions *options, const gchar *filename, const gchar *persist_name);
 
 #endif /* LOG_QUEUE_DISK_NON_RELIABLE_H_ */

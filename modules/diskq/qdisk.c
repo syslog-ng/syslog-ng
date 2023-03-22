@@ -1274,9 +1274,6 @@ _close_file(QDisk *self)
       self->fd = -1;
     }
 
-  g_free(self->filename);
-  self->filename = NULL;
-
   self->cached_file_size = 0;
 }
 
@@ -1306,21 +1303,20 @@ _ensure_header_byte_order(QDisk *self)
 }
 
 static gboolean
-_open_file(QDisk *self, const gchar *filename)
+_open_file(QDisk *self)
 {
-  g_assert(filename);
+  g_assert(self->filename);
 
-  gint fd = open(filename, O_LARGEFILE | (self->options->read_only ? O_RDONLY : O_RDWR), 0600);
+  gint fd = open(self->filename, O_LARGEFILE | (self->options->read_only ? O_RDONLY : O_RDWR), 0600);
   if (fd < 0)
     {
       msg_error("Error opening disk-queue file",
-                evt_tag_str("filename", filename),
+                evt_tag_str("filename", self->filename),
                 evt_tag_error("error"));
       return FALSE;
     }
 
   self->fd = fd;
-  self->filename = g_strdup(filename);
 
   struct stat st;
   if (fstat(self->fd, &st) != 0)
@@ -1573,9 +1569,9 @@ _ensure_disk_buf_size(QDisk *self)
 }
 
 static gboolean
-_load_qdisk_file(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+_load_qdisk_file(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
-  if (!_open_file(self, filename))
+  if (!_open_file(self))
     goto error;
 
   if (!_load_state(self, qout, qbacklog, qoverflow))
@@ -1604,7 +1600,7 @@ _init_qdisk_file(QDisk *self)
 }
 
 static gboolean
-_create_qdisk_file(QDisk *self, const gchar *filename)
+_create_qdisk_file(QDisk *self)
 {
   g_assert(!self->options->read_only);
 
@@ -1614,10 +1610,10 @@ _create_qdisk_file(QDisk *self, const gchar *filename)
       return FALSE;
     }
 
-  if (!_create_file(filename))
+  if (!_create_file(self->filename))
     goto error;
 
-  if (!_open_file(self, filename))
+  if (!_open_file(self))
     goto error;
 
   if (!_init_qdisk_file(self))
@@ -1631,9 +1627,9 @@ error:
 }
 
 static gboolean
-_init_qdisk_file_from_empty_file(QDisk *self, const gchar *filename)
+_init_qdisk_file_from_empty_file(QDisk *self)
 {
-  if (!_open_file(self, filename))
+  if (!_open_file(self))
     goto error;
 
   if (!_init_qdisk_file(self))
@@ -1647,21 +1643,21 @@ error:
 }
 
 gboolean
-qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+qdisk_start(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
   g_assert(!qdisk_started(self));
-  g_assert(filename);
+  g_assert(self->filename);
 
   struct stat st;
-  gboolean file_exists = stat(filename, &st) != -1;
+  gboolean file_exists = stat(self->filename, &st) != -1;
 
   if (!file_exists)
-    return _create_qdisk_file(self, filename);
+    return _create_qdisk_file(self);
 
   if (st.st_size != 0)
-    return _load_qdisk_file(self, filename, qout, qbacklog, qoverflow);
+    return _load_qdisk_file(self, qout, qbacklog, qoverflow);
 
-  return _init_qdisk_file_from_empty_file(self, filename);
+  return _init_qdisk_file_from_empty_file(self);
 }
 
 gboolean
@@ -1760,11 +1756,12 @@ void
 qdisk_free(QDisk *self)
 {
   self->options = NULL;
+  g_free(self->filename);
   g_free(self);
 }
 
 QDisk *
-qdisk_new(DiskQueueOptions *options, const gchar *file_id)
+qdisk_new(DiskQueueOptions *options, const gchar *file_id, const gchar *filename)
 {
   QDisk *self = g_new0(QDisk, 1);
 
@@ -1773,6 +1770,7 @@ qdisk_new(DiskQueueOptions *options, const gchar *file_id)
   self->options = options;
 
   self->file_id = file_id;
+  self->filename = g_strdup(filename);
 
   return self;
 }

@@ -59,12 +59,12 @@ test_diskq_become_full(gboolean reliable, const gchar *filename)
   if (reliable)
     {
       _construct_options(&options, 1000, 1000, reliable);
-      q = log_queue_disk_reliable_new(&options, persist_name);
+      q = log_queue_disk_reliable_new(&options, filename, persist_name);
     }
   else
     {
       _construct_options(&options, 1000, 0, reliable);
-      q = log_queue_disk_non_reliable_new(&options, persist_name);
+      q = log_queue_disk_non_reliable_new(&options, filename, persist_name);
     }
 
   log_queue_set_use_backlog(q, TRUE);
@@ -76,7 +76,7 @@ test_diskq_become_full(gboolean reliable, const gchar *filename)
   stats_counter_set(q->metrics.shared.dropped_messages, 0);
   stats_unlock();
   unlink(filename);
-  log_queue_disk_start(q, filename);
+  log_queue_disk_start(q);
   feed_some_messages(q, 1000);
 
   cr_assert_eq(atomic_gssize_racy_get(&q->metrics.shared.dropped_messages->value), 1000,

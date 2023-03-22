@@ -63,9 +63,9 @@ _peek_memory_queue_head_position(GQueue *queue)
 }
 
 static gboolean
-_start(LogQueueDisk *s, const gchar *filename)
+_start(LogQueueDisk *s)
 {
-  return qdisk_start(s->qdisk, filename, NULL, NULL, NULL);
+  return qdisk_start(s->qdisk, NULL, NULL, NULL);
 }
 
 static gboolean
@@ -469,11 +469,11 @@ _set_virtual_functions(LogQueueDiskReliable *self)
 }
 
 LogQueue *
-log_queue_disk_reliable_new(DiskQueueOptions *options, const gchar *persist_name)
+log_queue_disk_reliable_new(DiskQueueOptions *options, const gchar *filename, const gchar *persist_name)
 {
   g_assert(options->reliable == TRUE);
   LogQueueDiskReliable *self = g_new0(LogQueueDiskReliable, 1);
-  log_queue_disk_init_instance(&self->super, options, "SLRQ", persist_name);
+  log_queue_disk_init_instance(&self->super, options, "SLRQ", filename, persist_name);
   if (options->mem_buf_size < 0)
     {
       options->mem_buf_size = PESSIMISTIC_MEM_BUF_SIZE;
