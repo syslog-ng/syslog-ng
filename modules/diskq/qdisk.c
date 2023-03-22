@@ -235,17 +235,17 @@ _release_dirlock(gint fd)
   g_mutex_unlock(&filename_lock);
 }
 
-static gboolean
-_next_filename(QDisk *self, gchar *filename, gsize filename_len)
+gboolean
+qdisk_get_next_filename(const gchar *dir, gchar *filename, gsize filename_len, gboolean reliable)
 {
   gint i = 0;
   gboolean success = FALSE;
   gchar qdir[256];
 
-  g_snprintf(qdir, sizeof(qdir), "%s", self->options->dir);
+  g_snprintf(qdir, sizeof(qdir), "%s", dir);
 
   gint dirlock_fd = -1;
-  if (!_grab_dirlock(self->options->dir, &dirlock_fd))
+  if (!_grab_dirlock(dir, &dirlock_fd))
     return FALSE;
 
   /* NOTE: this'd be a security problem if we were not in our private directory. But we are. */
@@ -253,7 +253,7 @@ _next_filename(QDisk *self, gchar *filename, gsize filename_len)
     {
       struct stat st;
 
-      if (self->options->reliable)
+      if (reliable)
         g_snprintf(filename, filename_len, "%s/syslog-ng-%05d.rqf", qdir, i);
       else
         g_snprintf(filename, filename_len, "%s/syslog-ng-%05d.qf", qdir, i);
@@ -1665,7 +1665,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
     return _create_qdisk_file(self, filename);
 
   gchar next_filename[256];
-  if (_next_filename(self, next_filename, sizeof(next_filename)))
+  if (qdisk_get_next_filename(self->options->dir, next_filename, sizeof(next_filename), self->options->reliable))
     return _init_qdisk_file_from_empty_file(self, next_filename);
 
   return FALSE;
