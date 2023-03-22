@@ -1650,29 +1650,18 @@ gboolean
 qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
   g_assert(!qdisk_started(self));
+  g_assert(filename);
 
   struct stat st;
-  gboolean file_exists = filename && stat(filename, &st) != -1;
+  gboolean file_exists = stat(filename, &st) != -1;
 
-  if (file_exists)
-    {
-      if (st.st_size != 0)
-        return _load_qdisk_file(self, filename, qout, qbacklog, qoverflow);
-      return _init_qdisk_file_from_empty_file(self, filename);
-    }
-
-  if (filename)
+  if (!file_exists)
     return _create_qdisk_file(self, filename);
 
-  gchar *next_filename = qdisk_get_next_filename(self->options->dir, self->options->reliable);
-  if (!next_filename || !_init_qdisk_file_from_empty_file(self, next_filename))
-    {
-      g_free(next_filename);
-      return FALSE;
-    }
+  if (st.st_size != 0)
+    return _load_qdisk_file(self, filename, qout, qbacklog, qoverflow);
 
-  g_free(next_filename);
-  return TRUE;
+  return _init_qdisk_file_from_empty_file(self, filename);
 }
 
 static void
