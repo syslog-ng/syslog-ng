@@ -59,6 +59,17 @@ _create_disk_queue(DiskQDestPlugin *self, const gchar *persist_name)
   return log_queue_disk_non_reliable_new(&self->options, persist_name);
 }
 
+static void
+_warn_if_dir_changed(const gchar *qfile_name, const gchar *dir)
+{
+  if (qfile_name && !log_queue_disk_is_file_in_directory(qfile_name, dir))
+    {
+      msg_warning("The disk buffer directory has changed in the configuration, but the disk queue file cannot be moved",
+                  evt_tag_str("qfile", qfile_name),
+                  evt_tag_str("dir", dir));
+    }
+}
+
 static LogQueue *
 _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
 {
@@ -71,12 +82,7 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
   LogQueue *queue = _create_disk_queue(self, persist_name);
 
   gchar *qfile_name = persist_state_lookup_string(cfg->state, persist_name, NULL, NULL);
-  if (qfile_name && !log_queue_disk_is_file_in_directory(qfile_name, self->options.dir))
-    {
-      msg_warning("The disk buffer directory has changed in the configuration, but the disk queue file cannot be moved",
-                  evt_tag_str("qfile", qfile_name),
-                  evt_tag_str("dir", self->options.dir));
-    }
+  _warn_if_dir_changed(qfile_name, self->options.dir);
 
   if (!log_queue_disk_start(queue, qfile_name))
     {
