@@ -1664,16 +1664,6 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
   return _init_qdisk_file_from_empty_file(self, filename);
 }
 
-static void
-qdisk_init_instance(QDisk *self, DiskQueueOptions *options, const gchar *file_id)
-{
-  self->fd = -1;
-  self->cached_file_size = 0;
-  self->options = options;
-
-  self->file_id = file_id;
-}
-
 gboolean
 qdisk_stop(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
@@ -1777,6 +1767,12 @@ QDisk *
 qdisk_new(DiskQueueOptions *options, const gchar *file_id)
 {
   QDisk *self = g_new0(QDisk, 1);
-  qdisk_init_instance(self, options, file_id);
+
+  self->fd = -1;
+  self->cached_file_size = 0;
+  self->options = options;
+
+  self->file_id = file_id;
+
   return self;
 }
