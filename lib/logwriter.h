@@ -88,6 +88,8 @@ LogQueue *log_writer_get_queue(LogWriter *s);
 LogWriter *log_writer_new(guint32 flags, GlobalConfig *cfg);
 void log_writer_msg_rewind(LogWriter *self);
 
+void log_writer_init_driver_sck_builder(LogWriter *self, StatsClusterKeyBuilder *builder);
+
 void log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enable);
 void log_writer_options_defaults(LogWriterOptions *options);
 void log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 option_flags);

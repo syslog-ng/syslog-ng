@@ -505,8 +505,15 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
                          &self->writer_options,
                          self->super.super.id,
                          afsocket_dd_stats_instance(self));
-  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(
-                         &self->super, afsocket_dd_format_qfile_name(self)));
+
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  log_writer_init_driver_sck_builder(self->writer, driver_sck_builder);
+
+  LogQueue *queue = log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_qfile_name(self),
+                                                  self->writer_options.stats_level, driver_sck_builder);
+  log_writer_set_queue(self->writer, queue);
+
+  stats_cluster_key_builder_free(driver_sck_builder);
 
   if (!log_pipe_init((LogPipe *) self->writer))
     {

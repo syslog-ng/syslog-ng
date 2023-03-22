@@ -655,14 +655,15 @@ log_queue_fifo_free(LogQueue *s)
 }
 
 LogQueue *
-log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name)
+log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name, gint stats_level,
+                   const StatsClusterKeyBuilder *driver_sck_builder)
 {
   LogQueueFifo *self;
 
   gint max_threads = main_loop_worker_get_max_number_of_threads();
   self = g_malloc0(sizeof(LogQueueFifo) + max_threads * sizeof(self->input_queues[0]));
 
-  log_queue_init_instance(&self->super, persist_name);
+  log_queue_init_instance(&self->super, persist_name, stats_level, driver_sck_builder);
   self->super.type = log_queue_fifo_type;
   self->super.use_backlog = FALSE;
   self->super.get_length = log_queue_fifo_get_length;
@@ -694,9 +695,11 @@ log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name)
 }
 
 LogQueue *
-log_queue_fifo_legacy_new(gint log_fifo_size, const gchar *persist_name)
+log_queue_fifo_legacy_new(gint log_fifo_size, const gchar *persist_name, gint stats_level,
+                          const StatsClusterKeyBuilder *driver_sck_builder)
 {
-  LogQueueFifo *self = (LogQueueFifo *) log_queue_fifo_new(log_fifo_size, persist_name);
+  LogQueueFifo *self = (LogQueueFifo *) log_queue_fifo_new(log_fifo_size, persist_name, stats_level,
+                                                           driver_sck_builder);
   self->use_legacy_fifo_size = TRUE;
   return &self->super;
 }

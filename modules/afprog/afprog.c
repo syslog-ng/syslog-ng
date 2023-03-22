@@ -534,8 +534,15 @@ afprogram_dd_init(LogPipe *s)
                          &self->writer_options,
                          self->super.super.id,
                          self->process_info.cmdline->str);
-  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->super,
-                       afprogram_dd_format_queue_persist_name(self)));
+
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  log_writer_init_driver_sck_builder(self->writer, driver_sck_builder);
+
+  LogQueue *queue = log_dest_driver_acquire_queue(&self->super, afprogram_dd_format_queue_persist_name(self),
+                                                  self->writer_options.stats_level, driver_sck_builder);
+  log_writer_set_queue(self->writer, queue);
+
+  stats_cluster_key_builder_free(driver_sck_builder);
 
   if (!log_pipe_init((LogPipe *) self->writer))
     {

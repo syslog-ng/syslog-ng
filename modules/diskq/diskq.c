@@ -52,11 +52,13 @@ log_queue_disk_is_file_in_directory(const gchar *file, const gchar *directory)
 }
 
 static LogQueue *
-_create_disk_queue(DiskQDestPlugin *self, const gchar *filename, const gchar *persist_name)
+_create_disk_queue(DiskQDestPlugin *self, const gchar *filename, const gchar *persist_name, gint stats_level,
+                   const StatsClusterKeyBuilder *driver_sck_builder)
 {
   if (self->options.reliable)
-    return log_queue_disk_reliable_new(&self->options, filename, persist_name);
-  return log_queue_disk_non_reliable_new(&self->options, filename, persist_name);
+    return log_queue_disk_reliable_new(&self->options, filename, persist_name, stats_level, driver_sck_builder);
+
+  return log_queue_disk_non_reliable_new(&self->options, filename, persist_name, stats_level, driver_sck_builder);
 }
 
 static void
@@ -72,14 +74,15 @@ _warn_if_dir_changed(const gchar *qfile_name, const gchar *dir)
 
 static LogQueue *
 _create_and_start_disk_queue_with_filename_from_persist(DiskQDestPlugin *self, const gchar *persist_qfile_name,
-                                                        const gchar *persist_name)
+                                                        const gchar *persist_name, gint stats_level,
+                                                        const StatsClusterKeyBuilder *driver_sck_builder)
 {
   if (!persist_qfile_name)
     return FALSE;
 
   _warn_if_dir_changed(persist_qfile_name, self->options.dir);
 
-  LogQueue *queue = _create_disk_queue(self, persist_qfile_name, persist_name);
+  LogQueue *queue = _create_disk_queue(self, persist_qfile_name, persist_name, stats_level, driver_sck_builder);
   if (log_queue_disk_start(queue))
     return queue;
 
@@ -89,7 +92,7 @@ _create_and_start_disk_queue_with_filename_from_persist(DiskQDestPlugin *self, c
   if (!new_qfile_name)
     return NULL;
 
-  queue = _create_disk_queue(self, persist_qfile_name, persist_name);
+  queue = _create_disk_queue(self, persist_qfile_name, persist_name, stats_level, driver_sck_builder);
   if (log_queue_disk_start(queue))
     {
       msg_error("Error opening disk-queue file, a new one started",
@@ -108,12 +111,13 @@ _create_and_start_disk_queue_with_filename_from_persist(DiskQDestPlugin *self, c
 
 static LogQueue *
 _create_and_start_disk_queue_with_new_filename(DiskQDestPlugin *self, const gchar *new_qfile_name,
-                                               const gchar *persist_name)
+                                               const gchar *persist_name, gint stats_level,
+                                               const StatsClusterKeyBuilder *driver_sck_builder)
 {
   if (!new_qfile_name)
     return NULL;
 
-  LogQueue *queue = _create_disk_queue(self, new_qfile_name, persist_name);
+  LogQueue *queue = _create_disk_queue(self, new_qfile_name, persist_name, stats_level, driver_sck_builder);
   if (log_queue_disk_start(queue))
     return queue;
 
@@ -124,7 +128,8 @@ _create_and_start_disk_queue_with_new_filename(DiskQDestPlugin *self, const gcha
 }
 
 static LogQueue *
-_acquire_queue(LogDestDriver *dd, const gchar *persist_name)
+_acquire_queue(LogDestDriver *dd, const gchar *persist_name, gint stats_level,
+               const StatsClusterKeyBuilder *driver_sck_builder)
 {
   DiskQDestPlugin *self = log_driver_get_plugin(&dd->super, DiskQDestPlugin, DISKQ_PLUGIN_NAME);
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
@@ -135,12 +140,14 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
     log_queue_unref(cfg_persist_config_fetch(cfg, persist_name));
 
   persist_qfile_name = persist_state_lookup_string(cfg->state, persist_name, NULL, NULL);
-  queue = _create_and_start_disk_queue_with_filename_from_persist(self, persist_qfile_name, persist_name);
+  queue = _create_and_start_disk_queue_with_filename_from_persist(
+            self, persist_qfile_name, persist_name, stats_level, driver_sck_builder);
   if (queue)
     goto exit;
 
   new_qfile_name = qdisk_get_next_filename(self->options.dir, self->options.reliable);
-  queue = _create_and_start_disk_queue_with_new_filename(self, new_qfile_name, persist_name);
+  queue = _create_and_start_disk_queue_with_new_filename(self, new_qfile_name, persist_name, stats_level,
+                                                         driver_sck_builder);
 
 exit:
   if (queue)

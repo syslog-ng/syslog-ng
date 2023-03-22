@@ -104,6 +104,8 @@ struct _LogThreadedDestDriver
   LogDestDriver super;
   GMutex lock;
 
+  StatsClusterKey *output_events_sc_key;
+  StatsClusterKey *processed_sc_key;
   StatsCounterItem *dropped_messages;
   StatsCounterItem *processed_messages;
   StatsCounterItem *written_messages;

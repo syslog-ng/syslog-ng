@@ -75,13 +75,13 @@ _load_queue(ThreadedDiskqSourceDriver *self)
   if (self->diskq_options.reliable)
     {
       self->diskq_options.mem_buf_size = 1024 * 1024;
-      self->queue = log_queue_disk_reliable_new(&self->diskq_options, self->filename, NULL);
+      self->queue = log_queue_disk_reliable_new(&self->diskq_options, self->filename, NULL, STATS_LEVEL0, NULL);
     }
   else
     {
       self->diskq_options.mem_buf_size = 128;
       self->diskq_options.qout_size = 1000;
-      self->queue = log_queue_disk_non_reliable_new(&self->diskq_options, self->filename, NULL);
+      self->queue = log_queue_disk_non_reliable_new(&self->diskq_options, self->filename, NULL, STATS_LEVEL0, NULL);
     }
 
   if (!log_queue_disk_start(self->queue))

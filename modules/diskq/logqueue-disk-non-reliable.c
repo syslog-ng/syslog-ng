@@ -563,11 +563,13 @@ _set_virtual_functions(LogQueueDiskNonReliable *self)
 }
 
 LogQueue *
-log_queue_disk_non_reliable_new(DiskQueueOptions *options, const gchar *filename, const gchar *persist_name)
+log_queue_disk_non_reliable_new(DiskQueueOptions *options, const gchar *filename, const gchar *persist_name,
+                                gint stats_level, const StatsClusterKeyBuilder *driver_sck_builder)
 {
   g_assert(options->reliable == FALSE);
   LogQueueDiskNonReliable *self = g_new0(LogQueueDiskNonReliable, 1);
-  log_queue_disk_init_instance(&self->super, options, "SLQF", filename, persist_name);
+  log_queue_disk_init_instance(&self->super, options, "SLQF", filename, persist_name, stats_level,
+                               driver_sck_builder);
   self->qbacklog = g_queue_new();
   self->qout = g_queue_new();
   self->qoverflow = g_queue_new();

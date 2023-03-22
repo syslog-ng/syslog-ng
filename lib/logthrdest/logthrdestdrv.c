@@ -34,9 +34,6 @@
 #define MAX_RETRIES_ON_ERROR_DEFAULT 3
 #define MAX_RETRIES_BEFORE_SUSPEND_DEFAULT 3
 
-static void _init_stats_legacy_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key);
-static void _init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key);
-
 const gchar *
 log_threaded_result_to_str(LogThreadedResult self)
 {
@@ -657,28 +654,6 @@ _init_watches(LogThreadedDestWorker *self)
 }
 
 static void
-_register_worker_stats(LogThreadedDestWorker *self)
-{
-  StatsClusterKey sc_key;
-
-  stats_lock();
-  _init_stats_key(self->owner, &sc_key);
-  log_queue_register_stats_counters(self->queue, 0, &sc_key);
-  stats_unlock();
-}
-
-static void
-_unregister_worker_stats(LogThreadedDestWorker *self)
-{
-  StatsClusterKey sc_key;
-
-  stats_lock();
-  _init_stats_key(self->owner, &sc_key);
-  log_queue_unregister_stats_counters(self->queue, &sc_key);
-  stats_unlock();
-}
-
-static void
 _perform_final_flush(LogThreadedDestWorker *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->owner->super.super.super);
@@ -769,10 +744,10 @@ log_threaded_dest_worker_start(LogThreadedDestWorker *self)
 }
 
 static gboolean
-_acquire_worker_queue(LogThreadedDestWorker *self)
+_acquire_worker_queue(LogThreadedDestWorker *self, gint stats_level, const StatsClusterKeyBuilder *driver_sck_builder)
 {
   gchar *persist_name = _format_queue_persist_name(self);
-  self->queue = log_dest_driver_acquire_queue(&self->owner->super, persist_name);
+  self->queue = log_dest_driver_acquire_queue(&self->owner->super, persist_name, stats_level, driver_sck_builder);
   g_free(persist_name);
 
   if (!self->queue)
@@ -789,15 +764,12 @@ log_threaded_dest_worker_init_method(LogThreadedDestWorker *self)
   if (self->time_reopen == -1)
     self->time_reopen = self->owner->time_reopen;
 
-  _register_worker_stats(self);
-
   return TRUE;
 }
 
 void
 log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self)
 {
-  _unregister_worker_stats(self);
 }
 
 void
@@ -974,20 +946,6 @@ _init_stats_legacy_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key)
                                        self->format_stats_instance(self));
 }
 
-static void
-_init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key)
-{
-  enum { labels_len = 2 };
-  static StatsClusterLabel labels[labels_len];
-
-  labels[0] = stats_cluster_label("id", self->super.super.id ? : "");
-  labels[1] = stats_cluster_label("driver_instance", self->format_stats_instance(self));
-  stats_cluster_logpipe_key_set(sc_key, "output_events_total", labels, labels_len);
-  stats_cluster_logpipe_key_add_legacy_alias(sc_key, self->stats_source | SCS_DESTINATION,
-                                             self->super.super.id,
-                                             self->format_stats_instance(self));
-}
-
 void
 log_threaded_dest_driver_insert_msg_length_stats(LogThreadedDestDriver *self, gsize len)
 {
@@ -1048,38 +1006,61 @@ log_threaded_dest_driver_unregister_aggregated_stats(LogThreadedDestDriver *self
 }
 
 static void
-_register_stats(LogThreadedDestDriver *self)
+_register_driver_stats(LogThreadedDestDriver *self, StatsClusterKeyBuilder *driver_sck_builder)
 {
+  if (!driver_sck_builder)
+    return;
+
+  stats_cluster_key_builder_set_name(driver_sck_builder, "output_events_total");
+  self->output_events_sc_key = stats_cluster_key_builder_build_logpipe(driver_sck_builder);
+
+  stats_cluster_key_builder_reset(driver_sck_builder);
+  stats_cluster_key_builder_set_legacy_alias(driver_sck_builder, self->stats_source | SCS_DESTINATION,
+                                             self->super.super.id, self->format_stats_instance(self));
+  stats_cluster_key_builder_set_legacy_alias_name(driver_sck_builder, "processed");
+  self->processed_sc_key = stats_cluster_key_builder_build_single(driver_sck_builder);
+
   stats_lock();
   {
-    StatsClusterKey sc_key;
-
-    _init_stats_key(self, &sc_key);
-    stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-    stats_register_counter(0, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
-
-    stats_cluster_single_key_legacy_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
-                                                  self->format_stats_instance(self), "processed");
-    stats_register_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->processed_messages);
-
+    stats_register_counter(0, self->output_events_sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_register_counter(0, self->output_events_sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+    stats_register_counter(0, self->processed_sc_key, SC_TYPE_SINGLE_VALUE, &self->processed_messages);
   }
   stats_unlock();
 }
 
 static void
-_unregister_stats(LogThreadedDestDriver *self)
+_init_driver_sck_builder(LogThreadedDestDriver *self, StatsClusterKeyBuilder *builder)
+{
+  stats_cluster_key_builder_add_label(builder, stats_cluster_label("id", self->super.super.id ? : ""));
+  stats_cluster_key_builder_add_label(builder,
+                                      stats_cluster_label("driver_instance", self->format_stats_instance(self)));
+  stats_cluster_key_builder_set_legacy_alias(builder, self->stats_source | SCS_DESTINATION,
+                                             self->super.super.id,
+                                             self->format_stats_instance(self));
+}
+
+static void
+_unregister_driver_stats(LogThreadedDestDriver *self)
 {
   stats_lock();
   {
-    StatsClusterKey sc_key;
+    if (self->output_events_sc_key)
+      {
+        stats_unregister_counter(self->output_events_sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+        stats_unregister_counter(self->output_events_sc_key, SC_TYPE_WRITTEN, &self->written_messages);
 
-    _init_stats_key(self, &sc_key);
-    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-    stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+        stats_cluster_key_free(self->output_events_sc_key);
+        self->output_events_sc_key = NULL;
+      }
 
-    stats_cluster_single_key_legacy_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
-                                                  self->format_stats_instance(self), "processed");
-    stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->processed_messages);
+    if (self->processed_sc_key)
+      {
+        stats_unregister_counter(self->processed_sc_key, SC_TYPE_SINGLE_VALUE, &self->processed_messages);
+
+        stats_cluster_key_free(self->processed_sc_key);
+        self->processed_sc_key = NULL;
+      }
   }
   stats_unlock();
 }
@@ -1096,7 +1077,7 @@ _format_seqnum_persist_name(LogThreadedDestDriver *self)
 }
 
 static gboolean
-_create_workers(LogThreadedDestDriver *self)
+_create_workers(LogThreadedDestDriver *self, gint stats_level, const StatsClusterKeyBuilder *driver_sck_builder)
 {
   /* free previous workers array if set to cope with num_workers change */
   g_free(self->workers);
@@ -1107,7 +1088,7 @@ _create_workers(LogThreadedDestDriver *self)
       LogThreadedDestWorker *dw = _construct_worker(self, self->created_workers);
 
       self->workers[self->created_workers] = dw;
-      if (!_acquire_worker_queue(dw))
+      if (!_acquire_worker_queue(dw, stats_level, driver_sck_builder))
         return FALSE;
     }
 
@@ -1143,11 +1124,18 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (!self->shared_seq_num)
     init_sequence_number(&self->shared_seq_num);
 
-  _register_stats(self);
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  _init_driver_sck_builder(self, driver_sck_builder);
 
-  if (!_create_workers(self))
-    return FALSE;
+  if (!_create_workers(self, STATS_LEVEL0, driver_sck_builder))
+    {
+      stats_cluster_key_builder_free(driver_sck_builder);
+      return FALSE;
+    }
 
+  _register_driver_stats(self, driver_sck_builder);
+
+  stats_cluster_key_builder_free(driver_sck_builder);
   return TRUE;
 }
 
@@ -1180,7 +1168,7 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
                          _format_seqnum_persist_name(self),
                          GINT_TO_POINTER(self->shared_seq_num), NULL);
 
-  _unregister_stats(self);
+  _unregister_driver_stats(self);
 
   if (!_is_worker_compat_mode(self))
     {
