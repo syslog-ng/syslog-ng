@@ -13,6 +13,7 @@ set(STATS_HEADERS
     stats/stats-query-commands.h
     stats/stats-cluster-logpipe.h
     stats/stats-cluster-single.h
+    stats/stats-cluster-key-builder.h
     ${STATS_AGGREGATOR_HEADERS}
     PARENT_SCOPE)
 
@@ -28,6 +29,7 @@ set(STATS_SOURCES
     stats/stats-query-commands.c
     stats/stats-cluster-logpipe.c
     stats/stats-cluster-single.c
+    stats/stats-cluster-key-builder.c
     ${STATS_AGGREGATOR_SOURCES}
     PARENT_SCOPE)
 
