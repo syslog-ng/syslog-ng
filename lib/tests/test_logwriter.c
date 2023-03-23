@@ -173,7 +173,7 @@ _assert_logwriter_output(LogWriterTestCase c)
       opt.template = templ;
     }
   msg = init_msg(c.msg, c.is_rfc5424);
-  queue = log_queue_fifo_new(1000, NULL, STATS_LEVEL0, NULL);
+  queue = log_queue_fifo_new(1000, NULL, STATS_LEVEL0, NULL, NULL);
   writer = log_writer_new(c.writer_flags, configuration);
 
   log_writer_set_options(writer, NULL, &opt, NULL, NULL);

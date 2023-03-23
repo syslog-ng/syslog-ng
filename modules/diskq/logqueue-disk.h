@@ -52,7 +52,8 @@ gboolean log_queue_disk_stop(LogQueue *self, gboolean *persistent);
 gboolean log_queue_disk_start(LogQueue *self);
 void log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, const gchar *qdisk_file_id,
                                   const gchar *filename, const gchar *persist_name, gint stats_level,
-                                  const StatsClusterKeyBuilder *driver_sck_builder);
+                                  const StatsClusterKeyBuilder *driver_sck_builder,
+                                  StatsClusterKeyBuilder *queue_sck_builder);
 void log_queue_disk_restart_corrupted(LogQueueDisk *self);
 void log_queue_disk_free_method(LogQueueDisk *self);
 

@@ -470,12 +470,13 @@ _set_virtual_functions(LogQueueDiskReliable *self)
 
 LogQueue *
 log_queue_disk_reliable_new(DiskQueueOptions *options, const gchar *filename, const gchar *persist_name,
-                            gint stats_level, const StatsClusterKeyBuilder *driver_sck_builder)
+                            gint stats_level, const StatsClusterKeyBuilder *driver_sck_builder,
+                            StatsClusterKeyBuilder *queue_sck_builder)
 {
   g_assert(options->reliable == TRUE);
   LogQueueDiskReliable *self = g_new0(LogQueueDiskReliable, 1);
   log_queue_disk_init_instance(&self->super, options, "SLRQ", filename, persist_name, stats_level,
-                               driver_sck_builder);
+                               driver_sck_builder, queue_sck_builder);
   if (options->mem_buf_size < 0)
     {
       options->mem_buf_size = PESSIMISTIC_MEM_BUF_SIZE;

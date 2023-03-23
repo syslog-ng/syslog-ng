@@ -42,6 +42,7 @@ struct ThreadedDiskqSourceDriver
   struct stat diskq_file_stat;
   gboolean waiting_for_file_change;
 
+  StatsClusterKeyBuilder *queue_sck_builder;
   gchar *filename;
 };
 
@@ -75,13 +76,15 @@ _load_queue(ThreadedDiskqSourceDriver *self)
   if (self->diskq_options.reliable)
     {
       self->diskq_options.mem_buf_size = 1024 * 1024;
-      self->queue = log_queue_disk_reliable_new(&self->diskq_options, self->filename, NULL, STATS_LEVEL0, NULL);
+      self->queue = log_queue_disk_reliable_new(&self->diskq_options, self->filename, NULL, STATS_LEVEL0, NULL,
+                                                self->queue_sck_builder);
     }
   else
     {
       self->diskq_options.mem_buf_size = 128;
       self->diskq_options.qout_size = 1000;
-      self->queue = log_queue_disk_non_reliable_new(&self->diskq_options, self->filename, NULL, STATS_LEVEL0, NULL);
+      self->queue = log_queue_disk_non_reliable_new(&self->diskq_options, self->filename, NULL, STATS_LEVEL0, NULL,
+                                                    self->queue_sck_builder);
     }
 
   if (!log_queue_disk_start(self->queue))
@@ -168,30 +171,6 @@ _fetch(LogThreadedFetcherDriver *s)
   return result;
 }
 
-static gboolean
-_init(LogPipe *s)
-{
-  ThreadedDiskqSourceDriver *self = (ThreadedDiskqSourceDriver *) s;
-
-  if (!self->filename)
-    {
-      msg_error("The file() option for diskq-source() is mandatory", log_pipe_location_tag(s));
-      return FALSE;
-    }
-
-  return log_threaded_fetcher_driver_init_method(s);
-}
-
-static void
-_free(LogPipe *s)
-{
-  ThreadedDiskqSourceDriver *self = (ThreadedDiskqSourceDriver *) s;
-
-  g_free(self->filename);
-
-  log_threaded_fetcher_driver_free_method(s);
-}
-
 static const gchar *
 _format_stats_instance(LogThreadedSourceDriver *s)
 {
@@ -204,6 +183,37 @@ _format_stats_instance(LogThreadedSourceDriver *s)
     g_snprintf(persist_name, sizeof(persist_name), "diskq-source,%s", self->filename);
 
   return persist_name;
+}
+
+static gboolean
+_init(LogPipe *s)
+{
+  ThreadedDiskqSourceDriver *self = (ThreadedDiskqSourceDriver *) s;
+
+  if (!self->filename)
+    {
+      msg_error("The file() option for diskq-source() is mandatory", log_pipe_location_tag(s));
+      return FALSE;
+    }
+
+  stats_cluster_key_builder_reset(self->queue_sck_builder);
+  stats_cluster_key_builder_add_label(self->queue_sck_builder,
+                                      stats_cluster_label("id", self->super.super.super.super.id ? : ""));
+  stats_cluster_key_builder_add_label(self->queue_sck_builder, stats_cluster_label("driver_instance",
+                                      _format_stats_instance(&self->super.super)));
+
+  return log_threaded_fetcher_driver_init_method(s);
+}
+
+static void
+_free(LogPipe *s)
+{
+  ThreadedDiskqSourceDriver *self = (ThreadedDiskqSourceDriver *) s;
+
+  stats_cluster_key_builder_free(self->queue_sck_builder);
+  g_free(self->filename);
+
+  log_threaded_fetcher_driver_free_method(s);
 }
 
 void
@@ -222,6 +232,8 @@ threaded_diskq_sd_new(GlobalConfig *cfg)
   log_threaded_fetcher_driver_init_instance(&self->super, cfg);
 
   disk_queue_options_set_default_options(&self->diskq_options);
+
+  self->queue_sck_builder = stats_cluster_key_builder_new();
 
   self->super.connect = _open_diskq;
   self->super.disconnect = _close_diskq;

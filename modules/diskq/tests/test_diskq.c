@@ -65,7 +65,7 @@ Test(diskq, testcase_zero_diskbuf_and_normal_acks)
   filename = g_string_sized_new(32);
   g_string_printf(filename, "test-normal_acks.qf");
   unlink(filename->str);
-  q = log_queue_disk_reliable_new(&options, filename->str, NULL, STATS_LEVEL0, NULL);
+  q = log_queue_disk_reliable_new(&options, filename->str, NULL, STATS_LEVEL0, NULL, NULL);
   log_queue_set_use_backlog(q, TRUE);
 
   log_queue_disk_start(q);
@@ -100,7 +100,7 @@ Test(diskq, testcase_zero_diskbuf_alternating_send_acks)
   filename = g_string_sized_new(32);
   g_string_printf(filename, "test-send_acks.qf");
   unlink(filename->str);
-  q = log_queue_disk_reliable_new(&options, filename->str, NULL, STATS_LEVEL0, NULL);
+  q = log_queue_disk_reliable_new(&options, filename->str, NULL, STATS_LEVEL0, NULL, NULL);
   log_queue_set_use_backlog(q, TRUE);
   log_queue_disk_start(q);
 
@@ -138,8 +138,10 @@ Test(diskq, testcase_ack_and_rewind_messages)
   g_string_printf(filename, "test-rewind_and_acks.qf");
   unlink(filename->str);
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
-  q = log_queue_disk_reliable_new(&options, filename->str, NULL, STATS_LEVEL0, driver_sck_builder);
+  StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
+  q = log_queue_disk_reliable_new(&options, filename->str, NULL, STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
   stats_cluster_key_builder_free(driver_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
   log_queue_set_use_backlog(q, TRUE);
 
   cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 0, "queued messages: %d", __LINE__);
@@ -286,7 +288,7 @@ Test(diskq, testcase_with_threads)
       filename = g_string_sized_new(32);
       g_string_printf(filename, "test-%04d.qf", i);
       unlink(filename->str);
-      q = log_queue_disk_reliable_new(&options, filename->str, NULL, STATS_LEVEL0, NULL);
+      q = log_queue_disk_reliable_new(&options, filename->str, NULL, STATS_LEVEL0, NULL, NULL);
       log_queue_disk_start(q);
 
       for (j = 0; j < FEEDERS; j++)
@@ -323,9 +325,9 @@ static LogQueue *
 queue_new(gboolean reliable, DiskQueueOptions *options, const gchar *filename, const gchar *persist_name)
 {
   if (reliable)
-    return log_queue_disk_reliable_new(options, filename, persist_name, STATS_LEVEL0, NULL);
+    return log_queue_disk_reliable_new(options, filename, persist_name, STATS_LEVEL0, NULL, NULL);
 
-  return log_queue_disk_non_reliable_new(options, filename, persist_name, STATS_LEVEL0, NULL);
+  return log_queue_disk_non_reliable_new(options, filename, persist_name, STATS_LEVEL0, NULL, NULL);
 }
 
 ParameterizedTestParameters(diskq, testcase_diskbuffer_restart_corrupted)
@@ -442,11 +444,15 @@ testcase_diskq_prepare(DiskQueueOptions *options, diskq_tester_parameters_t *par
   options->qout_size = parameters->qout_size;
 
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
   if (parameters->reliable)
-    q = log_queue_disk_reliable_new(options, parameters->filename, NULL, STATS_LEVEL0, driver_sck_builder);
+    q = log_queue_disk_reliable_new(options, parameters->filename, NULL, STATS_LEVEL0, driver_sck_builder,
+                                    queue_sck_builder);
   else
-    q = log_queue_disk_non_reliable_new(options, parameters->filename, NULL, STATS_LEVEL0, driver_sck_builder);
+    q = log_queue_disk_non_reliable_new(options, parameters->filename, NULL, STATS_LEVEL0, driver_sck_builder,
+                                        queue_sck_builder);
   stats_cluster_key_builder_free(driver_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
 
   cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 0, "queued messages: line: %d", __LINE__);
   cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 0, "memory_usage: line: %d", __LINE__);
@@ -548,7 +554,7 @@ Test(diskq, test_no_next_filename_in_acquire)
   cr_assert(log_driver_add_plugin(&driver->super, (LogDriverPlugin *) plugin));
   cr_assert(log_pipe_init(&driver->super.super));
 
-  cr_assert_eq(log_dest_driver_acquire_queue(driver, queue_persist_name, STATS_LEVEL0, NULL), NULL);
+  cr_assert_eq(log_dest_driver_acquire_queue(driver, queue_persist_name, STATS_LEVEL0, NULL, NULL), NULL);
 
   cr_assert(log_pipe_deinit(&driver->super.super));
   cr_assert(log_pipe_unref(&driver->super.super));

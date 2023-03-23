@@ -56,18 +56,22 @@ test_diskq_become_full(gboolean reliable, const gchar *filename)
   const gchar *persist_name = "test_diskq";
 
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
   options.reliable = reliable;
   if (reliable)
     {
       _construct_options(&options, 1000, 1000, reliable);
-      q = log_queue_disk_reliable_new(&options, filename, persist_name, STATS_LEVEL0, driver_sck_builder);
+      q = log_queue_disk_reliable_new(&options, filename, persist_name, STATS_LEVEL0, driver_sck_builder,
+                                      queue_sck_builder);
     }
   else
     {
       _construct_options(&options, 1000, 0, reliable);
-      q = log_queue_disk_non_reliable_new(&options, filename, persist_name, STATS_LEVEL0, driver_sck_builder);
+      q = log_queue_disk_non_reliable_new(&options, filename, persist_name, STATS_LEVEL0, driver_sck_builder,
+                                          queue_sck_builder);
     }
   stats_cluster_key_builder_free(driver_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
 
   log_queue_set_use_backlog(q, TRUE);
 

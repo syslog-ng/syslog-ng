@@ -28,9 +28,11 @@
 #include "logqueue.h"
 
 LogQueue *log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name, gint stats_level,
-                             const StatsClusterKeyBuilder *driver_sck_builder);
+                             const StatsClusterKeyBuilder *driver_sck_builder,
+                             StatsClusterKeyBuilder *queue_sck_builder);
 LogQueue *log_queue_fifo_legacy_new(gint log_fifo_size, const gchar *persist_name, gint stats_level,
-                                    const StatsClusterKeyBuilder *driver_sck_builder);
+                                    const StatsClusterKeyBuilder *driver_sck_builder,
+                                    StatsClusterKeyBuilder *queue_sck_builder);
 
 QueueType log_queue_fifo_get_type(void);
 

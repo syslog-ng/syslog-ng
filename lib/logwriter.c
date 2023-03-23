@@ -1757,6 +1757,13 @@ log_writer_init_driver_sck_builder(LogWriter *self, StatsClusterKeyBuilder *buil
 }
 
 void
+log_writer_init_queue_sck_builder(LogWriter *self, StatsClusterKeyBuilder *builder)
+{
+  stats_cluster_key_builder_add_label(builder, stats_cluster_label("id", self->stats_id));
+  stats_cluster_key_builder_add_label(builder, stats_cluster_label("driver_instance", self->stats_instance));
+}
+
+void
 log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *options,
                        const gchar *stats_id, const gchar *stats_instance)
 {
