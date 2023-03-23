@@ -96,6 +96,19 @@ _register_stats_counters(LogQueue *q)
   stats_unlock();
 }
 
+static void
+_unregister_stats_counters(LogQueue *q)
+{
+  stats_lock();
+  {
+    StatsClusterKey sc_key;
+    StatsClusterLabel labels[] = {};
+    stats_cluster_logpipe_key_set(&sc_key, "dummy-name", labels, G_N_ELEMENTS(labels));
+    log_queue_unregister_stats_counters(q, &sc_key);
+  }
+  stats_unlock();
+}
+
 Test(logqueue_disk, restart_corrupted_reliable)
 {
   start_grabbing_messages();
@@ -311,6 +324,15 @@ Test(logqueue_disk, restart_corrupted_non_reliable_with_qout)
   gboolean persistent;
   log_queue_disk_stop(queue, &persistent);
   log_queue_unref(queue);
+  _unregister_stats_counters(queue);
+  queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable_with_qout");
+  cr_assert(log_queue_disk_start(queue));
+  _register_stats_counters(queue);
+
+  _assert_log_queue_disk_non_reliable_has_messages_in_qout(queue, 1);
+
+  log_queue_disk_stop(queue, &persistent);
+  log_queue_unref(queue);
   disk_queue_options_destroy(&options);
   unlink(filename);
   unlink(corrupted_filename);
@@ -356,6 +378,23 @@ Test(logqueue_disk, restart_corrupted_with_multiple_queues)
   cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 2);
   cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
 
+  gboolean persistent;
+  log_queue_disk_stop(queue_1, &persistent);
+  log_queue_unref(queue_1);
+  _unregister_stats_counters(queue_1);
+
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
+
+  queue_1 = log_queue_disk_reliable_new(&options, filename_1, "restart_corrupted_with_multiple_queues_1");
+  cr_assert(log_queue_disk_start(queue_1));
+  _register_stats_counters(queue_1);
+
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 2);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 1);
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 2);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
+
   log_queue_disk_restart_corrupted((LogQueueDisk *) queue_1);
 
   cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 1);
@@ -369,7 +408,6 @@ Test(logqueue_disk, restart_corrupted_with_multiple_queues)
   cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 0);
   cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 0);
 
-  gboolean persistent;
   log_queue_disk_stop(queue_1, &persistent);
   log_queue_disk_stop(queue_2, &persistent);
   log_queue_unref(queue_1);
