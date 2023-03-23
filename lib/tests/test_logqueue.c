@@ -384,3 +384,49 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages_thre
 
   log_queue_unref(q);
 }
+
+Test(logqueue, log_queue_fifo_multiple_queues)
+{
+  const gint fifo_size = 1;
+  LogPathOptions options = LOG_PATH_OPTIONS_INIT;
+
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  LogQueue *queue_1 = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder);
+  LogQueue *queue_2 = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder);
+  log_queue_set_use_backlog(queue_1, TRUE);
+  log_queue_set_use_backlog(queue_2, TRUE);
+
+  log_queue_push_tail(queue_1, log_msg_new_empty(), &options);
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 1);
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 0);
+
+  log_queue_push_tail(queue_2, log_msg_new_empty(), &options);
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 2);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 1);
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 2);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
+
+  log_queue_unref(queue_1);
+
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
+
+  queue_1 = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder);
+  log_queue_set_use_backlog(queue_1, TRUE);
+
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 0);
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
+
+  log_queue_unref(queue_2);
+
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 0);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 0);
+
+  log_queue_unref(queue_1);
+
+  stats_cluster_key_builder_free(driver_sck_builder);
+}
