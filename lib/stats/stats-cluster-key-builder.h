@@ -41,6 +41,8 @@ void stats_cluster_key_builder_set_legacy_alias(StatsClusterKeyBuilder *self, gu
                                                 const gchar *instance);
 void stats_cluster_key_builder_set_legacy_alias_name(StatsClusterKeyBuilder *self, const gchar *name);
 
+void stats_cluster_key_builder_reset(StatsClusterKeyBuilder *self);
+
 StatsClusterKey *stats_cluster_key_builder_build_single(const StatsClusterKeyBuilder *self);
 StatsClusterKey *stats_cluster_key_builder_build_logpipe(const StatsClusterKeyBuilder *self);
 

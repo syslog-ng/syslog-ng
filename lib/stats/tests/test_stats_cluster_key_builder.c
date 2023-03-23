@@ -183,6 +183,11 @@ _test_builder(KeyType type)
                                               dummy_legacy_instance, dummy_legacy_name);
     }
 
+  /* Reset */
+  stats_cluster_key_builder_reset(builder);
+  stats_cluster_key_builder_set_name(builder, dummy_name);
+  _assert_built_sc_key_equals(builder, type, dummy_name, empty_labels, G_N_ELEMENTS(empty_labels));
+
   stats_cluster_key_builder_free(builder);
 }
 

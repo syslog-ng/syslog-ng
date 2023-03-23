@@ -83,14 +83,8 @@ stats_cluster_key_builder_clone(const StatsClusterKeyBuilder *self)
 void
 stats_cluster_key_builder_free(StatsClusterKeyBuilder *self)
 {
-  g_free(self->name);
-  g_free(self->name_suffix);
+  stats_cluster_key_builder_reset(self);
   g_array_free(self->labels, TRUE);
-
-  g_free(self->legacy.id);
-  g_free(self->legacy.instance);
-  g_free(self->legacy.name);
-
   g_free(self);
 }
 
@@ -142,6 +136,19 @@ stats_cluster_key_builder_set_legacy_alias_name(StatsClusterKeyBuilder *self, co
 
   g_free(self->legacy.name);
   self->legacy.name = g_strdup(name);
+}
+
+void
+stats_cluster_key_builder_reset(StatsClusterKeyBuilder *self)
+{
+  stats_cluster_key_builder_set_name(self, NULL);
+  stats_cluster_key_builder_set_name_suffix(self, NULL);
+
+  g_array_remove_range(self->labels, 0, self->labels->len);
+
+  stats_cluster_key_builder_set_legacy_alias(self, 0, NULL, NULL);
+  stats_cluster_key_builder_set_legacy_alias_name(self, NULL);
+  self->legacy.set = FALSE;
 }
 
 static gint
