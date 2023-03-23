@@ -34,21 +34,23 @@ typedef enum
 } KeyType;
 
 static void
-_assert_built_sc_key_equals(StatsClusterKeyBuilder *builder, KeyType type, const gchar *name,
+_assert_built_sc_key_equals(const StatsClusterKeyBuilder *builder, KeyType type, const gchar *name,
                             StatsClusterLabel *labels, gssize labels_len)
 {
   StatsClusterKey expected_sc_key;
   StatsClusterKey *built_key;
 
+  StatsClusterKeyBuilder *cloned_builder = stats_cluster_key_builder_clone(builder);
+
   if (type == TEST_LOGPIPE)
     {
       stats_cluster_logpipe_key_set(&expected_sc_key, name, labels, labels_len);
-      built_key = stats_cluster_key_builder_build_logpipe(builder);
+      built_key = stats_cluster_key_builder_build_logpipe(cloned_builder);
     }
   else if (type == TEST_SINGLE)
     {
       stats_cluster_single_key_set(&expected_sc_key, name, labels, labels_len);
-      built_key = stats_cluster_key_builder_build_single(builder);
+      built_key = stats_cluster_key_builder_build_single(cloned_builder);
     }
   else
     {
@@ -56,22 +58,26 @@ _assert_built_sc_key_equals(StatsClusterKeyBuilder *builder, KeyType type, const
     }
 
   cr_assert(stats_cluster_key_equal(&expected_sc_key, built_key));
+
   stats_cluster_key_free(built_key);
+  stats_cluster_key_builder_free(cloned_builder);
 }
 
 static void
-_assert_built_sc_key_has_unit(StatsClusterKeyBuilder *builder, KeyType type, StatsClusterUnit unit)
+_assert_built_sc_key_has_unit(const StatsClusterKeyBuilder *builder, KeyType type, StatsClusterUnit unit)
 {
-  StatsClusterKey *built_key = stats_cluster_key_builder_build_single(builder);
+  StatsClusterKeyBuilder *cloned_builder = stats_cluster_key_builder_clone(builder);
+  StatsClusterKey *built_key = stats_cluster_key_builder_build_single(cloned_builder);
 
   if (type == TEST_SINGLE)
     cr_assert(built_key->stored_unit == unit);
 
   stats_cluster_key_free(built_key);
+  stats_cluster_key_builder_free(cloned_builder);
 }
 
 static void
-_assert_built_sc_key_equals_with_legacy(StatsClusterKeyBuilder *builder, KeyType type, const gchar *name,
+_assert_built_sc_key_equals_with_legacy(const StatsClusterKeyBuilder *builder, KeyType type, const gchar *name,
                                         StatsClusterLabel *labels, gssize labels_len, guint16 legacy_component,
                                         const gchar *legacy_id, const gchar *legacy_instance,
                                         const gchar *legacy_name)
@@ -79,11 +85,13 @@ _assert_built_sc_key_equals_with_legacy(StatsClusterKeyBuilder *builder, KeyType
   StatsClusterKey expected_sc_key;
   StatsClusterKey *built_key;
 
+  StatsClusterKeyBuilder *cloned_builder = stats_cluster_key_builder_clone(builder);
+
   if (type == TEST_LOGPIPE)
     {
       stats_cluster_logpipe_key_set(&expected_sc_key, name, labels, labels_len);
       stats_cluster_logpipe_key_add_legacy_alias(&expected_sc_key, legacy_component, legacy_id, legacy_instance);
-      built_key = stats_cluster_key_builder_build_logpipe(builder);
+      built_key = stats_cluster_key_builder_build_logpipe(cloned_builder);
     }
   else if (type == TEST_SINGLE)
     {
@@ -97,7 +105,7 @@ _assert_built_sc_key_equals_with_legacy(StatsClusterKeyBuilder *builder, KeyType
         {
           stats_cluster_single_key_add_legacy_alias(&expected_sc_key, legacy_component, legacy_id, legacy_instance);
         }
-      built_key = stats_cluster_key_builder_build_single(builder);
+      built_key = stats_cluster_key_builder_build_single(cloned_builder);
     }
   else
     {
@@ -105,7 +113,9 @@ _assert_built_sc_key_equals_with_legacy(StatsClusterKeyBuilder *builder, KeyType
     }
 
   cr_assert(stats_cluster_key_equal(&expected_sc_key, built_key));
+
   stats_cluster_key_free(built_key);
+  stats_cluster_key_builder_free(cloned_builder);
 }
 
 static void
@@ -172,6 +182,11 @@ _test_builder(KeyType type)
                                               G_N_ELEMENTS(two_labels), dummy_legacy_component, dummy_legacy_id,
                                               dummy_legacy_instance, dummy_legacy_name);
     }
+
+  /* Reset */
+  stats_cluster_key_builder_reset(builder);
+  stats_cluster_key_builder_set_name(builder, dummy_name);
+  _assert_built_sc_key_equals(builder, type, dummy_name, empty_labels, G_N_ELEMENTS(empty_labels));
 
   stats_cluster_key_builder_free(builder);
 }

@@ -60,17 +60,31 @@ stats_cluster_key_builder_new(void)
   return self;
 }
 
+StatsClusterKeyBuilder *
+stats_cluster_key_builder_clone(const StatsClusterKeyBuilder *self)
+{
+  StatsClusterKeyBuilder *cloned = stats_cluster_key_builder_new();
+
+  stats_cluster_key_builder_set_name(cloned, self->name);
+  stats_cluster_key_builder_set_name_suffix(cloned, self->name_suffix);
+  for (gint i = 0; i < self->labels->len; i++)
+    {
+      StatsClusterLabel *label = &g_array_index(self->labels, StatsClusterLabel, i);
+      stats_cluster_key_builder_add_label(cloned, stats_cluster_label(label->name, label->value));
+    }
+  stats_cluster_key_builder_set_unit(cloned, self->unit);
+  stats_cluster_key_builder_set_legacy_alias(cloned, self->legacy.component, self->legacy.id, self->legacy.instance);
+  stats_cluster_key_builder_set_legacy_alias_name(cloned, self->legacy.name);
+  cloned->legacy.set = self->legacy.set;
+
+  return cloned;
+}
+
 void
 stats_cluster_key_builder_free(StatsClusterKeyBuilder *self)
 {
-  g_free(self->name);
-  g_free(self->name_suffix);
+  stats_cluster_key_builder_reset(self);
   g_array_free(self->labels, TRUE);
-
-  g_free(self->legacy.id);
-  g_free(self->legacy.instance);
-  g_free(self->legacy.name);
-
   g_free(self);
 }
 
@@ -124,6 +138,19 @@ stats_cluster_key_builder_set_legacy_alias_name(StatsClusterKeyBuilder *self, co
   self->legacy.name = g_strdup(name);
 }
 
+void
+stats_cluster_key_builder_reset(StatsClusterKeyBuilder *self)
+{
+  stats_cluster_key_builder_set_name(self, NULL);
+  stats_cluster_key_builder_set_name_suffix(self, NULL);
+
+  g_array_remove_range(self->labels, 0, self->labels->len);
+
+  stats_cluster_key_builder_set_legacy_alias(self, 0, NULL, NULL);
+  stats_cluster_key_builder_set_legacy_alias_name(self, NULL);
+  self->legacy.set = FALSE;
+}
+
 static gint
 _labels_sort(const StatsClusterLabel *a, const StatsClusterLabel *b)
 {
@@ -131,7 +158,7 @@ _labels_sort(const StatsClusterLabel *a, const StatsClusterLabel *b)
 }
 
 static gchar *
-_format_name(StatsClusterKeyBuilder *self)
+_format_name(const StatsClusterKeyBuilder *self)
 {
   if (self->name_suffix)
     return g_strdup_printf("%s%s", self->name, self->name_suffix);
@@ -140,7 +167,7 @@ _format_name(StatsClusterKeyBuilder *self)
 }
 
 StatsClusterKey *
-stats_cluster_key_builder_build_single(StatsClusterKeyBuilder *self)
+stats_cluster_key_builder_build_single(const StatsClusterKeyBuilder *self)
 {
   StatsClusterKey *sc_key = g_new0(StatsClusterKey, 1);
 
@@ -167,7 +194,7 @@ stats_cluster_key_builder_build_single(StatsClusterKeyBuilder *self)
 }
 
 StatsClusterKey *
-stats_cluster_key_builder_build_logpipe(StatsClusterKeyBuilder *self)
+stats_cluster_key_builder_build_logpipe(const StatsClusterKeyBuilder *self)
 {
   StatsClusterKey *sc_key = g_new0(StatsClusterKey, 1);
 
