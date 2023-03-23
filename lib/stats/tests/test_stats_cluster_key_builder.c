@@ -156,8 +156,10 @@ _test_builder(KeyType type)
 
   const gchar *dummy_name = "dummy_name";
   const gchar *dummy_name_2 = "dummy_name_2";
+  const gchar *dummy_name_prefix = "dummy_name_prefix_";
+  const gchar *dummy_name_2_with_prefix = "dummy_name_prefix_dummy_name_2";
   const gchar *dummy_name_suffix = "_dummy_name_suffix";
-  const gchar *dummy_name_2_with_suffix = "dummy_name_2_dummy_name_suffix";
+  const gchar *dummy_name_2_with_prefix_and_suffix = "dummy_name_prefix_dummy_name_2_dummy_name_suffix";
 
   guint16 dummy_legacy_component = 42;
   const gchar *dummy_legacy_id = "dummy_legacy_id";
@@ -190,9 +192,13 @@ _test_builder(KeyType type)
   stats_cluster_key_builder_set_name(builder, dummy_name_2);
   _assert_built_sc_key_equals(builder, type, dummy_name_2, two_labels, G_N_ELEMENTS(two_labels));
 
+  /* Name prefix */
+  stats_cluster_key_builder_set_name_prefix(builder, dummy_name_prefix);
+  _assert_built_sc_key_equals(builder, type, dummy_name_2_with_prefix, two_labels, G_N_ELEMENTS(two_labels));
+
   /* Name suffix */
   stats_cluster_key_builder_set_name_suffix(builder, dummy_name_suffix);
-  _assert_built_sc_key_equals(builder, type, dummy_name_2_with_suffix, two_labels, G_N_ELEMENTS(two_labels));
+  _assert_built_sc_key_equals(builder, type, dummy_name_2_with_prefix_and_suffix, two_labels, G_N_ELEMENTS(two_labels));
 
   /* Unit */
   stats_cluster_key_builder_set_unit(builder, SCU_NANOSECONDS);
@@ -200,7 +206,7 @@ _test_builder(KeyType type)
 
   /* Legacy alias */
   stats_cluster_key_builder_set_legacy_alias(builder, dummy_legacy_component, dummy_legacy_id, dummy_legacy_instance);
-  _assert_built_sc_key_equals_with_legacy(builder, type, dummy_name_2_with_suffix, two_labels,
+  _assert_built_sc_key_equals_with_legacy(builder, type, dummy_name_2_with_prefix_and_suffix, two_labels,
                                           G_N_ELEMENTS(two_labels), dummy_legacy_component, dummy_legacy_id,
                                           dummy_legacy_instance, NULL);
 
@@ -209,7 +215,7 @@ _test_builder(KeyType type)
     {
       /* LOGPIPE does not support setting the legacy name */
       stats_cluster_key_builder_set_legacy_alias_name(builder, dummy_legacy_name);
-      _assert_built_sc_key_equals_with_legacy(builder, type, dummy_name_2_with_suffix, two_labels,
+      _assert_built_sc_key_equals_with_legacy(builder, type, dummy_name_2_with_prefix_and_suffix, two_labels,
                                               G_N_ELEMENTS(two_labels), dummy_legacy_component, dummy_legacy_id,
                                               dummy_legacy_instance, dummy_legacy_name);
     }

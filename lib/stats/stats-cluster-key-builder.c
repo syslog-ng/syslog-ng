@@ -28,6 +28,7 @@
 struct _StatsClusterKeyBuilder
 {
   gchar *name;
+  gchar *name_prefix;
   gchar *name_suffix;
   GArray *labels;
   StatsClusterUnit unit;
@@ -66,6 +67,7 @@ stats_cluster_key_builder_clone(const StatsClusterKeyBuilder *self)
   StatsClusterKeyBuilder *cloned = stats_cluster_key_builder_new();
 
   stats_cluster_key_builder_set_name(cloned, self->name);
+  stats_cluster_key_builder_set_name_prefix(cloned, self->name_prefix);
   stats_cluster_key_builder_set_name_suffix(cloned, self->name_suffix);
   for (gint i = 0; i < self->labels->len; i++)
     {
@@ -93,6 +95,13 @@ stats_cluster_key_builder_set_name(StatsClusterKeyBuilder *self, const gchar *na
 {
   g_free(self->name);
   self->name = g_strdup(name);
+}
+
+void
+stats_cluster_key_builder_set_name_prefix(StatsClusterKeyBuilder *self, const gchar *name_prefix)
+{
+  g_free(self->name_prefix);
+  self->name_prefix = g_strdup(name_prefix);
 }
 
 void
@@ -142,6 +151,7 @@ void
 stats_cluster_key_builder_reset(StatsClusterKeyBuilder *self)
 {
   stats_cluster_key_builder_set_name(self, NULL);
+  stats_cluster_key_builder_set_name_prefix(self, NULL);
   stats_cluster_key_builder_set_name_suffix(self, NULL);
 
   g_array_remove_range(self->labels, 0, self->labels->len);
@@ -160,10 +170,7 @@ _labels_sort(const StatsClusterLabel *a, const StatsClusterLabel *b)
 static gchar *
 _format_name(const StatsClusterKeyBuilder *self)
 {
-  if (self->name_suffix)
-    return g_strdup_printf("%s%s", self->name, self->name_suffix);
-
-  return g_strdup(self->name);
+  return g_strdup_printf("%s%s%s", self->name_prefix ? : "", self->name, self->name_suffix ? : "");
 }
 
 static gboolean
