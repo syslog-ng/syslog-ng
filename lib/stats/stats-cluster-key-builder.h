@@ -30,6 +30,7 @@
 typedef struct _StatsClusterKeyBuilder StatsClusterKeyBuilder;
 
 StatsClusterKeyBuilder *stats_cluster_key_builder_new(void);
+StatsClusterKeyBuilder *stats_cluster_key_builder_clone(const StatsClusterKeyBuilder *self);
 void stats_cluster_key_builder_free(StatsClusterKeyBuilder *self);
 
 void stats_cluster_key_builder_set_name(StatsClusterKeyBuilder *self, const gchar *name);

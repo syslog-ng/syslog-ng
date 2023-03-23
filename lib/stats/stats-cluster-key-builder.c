@@ -60,6 +60,26 @@ stats_cluster_key_builder_new(void)
   return self;
 }
 
+StatsClusterKeyBuilder *
+stats_cluster_key_builder_clone(const StatsClusterKeyBuilder *self)
+{
+  StatsClusterKeyBuilder *cloned = stats_cluster_key_builder_new();
+
+  stats_cluster_key_builder_set_name(cloned, self->name);
+  stats_cluster_key_builder_set_name_suffix(cloned, self->name_suffix);
+  for (gint i = 0; i < self->labels->len; i++)
+    {
+      StatsClusterLabel *label = &g_array_index(self->labels, StatsClusterLabel, i);
+      stats_cluster_key_builder_add_label(cloned, stats_cluster_label(label->name, label->value));
+    }
+  stats_cluster_key_builder_set_unit(cloned, self->unit);
+  stats_cluster_key_builder_set_legacy_alias(cloned, self->legacy.component, self->legacy.id, self->legacy.instance);
+  stats_cluster_key_builder_set_legacy_alias_name(cloned, self->legacy.name);
+  cloned->legacy.set = self->legacy.set;
+
+  return cloned;
+}
+
 void
 stats_cluster_key_builder_free(StatsClusterKeyBuilder *self)
 {
