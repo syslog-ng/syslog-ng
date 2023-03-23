@@ -426,8 +426,12 @@ _format_persist_name(const LogPipe *s)
   static gchar persist_name[512];
   GroupingBy *self = (GroupingBy *)s;
 
-  g_snprintf(persist_name, sizeof(persist_name), "grouping-by(%s,scope=%d,clone=%d)", self->key_template->template,
-             self->scope, self->clone_id);
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "grouping-by.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "grouping-by(%s,scope=%d,clone=%d)", self->key_template->template,
+               self->scope, self->clone_id);
+
   return persist_name;
 }
 
