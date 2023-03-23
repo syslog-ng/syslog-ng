@@ -73,7 +73,6 @@ test_diskq_become_full(gboolean reliable, const gchar *filename)
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL);
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &q->metrics.shared.dropped_messages);
-  stats_counter_set(q->metrics.shared.dropped_messages, 0);
   stats_unlock();
   unlink(filename);
   log_queue_disk_start(q);
@@ -90,9 +89,13 @@ test_diskq_become_full(gboolean reliable, const gchar *filename)
   unlink(filename);
 }
 
-Test(diskq_full, diskq_become_full)
+Test(diskq_full, diskq_become_full_reliable)
 {
   test_diskq_become_full(TRUE, DISKQ_FILENAME_RELIABLE);
+}
+
+Test(diskq_full, diskq_become_full_non_reliable)
+{
   test_diskq_become_full(FALSE, DISKQ_FILENAME_NOT_RELIABLE);
 }
 
