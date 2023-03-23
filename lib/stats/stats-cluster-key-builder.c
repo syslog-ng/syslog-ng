@@ -131,7 +131,7 @@ _labels_sort(const StatsClusterLabel *a, const StatsClusterLabel *b)
 }
 
 static gchar *
-_format_name(StatsClusterKeyBuilder *self)
+_format_name(const StatsClusterKeyBuilder *self)
 {
   if (self->name_suffix)
     return g_strdup_printf("%s%s", self->name, self->name_suffix);
@@ -140,7 +140,7 @@ _format_name(StatsClusterKeyBuilder *self)
 }
 
 StatsClusterKey *
-stats_cluster_key_builder_build_single(StatsClusterKeyBuilder *self)
+stats_cluster_key_builder_build_single(const StatsClusterKeyBuilder *self)
 {
   StatsClusterKey *sc_key = g_new0(StatsClusterKey, 1);
 
@@ -167,7 +167,7 @@ stats_cluster_key_builder_build_single(StatsClusterKeyBuilder *self)
 }
 
 StatsClusterKey *
-stats_cluster_key_builder_build_logpipe(StatsClusterKeyBuilder *self)
+stats_cluster_key_builder_build_logpipe(const StatsClusterKeyBuilder *self)
 {
   StatsClusterKey *sc_key = g_new0(StatsClusterKey, 1);
 

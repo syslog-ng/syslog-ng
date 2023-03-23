@@ -34,7 +34,7 @@ typedef enum
 } KeyType;
 
 static void
-_assert_built_sc_key_equals(StatsClusterKeyBuilder *builder, KeyType type, const gchar *name,
+_assert_built_sc_key_equals(const StatsClusterKeyBuilder *builder, KeyType type, const gchar *name,
                             StatsClusterLabel *labels, gssize labels_len)
 {
   StatsClusterKey expected_sc_key;
@@ -60,7 +60,7 @@ _assert_built_sc_key_equals(StatsClusterKeyBuilder *builder, KeyType type, const
 }
 
 static void
-_assert_built_sc_key_has_unit(StatsClusterKeyBuilder *builder, KeyType type, StatsClusterUnit unit)
+_assert_built_sc_key_has_unit(const StatsClusterKeyBuilder *builder, KeyType type, StatsClusterUnit unit)
 {
   StatsClusterKey *built_key = stats_cluster_key_builder_build_single(builder);
 
@@ -71,7 +71,7 @@ _assert_built_sc_key_has_unit(StatsClusterKeyBuilder *builder, KeyType type, Sta
 }
 
 static void
-_assert_built_sc_key_equals_with_legacy(StatsClusterKeyBuilder *builder, KeyType type, const gchar *name,
+_assert_built_sc_key_equals_with_legacy(const StatsClusterKeyBuilder *builder, KeyType type, const gchar *name,
                                         StatsClusterLabel *labels, gssize labels_len, guint16 legacy_component,
                                         const gchar *legacy_id, const gchar *legacy_instance,
                                         const gchar *legacy_name)
