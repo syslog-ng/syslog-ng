@@ -318,6 +318,71 @@ Test(logqueue_disk, restart_corrupted_non_reliable_with_qout)
   stop_grabbing_messages();
 }
 
+Test(logqueue_disk, restart_corrupted_with_multiple_queues)
+{
+  start_grabbing_messages();
+
+  const gchar *filename_1 = "restart_corrupted_with_multiple_queues_1.rqf";
+  const gchar *filename_1_corrupted = "restart_corrupted_with_multiple_queues_1.rqf.corrupted";
+  const gchar *filename_2 = "restart_corrupted_with_multiple_queues_2.rqf";
+  const gchar *filename_2_corrupted = "restart_corrupted_with_multiple_queues_2.rqf.corrupted";
+
+  DiskQueueOptions options = {0};
+  disk_queue_options_set_default_options(&options);
+  disk_queue_options_reliable_set(&options, TRUE);
+  disk_queue_options_disk_buf_size_set(&options, MIN_DISK_BUF_SIZE);
+  disk_queue_options_mem_buf_size_set(&options, 4096);
+
+  LogQueue *queue_1 = log_queue_disk_reliable_new(&options, "restart_corrupted_with_multiple_queues_1");
+  _register_stats_counters(queue_1);
+
+  LogQueue *queue_2 = log_queue_disk_reliable_new(&options, "restart_corrupted_with_multiple_queues_2");
+  _register_stats_counters(queue_2);
+
+  cr_assert(log_queue_disk_start(queue_1, filename_1));
+  cr_assert(log_queue_disk_start(queue_2, filename_2));
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+  log_queue_push_tail(queue_1, log_msg_new_empty(), &path_options);
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 1);
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 0);
+
+  log_queue_push_tail(queue_2, log_msg_new_empty(), &path_options);
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 2);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 1);
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 2);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
+
+  log_queue_disk_restart_corrupted((LogQueueDisk *) queue_1);
+
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 0);
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
+
+  log_queue_disk_restart_corrupted((LogQueueDisk *) queue_2);
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 0);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 0);
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 0);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 0);
+
+  gboolean persistent;
+  log_queue_disk_stop(queue_1, &persistent);
+  log_queue_disk_stop(queue_2, &persistent);
+  log_queue_unref(queue_1);
+  log_queue_unref(queue_2);
+  disk_queue_options_destroy(&options);
+  unlink(filename_1);
+  unlink(filename_1_corrupted);
+  unlink(filename_2);
+  unlink(filename_2_corrupted);
+
+  stop_grabbing_messages();
+}
+
 static void
 setup(void)
 {

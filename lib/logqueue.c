@@ -73,9 +73,12 @@ log_queue_queued_messages_dec(LogQueue *self)
 void
 log_queue_queued_messages_reset(LogQueue *self)
 {
-  const gssize queue_length = log_queue_get_length(self);
-  stats_counter_set(self->metrics.shared.queued_messages, queue_length);
-  atomic_gssize_set_and_get(&self->metrics.owned.queued_messages, queue_length);
+  stats_counter_sub(self->metrics.shared.queued_messages,
+                    atomic_gssize_get_unsigned(&self->metrics.owned.queued_messages));
+
+  atomic_gssize_set_and_get(&self->metrics.owned.queued_messages, log_queue_get_length(self));
+  stats_counter_add(self->metrics.shared.queued_messages,
+                    atomic_gssize_get_unsigned(&self->metrics.owned.queued_messages));
 }
 
 void
