@@ -55,25 +55,22 @@ test_diskq_become_full(gboolean reliable, const gchar *filename)
 
   const gchar *persist_name = "test_diskq";
 
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
   options.reliable = reliable;
   if (reliable)
     {
       _construct_options(&options, 1000, 1000, reliable);
-      q = log_queue_disk_reliable_new(&options, filename, persist_name);
+      q = log_queue_disk_reliable_new(&options, filename, persist_name, STATS_LEVEL0, driver_sck_builder);
     }
   else
     {
       _construct_options(&options, 1000, 0, reliable);
-      q = log_queue_disk_non_reliable_new(&options, filename, persist_name);
+      q = log_queue_disk_non_reliable_new(&options, filename, persist_name, STATS_LEVEL0, driver_sck_builder);
     }
+  stats_cluster_key_builder_free(driver_sck_builder);
 
   log_queue_set_use_backlog(q, TRUE);
 
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL);
-  stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &q->metrics.shared.dropped_messages);
-  stats_unlock();
   unlink(filename);
   log_queue_disk_start(q);
   feed_some_messages(q, 1000);
