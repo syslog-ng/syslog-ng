@@ -166,28 +166,57 @@ _format_name(const StatsClusterKeyBuilder *self)
   return g_strdup(self->name);
 }
 
+static gboolean
+_has_new_style_values(const StatsClusterKeyBuilder *self)
+{
+  return !!self->name;
+}
+
+static gboolean
+_has_legacy_values(const StatsClusterKeyBuilder *self)
+{
+  return self->legacy.set;
+}
+
 StatsClusterKey *
 stats_cluster_key_builder_build_single(const StatsClusterKeyBuilder *self)
 {
   StatsClusterKey *sc_key = g_new0(StatsClusterKey, 1);
-
-  gchar *name = _format_name(self);
-  g_array_sort(self->labels, (GCompareFunc) _labels_sort);
-
   StatsClusterKey temp_key;
-  stats_cluster_single_key_set(&temp_key, name, (StatsClusterLabel *) self->labels->data, self->labels->len);
-  if (self->legacy.set)
-    {
-      if (self->legacy.name)
-        stats_cluster_single_key_add_legacy_alias_with_name(&temp_key, self->legacy.component, self->legacy.id,
-                                                            self->legacy.instance, self->legacy.name);
-      else
-        stats_cluster_single_key_add_legacy_alias(&temp_key, self->legacy.component, self->legacy.id,
-                                                  self->legacy.instance);
-    }
-  stats_cluster_single_key_add_unit(&temp_key, self->unit);
-  stats_cluster_key_clone(sc_key, &temp_key);
+  gchar *name = NULL;
 
+  if (_has_new_style_values(self))
+    {
+      name = _format_name(self);
+      g_array_sort(self->labels, (GCompareFunc) _labels_sort);
+
+      stats_cluster_single_key_set(&temp_key, name, (StatsClusterLabel *) self->labels->data, self->labels->len);
+      stats_cluster_single_key_add_unit(&temp_key, self->unit);
+    }
+
+  if (_has_legacy_values(self))
+    {
+      if (_has_new_style_values(self))
+        {
+          if (self->legacy.name)
+            stats_cluster_single_key_add_legacy_alias_with_name(&temp_key, self->legacy.component, self->legacy.id,
+                                                                self->legacy.instance, self->legacy.name);
+          else
+            stats_cluster_single_key_add_legacy_alias(&temp_key, self->legacy.component, self->legacy.id,
+                                                      self->legacy.instance);
+        }
+      else
+        {
+          if (self->legacy.name)
+            stats_cluster_single_key_legacy_set_with_name(&temp_key, self->legacy.component, self->legacy.id,
+                                                          self->legacy.instance, self->legacy.name);
+          else
+            stats_cluster_single_key_legacy_set(&temp_key, self->legacy.component, self->legacy.id,
+                                                self->legacy.instance);
+        }
+    }
+
+  stats_cluster_key_clone(sc_key, &temp_key);
   g_free(name);
 
   return sc_key;
@@ -197,19 +226,29 @@ StatsClusterKey *
 stats_cluster_key_builder_build_logpipe(const StatsClusterKeyBuilder *self)
 {
   StatsClusterKey *sc_key = g_new0(StatsClusterKey, 1);
-
-  gchar *name = _format_name(self);
-  g_array_sort(self->labels, (GCompareFunc) _labels_sort);
-
   StatsClusterKey temp_key;
-  stats_cluster_logpipe_key_set(&temp_key, name, (StatsClusterLabel *) self->labels->data, self->labels->len);
-  if (self->legacy.set)
+  gchar *name = NULL;
+
+  if (_has_new_style_values(self))
+    {
+      name = _format_name(self);
+      g_array_sort(self->labels, (GCompareFunc) _labels_sort);
+
+      stats_cluster_logpipe_key_set(&temp_key, name, (StatsClusterLabel *) self->labels->data, self->labels->len);
+    }
+
+  if (_has_legacy_values(self))
     {
       g_assert(!self->legacy.name);
-      stats_cluster_logpipe_key_add_legacy_alias(&temp_key, self->legacy.component, self->legacy.id, self->legacy.instance);
+      if (_has_new_style_values(self))
+        stats_cluster_logpipe_key_add_legacy_alias(&temp_key, self->legacy.component, self->legacy.id,
+                                                   self->legacy.instance);
+      else
+        stats_cluster_logpipe_key_legacy_set(&temp_key, self->legacy.component, self->legacy.id,
+                                             self->legacy.instance);
     }
-  stats_cluster_key_clone(sc_key, &temp_key);
 
+  stats_cluster_key_clone(sc_key, &temp_key);
   g_free(name);
 
   return sc_key;
