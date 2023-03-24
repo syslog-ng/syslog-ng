@@ -83,6 +83,18 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     needs: detect-version
+    services:
+      splunk:
+        image: splunk/splunk:latest
+        ports:
+          - 8000:8000
+          - 8088:8088
+          - 8089:8089
+        env:
+          SPLUNK_HEC_TOKEN: 70b6ae71-76b3-4c38-9597-0c5b37ad9630
+          SPLUNK_PASSWORD: Changed@11
+          SPLUNK_START_ARGS: --accept-license
+          SPLUNK_APPS_URL: https://github.com/splunk/splunk-configurations-base-indexes/releases/download/v1.0.0/splunk_configurations_base_indexes-1.0.0.tar.gz
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
@@ -103,6 +115,21 @@ jobs:
           tags: sc4s:test
           build-args: |
             SYSLOGNG_VERSION=${{ inputs.syslog-ng-image-version || 'nightly' }}
+
+      - name: Smoke test
+        working-directory: sc4s/splunk-connect-for-syslog
+        run: |
+          docker run -d --network host \
+            -e SC4S_DEST_SPLUNK_HEC_DEFAULT_URL="https://127.0.0.1:8088" \
+            -e SC4S_DEST_SPLUNK_HEC_DEFAULT_TOKEN="70b6ae71-76b3-4c38-9597-0c5b37ad9630" \
+            -e SC4S_DEST_SPLUNK_HEC_DEFAULT_TLS_VERIFY="no" \
+            -e SC4S_DEBUG_CONTAINER="yes" \
+            sc4s:test
+
+          pip3 install poetry
+          poetry install
+          poetry run pytest -v -n8 --splunk_type=external --splunk_hec_token=70b6ae71-76b3-4c38-9597-0c5b37ad9630 \
+            tests/test_loggen.py
 
   publish-image:
     if: github.repository_owner == 'axoflow' && startsWith(github.ref, 'refs/tags/sc4s-')
