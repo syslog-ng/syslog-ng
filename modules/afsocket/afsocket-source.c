@@ -791,6 +791,33 @@ afsocket_sd_setup_transport(AFSocketSourceDriver *self)
   return TRUE;
 }
 
+
+static void
+afsocket_sd_save_connections(AFSocketSourceDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+
+  if (!self->connections_kept_alive_across_reloads || !cfg->persist)
+    {
+      afsocket_sd_kill_connection_list(self->connections);
+    }
+  else
+    {
+      GList *p;
+
+      /* for SOCK_STREAM source drivers this is a list, for
+       * SOCK_DGRAM this is a single connection */
+
+      for (p = self->connections; p; p = p->next)
+        {
+          log_pipe_deinit((LogPipe *) p->data);
+        }
+      cfg_persist_config_add(cfg, afsocket_sd_format_connections_name(self), self->connections,
+                             (GDestroyNotify)afsocket_sd_kill_connection_list);
+    }
+  self->connections = NULL;
+}
+
 static void
 afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
 {
@@ -926,31 +953,6 @@ afsocket_sd_close_fd(gpointer value)
   close(fd);
 }
 
-static void
-afsocket_sd_save_connections(AFSocketSourceDriver *self)
-{
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-
-  if (!self->connections_kept_alive_across_reloads || !cfg->persist)
-    {
-      afsocket_sd_kill_connection_list(self->connections);
-    }
-  else
-    {
-      GList *p;
-
-      /* for SOCK_STREAM source drivers this is a list, for
-       * SOCK_DGRAM this is a single connection */
-
-      for (p = self->connections; p; p = p->next)
-        {
-          log_pipe_deinit((LogPipe *) p->data);
-        }
-      cfg_persist_config_add(cfg, afsocket_sd_format_connections_name(self), self->connections,
-                             (GDestroyNotify)afsocket_sd_kill_connection_list);
-    }
-  self->connections = NULL;
-}
 
 static void
 afsocket_sd_save_listener(AFSocketSourceDriver *self)
