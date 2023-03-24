@@ -111,41 +111,52 @@ synthetic_message_add_value_template_string(SyntheticMessage *self, GlobalConfig
   gboolean success = FALSE;
 
   value_template = log_template_new(cfg, NULL);
-
-  if (!cfg_is_typing_feature_enabled(cfg))
+  if (cfg_is_typing_feature_enabled(cfg))
     {
-      if (strchr(value, '(') != NULL)
-        {
-          success = log_template_compile_with_type_hint(value_template, value, error);
-          if (!success)
-            {
-              log_template_set_type_hint(value_template, "string", NULL);
+      /* typing is enabled as a feature, check @version */
 
-              msg_warning("WARNING: the template specified in value()/<value> options for your grouping-by() or "
-                          "db-parser() configuration has been changed to support typing from "
-                          "" FEATURE_TYPING_VERSION ". You are using an older config "
-                          "version and your template contains an unrecognized type-cast, probably a "
-                          "parenthesis in the value field. This will be interpreted in the `type(value)' "
-                          "format in future versions. Please add an "
-                          "explicit string() cast as shown in the 'fixed-value' tag of this log message "
-                          "or remove the parenthesis. The value will be processed as a 'string' "
-                          "expression",
-                          cfg_format_config_version_tag(cfg),
-                          evt_tag_str("name", name),
-                          evt_tag_str("value", value),
-                          evt_tag_printf("fixed-value", "string(%s)", value));
-              g_clear_error(error);
+      if (cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
+        {
+          /* old @version, let's use compat mode but warn on changes */
+          if (strchr(value, '(') != NULL)
+            {
+              success = log_template_compile_with_type_hint(value_template, value, error);
+              if (!success)
+                {
+                  log_template_set_type_hint(value_template, "string", NULL);
+
+                  msg_warning("WARNING: the template specified in value()/<value> options for your grouping-by() or "
+                              "db-parser() configuration has been changed to support typing from "
+                              "" FEATURE_TYPING_VERSION ". You are using an older config "
+                              "version and your template contains an unrecognized type-cast, probably a "
+                              "parenthesis in the value field. This will be interpreted in the `type(value)' "
+                              "format in future versions. Please add an "
+                              "explicit string() cast as shown in the 'fixed-value' tag of this log message "
+                              "or remove the parenthesis. The value will be processed as a 'string' "
+                              "expression",
+                              cfg_format_config_version_tag(cfg),
+                              evt_tag_str("name", name),
+                              evt_tag_str("value", value),
+                              evt_tag_printf("fixed-value", "string(%s)", value));
+                  g_clear_error(error);
+                  success = log_template_compile(value_template, value, error);
+                }
+            }
+          else
+            {
               success = log_template_compile(value_template, value, error);
             }
         }
       else
         {
-          success = log_template_compile(value_template, value, error);
+          /* recent @version */
+          success = log_template_compile_with_type_hint(value_template, value, error);
         }
     }
   else
     {
-      success = log_template_compile_with_type_hint(value_template, value, error);
+      /* typing is not enabled use compat mode */
+      success = log_template_compile(value_template, value, error);
     }
 
   if (success)
