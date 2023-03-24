@@ -134,6 +134,7 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
         {
           if (_serialize_and_write_message_to_disk(self, msg))
             {
+              log_queue_disk_update_disk_related_counters(&self->super);
               log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
               log_msg_ack(msg, &path_options, AT_PROCESSED);
               log_msg_unref(msg);
@@ -169,6 +170,7 @@ _move_messages_from_disk_to_qout(LogQueueDiskNonReliable *self)
       g_queue_push_tail(self->qout, msg);
       g_queue_push_tail(self->qout, LOG_PATH_OPTIONS_TO_POINTER(&path_options));
       log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
+      log_queue_disk_update_disk_related_counters(&self->super);
     }
   while (HAS_SPACE_IN_QUEUE(self->qout));
 
@@ -308,6 +310,7 @@ success:
       stats_update = FALSE;
     }
 
+  log_queue_disk_update_disk_related_counters(&self->super);
   g_mutex_unlock(&s->lock);
 
   if (s->use_backlog)
@@ -389,12 +392,16 @@ static inline gboolean
 _push_tail_disk(LogQueueDiskNonReliable *self, LogMessage *msg, const LogPathOptions *path_options,
                 GString *serialized_msg)
 {
-  if (!_ensure_serialized_and_write_to_disk(self, msg, serialized_msg))
-    return FALSE;
+  gboolean result = _ensure_serialized_and_write_to_disk(self, msg, serialized_msg);
+  if (result)
+    {
+      log_msg_ack(msg, path_options, AT_PROCESSED);
+      log_msg_unref(msg);
+    }
 
-  log_msg_ack(msg, path_options, AT_PROCESSED);
-  log_msg_unref(msg);
-  return TRUE;
+  log_queue_disk_update_disk_related_counters(&self->super);
+
+  return result;
 }
 
 static void

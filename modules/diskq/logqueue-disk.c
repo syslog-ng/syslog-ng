@@ -27,6 +27,7 @@
 #include "serialize.h"
 #include "logmsg/logmsg-serialize.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-single.h"
 #include "reloc.h"
 #include "qdisk.h"
 #include "scratch-buffers.h"
@@ -40,6 +41,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+
+#define B_TO_KiB(x) ((x) / 1024)
 
 QueueType log_queue_disk_type = "DISK";
 
@@ -71,6 +74,8 @@ log_queue_disk_start(LogQueue *s)
   if (self->start(self))
     {
       log_queue_queued_messages_add(s, log_queue_get_length(s));
+      log_queue_disk_update_disk_related_counters(self);
+      stats_counter_set(self->metrics.capacity, B_TO_KiB(qdisk_get_max_useful_space(self->qdisk)));
       return TRUE;
     }
 
@@ -84,13 +89,54 @@ log_queue_disk_get_filename(LogQueue *s)
   return qdisk_get_filename(self->qdisk);
 }
 
+static void
+_unregister_counters(LogQueueDisk *self)
+{
+  stats_lock();
+  {
+    if (self->metrics.capacity_sc_key)
+      {
+        stats_unregister_counter(self->metrics.capacity_sc_key, SC_TYPE_SINGLE_VALUE,
+                                 &self->metrics.capacity);
+
+        stats_cluster_key_free(self->metrics.capacity_sc_key);
+      }
+
+    if (self->metrics.disk_usage_sc_key)
+      {
+        stats_unregister_counter(self->metrics.disk_usage_sc_key, SC_TYPE_SINGLE_VALUE,
+                                 &self->metrics.disk_usage);
+
+        stats_cluster_key_free(self->metrics.disk_usage_sc_key);
+      }
+
+    if (self->metrics.disk_allocated_sc_key)
+      {
+        stats_unregister_counter(self->metrics.disk_allocated_sc_key, SC_TYPE_SINGLE_VALUE,
+                                 &self->metrics.disk_allocated);
+
+        stats_cluster_key_free(self->metrics.disk_allocated_sc_key);
+      }
+  }
+  stats_unlock();
+}
+
 void
 log_queue_disk_free_method(LogQueueDisk *self)
 {
   g_assert(!qdisk_started(self->qdisk));
   qdisk_free(self->qdisk);
 
+  _unregister_counters(self);
+
   log_queue_free_method(&self->super);
+}
+
+void
+log_queue_disk_update_disk_related_counters(LogQueueDisk *self)
+{
+  stats_counter_set(self->metrics.disk_usage, B_TO_KiB(qdisk_get_used_useful_space(self->qdisk)));
+  stats_counter_set(self->metrics.disk_allocated, B_TO_KiB(qdisk_get_file_size(self->qdisk)));
 }
 
 static gboolean
@@ -227,6 +273,42 @@ log_queue_disk_restart_corrupted(LogQueueDisk *self)
 {
   _restart_diskq(self);
   log_queue_queued_messages_reset(&self->super);
+  log_queue_disk_update_disk_related_counters(self);
+  stats_counter_set(self->metrics.capacity, B_TO_KiB(qdisk_get_max_useful_space(self->qdisk)));
+}
+
+static void
+_register_counters(LogQueueDisk *self, StatsClusterKeyBuilder *builder)
+{
+  if (!builder)
+    return;
+
+  StatsClusterKeyBuilder *local_builder = stats_cluster_key_builder_clone(builder);
+
+  /* Up to 4 TiB with 32 bit atomic counters. */
+  stats_cluster_key_builder_set_unit(local_builder, SCU_KIB);
+
+  stats_cluster_key_builder_set_name(local_builder, "capacity_bytes");
+  self->metrics.capacity_sc_key = stats_cluster_key_builder_build_single(local_builder);
+
+  stats_cluster_key_builder_set_name(local_builder, "disk_usage_bytes");
+  self->metrics.disk_usage_sc_key = stats_cluster_key_builder_build_single(local_builder);
+
+  stats_cluster_key_builder_set_name(local_builder, "disk_allocated_bytes");
+  self->metrics.disk_allocated_sc_key = stats_cluster_key_builder_build_single(local_builder);
+
+  stats_lock();
+  {
+    stats_register_counter(STATS_LEVEL1, self->metrics.capacity_sc_key, SC_TYPE_SINGLE_VALUE,
+                           &self->metrics.capacity);
+    stats_register_counter(STATS_LEVEL1, self->metrics.disk_usage_sc_key, SC_TYPE_SINGLE_VALUE,
+                           &self->metrics.disk_usage);
+    stats_register_counter(STATS_LEVEL1, self->metrics.disk_allocated_sc_key, SC_TYPE_SINGLE_VALUE,
+                           &self->metrics.disk_allocated);
+  }
+  stats_unlock();
+
+  stats_cluster_key_builder_free(local_builder);
 }
 
 void
@@ -249,6 +331,7 @@ log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, cons
   self->compaction = options->compaction;
 
   self->qdisk = qdisk_new(options, qdisk_file_id, filename);
+  _register_counters(self, queue_sck_builder);
 }
 
 static gboolean
