@@ -148,7 +148,7 @@ py_log_message_new(LogMessage *msg, GlobalConfig *cfg)
   self->msg = log_msg_ref(msg);
   self->bookmark_data = NULL;
 
-  if (!cfg_is_typing_feature_enabled(cfg))
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
     self->cast_to_strings = TRUE;
   else
     self->cast_to_strings = FALSE;
