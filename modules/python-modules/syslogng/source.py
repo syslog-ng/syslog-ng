@@ -66,6 +66,11 @@ class LogSource(LogSource):
         """
         return True
 
+    def deinit(self):
+        """Deinitialize this LogSource instance
+        """
+        pass
+
     def run(self):
         """Run the main loop for the source
 
@@ -145,6 +150,11 @@ class LogFetcher(LogFetcher):
         """
         return True
 
+    def deinit(self):
+        """Deinitialize this LogFetcher instance
+        """
+        pass
+
     def open(self):
         """Open the connection to the target service
 
@@ -174,3 +184,13 @@ class LogFetcher(LogFetcher):
                 in the LogFetchrResult enum.
         """
         raise NotImplementedError
+
+    def request_exit(self):
+        """Request fetch() to exit
+
+        This function is invoked by syslog-ng from its main thread when this
+        source should stop executing.
+        The method is optional, use it when fetch() has blocking operations and
+        it has to be interrupted when shutting down syslog-ng.
+        """
+        pass
