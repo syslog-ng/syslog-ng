@@ -1014,6 +1014,16 @@ afsocket_sd_restore_dynamic_window_pool(AFSocketSourceDriver *self)
 }
 
 
+static void
+afsocket_sd_drop_dynamic_window_pool(AFSocketSourceDriver *self)
+{
+  if (self->dynamic_window_pool)
+    {
+      dynamic_window_pool_unref(self->dynamic_window_pool);
+      self->dynamic_window_pool = NULL;
+    }
+}
+
 gboolean
 afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
 {
@@ -1086,6 +1096,7 @@ afsocket_sd_init_method(LogPipe *s)
     {
       /* returning FALSE, so deinit is not called */
       afsocket_sd_unregister_stats(self);
+      afsocket_sd_drop_dynamic_window_pool(self);
       return FALSE;
     }
   return TRUE;
