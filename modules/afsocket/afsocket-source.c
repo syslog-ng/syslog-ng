@@ -897,9 +897,10 @@ _sd_open_dgram(AFSocketSourceDriver *self)
   self->fd = -1;
 
   /* we either have self->connections != NULL, or sock contains a new fd */
-  if (self->connections || afsocket_sd_process_connection(self, NULL, self->bind_addr, sock))
-    return transport_mapper_init(self->transport_mapper);
-  return FALSE;
+  if (!(self->connections || afsocket_sd_process_connection(self, NULL, self->bind_addr, sock)))
+    return FALSE;
+
+  return transport_mapper_init(self->transport_mapper);
 }
 
 static gboolean
