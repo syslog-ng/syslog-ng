@@ -306,18 +306,16 @@ main(int argc, char *argv[])
   main_loop_init(main_loop, &main_loop_options);
   rc = main_loop_read_and_init_config(main_loop);
 
-  if (rc)
+  if (rc || exit_before_main_loop_run)
     {
+      main_loop_deinit(main_loop);
+      app_shutdown();
+      reloc_deinit();
       g_process_startup_failed(rc, TRUE);
       return rc;
     }
-  else
-    {
-      if (exit_before_main_loop_run)
-        g_process_startup_failed(0, TRUE);
-      else
-        g_process_startup_ok();
-    }
+
+  g_process_startup_ok();
 
   /* we are running as a non-root user from this point */
 
