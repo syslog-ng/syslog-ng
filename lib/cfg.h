@@ -29,6 +29,7 @@
 #include "cfg-tree.h"
 #include "cfg-lexer.h"
 #include "cfg-parser.h"
+#include "cfg-persist.h"
 #include "plugin.h"
 #include "persist-state.h"
 #include "template/templates.h"
@@ -52,9 +53,6 @@ enum
   MM_NONE,
   MM_GLOBAL,
 };
-
-/* configuration data kept between configuration reloads */
-typedef struct _PersistConfig PersistConfig;
 
 /* configuration data as loaded from the config file */
 struct _GlobalConfig

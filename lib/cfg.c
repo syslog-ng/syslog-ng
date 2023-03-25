@@ -52,46 +52,6 @@
 #include <stdlib.h>
 #include <iv_work.h>
 
-/* PersistConfig */
-
-struct _PersistConfig
-{
-  GHashTable *keys;
-};
-
-typedef struct _PersistConfigEntry
-{
-  gpointer value;
-  GDestroyNotify destroy;
-} PersistConfigEntry;
-
-static void
-persist_config_entry_free(PersistConfigEntry *self)
-{
-  if (self->destroy)
-    {
-      self->destroy(self->value);
-    }
-  g_free(self);
-}
-
-PersistConfig *
-persist_config_new(void)
-{
-  PersistConfig *self = g_new0(PersistConfig, 1);
-
-  self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify) g_free,
-                                     (GDestroyNotify) persist_config_entry_free);
-  return self;
-}
-
-void
-persist_config_free(PersistConfig *self)
-{
-  g_hash_table_destroy(self->keys);
-  g_free(self);
-}
-
 gint
 cfg_ts_format_value(gchar *format)
 {
@@ -764,56 +724,24 @@ void
 cfg_persist_config_add(GlobalConfig *cfg, const gchar *name, gpointer value, GDestroyNotify destroy,
                        gboolean force)
 {
-  PersistConfigEntry *p;
+  if (!value)
+    return;
 
-  if (cfg->persist && value)
+  if (!cfg->persist)
     {
-      if (g_hash_table_lookup(cfg->persist->keys, name))
-        {
-          if (!force)
-            {
-              msg_error("Internal error, duplicate configuration elements refer to the same persistent config",
-                        evt_tag_str("name", name));
-              if (destroy)
-                destroy(value);
-              return;
-            }
-        }
-
-      p = g_new0(PersistConfigEntry, 1);
-
-      p->value = value;
-      p->destroy = destroy;
-      g_hash_table_insert(cfg->persist->keys, g_strdup(name), p);
+      if (destroy)
+        destroy(value);
       return;
     }
-  else if (destroy && value)
-    {
-      destroy(value);
-    }
-  return;
+  persist_config_add(cfg->persist, name, value, destroy, force);
 }
 
 gpointer
 cfg_persist_config_fetch(GlobalConfig *cfg, const gchar *name)
 {
-  gpointer res = NULL;
-  gchar *orig_key;
-  PersistConfigEntry *p;
-  gpointer tmp1, tmp2;
-
-  if (cfg->persist && g_hash_table_lookup_extended(cfg->persist->keys, name, &tmp1, &tmp2))
-    {
-      orig_key = (gchar *) tmp1;
-      p = (PersistConfigEntry *) tmp2;
-
-      res = p->value;
-
-      g_hash_table_steal(cfg->persist->keys, name);
-      g_free(orig_key);
-      g_free(p);
-    }
-  return res;
+  if (!cfg->persist)
+    return NULL;
+  return persist_config_fetch(cfg->persist, name);
 }
 
 gint
