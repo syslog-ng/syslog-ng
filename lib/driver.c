@@ -296,7 +296,7 @@ log_dest_driver_release_queue_method(LogDestDriver *self, LogQueue *q)
   /* we only save the LogQueue instance if it contains data */
   if (q->persist_name && log_queue_keep_on_reload(q) > 0)
     {
-      cfg_persist_config_add(cfg, q->persist_name, q, (GDestroyNotify) log_queue_unref, FALSE);
+      cfg_persist_config_add(cfg, q->persist_name, q, (GDestroyNotify) log_queue_unref);
     }
   else
     {

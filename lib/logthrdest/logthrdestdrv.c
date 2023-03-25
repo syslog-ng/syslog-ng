@@ -1178,7 +1178,7 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
 
   cfg_persist_config_add(log_pipe_get_config(s),
                          _format_seqnum_persist_name(self),
-                         GINT_TO_POINTER(self->shared_seq_num), NULL, FALSE);
+                         GINT_TO_POINTER(self->shared_seq_num), NULL);
 
   _unregister_stats(self);
 

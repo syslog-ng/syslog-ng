@@ -41,21 +41,17 @@ persist_config_entry_free(PersistConfigEntry *self)
 }
 
 void
-persist_config_add(PersistConfig *self, const gchar *name, gpointer value, GDestroyNotify destroy,
-                   gboolean force)
+persist_config_add(PersistConfig *self, const gchar *name, gpointer value, GDestroyNotify destroy)
 {
   PersistConfigEntry *p;
 
   if (g_hash_table_lookup(self->keys, name))
     {
-      if (!force)
-        {
-          msg_error("Internal error, duplicate configuration elements refer to the same persistent config",
-                    evt_tag_str("name", name));
-          if (destroy)
-            destroy(value);
-          return;
-        }
+      msg_error("Internal error, duplicate configuration elements refer to the same persistent config",
+                evt_tag_str("name", name));
+      if (destroy)
+        destroy(value);
+      return;
     }
 
   p = g_new0(PersistConfigEntry, 1);

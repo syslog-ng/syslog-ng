@@ -32,8 +32,7 @@ typedef struct _PersistConfig
   GHashTable *keys;
 } PersistConfig;
 
-void persist_config_add(PersistConfig *self, const gchar *name, gpointer value, GDestroyNotify destroy,
-                        gboolean force);
+void persist_config_add(PersistConfig *self, const gchar *name, gpointer value, GDestroyNotify destroy);
 gpointer persist_config_fetch(PersistConfig *cfg, const gchar *name);
 
 PersistConfig *persist_config_new(void);

@@ -455,7 +455,7 @@ _store_data_in_persist(GroupingBy *self, GlobalConfig *cfg)
 {
   cfg_persist_config_add(cfg, log_pipe_get_persist_name(&self->super.super.super),
                          correlation_state_ref(self->correlation),
-                         (GDestroyNotify) correlation_state_unref, FALSE);
+                         (GDestroyNotify) correlation_state_unref);
 }
 
 static gboolean

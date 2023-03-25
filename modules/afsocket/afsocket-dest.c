@@ -625,7 +625,7 @@ afsocket_dd_save_connection(AFSocketDestDriver *self)
     {
       ReloadStoreItem *item = _reload_store_item_new(self);
       cfg_persist_config_add(cfg, afsocket_dd_format_connections_name(self), item,
-                             (GDestroyNotify)_reload_store_item_free, FALSE);
+                             (GDestroyNotify)_reload_store_item_free);
       self->writer = NULL;
     }
 }

@@ -165,8 +165,7 @@ gboolean cfg_deinit(GlobalConfig *cfg);
 PersistConfig *persist_config_new(void);
 void persist_config_free(PersistConfig *self);
 void cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest);
-void cfg_persist_config_add(GlobalConfig *cfg, const gchar *name, gpointer value, GDestroyNotify destroy,
-                            gboolean force);
+void cfg_persist_config_add(GlobalConfig *cfg, const gchar *name, gpointer value, GDestroyNotify destroy);
 gpointer cfg_persist_config_fetch(GlobalConfig *cfg, const gchar *name);
 
 typedef gboolean(* mangle_callback)(GlobalConfig *cfg, LogMessage *msg, gpointer user_data);

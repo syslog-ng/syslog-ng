@@ -721,8 +721,7 @@ cfg_persist_config_move(GlobalConfig *src, GlobalConfig *dest)
 }
 
 void
-cfg_persist_config_add(GlobalConfig *cfg, const gchar *name, gpointer value, GDestroyNotify destroy,
-                       gboolean force)
+cfg_persist_config_add(GlobalConfig *cfg, const gchar *name, gpointer value, GDestroyNotify destroy)
 {
   if (!value)
     return;
@@ -733,7 +732,7 @@ cfg_persist_config_add(GlobalConfig *cfg, const gchar *name, gpointer value, GDe
         destroy(value);
       return;
     }
-  persist_config_add(cfg->persist, name, value, destroy, force);
+  persist_config_add(cfg->persist, name, value, destroy);
 }
 
 gpointer

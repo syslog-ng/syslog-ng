@@ -125,7 +125,7 @@ _release_queue(LogDestDriver *dd, LogQueue *queue)
   log_queue_disk_stop(queue, &persistent);
   if (queue->persist_name)
     {
-      cfg_persist_config_add(cfg, queue->persist_name, queue, (GDestroyNotify) log_queue_unref, FALSE);
+      cfg_persist_config_add(cfg, queue->persist_name, queue, (GDestroyNotify) log_queue_unref);
     }
   else
     {
