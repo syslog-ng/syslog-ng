@@ -560,6 +560,13 @@ _listen_fd_start(AFSocketSourceDriver *self)
 }
 
 static void
+_listen_fd_stop(AFSocketSourceDriver *self)
+{
+  if (iv_fd_registered (&self->listen_fd))
+    iv_fd_unregister(&self->listen_fd);
+}
+
+static void
 _dynamic_window_timer_start(AFSocketSourceDriver *self)
 {
   iv_validate_now();
@@ -658,12 +665,6 @@ _dynamic_window_timer_stop(AFSocketSourceDriver *self)
 {
   if (iv_timer_registered(&self->dynamic_window_timer))
     iv_timer_unregister(&self->dynamic_window_timer);
-}
-static void
-_listen_fd_stop(AFSocketSourceDriver *self)
-{
-  if (iv_fd_registered (&self->listen_fd))
-    iv_fd_unregister(&self->listen_fd);
 }
 
 static void
