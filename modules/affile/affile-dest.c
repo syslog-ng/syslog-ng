@@ -585,7 +585,7 @@ affile_dd_deinit(LogPipe *s)
 
       log_pipe_deinit(&self->single_writer->super);
       cfg_persist_config_add(cfg, affile_dd_format_persist_name(s), self->single_writer,
-                             affile_dd_destroy_writer, FALSE);
+                             affile_dd_destroy_writer);
       self->single_writer = NULL;
     }
   else if (self->writer_hash)
@@ -594,7 +594,7 @@ affile_dd_deinit(LogPipe *s)
 
       g_hash_table_foreach(self->writer_hash, affile_dd_deinit_writer, NULL);
       cfg_persist_config_add(cfg, affile_dd_format_persist_name(s), self->writer_hash,
-                             affile_dd_destroy_writer_hash, FALSE);
+                             affile_dd_destroy_writer_hash);
       self->writer_hash = NULL;
     }
 

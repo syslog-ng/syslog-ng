@@ -938,7 +938,7 @@ afsocket_sd_save_connections(AFSocketSourceDriver *self)
           log_pipe_deinit((LogPipe *) p->data);
         }
       cfg_persist_config_add(cfg, afsocket_sd_format_connections_name(self), self->connections,
-                             (GDestroyNotify)afsocket_sd_kill_connection_list, FALSE);
+                             (GDestroyNotify)afsocket_sd_kill_connection_list);
     }
   self->connections = NULL;
 }
@@ -963,7 +963,7 @@ afsocket_sd_save_listener(AFSocketSourceDriver *self)
            * as persist config cannot store NULL */
 
           cfg_persist_config_add(cfg, afsocket_sd_format_listener_name(self),
-                                 GUINT_TO_POINTER(self->fd + 1), afsocket_sd_close_fd, FALSE);
+                                 GUINT_TO_POINTER(self->fd + 1), afsocket_sd_close_fd);
         }
     }
 }
@@ -976,7 +976,7 @@ afsocket_sd_save_dynamic_window_pool(AFSocketSourceDriver *self)
   if (self->connections_kept_alive_across_reloads)
     {
       cfg_persist_config_add(cfg, afsocket_sd_format_dynamic_window_pool_name(self),
-                             self->dynamic_window_pool, (GDestroyNotify) dynamic_window_pool_unref, FALSE);
+                             self->dynamic_window_pool, (GDestroyNotify) dynamic_window_pool_unref);
     }
   else
     {

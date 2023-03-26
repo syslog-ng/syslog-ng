@@ -165,7 +165,7 @@ log_db_parser_deinit(LogPipe *s)
       iv_timer_unregister(&self->tick);
     }
 
-  cfg_persist_config_add(cfg, log_db_parser_format_persist_name(self), self->db, (GDestroyNotify) pattern_db_free, FALSE);
+  cfg_persist_config_add(cfg, log_db_parser_format_persist_name(self), self->db, (GDestroyNotify) pattern_db_free);
   self->db = NULL;
   return stateful_parser_deinit_method(s);
 }
