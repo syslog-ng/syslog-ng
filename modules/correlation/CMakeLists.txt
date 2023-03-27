@@ -64,6 +64,8 @@ set(CORRELATION_SOURCES
     correlation-plugin.c
     groupingby.c
     groupingby.h
+    grouping-parser.c
+    grouping-parser.h
 )
 
 add_module(

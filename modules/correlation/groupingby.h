@@ -22,7 +22,7 @@
 #ifndef PATTERNDB_GROUPING_BY_PARSER_H_INCLUDED
 #define PATTERNDB_GROUPING_BY_PARSER_H_INCLUDED
 
-#include "stateful-parser.h"
+#include "grouping-parser.h"
 #include "synthetic-message.h"
 #include "filter/filter-expr.h"
 

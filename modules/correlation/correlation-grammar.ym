@@ -134,9 +134,15 @@ grouping_by_opts
 	;
 
 grouping_by_opt
-	: KW_KEY '(' template_content ')'                       { grouping_by_set_key_template(last_parser, $3); log_template_unref($3); }
-        | KW_SORT_KEY '(' template_content ')'			{ grouping_by_set_sort_key_template(last_parser, $3); log_template_unref($3); }
-        | KW_SCOPE '(' context_scope ')'                        { grouping_by_set_scope(last_parser, $3); }
+	: KW_KEY '(' template_content ')'                       { grouping_parser_set_key_template(last_parser, $3); log_template_unref($3); }
+        | KW_SORT_KEY '(' template_content ')'			{ grouping_parser_set_sort_key_template(last_parser, $3); log_template_unref($3); }
+        | KW_SCOPE '(' context_scope ')'                        { grouping_parser_set_scope(last_parser, $3); }
+	| KW_TIMEOUT '(' nonnegative_integer ')'
+          {
+            CHECK_ERROR($3 >= 1, @1, "timeout() needs to be greater than 1 second");
+
+            grouping_parser_set_timeout(last_parser, $3);
+          }
         | KW_WHERE '('
           {
             FilterExprNode *filter_expr;
@@ -151,12 +157,6 @@ grouping_by_opt
             CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1);
             grouping_by_set_having_condition(last_parser, filter_expr);
           } ')'
-	| KW_TIMEOUT '(' nonnegative_integer ')'
-          {
-            CHECK_ERROR($3 >= 1, @1, "timeout() needs to be greater than 1 second");
-
-            grouping_by_set_timeout(last_parser, $3);
-          }
 	| KW_AGGREGATE '(' synthetic_message ')'		{ grouping_by_set_synthetic_message(last_parser, $3); }
 	| KW_TRIGGER '('
           {
