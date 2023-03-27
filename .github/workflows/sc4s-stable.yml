@@ -39,6 +39,9 @@ on:
 env:
   DOCKER_IMAGE_NAME: ghcr.io/axoflow/syslog-ng-splunk-connector
   PLATFORMS: linux/amd64,linux/arm64
+  SC4S_OWNER: ${{ inputs.owner || 'splunk' }}
+  SC4S_REPO: ${{ inputs.repo || 'splunk-connect-for-syslog' }}
+  SYSLOG_NG_IMG_VERSION: ${{ inputs.syslog-ng-image-version || 'nightly' }}
 
 jobs:
   detect-version:
@@ -65,11 +68,10 @@ jobs:
               return;
             }
 
-            const owner = '${{ inputs.owner || 'splunk' }}';
-            const repo = '${{ inputs.repo || 'splunk-connect-for-syslog' }}';
+            const { SC4S_OWNER, SC4S_REPO } = process.env;
             const latest_release = await github.rest.repos.getLatestRelease({
-              owner: owner,
-              repo: repo,
+              owner: SC4S_OWNER,
+              repo: SC4S_REPO,
             });
 
             if (!/^v[0-9]/.test(latest_release.data.tag_name)) {
@@ -102,7 +104,7 @@ jobs:
       - name: Checkout SC4S source
         uses: actions/checkout@v3
         with:
-          repository: ${{ inputs.owner || 'splunk' }}/${{ inputs.repo || 'splunk-connect-for-syslog' }}
+          repository: ${{ env.SC4S_OWNER }}/${{ env.SC4S_REPO }}
           ref: ${{ needs.detect-version.outputs.version }}
           path: sc4s/splunk-connect-for-syslog
 
@@ -114,7 +116,7 @@ jobs:
           load: true
           tags: sc4s:test
           build-args: |
-            SYSLOGNG_VERSION=${{ inputs.syslog-ng-image-version || 'nightly' }}
+            SYSLOGNG_VERSION=${{ env.SYSLOG_NG_IMG_VERSION }}
 
       - name: Smoke test
         working-directory: sc4s/splunk-connect-for-syslog
@@ -142,7 +144,7 @@ jobs:
       - name: Checkout SC4S source
         uses: actions/checkout@v3
         with:
-          repository: ${{ inputs.owner || 'splunk' }}/${{ inputs.repo || 'splunk-connect-for-syslog' }}
+          repository: ${{ env.SC4S_OWNER }}/${{ env.SC4S_REPO }}
           ref: ${{ needs.detect-version.outputs.version }}
           path: sc4s/splunk-connect-for-syslog
 
@@ -175,4 +177,4 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           build-args: |
-            SYSLOGNG_VERSION=${{ inputs.syslog-ng-image-version || 'nightly' }}
+            SYSLOGNG_VERSION=${{ env.SYSLOG_NG_IMG_VERSION }}
