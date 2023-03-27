@@ -218,13 +218,14 @@ ParameterizedTest(PyLogMessageSetValueTestParams *params, python_log_message, te
 
 Test(python_log_message, test_python_logmessage_set_value_no_typing_support)
 {
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
+
   LogMessage *msg = log_msg_new_empty();
 
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   {
     PyObject *msg_object = py_log_message_new(msg, configuration);
-    ((PyLogMessage *) msg_object)->cast_to_strings = TRUE;
 
     PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
 
@@ -241,6 +242,8 @@ Test(python_log_message, test_python_logmessage_get_value_no_typing_support)
   const gchar *test_key = "test_field";
   const gchar *test_value = "42";
 
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
+
   LogMessage *msg = log_msg_new_empty();
 
   // set from C code as INTEGER
@@ -250,7 +253,6 @@ Test(python_log_message, test_python_logmessage_get_value_no_typing_support)
   gstate = PyGILState_Ensure();
   {
     PyObject *msg_object = py_log_message_new(msg, configuration);
-    ((PyLogMessage *) msg_object)->cast_to_strings = TRUE;
 
     PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
 

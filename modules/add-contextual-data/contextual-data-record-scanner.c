@@ -114,39 +114,50 @@ _fetch_value(ContextualDataRecordScanner *self, ContextualDataRecord *record)
       log_template_compile_literal_string(record->value, value_template);
       success = TRUE;
     }
-  else if (!cfg_is_typing_feature_enabled(self->cfg))
+  else if (cfg_is_typing_feature_enabled(self->cfg))
     {
-      if (strchr(value_template, '(') != NULL)
+      /* typing feature is enabled */
+      if (cfg_is_config_version_older(self->cfg, VERSION_VALUE_4_0))
         {
-          success = log_template_compile_with_type_hint(record->value, value_template, &error);
-          if (!success)
+          /* old @config, use compat mode but warn if the format would become incompatible */
+          if (strchr(value_template, '(') != NULL)
             {
-              log_template_set_type_hint(record->value, "string", NULL);
-              msg_warning("WARNING: the value field in add-contextual-data() CSV files has been changed "
-                          "to support typing from " FEATURE_TYPING_VERSION ". You are using an older config "
-                          "version and your CSV file contains an unrecognized type-cast, probably a "
-                          "parenthesis in the value field. This will be interpreted in the `type(value)' "
-                          "format in future versions. Please add an "
-                          "explicit string() cast as shown in the 'fixed-value' tag of this log message "
-                          "or remove the parenthesis. The value column will be processed as a 'string' "
-                          "expression",
-                          cfg_format_config_version_tag(self->cfg),
-                          evt_tag_str("selector", record->selector->str),
-                          evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
-                          evt_tag_str("value", value_template),
-                          evt_tag_printf("fixed-value", "string(%s)", value_template));
-              g_clear_error(&error);
+              success = log_template_compile_with_type_hint(record->value, value_template, &error);
+              if (!success)
+                {
+                  log_template_set_type_hint(record->value, "string", NULL);
+                  msg_warning("WARNING: the value field in add-contextual-data() CSV files has been changed "
+                              "to support typing from " FEATURE_TYPING_VERSION ". You are using an older config "
+                              "version and your CSV file contains an unrecognized type-cast, probably a "
+                              "parenthesis in the value field. This will be interpreted in the `type(value)' "
+                              "format in future versions. Please add an "
+                              "explicit string() cast as shown in the 'fixed-value' tag of this log message "
+                              "or remove the parenthesis. The value column will be processed as a 'string' "
+                              "expression",
+                              cfg_format_config_version_tag(self->cfg),
+                              evt_tag_str("selector", record->selector->str),
+                              evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
+                              evt_tag_str("value", value_template),
+                              evt_tag_printf("fixed-value", "string(%s)", value_template));
+                  g_clear_error(&error);
+                  success = log_template_compile(record->value, value_template, &error);
+                }
+            }
+          else
+            {
               success = log_template_compile(record->value, value_template, &error);
             }
         }
       else
         {
-          success = log_template_compile(record->value, value_template, &error);
+          /* new @config, use the new format with error handling */
+          success = log_template_compile_with_type_hint(record->value, value_template, &error);
         }
     }
   else
     {
-      success = log_template_compile_with_type_hint(record->value, value_template, &error);
+      /* typing feature is disabled, use old format, no warnings */
+      success = log_template_compile(record->value, value_template, &error);
     }
 
   if (!success)

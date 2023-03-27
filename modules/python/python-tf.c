@@ -99,7 +99,7 @@ static gboolean
 _py_convert_return_value_to_result(PythonTfState *state, const gchar *function_name, PyObject *ret, GString *result,
                                    LogMessageValueType *type)
 {
-  if (!cfg_is_typing_feature_enabled(state->cfg) && !is_py_obj_bytes_or_string_type(ret))
+  if (cfg_is_config_version_older(state->cfg, VERSION_VALUE_4_0) && !is_py_obj_bytes_or_string_type(ret))
     {
       msg_error("$(python): The current config version does not support returning non-string values from Python "
                 "functions. Please return str or bytes values from your Python function, use an explicit syslog-ng "
