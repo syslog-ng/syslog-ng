@@ -29,6 +29,7 @@
 #define DEFAULT_TRUNCATE_SIZE_RATIO_V3_X (0.1)
 #define DEFAULT_TRUNCATE_SIZE_RATIO_V4_X (1)
 #define DEFAULT_PREALLOC FALSE
+#define DEFAULT_STATS_FREQ (300)
 
 static void
 disk_queue_config_free(ModuleConfig *s)
@@ -43,6 +44,7 @@ disk_queue_config_new(GlobalConfig *cfg)
 
   self->truncate_size_ratio = -1;
   self->prealloc = -1;
+  self->stats_freq = -1;
 
   self->super.free_fn = disk_queue_config_free;
   return self;
@@ -112,4 +114,29 @@ disk_queue_config_is_prealloc_set_explicitly(GlobalConfig *cfg)
 {
   DiskQueueConfig *dqc = disk_queue_config_get(cfg);
   return dqc->prealloc != -1;
+}
+
+void
+disk_queue_config_set_stats_freq(GlobalConfig *cfg, gint stats_freq)
+{
+  DiskQueueConfig *dqc = disk_queue_config_get(cfg);
+  dqc->stats_freq = stats_freq;
+}
+
+gboolean
+disk_queue_config_get_stats_freq(GlobalConfig *cfg)
+{
+  DiskQueueConfig *dqc = disk_queue_config_get(cfg);
+
+  if (!disk_queue_config_is_stats_freq_set_explicitly(cfg))
+    return DEFAULT_STATS_FREQ;
+
+  return dqc->stats_freq;
+}
+
+gboolean
+disk_queue_config_is_stats_freq_set_explicitly(GlobalConfig *cfg)
+{
+  DiskQueueConfig *dqc = disk_queue_config_get(cfg);
+  return dqc->stats_freq != -1;
 }
