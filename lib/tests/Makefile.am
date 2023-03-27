@@ -165,6 +165,7 @@ CLEANFILES				+= \
 	test_run_id.persist		   \
 	test_run_id.persist-
 
+lib_tests_test_userdb_CFLAGS = $(TEST_CFLAGS)
 lib_tests_test_userdb_LDADD	= \
 	$(TEST_LDADD)
 
