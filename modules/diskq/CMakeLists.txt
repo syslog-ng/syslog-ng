@@ -11,6 +11,8 @@ set(SYSLOG_NG_DISK_BUFFER_SOURCES
     logqueue-disk-reliable.h
     qdisk.h
     qdisk.c
+    diskq-global-metrics.h
+    diskq-global-metrics.c
 )
 
 add_library(syslog-ng-disk-buffer STATIC ${SYSLOG_NG_DISK_BUFFER_SOURCES})

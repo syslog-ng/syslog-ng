@@ -25,6 +25,7 @@
 
 #include "diskq.h"
 #include "diskq-config.h"
+#include "diskq-global-metrics.h"
 
 #include "driver.h"
 #include "messages.h"
@@ -293,6 +294,8 @@ _attach(LogDriverPlugin *s, LogDriver *d)
 
   if (!_set_truncate_size_ratio_and_prealloc(self, dd))
     return FALSE;
+
+  diskq_global_metrics_watch_dir(self->options.dir);
 
   dd->acquire_queue = _acquire_queue;
   dd->release_queue = _release_queue;
