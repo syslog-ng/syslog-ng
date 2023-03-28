@@ -579,7 +579,7 @@ _dynamic_window_timer_start(AFSocketSourceDriver *self)
 }
 
 static void
-_log_source_dynamic_window_update_statistics_cb(AFSocketSourceConnection *conn)
+_dynamic_window_update_statistics_cb(AFSocketSourceConnection *conn)
 {
   log_source_dynamic_window_update_statistics(&conn->reader->super);
 }
@@ -587,11 +587,11 @@ _log_source_dynamic_window_update_statistics_cb(AFSocketSourceConnection *conn)
 static void
 _dynamic_window_update_stats(AFSocketSourceDriver *self)
 {
-  g_list_foreach(self->connections, (GFunc) _log_source_dynamic_window_update_statistics_cb, NULL);
+  g_list_foreach(self->connections, (GFunc) _dynamic_window_update_statistics_cb, NULL);
 }
 
 static void
-_log_source_dynamic_window_realloc_cb(AFSocketSourceConnection *conn)
+_dynamic_window_realloc_cb(AFSocketSourceConnection *conn)
 {
   log_source_schedule_dynamic_window_realloc(&conn->reader->super);
 }
@@ -599,7 +599,7 @@ _log_source_dynamic_window_realloc_cb(AFSocketSourceConnection *conn)
 static void
 _dynamic_window_realloc(AFSocketSourceDriver *self)
 {
-  g_list_foreach(self->connections, (GFunc) _log_source_dynamic_window_realloc_cb, NULL);
+  g_list_foreach(self->connections, (GFunc) _dynamic_window_realloc_cb, NULL);
 }
 
 static void
