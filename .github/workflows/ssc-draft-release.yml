@@ -1,0 +1,61 @@
+name: SSC draft release
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '00 00 * * *'
+
+env:
+  SC4S_OWNER: splunk
+  SC4S_REPO: splunk-connect-for-syslog
+
+jobs:
+  detect-version:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+    steps:
+      - name: Detect SC4S version
+        id: version
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { SC4S_OWNER, SC4S_REPO } = process.env;
+            const latest_release = await github.rest.repos.getLatestRelease({
+              owner: SC4S_OWNER,
+              repo: SC4S_REPO,
+            });
+
+            if (!/^v[0-9]/.test(latest_release.data.tag_name)) {
+              core.setFailed('Latest release tag mismatch');
+              return;
+            }
+
+            const new_version = latest_release.data.tag_name.substring(1);
+            console.log('Version (latest): ' + new_version);
+
+            const ssc_releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const release_exists = !!ssc_releases.data.find((release) => {
+              return release.name == "ssc-" + new_version;
+            });
+
+            if (!release_exists)
+              core.setOutput('new_version', new_version)
+
+  draft-release:
+    runs-on: ubuntu-latest
+    needs: detect-version
+    if: needs.detect-version.outputs.new_version
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+      - name: Draft release
+        run: |
+          gh release create --draft --target "main" --title "ssc-${{ needs.detect-version.outputs.new_version }}" \
+            "ssc-${{ needs.detect-version.outputs.new_version }}"
