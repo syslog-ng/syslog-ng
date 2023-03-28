@@ -24,6 +24,8 @@
 #include "cfg.h"
 #include "diskq-config.h"
 #include "diskq-global-metrics.h"
+#include "logqueue-disk-non-reliable.h"
+#include "logqueue-disk-reliable.h"
 #include "mainloop.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
@@ -37,6 +39,8 @@
 #include <sys/statvfs.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#define B_TO_KiB(x) ((x) / 1024)
 
 typedef struct DiskQGlobalMetrics_
 {
@@ -129,6 +133,73 @@ _init_abandoned_disk_buffer_sc_keys(StatsClusterKey *queued_sc_key, StatsCluster
 }
 
 static void
+_init_disk_queue_options(DiskQueueOptions *options, const gchar *dir, const gchar *filename)
+{
+  disk_queue_options_set_default_options(options);
+  disk_queue_options_set_dir(options, dir);
+  g_assert(qdisk_is_disk_buffer_file_reliable(filename, &options->reliable));
+  options->read_only = TRUE;
+}
+
+static LogQueueDisk *
+_create_log_queue_disk(DiskQueueOptions *options, const gchar *abs_filename)
+{
+  if (options->reliable)
+    return (LogQueueDisk *) log_queue_disk_reliable_new(options, abs_filename, NULL, STATS_LEVEL0, NULL, NULL);
+  else
+    return (LogQueueDisk *) log_queue_disk_non_reliable_new(options, abs_filename, NULL, STATS_LEVEL0, NULL, NULL);
+}
+
+static void
+_set_abandoned_disk_buffer_file_metrics(const gchar *dir, const gchar *filename)
+{
+  DiskQueueOptions options;
+  _init_disk_queue_options(&options, dir, filename);
+  gchar *abs_filename = g_build_filename(dir, filename, NULL);
+  LogQueueDisk *queue = _create_log_queue_disk(&options, abs_filename);
+
+  if (!log_queue_disk_start(&queue->super))
+    {
+      log_queue_unref(&queue->super);
+      disk_queue_options_destroy(&options);
+      g_free(abs_filename);
+      return;
+    }
+
+  StatsCounterItem *queued, *capacity, *disk_allocated, *disk_usage;
+  StatsCluster *queued_c, *capacity_c, *disk_allocated_c, *disk_usage_c;
+  StatsClusterKey queued_sc_key, capacity_sc_key, disk_allocated_sc_key, disk_usage_sc_key;
+  _init_abandoned_disk_buffer_sc_keys(&queued_sc_key, &capacity_sc_key, &disk_allocated_sc_key, &disk_usage_sc_key,
+                                      abs_filename, options.reliable);
+
+  stats_lock();
+  {
+    queued_c = stats_register_dynamic_counter(STATS_LEVEL1, &queued_sc_key, SC_TYPE_SINGLE_VALUE, &queued);
+    capacity_c = stats_register_dynamic_counter(STATS_LEVEL1, &capacity_sc_key, SC_TYPE_SINGLE_VALUE, &capacity);
+    disk_allocated_c = stats_register_dynamic_counter(STATS_LEVEL1, &disk_allocated_sc_key, SC_TYPE_SINGLE_VALUE,
+                                                      &disk_allocated);
+    disk_usage_c = stats_register_dynamic_counter(STATS_LEVEL1, &disk_usage_sc_key, SC_TYPE_SINGLE_VALUE, &disk_usage);
+
+    stats_counter_set(queued, log_queue_get_length(&queue->super));
+    stats_counter_set(capacity, B_TO_KiB(qdisk_get_max_useful_space(queue->qdisk)));
+    stats_counter_set(disk_allocated, B_TO_KiB(qdisk_get_file_size(queue->qdisk)));
+    stats_counter_set(disk_usage, B_TO_KiB(qdisk_get_used_useful_space(queue->qdisk)));
+
+    stats_unregister_dynamic_counter(queued_c, SC_TYPE_SINGLE_VALUE, &queued);
+    stats_unregister_dynamic_counter(capacity_c, SC_TYPE_SINGLE_VALUE, &capacity);
+    stats_unregister_dynamic_counter(disk_allocated_c, SC_TYPE_SINGLE_VALUE, &disk_allocated);
+    stats_unregister_dynamic_counter(disk_usage_c, SC_TYPE_SINGLE_VALUE, &disk_usage);
+  }
+  stats_unlock();
+
+  gboolean persistent;
+  log_queue_disk_stop(&queue->super, &persistent);
+  log_queue_unref(&queue->super);
+  disk_queue_options_destroy(&options);
+  g_free(abs_filename);
+}
+
+static void
 _track_disk_buffer_files_in_dir(const gchar *dir, GHashTable *tracked_files)
 {
   DIR *dir_stream = opendir(dir);
@@ -151,6 +222,7 @@ _track_disk_buffer_files_in_dir(const gchar *dir, GHashTable *tracked_files)
         continue;
 
       _track_released_file(tracked_files, filename);
+      _set_abandoned_disk_buffer_file_metrics(dir, filename);
     }
 
   closedir(dir_stream);
@@ -315,7 +387,11 @@ diskq_global_metrics_file_released(const gchar *abs_filename)
     GHashTable *tracked_files = g_hash_table_lookup(self->dirs, dir);
     g_assert(tracked_files);
 
-    _track_released_file(tracked_files, filename);
+    if (_is_non_corrupted_disk_buffer_file(dir, filename))
+      {
+        _track_released_file(tracked_files, filename);
+        _set_abandoned_disk_buffer_file_metrics(dir, filename);
+      }
   }
   g_mutex_unlock(&self->lock);
 
