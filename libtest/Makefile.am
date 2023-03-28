@@ -34,6 +34,8 @@ libtest_libsyslog_ng_test_a_SOURCES =   \
 	libtest/stopwatch.c		\
 	libtest/stopwatch.h
 
+libtest_libsyslog_ng_test_a_CFLAGS = $(AM_CFLAGS) $(CRITERION_CFLAGS)
+
 libtestinclude_HEADERS		    =	\
 	libtest/config_parse_lib.h		\
 	libtest/cr_template.h		\
