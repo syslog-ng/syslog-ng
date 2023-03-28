@@ -200,6 +200,29 @@ _set_abandoned_disk_buffer_file_metrics(const gchar *dir, const gchar *filename)
 }
 
 static void
+_unset_abandoned_disk_buffer_file_metrics(const gchar *dir, const gchar *filename)
+{
+  gchar *abs_filename = g_build_filename(dir, filename, NULL);
+  gboolean reliable;
+  g_assert(qdisk_is_disk_buffer_file_reliable(filename, &reliable));
+
+  StatsClusterKey queued_sc_key, capacity_sc_key, disk_allocated_sc_key, disk_usage_sc_key;
+  _init_abandoned_disk_buffer_sc_keys(&queued_sc_key, &capacity_sc_key, &disk_allocated_sc_key, &disk_usage_sc_key,
+                                      abs_filename, reliable);
+
+  stats_lock();
+  {
+    stats_remove_cluster(&queued_sc_key);
+    stats_remove_cluster(&capacity_sc_key);
+    stats_remove_cluster(&disk_allocated_sc_key);
+    stats_remove_cluster(&disk_usage_sc_key);
+  }
+  stats_unlock();
+
+  g_free(abs_filename);
+}
+
+static void
 _track_disk_buffer_files_in_dir(const gchar *dir, GHashTable *tracked_files)
 {
   DIR *dir_stream = opendir(dir);
@@ -367,6 +390,7 @@ diskq_global_metrics_file_acquired(const gchar *abs_filename)
       }
 
     _track_acquired_file(tracked_files, filename);
+    _unset_abandoned_disk_buffer_file_metrics(dir, filename);
   }
   g_mutex_unlock(&self->lock);
 
