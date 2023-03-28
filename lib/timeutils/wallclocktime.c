@@ -268,6 +268,12 @@ static const int start_of_month[2][13] =
   { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 }
 };
 
+static inline gboolean
+_is_str_empty(const gchar *str)
+{
+  return !str || strcmp(str, "") == 0;
+}
+
 gchar *
 wall_clock_time_strptime(WallClockTime *wct, const gchar *format, const gchar *input)
 {
@@ -277,6 +283,7 @@ wall_clock_time_strptime(WallClockTime *wct, const gchar *format, const gchar *i
                      day_offset = -1, week_offset = 0, offs, mandatory;
   const char *new_fmt;
   const char *const *system_tznames;
+  int system_tznames_len;
 
   bp = (const unsigned char *)input;
 
@@ -672,7 +679,8 @@ recurse:
                   continue;
                 }
               system_tznames = cached_get_system_tznames();
-              ep = find_string(bp, &i, system_tznames, NULL, 2);
+              system_tznames_len = _is_str_empty(system_tznames[1]) ? 1 : 2;
+              ep = find_string(bp, &i, system_tznames, NULL, system_tznames_len);
               if (ep != NULL)
                 {
                   wct->tm.tm_isdst = i;

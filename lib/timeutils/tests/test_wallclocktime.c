@@ -28,6 +28,25 @@
 #include "timeutils/cache.h"
 #include "timeutils/conv.h"
 
+/* timeutils cache mock */
+
+gboolean tz_mock_empty_dst_tzname = FALSE;
+const gchar *const *
+cached_get_system_tznames(void)
+{
+  static gchar *tznames[] = { "CET", "CEST" };
+  if (tz_mock_empty_dst_tzname)
+    tznames[1] = "";
+
+  return (const gchar *const *) &tznames;
+}
+
+glong
+cached_get_system_tzofs(void)
+{
+  return -1 * 3600;
+}
+
 Test(wallclocktime, test_wall_clock_time_init)
 {
   WallClockTime wct;
@@ -392,6 +411,17 @@ Test(wallclocktime, test_strptime_parses_without_second)
   cr_expect(end != NULL);
   cr_expect(wct.wct_min == 30);
   cr_expect(wct.wct_sec == 0);
+}
+
+Test(wallclocktime, test_strptime_percent_z_is_mandatory)
+{
+  /* This imitates musl libc behavior to test a bugfix:
+   * if Daylight Saving Time is never used (no past, present or future tzdata), tzname[1] is the empty string.
+   */
+  tz_mock_empty_dst_tzname = TRUE;
+
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  cr_assert_null(wall_clock_time_strptime(&wct, "%Y-%m-%d %T%z", "2011-06-25 20:00:04"));
 }
 
 static void
