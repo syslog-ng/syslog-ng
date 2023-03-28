@@ -162,6 +162,7 @@ exit:
       log_queue_set_throttle(queue, dd->throttle);
 
       const gchar *qfile_name = log_queue_disk_get_filename(queue);
+      diskq_global_metrics_file_acquired(qfile_name);
       if (persist_name && qfile_name)
         persist_state_alloc_string(cfg->state, persist_name, qfile_name, -1);
     }
@@ -179,6 +180,8 @@ _release_queue(LogDestDriver *dd, LogQueue *queue)
   gboolean persistent;
 
   log_queue_disk_stop(queue, &persistent);
+  diskq_global_metrics_file_released(log_queue_disk_get_filename(queue));
+
   if (queue->persist_name)
     {
       cfg_persist_config_add(cfg, queue->persist_name, queue, (GDestroyNotify) log_queue_unref);

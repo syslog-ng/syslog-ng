@@ -63,6 +63,24 @@ _dir_watch_timer_start(DiskQGlobalMetrics *self)
   iv_timer_register(&self->dir_watch_timer);
 }
 
+static void
+_track_acquired_file(GHashTable *tracked_files, const gchar *filename)
+{
+  g_hash_table_insert(tracked_files, g_strdup(filename), GINT_TO_POINTER((gint) TRUE));
+}
+
+static void
+_track_released_file(GHashTable *tracked_files, const gchar *filename)
+{
+  g_hash_table_insert(tracked_files, g_strdup(filename), GINT_TO_POINTER((gint) FALSE));
+}
+
+static gboolean
+_is_file_tracked(GHashTable *tracked_files, const gchar *filename)
+{
+  return g_hash_table_contains(tracked_files, filename);
+}
+
 static gboolean
 _get_available_space_mib_in_dir(const gchar *dir, gint64 *available_space_mib)
 {
@@ -128,7 +146,7 @@ _new(gint type, gpointer c)
   self->dir_watch_timer.handler = _update_all_dir_metrics;
   self->dir_watch_timer.cookie = self;
 
-  self->dirs = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+  self->dirs = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_hash_table_destroy);
 }
 
 static void
@@ -191,7 +209,52 @@ diskq_global_metrics_watch_dir(const gchar *dir)
   g_mutex_lock(&self->lock);
   {
     if (!g_hash_table_contains(self->dirs, dir))
-      g_hash_table_insert(self->dirs, g_strdup(dir), NULL);
+      {
+        GHashTable *tracked_files = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+        g_hash_table_insert(self->dirs, g_strdup(dir), tracked_files);
+      }
   }
   g_mutex_unlock(&self->lock);
+}
+
+void
+diskq_global_metrics_file_acquired(const gchar *abs_filename)
+{
+  DiskQGlobalMetrics *self = &diskq_global_metrics;
+
+  gchar *dir = g_path_get_dirname(abs_filename);
+  gchar *filename = g_path_get_basename(abs_filename);
+
+  g_mutex_lock(&self->lock);
+  {
+    GHashTable *tracked_files = g_hash_table_lookup(self->dirs, dir);
+    g_assert(tracked_files);
+
+    _track_acquired_file(tracked_files, filename);
+  }
+  g_mutex_unlock(&self->lock);
+
+  g_free(filename);
+  g_free(dir);
+}
+
+void
+diskq_global_metrics_file_released(const gchar *abs_filename)
+{
+  DiskQGlobalMetrics *self = &diskq_global_metrics;
+
+  gchar *dir = g_path_get_dirname(abs_filename);
+  gchar *filename = g_path_get_basename(abs_filename);
+
+  g_mutex_lock(&self->lock);
+  {
+    GHashTable *tracked_files = g_hash_table_lookup(self->dirs, dir);
+    g_assert(tracked_files);
+
+    _track_released_file(tracked_files, filename);
+  }
+  g_mutex_unlock(&self->lock);
+
+  g_free(filename);
+  g_free(dir);
 }

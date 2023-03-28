@@ -27,5 +27,7 @@
 
 void diskq_global_metrics_init(void);
 void diskq_global_metrics_watch_dir(const gchar *dir);
+void diskq_global_metrics_file_acquired(const gchar *abs_filename);
+void diskq_global_metrics_file_released(const gchar *abs_filename);
 
 #endif /* DISKQ_GLOBAL_METRICS_H_ */
