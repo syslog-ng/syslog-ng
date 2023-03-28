@@ -25,6 +25,9 @@
 #include "stats/stats-cluster-single.h"
 #include "stats/stats-cluster-logpipe.h"
 
+#include <string.h>
+#include <stdio.h>
+
 struct _StatsClusterKeyBuilder
 {
   gchar *name;
