@@ -29,9 +29,14 @@
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster-single.h"
 #include "timeutils/misc.h"
+#include "qdisk.h"
 
 #include <iv.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include <sys/statvfs.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 typedef struct DiskQGlobalMetrics_
 {
@@ -79,6 +84,53 @@ static gboolean
 _is_file_tracked(GHashTable *tracked_files, const gchar *filename)
 {
   return g_hash_table_contains(tracked_files, filename);
+}
+
+static gboolean
+_file_exists_and_non_empty(const gchar *dir, const gchar *filename)
+{
+  gchar *abs_filename = g_build_filename(dir, filename, NULL);
+
+  struct stat st;
+  gboolean result = stat(abs_filename, &st) >= 0 && st.st_size > 0;
+
+  g_free(abs_filename);
+  return result;
+}
+
+static gboolean
+_is_non_corrupted_disk_buffer_file(const gchar *dir, const gchar *filename)
+{
+  return qdisk_is_file_a_disk_buffer_file(filename) && strstr(filename, "corrupted") == NULL &&
+         _file_exists_and_non_empty(dir, filename);
+}
+
+static void
+_track_disk_buffer_files_in_dir(const gchar *dir, GHashTable *tracked_files)
+{
+  DIR *dir_stream = opendir(dir);
+  if (!dir_stream)
+    {
+      msg_error("disk-buffer: Failed to list files in dir",
+                evt_tag_str("dir", dir),
+                evt_tag_error("error"));
+      return;
+    }
+
+  while (TRUE)
+    {
+      struct dirent *dir_entry = readdir(dir_stream);
+      if (!dir_entry)
+        break;
+
+      const gchar *filename = dir_entry->d_name;
+      if (_is_file_tracked(tracked_files, filename) || !_is_non_corrupted_disk_buffer_file(dir, filename))
+        continue;
+
+      _track_released_file(tracked_files, filename);
+    }
+
+  closedir(dir_stream);
 }
 
 static gboolean
@@ -215,6 +267,7 @@ diskq_global_metrics_file_acquired(const gchar *abs_filename)
     if (!tracked_files)
       {
         tracked_files = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+        _track_disk_buffer_files_in_dir(dir, tracked_files);
         g_hash_table_insert(self->dirs, g_strdup(dir), tracked_files);
       }
 
