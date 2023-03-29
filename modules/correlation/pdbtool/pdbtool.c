@@ -682,33 +682,38 @@ static gboolean
 pdbtool_test_value(LogMessage *msg, const gchar *name, const gchar *test_value, const gchar *test_type)
 {
   const gchar *value;
-  const gchar *type;
   gssize value_len;
-  LogMessageValueType t;
+  LogMessageValueType t, test_t;
   gboolean ret = TRUE;
 
   value = log_msg_get_value_by_name_with_type(msg, name, &value_len, &t);
-  type = log_msg_value_type_to_str(t);
+
+  if (!log_msg_value_type_from_str(test_type, &test_t))
+    {
+      printf(" Unknown type name specified in test_value, name='%s', expected_type='%s'\n", name, test_type);
+      return FALSE;
+    }
 
   if (!test_type)
     {
       /* not interested in validating the type */
-      test_type = type;
+      test_t = t;
     }
 
   if (!(value && strncmp(value, test_value, value_len) == 0 && value_len == strlen(test_value)
-        && strcmp(type, test_type) == 0))
+        && t == test_t))
     {
       if (value)
         printf(" Wrong match name='%s', value='%.*s', type='%s', expected='%s', expected_type='%s'\n", name, (gint) value_len,
-               value, type, test_value, test_type);
+               value, log_msg_value_type_to_str(t), test_value, log_msg_value_type_to_str(test_t));
       else
         printf(" No value to match name='%s', expected='%s'\n", name, test_value);
 
       ret = FALSE;
     }
   else if (verbose_flag)
-    printf(" Match name='%s', value='%.*s', type='%s', expected='%s'\n", name, (gint) value_len, value, type, test_value);
+    printf(" Match name='%s', value='%.*s', type='%s', expected='%s'\n", name, (gint) value_len, value,
+           log_msg_value_type_to_str(t), test_value);
 
   return ret;
 }
