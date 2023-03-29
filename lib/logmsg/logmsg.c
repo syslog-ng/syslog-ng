@@ -241,7 +241,7 @@ log_msg_value_type_to_str(LogMessageValueType self)
     [LM_VT_JSON] = "json",
     [LM_VT_BOOLEAN] = "boolean",
     [__COMPAT_LM_VT_INT32] = "compat-int32",
-    [LM_VT_INTEGER] = "integer",
+    [LM_VT_INTEGER] = "int",
     [LM_VT_DOUBLE] = "double",
     [LM_VT_DATETIME] = "datetime",
     [LM_VT_LIST] = "list",
@@ -261,7 +261,8 @@ log_msg_value_type_from_str(const gchar *in_str, LogMessageValueType *out_type)
     *out_type = LM_VT_JSON;
   else if (strcmp(in_str, "boolean") == 0)
     *out_type = LM_VT_BOOLEAN;
-  else if (strcmp(in_str, "int32") == 0 || strcmp(in_str, "int") == 0 || strcmp(in_str, "int64") == 0)
+  else if (strcmp(in_str, "int32") == 0 || strcmp(in_str, "int") == 0 || strcmp(in_str, "int64") == 0
+           || strcmp(in_str, "integer") == 0)
     *out_type = LM_VT_INTEGER;
   else if (strcmp(in_str, "double") == 0 || strcmp(in_str, "float") == 0)
     *out_type = LM_VT_DOUBLE;
