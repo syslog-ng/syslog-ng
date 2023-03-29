@@ -240,7 +240,7 @@ qdisk_get_next_filename(const gchar *dir, gboolean reliable)
 {
   gint dirlock_fd = -1;
   if (!_grab_dirlock(dir, &dirlock_fd))
-    return FALSE;
+    return NULL;
 
   gchar *filename = NULL;
   for (gint i = 0; i < 10000; i++)
