@@ -688,16 +688,18 @@ pdbtool_test_value(LogMessage *msg, const gchar *name, const gchar *test_value, 
 
   value = log_msg_get_value_by_name_with_type(msg, name, &value_len, &t);
 
-  if (!log_msg_value_type_from_str(test_type, &test_t))
-    {
-      printf(" Unknown type name specified in test_value, name='%s', expected_type='%s'\n", name, test_type);
-      return FALSE;
-    }
-
   if (!test_type)
     {
       /* not interested in validating the type */
       test_t = t;
+    }
+  else
+    {
+      if (!log_msg_value_type_from_str(test_type, &test_t))
+        {
+          printf(" Unknown type name specified in test_value, name='%s', expected_type='%s'\n", name, test_type);
+          return FALSE;
+        }
     }
 
   if (!(value && strncmp(value, test_value, value_len) == 0 && value_len == strlen(test_value)
@@ -840,7 +842,7 @@ pdbtool_test(int argc, char *argv[])
               for (i = 0; example->values && i < example->values->len; i++)
                 {
                   gchar **nv = g_ptr_array_index(example->values, i);
-                  if (!pdbtool_test_value(msg, nv[0], nv[1], nv[2] ? : "string"))
+                  if (!pdbtool_test_value(msg, nv[0], nv[1], nv[2]))
                     failed_to_match = TRUE;
                 }
 
