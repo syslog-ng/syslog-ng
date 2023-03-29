@@ -1,0 +1,90 @@
+name: SSC stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: 'SC4S repository'
+        required: true
+        default: 'splunk/splunk-connect-for-syslog'
+        type: string
+      syslog-ng-image-version:
+        description: 'syslog-ng image version'
+        required: true
+        default: 'nightly' # until https://github.com/syslog-ng/syslog-ng/pull/4390 is released
+        type: string
+  push:
+    tags:
+      - 'ssc-*'
+
+env:
+  DOCKER_IMAGE_NAME: ghcr.io/axoflow/syslog-ng-splunk-connector
+  PLATFORMS: linux/amd64,linux/arm64
+  SC4S_REPO: ${{ inputs.repo || 'splunk/splunk-connect-for-syslog' }}
+  SYSLOG_NG_IMG_VERSION: ${{ inputs.syslog-ng-image-version || 'nightly' }}
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.ref }}
+    steps:
+      - name: Determine SC4S version
+        id: version
+        uses: actions/github-script@v6
+        with:
+          script: |
+            if (!context.ref.startsWith('refs/tags/ssc-')) {
+              core.setFailed('SSC stable can only be started on a ssc-* tag');
+              return;
+            }
+
+            const tag = "v" + context.ref.replace("refs/tags/ssc-", "");
+            console.log('Version from tag: ' + tag);
+            core.setOutput('ref', tag);
+
+  publish-image:
+    if: github.repository_owner == 'axoflow'
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Checkout SC4S source
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.SC4S_REPO }}
+          ref: ${{ needs.version.outputs.version }}
+          path: ssc/splunk-connect-for-syslog
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (SSC version) for Docker
+        id: tags
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.DOCKER_IMAGE_NAME }}
+          tags: type=match,pattern=ssc-(.*),group=1
+          sep-tags: ','
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: ssc
+          file: ssc/Dockerfile
+          platforms: ${{ env.PLATFORMS }}
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            SYSLOGNG_VERSION=${{ env.SYSLOG_NG_IMG_VERSION }}
