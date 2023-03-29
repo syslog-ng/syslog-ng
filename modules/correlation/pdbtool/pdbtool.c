@@ -714,8 +714,8 @@ pdbtool_test_value(LogMessage *msg, const gchar *name, const gchar *test_value, 
       ret = FALSE;
     }
   else if (verbose_flag)
-    printf(" Match name='%s', value='%.*s', type='%s', expected='%s'\n", name, (gint) value_len, value,
-           log_msg_value_type_to_str(t), test_value);
+    printf(" Match name='%s', value='%.*s', type='%s%s', expected='%s'\n", name, (gint) value_len, value,
+           log_msg_value_type_to_str(t), test_type ? "" : "[unchecked]", test_value);
 
   return ret;
 }
