@@ -546,6 +546,35 @@ ParameterizedTest(diskq_tester_parameters_t *parameters, diskq, test_diskq_stati
   disk_queue_options_destroy(&options);
 }
 
+gchar *
+qdisk_get_next_filename(const gchar *dir, gboolean reliable)
+{
+  return NULL;
+}
+
+Test(diskq, test_no_next_filename_in_acquire)
+{
+  const gchar *queue_persist_name = "test_no_next_filename_in_acquire";
+  const gchar *persist_filename = "test_no_next_filename_in_acquire.persist";
+  configuration->state = persist_state_new(persist_filename);
+  persist_state_start(configuration->state);
+
+  LogDestDriver *driver = g_new0(LogDestDriver, 1);
+  log_dest_driver_init_instance(driver, configuration);
+
+  DiskQDestPlugin *plugin = diskq_dest_plugin_new();
+  cr_assert(log_driver_add_plugin(&driver->super, (LogDriverPlugin *) plugin));
+  cr_assert(log_pipe_init(&driver->super.super));
+
+  cr_assert_eq(log_dest_driver_acquire_queue(driver, queue_persist_name), NULL);
+
+  cr_assert(log_pipe_deinit(&driver->super.super));
+  cr_assert(log_pipe_unref(&driver->super.super));
+
+  persist_state_cancel(configuration->state);
+  unlink(persist_filename);
+}
+
 static void
 setup(void)
 {
