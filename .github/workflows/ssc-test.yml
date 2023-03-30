@@ -1,0 +1,141 @@
+name: SSC test
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: 'SC4S repository owner'
+        required: false
+        default: 'splunk'
+        type: string
+      repo:
+        description: 'SC4S repository'
+        required: false
+        default: 'splunk-connect-for-syslog'
+        type: string
+      ref:
+        description: 'SC4S ref (branch, tag, commit id)'
+        required: false
+        type: string
+      syslog-ng-image-version:
+        description: 'syslog-ng image version'
+        required: false
+        default: 'nightly' # until https://github.com/syslog-ng/syslog-ng/pull/4390 is released
+        type: string
+  workflow_call:
+    inputs:
+      owner:
+        description: 'SC4S repository owner'
+        required: false
+        default: 'splunk'
+        type: string
+      repo:
+        description: 'SC4S repository'
+        required: false
+        default: 'splunk-connect-for-syslog'
+        type: string
+      ref:
+        description: 'SC4S ref (branch, tag, commit id)'
+        required: false
+        type: string
+      syslog-ng-image-version:
+        description: 'syslog-ng image version'
+        required: false
+        default: 'nightly' # until https://github.com/syslog-ng/syslog-ng/pull/4390 is released
+        type: string
+  pull_request:
+    paths:
+      - 'ssc/**'
+      - '.github/workflows/**'
+  push:
+    paths:
+      - 'ssc/**'
+      - '.github/workflows/**'
+
+env:
+  SC4S_OWNER: ${{ inputs.owner || 'splunk' }}
+  SC4S_REPO: ${{ inputs.repo || 'splunk-connect-for-syslog' }}
+  SYSLOG_NG_IMG_VERSION: ${{ inputs.syslog-ng-image-version || 'nightly' }}
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.ref }}
+    steps:
+      - name: Detect SC4S version
+        id: version
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const input_ref = '${{ inputs.ref }}';
+            if (input_ref) {
+              console.log('Version from workflow input: ' + input_ref);
+              core.setOutput('ref', input_ref);
+              return;
+            }
+
+            const { SC4S_OWNER, SC4S_REPO } = process.env;
+            const latest_release = await github.rest.repos.getLatestRelease({
+              owner: SC4S_OWNER,
+              repo: SC4S_REPO,
+            });
+
+            if (!/^v[0-9]/.test(latest_release.data.tag_name)) {
+              core.setFailed('Latest release tag mismatch');
+              return;
+            }
+
+            console.log('Version (latest): ' + latest_release.data.tag_name);
+            core.setOutput('ref', latest_release.data.tag_name)
+
+  build-and-test:
+    runs-on: ubuntu-latest
+    needs: version
+    services:
+      splunk:
+        image: splunk/splunk:latest
+        ports:
+          - 8000:8000
+          - 8088:8088
+          - 8089:8089
+        env:
+          SPLUNK_HEC_TOKEN: 70b6ae71-76b3-4c38-9597-0c5b37ad9630
+          SPLUNK_PASSWORD: Changed@11
+          SPLUNK_START_ARGS: --accept-license
+          SPLUNK_APPS_URL: https://github.com/splunk/splunk-configurations-base-indexes/releases/download/v1.0.0/splunk_configurations_base_indexes-1.0.0.tar.gz
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Checkout SC4S source
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.SC4S_OWNER }}/${{ env.SC4S_REPO }}
+          ref: ${{ needs.version.outputs.version }}
+          path: ssc/splunk-connect-for-syslog
+
+      - name: Build and export Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: ssc
+          file: ssc/Dockerfile
+          load: true
+          tags: ssc:test
+          build-args: |
+            SYSLOGNG_VERSION=${{ env.SYSLOG_NG_IMG_VERSION }}
+
+      - name: Smoke test
+        working-directory: ssc/splunk-connect-for-syslog
+        run: |
+          docker run -d --network host \
+            -e SC4S_DEST_SPLUNK_HEC_DEFAULT_URL="https://127.0.0.1:8088" \
+            -e SC4S_DEST_SPLUNK_HEC_DEFAULT_TOKEN="70b6ae71-76b3-4c38-9597-0c5b37ad9630" \
+            -e SC4S_DEST_SPLUNK_HEC_DEFAULT_TLS_VERIFY="no" \
+            -e SC4S_DEBUG_CONTAINER="yes" \
+            ssc:test
+
+          pip3 install poetry
+          poetry install
+          poetry run pytest -v -n8 --splunk_type=external --splunk_hec_token=70b6ae71-76b3-4c38-9597-0c5b37ad9630 \
+            tests/test_loggen.py

@@ -1,4 +1,4 @@
-name: Docker
+name: syslog-ng Docker
 
 on:
   workflow_call:
@@ -19,7 +19,7 @@ env:
 
 jobs:
   docker:
-    name: Docker
+    name: syslog-ng Docker
     if: github.repository_owner == 'axoflow'
     runs-on: ubuntu-latest
     steps:
@@ -31,7 +31,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: ${{ inputs.tarball-artifact }}
-          path: apkbuild/axoflow/syslog-ng
+          path: syslog-ng/apkbuild/axoflow/syslog-ng
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -70,8 +70,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
-          context: .
-          file: alpine.dockerfile
+          context: syslog-ng
+          file: syslog-ng/alpine.dockerfile
           platforms: ${{ env.PLATFORMS }}
           push: true
           tags: ${{ steps.tags.outputs.TAGS }}
