@@ -1,4 +1,6 @@
-find_package(Curl)
+if (NOT DEFINED ENABLE_CURL OR ENABLE_CURL)
+  find_package(Curl)
+endif()
 
 module_switch(ENABLE_CURL "Enable http destination" Curl_FOUND)
 if (NOT ENABLE_CURL)

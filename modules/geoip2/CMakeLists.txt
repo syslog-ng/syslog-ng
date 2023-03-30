@@ -1,4 +1,6 @@
-find_package(LIBMAXMINDDB)
+if (NOT DEFINED ENABLE_GEOIP2 OR ENABLE_GEOIP2)
+  find_package(LIBMAXMINDDB)
+endif()
 
 module_switch(ENABLE_GEOIP2 "Enable geoip2 parser and template function" LIBMAXMINDDB_FOUND)
 

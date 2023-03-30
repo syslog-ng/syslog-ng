@@ -1,4 +1,6 @@
-find_package(NETSNMP)
+if (NOT DEFINED ENABLE_AFSNMP OR ENABLE_AFSNMP)
+  find_package(NETSNMP)
+endif()
 
 module_switch(ENABLE_AFSNMP "Enable afsnmp module" NETSNMP_FOUND)
 

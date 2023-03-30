@@ -1,4 +1,6 @@
-find_package(LIBBPF)
+if (NOT DEFINED ENABLE_EBPF OR ENABLE_EBPF)
+  find_package(LIBBPF)
+endif()
 
 module_switch(ENABLE_EBPF "Enable ebpf module (requires ebpf toolchain)" LIBBPF_FOUND)
 
