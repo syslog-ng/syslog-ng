@@ -52,66 +52,108 @@ log_queue_disk_is_file_in_directory(const gchar *file, const gchar *directory)
 }
 
 static LogQueue *
+_create_disk_queue(DiskQDestPlugin *self, const gchar *filename, const gchar *persist_name)
+{
+  if (self->options.reliable)
+    return log_queue_disk_reliable_new(&self->options, filename, persist_name);
+  return log_queue_disk_non_reliable_new(&self->options, filename, persist_name);
+}
+
+static void
+_warn_if_dir_changed(const gchar *qfile_name, const gchar *dir)
+{
+  if (!log_queue_disk_is_file_in_directory(qfile_name, dir))
+    {
+      msg_warning("The disk buffer directory has changed in the configuration, but the disk queue file cannot be moved",
+                  evt_tag_str("qfile", qfile_name),
+                  evt_tag_str("dir", dir));
+    }
+}
+
+static LogQueue *
+_create_and_start_disk_queue_with_filename_from_persist(DiskQDestPlugin *self, const gchar *persist_qfile_name,
+                                                        const gchar *persist_name)
+{
+  if (!persist_qfile_name)
+    return FALSE;
+
+  _warn_if_dir_changed(persist_qfile_name, self->options.dir);
+
+  LogQueue *queue = _create_disk_queue(self, persist_qfile_name, persist_name);
+  if (log_queue_disk_start(queue))
+    return queue;
+
+  log_queue_unref(queue);
+
+  gchar *new_qfile_name = qdisk_get_next_filename(self->options.dir, self->options.reliable);
+  if (!new_qfile_name)
+    return NULL;
+
+  queue = _create_disk_queue(self, persist_qfile_name, persist_name);
+  if (log_queue_disk_start(queue))
+    {
+      msg_error("Error opening disk-queue file, a new one started",
+                evt_tag_str("old_filename", persist_qfile_name),
+                evt_tag_str("new_filename", log_queue_disk_get_filename(queue)));
+      g_free(new_qfile_name);
+      return queue;
+    }
+
+  msg_error("Error initializing log queue");
+
+  log_queue_unref(queue);
+  g_free(new_qfile_name);
+  return NULL;
+}
+
+static LogQueue *
+_create_and_start_disk_queue_with_new_filename(DiskQDestPlugin *self, const gchar *new_qfile_name,
+                                               const gchar *persist_name)
+{
+  if (!new_qfile_name)
+    return NULL;
+
+  LogQueue *queue = _create_disk_queue(self, new_qfile_name, persist_name);
+  if (log_queue_disk_start(queue))
+    return queue;
+
+  msg_error("Error initializing log queue");
+
+  log_queue_unref(queue);
+  return NULL;
+}
+
+static LogQueue *
 _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
 {
   DiskQDestPlugin *self = log_driver_get_plugin(&dd->super, DiskQDestPlugin, DISKQ_PLUGIN_NAME);
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
-  LogQueue *queue = NULL;
-  gchar *qfile_name;
-  gboolean success;
+  LogQueue *queue;
+  gchar *persist_qfile_name, *new_qfile_name = NULL;
 
   if (persist_name)
-    queue = cfg_persist_config_fetch(cfg, persist_name);
+    log_queue_unref(cfg_persist_config_fetch(cfg, persist_name));
 
+  persist_qfile_name = persist_state_lookup_string(cfg->state, persist_name, NULL, NULL);
+  queue = _create_and_start_disk_queue_with_filename_from_persist(self, persist_qfile_name, persist_name);
+  if (queue)
+    goto exit;
+
+  new_qfile_name = qdisk_get_next_filename(self->options.dir, self->options.reliable);
+  queue = _create_and_start_disk_queue_with_new_filename(self, new_qfile_name, persist_name);
+
+exit:
   if (queue)
     {
-      log_queue_unref(queue);
-      queue = NULL;
+      log_queue_set_throttle(queue, dd->throttle);
+
+      const gchar *qfile_name = log_queue_disk_get_filename(queue);
+      if (persist_name && qfile_name)
+        persist_state_alloc_string(cfg->state, persist_name, qfile_name, -1);
     }
 
-  if (self->options.reliable)
-    queue = log_queue_disk_reliable_new(&self->options, persist_name);
-  else
-    queue = log_queue_disk_non_reliable_new(&self->options, persist_name);
-  log_queue_set_throttle(queue, dd->throttle);
-
-  qfile_name = persist_state_lookup_string(cfg->state, persist_name, NULL, NULL);
-
-  if (qfile_name && !log_queue_disk_is_file_in_directory(qfile_name, self->options.dir))
-    {
-      msg_warning("The disk buffer directory has changed in the configuration, but the disk queue file cannot be moved",
-                  evt_tag_str("qfile", qfile_name),
-                  evt_tag_str("dir", self->options.dir));
-    }
-
-  success = log_queue_disk_start(queue, qfile_name);
-  if (!success)
-    {
-      if (qfile_name && log_queue_disk_start(queue, NULL))
-        {
-          msg_error("Error opening disk-queue file, a new one started",
-                    evt_tag_str("old_filename", qfile_name),
-                    evt_tag_str("new_filename", log_queue_disk_get_filename(queue)));
-        }
-      else
-        {
-          g_free(qfile_name);
-          msg_error("Error initializing log queue");
-          return NULL;
-        }
-    }
-
-  g_free(qfile_name);
-
-  if (persist_name)
-    {
-      /* save the queue file name to permanent state */
-      qfile_name = (gchar *) log_queue_disk_get_filename(queue);
-      if (qfile_name)
-        {
-          persist_state_alloc_string(cfg->state, persist_name, qfile_name, -1);
-        }
-    }
+  g_free(persist_qfile_name);
+  g_free(new_qfile_name);
 
   return queue;
 }

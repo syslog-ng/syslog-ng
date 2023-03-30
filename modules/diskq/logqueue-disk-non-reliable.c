@@ -44,7 +44,7 @@ _update_memory_usage_during_load(LogQueueDiskNonReliable *s, GQueue *memory_queu
 }
 
 static gboolean
-_start(LogQueueDisk *s, const gchar *filename)
+_start(LogQueueDisk *s)
 {
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
 
@@ -52,7 +52,7 @@ _start(LogQueueDisk *s, const gchar *filename)
   guint qbacklog_length_before_start = g_queue_get_length(self->qbacklog);
   guint qoverflow_length_before_start = g_queue_get_length(self->qoverflow);
 
-  gboolean retval = qdisk_start(s->qdisk, filename, self->qout, self->qbacklog, self->qoverflow);
+  gboolean retval = qdisk_start(s->qdisk, self->qout, self->qbacklog, self->qoverflow);
 
   _update_memory_usage_during_load(self, self->qout, qout_length_before_start);
   _update_memory_usage_during_load(self, self->qbacklog, qbacklog_length_before_start);
@@ -563,11 +563,11 @@ _set_virtual_functions(LogQueueDiskNonReliable *self)
 }
 
 LogQueue *
-log_queue_disk_non_reliable_new(DiskQueueOptions *options, const gchar *persist_name)
+log_queue_disk_non_reliable_new(DiskQueueOptions *options, const gchar *filename, const gchar *persist_name)
 {
   g_assert(options->reliable == FALSE);
   LogQueueDiskNonReliable *self = g_new0(LogQueueDiskNonReliable, 1);
-  log_queue_disk_init_instance(&self->super, options, "SLQF", persist_name);
+  log_queue_disk_init_instance(&self->super, options, "SLQF", filename, persist_name);
   self->qbacklog = g_queue_new();
   self->qout = g_queue_new();
   self->qoverflow = g_queue_new();

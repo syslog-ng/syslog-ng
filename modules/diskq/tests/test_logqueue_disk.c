@@ -112,10 +112,10 @@ Test(logqueue_disk, restart_corrupted_reliable)
   disk_queue_options_mem_buf_size_set(&options, 4096);
   disk_queue_options_qout_size_set(&options, 2);
 
-  LogQueue *queue = log_queue_disk_reliable_new(&options, "restart_corrupted_reliable");
+  LogQueue *queue = log_queue_disk_reliable_new(&options, filename, "restart_corrupted_reliable");
   _register_stats_counters(queue);
 
-  cr_assert(log_queue_disk_start(queue, filename));
+  cr_assert(log_queue_disk_start(queue));
   cr_assert_str_eq(log_queue_disk_get_filename(queue), filename);
   _assert_file_exists(filename);
   _assert_log_queue_disk_reliable_is_empty(queue);
@@ -197,10 +197,10 @@ Test(logqueue_disk, restart_corrupted_non_reliable)
   disk_queue_options_mem_buf_size_set(&options, 4096);
   disk_queue_options_qout_size_set(&options, 0);
 
-  LogQueue *queue = log_queue_disk_non_reliable_new(&options, "restart_corrupted_non_reliable");
+  LogQueue *queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable");
   _register_stats_counters(queue);
 
-  cr_assert(log_queue_disk_start(queue, filename));
+  cr_assert(log_queue_disk_start(queue));
   cr_assert_str_eq(log_queue_disk_get_filename(queue), filename);
   _assert_file_exists(filename);
   _assert_log_queue_disk_non_reliable_is_empty(queue);
@@ -285,11 +285,11 @@ Test(logqueue_disk, restart_corrupted_non_reliable_with_qout)
   disk_queue_options_mem_buf_size_set(&options, 4096);
   disk_queue_options_qout_size_set(&options, 1);
 
-  LogQueue *queue = log_queue_disk_non_reliable_new(&options, "restart_corrupted_non_reliable_with_qout");
+  LogQueue *queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable_with_qout");
   LogQueueDiskNonReliable *queue_disk_non_reliable = (LogQueueDiskNonReliable *) queue;
   _register_stats_counters(queue);
 
-  cr_assert(log_queue_disk_start(queue, filename));
+  cr_assert(log_queue_disk_start(queue));
   cr_assert_str_eq(log_queue_disk_get_filename(queue), filename);
   _assert_file_exists(filename);
   _assert_log_queue_disk_non_reliable_is_empty(queue);
@@ -333,14 +333,14 @@ Test(logqueue_disk, restart_corrupted_with_multiple_queues)
   disk_queue_options_disk_buf_size_set(&options, MIN_DISK_BUF_SIZE);
   disk_queue_options_mem_buf_size_set(&options, 4096);
 
-  LogQueue *queue_1 = log_queue_disk_reliable_new(&options, "restart_corrupted_with_multiple_queues_1");
+  LogQueue *queue_1 = log_queue_disk_reliable_new(&options, filename_1, "restart_corrupted_with_multiple_queues_1");
   _register_stats_counters(queue_1);
 
-  LogQueue *queue_2 = log_queue_disk_reliable_new(&options, "restart_corrupted_with_multiple_queues_2");
+  LogQueue *queue_2 = log_queue_disk_reliable_new(&options, filename_2, "restart_corrupted_with_multiple_queues_2");
   _register_stats_counters(queue_2);
 
-  cr_assert(log_queue_disk_start(queue_1, filename_1));
-  cr_assert(log_queue_disk_start(queue_2, filename_2));
+  cr_assert(log_queue_disk_start(queue_1));
+  cr_assert(log_queue_disk_start(queue_2));
 
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 

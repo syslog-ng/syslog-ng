@@ -54,7 +54,7 @@ QDiskQueuePosition;
 
 typedef struct _QDisk QDisk;
 
-QDisk *qdisk_new(DiskQueueOptions *options, const gchar *file_id);
+QDisk *qdisk_new(DiskQueueOptions *options, const gchar *file_id, const gchar *filename);
 
 gboolean qdisk_is_space_avail(QDisk *self, gint at_least);
 gint64 qdisk_get_max_useful_space(QDisk *self);
@@ -68,7 +68,7 @@ gboolean qdisk_rewind_backlog(QDisk *self, guint rewind_count);
 void qdisk_empty_backlog(QDisk *self);
 gint64 qdisk_get_next_tail_position(QDisk *self);
 gint64 qdisk_get_next_head_position(QDisk *self);
-gboolean qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);
+gboolean qdisk_start(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);
 gboolean qdisk_stop(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);
 void qdisk_reset_file_if_empty(QDisk *self);
 gboolean qdisk_started(QDisk *self);
@@ -85,6 +85,8 @@ gint qdisk_get_memory_size(QDisk *self);
 gboolean qdisk_is_read_only(QDisk *self);
 const gchar *qdisk_get_filename(QDisk *self);
 gint64 qdisk_get_file_size(QDisk *self);
+
+gchar *qdisk_get_next_filename(const gchar *dir, gboolean reliable);
 
 gboolean qdisk_serialize(GString *serialized, QDiskSerializeFunc serialize_func, gpointer user_data, GError **error);
 gboolean qdisk_deserialize(GString *serialized, QDiskDeSerializeFunc deserialize_func, gpointer user_data,

@@ -43,9 +43,9 @@
 static LogQueue *
 _get_non_reliable_diskqueue(gchar *filename, DiskQueueOptions *options)
 {
-  LogQueue *q = log_queue_disk_non_reliable_new(options, NULL);
+  LogQueue *q = log_queue_disk_non_reliable_new(options, filename, NULL);
   log_queue_set_use_backlog(q, FALSE);
-  log_queue_disk_start(q, filename);
+  log_queue_disk_start(q);
   return q;
 }
 
@@ -242,9 +242,9 @@ _create_reliable_diskqueue(gchar *filename, DiskQueueOptions *options, gboolean 
     truncate_size_ratio = disk_queue_config_get_truncate_size_ratio(configuration);
   options->truncate_size_ratio = truncate_size_ratio;
 
-  q = log_queue_disk_reliable_new(options, "persist-name");
+  q = log_queue_disk_reliable_new(options, filename, "persist-name");
   log_queue_set_use_backlog(q, use_backlog);
-  log_queue_disk_start(q, filename);
+  log_queue_disk_start(q);
   return q;
 }
 

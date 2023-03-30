@@ -62,13 +62,13 @@ Test(diskq, testcase_zero_diskbuf_and_normal_acks)
 
   _construct_options(&options, 10000000, 100000, TRUE);
 
-  q = log_queue_disk_reliable_new(&options, NULL);
-  log_queue_set_use_backlog(q, TRUE);
-
   filename = g_string_sized_new(32);
   g_string_printf(filename, "test-normal_acks.qf");
   unlink(filename->str);
-  log_queue_disk_start(q, filename->str);
+  q = log_queue_disk_reliable_new(&options, filename->str, NULL);
+  log_queue_set_use_backlog(q, TRUE);
+
+  log_queue_disk_start(q);
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
@@ -97,13 +97,13 @@ Test(diskq, testcase_zero_diskbuf_alternating_send_acks)
 
   _construct_options(&options, 10000000, 100000, TRUE);
 
-  q = log_queue_disk_reliable_new(&options, NULL);
-  log_queue_set_use_backlog(q, TRUE);
-
   filename = g_string_sized_new(32);
   g_string_printf(filename, "test-send_acks.qf");
   unlink(filename->str);
-  log_queue_disk_start(q, filename->str);
+  q = log_queue_disk_reliable_new(&options, filename->str, NULL);
+  log_queue_set_use_backlog(q, TRUE);
+  log_queue_disk_start(q);
+
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
@@ -134,7 +134,10 @@ Test(diskq, testcase_ack_and_rewind_messages)
 
   _construct_options(&options, 10000000, 100000, TRUE);
 
-  q = log_queue_disk_reliable_new(&options, NULL);
+  filename = g_string_sized_new(32);
+  g_string_printf(filename, "test-rewind_and_acks.qf");
+  unlink(filename->str);
+  q = log_queue_disk_reliable_new(&options, filename->str, NULL);
   log_queue_set_use_backlog(q, TRUE);
 
   StatsClusterKey sc_key;
@@ -145,10 +148,7 @@ Test(diskq, testcase_ack_and_rewind_messages)
 
   cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 0, "queued messages: %d", __LINE__);
 
-  filename = g_string_sized_new(32);
-  g_string_printf(filename, "test-rewind_and_acks.qf");
-  unlink(filename->str);
-  log_queue_disk_start(q, filename->str);
+  log_queue_disk_start(q);
 
   fed_messages = 0;
   acked_messages = 0;
@@ -287,11 +287,11 @@ Test(diskq, testcase_with_threads)
 
       _construct_options(&options, 10000000, 100000, TRUE);
 
-      q = log_queue_disk_reliable_new(&options, NULL);
       filename = g_string_sized_new(32);
       g_string_printf(filename, "test-%04d.qf", i);
       unlink(filename->str);
-      log_queue_disk_start(q, filename->str);
+      q = log_queue_disk_reliable_new(&options, filename->str, NULL);
+      log_queue_disk_start(q);
 
       for (j = 0; j < FEEDERS; j++)
         {
@@ -324,12 +324,12 @@ typedef struct restart_test_parameters
 } restart_test_parameters;
 
 static LogQueue *
-queue_new(gboolean reliable, DiskQueueOptions *options, const gchar *persist_name)
+queue_new(gboolean reliable, DiskQueueOptions *options, const gchar *filename, const gchar *persist_name)
 {
   if (reliable)
-    return log_queue_disk_reliable_new(options, persist_name);
+    return log_queue_disk_reliable_new(options, filename, persist_name);
 
-  return log_queue_disk_non_reliable_new(options, persist_name);
+  return log_queue_disk_non_reliable_new(options, filename, persist_name);
 }
 
 ParameterizedTestParameters(diskq, testcase_diskbuffer_restart_corrupted)
@@ -348,16 +348,16 @@ ParameterizedTest(restart_test_parameters *test_case, diskq, testcase_diskbuffer
   guint64 const original_disk_buf_size = 1000123;
   DiskQueueOptions options;
   _construct_options(&options, original_disk_buf_size, 100000, test_case->reliable);
-  LogQueue *q = queue_new(test_case->reliable, &options, NULL);
+  gchar *filename = test_case->filename;
+  LogQueue *q = queue_new(test_case->reliable, &options, filename, NULL);
   log_queue_set_use_backlog(q, FALSE);
 
-  gchar *filename = test_case->filename;
   gchar filename_corrupted_dq[100];
   g_snprintf(filename_corrupted_dq, 100, "%s.corrupted", filename);
   unlink(filename);
   unlink(filename_corrupted_dq);
 
-  log_queue_disk_start(q, filename);
+  log_queue_disk_start(q);
   fed_messages = 0;
   feed_some_messages(q, 100);
   cr_assert_eq(fed_messages, 100, "Failed to push all messages to the disk-queue!\n");
@@ -461,16 +461,16 @@ testcase_diskq_prepare(DiskQueueOptions *options, diskq_tester_parameters_t *par
   options->qout_size = parameters->qout_size;
 
   if (parameters->reliable)
-    q = log_queue_disk_reliable_new(options, NULL);
+    q = log_queue_disk_reliable_new(options, parameters->filename, NULL);
   else
-    q = log_queue_disk_non_reliable_new(options, NULL);
+    q = log_queue_disk_non_reliable_new(options, parameters->filename, NULL);
 
   init_statistics(q);
   cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 0, "queued messages: line: %d", __LINE__);
   cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 0, "memory_usage: line: %d", __LINE__);
 
   unlink(parameters->filename);
-  log_queue_disk_start(q, parameters->filename);
+  log_queue_disk_start(q);
 
   return q;
 }
@@ -544,6 +544,35 @@ ParameterizedTest(diskq_tester_parameters_t *parameters, diskq, test_diskq_stati
   log_queue_disk_stop(q, &persistent);
   log_queue_unref(q);
   disk_queue_options_destroy(&options);
+}
+
+gchar *
+qdisk_get_next_filename(const gchar *dir, gboolean reliable)
+{
+  return NULL;
+}
+
+Test(diskq, test_no_next_filename_in_acquire)
+{
+  const gchar *queue_persist_name = "test_no_next_filename_in_acquire";
+  const gchar *persist_filename = "test_no_next_filename_in_acquire.persist";
+  configuration->state = persist_state_new(persist_filename);
+  persist_state_start(configuration->state);
+
+  LogDestDriver *driver = g_new0(LogDestDriver, 1);
+  log_dest_driver_init_instance(driver, configuration);
+
+  DiskQDestPlugin *plugin = diskq_dest_plugin_new();
+  cr_assert(log_driver_add_plugin(&driver->super, (LogDriverPlugin *) plugin));
+  cr_assert(log_pipe_init(&driver->super.super));
+
+  cr_assert_eq(log_dest_driver_acquire_queue(driver, queue_persist_name), NULL);
+
+  cr_assert(log_pipe_deinit(&driver->super.super));
+  cr_assert(log_pipe_unref(&driver->super.super));
+
+  persist_state_cancel(configuration->state);
+  unlink(persist_filename);
 }
 
 static void
