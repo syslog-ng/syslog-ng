@@ -1,4 +1,7 @@
-find_package(RiemannClient)
+if (NOT DEFINED ENABLE_RIEMANN OR ENABLE_RIEMANN)
+  find_package(RiemannClient)
+endif()
+
 if (HAVE_RIEMANN_MICROSECONDS)
   add_definitions("-DSYSLOG_NG_HAVE_RIEMANN_MICROSECONDS")
 endif()

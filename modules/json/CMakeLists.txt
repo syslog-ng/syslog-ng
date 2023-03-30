@@ -1,4 +1,6 @@
-external_or_find_package(JSONC)
+if (NOT DEFINED ENABLE_JSON OR ENABLE_JSON)
+  external_or_find_package(JSONC)
+endif()
 
 module_switch(ENABLE_JSON "Enable JSON plugin" JSONC_FOUND)
 if (NOT ENABLE_JSON)

@@ -150,6 +150,13 @@ function (libfind_process PREFIX)
   set(includeopts ${${PREFIX}_PROCESS_INCLUDES})
   set(libraryopts ${${PREFIX}_PROCESS_LIBS})
 
+  # Process optional arguments
+  foreach(arg ${ARGN})
+    if (arg STREQUAL "QUIET")
+      set(quiet TRUE)
+    endif()
+  endforeach()
+
   # Process deps to add to
   foreach (i ${PREFIX} ${${PREFIX}_DEPENDENCIES})
     if (DEFINED ${i}_INCLUDE_OPTS OR DEFINED ${i}_LIBRARY_OPTS)

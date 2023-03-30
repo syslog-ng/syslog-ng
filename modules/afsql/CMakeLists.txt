@@ -1,5 +1,7 @@
-find_package(LIBDBI)
-find_package(OpenSSL)
+if (NOT DEFINED ENABLE_SQL OR ENABLE_SQL)
+  find_package(LIBDBI)
+  find_package(OpenSSL)
+endif()
 
 module_switch(ENABLE_SQL "Enable SQL plugin" LIBDBI_FOUND)
 if (NOT ENABLE_SQL)

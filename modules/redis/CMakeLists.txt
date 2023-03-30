@@ -1,4 +1,6 @@
-find_package(Hiredis)
+if (NOT DEFINED ENABLE_REDIS OR ENABLE_REDIS)
+  find_package(Hiredis)
+endif()
 
 module_switch(ENABLE_REDIS "Enable redis module" HIREDIS_FOUND)
 if (NOT ENABLE_REDIS)
