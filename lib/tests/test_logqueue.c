@@ -178,16 +178,9 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
   LogQueue *q;
   gint i;
 
-  q = log_queue_fifo_new(OVERFLOW_SIZE, NULL);
-
-  StatsClusterKey sc_key;
-  stats_lock();
-  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
-  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &q->metrics.shared.queued_messages);
-  stats_cluster_single_key_legacy_set_with_name(&sc_key, SCS_DESTINATION, q->persist_name, NULL, "memory_usage");
-  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &q->metrics.shared.memory_usage);
-  stats_unlock();
-
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  q = log_queue_fifo_new(OVERFLOW_SIZE, NULL, STATS_LEVEL0, driver_sck_builder);
+  stats_cluster_key_builder_free(driver_sck_builder);
   log_queue_set_use_backlog(q, TRUE);
 
   cr_assert_eq(atomic_gssize_racy_get(&q->metrics.shared.queued_messages->value), 0);
@@ -220,7 +213,7 @@ Test(logqueue, test_zero_diskbuf_alternating_send_acks)
   LogQueue *q;
   gint i;
 
-  q = log_queue_fifo_new(OVERFLOW_SIZE, NULL);
+  q = log_queue_fifo_new(OVERFLOW_SIZE, NULL, STATS_LEVEL0, NULL);
   log_queue_set_use_backlog(q, TRUE);
 
   fed_messages = 0;
@@ -251,7 +244,7 @@ Test(logqueue, test_with_threads)
   for (i = 0; i < TEST_RUNS; i++)
     {
       fprintf(stderr, "starting testrun: %d\n", i);
-      q = log_queue_fifo_new(MESSAGES_SUM, NULL);
+      q = log_queue_fifo_new(MESSAGES_SUM, NULL, STATS_LEVEL0, NULL);
       log_queue_set_use_backlog(q, TRUE);
 
       for (j = 0; j < FEEDERS; j++)
@@ -278,14 +271,10 @@ Test(logqueue, test_with_threads)
 
 Test(logqueue, log_queue_fifo_rewind_all_and_memory_usage)
 {
-  LogQueue *q = log_queue_fifo_new(OVERFLOW_SIZE, NULL);
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  LogQueue *q = log_queue_fifo_new(OVERFLOW_SIZE, NULL, STATS_LEVEL0, driver_sck_builder);
+  stats_cluster_key_builder_free(driver_sck_builder);
   log_queue_set_use_backlog(q, TRUE);
-
-  StatsClusterKey sc_key;
-  stats_lock();
-  stats_cluster_single_key_legacy_set_with_name(&sc_key, SCS_DESTINATION, q->persist_name, NULL, "memory_usage");
-  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &q->metrics.shared.memory_usage);
-  stats_unlock();
 
   feed_some_messages(q, 1);
   gint size_when_single_msg = stats_counter_get(q->metrics.shared.memory_usage);
@@ -301,28 +290,6 @@ Test(logqueue, log_queue_fifo_rewind_all_and_memory_usage)
   log_queue_unref(q);
 }
 
-static void
-_register_stats_counters(LogQueue *q)
-{
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL);
-
-  stats_lock();
-  log_queue_register_stats_counters(q, 0, &sc_key);
-  stats_unlock();
-}
-
-static void
-_unregister_stats_counters(LogQueue *q)
-{
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL);
-
-  stats_lock();
-  log_queue_unregister_stats_counters(q, &sc_key);
-  stats_unlock();
-}
-
 Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages,
      .description = "Flow-controlled messages should never be dropped")
 {
@@ -333,9 +300,10 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages,
   non_flow_controlled_path.flow_control_requested = FALSE;
 
   gint fifo_size = 5;
-  LogQueue *q = log_queue_fifo_new(fifo_size, NULL);
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  LogQueue *q = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder);
+  stats_cluster_key_builder_free(driver_sck_builder);
   log_queue_set_use_backlog(q, TRUE);
-  _register_stats_counters(q);
 
   fed_messages = 0;
   acked_messages = 0;
@@ -357,7 +325,6 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages,
                "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
                fed_messages, acked_messages);
 
-  _unregister_stats_counters(q);
   log_queue_unref(q);
 }
 
@@ -397,9 +364,10 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages_thre
   main_loop_worker_allocate_thread_space(1);
   main_loop_worker_finalize_thread_space();
 
-  LogQueue *q = log_queue_fifo_new(fifo_size, NULL);
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  LogQueue *q = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder);
+  stats_cluster_key_builder_free(driver_sck_builder);
   log_queue_set_use_backlog(q, TRUE);
-  _register_stats_counters(q);
 
   GThread *thread = g_thread_new(NULL, _flow_control_feed_thread, q);
   g_thread_join(thread);
@@ -414,6 +382,51 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages_thre
                "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
                fed_messages, acked_messages);
 
-  _unregister_stats_counters(q);
   log_queue_unref(q);
+}
+
+Test(logqueue, log_queue_fifo_multiple_queues)
+{
+  const gint fifo_size = 1;
+  LogPathOptions options = LOG_PATH_OPTIONS_INIT;
+
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  LogQueue *queue_1 = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder);
+  LogQueue *queue_2 = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder);
+  log_queue_set_use_backlog(queue_1, TRUE);
+  log_queue_set_use_backlog(queue_2, TRUE);
+
+  log_queue_push_tail(queue_1, log_msg_new_empty(), &options);
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 1);
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 0);
+
+  log_queue_push_tail(queue_2, log_msg_new_empty(), &options);
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 2);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 1);
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 2);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
+
+  log_queue_unref(queue_1);
+
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
+
+  queue_1 = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder);
+  log_queue_set_use_backlog(queue_1, TRUE);
+
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 0);
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
+
+  log_queue_unref(queue_2);
+
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 0);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 0);
+
+  log_queue_unref(queue_1);
+
+  stats_cluster_key_builder_free(driver_sck_builder);
 }

@@ -228,61 +228,83 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
 }
 
 static void
-_register_common_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key)
+_register_shared_counters(LogQueue *self, gint stats_level, const StatsClusterKeyBuilder *builder)
 {
-  stats_register_counter(stats_level, sc_key, SC_TYPE_QUEUED, &self->metrics.shared.queued_messages);
-  stats_register_counter(stats_level, sc_key, SC_TYPE_DROPPED, &self->metrics.shared.dropped_messages);
-  atomic_gssize_set(&self->metrics.owned.queued_messages, log_queue_get_length(self));
-  stats_counter_add(self->metrics.shared.queued_messages,
-                    atomic_gssize_get_unsigned(&self->metrics.owned.queued_messages));
+  if (!builder)
+    return;
 
+  StatsClusterKeyBuilder *local_builder = stats_cluster_key_builder_clone(builder);
 
-  StatsClusterKey sc_mem_key;
-  stats_cluster_single_key_legacy_set_with_name(&sc_mem_key, sc_key->legacy.component,
-                                                sc_key->legacy.id, sc_key->legacy.instance, "memory_usage");
-  stats_register_counter_and_index(STATS_LEVEL1, &sc_mem_key, SC_TYPE_SINGLE_VALUE, &self->metrics.shared.memory_usage);
-  stats_counter_add(self->metrics.shared.memory_usage, atomic_gssize_get_unsigned(&self->metrics.owned.memory_usage));
-}
+  stats_cluster_key_builder_set_name(local_builder, "output_events_total");
+  self->metrics.shared.output_events_sc_key = stats_cluster_key_builder_build_logpipe(local_builder);
 
-void
-log_queue_register_stats_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key)
-{
-  _register_common_counters(self, stats_level, sc_key);
+  stats_cluster_key_builder_reset(local_builder);
+  stats_cluster_key_builder_set_legacy_alias(local_builder,
+                                             self->metrics.shared.output_events_sc_key->legacy.component,
+                                             self->metrics.shared.output_events_sc_key->legacy.id,
+                                             self->metrics.shared.output_events_sc_key->legacy.instance);
+  stats_cluster_key_builder_set_legacy_alias_name(local_builder, "memory_usage");
+  self->metrics.shared.memory_usage_sc_key = stats_cluster_key_builder_build_single(local_builder);
+
+  stats_lock();
+  {
+    stats_register_counter(stats_level, self->metrics.shared.output_events_sc_key, SC_TYPE_QUEUED,
+                           &self->metrics.shared.queued_messages);
+    stats_register_counter(stats_level, self->metrics.shared.output_events_sc_key, SC_TYPE_DROPPED,
+                           &self->metrics.shared.dropped_messages);
+    stats_register_counter_and_index(STATS_LEVEL1, self->metrics.shared.memory_usage_sc_key, SC_TYPE_SINGLE_VALUE,
+                                     &self->metrics.shared.memory_usage);
+  }
+  stats_unlock();
+
+  stats_cluster_key_builder_free(local_builder);
 }
 
 static void
-_unregister_common_counters(LogQueue *self, const StatsClusterKey *sc_key)
+_unregister_shared_counters(LogQueue *self)
 {
-  stats_counter_sub(self->metrics.shared.queued_messages, atomic_gssize_get(&self->metrics.owned.queued_messages));
-  stats_unregister_counter(sc_key, SC_TYPE_QUEUED, &self->metrics.shared.queued_messages);
-  stats_unregister_counter(sc_key, SC_TYPE_DROPPED, &self->metrics.shared.dropped_messages);
+  stats_lock();
+  {
+    if (self->metrics.shared.output_events_sc_key)
+      {
+        log_queue_queued_messages_sub(self, atomic_gssize_get_unsigned(&self->metrics.owned.queued_messages));
+        stats_unregister_counter(self->metrics.shared.output_events_sc_key, SC_TYPE_QUEUED,
+                                 &self->metrics.shared.queued_messages);
+        stats_unregister_counter(self->metrics.shared.output_events_sc_key, SC_TYPE_DROPPED,
+                                 &self->metrics.shared.dropped_messages);
 
-  StatsClusterKey sc_mem_key;
-  stats_cluster_single_key_legacy_set_with_name(&sc_mem_key, sc_key->legacy.component,
-                                                sc_key->legacy.id, sc_key->legacy.instance, "memory_usage");
-  stats_counter_sub(self->metrics.shared.memory_usage, atomic_gssize_get(&self->metrics.owned.memory_usage));
-  stats_unregister_counter(&sc_mem_key, SC_TYPE_SINGLE_VALUE, &self->metrics.shared.memory_usage);
+        stats_cluster_key_free(self->metrics.shared.output_events_sc_key);
+      }
+
+    if (self->metrics.shared.memory_usage_sc_key)
+      {
+        log_queue_memory_usage_sub(self, atomic_gssize_get_unsigned(&self->metrics.owned.memory_usage));
+        stats_unregister_counter(self->metrics.shared.memory_usage_sc_key, SC_TYPE_SINGLE_VALUE,
+                                 &self->metrics.shared.memory_usage);
+
+        stats_cluster_key_free(self->metrics.shared.memory_usage_sc_key);
+      }
+  }
+  stats_unlock();
 }
 
 void
-log_queue_unregister_stats_counters(LogQueue *self, const StatsClusterKey *sc_key)
-{
-  _unregister_common_counters(self, sc_key);
-}
-
-void
-log_queue_init_instance(LogQueue *self, const gchar *persist_name)
+log_queue_init_instance(LogQueue *self, const gchar *persist_name, gint stats_level,
+                        const StatsClusterKeyBuilder *driver_sck_builder)
 {
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->free_fn = log_queue_free_method;
 
   self->persist_name = persist_name ? g_strdup(persist_name) : NULL;
   g_mutex_init(&self->lock);
+
+  _register_shared_counters(self, stats_level, driver_sck_builder);
 }
 
 void
 log_queue_free_method(LogQueue *self)
 {
+  _unregister_shared_counters(self);
   g_mutex_clear(&self->lock);
   g_free(self->persist_name);
   g_free(self);

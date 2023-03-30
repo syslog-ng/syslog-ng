@@ -1457,7 +1457,6 @@ _register_counters(LogWriter *self)
     stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
   stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
-  log_queue_register_stats_counters(self->queue, self->options->stats_level, &sc_key);
 
   StatsClusterKey sc_legacy_processed;
   stats_cluster_single_key_legacy_set_with_name(&sc_legacy_processed, self->options->stats_source | SCS_DESTINATION,
@@ -1540,9 +1539,6 @@ _unregister_counters(LogWriter *self)
     stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
                                                   self->stats_id, self->stats_instance, "truncated_bytes");
     stats_unregister_counter(&sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE, &self->truncated.bytes);
-
-    log_queue_unregister_stats_counters(self->queue, &sc_key);
-
   }
   stats_unlock();
   _unregister_aggregated_stats(self);
@@ -1749,6 +1745,15 @@ log_writer_reopen(LogWriter *s, LogProtoClient *proto)
         }
       g_mutex_unlock(&self->pending_proto_lock);
     }
+}
+
+void
+log_writer_init_driver_sck_builder(LogWriter *self, StatsClusterKeyBuilder *builder)
+{
+  stats_cluster_key_builder_add_label(builder, stats_cluster_label("id", self->stats_id));
+  stats_cluster_key_builder_add_label(builder, stats_cluster_label("driver_instance", self->stats_instance));
+  stats_cluster_key_builder_set_legacy_alias(builder, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+                                             self->stats_instance);
 }
 
 void

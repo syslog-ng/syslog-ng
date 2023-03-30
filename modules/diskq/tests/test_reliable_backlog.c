@@ -58,7 +58,7 @@ _init_diskq_for_test(const gchar *filename, gint64 size, gint64 membuf_size)
   LogQueueDiskReliable *dq;
 
   _construct_options(&options, size, membuf_size, TRUE);
-  LogQueue *q = log_queue_disk_reliable_new(&options, filename, NULL);
+  LogQueue *q = log_queue_disk_reliable_new(&options, filename, NULL, STATS_LEVEL0, NULL);
   struct stat st;
   num_of_ack = 0;
   unlink(filename);

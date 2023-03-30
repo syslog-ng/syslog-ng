@@ -55,6 +55,7 @@ log_queue_disk_stop(LogQueue *s, gboolean *persistent)
       return TRUE;
     }
 
+  log_queue_queued_messages_sub(s, log_queue_get_length(s));
   return self->stop(self, persistent);
 }
 
@@ -67,7 +68,13 @@ log_queue_disk_start(LogQueue *s)
   g_assert(!qdisk_started(self->qdisk));
   g_assert(self->start);
 
-  return self->start(self);
+  if (self->start(self))
+    {
+      log_queue_queued_messages_add(s, log_queue_get_length(s));
+      return TRUE;
+    }
+
+  return FALSE;
 }
 
 const gchar *
@@ -222,12 +229,12 @@ log_queue_disk_restart_corrupted(LogQueueDisk *self)
   log_queue_queued_messages_reset(&self->super);
 }
 
-
 void
 log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, const gchar *qdisk_file_id,
-                             const gchar *filename, const gchar *persist_name)
+                             const gchar *filename, const gchar *persist_name, gint stats_level,
+                             const StatsClusterKeyBuilder *driver_sck_builder)
 {
-  log_queue_init_instance(&self->super, persist_name);
+  log_queue_init_instance(&self->super, persist_name, stats_level, driver_sck_builder);
   self->super.type = log_queue_disk_type;
 
   self->compaction = options->compaction;

@@ -83,19 +83,6 @@ _assert_log_queue_disk_reliable_is_empty(LogQueue *q)
   cr_assert_eq(atomic_gssize_get_unsigned(&q->metrics.owned.queued_messages), 0);
 }
 
-static void
-_register_stats_counters(LogQueue *q)
-{
-  stats_lock();
-  {
-    StatsClusterKey sc_key;
-    StatsClusterLabel labels[] = {};
-    stats_cluster_logpipe_key_set(&sc_key, "dummy-name", labels, G_N_ELEMENTS(labels));
-    log_queue_register_stats_counters(q, STATS_LEVEL1, &sc_key);
-  }
-  stats_unlock();
-}
-
 Test(logqueue_disk, restart_corrupted_reliable)
 {
   start_grabbing_messages();
@@ -112,8 +99,10 @@ Test(logqueue_disk, restart_corrupted_reliable)
   disk_queue_options_mem_buf_size_set(&options, 4096);
   disk_queue_options_qout_size_set(&options, 2);
 
-  LogQueue *queue = log_queue_disk_reliable_new(&options, filename, "restart_corrupted_reliable");
-  _register_stats_counters(queue);
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  LogQueue *queue = log_queue_disk_reliable_new(&options, filename, "restart_corrupted_reliable", STATS_LEVEL0,
+                                                driver_sck_builder);
+  stats_cluster_key_builder_free(driver_sck_builder);
 
   cr_assert(log_queue_disk_start(queue));
   cr_assert_str_eq(log_queue_disk_get_filename(queue), filename);
@@ -197,8 +186,10 @@ Test(logqueue_disk, restart_corrupted_non_reliable)
   disk_queue_options_mem_buf_size_set(&options, 4096);
   disk_queue_options_qout_size_set(&options, 0);
 
-  LogQueue *queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable");
-  _register_stats_counters(queue);
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  LogQueue *queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable", STATS_LEVEL0,
+                                                    driver_sck_builder);
+  stats_cluster_key_builder_free(driver_sck_builder);
 
   cr_assert(log_queue_disk_start(queue));
   cr_assert_str_eq(log_queue_disk_get_filename(queue), filename);
@@ -285,9 +276,10 @@ Test(logqueue_disk, restart_corrupted_non_reliable_with_qout)
   disk_queue_options_mem_buf_size_set(&options, 4096);
   disk_queue_options_qout_size_set(&options, 1);
 
-  LogQueue *queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable_with_qout");
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  LogQueue *queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable_with_qout",
+                                                    STATS_LEVEL0, driver_sck_builder);
   LogQueueDiskNonReliable *queue_disk_non_reliable = (LogQueueDiskNonReliable *) queue;
-  _register_stats_counters(queue);
 
   cr_assert(log_queue_disk_start(queue));
   cr_assert_str_eq(log_queue_disk_get_filename(queue), filename);
@@ -309,6 +301,15 @@ Test(logqueue_disk, restart_corrupted_non_reliable_with_qout)
   _assert_log_queue_disk_non_reliable_has_messages_in_qout(queue, 1);
 
   gboolean persistent;
+  log_queue_disk_stop(queue, &persistent);
+  log_queue_unref(queue);
+  queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable_with_qout",
+                                          STATS_LEVEL0, driver_sck_builder);
+  cr_assert(log_queue_disk_start(queue));
+
+  _assert_log_queue_disk_non_reliable_has_messages_in_qout(queue, 1);
+
+  stats_cluster_key_builder_free(driver_sck_builder);
   log_queue_disk_stop(queue, &persistent);
   log_queue_unref(queue);
   disk_queue_options_destroy(&options);
@@ -333,11 +334,11 @@ Test(logqueue_disk, restart_corrupted_with_multiple_queues)
   disk_queue_options_disk_buf_size_set(&options, MIN_DISK_BUF_SIZE);
   disk_queue_options_mem_buf_size_set(&options, 4096);
 
-  LogQueue *queue_1 = log_queue_disk_reliable_new(&options, filename_1, "restart_corrupted_with_multiple_queues_1");
-  _register_stats_counters(queue_1);
-
-  LogQueue *queue_2 = log_queue_disk_reliable_new(&options, filename_2, "restart_corrupted_with_multiple_queues_2");
-  _register_stats_counters(queue_2);
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  LogQueue *queue_1 = log_queue_disk_reliable_new(&options, filename_1, "restart_corrupted_with_multiple_queues_1",
+                                                  STATS_LEVEL0, driver_sck_builder);
+  LogQueue *queue_2 = log_queue_disk_reliable_new(&options, filename_2, "restart_corrupted_with_multiple_queues_2",
+                                                  STATS_LEVEL0, driver_sck_builder);
 
   cr_assert(log_queue_disk_start(queue_1));
   cr_assert(log_queue_disk_start(queue_2));
@@ -356,6 +357,22 @@ Test(logqueue_disk, restart_corrupted_with_multiple_queues)
   cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 2);
   cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
 
+  gboolean persistent;
+  log_queue_disk_stop(queue_1, &persistent);
+  log_queue_unref(queue_1);
+
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 1);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
+
+  queue_1 = log_queue_disk_reliable_new(&options, filename_1, "restart_corrupted_with_multiple_queues_1",
+                                        STATS_LEVEL0, driver_sck_builder);
+  cr_assert(log_queue_disk_start(queue_1));
+
+  cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 2);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_1->metrics.owned.queued_messages), 1);
+  cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 2);
+  cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 1);
+
   log_queue_disk_restart_corrupted((LogQueueDisk *) queue_1);
 
   cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 1);
@@ -369,7 +386,7 @@ Test(logqueue_disk, restart_corrupted_with_multiple_queues)
   cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 0);
   cr_assert_eq(atomic_gssize_get_unsigned(&queue_2->metrics.owned.queued_messages), 0);
 
-  gboolean persistent;
+  stats_cluster_key_builder_free(driver_sck_builder);
   log_queue_disk_stop(queue_1, &persistent);
   log_queue_disk_stop(queue_2, &persistent);
   log_queue_unref(queue_1);

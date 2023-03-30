@@ -243,7 +243,8 @@ log_src_driver_free(LogPipe *s)
 /* LogDestDriver */
 
 static LogQueue *
-_create_memory_queue(LogDestDriver *self, const gchar *persist_name)
+_create_memory_queue(LogDestDriver *self, const gchar *persist_name, gint stats_level,
+                     const StatsClusterKeyBuilder *driver_sck_builder)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
@@ -257,15 +258,16 @@ _create_memory_queue(LogDestDriver *self, const gchar *persist_name)
                        "flags(flow-control) option set.) To enable the new behaviour, update the @version string in "
                        "your configuration and consider lowering the value of log-fifo-size().");
 
-      return log_queue_fifo_legacy_new(log_fifo_size, persist_name);
+      return log_queue_fifo_legacy_new(log_fifo_size, persist_name, stats_level, driver_sck_builder);
     }
 
-  return log_queue_fifo_new(log_fifo_size, persist_name);
+  return log_queue_fifo_new(log_fifo_size, persist_name, stats_level, driver_sck_builder);
 }
 
 /* returns a reference */
 static LogQueue *
-log_dest_driver_acquire_memory_queue(LogDestDriver *self, const gchar *persist_name)
+log_dest_driver_acquire_memory_queue(LogDestDriver *self, const gchar *persist_name, gint stats_level,
+                                     const StatsClusterKeyBuilder *driver_sck_builder)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
   LogQueue *queue = NULL;
@@ -281,7 +283,7 @@ log_dest_driver_acquire_memory_queue(LogDestDriver *self, const gchar *persist_n
 
   if (!queue)
     {
-      queue = _create_memory_queue(self, persist_name);
+      queue = _create_memory_queue(self, persist_name, stats_level, driver_sck_builder);
       log_queue_set_throttle(queue, self->throttle);
     }
   return queue;

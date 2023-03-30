@@ -197,8 +197,15 @@ affile_dw_init(LogPipe *s)
                          &self->owner->writer_options,
                          self->owner->super.super.id,
                          self->filename);
-  log_writer_set_queue(self->writer, log_dest_driver_acquire_queue(&self->owner->super,
-                       affile_dw_format_persist_name(self)));
+
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  log_writer_init_driver_sck_builder(self->writer, driver_sck_builder);
+
+  LogQueue *queue = log_dest_driver_acquire_queue(&self->owner->super, affile_dw_format_persist_name(self),
+                                                  self->owner->writer_options.stats_level, driver_sck_builder);
+  log_writer_set_queue(self->writer, queue);
+
+  stats_cluster_key_builder_free(driver_sck_builder);
 
   if (!log_pipe_init((LogPipe *) self->writer))
     {
