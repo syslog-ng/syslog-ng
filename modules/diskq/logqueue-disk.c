@@ -232,9 +232,18 @@ log_queue_disk_restart_corrupted(LogQueueDisk *self)
 void
 log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, const gchar *qdisk_file_id,
                              const gchar *filename, const gchar *persist_name, gint stats_level,
-                             const StatsClusterKeyBuilder *driver_sck_builder)
+                             const StatsClusterKeyBuilder *driver_sck_builder,
+                             StatsClusterKeyBuilder *queue_sck_builder)
 {
-  log_queue_init_instance(&self->super, persist_name, stats_level, driver_sck_builder);
+  if (queue_sck_builder)
+    {
+      stats_cluster_key_builder_set_name_prefix(queue_sck_builder, "disk_queue_");
+      stats_cluster_key_builder_add_label(queue_sck_builder, stats_cluster_label("path", filename));
+      stats_cluster_key_builder_add_label(queue_sck_builder,
+                                          stats_cluster_label("reliable", options->reliable ? "true" : "false"));
+    }
+
+  log_queue_init_instance(&self->super, persist_name, stats_level, driver_sck_builder, queue_sck_builder);
   self->super.type = log_queue_disk_type;
 
   self->compaction = options->compaction;

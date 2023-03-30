@@ -37,6 +37,7 @@ typedef struct _LogQueueDiskNonReliable
 } LogQueueDiskNonReliable;
 
 LogQueue *log_queue_disk_non_reliable_new(DiskQueueOptions *options, const gchar *filename, const gchar *persist_name,
-                                          gint stats_level, const StatsClusterKeyBuilder *driver_sck_builder);
+                                          gint stats_level, const StatsClusterKeyBuilder *driver_sck_builder,
+                                          StatsClusterKeyBuilder *queue_sck_builder);
 
 #endif /* LOG_QUEUE_DISK_NON_RELIABLE_H_ */

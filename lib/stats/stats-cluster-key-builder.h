@@ -34,6 +34,7 @@ StatsClusterKeyBuilder *stats_cluster_key_builder_clone(const StatsClusterKeyBui
 void stats_cluster_key_builder_free(StatsClusterKeyBuilder *self);
 
 void stats_cluster_key_builder_set_name(StatsClusterKeyBuilder *self, const gchar *name);
+void stats_cluster_key_builder_set_name_prefix(StatsClusterKeyBuilder *self, const gchar *name_prefix);
 void stats_cluster_key_builder_set_name_suffix(StatsClusterKeyBuilder *self, const gchar *name_suffix);
 void stats_cluster_key_builder_add_label(StatsClusterKeyBuilder *self, const StatsClusterLabel label);
 void stats_cluster_key_builder_set_unit(StatsClusterKeyBuilder *self, StatsClusterUnit unit);

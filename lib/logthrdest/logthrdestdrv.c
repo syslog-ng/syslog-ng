@@ -743,11 +743,29 @@ log_threaded_dest_worker_start(LogThreadedDestWorker *self)
   return main_loop_threaded_worker_start(&self->thread);
 }
 
+static void
+_init_queue_sck_builder(LogThreadedDestWorker *self, StatsClusterKeyBuilder *builder)
+{
+  stats_cluster_key_builder_add_label(builder, stats_cluster_label("id", self->owner->super.super.id ? : ""));
+  stats_cluster_key_builder_add_label(builder, stats_cluster_label("driver_instance",
+                                      self->owner->format_stats_instance(self->owner)));
+
+  gchar worker_index_str[8];
+  g_snprintf(worker_index_str, sizeof(worker_index_str), "%d", self->worker_index);
+  stats_cluster_key_builder_add_label(builder, stats_cluster_label("worker", worker_index_str));
+}
+
 static gboolean
 _acquire_worker_queue(LogThreadedDestWorker *self, gint stats_level, const StatsClusterKeyBuilder *driver_sck_builder)
 {
   gchar *persist_name = _format_queue_persist_name(self);
-  self->queue = log_dest_driver_acquire_queue(&self->owner->super, persist_name, stats_level, driver_sck_builder);
+  StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
+  _init_queue_sck_builder(self, queue_sck_builder);
+
+  self->queue = log_dest_driver_acquire_queue(&self->owner->super, persist_name, stats_level, driver_sck_builder,
+                                              queue_sck_builder);
+
+  stats_cluster_key_builder_free(queue_sck_builder);
   g_free(persist_name);
 
   if (!self->queue)
