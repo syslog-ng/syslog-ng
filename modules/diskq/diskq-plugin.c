@@ -22,6 +22,7 @@
  */
 
 #include "cfg-parser.h"
+#include "diskq-global-metrics.h"
 #include "plugin.h"
 #include "plugin-types.h"
 
@@ -57,5 +58,6 @@ gboolean
 disk_buffer_module_init(PluginContext *context, CfgArgs *args)
 {
   plugin_register(context, diskq_plugins, G_N_ELEMENTS(diskq_plugins));
+  diskq_global_metrics_init();
   return TRUE;
 }

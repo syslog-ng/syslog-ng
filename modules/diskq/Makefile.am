@@ -14,7 +14,9 @@ modules_diskq_libsyslog_ng_disk_buffer_la_SOURCES = \
   modules/diskq/logqueue-disk-reliable.c \
   modules/diskq/logqueue-disk-reliable.h \
   modules/diskq/qdisk.h \
-  modules/diskq/qdisk.c
+  modules/diskq/qdisk.c \
+  modules/diskq/diskq-global-metrics.h \
+  modules/diskq/diskq-global-metrics.c
 
 modules_diskq_libsyslog_ng_disk_buffer_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
