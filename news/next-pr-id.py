@@ -21,19 +21,43 @@
 #
 #############################################################################
 from urllib.request import urlopen
+from urllib.error import HTTPError
 from json import loads
 from argparse import ArgumentParser
 
 
-def get_next_pr_id():
+def get_last_issue_or_pr_id():
     ISSUES_API = "https://api.github.com/repos/syslog-ng/syslog-ng/issues?state=all&sort=created&direction=desc"
 
     raw_response = urlopen(ISSUES_API).read().decode("utf-8")
     json_response = loads(raw_response)
     issues = list(json_response)
-    last_id = int(issues[0]["number"])
 
-    return last_id + 1
+    return int(issues[0]["number"])
+
+
+def is_a_discussion(id):
+    DISCUSSIONS_URL = "https://github.com/syslog-ng/syslog-ng/discussions/"
+
+    try:
+        urlopen(DISCUSSIONS_URL + str(id))
+        return True
+    except HTTPError as e:
+        if e.getcode() == 404:
+            return False
+
+    return False
+
+
+def get_next_pr_id():
+    last_issue_or_pr_id = get_last_issue_or_pr_id()
+
+    for i in range(1, 100):
+        id = last_issue_or_pr_id + i
+        if not is_a_discussion(id):
+            return id
+
+    return -1
 
 
 def parse_arguments():
@@ -47,6 +71,10 @@ def parse_arguments():
 def main():
     args = parse_arguments()
     next_pr_id = get_next_pr_id()
+
+    if (next_pr_id == -1):
+        print("Failed to calculate next PR ID")
+        return
 
     if args.raw:
         print(next_pr_id)
