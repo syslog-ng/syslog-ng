@@ -8,7 +8,8 @@ modules_diskq_tests_TESTS = \
   modules/diskq/tests/test_diskq_truncate \
   modules/diskq/tests/test_reliable_backlog \
   modules/diskq/tests/test_qdisk \
-  modules/diskq/tests/test_logqueue_disk
+  modules/diskq/tests/test_logqueue_disk \
+  modules/diskq/tests/test_diskq_counters
 
 check_PROGRAMS += ${modules_diskq_tests_TESTS}
 
@@ -66,4 +67,13 @@ modules_diskq_tests_test_logqueue_disk_DEPENDENCIES =	\
 	$(top_builddir)/modules/diskq/libdisk-buffer.la
 modules_diskq_tests_test_logqueue_disk_SOURCES = \
 	modules/diskq/tests/test_logqueue_disk.c \
+	modules/diskq/tests/test_diskq_tools.h
+
+modules_diskq_tests_test_diskq_counters_CFLAGS = $(DISKQ_TEST_C_FLAGS)
+modules_diskq_tests_test_diskq_counters_LDFLAGS = $(DISKQ_TEST_LD_FLAGS)
+modules_diskq_tests_test_diskq_counters_LDADD = $(DISKQ_TEST_LD_ADD)
+modules_diskq_tests_test_diskq_counters_DEPENDENCIES =	\
+	$(top_builddir)/modules/diskq/libdisk-buffer.la
+modules_diskq_tests_test_diskq_counters_SOURCES = \
+	modules/diskq/tests/test_diskq_counters.c \
 	modules/diskq/tests/test_diskq_tools.h

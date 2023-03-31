@@ -133,6 +133,7 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
         }
 
       qdisk_ack_backlog(self->super.qdisk);
+      log_queue_disk_update_disk_related_counters(&self->super);
     }
 exit_reliable:
   qdisk_reset_file_if_empty(self->super.qdisk);
@@ -280,6 +281,7 @@ exit:
   if (!s->use_backlog)
     qdisk_empty_backlog(self->super.qdisk);
 
+  log_queue_disk_update_disk_related_counters(&self->super);
   log_queue_queued_messages_dec(s);
 
   if (qdisk_corrupt)
@@ -345,6 +347,8 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
       g_mutex_unlock(&s->lock);
       return;
     }
+
+  log_queue_disk_update_disk_related_counters(&self->super);
 
   scratch_buffers_reclaim_marked(marker);
 
