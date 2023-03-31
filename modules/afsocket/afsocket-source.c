@@ -694,7 +694,7 @@ afsocket_sd_stop_watches(AFSocketSourceDriver *self)
 }
 
 static void
-_adjust_dynamic_window_size_if_needed(AFSocketSourceDriver *self)
+afsocket_sd_adjust_dynamic_window_size_if_needed(AFSocketSourceDriver *self)
 {
   if (self->max_connections > 0 && self->dynamic_window_size > 0)
     {
@@ -748,7 +748,7 @@ afsocket_sd_setup_reader_options(AFSocketSourceDriver *self)
       if (self->dynamic_window_size != 0)
         min_iw_size_per_reader = 1;
 
-      _adjust_dynamic_window_size_if_needed(self);
+      afsocket_sd_adjust_dynamic_window_size_if_needed(self);
 
       self->reader_options.super.init_window_size /= self->max_connections;
       if (self->reader_options.super.init_window_size < min_iw_size_per_reader)
