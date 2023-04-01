@@ -32,6 +32,7 @@ PythonOption *python_option_long_new(const gchar *name, gint64 value);
 PythonOption *python_option_double_new(const gchar *name, gdouble value);
 PythonOption *python_option_boolean_new(const gchar *name, gboolean value);
 PythonOption *python_option_string_list_new(const gchar *name, const GList *value);
+PythonOption *python_option_template_new(const gchar *name, const gchar *value);
 
 const gchar *python_option_get_name(const PythonOption *self);
 PyObject *python_option_create_value_py_object(const PythonOption *self);

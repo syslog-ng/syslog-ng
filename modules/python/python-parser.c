@@ -41,6 +41,8 @@ static CfgLexerKeyword python_keywords[] =
   },
   { "loaders",                    KW_LOADERS   },
   { "mark_errors_as_critical",  KW_MARK_ERRORS_AS_CRITICAL },
+
+  { "LogTemplate", KW_LOG_TEMPLATE },
   { NULL }
 };
 

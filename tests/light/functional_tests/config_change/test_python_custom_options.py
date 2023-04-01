@@ -34,6 +34,8 @@ def assert_options(options):
     assert options["long"] == 123456789, "Actual: {}".format(options["long"])
     assert options["double"] == 123.456789, "Actual: {}".format(options["double"])
     assert options["string_list"] == ["string1", "string2"], "Actual: {}".format(options["string_list"])
+    assert isinstance(options["template"], syslogng.LogTemplate), "Actual: {}".format(type(options["template"]))
+    assert str(options["template"]) == "${template}", "Actual: {}".format(str(options["template"]))
 
 
 class TestSource(syslogng.LogSource):
@@ -82,11 +84,13 @@ def test_confgen(options):
         "long" => {}
         "double" => {}
         "string-list" => [{}]
+        "template" => LogTemplate({})
       )
       persist-name("custom-persist-name")
     );
   '''.format(options["string"], options["true"], options["false"],
-             options["long"], options["double"], options["string_list"])
+             options["long"], options["double"], options["string_list"],
+             options["template"])
 
 
 syslogng.register_config_generator(context="destination", name="test_confgen",
@@ -104,6 +108,7 @@ log {
         "long" => 123456789
         "double" => 123.456789
         "string-list" => ["string1", "string2"]
+        "template" => LogTemplate("${template}")
       )
     );
     python-fetcher(
@@ -115,6 +120,7 @@ log {
         "long" => 123456789
         "double" => 123.456789
         "string-list" => ["string1", "string2"]
+        "template" => LogTemplate("${template}")
       )
     );
   };
@@ -128,6 +134,7 @@ log {
         "long" => 123456789
         "double" => 123.456789
         "string-list" => ["string1", "string2"]
+        "template" => LogTemplate("${template}")
       )
     );
   };
@@ -141,6 +148,7 @@ log {
         "long" => 123456789
         "double" => 123.456789
         "string-list" => ["string1", "string2"]
+        "template" => LogTemplate("${template}")
       )
     );
     test-confgen(
@@ -150,6 +158,7 @@ log {
       long(123456789)
       double(123.456789)
       string-list("string1", "string2")
+      template("${template}")
     );
   };
 };

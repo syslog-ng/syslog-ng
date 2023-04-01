@@ -134,6 +134,36 @@ Test(python_options, test_python_option_string_list)
   python_option_free(option);
 }
 
+Test(python_options, test_python_option_template)
+{
+  gchar *template = g_strdup("${example-value}");
+  PythonOption *option = python_option_template_new("template", template);
+  g_free(template);
+
+  cr_assert_str_eq(python_option_get_name(option), "template");
+
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  {
+    PyObject *value = python_option_create_value_py_object(option);
+    PyDict_SetItemString(_python_main_dict, "test_variable", value);
+
+    gchar *script = "import _syslogng\n"
+                    "assert isinstance(test_variable, _syslogng.LogTemplate), type(test_variable)\n"
+                    "assert str(test_variable) == '${example-value}'\n";
+    if (!PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict))
+      {
+        PyErr_Print();
+        Py_DECREF(value);
+        PyGILState_Release(gstate);
+        cr_assert(FALSE, "Error running Python script >>>%s<<<", script);
+      }
+    Py_DECREF(value);
+  }
+  PyGILState_Release(gstate);
+
+  python_option_free(option);
+}
+
 Test(python_options, test_python_options)
 {
   PythonOptions *options = python_options_new();
@@ -162,18 +192,24 @@ Test(python_options, test_python_options)
   string_list_free(string_list);
   python_options_add_option(options, option);
 
+  option = python_option_template_new("template", "${example-template}");
+  python_options_add_option(options, option);
+
   PyObject *options_dict = python_options_create_py_dict(options);
 
   PyGILState_STATE gstate = PyGILState_Ensure();
   {
     PyDict_SetItemString(_python_main_dict, "options", options_dict);
 
-    const gchar *script = "assert options['string'] == 'example-value', 'Actual: {}'.format(options['string'])\n"
+    const gchar *script = "import _syslogng\n"
+                          "assert options['string'] == 'example-value', 'Actual: {}'.format(options['string'])\n"
                           "assert options['long'] == -42, 'Actual: {}'.format(options['long'])\n"
                           "assert options['double'] == -13.37, 'Actual: {}'.format(options['double'])\n"
                           "assert options['boolean'] == True, 'Actual: {}'.format(options['string'])\n"
                           "assert options['string_list'] == ['example-value-1', 'example-value-2'], "
-                          "'Actual: {}'.format(options['string_list'])\n";
+                          "'Actual: {}'.format(options['string_list'])\n"
+                          "assert isinstance(options['template'], _syslogng.LogTemplate), 'Actual: {}'.format(type(options['template']))\n"
+                          "assert str(options['template']) == '${example-template}', 'Actual: {}'.format(str(options['template']))\n";
     if (!PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict))
       {
         PyErr_Print();

@@ -23,6 +23,7 @@
 #include "python-options.h"
 #include "python-types.h"
 #include "python-helpers.h"
+#include "python-logtemplate.h"
 #include "str-utils.h"
 #include "string-list.h"
 
@@ -229,6 +230,51 @@ python_option_string_list_new(const gchar *name, const GList *value)
   self->super.create_value_py_object = _string_list_create_value_py_object;
   self->super.free_fn = _string_list_free_fn;
   self->value = string_list_clone(value);
+
+  return &self->super;
+}
+
+/* Template */
+
+typedef struct _PythonOptionTemplate
+{
+  PythonOption super;
+  gchar *value;
+} PythonOptionTemplate;
+
+static PyObject *
+_template_create_value_py_object(const PythonOption *s)
+{
+  PythonOptionTemplate *self = (PythonOptionTemplate *) s;
+
+  PyObject *template_str = py_string_from_string(self->value, -1);
+  if (!template_str)
+    return NULL;
+
+  PyObject *args = PyTuple_Pack(1, template_str);
+  PyObject *py_template = PyObject_Call((PyObject *) &py_log_template_type, args, NULL);
+
+  Py_DECREF(template_str);
+  Py_DECREF(args);
+  return py_template;
+}
+
+static void
+_template_free_fn(PythonOption *s)
+{
+  PythonOptionTemplate *self = (PythonOptionTemplate *) s;
+  g_free(self->value);
+}
+
+PythonOption *
+python_option_template_new(const gchar *name, const gchar *value)
+{
+  PythonOptionTemplate *self = g_new0(PythonOptionTemplate, 1);
+  python_option_init_instance(&self->super, name);
+
+  self->super.create_value_py_object = _template_create_value_py_object;
+  self->super.free_fn = _template_free_fn;
+  self->value = g_strdup(value);
 
   return &self->super;
 }
