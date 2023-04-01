@@ -1033,6 +1033,22 @@ afsocket_sd_drop_dynamic_window_pool(AFSocketSourceDriver *self)
     }
 }
 
+static void
+afsocket_sd_dynamic_window_init(AFSocketSourceDriver *self)
+{
+  if (!afsocket_sd_restore_dynamic_window_pool(self))
+    afsocket_sd_create_dynamic_window_pool(self);
+}
+
+static void
+afsocket_sd_dynamic_window_deinit(AFSocketSourceDriver *self)
+{
+  if (self->dynamic_window_pool == NULL)
+    return;
+
+  afsocket_sd_save_dynamic_window_pool(self);
+}
+
 gboolean
 afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
 {
@@ -1089,9 +1105,7 @@ afsocket_sd_init_method(LogPipe *s)
   if (!afsocket_sd_setup_transport(self) || !afsocket_sd_setup_addresses(self))
     return FALSE;
 
-  if (!afsocket_sd_restore_dynamic_window_pool(self))
-    afsocket_sd_create_dynamic_window_pool(self);
-
+  afsocket_sd_dynamic_window_init(self);
   afsocket_sd_restore_kept_alive_connections(self);
   afsocket_sd_register_stats(self);
 
@@ -1115,8 +1129,7 @@ afsocket_sd_deinit_method(LogPipe *s)
 
   afsocket_sd_unregister_stats(self);
 
-  if (self->dynamic_window_pool)
-    afsocket_sd_save_dynamic_window_pool(self);
+  afsocket_sd_dynamic_window_deinit(self);
 
   return log_src_driver_deinit_method(s);
 }
