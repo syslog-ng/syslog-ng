@@ -688,6 +688,7 @@ AC_CHECK_HEADERS(strings.h	\
 	door.h			\
 	sys/capability.h	\
 	sys/prctl.h		\
+	linux/sock_diag.h	\
 	utmp.h			\
 	utmpx.h)
 AC_CHECK_HEADERS(tcpd.h)
@@ -788,6 +789,22 @@ blb_cv_c_modern_utmp=no)])
 
 if test "x$blb_cv_c_modern_utmp" = "xyes"; then
 	AC_DEFINE(HAVE_MODERN_UTMP, 1, [have modern utmp/utmpx format])
+fi
+
+old_CPPFLAGS=$CPPFLAGS
+CPPFLAGS="-D_GNU_SOURCE -D_DEFAULT_SOURCE"
+AC_CACHE_CHECK(for SO_MEMINFO, blb_cv_c_so_meminfo,
+  [AC_EGREP_CPP(SO_MEMINFO,
+[
+#include <sys/socket.h>
+SO_MEMINFO
+],
+  blb_cv_c_so_meminfo=no, blb_cv_c_so_meminfo=yes)])
+CPPFLAGS=$old_CPPFLAGS
+
+if test "x$blb_cv_c_so_meminfo" = "xyes"; then
+	AC_DEFINE(HAVE_SO_MEMINFO, 1, [have SO_MEMINFO sockopt])
+	AC_DEFINE(ENABLE_AFSOCKET_MEMINFO_METRICS, 1, [enable SO_MEMINFO based metrics in afsocket])
 fi
 
 dnl ***************************************************************************

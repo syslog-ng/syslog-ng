@@ -36,6 +36,14 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#if SYSLOG_NG_HAVE_LINUX_SOCK_DIAG_H
+#include <linux/sock_diag.h>
+#endif
+
+#if SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS
+static const glong PACKET_STATS_TIMER_MSECS = 1000;
+#endif
+
 #if SYSLOG_NG_ENABLE_TCP_WRAPPER
 #include <tcpd.h>
 int allow_severity = 0;
@@ -774,6 +782,65 @@ afsocket_sd_adjust_dynamic_window_size_if_needed(AFSocketSourceDriver *self)
     }
 }
 
+#if SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS
+
+static void
+_packet_stats_timer_start(AFSocketSourceDriver *self)
+{
+  if (!self->stat_socket_dropped_packets)
+    return;
+
+  iv_validate_now();
+  self->packet_stats_timer.expires = iv_now;
+  timespec_add_msec(&self->packet_stats_timer.expires, PACKET_STATS_TIMER_MSECS);
+  iv_timer_register(&self->packet_stats_timer);
+}
+
+
+static void
+_on_packet_stats_timer_elapsed(gpointer cookie)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *)cookie;
+  guint32 meminfo[SK_MEMINFO_VARS];
+  socklen_t meminfo_len = sizeof(meminfo);
+  AFSocketSourceConnection *first_connection = self->connections->data;
+  gint sock = first_connection->sock;
+
+  /* once this getsockopt() fails, we won't try again */
+  if (getsockopt(sock, SOL_SOCKET, SO_MEMINFO, &meminfo, &meminfo_len) < 0)
+    return;
+
+  stats_counter_set(self->stat_socket_dropped_packets, meminfo[SK_MEMINFO_DROPS]);
+  stats_counter_set(self->stat_socket_receive_buffer_max, meminfo[SK_MEMINFO_RCVBUF]);
+  stats_counter_set(self->stat_socket_receive_buffer_used, meminfo[SK_MEMINFO_RMEM_ALLOC]);
+  _packet_stats_timer_start(self);
+}
+
+static void
+_packet_stats_timer_init(AFSocketSourceDriver *self)
+{
+  IV_TIMER_INIT(&self->packet_stats_timer);
+  self->packet_stats_timer.cookie = self;
+  self->packet_stats_timer.handler = _on_packet_stats_timer_elapsed;
+}
+
+
+static void
+_packet_stats_timer_stop(AFSocketSourceDriver *self)
+{
+  if (iv_timer_registered(&self->packet_stats_timer))
+    iv_timer_unregister(&self->packet_stats_timer);
+}
+
+#else
+
+#define _packet_stats_timer_init(s)
+#define _packet_stats_timer_start(s)
+#define _packet_stats_timer_stop(s)
+
+#endif
+
+
 static gboolean
 afsocket_sd_setup_reader_options(AFSocketSourceDriver *self)
 {
@@ -911,6 +978,7 @@ afsocket_sd_init_watches(AFSocketSourceDriver *self)
 {
   _dynamic_window_timer_init(self);
   _listen_fd_init(self);
+  _packet_stats_timer_init(self);
 }
 
 static void
@@ -918,11 +986,13 @@ afsocket_sd_start_watches(AFSocketSourceDriver *self)
 {
   _listen_fd_start(self);
   afsocket_sd_dynamic_window_start(self);
+  _packet_stats_timer_start(self);
 }
 
 static void
 afsocket_sd_stop_watches(AFSocketSourceDriver *self)
 {
+  _packet_stats_timer_stop(self);
   _dynamic_window_timer_stop(self);
   _listen_fd_stop(self);
 }
@@ -1068,18 +1138,17 @@ afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
 static void
 afsocket_sd_register_stats(AFSocketSourceDriver *self)
 {
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("id", self->super.super.id),
+    stats_cluster_label("direction", "input"),
+    stats_cluster_label("driver_instance", afsocket_sd_format_name(&self->super.super.super)),
+  };
+  stats_lock();
   if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
-      stats_lock();
       {
         StatsClusterKey sc_key;
-
-        StatsClusterLabel labels[] =
-        {
-          stats_cluster_label("id", self->super.super.id),
-          stats_cluster_label("direction", "input"),
-          stats_cluster_label("driver_instance", afsocket_sd_format_name(&self->super.super.super)),
-        };
 
         stats_cluster_single_key_set(&sc_key, "socket_connections", labels, G_N_ELEMENTS(labels));
 
@@ -1091,24 +1160,41 @@ afsocket_sd_register_stats(AFSocketSourceDriver *self)
         stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
         _connections_count_set(self, 0);
       }
-      stats_unlock();
     }
+  else
+    {
+#if SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS
+      {
+        StatsClusterKey sc_key;
+
+        stats_cluster_single_key_set(&sc_key, "socket_receive_dropped_packets_total", labels, G_N_ELEMENTS(labels));
+        stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->stat_socket_dropped_packets);
+
+        stats_cluster_single_key_set(&sc_key, "socket_receive_buffer_max_bytes", labels, G_N_ELEMENTS(labels));
+        stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->stat_socket_receive_buffer_max);
+
+        stats_cluster_single_key_set(&sc_key, "socket_receive_buffer_used_bytes", labels, G_N_ELEMENTS(labels));
+        stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->stat_socket_receive_buffer_used);
+      }
+#endif
+    }
+  stats_unlock();
 }
 
 static void
 afsocket_sd_unregister_stats(AFSocketSourceDriver *self)
 {
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("id", self->super.super.id),
+    stats_cluster_label("direction", "input"),
+    stats_cluster_label("driver_instance", afsocket_sd_format_name(&self->super.super.super)),
+  };
+  stats_lock();
   if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
-      stats_lock();
       {
         StatsClusterKey sc_key;
-        StatsClusterLabel labels[] =
-        {
-          stats_cluster_label("id", self->super.super.id),
-          stats_cluster_label("direction", "input"),
-          stats_cluster_label("driver_instance", afsocket_sd_format_name(&self->super.super.super)),
-        };
 
         stats_cluster_single_key_set(&sc_key, "socket_connections", labels, G_N_ELEMENTS(labels));
         stats_cluster_single_key_add_legacy_alias_with_name(&sc_key,
@@ -1118,8 +1204,25 @@ afsocket_sd_unregister_stats(AFSocketSourceDriver *self)
                                                             "connections");
         stats_unregister_external_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
       }
-      stats_unlock();
     }
+  else
+    {
+#if SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS
+      {
+        StatsClusterKey sc_key;
+
+        stats_cluster_single_key_set(&sc_key, "socket_receive_dropped_packets_total", labels, G_N_ELEMENTS(labels));
+        stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->stat_socket_dropped_packets);
+
+        stats_cluster_single_key_set(&sc_key, "socket_receive_buffer_max_bytes", labels, G_N_ELEMENTS(labels));
+        stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->stat_socket_receive_buffer_max);
+
+        stats_cluster_single_key_set(&sc_key, "socket_receive_buffer_used_bytes", labels, G_N_ELEMENTS(labels));
+        stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->stat_socket_receive_buffer_used);
+      }
+#endif
+    }
+  stats_unlock();
 }
 
 gboolean
@@ -1144,6 +1247,7 @@ afsocket_sd_init_method(LogPipe *s)
       afsocket_sd_drop_dynamic_window_pool(self);
       return FALSE;
     }
+
   return TRUE;
 }
 

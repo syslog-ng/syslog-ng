@@ -173,6 +173,12 @@ if ((UTMPX_HAS_UT_TYPE AND UTMPX_HAS_UT_USER) OR (UTMPX_HAS_UT_TYPE AND UTMP_HAS
   set(SYSLOG_NG_HAVE_MODERN_UTMP 1)
 endif()
 
+check_symbol_exists(SO_MEMINFO "sys/socket.h" SYSLOG_NG_HAVE_SO_MEMINFO)
+check_include_file("linux/sock_diag.h" SYSLOG_NG_HAVE_LINUX_SOCK_DIAG_H)
+if (SYSLOG_NG_HAVE_SO_MEMINFO)
+  set(SYSLOG_NG_ENABLE_AFSOCKET_MEMINFO_METRICS 1)
+endif()
+
 set(WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.g. /usr)")
 
 set(CMAKE_C_STANDARD 99)
