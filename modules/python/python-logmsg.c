@@ -44,6 +44,25 @@ py_is_log_message(PyObject *obj)
   return PyType_IsSubtype(Py_TYPE(obj), &py_log_message_type);
 }
 
+static inline PyObject *
+_get_value(PyLogMessage *self, const gchar *name, gboolean cast_to_bytes)
+{
+  NVHandle handle = log_msg_get_value_handle(name);
+  gssize value_len = 0;
+  LogMessageValueType type;
+  const gchar *value = log_msg_get_value_with_type(self->msg, handle, &value_len, &type);
+
+  if (!value)
+    return NULL;
+
+  if (cast_to_bytes)
+    type = LM_VT_STRING;
+
+  APPEND_ZERO(value, value, value_len);
+
+  return py_obj_from_log_msg_value(value, value_len, type);
+}
+
 static PyObject *
 _py_log_message_subscript(PyObject *o, PyObject *key)
 {
@@ -54,24 +73,15 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
       return NULL;
     }
 
-  NVHandle handle = log_msg_get_value_handle(name);
-  PyLogMessage *py_msg = (PyLogMessage *)o;
-  gssize value_len = 0;
-  LogMessageValueType type;
-  const gchar *value = log_msg_get_value_with_type(py_msg->msg, handle, &value_len, &type);
-
+  PyLogMessage *py_msg = (PyLogMessage *) o;
+  PyObject *value = _get_value(py_msg, name, py_msg->cast_to_bytes);
   if (!value)
     {
       PyErr_Format(PyExc_KeyError, "No such name-value pair %s", name);
       return NULL;
     }
 
-  if (py_msg->cast_to_bytes)
-    type = LM_VT_STRING;
-
-  APPEND_ZERO(value, value, value_len);
-
-  return py_obj_from_log_msg_value(value, value_len, type);
+  return value;
 }
 
 static int
