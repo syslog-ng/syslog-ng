@@ -1105,9 +1105,9 @@ afsocket_sd_init_method(LogPipe *s)
   if (!afsocket_sd_setup_transport(self) || !afsocket_sd_setup_addresses(self))
     return FALSE;
 
+  afsocket_sd_register_stats(self);
   afsocket_sd_dynamic_window_init(self);
   afsocket_sd_restore_kept_alive_connections(self);
-  afsocket_sd_register_stats(self);
 
   if (!afsocket_sd_open_listener(self))
     {
@@ -1124,12 +1124,10 @@ afsocket_sd_deinit_method(LogPipe *s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
-  afsocket_sd_save_connections(self);
   afsocket_sd_save_listener(self);
-
-  afsocket_sd_unregister_stats(self);
-
+  afsocket_sd_save_connections(self);
   afsocket_sd_dynamic_window_deinit(self);
+  afsocket_sd_unregister_stats(self);
 
   return log_src_driver_deinit_method(s);
 }
