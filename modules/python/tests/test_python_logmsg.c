@@ -193,7 +193,7 @@ ParameterizedTest(PyLogMessageSetValueTestParams *params, python_log_message, te
 
     gchar *script = g_strdup_printf(
                       "test_msg['test_field'] = %s\n"
-                      "result = test_msg['test_field']\n",
+                      "result = test_msg.get('test_field')\n",
                       params->py_value_to_set
                     );
     if (!PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict))

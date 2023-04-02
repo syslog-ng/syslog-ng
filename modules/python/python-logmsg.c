@@ -51,7 +51,7 @@ _get_value(PyLogMessage *self, const gchar *name, gboolean cast_to_bytes, gboole
   NVHandle handle = log_msg_get_value_handle(name);
   gssize value_len = 0;
   LogMessageValueType type;
-  const gchar *value = log_msg_get_value_with_type(self->msg, handle, &value_len, &type);
+  const gchar *value = log_msg_get_value_if_set_with_type(self->msg, handle, &value_len, &type);
 
   if (!value)
     return NULL;
@@ -85,13 +85,19 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
   PyLogMessage *py_msg = (PyLogMessage *) o;
   gboolean error;
   PyObject *value = _get_value(py_msg, name, py_msg->cast_to_bytes, &error);
-  if (!value && !error)
-    {
-      PyErr_Format(PyExc_KeyError, "No such name-value pair %s", name);
-      return NULL;
-    }
 
-  return value;
+  if (error)
+    return NULL;
+
+  if (value)
+    return value;
+
+  /* compat mode (3.x), we don't raise KeyError */
+  if (py_msg->cast_to_bytes)
+    return py_bytes_from_string("", -1);
+
+  PyErr_Format(PyExc_KeyError, "No such name-value pair %s", name);
+  return NULL;
 }
 
 static int

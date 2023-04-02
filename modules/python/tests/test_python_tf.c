@@ -126,7 +126,7 @@ ParameterizedTestParameters(python_tf, test_python_tf)
 ParameterizedTest(PyTfTestParams *params, python_tf, test_python_tf)
 {
   const gchar *python_tf_implementation = "def test_python_tf(msg):\n"
-                                          "    return msg['test_key']\n";
+                                          "    return msg.get('test_key')\n";
   const gchar *template = "$(python test_python_tf)";
 
   LogMessage *msg = log_msg_new_empty();
