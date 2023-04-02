@@ -671,26 +671,73 @@ _dynamic_window_timer_stop(AFSocketSourceDriver *self)
 }
 
 static void
-_init_watches(AFSocketSourceDriver *self)
+afsocket_sd_save_dynamic_window_pool(AFSocketSourceDriver *self)
 {
-  _dynamic_window_timer_init(self);
-  _listen_fd_init(self);
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+
+  if (self->connections_kept_alive_across_reloads)
+    {
+      cfg_persist_config_add(cfg, afsocket_sd_format_dynamic_window_pool_name(self),
+                             self->dynamic_window_pool, (GDestroyNotify) dynamic_window_pool_unref);
+    }
+  else
+    {
+      dynamic_window_pool_unref(self->dynamic_window_pool);
+    }
+
+  self->dynamic_window_pool = NULL;
+}
+
+static gboolean
+afsocket_sd_restore_dynamic_window_pool(AFSocketSourceDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+
+  if (!self->connections_kept_alive_across_reloads)
+    return FALSE;
+
+  DynamicWindowPool *ctr = cfg_persist_config_fetch(cfg, afsocket_sd_format_dynamic_window_pool_name(self));
+  if (ctr == NULL)
+    return FALSE;
+
+  self->dynamic_window_pool = ctr;
+  return TRUE;
 }
 
 static void
-afsocket_sd_start_watches(AFSocketSourceDriver *self)
+afsocket_sd_create_dynamic_window_pool(AFSocketSourceDriver *self)
 {
-  _listen_fd_start(self);
-
-  if (self->dynamic_window_pool != NULL)
-    _dynamic_window_timer_start(self);
+  if (self->dynamic_window_size != 0)
+    {
+      self->dynamic_window_pool = dynamic_window_pool_new(self->dynamic_window_size);
+      dynamic_window_pool_init(self->dynamic_window_pool);
+    }
 }
 
 static void
-afsocket_sd_stop_watches(AFSocketSourceDriver *self)
+afsocket_sd_drop_dynamic_window_pool(AFSocketSourceDriver *self)
 {
-  _listen_fd_stop(self);
-  _dynamic_window_timer_stop(self);
+  if (self->dynamic_window_pool)
+    {
+      dynamic_window_pool_unref(self->dynamic_window_pool);
+      self->dynamic_window_pool = NULL;
+    }
+}
+
+static void
+afsocket_sd_dynamic_window_init(AFSocketSourceDriver *self)
+{
+  if (!afsocket_sd_restore_dynamic_window_pool(self))
+    afsocket_sd_create_dynamic_window_pool(self);
+}
+
+static void
+afsocket_sd_dynamic_window_deinit(AFSocketSourceDriver *self)
+{
+  if (self->dynamic_window_pool == NULL)
+    return;
+
+  afsocket_sd_save_dynamic_window_pool(self);
 }
 
 static void
@@ -848,6 +895,30 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
     }
 }
 
+/* afsocket */
+
+static void
+afsocket_sd_init_watches(AFSocketSourceDriver *self)
+{
+  _dynamic_window_timer_init(self);
+  _listen_fd_init(self);
+}
+
+static void
+afsocket_sd_start_watches(AFSocketSourceDriver *self)
+{
+  _listen_fd_start(self);
+  if (self->dynamic_window_pool != NULL)
+    _dynamic_window_timer_start(self);
+}
+
+static void
+afsocket_sd_stop_watches(AFSocketSourceDriver *self)
+{
+  _dynamic_window_timer_stop(self);
+  _listen_fd_stop(self);
+}
+
 static gboolean
 _sd_open_stream_finalize(gpointer arg)
 {
@@ -979,75 +1050,6 @@ afsocket_sd_save_listener(AFSocketSourceDriver *self)
     }
 }
 
-static void
-afsocket_sd_save_dynamic_window_pool(AFSocketSourceDriver *self)
-{
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-
-  if (self->connections_kept_alive_across_reloads)
-    {
-      cfg_persist_config_add(cfg, afsocket_sd_format_dynamic_window_pool_name(self),
-                             self->dynamic_window_pool, (GDestroyNotify) dynamic_window_pool_unref);
-    }
-  else
-    {
-      dynamic_window_pool_unref(self->dynamic_window_pool);
-    }
-
-  self->dynamic_window_pool = NULL;
-}
-
-static gboolean
-afsocket_sd_restore_dynamic_window_pool(AFSocketSourceDriver *self)
-{
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-
-  if (!self->connections_kept_alive_across_reloads)
-    return FALSE;
-
-  DynamicWindowPool *ctr = cfg_persist_config_fetch(cfg, afsocket_sd_format_dynamic_window_pool_name(self));
-  if (ctr == NULL)
-    return FALSE;
-
-  self->dynamic_window_pool = ctr;
-  return TRUE;
-}
-
-static void
-afsocket_sd_create_dynamic_window_pool(AFSocketSourceDriver *self)
-{
-  if (self->dynamic_window_size != 0)
-    {
-      self->dynamic_window_pool = dynamic_window_pool_new(self->dynamic_window_size);
-      dynamic_window_pool_init(self->dynamic_window_pool);
-    }
-}
-
-static void
-afsocket_sd_drop_dynamic_window_pool(AFSocketSourceDriver *self)
-{
-  if (self->dynamic_window_pool)
-    {
-      dynamic_window_pool_unref(self->dynamic_window_pool);
-      self->dynamic_window_pool = NULL;
-    }
-}
-
-static void
-afsocket_sd_dynamic_window_init(AFSocketSourceDriver *self)
-{
-  if (!afsocket_sd_restore_dynamic_window_pool(self))
-    afsocket_sd_create_dynamic_window_pool(self);
-}
-
-static void
-afsocket_sd_dynamic_window_deinit(AFSocketSourceDriver *self)
-{
-  if (self->dynamic_window_pool == NULL)
-    return;
-
-  afsocket_sd_save_dynamic_window_pool(self);
-}
 
 gboolean
 afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
@@ -1186,5 +1188,5 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   self->reader_options.super.stats_level = STATS_LEVEL1;
   self->reader_options.super.stats_source = transport_mapper->stats_source;
 
-  _init_watches(self);
+  afsocket_sd_init_watches(self);
 }
