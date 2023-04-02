@@ -725,6 +725,15 @@ afsocket_sd_drop_dynamic_window_pool(AFSocketSourceDriver *self)
 }
 
 static void
+afsocket_sd_dynamic_window_start(AFSocketSourceDriver *self)
+{
+  if (self->dynamic_window_pool == NULL)
+    return;
+
+  _dynamic_window_timer_start(self);
+}
+
+static void
 afsocket_sd_dynamic_window_init(AFSocketSourceDriver *self)
 {
   if (!afsocket_sd_restore_dynamic_window_pool(self))
@@ -908,8 +917,7 @@ static void
 afsocket_sd_start_watches(AFSocketSourceDriver *self)
 {
   _listen_fd_start(self);
-  if (self->dynamic_window_pool != NULL)
-    _dynamic_window_timer_start(self);
+  afsocket_sd_dynamic_window_start(self);
 }
 
 static void
