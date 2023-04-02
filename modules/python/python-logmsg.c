@@ -45,8 +45,9 @@ py_is_log_message(PyObject *obj)
 }
 
 static inline PyObject *
-_get_value(PyLogMessage *self, const gchar *name, gboolean cast_to_bytes)
+_get_value(PyLogMessage *self, const gchar *name, gboolean cast_to_bytes, gboolean *error)
 {
+  *error = FALSE;
   NVHandle handle = log_msg_get_value_handle(name);
   gssize value_len = 0;
   LogMessageValueType type;
@@ -60,7 +61,15 @@ _get_value(PyLogMessage *self, const gchar *name, gboolean cast_to_bytes)
 
   APPEND_ZERO(value, value, value_len);
 
-  return py_obj_from_log_msg_value(value, value_len, type);
+  PyObject *py_value = py_obj_from_log_msg_value(value, value_len, type);
+  if (!py_value)
+    {
+      PyErr_Format(PyExc_TypeError, "Error converting a name-value (%s) pair to a Python object", name);
+      *error = TRUE;
+      return NULL;
+    }
+
+  return py_value;
 }
 
 static PyObject *
@@ -74,8 +83,9 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
     }
 
   PyLogMessage *py_msg = (PyLogMessage *) o;
-  PyObject *value = _get_value(py_msg, name, py_msg->cast_to_bytes);
-  if (!value)
+  gboolean error;
+  PyObject *value = _get_value(py_msg, name, py_msg->cast_to_bytes, &error);
+  if (!value && !error)
     {
       PyErr_Format(PyExc_KeyError, "No such name-value pair %s", name);
       return NULL;
