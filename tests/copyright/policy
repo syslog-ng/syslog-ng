@@ -62,6 +62,7 @@ tests/light/.pre-commit-config.yaml
 .github/workflows/.*$
 lib/logmsg/tests/messages/syslog-ng-(pe-)?[.0-9]*-msg.h$
 modules/python-modules/requirements\.lock
+scl/darwinosl/darwinosl-metadata-db.csv
 lib/multi-line/smart-multi-line\.fsm$
 
 ###########################################################################
