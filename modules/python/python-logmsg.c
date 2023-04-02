@@ -254,6 +254,33 @@ _logmessage_get_keys_method(PyLogMessage *self)
 }
 
 static PyObject *
+py_log_message_get(PyLogMessage *self, PyObject *args, PyObject *kwrds)
+{
+  const gchar *key = NULL;
+  Py_ssize_t key_len = 0;
+  PyObject *default_value = NULL;
+
+  static const gchar *kwlist[] = {"key", "default", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwrds, "z#|O", (gchar **) kwlist, &key, &key_len, &default_value))
+    return NULL;
+
+  gboolean error;
+  PyObject *value = _get_value(self, key, self->cast_to_bytes, &error);
+
+  if (error)
+    return NULL;
+
+  if (value)
+    return value;
+
+  if (!default_value)
+    Py_RETURN_NONE;
+
+  Py_XINCREF(default_value);
+  return default_value;
+}
+
+static PyObject *
 py_log_message_set_pri(PyLogMessage *self, PyObject *args, PyObject *kwrds)
 {
   guint pri;
@@ -361,6 +388,7 @@ py_log_message_parse(PyObject *_none, PyObject *args, PyObject *kwrds)
 static PyMethodDef py_log_message_methods[] =
 {
   { "keys", (PyCFunction)_logmessage_get_keys_method, METH_NOARGS, "Return keys." },
+  { "get", (PyCFunction)py_log_message_get, METH_VARARGS | METH_KEYWORDS, "Get value" },
   { "set_pri", (PyCFunction)py_log_message_set_pri, METH_VARARGS | METH_KEYWORDS, "Set syslog priority" },
   { "get_pri", (PyCFunction)py_log_message_get_pri, METH_VARARGS | METH_KEYWORDS, "Get syslog priority" },
   { "set_timestamp", (PyCFunction)py_log_message_set_timestamp, METH_VARARGS | METH_KEYWORDS, "Set timestamp" },
