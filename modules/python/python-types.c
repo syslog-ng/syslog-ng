@@ -317,10 +317,11 @@ py_boolean_to_boolean(PyObject *obj, gboolean *b)
   return FALSE;
 }
 
-/* Appends to the end of `list`. */
 gboolean
 py_list_to_list(PyObject *obj, GString *list)
 {
+  g_string_truncate(list, 0);
+
   if (!PyList_Check(obj))
     {
       PyErr_Format(PyExc_ValueError, "Error extracting value from list");
@@ -402,9 +403,7 @@ py_datetime_to_datetime(PyObject *obj, GString *dt)
   return TRUE;
 }
 
-/* Appends to the end of `value`. */
 
-/* in case we return FALSE a Python exception needs to be raised */
 gboolean
 py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type)
 {
@@ -415,7 +414,7 @@ py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type
         return FALSE;
 
       *type = LM_VT_STRING;
-      g_string_append(value, string);
+      g_string_assign(value, string);
 
       return TRUE;
     }
@@ -427,7 +426,7 @@ py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type
         return FALSE;
 
       *type = LM_VT_INTEGER;
-      g_string_append_printf(value, "%ld", l);
+      g_string_printf(value, "%ld", l);
 
       return TRUE;
     }
@@ -439,7 +438,7 @@ py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type
         return FALSE;
 
       *type = LM_VT_DOUBLE;
-      g_string_append_printf(value, "%f", d);
+      g_string_printf(value, "%f", d);
 
       return TRUE;
     }
@@ -451,7 +450,7 @@ py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type
         return FALSE;
 
       *type = LM_VT_BOOLEAN;
-      g_string_append(value, b ? "true" : "false");
+      g_string_assign(value, b ? "true" : "false");
 
       return TRUE;
     }
@@ -459,7 +458,7 @@ py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type
   if (obj == Py_None)
     {
       *type = LM_VT_NULL;
-
+      g_string_truncate(value, 0);
       return TRUE;
     }
 

@@ -81,6 +81,7 @@ TestSuite(python_tf, .init = setup, .fini = teardown);
 typedef struct _PyTfTestParams
 {
   const gchar *value;
+  const gchar *expected_value;
   LogMessageValueType type;
 } PyTfTestParams;
 
@@ -112,6 +113,11 @@ ParameterizedTestParameters(python_tf, test_python_tf)
       .value = "a,b,c",
       .type = LM_VT_LIST
     },
+    {
+      .value = "1680456974",
+      .expected_value = "1680456974.000",
+      .type = LM_VT_DATETIME
+    },
   };
 
   return cr_make_param_array(PyTfTestParams, test_data_list, G_N_ELEMENTS(test_data_list));
@@ -134,8 +140,9 @@ ParameterizedTest(PyTfTestParams *params, python_tf, test_python_tf)
     cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
     assert_template_format_value_and_type_msg(template, params->value, LM_VT_STRING, msg);
 
+    const gchar *expected_value = params->expected_value ? params->expected_value : params->value;
     cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
-    assert_template_format_value_and_type_msg(template, params->value, params->type, msg);
+    assert_template_format_value_and_type_msg(template, expected_value, params->type, msg);
   }
   PyGILState_Release(gstate);
 

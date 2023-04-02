@@ -110,7 +110,9 @@ _py_convert_return_value_to_result(PythonTfState *state, const gchar *function_n
       return FALSE;
     }
 
-  if (!py_obj_to_log_msg_value(ret, result, type))
+  ScratchBuffersMarker marker;
+  GString *value = scratch_buffers_alloc_and_mark(&marker);
+  if (!py_obj_to_log_msg_value(ret, value, type))
     {
       gchar buf[256];
 
@@ -119,9 +121,13 @@ _py_convert_return_value_to_result(PythonTfState *state, const gchar *function_n
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
+      scratch_buffers_reclaim_marked(marker);
       Py_DECREF(ret);
       return FALSE;
     }
+
+  g_string_append(result, value->str);
+  scratch_buffers_reclaim_marked(marker);
 
   Py_DECREF(ret);
   return TRUE;
