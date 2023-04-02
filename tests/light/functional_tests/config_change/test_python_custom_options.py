@@ -103,8 +103,8 @@ log {
       class("TestSource")
       options(
         "string" => "example_string"
-        "true" => yes
-        "false" => no
+        "true" => True
+        "false" => False
         "long" => 123456789
         "double" => 123.456789
         "string-list" => ["string1", "string2"]
@@ -115,8 +115,8 @@ log {
       class("TestFetcher")
       options(
         "string" => "example_string"
-        "true" => yes
-        "false" => no
+        "true" => True
+        "false" => False
         "long" => 123456789
         "double" => 123.456789
         "string-list" => ["string1", "string2"]
@@ -129,8 +129,8 @@ log {
       class("TestParser")
       options(
         "string" => "example_string"
-        "true" => yes
-        "false" => no
+        "true" => True
+        "false" => False
         "long" => 123456789
         "double" => 123.456789
         "string-list" => ["string1", "string2"]
@@ -143,8 +143,8 @@ log {
       class("TestDestination")
       options(
         "string" => "example_string"
-        "true" => yes
-        "false" => no
+        "true" => True
+        "false" => False
         "long" => 123456789
         "double" => 123.456789
         "string-list" => ["string1", "string2"]

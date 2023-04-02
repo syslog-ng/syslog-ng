@@ -63,10 +63,13 @@ PythonOptions *last_python_options;
 %token KW_IMPORTS
 %token KW_LOADERS
 %token KW_MARK_ERRORS_AS_CRITICAL
+%token KW_TRUE
+%token KW_FALSE
 %token KW_LOG_TEMPLATE
 
 %type <ptr> python_options_block
 %type <ptr> python_option
+%type	<num> python_yesno
 
 %%
 
@@ -255,6 +258,12 @@ optional_arrow
           |
           ;
 
+python_yesno
+          : yesno_strict
+          | KW_TRUE  { $$ = 1; }
+          | KW_FALSE { $$ = 0; }
+          ;
+
 python_option
           : string optional_arrow string
             {
@@ -272,7 +281,7 @@ python_option
               $$ = python_option_double_new($1, $3);
               free($1);
             }
-          | string optional_arrow yesno_strict
+          | string optional_arrow python_yesno
             {
               $$ = python_option_boolean_new($1, $3);
               free($1);
