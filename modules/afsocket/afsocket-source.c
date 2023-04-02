@@ -1080,10 +1080,14 @@ afsocket_sd_init_method(LogPipe *s)
     }
 
   afsocket_sd_restore_kept_alive_connections(self);
-  if (!afsocket_sd_open_listener(self))
-    return FALSE;
   afsocket_sd_register_stats(self);
 
+  if (!afsocket_sd_open_listener(self))
+    {
+      /* returning FALSE, so deinit is not called */
+      afsocket_sd_unregister_stats(self);
+      return FALSE;
+    }
   return TRUE;
 }
 
