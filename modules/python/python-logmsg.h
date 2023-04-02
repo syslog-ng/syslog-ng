@@ -32,7 +32,7 @@ typedef struct _PyLogMessage
   PyObject_HEAD
   LogMessage *msg;
   PyObject *bookmark_data;
-  gboolean cast_to_strings;
+  gboolean cast_to_bytes;
 } PyLogMessage;
 
 extern PyTypeObject py_log_message_type;

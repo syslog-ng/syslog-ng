@@ -66,7 +66,7 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
       return NULL;
     }
 
-  if (py_msg->cast_to_strings)
+  if (py_msg->cast_to_bytes)
     type = LM_VT_STRING;
 
   APPEND_ZERO(value, value, value_len);
@@ -101,7 +101,7 @@ _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
   if (!value)
     return -1;
 
-  if (py_msg->cast_to_strings && !is_py_obj_bytes_or_string_type(value))
+  if (py_msg->cast_to_bytes && !is_py_obj_bytes_or_string_type(value))
     {
       PyErr_Format(PyExc_ValueError,
                    "str or unicode object expected as log message values, got type %s (key %s). "
@@ -149,9 +149,9 @@ py_log_message_new(LogMessage *msg, GlobalConfig *cfg)
   self->bookmark_data = NULL;
 
   if (cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
-    self->cast_to_strings = TRUE;
+    self->cast_to_bytes = TRUE;
   else
-    self->cast_to_strings = FALSE;
+    self->cast_to_bytes = FALSE;
   return (PyObject *) self;
 }
 
