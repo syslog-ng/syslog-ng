@@ -791,7 +791,7 @@ afsocket_sd_setup_transport(AFSocketSourceDriver *self)
   return TRUE;
 }
 
-static gboolean
+static void
 afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
@@ -819,7 +819,6 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
             }
         }
     }
-  return TRUE;
 }
 
 static gboolean
@@ -1078,11 +1077,12 @@ afsocket_sd_init_method(LogPipe *s)
         }
     }
 
-  gboolean success = afsocket_sd_restore_kept_alive_connections(self) && afsocket_sd_open_listener(self);
-  if (success)
-    afsocket_sd_register_stats(self);
+  afsocket_sd_restore_kept_alive_connections(self);
+  if (!afsocket_sd_open_listener(self))
+    return FALSE;
+  afsocket_sd_register_stats(self);
 
-  return success;
+  return TRUE;
 }
 
 gboolean
