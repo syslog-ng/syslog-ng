@@ -26,7 +26,7 @@
     <refsection xml:id="loggen-mandescription">
       <title>Description</title>
       <para>NOTE: The loggen application is distributed with the syslog-ng system logging application, and is usually part of the syslog-ng package. The latest version of the syslog-ng application is available at <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/log-management">the official syslog-ng website</link>.</para>
-      <para>This manual page is only an abstract, for the complete documentation of syslog-ng, see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/support/documentation/">The syslog-ng Administrator Guide</link>.</para>
+      <para>This manual page is only an abstract, for the complete documentation of syslog-ng, see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.syslog-ng.com/technical-documents/doc/syslog-ng-open-source-edition/3.37/administration-guide">The syslog-ng Administrator Guide</link>.</para>
       <para>The <command>loggen</command> application is tool to test and stress-test your syslog server and the connection to the server. It can send syslog messages to the server at a specified rate, using a number of connection types and protocols, including TCP, UDP, and unix domain sockets. The messages can be generated automatically (repeating the <parameter>PADD</parameter>string over and over), or read from a file or the standard input.</para>
       <para>When <command>loggen</command> finishes sending the messages, it displays the following statistics:</para>
       <itemizedlist>
@@ -258,7 +258,7 @@
         <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link>
       </para>
       <note version="5.0">
-        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  4.1 Administrator Guide</command></link></para>
+        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.syslog-ng.com/technical-documents/doc/syslog-ng-open-source-edition/3.37/administration-guide"><command>The  4.1 Administrator Guide</command></link></para>
         <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
         <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
       </note>
