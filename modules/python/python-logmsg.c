@@ -287,6 +287,46 @@ py_log_message_get(PyLogMessage *self, PyObject *args, PyObject *kwrds)
 }
 
 static PyObject *
+py_log_message_get_as_str(PyLogMessage *self, PyObject *args, PyObject *kwrds)
+{
+  const gchar *key = NULL;
+  Py_ssize_t key_len = 0;
+  PyObject *default_value = NULL;
+  const gchar *encoding = "utf-8";
+  const gchar *errors = "strict";
+
+  static const gchar *kwlist[] = {"key", "default", "encoding", "errors", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwrds, "z#|Oss", (gchar **) kwlist, &key, &key_len, &default_value,
+                                   &encoding, &errors))
+    {
+      return NULL;
+    }
+
+
+  NVHandle handle = log_msg_get_value_handle(key);
+  gssize value_len = 0;
+  const gchar *value = log_msg_get_value_if_set(self->msg, handle, &value_len);
+
+  if (value)
+    {
+      APPEND_ZERO(value, value, value_len);
+      return PyUnicode_Decode(value, value_len, encoding, errors);
+    }
+
+  if (!default_value)
+    Py_RETURN_NONE;
+
+  if (!PyUnicode_Check(default_value) && default_value != Py_None)
+    {
+      PyErr_Format(PyExc_TypeError, "default is not a string object");
+      return NULL;
+    }
+
+  Py_XINCREF(default_value);
+  return default_value;
+}
+
+static PyObject *
 py_log_message_set_pri(PyLogMessage *self, PyObject *args, PyObject *kwrds)
 {
   guint pri;
@@ -395,6 +435,7 @@ static PyMethodDef py_log_message_methods[] =
 {
   { "keys", (PyCFunction)_logmessage_get_keys_method, METH_NOARGS, "Return keys." },
   { "get", (PyCFunction)py_log_message_get, METH_VARARGS | METH_KEYWORDS, "Get value" },
+  { "get_as_str", (PyCFunction)py_log_message_get_as_str, METH_VARARGS | METH_KEYWORDS, "Get value as string" },
   { "set_pri", (PyCFunction)py_log_message_set_pri, METH_VARARGS | METH_KEYWORDS, "Set syslog priority" },
   { "get_pri", (PyCFunction)py_log_message_get_pri, METH_VARARGS | METH_KEYWORDS, "Get syslog priority" },
   { "set_timestamp", (PyCFunction)py_log_message_set_timestamp, METH_VARARGS | METH_KEYWORDS, "Set timestamp" },
