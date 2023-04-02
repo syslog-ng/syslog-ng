@@ -104,10 +104,10 @@ _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
   if (py_msg->cast_to_bytes && !is_py_obj_bytes_or_string_type(value))
     {
       PyErr_Format(PyExc_ValueError,
-                   "str or unicode object expected as log message values, got type %s (key %s). "
+                   "str or bytes object expected as log message values, got type %s (key %s). "
                    "Earlier syslog-ng accepted any type, implicitly converting it to a string. "
                    "Later syslog-ng (at least 4.0) will store the value with the correct type. "
-                   "With this version please convert it explicitly to a string using str()",
+                   "With this version please convert it explicitly to string/bytes",
                    value->ob_type->tp_name, name);
       return -1;
     }
