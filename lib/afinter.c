@@ -38,6 +38,7 @@ static GQueue *internal_msg_queue;
 static AFInterSource *current_internal_source;
 static StatsCounterItem *internal_queue_length;
 static StatsCounterItem *internal_queue_dropped;
+static StatsCounterItem *internal_source_processed;
 
 /* the expiration timer of the next MARK message */
 static struct timespec next_mark_target = { -1, 0 };
@@ -121,6 +122,7 @@ afinter_source_post(gpointer s)
         break;
 
       stats_counter_dec(internal_queue_length);
+      stats_counter_inc(internal_source_processed);
       log_source_post(&self->super, msg);
       main_loop_worker_invoke_batch_callbacks();
     }
@@ -586,6 +588,7 @@ afinter_message_posted(LogMessage *msg)
       stats_cluster_logpipe_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "internal_source", NULL );
       stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &internal_queue_length);
       stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &internal_queue_dropped);
+      stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_source_processed);
       stats_unlock();
 
       _register_obsolete_stats_alias(internal_queue_length);
@@ -632,6 +635,7 @@ afinter_global_deinit(void)
       stats_cluster_logpipe_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "internal_source", NULL );
       stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &internal_queue_length);
       stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &internal_queue_dropped);
+      stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &internal_source_processed);
       stats_unlock();
       g_queue_free_full(internal_msg_queue, (GDestroyNotify)log_msg_unref);
       internal_msg_queue = NULL;
