@@ -429,6 +429,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
           msg_error("Syslog connection rejected by tcpd",
                     evt_tag_str("client", g_sockaddr_format(client_addr, buf, sizeof(buf), GSA_FULL)),
                     evt_tag_str("local", g_sockaddr_format(local_addr, buf2, sizeof(buf2), GSA_FULL)));
+          stats_counter_inc(self->metrics.rejected_connections);
           return FALSE;
         }
     }
@@ -443,6 +444,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
                 evt_tag_str("group_name", self->super.super.group),
                 log_pipe_location_tag(&self->super.super.super),
                 evt_tag_int("max", atomic_gssize_get(&self->max_connections)));
+      stats_counter_inc(self->metrics.rejected_connections);
       return FALSE;
     }
   else
@@ -1186,6 +1188,9 @@ _register_stream_stats(AFSocketSourceDriver *self, StatsClusterLabel *labels, gs
 
   stats_cluster_single_key_set(&sc_key, "socket_max_connections", labels, labels_len);
   stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->max_connections);
+
+  stats_cluster_single_key_set(&sc_key, "socket_rejected_connections_total", labels, labels_len);
+  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.rejected_connections);
 }
 
 static void
@@ -1204,6 +1209,9 @@ _unregister_stream_stats(AFSocketSourceDriver *self, StatsClusterLabel *labels, 
 
   stats_cluster_single_key_set(&sc_key, "socket_max_connections", labels, labels_len);
   stats_unregister_external_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->max_connections);
+
+  stats_cluster_single_key_set(&sc_key, "socket_rejected_connections_total", labels, labels_len);
+  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.rejected_connections);
 }
 
 static void

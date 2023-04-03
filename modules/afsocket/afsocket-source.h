@@ -31,6 +31,7 @@
 #include "logreader.h"
 #include "dynamic-window-pool.h"
 #include "atomic-gssize.h"
+#include "stats/stats-counter.h"
 
 #include <iv.h>
 
@@ -58,6 +59,7 @@ struct _AFSocketSourceDriver
     StatsCounterItem *socket_dropped_packets;
     StatsCounterItem *socket_receive_buffer_max;
     StatsCounterItem *socket_receive_buffer_used;
+    StatsCounterItem *rejected_connections;
   } metrics;
 
   GSockAddr *bind_addr;
