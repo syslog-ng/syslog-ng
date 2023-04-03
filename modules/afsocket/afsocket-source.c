@@ -789,13 +789,13 @@ afsocket_sd_adjust_dynamic_window_size_if_needed(AFSocketSourceDriver *self)
 static void
 _packet_stats_timer_start(AFSocketSourceDriver *self)
 {
-  if (!self->stat_socket_dropped_packets)
+  if (!self->metrics.socket_dropped_packets)
     return;
 
   iv_validate_now();
-  self->packet_stats_timer.expires = iv_now;
-  timespec_add_msec(&self->packet_stats_timer.expires, PACKET_STATS_TIMER_MSECS);
-  iv_timer_register(&self->packet_stats_timer);
+  self->metrics.packet_stats_timer.expires = iv_now;
+  timespec_add_msec(&self->metrics.packet_stats_timer.expires, PACKET_STATS_TIMER_MSECS);
+  iv_timer_register(&self->metrics.packet_stats_timer);
 }
 
 
@@ -812,26 +812,26 @@ _on_packet_stats_timer_elapsed(gpointer cookie)
   if (getsockopt(sock, SOL_SOCKET, SO_MEMINFO, &meminfo, &meminfo_len) < 0)
     return;
 
-  stats_counter_set(self->stat_socket_dropped_packets, meminfo[SK_MEMINFO_DROPS]);
-  stats_counter_set(self->stat_socket_receive_buffer_max, meminfo[SK_MEMINFO_RCVBUF]);
-  stats_counter_set(self->stat_socket_receive_buffer_used, meminfo[SK_MEMINFO_RMEM_ALLOC]);
+  stats_counter_set(self->metrics.socket_dropped_packets, meminfo[SK_MEMINFO_DROPS]);
+  stats_counter_set(self->metrics.socket_receive_buffer_max, meminfo[SK_MEMINFO_RCVBUF]);
+  stats_counter_set(self->metrics.socket_receive_buffer_used, meminfo[SK_MEMINFO_RMEM_ALLOC]);
   _packet_stats_timer_start(self);
 }
 
 static void
 _packet_stats_timer_init(AFSocketSourceDriver *self)
 {
-  IV_TIMER_INIT(&self->packet_stats_timer);
-  self->packet_stats_timer.cookie = self;
-  self->packet_stats_timer.handler = _on_packet_stats_timer_elapsed;
+  IV_TIMER_INIT(&self->metrics.packet_stats_timer);
+  self->metrics.packet_stats_timer.cookie = self;
+  self->metrics.packet_stats_timer.handler = _on_packet_stats_timer_elapsed;
 }
 
 
 static void
 _packet_stats_timer_stop(AFSocketSourceDriver *self)
 {
-  if (iv_timer_registered(&self->packet_stats_timer))
-    iv_timer_unregister(&self->packet_stats_timer);
+  if (iv_timer_registered(&self->metrics.packet_stats_timer))
+    iv_timer_unregister(&self->metrics.packet_stats_timer);
 }
 
 static void
@@ -840,13 +840,13 @@ _register_packet_stats(AFSocketSourceDriver *self, StatsClusterLabel *labels, gs
   StatsClusterKey sc_key;
 
   stats_cluster_single_key_set(&sc_key, "socket_receive_dropped_packets_total", labels, labels_len);
-  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->stat_socket_dropped_packets);
+  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.socket_dropped_packets);
 
   stats_cluster_single_key_set(&sc_key, "socket_receive_buffer_max_bytes", labels, labels_len);
-  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->stat_socket_receive_buffer_max);
+  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.socket_receive_buffer_max);
 
   stats_cluster_single_key_set(&sc_key, "socket_receive_buffer_used_bytes", labels, labels_len);
-  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->stat_socket_receive_buffer_used);
+  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.socket_receive_buffer_used);
 }
 
 static void
@@ -855,13 +855,13 @@ _unregister_packet_stats(AFSocketSourceDriver *self, StatsClusterLabel *labels, 
   StatsClusterKey sc_key;
 
   stats_cluster_single_key_set(&sc_key, "socket_receive_dropped_packets_total", labels, labels_len);
-  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->stat_socket_dropped_packets);
+  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.socket_dropped_packets);
 
   stats_cluster_single_key_set(&sc_key, "socket_receive_buffer_max_bytes", labels, labels_len);
-  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->stat_socket_receive_buffer_max);
+  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.socket_receive_buffer_max);
 
   stats_cluster_single_key_set(&sc_key, "socket_receive_buffer_used_bytes", labels, labels_len);
-  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->stat_socket_receive_buffer_used);
+  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.socket_receive_buffer_used);
 }
 
 #else

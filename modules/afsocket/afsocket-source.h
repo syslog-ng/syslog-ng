@@ -43,7 +43,6 @@ struct _AFSocketSourceDriver
           window_size_initialized:1;
   struct iv_fd listen_fd;
   struct iv_timer dynamic_window_timer;
-  struct iv_timer packet_stats_timer;
   gsize dynamic_window_size;
   gsize dynamic_window_timer_tick;
   glong dynamic_window_stats_freq;
@@ -52,9 +51,15 @@ struct _AFSocketSourceDriver
   LogReaderOptions reader_options;
   DynamicWindowPool *dynamic_window_pool;
   LogProtoServerFactory *proto_factory;
-  StatsCounterItem *stat_socket_dropped_packets;
-  StatsCounterItem *stat_socket_receive_buffer_max;
-  StatsCounterItem *stat_socket_receive_buffer_used;
+
+  struct
+  {
+    struct iv_timer packet_stats_timer;
+    StatsCounterItem *socket_dropped_packets;
+    StatsCounterItem *socket_receive_buffer_max;
+    StatsCounterItem *socket_receive_buffer_used;
+  } metrics;
+
   GSockAddr *bind_addr;
   atomic_gssize max_connections;
   atomic_gssize num_connections;
