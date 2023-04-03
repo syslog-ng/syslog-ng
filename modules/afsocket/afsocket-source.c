@@ -317,7 +317,7 @@ afsocket_sd_set_max_connections(LogDriver *s, gint max_connections)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
-  self->max_connections = max_connections;
+  atomic_gssize_set(&self->max_connections, max_connections);
 }
 
 void
@@ -435,14 +435,14 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
 
 #endif
 
-  if (_connections_count_get(self) >= self->max_connections)
+  if (_connections_count_get(self) >= atomic_gssize_get(&self->max_connections))
     {
       msg_error("Number of allowed concurrent connections reached, rejecting connection",
                 evt_tag_str("client", g_sockaddr_format(client_addr, buf, sizeof(buf), GSA_FULL)),
                 evt_tag_str("local", g_sockaddr_format(local_addr, buf2, sizeof(buf2), GSA_FULL)),
                 evt_tag_str("group_name", self->super.super.group),
                 log_pipe_location_tag(&self->super.super.super),
-                evt_tag_int("max", self->max_connections));
+                evt_tag_int("max", atomic_gssize_get(&self->max_connections)));
       return FALSE;
     }
   else
@@ -625,7 +625,7 @@ _dynamic_window_set_balanced_window(AFSocketSourceDriver *self)
                "The reason of dynamic-window-pool exhaustion is that the number of clients is larger than the"
                " dynamic-window-size",
                evt_tag_long("total_dynamic_window_size", self->dynamic_window_size),
-               evt_tag_int("max_connections", self->max_connections),
+               evt_tag_int("max_connections", atomic_gssize_get(&self->max_connections)),
                evt_tag_int("active_connections", number_of_connections),
                evt_tag_long("dynamic_window_size_for_existing_clients", self->dynamic_window_pool->balanced_window),
                evt_tag_long("static_window_size", self->reader_options.super.init_window_size));
@@ -760,12 +760,14 @@ afsocket_sd_dynamic_window_deinit(AFSocketSourceDriver *self)
 static void
 afsocket_sd_adjust_dynamic_window_size_if_needed(AFSocketSourceDriver *self)
 {
-  if (self->max_connections > 0 && self->dynamic_window_size > 0)
+  gssize max_connections = atomic_gssize_get(&self->max_connections);
+
+  if (max_connections > 0 && self->dynamic_window_size > 0)
     {
-      gint remainder = self->dynamic_window_size % self->max_connections;
+      gint remainder = self->dynamic_window_size % max_connections;
       if (remainder)
         {
-          gsize new_dynamic_window_size = self->dynamic_window_size + (self->max_connections - remainder);
+          gsize new_dynamic_window_size = self->dynamic_window_size + (max_connections - remainder);
           msg_warning("WARNING: dynamic-window-size() is advised to be a multiple of max-connections(), "
                       "to achieve effective dynamic-window usage. Adjusting dynamic-window-size()",
                       evt_tag_int("orig_dynamic_window_size", self->dynamic_window_size),
@@ -773,7 +775,7 @@ afsocket_sd_adjust_dynamic_window_size_if_needed(AFSocketSourceDriver *self)
                       log_pipe_location_tag(&self->super.super.super));
           self->dynamic_window_size = new_dynamic_window_size;
         }
-      if (self->dynamic_window_size / self->max_connections < 10)
+      if (self->dynamic_window_size / max_connections < 10)
         {
           msg_warning("WARNING: dynamic-window-size() is advised to be at least 10 times larger, than max-connections(), "
                       "to achieve effective dynamic-window usage. Please update your configuration",
@@ -896,7 +898,7 @@ afsocket_sd_setup_reader_options(AFSocketSourceDriver *self)
         {
           self->reader_options.super.init_window_size = 1000;
           if (self->dynamic_window_size != 0)
-            self->reader_options.super.init_window_size = self->max_connections * 10;
+            self->reader_options.super.init_window_size = atomic_gssize_get(&self->max_connections) * 10;
         }
 
       guint min_iw_size_per_reader = cfg->min_iw_size_per_reader;
@@ -905,7 +907,7 @@ afsocket_sd_setup_reader_options(AFSocketSourceDriver *self)
 
       afsocket_sd_adjust_dynamic_window_size_if_needed(self);
 
-      self->reader_options.super.init_window_size /= self->max_connections;
+      self->reader_options.super.init_window_size /= atomic_gssize_get(&self->max_connections);
       if (self->reader_options.super.init_window_size < min_iw_size_per_reader)
         {
           msg_warning("WARNING: window sizing for tcp sources were changed in " VERSION_3_3
@@ -913,7 +915,7 @@ afsocket_sd_setup_reader_options(AFSocketSourceDriver *self)
                       evt_tag_int("orig_log_iw_size", self->reader_options.super.init_window_size),
                       evt_tag_int("new_log_iw_size", min_iw_size_per_reader),
                       evt_tag_int("min_iw_size_per_reader", min_iw_size_per_reader),
-                      evt_tag_int("min_log_fifo_size", min_iw_size_per_reader * self->max_connections));
+                      evt_tag_int("min_log_fifo_size", min_iw_size_per_reader * atomic_gssize_get(&self->max_connections)));
           self->reader_options.super.init_window_size = min_iw_size_per_reader;
         }
       self->window_size_initialized = TRUE;
@@ -1173,14 +1175,17 @@ _register_stream_stats(AFSocketSourceDriver *self, StatsClusterLabel *labels, gs
   StatsClusterKey sc_key;
 
   stats_cluster_single_key_set(&sc_key, "socket_connections", labels, labels_len);
-
   stats_cluster_single_key_add_legacy_alias_with_name(&sc_key,
                                                       self->transport_mapper->stats_source | SCS_SOURCE,
                                                       self->super.super.group,
                                                       afsocket_sd_format_name(&self->super.super.super),
                                                       "connections");
+
   stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
   _connections_count_set(self, 0);
+
+  stats_cluster_single_key_set(&sc_key, "socket_max_connections", labels, labels_len);
+  stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->max_connections);
 }
 
 static void
@@ -1189,13 +1194,16 @@ _unregister_stream_stats(AFSocketSourceDriver *self, StatsClusterLabel *labels, 
   StatsClusterKey sc_key;
 
   stats_cluster_single_key_set(&sc_key, "socket_connections", labels, labels_len);
-
   stats_cluster_single_key_add_legacy_alias_with_name(&sc_key,
                                                       self->transport_mapper->stats_source | SCS_SOURCE,
                                                       self->super.super.group,
                                                       afsocket_sd_format_name(&self->super.super.super),
                                                       "connections");
+
   stats_unregister_external_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
+
+  stats_cluster_single_key_set(&sc_key, "socket_max_connections", labels, labels_len);
+  stats_unregister_external_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->max_connections);
 }
 
 static void
@@ -1216,8 +1224,8 @@ afsocket_sd_register_stats(AFSocketSourceDriver *self)
   StatsClusterLabel labels[] =
   {
     stats_cluster_label("id", self->super.super.id),
-    stats_cluster_label("direction", "input"),
     stats_cluster_label("driver_instance", afsocket_sd_format_name(&self->super.super.super)),
+    stats_cluster_label("direction", "input"),
   };
   stats_lock();
   if (self->transport_mapper->sock_type == SOCK_STREAM)
@@ -1233,8 +1241,8 @@ afsocket_sd_unregister_stats(AFSocketSourceDriver *self)
   StatsClusterLabel labels[] =
   {
     stats_cluster_label("id", self->super.super.id),
-    stats_cluster_label("direction", "input"),
     stats_cluster_label("driver_instance", afsocket_sd_format_name(&self->super.super.super)),
+    stats_cluster_label("direction", "input"),
   };
   stats_lock();
   if (self->transport_mapper->sock_type == SOCK_STREAM)
@@ -1328,7 +1336,7 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   self->setup_addresses = afsocket_sd_setup_addresses_method;
   self->socket_options = socket_options;
   self->transport_mapper = transport_mapper;
-  self->max_connections = 10;
+  atomic_gssize_set(&self->max_connections, 10);
   self->listen_backlog = 255;
   self->dynamic_window_stats_freq = DYNAMIC_WINDOW_TIMER_MSECS;
   self->dynamic_window_realloc_ticks = DYNAMIC_WINDOW_REALLOC_TICKS;

@@ -148,7 +148,7 @@ afunix_sd_new_instance(TransportMapper *transport_mapper, gchar *filename, Globa
   self->super.super.super.super.free_fn = afunix_sd_free;
   self->super.setup_addresses = afunix_sd_setup_addresses;
 
-  self->super.max_connections = 256;
+  atomic_gssize_set(&self->super.max_connections, 256);
 
   self->filename = g_strdup(filename);
   file_perm_options_defaults(&self->file_perm_options);
@@ -184,6 +184,6 @@ afunix_sd_new_stream(gchar *filename, GlobalConfig *cfg)
 {
   AFUnixSourceDriver *self = afunix_sd_new_instance(transport_mapper_unix_stream_new(), filename, cfg);
 
-  self->super.reader_options.super.init_window_size = self->super.max_connections * 100;
+  self->super.reader_options.super.init_window_size = atomic_gssize_get(&self->super.max_connections )* 100;
   return self;
 }

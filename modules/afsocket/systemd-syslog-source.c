@@ -138,7 +138,7 @@ systemd_syslog_sd_new(GlobalConfig *cfg, gboolean fallback)
   self->super.super.super.super.init = systemd_syslog_sd_init_method;
 
   self->super.acquire_socket = systemd_syslog_sd_acquire_socket;
-  self->super.max_connections = 256;
+  atomic_gssize_set(&self->super.max_connections, 256);
 
   if (!self->super.bind_addr)
     self->super.bind_addr = g_sockaddr_unix_new(NULL);

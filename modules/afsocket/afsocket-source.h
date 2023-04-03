@@ -56,7 +56,7 @@ struct _AFSocketSourceDriver
   StatsCounterItem *stat_socket_receive_buffer_max;
   StatsCounterItem *stat_socket_receive_buffer_used;
   GSockAddr *bind_addr;
-  gint max_connections;
+  atomic_gssize max_connections;
   atomic_gssize num_connections;
   gint listen_backlog;
   GList *connections;
