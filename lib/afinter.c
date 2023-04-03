@@ -582,7 +582,7 @@ afinter_message_posted(LogMessage *msg)
 
       stats_lock();
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, "internal_source", NULL, 0);
+      stats_cluster_logpipe_key_set(&sc_key, "internal_events_total", NULL, 0);
       stats_cluster_logpipe_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "internal_source", NULL );
       stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &internal_queue_length);
       stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &internal_queue_dropped);
@@ -628,7 +628,7 @@ afinter_global_deinit(void)
 
       stats_lock();
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, "internal_source", NULL, 0);
+      stats_cluster_logpipe_key_set(&sc_key, "internal_events_total", NULL, 0);
       stats_cluster_logpipe_key_add_legacy_alias(&sc_key, SCS_GLOBAL, "internal_source", NULL );
       stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &internal_queue_length);
       stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &internal_queue_dropped);
