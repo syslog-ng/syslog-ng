@@ -629,3 +629,9 @@ afinter_global_deinit(void)
     }
   current_internal_source = NULL;
 }
+
+AFInterMetrics
+afinter_get_metrics(void)
+{
+  return metrics;
+}

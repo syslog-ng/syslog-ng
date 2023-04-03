@@ -28,6 +28,25 @@
 #include "control/control-connection.h"
 #include "control/control-commands.h"
 #include "stats/stats-prometheus.h"
+#include "afinter.h"
+
+static inline void
+_append_internal_src_queue_metrics(AFInterMetrics metrics, GString *reply)
+{
+  gchar double_buf[G_ASCII_DTOSTR_BUF_SIZE];
+
+  gdouble queued = (gint) stats_counter_get(metrics.queued);
+  gsize queue_capacity = stats_counter_get(metrics.queue_capacity);
+
+  gdouble internal_queue_usage = 1;
+
+  if (queue_capacity != 0)
+    internal_queue_usage = queued / queue_capacity;
+
+  g_string_append_printf(reply, PROMETHEUS_METRIC_PREFIX
+                         "internal_events_queue_usage_ratio %s\n",
+                         g_ascii_dtostr(double_buf, G_N_ELEMENTS(double_buf), internal_queue_usage));
+}
 
 static void
 _send_healthcheck_reply(HealthCheckResult result, gpointer c)
@@ -46,6 +65,9 @@ _send_healthcheck_reply(HealthCheckResult result, gpointer c)
                          "mainloop_io_worker_roundtrip_latency_seconds %s\n",
                          g_ascii_dtostr(double_buf, G_N_ELEMENTS(double_buf), mainloop_io_worker_roundtrip_latency));
 
+  AFInterMetrics internal_src_metrics = afinter_get_metrics();
+  if (internal_src_metrics.queued)
+    _append_internal_src_queue_metrics(internal_src_metrics, reply);
 
   control_connection_send_reply(cc, reply);
   control_connection_unref(cc);
