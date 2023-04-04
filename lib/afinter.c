@@ -425,8 +425,8 @@ afinter_sd_init(LogPipe *s)
 
   if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_29))
     {
-      msg_warning_once("WARNING: The internal_queue_length stat counter has been renamed to internal_source.queued. "
-                       "The old name will be removed in future versions", cfg_format_config_version_tag(cfg));
+      msg_warning_once("WARNING: The internal_queue_length stat counter has been renamed to internal_source.queued",
+                       cfg_format_config_version_tag(cfg));
     }
 
   if (!log_src_driver_init_method(s))
@@ -546,26 +546,6 @@ _release_internal_msg_queue(void)
   internal_msg_queue = NULL;
 }
 
-static inline void
-_register_obsolete_stats_alias(StatsCounterItem *internal_queued_ctr)
-{
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL);
-  stats_register_alias_counter(0, &sc_key, SC_TYPE_PROCESSED, internal_queued_ctr);
-  stats_unlock();
-}
-
-static inline void
-_unregister_obsolete_stats_alias(StatsCounterItem *internal_queued_ctr)
-{
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL);
-  stats_unregister_alias_counter(&sc_key, SC_TYPE_PROCESSED, internal_queued_ctr);
-  stats_unlock();
-}
-
 void
 afinter_message_posted(LogMessage *msg)
 {
@@ -597,8 +577,6 @@ afinter_message_posted(LogMessage *msg)
       stats_unlock();
 
       stats_counter_set(metrics.queue_capacity, current_internal_source->options->queue_capacity);
-
-      _register_obsolete_stats_alias(metrics.queued);
     }
 
   if (g_queue_get_length(internal_msg_queue) >= current_internal_source->options->queue_capacity)
@@ -634,8 +612,6 @@ afinter_global_deinit(void)
 {
   if (internal_msg_queue)
     {
-      _unregister_obsolete_stats_alias(metrics.queued);
-
       stats_lock();
       StatsClusterKey sc_key;
       stats_cluster_logpipe_key_set(&sc_key, "internal_events_total", NULL, 0);
