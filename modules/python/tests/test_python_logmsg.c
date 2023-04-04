@@ -226,6 +226,56 @@ _run_scripts(const gchar *script)
     }
 }
 
+Test(python_log_message, test_python_logmessage_subscript)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  {
+    cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+    PyObject *msg_object = py_log_message_new(msg, configuration);
+    PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
+
+    log_msg_set_value_by_name_with_type(msg, "field", "25", -1, LM_VT_INTEGER);
+
+    _run_scripts("result = test_msg['field']");
+    _assert_python_variable_value("result", "25");
+
+    cr_assert_null(PyRun_String("result = test_msg['nonexistent']", Py_file_input,
+                                _python_main_dict, _python_main_dict));
+    cr_assert_not_null(PyErr_Occurred());
+    cr_assert(PyErr_ExceptionMatches(PyExc_KeyError));
+
+    Py_XDECREF(msg_object);
+  }
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_python_logmessage_subscript_no_typing_support)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  {
+    cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
+    PyObject *msg_object = py_log_message_new(msg, configuration);
+    PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
+
+    log_msg_set_value_by_name_with_type(msg, "field", "25", -1, LM_VT_INTEGER);
+
+    _run_scripts("result = test_msg['field']");
+    _assert_python_variable_value("result", "b'25'");
+
+    _run_scripts("result = test_msg['nonexistent']");
+    _assert_python_variable_value("result", "b''");
+
+    Py_XDECREF(msg_object);
+  }
+  PyGILState_Release(gstate);
+}
+
 typedef struct
 {
   const gchar *value;
