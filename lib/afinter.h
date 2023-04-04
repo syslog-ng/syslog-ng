@@ -45,6 +45,14 @@ typedef struct _AFInterSourceDriver
   AFInterSourceOptions source_options;
 } AFInterSourceDriver;
 
+typedef struct _AFInterMetrics
+{
+  StatsCounterItem *processed;
+  StatsCounterItem *dropped;
+  StatsCounterItem *queued;
+  gsize queue_capacity;
+} AFInterMetrics;
+
 void afinter_postpone_mark(gint mark_freq);
 LogDriver *afinter_sd_new(GlobalConfig *cfg);
 void afinter_global_init(void);
