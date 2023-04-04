@@ -28,6 +28,7 @@
 #include "driver.h"
 #include "logsource.h"
 #include "mainloop-worker.h"
+#include "stats/stats-counter.h"
 
 typedef struct AFInterSourceOptions
 {
@@ -45,9 +46,19 @@ typedef struct _AFInterSourceDriver
   AFInterSourceOptions source_options;
 } AFInterSourceDriver;
 
+typedef struct _AFInterMetrics
+{
+  StatsCounterItem *processed;
+  StatsCounterItem *dropped;
+  StatsCounterItem *queued;
+  StatsCounterItem *queue_capacity;
+} AFInterMetrics;
+
 void afinter_postpone_mark(gint mark_freq);
 LogDriver *afinter_sd_new(GlobalConfig *cfg);
 void afinter_global_init(void);
 void afinter_global_deinit(void);
+
+AFInterMetrics afinter_get_metrics(void);
 
 #endif

@@ -37,14 +37,14 @@ def assert_logpath_stats(logpath, ingress, egress):
 
     found = False
     for stat in stats:
-        if stat.name == "syslogng_log_path_ingress" and stat.labels == {"id": logpath.name}:
+        if stat.name == "syslogng_route_ingress_total" and stat.labels == {"id": logpath.name}:
             found = True
             actual_ingress = stat.value
     assert found, "Did not find ingress stats counter for logpath: %s" % (logpath.name)
 
     found = False
     for stat in stats:
-        if stat.name == "syslogng_log_path_egress" and stat.labels == {"id": logpath.name}:
+        if stat.name == "syslogng_route_egress_total" and stat.labels == {"id": logpath.name}:
             found = True
             actual_egress = stat.value
     assert found, "Did not find egress stats counter for logpath: %s" % (logpath.name)

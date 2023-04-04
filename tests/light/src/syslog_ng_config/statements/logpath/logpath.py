@@ -34,8 +34,8 @@ class LogPath(object):
         metric_filters = []
         if name:
             metric_filters += [
-                MetricFilter("syslogng_log_path_ingress", {"id": name}),
-                MetricFilter("syslogng_log_path_egress", {"id": name}),
+                MetricFilter("syslogng_route_ingress_total", {"id": name}),
+                MetricFilter("syslogng_route_egress_total", {"id": name}),
             ]
 
         self.__prometheus_stats_handler = PrometheusStatsHandler(metric_filters)
