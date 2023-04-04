@@ -460,6 +460,48 @@ tls_context_load_key_and_cert(TLSContext *self)
   return TLS_CONTEXT_OK;
 }
 
+static void
+_ca_list_free(STACK_OF(X509_NAME) *ca_list)
+{
+  for (gint i = 0; i < sk_X509_NAME_num(ca_list); i++)
+    X509_NAME_free(sk_X509_NAME_value(ca_list, i));
+  sk_X509_NAME_free(ca_list);
+}
+
+static gboolean
+_set_client_ca_list(TLSContext *self)
+{
+#if SYSLOG_NG_HAVE_DECL_SSL_ADD_DIR_CERT_SUBJECTS_TO_STACK && SYSLOG_NG_HAVE_DECL_SSL_ADD_FILE_CERT_SUBJECTS_TO_STACK
+
+  STACK_OF(X509_NAME) *ca_list = sk_X509_NAME_new_null();
+  const STACK_OF(X509_NAME) *existing_ca_list = SSL_CTX_get_client_CA_list(self->ssl_ctx);
+
+  for (gint i = 0; i < sk_X509_NAME_num(existing_ca_list); i++)
+    {
+      sk_X509_NAME_push(ca_list, X509_NAME_dup(sk_X509_NAME_value(existing_ca_list, i)));
+    }
+
+  if (_is_file_accessible(self, self->ca_dir) && !SSL_add_dir_cert_subjects_to_stack(ca_list, self->ca_dir))
+    {
+      _ca_list_free(ca_list);
+      return FALSE;
+    }
+
+  if (_is_file_accessible(self, self->ca_file) && !SSL_add_file_cert_subjects_to_stack(ca_list, self->ca_file))
+    {
+      _ca_list_free(ca_list);
+      return FALSE;
+    }
+
+  SSL_CTX_set_client_CA_list(self->ssl_ctx, ca_list);
+  return TRUE;
+#else
+  msg_warning_once("Setting the client CA list based on the ca-file() and ca-dir() options is not supported with the "
+                   "OpenSSL version syslog-ng was compiled with");
+  return TRUE;
+#endif
+}
+
 TLSContextSetupResult
 tls_context_setup_context(TLSContext *self)
 {
@@ -496,6 +538,9 @@ tls_context_setup_context(TLSContext *self)
     goto error;
 
   if (_is_file_accessible(self, self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
+    goto error;
+
+  if (self->mode == TM_SERVER && !_set_client_ca_list(self))
     goto error;
 
   if (self->crl_dir)
