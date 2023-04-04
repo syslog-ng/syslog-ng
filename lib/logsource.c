@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "host-resolve.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-logpipe.h"
 #include "stats/stats-cluster-single.h"
 #include "msg-stats.h"
 #include "logmsg/tags.h"
@@ -473,11 +474,15 @@ log_source_init(LogPipe *s)
     stats_cluster_label("id", self->stats_id),
     stats_cluster_label("driver_instance", self->stats_instance),
   };
-  stats_cluster_logpipe_key_set(&sc_key, "input_events_total", labels, G_N_ELEMENTS(labels));
-  stats_cluster_logpipe_key_add_legacy_alias(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                             self->stats_instance);
+  stats_cluster_single_key_set(&sc_key, "input_events_total", labels, G_N_ELEMENTS(labels));
+  stats_cluster_single_key_add_legacy_alias_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
+                                                      self->stats_instance, "processed");
   stats_register_counter(self->options->stats_level, &sc_key,
-                         SC_TYPE_PROCESSED, &self->recvd_messages);
+                         SC_TYPE_SINGLE_VALUE, &self->recvd_messages);
+
+
+  stats_cluster_logpipe_key_legacy_set(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
+                                       self->stats_instance);
   stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_STAMP, &self->last_message_seen);
 
   _register_window_stats(self);
@@ -500,10 +505,13 @@ log_source_deinit(LogPipe *s)
     stats_cluster_label("id", self->stats_id),
     stats_cluster_label("driver_instance", self->stats_instance),
   };
-  stats_cluster_logpipe_key_set(&sc_key, "input_events_total", labels, G_N_ELEMENTS(labels));
-  stats_cluster_logpipe_key_add_legacy_alias(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                             self->stats_instance);
-  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->recvd_messages);
+  stats_cluster_single_key_set(&sc_key, "input_events_total", labels, G_N_ELEMENTS(labels));
+  stats_cluster_single_key_add_legacy_alias_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
+                                                      self->stats_instance, "processed");
+  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->recvd_messages);
+
+  stats_cluster_logpipe_key_legacy_set(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
+                                       self->stats_instance);
   stats_unregister_counter(&sc_key, SC_TYPE_STAMP, &self->last_message_seen);
 
   _unregister_window_stats(self);
