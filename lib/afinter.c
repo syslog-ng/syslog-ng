@@ -25,6 +25,8 @@
 #include "afinter.h"
 #include "logreader.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-logpipe.h"
+#include "stats/stats-cluster-single.h"
 #include "messages.h"
 #include "apphook.h"
 #include "mainloop-threaded-worker.h"
@@ -348,7 +350,7 @@ afinter_source_init(LogPipe *s)
 
   g_mutex_lock(&internal_msg_lock);
   current_internal_source = self;
-  metrics.queue_capacity = self->options->queue_capacity;
+  stats_counter_set(metrics.queue_capacity, self->options->queue_capacity);
   g_mutex_unlock(&internal_msg_lock);
 
   return TRUE;
@@ -589,7 +591,12 @@ afinter_message_posted(LogMessage *msg)
       stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &metrics.queued);
       stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &metrics.dropped);
       stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &metrics.processed);
+
+      stats_cluster_single_key_set(&sc_key, "internal_events_queue_capacity", NULL, 0);
+      stats_register_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &metrics.queue_capacity);
       stats_unlock();
+
+      stats_counter_set(metrics.queue_capacity, current_internal_source->options->queue_capacity);
 
       _register_obsolete_stats_alias(metrics.queued);
     }
@@ -636,7 +643,11 @@ afinter_global_deinit(void)
       stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &metrics.queued);
       stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &metrics.dropped);
       stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &metrics.processed);
+
+      stats_cluster_single_key_set(&sc_key, "internal_events_queue_capacity", NULL, 0);
+      stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &metrics.queue_capacity);
       stats_unlock();
+
       g_queue_free_full(internal_msg_queue, (GDestroyNotify)log_msg_unref);
       internal_msg_queue = NULL;
     }

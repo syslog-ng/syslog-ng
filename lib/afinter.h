@@ -50,7 +50,7 @@ typedef struct _AFInterMetrics
   StatsCounterItem *processed;
   StatsCounterItem *dropped;
   StatsCounterItem *queued;
-  gsize queue_capacity;
+  StatsCounterItem *queue_capacity;
 } AFInterMetrics;
 
 void afinter_postpone_mark(gint mark_freq);
