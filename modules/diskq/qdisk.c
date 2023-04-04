@@ -320,6 +320,29 @@ qdisk_is_file_a_disk_buffer_file(const gchar *filename)
 }
 
 gboolean
+qdisk_is_disk_buffer_file_reliable(const gchar *filename, gboolean *reliable)
+{
+  const gsize extension_start = strlen(QDISK_FILENAME_PREFIX QDISK_FILENAME_IDX_EXAMPLE);
+
+  if (strlen(filename) < extension_start + MIN(strlen(QDISK_FILENAME_REL_EXT), strlen(QDISK_FILENAME_NON_REL_EXT)))
+    return FALSE;
+
+  if (strncmp(&filename[extension_start], QDISK_FILENAME_REL_EXT, strlen(QDISK_FILENAME_REL_EXT)) == 0)
+    {
+      *reliable = TRUE;
+      return TRUE;
+    }
+
+  if (strncmp(&filename[extension_start], QDISK_FILENAME_NON_REL_EXT, strlen(QDISK_FILENAME_NON_REL_EXT)) == 0)
+    {
+      *reliable = FALSE;
+      return TRUE;
+    }
+
+  return FALSE;
+}
+
+gboolean
 qdisk_started(QDisk *self)
 {
   return self->fd >= 0;
