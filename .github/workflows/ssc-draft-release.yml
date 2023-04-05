@@ -11,6 +11,7 @@ env:
 
 jobs:
   detect-version:
+    if: github.repository_owner == 'axoflow'
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.version.outputs.new_version }}
