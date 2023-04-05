@@ -294,10 +294,11 @@ py_log_message_get_as_str(PyLogMessage *self, PyObject *args, PyObject *kwrds)
   PyObject *default_value = NULL;
   const gchar *encoding = "utf-8";
   const gchar *errors = "strict";
+  const gchar *repr = "internal";
 
-  static const gchar *kwlist[] = {"key", "default", "encoding", "errors", NULL};
-  if (!PyArg_ParseTupleAndKeywords(args, kwrds, "z#|Oss", (gchar **) kwlist, &key, &key_len, &default_value,
-                                   &encoding, &errors))
+  static const gchar *kwlist[] = {"key", "default", "encoding", "errors", "repr", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwrds, "z#|Osss", (gchar **) kwlist, &key, &key_len, &default_value,
+                                   &encoding, &errors, &repr))
     {
       return NULL;
     }
