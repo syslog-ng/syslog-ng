@@ -585,9 +585,9 @@ static void
 _register_aggregated_stats(LogReader *self)
 {
   StatsClusterKey sc_key_eps_input;
-  stats_cluster_logpipe_key_legacy_set(&sc_key_eps_input, self->super.options->stats_source | SCS_SOURCE,
-                                       self->super.stats_id,
-                                       self->super.stats_instance);
+  stats_cluster_single_key_legacy_set_with_name(&sc_key_eps_input, self->super.options->stats_source | SCS_SOURCE,
+                                                self->super.stats_id,
+                                                self->super.stats_instance, "processed");
 
   stats_aggregator_lock();
   StatsClusterKey sc_key;
@@ -605,7 +605,8 @@ _register_aggregated_stats(LogReader *self)
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->super.options->stats_source | SCS_SOURCE,
                                                 self->super.stats_id,
                                                 self->super.stats_instance, "eps");
-  stats_register_aggregator_cps(self->super.options->stats_level, &sc_key, &sc_key_eps_input, SC_TYPE_PROCESSED,
+
+  stats_register_aggregator_cps(self->super.options->stats_level, &sc_key, &sc_key_eps_input, SC_TYPE_SINGLE_VALUE,
                                 &self->CPS);
 
   stats_aggregator_unlock();
