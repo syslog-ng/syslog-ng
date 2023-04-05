@@ -44,6 +44,34 @@ py_is_log_message(PyObject *obj)
   return PyType_IsSubtype(Py_TYPE(obj), &py_log_message_type);
 }
 
+static inline PyObject *
+_get_value(PyLogMessage *self, const gchar *name, gboolean cast_to_bytes, gboolean *error)
+{
+  *error = FALSE;
+  NVHandle handle = log_msg_get_value_handle(name);
+  gssize value_len = 0;
+  LogMessageValueType type;
+  const gchar *value = log_msg_get_value_if_set_with_type(self->msg, handle, &value_len, &type);
+
+  if (!value)
+    return NULL;
+
+  if (cast_to_bytes)
+    type = LM_VT_STRING;
+
+  APPEND_ZERO(value, value, value_len);
+
+  PyObject *py_value = py_obj_from_log_msg_value(value, value_len, type);
+  if (!py_value)
+    {
+      PyErr_Format(PyExc_TypeError, "Error converting a name-value (%s) pair to a Python object", name);
+      *error = TRUE;
+      return NULL;
+    }
+
+  return py_value;
+}
+
 static PyObject *
 _py_log_message_subscript(PyObject *o, PyObject *key)
 {
@@ -54,24 +82,22 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
       return NULL;
     }
 
-  NVHandle handle = log_msg_get_value_handle(name);
-  PyLogMessage *py_msg = (PyLogMessage *)o;
-  gssize value_len = 0;
-  LogMessageValueType type;
-  const gchar *value = log_msg_get_value_with_type(py_msg->msg, handle, &value_len, &type);
+  PyLogMessage *py_msg = (PyLogMessage *) o;
+  gboolean error;
+  PyObject *value = _get_value(py_msg, name, py_msg->cast_to_bytes, &error);
 
-  if (!value)
-    {
-      PyErr_Format(PyExc_KeyError, "No such name-value pair %s", name);
-      return NULL;
-    }
+  if (error)
+    return NULL;
 
-  if (py_msg->cast_to_strings)
-    type = LM_VT_STRING;
+  if (value)
+    return value;
 
-  APPEND_ZERO(value, value, value_len);
+  /* compat mode (3.x), we don't raise KeyError */
+  if (py_msg->cast_to_bytes)
+    return py_bytes_from_string("", -1);
 
-  return py_obj_from_log_msg_value(value, value_len, type);
+  PyErr_Format(PyExc_KeyError, "No such name-value pair %s", name);
+  return NULL;
 }
 
 static int
@@ -101,13 +127,13 @@ _py_log_message_ass_subscript(PyObject *o, PyObject *key, PyObject *value)
   if (!value)
     return -1;
 
-  if (py_msg->cast_to_strings && !is_py_obj_bytes_or_string_type(value))
+  if (py_msg->cast_to_bytes && !is_py_obj_bytes_or_string_type(value))
     {
       PyErr_Format(PyExc_ValueError,
-                   "str or unicode object expected as log message values, got type %s (key %s). "
+                   "str or bytes object expected as log message values, got type %s (key %s). "
                    "Earlier syslog-ng accepted any type, implicitly converting it to a string. "
                    "Later syslog-ng (at least 4.0) will store the value with the correct type. "
-                   "With this version please convert it explicitly to a string using str()",
+                   "With this version please convert it explicitly to string/bytes",
                    value->ob_type->tp_name, name);
       return -1;
     }
@@ -149,9 +175,9 @@ py_log_message_new(LogMessage *msg, GlobalConfig *cfg)
   self->bookmark_data = NULL;
 
   if (cfg_is_config_version_older(cfg, VERSION_VALUE_4_0))
-    self->cast_to_strings = TRUE;
+    self->cast_to_bytes = TRUE;
   else
-    self->cast_to_strings = FALSE;
+    self->cast_to_bytes = FALSE;
   return (PyObject *) self;
 }
 
@@ -231,6 +257,74 @@ _logmessage_get_keys_method(PyLogMessage *self)
   log_msg_registry_foreach(_collect_macro_names, keys);
 
   return keys;
+}
+
+static PyObject *
+py_log_message_get(PyLogMessage *self, PyObject *args, PyObject *kwrds)
+{
+  const gchar *key = NULL;
+  Py_ssize_t key_len = 0;
+  PyObject *default_value = NULL;
+
+  static const gchar *kwlist[] = {"key", "default", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwrds, "z#|O", (gchar **) kwlist, &key, &key_len, &default_value))
+    return NULL;
+
+  gboolean error;
+  PyObject *value = _get_value(self, key, self->cast_to_bytes, &error);
+
+  if (error)
+    return NULL;
+
+  if (value)
+    return value;
+
+  if (!default_value)
+    Py_RETURN_NONE;
+
+  Py_XINCREF(default_value);
+  return default_value;
+}
+
+static PyObject *
+py_log_message_get_as_str(PyLogMessage *self, PyObject *args, PyObject *kwrds)
+{
+  const gchar *key = NULL;
+  Py_ssize_t key_len = 0;
+  PyObject *default_value = NULL;
+  const gchar *encoding = "utf-8";
+  const gchar *errors = "strict";
+  const gchar *repr = "internal";
+
+  static const gchar *kwlist[] = {"key", "default", "encoding", "errors", "repr", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwrds, "z#|Osss", (gchar **) kwlist, &key, &key_len, &default_value,
+                                   &encoding, &errors, &repr))
+    {
+      return NULL;
+    }
+
+
+  NVHandle handle = log_msg_get_value_handle(key);
+  gssize value_len = 0;
+  const gchar *value = log_msg_get_value_if_set(self->msg, handle, &value_len);
+
+  if (value)
+    {
+      APPEND_ZERO(value, value, value_len);
+      return PyUnicode_Decode(value, value_len, encoding, errors);
+    }
+
+  if (!default_value)
+    Py_RETURN_NONE;
+
+  if (!PyUnicode_Check(default_value) && default_value != Py_None)
+    {
+      PyErr_Format(PyExc_TypeError, "default is not a string object");
+      return NULL;
+    }
+
+  Py_XINCREF(default_value);
+  return default_value;
 }
 
 static PyObject *
@@ -341,6 +435,8 @@ py_log_message_parse(PyObject *_none, PyObject *args, PyObject *kwrds)
 static PyMethodDef py_log_message_methods[] =
 {
   { "keys", (PyCFunction)_logmessage_get_keys_method, METH_NOARGS, "Return keys." },
+  { "get", (PyCFunction)py_log_message_get, METH_VARARGS | METH_KEYWORDS, "Get value" },
+  { "get_as_str", (PyCFunction)py_log_message_get_as_str, METH_VARARGS | METH_KEYWORDS, "Get value as string" },
   { "set_pri", (PyCFunction)py_log_message_set_pri, METH_VARARGS | METH_KEYWORDS, "Set syslog priority" },
   { "get_pri", (PyCFunction)py_log_message_get_pri, METH_VARARGS | METH_KEYWORDS, "Get syslog priority" },
   { "set_timestamp", (PyCFunction)py_log_message_set_timestamp, METH_VARARGS | METH_KEYWORDS, "Set timestamp" },

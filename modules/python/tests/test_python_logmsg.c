@@ -193,7 +193,7 @@ ParameterizedTest(PyLogMessageSetValueTestParams *params, python_log_message, te
 
     gchar *script = g_strdup_printf(
                       "test_msg['test_field'] = %s\n"
-                      "result = test_msg['test_field']\n",
+                      "result = test_msg.get('test_field')\n",
                       params->py_value_to_set
                     );
     if (!PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict))
@@ -210,6 +210,253 @@ ParameterizedTest(PyLogMessageSetValueTestParams *params, python_log_message, te
     const gchar *value = log_msg_get_value_by_name_with_type(msg, "test_field", NULL, &type);
     cr_assert_str_eq(value, params->expected_log_msg_value);
     cr_assert(type == params->expected_log_msg_type);
+
+    Py_XDECREF(msg_object);
+  }
+  PyGILState_Release(gstate);
+}
+
+static void
+_run_scripts(const gchar *script)
+{
+  if (!PyRun_String(script, Py_file_input, _python_main_dict, _python_main_dict))
+    {
+      PyErr_Print();
+      cr_assert(FALSE, "Error running Python script >>>%s<<<", script);
+    }
+}
+
+Test(python_log_message, test_python_logmessage_subscript)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  {
+    cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+    PyObject *msg_object = py_log_message_new(msg, configuration);
+    PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
+
+    log_msg_set_value_by_name_with_type(msg, "field", "25", -1, LM_VT_INTEGER);
+
+    _run_scripts("result = test_msg['field']");
+    _assert_python_variable_value("result", "25");
+
+    cr_assert_null(PyRun_String("result = test_msg['nonexistent']", Py_file_input,
+                                _python_main_dict, _python_main_dict));
+    cr_assert_not_null(PyErr_Occurred());
+    cr_assert(PyErr_ExceptionMatches(PyExc_KeyError));
+
+    Py_XDECREF(msg_object);
+  }
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_python_logmessage_subscript_no_typing_support)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  {
+    cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
+    PyObject *msg_object = py_log_message_new(msg, configuration);
+    PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
+
+    log_msg_set_value_by_name_with_type(msg, "field", "25", -1, LM_VT_INTEGER);
+
+    _run_scripts("result = test_msg['field']");
+    _assert_python_variable_value("result", "b'25'");
+
+    _run_scripts("result = test_msg['nonexistent']");
+    _assert_python_variable_value("result", "b''");
+
+    Py_XDECREF(msg_object);
+  }
+  PyGILState_Release(gstate);
+}
+
+typedef struct
+{
+  const gchar *value;
+  LogMessageValueType type;
+  const gchar *expected_value;
+} PyLogMessageGetTestParams;
+
+ParameterizedTestParameters(python_log_message, test_python_logmessage_get)
+{
+  static PyLogMessageGetTestParams test_data_list[] =
+  {
+    {
+      .value = "test",
+      .type = LM_VT_STRING,
+      .expected_value = "b'test'"
+    },
+    {
+      .value = "true",
+      .type = LM_VT_BOOLEAN,
+      .expected_value = "True"
+    },
+    {
+      .value = "14",
+      .type = LM_VT_INTEGER,
+      .expected_value = "14"
+    },
+    {
+      .value = "14",
+      .type = LM_VT_DOUBLE,
+      .expected_value = "14.000"
+    },
+    {
+      .value = "1664894892",
+      .type = LM_VT_DATETIME,
+      .expected_value = "datetime.datetime(2022, 10, 4, 14, 48, 12)"
+    },
+    {
+      .value = "\"a,\",\" b\",c",
+      .type = LM_VT_LIST,
+      .expected_value = "[b'a,', b' b', b'c']"
+    },
+    {
+      .value = "",
+      .type = LM_VT_NULL,
+      .expected_value = "None"
+    },
+  };
+
+  return cr_make_param_array(PyLogMessageGetTestParams, test_data_list, G_N_ELEMENTS(test_data_list));
+}
+
+ParameterizedTest(PyLogMessageGetTestParams *params, python_log_message, test_python_logmessage_get)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  {
+    cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+    PyObject *msg_object = py_log_message_new(msg, configuration);
+    PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
+
+    log_msg_set_value_by_name_with_type(msg, "field", params->value, -1, params->type);
+
+    _run_scripts("result = test_msg.get('field')");
+    _assert_python_variable_value("result", params->expected_value);
+
+    _run_scripts("result = test_msg.get('field', default='def')");
+    _assert_python_variable_value("result", params->expected_value);
+
+    Py_XDECREF(msg_object);
+  }
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_python_logmessage_get_with_default_value)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  {
+    cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+    PyObject *msg_object = py_log_message_new(msg, configuration);
+    PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
+
+    _run_scripts("result = test_msg.get('nonexistent', default=-1)");
+    _assert_python_variable_value("result", "-1");
+
+    _run_scripts("result = test_msg.get('nonexistent')");
+    _assert_python_variable_value("result", "None");
+
+    Py_XDECREF(msg_object);
+  }
+  PyGILState_Release(gstate);
+}
+
+ParameterizedTestParameters(python_log_message, test_python_logmessage_get_as_str)
+{
+  static PyLogMessageGetTestParams test_data_list[] =
+  {
+    {
+      .value = "test",
+      .type = LM_VT_STRING,
+      .expected_value = "'test'"
+    },
+    {
+      .value = "true",
+      .type = LM_VT_BOOLEAN,
+      .expected_value = "'true'"
+    },
+    {
+      .value = "14",
+      .type = LM_VT_INTEGER,
+      .expected_value = "'14'"
+    },
+    {
+      .value = "14",
+      .type = LM_VT_DOUBLE,
+      .expected_value = "'14'"
+    },
+    {
+      .value = "1664894892",
+      .type = LM_VT_DATETIME,
+      .expected_value = "'1664894892'"
+    },
+    {
+      .value = "\"a,\",\" b\",c",
+      .type = LM_VT_LIST,
+      .expected_value = "'\"a,\",\" b\",c'"
+    },
+    {
+      .value = "",
+      .type = LM_VT_NULL,
+      .expected_value = "''"
+    },
+  };
+
+  return cr_make_param_array(PyLogMessageGetTestParams, test_data_list, G_N_ELEMENTS(test_data_list));
+}
+
+ParameterizedTest(PyLogMessageGetTestParams *params, python_log_message, test_python_logmessage_get_as_str)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  {
+    cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+    PyObject *msg_object = py_log_message_new(msg, configuration);
+    PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
+
+    log_msg_set_value_by_name_with_type(msg, "field", params->value, -1, params->type);
+
+    _run_scripts("result = test_msg.get_as_str('field')");
+    _assert_python_variable_value("result", params->expected_value);
+
+    _run_scripts("result = test_msg.get_as_str('field', default='def')");
+    _assert_python_variable_value("result", params->expected_value);
+
+    Py_XDECREF(msg_object);
+  }
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_python_logmessage_get_as_str_with_default_value)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  {
+    cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+    PyObject *msg_object = py_log_message_new(msg, configuration);
+    PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
+
+    _run_scripts("result = test_msg.get_as_str('nonexistent', default='default', encoding='utf-8', errors='strict')");
+    _assert_python_variable_value("result", "'default'");
+
+    _run_scripts("result = test_msg.get_as_str('nonexistent')");
+    _assert_python_variable_value("result", "None");
 
     Py_XDECREF(msg_object);
   }
