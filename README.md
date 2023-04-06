@@ -1,9 +1,9 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: light)" srcset="https://axoflow.com/wp-content/uploads/2023/03/axoflow-logging_unleashed-blue.svg">
-    <source media="(prefers-color-scheme: dark)" srcset="https://axoflow.com/wp-content/uploads/2023/03/axoflow-logging_unleashed-grey.svg">
-    <img alt="Axoflow" src="https://raw.githubusercontent.com/axoflow/syslog-ng-docker/main/docs/logo.svg" width="550">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/axoflow/syslog-ng-docker/raw/main/docs/axoflow-logo-color.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/axoflow/syslog-ng-docker/raw/main/docs/axoflow-logo-white.svg">
+    <img alt="Axoflow" src="https://github.com/axoflow/syslog-ng-docker/raw/main/docs/axoflow-logo-color.svg" width="550">
   </picture>
 </p>
 
