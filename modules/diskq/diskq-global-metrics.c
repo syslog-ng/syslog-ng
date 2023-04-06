@@ -202,22 +202,6 @@ diskq_global_metrics_init(void)
 }
 
 void
-diskq_global_metrics_watch_dir(const gchar *dir)
-{
-  DiskQGlobalMetrics *self = &diskq_global_metrics;
-
-  g_mutex_lock(&self->lock);
-  {
-    if (!g_hash_table_contains(self->dirs, dir))
-      {
-        GHashTable *tracked_files = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
-        g_hash_table_insert(self->dirs, g_strdup(dir), tracked_files);
-      }
-  }
-  g_mutex_unlock(&self->lock);
-}
-
-void
 diskq_global_metrics_file_acquired(const gchar *abs_filename)
 {
   DiskQGlobalMetrics *self = &diskq_global_metrics;
@@ -228,7 +212,11 @@ diskq_global_metrics_file_acquired(const gchar *abs_filename)
   g_mutex_lock(&self->lock);
   {
     GHashTable *tracked_files = g_hash_table_lookup(self->dirs, dir);
-    g_assert(tracked_files);
+    if (!tracked_files)
+      {
+        tracked_files = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+        g_hash_table_insert(self->dirs, g_strdup(dir), tracked_files);
+      }
 
     _track_acquired_file(tracked_files, filename);
   }
