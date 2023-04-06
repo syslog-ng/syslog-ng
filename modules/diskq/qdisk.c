@@ -1665,7 +1665,8 @@ _init_qdisk_file(QDisk *self)
 static gboolean
 _create_qdisk_file(QDisk *self)
 {
-  g_assert(!self->options->read_only);
+  if (self->options->read_only)
+    return FALSE;
 
   if (self->options->disk_buf_size == -1)
     {
