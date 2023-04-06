@@ -72,18 +72,21 @@ _dir_watch_timer_start(DiskQGlobalMetrics *self)
   iv_timer_register(&self->dir_watch_timer);
 }
 
+/* Must be called with the lock held. */
 static void
 _track_acquired_file(GHashTable *tracked_files, const gchar *filename)
 {
   g_hash_table_insert(tracked_files, g_strdup(filename), GINT_TO_POINTER((gint) TRUE));
 }
 
+/* Must be called with the lock held. */
 static void
 _track_released_file(GHashTable *tracked_files, const gchar *filename)
 {
   g_hash_table_insert(tracked_files, g_strdup(filename), GINT_TO_POINTER((gint) FALSE));
 }
 
+/* Must be called with the lock held. */
 static gboolean
 _is_file_tracked(GHashTable *tracked_files, const gchar *filename)
 {
@@ -109,6 +112,7 @@ _is_non_corrupted_disk_buffer_file(const gchar *dir, const gchar *filename)
          _file_exists_and_non_empty(dir, filename);
 }
 
+/* Must be called with the lock held. */
 static void
 _init_abandoned_disk_buffer_sc_keys(StatsClusterKey *queued_sc_key, StatsClusterKey *capacity_sc_key,
                                     StatsClusterKey *disk_allocated_sc_key, StatsClusterKey *disk_usage_sc_key,
@@ -150,6 +154,7 @@ _create_log_queue_disk(DiskQueueOptions *options, const gchar *abs_filename)
     return (LogQueueDisk *) log_queue_disk_non_reliable_new(options, abs_filename, NULL, STATS_LEVEL0, NULL, NULL);
 }
 
+/* Must be called with the lock held. */
 static void
 _set_abandoned_disk_buffer_file_metrics(const gchar *dir, const gchar *filename)
 {
@@ -199,6 +204,7 @@ _set_abandoned_disk_buffer_file_metrics(const gchar *dir, const gchar *filename)
   g_free(abs_filename);
 }
 
+/* Must be called with the lock held. */
 static void
 _unset_abandoned_disk_buffer_file_metrics(const gchar *dir, const gchar *filename)
 {
@@ -222,6 +228,7 @@ _unset_abandoned_disk_buffer_file_metrics(const gchar *dir, const gchar *filenam
   g_free(abs_filename);
 }
 
+/* Must be called with the lock held. */
 static void
 _track_disk_buffer_files_in_dir(const gchar *dir, GHashTable *tracked_files)
 {
@@ -268,6 +275,7 @@ _get_available_space_mib_in_dir(const gchar *dir, gint64 *available_space_mib)
   return TRUE;
 }
 
+/* Must be called with the lock held. */
 static void
 _init_dir_sc_keys(StatsClusterKey *available_bytes_sc_key, const gchar *dir)
 {
@@ -280,6 +288,7 @@ _init_dir_sc_keys(StatsClusterKey *available_bytes_sc_key, const gchar *dir)
   stats_cluster_single_key_add_unit(available_bytes_sc_key, SCU_MIB);
 }
 
+/* Must be called with the lock held. */
 static void
 _update_dir_metrics(gpointer key, gpointer value, gpointer user_data)
 {
@@ -317,6 +326,7 @@ _update_all_dir_metrics(gpointer s)
   _dir_watch_timer_start(self);
 }
 
+/* Must be called with the lock held. */
 static void
 _unset_dir_metrics(const gchar *dir)
 {
@@ -330,6 +340,7 @@ _unset_dir_metrics(const gchar *dir)
   stats_unlock();
 }
 
+/* Must be called with the lock held. */
 static void
 _unset_abandoned_disk_buffer_file_metrics_foreach_fn(gpointer key, gpointer value, gpointer user_data)
 {
@@ -343,6 +354,7 @@ _unset_abandoned_disk_buffer_file_metrics_foreach_fn(gpointer key, gpointer valu
   _unset_abandoned_disk_buffer_file_metrics(dir, filename);
 }
 
+/* Must be called with the lock held. */
 static void
 _unset_all_metrics_in_dir(gpointer key, gpointer value, gpointer user_data)
 {
