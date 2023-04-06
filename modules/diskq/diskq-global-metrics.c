@@ -33,6 +33,7 @@
 #include "timeutils/misc.h"
 #include "qdisk.h"
 
+#include <errno.h>
 #include <iv.h>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -235,9 +236,9 @@ _track_disk_buffer_files_in_dir(const gchar *dir, GHashTable *tracked_files)
   DIR *dir_stream = opendir(dir);
   if (!dir_stream)
     {
-      msg_error("disk-buffer: Failed to list files in dir",
+      msg_debug("disk-buffer: Failed to list files in dir",
                 evt_tag_str("dir", dir),
-                evt_tag_error("error"));
+                evt_tag_str("error", g_strerror(errno)));
       return;
     }
 
@@ -264,9 +265,9 @@ _get_available_space_mib_in_dir(const gchar *dir, gint64 *available_space_mib)
   struct statvfs stat;
   if (statvfs(dir, &stat) < 0 )
     {
-      msg_error("disk-buffer: Failed to get filesystem info",
+      msg_debug("disk-buffer: Failed to get filesystem info",
                 evt_tag_str("dir", dir),
-                evt_tag_error("error"));
+                evt_tag_str("error", g_strerror(errno)));
       return FALSE;
     }
 
