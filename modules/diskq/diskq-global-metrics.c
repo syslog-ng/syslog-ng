@@ -318,6 +318,42 @@ _update_all_dir_metrics(gpointer s)
 }
 
 static void
+_unset_dir_metrics(const gchar *dir)
+{
+  StatsClusterKey available_bytes_sc_key;
+  _init_dir_sc_keys(&available_bytes_sc_key, dir);
+
+  stats_lock();
+  {
+    stats_remove_cluster(&available_bytes_sc_key);
+  }
+  stats_unlock();
+}
+
+static void
+_unset_abandoned_disk_buffer_file_metrics_foreach_fn(gpointer key, gpointer value, gpointer user_data)
+{
+  const gchar *filename = (const gchar *) key;
+  gboolean acquired = (gboolean) GPOINTER_TO_INT(value);
+  const gchar *dir = (const gchar *) user_data;
+
+  if (acquired)
+    return;
+
+  _unset_abandoned_disk_buffer_file_metrics(dir, filename);
+}
+
+static void
+_unset_all_metrics_in_dir(gpointer key, gpointer value, gpointer user_data)
+{
+  gchar *dir = (gchar *) key;
+  GHashTable *tracked_files = (GHashTable *) value;
+
+  _unset_dir_metrics(dir);
+  g_hash_table_foreach(tracked_files, _unset_abandoned_disk_buffer_file_metrics_foreach_fn, dir);
+}
+
+static void
 _new(gint type, gpointer c)
 {
   DiskQGlobalMetrics *self = &diskq_global_metrics;
@@ -354,6 +390,7 @@ _deinit(gint type, gpointer c)
 
   g_mutex_lock(&self->lock);
   {
+    g_hash_table_foreach(self->dirs, _unset_all_metrics_in_dir, NULL);
     g_hash_table_remove_all(self->dirs);
   }
   g_mutex_unlock(&self->lock);
