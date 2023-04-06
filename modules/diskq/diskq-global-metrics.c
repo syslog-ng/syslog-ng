@@ -106,6 +106,29 @@ _is_non_corrupted_disk_buffer_file(const gchar *dir, const gchar *filename)
 }
 
 static void
+_init_abandoned_disk_buffer_sc_keys(StatsClusterKey *queued_sc_key, StatsClusterKey *capacity_sc_key,
+                                    StatsClusterKey *disk_allocated_sc_key, StatsClusterKey *disk_usage_sc_key,
+                                    const gchar *abs_filename, gboolean reliable)
+{
+  enum { labels_len = 3 };
+  static StatsClusterLabel labels[labels_len];
+  labels[0] = stats_cluster_label("abandoned", "true");
+  labels[1] = stats_cluster_label("path", abs_filename);
+  labels[2] = stats_cluster_label("reliable", reliable ? "true" : "false");
+
+  stats_cluster_single_key_set(queued_sc_key, "disk_queue_events", labels, labels_len);
+
+  stats_cluster_single_key_set(capacity_sc_key, "disk_queue_capacity_bytes", labels, labels_len);
+  stats_cluster_single_key_add_unit(capacity_sc_key, SCU_KIB);
+
+  stats_cluster_single_key_set(disk_allocated_sc_key, "disk_queue_disk_allocated_bytes", labels, labels_len);
+  stats_cluster_single_key_add_unit(disk_allocated_sc_key, SCU_KIB);
+
+  stats_cluster_single_key_set(disk_usage_sc_key, "disk_queue_disk_usage_bytes", labels, labels_len);
+  stats_cluster_single_key_add_unit(disk_usage_sc_key, SCU_KIB);
+}
+
+static void
 _track_disk_buffer_files_in_dir(const gchar *dir, GHashTable *tracked_files)
 {
   DIR *dir_stream = opendir(dir);
