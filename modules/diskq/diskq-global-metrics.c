@@ -269,6 +269,18 @@ _get_available_space_mib_in_dir(const gchar *dir, gint64 *available_space_mib)
 }
 
 static void
+_init_dir_sc_keys(StatsClusterKey *available_bytes_sc_key, const gchar *dir)
+{
+  enum { labels_len = 1 };
+  static StatsClusterLabel labels[labels_len];
+  labels[0] = stats_cluster_label("dir", dir);
+
+  stats_cluster_single_key_set(available_bytes_sc_key, "disk_queue_dir_available_bytes", labels, G_N_ELEMENTS(labels));
+  /* Up to 4096 TiB with 32 bit atomic counters. */
+  stats_cluster_single_key_add_unit(available_bytes_sc_key, SCU_MIB);
+}
+
+static void
 _update_dir_metrics(gpointer key, gpointer value, gpointer user_data)
 {
   const gchar *dir = (const gchar *) key;
@@ -277,16 +289,14 @@ _update_dir_metrics(gpointer key, gpointer value, gpointer user_data)
   if (!_get_available_space_mib_in_dir(dir, &available_space_mib))
     return;
 
-  StatsClusterLabel labels[] = { stats_cluster_label("dir", dir), };
-  StatsClusterKey sc_key;
-  stats_cluster_single_key_set(&sc_key, "disk_queue_dir_available_bytes", labels, G_N_ELEMENTS(labels));
-  /* Up to 4096 TiB with 32 bit atomic counters. */
-  stats_cluster_single_key_add_unit(&sc_key, SCU_MIB);
+  StatsClusterKey available_bytes_sc_key;
+  _init_dir_sc_keys(&available_bytes_sc_key, dir);
 
   stats_lock();
   {
     StatsCounterItem *counter;
-    StatsCluster *cluster = stats_register_dynamic_counter(STATS_LEVEL1, &sc_key, SC_TYPE_SINGLE_VALUE, &counter);
+    StatsCluster *cluster = stats_register_dynamic_counter(STATS_LEVEL1, &available_bytes_sc_key, SC_TYPE_SINGLE_VALUE,
+                                                           &counter);
     stats_counter_set(counter, available_space_mib);
     stats_unregister_dynamic_counter(cluster, SC_TYPE_SINGLE_VALUE, &counter);
   }
