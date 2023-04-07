@@ -25,6 +25,8 @@
 #include "darwinosl-source-persist.h"
 #include "logthrsource/logthrfetcherdrv.h"
 #include "ack-tracker/ack_tracker_factory.h"
+#include "stats/stats-cluster-single.h"
+#include "stats/aggregator/stats-aggregator-registry.h"
 #include "timeutils/misc.h"
 
 /* TODO: Move these to darwinosl-source.h or a separate class once options and its handling need to be exposed */
@@ -60,11 +62,72 @@ typedef struct _DarwinOSLogSourceDriver
   const gchar *persist_name;
   const gchar *stat_persist_name;
 
+  StatsAggregator *max_message_size;
+  StatsAggregator *average_messages_size;
+  StatsAggregator *CPS;
+
   /* NOTE: Naming convention difference is intentional here, camelCase is ObjC default.
            and signs nicely those variables need different kind of care because of ARC */
   __strong OSLogSource *osLogSource;
 } DarwinOSLogSourceDriver;
 
+
+static void
+_log_reader_insert_msg_length_stats(DarwinOSLogSourceDriver *self, gsize len)
+{
+  stats_aggregator_insert_data(self->max_message_size, len);
+  stats_aggregator_insert_data(self->average_messages_size, len);
+}
+
+static void
+_register_aggregated_stats(DarwinOSLogSourceDriver *self)
+{
+  StatsClusterKey sc_key_eps_input;
+  stats_cluster_single_key_legacy_set_with_name(&sc_key_eps_input,
+                                                self->options.super_source_options->super.stats_source | SCS_SOURCE,
+                                                self->super.worker->super.stats_id,
+                                                self->super.worker->super.stats_instance, "processed");
+
+  stats_aggregator_lock();
+  StatsClusterKey sc_key;
+
+  stats_cluster_single_key_legacy_set_with_name(&sc_key,
+                                                self->options.super_source_options->super.stats_source | SCS_SOURCE,
+                                                self->super.worker->super.stats_id,
+                                                self->super.worker->super.stats_instance, "msg_size_max");
+  stats_register_aggregator_maximum(self->options.super_source_options->super.stats_level, &sc_key,
+                                    &self->max_message_size);
+
+  stats_cluster_single_key_legacy_set_with_name(&sc_key,
+                                                self->options.super_source_options->super.stats_source | SCS_SOURCE,
+                                                self->super.worker->super.stats_id,
+                                                self->super.worker->super.stats_instance, "msg_size_avg");
+  stats_register_aggregator_average(self->options.super_source_options->super.stats_level, &sc_key,
+                                    &self->average_messages_size);
+
+  stats_cluster_single_key_legacy_set_with_name(&sc_key,
+                                                self->options.super_source_options->super.stats_source | SCS_SOURCE,
+                                                self->super.worker->super.stats_id,
+                                                self->super.worker->super.stats_instance, "eps");
+
+  stats_register_aggregator_cps(self->options.super_source_options->super.stats_level, &sc_key, &sc_key_eps_input,
+                                SC_TYPE_SINGLE_VALUE,
+                                &self->CPS);
+
+  stats_aggregator_unlock();
+}
+
+static void
+_unregister_aggregated_stats(DarwinOSLogSourceDriver *self)
+{
+  stats_aggregator_lock();
+
+  stats_unregister_aggregator_maximum(&self->max_message_size);
+  stats_unregister_aggregator_average(&self->average_messages_size);
+  stats_unregister_aggregator_cps(&self->CPS);
+
+  stats_aggregator_unlock();
+}
 
 static void
 _check_restored_postion(DarwinOSLogSourceDriver *self, OSLogEntry *nextLogEntry)
@@ -120,13 +183,13 @@ _log_position_date_from_persist(DarwinOSLogSourceDriver *self, NSDate **startDat
   return FALSE;
 }
 
-static LogMessage *
-_log_message_from_string(const char *msg_cstring, MsgFormatOptions *format_options)
+static gsize
+_log_message_from_string(const char *msg_cstring, MsgFormatOptions *format_options, LogMessage **out_msg)
 {
-  int msg_len = strlen(msg_cstring);
-  LogMessage *msg = msg_format_construct_message(format_options, (const guchar *) msg_cstring, msg_len);
-  msg_format_parse_into(format_options, msg, (const guchar *) msg_cstring, msg_len);
-  return msg;
+  gsize msg_len = strlen(msg_cstring);
+  *out_msg = msg_format_construct_message(format_options, (const guchar *) msg_cstring, msg_len);
+  msg_format_parse_into(format_options, *out_msg, (const guchar *) msg_cstring, msg_len);
+  return msg_len;
 }
 
 static gboolean
@@ -214,8 +277,10 @@ _fetch(LogThreadedSourceDriver *s)
             evt_tag_printf("last message hash", "%u", self->log_source_position.last_msg_hash),
             evt_tag_printf("filter predicate hash", "%u", self->log_source_position.last_used_filter_predicate_hash));
 
-  LogMessage *msg = _log_message_from_string(log_string, self->options.format_options);
+  LogMessage *msg;
+  gsize msg_len = _log_message_from_string(log_string, self->options.format_options, &msg);
   LogThreadedFetchResult result = {THREADED_FETCH_SUCCESS, msg};
+  _log_reader_insert_msg_length_stats(self, msg_len);
   return result;
 }
 
@@ -337,7 +402,21 @@ _init(LogPipe *s)
 
   darwinosl_source_persist_init(self->log_source_persist, cfg->state, _get_persist_name(s));
 
-  return log_threaded_source_driver_init_method(s);
+  gboolean ret = log_threaded_source_driver_init_method(s);
+  if (ret)
+    _register_aggregated_stats(self);
+
+  return ret;
+}
+
+static gboolean
+_deinit(LogPipe *s)
+{
+  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *)s;
+
+  _unregister_aggregated_stats(self);
+
+  return log_threaded_source_driver_deinit_method(s);
 }
 
 static void
@@ -370,6 +449,7 @@ darwinosl_sd_new(GlobalConfig *cfg)
   self->super.request_exit = _request_exit;
 
   self->super.super.super.super.init = _init;
+  self->super.super.super.super.deinit = _deinit;
   self->super.super.super.super.free_fn = _free;
   self->super.super.super.super.generate_persist_name = _get_persist_name;
 
