@@ -26,6 +26,7 @@
 #include "multi-line/multi-line-factory.h"
 #include "multi-line/regexp-multi-line.h"
 #include "multi-line/indented-multi-line.h"
+#include "multi-line/smart-multi-line.h"
 #include "messages.h"
 
 #include <string.h>
@@ -42,6 +43,8 @@ multi_line_factory_construct(const MultiLineOptions *options)
       return regexp_multi_line_new(RML_PREFIX_GARBAGE, options->regexp.prefix, options->regexp.garbage);
     case MLM_REGEXP_PREFIX_SUFFIX:
       return regexp_multi_line_new(RML_PREFIX_SUFFIX, options->regexp.prefix, options->regexp.garbage);
+    case MLM_SMART:
+      return smart_multi_line_new();
     case MLM_NONE:
       return NULL;
 
@@ -63,6 +66,8 @@ multi_line_options_set_mode(MultiLineOptions *options, const gchar *mode)
     options->mode = MLM_REGEXP_PREFIX_GARBAGE;
   else if (strcasecmp(mode, "prefix-suffix") == 0)
     options->mode = MLM_REGEXP_PREFIX_SUFFIX;
+  else if (strcasecmp(mode, "smart") == 0)
+    options->mode = MLM_SMART;
   else if (strcasecmp(mode, "none") == 0)
     options->mode = MLM_NONE;
   else
@@ -139,9 +144,11 @@ multi_line_options_destroy(MultiLineOptions *options)
 void
 multi_line_global_init(void)
 {
+  smart_multi_line_global_init();
 }
 
 void
 multi_line_global_deinit(void)
 {
+  smart_multi_line_global_deinit();
 }

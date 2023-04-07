@@ -34,6 +34,7 @@ enum
   MLM_INDENTED,
   MLM_REGEXP_PREFIX_GARBAGE,
   MLM_REGEXP_PREFIX_SUFFIX,
+  MLM_SMART,
 };
 
 typedef struct _MultiLineOptions
