@@ -59,7 +59,7 @@ tests/light/.pre-commit-config.yaml
 .github/workflows/.*$
 lib/logmsg/tests/messages/syslog-ng-(pe-)?[.0-9]*-msg.h$
 modules/python-modules/requirements\.lock
-
+lib/multi-line/smart-multi-line\.fsm$
 
 ###########################################################################
 # These files are LGPLd and are external contributions _without_ a Balabit
@@ -92,6 +92,8 @@ lib/stats/tests/test_stats_prometheus\.c
 lib/stats/tests/test_stats_cluster_key_builder\.c
 lib/timeutils/timeutils\.h
 lib/logmsg/tests/dump_logmsg\.c
+lib/multi-line/smart-multi-line\.[ch]
+lib/multi-line/tests/test_smart_multi_line\.c
 libtest/mock-logpipe\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
