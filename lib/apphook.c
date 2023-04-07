@@ -47,6 +47,7 @@
 #include "timeutils/timeutils.h"
 #include "msg-stats.h"
 #include "timeutils/cache.h"
+#include "multi-line/multi-line-factory.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -240,6 +241,7 @@ app_startup(void)
   scratch_buffers_global_init();
   msg_stats_init();
   timeutils_global_init();
+  multi_line_global_init();
 }
 
 void
@@ -266,6 +268,8 @@ app_shutdown(void)
 {
   msg_stats_deinit();
   run_application_hook(AH_SHUTDOWN);
+
+  multi_line_global_deinit();
   main_loop_thread_resource_deinit();
   secret_storage_deinit();
   scratch_buffers_allocator_deinit();

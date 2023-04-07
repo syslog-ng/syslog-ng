@@ -63,5 +63,8 @@ void multi_line_options_defaults(MultiLineOptions *options);
 gboolean multi_line_options_init(MultiLineOptions *options);
 void multi_line_options_destroy(MultiLineOptions *options);
 
+void multi_line_global_init(void);
+void multi_line_global_deinit(void);
+
 
 #endif

@@ -135,3 +135,13 @@ multi_line_options_destroy(MultiLineOptions *options)
   multi_line_pattern_unref(options->regexp.prefix);
   multi_line_pattern_unref(options->regexp.garbage);
 }
+
+void
+multi_line_global_init(void)
+{
+}
+
+void
+multi_line_global_deinit(void)
+{
+}
