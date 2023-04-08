@@ -47,6 +47,7 @@ struct _CorrelationContext
 static inline LogMessage *
 correlation_context_get_last_message(CorrelationContext *self)
 {
+  g_assert(self->messages->len > 0);
   return (LogMessage *) g_ptr_array_index(self->messages, self->messages->len - 1);
 }
 
