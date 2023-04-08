@@ -40,6 +40,7 @@ struct _CorrelationContext
   /* messages belonging to this context */
   GPtrArray *messages;
   gint ref_cnt;
+  void (*clear)(CorrelationContext *s);
   void (*free_fn)(CorrelationContext *s);
 };
 
@@ -49,7 +50,14 @@ correlation_context_get_last_message(CorrelationContext *self)
   return (LogMessage *) g_ptr_array_index(self->messages, self->messages->len - 1);
 }
 
+static inline void
+correlation_context_clear(CorrelationContext *self)
+{
+  self->clear(self);
+}
+
 void correlation_context_init(CorrelationContext *self, const CorrelationKey *key);
+void correlation_context_clear_method(CorrelationContext *self);
 void correlation_context_free_method(CorrelationContext *self);
 void correlation_context_sort(CorrelationContext *self, LogTemplate *sort_key);
 CorrelationContext *correlation_context_new(CorrelationKey *key);
