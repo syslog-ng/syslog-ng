@@ -130,12 +130,14 @@ _store_data_in_persist(GroupingParser *self, GlobalConfig *cfg)
 LogMessage *
 grouping_parser_aggregate_context(GroupingParser *self, CorrelationContext *context)
 {
+  if (context->messages->len == 0)
+    return NULL;
+
   if (self->sort_key_template)
     correlation_context_sort(context, self->sort_key_template);
 
   LogMessage *msg = self->aggregate_context(self, context);
-
-  correlation_state_tx_remove_context(self->correlation, context);
+  correlation_context_clear(context);
 
   /* correlation_context_free is automatically called when returning from
      this function by the timerwheel code as a destroy notify
@@ -158,6 +160,8 @@ _expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpointer calle
 
   context->timer = NULL;
   LogMessage *msg = grouping_parser_aggregate_context(self, context);
+  correlation_state_tx_remove_context(self->correlation, context);
+
   if (msg)
     {
       stateful_parser_emitted_messages_add(emitted_messages, msg);
@@ -206,6 +210,7 @@ static void
 _aggregate_and_emit(GroupingParser *self, CorrelationContext *context, StatefulParserEmittedMessages *emitted_messages)
 {
   LogMessage *genmsg = grouping_parser_aggregate_context(self, context);
+  correlation_state_tx_update_context(self->correlation, context, self->timeout);
   correlation_state_tx_end(self->correlation);
   if (genmsg)
     {

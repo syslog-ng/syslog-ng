@@ -59,7 +59,6 @@ grouping_parser_filter_messages(GroupingParser *self, LogMessage **pmsg, const L
   return TRUE;
 }
 
-
 static inline CorrelationContext *
 grouping_parser_construct_context(GroupingParser *self, CorrelationKey *key)
 {
