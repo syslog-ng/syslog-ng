@@ -1955,6 +1955,7 @@ AC_DEFINE_UNQUOTED(PATH_LOCALSTATEDIR, "$localstatedir", [local state directory]
 AC_DEFINE_UNQUOTED(PATH_PIDFILEDIR, "$pidfiledir", [local state directory])
 AC_DEFINE_UNQUOTED(PATH_DATAROOTDIR, "$datarootdir", [data root directory])
 AC_DEFINE_UNQUOTED(PATH_DATADIR, "$datadir", [data directory])
+AC_DEFINE_UNQUOTED(PATH_PKGDATADIR, "$datadir/$PACKAGE", [pkgdata directory])
 AC_DEFINE_UNQUOTED(PATH_CONFIG_INCLUDEDIR, "$config_includedir", [include directory])
 AC_DEFINE_UNQUOTED(PATH_SCLDIR, "$scldir", [SCL directory])
 AC_DEFINE_UNQUOTED(PATH_XSDDIR, "$xsddir", [XSD directory])
