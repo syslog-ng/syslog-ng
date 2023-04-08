@@ -32,6 +32,7 @@
 #include "utf8utils.h"
 #include "scanner/list-scanner/list-scanner.h"
 #include "scratch-buffers.h"
+#include "str-format.h"
 
 typedef struct _TFJsonState
 {
@@ -234,6 +235,24 @@ tf_json_append_list(const gchar *name, const gchar *value, gsize value_len,
   g_string_append_c(state->buffer, ']');
 }
 
+/* RFC8259 numbers: '+' sign, leading zeros are not allowed. */
+static inline void
+tf_json_append_double(const gchar *name, gdouble d, json_state_t *state)
+{
+  gchar double_buf[G_ASCII_DTOSTR_BUF_SIZE];
+  g_ascii_dtostr(double_buf, G_N_ELEMENTS(double_buf), d);
+  tf_json_append_value(name, double_buf, -1, state, FALSE);
+}
+
+static inline void
+tf_json_append_int(const gchar *name, gint64 i, json_state_t *state)
+{
+  GString *int_buf = scratch_buffers_alloc();
+  format_int64_padded(int_buf, 0, 0, 10, i);
+  tf_json_append_value(name, int_buf->str, int_buf->len, state, FALSE);
+}
+
+
 static gboolean
 tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_state_t *state, const gchar *value,
                               const gssize value_len, const gboolean on_error)
@@ -266,7 +285,7 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
         }
       else
         {
-          tf_json_append_value(name, v, v_len, state, FALSE);
+          tf_json_append_int(name, i64, state);
         }
       break;
     }
@@ -285,7 +304,7 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
         }
       else
         {
-          tf_json_append_value(name, v, v_len, state, FALSE);
+          tf_json_append_double(name, d, state);
         }
       break;
     }
@@ -353,6 +372,9 @@ tf_json_call(LogTemplateFunction *self, gpointer s,
   TFJsonState *state = (TFJsonState *)s;
   gsize orig_size = result->len;
 
+  ScratchBuffersMarker m;
+  scratch_buffers_mark(&m);
+
   *type = LM_VT_JSON;
   for (gint i = 0; i < args->num_messages; i++)
     {
@@ -360,10 +382,12 @@ tf_json_call(LogTemplateFunction *self, gpointer s,
       if (!r && (args->options->opts->on_error & ON_ERROR_DROP_MESSAGE))
         {
           g_string_set_size(result, orig_size);
-          return;
+          goto exit;
         }
     }
 
+exit:
+  scratch_buffers_reclaim_marked(m);
 }
 
 static gboolean
@@ -414,6 +438,9 @@ tf_flat_json_call(LogTemplateFunction *self, gpointer s,
   TFJsonState *state = (TFJsonState *)s;
   gsize orig_size = result->len;
 
+  ScratchBuffersMarker m;
+  scratch_buffers_mark(&m);
+
   *type = LM_VT_JSON;
   for (gint i = 0; i < args->num_messages; i++)
     {
@@ -421,10 +448,12 @@ tf_flat_json_call(LogTemplateFunction *self, gpointer s,
       if (!r && (args->options->opts->on_error & ON_ERROR_DROP_MESSAGE))
         {
           g_string_set_size(result, orig_size);
-          return;
+          goto exit;
         }
     }
 
+exit:
+  scratch_buffers_reclaim_marked(m);
 }
 
 static void
