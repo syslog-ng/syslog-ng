@@ -147,7 +147,7 @@ Test(json_parser, test_json_parser_validate_type_representation)
   LogParser *json_parser = json_parser_new(NULL);
 
   json_parser_set_prefix(json_parser, ".prefix.");
-  msg = parse_json_into_log_message("{'int': 123, 'booltrue': true, 'boolfalse': false, 'double': 1.23, 'object': {'member1': 'foo', 'member2': 'bar'}, 'array': [1, 2, 3], 'null': null}",
+  msg = parse_json_into_log_message("{'int': 123, 'booltrue': true, 'boolfalse': false, 'double': 1.23, 'object': {'member1': 'foo', 'member2': 'bar'}, 'array': ['1', '2', '3'], 'null': null}",
                                     json_parser);
   assert_log_message_value_and_type_by_name(msg, ".prefix.int", "123", LM_VT_INTEGER);
   assert_log_message_value_and_type_by_name(msg, ".prefix.booltrue", "true", LM_VT_BOOLEAN);
@@ -173,11 +173,11 @@ Test(json_parser, test_json_parser_different_type_arrays)
                                     " 'dblarray': [1.234,1e6,5.6789],"
                                     " 'nullarray': [null,null,null,null]}",
                                     json_parser);
-  assert_log_message_value_and_type_by_name(msg, ".prefix.intarray", "1,2,3", LM_VT_LIST);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.intarray", "[1,2,3]", LM_VT_JSON);
   assert_log_message_value_and_type_by_name(msg, ".prefix.strarray", "foo,bar,baz", LM_VT_LIST);
-  assert_log_message_value_and_type_by_name(msg, ".prefix.boolarray", "true,false,true", LM_VT_LIST);
-  assert_log_message_value_and_type_by_name(msg, ".prefix.dblarray", "1.234000,1000000.000000,5.678900", LM_VT_LIST);
-  assert_log_message_value_and_type_by_name(msg, ".prefix.nullarray", "\"\",\"\",\"\",\"\"", LM_VT_LIST);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.boolarray", "[true,false,true]", LM_VT_JSON);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.dblarray", "[1.234,1e6,5.6789]", LM_VT_JSON);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.nullarray", "[null,null,null,null]", LM_VT_JSON);
   log_msg_unref(msg);
   log_pipe_unref(&json_parser->super);
 }
@@ -251,7 +251,7 @@ Test(json_parser, test_json_parser_extracts_subobjects_if_extract_prefix_is_spec
   log_pipe_unref(&json_parser->super);
 }
 
-Test(json_parser, test_json_parser_extracts_array_elements_into_matches)
+Test(json_parser, test_json_parser_extracts_top_level_array_elements_into_matches)
 {
   LogMessage *msg;
   LogParser *json_parser = json_parser_new(NULL);
