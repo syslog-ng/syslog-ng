@@ -45,13 +45,12 @@ correlation_state_tx_lookup_context(CorrelationState *self, const CorrelationKey
 }
 
 void
-correlation_state_tx_store_context(CorrelationState *self, CorrelationContext *context, gint timeout,
-                                   TWCallbackFunc expire)
+correlation_state_tx_store_context(CorrelationState *self, CorrelationContext *context, gint timeout)
 {
   g_assert(context->timer == NULL);
 
   g_hash_table_insert(self->state, &context->key, context);
-  context->timer = timer_wheel_add_timer(self->timer_wheel, timeout, expire,
+  context->timer = timer_wheel_add_timer(self->timer_wheel, timeout, self->expire_callback,
                                          correlation_context_ref(context), (GDestroyNotify) correlation_context_unref);
 }
 
@@ -156,7 +155,7 @@ correlation_state_timer_tick(CorrelationState *self, gpointer caller_context)
 
 
 CorrelationState *
-correlation_state_new(void)
+correlation_state_new(TWCallbackFunc expire_callback)
 {
   CorrelationState *self = g_new0(CorrelationState, 1);
 
@@ -166,6 +165,7 @@ correlation_state_new(void)
   self->timer_wheel = timer_wheel_new();
   cached_g_current_time(&self->last_tick);
   g_atomic_counter_set(&self->ref_cnt, 1);
+  self->expire_callback = expire_callback;
   return self;
 }
 

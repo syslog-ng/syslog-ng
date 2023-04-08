@@ -186,7 +186,7 @@ grouping_parser_lookup_or_create_context(GroupingParser *self, LogMessage *msg)
                 log_pipe_location_tag(&self->super.super.super));
 
       context = grouping_parser_construct_context(self, &key);
-      correlation_state_tx_store_context(self->correlation, context, self->timeout, _expire_entry);
+      correlation_state_tx_store_context(self->correlation, context, self->timeout);
       g_string_steal(buffer);
     }
   else
@@ -333,7 +333,7 @@ grouping_parser_init_instance(GroupingParser *self, GlobalConfig *cfg)
   self->super.super.process = grouping_parser_process_method;
   self->scope = RCS_GLOBAL;
   self->timeout = -1;
-  self->correlation = correlation_state_new();
+  self->correlation = correlation_state_new(_expire_entry);
 }
 
 void
