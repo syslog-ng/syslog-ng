@@ -36,7 +36,6 @@ typedef struct _PathResolver
   GHashTable *configure_variables;
 } PathResolver;
 
-
 void
 path_resolver_add_configure_variable(CacheResolver *s, const gchar *name, const gchar *value)
 {
@@ -182,6 +181,14 @@ resolve_path_variables_in_text(const gchar *text)
 {
   reloc_init();
   return cache_resolve(path_cache, text);
+}
+
+/* NOTE: to be used in test programs only to override paths to external files */
+void
+override_installation_path_for(const gchar *template, const gchar *value)
+{
+  reloc_init();
+  cache_populate(path_cache, template, value);
 }
 
 void
