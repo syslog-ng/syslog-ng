@@ -124,7 +124,8 @@ typedef struct
 static inline void
 tf_json_append_escaped(GString *dest, const gchar *str, gssize str_len)
 {
-  append_unsafe_utf8_as_escaped_text(dest, str, str_len, "\"");
+  /* RFC8259 specifies only \uXXXX escaping */
+  append_unsafe_utf8_as_escaped(dest, str, str_len, "\"", "\\u%04x", "\\\\x%02x");
 }
 
 static gboolean

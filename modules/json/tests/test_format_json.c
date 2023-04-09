@@ -341,10 +341,13 @@ Test(format_json, test_format_json_with_utf8)
   LogMessage *msg = create_empty_message();
   log_msg_set_value_by_name(msg, "UTF8-C2", "\xc2\xbf \xc2\xb6 \xc2\xa9 \xc2\xb1", -1); // ¿ ¶ © ±
   log_msg_set_value_by_name(msg, "UTF8-C3", "\xc3\x88 \xc3\x90", -1); // È Ð
+  log_msg_set_value_by_name(msg, "UTF8-CTRL", "\x07\x09", -1);
 
   assert_template_format_msg("$(format-json MSG=\"${UTF8-C2}\")", "{\"MSG\":\"\xc2\xbf \xc2\xb6 \xc2\xa9 \xc2\xb1\"}",
                              msg);
   assert_template_format_msg("$(format-json MSG=\"${UTF8-C3}\")", "{\"MSG\":\"\xc3\x88 \xc3\x90\"}", msg);
+
+  assert_template_format_msg("$(format-json MSG=\"${UTF8-CTRL}\")", "{\"MSG\":\"\\u0007\\t\"}", msg);
 
   log_msg_unref(msg);
 }
