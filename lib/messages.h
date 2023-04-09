@@ -113,6 +113,12 @@ void msg_add_option_group(GOptionContext *ctx);
             msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL ));          \
   } while (0)
 
+#define msg_trace_printf(fmt, values...)       \
+  do {                                    \
+    if (G_UNLIKELY(trace_flag))                               \
+      msg_send_message_printf(EVT_PRI_DEBUG, fmt, ##values);        \
+  } while (0)
+
 #define msg_diagnostics(desc, tags...)              \
   do {                    \
     if (G_UNLIKELY(trace_flag))                     \
@@ -136,5 +142,6 @@ void msg_add_option_group(GOptionContext *ctx);
 
 void msg_post_message(LogMessage *msg);
 void msg_send_formatted_message(int prio, const char *msg);
+void msg_send_message_printf(int prio, const gchar *fmt, ...) G_GNUC_PRINTF(2, 3);
 
 #endif
