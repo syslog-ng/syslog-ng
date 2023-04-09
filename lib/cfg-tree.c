@@ -1354,22 +1354,15 @@ cfg_tree_compile_node(CfgTree *self, LogExprNode *node,
 {
   gboolean result = FALSE;
   static gint indent = -1;
+  gchar buf[128];
 
-  if (trace_flag)
-    {
-      gchar buf[128];
-      gchar compile_message[256];
-
-      indent++;
-      g_snprintf(compile_message, sizeof(compile_message),
-                 "%-*sCompiling %s %s [%s] at [%s]",
-                 indent * 2, "",
-                 node->name ? : "#unnamed",
-                 log_expr_node_get_layout_name(node->layout),
-                 log_expr_node_get_content_name(node->content),
-                 log_expr_node_format_location(node, buf, sizeof(buf)));
-      msg_send_formatted_message(EVT_PRI_DEBUG, compile_message);
-    }
+  indent++;
+  msg_trace_printf("%-*sCompiling %s %s [%s] at [%s]",
+                   indent * 2, "",
+                   node->name ? : "#unnamed",
+                   log_expr_node_get_layout_name(node->layout),
+                   log_expr_node_get_content_name(node->content),
+                   log_expr_node_format_location(node, buf, sizeof(buf)));
 
   switch (node->layout)
     {
