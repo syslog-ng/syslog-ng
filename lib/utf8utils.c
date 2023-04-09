@@ -137,11 +137,11 @@ _append_unsafe_utf8_as_escaped_nul_terminated(GString *escaped_output, const gch
 /**
  * @see _append_escaped_utf8_character()
  */
-static void
-_append_unsafe_utf8_as_escaped(GString *escaped_output, const gchar *raw,
-                               gssize raw_len, const gchar *unsafe_chars,
-                               const gchar *control_format,
-                               const gchar *invalid_format)
+void
+append_unsafe_utf8_as_escaped(GString *escaped_output, const gchar *raw,
+                              gssize raw_len, const gchar *unsafe_chars,
+                              const gchar *control_format,
+                              const gchar *invalid_format)
 {
   if (raw_len < 0)
     _append_unsafe_utf8_as_escaped_nul_terminated(escaped_output, raw, unsafe_chars, control_format, invalid_format);
@@ -169,14 +169,14 @@ _append_unsafe_utf8_as_escaped(GString *escaped_output, const gchar *raw,
  *
  * This is basically meant to be used when sending data to
  * 8 bit clean receivers, e.g. syslog-ng or WELF.
- * @see _append_unsafe_utf8_as_escaped()
+ * @see append_unsafe_utf8_as_escaped()
  */
 void
 append_unsafe_utf8_as_escaped_binary(GString *escaped_string, const gchar *str,
                                      gssize str_len, const gchar *unsafe_chars)
 {
-  _append_unsafe_utf8_as_escaped(escaped_string, str, str_len, unsafe_chars,
-                                 "\\x%02x", "\\x%02x");
+  append_unsafe_utf8_as_escaped(escaped_string, str, str_len, unsafe_chars,
+                                "\\x%02x", "\\x%02x");
 }
 gchar *
 convert_unsafe_utf8_to_escaped_binary(const gchar *str, gssize str_len,
@@ -201,7 +201,7 @@ convert_unsafe_utf8_to_escaped_binary(const gchar *str, gssize str_len,
  *
  * Here are the rules that the routine follows:
  *   - well-known control characters are escaped (0x0a as \n and so on)
- *   - other control characters as per control_format (\u00XX)
+ *   - other control characters as per control_format (\xXX)
  *   - backslash is escaped as \\
  *   - any additional characters (only ASCII is supported) as \<char>
  *   - invalid utf8 sequences are converted as per invalid_format (\\xXX)
@@ -209,14 +209,14 @@ convert_unsafe_utf8_to_escaped_binary(const gchar *str, gssize str_len,
  *
  * This is basically meant to be used when sending data to
  * utf8 only receivers, e.g. JSON.
- * @see _append_unsafe_utf8_as_escaped()
+ * @see append_unsafe_utf8_as_escaped()
  */
 void
 append_unsafe_utf8_as_escaped_text(GString *escaped_string, const gchar *str,
                                    gssize str_len, const gchar *unsafe_chars)
 {
-  _append_unsafe_utf8_as_escaped(escaped_string, str, str_len, unsafe_chars,
-                                 "\\x%02x", "\\\\x%02x");
+  append_unsafe_utf8_as_escaped(escaped_string, str, str_len, unsafe_chars,
+                                "\\x%02x", "\\\\x%02x");
 }
 
 gchar *
