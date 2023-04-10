@@ -505,6 +505,7 @@ fi
 
 # uhm, some better places for those?
 %{_datadir}/%{name}/xsd/
+%{_datadir}/%{name}/smart-multi-line.fsm
 
 %{_mandir}/man1/loggen.1*
 %{_mandir}/man1/pdbtool.1*
