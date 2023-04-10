@@ -36,4 +36,9 @@ void append_unsafe_utf8_as_escaped_text(GString *escaped_string, const gchar *st
 gchar *convert_unsafe_utf8_to_escaped_text(const gchar *str, gssize str_len,
                                            const gchar *unsafe_chars);
 
+
+void append_unsafe_utf8_as_escaped(GString *escaped_output, const gchar *raw,
+                                   gssize raw_len, const gchar *unsafe_chars,
+                                   const gchar *control_format,
+                                   const gchar *invalid_format);
 #endif
