@@ -51,6 +51,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <iv_work.h>
+#include <openssl/sha.h>
+
+#define CONFIG_HASH_LENGTH SHA256_DIGEST_LENGTH
+#define CONFIG_HASH_STR_LENGTH (CONFIG_HASH_LENGTH * 2 + 1)
 
 gint
 cfg_ts_format_value(gchar *format)
@@ -454,6 +458,7 @@ cfg_new(gint version)
   self->module_config = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) module_config_free);
   self->globals = cfg_args_new();
   self->user_version = version;
+  self->config_hash = g_malloc0(CONFIG_HASH_LENGTH * sizeof(guint8));
 
   self->flush_lines = 100;
   self->mark_freq = 1200; /* 20 minutes */
@@ -623,6 +628,41 @@ _cfg_file_path_free(gpointer data)
   g_free(self);
 }
 
+static inline const gchar *
+_format_config_hash(GlobalConfig *self, gchar *str, size_t str_size)
+{
+  for (gsize i = 0; i < CONFIG_HASH_LENGTH; ++i)
+    {
+      g_snprintf(str + (i * 2), str_size - (i * 2), "%02x", self->config_hash[i]);
+    }
+
+  return str;
+}
+
+void
+cfg_set_user_config_id(GlobalConfig *self, const gchar *id)
+{
+  g_free(self->user_config_id);
+  self->user_config_id = g_strdup(id);
+}
+
+void
+cfg_format_id(GlobalConfig *self, GString *id)
+{
+  gchar buf[CONFIG_HASH_STR_LENGTH];
+
+  if (self->user_config_id)
+    g_string_printf(id, "%s (%s)", self->user_config_id, _format_config_hash(self, buf, sizeof(buf)));
+  else
+    g_string_assign(id, _format_config_hash(self, buf, sizeof(buf)));
+}
+
+static void
+cfg_hash_config(GlobalConfig *self)
+{
+  SHA256((const guchar *) self->preprocess_config->str, self->preprocess_config->len, self->config_hash);
+}
+
 gboolean
 cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
 {
@@ -643,6 +683,9 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
       lexer = cfg_lexer_new(self, cfg_file, fname, self->preprocess_config);
       res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
       fclose(cfg_file);
+
+      cfg_hash_config(self);
+
       if (preprocess_into)
         {
           cfg_dump_processed_config(self->preprocess_config, preprocess_into);
@@ -705,6 +748,9 @@ cfg_free(GlobalConfig *self)
     g_string_free(self->original_config, TRUE);
 
   g_list_free_full(self->file_list, _cfg_file_path_free);
+
+  g_free(self->user_config_id);
+  g_free(self->config_hash);
 
   g_free(self);
 }

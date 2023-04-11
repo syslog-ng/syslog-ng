@@ -61,6 +61,11 @@ struct _GlobalConfig
   /* hex-encoded syslog-ng major/minor, e.g. 0x0201 is syslog-ng 2.1 format */
   gint user_version;
 
+  /* config identifier specified by the user */
+  gchar *user_config_id;
+
+  guint8 *config_hash;
+
   const gchar *filename;
   PluginContext plugin_context;
   gboolean use_plugin_discovery;
@@ -145,6 +150,9 @@ gint cfg_ts_format_value(gchar *format);
 void cfg_set_version_without_validation(GlobalConfig *self, gint version);
 gboolean cfg_set_version(GlobalConfig *self, gint version);
 gboolean cfg_set_current_version(GlobalConfig *self);
+void cfg_set_user_config_id(GlobalConfig *self, const gchar *id);
+
+void cfg_format_id(GlobalConfig *self, GString *id);
 
 void cfg_set_global_paths(GlobalConfig *self);
 
