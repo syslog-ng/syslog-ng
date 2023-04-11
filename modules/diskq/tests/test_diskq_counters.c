@@ -27,6 +27,7 @@
 #include "test_diskq_tools.h"
 
 #include "diskq.h"
+#include "diskq-global-metrics.h"
 #include "logqueue-disk.h"
 #include "apphook.h"
 
@@ -39,6 +40,7 @@ _setup_with_persist(const gchar *persist_file)
   configuration->stats_options.level = STATS_LEVEL1;
   configuration->state = persist_state_new(persist_file);
   persist_state_start(configuration->state);
+  diskq_global_metrics_init();
   cfg_init(configuration);
 }
 

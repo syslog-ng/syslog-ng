@@ -36,6 +36,8 @@
 #include <sys/mman.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/file.h>
 
@@ -50,6 +52,18 @@
 #define PATH_QDISK              PATH_LOCALSTATEDIR
 
 #define QDISK_HDR_VERSION_CURRENT 3
+
+#define QDISK_FILENAME_PREFIX "syslog-ng-"
+#define QDISK_FILENAME_IDX_FMT "%05d"
+#define QDISK_FILENAME_IDX_EXAMPLE "00000"
+
+#define QDISK_FILENAME_REL_EXT ".rqf"
+#define QDISK_FILENAME_REL_FORMAT QDISK_FILENAME_PREFIX QDISK_FILENAME_IDX_FMT QDISK_FILENAME_REL_EXT
+#define QDISK_FILENAME_REL_EXAMPLE QDISK_FILENAME_PREFIX QDISK_FILENAME_IDX_EXAMPLE QDISK_FILENAME_REL_EXT
+
+#define QDISK_FILENAME_NON_REL_EXT ".qf"
+#define QDISK_FILENAME_NON_REL_FMT QDISK_FILENAME_PREFIX QDISK_FILENAME_IDX_FMT QDISK_FILENAME_NON_REL_EXT
+#define QDISK_FILENAME_NON_REL_EXAMPLE QDISK_FILENAME_PREFIX QDISK_FILENAME_IDX_EXAMPLE QDISK_FILENAME_NON_REL_EXT
 
 #define DIRLOCK_FILENAME "syslog-ng-disk-buffer.dirlock"
 
@@ -246,10 +260,8 @@ qdisk_get_next_filename(const gchar *dir, gboolean reliable)
   for (gint i = 0; i < 10000; i++)
     {
       gchar filename_buffer[256];
-      if (reliable)
-        g_snprintf(filename_buffer, sizeof(filename_buffer), "syslog-ng-%05d.rqf", i);
-      else
-        g_snprintf(filename_buffer, sizeof(filename_buffer), "syslog-ng-%05d.qf", i);
+      g_snprintf(filename_buffer, sizeof(filename_buffer),
+                 reliable ? QDISK_FILENAME_REL_FORMAT : QDISK_FILENAME_NON_REL_FMT, i);
 
       filename = g_build_path(G_DIR_SEPARATOR_S, dir, filename_buffer, NULL);
 
@@ -276,6 +288,58 @@ qdisk_get_next_filename(const gchar *dir, gboolean reliable)
 
   _release_dirlock(dirlock_fd);
   return filename;
+}
+
+gboolean
+qdisk_is_file_a_disk_buffer_file(const gchar *filename)
+{
+  const gsize min_len = MIN(strlen(QDISK_FILENAME_REL_EXAMPLE), strlen(QDISK_FILENAME_NON_REL_EXAMPLE));
+  const gsize prefix_len = strlen(QDISK_FILENAME_PREFIX);
+  const gsize extension_start = strlen(QDISK_FILENAME_PREFIX QDISK_FILENAME_IDX_EXAMPLE);
+
+  gsize len = strlen(filename);
+  if (len < min_len)
+    return FALSE;
+
+  if (strncmp(filename, "syslog-ng-", prefix_len) != 0)
+    return FALSE;
+
+  for (gint i = prefix_len; i < extension_start; i++)
+    {
+      if (!g_ascii_isdigit(filename[i]))
+        return FALSE;
+    }
+
+  if (strncmp(&filename[extension_start], QDISK_FILENAME_REL_EXT, strlen(QDISK_FILENAME_REL_EXT)) != 0 &&
+      strncmp(&filename[extension_start], QDISK_FILENAME_NON_REL_EXT, strlen(QDISK_FILENAME_NON_REL_EXT)) != 0)
+    {
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+gboolean
+qdisk_is_disk_buffer_file_reliable(const gchar *filename, gboolean *reliable)
+{
+  const gsize extension_start = strlen(QDISK_FILENAME_PREFIX QDISK_FILENAME_IDX_EXAMPLE);
+
+  if (strlen(filename) < extension_start + MIN(strlen(QDISK_FILENAME_REL_EXT), strlen(QDISK_FILENAME_NON_REL_EXT)))
+    return FALSE;
+
+  if (strncmp(&filename[extension_start], QDISK_FILENAME_REL_EXT, strlen(QDISK_FILENAME_REL_EXT)) == 0)
+    {
+      *reliable = TRUE;
+      return TRUE;
+    }
+
+  if (strncmp(&filename[extension_start], QDISK_FILENAME_NON_REL_EXT, strlen(QDISK_FILENAME_NON_REL_EXT)) == 0)
+    {
+      *reliable = FALSE;
+      return TRUE;
+    }
+
+  return FALSE;
 }
 
 gboolean
@@ -1601,7 +1665,8 @@ _init_qdisk_file(QDisk *self)
 static gboolean
 _create_qdisk_file(QDisk *self)
 {
-  g_assert(!self->options->read_only);
+  if (self->options->read_only)
+    return FALSE;
 
   if (self->options->disk_buf_size == -1)
     {
