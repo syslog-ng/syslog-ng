@@ -26,11 +26,13 @@
 
 static gboolean config_options_preprocessed = FALSE;
 static gboolean config_options_verify = FALSE;
+static gboolean config_options_id = FALSE;
 
 GOptionEntry config_options[] =
 {
   { "preprocessed", 'p', 0, G_OPTION_ARG_NONE, &config_options_preprocessed, "preprocessed", NULL },
   { "verify", 'v', 0, G_OPTION_ARG_NONE, &config_options_verify, "verify", NULL },
+  { "id", 'i', 0, G_OPTION_ARG_NONE, &config_options_id, "Get config identifier", NULL },
   { NULL,           0,   0, G_OPTION_ARG_NONE, NULL,                         NULL,           NULL }
 };
 
@@ -39,7 +41,9 @@ slng_config(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   GString *cmd = g_string_new("CONFIG ");
 
-  if (config_options_verify)
+  if (config_options_id)
+    g_string_append(cmd, "ID");
+  else if (config_options_verify)
     g_string_append(cmd, "VERIFY ");
   else
     {

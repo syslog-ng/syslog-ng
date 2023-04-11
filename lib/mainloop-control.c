@@ -129,6 +129,12 @@ control_connection_config(ControlConnection *cc, GString *command, gpointer user
       goto exit;
     }
 
+  if (g_str_equal(arguments[1], "ID"))
+    {
+      cfg_format_id(config, result);
+      goto exit;
+    }
+
   if (g_str_equal(arguments[1], "GET"))
     {
       if (g_str_equal(arguments[2], "ORIGINAL"))
