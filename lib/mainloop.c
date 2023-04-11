@@ -189,8 +189,6 @@ main_loop_is_server_mode(MainLoop *self)
 gboolean
 main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
 {
-  gboolean success;
-
   cfg->state = persist_state_new(persist_filename);
   persist_state_set_global_error_handler(cfg->state, (gpointer)main_loop_exit, (gpointer)main_loop_get_instance());
 
@@ -201,7 +199,9 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
   if (!host_id_init(cfg->state))
     return FALSE;
 
-  success = cfg_init(cfg);
+  gboolean success = cfg_init(cfg);
+  if (!success)
+    cfg_deinit(cfg);
 
   if (success)
     persist_state_commit(cfg->state);
