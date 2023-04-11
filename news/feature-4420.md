@@ -1,0 +1,7 @@
+New configuration-related metrics:
+
+```
+syslogng_last_config_reload_timestamp_seconds 1681309903
+syslogng_last_successful_config_reload_timestamp_seconds 1681309758
+syslogng_last_config_file_modification_timestamp_seconds 1681309877
+```
