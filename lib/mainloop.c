@@ -29,6 +29,8 @@
 #include "apphook.h"
 #include "cfg.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-counter.h"
+#include "stats/stats-cluster-single.h"
 #include "messages.h"
 #include "children.h"
 #include "control/control-main.h"
@@ -49,6 +51,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <time.h>
 #include <iv.h>
 #include <iv_signal.h>
 #include <iv_event.h>
@@ -134,6 +137,7 @@ struct _MainLoop
    */
   gboolean _is_terminating;
   gboolean last_config_reload_successful;
+  time_t last_config_reload_time;
 
   /* signal handling */
   struct iv_signal sighup_poll;
@@ -162,6 +166,12 @@ struct _MainLoop
 
   MainLoopOptions *options;
   ControlServer *control_server;
+
+  struct
+  {
+    StatsCounterItem *last_reload;
+    StatsCounterItem *last_successful_reload;
+  } metrics;
 };
 
 static MainLoop main_loop;
@@ -300,6 +310,8 @@ main_loop_reload_config_apply(gpointer user_data)
   service_management_clear_status();
   msg_notice("Configuration reload request received, reloading configuration");
 
+  stats_counter_set(self->metrics.last_successful_reload, (gsize) self->last_config_reload_time);
+
   /* this is already running with the new config in place */
   main_loop_reload_config_finished(self);
 }
@@ -312,6 +324,8 @@ main_loop_reload_config_prepare(MainLoop *self, GError **error)
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
 
   self->last_config_reload_successful = FALSE;
+  self->last_config_reload_time =  time(NULL);
+
   if (main_loop_is_terminating(self))
     {
       g_set_error(error, MAIN_LOOP_ERROR, MAIN_LOOP_ERROR_RELOAD_FAILED,
@@ -326,6 +340,7 @@ main_loop_reload_config_prepare(MainLoop *self, GError **error)
     }
 
   service_management_publish_status("Reloading configuration");
+  stats_counter_set(self->metrics.last_reload, (gsize) self->last_config_reload_time);
 
   self->old_config = self->current_configuration;
   self->new_config = cfg_new(0);
@@ -587,6 +602,35 @@ main_loop_exit(MainLoop *self)
   return;
 }
 
+static void
+_register_metrics(MainLoop *self)
+{
+  /* MainLoop metrics are on stats-level 0 as they "go through" several
+   * configuration changes */
+
+  stats_lock();
+  StatsClusterKey k;
+  stats_cluster_single_key_set(&k, "last_config_reload_timestamp_seconds", NULL, 0);
+  stats_register_counter(0, &k, SC_TYPE_SINGLE_VALUE, &self->metrics.last_reload);
+
+  stats_cluster_single_key_set(&k, "last_successful_config_reload_timestamp_seconds", NULL, 0);
+  stats_register_counter(0, &k, SC_TYPE_SINGLE_VALUE, &self->metrics.last_successful_reload);
+  stats_unlock();
+}
+
+static void
+_unregister_metrics(MainLoop *self)
+{
+  stats_lock();
+  StatsClusterKey k;
+  stats_cluster_single_key_set(&k, "last_config_reload_timestamp_seconds", NULL, 0);
+  stats_unregister_counter(&k, SC_TYPE_SINGLE_VALUE, &self->metrics.last_reload);
+
+  stats_cluster_single_key_set(&k, "last_successful_config_reload_timestamp_seconds", NULL, 0);
+  stats_unregister_counter(&k, SC_TYPE_SINGLE_VALUE, &self->metrics.last_successful_reload);
+  stats_unlock();
+}
+
 void
 main_loop_init(MainLoop *self, MainLoopOptions *options)
 {
@@ -606,6 +650,16 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
 
   if (self->options->disable_module_discovery)
     self->current_configuration->use_plugin_discovery = FALSE;
+
+  _register_metrics(self);
+}
+
+static inline void
+_init_reload_metrics(MainLoop *self)
+{
+  time_t config_init_time = time(NULL);
+  stats_counter_set(self->metrics.last_reload, (gsize) config_init_time);
+  stats_counter_set(self->metrics.last_successful_reload, (gsize) config_init_time);
 }
 
 /*
@@ -615,6 +669,8 @@ int
 main_loop_read_and_init_config(MainLoop *self)
 {
   MainLoopOptions *options = self->options;
+
+  _init_reload_metrics(self);
 
   if (!cfg_read_config(self->current_configuration, resolved_configurable_paths.cfgfilename, options->preprocess_into))
     {
@@ -659,6 +715,8 @@ main_loop_deinit(MainLoop *self)
   block_till_workers_exit();
   scratch_buffers_automatic_gc_deinit();
   g_mutex_clear(&workers_running_lock);
+
+  _unregister_metrics(self);
 }
 
 void
