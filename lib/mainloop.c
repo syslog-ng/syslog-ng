@@ -199,15 +199,15 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
   if (!host_id_init(cfg->state))
     return FALSE;
 
-  gboolean success = cfg_init(cfg);
-  if (!success)
-    cfg_deinit(cfg);
+  if (!cfg_init(cfg))
+    {
+      cfg_deinit(cfg);
+      persist_state_cancel(cfg->state);
+      return FALSE;
+    }
 
-  if (success)
-    persist_state_commit(cfg->state);
-  else
-    persist_state_cancel(cfg->state);
-  return success;
+  persist_state_commit(cfg->state);
+  return TRUE;
 }
 
 gboolean
