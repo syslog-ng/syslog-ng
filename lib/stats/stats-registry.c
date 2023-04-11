@@ -450,7 +450,7 @@ _foreach_cluster_remove_helper(gpointer key, gpointer value, gpointer user_data)
   gpointer func_data = args[1];
   StatsCluster *sc = (StatsCluster *) value;
 
-  gboolean should_be_removed = func(sc, func_data);
+  gboolean should_be_removed = func(sc, func_data) && stats_cluster_is_orphaned(sc);
 
   if (should_be_removed)
     stats_query_deindex_cluster(sc);

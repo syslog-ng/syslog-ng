@@ -301,7 +301,7 @@ qdisk_is_file_a_disk_buffer_file(const gchar *filename)
   if (len < min_len)
     return FALSE;
 
-  if (strncmp(filename, "syslog-ng-", prefix_len) != 0)
+  if (strncmp(filename, QDISK_FILENAME_PREFIX, prefix_len) != 0)
     return FALSE;
 
   for (gint i = prefix_len; i < extension_start; i++)

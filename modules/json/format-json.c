@@ -105,7 +105,7 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
                       "document to change types if no explicit type hint is "
                       "specified. This change will cause the type in the output "
                       "document match the original type that was parsed "
-                      "using json-parser(), add --no-cast argument "
+                      "using json-parser(), add --cast argument "
                       "to $(format-json) to keep the old behavior");
         }
       value_pairs_set_cast_to_strings(state->vp, TRUE);
