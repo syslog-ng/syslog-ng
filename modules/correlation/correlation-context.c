@@ -80,6 +80,8 @@ correlation_context_sort(CorrelationContext *self, LogTemplate *sort_key)
 void
 correlation_context_init(CorrelationContext *self, const CorrelationKey *key)
 {
+  self->clear = correlation_context_clear_method;
+
   self->messages = g_ptr_array_new();
   memcpy(&self->key, key, sizeof(self->key));
 
@@ -94,14 +96,19 @@ correlation_context_init(CorrelationContext *self, const CorrelationKey *key)
 }
 
 void
-correlation_context_free_method(CorrelationContext *self)
+correlation_context_clear_method(CorrelationContext *self)
 {
-  gint i;
-
-  for (i = 0; i < self->messages->len; i++)
+  for (gint i = 0; i < self->messages->len; i++)
     {
       log_msg_unref((LogMessage *) g_ptr_array_index(self->messages, i));
     }
+  g_ptr_array_set_size(self->messages, 0);
+}
+
+void
+correlation_context_free_method(CorrelationContext *self)
+{
+  correlation_context_clear(self);
   g_ptr_array_free(self->messages, TRUE);
 
   if (self->key.host)

@@ -71,43 +71,25 @@ struct _PatternDB
   gchar *prefix;
 };
 
-static inline gpointer
-_piggy_back_log_message_pointer_with_synthetic_value(LogMessage *msg, gboolean synthetic)
-{
-  /* we piggy back the "synthetic" value as the LSB in the pointer value
-   * (which is always zero anyway).  This avoids creating a struct that
-   * holds two values */
-  return (gpointer) ((guintptr) msg | (!!synthetic));
-}
-
-static inline void
-_extract_log_message_pointer_and_synthetic_value(gpointer value, LogMessage **pmsg, gboolean *synthetic)
-{
-  *synthetic = (gboolean) ((guintptr) value & 1);
-  *pmsg = (LogMessage *) ((guintptr) value & ~1);
-}
-
 /* This function is called to populate the emitted_messages array in
  * process_params.  It only manipulates per-thread data structure so it does
  * not require locks but does not mind them being locked either.  */
 static void
-_emit_message(PatternDB *self, PDBProcessParams *process_params, gboolean synthetic, LogMessage *msg)
+_emit_message(PatternDB *self, PDBProcessParams *process_params, LogMessage *msg)
 {
   if (!self->emit)
     return;
 
   if (process_params->num_emitted_messages < EXPECTED_NUMBER_OF_MESSAGES_EMITTED)
     {
-      process_params->emitted_messages[process_params->num_emitted_messages++] =
-        _piggy_back_log_message_pointer_with_synthetic_value(msg, synthetic);
+      process_params->emitted_messages[process_params->num_emitted_messages++] = msg;
     }
   else
     {
       if (!process_params->emitted_messages_overflow)
         process_params->emitted_messages_overflow = g_ptr_array_new();
 
-      g_ptr_array_add(process_params->emitted_messages_overflow,
-                      _piggy_back_log_message_pointer_with_synthetic_value(msg, synthetic));
+      g_ptr_array_add(process_params->emitted_messages_overflow, msg);
     }
   log_msg_ref(msg);
 }
@@ -120,13 +102,9 @@ _send_emitted_message_array(PatternDB *self, gpointer *values, gsize len)
 
   for (gint i = 0; i < len; i++)
     {
-      gpointer *value = values[i];
-      LogMessage *msg;
-      gboolean synthetic;
+      LogMessage *msg = values[i];
 
-      _extract_log_message_pointer_and_synthetic_value(value, &msg, &synthetic);
-
-      self->emit(msg, synthetic, self->emit_data);
+      self->emit(msg, self->emit_data);
       log_msg_unref(msg);
     }
 }
@@ -296,7 +274,7 @@ _execute_action_message(PatternDB *db, PDBProcessParams *process_params)
   LogMessage *genmsg;
 
   genmsg = _generate_synthetic_message(process_params);
-  _emit_message(db, process_params, TRUE, genmsg);
+  _emit_message(db, process_params, genmsg);
   log_msg_unref(genmsg);
 }
 
@@ -341,8 +319,7 @@ _execute_action_create_context(PatternDB *db, PDBProcessParams *process_params)
 
   correlation_key_init(&key, syn_context->scope, context_msg, buffer->str);
   new_context = pdb_context_new(&key);
-  correlation_state_tx_store_context(db->correlation, &new_context->super, rule->context.timeout,
-                                     pattern_db_expire_entry);
+  correlation_state_tx_store_context(db->correlation, &new_context->super, rule->context.timeout);
   g_string_free(buffer, FALSE);
 
   g_ptr_array_add(new_context->super.messages, context_msg);
@@ -558,7 +535,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
                     evt_tag_int("context_timeout", rule->context.timeout),
                     evt_tag_int("context_expiration", correlation_state_get_time(self->correlation) + rule->context.timeout));
           context = pdb_context_new(&key);
-          correlation_state_tx_store_context(self->correlation, &context->super, rule->context.timeout, pattern_db_expire_entry);
+          correlation_state_tx_store_context(self->correlation, &context->super, rule->context.timeout);
           g_string_steal(buffer);
         }
       else
@@ -590,7 +567,6 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
 
   synthetic_message_apply(&rule->msg, context ? &context->super : NULL, msg);
 
-  _emit_message(self, process_params, FALSE, msg);
   _execute_rule_actions(self, process_params, RAT_MATCH);
 
   pdb_rule_unref(rule);
@@ -609,13 +585,6 @@ _pattern_db_advance_time_and_flush_expired(PatternDB *self, LogMessage *msg)
 
   _advance_time_based_on_message(self, &process_params, &msg->timestamps[LM_TS_STAMP]);
   _flush_emitted_messages(self, &process_params);
-}
-
-static void
-_pattern_db_process_unmatching_rule(PatternDB *self, PDBProcessParams *process_params)
-{
-  LogMessage *msg = process_params->msg;
-  _emit_message(self, process_params, FALSE, msg);
 }
 
 static gboolean
@@ -639,8 +608,6 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
 
   if (process_params->rule)
     _pattern_db_process_matching_rule(self, process_params);
-  else
-    _pattern_db_process_unmatching_rule(self, process_params);
 
   _flush_emitted_messages(self, process_params);
 
@@ -690,7 +657,7 @@ _init_state(PatternDB *self)
 {
   self->rate_limits = g_hash_table_new_full(correlation_key_hash, correlation_key_equal, NULL,
                                             (GDestroyNotify) pdb_rate_limit_free);
-  self->correlation = correlation_state_new();
+  self->correlation = correlation_state_new(pattern_db_expire_entry);
   timer_wheel_set_associated_data(self->correlation->timer_wheel, self, NULL);
 }
 

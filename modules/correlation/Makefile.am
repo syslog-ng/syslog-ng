@@ -59,6 +59,8 @@ modules_correlation_libcorrelation_la_SOURCES			=	\
 	modules/correlation/correlation-parser.c		\
 	modules/correlation/correlation-parser.h		\
 	modules/correlation/correlation-plugin.c		\
+	modules/correlation/grouping-parser.c			\
+	modules/correlation/grouping-parser.h			\
 	modules/correlation/groupingby.c			\
 	modules/correlation/groupingby.h			\
 	$(modules_correlation_libsyslog_ng_patterndb_la_SOURCES)

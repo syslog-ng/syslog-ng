@@ -35,14 +35,14 @@ typedef struct _CorrelationState
   GMutex lock;
   GHashTable *state;
   TimerWheel *timer_wheel;
+  TWCallbackFunc expire_callback;
   GTimeVal last_tick;
 } CorrelationState;
 
 void correlation_state_tx_begin(CorrelationState *self);
 void correlation_state_tx_end(CorrelationState *self);
 CorrelationContext *correlation_state_tx_lookup_context(CorrelationState *self, const CorrelationKey *key);
-void correlation_state_tx_store_context(CorrelationState *self, CorrelationContext *context, gint timeout,
-                                        TWCallbackFunc expire);
+void correlation_state_tx_store_context(CorrelationState *self, CorrelationContext *context, gint timeout);
 void correlation_state_tx_remove_context(CorrelationState *self, CorrelationContext *context);
 void correlation_state_tx_update_context(CorrelationState *self, CorrelationContext *context, gint timeout);
 
@@ -54,7 +54,7 @@ void correlation_state_advance_time(CorrelationState *self, gint timeout, gpoint
 
 void correlation_state_init_instance(CorrelationState *self);
 void correlation_state_deinit_instance(CorrelationState *self);
-CorrelationState *correlation_state_new(void);
+CorrelationState *correlation_state_new(TWCallbackFunc expire);
 CorrelationState *correlation_state_ref(CorrelationState *self);
 void correlation_state_unref(CorrelationState *self);
 

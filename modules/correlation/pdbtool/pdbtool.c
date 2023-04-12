@@ -351,7 +351,7 @@ pdbtool_match_values(NVHandle handle, const gchar *name,
 }
 
 static void
-pdbtool_pdb_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
+pdbtool_pdb_emit(LogMessage *msg, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   FilterExprNode *filter = (FilterExprNode *) args[0];
@@ -599,12 +599,13 @@ pdbtool_match(int argc, char *argv[])
           dbg_info = NULL;
           {
             gpointer nulls[] = { NULL, NULL, &ret, output };
-            pdbtool_pdb_emit(msg, FALSE, nulls);
+            pdbtool_pdb_emit(msg, nulls);
           }
         }
       else
         {
           pattern_db_process(patterndb, msg);
+          pdbtool_pdb_emit(msg, args);
         }
 
       if (G_LIKELY(proto))

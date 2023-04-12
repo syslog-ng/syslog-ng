@@ -22,7 +22,7 @@
 #ifndef PATTERNDB_GROUPING_BY_PARSER_H_INCLUDED
 #define PATTERNDB_GROUPING_BY_PARSER_H_INCLUDED
 
-#include "stateful-parser.h"
+#include "grouping-parser.h"
 #include "synthetic-message.h"
 #include "filter/filter-expr.h"
 
@@ -36,6 +36,5 @@ void grouping_by_set_where_condition(LogParser *s, FilterExprNode *filter_expr);
 void grouping_by_set_having_condition(LogParser *s, FilterExprNode *filter_expr);
 void grouping_by_set_prefix(LogParser *s, const gchar *prefix);
 LogParser *grouping_by_new(GlobalConfig *cfg);
-void grouping_by_global_init(void);
 
 #endif

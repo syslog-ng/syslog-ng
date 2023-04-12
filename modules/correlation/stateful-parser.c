@@ -25,6 +25,7 @@
 #include <string.h>
 
 
+
 void
 stateful_parser_set_inject_mode(StatefulParser *self, LogDBParserInjectMode inject_mode)
 {
@@ -44,6 +45,17 @@ stateful_parser_emit_synthetic(StatefulParser *self, LogMessage *msg)
   else
     {
       msg_post_message(log_msg_ref(msg));
+    }
+}
+
+void
+stateful_parser_emit_synthetic_list(StatefulParser *self, LogMessage **values, gsize len)
+{
+  for (gint i = 0; i < len; i++)
+    {
+      LogMessage *msg = values[i];
+      stateful_parser_emit_synthetic(self, msg);
+      log_msg_unref(msg);
     }
 }
 
@@ -89,4 +101,46 @@ stateful_parser_lookup_inject_mode(const gchar *inject_mode)
   else if (strcasecmp(inject_mode, "aggregate-only") == 0 || strcasecmp(inject_mode, "aggregate_only") == 0)
     return LDBP_IM_AGGREGATE_ONLY;
   return -1;
+}
+
+/* This function is called to populate the emitted_messages array.  It only
+ * manipulates per-thread data structure so it does not require locks but
+ * does not mind them being locked either.  */
+void
+stateful_parser_emitted_messages_add(StatefulParserEmittedMessages *self, LogMessage *msg)
+{
+  if (self->num_emitted_messages < EXPECTED_NUMBER_OF_MESSAGES_EMITTED)
+    {
+      self->emitted_messages[self->num_emitted_messages++] = log_msg_ref(msg);
+      return;
+    }
+
+  if (!self->emitted_messages_overflow)
+    self->emitted_messages_overflow = g_ptr_array_new();
+
+  g_ptr_array_add(self->emitted_messages_overflow, log_msg_ref(msg));
+}
+
+/* This function is called to flush the accumulated list of messages that
+ * are generated during processing.  We must not hold any locks within
+ * GroupingBy when doing this, as it will cause log_pipe_queue() calls to
+ * subsequent elements in the message pipeline, which in turn may recurse
+ * into PatternDB.  This works as msg_emitter itself is per-thread
+ * (actually an auto variable on the stack), and this is called without
+ * locks held at the end of a process() invocation. */
+void
+stateful_parser_emitted_messages_flush(StatefulParserEmittedMessages *self, StatefulParser *parser)
+{
+  stateful_parser_emit_synthetic_list(parser,
+                                      self->emitted_messages, self->num_emitted_messages);
+  self->num_emitted_messages = 0;
+
+  if (!self->emitted_messages_overflow)
+    return;
+
+  stateful_parser_emit_synthetic_list(parser, (LogMessage **) self->emitted_messages_overflow->pdata,
+                                      self->emitted_messages_overflow->len);
+
+  g_ptr_array_free(self->emitted_messages_overflow, TRUE);
+  self->emitted_messages_overflow = NULL;
 }
