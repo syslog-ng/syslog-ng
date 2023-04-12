@@ -83,6 +83,7 @@ set (LIB_HEADERS
     cfg-tree.h
     cfg-walker.h
     cfg-persist.h
+    cfg-monitor.h
     children.h
     crypto.h
     dnscache.h
@@ -177,6 +178,7 @@ set(LIB_SOURCES
     cfg-tree.c
     cfg-walker.c
     cfg-persist.c
+    cfg-monitor.c
     children.c
     dnscache.c
     driver.c
