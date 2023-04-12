@@ -13,8 +13,8 @@ syslog-ng.conf.HP-UX 	- sample configuration for HP-UX
 syslog-ng.conf.RedHat 	- sample configuration for RedHat GNU/Linux
 syslog-ng.conf.SunOS 	- sample configuration for SunOS
 syslog-ng.conf.doc	- sample configuration file with inline documentation as comments
-syslog-ng.vim 		- vim syntax file for syslog-ng.conf
 syslog2ng		- script to convert old syslog.conf to syslog-ng.conf
 relogger.pl		- script to replay syslog messages at the original rate
 fedora-packaging	- directory containing files related to Fedora packaging
 syslog-mc		- syslog multicast client
+vim 			- vim configuration for syslog-ng.conf

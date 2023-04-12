@@ -376,12 +376,16 @@ rm %{buildroot}/usr/lib/systemd/system/syslog-ng@.service
 %{__install} -p -m 644 lib/*.h %{buildroot}%{_includedir}/%{name}
 
 # install vim files
-%{__install} -d -m 755 %{buildroot}%{_datadir}/%{name}
-%{__install} -p -m 644 contrib/syslog-ng.vim %{buildroot}%{_datadir}/%{name}
+%{__install} -d -m 755 %{buildroot}%{_datadir}/%{name}/vim/ftdetect
+%{__install} -d -m 755 %{buildroot}%{_datadir}/%{name}/vim/syntax
+%{__install} -p -m 644 contrib/vim/ftdetect/syslog-ng.vim %{buildroot}%{_datadir}/%{name}/vim/ftdetect
+%{__install} -p -m 644 contrib/vim/syntax/syslog-ng.vim %{buildroot}%{_datadir}/%{name}/vim/syntax
 for vimver in 73 ; do
+    %{__install} -d -m 755 %{buildroot}%{_datadir}/vim/vim$vimver/ftdetect
     %{__install} -d -m 755 %{buildroot}%{_datadir}/vim/vim$vimver/syntax
-    cd %{buildroot}%{_datadir}/vim/vim$vimver/syntax
-    ln -s ../../../%{name}/syslog-ng.vim .
+    cd %{buildroot}%{_datadir}/vim/vim$vimver
+    ln -s ../../../%{name}/vim/ftdetect/syslog-ng.vim ftdetect
+    ln -s ../../../%{name}/vim/syntax/syslog-ng.vim syntax
     cd -
 done
 
@@ -408,22 +412,28 @@ fi
 
 %triggerin -- vim-common
 VIMVERNEW=`rpm -q --qf='%%{epoch}:%%{version}\n' vim-common | sort | tail -n 1 | sed -e 's/[0-9]*://' | sed -e 's/\.[0-9]*$//' | sed -e 's/\.//'`
+[ -d %{_datadir}/vim/vim${VIMVERNEW}/ftdetect ] && \
+    cd %{_datadir}/vim/vim${VIMVERNEW}/ftdetect && \
+    ln -sf ../../../%{name}/vim/ftdetect/syslog-ng.vim . || :
 [ -d %{_datadir}/vim/vim${VIMVERNEW}/syntax ] && \
     cd %{_datadir}/vim/vim${VIMVERNEW}/syntax && \
-    ln -sf ../../../%{name}/syslog-ng.vim . || :
+    ln -sf ../../../%{name}/vim/syntax/syslog-ng.vim . || :
 
 %triggerun -- vim-common
 VIMVEROLD=`rpm -q --qf='%%{epoch}:%%{version}\n' vim-common | sort | head -n 1 | sed -e 's/[0-9]*://' | sed -e 's/\.[0-9]*$//' | sed -e 's/\.//'`
-[ $2 = 0 ] && rm -f %{_datadir}/vim/vim${VIMVEROLD}/syntax/syslog-ng.vim || :
+[ $2 = 0 ] && rm -f %{_datadir}/vim/vim${VIMVEROLD}/ftdetect/syslog-ng.vim %{_datadir}/vim/vim${VIMVEROLD}/syntax/syslog-ng.vim || :
 
 %triggerpostun -- vim-common
 VIMVEROLD=`rpm -q --qf='%%{epoch}:%%{version}\n' vim-common | sort | head -n 1 | sed -e 's/[0-9]*://' | sed -e 's/\.[0-9]*$//' | sed -e 's/\.//'`
 VIMVERNEW=`rpm -q --qf='%%{epoch}:%%{version}\n' vim-common | sort | tail -n 1 | sed -e 's/[0-9]*://' | sed -e 's/\.[0-9]*$//' | sed -e 's/\.//'`
 if [ $1 = 1 ]; then
-    rm -f %{_datadir}/vim/vim${VIMVEROLD}/syntax/syslog-ng.vim || :
+    rm -f %{_datadir}/vim/vim${VIMVEROLD}/ftdetect/syslog-ng.vim %{_datadir}/vim/vim${VIMVEROLD}/syntax/syslog-ng.vim || :
+    [ -d %{_datadir}/vim/vim${VIMVERNEW}/ftdetect ] && \
+        cd %{_datadir}/vim/vim${VIMVERNEW}/ftdetect && \
+        ln -sf ../../../%{name}/vim/ftdetect/syslog-ng.vim . || :
     [ -d %{_datadir}/vim/vim${VIMVERNEW}/syntax ] && \
         cd %{_datadir}/vim/vim${VIMVERNEW}/syntax && \
-        ln -sf ../../../%{name}/syslog-ng.vim . || :
+        ln -sf ../../../%{name}/vim/syntax/syslog-ng.vim . || :
 fi
 
 
@@ -497,7 +507,8 @@ fi
 %{_libdir}/%{name}/loggen/libloggen*
 
 %dir %{_datadir}/%{name}
-%{_datadir}/%{name}/syslog-ng.vim
+%{_datadir}/%{name}/vim/ftdetect/syslog-ng.vim
+%{_datadir}/%{name}/vim/syntax/syslog-ng.vim
 %ghost %{_datadir}/vim/
 
 # scl files
