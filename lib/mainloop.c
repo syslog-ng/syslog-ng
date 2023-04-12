@@ -47,6 +47,7 @@
 #include "stats/stats-control.h"
 #include "healthcheck/healthcheck-control.h"
 #include "signal-handler.h"
+#include "cfg-monitor.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -166,11 +167,13 @@ struct _MainLoop
 
   MainLoopOptions *options;
   ControlServer *control_server;
+  CfgMonitor *cfg_monitor;
 
   struct
   {
     StatsCounterItem *last_reload;
     StatsCounterItem *last_successful_reload;
+    StatsCounterItem *last_cfgfile_mtime;
   } metrics;
 };
 
@@ -615,6 +618,9 @@ _register_metrics(MainLoop *self)
 
   stats_cluster_single_key_set(&k, "last_successful_config_reload_timestamp_seconds", NULL, 0);
   stats_register_counter(0, &k, SC_TYPE_SINGLE_VALUE, &self->metrics.last_successful_reload);
+
+  stats_cluster_single_key_set(&k, "last_config_file_modification_timestamp_seconds", NULL, 0);
+  stats_register_counter(0, &k, SC_TYPE_SINGLE_VALUE, &self->metrics.last_cfgfile_mtime);
   stats_unlock();
 }
 
@@ -628,7 +634,18 @@ _unregister_metrics(MainLoop *self)
 
   stats_cluster_single_key_set(&k, "last_successful_config_reload_timestamp_seconds", NULL, 0);
   stats_unregister_counter(&k, SC_TYPE_SINGLE_VALUE, &self->metrics.last_successful_reload);
+
+  stats_cluster_single_key_set(&k, "last_config_file_modification_timestamp_seconds", NULL, 0);
+  stats_unregister_counter(&k, SC_TYPE_SINGLE_VALUE, &self->metrics.last_cfgfile_mtime);
   stats_unlock();
+}
+
+static void
+_cfg_file_modified(const CfgMonitorEvent *event, gpointer c)
+{
+  MainLoop *self = (MainLoop *) c;
+
+  stats_counter_set(self->metrics.last_cfgfile_mtime, (gsize) event->st.st_mtime);
 }
 
 void
@@ -687,7 +704,13 @@ main_loop_read_and_init_config(MainLoop *self)
     {
       return 2;
     }
+
   self->control_server = control_init(resolved_configurable_paths.ctlfilename);
+
+  self->cfg_monitor = cfg_monitor_new();
+  cfg_monitor_add_watch(self->cfg_monitor, _cfg_file_modified, self);
+  cfg_monitor_start(self->cfg_monitor);
+
   main_loop_register_control_commands(self);
   stats_register_control_commands();
   healthcheck_register_control_commands();
@@ -705,6 +728,12 @@ void
 main_loop_deinit(MainLoop *self)
 {
   main_loop_free_config(self);
+
+  if (self->cfg_monitor)
+    {
+      cfg_monitor_stop(self->cfg_monitor);
+      cfg_monitor_free(self->cfg_monitor);
+    }
 
   control_deinit(self->control_server);
 
