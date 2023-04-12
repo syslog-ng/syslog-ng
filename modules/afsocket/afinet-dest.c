@@ -27,6 +27,7 @@
 #include "messages.h"
 #include "gprocess.h"
 #include "compat/openssl_support.h"
+#include "afsocket-signals.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -56,6 +57,7 @@ typedef struct _AFInetDestDriverTLSVerifyData
 {
   TLSContext *tls_context;
   gchar *hostname;
+  AFInetDestDriver *driver;
 } AFInetDestDriverTLSVerifyData;
 
 void
@@ -143,18 +145,28 @@ afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
       && (tls_context_get_verify_mode(self->tls_context) & TVM_TRUSTED))
     {
       ok = tls_verify_certificate_name(cert, self->hostname);
+      if (ok)
+        {
+          AFSocketTLSCertificateValidationSignalData signal_data = {0};
+          signal_data.ctx = ctx;
+
+          EMIT(self->driver->super.super.super.super.signal_slot_connector, signal_afsocket_tls_certificate_validation,
+               &signal_data);
+          ok = !signal_data.failure;
+        }
     }
 
   return ok;
 }
 
 static AFInetDestDriverTLSVerifyData *
-afinet_dd_tls_verify_data_new(TLSContext *ctx, const gchar *hostname)
+afinet_dd_tls_verify_data_new(TLSContext *ctx, const gchar *hostname, AFInetDestDriver *driver)
 {
   AFInetDestDriverTLSVerifyData *self = g_new0(AFInetDestDriverTLSVerifyData, 1);
 
   self->tls_context = tls_context_ref(ctx);
   self->hostname = g_strdup(hostname);
+  self->driver = driver;
   return self;
 }
 
@@ -209,7 +221,7 @@ afinet_dd_setup_tls_verifier(AFInetDestDriver *self)
   TransportMapperInet *transport_mapper_inet = (TransportMapperInet *) self->super.transport_mapper;
 
   AFInetDestDriverTLSVerifyData *verify_data;
-  verify_data = afinet_dd_tls_verify_data_new(transport_mapper_inet->tls_context, _afinet_dd_get_hostname(self));
+  verify_data = afinet_dd_tls_verify_data_new(transport_mapper_inet->tls_context, _afinet_dd_get_hostname(self), self);
   TLSVerifier *verifier = tls_verifier_new(afinet_dd_verify_callback, verify_data, afinet_dd_tls_verify_data_free);
 
   transport_mapper_inet_set_tls_verifier(transport_mapper_inet, verifier);
