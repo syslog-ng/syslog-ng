@@ -14,6 +14,8 @@ license="GPL-2.0-or-later"
 options="!check" # unit tests require https://github.com/Snaipe/Criterion with deps
 makedepends="
 	bison
+	bpftool
+	clang
 	curl-dev
 	file
 	flex
@@ -22,6 +24,7 @@ makedepends="
 	hiredis-dev
 	ivykis-dev>=0.42.4
 	json-c-dev
+	libbpf-dev
 	libdbi-dev
 	libmaxminddb-dev
 	libnet-dev
@@ -50,6 +53,7 @@ builddir="$srcdir/$pkgname-$pkgver"
 _modules="
 	add-contextual-data
 	amqp:afamqp
+	ebpf
 	examples
 	geoip2:geoip2-plugin
 	graphite
@@ -85,6 +89,7 @@ build() {
 		--with-jsonc=system \
 		\
 		--enable-all-modules \
+		--enable-ebpf \
 		--disable-linux-caps \
 		--disable-smtp \
 		--disable-systemd \
