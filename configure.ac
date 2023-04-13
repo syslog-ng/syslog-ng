@@ -52,6 +52,7 @@ PCRE_MIN_VERSION="6.1"
 LMC_MIN_VERSION="1.0.0"
 LRMQ_MIN_VERSION="0.0.1"
 LRC_MIN_VERSION="1.6.0"
+LIBBPF_MIN_VERSION="1.0.1"
 JOURNALD_MIN_VERSION="195"
 LIBSYSTEMD_MIN_VERSION="209"
 LIBSYSTEMD_WITH_JOURNAL_NAMESPACES_MIN_VERSION="245"
@@ -1785,7 +1786,7 @@ fi
 
 
 if test "x$enable_ebpf" = "xyes"; then
-	PKG_CHECK_MODULES(LIBBPF, libbpf >= "1.1.0")
+	PKG_CHECK_MODULES(LIBBPF, libbpf >= $LIBBPF_MIN_VERSION)
 
 	# we are using a distinct C compiler for compiling BPF code and
 	# pkg-config removes builtin paths from its output.  Reference it
