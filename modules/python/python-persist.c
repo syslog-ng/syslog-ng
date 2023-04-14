@@ -360,7 +360,7 @@ _store_entry(PyPersist *self, const gchar *key, guint8 type, PyObject *v)
 {
   gchar *query_key = _build_key(self, key);
   gchar *value = _serialize(type, v);
-  gsize value_len = strlen(value) + sizeof(type);
+  gsize value_len = strlen(value) + 1 + sizeof(type);
 
   PersistEntryHandle handle = _allocate_persist_entry(self->persist_state, query_key, value, value_len);
   if (!handle)
