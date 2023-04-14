@@ -347,8 +347,11 @@ log_msg_read_sd_param(SerializeArchive *sa, gchar *sd_element_name, LogMessage *
 
   if (name_len != 0 && value_len != 0)
     {
-      strncpy(sd_param_name, sd_element_name, 256);
-      strncpy(sd_param_name + strlen(sd_element_name), name, name_len);
+      gsize sd_element_name_len = g_strlcpy(sd_param_name, sd_element_name, sizeof(sd_param_name));
+      if (sd_element_name_len >= sizeof(sd_param_name))
+        goto error;
+
+      g_strlcpy(sd_param_name + sd_element_name_len, name, sizeof(sd_param_name) - sd_element_name_len);
       log_msg_set_value(self, log_msg_get_value_handle(sd_param_name), value, value_len);
       *has_more = TRUE;
     }
@@ -365,7 +368,7 @@ error:
 }
 
 static gboolean
-log_msg_read_sd_param_first(SerializeArchive *sa, gchar *sd_element_name, gsize sd_element_name_len, LogMessage *self,
+log_msg_read_sd_param_first(SerializeArchive *sa, gchar *sd_element_name, LogMessage *self,
                             gboolean *has_more)
 {
   gchar *name = NULL, *value = NULL;
@@ -379,8 +382,11 @@ log_msg_read_sd_param_first(SerializeArchive *sa, gchar *sd_element_name, gsize 
 
   if (name_len != 0 && value_len != 0)
     {
-      strncpy(sd_param_name, sd_element_name, sd_element_name_len);
-      strncpy(sd_param_name + strlen(sd_element_name), name, name_len);
+      gsize sd_element_name_len = g_strlcpy(sd_param_name, sd_element_name, sizeof(sd_param_name));
+      if (sd_element_name_len >= sizeof(sd_param_name))
+        goto error;
+
+      g_strlcpy(sd_param_name + sd_element_name_len, name, sizeof(sd_param_name) - sd_element_name_len);
       log_msg_set_value(self, log_msg_get_value_handle(sd_param_name), value, value_len);
       *has_more = TRUE;
     }
@@ -388,6 +394,7 @@ log_msg_read_sd_param_first(SerializeArchive *sa, gchar *sd_element_name, gsize 
     {
       *has_more = FALSE;
     }
+
   success = TRUE;
 error:
   g_free(name);
@@ -413,11 +420,16 @@ log_msg_read_sd_element(SerializeArchive *sa, LogMessage *self, gboolean *has_mo
       return TRUE;
     }
   strcpy(sd_element_root, logmsg_sd_prefix);
+
+  /* sd_id + '.' + '\0' */
+  if (sd_id_len + 2 >= G_N_ELEMENTS(sd_element_root) - logmsg_sd_prefix_len)
+    return FALSE;
+
   strncpy(sd_element_root + logmsg_sd_prefix_len, sd_id, sd_id_len);
   sd_element_root[logmsg_sd_prefix_len + sd_id_len]='.';
 
 
-  if (!log_msg_read_sd_param_first(sa, sd_element_root, G_N_ELEMENTS(sd_element_root), self, &has_more_param))
+  if (!log_msg_read_sd_param_first(sa, sd_element_root, self, &has_more_param))
     goto error;
 
   while (has_more_param)
