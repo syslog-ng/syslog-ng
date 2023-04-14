@@ -602,7 +602,7 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
           sd_id_name[pos] = 0;
           sd_id_len = pos;
           strcpy(sd_value_name, options->sdata_prefix);
-          strncpy(sd_value_name + options->sdata_prefix_len, sd_id_name, sizeof(sd_value_name) - options->sdata_prefix_len);
+          g_strlcpy(sd_value_name + options->sdata_prefix_len, sd_id_name, sizeof(sd_value_name) - options->sdata_prefix_len);
 
           if (left && *src == ']')
             {
@@ -610,7 +610,11 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
             }
           else
             {
+              if (options->sdata_prefix_len + pos + 1 >= sizeof(sd_value_name))
+                goto error;
+
               sd_value_name[options->sdata_prefix_len + pos] = '.';
+              sd_value_name[options->sdata_prefix_len + pos + 1] = 0;
             }
 
           g_assert(sd_id_len < sizeof(sd_param_name));
@@ -647,8 +651,12 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
                   _skip_char(&src, &left);
                 }
               sd_param_name[pos] = 0;
-              strncpy(&sd_value_name[options->sdata_prefix_len + 1 + sd_id_len], sd_param_name,
-                      sizeof(sd_value_name) - options->sdata_prefix_len - 1 - sd_id_len);
+              gsize sd_param_name_len = g_strlcpy(&sd_value_name[options->sdata_prefix_len + 1 + sd_id_len],
+                                                  sd_param_name,
+                                                  sizeof(sd_value_name) - options->sdata_prefix_len - 1 - sd_id_len);
+
+              if (sd_param_name_len >= sizeof(sd_value_name) - options->sdata_prefix_len - 1 - sd_id_len)
+                goto error;
 
               if (left && *src == '=')
                 _skip_char(&src, &left);
