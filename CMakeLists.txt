@@ -305,30 +305,30 @@ set_target_properties(check-copyright PROPERTIES
   ADDITIONAL_MAKE_CLEAN_FILES
   "copyright-run.log;copyright-err.log")
 
-# The inclusion of CTest triggers enable_testing()
-# CMake will generate tests only if the enable_testing() command has been invoked.
-# The CTest module invokes the command automatically when the BUILD_TESTING option is ON.
-
 if (CRITERION_FOUND)
   option(BUILD_TESTING "Enable unit tests" ON)
 else()
   option(BUILD_TESTING  "Enable unit tests" OFF)
 endif()
 
-if (BUILD_TESTING AND NOT CRITERION_FOUND)
-  message(FATAL_ERROR "BUILD_TESTING enabled without criterion detected!")
-endif()
-
 include(add_tests)
 
-if (CRITERION_FOUND)
-  set(CTEST_ENVIRONMENT
-    "G_SLICE=always-malloc,debug-blocks"
-    "G_DEBUG=fatal-warnings,fatal-criticals,gc-friendly")
-  include(CTest)
-endif()
+# The inclusion of CTest triggers enable_testing()
+# CMake will generate tests only if the enable_testing() command has been invoked.
+# The CTest module invokes the command automatically when the BUILD_TESTING option is ON.
 
-add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -j $$(nproc) --output-on-failure)
+if (BUILD_TESTING)
+  if (NOT CRITERION_FOUND)
+    message(FATAL_ERROR "BUILD_TESTING enabled without criterion detected!")
+  else()
+    set(CTEST_ENVIRONMENT
+      "G_SLICE=always-malloc,debug-blocks"
+      "G_DEBUG=fatal-warnings,fatal-criticals,gc-friendly")
+    include(CTest)
+
+    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -j $$(nproc) --output-on-failure)
+  endif()
+endif()
 
 set(IMPORTANT_WARNINGS
   -Wshadow)
@@ -398,9 +398,11 @@ add_subdirectory(modules)
 add_subdirectory(scripts)
 add_subdirectory(syslog-ng)
 add_subdirectory(syslog-ng-ctl)
-add_test_subdirectory(libtest)
-add_subdirectory(tests)
 add_subdirectory(persist-tool)
+if (BUILD_TESTING)
+  add_test_subdirectory(libtest)
+  add_subdirectory(tests)
+endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
 
