@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2020 One Identity
- * Copyright (c) 2020 Laszlo Budai <laszlo.budai@outlook.com>
+ * Copyright (c) 2023 Ricardo Filipe <ricardo.l.filipe@tecnico.ulisboa.pt>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
