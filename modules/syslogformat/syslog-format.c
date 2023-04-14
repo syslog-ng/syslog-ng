@@ -555,6 +555,8 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
   gsize sd_param_value_len;
   gchar sd_value_name[SD_NAME_SIZE];
 
+  g_assert(options->sdata_prefix_len < SD_NAME_SIZE);
+
   guint open_sd = 0;
   gint left = *length, pos;
 
@@ -611,6 +613,8 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
             {
               sd_value_name[options->sdata_prefix_len + pos] = '.';
             }
+
+          g_assert(sd_id_len < sizeof(sd_param_name));
 
           /* read sd-element */
           while (left && *src != ']')
