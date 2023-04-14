@@ -38,6 +38,8 @@
 #include <ctype.h>
 #include <string.h>
 
+#define SD_NAME_SIZE 256
+
 static const char aix_fwd_string[] = "Message forwarded from ";
 static const char repeat_msg_string[] = "last message repeated";
 static struct
@@ -544,14 +546,14 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
   gboolean ret = FALSE;
   const guchar *src = *data;
   /* ASCII string */
-  gchar sd_id_name[256];
+  gchar sd_id_name[SD_NAME_SIZE];
   gsize sd_id_len;
-  gchar sd_param_name[256];
+  gchar sd_param_name[SD_NAME_SIZE];
 
   /* UTF-8 string */
   gchar sd_param_value[options->sdata_param_value_max + 1];
   gsize sd_param_value_len;
-  gchar sd_value_name[256];
+  gchar sd_value_name[SD_NAME_SIZE];
 
   guint open_sd = 0;
   gint left = *length, pos;
