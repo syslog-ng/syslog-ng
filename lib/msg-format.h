@@ -100,7 +100,7 @@ void msg_format_parse_into(MsgFormatOptions *options, LogMessage *msg,
 LogMessage *msg_format_construct_message(MsgFormatOptions *options, const guchar *data, gsize length);
 LogMessage *msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length);
 
-void msg_format_options_set_sdata_prefix(MsgFormatOptions *options, const gchar *prefix);
+gboolean msg_format_options_set_sdata_prefix(MsgFormatOptions *options, const gchar *prefix);
 
 void msg_format_options_defaults(MsgFormatOptions *options);
 void msg_format_options_init(MsgFormatOptions *parse_options, GlobalConfig *cfg);
