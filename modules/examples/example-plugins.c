@@ -35,6 +35,8 @@ extern CfgParser threaded_diskq_source_parser;
 
 extern CfgParser http_test_slots_parser;
 
+extern CfgParser tls_test_validation_parser;
+
 extern CfgParser example_destination_parser;
 
 static Plugin example_plugins[] =
@@ -60,6 +62,11 @@ static Plugin example_plugins[] =
     .type = LL_CONTEXT_INNER_DEST,
     .name = "http_test_slots",
     .parser = &http_test_slots_parser
+  },
+  {
+    .type = LL_CONTEXT_INNER_DEST,
+    .name = "tls_test_validation",
+    .parser = &tls_test_validation_parser
   },
   {
     .type = LL_CONTEXT_DESTINATION,

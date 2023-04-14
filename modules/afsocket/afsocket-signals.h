@@ -25,6 +25,13 @@
 #define AFSOCKET_SIGNALS_H_INCLUDED
 
 #include "signal-slot-connector/signal-slot-connector.h"
+#include <openssl/x509v3.h>
+
+typedef struct _AFSocketTLSCertificateValidationSignalData
+{
+  X509_STORE_CTX *ctx;
+  gboolean failure;
+} AFSocketTLSCertificateValidationSignalData;
 
 typedef struct _AFSocketSetupSocketSignalData
 {
@@ -35,5 +42,7 @@ typedef struct _AFSocketSetupSocketSignalData
 } AFSocketSetupSocketSignalData;
 
 #define signal_afsocket_setup_socket SIGNAL(afsocket, setup_socket, AFSocketSetupSocketSignalData *)
+
+#define signal_afsocket_tls_certificate_validation SIGNAL(afsocket, tls_certificate_validation, AFSocketTLSCertificateValidationSignalData *)
 
 #endif

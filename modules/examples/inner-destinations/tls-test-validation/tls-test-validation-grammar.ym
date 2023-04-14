@@ -1,0 +1,83 @@
+/*
+ * Copyright (c) 2023 Ricardo Filipe <ricardo.l.filipe@tecnico.ulisboa.pt>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "driver.h"
+#include "cfg-lexer.h"
+#include "tls-test-validation-parser.h"
+}
+
+%code {
+
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
+#include "tls-test-validation.h"
+
+TlsTestValidationPlugin *last_tls_test_validation;
+
+}
+
+%define api.prefix {tls_test_validation_}
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriverPlugin **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_TLS_TEST_VALIDATION
+%token KW_IDENTITY
+
+%%
+
+start
+  : LL_CONTEXT_INNER_DEST tls_test_validation_start { YYACCEPT; }
+  ;
+
+tls_test_validation_start
+  : KW_TLS_TEST_VALIDATION '('
+  {
+    last_tls_test_validation = tls_test_validation_plugin_new();
+    *instance = (LogDriverPlugin *) last_tls_test_validation;
+    }
+    tls_test_validation_options
+  ')'
+  ;
+
+tls_test_validation_options
+	: tls_test_validation_option tls_test_validation_options
+	|
+	;
+
+
+tls_test_validation_option
+  : KW_IDENTITY '(' string ')'		{ tls_test_validation_plugin_set_identity(last_tls_test_validation, $3); free($3); }
+
+  ;
+
+/* INCLUDE_RULES */
+
+%%
