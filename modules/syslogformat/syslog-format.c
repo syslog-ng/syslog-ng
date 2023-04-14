@@ -577,7 +577,6 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
           pos = 0;
           while (left && *src != ' ' && *src != ']')
             {
-              /* the sd_id_name is max 255, the other chars are only stored in the msg->sd_str*/
               if (pos < sizeof(sd_id_name) - 1 - options->sdata_prefix_len)
                 {
                   if (isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
