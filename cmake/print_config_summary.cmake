@@ -21,10 +21,29 @@
 #
 # ############################################################################
 
+function(_print_summary_line _variableName)
+  string(ASCII 27 Esc)
+  set(Red "${Esc}[31m")
+  set(Green "${Esc}[32m")
+  set(ResetFG "${Esc}[39m")
+
+  string(LENGTH "${_variableName}" _variableNameLen)
+  math(EXPR _variableNameLen "32 - ${_variableNameLen}")
+  string(REPEAT " " ${_variableNameLen} _spaces)
+  string(REGEX MATCH "^[Oo][Nn]" _on "${${_variableName}}")
+
+  if(_on)
+    message("${_variableName}${_spaces}${Green}On${ResetFG}")
+  else()
+    message("${_variableName}${_spaces}${Red}Off${ResetFG}")
+  endif()
+endfunction ()
+
 # Lists actual module definition results
 # Behaves similar to the cmake -L option but filters out the relevant information and adds some highlighting
 #
 function(print_config_summary)
+  list(APPEND _importantVariableNames "BUILD_TESTING")
   get_cmake_property(_variableNames VARIABLES)
   list(SORT _variableNames)
 
@@ -32,26 +51,27 @@ function(print_config_summary)
   message(STATUS "syslog-ng Open Source Edition ${SYSLOG_NG_VERSION} configured")
   message(STATUS "-----------------------------")
 
-  string(ASCII 27 Esc)
-  set(Red "${Esc}[31m")
-  set(Green "${Esc}[32m")
-  set(ResetFG "${Esc}[39m")
+  foreach(_variableName ${_variableNames})
+    foreach(_importantVariableName ${_importantVariableNames})
+      string(REGEX MATCH "${_importantVariableName}" _match "${_variableName}")
+
+      if(_match)
+        _print_summary_line(${_importantVariableName})
+      endif()
+    endforeach()
+  endforeach()
+  message(STATUS "-----------------------------")
 
   foreach(_variableName ${_variableNames})
     string(REGEX MATCH "^ENABLE_" _match "${_variableName}")
 
     if(_match)
-      string(LENGTH "${_variableName}" _variableNameLen)
-      math(EXPR _variableNameLen "32 - ${_variableNameLen}")
-      string(REPEAT " " ${_variableNameLen} _spaces)
-      string(REGEX MATCH "^[Oo][Nn]" _on "${${_variableName}}")
-
-      if(_on)
-        message("${_variableName}${_spaces}${Green}On${ResetFG}")
-      else()
-        message("${_variableName}${_spaces}${Red}Off${ResetFG}")
+      _print_summary_line(${_variableName})
+    else()
+      if (VERBOSE)
+        message("${_variableName}=${${_variableName}}")
       endif()
     endif()
   endforeach()
-  
+  message(STATUS "-----------------------------")
 endfunction ()
