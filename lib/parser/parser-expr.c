@@ -36,6 +36,12 @@ log_parser_set_template(LogParser *self, LogTemplate *template)
   self->template = template;
 }
 
+void
+log_parser_clone_settings(LogParser *self, LogParser *cloned)
+{
+  log_parser_set_template(cloned, self->template);
+}
+
 gboolean
 log_parser_process_message(LogParser *self, LogMessage **pmsg, const LogPathOptions *path_options)
 {
