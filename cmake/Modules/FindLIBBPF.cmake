@@ -22,7 +22,7 @@
 #############################################################################
 
 find_package(PkgConfig)
-pkg_check_modules(LIBBPF QUIET libbpf>=1.1.0)
+pkg_check_modules(LIBBPF QUIET libbpf>=1.0.1)
 
 if (LIBBPF_FOUND)
   find_program(BPF_CC clang)
