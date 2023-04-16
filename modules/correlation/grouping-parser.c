@@ -333,8 +333,6 @@ grouping_parser_init_instance(GroupingParser *self, GlobalConfig *cfg)
   self->super.super.super.free_fn = grouping_parser_free_method;
   self->super.super.super.init = grouping_parser_init_method;
   self->super.super.super.deinit = grouping_parser_deinit_method;
-//  self->super.super.super.clone = _clone;
-//  self->super.super.super.generate_persist_name = _format_persist_name;
   self->super.super.process = grouping_parser_process_method;
   self->scope = RCS_GLOBAL;
   self->timeout = -1;
