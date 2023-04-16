@@ -24,12 +24,17 @@
 #include "stateful-parser.h"
 #include <string.h>
 
-
-
 void
 stateful_parser_set_inject_mode(StatefulParser *self, LogDBParserInjectMode inject_mode)
 {
   self->inject_mode = inject_mode;
+}
+
+void
+stateful_parser_clone_settings(StatefulParser *self, StatefulParser *cloned)
+{
+  log_parser_clone_settings(&self->super, &cloned->super);
+  cloned->inject_mode = self->inject_mode;
 }
 
 void
