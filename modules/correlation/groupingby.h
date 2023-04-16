@@ -19,8 +19,8 @@
  * COPYING for details.
  *
  */
-#ifndef PATTERNDB_GROUPING_BY_PARSER_H_INCLUDED
-#define PATTERNDB_GROUPING_BY_PARSER_H_INCLUDED
+#ifndef CORRELATION_GROUPING_BY_PARSER_H_INCLUDED
+#define CORRELATION_GROUPING_BY_PARSER_H_INCLUDED
 
 #include "grouping-parser.h"
 #include "synthetic-message.h"

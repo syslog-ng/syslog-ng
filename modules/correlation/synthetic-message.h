@@ -20,8 +20,8 @@
  * COPYING for details.
  *
  */
-#ifndef PATTERNDB_SYNTHETIC_MESSAGE_H_INCLUDED
-#define PATTERNDB_SYNTHETIC_MESSAGE_H_INCLUDED
+#ifndef CORRELATION_SYNTHETIC_MESSAGE_H_INCLUDED
+#define CORRELATION_SYNTHETIC_MESSAGE_H_INCLUDED
 
 #include "syslog-ng.h"
 #include "correlation-context.h"

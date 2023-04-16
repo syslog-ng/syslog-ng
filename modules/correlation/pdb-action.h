@@ -20,8 +20,8 @@
  * COPYING for details.
  *
  */
-#ifndef DBPARSER_PDB_ACTION_H_INCLUDED
-#define DBPARSER_PDB_ACTION_H_INCLUDED
+#ifndef CORRELATION_PDB_ACTION_H_INCLUDED
+#define CORRELATION_PDB_ACTION_H_INCLUDED
 
 #include "syslog-ng.h"
 #include "synthetic-message.h"

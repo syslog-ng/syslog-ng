@@ -20,8 +20,8 @@
  * COPYING for details.
  *
  */
-#ifndef PATTERNDB_PDB_LOAD_H_INCLUDED
-#define PATTERNDB_PDB_LOAD_H_INCLUDED
+#ifndef CORRELATION_PDB_LOAD_H_INCLUDED
+#define CORRELATION_PDB_LOAD_H_INCLUDED
 
 #include "syslog-ng.h"
 #include "pdb-ruleset.h"

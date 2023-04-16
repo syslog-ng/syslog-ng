@@ -19,8 +19,8 @@
  * COPYING for details.
  *
  */
-#ifndef PATTERNDB_GROUP_LINES_PARSER_H_INCLUDED
-#define PATTERNDB_GROUP_LINES_PARSER_H_INCLUDED
+#ifndef CORRELATION_GROUP_LINES_PARSER_H_INCLUDED
+#define CORRELATION_GROUP_LINES_PARSER_H_INCLUDED
 
 #include "stateful-parser.h"
 #include "synthetic-message.h"

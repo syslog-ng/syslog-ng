@@ -20,8 +20,8 @@
  * COPYING for details.
  *
  */
-#ifndef PDB_ERROR_H_INCLUDED
-#define PDB_ERROR_H_INCLUDED
+#ifndef CORRELATION_PDB_ERROR_H_INCLUDED
+#define CORRELATION_PDB_ERROR_H_INCLUDED
 
 #include "syslog-ng.h"
 
