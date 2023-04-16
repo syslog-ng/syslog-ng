@@ -58,6 +58,16 @@ grouping_parser_set_timeout(LogParser *s, gint timeout)
   self->timeout = timeout;
 }
 
+void
+grouping_parser_clone_settings(GroupingParser *self, GroupingParser *cloned)
+{
+  stateful_parser_clone_settings(&self->super, &cloned->super);
+  grouping_parser_set_key_template(&cloned->super.super, self->key_template);
+  grouping_parser_set_sort_key_template(&cloned->super.super, self->sort_key_template);
+  grouping_parser_set_timeout(&cloned->super.super, self->timeout);
+  grouping_parser_set_scope(&cloned->super.super, self->scope);
+}
+
 /*
  * This function can be called any time when pattern-db is not processing
  * messages, but we expect the correlation timer to move forward.  It

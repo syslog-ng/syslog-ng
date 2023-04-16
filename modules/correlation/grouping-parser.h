@@ -79,6 +79,7 @@ void grouping_parser_set_key_template(LogParser *s, LogTemplate *key_template);
 void grouping_parser_set_sort_key_template(LogParser *s, LogTemplate *sort_key);
 void grouping_parser_set_scope(LogParser *s, CorrelationScope scope);
 void grouping_parser_set_timeout(LogParser *s, gint timeout);
+void grouping_parser_clone_settings(GroupingParser *self, GroupingParser *cloned);
 
 
 CorrelationContext *grouping_parser_lookup_or_create_context(GroupingParser *self, LogMessage *msg);
