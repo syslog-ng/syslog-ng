@@ -21,7 +21,9 @@ EXTRA_DIST += \
 	\
 	contrib/syslog2ng \
 	contrib/syslog-mc \
-	contrib/syslog-ng.vim \
+	\
+	contrib/vim/ftdetect/syslog-ng.vim \
+	contrib/vim/syntax/syslog-ng.vim \
 	\
 	contrib/syslog-ng.conf.doc \
 	contrib/relogger.pl \
