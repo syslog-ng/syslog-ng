@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2023 One Identity LLC.
  * Copyright (c) 2010-2016 Balabit
  * Copyright (c) 2010-2014 Balázs Scheidler
  * Copyright (c) 2014 Viktor Tusa
@@ -202,6 +203,28 @@ Test(persist_state, test_persist_state_remove_entry)
 
   handle = persist_state_lookup_entry(state, "test", &size, &version);
   cr_assert_eq(handle, 0, "lookup succeeded after removing entry");
+
+  cancel_and_destroy_persist_state(state);
+}
+
+Test(persist_state, test_persist_state_string_alloc_test)
+{
+  guint8 version;
+  gsize size_1;
+  gsize size_2;
+  PersistEntryHandle handle_1;
+  PersistEntryHandle handle_2;
+
+  PersistState *state = clean_and_create_persist_state_for_test("test_persist_state_string_alloc.persist");
+
+  persist_state_alloc_string(state, "test", "test_longer", -1);
+  handle_1 = persist_state_lookup_entry(state, "test", &size_1, &version);
+
+  persist_state_alloc_string(state, "test", "test_short", -1);
+  handle_2 = persist_state_lookup_entry(state, "test", &size_2, &version);
+
+  cr_assert_eq(size_1, size_2, "allocation sizes do not match");
+  cr_assert_eq(handle_1, handle_2, "allocation handles do not match");
 
   cancel_and_destroy_persist_state(state);
 }

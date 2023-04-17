@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2023 One Identity LLC.
  * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
@@ -889,26 +890,34 @@ void
 persist_state_alloc_string(PersistState *self, const gchar *persist_name, const gchar *value, gssize len)
 {
   PersistEntryHandle handle;
-  SerializeArchive *sa;
+  SerializeArchive *serializer;
   GString *buf;
   gboolean success;
   gpointer block;
+
+  gsize lookup_size;
+  guint8 lookup_result_version;
 
   if (len < 0)
     len = strlen(value);
 
   buf = g_string_sized_new(len + 5);
-  sa = serialize_string_archive_new(buf);
-
-  success = serialize_write_cstring(sa, value, len);
+  serializer = serialize_string_archive_new(buf);
+  success = serialize_write_cstring(serializer, value, len);
   g_assert(success == TRUE);
+  serialize_archive_free(serializer);
 
-  serialize_archive_free(sa);
+  handle = persist_state_lookup_entry(self, persist_name, &lookup_size, &lookup_result_version);
 
-  handle = persist_state_alloc_entry(self, persist_name, buf->len);
+  if (!handle || lookup_size < buf->len)
+    {
+      handle = persist_state_alloc_entry(self, persist_name, buf->len);
+    }
+
   block = persist_state_map_entry(self, handle);
   memcpy(block, buf->str, buf->len);
   persist_state_unmap_entry(self, handle);
+
   g_string_free(buf, TRUE);
 }
 
