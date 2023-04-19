@@ -50,7 +50,7 @@ _convert_facility_as_number(const gchar *facility_text)
   if (facility > 127)
     return -1;
 
-  return FACILITY_CODE(facility);
+  return SYSLOG_FACILITY_CODE(facility);
 }
 
 static gint
@@ -76,7 +76,7 @@ _convert_facility(const gchar *facility_text)
 static void
 _set_msg_facility(LogMessage *msg, const guint32 facility)
 {
-  msg->pri = (msg->pri & ~LOG_FACMASK) | facility;
+  msg->pri = (msg->pri & ~SYSLOG_FACMASK) | facility;
 }
 
 static void
@@ -100,7 +100,7 @@ log_rewrite_set_facility_process(LogRewrite *s, LogMessage **pmsg, const LogPath
     }
 
   msg_trace("Setting syslog facility",
-            evt_tag_int("old_facility", (*pmsg)->pri & LOG_FACMASK),
+            evt_tag_int("old_facility", (*pmsg)->pri & SYSLOG_FACMASK),
             evt_tag_int("new_facility", facility),
             evt_tag_msg_reference(*pmsg));
   _set_msg_facility(*pmsg, facility);

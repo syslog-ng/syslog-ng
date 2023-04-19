@@ -37,7 +37,7 @@ filter_facility_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemp
 {
   FilterPri *self = (FilterPri *) s;
   LogMessage *msg = msgs[num_msg - 1];
-  guint32 fac_num = (msg->pri & LOG_FACMASK) >> 3;
+  guint32 fac_num = (msg->pri & SYSLOG_FACMASK) >> 3;
   gboolean res;
 
   if (G_UNLIKELY(self->valid & 0x80000000))
@@ -74,7 +74,7 @@ filter_severity_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemp
 {
   FilterPri *self = (FilterPri *) s;
   LogMessage *msg = msgs[num_msg - 1];
-  guint32 pri = msg->pri & LOG_PRIMASK;
+  guint32 pri = msg->pri & SYSLOG_PRIMASK;
   gboolean res;
 
   res = !!((1 << pri) & self->valid);

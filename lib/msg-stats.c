@@ -38,9 +38,9 @@ static StatsCounterItem *facility_counters[FACILITY_MAX];
 static void
 _process_message_pri(guint16 pri)
 {
-  int lpri = LOG_FAC(pri);
+  int lpri = SYSLOG_FAC(pri);
 
-  stats_counter_inc(severity_counters[LOG_PRI(pri)]);
+  stats_counter_inc(severity_counters[SYSLOG_PRI(pri)]);
   if (lpri > (FACILITY_MAX - 1))
     {
       /* the large facilities (=facility.other) are collected in the last array item */

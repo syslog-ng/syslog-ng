@@ -28,6 +28,7 @@
 #include "apphook.h"
 #include "rewrite/rewrite-set-severity.h"
 #include "logmsg/logmsg.h"
+#include "syslog-names.h"
 
 GlobalConfig *cfg = NULL;
 LogMessage *msg;
@@ -67,7 +68,7 @@ _perform_set_severity(LogTemplate *template, LogMessage *msg_)
 static gboolean
 _msg_severity_equals(LogMessage *msg_, gint sev)
 {
-  return (msg_->pri & LOG_PRIMASK) == sev;
+  return (msg_->pri & SYSLOG_PRIMASK) == sev;
 }
 
 Test(set_severity, text)
@@ -92,7 +93,7 @@ Test(set_severity, test_set_severity_with_various_invalid_values)
 {
   debug_flag = 1;
 
-  int default_severity = msg->pri & LOG_PRIMASK;
+  int default_severity = msg->pri & SYSLOG_PRIMASK;
   _perform_set_severity(_create_template("${nonexistentvalue}"), msg);
   assert_grabbed_log_contains("invalid value passed to set-severity()");
   cr_assert(_msg_severity_equals(msg, default_severity),
