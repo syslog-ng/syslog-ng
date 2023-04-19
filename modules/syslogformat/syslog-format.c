@@ -32,6 +32,7 @@
 #include "str-format.h"
 #include "utf8utils.h"
 #include "str-utils.h"
+#include "syslog-names.h"
 
 #include <regex.h>
 #include <ctype.h>
@@ -840,7 +841,7 @@ _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *l
       /* Different format */
 
       /* A kernel message? Use 'kernel' as the program name. */
-      if (((msg->pri & LOG_FACMASK) == LOG_KERN && (parse_options->flags & LP_LOCAL) != 0))
+      if (((msg->pri & SYSLOG_FACMASK) == LOG_KERN && (parse_options->flags & LP_LOCAL) != 0))
         {
           log_msg_set_value(msg, LM_V_PROGRAM, "kernel", 6);
         }

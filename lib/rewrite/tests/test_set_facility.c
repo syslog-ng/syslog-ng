@@ -67,7 +67,7 @@ _perform_set_facility(LogTemplate *template, LogMessage *msg_)
 static gboolean
 _msg_facility_equals(LogMessage *msg_, gint fac)
 {
-  return (msg_->pri & LOG_FACMASK) == fac;
+  return (msg_->pri & SYSLOG_FACMASK) == fac;
 }
 
 Test(set_facility, text)
@@ -85,17 +85,17 @@ Test(set_facility, text)
 Test(set_facility, numeric)
 {
   _perform_set_facility(_create_template("1"), msg);
-  cr_assert(_msg_facility_equals(msg, FACILITY_CODE(1)));
+  cr_assert(_msg_facility_equals(msg, SYSLOG_FACILITY_CODE(1)));
 
   _perform_set_facility(_create_template("2"), msg);
-  cr_assert(_msg_facility_equals(msg, FACILITY_CODE(2)));
+  cr_assert(_msg_facility_equals(msg, SYSLOG_FACILITY_CODE(2)));
 }
 
 Test(set_facility, test_set_facility_with_template_evaluating_to_empty_string)
 {
   debug_flag = 1;
 
-  gint default_facility = msg->pri & LOG_FACMASK;
+  gint default_facility = msg->pri & SYSLOG_FACMASK;
 
   _perform_set_facility(_create_template("${nonexistentvalue}"), msg);
 
@@ -107,7 +107,7 @@ Test(set_facility, large_number)
 {
   debug_flag = 1;
 
-  gint default_facility = msg->pri & LOG_FACMASK;
+  gint default_facility = msg->pri & SYSLOG_FACMASK;
 
   _perform_set_facility(_create_template("128"), msg);
 
@@ -119,7 +119,7 @@ Test(set_facility, invalid)
 {
   debug_flag = 1;
 
-  gint default_facility = msg->pri & LOG_FACMASK;
+  gint default_facility = msg->pri & SYSLOG_FACMASK;
 
   _perform_set_facility(_create_template("random-text"), msg);
 

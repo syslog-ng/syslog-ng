@@ -434,21 +434,21 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
       /* facility */
       const char *n;
 
-      n = syslog_name_lookup_facility_by_value(msg->pri & LOG_FACMASK);
+      n = syslog_name_lookup_facility_by_value(msg->pri & SYSLOG_FACMASK);
       if (n)
         {
           g_string_append(result, n);
         }
       else
         {
-          format_uint32_padded(result, 0, 0, 16, (msg->pri & LOG_FACMASK) >> 3);
+          format_uint32_padded(result, 0, 0, 16, (msg->pri & SYSLOG_FACMASK) >> 3);
         }
       break;
     }
     case M_FACILITY_NUM:
     {
       t = LM_VT_INTEGER;
-      format_uint32_padded(result, 0, 0, 10, (msg->pri & LOG_FACMASK) >> 3);
+      format_uint32_padded(result, 0, 0, 10, (msg->pri & SYSLOG_FACMASK) >> 3);
       break;
     }
     case M_SEVERITY:
@@ -456,14 +456,14 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
       /* level */
       const char *n;
 
-      n = syslog_name_lookup_severity_by_value(msg->pri & LOG_PRIMASK);
+      n = syslog_name_lookup_severity_by_value(msg->pri & SYSLOG_PRIMASK);
       if (n)
         {
           g_string_append(result, n);
         }
       else
         {
-          format_uint32_padded(result, 0, 0, 10, msg->pri & LOG_PRIMASK);
+          format_uint32_padded(result, 0, 0, 10, msg->pri & SYSLOG_PRIMASK);
         }
 
       break;
@@ -471,7 +471,7 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
     case M_SEVERITY_NUM:
     {
       t = LM_VT_INTEGER;
-      format_uint32_padded(result, 0, 0, 10, msg->pri & LOG_PRIMASK);
+      format_uint32_padded(result, 0, 0, 10, msg->pri & SYSLOG_PRIMASK);
       break;
     }
     case M_TAG:
@@ -493,8 +493,8 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
     }
     case M_BSDTAG:
     {
-      format_uint32_padded(result, 0, 0, 10, (msg->pri & LOG_PRIMASK));
-      g_string_append_c(result, (((msg->pri & LOG_FACMASK) >> 3) + 'A'));
+      format_uint32_padded(result, 0, 0, 10, (msg->pri & SYSLOG_PRIMASK));
+      g_string_append_c(result, (((msg->pri & SYSLOG_FACMASK) >> 3) + 'A'));
       break;
     }
     case M_PRI:
