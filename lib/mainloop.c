@@ -694,6 +694,15 @@ main_loop_read_and_init_config(MainLoop *self)
       return 1;
     }
 
+  if (options->config_id)
+    {
+      GString *config_id = g_string_sized_new(128);
+      cfg_format_id(self->current_configuration, config_id);
+      fprintf(stdout, "%s\n", config_id->str);
+      g_string_free(config_id, TRUE);
+      return 0;
+    }
+
   if (options->syntax_only || options->preprocess_into)
     {
       return 0;
