@@ -95,21 +95,28 @@ _exec_program(const gchar *cmdline)
 static void
 _close_all_fd(void)
 {
+  const rlim_t min_range = 10000;
   struct rlimit rlp;
   if (getrlimit(RLIMIT_NOFILE, &rlp) < 0)
     {
       /*
        * Failing to query max *fd*, still closing an arbitrary range might make sense,
-       * tring with some arbitrary big number. The only issue could be that it cannot
+       * trying with some arbitrary big number. The only issue could be that it cannot
        * close all of the needed *fd* and fail to bind to a socket (original issue).
        */
-      rlp.rlim_max = 10000;
+      rlp.rlim_max = min_range;
+    }
+  else if (rlp.rlim_max == RLIM_INFINITY)
+    {
+      /*
+       * Also could happen that the limits are RLIM_INFINITY.
+       * Use the same logic as above, try to close as much as possible.
+       */
+      rlp.rlim_max = (rlp.rlim_cur != RLIM_INFINITY ? rlp.rlim_cur : min_range);
     }
 
-  for (int i = rlp.rlim_max; i > 2; --i)
-    {
-      close(i);
-    }
+  for (rlim_t i = rlp.rlim_max; i > 2; --i)
+    close(i);
 }
 
 static void
