@@ -419,9 +419,19 @@ vp_foreach_helper(const gchar *name, gpointer ndx_as_pointer, gpointer data)
   gpointer user_data = ((gpointer *)data)[2];
   gboolean *r = ((gpointer *)data)[3];
 
-  *r &= !func(name, rv->type_hint,
-              rv->value->str,
-              rv->value->len, user_data);
+  gboolean success = !func(name, rv->type_hint,
+                           rv->value->str,
+                           rv->value->len, user_data);
+
+  *r &= success;
+
+  if (!success)
+    {
+      msg_trace("value_pairs_foreach: callback indicates failure",
+                evt_tag_str("name", name),
+                evt_tag_mem("value", rv->value->str, rv->value->len),
+                evt_tag_int("type", rv->type_hint));
+    }
   return !*r;
 }
 
