@@ -68,18 +68,25 @@ struct _LogWriter
   guint32 flags:31;
   gint32 seq_num;
   gboolean partial_write;
-  StatsCounterItem *dropped_messages;
-  StatsCounterItem *suppressed_messages;
-  StatsCounterItem *processed_messages;
-  StatsCounterItem *written_messages;
-  StatsAggregator *max_message_size;
-  StatsAggregator *average_messages_size;
-  StatsAggregator *CPS;
+
   struct
   {
-    StatsCounterItem *count;
-    StatsCounterItem *bytes;
-  } truncated;
+    StatsCounterItem *dropped_messages;
+    StatsCounterItem *suppressed_messages;
+    StatsCounterItem *processed_messages;
+    StatsCounterItem *written_messages;
+
+    StatsAggregator *max_message_size;
+    StatsAggregator *average_messages_size;
+    StatsAggregator *CPS;
+
+    struct
+    {
+      StatsCounterItem *count;
+      StatsCounterItem *bytes;
+    } truncated;
+  } metrics;
+
   LogPipe *control;
   LogWriterOptions *options;
   LogMessage *last_msg;
@@ -749,7 +756,7 @@ log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
           !_is_message_a_mark(lm))
         {
 
-          stats_counter_inc(self->suppressed_messages);
+          stats_counter_inc(self->metrics.suppressed_messages);
           self->last_msg_count++;
 
           /* we only create the timer if this is the first suppressed message, otherwise it is already running. */
@@ -813,7 +820,7 @@ log_writer_mark_timeout(void *cookie)
   if (!log_writer_is_msg_suppressed(self, msg))
     {
       log_queue_push_tail(self->queue, msg, &path_options);
-      stats_counter_inc(self->processed_messages);
+      stats_counter_inc(self->metrics.processed_messages);
     }
   else
     {
@@ -865,7 +872,7 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
       log_writer_postpone_mark_timer(self);
     }
 
-  stats_counter_inc(self->processed_messages);
+  stats_counter_inc(self->metrics.processed_messages);
   log_queue_push_tail(self->queue, lm, path_options);
 }
 
@@ -1113,8 +1120,8 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 
       g_string_truncate(result, self->options->truncate_size);
 
-      stats_counter_inc(self->truncated.count);
-      stats_counter_add(self->truncated.bytes, truncated_bytes);
+      stats_counter_inc(self->metrics.truncated.count);
+      stats_counter_add(self->metrics.truncated.bytes, truncated_bytes);
     }
 }
 
@@ -1160,8 +1167,8 @@ log_writer_flush_finalize(LogWriter *self)
 static void
 _log_writer_insert_msg_length_stats(LogWriter *self, gsize msg_len)
 {
-  stats_aggregator_insert_data(self->max_message_size, msg_len);
-  stats_aggregator_insert_data(self->average_messages_size, msg_len);
+  stats_aggregator_insert_data(self->metrics.max_message_size, msg_len);
+  stats_aggregator_insert_data(self->metrics.average_messages_size, msg_len);
 }
 
 static gboolean
@@ -1311,7 +1318,7 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       scratch_buffers_reclaim_marked(mark);
 
       if (!write_error)
-        stats_counter_inc(self->written_messages);
+        stats_counter_inc(self->metrics.written_messages);
     }
 
   if (write_error)
@@ -1414,15 +1421,15 @@ _register_aggregated_stats(LogWriter *self, StatsClusterKey *sc_key_input, gint 
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
                                                 self->stats_instance, "msg_size_max");
-  stats_register_aggregator_maximum(self->options->stats_level, &sc_key, &self->max_message_size);
+  stats_register_aggregator_maximum(self->options->stats_level, &sc_key, &self->metrics.max_message_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
                                                 self->stats_instance, "msg_size_avg");
-  stats_register_aggregator_average(self->options->stats_level, &sc_key, &self->average_messages_size);
+  stats_register_aggregator_average(self->options->stats_level, &sc_key, &self->metrics.average_messages_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
                                                 self->stats_instance, "eps");
-  stats_register_aggregator_cps(self->options->stats_level, &sc_key, sc_key_input, stats_type, &self->CPS);
+  stats_register_aggregator_cps(self->options->stats_level, &sc_key, sc_key_input, stats_type, &self->metrics.CPS);
 
   stats_aggregator_unlock();
 }
@@ -1432,9 +1439,9 @@ _unregister_aggregated_stats(LogWriter *self)
 {
   stats_aggregator_lock();
 
-  stats_unregister_aggregator_maximum(&self->max_message_size);
-  stats_unregister_aggregator_average(&self->average_messages_size);
-  stats_unregister_aggregator_cps(&self->CPS);
+  stats_unregister_aggregator_maximum(&self->metrics.max_message_size);
+  stats_unregister_aggregator_average(&self->metrics.average_messages_size);
+  stats_unregister_aggregator_cps(&self->metrics.CPS);
 
   stats_aggregator_unlock();
 }
@@ -1454,27 +1461,27 @@ _register_counters(LogWriter *self)
                                              self->stats_instance);
 
   if (self->options->suppress > 0)
-    stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
-  stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+    stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->metrics.suppressed_messages);
+  stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_DROPPED, &self->metrics.dropped_messages);
+  stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_WRITTEN, &self->metrics.written_messages);
 
   StatsClusterKey sc_legacy_processed;
   stats_cluster_single_key_legacy_set_with_name(&sc_legacy_processed, self->options->stats_source | SCS_DESTINATION,
                                                 self->stats_id, self->stats_instance, "processed");
   stats_register_counter(self->options->stats_level, &sc_legacy_processed, SC_TYPE_SINGLE_VALUE,
-                         &self->processed_messages);
+                         &self->metrics.processed_messages);
 
   StatsClusterKey sc_key_truncated_count;
   stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
                                                 self->stats_id, self->stats_instance, "truncated_count");
   stats_register_counter(self->options->stats_level, &sc_key_truncated_count, SC_TYPE_SINGLE_VALUE,
-                         &self->truncated.count);
+                         &self->metrics.truncated.count);
 
   StatsClusterKey sc_key_truncated_bytes;
   stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
                                                 self->stats_id, self->stats_instance, "truncated_bytes");
   stats_register_counter(self->options->stats_level, &sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE,
-                         &self->truncated.bytes);
+                         &self->metrics.truncated.bytes);
 
   stats_unlock();
   _register_aggregated_stats(self, &sc_key, SC_TYPE_WRITTEN);
@@ -1491,7 +1498,7 @@ log_writer_init(LogPipe *s)
     }
   iv_event_register(&self->queue_filled);
 
-  if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
+  if ((self->options->options & LWO_NO_STATS) == 0 && !self->metrics.dropped_messages)
     _register_counters(self);
 
 
@@ -1521,24 +1528,24 @@ _unregister_counters(LogWriter *self)
     stats_cluster_logpipe_key_add_legacy_alias(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
                                                self->stats_instance);
 
-    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-    stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
-    stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->metrics.dropped_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->metrics.suppressed_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->metrics.written_messages);
 
     StatsClusterKey sc_legacy_processed;
     stats_cluster_single_key_legacy_set_with_name(&sc_legacy_processed, self->options->stats_source | SCS_DESTINATION,
                                                   self->stats_id, self->stats_instance, "processed");
-    stats_unregister_counter(&sc_legacy_processed, SC_TYPE_SINGLE_VALUE, &self->processed_messages);
+    stats_unregister_counter(&sc_legacy_processed, SC_TYPE_SINGLE_VALUE, &self->metrics.processed_messages);
 
     StatsClusterKey sc_key_truncated_count;
     stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
                                                   self->stats_id, self->stats_instance, "truncated_count");
-    stats_unregister_counter(&sc_key_truncated_count, SC_TYPE_SINGLE_VALUE, &self->truncated.count);
+    stats_unregister_counter(&sc_key_truncated_count, SC_TYPE_SINGLE_VALUE, &self->metrics.truncated.count);
 
     StatsClusterKey sc_key_truncated_bytes;
     stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
                                                   self->stats_id, self->stats_instance, "truncated_bytes");
-    stats_unregister_counter(&sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE, &self->truncated.bytes);
+    stats_unregister_counter(&sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE, &self->metrics.truncated.bytes);
   }
   stats_unlock();
   _unregister_aggregated_stats(self);
