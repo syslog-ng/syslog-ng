@@ -441,6 +441,7 @@ http_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = http_dd_free;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.format_stats_instance = _format_stats_instance;
+  self->super.metrics.raw_bytes_enabled = TRUE;
   self->super.stats_source = stats_register_type("http");
   self->super.worker.construct = http_dw_new;
 

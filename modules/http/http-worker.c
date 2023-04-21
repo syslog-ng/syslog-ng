@@ -687,6 +687,7 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
       if (retval == LTR_SUCCESS)
         {
           gsize msg_length = self->request_body->len;
+          log_threaded_dest_worker_written_bytes_add(&self->super, msg_length);
           log_threaded_dest_driver_insert_batch_length_stats(self->super.owner, msg_length);
 
           http_load_balancer_set_target_successful(owner->load_balancer, target);
