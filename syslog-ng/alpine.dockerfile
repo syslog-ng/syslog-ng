@@ -40,6 +40,7 @@ RUN apk add --repository /axoflow -U --upgrade --no-cache \
     syslog-ng \
     syslog-ng-add-contextual-data \
     syslog-ng-amqp \
+    syslog-ng-ebpf \
     syslog-ng-examples \
     syslog-ng-geoip2 \
     syslog-ng-graphite \
