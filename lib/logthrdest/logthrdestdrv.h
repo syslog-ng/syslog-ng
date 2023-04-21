@@ -104,16 +104,21 @@ struct _LogThreadedDestDriver
   LogDestDriver super;
   GMutex lock;
 
-  StatsClusterKey *output_events_sc_key;
-  StatsClusterKey *processed_sc_key;
-  StatsCounterItem *dropped_messages;
-  StatsCounterItem *processed_messages;
-  StatsCounterItem *written_messages;
-  StatsAggregator *max_message_size;
-  StatsAggregator *average_messages_size;
-  StatsAggregator *max_batch_size;
-  StatsAggregator *average_batch_size;
-  StatsAggregator *CPS;
+  struct
+  {
+    StatsClusterKey *output_events_sc_key;
+    StatsClusterKey *processed_sc_key;
+
+    StatsCounterItem *dropped_messages;
+    StatsCounterItem *processed_messages;
+    StatsCounterItem *written_messages;
+
+    StatsAggregator *max_message_size;
+    StatsAggregator *average_messages_size;
+    StatsAggregator *max_batch_size;
+    StatsAggregator *average_batch_size;
+    StatsAggregator *CPS;
+  } metrics;
 
   gint batch_lines;
   gint batch_timeout;
