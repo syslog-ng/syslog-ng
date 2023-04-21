@@ -776,6 +776,34 @@ _acquire_worker_queue(LogThreadedDestWorker *self, gint stats_level, const Stats
   return TRUE;
 }
 
+static void
+_register_raw_bytes_stats(LogThreadedDestWorker *self)
+{
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("id", self->owner->super.super.id ? : ""),
+    stats_cluster_label("driver_instance", self->owner->format_stats_instance(self->owner)),
+  };
+
+  StatsClusterKey output_bytes_key;
+  stats_cluster_single_key_set(&output_bytes_key, "output_event_bytes_total", labels, G_N_ELEMENTS(labels));
+  stats_byte_counter_init(&self->metrics.written_bytes, &output_bytes_key, SBCP_KIB);
+}
+
+static void
+_unregister_raw_bytes_stats(LogThreadedDestWorker *self)
+{
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("id", self->owner->super.super.id ? : ""),
+    stats_cluster_label("driver_instance", self->owner->format_stats_instance(self->owner)),
+  };
+
+  StatsClusterKey output_bytes_key;
+  stats_cluster_single_key_set(&output_bytes_key, "output_event_bytes_total", labels, G_N_ELEMENTS(labels));
+  stats_byte_counter_deinit(&self->metrics.written_bytes, &output_bytes_key);
+}
+
 gboolean
 log_threaded_dest_worker_init_method(LogThreadedDestWorker *self)
 {
@@ -793,6 +821,9 @@ log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self)
 void
 log_threaded_dest_worker_free_method(LogThreadedDestWorker *self)
 {
+  if (self->owner->metrics.raw_bytes_enabled)
+    _unregister_raw_bytes_stats(self);
+
   main_loop_threaded_worker_clear(&self->thread);
 }
 
@@ -811,6 +842,10 @@ log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedD
   self->owner = owner;
   self->time_reopen = -1;
   _init_watches(self);
+
+  /* cannot be moved to the thread's init() as neither StatsByteCounter nor format_stats_instance() is thread-safe */
+  if (self->owner->metrics.raw_bytes_enabled)
+    _register_raw_bytes_stats(self);
 }
 
 void
@@ -962,6 +997,12 @@ _init_stats_legacy_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key)
   stats_cluster_logpipe_key_legacy_set(sc_key, self->stats_source | SCS_DESTINATION,
                                        self->super.super.id,
                                        self->format_stats_instance(self));
+}
+
+void
+log_threaded_dest_worker_written_bytes_add(LogThreadedDestWorker *self, gsize b)
+{
+  stats_byte_counter_add(&self->metrics.written_bytes, b);
 }
 
 void
