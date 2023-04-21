@@ -28,6 +28,7 @@
 #include "stats/aggregator/stats-aggregator-registry.h"
 #include "stats/stats-cluster-single.h"
 #include "stats/aggregator/stats-aggregator.h"
+#include "stats/stats-compat.h"
 #include "hostname.h"
 #include "host-resolve.h"
 #include "seqnum.h"
@@ -75,6 +76,8 @@ struct _LogWriter
     StatsCounterItem *suppressed_messages;
     StatsCounterItem *processed_messages;
     StatsCounterItem *written_messages;
+
+    StatsByteCounter written_bytes;
 
     StatsAggregator *max_message_size;
     StatsAggregator *average_messages_size;
@@ -1234,6 +1237,7 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
       log_msg_unref(msg);
       msg_set_context(NULL);
       log_msg_refcache_stop();
+      stats_byte_counter_add(&self->metrics.written_bytes, msg_len);
       _log_writer_insert_msg_length_stats(self, msg_len);
 
       return TRUE;
@@ -1447,6 +1451,34 @@ _unregister_aggregated_stats(LogWriter *self)
 }
 
 static void
+_register_raw_bytes_stats(LogWriter *self)
+{
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("id", self->stats_id),
+    stats_cluster_label("driver_instance", self->stats_instance),
+  };
+
+  StatsClusterKey output_bytes_key;
+  stats_cluster_single_key_set(&output_bytes_key, "output_event_bytes_total", labels, G_N_ELEMENTS(labels));
+  stats_byte_counter_init(&self->metrics.written_bytes, &output_bytes_key, SBCP_KIB);
+}
+
+static void
+_unregister_raw_bytes_stats(LogWriter *self)
+{
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("id", self->stats_id),
+    stats_cluster_label("driver_instance", self->stats_instance),
+  };
+
+  StatsClusterKey output_bytes_key;
+  stats_cluster_single_key_set(&output_bytes_key, "output_event_bytes_total", labels, G_N_ELEMENTS(labels));
+  stats_byte_counter_deinit(&self->metrics.written_bytes, &output_bytes_key);
+}
+
+static void
 _register_counters(LogWriter *self)
 {
   stats_lock();
@@ -1484,6 +1516,7 @@ _register_counters(LogWriter *self)
                          &self->metrics.truncated.bytes);
 
   stats_unlock();
+  _register_raw_bytes_stats(self);
   _register_aggregated_stats(self, &sc_key, SC_TYPE_WRITTEN);
 }
 
@@ -1549,7 +1582,7 @@ _unregister_counters(LogWriter *self)
   }
   stats_unlock();
   _unregister_aggregated_stats(self);
-
+  _unregister_raw_bytes_stats(self);
 }
 
 static gboolean
