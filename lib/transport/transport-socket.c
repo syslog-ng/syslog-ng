@@ -86,10 +86,38 @@ _determine_proto(gint fd, gint address_family)
   return result;
 }
 
+struct timespec *
+_extract_timestamp_from_cmsg(struct cmsghdr *cmsg)
+{
+#ifdef SCM_TIMESTAMPNS
+  if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMPNS)
+    {
+      struct timespec *timestamp = (struct timespec *) CMSG_DATA(cmsg);
+      return timestamp;
+    }
+#endif
+  return NULL;
+}
+
 void
 log_transport_socket_parse_cmsg_method(LogTransportSocket *s, struct cmsghdr *cmsg, LogTransportAuxData *aux)
 {
-  return;
+  struct timespec *timestamp = _extract_timestamp_from_cmsg(cmsg);
+  if (timestamp)
+    {
+      log_transport_aux_data_set_timestamp(aux, timestamp);
+      return;
+    }
+}
+
+static void
+_setup_fd(LogTransportSocket *self, gint fd)
+{
+#ifdef SO_TIMESTAMPNS
+  gint on = 1;
+
+  setsockopt(fd, SOL_SOCKET, SO_TIMESTAMPNS, &on, sizeof(on));
+#endif
 }
 
 #if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
@@ -178,6 +206,8 @@ log_transport_socket_init_instance(LogTransportSocket *self, gint fd)
   self->address_family = _determine_address_family(fd);
   self->proto = _determine_proto(fd, self->address_family);
   self->parse_cmsg = log_transport_socket_parse_cmsg_method;
+
+  _setup_fd(self, fd);
 }
 
 static gssize
