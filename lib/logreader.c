@@ -464,6 +464,13 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
     {
       log_msg_set_saddr(m, aux->peer_addr ? : self->peer_addr);
       log_msg_set_daddr(m, aux->local_addr ? : self->local_addr);
+      if (aux->timestamp.tv_sec)
+        {
+          /* accurate timestamp was received from the transport layer, use
+           * that instead of the one we generated */
+          m->timestamps[LM_TS_RECVD].ut_sec = aux->timestamp.tv_sec;
+          m->timestamps[LM_TS_RECVD].ut_usec = aux->timestamp.tv_nsec / 1000;
+        }
       m->proto = aux->proto;
     }
   log_msg_refcache_start_producer(m);
