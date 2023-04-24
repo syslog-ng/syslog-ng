@@ -65,7 +65,7 @@ _source_queue_mock(LogPipe *s, LogMessage *msg, const LogPathOptions *path_optio
 {
   LogSource *self = (LogSource *) s;
 
-  stats_counter_inc(self->recvd_messages);
+  stats_counter_inc(self->metrics.recvd_messages);
   log_pipe_forward_msg(s, msg, path_options);
 }
 
@@ -212,7 +212,7 @@ Test(logthrsourcedrv, test_threaded_source_blocking_post)
   start_test_threaded_source(s);
   request_exit_and_wait_for_stop(s);
 
-  StatsCounterItem *recvd_messages = _get_source(s)->recvd_messages;
+  StatsCounterItem *recvd_messages = _get_source(s)->metrics.recvd_messages;
   cr_assert(stats_counter_get(recvd_messages) == 10);
   cr_assert(s->exit_requested);
 
@@ -230,7 +230,7 @@ Test(logthrsourcedrv, test_threaded_source_suspend)
   start_test_threaded_source(s);
   request_exit_and_wait_for_stop(s);
 
-  StatsCounterItem *recvd_messages = _get_source(s)->recvd_messages;
+  StatsCounterItem *recvd_messages = _get_source(s)->metrics.recvd_messages;
   cr_assert(stats_counter_get(recvd_messages) == 5);
   cr_assert(s->suspended);
   cr_assert(s->exit_requested);
