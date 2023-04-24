@@ -341,6 +341,11 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
         }
       break;
     }
+    case LM_VT_NULL:
+    {
+      bson_append_null(o, name, -1);
+      break;
+    }
     default:
       return TRUE;
     }
