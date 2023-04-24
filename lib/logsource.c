@@ -457,6 +457,34 @@ _create_ack_tracker_if_not_exists(LogSource *self)
     }
 }
 
+static void
+_register_raw_bytes_stats(LogSource *self)
+{
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("id", self->stats_id),
+    stats_cluster_label("driver_instance", self->stats_instance),
+  };
+
+  StatsClusterKey input_bytes_key;
+  stats_cluster_single_key_set(&input_bytes_key, "input_event_bytes_total", labels, G_N_ELEMENTS(labels));
+  stats_byte_counter_init(&self->metrics.recvd_bytes, &input_bytes_key, SBCP_KIB);
+}
+
+static void
+_unregister_raw_bytes_stats(LogSource *self)
+{
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("id", self->stats_id),
+    stats_cluster_label("driver_instance", self->stats_instance),
+  };
+
+  StatsClusterKey input_bytes_key;
+  stats_cluster_single_key_set(&input_bytes_key, "input_event_bytes_total", labels, G_N_ELEMENTS(labels));
+  stats_byte_counter_deinit(&self->metrics.recvd_bytes, &input_bytes_key);
+}
+
 gboolean
 log_source_init(LogPipe *s)
 {
@@ -491,6 +519,9 @@ log_source_init(LogPipe *s)
 
   stats_unlock();
 
+  if (self->metrics.raw_bytes_enabled)
+    _register_raw_bytes_stats(self);
+
   return TRUE;
 }
 
@@ -499,6 +530,9 @@ log_source_deinit(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
   ack_tracker_deinit(self->ack_tracker);
+
+  if (self->metrics.raw_bytes_enabled)
+    _unregister_raw_bytes_stats(self);
 
   stats_lock();
   StatsClusterKey sc_key;
@@ -665,6 +699,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   stats_counter_inc(self->metrics.recvd_messages);
   stats_counter_set(self->metrics.last_message_seen, msg->timestamps[LM_TS_RECVD].ut_sec);
+  stats_byte_counter_add(&self->metrics.recvd_bytes, msg->recvd_rawmsg_size);
   log_pipe_forward_msg(s, msg, path_options);
 
   if (accurate_nanosleep && self->threaded && self->window_full_sleep_nsec > 0 && !log_source_free_to_send(self))

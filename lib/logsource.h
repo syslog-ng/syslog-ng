@@ -27,6 +27,7 @@
 
 #include "logpipe.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-compat.h"
 #include "window-size-counter.h"
 #include "dynamic-window.h"
 
@@ -84,6 +85,10 @@ struct _LogSource
     StatsCounterItem *stat_full_window;
     StatsCounterItem *last_message_seen;
     StatsCounterItem *recvd_messages;
+
+    gboolean raw_bytes_enabled;
+    StatsByteCounter recvd_bytes;
+
     StatsCluster *stat_window_size_cluster;
     StatsCluster *stat_full_window_cluster;
   } metrics;
