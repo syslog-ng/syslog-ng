@@ -457,6 +457,9 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
   msg_format_parse_into(&self->options->parse_options, m, line, length);
 
   _log_reader_insert_msg_length_stats(self, length);
+
+  log_msg_set_recvd_rawmsg_size(m, length);
+
   if (aux)
     {
       log_msg_set_saddr(m, aux->peer_addr ? : self->peer_addr);

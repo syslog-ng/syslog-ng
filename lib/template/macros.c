@@ -207,6 +207,7 @@ LogMacroDef macros[] =
   { "DESTIP", M_DEST_IP },
   { "DESTPORT", M_DEST_PORT },
   { "PROTO", M_PROTOCOL },
+  { "RAWMSG_SIZE", M_RAWMSG_SIZE },
   { "SEQNUM", M_SEQNUM },
   { "CONTEXT_ID", M_CONTEXT_ID },
   { "_", M_CONTEXT_ID },
@@ -633,6 +634,12 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
     {
       t = LM_VT_INTEGER;
       format_uint32_padded(result, 0, 0, 10, msg->proto);
+      break;
+    }
+    case M_RAWMSG_SIZE:
+    {
+      t = LM_VT_INTEGER;
+      format_uint32_padded(result, 0, 0, 10, msg->recvd_rawmsg_size);
       break;
     }
     case M_SEQNUM:
