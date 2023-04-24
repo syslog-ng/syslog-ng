@@ -1354,7 +1354,7 @@ msg_format_option
           }
         | KW_SDATA_PREFIX '(' string ')'
           {
-            msg_format_options_set_sdata_prefix(last_msg_format_options, $3);
+            CHECK_ERROR(msg_format_options_set_sdata_prefix(last_msg_format_options, $3), @3, "Prefix is too long \"%s\"", $3);
             free($3);
           }
         ;

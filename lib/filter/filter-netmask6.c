@@ -141,26 +141,26 @@ filter_netmask6_new(const gchar *cidr)
 {
   FilterNetmask6 *self = g_new0(FilterNetmask6, 1);
   struct in6_addr packet_addr;
-  gchar address[INET6_ADDRSTRLEN] = "";
+  gchar address[INET6_ADDRSTRLEN];
   gchar *slash = strchr(cidr, '/');
 
   filter_expr_node_init_instance(&self->super);
-  if (strlen(cidr) >= INET6_ADDRSTRLEN + 5 || !slash)
+  if (strlen(cidr) >= sizeof(address) || !slash)
     {
-      strcpy(address, cidr);
+      self->is_valid = inet_pton(AF_INET6, cidr, &packet_addr) == 1;
       self->prefix = 128;
     }
   else
     {
-      self->prefix = atol(slash + 1);
+      self->prefix = strtol(slash + 1, NULL, 10);
       if (self->prefix > 0 && self->prefix < 129)
         {
           strncpy(address, cidr, slash - cidr);
           address[slash - cidr] = 0;
+          self->is_valid = inet_pton(AF_INET6, address, &packet_addr) == 1;
         }
     }
 
-  self->is_valid = ((strlen(address) > 0) && inet_pton(AF_INET6, address, &packet_addr) == 1);
   if (self->is_valid)
     get_network_address(&packet_addr, self->prefix, &self->address);
   else

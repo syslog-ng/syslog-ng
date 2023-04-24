@@ -179,7 +179,7 @@ log_expr_node_format_location(LogExprNode *self, gchar *buf, gsize buf_len)
       node = node->parent;
     }
   if (!node)
-    strncpy(buf, "#unknown", buf_len);
+    g_strlcpy(buf, "#unknown", buf_len);
   return buf;
 }
 

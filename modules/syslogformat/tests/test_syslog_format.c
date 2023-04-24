@@ -105,13 +105,14 @@ Test(syslog_format, minimal_non_zero_terminated_numeric_message_is_parsed_as_pro
 }
 
 static gboolean
-_extract_sdata_into_message(const gchar *sdata, LogMessage **pmsg)
+_extract_sdata_into_message_with_prefix(const gchar *sdata, LogMessage **pmsg, const gchar *sdata_prefix)
 {
   const guchar *data = (const guchar *) sdata;
   gint data_length = strlen(sdata);
   LogMessage *msg = log_msg_new_empty();
 
   msg_format_options_defaults(&parse_options);
+  msg_format_options_set_sdata_prefix(&parse_options, sdata_prefix);
   msg_format_options_init(&parse_options, cfg);
   gboolean result = _syslog_format_parse_sd(msg, &data, &data_length, &parse_options);
   msg_format_options_destroy(&parse_options);
@@ -122,6 +123,12 @@ _extract_sdata_into_message(const gchar *sdata, LogMessage **pmsg)
     log_msg_unref(msg);
 
   return result;
+}
+
+static gboolean
+_extract_sdata_into_message(const gchar *sdata, LogMessage **pmsg)
+{
+  return _extract_sdata_into_message_with_prefix(sdata, pmsg, NULL);
 }
 
 Test(syslog_format, test_sdata_dash_means_there_are_no_sdata_elements)
@@ -271,4 +278,20 @@ Test(syslog_format, test_sdata_enterprise_qualified_id_with_and_multiple_params)
 Test(syslog_format, test_sdata_missing_closing_bracket)
 {
   cr_assert_not(_extract_sdata_into_message("[foo bar=\"baz\"", NULL));
+}
+
+Test(syslog_format, test_long_sdata)
+{
+  const gchar *sdata_prefix = ".SDATA.";
+  gchar long_sdata[1024] = "[";
+
+  gsize long_sdata_id = 255 - strlen(sdata_prefix);
+  memset(long_sdata + 1, 'a', long_sdata_id);
+  strcpy(long_sdata + 1 + long_sdata_id, " a=b]");
+  cr_expect_not(_extract_sdata_into_message_with_prefix(long_sdata, NULL, sdata_prefix));
+
+  long_sdata_id -= 1;
+  memset(long_sdata + 1, 'a', long_sdata_id);
+  strcpy(long_sdata + 1 + long_sdata_id, " a=b]");
+  cr_expect_not(_extract_sdata_into_message_with_prefix(long_sdata, NULL, sdata_prefix));
 }

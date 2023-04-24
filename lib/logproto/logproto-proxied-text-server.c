@@ -193,8 +193,8 @@ _parse_proxy_v1_tcp_header(LogProtoProxiedTextServer *self, const guchar *msg, g
   if (params_n < 4)
     goto ret;
 
-  strncpy(self->info.src_ip, params[0], IP_BUF_SIZE - 1);
-  strncpy(self->info.dst_ip, params[1], IP_BUF_SIZE - 1);
+  g_strlcpy(self->info.src_ip, params[0], IP_BUF_SIZE);
+  g_strlcpy(self->info.dst_ip, params[1], IP_BUF_SIZE);
 
   self->info.src_port = atoi(params[2]);
   if (self->info.src_port > 65535 || self->info.src_port < 0)

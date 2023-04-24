@@ -188,11 +188,15 @@ msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length)
   return msg;
 }
 
-void
+gboolean
 msg_format_options_set_sdata_prefix(MsgFormatOptions *options, const gchar *prefix)
 {
+  if (prefix && strlen(prefix) > 128)
+    return FALSE;
+
   g_free(options->sdata_prefix);
   options->sdata_prefix = g_strdup(prefix);
+  return TRUE;
 }
 
 void

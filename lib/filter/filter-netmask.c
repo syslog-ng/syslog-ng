@@ -87,7 +87,7 @@ filter_netmask_new(const gchar *cidr)
     }
   else
     {
-      strncpy(buf, cidr, slash - cidr + 1);
+      strncpy(buf, cidr, slash - cidr);
       buf[slash - cidr] = 0;
       g_inet_aton(buf, &self->address);
       if (strchr(slash + 1, '.'))
