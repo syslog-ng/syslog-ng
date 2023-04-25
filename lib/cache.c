@@ -51,6 +51,15 @@ cache_lookup(Cache *self, const gchar *key)
 }
 
 void
+cache_populate(Cache *self, const gchar *key, const gchar *value)
+{
+  gpointer result = g_hash_table_lookup(self->hash_table, key);
+
+  g_assert(result == NULL);
+  g_hash_table_insert(self->hash_table, g_strdup(key), g_strdup(value));
+}
+
+void
 cache_clear(Cache *self)
 {
   g_hash_table_unref(self->hash_table);

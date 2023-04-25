@@ -199,10 +199,7 @@ _clone(LogPipe *s)
   GroupingBy *cloned;
 
   cloned = (GroupingBy *) grouping_by_new(s->cfg);
-  grouping_parser_set_key_template(&cloned->super.super.super, self->super.key_template);
-  grouping_parser_set_sort_key_template(&cloned->super.super.super, self->super.sort_key_template);
-  grouping_parser_set_timeout(&cloned->super.super.super, self->super.timeout);
-  grouping_parser_set_scope(&cloned->super.super.super, self->super.scope);
+  grouping_parser_clone_settings(&self->super, &cloned->super);
   grouping_by_set_synthetic_message(&cloned->super.super.super, self->synthetic_message);
   grouping_by_set_trigger_condition(&cloned->super.super.super, filter_expr_clone(self->trigger_condition_expr));
   grouping_by_set_where_condition(&cloned->super.super.super, filter_expr_clone(self->where_condition_expr));

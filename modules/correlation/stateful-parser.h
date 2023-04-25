@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef STATEFUL_PARSER_H_INCLUDED
-#define STATEFUL_PARSER_H_INCLUDED 1
+#ifndef CORRELATION_STATEFUL_PARSER_H_INCLUDED
+#define CORRELATION_STATEFUL_PARSER_H_INCLUDED 1
 
 #include "parser/parser-expr.h"
 
@@ -52,6 +52,7 @@ stateful_parser_deinit_method(LogPipe *s)
 }
 
 void stateful_parser_set_inject_mode(StatefulParser *self, LogDBParserInjectMode inject_mode);
+void stateful_parser_clone_settings(StatefulParser *self, StatefulParser *cloned);
 void stateful_parser_emit_synthetic(StatefulParser *self, LogMessage *msg);
 void stateful_parser_emit_synthetic_list(StatefulParser *self, LogMessage **values, gsize len);
 void stateful_parser_init_instance(StatefulParser *self, GlobalConfig *cfg);

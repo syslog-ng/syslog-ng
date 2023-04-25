@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 BalaBit
+ * Copyright (c) 2023 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -19,22 +19,15 @@
  * COPYING for details.
  *
  */
-#ifndef CORRELATION_GROUPING_BY_PARSER_H_INCLUDED
-#define CORRELATION_GROUPING_BY_PARSER_H_INCLUDED
+#ifndef CORRELATION_GROUP_LINES_PARSER_H_INCLUDED
+#define CORRELATION_GROUP_LINES_PARSER_H_INCLUDED
 
-#include "grouping-parser.h"
+#include "stateful-parser.h"
 #include "synthetic-message.h"
-#include "filter/filter-expr.h"
+#include "multi-line/multi-line-factory.h"
 
-void grouping_by_set_key_template(LogParser *s, LogTemplate *context_id);
-void grouping_by_set_sort_key_template(LogParser *s, LogTemplate *sort_key);
-void grouping_by_set_timeout(LogParser *s, gint timeout);
-void grouping_by_set_scope(LogParser *s, CorrelationScope scope);
-void grouping_by_set_synthetic_message(LogParser *s, SyntheticMessage *message);
-void grouping_by_set_trigger_condition(LogParser *s, FilterExprNode *filter_expr);
-void grouping_by_set_where_condition(LogParser *s, FilterExprNode *filter_expr);
-void grouping_by_set_having_condition(LogParser *s, FilterExprNode *filter_expr);
-void grouping_by_set_prefix(LogParser *s, const gchar *prefix);
-LogParser *grouping_by_new(GlobalConfig *cfg);
+MultiLineOptions *group_lines_get_multi_line_options(LogParser *s);
+void group_lines_set_separator(LogParser *s, const gchar *separator);
+LogParser *group_lines_new(GlobalConfig *cfg);
 
 #endif

@@ -176,6 +176,19 @@ msg_send_formatted_message(int prio, const char *msg)
     }
 }
 
+void
+msg_send_message_printf(int prio, const gchar *fmt, ...)
+{
+  gchar buf[1024];
+  va_list va;
+
+  va_start(va, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, va);
+  va_end(va);
+
+  msg_send_formatted_message(prio, buf);
+}
+
 static void
 msg_event_send_with_suppression(EVTREC *e, gboolean (*suppress)(const gchar *msg))
 {

@@ -47,6 +47,7 @@
 #include "template/user-function.h"
 #include "cfg-block.h"
 #include "cfg-path.h"
+#include "multi-line/multi-line-factory.h"
 
 #include "logthrsource/logthrfetcherdrv.h"
 #include "logthrdest/logthrdestdrv.h"
@@ -84,6 +85,7 @@ extern HealthCheckStatsOptions *last_healthcheck_options;
 extern LogRewrite *last_rewrite;
 extern CfgArgs *last_block_args;
 extern DNSCacheOptions *last_dns_cache_options;
+extern MultiLineOptions *last_multi_line_options;
 
 
 #endif

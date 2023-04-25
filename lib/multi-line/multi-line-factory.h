@@ -34,6 +34,7 @@ enum
   MLM_INDENTED,
   MLM_REGEXP_PREFIX_GARBAGE,
   MLM_REGEXP_PREFIX_SUFFIX,
+  MLM_SMART,
 };
 
 typedef struct _MultiLineOptions
@@ -62,6 +63,9 @@ void multi_line_options_copy(MultiLineOptions *dest, MultiLineOptions *source);
 void multi_line_options_defaults(MultiLineOptions *options);
 gboolean multi_line_options_init(MultiLineOptions *options);
 void multi_line_options_destroy(MultiLineOptions *options);
+
+void multi_line_global_init(void);
+void multi_line_global_deinit(void);
 
 
 #endif

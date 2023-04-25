@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2013 Balabit
- * Copyright (c) 2013 Balazs Scheidler <bazsi@balabit.hu>
- * Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
+ * Copyright (c) 2023 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,24 +21,14 @@
  *
  */
 
-#ifndef MULTI_LINE_REGEXP_MULTI_LINE_H_INCLUDED
-#define MULTI_LINE_REGEXP_MULTI_LINE_H_INCLUDED
+#ifndef MULTI_LINE_SMART_MULTI_LINE_H_INCLUDED
+#define MULTI_LINE_SMART_MULTI_LINE_H_INCLUDED
 
 #include "multi-line/multi-line-logic.h"
-#include "multi-line/multi-line-pattern.h"
 
-typedef struct _RegexpMultiLine
-{
-  MultiLineLogic super;
-  enum
-  {
-    RML_PREFIX_GARBAGE,
-    RML_PREFIX_SUFFIX,
-  } mode;
-  MultiLinePattern *prefix;
-  MultiLinePattern *garbage;
-} RegexpMultiLine;
+MultiLineLogic *smart_multi_line_new(void);
 
-MultiLineLogic *regexp_multi_line_new(gint mode, MultiLinePattern *prefix, MultiLinePattern *garbage_or_suffix);
+void smart_multi_line_global_init(void);
+void smart_multi_line_global_deinit(void);
 
 #endif

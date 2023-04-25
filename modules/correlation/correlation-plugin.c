@@ -41,6 +41,11 @@ static Plugin correlation_plugins[] =
     .name = "grouping-by",
     .parser = &correlation_parser,
   },
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "group-lines",
+    .parser = &correlation_parser,
+  },
 };
 
 gboolean

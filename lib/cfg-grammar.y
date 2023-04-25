@@ -249,8 +249,13 @@
 %token KW_LOCAL_TIME_ZONE             10204
 %token KW_FORMAT                      10205
 
+/* multi-line options */
+%token KW_MULTI_LINE_MODE             10206
+%token KW_MULTI_LINE_PREFIX           10207
+%token KW_MULTI_LINE_GARBAGE          10208
+
 /* destination writer options */
-%token KW_TRUNCATE_SIZE               10206
+%token KW_TRUNCATE_SIZE               10209
 
 /* timers */
 %token KW_TIME_REOPEN                 10210
@@ -1530,6 +1535,26 @@ rewrite_condition_opt
           } ')'
         ;
 
+multi_line_option
+	: KW_MULTI_LINE_MODE '(' string ')'
+          {
+            CHECK_ERROR(multi_line_options_set_mode(last_multi_line_options, $3), @3, "Invalid multi-line mode");
+	    free($3);
+          }
+	| KW_MULTI_LINE_PREFIX '(' string ')'
+          {
+            GError *error = NULL;
+            CHECK_ERROR_GERROR(multi_line_options_set_prefix(last_multi_line_options, $3, &error), @3, error, "error compiling multi-line regexp");
+            free($3);
+          }
+	| KW_MULTI_LINE_GARBAGE '(' string ')'
+	  {
+            GError *error = NULL;
+
+            CHECK_ERROR_GERROR(multi_line_options_set_garbage(last_multi_line_options, $3, &error), @3, error, "error compiling multi-line regexp");
+            free($3);
+	  }
+	;
 
 _root_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_ROOT, NULL, "root context"); };
 _root_context_pop: { cfg_lexer_pop_context(lexer); };

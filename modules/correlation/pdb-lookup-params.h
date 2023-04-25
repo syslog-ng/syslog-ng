@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef PATTERNDB_PDB_LOOKUP_PARAMS_H_INCLUDED
-#define PATTERNDB_PDB_LOOKUP_PARAMS_H_INCLUDED
+#ifndef CORRELATION_PDB_LOOKUP_PARAMS_H_INCLUDED
+#define CORRELATION_PDB_LOOKUP_PARAMS_H_INCLUDED
 
 #include <template/templates.h>
 #include "logmsg/logmsg.h"

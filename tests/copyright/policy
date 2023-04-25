@@ -59,7 +59,7 @@ tests/light/.pre-commit-config.yaml
 .github/workflows/.*$
 lib/logmsg/tests/messages/syslog-ng-(pe-)?[.0-9]*-msg.h$
 modules/python-modules/requirements\.lock
-
+lib/multi-line/smart-multi-line\.fsm$
 
 ###########################################################################
 # These files are LGPLd and are external contributions _without_ a Balabit
@@ -93,6 +93,8 @@ lib/stats/tests/test_stats_prometheus\.c
 lib/stats/tests/test_stats_cluster_key_builder\.c
 lib/timeutils/timeutils\.h
 lib/logmsg/tests/dump_logmsg\.c
+lib/multi-line/smart-multi-line\.[ch]
+lib/multi-line/tests/test_smart_multi_line\.c
 libtest/mock-logpipe\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
@@ -162,6 +164,7 @@ modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
 modules/afsocket/socket-options-unix\.[ch]$
 modules/basicfuncs/vp-funcs\.[ch]$
+modules/correlation/group-lines\.[ch]$
 modules/diskq/diskq-global-metrics\.[ch]$
 modules/diskq/tests/test_logqueue_disk\.c$
 modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
@@ -184,6 +187,7 @@ tests/light/functional_tests/logpath/test_named_logpaths_with_catchall_flag.py
 tests/light/functional_tests/logpath/test_named_logpaths_with_fallback_flag.py
 tests/light/functional_tests/logpath/test_named_logpaths_with_final_flag.py
 tests/light/functional_tests/parsers/sdata-parser/test_sdata_parser\.py
+tests/light/functional_tests/parsers/group-lines-parser/test_group_lines_parser\.py
 tests/light/functional_tests/logpath/test_conditionals\.py
 tests/light/functional_tests/logpath/test_midpoint_destinations\.py
 tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py

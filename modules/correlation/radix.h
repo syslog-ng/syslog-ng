@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef RADIX_H_INCLUDED
-#define RADIX_H_INCLUDED
+#ifndef CORRELATION_RADIX_H_INCLUDED
+#define CORRELATION_RADIX_H_INCLUDED
 
 #include "logmsg/logmsg.h"
 #include "messages.h"

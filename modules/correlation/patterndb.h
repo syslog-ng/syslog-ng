@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef PATTERNDB_H_INCLUDED
-#define PATTERNDB_H_INCLUDED
+#ifndef CORRELATION_PATTERNDB_H_INCLUDED
+#define CORRELATION_PATTERNDB_H_INCLUDED
 
 #include "syslog-ng.h"
 #include "pdb-ruleset.h"

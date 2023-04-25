@@ -66,6 +66,8 @@ set(CORRELATION_SOURCES
     groupingby.h
     grouping-parser.c
     grouping-parser.h
+    group-lines.c
+    group-lines.h
 )
 
 add_module(

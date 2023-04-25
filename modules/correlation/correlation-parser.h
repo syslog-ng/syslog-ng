@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef DBPARSER_PARSER_H_INCLUDED
-#define DBPARSER_PARSER_H_INCLUDED
+#ifndef CORRELATION_PARSER_H_INCLUDED
+#define CORRELATION_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
 #include "parser/parser-expr.h"

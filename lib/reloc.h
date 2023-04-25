@@ -32,6 +32,7 @@ CacheResolver *path_resolver_new(const gchar *sysprefix);
 
 gchar *resolve_path_variables_in_text(const gchar *text);
 const gchar *get_installation_path_for(const gchar *template);
+void override_installation_path_for(const gchar *template, const gchar *value);
 void reloc_init(void);
 void reloc_deinit(void);
 

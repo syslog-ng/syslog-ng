@@ -138,6 +138,9 @@ class SyslogNgConfig(object):
     def create_sdata_parser(self, **options):
         return Parser("sdata-parser", **options)
 
+    def create_group_lines_parser(self, **options):
+        return Parser("group-lines", **options)
+
     def create_cisco_parser(self, **options):
         return Parser("cisco-parser", **options)
 

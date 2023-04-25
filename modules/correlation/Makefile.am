@@ -63,6 +63,8 @@ modules_correlation_libcorrelation_la_SOURCES			=	\
 	modules/correlation/grouping-parser.h			\
 	modules/correlation/groupingby.c			\
 	modules/correlation/groupingby.h			\
+	modules/correlation/group-lines.c			\
+	modules/correlation/group-lines.h			\
 	$(modules_correlation_libsyslog_ng_patterndb_la_SOURCES)
 modules_correlation_libcorrelation_la_CPPFLAGS		=	\
 	$(AM_CPPFLAGS)						\

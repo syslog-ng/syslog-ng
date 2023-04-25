@@ -184,6 +184,13 @@ static CfgLexerKeyword main_keywords[] =
   { "read_old_records",   KW_READ_OLD_RECORDS},
   { "use_syslogng_pid",   KW_USE_SYSLOGNG_PID },
   { "fetch_no_data_delay", KW_FETCH_NO_DATA_DELAY},
+
+  /* multi-line */
+  { "multi_line_mode",    KW_MULTI_LINE_MODE  },
+  { "multi_line_prefix",  KW_MULTI_LINE_PREFIX },
+  { "multi_line_garbage", KW_MULTI_LINE_GARBAGE },
+  { "multi_line_suffix",  KW_MULTI_LINE_GARBAGE },
+
   /* filter items */
   { "type",               KW_TYPE },
   { "tags",               KW_TAGS },
