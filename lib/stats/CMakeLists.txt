@@ -2,6 +2,7 @@ add_subdirectory(aggregator)
 
 set(STATS_HEADERS
     stats/stats.h
+    stats/stats-compat.h
     stats/stats-control.h
     stats/stats-counter.h
     stats/stats-cluster.h

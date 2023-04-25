@@ -6,6 +6,7 @@ include lib/stats/aggregator/Makefile.am
 
 statsinclude_HEADERS = \
 	lib/stats/stats.h			\
+	lib/stats/stats-compat.h \
 	lib/stats/stats-control.h		\
 	lib/stats/stats-counter.h		\
 	lib/stats/stats-cluster.h		\
