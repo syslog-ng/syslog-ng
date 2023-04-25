@@ -27,6 +27,7 @@
 #include "messages.h"
 #include "value-pairs/evttag.h"
 #include "value-pairs/value-pairs.h"
+#include "scanner/list-scanner/list-scanner.h"
 
 static void
 _worker_disconnect(LogThreadedDestWorker *s)
@@ -294,9 +295,57 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
       break;
     }
     case LM_VT_STRING:
-    case LM_VT_JSON:
       bson_append_utf8(o, name, -1, value, value_len);
       break;
+    case LM_VT_LIST:
+    {
+      bson_t array;
+      ListScanner scanner;
+      gint i = 0;
+
+      bson_append_array_begin(o, name, -1, &array);
+
+      list_scanner_init(&scanner);
+      list_scanner_input_string(&scanner, value, value_len);
+      while (list_scanner_scan_next(&scanner))
+        {
+          gchar buf[32];
+          const gchar *index_string;
+
+          bson_uint32_to_string(i, &index_string, buf, sizeof(buf));
+          bson_append_utf8(&array, index_string, -1, list_scanner_get_current_value(&scanner), -1);
+          i++;
+        }
+
+      list_scanner_deinit(&scanner);
+      bson_append_array_end(o, &array);
+      break;
+    }
+    case LM_VT_JSON:
+    {
+      bson_t embedded_bson;
+
+      if (bson_init_from_json(&embedded_bson, value, value_len, NULL))
+        {
+          bson_append_document(o, name, -1, &embedded_bson);
+          bson_destroy(&embedded_bson);
+        }
+      else
+        {
+          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, "json");
+
+          if (fallback)
+            bson_append_utf8(o, name, -1, value, value_len);
+          else
+            return r;
+        }
+      break;
+    }
+    case LM_VT_NULL:
+    {
+      bson_append_null(o, name, -1);
+      break;
+    }
     default:
       return TRUE;
     }
