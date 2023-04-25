@@ -67,7 +67,7 @@ _fetch_selector(ContextualDataRecordScanner *self, ContextualDataRecord *record)
 {
   if (!_fetch_next(self))
     return FALSE;
-  record->selector = g_string_new(csv_scanner_get_current_value(&self->scanner));
+  record->selector = g_strdup(csv_scanner_get_current_value(&self->scanner));
   return TRUE;
 }
 
@@ -108,7 +108,7 @@ _fetch_value(ContextualDataRecordScanner *self, ContextualDataRecord *record)
                   "configuration. This message means that this string is now assumed to be a "
                   "literal (non-template) string for compatibility",
                   cfg_format_config_version_tag(self->cfg),
-                  evt_tag_str("selector", record->selector->str),
+                  evt_tag_str("selector", record->selector),
                   evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
                   evt_tag_str("value", value_template));
       log_template_compile_literal_string(record->value, value_template);
@@ -135,7 +135,7 @@ _fetch_value(ContextualDataRecordScanner *self, ContextualDataRecord *record)
                               "or remove the parenthesis. The value column will be processed as a 'string' "
                               "expression",
                               cfg_format_config_version_tag(self->cfg),
-                              evt_tag_str("selector", record->selector->str),
+                              evt_tag_str("selector", record->selector),
                               evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
                               evt_tag_str("value", value_template),
                               evt_tag_printf("fixed-value", "string(%s)", value_template));
@@ -163,7 +163,7 @@ _fetch_value(ContextualDataRecordScanner *self, ContextualDataRecord *record)
   if (!success)
     {
       msg_error("add-contextual-data(): error compiling template",
-                evt_tag_str("selector", record->selector->str),
+                evt_tag_str("selector", record->selector),
                 evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
                 evt_tag_str("value", value_template),
                 evt_tag_str("error", error->message));

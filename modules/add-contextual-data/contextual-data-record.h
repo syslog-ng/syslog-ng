@@ -29,7 +29,7 @@
 
 typedef struct _ContextualDataRecord
 {
-  GString *selector;
+  gchar *selector;
   NVHandle value_handle;
   LogTemplate *value;
 } ContextualDataRecord;

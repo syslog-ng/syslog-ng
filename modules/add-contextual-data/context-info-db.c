@@ -52,7 +52,7 @@ _contextual_data_record_cmp(gconstpointer k1, gconstpointer k2)
   ContextualDataRecord *r1 = (ContextualDataRecord *) k1;
   ContextualDataRecord *r2 = (ContextualDataRecord *) k2;
 
-  return strcmp(r1->selector->str, r2->selector->str);
+  return strcmp(r1->selector, r2->selector);
 }
 
 static gint
@@ -75,7 +75,7 @@ _contextual_data_record_case_cmp(gconstpointer k1, gconstpointer k2)
   ContextualDataRecord *r1 = (ContextualDataRecord *) k1;
   ContextualDataRecord *r2 = (ContextualDataRecord *) k2;
 
-  return _g_strcasecmp(r1->selector->str, r2->selector->str);
+  return _g_strcasecmp(r1->selector, r2->selector);
 }
 
 void
@@ -113,7 +113,7 @@ context_info_db_index(ContextInfoDB *self)
               current_range->offset = range_start;
               current_range->length = i - range_start;
 
-              g_hash_table_insert(self->index, range_start_record->selector->str,
+              g_hash_table_insert(self->index, range_start_record->selector,
                                   current_range);
 
               range_start_record = current_record;
@@ -125,7 +125,7 @@ context_info_db_index(ContextInfoDB *self)
         element_range *last_range = g_new(element_range, 1);
         last_range->offset = range_start;
         last_range->length = self->data->len - range_start;
-        g_hash_table_insert(self->index, range_start_record->selector->str,
+        g_hash_table_insert(self->index, range_start_record->selector,
                             last_range);
       }
       self->is_data_indexed = TRUE;
@@ -222,8 +222,8 @@ context_info_db_insert(ContextInfoDB *self,
 {
   g_array_append_val(self->data, *record);
   self->is_data_indexed = FALSE;
-  if (self->is_ordering_enabled && !g_list_find_custom(self->ordered_selectors, record->selector->str, _g_strcmp))
-    self->ordered_selectors = g_list_append(self->ordered_selectors, record->selector->str);
+  if (self->is_ordering_enabled && !g_list_find_custom(self->ordered_selectors, record->selector, _g_strcmp))
+    self->ordered_selectors = g_list_append(self->ordered_selectors, record->selector);
 }
 
 gboolean
@@ -338,7 +338,7 @@ context_info_db_import(ContextInfoDB *self, FILE *fp, const gchar *filename,
           return FALSE;
         }
       msg_trace("add-contextual-data(): adding database entry",
-                evt_tag_str("selector", next_record->selector->str),
+                evt_tag_str("selector", next_record->selector),
                 evt_tag_str("name", log_msg_get_value_name(next_record->value_handle, NULL)),
                 evt_tag_str("type", log_msg_value_type_to_str(next_record->value->type_hint)),
                 evt_tag_str("value", next_record->value->template));
