@@ -27,6 +27,8 @@
 #include "syslog-ng.h"
 #include "atomic-gssize.h"
 
+#define STATS_COUNTER_MAX_VALUE G_MAXSIZE
+
 typedef struct _StatsCounterItem
 {
   union

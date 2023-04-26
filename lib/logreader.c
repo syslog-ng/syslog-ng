@@ -457,6 +457,9 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
   msg_format_parse_into(&self->options->parse_options, m, line, length);
 
   _log_reader_insert_msg_length_stats(self, length);
+
+  log_msg_set_recvd_rawmsg_size(m, length);
+
   if (aux)
     {
       log_msg_set_saddr(m, aux->peer_addr ? : self->peer_addr);
@@ -751,6 +754,7 @@ log_reader_new(GlobalConfig *cfg)
   self->super.super.free_fn = log_reader_free;
   self->super.wakeup = log_reader_wakeup;
   self->super.schedule_dynamic_window_realloc = _schedule_dynamic_window_realloc;
+  self->super.metrics.raw_bytes_enabled = TRUE;
   self->immediate_check = FALSE;
   log_reader_init_watches(self);
   g_mutex_init(&self->pending_close_lock);

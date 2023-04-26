@@ -211,6 +211,8 @@ struct _LogMessage
 
   guint allocated_bytes;
 
+  guint32 recvd_rawmsg_size;
+
   AckRecord *ack_record;
   LMAckFunc ack_func;
   LogMessage *original;
@@ -466,10 +468,6 @@ void log_msg_format_sdata(const LogMessage *self, GString *result, guint32 seq_n
 void log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on);
 void log_msg_set_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_set_tag_by_name(LogMessage *self, const gchar *name);
-void log_msg_set_saddr(LogMessage *self, GSockAddr *saddr);
-void log_msg_set_saddr_ref(LogMessage *self, GSockAddr *saddr);
-void log_msg_set_daddr(LogMessage *self, GSockAddr *daddr);
-void log_msg_set_daddr_ref(LogMessage *self, GSockAddr *daddr);
 void log_msg_clear_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_clear_tag_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_is_tag_by_id(LogMessage *self, LogTagId id);
@@ -477,6 +475,19 @@ gboolean log_msg_is_tag_by_name(LogMessage *self, const gchar *name);
 void log_msg_tags_foreach(const LogMessage *self, LogMessageTagsForeachFunc callback, gpointer user_data);
 void log_msg_format_tags(const LogMessage *self, GString *result);
 void log_msg_format_matches(const LogMessage *self, GString *result);
+
+
+static inline void
+log_msg_set_recvd_rawmsg_size(LogMessage *self, guint32 size)
+{
+  self->recvd_rawmsg_size = size;
+}
+
+void log_msg_set_saddr(LogMessage *self, GSockAddr *saddr);
+void log_msg_set_saddr_ref(LogMessage *self, GSockAddr *saddr);
+void log_msg_set_daddr(LogMessage *self, GSockAddr *daddr);
+void log_msg_set_daddr_ref(LogMessage *self, GSockAddr *daddr);
+
 
 LogMessageQueueNode *log_msg_alloc_queue_node(LogMessage *msg, const LogPathOptions *path_options);
 LogMessageQueueNode *log_msg_alloc_dynamic_queue_node(LogMessage *msg, const LogPathOptions *path_options);

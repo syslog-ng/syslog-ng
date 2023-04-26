@@ -66,7 +66,7 @@ static void _source_queue_mock(LogPipe *s, LogMessage *msg, const LogPathOptions
 {
   LogSource *self = (LogSource *) s;
 
-  stats_counter_inc(self->recvd_messages);
+  stats_counter_inc(self->metrics.recvd_messages);
   log_pipe_forward_msg(s, msg, path_options);
 }
 
@@ -232,7 +232,7 @@ Test(logthrfetcherdrv, test_simple_fetch)
   wait_for_messages(s);
   stop_test_threaded_fetcher(s);
 
-  StatsCounterItem *recvd_messages = _get_source(s)->recvd_messages;
+  StatsCounterItem *recvd_messages = _get_source(s)->metrics.recvd_messages;
   cr_assert(stats_counter_get(recvd_messages) == 10);
 
   destroy_test_threaded_fetcher(s);
@@ -252,7 +252,7 @@ Test(logthrfetcherdrv, test_reconnect)
   wait_for_messages(s);
   stop_test_threaded_fetcher(s);
 
-  StatsCounterItem *recvd_messages = _get_source(s)->recvd_messages;
+  StatsCounterItem *recvd_messages = _get_source(s)->metrics.recvd_messages;
   cr_assert(stats_counter_get(recvd_messages) == 10);
   cr_assert_geq(s->connect_counter, 6);
 

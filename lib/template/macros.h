@@ -52,6 +52,7 @@ enum
   M_DEST_IP,
   M_DEST_PORT,
   M_PROTOCOL,
+  M_RAWMSG_SIZE,
   M_SEQNUM,
   M_CONTEXT_ID,
 

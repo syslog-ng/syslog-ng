@@ -29,6 +29,7 @@
 #include "driver.h"
 #include "stats/stats-registry.h"
 #include "stats/aggregator/stats-aggregator.h"
+#include "stats/stats-compat.h"
 #include "logqueue.h"
 #include "seqnum.h"
 #include "mainloop-threaded-worker.h"
@@ -88,6 +89,11 @@ struct _LogThreadedDestWorker
   gboolean suspended;
   time_t time_reopen;
 
+  struct
+  {
+    StatsByteCounter written_bytes;
+  } metrics;
+
   gboolean (*init)(LogThreadedDestWorker *s);
   void (*deinit)(LogThreadedDestWorker *s);
   gboolean (*connect)(LogThreadedDestWorker *s);
@@ -104,16 +110,23 @@ struct _LogThreadedDestDriver
   LogDestDriver super;
   GMutex lock;
 
-  StatsClusterKey *output_events_sc_key;
-  StatsClusterKey *processed_sc_key;
-  StatsCounterItem *dropped_messages;
-  StatsCounterItem *processed_messages;
-  StatsCounterItem *written_messages;
-  StatsAggregator *max_message_size;
-  StatsAggregator *average_messages_size;
-  StatsAggregator *max_batch_size;
-  StatsAggregator *average_batch_size;
-  StatsAggregator *CPS;
+  struct
+  {
+    StatsClusterKey *output_events_sc_key;
+    StatsClusterKey *processed_sc_key;
+
+    StatsCounterItem *dropped_messages;
+    StatsCounterItem *processed_messages;
+    StatsCounterItem *written_messages;
+
+    gboolean raw_bytes_enabled;
+
+    StatsAggregator *max_message_size;
+    StatsAggregator *average_messages_size;
+    StatsAggregator *max_batch_size;
+    StatsAggregator *average_batch_size;
+    StatsAggregator *CPS;
+  } metrics;
 
   gint batch_lines;
   gint batch_timeout;
@@ -236,6 +249,7 @@ void log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self,
 void log_threaded_dest_worker_free_method(LogThreadedDestWorker *self);
 void log_threaded_dest_worker_free(LogThreadedDestWorker *self);
 
+void log_threaded_dest_worker_written_bytes_add(LogThreadedDestWorker *self, gsize b);
 void log_threaded_dest_driver_insert_msg_length_stats(LogThreadedDestDriver *self, gsize len);
 void log_threaded_dest_driver_insert_batch_length_stats(LogThreadedDestDriver *self, gsize len);
 void log_threaded_dest_driver_register_aggregated_stats(LogThreadedDestDriver *self);
