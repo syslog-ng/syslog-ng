@@ -256,6 +256,7 @@ _clone(LogPipe *s)
     {
       LabelTemplate *label_template = (LabelTemplate *) elem->data;
       cloned->label_templates = g_list_append(cloned->label_templates, label_template_clone(label_template));
+      cloned->num_of_labels++;
     }
 
   log_template_options_clone(&self->template_options, &cloned->template_options);
