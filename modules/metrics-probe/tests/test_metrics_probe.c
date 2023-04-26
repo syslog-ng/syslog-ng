@@ -313,6 +313,34 @@ Test(metrics_probe, test_metrics_probe_stats_max_dynamics)
   log_pipe_unref(&metrics_probe->super);
 }
 
+Test(metrics_probe, test_metrics_probe_increment)
+{
+  LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
+  metrics_probe_set_key(tmp_metrics_probe, "custom_key");
+  LogTemplate *increment_template = log_template_new(tmp_metrics_probe->super.cfg, NULL);
+  log_template_compile(increment_template, "${custom_increment}", NULL);
+  metrics_probe_set_increment_template(tmp_metrics_probe, increment_template);
+  log_template_unref(increment_template);
+
+  LogParser *metrics_probe = (LogParser *) log_pipe_clone(&tmp_metrics_probe->super);
+  log_pipe_unref(&tmp_metrics_probe->super);
+  cr_assert(log_pipe_init(&metrics_probe->super), "Failed to init metrics-probe");
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, "custom_increment", "1337", -1);
+  StatsClusterLabel expected_labels[] = {};
+
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  _assert_counter_value("custom_key",
+                        expected_labels,
+                        G_N_ELEMENTS(expected_labels),
+                        1337);
+
+  log_msg_unref(msg);
+  log_pipe_deinit(&metrics_probe->super);
+  log_pipe_unref(&metrics_probe->super);
+}
+
 void setup(void)
 {
   app_startup();
