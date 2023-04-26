@@ -26,16 +26,6 @@
 #include "apphook.h"
 #include "stats/stats-cluster-single.h"
 
-static LogParser *
-_create_metrics_probe(void)
-{
-  LogParser *temp_metrics_probe = metrics_probe_new(configuration);
-  LogParser *metrics_probe = (LogParser *) log_pipe_clone(&temp_metrics_probe->super);
-  log_pipe_unref(&temp_metrics_probe->super);
-
-  return metrics_probe;
-}
-
 static void
 _add_label(LogParser *s, const gchar *label, const gchar *value_template_str)
 {
@@ -122,7 +112,9 @@ _assert_counter_value(const gchar *key, StatsClusterLabel *labels, gsize labels_
 
 Test(metrics_probe, test_metrics_probe_defaults)
 {
-  LogParser *metrics_probe = _create_metrics_probe();
+  LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
+  LogParser *metrics_probe = (LogParser *) log_pipe_clone(&tmp_metrics_probe->super);
+  log_pipe_unref(&tmp_metrics_probe->super);
   cr_assert(log_pipe_init(&metrics_probe->super), "Failed to init metrics-probe");
 
   LogMessage *msg = log_msg_new_empty();
@@ -179,8 +171,11 @@ Test(metrics_probe, test_metrics_probe_defaults)
 
 Test(metrics_probe, test_metrics_probe_custom_labels_only)
 {
-  LogParser *metrics_probe = _create_metrics_probe();
-  _add_label(metrics_probe, "test_label", "foo");
+  LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
+  _add_label(tmp_metrics_probe, "test_label", "foo");
+
+  LogParser *metrics_probe = (LogParser *) log_pipe_clone(&tmp_metrics_probe->super);
+  log_pipe_unref(&tmp_metrics_probe->super);
 
   cr_assert_not(log_pipe_init(&metrics_probe->super), "metrics-probe should have failed to init");
 
@@ -189,8 +184,11 @@ Test(metrics_probe, test_metrics_probe_custom_labels_only)
 
 Test(metrics_probe, test_metrics_probe_custom_key_only)
 {
-  LogParser *metrics_probe = _create_metrics_probe();
-  metrics_probe_set_key(metrics_probe, "custom_key");
+  LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
+  metrics_probe_set_key(tmp_metrics_probe, "custom_key");
+
+  LogParser *metrics_probe = (LogParser *) log_pipe_clone(&tmp_metrics_probe->super);
+  log_pipe_unref(&tmp_metrics_probe->super);
   cr_assert(log_pipe_init(&metrics_probe->super), "Failed to init metrics-probe");
 
   LogMessage *msg = log_msg_new_empty();
@@ -215,11 +213,14 @@ Test(metrics_probe, test_metrics_probe_custom_key_only)
 
 Test(metrics_probe, test_metrics_probe_custom_full)
 {
-  LogParser *metrics_probe = _create_metrics_probe();
-  metrics_probe_set_key(metrics_probe, "custom_key");
-  _add_label(metrics_probe, "test_label_3", "foo");
-  _add_label(metrics_probe, "test_label_1", "${test_field_1}");
-  _add_label(metrics_probe, "test_label_2", "${test_field_2}");
+  LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
+  metrics_probe_set_key(tmp_metrics_probe, "custom_key");
+  _add_label(tmp_metrics_probe, "test_label_3", "foo");
+  _add_label(tmp_metrics_probe, "test_label_1", "${test_field_1}");
+  _add_label(tmp_metrics_probe, "test_label_2", "${test_field_2}");
+
+  LogParser *metrics_probe = (LogParser *) log_pipe_clone(&tmp_metrics_probe->super);
+  log_pipe_unref(&tmp_metrics_probe->super);
   cr_assert(log_pipe_init(&metrics_probe->super), "Failed to init metrics-probe");
 
   LogMessage *msg = log_msg_new_empty();
@@ -273,9 +274,12 @@ Test(metrics_probe, test_metrics_probe_stats_max_dynamics)
   configuration->stats_options.max_dynamic = 1;
   stats_reinit(&configuration->stats_options);
 
-  LogParser *metrics_probe = _create_metrics_probe();
-  metrics_probe_set_key(metrics_probe, "custom_key");
-  _add_label(metrics_probe, "test_label", "${test_field}");
+  LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
+  metrics_probe_set_key(tmp_metrics_probe, "custom_key");
+  _add_label(tmp_metrics_probe, "test_label", "${test_field}");
+
+  LogParser *metrics_probe = (LogParser *) log_pipe_clone(&tmp_metrics_probe->super);
+  log_pipe_unref(&tmp_metrics_probe->super);
   cr_assert(log_pipe_init(&metrics_probe->super), "Failed to init metrics-probe");
 
   LogMessage *msg = log_msg_new_empty();
