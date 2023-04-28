@@ -840,16 +840,18 @@ _packet_stats_timer_stop(AFSocketSourceDriver *self)
 static void
 _register_packet_stats(AFSocketSourceDriver *self, StatsClusterLabel *labels, gsize labels_len)
 {
+  gint level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1;
+
   StatsClusterKey sc_key;
 
   stats_cluster_single_key_set(&sc_key, "socket_receive_dropped_packets_total", labels, labels_len);
-  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.socket_dropped_packets);
+  stats_register_counter(level, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.socket_dropped_packets);
 
   stats_cluster_single_key_set(&sc_key, "socket_receive_buffer_max_bytes", labels, labels_len);
-  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.socket_receive_buffer_max);
+  stats_register_counter(level, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.socket_receive_buffer_max);
 
   stats_cluster_single_key_set(&sc_key, "socket_receive_buffer_used_bytes", labels, labels_len);
-  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.socket_receive_buffer_used);
+  stats_register_counter(level, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.socket_receive_buffer_used);
 }
 
 static void
@@ -1175,6 +1177,8 @@ afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
 static void
 _register_stream_stats(AFSocketSourceDriver *self, StatsClusterLabel *labels, gsize labels_len)
 {
+  gint level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL0;
+
   StatsClusterKey sc_key;
 
   stats_cluster_single_key_set(&sc_key, "socket_connections", labels, labels_len);
@@ -1184,14 +1188,16 @@ _register_stream_stats(AFSocketSourceDriver *self, StatsClusterLabel *labels, gs
                                                       afsocket_sd_format_name(&self->super.super.super),
                                                       "connections");
 
-  stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
+  stats_register_external_counter(level, &sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
   _connections_count_set(self, 0);
 
   stats_cluster_single_key_set(&sc_key, "socket_max_connections", labels, labels_len);
-  stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->max_connections);
+  stats_register_external_counter(level, &sc_key, SC_TYPE_SINGLE_VALUE, &self->max_connections);
+
+  level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1;
 
   stats_cluster_single_key_set(&sc_key, "socket_rejected_connections_total", labels, labels_len);
-  stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.rejected_connections);
+  stats_register_counter(level, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.rejected_connections);
 }
 
 static void
