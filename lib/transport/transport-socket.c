@@ -97,21 +97,20 @@ log_transport_socket_init_instance(LogTransportSocket *self, gint fd)
 static gssize
 _extract_from_msghdr_method(LogTransportSocket *self, gint rc, struct msghdr *msg, LogTransportAuxData *aux)
 {
-  if (rc != -1)
-    {
-      if (msg->msg_namelen && aux)
-        log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) msg->msg_name, msg->msg_namelen));
-      if (aux)
-        aux->proto = self->proto;
-    }
   if (rc == 0)
     {
       /* DGRAM sockets should never return EOF, they just need to be read again */
       rc = -1;
       errno = EAGAIN;
     }
+  else if (rc > 0)
+    {
+      if (msg->msg_namelen && aux)
+        log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) msg->msg_name, msg->msg_namelen));
+      if (aux)
+        aux->proto = self->proto;
+    }
   return rc;
-
 }
 
 static gssize
