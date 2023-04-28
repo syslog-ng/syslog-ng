@@ -514,9 +514,9 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
   log_writer_init_driver_sck_builder(self->writer, driver_sck_builder);
   log_writer_init_queue_sck_builder(self->writer, queue_sck_builder);
 
+  gint stats_level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : self->writer_options.stats_level;
   LogQueue *queue = log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_qfile_name(self),
-                                                  self->writer_options.stats_level, driver_sck_builder,
-                                                  queue_sck_builder);
+                                                  stats_level, driver_sck_builder, queue_sck_builder);
   log_writer_set_queue(self->writer, queue);
 
   stats_cluster_key_builder_free(queue_sck_builder);
