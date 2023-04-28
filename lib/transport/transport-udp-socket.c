@@ -127,7 +127,7 @@ log_transport_udp_parse_cmsg(LogTransportSocket *s, struct cmsghdr *cmsg, LogTra
 }
 
 static void
-log_transport_udp_setup_fd(LogTransportUDP *self, gint fd)
+_setup_fd(LogTransportUDP *self, gint fd)
 {
   gint on = 1;
 
@@ -167,6 +167,6 @@ log_transport_udp_socket_new(gint fd)
   self->super.super.free_fn = log_transport_udp_socket_free;
   self->super.parse_cmsg = log_transport_udp_parse_cmsg;
 
-  log_transport_udp_setup_fd(self, fd);
+  _setup_fd(self, fd);
   return &self->super.super;
 }
