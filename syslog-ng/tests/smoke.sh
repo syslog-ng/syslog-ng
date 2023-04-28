@@ -2,7 +2,7 @@
 set -e
 
 DOCKER="${DOCKER:-docker}"
-SYSLOG_NG_IMAGE="${SYSLOG_NG_IMAGE:-ghcr.io/axoflow/syslog-ng:latest}"
+SYSLOG_NG_IMAGE="${SYSLOG_NG_IMAGE:-ghcr.io/axoflow/axosyslog:latest}"
 SYSLOG_NG_VERSION="${SYSLOG_NG_VERSION:-}"
 
 

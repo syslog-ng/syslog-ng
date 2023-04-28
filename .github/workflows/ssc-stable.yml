@@ -18,7 +18,7 @@ on:
       - 'ssc-*'
 
 env:
-  DOCKER_IMAGE_NAME: ghcr.io/axoflow/syslog-ng-splunk-connector
+  DOCKER_IMAGE_NAME: ghcr.io/axoflow/axosyslog-splunk-connector
   PLATFORMS: linux/amd64,linux/arm64
   SC4S_REPO: ${{ inputs.repo || 'splunk/splunk-connect-for-syslog' }}
   SYSLOG_NG_IMG_VERSION: ${{ inputs.syslog-ng-image-version || 'nightly' }}
