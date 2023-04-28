@@ -38,8 +38,6 @@ struct _LogTransportUDP
   GSockAddr *bind_addr;
 };
 
-#if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
-
 #if defined(__FreeBSD__) || defined(__OpenBSD__)
 
 GSockAddr *
@@ -114,71 +112,18 @@ _extract_dest_addr_from_cmsg(struct cmsghdr *cmsg, GSockAddr *bind_addr)
 }
 
 static void
-_feed_aux_from_cmsg(LogTransportUDP *self, LogTransportAuxData *aux, struct msghdr *msg)
-{
-  struct cmsghdr *cmsg;
-
-  for (cmsg = CMSG_FIRSTHDR(msg); cmsg != NULL; cmsg = CMSG_NXTHDR(msg, cmsg))
-    {
-      GSockAddr *dest_addr;
-
-      dest_addr = _extract_dest_addr_from_cmsg(cmsg, self->bind_addr);
-      if (dest_addr)
-        {
-          log_transport_aux_data_set_local_addr_ref(aux, dest_addr);
-          break;
-        }
-    }
-}
-
-#else
-#define _feed_aux_from_cmsg(self, aux, msg)
-#endif
-
-
-static gssize
-log_transport_udp_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+log_transport_udp_parse_cmsg(LogTransportSocket *s, struct cmsghdr *cmsg, LogTransportAuxData *aux)
 {
   LogTransportUDP *self = (LogTransportUDP *) s;
-  gint rc;
-  struct msghdr msg;
-  struct iovec iov[1];
-  struct sockaddr_storage ss;
-#if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
-  gchar ctlbuf[64];
-  msg.msg_control = ctlbuf;
-  msg.msg_controllen = sizeof(ctlbuf);
-#endif
 
-  msg.msg_name = (struct sockaddr *) &ss;
-  msg.msg_namelen = sizeof(ss);
-  msg.msg_iovlen = 1;
-  msg.msg_iov = iov;
-  iov[0].iov_base = buf;
-  iov[0].iov_len = buflen;
+  log_transport_socket_parse_cmsg_method(s, cmsg, aux);
 
-  do
+  GSockAddr *dest_addr = _extract_dest_addr_from_cmsg(cmsg, self->bind_addr);
+  if (dest_addr)
     {
-      rc = recvmsg(self->super.super.fd, &msg, 0);
+      log_transport_aux_data_set_local_addr_ref(aux, dest_addr);
+      return;
     }
-  while (rc == -1 && errno == EINTR);
-
-  if (rc == 0)
-    {
-      /* DGRAM sockets should never return EOF, they just need to be read again */
-      rc = -1;
-      errno = EAGAIN;
-    }
-  else if (rc > 0)
-    {
-      if (msg.msg_namelen && aux)
-        log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) &ss, msg.msg_namelen));
-      if (aux)
-        aux->proto = self->super.proto;
-      _feed_aux_from_cmsg(self, aux, &msg);
-    }
-  return rc;
-
 }
 
 static void
@@ -219,8 +164,8 @@ log_transport_udp_socket_new(gint fd)
   LogTransportUDP *self = g_new0(LogTransportUDP, 1);
 
   log_transport_dgram_socket_init_instance(&self->super, fd);
-  self->super.super.read = log_transport_udp_socket_read_method;
   self->super.super.free_fn = log_transport_udp_socket_free;
+  self->super.parse_cmsg = log_transport_udp_parse_cmsg;
 
   log_transport_udp_setup_fd(self, fd);
   return &self->super.super;
