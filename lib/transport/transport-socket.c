@@ -95,24 +95,12 @@ log_transport_socket_init_instance(LogTransportSocket *self, gint fd)
 }
 
 static gssize
-log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+_extract_from_msghdr_method(LogTransportSocket *self, gint rc, struct msghdr *msg, LogTransportAuxData *aux)
 {
-  LogTransportSocket *self = (LogTransportSocket *) s;
-  gint rc;
-  struct sockaddr_storage ss;
-
-  socklen_t salen = sizeof(ss);
-
-  do
-    {
-      rc = recvfrom(self->super.fd, buf, buflen, 0,
-                    (struct sockaddr *) &ss, &salen);
-    }
-  while (rc == -1 && errno == EINTR);
   if (rc != -1)
     {
-      if (salen && aux)
-        log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) &ss, salen));
+      if (msg->msg_namelen && aux)
+        log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) msg->msg_name, msg->msg_namelen));
       if (aux)
         aux->proto = self->proto;
     }
@@ -123,6 +111,36 @@ log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize bufl
       errno = EAGAIN;
     }
   return rc;
+
+}
+
+static gssize
+log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+{
+  LogTransportSocket *self = (LogTransportSocket *) s;
+  gint rc;
+  struct msghdr msg;
+  struct iovec iov[1];
+  struct sockaddr_storage ss;
+#if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
+  gchar ctlbuf[64];
+  msg.msg_control = ctlbuf;
+  msg.msg_controllen = sizeof(ctlbuf);
+#endif
+
+  msg.msg_name = (struct sockaddr *) &ss;
+  msg.msg_namelen = sizeof(ss);
+  msg.msg_iovlen = 1;
+  msg.msg_iov = iov;
+  iov[0].iov_base = buf;
+  iov[0].iov_len = buflen;
+
+  do
+    {
+      rc = recvmsg(self->super.fd, &msg, 0);
+    }
+  while (rc == -1 && errno == EINTR);
+  return _extract_from_msghdr_method(self, rc, &msg, aux);
 }
 
 static gssize
