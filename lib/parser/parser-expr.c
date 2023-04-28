@@ -118,6 +118,19 @@ log_parser_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_
             evt_tag_msg_reference(msg));
 }
 
+static void
+_register_counters(LogParser *self)
+{
+  stats_lock();
+  StatsClusterKey sc_key;
+  StatsClusterLabel labels[] = { stats_cluster_label("id", self->name) };
+  stats_cluster_logpipe_key_set(&sc_key, "parsed_events_total", labels, G_N_ELEMENTS(labels));
+  stats_cluster_logpipe_key_add_legacy_alias(&sc_key, SCS_PARSER, self->name, NULL );
+  stats_register_counter(1, &sc_key, SC_TYPE_DISCARDED, &self->super.discarded_messages);
+  stats_register_counter(1, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_unlock();
+}
+
 gboolean
 log_parser_init_method(LogPipe *s)
 {
@@ -127,23 +140,14 @@ log_parser_init_method(LogPipe *s)
   if (!self->name && s->expr_node)
     self->name = cfg_tree_get_rule_name(&cfg->tree, ENC_PARSER, s->expr_node);
 
-  stats_lock();
-  StatsClusterKey sc_key;
-  StatsClusterLabel labels[] = { stats_cluster_label("id", self->name) };
-  stats_cluster_logpipe_key_set(&sc_key, "parsed_events_total", labels, G_N_ELEMENTS(labels));
-  stats_cluster_logpipe_key_add_legacy_alias(&sc_key, SCS_PARSER, self->name, NULL );
-  stats_register_counter(1, &sc_key, SC_TYPE_DISCARDED, &self->super.discarded_messages);
-  stats_register_counter(1, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-  stats_unlock();
+  _register_counters(self);
 
   return TRUE;
 }
 
-void
-log_parser_free_method(LogPipe *s)
+static void
+_unregister_stats(LogParser *self)
 {
-  LogParser *self = (LogParser *) s;
-
   stats_lock();
   StatsClusterKey sc_key;
   StatsClusterLabel labels[] = { stats_cluster_label("id", self->name) };
@@ -152,11 +156,18 @@ log_parser_free_method(LogPipe *s)
   stats_unregister_counter(&sc_key, SC_TYPE_DISCARDED, &self->super.discarded_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
   stats_unlock();
+}
+
+void
+log_parser_free_method(LogPipe *s)
+{
+  LogParser *self = (LogParser *) s;
+
+  _unregister_stats(self);
 
   g_free(self->name);
   log_template_unref(self->template);
   log_pipe_free_method(s);
-
 }
 
 void
