@@ -485,18 +485,9 @@ _unregister_raw_bytes_stats(LogSource *self)
   stats_byte_counter_deinit(&self->metrics.recvd_bytes, &input_bytes_key);
 }
 
-gboolean
-log_source_init(LogPipe *s)
+static void
+_register_counters(LogSource *self)
 {
-  LogSource *self = (LogSource *) s;
-
-  _create_ack_tracker_if_not_exists(self);
-  if (!ack_tracker_init(self->ack_tracker))
-    {
-      msg_error("Failed to initialize AckTracker");
-      return FALSE;
-    }
-
   stats_lock();
   StatsClusterKey sc_key;
   StatsClusterLabel labels[] =
@@ -521,16 +512,28 @@ log_source_init(LogPipe *s)
 
   if (self->metrics.raw_bytes_enabled)
     _register_raw_bytes_stats(self);
+}
+
+gboolean
+log_source_init(LogPipe *s)
+{
+  LogSource *self = (LogSource *) s;
+
+  _create_ack_tracker_if_not_exists(self);
+  if (!ack_tracker_init(self->ack_tracker))
+    {
+      msg_error("Failed to initialize AckTracker");
+      return FALSE;
+    }
+
+  _register_counters(self);
 
   return TRUE;
 }
 
-gboolean
-log_source_deinit(LogPipe *s)
+static void
+_unregister_counters(LogSource *self)
 {
-  LogSource *self = (LogSource *) s;
-  ack_tracker_deinit(self->ack_tracker);
-
   if (self->metrics.raw_bytes_enabled)
     _unregister_raw_bytes_stats(self);
 
@@ -553,6 +556,15 @@ log_source_deinit(LogPipe *s)
   _unregister_window_stats(self);
 
   stats_unlock();
+}
+
+gboolean
+log_source_deinit(LogPipe *s)
+{
+  LogSource *self = (LogSource *) s;
+  ack_tracker_deinit(self->ack_tracker);
+
+  _unregister_counters(self);
 
   return TRUE;
 }
