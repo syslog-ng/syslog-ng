@@ -1181,10 +1181,12 @@ parser_opt
                                                   log_parser_set_template(last_parser, template);
                                                   free($3);
                                                 }
+        | KW_INTERNAL '(' yesno ')' { log_pipe_set_internal(&last_parser->super, $3); }
         ;
 
 driver_option
         : KW_PERSIST_NAME '(' string ')' { log_pipe_set_persist_name(&last_driver->super, $3); free($3); }
+        | KW_INTERNAL '(' yesno ')' { log_pipe_set_internal(&last_driver->super, $3); }
         ;
 
 inner_source
@@ -1531,6 +1533,7 @@ rewrite_expr_opt
 	    CHECK_ERROR(log_msg_is_value_name_valid(p), @3, "%s is not a valid name for a name-value pair, perhaps a misspelled .SDATA reference?", p);
             free($3);
           }
+        | KW_INTERNAL '(' yesno ')' { log_pipe_set_internal(&last_rewrite->super, $3); }
         | rewrite_condition_opt
         ;
 
