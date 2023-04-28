@@ -58,6 +58,12 @@ _arcs(LogPipe *self)
 }
 
 void
+log_pipe_clone_method(LogPipe *dst, const LogPipe *src)
+{
+  log_pipe_set_options(dst, &src->options);
+}
+
+void
 log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
 {
   g_atomic_counter_set(&self->ref_cnt, 1);

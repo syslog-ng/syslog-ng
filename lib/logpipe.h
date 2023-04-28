@@ -317,6 +317,7 @@ LogPipe *log_pipe_ref(LogPipe *self);
 gboolean log_pipe_unref(LogPipe *self);
 LogPipe *log_pipe_new(GlobalConfig *cfg);
 void log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg);
+void log_pipe_clone_method(LogPipe *dst, const LogPipe *src);
 void log_pipe_forward_notify(LogPipe *self, gint notify_code, gpointer user_data);
 EVTTAG *log_pipe_location_tag(LogPipe *pipe);
 void log_pipe_attach_expr_node(LogPipe *self, LogExprNode *expr_node);
