@@ -124,13 +124,7 @@ _parse_cmsg_to_aux(LogTransportSocket *self, struct msghdr *msg, LogTransportAux
 static gssize
 _extract_from_msghdr_method(LogTransportSocket *self, gint rc, struct msghdr *msg, LogTransportAuxData *aux)
 {
-  if (rc == 0)
-    {
-      /* DGRAM sockets should never return EOF, they just need to be read again */
-      rc = -1;
-      errno = EAGAIN;
-    }
-  else if (rc > 0)
+  if (rc > 0)
     {
       if (msg->msg_namelen && aux)
         log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) msg->msg_name, msg->msg_namelen));
@@ -167,7 +161,14 @@ log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize bufl
       rc = recvmsg(self->super.fd, &msg, 0);
     }
   while (rc == -1 && errno == EINTR);
-  return _extract_from_msghdr_method(self, rc, &msg, aux);
+  rc = _extract_from_msghdr_method(self, rc, &msg, aux);
+
+  if (rc == 0)
+    {
+      /* DGRAM sockets should never return EOF, they just need to be read again */
+      rc = -1;
+      errno = EAGAIN;
+    }
 }
 
 static gssize
