@@ -7,7 +7,7 @@
   </picture>
 </p>
 
-# AxoSyslog - a cloud native distribution of syslog-ng by Axoflow
+# AxoSyslog - a cloud-native distribution of syslog-ng by Axoflow
 
 This repository contains the cloud-ready syslog-ng images created and maintained by [Axoflow](https://axoflow.com). Our images are different from the [upstream syslog-ng images](https://hub.docker.com/r/balabit/syslog-ng/) in a number of ways:
 
