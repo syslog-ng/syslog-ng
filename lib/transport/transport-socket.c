@@ -86,13 +86,40 @@ _determine_proto(gint fd, gint address_family)
   return result;
 }
 
+void
+log_transport_socket_parse_cmsg_method(LogTransportSocket *s, struct cmsghdr *cmsg, LogTransportAuxData *aux)
+{
+  return;
+}
+
 static void
 log_transport_socket_init_instance(LogTransportSocket *self, gint fd)
 {
   log_transport_init_instance(&self->super, fd);
   self->address_family = _determine_address_family(fd);
   self->proto = _determine_proto(fd, self->address_family);
+  self->parse_cmsg = log_transport_socket_parse_cmsg_method;
 }
+
+#if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
+
+static void
+_parse_cmsg_to_aux(LogTransportSocket *self, struct msghdr *msg, LogTransportAuxData *aux)
+{
+  struct cmsghdr *cmsg;
+
+  if (!self->parse_cmsg || !aux)
+    return;
+
+  for (cmsg = CMSG_FIRSTHDR(msg); cmsg != NULL; cmsg = CMSG_NXTHDR(msg, cmsg))
+    {
+      self->parse_cmsg(self, cmsg, aux);
+    }
+}
+
+#else
+#define _parse_cmsg_to_aux(s, m, a)
+#endif
 
 static gssize
 _extract_from_msghdr_method(LogTransportSocket *self, gint rc, struct msghdr *msg, LogTransportAuxData *aux)
@@ -109,6 +136,7 @@ _extract_from_msghdr_method(LogTransportSocket *self, gint rc, struct msghdr *ms
         log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) msg->msg_name, msg->msg_namelen));
       if (aux)
         aux->proto = self->proto;
+      _parse_cmsg_to_aux(self, msg, aux);
     }
   return rc;
 }

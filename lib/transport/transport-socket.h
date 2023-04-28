@@ -33,7 +33,10 @@ struct _LogTransportSocket
   LogTransport super;
   gint address_family;
   gint proto;
+  void (*parse_cmsg)(LogTransportSocket *self, struct cmsghdr *cmsg, LogTransportAuxData *aux);
 };
+
+void log_transport_socket_parse_cmsg_method(LogTransportSocket *s, struct cmsghdr *cmsg, LogTransportAuxData *aux);
 
 void log_transport_dgram_socket_init_instance(LogTransportSocket *self, gint fd);
 LogTransport *log_transport_dgram_socket_new(gint fd);
