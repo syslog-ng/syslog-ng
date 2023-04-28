@@ -14,7 +14,7 @@ on:
         type: string
 
 env:
-  DOCKER_IMAGE_NAME: ghcr.io/axoflow/syslog-ng
+  DOCKER_IMAGE_NAME: ghcr.io/axoflow/axosyslog
   PLATFORMS: linux/amd64,linux/arm64,linux/arm/v7
 
 jobs:

@@ -1,5 +1,5 @@
 ARG SYSLOGNG_VERSION=latest
-FROM ghcr.io/axoflow/syslog-ng:${SYSLOGNG_VERSION}
+FROM ghcr.io/axoflow/axosyslog:${SYSLOGNG_VERSION}
 LABEL maintainer="László Várady <laszlo.varady@axoflow.com>"
 
 ADD splunk-connect-for-syslog/package/etc /etc/syslog-ng
