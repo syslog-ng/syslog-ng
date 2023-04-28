@@ -192,6 +192,7 @@ affile_dw_init(LogPipe *s)
       self->writer = log_writer_new(self->owner->writer_flags, cfg);
     }
 
+  log_pipe_set_options((LogPipe *) self->writer, &s->options);
   log_writer_set_options(self->writer,
                          s,
                          &self->owner->writer_options,
@@ -298,6 +299,7 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
   self->owner = owner;
   self->super.expr_node = owner->super.super.super.expr_node;
 
+  log_pipe_set_options(&self->super, &owner->super.super.super.options);
   log_pipe_set_config(&self->super, cfg);
   if (self->writer)
     {

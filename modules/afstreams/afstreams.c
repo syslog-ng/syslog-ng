@@ -185,6 +185,7 @@ afstreams_sd_init(LogPipe *s)
         }
       g_fd_set_nonblock(fd, TRUE);
       self->reader = log_reader_new(cfg);
+      log_pipe_set_options(&self->reader->super.super, &self->super.super.super.options);
       log_reader_open(self->reader, log_proto_dgram_server_new(log_transport_streams_new(fd),
                                                                &self->reader_options.proto_options.super), poll_fd_events_new(fd));
       log_reader_set_options(self->reader,

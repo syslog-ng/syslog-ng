@@ -290,6 +290,7 @@ afprogram_sd_init(LogPipe *s)
       proto = log_proto_text_server_new(transport, &self->reader_options.proto_options.super);
 
       self->reader = log_reader_new(s->cfg);
+      log_pipe_set_options(&self->reader->super.super, &self->super.super.super.options);
       log_reader_open(self->reader, proto, poll_fd_events_new(fd));
       log_reader_set_options(self->reader,
                              s,
@@ -536,6 +537,7 @@ afprogram_dd_init(LogPipe *s)
   if (!self->writer)
     self->writer = log_writer_new(LW_FORMAT_FILE, s->cfg);
 
+  log_pipe_set_options((LogPipe *) self->writer, &self->super.super.super.options);
   log_writer_set_options(self->writer,
                          s,
                          &self->writer_options,
