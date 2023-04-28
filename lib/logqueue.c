@@ -252,7 +252,7 @@ _register_shared_counters(LogQueue *self, gint stats_level, const StatsClusterKe
                            &self->metrics.shared.queued_messages);
     stats_register_counter(stats_level, self->metrics.shared.output_events_sc_key, SC_TYPE_DROPPED,
                            &self->metrics.shared.dropped_messages);
-    stats_register_counter_and_index(STATS_LEVEL1, self->metrics.shared.memory_usage_sc_key, SC_TYPE_SINGLE_VALUE,
+    stats_register_counter_and_index(stats_level, self->metrics.shared.memory_usage_sc_key, SC_TYPE_SINGLE_VALUE,
                                      &self->metrics.shared.memory_usage);
   }
   stats_unlock();
@@ -261,7 +261,7 @@ _register_shared_counters(LogQueue *self, gint stats_level, const StatsClusterKe
 }
 
 static void
-_register_owned_counters(LogQueue *self, StatsClusterKeyBuilder *builder)
+_register_owned_counters(LogQueue *self, gint stats_level, StatsClusterKeyBuilder *builder)
 {
   if (!builder)
     return;
@@ -274,9 +274,9 @@ _register_owned_counters(LogQueue *self, StatsClusterKeyBuilder *builder)
 
   stats_lock();
   {
-    stats_register_counter(STATS_LEVEL1, self->metrics.owned.events_sc_key, SC_TYPE_SINGLE_VALUE,
+    stats_register_counter(stats_level, self->metrics.owned.events_sc_key, SC_TYPE_SINGLE_VALUE,
                            &self->metrics.owned.queued_messages);
-    stats_register_counter(STATS_LEVEL1, self->metrics.owned.memory_usage_sc_key, SC_TYPE_SINGLE_VALUE,
+    stats_register_counter(stats_level, self->metrics.owned.memory_usage_sc_key, SC_TYPE_SINGLE_VALUE,
                            &self->metrics.owned.memory_usage);
   }
   stats_unlock();
@@ -289,7 +289,7 @@ _register_counters(LogQueue *self, gint stats_level, const StatsClusterKeyBuilde
   g_assert(!driver_sck_builder || queue_sck_builder);
 
   _register_shared_counters(self, stats_level, driver_sck_builder);
-  _register_owned_counters(self, queue_sck_builder);
+  _register_owned_counters(self, stats_level, queue_sck_builder);
 }
 
 static void

@@ -278,7 +278,7 @@ log_queue_disk_restart_corrupted(LogQueueDisk *self)
 }
 
 static void
-_register_counters(LogQueueDisk *self, StatsClusterKeyBuilder *builder)
+_register_counters(LogQueueDisk *self, gint stats_level, StatsClusterKeyBuilder *builder)
 {
   if (!builder)
     return;
@@ -299,11 +299,11 @@ _register_counters(LogQueueDisk *self, StatsClusterKeyBuilder *builder)
 
   stats_lock();
   {
-    stats_register_counter(STATS_LEVEL1, self->metrics.capacity_sc_key, SC_TYPE_SINGLE_VALUE,
+    stats_register_counter(stats_level, self->metrics.capacity_sc_key, SC_TYPE_SINGLE_VALUE,
                            &self->metrics.capacity);
-    stats_register_counter(STATS_LEVEL1, self->metrics.disk_usage_sc_key, SC_TYPE_SINGLE_VALUE,
+    stats_register_counter(stats_level, self->metrics.disk_usage_sc_key, SC_TYPE_SINGLE_VALUE,
                            &self->metrics.disk_usage);
-    stats_register_counter(STATS_LEVEL1, self->metrics.disk_allocated_sc_key, SC_TYPE_SINGLE_VALUE,
+    stats_register_counter(stats_level, self->metrics.disk_allocated_sc_key, SC_TYPE_SINGLE_VALUE,
                            &self->metrics.disk_allocated);
   }
   stats_unlock();
@@ -331,7 +331,7 @@ log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, cons
   self->compaction = options->compaction;
 
   self->qdisk = qdisk_new(options, qdisk_file_id, filename);
-  _register_counters(self, queue_sck_builder);
+  _register_counters(self, stats_level, queue_sck_builder);
 }
 
 static gboolean
