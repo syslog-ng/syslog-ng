@@ -787,7 +787,7 @@ _register_raw_bytes_stats(LogThreadedDestWorker *self)
 
   StatsClusterKey output_bytes_key;
   stats_cluster_single_key_set(&output_bytes_key, "output_event_bytes_total", labels, G_N_ELEMENTS(labels));
-  stats_byte_counter_init(&self->metrics.written_bytes, &output_bytes_key, SBCP_KIB);
+  stats_byte_counter_init(&self->metrics.written_bytes, &output_bytes_key, 1, SBCP_KIB);
 }
 
 static void

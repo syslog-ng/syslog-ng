@@ -62,7 +62,8 @@ typedef struct _StatsByteCounter
 } StatsByteCounter;
 
 static inline void
-stats_byte_counter_init(StatsByteCounter *self, StatsClusterKey *key, StatsByteCounterPrecision min_precision)
+stats_byte_counter_init(StatsByteCounter *self, StatsClusterKey *key, gint stats_level,
+                        StatsByteCounterPrecision min_precision)
 {
   *self = (StatsByteCounter)
   {
@@ -94,7 +95,7 @@ stats_byte_counter_init(StatsByteCounter *self, StatsClusterKey *key, StatsByteC
 #endif
 
   stats_lock();
-  stats_register_counter(1, key, SC_TYPE_SINGLE_VALUE, &self->counter);
+  stats_register_counter(stats_level, key, SC_TYPE_SINGLE_VALUE, &self->counter);
   stats_unlock();
 }
 

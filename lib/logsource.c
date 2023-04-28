@@ -468,7 +468,7 @@ _register_raw_bytes_stats(LogSource *self)
 
   StatsClusterKey input_bytes_key;
   stats_cluster_single_key_set(&input_bytes_key, "input_event_bytes_total", labels, G_N_ELEMENTS(labels));
-  stats_byte_counter_init(&self->metrics.recvd_bytes, &input_bytes_key, SBCP_KIB);
+  stats_byte_counter_init(&self->metrics.recvd_bytes, &input_bytes_key, 1, SBCP_KIB);
 }
 
 static void
