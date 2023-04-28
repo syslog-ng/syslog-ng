@@ -63,6 +63,7 @@ log_rewrite_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
 void
 log_rewrite_clone_method(LogRewrite *dst, const LogRewrite *src)
 {
+  log_pipe_clone_method(&dst->super, &src->super);
   dst->condition = filter_expr_clone(src->condition);
   dst->value_handle = src->value_handle;
 }
