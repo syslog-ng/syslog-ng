@@ -170,13 +170,15 @@ log_src_driver_pre_init_method(LogPipe *s)
 static void
 _log_src_driver_register_counters(LogSrcDriver *self)
 {
+  gint level = log_pipe_is_internal(&self->super.super) ? STATS_LEVEL3 : STATS_LEVEL0;
+
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_SOURCE | SCS_GROUP, self->super.group, NULL );
-  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED,
+  stats_register_counter(level, &sc_key, SC_TYPE_PROCESSED,
                          &self->super.processed_group_messages);
   stats_cluster_logpipe_key_legacy_set(&sc_key,  SCS_CENTER, NULL, "received" );
-  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->received_global_messages);
+  stats_register_counter(level, &sc_key, SC_TYPE_PROCESSED, &self->received_global_messages);
   stats_unlock();
 }
 
@@ -347,13 +349,15 @@ log_dest_driver_pre_init_method(LogPipe *s)
 static void
 _log_dest_driver_register_counters(LogDestDriver *self)
 {
+  gint level = log_pipe_is_internal(&self->super.super) ? STATS_LEVEL3 : STATS_LEVEL0;
+
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL );
-  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED,
+  stats_register_counter(level, &sc_key, SC_TYPE_PROCESSED,
                          &self->super.processed_group_messages);
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_CENTER, NULL, "queued" );
-  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->queued_global_messages);
+  stats_register_counter(level, &sc_key, SC_TYPE_PROCESSED, &self->queued_global_messages);
   stats_unlock();
 }
 
