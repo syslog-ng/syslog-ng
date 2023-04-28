@@ -167,14 +167,9 @@ log_src_driver_pre_init_method(LogPipe *s)
   return log_driver_pre_init_method(s);
 }
 
-gboolean
-log_src_driver_init_method(LogPipe *s)
+static void
+_log_src_driver_register_counters(LogSrcDriver *self)
 {
-  LogSrcDriver *self = (LogSrcDriver *) s;
-
-  if (!log_driver_init_method(s))
-    return FALSE;
-
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_SOURCE | SCS_GROUP, self->super.group, NULL );
@@ -183,8 +178,32 @@ log_src_driver_init_method(LogPipe *s)
   stats_cluster_logpipe_key_legacy_set(&sc_key,  SCS_CENTER, NULL, "received" );
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->received_global_messages);
   stats_unlock();
+}
+
+gboolean
+log_src_driver_init_method(LogPipe *s)
+{
+  LogSrcDriver *self = (LogSrcDriver *) s;
+
+  if (!log_driver_init_method(s))
+    return FALSE;
+
+  _log_src_driver_register_counters(self);
 
   return TRUE;
+}
+
+static void
+_log_src_driver_unregister_counters(LogSrcDriver *self)
+{
+  stats_lock();
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_SOURCE | SCS_GROUP, self->super.group, NULL );
+  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED,
+                           &self->super.processed_group_messages);
+  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_CENTER, NULL, "received" );
+  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->received_global_messages);
+  stats_unlock();
 }
 
 gboolean
@@ -195,14 +214,8 @@ log_src_driver_deinit_method(LogPipe *s)
   if (!log_driver_deinit_method(s))
     return FALSE;
 
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_SOURCE | SCS_GROUP, self->super.group, NULL );
-  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED,
-                           &self->super.processed_group_messages);
-  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_CENTER, NULL, "received" );
-  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->received_global_messages);
-  stats_unlock();
+  _log_src_driver_unregister_counters(self);
+
   return TRUE;
 }
 
@@ -331,14 +344,9 @@ log_dest_driver_pre_init_method(LogPipe *s)
   return log_driver_pre_init_method(s);
 }
 
-gboolean
-log_dest_driver_init_method(LogPipe *s)
+static void
+_log_dest_driver_register_counters(LogDestDriver *self)
 {
-  LogDestDriver *self = (LogDestDriver *) s;
-
-  if (!log_driver_init_method(s))
-    return FALSE;
-
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL );
@@ -347,8 +355,32 @@ log_dest_driver_init_method(LogPipe *s)
   stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_CENTER, NULL, "queued" );
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->queued_global_messages);
   stats_unlock();
+}
+
+gboolean
+log_dest_driver_init_method(LogPipe *s)
+{
+  LogDestDriver *self = (LogDestDriver *) s;
+
+  if (!log_driver_init_method(s))
+    return FALSE;
+
+  _log_dest_driver_register_counters(self);
 
   return TRUE;
+}
+
+static void
+_log_dest_driver_unregister_counters(LogDestDriver *self)
+{
+  stats_lock();
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL );
+  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED,
+                           &self->super.processed_group_messages);
+  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_CENTER, NULL, "queued" );
+  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->queued_global_messages);
+  stats_unlock();
 }
 
 gboolean
@@ -370,14 +402,7 @@ log_dest_driver_deinit_method(LogPipe *s)
     }
   g_assert(self->queues == NULL);
 
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_DESTINATION | SCS_GROUP, self->super.group, NULL );
-  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED,
-                           &self->super.processed_group_messages);
-  stats_cluster_logpipe_key_legacy_set(&sc_key, SCS_CENTER, NULL, "queued" );
-  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->queued_global_messages);
-  stats_unlock();
+  _log_dest_driver_unregister_counters(self);
 
   if (!log_driver_deinit_method(s))
     return FALSE;
