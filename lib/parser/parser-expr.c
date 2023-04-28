@@ -158,12 +158,20 @@ _unregister_stats(LogParser *self)
   stats_unlock();
 }
 
-void
-log_parser_free_method(LogPipe *s)
+gboolean
+log_parser_deinit_method(LogPipe *s)
 {
   LogParser *self = (LogParser *) s;
 
   _unregister_stats(self);
+
+  return TRUE;
+}
+
+void
+log_parser_free_method(LogPipe *s)
+{
+  LogParser *self = (LogParser *) s;
 
   g_free(self->name);
   log_template_unref(self->template);

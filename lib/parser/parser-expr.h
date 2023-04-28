@@ -44,15 +44,7 @@ struct _LogParser
   gchar *name;
 };
 
-static inline gboolean
-log_parser_deinit_method(LogPipe *s)
-{
-  /* NOTE: placeholder for the future and to pair up with
-   * log_parser_init_method().  There's no log_pipe_deinit_method() to call
-   */
-  return TRUE;
-}
-
+gboolean log_parser_deinit_method(LogPipe *s);
 void log_parser_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options);
 gboolean log_parser_init_method(LogPipe *s);
 void log_parser_set_template(LogParser *self, LogTemplate *template);
