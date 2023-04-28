@@ -92,15 +92,6 @@ log_transport_socket_parse_cmsg_method(LogTransportSocket *s, struct cmsghdr *cm
   return;
 }
 
-static void
-log_transport_socket_init_instance(LogTransportSocket *self, gint fd)
-{
-  log_transport_init_instance(&self->super, fd);
-  self->address_family = _determine_address_family(fd);
-  self->proto = _determine_proto(fd, self->address_family);
-  self->parse_cmsg = log_transport_socket_parse_cmsg_method;
-}
-
 #if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
 
 static void
@@ -121,22 +112,18 @@ _parse_cmsg_to_aux(LogTransportSocket *self, struct msghdr *msg, LogTransportAux
 #define _parse_cmsg_to_aux(s, m, a)
 #endif
 
-static gssize
-_extract_from_msghdr_method(LogTransportSocket *self, gint rc, struct msghdr *msg, LogTransportAuxData *aux)
+static void
+_extract_from_msghdr_method(LogTransportSocket *self, struct msghdr *msg, LogTransportAuxData *aux)
 {
-  if (rc > 0)
-    {
-      if (msg->msg_namelen && aux)
-        log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) msg->msg_name, msg->msg_namelen));
-      if (aux)
-        aux->proto = self->proto;
-      _parse_cmsg_to_aux(self, msg, aux);
-    }
-  return rc;
+  if (msg->msg_namelen && aux)
+    log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) msg->msg_name, msg->msg_namelen));
+  if (aux)
+    aux->proto = self->proto;
+  _parse_cmsg_to_aux(self, msg, aux);
 }
 
 static gssize
-log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+log_transport_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportSocket *self = (LogTransportSocket *) s;
   gint rc;
@@ -161,18 +148,15 @@ log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize bufl
       rc = recvmsg(self->super.fd, &msg, 0);
     }
   while (rc == -1 && errno == EINTR);
-  rc = _extract_from_msghdr_method(self, rc, &msg, aux);
 
-  if (rc == 0)
-    {
-      /* DGRAM sockets should never return EOF, they just need to be read again */
-      rc = -1;
-      errno = EAGAIN;
-    }
+  if (rc > 0)
+    _extract_from_msghdr_method(self, &msg, aux);
+
+  return rc;
 }
 
 static gssize
-log_transport_dgram_socket_write_method(LogTransport *s, const gpointer buf, gsize buflen)
+log_transport_socket_write_method(LogTransport *s, const gpointer buf, gsize buflen)
 {
   LogTransportSocket *self = (LogTransportSocket *) s;
   gint rc;
@@ -182,6 +166,39 @@ log_transport_dgram_socket_write_method(LogTransport *s, const gpointer buf, gsi
       rc = send(self->super.fd, buf, buflen, 0);
     }
   while (rc == -1 && errno == EINTR);
+  return rc;
+}
+
+static void
+log_transport_socket_init_instance(LogTransportSocket *self, gint fd)
+{
+  log_transport_init_instance(&self->super, fd);
+  self->super.read = log_transport_socket_read_method;
+  self->super.write = log_transport_socket_write_method;
+  self->address_family = _determine_address_family(fd);
+  self->proto = _determine_proto(fd, self->address_family);
+  self->parse_cmsg = log_transport_socket_parse_cmsg_method;
+}
+
+static gssize
+log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+{
+  gssize rc = log_transport_socket_read_method(s, buf, buflen, aux);
+  if (rc == 0)
+    {
+      /* DGRAM sockets should never return EOF, they just need to be read again */
+      rc = -1;
+      errno = EAGAIN;
+    }
+  return rc;
+}
+
+static gssize
+log_transport_dgram_socket_write_method(LogTransport *s, const gpointer buf, gsize buflen)
+{
+  gint rc;
+
+  rc = log_transport_socket_write_method(s, buf, buflen);
 
   /* NOTE: FreeBSD returns ENOBUFS on send() failure instead of indicating
    * this conditions via poll().  The return of ENOBUFS actually is a send
@@ -214,36 +231,6 @@ log_transport_dgram_socket_new(gint fd)
   return &self->super;
 }
 
-static gssize
-log_transport_stream_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
-{
-  LogTransportSocket *self = (LogTransportSocket *) s;
-  gint rc;
-
-  do
-    {
-      rc = recv(self->super.fd, buf, buflen, 0);
-    }
-  while (rc == -1 && errno == EINTR);
-  if (aux)
-    aux->proto = self->proto;
-  return rc;
-}
-
-static gssize
-log_transport_stream_socket_write_method(LogTransport *s, const gpointer buf, gsize buflen)
-{
-  LogTransportSocket *self = (LogTransportSocket *) s;
-  gint rc;
-
-  do
-    {
-      rc = send(self->super.fd, buf, buflen, 0);
-    }
-  while (rc == -1 && errno == EINTR);
-  return rc;
-}
-
 void
 log_transport_stream_socket_free_method(LogTransport *s)
 {
@@ -256,8 +243,6 @@ void
 log_transport_stream_socket_init_instance(LogTransportSocket *self, gint fd)
 {
   log_transport_socket_init_instance(self, fd);
-  self->super.read = log_transport_stream_socket_read_method;
-  self->super.write = log_transport_stream_socket_write_method;
   self->super.free_fn = log_transport_stream_socket_free_method;
 }
 
