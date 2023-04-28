@@ -104,7 +104,7 @@ _fill_context_info_db(ContextInfoDB *context_info_db,
           ContextualDataRecord record;
 
           g_snprintf(buf, sizeof(buf), "%s-%d", selector_base, i);
-          record.selector = g_string_new(buf);
+          record.selector = g_strdup(buf);
 
           g_snprintf(buf, sizeof(buf), "%s-%d.%d", name_base, i, j);
           record.value_handle = log_msg_get_value_handle(buf);

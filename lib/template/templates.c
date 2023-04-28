@@ -211,6 +211,13 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
   return result;
 }
 
+void
+log_template_forget_template_string(LogTemplate *self)
+{
+  g_free(self->template);
+  self->template = NULL;
+}
+
 static void
 _split_type_and_template(gchar *spec, gchar **value, gchar **type)
 {
