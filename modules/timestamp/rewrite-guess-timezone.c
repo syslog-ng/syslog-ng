@@ -59,9 +59,9 @@ _clone(LogPipe *s)
   LogRewrite *cloned;
 
   cloned = rewrite_guess_time_zone_new(s->cfg);
+  log_rewrite_clone_method(cloned, &self->super);
 
   rewrite_guess_time_zone_set_time_stamp(cloned, self->stamp);
-  cloned->condition = filter_expr_clone(self->super.condition);
 
   return &cloned->super;
 }

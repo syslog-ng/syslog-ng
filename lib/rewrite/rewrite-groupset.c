@@ -100,10 +100,10 @@ log_rewrite_groupset_clone(LogPipe *s)
   LogRewriteGroupSet *self = (LogRewriteGroupSet *) s;
   LogRewriteGroupSet *cloned = (LogRewriteGroupSet *)log_rewrite_groupset_new(self->replacement,
                                log_pipe_get_config(&self->super.super));
+  log_rewrite_clone_method(&cloned->super, &self->super);
   value_pairs_unref(cloned->query);
   cloned->query = value_pairs_ref(self->query);
   cloned->vp_func = self->vp_func;
-  cloned->super.condition = filter_expr_clone(self->super.condition);
 
   return &cloned->super.super;
 }

@@ -79,9 +79,7 @@ log_rewrite_set_matches_clone(LogPipe *s)
   LogRewriteSetMatches *cloned;
 
   cloned = (LogRewriteSetMatches *) log_rewrite_set_matches_new(self->value_template, s->cfg);
-
-  if (self->super.condition)
-    cloned->super.condition = filter_expr_clone(self->super.condition);
+  log_rewrite_clone_method(&cloned->super, &self->super);
 
   return &cloned->super.super;
 }

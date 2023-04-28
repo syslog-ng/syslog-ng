@@ -115,9 +115,8 @@ log_rewrite_subst_clone(LogPipe *s)
   LogRewriteSubst *cloned;
 
   cloned = (LogRewriteSubst *) log_rewrite_subst_new(self->replacement, s->cfg);
+  log_rewrite_clone_method(&cloned->super, &self->super);
   cloned->matcher = log_matcher_ref(self->matcher);
-  cloned->super.value_handle = self->super.value_handle;
-  cloned->super.condition = filter_expr_clone(self->super.condition);
 
   return &cloned->super.super;
 }
