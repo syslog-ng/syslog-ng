@@ -121,13 +121,15 @@ log_parser_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_
 static void
 _register_counters(LogParser *self)
 {
+  gint level = log_pipe_is_internal(&self->super) ? STATS_LEVEL3 : STATS_LEVEL1;
+
   stats_lock();
   StatsClusterKey sc_key;
   StatsClusterLabel labels[] = { stats_cluster_label("id", self->name) };
   stats_cluster_logpipe_key_set(&sc_key, "parsed_events_total", labels, G_N_ELEMENTS(labels));
   stats_cluster_logpipe_key_add_legacy_alias(&sc_key, SCS_PARSER, self->name, NULL );
-  stats_register_counter(1, &sc_key, SC_TYPE_DISCARDED, &self->super.discarded_messages);
-  stats_register_counter(1, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_register_counter(level, &sc_key, SC_TYPE_DISCARDED, &self->super.discarded_messages);
+  stats_register_counter(level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
   stats_unlock();
 }
 
