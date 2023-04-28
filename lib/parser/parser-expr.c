@@ -39,7 +39,7 @@ log_parser_set_template(LogParser *self, LogTemplate *template)
 void
 log_parser_clone_settings(LogParser *self, LogParser *cloned)
 {
-  log_parser_set_template(cloned, self->template);
+  log_parser_set_template(cloned, log_template_ref(self->template));
 }
 
 gboolean
