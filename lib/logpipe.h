@@ -252,6 +252,13 @@ log_path_options_pop_junction(LogPathOptions *local_path_options)
     local_path_options->parent = local_path_options->parent->parent;
 }
 
+typedef struct _LogPipeOptions LogPipeOptions;
+
+struct _LogPipeOptions
+{
+  gboolean internal;
+};
+
 struct _LogPipe
 {
   GAtomicCounter ref_cnt;
@@ -266,6 +273,7 @@ struct _LogPipe
   const gchar *persist_name;
   gchar *plugin_name;
   SignalSlotConnector *signal_slot_connector;
+  LogPipeOptions options;
 
   gboolean (*pre_init)(LogPipe *self);
   gboolean (*init)(LogPipe *self);
@@ -470,6 +478,10 @@ log_pipe_set_persist_name(LogPipe *self, const gchar *persist_name);
 
 const gchar *
 log_pipe_get_persist_name(const LogPipe *self);
+
+void log_pipe_set_options(LogPipe *self, const LogPipeOptions *options);
+void log_pipe_set_internal(LogPipe *self, gboolean internal);
+gboolean log_pipe_is_internal(const LogPipe *self);
 
 void log_pipe_free_method(LogPipe *s);
 

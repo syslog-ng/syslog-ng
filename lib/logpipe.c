@@ -151,6 +151,24 @@ log_pipe_get_persist_name(const LogPipe *self)
 }
 
 void
+log_pipe_set_options(LogPipe *self, const LogPipeOptions *options)
+{
+  self->options = *options;
+}
+
+void
+log_pipe_set_internal(LogPipe *self, gboolean internal)
+{
+  self->options.internal = internal;
+}
+
+gboolean
+log_pipe_is_internal(const LogPipe *self)
+{
+  return self->options.internal;
+}
+
+void
 log_pipe_add_info(LogPipe *self, const gchar *info)
 {
   self->info = g_list_append(self->info, g_strdup(info));
