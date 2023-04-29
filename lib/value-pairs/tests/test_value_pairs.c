@@ -285,6 +285,30 @@ Test(value_pairs, test_transformer_shift_levels)
   g_ptr_array_free(transformers, TRUE);
 }
 
+Test(value_pairs, test_transformer_lower)
+{
+  /* test the value-pair transformators */
+  GPtrArray *transformers = g_ptr_array_new();
+  g_ptr_array_add(transformers, value_pairs_new_transform_lower());
+
+  transformers_testcase("sdata", ".SDATA.meta.sequenceId",
+                        ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sysUpTime,.SDATA.origin.ip,.sdata.meta.sequenceid",
+                        transformers);
+  g_ptr_array_free(transformers, TRUE);
+}
+
+Test(value_pairs, test_transformer_upper)
+{
+  /* test the value-pair transformators */
+  GPtrArray *transformers = g_ptr_array_new();
+  g_ptr_array_add(transformers, value_pairs_new_transform_upper());
+
+  transformers_testcase("sdata", ".SDATA.meta.sequenceId",
+                        ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.META.SEQUENCEID,.SDATA.meta.sysUpTime,.SDATA.origin.ip",
+                        transformers);
+  g_ptr_array_free(transformers, TRUE);
+}
+
 void
 setup(void)
 {
