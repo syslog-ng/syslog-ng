@@ -46,6 +46,21 @@
 PythonHttpHeaderPlugin *last_header;
 PythonOptions *last_python_options;
 
+static inline void
+_warn_if_config_version_is_old(CfgLexer *lexer, const CFG_LTYPE *yylloc, const gchar *type, const gchar *option_name)
+{
+  if (!cfg_is_config_version_older(configuration, VERSION_VALUE_4_2))
+    return;
+
+  msg_warning("WARNING: The parsing of python options has been changed with " VERSION_4_2 ". "
+              "Previously values were converted to strings if possible, now they are passed "
+              "to the python class with their real type. Make sure to follow up these changes "
+              "in your python code",
+              cfg_lexer_format_location_tag(lexer, yylloc),
+              evt_tag_str("type", type),
+              evt_tag_str("option_name", option_name));
+};
+
 }
 
 %define api.prefix {python_}
@@ -274,16 +289,19 @@ python_option
           | string optional_arrow LL_NUMBER
             {
               $$ = python_option_long_new($1, $3);
+              _warn_if_config_version_is_old(lexer, &@3, "int", $1);
               free($1);
             }
           | string optional_arrow LL_FLOAT
             {
               $$ = python_option_double_new($1, $3);
+              _warn_if_config_version_is_old(lexer, &@3, "float", $1);
               free($1);
             }
           | string optional_arrow python_yesno
             {
               $$ = python_option_boolean_new($1, $3);
+              _warn_if_config_version_is_old(lexer, &@3, "bool", $1);
               free($1);
             }
           | string optional_arrow '[' string_list ']'
