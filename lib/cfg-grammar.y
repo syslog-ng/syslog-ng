@@ -347,6 +347,8 @@
 %token KW_ADD_PREFIX                  10509
 %token KW_REPLACE_PREFIX              10510
 %token KW_CAST                        10511
+%token KW_UPPER                       10512
+%token KW_LOWER                       10513
 
 %token KW_ON_ERROR                    10520
 
@@ -1504,6 +1506,8 @@ vp_rekey_option
 	| KW_SHIFT_LEVELS '(' positive_integer ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_shift_levels($3)); }
 	| KW_ADD_PREFIX '(' string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_add_prefix($3)); free($3); }
 	| KW_REPLACE_PREFIX '(' string string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_replace_prefix($3, $4)); free($3); free($4); }
+	| KW_UPPER '(' ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_upper()); }
+	| KW_LOWER '(' ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_lower()); }
 	;
 
 rewrite_expr_opt

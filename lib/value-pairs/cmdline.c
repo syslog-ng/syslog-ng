@@ -287,6 +287,48 @@ vp_cmdline_parse_rekey_add_prefix (const gchar *option_name, const gchar *value,
 }
 
 static gboolean
+vp_cmdline_parse_rekey_upper (const gchar *option_name, const gchar *value,
+                              gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+  gchar *key = (gchar *) args[3];
+
+  vpts = vp_cmdline_rekey_verify (key, vpts, data);
+  if (!vpts)
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                   "Error parsing value-pairs: --upper used without --key or --rekey");
+      return FALSE;
+    }
+
+  value_pairs_transform_set_add_func(vpts,
+                                     value_pairs_new_transform_upper ());
+  return TRUE;
+}
+
+static gboolean
+vp_cmdline_parse_rekey_lower (const gchar *option_name, const gchar *value,
+                              gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+  gchar *key = (gchar *) args[3];
+
+  vpts = vp_cmdline_rekey_verify (key, vpts, data);
+  if (!vpts)
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                   "Error parsing value-pairs: --lower used without --key or --rekey");
+      return FALSE;
+    }
+
+  value_pairs_transform_set_add_func(vpts,
+                                     value_pairs_new_transform_lower ());
+  return TRUE;
+}
+
+static gboolean
 vp_cmdline_parse_rekey_shift (const gchar *option_name, const gchar *value,
                               gpointer data, GError **error)
 {
@@ -391,6 +433,14 @@ value_pairs_parse_command_line(ValuePairs *vp,
     },
     {
       "pair", 'p', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_pair,
+      NULL, NULL
+    },
+    {
+      "upper", 0, G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_upper,
+      NULL, NULL
+    },
+    {
+      "lower", 0, G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_lower,
       NULL, NULL
     },
     {

@@ -191,6 +191,7 @@ tests/light/functional_tests/parsers/sdata-parser/test_sdata_parser\.py
 tests/light/functional_tests/parsers/group-lines-parser/test_group_lines_parser\.py
 tests/light/functional_tests/logpath/test_conditionals\.py
 tests/light/functional_tests/logpath/test_midpoint_destinations\.py
+tests/light/functional_tests/value-pairs/test_value_pairs\.py
 tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py
 
 ###########################################################################
