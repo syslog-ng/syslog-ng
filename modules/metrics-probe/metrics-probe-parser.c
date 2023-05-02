@@ -34,6 +34,7 @@ static CfgLexerKeyword metrics_probe_keywords[] =
   { "key",                         KW_KEY },
   { "labels",                      KW_LABELS },
   { "increment",                   KW_INCREMENT },
+  { "level",                       KW_LEVEL },
   { NULL }
 };
 

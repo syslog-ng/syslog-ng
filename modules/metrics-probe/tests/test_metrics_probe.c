@@ -45,9 +45,7 @@ _stats_cluster_exists(const gchar *key, StatsClusterLabel *labels, gsize labels_
 
   stats_lock();
   {
-    StatsCounterItem *counter;
-    cluster = stats_register_dynamic_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &counter);
-    stats_unregister_dynamic_counter(cluster, SC_TYPE_SINGLE_VALUE, &counter);
+    cluster = stats_get_cluster(&sc_key);
   }
   stats_unlock();
 
@@ -335,6 +333,45 @@ Test(metrics_probe, test_metrics_probe_increment)
                         expected_labels,
                         G_N_ELEMENTS(expected_labels),
                         1337);
+
+  log_msg_unref(msg);
+  log_pipe_deinit(&metrics_probe->super);
+  log_pipe_unref(&metrics_probe->super);
+}
+
+Test(metrics_probe, test_metrics_probe_level)
+{
+  LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
+  metrics_probe_set_key(tmp_metrics_probe, "custom_key");
+  metrics_probe_set_level(tmp_metrics_probe, STATS_LEVEL2);
+
+  LogParser *metrics_probe = (LogParser *) log_pipe_clone(&tmp_metrics_probe->super);
+  log_pipe_unref(&tmp_metrics_probe->super);
+  cr_assert(log_pipe_init(&metrics_probe->super), "Failed to init metrics-probe");
+
+  LogMessage *msg = log_msg_new_empty();
+  StatsClusterLabel expected_labels[] = {};
+
+  configuration->stats_options.level = STATS_LEVEL0;
+  cr_assert(cfg_init(configuration));
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  cr_assert_not(_stats_cluster_exists("custom_key", expected_labels, G_N_ELEMENTS(expected_labels)));
+  cr_assert(cfg_deinit(configuration));
+
+  configuration->stats_options.level = STATS_LEVEL1;
+  cr_assert(cfg_init(configuration));
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  cr_assert_not(_stats_cluster_exists("custom_key", expected_labels, G_N_ELEMENTS(expected_labels)));
+  cr_assert(cfg_deinit(configuration));
+
+  configuration->stats_options.level = STATS_LEVEL2;
+  cr_assert(cfg_init(configuration));
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  _assert_counter_value("custom_key",
+                        expected_labels,
+                        G_N_ELEMENTS(expected_labels),
+                        1);
+  cr_assert(cfg_deinit(configuration));
 
   log_msg_unref(msg);
   log_pipe_deinit(&metrics_probe->super);

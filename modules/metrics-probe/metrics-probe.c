@@ -37,6 +37,7 @@ typedef struct _MetricsProbe
   GList *label_templates;
   guint8 num_of_labels;
   LogTemplate *increment_template;
+  gint level;
 
   LogTemplateOptions template_options;
 } MetricsProbe;
@@ -50,14 +51,14 @@ TLS_BLOCK_END;
 #define clusters __tls_deref(clusters)
 
 static StatsCluster *
-_register_single_cluster_locked(StatsClusterKey *key)
+_register_single_cluster_locked(StatsClusterKey *key, gint stats_level)
 {
   StatsCluster *cluster;
 
   stats_lock();
   {
     StatsCounterItem *counter;
-    cluster = stats_register_dynamic_counter(0, key, SC_TYPE_SINGLE_VALUE, &counter);
+    cluster = stats_register_dynamic_counter(stats_level, key, SC_TYPE_SINGLE_VALUE, &counter);
   }
   stats_unlock();
 
@@ -107,6 +108,14 @@ metrics_probe_set_increment_template(LogParser *s, LogTemplate *increment_templa
   self->increment_template = log_template_ref(increment_template);
 }
 
+void
+metrics_probe_set_level(LogParser *s, gint level)
+{
+  MetricsProbe *self = (MetricsProbe *) s;
+
+  self->level = level;
+}
+
 LogTemplateOptions *
 metrics_probe_get_template_options(LogParser *s)
 {
@@ -143,7 +152,7 @@ _lookup_stats_counter(MetricsProbe *self, LogMessage *msg)
   StatsCluster *cluster = g_hash_table_lookup(clusters, &key);
   if (!cluster)
     {
-      cluster = _register_single_cluster_locked(&key);
+      cluster = _register_single_cluster_locked(&key, self->level);
       if (cluster)
         g_hash_table_insert(clusters, &cluster->key, cluster);
     }
@@ -193,6 +202,9 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
   msg_trace("metrics-probe message processing started",
             evt_tag_str("key", self->key),
             evt_tag_msg_reference(*pmsg));
+
+  if (!stats_check_level(self->level))
+    return TRUE;
 
   StatsCounterItem *counter = _lookup_stats_counter(self, *pmsg);
   gssize increment = _calculate_increment(self, *pmsg);
@@ -303,6 +315,7 @@ _clone(LogPipe *s)
     }
 
   metrics_probe_set_increment_template(&cloned->super, self->increment_template);
+  metrics_probe_set_level(&cloned->super, self->level);
   log_template_options_clone(&self->template_options, &cloned->template_options);
 
   return &cloned->super.super;
