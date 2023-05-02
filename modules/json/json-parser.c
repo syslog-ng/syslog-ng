@@ -386,11 +386,11 @@ json_parser_clone(LogPipe *s)
   LogParser *cloned;
 
   cloned = json_parser_new(s->cfg);
+  log_parser_clone_settings(&self->super, cloned);
   json_parser_set_prefix(cloned, self->prefix);
   json_parser_set_marker(cloned, self->marker);
   json_parser_set_extract_prefix(cloned, self->extract_prefix);
   json_parser_set_key_delimiter(cloned, self->key_delimiter);
-  log_parser_set_template(cloned, log_template_ref(self->super.template));
 
   return &cloned->super;
 }

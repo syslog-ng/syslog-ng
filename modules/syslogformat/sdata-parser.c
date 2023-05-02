@@ -57,7 +57,7 @@ sdata_parser_clone(LogPipe *s)
   SDataParser *cloned;
 
   cloned = (SDataParser *) sdata_parser_new(s->cfg);
-  cloned->super.template = log_template_ref(self->super.template);
+  log_parser_clone_settings(&self->super, &cloned->super);
   msg_format_options_copy(&cloned->parse_options, &self->parse_options);
   return &cloned->super.super;
 }

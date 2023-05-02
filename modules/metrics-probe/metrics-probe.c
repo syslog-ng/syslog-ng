@@ -292,7 +292,7 @@ _clone(LogPipe *s)
   MetricsProbe *self = (MetricsProbe *) s;
   MetricsProbe *cloned = (MetricsProbe *) metrics_probe_new(s->cfg);
 
-  log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
+  log_parser_clone_settings(&self->super, &cloned->super);
   metrics_probe_set_key(&cloned->super, self->key);
 
   for (GList *elem = g_list_first(self->label_templates); elem; elem = elem->next)

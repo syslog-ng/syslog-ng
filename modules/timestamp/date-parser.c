@@ -197,10 +197,10 @@ date_parser_clone(LogPipe *s)
   LogParser *cloned;
 
   cloned = date_parser_new(log_pipe_get_config(&self->super.super));
+  log_parser_clone_settings(&self->super, cloned);
   date_parser_set_formats(cloned, string_list_clone(self->date_formats));
   date_parser_set_timezone(cloned, self->date_tz);
   date_parser_set_time_stamp(cloned, self->time_stamp);
-  log_parser_set_template(cloned, log_template_ref(self->super.template));
 
   return &cloned->super;
 }

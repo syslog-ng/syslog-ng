@@ -120,6 +120,7 @@ native_parser_clone(LogPipe *s)
 
   cloned = (ParserNative *) g_new0(ParserNative, 1);
   log_parser_init_instance(&cloned->super, s->cfg);
+  log_parser_clone_settings(&self->super, &cloned->super);
   cloned->native_object = native_parser_proxy_clone(self->native_object);
   assert(self != cloned);
 

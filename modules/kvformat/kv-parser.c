@@ -136,8 +136,8 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
 LogPipe *
 kv_parser_clone_method(KVParser *dst, KVParser *src)
 {
+  log_parser_clone_settings(&src->super, &dst->super);
   kv_parser_set_prefix(&dst->super, src->prefix);
-  log_parser_set_template(&dst->super, log_template_ref(src->super.template));
   kv_parser_set_value_separator(&dst->super, src->value_separator);
   kv_parser_set_pair_separator(&dst->super, src->pair_separator);
   kv_parser_set_stray_words_value_name(&dst->super, src->stray_words_value_name);

@@ -62,7 +62,7 @@ tags_parser_clone(LogPipe *s)
   TagsParser *cloned;
 
   cloned = (TagsParser *) tags_parser_new(s->cfg);
-  cloned->super.template = log_template_ref(self->super.template);
+  log_parser_clone_settings(&self->super, &cloned->super);
   return &cloned->super.super;
 }
 

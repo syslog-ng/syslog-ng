@@ -147,9 +147,9 @@ regexp_parser_clone(LogPipe *s)
   RegexpParser *cloned;
 
   cloned = (RegexpParser *)regexp_parser_new(s->cfg);
+  log_parser_clone_settings(&self->super, &cloned->super);
   regexp_parser_set_prefix(&cloned->super, self->prefix);
   regexp_parser_set_patterns(&cloned->super, string_list_clone(self->patterns));
-  log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
 
   for (GList *item = self->matchers; item; item = item->next)
     cloned->matchers = g_list_append(cloned->matchers, log_matcher_ref((LogMatcher *)item->data));

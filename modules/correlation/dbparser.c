@@ -253,11 +253,11 @@ log_db_parser_clone(LogPipe *s)
   LogDBParser *self = (LogDBParser *) s;
 
   cloned = (LogDBParser *) log_db_parser_new(s->cfg);
+  stateful_parser_clone_settings(&self->super, &cloned->super);
   log_db_parser_set_db_file(cloned, self->db_file);
   log_db_parser_set_prefix(cloned, self->prefix);
   log_db_parser_set_drop_unmatched(cloned, self->drop_unmatched);
   log_db_parser_set_program_template_ref(&cloned->super.super, log_template_ref(self->program_template));
-  log_parser_set_template(&cloned->super.super, log_template_ref(self->super.super.template));
   return &cloned->super.super.super;
 }
 

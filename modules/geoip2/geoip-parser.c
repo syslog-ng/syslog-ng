@@ -121,10 +121,10 @@ maxminddb_parser_clone(LogPipe *s)
   GeoIPParser *cloned;
 
   cloned = (GeoIPParser *) maxminddb_parser_new(s->cfg);
+  log_parser_clone_settings(&self->super, &cloned->super);
 
   geoip_parser_set_database_path(&cloned->super, self->database_path);
   geoip_parser_set_prefix(&cloned->super, self->prefix);
-  log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
 
   return &cloned->super.super;
 }
