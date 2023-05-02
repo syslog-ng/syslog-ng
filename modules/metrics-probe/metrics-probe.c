@@ -36,6 +36,7 @@ typedef struct _MetricsProbe
   gchar *key;
   GList *label_templates;
   guint8 num_of_labels;
+  LogTemplate *increment_template;
 
   LogTemplateOptions template_options;
 } MetricsProbe;
@@ -97,6 +98,15 @@ metrics_probe_add_label_template(LogParser *s, const gchar *label, LogTemplate *
   return TRUE;
 }
 
+void
+metrics_probe_set_increment_template(LogParser *s, LogTemplate *increment_template)
+{
+  MetricsProbe *self = (MetricsProbe *) s;
+
+  log_template_unref(self->increment_template);
+  self->increment_template = log_template_ref(increment_template);
+}
+
 LogTemplateOptions *
 metrics_probe_get_template_options(LogParser *s)
 {
@@ -143,6 +153,38 @@ _lookup_stats_counter(MetricsProbe *self, LogMessage *msg)
   return stats_cluster_single_get_counter(cluster);
 }
 
+static const gchar *
+_format_increment_template(MetricsProbe *self, LogMessage *msg, GString *buffer)
+{
+  if (log_template_is_trivial(self->increment_template))
+    {
+      gssize len;
+      return log_template_get_trivial_value(self->increment_template, msg, &len);
+    }
+
+  LogTemplateEvalOptions template_eval_options = { &self->template_options, LTZ_SEND, 0, NULL, LM_VT_STRING };
+  log_template_format(self->increment_template, msg, &template_eval_options, buffer);
+
+  return buffer->str;
+}
+
+static gssize
+_calculate_increment(MetricsProbe *self, LogMessage *msg)
+{
+  if (!self->increment_template)
+    return 1;
+
+  ScratchBuffersMarker marker;
+  GString *increment_buffer = scratch_buffers_alloc_and_mark(&marker);
+
+  const gchar *increment_str = _format_increment_template(self, msg, increment_buffer);
+  gssize increment = strtoll(increment_str, NULL, 10);
+
+  scratch_buffers_reclaim_marked(marker);
+
+  return increment;
+}
+
 static gboolean
 _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
 {
@@ -153,7 +195,8 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
             evt_tag_msg_reference(*pmsg));
 
   StatsCounterItem *counter = _lookup_stats_counter(self, *pmsg);
-  stats_counter_inc(counter);
+  gssize increment = _calculate_increment(self, *pmsg);
+  stats_counter_add(counter, increment);
 
   return TRUE;
 }
@@ -256,8 +299,10 @@ _clone(LogPipe *s)
     {
       LabelTemplate *label_template = (LabelTemplate *) elem->data;
       cloned->label_templates = g_list_append(cloned->label_templates, label_template_clone(label_template));
+      cloned->num_of_labels++;
     }
 
+  metrics_probe_set_increment_template(&cloned->super, self->increment_template);
   log_template_options_clone(&self->template_options, &cloned->template_options);
 
   return &cloned->super.super;
@@ -270,6 +315,7 @@ _free(LogPipe *s)
 
   g_free(self->key);
   g_list_free_full(self->label_templates, (GDestroyNotify) label_template_free);
+  log_template_unref(self->increment_template);
   log_template_options_destroy(&self->template_options);
 
   log_parser_free_method(s);
