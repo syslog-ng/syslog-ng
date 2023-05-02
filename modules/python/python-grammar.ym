@@ -211,7 +211,8 @@ python_parser_option
           {
             python_parser_set_options(last_parser, $1);
           }
-          ;
+        | parser_opt
+        ;
 
 
 python_http_header_options
