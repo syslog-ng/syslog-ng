@@ -24,6 +24,7 @@
 #define SNG_PYTHON_PERSIST_H_INCLUDED
 
 #include "python-module.h"
+#include "python-options.h"
 #include "logpipe.h"
 
 typedef struct
@@ -38,7 +39,7 @@ extern PyTypeObject py_persist_type;
 typedef struct
 {
   PyObject *generate_persist_name_method;
-  GHashTable *options;
+  PythonOptions *options;
   const gchar *class;
   const gchar *id;
 } PythonPersistMembers;

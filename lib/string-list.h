@@ -26,7 +26,7 @@
 
 #include "syslog-ng.h"
 
-GList *string_list_clone(GList *string_list);
+GList *string_list_clone(const GList *string_list);
 GList *string_array_to_list(const gchar *strlist[]);
 GList *string_vargs_to_list_va(const gchar *str, va_list va);
 GList *string_vargs_to_list(const gchar *str, ...);

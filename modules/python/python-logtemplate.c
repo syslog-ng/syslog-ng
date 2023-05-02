@@ -120,6 +120,14 @@ py_log_template_init(PyObject *s, PyObject *args, PyObject *kwds)
   return 0;
 }
 
+PyObject *
+py_log_template_str(PyObject *s)
+{
+  PyLogTemplate *self = (PyLogTemplate *)s;
+
+  return py_string_from_string(self->template->template, -1);
+}
+
 void
 py_log_template_free(PyLogTemplate *self)
 {
@@ -145,6 +153,7 @@ PyTypeObject py_log_template_type =
   .tp_methods = py_log_template_methods,
   .tp_new = PyType_GenericNew,
   .tp_init = py_log_template_init,
+  .tp_str = py_log_template_str,
   0,
 };
 

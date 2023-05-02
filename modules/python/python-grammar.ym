@@ -31,6 +31,7 @@
 #include "python-http-header.h"
 #include "python-main.h"
 #include "value-pairs/value-pairs.h"
+#include "string-list.h"
 #include "logthrsource/logthrsourcedrv.h"
 
 }
@@ -43,6 +44,22 @@
 #include "syslog-names.h"
 
 PythonHttpHeaderPlugin *last_header;
+PythonOptions *last_python_options;
+
+static inline void
+_warn_if_config_version_is_old(CfgLexer *lexer, const CFG_LTYPE *yylloc, const gchar *type, const gchar *option_name)
+{
+  if (!cfg_is_config_version_older(configuration, VERSION_VALUE_4_2))
+    return;
+
+  msg_warning("WARNING: The parsing of python options has been changed with " VERSION_4_2 ". "
+              "Previously values were converted to strings if possible, now they are passed "
+              "to the python class with their real type. Make sure to follow up these changes "
+              "in your python code",
+              cfg_lexer_format_location_tag(lexer, yylloc),
+              evt_tag_str("type", type),
+              evt_tag_str("option_name", option_name));
+};
 
 }
 
@@ -61,6 +78,13 @@ PythonHttpHeaderPlugin *last_header;
 %token KW_IMPORTS
 %token KW_LOADERS
 %token KW_MARK_ERRORS_AS_CRITICAL
+%token KW_TRUE
+%token KW_FALSE
+%token KW_LOG_TEMPLATE
+
+%type <ptr> python_options_block
+%type <ptr> python_option
+%type	<num> python_yesno
 
 %%
 
@@ -115,7 +139,10 @@ python_dd_option
           }
         | KW_LOADERS python_dd_loaders
         | KW_IMPORTS python_dd_loaders
-        | KW_OPTIONS '(' python_dd_custom_options ')'
+        | python_options_block
+          {
+            python_dd_set_options(last_driver, $1);
+          }
         | threaded_dest_driver_general_option
         | threaded_dest_driver_batch_option
         | value_pair_option
@@ -125,25 +152,6 @@ python_dd_option
         | { last_template_options = python_dd_get_template_options(last_driver); } template_option
         ;
 
-python_dd_custom_options
-        : python_dd_custom_option python_dd_custom_options
-        |
-        ;
-
-python_dd_custom_option
-        : string string_or_number
-        {
-          python_dd_set_option(last_driver, $1, $2);
-          free($1);
-          free($2);
-        }
-	| string LL_ARROW string_or_number
-        {
-          python_dd_set_option(last_driver, $1, $3);
-          free($1);
-          free($3);
-        }
-        ;
 
 python_sd_options
         : python_sd_option python_sd_options
@@ -157,28 +165,11 @@ python_sd_option
             free($3);
           }
         | KW_LOADERS python_sd_loaders
-        | KW_OPTIONS '(' python_sd_custom_options ')'
+        | python_options_block
+          {
+            python_sd_set_options(last_driver, $1);
+          }
         | threaded_source_driver_option
-        ;
-
-python_sd_custom_options
-        : python_sd_custom_option python_sd_custom_options
-        |
-        ;
-
-python_sd_custom_option
-        : string string_or_number
-        {
-          python_sd_set_option(last_driver, $1, $2);
-          free($1);
-          free($2);
-        }
-        | string LL_ARROW string_or_number
-        {
-          python_sd_set_option(last_driver, $1, $3);
-          free($1);
-          free($3);
-        }
         ;
 
 
@@ -194,29 +185,12 @@ python_fetcher_option
             free($3);
           }
         | KW_LOADERS python_fetcher_loaders
-        | KW_OPTIONS '(' python_fetcher_custom_options ')'
+        | python_options_block
+          {
+            python_fetcher_set_options(last_driver, $1);
+          }
         | threaded_source_driver_option
         | threaded_fetcher_driver_option
-        ;
-
-python_fetcher_custom_options
-        : python_fetcher_custom_option python_fetcher_custom_options
-        |
-        ;
-
-python_fetcher_custom_option
-        : string string_or_number
-        {
-          python_fetcher_set_option(last_driver, $1, $2);
-          free($1);
-          free($2);
-        }
-        | string LL_ARROW string_or_number
-        {
-          python_fetcher_set_option(last_driver, $1, $3);
-          free($1);
-          free($3);
-        }
         ;
 
 
@@ -233,29 +207,11 @@ python_parser_option
           }
         | KW_LOADERS python_parser_loaders
         | KW_IMPORTS python_parser_loaders
-        | KW_OPTIONS '(' python_parser_custom_options ')'
-        ;
-
-python_parser_custom_options
-        : python_parser_custom_option python_parser_custom_options
-        |
-        ;
-
-python_parser_custom_option
-        : string string_or_number
-        {
-          python_parser_set_option(last_parser, $1, $2);
-          free($1);
-          free($2);
-        }
-        | string LL_ARROW string_or_number
-        {
-          python_parser_set_option(last_parser, $1, $3);
-          free($1);
-          free($3);
-        }
-
-        ;
+        | python_options_block
+          {
+            python_parser_set_options(last_parser, $1);
+          }
+          ;
 
 
 python_http_header_options
@@ -270,32 +226,14 @@ python_http_header_option
             free($3);
           }
         | KW_LOADERS python_http_header_loaders
-        | KW_OPTIONS '(' python_http_header_custom_options ')'
+        | python_options_block
+          {
+            python_http_header_set_options(last_header, $1);
+          }
         | KW_MARK_ERRORS_AS_CRITICAL '(' yesno ')'
           {
             python_http_header_set_mark_errors_as_critical(last_header, $3);
           }
-        ;
-
-python_http_header_custom_options
-        : python_http_header_custom_option python_http_header_custom_options
-        |
-        ;
-
-python_http_header_custom_option
-        : string string_or_number
-        {
-          python_http_header_set_option(last_header, $1, $2);
-          free($1);
-          free($2);
-        }
-        |
-        string LL_ARROW string_or_number
-        {
-          python_http_header_set_option(last_header, $1, $3);
-          free($1);
-          free($3);
-        }
         ;
 
 
@@ -329,6 +267,65 @@ python_parser_loaders
             python_parser_set_loaders(last_parser, $2);
           }
 
+
+optional_arrow
+          : LL_ARROW
+          |
+          ;
+
+python_yesno
+          : yesno_strict
+          | KW_TRUE  { $$ = 1; }
+          | KW_FALSE { $$ = 0; }
+          ;
+
+python_option
+          : string optional_arrow string
+            {
+              $$ = python_option_string_new($1, $3);
+              free($1);
+              free($3);
+            }
+          | string optional_arrow LL_NUMBER
+            {
+              $$ = python_option_long_new($1, $3);
+              _warn_if_config_version_is_old(lexer, &@3, "int", $1);
+              free($1);
+            }
+          | string optional_arrow LL_FLOAT
+            {
+              $$ = python_option_double_new($1, $3);
+              _warn_if_config_version_is_old(lexer, &@3, "float", $1);
+              free($1);
+            }
+          | string optional_arrow python_yesno
+            {
+              $$ = python_option_boolean_new($1, $3);
+              _warn_if_config_version_is_old(lexer, &@3, "bool", $1);
+              free($1);
+            }
+          | string optional_arrow '[' string_list ']'
+            {
+              $$ = python_option_string_list_new($1, $4);
+              free($1);
+              string_list_free($4);
+            }
+          | string optional_arrow KW_LOG_TEMPLATE '(' string ')'
+            {
+              $$ = python_option_template_new($1, $5);
+              free($1);
+              free($5);
+            }
+          ;
+
+python_options
+          : python_option { python_options_add_option(last_python_options, $1); } python_options
+          |
+          ;
+
+python_options_block
+          : KW_OPTIONS { last_python_options = python_options_new(); } '(' python_options ')' { $$ = last_python_options; }
+          ;
 
 /* INCLUDE_RULES */
 

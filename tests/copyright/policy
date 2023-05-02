@@ -172,6 +172,8 @@ modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
 modules/metrics-probe/label-template\.(c|h)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
 modules/examples/inner-destinations/tls-test-validation
+modules/python/python-options.(c|h)$
+modules/python/tests/test_python_options.c$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/mariadb/.*\.conf$
@@ -182,6 +184,7 @@ modules/python-modules/syslogng/modules/example/.*
 modules/python-modules/setup\.py
 scripts/build-python-venv\.sh
 modules/syslogformat/sdata-parser\.[ch]
+tests/light/functional_tests/config_change/test_python_custom_options\.py
 tests/light/functional_tests/logpath/__init__.py
 tests/light/functional_tests/logpath/test_named_logpaths.py
 tests/light/functional_tests/logpath/test_named_logpaths_with_catchall_flag.py

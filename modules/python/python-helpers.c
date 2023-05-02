@@ -242,14 +242,6 @@ _insert_to_dict(gpointer key, gpointer value, gpointer dict)
 }
 
 PyObject *
-_py_create_arg_dict(GHashTable *args)
-{
-  PyObject *arg_dict = PyDict_New();
-  g_hash_table_foreach(args, _insert_to_dict, arg_dict);
-  return arg_dict;
-}
-
-PyObject *
 _py_construct_cfg_args(CfgArgs *args)
 {
   PyObject *arg_dict = PyDict_New();
@@ -361,18 +353,18 @@ _py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, con
 }
 
 gboolean
-_py_invoke_bool_method_by_name_with_args(PyObject *instance, const gchar *method_name,
-                                         GHashTable *args, const gchar *class, const gchar *module)
+_py_invoke_bool_method_by_name_with_options(PyObject *instance, const gchar *method_name,
+                                            const PythonOptions *options, const gchar *class, const gchar *module)
 {
   gboolean result = FALSE;
   PyObject *method = _py_get_optional_method(instance, class, method_name, module);
 
   if (method)
     {
-      PyObject *args_obj = args ? _py_create_arg_dict(args) : NULL;
-      result = _py_invoke_bool_function(method, args_obj, class, module);
+      PyObject *py_options_dict = options ? python_options_create_py_dict(options) : NULL;
+      result = _py_invoke_bool_function(method, py_options_dict, class, module);
 
-      Py_XDECREF(args_obj);
+      Py_XDECREF(py_options_dict);
       Py_DECREF(method);
     }
   return result;
@@ -381,7 +373,7 @@ _py_invoke_bool_method_by_name_with_args(PyObject *instance, const gchar *method
 gboolean
 _py_invoke_bool_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class, const gchar *module)
 {
-  return _py_invoke_bool_method_by_name_with_args(instance, method_name, NULL, class, module);
+  return _py_invoke_bool_method_by_name_with_options(instance, method_name, NULL, class, module);
 }
 
 static void

@@ -71,7 +71,9 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-types.h \
 	modules/python/python-types.c \
 	modules/python/python-confgen.h \
-	modules/python/python-confgen.c
+	modules/python/python-confgen.c \
+	modules/python/python-options.h \
+	modules/python/python-options.c
 
 
 modules_python_libmod_python_la_LDFLAGS		 = \

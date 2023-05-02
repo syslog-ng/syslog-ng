@@ -34,10 +34,10 @@
  * tokens.
  */
 GList *
-string_list_clone(GList *string_list)
+string_list_clone(const GList *string_list)
 {
   GList *cloned = NULL;
-  GList *l;
+  const GList *l;
 
   for (l = string_list; l; l = l->next)
     cloned = g_list_append(cloned, (gulong)(l->data) > 4096 ? g_strdup(l->data) : l->data);

@@ -24,6 +24,7 @@
 #define _SNG_PYTHON_AUTH_HEADERS_H
 
 #include "python-module.h"
+#include "python-options.h"
 
 typedef struct _PythonHttpHeaderPlugin PythonHttpHeaderPlugin;
 
@@ -31,7 +32,7 @@ PythonHttpHeaderPlugin *python_http_header_new(void);
 
 void python_http_header_set_loaders(PythonHttpHeaderPlugin *self, GList *loaders);
 void python_http_header_set_class(PythonHttpHeaderPlugin *self, gchar *class);
-void python_http_header_set_option(PythonHttpHeaderPlugin *self, gchar *key, gchar *value);
+void python_http_header_set_options(PythonHttpHeaderPlugin *self, PythonOptions *options);
 void python_http_header_set_mark_errors_as_critical(PythonHttpHeaderPlugin *self, gboolean enable);
 
 #endif
