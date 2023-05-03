@@ -64,6 +64,24 @@ afsql_dd_add_dbd_option_numeric(LogDriver *s, const gchar *name, gint value)
 }
 
 void
+afsql_dd_set_dbi_driver_dir(LogDriver *s, const gchar *dbi_driver_dir)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  g_free(self->dbi_driver_dir);
+  self->dbi_driver_dir = g_strdup(dbi_driver_dir);
+}
+
+void
+afsql_dd_set_quote_char(LogDriver *s, const gchar *quote_str)
+{
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
+
+  g_free(self->quote_as_string);
+  self->quote_as_string = g_strdup(quote_str);
+}
+
+void
 afsql_dd_set_type(LogDriver *s, const gchar *type)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
@@ -406,16 +424,18 @@ afsql_dd_create_index(AFSqlDestDriver *self, const gchar *table, const gchar *co
 
           format_hex_string(hash, md_len, hash_str, sizeof(hash_str));
           hash_str[0] = 'i';
-          g_string_printf(query_string, "CREATE INDEX %s ON %s (%s)",
-                          hash_str, table, column);
+          g_string_printf(query_string, "CREATE INDEX %s ON %s%s%s (%s)",
+                          hash_str, self->quote_as_string, table, self->quote_as_string, column);
         }
       else
-        g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s (%s)",
-                        table, column, table, column);
+        g_string_printf(query_string, "CREATE INDEX %s%s_%s_idx%s ON %s%s%s (%s)",
+                        self->quote_as_string, table, column, self->quote_as_string, self->quote_as_string, table, self->quote_as_string,
+                        column);
     }
   else
-    g_string_printf(query_string, "CREATE INDEX %s_%s_idx ON %s (%s)",
-                    table, column, table, column);
+    g_string_printf(query_string, "CREATE INDEX %s%s_%s_idx%s ON %s%s%s (%s)",
+                    self->quote_as_string, table, column, self->quote_as_string, self->quote_as_string, table, self->quote_as_string,
+                    column);
   if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
     {
       msg_error("Error adding missing index",
@@ -453,7 +473,7 @@ _is_table_present(AFSqlDestDriver *self, const gchar *table, dbi_result *metadat
     }
 
   query_string = g_string_sized_new(32);
-  g_string_printf(query_string, "SELECT * FROM %s WHERE 0=1", table);
+  g_string_printf(query_string, "SELECT * FROM %s%s%s WHERE 0=1", self->quote_as_string, table, self->quote_as_string);
   res = afsql_dd_run_query(self, query_string->str, TRUE, metadata);
   g_string_free(query_string, TRUE);
 
@@ -487,7 +507,9 @@ _ensure_table_is_syslogng_conform(AFSqlDestDriver *self, dbi_result db_res, cons
               new_transaction_started = TRUE;
             }
           /* field does not exist, add this column */
-          g_string_printf(query_string, "ALTER TABLE %s ADD %s %s", table, self->fields[i].name, self->fields[i].type);
+          g_string_printf(query_string, "ALTER TABLE %s%s%s ADD %s %s", self->quote_as_string, table, self->quote_as_string,
+                          self->fields[i].name,
+                          self->fields[i].type);
           if (!afsql_dd_run_query(self, query_string->str, FALSE, NULL))
             {
               msg_error("Error adding missing column, giving up",
@@ -557,7 +579,7 @@ _table_create(AFSqlDestDriver *self, const gchar *table)
       return FALSE;
     }
 
-  g_string_printf(query_string, "CREATE TABLE %s (", table);
+  g_string_printf(query_string, "CREATE TABLE %s%s%s (", self->quote_as_string, table, self->quote_as_string);
   for (i = 0; i < self->fields_len; i++)
     {
       g_string_append_printf(query_string, "%s %s", self->fields[i].name, self->fields[i].type);
@@ -872,7 +894,7 @@ afsql_dd_build_insert_command(AFSqlDestDriver *self, LogMessage *msg, GString *t
   GString *value = g_string_sized_new(512);
   gint i, j;
 
-  g_string_printf(insert_command, "INSERT INTO %s (", table->str);
+  g_string_printf(insert_command, "INSERT INTO %s%s%s (", self->quote_as_string, table->str, self->quote_as_string);
 
   for (i = 0; i < self->fields_len; i++)
     {
@@ -1176,12 +1198,12 @@ _init_fields_from_columns_and_values(AFSqlDestDriver *self)
 }
 
 static gboolean
-_initialize_dbi(void)
+_initialize_dbi(AFSqlDestDriver *self)
 {
   if (!dbi_initialized)
     {
       errno = 0;
-      gint rc = dbi_initialize_r(NULL, &dbi_instance);
+      gint rc = dbi_initialize_r(self->dbi_driver_dir, &dbi_instance);
 
       if (rc < 0)
         {
@@ -1193,7 +1215,8 @@ _initialize_dbi(void)
         }
       else if (rc == 0)
         {
-          msg_error("The database access library (DBI) reports no usable SQL drivers, perhaps DBI drivers are not installed properly");
+          msg_error("The database access library (DBI) reports no usable SQL drivers, perhaps DBI drivers are not installed properly",
+                    evt_tag_str("dbi_driver_dir", self->dbi_driver_dir ? self->dbi_driver_dir : ""));
           return FALSE;
         }
       else
@@ -1212,7 +1235,7 @@ afsql_dd_init(LogPipe *s)
 
   if (!_update_legacy_persist_name_if_exists(self))
     return FALSE;
-  if (!_initialize_dbi())
+  if (!_initialize_dbi(self))
     return FALSE;
 
   if (!self->columns || !self->values)
@@ -1274,6 +1297,7 @@ afsql_dd_free(LogPipe *s)
   g_hash_table_destroy(self->syslogng_conform_tables);
   g_hash_table_destroy(self->dbd_options);
   g_hash_table_destroy(self->dbd_options_numeric);
+  g_free(self->dbi_driver_dir);
   if (self->session_statements)
     string_list_free(self->session_statements);
   log_threaded_dest_driver_free(s);
@@ -1308,12 +1332,14 @@ afsql_dd_new(GlobalConfig *cfg)
   self->table = log_template_new(configuration, NULL);
   log_template_compile_literal_string(self->table, "messages");
   self->failed_message_counter = 0;
+  self->quote_as_string = g_strdup("");;
 
   self->session_statements = NULL;
 
   self->syslogng_conform_tables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   self->dbd_options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   self->dbd_options_numeric = g_hash_table_new_full(g_str_hash, g_int_equal, g_free, NULL);
+  self->dbi_driver_dir = NULL;
 
   log_template_options_defaults(&self->template_options);
   self->super.stats_source = stats_register_type("sql");

@@ -40,6 +40,7 @@ static CfgLexerKeyword afsql_keywords[] =
   { "columns",            KW_COLUMNS },
   { "indexes",            KW_INDEXES },
   { "values",             KW_VALUES },
+  { "quote_char",         KW_QUOTE_CHAR },
   { "frac_digits",        KW_FRAC_DIGITS },
   { "session_statements", KW_SESSION_STATEMENTS },
   { "host",               KW_HOST },
@@ -56,6 +57,7 @@ static CfgLexerKeyword afsql_keywords[] =
   { "ignore_tns_config",  KW_IGNORE_TNS_CONFIG },
 
   { "dbd_option",         KW_DBD_OPTION },
+  { "dbi_driver_dir",     KW_DBI_DRIVER_DIR },
   { NULL }
 };
 

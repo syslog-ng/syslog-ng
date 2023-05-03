@@ -81,6 +81,7 @@ typedef struct _AFSqlDestDriver
   gint fields_len;
   AFSqlField *fields;
   gchar *null_value;
+  gchar *quote_as_string;
   gint flags;
   gboolean ignore_tns_config;
   GList *session_statements;
@@ -92,6 +93,7 @@ typedef struct _AFSqlDestDriver
 
   /* used exclusively by the db thread */
   dbi_conn dbi_ctx;
+  gchar *dbi_driver_dir;
   GHashTable *syslogng_conform_tables;
   guint32 failed_message_counter;
   gboolean transaction_active;
@@ -117,6 +119,8 @@ LogDriver *afsql_dd_new(GlobalConfig *cfg);
 gint afsql_dd_lookup_flag(const gchar *flag);
 void afsql_dd_add_dbd_option(LogDriver *s, const gchar *name, const gchar *value);
 void afsql_dd_add_dbd_option_numeric(LogDriver *s, const gchar *name, gint value);
+void afsql_dd_set_dbi_driver_dir(LogDriver *s, const gchar *dbi_driver_dir);
+void afsql_dd_set_quote_char(LogDriver *s, const gchar *quote);
 void afsql_dd_set_ignore_tns_config(LogDriver *s, const gboolean ignore_tns_config);
 
 #endif
