@@ -59,6 +59,8 @@ set(PYTHON_SOURCES
     python-options.h
     python-options.c
     compat/compat-python.c
+    python-flags.h
+    python-flags.c
 )
 
 add_module(

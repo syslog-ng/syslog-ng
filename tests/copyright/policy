@@ -173,6 +173,7 @@ modules/metrics-probe/label-template\.(c|h)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
 modules/examples/inner-destinations/tls-test-validation
 modules/python/python-options.(c|h)$
+modules/python/python-flags.(c|h)$
 modules/python/tests/test_python_options.c$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
