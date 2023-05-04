@@ -54,8 +54,8 @@
 %token KW_GO_REVERSE
 %token KW_DO_NOT_USE_BOOKMARK
 %token KW_MAX_BOOKMARK_DISTANCE
-%token KW_LOG_FETCH_DELAY
-%token KW_LOG_FETCH_RETRY_DELAY
+%token KW_FETCH_DELAY
+%token KW_FETCH_RETRY_DELAY
 
 %type   <ptr> source_darwinosl
 %type   <ptr> source_darwinosl_params
@@ -89,8 +89,8 @@ source_darwinosl_option
   | KW_GO_REVERSE '(' yesno ')'	{ darwinosl_sd_set_go_reverse(last_driver, $3); }
   | KW_DO_NOT_USE_BOOKMARK '(' yesno ')'	{ darwinosl_sd_set_do_not_use_bookmark(last_driver, $3); }
   | KW_MAX_BOOKMARK_DISTANCE '(' nonnegative_integer ')'	{ darwinosl_sd_set_max_bookmark_distance(last_driver, $3); }
-  | KW_LOG_FETCH_DELAY '(' positive_integer ')'	{ darwinosl_sd_set_log_fetch_delay(last_driver, $3); }
-  | KW_LOG_FETCH_RETRY_DELAY '(' nonnegative_integer ')'	{ darwinosl_sd_set_log_fetch_retry_delay(last_driver, $3); }
+  | KW_FETCH_DELAY '(' positive_integer ')'	{ darwinosl_sd_set_log_fetch_delay(last_driver, $3); }
+  | KW_FETCH_RETRY_DELAY '(' nonnegative_integer ')'	{ darwinosl_sd_set_log_fetch_retry_delay(last_driver, $3); }
   /*
     TODO: This cannot be used due to an actual macOS API bug now, as this would lead to unclosed enumerator threads with
           an unreleased OSLogEntry item array in each.

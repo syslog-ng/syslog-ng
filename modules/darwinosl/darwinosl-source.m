@@ -146,11 +146,11 @@ _check_restored_postion(DarwinOSLogSourceDriver *self, OSLogEntry *nextLogEntry)
         msg_info("darwinosl: Could not restore last bookmark (filter might be changed or max_bookmark_distance took effect?)",
                  evt_tag_str("bookmark", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
                                                                            [NSDate dateWithTimeIntervalSince1970:self->log_source_position.log_position]].UTF8String),
-                 evt_tag_str("new start position", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
+                 evt_tag_str("new_start_position", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
                                                                                      nextLogEntry.date].UTF8String));
       else
         msg_debug("darwinosl: No last msg hash found",
-                  evt_tag_str("new start position", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
+                  evt_tag_str("new_start_position", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
                                                                                       nextLogEntry.date].UTF8String));
     }
 }
@@ -205,7 +205,7 @@ _open_osl(LogThreadedSourceDriver *s)
   NSDate *startDate = nil;
   bool positionRestored = _log_position_date_from_persist(self, &startDate);
   msg_trace("darwinosl: Should start from",
-            evt_tag_str("position",
+            evt_tag_str("start_position",
                         (startDate ?
                          [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:startDate].UTF8String :
                          "no saved position")));
@@ -297,7 +297,6 @@ _request_exit(LogThreadedSourceDriver *s)
   g_atomic_counter_set(&self->exit_requested, TRUE);
 }
 
-/* TODO: Using some iv_timer or similar instead ?! */
 static void
 _sleep(DarwinOSLogSourceDriver *self, gdouble wait_time)
 {
@@ -326,6 +325,7 @@ static void
 _run(LogThreadedSourceDriver *s)
 {
   DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) s;
+  const gdouble iteration_sleep_time = 1.0 / self->options.fetch_delay;
 
   while (false == g_atomic_counter_get(&self->exit_requested))
     {
@@ -344,7 +344,7 @@ _run(LogThreadedSourceDriver *s)
               else
                 break;
             }
-            _sleep(self, 1.0 / self->options.fetch_delay);
+            _sleep(self, iteration_sleep_time);
           }
 
         _close_osl(s);

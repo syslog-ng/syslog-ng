@@ -29,11 +29,11 @@ The following parameters can be used for customization:
 - read-old-records
     - boolean value, controls if syslog-ng should start reading logs from the oldest available at first start (or if no bookmark can be found)
     - default value: yes
-- log-fetch-delay
+- fetch-delay
     - integer value, controls how much time syslog-ng should wait between reading/sending log messages, this is a fraction of a second, where wait_time = 1 second / n,  so, e.g. n=1 means that only about 1 log will be read and sent in each second, and n=1 000 000 means only 1 microsecond (the allowed minimum value now!) will be the delay between read/write attempts
     (Use with care, though lower delay time can increase log feed performance, at the same time could lead to a heavy system load!)
     - default value: 10 000
-- log-fetch-retry-delay
+- fetch-retry-delay
     - integer value, controls how many seconds syslog-ng will wait before a repeated attempt to read/send once it's out of available logs
     - default value: 1
 - log-fetch-limit
