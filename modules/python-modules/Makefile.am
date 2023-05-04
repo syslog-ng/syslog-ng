@@ -114,6 +114,8 @@ pymodules-pycodestyle: python-venv
 pymodules-pylint: python-venv
 	$(PYTHON_VENV) -m pylint -r n --rcfile=$(PYMODULES_SRCDIR)/pylintrc $(PYMODULES_SRCDIR)/$(PYMODULES_ROOT_MODULE)
 
+pymodules-linters: pymodules-pycodestyle pymodules-pylint
+
 check_SCRIPTS += modules/python-modules/test_pymodules.sh
 
 
