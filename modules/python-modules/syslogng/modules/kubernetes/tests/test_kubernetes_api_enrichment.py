@@ -27,11 +27,13 @@ import json
 
 import kubernetes.client
 
+
 @pytest.fixture
 def minimal_config():
     return {
         'prefix': 'myk8s.',
     }
+
 
 @pytest.fixture
 def mock_kube_config(mocker):
@@ -43,6 +45,7 @@ def mock_kube_config(mocker):
     yield mocker.patch('kubernetes.config.load_config', return_value=None)
 
     kubernetes.client.Configuration.set_default(None)
+
 
 @pytest.fixture
 def mock_api_response_nginx(mocker):
@@ -206,8 +209,8 @@ def mock_api_response_nginx(mocker):
     }
 
     yield mocker.patch('kubernetes.client.rest.RESTClientObject.request', return_value=mocker.Mock(**{
-            'status_code': 200,
-            'data': json.dumps(response_json)
+        'status_code': 200,
+        'data': json.dumps(response_json)
     }))
 
 
@@ -243,6 +246,7 @@ def test_message_from_var_log_pods_is_enriched(minimal_config, mock_kube_config,
     assert msg['myk8s.annotations.cni.projectcalico.org/podIP'] == b'10.1.71.91/32'
     assert msg['myk8s.container_image'] == b'docker.io/library/nginx:latest'
 
+
 def test_message_from_var_log_containers_is_enriched(minimal_config, mock_kube_config, mock_api_response_nginx):
     p = KubernetesAPIEnrichment()
     p.init(minimal_config)
@@ -271,6 +275,7 @@ def test_message_from_var_log_containers_is_enriched(minimal_config, mock_kube_c
     assert msg['myk8s.annotations.cni.projectcalico.org/podIP'] == b'10.1.71.91/32'
     assert msg['myk8s.container_image'] == b'docker.io/library/nginx:latest'
     assert msg['myk8s.pod_uuid'] == b'd7a782cf-cfaa-45e6-8f22-950b2df5bf82'
+
 
 def test_key_delimiter_would_replace_dot(minimal_config, mock_kube_config, mock_api_response_nginx):
     p = KubernetesAPIEnrichment()
