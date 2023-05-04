@@ -81,10 +81,10 @@ _clone(LogPipe *s)
   LogRewrite *cloned;
 
   cloned = rewrite_set_time_zone_new(s->cfg);
+  log_rewrite_clone_method(cloned, &self->super);
 
   rewrite_set_time_zone_set_zone_template_ref(cloned, log_template_ref(self->zone_template));
   rewrite_set_time_zone_set_time_stamp(cloned, self->stamp);
-  cloned->condition = filter_expr_clone(self->super.condition);
 
   return &cloned->super;
 }

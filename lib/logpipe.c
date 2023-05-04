@@ -58,6 +58,12 @@ _arcs(LogPipe *self)
 }
 
 void
+log_pipe_clone_method(LogPipe *dst, const LogPipe *src)
+{
+  log_pipe_set_options(dst, &src->options);
+}
+
+void
 log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
 {
   g_atomic_counter_set(&self->ref_cnt, 1);
@@ -148,6 +154,24 @@ log_pipe_get_persist_name(const LogPipe *self)
 {
   return (self->generate_persist_name != NULL) ? self->generate_persist_name(self)
          : self->persist_name;
+}
+
+void
+log_pipe_set_options(LogPipe *self, const LogPipeOptions *options)
+{
+  self->options = *options;
+}
+
+void
+log_pipe_set_internal(LogPipe *self, gboolean internal)
+{
+  self->options.internal = internal;
+}
+
+gboolean
+log_pipe_is_internal(const LogPipe *self)
+{
+  return self->options.internal;
 }
 
 void

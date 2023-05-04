@@ -181,8 +181,8 @@ csv_parser_clone(LogPipe *s)
   CSVParser *cloned;
 
   cloned = (CSVParser *) csv_parser_new(s->cfg);
+  log_parser_clone_settings(&self->super, &cloned->super);
   csv_scanner_options_copy(&cloned->options, &self->options);
-  cloned->super.template = log_template_ref(self->super.template);
   csv_parser_set_prefix(&cloned->super, self->prefix);
   csv_parser_set_drop_invalid(&cloned->super, self->drop_invalid);
   return &cloned->super.super;

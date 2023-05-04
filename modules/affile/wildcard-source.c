@@ -115,6 +115,7 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
                                     self->file_opener,
                                     &self->super,
                                     cfg);
+  log_pipe_set_options(&reader->super.super, &self->super.super.super.options);
 
   wildcard_file_reader_on_deleted_file_eof(reader, _remove_file_reader, self);
 

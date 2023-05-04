@@ -485,7 +485,10 @@ afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
   if (self->transport_mapper->sock_type == SOCK_STREAM && self->close_on_input)
     writer_flags |= LW_DETECT_EOF;
 
-  return log_writer_new(writer_flags, self->super.super.super.cfg);
+  LogWriter *writer = log_writer_new(writer_flags, self->super.super.super.cfg);
+  log_pipe_set_options((LogPipe *) writer, &self->super.super.super.options);
+
+  return writer;
 }
 
 static gboolean
@@ -511,9 +514,9 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
   log_writer_init_driver_sck_builder(self->writer, driver_sck_builder);
   log_writer_init_queue_sck_builder(self->writer, queue_sck_builder);
 
+  gint stats_level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : self->writer_options.stats_level;
   LogQueue *queue = log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_qfile_name(self),
-                                                  self->writer_options.stats_level, driver_sck_builder,
-                                                  queue_sck_builder);
+                                                  stats_level, driver_sck_builder, queue_sck_builder);
   log_writer_set_queue(self->writer, queue);
 
   stats_cluster_key_builder_free(queue_sck_builder);

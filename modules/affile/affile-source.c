@@ -99,6 +99,7 @@ affile_sd_init(LogPipe *s)
   self->file_reader = file_reader_new(self->filename->str, &self->file_reader_options,
                                       self->file_opener,
                                       &self->super, cfg);
+  log_pipe_set_options(&self->file_reader->super, &self->super.super.super.options);
 
   log_pipe_append(&self->file_reader->super, &self->super.super.super);
   return log_pipe_init(&self->file_reader->super);

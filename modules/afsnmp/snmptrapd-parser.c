@@ -238,8 +238,7 @@ snmptrapd_parser_clone(LogPipe *s)
   snmptrapd_parser_set_prefix(&cloned->super, self->prefix->str);
   snmptrapd_parser_set_set_message_macro(&cloned->super, self->set_message_macro);
 
-  /* log_parser_clone_method() is missing.. */
-  log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
+  log_parser_clone_settings(&self->super, &cloned->super);
 
   return &cloned->super.super;
 }

@@ -75,8 +75,8 @@ _clone(LogPipe *s)
   LogRewriteSetTag *cloned;
 
   cloned = (LogRewriteSetTag *) log_rewrite_set_tag_new(self->tag_template, self->value, self->super.super.cfg);
+  log_rewrite_clone_method(&cloned->super, &self->super);
 
-  cloned->super.condition = filter_expr_clone(self->super.condition);
   return &cloned->super.super;
 }
 

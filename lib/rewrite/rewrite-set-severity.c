@@ -116,8 +116,7 @@ log_rewrite_set_severity_clone(LogPipe *s)
   LogRewriteSetSeverity *self = (LogRewriteSetSeverity *) s;
   LogRewriteSetSeverity *cloned = (LogRewriteSetSeverity *)log_rewrite_set_severity_new(log_template_ref(self->severity),
                                   s->cfg);
-
-  cloned->super.condition = filter_expr_clone(self->super.condition);
+  log_rewrite_clone_method(&cloned->super, &self->super);
 
   return &cloned->super.super;
 }

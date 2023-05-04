@@ -51,8 +51,7 @@ log_rewrite_unset_clone(LogPipe *s)
   LogRewriteUnset *cloned;
 
   cloned = (LogRewriteUnset *) log_rewrite_unset_new(s->cfg);
-  cloned->super.value_handle = self->super.value_handle;
-  cloned->super.condition = filter_expr_clone(self->super.condition);
+  log_rewrite_clone_method(&cloned->super, &self->super);
 
   return &cloned->super.super;
 }

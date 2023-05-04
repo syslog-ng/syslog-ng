@@ -587,6 +587,8 @@ log_reader_io_handle_in(gpointer s)
 static void
 _register_aggregated_stats(LogReader *self)
 {
+  gint level = log_pipe_is_internal(&self->super.super) ? STATS_LEVEL3 : self->super.options->stats_level;
+
   StatsClusterKey sc_key_eps_input;
   stats_cluster_single_key_legacy_set_with_name(&sc_key_eps_input, self->super.options->stats_source | SCS_SOURCE,
                                                 self->super.stats_id,
@@ -598,19 +600,18 @@ _register_aggregated_stats(LogReader *self)
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->super.options->stats_source | SCS_SOURCE,
                                                 self->super.stats_id,
                                                 self->super.stats_instance, "msg_size_max");
-  stats_register_aggregator_maximum(self->super.options->stats_level, &sc_key, &self->max_message_size);
+  stats_register_aggregator_maximum(level, &sc_key, &self->max_message_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->super.options->stats_source | SCS_SOURCE,
                                                 self->super.stats_id,
                                                 self->super.stats_instance, "msg_size_avg");
-  stats_register_aggregator_average(self->super.options->stats_level, &sc_key, &self->average_messages_size);
+  stats_register_aggregator_average(level, &sc_key, &self->average_messages_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->super.options->stats_source | SCS_SOURCE,
                                                 self->super.stats_id,
                                                 self->super.stats_instance, "eps");
 
-  stats_register_aggregator_cps(self->super.options->stats_level, &sc_key, &sc_key_eps_input, SC_TYPE_SINGLE_VALUE,
-                                &self->CPS);
+  stats_register_aggregator_cps(level, &sc_key, &sc_key_eps_input, SC_TYPE_SINGLE_VALUE, &self->CPS);
 
   stats_aggregator_unlock();
 }

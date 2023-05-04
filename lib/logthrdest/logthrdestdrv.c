@@ -785,9 +785,11 @@ _register_raw_bytes_stats(LogThreadedDestWorker *self)
     stats_cluster_label("driver_instance", self->owner->format_stats_instance(self->owner)),
   };
 
+  gint level = log_pipe_is_internal(&self->owner->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1;
+
   StatsClusterKey output_bytes_key;
   stats_cluster_single_key_set(&output_bytes_key, "output_event_bytes_total", labels, G_N_ELEMENTS(labels));
-  stats_byte_counter_init(&self->metrics.written_bytes, &output_bytes_key, SBCP_KIB);
+  stats_byte_counter_init(&self->metrics.written_bytes, &output_bytes_key, level, SBCP_KIB);
 }
 
 static void
@@ -1022,6 +1024,8 @@ log_threaded_dest_driver_insert_batch_length_stats(LogThreadedDestDriver *self, 
 void
 log_threaded_dest_driver_register_aggregated_stats(LogThreadedDestDriver *self)
 {
+  gint level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL0;
+
   StatsClusterKey sc_key_eps_input;
   _init_stats_legacy_key(self, &sc_key_eps_input);
   stats_aggregator_lock();
@@ -1029,23 +1033,23 @@ log_threaded_dest_driver_register_aggregated_stats(LogThreadedDestDriver *self)
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
                                                 self->format_stats_instance(self), "msg_size_max");
-  stats_register_aggregator_maximum(0, &sc_key, &self->metrics.max_message_size);
+  stats_register_aggregator_maximum(level, &sc_key, &self->metrics.max_message_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
                                                 self->format_stats_instance(self), "msg_size_avg");
-  stats_register_aggregator_average(0, &sc_key, &self->metrics.average_messages_size);
+  stats_register_aggregator_average(level, &sc_key, &self->metrics.average_messages_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
                                                 self->format_stats_instance(self), "batch_size_max");
-  stats_register_aggregator_maximum(0, &sc_key, &self->metrics.max_batch_size);
+  stats_register_aggregator_maximum(level, &sc_key, &self->metrics.max_batch_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
                                                 self->format_stats_instance(self), "batch_size_avg");
-  stats_register_aggregator_average(0, &sc_key, &self->metrics.average_batch_size);
+  stats_register_aggregator_average(level, &sc_key, &self->metrics.average_batch_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
                                                 self->format_stats_instance(self), "eps");
-  stats_register_aggregator_cps(0, &sc_key, &sc_key_eps_input, SC_TYPE_WRITTEN, &self->metrics.CPS);
+  stats_register_aggregator_cps(level, &sc_key, &sc_key_eps_input, SC_TYPE_WRITTEN, &self->metrics.CPS);
 
   stats_aggregator_unlock();
 }
@@ -1070,6 +1074,8 @@ _register_driver_stats(LogThreadedDestDriver *self, StatsClusterKeyBuilder *driv
   if (!driver_sck_builder)
     return;
 
+  gint level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL0;
+
   stats_cluster_key_builder_set_name(driver_sck_builder, "output_events_total");
   self->metrics.output_events_sc_key = stats_cluster_key_builder_build_logpipe(driver_sck_builder);
 
@@ -1081,9 +1087,10 @@ _register_driver_stats(LogThreadedDestDriver *self, StatsClusterKeyBuilder *driv
 
   stats_lock();
   {
-    stats_register_counter(0, self->metrics.output_events_sc_key, SC_TYPE_DROPPED, &self->metrics.dropped_messages);
-    stats_register_counter(0, self->metrics.output_events_sc_key, SC_TYPE_WRITTEN, &self->metrics.written_messages);
-    stats_register_counter(0, self->metrics.processed_sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.processed_messages);
+    stats_register_counter(level, self->metrics.output_events_sc_key, SC_TYPE_DROPPED, &self->metrics.dropped_messages);
+    stats_register_counter(level, self->metrics.output_events_sc_key, SC_TYPE_WRITTEN, &self->metrics.written_messages);
+    stats_register_counter(level, self->metrics.processed_sc_key, SC_TYPE_SINGLE_VALUE,
+                           &self->metrics.processed_messages);
   }
   stats_unlock();
 }
@@ -1186,7 +1193,8 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
   _init_driver_sck_builder(self, driver_sck_builder);
 
-  if (!_create_workers(self, STATS_LEVEL0, driver_sck_builder))
+  gint stats_level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL0;
+  if (!_create_workers(self, stats_level, driver_sck_builder))
     {
       stats_cluster_key_builder_free(driver_sck_builder);
       return FALSE;

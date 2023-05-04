@@ -150,9 +150,9 @@ xml_parser_clone(LogPipe *s)
   XMLParser *cloned;
 
   cloned = (XMLParser *) xml_parser_new(s->cfg);
+  log_parser_clone_settings(&self->super, &cloned->super);
 
   xml_parser_set_prefix(&cloned->super, self->prefix);
-  log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
   xml_parser_set_forward_invalid(&cloned->super, self->forward_invalid);
   xml_parser_allow_create_lists(&cloned->super, self->create_lists);
   xml_scanner_options_copy(&cloned->options, &self->options);

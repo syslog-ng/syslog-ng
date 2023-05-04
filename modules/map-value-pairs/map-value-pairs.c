@@ -59,6 +59,7 @@ _clone(LogPipe *s)
   MapValuePairs *cloned;
 
   cloned = (MapValuePairs *) map_value_pairs_new(log_pipe_get_config(s), value_pairs_ref(self->value_pairs));
+  log_parser_clone_settings(&self->super, &cloned->super);
   return &cloned->super.super;
 }
 

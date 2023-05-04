@@ -458,7 +458,7 @@ _create_ack_tracker_if_not_exists(LogSource *self)
 }
 
 static void
-_register_raw_bytes_stats(LogSource *self)
+_register_raw_bytes_stats(LogSource *self, gint stats_level)
 {
   StatsClusterLabel labels[] =
   {
@@ -468,7 +468,7 @@ _register_raw_bytes_stats(LogSource *self)
 
   StatsClusterKey input_bytes_key;
   stats_cluster_single_key_set(&input_bytes_key, "input_event_bytes_total", labels, G_N_ELEMENTS(labels));
-  stats_byte_counter_init(&self->metrics.recvd_bytes, &input_bytes_key, SBCP_KIB);
+  stats_byte_counter_init(&self->metrics.recvd_bytes, &input_bytes_key, stats_level, SBCP_KIB);
 }
 
 static void
@@ -485,6 +485,39 @@ _unregister_raw_bytes_stats(LogSource *self)
   stats_byte_counter_deinit(&self->metrics.recvd_bytes, &input_bytes_key);
 }
 
+static void
+_register_counters(LogSource *self)
+{
+  stats_lock();
+  StatsClusterKey sc_key;
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("id", self->stats_id),
+    stats_cluster_label("driver_instance", self->stats_instance),
+  };
+
+  gint level = log_pipe_is_internal(&self->super) ? STATS_LEVEL3 : self->options->stats_level;
+
+  stats_cluster_single_key_set(&sc_key, "input_events_total", labels, G_N_ELEMENTS(labels));
+  stats_cluster_single_key_add_legacy_alias_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
+                                                      self->stats_instance, "processed");
+  stats_register_counter(level, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.recvd_messages);
+
+  stats_cluster_logpipe_key_legacy_set(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
+                                       self->stats_instance);
+  stats_register_counter(level, &sc_key, SC_TYPE_STAMP, &self->metrics.last_message_seen);
+
+  _register_window_stats(self);
+
+  stats_unlock();
+
+  if (self->metrics.raw_bytes_enabled)
+    {
+      level = log_pipe_is_internal(&self->super) ? STATS_LEVEL3 : STATS_LEVEL1;
+      _register_raw_bytes_stats(self, level);
+    }
+}
+
 gboolean
 log_source_init(LogPipe *s)
 {
@@ -497,40 +530,14 @@ log_source_init(LogPipe *s)
       return FALSE;
     }
 
-  stats_lock();
-  StatsClusterKey sc_key;
-  StatsClusterLabel labels[] =
-  {
-    stats_cluster_label("id", self->stats_id),
-    stats_cluster_label("driver_instance", self->stats_instance),
-  };
-  stats_cluster_single_key_set(&sc_key, "input_events_total", labels, G_N_ELEMENTS(labels));
-  stats_cluster_single_key_add_legacy_alias_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                                      self->stats_instance, "processed");
-  stats_register_counter(self->options->stats_level, &sc_key,
-                         SC_TYPE_SINGLE_VALUE, &self->metrics.recvd_messages);
-
-
-  stats_cluster_logpipe_key_legacy_set(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                       self->stats_instance);
-  stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_STAMP, &self->metrics.last_message_seen);
-
-  _register_window_stats(self);
-
-  stats_unlock();
-
-  if (self->metrics.raw_bytes_enabled)
-    _register_raw_bytes_stats(self);
+  _register_counters(self);
 
   return TRUE;
 }
 
-gboolean
-log_source_deinit(LogPipe *s)
+static void
+_unregister_counters(LogSource *self)
 {
-  LogSource *self = (LogSource *) s;
-  ack_tracker_deinit(self->ack_tracker);
-
   if (self->metrics.raw_bytes_enabled)
     _unregister_raw_bytes_stats(self);
 
@@ -553,6 +560,15 @@ log_source_deinit(LogPipe *s)
   _unregister_window_stats(self);
 
   stats_unlock();
+}
+
+gboolean
+log_source_deinit(LogPipe *s)
+{
+  LogSource *self = (LogSource *) s;
+  ack_tracker_deinit(self->ack_tracker);
+
+  _unregister_counters(self);
 
   return TRUE;
 }
