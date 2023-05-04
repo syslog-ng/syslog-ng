@@ -61,6 +61,8 @@ class LogSource(LogSource):
     It easily maps to any source mechanism that pushes messages to syslog-ng
     (e.g.  queueing protocols such as mqtt or HTTP server implementations)
     """
+    flags = {}
+    parse_options = None
 
     def init(self, options):
         """Initialize this LogSource instance
@@ -144,6 +146,9 @@ class LogFetcher(LogFetcher):
     SUCCESS = FETCH_SUCCESS = LogFetcherResult.SUCCESS
     TRY_AGAIN = FETCH_TRY_AGAIN = LogFetcherResult.TRY_AGAIN
     NO_DATA = FETCH_NO_DATA = LogFetcherResult.NO_DATA
+
+    flags = {}
+    parse_options = None
 
     def init(self, options):
         """Initialize this LogFetcher instance
