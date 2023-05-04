@@ -24,7 +24,7 @@ from __future__ import print_function, absolute_import
 from abc import ABCMeta, abstractmethod
 
 
-class Lexer(object):
+class Lexer():
     __metaclass__ = ABCMeta
 
     @abstractmethod

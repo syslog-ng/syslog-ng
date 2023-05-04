@@ -30,7 +30,7 @@ from .macrocompleter import MacroCompleter
 from .syslognginternals import get_debugger_commands, get_template_functions, get_nv_registry, get_value_pairs_scopes
 
 
-class DebuggerCLI(object):
+class DebuggerCLI():
     debug_completers = {}
     template_completers = {}
     tflang_completers = {}

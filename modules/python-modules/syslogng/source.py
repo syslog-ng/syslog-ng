@@ -20,6 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
+# pylint: disable=unused-import,function-redefined,useless-parent-delegation
+
 try:
     from _syslogng import LogSource, LogFetcher, LogFetcherResult
     from _syslogng import InstantAckTracker, ConsecutiveAckTracker, BatchedAckTracker
@@ -28,7 +30,9 @@ except ImportError:
     import warnings
     from enum import Enum, auto
 
-    warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
+    warnings.warn("You have imported the syslogng package outside of syslog-ng, "
+                  "thus some of the functionality is not available. "
+                  "Defining fake classes for those exported by the underlying syslog-ng code")
 
     LogSource = object
     LogFetcher = object
@@ -69,7 +73,6 @@ class LogSource(LogSource):
     def deinit(self):
         """Deinitialize this LogSource instance
         """
-        pass
 
     def run(self):
         """Run the main loop for the source
@@ -153,7 +156,6 @@ class LogFetcher(LogFetcher):
     def deinit(self):
         """Deinitialize this LogFetcher instance
         """
-        pass
 
     def open(self):
         """Open the connection to the target service
@@ -168,7 +170,6 @@ class LogFetcher(LogFetcher):
 
     def close(self):
         """Close the connection to the target service"""
-        pass
 
     def fetch(self):
         """Function to fetch the next message
@@ -193,4 +194,3 @@ class LogFetcher(LogFetcher):
         The method is optional, use it when fetch() has blocking operations and
         it has to be interrupted when shutting down syslog-ng.
         """
-        pass

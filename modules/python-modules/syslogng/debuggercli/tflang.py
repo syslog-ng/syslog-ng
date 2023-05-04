@@ -41,16 +41,13 @@ class TemplateFunctionLang(CompleterLang):
         '''template_func : tf_format_json
                          | tf_echo
                          | tf_generic'''
-        pass
 
     def p_tf_format_json(self, p):
         '''tf_format_json : COMMAND_FORMAT_JSON tf_format_json_args'''
-        pass
 
     def p_tf_format_json_args(self, p):
         '''tf_format_json_args : tf_format_json_arg tf_format_json_args
                                | '''
-        pass
 
     def p_tf_format_json_arg(self, p):
         '''tf_format_json_arg  : OPT__SCOPE value_pairs_scope
@@ -64,46 +61,36 @@ class TemplateFunctionLang(CompleterLang):
                                | OPT__REPLACE ARG
                                | OPT
                                | ARG'''
-        pass
 
     def p_name_value_name(self, p):
         '''name_value_name : ARG'''
-        pass
 
     def p_name_value_pair(self, p):
         '''name_value_pair : ARG'''
-        pass
 
     def p_value_pairs_scope(self, p):
         '''value_pairs_scope : ARG'''
-        pass
 
     def p_tf_echo(self, p):
         '''tf_echo : COMMAND_ECHO templates'''
-        pass
 
     def p_tf_generic(self, p):
         '''tf_generic : COMMAND args'''
-        pass
 
     def p_args(self, p):
         '''args : ARG args
                 |
         '''
-        pass
 
     def p_templates(self, p):
         '''templates : template templates
                      | '''
-        pass
 
     def p_template(self, p):
         '''template : ARG'''
-        pass
 
     def p_ipaddress(self, p):
         '''ipaddress : ARG'''
-        pass
 
     def _initialize_rules(self):
         tokens = list(self.tokens_base)

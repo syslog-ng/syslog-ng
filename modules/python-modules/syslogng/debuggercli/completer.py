@@ -24,7 +24,7 @@ from __future__ import print_function, absolute_import
 from abc import abstractmethod, ABCMeta
 
 
-class Completer(object):
+class Completer():
     __metaclass__ = ABCMeta
 
     @abstractmethod

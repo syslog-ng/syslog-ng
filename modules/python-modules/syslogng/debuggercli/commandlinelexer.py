@@ -30,6 +30,7 @@ CLL_QUOTED_CHAR = 2
 
 
 class CommandLineLexer(Lexer):
+    # pylint: disable=assignment-from-no-return
     """This an inperfect lexer for both the debug language and template functions"""
     def __init__(self):
         self._tokens = []
@@ -89,7 +90,7 @@ class CommandLineLexer(Lexer):
             self._current_position += 1
 
     def _process_normal_character(self, current_char):
-        if current_char == '"' or current_char == "'":
+        if current_char in ('"', "'"):
             return self._open_quoted_string(current_char)
         elif current_char.isspace():
             return self._close_current_token(current_char)

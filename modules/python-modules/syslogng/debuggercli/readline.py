@@ -26,7 +26,7 @@ import traceback
 from .debuggercli import DebuggerCLI
 
 
-class ReadlineCompleteHook(object):
+class ReadlineCompleteHook():
     def __init__(self, completer):
         self._completer = completer
         self._last_contents = (None, None)
@@ -40,6 +40,7 @@ class ReadlineCompleteHook(object):
             return completions[state]
         except Exception:
             traceback.print_exc()
+            return []
 
     def _get_completions(self, entire_text, text):
         if self._last_contents == (entire_text, text):

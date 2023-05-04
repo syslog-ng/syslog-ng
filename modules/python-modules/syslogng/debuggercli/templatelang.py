@@ -34,13 +34,11 @@ class TemplateLang(CompleterLang):
     @staticmethod
     def p_template_string(p):
         '''template_string : template_elems'''
-        pass
 
     @staticmethod
     def p_template_elems(p):
         '''template_elems : template_elem template_elems
                           |'''
-        pass
 
     @staticmethod
     def p_template_elem(p):
@@ -48,7 +46,6 @@ class TemplateLang(CompleterLang):
                          | MACRO
                          | TEMPLATE_FUNC
         '''
-        pass
 
     def _construct_lexer(self):
         return TemplateLexer()

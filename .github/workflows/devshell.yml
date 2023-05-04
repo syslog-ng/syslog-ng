@@ -222,9 +222,8 @@ jobs:
       - name: Style check (pylib)
         if: always()
         working-directory: ./build
-        continue-on-error: true # Fix errors from pylint
         run: |
-          make pymodules-checks || (git reset --hard HEAD && exit 1)
+          make pymodules-linters || (git reset --hard HEAD && exit 1)
 
       - name: Style check (Light)
         id: light-style-check

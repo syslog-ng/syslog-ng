@@ -20,17 +20,20 @@
 # COPYING for details.
 #
 #############################################################################
+# pylint: disable=import-error
 
 from __future__ import absolute_import, print_function
-from .debuggercli import DebuggerCLI
+
+import sys
 
 from editline import _editline
 from editline.editline import EditLine
 from editline import lineeditor
 
-import sys
+from .debuggercli import DebuggerCLI
 
-class EditlineCompleteHook(object):
+
+class EditlineCompleteHook():
     def __init__(self, completer, editl):
         self._completer = completer
         self._last_contents = (None, None)
@@ -47,8 +50,9 @@ class EditlineCompleteHook(object):
         self._last_contents = (entire_text, text)
         return self._last_completions
 
+
 class MyEditLineCompleter(lineeditor.Completer):
-    def __init__(self, subeditor, completer, namespace = None):
+    def __init__(self, subeditor, completer, namespace=None):
         super().__init__(subeditor, namespace)
         self._default_display_matches = self.subeditor.display_matches
         self.subeditor.display_matches = self.display_matches
@@ -56,12 +60,13 @@ class MyEditLineCompleter(lineeditor.Completer):
         self.subeditor.completer = self.complete
 
     def complete(self, text):
+        # pylint: disable=attribute-defined-outside-init
         self.matches = self.completer.complete(text)
         return self.matches
 
     def display_matches(self, matches):
+        # pylint: disable=protected-access
         self.subeditor._display_matches(self.matches)
-
 
 
 __setup_performed__ = False
@@ -78,11 +83,11 @@ def setup_editline():
 
     editline_system = _editline.get_global_instance()
     if editline_system is None:
-      sys_el = EditLine("DebuggerCLI", sys.stdin, sys.stdout, sys.stderr)
-      _editline.set_global_instance(sys_el)
-      completer = EditlineCompleteHook(debuggercli.get_root_completer(), sys_el)
-      sys_line_ed = MyEditLineCompleter(sys_el, completer=completer)
-      lineeditor.global_line_editor(sys_line_ed)
-      sys_el.completer = sys_line_ed.complete
+        sys_el = EditLine("DebuggerCLI", sys.stdin, sys.stdout, sys.stderr)
+        _editline.set_global_instance(sys_el)
+        completer = EditlineCompleteHook(debuggercli.get_root_completer(), sys_el)
+        sys_line_ed = MyEditLineCompleter(sys_el, completer=completer)
+        lineeditor.global_line_editor(sys_line_ed)
+        sys_el.completer = sys_line_ed.complete
 
     __setup_performed__ = True

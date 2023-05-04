@@ -106,13 +106,15 @@ pymodules-clean:
 pymodules-unit: python-venv
 	$(PYTHON_VENV) -m pytest --showlocals --verbosity=3 $(PYMODULES_SRCDIR) -W ignore::UserWarning
 
-pymodules-checks: pymodules-unit pymodules-pep8 pymodules-pylint
+pymodules-checks: pymodules-unit pymodules-pycodestyle pymodules-pylint
 
-pymodules-pep8: python-venv
-	$(PYTHON_VENV) -m pep8 --ignore=E501 $(PYMODULES_SRCDIR)/$(PYMODULES_ROOT_MODULE)
+pymodules-pycodestyle: python-venv
+	$(PYTHON_VENV) -m pycodestyle --ignore=E501,E121,E123,E126,E226,E24,E704,W503,W504 $(PYMODULES_SRCDIR)/$(PYMODULES_ROOT_MODULE)
 
 pymodules-pylint: python-venv
 	$(PYTHON_VENV) -m pylint -r n --rcfile=$(PYMODULES_SRCDIR)/pylintrc $(PYMODULES_SRCDIR)/$(PYMODULES_ROOT_MODULE)
+
+pymodules-linters: pymodules-pycodestyle pymodules-pylint
 
 check_SCRIPTS += modules/python-modules/test_pymodules.sh
 

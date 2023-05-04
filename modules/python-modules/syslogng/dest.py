@@ -20,6 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
+# pylint: disable=function-redefined
+
 try:
     from _syslogng import LogDestination, LogDestinationResult
 
@@ -27,16 +29,18 @@ except ImportError:
     import warnings
     from enum import Enum, auto
 
-    warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
+    warnings.warn("You have imported the syslogng package outside of syslog-ng, "
+                  "thus some of the functionality is not available. "
+                  "Defining fake classes for those exported by the underlying syslog-ng code")
 
     LogDestination = object
 
     class LogDestinationResult(Enum):
-        DROP = auto(),
-        ERROR = auto(),
-        SUCCESS = auto(),
-        QUEUED = auto(),
-        NOT_CONNECTED = auto(),
+        DROP = auto()
+        ERROR = auto()
+        SUCCESS = auto()
+        QUEUED = auto()
+        NOT_CONNECTED = auto()
 
 
 class LogDestination(LogDestination):
@@ -52,7 +56,6 @@ class LogDestination(LogDestination):
 
     def close(self):
         """Close the connection to the target service"""
-        pass
 
     def is_opened(self):
         """Check if the connection to the target is able to receive messages"""
@@ -89,7 +92,6 @@ class LogDestination(LogDestination):
         This method is called when the syslog-ng configuration is being shut
         down.
         """
-        pass
 
     def send(self, msg):
         """Send a message to the target service
