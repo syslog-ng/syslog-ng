@@ -354,7 +354,7 @@ log_reader_update_watches(LogReader *self)
  *****************************************************************************/
 
 static void
-log_reader_work_perform(void *s, GIOCondition cond)
+log_reader_work_perform(void *s, gpointer arg)
 {
   LogReader *self = (LogReader *) s;
 
@@ -362,7 +362,7 @@ log_reader_work_perform(void *s, GIOCondition cond)
 }
 
 static void
-log_reader_work_finished(void *s)
+log_reader_work_finished(void *s, gpointer arg)
 {
   LogReader *self = (LogReader *) s;
 
@@ -562,7 +562,7 @@ log_reader_io_handle_in(gpointer s)
   log_reader_disable_watches(self);
   if ((self->options->flags & LR_THREADED))
     {
-      main_loop_io_worker_job_submit(&self->io_job, G_IO_IN);
+      main_loop_io_worker_job_submit(&self->io_job, NULL);
     }
   else
     {
@@ -577,8 +577,8 @@ log_reader_io_handle_in(gpointer s)
       if (!main_loop_worker_job_quit())
         {
           log_pipe_ref(&self->super.super);
-          log_reader_work_perform(s, G_IO_IN);
-          log_reader_work_finished(s);
+          log_reader_work_perform(s, NULL);
+          log_reader_work_finished(s, NULL);
           log_pipe_unref(&self->super.super);
         }
     }
@@ -699,10 +699,10 @@ log_reader_init_watches(LogReader *self)
 
   main_loop_io_worker_job_init(&self->io_job);
   self->io_job.user_data = self;
-  self->io_job.work = (void (*)(void *, GIOCondition)) log_reader_work_perform;
-  self->io_job.completion = (void (*)(void *)) log_reader_work_finished;
-  self->io_job.engage = (void (*)(void *)) log_pipe_ref;
-  self->io_job.release = (void (*)(void *)) log_pipe_unref;
+  self->io_job.work = log_reader_work_perform;
+  self->io_job.completion = log_reader_work_finished;
+  self->io_job.engage = (void (*)(gpointer)) log_pipe_ref;
+  self->io_job.release = (void (*)(gpointer)) log_pipe_unref;
 }
 
 static void

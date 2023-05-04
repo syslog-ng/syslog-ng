@@ -27,6 +27,7 @@
 #include "apphook.h"
 #include "messages.h"
 #include "scratch-buffers.h"
+#include "atomic.h"
 
 #include <iv.h>
 
@@ -56,7 +57,7 @@ volatile gboolean main_loop_workers_quit;
 volatile gboolean is_reloading_scheduled;
 
 /* number of I/O worker jobs running */
-static gint main_loop_jobs_running;
+static GAtomicCounter main_loop_jobs_running;
 
 static struct iv_task main_loop_workers_reenable_jobs_task;
 
@@ -147,6 +148,12 @@ _release_thread_id(void)
   g_mutex_unlock(&main_loop_workers_idmap_lock);
 }
 
+gboolean
+main_loop_worker_is_worker_thread(void)
+{
+  return main_loop_worker_type > MLW_UNKNOWN;
+}
+
 typedef struct _WorkerExitNotification
 {
   WorkerExitNotificationFunc func;
@@ -226,7 +233,7 @@ main_loop_worker_job_start(void)
 {
   main_loop_assert_main_thread();
 
-  main_loop_jobs_running++;
+  g_atomic_counter_inc(&main_loop_jobs_running);
 }
 
 typedef struct
@@ -277,8 +284,8 @@ main_loop_worker_job_complete(void)
 {
   main_loop_assert_main_thread();
 
-  main_loop_jobs_running--;
-  if (main_loop_workers_quit && main_loop_jobs_running == 0)
+  gboolean reached_zero = g_atomic_counter_dec_and_test(&main_loop_jobs_running);
+  if (main_loop_workers_quit && reached_zero)
     {
       /* NOTE: we can't reenable I/O jobs by setting
        * main_loop_io_workers_quit to FALSE right here, because a task
@@ -357,9 +364,31 @@ _reenable_worker_jobs(void *s)
 void
 main_loop_worker_sync_call(void (*func)(gpointer user_data), gpointer user_data)
 {
+  main_loop_assert_main_thread();
+
   _register_sync_call_action(&sync_call_actions, func, user_data);
 
-  if (main_loop_jobs_running == 0)
+  /*
+   * This might seem racy as we are reading an atomic counter without
+   * testing it for its zero value. This is safe, because:
+   *
+   *   - the only case we increment main_loop_jobs_running from the non-main
+   *     thread is when we submit slave jobs to the worker pool
+   *
+   *   - slave jobs are submitted by worker jobs at a point where
+   *     main_loop_jobs_running cannot be zero (since they are running)
+   *
+   *   - decrementing main_loop_jobs_running always happens in the main
+   *     thread (in main_loop_worker_job_complete)
+   *
+   *    - this function is called by the main thread.
+   *
+   * With all this said, checking the main_loop_jobs_running is zero is not
+   * in fact racy as once it reaches zero there's no concurrency.  If it's
+   * non-zero, then the _complete() callbacks are yet to run, but that
+   * always happens in the thread we are executing now.
+   */
+  if (g_atomic_counter_get(&main_loop_jobs_running) == 0)
     {
       _reenable_worker_jobs(NULL);
     }
@@ -388,7 +417,7 @@ void
 main_loop_sync_worker_startup_and_teardown(void)
 {
   struct iv_task request_exit;
-  if (main_loop_jobs_running == 0)
+  if (g_atomic_counter_get(&main_loop_jobs_running) == 0)
     return;
 
   IV_TASK_INIT(&request_exit);

@@ -68,7 +68,7 @@ _start_io_worker_latency(HealthCheck *self)
 {
   stopwatch_start(&self->io_worker_latency.stopwatch);
 
-  if (!main_loop_io_worker_job_submit(&self->io_worker_latency.job, G_IO_IN))
+  if (!main_loop_io_worker_job_submit(&self->io_worker_latency.job, NULL))
     {
       /* currently, the IO worker check is our only health check */
       healthcheck_incomplete(self);
@@ -105,7 +105,7 @@ healthcheck_run(HealthCheck *self, HealthCheckCompletionCB completion, gpointer 
 }
 
 static void
-_io_worker_latency(gpointer s, GIOCondition cond)
+_io_worker_latency(gpointer s, gpointer arg)
 {
   HealthCheck *self = (HealthCheck *) s;
 
@@ -113,7 +113,7 @@ _io_worker_latency(gpointer s, GIOCondition cond)
 }
 
 static void
-_io_worker_latency_finished(gpointer s)
+_io_worker_latency_finished(gpointer s, gpointer arg)
 {
   HealthCheck *self = (HealthCheck *) s;
 

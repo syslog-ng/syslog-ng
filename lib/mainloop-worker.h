@@ -33,7 +33,8 @@
 
 typedef enum
 {
-  MLW_ASYNC_WORKER = 0,
+  MLW_UNKNOWN,
+  MLW_ASYNC_WORKER = 1,
   MLW_THREADED_OUTPUT_WORKER,
   MLW_THREADED_INPUT_WORKER,
   MAIN_LOOP_WORKER_TYPE_MAX
@@ -76,6 +77,7 @@ void main_loop_worker_thread_start(MainLoopWorkerType worker_type);
 void main_loop_worker_thread_stop(void);
 void main_loop_worker_run_gc(void);
 void main_loop_worker_register_exit_notification_callback(WorkerExitNotificationFunc func, gpointer user_data);
+gboolean main_loop_worker_is_worker_thread(void);
 
 void main_loop_worker_sync_call(void (*func)(void *user_data), void *user_data);
 void main_loop_sync_worker_startup_and_teardown(void);
@@ -94,6 +96,14 @@ static inline gboolean
 main_loop_worker_job_quit(void)
 {
   return main_loop_workers_quit;
+}
+
+static inline void
+main_loop_assert_worker_thread(void)
+{
+#if SYSLOG_NG_ENABLE_DEBUG
+  g_assert(main_loop_worker_is_worker_thread());
+#endif
 }
 
 #endif

@@ -49,7 +49,7 @@ _engage(MainLoopIOWorkerJob *self)
 
 /* NOTE: runs in the main thread */
 gboolean
-main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond)
+main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, gpointer arg)
 {
   g_assert(self->working == FALSE);
   if (main_loop_workers_quit)
@@ -58,7 +58,7 @@ main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond)
   _engage(self);
   main_loop_worker_job_start();
   self->working = TRUE;
-  self->cond = cond;
+  self->arg = arg;
   iv_work_pool_submit_work(&main_loop_io_workers, &self->work_item);
   return TRUE;
 }
@@ -68,7 +68,7 @@ main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond)
 static void
 _work(MainLoopIOWorkerJob *self)
 {
-  self->work(self->user_data, self->cond);
+  self->work(self->user_data, self->arg);
   main_loop_worker_invoke_batch_callbacks();
   main_loop_worker_run_gc();
 }
@@ -78,7 +78,8 @@ static void
 _complete(MainLoopIOWorkerJob *self)
 {
   self->working = FALSE;
-  self->completion(self->user_data);
+  if (self->completion)
+    self->completion(self->user_data, self->arg);
   main_loop_worker_job_complete();
   _release(self);
 }
