@@ -22,13 +22,12 @@
 from syslogng.modules import hypr
 import base64
 
+
 def test_config_generator_generates_a_config_snippet_with_all_apps(mocker):
-    m = mocker.patch("requests.get",
-        return_value=mocker.Mock(**{
-            'status_code': 200,
-            'json': mocker.Mock(return_value=[{"appID": "rp_foo"}, {"appID": "rp_bar"}])
-        })
-    )
+    m = mocker.patch("requests.get", return_value=mocker.Mock(**{
+        'status_code': 200,
+        'json': mocker.Mock(return_value=[{"appID": "rp_foo"}, {"appID": "rp_bar"}])
+    }))
 
     bearer_token = b'bearer_token'
     base64_encoded_bearer_token = base64.b64encode(bearer_token).decode('utf8')

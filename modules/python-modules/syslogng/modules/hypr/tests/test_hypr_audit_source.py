@@ -24,9 +24,11 @@ import base64
 import pytest
 import json
 
+
 @pytest.fixture
 def empty_config():
     return {}
+
 
 @pytest.fixture
 def minimal_config():
@@ -42,7 +44,8 @@ def minimal_config():
 def test_hypr_audit_source_can_be_instantiated():
 
     sut = hypr.HyprAuditSource()
-    assert sut != None
+    assert sut is not None
+
 
 def test_hypr_audit_source_with_invalid_configuration(caplog, empty_config):
     sut = hypr.HyprAuditSource()
@@ -50,14 +53,16 @@ def test_hypr_audit_source_with_invalid_configuration(caplog, empty_config):
     assert sut.init(empty_config) is False
     assert "Missing rp_app_id" in caplog.text
 
+
 def test_hypr_audit_source_lifecycle_without_actually_fetching_messages(minimal_config):
 
     sut = hypr.HyprAuditSource()
 
     assert sut.init(minimal_config) is True
-    assert sut.open() == True
+    assert sut.open() is True
     assert sut.close() is None
     sut.deinit()
+
 
 def test_hypr_audit_source_complete_lifecycle(minimal_config, mocker):
 
@@ -86,13 +91,13 @@ def test_hypr_audit_source_complete_lifecycle(minimal_config, mocker):
     m = mocker.Mock(side_effect=response_json)
 
     mocker.patch('requests.get', return_value=mocker.Mock(**{
-            'status_code': 200,
-            'json': mocker.Mock(side_effect=response_json)
+        'status_code': 200,
+        'json': mocker.Mock(side_effect=response_json)
     }))
     sut = hypr.HyprAuditSource()
 
     assert sut.init(minimal_config) is True
-    assert sut.open() == True
+    assert sut.open() is True
 
     index = 0
     status, msg = sut.fetch()

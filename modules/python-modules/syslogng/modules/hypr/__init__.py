@@ -48,6 +48,7 @@ import requests
 
 import syslogng
 
+
 class HyprAuditSource(syslogng.LogFetcher):
     """
     class for python syslog-ng log fetcher
@@ -98,8 +99,7 @@ class HyprAuditSource(syslogng.LogFetcher):
         # Ensure url parameter is defined
         if "url" in options:
             self.url = options["url"]
-            self.logger.debug("Initializing Hypr %s syslog-ng driver against URL %s" \
-                , self.rp_app_id, self.url)
+            self.logger.debug("Initializing Hypr %s syslog-ng driver against URL %s", self.rp_app_id, self.url)
         else:
             self.logger.error("Missing url configuration option for %s", self.rp_app_id)
             return False
@@ -107,8 +107,8 @@ class HyprAuditSource(syslogng.LogFetcher):
         # Ensure bearer_token parameter is defined
         if "bearer_token" in options:
             self.token = options["bearer_token"]
-            self.logger.debug("Initializing Hypr syslog-ng driver with bearer_token %s for %s", \
-                self.token, self.rp_app_id)
+            self.logger.debug("Initializing Hypr syslog-ng driver with bearer_token %s for %s",
+                              self.token, self.rp_app_id)
         else:
             self.logger.error("Missing bearer_token configuration option for %s", self.rp_app_id)
             return False
@@ -117,8 +117,8 @@ class HyprAuditSource(syslogng.LogFetcher):
         self.page_size = 100
         if "page_size" in options:
             self.page_size = options["page_size"]
-            self.logger.debug("Initializing Hypr syslog-ng driver with pageSize %s for %s" \
-                , self.page_size, self.rp_app_id)
+            self.logger.debug("Initializing Hypr syslog-ng driver with pageSize %s for %s",
+                              self.page_size, self.rp_app_id)
 
         # Set max_performance if defined
         self.max_performance = False
@@ -140,24 +140,23 @@ class HyprAuditSource(syslogng.LogFetcher):
             except Exception as ex:
                 self.logger.error("Invalid value (%s) for initial_hours : %s", options["initial_hours"], ex)
 
-            self.logger.debug("Initializing Hypr syslog-ng driver with initial_hours %i hours ago for %s" \
-                , initial_hours, self.rp_app_id)
+            self.logger.debug("Initializing Hypr syslog-ng driver with initial_hours %i hours ago for %s",
+                              initial_hours, self.rp_app_id)
 
         # Convert initial_hours to milliseconds and subtract from current time
-        self.start_time = int(time.time()* 1000) - (initial_hours * 3600000)
+        self.start_time = int(time.time() * 1000) - (initial_hours * 3600000)
 
         # Setup persist_name with defined persist_name or use URL and rpAppId if none specified
         if self.persist_name is None:
             self.persist_name = "hypr-%s-%s" % (self.url, self.rp_app_id)
 
         # Initialize persistence
-        self.logger.debug("Initializing Hypr syslog-ng driver with persist_name %s", \
-                self.persist_name)
+        self.logger.debug("Initializing Hypr syslog-ng driver with persist_name %s", self.persist_name)
         self.persist = syslogng.Persist(persist_name=self.persist_name, defaults={"last_read": self.start_time})
 
         # Convert persistence timestamp and reset if invalid data is in persistence
         try:
-            last_run = datetime.utcfromtimestamp(int(self.persist["last_read"])/1000)
+            last_run = datetime.utcfromtimestamp(int(self.persist["last_read"]) / 1000)
             self.logger.debug("Read %s from persistence as last run time", last_run)
         except (OverflowError, OSError):
             self.logger.error("Invalid last_read detected in persistence, resetting to %s hours ago", initial_hours)
@@ -168,11 +167,10 @@ class HyprAuditSource(syslogng.LogFetcher):
             # Start search at last fetch window end time
             self.start_time = int(self.persist["last_read"])
 
-        self.logger.debug("Driver initialization complete, fetch window starts at %i (%s)", \
-            self.start_time, datetime.utcfromtimestamp(self.start_time/1000))
+        self.logger.debug("Driver initialization complete, fetch window starts at %i (%s)",
+                          self.start_time, datetime.utcfromtimestamp(self.start_time / 1000))
 
         return True
-
 
     def parse_log(self, log):
         """
@@ -202,17 +200,15 @@ class HyprAuditSource(syslogng.LogFetcher):
             # Try to get timestamp information from message
             if "eventTimeInUTC" in log:
                 try:
-                    timestamp = datetime.fromtimestamp(int(log['eventTimeInUTC'] / 1000.0), \
-                        tz=timezone.utc)
+                    timestamp = datetime.fromtimestamp(int(log['eventTimeInUTC'] / 1000.0), tz=timezone.utc)
                     msg.set_timestamp(timestamp)
 
                 except Exception as e_all:
-                    self.logger.debug("Unable to convert %s to timestamp from %s : %s", \
-                        log['eventTimeInUTC'], self.rp_app_id, e_all)
+                    self.logger.debug("Unable to convert %s to timestamp from %s : %s",
+                                      log['eventTimeInUTC'], self.rp_app_id, e_all)
 
             # Return LogMessage
             return msg
-
 
     def fetch(self):
         """
@@ -230,15 +226,15 @@ class HyprAuditSource(syslogng.LogFetcher):
         self.end_time = int(time.time() * 1000)
 
         # Retrieve log messages from Hypr API
-        subscription_url = self.url + "/cc/api/versioned/audit/search?" + \
-            "rpAppId=" + self.rp_app_id + \
-                "&startTSUTC=" + str(self.start_time) + \
-                    "&endTSUTC=" + str(self.end_time) + \
-                        "&pageSize=" + str(self.page_size)
+        subscription_url = (self.url + "/cc/api/versioned/audit/search?" +
+                            "rpAppId=" + self.rp_app_id +
+                            "&startTSUTC=" + str(self.start_time) +
+                            "&endTSUTC=" + str(self.end_time) +
+                            "&pageSize=" + str(self.page_size))
 
-        headers =  {"Content-Type":"application/application-json", \
-            "Accept":"application/json", "Authorization": "Bearer %s" \
-            % self.bearer_token}
+        headers = {"Content-Type": "application/application-json",
+                   "Accept": "application/json",
+                   "Authorization": "Bearer %s" % self.bearer_token}
 
         # Perform HTTP request
         response = requests.get(subscription_url, headers=headers)
@@ -259,8 +255,7 @@ class HyprAuditSource(syslogng.LogFetcher):
 
                 # Set internal log buffer to all returned events
                 self.logs = result['data']
-                self.logger.debug("%i events available from Hypr API %s fetch" \
-                    , total_records, self.rp_app_id)
+                self.logger.debug("%i events available from Hypr API %s fetch", total_records, self.rp_app_id)
             except Exception as e_all:
                 self.logger.error("%s - %s access failure : %s\n%s" % (self.url, self.rp_app_id, e_all, response.text))
                 return self.ERROR, None
@@ -272,16 +267,16 @@ class HyprAuditSource(syslogng.LogFetcher):
                 current_page = current_page + 1
 
                 # Retrieve log messages from Hypr API
-                subscription_url = self.url + "/cc/api/versioned/audit/search?" + \
-                    "rpAppId=" + self.rp_app_id + \
-                        "&startTSUTC=" + str(self.start_time) + \
-                            "&endTSUTC=" + str(self.end_time) + \
-                                "&pageSize=" + str(self.page_size) + \
-                                    "&pageNumber=" + str(current_page)
+                subscription_url = (self.url + "/cc/api/versioned/audit/search?" +
+                                    "rpAppId=" + self.rp_app_id +
+                                    "&startTSUTC=" + str(self.start_time) +
+                                    "&endTSUTC=" + str(self.end_time) +
+                                    "&pageSize=" + str(self.page_size) +
+                                    "&pageNumber=" + str(current_page))
 
-                headers =  {"Content-Type":"application/application-json", \
-                    "Accept":"application/json", "Authorization": "Bearer %s" \
-                    % self.bearer_token}
+                headers = {"Content-Type": "application/application-json",
+                           "Accept": "application/json",
+                           "Authorization": "Bearer %s" % self.bearer_token}
 
                 # Perform HTTP request
                 response = requests.get(subscription_url, headers=headers)
@@ -342,7 +337,6 @@ class HyprAuditSource(syslogng.LogFetcher):
 
         return True
 
-
     def deinit(self):
         """
         Driver de-initialization routine
@@ -351,14 +345,14 @@ class HyprAuditSource(syslogng.LogFetcher):
 
         # Only update persistence if all logs in memory were processed
         if len(self.logs) > 0:
-            self.logger.warning("Deinitializing with %i %s events in memory buffer", \
-                len(self.logs), self.rp_app_id)
+            self.logger.warning("Deinitializing with %i %s events in memory buffer", len(self.logs), self.rp_app_id)
         else:
             self.persist["last_read"] = self.end_time
 
 
 class HyprError(Exception):
     pass
+
 
 def _hypr_config_generator(args):
     logger = logging.getLogger("Hypr-Confgen")
@@ -367,29 +361,28 @@ def _hypr_config_generator(args):
         """Filter out characters that would break syslog-ng configuration"""
         return variable.translate({ord(i): None for i in '\'\"\r'})
 
-
     # Capture environment variables for syslog-ng configuration
     url = sanitize(args.get('url', ""))
     bearer_token = sanitize(args.get('bearer_token', ""))
-    page_size = sanitize(args.get('page_size',"100"))
+    page_size = sanitize(args.get('page_size', "100"))
     initial_hours = sanitize(args.get('initial_hours', "4"))
     sleep = sanitize(args.get('sleep', "60"))
     log_level = sanitize(args.get('log_level', "INFO"))
-    application_skiplist = args.get('application_skiplist', \
-        "HYPRDefaultApplication,HYPRDefaultWorkstationApplication")
+    application_skiplist = args.get('application_skiplist',
+                                    "HYPRDefaultApplication,HYPRDefaultWorkstationApplication")
     persist_name = sanitize(args.get('persist_name', ""))
     max_performance = sanitize(args.get('max_performance', "False"))
 
     # Log environment variables
     logger.debug("url : %s" % url)
-    logger.debug("bearer_token : %s" %  bearer_token)
-    logger.debug("page_size : %s" %  page_size)
-    logger.debug("initial_hours : %s" %  initial_hours)
-    logger.debug("sleep : %s" %  sleep)
-    logger.debug("log_level : %s" %  log_level)
-    logger.debug("application_skiplist : %s" %  application_skiplist)
-    logger.debug("persist_name : %s" %  persist_name)
-    logger.debug("max_performance : %s" %  max_performance)
+    logger.debug("bearer_token : %s" % bearer_token)
+    logger.debug("page_size : %s" % page_size)
+    logger.debug("initial_hours : %s" % initial_hours)
+    logger.debug("sleep : %s" % sleep)
+    logger.debug("log_level : %s" % log_level)
+    logger.debug("application_skiplist : %s" % application_skiplist)
+    logger.debug("persist_name : %s" % persist_name)
+    logger.debug("max_performance : %s" % max_performance)
 
     # Deobfuscate
     try:
@@ -448,9 +441,9 @@ def _hypr_config_generator(args):
             persist-name(%s-%s)
             fetch-no-data-delay(%s)
         );
-    """ % (url, application, args['bearer_token'], page_size, \
-        initial_hours, max_performance, \
-        persist_name, application, sleep)
+    """ % (url, application, args['bearer_token'], page_size,
+           initial_hours, max_performance,
+           persist_name, application, sleep)
 
     logger.debug("Final configuration is: %s" % sources)
 
