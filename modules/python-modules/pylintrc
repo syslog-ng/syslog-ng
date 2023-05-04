@@ -18,6 +18,7 @@ persistent=yes
 # usually to register additional checkers.
 load-plugins=
 
+extension-pkg-whitelist=editline
 
 [MESSAGES CONTROL]
 

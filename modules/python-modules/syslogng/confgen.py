@@ -20,6 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
+# pylint: disable=unused-import
 
 try:
     from _syslogng import register_config_generator

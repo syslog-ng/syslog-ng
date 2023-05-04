@@ -19,8 +19,10 @@
 # COPYING for details.
 #
 #############################################################################
+# pylint: disable=import-outside-toplevel, unused-import
 
 from __future__ import absolute_import
+
 
 def is_readline_available():
     try:
@@ -29,12 +31,14 @@ def is_readline_available():
         return False
     return True
 
+
 def is_editline_available():
     try:
         import editline
     except ImportError:
         return False
     return True
+
 
 def setup_read_or_editline():
     if is_readline_available():
@@ -43,6 +47,7 @@ def setup_read_or_editline():
     elif is_editline_available():
         from syslogng.debuggercli.editline import setup_editline
         setup_editline()
+
 
 def fetch_command():
     setup_read_or_editline()

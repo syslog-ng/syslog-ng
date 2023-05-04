@@ -22,11 +22,11 @@
 
 from __future__ import print_function, absolute_import
 from abc import abstractmethod, ABCMeta
-import ply.yacc as yacc
+from ply import yacc
 from .tablexer import TabLexer
 
 
-class CompleterLang(object):
+class CompleterLang():
     """Class encapsulating a language (or grammar) used by tab completion
 
     Derived classes should define their ply.yacc rules in their body, which is

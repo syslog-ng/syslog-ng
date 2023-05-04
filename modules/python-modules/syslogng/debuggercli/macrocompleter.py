@@ -33,7 +33,7 @@ class MacroCompleter(Completer):
     }
 
     def __init__(self, macros=None):
-        super(MacroCompleter, self).__init__()
+        super().__init__()
         self._macros = macros
         self._completions = []
 
@@ -63,11 +63,11 @@ class MacroCompleter(Completer):
 
     @staticmethod
     def _is_valid_macro_char(macro_char):
-        if macro_char >= 'A' and macro_char <= 'Z':
+        if 'A' <= macro_char <= 'Z':
             return True
-        if macro_char >= 'a' and macro_char <= 'z':
+        if 'a' <= macro_char <= 'z':
             return True
-        if macro_char >= '0' and macro_char <= '9':
+        if '0' <= macro_char <= '9':
             return True
         if macro_char == '_':
             return True

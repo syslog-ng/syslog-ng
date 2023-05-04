@@ -46,28 +46,22 @@ class DebugLang(CompleterLang):
         '''statement : print_command
                     | display_command
                     | generic_command'''
-        pass
 
     def p_args(self, p):
         '''args : ARG args
                | '''
-        pass
 
     def p_print_command(self, p):
         '''print_command : COMMAND_PRINT template'''
-        pass
 
     def p_display_command(self, p):
         '''display_command : COMMAND_DISPLAY template'''
-        pass
 
     def p_generic_command(self, p):
         '''generic_command : COMMAND args'''
-        pass
 
     def p_template(self, p):
         '''template : ARG'''
-        pass
 
     def _construct_lexer(self):
         return GetoptLexer(CommandLineLexer(),

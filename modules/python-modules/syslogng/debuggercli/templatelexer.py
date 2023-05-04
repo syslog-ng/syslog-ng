@@ -21,7 +21,7 @@
 #############################################################################
 
 from __future__ import print_function, absolute_import
-import ply.lex as lex
+from ply import lex
 from .lexertoken import LexerToken
 from .lexer import Lexer
 
@@ -55,7 +55,7 @@ class TemplateLexerError(Exception):
 
 
 class TemplateLexer(LexBasedLexer):
-    # pylint: disable=no-self-use,invalid-name
+    # pylint: disable=invalid-name
     tokens = (
         'LITERAL', 'MACRO', "TEMPLATE_FUNC"
     )

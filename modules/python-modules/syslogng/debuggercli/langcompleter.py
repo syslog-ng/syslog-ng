@@ -63,7 +63,7 @@ class LangBasedCompleter(Completer):
 
     def _evaluate_language(self, entire_input, word_to_be_completed):
         expected_tokens, replaced_token, token_position = (
-            self._parser.get_expected_tokens(entire_input, drop_last_token=(word_to_be_completed != '')))
+            self._parser.get_expected_tokens(entire_input, drop_last_token=word_to_be_completed != ''))
 
         if token_position >= 0:
             word_position = len(entire_input) - len(word_to_be_completed)
