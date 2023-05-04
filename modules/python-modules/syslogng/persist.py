@@ -21,12 +21,16 @@
 # COPYING for details.
 #
 #############################################################################
+# pylint: disable=unused-import,function-redefined
+
 try:
     from _syslogng import Persist
 
 except ImportError:
     import warnings
-    warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
+    warnings.warn("You have imported the syslogng package outside of syslog-ng, "
+                  "thus some of the functionality is not available. "
+                  "Defining fake classes for those exported by the underlying syslog-ng code")
 
     # fake Persist class
     class Persist(dict):
@@ -36,7 +40,7 @@ except ImportError:
 
 class Persist(Persist):
     def __init__(self, persist_name, defaults=None):
-        super(Persist, self).__init__(persist_name)
+        super().__init__(persist_name)
 
         if defaults:
             for key, value in defaults.items():

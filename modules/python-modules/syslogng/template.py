@@ -20,12 +20,16 @@
 # COPYING for details.
 #
 #############################################################################
+# pylint: disable = unused-import
+
 try:
     from _syslogng import LogTemplate, LogTemplateException, LogTemplateOptions
 
 except ImportError:
     import warnings
-    warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
+    warnings.warn("You have imported the syslogng package outside of syslog-ng, "
+                  "thus some of the functionality is not available. "
+                  "Defining fake classes for those exported by the underlying syslog-ng code")
 
     LogTemplate = object
     LogTemplateOptions = object

@@ -20,12 +20,16 @@
 # COPYING for details.
 #
 #############################################################################
+# pylint: disable=unused-import
+
 try:
     from _syslogng import LogMessage
 
 except ImportError:
     import warnings
-    warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
+    warnings.warn("You have imported the syslogng package outside of syslog-ng, "
+                  "thus some of the functionality is not available. "
+                  "Defining fake classes for those exported by the underlying syslog-ng code")
 
     class LogMessage(dict):
 
@@ -49,5 +53,5 @@ except ImportError:
                 value = value.encode('utf8')
             super().__setitem__(key, value)
 
-        def __eq__(self):
+        def __eq__(self, other):
             return False

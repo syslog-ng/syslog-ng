@@ -20,12 +20,16 @@
 # COPYING for details.
 #
 #############################################################################
+# pylint: disable=function-redefined
+
 try:
     from _syslogng import LogParser
 
 except ImportError:
     import warnings
-    warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
+    warnings.warn("You have imported the syslogng package outside of syslog-ng, "
+                  "thus some of the functionality is not available. "
+                  "Defining fake classes for those exported by the underlying syslog-ng code")
 
     LogParser = object
 
@@ -46,7 +50,6 @@ class LogParser(LogParser):
 
     def deinit(self):
         """This method is called when the configuration is deinitialized"""
-        pass
 
     def parse(self, msg):
         """This method is called to 'parse' the message

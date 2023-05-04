@@ -20,18 +20,21 @@
 # COPYING for details.
 #
 #############################################################################
+# pylint: disable=unused-import,invalid-name
 
 import logging
 
 try:
     from _syslogng import Logger
 
-    fake_logger = False
+    FAKE_LOGGER = False
 except ImportError:
     import warnings
-    warnings.warn("You have imported the syslogng package outside of syslog-ng, thus some of the functionality is not available. Defining fake classes for those exported by the underlying syslog-ng code")
+    warnings.warn("You have imported the syslogng package outside of syslog-ng, "
+                  "thus some of the functionality is not available. "
+                  "Defining fake classes for those exported by the underlying syslog-ng code")
 
-    fake_logger = True
+    FAKE_LOGGER = True
 
     def Logger():
         return logging.getLogger()
@@ -64,5 +67,6 @@ def setup_logging():
     sh.setFormatter(formatter)
     logger.addHandler(sh)
 
-if not fake_logger:
+
+if not FAKE_LOGGER:
     setup_logging()
