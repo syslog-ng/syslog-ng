@@ -1,6 +1,6 @@
 -r requirements.txt
 
-pep8
+pycodestyle
 isort
 pylint
 astroid
