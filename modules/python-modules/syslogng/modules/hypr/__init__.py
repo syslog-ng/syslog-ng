@@ -364,7 +364,7 @@ def _hypr_config_generator(args):
     log_level = sanitize(args.get('log_level', "INFO"))
     application_skiplist = sanitize(args.get('application_skiplist',
                                     "'HYPRDefaultApplication' 'HYPRDefaultWorkstationApplication'")).replace(",", " ").split()
-    persist_name = sanitize(args.get('persist_name', ""))
+    persist_name = sanitize(args.get('persist_name', "hypr-%s" % url))
     flags = sanitize(args.get('flags', ''))
 
     # Log environment variables
@@ -431,7 +431,7 @@ def _hypr_config_generator(args):
                 "initial_hours" => %s
             )
             flags(%s)
-            persist-name(%s-%s)
+            persist-name("%s-%s")
             fetch-no-data-delay(%s)
         );
     """ % (url, application, args['bearer_token'], page_size,
