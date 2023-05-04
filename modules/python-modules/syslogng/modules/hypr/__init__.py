@@ -63,7 +63,6 @@ class HyprAuditSource(syslogng.LogFetcher):
 
     # optional settings
     page_size = 100
-    max_performance = True
     initial_hours = 4
 
     # state
@@ -121,11 +120,6 @@ class HyprAuditSource(syslogng.LogFetcher):
             self.logger.debug("Initializing Hypr syslog-ng driver with pageSize %s for %s",
                               self.page_size, self.rp_app_id)
 
-        # Set max_performance if defined
-        self.max_performance = False
-        if "max_performance" in options:
-                self.max_performance = options["max_performance"]
-
         # Default time to go back is 4 hours
         initial_hours = 4
         if "initial_hours" in options:
@@ -179,7 +173,7 @@ class HyprAuditSource(syslogng.LogFetcher):
         """
 
         # Do not parse message as json for higher performance if set
-        if self.max_performance is True:
+        if self.flags.get("parse") is False:
 
             # Convert python dict to json for message
             msg = syslogng.LogMessage(str(log))
@@ -371,7 +365,7 @@ def _hypr_config_generator(args):
     application_skiplist = sanitize(args.get('application_skiplist',
                                     "'HYPRDefaultApplication' 'HYPRDefaultWorkstationApplication'")).replace(",", " ").split()
     persist_name = sanitize(args.get('persist_name', ""))
-    max_performance = args.get('max_performance', 'no')
+    flags = sanitize(args.get('flags', ''))
 
     # Log environment variables
     logger.debug("url : %s" % url)
@@ -382,7 +376,7 @@ def _hypr_config_generator(args):
     logger.debug("log_level : %s" % log_level)
     logger.debug("application_skiplist : %s" % application_skiplist)
     logger.debug("persist_name : %s" % persist_name)
-    logger.debug("max_performance : %s" % max_performance)
+    logger.debug("flags : %s" % flags)
 
     # Deobfuscate
     try:
@@ -435,14 +429,13 @@ def _hypr_config_generator(args):
                 "bearer_token" => "%s"
                 "page_size" => %s
                 "initial_hours" => %s
-                "max_performance" => %s
             )
-            flags(no-parse)
+            flags(%s)
             persist-name(%s-%s)
             fetch-no-data-delay(%s)
         );
     """ % (url, application, args['bearer_token'], page_size,
-           initial_hours, max_performance,
+           initial_hours, flags,
            persist_name, application, sleep)
 
     logger.debug("Final configuration is: %s" % sources)

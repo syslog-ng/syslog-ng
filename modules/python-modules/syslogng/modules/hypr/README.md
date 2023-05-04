@@ -45,7 +45,7 @@ A more complete example:
             page_size(<number of results to return in a single page>)
             initial_hours(<number of hours to search backward on initial fetch>)
             application_skip_list('HYPRDefaultApplication', 'HYPRDefaultWorkstationApplication')
-            max_performance(<True|False>)
+            flags(<optional flags passed to the source>)
         );
     };
 ```
@@ -57,7 +57,7 @@ Options:
   page_size: number of results to return in a single page (optional - defaults to 100)
   initial_hours: number of hours to search backward on initial fetch (optional - defaults to 4)
   application_skip_list - list of rpAppIds not to retrieve from Hypr (optional - defaults to ['HYPRDefaultApplication', 'HYPRDefaultWorkstationApplication'])
-  max_performance - Disables json parsing of message for timestamp extraction if True (optional - defaults to False)
+  flags - flags passed to the source, can be used for example to disable message parsing with flags(no-parse) (optional - defaults to empty)
 
 ### hypr-app-audit-trail()
 
@@ -71,7 +71,7 @@ Options:
   rp_app_id: the RP Application ID for the application to monitor
   page_size: number of results to return in a single page (optional - defaults to 100)
   initial_hours: number of hours to search backward on initial fetch (optional - defaults to 4)
-  max_performance - Disables json parsing of message for timestamp extraction if True (optional - defaults to False)
+  flags - flags passed to the source, can be used for example to disable message parsing with flags(no-parse) (optional - defaults to empty)
 
 
 ### Implementation
