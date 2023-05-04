@@ -44,8 +44,8 @@ A more complete example:
             bearer_token('<base64 encoded bearer token>')
             page_size(<number of results to return in a single page>)
             initial_hours(<number of hours to search backward on initial fetch>)
-            application_skip_list('HYPRDefaultApplication,HYPRDefaultWorkstationApplication')
-            max_performance('<True|False>')
+            application_skip_list('HYPRDefaultApplication', 'HYPRDefaultWorkstationApplication')
+            max_performance(<True|False>)
         );
     };
 ```
@@ -56,7 +56,7 @@ Options:
   bearer_token: base64 encoded authentication token from Hypr
   page_size: number of results to return in a single page (optional - defaults to 100)
   initial_hours: number of hours to search backward on initial fetch (optional - defaults to 4)
-  application_skip_list - list of rpAppIds not to retrieve from Hypr (optional - defaults to 'HYPRDefaultApplication,HYPRDefaultWorkstationApplication')
+  application_skip_list - list of rpAppIds not to retrieve from Hypr (optional - defaults to ['HYPRDefaultApplication', 'HYPRDefaultWorkstationApplication'])
   max_performance - Disables json parsing of message for timestamp extraction if True (optional - defaults to False)
 
 ### hypr-app-audit-trail()

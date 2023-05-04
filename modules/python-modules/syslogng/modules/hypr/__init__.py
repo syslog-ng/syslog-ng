@@ -1,6 +1,7 @@
 #############################################################################
 # Copyright (c) 2022 novaSOC
 # Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
+# Copyright (c) 2023 Attila Szakacs
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -123,22 +124,21 @@ class HyprAuditSource(syslogng.LogFetcher):
         # Set max_performance if defined
         self.max_performance = False
         if "max_performance" in options:
-            if options["max_performance"].lower() == "true":
-                self.max_performance = True
+                self.max_performance = options["max_performance"]
 
         # Default time to go back is 4 hours
         initial_hours = 4
         if "initial_hours" in options:
 
             # If r is set as an initial_hours value, ignore persistence
-            if "r" in options["initial_hours"]:
-                self.logger.info("Disabling persistence due to special initial_hours setting (%s)", options["initial_hours"])
+            if "r" in str(options["initial_hours"]):
+                self.logger.info("Disabling persistence due to special initial_hours setting (%d)", options["initial_hours"])
                 ignore_persistence = True
             # Extract decimal value from initial_hours setting
             try:
-                initial_hours = int(re.search(r'.*?(\d+).*', options["initial_hours"]).group(1))
+                initial_hours = int(re.search(r'.*?(\d+).*', str(options["initial_hours"])).group(1))
             except Exception as ex:
-                self.logger.error("Invalid value (%s) for initial_hours : %s", options["initial_hours"], ex)
+                self.logger.error("Invalid value (%s) for initial_hours : %s", str(options["initial_hours"]), ex)
 
             self.logger.debug("Initializing Hypr syslog-ng driver with initial_hours %i hours ago for %s",
                               initial_hours, self.rp_app_id)
@@ -364,14 +364,14 @@ def _hypr_config_generator(args):
     # Capture environment variables for syslog-ng configuration
     url = sanitize(args.get('url', ""))
     bearer_token = sanitize(args.get('bearer_token', ""))
-    page_size = sanitize(args.get('page_size', "100"))
-    initial_hours = sanitize(args.get('initial_hours', "4"))
-    sleep = sanitize(args.get('sleep', "60"))
+    page_size = args.get('page_size', "100")
+    initial_hours = args.get('initial_hours', "4")
+    sleep = args.get('sleep', "60")
     log_level = sanitize(args.get('log_level', "INFO"))
-    application_skiplist = args.get('application_skiplist',
-                                    "HYPRDefaultApplication,HYPRDefaultWorkstationApplication")
+    application_skiplist = sanitize(args.get('application_skiplist',
+                                    "'HYPRDefaultApplication' 'HYPRDefaultWorkstationApplication'")).replace(",", " ").split()
     persist_name = sanitize(args.get('persist_name', ""))
-    max_performance = sanitize(args.get('max_performance', "False"))
+    max_performance = args.get('max_performance', 'no')
 
     # Log environment variables
     logger.debug("url : %s" % url)
@@ -433,9 +433,9 @@ def _hypr_config_generator(args):
                 "url" => "%s"
                 "rp_app_id" => "%s"
                 "bearer_token" => "%s"
-                "page_size" => "%s"
-                "initial_hours" => "%s"
-                "max_performance" => "%s"
+                "page_size" => %s
+                "initial_hours" => %s
+                "max_performance" => %s
             )
             flags(no-parse)
             persist-name(%s-%s)
