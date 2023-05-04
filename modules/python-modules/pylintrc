@@ -7,9 +7,6 @@
 # pygtk.require().
 #init-hook=
 
-# Profiled execution.
-profile=no
-
 # Add files or directories to the blacklist. They should be base names, not
 # paths.
 ignore=.git,doc,
@@ -40,14 +37,12 @@ load-plugins=
 # --disable=W"
 #disable=
 
-disable=C0111,W0613,R0903,I0011,W0142,E1101,R0921,R0922,R0801,C0330,R1705
+disable=C0111,W0613,R0903,I0011,E1101,R0801,R1705
 
 # C0111     missing-docstring       Our priority is to make the code document
 #                                   itself. Docstring is required only when
 #                                   the signature is not enough to tell
 #                                   everything important.
-#
-# C0330
 #
 # W0613     unused-argument         Methods of test doubles, for example stubs,
 #                                   often return canned values, not using any
@@ -59,37 +54,14 @@ disable=C0111,W0613,R0903,I0011,W0142,E1101,R0921,R0922,R0801,C0330,R1705
 #                                   result of a decision, no additional notification
 #                                   is required to tell us what we did.
 #
-# W0142     star-args               Using * or ** is not magic, rather it is a very
-#                                   useful Python feature.
-#
 # E1101     no-member               Gives false positives on numpy dynamic module
 #                                   functions.
-#
-# R0921     abstract-class-not-used Due to a pylint bug (#111138), this cannot be
-#                                   disabled inline. The warning itself is invalid,
-#                                   as the class is used by addons, which is not
-#                                   visible to pylint.
-#
-# R0922     abstract-class-little-used Probably due to a pylint bug, this cannot be
-#                                   disabled inline. The warning itself is invalid,
-#                                   as the class is used by addons, which is not
-#                                   visible to pylint.
 #
 # R1705     no-else-return          I don't consider this a good
 #                                   recommendation, sometimes a return in
 #                                   both the if and else branches is preferred.
 #
 [REPORTS]
-
-# Set the output format. Available formats are text, parseable, colorized, msvs
-# (visual studio) and html. You can also give a reporter class, eg
-# mypackage.mymodule.MyReporterClass.
-#output-format=parseable
-
-# Put messages in a separate file for each module / package specified on the
-# command line instead of printing them on stdout. Reports (if any) will be
-# written in a file name "pylint_global.[txt|html]".
-files-output=no
 
 # Tells whether to display a full report or only the messages
 reports=yes
@@ -100,10 +72,6 @@ reports=yes
 # number of statements analyzed. This is used by the global evaluation report
 # (RP0004).
 evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10)
-
-# Add a comment according to your evaluation note. This is used by the global
-# evaluation report (RP0004).
-comment=no
 
 # Template used to display messages. This is a python new-style format string
 # used to format the message information. See doc for all details
@@ -140,12 +108,6 @@ additional-builtins=
 
 
 [BASIC]
-
-# Required attributes for module, separated by a comma
-required-attributes=
-
-# List of builtins function names that should not be used, separated by a comma
-bad-functions=map,filter,apply,input
 
 # Regular expression which should only match correct module names
 module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
@@ -232,10 +194,6 @@ ignore-mixin-members=yes
 # (useful for classes with attributes dynamically set).
 ignored-classes=SQLObject
 
-# When zope mode is activated, add a predefined set of Zope acquired attributes
-# to generated-members.
-zope=no
-
 # List of members which are set dynamically and missed by pylint inference
 # system, and so shouldn't trigger E0201 when accessed. Python regular
 # expressions are accepted.
@@ -283,10 +241,6 @@ max-public-methods=80
 deprecated-modules=regsub,TERMIOS,Bastion,rexec
 
 [CLASSES]
-
-# List of interface methods to ignore, separated by a comma. This is used for
-# instance to not check methods defines in Zope's Interface base class.
-ignore-iface-methods=isImplementedBy,deferred,extends,names,namesAndDescriptions,queryDescriptionFor,getBases,getDescriptionFor,getDoc,getName,getTaggedValue,getTaggedValueTags,isEqualOrExtendedBy,setTaggedValue,isImplementedByInstancesOf,adaptWith,is_implemented_by
 
 # List of method names used to declare (i.e. assign) instance attributes.
 defining-attr-methods=__init__,__new__,setUp
