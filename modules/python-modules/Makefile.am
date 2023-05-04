@@ -109,7 +109,7 @@ pymodules-unit: python-venv
 pymodules-checks: pymodules-unit pymodules-pycodestyle pymodules-pylint
 
 pymodules-pycodestyle: python-venv
-	$(PYTHON_VENV) -m pycodestyle --ignore=E501 $(PYMODULES_SRCDIR)/$(PYMODULES_ROOT_MODULE)
+	$(PYTHON_VENV) -m pycodestyle --ignore=E501,E121,E123,E126,E226,E24,E704,W503,W504 $(PYMODULES_SRCDIR)/$(PYMODULES_ROOT_MODULE)
 
 pymodules-pylint: python-venv
 	$(PYTHON_VENV) -m pylint -r n --rcfile=$(PYMODULES_SRCDIR)/pylintrc $(PYMODULES_SRCDIR)/$(PYMODULES_ROOT_MODULE)
