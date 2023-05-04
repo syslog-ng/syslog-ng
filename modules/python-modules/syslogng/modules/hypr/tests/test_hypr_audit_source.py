@@ -1,5 +1,6 @@
 #############################################################################
 # Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
+# Copyright (c) 2023 Attila Szakacs
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -74,8 +75,27 @@ def test_hypr_audit_source_complete_lifecycle(minimal_config, mocker):
                 'currentPage': 1,
             },
             'data': [
-                {'rpAppId': 'rp_foo', 'eventTimeInUTC': 1666427394, 'message': 'whatever first', 'counter': 0},
-                {'rpAppId': 'rp_foo', 'eventTimeInUTC': 1666427394, 'message': 'whatever second', 'counter': 1}
+                {
+                    'rpAppId': 'rp_foo',
+                    'eventTimeInUTC': 1666427394,
+                    'message': 'whatever first',
+                    'counter': 0,
+                },
+                {
+                    'rpAppId': 'rp_foo',
+                    'eventTimeInUTC': 1666427394,
+                    'message': 'whatever second',
+                    'counter': 1,
+                    'single_nested': {
+                        'double_nested': {
+                            'none': None,
+                        },
+                    },
+                    'float': 123.456,
+                    'string_list': ['foo', 'bar'],
+                    'non_string_list': [1, 2],
+                    'bool': True,
+                },
             ]
         },
         {
@@ -101,16 +121,84 @@ def test_hypr_audit_source_complete_lifecycle(minimal_config, mocker):
 
     index = 0
     status, msg = sut.fetch()
+
     while status == sut.SUCCESS:
-        js = json.loads(msg['MESSAGE'])
-        assert js['rpAppId'] == 'rp_foo'
-        assert js['counter'] == index
+        if index == 0:
+            assert msg['MESSAGE'] == b'whatever first'
+            assert msg['PROGRAM'] == b'rp_foo'
+            assert msg['.hypr.rpAppId'] == b'rp_foo'
+            assert msg['.hypr.eventTimeInUTC'] == 1666427394
+            assert msg['.hypr.message'] == b'whatever first'
+            assert msg['.hypr.counter'] == 0
+        elif index == 1:
+            assert msg['MESSAGE'] == b'whatever second'
+            assert msg['PROGRAM'] == b'rp_foo'
+            assert msg['.hypr.rpAppId'] == b'rp_foo'
+            assert msg['.hypr.eventTimeInUTC'] == 1666427394
+            assert msg['.hypr.message'] == b'whatever second'
+            assert msg['.hypr.counter'] == 1
+            assert msg['.hypr.single_nested.double_nested.none'] is None
+            assert msg['.hypr.float'] == 123.456
+            assert msg['.hypr.string_list'] == ['foo', 'bar']
+            assert msg['.hypr.non_string_list'] == b'[1, 2]'
+            assert msg['.hypr.bool'] is True
 
         index += 1
         status, msg = sut.fetch()
 
     assert status == sut.NO_DATA
     assert index == 2
+
+    assert sut.close() is None
+    sut.deinit()
+
+
+def test_hypr_audit_source_complete_lifecycle_no_parse(minimal_config, mocker):
+
+    response_json = [
+        {
+            'metadata': {
+                'totalRecords': 1,
+                'totalPages': 1,
+                'currentPage': 1,
+            },
+            'data': [
+                {
+                    'rpAppId': 'rp_foo',
+                    'eventTimeInUTC': 1666427394,
+                    'message': 'whatever first',
+                    'counter': 1,
+                    'single_nested': {
+                        'double_nested': {
+                            'none': None,
+                        },
+                    },
+                    'float': 123.456,
+                    'string_list': ['foo', 'bar'],
+                    'non_string_list': [1, 2],
+                    'bool': True,
+                },
+            ],
+        }
+    ]
+
+    m = mocker.Mock(side_effect=response_json)
+
+    mocker.patch('requests.get', return_value=mocker.Mock(**{
+        'status_code': 200,
+        'json': mocker.Mock(side_effect=response_json)
+    }))
+    sut = hypr.HyprAuditSource()
+    sut.flags["parse"] = False
+
+    assert sut.init(minimal_config) is True
+    assert sut.open() is True
+
+    status, msg = sut.fetch()
+
+    assert status == sut.SUCCESS
+    assert msg['MESSAGE'] == b'{"rpAppId": "rp_foo", "eventTimeInUTC": 1666427394, "message": "whatever first", "counter": 1, "single_nested": {"double_nested": {"none": null}}, "float": 123.456, "string_list": ["foo", "bar"], "non_string_list": [1, 2], "bool": true}'
+    assert msg['PROGRAM'] == b'Hypr-rpFoo'
 
     assert sut.close() is None
     sut.deinit()

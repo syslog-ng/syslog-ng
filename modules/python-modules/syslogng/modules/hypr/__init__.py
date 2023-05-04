@@ -161,26 +161,44 @@ class HyprAuditSource(syslogng.LogFetcher):
 
         return True
 
+    def extract_nvpairs(self, msg, log, prefix, parent_name=""):
+        for name, value in log.items():
+            new_name = "%s.%s" % (parent_name, name) if parent_name else name
+            value_type = type(value)
+
+            if value_type == dict:
+                self.extract_nvpairs(msg, value, prefix, new_name)
+            elif ((value_type in (str, bytes, int, float, bool, datetime)) or
+                  (value is None) or
+                  (value_type == list and all(type(element) in (str, bytes) for element in value))):
+                msg[prefix + new_name] = value
+            else:
+                msg[prefix + new_name] = str(value)
+
     def parse_log(self, log):
         """
         Parse an event into a syslog LogMessage
         (custom function for message parsing)
         """
 
-        # Do not parse message as json for higher performance if set
-        if self.flags.get("parse") is False:
-
-            # Convert python dict to json for message
-            msg = syslogng.LogMessage(str(log))
-            program = "Hypr-" + self.rp_app_id
+        def simple_parse_log(log, rp_app_id):
+            msg = syslogng.LogMessage("%s" % json.dumps(log))
+            program = "Hypr-" + rp_app_id
             msg["PROGRAM"] = program.replace(" ", "-")
+
             return msg
+
+        # Do not extract fields, if flags(no-parse) is set
+        if not self.flags.get("parse", True):
+            return simple_parse_log(log, self.rp_app_id)
 
         # Parse everything we can out of the message
         else:
-
-            # Convert python dict to json for message
-            msg = syslogng.LogMessage("%s" % json.dumps(log))
+            try:
+                msg = syslogng.LogMessage(log["message"])
+            except KeyError:
+                self.logger.debug("'message' field is missing, dumping JSON data to ${MESSAGE} from %s", self.rp_app_id)
+                return simple_parse_log(log, self.rp_app_id)
 
             # Try to get program/rpAppId from message
             if "rpAppId" in log:
@@ -196,8 +214,9 @@ class HyprAuditSource(syslogng.LogFetcher):
                     self.logger.debug("Unable to convert %s to timestamp from %s : %s",
                                       log['eventTimeInUTC'], self.rp_app_id, e_all)
 
-            # Return LogMessage
-            return msg
+            self.extract_nvpairs(msg=msg, log=log, prefix=".hypr.")
+
+        return msg
 
     def fetch(self):
         """
@@ -237,6 +256,8 @@ class HyprAuditSource(syslogng.LogFetcher):
         if response.status_code == 200:
 
             try:
+                # This JSON parsing is unfortunately necessary, as we get a batch of messages in one response.
+                # There is no way to limit the level of the parsing, so we get each message as a python dict.
                 result = response.json()
                 total_records = result['metadata']['totalRecords']
                 total_pages = result['metadata']['totalPages']
