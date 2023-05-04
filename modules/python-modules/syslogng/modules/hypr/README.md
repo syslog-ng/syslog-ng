@@ -58,6 +58,7 @@ Options:
   initial_hours: number of hours to search backward on initial fetch (optional - defaults to 4)
   application_skip_list - list of rpAppIds not to retrieve from Hypr (optional - defaults to ['HYPRDefaultApplication', 'HYPRDefaultWorkstationApplication'])
   flags - flags passed to the source, can be used for example to disable message parsing with flags(no-parse) (optional - defaults to empty)
+  ignore_persistence: ignores the saved value in the persist file, and starts querying from the current time (optional - defaults to no)
 
 ### hypr-app-audit-trail()
 
@@ -72,6 +73,7 @@ Options:
   page_size: number of results to return in a single page (optional - defaults to 100)
   initial_hours: number of hours to search backward on initial fetch (optional - defaults to 4)
   flags - flags passed to the source, can be used for example to disable message parsing with flags(no-parse) (optional - defaults to empty)
+  ignore_persistence: ignores the saved value in the persist file, and starts querying from the current time (optional - defaults to no)
 
 
 ### Implementation

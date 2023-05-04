@@ -93,9 +93,6 @@ class HyprAuditSource(syslogng.LogFetcher):
         # Initialize empty array of log messages
         self.logs = []
 
-        # Start with last search window end time or ignore
-        ignore_persistence = False
-
         # Ensure url parameter is defined
         if "url" in options:
             self.url = options["url"]
@@ -123,19 +120,16 @@ class HyprAuditSource(syslogng.LogFetcher):
         # Default time to go back is 4 hours
         initial_hours = 4
         if "initial_hours" in options:
-
-            # If r is set as an initial_hours value, ignore persistence
-            if "r" in str(options["initial_hours"]):
-                self.logger.info("Disabling persistence due to special initial_hours setting (%d)", options["initial_hours"])
-                ignore_persistence = True
-            # Extract decimal value from initial_hours setting
-            try:
-                initial_hours = int(re.search(r'.*?(\d+).*', str(options["initial_hours"])).group(1))
-            except Exception as ex:
-                self.logger.error("Invalid value (%s) for initial_hours : %s", str(options["initial_hours"]), ex)
-
+            initial_hours = options["initial_hours"]
             self.logger.debug("Initializing Hypr syslog-ng driver with initial_hours %i hours ago for %s",
                               initial_hours, self.rp_app_id)
+
+        # Start with last search window end time or ignore
+        ignore_persistence = False
+        if "ignore_persistence" in options:
+            ignore_persistence = options["ignore_persistence"]
+            self.logger.debug("Initializing Hypr syslog-ng driver with %spersistence for %s",
+                              "ignoring " if ignore_persistence else "", self.rp_app_id)
 
         # Convert initial_hours to milliseconds and subtract from current time
         self.start_time = int(time.time() * 1000) - (initial_hours * 3600000)
@@ -153,7 +147,8 @@ class HyprAuditSource(syslogng.LogFetcher):
             last_run = datetime.utcfromtimestamp(int(self.persist["last_read"]) / 1000)
             self.logger.debug("Read %s from persistence as last run time", last_run)
         except (OverflowError, OSError):
-            self.logger.error("Invalid last_read detected in persistence, resetting to %s hours ago", initial_hours)
+            self.logger.error("Invalid last_read detected in persistence, resetting to %s hours ago and ignoring "
+                              "persistence for %s", initial_hours, self.rp_app_id)
             ignore_persistence = True
 
         # Ignore persistence if configured
@@ -364,6 +359,7 @@ def _hypr_config_generator(args):
     log_level = sanitize(args.get('log_level', "INFO"))
     application_skiplist = sanitize(args.get('application_skiplist',
                                     "'HYPRDefaultApplication' 'HYPRDefaultWorkstationApplication'")).replace(",", " ").split()
+    ignore_persistence = args.get('ignore_persistence', 'no')
     persist_name = sanitize(args.get('persist_name', "hypr-%s" % url))
     flags = sanitize(args.get('flags', ''))
 
@@ -375,6 +371,7 @@ def _hypr_config_generator(args):
     logger.debug("fetch_no_data_delay : %s" % fetch_no_data_delay)
     logger.debug("log_level : %s" % log_level)
     logger.debug("application_skiplist : %s" % application_skiplist)
+    logger.debug("ignore_persistence: %s" % ignore_persistence)
     logger.debug("persist_name : %s" % persist_name)
     logger.debug("flags : %s" % flags)
 
@@ -429,13 +426,14 @@ def _hypr_config_generator(args):
                 "bearer_token" => "%s"
                 "page_size" => %s
                 "initial_hours" => %s
+                "ignore_persistence" => %s
             )
             flags(%s)
             persist-name("%s-%s")
             fetch-no-data-delay(%s)
         );
     """ % (url, application, bearer_token, page_size,
-           initial_hours, flags,
+           initial_hours, ignore_persistence, flags,
            persist_name, application, fetch_no_data_delay)
 
     logger.debug("Final configuration is: %s" % sources)
