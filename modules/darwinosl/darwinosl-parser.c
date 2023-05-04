@@ -34,8 +34,8 @@ static CfgLexerKeyword darwinosl_keywords[] =
   { "go_reverse",             KW_GO_REVERSE },
   { "do_not_use_bookmark",    KW_DO_NOT_USE_BOOKMARK },
   { "max_bookmark_distance",  KW_MAX_BOOKMARK_DISTANCE },
-  { "log_fetch_delay",        KW_LOG_FETCH_DELAY },
-  { "log_fetch_retry_delay",  KW_LOG_FETCH_RETRY_DELAY },
+  { "fetch_delay",            KW_FETCH_DELAY },
+  { "fetch_retry_delay",      KW_FETCH_RETRY_DELAY },
 
   { NULL }
 };
