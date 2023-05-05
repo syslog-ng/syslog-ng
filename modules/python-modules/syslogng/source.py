@@ -199,3 +199,18 @@ class LogFetcher(LogFetcher):
         The method is optional, use it when fetch() has blocking operations and
         it has to be interrupted when shutting down syslog-ng.
         """
+
+
+class InstantAckTracker(InstantAckTracker):
+    def __init__(self, ack_callback):
+        self.ack_callback = ack_callback
+
+
+class ConsecutiveAckTracker(ConsecutiveAckTracker):
+    def __init__(self, ack_callback):
+        self.ack_callback = ack_callback
+
+
+class BatchedAckTracker(BatchedAckTracker):
+    def __init__(self, ack_callback):
+        self.ack_callback = ack_callback
