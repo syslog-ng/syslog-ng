@@ -380,7 +380,7 @@ def _hypr_config_generator(args):
 
     # Deobfuscate
     try:
-        bearer_token = base64.b64decode(bearer_token).decode("utf-8")
+        decoded_bearer_token = base64.b64decode(bearer_token).decode("utf-8")
     except Exception as e_all:
         raise ValueError("Unable to decode bearer_token %s : %s\n" % (bearer_token, e_all))
 
@@ -391,7 +391,7 @@ def _hypr_config_generator(args):
     get_url = url + "/cc/api/application"
     headers = {
         "Content-Type": "application/application-json",
-        "Authorization": "Bearer %s" % bearer_token
+        "Authorization": "Bearer %s" % decoded_bearer_token
     }
 
     response = requests.get(get_url, headers=headers)
@@ -400,7 +400,7 @@ def _hypr_config_generator(args):
     if response.status_code != 200:
         logger.debug("Hypr API fetch returned:%s" % response.text)
         logger.debug("Unable to retrieve applications from Hypr : HTTP %s" % response.status_code)
-        logger.debug("Decoded bearer_token is %s" % bearer_token)
+        logger.debug("Decoded bearer_token is %s" % decoded_bearer_token)
         logger.debug("Requested URL is %s" % get_url)
         raise HyprError("Unable to process hypr() source, HTTP error while retrieving application list: HTTP {} [{}]".format(response.status_code, response.text))
 
@@ -434,7 +434,7 @@ def _hypr_config_generator(args):
             persist-name("%s-%s")
             fetch-no-data-delay(%s)
         );
-    """ % (url, application, args['bearer_token'], page_size,
+    """ % (url, application, bearer_token, page_size,
            initial_hours, flags,
            persist_name, application, fetch_no_data_delay)
 
