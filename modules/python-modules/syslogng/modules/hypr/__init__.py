@@ -145,6 +145,9 @@ class HyprAuditSource(syslogng.LogFetcher):
         self.logger.debug("Initializing Hypr syslog-ng driver with persist_name %s", self.persist_name)
         self.persist = syslogng.Persist(persist_name=self.persist_name, defaults={"last_read": self.start_time})
 
+        # Initialize ack tracing
+        self.ack_tracker = syslogng.ConsecutiveAckTracker(ack_callback=self.message_acked)
+
         # Convert persistence timestamp and reset if invalid data is in persistence
         try:
             last_run = datetime.utcfromtimestamp(int(self.persist["last_read"]) / 1000)
@@ -163,6 +166,9 @@ class HyprAuditSource(syslogng.LogFetcher):
                           self.start_time, datetime.utcfromtimestamp(self.start_time / 1000))
 
         return True
+
+    def message_acked(self, acked_message_bookmark):
+        self.persist["last_read"] = acked_message_bookmark
 
     def extract_nvpairs(self, msg, log, prefix, parent_name=""):
         for name, value in log.items():
@@ -230,7 +236,13 @@ class HyprAuditSource(syslogng.LogFetcher):
         # Retrieve log messages from memory if present
         if self.logs:
             log = self.logs.pop(0)
+
+            if "eventTimeInUTC" not in log:
+                self.logger.error("'eventTimeInUTC' field is missing, skipping message: %s" % str(log))
+                return self.ERROR, None
+
             msg = self.parse_log(log)
+            msg.set_bookmark(log["eventTimeInUTC"])
             return self.SUCCESS, msg
 
         # Get current time in milliseconds since epoch
@@ -241,7 +253,9 @@ class HyprAuditSource(syslogng.LogFetcher):
                             "rpAppId=" + self.rp_app_id +
                             "&startTSUTC=" + str(self.start_time) +
                             "&endTSUTC=" + str(self.end_time) +
-                            "&pageSize=" + str(self.page_size))
+                            "&pageSize=" + str(self.page_size) +
+                            "&orderBy=eventTimeInUTC" +
+                            "&sortDir=asc")
 
         headers = {"Content-Type": "application/application-json",
                    "Accept": "application/json",
@@ -316,14 +330,9 @@ class HyprAuditSource(syslogng.LogFetcher):
 
             # If there are new logs
             if self.logs:
-
-                # Process each log message
-                log = self.logs.pop(0)
-                msg = self.parse_log(log)
-                return self.SUCCESS, msg
+                return self.fetch()
 
             # If there aren't new logs
-            self.persist["last_read"] = self.end_time
             self.logger.debug("No new Hypr events available")
             return self.NO_DATA, None
 
@@ -349,18 +358,6 @@ class HyprAuditSource(syslogng.LogFetcher):
             return False
 
         return True
-
-    def deinit(self):
-        """
-        Driver de-initialization routine
-        (optional for Python LogFetcher)
-        """
-
-        # Only update persistence if all logs in memory were processed
-        if len(self.logs) > 0:
-            self.logger.warning("Deinitializing with %i %s events in memory buffer", len(self.logs), self.rp_app_id)
-        else:
-            self.persist["last_read"] = self.end_time
 
 
 class HyprError(Exception):
