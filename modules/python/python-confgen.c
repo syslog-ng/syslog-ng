@@ -121,6 +121,7 @@ py_register_config_generator(PyObject *self, PyObject *args, PyObject *kwargs)
       return NULL;
     }
 
+  Py_XINCREF(generator_function);
   python_confgen_register(context_value, name, generator_function);
 
   Py_RETURN_NONE;
