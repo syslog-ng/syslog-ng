@@ -88,6 +88,9 @@ class HyprAuditSource(syslogng.LogFetcher):
 
         # Initialize rp_app_id specific logger
         self.logger = logging.getLogger('hypr.' + self.rp_app_id)
+        if "log_level" in options:
+            self.logger.setLevel(options["log_level"])
+
         self.logger.info("Starting Hypr API fetch driver for %s", self.rp_app_id)
 
         # Initialize empty array of log messages
