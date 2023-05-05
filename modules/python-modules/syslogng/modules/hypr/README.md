@@ -45,6 +45,7 @@ A more complete example:
             page_size(<number of results to return in a single page>)
             initial_hours(<number of hours to search backward on initial fetch>)
             application_skip_list('HYPRDefaultApplication', 'HYPRDefaultWorkstationApplication')
+            log_level('INFO')
             flags(<optional flags passed to the source>)
         );
     };
@@ -57,6 +58,7 @@ Options:
   page_size: number of results to return in a single page (optional - defaults to 100)
   initial_hours: number of hours to search backward on initial fetch (optional - defaults to 4)
   application_skip_list - list of rpAppIds not to retrieve from Hypr (optional - defaults to ['HYPRDefaultApplication', 'HYPRDefaultWorkstationApplication'])
+  log_level - logging level, possible values: "DEBUG", "INFO, "WARNING", "ERROR", "CRITICAL" (optional - defaults to "INFO")
   flags - flags passed to the source, can be used for example to disable message parsing with flags(no-parse) (optional - defaults to empty)
   ignore_persistence: ignores the saved value in the persist file, and starts querying from the current time (optional - defaults to no)
 
@@ -72,6 +74,7 @@ Options:
   rp_app_id: the RP Application ID for the application to monitor
   page_size: number of results to return in a single page (optional - defaults to 100)
   initial_hours: number of hours to search backward on initial fetch (optional - defaults to 4)
+  log_level - logging level, possible values: "DEBUG", "INFO, "WARNING", "ERROR", "CRITICAL" (optional - defaults to "INFO")
   flags - flags passed to the source, can be used for example to disable message parsing with flags(no-parse) (optional - defaults to empty)
   ignore_persistence: ignores the saved value in the persist file, and starts querying from the current time (optional - defaults to no)
 

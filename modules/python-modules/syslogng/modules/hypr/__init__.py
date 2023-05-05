@@ -448,13 +448,14 @@ def _hypr_config_generator(args):
                 "page_size" => %s
                 "initial_hours" => %s
                 "ignore_persistence" => %s
+                "log_level" => "%s"
             )
             flags(%s)
             persist-name("%s-%s")
             fetch-no-data-delay(%s)
         );
     """ % (url, application, bearer_token, page_size,
-           initial_hours, ignore_persistence, flags,
+           initial_hours, ignore_persistence, log_level, flags,
            persist_name, application, fetch_no_data_delay)
 
     logger.debug("Final configuration is: %s" % sources)

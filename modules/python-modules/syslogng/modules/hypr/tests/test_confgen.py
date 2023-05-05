@@ -52,6 +52,7 @@ def test_config_generator_all_options(mocker):
                 "page_size" => 100
                 "initial_hours" => 4
                 "ignore_persistence" => False
+                "log_level" => "INFO"
             )
             flags()
             persist-name("hypr-https://dummy.hypr.com/-rp_foo")
@@ -94,6 +95,7 @@ def test_config_generator_all_options(mocker):
                 "page_size" => 123
                 "initial_hours" => 9
                 "ignore_persistence" => yes
+                "log_level" => "ERROR"
             )
             flags(no-parse)
             persist-name("custom-persist-name-rp_foo")
@@ -109,6 +111,7 @@ def test_config_generator_all_options(mocker):
                 "page_size" => 123
                 "initial_hours" => 9
                 "ignore_persistence" => yes
+                "log_level" => "ERROR"
             )
             flags(no-parse)
             persist-name("custom-persist-name-rp_bar")
