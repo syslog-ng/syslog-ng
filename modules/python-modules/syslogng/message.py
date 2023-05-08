@@ -39,7 +39,9 @@ except ImportError:
         # local character set!)
 
         def __init__(self, msg):
-            super().__init__([('MESSAGE', msg)])
+            super().__init__()
+            self["MESSAGE"] = msg
+            self.bookmark = None
 
         def __getitem__(self, key):
             if isinstance(key, str):
@@ -55,3 +57,6 @@ except ImportError:
 
         def __eq__(self, other):
             return False
+
+        def set_bookmark(self, bookmark):
+            self.bookmark = bookmark
