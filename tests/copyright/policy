@@ -179,6 +179,7 @@ scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/mariadb/.*\.conf$
 scl/python/python-modules\.conf$
+scl/splunk/splunk\.conf$
 modules/python-modules/syslogng/modules/kubernetes/.*
 modules/ebpf/.*
 modules/python-modules/syslogng/modules/hypr/.*
