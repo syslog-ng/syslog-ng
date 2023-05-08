@@ -1,26 +1,119 @@
 4.2.0
 =====
 
+Read Axoflow's [blog post](https://axoflow.com/axosyslog-release-4-2/) for more details.
+
 ## Highlights
 
-<Fill this block manually from the blocks below>
+#### Sending messages to Splunk HEC
+The `splunk-hec-event()` destination feeds Splunk via the [HEC events API](https://docs.splunk.com/Documentation/Splunk/9.0.4/RESTREF/RESTinput#services.2Fcollector.2Fevent.2F1.0).
+
+Minimal config:
+```
+destination d_splunk_hec_event {
+  splunk-hec-event(
+    url("https://localhost:8088")
+    token("70b6ae71-76b3-4c38-9597-0c5b37ad9630")
+  );
+};
+```
+
+Additional options include:
+  * `event()`
+  * `index()`
+  * `source()`
+  * `sourcetype()`
+  * `host()`
+  * `time()`
+  * `default-index()`
+  * `default-source()`
+  * `default-sourcetype()`
+  * `fields()`
+  * `extra-headers()`
+  * `extra-queries()`
+  * `content-type()`
+
+
+The `splunk-hec-raw()` destination feeds Splunk via the [HEC raw API](https://docs.splunk.com/Documentation/Splunk/9.0.4/RESTREF/RESTinput#services.2Fcollector.2Fraw.2F1.0).
+
+Minimal config:
+```
+destination d_splunk_hec_raw {
+  splunk-hec-raw(
+    url("https://localhost:8088")
+    token("70b6ae71-76b3-4c38-9597-0c5b37ad9630")
+    channel("05ed4617-f186-4ccd-b4e7-08847094c8fd")
+  );
+};
+```
+
+([#4462](https://github.com/syslog-ng/syslog-ng/pull/4462))
+
+#### Smart multi-line for recognizing backtraces
+`multi-line-mode(smart)`:
+With this multi-line mode, the inherently multi-line data backtrace format is
+recognized even if they span multiple lines in the input and are converted
+to a single log message for easier analysis.  Backtraces for the following
+programming languages are recognized : Python, Java, JavaScript, PHP, Go,
+Ruby and Dart.
+
+The regular expressions to recognize these programming languages are
+specified by an external file called
+`/usr/share/syslog-ng/smart-multi-line.fsm` (installation path depends on
+configure arguments), in a format that is described in that file.
+
+`group-lines()` parser: this new parser correlates multi-line messages
+received as separate, but subsequent lines into a single log message.
+Received messages are first collected into streams related messages (using
+key()), then collected into correlation contexts up to timeout() seconds.
+The identification of multi-line messages are then performed on these
+message contexts within the time period.
+
+```
+  group-lines(key("$FILE_NAME")
+              multi-line-mode("smart")
+        template("$MESSAGE")
+        timeout(10)
+        line-separator("\n")
+  );
+```
+
+([#4225](https://github.com/syslog-ng/syslog-ng/pull/4225))
+
+#### HYPR Audit Trail source
+`hypr-audit-trail()` & `hypr-app-audit-trail()` source drivers are now
+available to monitor the audit trails for [HYPR](https://www.hypr.com) applications.
+
+See the README.md file in the driver's directory to see usage information.
+
+([#4175](https://github.com/syslog-ng/syslog-ng/pull/4175))
+
+#### `ebpf()` plugin and reuseport packet randomizer
+A new ebpf() plugin was added as a framework to leverage the kernel's eBPF
+infrastructure to improve performance and scalability of syslog-ng.
+
+Example:
+
+```
+source s_udp {
+        udp(so-reuseport(yes) port(2000) persist-name("udp1")
+                ebpf(reuseport(sockets(4)))
+        );
+        udp(so-reuseport(yes) port(2000) persist-name("udp2"));
+        udp(so-reuseport(yes) port(2000) persist-name("udp3"));
+        udp(so-reuseport(yes) port(2000) persist-name("udp4"));
+};
+```
+
+NOTE: The `ebpf()` plugin is considered advanced usage so its compilation is
+disabled by default.  Please don't use it unless all other avenues of
+configuration solutions are already tried.  You will need a special
+toolchain and a recent kernel version to compile and run eBPF programs.
+
+([#4365](https://github.com/syslog-ng/syslog-ng/pull/4365))
+
 
 ## Features
-
-  * New metrics
-
-    `network()`, `syslog()`: TCP connection metrics
-
-    ```
-    syslogng_socket_connections{id="tcp_src#0",driver_instance="afsocket_sd.(stream,AF_INET(0.0.0.0:5555))",direction="input"} 3
-    syslogng_socket_max_connections{id="tcp_src#0",driver_instance="afsocket_sd.(stream,AF_INET(0.0.0.0:5555))",direction="input"} 10
-    syslogng_socket_rejected_connections_total{id="tcp_src#0",driver_instance="afsocket_sd.(stream,AF_INET(0.0.0.0:5555))",direction="input"} 96
-    ```
-
-    `internal()`: `internal_events_queue_capacity` metric
-
-    `syslog-ng-ctl healthcheck`: new healthcheck value `syslogng_internal_events_queue_usage_ratio`
-    ([#4411](https://github.com/syslog-ng/syslog-ng/pull/4411))
 
   * `network` source: During a TLS handshake, syslog-ng now automatically sets the
     `certificate_authorities` field of the certificate request based on the `ca-file()`
@@ -30,64 +123,11 @@
   * `metrics-probe()`: Added `level()` option to set the stats level of the generated metrics.
     ([#4453](https://github.com/syslog-ng/syslog-ng/pull/4453))
 
-  * `ebpf()` plugin and reuseport packet randomizer: a new ebpf() plugin was
-    added as a framework to leverage the kernel's eBPF infrastructure to improve
-    performance and scalability of syslog-ng.  The first eBPF based solution in
-    this framework improves performance when a single (or very few) senders
-    generate most of the inbound UDP traffic that syslog-ng needs to process.
-    Normally, the kernel distributes the load between so-reuseport sockets by
-    keeping each flow (e.g.  same source/dest ip/port) in its dedicated
-    receiver.  This fails to balance the sockets properly if only a few senders
-    are responsible for most of the load.  ebpf(reuseport()) will replace the
-    original kernel algorithm with an alternative: individual packets will be
-    assigned to one of the sockets in the group randomly, thereby producing a
-    more uniform load.
+  * `metrics-probe()`: Added `increment()` option.
 
-    Example:
-
-    ```
-    source s_udp {
-            udp(so-reuseport(yes) port(2000) persist-name("udp1")
-                    ebpf(reuseport(sockets(4)))
-            );
-            udp(so-reuseport(yes) port(2000) persist-name("udp2"));
-            udp(so-reuseport(yes) port(2000) persist-name("udp3"));
-            udp(so-reuseport(yes) port(2000) persist-name("udp4"));
-    };
-    ```
-
-    NOTE: The `ebpf()` plugin is considered advanced usage so its compilation is
-    disabled by default.  Please don't use it unless all other avenues of
-    configuration solutions are already tried.  You will need a special
-    toolchain and a recent kernel version to compile and run eBPF programs.  To
-    compile `ebpf()` you will need libbpf development package, bpftool (shipped as
-    part of the kernel) and `clang` with bpf target support.  To run `ebpf()` programs,
-    syslog-ng will require root privileges and a minimum kernel version of 5.5.
-    ([#4365](https://github.com/syslog-ng/syslog-ng/pull/4365))
-
-  * `disk-buffer`: Added capacity, disk_allocated and disk_usage metrics.
-
-      * "capacity_bytes": The theoretical maximal useful size of the disk-buffer.
-                          This is always smaller, than `disk-buf-size()`, as there is some reserved
-                          space for metadata. The actual full disk-buffer file can be larger than this,
-                          as syslog-ng allows to write over this limit once, at the end of the file.
-
-      * "disk_allocated_bytes": The current size of the disk-buffer file on the disk. Please note that
-                                the disk-buffer file size does not strictly correlate with the number
-                                of messages, as it is a ring buffer implementation, and also syslog-ng
-                                optimizes the truncation of the file for performance reasons.
-
-      * "disk_usage_bytes": The serialized size of the queued messages in the disk-buffer file. This counter
-                            is useful for calculating the disk usage percentage (disk_usage_bytes / capacity_bytes)
-                            or the remaining available space (capacity_bytes - disk_usage_bytes).
-
-    Example metrics:
-    ```
-    syslogng_disk_queue_capacity_bytes{driver_id="d_network#0",driver_instance="tcp,localhost:1235",path="/var/syslog-ng-00000.rqf",reliable="true"} 104853504
-    syslogng_disk_queue_disk_allocated_bytes{driver_id="d_network#0",driver_instance="tcp,localhost:1235",path="/var/syslog-ng-00000.rqf",reliable="true"} 17284
-    syslogng_disk_queue_disk_usage_bytes{driver_id="d_network#0",driver_instance="tcp,localhost:1235",path="/var/syslog-ng-00000.rqf",reliable="true"} 13188
-    ```
-    ([#4356](https://github.com/syslog-ng/syslog-ng/pull/4356))
+    Users can now set a template, which resolves to a number that modifies
+    the increment of the counter. If not set, the increment is 1.
+    ([#4447](https://github.com/syslog-ng/syslog-ng/pull/4447))
 
   * `python`: Added support for typed custom options.
 
@@ -114,27 +154,8 @@
     in your python code!**
     ([#4354](https://github.com/syslog-ng/syslog-ng/pull/4354))
 
-  * `metrics-probe()`: Added `increment()` option.
-
-    Users can now set a template, which resolves to a number that modifies
-    the increment of the counter. If not set, the increment is 1.
-    ([#4447](https://github.com/syslog-ng/syslog-ng/pull/4447))
-
   * `mongodb` destination: Added support for list, JSON and null types.
     ([#4437](https://github.com/syslog-ng/syslog-ng/pull/4437))
-
-  * `disk-buffer`: Added metrics for abandoned disk-buffer files.
-
-    Availability is the same as the `disk_queue_dir_available_bytes` metric.
-
-    Example metrics:
-    ```
-    syslogng_disk_queue_capacity_bytes{abandoned="true",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true"} 104853504
-    syslogng_disk_queue_disk_allocated_bytes{abandoned="true",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true"} 273408
-    syslogng_disk_queue_disk_usage_bytes{abandoned="true",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true"} 269312
-    syslogng_disk_queue_events{abandoned="true",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true"} 860
-    ```
-    ([#4402](https://github.com/syslog-ng/syslog-ng/pull/4402))
 
   * `add-contextual-data()`: significantly reduce memory usage for large CSV
     files.
@@ -147,7 +168,6 @@
       not given, it defaults to `None`, so that this method never raises a
       `KeyError`.
 
-    
     - `get_as_str(key, default=None, encoding='utf-8', errors='strict', repr='internal')`:
       Return the string value for `key` if `key` exists, else `default`.
       If `default` is not given, it defaults to `None`, so that this method never
@@ -161,70 +181,6 @@
       specify the `repr` argument explicitly if you want to avoid future
       representation changes in your code.
     ([#4410](https://github.com/syslog-ng/syslog-ng/pull/4410))
-
-  * `kubernetes()`: Added `input_events_total` and `input_event_bytes_total` metrics.
-
-    ```
-    syslogng_input_events_total{cluster="k8s",driver="kubernetes",id="#anon-source0",namespace="default",pod="log-generator-1682517834-7797487dcc-49hqc"} 25
-    syslogng_input_event_bytes_total{cluster="k8s",driver="kubernetes",id="#anon-source0",namespace="default",pod="log-generator-1682517834-7797487dcc-49hqc"} 1859
-    ```
-    ([#4447](https://github.com/syslog-ng/syslog-ng/pull/4447))
-
-  * `disk-buffer`: Added metrics for monitoring the available space in disk-buffer `dir()`s.
-
-    Metrics are available from `stats(level(1))`.
-
-    By default, the metrics are generated every 5 minutes, but it can be changed in the global options:
-    ```
-    options {
-      disk-buffer(
-        stats(
-          freq(10)
-        )
-      );
-    };
-    ```
-    Setting `freq(0)` disabled this feature.
-
-    Example metrics:
-    ```
-    syslogng_disk_queue_dir_available_bytes{dir="/var/syslog-ng"} 870109413376
-    ```
-    ([#4399](https://github.com/syslog-ng/syslog-ng/pull/4399))
-
-  * `multi-line-mode(smart)`: a new multi-line mode was added to recognize
-    backtraces for various programming languages automatically.  With this
-    multi-line mode, the inherently multi-line data backtrace format is
-    recognized even if they span multiple lines in the input and are converted
-    to a single log message for easier analysis.  Backtraces for the following
-    programming languages are recognized : Python, Java, JavaScript, PHP, Go,
-    Ruby and Dart.
-
-    The regular expressions to recognize these programming languages are
-    specified by an external file called
-    `/usr/share/syslog-ng/smart-multi-line.fsm` (installation path depends on
-    configure arguments), in a format that is described in that file.
-    ([#4225](https://github.com/syslog-ng/syslog-ng/pull/4225))
-
-  * `network()`, `syslog()`, `file()`, `http()`: new byte-based metrics for incoming/outgoing events
-
-    These metrics show the serialized message sizes (protocol-specific header/framing/etc. length is not included).
-
-    ```
-    syslogng_input_event_bytes_total{id="s_network#0",driver_instance="tcp,127.0.0.1"} 1925529600
-    syslogng_output_event_bytes_total{id="d_network#0",driver_instance="tcp,127.0.0.1:5555"} 565215232
-    syslogng_output_event_bytes_total{id="d_http#0",driver_instance="http,http://127.0.0.1:8080/"} 1024
-    ```
-    ([#4440](https://github.com/syslog-ng/syslog-ng/pull/4440))
-
-  * `syslog-ng`: add `--config-id` command line option
-
-    Similarly to `--syntax-only`, this command line option parses the configuration
-    and then prints its ID before exiting.
-
-    It can be used to query the ID of the current configuration persisted on
-    disk.
-    ([#4435](https://github.com/syslog-ng/syslog-ng/pull/4435))
 
   * `kubernetes()` source: Added support for json-file logging driver format.
     ([#4419](https://github.com/syslog-ng/syslog-ng/pull/4419))
@@ -251,6 +207,97 @@
     ```
     $ syslog-ng-ctl config --id
     cfg-20230404-13-g02b0850fc (08ddecfa52a3443b29d5d5aa3e5114e48dd465e195598062da9f5fc5a45d8a83)
+    ```
+    ([#4420](https://github.com/syslog-ng/syslog-ng/pull/4420))
+
+  * `syslog-ng`: add `--config-id` command line option
+
+    Similarly to `--syntax-only`, this command line option parses the configuration
+    and then prints its ID before exiting.
+
+    It can be used to query the ID of the current configuration persisted on
+    disk.
+    ([#4435](https://github.com/syslog-ng/syslog-ng/pull/4435))
+
+  * Health metrics and `syslog-ng-ctl healthcheck`
+
+    A new `syslog-ng-ctl` command has been introduced, which can be used to query a healthcheck status from syslog-ng.
+    Currently, only 2 basic health values are reported.
+
+    `syslog-ng-ctl healthcheck --timeout <seconds>` can be specified to use it as a boolean healthy/unhealthy check.
+
+    Health checks are also published as periodically updated metrics.
+    The frequency of these checks can be configured with the `stats(healthcheck-freq())` option.
+    The default is 5 minutes.
+    ([#4362](https://github.com/syslog-ng/syslog-ng/pull/4362))
+
+  * `$(format-json)` and template functions which support value-pairs
+    expressions: new key transformations upper() and lower() have been added to
+    translate the caps of keys while formatting the output template. For
+    example:
+
+        template("$(format-json test.* --upper)\n")
+
+    Would convert all keys to uppercase. Only supports US ASCII.
+    ([#4452](https://github.com/syslog-ng/syslog-ng/pull/4452))
+
+  * `python()`, `python-fetcher()` sources: Added a mapping for the `flags()` option.
+
+    The state of the `flags()` option is mapped to the `self.flags` variable, which is
+    a `Dict[str, bool]`, for example:
+    ```python
+    {
+        'parse': True,
+        'check-hostname': False,
+        'syslog-protocol': True,
+        'assume-utf8': False,
+        'validate-utf8': False,
+        'sanitize-utf8': False,
+        'multi-line': True,
+        'store-legacy-msghdr': True,
+        'store-raw-message': False,
+        'expect-hostname': True,
+        'guess-timezone': False,
+        'header': True,
+        'rfc3164-fallback': True,
+    }
+    ```
+    ([#4455](https://github.com/syslog-ng/syslog-ng/pull/4455))
+
+
+### Metrics
+  * `network()`, `syslog()`: TCP connection metrics
+
+    ```
+    syslogng_socket_connections{id="tcp_src#0",driver_instance="afsocket_sd.(stream,AF_INET(0.0.0.0:5555))",direction="input"} 3
+    syslogng_socket_max_connections{id="tcp_src#0",driver_instance="afsocket_sd.(stream,AF_INET(0.0.0.0:5555))",direction="input"} 10
+    syslogng_socket_rejected_connections_total{id="tcp_src#0",driver_instance="afsocket_sd.(stream,AF_INET(0.0.0.0:5555))",direction="input"} 96
+    ```
+
+    `internal()`: `internal_events_queue_capacity` metric
+
+    `syslog-ng-ctl healthcheck`: new healthcheck value `syslogng_internal_events_queue_usage_ratio`
+    ([#4411](https://github.com/syslog-ng/syslog-ng/pull/4411))
+
+  * `metrics`: new network (TCP, UDP) metrics are available on stats level 1
+
+    ```
+    # syslog-ng-ctl stats prometheus
+
+    syslogng_socket_receive_buffer_used_bytes{id="#anon-source0#3",direction="input",driver_instance="afsocket_sd.udp4"} 0
+    syslogng_socket_receive_buffer_max_bytes{id="#anon-source0#3",direction="input",driver_instance="afsocket_sd.udp4"} 268435456
+    syslogng_socket_receive_dropped_packets_total{id="#anon-source0#3",direction="input",driver_instance="afsocket_sd.udp4"} 619173
+
+    syslogng_socket_connections{id="#anon-source0#0",direction="input",driver_instance="afsocket_sd.(stream,AF_INET(0.0.0.0:2000))"} 1
+    ```
+    ([#4374](https://github.com/syslog-ng/syslog-ng/pull/4374))
+
+  * New configuration-related metrics:
+
+    ```
+    syslogng_last_config_reload_timestamp_seconds 1681309903
+    syslogng_last_successful_config_reload_timestamp_seconds 1681309758
+    syslogng_last_config_file_modification_timestamp_seconds 1681309877
     ```
     ([#4420](https://github.com/syslog-ng/syslog-ng/pull/4420))
 
@@ -285,89 +332,83 @@
     ```
     ([#4392](https://github.com/syslog-ng/syslog-ng/pull/4392))
 
-  * Health metrics and `syslog-ng-ctl healthcheck`
+  * `network()`, `syslog()`, `file()`, `http()`: new byte-based metrics for incoming/outgoing events
 
-    A new `syslog-ng-ctl` command has been introduced, which can be used to query a healthcheck status from syslog-ng.
-    Currently, only 2 basic health values are reported.
-
-    `syslog-ng-ctl healthcheck --timeout <seconds>` can be specified to use it as a boolean healthy/unhealthy check.
-
-    Health checks are also published as periodically updated metrics.
-    The frequency of these checks can be configured with the `stats(healthcheck-freq())` option.
-    The default is 5 minutes.
-    ([#4362](https://github.com/syslog-ng/syslog-ng/pull/4362))
-
-  * New configuration-related metrics:
+    These metrics show the serialized message sizes (protocol-specific header/framing/etc. length is not included).
 
     ```
-    syslogng_last_config_reload_timestamp_seconds 1681309903
-    syslogng_last_successful_config_reload_timestamp_seconds 1681309758
-    syslogng_last_config_file_modification_timestamp_seconds 1681309877
+    syslogng_input_event_bytes_total{id="s_network#0",driver_instance="tcp,127.0.0.1"} 1925529600
+    syslogng_output_event_bytes_total{id="d_network#0",driver_instance="tcp,127.0.0.1:5555"} 565215232
+    syslogng_output_event_bytes_total{id="d_http#0",driver_instance="http,http://127.0.0.1:8080/"} 1024
     ```
-    ([#4420](https://github.com/syslog-ng/syslog-ng/pull/4420))
+    ([#4440](https://github.com/syslog-ng/syslog-ng/pull/4440))
 
-  * `group-lines()` parser: this new parser correlates multi-line messages
-    received as separate, but subsequent lines into a single log message.
-    Received messages are first collected into streams related messages (using
-    key()), then collected into correlation contexts up to timeout() seconds.
-    The identification of multi-line messages are then performed on these
-    message contexts within the time period.
+  * `disk-buffer`: Added metrics for monitoring the available space in disk-buffer `dir()`s.
 
+    Metrics are available from `stats(level(1))`.
+
+    By default, the metrics are generated every 5 minutes, but it can be changed in the global options:
     ```
-      group-lines(key("$FILE_NAME")
-                  multi-line-mode("smart")
-    	      template("$MESSAGE")
-    	      timeout(10)
-    	      line-separator("\n")
+    options {
+      disk-buffer(
+        stats(
+          freq(10)
+        )
       );
+    };
     ```
+    Setting `freq(0)` disabled this feature.
 
-    Configuration options are as follows:
-      key() -- specifies a template that determines what messages are forming a
-               single stream. Messages where the template expansion results in the same
-               key are considered part of the same stream. Using key() you can apply
-               multi-line extraction even if different streams are interleaved in your
-               input.
+    Example metrics:
+    ```
+    syslogng_disk_queue_dir_available_bytes{dir="/var/syslog-ng"} 870109413376
+    ```
+    ([#4399](https://github.com/syslog-ng/syslog-ng/pull/4399))
 
-      multi-line-mode() -- same as multi-line-mode() for multi-line file
-                           sources.  Value is one of: `smart`, `indented`,
-                           `prefix-garbage` or `prefix-suffix`.
+  * `disk-buffer`: Added metrics for abandoned disk-buffer files.
 
-      multi-line-prefix(), multi-line-suffix(), multi-line-garbage() --
-                           regular expressions associated with regexp based multi-line-mode
-                           values.
+    Availability is the same as the `disk_queue_dir_available_bytes` metric.
 
-      template() -- a template string that specifies what constitutes an line to
-                    group-lines(). In simplest cases this is $MSG or $RAWMSG.
+    Example metrics:
+    ```
+    syslogng_disk_queue_capacity_bytes{abandoned="true",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true"} 104853504
+    syslogng_disk_queue_disk_allocated_bytes{abandoned="true",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true"} 273408
+    syslogng_disk_queue_disk_usage_bytes{abandoned="true",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true"} 269312
+    syslogng_disk_queue_events{abandoned="true",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true"} 860
+    ```
+    ([#4402](https://github.com/syslog-ng/syslog-ng/pull/4402))
 
-      line-separator() -- in case a multi-line message is found, this value is
-                          inserted between segments of the new multi-line message. Defaults to '\n'
-                          that is the newline character.
-    ([#4225](https://github.com/syslog-ng/syslog-ng/pull/4225))
+  * `disk-buffer`: Added capacity, disk_allocated and disk_usage metrics.
 
-  * `$(format-json)` and template functions which support value-pairs
-    expressions: new key transformations upper() and lower() have been added to
-    translate the caps of keys while formatting the output template. For
-    example:
+      * "capacity_bytes": The theoretical maximal useful size of the disk-buffer.
+                          This is always smaller, than `disk-buf-size()`, as there is some reserved
+                          space for metadata. The actual full disk-buffer file can be larger than this,
+                          as syslog-ng allows to write over this limit once, at the end of the file.
 
-        template("$(format-json test.* --upper)\n")
+      * "disk_allocated_bytes": The current size of the disk-buffer file on the disk. Please note that
+                                the disk-buffer file size does not strictly correlate with the number
+                                of messages, as it is a ring buffer implementation, and also syslog-ng
+                                optimizes the truncation of the file for performance reasons.
 
-    Would convert all keys to uppercase. Only supports US ASCII.
-    ([#4452](https://github.com/syslog-ng/syslog-ng/pull/4452))
+      * "disk_usage_bytes": The serialized size of the queued messages in the disk-buffer file. This counter
+                            is useful for calculating the disk usage percentage (disk_usage_bytes / capacity_bytes)
+                            or the remaining available space (capacity_bytes - disk_usage_bytes).
 
-  * `metrics`: new network (TCP, UDP) metrics are available on stats level 1
+    Example metrics:
+    ```
+    syslogng_disk_queue_capacity_bytes{driver_id="d_network#0",driver_instance="tcp,localhost:1235",path="/var/syslog-ng-00000.rqf",reliable="true"} 104853504
+    syslogng_disk_queue_disk_allocated_bytes{driver_id="d_network#0",driver_instance="tcp,localhost:1235",path="/var/syslog-ng-00000.rqf",reliable="true"} 17284
+    syslogng_disk_queue_disk_usage_bytes{driver_id="d_network#0",driver_instance="tcp,localhost:1235",path="/var/syslog-ng-00000.rqf",reliable="true"} 13188
+    ```
+    ([#4356](https://github.com/syslog-ng/syslog-ng/pull/4356))
+
+  * `kubernetes()`: Added `input_events_total` and `input_event_bytes_total` metrics.
 
     ```
-    # syslog-ng-ctl stats prometheus
-
-    syslogng_socket_receive_buffer_used_bytes{id="#anon-source0#3",direction="input",driver_instance="afsocket_sd.udp4"} 0
-    syslogng_socket_receive_buffer_max_bytes{id="#anon-source0#3",direction="input",driver_instance="afsocket_sd.udp4"} 268435456
-    syslogng_socket_receive_dropped_packets_total{id="#anon-source0#3",direction="input",driver_instance="afsocket_sd.udp4"} 619173
-
-    syslogng_socket_connections{id="#anon-source0#0",direction="input",driver_instance="afsocket_sd.(stream,AF_INET(0.0.0.0:2000))"} 1
+    syslogng_input_events_total{cluster="k8s",driver="kubernetes",id="#anon-source0",namespace="default",pod="log-generator-1682517834-7797487dcc-49hqc"} 25
+    syslogng_input_event_bytes_total{cluster="k8s",driver="kubernetes",id="#anon-source0",namespace="default",pod="log-generator-1682517834-7797487dcc-49hqc"} 1859
     ```
-    ([#4374](https://github.com/syslog-ng/syslog-ng/pull/4374))
-
+    ([#4447](https://github.com/syslog-ng/syslog-ng/pull/4447))
 
 ## Bugfixes
 
@@ -482,6 +523,11 @@
   * `python-persist`: fix off-by-one overflow
     ([#4429](https://github.com/syslog-ng/syslog-ng/pull/4429))
 
+## Packaging
+  * The `--with-python-venv-dir=path` configure option can be used to modify the location of syslog-ng's venv.
+    The default is still `${localstatedir}/python-venv`.
+    ([#4465](https://github.com/syslog-ng/syslog-ng/pull/4465))
+
 
 ## Other changes
 
@@ -515,6 +561,12 @@
     It was deprecated since syslog-ng 3.29.
     ([#4411](https://github.com/syslog-ng/syslog-ng/pull/4411))
 
+
+## syslog-ng Discord
+
+For a bit more interactive discussion, join our Discord server:
+
+[![Axoflow Discord Server](https://discordapp.com/api/guilds/1082023686028148877/widget.png?style=banner2)](https://discord.gg/E65kP9aZGm)
 
 ## Credits
 
