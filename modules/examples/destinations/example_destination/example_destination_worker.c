@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2023 One Identity LLC.
  * Copyright (c) 2020 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -35,7 +36,10 @@ _dw_insert(LogThreadedDestWorker *s, LogMessage *msg)
                   self->thread_id, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
 
   size_t retval = fwrite(string_to_write->str, 1, string_to_write->len, self->file);
-  if (retval != string_to_write->len)
+  gsize string_to_write_len = string_to_write->len;
+  g_string_free(string_to_write, TRUE);
+
+  if (retval != string_to_write_len)
     {
       msg_error("Error while reading file");
       return LTR_NOT_CONNECTED;
@@ -46,8 +50,6 @@ _dw_insert(LogThreadedDestWorker *s, LogMessage *msg)
       msg_error("Error while flushing file");
       return LTR_NOT_CONNECTED;
     }
-
-  g_string_free(string_to_write, TRUE);
 
   return LTR_SUCCESS;
   /*
