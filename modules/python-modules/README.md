@@ -476,6 +476,28 @@ outstanding messages at a time. With this interface it's quite easy to
 perform acknowledgements back to the source interface where per-message
 acknowledgements are needed (e.g. Google PubSub).
 
+#### Accessing the `flags()` option
+
+The state of the `flags()` option is mapped to the `self.flags` variable, which is
+a `Dict[str, bool]`, for example:
+```python
+{
+    'parse': True,
+    'check-hostname': False,
+    'syslog-protocol': True,
+    'assume-utf8': False,
+    'validate-utf8': False,
+    'sanitize-utf8': False,
+    'multi-line': True,
+    'store-legacy-msghdr': True,
+    'store-raw-message': False,
+    'expect-hostname': True,
+    'guess-timezone': False,
+    'header': True,
+    'rfc3164-fallback': True,
+}
+```
+
 ### Creating a syslog-ng LogSource based Source plugin
 
 While `LogFetcher` gives us a convinient interface for fetching messages from
@@ -524,8 +546,8 @@ class MySource(LogSource):
 
 ```
 
-Acknowledgement mechanisms (`ConsecutiveAckTracker`, `BatchedAckTracker`) can be
-used similarly to how it was described at `LogFetcher`.
+Acknowledgement mechanisms (`ConsecutiveAckTracker`, `BatchedAckTracker`) and
+`flags()` mapping can be used similarly to how it was described at `LogFetcher`.
 
 ## Making it more native config-wise
 

@@ -31,6 +31,7 @@
 #include "python-persist.h"
 #include "python-ack-tracker.h"
 #include "python-bookmark.h"
+#include "python-flags.h"
 
 #include <structmember.h>
 
@@ -345,6 +346,39 @@ _py_init_bindings(PythonSourceDriver *self)
 }
 
 static gboolean
+_py_set_flags(PythonSourceDriver *self)
+{
+  MsgFormatOptions *parse_options = log_threaded_source_driver_get_parse_options(&self->super.super.super);
+  g_assert(parse_options);
+
+  PyObject *flags = python_source_flags_new(parse_options->flags);
+  if (!flags)
+    {
+      msg_error("python-source: Error creating flags attribute",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("class", self->class));
+      return FALSE;
+    }
+
+  if (PyObject_SetAttrString(self->py.instance, "flags", flags) == -1)
+    {
+      gchar buf[256];
+
+      msg_error("python-source: Error setting flags attribute",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("class", self->class),
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
+
+      Py_DECREF(flags);
+      return FALSE;
+    }
+
+  Py_DECREF(flags);
+  return TRUE;
+}
+
+static gboolean
 _py_init_object(PythonSourceDriver *self)
 {
   if (!_py_get_attr_or_null(self->py.instance, "init"))
@@ -481,6 +515,9 @@ _py_sd_init(PythonSourceDriver *self)
 
   _py_perform_imports(self->loaders);
   if (!_py_init_bindings(self))
+    goto error;
+
+  if (!_py_set_flags(self))
     goto error;
 
   if (!_py_init_object(self))
