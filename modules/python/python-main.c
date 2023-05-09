@@ -544,10 +544,33 @@ _py_init_argv(void)
 }
 
 static gboolean
+_py_activate_venv(void)
+{
+  const gchar *python_venv_path = _get_venv_path();
+
+  if (!python_venv_path)
+    return FALSE;
+
+  gchar *python_venv_binary = g_build_path(G_DIR_SEPARATOR_S, python_venv_path, "bin", "python", NULL);
+  wchar_t *python_programname = Py_DecodeLocale(python_venv_binary, NULL);
+  g_free(python_venv_binary);
+
+  msg_info("python: activating virtualenv",
+           evt_tag_str("path", python_venv_path),
+           evt_tag_str("executable", python_venv_binary));
+
+  Py_SetProgramName(python_programname);
+  return TRUE;
+}
+
+static gboolean
 _py_configure_interpreter(gboolean use_virtualenv)
 {
   _py_setup_python_home();
   _py_set_python_path();
+
+  if (use_virtualenv)
+    _py_activate_venv();
 
   Py_Initialize();
   _py_init_argv();
