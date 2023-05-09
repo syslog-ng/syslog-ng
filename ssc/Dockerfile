@@ -32,7 +32,7 @@ RUN apk add -U --upgrade --no-cache \
     && chmod 755 /var/log/syslog-ng.* \
     && pip3 --no-cache-dir install poetry \
     && poetry export --format requirements.txt \
-        | /var/lib/syslog-ng/python-venv/bin/pip3 --no-cache-dir install -r /dev/stdin \
+        | /var/lib/syslog-ng-venv/bin/pip3 --no-cache-dir install -r /dev/stdin \
     && apk del build-base python3-dev libffi-dev
 
 HEALTHCHECK --interval=10s --retries=6 --timeout=6s CMD /sbin/healthcheck.sh
