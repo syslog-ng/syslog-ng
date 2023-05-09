@@ -242,6 +242,92 @@ _format_python_path(void)
   return g_string_free(python_path, FALSE);
 }
 
+static gboolean
+_py_is_virtualenv_valid(const gchar *path)
+{
+  gchar *python_venv_binary = g_strdup_printf("%s/bin/python", path);
+  gboolean result = FALSE;
+
+  /* check if the virtualenv is populated */
+  if (g_file_test(path, G_FILE_TEST_IS_DIR) &&
+      g_file_test(python_venv_binary, G_FILE_TEST_IS_EXECUTABLE))
+    {
+      result = TRUE;
+    }
+
+  g_free(python_venv_binary);
+  return result;
+}
+
+static gboolean
+_py_requirements_up_to_date(const gchar *python_venv_path)
+{
+  const gchar *my_requirements_file = get_installation_path_for(SYSLOG_NG_PYTHON_MODULE_DIR "/requirements.txt");
+  gchar *installed_requirements_file = g_strdup_printf("%s/requirements.txt", python_venv_path);
+  gchar *installed_requirements = NULL;
+  gsize installed_requirements_len;
+  gchar *my_requirements = NULL;
+  gsize my_requirements_len;
+  gboolean result = FALSE;
+
+  if (!g_file_get_contents(installed_requirements_file, &installed_requirements, &installed_requirements_len, NULL))
+    goto mismatch;
+
+  if (!g_file_get_contents(my_requirements_file, &my_requirements, &my_requirements_len, NULL))
+    goto mismatch;
+
+  if (my_requirements_len != installed_requirements_len ||
+      strcmp(my_requirements, installed_requirements) != 0)
+    goto mismatch;
+
+  result = TRUE;
+mismatch:
+  g_free(installed_requirements);
+  g_free(my_requirements);
+  g_free(installed_requirements_file);
+  return result;
+}
+
+static const gchar *
+_get_venv_path(void)
+{
+  const gchar *env_virtual_env = getenv("VIRTUAL_ENV");
+  if (env_virtual_env)
+    {
+      if (!_py_is_virtualenv_valid(env_virtual_env))
+        {
+          msg_error("python: environment variable VIRTUAL_ENV is set, but does not point to a valid virtualenv, Python executable not found",
+                    evt_tag_str("path", env_virtual_env));
+          return NULL;
+        }
+
+      msg_debug("python: using virtualenv pointed to by $VIRTUAL_ENV", evt_tag_str("path", env_virtual_env));
+      return env_virtual_env;
+    }
+
+
+  const gchar *private_venv_path = get_installation_path_for(SYSLOG_NG_PYTHON_VENV_DIR);
+  if (!_py_is_virtualenv_valid(private_venv_path))
+    {
+      msg_warning("python: private virtualenv is not initialized, use the `syslog-ng-update-virtualenv' "
+                  "script to initialize it or make sure all required Python dependencies are available in "
+                  "the system Python installation",
+                  evt_tag_str("path", private_venv_path));
+      return NULL;
+    }
+
+  if (!_py_requirements_up_to_date(private_venv_path))
+    {
+      msg_warning("python: the current set of requirements installed in our virtualenv seems to be out of date, "
+                  "use the `syslog-ng-update-virtualenv' script to upgrade Python dependencies",
+                  evt_tag_str("path", private_venv_path));
+      return NULL;
+    }
+
+  msg_debug("python: the virtualenv validation successful");
+  return private_venv_path;
+}
+
 #if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 8 || PY_MAJOR_VERSION > 3
 
 static gboolean
@@ -285,23 +371,6 @@ _py_set_python_home(PyConfig *config)
 }
 
 static gboolean
-_py_is_virtualenv_valid(const gchar *path)
-{
-  gchar *python_venv_binary = g_strdup_printf("%s/bin/python", path);
-  gboolean result = FALSE;
-
-  /* check if the virtualenv is populated */
-  if (g_file_test(path, G_FILE_TEST_IS_DIR) &&
-      g_file_test(python_venv_binary, G_FILE_TEST_IS_EXECUTABLE))
-    {
-      result = TRUE;
-    }
-
-  g_free(python_venv_binary);
-  return result;
-}
-
-static gboolean
 _py_set_argv(PyConfig *config, const gchar *binary)
 {
   char *argv[] = { (char *) binary };
@@ -319,78 +388,9 @@ _py_set_argv(PyConfig *config, const gchar *binary)
 }
 
 static gboolean
-_py_requirements_up_to_date(const gchar *python_venv_path)
-{
-  const gchar *my_requirements_file = get_installation_path_for(SYSLOG_NG_PYTHON_MODULE_DIR "/requirements.txt");
-  gchar *installed_requirements_file = g_strdup_printf("%s/requirements.txt", python_venv_path);
-  gchar *installed_requirements = NULL;
-  gsize installed_requirements_len;
-  gchar *my_requirements = NULL;
-  gsize my_requirements_len;
-  gboolean result = FALSE;
-
-  if (!g_file_get_contents(installed_requirements_file, &installed_requirements, &installed_requirements_len, NULL))
-    goto mismatch;
-
-  if (!g_file_get_contents(my_requirements_file, &my_requirements, &my_requirements_len, NULL))
-    goto mismatch;
-
-  if (my_requirements_len != installed_requirements_len ||
-      strcmp(my_requirements, installed_requirements) != 0)
-    goto mismatch;
-
-  result = TRUE;
-mismatch:
-  g_free(installed_requirements);
-  g_free(my_requirements);
-  g_free(installed_requirements_file);
-  return result;
-}
-
-static gboolean
 _py_activate_venv(PyConfig *config)
 {
-  const gchar *python_venv_path = NULL;
-
-  /* check if VIRTUAL_ENV points to a valid virtualenv */
-  const gchar *env_virtual_env = getenv("VIRTUAL_ENV");
-  if (env_virtual_env)
-    {
-      if (!_py_is_virtualenv_valid(env_virtual_env))
-        {
-          msg_error("python: environment variable VIRTUAL_ENV is set, but does not point to a valid virtualenv, Python executable not found",
-                    evt_tag_str("path", env_virtual_env));
-        }
-      else
-        {
-          /* let's use the virtualenv specified by the user */
-          msg_debug("python: using virtualenv pointed to by $VIRTUAL_ENV",
-                    evt_tag_str("path", env_virtual_env));
-          python_venv_path = env_virtual_env;
-        }
-    }
-  else
-    {
-      const gchar *private_venv_path = get_installation_path_for(SYSLOG_NG_PYTHON_VENV_DIR);
-      if (!_py_is_virtualenv_valid(private_venv_path))
-        {
-          msg_warning("python: private virtualenv is not initialized, use the `syslog-ng-update-virtualenv' "
-                      "script to initialize it or make sure all required Python dependencies are available in "
-                      "the system Python installation",
-                      evt_tag_str("path", private_venv_path));
-        }
-      else if (!_py_requirements_up_to_date(private_venv_path))
-        {
-          msg_warning("python: the current set of requirements installed in our virtualenv seems to be out of date, "
-                      "use the `syslog-ng-update-virtualenv' script to upgrade Python dependencies",
-                      evt_tag_str("path", private_venv_path));
-        }
-      else
-        {
-          msg_debug("python: the virtualenv validation successful");
-          python_venv_path = private_venv_path;
-        }
-    }
+  const gchar *python_venv_path = _get_venv_path();
 
   gboolean success;
   if (python_venv_path)
@@ -544,10 +544,34 @@ _py_init_argv(void)
 }
 
 static gboolean
+_py_activate_venv(void)
+{
+  const gchar *python_venv_path = _get_venv_path();
+
+  if (!python_venv_path)
+    return FALSE;
+
+  gchar *python_venv_binary = g_build_path(G_DIR_SEPARATOR_S, python_venv_path, "bin", "python", NULL);
+  wchar_t *python_programname = Py_DecodeLocale(python_venv_binary, NULL);
+  g_free(python_venv_binary);
+
+  msg_info("python: activating virtualenv",
+           evt_tag_str("path", python_venv_path),
+           evt_tag_str("executable", python_venv_binary));
+
+  Py_SetProgramName(python_programname);
+  return TRUE;
+}
+
+static gboolean
 _py_configure_interpreter(gboolean use_virtualenv)
 {
   _py_setup_python_home();
   _py_set_python_path();
+
+  if (use_virtualenv)
+    _py_activate_venv();
+
   Py_Initialize();
   _py_init_argv();
   return TRUE;
