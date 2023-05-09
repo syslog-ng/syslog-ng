@@ -133,6 +133,7 @@ fi
 pidfiledir='${localstatedir}'
 moduledir='${exec_prefix}/lib/syslog-ng'
 loggenplugindir='${moduledir}/loggen'
+python_venvdir='${localstatedir}/python-venv'
 toolsdir='${datadir}/syslog-ng/tools'
 xsddir='${datadir}/syslog-ng/xsd'
 
@@ -166,6 +167,10 @@ AC_ARG_WITH(module-dir,
 AC_ARG_WITH(loggen-plugin-dir,
    [  --with-loggen-plugin-dir=path   Use path as the directory to install loggen plugins into],
    loggenplugindir=$with_loggen_plugin_dir)
+
+AC_ARG_WITH(python-venv-dir,
+   [  --with-python-venv-dir=path   Use path as the directory to install the Python venv into],
+   python_venvdir=$with_python_venv_dir)
 
 AC_ARG_WITH(module-path,
    [  --with-module-path=path   Use path as the list of ':' separated directories looked up when searching for modules],
@@ -1840,7 +1845,6 @@ fi
 
 python_moduledir="$moduledir"/python
 python_sysconf_moduledir="${sysconfdir}/python"
-python_venvdir="${localstatedir}/python-venv"
 
 CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS $LIBCAP_CFLAGS -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
