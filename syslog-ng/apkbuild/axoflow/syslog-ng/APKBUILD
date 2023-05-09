@@ -87,6 +87,7 @@ build() {
 		--enable-manpages \
 		--with-ivykis=system \
 		--with-jsonc=system \
+		--with-python-venv-dir=/var/lib/syslog-ng-venv \
 		\
 		--enable-all-modules \
 		--enable-ebpf \
