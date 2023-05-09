@@ -32,6 +32,7 @@ set(SCL_DIRS
     slack
     snmptrap
     solaris
+    splunk
     sudo
     sumologic
     syslogconf

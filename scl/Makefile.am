@@ -32,6 +32,7 @@ SCL_SUBDIRS	= \
 	slack \
 	snmptrap	\
 	solaris	\
+	splunk \
 	sudo		\
 	sumologic	\
 	syslogconf	\
