@@ -291,9 +291,6 @@ mismatch:
 static const gchar *
 _get_venv_path(void)
 {
-  const gchar *python_venv_path = NULL;
-
-  /* check if VIRTUAL_ENV points to a valid virtualenv */
   const gchar *env_virtual_env = getenv("VIRTUAL_ENV");
   if (env_virtual_env)
     {
@@ -301,39 +298,34 @@ _get_venv_path(void)
         {
           msg_error("python: environment variable VIRTUAL_ENV is set, but does not point to a valid virtualenv, Python executable not found",
                     evt_tag_str("path", env_virtual_env));
+          return NULL;
         }
-      else
-        {
-          /* let's use the virtualenv specified by the user */
-          msg_debug("python: using virtualenv pointed to by $VIRTUAL_ENV",
-                    evt_tag_str("path", env_virtual_env));
-          python_venv_path = env_virtual_env;
-        }
-    }
-  else
-    {
-      const gchar *private_venv_path = get_installation_path_for(SYSLOG_NG_PYTHON_VENV_DIR);
-      if (!_py_is_virtualenv_valid(private_venv_path))
-        {
-          msg_warning("python: private virtualenv is not initialized, use the `syslog-ng-update-virtualenv' "
-                      "script to initialize it or make sure all required Python dependencies are available in "
-                      "the system Python installation",
-                      evt_tag_str("path", private_venv_path));
-        }
-      else if (!_py_requirements_up_to_date(private_venv_path))
-        {
-          msg_warning("python: the current set of requirements installed in our virtualenv seems to be out of date, "
-                      "use the `syslog-ng-update-virtualenv' script to upgrade Python dependencies",
-                      evt_tag_str("path", private_venv_path));
-        }
-      else
-        {
-          msg_debug("python: the virtualenv validation successful");
-          python_venv_path = private_venv_path;
-        }
+
+      msg_debug("python: using virtualenv pointed to by $VIRTUAL_ENV", evt_tag_str("path", env_virtual_env));
+      return env_virtual_env;
     }
 
-  return python_venv_path;
+
+  const gchar *private_venv_path = get_installation_path_for(SYSLOG_NG_PYTHON_VENV_DIR);
+  if (!_py_is_virtualenv_valid(private_venv_path))
+    {
+      msg_warning("python: private virtualenv is not initialized, use the `syslog-ng-update-virtualenv' "
+                  "script to initialize it or make sure all required Python dependencies are available in "
+                  "the system Python installation",
+                  evt_tag_str("path", private_venv_path));
+      return NULL;
+    }
+
+  if (!_py_requirements_up_to_date(private_venv_path))
+    {
+      msg_warning("python: the current set of requirements installed in our virtualenv seems to be out of date, "
+                  "use the `syslog-ng-update-virtualenv' script to upgrade Python dependencies",
+                  evt_tag_str("path", private_venv_path));
+      return NULL;
+    }
+
+  msg_debug("python: the virtualenv validation successful");
+  return private_venv_path;
 }
 
 #if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 8 || PY_MAJOR_VERSION > 3
