@@ -24,6 +24,7 @@
 #include "transport-socket.h"
 
 #include <errno.h>
+#include <string.h>
 #include <unistd.h>
 
 static gint
@@ -86,26 +87,26 @@ _determine_proto(gint fd, gint address_family)
   return result;
 }
 
-struct timespec *
-_extract_timestamp_from_cmsg(struct cmsghdr *cmsg)
+gboolean
+_extract_timestamp_from_cmsg(struct cmsghdr *cmsg, struct timespec *timestamp)
 {
 #ifdef SCM_TIMESTAMPNS
   if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMPNS)
     {
-      struct timespec *timestamp = (struct timespec *) CMSG_DATA(cmsg);
-      return timestamp;
+      memcpy(timestamp, CMSG_DATA(cmsg), sizeof(struct timespec));
+      return TRUE;
     }
 #endif
-  return NULL;
+  return FALSE;
 }
 
 void
 log_transport_socket_parse_cmsg_method(LogTransportSocket *s, struct cmsghdr *cmsg, LogTransportAuxData *aux)
 {
-  struct timespec *timestamp = _extract_timestamp_from_cmsg(cmsg);
-  if (timestamp)
+  struct timespec timestamp;
+  if (_extract_timestamp_from_cmsg(cmsg, &timestamp))
     {
-      log_transport_aux_data_set_timestamp(aux, timestamp);
+      log_transport_aux_data_set_timestamp(aux, &timestamp);
       return;
     }
 }

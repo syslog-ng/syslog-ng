@@ -29,7 +29,10 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
 #include <errno.h>
+#include <string.h>
 
 typedef struct _LogTransportUDP LogTransportUDP;
 struct _LogTransportUDP
@@ -63,13 +66,14 @@ _extract_dest_ip4_addr_from_cmsg(struct cmsghdr *cmsg, GSockAddr *bind_addr)
   if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_PKTINFO)
     {
       struct sockaddr_in sin;
-      struct in_pktinfo *inpkt = (struct in_pktinfo *) CMSG_DATA(cmsg);
+      struct in_pktinfo inpkt;
+      memcpy(&inpkt, CMSG_DATA(cmsg), sizeof(inpkt));
 
       /* we need to copy the port number from the bind address as it is not
        * part of IP_PKTINFO */
 
       sin = *(struct sockaddr_in *) &bind_addr->sa;
-      sin.sin_addr = inpkt->ipi_addr;
+      sin.sin_addr = inpkt.ipi_addr;
       return g_sockaddr_new((struct sockaddr *) &sin, sizeof(sin));
     }
   return NULL;
@@ -84,13 +88,14 @@ _extract_dest_ip6_addr_from_cmsg(struct cmsghdr *cmsg, GSockAddr *bind_addr)
   if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO)
     {
       struct sockaddr_in6 sin6;
-      struct in6_pktinfo *in6pkt = (struct in6_pktinfo *) CMSG_DATA(cmsg);
+      struct in6_pktinfo in6pkt;
+      memcpy(&in6pkt, CMSG_DATA(cmsg), sizeof(in6pkt));
 
       /* we need to copy the port number (and scope id) from the bind
        * address as it is not part of IPV6_PKTINFO */
 
       sin6 = *(struct sockaddr_in6 *) &bind_addr->sa;
-      sin6.sin6_addr = in6pkt->ipi6_addr;
+      sin6.sin6_addr = in6pkt.ipi6_addr;
       return g_sockaddr_new((struct sockaddr *) &sin6, sizeof(sin6));
     }
   return NULL;
