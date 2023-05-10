@@ -1,4 +1,4 @@
-FROM alpine:3.17 as apkbuilder
+FROM alpine:3.18 as apkbuilder
 
 ARG PKG_TYPE=stable
 ARG SNAPSHOT_VERSION
@@ -29,7 +29,7 @@ RUN mkdir packages \
     && abuild -r
 
 
-FROM alpine:3.17
+FROM alpine:3.18
 LABEL maintainer="László Várady <laszlo.varady@axoflow.com>"
 COPY --from=apkbuilder /home/builder/packages/ /
 COPY --from=apkbuilder /home/builder/.abuild/*.pub /etc/apk/keys/
