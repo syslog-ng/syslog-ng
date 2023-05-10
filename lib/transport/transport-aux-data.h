@@ -30,6 +30,7 @@ typedef struct _LogTransportAuxData
 {
   GSockAddr *peer_addr;
   GSockAddr *local_addr;
+  struct timespec timestamp;
   gint proto;
   gchar data[1536];
   gsize end_ptr;
@@ -44,6 +45,8 @@ log_transport_aux_data_init(LogTransportAuxData *self)
       self->local_addr = NULL;
       self->end_ptr = 0;
       self->data[0] = 0;
+      self->timestamp.tv_sec = 0;
+      self->timestamp.tv_nsec = 0;
     }
 }
 
@@ -97,6 +100,13 @@ log_transport_aux_data_set_local_addr_ref(LogTransportAuxData *self, GSockAddr *
         g_sockaddr_unref(self->local_addr);
       self->local_addr = local_addr;
     }
+}
+
+static inline void
+log_transport_aux_data_set_timestamp(LogTransportAuxData *self, const struct timespec *timestamp)
+{
+  if (self)
+    self->timestamp = *timestamp;
 }
 
 void log_transport_aux_data_add_nv_pair(LogTransportAuxData *self, const gchar *name, const gchar *value);

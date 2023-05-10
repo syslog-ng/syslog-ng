@@ -32,6 +32,7 @@
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <string.h>
 #include <unistd.h>
 
 static void G_GNUC_UNUSED
@@ -188,15 +189,16 @@ _feed_credentials_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
 {
 #if defined(CRED_PASS_SUPPORTED)
   struct cmsghdr *cmsg;
+  cred_t uc;
 
   for (cmsg = CMSG_FIRSTHDR(msg); cmsg != NULL; cmsg = CMSG_NXTHDR(msg, cmsg))
     {
       if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_CREDENTIALS)
         {
-          cred_t *uc = (cred_t *) CMSG_DATA(cmsg);
+          memcpy(&uc, CMSG_DATA(cmsg), sizeof(uc));
 
-          _feed_aux_from_procfs(aux, cred_get(uc, pid));
-          _feed_aux_from_ucred(aux, uc);
+          _feed_aux_from_procfs(aux, cred_get(&uc, pid));
+          _feed_aux_from_ucred(aux, &uc);
           break;
         }
     }
