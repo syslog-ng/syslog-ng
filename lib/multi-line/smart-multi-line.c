@@ -24,6 +24,8 @@
 #include "reloc.h"
 #include "messages.h"
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 enum
 {

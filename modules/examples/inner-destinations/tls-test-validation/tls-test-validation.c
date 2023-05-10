@@ -23,6 +23,7 @@
 #include "tls-test-validation.h"
 #include "modules/afsocket/afsocket-signals.h"
 #include "transport/tls-verifier.h"
+#include "compat/openssl_support.h"
 
 #define TLS_TEST_VALIDATION_PLUGIN "tls-test-validation"
 
