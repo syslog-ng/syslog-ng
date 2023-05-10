@@ -212,5 +212,7 @@ class ConsecutiveAckTracker(ConsecutiveAckTracker):
 
 
 class BatchedAckTracker(BatchedAckTracker):
-    def __init__(self, ack_callback):
-        self.ack_callback = ack_callback
+    def __init__(self, timeout, batch_size, batched_ack_callback):
+        self.timeout = timeout
+        self.batch_size = batch_size
+        self.ack_callback = batched_ack_callback
