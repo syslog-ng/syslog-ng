@@ -5,7 +5,7 @@
 # Contributor: jv <jens@eisfair.org>
 # Maintainer: László Várady <laszlo.varady@axoflow.com>
 pkgname=syslog-ng
-pkgver=4.1.1
+pkgver=4.2.0
 pkgrel=0
 pkgdesc="Next generation logging daemon"
 url="https://www.syslog-ng.com/products/open-source-log-management/"
@@ -160,5 +160,5 @@ _submv() {
 }
 
 sha512sums="
-89abb7a53570b6f7c0dc76905c97d207447117f1db1aa0c0da97c17366ea833b6404f9c7fc318436fd01be2bab032eccca9712063a7c683780026e7e52493dc8  syslog-ng-4.1.1.tar.gz
+85442b57b7934e8afbb4e7d8285ed1fd16aaad2a8d853e3765db4f885d88bee4910a3b5d271f1cbd100c2d3a3f81f1a4fe845bc948fe68c22d32bc9b730af04b  syslog-ng-4.2.0.tar.gz
 "
