@@ -395,12 +395,13 @@ _perform_flush(LogThreadedDestWorker *self)
 /* NOTE: runs in the worker thread, whenever items on our queue are
  * available. It iterates all elements on the queue, however will terminate
  * if the mainloop requests that we exit. */
-static void
+static gboolean
 _perform_inserts(LogThreadedDestWorker *self)
 {
   LogMessage *msg;
   LogThreadedResult result;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  gboolean flushed = FALSE;
 
   if (self->batch_size == 0)
     {
@@ -429,7 +430,10 @@ _perform_inserts(LogThreadedDestWorker *self)
       _process_result(self, result);
 
       if (self->enable_batching && self->batch_size >= self->owner->batch_lines)
-        _perform_flush(self);
+        {
+          _perform_flush(self);
+          flushed = TRUE;
+        }
 
       log_msg_unref(msg);
       msg_set_context(NULL);
@@ -445,6 +449,7 @@ _perform_inserts(LogThreadedDestWorker *self)
       iv_invalidate_now();
     }
   self->rewound_batch_size = 0;
+  return flushed;
 }
 
 /* this callback is invoked by LogQueue and is registered using
@@ -535,8 +540,8 @@ _perform_work(gpointer data)
                 evt_tag_int("worker_index", self->worker_index));
 
       /* Something is in the queue, buffer them up and flush (if needed) */
-      _perform_inserts(self);
-      if (_should_flush_now(self))
+      gboolean flushed = _perform_inserts(self);
+      if (!flushed && _should_flush_now(self))
         _perform_flush(self);
       _schedule_restart(self);
     }
@@ -573,7 +578,6 @@ _perform_work(gpointer data)
                 evt_tag_int("worker_index", self->worker_index));
 
       _schedule_restart_on_throttle_timeout(self, timeout_msec);
-
     }
   else
     {
