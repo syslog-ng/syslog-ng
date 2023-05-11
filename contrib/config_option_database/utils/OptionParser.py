@@ -100,7 +100,7 @@ def _get_resolve_db():
     root_dir = Path(__file__).parents[3]
     if not resolve_db:
         resolve_db = {}
-        struct_regex = re.compile(r'CfgLexerKeyword[^;]*')
+        struct_regex = re.compile(r'CfgLexerKeyword.*?};')
         entry_regex = re.compile(r'{[^{}]+,[^{}]+}')
         for f in root_dir.rglob('*-parser.c'):
             for struct_match in struct_regex.finditer(f.read_text(encoding='UTF-8').replace('\n', '')):
