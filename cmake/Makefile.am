@@ -33,4 +33,5 @@ EXTRA_DIST +=	\
 	cmake/Modules/GenerateYFromYm.cmake	\
 	cmake/Modules/LibFindMacros.cmake	\
 	cmake/module_switch.cmake		\
-	cmake/openssl_functions.cmake
+	cmake/openssl_functions.cmake \
+	cmake/print_config_summary.cmake
