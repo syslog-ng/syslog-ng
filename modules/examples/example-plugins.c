@@ -31,6 +31,10 @@ extern CfgParser msg_generator_parser;
 extern CfgParser threaded_random_generator_parser;
 #endif
 
+#ifdef SYSLOG_NG_ENABLE_CPP
+extern CfgParser random_choice_generator_parser;
+#endif
+
 extern CfgParser threaded_diskq_source_parser;
 
 extern CfgParser http_test_slots_parser;
@@ -51,6 +55,13 @@ static Plugin example_plugins[] =
     .type = LL_CONTEXT_SOURCE,
     .name = "example_random_generator",
     .parser = &threaded_random_generator_parser,
+  },
+#endif
+#ifdef SYSLOG_NG_ENABLE_CPP
+  {
+    .type = LL_CONTEXT_SOURCE,
+    .name = "random_choice_generator",
+    .parser = &random_choice_generator_parser,
   },
 #endif
   {
