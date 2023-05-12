@@ -26,6 +26,7 @@
 #include "cfg-grammar-internal.h"
 
 LogDriver *last_driver;
+LogSchedulerOptions *last_scheduler_options;
 LogParser *last_parser;
 FilterExprNode *last_filter_expr;
 LogSourceOptions *last_source_options;

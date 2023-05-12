@@ -38,6 +38,7 @@
 #include "logproto/logproto.h"
 #include "afinter.h"
 #include "str-utils.h"
+#include "logscheduler-pipe.h"
 
 #include "filter/filter-expr-parser.h"
 #include "filter/filter-pipe.h"
@@ -72,6 +73,7 @@ extern LogWriterOptions *last_writer_options;
 extern FilePermOptions *last_file_perm_options;
 extern MsgFormatOptions *last_msg_format_options;
 extern LogDriver *last_driver;
+extern LogSchedulerOptions *last_scheduler_options;
 extern LogParser *last_parser;
 extern FilterExprNode *last_filter_expr;
 extern LogTemplateOptions *last_template_options;

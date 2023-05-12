@@ -262,6 +262,10 @@
 %token KW_TIME_REAP                   10211
 %token KW_TIME_SLEEP                  10212
 
+%token KW_PARTITIONS                  10213
+%token KW_PARTITION_KEY               10214
+%token KW_PARALLELIZE                 10215
+
 /* destination options */
 %token KW_TMPL_ESCAPE                 10220
 
@@ -394,6 +398,7 @@
 %type	<ptr> log_item
 
 %type   <ptr> log_last_junction
+%type   <ptr> log_scheduler
 %type   <ptr> log_junction
 %type   <ptr> log_content
 %type   <ptr> log_conditional
@@ -689,9 +694,37 @@ log_item
         | KW_REWRITE '{' rewrite_content '}'    { $$ = log_expr_node_new_rewrite(NULL, $3, &@$); }
         | KW_DESTINATION '(' string ')'		{ $$ = log_expr_node_new_destination_reference($3, &@$); free($3); }
         | KW_DESTINATION '{' dest_content '}'   { $$ = log_expr_node_new_destination(NULL, $3, &@$); }
+        | log_scheduler                         { $$ = $1; }
         | log_conditional			{ $$ = $1; }
         | log_junction                          { $$ = $1; }
 	;
+
+log_scheduler
+        : KW_PARALLELIZE '('
+          {
+            LogPipe *scheduler_pipe = log_scheduler_pipe_new(configuration);
+            last_scheduler_options = log_scheduler_pipe_get_scheduler_options(scheduler_pipe);
+            $<ptr>$ = scheduler_pipe;
+          }
+          log_scheduler_options ')'             { $$ = log_expr_node_new_pipe($<ptr>3, &@$); }
+        ;
+
+log_scheduler_options
+        : log_scheduler_option log_scheduler_options
+        |
+        ;
+
+log_scheduler_option
+        : KW_PARTITIONS '(' nonnegative_integer ')'
+          {
+            last_scheduler_options->num_partitions = $3;
+          }
+        | KW_PARTITION_KEY '(' template_content ')'
+          {
+            log_scheduler_options_set_partition_key_ref(last_scheduler_options, $3);
+          }
+        ;
+
 
 log_junction
         : KW_JUNCTION '{' log_forks '}'         { $$ = log_expr_node_new_junction($3, &@$); }
@@ -1214,6 +1247,7 @@ inner_source
               }
           }
         ;
+
 
 /* All source drivers should incorporate this rule, implies driver_option */
 source_driver_option
