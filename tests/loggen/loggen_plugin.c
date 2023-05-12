@@ -42,6 +42,19 @@ thread_check_exit_criteria(ThreadData *thread_context)
       return TRUE;
     }
 
+  long seq_check;
+
+  /* 0.1 sec */
+  seq_check = thread_context->option->rate / 10;
+
+  /* or every 1000 messages */
+  if (seq_check > 1000)
+    seq_check = 1000;
+
+
+  if (seq_check > 1 && (thread_context->sent_messages % seq_check) != 0)
+    return FALSE;
+
   struct timeval now;
   gettimeofday(&now, NULL);
 
