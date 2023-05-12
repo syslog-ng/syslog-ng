@@ -23,6 +23,7 @@
 
 #include "logline_generator.h"
 #include "loggen_helper.h"
+#include "loggen_plugin.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -97,7 +98,12 @@ prepare_log_line_template(int syslog_proto, int framing, int message_length, cha
 }
 
 int
-generate_log_line(char *buffer, int buffer_length, int syslog_proto, int thread_id, unsigned long seq)
+generate_log_line(ThreadData *thread_context,
+                  char *buffer, int buffer_length,
+                  int syslog_proto,
+                  int thread_id,
+                  unsigned long rate,
+                  unsigned long seq)
 {
   if (!buffer)
     {
@@ -110,17 +116,28 @@ generate_log_line(char *buffer, int buffer_length, int syslog_proto, int thread_
 
   /* create time stamps */
   struct timeval now;
-  gettimeofday(&now, NULL);
   struct tm tm;
-  char stamp[32];
-  localtime_r(&now.tv_sec, &tm);
-  int len = strftime(stamp, sizeof(stamp), "%Y-%m-%dT%H:%M:%S", &tm);
-  memcpy(&buffer[pos_timestamp2], stamp, len);
+  static int len;
 
-  if (syslog_proto)
-    format_timezone_offset_with_colon(stamp, sizeof(stamp), &tm);
+  int check_seq = rate / 10;
+  if (check_seq > 1000)
+    check_seq = 1000;
+  if (check_seq <= 1 || (seq % check_seq) == 0)
+    {
+      gettimeofday(&now, NULL);
+      if (now.tv_sec != thread_context->ts_formatted.tv_sec)
+        {
+          localtime_r(&now.tv_sec, &tm);
+          len = strftime(thread_context->stamp, sizeof(thread_context->stamp), "%Y-%m-%dT%H:%M:%S", &tm);
+          thread_context->ts_formatted = now;
 
-  memcpy(&buffer[pos_timestamp1], stamp, strlen(stamp));
+          if (syslog_proto)
+            format_timezone_offset_with_colon(thread_context->stamp, sizeof(thread_context->stamp), &tm);
+        }
+    }
+
+  memcpy(&buffer[pos_timestamp2], thread_context->stamp, len);
+  memcpy(&buffer[pos_timestamp1], thread_context->stamp, strlen(thread_context->stamp));
 
   /* print sequence number to logline */
   char intbuf[16];

@@ -137,7 +137,9 @@ generate_message(char *buffer, int buffer_size, ThreadData *thread_context, unsi
   if (read_from_file)
     str_len = read_next_message_from_file(buffer, buffer_size, syslog_proto, thread_context->index);
   else
-    str_len = generate_log_line(buffer, buffer_size, syslog_proto, thread_context->index, seq);
+    str_len = generate_log_line(thread_context,
+                                buffer, buffer_size,
+                                syslog_proto, thread_context->index, global_plugin_option.rate, seq);
 
   if (str_len < 0)
     return -1;

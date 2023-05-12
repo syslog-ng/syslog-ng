@@ -24,7 +24,14 @@
 #ifndef LOGLINE_GENERATOR_H_INCLUDED
 #define LOGLINE_GENERATOR_H_INCLUDED
 
-int generate_log_line(char *buffer, int buffer_length, int syslog_proto, int thread_id, unsigned long seq);
+#include "loggen_plugin.h"
+
+int generate_log_line(ThreadData *thread_context,
+                      char *buffer, int buffer_length,
+                      int syslog_proto,
+                      int thread_id,
+                      unsigned long rate,
+                      unsigned long seq);
 int prepare_log_line_template(int syslog_proto, int framing, int message_length, char *sdata_value);
 
 #endif
