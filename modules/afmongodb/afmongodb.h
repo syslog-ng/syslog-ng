@@ -34,6 +34,10 @@ LogDriver *afmongodb_dd_new(GlobalConfig *cfg);
 void afmongodb_dd_set_uri(LogDriver *d, const gchar *uri);
 void afmongodb_dd_set_collection(LogDriver *d, LogTemplate *collection_template);
 void afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
+void afmongodb_dd_set_bulk(LogDriver *d, gboolean bulk);
+void afmongodb_dd_set_bulk_unordered(LogDriver *d, gboolean unordered);
+void afmongodb_dd_set_bulk_bypass_validation(LogDriver *d, gboolean bypass_validation);
+void afmongodb_dd_set_write_concern(LogDriver *d, int32_t write_concern_level);
 
 LogTemplateOptions *afmongodb_dd_get_template_options(LogDriver *s);
 

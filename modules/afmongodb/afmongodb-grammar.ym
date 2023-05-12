@@ -47,6 +47,16 @@
 %token KW_MONGODB
 %token KW_URI
 %token KW_COLLECTION
+%token KW_BULK
+%token KW_BULK_UNORDERED
+%token KW_BULK_BYPASS_VALIDATION
+%token KW_WRITE_CONCERN
+%token KW_W_UNACKNOWLEDGED
+%token KW_W_DEFAULT
+%token KW_W_MAJORITY
+
+%type <num> write_concern_strict
+%type <num> write_concern
 
 %%
 
@@ -58,23 +68,33 @@ start
         '(' _inner_dest_context_push afmongodb_options _inner_dest_context_pop ')'         { YYACCEPT; }
     ;
 
+write_concern_strict
+	: KW_W_UNACKNOWLEDGED   { $$ = 0; }     /* MONGOC_WRITE_CONCERN_W_UNACKNOWLEDGED */
+	| KW_W_DEFAULT          { $$ = -2; }    /* MONGOC_WRITE_CONCERN_W_DEFAULT */
+    | KW_W_MAJORITY         { $$ = -3; }    /* MONGOC_WRITE_CONCERN_W_MAJORITY */
+	;
+
+write_concern
+	: write_concern_strict
+	| positive_integer      { $$ = $1; }
+	;
+
 afmongodb_options
     : afmongodb_option afmongodb_options
     |
     ;
 
 afmongodb_option
-    : KW_URI '(' string ')'
-        {
-            afmongodb_dd_set_uri(last_driver, $3); free($3);
-        }
+    : KW_URI '(' string ')' { afmongodb_dd_set_uri(last_driver, $3); free($3); }
+    | KW_BULK '(' yesno ')' { afmongodb_dd_set_bulk(last_driver, $3); }
+    | KW_BULK_UNORDERED '(' yesno ')' { afmongodb_dd_set_bulk_unordered(last_driver, $3); }
+    | KW_BULK_BYPASS_VALIDATION '(' yesno ')' { afmongodb_dd_set_bulk_bypass_validation(last_driver, $3); }
+    | KW_WRITE_CONCERN '(' write_concern ')' { afmongodb_dd_set_write_concern(last_driver, $3); }
     | KW_COLLECTION '(' template_content ')' { afmongodb_dd_set_collection(last_driver, $3); }
-    | value_pair_option
-        {
-            afmongodb_dd_set_value_pairs(last_driver, $1);
-        }
+    | value_pair_option { afmongodb_dd_set_value_pairs(last_driver, $1); }
     | threaded_dest_driver_general_option
     | threaded_dest_driver_workers_option
+    | threaded_dest_driver_batch_option
     | { last_template_options = afmongodb_dd_get_template_options(last_driver); } template_option
     ;
 
