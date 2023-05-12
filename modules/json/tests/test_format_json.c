@@ -321,6 +321,8 @@ Test(format_json, test_format_json_on_error)
                          "{\"x\":\"y\"}");
   assert_template_format("$(format-json x=y bad=int64(blah))",
                          "{\"x\":\"y\"}");
+  assert_template_format("$(format-json x=y z=boolean(blah))",
+                         "{\"x\":\"y\"}");
 
   configuration->template_options.on_error = ON_ERROR_FALLBACK_TO_STRING | ON_ERROR_SILENT;
   assert_template_format("$(format-json x=y bad=boolean(blah) foo=bar)",

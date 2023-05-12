@@ -256,21 +256,23 @@ tf_json_append_int(const gchar *name, gint64 i, json_state_t *state)
 
 static gboolean
 tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_state_t *state, const gchar *value,
-                              const gssize value_len, const gboolean on_error)
+                              const gssize value_len, const gboolean on_error, gboolean *drop)
 {
+  *drop = FALSE;
+
   switch (type)
     {
     case LM_VT_STRING:
     case LM_VT_DATETIME:
     default:
       tf_json_append_value(name, value, value_len, state, TRUE);
-      break;
+      return TRUE;
     case LM_VT_JSON:
       tf_json_append_literal(name, value, value_len, state);
-      break;
+      return TRUE;
     case LM_VT_LIST:
       tf_json_append_list(name, value, value_len, state);
-      break;
+      return TRUE;
     case LM_VT_INTEGER:
     {
       gint64 i64;
@@ -280,15 +282,17 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
       if (!type_cast_to_int64(value, &i64, NULL))
         {
           if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
-            tf_json_append_value(name, v, v_len, state, TRUE);
-          else
-            return type_cast_drop_helper(on_error, value, "integer");
+            {
+              tf_json_append_value(name, v, v_len, state, TRUE);
+              return TRUE;
+            }
+
+          *drop = type_cast_drop_helper(on_error, value, "integer");
+          return FALSE;
         }
-      else
-        {
-          tf_json_append_int(name, i64, state);
-        }
-      break;
+
+      tf_json_append_int(name, i64, state);
+      return TRUE;
     }
     case LM_VT_DOUBLE:
     {
@@ -299,15 +303,17 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
       if (!type_cast_to_double(value, &d, NULL))
         {
           if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
-            tf_json_append_value(name, v, v_len, state, TRUE);
-          else
-            return type_cast_drop_helper(on_error, value, "double");
+            {
+              tf_json_append_value(name, v, v_len, state, TRUE);
+              return TRUE;
+            }
+
+          *drop = type_cast_drop_helper(on_error, value, "double");
+          return FALSE;
         }
-      else
-        {
-          tf_json_append_double(name, d, state);
-        }
-      break;
+
+      tf_json_append_double(name, d, state);
+      return TRUE;
     }
     case LM_VT_BOOLEAN:
     {
@@ -317,25 +323,28 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
 
       if (!type_cast_to_boolean(value, &b, NULL))
         {
-          if (!(on_error & ON_ERROR_FALLBACK_TO_STRING))
-            return type_cast_drop_helper(on_error, value, "boolean");
-          tf_json_append_value(name, v, v_len, state, TRUE);
+          if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
+            {
+              tf_json_append_value(name, v, v_len, state, TRUE);
+              return TRUE;
+            }
+
+          *drop = type_cast_drop_helper(on_error, value, "boolean");
+          return FALSE;
         }
-      else
-        {
-          v = b ? "true" : "false";
-          v_len = -1;
-          tf_json_append_value(name, v, v_len, state, FALSE);
-        }
-      break;
+
+      v = b ? "true" : "false";
+      v_len = -1;
+      tf_json_append_value(name, v, v_len, state, FALSE);
+      return TRUE;
     }
     case LM_VT_NULL:
     {
       tf_json_append_value(name, "null", -1, state, FALSE);
-      break;
+      return TRUE;
     }
     }
-  return FALSE;
+  g_assert_not_reached();
 }
 
 static gboolean
@@ -344,12 +353,12 @@ tf_json_value(const gchar *name, const gchar *prefix,
               gpointer *prefix_data, gpointer user_data)
 {
   json_state_t *state = (json_state_t *)user_data;
+  gboolean drop;
 
-  gboolean result = tf_json_append_with_type_hint(name, type, state, value, value_len, state->template_options->on_error);
+  if (tf_json_append_with_type_hint(name, type, state, value, value_len, state->template_options->on_error, &drop))
+    state->need_comma = TRUE;
 
-  state->need_comma = TRUE;
-
-  return result;
+  return drop;
 }
 
 static gboolean
@@ -398,11 +407,12 @@ tf_flat_json_value(const gchar *name,
                    gpointer user_data)
 {
   json_state_t *state = (json_state_t *) user_data;
+  gboolean drop;
 
-  gboolean result = tf_json_append_with_type_hint(name, type, state, value, value_len,
-                                                  state->template_options->on_error);
-  state->need_comma = TRUE;
-  return result;
+  if (tf_json_append_with_type_hint(name, type, state, value, value_len, state->template_options->on_error, &drop))
+    state->need_comma = TRUE;
+
+  return drop;
 }
 
 static gint
