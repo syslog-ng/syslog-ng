@@ -72,6 +72,10 @@ ifneq ($(filter sng-nomqtt,$(DEB_BUILD_PROFILES)),)
 DH_OPTIONS += -Nsyslog-ng-mod-mqtt
 endif
 
+ifneq ($(filter sng-nogrpc,$(DEB_BUILD_PROFILES)),)
+DH_OPTIONS += -Nsyslog-ng-mod-grpc
+endif
+
 # If DH_QUIET is set, then we want silent mode.
 # If DH_VERBOSE is set, we do not want silent mode.
 # If neither is set, we want the default: verbose mode.
@@ -122,6 +126,7 @@ override_dh_auto_configure:
 		--enable-riemann=auto \
 		--enable-java=auto \
 		--enable-mqtt=auto \
+		--enable-grpc=auto \
 		\
 		--with-mongoc=system \
 		--with-ivykis=system \
