@@ -108,6 +108,7 @@ set (LIB_HEADERS
     logreader.h
     logsource.h
     logscheduler.h
+    logscheduler-pipe.h
     logwriter.h
     mainloop.h
     mainloop-call.h
@@ -202,6 +203,7 @@ set(LIB_SOURCES
     logqueue-fifo.c
     logreader.c
     logscheduler.c
+    logscheduler-pipe.c
     logsource.c
     logwriter.c
     mainloop.c

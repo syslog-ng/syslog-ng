@@ -128,6 +128,7 @@ pkginclude_HEADERS			+= \
 	lib/logmatcher.h		\
 	lib/logmpx.h			\
 	lib/logscheduler.h		\
+	lib/logscheduler-pipe.h		\
 	lib/logpipe.h			\
 	lib/logqueue-fifo.h		\
 	lib/logqueue.h			\
@@ -221,6 +222,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/logmatcher.c		\
 	lib/logmpx.c			\
 	lib/logscheduler.c		\
+	lib/logscheduler-pipe.c		\
 	lib/logpipe.c			\
 	lib/logqueue.c			\
 	lib/logqueue-fifo.c		\
