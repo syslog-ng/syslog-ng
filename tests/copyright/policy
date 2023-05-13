@@ -34,7 +34,6 @@ doc/man
 (_configs\.sed|\.project|\.cproject|config\.status)$
 stamp-h1$
 tests/functional/test\.conf$
-contrib/config_option_database/.coveragerc
 scripts/update-patterndb$
 (contrib|debian)
 packaging/debian
@@ -205,7 +204,6 @@ tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py
 ###########################################################################
                                                  GPLv2+_SSL
 
-contib/config_option_database
 news/create-newsfile.py
 news/next-pr-id.py
 dev-utils/plugin_skeleton_creator/create_plugin.sh

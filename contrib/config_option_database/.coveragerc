@@ -1,5 +1,0 @@
-[run]
-omit=
-    *-packages*
-    */test_*
-    *__init__.py
