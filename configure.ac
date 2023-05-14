@@ -1287,6 +1287,8 @@ if test "x$with_ivykis" = "xinternal"; then
 
 		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
 		IVYKIS_NO_LIBTOOL_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
+
+		AC_DEFINE(HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION, 1)
 	else
 		AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency, unable to build syslog-ng without them.])
 	fi
@@ -1300,7 +1302,15 @@ else
 	# we're linking dynamically)
 
 	IVYKIS_NO_LIBTOOL_LIBS="$IVYKIS_LIBS"
+
+	dnl check if iv_work_pool_submit_continuation is available in the system ivykis
+	old_LIBS=$LIBS
+	LIBS="$LIBS $IVYKIS_LIBS"
+	AC_CHECK_FUNCS(iv_work_pool_submit_continuation)
+	LIBS=$old_LIBS
 fi
+
+
 
 dnl ***************************************************************************
 dnl json headers/libraries
