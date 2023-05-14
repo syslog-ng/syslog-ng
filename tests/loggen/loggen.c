@@ -396,10 +396,16 @@ print_statistic(struct timeval *start_time)
 {
   gint64 count;
   static gint64 last_count = 0;
-  static struct timeval last_ts_format;
+  static struct timeval last_ts_format = {0};
 
   struct timeval now;
   gettimeofday(&now, NULL);
+
+  if (!last_ts_format.tv_sec)
+    {
+      last_ts_format = now;
+      return;
+    }
 
   if (!quiet && !csv)
     {
@@ -410,7 +416,7 @@ print_statistic(struct timeval *start_time)
           count = sent_messages_num;
           g_mutex_unlock(&message_counter_lock);
 
-          if (count > last_count && last_count > 0)
+          if (count > last_count)
             {
               fprintf(stderr, "count=%"G_GINT64_FORMAT", rate = %.2lf msg/sec\n",
                       count,
