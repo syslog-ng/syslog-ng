@@ -39,7 +39,7 @@ typedef struct _TimeCache
 
 TLS_BLOCK_START
 {
-  GTimeVal current_time_value;
+  struct timespec current_time_value;
   struct iv_task invalidate_time_task;
   gint local_gencounter;
   struct
@@ -212,7 +212,7 @@ invalidate_cached_time(void)
 }
 
 void
-set_cached_time(GTimeVal *timeval)
+set_cached_time(struct timespec *timeval)
 {
   current_time_value = *timeval;
   faking_time = TRUE;
@@ -223,11 +223,11 @@ set_cached_time(GTimeVal *timeval)
  * (log_msg_init, afinter_postpone_mark)
  */
 void
-cached_g_current_time(GTimeVal *result)
+cached_g_current_time(struct timespec *result)
 {
   if (current_time_value.tv_sec == 0)
     {
-      g_get_current_time(&current_time_value);
+      timespec_get(&current_time_value, TIME_UTC);
     }
   *result = current_time_value;
 
@@ -252,7 +252,7 @@ cached_g_current_time(GTimeVal *result)
 time_t
 cached_g_current_time_sec(void)
 {
-  GTimeVal now;
+  struct timespec now;
 
   cached_g_current_time(&now);
   return now.tv_sec;
