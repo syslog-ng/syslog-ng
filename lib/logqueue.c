@@ -185,13 +185,13 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
     {
       gint64 diff;
       gint new_buckets;
-      GTimeVal now;
+      struct timespec now;
 
-      g_get_current_time(&now);
+      timespec_get(&now, TIME_UTC);
       /* throttling is enabled, calculate new buckets */
       if (self->last_throttle_check.tv_sec != 0)
         {
-          diff = g_time_val_diff(&now, &self->last_throttle_check);
+          diff = timespec_diff_usec(&now, &self->last_throttle_check);
         }
       else
         {
