@@ -128,16 +128,16 @@ static gchar *
 msg_format_timestamp(gchar *buf, gsize buflen)
 {
   struct tm tm;
-  GTimeVal now;
+  struct timespec now;
   gint len;
   time_t now_sec;
 
-  g_get_current_time(&now);
+  timespec_get(&now, TIME_UTC);
   now_sec = now.tv_sec;
   cached_localtime(&now_sec, &tm);
   len = strftime(buf, buflen, "%Y-%m-%dT%H:%M:%S", &tm);
   if (len < buflen)
-    g_snprintf(buf + len, buflen - len, ".%06ld", now.tv_usec);
+    g_snprintf(buf + len, buflen - len, ".%06ld", now.tv_nsec / 1000);
   return buf;
 }
 
