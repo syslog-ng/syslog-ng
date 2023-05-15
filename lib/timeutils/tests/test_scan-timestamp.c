@@ -34,7 +34,7 @@
 static void
 fake_time(time_t now)
 {
-  GTimeVal tv = { now, 123 * 1000 };
+  struct timespec tv = { now, 123 * 1000 * 1000 };
 
   set_cached_time(&tv);
 }
@@ -42,7 +42,7 @@ fake_time(time_t now)
 static void
 fake_time_add(time_t diff)
 {
-  GTimeVal tv;
+  struct timespec tv;
 
   cached_g_current_time(&tv);
   tv.tv_sec += diff;
