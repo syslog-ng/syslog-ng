@@ -198,7 +198,7 @@ Test(dnscache, test_run_benchmark)
   };
 
   DNSCache *cache = dns_cache_new(&options);
-  GTimeVal start, end;
+  struct timespec start, end;
   const gchar *hn;
   gsize hn_len;
   gboolean positive;
@@ -207,7 +207,7 @@ Test(dnscache, test_run_benchmark)
   gint cache_size = 10000;
   _fill_benchmark_dns_cache(cache, cache_size);
 
-  g_get_current_time(&start);
+  timespec_get(&start, TIME_UTC);
   /* run benchmarks */
   for (i = 0; i < cache_size; i++)
     {
@@ -216,8 +216,8 @@ Test(dnscache, test_run_benchmark)
       hn = NULL;
       dns_cache_lookup(cache, AF_INET, (void *) &ni, &hn, &hn_len, &positive);
     }
-  g_get_current_time(&end);
-  printf("DNS cache speed: %12.3f iters/sec\n", i * 1e6 / g_time_val_diff(&end, &start));
+  timespec_get(&end, TIME_UTC);
+  printf("DNS cache speed: %12.3f iters/sec\n", i * 1e6 / timespec_diff_usec(&end, &start));
 
   dns_cache_free(cache);
 }
