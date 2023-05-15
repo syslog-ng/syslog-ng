@@ -59,8 +59,8 @@ cached_gmtime_wct(time_t *when, WallClockTime *wct)
 }
 
 void invalidate_cached_time(void);
-void set_cached_time(GTimeVal *timeval);
-void cached_g_current_time(GTimeVal *result);
+void set_cached_time(struct timespec *timeval);
+void cached_g_current_time(struct timespec *result);
 time_t cached_g_current_time_sec(void);
 TimeZoneInfo *cached_get_time_zone_info(const gchar *tz);
 
