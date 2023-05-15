@@ -1327,13 +1327,13 @@ log_msg_set_daddr_ref(LogMessage *self, GSockAddr *daddr)
 static void
 log_msg_init(LogMessage *self)
 {
-  GTimeVal tv;
+  struct timespec tv;
 
   /* ref is set to 1, ack is set to 0 */
   self->ack_and_ref_and_abort_and_suspended = LOGMSG_REFCACHE_REF_TO_VALUE(1);
   cached_g_current_time(&tv);
   self->timestamps[LM_TS_RECVD].ut_sec = tv.tv_sec;
-  self->timestamps[LM_TS_RECVD].ut_usec = tv.tv_usec;
+  self->timestamps[LM_TS_RECVD].ut_usec = tv.tv_nsec / 1000;
   self->timestamps[LM_TS_RECVD].ut_gmtoff = get_local_timezone_ofs(self->timestamps[LM_TS_RECVD].ut_sec);
   self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
   unix_time_unset(&self->timestamps[LM_TS_PROCESSED]);
