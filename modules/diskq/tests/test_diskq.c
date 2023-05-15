@@ -192,14 +192,14 @@ threaded_feed(gpointer args)
   gint i;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg, *tmpl;
-  GTimeVal start, end;
+  struct timespec start, end;
   glong diff;
 
   /* emulate main loop for LogQueue */
   main_loop_worker_thread_start(MLW_ASYNC_WORKER);
 
   tmpl = log_msg_new_empty();
-  g_get_current_time(&start);
+  timespec_get(&start, TIME_UTC);
   for (i = 0; i < MESSAGES_PER_FEEDER; i++)
     {
       main_loop_worker_run_gc();
@@ -213,8 +213,8 @@ threaded_feed(gpointer args)
         main_loop_worker_invoke_batch_callbacks();
     }
   main_loop_worker_invoke_batch_callbacks();
-  g_get_current_time(&end);
-  diff = g_time_val_diff(&end, &start);
+  timespec_get(&end, TIME_UTC);
+  diff = timespec_diff_usec(&end, &start);
   g_mutex_lock(&tlock);
   sum_time += diff;
   g_mutex_unlock(&tlock);
