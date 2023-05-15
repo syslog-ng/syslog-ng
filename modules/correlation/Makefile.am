@@ -40,7 +40,9 @@ modules_correlation_libsyslog_ng_patterndb_la_SOURCES	=	\
 	modules/correlation/timerwheel.c			\
 	modules/correlation/timerwheel.h			\
 	modules/correlation/patternize.c			\
-	modules/correlation/patternize.h
+	modules/correlation/patternize.h      \
+	modules/correlation/id-counter.h      \
+	modules/correlation/id-counter.c
 
 modules_correlation_libsyslog_ng_patterndb_la_CFLAGS	=	\
 	$(AM_CFLAGS) -fPIC

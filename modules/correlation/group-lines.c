@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2023 One Identity LLC.
  * Copyright (c) 2023 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -27,6 +28,7 @@
 #include "str-utils.h"
 #include "messages.h"
 #include "grouping-parser.h"
+#include "id-counter.h"
 
 #include <iv.h>
 
@@ -85,7 +87,8 @@ group_lines_context_new(const CorrelationKey *key, MultiLineLogic *multi_line)
 typedef struct _GroupLines
 {
   GroupingParser super;
-  gint clone_id;
+  guint clone_id;
+  IdCounter *id_counter;
   gchar *separator;
   gsize separator_len;
   MultiLineOptions multi_line_options;
@@ -246,6 +249,8 @@ _init(LogPipe *s)
 {
   GroupLines *self = (GroupLines *) s;
 
+  self->id_counter = NULL;
+
   if (self->super.timeout < 1)
     {
       msg_error("timeout() needs to be specified explicitly and must be greater than 0 in the group-lines() parser",
@@ -270,13 +275,20 @@ _clone(LogPipe *s)
   GroupLines *self = (GroupLines *) s;
   GroupLines *cloned;
 
+  if (self->id_counter == NULL)
+    {
+      self->id_counter = id_counter_new();
+    }
+
   cloned = (GroupLines *) group_lines_new(s->cfg);
   grouping_parser_clone_settings(&self->super, &cloned->super);
   group_lines_set_separator(&cloned->super.super.super, self->separator);
 
   multi_line_options_copy(&cloned->multi_line_options, &self->multi_line_options);
 
-  cloned->clone_id = self->clone_id++;
+  cloned->id_counter = id_counter_ref(self->id_counter);
+  cloned->clone_id = id_counter_get_next_id(cloned->id_counter);
+
   return &cloned->super.super.super.super;
 }
 
@@ -284,6 +296,8 @@ static void
 _free(LogPipe *s)
 {
   GroupLines *self = (GroupLines *) s;
+
+  id_counter_unref(self->id_counter);
 
   multi_line_options_destroy(&self->multi_line_options);
   g_free(self->separator);

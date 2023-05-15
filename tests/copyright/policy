@@ -171,7 +171,6 @@ modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
 modules/afsocket/socket-options-unix\.[ch]$
 modules/basicfuncs/vp-funcs\.[ch]$
-modules/correlation/group-lines\.[ch]$
 modules/diskq/diskq-global-metrics\.[ch]$
 modules/diskq/tests/test_logqueue_disk\.c$
 modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
@@ -213,6 +212,8 @@ tests/light/functional_tests/logpath/test_conditionals\.py
 tests/light/functional_tests/logpath/test_midpoint_destinations\.py
 tests/light/functional_tests/value-pairs/test_value_pairs\.py
 tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py
+modules/correlation/id-counter\.[ch]$
+modules/correlation/group-lines.h
 
 ###########################################################################
 # These files are GPLd with Balabit origin.
@@ -247,3 +248,4 @@ modules/http/tests
 modules/http/http\.[ch]
 modules/http/http-parser.c
 modules/http/http-grammar.ym
+modules/correlation/group-lines.c

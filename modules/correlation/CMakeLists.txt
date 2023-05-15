@@ -39,6 +39,8 @@ set(PATTERNDB_SOURCES
     timerwheel.h
     patternize.c
     patternize.h
+    id-counter.h
+    id-counter.c
 )
 
 set(PATTERNDB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
