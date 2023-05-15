@@ -791,7 +791,7 @@ _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *l
 {
   const guchar *src = *data;
   gint left = *length;
-  GTimeVal now;
+  struct timespec now;
 
   _syslog_format_parse_cisco_sequence_id(msg, &src, &left);
   _skip_chars(&src, &left, " ", -1);
