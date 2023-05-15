@@ -81,10 +81,10 @@ setup(void)
   /* year heuristics depends on the current time */
 
   /* Dec  30 2015 */
-  GTimeVal faked_time =
+  struct timespec faked_time =
   {
     .tv_sec = 1451473200,
-    .tv_usec = 0
+    .tv_nsec = 0
   };
   set_cached_time(&faked_time);
 }
