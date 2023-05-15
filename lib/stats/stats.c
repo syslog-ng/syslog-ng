@@ -109,7 +109,7 @@ stats_cluster_is_expired(StatsOptions *options, StatsCluster *sc, time_t now)
 
 typedef struct _StatsTimerState
 {
-  GTimeVal now;
+  struct timespec now;
   time_t oldest_counter;
   gint dropped_counters;
   EVTREC *stats_event;
