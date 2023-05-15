@@ -104,25 +104,6 @@ check_nanosleep(void)
   return FALSE;
 }
 
-/**
- * g_time_val_diff:
- * @t1: time value t1
- * @t2: time value t2
- *
- * Calculates the time difference between t1 and t2 in microseconds.
- * The result is positive if t1 is later than t2.
- *
- * Returns:
- * Time difference in microseconds
- */
-glong
-g_time_val_diff(GTimeVal *t1, GTimeVal *t2)
-{
-  g_assert(t1);
-  g_assert(t2);
-  return (t1->tv_sec - t2->tv_sec) * G_USEC_PER_SEC + (t1->tv_usec - t2->tv_usec);
-}
-
 void
 timespec_add_msec(struct timespec *ts, glong msec)
 {
@@ -136,10 +117,29 @@ timespec_add_msec(struct timespec *ts, glong msec)
     }
 }
 
+void
+timespec_add_usec(struct timespec *ts, glong usec)
+{
+  ts->tv_sec += usec / 1000000;
+  usec = usec % 1000000;
+  ts->tv_nsec += (glong) (usec * 1000);
+  if (ts->tv_nsec > 1e9)
+    {
+      ts->tv_nsec -= (glong) 1e9;
+      ts->tv_sec++;
+    }
+}
+
 glong
 timespec_diff_msec(const struct timespec *t1, const struct timespec *t2)
 {
   return ((t1->tv_sec - t2->tv_sec) * 1000 + (t1->tv_nsec - t2->tv_nsec) / 1000000);
+}
+
+glong
+timespec_diff_usec(const struct timespec *t1, const struct timespec *t2)
+{
+  return ((t1->tv_sec - t2->tv_sec) * 1e6 + (t1->tv_nsec - t2->tv_nsec) / 1000);
 }
 
 glong
