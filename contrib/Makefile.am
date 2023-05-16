@@ -92,19 +92,6 @@ EXTRA_DIST += \
 	\
 	contrib/valgrind/syslog-ng.supp \
 	\
-	contrib/config_option_database/syslog-ng-cfg-db.py \
-	contrib/config_option_database/requirements.txt \
-	contrib/config_option_database/__init__.py \
-	contrib/config_option_database/utils/BisonGraph.py \
-	contrib/config_option_database/utils/ConfigOptions.py \
-	contrib/config_option_database/utils/MergeYm.py \
-	contrib/config_option_database/utils/OptionParser.py \
-	contrib/config_option_database/utils/Yacc2Graph.py \
-	contrib/config_option_database/utils/__init__.py \
-	contrib/config_option_database/utils/test/test_BisonGraph.py \
-	contrib/config_option_database/utils/test/test_OptionParser.py \
-	contrib/config_option_database/utils/test/test_Yacc2Graph.py \
-	\
 	contrib/syslog-ng-helm-chart/.helmignore \
 	contrib/syslog-ng-helm-chart/values.yaml \
 	contrib/syslog-ng-helm-chart/Chart.yaml \
