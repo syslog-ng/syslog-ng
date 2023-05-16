@@ -73,6 +73,7 @@ modules/secure-logging/tests
 modules/secure-logging/slogencrypt
 modules/secure-logging/slogverify
 modules/secure-logging/slogkey
+lib/compat/cpp-(start|end).\h$
 lib/healthcheck
 lib/healthcheck/tests
 lib/cfg-monitor\.[ch]
