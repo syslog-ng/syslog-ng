@@ -103,7 +103,7 @@ serialize_write_uint32_array(SerializeArchive *archive, guint32 *values, gsize e
            converted_ndx++)
         converted_values[converted_ndx] = GUINT32_TO_BE(values[converted_ndx]);
 
-      if (!serialize_archive_write_bytes(archive, (void *) converted_values, converted_ndx * sizeof(guint32)))
+      if (!serialize_archive_write_bytes(archive, (const gchar *) converted_values, converted_ndx * sizeof(guint32)))
         return FALSE;
 
       values += converted_ndx;
@@ -115,7 +115,7 @@ serialize_write_uint32_array(SerializeArchive *archive, guint32 *values, gsize e
 static inline gboolean
 serialize_read_uint32_array(SerializeArchive *archive, guint32 *values, gsize elements)
 {
-  if (serialize_archive_read_bytes(archive, (void *) values, elements * sizeof(guint32)))
+  if (serialize_archive_read_bytes(archive, (gchar *) values, elements * sizeof(guint32)))
     {
       for (int i = 0; i < elements; i++)
         values[i] = GUINT32_FROM_BE(values[i]);
@@ -129,7 +129,7 @@ serialize_read_uint16_array(SerializeArchive *archive, guint32 *values, gsize el
 {
   guint16 buffer[elements];
 
-  if (serialize_archive_read_bytes(archive, (void *) &buffer, elements * sizeof(guint16)))
+  if (serialize_archive_read_bytes(archive, (gchar *) &buffer, elements * sizeof(guint16)))
     {
       for (int i = 0; i < elements; i++)
         values[i] = GUINT16_FROM_BE(buffer[i]);
@@ -208,13 +208,13 @@ serialize_read_uint8(SerializeArchive *archive, guint8 *value)
 static inline gboolean
 serialize_write_blob(SerializeArchive *archive, const void *blob, gsize len)
 {
-  return serialize_archive_write_bytes(archive, blob, len);
+  return serialize_archive_write_bytes(archive, (const gchar *) blob, len);
 }
 
 static inline gboolean
 serialize_read_blob(SerializeArchive *archive, void *blob, gsize len)
 {
-  return serialize_archive_read_bytes(archive, blob, len);
+  return serialize_archive_read_bytes(archive, (gchar *) blob, len);
 }
 
 static inline gboolean
@@ -235,7 +235,7 @@ serialize_read_string(SerializeArchive *archive, GString *str)
         {
           gchar *p;
 
-          p = g_try_realloc(str->str, len + 1);
+          p = (gchar *) g_try_realloc(str->str, len + 1);
           if (!p)
             return FALSE;
           str->str = p;
@@ -267,7 +267,7 @@ serialize_read_cstring(SerializeArchive *archive, gchar **str, gsize *str_len)
 
   if (serialize_read_uint32(archive, &len))
     {
-      *str = g_try_malloc(len + 1);
+      *str = (gchar *) g_try_malloc(len + 1);
 
       if (!(*str))
         return FALSE;
