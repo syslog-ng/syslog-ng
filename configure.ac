@@ -303,6 +303,9 @@ AC_ARG_WITH(libpaho-mqtt,
              AC_HELP_STRING([--with-libpaho-mqtt=DIR],
                             [use libpaho-mqtt library from (prefix) directory DIR]),,)
 
+AC_ARG_ENABLE(cpp,
+              [  --enable-cpp           Enable C++ support (default: auto)]
+              ,,enable_cpp="auto")
 
 AC_ARG_ENABLE(http,
               [  --disable-http          Disable http support (default: auto)]
@@ -1374,6 +1377,30 @@ if test "x$enable_mqtt" = "xyes" || test "x$enable_mqtt" = "xauto"; then
 fi
 
 dnl ***************************************************************************
+dnl C++
+dnl ***************************************************************************
+
+AC_PROG_CXX
+
+if test "x$enable_cpp" = "xyes"; then
+    if test "x$ostype" = "xDarwin"; then
+        AC_MSG_ERROR(C++ support is not available on MacOS)
+    fi
+    AX_CXX_COMPILE_STDCXX(11,, mandatory)
+elif test "x$enable_cpp" = "xauto"; then
+    if test "x$ostype" = "xDarwin"; then
+        enable_cpp=no
+    else
+        AX_CXX_COMPILE_STDCXX(11,, optional)
+        if test "x$HAVE_CXX11" = "x1"; then
+            enable_cpp=yes
+        else
+            enable_cpp=no
+        fi
+    fi
+fi
+
+dnl ***************************************************************************
 dnl libcurl headers/libraries
 dnl ***************************************************************************
 if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
@@ -1996,6 +2023,7 @@ AC_DEFINE_UNQUOTED(ENABLE_EBPF, `enable_value $enable_ebpf`, [Enable Linux eBPF 
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
 AC_DEFINE_UNQUOTED(ENABLE_KAFKA, `enable_value $enable_kafka`, [Enable kafka support])
+AC_DEFINE_UNQUOTED(ENABLE_CPP, `enable_value $enable_cpp`, [Enable C++ support])
 AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
 AC_DEFINE_UNQUOTED(USE_CONST_IVYKIS_MOCK, `enable_value $IVYKIS_VERSION_UPDATED`, [ivykis version is greater than $IVYKIS_UPDATED_VERSION])
@@ -2011,6 +2039,7 @@ AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
 AM_CONDITIONAL(ENABLE_MQTT, [test "$enable_mqtt" = "yes"])
+AM_CONDITIONAL(ENABLE_CPP, [test "$enable_cpp" = "yes"])
 AM_CONDITIONAL(ENABLE_HTTP, [test "$enable_http" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
@@ -2126,6 +2155,11 @@ echo "  Package name                : $PACKAGE_NAME"
 echo " Compiler options:"
 echo "  compiler                    : $CC"
 echo "  compiler options            : $CFLAGS $CPPFLAGS"
+echo "  C++ enabled                 : ${enable_cpp:=no}"
+if test "x$enable_cpp" = "xyes"; then
+echo "  C++ compiler                : $CXX"
+echo "  C++ compiler options        : $CXXFLAGS"
+fi
 echo "  linker flags                : $LDFLAGS $LIBS"
 echo "  prefix                      : $prefix"
 echo "  linking mode                : $linking_mode"
