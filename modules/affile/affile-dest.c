@@ -124,7 +124,7 @@ affile_dw_reap(AFFileDestWriter *self)
   if (!log_writer_has_pending_writes((LogWriter *) self->writer) && !self->queue_pending)
     {
       msg_verbose("Destination timed out, reaping",
-                  evt_tag_str("template", self->owner->filename_template->template),
+                  evt_tag_str("template", self->owner->filename_template->template_str),
                   evt_tag_str("filename", self->filename));
       affile_dd_reap_writer(self->owner, self);
     }
@@ -139,7 +139,7 @@ affile_dw_reopen(AFFileDestWriter *self)
   LogProtoClient *proto = NULL;
 
   msg_verbose("Initializing destination file writer",
-              evt_tag_str("template", self->owner->filename_template->template),
+              evt_tag_str("template", self->owner->filename_template->template_str),
               evt_tag_str("filename", self->filename),
               evt_tag_str("symlink_as", self->owner->symlink_as));
 
@@ -443,7 +443,7 @@ affile_dd_format_persist_name(const LogPipe *s)
     g_snprintf(persist_name, sizeof(persist_name), "affile_dd.%s.writers", s->persist_name);
   else
     g_snprintf(persist_name, sizeof(persist_name), "affile_dd_writers(%s)",
-               self->filename_template->template);
+               self->filename_template->template_str);
 
   return persist_name;
 }

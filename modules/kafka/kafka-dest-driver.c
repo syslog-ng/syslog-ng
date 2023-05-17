@@ -145,7 +145,7 @@ _format_stats_instance(LogThreadedDestDriver *d)
   KafkaDestDriver *self = (KafkaDestDriver *)d;
   static gchar stats_name[1024];
 
-  g_snprintf(stats_name, sizeof(stats_name), "kafka,%s", self->topic_name->template);
+  g_snprintf(stats_name, sizeof(stats_name), "kafka,%s", self->topic_name->template_str);
   return stats_name;
 }
 
@@ -158,7 +158,7 @@ _format_persist_name(const LogPipe *d)
   if (d->persist_name)
     g_snprintf(persist_name, sizeof(persist_name), "kafka.%s", d->persist_name);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "kafka(%s)", self->topic_name->template);
+    g_snprintf(persist_name, sizeof(persist_name), "kafka(%s)", self->topic_name->template_str);
   return persist_name;
 }
 
@@ -293,7 +293,7 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
   if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
       msg_debug("kafka: delivery report for message came back with an error, message is lost",
-                evt_tag_str("topic", self->topic_name->template),
+                evt_tag_str("topic", self->topic_name->template_str),
                 evt_tag_str("fallback_topic", self->fallback_topic_name),
                 evt_tag_mem("message", (char *) payload, MIN(len, 128)),
                 evt_tag_str("error", rd_kafka_err2str(err)),
@@ -303,7 +303,7 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
   else
     {
       msg_debug("kafka: delivery report successful",
-                evt_tag_str("topic", self->topic_name->template),
+                evt_tag_str("topic", self->topic_name->template_str),
                 evt_tag_str("fallback_topic", self->fallback_topic_name),
                 evt_tag_mem("message", (char *) payload, MIN(len, 128)),
                 evt_tag_str("error", rd_kafka_err2str(err)),
@@ -398,7 +398,7 @@ _construct_client(KafkaDestDriver *self)
   if (!client)
     {
       msg_error("kafka: error constructing the kafka connection object",
-                evt_tag_str("topic", self->topic_name->template),
+                evt_tag_str("topic", self->topic_name->template_str),
                 evt_tag_str("error", errbuf),
                 evt_tag_str("driver", self->super.super.super.id),
                 log_pipe_location_tag(&self->super.super.super.super));
@@ -432,7 +432,7 @@ _flush_inflight_messages(KafkaDestDriver *self)
     {
       msg_notice("kafka: shutting down kafka producer, while messages are still in-flight, waiting for messages to flush",
 
-                 evt_tag_str("topic", self->topic_name->template),
+                 evt_tag_str("topic", self->topic_name->template_str),
                  evt_tag_str("fallback_topic", self->fallback_topic_name),
                  evt_tag_int("outq_len", outq_len),
                  evt_tag_int("timeout_ms", timeout_ms),
@@ -443,7 +443,7 @@ _flush_inflight_messages(KafkaDestDriver *self)
   if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
       msg_error("kafka: error flushing accumulated messages during shutdown, rd_kafka_flush() returned failure, this might indicate that some in-flight messages are lost",
-                evt_tag_str("topic", self->topic_name->template),
+                evt_tag_str("topic", self->topic_name->template_str),
                 evt_tag_str("fallback_topic", self->fallback_topic_name),
                 evt_tag_int("outq_len", rd_kafka_outq_len(self->kafka)),
                 evt_tag_str("error", rd_kafka_err2str(err)),
@@ -474,7 +474,7 @@ static gboolean
 _init_template_topic_name(KafkaDestDriver *self)
 {
   msg_debug("kafka: The topic name is a template",
-            evt_tag_str("topic", self->topic_name->template),
+            evt_tag_str("topic", self->topic_name->template_str),
             evt_tag_str("driver", self->super.super.super.id),
             log_pipe_location_tag(&self->super.super.super.super));
 
@@ -512,12 +512,12 @@ _topic_name_is_a_template(KafkaDestDriver *self)
 static gboolean
 _init_literal_topic_name(KafkaDestDriver *self)
 {
-  self->topic = _construct_topic(self, self->topic_name->template);
+  self->topic = _construct_topic(self, self->topic_name->template_str);
 
   if (self->topic == NULL)
     {
       msg_error("kafka: error constructing the kafka topic object",
-                evt_tag_str("topic", self->topic_name->template),
+                evt_tag_str("topic", self->topic_name->template_str),
                 evt_tag_str("driver", self->super.super.super.id),
                 log_pipe_location_tag(&self->super.super.super.super));
       return FALSE;
@@ -559,7 +559,7 @@ kafka_dd_reopen(LogDriver *s)
   if (self->kafka == NULL)
     {
       msg_error("kafka: error constructing kafka connection object",
-                evt_tag_str("topic", self->topic_name->template),
+                evt_tag_str("topic", self->topic_name->template_str),
                 evt_tag_str("driver", self->super.super.super.id),
                 log_pipe_location_tag(&self->super.super.super.super));
       return FALSE;
@@ -629,10 +629,10 @@ kafka_dd_init(LogPipe *s)
 
   log_template_options_init(&self->template_options, cfg);
   msg_verbose("kafka: Kafka destination initialized",
-              evt_tag_str("topic", self->topic_name->template),
+              evt_tag_str("topic", self->topic_name->template_str),
               evt_tag_str("fallback_topic", self->fallback_topic_name),
-              evt_tag_str("key", self->key ? self->key->template : "NULL"),
-              evt_tag_str("message", self->message->template),
+              evt_tag_str("key", self->key ? self->key->template_str : "NULL"),
+              evt_tag_str("message", self->message->template_str),
               evt_tag_str("driver", self->super.super.super.id),
               log_pipe_location_tag(&self->super.super.super.super));
 

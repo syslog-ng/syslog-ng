@@ -116,7 +116,7 @@ assert_template_compile(const gchar *template_string)
   GError *error = NULL;
 
   cr_assert(log_template_compile(template, template_string, &error), "%s", "Can't compile template");
-  cr_assert_str_eq(template->template, template_string, "%s", "Bad stored template");
+  cr_assert_str_eq(template->template_str, template_string, "%s", "Bad stored template");
   select_first_element();
 }
 

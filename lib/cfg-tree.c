@@ -1463,10 +1463,10 @@ cfg_tree_get_objects(CfgTree *self)
 }
 
 gboolean
-cfg_tree_add_template(CfgTree *self, LogTemplate *template)
+cfg_tree_add_template(CfgTree *self, LogTemplate *template_obj)
 {
-  gboolean res = (g_hash_table_lookup(self->templates, template->name) == NULL);
-  g_hash_table_replace(self->templates, template->name, template);
+  gboolean res = (g_hash_table_lookup(self->templates, template_obj->name) == NULL);
+  g_hash_table_replace(self->templates, template_obj->name, template_obj);
   return res;
 }
 

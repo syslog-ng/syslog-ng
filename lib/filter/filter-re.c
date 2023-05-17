@@ -198,7 +198,7 @@ filter_match_eval_against_template(FilterExprNode *s, LogMessage **msgs, gint nu
   msg_trace("match() evaluation started against template",
             evt_tag_template("input", self->template, msg, options),
             evt_tag_str("pattern", self->super.matcher->pattern),
-            evt_tag_str("template", self->template->template),
+            evt_tag_str("template", self->template->template_str),
             evt_tag_msg_reference(msg));
   gboolean result = log_matcher_match_template(self->super.matcher, msg, self->template, options);
   return result ^ s->comp;

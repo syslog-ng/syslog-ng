@@ -86,7 +86,7 @@ _format_stats_instance(LogThreadedDestDriver *d)
     g_snprintf(stats_instance, sizeof(stats_instance), "%s", ((LogPipe *)d)->persist_name);
   else
     g_snprintf(stats_instance, sizeof(stats_instance), "mqtt,%s,%s", mqtt_client_options_get_address(&self->options),
-               self->topic_name->template);
+               self->topic_name->template_str);
 
   return stats_instance;
 }
@@ -102,7 +102,7 @@ _format_persist_name(const LogPipe *d)
   else
     g_snprintf(persist_name, sizeof(persist_name), "mqtt-destination.(%s,%s)",
                mqtt_client_options_get_address(&self->options),
-               self->topic_name->template);
+               self->topic_name->template_str);
 
   return persist_name;
 }
@@ -153,7 +153,7 @@ _set_client_id(LogPipe *d)
       tmp_client_id = g_strdup(_format_persist_name(d));
     }
   else
-    tmp_client_id = g_strdup_printf("syslog-ng-destination-%s", self->topic_name->template);
+    tmp_client_id = g_strdup_printf("syslog-ng-destination-%s", self->topic_name->template_str);
 
   mqtt_client_options_set_client_id(&self->options, tmp_client_id);
   g_free(tmp_client_id);

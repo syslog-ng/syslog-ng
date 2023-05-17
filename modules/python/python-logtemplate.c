@@ -125,7 +125,7 @@ py_log_template_str(PyObject *s)
 {
   PyLogTemplate *self = (PyLogTemplate *)s;
 
-  return py_string_from_string(self->template->template, -1);
+  return py_string_from_string(self->template->template_str, -1);
 }
 
 void
