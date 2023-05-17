@@ -301,7 +301,7 @@ static GPrivate priv_macro_value = G_PRIVATE_INIT(__free_macro_value);
 void
 log_msg_write_protect(LogMessage *self)
 {
-  self->protected = TRUE;
+  self->write_protected = TRUE;
 }
 
 LogMessage *
@@ -1486,7 +1486,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   self->ack_and_ref_and_abort_and_suspended = LOGMSG_REFCACHE_REF_TO_VALUE(1) + LOGMSG_REFCACHE_ACK_TO_VALUE(
                                                 0) + LOGMSG_REFCACHE_ABORT_TO_VALUE(0);
   self->cur_node = 0;
-  self->protected = FALSE;
+  self->write_protected = FALSE;
 
   log_msg_add_ack(self, path_options);
   if (!path_options->ack_needed)

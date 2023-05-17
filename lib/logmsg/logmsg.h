@@ -256,7 +256,7 @@ struct _LogMessage
 
   guint8 num_nodes;
   guint8 cur_node;
-  guint8 protected;
+  guint8 write_protected;
 
 
   /* preallocated LogQueueNodes used to insert this message into a LogQueue */
@@ -277,7 +277,7 @@ void log_msg_write_protect(LogMessage *m);
 static inline gboolean
 log_msg_is_write_protected(const LogMessage *self)
 {
-  return self->protected;
+  return self->write_protected;
 }
 
 LogMessage *log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options);
