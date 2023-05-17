@@ -43,7 +43,9 @@ typedef struct _PythonOptions PythonOptions;
 
 PythonOptions *python_options_new(void);
 void python_options_add_option(PythonOptions *self, PythonOption *option);
+void python_options_add_options(PythonOptions *self, PythonOptions *options);
 PyObject *python_options_create_py_dict(const PythonOptions *self);
 void python_options_free(PythonOptions *self);
+void python_options_release(PythonOptions *self);
 
 #endif
