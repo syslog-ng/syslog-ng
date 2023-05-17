@@ -90,8 +90,8 @@ python_dd_set_options(LogDriver *d, PythonOptions *options)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
 
-  python_options_free(self->options);
-  self->options = options;
+  python_options_add_options(self->options, options);
+  python_options_release(options);
 }
 
 void

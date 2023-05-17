@@ -71,8 +71,8 @@ python_parser_set_options(LogParser *d, PythonOptions *options)
 {
   PythonParser *self = (PythonParser *)d;
 
-  python_options_free(self->options);
-  self->options = options;
+  python_options_add_options(self->options, options);
+  python_options_release(options);
 }
 
 void

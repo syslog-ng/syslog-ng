@@ -299,6 +299,13 @@ python_options_add_option(PythonOptions *self, PythonOption *option)
   self->options = g_list_append(self->options, option);
 }
 
+void
+python_options_add_options(PythonOptions *self, PythonOptions *options)
+{
+  for (GList *elem = options->options; elem; elem = elem->next)
+    python_options_add_option(self, (PythonOption *) elem->data);
+}
+
 PyObject *
 python_options_create_py_dict(const PythonOptions *self)
 {
@@ -339,5 +346,15 @@ python_options_free(PythonOptions *self)
     return;
 
   g_list_free_full(self->options, (GDestroyNotify) python_option_free);
+  g_free(self);
+}
+
+void
+python_options_release(PythonOptions *self)
+{
+  if (!self)
+    return;
+
+  g_list_free(self->options);
   g_free(self);
 }
