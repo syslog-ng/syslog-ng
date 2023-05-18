@@ -92,9 +92,9 @@ serialize_read_uint32(SerializeArchive *archive, guint32 *value)
 static inline gboolean
 serialize_write_uint32_array(SerializeArchive *archive, guint32 *values, gsize elements)
 {
-  const int buffer_size = 128;
+  const gsize buffer_size = 128;
   guint32 converted_values[buffer_size];
-  gint converted_ndx;
+  gsize converted_ndx;
 
   while (elements > 0)
     {
@@ -117,7 +117,7 @@ serialize_read_uint32_array(SerializeArchive *archive, guint32 *values, gsize el
 {
   if (serialize_archive_read_bytes(archive, (gchar *) values, elements * sizeof(guint32)))
     {
-      for (int i = 0; i < elements; i++)
+      for (gsize i = 0; i < elements; i++)
         values[i] = GUINT32_FROM_BE(values[i]);
       return TRUE;
     }
@@ -131,7 +131,7 @@ serialize_read_uint16_array(SerializeArchive *archive, guint32 *values, gsize el
 
   if (serialize_archive_read_bytes(archive, (gchar *) &buffer, elements * sizeof(guint16)))
     {
-      for (int i = 0; i < elements; i++)
+      for (gsize i = 0; i < elements; i++)
         values[i] = GUINT16_FROM_BE(buffer[i]);
       return TRUE;
     }
