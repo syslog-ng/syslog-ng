@@ -20,6 +20,7 @@ SCL_SUBDIRS	= \
 	loadbalancer	\
 	loggly		\
 	logmatic	\
+	logscale	\
 	mariadb		\
 	mbox		\
 	netskope	\

@@ -176,6 +176,7 @@ modules/python/python-flags.(c|h)$
 modules/python/tests/test_python_options.c$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
+scl/logscale/logscale\.conf$
 scl/mariadb/.*\.conf$
 scl/python/python-modules\.conf$
 scl/splunk/splunk\.conf$
