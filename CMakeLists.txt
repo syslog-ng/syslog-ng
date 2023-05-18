@@ -354,11 +354,11 @@ set(ACCEPTABLE_WARNINGS
 option(ENABLE_EXTRA_WARNINGS "Enable extra warnings" ON)
 if (ENABLE_EXTRA_WARNINGS)
   set(EXTRA_WARNINGS
-    -Wimplicit-function-declaration
-    -Wnested-externs
-    -Wstrict-prototypes
+    $<$<COMPILE_LANGUAGE:C>:-Wimplicit-function-declaration>
+    $<$<COMPILE_LANGUAGE:C>:-Wnested-externs>
+    $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>
     -Wswitch-default
-    -Wimplicit-int
+    $<$<COMPILE_LANGUAGE:C>:-Wimplicit-int>
     -Wall
     -Wuninitialized
     -Wdeprecated
@@ -367,13 +367,13 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wdouble-promotion
     -Wfloat-equal
     -Wpointer-arith
-    -Wpointer-sign
+    $<$<COMPILE_LANGUAGE:C>:-Wpointer-sign>
     -Wmissing-format-attribute
-    -Wold-style-definition
+    $<$<COMPILE_LANGUAGE:C>:-Wold-style-definition>
     -Wundef
     -Wignored-qualifiers
     -Wfloat-conversion
-    -Wbad-function-cast)
+    $<$<COMPILE_LANGUAGE:C>:-Wbad-function-cast>)
 
 if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
   set(EXTRA_WARNINGS
@@ -381,9 +381,9 @@ if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     )
 else()
   set(EXTRA_WARNINGS
-    -Wold-style-declaration
+    $<$<COMPILE_LANGUAGE:C>:-Wold-style-declaration>
     -Wunused-but-set-parameter
-    -Woverride-init
+    $<$<COMPILE_LANGUAGE:C>:-Woverride-init>
     ${EXTRA_WARNINGS}
     )
 endif()
