@@ -16,6 +16,18 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 project(syslog-ng C)
 
+option(ENABLE_CPP "Enable C++" ON)
+
+if (APPLE)
+  set(ENABLE_CPP OFF)
+endif()
+
+if (ENABLE_CPP)
+  enable_language(CXX)
+  set(CMAKE_CXX_STANDARD 11)
+  set(SYSLOG_NG_ENABLE_CPP ${ENABLE_CPP})
+endif()
+
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake/)
 set(CMAKE_POSITION_INDEPENDENT_CODE 1)
 set(BISON_FLAGS "-Wno-other -Werror=conflicts-sr -Werror=conflicts-rr")
