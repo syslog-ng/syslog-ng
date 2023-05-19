@@ -38,7 +38,11 @@ Build-Depends: debhelper (>= 10~),
                librdkafka-dev (>= 1.1.0) <!sng-nokafka>,
                default-jdk-headless <!nojava>,
                gradle (>= 3.5.1~) <!nojava>,
-               libpaho-mqtt-dev <!sng-nomqtt>
+               libpaho-mqtt-dev <!sng-nomqtt>,
+               protobuf-compiler <!sng-nogrpc>,
+               protobuf-compiler-grpc <!sng-nogrpc>,
+               libprotobuf-dev <!sng-nogrpc>,
+               libgrpc++-dev <!sng-nogrpc>
 Build-Conflicts: autoconf2.13
 Standards-Version: 4.4.1
 Homepage: https://www.syslog-ng.com/
