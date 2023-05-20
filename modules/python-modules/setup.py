@@ -22,6 +22,34 @@
 #############################################################################
 
 from setuptools import setup
+import os
+
+install_addons=int(os.getenv('PYMODULES_BUILTINS_ONLY', '0')) == 0
+
+packages_builtin=[
+  "syslogng",
+  "syslogng.debuggercli",
+]
+requires_builtin=[]
+
+packages_addons=[
+  "syslogng.modules.example",
+  "syslogng.modules.kubernetes",
+  "syslogng.modules.hypr",
+]
+
+requires_addons=[
+  # kubernetes
+  "kubernetes",
+  # hypr
+  "requests",
+]
+
+packages = packages_builtin
+requires = []
+if install_addons:
+  packages = packages + packages_addons
+  requires = requires + requires_addons
 
 setup(name='syslogng',
       version='1.0',
@@ -31,16 +59,5 @@ setup(name='syslogng',
       url='https://www.syslog-ng.org',
       package_data={"": ["scl/*"]},
       exclude_package_data={"": ["*~"]},
-      packages=[
-        "syslogng",
-        "syslogng.debuggercli",
-        "syslogng.modules.example",
-        "syslogng.modules.kubernetes",
-        "syslogng.modules.hypr",
-      ],
-      install_requires=[
-          # kubernetes
-          "kubernetes",
-          # hypr
-          "requests",
-      ])
+      packages=packages,
+      install_requires=requires)

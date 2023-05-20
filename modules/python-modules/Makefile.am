@@ -57,7 +57,7 @@ EXTRA_DIST += \
 	modules/python-modules/setup.py						\
 	modules/python-modules/README.md
 
-if ENABLE_PYTHON_MODULES
+if ENABLE_PYTHON
 
 python_sysconf_module_DATA = modules/python-modules/README.md
 
@@ -66,6 +66,14 @@ PYMODULES_BUILDDIR = $(abs_builddir)/$(PYMODULES_PATH)
 PYMODULES_SRCDIR = $(top_srcdir)/modules/python-modules
 PYMODULES_MANIFEST = $(PYMODULES_BUILDDIR)/install-manifest.txt
 PYMODULES_ROOT_MODULE = syslogng
+
+if ENABLE_PYTHON_MODULES
+PYMODULES_BUILTINS_ONLY=0
+else
+PYMODULES_BUILTINS_ONLY=1
+endif
+export PYMODULES_BUILTINS_ONLY
+
 PYTHON_ROOT = $(if $(DESTDIR),$(DESTDIR),/)
 
 INSTALL_EXEC_HOOKS += pymodules-install

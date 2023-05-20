@@ -350,7 +350,7 @@ AC_ARG_ENABLE(python,
               ,,enable_python="auto")
 
 AC_ARG_ENABLE(python-modules,
-              [  --disable-python-modules  Disable Python based syslog-ng modules]
+              [  --disable-python-modules  Disable Python based syslog-ng addons while installing the core Python modules]
               ,,enable_python_modules="auto")
 
 AC_ARG_WITH(python,
