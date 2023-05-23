@@ -172,7 +172,7 @@ modules/diskq/tests/test_logqueue_disk\.c$
 modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
 modules/metrics-probe/label-template\.(c|h)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
-modules/grpc/otel/otel-(grammar|parser|plugin|source)\.(c|h|cpp|hpp|ym)$
+modules/grpc/otel/otel-(grammar|parser|plugin|source|source-services)\.(c|h|cpp|hpp|ym)$
 modules/examples/inner-destinations/tls-test-validation
 modules/examples/sources/random-choice-generator
 modules/python/python-options.(c|h)$

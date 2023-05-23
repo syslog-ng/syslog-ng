@@ -23,6 +23,8 @@
 #ifndef OTEL_SOURCE_HPP
 #define OTEL_SOURCE_HPP
 
+#include <grpcpp/server.h>
+
 #include "compat/cpp-start.h"
 #include "logthrsource/logthrsourcedrv.h"
 #include "compat/cpp-end.h"
@@ -50,7 +52,7 @@ public:
 
 private:
   OtelSourceDriver *super;
-  GAtomicCounter exit_requested = {};
+  std::unique_ptr<::grpc::Server> server;
 };
 
 }

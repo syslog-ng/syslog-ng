@@ -20,9 +20,12 @@
  *
  */
 
-#include <unistd.h>
+#include <string>
+
+#include <grpcpp/server_builder.h>
 
 #include "otel-source.hpp"
+#include "otel-source-services.hpp"
 
 #define get_SourceDriver(s) (((OtelSourceDriver *) s)->cpp)
 
@@ -36,21 +39,34 @@ syslogng::grpc::otel::SourceDriver::SourceDriver(OtelSourceDriver *s)
 void
 syslogng::grpc::otel::SourceDriver::run()
 {
-  while (!g_atomic_counter_get(&exit_requested))
+  std::string address = std::string("[::]:").append(std::to_string(port));
+
+  ::grpc::ServerBuilder builder;
+  builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
+
+  SourceTraceService trace_service(*this);
+  SourceLogsService logs_service(*this);
+  SourceMetricsService metrics_service(*this);
+
+  builder.RegisterService(&trace_service);
+  builder.RegisterService(&logs_service);
+  builder.RegisterService(&metrics_service);
+
+  server = builder.BuildAndStart();
+  if (!server)
     {
-      LogMessage *msg = log_msg_new_empty();
-      log_msg_set_value(msg, LM_V_MESSAGE, "Hello from OpenTelemetry C++ source", -1);
-
-      log_threaded_source_blocking_post(&super->super, msg);
-
-      usleep(1000000);
+      msg_error("Failed to start OpenTelemetry server", evt_tag_int("port", port));
+      return;
     }
+
+  msg_info("OpenTelemetry server accepting connections", evt_tag_int("port", port));
+  server->Wait();
 }
 
 void
 syslogng::grpc::otel::SourceDriver::request_exit()
 {
-  g_atomic_counter_set(&exit_requested, TRUE);
+  server->Shutdown();
 }
 
 const gchar *

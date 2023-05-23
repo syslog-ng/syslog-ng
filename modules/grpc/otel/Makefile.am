@@ -44,7 +44,9 @@ nodist_modules_grpc_otel_libotel_cpp_la_SOURCES = $(OTEL_PROTO_BUILT_SOURCES)
 modules_grpc_otel_libotel_cpp_la_SOURCES = \
   modules/grpc/otel/otel-source.h \
   modules/grpc/otel/otel-source.hpp \
-  modules/grpc/otel/otel-source.cpp
+  modules/grpc/otel/otel-source.cpp \
+  modules/grpc/otel/otel-source-services.hpp \
+  modules/grpc/otel/otel-source-services.cpp
 
 modules_grpc_otel_libotel_cpp_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \

@@ -29,6 +29,8 @@ set(OTEL_CPP_SOURCES
   otel-source.cpp
   otel-source.hpp
   otel-source.h
+  otel-source-services.hpp
+  otel-source-services.cpp
   ${OTEL_PROTO_GENERATED_SOURCES}
   ${OTEL_PROTO_GENERATED_GRPC_SOURCES})
 
