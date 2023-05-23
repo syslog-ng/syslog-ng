@@ -31,6 +31,7 @@ int otel_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 static CfgLexerKeyword otel_keywords[] =
 {
   { "opentelemetry",             KW_OPENTELEMETRY },
+  { "port",                      KW_PORT },
   { NULL }
 };
 

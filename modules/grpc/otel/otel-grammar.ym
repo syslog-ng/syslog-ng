@@ -47,6 +47,7 @@
 /* INCLUDE_DECLS */
 
 %token KW_OPENTELEMETRY
+%token KW_PORT
 
 %type <ptr> source_otel
 
@@ -70,7 +71,8 @@ source_otel_options
   ;
 
 source_otel_option
-  : threaded_source_driver_option
+  : KW_PORT '(' positive_integer ')' { otel_sd_set_port(last_driver, $3); }
+  | threaded_source_driver_option
   ;
 
 /* INCLUDE_RULES */

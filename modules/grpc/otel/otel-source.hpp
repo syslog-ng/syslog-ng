@@ -45,6 +45,9 @@ public:
   gboolean init();
   gboolean deinit();
 
+public:
+  guint64 port = 4317;
+
 private:
   OtelSourceDriver *super;
   GAtomicCounter exit_requested = {};
