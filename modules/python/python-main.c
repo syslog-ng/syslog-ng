@@ -403,9 +403,9 @@ _py_activate_venv(PyConfig *config)
        */
       gchar *python_venv_binary = g_strdup_printf("%s/bin/python", python_venv_path);
 
-      msg_info("python: activating virtualenv",
-               evt_tag_str("path", python_venv_path),
-               evt_tag_str("executable", python_venv_binary));
+      msg_debug("python: activating virtualenv",
+                evt_tag_str("path", python_venv_path),
+                evt_tag_str("executable", python_venv_binary));
       success = _py_set_argv(config, python_venv_binary);
       g_free(python_venv_binary);
     }
