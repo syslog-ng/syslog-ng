@@ -124,6 +124,31 @@ _py_format_exception_text(gchar *buf, gsize buf_len)
 void
 _py_finish_exception_handling(void)
 {
+  if (PyErr_ExceptionMatches(PyExc_ImportError))
+    {
+      PyObject *exc, *value, *tb;
+
+      PyErr_Fetch(&exc, &value, &tb);
+      PyImportErrorObject *import_error = (PyImportErrorObject *) value;
+      const gchar *module_cstr;
+
+      py_bytes_or_string_to_string(import_error->name, &module_cstr);
+      msg_error("Seems you are missing a module that may be referenced by a "
+                "syslog-ng plugin implemented in Python. These modules "
+                "need to be installed either using your platform's package management "
+                "tools (e.g. apt/dnf/yum) or Python's own package management "
+                "tool (e.g. pip). syslog-ng authors recommend using pip and "
+                "a dedicated Python virtualenv. You can initialize such a "
+                "virtualenv using the `syslog-ng-update-virtualenv` command. "
+                "This command will initialize the virtualenv and install all "
+                "packages needed by plugins shipped with syslog-ng itself "
+                "from the Python Package Index (PyPI). If you need any additional "
+                "Python libraries for your local scripts, you can "
+                "install those using the `pip` command located in the virtualenv's bin directory",
+                evt_tag_str("module", module_cstr));
+      PyErr_Restore(exc, value, tb);
+    }
+
   _py_log_python_traceback_to_stderr();
   PyErr_Clear();
 }
