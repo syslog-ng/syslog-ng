@@ -116,7 +116,7 @@ _handle_transaction_error(KafkaDestWorker *self, rd_kafka_error_t *error)
       if (abort_error)
         {
           msg_error("kafka: Failed to abort transaction",
-                    evt_tag_str("topic", owner->topic_name->template),
+                    evt_tag_str("topic", owner->topic_name->template_str),
                     evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(abort_error))),
                     log_pipe_location_tag(&owner->super.super.super.super));
           rd_kafka_error_destroy(abort_error);
@@ -152,7 +152,7 @@ _transaction_init(KafkaDestWorker *self)
   if (error)
     {
       msg_error("kafka: init_transactions failed",
-                evt_tag_str("topic", owner->topic_name->template),
+                evt_tag_str("topic", owner->topic_name->template_str),
                 evt_tag_str("error", rd_kafka_error_string(error)),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
@@ -174,7 +174,7 @@ _transaction_commit(KafkaDestWorker *self)
   if (error)
     {
       msg_error("kafka: Failed to commit transaction",
-                evt_tag_str("topic", owner->topic_name->template),
+                evt_tag_str("topic", owner->topic_name->template_str),
                 evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(error))),
                 log_pipe_location_tag(&owner->super.super.super.super));
 
@@ -195,7 +195,7 @@ _transaction_begin(KafkaDestWorker *self)
   if (error)
     {
       msg_error("kafka: failed to start new transaction",
-                evt_tag_str("topic", owner->topic_name->template),
+                evt_tag_str("topic", owner->topic_name->template_str),
                 evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(error))),
                 log_pipe_location_tag(&owner->super.super.super.super));
       return _handle_transaction_error(self, error);
@@ -272,8 +272,8 @@ _drain_responses(KafkaDestWorker *self)
   if (count != 0)
     {
       msg_trace("kafka: destination side rd_kafka_poll() processed some responses",
-                kafka_dd_is_topic_name_a_template(owner) ? evt_tag_str("template", owner->topic_name->template):
-                evt_tag_str("topic", owner->topic_name->template),
+                kafka_dd_is_topic_name_a_template(owner) ? evt_tag_str("template", owner->topic_name->template_str):
+                evt_tag_str("topic", owner->topic_name->template_str),
                 evt_tag_str("fallback_topic", owner->fallback_topic_name),
                 evt_tag_int("count", count),
                 evt_tag_str("driver", owner->super.super.super.id),

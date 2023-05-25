@@ -71,7 +71,7 @@ log_rewrite_subst_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions
                 evt_tag_mem("input", value, length),
                 evt_tag_str("type", self->matcher_options.type),
                 evt_tag_str("pattern", self->matcher->pattern),
-                evt_tag_str("replacement", self->replacement->template),
+                evt_tag_str("replacement", self->replacement->template_str),
                 log_pipe_location_tag(&s->super));
       log_msg_set_value(msg, self->super.value_handle, new_value, new_length);
     }
@@ -83,7 +83,7 @@ log_rewrite_subst_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions
                 evt_tag_mem("input", value, length),
                 evt_tag_str("type", self->matcher_options.type),
                 evt_tag_str("pattern", self->matcher->pattern),
-                evt_tag_str("replacement", self->replacement->template),
+                evt_tag_str("replacement", self->replacement->template_str),
                 log_pipe_location_tag(&s->super));
     }
   nv_table_unref(nvtable);

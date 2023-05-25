@@ -148,7 +148,8 @@ _format_persist_name(const LogPipe *s)
   if (s->persist_name)
     g_snprintf(persist_name, sizeof(persist_name), "grouping-by.%s(clone=%d)", s->persist_name, self->clone_id);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "grouping-by(%s,scope=%d,clone=%d)", self->super.key_template->template,
+    g_snprintf(persist_name, sizeof(persist_name), "grouping-by(%s,scope=%d,clone=%d)",
+               self->super.key_template->template_str,
                self->super.scope, self->clone_id);
 
   return persist_name;

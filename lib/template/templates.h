@@ -56,7 +56,7 @@ struct _LogTemplate
 {
   GAtomicCounter ref_cnt;
   gchar *name;
-  gchar *template;
+  gchar *template_str;
   GList *compiled_template;
   GlobalConfig *cfg;
   guint escape:1, def_inline:1, trivial:1, literal:1;
@@ -78,7 +78,7 @@ struct _LogTemplate
 
 void log_template_set_escape(LogTemplate *self, gboolean enable);
 gboolean log_template_set_type_hint(LogTemplate *self, const gchar *hint, GError **error);
-gboolean log_template_compile(LogTemplate *self, const gchar *template, GError **error);
+gboolean log_template_compile(LogTemplate *self, const gchar *template_str, GError **error);
 gboolean log_template_compile_with_type_hint(LogTemplate *self, const gchar *template_and_typehint, GError **error);
 void log_template_forget_template_string(LogTemplate *self);
 void log_template_compile_literal_string(LogTemplate *self, const gchar *literal);
@@ -107,6 +107,7 @@ void log_template_global_deinit(void);
 gboolean log_template_on_error_parse(const gchar *on_error, gint *out);
 void log_template_options_set_on_error(LogTemplateOptions *options, gint on_error);
 
-EVTTAG *evt_tag_template(const gchar *name, LogTemplate *template, LogMessage *msg, LogTemplateEvalOptions *options);
+EVTTAG *evt_tag_template(const gchar *name, LogTemplate *template_obj, LogMessage *msg,
+                         LogTemplateEvalOptions *options);
 
 #endif

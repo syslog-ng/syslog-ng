@@ -159,7 +159,7 @@ dqtool_cat(int argc, char *argv[])
       template = log_template_new(configuration, NULL);
       if (!log_template_compile(template, template_string, &error))
         {
-          fprintf(stderr, "Error compiling template: %s, error: %s\n", template->template, error->message);
+          fprintf(stderr, "Error compiling template: %s, error: %s\n", template->template_str, error->message);
           g_clear_error(&error);
           return 1;
         }

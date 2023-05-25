@@ -727,7 +727,7 @@ nv_table_init_borrowed(gpointer space, gsize space_len, gint num_static_entries)
 
 /* returns TRUE if successfully realloced, FALSE means that we're unable to grow */
 gboolean
-nv_table_realloc(NVTable *self, NVTable **new)
+nv_table_realloc(NVTable *self, NVTable **new_nv_table)
 {
   gsize old_size = self->size;
   gsize new_size;
@@ -741,7 +741,7 @@ nv_table_realloc(NVTable *self, NVTable **new)
 
   if (self->ref_cnt == 1 && !self->borrowed)
     {
-      *new = self = g_realloc(self, new_size);
+      *new_nv_table = self = g_realloc(self, new_size);
 
       self->size = new_size;
       /* move the downwards growing region to the end of the new buffer */
@@ -751,16 +751,16 @@ nv_table_realloc(NVTable *self, NVTable **new)
     }
   else
     {
-      *new = g_malloc(new_size);
+      *new_nv_table = g_malloc(new_size);
 
       /* we only copy the header first */
-      memcpy(*new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->index_size *
-             sizeof(NVIndexEntry));
-      (*new)->ref_cnt = 1;
-      (*new)->borrowed = FALSE;
-      (*new)->size = new_size;
+      memcpy(*new_nv_table, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) +
+             self->index_size * sizeof(NVIndexEntry));
+      (*new_nv_table)->ref_cnt = 1;
+      (*new_nv_table)->borrowed = FALSE;
+      (*new_nv_table)->size = new_size;
 
-      memmove(NV_TABLE_ADDR((*new), (*new)->size - (*new)->used),
+      memmove(NV_TABLE_ADDR((*new_nv_table), (*new_nv_table)->size - (*new_nv_table)->used),
               NV_TABLE_ADDR(self, old_size - self->used),
               self->used);
 

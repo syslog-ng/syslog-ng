@@ -176,7 +176,7 @@ _cmd_display(Debugger *self, gint argc, gchar *argv[])
           return TRUE;
         }
     }
-  printf("display: The template is set to: \"%s\"\n", self->display_template->template);
+  printf("display: The template is set to: \"%s\"\n", self->display_template->template_str);
   return TRUE;
 }
 

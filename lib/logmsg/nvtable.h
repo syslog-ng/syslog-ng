@@ -310,7 +310,7 @@ gboolean nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpo
 
 NVTable *nv_table_new(gint num_static_values, gint index_size_hint, gint init_length);
 NVTable *nv_table_init_borrowed(gpointer space, gsize space_len, gint num_static_entries);
-gboolean nv_table_realloc(NVTable *self, NVTable **new);
+gboolean nv_table_realloc(NVTable *self, NVTable **new_nv_table);
 NVTable *nv_table_compact(NVTable *self);
 NVTable *nv_table_clone(NVTable *self, gint additional_space);
 NVTable *nv_table_ref(NVTable *self);
@@ -359,7 +359,7 @@ nv_table_get_ofs_table_top(NVTable *self)
 static inline gboolean
 nv_table_alloc_check(NVTable *self, gsize alloc_size)
 {
-  if (nv_table_get_bottom(self) - nv_table_get_ofs_table_top(self) < alloc_size)
+  if ((gsize)(nv_table_get_bottom(self) - nv_table_get_ofs_table_top(self)) < alloc_size)
     return FALSE;
   return TRUE;
 }

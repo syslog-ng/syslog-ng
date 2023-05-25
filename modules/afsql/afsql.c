@@ -1067,7 +1067,7 @@ afsql_dd_format_stats_instance(LogThreadedDestDriver *s)
 
   g_snprintf(persist_name, sizeof(persist_name),
              "%s,%s,%s,%s,%s",
-             self->type, self->host, self->port, self->database, self->table->template);
+             self->type, self->host, self->port, self->database, self->table->template_str);
   return persist_name;
 }
 
@@ -1081,7 +1081,7 @@ afsql_dd_format_persist_name(const LogPipe *s)
     g_snprintf(persist_name, sizeof(persist_name), "afsql_dd.%s", s->persist_name);
   else
     g_snprintf(persist_name, sizeof(persist_name), "afsql_dd(%s,%s,%s,%s,%s)", self->type,
-               self->host, self->port, self->database, self->table->template);
+               self->host, self->port, self->database, self->table->template_str);
 
   return persist_name;
 }
@@ -1093,7 +1093,7 @@ _afsql_dd_format_legacy_persist_name(const AFSqlDestDriver *self)
 
   g_snprintf(legacy_persist_name, sizeof(legacy_persist_name),
              "afsql_dd_qfile(%s,%s,%s,%s,%s)",
-             self->type, self->host, self->port, self->database, self->table->template);
+             self->type, self->host, self->port, self->database, self->table->template_str);
 
   return legacy_persist_name;
 }

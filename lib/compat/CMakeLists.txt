@@ -14,6 +14,8 @@ set(COMPAT_HEADERS
     compat/getent-openbsd.h
     compat/getent-generic.h
     compat/un.h
+    compat/cpp-start.h
+    compat/cpp-end.h
     PARENT_SCOPE)
 
 set(COMPAT_SOURCES

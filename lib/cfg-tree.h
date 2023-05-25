@@ -179,7 +179,7 @@ gboolean cfg_tree_add_object(CfgTree *self, LogExprNode *rule);
 LogExprNode *cfg_tree_get_object(CfgTree *self, gint type, const gchar *name);
 GList *cfg_tree_get_objects(CfgTree *self);
 
-gboolean cfg_tree_add_template(CfgTree *self, LogTemplate *template);
+gboolean cfg_tree_add_template(CfgTree *self, LogTemplate *template_obj);
 LogTemplate *cfg_tree_lookup_template(CfgTree *self, const gchar *name);
 LogTemplate *cfg_tree_check_inline_template(CfgTree *self, const gchar *template_or_name, GError **error);
 

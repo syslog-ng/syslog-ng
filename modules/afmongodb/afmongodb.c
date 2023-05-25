@@ -118,7 +118,7 @@ _format_instance_id(const LogThreadedDestDriver *d, const gchar *format)
       if (!replica_set)
         replica_set = "";
 
-      const gchar *coll = self->collection_template->template ? self->collection_template->template : "";
+      const gchar *coll = self->collection_template->template_str ? self->collection_template->template_str : "";
 
       g_snprintf(args, sizeof(args), "%s,%s,%s,%s", first_host, db, replica_set, coll);
     }
@@ -182,7 +182,7 @@ afmongodb_dd_private_uri_init(LogDriver *d)
   msg_verbose("Initializing MongoDB destination",
               evt_tag_str("uri", self->uri_str->str),
               evt_tag_str("db", self->const_db),
-              evt_tag_str("collection", self->collection_template->template),
+              evt_tag_str("collection", self->collection_template->template_str),
               evt_tag_str("driver", self->super.super.super.id));
 
   return TRUE;

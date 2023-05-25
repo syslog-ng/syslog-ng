@@ -73,6 +73,7 @@ modules/secure-logging/tests
 modules/secure-logging/slogencrypt
 modules/secure-logging/slogverify
 modules/secure-logging/slogkey
+lib/compat/cpp-(start|end).\h$
 lib/healthcheck
 lib/healthcheck/tests
 lib/cfg-monitor\.[ch]
@@ -171,6 +172,7 @@ modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
 modules/metrics-probe/label-template\.(c|h)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
 modules/examples/inner-destinations/tls-test-validation
+modules/examples/sources/random-choice-generator
 modules/python/python-options.(c|h)$
 modules/python/python-flags.(c|h)$
 modules/python/tests/test_python_options.c$

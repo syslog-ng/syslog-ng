@@ -1,0 +1,88 @@
+/*
+ * Copyright (c) 2023 Attila Szakacs
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "random-choice-generator-parser.h"
+
+}
+
+%code {
+
+#include "cfg-grammar-internal.h"
+#include "plugin.h"
+#include "syslog-names.h"
+#include "random-choice-generator.h"
+
+}
+
+%define api.prefix {random_choice_generator_}
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_RANDOM_CHOICE_GENERATOR
+%token KW_CHOICES
+
+%type <ptr> source_random_choice_generator
+
+%%
+
+start
+  : LL_CONTEXT_SOURCE source_random_choice_generator { YYACCEPT; }
+  ;
+
+source_random_choice_generator
+  : KW_RANDOM_CHOICE_GENERATOR
+    {
+      last_driver = *instance = random_choice_generator_sd_new(configuration);
+    }
+    '(' _inner_src_context_push source_random_choice_generator_options _inner_src_context_pop ')' { $$ = last_driver; }
+  ;
+
+source_random_choice_generator_options
+  : source_random_choice_generator_option source_random_choice_generator_options
+  |
+  ;
+
+source_random_choice_generator_option
+  : KW_CHOICES '(' string_list ')'
+    {
+      random_choice_generator_set_choices(last_driver, $3);
+    }
+  | KW_FREQ '(' nonnegative_float ')'
+    {
+      random_choice_generator_set_freq(last_driver, $3);
+    }
+  | threaded_source_driver_option
+  ;
+
+/* INCLUDE_RULES */
+
+%%
+

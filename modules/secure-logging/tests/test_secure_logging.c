@@ -689,8 +689,8 @@ void test_slog_performance(void)
     {
       log_template_format(slog_templ, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, res);
     }
-  stop_stopwatch_and_display_result(PERFORMANCE_COUNTER, "%-90.*s", (int)strlen(slog_templ->template) - 1,
-                                    slog_templ->template);
+  stop_stopwatch_and_display_result(PERFORMANCE_COUNTER, "%-90.*s", (int)strlen(slog_templ->template_str) - 1,
+                                    slog_templ->template_str);
 
   // Free resources
   log_template_unref(slog_templ);
