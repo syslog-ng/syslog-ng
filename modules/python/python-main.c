@@ -305,14 +305,13 @@ _get_venv_path(void)
       return env_virtual_env;
     }
 
-
   const gchar *private_venv_path = get_installation_path_for(SYSLOG_NG_PYTHON_VENV_DIR);
   if (!_py_is_virtualenv_valid(private_venv_path))
     {
-      msg_warning("python: private virtualenv is not initialized, use the `syslog-ng-update-virtualenv' "
-                  "script to initialize it or make sure all required Python dependencies are available in "
-                  "the system Python installation",
-                  evt_tag_str("path", private_venv_path));
+      msg_debug("python: private virtualenv is not initialized, use the `syslog-ng-update-virtualenv' "
+                "script to initialize it or make sure all required Python dependencies are available in "
+                "the system Python installation",
+                evt_tag_str("path", private_venv_path));
       return NULL;
     }
 
@@ -404,9 +403,9 @@ _py_activate_venv(PyConfig *config)
        */
       gchar *python_venv_binary = g_strdup_printf("%s/bin/python", python_venv_path);
 
-      msg_info("python: activating virtualenv",
-               evt_tag_str("path", python_venv_path),
-               evt_tag_str("executable", python_venv_binary));
+      msg_debug("python: activating virtualenv",
+                evt_tag_str("path", python_venv_path),
+                evt_tag_str("executable", python_venv_binary));
       success = _py_set_argv(config, python_venv_binary);
       g_free(python_venv_binary);
     }
