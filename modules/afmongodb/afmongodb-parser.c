@@ -33,6 +33,13 @@ static CfgLexerKeyword afmongodb_keywords[] =
   { "mongodb", KW_MONGODB },
   { "uri", KW_URI },
   { "collection", KW_COLLECTION },
+  { "bulk", KW_BULK },
+  { "bulk_unordered", KW_BULK_UNORDERED },
+  { "bulk_bypass_validation", KW_BULK_BYPASS_VALIDATION },
+  { "write_concern", KW_WRITE_CONCERN },
+  { "unacked", KW_W_UNACKNOWLEDGED },
+  { "acked", KW_W_DEFAULT },
+  { "majority", KW_W_MAJORITY },
   { NULL }
 };
 

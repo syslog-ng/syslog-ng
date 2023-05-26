@@ -37,8 +37,11 @@ typedef struct MongoDBDestWorker
 
   GString *collection;
   mongoc_collection_t *coll_obj;
+  mongoc_bulk_operation_t *bulk_op;
+  mongoc_write_concern_t *write_concern;
 
   bson_t *bson;
+  bson_t *bson_opts;
 } MongoDBDestWorker;
 
 LogThreadedDestWorker *afmongodb_dw_new(LogThreadedDestDriver *owner, gint worker_index);

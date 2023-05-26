@@ -25,9 +25,64 @@
 #include "afmongodb-worker.h"
 #include "afmongodb-private.h"
 #include "messages.h"
+#include "scratch-buffers.h"
 #include "value-pairs/evttag.h"
 #include "value-pairs/value-pairs.h"
 #include "scanner/list-scanner/list-scanner.h"
+
+static LogThreadedResult _do_bulk_flush(MongoDBDestWorker *self);
+
+static void
+_compose_bulk_op_options(MongoDBDestWorker *self)
+{
+  MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
+
+  if (owner->use_bulk)
+    {
+      self->bson_opts = bson_new();
+      bson_t def_opts = BSON_INITIALIZER;
+      *self->bson_opts = def_opts;
+
+      if (!BSON_APPEND_BOOL(self->bson_opts, "ordered", false == owner->bulk_unordered))
+        msg_error("Error setting bulk option",
+                  evt_tag_str("option", "ordered"),
+                  evt_tag_str("driver", owner->super.super.super.id));
+
+      if (!mongoc_write_concern_append(self->write_concern, self->bson_opts))
+        msg_error("Error setting bulk option",
+                  evt_tag_str("option", "write_concern"),
+                  evt_tag_str("driver", owner->super.super.super.id));
+    }
+}
+
+static void
+_destroy_bulk_op_options(MongoDBDestWorker *self)
+{
+  if (self->bson_opts)
+    {
+      bson_destroy(self->bson_opts);
+      self->bson_opts = NULL;
+    }
+}
+
+static void
+_compose_write_concern(MongoDBDestWorker *self)
+{
+  MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
+
+  self->write_concern = mongoc_write_concern_new();
+  mongoc_write_concern_set_w(self->write_concern, owner->write_concern_level);
+}
+
+static void
+_destroy_write_concern(MongoDBDestWorker *self)
+{
+  if (self->write_concern)
+    {
+      mongoc_write_concern_destroy(self->write_concern);
+      self->write_concern = NULL;
+    }
+}
 
 static void
 _worker_disconnect(LogThreadedDestWorker *s)
@@ -35,9 +90,17 @@ _worker_disconnect(LogThreadedDestWorker *s)
   MongoDBDestWorker *self = (MongoDBDestWorker *)s;
   MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
 
+  if (self->bulk_op)
+    {
+      mongoc_bulk_operation_destroy(self->bulk_op);
+      self->bulk_op = NULL;
+    }
+
   if (self->coll_obj)
-    mongoc_collection_destroy(self->coll_obj);
-  self->coll_obj = NULL;
+    {
+      mongoc_collection_destroy(self->coll_obj);
+      self->coll_obj = NULL;
+    }
 
   if (self->client)
     {
@@ -63,6 +126,9 @@ _switch_collection(MongoDBDestWorker *self, const gchar *collection)
   MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
 
   if (!self->client)
+    return FALSE;
+
+  if (self->bulk_op && _do_bulk_flush(self) != LTR_SUCCESS)
     return FALSE;
 
   if (self->coll_obj)
@@ -146,13 +212,9 @@ _worker_connect(LogThreadedDestWorker *s)
       read_prefs = mongoc_collection_get_read_prefs(self->coll_obj);
     }
 
-
   if (!_check_server_status(self, read_prefs))
     {
-      mongoc_collection_destroy(self->coll_obj);
-      self->coll_obj = NULL;
-      mongoc_client_pool_push(owner->pool, self->client);
-      self->client = NULL;
+      _worker_disconnect(s);
       return FALSE;
     }
 
@@ -354,51 +416,65 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
 }
 
 static LogThreadedResult
-_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
+_do_bulk_flush(MongoDBDestWorker *self)
+{
+  bson_error_t error;
+  bson_t reply;
+
+  int result = mongoc_bulk_operation_execute(self->bulk_op, &reply, &error);
+
+  bson_destroy (&reply);
+  mongoc_bulk_operation_destroy(self->bulk_op);
+  self->bulk_op = NULL;
+
+  if (result == 0)
+    {
+      MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
+      msg_error("Error while bulk inserting into MongoDB",
+                evt_tag_int("time_reopen", self->super.time_reopen),
+                evt_tag_str("reason", error.message),
+                evt_tag_str("driver", owner->super.super.super.id));
+      return LTR_ERROR;
+    }
+
+  return LTR_SUCCESS;
+}
+
+static LogThreadedResult
+_worker_batch_flush(LogThreadedDestWorker *s, LogThreadedFlushMode expedite)
 {
   MongoDBDestWorker *self = (MongoDBDestWorker *) s;
+  return _do_bulk_flush(self);
+}
+
+static LogThreadedResult
+_bulk_insert(MongoDBDestWorker *self)
+{
   MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
 
-  gboolean success;
-  gboolean drop_silently = owner->template_options.on_error & ON_ERROR_SILENT;
-
-  bson_reinit(self->bson);
-
-  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING};
-  success = value_pairs_walk(owner->vp,
-                             _vp_obj_start,
-                             _vp_process_value,
-                             _vp_obj_end,
-                             msg, &options,
-                             0,
-                             self);
-
-  if (!success)
+  if (self->bulk_op == NULL)
+    self->bulk_op = mongoc_collection_create_bulk_operation_with_opts(self->coll_obj, self->bson_opts);
+  if (self->bulk_op == NULL)
     {
-      if (!drop_silently)
-        {
-          msg_error("Failed to format message for MongoDB, dropping message",
-                    evt_tag_value_pairs("message", owner->vp, msg, &options),
-                    evt_tag_str("driver", owner->super.super.super.id));
-        }
-      return LTR_DROP;
+      msg_error("Failed to create MongoDB bulk operation",
+                evt_tag_int("time_reopen", self->super.time_reopen),
+                evt_tag_str("driver", owner->super.super.super.id));
+      return LTR_ERROR;
     }
 
-  msg_debug("Outgoing message to MongoDB destination",
-            evt_tag_value_pairs("message", owner->vp, msg, &options),
-            evt_tag_str("driver", owner->super.super.super.id));
+  mongoc_bulk_operation_set_bypass_document_validation(self->bulk_op, owner->bulk_bypass_validation);
+  mongoc_bulk_operation_insert(self->bulk_op, (const bson_t *)self->bson);
+  return LTR_QUEUED;
+}
 
-
-  if (!owner->collection_is_literal_string)
-    {
-      const gchar *new_collection = _format_collection_template(self, msg);
-      if (!_switch_collection(self, new_collection))
-        return LTR_ERROR;
-    }
+static LogThreadedResult
+_single_insert(MongoDBDestWorker *self)
+{
+  MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
 
   bson_error_t error;
-  success = mongoc_collection_insert(self->coll_obj, MONGOC_INSERT_NONE,
-                                     (const bson_t *)self->bson, NULL, &error);
+  bool success = mongoc_collection_insert(self->coll_obj, MONGOC_INSERT_NONE,
+                                          (const bson_t *)self->bson, self->write_concern, &error);
   if (!success)
     {
       if (error.domain == MONGOC_ERROR_STREAM)
@@ -420,6 +496,60 @@ _worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
     }
 
   return LTR_SUCCESS;
+
+}
+
+static LogThreadedResult
+_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
+{
+  MongoDBDestWorker *self = (MongoDBDestWorker *) s;
+  MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
+
+  gboolean success;
+  gboolean drop_silently = owner->template_options.on_error & ON_ERROR_SILENT;
+
+  bson_reinit(self->bson);
+
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL, LM_VT_STRING};
+  success = value_pairs_walk(owner->vp,
+                             _vp_obj_start,
+                             _vp_process_value,
+                             _vp_obj_end,
+                             msg, &options,
+                             0,
+                             self);
+  if (!success)
+    {
+      if (!drop_silently)
+        {
+          msg_error("Failed to format message for MongoDB, dropping message",
+                    evt_tag_value_pairs("message", owner->vp, msg, &options),
+                    evt_tag_str("driver", owner->super.super.super.id));
+        }
+      return LTR_DROP;
+    }
+
+  msg_debug("Outgoing message to MongoDB destination",
+            evt_tag_value_pairs("message", owner->vp, msg, &options),
+            evt_tag_str("driver", owner->super.super.super.id));
+
+  if (!owner->collection_is_literal_string)
+    {
+      ScratchBuffersMarker mark;
+      GString *last_collection = scratch_buffers_alloc_and_mark(&mark);
+      g_string_assign(last_collection, self->collection->str);
+      const gchar *new_collection = _format_collection_template(self, msg);
+      bool should_switch_collection = (strcmp(last_collection->str, new_collection) != 0);
+      scratch_buffers_reclaim_marked(mark);
+
+      if (should_switch_collection && !_switch_collection(self, new_collection))
+        return LTR_ERROR;
+    }
+
+  if (owner->use_bulk)
+    return _bulk_insert(self);
+  else
+    return _single_insert(self);
 }
 
 static gboolean
@@ -429,6 +559,9 @@ _worker_init(LogThreadedDestWorker *s)
 
   self->collection = g_string_sized_new(64);
   self->bson = bson_sized_new(4096);
+  /* NOTE: write concern can be used by _compose_bulk_op_options too, keep the order! */
+  _compose_write_concern(self);
+  _compose_bulk_op_options(self);
 
   return log_threaded_dest_worker_init_method(s);
 }
@@ -437,6 +570,9 @@ static void
 _worker_deinit(LogThreadedDestWorker *s)
 {
   MongoDBDestWorker *self = (MongoDBDestWorker *) s;
+
+  _destroy_write_concern(self);
+  _destroy_bulk_op_options(self);
 
   if (self->bson)
     bson_destroy(self->bson);
@@ -449,17 +585,20 @@ _worker_deinit(LogThreadedDestWorker *s)
 }
 
 LogThreadedDestWorker *
-afmongodb_dw_new(LogThreadedDestDriver *owner, gint worker_index)
+afmongodb_dw_new(LogThreadedDestDriver *o, gint worker_index)
 {
   MongoDBDestWorker *self = g_new0(MongoDBDestWorker, 1);
+  MongoDBDestDriver *owner = (MongoDBDestDriver *) o;
 
-  log_threaded_dest_worker_init_instance(&self->super, owner, worker_index);
+  log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
 
   self->super.init = _worker_init;
   self->super.deinit = _worker_deinit;
   self->super.connect = _worker_connect;
   self->super.disconnect = _worker_disconnect;
   self->super.insert = _worker_insert;
+  if (owner->use_bulk)
+    self->super.flush = _worker_batch_flush;
 
   return &self->super;
 }

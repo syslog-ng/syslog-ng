@@ -39,6 +39,11 @@ typedef struct _MongoDBDestDriver
 
   LogTemplateOptions template_options;
 
+  gboolean use_bulk;
+  gboolean bulk_unordered;
+  gboolean bulk_bypass_validation;
+  int32_t write_concern_level;
+
   ValuePairs *vp;
 
   const gchar *const_db;

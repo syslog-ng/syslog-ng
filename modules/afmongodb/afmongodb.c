@@ -85,6 +85,37 @@ afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
   self->vp = vp;
 }
 
+void afmongodb_dd_set_bulk(LogDriver *d, gboolean bulk)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  self->use_bulk = bulk;
+}
+
+void
+afmongodb_dd_set_bulk_unordered(LogDriver *d, gboolean unordered)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  self->bulk_unordered = unordered;
+}
+
+void
+afmongodb_dd_set_bulk_bypass_validation(LogDriver *d, gboolean bypass_validation)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  self->bulk_bypass_validation = bypass_validation;
+}
+
+void
+afmongodb_dd_set_write_concern(LogDriver *d, int32_t write_concern_level)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
+
+  self->write_concern_level = write_concern_level;
+}
+
 /*
  * Utilities
  */
@@ -344,6 +375,11 @@ afmongodb_dd_new(GlobalConfig *cfg)
 
   log_template_options_defaults(&self->template_options);
   afmongodb_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
+
+  self->use_bulk = TRUE;
+  self->bulk_unordered = FALSE;
+  self->bulk_bypass_validation = FALSE;
+  self->write_concern_level = MONGOC_WRITE_CONCERN_W_DEFAULT;
 
   return &self->super.super.super;
 }
