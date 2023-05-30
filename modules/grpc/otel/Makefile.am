@@ -46,7 +46,9 @@ modules_grpc_otel_libotel_cpp_la_SOURCES = \
   modules/grpc/otel/otel-source.hpp \
   modules/grpc/otel/otel-source.cpp \
   modules/grpc/otel/otel-source-services.hpp \
-  modules/grpc/otel/otel-source-services.cpp
+  modules/grpc/otel/otel-source-services.cpp \
+  modules/grpc/otel/otel-protobuf-parser.hpp \
+  modules/grpc/otel/otel-protobuf-parser.cpp
 
 modules_grpc_otel_libotel_cpp_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
@@ -108,3 +110,5 @@ EXTRA_DIST += \
   $(OTEL_PROTO_SRCDIR)
 
 .PHONY: modules/grpc/otel/ mod-otel
+
+include modules/grpc/otel/tests/Makefile.am

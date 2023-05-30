@@ -31,6 +31,8 @@ set(OTEL_CPP_SOURCES
   otel-source.h
   otel-source-services.hpp
   otel-source-services.cpp
+  otel-protobuf-parser.hpp
+  otel-protobuf-parser.cpp
   ${OTEL_PROTO_GENERATED_SOURCES}
   ${OTEL_PROTO_GENERATED_GRPC_SOURCES})
 
@@ -54,3 +56,5 @@ add_module(
   DEPENDS otel-cpp
   SOURCES ${OTEL_SOURCES}
 )
+
+add_test_subdirectory(tests)
