@@ -453,12 +453,21 @@ AM_CONDITIONAL([HAVE_PYTHON_INTERPRETER], [test "$PYTHON" != :])
 dnl ***************************************************************************
 dnl C++
 
-AC_PROG_CXX([$CC])
+# Ok, here is the deal
+# clang cannot compile the current source, it has nultiple issues
+# replace it till not fixed them
+if test "x$CXX" = "xclang"; then
+        AC_MSG_ERROR(["clang cannot compile syslog-ng C++ sources, try using gcc instead (export CXX=gcc) for C++ compilation (NOTE: on macOS you need Homebrew gcc not the Apple one)"])
+elif test "x$CC" = "xclang"; then
+        CPP_COMPILER="gcc"
+        AC_MSG_WARN(["clang cannot compile syslog-ng C++ sources, switched to $CPP_COMPILER for C++ compilation (NOTE: on macOS you need Homebrew gcc not the Apple one)"])
+else
+        CPP_COMPILER="$CXX $CC"
+fi
+AC_MSG_RESULT(C++ compilers to be used $CPP_COMPILER)
+AC_PROG_CXX([$CPP_COMPILER])
 
 if test "x$enable_cpp" = "xyes"; then
-        if test "x$ostype" = "xDarwin"; then
-                AC_MSG_ERROR(C++ support is not available on MacOS)
-        fi
         AX_CXX_COMPILE_STDCXX(11,, mandatory)
 elif test "x$enable_cpp" = "xauto"; then
         if test "x$ostype" = "xDarwin"; then
