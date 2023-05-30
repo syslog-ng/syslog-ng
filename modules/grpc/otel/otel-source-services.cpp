@@ -110,6 +110,7 @@ syslogng::grpc::otel::SourceMetricsService::Export(::grpc::ServerContext *contex
               LogMessage *msg = log_msg_new_empty();
               protobuf_parser::set_metadata(msg, context->peer(), resource, resource_logs_schema_url, scope,
                                             scope_logs_schema_url);
+              protobuf_parser::parse(msg, metric);
               log_msg_unref(msg);
             }
         }
