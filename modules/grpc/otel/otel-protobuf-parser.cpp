@@ -30,6 +30,7 @@ using namespace opentelemetry::proto::resource::v1;
 using namespace opentelemetry::proto::common::v1;
 using namespace opentelemetry::proto::logs::v1;
 using namespace opentelemetry::proto::metrics::v1;
+using namespace opentelemetry::proto::trace::v1;
 
 static void
 _set_value(LogMessage *msg, const char *key, const char *value, LogMessageValueType type)
@@ -768,4 +769,136 @@ syslogng::grpc::otel::protobuf_parser::parse(LogMessage *msg, const Metric &metr
   _set_value(msg, ".otel.metric.unit", metric.unit(), LM_VT_STRING);
 
   _add_metric_data_fields(msg, metric);
+}
+
+void
+syslogng::grpc::otel::protobuf_parser::parse(LogMessage *msg, const Span &span)
+{
+  /* .otel.type */
+  log_msg_set_value_by_name_with_type(msg, ".otel.type", "span", -1, LM_VT_STRING);
+
+  std::string key_buffer = ".otel.span.";
+  size_t key_prefix_length = key_buffer.length();
+  char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
+
+  /* .otel.span.trace_id */
+  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "trace_id", span.trace_id(), LM_VT_BYTES);
+
+  /* .otel.span.span_id */
+  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "span_id", span.span_id(), LM_VT_BYTES);
+
+  /* .otel.span.trace_state */
+  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "trace_state", span.trace_state(), LM_VT_STRING);
+
+  /* .otel.span.parent_span_id */
+  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "parent_span_id", span.parent_span_id(), LM_VT_BYTES);
+
+  /* .otel.span.name */
+  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "name", span.name(), LM_VT_STRING);
+
+  /* .otel.span.kind */
+  std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIi32, span.kind());
+  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "kind", number_buf, LM_VT_INTEGER);
+
+  /* .otel.span.start_time_unix_nano */
+  std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, span.start_time_unix_nano());
+  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "start_time_unix_nano", number_buf, LM_VT_INTEGER);
+
+  /* .otel.span.end_time_unix_nano */
+  std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, span.end_time_unix_nano());
+  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "end_time_unix_nano", number_buf, LM_VT_INTEGER);
+
+  /* .otel.span.attributes.<...> */
+  _add_repeated_KeyValue_fields_with_prefix(msg, key_buffer, key_prefix_length, "attributes", span.attributes());
+
+  /* .otel.span.dropped_attributes_count */
+  std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, span.dropped_attributes_count());
+  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "dropped_attributes_count", number_buf, LM_VT_INTEGER);
+
+  /* .otel.span.events.<...> */
+  key_buffer.resize(key_prefix_length);
+  key_buffer.append("events.");
+  size_t length_with_events = key_buffer.length();
+
+  uint64_t event_idx = 0;
+  for (const Span::Event &event : span.events())
+    {
+      key_buffer.resize(length_with_events);
+      std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, event_idx);
+      key_buffer.append(number_buf);
+      key_buffer.append(".");
+      size_t length_with_idx = key_buffer.length();
+
+      /* .otel.span.events.<idx>.time_unix_nano */
+      std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, event.time_unix_nano());
+      _set_value_with_prefix(msg, key_buffer, length_with_idx, "time_unix_nano", number_buf, LM_VT_INTEGER);
+
+      /* .otel.span.events.<idx>.name */
+      _set_value_with_prefix(msg, key_buffer, length_with_idx, "name", event.name(), LM_VT_STRING);
+
+      /* .otel.span.events.<idx>.attributes.<...> */
+      _add_repeated_KeyValue_fields_with_prefix(msg, key_buffer, length_with_idx, "attributes", event.attributes());
+
+      /* .otel.span.events.<idx>.dropped_attributes_count */
+      std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, event.dropped_attributes_count());
+      _set_value_with_prefix(msg, key_buffer, length_with_idx, "dropped_attributes_count", number_buf,
+                             LM_VT_INTEGER);
+
+      event_idx++;
+    }
+
+  /* .otel.span.dropped_events_count */
+  std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, span.dropped_events_count());
+  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "dropped_events_count", number_buf, LM_VT_INTEGER);
+
+  /* .otel.span.links.<...> */
+  key_buffer.resize(key_prefix_length);
+  key_buffer.append("links.");
+  size_t length_with_links = key_buffer.length();
+
+  uint64_t link_idx = 0;
+  for (const Span::Link &link : span.links())
+    {
+      key_buffer.resize(length_with_links);
+      std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, link_idx);
+      key_buffer.append(number_buf);
+      key_buffer.append(".");
+      size_t length_with_idx = key_buffer.length();
+
+      /* .otel.span.links.<idx>.trace_id */
+      _set_value_with_prefix(msg, key_buffer, length_with_idx, "trace_id", link.trace_id(), LM_VT_BYTES);
+
+      /* .otel.span.links.<idx>.span_id */
+      _set_value_with_prefix(msg, key_buffer, length_with_idx, "span_id", link.span_id(), LM_VT_BYTES);
+
+      /* .otel.span.links.<idx>.trace_state */
+      _set_value_with_prefix(msg, key_buffer, length_with_idx, "trace_state", link.trace_state(), LM_VT_STRING);
+
+      /* .otel.span.links.<idx>.attributes.<...> */
+      _add_repeated_KeyValue_fields_with_prefix(msg, key_buffer, length_with_idx, "attributes", link.attributes());
+
+      /* .otel.span.links.<idx>.dropped_attributes_count */
+      std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, link.dropped_attributes_count());
+      _set_value_with_prefix(msg, key_buffer, length_with_idx, "dropped_attributes_count", number_buf,
+                             LM_VT_INTEGER);
+
+      link_idx++;
+    }
+
+  /* .otel.span.dropped_links_count */
+  std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, span.dropped_links_count());
+  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "dropped_links_count", number_buf, LM_VT_INTEGER);
+
+  /* .otel.span.status.<...> */
+  key_buffer.resize(key_prefix_length);
+  key_buffer.append("status.");
+  size_t length_with_status = key_buffer.length();
+  const Status &status = span.status();
+
+  /* .otel.span.status.message */
+  _set_value_with_prefix(msg, key_buffer, length_with_status, "message", status.message(), LM_VT_STRING);
+
+  /* .otel.span.status.code */
+  std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIi32, status.code());
+  _set_value_with_prefix(msg, key_buffer, length_with_status, "code", number_buf, LM_VT_INTEGER);
 }

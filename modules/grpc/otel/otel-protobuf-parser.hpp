@@ -33,6 +33,7 @@
 #include "opentelemetry/proto/common/v1/common.pb.h"
 #include "opentelemetry/proto/logs/v1/logs.pb.h"
 #include "opentelemetry/proto/metrics/v1/metrics.pb.h"
+#include "opentelemetry/proto/trace/v1/trace.pb.h"
 
 namespace syslogng {
 namespace grpc {
@@ -43,6 +44,7 @@ using opentelemetry::proto::resource::v1::Resource;
 using opentelemetry::proto::common::v1::InstrumentationScope;
 using opentelemetry::proto::logs::v1::LogRecord;
 using opentelemetry::proto::metrics::v1::Metric;
+using opentelemetry::proto::trace::v1::Span;
 
 void set_metadata(LogMessage *msg, const ::grpc::string &peer,
                   const Resource &resource, const std::string &resource_schema_url,
@@ -50,6 +52,7 @@ void set_metadata(LogMessage *msg, const ::grpc::string &peer,
 
 void parse(LogMessage *msg, const LogRecord &log_record);
 void parse(LogMessage *msg, const Metric &metric);
+void parse(LogMessage *msg, const Span &span);
 
 }
 }
