@@ -453,24 +453,24 @@ AM_CONDITIONAL([HAVE_PYTHON_INTERPRETER], [test "$PYTHON" != :])
 dnl ***************************************************************************
 dnl C++
 
-AC_PROG_CXX
+AC_PROG_CXX([$CC])
 
 if test "x$enable_cpp" = "xyes"; then
-    if test "x$ostype" = "xDarwin"; then
-        AC_MSG_ERROR(C++ support is not available on MacOS)
-    fi
-    AX_CXX_COMPILE_STDCXX(11,, mandatory)
-elif test "x$enable_cpp" = "xauto"; then
-    if test "x$ostype" = "xDarwin"; then
-        enable_cpp=no
-    else
-        AX_CXX_COMPILE_STDCXX(11,, optional)
-        if test "x$HAVE_CXX11" = "x1"; then
-            enable_cpp=yes
-        else
-            enable_cpp=no
+        if test "x$ostype" = "xDarwin"; then
+                AC_MSG_ERROR(C++ support is not available on MacOS)
         fi
-    fi
+        AX_CXX_COMPILE_STDCXX(11,, mandatory)
+elif test "x$enable_cpp" = "xauto"; then
+        if test "x$ostype" = "xDarwin"; then
+                enable_cpp=no
+        else
+                AX_CXX_COMPILE_STDCXX(11,, optional)
+                if test "x$HAVE_CXX11" = "x1"; then
+                        enable_cpp=yes
+                else
+                        enable_cpp=no
+                fi
+        fi
 fi
 
 dnl ***************************************************************************
