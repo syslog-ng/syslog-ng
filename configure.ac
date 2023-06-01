@@ -426,6 +426,7 @@ patheval()
 
 dnl ***************************************************************************
 dnl Checks for programs.
+
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
@@ -448,6 +449,38 @@ if test "${PYTHON}" = ":"; then
 fi
 
 AM_CONDITIONAL([HAVE_PYTHON_INTERPRETER], [test "$PYTHON" != :])
+
+dnl ***************************************************************************
+dnl C++
+
+# Ok, here is the deal
+# clang cannot compile the current source, it has nultiple issues
+# replace it till not fixed them
+if test "x$CXX" = "xclang"; then
+        AC_MSG_ERROR(["clang cannot compile syslog-ng C++ sources, try using gcc instead (export CXX=gcc) for C++ compilation (NOTE: on macOS you need Homebrew gcc not the Apple one)"])
+elif test "x$CC" = "xclang"; then
+        CPP_COMPILER="gcc"
+        AC_MSG_WARN(["clang cannot compile syslog-ng C++ sources, switched to $CPP_COMPILER for C++ compilation (NOTE: on macOS you need Homebrew gcc not the Apple one)"])
+else
+        CPP_COMPILER="$CXX $CC"
+fi
+AC_MSG_RESULT(C++ compilers to be used $CPP_COMPILER)
+AC_PROG_CXX([$CPP_COMPILER])
+
+if test "x$enable_cpp" = "xyes"; then
+        AX_CXX_COMPILE_STDCXX(11,, mandatory)
+elif test "x$enable_cpp" = "xauto"; then
+        if test "x$ostype" = "xDarwin"; then
+                enable_cpp=no
+        else
+                AX_CXX_COMPILE_STDCXX(11,, optional)
+                if test "x$HAVE_CXX11" = "x1"; then
+                        enable_cpp=yes
+                else
+                        enable_cpp=no
+                fi
+        fi
+fi
 
 dnl ***************************************************************************
 dnl Validate yacc
@@ -1332,7 +1365,6 @@ if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "xno"; then
 	enable_smtp=$libesmtp
 fi
 
-
 dnl ***************************************************************************
 dnl libmqtt headers/libraries
 dnl ***************************************************************************
@@ -1374,30 +1406,6 @@ if test "x$enable_mqtt" = "xyes" || test "x$enable_mqtt" = "xauto"; then
 	fi
 
 	enable_mqtt=$libpaho_mqtt
-fi
-
-dnl ***************************************************************************
-dnl C++
-dnl ***************************************************************************
-
-AC_PROG_CXX
-
-if test "x$enable_cpp" = "xyes"; then
-    if test "x$ostype" = "xDarwin"; then
-        AC_MSG_ERROR(C++ support is not available on MacOS)
-    fi
-    AX_CXX_COMPILE_STDCXX(11,, mandatory)
-elif test "x$enable_cpp" = "xauto"; then
-    if test "x$ostype" = "xDarwin"; then
-        enable_cpp=no
-    else
-        AX_CXX_COMPILE_STDCXX(11,, optional)
-        if test "x$HAVE_CXX11" = "x1"; then
-            enable_cpp=yes
-        else
-            enable_cpp=no
-        fi
-    fi
 fi
 
 dnl ***************************************************************************

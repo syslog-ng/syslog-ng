@@ -169,6 +169,7 @@ jobs:
 
           DISTCHECK_CONFIGURE_FLAGS="
             CFLAGS=-Werror
+            CXXFLAGS=-Werror
             --prefix=${HOME}/install/syslog-ng
             --with-ivykis=internal
             --with-jsonc=system

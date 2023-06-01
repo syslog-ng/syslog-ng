@@ -59,8 +59,16 @@ AM_CPPFLAGS		= -I$(top_srcdir)/lib -I$(top_srcdir)/modules -I$(top_builddir)/lib
 AM_CFLAGS = \
 	-Wshadow
 
+AM_CXXFLAGS = \
+	-Wshadow
+
 # Acceptable warnings
 AM_CFLAGS += \
+	-Wno-stack-protector \
+	-Wno-unused-parameter \
+	-Wno-variadic-macros
+
+AM_CXXFLAGS += \
 	-Wno-stack-protector \
 	-Wno-unused-parameter \
 	-Wno-variadic-macros
@@ -90,6 +98,22 @@ AM_CFLAGS += \
 	-Woverride-init \
 	-Wfloat-conversion \
 	-Wbad-function-cast
+
+AM_CXXFLAGS += \
+	-Wswitch-default \
+	-Wall \
+	-Wuninitialized \
+	-Wdeprecated \
+	-Wdeprecated-declarations \
+	-Woverflow \
+	-Wdouble-promotion \
+	-Wfloat-equal \
+	-Wpointer-arith \
+	-Wmissing-format-attribute \
+	-Wundef \
+	-Wignored-qualifiers \
+	-Wfloat-conversion \
+	-Wunused-but-set-parameter
 endif
 
 if ENABLE_DEBUG
