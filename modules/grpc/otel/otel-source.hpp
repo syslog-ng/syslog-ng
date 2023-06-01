@@ -36,6 +36,10 @@ namespace syslogng {
 namespace grpc {
 namespace otel {
 
+class SourceLogsService;
+class SourceMetricsService;
+class SourceTraceService;
+
 class SourceDriver
 {
 public:
@@ -46,6 +50,13 @@ public:
   const gchar *format_stats_instance();
   gboolean init();
   gboolean deinit();
+
+private:
+  bool post(LogMessage *msg);
+
+  friend class SourceLogsService;
+  friend class SourceMetricsService;
+  friend class SourceTraceService;
 
 public:
   guint64 port = 4317;
