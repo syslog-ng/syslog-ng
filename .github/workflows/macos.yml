@@ -31,7 +31,9 @@ jobs:
 
           HOMEBREW_PREFIX="$(brew --prefix)"
           PYTHONUSERBASE="${HOME}/python_packages"
-          PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@1.1/lib/pkgconfig:$PKG_CONFIG_PATH"
+          PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@1.1/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${PKG_CONFIG_PATH}"
+          CFLAGS="-I${HOMEBREW_PREFIX}/include/ ${CFLAGS}"
+          LDFLAGS="-L${HOMEBREW_PREFIX}/lib ${LDFLAGS}"
           THREADS="$(sysctl -n hw.physicalcpu)"
           CONFIGURE_FLAGS="
             --with-ivykis=system
@@ -44,8 +46,10 @@ jobs:
             --with-python=3
           "
 
-          gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS
-          gh_path "${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${PYTHONUSERBASE}/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin"
+          gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS
+          gh_path "${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${PYTHONUSERBASE}/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${PATH}"
+
+          ln -s "${HOMEBREW_PREFIX}/bin/gcc-11" "${HOMEBREW_PREFIX}/bin/gcc"
 
       - name: autogen.sh
         run: |
