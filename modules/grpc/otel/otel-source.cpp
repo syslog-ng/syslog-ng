@@ -41,6 +41,8 @@ syslogng::grpc::otel::SourceDriver::run()
 {
   std::string address = std::string("[::]:").append(std::to_string(port));
 
+  ::grpc::EnableDefaultHealthCheckService(true);
+
   ::grpc::ServerBuilder builder;
   builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
 
