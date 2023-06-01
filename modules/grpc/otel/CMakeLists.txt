@@ -30,7 +30,7 @@ set(OTEL_CPP_SOURCES
   otel-source.hpp
   otel-source.h
   otel-source-services.hpp
-  otel-source-services.cpp
+  otel-servicecall.hpp
   otel-protobuf-parser.hpp
   otel-protobuf-parser.cpp
   ${OTEL_PROTO_GENERATED_SOURCES}

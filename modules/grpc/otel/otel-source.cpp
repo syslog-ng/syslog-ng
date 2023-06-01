@@ -28,7 +28,13 @@
 #include "otel-source.hpp"
 #include "otel-source-services.hpp"
 
+#include "compat/cpp-start.h"
+#include "messages.h"
+#include "compat/cpp-end.h"
+
 #define get_SourceDriver(s) (((OtelSourceDriver *) s)->cpp)
+
+using namespace syslogng::grpc::otel;
 
 /* C++ Implementations */
 
@@ -47,14 +53,15 @@ syslogng::grpc::otel::SourceDriver::run()
   ::grpc::ServerBuilder builder;
   builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
 
-  SourceTraceService trace_service(*this);
-  SourceLogsService logs_service(*this);
-  SourceMetricsService metrics_service(*this);
+  TraceService::AsyncService trace_service;
+  LogsService::AsyncService logs_service;
+  MetricsService::AsyncService metrics_service;
 
   builder.RegisterService(&trace_service);
   builder.RegisterService(&logs_service);
   builder.RegisterService(&metrics_service);
 
+  cq = builder.AddCompletionQueue();
   server = builder.BuildAndStart();
   if (!server)
     {
@@ -63,13 +70,24 @@ syslogng::grpc::otel::SourceDriver::run()
     }
 
   msg_info("OpenTelemetry server accepting connections", evt_tag_int("port", port));
-  server->Wait();
+
+  new TraceServiceCall(*this, &trace_service, cq.get());
+  new LogsServiceCall(*this, &logs_service, cq.get());
+  new MetricsServiceCall(*this, &metrics_service, cq.get());
+
+  void *tag;
+  bool ok;
+  while (cq->Next(&tag, &ok))
+    {
+      static_cast<AsyncServiceCallInterface *>(tag)->Proceed(ok);
+    }
 }
 
 void
 syslogng::grpc::otel::SourceDriver::request_exit()
 {
   server->Shutdown();
+  cq->Shutdown();
 }
 
 const gchar *

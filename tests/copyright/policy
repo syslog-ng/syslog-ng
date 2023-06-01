@@ -172,7 +172,7 @@ modules/diskq/tests/test_logqueue_disk\.c$
 modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
 modules/metrics-probe/label-template\.(c|h)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
-modules/grpc/otel/otel-(grammar|parser|plugin|source|source-services|protobuf-parser)\.(c|h|cpp|hpp|ym)$
+modules/grpc/otel/otel-(grammar|parser|plugin|source|source-services|servicecall|protobuf-parser)\.(c|h|cpp|hpp|ym)$
 modules/grpc/otel/tests/test-otel-(protobuf-parser)\.cpp$
 modules/examples/inner-destinations/tls-test-validation
 modules/examples/sources/random-choice-generator

@@ -30,15 +30,12 @@
 #include "compat/cpp-end.h"
 
 #include "otel-source.h"
+#include "otel-servicecall.hpp"
 
 
 namespace syslogng {
 namespace grpc {
 namespace otel {
-
-class SourceLogsService;
-class SourceMetricsService;
-class SourceTraceService;
 
 class SourceDriver
 {
@@ -54,9 +51,9 @@ public:
 private:
   bool post(LogMessage *msg);
 
-  friend class SourceLogsService;
-  friend class SourceMetricsService;
-  friend class SourceTraceService;
+  friend TraceServiceCall;
+  friend LogsServiceCall;
+  friend MetricsServiceCall;
 
 public:
   guint64 port = 4317;
@@ -64,6 +61,7 @@ public:
 private:
   OtelSourceDriver *super;
   std::unique_ptr<::grpc::Server> server;
+  std::unique_ptr<::grpc::ServerCompletionQueue> cq;
 };
 
 }
