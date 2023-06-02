@@ -29,14 +29,14 @@ jobs:
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib ${LDFLAGS}"
           THREADS="$(sysctl -n hw.physicalcpu)"
           CONFIGURE_FLAGS="
+            --enable-all-modules
             --with-ivykis=system
+            --with-python=3
             --disable-sun-streams
             --disable-systemd
             --disable-pacct
             --disable-smtp
             --disable-mqtt
-            --enable-all-modules
-            --with-python=3
           "
 
           gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS
