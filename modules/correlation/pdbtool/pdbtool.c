@@ -389,7 +389,7 @@ pdbtool_match(int argc, char *argv[])
   GArray *dbg_list = NULL;
   RDebugInfo *dbg_info;
   gint i = 0, pos = 0;
-  gint ret = 0;
+  gint ret = 1;
   const gchar *name = NULL;
   gssize name_len = 0;
   MsgFormatOptions parse_options;
@@ -509,6 +509,7 @@ pdbtool_match(int argc, char *argv[])
     {
       dbg_list = g_array_new(FALSE, FALSE, sizeof(RDebugInfo));
     }
+  ret = 0;
   while (!eof && (buf || match_message))
     {
       invalidate_cached_time();
