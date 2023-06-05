@@ -1279,6 +1279,7 @@ main(int argc, char *argv[])
   msg_init(TRUE);
 
   resolved_configurable_paths_init(&resolved_configurable_paths);
+  patterndb_file = get_installation_path_for(patterndb_file);
   app_startup();
   pattern_db_global_init();
   configuration = cfg_new_snippet();
