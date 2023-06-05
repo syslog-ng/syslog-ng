@@ -13,13 +13,6 @@ jobs:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v3
 
-      - name: Unlinking preinstalled Python 2 (workaround)
-        # The python@3 brew package has to be installed and linked system-wide (it's a dependency of glib and syslog-ng)
-        # The macos-latest GitHub runner has Python 2.7 preinstalled as a pkg, this prevents linking the python@3
-        # brew package, even when linking is forced.
-        run : |
-          find /usr/local/bin/ -lname "*Python.framework*" -delete
-
       - name: Install dependencies
         run: |
           brew update --preinstall
@@ -31,21 +24,25 @@ jobs:
 
           HOMEBREW_PREFIX="$(brew --prefix)"
           PYTHONUSERBASE="${HOME}/python_packages"
-          PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@1.1/lib/pkgconfig:$PKG_CONFIG_PATH"
+          PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@1.1/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${PKG_CONFIG_PATH}"
+          CFLAGS="-I${HOMEBREW_PREFIX}/include/ ${CFLAGS}"
+          LDFLAGS="-L${HOMEBREW_PREFIX}/lib ${LDFLAGS}"
           THREADS="$(sysctl -n hw.physicalcpu)"
           CONFIGURE_FLAGS="
+            --enable-all-modules
             --with-ivykis=system
+            --with-python=3
             --disable-sun-streams
             --disable-systemd
             --disable-pacct
             --disable-smtp
             --disable-mqtt
-            --enable-all-modules
-            --with-python=3
           "
 
-          gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS
-          gh_path "${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${PYTHONUSERBASE}/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin"
+          gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS
+          gh_path "${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${PYTHONUSERBASE}/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${PATH}"
+
+          ln -s "${HOMEBREW_PREFIX}/bin/gcc-11" "${HOMEBREW_PREFIX}/bin/gcc"
 
       - name: autogen.sh
         run: |
