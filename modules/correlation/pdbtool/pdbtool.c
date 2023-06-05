@@ -1091,6 +1091,7 @@ pdbtool_patternize(int argc, char *argv[])
   gint i;
   GError *error = NULL;
   GString *delimcheck = g_string_new(" "); /* delims should always include a space */
+  gint ret = 0;
 
   if (iterate_outliers)
     iterate = PTZ_ITERATE_OUTLIERS;
@@ -1116,6 +1117,7 @@ pdbtool_patternize(int argc, char *argv[])
         {
           fprintf(stderr, "Error adding log file as patternize input: %s\n", error->message);
           g_clear_error(&error);
+          ret = 1;
           goto exit;
         }
     }
@@ -1127,7 +1129,7 @@ pdbtool_patternize(int argc, char *argv[])
 exit:
   ptz_free(ptz);
 
-  return 0;
+  return ret;
 }
 
 static GOptionEntry patternize_options[] =
