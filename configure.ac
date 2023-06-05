@@ -431,13 +431,27 @@ patheval()
 dnl ***************************************************************************
 dnl Checks for programs.
 
+# Do not mix the used compilers or you might have to deal with further libtool issues
+# Currently syslog-ng and all modules can be compiled like
+#       | Comoiler |  C  | C++ | ObjC |
+#       -------------------------------
+#       |    gcc   |  x  |  x  |  x   |
+#       -------------------------------
+#       |   clang  |  x  |  -  |  x   |
+#       -------------------------------
+#       |    g++   | n/a |  x  |  x   | (NOTE: g++ fails on C99 compilant test bellow)
+#       -------------------------------
+# So the best choice is simply using gcc, just
+#       export CC=gcc
+# and you'll be fine in most of the cases
+#
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
 if test "x$ac_cv_prog_cc_c99" = "xno"; then
 	AC_MSG_ERROR([C99 standard compliant C compiler required. Try GCC 3.x or later.])
 fi
-AC_PROG_OBJC([clang gcc cc])
+AC_PROG_OBJC([$OBJC $CC])
 AC_PROG_YACC
 AM_PROG_LEX
 AC_PROG_MAKE_SET
@@ -2185,6 +2199,7 @@ echo "  Package name                : $PACKAGE_NAME"
 echo " Compiler options:"
 echo "  compiler                    : $CC"
 echo "  compiler options            : $CFLAGS $CPPFLAGS"
+echo "  ObjC compiler               : $OBJC"
 echo "  C++ enabled                 : ${enable_cpp:=no}"
 if test "x$enable_cpp" = "xyes"; then
 echo "  C++ compiler                : $CXX"
