@@ -52,6 +52,8 @@
 
 %token KW_DEFAULT
 %token KW_DBD_OPTION
+%token KW_DBI_DRIVER_DIR
+%token KW_QUOTE_CHAR
 %token KW_INDEXES
 %token KW_VALUES
 %token KW_SQL
@@ -107,12 +109,14 @@ dest_afsql_option
         | KW_USERNAME '(' string ')'		{ afsql_dd_set_user(last_driver, $3); free($3); }
         | KW_DBD_OPTION '(' string LL_NUMBER ')' { afsql_dd_add_dbd_option_numeric(last_driver, $3, $4); free($3); }
         | KW_DBD_OPTION '(' string string ')'    { afsql_dd_add_dbd_option(last_driver, $3, $4); free($3); free($4); }
+        | KW_DBI_DRIVER_DIR '(' path ')'        { afsql_dd_set_dbi_driver_dir(last_driver, $3); free($3); }
+        | KW_QUOTE_CHAR '(' string ')'          { afsql_dd_set_quote_char(last_driver, $3); }
         | KW_PASSWORD '(' string ')'		{ afsql_dd_set_password(last_driver, $3); free($3); }
         | KW_DATABASE '(' string ')'		{ afsql_dd_set_database(last_driver, $3); free($3); }
         | KW_TABLE '(' template_content ')'	{ afsql_dd_set_table(last_driver, $3); }
         | KW_COLUMNS '(' string_list ')'	{ afsql_dd_set_columns(last_driver, $3); }
         | KW_INDEXES '(' string_list ')'        { afsql_dd_set_indexes(last_driver, $3); }
-        | KW_VALUES '(' dest_afsql_values ')'		{ afsql_dd_set_values(last_driver, $3); }
+        | KW_VALUES '(' dest_afsql_values ')'   { afsql_dd_set_values(last_driver, $3); }
         | KW_IGNORE_TNS_CONFIG '(' yesno ')'    { afsql_dd_set_ignore_tns_config(last_driver,$3); }
         | KW_NULL '(' string ')'                { afsql_dd_set_null_value(last_driver, $3); free($3); }
         | KW_SESSION_STATEMENTS '(' string_list ')' { afsql_dd_set_session_statements(last_driver, $3); }
