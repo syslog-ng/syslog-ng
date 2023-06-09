@@ -1,0 +1,90 @@
+/*
+ * Copyright (c) 2023 László Várady
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "bigquery-parser.h"
+
+}
+
+
+%code {
+
+#include "cfg-grammar-internal.h"
+#include "plugin.h"
+#include "syslog-names.h"
+
+#include "bigquery-dest.h"
+
+#include <stdlib.h>
+
+}
+
+%define api.prefix {bigquery_}
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_BIGQUERY
+%token KW_URL
+%token KW_PROJECT
+%token KW_DATASET
+%token KW_TABLE
+
+%type <ptr> bigquery_dest
+
+%%
+
+start
+  : LL_CONTEXT_DESTINATION bigquery_dest { YYACCEPT; }
+  ;
+
+bigquery_dest
+  : KW_BIGQUERY
+    {
+      last_driver = *instance = bigquery_dd_new(configuration);
+    }
+    '(' _inner_dest_context_push bigquery_dest_options _inner_dest_context_pop ')' { $$ = last_driver; }
+  ;
+
+bigquery_dest_options
+  : bigquery_dest_option bigquery_dest_options
+  |
+  ;
+
+bigquery_dest_option
+  : KW_URL '(' string ')' { bigquery_dd_set_url(last_driver, $3); free($3); }
+  | KW_PROJECT '(' string ')' { bigquery_dd_set_project(last_driver, $3); free($3); }
+  | KW_DATASET '(' string ')' { bigquery_dd_set_dataset(last_driver, $3); free($3); }
+  | KW_TABLE '(' string ')' { bigquery_dd_set_table(last_driver, $3); free($3); }
+  | threaded_dest_driver_general_option
+  | threaded_dest_driver_workers_option
+  | threaded_dest_driver_batch_option
+  | { last_template_options = bigquery_dd_get_template_options(last_driver); } template_option
+  ;
+
+/* INCLUDE_RULES */
+
+%%
