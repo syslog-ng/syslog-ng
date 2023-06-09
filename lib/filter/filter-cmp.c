@@ -53,9 +53,16 @@ fop_compare_numeric(const GString *left, const GString *right)
 }
 
 static gint
-fop_compare_string(const GString *left, const GString *right)
+fop_compare_bytes(const GString *left, const GString *right)
 {
-  return strcmp(left->str, right->str);
+  gint cmp = memcmp(left->str, right->str, MIN(left->len, right->len));
+  if (cmp != 0)
+    return cmp;
+
+  if (left->len == right->len)
+    return 0;
+
+  return left->len < right->len ? -1 : 1;
 }
 
 static inline gboolean
@@ -68,6 +75,12 @@ static inline gboolean
 _is_string(LogMessageValueType type)
 {
   return type == LM_VT_STRING;
+}
+
+static inline gboolean
+_is_bytes(LogMessageValueType type)
+{
+  return type == LM_VT_BYTES || type == LM_VT_PROTOBUF;
 }
 
 static gboolean
@@ -114,6 +127,8 @@ _convert_to_number(const GString *value, LogMessageValueType type, GenericNumber
       break;
     case LM_VT_JSON:
     case LM_VT_LIST:
+    case LM_VT_BYTES:
+    case LM_VT_PROTOBUF:
       gn_set_nan(number);
       break;
     case LM_VT_NULL:
@@ -183,8 +198,8 @@ _evaluate_typed(FilterCmp *self,
    *   - numbers or mismatching types are compared as numbers */
 
   if (left_type == right_type &&
-      (_is_string(left_type) || _is_object(left_type)))
-    return _evaluate_comparison(self, fop_compare_string(left, right));
+      (_is_string(left_type) || _is_object(left_type) || _is_bytes(left_type)))
+    return _evaluate_comparison(self, fop_compare_bytes(left, right));
 
   if (left_type == LM_VT_NULL || right_type == LM_VT_NULL)
     {
@@ -272,7 +287,7 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEval
   if (self->compare_mode & FCMP_TYPE_AWARE)
     result = _evaluate_typed(self, left_buf, left_type, right_buf, right_type);
   else if (self->compare_mode & FCMP_STRING_BASED)
-    result = _evaluate_comparison(self, fop_compare_string(left_buf, right_buf));
+    result = _evaluate_comparison(self, fop_compare_bytes(left_buf, right_buf));
   else if (self->compare_mode & FCMP_NUM_BASED)
     result = _evaluate_comparison(self, fop_compare_numeric(left_buf, right_buf));
   else if (self->compare_mode & FCMP_TYPE_AND_VALUE_BASED)

@@ -246,6 +246,8 @@ log_msg_value_type_to_str(LogMessageValueType self)
     [LM_VT_DATETIME] = "datetime",
     [LM_VT_LIST] = "list",
     [LM_VT_NULL] = "null",
+    [LM_VT_BYTES] = "bytes",
+    [LM_VT_PROTOBUF] = "protobuf",
     [LM_VT_NONE] = "none",
   };
 
@@ -272,6 +274,10 @@ log_msg_value_type_from_str(const gchar *in_str, LogMessageValueType *out_type)
     *out_type = LM_VT_LIST;
   else if (strcmp(in_str, "null") == 0)
     *out_type = LM_VT_NULL;
+  else if (strcmp(in_str, "bytes") == 0)
+    *out_type = LM_VT_BYTES;
+  else if (strcmp(in_str, "protobuf") == 0)
+    *out_type = LM_VT_PROTOBUF;
   else if (strcmp(in_str, "none") == 0)
     *out_type = LM_VT_NONE;
   else

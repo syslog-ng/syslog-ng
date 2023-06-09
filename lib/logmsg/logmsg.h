@@ -164,6 +164,8 @@ enum _LogMessageValueType
   LM_VT_DATETIME = 6,
   LM_VT_LIST = 7,
   LM_VT_NULL = 8,
+  LM_VT_BYTES = 9,
+  LM_VT_PROTOBUF = 10,
 
   /* extremal value to indicate "unset" state.
    *

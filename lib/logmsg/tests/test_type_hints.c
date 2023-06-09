@@ -71,6 +71,10 @@ ParameterizedTestParameters(type_hints, test_type_hint_parse)
     {"float",     LM_VT_DOUBLE},
     {"double",    LM_VT_DOUBLE},
     {"datetime",  LM_VT_DATETIME},
+    {"list",      LM_VT_LIST},
+    {"null",      LM_VT_NULL},
+    {"bytes",     LM_VT_BYTES},
+    {"protobuf",  LM_VT_PROTOBUF},
   };
 
   return cr_make_param_array(StringHintPair, string_value_pairs,

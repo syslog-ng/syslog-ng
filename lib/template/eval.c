@@ -43,6 +43,15 @@ _propagate_type(LogMessageValueType acc_type, LogMessageValueType elem_type)
   return acc_type;
 }
 
+static gboolean
+_should_render(const gchar *value, LogMessageValueType value_type, LogMessageValueType type_hint)
+{
+  if (value_type == LM_VT_BYTES || value_type == LM_VT_PROTOBUF)
+    return value_type == type_hint;
+
+  return !!value[0];
+}
+
 void
 log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
                                                        LogTemplateEvalOptions *options,
@@ -106,12 +115,18 @@ log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMes
           LogMessageValueType value_type = LM_VT_NONE;
 
           value = log_msg_get_value_with_type(messages[msg_ndx], e->value_handle, &value_len, &value_type);
-          if (value && value[0])
-            result_append(result, value, value_len, self->escape);
+          if (value && _should_render(value, value_type, self->type_hint))
+            {
+              result_append(result, value, value_len, self->escape);
+            }
           else if (e->default_value)
             {
               result_append(result, e->default_value, -1, self->escape);
               value_type = LM_VT_STRING;
+            }
+          else if (value_type == LM_VT_BYTES || value_type == LM_VT_PROTOBUF)
+            {
+              value_type = LM_VT_NULL;
             }
           t = _propagate_type(t, value_type);
           break;
