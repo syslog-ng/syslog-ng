@@ -81,8 +81,11 @@ TestSuite(python_tf, .init = setup, .fini = teardown);
 typedef struct _PyTfTestParams
 {
   const gchar *value;
-  const gchar *expected_value;
+  gssize value_length;
+  const gchar *v3_x_expected_value;
+  const gchar *v4_x_expected_value;
   LogMessageValueType type;
+  LogMessageValueType expected_type;
 } PyTfTestParams;
 
 ParameterizedTestParameters(python_tf, test_python_tf)
@@ -91,32 +94,62 @@ ParameterizedTestParameters(python_tf, test_python_tf)
   {
     {
       .value = "almafa",
+      .value_length = -1,
       .type = LM_VT_STRING,
+      .expected_type = LM_VT_STRING,
     },
     {
       .value = "42",
+      .value_length = -1,
       .type = LM_VT_INTEGER,
+      .expected_type = LM_VT_INTEGER,
     },
     {
       .value = "6.900000",
-      .type = LM_VT_DOUBLE
+      .value_length = -1,
+      .type = LM_VT_DOUBLE,
+      .expected_type = LM_VT_DOUBLE
     },
     {
       .value = "true",
-      .type = LM_VT_BOOLEAN
+      .value_length = -1,
+      .type = LM_VT_BOOLEAN,
+      .expected_type = LM_VT_BOOLEAN
     },
     {
       .value = "",
-      .type = LM_VT_NULL
+      .value_length = -1,
+      .type = LM_VT_NULL,
+      .expected_type = LM_VT_NULL
     },
     {
       .value = "a,b,c",
-      .type = LM_VT_LIST
+      .value_length = -1,
+      .type = LM_VT_LIST,
+      .expected_type = LM_VT_LIST
     },
     {
       .value = "1680456974",
-      .expected_value = "1680456974.000",
-      .type = LM_VT_DATETIME
+      .value_length = -1,
+      .v4_x_expected_value = "1680456974.000",
+      .type = LM_VT_DATETIME,
+      .expected_type = LM_VT_DATETIME
+    },
+    {
+      .value = "\0\1\2\3",
+      .value_length = 4,
+      .v3_x_expected_value = "def",
+      .v4_x_expected_value = "def",
+      .type = LM_VT_BYTES,
+      .expected_type = LM_VT_STRING
+    },
+    {
+      .value = "\4\5\6\7",
+      .value_length = 4,
+      .v3_x_expected_value = "def",
+      .v4_x_expected_value = "def",
+      .type = LM_VT_PROTOBUF,
+      .expected_type = LM_VT_STRING
     },
   };
 
@@ -126,23 +159,24 @@ ParameterizedTestParameters(python_tf, test_python_tf)
 ParameterizedTest(PyTfTestParams *params, python_tf, test_python_tf)
 {
   const gchar *python_tf_implementation = "def test_python_tf(msg):\n"
-                                          "    return msg.get('test_key')\n";
+                                          "    return msg.get('test_key', default='def')\n";
   const gchar *template = "$(python test_python_tf)";
 
   LogMessage *msg = log_msg_new_empty();
-  log_msg_set_value_by_name_with_type(msg, "test_key", params->value, strlen(params->value), params->type);
+  log_msg_set_value_by_name_with_type(msg, "test_key", params->value, params->value_length, params->type);
 
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   {
     cr_assert(PyRun_String(python_tf_implementation, Py_file_input, _python_main_dict, _python_main_dict));
 
+    const gchar *expected_value = params->v3_x_expected_value ? params->v3_x_expected_value : params->value;
     cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
-    assert_template_format_value_and_type_msg(template, params->value, LM_VT_STRING, msg);
+    assert_template_format_value_and_type_msg(template, expected_value, LM_VT_STRING, msg);
 
-    const gchar *expected_value = params->expected_value ? params->expected_value : params->value;
+    expected_value = params->v4_x_expected_value ? params->v4_x_expected_value : params->value;
     cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
-    assert_template_format_value_and_type_msg(template, expected_value, params->type, msg);
+    assert_template_format_value_and_type_msg(template, expected_value, params->expected_type, msg);
   }
   PyGILState_Release(gstate);
 
