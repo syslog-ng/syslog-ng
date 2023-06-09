@@ -349,6 +349,7 @@
 %token KW_CAST                        10511
 %token KW_UPPER                       10512
 %token KW_LOWER                       10513
+%token KW_INCLUDE_BYTES               10514
 
 %token KW_ON_ERROR                    10520
 
@@ -1496,6 +1497,7 @@ vp_option
         | KW_EXCLUDE '(' string_list ')'                 { value_pairs_add_glob_patterns(last_value_pairs, $3, FALSE); }
 	| KW_SCOPE '(' vp_scope_list ')'
 	| KW_CAST '(' yesno ')'                          { value_pairs_set_cast_to_strings(last_value_pairs, $3); }
+	| KW_INCLUDE_BYTES '(' yesno ')'                 { value_pairs_set_include_bytes(last_value_pairs, $3); }
 	;
 
 vp_scope_list

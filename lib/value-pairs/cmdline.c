@@ -406,9 +406,22 @@ vp_cmdline_parse_cast(const gchar *option_name, const gchar *value,
   return TRUE;
 }
 
+static void
+_value_pairs_add_optional_options(ValuePairs *vp, GOptionGroup *og, const ValuePairsOptionalOptions *optional_options)
+{
+  GOptionEntry include_bytes_option[] =
+  {
+    { "include-bytes", 0, 0, G_OPTION_ARG_NONE, &vp->include_bytes, NULL, NULL }, { NULL },
+  };
+
+  if (optional_options->enable_include_bytes)
+    g_option_group_add_entries(og, include_bytes_option);
+}
+
 static gboolean
 value_pairs_parse_command_line(ValuePairs *vp,
                                gint *argc, gchar ***argv,
+                               const ValuePairsOptionalOptions *optional_options,
                                GOptionGroup *custom_options,
                                GError **error)
 {
@@ -489,6 +502,7 @@ value_pairs_parse_command_line(ValuePairs *vp,
     },
     { NULL }
   };
+
   gpointer user_data_args[4];
   gboolean success;
 
@@ -500,6 +514,8 @@ value_pairs_parse_command_line(ValuePairs *vp,
   ctx = g_option_context_new("value-pairs");
   GOptionGroup *og = g_option_group_new("value-pairs", "", "", user_data_args, NULL);
   g_option_group_add_entries(og, vp_options);
+  if (optional_options)
+    _value_pairs_add_optional_options(vp, og, optional_options);
 
   /* only the main group gets to process G_OPTION_REMAINING options, so
    * vp_options is the main one */
@@ -517,6 +533,7 @@ value_pairs_parse_command_line(ValuePairs *vp,
 ValuePairs *
 value_pairs_new_from_cmdline(GlobalConfig *cfg,
                              gint *argc, gchar ***argv,
+                             const ValuePairsOptionalOptions *optional_options,
                              GOptionGroup *custom_options,
                              GError **error)
 {
@@ -524,7 +541,7 @@ value_pairs_new_from_cmdline(GlobalConfig *cfg,
 
   vp = value_pairs_new(cfg);
 
-  if (!value_pairs_parse_command_line(vp, argc, argv, custom_options, error))
+  if (!value_pairs_parse_command_line(vp, argc, argv, optional_options, custom_options, error))
     {
       value_pairs_unref(vp);
       return NULL;

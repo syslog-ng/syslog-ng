@@ -80,7 +80,7 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
   GOptionGroup *og = g_option_group_new("format-json", "", "", state, NULL);
   g_option_group_add_entries(og, format_json_options);
 
-  state->vp = value_pairs_new_from_cmdline(parent->cfg, &argc, &argv, og, error);
+  state->vp = value_pairs_new_from_cmdline(parent->cfg, &argc, &argv, NULL, og, error);
   if (!state->vp)
     return FALSE;
 

@@ -973,6 +973,12 @@ value_pairs_is_cast_to_strings_explicit(ValuePairs *vp)
   return vp->explicit_cast_to_strings;
 }
 
+void
+value_pairs_set_include_bytes(ValuePairs *vp, gboolean enable)
+{
+  vp->include_bytes = enable;
+}
+
 ValuePairs *
 value_pairs_new(GlobalConfig *cfg)
 {

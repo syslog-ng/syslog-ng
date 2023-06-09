@@ -82,6 +82,7 @@ static CfgLexerKeyword main_keywords[] =
   { "cast",               KW_CAST },
   { "upper",              KW_UPPER },
   { "lower",              KW_LOWER },
+  { "include_bytes",      KW_INCLUDE_BYTES },
 
   /* option items */
   { "flags",              KW_FLAGS },
