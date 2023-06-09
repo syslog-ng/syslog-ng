@@ -273,6 +273,9 @@ vp_msg_nvpairs_foreach(NVHandle handle, const gchar *name,
   if (vp->omit_empty_values && value_len == 0)
     return FALSE;
 
+  if ((type == LM_VT_BYTES || type == LM_VT_PROTOBUF) && !vp->include_bytes)
+    return FALSE;
+
   inc = (name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
         (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||
         (log_msg_is_handle_sdata(handle) && (vp->scopes & (VPS_SDATA + VPS_RFC5424)));
