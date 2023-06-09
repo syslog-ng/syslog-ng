@@ -219,6 +219,9 @@ _collect_nvpair_names_from_logmsg(NVHandle handle, const gchar *name, const gcha
 {
   PyObject *list = (PyObject *)user_data;
 
+  if (type == LM_VT_BYTES || type == LM_VT_PROTOBUF)
+    return FALSE;
+
   PyObject *py_name = PyBytes_FromString(name);
   PyList_Append(list, py_name);
   Py_XDECREF(py_name);
