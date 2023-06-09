@@ -354,6 +354,19 @@ Test(format_json, test_format_json_with_utf8)
   log_msg_unref(msg);
 }
 
+Test(format_json, test_format_json_with_bytes)
+{
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value_by_name_with_type(msg, "bytes", "\0\1\2\3", 4, LM_VT_BYTES);
+  log_msg_set_value_by_name_with_type(msg, "protobuf", "\4\5\6\7", 4, LM_VT_PROTOBUF);
+
+  assert_template_format_msg("$(format-json --scope nv-pairs)", "{}", msg);
+  assert_template_format_msg("$(format-json --include-bytes --scope nv-pairs)",
+                             "{\"protobuf\":\"BAUGBw==\",\"bytes\":\"AAECAw==\"}", msg);
+
+  log_msg_unref(msg);
+}
+
 Test(format_json, test_format_flat_json)
 {
   LogMessage *msg = create_empty_message();

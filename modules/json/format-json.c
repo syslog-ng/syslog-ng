@@ -80,7 +80,9 @@ tf_json_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
   GOptionGroup *og = g_option_group_new("format-json", "", "", state, NULL);
   g_option_group_add_entries(og, format_json_options);
 
-  state->vp = value_pairs_new_from_cmdline(parent->cfg, &argc, &argv, NULL, og, error);
+  ValuePairsOptionalOptions optional_options = { .enable_include_bytes = TRUE };
+
+  state->vp = value_pairs_new_from_cmdline(parent->cfg, &argc, &argv, &optional_options, og, error);
   if (!state->vp)
     return FALSE;
 
@@ -195,6 +197,40 @@ tf_json_append_value(const gchar *name, const gchar *value, gsize value_len,
 
   if (quoted)
     g_string_append_c(state->buffer, '"');
+}
+
+static inline gsize
+_get_base64_encoded_size(gsize len)
+{
+  return (len / 3 + 1) * 4 + 4;
+}
+
+static void
+tf_json_append_value_base64_encode(const gchar *name, const gchar *value, gsize value_len, json_state_t *state)
+{
+  tf_json_append_key(name, state);
+  g_string_append(state->buffer, ":\"");
+
+  gint encode_state = 0;
+  gint encode_save = 0;
+  gsize init_len = state->buffer->len;
+
+  /* expand the buffer and add space for the base64 encoded string */
+  g_string_set_size(state->buffer, init_len + _get_base64_encoded_size(value_len));
+  gsize out_len = g_base64_encode_step((const guchar *) value, value_len, FALSE, state->buffer->str + init_len,
+                                       &encode_state, &encode_save);
+  g_string_set_size(state->buffer, init_len + out_len + _get_base64_encoded_size(0));
+
+#if !GLIB_CHECK_VERSION(2, 54, 0)
+  /* See modules/basicfuncs/str-funcs.c: tf_base64encode() */
+  if (((unsigned char *) &save)[0] == 1)
+    ((unsigned char *) &save)[2] = 0;
+#endif
+
+  out_len += g_base64_encode_close(FALSE, state->buffer->str + init_len + out_len, &encode_state, &encode_save);
+  g_string_set_size(state->buffer, init_len + out_len);
+
+  g_string_append_c(state->buffer, '"');
 }
 
 static void
@@ -338,6 +374,10 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
       tf_json_append_value(name, v, v_len, state, FALSE);
       return TRUE;
     }
+    case LM_VT_BYTES:
+    case LM_VT_PROTOBUF:
+      tf_json_append_value_base64_encode(name, value, value_len, state);
+      return TRUE;
     case LM_VT_NULL:
     {
       tf_json_append_value(name, "null", -1, state, FALSE);
