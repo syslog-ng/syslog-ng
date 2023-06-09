@@ -29,4 +29,6 @@
 
 }
 
+#undef this
+
 #endif
