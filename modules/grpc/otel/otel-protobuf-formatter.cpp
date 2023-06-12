@@ -21,3 +21,28 @@
  */
 
 #include "otel-protobuf-formatter.hpp"
+
+syslogng::grpc::otel::MessageType
+syslogng::grpc::otel::get_message_type(LogMessage *msg)
+{
+  gssize len;
+  LogMessageValueType type;
+  const gchar *value = log_msg_get_value_by_name_with_type(msg, ".otel_raw.type", &len, &type);
+
+  if (type == LM_VT_NULL)
+    value = log_msg_get_value_by_name_with_type(msg, ".otel.type", &len, &type);
+
+  if (type != LM_VT_STRING)
+    return MessageType::UNKNOWN;
+
+  if (strncmp(value, "log", len) == 0)
+    return MessageType::LOG;
+
+  if (strncmp(value, "metric", len) == 0)
+    return MessageType::METRIC;
+
+  if (strncmp(value, "span", len) == 0)
+    return MessageType::SPAN;
+
+  return MessageType::UNKNOWN;
+}
