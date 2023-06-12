@@ -1,3 +1,5 @@
+include modules/grpc/protos/Makefile.am
+
 include modules/grpc/otel/Makefile.am
 
 if ENABLE_GRPC
