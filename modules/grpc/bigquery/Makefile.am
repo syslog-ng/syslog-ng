@@ -14,6 +14,7 @@ modules_grpc_bigquery_libbigquery_cpp_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
   $(PROTOBUF_CLFAGS) \
   $(GRPCPP_CFLAGS) \
+  -I$(GOOGLEAPIS_PROTO_BUILDDIR) \
   -I$(top_srcdir)/modules/grpc/bigquery \
   -I$(top_builddir)/modules/grpc/bigquery
 
@@ -21,8 +22,8 @@ modules_grpc_bigquery_libbigquery_cpp_la_LIBADD = $(MODULE_DEPS_LIBS) $(PROTOBUF
 modules_grpc_bigquery_libbigquery_cpp_la_LDFLAGS = $(MODULE_LDFLAGS)
 modules_grpc_bigquery_libbigquery_cpp_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
-
 module_LTLIBRARIES += modules/grpc/bigquery/libbigquery.la
+
 modules_grpc_bigquery_libbigquery_la_SOURCES = \
   modules/grpc/bigquery/bigquery-grammar.y \
   modules/grpc/bigquery/bigquery-parser.c \
@@ -33,14 +34,17 @@ modules_grpc_bigquery_libbigquery_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
   -I$(top_srcdir)/modules/grpc/bigquery \
   -I$(top_builddir)/modules/grpc/bigquery
+
 modules_grpc_bigquery_libbigquery_la_LIBADD = \
   $(MODULE_DEPS_LIBS) \
+  $(top_builddir)/modules/grpc/protos/libgrpc-protos.la \
   $(top_builddir)/modules/grpc/bigquery/libbigquery_cpp.la \
   -lstdc++
 
 modules_grpc_bigquery_libbigquery_la_LDFLAGS = $(MODULE_LDFLAGS)
 modules_grpc_bigquery_libbigquery_la_DEPENDENCIES = \
   $(MODULE_DEPS_LIBS) \
+  $(top_builddir)/modules/grpc/protos/libgrpc-protos.la \
   $(top_builddir)/modules/grpc/bigquery/libbigquery_cpp.la
 
 modules/grpc/bigquery modules/grpc/bigquery/ mod-bigquery: modules/grpc/bigquery/libbigquery.la

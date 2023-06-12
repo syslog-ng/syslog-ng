@@ -1,0 +1,35 @@
+type: google.api.Service
+config_version: 3
+name: bigquerystorage.googleapis.com
+title: BigQuery Storage API
+
+apis:
+- name: google.cloud.bigquery.storage.v1.BigQueryRead
+- name: google.cloud.bigquery.storage.v1.BigQueryWrite
+
+backend:
+  rules:
+  - selector: google.cloud.bigquery.storage.v1.BigQueryRead.CreateReadSession
+    deadline: 120.0
+  - selector: google.cloud.bigquery.storage.v1.BigQueryRead.ReadRows
+    deadline: 21600.0
+  - selector: google.cloud.bigquery.storage.v1.BigQueryRead.SplitReadStream
+    deadline: 120.0
+  - selector: 'google.cloud.bigquery.storage.v1.BigQueryWrite.*'
+    deadline: 120.0
+  - selector: google.cloud.bigquery.storage.v1.BigQueryWrite.CreateWriteStream
+    deadline: 600.0
+
+authentication:
+  rules:
+  - selector: 'google.cloud.bigquery.storage.v1.BigQueryRead.*'
+    oauth:
+      canonical_scopes: |-
+        https://www.googleapis.com/auth/bigquery,
+        https://www.googleapis.com/auth/cloud-platform
+  - selector: 'google.cloud.bigquery.storage.v1.BigQueryWrite.*'
+    oauth:
+      canonical_scopes: |-
+        https://www.googleapis.com/auth/bigquery,
+        https://www.googleapis.com/auth/bigquery.insertdata,
+        https://www.googleapis.com/auth/cloud-platform
