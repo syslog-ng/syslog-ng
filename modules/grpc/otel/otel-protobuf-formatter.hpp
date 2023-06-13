@@ -28,6 +28,7 @@
 #include "compat/cpp-end.h"
 
 #include "opentelemetry/proto/logs/v1/logs.pb.h"
+#include "opentelemetry/proto/metrics/v1/metrics.pb.h"
 
 namespace syslogng {
 namespace grpc {
@@ -49,6 +50,17 @@ using opentelemetry::proto::resource::v1::Resource;
 using opentelemetry::proto::common::v1::InstrumentationScope;
 using opentelemetry::proto::common::v1::KeyValue;
 using opentelemetry::proto::logs::v1::LogRecord;
+using opentelemetry::proto::metrics::v1::Metric;
+using opentelemetry::proto::metrics::v1::Gauge;
+using opentelemetry::proto::metrics::v1::Sum;
+using opentelemetry::proto::metrics::v1::Histogram;
+using opentelemetry::proto::metrics::v1::ExponentialHistogram;
+using opentelemetry::proto::metrics::v1::Summary;
+using opentelemetry::proto::metrics::v1::Exemplar;
+using opentelemetry::proto::metrics::v1::NumberDataPoint;
+using opentelemetry::proto::metrics::v1::SummaryDataPoint;
+using opentelemetry::proto::metrics::v1::HistogramDataPoint;
+using opentelemetry::proto::metrics::v1::ExponentialHistogramDataPoint;
 
 class ProtobufFormatter
 {
@@ -59,11 +71,26 @@ public:
                     InstrumentationScope &scope, std::string &scope_schema_url);
   bool format(LogMessage *msg, LogRecord &log_record);
   void format_fallback(LogMessage *msg, LogRecord &log_record);
+  bool format(LogMessage *msg, Metric &metric);
 
 private:
   void get_and_set_repeated_KeyValues(LogMessage *msg, const char *prefix, RepeatedPtrField<KeyValue> *key_values);
   bool get_resource_and_schema_url(LogMessage *msg, Resource &resource, std::string &schema_url);
   bool get_scope_and_schema_url(LogMessage *msg, InstrumentationScope &scope, std::string &schema_url);
+
+  /* Metric */
+  void add_exemplars(LogMessage *msg, std::string &key_buffer, RepeatedPtrField<Exemplar> *exemplars);
+  void add_number_data_points(LogMessage *msg, const char *prefix, RepeatedPtrField<NumberDataPoint> *data_points);
+  void set_metric_gauge_values(LogMessage *msg, Gauge *gauge);
+  void set_metric_sum_values(LogMessage *msg, Sum *sum);
+  void add_histogram_data_points(LogMessage *msg, const char *prefix,
+                                 RepeatedPtrField<HistogramDataPoint> *data_points);
+  void set_metric_histogram_values(LogMessage *msg, Histogram *histogram);
+  void add_exponential_histogram_data_points(LogMessage *msg, const char *prefix,
+                                             RepeatedPtrField<ExponentialHistogramDataPoint> *data_points);
+  void set_metric_exponential_histogram_values(LogMessage *msg, ExponentialHistogram *exponential_histogram);
+  void add_summary_data_points(LogMessage *msg, const char *prefix, RepeatedPtrField<SummaryDataPoint> *data_points);
+  void set_metric_summary_values(LogMessage *msg, Summary *summary);
 
 private:
   GlobalConfig *cfg;

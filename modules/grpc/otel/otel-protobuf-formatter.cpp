@@ -33,6 +33,7 @@ using namespace google::protobuf;
 using namespace opentelemetry::proto::common::v1;
 using namespace opentelemetry::proto::resource::v1;
 using namespace opentelemetry::proto::logs::v1;
+using namespace opentelemetry::proto::metrics::v1;
 
 using namespace syslogng::grpc::otel;
 
@@ -98,6 +99,40 @@ _get_uint32(LogMessage *msg, const gchar *name)
     return 0;
 
   return std::strtoul(value, nullptr, 10);
+}
+
+static bool
+_get_bool(LogMessage *msg, const gchar *name)
+{
+  gssize len;
+  LogMessageValueType type;
+  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, &len, &type);
+
+  if (type != LM_VT_BOOLEAN)
+    return false;
+
+  gboolean b = false;
+  if (!type_cast_to_boolean(value, &b, NULL))
+    return false;
+
+  return b;
+}
+
+static double
+_get_double(LogMessage *msg, const gchar *name)
+{
+  gssize len;
+  LogMessageValueType type;
+  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, &len, &type);
+
+  if (type != LM_VT_DOUBLE)
+    return 0;
+
+  gdouble d = 0;
+  if (!type_cast_to_double(value, &d, NULL))
+    return 0;
+
+  return d;
 }
 
 static const gchar *
@@ -397,6 +432,609 @@ ProtobufFormatter::format_fallback(LogMessage *msg, LogRecord &log_record)
                                          msg->timestamps[LM_TS_RECVD].ut_usec * 1000);
   log_record.set_severity_number(_get_log_msg_severity_number(msg));
   _get_and_set_AnyValue(msg, "MESSAGE", log_record.mutable_body());
+}
+
+void
+ProtobufFormatter::add_exemplars(LogMessage *msg, std::string &key_buffer, RepeatedPtrField<Exemplar> *exemplars)
+{
+  char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
+  size_t orig_len = key_buffer.length();
+
+  gssize len;
+  LogMessageValueType type;
+  const gchar *value;
+  GError *error = NULL;
+
+  uint64_t idx = 0;
+  while (true)
+    {
+      key_buffer.resize(orig_len);
+      std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, idx);
+      key_buffer.append(number_buf);
+      key_buffer.append(".");
+      size_t len_with_idx = key_buffer.length();
+
+      key_buffer.append("value");
+      value = log_msg_get_value_by_name_with_type(msg, key_buffer.c_str(), &len, &type);
+      if (type == LM_VT_NULL)
+        break;
+
+      Exemplar *exemplar = exemplars->Add();
+
+      if (type == LM_VT_INTEGER)
+        {
+          gint64 ll = 0;
+          if (!type_cast_to_int64(value, &ll, &error))
+            {
+              msg_error("OpenTelemetry: Cannot parse integer value, falling back to 0",
+                        evt_tag_str("name", key_buffer.c_str()),
+                        evt_tag_str("value", value),
+                        evt_tag_str("error", error->message));
+              g_error_free(error);
+            }
+          exemplar->set_as_int(ll);
+        }
+      else if (type == LM_VT_DOUBLE)
+        {
+          gdouble d = 0;
+          if (!type_cast_to_double(value, &d, &error))
+            {
+              msg_error("OpenTelemetry: Cannot parse double value, falling back to 0",
+                        evt_tag_str("name", key_buffer.c_str()),
+                        evt_tag_str("value", value),
+                        evt_tag_str("error", error->message));
+              g_error_free(error);
+            }
+          exemplar->set_as_double(d);
+        }
+      else
+        {
+          msg_error("OpenTelemetry: Cannot parse value, unexpected log message type, falling back to 0",
+                    evt_tag_str("name", key_buffer.c_str()),
+                    evt_tag_str("value", value),
+                    evt_tag_str("type", log_msg_value_type_to_str(type)));
+          exemplar->set_as_int(0);
+        }
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("filtered_attributes.");
+      get_and_set_repeated_KeyValues(msg, key_buffer.c_str(), exemplar->mutable_filtered_attributes());
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("time_unix_nano");
+      exemplar->set_time_unix_nano(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("span_id");
+      value = _get_bytes(msg, key_buffer.c_str(), &len);
+      exemplar->set_span_id(value, len);
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("trace_id");
+      value = _get_bytes(msg, key_buffer.c_str(), &len);
+      exemplar->set_trace_id(value, len);
+
+      idx++;
+    }
+}
+
+void
+ProtobufFormatter::add_number_data_points(LogMessage *msg, const char *prefix,
+                                          RepeatedPtrField<NumberDataPoint> *data_points)
+{
+  char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
+  std::string key_buffer = prefix;
+  size_t orig_len = key_buffer.length();
+
+  gssize len;
+  LogMessageValueType type;
+  const gchar *value;
+  GError *error = NULL;
+
+  uint64_t idx = 0;
+  while (true)
+    {
+      key_buffer.resize(orig_len);
+      std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, idx);
+      key_buffer.append(number_buf);
+      key_buffer.append(".");
+      size_t len_with_idx = key_buffer.length();
+
+      key_buffer.append("value");
+      value = log_msg_get_value_by_name_with_type(msg, key_buffer.c_str(), &len, &type);
+      if (type == LM_VT_NULL)
+        break;
+
+      NumberDataPoint *data_point = data_points->Add();
+
+      if (type == LM_VT_INTEGER)
+        {
+          gint64 ll = 0;
+          if (!type_cast_to_int64(value, &ll, &error))
+            {
+              msg_error("OpenTelemetry: Cannot parse integer value, falling back to 0",
+                        evt_tag_str("name", key_buffer.c_str()),
+                        evt_tag_str("value", value),
+                        evt_tag_str("error", error->message));
+              g_error_free(error);
+            }
+          data_point->set_as_int(ll);
+        }
+      else if (type == LM_VT_DOUBLE)
+        {
+          gdouble d = 0;
+          if (!type_cast_to_double(value, &d, &error))
+            {
+              msg_error("OpenTelemetry: Cannot parse double value, falling back to 0",
+                        evt_tag_str("name", key_buffer.c_str()),
+                        evt_tag_str("value", value),
+                        evt_tag_str("error", error->message));
+              g_error_free(error);
+            }
+          data_point->set_as_double(d);
+        }
+      else
+        {
+          msg_error("OpenTelemetry: Cannot parse value, unexpected log message type, falling back to 0",
+                    evt_tag_str("name", key_buffer.c_str()),
+                    evt_tag_str("value", value),
+                    evt_tag_str("type", log_msg_value_type_to_str(type)));
+          data_point->set_as_int(0);
+        }
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("attributes.");
+      get_and_set_repeated_KeyValues(msg, key_buffer.c_str(), data_point->mutable_attributes());
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("start_time_unix_nano");
+      data_point->set_start_time_unix_nano(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("time_unix_nano");
+      data_point->set_time_unix_nano(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("exemplars.");
+      add_exemplars(msg, key_buffer, data_point->mutable_exemplars());
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("flags");
+      data_point->set_flags(_get_uint32(msg, key_buffer.c_str()));
+
+      idx++;
+    }
+}
+
+void
+ProtobufFormatter::set_metric_gauge_values(LogMessage *msg, Gauge *gauge)
+{
+  add_number_data_points(msg, ".otel.metric.data.gauge.data_points.", gauge->mutable_data_points());
+}
+
+void
+ProtobufFormatter::set_metric_sum_values(LogMessage *msg, Sum *sum)
+{
+  add_number_data_points(msg, ".otel.metric.data.sum.data_points.", sum->mutable_data_points());
+
+  int32_t aggregation_temporality_int = _get_int32(msg, ".otel.metric.data.sum.aggregation_temporality");
+  AggregationTemporality aggregation_temporality = AggregationTemporality_IsValid(aggregation_temporality_int) \
+                                                   ? (AggregationTemporality) aggregation_temporality_int \
+                                                   : AGGREGATION_TEMPORALITY_UNSPECIFIED;
+  sum->set_aggregation_temporality(aggregation_temporality);
+
+  sum->set_is_monotonic(_get_bool(msg, ".otel.metric.data.sum.is_monotonic"));
+}
+
+void
+ProtobufFormatter::add_histogram_data_points(LogMessage *msg, const char *prefix,
+                                             RepeatedPtrField<HistogramDataPoint> *data_points)
+{
+  char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
+  std::string key_buffer = prefix;
+  size_t orig_len = key_buffer.length();
+
+  NVHandle handle;
+  gssize len;
+  LogMessageValueType type;
+  const gchar *value;
+
+  uint64_t idx = 0;
+  while (true)
+    {
+      key_buffer.resize(orig_len);
+      std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, idx);
+      key_buffer.append(number_buf);
+      key_buffer.append(".");
+      size_t len_with_idx = key_buffer.length();
+
+      key_buffer.append("count");
+      handle = log_msg_get_value_handle(key_buffer.c_str());
+      value = log_msg_get_value_if_set_with_type(msg, handle, &len, &type);
+      if (!value)
+        break;
+
+      HistogramDataPoint *data_point = data_points->Add();
+
+      data_point->set_count(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("attributes.");
+      get_and_set_repeated_KeyValues(msg, key_buffer.c_str(), data_point->mutable_attributes());
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("start_time_unix_nano");
+      data_point->set_start_time_unix_nano(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("time_unix_nano");
+      data_point->set_time_unix_nano(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("sum");
+      data_point->set_sum(_get_double(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("bucket_counts.");
+      size_t len_with_bucket_counts = key_buffer.length();
+      uint64_t bucket_count_idx = 0;
+      while (true)
+        {
+          key_buffer.resize(len_with_bucket_counts);
+          std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, bucket_count_idx);
+          key_buffer.append(number_buf);
+
+          handle = log_msg_get_value_handle(key_buffer.c_str());
+          value = log_msg_get_value_if_set_with_type(msg, handle, &len, &type);
+          if (!value)
+            break;
+
+          data_point->add_bucket_counts(_get_uint64(msg, key_buffer.c_str()));
+
+          bucket_count_idx++;
+        }
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("explicit_bounds.");
+      size_t len_with_explicit_bounds = key_buffer.length();
+      uint64_t explicit_bound_idx = 0;
+      while (true)
+        {
+          key_buffer.resize(len_with_explicit_bounds);
+          std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, explicit_bound_idx);
+          key_buffer.append(number_buf);
+
+          handle = log_msg_get_value_handle(key_buffer.c_str());
+          value = log_msg_get_value_if_set_with_type(msg, handle, &len, &type);
+          if (!value)
+            break;
+
+          data_point->add_explicit_bounds(_get_double(msg, key_buffer.c_str()));
+
+          explicit_bound_idx++;
+        }
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("exemplars.");
+      add_exemplars(msg, key_buffer, data_point->mutable_exemplars());
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("flags");
+      data_point->set_flags(_get_uint32(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("min");
+      data_point->set_min(_get_double(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("max");
+      data_point->set_max(_get_double(msg, key_buffer.c_str()));
+
+      idx++;
+    }
+}
+
+void
+ProtobufFormatter::set_metric_histogram_values(LogMessage *msg, Histogram *histogram)
+{
+  add_histogram_data_points(msg, ".otel.metric.data.histogram.data_points.", histogram->mutable_data_points());
+
+  int32_t aggregation_temporality_int = _get_int32(msg, ".otel.metric.data.histogram.aggregation_temporality");
+  AggregationTemporality aggregation_temporality = AggregationTemporality_IsValid(aggregation_temporality_int) \
+                                                   ? (AggregationTemporality) aggregation_temporality_int \
+                                                   : AGGREGATION_TEMPORALITY_UNSPECIFIED;
+  histogram->set_aggregation_temporality(aggregation_temporality);
+}
+
+static void
+_add_buckets(LogMessage *msg, std::string &key_buffer, ExponentialHistogramDataPoint_Buckets *buckets)
+{
+  char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
+  size_t orig_len = key_buffer.length();
+
+  NVHandle handle;
+  gssize len;
+  LogMessageValueType type;
+  const gchar *value;
+
+  key_buffer.append("offset");
+  buckets->set_offset(_get_int32(msg, key_buffer.c_str()));
+
+  key_buffer.resize(orig_len);
+  key_buffer.append("bucket_counts.");
+
+  size_t len_with_bucket_counts = key_buffer.length();
+  uint64_t idx = 0;
+  while (true)
+    {
+      key_buffer.resize(len_with_bucket_counts);
+      std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, idx);
+      key_buffer.append(number_buf);
+
+      handle = log_msg_get_value_handle(key_buffer.c_str());
+      value = log_msg_get_value_if_set_with_type(msg, handle, &len, &type);
+      if (!value)
+        break;
+
+      buckets->add_bucket_counts(_get_uint64(msg, key_buffer.c_str()));
+
+      idx++;
+    }
+}
+
+void
+ProtobufFormatter::add_exponential_histogram_data_points(LogMessage *msg, const char *prefix,
+                                                         RepeatedPtrField<ExponentialHistogramDataPoint> *data_points)
+{
+  char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
+  std::string key_buffer = prefix;
+  size_t orig_len = key_buffer.length();
+
+  NVHandle handle;
+  gssize len;
+  LogMessageValueType type;
+  const gchar *value;
+
+  uint64_t idx = 0;
+  while (true)
+    {
+      key_buffer.resize(orig_len);
+      std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, idx);
+      key_buffer.append(number_buf);
+      key_buffer.append(".");
+      size_t len_with_idx = key_buffer.length();
+
+      key_buffer.append("count");
+      handle = log_msg_get_value_handle(key_buffer.c_str());
+      value = log_msg_get_value_if_set_with_type(msg, handle, &len, &type);
+      if (!value)
+        break;
+
+      ExponentialHistogramDataPoint *data_point = data_points->Add();
+
+      data_point->set_count(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("attributes.");
+      get_and_set_repeated_KeyValues(msg, key_buffer.c_str(), data_point->mutable_attributes());
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("start_time_unix_nano");
+      data_point->set_start_time_unix_nano(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("time_unix_nano");
+      data_point->set_time_unix_nano(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("sum");
+      data_point->set_sum(_get_double(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("scale");
+      data_point->set_scale(_get_int32(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("zero_count");
+      data_point->set_zero_count(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("positive.");
+      _add_buckets(msg, key_buffer, data_point->mutable_positive());
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("negative.");
+      _add_buckets(msg, key_buffer, data_point->mutable_negative());
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("flags");
+      data_point->set_flags(_get_uint32(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("exemplars.");
+      add_exemplars(msg, key_buffer, data_point->mutable_exemplars());
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("min");
+      data_point->set_min(_get_double(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("max");
+      data_point->set_max(_get_double(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("zero_threshold");
+      data_point->set_zero_threshold(_get_double(msg, key_buffer.c_str()));
+
+      idx++;
+    }
+}
+
+void
+ProtobufFormatter::set_metric_exponential_histogram_values(LogMessage *msg, ExponentialHistogram *exponential_histogram)
+{
+  add_exponential_histogram_data_points(msg, ".otel.metric.data.exponential_histogram.data_points.",
+                                        exponential_histogram->mutable_data_points());
+
+  int32_t aggregation_temporality_int = _get_int32(msg,
+                                                   ".otel.metric.data.exponential_histogram.aggregation_temporality");
+  AggregationTemporality aggregation_temporality = AggregationTemporality_IsValid(aggregation_temporality_int) \
+                                                   ? (AggregationTemporality) aggregation_temporality_int \
+                                                   : AGGREGATION_TEMPORALITY_UNSPECIFIED;
+  exponential_histogram->set_aggregation_temporality(aggregation_temporality);
+}
+
+void
+ProtobufFormatter::add_summary_data_points(LogMessage *msg, const char *prefix,
+                                           RepeatedPtrField<SummaryDataPoint> *data_points)
+{
+  char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
+  std::string key_buffer = prefix;
+  size_t orig_len = key_buffer.length();
+
+  NVHandle handle;
+  gssize len;
+  LogMessageValueType type;
+  const gchar *value;
+
+  uint64_t idx = 0;
+  while (true)
+    {
+      key_buffer.resize(orig_len);
+      std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, idx);
+      key_buffer.append(number_buf);
+      key_buffer.append(".");
+      size_t len_with_idx = key_buffer.length();
+
+      key_buffer.append("count");
+      handle = log_msg_get_value_handle(key_buffer.c_str());
+      value = log_msg_get_value_if_set_with_type(msg, handle, &len, &type);
+      if (!value)
+        break;
+
+      SummaryDataPoint *data_point = data_points->Add();
+
+      data_point->set_count(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("start_time_unix_nano");
+      data_point->set_start_time_unix_nano(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("time_unix_nano");
+      data_point->set_time_unix_nano(_get_uint64(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("sum");
+      data_point->set_sum(_get_double(msg, key_buffer.c_str()));
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("attributes.");
+      get_and_set_repeated_KeyValues(msg, key_buffer.c_str(), data_point->mutable_attributes());
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("quantile_values.");
+      size_t len_with_quantile_values = key_buffer.length();
+      uint64_t quantile_value_idx = 0;
+      while (true)
+        {
+          key_buffer.resize(len_with_quantile_values);
+          std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, quantile_value_idx);
+          key_buffer.append(number_buf);
+          key_buffer.append(".");
+          size_t len_with_quantile_value_idx = key_buffer.length();
+
+          key_buffer.append("quantile");
+          handle = log_msg_get_value_handle(key_buffer.c_str());
+          value = log_msg_get_value_if_set_with_type(msg, handle, &len, &type);
+          if (!value)
+            break;
+
+          SummaryDataPoint_ValueAtQuantile *value_at_quantile = data_point->add_quantile_values();
+
+          value_at_quantile->set_quantile(_get_double(msg, key_buffer.c_str()));
+
+          key_buffer.resize(len_with_quantile_value_idx);
+          key_buffer.append("value");
+          value_at_quantile->set_value(_get_double(msg, key_buffer.c_str()));
+
+          quantile_value_idx++;
+        }
+
+      key_buffer.resize(len_with_idx);
+      key_buffer.append("flags");
+      data_point->set_flags(_get_uint32(msg, key_buffer.c_str()));
+
+      idx++;
+    }
+}
+
+void
+ProtobufFormatter::set_metric_summary_values(LogMessage *msg, Summary *summary)
+{
+  add_summary_data_points(msg, ".otel.metric.data.summary.data_points.", summary->mutable_data_points());
+}
+
+bool
+ProtobufFormatter::format(LogMessage *msg, Metric &metric)
+{
+  gssize len;
+  const gchar *value;
+
+  value = _get_protobuf(msg, ".otel_raw.metric", &len);
+  if (value)
+    return metric.ParsePartialFromArray(value, len);
+
+  LogMessageValueType type;
+
+  value = _get_string(msg, ".otel.metric.name", &len);
+  metric.set_name(value, len);
+
+  value = _get_string(msg, ".otel.metric.description", &len);
+  metric.set_description(value, len);
+
+  value = _get_string(msg, ".otel.metric.unit", &len);
+  metric.set_unit(value, len);
+
+  value = log_msg_get_value_by_name_with_type(msg, ".otel.metric.data.type", &len, &type);
+  if (type != LM_VT_STRING)
+    {
+      msg_error("OpenTelemetry: Failed to determine metric data type, invalid log message type",
+                evt_tag_str("name", ".otel.metric.data.type"),
+                evt_tag_str("value", value),
+                evt_tag_str("log_msg_type", log_msg_value_type_to_str(type)));
+      return false;
+    }
+
+  if (strncmp(value, "gauge", len) == 0)
+    {
+      set_metric_gauge_values(msg, metric.mutable_gauge());
+    }
+  else if (strncmp(value, "sum", len) == 0)
+    {
+      set_metric_sum_values(msg, metric.mutable_sum());
+    }
+  else if (strncmp(value, "histogram", len) == 0)
+    {
+      set_metric_histogram_values(msg, metric.mutable_histogram());
+    }
+  else if (strncmp(value, "exponential_histogram", len) == 0)
+    {
+      set_metric_exponential_histogram_values(msg, metric.mutable_exponential_histogram());
+    }
+  else if (strncmp(value, "summary", len) == 0)
+    {
+      set_metric_summary_values(msg, metric.mutable_summary());
+    }
+  else
+    {
+      msg_error("OpenTelemetry: Failed to determine metric data type, unexpected type",
+                evt_tag_str("name", ".otel.metric.data.type"),
+                evt_tag_str("value", value));
+      return false;
+    }
+
+  return true;
 }
 
 syslogng::grpc::otel::ProtobufFormatter::ProtobufFormatter(GlobalConfig *cfg_)
