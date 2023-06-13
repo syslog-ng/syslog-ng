@@ -24,10 +24,21 @@
 #define BIGQUERY_WORKER_HPP
 
 #include "bigquery-worker.h"
+#include "bigquery-dest.hpp"
 
 #include "compat/cpp-start.h"
 #include "syslog-ng.h"
+#include "messages.h"
 #include "compat/cpp-end.h"
+
+#include <grpcpp/create_channel.h>
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/message.h>
+
+#include <string>
+#include <memory>
+
+#include "google/cloud/bigquery/storage/v1/storage.grpc.pb.h"
 
 namespace syslog_ng {
 namespace bigquery {
@@ -40,11 +51,36 @@ public:
 
   bool init();
   void deinit();
+  bool connect();
+  void disconnect();
   LogThreadedResult insert(LogMessage *msg);
   LogThreadedResult flush(LogThreadedFlushMode mode);
 
 private:
+  void construct_write_stream();
+  void prepare_batch();
+  bool insert_field(const google::protobuf::Reflection *reflection, const Field &field,
+                    LogMessage *msg, google::protobuf::Message *message);
+  LogThreadedResult handle_row_errors(const google::cloud::bigquery::storage::v1::AppendRowsResponse &response);
+  DestinationDriver *get_owner();
+
+private:
   BigQueryDestWorker *super;
+
+  std::string table;
+  bool connected;
+
+  std::shared_ptr<grpc::Channel> channel;
+  std::unique_ptr<google::cloud::bigquery::storage::v1::BigQueryWrite::Stub> stub;
+
+  google::cloud::bigquery::storage::v1::WriteStream write_stream;
+  std::unique_ptr<grpc::ClientContext> batch_writer_ctx;
+  std::unique_ptr<grpc::ClientReaderWriter<google::cloud::bigquery::storage::v1::AppendRowsRequest,
+      google::cloud::bigquery::storage::v1::AppendRowsResponse>> batch_writer;
+
+  /* batch state */
+  google::cloud::bigquery::storage::v1::AppendRowsRequest current_batch;
+  size_t batch_size = 0;
 };
 
 }

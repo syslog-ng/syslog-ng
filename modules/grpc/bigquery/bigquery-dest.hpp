@@ -28,12 +28,51 @@
 #include "compat/cpp-start.h"
 #include "syslog-ng.h"
 #include "template/templates.h"
+#include "stats/stats-cluster-key-builder.h"
 #include "compat/cpp-end.h"
 
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/descriptor.pb.h>
+#include <google/protobuf/dynamic_message.h>
+#include <google/protobuf/message.h>
+
 #include <string>
+#include <memory>
+#include <vector>
 
 namespace syslog_ng {
 namespace bigquery {
+
+struct Field
+{
+  std::string name;
+  google::protobuf::FieldDescriptorProto::Type type;
+  LogTemplate *value;
+  const google::protobuf::FieldDescriptor *field_desc;
+
+  Field(std::string name_, google::protobuf::FieldDescriptorProto::Type type_, LogTemplate *value_)
+    : name(name_), type(type_), value(log_template_ref(value_)), field_desc(nullptr) {}
+
+  Field(const Field &a)
+    : name(a.name), type(a.type), value(log_template_ref(a.value)), field_desc(a.field_desc) {}
+
+  Field &operator=(const Field &a)
+  {
+    name = a.name;
+    type = a.type;
+    log_template_unref(value);
+    value = log_template_ref(a.value);
+    field_desc = a.field_desc;
+
+    return *this;
+  }
+
+  ~Field()
+  {
+    log_template_unref(value);
+  }
+
+};
 
 class DestinationDriver final
 {
@@ -43,9 +82,12 @@ public:
   bool init();
   bool deinit();
   const gchar *format_persist_name();
-  const gchar *format_stats_instance();
+  const gchar *format_stats_key(StatsClusterKeyBuilder *kb);
 
-  LogTemplateOptions& get_template_options()
+  bool add_field(std::string name, std::string type, LogTemplate *value);
+  void set_protobuf_schema(std::string proto_path, GList *values);
+
+  LogTemplateOptions &get_template_options()
   {
     return this->template_options;
   }
@@ -70,6 +112,30 @@ public:
     this->table = t;
   }
 
+  const std::string &get_url()
+  {
+    return this->url;
+  }
+
+  const std::string &get_project()
+  {
+    return this->project;
+  }
+
+  const std::string &get_dataset()
+  {
+    return this->dataset;
+  }
+
+  const std::string &get_table()
+  {
+    return this->table;
+  }
+
+private:
+  friend class DestinationWorker;
+  void construct_schema_prototype();
+
 private:
   BigQueryDestDriver *super;
   LogTemplateOptions template_options;
@@ -78,9 +144,25 @@ private:
   std::string project;
   std::string dataset;
   std::string table;
+
+  struct
+  {
+    std::string proto_path;
+    GList *values = nullptr;
+  } protobuf_schema;
+
+  std::vector<Field> fields;
+
+  google::protobuf::DescriptorPool descriptor_pool;
+  google::protobuf::DynamicMessageFactory msg_factory;
+  const google::protobuf::Descriptor *schema_descriptor = nullptr;
+  const google::protobuf::Message *schema_prototype  = nullptr;
 };
+
 
 }
 }
+
+syslog_ng::bigquery::DestinationDriver *bigquery_dd_get_cpp(BigQueryDestDriver *self);
 
 #endif

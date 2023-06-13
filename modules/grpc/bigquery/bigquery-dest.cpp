@@ -25,7 +25,10 @@
 
 #include "compat/cpp-start.h"
 #include "logthrdest/logthrdestdrv.h"
+#include "messages.h"
 #include "compat/cpp-end.h"
+
+#include <cstring>
 
 using syslog_ng::bigquery::DestinationDriver;
 
@@ -36,14 +39,70 @@ struct _BigQueryDestDriver
 };
 
 
-DestinationDriver::DestinationDriver(BigQueryDestDriver *s) : super(s)
+DestinationDriver::DestinationDriver(BigQueryDestDriver *s)
+  : super(s), url("bigquerystorage.googleapis.com"), msg_factory(&descriptor_pool)
 {
   log_template_options_defaults(&this->template_options);
 }
 
 DestinationDriver::~DestinationDriver()
 {
+  g_list_free_full(this->protobuf_schema.values, g_free);
   log_template_options_destroy(&this->template_options);
+}
+
+bool
+DestinationDriver::add_field(std::string name, std::string type, LogTemplate *value)
+{
+  /* https://cloud.google.com/bigquery/docs/write-api#data_type_conversions */
+
+  google::protobuf::FieldDescriptorProto::Type proto_type;
+  const char *type_str = type.c_str();
+  if (type.empty() || strcasecmp(type_str, "STRING") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_STRING;
+  else if (strcasecmp(type_str, "BYTES") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_BYTES;
+  else if (strcasecmp(type_str, "INTEGER") == 0 || strcasecmp(type_str, "INT64") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_INT64;
+  else if (strcasecmp(type_str, "FLOAT") == 0 || strcasecmp(type_str, "FLOAT64") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_DOUBLE;
+  else if (strcasecmp(type_str, "BOOLEAN") == 0 || strcasecmp(type_str, "BOOL") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_BOOL;
+  else if (strcasecmp(type_str, "TIMESTAMP") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_INT64;
+  else if (strcasecmp(type_str, "DATE") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_INT32;
+  else if (strcasecmp(type_str, "TIME") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_STRING;
+  else if (strcasecmp(type_str, "DATETIME") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_STRING;
+  else if (strcasecmp(type_str, "JSON") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_STRING;
+  else if (strcasecmp(type_str, "NUMERIC") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_INT64;
+  else if (strcasecmp(type_str, "BIGNUMERIC") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_STRING;
+  else if (strcasecmp(type_str, "GEOGRAPHY") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_STRING;
+  else if (strcasecmp(type_str, "RECORD") == 0 || strcasecmp(type_str, "STRUCT") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_MESSAGE;
+  else if (strcasecmp(type_str, "INTERVAL") == 0)
+    proto_type = google::protobuf::FieldDescriptorProto::TYPE_STRING;
+  else
+    return false;
+
+  this->fields.push_back(Field{name, proto_type, value});
+
+  return true;
+}
+
+void
+DestinationDriver::set_protobuf_schema(std::string proto_path, GList *values)
+{
+  this->protobuf_schema.proto_path = proto_path;
+
+  g_list_free_full(this->protobuf_schema.values, g_free);
+  this->protobuf_schema.values = g_list_copy_deep(values, ((GCopyFunc)g_strdup), NULL);
 }
 
 bool
@@ -51,6 +110,8 @@ DestinationDriver::init()
 {
   GlobalConfig *cfg = log_pipe_get_config(&this->super->super.super.super.super);
   log_template_options_init(&this->template_options, cfg);
+
+  this->construct_schema_prototype();
 
   return log_threaded_dest_driver_init_method(&this->super->super.super.super.super);
 }
@@ -77,18 +138,58 @@ DestinationDriver::format_persist_name()
 }
 
 const gchar *
-DestinationDriver::format_stats_instance()
+DestinationDriver::format_stats_key(StatsClusterKeyBuilder *kb)
 {
-  static gchar stats[1024];
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "bigquery"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("url", this->url.c_str()));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("project", this->project.c_str()));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("dataset", this->dataset.c_str()));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("table", this->table.c_str()));
 
-  g_snprintf(stats, sizeof(stats), "bigquery,%s,%s,%s,%s", this->url.c_str(),
-             this->project.c_str(), this->dataset.c_str(), this->table.c_str());
+  return nullptr;
+}
 
-  return stats;
+void
+DestinationDriver::construct_schema_prototype()
+{
+  this->descriptor_pool.~DescriptorPool();
+  new (&this->descriptor_pool) google::protobuf::DescriptorPool();
+
+  google::protobuf::FileDescriptorProto file_descriptor_proto;
+  file_descriptor_proto.set_name("bigquery_record.proto");
+  file_descriptor_proto.set_syntax("proto2");
+  google::protobuf::DescriptorProto *descriptor_proto = file_descriptor_proto.add_message_type();
+  descriptor_proto->set_name("BigQueryRecord");
+
+  int32_t num = 1;
+  for (auto &field : this->fields)
+    {
+      google::protobuf::FieldDescriptorProto *field_desc_proto = descriptor_proto->add_field();
+      field_desc_proto->set_name(field.name);
+      field_desc_proto->set_type(field.type);
+      field_desc_proto->set_number(num++);
+    }
+
+
+  const google::protobuf::FileDescriptor *file_descriptor = this->descriptor_pool.BuildFile(file_descriptor_proto);
+  this->schema_descriptor = file_descriptor->message_type(0);
+
+  for (int i = 0; i < this->schema_descriptor->field_count(); ++i)
+    {
+      this->fields[i].field_desc = this->schema_descriptor->field(i);
+    }
+
+  this->schema_prototype = msg_factory.GetPrototype(this->schema_descriptor);
 }
 
 
 /* C Wrappers */
+
+DestinationDriver *
+bigquery_dd_get_cpp(BigQueryDestDriver *self)
+{
+  return self->cpp;
+}
 
 static const gchar *
 _format_persist_name(const LogPipe *s)
@@ -98,10 +199,10 @@ _format_persist_name(const LogPipe *s)
 }
 
 static const gchar *
-_format_stats_instance(LogThreadedDestDriver *s)
+_format_stats_key(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb)
 {
   BigQueryDestDriver *self = (BigQueryDestDriver *) s;
-  return self->cpp->format_stats_instance();
+  return self->cpp->format_stats_key(kb);
 }
 
 void
@@ -129,6 +230,20 @@ void bigquery_dd_set_table(LogDriver *d, const gchar *table)
 {
   BigQueryDestDriver *self = (BigQueryDestDriver *) d;
   self->cpp->set_table(table);
+}
+
+gboolean
+bigquery_dd_add_field(LogDriver *d, const gchar *name, const gchar *type, LogTemplate *value)
+{
+  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
+  return self->cpp->add_field(name, type ? type : "", value);
+}
+
+void
+bigquery_dd_set_protobuf_schema(LogDriver *d, const gchar *proto_path, GList *values)
+{
+  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
+  self->cpp->set_protobuf_schema(proto_path, values);
 }
 
 LogTemplateOptions *
@@ -175,7 +290,7 @@ bigquery_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = _free;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
 
-  self->super.format_stats_instance = _format_stats_instance;
+  self->super.format_stats_key = _format_stats_key;
   self->super.stats_source = stats_register_type("bigquery");
 
   self->super.worker.construct = bigquery_dw_new;
