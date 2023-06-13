@@ -44,6 +44,7 @@ RUN apk add --repository /axoflow -U --upgrade --no-cache \
     syslog-ng-examples \
     syslog-ng-geoip2 \
     syslog-ng-graphite \
+    syslog-ng-grpc \
     syslog-ng-http \
     syslog-ng-json \
     syslog-ng-kafka \
