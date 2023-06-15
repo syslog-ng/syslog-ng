@@ -152,17 +152,24 @@ setup_vars() {
 			fi
 			;;
 		7.*)
-			EL_FC="syslog_ng.el78.fc.in"
+			EL_FC="syslog_ng.el789.fc.in"
 			EL_TE="syslog_ng.el7.te.in"
 			
 			# 601/tcp and 601/udp are allowed by default on RHEL7, so there is no need to enable them
 			omit_allowed_ports
 			;;
 		8.*)
-			EL_FC="syslog_ng.el78.fc.in"
+			EL_FC="syslog_ng.el789.fc.in"
 			EL_TE="syslog_ng.el8.te.in"
 
 			# 601/tcp and 601/udp are allowed by default on RHEL8, so there is no need to enable them
+			omit_allowed_ports
+			;;
+		9.*)
+			EL_FC="syslog_ng.el789.fc.in"
+			EL_TE="syslog_ng.el9.te.in"
+
+			# 601/tcp and 601/udp are allowed by default on RHEL9, so there is no need to enable them
 			omit_allowed_ports
 			;;
 		*)

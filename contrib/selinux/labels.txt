@@ -19,6 +19,12 @@ FILE CONTEXTS FOR SYSLOG-NG:
   /opt/syslog-ng/var/syslog-ng.persist:                                   syslogd_var_lib_t
   /etc/rc.d/init.d/syslog-ng:                                             syslogd_initrc_exec_t
 
+PROCESS LABEL (RHEL9):
+  when syslog-ng was started by systemd (by systemctl or during boot):
+    system_u:system_r:syslogd_t:s0
+
+  when syslog-ng was started manually (/opt/syslog-ng/sbin/syslog-ng -Fevd):
+    unconfined_u:system_r:unconfined_t:s0-s0:c0.c1023
 
 PROCESS LABEL (RHEL8):
   when syslog-ng was started by systemd (by systemctl or during boot):

@@ -14,6 +14,7 @@ SELINUX SUPPORT FOR SYSLOG-NG
 
     Red Hat Enterprise Linux/CentOS/Oracle Linux 7
     Red Hat Enterprise Linux/CentOS/Oracle Linux 8
+    Red Hat Enterprise Linux/CentOS/Oracle Linux 9
 
 
 PRE-REQUISITES
@@ -73,7 +74,7 @@ RESTARTING SYSLOG-NG
 
     # service syslog-ng restart
 
-  On RHEL/CentOS/Oracle Linux 7 and 8 you have to run:
+  On RHEL/CentOS/Oracle Linux 7, 8 and 9 you have to run:
 
     # systemctl restart syslog-ng
 
