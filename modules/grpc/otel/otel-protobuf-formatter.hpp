@@ -29,6 +29,7 @@
 
 #include "opentelemetry/proto/logs/v1/logs.pb.h"
 #include "opentelemetry/proto/metrics/v1/metrics.pb.h"
+#include "opentelemetry/proto/trace/v1/trace.pb.h"
 
 namespace syslogng {
 namespace grpc {
@@ -61,6 +62,7 @@ using opentelemetry::proto::metrics::v1::NumberDataPoint;
 using opentelemetry::proto::metrics::v1::SummaryDataPoint;
 using opentelemetry::proto::metrics::v1::HistogramDataPoint;
 using opentelemetry::proto::metrics::v1::ExponentialHistogramDataPoint;
+using opentelemetry::proto::trace::v1::Span;
 
 class ProtobufFormatter
 {
@@ -72,6 +74,7 @@ public:
   bool format(LogMessage *msg, LogRecord &log_record);
   void format_fallback(LogMessage *msg, LogRecord &log_record);
   bool format(LogMessage *msg, Metric &metric);
+  bool format(LogMessage *msg, Span &span);
 
 private:
   void get_and_set_repeated_KeyValues(LogMessage *msg, const char *prefix, RepeatedPtrField<KeyValue> *key_values);

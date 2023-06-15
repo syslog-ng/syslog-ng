@@ -37,6 +37,7 @@ using namespace opentelemetry::proto::resource::v1;
 using namespace opentelemetry::proto::common::v1;
 using namespace opentelemetry::proto::logs::v1;
 using namespace opentelemetry::proto::metrics::v1;
+using namespace opentelemetry::proto::trace::v1;
 
 static LogMessage *
 _create_log_msg_with_dummy_resource_and_scope()
@@ -862,6 +863,127 @@ Test(otel_protobuf_formatter, metric_summary)
   log_msg_unref(msg);
 
   _metric_summary_tc_asserts(metric_from_raw);
+}
+
+static void
+_span_tc_asserts(const Span &span)
+{
+  cr_assert_eq(span.trace_id().length(), 16);
+  cr_assert_eq(memcmp(span.trace_id().c_str(), "\0\1\2\3\4\5\6\7\0\1\2\3\4\5\6\7", 16), 0);
+  cr_assert_eq(span.span_id().length(), 8);
+  cr_assert_eq(memcmp(span.span_id().c_str(), "\0\1\2\3\4\5\6\7", 8), 0);
+  cr_assert_str_eq(span.trace_state().c_str(), "dummy_trace_state");
+  cr_assert_eq(span.parent_span_id().length(), 8);
+  cr_assert_eq(memcmp(span.parent_span_id().c_str(), "\7\6\5\4\3\2\1\0", 8), 0);
+  cr_assert_str_eq(span.name().c_str(), "dummy_name");
+  cr_assert_eq(span.kind(), Span_SpanKind::Span_SpanKind_SPAN_KIND_PRODUCER);
+  cr_assert_eq(span.start_time_unix_nano(), 111);
+  cr_assert_eq(span.end_time_unix_nano(), 222);
+  cr_assert_eq(span.attributes_size(), 1);
+  cr_assert_str_eq(span.attributes().at(0).key().c_str(), "attr_0");
+  cr_assert_str_eq(span.attributes().at(0).value().string_value().c_str(), "val_0");
+  cr_assert_eq(span.dropped_attributes_count(), 333);
+  cr_assert_eq(span.events_size(), 2);
+
+  const Span_Event &event_0 = span.events().at(0);
+  cr_assert_eq(event_0.time_unix_nano(), 444);
+  cr_assert_str_eq(event_0.name().c_str(), "event_0");
+  cr_assert_eq(event_0.attributes_size(), 1);
+  cr_assert_str_eq(event_0.attributes().at(0).key().c_str(), "e_attr_0");
+  cr_assert_str_eq(event_0.attributes().at(0).value().string_value().c_str(), "e_val_0");
+  cr_assert_eq(event_0.dropped_attributes_count(), 555);
+
+  const Span_Event &event_1 = span.events().at(1);
+  cr_assert_eq(event_1.time_unix_nano(), 666);
+  cr_assert_str_eq(event_1.name().c_str(), "event_1");
+  cr_assert_eq(event_1.attributes_size(), 1);
+  cr_assert_str_eq(event_1.attributes().at(0).key().c_str(), "e_attr_1");
+  cr_assert_str_eq(event_1.attributes().at(0).value().string_value().c_str(), "e_val_1");
+  cr_assert_eq(event_1.dropped_attributes_count(), 777);
+
+  cr_assert_eq(span.dropped_events_count(), 888);
+  cr_assert_eq(span.links_size(), 2);
+
+  const Span_Link &link_0 = span.links().at(0);
+  cr_assert_eq(link_0.trace_id().length(), 16);
+  cr_assert_eq(memcmp(link_0.trace_id().c_str(), "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16), 0);
+  cr_assert_eq(link_0.span_id().length(), 8);
+  cr_assert_eq(memcmp(link_0.span_id().c_str(), "\1\1\1\1\1\1\1\1", 8), 0);
+  cr_assert_str_eq(link_0.trace_state().c_str(), "l_trace_state_0");
+  cr_assert_eq(link_0.attributes_size(), 1);
+  cr_assert_str_eq(link_0.attributes().at(0).key().c_str(), "l_attr_0");
+  cr_assert_str_eq(link_0.attributes().at(0).value().string_value().c_str(), "l_val_0");
+  cr_assert_eq(link_0.dropped_attributes_count(), 999);
+
+  const Span_Link &link_1 = span.links().at(1);
+  cr_assert_eq(link_1.trace_id().length(), 16);
+  cr_assert_eq(memcmp(link_1.trace_id().c_str(), "\2\2\2\2\2\2\2\2\2\2\2\2\2\2\2\2", 16), 0);
+  cr_assert_eq(link_1.span_id().length(), 8);
+  cr_assert_eq(memcmp(link_1.span_id().c_str(), "\3\3\3\3\3\3\3\3", 8), 0);
+  cr_assert_str_eq(link_1.trace_state().c_str(), "l_trace_state_1");
+  cr_assert_eq(link_1.attributes_size(), 1);
+  cr_assert_str_eq(link_1.attributes().at(0).key().c_str(), "l_attr_1");
+  cr_assert_str_eq(link_1.attributes().at(0).value().string_value().c_str(), "l_val_1");
+  cr_assert_eq(link_1.dropped_attributes_count(), 1111);
+
+  cr_assert_str_eq(span.status().message().c_str(), "dummy_status_message");
+  cr_assert_eq(span.status().code(), Status_StatusCode::Status_StatusCode_STATUS_CODE_ERROR);
+}
+
+Test(otel_protobuf_formatter, span)
+{
+  ProtobufFormatter formatter(configuration);
+  LogMessage *msg = _create_log_msg_with_dummy_resource_and_scope();
+
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.trace_id", "\0\1\2\3\4\5\6\7\0\1\2\3\4\5\6\7", 16, LM_VT_BYTES);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.span_id", "\0\1\2\3\4\5\6\7", 8, LM_VT_BYTES);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.trace_state", "dummy_trace_state", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.parent_span_id", "\7\6\5\4\3\2\1\0", 8, LM_VT_BYTES);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.name", "dummy_name", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.kind", "4", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.start_time_unix_nano", "111", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.end_time_unix_nano", "222", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.attributes.attr_0", "val_0", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.dropped_attributes_count", "333", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.events.0.time_unix_nano", "444", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.events.0.name", "event_0", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.events.0.attributes.e_attr_0", "e_val_0", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.events.0.dropped_attributes_count", "555", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.events.1.time_unix_nano", "666", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.events.1.name", "event_1", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.events.1.attributes.e_attr_1", "e_val_1", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.events.1.dropped_attributes_count", "777", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.dropped_events_count", "888", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.links.0.trace_id", "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16,
+                                      LM_VT_BYTES);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.links.0.span_id", "\1\1\1\1\1\1\1\1", 8, LM_VT_BYTES);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.links.0.trace_state", "l_trace_state_0", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.links.0.attributes.l_attr_0", "l_val_0", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.links.0.dropped_attributes_count", "999", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.links.1.trace_id", "\2\2\2\2\2\2\2\2\2\2\2\2\2\2\2\2", 16,
+                                      LM_VT_BYTES);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.links.1.span_id", "\3\3\3\3\3\3\3\3", 8, LM_VT_BYTES);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.links.1.trace_state", "l_trace_state_1", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.links.1.attributes.l_attr_1", "l_val_1", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.links.1.dropped_attributes_count", "1111", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.status.message", "dummy_status_message", -1, LM_VT_STRING);
+  log_msg_set_value_by_name_with_type(msg, ".otel.span.status.code", "2", -1, LM_VT_INTEGER);
+
+  Span span;
+  cr_assert(formatter.format(msg, span));
+  log_msg_unref(msg);
+
+  _span_tc_asserts(span);
+
+  /* Raw */
+  msg = _create_log_msg_with_dummy_resource_and_scope();
+  ProtobufParser::store_raw(msg, span);
+
+  Span span_from_raw;
+  cr_assert(formatter.format(msg, span_from_raw));
+  log_msg_unref(msg);
+
+  _span_tc_asserts(span_from_raw);
 }
 
 void
