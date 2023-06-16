@@ -45,7 +45,11 @@ import logging
 import base64
 import re
 from datetime import datetime, timezone
-import requests
+
+try:
+    import requests
+except ImportError:
+    requests = None
 
 import syslogng
 
@@ -78,6 +82,10 @@ class HyprAuditSource(syslogng.LogFetcher):
         Initialize Hypr driver
         (optional for Python LogFetcher)
         """
+
+        if requests is None:
+            self.logger.error("Unable to start HyprAuditSource class, the required Python dependency of `requests` is missing")
+            return False
 
         # Ensure rp_app_id parameter is defined
         if "rp_app_id" in options:
@@ -365,6 +373,8 @@ class HyprError(Exception):
 
 
 def _hypr_config_generator(args):
+    if requests is None:
+        raise HyprError("Unable to run confgen for hypr-audit-trail(), the required Python dependency `requests` is missing")
     logger = logging.getLogger("Hypr-Confgen")
 
     def sanitize(variable):
