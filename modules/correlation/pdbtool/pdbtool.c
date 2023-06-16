@@ -1193,6 +1193,10 @@ static GOptionEntry pdbtool_options[] =
     "Enable verbose messages on stderr", NULL
   },
   {
+    "trace",   't', 0, G_OPTION_ARG_NONE, &trace_flag,
+    "Enable trace messages on stderr", NULL
+  },
+  {
     "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
     "Load the module specified as parameter", "<module>"
   },
