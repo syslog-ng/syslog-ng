@@ -51,6 +51,10 @@ modules_grpc_protos_libgrpc_protos_la_CXXFLAGS = \
   -I$(OPENTELEMETRY_PROTO_SRCDIR) \
   -I$(OPENTELEMETRY_PROTO_BUILDDIR)
 
+if ENABLE_EXTRA_WARNINGS
+modules_grpc_protos_libgrpc_protos_la_CXXFLAGS += -Wno-switch-default
+endif
+
 modules_grpc_protos_libgrpc_protos_la_LIBADD = $(MODULE_DEPS_LIBS) $(PROTOBUF_LIBS) $(GRPCPP_LIBS) -lstdc++
 modules_grpc_protos_libgrpc_protos_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
