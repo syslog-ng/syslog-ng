@@ -30,12 +30,25 @@
 typedef enum
 {
   GSAM_INSECURE,
+  GSAM_TLS,
 } GrpcServerAuthMode;
 
+typedef enum
+{
+  GSTPV_OPTIONAL_UNTRUSTED,
+  GSTPV_OPTIONAL_TRUSTED,
+  GSTPV_REQUIRED_UNTRUSTED,
+  GSTPV_REQUIRED_TRUSTED,
+} GrpcServerTlsPeerVerify;
 
 typedef struct GrpcServerCredentialsBuilderW_ GrpcServerCredentialsBuilderW; // Wrapper struct
 
 void grpc_server_credentials_builder_set_mode(GrpcServerCredentialsBuilderW *s, GrpcServerAuthMode mode);
+gboolean grpc_server_credentials_builder_set_tls_ca_path(GrpcServerCredentialsBuilderW *s, const gchar *ca_path);
+gboolean grpc_server_credentials_builder_set_tls_key_path(GrpcServerCredentialsBuilderW *s, const gchar *key_path);
+gboolean grpc_server_credentials_builder_set_tls_cert_path(GrpcServerCredentialsBuilderW *s, const gchar *cert_path);
+void grpc_server_credentials_builder_set_tls_peer_verify(GrpcServerCredentialsBuilderW *s,
+                                                         GrpcServerTlsPeerVerify peer_verify);
 
 #include "compat/cpp-end.h"
 

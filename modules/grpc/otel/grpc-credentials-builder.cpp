@@ -21,10 +21,31 @@
  */
 
 #include <assert.h>
+#include <fstream>
 
 #include "grpc-credentials-builder.hpp"
 
+#include "compat/cpp-start.h"
+#include "messages.h"
+#include "compat/cpp-end.h"
+
 using namespace syslogng::grpc;
+
+static bool
+_get_file_content(const char *path, std::string &content)
+{
+  std::ifstream ifs(path);
+  if (!ifs)
+    {
+      msg_error("gRPC: File not found", evt_tag_str("path", path));
+      return false;
+    }
+
+  content.assign(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+  ifs.close();
+
+  return true;
+}
 
 void
 ServerCredentialsBuilder::set_mode(GrpcServerAuthMode mode_)
@@ -38,6 +59,16 @@ ServerCredentialsBuilder::validate() const
   switch (mode)
     {
     case GSAM_INSECURE:
+      break;
+    case GSAM_TLS:
+      if (ssl_server_credentials_options.pem_key_cert_pairs.size() == 0 ||
+          ssl_server_credentials_options.pem_key_cert_pairs.at(0).private_key.size() == 0 ||
+          ssl_server_credentials_options.pem_key_cert_pairs.at(0).cert_chain.size() == 0)
+        {
+          msg_error("gRPC: You have a TLS enabled source without a X.509 keypair. "
+                    "Make sure to set the auth(tls(key-file() and cert-file())) options");
+          return false;
+        }
       break;
     default:
       assert(false);
@@ -53,14 +84,99 @@ ServerCredentialsBuilder::build() const
     {
     case GSAM_INSECURE:
       return ::grpc::InsecureServerCredentials();
+    case GSAM_TLS:
+    {
+      return ::grpc::SslServerCredentials(ssl_server_credentials_options);
+    }
     default:
       assert(false);
     }
   assert(false);
 }
 
+bool
+ServerCredentialsBuilder::set_tls_ca_path(const char *ca_path)
+{
+  return _get_file_content(ca_path, ssl_server_credentials_options.pem_root_certs);
+}
+
+bool
+ServerCredentialsBuilder::set_tls_key_path(const char *key_path)
+{
+  if (ssl_server_credentials_options.pem_key_cert_pairs.size() == 0)
+    {
+      ::grpc::SslServerCredentialsOptions::PemKeyCertPair key_cert_pair;
+      ssl_server_credentials_options.pem_key_cert_pairs.push_back(key_cert_pair);
+    }
+
+  return _get_file_content(key_path, ssl_server_credentials_options.pem_key_cert_pairs.at(0).private_key);
+}
+
+bool
+ServerCredentialsBuilder::set_tls_cert_path(const char *cert_path)
+{
+  if (ssl_server_credentials_options.pem_key_cert_pairs.size() == 0)
+    {
+      ::grpc::SslServerCredentialsOptions::PemKeyCertPair key_cert_pair;
+      ssl_server_credentials_options.pem_key_cert_pairs.push_back(key_cert_pair);
+    }
+
+  return _get_file_content(cert_path, ssl_server_credentials_options.pem_key_cert_pairs.at(0).cert_chain);
+}
+
+void
+ServerCredentialsBuilder::set_tls_peer_verify(GrpcServerTlsPeerVerify peer_verify)
+{
+  grpc_ssl_client_certificate_request_type client_certificate_request;
+
+  switch (peer_verify)
+    {
+    case GSTPV_OPTIONAL_UNTRUSTED:
+      client_certificate_request = GRPC_SSL_DONT_REQUEST_CLIENT_CERTIFICATE;
+      break;
+    case GSTPV_OPTIONAL_TRUSTED:
+      client_certificate_request = GRPC_SSL_REQUEST_CLIENT_CERTIFICATE_AND_VERIFY;
+      break;
+    case GSTPV_REQUIRED_UNTRUSTED:
+      client_certificate_request = GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_BUT_DONT_VERIFY;
+      break;
+    case GSTPV_REQUIRED_TRUSTED:
+      client_certificate_request = GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
+      break;
+    default:
+      g_assert_not_reached();
+    }
+
+  ssl_server_credentials_options.client_certificate_request = client_certificate_request;
+}
+
 void
 grpc_server_credentials_builder_set_mode(GrpcServerCredentialsBuilderW *s, GrpcServerAuthMode mode)
 {
   s->self->set_mode(mode);
+}
+
+gboolean
+grpc_server_credentials_builder_set_tls_ca_path(GrpcServerCredentialsBuilderW *s, const gchar *ca_path)
+{
+  return s->self->set_tls_ca_path(ca_path);
+}
+
+gboolean
+grpc_server_credentials_builder_set_tls_key_path(GrpcServerCredentialsBuilderW *s, const gchar *key_path)
+{
+  return s->self->set_tls_key_path(key_path);
+}
+
+gboolean
+grpc_server_credentials_builder_set_tls_cert_path(GrpcServerCredentialsBuilderW *s, const gchar *cert_path)
+{
+  return s->self->set_tls_cert_path(cert_path);
+}
+
+void
+grpc_server_credentials_builder_set_tls_peer_verify(GrpcServerCredentialsBuilderW *s,
+                                                    GrpcServerTlsPeerVerify peer_verify)
+{
+  s->self->set_tls_peer_verify(peer_verify);
 }

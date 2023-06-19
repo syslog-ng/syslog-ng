@@ -52,8 +52,18 @@ GrpcServerCredentialsBuilderW *last_grpc_server_credentials_builder;
 %token KW_PORT
 %token KW_AUTH
 %token KW_INSECURE
+%token KW_TLS
+%token KW_KEY_FILE
+%token KW_CERT_FILE
+%token KW_CA_FILE
+%token KW_PEER_VERIFY
+%token KW_OPTIONAL_UNTRUSTED
+%token KW_OPTIONAL_TRUSTED
+%token KW_REQUIRED_UNTRUSTED
+%token KW_REQUIRED_TRUSTED
 
 %type <ptr> source_otel
+%type <num> source_otel_auth_tls_peer_verify
 
 %%
 
@@ -82,6 +92,41 @@ source_otel_option
 
 source_otel_auth_option
   : KW_INSECURE { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_INSECURE); } '(' ')'
+  | KW_TLS { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_TLS); } '(' source_otel_auth_tls_options ')'
+  ;
+
+source_otel_auth_tls_options
+  : source_otel_auth_tls_option source_otel_auth_tls_options
+  |
+  ;
+
+source_otel_auth_tls_option
+  : KW_KEY_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_server_credentials_builder_set_tls_key_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set key-file()");
+        free($3);
+      }
+  | KW_CERT_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_server_credentials_builder_set_tls_cert_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set cert-file()");
+        free($3);
+      }
+  | KW_CA_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_server_credentials_builder_set_tls_ca_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set ca-file()");
+        free($3);
+      }
+  | KW_PEER_VERIFY '(' source_otel_auth_tls_peer_verify ')'
+      {
+        grpc_server_credentials_builder_set_tls_peer_verify(last_grpc_server_credentials_builder, $3);
+      }
+  ;
+
+source_otel_auth_tls_peer_verify
+  : KW_OPTIONAL_UNTRUSTED { $$ = GSTPV_OPTIONAL_UNTRUSTED; }
+  | KW_OPTIONAL_TRUSTED { $$ = GSTPV_OPTIONAL_TRUSTED; }
+  | KW_REQUIRED_UNTRUSTED { $$ = GSTPV_REQUIRED_UNTRUSTED; }
+  | KW_REQUIRED_TRUSTED { $$ = GSTPV_REQUIRED_TRUSTED; }
   ;
 
 /* INCLUDE_RULES */

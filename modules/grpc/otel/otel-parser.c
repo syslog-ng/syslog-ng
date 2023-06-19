@@ -34,6 +34,15 @@ static CfgLexerKeyword otel_keywords[] =
   { "port",                      KW_PORT },
   { "auth",                      KW_AUTH },
   { "insecure",                  KW_INSECURE },
+  { "tls",                       KW_TLS },
+  { "key_file",                  KW_KEY_FILE },
+  { "cert_file",                 KW_CERT_FILE },
+  { "ca_file",                   KW_CA_FILE },
+  { "peer_verify",               KW_PEER_VERIFY },
+  { "optional_untrusted",        KW_OPTIONAL_UNTRUSTED },
+  { "optional_trusted",          KW_OPTIONAL_TRUSTED },
+  { "required_untrusted",        KW_REQUIRED_UNTRUSTED },
+  { "required_trusted",          KW_REQUIRED_TRUSTED },
   { NULL }
 };
 

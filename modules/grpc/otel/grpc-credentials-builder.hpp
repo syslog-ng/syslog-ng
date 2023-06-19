@@ -33,13 +33,23 @@ class ServerCredentialsBuilder
 {
 public:
   using ServerAuthMode = GrpcServerAuthMode;
+  using ServerTlsPeerVerify = GrpcServerTlsPeerVerify;
 
   void set_mode(ServerAuthMode mode);
   bool validate() const;
   std::shared_ptr<::grpc::ServerCredentials> build() const;
 
+  /* TLS */
+  bool set_tls_ca_path(const char *ca_path);
+  bool set_tls_key_path(const char *key_path);
+  bool set_tls_cert_path(const char *cert_path);
+  void set_tls_peer_verify(ServerTlsPeerVerify peer_verify);
+
 private:
   ServerAuthMode mode = GSAM_INSECURE;
+
+  /* TLS */
+  ::grpc::SslServerCredentialsOptions ssl_server_credentials_options { GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY };
 };
 
 }
