@@ -50,6 +50,9 @@ private:
 
   /* TLS */
   ::grpc::SslServerCredentialsOptions ssl_server_credentials_options { GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY };
+
+  /* ALTS */
+  ::grpc::experimental::AltsServerCredentialsOptions alts_server_credentials_options;
 };
 
 }

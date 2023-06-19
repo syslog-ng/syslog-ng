@@ -70,6 +70,8 @@ ServerCredentialsBuilder::validate() const
           return false;
         }
       break;
+    case GSAM_ALTS:
+      break;
     default:
       assert(false);
     }
@@ -88,6 +90,8 @@ ServerCredentialsBuilder::build() const
     {
       return ::grpc::SslServerCredentials(ssl_server_credentials_options);
     }
+    case GSAM_ALTS:
+      return ::grpc::experimental::AltsServerCredentials(alts_server_credentials_options);
     default:
       assert(false);
     }

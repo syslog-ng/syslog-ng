@@ -31,6 +31,7 @@ typedef enum
 {
   GSAM_INSECURE,
   GSAM_TLS,
+  GSAM_ALTS,
 } GrpcServerAuthMode;
 
 typedef enum
