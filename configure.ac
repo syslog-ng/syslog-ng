@@ -588,16 +588,21 @@ if test "x$ac_compiler_gnu" = "xyes"; then
 	# we don't want to use with our debugging builds.
 
 	CFLAGS_ADD=""
+        CXXFLAGS_ADD=""
         if test "x$enable_debug" = "xyes"; then
                 CFLAGS_ADD="${CFLAGS_ADD} -g"
+                CXXFLAGS_ADD="${CXXFLAGS_ADD} -g"
         else
                 CFLAGS_ADD="${CFLAGS_ADD} -O2 -g"
+                CXXFLAGS_ADD="${CXXFLAGS_ADD} -O2 -g"
         fi
         if test "x$enable_gprof" = "xyes"; then
                 CFLAGS_ADD="${CFLAGS_ADD} -pg"
+                CXXFLAGS_ADD="${CXXFLAGS_ADD} -pg"
         fi
         if test "x$enable_gcov" = "xyes"; then
                 CFLAGS_ADD="${CFLAGS_ADD} -fprofile-arcs -ftest-coverage"
+                CXXFLAGS_ADD="${CXXFLAGS_ADD} -fprofile-arcs -ftest-coverage"
         fi
 else
         enable_extra_warnings="no"
@@ -620,6 +625,7 @@ AX_CFLAGS_GCC_OPTION(-Winitializer-overrides,
 
 dnl User supplied CFLAGS come last
 CFLAGS="${CFLAGS_ADD} ${ac_cv_env_CFLAGS_value}"
+CXXFLAGS="${CXXFLAGS_ADD} ${ac_cv_env_CXXFLAGS_value}"
 
 AC_SYS_LARGEFILE
 
