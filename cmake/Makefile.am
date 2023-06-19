@@ -14,6 +14,7 @@ EXTRA_DIST +=	\
 	cmake/Modules/FindGettext.cmake	\
 	cmake/Modules/FindGLIB.cmake	\
 	cmake/Modules/FindGradle.cmake	\
+	cmake/Modules/FindgRPC.cmake	\
 	cmake/Modules/FindHiredis.cmake	\
 	cmake/Modules/FindInotify.cmake	\
 	cmake/Modules/FindIVYKIS.cmake	\
@@ -32,6 +33,7 @@ EXTRA_DIST +=	\
 	cmake/Modules/FindWRAP.cmake	\
 	cmake/Modules/GenerateYFromYm.cmake	\
 	cmake/Modules/LibFindMacros.cmake	\
+	cmake/Modules/ProtobufGenerateCpp.cmake	\
 	cmake/module_switch.cmake		\
 	cmake/openssl_functions.cmake \
 	cmake/print_config_summary.cmake
