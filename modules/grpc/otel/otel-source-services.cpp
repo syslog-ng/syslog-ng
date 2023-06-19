@@ -21,15 +21,43 @@
  */
 
 #include "otel-source-services.hpp"
+#include "otel-protobuf-parser.hpp"
 
 using namespace syslogng::grpc::otel;
+using namespace opentelemetry::proto::collector::trace::v1;
+using namespace opentelemetry::proto::collector::logs::v1;
+using namespace opentelemetry::proto::collector::metrics::v1;
+using namespace opentelemetry::proto::trace::v1;
+using namespace opentelemetry::proto::logs::v1;
+using namespace opentelemetry::proto::metrics::v1;
+using namespace opentelemetry::proto::resource::v1;
+using namespace opentelemetry::proto::common::v1;
 
 ::grpc::Status
 syslogng::grpc::otel::SourceTraceService::Export(::grpc::ServerContext *context,
                                                  const ExportTraceServiceRequest *request,
                                                  ExportTraceServiceResponse *response)
 {
-  std::cout << "Trace received: " << request->ShortDebugString() << std::endl;
+  for (const ResourceSpans &resource_spans : request->resource_spans())
+    {
+      const Resource &resource = resource_spans.resource();
+      const std::string &resource_logs_schema_url = resource_spans.schema_url();
+
+      for (const ScopeSpans &scope_spans : resource_spans.scope_spans())
+        {
+          const InstrumentationScope &scope = scope_spans.scope();
+          const std::string &scope_logs_schema_url = scope_spans.schema_url();
+
+          for (const Span &span : scope_spans.spans())
+            {
+              LogMessage *msg = log_msg_new_empty();
+              protobuf_parser::set_metadata(msg, context->peer(), resource, resource_logs_schema_url, scope,
+                                            scope_logs_schema_url);
+              log_msg_unref(msg);
+            }
+        }
+    }
+
   return ::grpc::Status::OK;
 }
 
@@ -38,7 +66,26 @@ syslogng::grpc::otel::SourceLogsService::Export(::grpc::ServerContext *context,
                                                 const ExportLogsServiceRequest *request,
                                                 ExportLogsServiceResponse *response)
 {
-  std::cout << "Logs received: " << request->ShortDebugString() << std::endl;
+  for (const ResourceLogs &resource_logs : request->resource_logs())
+    {
+      const Resource &resource = resource_logs.resource();
+      const std::string &resource_logs_schema_url = resource_logs.schema_url();
+
+      for (const ScopeLogs &scope_logs : resource_logs.scope_logs())
+        {
+          const InstrumentationScope &scope = scope_logs.scope();
+          const std::string &scope_logs_schema_url = scope_logs.schema_url();
+
+          for (const LogRecord &log_record : scope_logs.log_records())
+            {
+              LogMessage *msg = log_msg_new_empty();
+              protobuf_parser::set_metadata(msg, context->peer(), resource, resource_logs_schema_url, scope,
+                                            scope_logs_schema_url);
+              log_msg_unref(msg);
+            }
+        }
+    }
+
   return ::grpc::Status::OK;
 }
 
@@ -47,6 +94,25 @@ syslogng::grpc::otel::SourceMetricsService::Export(::grpc::ServerContext *contex
                                                    const ExportMetricsServiceRequest *request,
                                                    ExportMetricsServiceResponse *response)
 {
-  std::cout << "Metrics received: " << request->ShortDebugString() << std::endl;
+  for (const ResourceMetrics &resource_metrics : request->resource_metrics())
+    {
+      const Resource &resource = resource_metrics.resource();
+      const std::string &resource_logs_schema_url = resource_metrics.schema_url();
+
+      for (const ScopeMetrics &scope_metrics : resource_metrics.scope_metrics())
+        {
+          const InstrumentationScope &scope = scope_metrics.scope();
+          const std::string &scope_logs_schema_url = scope_metrics.schema_url();
+
+          for (const Metric &metric : scope_metrics.metrics())
+            {
+              LogMessage *msg = log_msg_new_empty();
+              protobuf_parser::set_metadata(msg, context->peer(), resource, resource_logs_schema_url, scope,
+                                            scope_logs_schema_url);
+              log_msg_unref(msg);
+            }
+        }
+    }
+
   return ::grpc::Status::OK;
 }

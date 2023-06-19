@@ -23,4 +23,31 @@
 #ifndef OTEL_PROTOBUF_PARSER_HPP
 #define OTEL_PROTOBUF_PARSER_HPP
 
+#include <grpcpp/support/config.h>
+
+#include "compat/cpp-start.h"
+#include "logmsg/logmsg.h"
+#include "compat/cpp-end.h"
+
+#include "opentelemetry/proto/resource/v1/resource.pb.h"
+#include "opentelemetry/proto/common/v1/common.pb.h"
+
+namespace syslogng {
+namespace grpc {
+namespace otel {
+namespace protobuf_parser {
+
+using opentelemetry::proto::resource::v1::Resource;
+using opentelemetry::proto::common::v1::InstrumentationScope;
+
+void set_metadata(LogMessage *msg, const ::grpc::string &peer,
+                  const Resource &resource, const std::string &resource_schema_url,
+                  const InstrumentationScope &scope, const std::string &scope_schema_url);
+
+
+}
+}
+}
+}
+
 #endif
