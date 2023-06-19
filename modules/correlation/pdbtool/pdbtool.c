@@ -1193,6 +1193,10 @@ static GOptionEntry pdbtool_options[] =
     "Enable verbose messages on stderr", NULL
   },
   {
+    "trace",   't', 0, G_OPTION_ARG_NONE, &trace_flag,
+    "Enable trace messages on stderr", NULL
+  },
+  {
     "module", 0, 0, G_OPTION_ARG_CALLBACK, pdbtool_load_module,
     "Load the module specified as parameter", "<module>"
   },
@@ -1269,18 +1273,11 @@ main(int argc, char *argv[])
 
   setlocale(LC_ALL, "");
 
-  main_loop_thread_resource_init();
   msg_init(TRUE);
-  resolved_configurable_paths_init(&resolved_configurable_paths);
-  stats_init();
-  scratch_buffers_global_init();
-  scratch_buffers_allocator_init();
-  log_msg_global_init();
-  log_template_global_init();
-  log_tags_global_init();
-  pattern_db_global_init();
-  crypto_init();
 
+  resolved_configurable_paths_init(&resolved_configurable_paths);
+  app_startup();
+  pattern_db_global_init();
   configuration = cfg_new_snippet();
 
   if (!g_option_context_parse(ctx, &argc, &argv, &error))
@@ -1299,16 +1296,9 @@ main(int argc, char *argv[])
     colors = full_colors;
 
   ret = modes[mode].main(argc, argv);
-  scratch_buffers_allocator_deinit();
-  scratch_buffers_global_deinit();
-  log_tags_global_deinit();
-  log_msg_global_deinit();
-  stats_destroy();
-
   cfg_free(configuration);
   configuration = NULL;
-  crypto_deinit();
-  msg_deinit();
-  main_loop_thread_resource_deinit();
+
+  app_shutdown();
   return ret;
 }
