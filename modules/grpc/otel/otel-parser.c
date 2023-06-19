@@ -32,6 +32,8 @@ static CfgLexerKeyword otel_keywords[] =
 {
   { "opentelemetry",             KW_OPENTELEMETRY },
   { "port",                      KW_PORT },
+  { "auth",                      KW_AUTH },
+  { "insecure",                  KW_INSECURE },
   { NULL }
 };
 

@@ -23,4 +23,20 @@
 #ifndef GRPC_CREDENTIALS_BUILDER_H
 #define GRPC_CREDENTIALS_BUILDER_H
 
+#include "compat/cpp-start.h"
+
+#include "compat/glib.h"
+
+typedef enum
+{
+  GSAM_INSECURE,
+} GrpcServerAuthMode;
+
+
+typedef struct GrpcServerCredentialsBuilderW_ GrpcServerCredentialsBuilderW; // Wrapper struct
+
+void grpc_server_credentials_builder_set_mode(GrpcServerCredentialsBuilderW *s, GrpcServerAuthMode mode);
+
+#include "compat/cpp-end.h"
+
 #endif

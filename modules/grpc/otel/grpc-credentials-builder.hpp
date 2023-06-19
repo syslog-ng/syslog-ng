@@ -23,12 +23,31 @@
 #ifndef GRPC_CREDENTIALS_BUILDER_HPP
 #define GRPC_CREDENTIALS_BUILDER_HPP
 
+#include <grpcpp/server.h>
 #include "grpc-credentials-builder.h"
 
 namespace syslogng {
 namespace grpc {
 
+class ServerCredentialsBuilder
+{
+public:
+  using ServerAuthMode = GrpcServerAuthMode;
+
+  void set_mode(ServerAuthMode mode);
+  bool validate() const;
+  std::shared_ptr<::grpc::ServerCredentials> build() const;
+
+private:
+  ServerAuthMode mode = GSAM_INSECURE;
+};
+
 }
 }
+
+struct GrpcServerCredentialsBuilderW_
+{
+  syslogng::grpc::ServerCredentialsBuilder *self;
+};
 
 #endif

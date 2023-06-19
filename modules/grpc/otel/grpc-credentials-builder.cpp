@@ -20,4 +20,47 @@
  *
  */
 
+#include <assert.h>
+
 #include "grpc-credentials-builder.hpp"
+
+using namespace syslogng::grpc;
+
+void
+ServerCredentialsBuilder::set_mode(GrpcServerAuthMode mode_)
+{
+  mode = mode_;
+}
+
+bool
+ServerCredentialsBuilder::validate() const
+{
+  switch (mode)
+    {
+    case GSAM_INSECURE:
+      break;
+    default:
+      assert(false);
+    }
+
+  return build().get() != nullptr;
+}
+
+std::shared_ptr<::grpc::ServerCredentials>
+ServerCredentialsBuilder::build() const
+{
+  switch (mode)
+    {
+    case GSAM_INSECURE:
+      return ::grpc::InsecureServerCredentials();
+    default:
+      assert(false);
+    }
+  assert(false);
+}
+
+void
+grpc_server_credentials_builder_set_mode(GrpcServerCredentialsBuilderW *s, GrpcServerAuthMode mode)
+{
+  s->self->set_mode(mode);
+}

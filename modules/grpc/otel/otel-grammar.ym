@@ -32,6 +32,8 @@
 #include "syslog-names.h"
 #include "otel-source.h"
 
+GrpcServerCredentialsBuilderW *last_grpc_server_credentials_builder;
+
 }
 
 %define api.prefix {otel_}
@@ -48,6 +50,8 @@
 
 %token KW_OPENTELEMETRY
 %token KW_PORT
+%token KW_AUTH
+%token KW_INSECURE
 
 %type <ptr> source_otel
 
@@ -72,7 +76,12 @@ source_otel_options
 
 source_otel_option
   : KW_PORT '(' positive_integer ')' { otel_sd_set_port(last_driver, $3); }
+  | KW_AUTH { last_grpc_server_credentials_builder = otel_sd_get_credentials_builder(last_driver); } '(' source_otel_auth_option ')'
   | threaded_source_driver_option
+  ;
+
+source_otel_auth_option
+  : KW_INSECURE { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_INSECURE); } '(' ')'
   ;
 
 /* INCLUDE_RULES */

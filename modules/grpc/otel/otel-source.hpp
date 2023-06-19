@@ -31,6 +31,7 @@
 
 #include "otel-source.h"
 #include "otel-servicecall.hpp"
+#include "grpc-credentials-builder.hpp"
 
 
 namespace syslogng {
@@ -48,6 +49,8 @@ public:
   gboolean init();
   gboolean deinit();
 
+  GrpcServerCredentialsBuilderW *get_credentials_builder_wrapper();
+
 private:
   bool post(LogMessage *msg);
 
@@ -57,9 +60,11 @@ private:
 
 public:
   guint64 port = 4317;
+  syslogng::grpc::ServerCredentialsBuilder credentials_builder;
 
 private:
   OtelSourceDriver *super;
+  GrpcServerCredentialsBuilderW credentials_builder_wrapper;
   std::unique_ptr<::grpc::Server> server;
   std::unique_ptr<::grpc::ServerCompletionQueue> cq;
 };

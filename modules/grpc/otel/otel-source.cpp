@@ -27,6 +27,7 @@
 
 #include "otel-source.hpp"
 #include "otel-source-services.hpp"
+#include "grpc-credentials-builder.hpp"
 
 #include "compat/cpp-start.h"
 #include "messages.h"
@@ -41,6 +42,7 @@ using namespace syslogng::grpc::otel;
 syslogng::grpc::otel::SourceDriver::SourceDriver(OtelSourceDriver *s)
   : super(s)
 {
+  credentials_builder_wrapper.self = &credentials_builder;
 }
 
 void
@@ -51,7 +53,7 @@ syslogng::grpc::otel::SourceDriver::run()
   ::grpc::EnableDefaultHealthCheckService(true);
 
   ::grpc::ServerBuilder builder;
-  builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
+  builder.AddListeningPort(address, credentials_builder.build());
 
   TraceService::AsyncService trace_service;
   LogsService::AsyncService logs_service;
@@ -108,6 +110,9 @@ syslogng::grpc::otel::SourceDriver::format_stats_instance()
 gboolean
 syslogng::grpc::otel::SourceDriver::init()
 {
+  if (!credentials_builder.validate())
+    return FALSE;
+
   return log_threaded_source_driver_init_method(&super->super.super.super.super);
 }
 
@@ -127,12 +132,24 @@ syslogng::grpc::otel::SourceDriver::post(LogMessage *msg)
   return true;
 }
 
+GrpcServerCredentialsBuilderW *
+SourceDriver::get_credentials_builder_wrapper()
+{
+  return &credentials_builder_wrapper;
+}
+
 /* Config setters */
 
 void
 otel_sd_set_port(LogDriver *s, guint64 port)
 {
   get_SourceDriver(s)->port = port;
+}
+
+GrpcServerCredentialsBuilderW *
+otel_sd_get_credentials_builder(LogDriver *s)
+{
+  return get_SourceDriver(s)->get_credentials_builder_wrapper();
 }
 
 /* C Wrappers */
