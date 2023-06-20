@@ -26,7 +26,7 @@
 
 extern int otel_debug;
 
-int otel_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
+int otel_parse(CfgLexer *lexer, void **instance, gpointer arg);
 
 static CfgLexerKeyword otel_keywords[] =
 {
@@ -58,4 +58,4 @@ CfgParser otel_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(otel_, otel_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(otel_, otel_, void **)

@@ -35,6 +35,8 @@
 #include "opentelemetry/proto/metrics/v1/metrics.pb.h"
 #include "opentelemetry/proto/trace/v1/trace.pb.h"
 
+#include "otel-protobuf-parser.h"
+
 namespace syslogng {
 namespace grpc {
 namespace otel {
@@ -55,6 +57,13 @@ void parse(LogMessage *msg, const Metric &metric);
 void parse(LogMessage *msg, const Span &span);
 
 }
+
+class ProtobufParser
+{
+public:
+  bool process(LogMessage *msg);
+};
+
 }
 }
 }

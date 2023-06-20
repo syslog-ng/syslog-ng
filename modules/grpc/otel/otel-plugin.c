@@ -33,7 +33,12 @@ static Plugin otel_plugins[] =
     .type = LL_CONTEXT_SOURCE,
     .name = "opentelemetry",
     .parser = &otel_parser
-  }
+  },
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "opentelemetry",
+    .parser = &otel_parser,
+  },
 };
 
 gboolean

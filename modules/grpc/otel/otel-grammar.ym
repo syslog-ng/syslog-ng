@@ -31,6 +31,7 @@
 #include "plugin.h"
 #include "syslog-names.h"
 #include "otel-source.h"
+#include "otel-protobuf-parser.h"
 
 GrpcServerCredentialsBuilderW *last_grpc_server_credentials_builder;
 
@@ -43,7 +44,7 @@ GrpcServerCredentialsBuilderW *last_grpc_server_credentials_builder;
 
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {LogDriver **instance}
+%parse-param {void **instance}
 %parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */
@@ -64,12 +65,14 @@ GrpcServerCredentialsBuilderW *last_grpc_server_credentials_builder;
 %token KW_ALTS
 
 %type <ptr> source_otel
+%type <ptr> parser_otel
 %type <num> source_otel_auth_tls_peer_verify
 
 %%
 
 start
   : LL_CONTEXT_SOURCE source_otel { YYACCEPT; }
+  | LL_CONTEXT_PARSER parser_otel { YYACCEPT; }
   ;
 
 source_otel
@@ -129,6 +132,18 @@ source_otel_auth_tls_peer_verify
   | KW_OPTIONAL_TRUSTED { $$ = GSTPV_OPTIONAL_TRUSTED; }
   | KW_REQUIRED_UNTRUSTED { $$ = GSTPV_REQUIRED_UNTRUSTED; }
   | KW_REQUIRED_TRUSTED { $$ = GSTPV_REQUIRED_TRUSTED; }
+  ;
+
+parser_otel
+  : KW_OPENTELEMETRY
+    {
+      last_parser = *instance = otel_protobuf_parser_new(configuration);
+    }
+    '(' parser_otel_options ')' { $$ = last_parser; }
+  ;
+
+parser_otel_options
+  :
   ;
 
 /* INCLUDE_RULES */

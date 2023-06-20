@@ -33,6 +33,7 @@ set(OTEL_CPP_SOURCES
   otel-servicecall.hpp
   otel-protobuf-parser.hpp
   otel-protobuf-parser.cpp
+  otel-protobuf-parser.h
   grpc-credentials-builder.cpp
   grpc-credentials-builder.hpp
   grpc-credentials-builder.h

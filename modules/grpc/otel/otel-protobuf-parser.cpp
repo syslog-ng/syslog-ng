@@ -24,13 +24,20 @@
 
 #include "otel-protobuf-parser.hpp"
 
-
 using namespace google::protobuf;
 using namespace opentelemetry::proto::resource::v1;
 using namespace opentelemetry::proto::common::v1;
 using namespace opentelemetry::proto::logs::v1;
 using namespace opentelemetry::proto::metrics::v1;
 using namespace opentelemetry::proto::trace::v1;
+
+#define get_ProtobufParser(s) (((OtelProtobufParser *) s)->cpp)
+
+struct OtelProtobufParser_
+{
+  LogParser super;
+  syslogng::grpc::otel::ProtobufParser *cpp;
+};
 
 static void
 _set_value(LogMessage *msg, const char *key, const char *value, LogMessageValueType type)
@@ -901,4 +908,43 @@ syslogng::grpc::otel::protobuf_parser::parse(LogMessage *msg, const Span &span)
   /* .otel.span.status.code */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIi32, status.code());
   _set_value_with_prefix(msg, key_buffer, length_with_status, "code", number_buf, LM_VT_INTEGER);
+
+static gboolean
+_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)
+{
+  LogMessage *msg = log_msg_make_writable(pmsg, path_options);
+  return get_ProtobufParser(s)->process(msg);
+}
+
+static LogPipe *
+_clone(LogPipe *s)
+{
+  OtelProtobufParser *self = (OtelProtobufParser *) s;
+  OtelProtobufParser *cloned = (OtelProtobufParser *) otel_protobuf_parser_new(s->cfg);
+
+  log_parser_clone_settings(&self->super, &cloned->super);
+
+  return &cloned->super.super;
+}
+
+static void
+_free(LogPipe *s)
+{
+  delete get_ProtobufParser(s);
+  log_parser_free_method(s);
+}
+
+LogParser *
+otel_protobuf_parser_new(GlobalConfig *cfg)
+{
+  OtelProtobufParser *self = g_new0(OtelProtobufParser, 1);
+
+  self->cpp = new syslogng::grpc::otel::ProtobufParser();
+
+  log_parser_init_instance(&self->super, cfg);
+  self->super.super.free_fn = _free;
+  self->super.super.clone = _clone;
+  self->super.process = _process;
+
+  return &self->super;
 }

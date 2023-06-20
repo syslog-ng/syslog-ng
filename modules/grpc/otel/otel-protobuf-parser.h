@@ -20,16 +20,17 @@
  *
  */
 
-#ifndef OTEL_PARSER_H
-#define OTEL_PARSER_H
+#ifndef OTEL_PROTOBUF_PARSER_H
+#define OTEL_PROTOBUF_PARSER_H
 
-#include "cfg-parser.h"
-#include "cfg-lexer.h"
-#include "driver.h"
+#include "compat/cpp-start.h"
 
-extern CfgParser otel_parser;
+#include "parser/parser-expr.h"
 
-CFG_PARSER_DECLARE_LEXER_BINDING(otel_, OTEL_, void **)
+typedef struct OtelProtobufParser_ OtelProtobufParser;
+
+LogParser *otel_protobuf_parser_new(GlobalConfig *cfg);
+
+#include "compat/cpp-end.h"
 
 #endif
-
