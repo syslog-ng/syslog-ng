@@ -56,7 +56,7 @@ tf_value_pairs_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
   else
     g_assert_not_reached();
 
-  state->vp = value_pairs_new_from_cmdline (parent->cfg, &argc, &argv, NULL, error);
+  state->vp = value_pairs_new_from_cmdline (parent->cfg, &argc, &argv, NULL, NULL, error);
   return state->vp != NULL;
 }
 

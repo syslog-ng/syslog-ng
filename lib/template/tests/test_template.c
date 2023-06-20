@@ -776,3 +776,68 @@ Test(template, test_log_template_with_escaping_produces_string_even_if_the_value
   log_template_unref(template);
   g_string_free(formatted_value, TRUE);
 }
+
+Test(template, test_bytes_and_protobuf_types_are_rendered_when_necessary)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
+  LogTemplate *template = log_template_new(configuration, NULL);
+  GError *error = NULL;
+  gboolean result;
+
+  GString *formatted_value = g_string_sized_new(64);
+  LogMessage *msg = create_sample_message();
+  LogMessageValueType type;
+
+  result = log_template_compile(template, "$bytes", &error);
+  cr_assert(result);
+  cr_assert_eq(error, NULL);
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("", formatted_value->str);
+  cr_assert_eq(type, LM_VT_NULL);
+
+  result = log_template_compile(template, "$protobuf", &error);
+  cr_assert(result);
+  cr_assert_eq(error, NULL);
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("", formatted_value->str);
+  cr_assert_eq(type, LM_VT_NULL);
+
+  result = log_template_compile_with_type_hint(template, "bytes($bytes almafa)", &error);
+  cr_assert(result);
+  cr_assert_eq(error, NULL);
+  cr_assert_eq(template->type_hint, LM_VT_BYTES);
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_eq(formatted_value->len, 11);
+  cr_assert_eq(memcmp(formatted_value->str, "\0\1\2\3 almafa", 11), 0);
+  cr_assert_eq(type, LM_VT_BYTES);
+
+  result = log_template_compile_with_type_hint(template, "protobuf($protobuf almafa)", &error);
+  cr_assert(result);
+  cr_assert_eq(error, NULL);
+  cr_assert_eq(template->type_hint, LM_VT_PROTOBUF);
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_eq(formatted_value->len, 11);
+  cr_assert_eq(memcmp(formatted_value->str, "\4\5\6\7 almafa", 11), 0);
+  cr_assert_eq(type, LM_VT_PROTOBUF);
+
+  result = log_template_compile_with_type_hint(template, "bytes($protobuf)", &error);
+  cr_assert(result);
+  cr_assert_eq(error, NULL);
+  cr_assert_eq(template->type_hint, LM_VT_BYTES);
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("", formatted_value->str);
+  cr_assert_eq(type, LM_VT_BYTES);
+
+  result = log_template_compile_with_type_hint(template, "protobuf($bytes)", &error);
+  cr_assert(result);
+  cr_assert_eq(error, NULL);
+  cr_assert_eq(template->type_hint, LM_VT_PROTOBUF);
+  log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
+  cr_assert_str_eq("", formatted_value->str);
+  cr_assert_eq(type, LM_VT_PROTOBUF);
+
+  log_template_unref(template);
+  log_msg_unref(msg);
+  g_string_free(formatted_value, TRUE);
+}

@@ -408,6 +408,12 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
       bson_append_null(o, name, -1);
       break;
     }
+    case LM_VT_BYTES:
+    case LM_VT_PROTOBUF:
+    {
+      bson_append_binary(o, name, -1, BSON_SUBTYPE_BINARY, (const uint8_t *) value, value_len);
+      break;
+    }
     default:
       return TRUE;
     }

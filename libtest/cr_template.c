@@ -134,6 +134,8 @@ create_sample_message(void)
   log_msg_set_value_by_name(msg, "template_name", "dummy", -1);
   log_msg_set_value_by_name_with_type(msg, "number1", "123", -1, LM_VT_INTEGER);
   log_msg_set_value_by_name_with_type(msg, "number2", "456", -1, LM_VT_INTEGER);
+  log_msg_set_value_by_name_with_type(msg, "bytes", "\0\1\2\3", 4, LM_VT_BYTES);
+  log_msg_set_value_by_name_with_type(msg, "protobuf", "\4\5\6\7", 4, LM_VT_PROTOBUF);
 
   return msg;
 }

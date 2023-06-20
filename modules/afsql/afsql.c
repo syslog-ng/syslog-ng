@@ -809,6 +809,18 @@ afsql_dd_append_quoted_value(AFSqlDestDriver *self, GString *value, GString *ins
   free(quoted);
 }
 
+static void
+afsql_dd_append_quoted_binary_value(AFSqlDestDriver *self, GString *value, GString *insert_command)
+{
+  guchar *quoted = NULL;
+  dbi_conn_quote_binary_copy(self->dbi_ctx, (guchar *) value->str, value->len, &quoted);
+  if (quoted)
+    g_string_append(insert_command, (gchar *) quoted);
+  else
+    g_string_append(insert_command, "''");
+  free(quoted);
+}
+
 static gboolean
 afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
                                      AFSqlField *field, GString *value, LogMessageValueType type,
@@ -877,6 +889,10 @@ afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
     }
     case LM_VT_NULL:
       g_string_append(insert_command, "NULL");
+      break;
+    case LM_VT_BYTES:
+    case LM_VT_PROTOBUF:
+      afsql_dd_append_quoted_binary_value(self, value, insert_command);
       break;
     default:
       afsql_dd_append_quoted_value(self, value, insert_command);

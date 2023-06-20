@@ -53,7 +53,7 @@ _get_value(PyLogMessage *self, const gchar *name, gboolean cast_to_bytes, gboole
   LogMessageValueType type;
   const gchar *value = log_msg_get_value_if_set_with_type(self->msg, handle, &value_len, &type);
 
-  if (!value)
+  if (!value || type == LM_VT_BYTES || type == LM_VT_PROTOBUF)
     return NULL;
 
   if (cast_to_bytes)
@@ -219,6 +219,9 @@ _collect_nvpair_names_from_logmsg(NVHandle handle, const gchar *name, const gcha
 {
   PyObject *list = (PyObject *)user_data;
 
+  if (type == LM_VT_BYTES || type == LM_VT_PROTOBUF)
+    return FALSE;
+
   PyObject *py_name = PyBytes_FromString(name);
   PyList_Append(list, py_name);
   Py_XDECREF(py_name);
@@ -303,12 +306,12 @@ py_log_message_get_as_str(PyLogMessage *self, PyObject *args, PyObject *kwrds)
       return NULL;
     }
 
-
   NVHandle handle = log_msg_get_value_handle(key);
   gssize value_len = 0;
-  const gchar *value = log_msg_get_value_if_set(self->msg, handle, &value_len);
+  LogMessageValueType type;
+  const gchar *value = log_msg_get_value_if_set_with_type(self->msg, handle, &value_len, &type);
 
-  if (value)
+  if (value && type != LM_VT_BYTES && type != LM_VT_PROTOBUF)
     {
       APPEND_ZERO(value, value, value_len);
       return PyUnicode_Decode(value, value_len, encoding, errors);

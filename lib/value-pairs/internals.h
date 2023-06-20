@@ -38,6 +38,7 @@ struct _ValuePairs
   GPtrArray *transforms;
 
   gboolean omit_empty_values;
+  gboolean include_bytes;
 
   /* guint32 as CfgFlagHandler only supports 32 bit integers */
   guint32 scopes;

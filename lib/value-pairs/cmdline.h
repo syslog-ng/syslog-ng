@@ -26,8 +26,14 @@
 
 #include "value-pairs/value-pairs.h"
 
+typedef struct ValuePairsOptionalOptions_
+{
+  gboolean enable_include_bytes;
+} ValuePairsOptionalOptions;
+
 ValuePairs *value_pairs_new_from_cmdline(GlobalConfig *cfg,
                                          gint *argc, gchar ***argv,
+                                         const ValuePairsOptionalOptions *optional_options,
                                          GOptionGroup *custom_options,
                                          GError **error);
 

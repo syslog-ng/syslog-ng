@@ -279,6 +279,7 @@ Test(python_log_message, test_python_logmessage_subscript_no_typing_support)
 typedef struct
 {
   const gchar *value;
+  gssize value_length;
   LogMessageValueType type;
   const gchar *expected_value;
 } PyLogMessageGetTestParams;
@@ -289,38 +290,57 @@ ParameterizedTestParameters(python_log_message, test_python_logmessage_get)
   {
     {
       .value = "test",
+      .value_length = -1,
       .type = LM_VT_STRING,
       .expected_value = "b'test'"
     },
     {
       .value = "true",
+      .value_length = -1,
       .type = LM_VT_BOOLEAN,
       .expected_value = "True"
     },
     {
       .value = "14",
+      .value_length = -1,
       .type = LM_VT_INTEGER,
       .expected_value = "14"
     },
     {
       .value = "14",
+      .value_length = -1,
       .type = LM_VT_DOUBLE,
       .expected_value = "14.000"
     },
     {
       .value = "1664894892",
+      .value_length = -1,
       .type = LM_VT_DATETIME,
       .expected_value = "datetime.datetime(2022, 10, 4, 14, 48, 12)"
     },
     {
       .value = "\"a,\",\" b\",c",
+      .value_length = -1,
       .type = LM_VT_LIST,
       .expected_value = "[b'a,', b' b', b'c']"
     },
     {
       .value = "",
+      .value_length = -1,
       .type = LM_VT_NULL,
       .expected_value = "None"
+    },
+    {
+      .value = "\0\1\2\3",
+      .value_length = 4,
+      .type = LM_VT_BYTES,
+      .expected_value = NULL
+    },
+    {
+      .value = "\4\5\6\7",
+      .value_length = 4,
+      .type = LM_VT_PROTOBUF,
+      .expected_value = NULL
     },
   };
 
@@ -338,13 +358,24 @@ ParameterizedTest(PyLogMessageGetTestParams *params, python_log_message, test_py
     PyObject *msg_object = py_log_message_new(msg, configuration);
     PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
 
-    log_msg_set_value_by_name_with_type(msg, "field", params->value, -1, params->type);
+    log_msg_set_value_by_name_with_type(msg, "field", params->value, params->value_length, params->type);
 
-    _run_scripts("result = test_msg.get('field')");
-    _assert_python_variable_value("result", params->expected_value);
+    if (params->expected_value)
+      {
+        _run_scripts("result = test_msg.get('field')");
+        _assert_python_variable_value("result", params->expected_value);
 
-    _run_scripts("result = test_msg.get('field', default='def')");
-    _assert_python_variable_value("result", params->expected_value);
+        _run_scripts("result = test_msg.get('field', default='def')");
+        _assert_python_variable_value("result", params->expected_value);
+      }
+    else
+      {
+        _run_scripts("result = test_msg.get('field')");
+        _assert_python_variable_value("result", "None");
+
+        _run_scripts("result = test_msg.get('field', default='def')");
+        _assert_python_variable_value("result", "'def'");
+      }
 
     Py_XDECREF(msg_object);
   }
@@ -379,38 +410,57 @@ ParameterizedTestParameters(python_log_message, test_python_logmessage_get_as_st
   {
     {
       .value = "test",
+      .value_length = -1,
       .type = LM_VT_STRING,
       .expected_value = "'test'"
     },
     {
       .value = "true",
+      .value_length = -1,
       .type = LM_VT_BOOLEAN,
       .expected_value = "'true'"
     },
     {
       .value = "14",
+      .value_length = -1,
       .type = LM_VT_INTEGER,
       .expected_value = "'14'"
     },
     {
       .value = "14",
+      .value_length = -1,
       .type = LM_VT_DOUBLE,
       .expected_value = "'14'"
     },
     {
       .value = "1664894892",
+      .value_length = -1,
       .type = LM_VT_DATETIME,
       .expected_value = "'1664894892'"
     },
     {
       .value = "\"a,\",\" b\",c",
+      .value_length = -1,
       .type = LM_VT_LIST,
       .expected_value = "'\"a,\",\" b\",c'"
     },
     {
       .value = "",
+      .value_length = -1,
       .type = LM_VT_NULL,
       .expected_value = "''"
+    },
+    {
+      .value = "\0\1\2\3",
+      .value_length = 4,
+      .type = LM_VT_BYTES,
+      .expected_value = NULL
+    },
+    {
+      .value = "\4\5\6\7",
+      .value_length = 4,
+      .type = LM_VT_PROTOBUF,
+      .expected_value = NULL
     },
   };
 
@@ -428,13 +478,24 @@ ParameterizedTest(PyLogMessageGetTestParams *params, python_log_message, test_py
     PyObject *msg_object = py_log_message_new(msg, configuration);
     PyDict_SetItemString(_python_main_dict, "test_msg", msg_object);
 
-    log_msg_set_value_by_name_with_type(msg, "field", params->value, -1, params->type);
+    log_msg_set_value_by_name_with_type(msg, "field", params->value, params->value_length, params->type);
 
-    _run_scripts("result = test_msg.get_as_str('field')");
-    _assert_python_variable_value("result", params->expected_value);
+    if (params->expected_value)
+      {
+        _run_scripts("result = test_msg.get_as_str('field')");
+        _assert_python_variable_value("result", params->expected_value);
 
-    _run_scripts("result = test_msg.get_as_str('field', default='def')");
-    _assert_python_variable_value("result", params->expected_value);
+        _run_scripts("result = test_msg.get_as_str('field', default='def')");
+        _assert_python_variable_value("result", params->expected_value);
+      }
+    else
+      {
+        _run_scripts("result = test_msg.get_as_str('field', )");
+        _assert_python_variable_value("result", "None");
+
+        _run_scripts("result = test_msg.get_as_str('field', default='def')");
+        _assert_python_variable_value("result", "'def'");
+      }
 
     Py_XDECREF(msg_object);
   }

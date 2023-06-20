@@ -40,10 +40,10 @@ typedef struct _FilterCmp
 } FilterCmp;
 
 static gint
-fop_compare_numeric(const gchar *left, const gchar *right)
+fop_compare_numeric(const GString *left, const GString *right)
 {
-  gint l = atoi(left);
-  gint r = atoi(right);
+  gint l = atoi(left->str);
+  gint r = atoi(right->str);
   if (l == r)
     return 0;
   else if (l < r)
@@ -53,11 +53,17 @@ fop_compare_numeric(const gchar *left, const gchar *right)
 }
 
 static gint
-fop_compare_string(const gchar *left, const gchar *right)
+fop_compare_bytes(const GString *left, const GString *right)
 {
-  return strcmp(left, right);
-}
+  gint cmp = memcmp(left->str, right->str, MIN(left->len, right->len));
+  if (cmp != 0)
+    return cmp;
 
+  if (left->len == right->len)
+    return 0;
+
+  return left->len < right->len ? -1 : 1;
+}
 
 static inline gboolean
 _is_object(LogMessageValueType type)
@@ -69,6 +75,12 @@ static inline gboolean
 _is_string(LogMessageValueType type)
 {
   return type == LM_VT_STRING;
+}
+
+static inline gboolean
+_is_bytes(LogMessageValueType type)
+{
+  return type == LM_VT_BYTES || type == LM_VT_PROTOBUF;
 }
 
 static gboolean
@@ -103,18 +115,20 @@ _evaluate_comparison(FilterCmp *self, gint cmp)
  *
  */
 static void
-_convert_to_number(const gchar *value, LogMessageValueType type, GenericNumber *number)
+_convert_to_number(const GString *value, LogMessageValueType type, GenericNumber *number)
 {
   switch (type)
     {
     case LM_VT_STRING:
     case LM_VT_INTEGER:
     case LM_VT_DOUBLE:
-      if (!parse_generic_number(value, number))
+      if (!parse_generic_number(value->str, number))
         gn_set_nan(number);
       break;
     case LM_VT_JSON:
     case LM_VT_LIST:
+    case LM_VT_BYTES:
+    case LM_VT_PROTOBUF:
       gn_set_nan(number);
       break;
     case LM_VT_NULL:
@@ -124,7 +138,7 @@ _convert_to_number(const gchar *value, LogMessageValueType type, GenericNumber *
     {
       gboolean b;
 
-      if (type_cast_to_boolean(value, &b, NULL))
+      if (type_cast_to_boolean(value->str, &b, NULL))
         gn_set_int64(number, b);
       else
         gn_set_int64(number, 0);
@@ -134,7 +148,7 @@ _convert_to_number(const gchar *value, LogMessageValueType type, GenericNumber *
     {
       gint64 msec;
 
-      if (type_cast_to_datetime_msec(value, &msec, NULL))
+      if (type_cast_to_datetime_msec(value->str, &msec, NULL))
         gn_set_int64(number, msec);
       else
         gn_set_int64(number, 0);
@@ -173,8 +187,8 @@ _convert_to_number(const gchar *value, LogMessageValueType type, GenericNumber *
  */
 static gboolean
 _evaluate_typed(FilterCmp *self,
-                const gchar *left, LogMessageValueType left_type,
-                const gchar *right, LogMessageValueType right_type)
+                const GString *left, LogMessageValueType left_type,
+                const GString *right, LogMessageValueType right_type)
 {
   GenericNumber l, r;
 
@@ -184,8 +198,8 @@ _evaluate_typed(FilterCmp *self,
    *   - numbers or mismatching types are compared as numbers */
 
   if (left_type == right_type &&
-      (_is_string(left_type) || _is_object(left_type)))
-    return _evaluate_comparison(self, fop_compare_string(left, right));
+      (_is_string(left_type) || _is_object(left_type) || _is_bytes(left_type)))
+    return _evaluate_comparison(self, fop_compare_bytes(left, right));
 
   if (left_type == LM_VT_NULL || right_type == LM_VT_NULL)
     {
@@ -223,8 +237,8 @@ _evaluate_typed(FilterCmp *self,
 
 static gboolean
 _evaluate_type_and_value_comparison(FilterCmp *self,
-                                    const gchar *left, LogMessageValueType left_type,
-                                    const gchar *right, LogMessageValueType right_type)
+                                    const GString *left, LogMessageValueType left_type,
+                                    const GString *right, LogMessageValueType right_type)
 {
   if ((self->compare_mode & FCMP_OP_MASK) == FCMP_EQ)
     {
@@ -271,13 +285,13 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEval
 
   gboolean result;
   if (self->compare_mode & FCMP_TYPE_AWARE)
-    result = _evaluate_typed(self, left_buf->str, left_type, right_buf->str, right_type);
+    result = _evaluate_typed(self, left_buf, left_type, right_buf, right_type);
   else if (self->compare_mode & FCMP_STRING_BASED)
-    result = _evaluate_comparison(self, fop_compare_string(left_buf->str, right_buf->str));
+    result = _evaluate_comparison(self, fop_compare_bytes(left_buf, right_buf));
   else if (self->compare_mode & FCMP_NUM_BASED)
-    result = _evaluate_comparison(self, fop_compare_numeric(left_buf->str, right_buf->str));
+    result = _evaluate_comparison(self, fop_compare_numeric(left_buf, right_buf));
   else if (self->compare_mode & FCMP_TYPE_AND_VALUE_BASED)
-    result = _evaluate_type_and_value_comparison(self, left_buf->str, left_type, right_buf->str, right_type);
+    result = _evaluate_type_and_value_comparison(self, left_buf, left_type, right_buf, right_type);
   else
     g_assert_not_reached();
 

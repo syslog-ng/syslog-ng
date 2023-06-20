@@ -57,6 +57,8 @@ void value_pairs_set_cast_to_strings(ValuePairs *vp, gboolean enable);
 void value_pairs_set_auto_cast(ValuePairs *vp);
 gboolean value_pairs_is_cast_to_strings_explicit(ValuePairs *vp);
 
+void value_pairs_set_include_bytes(ValuePairs *vp, gboolean enable);
+
 gboolean value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func,
                                     GCompareFunc compare_func,
                                     LogMessage *msg, LogTemplateEvalOptions *options,

@@ -374,7 +374,9 @@ afmongodb_dd_new(GlobalConfig *cfg)
   afmongodb_dd_set_collection(&self->super.super.super, template);
 
   log_template_options_defaults(&self->template_options);
-  afmongodb_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
+  ValuePairs *vp = value_pairs_new_default(cfg);
+  value_pairs_set_include_bytes(vp, TRUE);
+  afmongodb_dd_set_value_pairs(&self->super.super.super, vp);
 
   self->use_bulk = TRUE;
   self->bulk_unordered = FALSE;
