@@ -7,6 +7,7 @@ set(TEST_LOGPROTO_SOURCES
   test-framed-server.c
   test-indented-multiline-server.c
   test-regexp-multiline-server.c
+	test-framed-proxied-text-server.c
   test-proxy-proto.c)
 
 add_unit_test(LIBTEST CRITERION

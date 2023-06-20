@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2023 One Identity LLC.
  * Copyright (c) 2013 Balabit
  * Copyright (c) 2013 Balázs Scheidler <balazs.scheidler@balabit.com>
  *
@@ -283,6 +284,18 @@ Test(transport_mapper_inet, test_syslog_transport_tcp_apply_transport_sets_defau
 
   assert_transport_mapper_transport(transport_mapper, "tcp");
   assert_transport_mapper_logproto(transport_mapper, "framed");
+  assert_transport_mapper_stats_source(transport_mapper, SCS_SYSLOG);
+  assert_transport_mapper_inet_server_port(transport_mapper, 601);
+}
+
+Test(transport_mapper_inet, test_syslog_transport_proxied_tcp_apply_transport_sets_defaults)
+{
+  transport_mapper = transport_mapper_syslog_new();
+  assert_transport_mapper_apply(transport_mapper, "proxied-tcp");
+  assert_transport_mapper_tcp_socket(transport_mapper);
+
+  assert_transport_mapper_transport(transport_mapper, "proxied-tcp");
+  assert_transport_mapper_logproto(transport_mapper, "proxied-framed");
   assert_transport_mapper_stats_source(transport_mapper, SCS_SYSLOG);
   assert_transport_mapper_inet_server_port(transport_mapper, 601);
 }
