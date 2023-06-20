@@ -1,7 +1,5 @@
 /*
  * Copyright (c) 2023 One Identity LLC.
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,46 +21,14 @@
  *
  */
 
-#include "logtransport.h"
-#include "messages.h"
+#ifndef LOGPROTO_FRAMED_PROXIED_TEXT_SERVER_H_INCLUDED
+#define LOGPROTO_FRAMED_PROXIED_TEXT_SERVER_H_INCLUDED
 
-#include <unistd.h>
+#include "logproto-server.h"
+#include "logproto-text-server.h"
 
-void
-log_transport_free_method(LogTransport *s)
-{
-  if (s->fd != -1)
-    {
-      msg_trace("Closing log transport fd",
-                evt_tag_int("fd", s->fd));
-      close(s->fd);
-    }
-}
+LogProtoServer *log_proto_framed_proxied_text_server_new(LogTransport *transport, const LogProtoServerOptions *options);
+LogProtoServer *log_proto_framed_proxied_text_tls_passthrough_server_new(LogTransport *transport,
+    const LogProtoServerOptions *options);
 
-void
-log_transport_init_instance(LogTransport *self, gint fd)
-{
-  self->fd = fd;
-  self->cond = 0;
-  self->free_fn = log_transport_free_method;
-}
-
-void
-log_transport_free(LogTransport *self)
-{
-  if (self)
-    {
-      self->free_fn(self);
-      g_free(self);
-    }
-}
-
-gint
-log_transport_release_fd(LogTransport *s)
-{
-  gint fd = s->fd;
-  s->fd = -1;
-
-  return fd;
-}
-
+#endif

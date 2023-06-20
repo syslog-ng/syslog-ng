@@ -9,9 +9,12 @@ logprotoinclude_HEADERS = \
 	lib/logproto/logproto-dgram-server.h	\
 	lib/logproto/logproto-framed-client.h	\
 	lib/logproto/logproto-framed-server.h	\
+	lib/logproto/logproto-framed-server-private.h	\
+	lib/logproto/logproto-framed-proxied-text-server.h	\
 	lib/logproto/logproto-text-client.h  \
 	lib/logproto/logproto-text-server.h	\
 	lib/logproto/logproto-proxied-text-server.h	\
+	lib/logproto/logproto-proxied-text-server-private.h	\
 	lib/logproto/logproto-multiline-server.h \
 	lib/logproto/logproto-record-server.h \
 	lib/logproto/logproto-builtins.h	\
@@ -24,6 +27,7 @@ logproto_sources = \
 	lib/logproto/logproto-dgram-server.c	\
 	lib/logproto/logproto-framed-client.c	\
 	lib/logproto/logproto-framed-server.c	\
+	lib/logproto/logproto-framed-proxied-text-server.c	\
 	lib/logproto/logproto-text-client.c  \
 	lib/logproto/logproto-text-server.c	\
 	lib/logproto/logproto-proxied-text-server.c	\

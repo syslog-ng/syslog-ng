@@ -452,6 +452,13 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
     }
+  else if (strcasecmp(transport, "proxied-tcp") == 0)
+    {
+      self->server_port = SYSLOG_TRANSPORT_TCP_PORT;
+      self->super.logproto = "proxied-framed";
+      self->super.sock_type = SOCK_STREAM;
+      self->super.sock_proto = IPPROTO_TCP;
+    }
   else if (strcasecmp(transport, "tls") == 0)
     {
       if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_3))

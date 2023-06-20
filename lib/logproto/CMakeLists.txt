@@ -5,6 +5,8 @@ set(LOGPROTO_HEADERS
     logproto/logproto-dgram-server.h
     logproto/logproto-framed-client.h
     logproto/logproto-framed-server.h
+    logproto/logproto-framed-server-private.h
+	  logproto/logproto-framed-proxied-text-server.h
     logproto/logproto.h
     logproto/logproto-multiline-server.h
     logproto/logproto-record-server.h
@@ -12,6 +14,7 @@ set(LOGPROTO_HEADERS
     logproto/logproto-text-client.h
     logproto/logproto-text-server.h
     logproto/logproto-proxied-text-server.h
+    logproto/logproto-proxied-text-server-private.h
     PARENT_SCOPE)
 
 set(LOGPROTO_SOURCES
@@ -21,6 +24,7 @@ set(LOGPROTO_SOURCES
     logproto/logproto-dgram-server.c
     logproto/logproto-framed-client.c
     logproto/logproto-framed-server.c
+	  logproto/logproto-framed-proxied-text-server.c
     logproto/logproto-multiline-server.c
     logproto/logproto-record-server.c
     logproto/logproto-server.c

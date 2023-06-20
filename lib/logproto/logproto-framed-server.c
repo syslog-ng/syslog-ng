@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2023 One Identity LLC.
  * Copyright (c) 2002-2012 Balabit
  * Copyright (c) 1998-2012 Balázs Scheidler
  *
@@ -21,45 +22,8 @@
  * COPYING for details.
  *
  */
-#include "logproto-framed-server.h"
-#include "messages.h"
 
-#include <errno.h>
-#include <ctype.h>
-#include <string.h>
-
-#define MAX_FRAME_LEN_DIGITS 10
-static const guint MAX_FETCH_COUNT = 3;
-
-typedef enum
-{
-  LPFSS_FRAME_READ,
-  LPFSS_FRAME_EXTRACT,
-  LPFSS_MESSAGE_READ,
-  LPFSS_MESSAGE_EXTRACT,
-  LPFSS_TRIM_MESSAGE,
-  LPFSS_TRIM_MESSAGE_READ,
-  LPFSS_CONSUME_TRIMMED
-} LogProtoFramedServerState;
-
-typedef enum
-{
-  LPFSSCTRL_RETURN_WITH_STATUS,
-  LPFSSCTRL_NEXT_STATE,
-} LogProtoFramedServerStateControl;
-
-
-typedef struct _LogProtoFramedServer
-{
-  LogProtoServer super;
-  LogProtoFramedServerState state;
-
-  guchar *buffer;
-  guint32 buffer_size, buffer_pos, buffer_end;
-  guint32 frame_len;
-  gboolean half_message_in_buffer;
-  guint32 fetch_counter;
-} LogProtoFramedServer;
+#include "logproto-framed-server-private.h"
 
 static LogProtoPrepareAction
 log_proto_framed_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
@@ -362,7 +326,7 @@ _on_message_extract(LogProtoFramedServer *self, const guchar **msg, gsize *msg_l
   return LPFSSCTRL_NEXT_STATE;
 }
 
-static LogProtoFramedServerStateControl
+LogProtoFramedServerStateControl
 _step_state_machine(LogProtoFramedServer *self, const guchar **msg, gsize *msg_len, gboolean *may_read,
                     LogTransportAuxData *aux, LogProtoStatus *status)
 {
