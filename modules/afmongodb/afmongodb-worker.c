@@ -424,25 +424,30 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
 static LogThreadedResult
 _do_bulk_flush(MongoDBDestWorker *self)
 {
-  bson_error_t error;
-  bson_t reply;
-
-  int result = mongoc_bulk_operation_execute(self->bulk_op, &reply, &error);
-
-  bson_destroy (&reply);
-  mongoc_bulk_operation_destroy(self->bulk_op);
-  self->bulk_op = NULL;
-
-  if (result == 0)
+  /* Take care, _worker_batch_flush -> _do_bulk_flush is called at thread shutdown as well
+     at that time not neccessarily we have an inprogress bulk operation
+  */
+  if (self->bulk_op)
     {
-      MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
-      msg_error("Error while bulk inserting into MongoDB",
-                evt_tag_int("time_reopen", self->super.time_reopen),
-                evt_tag_str("reason", error.message),
-                evt_tag_str("driver", owner->super.super.super.id));
-      return LTR_ERROR;
-    }
+      bson_error_t error;
+      bson_t reply;
 
+      int result = mongoc_bulk_operation_execute(self->bulk_op, &reply, &error);
+
+      bson_destroy (&reply);
+      mongoc_bulk_operation_destroy(self->bulk_op);
+      self->bulk_op = NULL;
+
+      if (result == 0)
+        {
+          MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
+          msg_error("Error while bulk inserting into MongoDB",
+                    evt_tag_int("time_reopen", self->super.time_reopen),
+                    evt_tag_str("reason", error.message),
+                    evt_tag_str("driver", owner->super.super.super.id));
+          return LTR_ERROR;
+        }
+    }
   return LTR_SUCCESS;
 }
 
