@@ -40,7 +40,6 @@
 namespace syslogng {
 namespace grpc {
 namespace otel {
-namespace protobuf_parser {
 
 using opentelemetry::proto::resource::v1::Resource;
 using opentelemetry::proto::common::v1::InstrumentationScope;
@@ -48,20 +47,17 @@ using opentelemetry::proto::logs::v1::LogRecord;
 using opentelemetry::proto::metrics::v1::Metric;
 using opentelemetry::proto::trace::v1::Span;
 
-void set_metadata(LogMessage *msg, const ::grpc::string &peer,
-                  const Resource &resource, const std::string &resource_schema_url,
-                  const InstrumentationScope &scope, const std::string &scope_schema_url);
-
-void parse(LogMessage *msg, const LogRecord &log_record);
-void parse(LogMessage *msg, const Metric &metric);
-void parse(LogMessage *msg, const Span &span);
-
-}
-
 class ProtobufParser
 {
 public:
   bool process(LogMessage *msg);
+
+  static void store_raw_metadata(LogMessage *msg, const ::grpc::string &peer,
+                                 const Resource &resource, const std::string &resource_schema_url,
+                                 const InstrumentationScope &scope, const std::string &scope_schema_url);
+  static void store_raw(LogMessage *msg, const LogRecord &log_record);
+  static void store_raw(LogMessage *msg, const Metric &metric);
+  static void store_raw(LogMessage *msg, const Span &span);
 };
 
 }

@@ -39,6 +39,43 @@ struct OtelProtobufParser_
   syslogng::grpc::otel::ProtobufParser *cpp;
 };
 
+static const gchar *
+_get_string_field(LogMessage *msg, const char *name, gssize *len)
+{
+  LogMessageValueType type;
+  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, len, &type);
+
+  if (type != LM_VT_STRING)
+    {
+      msg_error("OpenTelemetry: unexpected LogMessage type, while getting string field",
+                evt_tag_msg_reference(msg),
+                evt_tag_str("name", name),
+                evt_tag_str("type", log_msg_value_type_to_str(type)));
+      return nullptr;
+    }
+
+  return value;
+}
+
+
+static const gchar *
+_get_protobuf_field(LogMessage *msg, const char *name, gssize *len)
+{
+  LogMessageValueType type;
+  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, len, &type);
+
+  if (type != LM_VT_PROTOBUF)
+    {
+      msg_error("OpenTelemetry: unexpected LogMessage type, while getting protobuf field",
+                evt_tag_msg_reference(msg),
+                evt_tag_str("name", name),
+                evt_tag_str("type", log_msg_value_type_to_str(type)));
+      return nullptr;
+    }
+
+  return value;
+}
+
 static void
 _set_value(LogMessage *msg, const char *key, const char *value, LogMessageValueType type)
 {
@@ -147,18 +184,24 @@ _extract_hostname(const grpc::string &peer)
   return "";
 }
 
-void
-syslogng::grpc::otel::protobuf_parser::set_metadata(LogMessage *msg, const ::grpc::string &peer,
-                                                    const Resource &resource, const std::string &resource_schema_url,
-                                                    const InstrumentationScope &scope,
-                                                    const std::string &scope_schema_url)
+static bool
+_parse_metadata(LogMessage *msg)
 {
   char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
+  gssize len;
+  const gchar *value;
 
-  /* HOST */
-  std::string hostname = _extract_hostname(peer);
-  if (hostname.length())
-    log_msg_set_value(msg, LM_V_HOST, hostname.c_str(), hostname.length());
+  /* .otel.resource.<...> */
+  value = _get_protobuf_field(msg, ".otel_raw.resource", &len);
+  if (!value)
+    return false;
+  Resource resource;
+  if (!resource.ParseFromArray(value, len))
+    {
+      msg_error("OpenTelemetry: Failed to deserialize .otel_raw.resource",
+                evt_tag_msg_reference(msg));
+      return false;
+    }
 
   /* .otel.resource.attributes */
   _add_repeated_KeyValue_fields(msg, ".otel.resource.attributes", resource.attributes());
@@ -168,7 +211,22 @@ syslogng::grpc::otel::protobuf_parser::set_metadata(LogMessage *msg, const ::grp
   _set_value(msg, ".otel.resource.dropped_attributes_count", number_buf, LM_VT_INTEGER);
 
   /* .otel.resource.schema_url */
-  _set_value(msg, ".otel.resource.schema_url", resource_schema_url, LM_VT_STRING);
+  value = _get_string_field(msg, ".otel_raw.resource_schema_url", &len);
+  if (!value)
+    return false;
+  log_msg_set_value_by_name_with_type(msg, ".otel.resource.schema_url", value, len, LM_VT_STRING);
+
+  /* .otel.scope.<...> */
+  value = _get_protobuf_field(msg, ".otel_raw.scope", &len);
+  if (!value)
+    return false;
+  InstrumentationScope scope;
+  if (!scope.ParseFromArray(value, len))
+    {
+      msg_error("OpenTelemetry: Failed to deserialize .otel_raw.scope",
+                evt_tag_msg_reference(msg));
+      return false;
+    }
 
   /* .otel.scope.name */
   _set_value(msg, ".otel.scope.name", scope.name(), LM_VT_STRING);
@@ -184,7 +242,12 @@ syslogng::grpc::otel::protobuf_parser::set_metadata(LogMessage *msg, const ::grp
   _set_value(msg, ".otel.scope.dropped_attributes_count", number_buf, LM_VT_INTEGER);
 
   /* .otel.scope.schema_url */
-  _set_value(msg, ".otel.scope.schema_url", scope_schema_url, LM_VT_STRING);
+  value = _get_string_field(msg, ".otel_raw.scope_schema_url", &len);
+  if (!value)
+    return false;
+  log_msg_set_value_by_name_with_type(msg, ".otel.scope.schema_url", value, len, LM_VT_STRING);
+
+  return true;
 }
 
 static int
@@ -229,9 +292,22 @@ _map_severity_number_to_syslog_pri(SeverityNumber severity_number)
     }
 }
 
-void
-syslogng::grpc::otel::protobuf_parser::parse(LogMessage *msg, const LogRecord &log_record)
+static bool
+_parse_log_record(LogMessage *msg)
 {
+  gssize len;
+  const gchar *raw_value = _get_protobuf_field(msg, ".otel_raw.log", &len);
+  if (!raw_value)
+    return false;
+
+  LogRecord log_record;
+  if (!log_record.ParseFromArray(raw_value, len))
+    {
+      msg_error("OpenTelemetry: Failed to deserialize .otel_raw.log",
+                evt_tag_msg_reference(msg));
+      return false;
+    }
+
   char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
 
   /* .otel.type */
@@ -294,6 +370,8 @@ syslogng::grpc::otel::protobuf_parser::parse(LogMessage *msg, const LogRecord &l
 
   /* .otel.log.span_id */
   _set_value(msg, ".otel.log.span_id", log_record.span_id(), LM_VT_BYTES);
+
+  return true;
 }
 
 static void
@@ -760,9 +838,22 @@ _add_metric_data_fields(LogMessage *msg, const Metric &metric)
     log_msg_set_value_by_name_with_type(msg, ".otel.metric.data.type", type, -1, LM_VT_STRING);
 }
 
-void
-syslogng::grpc::otel::protobuf_parser::parse(LogMessage *msg, const Metric &metric)
+static bool
+_parse_metric(LogMessage *msg)
 {
+  gssize len;
+  const gchar *raw_value = _get_protobuf_field(msg, ".otel_raw.metric", &len);
+  if (!raw_value)
+    return false;
+
+  Metric metric;
+  if (!metric.ParseFromArray(raw_value, len))
+    {
+      msg_error("OpenTelemetry: Failed to deserialize .otel_raw.metric",
+                evt_tag_msg_reference(msg));
+      return false;
+    }
+
   /* .otel.type */
   log_msg_set_value_by_name_with_type(msg, ".otel.type", "metric", -1, LM_VT_STRING);
 
@@ -776,11 +867,26 @@ syslogng::grpc::otel::protobuf_parser::parse(LogMessage *msg, const Metric &metr
   _set_value(msg, ".otel.metric.unit", metric.unit(), LM_VT_STRING);
 
   _add_metric_data_fields(msg, metric);
+
+  return true;
 }
 
-void
-syslogng::grpc::otel::protobuf_parser::parse(LogMessage *msg, const Span &span)
+static bool
+_parse_span(LogMessage *msg)
 {
+  gssize len;
+  const gchar *raw_value = _get_protobuf_field(msg, ".otel_raw.span", &len);
+  if (!raw_value)
+    return false;
+
+  Span span;
+  if (!span.ParseFromArray(raw_value, len))
+    {
+      msg_error("OpenTelemetry: Failed to deserialize .otel_raw.span",
+                evt_tag_msg_reference(msg));
+      return false;
+    }
+
   /* .otel.type */
   log_msg_set_value_by_name_with_type(msg, ".otel.type", "span", -1, LM_VT_STRING);
 
@@ -908,6 +1014,133 @@ syslogng::grpc::otel::protobuf_parser::parse(LogMessage *msg, const Span &span)
   /* .otel.span.status.code */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIi32, status.code());
   _set_value_with_prefix(msg, key_buffer, length_with_status, "code", number_buf, LM_VT_INTEGER);
+
+  return true;
+}
+
+static void
+_unset_raw_fields(LogMessage *msg)
+{
+  log_msg_unset_value_by_name(msg, ".otel_raw.resource");
+  log_msg_unset_value_by_name(msg, ".otel_raw.resource_schema_url");
+  log_msg_unset_value_by_name(msg, ".otel_raw.scope");
+  log_msg_unset_value_by_name(msg, ".otel_raw.scope_schema_url");
+  log_msg_unset_value_by_name(msg, ".otel_raw.type");
+  log_msg_unset_value_by_name(msg, ".otel_raw.log");
+  log_msg_unset_value_by_name(msg, ".otel_raw.metric");
+  log_msg_unset_value_by_name(msg, ".otel_raw.span");
+}
+
+void
+syslogng::grpc::otel::ProtobufParser::store_raw_metadata(LogMessage *msg, const ::grpc::string &peer,
+                                                         const Resource &resource,
+                                                         const std::string &resource_schema_url,
+                                                         const InstrumentationScope &scope,
+                                                         const std::string &scope_schema_url)
+{
+  std::string serialized;
+
+  /* HOST */
+  std::string hostname = _extract_hostname(peer);
+  if (hostname.length())
+    log_msg_set_value(msg, LM_V_HOST, hostname.c_str(), hostname.length());
+
+  /* .otel_raw.resource */
+  resource.SerializeToString(&serialized);
+  _set_value(msg, ".otel_raw.resource", serialized, LM_VT_PROTOBUF);
+
+  /* .otel_raw.resource_schema_url */
+  _set_value(msg, ".otel_raw.resource_schema_url", resource_schema_url, LM_VT_STRING);
+
+  /* .otel_raw.scope */
+  scope.SerializeToString(&serialized);
+  _set_value(msg, ".otel_raw.scope", serialized, LM_VT_PROTOBUF);
+
+  /* .otel_raw.scope_schema_url */
+  _set_value(msg, ".otel_raw.scope_schema_url", scope_schema_url, LM_VT_STRING);
+}
+
+void
+syslogng::grpc::otel::ProtobufParser::store_raw(LogMessage *msg, const LogRecord &log_record)
+{
+  /* .otel_raw.type */
+  _set_value(msg, ".otel_raw.type", "log", LM_VT_STRING);
+
+  /* .otel_raw.log */
+  std::string serialized = log_record.SerializeAsString();
+  _set_value(msg, ".otel_raw.log", serialized, LM_VT_PROTOBUF);
+}
+
+void
+syslogng::grpc::otel::ProtobufParser::store_raw(LogMessage *msg, const Metric &metric)
+{
+  /* .otel_raw.type */
+  _set_value(msg, ".otel_raw.type", "metric", LM_VT_STRING);
+
+  /* .otel_raw.metric */
+  std::string serialized = metric.SerializeAsString();
+  _set_value(msg, ".otel_raw.metric", serialized, LM_VT_PROTOBUF);
+}
+
+void
+syslogng::grpc::otel::ProtobufParser::store_raw(LogMessage *msg, const Span &span)
+{
+  /* .otel_raw.type */
+  _set_value(msg, ".otel_raw.type", "span", LM_VT_STRING);
+
+  /* .otel_raw.span */
+  std::string serialized = span.SerializeAsString();
+  _set_value(msg, ".otel_raw.span", serialized, LM_VT_PROTOBUF);
+}
+
+bool
+syslogng::grpc::otel::ProtobufParser::process(LogMessage *msg)
+{
+  msg_trace("OpenTelemetry: message processing started",
+            evt_tag_msg_reference(msg));
+
+  gssize len;
+  LogMessageValueType log_msg_type;
+  const gchar *type = log_msg_get_value_by_name_with_type(msg, ".otel_raw.type", &len, &log_msg_type);
+
+  if (log_msg_type != LM_VT_STRING)
+    {
+      msg_error("OpenTelemetry: unexpected .otel_raw.type LogMessage type",
+                evt_tag_msg_reference(msg),
+                evt_tag_str("log_msg_type", log_msg_value_type_to_str(log_msg_type)));
+      return false;
+    }
+
+  if (strncmp(type, "log", len) == 0)
+    {
+      if (!_parse_log_record(msg))
+        return false;
+    }
+  else if (strncmp(type, "metric", len) == 0)
+    {
+      if (!_parse_metric(msg))
+        return false;
+    }
+  else if (strncmp(type, "span", len) == 0)
+    {
+      if (!_parse_span(msg))
+        return false;
+    }
+  else
+    {
+      msg_error("OpenTelemetry: unexpected .otel_raw.type",
+                evt_tag_msg_reference(msg),
+                evt_tag_str("type", type));
+      return false;
+    }
+
+  if (!_parse_metadata(msg))
+    return false;
+
+  _unset_raw_fields(msg);
+
+  return true;
+}
 
 static gboolean
 _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input, gsize input_len)

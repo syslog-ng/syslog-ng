@@ -143,7 +143,12 @@ parser_otel
   ;
 
 parser_otel_options
-  :
+  : parser_otel_option parser_otel_options
+  |
+  ;
+
+parser_otel_option
+  : parser_opt
   ;
 
 /* INCLUDE_RULES */

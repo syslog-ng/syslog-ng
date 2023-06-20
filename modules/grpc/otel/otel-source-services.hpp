@@ -113,9 +113,9 @@ syslogng::grpc::otel::TraceServiceCall::Proceed(bool ok)
           for (const Span &span : scope_spans.spans())
             {
               LogMessage *msg = log_msg_new_empty();
-              protobuf_parser::set_metadata(msg, ctx.peer(), resource, resource_spans_schema_url, scope,
-                                            scope_spans_schema_url);
-              protobuf_parser::parse(msg, span);
+              ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_spans_schema_url, scope,
+                                                 scope_spans_schema_url);
+              ProtobufParser::store_raw(msg, span);
               if (!driver.post(msg))
                 {
                   response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");
@@ -155,9 +155,9 @@ syslogng::grpc::otel::LogsServiceCall::Proceed(bool ok)
           for (const LogRecord &log_record : scope_logs.log_records())
             {
               LogMessage *msg = log_msg_new_empty();
-              protobuf_parser::set_metadata(msg, ctx.peer(), resource, resource_logs_schema_url, scope,
-                                            scope_logs_schema_url);
-              protobuf_parser::parse(msg, log_record);
+              ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_logs_schema_url, scope,
+                                                 scope_logs_schema_url);
+              ProtobufParser::store_raw(msg, log_record);
               if (!driver.post(msg))
                 {
                   response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");
@@ -197,9 +197,9 @@ syslogng::grpc::otel::MetricsServiceCall::Proceed(bool ok)
           for (const Metric &metric : scope_metrics.metrics())
             {
               LogMessage *msg = log_msg_new_empty();
-              protobuf_parser::set_metadata(msg, ctx.peer(), resource, resource_metrics_schema_url, scope,
-                                            scope_metrics_schema_url);
-              protobuf_parser::parse(msg, metric);
+              ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_metrics_schema_url, scope,
+                                                 scope_metrics_schema_url);
+              ProtobufParser::store_raw(msg, metric);
               if (!driver.post(msg))
                 {
                   response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");
