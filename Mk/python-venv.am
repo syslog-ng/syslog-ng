@@ -1,7 +1,7 @@
 
 PYTHON_VENV_TOUCHFILE=$(abs_builddir)/.python-venv-built
 
-$(PYTHON_VENV_TOUCHFILE): Makefile
+$(PYTHON_VENV_TOUCHFILE): dev-requirements.txt
 	if [ "$(with_python_packages)" = "venv" ]; then \
 	    $(top_srcdir)/scripts/build-python-venv.sh "$(PYTHON)" "$(PYTHON_VENV_DIR)" "$(top_srcdir)"; \
 	fi
