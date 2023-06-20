@@ -138,7 +138,7 @@ _update_context_add_message(GroupLines *self, GroupLinesContext *context, LogMes
 static const gchar *
 _get_payload(GroupLines *self, LogMessage *msg, gssize *len)
 {
-  LogTemplate *template = self->super.super.super.template;
+  LogTemplate *template = self->super.super.super.template_obj;
 
   if (!template)
     return log_msg_get_value(msg, LM_V_MESSAGE, len);

@@ -151,7 +151,7 @@ _clone(LogPipe *s)
     (AddContextualData *) add_contextual_data_parser_new(s->cfg);
 
   log_parser_set_template(&cloned->super,
-                          log_template_ref(self->super.template));
+                          log_template_ref(self->super.template_obj));
   _replace_context_info_db(&cloned->context_info_db, self->context_info_db);
   add_contextual_data_set_prefix(&cloned->super, self->prefix);
   add_contextual_data_set_filename(&cloned->super, self->filename);
