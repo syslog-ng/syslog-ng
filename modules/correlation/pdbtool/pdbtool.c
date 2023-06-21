@@ -389,7 +389,7 @@ pdbtool_match(int argc, char *argv[])
   GArray *dbg_list = NULL;
   RDebugInfo *dbg_info;
   gint i = 0, pos = 0;
-  gint ret = 0;
+  gint ret = 1;
   const gchar *name = NULL;
   gssize name_len = 0;
   MsgFormatOptions parse_options;
@@ -509,6 +509,7 @@ pdbtool_match(int argc, char *argv[])
     {
       dbg_list = g_array_new(FALSE, FALSE, sizeof(RDebugInfo));
     }
+  ret = 0;
   while (!eof && (buf || match_message))
     {
       invalidate_cached_time();
@@ -1090,6 +1091,7 @@ pdbtool_patternize(int argc, char *argv[])
   gint i;
   GError *error = NULL;
   GString *delimcheck = g_string_new(" "); /* delims should always include a space */
+  gint ret = 0;
 
   if (iterate_outliers)
     iterate = PTZ_ITERATE_OUTLIERS;
@@ -1115,6 +1117,7 @@ pdbtool_patternize(int argc, char *argv[])
         {
           fprintf(stderr, "Error adding log file as patternize input: %s\n", error->message);
           g_clear_error(&error);
+          ret = 1;
           goto exit;
         }
     }
@@ -1126,7 +1129,7 @@ pdbtool_patternize(int argc, char *argv[])
 exit:
   ptz_free(ptz);
 
-  return 0;
+  return ret;
 }
 
 static GOptionEntry patternize_options[] =
@@ -1276,6 +1279,7 @@ main(int argc, char *argv[])
   msg_init(TRUE);
 
   resolved_configurable_paths_init(&resolved_configurable_paths);
+  patterndb_file = get_installation_path_for(patterndb_file);
   app_startup();
   pattern_db_global_init();
   configuration = cfg_new_snippet();
