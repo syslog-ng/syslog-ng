@@ -223,8 +223,8 @@ tf_json_append_value_base64_encode(const gchar *name, const gchar *value, gsize 
 
 #if !GLIB_CHECK_VERSION(2, 54, 0)
   /* See modules/basicfuncs/str-funcs.c: tf_base64encode() */
-  if (((unsigned char *) &save)[0] == 1)
-    ((unsigned char *) &save)[2] = 0;
+  if (((unsigned char *) &encode_save)[0] == 1)
+    ((unsigned char *) &encode_save)[2] = 0;
 #endif
 
   out_len += g_base64_encode_close(FALSE, state->buffer->str + init_len + out_len, &encode_state, &encode_save);
