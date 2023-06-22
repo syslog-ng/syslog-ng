@@ -32,6 +32,7 @@
 #include "syslog-names.h"
 #include "otel-source.h"
 #include "otel-protobuf-parser.h"
+#include "otel-dest.h"
 
 GrpcServerCredentialsBuilderW *last_grpc_server_credentials_builder;
 
@@ -67,12 +68,14 @@ GrpcServerCredentialsBuilderW *last_grpc_server_credentials_builder;
 %type <ptr> source_otel
 %type <ptr> parser_otel
 %type <num> source_otel_auth_tls_peer_verify
+%type <ptr> destination_otel
 
 %%
 
 start
   : LL_CONTEXT_SOURCE source_otel { YYACCEPT; }
   | LL_CONTEXT_PARSER parser_otel { YYACCEPT; }
+  | LL_CONTEXT_DESTINATION destination_otel { YYACCEPT; }
   ;
 
 source_otel
@@ -149,6 +152,23 @@ parser_otel_options
 
 parser_otel_option
   : parser_opt
+  ;
+
+destination_otel
+  : KW_OPENTELEMETRY
+    {
+      last_driver = *instance = otel_dd_new(configuration);
+    }
+    '(' _inner_dest_context_push destination_otel_options _inner_dest_context_pop ')' { $$ = last_driver; }
+  ;
+
+destination_otel_options
+  : destination_otel_option destination_otel_options
+  |
+  ;
+
+destination_otel_option
+  : threaded_dest_driver_general_option
   ;
 
 /* INCLUDE_RULES */

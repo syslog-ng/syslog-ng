@@ -39,6 +39,9 @@ set(OTEL_CPP_SOURCES
   grpc-credentials-builder.h
   otel-protobuf-formatter.hpp
   otel-protobuf-formatter.cpp
+  otel-dest.hpp
+  otel-dest.cpp
+  otel-dest.h
   ${OTEL_PROTO_GENERATED_SOURCES}
   ${OTEL_PROTO_GENERATED_GRPC_SOURCES})
 

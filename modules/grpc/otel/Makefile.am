@@ -54,7 +54,10 @@ modules_grpc_otel_libotel_cpp_la_SOURCES = \
   modules/grpc/otel/grpc-credentials-builder.hpp \
   modules/grpc/otel/grpc-credentials-builder.cpp \
   modules/grpc/otel/otel-protobuf-formatter.hpp \
-  modules/grpc/otel/otel-protobuf-formatter.cpp
+  modules/grpc/otel/otel-protobuf-formatter.cpp \
+  modules/grpc/otel/otel-dest.h \
+  modules/grpc/otel/otel-dest.hpp \
+  modules/grpc/otel/otel-dest.cpp
 
 modules_grpc_otel_libotel_cpp_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \

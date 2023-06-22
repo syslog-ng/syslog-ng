@@ -20,46 +20,17 @@
  *
  */
 
+#ifndef OTEL_DEST_H
+#define OTEL_DEST_H
 
-#include "cfg-parser.h"
-#include "plugin.h"
-#include "plugin-types.h"
+#include "compat/cpp-start.h"
 
-extern CfgParser otel_parser;
+#include "driver.h"
 
-static Plugin otel_plugins[] =
-{
-  {
-    .type = LL_CONTEXT_SOURCE,
-    .name = "opentelemetry",
-    .parser = &otel_parser
-  },
-  {
-    .type = LL_CONTEXT_PARSER,
-    .name = "opentelemetry",
-    .parser = &otel_parser,
-  },
-  {
-    .type = LL_CONTEXT_DESTINATION,
-    .name = "opentelemetry",
-    .parser = &otel_parser,
-  },
-};
+typedef struct OtelDestDriver_ OtelDestDriver;
 
-gboolean
-otel_module_init(PluginContext *context, CfgArgs *args)
-{
-  plugin_register(context, otel_plugins, G_N_ELEMENTS(otel_plugins));
+LogDriver *otel_dd_new(GlobalConfig *cfg);
 
-  return TRUE;
-}
+#include "compat/cpp-end.h"
 
-const ModuleInfo module_info =
-{
-  .canonical_name = "otel",
-  .version = SYSLOG_NG_VERSION,
-  .description = "OpenTelemetry plugins",
-  .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = otel_plugins,
-  .plugins_len = G_N_ELEMENTS(otel_plugins),
-};
+#endif
