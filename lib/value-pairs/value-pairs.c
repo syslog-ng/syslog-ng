@@ -253,6 +253,8 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
 
   if (vp->omit_empty_values && sb->len == 0)
     return;
+  if (!vp->include_bytes && (type == LM_VT_BYTES || type == LM_VT_PROTOBUF))
+    return;
   if (vp->cast_to_strings && vpc->template->explicit_type_hint == LM_VT_NONE)
     type = LM_VT_STRING;
   vp_results_insert(results, vp_transform_apply(vp, vpc->name), type, sb);

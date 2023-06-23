@@ -360,9 +360,23 @@ Test(format_json, test_format_json_with_bytes)
   log_msg_set_value_by_name_with_type(msg, "bytes", "\0\1\2\3", 4, LM_VT_BYTES);
   log_msg_set_value_by_name_with_type(msg, "protobuf", "\4\5\6\7", 4, LM_VT_PROTOBUF);
 
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
+
   assert_template_format_msg("$(format-json --scope nv-pairs)", "{}", msg);
   assert_template_format_msg("$(format-json --include-bytes --scope nv-pairs)",
                              "{\"protobuf\":\"BAUGBw==\",\"bytes\":\"AAECAw==\"}", msg);
+
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
+
+  /*
+   * format-json() receives the bytes value with string type, so it does not know, that it has to
+   * base64 encode it.  This scenario is extremely rare and illogical, as the bytes type was introduced
+   * in v4.3 and no one should try to use it with v3 config.
+   */
+  assert_template_format_msg("$(format-json --scope nv-pairs)", "{}", msg);
+  assert_template_format_msg("$(format-json --include-bytes --scope nv-pairs)",
+                             "{\"protobuf\":\"\\u0004\\u0005\\u0006\\u0007\","
+                             "\"bytes\":\"\\\\x00\\u0001\\u0002\\u0003\"}", msg);
 
   log_msg_unref(msg);
 }

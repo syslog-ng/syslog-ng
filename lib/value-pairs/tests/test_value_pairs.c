@@ -309,9 +309,32 @@ Test(value_pairs, test_transformer_upper)
   g_ptr_array_free(transformers, TRUE);
 }
 
-gboolean
-asserts_for_no_include_bytes(const gchar *name, LogMessageValueType type, const gchar *value,
-                             gsize value_len, gpointer user_data)
+static ValuePairs *
+_create_value_pairs_for_include_bytes_tc(void)
+{
+  ValuePairs *vp = value_pairs_new(configuration);
+  value_pairs_add_scope(vp, "nv-pairs");
+
+  LogTemplate *template;
+  template = create_template(NULL, "$bytes");
+  value_pairs_add_pair(vp, "custom_bytes", template);
+  log_template_unref(template);
+  template = create_template(NULL, "$protobuf");
+  value_pairs_add_pair(vp, "custom_protobuf", template);
+  log_template_unref(template);
+  template = create_template("bytes", "$bytes");
+  value_pairs_add_pair(vp, "custom_explicit_bytes", template);
+  log_template_unref(template);
+  template = create_template("protobuf", "$protobuf");
+  value_pairs_add_pair(vp, "custom_explicit_protobuf", template);
+  log_template_unref(template);
+
+  return vp;
+}
+
+static gboolean
+asserts_for_no_include_bytes_v4(const gchar *name, LogMessageValueType type, const gchar *value,
+                                gsize value_len, gpointer user_data)
 {
   if (strcmp(name, "custom_bytes") == 0)
     {
@@ -323,18 +346,6 @@ asserts_for_no_include_bytes(const gchar *name, LogMessageValueType type, const 
       cr_assert_eq(type, LM_VT_NULL);
       cr_assert_eq(value_len, 0);
     }
-  else if (strcmp(name, "custom_explicit_bytes") == 0)
-    {
-      cr_assert_eq(type, LM_VT_BYTES);
-      cr_assert_eq(value_len, 4);
-      cr_assert_eq(memcmp(value, "\0\1\2\3", 4), 0);
-    }
-  else if (strcmp(name, "custom_explicit_protobuf") == 0)
-    {
-      cr_assert_eq(type, LM_VT_PROTOBUF);
-      cr_assert_eq(value_len, 4);
-      cr_assert_eq(memcmp(value, "\4\5\6\7", 4), 0);
-    }
   else
     {
       cr_assert(FALSE, "%s not expected", name);
@@ -343,9 +354,9 @@ asserts_for_no_include_bytes(const gchar *name, LogMessageValueType type, const 
   return FALSE;
 }
 
-gboolean
-asserts_for_include_bytes(const gchar *name, LogMessageValueType type, const gchar *value,
-                          gsize value_len, gpointer user_data)
+static gboolean
+asserts_for_include_bytes_v4(const gchar *name, LogMessageValueType type, const gchar *value,
+                             gsize value_len, gpointer user_data)
 {
   if (strcmp(name, "bytes") == 0)
     {
@@ -389,35 +400,111 @@ asserts_for_include_bytes(const gchar *name, LogMessageValueType type, const gch
   return FALSE;
 }
 
-Test(value_pairs, test_include_bytes)
+Test(value_pairs, test_include_bytes_v4)
 {
-  LogTemplateEvalOptions options = {&template_options, LTZ_LOCAL, 11, NULL, LM_VT_STRING};
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_4_0);
 
-  ValuePairs *vp = value_pairs_new(configuration);
-  value_pairs_add_scope(vp, "nv-pairs");
-
-  LogTemplate *template;
-  template = create_template(NULL, "$bytes");
-  value_pairs_add_pair(vp, "custom_bytes", template);
-  log_template_unref(template);
-  template = create_template(NULL, "$protobuf");
-  value_pairs_add_pair(vp, "custom_protobuf", template);
-  log_template_unref(template);
-  template = create_template("bytes", "$bytes");
-  value_pairs_add_pair(vp, "custom_explicit_bytes", template);
-  log_template_unref(template);
-  template = create_template("protobuf", "$protobuf");
-  value_pairs_add_pair(vp, "custom_explicit_protobuf", template);
-  log_template_unref(template);
+  ValuePairs *vp = _create_value_pairs_for_include_bytes_tc();
 
   LogMessage *msg = log_msg_new_empty();
   log_msg_set_value_by_name_with_type(msg, "bytes", "\0\1\2\3", 4, LM_VT_BYTES);
   log_msg_set_value_by_name_with_type(msg, "protobuf", "\4\5\6\7", 4, LM_VT_PROTOBUF);
 
-  value_pairs_foreach(vp, asserts_for_no_include_bytes, msg, &options, NULL);
+  LogTemplateEvalOptions options = {&template_options, LTZ_LOCAL, 11, NULL, LM_VT_STRING};
+
+  value_pairs_foreach(vp, asserts_for_no_include_bytes_v4, msg, &options, NULL);
 
   value_pairs_set_include_bytes(vp, TRUE);
-  value_pairs_foreach(vp, asserts_for_include_bytes, msg, &options, NULL);
+  value_pairs_foreach(vp, asserts_for_include_bytes_v4, msg, &options, NULL);
+
+  log_msg_unref(msg);
+  value_pairs_unref(vp);
+}
+
+static gboolean
+asserts_for_no_include_bytes_v3(const gchar *name, LogMessageValueType type, const gchar *value,
+                                gsize value_len, gpointer user_data)
+{
+  if (strcmp(name, "custom_bytes") == 0)
+    {
+      cr_assert_eq(type, LM_VT_STRING);
+      cr_assert_eq(value_len, 0);
+    }
+  else if (strcmp(name, "custom_protobuf") == 0)
+    {
+      cr_assert_eq(type, LM_VT_STRING);
+      cr_assert_eq(value_len, 0);
+    }
+  else
+    {
+      cr_assert(FALSE, "%s not expected", name);
+    }
+
+  return FALSE;
+}
+
+static gboolean
+asserts_for_include_bytes_v3(const gchar *name, LogMessageValueType type, const gchar *value,
+                             gsize value_len, gpointer user_data)
+{
+  if (strcmp(name, "bytes") == 0)
+    {
+      cr_assert_eq(type, LM_VT_STRING);
+      cr_assert_eq(value_len, 4);
+      cr_assert_eq(memcmp(value, "\0\1\2\3", 4), 0);
+    }
+  else if (strcmp(name, "protobuf") == 0)
+    {
+      cr_assert_eq(type, LM_VT_STRING);
+      cr_assert_eq(value_len, 4);
+      cr_assert_eq(memcmp(value, "\4\5\6\7", 4), 0);
+    }
+  else if (strcmp(name, "custom_bytes") == 0)
+    {
+      cr_assert_eq(type, LM_VT_STRING);
+      cr_assert_eq(value_len, 0);
+    }
+  else if (strcmp(name, "custom_protobuf") == 0)
+    {
+      cr_assert_eq(type, LM_VT_STRING);
+      cr_assert_eq(value_len, 0);
+    }
+  else if (strcmp(name, "custom_explicit_bytes") == 0)
+    {
+      cr_assert_eq(type, LM_VT_BYTES);
+      cr_assert_eq(value_len, 4);
+      cr_assert_eq(memcmp(value, "\0\1\2\3", 4), 0);
+    }
+  else if (strcmp(name, "custom_explicit_protobuf") == 0)
+    {
+      cr_assert_eq(type, LM_VT_PROTOBUF);
+      cr_assert_eq(value_len, 4);
+      cr_assert_eq(memcmp(value, "\4\5\6\7", 4), 0);
+    }
+  else
+    {
+      cr_assert(FALSE, "%s not expected", name);
+    }
+
+  return FALSE;
+}
+
+Test(value_pairs, test_include_bytes_v3)
+{
+  cfg_set_version_without_validation(configuration, VERSION_VALUE_3_38);
+
+  ValuePairs *vp = _create_value_pairs_for_include_bytes_tc();
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value_by_name_with_type(msg, "bytes", "\0\1\2\3", 4, LM_VT_BYTES);
+  log_msg_set_value_by_name_with_type(msg, "protobuf", "\4\5\6\7", 4, LM_VT_PROTOBUF);
+
+  LogTemplateEvalOptions options = {&template_options, LTZ_LOCAL, 11, NULL, LM_VT_STRING};
+
+  value_pairs_foreach(vp, asserts_for_no_include_bytes_v3, msg, &options, NULL);
+
+  value_pairs_set_include_bytes(vp, TRUE);
+  value_pairs_foreach(vp, asserts_for_include_bytes_v3, msg, &options, NULL);
 
   log_msg_unref(msg);
   value_pairs_unref(vp);
