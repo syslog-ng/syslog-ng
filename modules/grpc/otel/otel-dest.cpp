@@ -21,6 +21,7 @@
  */
 
 #include "otel-dest.hpp"
+#include "otel-dest-worker.hpp"
 
 #define get_DestDriver(s) (((OtelDestDriver *) s)->cpp)
 
@@ -93,6 +94,12 @@ _deinit(LogPipe *s)
   return get_DestDriver(s)->deinit();
 }
 
+static LogThreadedDestWorker *
+_construct_worker(LogThreadedDestDriver *s, gint worker_index)
+{
+  return otel_dest_worker_new(s, worker_index);
+}
+
 static void
 _free(LogPipe *s)
 {
@@ -113,6 +120,7 @@ otel_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = _free;
   self->super.super.super.super.generate_persist_name = _generate_persist_name;
 
+  self->super.worker.construct = _construct_worker;
   self->super.stats_source = stats_register_type("opentelemetry");
   self->super.format_stats_key = _format_stats_key;
 

@@ -42,6 +42,8 @@ set(OTEL_CPP_SOURCES
   otel-dest.hpp
   otel-dest.cpp
   otel-dest.h
+  otel-dest-worker.hpp
+  otel-dest-worker.cpp
   ${OTEL_PROTO_GENERATED_SOURCES}
   ${OTEL_PROTO_GENERATED_GRPC_SOURCES})
 
