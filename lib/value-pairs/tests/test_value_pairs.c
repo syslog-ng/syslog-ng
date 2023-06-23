@@ -349,13 +349,13 @@ asserts_for_include_bytes(const gchar *name, LogMessageValueType type, const gch
 {
   if (strcmp(name, "bytes") == 0)
     {
-      cr_assert_eq(type, LM_VT_BYTES);
+      cr_assert_eq(type, cfg_is_config_version_older(configuration, VERSION_VALUE_4_0) ? LM_VT_STRING : LM_VT_BYTES);
       cr_assert_eq(value_len, 4);
       cr_assert_eq(memcmp(value, "\0\1\2\3", 4), 0);
     }
   else if (strcmp(name, "protobuf") == 0)
     {
-      cr_assert_eq(type, LM_VT_PROTOBUF);
+      cr_assert_eq(type, cfg_is_config_version_older(configuration, VERSION_VALUE_4_0) ? LM_VT_STRING : LM_VT_PROTOBUF);
       cr_assert_eq(value_len, 4);
       cr_assert_eq(memcmp(value, "\4\5\6\7", 4), 0);
     }
@@ -397,10 +397,10 @@ Test(value_pairs, test_include_bytes)
   value_pairs_add_scope(vp, "nv-pairs");
 
   LogTemplate *template;
-  template = create_template(NULL, "$bytes");
+  template = create_template(cfg_is_config_version_older(configuration, VERSION_VALUE_4_0) ? "null" : NULL, "$bytes");
   value_pairs_add_pair(vp, "custom_bytes", template);
   log_template_unref(template);
-  template = create_template(NULL, "$protobuf");
+  template = create_template(cfg_is_config_version_older(configuration, VERSION_VALUE_4_0) ? "null" : NULL, "$protobuf");
   value_pairs_add_pair(vp, "custom_protobuf", template);
   log_template_unref(template);
   template = create_template("bytes", "$bytes");
