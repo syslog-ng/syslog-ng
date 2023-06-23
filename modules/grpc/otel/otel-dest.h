@@ -30,6 +30,7 @@
 typedef struct OtelDestDriver_ OtelDestDriver;
 
 LogDriver *otel_dd_new(GlobalConfig *cfg);
+void otel_dd_set_url(LogDriver *s, const gchar *url);
 
 #include "compat/cpp-end.h"
 

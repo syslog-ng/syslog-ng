@@ -41,6 +41,9 @@ class DestDriver
 public:
   DestDriver(OtelDestDriver *s);
 
+  void set_url(const char *url);
+  const std::string &get_url() const;
+
   bool init();
   bool deinit();
   const char *format_stats_key(StatsClusterKeyBuilder *kb);
@@ -48,6 +51,8 @@ public:
 
 private:
   OtelDestDriver *super;
+
+  std::string url;
 };
 
 }

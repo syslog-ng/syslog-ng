@@ -64,6 +64,7 @@ GrpcServerCredentialsBuilderW *last_grpc_server_credentials_builder;
 %token KW_REQUIRED_UNTRUSTED
 %token KW_REQUIRED_TRUSTED
 %token KW_ALTS
+%token KW_URL
 
 %type <ptr> source_otel
 %type <ptr> parser_otel
@@ -168,7 +169,8 @@ destination_otel_options
   ;
 
 destination_otel_option
-  : threaded_dest_driver_general_option
+  : KW_URL '(' string ')' { otel_dd_set_url(last_driver, $3); free($3); }
+  | threaded_dest_driver_general_option
   ;
 
 /* INCLUDE_RULES */

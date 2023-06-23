@@ -34,6 +34,18 @@ DestDriver::DestDriver(OtelDestDriver *s)
 {
 }
 
+void
+DestDriver::set_url(const char *url_)
+{
+  url.assign(url_);
+}
+
+const std::string &
+DestDriver::get_url() const
+{
+  return url;
+}
+
 const char *
 DestDriver::generate_persist_name()
 {
@@ -52,6 +64,7 @@ const char *
 DestDriver::format_stats_key(StatsClusterKeyBuilder *kb)
 {
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "opentelemetry"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("url", url.c_str()));
 
   return NULL;
 }
@@ -59,6 +72,13 @@ DestDriver::format_stats_key(StatsClusterKeyBuilder *kb)
 bool
 DestDriver::init()
 {
+  if (url.length() == 0)
+    {
+      msg_error("OpenTelemetry: url() option is mandatory",
+                log_pipe_location_tag(&super->super.super.super.super));
+      return false;
+    }
+
   return log_threaded_dest_driver_init_method(&super->super.super.super.super);
 }
 
@@ -69,6 +89,12 @@ DestDriver::deinit()
 }
 
 /* C Wrappers */
+
+void
+otel_dd_set_url(LogDriver *s, const gchar *url)
+{
+  get_DestDriver(s)->set_url(url);
+}
 
 static const gchar *
 _format_stats_key(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb)
