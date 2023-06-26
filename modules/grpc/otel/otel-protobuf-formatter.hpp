@@ -41,6 +41,29 @@ enum MessageType : int
 
 MessageType get_message_type(LogMessage *msg);
 
+using google::protobuf::RepeatedPtrField;
+
+using opentelemetry::proto::resource::v1::Resource;
+using opentelemetry::proto::common::v1::InstrumentationScope;
+using opentelemetry::proto::common::v1::KeyValue;
+
+class ProtobufFormatter
+{
+public:
+  ProtobufFormatter(GlobalConfig *cfg);
+
+  bool get_metadata(LogMessage *msg, Resource &resource, std::string &resource_schema_url,
+                    InstrumentationScope &scope, std::string &scope_schema_url);
+
+private:
+  void get_and_set_repeated_KeyValues(LogMessage *msg, const char *prefix, RepeatedPtrField<KeyValue> *key_values);
+  bool get_resource_and_schema_url(LogMessage *msg, Resource &resource, std::string &schema_url);
+  bool get_scope_and_schema_url(LogMessage *msg, InstrumentationScope &scope, std::string &schema_url);
+
+private:
+  GlobalConfig *cfg;
+};
+
 }
 }
 }
