@@ -27,9 +27,12 @@
 #include "value-pairs/value-pairs.h"
 #include "compat/cpp-end.h"
 
+#include <syslog.h>
+
 using namespace google::protobuf;
 using namespace opentelemetry::proto::common::v1;
 using namespace opentelemetry::proto::resource::v1;
+using namespace opentelemetry::proto::logs::v1;
 
 using namespace syslogng::grpc::otel;
 
@@ -233,6 +236,23 @@ _set_KeyValue_vp_fn(const gchar *name, LogMessageValueType type, const gchar *va
   return FALSE;
 }
 
+static SeverityNumber
+_get_log_msg_severity_number(LogMessage *msg)
+{
+  static SeverityNumber mapping[] =
+  {
+    [LOG_EMERG] = SeverityNumber::SEVERITY_NUMBER_FATAL,
+    [LOG_ALERT] = SeverityNumber::SEVERITY_NUMBER_FATAL2,
+    [LOG_CRIT] = SeverityNumber::SEVERITY_NUMBER_FATAL3,
+    [LOG_ERR] = SeverityNumber::SEVERITY_NUMBER_ERROR,
+    [LOG_WARNING] = SeverityNumber::SEVERITY_NUMBER_WARN,
+    [LOG_NOTICE] = SeverityNumber::SEVERITY_NUMBER_INFO2,
+    [LOG_INFO] = SeverityNumber::SEVERITY_NUMBER_INFO,
+    [LOG_DEBUG] = SeverityNumber::SEVERITY_NUMBER_DEBUG,
+  };
+
+  return mapping[LOG_PRI(msg->pri)];
+}
 
 void
 ProtobufFormatter::get_and_set_repeated_KeyValues(LogMessage *msg, const char *prefix,
@@ -329,6 +349,55 @@ ProtobufFormatter::get_metadata(LogMessage *msg, Resource &resource, std::string
          get_scope_and_schema_url(msg, scope, scope_schema_url);
 }
 
+bool
+ProtobufFormatter::format(LogMessage *msg, LogRecord &log_record)
+{
+  gssize len;
+  const gchar *value;
+
+  value = _get_protobuf(msg, ".otel_raw.log", &len);
+  if (value)
+    return log_record.ParsePartialFromArray(value, len);
+
+  log_record.set_time_unix_nano(_get_uint64(msg, ".otel.log.time_unix_nano"));
+  log_record.set_observed_time_unix_nano(_get_uint64(msg, ".otel.log.observed_time_unix_nano"));
+
+  int32_t severity_number_int = _get_int32(msg, ".otel.log.severity_number");
+  SeverityNumber severity_number = SeverityNumber_IsValid(severity_number_int)
+                                   ? (SeverityNumber) severity_number_int
+                                   : SEVERITY_NUMBER_UNSPECIFIED;
+  log_record.set_severity_number(severity_number);
+
+  value = _get_string(msg, ".otel.log.severity_text", &len);
+  log_record.set_severity_text(value, len);
+
+  _get_and_set_AnyValue(msg, ".otel.log.body", log_record.mutable_body());
+
+  get_and_set_repeated_KeyValues(msg, ".otel.log.attributes.", log_record.mutable_attributes());
+
+  log_record.set_dropped_attributes_count(_get_uint32(msg, ".otel.log.dropped_attributes_count"));
+
+  log_record.set_flags(_get_uint32(msg, ".otel.log.flags"));
+
+  value = _get_bytes(msg, ".otel.log.trace_id", &len);
+  log_record.set_trace_id(value, len);
+
+  value = _get_bytes(msg, ".otel.log.span_id", &len);
+  log_record.set_span_id(value, len);
+
+  return true;
+}
+
+void
+ProtobufFormatter::format_fallback(LogMessage *msg, LogRecord &log_record)
+{
+  log_record.set_time_unix_nano(msg->timestamps[LM_TS_STAMP].ut_sec * 1000000000 +
+                                msg->timestamps[LM_TS_STAMP].ut_usec * 1000);
+  log_record.set_observed_time_unix_nano(msg->timestamps[LM_TS_RECVD].ut_sec * 1000000000 +
+                                         msg->timestamps[LM_TS_RECVD].ut_usec * 1000);
+  log_record.set_severity_number(_get_log_msg_severity_number(msg));
+  _get_and_set_AnyValue(msg, "MESSAGE", log_record.mutable_body());
+}
 
 syslogng::grpc::otel::ProtobufFormatter::ProtobufFormatter(GlobalConfig *cfg_)
   : cfg(cfg_)

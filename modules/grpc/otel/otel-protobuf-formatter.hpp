@@ -27,6 +27,8 @@
 #include "logmsg/logmsg.h"
 #include "compat/cpp-end.h"
 
+#include "opentelemetry/proto/logs/v1/logs.pb.h"
+
 namespace syslogng {
 namespace grpc {
 namespace otel {
@@ -46,6 +48,7 @@ using google::protobuf::RepeatedPtrField;
 using opentelemetry::proto::resource::v1::Resource;
 using opentelemetry::proto::common::v1::InstrumentationScope;
 using opentelemetry::proto::common::v1::KeyValue;
+using opentelemetry::proto::logs::v1::LogRecord;
 
 class ProtobufFormatter
 {
@@ -54,6 +57,8 @@ public:
 
   bool get_metadata(LogMessage *msg, Resource &resource, std::string &resource_schema_url,
                     InstrumentationScope &scope, std::string &scope_schema_url);
+  bool format(LogMessage *msg, LogRecord &log_record);
+  void format_fallback(LogMessage *msg, LogRecord &log_record);
 
 private:
   void get_and_set_repeated_KeyValues(LogMessage *msg, const char *prefix, RepeatedPtrField<KeyValue> *key_values);
