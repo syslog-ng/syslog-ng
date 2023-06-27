@@ -66,6 +66,7 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_REQUIRED_TRUSTED
 %token KW_ALTS
 %token KW_URL
+%token KW_TARGET_SERVICE_ACCOUNTS
 
 %type <ptr> source_otel
 %type <ptr> parser_otel
@@ -180,6 +181,7 @@ destination_otel_option
 destination_otel_auth_option
   : KW_INSECURE { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_INSECURE); } '(' ')'
   | KW_TLS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_TLS); } '(' destination_otel_auth_tls_options ')'
+  | KW_ALTS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ALTS); } '(' destination_otel_auth_alts_options ')'
   ;
 
 destination_otel_auth_tls_options
@@ -203,6 +205,25 @@ destination_otel_auth_tls_option
         CHECK_ERROR(grpc_client_credentials_builder_set_tls_ca_path(last_grpc_client_credentials_builder, $3), @1, "Failed to set ca-file()");
         free($3);
       }
+  ;
+
+destination_otel_auth_alts_options
+  : destination_otel_auth_alts_option destination_otel_auth_alts_options
+  |
+  ;
+
+destination_otel_auth_alts_option
+  : KW_TARGET_SERVICE_ACCOUNTS '(' destination_otel_auth_alts_target_service_accounts ')'
+  ;
+
+destination_otel_auth_alts_target_service_accounts
+  : string
+      {
+        grpc_client_credentials_builder_add_alts_target_service_account(last_grpc_client_credentials_builder, $1);
+        free($1);
+      }
+    destination_otel_auth_alts_target_service_accounts
+  |
   ;
 
 /* INCLUDE_RULES */

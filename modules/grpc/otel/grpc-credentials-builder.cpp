@@ -213,6 +213,12 @@ ClientCredentialsBuilder::set_tls_cert_path(const char *cert_path)
   return _get_file_content(cert_path, ssl_credentials_options.pem_cert_chain);
 }
 
+void
+ClientCredentialsBuilder::add_alts_target_service_account(const char *target_service_account)
+{
+  alts_credentials_options.target_service_accounts.push_back(target_service_account);
+}
+
 bool
 ClientCredentialsBuilder::validate() const
 {
@@ -221,6 +227,8 @@ ClientCredentialsBuilder::validate() const
     case GCAM_INSECURE:
       break;
     case GCAM_TLS:
+      break;
+    case GCAM_ALTS:
       break;
     default:
       g_assert_not_reached();
@@ -238,6 +246,8 @@ ClientCredentialsBuilder::build() const
       return ::grpc::InsecureChannelCredentials();
     case GCAM_TLS:
       return ::grpc::SslCredentials(ssl_credentials_options);
+    case GCAM_ALTS:
+      return ::grpc::experimental::AltsCredentials(alts_credentials_options);
     default:
       g_assert_not_reached();
     }
@@ -266,4 +276,11 @@ gboolean
 grpc_client_credentials_builder_set_tls_cert_path(GrpcClientCredentialsBuilderW *s, const gchar *cert_path)
 {
   return s->self->set_tls_cert_path(cert_path);
+}
+
+void
+grpc_client_credentials_builder_add_alts_target_service_account(GrpcClientCredentialsBuilderW *s,
+                                                                const gchar *target_service_acount)
+{
+  return s->self->add_alts_target_service_account(target_service_acount);
 }

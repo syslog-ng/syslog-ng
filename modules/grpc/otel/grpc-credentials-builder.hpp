@@ -70,11 +70,17 @@ public:
   bool set_tls_key_path(const char *key_path);
   bool set_tls_cert_path(const char *cert_path);
 
+  /* ALTS */
+  void add_alts_target_service_account(const char *target_service_account);
+
 private:
   ClientAuthMode mode = GCAM_INSECURE;
 
   /* TLS */
   ::grpc::SslCredentialsOptions ssl_credentials_options;
+
+  /* ALTS */
+  ::grpc::experimental::AltsCredentialsOptions alts_credentials_options;
 };
 
 }
