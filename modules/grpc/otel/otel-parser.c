@@ -46,6 +46,7 @@ static CfgLexerKeyword otel_keywords[] =
   { "alts",                      KW_ALTS },
   { "url",                       KW_URL },
   { "target_service_accounts",   KW_TARGET_SERVICE_ACCOUNTS },
+  { "adc",                       KW_ADC },
   { NULL }
 };
 

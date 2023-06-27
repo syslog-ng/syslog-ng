@@ -67,6 +67,7 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_ALTS
 %token KW_URL
 %token KW_TARGET_SERVICE_ACCOUNTS
+%token KW_ADC
 
 %type <ptr> source_otel
 %type <ptr> parser_otel
@@ -182,6 +183,7 @@ destination_otel_auth_option
   : KW_INSECURE { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_INSECURE); } '(' ')'
   | KW_TLS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_TLS); } '(' destination_otel_auth_tls_options ')'
   | KW_ALTS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ALTS); } '(' destination_otel_auth_alts_options ')'
+  | KW_ADC { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ADC); } '(' ')'
   ;
 
 destination_otel_auth_tls_options

@@ -230,6 +230,8 @@ ClientCredentialsBuilder::validate() const
       break;
     case GCAM_ALTS:
       break;
+    case GCAM_ADC:
+      break;
     default:
       g_assert_not_reached();
     }
@@ -248,6 +250,8 @@ ClientCredentialsBuilder::build() const
       return ::grpc::SslCredentials(ssl_credentials_options);
     case GCAM_ALTS:
       return ::grpc::experimental::AltsCredentials(alts_credentials_options);
+    case GCAM_ADC:
+      return ::grpc::GoogleDefaultCredentials();
     default:
       g_assert_not_reached();
     }
@@ -280,7 +284,7 @@ grpc_client_credentials_builder_set_tls_cert_path(GrpcClientCredentialsBuilderW 
 
 void
 grpc_client_credentials_builder_add_alts_target_service_account(GrpcClientCredentialsBuilderW *s,
-                                                                const gchar *target_service_acount)
+    const gchar *target_service_acount)
 {
   return s->self->add_alts_target_service_account(target_service_acount);
 }
