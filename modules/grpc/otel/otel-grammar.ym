@@ -179,6 +179,30 @@ destination_otel_option
 
 destination_otel_auth_option
   : KW_INSECURE { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_INSECURE); } '(' ')'
+  | KW_TLS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_TLS); } '(' destination_otel_auth_tls_options ')'
+  ;
+
+destination_otel_auth_tls_options
+  : destination_otel_auth_tls_option destination_otel_auth_tls_options
+  |
+  ;
+
+destination_otel_auth_tls_option
+  : KW_KEY_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_client_credentials_builder_set_tls_key_path(last_grpc_client_credentials_builder, $3), @1, "Failed to set key-file()");
+        free($3);
+      }
+  | KW_CERT_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_client_credentials_builder_set_tls_cert_path(last_grpc_client_credentials_builder, $3), @1, "Failed to set cert-file()");
+        free($3);
+      }
+  | KW_CA_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_client_credentials_builder_set_tls_ca_path(last_grpc_client_credentials_builder, $3), @1, "Failed to set ca-file()");
+        free($3);
+      }
   ;
 
 /* INCLUDE_RULES */

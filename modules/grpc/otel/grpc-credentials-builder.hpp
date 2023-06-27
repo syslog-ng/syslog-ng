@@ -65,8 +65,16 @@ public:
   bool validate() const;
   std::shared_ptr<::grpc::ChannelCredentials> build() const;
 
+  /* TLS */
+  bool set_tls_ca_path(const char *ca_path);
+  bool set_tls_key_path(const char *key_path);
+  bool set_tls_cert_path(const char *cert_path);
+
 private:
   ClientAuthMode mode = GCAM_INSECURE;
+
+  /* TLS */
+  ::grpc::SslCredentialsOptions ssl_credentials_options;
 };
 
 }

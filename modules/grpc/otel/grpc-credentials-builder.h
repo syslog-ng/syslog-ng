@@ -58,11 +58,15 @@ void grpc_server_credentials_builder_set_tls_peer_verify(GrpcServerCredentialsBu
 typedef enum
 {
   GCAM_INSECURE,
+  GCAM_TLS,
 } GrpcClientAuthMode;
 
 typedef struct GrpcClientCredentialsBuilderW_ GrpcClientCredentialsBuilderW; // Wrapper struct
 
 void grpc_client_credentials_builder_set_mode(GrpcClientCredentialsBuilderW *s, GrpcClientAuthMode mode);
+gboolean grpc_client_credentials_builder_set_tls_ca_path(GrpcClientCredentialsBuilderW *s, const gchar *ca_path);
+gboolean grpc_client_credentials_builder_set_tls_key_path(GrpcClientCredentialsBuilderW *s, const gchar *key_path);
+gboolean grpc_client_credentials_builder_set_tls_cert_path(GrpcClientCredentialsBuilderW *s, const gchar *cert_path);
 
 #include "compat/cpp-end.h"
 
