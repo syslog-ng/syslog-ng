@@ -32,6 +32,7 @@ using namespace syslogng::grpc::otel;
 DestDriver::DestDriver(OtelDestDriver *s)
   : super(s)
 {
+  credentials_builder_wrapper.self = &credentials_builder;
 }
 
 void
@@ -79,6 +80,11 @@ DestDriver::init()
       return false;
     }
 
+  if (!credentials_builder.validate())
+    {
+      return false;
+    }
+
   return log_threaded_dest_driver_init_method(&super->super.super.super.super);
 }
 
@@ -88,12 +94,24 @@ DestDriver::deinit()
   return log_threaded_dest_driver_deinit_method(&super->super.super.super.super);
 }
 
+GrpcClientCredentialsBuilderW *
+DestDriver::get_credentials_builder_wrapper()
+{
+  return &credentials_builder_wrapper;
+}
+
 /* C Wrappers */
 
 void
 otel_dd_set_url(LogDriver *s, const gchar *url)
 {
   get_DestDriver(s)->set_url(url);
+}
+
+GrpcClientCredentialsBuilderW *
+otel_dd_get_credentials_builder(LogDriver *s)
+{
+  return get_DestDriver(s)->get_credentials_builder_wrapper();
 }
 
 static const gchar *

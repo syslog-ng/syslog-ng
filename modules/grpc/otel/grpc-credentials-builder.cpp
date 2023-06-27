@@ -46,6 +46,8 @@ _get_file_content(const char *path, std::string &content)
   return true;
 }
 
+/* Server */
+
 void
 ServerCredentialsBuilder::set_mode(GrpcServerAuthMode mode_)
 {
@@ -182,4 +184,46 @@ grpc_server_credentials_builder_set_tls_peer_verify(GrpcServerCredentialsBuilder
                                                     GrpcServerTlsPeerVerify peer_verify)
 {
   s->self->set_tls_peer_verify(peer_verify);
+}
+
+/* Client */
+
+
+void
+ClientCredentialsBuilder::set_mode(GrpcClientAuthMode mode_)
+{
+  mode = mode_;
+}
+
+bool
+ClientCredentialsBuilder::validate() const
+{
+  switch (mode)
+    {
+    case GCAM_INSECURE:
+      break;
+    default:
+      g_assert_not_reached();
+    }
+
+  return build().get() != nullptr;
+}
+
+std::shared_ptr<::grpc::ChannelCredentials>
+ClientCredentialsBuilder::build() const
+{
+  switch (mode)
+    {
+    case GCAM_INSECURE:
+      return ::grpc::InsecureChannelCredentials();
+    default:
+      g_assert_not_reached();
+    }
+  g_assert_not_reached();
+}
+
+void
+grpc_client_credentials_builder_set_mode(GrpcClientCredentialsBuilderW *s, GrpcClientAuthMode mode)
+{
+  s->self->set_mode(mode);
 }

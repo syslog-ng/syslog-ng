@@ -45,7 +45,7 @@ DestWorker::DestWorker(OtelDestWorker *s)
     owner(*((OtelDestDriver *) s->super.owner)->cpp),
     formatter(s->super.owner->super.super.super.cfg)
 {
-  channel = ::grpc::CreateChannel(owner.get_url(), ::grpc::InsecureChannelCredentials());
+  channel = ::grpc::CreateChannel(owner.get_url(), owner.credentials_builder.build());
   logs_service_stub = LogsService::NewStub(channel);
   metrics_service_stub = MetricsService::NewStub(channel);
   trace_service_stub = TraceService::NewStub(channel);

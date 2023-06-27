@@ -30,6 +30,7 @@
 #include "compat/cpp-end.h"
 
 #include "otel-dest.h"
+#include "grpc-credentials-builder.hpp"
 
 
 namespace syslogng {
@@ -49,10 +50,15 @@ public:
   const char *format_stats_key(StatsClusterKeyBuilder *kb);
   const char *generate_persist_name();
 
+  GrpcClientCredentialsBuilderW *get_credentials_builder_wrapper();
+
+public:
+  syslogng::grpc::ClientCredentialsBuilder credentials_builder;
+
 private:
   OtelDestDriver *super;
-
   std::string url;
+  GrpcClientCredentialsBuilderW credentials_builder_wrapper;
 };
 
 }

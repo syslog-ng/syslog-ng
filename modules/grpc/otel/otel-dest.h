@@ -26,11 +26,13 @@
 #include "compat/cpp-start.h"
 
 #include "driver.h"
+#include "grpc-credentials-builder.h"
 
 typedef struct OtelDestDriver_ OtelDestDriver;
 
 LogDriver *otel_dd_new(GlobalConfig *cfg);
 void otel_dd_set_url(LogDriver *s, const gchar *url);
+GrpcClientCredentialsBuilderW *otel_dd_get_credentials_builder(LogDriver *s);
 
 #include "compat/cpp-end.h"
 

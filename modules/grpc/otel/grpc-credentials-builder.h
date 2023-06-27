@@ -27,6 +27,8 @@
 
 #include "compat/glib.h"
 
+/* Server */
+
 typedef enum
 {
   GSAM_INSECURE,
@@ -50,6 +52,17 @@ gboolean grpc_server_credentials_builder_set_tls_key_path(GrpcServerCredentialsB
 gboolean grpc_server_credentials_builder_set_tls_cert_path(GrpcServerCredentialsBuilderW *s, const gchar *cert_path);
 void grpc_server_credentials_builder_set_tls_peer_verify(GrpcServerCredentialsBuilderW *s,
                                                          GrpcServerTlsPeerVerify peer_verify);
+
+/* Client */
+
+typedef enum
+{
+  GCAM_INSECURE,
+} GrpcClientAuthMode;
+
+typedef struct GrpcClientCredentialsBuilderW_ GrpcClientCredentialsBuilderW; // Wrapper struct
+
+void grpc_client_credentials_builder_set_mode(GrpcClientCredentialsBuilderW *s, GrpcClientAuthMode mode);
 
 #include "compat/cpp-end.h"
 

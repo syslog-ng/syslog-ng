@@ -35,6 +35,7 @@
 #include "otel-dest.h"
 
 GrpcServerCredentialsBuilderW *last_grpc_server_credentials_builder;
+GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 
 }
 
@@ -170,9 +171,14 @@ destination_otel_options
 
 destination_otel_option
   : KW_URL '(' string ')' { otel_dd_set_url(last_driver, $3); free($3); }
+  | KW_AUTH { last_grpc_client_credentials_builder = otel_dd_get_credentials_builder(last_driver); } '(' destination_otel_auth_option ')'
   | threaded_dest_driver_general_option
   | threaded_dest_driver_batch_option
   | threaded_dest_driver_workers_option
+  ;
+
+destination_otel_auth_option
+  : KW_INSECURE { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_INSECURE); } '(' ')'
   ;
 
 /* INCLUDE_RULES */
