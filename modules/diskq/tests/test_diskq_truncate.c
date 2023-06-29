@@ -50,14 +50,15 @@ _get_non_reliable_diskqueue(gchar *filename, DiskQueueOptions *options)
 }
 
 static LogQueue *
-_create_non_reliable_diskqueue(gchar *filename, DiskQueueOptions *options, gint qout_size, gdouble truncate_size_ratio)
+_create_non_reliable_diskqueue(gchar *filename, DiskQueueOptions *options, gint front_cache_size,
+                               gdouble truncate_size_ratio)
 {
   LogQueue *q;
   unlink(filename);
 
   _construct_options(options, TEST_DISKQ_SIZE, 0, FALSE);
 
-  options->qout_size = qout_size;
+  options->front_cache_size = front_cache_size;
 
   if (truncate_size_ratio < 0)
     truncate_size_ratio = disk_queue_config_get_truncate_size_ratio(configuration);
@@ -98,7 +99,7 @@ _calculate_full_disk_message_num(LogQueueDisk *queue_disk)
   QDisk *qdisk = queue_disk->qdisk;
 
   gsize msg_size = _calculate_serialized_empty_message_size(queue_disk);
-  gint num_messages = llrint(ceil((qdisk->options->disk_buf_size - QDISK_RESERVED_SPACE) / (double) msg_size));
+  gint num_messages = llrint(ceil((qdisk->options->capacity_bytes - QDISK_RESERVED_SPACE) / (double) msg_size));
 
   return num_messages;
 }
@@ -204,7 +205,7 @@ _test_diskq_truncate(TruncateTestParams params)
   disk_queue_options_destroy(&options);
 }
 
-// Diskbuffer is the part of disk-queue that is used only when qout is full
+// Diskbuffer is the part of disk-queue that is used only when front cache is full
 Test(diskq_truncate, test_diskq_truncate_with_diskbuffer_used)
 {
   _test_diskq_truncate((TruncateTestParams)
@@ -278,7 +279,7 @@ Test(diskq_truncate, test_diskq_truncate_on_push)
 
   // 3. wrap around write pointer
   feed_some_messages(q, write_wraps_message_number);
-  // file size can even grow, if not the whole disk_buf_size is filled (i.e. disk_buf_size is not an integer multiple of one message size)
+  // file size can even grow, if not the whole capacity_bytes is filled (i.e. capacity_bytes is not an integer multiple of one message size)
   cr_assert(_get_file_size(q) >= file_size_full,
             "Unexpected disk-queue truncate during push! size:%ld expected:%ld", _get_file_size(q), file_size_full);
 
@@ -550,16 +551,16 @@ Test(diskq_truncate, test_diskq_no_truncate_wrap)
 
 Test(diskq_truncate, test_non_reliable_diskq_restart_with_truncation_disabled)
 {
-  const gint qout_size = 128;
+  const gint front_cache_size = 128;
 
   GString *filename = g_string_new("test_dq_non_reliable_restart.rqf");
 
   DiskQueueOptions options;
-  LogQueue *q = _create_non_reliable_diskqueue(filename->str, &options, qout_size, 1);
+  LogQueue *q = _create_non_reliable_diskqueue(filename->str, &options, front_cache_size, 1);
   cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
 
   LogQueueDisk *queue_disk = (LogQueueDisk *)q;
-  const gint just_under_max_size_message_number = (_calculate_full_disk_message_num(queue_disk) + qout_size) - 1;
+  const gint just_under_max_size_message_number = (_calculate_full_disk_message_num(queue_disk) + front_cache_size) - 1;
   const gint some_messages_to_let_write_head_wrap = 500;
 
   // 1. feed to full

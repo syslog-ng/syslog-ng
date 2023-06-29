@@ -59,7 +59,7 @@ _pop_msg(LogQueue *queue)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg = log_queue_pop_head(queue, &path_options);
 
-  // If the message was stored in qout in addition to qdisk, it can be popped successfully.
+  // If the message was stored in front_cache in addition to qdisk, it can be popped successfully.
   if (msg)
     log_msg_unref(msg);
 }
@@ -69,9 +69,9 @@ _assert_log_queue_disk_reliable_is_empty(LogQueue *q)
 {
   LogQueueDiskReliable *queue = (LogQueueDiskReliable *) q;
 
-  cr_assert_eq(g_queue_get_length(queue->qout), 0);
-  cr_assert_eq(g_queue_get_length(queue->qreliable), 0);
-  cr_assert_eq(g_queue_get_length(queue->qbacklog), 0);
+  cr_assert_eq(g_queue_get_length(queue->front_cache), 0);
+  cr_assert_eq(g_queue_get_length(queue->flow_control_window), 0);
+  cr_assert_eq(g_queue_get_length(queue->backlog), 0);
   cr_assert_eq(qdisk_get_length(queue->super.qdisk), 0);
 
   cr_assert(q->metrics.shared.memory_usage);
@@ -95,9 +95,9 @@ Test(logqueue_disk, restart_corrupted_reliable)
   DiskQueueOptions options = {0};
   disk_queue_options_set_default_options(&options);
   disk_queue_options_reliable_set(&options, TRUE);
-  disk_queue_options_disk_buf_size_set(&options, MIN_DISK_BUF_SIZE);
-  disk_queue_options_mem_buf_size_set(&options, 4096);
-  disk_queue_options_qout_size_set(&options, 2);
+  disk_queue_options_capacity_bytes_set(&options, MIN_CAPACITY_BYTES);
+  disk_queue_options_flow_control_window_bytes_set(&options, 4096);
+  disk_queue_options_front_cache_size_set(&options, 2);
 
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
   StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
@@ -158,9 +158,9 @@ _assert_log_queue_disk_non_reliable_is_empty(LogQueue *q)
 {
   LogQueueDiskNonReliable *queue = (LogQueueDiskNonReliable *) q;
 
-  cr_assert_eq(g_queue_get_length(queue->qout), 0);
-  cr_assert_eq(g_queue_get_length(queue->qoverflow), 0);
-  cr_assert_eq(g_queue_get_length(queue->qbacklog), 0);
+  cr_assert_eq(g_queue_get_length(queue->front_cache), 0);
+  cr_assert_eq(g_queue_get_length(queue->flow_control_window), 0);
+  cr_assert_eq(g_queue_get_length(queue->backlog), 0);
   cr_assert_eq(qdisk_get_length(queue->super.qdisk), 0);
 
   cr_assert(q->metrics.shared.memory_usage);
@@ -184,9 +184,9 @@ Test(logqueue_disk, restart_corrupted_non_reliable)
   DiskQueueOptions options = {0};
   disk_queue_options_set_default_options(&options);
   disk_queue_options_reliable_set(&options, FALSE);
-  disk_queue_options_disk_buf_size_set(&options, MIN_DISK_BUF_SIZE);
-  disk_queue_options_mem_buf_size_set(&options, 4096);
-  disk_queue_options_qout_size_set(&options, 0);
+  disk_queue_options_capacity_bytes_set(&options, MIN_CAPACITY_BYTES);
+  disk_queue_options_flow_control_window_bytes_set(&options, 4096);
+  disk_queue_options_front_cache_size_set(&options, 0);
 
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
   StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
@@ -243,7 +243,7 @@ Test(logqueue_disk, restart_corrupted_non_reliable)
 }
 
 static void
-_assert_log_queue_disk_non_reliable_has_messages_in_qout(LogQueue *q, guint num_of_messages)
+_assert_log_queue_disk_non_reliable_has_messages_in_front_cache(LogQueue *q, guint num_of_messages)
 {
   LogQueueDiskNonReliable *queue = (LogQueueDiskNonReliable *) q;
   const guint item_number_per_message = 2;
@@ -252,9 +252,9 @@ _assert_log_queue_disk_non_reliable_has_messages_in_qout(LogQueue *q, guint num_
   const gssize log_msg_size = log_msg_get_size(msg);
   log_msg_unref(msg);
 
-  cr_assert_eq(g_queue_get_length(queue->qout), num_of_messages * item_number_per_message);
-  cr_assert_eq(g_queue_get_length(queue->qoverflow), 0);
-  cr_assert_eq(g_queue_get_length(queue->qbacklog), 0);
+  cr_assert_eq(g_queue_get_length(queue->front_cache), num_of_messages * item_number_per_message);
+  cr_assert_eq(g_queue_get_length(queue->flow_control_window), 0);
+  cr_assert_eq(g_queue_get_length(queue->backlog), 0);
   cr_assert_eq(qdisk_get_length(queue->super.qdisk), 0);
 
   cr_assert(q->metrics.shared.memory_usage);
@@ -266,23 +266,23 @@ _assert_log_queue_disk_non_reliable_has_messages_in_qout(LogQueue *q, guint num_
   cr_assert_eq(stats_counter_get(q->metrics.owned.queued_messages), num_of_messages);
 }
 
-Test(logqueue_disk, restart_corrupted_non_reliable_with_qout)
+Test(logqueue_disk, restart_corrupted_non_reliable_with_front_cache)
 {
   start_grabbing_messages();
 
-  const gchar *filename = "restart_corrupted_non_reliable_with_qout.qf";
-  const gchar *corrupted_filename = "restart_corrupted_non_reliable_with_qout.qf.corrupted";
+  const gchar *filename = "restart_corrupted_non_reliable_with_front_cache.qf";
+  const gchar *corrupted_filename = "restart_corrupted_non_reliable_with_front_cache.qf.corrupted";
 
   DiskQueueOptions options = {0};
   disk_queue_options_set_default_options(&options);
   disk_queue_options_reliable_set(&options, FALSE);
-  disk_queue_options_disk_buf_size_set(&options, MIN_DISK_BUF_SIZE);
-  disk_queue_options_mem_buf_size_set(&options, 4096);
-  disk_queue_options_qout_size_set(&options, 1);
+  disk_queue_options_capacity_bytes_set(&options, MIN_CAPACITY_BYTES);
+  disk_queue_options_flow_control_window_bytes_set(&options, 4096);
+  disk_queue_options_front_cache_size_set(&options, 1);
 
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
   StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
-  LogQueue *queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable_with_qout",
+  LogQueue *queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable_with_front_cache",
                                                     STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
   LogQueueDiskNonReliable *queue_disk_non_reliable = (LogQueueDiskNonReliable *) queue;
 
@@ -295,7 +295,7 @@ Test(logqueue_disk, restart_corrupted_non_reliable_with_qout)
   LogMessage *msg = log_msg_new_empty();
   log_queue_push_tail(queue, msg, &path_options);
 
-  _assert_log_queue_disk_non_reliable_has_messages_in_qout(queue, 1);
+  _assert_log_queue_disk_non_reliable_has_messages_in_front_cache(queue, 1);
 
   log_queue_disk_restart_corrupted(&queue_disk_non_reliable->super);
 
@@ -303,17 +303,17 @@ Test(logqueue_disk, restart_corrupted_non_reliable_with_qout)
   _assert_file_exists(corrupted_filename);
   _assert_file_exists(filename);
 
-  _assert_log_queue_disk_non_reliable_has_messages_in_qout(queue, 1);
+  _assert_log_queue_disk_non_reliable_has_messages_in_front_cache(queue, 1);
 
   gboolean persistent;
   log_queue_disk_stop(queue, &persistent);
   log_queue_unref(queue);
   stats_cluster_key_builder_reset(queue_sck_builder);
-  queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable_with_qout",
+  queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable_with_front_cache",
                                           STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
   cr_assert(log_queue_disk_start(queue));
 
-  _assert_log_queue_disk_non_reliable_has_messages_in_qout(queue, 1);
+  _assert_log_queue_disk_non_reliable_has_messages_in_front_cache(queue, 1);
 
   stats_cluster_key_builder_free(driver_sck_builder);
   stats_cluster_key_builder_free(queue_sck_builder);
@@ -338,8 +338,8 @@ Test(logqueue_disk, restart_corrupted_with_multiple_queues)
   DiskQueueOptions options = {0};
   disk_queue_options_set_default_options(&options);
   disk_queue_options_reliable_set(&options, TRUE);
-  disk_queue_options_disk_buf_size_set(&options, MIN_DISK_BUF_SIZE);
-  disk_queue_options_mem_buf_size_set(&options, 4096);
+  disk_queue_options_capacity_bytes_set(&options, MIN_CAPACITY_BYTES);
+  disk_queue_options_flow_control_window_bytes_set(&options, 4096);
 
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
   StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();

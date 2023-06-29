@@ -45,20 +45,20 @@ typedef enum
 } TestDiskQType;
 
 static DiskQueueOptions *
-construct_diskq_options(TestDiskQType dq_type, gint64 disk_buf_size)
+construct_diskq_options(TestDiskQType dq_type, gint64 capacity_bytes)
 {
   DiskQueueOptions *opts = g_new0(DiskQueueOptions, 1);
   disk_queue_options_set_default_options(opts);
-  disk_queue_options_disk_buf_size_set(opts, disk_buf_size);
+  disk_queue_options_capacity_bytes_set(opts, capacity_bytes);
   disk_queue_options_reliable_set(opts, dq_type);
 
   return opts;
 }
 
 static QDisk *
-create_qdisk(TestDiskQType dq_type, const gchar *filename, gint64 disk_buf_size)
+create_qdisk(TestDiskQType dq_type, const gchar *filename, gint64 capacity_bytes)
 {
-  DiskQueueOptions *opts = construct_diskq_options(dq_type, disk_buf_size);
+  DiskQueueOptions *opts = construct_diskq_options(dq_type, capacity_bytes);
   QDisk *qdisk = qdisk_new(opts, "TEST", filename);
 
   return qdisk;
@@ -360,7 +360,7 @@ Test(qdisk, prealloc)
 {
   const gchar *filename = "test_prealloc.rqf";
 
-  DiskQueueOptions *opts = construct_diskq_options(TDISKQ_RELIABLE, MIN_DISK_BUF_SIZE);
+  DiskQueueOptions *opts = construct_diskq_options(TDISKQ_RELIABLE, MIN_CAPACITY_BYTES);
   disk_queue_options_set_prealloc(opts, TRUE);
   QDisk *qdisk = qdisk_new(opts, "TEST", filename);
 
@@ -370,7 +370,7 @@ Test(qdisk, prealloc)
   cr_assert(stat(filename, &file_stats) == 0, "Stat call failed, errno: %d", errno);
   gint64 real_size = file_stats.st_size;
 
-  cr_assert_eq(qdisk_get_file_size(qdisk), MIN_DISK_BUF_SIZE);
+  cr_assert_eq(qdisk_get_file_size(qdisk), MIN_CAPACITY_BYTES);
   cr_assert_eq(qdisk_get_file_size(qdisk), real_size);
 
   qdisk_stop(qdisk, NULL, NULL, NULL);
@@ -429,10 +429,10 @@ _assert_backlog_and_write_head_pos(QDisk *qdisk, gint64 backlog_head_pos, gint64
 Test(qdisk, get_empty_space_non_wrapped)
 {
   const gsize small_amount_of_data = 32;
-  const gsize useful_size = MIN_DISK_BUF_SIZE - QDISK_RESERVED_SPACE;
+  const gsize useful_size = MIN_CAPACITY_BYTES - QDISK_RESERVED_SPACE;
 
   const gchar *filename = "test_get_empty_space_non_wrapped.rqf";
-  DiskQueueOptions *opts = construct_diskq_options(TDISKQ_RELIABLE, MIN_DISK_BUF_SIZE);
+  DiskQueueOptions *opts = construct_diskq_options(TDISKQ_RELIABLE, MIN_CAPACITY_BYTES);
   disk_queue_options_set_truncate_size_ratio(opts, 1);
   QDisk *qdisk = qdisk_new(opts, "TEST", filename);
   cr_assert(qdisk_start(qdisk, NULL, NULL, NULL));
@@ -517,10 +517,10 @@ Test(qdisk, get_empty_space_non_wrapped)
 Test(qdisk, get_empty_space_wrapped)
 {
   const gsize small_amount_of_data = 32;
-  const gsize useful_size = MIN_DISK_BUF_SIZE - QDISK_RESERVED_SPACE;
+  const gsize useful_size = MIN_CAPACITY_BYTES - QDISK_RESERVED_SPACE;
 
   const gchar *filename = "test_get_empty_space_wrapped.rqf";
-  DiskQueueOptions *opts = construct_diskq_options(TDISKQ_RELIABLE, MIN_DISK_BUF_SIZE);
+  DiskQueueOptions *opts = construct_diskq_options(TDISKQ_RELIABLE, MIN_CAPACITY_BYTES);
   disk_queue_options_set_truncate_size_ratio(opts, 1);
   QDisk *qdisk = qdisk_new(opts, "TEST", filename);
   cr_assert(qdisk_start(qdisk, NULL, NULL, NULL));

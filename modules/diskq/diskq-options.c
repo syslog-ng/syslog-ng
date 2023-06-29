@@ -27,23 +27,23 @@
 #include "reloc.h"
 
 void
-disk_queue_options_qout_size_set(DiskQueueOptions *self, gint qout_size)
+disk_queue_options_front_cache_size_set(DiskQueueOptions *self, gint front_cache_size)
 {
-  self->qout_size = qout_size;
+  self->front_cache_size = front_cache_size;
 }
 
 void
-disk_queue_options_disk_buf_size_set(DiskQueueOptions *self, gint64 disk_buf_size)
+disk_queue_options_capacity_bytes_set(DiskQueueOptions *self, gint64 capacity_bytes)
 {
-  if (disk_buf_size < MIN_DISK_BUF_SIZE)
+  if (capacity_bytes < MIN_CAPACITY_BYTES)
     {
-      msg_warning("WARNING: The configured disk buffer size is smaller than the minimum allowed",
-                  evt_tag_long("configured_size", disk_buf_size),
-                  evt_tag_long("minimum_allowed_size", MIN_DISK_BUF_SIZE),
-                  evt_tag_long("new_size", MIN_DISK_BUF_SIZE));
-      disk_buf_size = MIN_DISK_BUF_SIZE;
+      msg_warning("WARNING: The configured disk buffer capacity is smaller than the minimum allowed",
+                  evt_tag_long("configured_capacity", capacity_bytes),
+                  evt_tag_long("minimum_allowed_capacity", MIN_CAPACITY_BYTES),
+                  evt_tag_long("new_capacity", MIN_CAPACITY_BYTES));
+      capacity_bytes = MIN_CAPACITY_BYTES;
     }
-  self->disk_buf_size = disk_buf_size;
+  self->capacity_bytes = capacity_bytes;
 }
 
 void
@@ -59,15 +59,15 @@ disk_queue_options_compaction_set(DiskQueueOptions *self, gboolean compaction)
 }
 
 void
-disk_queue_options_mem_buf_size_set(DiskQueueOptions *self, gint mem_buf_size)
+disk_queue_options_flow_control_window_bytes_set(DiskQueueOptions *self, gint flow_control_window_bytes)
 {
-  self->mem_buf_size = mem_buf_size;
+  self->flow_control_window_bytes = flow_control_window_bytes;
 }
 
 void
-disk_queue_options_mem_buf_length_set(DiskQueueOptions *self, gint mem_buf_length)
+disk_queue_options_flow_control_window_size_set(DiskQueueOptions *self, gint flow_control_window_size)
 {
-  self->mem_buf_length = mem_buf_length;
+  self->flow_control_window_size = flow_control_window_size;
 }
 
 void
@@ -87,16 +87,16 @@ disk_queue_options_check_plugin_settings(DiskQueueOptions *self)
 {
   if (self->reliable)
     {
-      if (self->mem_buf_length > 0)
+      if (self->flow_control_window_size > 0)
         {
-          msg_warning("WARNING: mem-buf-length parameter was ignored as it is not compatible with reliable queue. Did you mean mem-buf-size?");
+          msg_warning("WARNING: flow-control-window-size/mem-buf-length parameter was ignored as it is not compatible with reliable queue. Did you mean flow-control-window-bytes?");
         }
     }
   else
     {
-      if (self->mem_buf_size > 0)
+      if (self->flow_control_window_bytes > 0)
         {
-          msg_warning("WARNING: mem-buf-size parameter was ignored as it is not compatible with non-reliable queue. Did you mean mem-buf-length?");
+          msg_warning("WARNING: flow-control-window-bytes/mem-buf-size parameter was ignored as it is not compatible with non-reliable queue. Did you mean flow-control-window-size?");
         }
     }
 }
@@ -126,11 +126,11 @@ disk_queue_options_set_dir(DiskQueueOptions *self, const gchar *dir)
 void
 disk_queue_options_set_default_options(DiskQueueOptions *self)
 {
-  self->disk_buf_size = -1;
-  self->mem_buf_length = -1;
+  self->capacity_bytes = -1;
+  self->flow_control_window_size = -1;
   self->reliable = FALSE;
-  self->mem_buf_size = -1;
-  self->qout_size = -1;
+  self->flow_control_window_bytes = -1;
+  self->front_cache_size = -1;
   self->dir = g_strdup(get_installation_path_for(SYSLOG_NG_PATH_LOCALSTATEDIR));
   self->truncate_size_ratio = -1;
   self->prealloc = -1;
