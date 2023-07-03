@@ -75,8 +75,8 @@ typedef struct _InputQueue
 {
   struct iv_list_head items;
   WorkerBatchCallback cb;
-  guint16 len;
-  guint16 non_flow_controlled_len;
+  guint32 len;
+  guint32 non_flow_controlled_len;
   guint16 finish_cb_registered;
 } InputQueue;
 
