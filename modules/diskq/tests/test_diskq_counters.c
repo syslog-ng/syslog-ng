@@ -61,8 +61,8 @@ _dummy_dd_new(gboolean reliable_disk_buffer, const gchar *dir)
 
   DiskQDestPlugin *plugin = diskq_dest_plugin_new();
   DiskQueueOptions *options = diskq_get_options(plugin);
-  disk_queue_options_disk_buf_size_set(options, MIN_DISK_BUF_SIZE);
-  disk_queue_options_qout_size_set(options, 1);
+  disk_queue_options_capacity_bytes_set(options, MIN_CAPACITY_BYTES);
+  disk_queue_options_front_cache_size_set(options, 1);
   disk_queue_options_reliable_set(options, reliable_disk_buffer);
   disk_queue_options_set_dir(options, dir);
   cr_assert(log_driver_add_plugin(&self->super, (LogDriverPlugin *) plugin));
@@ -158,7 +158,7 @@ Test(diskq_counters, test_non_reliable,
      .init = _test_non_reliable_setup,
      .fini = _test_non_reliable_teardown)
 {
-  const gsize expected_capacity = MIN_DISK_BUF_SIZE - QDISK_RESERVED_SPACE;
+  const gsize expected_capacity = MIN_CAPACITY_BYTES - QDISK_RESERVED_SPACE;
   const gchar *queue_persist_name = "test_non_reliable";
   const gchar *dir_name = "test_diskq_counters_test_non_reliable";
   const gchar *dirlock_path = "test_diskq_counters_test_non_reliable/syslog-ng-disk-buffer.dirlock";
@@ -173,7 +173,7 @@ Test(diskq_counters, test_non_reliable,
   cr_assert(queue);
   _assert_counters(queue, 0, 0, expected_capacity, 0, QDISK_RESERVED_SPACE, __LINE__);
 
-  /* First message goes to qout */
+  /* First message goes to front cache */
   gssize one_message_memory_size;
   gssize one_message_serialized_size;
   _push_one_message(queue, &one_message_memory_size, &one_message_serialized_size);
@@ -231,7 +231,7 @@ Test(diskq_counters, test_reliable,
      .init = _test_reliable_setup,
      .fini = _test_reliable_teardown)
 {
-  const gsize expected_capacity = MIN_DISK_BUF_SIZE - QDISK_RESERVED_SPACE;
+  const gsize expected_capacity = MIN_CAPACITY_BYTES - QDISK_RESERVED_SPACE;
   const gchar *queue_persist_name = "test_reliable";
   const gchar *dir_name = "test_diskq_counters_test_reliable";
   const gchar *dirlock_path = "test_diskq_counters_test_reliable/syslog-ng-disk-buffer.dirlock";
@@ -246,14 +246,14 @@ Test(diskq_counters, test_reliable,
   cr_assert(queue);
   _assert_counters(queue, 0, 0, expected_capacity, 0, QDISK_RESERVED_SPACE, __LINE__);
 
-  /* The message goes to both qout and qdisk */
+  /* The message goes to both front cache and qdisk */
   gssize one_message_memory_size;
   gssize one_message_serialized_size;
   _push_one_message(queue, &one_message_memory_size, &one_message_serialized_size);
   _assert_counters(queue, 1, one_message_memory_size, expected_capacity, one_message_serialized_size,
                    QDISK_RESERVED_SPACE + one_message_serialized_size, __LINE__);
 
-  /* Release and reacquire queue, only disk usage is expected, as qout is not refilled */
+  /* Release and reacquire queue, only disk usage is expected, as front cache is not refilled */
   log_dest_driver_release_queue(driver, queue);
 
   stats_cluster_key_builder_reset(queue_sck_builder);

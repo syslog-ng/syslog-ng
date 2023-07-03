@@ -29,11 +29,11 @@
 typedef struct _LogQueueDiskNonReliable
 {
   LogQueueDisk super;
-  GQueue *qout;
-  GQueue *qoverflow;
-  GQueue *qbacklog;
-  gint qoverflow_size;
-  gint qout_size;
+  GQueue *front_cache;
+  GQueue *flow_control_window;
+  GQueue *backlog;
+  gint flow_control_window_size;
+  gint front_cache_size;
 } LogQueueDiskNonReliable;
 
 LogQueue *log_queue_disk_non_reliable_new(DiskQueueOptions *options, const gchar *filename, const gchar *persist_name,

@@ -82,14 +82,14 @@ typedef union _QDiskFileHeader
     gint64 write_head;
     gint64 length;
 
-    QDiskQueuePosition qout_pos;
-    QDiskQueuePosition qbacklog_pos;
-    QDiskQueuePosition qoverflow_pos;
+    QDiskQueuePosition front_cache_pos;
+    QDiskQueuePosition backlog_pos;
+    QDiskQueuePosition flow_control_window_pos;
     gint64 backlog_head;
     gint64 backlog_len;
 
     guint8 use_v1_wrap_condition;
-    gint64 disk_buf_size;
+    gint64 capacity_bytes;
   };
   gchar _pad2[QDISK_RESERVED_SPACE];
 } QDiskFileHeader;
@@ -142,7 +142,7 @@ pwrite_strict(gint fd, const void *buf, size_t count, off_t offset)
 static inline gboolean
 _has_position_reached_max_size(QDisk *self, gint64 position)
 {
-  return position >= self->hdr->disk_buf_size;
+  return position >= self->hdr->capacity_bytes;
 }
 
 static inline guint64
@@ -357,7 +357,7 @@ _does_backlog_head_precede_write_head(QDisk *self)
 static inline gboolean
 _is_write_head_less_than_max_size(QDisk *self)
 {
-  return self->hdr->write_head < self->hdr->disk_buf_size;
+  return self->hdr->write_head < self->hdr->capacity_bytes;
 }
 
 static inline gboolean
@@ -392,7 +392,7 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
   if (_does_backlog_head_precede_write_head(self))
     {
       /* no exact size-check is needed in this case, because writing after
-       * disk_buf_size is allowed when the last message does not fit in
+       * capacity_bytes is allowed when the last message does not fit in
        */
       if (_is_write_head_less_than_max_size(self))
         return TRUE;
@@ -517,14 +517,14 @@ qdisk_get_lowest_used_queue_offset(QDisk *self)
 {
   gint64 lowest_offset = G_MAXINT64;
 
-  if (self->hdr->qout_pos.ofs > 0)
-    lowest_offset = MIN(lowest_offset, self->hdr->qout_pos.ofs);
+  if (self->hdr->front_cache_pos.ofs > 0)
+    lowest_offset = MIN(lowest_offset, self->hdr->front_cache_pos.ofs);
 
-  if (self->hdr->qbacklog_pos.ofs > 0)
-    lowest_offset = MIN(lowest_offset, self->hdr->qbacklog_pos.ofs);
+  if (self->hdr->backlog_pos.ofs > 0)
+    lowest_offset = MIN(lowest_offset, self->hdr->backlog_pos.ofs);
 
-  if (self->hdr->qoverflow_pos.ofs > 0)
-    lowest_offset = MIN(lowest_offset, self->hdr->qoverflow_pos.ofs);
+  if (self->hdr->flow_control_window_pos.ofs > 0)
+    lowest_offset = MIN(lowest_offset, self->hdr->flow_control_window_pos.ofs);
 
   return lowest_offset < G_MAXINT64 ? lowest_offset : 0;
 }
@@ -556,9 +556,9 @@ qdisk_get_empty_space(QDisk *self)
 {
   gint64 wpos = qdisk_get_writer_head(self);
   gint64 bpos = qdisk_get_backlog_head(self);
-  gint64 disk_buf_size = qdisk_get_maximum_size(self);
+  gint64 capacity_bytes = qdisk_get_maximum_size(self);
 
-  if (wpos < disk_buf_size && bpos < disk_buf_size)
+  if (wpos < capacity_bytes && bpos < capacity_bytes)
     {
       if (wpos < bpos)
         {
@@ -572,7 +572,7 @@ qdisk_get_empty_space(QDisk *self)
           // 0   RESERVED    B   W         DBS   FS
           // |---|--- ... ---|---|---------|-----|
           //      ^^^^^^^^^^^     ^^^^^^^^^
-          return (bpos - QDISK_RESERVED_SPACE) + (disk_buf_size - wpos);
+          return (bpos - QDISK_RESERVED_SPACE) + (capacity_bytes - wpos);
         }
       else
         {
@@ -580,10 +580,10 @@ qdisk_get_empty_space(QDisk *self)
           // |---|------- ... -------|-----|-----|
           //      ^^^^^^^^^^^^^^^^^^^^^^^^^
           g_assert(self->hdr->length == 0);
-          return disk_buf_size - QDISK_RESERVED_SPACE;
+          return capacity_bytes - QDISK_RESERVED_SPACE;
         }
     }
-  else if (wpos >= disk_buf_size && bpos >= disk_buf_size)
+  else if (wpos >= capacity_bytes && bpos >= capacity_bytes)
     {
       if (wpos < bpos)
         {
@@ -607,7 +607,7 @@ qdisk_get_empty_space(QDisk *self)
           // 0   RESERVED          DBS=B     W   FS
           // |---|------ ... ------|---------|---|
           //      ^^^^^^^^^^^^^^^^^
-          return disk_buf_size - QDISK_RESERVED_SPACE;
+          return capacity_bytes - QDISK_RESERVED_SPACE;
         }
       else
         {
@@ -621,10 +621,10 @@ qdisk_get_empty_space(QDisk *self)
           // |---|------ ... ------|-------------|
           //      ^^^^^^^^^^^^^^^^^
           g_assert(self->hdr->length == 0);
-          return disk_buf_size - QDISK_RESERVED_SPACE;
+          return capacity_bytes - QDISK_RESERVED_SPACE;
         }
     }
-  else if ((wpos >= disk_buf_size && bpos < disk_buf_size) || (bpos >= disk_buf_size && wpos < disk_buf_size))
+  else if ((wpos >= capacity_bytes && bpos < capacity_bytes) || (bpos >= capacity_bytes && wpos < capacity_bytes))
     {
       if (wpos < bpos)
         {
@@ -637,7 +637,7 @@ qdisk_get_empty_space(QDisk *self)
           // 0   RESERVED      W        DBS=B     FS
           // |---|---- ... ----|--------|---------|
           //                    ^^^^^^^^
-          return disk_buf_size - wpos;
+          return capacity_bytes - wpos;
         }
       else if (bpos < wpos)
         {
@@ -759,7 +759,7 @@ qdisk_push_tail(QDisk *self, GString *record)
            * Otherwise try to wrap again in the beginning of the next push.
            *
            * This way we guarantee, that only a part of 1 message is written after
-           * disk_buf_size.
+           * capacity_bytes.
            */
           self->hdr->write_head = QDISK_RESERVED_SPACE;
         }
@@ -1143,13 +1143,13 @@ _try_to_load_queue(QDisk *self, GQueue *queue, QDiskQueuePosition *pos, gchar *t
 #define try_load_queue(self, queue) _try_to_load_queue(self, queue, &self->hdr->queue ##_pos, #queue)
 
 static gboolean
-_load_non_reliable_queues(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+_load_non_reliable_queues(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window)
 {
-  if (!try_load_queue(self, qout))
+  if (!try_load_queue(self, front_cache))
     return FALSE;
-  if (!try_load_queue(self, qbacklog))
+  if (!try_load_queue(self, backlog))
     return FALSE;
-  if (!try_load_queue(self, qoverflow))
+  if (!try_load_queue(self, flow_control_window))
     return FALSE;
 
   return TRUE;
@@ -1167,18 +1167,18 @@ _number_of_messages(QDisk *self)
   else
     {
       return self->hdr->length +
-             self->hdr->qbacklog_pos.count +
-             self->hdr->qout_pos.count +
-             self->hdr->qoverflow_pos.count;
+             self->hdr->backlog_pos.count +
+             self->hdr->front_cache_pos.count +
+             self->hdr->flow_control_window_pos.count;
     }
 }
 
 static void
 _reset_queue_pointers(QDisk *self)
 {
-  _clear(self->hdr->qout_pos);
-  _clear(self->hdr->qbacklog_pos);
-  _clear(self->hdr->qoverflow_pos);
+  _clear(self->hdr->front_cache_pos);
+  _clear(self->hdr->backlog_pos);
+  _clear(self->hdr->flow_control_window_pos);
 };
 
 static gboolean
@@ -1233,7 +1233,7 @@ _save_queue(QDisk *self, GQueue *q, QDiskQueuePosition *q_pos)
   sa = serialize_string_archive_new(serialized);
   for (gint i = 0; i < g_queue_get_length(q); i+=2)
     {
-      /* NOTE: we might have some flow-controlled events on qout, when
+      /* NOTE: we might have some flow-controlled events on front_cache, when
        * saving them to disk, we ack them, they are restored as
        * non-flow-controlled entries later, but then we've saved them to
        * disk anyway. */
@@ -1271,45 +1271,45 @@ error:
 }
 
 static gboolean
-_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+_save_state(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window)
 {
-  QDiskQueuePosition qout_pos = { 0 };
-  QDiskQueuePosition qbacklog_pos = { 0 };
-  QDiskQueuePosition qoverflow_pos = { 0 };
+  QDiskQueuePosition front_cache_pos = { 0 };
+  QDiskQueuePosition backlog_pos = { 0 };
+  QDiskQueuePosition flow_control_window_pos = { 0 };
 
-  if (qout)
+  if (front_cache)
     {
-      qout_pos.count = qout->length / 2;
-      if (!_save_queue(self, qout, &qout_pos))
+      front_cache_pos.count = front_cache->length / 2;
+      if (!_save_queue(self, front_cache, &front_cache_pos))
         return FALSE;
     }
 
-  if (qbacklog)
+  if (backlog)
     {
-      qbacklog_pos.count = qbacklog->length / 2;
-      if (!_save_queue(self, qbacklog, &qbacklog_pos))
+      backlog_pos.count = backlog->length / 2;
+      if (!_save_queue(self, backlog, &backlog_pos))
         return FALSE;
     }
 
-  if (qoverflow)
+  if (flow_control_window)
     {
-      qoverflow_pos.count = qoverflow->length / 2;
-      if (!_save_queue(self, qoverflow, &qoverflow_pos))
+      flow_control_window_pos.count = flow_control_window->length / 2;
+      if (!_save_queue(self, flow_control_window, &flow_control_window_pos))
         return FALSE;
     }
 
   memcpy(self->hdr->magic, self->file_id, sizeof(self->hdr->magic));
 
-  self->hdr->qout_pos = qout_pos;
-  self->hdr->qbacklog_pos = qbacklog_pos;
-  self->hdr->qoverflow_pos= qoverflow_pos;
+  self->hdr->front_cache_pos = front_cache_pos;
+  self->hdr->backlog_pos = backlog_pos;
+  self->hdr->flow_control_window_pos= flow_control_window_pos;
 
   if (!self->options->reliable)
     msg_info("Disk-buffer state saved",
              evt_tag_str("filename", self->filename),
-             evt_tag_long("qout_length", qout_pos.count),
-             evt_tag_long("qbacklog_length", qbacklog_pos.count),
-             evt_tag_long("qoverflow_length", qoverflow_pos.count),
+             evt_tag_long("front_cache_length", front_cache_pos.count),
+             evt_tag_long("backlog_length", backlog_pos.count),
+             evt_tag_long("flow_control_window_length", flow_control_window_pos.count),
              evt_tag_long("qdisk_length", self->hdr->length));
   else
     msg_info("Reliable disk-buffer state saved",
@@ -1350,18 +1350,18 @@ _ensure_header_byte_order(QDisk *self)
       self->hdr->read_head = GUINT64_SWAP_LE_BE(self->hdr->read_head);
       self->hdr->write_head = GUINT64_SWAP_LE_BE(self->hdr->write_head);
       self->hdr->length = GUINT64_SWAP_LE_BE(self->hdr->length);
-      self->hdr->qout_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->qout_pos.ofs);
-      self->hdr->qout_pos.len = GUINT32_SWAP_LE_BE(self->hdr->qout_pos.len);
-      self->hdr->qout_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qout_pos.count);
-      self->hdr->qbacklog_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->qbacklog_pos.ofs);
-      self->hdr->qbacklog_pos.len = GUINT32_SWAP_LE_BE(self->hdr->qbacklog_pos.len);
-      self->hdr->qbacklog_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qbacklog_pos.count);
-      self->hdr->qoverflow_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->qoverflow_pos.ofs);
-      self->hdr->qoverflow_pos.len = GUINT32_SWAP_LE_BE(self->hdr->qoverflow_pos.len);
-      self->hdr->qoverflow_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qoverflow_pos.count);
+      self->hdr->front_cache_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->front_cache_pos.ofs);
+      self->hdr->front_cache_pos.len = GUINT32_SWAP_LE_BE(self->hdr->front_cache_pos.len);
+      self->hdr->front_cache_pos.count = GUINT32_SWAP_LE_BE(self->hdr->front_cache_pos.count);
+      self->hdr->backlog_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->backlog_pos.ofs);
+      self->hdr->backlog_pos.len = GUINT32_SWAP_LE_BE(self->hdr->backlog_pos.len);
+      self->hdr->backlog_pos.count = GUINT32_SWAP_LE_BE(self->hdr->backlog_pos.count);
+      self->hdr->flow_control_window_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->flow_control_window_pos.ofs);
+      self->hdr->flow_control_window_pos.len = GUINT32_SWAP_LE_BE(self->hdr->flow_control_window_pos.len);
+      self->hdr->flow_control_window_pos.count = GUINT32_SWAP_LE_BE(self->hdr->flow_control_window_pos.count);
       self->hdr->backlog_head = GUINT64_SWAP_LE_BE(self->hdr->backlog_head);
       self->hdr->backlog_len = GUINT64_SWAP_LE_BE(self->hdr->backlog_len);
-      self->hdr->disk_buf_size = GUINT64_SWAP_LE_BE(self->hdr->disk_buf_size);
+      self->hdr->capacity_bytes = GUINT64_SWAP_LE_BE(self->hdr->capacity_bytes);
       self->hdr->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
     }
 }
@@ -1431,7 +1431,7 @@ _create_header(QDisk *self)
   self->hdr->backlog_len = 0;
   self->hdr->length = 0;
   self->hdr->use_v1_wrap_condition = FALSE;
-  self->hdr->disk_buf_size = self->options->disk_buf_size;
+  self->hdr->capacity_bytes = self->options->capacity_bytes;
 
   return TRUE;
 }
@@ -1454,13 +1454,13 @@ _upgrade_header(QDisk *self)
   if (self->hdr->version < 2)
     {
       struct stat st;
-      gboolean file_was_overwritten = (fstat(self->fd, &st) != 0 || st.st_size > self->hdr->disk_buf_size);
+      gboolean file_was_overwritten = (fstat(self->fd, &st) != 0 || st.st_size > self->hdr->capacity_bytes);
       self->hdr->use_v1_wrap_condition = file_was_overwritten;
     }
 
   if (self->hdr->version < 3)
     {
-      self->hdr->disk_buf_size = self->options->disk_buf_size;
+      self->hdr->capacity_bytes = self->options->capacity_bytes;
     }
 
   self->hdr->version = QDISK_HDR_VERSION_CURRENT;
@@ -1518,14 +1518,14 @@ _load_header(QDisk *self)
 }
 
 static gboolean
-_load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+_load_state(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window)
 {
   if (!_load_header(self))
     return FALSE;
 
   if (!self->options->reliable)
     {
-      if (!_load_non_reliable_queues(self, qout, qbacklog, qoverflow))
+      if (!_load_non_reliable_queues(self, front_cache, backlog, flow_control_window))
         return FALSE;
 
       self->cached_file_size = QDISK_RESERVED_SPACE;
@@ -1540,13 +1540,13 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 
       msg_debug("Disk-buffer internal state",
                 evt_tag_str("filename", self->filename),
-                evt_tag_long("qout_length", self->hdr->qout_pos.count),
-                evt_tag_long("qbacklog_length", self->hdr->qbacklog_pos.count),
-                evt_tag_long("qoverflow_length", self->hdr->qoverflow_pos.count),
+                evt_tag_long("front_cache_length", self->hdr->front_cache_pos.count),
+                evt_tag_long("backlog_length", self->hdr->backlog_pos.count),
+                evt_tag_long("flow_control_window_length", self->hdr->flow_control_window_pos.count),
                 evt_tag_long("qdisk_length", self->hdr->length),
                 evt_tag_long("read_head", self->hdr->read_head),
                 evt_tag_long("write_head", self->hdr->write_head),
-                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
+                evt_tag_long("capacity_bytes", self->hdr->capacity_bytes));
 
       _reset_queue_pointers(self);
     }
@@ -1566,19 +1566,19 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
                 evt_tag_long("backlog_head", self->hdr->backlog_head),
                 evt_tag_long("read_head", self->hdr->read_head),
                 evt_tag_long("write_head", self->hdr->write_head),
-                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
+                evt_tag_long("capacity_bytes", self->hdr->capacity_bytes));
     }
 
   return TRUE;
 }
 
 gboolean
-_autodetect_disk_buf_size(QDisk *self)
+_autodetect_capacity_bytes(QDisk *self)
 {
   struct stat st;
   if (fstat(self->fd, &st) < 0)
     {
-      msg_error("Autodetect disk-buf-size(): cannot stat",
+      msg_error("Autodetect capacity-bytes(): cannot stat",
                 evt_tag_str("filename", self->filename),
                 evt_tag_error("error"));
 
@@ -1587,60 +1587,60 @@ _autodetect_disk_buf_size(QDisk *self)
 
   if (qdisk_is_file_empty(self))
     {
-      self->hdr->disk_buf_size = MAX(MIN_DISK_BUF_SIZE, st.st_size);
+      self->hdr->capacity_bytes = MAX(MIN_CAPACITY_BYTES, st.st_size);
 
-      msg_debug("Autodetected empty disk-queue's disk-buf-size()",
+      msg_debug("Autodetected empty disk-queue's capacity-bytes()",
                 evt_tag_str("filename", self->filename),
-                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
+                evt_tag_long("capacity_bytes", self->hdr->capacity_bytes));
 
       return TRUE;
     }
 
   if (self->hdr->write_head > MAX(self->hdr->backlog_head, self->hdr->read_head))
     {
-      self->hdr->disk_buf_size = (gint64) st.st_size;
+      self->hdr->capacity_bytes = (gint64) st.st_size;
 
-      msg_debug("Autodetected disk-buf-size()",
+      msg_debug("Autodetected capacity-bytes()",
                 evt_tag_str("filename", self->filename),
-                evt_tag_long("disk_buf_size", self->hdr->disk_buf_size));
+                evt_tag_long("capacity_bytes", self->hdr->capacity_bytes));
 
       return TRUE;
     }
 
-  msg_error("Failed to autodetect disk-buf-size() as the disk-queue file is wrapped",
+  msg_error("Failed to autodetect capacity-bytes() as the disk-queue file is wrapped",
             evt_tag_str("filename", self->filename));
 
   return FALSE;
 }
 
 static gboolean
-_ensure_disk_buf_size(QDisk *self)
+_ensure_capacity_bytes(QDisk *self)
 {
-  if (self->hdr->disk_buf_size == -1 && !_autodetect_disk_buf_size(self))
+  if (self->hdr->capacity_bytes == -1 && !_autodetect_capacity_bytes(self))
     return FALSE;
 
-  if (self->options->disk_buf_size != -1 && self->hdr->disk_buf_size != self->options->disk_buf_size)
+  if (self->options->capacity_bytes != -1 && self->hdr->capacity_bytes != self->options->capacity_bytes)
     {
-      msg_warning("WARNING: disk-buf-size() has changed since the last syslog-ng run. syslog-ng currently does "
-                  "not support changing the disk-buf-size() of existing disk-queues. Continuing with the old one",
+      msg_warning("WARNING: capacity-bytes() has changed since the last syslog-ng run. syslog-ng currently does "
+                  "not support changing the capacity-bytes() of existing disk-queues. Continuing with the old one",
                   evt_tag_str("filename", self->filename),
-                  evt_tag_long("active_old_disk_buf_size", self->hdr->disk_buf_size),
-                  evt_tag_long("ignored_new_disk_buf_size", self->options->disk_buf_size));
+                  evt_tag_long("active_old_capacity_bytes", self->hdr->capacity_bytes),
+                  evt_tag_long("ignored_new_capacity_bytes", self->options->capacity_bytes));
     }
 
   return TRUE;
 }
 
 static gboolean
-_load_qdisk_file(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+_load_qdisk_file(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window)
 {
   if (!_open_file(self->filename, self->options->read_only, &self->fd))
     goto error;
 
-  if (!_load_state(self, qout, qbacklog, qoverflow))
+  if (!_load_state(self, front_cache, backlog, flow_control_window))
     goto error;
 
-  if (!_ensure_disk_buf_size(self))
+  if (!_ensure_capacity_bytes(self))
     goto error;
 
   return TRUE;
@@ -1656,7 +1656,7 @@ _init_qdisk_file(QDisk *self)
   if (!_create_header(self))
     return FALSE;
 
-  if (self->options->prealloc && !_preallocate_qdisk_file(self, self->options->disk_buf_size))
+  if (self->options->prealloc && !_preallocate_qdisk_file(self, self->options->capacity_bytes))
     return FALSE;
 
   return TRUE;
@@ -1668,9 +1668,9 @@ _create_qdisk_file(QDisk *self)
   if (self->options->read_only)
     return FALSE;
 
-  if (self->options->disk_buf_size == -1)
+  if (self->options->capacity_bytes == -1)
     {
-      msg_error("disk-buf-size for new disk-queue files must be set");
+      msg_error("capacity-bytes for new disk-queue files must be set");
       return FALSE;
     }
 
@@ -1707,7 +1707,7 @@ error:
 }
 
 gboolean
-qdisk_start(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+qdisk_start(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window)
 {
   g_assert(!qdisk_started(self));
   g_assert(self->filename);
@@ -1719,18 +1719,18 @@ qdisk_start(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
     return _create_qdisk_file(self);
 
   if (st.st_size != 0)
-    return _load_qdisk_file(self, qout, qbacklog, qoverflow);
+    return _load_qdisk_file(self, front_cache, backlog, flow_control_window);
 
   return _init_qdisk_file_from_empty_file(self);
 }
 
 gboolean
-qdisk_stop(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+qdisk_stop(QDisk *self, GQueue *front_cache, GQueue *backlog, GQueue *flow_control_window)
 {
   gboolean result = TRUE;
 
   if (!self->options->read_only)
-    result = _save_state(self, qout, qbacklog, qoverflow);
+    result = _save_state(self, front_cache, backlog, flow_control_window);
 
   _close_file(self);
 
@@ -1765,7 +1765,7 @@ qdisk_get_length(QDisk *self)
 gint64
 qdisk_get_maximum_size(QDisk *self)
 {
-  return self->hdr->disk_buf_size;
+  return self->hdr->capacity_bytes;
 }
 
 const gchar *
@@ -1805,9 +1805,9 @@ qdisk_get_backlog_count(QDisk *self)
 }
 
 gint
-qdisk_get_memory_size(QDisk *self)
+qdisk_get_flow_control_window_bytes(QDisk *self)
 {
-  return self->options->mem_buf_size;
+  return self->options->flow_control_window_bytes;
 }
 
 gboolean

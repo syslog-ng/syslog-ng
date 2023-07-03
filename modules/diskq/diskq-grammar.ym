@@ -61,12 +61,12 @@ DiskQueueOptions *last_options;
 /* INCLUDE_DECLS */
 
 %token KW_DISK_BUFFER
-%token KW_MEM_BUF_LENGTH
-%token KW_DISK_BUF_SIZE
+%token KW_FLOW_CONTROL_WINDOW_SIZE
+%token KW_CAPACITY_BYTES
 %token KW_RELIABLE
 %token KW_COMPACTION
-%token KW_MEM_BUF_SIZE
-%token KW_QOUT_SIZE
+%token KW_FLOW_CONTROL_WINDOW_BYTES
+%token KW_FRONT_CACHE_SIZE
 %token KW_DIR
 %token KW_TRUNCATE_SIZE_RATIO
 %token KW_PREALLOC
@@ -97,10 +97,10 @@ dest_diskq_options
 dest_diskq_option
         : KW_RELIABLE '(' yesno ')'                      { disk_queue_options_reliable_set(last_options, $3); }
         | KW_COMPACTION '(' yesno ')'                    { disk_queue_options_compaction_set(last_options, $3); }
-        | KW_MEM_BUF_SIZE '(' nonnegative_integer ')'    { disk_queue_options_mem_buf_size_set(last_options, $3); }
-        | KW_MEM_BUF_LENGTH '(' nonnegative_integer ')'  { disk_queue_options_mem_buf_length_set(last_options, $3); }
-        | KW_DISK_BUF_SIZE '(' nonnegative_integer64 ')' { disk_queue_options_disk_buf_size_set(last_options, $3); }
-        | KW_QOUT_SIZE '(' nonnegative_integer ')'       { disk_queue_options_qout_size_set(last_options, $3); }
+        | KW_FLOW_CONTROL_WINDOW_BYTES '(' nonnegative_integer ')' { disk_queue_options_flow_control_window_bytes_set(last_options, $3); }
+        | KW_FLOW_CONTROL_WINDOW_SIZE '(' nonnegative_integer ')'  { disk_queue_options_flow_control_window_size_set(last_options, $3); }
+        | KW_CAPACITY_BYTES '(' nonnegative_integer64 ')'          { disk_queue_options_capacity_bytes_set(last_options, $3); }
+        | KW_FRONT_CACHE_SIZE '(' nonnegative_integer ')'          { disk_queue_options_front_cache_size_set(last_options, $3); }
         | KW_DIR '(' string ')'                          { disk_queue_options_set_dir(last_options, $3); free($3); }
         | KW_TRUNCATE_SIZE_RATIO '(' float_between_0_and_1 ')' { disk_queue_options_set_truncate_size_ratio(last_options, $3); }
         | KW_PREALLOC '(' yesno ')'                      { disk_queue_options_set_prealloc(last_options, $3); }

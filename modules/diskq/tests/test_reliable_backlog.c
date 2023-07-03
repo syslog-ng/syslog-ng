@@ -133,7 +133,8 @@ _prepare_eof_test(LogQueueDiskReliable *dq, LogMessage **msg1, LogMessage **msg2
   log_queue_push_tail(&dq->super.super, *msg1, &local_options);
   log_queue_push_tail(&dq->super.super, *msg2, &local_options);
 
-  cr_assert_eq(dq->qreliable->length, NUMBER_MESSAGES_IN_QUEUE(2), "%s", "Messages aren't in qreliable");
+  cr_assert_eq(dq->flow_control_window->length, NUMBER_MESSAGES_IN_QUEUE(2), "%s",
+               "Messages aren't in flow_control_window");
   cr_assert_eq(dq->super.qdisk->hdr->write_head, QDISK_RESERVED_SPACE + mark_message_serialized_size,
                "%s", "Bad write head");
   cr_assert_eq(num_of_ack, 0, "%s", "Messages are acked");
@@ -154,12 +155,12 @@ test_read_over_eof(LogQueueDiskReliable *dq, LogMessage *msg1, LogMessage *msg2)
   cr_assert_not_null(read_message1, "%s", "Can't read message from queue");
   read_message2 = log_queue_pop_head(&dq->super.super, &read_options);
   cr_assert_not_null(read_message2, "%s", "Can't read message from queue");
-  cr_assert_eq(dq->qreliable->length, 0, "%s", "Queue reliable isn't empty");
-  cr_assert_eq(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(2), "%s", "Messages aren't in the qbacklog");
+  cr_assert_eq(dq->flow_control_window->length, 0, "%s", "Queue reliable isn't empty");
+  cr_assert_eq(dq->backlog->length, NUMBER_MESSAGES_IN_QUEUE(2), "%s", "Messages aren't in the backlog");
   cr_assert_eq(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->write_head,
                "%s", "Read head in bad position");
-  cr_assert_eq(msg1, read_message1, "%s", "Message 1 isn't read from qreliable");
-  cr_assert_eq(msg2, read_message2, "%s", "Message 2 isn't read from qreliable");
+  cr_assert_eq(msg1, read_message1, "%s", "Message 1 isn't read from flow_control_window");
+  cr_assert_eq(msg2, read_message2, "%s", "Message 2 isn't read from flow_control_window");
 }
 
 static void
@@ -178,7 +179,7 @@ test_rewind_over_eof(LogQueueDiskReliable *dq)
   cr_assert_eq(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->write_head,
                "%s", "Read head in bad position");
 
-  cr_assert_eq(msg3, read_message3, "%s", "Message 3 isn't read from qreliable");
+  cr_assert_eq(msg3, read_message3, "%s", "Message 3 isn't read from flow_control_window");
   log_msg_unref(read_message3);
 
   log_queue_rewind_backlog(&dq->super.super, 1);
@@ -189,7 +190,7 @@ test_rewind_over_eof(LogQueueDiskReliable *dq)
   cr_assert_not_null(read_message3, "%s", "Can't read message from queue");
   cr_assert_eq(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->write_head,
                "%s", "Read head in bad position");
-  cr_assert_eq(msg3, read_message3, "%s", "Message 3 isn't read from qreliable");
+  cr_assert_eq(msg3, read_message3, "%s", "Message 3 isn't read from flow_control_window");
 
   log_msg_drop(msg3, &local_options, AT_PROCESSED);
 }
@@ -198,7 +199,7 @@ static void
 test_ack_over_eof(LogQueueDiskReliable *dq, LogMessage *msg1, LogMessage *msg2)
 {
   log_queue_ack_backlog(&dq->super.super, 3);
-  cr_assert_eq(dq->qbacklog->length, 0, "%s", "Messages are in the qbacklog");
+  cr_assert_eq(dq->backlog->length, 0, "%s", "Messages are in the backlog");
   cr_assert_eq(dq->super.qdisk->hdr->backlog_head, dq->super.qdisk->hdr->read_head,
                "%s", "Backlog head in bad position");
 }
@@ -240,8 +241,8 @@ Test(diskq_reliable, test_over_EOF)
 /*
  * The method make the following situation
  * the backlog contains 6 messages
- * the qbacklog contains 3 messages,
- * but messages in qbacklog are the end of the backlog
+ * the backlog contains 3 messages,
+ * but messages in backlog are the end of the backlog
  */
 void
 _prepare_rewind_backlog_test(LogQueueDiskReliable *dq, gint64 *start_pos)
@@ -266,17 +267,17 @@ _prepare_rewind_backlog_test(LogQueueDiskReliable *dq, gint64 *start_pos)
       log_msg_unref(msg);
     }
 
-  /* Ack the messages which are not in the qbacklog */
+  /* Ack the messages which are not in the backlog */
   log_queue_ack_backlog(&dq->super.super, 5);
-  cr_assert_eq(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(3),
-               "%s", "Incorrect number of items in the qbacklog");
+  cr_assert_eq(dq->backlog->length, NUMBER_MESSAGES_IN_QUEUE(3),
+               "%s", "Incorrect number of items in the backlog");
 
   *start_pos = dq->super.qdisk->hdr->read_head;
 
   /* Now write 3 more messages and read them from buffer
-   * the number of messages in the qbacklog should not be changed
+   * the number of messages in the backlog should not be changed
    * The backlog should contain 6 messages
-   * from these 6 messages 3 messages are cached in the qbacklog
+   * from these 6 messages 3 messages are cached in the backlog
    * No readable messages are in the queue
    */
   for (i = 0; i < 3; i++)
@@ -287,10 +288,10 @@ _prepare_rewind_backlog_test(LogQueueDiskReliable *dq, gint64 *start_pos)
       mark_message->ack_func = _dummy_ack;
       log_queue_push_tail(&dq->super.super, mark_message, &path_options);
       mark_message = log_queue_pop_head(&dq->super.super, &path_options);
-      cr_assert_eq(dq->qreliable->length, 0,
-                   "%s", "Incorrect number of items in the qreliable");
-      cr_assert_eq(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(3),
-                   "%s", "Incorrect number of items in the qbacklog");
+      cr_assert_eq(dq->flow_control_window->length, 0,
+                   "%s", "Incorrect number of items in the flow_control_window");
+      cr_assert_eq(dq->backlog->length, NUMBER_MESSAGES_IN_QUEUE(3),
+                   "%s", "Incorrect number of items in the backlog");
       log_msg_unref(mark_message);
     }
   cr_assert_eq(dq->super.qdisk->hdr->backlog_len, 6,
@@ -300,63 +301,63 @@ _prepare_rewind_backlog_test(LogQueueDiskReliable *dq, gint64 *start_pos)
 }
 
 void
-test_rewind_backlog_without_using_qbacklog(LogQueueDiskReliable *dq, gint64 old_read_pos)
+test_rewind_backlog_without_using_backlog(LogQueueDiskReliable *dq, gint64 old_read_pos)
 {
   /*
      * Rewind the last 2 messages
      * - the read_head should be moved to the good position
-     * - the qbacklog and qreliable should be untouched
+     * - the backlog and flow_control_window should be untouched
      */
   log_queue_rewind_backlog(&dq->super.super, 2);
   cr_assert_eq(dq->super.qdisk->hdr->read_head, old_read_pos + mark_message_serialized_size,
                "%s", "Bad reader position");
-  cr_assert_eq(dq->qreliable->length, 0, "%s", "Incorrect number of items in the qreliable");
-  cr_assert_eq(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(3),
-               "%s", "Incorrect number of items in the qbacklog");
+  cr_assert_eq(dq->flow_control_window->length, 0, "%s", "Incorrect number of items in the flow_control_window");
+  cr_assert_eq(dq->backlog->length, NUMBER_MESSAGES_IN_QUEUE(3),
+               "%s", "Incorrect number of items in the backlog");
 }
 
 void
-test_rewind_backlog_partially_used_qbacklog(LogQueueDiskReliable *dq, gint64 old_read_pos)
+test_rewind_backlog_partially_used_backlog(LogQueueDiskReliable *dq, gint64 old_read_pos)
 {
   /*
    * Rewind more 2 messages
    * - the reader the should be moved to the good position
-   * - the qreliable should contain 1 items
-   * - the qbackbacklog should contain 2 items
+   * - the flow_control_window should contain 1 items
+   * - the backlog should contain 2 items
    */
   log_queue_rewind_backlog(&dq->super.super, 2);
   cr_assert_eq(dq->super.qdisk->hdr->read_head, old_read_pos - mark_message_serialized_size,
                "%s", "Bad reader position");
-  cr_assert_eq(dq->qreliable->length, NUMBER_MESSAGES_IN_QUEUE(1),
-               "%s", "Incorrect number of items in the qreliable");
-  cr_assert_eq(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(2),
-               "%s", "Incorrect number of items in the qbacklog");
+  cr_assert_eq(dq->flow_control_window->length, NUMBER_MESSAGES_IN_QUEUE(1),
+               "%s", "Incorrect number of items in the flow_control_window");
+  cr_assert_eq(dq->backlog->length, NUMBER_MESSAGES_IN_QUEUE(2),
+               "%s", "Incorrect number of items in the backlog");
 }
 
 void
-test_rewind_backlog_use_whole_qbacklog(LogQueueDiskReliable *dq)
+test_rewind_backlog_use_whole_backlog(LogQueueDiskReliable *dq)
 {
   /*
    * Rewind more 2 messages
    * - the reader the should be moved to the backlog head
-   * - the qreliable should contain 3 items
+   * - the flow_control_window should contain 3 items
    * - the qbackbacklog should be empty
    */
   log_queue_rewind_backlog(&dq->super.super, 2);
   cr_assert_eq(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->backlog_head,
                "%s", "Bad reader position");
-  cr_assert_eq(dq->qreliable->length, NUMBER_MESSAGES_IN_QUEUE(3),
-               "%s", "Incorrect number of items in the qreliable");
-  cr_assert_eq(dq->qbacklog->length, 0,
-               "%s", "Incorrect number of items in the qbacklog");
+  cr_assert_eq(dq->flow_control_window->length, NUMBER_MESSAGES_IN_QUEUE(3),
+               "%s", "Incorrect number of items in the flow_control_window");
+  cr_assert_eq(dq->backlog->length, 0,
+               "%s", "Incorrect number of items in the backlog");
 
 }
 
 /*
  * TestCase
  * backlog contains messages: 1 2 3 4 5 6
- * qbacklog contains messages: 1 2 3
- * qbacklog must be always in sync with backlog
+ * backlog contains messages: 1 2 3
+ * backlog must be always in sync with backlog
  */
 Test(diskq_reliable, test_rewind_backlog)
 {
@@ -367,11 +368,11 @@ Test(diskq_reliable, test_rewind_backlog)
 
   _prepare_rewind_backlog_test(dq, &old_read_pos);
 
-  test_rewind_backlog_without_using_qbacklog(dq, old_read_pos);
+  test_rewind_backlog_without_using_backlog(dq, old_read_pos);
 
-  test_rewind_backlog_partially_used_qbacklog(dq, old_read_pos);
+  test_rewind_backlog_partially_used_backlog(dq, old_read_pos);
 
-  test_rewind_backlog_use_whole_qbacklog(dq);
+  test_rewind_backlog_use_whole_backlog(dq);
 
   _common_cleanup(dq, file_name);
 }

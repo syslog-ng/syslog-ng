@@ -37,7 +37,8 @@ struct _LogQueueDisk
   QDisk *qdisk;         /* disk based queue */
   /* TODO:
    * LogQueueDisk should have a separate options class, which should only contain compaction, reliable, etc...
-   * Similarly, QDisk should have a separate options class, which should only contain disk_buf_size, mem_buf_size, etc...
+   * Similarly, QDisk should have a separate options class, which should only contain capacity_bytes,
+   * flow_control_window_bytes, etc...
    */
 
   struct

@@ -29,13 +29,13 @@
 #include "diskq-options.h"
 
 static inline void
-_construct_options(DiskQueueOptions *options, guint64 size, gint mem_size, gboolean reliable)
+_construct_options(DiskQueueOptions *options, guint64 capacity, gint flow_control_window, gboolean reliable)
 {
   memset(options, 0, sizeof(DiskQueueOptions));
-  options->disk_buf_size = size;
-  options->mem_buf_length = mem_size;
-  options->mem_buf_size = mem_size;
-  options->qout_size = 0;
+  options->capacity_bytes = capacity;
+  options->flow_control_window_size = flow_control_window;
+  options->flow_control_window_bytes = flow_control_window;
+  options->front_cache_size = 0;
   options->reliable = reliable;
 }
 

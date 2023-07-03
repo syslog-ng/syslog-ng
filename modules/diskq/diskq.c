@@ -286,20 +286,20 @@ _attach(LogDriverPlugin *s, LogDriver *d)
   LogDestDriver *dd = (LogDestDriver *) d;
   GlobalConfig *cfg = log_pipe_get_config(&d->super);
 
-  if (self->options.disk_buf_size < MIN_DISK_BUF_SIZE && self->options.disk_buf_size > 0)
+  if (self->options.capacity_bytes < MIN_CAPACITY_BYTES && self->options.capacity_bytes > 0)
     {
-      msg_warning("The value of 'disk_buf_size()' is too low, setting to the smallest acceptable value",
-                  evt_tag_long("min_space", MIN_DISK_BUF_SIZE),
+      msg_warning("The value of 'capacity_bytes()' is too low, setting to the smallest acceptable value",
+                  evt_tag_long("min_space", MIN_CAPACITY_BYTES),
                   log_pipe_location_tag(&dd->super.super));
-      self->options.disk_buf_size = MIN_DISK_BUF_SIZE;
+      self->options.capacity_bytes = MIN_CAPACITY_BYTES;
     }
 
-  if (self->options.mem_buf_length < 0)
-    self->options.mem_buf_length = dd->log_fifo_size;
-  if (self->options.mem_buf_length < 0)
-    self->options.mem_buf_length = cfg->log_fifo_size;
-  if (self->options.qout_size < 0)
-    self->options.qout_size = 1000;
+  if (self->options.flow_control_window_size < 0)
+    self->options.flow_control_window_size = dd->log_fifo_size;
+  if (self->options.flow_control_window_size < 0)
+    self->options.flow_control_window_size = cfg->log_fifo_size;
+  if (self->options.front_cache_size < 0)
+    self->options.front_cache_size = 1000;
 
   if (!_set_truncate_size_ratio_and_prealloc(self, dd))
     return FALSE;

@@ -343,9 +343,9 @@ ParameterizedTestParameters(diskq, testcase_diskbuffer_restart_corrupted)
 
 ParameterizedTest(restart_test_parameters *test_case, diskq, testcase_diskbuffer_restart_corrupted)
 {
-  guint64 const original_disk_buf_size = 1000123;
+  guint64 const original_dcapacity = 1000123;
   DiskQueueOptions options;
-  _construct_options(&options, original_disk_buf_size, 100000, test_case->reliable);
+  _construct_options(&options, original_dcapacity, 100000, test_case->reliable);
   gchar *filename = test_case->filename;
   LogQueue *q = queue_new(test_case->reliable, &options, filename, NULL);
   log_queue_set_use_backlog(q, FALSE);
@@ -374,7 +374,7 @@ ParameterizedTest(restart_test_parameters *test_case, diskq, testcase_diskbuffer
                "Corrupted disk-queue file does not exists!!");
   cr_assert_str_eq(qdisk_get_filename(disk_queue->qdisk), filename,
                    "New disk-queue file's name should be the same\n");
-  cr_assert_eq(qdisk_get_maximum_size(disk_queue->qdisk), original_disk_buf_size,
+  cr_assert_eq(qdisk_get_maximum_size(disk_queue->qdisk), original_dcapacity,
                "Disk-queue option does not match the original configured value!\n");
   cr_assert_eq(qdisk_get_length(disk_queue->qdisk), 0,
                "New disk-queue file should be empty!\n");
@@ -411,7 +411,7 @@ typedef struct diskq_tester_parameters
   guint32 disk_size;
   gboolean reliable;
   gboolean overflow_expected;
-  guint32 qout_size;
+  guint32 front_cache_size;
   const gchar *filename;
 } diskq_tester_parameters_t;
 
@@ -441,7 +441,7 @@ testcase_diskq_prepare(DiskQueueOptions *options, diskq_tester_parameters_t *par
   LogQueue *q;
 
   _construct_options(options, parameters->disk_size, 100000, parameters->reliable);
-  options->qout_size = parameters->qout_size;
+  options->front_cache_size = parameters->front_cache_size;
 
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
   StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
@@ -468,32 +468,32 @@ ParameterizedTestParameters(diskq, test_diskq_statistics)
   static diskq_tester_parameters_t test_cases[] =
   {
     // small enough to trigger overflow
-    { .disk_size = 10*1024, .reliable = TRUE, .overflow_expected = TRUE, .qout_size = 0, .filename = "file1.qf" },
+    { .disk_size = 10*1024, .reliable = TRUE, .overflow_expected = TRUE, .front_cache_size = 0, .filename = "file1.qf" },
 
     // no overflow
-    { .disk_size = 500*1024, .reliable = TRUE, .overflow_expected = FALSE, .qout_size = 0, .filename = "file2.qf" },
+    { .disk_size = 500*1024, .reliable = TRUE, .overflow_expected = FALSE, .front_cache_size = 0, .filename = "file2.qf" },
 
-    // nonreliable version moves msgs from qoverflow only if there is free space in qout: qout_size must be 1
-    { .disk_size = 1*1024, .reliable = FALSE, .overflow_expected = TRUE, .qout_size = 1, .filename = "file3.qf" }
+    // nonreliable version moves msgs from flow_control_window only if there is free space in front cache: front_cache_size must be 1
+    { .disk_size = 1*1024, .reliable = FALSE, .overflow_expected = TRUE, .front_cache_size = 1, .filename = "file3.qf" }
   };
 
   return cr_make_param_array(diskq_tester_parameters_t, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
 }
 
 static inline void
-assert_overflow_queue_length(diskq_tester_parameters_t *parameters, LogQueue *q, gsize sent_msgs)
+assert_flow_control_window_length(diskq_tester_parameters_t *parameters, LogQueue *q, gsize sent_msgs)
 {
-  gsize expected_length = sent_msgs - parameters->qout_size;
+  gsize expected_length = sent_msgs - parameters->front_cache_size;
 
   if (parameters->reliable)
     {
-      cr_assert_eq(((LogQueueDiskReliable *)q)->qreliable->length, 3 * expected_length,
-                   "%"G_GSIZE_FORMAT" message on overflow area: line: %d", expected_length, __LINE__);
+      cr_assert_eq(((LogQueueDiskReliable *)q)->flow_control_window->length, 3 * expected_length,
+                   "%"G_GSIZE_FORMAT" message in flow control window: line: %d", expected_length, __LINE__);
       return;
     }
 
-  cr_assert_eq(((LogQueueDiskNonReliable *)q)->qoverflow->length, 2 * expected_length,
-               "%"G_GSIZE_FORMAT" message on overflow area: line: %d", expected_length, __LINE__);
+  cr_assert_eq(((LogQueueDiskNonReliable *)q)->flow_control_window->length, 2 * expected_length,
+               "%"G_GSIZE_FORMAT" message in flow control window: line: %d", expected_length, __LINE__);
 }
 
 ParameterizedTest(diskq_tester_parameters_t *parameters, diskq, test_diskq_statistics)
@@ -507,7 +507,7 @@ ParameterizedTest(diskq_tester_parameters_t *parameters, diskq, test_diskq_stati
   cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 1, "queued messages: line: %d", __LINE__);
 
   if (parameters->overflow_expected)
-    assert_overflow_queue_length(parameters, q, 1);
+    assert_flow_control_window_length(parameters, q, 1);
 
   guint32 one_msg_size = stats_counter_get(q->metrics.shared.memory_usage);
   if (parameters->overflow_expected)
@@ -522,7 +522,7 @@ ParameterizedTest(diskq_tester_parameters_t *parameters, diskq, test_diskq_stati
   cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), one_msg_size*2, "memory_usage: line: %d", __LINE__);
 
   if (parameters->overflow_expected)
-    assert_overflow_queue_length(parameters, q, 2);
+    assert_flow_control_window_length(parameters, q, 2);
 
   assert_general_message_flow(q, one_msg_size);
 
