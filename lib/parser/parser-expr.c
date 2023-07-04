@@ -30,17 +30,17 @@
 
 /* NOTE: consumes template */
 void
-log_parser_set_template(LogParser *self, LogTemplate *template)
+log_parser_set_template(LogParser *self, LogTemplate *template_obj)
 {
-  log_template_unref(self->template);
-  self->template = template;
+  log_template_unref(self->template_obj);
+  self->template_obj = template_obj;
 }
 
 void
 log_parser_clone_settings(LogParser *self, LogParser *cloned)
 {
   log_pipe_clone_method(&cloned->super, &self->super);
-  log_parser_set_template(cloned, log_template_ref(self->template));
+  log_parser_set_template(cloned, log_template_ref(self->template_obj));
 }
 
 gboolean
@@ -49,7 +49,7 @@ log_parser_process_message(LogParser *self, LogMessage **pmsg, const LogPathOpti
   LogMessage *msg = *pmsg;
   gboolean success;
 
-  if (G_LIKELY(!self->template))
+  if (G_LIKELY(!self->template_obj))
     {
       NVTable *payload = nv_table_ref(msg->payload);
       const gchar *value;
@@ -72,7 +72,7 @@ log_parser_process_message(LogParser *self, LogMessage **pmsg, const LogPathOpti
     {
       GString *input = g_string_sized_new(256);
 
-      log_template_format(self->template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, input);
+      log_template_format(self->template_obj, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, input);
       success = self->process(self, pmsg, path_options, input->str, input->len);
       g_string_free(input, TRUE);
     }
@@ -176,7 +176,7 @@ log_parser_free_method(LogPipe *s)
   LogParser *self = (LogParser *) s;
 
   g_free(self->name);
-  log_template_unref(self->template);
+  log_template_unref(self->template_obj);
   log_pipe_free_method(s);
 }
 

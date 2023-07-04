@@ -37,7 +37,7 @@ typedef struct _LogParser LogParser;
 struct _LogParser
 {
   LogPipe super;
-  LogTemplate *template;
+  LogTemplate *template_obj;
   StatsCounterItem *processed_messages;
   gboolean (*process)(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
                       gsize input_len);
@@ -47,7 +47,7 @@ struct _LogParser
 gboolean log_parser_deinit_method(LogPipe *s);
 void log_parser_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options);
 gboolean log_parser_init_method(LogPipe *s);
-void log_parser_set_template(LogParser *self, LogTemplate *template);
+void log_parser_set_template(LogParser *self, LogTemplate *template_obj);
 void log_parser_clone_settings(LogParser *self, LogParser *cloned);
 void log_parser_init_instance(LogParser *self, GlobalConfig *cfg);
 void log_parser_free_method(LogPipe *self);

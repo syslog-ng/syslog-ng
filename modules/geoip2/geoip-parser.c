@@ -159,7 +159,7 @@ maxminddb_parser_init(LogPipe *s)
 {
   GeoIPParser *self = (GeoIPParser *) s;
 
-  if (!self->super.template)
+  if (!self->super.template_obj)
     {
       msg_error("geoip2(): template is a mandatory parameter", log_pipe_location_tag(s));
       return FALSE;

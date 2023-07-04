@@ -1,0 +1,157 @@
+/*
+ * Copyright (c) 2023 Attila Szakacs
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "otel-parser.h"
+
+}
+
+%code {
+
+#include "cfg-grammar-internal.h"
+#include "plugin.h"
+#include "syslog-names.h"
+#include "otel-source.h"
+#include "otel-protobuf-parser.h"
+
+GrpcServerCredentialsBuilderW *last_grpc_server_credentials_builder;
+
+}
+
+%define api.prefix {otel_}
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {void **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_OPENTELEMETRY
+%token KW_PORT
+%token KW_AUTH
+%token KW_INSECURE
+%token KW_TLS
+%token KW_KEY_FILE
+%token KW_CERT_FILE
+%token KW_CA_FILE
+%token KW_PEER_VERIFY
+%token KW_OPTIONAL_UNTRUSTED
+%token KW_OPTIONAL_TRUSTED
+%token KW_REQUIRED_UNTRUSTED
+%token KW_REQUIRED_TRUSTED
+%token KW_ALTS
+
+%type <ptr> source_otel
+%type <ptr> parser_otel
+%type <num> source_otel_auth_tls_peer_verify
+
+%%
+
+start
+  : LL_CONTEXT_SOURCE source_otel { YYACCEPT; }
+  | LL_CONTEXT_PARSER parser_otel { YYACCEPT; }
+  ;
+
+source_otel
+  : KW_OPENTELEMETRY
+    {
+      last_driver = *instance = otel_sd_new(configuration);
+    }
+    '(' _inner_src_context_push source_otel_options _inner_src_context_pop ')' { $$ = last_driver; }
+  ;
+
+source_otel_options
+  : source_otel_option source_otel_options
+  |
+  ;
+
+source_otel_option
+  : KW_PORT '(' positive_integer ')' { otel_sd_set_port(last_driver, $3); }
+  | KW_AUTH { last_grpc_server_credentials_builder = otel_sd_get_credentials_builder(last_driver); } '(' source_otel_auth_option ')'
+  | threaded_source_driver_option
+  ;
+
+source_otel_auth_option
+  : KW_INSECURE { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_INSECURE); } '(' ')'
+  | KW_TLS { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_TLS); } '(' source_otel_auth_tls_options ')'
+  | KW_ALTS { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_ALTS); } '(' ')'
+  ;
+
+source_otel_auth_tls_options
+  : source_otel_auth_tls_option source_otel_auth_tls_options
+  |
+  ;
+
+source_otel_auth_tls_option
+  : KW_KEY_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_server_credentials_builder_set_tls_key_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set key-file()");
+        free($3);
+      }
+  | KW_CERT_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_server_credentials_builder_set_tls_cert_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set cert-file()");
+        free($3);
+      }
+  | KW_CA_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_server_credentials_builder_set_tls_ca_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set ca-file()");
+        free($3);
+      }
+  | KW_PEER_VERIFY '(' source_otel_auth_tls_peer_verify ')'
+      {
+        grpc_server_credentials_builder_set_tls_peer_verify(last_grpc_server_credentials_builder, $3);
+      }
+  ;
+
+source_otel_auth_tls_peer_verify
+  : KW_OPTIONAL_UNTRUSTED { $$ = GSTPV_OPTIONAL_UNTRUSTED; }
+  | KW_OPTIONAL_TRUSTED { $$ = GSTPV_OPTIONAL_TRUSTED; }
+  | KW_REQUIRED_UNTRUSTED { $$ = GSTPV_REQUIRED_UNTRUSTED; }
+  | KW_REQUIRED_TRUSTED { $$ = GSTPV_REQUIRED_TRUSTED; }
+  ;
+
+parser_otel
+  : KW_OPENTELEMETRY
+    {
+      last_parser = *instance = otel_protobuf_parser_new(configuration);
+    }
+    '(' parser_otel_options ')' { $$ = last_parser; }
+  ;
+
+parser_otel_options
+  : parser_otel_option parser_otel_options
+  |
+  ;
+
+parser_otel_option
+  : parser_opt
+  ;
+
+/* INCLUDE_RULES */
+
+%%
+

@@ -2,3 +2,6 @@
         path = lib/ivykis
         url = https://github.com/buytenh/ivykis.git
         ignore = dirty
+[submodule "modules/grpc/otel/opentelemetry-proto"]
+	path = modules/grpc/otel/opentelemetry-proto
+	url = https://github.com/open-telemetry/opentelemetry-proto.git

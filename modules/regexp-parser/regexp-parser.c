@@ -114,7 +114,7 @@ regexp_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
                 evt_tag_str("pattern", ((LogMatcher *)item->data)->pattern));
 
       gint value_handle = LM_V_MESSAGE;
-      if (G_UNLIKELY(self->super.template))
+      if (G_UNLIKELY(self->super.template_obj))
         value_handle = LM_V_NONE;
 
       if (log_matcher_match((LogMatcher *)item->data, *pmsg, value_handle, input, input_len))

@@ -15,6 +15,7 @@ lib/eventlog
 modules/java/org_syslog_ng_[^./_-]+\.h$
 modules/(afmongodb|afamqp)/dummy\.c$
 modules/kafka/tests/sample\.properties
+modules/grpc/otel/opentelemetry-proto
 dev-utils/plugin_skeleton_creator/plugin_template.*
 (lib|modules)/.*\.conf$
 dist\.conf$
@@ -171,6 +172,9 @@ modules/diskq/tests/test_logqueue_disk\.c$
 modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
 modules/metrics-probe/label-template\.(c|h)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
+modules/grpc/otel/otel-(grammar|parser|plugin|source|source-services|servicecall|protobuf-parser)\.(c|h|cpp|hpp|ym)$
+modules/grpc/otel/grpc-credentials-builder\.(h|cpp|hpp)$
+modules/grpc/otel/tests/test-otel-(protobuf-parser)\.cpp$
 modules/examples/inner-destinations/tls-test-validation
 modules/examples/sources/random-choice-generator
 modules/python/python-options.(c|h)$

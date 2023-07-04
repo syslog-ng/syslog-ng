@@ -756,24 +756,27 @@ Test(template, test_log_template_with_escaping_produces_string_even_if_the_value
   log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
   cr_assert_str_eq("19", formatted_value->str);
   cr_assert_eq(type, LM_VT_INTEGER);
+  log_template_unref(template);
 
   template = compile_escaped_template("$FACILITY_NUM");
   log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
   cr_assert_str_eq("19", formatted_value->str);
   cr_assert_eq(type, LM_VT_STRING);
+  log_template_unref(template);
 
   template = compile_template("$number1");
   log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
   cr_assert_str_eq("123", formatted_value->str);
   cr_assert_eq(type, LM_VT_INTEGER);
+  log_template_unref(template);
 
   template = compile_escaped_template("$number1");
   log_template_format_value_and_type(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value, &type);
   cr_assert_str_eq("123", formatted_value->str);
   cr_assert_eq(type, LM_VT_STRING);
+  log_template_unref(template);
 
   log_msg_unref(msg);
-  log_template_unref(template);
   g_string_free(formatted_value, TRUE);
 }
 

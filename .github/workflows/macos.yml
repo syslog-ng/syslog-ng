@@ -45,6 +45,7 @@ jobs:
             --disable-pacct
             --disable-smtp
             --disable-mqtt
+            --disable-grpc
           "
 
           gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS

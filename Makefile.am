@@ -122,6 +122,8 @@ endif
 
 TEST_CFLAGS		= -DTOP_SRCDIR=\"$(abs_top_srcdir)\" $(AM_CFLAGS) $(CRITERION_CFLAGS)
 
+TEST_CXXFLAGS		= -DTOP_SRCDIR=\"$(abs_top_srcdir)\" $(AM_CXXFLAGS) $(CRITERION_CFLAGS) -lstdc++
+
 TEST_LDADD		= $(LIBTEST_LIBS) $(CRITERION_LIBS) \
 			  $(top_builddir)/lib/libsyslog-ng.la \
 			  $(TOOL_DEPS_LIBS)

@@ -60,6 +60,8 @@ JAVA_MIN_VERSION="1.8"
 GRADLE_MIN_VERSION="3.4"
 HIREDIS_MIN_VERSION="0.11.0"
 CRITERION_MIN_VERSION="2.2.1"
+PROTOBUF_MIN_VERSION="3.12.0"
+GRPCPP_MIN_VERSION="1.16.1"
 
 dnl ***************************************************************************
 dnl Initial setup
@@ -303,6 +305,18 @@ AC_ARG_WITH(libpaho-mqtt,
              AC_HELP_STRING([--with-libpaho-mqtt=DIR],
                             [use libpaho-mqtt library from (prefix) directory DIR]),,)
 
+AC_ARG_ENABLE(grpc,
+              [  --enable-grpc           Enable GRPC based driver support (OpenTelemetry) (default: auto)]
+              ,,enable_grpc="auto")
+
+AC_ARG_WITH(protoc,
+            AC_HELP_STRING([--with-protoc=PATH],
+                           [use protoc binary at PATH]),,)
+
+AC_ARG_WITH(protoc_gen_grpc_cpp_plugin,
+            AC_HELP_STRING([--with-protoc-gen-grpc-cpp-plugin=PATH],
+                           [use protoc-gen-grpc-cpp plugin at PATH]),,)
+
 AC_ARG_ENABLE(cpp,
               [  --enable-cpp           Enable C++ support (default: auto)]
               ,,enable_cpp="auto")
@@ -397,7 +411,7 @@ if test "x$enable_all_modules" != "xauto"; then
 
    MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
             redis systemd geoip2 riemann ipv6 smtp native python python_modules java java_modules \
-            http afsnmp kafka mqtt"
+            http afsnmp kafka mqtt grpc"
    for mod in ${MODULES}; do
        modstate=$(eval echo \$enable_${mod})
        if test "x$modstate" = "xauto"; then
@@ -1411,6 +1425,96 @@ if test "x$enable_mqtt" = "xyes" || test "x$enable_mqtt" = "xauto"; then
 fi
 
 dnl ***************************************************************************
+dnl GRPC headers/libraries
+dnl ***************************************************************************
+
+# C++
+if ! test "x$enable_grpc" = "xno"; then
+    if test "x$enable_cpp" = "xno"; then
+        if test "x$enable_grpc" = "xyes"; then
+            AC_MSG_ERROR(C++ support is mandatory when the GRPC modules are enabled.)
+        else
+            enable_grpc=no
+        fi
+    fi
+fi
+
+# ProtoBuf libraries
+if ! test "x$enable_grpc" = "xno"; then
+    PKG_CHECK_MODULES(PROTOBUF, protobuf >= $PROTOBUF_MIN_VERSION, protobuf_found="yes", protobuf_found="no")
+    if test "$protobuf_found" = "no"; then
+        if test "x$enable_grpc" = "xyes"; then
+            AC_MSG_ERROR(ProtoBuf libraries not found.)
+        else
+            enable_grpc=no
+        fi
+    fi
+fi
+
+# ProtoC compiler
+if ! test "x$enable_grpc" = "xno"; then
+    if ! test "x$with_protoc" = "x"; then
+        PROTOC=$with_protoc
+    else
+        AC_PATH_PROG([PROTOC], [protoc])
+        if test "x$PROTOC" = "x"; then
+            if test "x$enable_grpc" = "xyes"; then
+                AC_MSG_ERROR(ProtoBuf compiler "protoc" not found.)
+            else
+                enable_grpc=no
+            fi
+        else
+            PROTOC_VERSION=`${PROTOC} --version | cut -f2 -d' '`
+            PROTOC_VERSION_MAJOR=`echo $PROTOC_VERSION | cut -f1 -d'.'`
+            PROTOC_VERSION_MINOR=`echo $PROTOC_VERSION | cut -f2 -d'.'`
+            PROTOC_VERSION_PATCH=`echo $PROTOC_VERSION | cut -f3 -d'.'`
+        fi
+    fi
+fi
+
+# GRPC CPP plugin for ProtoC compiler
+if ! test "x$enable_grpc" = "xno"; then
+    if ! test "x$with_protoc_gen_grpc_cpp_plugin" = "x"; then
+        PROTOC_GEN_GRPC_CPP_PLUGIN=$with_protoc_gen_grpc_cpp_plugin
+    else
+        AC_PATH_PROG([PROTOC_GEN_GRPC_CPP_PLUGIN], [grpc_cpp_plugin])
+        if test "x$PROTOC_GEN_GRPC_CPP_PLUGIN" = "x"; then
+            if test "x$enable_grpc" = "xyes"; then
+                AC_MSG_ERROR(GRPC CPP plugin for ProtoC compiler not found.)
+            else
+                enable_grpc=no
+            fi
+        fi
+    fi
+
+    if ! test "x$PROTOC_GEN_GRPC_CPP_PLUGIN" = "x"; then
+        PROTOC_GEN_GRPC_CPP_PLUGIN_FLAGS='--plugin=protoc-gen-grpc-cpp="${PROTOC_GEN_GRPC_CPP_PLUGIN}"'
+
+        if test ${PROTOC_VERSION_MAJOR} -eq 3 -a ${PROTOC_VERSION_MINOR} -lt 15; then
+            PROTOC_GEN_GRPC_CPP_PLUGIN_FLAGS="${PROTOC_GEN_GRPC_CPP_PLUGIN_FLAGS} --experimental_allow_proto3_optional"
+        fi
+
+        AC_SUBST(PROTOC_GEN_GRPC_CPP_PLUGIN_FLAGS)
+    fi
+fi
+
+# GRPC++ libraries
+if ! test "x$enable_grpc" = "xno"; then
+    PKG_CHECK_MODULES(GRPCPP, grpc++ >= $GRPCPP_MIN_VERSION, grpcpp_found="yes", grpcpp_found="no")
+    if test "$grpcpp_found" = "no"; then
+        if test "x$enable_grpc" = "xyes"; then
+            AC_MSG_ERROR(GRPC++ libraries not found.)
+        else
+            enable_grpc=no
+        fi
+    fi
+fi
+
+if ! test "x$enable_grpc" = "xno"; then
+    enable_grpc=yes
+fi
+
+dnl ***************************************************************************
 dnl libcurl headers/libraries
 dnl ***************************************************************************
 if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
@@ -2050,6 +2154,7 @@ AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
 AM_CONDITIONAL(ENABLE_MQTT, [test "$enable_mqtt" = "yes"])
 AM_CONDITIONAL(ENABLE_CPP, [test "$enable_cpp" = "yes"])
+AM_CONDITIONAL(ENABLE_GRPC, [test "$enable_grpc" = "yes"])
 AM_CONDITIONAL(ENABLE_HTTP, [test "$enable_http" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
@@ -2209,6 +2314,7 @@ echo "  HTTP support (module)       : ${enable_http:=no}"
 echo "  AMQP destination (module)   : ${enable_amqp:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  MQTT (module)               : ${enable_mqtt:=no}"
+echo "  GRPC (module)               : ${enable_grpc:=no}"
 echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Kafka support (module)      : ${enable_kafka:=no}"
