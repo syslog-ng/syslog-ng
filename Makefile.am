@@ -33,7 +33,7 @@ endif
 
 ACLOCAL_AMFLAGS		= -I m4 --install
 
-EXTRA_DIST		= ${BUILT_SOURCES} VERSION NEWS.md autogen.sh \
+EXTRA_DIST		= $(filter-out ${NODIST_BUILT_SOURCES},${BUILT_SOURCES}) VERSION NEWS.md autogen.sh \
 			  dist.conf dist.conf.in syslog-ng.pc.in \
 			  syslog-ng-config.h.in	\
 			  CONTRIBUTING.md	\
@@ -176,6 +176,7 @@ pkginclude_HEADERS	= syslog-ng-config.h
 module_LTLIBRARIES	=
 loggenplugin_LTLIBRARIES	=
 BUILT_SOURCES		=
+NODIST_BUILT_SOURCES		=
 CLEANFILES 		= $(BUILT_SOURCES)
 check_PROGRAMS		=
 check_SCRIPTS		=
