@@ -1,4 +1,22 @@
-
+#
+# Makefile snippet to build the build-time Python venv, which is used during
+# the building of syslog-ng.
+#
+# The functionality depends on the value of ${with_python_packages}
+#
+#    none -- we don't do anything, just assume the packager/system installer
+#            already deployed our packages.
+#
+#    venv -- in this case we have a dedicated Python venv, we bootstrap
+#            everything in dev-requirements.txt, which includes both our
+#            Python based build tools and the runtime requirements for
+#            syslog-ng Python modules
+#
+#    system -- we don't do anything, just assume the packager/system
+#              installer already deployed our build tools.  syslog-ng
+#              runtime requirements are installed by python-modules if those
+#              are enabled.
+#
 PYTHON_VENV_TOUCHFILE=$(abs_builddir)/.python-venv-built
 
 $(PYTHON_VENV_TOUCHFILE): dev-requirements.txt

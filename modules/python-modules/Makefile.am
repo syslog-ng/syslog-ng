@@ -96,14 +96,34 @@ pymodules-install: pymodules-install-requirements python-venv
 		install --record=$(PYMODULES_MANIFEST) ${PYMODULES_SETUP_OPTIONS})
 	$(install_sh_DATA) $(top_srcdir)/requirements.txt "$(PYTHON_ROOT)/$(python_moduledir)/requirements.txt"
 
+#
+# This rule installs our runtime Python dependencies (but not our build
+# tools, such as pylint).  Please contrast this implementation with the
+# python-venv rule in Mk/python-venv.mk, which will take care of the build
+# tools instead.
+#
+# The functionality depends on the value of ${with_python_packages}
+#
+#    none -- we don't do anything, just assume the packager/system installer
+#            already deployed or is deploying our dependencies.  If
+#            syslog-ng Python support is not enabled, this might be an empty
+#            set anyway (which is probably the reason anyone would use this
+#            setting).
+#
+#    venv -- in this case we have a dedicated Python venv for building.
+#            That venv is already bootstrapped by python-venv, based on
+#            dev-requirements.txt.  This file does include requirements.txt
+#            too, e.g.  all our runtime dependencies.  This way we don't do
+#            anything.
+#
+#    system -- in this case we are using the system Python, python-venv is
+#              not creating a dedicated virtualenv, thus our runtime
+#              dependencies are not installed.  We install packages in
+#              requirements.txt to the system.
+#
 pymodules-install-requirements: python-venv
-	if [ "$(with_python_packages)" != "none" ]; then \
-		(cd $(PYMODULES_SRCDIR) && \
-		 mkdir -p $(PYMODULES_BUILDDIR) && \
-	         $(PYTHON_VENV) setup.py egg_info --egg-base="$(PYMODULES_BUILDDIR)"  && \
-		 if [ -f $(PYMODULES_BUILDDIR)/$(PYMODULES_ROOT_MODULE).egg-info/requires.txt ]; then \
-			$(PYTHON_VENV) -m pip install -r $(PYMODULES_BUILDDIR)/$(PYMODULES_ROOT_MODULE).egg-info/requires.txt; \
-		 fi) \
+	if [ "$(with_python_packages)" = "system" ]; then \
+		$(PYTHON_VENV) -m pip install -r $(top_srcdir)/requirements.txt; \
 	fi
 
 pymodules-uninstall:

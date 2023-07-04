@@ -30,7 +30,6 @@ packages_builtin=[
   "syslogng",
   "syslogng.debuggercli",
 ]
-requires_builtin=[]
 
 packages_addons=[
   "syslogng.modules.example",
@@ -38,18 +37,9 @@ packages_addons=[
   "syslogng.modules.hypr",
 ]
 
-requires_addons=[
-  # kubernetes
-  "kubernetes",
-  # hypr
-  "requests",
-]
-
 packages = packages_builtin
-requires = []
 if install_addons:
   packages = packages + packages_addons
-  requires = requires + requires_addons
 
 setup(name='syslogng',
       version='1.0',
@@ -59,5 +49,4 @@ setup(name='syslogng',
       url='https://www.syslog-ng.org',
       package_data={"": ["scl/*"]},
       exclude_package_data={"": ["*~"]},
-      packages=packages,
-      install_requires=requires)
+      packages=packages)
