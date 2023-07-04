@@ -108,6 +108,9 @@ BUILT_SOURCES += \
   modules/grpc/otel/otel-grammar.h \
   $(OTEL_PROTO_BUILT_SOURCES)
 
+NODIST_BUILT_SOURCES += \
+  $(OTEL_PROTO_BUILT_SOURCES)
+
 EXTRA_DIST += \
   modules/grpc/otel/otel-grammar.ym \
   modules/grpc/otel/CMakeLists.txt \
