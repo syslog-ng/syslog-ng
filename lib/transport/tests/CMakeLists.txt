@@ -1,2 +1,3 @@
 add_unit_test(CRITERION TARGET test_aux_data)
 add_unit_test(CRITERION TARGET test_transport_stack)
+add_unit_test(LIBTEST CRITERION TARGET test_transport_haproxy)
