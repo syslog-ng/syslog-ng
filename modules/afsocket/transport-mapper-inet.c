@@ -29,6 +29,7 @@
 #include "transport/multitransport.h"
 #include "transport/transport-factory-tls.h"
 #include "transport/transport-factory-socket.h"
+#include "transport/transport-factory-proxied-socket.h"
 #include "transport/transport-udp-socket.h"
 #include "secret-storage/secret-storage.h"
 
@@ -152,6 +153,11 @@ transport_mapper_inet_construct_log_transport(TransportMapper *s, gint fd)
   if (self->tls_context)
     {
       return _construct_multitransport_with_plain_and_tls_factories(self, fd);
+    }
+
+  if (self->proxied)
+    {
+      return log_transport_proxied_stream_socket_new(fd);
     }
 
   return _construct_plain_tcp_transport(self, fd);
@@ -476,6 +482,23 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->super.transport_name = g_strdup("rfc6587");
+    }
+  else if (strcasecmp(transport, "proxied-tcp") == 0)
+    {
+      self->server_port = SYSLOG_TRANSPORT_TCP_PORT;
+      self->proxied = TRUE;
+      self->super.logproto = "framed";
+      self->super.sock_type = SOCK_STREAM;
+      self->super.sock_proto = IPPROTO_TCP;
+    }
+  else if (strcasecmp(transport, "proxied-tls") == 0)
+    {
+      self->server_port = SYSLOG_TRANSPORT_TCP_PORT;
+      self->proxied = TRUE;
+      self->super.logproto = "framed";
+      self->super.sock_type = SOCK_STREAM;
+      self->super.sock_proto = IPPROTO_TCP;
+      self->require_tls = TRUE;
     }
   else if (strcasecmp(transport, "tls") == 0)
     {
