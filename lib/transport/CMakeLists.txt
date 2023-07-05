@@ -5,6 +5,7 @@ set(TRANSPORT_HEADERS
     transport/transport-file.h
     transport/transport-pipe.h
     transport/transport-socket.h
+    transport/transport-proxied-socket.h
     transport/transport-udp-socket.h
     transport/transport-factory-id.h
     transport/transport-factory.h
@@ -12,6 +13,7 @@ set(TRANSPORT_HEADERS
     transport/multitransport.h
     transport/transport-factory-tls.h
     transport/transport-factory-socket.h
+    transport/transport-factory-proxied-socket.h
     transport/tls-context.h
     transport/tls-verifier.h
     transport/tls-session.h
@@ -23,6 +25,7 @@ set(TRANSPORT_SOURCES
     transport/transport-file.c
     transport/transport-pipe.c
     transport/transport-socket.c
+    transport/transport-proxied-socket.c
     transport/transport-udp-socket.c
     transport/transport-tls.c
     transport/transport-factory-id.c
@@ -30,6 +33,7 @@ set(TRANSPORT_SOURCES
     transport/multitransport.c
     transport/transport-factory-tls.c
     transport/transport-factory-socket.c
+    transport/transport-factory-proxied-socket.c
     transport/tls-context.c
     transport/tls-verifier.c
     transport/tls-session.c
