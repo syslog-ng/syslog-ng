@@ -48,21 +48,23 @@ SCL_CONFIGS	= scl.conf syslog-ng.conf
 EXTRA_DIST	+= $(addprefix scl/,$(SCL_CONFIGS) $(SCL_SUBDIRS)) scl/CMakeLists.txt
 
 scl-install-data-local:
-	for cfg in $(SCL_CONFIGS); do \
-		if [ -f $(DESTDIR)/$(sysconfdir)/$${cfg} ]; then \
-			echo "Not overwriting existing configuration file, you might want to upgrade manually: $${cfg}"; \
-		else \
-			$(install_sh_DATA) $(srcdir)/scl/$${cfg}  $(DESTDIR)/$(sysconfdir)/$${cfg}; \
-		fi; \
-	done
+	if [ -f $(DESTDIR)/$(sysconfdir)/syslog-ng.conf ]; then \
+		echo "Not overwriting existing configuration file, you might want to upgrade manually: syslog-ng.conf"; \
+	else \
+		$(install_sh_DATA) $(srcdir)/scl/syslog-ng.conf  $(DESTDIR)/$(sysconfdir)/syslog-ng.conf; \
+	fi
 	$(mkinstalldirs) $(DESTDIR)/$(scldir)
+	if [ -f $(DESTDIR)/$(config_includedir)/scl.conf ]; then \
+		echo "Not overwriting existing configuration file, you might want to upgrade manually: scl.conf"; \
+	else \
+		$(install_sh_DATA) $(srcdir)/scl/scl.conf  $(DESTDIR)/$(config_includedir)/scl.conf; \
+	fi
 	(cd $(srcdir)/scl; tar cf - $(SCL_SUBDIRS)) | (cd $(DESTDIR)/$(scldir) && tar xf - --no-same-owner)
 	chmod -R u+rwX $(DESTDIR)/$(scldir)
 
 scl-uninstall-local:
-	for cfg in $(SCL_CONFIGS); do \
-		rm -f $(DESTDIR)/$(sysconfdir)/$${cfg}; \
-	done
+	rm -f $(DESTDIR)/$(sysconfdir)/syslog-ng.conf
+	rm -f $(DESTDIR)/$(config_includedir)/scl.conf
 	rm -rf $(DESTDIR)/$(scldir)
 
 scl-install: scl-install-data-local
