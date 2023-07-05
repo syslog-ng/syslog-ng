@@ -245,17 +245,26 @@ _restart_diskq(LogQueueDisk *self)
   g_assert(self->start);
   g_assert(self->stop);
 
+  const gchar *filename = qdisk_get_filename(self->qdisk);
+
   if (self->stop_corrupted)
     {
-      self->stop_corrupted(self);
+      if (!self->stop_corrupted(self))
+        {
+          msg_error("Failed to stop corrupted disk-queue-file",
+                    evt_tag_str(EVT_TAG_FILENAME, filename));
+        }
     }
   else
     {
       gboolean persistent;
-      self->stop(self, &persistent);
+      if (!self->stop(self, &persistent))
+        {
+          msg_error("Failed to stop corrupted disk-queue-file",
+                    evt_tag_str(EVT_TAG_FILENAME, filename));
+        }
     }
 
-  const gchar *filename = qdisk_get_filename(self->qdisk);
   gchar *new_file = _get_next_corrupted_filename(filename);
   if (!new_file || rename(filename, new_file) < 0)
     {
@@ -265,7 +274,10 @@ _restart_diskq(LogQueueDisk *self)
     }
   g_free(new_file);
 
-  self->start(self);
+  if (!self->start(self))
+    {
+      g_assert(FALSE && "Failed to restart a corrupted disk-queue file, baling out.");
+    }
 }
 
 void
