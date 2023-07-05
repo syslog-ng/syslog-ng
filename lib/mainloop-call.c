@@ -150,10 +150,9 @@ main_loop_call_handler(gpointer user_data)
 void
 main_loop_call_thread_init(void)
 {
-  call_info = g_malloc(sizeof (MainLoopTaskCallSite));
+  call_info = g_new0(MainLoopTaskCallSite, 1);
   g_cond_init(&call_info->cond);
   g_mutex_init(&call_info->lock);
-  call_info->mainfree = FALSE;
 }
 
 void
@@ -162,14 +161,15 @@ main_loop_call_thread_deinit(void)
   MainLoopTaskCallSite *site = call_info;
 
   g_mutex_lock(&site->lock);
-  if (site->pending) {
-    site->mainfree = TRUE;
-    call_info = NULL;
-  }
+  if (site->pending)
+    {
+      site->mainfree = TRUE;
+      call_info = NULL;
+    }
   g_mutex_unlock(&site->lock);
 
   if (call_info)
-     main_loop_call_free(call_info);
+    main_loop_call_free(call_info);
 }
 
 void
