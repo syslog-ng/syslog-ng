@@ -158,6 +158,14 @@ Test(type_hints, test_int32_cast)
   cr_assert_eq(value, 12345);
   cr_assert_null(error);
 
+  cr_assert(type_cast_to_int32("0x1000", &value, &error), "Type cast of \"0x1000\" to gint32 failed");
+  cr_assert_eq(value, 0x1000);
+  cr_assert_null(error);
+
+  cr_assert(type_cast_to_int32("0111", &value, &error), "Type cast of \"0111\" to gint32 failed");
+  cr_assert_eq(value, 111);
+  cr_assert_null(error);
+
   /* test for invalid string */
   cr_assert_not(type_cast_to_int32("12345a", &value, &error),
                 "Type cast of invalid string to gint32 should be failed");
@@ -184,6 +192,15 @@ Test(type_hints, test_int64_cast)
   cr_assert(type_cast_to_int64("12345", &value, &error), "Type cast of \"12345\" to gint64 failed");
   cr_assert_eq(value, 12345);
   cr_assert_null(error);
+
+  cr_assert(type_cast_to_int64("0x1000", &value, &error), "Type cast of \"0x1000\" to gint64 failed");
+  cr_assert_eq(value, 0x1000);
+  cr_assert_null(error);
+
+  cr_assert(type_cast_to_int64("0111", &value, &error), "Type cast of \"0111\" to gint64 failed");
+  cr_assert_eq(value, 111);
+  cr_assert_null(error);
+
 
   /* test for invalid string */
   cr_assert_not(type_cast_to_int64("12345a", &value, &error),

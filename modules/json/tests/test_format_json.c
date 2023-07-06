@@ -224,10 +224,17 @@ Test(format_json, test_v40_value_pairs_yields_typed_values)
                          "{\"FACILITY_NUM\":19}");
 
   /* RFC8259 number sanitization */
-  assert_template_format("$(format-json num=int(00014))", "{\"num\":14}");
+  assert_template_format("$(format-json num=int(+00014))", "{\"num\":14}");
+  assert_template_format("$(format-json num=int(014))", "{\"num\":14}");
+  assert_template_format("$(format-json num=int(000014))", "{\"num\":14}");
+  assert_template_format("$(format-json num=int(+0x0014))", "{\"num\":20}");
+  assert_template_format("$(format-json num=int(0x14))", "{\"num\":20}");
+  assert_template_format("$(format-json num=int(-0x14))", "{\"num\":-20}");
+  assert_template_format("$(format-json num=int(0x00014))", "{\"num\":20}");
   assert_template_format("$(format-json num=int(+14))", "{\"num\":14}");
-  assert_template_format("$(format-json num=int(-025))", "{\"num\":-25}");
-  assert_template_format("$(format-json num=int(+0009223372036854775804))", "{\"num\":9223372036854775804}");
+  assert_template_format("$(format-json num=int(-14))", "{\"num\":-14}");
+  assert_template_format("$(format-json num=int(-021))", "{\"num\":-21}");
+  assert_template_format("$(format-json num=int(+9223372036854775804))", "{\"num\":9223372036854775804}");
 }
 
 Test(format_json, test_cast_option_always_yields_strings_regardless_of_versions)
