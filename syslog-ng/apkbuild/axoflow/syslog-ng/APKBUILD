@@ -21,6 +21,7 @@ makedepends="
 	flex
 	geoip-dev
 	glib-dev
+	grpc-dev
 	hiredis-dev
 	ivykis-dev>=0.42.4
 	json-c-dev
@@ -36,6 +37,8 @@ makedepends="
 	openssl-dev>3
 	paho-mqtt-c-dev
 	pcre-dev
+	protobuf-dev
+	protoc
 	python3-dev
 	rabbitmq-c-dev
 	riemann-c-client-dev
@@ -46,6 +49,7 @@ subpackages="
 	$pkgname-dev
 	$pkgname-doc
 	$pkgname-python3:_python3
+	$pkgname-grpc:_grpc
 	"
 source="https://github.com/balabit/syslog-ng/releases/download/syslog-ng-$pkgver/syslog-ng-$pkgver.tar.gz"
 builddir="$srcdir/$pkgname-$pkgver"
@@ -140,6 +144,12 @@ _python3() {
 	install="$subpkgname.post-install"
 
 	_submv usr/lib/syslog-ng/libmod-python.so usr/lib/syslog-ng/python usr/bin/syslog-ng-update-virtualenv
+}
+
+_grpc() {
+	pkgdesc="$pkgdesc (grpc module)"
+
+	_submv usr/lib/syslog-ng/libotel.so
 }
 
 _module() {
