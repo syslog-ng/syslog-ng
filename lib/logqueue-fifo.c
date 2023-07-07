@@ -377,6 +377,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
           log_queue_ref(&self->super);
         }
 
+      log_msg_write_protect(msg);
       node = log_msg_alloc_queue_node(msg, path_options);
       iv_list_add_tail(&node->list, &self->input_queues[thread_index].items);
       self->input_queues[thread_index].len++;
@@ -406,6 +407,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
       return;
     }
 
+  log_msg_write_protect(msg);
   node = log_msg_alloc_queue_node(msg, path_options);
 
   iv_list_add_tail(&node->list, &self->wait_queue.items);
@@ -440,6 +442,7 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
    * normally happens when we start processing an item, but at the end
    * can't deliver it. No checks, no drops either. */
 
+  log_msg_write_protect(msg);
   node = log_msg_alloc_dynamic_queue_node(msg, path_options);
   iv_list_add(&node->list, &self->output_queue.items);
   self->output_queue.len++;
