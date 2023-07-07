@@ -160,7 +160,7 @@ Test(scratch_buffers_stats, stats_counters_are_updated)
 
       /* Check internal state is as expected */
       cr_assert_eq(scratch_buffers_get_local_allocation_count(), allocated_counter,
-                   "Local allocation count is not updated properly, value=%d, expected=%d",
+                   "Local allocation count is not updated properly, value=%ld, expected=%d",
                    scratch_buffers_get_local_allocation_count(), allocated_counter);
     }
 
@@ -169,7 +169,7 @@ Test(scratch_buffers_stats, stats_counters_are_updated)
                "get_local_usage_count() failed to reset to 0, value=%d, expected=%d",
                scratch_buffers_get_local_usage_count(), 0);
   cr_assert_eq(scratch_buffers_get_local_allocation_count(), allocated_counter,
-               "Local allocation count is not updated properly, value=%d, expected=%d",
+               "Local allocation count is not updated properly, value=%ld, expected=%d",
                scratch_buffers_get_local_allocation_count(), allocated_counter);
   cr_assert_eq(stats_counter_get(stats_scratch_buffers_count), allocated_counter,
                "Statistic scratch_buffers_count should not be changed, value=%d, expected=%d",

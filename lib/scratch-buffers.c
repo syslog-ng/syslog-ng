@@ -84,7 +84,7 @@ TLS_BLOCK_START
 {
   GPtrArray *scratch_buffers;
   gint scratch_buffers_used;
-  glong scratch_buffers_bytes_reported;
+  gssize scratch_buffers_bytes_reported;
   time_t scratch_buffers_time_of_last_maintenance;
   struct iv_task scratch_buffers_gc;
   gboolean scratch_buffers_gc_executed;
@@ -150,23 +150,23 @@ scratch_buffers_reclaim_marked(ScratchBuffersMarker marker)
 }
 
 /* get a snapshot of the global allocation counter, can be racy */
-gint
+gssize
 scratch_buffers_get_global_allocation_count(void)
 {
   return stats_counter_get(stats_scratch_buffers_count);
 }
 
 /* get the number of thread-local allocations does not race */
-gint
+gssize
 scratch_buffers_get_local_allocation_count(void)
 {
   return scratch_buffers->len;
 }
 
-glong
+gssize
 scratch_buffers_get_local_allocation_bytes(void)
 {
-  glong bytes = 0;
+  gssize bytes = 0;
 
   for (gint i = 0; i < scratch_buffers->len; i++)
     {
@@ -185,7 +185,7 @@ scratch_buffers_get_local_usage_count(void)
 void
 scratch_buffers_update_stats(void)
 {
-  glong prev_reported = scratch_buffers_bytes_reported;
+  gssize prev_reported = scratch_buffers_bytes_reported;
   scratch_buffers_bytes_reported = scratch_buffers_get_local_allocation_bytes();
   stats_counter_add(stats_scratch_buffers_bytes, -prev_reported + scratch_buffers_bytes_reported);
 }
