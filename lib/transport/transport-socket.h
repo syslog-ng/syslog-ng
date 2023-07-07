@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2023 One Identity LLC.
  * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
@@ -44,5 +45,7 @@ LogTransport *log_transport_dgram_socket_new(gint fd);
 void log_transport_stream_socket_init_instance(LogTransportSocket *self, gint fd);
 void log_transport_stream_socket_free_method(LogTransport *s);
 LogTransport *log_transport_stream_socket_new(gint fd);
+
+gssize log_transport_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux);
 
 #endif
