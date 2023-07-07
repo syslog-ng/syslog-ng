@@ -354,8 +354,7 @@ typedef struct _StringMatcher
   StringMatchMode mode;
   gchar *pattern;
   GPatternSpec *glob;
-  pcre *pcre;
-  pcre_extra *pcre_extra;
+  pcre2_code *pcre;
 } StringMatcher;
 
 static gboolean
@@ -369,33 +368,35 @@ string_matcher_prepare_glob(StringMatcher *self)
 static gboolean
 string_matcher_prepare_pcre(StringMatcher *self)
 {
-  const gchar *errptr;
-  gint erroffset;
+  PCRE2_SIZE erroffset;
   gint rc;
 
-  self->pcre = pcre_compile2(self->pattern, PCRE_ANCHORED, &rc, &errptr, &erroffset, NULL);
+  self->pcre = pcre2_compile((PCRE2_SPTR) self->pattern, PCRE2_ZERO_TERMINATED, PCRE2_ANCHORED, &rc, &erroffset, NULL);
   if (!self->pcre)
     {
+      PCRE2_UCHAR error_message[128];
+      pcre2_get_error_message(rc, error_message, sizeof(error_message));
+
       msg_error("Error while compiling regular expression",
                 evt_tag_str("regular_expression", self->pattern),
                 evt_tag_str("error_at", &self->pattern[erroffset]),
                 evt_tag_int("error_offset", erroffset),
-                evt_tag_str("error_message", errptr),
+                evt_tag_str("error_message", (gchar *) error_message),
                 evt_tag_int("error_code", rc));
       return FALSE;
     }
-  self->pcre_extra = pcre_study(self->pcre, PCRE_STUDY_JIT_COMPILE, &errptr);
-  if (errptr)
-    {
-      msg_error("Error while optimizing regular expression",
-                evt_tag_str("regular_expression", self->pattern),
-                evt_tag_str("error_message", errptr));
-      pcre_free(self->pcre);
-      if (self->pcre_extra)
-        pcre_free_study(self->pcre_extra);
-      return FALSE;
-    }
 
+  /* optimize regexp */
+  rc = pcre2_jit_compile(self->pcre, PCRE2_JIT_COMPLETE);
+  if (rc < 0)
+    {
+      PCRE2_UCHAR error_message[128];
+
+      pcre2_get_error_message(rc, error_message, sizeof(error_message));
+      msg_warning("$(list-search): Failed to JIT compile regular expression",
+                  evt_tag_str("regexp", self->pattern),
+                  evt_tag_str("error", (gchar *) error_message));
+    }
   return TRUE;
 }
 
@@ -416,8 +417,11 @@ string_matcher_prepare(StringMatcher *self)
 static gboolean
 string_matcher_match_pcre(StringMatcher *self, const char *string, gsize string_len)
 {
-  gint rc = pcre_exec(self->pcre, self->pcre_extra, string, string_len, 0, 0, NULL, 0);
-  if (rc == PCRE_ERROR_NOMATCH)
+  pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(self->pcre, NULL);
+  gint rc = pcre2_match(self->pcre, (PCRE2_SPTR) string, (PCRE2_SIZE) string_len, 0, 0, match_data, NULL);
+  pcre2_match_data_free(match_data);
+
+  if (rc == PCRE2_ERROR_NOMATCH)
     {
       return FALSE;
     }
@@ -468,9 +472,7 @@ string_matcher_free(StringMatcher *self)
   if (self->glob)
     g_pattern_spec_free(self->glob);
   if (self->pcre)
-    pcre_free(self->pcre);
-  if (self->pcre_extra)
-    pcre_free_study(self->pcre_extra);
+    pcre2_code_free(self->pcre);
   g_free(self);
 }
 

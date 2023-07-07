@@ -281,87 +281,82 @@ log_matcher_glob_new(const LogMatcherOptions *options)
 typedef struct _LogMatcherPcreRe
 {
   LogMatcher super;
-  pcre *pattern;
-  pcre_extra *extra;
+  pcre2_code *pattern;
   gint match_options;
   gchar *nv_prefix;
   gint nv_prefix_len;
 } LogMatcherPcreRe;
 
 static gboolean
-_compile_pcre_regexp(LogMatcherPcreRe *self, const gchar *re, GError **error)
+_compile_pcre2_regexp(LogMatcherPcreRe *self, const gchar *re, GError **error)
 {
   gint rc;
-  const gchar *errptr;
-  gint erroffset;
   gint flags = 0;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
   if (self->super.flags & LMF_ICASE)
-    flags |= PCRE_CASELESS;
+    flags |= PCRE2_CASELESS;
 
   if (self->super.flags & LMF_NEWLINE)
     {
-      if (!PCRE_NEWLINE_ANYCRLF)
+      if (!PCRE2_NEWLINE_ANYCRLF)
         msg_warning("syslog-ng was compiled against an old PCRE which doesn't support the 'newline' flag");
-      flags |= PCRE_NEWLINE_ANYCRLF;
+      flags |= PCRE2_NEWLINE_ANYCRLF;
     }
   if (self->super.flags & LMF_UTF8)
     {
       gint support;
-      flags |= PCRE_UTF8 | PCRE_NO_UTF8_CHECK;
-      self->match_options |= PCRE_NO_UTF8_CHECK;
+      flags |= PCRE2_UTF | PCRE2_NO_UTF_CHECK;
+      self->match_options |= PCRE2_NO_UTF_CHECK;
 
-      pcre_config(PCRE_CONFIG_UTF8, &support);
+      pcre2_config(PCRE2_CONFIG_UNICODE, &support);
       if (!support)
         {
-          g_set_error(error, LOG_TEMPLATE_ERROR, 0, "PCRE library is compiled without UTF8 support and utf8 flag was present");
+          g_set_error(error, LOG_TEMPLATE_ERROR, 0, "PCRE library is compiled without unicode support and utf8 flag was present");
           return FALSE;
         }
 
-      pcre_config(PCRE_CONFIG_UNICODE_PROPERTIES, &support);
-      if (!support)
-        {
-          g_set_error(error, LOG_TEMPLATE_ERROR, 0,
-                      "PCRE library is compiled without UTF8 properties support and utf8 flag was present");
-          return FALSE;
-        }
     }
   if (self->super.flags & LMF_DUPNAMES)
     {
-      if (!PCRE_DUPNAMES)
+      if (!PCRE2_DUPNAMES)
         msg_warning("syslog-ng was compiled against an old PCRE which doesn't support the 'dupnames' flag");
-      flags |= PCRE_DUPNAMES;
+      flags |= PCRE2_DUPNAMES;
     }
 
   /* compile the regexp */
-  self->pattern = pcre_compile2(re, flags, &rc, &errptr, &erroffset, NULL);
+  PCRE2_SIZE error_offset;
+
+  self->pattern = pcre2_compile((PCRE2_SPTR) re, PCRE2_ZERO_TERMINATED, flags, &rc, &error_offset, NULL);
   if (!self->pattern)
     {
+      PCRE2_UCHAR error_message[128];
+
+      pcre2_get_error_message(rc, error_message, sizeof(error_message));
       g_set_error(error, LOG_TEMPLATE_ERROR, 0, "Failed to compile PCRE expression >>>%s<<< `%s' at character %d",
-                  re, errptr, erroffset);
+                  re, error_message, (gint) error_offset);
       return FALSE;
     }
   return TRUE;
 }
 
 static gboolean
-_study_pcre_regexp(LogMatcherPcreRe *self, const gchar *re, GError **error)
+_jit_pcre2_regexp(LogMatcherPcreRe *self, const gchar *re, GError **error)
 {
-  const gchar *errptr;
-  gint options = 0;
-
-  if ((self->super.flags & LMF_DISABLE_JIT) == 0)
-    options |= PCRE_STUDY_JIT_COMPILE;
+  if ((self->super.flags & LMF_DISABLE_JIT))
+    return TRUE;
 
   /* optimize regexp */
-  self->extra = pcre_study(self->pattern, options, &errptr);
-  if (errptr != NULL)
+  gint rc = pcre2_jit_compile(self->pattern, PCRE2_JIT_COMPLETE);
+  if (rc < 0)
     {
-      g_set_error(error, LOG_TEMPLATE_ERROR, 0, "Failed to optimize regular expression >>>%s<<< `%s'",
-                  re, errptr);
-      return FALSE;
+      PCRE2_UCHAR error_message[128];
+
+      pcre2_get_error_message(rc, error_message, sizeof(error_message));
+      msg_warning("Failed to JIT compile regular expression, you might want to use flags(disable-jit)",
+                  evt_tag_str("regexp", re),
+                  evt_tag_str("error", (gchar *) error_message));
     }
   return TRUE;
 }
@@ -374,10 +369,10 @@ log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re, GError **error)
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
   log_matcher_store_pattern(s, re);
 
-  if (!_compile_pcre_regexp(self, re, error))
+  if (!_compile_pcre2_regexp(self, re, error))
     return FALSE;
 
-  if (!_study_pcre_regexp(self, re, error))
+  if (!_jit_pcre2_regexp(self, re, error))
     return FALSE;
 
   return TRUE;
@@ -388,8 +383,7 @@ typedef struct _LogMatcherPcreMatchResult
   NVHandle source_handle;
   const gchar *source_value;
   gssize source_value_len;
-  gint *matches;
-  gint num_matches;
+  pcre2_match_data *match_data;
 } LogMatcherPcreMatchResult;
 
 static inline void
@@ -434,11 +428,13 @@ static void
 log_matcher_pcre_re_feed_backrefs(LogMatcherPcreRe *self, LogMessage *msg, LogMatcherPcreMatchResult *result)
 {
   gint i;
+  guint32 num_matches = pcre2_get_ovector_count(result->match_data);
+  PCRE2_SIZE *matches = pcre2_get_ovector_pointer(result->match_data);
 
-  for (i = 0; i < (LOGMSG_MAX_MATCHES) && i < result->num_matches; i++)
+  for (i = 0; i < (LOGMSG_MAX_MATCHES) && i < num_matches; i++)
     {
-      gint begin_index = result->matches[2 * i];
-      gint end_index = result->matches[2 * i + 1];
+      gint begin_index = matches[2 * i];
+      gint end_index = matches[2 * i + 1];
 
       if (begin_index < 0 || end_index < 0)
         continue;
@@ -446,11 +442,11 @@ log_matcher_pcre_re_feed_backrefs(LogMatcherPcreRe *self, LogMessage *msg, LogMa
       log_matcher_pcre_re_feed_value(self, msg, log_msg_get_match_handle(i), result, begin_index, end_index);
     }
   if (log_msg_is_handle_match(result->source_handle) &&
-      log_msg_get_match_index(result->source_handle) >= result->num_matches)
+      log_msg_get_match_index(result->source_handle) >= num_matches)
     {
       log_matcher_pcre_re_save_source_value_to_avoid_clobbering(result);
     }
-  log_msg_truncate_matches(msg, result->num_matches);
+  log_msg_truncate_matches(msg, num_matches);
 }
 
 static void
@@ -458,18 +454,20 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcherPcreRe *self, LogMessage *ms
 {
   gchar *name_table = NULL;
   gint i = 0;
-  gint namecount = 0;
-  gint name_entry_size = 0;
+  guint32 namecount = 0;
+  guint32 name_entry_size = 0;
 
-  pcre_fullinfo(self->pattern, self->extra, PCRE_INFO_NAMECOUNT, &namecount);
+  pcre2_pattern_info(self->pattern, PCRE2_INFO_NAMECOUNT, &namecount);
   if (namecount > 0)
     {
+      PCRE2_SIZE *matches = pcre2_get_ovector_pointer(result->match_data);
+
       gchar *tabptr;
       /* Before we can access the substrings, we must extract the table for
          translating names to numbers, and the size of each entry in the table.
        */
-      pcre_fullinfo(self->pattern, self->extra, PCRE_INFO_NAMETABLE, &name_table);
-      pcre_fullinfo(self->pattern, self->extra, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size);
+      pcre2_pattern_info(self->pattern, PCRE2_INFO_NAMETABLE, &name_table);
+      pcre2_pattern_info(self->pattern, PCRE2_INFO_NAMEENTRYSIZE, &name_entry_size);
       /* Now we can scan the table and, for each entry, print the number, the name,
          and the substring itself.
        */
@@ -480,8 +478,8 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcherPcreRe *self, LogMessage *ms
       for (i = 0; i < namecount; i++, tabptr += name_entry_size)
         {
           int n = (tabptr[0] << 8) | tabptr[1];
-          gint begin_index = result->matches[2 * n];
-          gint end_index = result->matches[2 * n + 1];
+          gint begin_index = matches[2 * n];
+          gint end_index = matches[2 * n + 1];
           const gchar *namedgroup_name = tabptr + 2;
 
           if (begin_index < 0 || end_index < 0)
@@ -502,30 +500,28 @@ log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, con
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s;
   LogMatcherPcreMatchResult result;
   gint rc;
+  gboolean res = TRUE;
 
   if (value_len == -1)
     value_len = strlen(value);
 
-  if (pcre_fullinfo(self->pattern, self->extra, PCRE_INFO_CAPTURECOUNT, &result.num_matches) < 0)
-    g_assert_not_reached();
-  if (result.num_matches > LOGMSG_MAX_MATCHES)
-    result.num_matches = LOGMSG_MAX_MATCHES;
-
-  gsize matches_size = 3 * (result.num_matches + 1);
-  result.matches = g_alloca(matches_size * sizeof(gint));
+  result.match_data = pcre2_match_data_create_from_pattern(self->pattern, NULL);
   result.source_value = value;
   result.source_value_len = value_len;
   result.source_handle = value_handle;
 
-  rc = pcre_exec(self->pattern, self->extra,
-                 result.source_value, result.source_value_len,
-                 0, self->match_options,
-                 result.matches, matches_size);
+  rc = pcre2_match(self->pattern,
+                   (PCRE2_SPTR) result.source_value,
+                   (PCRE2_SIZE) result.source_value_len,
+                   (PCRE2_SIZE) 0,
+                   self->match_options,
+                   result.match_data,
+                   NULL);
   if (rc < 0)
     {
       switch (rc)
         {
-        case PCRE_ERROR_NOMATCH:
+        case PCRE2_ERROR_NOMATCH:
           break;
 
         default:
@@ -534,22 +530,22 @@ log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, con
                     evt_tag_int("error_code", rc));
           break;
         }
-      return FALSE;
+      res = FALSE;
     }
-  if (rc == 0)
+  else if (rc == 0)
     {
-      msg_error("Error while storing matching substrings");
+      msg_error("Error while storing matching substrings, more than 256 capture groups encountered");
     }
   else
     {
-      result.num_matches = rc;
       if ((s->flags & LMF_STORE_MATCHES))
         {
           log_matcher_pcre_re_feed_backrefs(self, msg, &result);
           log_matcher_pcre_re_feed_named_substrings(self, msg, &result);
         }
     }
-  return TRUE;
+  pcre2_match_data_free(result.match_data);
+  return res;
 }
 
 static gchar *
@@ -559,24 +555,19 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s;
   LogMatcherPcreMatchResult result;
   GString *new_value = NULL;
-  gsize matches_size;
   gint rc;
   gint start_offset, last_offset;
   gint options;
   gboolean last_match_was_empty;
 
-  if (pcre_fullinfo(self->pattern, self->extra, PCRE_INFO_CAPTURECOUNT, &result.num_matches) < 0)
-    g_assert_not_reached();
-  if (result.num_matches > LOGMSG_MAX_MATCHES)
-    result.num_matches = LOGMSG_MAX_MATCHES;
+  result.match_data = pcre2_match_data_create_from_pattern(self->pattern, NULL);
+  PCRE2_SIZE *matches = pcre2_get_ovector_pointer(result.match_data);
 
-  matches_size = 3 * (result.num_matches + 1);
-  result.matches = g_alloca(matches_size * sizeof(gint));
 
   /* we need zero initialized offsets for the last match as the
    * algorithm tries uses that as the base position */
 
-  result.matches[0] = result.matches[1] = result.matches[2] = 0;
+  matches[0] = matches[1] = 0;
 
   if (value_len == -1)
     value_len = strlen(value);
@@ -596,7 +587,7 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
        * advanced).
        *
        * A zero-length match can be as simple as "a*" which will be
-       * returned unless PCRE_NOTEMPTY is specified.
+       * returned unless PCRE2_NOTEMPTY is specified.
        *
        * By supporting zero-length matches, we basically make it
        * possible to insert replacement between each incoming
@@ -617,17 +608,21 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
            * to see if a non-empty match can be found.
            */
 
-          options = PCRE_NOTEMPTY | PCRE_ANCHORED;
+          options = PCRE2_NOTEMPTY | PCRE2_ANCHORED;
         }
       else
         {
           options = 0;
         }
 
-      rc = pcre_exec(self->pattern, self->extra,
-                     result.source_value, result.source_value_len,
-                     start_offset, (self->match_options | options), result.matches, matches_size);
-      if (rc < 0 && rc != PCRE_ERROR_NOMATCH)
+      rc = pcre2_match(self->pattern,
+                       (PCRE2_SPTR) result.source_value,
+                       (PCRE2_SIZE) result.source_value_len,
+                       start_offset,
+                       (self->match_options | options),
+                       result.match_data,
+                       NULL);
+      if (rc < 0 && rc != PCRE2_ERROR_NOMATCH)
         {
           msg_error("Error while matching regexp",
                     evt_tag_int("error_code", rc));
@@ -635,7 +630,7 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
         }
       else if (rc < 0)
         {
-          if ((options & PCRE_NOTEMPTY) == 0)
+          if ((options & PCRE2_NOTEMPTY) == 0)
             {
               /* we didn't match, even when we permitted to match the
                * empty string. Nothing to find here, bail out */
@@ -651,30 +646,30 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
           last_match_was_empty = FALSE;
           continue;
         }
+      else if (rc == 0)
+        {
+          msg_error("Error while storing matching substrings, more than 256 capture groups encountered");
+          break;
+        }
       else
         {
-          /* if the output array was too small, truncate the number of
-             captures to LOGMSG_MAX_MATCHES */
-
-          if (rc == 0)
-            rc = matches_size / 3;
-
-          result.num_matches = rc;
           log_matcher_pcre_re_feed_backrefs(self, msg, &result);
           log_matcher_pcre_re_feed_named_substrings(self, msg, &result);
 
           if (!new_value)
             new_value = g_string_sized_new(result.source_value_len);
           /* append non-matching portion */
-          g_string_append_len(new_value, &result.source_value[last_offset], result.matches[0] - last_offset);
+          g_string_append_len(new_value, &result.source_value[last_offset], matches[0] - last_offset);
           /* replacement */
           log_template_append_format(replacement, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, new_value);
 
-          last_match_was_empty = (result.matches[0] == result.matches[1]);
-          start_offset = last_offset = result.matches[1];
+          last_match_was_empty = (matches[0] == matches[1]);
+          start_offset = last_offset = matches[1];
         }
     }
   while (self->super.flags & LMF_GLOBAL && start_offset < result.source_value_len);
+
+  pcre2_match_data_free(result.match_data);
 
   if (new_value)
     {
@@ -691,8 +686,7 @@ static void
 log_matcher_pcre_re_free(LogMatcher *s)
 {
   LogMatcherPcreRe *self = (LogMatcherPcreRe *) s;
-  pcre_free_study(self->extra);
-  pcre_free(self->pattern);
+  pcre2_code_free(self->pattern);
   log_matcher_free_method(s);
 }
 

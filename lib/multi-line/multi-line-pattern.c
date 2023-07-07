@@ -22,69 +22,105 @@
  * COPYING for details.
  */
 #include "multi-line/multi-line-pattern.h"
+#include "messages.h"
 
 MultiLinePattern *
 multi_line_pattern_compile(const gchar *regexp, GError **error)
 {
   MultiLinePattern *self = g_new0(MultiLinePattern, 1);
-  gint optflags = 0;
   gint rc;
-  const gchar *errptr;
-  gint erroffset;
+  PCRE2_SIZE erroffset;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
   self->ref_cnt = 1;
 
   /* compile the regexp */
-  self->pattern = pcre_compile2(regexp, 0, &rc, &errptr, &erroffset, NULL);
+  self->pattern = pcre2_compile((PCRE2_SPTR) regexp, PCRE2_ZERO_TERMINATED, 0, &rc, &erroffset, NULL);
   if (!self->pattern)
     {
-      g_set_error(error, 0, 0, "Error while compiling multi-line regexp as a PCRE expression, error=%s, error_at=%d", errptr,
-                  erroffset);
+      PCRE2_UCHAR error_message[128];
+
+      pcre2_get_error_message(rc, error_message, sizeof(error_message));
+      g_set_error(error, 0, 0,
+                  "Error while compiling multi-line regexp as a PCRE expression, error=%s, error_at=%" G_GSIZE_FORMAT,
+                  (gchar *) error_message, erroffset);
       goto error;
     }
 
-#ifdef PCRE_STUDY_JIT_COMPILE
-  optflags = PCRE_STUDY_JIT_COMPILE;
-#endif
-
   /* optimize regexp */
-  self->extra = pcre_study(self->pattern, optflags, &errptr);
-  if (errptr != NULL)
+  rc = pcre2_jit_compile(self->pattern, PCRE2_JIT_COMPLETE);
+  if (rc < 0)
     {
-      g_set_error(error, 0, 0, "Error while studying multi-line regexp, error=%s", errptr);
-      goto error;
+      PCRE2_UCHAR error_message[128];
+
+      pcre2_get_error_message(rc, error_message, sizeof(error_message));
+      msg_warning("multi-line-pattern: Error while JIT compiling regular expression",
+                  evt_tag_str("regexp", regexp),
+                  evt_tag_str("error", (gchar *) error_message));
     }
 
   return self;
 error:
   if (self->pattern)
-    pcre_free(self->pattern);
+    pcre2_code_free(self->pattern);
   g_free(self);
   return NULL;
 }
 
 gint
-multi_line_pattern_find(MultiLinePattern *re, const guchar *str, gsize len, gint *matches, gint matches_num)
+multi_line_pattern_eval(MultiLinePattern *re, const guchar *str, gsize len, pcre2_match_data *match_data)
 {
-  gint rc;
+  return pcre2_match(re->pattern, (PCRE2_SPTR) str, (PCRE2_SIZE) len, 0, 0, match_data, NULL);
+}
 
+gboolean
+multi_line_pattern_find(MultiLinePattern *re, const guchar *str, gsize len, gint *start, gint *end)
+{
   if (!re)
-    return -1;
+    return FALSE;
 
-  rc = pcre_exec(re->pattern, re->extra, (const gchar *) str, len, 0, 0, matches, matches_num * 3);
-  return rc;
+  gboolean result = FALSE;
+  pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re->pattern, NULL);
+
+
+  if (multi_line_pattern_eval(re, str, len, match_data) < 0)
+    goto exit;
+
+  guint32 num_matches = pcre2_get_ovector_count(match_data);
+  PCRE2_SIZE *matches = pcre2_get_ovector_pointer(match_data);
+
+  if (num_matches == 0)
+    goto exit;
+
+  *start = matches[0];
+  *end = matches[1];
+  result = TRUE;
+exit:
+  pcre2_match_data_free(match_data);
+  return result;
 }
 
 gboolean
 multi_line_pattern_match(MultiLinePattern *re, const guchar *str, gsize len)
 {
-  gint match[3];
-  if (multi_line_pattern_find(re, str, len, match, 1) < 0)
+  if (!re)
     return FALSE;
-  return match[0] >= 0;
-}
 
+  gboolean result = FALSE;
+  pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re->pattern, NULL);
+
+  if (multi_line_pattern_eval(re, str, len, match_data) < 0)
+    goto exit;
+
+  guint32 num_matches = pcre2_get_ovector_count(match_data);
+  PCRE2_SIZE *matches = pcre2_get_ovector_pointer(match_data);
+
+  result = num_matches > 0 && matches[0] >= 0;
+
+exit:
+  pcre2_match_data_free(match_data);
+  return result;
+}
 
 MultiLinePattern *
 multi_line_pattern_ref(MultiLinePattern *self)
@@ -100,9 +136,7 @@ multi_line_pattern_unref(MultiLinePattern *self)
   if (self && (--self->ref_cnt == 0))
     {
       if (self->pattern)
-        pcre_free(self->pattern);
-      if (self->extra)
-        pcre_free_study(self->extra);
+        pcre2_code_free(self->pattern);
       g_free(self);
     }
 }

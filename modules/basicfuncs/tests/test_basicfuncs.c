@@ -663,3 +663,8 @@ ParameterizedTest(struct test_params *param, basicfuncs, test_filter)
 {
   assert_template_format(param->template, param->expected);
 }
+
+Test(basicfuncs, test_performance)
+{
+  perftest_template("$(list-search --start-index 1 --mode pcre .az '\"foo,\",\"bar\",\"baz\"')");
+}

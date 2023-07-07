@@ -27,19 +27,21 @@
 static gint
 _prefix_garbage_get_offset_of_garbage(RegexpMultiLine *self, const guchar *line, gsize line_len)
 {
-  gint match[3];
-  if (multi_line_pattern_find(self->garbage, line, line_len, match, 1) < 0)
+  gint start, end;
+
+  if (!multi_line_pattern_find(self->garbage, line, line_len, &start, &end))
     return -1;
-  return match[0];
+  return start;
 }
 
 static gint
 _prefix_suffix_get_offset_of_garbage(RegexpMultiLine *self, const guchar *line, gsize line_len)
 {
-  gint match[3];
-  if (multi_line_pattern_find(self->garbage, line, line_len, match, 1) < 0)
+  gint start, end;
+
+  if (!multi_line_pattern_find(self->garbage, line, line_len, &start, &end))
     return -1;
-  return match[1];
+  return end;
 }
 
 static gint
