@@ -33,7 +33,7 @@
 
 typedef struct _LogSourceOptions
 {
-  gint init_window_size;
+  gssize init_window_size;
   const gchar *group_name;
   gboolean keep_timestamp;
   gboolean keep_hostname;
@@ -110,7 +110,7 @@ log_source_free_to_send(LogSource *self)
   return !window_size_counter_suspended(&self->window_size);
 }
 
-static inline gint
+static inline gsize
 log_source_get_init_window_size(LogSource *self)
 {
   return self->initial_window_size;
