@@ -82,12 +82,23 @@ type_cast_to_boolean(const gchar *value, gboolean *out, GError **error)
   return TRUE;
 }
 
+static gboolean
+_is_value_hex(const gchar *value)
+{
+  if (value[0] == '+' || value[0] == '-')
+    value++;
+  return (value[0] == '0' && (value[1] == 'x' || value[1] == 'X'));
+}
+
 gboolean
 type_cast_to_int32(const gchar *value, gint32 *out, GError **error)
 {
   gchar *endptr;
 
-  *out = (gint32)strtol(value, &endptr, 10);
+  if (_is_value_hex(value))
+    *out = (gint32)strtol(value, &endptr, 16);
+  else
+    *out = (gint32)strtol(value, &endptr, 10);
 
   if (value[0] == 0 || endptr[0] != '\0')
     {
@@ -104,7 +115,10 @@ type_cast_to_int64(const gchar *value, gint64 *out, GError **error)
 {
   gchar *endptr;
 
-  *out = (gint64)strtoll(value, &endptr, 10);
+  if (_is_value_hex(value))
+    *out = (gint64)strtoll(value, &endptr, 16);
+  else
+    *out = (gint64)strtoll(value, &endptr, 10);
 
   if (value[0] == 0 || endptr[0] != '\0')
     {
