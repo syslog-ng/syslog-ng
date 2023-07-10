@@ -35,9 +35,9 @@ void scratch_buffers_mark(ScratchBuffersMarker *marker);
 void scratch_buffers_reclaim_allocations(void);
 void scratch_buffers_reclaim_marked(ScratchBuffersMarker marker);
 
-gint scratch_buffers_get_global_allocation_count(void);
-gint scratch_buffers_get_local_allocation_count(void);
-glong scratch_buffers_get_local_allocation_bytes(void);
+gssize scratch_buffers_get_global_allocation_count(void);
+gssize scratch_buffers_get_local_allocation_count(void);
+gssize scratch_buffers_get_local_allocation_bytes(void);
 gint scratch_buffers_get_local_usage_count(void);
 void scratch_buffers_update_stats(void);
 

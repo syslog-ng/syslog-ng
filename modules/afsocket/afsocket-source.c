@@ -616,7 +616,7 @@ _dynamic_window_realloc(AFSocketSourceDriver *self)
 static void
 _dynamic_window_set_balanced_window(AFSocketSourceDriver *self)
 {
-  gint number_of_connections= _connections_count_get(self);
+  gssize number_of_connections= _connections_count_get(self);
 
   if (number_of_connections <= 0)
     return;
@@ -767,7 +767,7 @@ afsocket_sd_adjust_dynamic_window_size_if_needed(AFSocketSourceDriver *self)
 
   if (max_connections > 0 && self->dynamic_window_size > 0)
     {
-      gint remainder = self->dynamic_window_size % max_connections;
+      gsize remainder = self->dynamic_window_size % max_connections;
       if (remainder)
         {
           gsize new_dynamic_window_size = self->dynamic_window_size + (max_connections - remainder);
