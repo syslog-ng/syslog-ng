@@ -243,9 +243,25 @@ official [third party page][3rd-party].
 
 Binaries are also available as a Docker image. To find out more, check out the blog post, [Your central log server in Docker](https://syslog-ng.com/blog/central-log-server-docker/).
 
+There are alternatives to the upstream provided, bare syslog-ng image, such
+as the [AxoSyslog image](https://github.com/axoflow/axosyslog-docker/pkgs/container/axosyslog)
+for running syslog-ng in Kubernetes.
+
+  * [AxoSyslog, a cloud native distribution for syslog-ng announcement](https://axoflow.com/cloud-ready-syslog-ng-images/)
+  * [AxoSyslog log collection for Kubernetes](https://axoflow.com/axosyslog-log-collection-for-kubernetes/)
+  * [AxoSyslog Documentation](https://axoflow.com/docs/axosyslog/)
+  * [GitHub](https://github.com/axoflow/axosyslog-docker)
+
 ## Documentation
 
-The documentation of the latest released version of syslog-ng Open Source Edition is available [here](https://www.syslog-ng.com/technical-documents/doc/syslog-ng-open-source-edition/3.26/administration-guide). For earlier versions, see the syslog-ng [Documentation Page](https://www.syslog-ng.com/technical-documents).
+The official documentation of the latest released version of syslog-ng Open
+Source Edition provided by One Identity is available
+[here](https://www.syslog-ng.com/technical-documents/doc/syslog-ng-open-source-edition/3.26/administration-guide).
+For earlier versions, see the syslog-ng [Documentation Page](https://www.syslog-ng.com/technical-documents).
+
+An alternative, markdown based, improved, community maintained version of the
+documentation is available [as AxoSyslog Core documentation](https://axoflow.com/docs/axosyslog-core/).
+[source code](https://github.com/axoflow/axosyslog-core-docs/)
 
 ## Contributing
 
