@@ -288,7 +288,7 @@ _parse_proxy_v2_header(LogTransportProxiedSocket *self)
   return FALSE;
 }
 
-static gboolean
+gboolean
 _parse_proxy_header(LogTransportProxiedSocket *self)
 {
   if (self->proxy_header_version == 1)
@@ -378,7 +378,7 @@ _fetch_proxy_v2_payload(LogTransportProxiedSocket *self)
   return _fetch_chunk(self, self->proxy_header_buff_len + proxy_header_len);
 }
 
-static gboolean
+gboolean
 _is_proxy_version_v1(LogTransportProxiedSocket *self)
 {
   if (self->proxy_header_buff_len < PROXY_PROTO_HDR_MAGIC_LEN)
@@ -387,7 +387,7 @@ _is_proxy_version_v1(LogTransportProxiedSocket *self)
   return memcmp(self->proxy_header_buff, "PROXY", PROXY_PROTO_HDR_MAGIC_LEN) == 0;
 }
 
-static gboolean
+gboolean
 _is_proxy_version_v2(LogTransportProxiedSocket *self)
 {
   if (self->proxy_header_buff_len < PROXY_PROTO_HDR_MAGIC_LEN)
@@ -481,7 +481,7 @@ _proccess_proxy_header(LogTransportProxiedSocket *self)
     }
 }
 
-static void
+void
 _augment_aux_data(LogTransportProxiedSocket *self, LogTransportAuxData *aux)
 {
   gchar buf1[8];
