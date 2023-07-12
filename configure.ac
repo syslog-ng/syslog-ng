@@ -1306,7 +1306,7 @@ else
 	dnl check if iv_work_pool_submit_continuation is available in the system ivykis
 	old_LIBS=$LIBS
 	LIBS="$LIBS $IVYKIS_LIBS"
-	AC_CHECK_FUNCS(iv_work_pool_submit_continuation)
+	AC_CHECK_FUNCS(iv_work_pool_submit_continuation, [], [AC_DEFINE(HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION, 0)])
 	LIBS=$old_LIBS
 fi
 
