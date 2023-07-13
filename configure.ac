@@ -849,21 +849,10 @@ if test "x$blb_cv_c_modern_utmp" = "xyes"; then
 	AC_DEFINE(HAVE_MODERN_UTMP, 1, [have modern utmp/utmpx format])
 fi
 
-old_CPPFLAGS=$CPPFLAGS
-CPPFLAGS="-D_GNU_SOURCE -D_DEFAULT_SOURCE"
-AC_CACHE_CHECK(for SO_MEMINFO, blb_cv_c_so_meminfo,
-  [AC_EGREP_CPP(SO_MEMINFO,
-[
-#include <sys/socket.h>
-SO_MEMINFO
-],
-  blb_cv_c_so_meminfo=no, blb_cv_c_so_meminfo=yes)])
-CPPFLAGS=$old_CPPFLAGS
-
-if test "x$blb_cv_c_so_meminfo" = "xyes"; then
-	AC_DEFINE(HAVE_SO_MEMINFO, 1, [have SO_MEMINFO sockopt])
-	AC_DEFINE(ENABLE_AFSOCKET_MEMINFO_METRICS, 1, [enable SO_MEMINFO based metrics in afsocket])
-fi
+AC_CHECK_DECLS(SO_MEMINFO,
+               AC_DEFINE(ENABLE_AFSOCKET_MEMINFO_METRICS, 1, [enable SO_MEMINFO based metrics in afsocket]),
+               AC_DEFINE(ENABLE_AFSOCKET_MEMINFO_METRICS, 0, [enable SO_MEMINFO based metrics in afsocket]),
+               [[#include <sys/socket.h>]])
 
 dnl ***************************************************************************
 dnl Checks for libraries
@@ -1306,7 +1295,7 @@ else
 	dnl check if iv_work_pool_submit_continuation is available in the system ivykis
 	old_LIBS=$LIBS
 	LIBS="$LIBS $IVYKIS_LIBS"
-	AC_CHECK_FUNCS(iv_work_pool_submit_continuation)
+	AC_CHECK_FUNCS(iv_work_pool_submit_continuation, [], [AC_DEFINE(HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION, 0)])
 	LIBS=$old_LIBS
 fi
 
