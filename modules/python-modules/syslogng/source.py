@@ -1,4 +1,5 @@
 #############################################################################
+# Copyright (c) 2023 One Identity LLC.
 # Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
 #
 # This library is free software; you can redistribute it and/or
@@ -36,9 +37,6 @@ except ImportError:
 
     LogSource = object
     LogFetcher = object
-    InstantAckTracker = object
-    ConsecutiveAckTracker = object
-    BatchedAckTracker = object
 
     class LogFetcherResult(Enum):
         ERROR = auto()
@@ -46,6 +44,23 @@ except ImportError:
         SUCCESS = auto()
         TRY_AGAIN = auto()
         NO_DATA = auto()
+
+    # Fake InstantAckTracker
+    class InstantAckTracker(dict):
+        def __init__(self, ack_callback):
+            self.ack_callback = ack_callback
+
+    # Fake ConsecutiveAckTracker
+    class ConsecutiveAckTracker(dict):
+        def __init__(self, ack_callback):
+            self.ack_callback = ack_callback
+
+    # Fake BatchedAckTracker
+    class BatchedAckTracker(dict):
+        def __init__(self, timeout, batch_size, batched_ack_callback):
+            self.timeout = timeout
+            self.batch_size = batch_size
+            self.batched_ack_callback = batched_ack_callback
 
 
 class LogSource(LogSource):
@@ -203,16 +218,14 @@ class LogFetcher(LogFetcher):
 
 class InstantAckTracker(InstantAckTracker):
     def __init__(self, ack_callback):
-        self.ack_callback = ack_callback
+        super().__init__(ack_callback=ack_callback)
 
 
 class ConsecutiveAckTracker(ConsecutiveAckTracker):
     def __init__(self, ack_callback):
-        self.ack_callback = ack_callback
+        super().__init__(ack_callback=ack_callback)
 
 
 class BatchedAckTracker(BatchedAckTracker):
     def __init__(self, timeout, batch_size, batched_ack_callback):
-        self.timeout = timeout
-        self.batch_size = batch_size
-        self.ack_callback = batched_ack_callback
+        super().__init__(timeout=timeout, batch_size=batch_size, batched_ack_callback=batched_ack_callback)
