@@ -35,8 +35,15 @@ except ImportError:
                   "thus some of the functionality is not available. "
                   "Defining fake classes for those exported by the underlying syslog-ng code")
 
-    LogSource = object
-    LogFetcher = object
+    # Fake LogSource
+    class LogSource(dict):
+        def __init__(self):
+            pass
+
+    # Fake LogFetcher
+    class LogFetcher(dict):
+        def __init__(self):
+            pass
 
     class LogFetcherResult(Enum):
         ERROR = auto()
@@ -78,6 +85,11 @@ class LogSource(LogSource):
     """
     flags = {}
     parse_options = None
+
+    def __init__(self):
+        """Constructs this LogSource instance
+        """
+        super().__init__()
 
     def init(self, options):
         """Initialize this LogSource instance
@@ -164,6 +176,11 @@ class LogFetcher(LogFetcher):
 
     flags = {}
     parse_options = None
+
+    def __init__(self):
+        """Constructs this LogFetcher instance
+        """
+        super().__init__()
 
     def init(self, options):
         """Initialize this LogFetcher instance
