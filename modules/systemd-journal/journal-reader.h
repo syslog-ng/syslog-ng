@@ -27,6 +27,7 @@
 #include "logsource.h"
 #include "journald-subsystem.h"
 #include "journald-helper.h"
+#include "stats/stats-cluster-key-builder.h"
 
 typedef struct _JournalReader JournalReader;
 
@@ -48,7 +49,7 @@ typedef struct _JournalReaderOptions
 
 JournalReader *journal_reader_new(GlobalConfig *cfg);
 void journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *options, const gchar *stats_id,
-                                const gchar *stats_instance);
+                                StatsClusterKeyBuilder *kb);
 
 void journal_reader_options_init(JournalReaderOptions *options, GlobalConfig *cfg, const gchar *group_name);
 void journal_reader_options_set_default_severity(JournalReaderOptions *self, gint severity);

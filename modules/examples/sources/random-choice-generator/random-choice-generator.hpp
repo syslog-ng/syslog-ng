@@ -42,7 +42,7 @@ public:
   void set_choices(GList *choices);
   void set_freq(gdouble freq);
   void request_exit();
-  const gchar *format_stats_instance();
+  const gchar *format_stats_key(StatsClusterKeyBuilder *kb);
   gboolean init();
   gboolean deinit();
 

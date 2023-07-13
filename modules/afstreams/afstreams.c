@@ -29,6 +29,7 @@
 #include "stats/stats-registry.h"
 #include "poll-fd-events.h"
 #include "logproto/logproto-dgram-server.h"
+#include "stats/stats-cluster-key-builder.h"
 
 typedef struct _AFStreamsSourceDriver
 {
@@ -188,11 +189,14 @@ afstreams_sd_init(LogPipe *s)
       log_pipe_set_options(&self->reader->super.super, &self->super.super.super.options);
       log_reader_open(self->reader, log_proto_dgram_server_new(log_transport_streams_new(fd),
                                                                &self->reader_options.proto_options.super), poll_fd_events_new(fd));
+
+      StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+      stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("filename", self->dev_filename->str));
       log_reader_set_options(self->reader,
                              s,
                              &self->reader_options,
                              self->super.super.id,
-                             self->dev_filename->str);
+                             kb);
       log_pipe_append((LogPipe *) self->reader, s);
 
       if (self->door_filename)

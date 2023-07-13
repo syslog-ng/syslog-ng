@@ -37,7 +37,6 @@
 
 #define TEST_SOURCE_GROUP "test_source_group"
 #define TEST_STATS_ID "test_stats_id"
-#define TEST_STATS_INSTANCE "test_stats_instance"
 
 GlobalConfig *cfg;
 LogSourceOptions source_options;
@@ -79,7 +78,7 @@ test_source_init(LogSourceOptions *options)
   source->super.wakeup = test_source_wakeup;
 
   log_source_options_init(options, cfg, TEST_SOURCE_GROUP);
-  log_source_set_options(&source->super, options, TEST_STATS_ID, TEST_STATS_INSTANCE, TRUE, NULL);
+  log_source_set_options(&source->super, options, TEST_STATS_ID, NULL, TRUE, NULL);
   cr_assert(log_pipe_init(&source->super.super));
   return &source->super;
 }

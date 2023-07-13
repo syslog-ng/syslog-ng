@@ -93,18 +93,15 @@ syslogng::grpc::otel::SourceDriver::request_exit()
 }
 
 const gchar *
-syslogng::grpc::otel::SourceDriver::format_stats_instance()
+syslogng::grpc::otel::SourceDriver::format_stats_key(StatsClusterKeyBuilder *kb)
 {
-  static gchar persist_name[1024];
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "opentelemetry"));
 
-  if (super->super.super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "opentelemetry,%s",
-               super->super.super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "opentelemetry,%lu",
-               port);
+  gchar num[64];
+  g_snprintf(num, sizeof(num), "%" G_GUINT64_FORMAT, port);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("port", num));
 
-  return persist_name;
+  return NULL;
 }
 
 gboolean
@@ -167,9 +164,9 @@ _request_exit(LogThreadedSourceDriver *s)
 }
 
 static const gchar *
-_format_stats_instance(LogThreadedSourceDriver *s)
+_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
-  return get_SourceDriver(s)->format_stats_instance();
+  return get_SourceDriver(s)->format_stats_key(kb);
 }
 
 static gboolean
@@ -203,7 +200,7 @@ otel_sd_new(GlobalConfig *cfg)
   s->super.super.super.super.deinit = _deinit;
   s->super.super.super.super.free_fn = _free;
 
-  s->super.format_stats_instance = _format_stats_instance;
+  s->super.format_stats_key = _format_stats_key;
   s->super.run = _run;
   s->super.request_exit = _request_exit;
 

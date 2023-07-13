@@ -114,9 +114,19 @@ copy_stats_instance(const LogPipe *self, const gchar *module, PythonPersistMembe
 }
 
 const gchar *
-python_format_stats_instance(LogPipe *p, const gchar *module, PythonPersistMembers *options)
+python_format_stats_key(LogPipe *p, StatsClusterKeyBuilder *kb, const gchar *module, PythonPersistMembers *options)
 {
   static gchar persist_name[1024];
+
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", module));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("class", options->class));
+
+  if (options->generate_persist_name_method)
+    {
+      copy_stats_instance(p, module, options, persist_name, sizeof(persist_name));
+      stats_cluster_key_builder_add_label(kb, stats_cluster_label("instance", persist_name));
+    }
+
 
   if (p->persist_name)
     format_default_stats_instance(persist_name, sizeof(persist_name), module, p->persist_name);

@@ -54,8 +54,10 @@ __init(LogPipe *s)
 
   journal_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
+  StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "journal"));
   journal_reader_set_options((LogPipe *)self->reader, &self->super.super.super,  &self->reader_options,
-                             self->super.super.id, "journal");
+                             self->super.super.id, kb);
 
   log_pipe_append((LogPipe *)self->reader, &self->super.super.super);
   if (!log_pipe_init((LogPipe *)self->reader))

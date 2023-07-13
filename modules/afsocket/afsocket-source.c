@@ -27,6 +27,7 @@
 #include "gsocket.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster-single.h"
+#include "stats/stats-cluster-key-builder.h"
 #include "mainloop.h"
 #include "poll-fd-events.h"
 #include "timeutils/misc.h"
@@ -112,10 +113,28 @@ _format_sc_name(AFSocketSourceConnection *self, gint format_type)
   return buf;
 }
 
-static gchar *
-afsocket_sc_stats_instance(AFSocketSourceConnection *self)
+static void
+afsocket_sc_format_stats_key(AFSocketSourceConnection *self, StatsClusterKeyBuilder *kb)
 {
-  return _format_sc_name(self, GSA_ADDRESS_ONLY);
+  gchar addr[256];
+
+  if (!self->peer_addr)
+    {
+      /* dgram connection, which means we have no peer, use the bind address */
+      if (self->owner->bind_addr)
+        {
+          g_sockaddr_format(self->owner->bind_addr, addr, sizeof(addr), GSA_ADDRESS_ONLY);
+          stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("address", addr));
+          return;
+        }
+      else
+        return;
+    }
+
+  g_sockaddr_format(self->peer_addr, addr, sizeof(addr), GSA_ADDRESS_ONLY);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("transport",
+                                             self->owner->transport_mapper->transport));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("address", addr));
 }
 
 static gchar *
@@ -160,10 +179,12 @@ afsocket_sc_init(LogPipe *s)
       log_reader_set_local_addr(self->reader, self->local_addr);
     }
 
+  StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+  afsocket_sc_format_stats_key(self, kb);
   log_reader_set_options(self->reader, &self->super,
                          &self->owner->reader_options,
                          self->owner->super.super.id,
-                         afsocket_sc_stats_instance(self));
+                         kb);
   log_reader_set_name(self->reader, afsocket_sc_format_name(self));
 
   if (!restored_kept_alive_source && self->owner->dynamic_window_pool)
@@ -1236,10 +1257,15 @@ _unregister_dgram_stats(AFSocketSourceDriver *self, StatsClusterLabel *labels, g
 static void
 afsocket_sd_register_stats(AFSocketSourceDriver *self)
 {
+  gchar addr[256];
+  g_sockaddr_format(self->bind_addr, addr, sizeof(addr), GSA_FULL);
+
   StatsClusterLabel labels[] =
   {
     stats_cluster_label("id", self->super.super.id),
-    stats_cluster_label("driver_instance", afsocket_sd_format_name(&self->super.super.super)),
+    stats_cluster_label("driver", "afsocket"),
+    stats_cluster_label("transport", (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram"),
+    stats_cluster_label("address", addr),
     stats_cluster_label("direction", "input"),
   };
   stats_lock();
@@ -1253,10 +1279,15 @@ afsocket_sd_register_stats(AFSocketSourceDriver *self)
 static void
 afsocket_sd_unregister_stats(AFSocketSourceDriver *self)
 {
+  gchar addr[256];
+  g_sockaddr_format(self->bind_addr, addr, sizeof(addr), GSA_FULL);
+
   StatsClusterLabel labels[] =
   {
     stats_cluster_label("id", self->super.super.id),
-    stats_cluster_label("driver_instance", afsocket_sd_format_name(&self->super.super.super)),
+    stats_cluster_label("driver", "afsocket"),
+    stats_cluster_label("transport", (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram"),
+    stats_cluster_label("address", addr),
     stats_cluster_label("direction", "input"),
   };
   stats_lock();

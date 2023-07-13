@@ -122,7 +122,7 @@ python_dd_get_template_options(LogDriver *d)
 /** Helpers for stats & persist_name formatting **/
 
 static const gchar *
-python_dd_format_stats_instance(LogThreadedDestDriver *d)
+python_dd_format_stats_key(LogThreadedDestDriver *d, StatsClusterKeyBuilder *kb)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
 
@@ -134,7 +134,7 @@ python_dd_format_stats_instance(LogThreadedDestDriver *d)
     .id = self->super.super.super.id
   };
 
-  return python_format_stats_instance((LogPipe *)d, "python", &options);
+  return python_format_stats_key((LogPipe *)d, kb, "python", &options);
 }
 
 static const gchar *
@@ -664,7 +664,7 @@ python_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = python_dd_insert;
   self->super.worker.flush = python_dd_flush;
 
-  self->super.format_stats_instance = python_dd_format_stats_instance;
+  self->super.format_stats_key = python_dd_format_stats_key;
   self->super.stats_source = stats_register_type("python");
 
   self->options = python_options_new();

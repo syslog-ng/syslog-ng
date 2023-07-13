@@ -51,14 +51,14 @@ example_destination_dd_set_filename(LogDriver *d, const gchar *filename)
  */
 
 static const gchar *
-_format_stats_instance(LogThreadedDestDriver *d)
+_format_stats_key(LogThreadedDestDriver *d, StatsClusterKeyBuilder *kb)
 {
   ExampleDestinationDriver *self = (ExampleDestinationDriver *)d;
-  static gchar persist_name[1024];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "example-destination,%s", self->filename->str);
-  return persist_name;
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "example-destination"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("filename", self->filename->str));
+
+  return NULL;
 }
 
 static const gchar *
@@ -121,7 +121,7 @@ example_destination_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.deinit = _dd_deinit;
   self->super.super.super.super.free_fn = _dd_free;
 
-  self->super.format_stats_instance = _format_stats_instance;
+  self->super.format_stats_key = _format_stats_key;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.stats_source = stats_register_type("example-destination");
   self->super.worker.construct = example_destination_dw_new;

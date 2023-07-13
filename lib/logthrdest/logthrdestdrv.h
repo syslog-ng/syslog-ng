@@ -30,6 +30,7 @@
 #include "stats/stats-registry.h"
 #include "stats/aggregator/stats-aggregator.h"
 #include "stats/stats-compat.h"
+#include "stats/stats-cluster-key-builder.h"
 #include "logqueue.h"
 #include "seqnum.h"
 #include "mainloop-threaded-worker.h"
@@ -91,6 +92,8 @@ struct _LogThreadedDestWorker
 
   struct
   {
+    StatsClusterKey *output_event_bytes_sc_key;
+
     StatsByteCounter written_bytes;
   } metrics;
 
@@ -166,7 +169,7 @@ struct _LogThreadedDestDriver
 
   gint32 shared_seq_num;
 
-  const gchar *(*format_stats_instance)(LogThreadedDestDriver *s);
+  const gchar *(*format_stats_key)(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb);
 };
 
 static inline gboolean

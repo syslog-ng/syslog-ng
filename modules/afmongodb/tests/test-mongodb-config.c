@@ -62,7 +62,7 @@ Test(mongodb_config, test_stats_name)
   cr_assert(afmongodb_dd_private_uri_init(mongodb));
 
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)mongodb;
-  const gchar *name = self->format_stats_instance(self);
+  const gchar *name = self->format_stats_key(self, NULL);
   cr_assert(name, "mongodb,127.0.0.2:27018,syslog,x,messages");
 }
 

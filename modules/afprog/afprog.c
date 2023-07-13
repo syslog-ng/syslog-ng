@@ -28,6 +28,7 @@
 #include "children.h"
 #include "fdhelpers.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-key-builder.h"
 #include "transport/transport-pipe.h"
 #include "logproto/logproto-text-server.h"
 #include "logproto/logproto-text-client.h"
@@ -292,11 +293,14 @@ afprogram_sd_init(LogPipe *s)
       self->reader = log_reader_new(s->cfg);
       log_pipe_set_options(&self->reader->super.super, &self->super.super.super.options);
       log_reader_open(self->reader, proto, poll_fd_events_new(fd));
+
+      StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+      stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("command", self->process_info.cmdline->str));
       log_reader_set_options(self->reader,
                              s,
                              &self->reader_options,
                              self->super.super.id,
-                             self->process_info.cmdline->str);
+                             kb);
     }
   log_pipe_append((LogPipe *) self->reader, &self->super.super.super);
   if (!log_pipe_init((LogPipe *) self->reader))

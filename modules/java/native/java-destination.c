@@ -252,19 +252,15 @@ java_dd_format_persist_name(const LogPipe *s)
 }
 
 static const gchar *
-java_dd_format_stats_instance(LogThreadedDestDriver *d)
+java_dd_format_stats_key(LogThreadedDestDriver *d, StatsClusterKeyBuilder *kb)
 {
   JavaDestDriver *self = (JavaDestDriver *)d;
-  static gchar persist_name[1024];
 
-  if (d->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "java_dst,%s",
-               d->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "java_dst,%s",
-               java_destination_proxy_get_name_by_uniq_options(self->proxy));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "java_dst"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("name",
+                                             java_destination_proxy_get_name_by_uniq_options(self->proxy)));
 
-  return persist_name;
+  return NULL;
 }
 
 void
@@ -310,7 +306,7 @@ java_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = java_worker_insert;
   self->super.worker.flush = java_worker_flush;
 
-  self->super.format_stats_instance = java_dd_format_stats_instance;
+  self->super.format_stats_key = java_dd_format_stats_key;
   self->super.stats_source = stats_register_type("java");
 
   self->template = log_template_new(cfg, NULL);

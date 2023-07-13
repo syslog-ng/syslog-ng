@@ -50,19 +50,16 @@ _format_persist_name(const LogPipe *s)
 }
 
 static const gchar *
-_format_stats_instance(LogThreadedSourceDriver *s)
+_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
   MQTTSourceDriver *self = (MQTTSourceDriver *) s;
-  LogPipe *p = &s->super.super.super;
-  static gchar persist_name[1024];
 
-  if (p->persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "mqtt-source.%s", p->persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "mqtt-source.(%s,%s)", mqtt_client_options_get_address(&self->options),
-               self->topic);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "mqtt-source"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("address",
+                                             mqtt_client_options_get_address(&self->options)));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("topic", self->topic));
 
-  return persist_name;
+  return NULL;
 }
 
 static LogMessage *
@@ -289,7 +286,7 @@ mqtt_sd_new(GlobalConfig *cfg)
   self->super.thread_deinit = _thread_deinit;
 
   self->super.super.super.super.super.generate_persist_name = _format_persist_name;
-  self->super.super.format_stats_instance = _format_stats_instance;
+  self->super.super.format_stats_key = _format_stats_key;
   return &self->super.super.super.super;
 }
 

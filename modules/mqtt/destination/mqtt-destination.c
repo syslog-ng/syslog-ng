@@ -77,18 +77,16 @@ mqtt_dd_set_message_template_ref(LogDriver *d, LogTemplate *message)
  * Utilities
  */
 static const gchar *
-_format_stats_instance(LogThreadedDestDriver *d)
+_format_stats_key(LogThreadedDestDriver *d, StatsClusterKeyBuilder *kb)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
-  static gchar stats_instance[1024];
 
-  if (((LogPipe *)d)->persist_name)
-    g_snprintf(stats_instance, sizeof(stats_instance), "%s", ((LogPipe *)d)->persist_name);
-  else
-    g_snprintf(stats_instance, sizeof(stats_instance), "mqtt,%s,%s", mqtt_client_options_get_address(&self->options),
-               self->topic_name->template_str);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "mqtt"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("address",
+                                             mqtt_client_options_get_address(&self->options)));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("topic", self->topic_name->template_str));
 
-  return stats_instance;
+  return NULL;
 }
 
 static const gchar *
@@ -231,7 +229,7 @@ mqtt_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.init = _init;
   self->super.super.super.super.free_fn = _free;
 
-  self->super.format_stats_instance = _format_stats_instance;
+  self->super.format_stats_key = _format_stats_key;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.stats_source = stats_register_type("mqtt-destination");
   self->super.worker.construct = mqtt_dw_new;

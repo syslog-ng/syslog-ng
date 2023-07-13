@@ -26,6 +26,7 @@
 #include "python-module.h"
 #include "python-options.h"
 #include "logpipe.h"
+#include "stats/stats-cluster-key-builder.h"
 
 typedef struct
 {
@@ -44,7 +45,8 @@ typedef struct
   const gchar *id;
 } PythonPersistMembers;
 
-const gchar *python_format_stats_instance(LogPipe *p, const gchar *module, PythonPersistMembers *options);
+const gchar *python_format_stats_key(LogPipe *p, StatsClusterKeyBuilder *kb, const gchar *module,
+                                     PythonPersistMembers *options);
 const gchar *python_format_persist_name(const LogPipe *p, const gchar *module, PythonPersistMembers *options);
 
 void py_persist_global_init(void);

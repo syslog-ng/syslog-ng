@@ -92,7 +92,7 @@ struct _LogReader
 };
 
 void log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options, const gchar *stats_id,
-                            const gchar *stats_instance);
+                            StatsClusterKeyBuilder *kb);
 void log_reader_set_follow_filename(LogReader *self, const gchar *follow_filename);
 void log_reader_set_name(LogReader *s, const gchar *name);
 void log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr);

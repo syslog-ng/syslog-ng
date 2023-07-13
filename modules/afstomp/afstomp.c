@@ -156,18 +156,20 @@ afstomp_dd_get_template_options(LogDriver *s)
  */
 
 static const gchar *
-afstomp_dd_format_stats_instance(LogThreadedDestDriver *s)
+afstomp_dd_format_stats_key(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb)
 {
   STOMPDestDriver *self = (STOMPDestDriver *) s;
-  static gchar persist_name[1024];
 
-  if (s->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "afstomp,%s", s->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "afstomp,%s,%u,%s", self->host, self->port,
-               self->destination);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "afstomp"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("host", self->host));
 
-  return persist_name;
+  gchar num[64];
+  g_snprintf(num, sizeof(num), "%u", self->port);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("port", num));
+
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("destination", self->destination));
+
+  return NULL;
 }
 
 static const gchar *
@@ -395,7 +397,7 @@ afstomp_dd_new(GlobalConfig *cfg)
   self->super.worker.disconnect = afstomp_dd_disconnect;
   self->super.worker.insert = afstomp_worker_insert;
 
-  self->super.format_stats_instance = afstomp_dd_format_stats_instance;
+  self->super.format_stats_key = afstomp_dd_format_stats_key;
   self->super.stats_source = stats_register_type("stomp");
 
   afstomp_dd_set_host((LogDriver *) self, "127.0.0.1");

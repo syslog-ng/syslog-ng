@@ -28,6 +28,7 @@
 #include "logpipe.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-compat.h"
+#include "stats/stats-cluster-key-builder.h"
 #include "window-size-counter.h"
 #include "dynamic-window.h"
 
@@ -69,7 +70,6 @@ struct _LogSource
   gboolean threaded;
   gchar *name;
   gchar *stats_id;
-  gchar *stats_instance;
   WindowSizeCounter window_size;
   DynamicWindow dynamic_window;
   gboolean window_initialized;
@@ -81,12 +81,17 @@ struct _LogSource
 
   struct
   {
+    StatsClusterKeyBuilder *stats_kb;
+
     StatsCounterItem *stat_window_size;
     StatsCounterItem *stat_full_window;
     StatsCounterItem *last_message_seen;
+
+    StatsClusterKey *recvd_messages_key;
     StatsCounterItem *recvd_messages;
 
     gboolean raw_bytes_enabled;
+    StatsClusterKey *recvd_bytes_key;
     StatsByteCounter recvd_bytes;
 
     StatsCluster *stat_window_size_cluster;
@@ -130,7 +135,7 @@ gboolean log_source_deinit(LogPipe *s);
 void log_source_post(LogSource *self, LogMessage *msg);
 
 void log_source_set_options(LogSource *self, LogSourceOptions *options, const gchar *stats_id,
-                            const gchar *stats_instance, gboolean threaded, LogExprNode *expr_node);
+                            StatsClusterKeyBuilder *kb, gboolean threaded, LogExprNode *expr_node);
 void log_source_set_ack_tracker_factory(LogSource *self, AckTrackerFactory *factory);
 void log_source_set_name(LogSource *self, const gchar *name);
 void log_source_mangle_hostname(LogSource *self, LogMessage *msg);

@@ -48,9 +48,10 @@ _generate_persist_name(const LogPipe *s)
 }
 
 static const gchar *
-_format_stats_instance(LogThreadedDestDriver *s)
+_format_stats_key(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb)
 {
-  return "stats-name";
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "stats-name"));
+  return NULL;
 }
 
 static gboolean
@@ -68,7 +69,7 @@ test_threaded_dd_new(GlobalConfig *cfg)
   TestThreadedDestDriver *self = g_new0(TestThreadedDestDriver, 1);
   log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.generate_persist_name = _generate_persist_name;
-  self->super.format_stats_instance = _format_stats_instance;
+  self->super.format_stats_key = _format_stats_key;
 
   self->super.worker.connect = _connect_success;
   /* the insert function will be initialized explicitly in testcases */

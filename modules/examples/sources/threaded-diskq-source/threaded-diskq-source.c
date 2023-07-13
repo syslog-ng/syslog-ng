@@ -172,17 +172,14 @@ _fetch(LogThreadedFetcherDriver *s)
 }
 
 static const gchar *
-_format_stats_instance(LogThreadedSourceDriver *s)
+_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
   ThreadedDiskqSourceDriver *self = (ThreadedDiskqSourceDriver *) s;
-  static gchar persist_name[1024];
 
-  if (s->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "diskq-source,%s", s->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "diskq-source,%s", self->filename);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "diskq-source"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("filename", self->filename));
 
-  return persist_name;
+  return NULL;
 }
 
 static gboolean
@@ -199,8 +196,7 @@ _init(LogPipe *s)
   stats_cluster_key_builder_reset(self->queue_sck_builder);
   stats_cluster_key_builder_add_label(self->queue_sck_builder,
                                       stats_cluster_label("id", self->super.super.super.super.id ? : ""));
-  stats_cluster_key_builder_add_label(self->queue_sck_builder, stats_cluster_label("driver_instance",
-                                      _format_stats_instance(&self->super.super)));
+  _format_stats_key(&self->super.super, self->queue_sck_builder);
 
   return log_threaded_fetcher_driver_init_method(s);
 }
@@ -241,7 +237,7 @@ threaded_diskq_sd_new(GlobalConfig *cfg)
 
   self->super.super.super.super.super.init = _init;
   self->super.super.super.super.super.free_fn = _free;
-  self->super.super.format_stats_instance = _format_stats_instance;
+  self->super.super.format_stats_key = _format_stats_key;
 
   return &self->super.super.super.super;
 }
