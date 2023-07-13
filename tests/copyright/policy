@@ -110,7 +110,6 @@ modules/python-modules/syslogng/dest\.py
 modules/python-modules/syslogng/logger\.py
 modules/python-modules/syslogng/message\.py
 modules/python-modules/syslogng/parser\.py
-modules/python-modules/syslogng/source\.py
 modules/python-modules/syslogng/template\.py
 modules/python/python-confgen\.[ch]
 lib/tests/test_logscheduler\.c
@@ -152,6 +151,7 @@ tests/loggen
 persist-tool
 modules/python-modules/syslogng/__init__\.py
 modules/python-modules/syslogng/persist\.py
+modules/python-modules/syslogng/source\.py
 
 ###########################################################################
 # These files are GPLd and non-balabit contributions.
