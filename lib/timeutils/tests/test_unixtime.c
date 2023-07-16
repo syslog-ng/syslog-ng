@@ -102,6 +102,7 @@ Test(unixtime, unix_time_fix_timezone_with_tzinfo_to_a_zone_backwards_during_spr
    * the timezone to EST5EDT */
 
   base_ut.ut_sec = 1552179600;
+  base_ut.ut_usec = 0;
   base_ut.ut_gmtoff = 3600;
 
   /* TESTCASE: 1 second earlier than the DST transition hour */
@@ -165,6 +166,7 @@ Test(unixtime, unix_time_fix_timezone_with_tzinfo_to_a_zone_forwards_during_spri
    * the timezone to CET */
 
   base_ut.ut_sec = 1554012000;
+  base_ut.ut_usec = 0;
   base_ut.ut_gmtoff = -4*3600;
 
   /* TESTCASE: 1 second earlier than the DST transition hour */
@@ -224,6 +226,7 @@ Test(unixtime, unix_time_fix_timezone_with_tzinfo_to_a_zone_backwards_during_aut
    * the timezone to EST5EDT */
 
   base_ut.ut_sec = 1572742800;
+  base_ut.ut_usec = 0;
   base_ut.ut_gmtoff = 3600;
 
   /* TESTCASE: 1 second earlier than the DST transition hour */
@@ -292,6 +295,7 @@ Test(unixtime, unix_time_fix_timezone_with_tzinfo_to_a_zone_forwards_during_autu
    * the timezone to CET */
 
   base_ut.ut_sec = 1572156000;
+  base_ut.ut_usec = 0;
   base_ut.ut_gmtoff = -4*3600;
 
   /* testcase, 1 second earlier than the DST transition hour */
