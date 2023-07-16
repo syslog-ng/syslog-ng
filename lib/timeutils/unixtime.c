@@ -308,3 +308,34 @@ unix_time_eq(const UnixTime *a, const UnixTime *b)
          a->ut_usec == b->ut_usec &&
          a->ut_gmtoff == b->ut_gmtoff;
 }
+
+/* NOTE: returns sec */
+gint64
+unix_time_diff_in_seconds(const UnixTime *a, const UnixTime *b)
+{
+  gint64 diff_sec = a->ut_sec - b->ut_sec;
+  gint64 diff_usec = (gint64) a->ut_usec - (gint64) b->ut_usec;
+
+  if (diff_usec > -500000 && diff_usec < 500000)
+    ;
+  else if (diff_usec <= -500000)
+    diff_sec--;
+  else
+    diff_sec++;
+  return diff_sec;
+}
+
+gint64
+unix_time_diff_in_msec(const UnixTime *a, const UnixTime *b)
+{
+  gint64 diff_msec = (a->ut_sec - b->ut_sec) * 1000 + ((gint64) a->ut_usec - (gint64) b->ut_usec) / 1000;
+  gint64 diff_usec = ((gint64) a->ut_usec - (gint64) b->ut_usec) % 1000;
+
+  if (diff_usec > -500 && diff_usec < 500)
+    ;
+  else if (diff_usec <= -500)
+    diff_msec--;
+  else
+    diff_msec++;
+  return diff_msec;
+}

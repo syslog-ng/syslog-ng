@@ -79,5 +79,7 @@ void unix_time_fix_timezone_with_tzinfo(UnixTime *self, TimeZoneInfo *tzinfo);
 gboolean unix_time_fix_timezone_assuming_the_time_matches_real_time(UnixTime *self);
 
 gboolean unix_time_eq(const UnixTime *a, const UnixTime *b);
+gint64 unix_time_diff_in_seconds(const UnixTime *a, const UnixTime *b);
+gint64 unix_time_diff_in_msec(const UnixTime *a, const UnixTime *b);
 
 #endif

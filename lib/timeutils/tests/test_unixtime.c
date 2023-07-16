@@ -478,6 +478,97 @@ Test(unixtime, unix_time_guess_timezone_for_quarter_hour_differences)
             number_of_even_timezones);
 }
 
+Test(unixtime, test_unix_time_diff_in_seconds)
+{
+  UnixTime ut1 = { 1, 123000 };
+  UnixTime ut2 = { 2, 123000 };
+
+  cr_assert(unix_time_diff_in_seconds(&ut1, &ut2) == -1);
+  cr_assert(unix_time_diff_in_seconds(&ut2, &ut1) == 1);
+
+  ut2.ut_sec = 1;
+  ut2.ut_usec = 623000;
+
+  cr_assert(unix_time_diff_in_seconds(&ut1, &ut2) == -1);
+  cr_assert(unix_time_diff_in_seconds(&ut2, &ut1) == 1);
+
+  ut2.ut_sec = 1;
+  ut2.ut_usec = 622000;
+
+  cr_assert(unix_time_diff_in_seconds(&ut1, &ut2) == 0);
+  cr_assert(unix_time_diff_in_seconds(&ut2, &ut1) == 0);
+
+  ut2.ut_sec = 1;
+  ut2.ut_usec = 624000;
+
+  cr_assert(unix_time_diff_in_seconds(&ut1, &ut2) == -1);
+  cr_assert(unix_time_diff_in_seconds(&ut2, &ut1) == 1);
+
+
+
+  /* >0.5 seconds in fractions rounded up */
+  ut1.ut_sec = 0;
+  ut1.ut_usec = 0;
+  ut2.ut_sec = 1;
+  ut2.ut_usec = 500001;
+  cr_assert_eq(unix_time_diff_in_seconds(&ut1, &ut2), -2);
+  cr_assert_eq(unix_time_diff_in_seconds(&ut2, &ut1), 2);
+
+  /* < 0.5 seconds rounded down */
+  ut1.ut_sec = 0;
+  ut1.ut_usec = 980000;
+  ut2.ut_sec = 1;
+  ut2.ut_usec =  20000;
+  cr_assert_eq(unix_time_diff_in_seconds(&ut2, &ut1), 0);
+  cr_assert_eq(unix_time_diff_in_seconds(&ut1, &ut2), 0);
+
+}
+
+Test(unixtime, test_unix_time_diff_in_msec)
+{
+  UnixTime ut1 = { 1, 123000 };
+  UnixTime ut2 = { 2, 123000 };
+
+  cr_assert(unix_time_diff_in_msec(&ut1, &ut2) == -1000);
+  cr_assert(unix_time_diff_in_msec(&ut2, &ut1) == 1000);
+
+  ut2.ut_sec = 1;
+  ut2.ut_usec = 623000;
+
+  cr_assert(unix_time_diff_in_msec(&ut1, &ut2) == -500);
+  cr_assert(unix_time_diff_in_msec(&ut2, &ut1) == 500);
+
+  ut2.ut_sec = 1;
+  ut2.ut_usec = 622000;
+
+  cr_assert(unix_time_diff_in_msec(&ut1, &ut2) == -499);
+  cr_assert(unix_time_diff_in_msec(&ut2, &ut1) == 499);
+
+  ut2.ut_sec = 1;
+  ut2.ut_usec = 622499;
+
+  cr_assert(unix_time_diff_in_msec(&ut1, &ut2) == -499);
+  cr_assert(unix_time_diff_in_msec(&ut2, &ut1) == 499);
+
+  ut2.ut_sec = 1;
+  ut2.ut_usec = 622500;
+
+  cr_assert(unix_time_diff_in_msec(&ut1, &ut2) == -500);
+  cr_assert(unix_time_diff_in_msec(&ut2, &ut1) == 500);
+
+  ut2.ut_sec = 1;
+  ut2.ut_usec = 623499;
+
+  cr_assert(unix_time_diff_in_msec(&ut1, &ut2) == -500);
+  cr_assert(unix_time_diff_in_msec(&ut2, &ut1) == 500);
+
+  ut2.ut_sec = 1;
+  ut2.ut_usec = 623501;
+
+  cr_assert(unix_time_diff_in_msec(&ut1, &ut2) == -501);
+  cr_assert(unix_time_diff_in_msec(&ut2, &ut1) == 501);
+}
+
 static void
 setup(void)
 {
