@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2023 One Identity LLC.
  * Copyright (c) 2010-2014 Balabit
  * Copyright (c) 2010-2014 Viktor Juhasz <viktor.juhasz@balabit.com>
  *
@@ -46,7 +47,12 @@
 #define DEFAULT_PRIO (LOG_LOCAL0 | LOG_NOTICE)
 #define DEFAULT_FETCH_LIMIT 10
 
+
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+GList *used_namespaces = NULL;
+#else
 static gboolean journal_reader_initialized = FALSE;
+#endif
 
 typedef struct _JournalReaderState
 {
@@ -305,6 +311,22 @@ _handle_message(JournalReader *self)
   log_source_post(&self->super, msg);
   return log_source_free_to_send(&self->super);
 }
+
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+static gboolean
+_namespace_is_already_in_use(JournalReader *self, const gchar *namespace)
+{
+  GList *item = g_list_find_custom(used_namespaces, namespace, (GCompareFunc)strcmp);
+  if (item == NULL)
+    {
+      used_namespaces = g_list_prepend(used_namespaces, (gpointer)namespace);
+      return FALSE;
+    }
+
+  msg_error("systemd-journal namespace already in use", evt_tag_str("namespace", namespace));
+  return TRUE;
+}
+#endif
 
 static gboolean
 _alloc_state(JournalReader *self)
@@ -720,17 +742,22 @@ _journal_apply_matches(JournalReader *self)
   return TRUE;
 }
 
-static void
+static gboolean
 _init_persist_name(JournalReader *self)
 {
 #if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
   if (strcmp(self->options->namespace, "*") != 0)
     {
       self->persist_name = g_strdup_printf("systemd_journal(%s)", self->options->namespace);
-      return;
     }
+  else
+    {
+      self->persist_name = g_strdup("systemd-journal");
+    }
+  return !_namespace_is_already_in_use(self, self->options->namespace);
 #endif
   self->persist_name = g_strdup("systemd-journal");
+  return TRUE;
 }
 
 static gboolean
@@ -738,13 +765,19 @@ _init(LogPipe *s)
 {
   JournalReader *self = (JournalReader *)s;
 
+#ifndef SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
   if (journal_reader_initialized)
     {
       msg_error("The configuration must not contain more than one systemd-journal() source");
       return FALSE;
     }
+#endif
 
-  _init_persist_name(self);
+  if (! _init_persist_name(self))
+    {
+      msg_error("The configuration must not contain more than one systemd-journal() source with the same namespace() option");
+      return FALSE;
+    }
 
   if (!log_source_init(s))
     return FALSE;
@@ -774,7 +807,9 @@ _init(LogPipe *s)
     }
 
   self->immediate_check = TRUE;
+#ifndef SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
   journal_reader_initialized = TRUE;
+#endif
   _update_watches(self);
   iv_event_register(&self->schedule_wakeup);
   return TRUE;
@@ -784,10 +819,17 @@ static gboolean
 _deinit(LogPipe *s)
 {
   JournalReader *self = (JournalReader *)s;
+
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+  GList *link = g_list_find(used_namespaces, self->options->namespace);
+  if (link) used_namespaces = g_list_delete_link(used_namespaces, link);
+#else
+  journal_reader_initialized = FALSE;
+#endif
+
   _stop_watches(self);
   sd_journal_close(self->journal);
   poll_events_free(self->poll_events);
-  journal_reader_initialized = FALSE;
   return TRUE;
 }
 

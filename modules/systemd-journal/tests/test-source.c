@@ -63,9 +63,9 @@ static gboolean
 __deinit(LogPipe *s)
 {
   TestSource *self = (TestSource *)s;
-  journal_reader_options_destroy(&self->options);
   log_pipe_deinit((LogPipe *)self->reader);
   log_pipe_unref((LogPipe *)self->reader);
+  journal_reader_options_destroy(&self->options);
   return TRUE;
 }
 
