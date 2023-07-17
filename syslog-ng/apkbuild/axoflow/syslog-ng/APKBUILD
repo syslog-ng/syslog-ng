@@ -23,7 +23,6 @@ makedepends="
 	glib-dev
 	grpc-dev
 	hiredis-dev
-	ivykis-dev>=0.42.4
 	json-c-dev
 	libbpf-dev
 	libdbi-dev
@@ -89,7 +88,7 @@ build() {
 		--enable-extra-warnings \
 		--enable-ipv6 \
 		--enable-manpages \
-		--with-ivykis=system \
+		--with-ivykis=internal \
 		--with-jsonc=system \
 		--with-python-venv-dir=/var/lib/syslog-ng-venv \
 		\
