@@ -126,6 +126,7 @@ scl() {
 	depends="$pkgname=$pkgver-r$pkgrel"
 
 	_submv usr/share/syslog-ng/include/scl
+	_submv usr/share/syslog-ng/include/scl.conf
 }
 
 dev() {
