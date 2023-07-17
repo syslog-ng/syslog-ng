@@ -455,10 +455,9 @@ python_http_header_set_class(PythonHttpHeaderPlugin *self, gchar *class)
 }
 
 void
-python_http_header_set_options(PythonHttpHeaderPlugin *self, PythonOptions *options)
+python_http_header_add_options(PythonHttpHeaderPlugin *self, PythonOptions *options)
 {
   python_options_add_options(self->options, options);
-  python_options_release(options);
 }
 
 void
