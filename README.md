@@ -26,6 +26,8 @@ Our images are available for the following architectures:
 
 You can find the list of tagged versions at [https://github.com/axoflow/axosyslog-docker/pkgs/container/axosyslog](https://github.com/axoflow/axosyslog-docker/pkgs/container/axosyslog).
 
+_NOTE: Images found at [https://github.com/axoflow/axosyslog-docker/pkgs/container/syslog-ng](https://github.com/axoflow/axosyslog-docker/pkgs/container/syslog-ng) are deprecated and will be removed in the future._
+
 To install the latest stable version, run:
 
 ```shell
