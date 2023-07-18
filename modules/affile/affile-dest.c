@@ -181,6 +181,18 @@ affile_dw_reopen(AFFileDestWriter *self)
   return TRUE;
 }
 
+static void
+_init_stats_key_builders(AFFileDestWriter *self, StatsClusterKeyBuilder *driver_sck_builder,
+                         StatsClusterKeyBuilder *queue_sck_builder)
+{
+  stats_cluster_key_builder_add_label(driver_sck_builder, stats_cluster_label("id", self->owner->super.super.id));
+  stats_cluster_key_builder_set_legacy_alias(driver_sck_builder,
+                                             self->owner->writer_options.stats_source | SCS_DESTINATION,
+                                             self->owner->super.super.id, self->filename);
+
+  stats_cluster_key_builder_add_label(queue_sck_builder, stats_cluster_label("id", self->owner->super.super.id));
+}
+
 static gboolean
 affile_dw_init(LogPipe *s)
 {
@@ -201,8 +213,7 @@ affile_dw_init(LogPipe *s)
 
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
   StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
-  log_writer_init_driver_sck_builder(self->writer, driver_sck_builder);
-  log_writer_init_queue_sck_builder(self->writer, queue_sck_builder);
+  _init_stats_key_builders(self, driver_sck_builder, queue_sck_builder);
 
   gint stats_level = log_pipe_is_internal(&self->super) ? STATS_LEVEL3 : self->owner->writer_options.stats_level;
   LogQueue *queue = log_dest_driver_acquire_queue(&self->owner->super, affile_dw_format_persist_name(self),
