@@ -29,6 +29,7 @@
 #include "template/templates.h"
 #include "logqueue.h"
 #include "logproto/logproto-client.h"
+#include "stats/stats-cluster-key-builder.h"
 
 /* writer constructor flags */
 #define LW_DETECT_EOF        0x0001
@@ -77,7 +78,7 @@ typedef struct _LogWriter LogWriter;
 void log_writer_set_flags(LogWriter *self, guint32 flags);
 guint32 log_writer_get_flags(LogWriter *self);
 void log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *options, const gchar *stats_id,
-                            const gchar *stats_instance);
+                            StatsClusterKeyBuilder *kb);
 void log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result);
 gboolean log_writer_has_pending_writes(LogWriter *self);
 gboolean log_writer_opened(LogWriter *self);

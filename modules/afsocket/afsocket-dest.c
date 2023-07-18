@@ -492,15 +492,23 @@ afsocket_dd_construct_writer_method(AFSocketDestDriver *self)
 }
 
 static void
-_init_stats_key_builders(AFSocketDestDriver *self, StatsClusterKeyBuilder *driver_sck_builder,
-                         StatsClusterKeyBuilder *queue_sck_builder)
+_init_stats_key_builders(AFSocketDestDriver *self, StatsClusterKeyBuilder **writer_sck_builder,
+                         StatsClusterKeyBuilder **driver_sck_builder, StatsClusterKeyBuilder **queue_sck_builder)
 {
-  stats_cluster_key_builder_add_label(driver_sck_builder, stats_cluster_label("id", self->super.super.id));
-  stats_cluster_key_builder_set_legacy_alias(driver_sck_builder,
+  *writer_sck_builder = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_add_legacy_label(*writer_sck_builder, stats_cluster_label("transport",
+                                             self->transport_mapper->transport));
+  stats_cluster_key_builder_add_legacy_label(*writer_sck_builder, stats_cluster_label("address",
+                                             afsocket_dd_get_dest_name(self)));
+
+  *driver_sck_builder = stats_cluster_key_builder_clone(*writer_sck_builder);
+  stats_cluster_key_builder_add_label(*driver_sck_builder, stats_cluster_label("id", self->super.super.id));
+  stats_cluster_key_builder_set_legacy_alias(*driver_sck_builder,
                                              self->writer_options.stats_source | SCS_DESTINATION,
                                              self->super.super.id, afsocket_dd_stats_instance(self));
 
-  stats_cluster_key_builder_add_label(queue_sck_builder, stats_cluster_label("id", self->super.super.id));
+  *queue_sck_builder = stats_cluster_key_builder_clone(*writer_sck_builder);
+  stats_cluster_key_builder_add_label(*queue_sck_builder, stats_cluster_label("id", self->super.super.id));
 }
 
 static gboolean
@@ -515,15 +523,17 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
 
       self->writer = afsocket_dd_construct_writer(self);
     }
+
+  StatsClusterKeyBuilder *writer_sck_builder;
+  StatsClusterKeyBuilder *driver_sck_builder;
+  StatsClusterKeyBuilder *queue_sck_builder;
+  _init_stats_key_builders(self, &writer_sck_builder, &driver_sck_builder, &queue_sck_builder);
+
   log_pipe_set_config((LogPipe *)self->writer, log_pipe_get_config(&self->super.super.super));
   log_writer_set_options(self->writer, &self->super.super.super,
                          &self->writer_options,
                          self->super.super.id,
-                         afsocket_dd_stats_instance(self));
-
-  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
-  StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
-  _init_stats_key_builders(self, driver_sck_builder, queue_sck_builder);
+                         writer_sck_builder);
 
   gint stats_level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : self->writer_options.stats_level;
   LogQueue *queue = log_dest_driver_acquire_queue(&self->super, afsocket_dd_format_qfile_name(self),

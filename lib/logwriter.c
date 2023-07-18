@@ -72,11 +72,15 @@ struct _LogWriter
 
   struct
   {
+    StatsClusterKeyBuilder *stats_kb;
+
+    StatsClusterKey *output_events_key;
     StatsCounterItem *dropped_messages;
     StatsCounterItem *suppressed_messages;
     StatsCounterItem *processed_messages;
     StatsCounterItem *written_messages;
 
+    StatsClusterKey *written_bytes_key;
     StatsByteCounter written_bytes;
 
     StatsAggregator *max_message_size;
@@ -97,7 +101,6 @@ struct _LogWriter
   GString *line_buffer;
 
   gchar *stats_id;
-  gchar *stats_instance;
 
   struct iv_fd fd_watch;
   struct iv_timer suspend_timer;
@@ -1424,16 +1427,20 @@ _register_aggregated_stats(LogWriter *self, StatsClusterKey *sc_key_input, gint 
   stats_aggregator_lock();
   StatsClusterKey sc_key;
 
+  gchar stats_instance[1024];
+  stats_cluster_key_builder_format_legacy_stats_instance(self->metrics.stats_kb,
+                                                         stats_instance, sizeof(stats_instance));
+
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                                self->stats_instance, "msg_size_max");
+                                                stats_instance, "msg_size_max");
   stats_register_aggregator_maximum(stats_level, &sc_key, &self->metrics.max_message_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                                self->stats_instance, "msg_size_avg");
+                                                stats_instance, "msg_size_avg");
   stats_register_aggregator_average(stats_level, &sc_key, &self->metrics.average_messages_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                                self->stats_instance, "eps");
+                                                stats_instance, "eps");
   stats_register_aggregator_cps(stats_level, &sc_key, sc_key_input, stats_type, &self->metrics.CPS);
 
   stats_aggregator_unlock();
@@ -1454,29 +1461,13 @@ _unregister_aggregated_stats(LogWriter *self)
 static void
 _register_raw_bytes_stats(LogWriter *self, gint stats_level)
 {
-  StatsClusterLabel labels[] =
-  {
-    stats_cluster_label("id", self->stats_id),
-    stats_cluster_label("driver_instance", self->stats_instance),
-  };
-
-  StatsClusterKey output_bytes_key;
-  stats_cluster_single_key_set(&output_bytes_key, "output_event_bytes_total", labels, G_N_ELEMENTS(labels));
-  stats_byte_counter_init(&self->metrics.written_bytes, &output_bytes_key, stats_level, SBCP_KIB);
+  stats_byte_counter_init(&self->metrics.written_bytes, self->metrics.written_bytes_key, stats_level, SBCP_KIB);
 }
 
 static void
 _unregister_raw_bytes_stats(LogWriter *self)
 {
-  StatsClusterLabel labels[] =
-  {
-    stats_cluster_label("id", self->stats_id),
-    stats_cluster_label("driver_instance", self->stats_instance),
-  };
-
-  StatsClusterKey output_bytes_key;
-  stats_cluster_single_key_set(&output_bytes_key, "output_event_bytes_total", labels, G_N_ELEMENTS(labels));
-  stats_byte_counter_deinit(&self->metrics.written_bytes, &output_bytes_key);
+  stats_byte_counter_deinit(&self->metrics.written_bytes, self->metrics.written_bytes_key);
 }
 
 static void
@@ -1486,38 +1477,34 @@ _register_counters(LogWriter *self)
 
   gint level = log_pipe_is_internal(&self->super) ? STATS_LEVEL3 : self->options->stats_level;
 
-  StatsClusterKey sc_key;
-  StatsClusterLabel labels[] =
-  {
-    stats_cluster_label("id", self->stats_id),
-    stats_cluster_label("driver_instance", self->stats_instance),
-  };
-  stats_cluster_logpipe_key_set(&sc_key, "output_events_total", labels, G_N_ELEMENTS(labels));
-  stats_cluster_logpipe_key_add_legacy_alias(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                             self->stats_instance);
-
   if (self->options->suppress > 0)
-    stats_register_counter(level, &sc_key, SC_TYPE_SUPPRESSED, &self->metrics.suppressed_messages);
-  stats_register_counter(level, &sc_key, SC_TYPE_DROPPED, &self->metrics.dropped_messages);
-  stats_register_counter(level, &sc_key, SC_TYPE_WRITTEN, &self->metrics.written_messages);
+    stats_register_counter(level, self->metrics.output_events_key, SC_TYPE_SUPPRESSED,
+                           &self->metrics.suppressed_messages);
+  stats_register_counter(level, self->metrics.output_events_key, SC_TYPE_DROPPED, &self->metrics.dropped_messages);
+  stats_register_counter(level, self->metrics.output_events_key, SC_TYPE_WRITTEN, &self->metrics.written_messages);
+
+
+  gchar stats_instance[1024];
+  stats_cluster_key_builder_format_legacy_stats_instance(self->metrics.stats_kb, stats_instance,
+                                                         sizeof(stats_instance));
 
   StatsClusterKey sc_legacy_processed;
   stats_cluster_single_key_legacy_set_with_name(&sc_legacy_processed, self->options->stats_source | SCS_DESTINATION,
-                                                self->stats_id, self->stats_instance, "processed");
+                                                self->stats_id, stats_instance, "processed");
   stats_register_counter(level, &sc_legacy_processed, SC_TYPE_SINGLE_VALUE, &self->metrics.processed_messages);
 
   StatsClusterKey sc_key_truncated_count;
   stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
-                                                self->stats_id, self->stats_instance, "truncated_count");
+                                                self->stats_id, stats_instance, "truncated_count");
   stats_register_counter(level, &sc_key_truncated_count, SC_TYPE_SINGLE_VALUE, &self->metrics.truncated.count);
 
   StatsClusterKey sc_key_truncated_bytes;
   stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
-                                                self->stats_id, self->stats_instance, "truncated_bytes");
+                                                self->stats_id, stats_instance, "truncated_bytes");
   stats_register_counter(level, &sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE, &self->metrics.truncated.bytes);
 
   stats_unlock();
-  _register_aggregated_stats(self, &sc_key, level, SC_TYPE_WRITTEN);
+  _register_aggregated_stats(self, self->metrics.output_events_key, level, SC_TYPE_WRITTEN);
 
   level = log_pipe_is_internal(&self->super) ? STATS_LEVEL3 : STATS_LEVEL1;
   _register_raw_bytes_stats(self, level);
@@ -1554,33 +1541,27 @@ _unregister_counters(LogWriter *self)
 {
   stats_lock();
   {
-    StatsClusterKey sc_key;
-    StatsClusterLabel labels[] =
-    {
-      stats_cluster_label("id", self->stats_id),
-      stats_cluster_label("driver_instance", self->stats_instance),
-    };
-    stats_cluster_logpipe_key_set(&sc_key, "output_events_total", labels, G_N_ELEMENTS(labels));
-    stats_cluster_logpipe_key_add_legacy_alias(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                               self->stats_instance);
+    stats_unregister_counter(self->metrics.output_events_key, SC_TYPE_DROPPED, &self->metrics.dropped_messages);
+    stats_unregister_counter(self->metrics.output_events_key, SC_TYPE_SUPPRESSED, &self->metrics.suppressed_messages);
+    stats_unregister_counter(self->metrics.output_events_key, SC_TYPE_WRITTEN, &self->metrics.written_messages);
 
-    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->metrics.dropped_messages);
-    stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->metrics.suppressed_messages);
-    stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->metrics.written_messages);
+    gchar stats_instance[1024];
+    stats_cluster_key_builder_format_legacy_stats_instance(self->metrics.stats_kb, stats_instance,
+                                                           sizeof(stats_instance));
 
     StatsClusterKey sc_legacy_processed;
     stats_cluster_single_key_legacy_set_with_name(&sc_legacy_processed, self->options->stats_source | SCS_DESTINATION,
-                                                  self->stats_id, self->stats_instance, "processed");
+                                                  self->stats_id, stats_instance, "processed");
     stats_unregister_counter(&sc_legacy_processed, SC_TYPE_SINGLE_VALUE, &self->metrics.processed_messages);
 
     StatsClusterKey sc_key_truncated_count;
     stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
-                                                  self->stats_id, self->stats_instance, "truncated_count");
+                                                  self->stats_id, stats_instance, "truncated_count");
     stats_unregister_counter(&sc_key_truncated_count, SC_TYPE_SINGLE_VALUE, &self->metrics.truncated.count);
 
     StatsClusterKey sc_key_truncated_bytes;
     stats_cluster_single_key_legacy_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
-                                                  self->stats_id, self->stats_instance, "truncated_bytes");
+                                                  self->stats_id, stats_instance, "truncated_bytes");
     stats_unregister_counter(&sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE, &self->metrics.truncated.bytes);
   }
   stats_unlock();
@@ -1630,7 +1611,16 @@ log_writer_free(LogPipe *s)
   if (self->last_msg)
     log_msg_unref(self->last_msg);
   g_free(self->stats_id);
-  g_free(self->stats_instance);
+
+  if (self->metrics.stats_kb)
+    stats_cluster_key_builder_free(self->metrics.stats_kb);
+
+  if (self->metrics.output_events_key)
+    stats_cluster_key_free(self->metrics.output_events_key);
+
+  if (self->metrics.written_bytes_key)
+    stats_cluster_key_free(self->metrics.written_bytes_key);
+
   ml_batched_timer_free(&self->mark_timer);
   ml_batched_timer_free(&self->suppress_timer);
   g_mutex_clear(&self->suppress_lock);
@@ -1790,9 +1780,44 @@ log_writer_reopen(LogWriter *s, LogProtoClient *proto)
     }
 }
 
+static void
+_set_metric_options(LogWriter *self, const gchar *stats_id, StatsClusterKeyBuilder *kb)
+{
+  if (self->stats_id)
+    g_free(self->stats_id);
+  self->stats_id = stats_id ? g_strdup(stats_id) : NULL;
+
+  if (self->metrics.stats_kb)
+    stats_cluster_key_builder_free(self->metrics.stats_kb);
+
+  if (!kb)
+    kb = stats_cluster_key_builder_new();
+
+  self->metrics.stats_kb = kb;
+
+  StatsClusterKeyBuilder *raw_bytes_stats_kb = stats_cluster_key_builder_clone(kb);
+
+  gchar stats_instance[1024];
+  const gchar *instance_name = stats_cluster_key_builder_format_legacy_stats_instance(self->metrics.stats_kb,
+                               stats_instance, sizeof(stats_instance));
+
+  stats_cluster_key_builder_set_name(self->metrics.stats_kb, "output_events_total");
+  stats_cluster_key_builder_set_legacy_alias(self->metrics.stats_kb, self->options->stats_source | SCS_DESTINATION,
+                                             self->stats_id, instance_name);
+  stats_cluster_key_builder_add_label(self->metrics.stats_kb, stats_cluster_label("id", self->stats_id));
+
+  self->metrics.output_events_key = stats_cluster_key_builder_build_logpipe(self->metrics.stats_kb);
+
+  stats_cluster_key_builder_set_name(raw_bytes_stats_kb, "output_event_bytes_total");
+  stats_cluster_key_builder_add_label(raw_bytes_stats_kb, stats_cluster_label("id", self->stats_id));
+
+  self->metrics.written_bytes_key = stats_cluster_key_builder_build_single(raw_bytes_stats_kb);
+  stats_cluster_key_builder_free(raw_bytes_stats_kb);
+}
+
 void
 log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *options,
-                       const gchar *stats_id, const gchar *stats_instance)
+                       const gchar *stats_id, StatsClusterKeyBuilder *kb)
 {
   self->control = control;
   self->options = options;
@@ -1800,13 +1825,7 @@ log_writer_set_options(LogWriter *self, LogPipe *control, LogWriterOptions *opti
   if (control)
     self->super.expr_node = control->expr_node;
 
-  if (self->stats_id)
-    g_free(self->stats_id);
-  self->stats_id = stats_id ? g_strdup(stats_id) : NULL;
-
-  if (self->stats_instance)
-    g_free(self->stats_instance);
-  self->stats_instance = stats_instance ? g_strdup(stats_instance) : NULL;
+  _set_metric_options(self, stats_id, kb);
 }
 
 LogWriter *
