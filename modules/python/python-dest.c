@@ -86,12 +86,11 @@ python_dd_set_class(LogDriver *d, gchar *class_name)
 }
 
 void
-python_dd_set_options(LogDriver *d, PythonOptions *options)
+python_dd_add_options(LogDriver *d, PythonOptions *options)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
 
   python_options_add_options(self->options, options);
-  python_options_release(options);
 }
 
 void

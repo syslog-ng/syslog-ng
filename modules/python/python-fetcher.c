@@ -76,12 +76,11 @@ python_fetcher_set_class(LogDriver *s, gchar *filename)
 }
 
 void
-python_fetcher_set_options(LogDriver *s, PythonOptions *options)
+python_fetcher_add_options(LogDriver *s, PythonOptions *options)
 {
   PythonFetcherDriver *self = (PythonFetcherDriver *) s;
 
   python_options_add_options(self->options, options);
-  python_options_release(options);
 }
 
 void

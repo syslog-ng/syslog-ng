@@ -141,7 +141,8 @@ python_dd_option
         | KW_IMPORTS python_dd_loaders
         | python_options_block
           {
-            python_dd_set_options(last_driver, $1);
+            python_dd_add_options(last_driver, $1);
+            python_options_release($1);
           }
         | threaded_dest_driver_general_option
         | threaded_dest_driver_batch_option
@@ -167,7 +168,8 @@ python_sd_option
         | KW_LOADERS python_sd_loaders
         | python_options_block
           {
-            python_sd_set_options(last_driver, $1);
+            python_sd_add_options(last_driver, $1);
+            python_options_release($1);
           }
         | threaded_source_driver_option
         ;
@@ -187,7 +189,8 @@ python_fetcher_option
         | KW_LOADERS python_fetcher_loaders
         | python_options_block
           {
-            python_fetcher_set_options(last_driver, $1);
+            python_fetcher_add_options(last_driver, $1);
+            python_options_release($1);
           }
         | threaded_source_driver_option
         | threaded_fetcher_driver_option
@@ -209,7 +212,8 @@ python_parser_option
         | KW_IMPORTS python_parser_loaders
         | python_options_block
           {
-            python_parser_set_options(last_parser, $1);
+            python_parser_add_options(last_parser, $1);
+            python_options_release($1);
           }
         | parser_opt
         ;
@@ -229,7 +233,8 @@ python_http_header_option
         | KW_LOADERS python_http_header_loaders
         | python_options_block
           {
-            python_http_header_set_options(last_header, $1);
+            python_http_header_add_options(last_header, $1);
+            python_options_release($1);
           }
         | KW_MARK_ERRORS_AS_CRITICAL '(' yesno ')'
           {

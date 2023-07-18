@@ -83,12 +83,11 @@ python_sd_set_class(LogDriver *s, gchar *filename)
 }
 
 void
-python_sd_set_options(LogDriver *s, PythonOptions *options)
+python_sd_add_options(LogDriver *s, PythonOptions *options)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
 
   python_options_add_options(self->options, options);
-  python_options_release(options);
 }
 
 void

@@ -31,7 +31,7 @@
 LogDriver *python_sd_new(GlobalConfig *cfg);
 void python_sd_set_loaders(LogDriver *d, GList *loaders);
 void python_sd_set_class(LogDriver *d, gchar *class_name);
-void python_sd_set_options(LogDriver *d, PythonOptions *options);
+void python_sd_add_options(LogDriver *d, PythonOptions *options);
 
 void py_log_source_global_init(void);
 
