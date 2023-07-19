@@ -68,7 +68,7 @@ struct _LogThreadedSourceDriver
   LogThreadedSourceWorker *worker;
   gboolean auto_close_batches;
 
-  const gchar *(*format_stats_key)(LogThreadedSourceDriver *self, StatsClusterKeyBuilder *kb);
+  void (*format_stats_key)(LogThreadedSourceDriver *self, StatsClusterKeyBuilder *kb);
   gboolean (*thread_init)(LogThreadedSourceDriver *self);
   void (*thread_deinit)(LogThreadedSourceDriver *self);
   void (*run)(LogThreadedSourceDriver *self);

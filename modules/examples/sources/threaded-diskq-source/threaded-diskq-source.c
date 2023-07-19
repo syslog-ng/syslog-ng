@@ -171,15 +171,13 @@ _fetch(LogThreadedFetcherDriver *s)
   return result;
 }
 
-static const gchar *
+static void
 _format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
   ThreadedDiskqSourceDriver *self = (ThreadedDiskqSourceDriver *) s;
 
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "diskq-source"));
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("filename", self->filename));
-
-  return NULL;
 }
 
 static gboolean

@@ -92,7 +92,7 @@ syslogng::grpc::otel::SourceDriver::request_exit()
   cq->Shutdown();
 }
 
-const gchar *
+void
 syslogng::grpc::otel::SourceDriver::format_stats_key(StatsClusterKeyBuilder *kb)
 {
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "opentelemetry"));
@@ -100,8 +100,6 @@ syslogng::grpc::otel::SourceDriver::format_stats_key(StatsClusterKeyBuilder *kb)
   gchar num[64];
   g_snprintf(num, sizeof(num), "%" G_GUINT64_FORMAT, port);
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("port", num));
-
-  return NULL;
 }
 
 gboolean
@@ -163,10 +161,10 @@ _request_exit(LogThreadedSourceDriver *s)
   get_SourceDriver(s)->request_exit();
 }
 
-static const gchar *
+static void
 _format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
-  return get_SourceDriver(s)->format_stats_key(kb);
+  get_SourceDriver(s)->format_stats_key(kb);
 }
 
 static gboolean

@@ -92,7 +92,7 @@ python_fetcher_set_loaders(LogDriver *s, GList *loaders)
   self->loaders = loaders;
 }
 
-static const gchar *
+static void
 python_fetcher_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
   PythonFetcherDriver *self = (PythonFetcherDriver *) s;
@@ -105,7 +105,7 @@ python_fetcher_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuild
     .id = self->super.super.super.super.id
   };
 
-  return python_format_stats_key((LogPipe *)s, kb, "python-fetcher", &options);
+  python_format_stats_key((LogPipe *)s, kb, "python-fetcher", &options);
 }
 
 static void

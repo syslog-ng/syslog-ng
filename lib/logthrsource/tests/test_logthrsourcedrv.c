@@ -54,11 +54,10 @@ _generate_persist_name(const LogPipe *s)
   return "test_threaded_source_driver";
 }
 
-static const gchar *
+static void
 _format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "test_threaded_source_driver_stats"));
-  return NULL;
 }
 
 static void

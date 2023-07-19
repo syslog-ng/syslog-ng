@@ -119,7 +119,7 @@ _init(LogPipe *s)
   return TRUE;
 }
 
-static const gchar *
+static void
 _format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
   ThreadedRandomGeneratorSourceDriver *self = (ThreadedRandomGeneratorSourceDriver *) s;
@@ -135,8 +135,6 @@ _format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 
   g_snprintf(num, sizeof(num), "%u", self->flags);
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("flags", num));
-
-  return NULL;
 }
 
 void

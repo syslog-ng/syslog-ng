@@ -49,7 +49,7 @@ _format_persist_name(const LogPipe *s)
   return stats_instance;
 }
 
-static const gchar *
+static void
 _format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
   MQTTSourceDriver *self = (MQTTSourceDriver *) s;
@@ -58,8 +58,6 @@ _format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("address",
                                              mqtt_client_options_get_address(&self->options)));
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("topic", self->topic));
-
-  return NULL;
 }
 
 static LogMessage *

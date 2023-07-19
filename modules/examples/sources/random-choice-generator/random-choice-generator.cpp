@@ -78,11 +78,10 @@ RandomChoiceGeneratorCpp::request_exit()
   exit_requested = true;
 }
 
-const gchar *
+void
 RandomChoiceGeneratorCpp::format_stats_key(StatsClusterKeyBuilder *kb)
 {
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "random-choice-generator"));
-  return NULL;
 }
 
 gboolean
@@ -130,10 +129,10 @@ _request_exit(LogThreadedSourceDriver *s)
   get_RandomChoiceGeneratorCpp(s)->request_exit();
 }
 
-static const gchar *
+static void
 _format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
-  return get_RandomChoiceGeneratorCpp(s)->format_stats_key(kb);
+  get_RandomChoiceGeneratorCpp(s)->format_stats_key(kb);
 }
 
 static gboolean

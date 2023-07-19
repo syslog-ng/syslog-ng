@@ -99,7 +99,7 @@ python_sd_set_loaders(LogDriver *s, GList *loaders)
   self->loaders = loaders;
 }
 
-static const gchar *
+static void
 python_sd_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
@@ -112,7 +112,7 @@ python_sd_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *k
     .id = self->super.super.super.id
   };
 
-  return python_format_stats_key((LogPipe *)s, kb, "python", &options);
+  python_format_stats_key((LogPipe *)s, kb, "python", &options);
 }
 
 static void
