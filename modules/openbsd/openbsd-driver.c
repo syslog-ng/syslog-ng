@@ -128,6 +128,7 @@ _openbsd_sd_init(LogPipe *s)
                   poll_fd_events_new(syslog_fd));
 
   StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_add_label(kb, stats_cluster_label("driver", "openbsd"));
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("filename", OPENBSD_LOG_DEV));
   log_reader_set_options(self->reader,
                          s,

@@ -191,6 +191,7 @@ afstreams_sd_init(LogPipe *s)
                                                                &self->reader_options.proto_options.super), poll_fd_events_new(fd));
 
       StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+      stats_cluster_key_builder_add_label(kb, stats_cluster_label("driver", "sun-streams"));
       stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("filename", self->dev_filename->str));
       log_reader_set_options(self->reader,
                              s,

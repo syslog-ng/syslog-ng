@@ -295,6 +295,7 @@ afprogram_sd_init(LogPipe *s)
       log_reader_open(self->reader, proto, poll_fd_events_new(fd));
 
       StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+      stats_cluster_key_builder_add_label(kb, stats_cluster_label("driver", "program"));
       stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("command", self->process_info.cmdline->str));
       log_reader_set_options(self->reader,
                              s,
@@ -530,6 +531,7 @@ _init_stats_key_builders(AFProgramDestDriver *self, StatsClusterKeyBuilder **wri
                          StatsClusterKeyBuilder **driver_sck_builder, StatsClusterKeyBuilder **queue_sck_builder)
 {
   *writer_sck_builder = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_add_label(*writer_sck_builder, stats_cluster_label("driver", "program"));
   stats_cluster_key_builder_add_legacy_label(*writer_sck_builder, stats_cluster_label("command",
                                              self->process_info.cmdline->str));
 

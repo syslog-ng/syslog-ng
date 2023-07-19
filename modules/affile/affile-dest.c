@@ -186,6 +186,7 @@ _init_stats_key_builders(AFFileDestWriter *self, StatsClusterKeyBuilder **writer
                          StatsClusterKeyBuilder **driver_sck_builder, StatsClusterKeyBuilder **queue_sck_builder)
 {
   *writer_sck_builder = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_add_label(*writer_sck_builder, stats_cluster_label("driver", "file"));
   stats_cluster_key_builder_add_legacy_label(*writer_sck_builder, stats_cluster_label("filename", self->filename));
 
   *driver_sck_builder = stats_cluster_key_builder_clone(*writer_sck_builder);
@@ -322,6 +323,7 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
   if (self->writer)
     {
       StatsClusterKeyBuilder *writer_sck_builder = stats_cluster_key_builder_new();
+      stats_cluster_key_builder_add_label(writer_sck_builder, stats_cluster_label("driver", "file"));
       stats_cluster_key_builder_add_legacy_label(writer_sck_builder, stats_cluster_label("filename", self->filename));
 
       log_pipe_set_config((LogPipe *) self->writer, cfg);

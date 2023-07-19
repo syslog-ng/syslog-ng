@@ -496,6 +496,7 @@ _init_stats_key_builders(AFSocketDestDriver *self, StatsClusterKeyBuilder **writ
                          StatsClusterKeyBuilder **driver_sck_builder, StatsClusterKeyBuilder **queue_sck_builder)
 {
   *writer_sck_builder = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_add_label(*writer_sck_builder, stats_cluster_label("driver", "afsocket"));
   stats_cluster_key_builder_add_legacy_label(*writer_sck_builder, stats_cluster_label("transport",
                                              self->transport_mapper->transport));
   stats_cluster_key_builder_add_legacy_label(*writer_sck_builder, stats_cluster_label("address",

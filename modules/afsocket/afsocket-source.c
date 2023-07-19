@@ -118,6 +118,8 @@ afsocket_sc_format_stats_key(AFSocketSourceConnection *self, StatsClusterKeyBuil
 {
   gchar addr[256];
 
+  stats_cluster_key_builder_add_label(kb, stats_cluster_label("driver", "afsocket"));
+
   if (!self->peer_addr)
     {
       /* dgram connection, which means we have no peer, use the bind address */
