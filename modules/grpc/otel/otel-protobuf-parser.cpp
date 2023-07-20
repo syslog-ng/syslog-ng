@@ -113,7 +113,7 @@ _serialize_AnyValue(const AnyValue &value, LogMessageValueType *type, std::strin
     case AnyValue::kArrayValue:
     case AnyValue::kKvlistValue:
       *type = LM_VT_PROTOBUF;
-      value.SerializeToString(buffer);
+      value.SerializePartialToString(buffer);
       return *buffer;
     case AnyValue::kBytesValue:
       *type = LM_VT_BYTES;
@@ -196,7 +196,7 @@ _parse_metadata(LogMessage *msg)
   if (!value)
     return false;
   Resource resource;
-  if (!resource.ParseFromArray(value, len))
+  if (!resource.ParsePartialFromArray(value, len))
     {
       msg_error("OpenTelemetry: Failed to deserialize .otel_raw.resource",
                 evt_tag_msg_reference(msg));
@@ -221,7 +221,7 @@ _parse_metadata(LogMessage *msg)
   if (!value)
     return false;
   InstrumentationScope scope;
-  if (!scope.ParseFromArray(value, len))
+  if (!scope.ParsePartialFromArray(value, len))
     {
       msg_error("OpenTelemetry: Failed to deserialize .otel_raw.scope",
                 evt_tag_msg_reference(msg));
@@ -301,7 +301,7 @@ _parse_log_record(LogMessage *msg)
     return false;
 
   LogRecord log_record;
-  if (!log_record.ParseFromArray(raw_value, len))
+  if (!log_record.ParsePartialFromArray(raw_value, len))
     {
       msg_error("OpenTelemetry: Failed to deserialize .otel_raw.log",
                 evt_tag_msg_reference(msg));
@@ -847,7 +847,7 @@ _parse_metric(LogMessage *msg)
     return false;
 
   Metric metric;
-  if (!metric.ParseFromArray(raw_value, len))
+  if (!metric.ParsePartialFromArray(raw_value, len))
     {
       msg_error("OpenTelemetry: Failed to deserialize .otel_raw.metric",
                 evt_tag_msg_reference(msg));
@@ -880,7 +880,7 @@ _parse_span(LogMessage *msg)
     return false;
 
   Span span;
-  if (!span.ParseFromArray(raw_value, len))
+  if (!span.ParsePartialFromArray(raw_value, len))
     {
       msg_error("OpenTelemetry: Failed to deserialize .otel_raw.span",
                 evt_tag_msg_reference(msg));
@@ -1046,14 +1046,14 @@ syslogng::grpc::otel::ProtobufParser::store_raw_metadata(LogMessage *msg, const 
     log_msg_set_value(msg, LM_V_HOST, hostname.c_str(), hostname.length());
 
   /* .otel_raw.resource */
-  resource.SerializeToString(&serialized);
+  resource.SerializePartialToString(&serialized);
   _set_value(msg, ".otel_raw.resource", serialized, LM_VT_PROTOBUF);
 
   /* .otel_raw.resource_schema_url */
   _set_value(msg, ".otel_raw.resource_schema_url", resource_schema_url, LM_VT_STRING);
 
   /* .otel_raw.scope */
-  scope.SerializeToString(&serialized);
+  scope.SerializePartialToString(&serialized);
   _set_value(msg, ".otel_raw.scope", serialized, LM_VT_PROTOBUF);
 
   /* .otel_raw.scope_schema_url */
@@ -1067,7 +1067,7 @@ syslogng::grpc::otel::ProtobufParser::store_raw(LogMessage *msg, const LogRecord
   _set_value(msg, ".otel_raw.type", "log", LM_VT_STRING);
 
   /* .otel_raw.log */
-  std::string serialized = log_record.SerializeAsString();
+  std::string serialized = log_record.SerializePartialAsString();
   _set_value(msg, ".otel_raw.log", serialized, LM_VT_PROTOBUF);
 }
 
@@ -1078,7 +1078,7 @@ syslogng::grpc::otel::ProtobufParser::store_raw(LogMessage *msg, const Metric &m
   _set_value(msg, ".otel_raw.type", "metric", LM_VT_STRING);
 
   /* .otel_raw.metric */
-  std::string serialized = metric.SerializeAsString();
+  std::string serialized = metric.SerializePartialAsString();
   _set_value(msg, ".otel_raw.metric", serialized, LM_VT_PROTOBUF);
 }
 
@@ -1089,7 +1089,7 @@ syslogng::grpc::otel::ProtobufParser::store_raw(LogMessage *msg, const Span &spa
   _set_value(msg, ".otel_raw.type", "span", LM_VT_STRING);
 
   /* .otel_raw.span */
-  std::string serialized = span.SerializeAsString();
+  std::string serialized = span.SerializePartialAsString();
   _set_value(msg, ".otel_raw.span", serialized, LM_VT_PROTOBUF);
 }
 
