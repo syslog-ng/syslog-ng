@@ -27,6 +27,7 @@
 #include "messages.h"
 #include "apphook.h"
 #include "ack-tracker/ack_tracker_factory.h"
+#include "stats/stats-cluster-key-builder.h"
 
 #include <iv.h>
 
@@ -85,9 +86,9 @@ log_threaded_source_worker_logpipe(LogThreadedSourceWorker *self)
 static void
 log_threaded_source_worker_set_options(LogThreadedSourceWorker *self, LogThreadedSourceDriver *control,
                                        LogThreadedSourceWorkerOptions *options,
-                                       const gchar *stats_id, const gchar *stats_instance)
+                                       const gchar *stats_id, StatsClusterKeyBuilder *kb)
 {
-  log_source_set_options(&self->super, &options->super, stats_id, stats_instance, TRUE,
+  log_source_set_options(&self->super, &options->super, stats_id, kb, TRUE,
                          control->super.super.super.expr_node);
   log_source_set_ack_tracker_factory(&self->super, ack_tracker_factory_ref(options->ack_tracker_factory));
 
@@ -253,11 +254,13 @@ log_threaded_source_driver_init_method(LogPipe *s)
   if (!log_src_driver_init_method(s))
     return FALSE;
 
-  g_assert(self->format_stats_instance);
+  g_assert(self->format_stats_key);
 
+  StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+  self->format_stats_key(self, kb);
   log_threaded_source_worker_options_init(&self->worker_options, cfg, self->super.super.group);
   log_threaded_source_worker_set_options(self->worker, self, &self->worker_options,
-                                         self->super.super.id, self->format_stats_instance(self));
+                                         self->super.super.id, kb);
 
   LogPipe *worker_pipe = log_threaded_source_worker_logpipe(self->worker);
   log_pipe_append(worker_pipe, s);

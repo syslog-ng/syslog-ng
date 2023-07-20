@@ -206,17 +206,18 @@ riemann_dd_get_template_options(LogDriver *d)
  */
 
 static const gchar *
-riemann_dd_format_stats_instance(LogThreadedDestDriver *s)
+riemann_dd_format_stats_key(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)s;
-  static gchar persist_name[1024];
 
-  if (s->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "riemann,%s", s->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "riemann,%s,%u", self->server, self->port);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "riemann"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("host", self->server));
 
-  return persist_name;
+  gchar num[64];
+  g_snprintf(num, sizeof(num), "%u", self->port);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("port", num));
+
+  return NULL;
 }
 
 static const gchar *
@@ -334,7 +335,7 @@ riemann_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.generate_persist_name = riemann_dd_format_persist_name;
   self->super.worker.construct = riemann_dw_new;
 
-  self->super.format_stats_instance = riemann_dd_format_stats_instance;
+  self->super.format_stats_key = riemann_dd_format_stats_key;
   self->super.stats_source = stats_register_type("riemann");
 
   self->port = -1;

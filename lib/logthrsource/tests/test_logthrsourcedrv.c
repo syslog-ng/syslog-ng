@@ -54,10 +54,10 @@ _generate_persist_name(const LogPipe *s)
   return "test_threaded_source_driver";
 }
 
-static const gchar *
-_format_stats_instance(LogThreadedSourceDriver *s)
+static void
+_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
-  return "test_threaded_source_driver_stats";
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "test_threaded_source_driver_stats"));
 }
 
 static void
@@ -99,7 +99,7 @@ test_threaded_sd_new(GlobalConfig *cfg, gboolean blocking_post)
   log_threaded_source_driver_init_instance(&self->super, cfg);
 
   self->super.super.super.super.init = test_threaded_source_driver_init_method;
-  self->super.format_stats_instance = _format_stats_instance;
+  self->super.format_stats_key = _format_stats_key;
   self->super.super.super.super.generate_persist_name = _generate_persist_name;
 
   self->super.request_exit = _request_exit;

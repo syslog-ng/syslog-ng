@@ -33,6 +33,7 @@
 #include "logmsg/logmsg.h"
 #include "msg-format.h"
 #include "mainloop-threaded-worker.h"
+#include "stats/stats-cluster-key-builder.h"
 
 typedef struct _LogThreadedSourceDriver LogThreadedSourceDriver;
 typedef struct _LogThreadedSourceWorker LogThreadedSourceWorker;
@@ -67,7 +68,7 @@ struct _LogThreadedSourceDriver
   LogThreadedSourceWorker *worker;
   gboolean auto_close_batches;
 
-  const gchar *(*format_stats_instance)(LogThreadedSourceDriver *self);
+  void (*format_stats_key)(LogThreadedSourceDriver *self, StatsClusterKeyBuilder *kb);
   gboolean (*thread_init)(LogThreadedSourceDriver *self);
   void (*thread_deinit)(LogThreadedSourceDriver *self);
   void (*run)(LogThreadedSourceDriver *self);

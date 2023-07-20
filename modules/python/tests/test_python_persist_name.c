@@ -36,6 +36,7 @@
 #include "mainloop-worker.h"
 #include "mainloop.h"
 #include "python-persist.h"
+#include "stats/stats-cluster-key-builder.h"
 
 
 MainLoop *main_loop;
@@ -220,7 +221,10 @@ Test(python_persist_name, test_python_exception_in_generate_persist_name)
     .generate_persist_name_method = persist_generator_stats,
     .class = "class",
   };
-  cr_assert_str_eq(python_format_stats_instance(p, "module", &options_stats), "module,class");
+
+  StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+  cr_assert_str_eq(python_format_stats_key(p, kb, "module", &options_stats), "module,class");
+  stats_cluster_key_builder_free(kb);
 
   PythonPersistMembers options_persist =
   {

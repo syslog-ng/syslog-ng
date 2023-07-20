@@ -53,7 +53,7 @@ __init(LogPipe *s)
       self->current_test_case->init(self->current_test_case, self, self->reader, &self->options);
     }
   journal_reader_options_init(&self->options, cfg, "test");
-  journal_reader_set_options((LogPipe *)self->reader, &self->super, &self->options, "test", "1");
+  journal_reader_set_options((LogPipe *)self->reader, &self->super, &self->options, "test", NULL);
   log_pipe_append((LogPipe *)self->reader, &self->super);
   cr_assert(log_pipe_init((LogPipe *)self->reader), "%s", "Can't initialize reader");
   return TRUE;
@@ -155,5 +155,3 @@ test_source_finish_tc(TestSource *self)
     }
   iv_task_register(&self->stop);
 }
-
-

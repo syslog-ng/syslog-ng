@@ -20,8 +20,6 @@
  *
  */
 
-#include <criterion/criterion.h>
-
 #include "opentelemetry/proto/logs/v1/logs.pb.h"
 #include "opentelemetry/proto/metrics/v1/metrics.pb.h"
 #include "opentelemetry/proto/trace/v1/trace.pb.h"
@@ -31,6 +29,8 @@
 #include "compat/cpp-start.h"
 #include "apphook.h"
 #include "compat/cpp-end.h"
+
+#include <criterion/criterion.h>
 
 using namespace syslogng::grpc::otel;
 using namespace opentelemetry::proto::resource::v1;

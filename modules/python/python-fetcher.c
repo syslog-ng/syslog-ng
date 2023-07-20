@@ -92,8 +92,8 @@ python_fetcher_set_loaders(LogDriver *s, GList *loaders)
   self->loaders = loaders;
 }
 
-static const gchar *
-python_fetcher_format_stats_instance(LogThreadedSourceDriver *s)
+static void
+python_fetcher_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
   PythonFetcherDriver *self = (PythonFetcherDriver *) s;
 
@@ -105,7 +105,7 @@ python_fetcher_format_stats_instance(LogThreadedSourceDriver *s)
     .id = self->super.super.super.super.id
   };
 
-  return python_format_stats_instance((LogPipe *)s, "python-fetcher", &options);
+  python_format_stats_key((LogPipe *)s, kb, "python-fetcher", &options);
 }
 
 static void
@@ -686,7 +686,7 @@ python_fetcher_new(GlobalConfig *cfg)
   self->super.super.super.super.super.free_fn = python_fetcher_free;
   self->super.super.super.super.super.generate_persist_name = python_fetcher_format_persist_name;
 
-  self->super.super.format_stats_instance = python_fetcher_format_stats_instance;
+  self->super.super.format_stats_key = python_fetcher_format_stats_key;
   self->super.super.worker_options.super.stats_level = STATS_LEVEL0;
   self->super.super.worker_options.super.stats_source = stats_register_type("python");
 

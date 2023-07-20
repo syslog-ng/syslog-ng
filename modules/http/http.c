@@ -337,15 +337,14 @@ _format_persist_name(const LogPipe *s)
 }
 
 static const gchar *
-_format_stats_instance(LogThreadedDestDriver *s)
+_format_stats_key(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb)
 {
-  static gchar stats[1024];
-
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
-  g_snprintf(stats, sizeof(stats), "http,%s", self->url);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "http"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("url", self->url));
 
-  return stats;
+  return NULL;
 }
 
 gboolean
@@ -440,7 +439,7 @@ http_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.deinit = http_dd_deinit;
   self->super.super.super.super.free_fn = http_dd_free;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
-  self->super.format_stats_instance = _format_stats_instance;
+  self->super.format_stats_key = _format_stats_key;
   self->super.metrics.raw_bytes_enabled = TRUE;
   self->super.stats_source = stats_register_type("http");
   self->super.worker.construct = http_dw_new;

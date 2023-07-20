@@ -113,10 +113,43 @@ copy_stats_instance(const LogPipe *self, const gchar *module, PythonPersistMembe
   PyGILState_Release(gstate);
 }
 
+static void
+copy_instance_name(const LogPipe *self, const gchar *module, PythonPersistMembers *options,
+                   gchar *buffer, gsize size)
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyObject *ret = _call_generate_persist_name_method(options);
+  if (ret)
+    {
+      const gchar *ret_as_c_str;
+      py_bytes_or_string_to_string(ret, &ret_as_c_str);
+      g_snprintf(buffer, size, "%s", ret_as_c_str);
+    }
+  else
+    {
+      g_strlcpy(buffer, "", size);
+    }
+  Py_XDECREF(ret);
+
+  PyGILState_Release(gstate);
+}
+
 const gchar *
-python_format_stats_instance(LogPipe *p, const gchar *module, PythonPersistMembers *options)
+python_format_stats_key(LogPipe *p, StatsClusterKeyBuilder *kb, const gchar *module, PythonPersistMembers *options)
 {
   static gchar persist_name[1024];
+
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", module));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("class", options->class));
+
+  if (options->generate_persist_name_method)
+    {
+      copy_instance_name(p, module, options, persist_name, sizeof(persist_name));
+      stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("instance", persist_name));
+    }
+
 
   if (p->persist_name)
     format_default_stats_instance(persist_name, sizeof(persist_name), module, p->persist_name);

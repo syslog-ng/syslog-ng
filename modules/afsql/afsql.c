@@ -1098,15 +1098,17 @@ error:
 }
 
 static const gchar *
-afsql_dd_format_stats_instance(LogThreadedDestDriver *s)
+afsql_dd_format_stats_key(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  static gchar persist_name[64];
 
-  g_snprintf(persist_name, sizeof(persist_name),
-             "%s,%s,%s,%s,%s",
-             self->type, self->host, self->port, self->database, self->table->template_str);
-  return persist_name;
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", self->type));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("host", self->host));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("port", self->port));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("database", self->database));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("table", self->table->template_str));
+
+  return NULL;
 }
 
 static const gchar *
@@ -1329,7 +1331,7 @@ afsql_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.init = afsql_dd_init;
   self->super.super.super.super.free_fn = afsql_dd_free;
   self->super.super.super.super.generate_persist_name = afsql_dd_format_persist_name;
-  self->super.format_stats_instance = afsql_dd_format_stats_instance;
+  self->super.format_stats_key = afsql_dd_format_stats_key;
   self->super.worker.connect = afsql_dd_connect;
   self->super.worker.disconnect = afsql_dd_disconnect;
   self->super.worker.insert = afsql_dd_insert;

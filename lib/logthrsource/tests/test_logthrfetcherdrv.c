@@ -56,10 +56,10 @@ _generate_persist_name(const LogPipe *s)
   return "test_threaded_fetcher_driver";
 }
 
-static const gchar *
-_format_stats_instance(LogThreadedSourceDriver *s)
+static void
+_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
-  return "test_threaded_fetcher_driver_stats";
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "test_threaded_fetcher_driver_stats"));
 }
 
 static void _source_queue_mock(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
@@ -113,7 +113,7 @@ test_threaded_fetcher_new(GlobalConfig *cfg)
 
   self->super.super.super.super.super.init = test_threaded_fetcher_driver_init_method;
 
-  self->super.super.format_stats_instance = _format_stats_instance;
+  self->super.super.format_stats_key = _format_stats_key;
   self->super.super.super.super.super.generate_persist_name = _generate_persist_name;
   self->super.super.super.super.super.free_fn = test_threaded_fetcher_free;
 

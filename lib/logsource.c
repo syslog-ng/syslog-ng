@@ -416,7 +416,11 @@ _register_window_stats(LogSource *self)
   if (!stats_check_level(4))
     return;
 
-  const gchar *instance_name = self->name ? : self->stats_instance;
+  gchar stats_instance[1024];
+  const gchar *instance_name = self->name;
+  if (!instance_name)
+    instance_name = stats_cluster_key_builder_format_legacy_stats_instance(self->metrics.stats_kb,
+                    stats_instance, sizeof(stats_instance));
 
   StatsClusterKey sc_key;
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
@@ -460,51 +464,31 @@ _create_ack_tracker_if_not_exists(LogSource *self)
 static void
 _register_raw_bytes_stats(LogSource *self, gint stats_level)
 {
-  StatsClusterLabel labels[] =
-  {
-    stats_cluster_label("id", self->stats_id),
-    stats_cluster_label("driver_instance", self->stats_instance),
-  };
-
-  StatsClusterKey input_bytes_key;
-  stats_cluster_single_key_set(&input_bytes_key, "input_event_bytes_total", labels, G_N_ELEMENTS(labels));
-  stats_byte_counter_init(&self->metrics.recvd_bytes, &input_bytes_key, stats_level, SBCP_KIB);
+  stats_byte_counter_init(&self->metrics.recvd_bytes, self->metrics.recvd_bytes_key, stats_level, SBCP_KIB);
 }
 
 static void
 _unregister_raw_bytes_stats(LogSource *self)
 {
-  StatsClusterLabel labels[] =
-  {
-    stats_cluster_label("id", self->stats_id),
-    stats_cluster_label("driver_instance", self->stats_instance),
-  };
-
-  StatsClusterKey input_bytes_key;
-  stats_cluster_single_key_set(&input_bytes_key, "input_event_bytes_total", labels, G_N_ELEMENTS(labels));
-  stats_byte_counter_deinit(&self->metrics.recvd_bytes, &input_bytes_key);
+  stats_byte_counter_deinit(&self->metrics.recvd_bytes, self->metrics.recvd_bytes_key);
 }
 
 static void
 _register_counters(LogSource *self)
 {
   stats_lock();
-  StatsClusterKey sc_key;
-  StatsClusterLabel labels[] =
-  {
-    stats_cluster_label("id", self->stats_id),
-    stats_cluster_label("driver_instance", self->stats_instance),
-  };
 
   gint level = log_pipe_is_internal(&self->super) ? STATS_LEVEL3 : self->options->stats_level;
 
-  stats_cluster_single_key_set(&sc_key, "input_events_total", labels, G_N_ELEMENTS(labels));
-  stats_cluster_single_key_add_legacy_alias_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                                      self->stats_instance, "processed");
-  stats_register_counter(level, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.recvd_messages);
+  stats_register_counter(level, self->metrics.recvd_messages_key, SC_TYPE_SINGLE_VALUE, &self->metrics.recvd_messages);
+
+  StatsClusterKey sc_key;
+  gchar stats_instance[1024];
+  const gchar *instance_name = stats_cluster_key_builder_format_legacy_stats_instance(self->metrics.stats_kb,
+                               stats_instance, sizeof(stats_instance));
 
   stats_cluster_logpipe_key_legacy_set(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                       self->stats_instance);
+                                       instance_name);
   stats_register_counter(level, &sc_key, SC_TYPE_STAMP, &self->metrics.last_message_seen);
 
   _register_window_stats(self);
@@ -542,19 +526,16 @@ _unregister_counters(LogSource *self)
     _unregister_raw_bytes_stats(self);
 
   stats_lock();
+
+  stats_unregister_counter(self->metrics.recvd_messages_key, SC_TYPE_SINGLE_VALUE, &self->metrics.recvd_messages);
+
   StatsClusterKey sc_key;
-  StatsClusterLabel labels[] =
-  {
-    stats_cluster_label("id", self->stats_id),
-    stats_cluster_label("driver_instance", self->stats_instance),
-  };
-  stats_cluster_single_key_set(&sc_key, "input_events_total", labels, G_N_ELEMENTS(labels));
-  stats_cluster_single_key_add_legacy_alias_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                                      self->stats_instance, "processed");
-  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.recvd_messages);
+  gchar stats_instance[1024];
+  const gchar *instance_name = stats_cluster_key_builder_format_legacy_stats_instance(self->metrics.stats_kb,
+                               stats_instance, sizeof(stats_instance));
 
   stats_cluster_logpipe_key_legacy_set(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                       self->stats_instance);
+                                       instance_name);
   stats_unregister_counter(&sc_key, SC_TYPE_STAMP, &self->metrics.last_message_seen);
 
   _unregister_window_stats(self);
@@ -678,7 +659,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   msg_set_context(msg);
 
   msg_diagnostics(">>>>>> Source side message processing begin",
-                  evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
                   log_pipe_location_tag(s),
                   evt_tag_msg_reference(msg));
 
@@ -728,7 +708,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       nanosleep(&ts, NULL);
     }
   msg_diagnostics("<<<<<< Source side message processing finish",
-                  evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
                   log_pipe_location_tag(s),
                   evt_tag_msg_reference(msg));
 
@@ -751,9 +730,45 @@ _is_window_initialized(LogSource *self)
   return self->window_initialized;
 }
 
+static void
+_set_metric_options(LogSource *self, const gchar *stats_id, StatsClusterKeyBuilder *kb)
+{
+  if (self->stats_id)
+    g_free(self->stats_id);
+  self->stats_id = stats_id ? g_strdup(stats_id) : NULL;
+  if (self->metrics.stats_kb)
+    stats_cluster_key_builder_free(self->metrics.stats_kb);
+
+  if (!kb)
+    kb = stats_cluster_key_builder_new();
+
+  self->metrics.stats_kb = kb;
+
+  StatsClusterKeyBuilder *raw_bytes_stats_kb = stats_cluster_key_builder_clone(kb);
+
+  gchar stats_instance[1024];
+  const gchar *instance_name = stats_cluster_key_builder_format_legacy_stats_instance(self->metrics.stats_kb,
+                               stats_instance, sizeof(stats_instance));
+
+  stats_cluster_key_builder_set_name(self->metrics.stats_kb, "input_events_total");
+  stats_cluster_key_builder_set_legacy_alias(self->metrics.stats_kb, self->options->stats_source | SCS_SOURCE,
+                                             self->stats_id, instance_name);
+  stats_cluster_key_builder_set_legacy_alias_name(self->metrics.stats_kb, "processed");
+  stats_cluster_key_builder_add_label(self->metrics.stats_kb, stats_cluster_label("id", self->stats_id));
+
+  self->metrics.recvd_messages_key = stats_cluster_key_builder_build_single(self->metrics.stats_kb);
+
+
+  stats_cluster_key_builder_set_name(raw_bytes_stats_kb, "input_event_bytes_total");;
+  stats_cluster_key_builder_add_label(raw_bytes_stats_kb, stats_cluster_label("id", self->stats_id));
+
+  self->metrics.recvd_bytes_key = stats_cluster_key_builder_build_single(raw_bytes_stats_kb);
+  stats_cluster_key_builder_free(raw_bytes_stats_kb);
+}
+
 void
 log_source_set_options(LogSource *self, LogSourceOptions *options,
-                       const gchar *stats_id, const gchar *stats_instance,
+                       const gchar *stats_id, StatsClusterKeyBuilder *kb,
                        gboolean threaded, LogExprNode *expr_node)
 {
   /* NOTE: we don't adjust window_size even in case it was changed in the
@@ -764,12 +779,7 @@ log_source_set_options(LogSource *self, LogSourceOptions *options,
     _initialize_window(self, options->init_window_size);
 
   self->options = options;
-  if (self->stats_id)
-    g_free(self->stats_id);
-  self->stats_id = stats_id ? g_strdup(stats_id) : NULL;
-  if (self->stats_instance)
-    g_free(self->stats_instance);
-  self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;
+  _set_metric_options(self, stats_id, kb);
   self->threaded = threaded;
 
   log_pipe_detach_expr_node(&self->super);
@@ -813,7 +823,16 @@ log_source_free(LogPipe *s)
 
   g_free(self->name);
   g_free(self->stats_id);
-  g_free(self->stats_instance);
+
+  if (self->metrics.stats_kb)
+    stats_cluster_key_builder_free(self->metrics.stats_kb);
+
+  if (self->metrics.recvd_messages_key)
+    stats_cluster_key_free(self->metrics.recvd_messages_key);
+
+  if (self->metrics.recvd_bytes_key)
+    stats_cluster_key_free(self->metrics.recvd_bytes_key);
+
   log_pipe_detach_expr_node(&self->super);
   log_pipe_free_method(s);
 

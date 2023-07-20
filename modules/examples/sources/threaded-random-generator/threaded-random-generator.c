@@ -119,18 +119,22 @@ _init(LogPipe *s)
   return TRUE;
 }
 
-static const gchar *
-_format_stats_instance(LogThreadedSourceDriver *s)
+static void
+_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
   ThreadedRandomGeneratorSourceDriver *self = (ThreadedRandomGeneratorSourceDriver *) s;
-  static gchar persist_name[1024];
 
-  if (s->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "random-generator,%s", s->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "random-generator,%u,%u,%u", self->bytes, self->freq, self->flags);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "random-generator"));
 
-  return persist_name;
+  gchar num[64];
+  g_snprintf(num, sizeof(num), "%u", self->bytes);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("bytes", num));
+
+  g_snprintf(num, sizeof(num), "%u", self->freq);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("freq", num));
+
+  g_snprintf(num, sizeof(num), "%u", self->flags);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("flags", num));
 }
 
 void
@@ -173,7 +177,7 @@ threaded_random_generator_sd_new(GlobalConfig *cfg)
   g_atomic_counter_set(&self->exit_requested, FALSE);
 
   self->super.super.super.super.init = _init;
-  self->super.format_stats_instance = _format_stats_instance;
+  self->super.format_stats_key = _format_stats_key;
 
   self->super.run = _run;
   self->super.request_exit = _request_exit;

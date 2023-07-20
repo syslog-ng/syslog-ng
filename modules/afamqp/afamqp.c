@@ -280,18 +280,22 @@ afamqp_dd_set_offered_heartbeat(LogDriver *d, gint offered_heartbeat)
  */
 
 static const gchar *
-afamqp_dd_format_stats_instance(LogThreadedDestDriver *s)
+afamqp_dd_format_stats_key(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) s;
-  static gchar persist_name[1024];
 
-  if (s->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "amqp,%s", s->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "amqp,%s,%s,%u,%s,%s", self->vhost, self->host,
-               self->port, self->exchange, self->exchange_type);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "amqp"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("vhost", self->vhost));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("host", self->host));
 
-  return persist_name;
+  gchar num[64];
+  g_snprintf(num, sizeof(num), "%u", self->port);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("port", num));
+
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("exchange", self->exchange));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("exchange_type", self->exchange_type));
+
+  return NULL;
 }
 
 static const gchar *
@@ -830,7 +834,7 @@ afamqp_dd_new(GlobalConfig *cfg)
   self->super.worker.disconnect = afamqp_dd_disconnect;
   self->super.worker.insert = afamqp_worker_insert;
 
-  self->super.format_stats_instance = afamqp_dd_format_stats_instance;
+  self->super.format_stats_key = afamqp_dd_format_stats_key;
   self->super.stats_source = stats_register_type("amqp");
 
   self->routing_key_template = log_template_new(cfg, NULL);

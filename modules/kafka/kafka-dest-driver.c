@@ -140,13 +140,14 @@ kafka_dd_is_topic_name_a_template(KafkaDestDriver *self)
 /* methods */
 
 static const gchar *
-_format_stats_instance(LogThreadedDestDriver *d)
+_format_stats_key(LogThreadedDestDriver *d, StatsClusterKeyBuilder *kb)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)d;
-  static gchar stats_name[1024];
 
-  g_snprintf(stats_name, sizeof(stats_name), "kafka,%s", self->topic_name->template_str);
-  return stats_name;
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "kafka"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("topic", self->topic_name->template_str));
+
+  return NULL;
 }
 
 static const gchar *
@@ -708,7 +709,7 @@ kafka_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = kafka_dd_free;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
 
-  self->super.format_stats_instance = _format_stats_instance;
+  self->super.format_stats_key = _format_stats_key;
   self->super.stats_source = stats_register_type("kafka");
   self->super.worker.construct = _construct_worker;
   /* one minute */

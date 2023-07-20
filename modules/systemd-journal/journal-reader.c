@@ -809,11 +809,11 @@ journal_reader_get_sd_journal(JournalReader *self)
 
 void
 journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *options,
-                           const gchar *stats_id, const gchar *stats_instance)
+                           const gchar *stats_id, StatsClusterKeyBuilder *kb)
 {
   JournalReader *self = (JournalReader *) s;
 
-  log_source_set_options(&self->super, &options->super, stats_id, stats_instance,
+  log_source_set_options(&self->super, &options->super, stats_id, kb,
                          (options->flags & JR_THREADED), control->expr_node);
   log_source_set_ack_tracker_factory(&self->super, consecutive_ack_tracker_factory_new());
 

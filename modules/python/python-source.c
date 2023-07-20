@@ -99,8 +99,8 @@ python_sd_set_loaders(LogDriver *s, GList *loaders)
   self->loaders = loaders;
 }
 
-static const gchar *
-python_sd_format_stats_instance(LogThreadedSourceDriver *s)
+static void
+python_sd_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
 
@@ -112,7 +112,7 @@ python_sd_format_stats_instance(LogThreadedSourceDriver *s)
     .id = self->super.super.super.id
   };
 
-  return python_format_stats_instance((LogPipe *)s, "python", &options);
+  python_format_stats_key((LogPipe *)s, kb, "python", &options);
 }
 
 static void
@@ -756,7 +756,7 @@ python_sd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = python_sd_free;
   self->super.super.super.super.generate_persist_name = python_source_format_persist_name;
 
-  self->super.format_stats_instance = python_sd_format_stats_instance;
+  self->super.format_stats_key = python_sd_format_stats_key;
   self->super.worker_options.super.stats_level = STATS_LEVEL0;
   self->super.worker_options.super.stats_source = stats_register_type("python");
 

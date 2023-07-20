@@ -78,18 +78,10 @@ RandomChoiceGeneratorCpp::request_exit()
   exit_requested = true;
 }
 
-const gchar *
-RandomChoiceGeneratorCpp::format_stats_instance()
+void
+RandomChoiceGeneratorCpp::format_stats_key(StatsClusterKeyBuilder *kb)
 {
-  static gchar persist_name[1024];
-
-  if (super->super.super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "random_choice_generator,%s",
-               super->super.super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "random_choice_generator");
-
-  return persist_name;
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "random-choice-generator"));
 }
 
 gboolean
@@ -137,10 +129,10 @@ _request_exit(LogThreadedSourceDriver *s)
   get_RandomChoiceGeneratorCpp(s)->request_exit();
 }
 
-static const gchar *
-_format_stats_instance(LogThreadedSourceDriver *s)
+static void
+_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
-  return get_RandomChoiceGeneratorCpp(s)->format_stats_instance();
+  get_RandomChoiceGeneratorCpp(s)->format_stats_key(kb);
 }
 
 static gboolean
@@ -174,7 +166,7 @@ random_choice_generator_sd_new(GlobalConfig *cfg)
   s->super.super.super.super.deinit = _deinit;
   s->super.super.super.super.free_fn = _free;
 
-  s->super.format_stats_instance = _format_stats_instance;
+  s->super.format_stats_key = _format_stats_key;
   s->super.run = _run;
   s->super.request_exit = _request_exit;
 

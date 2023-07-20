@@ -26,6 +26,7 @@
 
 #include "cfg.h"
 #include "msg-generator-source-options.h"
+#include "stats/stats-cluster-key-builder.h"
 
 typedef struct MsgGeneratorSource MsgGeneratorSource;
 
@@ -35,7 +36,7 @@ gboolean msg_generator_source_deinit(MsgGeneratorSource *self);
 void msg_generator_source_free(MsgGeneratorSource *self);
 
 void msg_generator_source_set_options(MsgGeneratorSource *self, MsgGeneratorSourceOptions *options,
-                                      const gchar *stats_id, const gchar *stats_instance, gboolean threaded,
+                                      const gchar *stats_id, StatsClusterKeyBuilder *kb, gboolean threaded,
                                       gboolean pos_tracked, LogExprNode *expr_node);
 
 

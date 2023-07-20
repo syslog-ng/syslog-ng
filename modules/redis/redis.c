@@ -105,17 +105,18 @@ redis_dd_get_template_options(LogDriver *d)
  */
 
 static const gchar *
-redis_dd_format_stats_instance(LogThreadedDestDriver *d)
+redis_dd_format_stats_key(LogThreadedDestDriver *d, StatsClusterKeyBuilder *kb)
 {
   RedisDriver *self = (RedisDriver *)d;
-  static gchar persist_name[1024];
 
-  if (d->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "redis,%s", d->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "redis,%s,%u", self->host, self->port);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "redis"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("host", self->host));
 
-  return persist_name;
+  gchar num[64];
+  g_snprintf(num, sizeof(num), "%u", self->port);
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("port", num));
+
+  return NULL;
 }
 
 static const gchar *
@@ -196,7 +197,7 @@ redis_dd_new(GlobalConfig *cfg)
 
   self->super.worker.construct = redis_worker_new;
 
-  self->super.format_stats_instance = redis_dd_format_stats_instance;
+  self->super.format_stats_key = redis_dd_format_stats_key;
   self->super.stats_source = stats_register_type("redis");
 
   redis_dd_set_host((LogDriver *)self, "127.0.0.1");

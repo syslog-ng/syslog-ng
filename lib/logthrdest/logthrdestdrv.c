@@ -747,11 +747,30 @@ log_threaded_dest_worker_start(LogThreadedDestWorker *self)
 }
 
 static void
+_format_stats_key(LogThreadedDestDriver *self, StatsClusterKeyBuilder *kb)
+{
+  self->format_stats_key(self, kb);
+}
+
+static const gchar *
+_format_legacy_stats_instance(LogThreadedDestDriver *self, StatsClusterKeyBuilder *kb)
+{
+  stats_cluster_key_builder_clear_legacy_labels(kb);
+
+  const gchar *legacy_stats_instance = self->format_stats_key(self, kb);
+  if (legacy_stats_instance)
+    return legacy_stats_instance;
+
+  static gchar stats_instance[1024];
+  stats_cluster_key_builder_format_legacy_stats_instance(kb, stats_instance, sizeof(stats_instance));
+  return stats_instance;
+}
+
+static void
 _init_queue_sck_builder(LogThreadedDestWorker *self, StatsClusterKeyBuilder *builder)
 {
   stats_cluster_key_builder_add_label(builder, stats_cluster_label("id", self->owner->super.super.id ? : ""));
-  stats_cluster_key_builder_add_label(builder, stats_cluster_label("driver_instance",
-                                      self->owner->format_stats_instance(self->owner)));
+  _format_stats_key(self->owner, builder);
 
   gchar worker_index_str[8];
   g_snprintf(worker_index_str, sizeof(worker_index_str), "%d", self->worker_index);
@@ -782,31 +801,28 @@ _acquire_worker_queue(LogThreadedDestWorker *self, gint stats_level, const Stats
 static void
 _register_raw_bytes_stats(LogThreadedDestWorker *self)
 {
-  StatsClusterLabel labels[] =
-  {
-    stats_cluster_label("id", self->owner->super.super.id ? : ""),
-    stats_cluster_label("driver_instance", self->owner->format_stats_instance(self->owner)),
-  };
+  StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_set_name(kb, "output_event_bytes_total");
+  stats_cluster_key_builder_add_label(kb, stats_cluster_label("id", self->owner->super.super.id ? : ""));
+  _format_stats_key(self->owner, kb);
 
   gint level = log_pipe_is_internal(&self->owner->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1;
 
-  StatsClusterKey output_bytes_key;
-  stats_cluster_single_key_set(&output_bytes_key, "output_event_bytes_total", labels, G_N_ELEMENTS(labels));
-  stats_byte_counter_init(&self->metrics.written_bytes, &output_bytes_key, level, SBCP_KIB);
+  self->metrics.output_event_bytes_sc_key = stats_cluster_key_builder_build_single(kb);
+  stats_cluster_key_builder_free(kb);
+
+  stats_byte_counter_init(&self->metrics.written_bytes, self->metrics.output_event_bytes_sc_key, level, SBCP_KIB);
 }
 
 static void
 _unregister_raw_bytes_stats(LogThreadedDestWorker *self)
 {
-  StatsClusterLabel labels[] =
-  {
-    stats_cluster_label("id", self->owner->super.super.id ? : ""),
-    stats_cluster_label("driver_instance", self->owner->format_stats_instance(self->owner)),
-  };
+  if (!self->metrics.output_event_bytes_sc_key)
+    return;
 
-  StatsClusterKey output_bytes_key;
-  stats_cluster_single_key_set(&output_bytes_key, "output_event_bytes_total", labels, G_N_ELEMENTS(labels));
-  stats_byte_counter_deinit(&self->metrics.written_bytes, &output_bytes_key);
+  stats_byte_counter_deinit(&self->metrics.written_bytes, self->metrics.output_event_bytes_sc_key);
+  stats_cluster_key_free(self->metrics.output_event_bytes_sc_key);
+  self->metrics.output_event_bytes_sc_key = NULL;
 }
 
 gboolean
@@ -848,7 +864,7 @@ log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedD
   self->time_reopen = -1;
   _init_watches(self);
 
-  /* cannot be moved to the thread's init() as neither StatsByteCounter nor format_stats_instance() is thread-safe */
+  /* cannot be moved to the thread's init() as neither StatsByteCounter nor format_stats_key() is thread-safe */
   if (self->owner->metrics.raw_bytes_enabled)
     _register_raw_bytes_stats(self);
 }
@@ -996,14 +1012,6 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
   log_dest_driver_queue_method(s, msg, path_options);
 }
 
-static void
-_init_stats_legacy_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key)
-{
-  stats_cluster_logpipe_key_legacy_set(sc_key, self->stats_source | SCS_DESTINATION,
-                                       self->super.super.id,
-                                       self->format_stats_instance(self));
-}
-
 void
 log_threaded_dest_worker_written_bytes_add(LogThreadedDestWorker *self, gsize b)
 {
@@ -1029,29 +1037,34 @@ log_threaded_dest_driver_register_aggregated_stats(LogThreadedDestDriver *self)
 {
   gint level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL0;
 
+  StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+  const gchar *legacy_stats_instance = _format_legacy_stats_instance(self, kb);
+  stats_cluster_key_builder_free(kb);
+
   StatsClusterKey sc_key_eps_input;
-  _init_stats_legacy_key(self, &sc_key_eps_input);
+  stats_cluster_logpipe_key_legacy_set(&sc_key_eps_input, self->stats_source | SCS_DESTINATION,
+                                       self->super.super.id, legacy_stats_instance);
   stats_aggregator_lock();
   StatsClusterKey sc_key;
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
-                                                self->format_stats_instance(self), "msg_size_max");
+                                                legacy_stats_instance, "msg_size_max");
   stats_register_aggregator_maximum(level, &sc_key, &self->metrics.max_message_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
-                                                self->format_stats_instance(self), "msg_size_avg");
+                                                legacy_stats_instance, "msg_size_avg");
   stats_register_aggregator_average(level, &sc_key, &self->metrics.average_messages_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
-                                                self->format_stats_instance(self), "batch_size_max");
+                                                legacy_stats_instance, "batch_size_max");
   stats_register_aggregator_maximum(level, &sc_key, &self->metrics.max_batch_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
-                                                self->format_stats_instance(self), "batch_size_avg");
+                                                legacy_stats_instance, "batch_size_avg");
   stats_register_aggregator_average(level, &sc_key, &self->metrics.average_batch_size);
 
   stats_cluster_single_key_legacy_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
-                                                self->format_stats_instance(self), "eps");
+                                                legacy_stats_instance, "eps");
   stats_register_aggregator_cps(level, &sc_key, &sc_key_eps_input, SC_TYPE_WRITTEN, &self->metrics.CPS);
 
   stats_aggregator_unlock();
@@ -1084,7 +1097,8 @@ _register_driver_stats(LogThreadedDestDriver *self, StatsClusterKeyBuilder *driv
 
   stats_cluster_key_builder_reset(driver_sck_builder);
   stats_cluster_key_builder_set_legacy_alias(driver_sck_builder, self->stats_source | SCS_DESTINATION,
-                                             self->super.super.id, self->format_stats_instance(self));
+                                             self->super.super.id,
+                                             _format_legacy_stats_instance(self, driver_sck_builder));
   stats_cluster_key_builder_set_legacy_alias_name(driver_sck_builder, "processed");
   self->metrics.processed_sc_key = stats_cluster_key_builder_build_single(driver_sck_builder);
 
@@ -1102,11 +1116,10 @@ static void
 _init_driver_sck_builder(LogThreadedDestDriver *self, StatsClusterKeyBuilder *builder)
 {
   stats_cluster_key_builder_add_label(builder, stats_cluster_label("id", self->super.super.id ? : ""));
-  stats_cluster_key_builder_add_label(builder,
-                                      stats_cluster_label("driver_instance", self->format_stats_instance(self)));
+  const gchar *legacy_stats_instance = _format_legacy_stats_instance(self, builder);
   stats_cluster_key_builder_set_legacy_alias(builder, self->stats_source | SCS_DESTINATION,
                                              self->super.super.id,
-                                             self->format_stats_instance(self));
+                                             legacy_stats_instance);
 }
 
 static void

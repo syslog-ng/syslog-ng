@@ -28,6 +28,7 @@
 #include "children.h"
 #include "fdhelpers.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-key-builder.h"
 #include "transport/transport-pipe.h"
 #include "logproto/logproto-text-server.h"
 #include "logproto/logproto-text-client.h"
@@ -292,11 +293,15 @@ afprogram_sd_init(LogPipe *s)
       self->reader = log_reader_new(s->cfg);
       log_pipe_set_options(&self->reader->super.super, &self->super.super.super.options);
       log_reader_open(self->reader, proto, poll_fd_events_new(fd));
+
+      StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+      stats_cluster_key_builder_add_label(kb, stats_cluster_label("driver", "program"));
+      stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("command", self->process_info.cmdline->str));
       log_reader_set_options(self->reader,
                              s,
                              &self->reader_options,
                              self->super.super.id,
-                             self->process_info.cmdline->str);
+                             kb);
     }
   log_pipe_append((LogPipe *) self->reader, &self->super.super.super);
   if (!log_pipe_init((LogPipe *) self->reader))
@@ -521,6 +526,25 @@ afprogram_dd_restore_reload_store_item(AFProgramDestDriver *self, GlobalConfig *
   return !!(self->writer);
 }
 
+static void
+_init_stats_key_builders(AFProgramDestDriver *self, StatsClusterKeyBuilder **writer_sck_builder,
+                         StatsClusterKeyBuilder **driver_sck_builder, StatsClusterKeyBuilder **queue_sck_builder)
+{
+  *writer_sck_builder = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_add_label(*writer_sck_builder, stats_cluster_label("driver", "program"));
+  stats_cluster_key_builder_add_legacy_label(*writer_sck_builder, stats_cluster_label("command",
+                                             self->process_info.cmdline->str));
+
+  *driver_sck_builder = stats_cluster_key_builder_clone(*writer_sck_builder);
+  stats_cluster_key_builder_add_label(*driver_sck_builder, stats_cluster_label("id", self->super.super.id));
+  stats_cluster_key_builder_set_legacy_alias(*driver_sck_builder,
+                                             self->writer_options.stats_source | SCS_DESTINATION,
+                                             self->super.super.id, self->process_info.cmdline->str);
+
+  *queue_sck_builder = stats_cluster_key_builder_clone(*writer_sck_builder);
+  stats_cluster_key_builder_add_label(*queue_sck_builder, stats_cluster_label("id", self->super.super.id));
+}
+
 static gboolean
 afprogram_dd_init(LogPipe *s)
 {
@@ -537,17 +561,18 @@ afprogram_dd_init(LogPipe *s)
   if (!self->writer)
     self->writer = log_writer_new(LW_FORMAT_FILE, s->cfg);
 
+  StatsClusterKeyBuilder *writer_sck_builder;
+  StatsClusterKeyBuilder *driver_sck_builder;
+  StatsClusterKeyBuilder *queue_sck_builder;
+  _init_stats_key_builders(self, &writer_sck_builder, &driver_sck_builder, &queue_sck_builder);
+
   log_pipe_set_options((LogPipe *) self->writer, &self->super.super.super.options);
   log_writer_set_options(self->writer,
                          s,
                          &self->writer_options,
                          self->super.super.id,
-                         self->process_info.cmdline->str);
+                         writer_sck_builder);
 
-  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
-  StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
-  log_writer_init_driver_sck_builder(self->writer, driver_sck_builder);
-  log_writer_init_queue_sck_builder(self->writer, queue_sck_builder);
 
   gint stats_level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : self->writer_options.stats_level;
   LogQueue *queue = log_dest_driver_acquire_queue(&self->super, afprogram_dd_format_queue_persist_name(self),

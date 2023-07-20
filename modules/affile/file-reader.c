@@ -34,6 +34,7 @@
 #include "poll-file-changes.h"
 #include "poll-multiline-file-changes.h"
 #include "ack-tracker/ack_tracker_factory.h"
+#include "stats/stats-cluster-key-builder.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -161,11 +162,15 @@ _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gbo
   self->reader = log_reader_new(log_pipe_get_config(s));
   log_pipe_set_options(&self->reader->super.super, &self->super.options);
   log_reader_open(self->reader, proto, poll_events);
+
+  StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_add_label(kb, stats_cluster_label("driver", "file"));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("filename", self->filename->str));
   log_reader_set_options(self->reader,
                          s,
                          &self->options->reader_options,
                          self->owner->super.id,
-                         self->filename->str);
+                         kb);
 
   if (check_immediately)
     log_reader_set_immediate_check(self->reader);
