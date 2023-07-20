@@ -22,12 +22,11 @@
  */
 
 #include "radix.h"
+#include "compat/pcre.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
-
-#include <pcre.h>
 
 /**************************************************************
  * Parsing nodes.
@@ -129,80 +128,80 @@ r_parser_estring(gchar *str, gint *len, const gchar *param, gpointer state, RPar
 
 typedef struct _RParserPCREState
 {
-  pcre *re;
-  pcre_extra *extra;
+  pcre2_code *re;
 } RParserPCREState;
 
 gboolean
 r_parser_pcre(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
 {
   RParserPCREState *self = (RParserPCREState *) state;
+  gboolean result = FALSE;
   gint rc;
-  gint num_matches;
 
-  if (pcre_fullinfo(self->re, self->extra, PCRE_INFO_CAPTURECOUNT, &num_matches) < 0)
-    g_assert_not_reached();
-  if (num_matches > LOGMSG_MAX_MATCHES)
-    num_matches = LOGMSG_MAX_MATCHES;
+  pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(self->re, NULL);
+  rc = pcre2_match(self->re, (PCRE2_SPTR) str, (PCRE2_SIZE) strlen(str), 0, 0, match_data, NULL);
 
-  gsize matches_size = 3 * (num_matches + 1);
-  gint *matches = g_alloca(matches_size * sizeof(gint));
-
-  rc = pcre_exec(self->re, self->extra, str, strlen(str), 0, 0, matches, matches_size);
-
-  if (rc == PCRE_ERROR_NOMATCH)
-    {
-      return FALSE;
-    }
+  if (rc == PCRE2_ERROR_NOMATCH)
+    goto exit;
 
   if (rc < 0)
     {
       msg_error("Error while matching regexp", evt_tag_int("error_code", rc));
-      return FALSE;
+      goto exit;
     }
 
   if (rc == 0)
     {
       msg_error("Error while storing matching substrings");
-      return FALSE;
+      goto exit;
     }
 
+  PCRE2_SIZE *matches = pcre2_get_ovector_pointer(match_data);
+
   *len = matches[1] - matches[0];
-  return TRUE;
+  result = TRUE;
+exit:
+  pcre2_match_data_free(match_data);
+  return result;
 }
 
 gpointer
 r_parser_pcre_compile_state(const gchar *expr)
 {
   RParserPCREState *self = g_new0(RParserPCREState, 1);
-  const gchar *errptr;
-  gint erroffset;
+  gsize erroffset;
   gint rc;
 
-  self->re = pcre_compile2(expr, PCRE_ANCHORED, &rc, &errptr, &erroffset, NULL);
+  self->re = pcre2_compile((PCRE2_SPTR)expr, PCRE2_ZERO_TERMINATED, PCRE2_ANCHORED, &rc, &erroffset, NULL);
   if (!self->re)
     {
+      PCRE2_UCHAR error_message[128];
+
+      pcre2_get_error_message(rc, error_message, sizeof(error_message));
+
       msg_error("Error while compiling regular expression",
                 evt_tag_str("regular_expression", expr),
                 evt_tag_str("error_at", &expr[erroffset]),
                 evt_tag_int("error_offset", erroffset),
-                evt_tag_str("error_message", errptr),
+                evt_tag_str("error_message", (gchar *) error_message),
                 evt_tag_int("error_code", rc));
       g_free(self);
       return NULL;
     }
-  self->extra = pcre_study(self->re, 0, &errptr);
-  if (errptr)
+
+  /* optimize regexp */
+  rc = pcre2_jit_compile(self->re, PCRE2_JIT_COMPLETE);
+  if (rc < 0)
     {
-      msg_error("Error while optimizing regular expression",
-                evt_tag_str("regular_expression", expr),
-                evt_tag_str("error_message", errptr));
-      pcre_free(self->re);
-      if (self->extra)
-        pcre_free(self->extra);
-      g_free(self);
-      return NULL;
+      PCRE2_UCHAR error_message[128];
+
+      pcre2_get_error_message(rc, error_message, sizeof(error_message));
+      msg_warning("radix: Error while JIT compiling regular expression",
+                  evt_tag_str("regular_expression", expr),
+                  evt_tag_str("error_message", (gchar *) error_message),
+                  evt_tag_int("error_code", rc));
     }
+
   return (gpointer) self;
 }
 
@@ -212,9 +211,7 @@ r_parser_pcre_free_state(gpointer s)
   RParserPCREState *self = (RParserPCREState *) s;
 
   if (self->re)
-    pcre_free(self->re);
-  if (self->extra)
-    pcre_free(self->extra);
+    pcre2_code_free(self->re);
   g_free(self);
 }
 

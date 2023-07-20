@@ -60,7 +60,7 @@ BuildRequires: libcap-devel
 BuildRequires: libdbi-devel
 BuildRequires: libnet-devel
 BuildRequires: openssl-devel
-BuildRequires: pcre-devel
+BuildRequires: pcre2-devel
 BuildRequires: libuuid-devel
 BuildRequires: libesmtp-devel
 BuildRequires: libcurl-devel

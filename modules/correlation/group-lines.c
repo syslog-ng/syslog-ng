@@ -28,7 +28,6 @@
 #include "messages.h"
 #include "grouping-parser.h"
 
-#include <pcre.h>
 #include <iv.h>
 
 typedef struct _GroupLinesContext
