@@ -36,7 +36,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <pcre.h>
 
 TestSuite(filter, .init = setup, .fini = teardown);
 
