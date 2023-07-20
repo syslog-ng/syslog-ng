@@ -20,7 +20,6 @@
  *
  */
 
-#include <assert.h>
 #include <fstream>
 
 #include "grpc-credentials-builder.hpp"
@@ -73,7 +72,7 @@ ServerCredentialsBuilder::validate() const
     case GSAM_ALTS:
       break;
     default:
-      assert(false);
+      g_assert_not_reached();
     }
 
   return build().get() != nullptr;
@@ -93,9 +92,9 @@ ServerCredentialsBuilder::build() const
     case GSAM_ALTS:
       return ::grpc::experimental::AltsServerCredentials(alts_server_credentials_options);
     default:
-      assert(false);
+      g_assert_not_reached();
     }
-  assert(false);
+  g_assert_not_reached();
 }
 
 bool
