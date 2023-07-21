@@ -24,6 +24,7 @@
 #define GRPC_CREDENTIALS_BUILDER_HPP
 
 #include <grpcpp/server.h>
+#include <grpcpp/security/credentials.h>
 #include "grpc-credentials-builder.h"
 
 namespace syslogng {
@@ -55,12 +56,44 @@ private:
   ::grpc::experimental::AltsServerCredentialsOptions alts_server_credentials_options;
 };
 
+class ClientCredentialsBuilder
+{
+public:
+  using ClientAuthMode = GrpcClientAuthMode;
+
+  void set_mode(ClientAuthMode mode);
+  bool validate() const;
+  std::shared_ptr<::grpc::ChannelCredentials> build() const;
+
+  /* TLS */
+  bool set_tls_ca_path(const char *ca_path);
+  bool set_tls_key_path(const char *key_path);
+  bool set_tls_cert_path(const char *cert_path);
+
+  /* ALTS */
+  void add_alts_target_service_account(const char *target_service_account);
+
+private:
+  ClientAuthMode mode = GCAM_INSECURE;
+
+  /* TLS */
+  ::grpc::SslCredentialsOptions ssl_credentials_options;
+
+  /* ALTS */
+  ::grpc::experimental::AltsCredentialsOptions alts_credentials_options;
+};
+
 }
 }
 
 struct GrpcServerCredentialsBuilderW_
 {
   syslogng::grpc::ServerCredentialsBuilder *self;
+};
+
+struct GrpcClientCredentialsBuilderW_
+{
+  syslogng::grpc::ClientCredentialsBuilder *self;
 };
 
 #endif

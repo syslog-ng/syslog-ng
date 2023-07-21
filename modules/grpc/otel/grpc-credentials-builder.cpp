@@ -20,7 +20,6 @@
  *
  */
 
-#include <assert.h>
 #include <fstream>
 
 #include "grpc-credentials-builder.hpp"
@@ -46,6 +45,8 @@ _get_file_content(const char *path, std::string &content)
 
   return true;
 }
+
+/* Server */
 
 void
 ServerCredentialsBuilder::set_mode(GrpcServerAuthMode mode_)
@@ -73,7 +74,7 @@ ServerCredentialsBuilder::validate() const
     case GSAM_ALTS:
       break;
     default:
-      assert(false);
+      g_assert_not_reached();
     }
 
   return build().get() != nullptr;
@@ -93,9 +94,9 @@ ServerCredentialsBuilder::build() const
     case GSAM_ALTS:
       return ::grpc::experimental::AltsServerCredentials(alts_server_credentials_options);
     default:
-      assert(false);
+      g_assert_not_reached();
     }
-  assert(false);
+  g_assert_not_reached();
 }
 
 bool
@@ -183,4 +184,107 @@ grpc_server_credentials_builder_set_tls_peer_verify(GrpcServerCredentialsBuilder
                                                     GrpcServerTlsPeerVerify peer_verify)
 {
   s->self->set_tls_peer_verify(peer_verify);
+}
+
+/* Client */
+
+
+void
+ClientCredentialsBuilder::set_mode(GrpcClientAuthMode mode_)
+{
+  mode = mode_;
+}
+
+bool
+ClientCredentialsBuilder::set_tls_ca_path(const char *ca_path)
+{
+  return _get_file_content(ca_path, ssl_credentials_options.pem_root_certs);
+}
+
+bool
+ClientCredentialsBuilder::set_tls_key_path(const char *key_path)
+{
+  return _get_file_content(key_path, ssl_credentials_options.pem_private_key);
+}
+
+bool
+ClientCredentialsBuilder::set_tls_cert_path(const char *cert_path)
+{
+  return _get_file_content(cert_path, ssl_credentials_options.pem_cert_chain);
+}
+
+void
+ClientCredentialsBuilder::add_alts_target_service_account(const char *target_service_account)
+{
+  alts_credentials_options.target_service_accounts.push_back(target_service_account);
+}
+
+bool
+ClientCredentialsBuilder::validate() const
+{
+  switch (mode)
+    {
+    case GCAM_INSECURE:
+      break;
+    case GCAM_TLS:
+      break;
+    case GCAM_ALTS:
+      break;
+    case GCAM_ADC:
+      break;
+    default:
+      g_assert_not_reached();
+    }
+
+  return build().get() != nullptr;
+}
+
+std::shared_ptr<::grpc::ChannelCredentials>
+ClientCredentialsBuilder::build() const
+{
+  switch (mode)
+    {
+    case GCAM_INSECURE:
+      return ::grpc::InsecureChannelCredentials();
+    case GCAM_TLS:
+      return ::grpc::SslCredentials(ssl_credentials_options);
+    case GCAM_ALTS:
+      return ::grpc::experimental::AltsCredentials(alts_credentials_options);
+    case GCAM_ADC:
+      return ::grpc::GoogleDefaultCredentials();
+    default:
+      g_assert_not_reached();
+    }
+  g_assert_not_reached();
+}
+
+void
+grpc_client_credentials_builder_set_mode(GrpcClientCredentialsBuilderW *s, GrpcClientAuthMode mode)
+{
+  s->self->set_mode(mode);
+}
+
+gboolean
+grpc_client_credentials_builder_set_tls_ca_path(GrpcClientCredentialsBuilderW *s, const gchar *ca_path)
+{
+  return s->self->set_tls_ca_path(ca_path);
+}
+
+gboolean
+grpc_client_credentials_builder_set_tls_key_path(GrpcClientCredentialsBuilderW *s, const gchar *key_path)
+{
+  return s->self->set_tls_key_path(key_path);
+}
+
+gboolean
+grpc_client_credentials_builder_set_tls_cert_path(GrpcClientCredentialsBuilderW *s, const gchar *cert_path)
+{
+  return s->self->set_tls_cert_path(cert_path);
+}
+
+void
+grpc_client_credentials_builder_add_alts_target_service_account(GrpcClientCredentialsBuilderW *s,
+    const gchar *target_service_acount)
+{
+  return s->self->add_alts_target_service_account(target_service_acount);
 }

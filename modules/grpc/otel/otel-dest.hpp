@@ -20,46 +20,55 @@
  *
  */
 
+#ifndef OTEL_DEST_HPP
+#define OTEL_DEST_HPP
 
-#include "cfg-parser.h"
-#include "plugin.h"
-#include "plugin-types.h"
+#include <grpcpp/server.h>
 
-extern CfgParser otel_parser;
+#include "compat/cpp-start.h"
+#include "logthrdest/logthrdestdrv.h"
+#include "compat/cpp-end.h"
 
-static Plugin otel_plugins[] =
+#include "otel-dest.h"
+#include "grpc-credentials-builder.hpp"
+
+
+namespace syslogng {
+namespace grpc {
+namespace otel {
+
+class DestDriver
 {
-  {
-    .type = LL_CONTEXT_SOURCE,
-    .name = "opentelemetry",
-    .parser = &otel_parser
-  },
-  {
-    .type = LL_CONTEXT_PARSER,
-    .name = "opentelemetry",
-    .parser = &otel_parser,
-  },
-  {
-    .type = LL_CONTEXT_DESTINATION,
-    .name = "opentelemetry",
-    .parser = &otel_parser,
-  },
+public:
+  DestDriver(OtelDestDriver *s);
+
+  void set_url(const char *url);
+  const std::string &get_url() const;
+
+  bool init();
+  bool deinit();
+  const char *format_stats_key(StatsClusterKeyBuilder *kb);
+  const char *generate_persist_name();
+
+  GrpcClientCredentialsBuilderW *get_credentials_builder_wrapper();
+
+public:
+  syslogng::grpc::ClientCredentialsBuilder credentials_builder;
+
+private:
+  OtelDestDriver *super;
+  std::string url;
+  GrpcClientCredentialsBuilderW credentials_builder_wrapper;
 };
 
-gboolean
-otel_module_init(PluginContext *context, CfgArgs *args)
-{
-  plugin_register(context, otel_plugins, G_N_ELEMENTS(otel_plugins));
-
-  return TRUE;
+}
+}
 }
 
-const ModuleInfo module_info =
+struct OtelDestDriver_
 {
-  .canonical_name = "otel",
-  .version = SYSLOG_NG_VERSION,
-  .description = "OpenTelemetry plugins",
-  .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = otel_plugins,
-  .plugins_len = G_N_ELEMENTS(otel_plugins),
+  LogThreadedDestDriver super;
+  syslogng::grpc::otel::DestDriver *cpp;
 };
+
+#endif

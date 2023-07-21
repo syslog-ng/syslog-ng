@@ -44,6 +44,9 @@ static CfgLexerKeyword otel_keywords[] =
   { "required_untrusted",        KW_REQUIRED_UNTRUSTED },
   { "required_trusted",          KW_REQUIRED_TRUSTED },
   { "alts",                      KW_ALTS },
+  { "url",                       KW_URL },
+  { "target_service_accounts",   KW_TARGET_SERVICE_ACCOUNTS },
+  { "adc",                       KW_ADC },
   { NULL }
 };
 

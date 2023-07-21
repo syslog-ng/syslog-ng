@@ -198,6 +198,7 @@ otel_sd_new(GlobalConfig *cfg)
   s->super.super.super.super.deinit = _deinit;
   s->super.super.super.super.free_fn = _free;
 
+  s->super.worker_options.super.stats_source = stats_register_type("opentelemetry");
   s->super.format_stats_key = _format_stats_key;
   s->super.run = _run;
   s->super.request_exit = _request_exit;

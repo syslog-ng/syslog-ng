@@ -1,15 +1,16 @@
-**Receiving OpenTelemetry (OTLP) messages**
+**Receiving and sending OpenTelemetry (OTLP) messages**
 
-The `opentelemetry()` source is now available to receive **OTLP/gRPC** messages.
+The `opentelemetry()` source, parser and destination are now available to receive, parse and send **OTLP/gRPC**
+messages.
 
 syslog-ng accepts [logs](https://github.com/open-telemetry/opentelemetry-proto/blob/v0.20.0/opentelemetry/proto/logs/v1/logs.proto), [metrics](https://github.com/open-telemetry/opentelemetry-proto/blob/v0.20.0/opentelemetry/proto/metrics/v1/metrics.proto) and [traces](https://github.com/open-telemetry/opentelemetry-proto/blob/v0.20.0/opentelemetry/proto/trace/v1/trace.proto).
 
 The incoming fields are not available through syslog-ng log message name-value pairs for the user by default.
-This is useful for forwarding functionality (the upcoming `opentelemetry()` destination will be able to access
-and format them). If such functionality is required, you can configure the `opentelemetry()` parser, which maps
-all the fields with some limitations.
+This is useful for forwarding functionality (the `opentelemetry()` destination can access and format them).
+If such functionality is required, you can configure the `opentelemetry()` parser, which maps all the fields
+with some limitations.
 
-The behavior of the parser is the following:
+The behavior of the `opentelemetry()` parser is the following:
 
 The name-value pairs always start with `.otel.` prefix. The type of the message is stored in `.otel.type`
 (possible values: `log`, `metric` and `span`). The `resource` info is mapped to `.otel.resource.<...>`
@@ -35,7 +36,73 @@ user, unless an explicit type cast is added (e.g. `"bytes(${.otel.log.span_id})"
 to name-value iterating template functions (e.g. `$(format-json .otel.* --include-bytes)`, which will base64
 encode the bytes content).
 
-Three authentication methods are available in the `auth()` block: `insecure()` (default), `tls()` and `alts()`.
+Three authentication methods are available in the source `auth()` block: `insecure()` (default), `tls()` and `alts()`.
 `tls()` accepts the `key-file()`, `cert-file()`, `ca-file()` and `peer-verify()` (possible values:
 `required-trusted`, `required-untrusted`, `optional-trusted` and `optional-untrusted`) options.
 [ALTS](https://grpc.io/docs/languages/cpp/alts/) is a simple to use authentication, only available within Google's infrastructure.
+
+The same methods are available in the destination `auth()` block, with two differences: `tls(peer-verify())`
+is not available, and there is a fourth method, called [ADC](https://cloud.google.com/docs/authentication/application-default-credentials), which accepts the `target-service-account()`
+option, where a list of service accounts can be configured to match against when authenticating the server.
+
+Example configs:
+```
+log otel_forward_mode_alts {
+  source {
+    opentelemetry(
+      port(12345)
+      auth(alts())
+    );
+  };
+
+  destination {
+    opentelemetry(
+      url("my-otel-server:12345")
+      auth(alts())
+    );
+  };
+};
+
+log otel_to_non_otel_insecure {
+  source {
+    opentelemetry(
+      port(12345)
+    );
+  };
+
+  parser {
+    opentelemetry();
+  };
+
+  destination {
+    network(
+      "my-network-server"
+      port(12345)
+      template("$(format-json .otel.* --shift-levels 1 --include-bytes)\n")
+    );
+  };
+};
+
+log non_otel_to_otel_tls {
+  source {
+    network(
+      port(12346)
+    );
+  };
+
+  destination {
+    opentelemetry(
+      url("my-otel-server:12346")
+      auth(
+        tls(
+          ca-file("/path/to/ca.pem")
+          key-file("/path/to/key.pem")
+          cert-file("/path/to/cert.pem")
+        )
+      )
+    );
+  };
+};
+```
+
+([#4523](https://github.com/syslog-ng/syslog-ng/pull/4523))

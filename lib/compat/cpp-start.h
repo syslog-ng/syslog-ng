@@ -68,6 +68,8 @@
 
 #ifdef __cplusplus
 
+#define this this_
+
 extern "C" {
 
 #endif
