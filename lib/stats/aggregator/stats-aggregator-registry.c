@@ -58,6 +58,8 @@ stats_aggregator_unlock(void)
   g_mutex_unlock(&stats_aggregator_mutex);
 }
 
+/* time based aggregation */
+
 static void
 _update_func (gpointer _key, gpointer _value, gpointer _user_data)
 {
@@ -133,6 +135,25 @@ stats_aggregator_remove_orphaned_stats(void)
   g_hash_table_foreach_remove(stats_container.aggregators, _remove_orphaned_helper, NULL);
 }
 
+/* reset aggregators, i.e. syslog-ng-ctl stats --reset */
+
+static void
+_reset_func (gpointer _key, gpointer _value, gpointer _user_data)
+{
+  StatsAggregator *self = (StatsAggregator *) _value;
+  stats_aggregator_reset(self);
+}
+
+void
+stats_aggregator_registry_reset(void)
+{
+  g_assert(stats_aggregator_locked);
+
+  g_hash_table_foreach(stats_container.aggregators, _reset_func, NULL);
+}
+
+/* aggregator cleanup */
+
 static gboolean
 _remove_helper(gpointer _key, gpointer _value, gpointer _user_data)
 {
@@ -152,20 +173,7 @@ stats_aggregator_remove_stats(void)
   g_hash_table_foreach_remove(stats_container.aggregators, _remove_helper, NULL);
 }
 
-static void
-_reset_func (gpointer _key, gpointer _value, gpointer _user_data)
-{
-  StatsAggregator *self = (StatsAggregator *) _value;
-  stats_aggregator_reset(self);
-}
-
-void
-stats_aggregator_registry_reset(void)
-{
-  g_assert(stats_aggregator_locked);
-
-  g_hash_table_foreach(stats_container.aggregators, _reset_func, NULL);
-}
+/* module init/deinit */
 
 void
 stats_aggregator_registry_init(void)
