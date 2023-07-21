@@ -156,6 +156,21 @@ stats_aggregator_remove_stats(void)
   g_hash_table_foreach_remove(stats_container.aggregators, _remove_helper, NULL);
 }
 
+static void
+_reset_func (gpointer _key, gpointer _value, gpointer _user_data)
+{
+  StatsAggregator *self = (StatsAggregator *) _value;
+  stats_aggregator_reset(self);
+}
+
+void
+stats_aggregator_registry_reset(void)
+{
+  g_assert(stats_aggregator_locked);
+
+  g_hash_table_foreach(stats_container.aggregators, _reset_func, NULL);
+}
+
 void
 stats_aggregator_registry_init(void)
 {
@@ -176,6 +191,8 @@ stats_aggregator_registry_deinit(void)
   g_mutex_clear(&stats_aggregator_mutex);
   _deinit_timer();
 }
+
+/* type specific registration helpers */
 
 static void
 _insert_to_table(StatsAggregator *value)
@@ -293,19 +310,4 @@ stats_unregister_aggregator_cps(StatsAggregator **s)
   g_assert(stats_aggregator_locked);
   stats_aggregator_untrack_counter(*s);
   *s = NULL;
-}
-
-static void
-_reset_func (gpointer _key, gpointer _value, gpointer _user_data)
-{
-  StatsAggregator *self = (StatsAggregator *) _value;
-  stats_aggregator_reset(self);
-}
-
-void
-stats_aggregator_registry_reset(void)
-{
-  g_assert(stats_aggregator_locked);
-
-  g_hash_table_foreach(stats_container.aggregators, _reset_func, NULL);
 }
