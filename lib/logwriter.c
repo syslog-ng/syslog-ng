@@ -1174,8 +1174,8 @@ log_writer_flush_finalize(LogWriter *self)
 static void
 _log_writer_insert_msg_length_stats(LogWriter *self, gsize msg_len)
 {
-  stats_aggregator_insert_data(self->metrics.max_message_size, msg_len);
-  stats_aggregator_insert_data(self->metrics.average_messages_size, msg_len);
+  stats_aggregator_add_data_point(self->metrics.max_message_size, msg_len);
+  stats_aggregator_add_data_point(self->metrics.average_messages_size, msg_len);
 }
 
 static gboolean

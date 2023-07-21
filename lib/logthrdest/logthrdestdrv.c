@@ -1024,15 +1024,15 @@ log_threaded_dest_worker_written_bytes_add(LogThreadedDestWorker *self, gsize b)
 void
 log_threaded_dest_driver_insert_msg_length_stats(LogThreadedDestDriver *self, gsize len)
 {
-  stats_aggregator_insert_data(self->metrics.max_message_size, len);
-  stats_aggregator_insert_data(self->metrics.average_messages_size, len);
+  stats_aggregator_add_data_point(self->metrics.max_message_size, len);
+  stats_aggregator_add_data_point(self->metrics.average_messages_size, len);
 }
 
 void
 log_threaded_dest_driver_insert_batch_length_stats(LogThreadedDestDriver *self, gsize len)
 {
-  stats_aggregator_insert_data(self->metrics.max_batch_size, len);
-  stats_aggregator_insert_data(self->metrics.average_batch_size, len);
+  stats_aggregator_add_data_point(self->metrics.max_batch_size, len);
+  stats_aggregator_add_data_point(self->metrics.average_batch_size, len);
 }
 
 void

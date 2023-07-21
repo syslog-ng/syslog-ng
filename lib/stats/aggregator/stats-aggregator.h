@@ -32,7 +32,7 @@ typedef struct _StatsAggregator StatsAggregator;
 
 struct _StatsAggregator
 {
-  void (*insert_data)(StatsAggregator *self, gsize value);
+  void (*add_data_point)(StatsAggregator *self, gsize value);
   void (*aggregate)(StatsAggregator *self);
   void (*reset)(StatsAggregator *self);
   void (*free_fn)(StatsAggregator *self);
@@ -47,10 +47,10 @@ struct _StatsAggregator
 };
 
 static inline void
-stats_aggregator_insert_data(StatsAggregator *self, gsize value)
+stats_aggregator_add_data_point(StatsAggregator *self, gsize value)
 {
-  if (self && self->insert_data)
-    self->insert_data(self, value);
+  if (self && self->add_data_point)
+    self->add_data_point(self, value);
 }
 
 static inline void
@@ -91,7 +91,7 @@ stats_aggregator_unregister(StatsAggregator *self)
 }
 
 /* public */
-void stats_aggregator_insert_data(StatsAggregator *self, gsize value);
+void stats_aggregator_add_data_point(StatsAggregator *self, gsize value);
 void stats_aggregator_aggregate(StatsAggregator *self);
 void stats_aggregator_reset(StatsAggregator *self);
 

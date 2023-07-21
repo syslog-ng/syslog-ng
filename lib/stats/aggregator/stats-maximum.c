@@ -32,7 +32,7 @@ typedef struct
 } StatsAggregatorMaximum;
 
 static void
-_insert_data(StatsAggregator *s, gsize value)
+_add_data_point(StatsAggregator *s, gsize value)
 {
   StatsAggregatorMaximum *self = (StatsAggregatorMaximum *)s;
   gsize current_max = 0;
@@ -74,7 +74,7 @@ _unregister(StatsAggregator *s)
 static void
 _set_virtual_function(StatsAggregatorMaximum *self)
 {
-  self->super.insert_data = _insert_data;
+  self->super.add_data_point = _add_data_point;
   self->super.register_aggr = _register;
   self->super.unregister_aggr = _unregister;
 }

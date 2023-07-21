@@ -440,8 +440,8 @@ log_reader_process_handshake(LogReader *self)
 static void
 _log_reader_insert_msg_length_stats(LogReader *self, gsize len)
 {
-  stats_aggregator_insert_data(self->max_message_size, len);
-  stats_aggregator_insert_data(self->average_messages_size, len);
+  stats_aggregator_add_data_point(self->max_message_size, len);
+  stats_aggregator_add_data_point(self->average_messages_size, len);
 }
 
 static gboolean
