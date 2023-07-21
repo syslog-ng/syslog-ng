@@ -1,566 +1,403 @@
-4.2.0
+4.3.0
 =====
 
-Read Axoflow's [blog post](https://axoflow.com/axosyslog-release-4-2/) for more details.
+Read Axoflow's [blog post](https://axoflow.com/axosyslog-release-4-3/) for more details.
 
 ## Highlights
 
-#### Sending messages to Splunk HEC
-The `splunk-hec-event()` destination feeds Splunk via the [HEC events API](https://docs.splunk.com/Documentation/Splunk/9.0.4/RESTREF/RESTinput#services.2Fcollector.2Fevent.2F1.0).
+#### `parallelize()` support for pipelines
 
-Minimal config:
+syslog-ng has traditionally performed processing of log messages arriving
+from a single connection sequentially.  This was done to ensure message ordering
+as well as most efficient use of CPU on a per message basis.  This mode of
+operation is performing well as long as we have a relatively large number
+of parallel connections, in which case syslog-ng would use all the CPU cores
+available in the system.
+
+In case only a small number of connections deliver a large number of
+messages, this behaviour may become a bottleneck.
+
+With the new parallelization feature, syslog-ng gained the ability to
+re-partition a stream of incoming messages into a set of partitions, each of
+which is to be processed by multiple threads in parallel.  This does away
+with ordering guarantees and adds an extra per-message overhead. In exchange
+it will be able to scale the incoming load to all CPUs in the system, even
+if coming from a single, chatty sender.
+
+To enable this mode of execution, use the new parallelize() element in your
+log path:
+
 ```
-destination d_splunk_hec_event {
-  splunk-hec-event(
-    url("https://localhost:8088")
-    token("70b6ae71-76b3-4c38-9597-0c5b37ad9630")
-  );
+log {
+  source {
+    tcp(
+      port(2000)
+      log-iw-size(10M) max-connections(10) log-fetch-limit(100000)
+    );
+  };
+  parallelize(partitions(4));
+
+  # from this part on, messages are processed in parallel even if
+  # messages are originally coming from a single connection
+
+  parser { ... };
+  destination { ... };
 };
 ```
 
+The config above will take all messages emitted by the tcp() source and push
+the work to 4 parallel threads of execution, regardless of how many
+connections were in use to deliver the stream of messages to the tcp()
+driver.
+
+parallelize() uses round-robin to allocate messages to partitions by default.
+You can however retain ordering for a subset of messages with the
+partition-key() option.
+
+You can use partition-key() to specify a message template. Messages that
+expand to the same value are guaranteed to be mapped to the same partition.
+
+For example:
+
+```
+log {
+  source {
+    tcp(
+      port(2000)
+      log-iw-size(10M) max-connections(10) log-fetch-limit(100000)
+    );
+  };
+  parallelize(partitions(4) partition-key("$HOST"));
+
+  # from this part on, messages are processed in parallel if their
+  # $HOST value differs. Messages with the same $HOST will be mapped
+  # to the same partition and are processed sequentially.
+
+  parser { ... };
+  destination { ... };
+};
+```
+
+NOTE: parallelize() requires a patched version of libivykis that contains
+this PR https://github.com/buytenh/ivykis/pull/25.  syslog-ng source
+releases bundle this version of ivykis in their source trees, so if you are
+building from source, be sure to use the internal version
+(--with-ivykis=internal).  You can also use Axoflow's cloud native container
+image for syslog-ng, named AxoSyslog
+(https://github.com/axoflow/axosyslog-docker) which also incorporates this
+change.
+
+([#3966](https://github.com/syslog-ng/syslog-ng/pull/3966))
+
+#### Receiving and sending OpenTelemetry (OTLP) messages
+
+The `opentelemetry()` source, parser and destination are now available to receive, parse and send **OTLP/gRPC**
+messages.
+
+syslog-ng accepts [logs](https://github.com/open-telemetry/opentelemetry-proto/blob/v0.20.0/opentelemetry/proto/logs/v1/logs.proto), [metrics](https://github.com/open-telemetry/opentelemetry-proto/blob/v0.20.0/opentelemetry/proto/metrics/v1/metrics.proto) and [traces](https://github.com/open-telemetry/opentelemetry-proto/blob/v0.20.0/opentelemetry/proto/trace/v1/trace.proto).
+
+The incoming fields are not available through syslog-ng log message name-value pairs for the user by default.
+This is useful for forwarding functionality (the `opentelemetry()` destination can access and format them).
+If such functionality is required, you can configure the `opentelemetry()` parser, which maps all the fields
+with some limitations.
+
+The behavior of the `opentelemetry()` parser is the following:
+
+The name-value pairs always start with `.otel.` prefix. The type of the message is stored in `.otel.type`
+(possible values: `log`, `metric` and `span`). The `resource` info is mapped to `.otel.resource.<...>`
+(e.g.: `.otel.resource.dropped_attributes_count`, `.otel.resource.schema_url` ...), the `scope` info 
+is mapped to `.otel.scope.<...>` (e.g.: `.otel.scope.name`, `.otel.scope.schema_url`, ...).
+
+The fields of log records are mapped to `.otel.log.<...>` (e.g. `.otel.log.body`, ` .otel.log.severity_text`, ...).
+
+The fields of metrics are mapped to `.otel.metric.<...>` (e.g. `.otel.metric.name`, `.otel.metric.unit`, ...),
+the type of the metric is mapped to `.otel.metric.data.type` (possible values: `gauge`, `sum`, `histogram`,
+`exponential_histogram`, `summary`) with the actual data mapped to `.otel.metric.data.<type>.<...>`
+(e.g.: `.otel.metric.data.gauge.data_points.0.time_unix_nano`, ...).
+
+The fields of traces are mapped to `.otel.span.<...>` (e.g. `.otel.span.name`, `.otel.span.trace_state`, ...).
+
+`repeated` fields are given an index (e.g. `.otel.span.events.5.time_unix_nano`).
+
+The mapping of [`AnyValue`](https://github.com/open-telemetry/opentelemetry-proto/blob/v0.20.0/opentelemetry/proto/common/v1/common.proto#L28) type fields is limited.
+`string`, `bool`, `int64`, `double` and `bytes` values are mapped with the respective syslog-ng name-value type
+(e.g. `.otel.resource.attributes.string_key` => `string_value`), however `ArrayValue` and `KeyValueList` types
+are stored serialized with `protobuf` type. `protobuf` and `bytes` types are not directly available for the
+user, unless an explicit type cast is added (e.g. `"bytes(${.otel.log.span_id})"`) or `--include-bytes` is passed
+to name-value iterating template functions (e.g. `$(format-json .otel.* --include-bytes)`, which will base64
+encode the bytes content).
+
+Three authentication methods are available in the source `auth()` block: `insecure()` (default), `tls()` and `alts()`.
+`tls()` accepts the `key-file()`, `cert-file()`, `ca-file()` and `peer-verify()` (possible values:
+`required-trusted`, `required-untrusted`, `optional-trusted` and `optional-untrusted`) options.
+[ALTS](https://grpc.io/docs/languages/cpp/alts/) is a simple to use authentication, only available within Google's infrastructure.
+
+The same methods are available in the destination `auth()` block, with two differences: `tls(peer-verify())`
+is not available, and there is a fourth method, called [ADC](https://cloud.google.com/docs/authentication/application-default-credentials), which accepts the `target-service-account()`
+option, where a list of service accounts can be configured to match against when authenticating the server.
+
+Example configs:
+```
+log otel_forward_mode_alts {
+  source {
+    opentelemetry(
+      port(12345)
+      auth(alts())
+    );
+  };
+
+  destination {
+    opentelemetry(
+      url("my-otel-server:12345")
+      auth(alts())
+    );
+  };
+};
+
+log otel_to_non_otel_insecure {
+  source {
+    opentelemetry(
+      port(12345)
+    );
+  };
+
+  parser {
+    opentelemetry();
+  };
+
+  destination {
+    network(
+      "my-network-server"
+      port(12345)
+      template("$(format-json .otel.* --shift-levels 1 --include-bytes)\n")
+    );
+  };
+};
+
+log non_otel_to_otel_tls {
+  source {
+    network(
+      port(12346)
+    );
+  };
+
+  destination {
+    opentelemetry(
+      url("my-otel-server:12346")
+      auth(
+        tls(
+          ca-file("/path/to/ca.pem")
+          key-file("/path/to/key.pem")
+          cert-file("/path/to/cert.pem")
+        )
+      )
+    );
+  };
+};
+```
+
+([#4523](https://github.com/syslog-ng/syslog-ng/pull/4523))
+([#4510](https://github.com/syslog-ng/syslog-ng/pull/4510))
+
+#### Sending messages to CrowdStrike Falcon LogScale (Humio)
+
+The `logscale()` destination feeds LogScale via the [Ingest API](https://library.humio.com/falcon-logscale/api-ingest.html#api-ingest-structured-data).
+
+Minimal config:
+```
+destination d_logscale {
+  logscale(
+    token("my-token")
+  );
+};
+```
 Additional options include:
-  * `event()`
-  * `index()`
-  * `source()`
-  * `sourcetype()`
-  * `host()`
-  * `time()`
-  * `default-index()`
-  * `default-source()`
-  * `default-sourcetype()`
-  * `fields()`
+  * `url()`
+  * `rawstring()`
+  * `timestamp()`
+  * `timezone()`
+  * `attributes()`
   * `extra-headers()`
-  * `extra-queries()`
   * `content-type()`
 
-
-The `splunk-hec-raw()` destination feeds Splunk via the [HEC raw API](https://docs.splunk.com/Documentation/Splunk/9.0.4/RESTREF/RESTinput#services.2Fcollector.2Fraw.2F1.0).
-
-Minimal config:
-```
-destination d_splunk_hec_raw {
-  splunk-hec-raw(
-    url("https://localhost:8088")
-    token("70b6ae71-76b3-4c38-9597-0c5b37ad9630")
-    channel("05ed4617-f186-4ccd-b4e7-08847094c8fd")
-  );
-};
-```
-
-([#4462](https://github.com/syslog-ng/syslog-ng/pull/4462))
-
-#### Smart multi-line for recognizing backtraces
-`multi-line-mode(smart)`:
-With this multi-line mode, the inherently multi-line data backtrace format is
-recognized even if they span multiple lines in the input and are converted
-to a single log message for easier analysis.  Backtraces for the following
-programming languages are recognized : Python, Java, JavaScript, PHP, Go,
-Ruby and Dart.
-
-The regular expressions to recognize these programming languages are
-specified by an external file called
-`/usr/share/syslog-ng/smart-multi-line.fsm` (installation path depends on
-configure arguments), in a format that is described in that file.
-
-`group-lines()` parser: this new parser correlates multi-line messages
-received as separate, but subsequent lines into a single log message.
-Received messages are first collected into streams related messages (using
-key()), then collected into correlation contexts up to timeout() seconds.
-The identification of multi-line messages are then performed on these
-message contexts within the time period.
-
-```
-  group-lines(key("$FILE_NAME")
-              multi-line-mode("smart")
-        template("$MESSAGE")
-        timeout(10)
-        line-separator("\n")
-  );
-```
-
-([#4225](https://github.com/syslog-ng/syslog-ng/pull/4225))
-
-#### HYPR Audit Trail source
-`hypr-audit-trail()` & `hypr-app-audit-trail()` source drivers are now
-available to monitor the audit trails for [HYPR](https://www.hypr.com) applications.
-
-See the README.md file in the driver's directory to see usage information.
-
-([#4175](https://github.com/syslog-ng/syslog-ng/pull/4175))
-
-#### `ebpf()` plugin and reuseport packet randomizer
-A new ebpf() plugin was added as a framework to leverage the kernel's eBPF
-infrastructure to improve performance and scalability of syslog-ng.
-
-Example:
-
-```
-source s_udp {
-        udp(so-reuseport(yes) port(2000) persist-name("udp1")
-                ebpf(reuseport(sockets(4)))
-        );
-        udp(so-reuseport(yes) port(2000) persist-name("udp2"));
-        udp(so-reuseport(yes) port(2000) persist-name("udp3"));
-        udp(so-reuseport(yes) port(2000) persist-name("udp4"));
-};
-```
-
-NOTE: The `ebpf()` plugin is considered advanced usage so its compilation is
-disabled by default.  Please don't use it unless all other avenues of
-configuration solutions are already tried.  You will need a special
-toolchain and a recent kernel version to compile and run eBPF programs.
-
-([#4365](https://github.com/syslog-ng/syslog-ng/pull/4365))
-
+([#4472](https://github.com/syslog-ng/syslog-ng/pull/4472))
 
 ## Features
 
-  * `network` source: During a TLS handshake, syslog-ng now automatically sets the
-    `certificate_authorities` field of the certificate request based on the `ca-file()`
-    and `ca-dir()` options. The `pkcs12-file()` option already had this feature.
-    ([#4412](https://github.com/syslog-ng/syslog-ng/pull/4412))
+  * `afmongodb`: Bulk MongoDB insert is added via the following options
 
-  * `metrics-probe()`: Added `level()` option to set the stats level of the generated metrics.
-    ([#4453](https://github.com/syslog-ng/syslog-ng/pull/4453))
+    - `bulk`  (**yes**/no)  turns on/off [bulk insert ](http://mongoc.org/libmongoc/current/bulk.html)usage, `no` forces the old behavior (each log is inserted one by one into the MongoDB)
+    - `bulk_unordered` (yes/**no**)  turns on/off [unordered MongoDB bulk operations](http://mongoc.org/libmongoc/current/bulk.html#unordered-bulk-write-operations)
+    - `bulk_bypass_validation`  (yes/**no**)  turns on/off [MongoDB bulk operations validation](http://mongoc.org/libmongoc/1.23.3/bulk.html#bulk-operation-bypassing-document-validation)
+    - `write_concern` (unacked/**acked**/majority/n > 0)  sets [write concern mode of the MongoDB operations](http://mongoc.org/libmongoc/1.23.3/bulk.html#bulk-operation-write-concerns), both bulk and single
 
-  * `metrics-probe()`: Added `increment()` option.
+    NOTE: Bulk sending is only efficient if the used collection is constant (e.g. not using templates) or the used template does not lead to too many collections switching within a reasonable time range.
+    ([#4483](https://github.com/syslog-ng/syslog-ng/pull/4483))
 
-    Users can now set a template, which resolves to a number that modifies
-    the increment of the counter. If not set, the increment is 1.
-    ([#4447](https://github.com/syslog-ng/syslog-ng/pull/4447))
+  * `sql`: Added 2 new options
 
-  * `python`: Added support for typed custom options.
+    - `quote_char` to aid custom quoting for table and index names (e.g. MySQL needs sometimes this for certain identifiers)
+    **NOTE**: Using a back-tick character needs a special formatting as syslog-ng uses it for configuration parameter names, so for that use:     `quote_char("``")`  (double back-tick)
+    - `dbi_driver_dir` to define an optional DBI driver location for DBD initialization
 
-    This applies for `python` source, `python-fetcher` source, `python` destination,
-    `python` parser and `python-http-header` inner destination.
+    NOTE: libdbi and libdbi-drivers OSE forks are updated, `afsql` now should work nicely both on ARM and X86 macOS systems too (tested on macOS 13.3.1 and 12.6.4)
 
-    Example config:
-    ```
-    python(
-      class("TestClass")
-      options(
-        "string_option" => "example_string"
-        "bool_option" => True  # supported values are: True, False, yes, no
-        "integer_option" => 123456789
-        "double_option" => 123.456789
-        "string_list_option" => ["string1", "string2", "string3"]
-        "template_option" => LogTemplate("${example_template}")
-      )
-    );
-    ```
+    Please do not use the pre-built ones (e.g. 0.9.0 from Homebrew), build from the **master** of the following
+    - https://github.com/balabit-deps/libdbi-drivers
+    - https://github.com/balabit-deps/libdbi
 
-    **Breaking change! Previously values were converted to strings if possible, now they are passed
-    to the python class with their real type. Make sure to follow up these changes
-    in your python code!**
-    ([#4354](https://github.com/syslog-ng/syslog-ng/pull/4354))
+    ([#4460](https://github.com/syslog-ng/syslog-ng/pull/4460))
 
-  * `mongodb` destination: Added support for list, JSON and null types.
-    ([#4437](https://github.com/syslog-ng/syslog-ng/pull/4437))
-
-  * `add-contextual-data()`: significantly reduce memory usage for large CSV
-    files.
-    ([#4444](https://github.com/syslog-ng/syslog-ng/pull/4444))
-
-  * `python()`: new LogMessage methods for querying as string and with default values
-
-    - `get(key[, default])`
-      Return the value for `key` if `key` exists, else `default`. If `default` is
-      not given, it defaults to `None`, so that this method never raises a
-      `KeyError`.
-
-    - `get_as_str(key, default=None, encoding='utf-8', errors='strict', repr='internal')`:
-      Return the string value for `key` if `key` exists, else `default`.
-      If `default` is not given, it defaults to `None`, so that this method never
-      raises a `KeyError`.
-
-      The string value is decoded using the codec registered for `encoding`.
-      `errors` may be given to set the desired error handling scheme.
-
-      Note that currently `repr='internal'` is the only available representation.
-      We may implement another more Pythonic representation in the future, so please
-      specify the `repr` argument explicitly if you want to avoid future
-      representation changes in your code.
-    ([#4410](https://github.com/syslog-ng/syslog-ng/pull/4410))
-
-  * `kubernetes()` source: Added support for json-file logging driver format.
-    ([#4419](https://github.com/syslog-ng/syslog-ng/pull/4419))
-
-  * The new `$RAWMSG_SIZE` hard macro can be used to query the original size of the
-    incoming message in bytes.
-
-    This information may not be available for all source drivers.
-    ([#4440](https://github.com/syslog-ng/syslog-ng/pull/4440))
-
-  * syslog-ng configuration identifier
-
-    A new syslog-ng configuration keyword has been added, which allows specifying a config identifier. For example:
-    ```
-    @config-id: cfg-20230404-13-g02b0850fc
-    ```
-
-    This keyword can be used for config identification in managed environments, where syslog-ng instances and their
-    configuration are deployed/generated automatically.
-
-    `syslog-ng-ctl config --id` can be used to query the active configuration ID and the SHA256 hash of the full
-    "preprocessed" syslog-ng configuration. For example:
-
-    ```
-    $ syslog-ng-ctl config --id
-    cfg-20230404-13-g02b0850fc (08ddecfa52a3443b29d5d5aa3e5114e48dd465e195598062da9f5fc5a45d8a83)
-    ```
-    ([#4420](https://github.com/syslog-ng/syslog-ng/pull/4420))
-
-  * `syslog-ng`: add `--config-id` command line option
-
-    Similarly to `--syntax-only`, this command line option parses the configuration
-    and then prints its ID before exiting.
-
-    It can be used to query the ID of the current configuration persisted on
-    disk.
-    ([#4435](https://github.com/syslog-ng/syslog-ng/pull/4435))
-
-  * Health metrics and `syslog-ng-ctl healthcheck`
-
-    A new `syslog-ng-ctl` command has been introduced, which can be used to query a healthcheck status from syslog-ng.
-    Currently, only 2 basic health values are reported.
-
-    `syslog-ng-ctl healthcheck --timeout <seconds>` can be specified to use it as a boolean healthy/unhealthy check.
-
-    Health checks are also published as periodically updated metrics.
-    The frequency of these checks can be configured with the `stats(healthcheck-freq())` option.
-    The default is 5 minutes.
-    ([#4362](https://github.com/syslog-ng/syslog-ng/pull/4362))
-
-  * `$(format-json)` and template functions which support value-pairs
-    expressions: new key transformations upper() and lower() have been added to
-    translate the caps of keys while formatting the output template. For
-    example:
-
-        template("$(format-json test.* --upper)\n")
-
-    Would convert all keys to uppercase. Only supports US ASCII.
-    ([#4452](https://github.com/syslog-ng/syslog-ng/pull/4452))
-
-  * `python()`, `python-fetcher()` sources: Added a mapping for the `flags()` option.
-
-    The state of the `flags()` option is mapped to the `self.flags` variable, which is
-    a `Dict[str, bool]`, for example:
-    ```python
-    {
-        'parse': True,
-        'check-hostname': False,
-        'syslog-protocol': True,
-        'assume-utf8': False,
-        'validate-utf8': False,
-        'sanitize-utf8': False,
-        'multi-line': True,
-        'store-legacy-msghdr': True,
-        'store-raw-message': False,
-        'expect-hostname': True,
-        'guess-timezone': False,
-        'header': True,
-        'rfc3164-fallback': True,
-    }
-    ```
-    ([#4455](https://github.com/syslog-ng/syslog-ng/pull/4455))
-
-
-### Metrics
-  * `network()`, `syslog()`: TCP connection metrics
-
-    ```
-    syslogng_socket_connections{id="tcp_src#0",driver_instance="afsocket_sd.(stream,AF_INET(0.0.0.0:5555))",direction="input"} 3
-    syslogng_socket_max_connections{id="tcp_src#0",driver_instance="afsocket_sd.(stream,AF_INET(0.0.0.0:5555))",direction="input"} 10
-    syslogng_socket_rejected_connections_total{id="tcp_src#0",driver_instance="afsocket_sd.(stream,AF_INET(0.0.0.0:5555))",direction="input"} 96
-    ```
-
-    `internal()`: `internal_events_queue_capacity` metric
-
-    `syslog-ng-ctl healthcheck`: new healthcheck value `syslogng_internal_events_queue_usage_ratio`
-    ([#4411](https://github.com/syslog-ng/syslog-ng/pull/4411))
-
-  * `metrics`: new network (TCP, UDP) metrics are available on stats level 1
-
-    ```
-    # syslog-ng-ctl stats prometheus
-
-    syslogng_socket_receive_buffer_used_bytes{id="#anon-source0#3",direction="input",driver_instance="afsocket_sd.udp4"} 0
-    syslogng_socket_receive_buffer_max_bytes{id="#anon-source0#3",direction="input",driver_instance="afsocket_sd.udp4"} 268435456
-    syslogng_socket_receive_dropped_packets_total{id="#anon-source0#3",direction="input",driver_instance="afsocket_sd.udp4"} 619173
-
-    syslogng_socket_connections{id="#anon-source0#0",direction="input",driver_instance="afsocket_sd.(stream,AF_INET(0.0.0.0:2000))"} 1
-    ```
-    ([#4374](https://github.com/syslog-ng/syslog-ng/pull/4374))
-
-  * New configuration-related metrics:
-
-    ```
-    syslogng_last_config_reload_timestamp_seconds 1681309903
-    syslogng_last_successful_config_reload_timestamp_seconds 1681309758
-    syslogng_last_config_file_modification_timestamp_seconds 1681309877
-    ```
-    ([#4420](https://github.com/syslog-ng/syslog-ng/pull/4420))
-
-  * destination: Introduced queue metrics.
-
-      * The corresponding driver is identified with the "id" and "driver_instance" labels.
-      * Available counters are "memory_usage_bytes" and "events".
-      * Memory queue metrics are available with "syslogng_memory_queue_" prefix,
-        `disk-buffer` metrics are available with "syslogng_disk_queue_" prefix.
-      * `disk-buffer` metrics have an additional "path" label, pointing to the location of the disk-buffer file
-        and a "reliable" label, which can be either "true" or "false".
-      * Threaded destinations, like `http`, `python`, etc have an additional "worker" label.
-
-    Example metrics
-    ```
-    syslogng_disk_queue_events{driver_instance="http,http://localhost:1239",id="d_http_disk_buffer#0",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true",worker="0"} 80
-    syslogng_disk_queue_events{driver_instance="http,http://localhost:1239",id="d_http_disk_buffer#0",path="/var/syslog-ng/syslog-ng-00001.rqf",reliable="true",worker="1"} 7
-    syslogng_disk_queue_events{driver_instance="http,http://localhost:1239",id="d_http_disk_buffer#0",path="/var/syslog-ng/syslog-ng-00002.rqf",reliable="true",worker="2"} 7
-    syslogng_disk_queue_events{driver_instance="http,http://localhost:1239",id="d_http_disk_buffer#0",path="/var/syslog-ng/syslog-ng-00003.rqf",reliable="true",worker="3"} 7
-    syslogng_disk_queue_events{driver_instance="tcp,localhost:1235",id="d_network_disk_buffer#0",path="/var/syslog-ng/syslog-ng-00000.qf",reliable="false"} 101
-    syslogng_disk_queue_memory_usage_bytes{driver_instance="http,http://localhost:1239",id="d_http_disk_buffer#0",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true",worker="0"} 3136
-    syslogng_disk_queue_memory_usage_bytes{driver_instance="http,http://localhost:1239",id="d_http_disk_buffer#0",path="/var/syslog-ng/syslog-ng-00001.rqf",reliable="true",worker="1"} 2776
-    syslogng_disk_queue_memory_usage_bytes{driver_instance="http,http://localhost:1239",id="d_http_disk_buffer#0",path="/var/syslog-ng/syslog-ng-00002.rqf",reliable="true",worker="2"} 2760
-    syslogng_disk_queue_memory_usage_bytes{driver_instance="http,http://localhost:1239",id="d_http_disk_buffer#0",path="/var/syslog-ng/syslog-ng-00003.rqf",reliable="true",worker="3"} 2776
-    syslogng_disk_queue_memory_usage_bytes{driver_instance="tcp,localhost:1235",id="d_network_disk_buffer#0",path="/var/syslog-ng/syslog-ng-00000.qf",reliable="false"} 39888
-    syslogng_memory_queue_events{driver_instance="http,http://localhost:1236",id="d_http#0",worker="0"} 15
-    syslogng_memory_queue_events{driver_instance="http,http://localhost:1236",id="d_http#0",worker="1"} 14
-    syslogng_memory_queue_events{driver_instance="tcp,localhost:1234",id="d_network#0"} 29
-    syslogng_memory_queue_memory_usage_bytes{driver_instance="http,http://localhost:1236",id="d_http#0",worker="0"} 5896
-    syslogng_memory_queue_memory_usage_bytes{driver_instance="http,http://localhost:1236",id="d_http#0",worker="1"} 5552
-    syslogng_memory_queue_memory_usage_bytes{driver_instance="tcp,localhost:1234",id="d_network#0"} 11448
-    ```
-    ([#4392](https://github.com/syslog-ng/syslog-ng/pull/4392))
-
-  * `network()`, `syslog()`, `file()`, `http()`: new byte-based metrics for incoming/outgoing events
-
-    These metrics show the serialized message sizes (protocol-specific header/framing/etc. length is not included).
-
-    ```
-    syslogng_input_event_bytes_total{id="s_network#0",driver_instance="tcp,127.0.0.1"} 1925529600
-    syslogng_output_event_bytes_total{id="d_network#0",driver_instance="tcp,127.0.0.1:5555"} 565215232
-    syslogng_output_event_bytes_total{id="d_http#0",driver_instance="http,http://127.0.0.1:8080/"} 1024
-    ```
-    ([#4440](https://github.com/syslog-ng/syslog-ng/pull/4440))
-
-  * `disk-buffer`: Added metrics for monitoring the available space in disk-buffer `dir()`s.
-
-    Metrics are available from `stats(level(1))`.
-
-    By default, the metrics are generated every 5 minutes, but it can be changed in the global options:
-    ```
-    options {
-      disk-buffer(
-        stats(
-          freq(10)
-        )
-      );
-    };
-    ```
-    Setting `freq(0)` disabled this feature.
-
-    Example metrics:
-    ```
-    syslogng_disk_queue_dir_available_bytes{dir="/var/syslog-ng"} 870109413376
-    ```
-    ([#4399](https://github.com/syslog-ng/syslog-ng/pull/4399))
-
-  * `disk-buffer`: Added metrics for abandoned disk-buffer files.
-
-    Availability is the same as the `disk_queue_dir_available_bytes` metric.
-
-    Example metrics:
-    ```
-    syslogng_disk_queue_capacity_bytes{abandoned="true",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true"} 104853504
-    syslogng_disk_queue_disk_allocated_bytes{abandoned="true",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true"} 273408
-    syslogng_disk_queue_disk_usage_bytes{abandoned="true",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true"} 269312
-    syslogng_disk_queue_events{abandoned="true",path="/var/syslog-ng/syslog-ng-00000.rqf",reliable="true"} 860
-    ```
-    ([#4402](https://github.com/syslog-ng/syslog-ng/pull/4402))
-
-  * `disk-buffer`: Added capacity, disk_allocated and disk_usage metrics.
-
-      * "capacity_bytes": The theoretical maximal useful size of the disk-buffer.
-                          This is always smaller, than `disk-buf-size()`, as there is some reserved
-                          space for metadata. The actual full disk-buffer file can be larger than this,
-                          as syslog-ng allows to write over this limit once, at the end of the file.
-
-      * "disk_allocated_bytes": The current size of the disk-buffer file on the disk. Please note that
-                                the disk-buffer file size does not strictly correlate with the number
-                                of messages, as it is a ring buffer implementation, and also syslog-ng
-                                optimizes the truncation of the file for performance reasons.
-
-      * "disk_usage_bytes": The serialized size of the queued messages in the disk-buffer file. This counter
-                            is useful for calculating the disk usage percentage (disk_usage_bytes / capacity_bytes)
-                            or the remaining available space (capacity_bytes - disk_usage_bytes).
-
-    Example metrics:
-    ```
-    syslogng_disk_queue_capacity_bytes{driver_id="d_network#0",driver_instance="tcp,localhost:1235",path="/var/syslog-ng-00000.rqf",reliable="true"} 104853504
-    syslogng_disk_queue_disk_allocated_bytes{driver_id="d_network#0",driver_instance="tcp,localhost:1235",path="/var/syslog-ng-00000.rqf",reliable="true"} 17284
-    syslogng_disk_queue_disk_usage_bytes{driver_id="d_network#0",driver_instance="tcp,localhost:1235",path="/var/syslog-ng-00000.rqf",reliable="true"} 13188
-    ```
-    ([#4356](https://github.com/syslog-ng/syslog-ng/pull/4356))
-
-  * `kubernetes()`: Added `input_events_total` and `input_event_bytes_total` metrics.
-
-    ```
-    syslogng_input_events_total{cluster="k8s",driver="kubernetes",id="#anon-source0",namespace="default",pod="log-generator-1682517834-7797487dcc-49hqc"} 25
-    syslogng_input_event_bytes_total{cluster="k8s",driver="kubernetes",id="#anon-source0",namespace="default",pod="log-generator-1682517834-7797487dcc-49hqc"} 1859
-    ```
-    ([#4447](https://github.com/syslog-ng/syslog-ng/pull/4447))
 
 ## Bugfixes
 
-  * `pdbtool test`: fix two type validation bugs:
+  * `network()`,`syslog()`,`tcp()` destination: fix TCP keepalive
 
-      1) When `pdbtool test` validates the type information associated with a name-value
-         pair, it was using string comparisons, which didn't take type aliases
-         into account. This is now fixed, so that "int", "integer" or "int64"
-         can all be used to mean the same type.
+    `tcp-keepalive-*()` options were broken on the destination side since v3.34.1.
+    ([#4559](https://github.com/syslog-ng/syslog-ng/pull/4559))
 
-      2) When type information is missing from a `<test_value/>` tag, don't
-         validate it against "string", rather accept any extracted type.
+  * Fixed a hang, which happend when syslog-ng received exremely low CPU time.
+    ([#4524](https://github.com/syslog-ng/syslog-ng/pull/4524))
 
-    In addition to these fixes, a new alias "integer" was added to mean the same
-    as "int", simply because syslog-ng was erroneously using this term when
-    reporting type information in its own messages.
-    ([#4405](https://github.com/syslog-ng/syslog-ng/pull/4405))
+  * `$(format-json)`: Fixed a bug where sometimes an unnecessary comma was added in case of a type cast failure.
+    ([#4477](https://github.com/syslog-ng/syslog-ng/pull/4477))
 
-  * `$(format-json)`: fix RFC8259 number violation
+  * Fix flow-control when `fetch-limit()` is set higher than 64K
 
-    `$(format-json)` produced invalid JSON output when it contained numeric values with leading zeros or + signs.
-    This has been fixed.
-    ([#4415](https://github.com/syslog-ng/syslog-ng/pull/4415))
+    In high-performance use cases, users may configure log-iw-size() and
+    fetch-limit() to be higher than 2^16, which caused flow-control issues,
+    such as messages stuck in the queue forever or log sources not receiving
+    messages.
+    ([#4528](https://github.com/syslog-ng/syslog-ng/pull/4528))
 
-  * `grouping-by()`: fix `persist-name()` option not taken into account
-    ([#4390](https://github.com/syslog-ng/syslog-ng/pull/4390))
+  * `int32()` and `int64()` type casts: accept hex numbers as proper
+    number representations just as the @NUMBER@ parser within db-parser().
+    Supporting octal numbers were considered and then rejected as the canonical
+    octal representation for numbers in C would be ambigious: a zero padded
+    decimal number could be erroneously considered octal. I find that log
+    messages contain zero padded decimals more often than octals.
+    ([#4535](https://github.com/syslog-ng/syslog-ng/pull/4535))
 
-  * `python()`, `db-parser()`, `grouping-by()`, `add-contextual-data()`: fix typing compatibility with <4.0 config versions
-    ([#4394](https://github.com/syslog-ng/syslog-ng/pull/4394))
+  * Fixed compilation on platforms where SO_MEMINFO is not available
+    ([#4548](https://github.com/syslog-ng/syslog-ng/pull/4548))
 
-  * `python`: Fixed a crash which occurred at reloading after registering a confgen plugin.
-    ([#4459](https://github.com/syslog-ng/syslog-ng/pull/4459))
+  * `python`: `InstantAckTracker`, `ConsecutiveAckTracker` and `BatchedAckTracker` are now called properly.
 
-  * `date-parser()`: fix `%z` when system timezone has no daylight saving time
-    ([#4401](https://github.com/syslog-ng/syslog-ng/pull/4401))
+    Added proper fake classes for the `InstantAckTracker`, `ConsecutiveAckTracker` and `BatchedAckTracker` classes, and the wapper now calls the super class' constructor. 
+    Previusly the super class' constructor was not called which caused the python API to never call into the C API, which's result was that that the callback was never called.
+    ([#4549](https://github.com/syslog-ng/syslog-ng/pull/4549))
 
-  * Consider messages consumed into correlation states "matching": syslog-ng's
-    correlation functionality (e.g.  grouping-by() or db-parser() with such
-    rules) drop individual messages as they are consumed into a correlation
-    contexts and you are using `inject-mode(aggregate-only)`.  This is usually
-    happens because you are only interested in the combined message and not in
-    those that make up the combination. However, if you are using correlation
-    with conditional processing (e.g. if/elif/else or flags(final)), such
-    messages were erroneously considered as unmatching, causing syslog-ng to
-    take the alternative branch.
+  * `python`: Fixed a crash when reloading with a config, which uses a python parser with multiple references.
+    ([#4552](https://github.com/syslog-ng/syslog-ng/pull/4552))
 
-    Example:
-
-    With a configuration similar to this, individual messages are consumed into
-    a correlation state and dropped by `grouping-by()`:
-
-    ```
-    log {
-        source(...);
-
-        if {
-            grouping-by(... inject-mode(aggregate-only));
-        } else {
-            # alternative branch
-        };
-    };
-    ```
-
-    The bug was that these individual messages also traverse the `else` branch,
-    even though they were successfully processed with the inclusion into the
-    correlation context. This is not correct. The bugfix changes this behaviour.
-    ([#4370](https://github.com/syslog-ng/syslog-ng/pull/4370))
-
-  * `netmask6()`: fix crash when user specifies too long mask
-    ([#4429](https://github.com/syslog-ng/syslog-ng/pull/4429))
-
-  * `afprog`: Fixed possible freezing on some OSes
-    ([#4438](https://github.com/syslog-ng/syslog-ng/pull/4438))
-
-  * `network()`, `syslog()`, `syslog-parser()`: fix null termination of SDATA param names
-    ([#4429](https://github.com/syslog-ng/syslog-ng/pull/4429))
-
-  * `python()`: fix LogMessage subscript not raising KeyError on non-existent keys
-
-    When message fields were queried (`msg["key"]`) and the given key did not exist,
-    `None` or an empty string was returned (depending on the version of the config).
-
-    Neither was correct, now a KeyError occurs in such cases.
-    ([#4410](https://github.com/syslog-ng/syslog-ng/pull/4410))
-
-  * `$(python)`: fix template function prefix being overwritten when using datetime types
-    ([#4410](https://github.com/syslog-ng/syslog-ng/pull/4410))
-
-  * `disk-buffer`: Fixed queued messages stats counting, when a disk-buffer became corrupted.
-    ([#4385](https://github.com/syslog-ng/syslog-ng/pull/4385))
-
-  * `$(format-json)`: fix escaping control characters
-
-    `$(format-json)` produced invalid JSON output when a string value contained control characters.
-    ([#4417](https://github.com/syslog-ng/syslog-ng/pull/4417))
-
-  * `disk-buffer()`: fix deinitialization when starting syslog-ng with invalid configuration
-    ([#4418](https://github.com/syslog-ng/syslog-ng/pull/4418))
-
-  * `python()`: fix exception handling when LogMessage value conversion fails
-    ([#4410](https://github.com/syslog-ng/syslog-ng/pull/4410))
-
-  * `json-parser()`: Fixed parsing non-string arrays.
-
-    syslog-ng now no longer parses non-string arrays to list of strings, losing the original type
-    information of the array's elements.
-    ([#4396](https://github.com/syslog-ng/syslog-ng/pull/4396))
-
-  * `disk-buffer`: Fixed a rare race condition when calculating disk-buffer filename.
-    ([#4381](https://github.com/syslog-ng/syslog-ng/pull/4381))
-
-  * `python-persist`: fix off-by-one overflow
-    ([#4429](https://github.com/syslog-ng/syslog-ng/pull/4429))
+  * `mqtt()`: Fixed the name of the stats instance (`mqtt-source`) to conform to the standard comma-separated format.
+    ([#4551](https://github.com/syslog-ng/syslog-ng/pull/4551))
 
 ## Packaging
-  * The `--with-python-venv-dir=path` configure option can be used to modify the location of syslog-ng's venv.
-    The default is still `${localstatedir}/python-venv`.
-    ([#4465](https://github.com/syslog-ng/syslog-ng/pull/4465))
+
+  * scl.conf: The scl.conf file has been moved to /share/syslog-ng/include/scl.conf
+    ([#4534](https://github.com/syslog-ng/syslog-ng/pull/4534))
+
+  * C++ plugins: Some of syslog-ng's plugins now contain C++ code.
+
+    By default they are being built if a C++ compiler is available.
+    Disabling it is possible with `--disable-cpp`.
+
+    Affected plugins:
+      * `lib/syslog-ng/libexamples.so`
+        * `--disable-cpp` will only disable the C++ part (`random-choice-generator()`)
+      * `lib/syslog-ng/libotel.so`
+
+    ([#4484](https://github.com/syslog-ng/syslog-ng/pull/4484))
+
+  * `debian`: A new module is added, called syslog-ng-mod-grpc.
+
+    Its dependencies are: `protobuf-compiler`, `protobuf-compiler-grpc`, `libprotobuf-dev`, `libgrpc++-dev`.
+    Building the module can be toggled with `--enable-grpc`.
+    ([#4510](https://github.com/syslog-ng/syslog-ng/pull/4510))
+
+  * pcre: syslog-ng now uses pcre2 (8 bit) as a dependency instead of pcre.
+
+    The minimum pcre2 version is 10.0.
+    ([#4537](https://github.com/syslog-ng/syslog-ng/pull/4537))
+
+## Notes to developers
+
+  * `lib/logmsg`: Public field `LogMessage::protected` has been renamed to `LogMessage::write_protected`.
+
+    Direct usage of this field is discouraged, instead use the following functions:
+      * `log_msg_is_write_protected()`
+      * `log_msg_write_protect()`
+    ([#4484](https://github.com/syslog-ng/syslog-ng/pull/4484))
+
+  * `lib/templates`: Public field `LogTemplate::template` has been renamed to `LogTemplate::template_str`.
+    ([#4484](https://github.com/syslog-ng/syslog-ng/pull/4484))
 
 
 ## Other changes
 
-  * The `sdata-prefix()` option does not accept values longer than 128 characters.
-    ([#4429](https://github.com/syslog-ng/syslog-ng/pull/4429))
+  * `syslog-ng-cfg-db`: Moved to a separate repository.
 
-  * `grouping-by()`: Remove setting of the `${.classifier.context_id}`
-    name-value pair in all messages consumed into a correlation context.  This
-    functionality is inherited from db-parser() and has never been documented
-    for `grouping-by()`, has of limited use, and any uses can be replaced by the
-    use of the built-in macro named `$CONTEXT_ID`.  Modifying all consumed
-    messages this way has significant performance consequences for
-    `grouping-by()` and removing it outweighs the small incompatibility this
-    change introduces. The similar functionality in `db-parser()` correlation is
-    not removed with this change.
-    ([#4424](https://github.com/syslog-ng/syslog-ng/pull/4424))
+    It is available at: https://github.com/alltilla/syslog-ng-cfg-helper
+    ([#4475](https://github.com/syslog-ng/syslog-ng/pull/4475))
 
-  * `config`: Added `internal()` option to `source`s, `destination`s, `parser`s and `rewrite`s.
+  * `disk-buffer`: Added alternative option names
 
-    Its main usage is in SCL blocks. Drivers configured with `internal(yes)` register
-    their metrics on level 3. This makes developers of SCLs able to create metrics manually
-    with `metrics-probe()` and "disable" every other metrics, they do not need.
-    ([#4451](https://github.com/syslog-ng/syslog-ng/pull/4451))
+    `disk-buf-size()` -> `capacity-bytes()`
+    `qout-size()` -> `front-cache-size()`
+    `mem-buf-length()` -> `flow-control-window-size()`
+    `mem-buf-size()` -> `flow-control-window-bytes()`
 
-  * The following Prometheus metrics have been renamed:
+    Old option names are still available.
 
-    `log_path_{in,e}gress` -> `route_{in,e}gress_total`
-    `internal_source` -> `internal_events_total`
+    Example configs:
+    ```
+    tcp(
+      "127.0.0.1" port(2001)
+      disk-buffer(
+        reliable(yes)
+        capacity-bytes(1GiB)
+        flow-control-window-bytes(200MiB)
+        front-cache-size(1000)
+      )
+    );
 
-    The `internal_queue_length` stats counter has been removed.
-    It was deprecated since syslog-ng 3.29.
-    ([#4411](https://github.com/syslog-ng/syslog-ng/pull/4411))
+    tcp(
+      "127.0.0.1" port(2001)
+      disk-buffer(
+        reliable(no)
+        capacity-bytes(1GiB)
+        flow-control-window-size(10000)
+        front-cache-size(1000)
+      )
+    );
+    ```
+    ([#4526](https://github.com/syslog-ng/syslog-ng/pull/4526))
 
+  * selinux: Added RHEL9 support for the selinux policies
+
+    Added RHEL9 support for the selinux policies at `contrib/selinux`
+    ([#4509](https://github.com/syslog-ng/syslog-ng/pull/4509))
+
+  * metrics: replace `driver_instance` (`stats_instance`) with metric labels
+
+    The new metric system had a label inherited from legacy: `driver_instance`.
+
+    This non-structured label has been removed and different driver-specific labels have been added instead, for example:
+
+    Before:
+    ```
+    syslogng_output_events_total{driver_instance="mongodb,localhost:27017,defaultdb,,coll",id="#anon-destination1#1",result="queued"} 4
+    ```
+
+    After:
+    ```
+    syslogng_output_events_total{driver="mongodb",host="localhost:27017",database="defaultdb",collection="coll",id="#anon-destination1#1",result="queued"} 4
+    ```
+
+    This change may affect legacy stats outputs (`syslog-ng-ctl stats`), for example, `persist-name()`-based naming
+    is no longer supported in this old format.
+    ([#4551](https://github.com/syslog-ng/syslog-ng/pull/4551))
 
 ## syslog-ng Discord
 
@@ -579,5 +416,6 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 
-Alex Becker, Attila Szakacs, Balazs Scheidler, Hofi, László Várady,
-Muhammad Shanif, Ricfilipe, Romain Tartière
+Andreas Friedmann, Attila Szakacs, Balazs Scheidler, Bálint Horváth,
+Chuck Silvers, Evan Rempel, Hofi, Kovacs, Gergo Ferenc, László Várady,
+Romain Tartière, Ryan Faircloth, vostrelt
