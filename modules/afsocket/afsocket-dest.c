@@ -357,6 +357,9 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
       return FALSE;
     }
 
+  if (!socket_options_setup_peer_socket(self->socket_options, sock, self->dest_addr))
+    return FALSE;
+
   rc = g_connect(sock, self->dest_addr);
   if (rc == G_IO_STATUS_NORMAL)
     {

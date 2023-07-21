@@ -135,7 +135,7 @@ socket_options_setup_socket_method(SocketOptions *self, gint fd, GSockAddr *bind
 }
 
 gboolean
-socket_options_setup_peer_socket_method(SocketOptions *self, gint fd, GSockAddr *bind_addr)
+socket_options_setup_peer_socket_method(SocketOptions *self, gint fd, GSockAddr *peer_addr)
 {
   if (self->so_keepalive && !_setup_keepalive(fd))
     return FALSE;
