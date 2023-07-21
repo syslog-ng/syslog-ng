@@ -111,11 +111,7 @@ _deinit_timer(void)
   _stop_timer();
 }
 
-static void
-_free_aggregator(StatsAggregator *self)
-{
-  stats_aggregator_free(self);
-}
+/* handle orphaned of aggregators */
 
 static gboolean
 _remove_orphaned_helper(gpointer _key, gpointer _value, gpointer _user_data)
@@ -123,7 +119,7 @@ _remove_orphaned_helper(gpointer _key, gpointer _value, gpointer _user_data)
   StatsAggregator *self = (StatsAggregator *) _value;
   if (stats_aggregator_is_orphaned(self))
     {
-      _free_aggregator(self);
+      stats_aggregator_free(self);
       return TRUE;
     }
   return FALSE;
@@ -144,7 +140,7 @@ _remove_helper(gpointer _key, gpointer _value, gpointer _user_data)
   if (!stats_aggregator_is_orphaned(self))
     stats_aggregator_unregister(self);
 
-  _free_aggregator(self);
+  stats_aggregator_free(self);
   return TRUE;
 }
 
