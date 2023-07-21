@@ -178,22 +178,23 @@ stats_aggregator_cleanup(void)
 void
 stats_aggregator_registry_init(void)
 {
+  g_mutex_init(&stats_aggregator_mutex);
+
   stats_container.aggregators = g_hash_table_new_full((GHashFunc) stats_cluster_key_hash,
                                                       (GEqualFunc) stats_cluster_key_equal, NULL, NULL);
   _init_timer();
-  g_mutex_init(&stats_aggregator_mutex);
 }
 
 void
 stats_aggregator_registry_deinit(void)
 {
+  _deinit_timer();
   stats_aggregator_lock();
   stats_aggregator_cleanup();
   stats_aggregator_unlock();
   g_hash_table_destroy(stats_container.aggregators);
   stats_container.aggregators = NULL;
   g_mutex_clear(&stats_aggregator_mutex);
-  _deinit_timer();
 }
 
 /* type specific registration helpers */
