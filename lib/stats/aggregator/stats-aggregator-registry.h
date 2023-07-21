@@ -29,6 +29,7 @@
 #include "syslog-ng.h"
 
 void stats_aggregator_registry_reset(void);
+void stats_aggregator_remove_orphaned_stats(void);
 
 void stats_aggregator_lock(void);
 void stats_aggregator_unlock(void);
@@ -36,17 +37,17 @@ void stats_aggregator_unlock(void);
 void stats_aggregator_registry_init(void);
 void stats_aggregator_registry_deinit(void);
 
-void stats_aggregator_remove_orphaned_stats(void);
+/* type specific helpers */
 
-void stats_register_aggregator_maximum(gint level, StatsClusterKey *sc_key, StatsAggregator **s);
-void stats_unregister_aggregator_maximum(StatsAggregator **s);
+void stats_register_aggregator_maximum(gint level, StatsClusterKey *sc_key, StatsAggregator **aggr);
+void stats_unregister_aggregator_maximum(StatsAggregator **aggr);
 
-void stats_register_aggregator_average(gint level, StatsClusterKey *sc_key, StatsAggregator **s);
-void stats_unregister_aggregator_average(StatsAggregator **s);
+void stats_register_aggregator_average(gint level, StatsClusterKey *sc_key, StatsAggregator **aggr);
+void stats_unregister_aggregator_average(StatsAggregator **aggr);
 
 void stats_register_aggregator_cps(gint level, StatsClusterKey *sc_key, StatsClusterKey *sc_key_input, gint stats_type,
-                                   StatsAggregator **s);
-void stats_unregister_aggregator_cps(StatsAggregator **s);
+                                   StatsAggregator **aggr);
+void stats_unregister_aggregator_cps(StatsAggregator **aggr);
 
 
 #endif /* STATS_AGGREGATOR_REGISTRY_H */

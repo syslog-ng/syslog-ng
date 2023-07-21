@@ -63,10 +63,10 @@ stats_aggregator_unlock(void)
 static void
 _update_func (gpointer _key, gpointer _value, gpointer _user_data)
 {
-  StatsAggregator *self = (StatsAggregator *) _value;
+  StatsAggregator *aggr = (StatsAggregator *) _value;
 
-  if (!stats_aggregator_is_orphaned(self))
-    stats_aggregator_aggregate(self);
+  if (!stats_aggregator_is_orphaned(aggr))
+    stats_aggregator_aggregate(aggr);
 }
 
 static void
@@ -118,10 +118,10 @@ _deinit_timer(void)
 static gboolean
 _remove_orphaned_helper(gpointer _key, gpointer _value, gpointer _user_data)
 {
-  StatsAggregator *self = (StatsAggregator *) _value;
-  if (stats_aggregator_is_orphaned(self))
+  StatsAggregator *aggr = (StatsAggregator *) _value;
+  if (stats_aggregator_is_orphaned(aggr))
     {
-      stats_aggregator_free(self);
+      stats_aggregator_free(aggr);
       return TRUE;
     }
   return FALSE;
@@ -140,8 +140,8 @@ stats_aggregator_remove_orphaned_stats(void)
 static void
 _reset_func (gpointer _key, gpointer _value, gpointer _user_data)
 {
-  StatsAggregator *self = (StatsAggregator *) _value;
-  stats_aggregator_reset(self);
+  StatsAggregator *aggr = (StatsAggregator *) _value;
+  stats_aggregator_reset(aggr);
 }
 
 void
@@ -157,11 +157,11 @@ stats_aggregator_registry_reset(void)
 static gboolean
 _cleanup_aggregator(gpointer _key, gpointer _value, gpointer _user_data)
 {
-  StatsAggregator *self = (StatsAggregator *) _value;
-  if (!stats_aggregator_is_orphaned(self))
-    stats_aggregator_unregister(self);
+  StatsAggregator *aggr = (StatsAggregator *) _value;
+  if (!stats_aggregator_is_orphaned(aggr))
+    stats_aggregator_unregister(aggr);
 
-  stats_aggregator_free(self);
+  stats_aggregator_free(aggr);
   return TRUE;
 }
 
@@ -200,9 +200,9 @@ stats_aggregator_registry_deinit(void)
 /* type specific registration helpers */
 
 static void
-_insert_to_table(StatsAggregator *value)
+_insert_to_table(StatsAggregator *aggr)
 {
-  g_hash_table_insert(stats_container.aggregators, &value->key, value);
+  g_hash_table_insert(stats_container.aggregators, &aggr->key, aggr);
 
   if (!iv_timer_registered(&stats_container.update_timer))
     _start_timer();
@@ -221,98 +221,98 @@ _get_from_table(StatsClusterKey *sc_key)
 }
 
 void
-stats_register_aggregator_maximum(gint level, StatsClusterKey *sc_key, StatsAggregator **s)
+stats_register_aggregator_maximum(gint level, StatsClusterKey *sc_key, StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
 
   if (!stats_check_level(level))
     {
-      *s = NULL;
+      *aggr = NULL;
       return;
     }
 
   if (!_is_in_table(sc_key))
     {
-      *s = stats_aggregator_maximum_new(level, sc_key);
-      _insert_to_table(*s);
+      *aggr = stats_aggregator_maximum_new(level, sc_key);
+      _insert_to_table(*aggr);
     }
   else
     {
-      *s = _get_from_table(sc_key);
+      *aggr = _get_from_table(sc_key);
     }
 
-  stats_aggregator_track_counter(*s);
+  stats_aggregator_track_counter(*aggr);
 }
 
 void
-stats_unregister_aggregator_maximum(StatsAggregator **s)
+stats_unregister_aggregator_maximum(StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
-  stats_aggregator_untrack_counter(*s);
-  *s = NULL;
+  stats_aggregator_untrack_counter(*aggr);
+  *aggr = NULL;
 }
 
 void
-stats_register_aggregator_average(gint level, StatsClusterKey *sc_key, StatsAggregator **s)
+stats_register_aggregator_average(gint level, StatsClusterKey *sc_key, StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
 
   if (!stats_check_level(level))
     {
-      *s = NULL;
+      *aggr = NULL;
       return;
     }
 
   if (!_is_in_table(sc_key))
     {
-      *s = stats_aggregator_average_new(level, sc_key);
-      _insert_to_table(*s);
+      *aggr = stats_aggregator_average_new(level, sc_key);
+      _insert_to_table(*aggr);
     }
   else
     {
-      *s = _get_from_table(sc_key);
+      *aggr = _get_from_table(sc_key);
     }
 
-  stats_aggregator_track_counter(*s);
+  stats_aggregator_track_counter(*aggr);
 }
 
 void
-stats_unregister_aggregator_average(StatsAggregator **s)
+stats_unregister_aggregator_average(StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
-  stats_aggregator_untrack_counter(*s);
-  *s = NULL;
+  stats_aggregator_untrack_counter(*aggr);
+  *aggr = NULL;
 }
 
 void
 stats_register_aggregator_cps(gint level, StatsClusterKey *sc_key, StatsClusterKey *sc_key_input, gint stats_type,
-                              StatsAggregator **s)
+                              StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
 
   if (!stats_check_level(level))
     {
-      *s = NULL;
+      *aggr = NULL;
       return;
     }
 
   if (!_is_in_table(sc_key))
     {
-      *s = stats_aggregator_cps_new(level, sc_key, sc_key_input, stats_type);
-      _insert_to_table(*s);
+      *aggr = stats_aggregator_cps_new(level, sc_key, sc_key_input, stats_type);
+      _insert_to_table(*aggr);
     }
   else
     {
-      *s = _get_from_table(sc_key);
+      *aggr = _get_from_table(sc_key);
     }
 
-  stats_aggregator_track_counter(*s);
+  stats_aggregator_track_counter(*aggr);
 }
 
 void
-stats_unregister_aggregator_cps(StatsAggregator **s)
+stats_unregister_aggregator_cps(StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
-  stats_aggregator_untrack_counter(*s);
-  *s = NULL;
+  stats_aggregator_untrack_counter(*aggr);
+  *aggr = NULL;
 }
