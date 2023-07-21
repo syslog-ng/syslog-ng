@@ -155,7 +155,7 @@ stats_aggregator_registry_reset(void)
 /* aggregator cleanup */
 
 static gboolean
-_remove_helper(gpointer _key, gpointer _value, gpointer _user_data)
+_cleanup_aggregator(gpointer _key, gpointer _value, gpointer _user_data)
 {
   StatsAggregator *self = (StatsAggregator *) _value;
   if (!stats_aggregator_is_orphaned(self))
@@ -166,11 +166,11 @@ _remove_helper(gpointer _key, gpointer _value, gpointer _user_data)
 }
 
 static void
-stats_aggregator_remove_stats(void)
+stats_aggregator_cleanup(void)
 {
   g_assert(stats_aggregator_locked);
 
-  g_hash_table_foreach_remove(stats_container.aggregators, _remove_helper, NULL);
+  g_hash_table_foreach_remove(stats_container.aggregators, _cleanup_aggregator, NULL);
 }
 
 /* module init/deinit */
@@ -188,7 +188,7 @@ void
 stats_aggregator_registry_deinit(void)
 {
   stats_aggregator_lock();
-  stats_aggregator_remove_stats();
+  stats_aggregator_cleanup();
   stats_aggregator_unlock();
   g_hash_table_destroy(stats_container.aggregators);
   stats_container.aggregators = NULL;
