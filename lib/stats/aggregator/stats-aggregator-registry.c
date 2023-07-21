@@ -44,6 +44,20 @@ static StatsAggregatorContainer stats_container;
 static GMutex stats_aggregator_mutex;
 static gboolean stats_aggregator_locked;
 
+void
+stats_aggregator_lock(void)
+{
+  g_mutex_lock(&stats_aggregator_mutex);
+  stats_aggregator_locked = TRUE;
+}
+
+void
+stats_aggregator_unlock(void)
+{
+  stats_aggregator_locked = FALSE;
+  g_mutex_unlock(&stats_aggregator_mutex);
+}
+
 static void
 _update_func (gpointer _key, gpointer _value, gpointer _user_data)
 {
@@ -95,20 +109,6 @@ static void
 _deinit_timer(void)
 {
   _stop_timer();
-}
-
-void
-stats_aggregator_lock(void)
-{
-  g_mutex_lock(&stats_aggregator_mutex);
-  stats_aggregator_locked = TRUE;
-}
-
-void
-stats_aggregator_unlock(void)
-{
-  stats_aggregator_locked = FALSE;
-  g_mutex_unlock(&stats_aggregator_mutex);
 }
 
 static void
