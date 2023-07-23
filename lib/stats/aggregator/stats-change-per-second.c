@@ -36,9 +36,9 @@
 typedef struct
 {
   StatsCounterItem *output_counter;
-  atomic_gssize average;
-  atomic_gssize sum;
-  atomic_gssize last_count;
+  gsize average;
+  gsize sum;
+  gsize last_count;
 
   gssize duration; /* if the duration equals -1, thats mean, it count since syslog start */
   gchar *name;
@@ -67,54 +67,14 @@ _get_count(StatsAggregatorCPS *self)
   return stats_counter_get(self->input_counter);
 }
 
-static inline void
-_set_sum(CPSLogic *self, gsize set)
-{
-  atomic_gssize_set(&self->sum, set);
-}
-
-static inline void
-_add_to_sum(CPSLogic *self, gsize value)
-{
-  atomic_gssize_add(&self->sum, value);
-}
-
-static inline gsize
-_get_sum(CPSLogic *self)
-{
-  return atomic_gssize_get_unsigned(&self->sum);
-}
-
-static inline void
-_set_average(CPSLogic *self, gsize set)
-{
-  atomic_gssize_set(&self->average, set);
-}
-
-static inline gsize
-_get_average(CPSLogic *self)
-{
-  return atomic_gssize_get_unsigned(&self->average);
-}
-
-static inline void
-_set_last_count(CPSLogic *self, gsize set)
-{
-  atomic_gssize_set(&self->last_count, set);
-}
-
-static inline gsize
-_get_last_count(CPSLogic *self)
-{
-  return atomic_gssize_get_unsigned(&self->last_count);
-}
-
 static void
 _reset_CPS_logic_values(CPSLogic *self)
 {
-  _set_average(self, 0);
-  _set_sum(self, 0);
-  _set_last_count(self, 0);
+  /* Both aggregate() and reset() is running in the main thread */
+
+  self->average = 0;
+  self->sum = 0;
+  self->last_count = 0;
   stats_counter_set(self->output_counter, 0);
 }
 
@@ -252,15 +212,16 @@ _is_less_then_duration(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
 static void
 _calc_sum(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
 {
-  gsize diff = _get_count(self) - _get_last_count(logic);
-  _set_last_count(logic, _get_count(self));
+  gsize count = _get_count(self);
+  gsize diff = count - logic->last_count;
+  logic->last_count = count;
 
   if (!_is_less_then_duration(self, logic, now))
     {
-      diff -= _get_average(logic) * _calc_sec_between_time(&self->last_add_time, now);
+      diff -= logic->average * _calc_sec_between_time(&self->last_add_time, now);
     }
 
-  _add_to_sum(logic, diff);
+  logic->sum += diff;
   self->last_add_time = *now;
 }
 
@@ -273,9 +234,9 @@ _calc_average(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
   elapsed_time = _calc_sec_between_time(&self->init_time, now);
   divisor = (_is_less_then_duration(self, logic, now)) ? elapsed_time : logic->duration;
   if (divisor <= 0) divisor = 1;
-  gsize sum = _get_sum(logic);
+  gsize sum = logic->sum;
 
-  _set_average(logic, (sum / divisor));
+  logic->average = (sum / divisor);
 
   msg_trace("stats-aggregator-cps",
             evt_tag_printf("name", "%s_%s", self->super.key.legacy.id, logic->name),
@@ -290,7 +251,7 @@ _aggregate_CPS_logic(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
 {
   _calc_sum(self, logic, now);
   _calc_average(self, logic, now);
-  stats_counter_set(logic->output_counter, _get_average(logic));
+  stats_counter_set(logic->output_counter, logic->average);
 }
 
 static void
