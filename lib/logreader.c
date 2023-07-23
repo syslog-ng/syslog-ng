@@ -632,9 +632,9 @@ _unregister_aggregated_stats(LogReader *self)
 {
   stats_aggregator_lock();
 
-  stats_unregister_aggregator_maximum(&self->max_message_size);
-  stats_unregister_aggregator_average(&self->average_messages_size);
-  stats_unregister_aggregator_cps(&self->CPS);
+  stats_unregister_aggregator(&self->max_message_size);
+  stats_unregister_aggregator(&self->average_messages_size);
+  stats_unregister_aggregator(&self->CPS);
 
   stats_aggregator_unlock();
 }

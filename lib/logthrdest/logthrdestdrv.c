@@ -1078,11 +1078,11 @@ log_threaded_dest_driver_unregister_aggregated_stats(LogThreadedDestDriver *self
 {
   stats_aggregator_lock();
 
-  stats_unregister_aggregator_maximum(&self->metrics.max_message_size);
-  stats_unregister_aggregator_average(&self->metrics.average_messages_size);
-  stats_unregister_aggregator_maximum(&self->metrics.max_batch_size);
-  stats_unregister_aggregator_average(&self->metrics.average_batch_size);
-  stats_unregister_aggregator_cps(&self->metrics.CPS);
+  stats_unregister_aggregator(&self->metrics.max_message_size);
+  stats_unregister_aggregator(&self->metrics.average_messages_size);
+  stats_unregister_aggregator(&self->metrics.max_batch_size);
+  stats_unregister_aggregator(&self->metrics.average_batch_size);
+  stats_unregister_aggregator(&self->metrics.CPS);
 
   stats_aggregator_unlock();
 }
