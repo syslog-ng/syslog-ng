@@ -148,6 +148,7 @@ void
 stats_aggregator_registry_reset(void)
 {
   g_assert(stats_aggregator_locked);
+  main_loop_assert_main_thread();
 
   g_hash_table_foreach(stats_container.aggregators, _reset_func, NULL);
 }
