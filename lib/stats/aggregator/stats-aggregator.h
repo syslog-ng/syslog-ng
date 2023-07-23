@@ -43,6 +43,7 @@ struct _StatsAggregator
 
   gssize use_count;
   StatsClusterKey key;
+  StatsCounterItem *output_counter;
   gint stats_level;
   gint timer_period;
   struct iv_timer update_timer;

@@ -28,7 +28,6 @@
 typedef struct
 {
   StatsAggregator super;
-  StatsCounterItem *output_counter;
 } StatsAggregatorMaximum;
 
 static void
@@ -39,44 +38,19 @@ _add_data_point(StatsAggregator *s, gsize value)
 
   do
     {
-      current_max = stats_counter_get(self->output_counter);
+      current_max = stats_counter_get(self->super.output_counter);
 
       if (current_max >= value)
         break;
 
     }
-  while(!atomic_gssize_compare_and_exchange(&self->output_counter->value, current_max, value));
-}
-
-static void
-_register(StatsAggregator *s)
-{
-  StatsAggregatorMaximum *self = (StatsAggregatorMaximum *)s;
-  stats_lock();
-  stats_register_counter(self->super.stats_level, &self->super.key, SC_TYPE_SINGLE_VALUE, &self->output_counter);
-  stats_unlock();
-}
-
-static void
-_unregister(StatsAggregator *s)
-{
-  StatsAggregatorMaximum *self = (StatsAggregatorMaximum *)s;
-
-  if(self->output_counter)
-    {
-      stats_lock();
-      stats_unregister_counter(&self->super.key, SC_TYPE_SINGLE_VALUE, &self->output_counter);
-      self->output_counter = NULL;
-      stats_unlock();
-    }
+  while(!atomic_gssize_compare_and_exchange(&self->super.output_counter->value, current_max, value));
 }
 
 static void
 _set_virtual_function(StatsAggregatorMaximum *self)
 {
   self->super.add_data_point = _add_data_point;
-  self->super.register_aggr = _register;
-  self->super.unregister_aggr = _unregister;
 }
 
 StatsAggregator *

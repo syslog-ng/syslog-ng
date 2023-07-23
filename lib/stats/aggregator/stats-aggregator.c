@@ -22,6 +22,8 @@
  */
 
 #include "stats/aggregator/stats-aggregator.h"
+#include "stats/stats-registry.h"
+#include "stats/stats-cluster-single.h"
 #include "mainloop.h"
 
 
@@ -134,9 +136,27 @@ _is_orphaned(StatsAggregator *self)
 }
 
 static void
+_register(StatsAggregator *self)
+{
+  stats_lock();
+  stats_register_counter(self->stats_level, &self->key, SC_TYPE_SINGLE_VALUE, &self->output_counter);
+  stats_unlock();
+}
+
+static void
+_unregister(StatsAggregator *self)
+{
+  stats_lock();
+  stats_unregister_counter(&self->key, SC_TYPE_SINGLE_VALUE, &self->output_counter);
+  stats_unlock();
+}
+
+static void
 _set_virtual_functions(StatsAggregator *self)
 {
   self->is_orphaned = _is_orphaned;
+  self->register_aggr = _register;
+  self->unregister_aggr = _unregister;
 }
 
 void
