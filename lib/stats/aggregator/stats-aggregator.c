@@ -24,7 +24,7 @@
 #include "stats/aggregator/stats-aggregator.h"
 
 void
-stats_aggregator_track_counter(StatsAggregator *self)
+stats_aggregator_start(StatsAggregator *self)
 {
   if (!self)
     return;
@@ -36,7 +36,7 @@ stats_aggregator_track_counter(StatsAggregator *self)
 }
 
 void
-stats_aggregator_untrack_counter(StatsAggregator *self)
+stats_aggregator_stop(StatsAggregator *self)
 {
   if (!self)
     return;

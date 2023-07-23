@@ -242,14 +242,14 @@ stats_register_aggregator_maximum(gint level, StatsClusterKey *sc_key, StatsAggr
       *aggr = _get_from_table(sc_key);
     }
 
-  stats_aggregator_track_counter(*aggr);
+  stats_aggregator_start(*aggr);
 }
 
 void
 stats_unregister_aggregator_maximum(StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
-  stats_aggregator_untrack_counter(*aggr);
+  stats_aggregator_stop(*aggr);
   *aggr = NULL;
 }
 
@@ -274,14 +274,14 @@ stats_register_aggregator_average(gint level, StatsClusterKey *sc_key, StatsAggr
       *aggr = _get_from_table(sc_key);
     }
 
-  stats_aggregator_track_counter(*aggr);
+  stats_aggregator_start(*aggr);
 }
 
 void
 stats_unregister_aggregator_average(StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
-  stats_aggregator_untrack_counter(*aggr);
+  stats_aggregator_stop(*aggr);
   *aggr = NULL;
 }
 
@@ -307,13 +307,13 @@ stats_register_aggregator_cps(gint level, StatsClusterKey *sc_key, StatsClusterK
       *aggr = _get_from_table(sc_key);
     }
 
-  stats_aggregator_track_counter(*aggr);
+  stats_aggregator_start(*aggr);
 }
 
 void
 stats_unregister_aggregator_cps(StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
-  stats_aggregator_untrack_counter(*aggr);
+  stats_aggregator_stop(*aggr);
   *aggr = NULL;
 }

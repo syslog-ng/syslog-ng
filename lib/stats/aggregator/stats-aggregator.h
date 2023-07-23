@@ -96,8 +96,8 @@ void stats_aggregator_aggregate(StatsAggregator *self);
 void stats_aggregator_reset(StatsAggregator *self);
 
 /* stats-internals */
-void stats_aggregator_track_counter(StatsAggregator *self);
-void stats_aggregator_untrack_counter(StatsAggregator *self);
+void stats_aggregator_start(StatsAggregator *self);
+void stats_aggregator_stop(StatsAggregator *self);
 void stats_aggregator_init_instance(StatsAggregator *self, StatsClusterKey *sc_key, gint stats_level);
 void stats_aggregator_free(StatsAggregator *self);
 
