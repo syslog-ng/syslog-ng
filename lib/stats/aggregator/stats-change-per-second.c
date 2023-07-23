@@ -366,6 +366,7 @@ stats_aggregator_cps_new(gint level, StatsClusterKey *sc_key, StatsClusterKey *s
   self->hour.duration = HOUR_IN_SEC;
   self->day.duration = DAY_IN_SEC;
   self->start.duration = -1;
+  self->super.timer_period = 60;
 
   return &self->super;
 }
