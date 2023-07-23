@@ -302,9 +302,6 @@ _aggregate(StatsAggregator *s)
   _aggregate_CPS_logic(self, &self->hour, &now);
   _aggregate_CPS_logic(self, &self->day, &now);
   _aggregate_CPS_logic(self, &self->start, &now);
-
-  if (stats_aggregator_is_orphaned(&self->super))
-    _unregister(s);
 }
 
 static void
