@@ -61,11 +61,6 @@ typedef struct
   CPSLogic start;
 } StatsAggregatorCPS;
 
-static inline gsize
-_get_count(StatsAggregatorCPS *self)
-{
-  return stats_counter_get(self->input_counter);
-}
 
 static void
 _reset_CPS_logic_values(CPSLogic *self)
@@ -212,7 +207,7 @@ _is_less_then_duration(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
 static void
 _calc_sum(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
 {
-  gsize count = _get_count(self);
+  gsize count = stats_counter_get(self->input_counter);
   gsize diff = count - logic->last_count;
   logic->last_count = count;
 
