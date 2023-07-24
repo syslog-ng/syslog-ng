@@ -304,7 +304,7 @@ ProtobufFormatter::get_and_set_repeated_KeyValues(LogMessage *msg, const char *p
 
   LogTemplateOptions template_options;
   log_template_options_defaults(&template_options);
-  LogTemplateEvalOptions options = {&template_options, LTZ_LOCAL, 11, NULL, LM_VT_STRING};
+  LogTemplateEvalOptions options = {&template_options, LTZ_LOCAL, -1, NULL, LM_VT_STRING};
 
   gpointer user_data[2];
   user_data[0] = key_values;
