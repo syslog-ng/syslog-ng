@@ -21,6 +21,7 @@ on:
           "debian-bullseye",
           "ubuntu-focal",
           "ubuntu-jammy",
+          "ubuntu-lunar",
           "centos-7",
           "fedora-37"
         ]'

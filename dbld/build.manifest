@@ -38,6 +38,7 @@ debian-sid		python3,nojava
 ubuntu-bionic		python3,nocriterion,nokafka,nomqtt,nogrpc
 ubuntu-focal		python3,nocriterion,nomqtt,nogrpc
 ubuntu-jammy		python3
+ubuntu-lunar		python3
 
 centos-7		python3
 fedora			python3

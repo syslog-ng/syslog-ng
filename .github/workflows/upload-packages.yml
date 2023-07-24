@@ -17,7 +17,8 @@ on:
           "ubuntu-bionic",
           "debian-bullseye",
           "ubuntu-focal",
-          "ubuntu-jammy"
+          "ubuntu-jammy",
+          "ubuntu-lunar"
         ]'
     secrets:
       azure-sas-token:

@@ -11,6 +11,7 @@ BUILDER_IMAGES=		\
 	ubuntu-bionic	\
 	ubuntu-focal	\
 	ubuntu-jammy \
+	ubuntu-lunar	\
 	kira		\
 	tarball
 

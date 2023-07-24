@@ -36,6 +36,7 @@ EXTRA_DIST += \
 	dbld/images/ubuntu-bionic.dockerfile \
 	dbld/images/ubuntu-focal.dockerfile \
 	dbld/images/ubuntu-jammy.dockerfile \
+	dbld/images/ubuntu-lunar.dockerfile \
 	dbld/images/kira.dockerfile \
 	dbld/images/tarball.dockerfile \
 	dbld/images/hooks/build \
