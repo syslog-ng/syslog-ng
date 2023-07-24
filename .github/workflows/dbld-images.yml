@@ -32,12 +32,14 @@ jobs:
           - centos-7
           - fedora-37
           - debian-bullseye
+          - debian-bookworm
           - debian-buster
           - debian-sid
           - debian-testing
           - ubuntu-bionic
           - ubuntu-focal
           - ubuntu-jammy
+          - ubuntu-lunar
           - devshell
           - kira
           - tarball

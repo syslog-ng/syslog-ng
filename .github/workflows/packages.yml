@@ -35,7 +35,7 @@ jobs:
       dbld-image-mode: cache
       distros: '[
         "centos-7",
-        "debian-bullseye",
+        "debian-bookworm",
         "debian-testing",
         "fedora-37",
         "ubuntu-jammy"

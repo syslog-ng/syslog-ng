@@ -17,11 +17,13 @@ jobs:
         distro:
           - "debian:buster"
           - "debian:bullseye"
+          - "debian:bookworm"
           - "debian:testing"
           - "debian:sid"
           - "ubuntu:bionic"
           - "ubuntu:focal"
           - "ubuntu:jammy"
+          - "ubuntu:lunar"
         upgrade-from:
           - "debian-official"
           - "syslog-ng-last"

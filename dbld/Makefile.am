@@ -31,11 +31,13 @@ EXTRA_DIST += \
 	dbld/images/fedora-37.dockerfile \
 	dbld/images/debian-buster.dockerfile \
 	dbld/images/debian-bullseye.dockerfile \
+	dbld/images/debian-bookworm.dockerfile \
 	dbld/images/debian-sid.dockerfile \
 	dbld/images/debian-testing.dockerfile \
 	dbld/images/ubuntu-bionic.dockerfile \
 	dbld/images/ubuntu-focal.dockerfile \
 	dbld/images/ubuntu-jammy.dockerfile \
+	dbld/images/ubuntu-lunar.dockerfile \
 	dbld/images/kira.dockerfile \
 	dbld/images/tarball.dockerfile \
 	dbld/images/hooks/build \
