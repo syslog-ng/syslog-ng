@@ -112,6 +112,21 @@ public:
     this->table = t;
   }
 
+  void set_keepalive_time(int t)
+  {
+    this->keepalive_time = t;
+  }
+
+  void set_keepalive_timeout(int t)
+  {
+    this->keepalive_timeout = t;
+  }
+
+  void set_keepalive_max_pings(int p)
+  {
+    this->keepalive_max_pings_without_data = p;
+  }
+
   const std::string &get_url()
   {
     return this->url;
@@ -144,6 +159,10 @@ private:
   std::string project;
   std::string dataset;
   std::string table;
+
+  int keepalive_time;
+  int keepalive_timeout;
+  int keepalive_max_pings_without_data;
 
   struct
   {

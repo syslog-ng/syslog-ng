@@ -37,6 +37,10 @@ static CfgLexerKeyword bigquery_keywords[] =
   { "table", KW_TABLE },
   { "schema", KW_SCHEMA },
   { "protobuf_schema", KW_PROTOBUF_SCHEMA },
+  { "keep_alive", KW_KEEP_ALIVE },
+  { "time", KW_TIME },
+  { "timeout", KW_TIMEOUT },
+  { "max_pings_without_data", KW_MAX_PINGS_WITHOUT_DATA },
   { NULL }
 };
 

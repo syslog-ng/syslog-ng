@@ -70,7 +70,18 @@ DestinationWorker::init()
 {
   DestinationDriver *owner = this->get_owner();
 
-  this->channel = grpc::CreateChannel(owner->get_url(), grpc::GoogleDefaultCredentials());
+  grpc::ChannelArguments args{};
+
+  if (owner->keepalive_time != -1)
+    args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, owner->keepalive_time);
+  if (owner->keepalive_timeout != -1)
+    args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, owner->keepalive_timeout);
+  if (owner->keepalive_max_pings_without_data != -1)
+    args.SetInt(GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA, owner->keepalive_max_pings_without_data);
+
+  args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
+
+  this->channel = grpc::CreateCustomChannel(owner->get_url(), grpc::GoogleDefaultCredentials(), args);
   if (!this->channel)
     {
       msg_error("Error creating BigQuery gRPC channel", log_pipe_location_tag((LogPipe *) this->super->super.owner));

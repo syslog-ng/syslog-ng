@@ -55,6 +55,11 @@
 %token KW_SCHEMA
 %token KW_PROTOBUF_SCHEMA
 
+%token KW_KEEP_ALIVE
+%token KW_TIME
+%token KW_TIMEOUT
+%token KW_MAX_PINGS_WITHOUT_DATA
+
 %type <ptr> bigquery_dest
 
 %%
@@ -88,6 +93,7 @@ bigquery_dest_option
       free($3);
       g_list_free_full($5, free);
     }
+  | KW_KEEP_ALIVE '(' bigquery_keepalive_options ')'
   | threaded_dest_driver_general_option
   | threaded_dest_driver_workers_option
   | threaded_dest_driver_batch_option
@@ -107,6 +113,17 @@ bigquery_schema_field
       free($2);
       log_template_unref($4);
     }
+  ;
+
+bigquery_keepalive_options
+  : bigquery_keepalive_option bigquery_keepalive_options
+  |
+  ;
+
+bigquery_keepalive_option
+  : KW_TIME '(' nonnegative_integer ')' { bigquery_dd_set_keepalive_time(last_driver, $3); }
+  | KW_TIMEOUT '(' nonnegative_integer ')' { bigquery_dd_set_keepalive_timeout(last_driver, $3); }
+  | KW_MAX_PINGS_WITHOUT_DATA '(' nonnegative_integer ')' { bigquery_dd_set_keepalive_max_pings(last_driver, $3); }
   ;
 
 /* INCLUDE_RULES */

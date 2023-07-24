@@ -40,7 +40,9 @@ struct _BigQueryDestDriver
 
 
 DestinationDriver::DestinationDriver(BigQueryDestDriver *s)
-  : super(s), url("bigquerystorage.googleapis.com"), msg_factory(&descriptor_pool)
+  : super(s), url("bigquerystorage.googleapis.com"),
+    keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1),
+    msg_factory(&descriptor_pool)
 {
   log_template_options_defaults(&this->template_options);
 }
@@ -244,6 +246,27 @@ bigquery_dd_set_protobuf_schema(LogDriver *d, const gchar *proto_path, GList *va
 {
   BigQueryDestDriver *self = (BigQueryDestDriver *) d;
   self->cpp->set_protobuf_schema(proto_path, values);
+}
+
+void
+bigquery_dd_set_keepalive_time(LogDriver *d, gint t)
+{
+  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
+  self->cpp->set_keepalive_time(t);
+}
+
+void
+bigquery_dd_set_keepalive_timeout(LogDriver *d, gint t)
+{
+  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
+  self->cpp->set_keepalive_timeout(t);
+}
+
+void
+bigquery_dd_set_keepalive_max_pings(LogDriver *d, gint p)
+{
+  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
+  self->cpp->set_keepalive_max_pings(p);
 }
 
 LogTemplateOptions *
