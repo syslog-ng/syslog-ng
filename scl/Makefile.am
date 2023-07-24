@@ -25,6 +25,7 @@ SCL_SUBDIRS	= \
 	mbox		\
 	netskope	\
 	nodejs		\
+	opensearch	\
 	osquery	\
 	pacct		\
 	paloalto 	\

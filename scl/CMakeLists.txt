@@ -25,6 +25,7 @@ set(SCL_DIRS
     mbox
     netskope
     nodejs
+    opensearch
     osquery
     pacct
     paloalto
