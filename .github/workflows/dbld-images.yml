@@ -32,6 +32,7 @@ jobs:
           - centos-7
           - fedora-37
           - debian-bullseye
+          - debian-bookworm
           - debian-buster
           - debian-sid
           - debian-testing

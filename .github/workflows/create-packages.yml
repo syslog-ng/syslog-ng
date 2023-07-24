@@ -19,6 +19,7 @@ on:
           "debian-sid",
           "ubuntu-bionic",
           "debian-bullseye",
+          "debian-bookworm",
           "ubuntu-focal",
           "ubuntu-jammy",
           "ubuntu-lunar",

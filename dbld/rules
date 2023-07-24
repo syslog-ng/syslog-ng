@@ -6,6 +6,7 @@ BUILDER_IMAGES=		\
 	debian-stretch	\
 	debian-buster	\
 	debian-bullseye	\
+	debian-bookworm	\
 	debian-testing	\
 	debian-sid	\
 	ubuntu-bionic	\

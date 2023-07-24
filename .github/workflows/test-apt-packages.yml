@@ -17,6 +17,7 @@ jobs:
         distro:
           - "debian:buster"
           - "debian:bullseye"
+          - "debian:bookworm"
           - "debian:testing"
           - "debian:sid"
           - "ubuntu:bionic"
