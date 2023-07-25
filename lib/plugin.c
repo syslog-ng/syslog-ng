@@ -553,6 +553,7 @@ plugin_context_copy_candidates(PluginContext *context, PluginContext *from)
 {
   GList *l;
 
+  _free_candidate_plugins(context);
   for (l = from->candidate_plugins; l; l = l->next)
     {
       PluginCandidate *pc = (PluginCandidate *) l->data;

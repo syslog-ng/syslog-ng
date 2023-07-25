@@ -347,6 +347,7 @@ main_loop_reload_config_prepare(MainLoop *self, GError **error)
 
   self->old_config = self->current_configuration;
   self->new_config = cfg_new(0);
+  plugin_context_copy_candidates(&self->new_config->plugin_context, &self->old_config->plugin_context);
   if (!cfg_read_config(self->new_config, resolved_configurable_paths.cfgfilename, NULL))
     {
       cfg_free(self->new_config);
