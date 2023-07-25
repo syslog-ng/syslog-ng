@@ -36,15 +36,15 @@ struct _LogRewriteSetPri
   LogTemplate *pri;
 };
 
-static gint
-_convert_pri(GString *pri_text)
+gint
+log_rewrite_set_pri_convert_pri(const gchar *pri_text)
 {
   char *endptr;
-  long int pri = strtol(pri_text->str, &endptr, 10);
+  long int pri = strtol(pri_text, &endptr, 10);
   if (!endptr)
     return -1;
 
-  if (endptr[0] != '\0' || pri_text->str == endptr)
+  if (endptr[0] != '\0' || pri_text == endptr)
     return -1;
 
   /* the maximum facility code is 127 in set-facility() */
@@ -64,7 +64,7 @@ log_rewrite_set_pri_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptio
 
   log_template_format(self->pri, *pmsg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, result);
 
-  const gint pri = _convert_pri(result);
+  const gint pri = log_rewrite_set_pri_convert_pri(result->str);
   if (pri < 0)
     {
       msg_debug("Warning: invalid value passed to set-pri()",
