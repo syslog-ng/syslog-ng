@@ -24,6 +24,7 @@
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster.h"
 #include "stats/stats-counter.h"
+#include "timeutils/unixtime.h"
 #include "utf8utils.h"
 #include "scratch-buffers.h"
 
@@ -77,6 +78,7 @@ stats_format_prometheus_format_value(const StatsClusterKey *key, StatsCounterIte
   guint64 converted_int = stored_value;
   gdouble converted_double = stored_value;
   gchar double_buf[G_ASCII_DTOSTR_BUF_SIZE];
+  UnixTime now;
 
   switch (key->stored_unit)
     {
@@ -105,6 +107,10 @@ stats_format_prometheus_format_value(const StatsClusterKey *key, StatsCounterIte
       converted_double /= 1e3;
       g_string_assign(value, g_ascii_dtostr(double_buf, G_N_ELEMENTS(double_buf), converted_double));
       break;
+
+    case SCU_SECONDS_AGE:
+      unix_time_set_now(&now);
+      stored_value = now.ut_sec - stored_value;
 
     default:
       /* no conversion */

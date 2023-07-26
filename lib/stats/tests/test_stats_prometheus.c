@@ -29,6 +29,7 @@
 #include "stats/stats-cluster-single.h"
 #include "stats/stats-cluster-logpipe.h"
 #include "stats/stats-prometheus.h"
+#include "timeutils/unixtime.h"
 #include "scratch-buffers.h"
 #include "mainloop.h"
 
@@ -196,6 +197,13 @@ Test(stats_prometheus, test_prometheus_format_value)
   cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "540");
   stats_cluster_single_key_add_unit(&key, SCU_SECONDS);
   cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "9");
+
+  UnixTime now;
+  unix_time_set_now(&now);
+  gchar buf[32];
+  g_snprintf(buf, sizeof(buf), "%" G_GSIZE_FORMAT, (gsize) now.ut_sec - 9);
+  stats_cluster_single_key_add_unit(&key, SCU_SECONDS_AGE);
+  cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), buf);
 
   stats_cluster_single_key_add_unit(&key, SCU_MILLISECONDS);
   gdouble actual = g_ascii_strtod(stats_format_prometheus_format_value(&key, &counter), NULL);

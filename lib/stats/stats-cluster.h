@@ -51,6 +51,8 @@ typedef enum _StatsClusterUnit
   SCU_NONE = 0,
 
   SCU_SECONDS,
+  /* represent value relative to the current time */
+  SCU_SECONDS_AGE,
   SCU_MINUTES,
   SCU_HOURS,
   SCU_MILLISECONDS,
@@ -60,7 +62,6 @@ typedef enum _StatsClusterUnit
   SCU_KIB,
   SCU_MIB,
   SCU_GIB,
-
 } StatsClusterUnit;
 
 typedef struct _StatsCounterGroup StatsCounterGroup;
