@@ -97,12 +97,10 @@ _load_code(const gchar *code)
 
 TestSuite(python_persist_name, .init = setup, .fini = teardown);
 
-static PythonOptions *
-_create_custom_options_with_dummy_option(void)
+static void
+_add_dummy_option(PythonOptions *options)
 {
-  PythonOptions *custom_options = python_options_new();
-  python_options_add_option(custom_options, python_option_string_new("key", "value"));
-  return custom_options;
+  python_options_add_option(options, python_option_string_new("key", "value"));
 }
 
 const gchar *python_destination_code = "\n\
@@ -121,9 +119,7 @@ Test(python_persist_name, test_python_dest)
   LogDriver *d = python_dd_new(empty_cfg);
   python_dd_set_class(d, "Dest");
 
-  PythonOptions *options = _create_custom_options_with_dummy_option();
-  python_dd_add_options(d, options);
-  python_options_release(options);
+  _add_dummy_option(python_dd_get_options(d));
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
@@ -150,9 +146,7 @@ Test(python_persist_name, test_python_fetcher)
   LogDriver *d = python_fetcher_new(empty_cfg);
   python_fetcher_set_class(d, "Fetcher");
 
-  PythonOptions *options = _create_custom_options_with_dummy_option();
-  python_fetcher_add_options(d, options);
-  python_options_release(options);
+  _add_dummy_option(python_fetcher_get_options(d));
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
@@ -181,9 +175,7 @@ Test(python_persist_name, test_python_source)
   LogDriver *d = python_sd_new(empty_cfg);
   python_sd_set_class(d, "Source");
 
-  PythonOptions *options = _create_custom_options_with_dummy_option();
-  python_sd_add_options(d, options);
-  python_options_release(options);
+  _add_dummy_option(python_sd_get_options(d));
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
@@ -256,9 +248,7 @@ Test(python_persist_name, test_python_fetcher_no_generate_persist_name)
   LogDriver *d = python_fetcher_new(empty_cfg);
   python_fetcher_set_class(d, "Fetcher");
 
-  PythonOptions *options = _create_custom_options_with_dummy_option();
-  python_fetcher_add_options(d, options);
-  python_options_release(options);
+  _add_dummy_option(python_fetcher_get_options(d));
 
   log_pipe_set_persist_name((LogPipe *)d, "test_persist_name");
   cr_assert(log_pipe_init((LogPipe *)d));
@@ -285,9 +275,7 @@ Test(python_persist_name, test_python_source_no_generate_persist_name)
   LogDriver *d = python_sd_new(empty_cfg);
   python_sd_set_class(d, "Source");
 
-  PythonOptions *options = _create_custom_options_with_dummy_option();
-  python_sd_add_options(d, options);
-  python_options_release(options);
+  _add_dummy_option(python_sd_get_options(d));
 
   log_pipe_set_persist_name((LogPipe *)d, "test_persist_name");
   cr_assert(log_pipe_init((LogPipe *)d));
@@ -373,9 +361,7 @@ Test(python_persist_name, test_python_fetcher_persist_preference)
   log_pipe_set_persist_name(&d->super, "test_persist_name");
   python_fetcher_set_class(d, "Fetcher");
 
-  PythonOptions *options = _create_custom_options_with_dummy_option();
-  python_fetcher_add_options(d, options);
-  python_options_release(options);
+  _add_dummy_option(python_fetcher_get_options(d));
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
@@ -395,9 +381,7 @@ Test(python_persist_name, test_python_source_persist_preference)
   log_pipe_set_persist_name(&d->super, "test_persist_name");
   python_sd_set_class(d, "Source");
 
-  PythonOptions *options = _create_custom_options_with_dummy_option();
-  python_sd_add_options(d, options);
-  python_options_release(options);
+  _add_dummy_option(python_sd_get_options(d));
 
   cr_assert(log_pipe_init((LogPipe *)d));
 

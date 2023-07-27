@@ -26,11 +26,14 @@
 #include "python-logtemplate.h"
 #include "str-utils.h"
 #include "string-list.h"
+#include "atomic.h"
+
 
 /* Python Option */
 
 struct _PythonOption
 {
+  GAtomicCounter ref_cnt;
   gchar *name;
 
   PyObject *(*create_value_py_object)(const PythonOption *s);
@@ -40,6 +43,7 @@ struct _PythonOption
 static void
 python_option_init_instance(PythonOption *s, const gchar *name)
 {
+  g_atomic_counter_set(&s->ref_cnt, 1);
   s->name = __normalize_key(name);
 }
 
@@ -73,14 +77,31 @@ python_option_create_value_py_object(const PythonOption *s)
   return value;
 }
 
-void
-python_option_free(PythonOption *s)
+PythonOption *
+python_option_ref(PythonOption *s)
 {
-  if (s->free_fn)
-    s->free_fn(s);
+  g_assert(!s || g_atomic_counter_get(&s->ref_cnt) > 0);
 
-  g_free(s->name);
-  g_free(s);
+  if (s)
+    {
+      g_atomic_counter_inc(&s->ref_cnt);
+    }
+  return s;
+}
+
+void
+python_option_unref(PythonOption *s)
+{
+  g_assert(!s || g_atomic_counter_get(&s->ref_cnt));
+
+  if (s && (g_atomic_counter_dec_and_test(&s->ref_cnt)))
+    {
+      if (s->free_fn)
+        s->free_fn(s);
+
+      g_free(s->name);
+      g_free(s);
+    }
 }
 
 /* String */
@@ -293,17 +314,21 @@ python_options_new(void)
   return self;
 }
 
-void
-python_options_add_option(PythonOptions *self, PythonOption *option)
+PythonOptions *
+python_options_clone(const PythonOptions *self)
 {
-  self->options = g_list_append(self->options, option);
+  PythonOptions *cloned = python_options_new();
+
+  for (GList *elem = self->options; elem; elem = elem->next)
+    python_options_add_option(cloned, (PythonOption *) elem->data);
+
+  return cloned;
 }
 
 void
-python_options_add_options(PythonOptions *self, PythonOptions *options)
+python_options_add_option(PythonOptions *self, PythonOption *option)
 {
-  for (GList *elem = options->options; elem; elem = elem->next)
-    python_options_add_option(self, (PythonOption *) elem->data);
+  self->options = g_list_append(self->options, python_option_ref(option));
 }
 
 PyObject *
@@ -345,16 +370,6 @@ python_options_free(PythonOptions *self)
   if (!self)
     return;
 
-  g_list_free_full(self->options, (GDestroyNotify) python_option_free);
-  g_free(self);
-}
-
-void
-python_options_release(PythonOptions *self)
-{
-  if (!self)
-    return;
-
-  g_list_free(self->options);
+  g_list_free_full(self->options, (GDestroyNotify) python_option_unref);
   g_free(self);
 }

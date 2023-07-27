@@ -139,11 +139,7 @@ python_dd_option
           }
         | KW_LOADERS python_dd_loaders
         | KW_IMPORTS python_dd_loaders
-        | python_options_block
-          {
-            python_dd_add_options(last_driver, $1);
-            python_options_release($1);
-          }
+        | { last_python_options = python_dd_get_options(last_driver); } python_options_block
         | threaded_dest_driver_general_option
         | threaded_dest_driver_batch_option
         | value_pair_option
@@ -166,11 +162,7 @@ python_sd_option
             free($3);
           }
         | KW_LOADERS python_sd_loaders
-        | python_options_block
-          {
-            python_sd_add_options(last_driver, $1);
-            python_options_release($1);
-          }
+        | { last_python_options = python_sd_get_options(last_driver); } python_options_block
         | threaded_source_driver_option
         ;
 
@@ -187,11 +179,7 @@ python_fetcher_option
             free($3);
           }
         | KW_LOADERS python_fetcher_loaders
-        | python_options_block
-          {
-            python_fetcher_add_options(last_driver, $1);
-            python_options_release($1);
-          }
+        | { last_python_options = python_fetcher_get_options(last_driver); } python_options_block
         | threaded_source_driver_option
         | threaded_fetcher_driver_option
         ;
@@ -210,11 +198,7 @@ python_parser_option
           }
         | KW_LOADERS python_parser_loaders
         | KW_IMPORTS python_parser_loaders
-        | python_options_block
-          {
-            python_parser_add_options(last_parser, $1);
-            python_options_release($1);
-          }
+        | { last_python_options = python_parser_get_options(last_parser); } python_options_block
         | parser_opt
         ;
 
@@ -231,11 +215,7 @@ python_http_header_option
             free($3);
           }
         | KW_LOADERS python_http_header_loaders
-        | python_options_block
-          {
-            python_http_header_add_options(last_header, $1);
-            python_options_release($1);
-          }
+        | { last_python_options = python_http_header_get_options(last_header); } python_options_block
         | KW_MARK_ERRORS_AS_CRITICAL '(' yesno ')'
           {
             python_http_header_set_mark_errors_as_critical(last_header, $3);
@@ -325,12 +305,17 @@ python_option
           ;
 
 python_options
-          : python_option { python_options_add_option(last_python_options, $1); } python_options
+          : python_option
+            {
+              python_options_add_option(last_python_options, $1);
+              python_option_unref($1);
+            }
+            python_options
           |
           ;
 
 python_options_block
-          : KW_OPTIONS { last_python_options = python_options_new(); } '(' python_options ')' { $$ = last_python_options; }
+          : KW_OPTIONS '(' python_options ')'
           ;
 
 /* INCLUDE_RULES */

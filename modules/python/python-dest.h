@@ -35,7 +35,7 @@ LogDriver *python_dd_new(GlobalConfig *cfg);
 void python_dd_set_loaders(LogDriver *d, GList *loaders);
 void python_dd_set_class(LogDriver *d, gchar *class_name);
 void python_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
-void python_dd_add_options(LogDriver *d, PythonOptions *options);
+PythonOptions *python_dd_get_options(LogDriver *d);
 LogTemplateOptions *python_dd_get_template_options(LogDriver *d);
 
 void py_log_destination_global_init(void);

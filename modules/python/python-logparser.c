@@ -66,12 +66,12 @@ python_parser_set_class(LogParser *d, gchar *class)
   self->class = g_strdup(class);
 }
 
-void
-python_parser_add_options(LogParser *d, PythonOptions *options)
+PythonOptions *
+python_parser_get_options(LogParser *d)
 {
   PythonParser *self = (PythonParser *)d;
 
-  python_options_add_options(self->options, options);
+  return self->options;
 }
 
 void
@@ -309,7 +309,9 @@ python_parser_clone(LogPipe *s)
   log_parser_clone_settings(&self->super, &cloned->super);
   python_parser_set_class(&cloned->super, self->class);
   cloned->loaders = string_list_clone(self->loaders);
-  python_parser_add_options(&cloned->super, self->options);
+
+  python_options_free(cloned->options);
+  cloned->options = python_options_clone(self->options);
 
   return &cloned->super.super;
 }

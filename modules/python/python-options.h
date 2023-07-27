@@ -34,18 +34,17 @@ PythonOption *python_option_boolean_new(const gchar *name, gboolean value);
 PythonOption *python_option_string_list_new(const gchar *name, const GList *value);
 PythonOption *python_option_template_new(const gchar *name, const gchar *value);
 
+PythonOption *python_option_ref(PythonOption *self);
+void python_option_unref(PythonOption *self);
 const gchar *python_option_get_name(const PythonOption *self);
 PyObject *python_option_create_value_py_object(const PythonOption *self);
-
-void python_option_free(PythonOption *self);
 
 typedef struct _PythonOptions PythonOptions;
 
 PythonOptions *python_options_new(void);
 void python_options_add_option(PythonOptions *self, PythonOption *option);
-void python_options_add_options(PythonOptions *self, PythonOptions *options);
+PythonOptions *python_options_clone(const PythonOptions *self);
 PyObject *python_options_create_py_dict(const PythonOptions *self);
 void python_options_free(PythonOptions *self);
-void python_options_release(PythonOptions *self);
 
 #endif
