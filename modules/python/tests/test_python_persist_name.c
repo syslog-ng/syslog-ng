@@ -123,7 +123,7 @@ Test(python_persist_name, test_python_dest)
 
   PythonOptions *options = _create_custom_options_with_dummy_option();
   python_dd_add_options(d, options);
-  python_options_release(options);
+  python_options_free(options);
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
@@ -152,7 +152,7 @@ Test(python_persist_name, test_python_fetcher)
 
   PythonOptions *options = _create_custom_options_with_dummy_option();
   python_fetcher_add_options(d, options);
-  python_options_release(options);
+  python_options_free(options);
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
@@ -183,7 +183,7 @@ Test(python_persist_name, test_python_source)
 
   PythonOptions *options = _create_custom_options_with_dummy_option();
   python_sd_add_options(d, options);
-  python_options_release(options);
+  python_options_free(options);
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
@@ -258,7 +258,7 @@ Test(python_persist_name, test_python_fetcher_no_generate_persist_name)
 
   PythonOptions *options = _create_custom_options_with_dummy_option();
   python_fetcher_add_options(d, options);
-  python_options_release(options);
+  python_options_free(options);
 
   log_pipe_set_persist_name((LogPipe *)d, "test_persist_name");
   cr_assert(log_pipe_init((LogPipe *)d));
@@ -287,7 +287,7 @@ Test(python_persist_name, test_python_source_no_generate_persist_name)
 
   PythonOptions *options = _create_custom_options_with_dummy_option();
   python_sd_add_options(d, options);
-  python_options_release(options);
+  python_options_free(options);
 
   log_pipe_set_persist_name((LogPipe *)d, "test_persist_name");
   cr_assert(log_pipe_init((LogPipe *)d));
@@ -375,7 +375,7 @@ Test(python_persist_name, test_python_fetcher_persist_preference)
 
   PythonOptions *options = _create_custom_options_with_dummy_option();
   python_fetcher_add_options(d, options);
-  python_options_release(options);
+  python_options_free(options);
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
@@ -397,7 +397,7 @@ Test(python_persist_name, test_python_source_persist_preference)
 
   PythonOptions *options = _create_custom_options_with_dummy_option();
   python_sd_add_options(d, options);
-  python_options_release(options);
+  python_options_free(options);
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
