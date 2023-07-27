@@ -71,7 +71,7 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 
 %type <ptr> source_otel
 %type <ptr> parser_otel
-%type <num> source_otel_auth_tls_peer_verify
+%type <num> grpc_server_credentials_builder_tls_peer_verify
 %type <ptr> destination_otel
 
 %%
@@ -97,48 +97,8 @@ source_otel_options
 
 source_otel_option
   : KW_PORT '(' positive_integer ')' { otel_sd_set_port(last_driver, $3); }
-  | KW_AUTH { last_grpc_server_credentials_builder = otel_sd_get_credentials_builder(last_driver); } '(' source_otel_auth_option ')'
+  | KW_AUTH { last_grpc_server_credentials_builder = otel_sd_get_credentials_builder(last_driver); } '(' grpc_server_credentials_builder_option ')'
   | threaded_source_driver_option
-  ;
-
-source_otel_auth_option
-  : KW_INSECURE { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_INSECURE); } '(' ')'
-  | KW_TLS { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_TLS); } '(' source_otel_auth_tls_options ')'
-  | KW_ALTS { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_ALTS); } '(' ')'
-  ;
-
-source_otel_auth_tls_options
-  : source_otel_auth_tls_option source_otel_auth_tls_options
-  |
-  ;
-
-source_otel_auth_tls_option
-  : KW_KEY_FILE '(' string ')'
-      {
-        CHECK_ERROR(grpc_server_credentials_builder_set_tls_key_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set key-file()");
-        free($3);
-      }
-  | KW_CERT_FILE '(' string ')'
-      {
-        CHECK_ERROR(grpc_server_credentials_builder_set_tls_cert_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set cert-file()");
-        free($3);
-      }
-  | KW_CA_FILE '(' string ')'
-      {
-        CHECK_ERROR(grpc_server_credentials_builder_set_tls_ca_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set ca-file()");
-        free($3);
-      }
-  | KW_PEER_VERIFY '(' source_otel_auth_tls_peer_verify ')'
-      {
-        grpc_server_credentials_builder_set_tls_peer_verify(last_grpc_server_credentials_builder, $3);
-      }
-  ;
-
-source_otel_auth_tls_peer_verify
-  : KW_OPTIONAL_UNTRUSTED { $$ = GSTPV_OPTIONAL_UNTRUSTED; }
-  | KW_OPTIONAL_TRUSTED { $$ = GSTPV_OPTIONAL_TRUSTED; }
-  | KW_REQUIRED_UNTRUSTED { $$ = GSTPV_REQUIRED_UNTRUSTED; }
-  | KW_REQUIRED_TRUSTED { $$ = GSTPV_REQUIRED_TRUSTED; }
   ;
 
 parser_otel
@@ -173,25 +133,71 @@ destination_otel_options
 
 destination_otel_option
   : KW_URL '(' string ')' { otel_dd_set_url(last_driver, $3); free($3); }
-  | KW_AUTH { last_grpc_client_credentials_builder = otel_dd_get_credentials_builder(last_driver); } '(' destination_otel_auth_option ')'
+  | KW_AUTH { last_grpc_client_credentials_builder = otel_dd_get_credentials_builder(last_driver); } '(' grpc_client_credentials_option ')'
   | threaded_dest_driver_general_option
   | threaded_dest_driver_batch_option
   | threaded_dest_driver_workers_option
   ;
 
-destination_otel_auth_option
-  : KW_INSECURE { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_INSECURE); } '(' ')'
-  | KW_TLS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_TLS); } '(' destination_otel_auth_tls_options ')'
-  | KW_ALTS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ALTS); } '(' destination_otel_auth_alts_options ')'
-  | KW_ADC { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ADC); } '(' ')'
+/*
+ * gRPC Credentials Builders
+ *
+ * TODO: These should be in a separate file, which can be included to other gRPC based drivers' grammar.
+ */
+
+grpc_server_credentials_builder_option
+  : KW_INSECURE { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_INSECURE); } '(' ')'
+  | KW_TLS { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_TLS); } '(' grpc_server_credentials_builder_tls_options ')'
+  | KW_ALTS { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_ALTS); } '(' ')'
   ;
 
-destination_otel_auth_tls_options
-  : destination_otel_auth_tls_option destination_otel_auth_tls_options
+grpc_server_credentials_builder_tls_options
+  : grpc_server_credentials_builder_tls_option grpc_server_credentials_builder_tls_options
   |
   ;
 
-destination_otel_auth_tls_option
+grpc_server_credentials_builder_tls_option
+  : KW_KEY_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_server_credentials_builder_set_tls_key_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set key-file()");
+        free($3);
+      }
+  | KW_CERT_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_server_credentials_builder_set_tls_cert_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set cert-file()");
+        free($3);
+      }
+  | KW_CA_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_server_credentials_builder_set_tls_ca_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set ca-file()");
+        free($3);
+      }
+  | KW_PEER_VERIFY '(' grpc_server_credentials_builder_tls_peer_verify ')'
+      {
+        grpc_server_credentials_builder_set_tls_peer_verify(last_grpc_server_credentials_builder, $3);
+      }
+  ;
+
+grpc_server_credentials_builder_tls_peer_verify
+  : KW_OPTIONAL_UNTRUSTED { $$ = GSTPV_OPTIONAL_UNTRUSTED; }
+  | KW_OPTIONAL_TRUSTED { $$ = GSTPV_OPTIONAL_TRUSTED; }
+  | KW_REQUIRED_UNTRUSTED { $$ = GSTPV_REQUIRED_UNTRUSTED; }
+  | KW_REQUIRED_TRUSTED { $$ = GSTPV_REQUIRED_TRUSTED; }
+  ;
+
+grpc_client_credentials_option
+  : KW_INSECURE { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_INSECURE); } '(' ')'
+  | KW_TLS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_TLS); } '(' grpc_client_credentials_builder_tls_options ')'
+  | KW_ALTS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ALTS); } '(' grpc_client_credentials_builder_alts_options ')'
+  | KW_ADC { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ADC); } '(' ')'
+  ;
+
+grpc_client_credentials_builder_tls_options
+  : grpc_client_credentials_builder_tls_option grpc_client_credentials_builder_tls_options
+  |
+  ;
+
+grpc_client_credentials_builder_tls_option
   : KW_KEY_FILE '(' string ')'
       {
         CHECK_ERROR(grpc_client_credentials_builder_set_tls_key_path(last_grpc_client_credentials_builder, $3), @1, "Failed to set key-file()");
@@ -209,22 +215,22 @@ destination_otel_auth_tls_option
       }
   ;
 
-destination_otel_auth_alts_options
-  : destination_otel_auth_alts_option destination_otel_auth_alts_options
+grpc_client_credentials_builder_alts_options
+  : grpc_client_credentials_builder_alts_option grpc_client_credentials_builder_alts_options
   |
   ;
 
-destination_otel_auth_alts_option
-  : KW_TARGET_SERVICE_ACCOUNTS '(' destination_otel_auth_alts_target_service_accounts ')'
+grpc_client_credentials_builder_alts_option
+  : KW_TARGET_SERVICE_ACCOUNTS '(' grpc_client_credentials_builder_alts_target_service_accounts ')'
   ;
 
-destination_otel_auth_alts_target_service_accounts
+grpc_client_credentials_builder_alts_target_service_accounts
   : string
       {
         grpc_client_credentials_builder_add_alts_target_service_account(last_grpc_client_credentials_builder, $1);
         free($1);
       }
-    destination_otel_auth_alts_target_service_accounts
+    grpc_client_credentials_builder_alts_target_service_accounts
   |
   ;
 
