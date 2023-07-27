@@ -1806,10 +1806,16 @@ _set_metric_options(LogWriter *self, const gchar *stats_id, StatsClusterKeyBuild
                                              self->stats_id, instance_name);
   stats_cluster_key_builder_add_label(self->metrics.stats_kb, stats_cluster_label("id", self->stats_id));
 
+  if (self->metrics.output_events_key)
+    stats_cluster_key_free(self->metrics.output_events_key);
+
   self->metrics.output_events_key = stats_cluster_key_builder_build_logpipe(self->metrics.stats_kb);
 
   stats_cluster_key_builder_set_name(raw_bytes_stats_kb, "output_event_bytes_total");
   stats_cluster_key_builder_add_label(raw_bytes_stats_kb, stats_cluster_label("id", self->stats_id));
+
+  if (self->metrics.written_bytes_key)
+    stats_cluster_key_free(self->metrics.written_bytes_key);
 
   self->metrics.written_bytes_key = stats_cluster_key_builder_build_single(raw_bytes_stats_kb);
   stats_cluster_key_builder_free(raw_bytes_stats_kb);
