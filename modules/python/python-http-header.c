@@ -454,10 +454,10 @@ python_http_header_set_class(PythonHttpHeaderPlugin *self, gchar *class)
   self->class = g_strdup(class);
 }
 
-void
-python_http_header_add_options(PythonHttpHeaderPlugin *self, PythonOptions *options)
+PythonOptions *
+python_http_header_get_options(PythonHttpHeaderPlugin *self)
 {
-  python_options_add_options(self->options, options);
+  return self->options;
 }
 
 void

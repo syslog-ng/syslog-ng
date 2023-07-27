@@ -202,37 +202,25 @@ _generate_options_test_options(void)
   python_options_add_option(options, option);
   python_option_unref(option);
 
-  return options;
+  PythonOptions *cloned = python_options_clone(options);
+  python_options_free(options);
+
+  return cloned;
 }
 
-static PythonOptions *
-_generate_options_test_options2(void)
+Test(python_options, test_python_options)
 {
-  PythonOptions *options = python_options_new();
-  PythonOption *option;
+  const gchar *script = "import _syslogng\n"
+                        "assert options['string'] == 'example-value', 'Actual: {}'.format(options['string'])\n"
+                        "assert options['long'] == -42, 'Actual: {}'.format(options['long'])\n"
+                        "assert options['double'] == -13.37, 'Actual: {}'.format(options['double'])\n"
+                        "assert options['boolean'] == True, 'Actual: {}'.format(options['string'])\n"
+                        "assert options['string_list'] == ['example-value-1', 'example-value-2'], "
+                        "'Actual: {}'.format(options['string_list'])\n"
+                        "assert isinstance(options['template'], _syslogng.LogTemplate), 'Actual: {}'.format(type(options['template']))\n"
+                        "assert str(options['template']) == '${example-template}', 'Actual: {}'.format(str(options['template']))\n";
 
-  option = python_option_string_new("string2", "example-value2");
-  python_options_add_option(options, option);
-  python_option_unref(option);
-
-  option = python_option_long_new("long2", 42);
-  python_options_add_option(options, option);
-  python_option_unref(option);
-
-  option = python_option_double_new("double2", 13.37);
-  python_options_add_option(options, option);
-  python_option_unref(option);
-
-  option = python_option_boolean_new("boolean2", FALSE);
-  python_options_add_option(options, option);
-  python_option_unref(option);
-
-  return options;
-}
-
-static void
-_run_py_options_test(PythonOptions *options, const gchar *script)
-{
+  PythonOptions *options = _generate_options_test_options();
   PyObject *options_dict = python_options_create_py_dict(options);
 
   PyGILState_STATE gstate = PyGILState_Ensure();
@@ -248,30 +236,6 @@ _run_py_options_test(PythonOptions *options, const gchar *script)
   }
   Py_DECREF(options_dict);
   PyGILState_Release(gstate);
-}
-
-Test(python_options, test_python_options)
-{
-  const gchar *script = "import _syslogng\n"
-                        "assert options['string'] == 'example-value', 'Actual: {}'.format(options['string'])\n"
-                        "assert options['long'] == -42, 'Actual: {}'.format(options['long'])\n"
-                        "assert options['double'] == -13.37, 'Actual: {}'.format(options['double'])\n"
-                        "assert options['boolean'] == True, 'Actual: {}'.format(options['string'])\n"
-                        "assert options['string_list'] == ['example-value-1', 'example-value-2'], "
-                        "'Actual: {}'.format(options['string_list'])\n"
-                        "assert isinstance(options['template'], _syslogng.LogTemplate), 'Actual: {}'.format(type(options['template']))\n"
-                        "assert str(options['template']) == '${example-template}', 'Actual: {}'.format(str(options['template']))\n"
-                        "assert options['string2'] == 'example-value2', 'Actual: {}'.format(options['string2'])\n"
-                        "assert options['long2'] == 42, 'Actual: {}'.format(options['long2'])\n"
-                        "assert options['double2'] == 13.37, 'Actual: {}'.format(options['double2'])\n"
-                        "assert options['boolean2'] == False, 'Actual: {}'.format(options['string2'])\n";
-  PythonOptions *options = _generate_options_test_options();
-  PythonOptions *options2 = _generate_options_test_options2();
-
-  python_options_add_options(options, options2);
-  python_options_free(options2);
-
-  _run_py_options_test(options, script);
 
   python_options_free(options);
 }

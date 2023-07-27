@@ -314,17 +314,21 @@ python_options_new(void)
   return self;
 }
 
+PythonOptions *
+python_options_clone(const PythonOptions *self)
+{
+  PythonOptions *cloned = python_options_new();
+
+  for (GList *elem = self->options; elem; elem = elem->next)
+    python_options_add_option(cloned, (PythonOption *) elem->data);
+
+  return cloned;
+}
+
 void
 python_options_add_option(PythonOptions *self, PythonOption *option)
 {
   self->options = g_list_append(self->options, python_option_ref(option));
-}
-
-void
-python_options_add_options(PythonOptions *self, PythonOptions *options)
-{
-  for (GList *elem = options->options; elem; elem = elem->next)
-    python_options_add_option(self, (PythonOption *) elem->data);
 }
 
 PyObject *

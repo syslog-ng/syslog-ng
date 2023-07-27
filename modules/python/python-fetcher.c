@@ -75,12 +75,12 @@ python_fetcher_set_class(LogDriver *s, gchar *filename)
   self->class = g_strdup(filename);
 }
 
-void
-python_fetcher_add_options(LogDriver *s, PythonOptions *options)
+PythonOptions *
+python_fetcher_get_options(LogDriver *s)
 {
   PythonFetcherDriver *self = (PythonFetcherDriver *) s;
 
-  python_options_add_options(self->options, options);
+  return self->options;
 }
 
 void
