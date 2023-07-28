@@ -43,6 +43,7 @@ namespace otel {
 
 using opentelemetry::proto::resource::v1::Resource;
 using opentelemetry::proto::common::v1::InstrumentationScope;
+using opentelemetry::proto::common::v1::KeyValueList;
 using opentelemetry::proto::logs::v1::LogRecord;
 using opentelemetry::proto::metrics::v1::Metric;
 using opentelemetry::proto::trace::v1::Span;
@@ -58,6 +59,15 @@ public:
   static void store_raw(LogMessage *msg, const LogRecord &log_record);
   static void store_raw(LogMessage *msg, const Metric &metric);
   static void store_raw(LogMessage *msg, const Span &span);
+  static void store_syslog_ng(LogMessage *msg, const LogRecord &log_record);
+
+  static bool is_syslog_ng_log_record(const Resource &resource, const std::string &resource_schema_url,
+                                      const InstrumentationScope &scope, const std::string &scope_schema_url);
+
+private:
+  static void set_syslog_ng_nv_pairs(LogMessage *msg, const KeyValueList &types);
+  static void set_syslog_ng_macros(LogMessage *msg, const KeyValueList &macros);
+  static void parse_syslog_ng_tags(LogMessage *msg, const std::string &tags_as_str);
 };
 
 }

@@ -24,6 +24,12 @@
 
 #include "otel-protobuf-parser.hpp"
 
+#include "compat/cpp-start.h"
+#include "logmsg/type-hinting.h"
+#include "scanner/list-scanner/list-scanner.h"
+#include "rewrite/rewrite-set-pri.h"
+#include "compat/cpp-end.h"
+
 using namespace google::protobuf;
 using namespace opentelemetry::proto::resource::v1;
 using namespace opentelemetry::proto::common::v1;
@@ -1091,6 +1097,161 @@ syslogng::grpc::otel::ProtobufParser::store_raw(LogMessage *msg, const Span &spa
   /* .otel_raw.span */
   std::string serialized = span.SerializePartialAsString();
   _set_value(msg, ".otel_raw.span", serialized, LM_VT_PROTOBUF);
+}
+
+static void
+_nanosec_to_unix_time(uint64_t nanosec, UnixTime *unix_time)
+{
+  unix_time->ut_sec = nanosec / 1000000000;
+  unix_time->ut_usec = (nanosec % 1000000000) / 1000;
+}
+
+static bool
+_value_case_equals(LogMessage *msg, const KeyValue &kv, const AnyValue::ValueCase &expected_value_case)
+{
+  if (kv.value().value_case() != expected_value_case)
+    {
+      msg_error("OpenTelemetry: unexpected attribute value type, skipping",
+                evt_tag_msg_reference(msg),
+                evt_tag_str("name", kv.key().c_str()),
+                evt_tag_int("type", kv.value().value_case()));
+      return false;
+    }
+
+  return true;
+}
+
+void
+syslogng::grpc::otel::ProtobufParser::set_syslog_ng_nv_pairs(LogMessage *msg, const KeyValueList &types)
+{
+  for (const KeyValue &nv_pairs_by_type : types.values())
+    {
+      LogMessageValueType log_msg_type;
+      const std::string &type_as_str = nv_pairs_by_type.key();
+      if (!log_msg_value_type_from_str(type_as_str.c_str(), &log_msg_type))
+        {
+          msg_debug("OpenTelemetry: unexpected attribute logmsg type, skipping",
+                    evt_tag_msg_reference(msg),
+                    evt_tag_str("type", type_as_str.c_str()));
+          continue;
+        }
+      if (nv_pairs_by_type.value().value_case() != AnyValue::kKvlistValue)
+        {
+          msg_debug("OpenTelemetry: unexpected attribute, skipping",
+                    evt_tag_msg_reference(msg),
+                    evt_tag_str("key", type_as_str.c_str()));
+          continue;
+        }
+      const KeyValueList &nv_pairs = nv_pairs_by_type.value().kvlist_value();
+
+      for (const KeyValue &nv_pair : nv_pairs.values())
+        {
+          if (!_value_case_equals(msg, nv_pair, AnyValue::kBytesValue))
+            continue;
+          const std::string &name = nv_pair.key();
+          const std::string &value = nv_pair.value().bytes_value();
+          log_msg_set_value_by_name_with_type(msg, name.c_str(), value.c_str(), value.length(), log_msg_type);
+        }
+    }
+}
+
+void
+syslogng::grpc::otel::ProtobufParser::set_syslog_ng_macros(LogMessage *msg, const KeyValueList &macros)
+{
+  for (const KeyValue &macro : macros.values())
+    {
+      const std::string &name = macro.key();
+
+      if (name.compare("PRI") == 0)
+        {
+          if (!_value_case_equals(msg, macro, AnyValue::kBytesValue))
+            continue;
+          msg->pri = log_rewrite_set_pri_convert_pri(macro.value().bytes_value().c_str());
+        }
+      else if (name.compare("TAGS") == 0)
+        {
+          if (!_value_case_equals(msg, macro, AnyValue::kBytesValue))
+            continue;
+          parse_syslog_ng_tags(msg, macro.value().bytes_value());
+        }
+      else if (name.compare("STAMP_GMTOFF") == 0)
+        {
+          if (!_value_case_equals(msg, macro, AnyValue::kIntValue))
+            continue;
+          msg->timestamps[LM_TS_STAMP].ut_gmtoff = (gint32) macro.value().int_value();
+        }
+      else if (name.compare("RECVD_GMTOFF") == 0)
+        {
+          if (!_value_case_equals(msg, macro, AnyValue::kIntValue))
+            continue;
+          msg->timestamps[LM_TS_RECVD].ut_gmtoff = (gint32) macro.value().int_value();
+        }
+      else
+        {
+          msg_debug("OpenTelemetry: unexpected attribute macro, skipping",
+                    evt_tag_msg_reference(msg),
+                    evt_tag_str("name", name.c_str()));
+        }
+    }
+}
+
+void
+syslogng::grpc::otel::ProtobufParser::parse_syslog_ng_tags(LogMessage *msg, const std::string &tags_as_str)
+{
+  ListScanner list_scanner;
+  list_scanner_init(&list_scanner);
+
+  list_scanner_input_va(&list_scanner, tags_as_str.c_str(), NULL);
+  while (list_scanner_scan_next(&list_scanner))
+    {
+      log_msg_set_tag_by_name(msg, list_scanner_get_current_value(&list_scanner));
+    }
+
+  list_scanner_deinit(&list_scanner);
+}
+
+void
+syslogng::grpc::otel::ProtobufParser::store_syslog_ng(LogMessage *msg, const LogRecord &log_record)
+{
+  _nanosec_to_unix_time(log_record.time_unix_nano(), &msg->timestamps[LM_TS_STAMP]);
+  _nanosec_to_unix_time(log_record.observed_time_unix_nano(), &msg->timestamps[LM_TS_RECVD]);
+
+  for (const KeyValue &attr : log_record.attributes())
+    {
+      const std::string &key = attr.key();
+      if (attr.value().value_case() != AnyValue::kKvlistValue)
+        {
+          msg_debug("OpenTelemetry: unexpected attribute, skipping",
+                    evt_tag_msg_reference(msg),
+                    evt_tag_str("key", key.c_str()));
+          continue;
+        }
+      const KeyValueList &value = attr.value().kvlist_value();
+
+      if (key.compare("n") == 0)
+        {
+          set_syslog_ng_nv_pairs(msg, value);
+        }
+      else if (key.compare("m") == 0)
+        {
+          set_syslog_ng_macros(msg, value);
+        }
+      else
+        {
+          msg_debug("OpenTelemetry: unexpected attribute, skipping",
+                    evt_tag_msg_reference(msg),
+                    evt_tag_str("key", key.c_str()));
+        }
+    }
+}
+
+bool
+syslogng::grpc::otel::ProtobufParser::is_syslog_ng_log_record(const Resource &resource,
+                                                              const std::string &resource_schema_url,
+                                                              const InstrumentationScope &scope,
+                                                              const std::string &scope_schema_url)
+{
+  return scope.name().compare("@syslog-ng") == 0;
 }
 
 bool
