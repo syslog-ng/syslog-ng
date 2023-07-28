@@ -385,6 +385,14 @@ ProtobufFormatter::get_metadata(LogMessage *msg, Resource &resource, std::string
          get_scope_and_schema_url(msg, scope, scope_schema_url);
 }
 
+void
+ProtobufFormatter::get_metadata_for_syslog_ng(Resource &resource, std::string &resource_schema_url,
+                                              InstrumentationScope &scope, std::string &scope_schema_url)
+{
+  scope.set_name("@syslog-ng");
+  scope.set_version(VERSION_STR_CURRENT);
+}
+
 bool
 ProtobufFormatter::format(LogMessage *msg, LogRecord &log_record)
 {
@@ -433,6 +441,122 @@ ProtobufFormatter::format_fallback(LogMessage *msg, LogRecord &log_record)
                                          msg->timestamps[LM_TS_RECVD].ut_usec * 1000);
   log_record.set_severity_number(_get_log_msg_severity_number(msg));
   _get_and_set_AnyValue(msg, "MESSAGE", log_record.mutable_body());
+}
+
+static uint64_t
+_unix_time_to_nanosec(UnixTime *unix_time)
+{
+  return unix_time->ut_sec * 1000000000 + unix_time->ut_usec * 1000;
+}
+
+static bool
+_is_number(const char *name)
+{
+  for (int i = 0; i < 3; i++)
+    {
+      if (!g_ascii_isdigit(name[i]))
+        break;
+
+      if (name[i+1] == '\0')
+        return true;
+    }
+
+  return false;
+}
+
+static KeyValueList *
+_create_types_kvlist_for_type(LogMessageValueType type, KeyValueList *types)
+{
+  KeyValue *new_type_kvlist_kv = types->add_values();
+  new_type_kvlist_kv->set_key(log_msg_value_type_to_str(type));
+  return new_type_kvlist_kv->mutable_value()->mutable_kvlist_value();;
+}
+
+static gboolean
+_set_syslog_ng_nv_pairs_vp_helper(const gchar *name, LogMessageValueType type, const gchar *value, gsize value_len,
+                                  gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  KeyValueList *types = (KeyValueList *) args[0];
+  KeyValueList **lmvt_to_types_kvlist_mapping = (KeyValueList **) args[1];
+
+  if (_is_number(name))
+    return FALSE;
+
+  KeyValueList *type_kvlist = lmvt_to_types_kvlist_mapping[type];
+  if (type_kvlist == NULL)
+    lmvt_to_types_kvlist_mapping[type] = type_kvlist = _create_types_kvlist_for_type(type, types);
+
+  KeyValue *nv = type_kvlist->add_values();
+  nv->set_key(name);
+  nv->mutable_value()->set_bytes_value(value, value_len);
+
+  return FALSE;
+}
+
+void
+ProtobufFormatter::set_syslog_ng_nv_pairs(LogMessage *msg, LogRecord &log_record)
+{
+  /*
+   * LogRecord -> attributes -> "n" -> "bool"   -> [ ("bool_name_1", "true"), ("bool_name_2", "false"), ... ]
+   *                                -> "string" -> [ ("string_name_1", "string_value_1"), ... ]
+   *                                -> ...
+   */
+
+  KeyValue *n = log_record.add_attributes();
+  n->set_key("n");
+  KeyValueList *types = n->mutable_value()->mutable_kvlist_value();
+  KeyValueList *lmvt_to_types_kvlist_mapping[LM_VT_NONE] = { 0 };
+
+  gpointer user_data[2];
+  user_data[0] = types;
+  user_data[1] = lmvt_to_types_kvlist_mapping;
+  value_pairs_foreach(syslog_ng.vp, _set_syslog_ng_nv_pairs_vp_helper, msg, &syslog_ng.template_eval_options,
+                      &user_data);
+}
+
+void
+ProtobufFormatter::set_syslog_ng_macros(LogMessage *msg, LogRecord &log_record)
+{
+  /*
+   * LogRecord -> attributes -> "m" -> [ ("PRI", "123"), ("TAGS", "foobar"), ... ]
+   */
+
+  KeyValue *m = log_record.add_attributes();
+  m->set_key("m");
+  KeyValueList *macros_kvlist = m->mutable_value()->mutable_kvlist_value();
+
+  LogMessageValueType type;
+  gssize len;
+  const char *value;
+
+  value = log_msg_get_value_by_name_with_type(msg, "PRI", &len, &type);
+  KeyValue *pri_attr = macros_kvlist->add_values();
+  pri_attr->set_key("PRI");
+  pri_attr->mutable_value()->set_bytes_value(value, len);
+
+  value = log_msg_get_value_by_name_with_type(msg, "TAGS", &len, &type);
+  KeyValue *tags_attr = macros_kvlist->add_values();
+  tags_attr->set_key("TAGS");
+  tags_attr->mutable_value()->set_bytes_value(value, len);
+
+  KeyValue *stamp_gmtoff = macros_kvlist->add_values();
+  stamp_gmtoff->set_key("STAMP_GMTOFF");
+  stamp_gmtoff->mutable_value()->set_int_value(msg->timestamps[LM_TS_STAMP].ut_gmtoff);
+
+  KeyValue *recvd_gmtoff = macros_kvlist->add_values();
+  recvd_gmtoff->set_key("RECVD_GMTOFF");
+  recvd_gmtoff->mutable_value()->set_int_value(msg->timestamps[LM_TS_RECVD].ut_gmtoff);
+}
+
+void
+ProtobufFormatter::format_syslog_ng(LogMessage *msg, LogRecord &log_record)
+{
+  log_record.set_time_unix_nano(_unix_time_to_nanosec(&msg->timestamps[LM_TS_STAMP]));
+  log_record.set_observed_time_unix_nano(_unix_time_to_nanosec(&msg->timestamps[LM_TS_RECVD]));
+
+  set_syslog_ng_nv_pairs(msg, log_record);
+  set_syslog_ng_macros(msg, log_record);
 }
 
 void
@@ -1173,7 +1297,28 @@ ProtobufFormatter::format(LogMessage *msg, Span &span)
   return true;
 }
 
+static LogTemplate *
+_create_template(const char *template_string, GlobalConfig *cfg)
+{
+  LogTemplate *template_obj = log_template_new(cfg, NULL);
+  g_assert(log_template_compile(template_obj, template_string, NULL));
+  return template_obj;
+}
+
 syslogng::grpc::otel::ProtobufFormatter::ProtobufFormatter(GlobalConfig *cfg_)
   : cfg(cfg_)
 {
+  syslog_ng.vp = value_pairs_new(cfg);
+  value_pairs_add_scope(syslog_ng.vp, "all-nv-pairs");
+  value_pairs_set_include_bytes(syslog_ng.vp, TRUE);
+
+  value_pairs_add_glob_pattern(syslog_ng.vp, "SOURCE", FALSE);
+
+  log_template_options_defaults(&syslog_ng.template_options);
+  syslog_ng.template_eval_options = {&syslog_ng.template_options, LTZ_LOCAL, -1, NULL, LM_VT_STRING};
+}
+
+syslogng::grpc::otel::ProtobufFormatter::~ProtobufFormatter()
+{
+  value_pairs_unref(syslog_ng.vp);
 }
