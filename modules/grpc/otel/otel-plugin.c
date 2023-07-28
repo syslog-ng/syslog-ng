@@ -49,6 +49,11 @@ static Plugin otel_plugins[] =
     .name = "syslog_ng_otlp",
     .parser = &otel_parser,
   },
+  {
+    .type = LL_CONTEXT_SOURCE,
+    .name = "syslog_ng_otlp",
+    .parser = &otel_parser,
+  },
 };
 
 gboolean

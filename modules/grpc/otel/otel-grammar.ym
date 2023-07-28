@@ -86,8 +86,13 @@ start
   | LL_CONTEXT_DESTINATION destination_syslog_ng_otlp { YYACCEPT; }
   ;
 
-source_otel
+kw_opentelemetry_or_syslog_ng_otlp
   : KW_OPENTELEMETRY
+  | KW_SYSLOG_NG_OTLP
+  ;
+
+source_otel
+  : kw_opentelemetry_or_syslog_ng_otlp
     {
       last_driver = *instance = otel_sd_new(configuration);
     }
