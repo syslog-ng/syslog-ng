@@ -67,7 +67,7 @@ public:
   LogThreadedResult insert(LogMessage *msg);
   LogThreadedResult flush(LogThreadedFlushMode mode);
 
-private:
+protected:
   void clear_current_msg_metadata();
   void get_metadata_for_current_msg(LogMessage *msg);
 
@@ -84,7 +84,7 @@ private:
   LogThreadedResult flush_metrics();
   LogThreadedResult flush_spans();
 
-private:
+protected:
   OtelDestWorker *super;
   const DestDriver &owner;
 
