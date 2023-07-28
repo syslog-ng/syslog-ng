@@ -1,5 +1,10 @@
-4.3.0
+4.3.1
 =====
+
+_This is the combination of the news entries of 4.3.0 and 4.3.1. 4.3.1 hotfixed_
+_a `python-parser()` related crash and a metrics related memory leak. It also_
+_added Ubuntu 23.04 and Debian 12 support for APT packages and the `opensearch()`_
+_destination._
 
 Read Axoflow's [blog post](https://axoflow.com/axosyslog-release-4-3/) for more details.
 
@@ -248,6 +253,11 @@ Additional options include:
 
     ([#4460](https://github.com/syslog-ng/syslog-ng/pull/4460))
 
+  * `opensearch`: Added a new destination.
+
+    It is similar to `elasticsearch-http()`, with the difference that it does not have the `type()`
+    option, which is deprecated and advised not to use.
+    ([#4560](https://github.com/syslog-ng/syslog-ng/pull/4560))
 
 ## Bugfixes
 
@@ -289,9 +299,13 @@ Additional options include:
 
   * `python`: Fixed a crash when reloading with a config, which uses a python parser with multiple references.
     ([#4552](https://github.com/syslog-ng/syslog-ng/pull/4552))
+    ([#4567](https://github.com/syslog-ng/syslog-ng/pull/4567))
 
   * `mqtt()`: Fixed the name of the stats instance (`mqtt-source`) to conform to the standard comma-separated format.
     ([#4551](https://github.com/syslog-ng/syslog-ng/pull/4551))
+
+  * metrics: Fixed a memory leak which happened during reload, and was introduced in 4.3.0.
+    ([#4568](https://github.com/syslog-ng/syslog-ng/pull/4568))
 
 ## Packaging
 
@@ -398,6 +412,9 @@ Additional options include:
     This change may affect legacy stats outputs (`syslog-ng-ctl stats`), for example, `persist-name()`-based naming
     is no longer supported in this old format.
     ([#4551](https://github.com/syslog-ng/syslog-ng/pull/4551))
+
+  * APT packages: Added Ubuntu Lunar Lobster and Debian Bookworm support.
+    ([#4561](https://github.com/syslog-ng/syslog-ng/pull/4561))
 
 ## syslog-ng Discord
 
