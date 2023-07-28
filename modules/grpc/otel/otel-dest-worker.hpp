@@ -59,6 +59,7 @@ class DestWorker
 {
 public:
   DestWorker(OtelDestWorker *s);
+  static LogThreadedDestWorker *construct(LogThreadedDestDriver *o, gint worker_index);
 
   bool init();
   void deinit();
@@ -120,7 +121,5 @@ struct OtelDestWorker_
   LogThreadedDestWorker super;
   syslogng::grpc::otel::DestWorker *cpp;
 };
-
-LogThreadedDestWorker *otel_dest_worker_new(LogThreadedDestDriver *o, gint worker_index);
 
 #endif

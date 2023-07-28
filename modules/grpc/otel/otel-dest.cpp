@@ -71,6 +71,12 @@ DestDriver::format_stats_key(StatsClusterKeyBuilder *kb)
   return NULL;
 }
 
+LogThreadedDestWorker *
+DestDriver::construct_worker(int worker_index)
+{
+  return DestWorker::construct(&super->super, worker_index);
+}
+
 bool
 DestDriver::init()
 {
@@ -142,7 +148,7 @@ _deinit(LogPipe *s)
 static LogThreadedDestWorker *
 _construct_worker(LogThreadedDestDriver *s, gint worker_index)
 {
-  return otel_dest_worker_new(s, worker_index);
+  return get_DestDriver(s)->construct_worker(worker_index);
 }
 
 static void

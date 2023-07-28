@@ -441,7 +441,7 @@ _free(LogThreadedDestWorker *s)
 }
 
 LogThreadedDestWorker *
-otel_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
+DestWorker::construct(LogThreadedDestDriver *o, gint worker_index)
 {
   OtelDestWorker *self = g_new0(OtelDestWorker, 1);
 

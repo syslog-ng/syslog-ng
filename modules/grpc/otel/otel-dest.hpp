@@ -49,9 +49,9 @@ public:
   bool deinit();
   const char *format_stats_key(StatsClusterKeyBuilder *kb);
   const char *generate_persist_name();
+  LogThreadedDestWorker *construct_worker(int worker_index);
 
   GrpcClientCredentialsBuilderW *get_credentials_builder_wrapper();
-
 public:
   syslogng::grpc::ClientCredentialsBuilder credentials_builder;
 
