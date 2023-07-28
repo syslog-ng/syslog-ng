@@ -33,6 +33,7 @@
 #include "otel-source.h"
 #include "otel-protobuf-parser.h"
 #include "otel-dest.h"
+#include "syslog-ng-otlp-dest.h"
 
 GrpcServerCredentialsBuilderW *last_grpc_server_credentials_builder;
 GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
@@ -68,11 +69,13 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_URL
 %token KW_TARGET_SERVICE_ACCOUNTS
 %token KW_ADC
+%token KW_SYSLOG_NG_OTLP
 
 %type <ptr> source_otel
 %type <ptr> parser_otel
 %type <num> grpc_server_credentials_builder_tls_peer_verify
 %type <ptr> destination_otel
+%type <ptr> destination_syslog_ng_otlp
 
 %%
 
@@ -80,6 +83,7 @@ start
   : LL_CONTEXT_SOURCE source_otel { YYACCEPT; }
   | LL_CONTEXT_PARSER parser_otel { YYACCEPT; }
   | LL_CONTEXT_DESTINATION destination_otel { YYACCEPT; }
+  | LL_CONTEXT_DESTINATION destination_syslog_ng_otlp { YYACCEPT; }
   ;
 
 source_otel
@@ -137,6 +141,23 @@ destination_otel_option
   | threaded_dest_driver_general_option
   | threaded_dest_driver_batch_option
   | threaded_dest_driver_workers_option
+  ;
+
+destination_syslog_ng_otlp
+  : KW_SYSLOG_NG_OTLP
+    {
+      last_driver = *instance = syslog_ng_otlp_dd_new(configuration);
+    }
+    '(' _inner_dest_context_push destination_syslog_ng_otlp_options _inner_dest_context_pop ')' { $$ = last_driver; }
+  ;
+
+destination_syslog_ng_otlp_options
+  : destination_syslog_ng_otlp_option destination_syslog_ng_otlp_options
+  |
+  ;
+
+destination_syslog_ng_otlp_option
+  : destination_otel_option
   ;
 
 /*
