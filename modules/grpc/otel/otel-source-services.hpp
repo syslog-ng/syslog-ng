@@ -155,9 +155,17 @@ syslogng::grpc::otel::LogsServiceCall::Proceed(bool ok)
           for (const LogRecord &log_record : scope_logs.log_records())
             {
               LogMessage *msg = log_msg_new_empty();
-              ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_logs_schema_url, scope,
-                                                 scope_logs_schema_url);
-              ProtobufParser::store_raw(msg, log_record);
+              if (ProtobufParser::is_syslog_ng_log_record(resource, resource_logs_schema_url, scope,
+                                                          scope_logs_schema_url))
+                {
+                  ProtobufParser::store_syslog_ng(msg, log_record);
+                }
+              else
+                {
+                  ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_logs_schema_url, scope,
+                                                     scope_logs_schema_url);
+                  ProtobufParser::store_raw(msg, log_record);
+                }
               if (!driver.post(msg))
                 {
                   response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");

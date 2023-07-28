@@ -1247,9 +1247,9 @@ syslogng::grpc::otel::ProtobufParser::store_syslog_ng(LogMessage *msg, const Log
 
 bool
 syslogng::grpc::otel::ProtobufParser::is_syslog_ng_log_record(const Resource &resource,
-                                                              const std::string &resource_schema_url,
-                                                              const InstrumentationScope &scope,
-                                                              const std::string &scope_schema_url)
+    const std::string &resource_schema_url,
+    const InstrumentationScope &scope,
+    const std::string &scope_schema_url)
 {
   return scope.name().compare("@syslog-ng") == 0;
 }
