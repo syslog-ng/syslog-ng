@@ -59,22 +59,23 @@ class DestWorker
 {
 public:
   DestWorker(OtelDestWorker *s);
+  virtual ~DestWorker();
   static LogThreadedDestWorker *construct(LogThreadedDestDriver *o, gint worker_index);
 
-  bool init();
-  void deinit();
-  bool connect();
-  void disconnect();
-  LogThreadedResult insert(LogMessage *msg);
-  LogThreadedResult flush(LogThreadedFlushMode mode);
+  virtual bool init();
+  virtual void deinit();
+  virtual bool connect();
+  virtual void disconnect();
+  virtual LogThreadedResult insert(LogMessage *msg);
+  virtual LogThreadedResult flush(LogThreadedFlushMode mode);
 
 protected:
   void clear_current_msg_metadata();
   void get_metadata_for_current_msg(LogMessage *msg);
 
-  ScopeLogs *lookup_scope_logs(LogMessage *msg);
-  ScopeMetrics *lookup_scope_metrics(LogMessage *msg);
-  ScopeSpans *lookup_scope_spans(LogMessage *msg);
+  virtual ScopeLogs *lookup_scope_logs(LogMessage *msg);
+  virtual ScopeMetrics *lookup_scope_metrics(LogMessage *msg);
+  virtual ScopeSpans *lookup_scope_spans(LogMessage *msg);
 
   bool insert_log_record_from_log_msg(LogMessage *msg);
   void insert_fallback_log_record_from_log_msg(LogMessage *msg);
