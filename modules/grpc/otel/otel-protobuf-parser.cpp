@@ -1264,6 +1264,12 @@ syslogng::grpc::otel::ProtobufParser::process(LogMessage *msg)
   LogMessageValueType log_msg_type;
   const gchar *type = log_msg_get_value_by_name_with_type(msg, ".otel_raw.type", &len, &log_msg_type);
 
+  if (log_msg_type == LM_VT_NULL)
+    {
+      /* Not an opentelemetry() message or it is a syslog-ng-otlp() message already parsed in the source */
+      return true;
+    }
+
   if (log_msg_type != LM_VT_STRING)
     {
       msg_error("OpenTelemetry: unexpected .otel_raw.type LogMessage type",
