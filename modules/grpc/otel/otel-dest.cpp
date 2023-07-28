@@ -158,22 +158,28 @@ _free(LogPipe *s)
   log_threaded_dest_driver_free(s);
 }
 
+void
+otel_dd_init_super(LogThreadedDestDriver *s, GlobalConfig *cfg)
+{
+  log_threaded_dest_driver_init_instance(s, cfg);
+
+  s->super.super.super.init = _init;
+  s->super.super.super.deinit = _deinit;
+  s->super.super.super.free_fn = _free;
+  s->super.super.super.generate_persist_name = _generate_persist_name;
+
+  s->worker.construct = _construct_worker;
+  s->stats_source = stats_register_type("opentelemetry");
+  s->format_stats_key = _format_stats_key;
+}
+
 LogDriver *
 otel_dd_new(GlobalConfig *cfg)
 {
   OtelDestDriver *self = g_new0(OtelDestDriver, 1);
-  log_threaded_dest_driver_init_instance(&self->super, cfg);
 
+  otel_dd_init_super(&self->super, cfg);
   self->cpp = new DestDriver(self);
-
-  self->super.super.super.super.init = _init;
-  self->super.super.super.super.deinit = _deinit;
-  self->super.super.super.super.free_fn = _free;
-  self->super.super.super.super.generate_persist_name = _generate_persist_name;
-
-  self->super.worker.construct = _construct_worker;
-  self->super.stats_source = stats_register_type("opentelemetry");
-  self->super.format_stats_key = _format_stats_key;
 
   return &self->super.super.super;
 }

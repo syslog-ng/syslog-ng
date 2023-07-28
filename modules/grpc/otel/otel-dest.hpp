@@ -73,4 +73,6 @@ struct OtelDestDriver_
   syslogng::grpc::otel::DestDriver *cpp;
 };
 
+void otel_dd_init_super(LogThreadedDestDriver *s, GlobalConfig *cfg);
+
 #endif

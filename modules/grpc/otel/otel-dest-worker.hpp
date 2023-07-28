@@ -123,4 +123,6 @@ struct OtelDestWorker_
   syslogng::grpc::otel::DestWorker *cpp;
 };
 
+void otel_dw_init_super(LogThreadedDestWorker *s, LogThreadedDestDriver *o, gint worker_index);
+
 #endif
