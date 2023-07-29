@@ -23,6 +23,7 @@
 /* this has to come first for modules which include the Python.h header */
 #include "python-module.h"
 #include "python-main.h"
+#include "python-startup.h"
 #include <criterion/criterion.h>
 
 #include "python-helpers.h"

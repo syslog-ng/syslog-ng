@@ -30,6 +30,7 @@
 #include "python-types.h"
 #include "python-logmsg.h"
 #include "python-main.h"
+#include "python-startup.h"
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "scratch-buffers.h"

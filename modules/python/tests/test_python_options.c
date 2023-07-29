@@ -23,6 +23,7 @@
 #include "python-config.h"
 #include "python-options.h"
 #include "python-main.h"
+#include "python-startup.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "scratch-buffers.h"

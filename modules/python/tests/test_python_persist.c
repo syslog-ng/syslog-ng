@@ -28,6 +28,7 @@
 #include "python-persist.h"
 #include "python-helpers.h"
 #include "python-main.h"
+#include "python-startup.h"
 #include "apphook.h"
 
 

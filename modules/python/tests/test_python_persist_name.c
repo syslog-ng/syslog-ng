@@ -29,6 +29,7 @@
 #include "apphook.h"
 #include "python-dest.h"
 #include "python-main.h"
+#include "python-startup.h"
 #include "python-fetcher.h"
 #include "python-source.h"
 #include "python-bookmark.h"
