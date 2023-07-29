@@ -265,7 +265,7 @@ _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
 {
   PyPersist *self = (PyPersist *) s;
   const gchar *persist_name = NULL;
-  GlobalConfig *cfg = python_get_associated_config();
+  GlobalConfig *cfg = _py_get_config_from_main_module()->cfg;
 
   static char *kwlist[] = {"persist_name", NULL};
 

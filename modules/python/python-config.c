@@ -34,7 +34,7 @@ python_config_init(ModuleConfig *s, GlobalConfig *cfg)
 
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
-  _py_switch_main_module(self);
+  _py_switch_to_config_main_module(self);
   PyGILState_Release(gstate);
   return TRUE;
 }

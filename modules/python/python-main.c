@@ -84,7 +84,7 @@ _py_construct_main_module(PythonConfig *pc)
     }
 
   /* there's a circular reference between GlobalConfig -> PythonConfig -> main_module -> main_module.__config__ -> GlobalConfig */
-  PyDict_SetItemString(module_dict, "__config__", PyCapsule_New(pc->cfg, "_syslogng_main.__config__", NULL));
+  PyDict_SetItemString(module_dict, "__config__", PyCapsule_New(pc, "_syslogng_main.__config__", NULL));
 
   /* return a reference */
   Py_INCREF(module);
@@ -93,7 +93,7 @@ _py_construct_main_module(PythonConfig *pc)
 
 /* switch the _syslogng_main module to the one in a specific configuration */
 void
-_py_switch_main_module(PythonConfig *pc)
+_py_switch_to_config_main_module(PythonConfig *pc)
 {
   PyObject *modules = PyImport_GetModuleDict();
 
@@ -118,12 +118,25 @@ _py_get_main_module(PythonConfig *pc)
   return pc->main_module;
 }
 
-GlobalConfig *
-python_get_associated_config(void)
+gboolean
+_py_init_main_module_for_config(PythonConfig *pc)
 {
-  GlobalConfig *cfg;
+  PyGILState_STATE gstate;
+  gboolean result;
 
-  cfg = (GlobalConfig *) PyCapsule_Import("_syslogng_main.__config__", FALSE);
-  g_assert(cfg != NULL);
-  return cfg;
+  gstate = PyGILState_Ensure();
+  result = _py_get_main_module(pc) != NULL;
+  PyGILState_Release(gstate);
+
+  return result;
+}
+
+PythonConfig *
+_py_get_config_from_main_module(void)
+{
+  PythonConfig *pc;
+
+  pc = (PythonConfig *) PyCapsule_Import("_syslogng_main.__config__", FALSE);
+  g_assert(pc != NULL);
+  return pc;
 }
