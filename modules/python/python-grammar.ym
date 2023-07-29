@@ -29,7 +29,7 @@
 #include "python-fetcher.h"
 #include "python-logparser.h"
 #include "python-http-header.h"
-#include "python-main.h"
+#include "python-global.h"
 #include "value-pairs/value-pairs.h"
 #include "string-list.h"
 #include "logthrsource/logthrsourcedrv.h"

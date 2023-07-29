@@ -29,6 +29,7 @@
 #include "python-helpers.h"
 #include "python-main.h"
 #include "python-startup.h"
+#include "python-global.h"
 #include "apphook.h"
 
 

@@ -42,6 +42,8 @@ set(PYTHON_SOURCES
     python-binding.c
     python-startup.h
     python-startup.c
+    python-global.h
+    python-global.c
     python-debugger.c
     python-debugger.h
     python-logparser.h
