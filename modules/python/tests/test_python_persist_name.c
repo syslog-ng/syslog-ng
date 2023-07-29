@@ -144,9 +144,9 @@ Test(python_persist_name, test_python_fetcher)
   _load_code(python_fetcher_code);
 
   LogDriver *d = python_fetcher_new(empty_cfg);
-  python_fetcher_set_class(d, "Fetcher");
+  python_binding_set_class(python_fetcher_get_binding(d), "Fetcher");
 
-  _add_dummy_option(python_fetcher_get_options(d));
+  _add_dummy_option(python_fetcher_get_binding(d)->options);
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
@@ -246,9 +246,10 @@ Test(python_persist_name, test_python_fetcher_no_generate_persist_name)
   _load_code(python_fetcher_code_no_generate_persist_name);
 
   LogDriver *d = python_fetcher_new(empty_cfg);
-  python_fetcher_set_class(d, "Fetcher");
 
-  _add_dummy_option(python_fetcher_get_options(d));
+  python_binding_set_class(python_fetcher_get_binding(d), "Fetcher");
+
+  _add_dummy_option(python_fetcher_get_binding(d)->options);
 
   log_pipe_set_persist_name((LogPipe *)d, "test_persist_name");
   cr_assert(log_pipe_init((LogPipe *)d));
@@ -337,7 +338,7 @@ Test(python_persist_name, test_python_fetcher_readonly)
   _load_code(python_fetcher_code_readonly);
 
   LogDriver *d = python_fetcher_new(empty_cfg);
-  python_fetcher_set_class(d, "Fetcher");
+  python_binding_set_class(python_fetcher_get_binding(d), "Fetcher");
 
   start_grabbing_messages();
   cr_assert_eq(log_pipe_init((LogPipe *)d), 0);
@@ -359,9 +360,9 @@ Test(python_persist_name, test_python_fetcher_persist_preference)
 
   LogDriver *d = python_fetcher_new(empty_cfg);
   log_pipe_set_persist_name(&d->super, "test_persist_name");
-  python_fetcher_set_class(d, "Fetcher");
+  python_binding_set_class(python_fetcher_get_binding(d), "Fetcher");
 
-  _add_dummy_option(python_fetcher_get_options(d));
+  _add_dummy_option(python_fetcher_get_binding(d)->options);
 
   cr_assert(log_pipe_init((LogPipe *)d));
 

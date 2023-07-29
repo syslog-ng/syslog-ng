@@ -110,6 +110,7 @@ start
         | LL_CONTEXT_SOURCE KW_PYTHON_FETCHER
           {
             last_driver = *instance = python_fetcher_new(configuration);
+	    last_python_binding = python_fetcher_get_binding(last_driver);
           }
           '(' _inner_src_context_push python_fetcher_options _inner_src_context_pop ')'      { YYACCEPT; }
         | LL_CONTEXT_INNER_DEST KW_PYTHON_HTTP_HEADER
@@ -170,13 +171,7 @@ python_fetcher_options
         ;
 
 python_fetcher_option
-        : KW_CLASS '(' string ')'
-          {
-            python_fetcher_set_class(last_driver, $3);
-            free($3);
-          }
-        | KW_LOADERS python_fetcher_loaders
-        | { last_python_options = python_fetcher_get_options(last_driver); } python_options_block
+	: python_binding_option
         | threaded_source_driver_option
         | threaded_fetcher_driver_option
         ;
@@ -217,12 +212,6 @@ python_dd_loaders
           : '(' string_list ')'
           {
             python_dd_set_loaders(last_driver, $2);
-          }
-
-python_fetcher_loaders
-          : '(' string_list ')'
-          {
-            python_fetcher_set_loaders(last_driver, $2);
           }
 
 python_http_header_loaders
