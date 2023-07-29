@@ -26,12 +26,11 @@
 
 #include "python-module.h"
 #include "python-options.h"
+#include "python-binding.h"
 #include "driver.h"
 
 LogDriver *python_sd_new(GlobalConfig *cfg);
-void python_sd_set_loaders(LogDriver *d, GList *loaders);
-void python_sd_set_class(LogDriver *d, gchar *class_name);
-PythonOptions *python_sd_get_options(LogDriver *d);
+PythonBinding *python_sd_get_binding(LogDriver *d);
 
 void py_log_source_global_init(void);
 

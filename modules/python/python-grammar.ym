@@ -104,6 +104,7 @@ start
         | LL_CONTEXT_SOURCE KW_PYTHON
           {
             last_driver = *instance = python_sd_new(configuration);
+	    last_python_binding = python_sd_get_binding(last_driver);
           }
           '(' _inner_src_context_push python_sd_options _inner_src_context_pop ')'           { YYACCEPT; }
         | LL_CONTEXT_SOURCE KW_PYTHON_FETCHER
@@ -158,13 +159,7 @@ python_sd_options
         ;
 
 python_sd_option
-        : KW_CLASS '(' string ')'
-          {
-            python_sd_set_class(last_driver, $3);
-            free($3);
-          }
-        | KW_LOADERS python_sd_loaders
-        | { last_python_options = python_sd_get_options(last_driver); } python_options_block
+        : python_binding_option
         | threaded_source_driver_option
         ;
 
@@ -222,12 +217,6 @@ python_dd_loaders
           : '(' string_list ')'
           {
             python_dd_set_loaders(last_driver, $2);
-          }
-
-python_sd_loaders
-          : '(' string_list ')'
-          {
-            python_sd_set_loaders(last_driver, $2);
           }
 
 python_fetcher_loaders

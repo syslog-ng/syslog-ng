@@ -173,9 +173,9 @@ Test(python_persist_name, test_python_source)
   _load_code(python_source_code);
 
   LogDriver *d = python_sd_new(empty_cfg);
-  python_sd_set_class(d, "Source");
+  python_binding_set_class(python_sd_get_binding(d), "Source");
 
-  _add_dummy_option(python_sd_get_options(d));
+  _add_dummy_option(python_sd_get_binding(d)->options);
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
@@ -273,9 +273,9 @@ Test(python_persist_name, test_python_source_no_generate_persist_name)
   _load_code(python_source_code_no_generate_persist_name);
 
   LogDriver *d = python_sd_new(empty_cfg);
-  python_sd_set_class(d, "Source");
+  python_binding_set_class(python_sd_get_binding(d), "Source");
 
-  _add_dummy_option(python_sd_get_options(d));
+  _add_dummy_option(python_sd_get_binding(d)->options);
 
   log_pipe_set_persist_name((LogPipe *)d, "test_persist_name");
   cr_assert(log_pipe_init((LogPipe *)d));
@@ -306,7 +306,7 @@ Test(python_persist_name, test_python_source_readonly)
   _load_code(python_source_code_readonly);
 
   LogDriver *d = python_sd_new(empty_cfg);
-  python_sd_set_class(d, "Source");
+  python_binding_set_class(python_sd_get_binding(d), "Source");
   start_grabbing_messages();
   cr_assert_eq(log_pipe_init((LogPipe *)d), 0);
   stop_grabbing_messages();
@@ -379,9 +379,9 @@ Test(python_persist_name, test_python_source_persist_preference)
 
   LogDriver *d = python_sd_new(empty_cfg);
   log_pipe_set_persist_name(&d->super, "test_persist_name");
-  python_sd_set_class(d, "Source");
+  python_binding_set_class(python_sd_get_binding(d), "Source");
 
-  _add_dummy_option(python_sd_get_options(d));
+  _add_dummy_option(python_sd_get_binding(d)->options);
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
