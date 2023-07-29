@@ -411,10 +411,11 @@ _foreach_import(gpointer data, gpointer user_data)
   Py_XDECREF(mod);
 }
 
-void
+gboolean
 _py_perform_imports(GList *imports)
 {
   g_list_foreach(imports, _foreach_import, NULL);
+  return TRUE;
 }
 
 const gchar *

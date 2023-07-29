@@ -51,7 +51,7 @@ gboolean _py_invoke_bool_method_by_name_with_options(PyObject *instance, const g
                                                      const gchar *module);
 gboolean _py_invoke_bool_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class,
                                         const gchar *module);
-void _py_perform_imports(GList *imports);
+gboolean _py_perform_imports(GList *imports);
 const gchar *_py_object_repr(PyObject *s, gchar *buf, gsize buflen);
 PyObject *_py_construct_enum(const gchar *name, PyObject *sequence);
 
