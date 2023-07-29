@@ -108,18 +108,6 @@ _py_switch_main_module(PythonConfig *pc)
     }
 }
 
-
-/* get the current main module in a production context by using the Python
- * module registry instead of the GlobalConfig machinery.  This only works
- * once _py_switch_to_main_module() has been called (e.g. past init()).
- *
- * returns borrowed reference. */
-PyObject *
-_py_get_current_main_module(void)
-{
-  return PyImport_AddModule("_syslogng_main");
-}
-
 /* get the current main module as stored in the current GlobalConfig.
  * returns borrowed reference */
 PyObject *

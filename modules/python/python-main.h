@@ -26,7 +26,6 @@
 #include "python-config.h"
 #include "cfg-lexer.h"
 
-PyObject *_py_get_current_main_module(void);
 PyObject *_py_get_main_module(PythonConfig *pc);
 void _py_switch_main_module(PythonConfig *pc);
 GlobalConfig *python_get_associated_config(void);
