@@ -24,6 +24,8 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/compat/compat-python.h     \
 	modules/python/compat/compat-python.c     \
 	modules/python/python-module.h		  \
+	modules/python/python-binding.h		  \
+	modules/python/python-binding.c		  \
 	modules/python/python-config.h		  \
 	modules/python/python-config.c		  \
 	modules/python/python-persist.h		  \

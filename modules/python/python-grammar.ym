@@ -45,6 +45,7 @@
 
 PythonHttpHeaderPlugin *last_header;
 PythonOptions *last_python_options;
+PythonBinding *last_python_binding;
 
 static inline void
 _warn_if_config_version_is_old(CfgLexer *lexer, const CFG_LTYPE *yylloc, const gchar *type, const gchar *option_name)
@@ -95,8 +96,9 @@ start
           }
           '(' _inner_dest_context_push python_dd_options _inner_dest_context_pop ')'         { YYACCEPT; }
         | LL_CONTEXT_PARSER KW_PYTHON
-	      {
-	        last_parser = *instance = python_parser_new(configuration);
+	  {
+	    last_parser = *instance = python_parser_new(configuration);
+	    last_python_binding = python_parser_get_binding(last_parser);
           }
           '(' python_parser_options ')'                                                      { YYACCEPT; }
         | LL_CONTEXT_SOURCE KW_PYTHON
@@ -191,14 +193,7 @@ python_parser_options
         ;
 
 python_parser_option
-        : KW_CLASS '(' string ')'
-          {
-            python_parser_set_class(last_parser, $3);
-            free($3);
-          }
-        | KW_LOADERS python_parser_loaders
-        | KW_IMPORTS python_parser_loaders
-        | { last_python_options = python_parser_get_options(last_parser); } python_options_block
+        : python_binding_option
         | parser_opt
         ;
 
@@ -247,13 +242,6 @@ python_http_header_loaders
             python_http_header_set_loaders(last_header, $2);
           }
 
-python_parser_loaders
-          : '(' string_list ')'
-          {
-            python_parser_set_loaders(last_parser, $2);
-          }
-
-
 optional_arrow
           : LL_ARROW
           |
@@ -263,6 +251,23 @@ python_yesno
           : yesno_strict
           | KW_TRUE  { $$ = 1; }
           | KW_FALSE { $$ = 0; }
+          ;
+
+python_binding_option
+          : KW_CLASS '(' string ')'
+            {
+              python_binding_set_class(last_python_binding, $3);
+              free($3);
+            }
+          | KW_LOADERS '(' string_list ')'
+            {
+              python_binding_set_loaders(last_python_binding, $3);
+            }
+          | KW_IMPORTS '(' string_list ')'
+            {
+              python_binding_set_loaders(last_python_binding, $3);
+            }
+          | { last_python_options = last_python_binding->options; } python_options_block
           ;
 
 python_option
