@@ -22,6 +22,7 @@
 
 #include "python-binding.h"
 #include "python-helpers.h"
+#include "python-main.h"
 #include "string-list.h"
 #include "messages.h"
 
@@ -54,12 +55,15 @@ python_binding_init(PythonBinding *self, GlobalConfig *cfg, const gchar *desc)
     }
 
   PyGILState_STATE gstate;
+  gboolean result = TRUE;
 
   gstate = PyGILState_Ensure();
-  _py_perform_imports(self->loaders);
+  if (!_py_init_main_module_for_config(python_config_get(cfg)) ||
+      !_py_perform_imports(self->loaders))
+    result = FALSE;
   PyGILState_Release(gstate);
 
-  return TRUE;
+  return result;
 }
 
 void
