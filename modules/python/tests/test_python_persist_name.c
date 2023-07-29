@@ -117,9 +117,9 @@ Test(python_persist_name, test_python_dest)
   _load_code(python_destination_code);
 
   LogDriver *d = python_dd_new(empty_cfg);
-  python_dd_set_class(d, "Dest");
+  python_binding_set_class(python_dd_get_binding(d), "Dest");
 
-  _add_dummy_option(python_dd_get_options(d));
+  _add_dummy_option(python_dd_get_binding(d)->options);
 
   cr_assert(log_pipe_init((LogPipe *)d));
 
