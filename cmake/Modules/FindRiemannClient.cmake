@@ -25,8 +25,15 @@ include(LibFindMacros)
 
 libfind_pkg_detect(Riemann riemann-client FIND_PATH riemann/event.h FIND_LIBRARY riemann-client)
 if (NOT Riemann_LIBRARY)
+  libfind_pkg_detect(Riemann riemann-client FIND_PATH riemann/event.h FIND_LIBRARY riemann-client-openssl)
+endif()
+if (NOT Riemann_LIBRARY)
   libfind_pkg_detect(Riemann riemann-client FIND_PATH riemann/event.h FIND_LIBRARY riemann-client-no-tls)
 endif()
+if (Riemann_LIBRARY)
+      message(STATUS "Found Riemann client: ${Riemann_LIBRARY}")
+endif()
+
 set(Riemann_PROCESS_INCLUDES Riemann_INCLUDE_DIR)
 set(Riemann_PROCESS_LIBS Riemann_LIBRARY)
 
