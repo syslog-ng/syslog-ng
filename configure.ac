@@ -1095,7 +1095,7 @@ fi
 
 PKG_CHECK_MODULES(PCRE2, libpcre2-8 >= $PCRE2_MIN_VERSION,, PCRE2_LIBS="")
 
-if test test -z "$PCRE2_LIBS"; then
+if test -z "$PCRE2_LIBS"; then
 	AC_MSG_ERROR(Cannot find pcre2 version >= $PCRE2_MIN_VERSION which is a hard dependency from syslog-ng 3.6 onwards)
 fi
 
