@@ -1859,14 +1859,14 @@ _set_metric_options(LogWriter *self, const gchar *stats_id, StatsClusterKeyBuild
   stats_cluster_key_builder_set_name(new_style_stats_kb, "output_event_bytes_total");
   self->metrics.written_bytes_key = stats_cluster_key_builder_build_single(new_style_stats_kb);
 
-  if (self->metrics.written_bytes_key)
+  if (self->metrics.message_delay_key)
     stats_cluster_key_free(self->metrics.message_delay_key);
 
   stats_cluster_key_builder_set_name(new_style_stats_kb, "output_message_delay_sample_seconds");
   stats_cluster_key_builder_set_unit(new_style_stats_kb, SCU_MILLISECONDS);
   self->metrics.message_delay_key = stats_cluster_key_builder_build_single(new_style_stats_kb);
 
-  if (self->metrics.written_bytes_key)
+  if (self->metrics.message_delay_sample_age_key)
     stats_cluster_key_free(self->metrics.message_delay_sample_age_key);
 
   stats_cluster_key_builder_set_name(new_style_stats_kb, "output_message_delay_sample_age_seconds");
