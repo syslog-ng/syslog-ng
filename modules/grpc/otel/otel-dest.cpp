@@ -56,7 +56,8 @@ DestDriver::generate_persist_name()
     g_snprintf(persist_name, sizeof(persist_name), "opentelemetry.%s",
                super->super.super.super.super.persist_name);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "opentelemetry");
+    g_snprintf(persist_name, sizeof(persist_name), "opentelemetry(%s)",
+               url.c_str());
 
   return persist_name;
 }
