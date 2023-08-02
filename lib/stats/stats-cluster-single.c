@@ -147,6 +147,12 @@ stats_cluster_single_key_add_unit(StatsClusterKey *key, StatsClusterUnit stored_
   key->formatting.stored_unit = stored_unit;
 }
 
+void
+stats_cluster_single_key_add_frame_of_reference(StatsClusterKey *key, StatsClusterFrameOfReference frame_of_reference)
+{
+  key->formatting.frame_of_reference = frame_of_reference;
+}
+
 StatsCounterItem *
 stats_cluster_single_get_counter(StatsCluster *self)
 {

@@ -1870,7 +1870,8 @@ _set_metric_options(LogWriter *self, const gchar *stats_id, StatsClusterKeyBuild
     stats_cluster_key_free(self->metrics.message_delay_sample_age_key);
 
   stats_cluster_key_builder_set_name(new_style_stats_kb, "output_message_delay_sample_age_seconds");
-  stats_cluster_key_builder_set_unit(new_style_stats_kb, SCU_SECONDS_AGE);
+  stats_cluster_key_builder_set_unit(new_style_stats_kb, SCU_SECONDS);
+  stats_cluster_key_builder_set_frame_of_reference(new_style_stats_kb, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
   self->metrics.message_delay_sample_age_key = stats_cluster_key_builder_build_single(new_style_stats_kb);
 
   stats_cluster_key_builder_free(new_style_stats_kb);

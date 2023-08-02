@@ -78,7 +78,6 @@ stats_format_prometheus_format_value(const StatsClusterKey *key, StatsCounterIte
   guint64 converted_int = stored_value;
   gdouble converted_double = stored_value;
   gchar double_buf[G_ASCII_DTOSTR_BUF_SIZE];
-  UnixTime now;
 
   switch (key->formatting.stored_unit)
     {
@@ -95,6 +94,13 @@ stats_format_prometheus_format_value(const StatsClusterKey *key, StatsCounterIte
       converted_int *= 60;
     case SCU_MINUTES:
       converted_int *= 60;
+    case SCU_SECONDS:
+      if (key->formatting.frame_of_reference == SCFOR_RELATIVE_TO_TIME_OF_QUERY)
+        {
+          UnixTime now;
+          unix_time_set_now(&now);
+          converted_int = now.ut_sec - converted_int;
+        }
       g_string_printf(value, "%"G_GUINT64_FORMAT, converted_int);
       break;
 
@@ -107,10 +113,6 @@ stats_format_prometheus_format_value(const StatsClusterKey *key, StatsCounterIte
       converted_double /= 1e3;
       g_string_assign(value, g_ascii_dtostr(double_buf, G_N_ELEMENTS(double_buf), converted_double));
       break;
-
-    case SCU_SECONDS_AGE:
-      unix_time_set_now(&now);
-      stored_value = now.ut_sec - stored_value;
 
     default:
       /* no conversion */

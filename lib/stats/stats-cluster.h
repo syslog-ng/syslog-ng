@@ -51,8 +51,6 @@ typedef enum _StatsClusterUnit
   SCU_NONE = 0,
 
   SCU_SECONDS,
-  /* represent value relative to the current time */
-  SCU_SECONDS_AGE,
   SCU_MINUTES,
   SCU_HOURS,
   SCU_MILLISECONDS,
@@ -63,6 +61,18 @@ typedef enum _StatsClusterUnit
   SCU_MIB,
   SCU_GIB,
 } StatsClusterUnit;
+
+typedef enum _StatsClusterFrameOfReference
+{
+  SCFOR_ABSOLUTE = 0,
+
+  /*
+   * Only applicable for counters with seconds, minutes or hours unit.
+   * Has a 1 second precision.
+   * Results in a positive value for timestamps older than the time of query.
+   */
+  SCFOR_RELATIVE_TO_TIME_OF_QUERY,
+} StatsClusterFrameOfReference;
 
 typedef struct _StatsCounterGroup StatsCounterGroup;
 typedef struct _StatsCounterGroupInit StatsCounterGroupInit;
@@ -117,6 +127,7 @@ struct _StatsClusterKey
   struct
   {
     StatsClusterUnit stored_unit;
+    StatsClusterFrameOfReference frame_of_reference;
   } formatting;
 
   struct
