@@ -23,28 +23,28 @@ modules/grpc/protos/otlp/%.pb.cc modules/grpc/protos/otlp/%.pb.h:
 	$(PROTOC) $(OPENTELEMETRY_PROTO_PROTOC_FLAGS) $*.proto
 
 GRPC_PROTOS_BUILT_SOURCES = \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/common/v1/common.pb.h \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/common/v1/common.pb.cc \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/resource/v1/resource.pb.h \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/resource/v1/resource.pb.cc \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/logs/v1/logs.pb.h \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/logs/v1/logs.pb.cc \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/metrics/v1/metrics.pb.h \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/metrics/v1/metrics.pb.cc \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/trace/v1/trace.pb.h \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/trace/v1/trace.pb.cc \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/logs/v1/logs_service.grpc.pb.h \
   $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/logs/v1/logs_service.grpc.pb.cc \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/logs/v1/logs_service.pb.h \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/logs/v1/logs_service.grpc.pb.h \
   $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/logs/v1/logs_service.pb.cc \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/metrics/v1/metrics_service.grpc.pb.h \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/logs/v1/logs_service.pb.h \
   $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/metrics/v1/metrics_service.grpc.pb.cc \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/metrics/v1/metrics_service.pb.h \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/metrics/v1/metrics_service.grpc.pb.h \
   $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/metrics/v1/metrics_service.pb.cc \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/trace/v1/trace_service.grpc.pb.h \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/metrics/v1/metrics_service.pb.h \
   $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/trace/v1/trace_service.grpc.pb.cc \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/trace/v1/trace_service.grpc.pb.h \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/trace/v1/trace_service.pb.cc \
   $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/trace/v1/trace_service.pb.h \
-  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/trace/v1/trace_service.pb.cc
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/common/v1/common.pb.cc \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/common/v1/common.pb.h \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/logs/v1/logs.pb.cc \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/logs/v1/logs.pb.h \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/metrics/v1/metrics.pb.cc \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/metrics/v1/metrics.pb.h \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/resource/v1/resource.pb.cc \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/resource/v1/resource.pb.h \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/trace/v1/trace.pb.cc \
+  $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/trace/v1/trace.pb.h
 
 lib_LTLIBRARIES += modules/grpc/protos/libgrpc-protos.la
 
