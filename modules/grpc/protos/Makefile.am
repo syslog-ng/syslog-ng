@@ -1,3 +1,9 @@
+# Built protobuf sources should not be part of the release tarball as different
+# protoc/protobuf versions can be incompatible.
+#
+# Always use a a different (srcdir, builddir) pair in order to avoid including
+# built sources in the tarball.
+
 GRPC_PROTOS_SRCDIR = $(top_srcdir)/modules/grpc/protos
 GRPC_PROTOS_BUILDDIR = $(top_builddir)/modules/grpc/protos
 
