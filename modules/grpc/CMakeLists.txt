@@ -27,4 +27,5 @@ set(MODULE_GRPC_LIBS
   gRPC::grpc++
   protobuf::libprotobuf)
 
+add_subdirectory(protos)
 add_subdirectory(otel)

@@ -24,7 +24,7 @@ endif()
 
 if (ENABLE_CPP)
   enable_language(CXX)
-  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_STANDARD 11 CACHE STRING "C++ standard")
   set(SYSLOG_NG_ENABLE_CPP ${ENABLE_CPP})
 endif()
 

@@ -3,5 +3,5 @@
         url = https://github.com/bazsi/ivykis.git
         ignore = dirty
 [submodule "modules/grpc/otel/opentelemetry-proto"]
-	path = modules/grpc/otel/opentelemetry-proto
+	path = modules/grpc/protos/opentelemetry-proto
 	url = https://github.com/open-telemetry/opentelemetry-proto.git
