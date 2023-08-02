@@ -16,10 +16,10 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 project(syslog-ng C)
 
-option(ENABLE_CPP "Enable C++" ON)
-
 if (APPLE)
-  set(ENABLE_CPP OFF)
+  option(ENABLE_CPP "Enable C++" OFF)
+else()
+  option(ENABLE_CPP "Enable C++" ON)
 endif()
 
 if (ENABLE_CPP)
