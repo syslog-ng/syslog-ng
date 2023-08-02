@@ -80,7 +80,7 @@ stats_format_prometheus_format_value(const StatsClusterKey *key, StatsCounterIte
   gchar double_buf[G_ASCII_DTOSTR_BUF_SIZE];
   UnixTime now;
 
-  switch (key->stored_unit)
+  switch (key->formatting.stored_unit)
     {
     case SCU_GIB:
       converted_int *= 1024;

@@ -114,7 +114,10 @@ struct _StatsClusterKey
   StatsClusterLabel *labels;
   gsize labels_len;
 
-  StatsClusterUnit stored_unit;
+  struct
+  {
+    StatsClusterUnit stored_unit;
+  } formatting;
 
   struct
   {

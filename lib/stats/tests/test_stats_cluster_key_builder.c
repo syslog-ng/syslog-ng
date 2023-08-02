@@ -70,7 +70,7 @@ _assert_built_sc_key_has_unit(const StatsClusterKeyBuilder *builder, KeyType typ
   StatsClusterKey *built_key = stats_cluster_key_builder_build_single(cloned_builder);
 
   if (type == TEST_SINGLE)
-    cr_assert(built_key->stored_unit == unit);
+    cr_assert(built_key->formatting.stored_unit == unit);
 
   stats_cluster_key_free(built_key);
   stats_cluster_key_builder_free(cloned_builder);
