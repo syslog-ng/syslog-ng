@@ -41,6 +41,8 @@ Build-Depends: debhelper (>= 10~),
                libpaho-mqtt-dev <!sng-nomqtt>,
                protobuf-compiler <!sng-nogrpc>,
                protobuf-compiler-grpc <!sng-nogrpc>,
+               libprotoc-dev <!sng-nogrpc>,
+               libabsl-dev <!sng-nogrpc>,
                libprotobuf-dev <!sng-nogrpc>,
                libgrpc++-dev <!sng-nogrpc>
 Build-Conflicts: autoconf2.13
