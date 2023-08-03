@@ -28,6 +28,8 @@
 #include "messages.h"
 #include "compat/cpp-end.h"
 
+#include <absl/strings/string_view.h>
+
 #include <cstring>
 
 using syslog_ng::bigquery::DestinationDriver;
@@ -52,8 +54,7 @@ public:
   ErrorCollector() {}
   ~ErrorCollector() override {}
 
-  void RecordError(absl::string_view filename, int line, int column,
-                   absl::string_view message) override
+  void RecordError(absl::string_view filename, int line, int column, absl::string_view message)
   {
     std::string file{filename};
     std::string msg{message};
@@ -63,8 +64,7 @@ public:
               evt_tag_str("error", msg.c_str()));
   }
 
-  void RecordWarning(absl::string_view filename, int line, int column,
-                     absl::string_view message) override
+  void RecordWarning(absl::string_view filename, int line, int column, absl::string_view message)
   {
     std::string file{filename};
     std::string msg{message};
@@ -72,6 +72,18 @@ public:
     msg_error("Warning during parsing protobuf-schema() file",
               evt_tag_str("filename", file.c_str()), evt_tag_int("line", line), evt_tag_int("column", column),
               evt_tag_str("warning", msg.c_str()));
+  }
+
+private:
+  /* deprecated interface */
+  void AddError(const std::string &filename, int line, int column, const std::string &message) override
+  {
+    this->RecordError(filename, line, column, message);
+  }
+
+  void AddWarning(const std::string &filename, int line, int column, const std::string &message) override
+  {
+    this->RecordWarning(filename, line, column, message);
   }
 };
 }
