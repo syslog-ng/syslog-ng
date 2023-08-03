@@ -194,6 +194,9 @@ stats_cluster_key_builder_reset(StatsClusterKeyBuilder *self)
   stats_cluster_key_builder_set_legacy_alias(self, 0, NULL, NULL);
   stats_cluster_key_builder_set_legacy_alias_name(self, NULL);
   self->legacy.set = FALSE;
+
+  self->unit = SCU_NONE;
+  self->frame_of_reference = SCFOR_ABSOLUTE;
 }
 
 static gint

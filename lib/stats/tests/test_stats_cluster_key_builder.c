@@ -58,6 +58,7 @@ _assert_built_sc_key_equals(const StatsClusterKeyBuilder *builder, KeyType type,
     }
 
   cr_assert(stats_cluster_key_equal(&expected_sc_key, built_key));
+  cr_assert_eq(memcmp(&expected_sc_key.formatting, &built_key->formatting, sizeof(built_key->formatting)), 0);
 
   stats_cluster_key_free(built_key);
   stats_cluster_key_builder_free(cloned_builder);
