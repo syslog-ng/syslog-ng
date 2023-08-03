@@ -15,7 +15,8 @@ lib/eventlog
 modules/java/org_syslog_ng_[^./_-]+\.h$
 modules/(afmongodb|afamqp)/dummy\.c$
 modules/kafka/tests/sample\.properties
-modules/grpc/otel/opentelemetry-proto
+modules/grpc/protos/opentelemetry-proto
+modules/grpc/protos/grafana-loki
 dev-utils/plugin_skeleton_creator/plugin_template.*
 (lib|modules)/.*\.conf$
 dist\.conf$
@@ -183,6 +184,7 @@ modules/grpc/otel/grpc-credentials-builder\.(h|cpp|hpp)$
 modules/grpc/otel/syslog-ng-otlp-(dest|dest-worker)\.(h|cpp|hpp)$
 modules/grpc/otel/tests/test-otel-(protobuf-parser|protobuf-formatter)\.cpp$
 modules/grpc/otel/tests/test-syslog-ng-otlp\.cpp$
+modules/grpc/loki
 modules/examples/inner-destinations/tls-test-validation
 modules/examples/sources/random-choice-generator
 modules/python/python-options.(c|h)$
