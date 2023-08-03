@@ -62,6 +62,7 @@ private:
   bool insert_field(const google::protobuf::Reflection *reflection, const Field &field,
                     LogMessage *msg, google::protobuf::Message *message);
   LogThreadedResult handle_row_errors(const google::cloud::bigquery::storage::v1::AppendRowsResponse &response);
+  void format_template(LogTemplate *tmpl, LogMessage *msg, GString *value, LogMessageValueType *type);
   DestinationDriver *get_owner();
 
 private:

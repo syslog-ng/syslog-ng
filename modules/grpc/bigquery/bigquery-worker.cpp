@@ -169,6 +169,27 @@ DestinationWorker::prepare_batch()
   this->get_owner()->schema_descriptor->CopyTo(schema->mutable_proto_descriptor());
 }
 
+void
+DestinationWorker::format_template(LogTemplate *tmpl, LogMessage *msg, GString *value, LogMessageValueType *type)
+{
+  DestinationDriver *owner = this->get_owner();
+
+  if (log_template_is_trivial(tmpl))
+    {
+      gssize trivial_value_len;
+      const gchar *trivial_value = log_template_get_trivial_value_and_type(tmpl, msg, &trivial_value_len, type);
+
+      g_string_truncate(value, 0);
+      if (trivial_value)
+        g_string_append_len(value, trivial_value, trivial_value_len);
+
+      return;
+    }
+
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, this->super->super.seq_num, NULL, LM_VT_STRING};
+  log_template_format_value_and_type(tmpl, msg, &options, value, type);
+}
+
 bool
 DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, const Field &field,
                                 LogMessage *msg, google::protobuf::Message *message)
@@ -178,10 +199,9 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
   ScratchBuffersMarker m;
   GString *value = scratch_buffers_alloc_and_mark(&m);
 
-  /* TODO trivial, NULL, etc. */
-  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, this->super->super.seq_num, NULL, LM_VT_STRING};
   LogMessageValueType type;
-  log_template_format_value_and_type(field.value, msg, &options, value, &type);
+
+  this->format_template(field.value, msg, value, &type);
 
   if (type == LM_VT_NULL)
     goto success;
