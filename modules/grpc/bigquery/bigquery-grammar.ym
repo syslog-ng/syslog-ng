@@ -87,11 +87,10 @@ bigquery_dest_option
   | KW_DATASET '(' string ')' { bigquery_dd_set_dataset(last_driver, $3); free($3); }
   | KW_TABLE '(' string ')' { bigquery_dd_set_table(last_driver, $3); free($3); }
   | KW_SCHEMA '(' bigquery_schema_fields ')'
-  | KW_PROTOBUF_SCHEMA '(' path_check LL_ARROW string_list ')'
+  | KW_PROTOBUF_SCHEMA '(' path_check LL_ARROW template_content_list ')'
     {
       bigquery_dd_set_protobuf_schema(last_driver, $3, $5);
       free($3);
-      g_list_free_full($5, free);
     }
   | KW_KEEP_ALIVE '(' bigquery_keepalive_options ')'
   | threaded_dest_driver_general_option

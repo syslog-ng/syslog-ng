@@ -38,6 +38,43 @@ struct _BigQueryDestDriver
   DestinationDriver *cpp;
 };
 
+static void
+_template_unref(gpointer data)
+{
+  LogTemplate *tpl = (LogTemplate *) data;
+  log_template_unref(tpl);
+}
+
+namespace {
+class ErrorCollector : public google::protobuf::compiler::MultiFileErrorCollector
+{
+public:
+  ErrorCollector() {}
+  ~ErrorCollector() override {}
+
+  void RecordError(absl::string_view filename, int line, int column,
+                   absl::string_view message) override
+  {
+    std::string file{filename};
+    std::string msg{message};
+
+    msg_error("Error parsing protobuf-schema() file",
+              evt_tag_str("filename", file.c_str()), evt_tag_int("line", line), evt_tag_int("column", column),
+              evt_tag_str("error", msg.c_str()));
+  }
+
+  void RecordWarning(absl::string_view filename, int line, int column,
+                     absl::string_view message) override
+  {
+    std::string file{filename};
+    std::string msg{message};
+
+    msg_error("Warning during parsing protobuf-schema() file",
+              evt_tag_str("filename", file.c_str()), evt_tag_int("line", line), evt_tag_int("column", column),
+              evt_tag_str("warning", msg.c_str()));
+  }
+};
+}
 
 DestinationDriver::DestinationDriver(BigQueryDestDriver *s)
   : super(s), url("bigquerystorage.googleapis.com"),
@@ -49,7 +86,7 @@ DestinationDriver::DestinationDriver(BigQueryDestDriver *s)
 
 DestinationDriver::~DestinationDriver()
 {
-  g_list_free_full(this->protobuf_schema.values, g_free);
+  g_list_free_full(this->protobuf_schema.values, _template_unref);
   log_template_options_destroy(&this->template_options);
 }
 
@@ -103,8 +140,8 @@ DestinationDriver::set_protobuf_schema(std::string proto_path, GList *values)
 {
   this->protobuf_schema.proto_path = proto_path;
 
-  g_list_free_full(this->protobuf_schema.values, g_free);
-  this->protobuf_schema.values = g_list_copy_deep(values, ((GCopyFunc)g_strdup), NULL);
+  g_list_free_full(this->protobuf_schema.values, _template_unref);
+  this->protobuf_schema.values = values;
 }
 
 bool
@@ -113,7 +150,20 @@ DestinationDriver::init()
   GlobalConfig *cfg = log_pipe_get_config(&this->super->super.super.super.super);
   log_template_options_init(&this->template_options, cfg);
 
-  this->construct_schema_prototype();
+  if (this->protobuf_schema.proto_path.empty())
+    this->construct_schema_prototype();
+  else
+    {
+      if (!this->load_protobuf_schema())
+        return false;
+    }
+
+  if (this->fields.size() == 0)
+    {
+      msg_error("Error initializing BigQuery destination, schema() or protobuf-schema() is empty",
+                log_pipe_location_tag(&this->super->super.super.super.super));
+      return false;
+    }
 
   return log_threaded_dest_driver_init_method(&this->super->super.super.super.super);
 }
@@ -182,6 +232,68 @@ DestinationDriver::construct_schema_prototype()
     }
 
   this->schema_prototype = msg_factory.GetPrototype(this->schema_descriptor);
+}
+
+bool
+DestinationDriver::load_protobuf_schema()
+{
+  this->protobuf_schema.src_tree = std::make_unique<google::protobuf::compiler::DiskSourceTree>();
+  this->protobuf_schema.src_tree->MapPath(this->protobuf_schema.proto_path, this->protobuf_schema.proto_path);
+
+  this->protobuf_schema.error_coll = std::make_unique<ErrorCollector>();
+
+  this->protobuf_schema.importer =
+    std::make_unique<google::protobuf::compiler::Importer>(this->protobuf_schema.src_tree.get(),
+                                                           this->protobuf_schema.error_coll.get());
+
+  const google::protobuf::FileDescriptor *file_descriptor =
+    this->protobuf_schema.importer->Import(this->protobuf_schema.proto_path);
+
+  if (!file_descriptor || file_descriptor->message_type_count() == 0)
+    {
+      msg_error("Error initializing BigQuery destination, protobuf-schema() file can't be loaded",
+                log_pipe_location_tag(&this->super->super.super.super.super));
+      return false;
+    }
+
+  this->schema_descriptor = file_descriptor->message_type(0);
+
+  this->fields.clear();
+
+  GList *current_value = this->protobuf_schema.values;
+  for (int i = 0; i < this->schema_descriptor->field_count(); ++i)
+    {
+      auto field = this->schema_descriptor->field(i);
+
+      if (!current_value)
+        {
+          msg_error("Error initializing BigQuery destination, protobuf-schema() file has more fields than "
+                    "values listed in the config",
+                    log_pipe_location_tag(&this->super->super.super.super.super));
+          return false;
+        }
+
+      LogTemplate *value = (LogTemplate *) current_value->data;
+
+      this->fields.push_back(Field{field->name(), (google::protobuf::FieldDescriptorProto::Type) field->type(), value});
+      this->fields[i].field_desc = field;
+
+      current_value = current_value->next;
+    }
+
+  if (current_value)
+    {
+      msg_error("Error initializing BigQuery destination, protobuf-schema() file has less fields than "
+                "values listed in the config",
+                log_pipe_location_tag(&this->super->super.super.super.super));
+      return false;
+    }
+
+  this->msg_factory.~DynamicMessageFactory();
+  new (&this->msg_factory) google::protobuf::DynamicMessageFactory(this->protobuf_schema.importer->pool());
+  this->schema_prototype = this->msg_factory.GetPrototype(this->schema_descriptor);
+
+  return true;
 }
 
 

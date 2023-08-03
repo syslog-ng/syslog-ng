@@ -35,6 +35,7 @@
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/dynamic_message.h>
 #include <google/protobuf/message.h>
+#include <google/protobuf/compiler/importer.h>
 
 #include <string>
 #include <memory>
@@ -150,6 +151,7 @@ public:
 private:
   friend class DestinationWorker;
   void construct_schema_prototype();
+  bool load_protobuf_schema();
 
 private:
   BigQueryDestDriver *super;
@@ -168,6 +170,10 @@ private:
   {
     std::string proto_path;
     GList *values = nullptr;
+
+    std::unique_ptr<google::protobuf::compiler::DiskSourceTree> src_tree;
+    std::unique_ptr<google::protobuf::compiler::MultiFileErrorCollector> error_coll;
+    std::unique_ptr<google::protobuf::compiler::Importer> importer;
   } protobuf_schema;
 
   std::vector<Field> fields;
