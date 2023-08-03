@@ -1182,16 +1182,19 @@ log_writer_update_message_stats(LogWriter *self, const LogMessage *msg, gsize ms
   stats_aggregator_add_data_point(self->metrics.max_message_size, msg_len);
   stats_aggregator_add_data_point(self->metrics.average_messages_size, msg_len);
 
-  UnixTime now;
-
-  unix_time_set_now(&now);
-  gint64 diff = unix_time_diff_in_msec(&now, &msg->timestamps[LM_TS_RECVD]);
-
-  if (self->last_delay_update != now.ut_sec)
+  if (self->metrics.message_delay)
     {
-      stats_counter_set(self->metrics.message_delay, diff);
-      stats_counter_set(self->metrics.message_delay_sample_age, now.ut_sec);
-      self->last_delay_update = now.ut_sec;
+      UnixTime now;
+
+      unix_time_set_now(&now);
+      gint64 diff = unix_time_diff_in_msec(&now, &msg->timestamps[LM_TS_RECVD]);
+
+      if (self->last_delay_update != now.ut_sec)
+        {
+          stats_counter_set(self->metrics.message_delay, diff);
+          stats_counter_set(self->metrics.message_delay_sample_age, now.ut_sec);
+          self->last_delay_update = now.ut_sec;
+        }
     }
 }
 
