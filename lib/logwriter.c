@@ -1523,7 +1523,8 @@ _register_counters(LogWriter *self)
 
 
   stats_register_counter(level, self->metrics.message_delay_key, SC_TYPE_SINGLE_VALUE, &self->metrics.message_delay);
-  stats_register_counter(level, self->metrics.message_delay_sample_age_key, SC_TYPE_SINGLE_VALUE, &self->metrics.message_delay_sample_age);
+  stats_register_counter(level, self->metrics.message_delay_sample_age_key, SC_TYPE_SINGLE_VALUE,
+                         &self->metrics.message_delay_sample_age);
 
   UnixTime now;
 
@@ -1592,7 +1593,8 @@ _unregister_counters(LogWriter *self)
     stats_unregister_counter(&sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE, &self->metrics.truncated.bytes);
 
     stats_unregister_counter(self->metrics.message_delay_key, SC_TYPE_SINGLE_VALUE, &self->metrics.message_delay);
-    stats_unregister_counter(self->metrics.message_delay_sample_age_key, SC_TYPE_SINGLE_VALUE, &self->metrics.message_delay_sample_age);
+    stats_unregister_counter(self->metrics.message_delay_sample_age_key, SC_TYPE_SINGLE_VALUE,
+                             &self->metrics.message_delay_sample_age);
   }
   stats_unlock();
   _unregister_aggregated_stats(self);
