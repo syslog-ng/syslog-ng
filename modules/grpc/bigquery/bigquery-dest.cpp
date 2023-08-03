@@ -78,8 +78,7 @@ public:
 
 DestinationDriver::DestinationDriver(BigQueryDestDriver *s)
   : super(s), url("bigquerystorage.googleapis.com"),
-    keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1),
-    msg_factory(&descriptor_pool)
+    keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1)
 {
   log_template_options_defaults(&this->template_options);
 }
@@ -204,6 +203,7 @@ DestinationDriver::format_stats_key(StatsClusterKeyBuilder *kb)
 void
 DestinationDriver::construct_schema_prototype()
 {
+  this->msg_factory = std::make_unique<google::protobuf::DynamicMessageFactory>();
   this->descriptor_pool.~DescriptorPool();
   new (&this->descriptor_pool) google::protobuf::DescriptorPool();
 
@@ -231,12 +231,15 @@ DestinationDriver::construct_schema_prototype()
       this->fields[i].field_desc = this->schema_descriptor->field(i);
     }
 
-  this->schema_prototype = msg_factory.GetPrototype(this->schema_descriptor);
+  this->schema_prototype = this->msg_factory->GetPrototype(this->schema_descriptor);
 }
 
 bool
 DestinationDriver::load_protobuf_schema()
 {
+  this->msg_factory = std::make_unique<google::protobuf::DynamicMessageFactory>();
+  this->protobuf_schema.importer.reset(nullptr);
+
   this->protobuf_schema.src_tree = std::make_unique<google::protobuf::compiler::DiskSourceTree>();
   this->protobuf_schema.src_tree->MapPath(this->protobuf_schema.proto_path, this->protobuf_schema.proto_path);
 
@@ -289,9 +292,8 @@ DestinationDriver::load_protobuf_schema()
       return false;
     }
 
-  this->msg_factory.~DynamicMessageFactory();
-  new (&this->msg_factory) google::protobuf::DynamicMessageFactory(this->protobuf_schema.importer->pool());
-  this->schema_prototype = this->msg_factory.GetPrototype(this->schema_descriptor);
+
+  this->schema_prototype = this->msg_factory->GetPrototype(this->schema_descriptor);
 
   return true;
 }

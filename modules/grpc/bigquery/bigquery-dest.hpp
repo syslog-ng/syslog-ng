@@ -179,7 +179,9 @@ private:
   std::vector<Field> fields;
 
   google::protobuf::DescriptorPool descriptor_pool;
-  google::protobuf::DynamicMessageFactory msg_factory;
+
+  /* A given descriptor_pool/importer instance should outlive msg_factory, as msg_factory caches prototypes */
+  std::unique_ptr<google::protobuf::DynamicMessageFactory> msg_factory;
   const google::protobuf::Descriptor *schema_descriptor = nullptr;
   const google::protobuf::Message *schema_prototype  = nullptr;
 };
