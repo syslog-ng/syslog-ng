@@ -311,20 +311,39 @@ bison_target(ParserExprGrammar
     COMPILE_FLAGS ${BISON_FLAGS})
 add_flex_bison_dependency(CfgLexer ParserExprGrammar)
 
-set(CORE_INCLUDE_DIRS
-    ${Gettext_INCLUDE_DIR}
-    ${IVYKIS_INCLUDE_DIR}
-    ${LIBPCRE_INCLUDE_DIRS}
-    ${Libsystemd_INCLUDE_DIRS}
-)
+if(NOT IVYKIS_INTERNAL)
+    set(CORE_INCLUDE_DIRS
+        ${Gettext_INCLUDE_DIR}
+        ${IVYKIS_INCLUDE_DIR}
+        ${LIBPCRE_INCLUDE_DIRS}
+        ${Libsystemd_INCLUDE_DIRS}
+    )
+else()
+    set(CORE_INCLUDE_DIRS
+        ${Gettext_INCLUDE_DIR}
+        ${LIBPCRE_INCLUDE_DIRS}
+        ${Libsystemd_INCLUDE_DIRS}
+    )
+endif()
 
 add_library(syslog-ng SHARED ${LIB_SOURCES})
 
-target_include_directories(syslog-ng
-  PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-)
+if(NOT IVYKIS_INTERNAL)
+    target_include_directories(
+        syslog-ng
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}
+    )
+else()
+    target_include_directories(
+        syslog-ng
+    PUBLIC
+        ${IVYKIS_INCLUDE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}
+    )
+endif()
 
 target_include_directories(syslog-ng
   SYSTEM PUBLIC
