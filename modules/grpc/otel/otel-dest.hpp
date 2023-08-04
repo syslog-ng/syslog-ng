@@ -56,6 +56,7 @@ public:
   syslogng::grpc::ClientCredentialsBuilder credentials_builder;
 
 private:
+  friend class DestWorker;
   OtelDestDriver *super;
   std::string url;
   GrpcClientCredentialsBuilderW credentials_builder_wrapper;
