@@ -29,4 +29,4 @@ from .template import LogTemplate, LogTemplateOptions, LogTemplateException, LTZ
 from .message import LogMessage
 from .logger import Logger
 from .persist import Persist
-from .confgen import register_config_generator
+from .confgen import register_config_generator, register_jinja_config_generator

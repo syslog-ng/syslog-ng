@@ -20,10 +20,22 @@
 # COPYING for details.
 #
 #############################################################################
-# pylint: disable=unused-import
 
 try:
     from _syslogng import register_config_generator
 except ImportError:
     def register_config_generator(context, name, config_generator):
+        pass
+
+try:
+    import jinja2
+
+    def register_jinja_config_generator(context, name, template):
+        def jinja_confgen_fn(args):
+            jinja2_env = jinja2.Environment()
+            jinja2_template = jinja2_env.from_string(template)
+            return jinja2_template.render(args=args)
+        register_config_generator(context, name, jinja_confgen_fn)
+except ImportError:
+    def register_jinja_config_generator(context, name, template):
         pass
