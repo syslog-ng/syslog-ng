@@ -266,15 +266,15 @@ DestWorker::insert(LogMessage *msg)
     {
     case MessageType::LOG:
       if (!insert_log_record_from_log_msg(msg))
-        return LTR_DROP;
+        goto drop;
       break;
     case MessageType::METRIC:
       if (!insert_metric_from_log_msg(msg))
-        return LTR_DROP;
+        goto drop;
       break;
     case MessageType::SPAN:
       if (!insert_span_from_log_msg(msg))
-        return LTR_DROP;
+        goto drop;
       break;
     case MessageType::UNKNOWN:
       insert_fallback_log_record_from_log_msg(msg);
@@ -283,6 +283,14 @@ DestWorker::insert(LogMessage *msg)
       g_assert_not_reached();
     }
 
+  return LTR_QUEUED;
+
+drop:
+  msg_error("OpenTelemetry: Failed to insert message, dropping message",
+            log_pipe_location_tag(&owner.super->super.super.super.super),
+            evt_tag_msg_reference(msg));
+
+  /* LTR_DROP currently drops the entire batch */
   return LTR_QUEUED;
 }
 
