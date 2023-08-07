@@ -388,4 +388,24 @@ Test(systemd_journal, test_journal_reader)
   _deinit_cfg(persist_file);
 }
 
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+Test(systemd_journal, test_journal_reader_namespace_init_same_twice)
+{
+  const gchar *persist_file = "test_systemd_journal_namespace_init.persist";
+  _init_cfg_with_persist_file(persist_file);
+
+  void *test_1 = journal_reader_test_prepare_with_namespace("asd", cfg);
+  cr_assert(journal_reader_test_allocate_namespace(test_1), "%s", "Can't initialize first reader");
+
+  void *test_2 = journal_reader_test_prepare_with_namespace("asd", cfg);
+  cr_assert_not(journal_reader_test_allocate_namespace(test_2), "%s",
+                "Multiple readers with the same namespace initialized");
+
+  journal_reader_test_destroy(test_1);
+  journal_reader_test_destroy(test_2);
+
+  _deinit_cfg(persist_file);
+}
+#endif
+
 TestSuite(systemd_journal, .init = app_startup, .fini = app_shutdown);
