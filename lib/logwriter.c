@@ -1191,8 +1191,8 @@ log_writer_update_message_stats(LogWriter *self, const LogMessage *msg, gsize ms
 
       if (self->last_delay_update != now.ut_sec)
         {
-          stats_counter_set(self->metrics.message_delay, diff);
-          stats_counter_set(self->metrics.message_delay_sample_age, now.ut_sec);
+          stats_counter_set_time(self->metrics.message_delay, diff);
+          stats_counter_set_time(self->metrics.message_delay_sample_age, now.ut_sec);
           self->last_delay_update = now.ut_sec;
         }
     }
@@ -1532,7 +1532,7 @@ _register_counters(LogWriter *self)
   UnixTime now;
 
   unix_time_set_now(&now);
-  stats_counter_set(self->metrics.message_delay_sample_age, now.ut_sec);
+  stats_counter_set_time(self->metrics.message_delay_sample_age, now.ut_sec);
 
   stats_unlock();
   _register_aggregated_stats(self, self->metrics.output_events_key, level, SC_TYPE_WRITTEN);
@@ -1865,6 +1865,7 @@ _set_metric_options(LogWriter *self, const gchar *stats_id, StatsClusterKeyBuild
   if (self->metrics.message_delay_key)
     stats_cluster_key_free(self->metrics.message_delay_key);
 
+  /* Up to 49 days and 17 hours on 32 bit machines. */
   stats_cluster_key_builder_set_name(new_style_stats_kb, "output_message_delay_sample_seconds");
   stats_cluster_key_builder_set_unit(new_style_stats_kb, SCU_MILLISECONDS);
   self->metrics.message_delay_key = stats_cluster_key_builder_build_single(new_style_stats_kb);
