@@ -112,6 +112,13 @@ stats_counter_get(StatsCounterItem *counter)
   return result;
 }
 
+/* Can only store positive values. Fixes overflow on 32 bit machines until 2106 if using seconds. */
+static inline void
+stats_counter_set_time(StatsCounterItem *counter, gint64 value)
+{
+  stats_counter_set(counter, (gsize) MAX(0, value));
+}
+
 static inline gchar *
 stats_counter_get_name(StatsCounterItem *counter)
 {
