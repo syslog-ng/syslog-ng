@@ -152,6 +152,8 @@ persist-tool
 modules/python-modules/syslogng/__init__\.py
 modules/python-modules/syslogng/persist\.py
 modules/python-modules/syslogng/source\.py
+modules/python/python-startup.(c|h)$
+modules/python/python-global.(c|h)$
 
 ###########################################################################
 # These files are GPLd and non-balabit contributions.
@@ -181,6 +183,7 @@ modules/grpc/otel/tests/test-otel-(protobuf-parser|protobuf-formatter)\.cpp$
 modules/examples/inner-destinations/tls-test-validation
 modules/examples/sources/random-choice-generator
 modules/python/python-options.(c|h)$
+modules/python/python-binding.(c|h)$
 modules/python/python-flags.(c|h)$
 modules/python/tests/test_python_options.c$
 scl/fortigate/.*\.conf$
