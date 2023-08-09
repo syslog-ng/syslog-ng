@@ -38,6 +38,12 @@ set(PYTHON_SOURCES
     python-logtemplate-options.c
     python-global-code-loader.h
     python-global-code-loader.c
+    python-binding.h
+    python-binding.c
+    python-startup.h
+    python-startup.c
+    python-global.h
+    python-global.c
     python-debugger.c
     python-debugger.h
     python-logparser.h

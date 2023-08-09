@@ -40,10 +40,7 @@ typedef struct _PythonSourceDriver PythonSourceDriver;
 struct _PythonSourceDriver
 {
   LogThreadedSourceDriver super;
-
-  gchar *class;
-  GList *loaders;
-  PythonOptions *options;
+  PythonBinding binding;
   ThreadId thread_id;
 
   void (*post_message)(PythonSourceDriver *self, LogMessage *msg);
@@ -73,30 +70,12 @@ static PyTypeObject py_log_source_type;
 
 static const gchar *python_source_format_persist_name(const LogPipe *s);
 
-void
-python_sd_set_class(LogDriver *s, gchar *filename)
+PythonBinding *
+python_sd_get_binding(LogDriver *s)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
 
-  g_free(self->class);
-  self->class = g_strdup(filename);
-}
-
-PythonOptions *
-python_sd_get_options(LogDriver *s)
-{
-  PythonSourceDriver *self = (PythonSourceDriver *) s;
-
-  return self->options;
-}
-
-void
-python_sd_set_loaders(LogDriver *s, GList *loaders)
-{
-  PythonSourceDriver *self = (PythonSourceDriver *) s;
-
-  string_list_free(self->loaders);
-  self->loaders = loaders;
+  return &self->binding;
 }
 
 static void
@@ -107,8 +86,8 @@ python_sd_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *k
   PythonPersistMembers options =
   {
     .generate_persist_name_method = self->py.generate_persist_name,
-    .options = self->options,
-    .class = self->class,
+    .options = self->binding.options,
+    .class = self->binding.class,
     .id = self->super.super.super.id
   };
 
@@ -118,20 +97,20 @@ python_sd_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *k
 static void
 _ps_py_invoke_void_method_by_name(PythonSourceDriver *self, const gchar *method_name)
 {
-  _py_invoke_void_method_by_name(self->py.instance, method_name, self->class, self->super.super.super.id);
+  _py_invoke_void_method_by_name(self->py.instance, method_name, self->binding.class, self->super.super.super.id);
 }
 
 static gboolean
 _ps_py_invoke_bool_method_by_name_with_options(PythonSourceDriver *self, const gchar *method_name)
 {
-  return _py_invoke_bool_method_by_name_with_options(self->py.instance, method_name, self->options, self->class,
-                                                     self->super.super.super.id);
+  return _py_invoke_bool_method_by_name_with_options(self->py.instance, method_name, self->binding.options,
+                                                     self->binding.class, self->super.super.super.id);
 }
 
 static void
 _ps_py_invoke_void_function(PythonSourceDriver *self, PyObject *func, PyObject *arg)
 {
-  return _py_invoke_void_function(func, arg, self->class, self->super.super.super.id);
+  return _py_invoke_void_function(func, arg, self->binding.class, self->super.super.super.id);
 }
 
 static gboolean
@@ -203,7 +182,7 @@ _py_free_bindings(PythonSourceDriver *self)
 static gboolean
 _py_resolve_class(PythonSourceDriver *self)
 {
-  self->py.class = _py_resolve_qualified_name(self->class);
+  self->py.class = _py_resolve_qualified_name(self->binding.class);
 
   if (!self->py.class)
     {
@@ -211,7 +190,7 @@ _py_resolve_class(PythonSourceDriver *self)
 
       msg_error("python-source: Error looking up Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
+                evt_tag_str("class", self->binding.class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return FALSE;
@@ -225,12 +204,12 @@ _py_init_instance(PythonSourceDriver *self)
 {
   gchar buf[256];
 
-  self->py.instance = _py_invoke_function(self->py.class, NULL, self->class, self->super.super.super.id);
+  self->py.instance = _py_invoke_function(self->py.class, NULL, self->binding.class, self->super.super.super.id);
   if (!self->py.instance)
     {
       msg_error("python-source: Error instantiating Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
+                evt_tag_str("class", self->binding.class),
                 evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
@@ -241,7 +220,7 @@ _py_init_instance(PythonSourceDriver *self)
     {
       msg_error("python-source: Error instantiating Python driver class, class is not a subclass of LogSource",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
+                evt_tag_str("class", self->binding.class),
                 evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
       return FALSE;
     }
@@ -261,7 +240,7 @@ _py_lookup_run_method(PythonSourceDriver *self)
     {
       msg_error("python-source: Error initializing Python source, class does not have a run() method",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class));
+                evt_tag_str("class", self->binding.class));
       return FALSE;
     }
 
@@ -277,7 +256,7 @@ _py_lookup_request_exit_method(PythonSourceDriver *self)
     {
       msg_error("python-source: Error initializing Python source, class does not have a request_exit() method",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class));
+                evt_tag_str("class", self->binding.class));
       return FALSE;
     }
 
@@ -296,7 +275,7 @@ _py_lookup_suspend_and_wakeup_methods(PythonSourceDriver *self)
         {
           msg_error("python-source: Error initializing Python source, class implements suspend() but wakeup() is missing",
                     evt_tag_str("driver", self->super.super.super.id),
-                    evt_tag_str("class", self->class));
+                    evt_tag_str("class", self->binding.class));
           return FALSE;
         }
     }
@@ -355,7 +334,7 @@ _py_set_flags(PythonSourceDriver *self)
     {
       msg_error("python-source: Error creating flags attribute",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class));
+                evt_tag_str("class", self->binding.class));
       return FALSE;
     }
 
@@ -365,7 +344,7 @@ _py_set_flags(PythonSourceDriver *self)
 
       msg_error("python-source: Error setting flags attribute",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
+                evt_tag_str("class", self->binding.class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
@@ -384,7 +363,7 @@ _py_init_object(PythonSourceDriver *self)
     {
       msg_debug("python-source: Missing Python method, init()",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class));
+                evt_tag_str("class", self->binding.class));
       return TRUE;
     }
 
@@ -392,7 +371,7 @@ _py_init_object(PythonSourceDriver *self)
     {
       msg_error("python-source: Error initializing Python driver object, init() returned FALSE",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class));
+                evt_tag_str("class", self->binding.class));
       return FALSE;
     }
   return TRUE;
@@ -409,7 +388,7 @@ _py_parse_options_new(PythonSourceDriver *self, MsgFormatOptions *parse_options)
 
       msg_error("python-source: Error creating capsule for message parse options",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
+                evt_tag_str("class", self->binding.class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return NULL;
@@ -430,7 +409,7 @@ _py_init_ack_tracker_factory(PythonSourceDriver *self)
     {
       msg_error("python-source: Python source attribute ack_tracker needs to be an AckTracker subtype",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class));
+                evt_tag_str("class", self->binding.class));
       return FALSE;
     }
 
@@ -457,7 +436,7 @@ _py_set_parse_options(PythonSourceDriver *self)
 
       msg_error("python-source: Error setting attribute message parse options",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
+                evt_tag_str("class", self->binding.class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
@@ -512,7 +491,6 @@ _py_sd_init(PythonSourceDriver *self)
 {
   PyGILState_STATE gstate = PyGILState_Ensure();
 
-  _py_perform_imports(self->loaders);
   if (!_py_init_bindings(self))
     goto error;
 
@@ -671,8 +649,8 @@ python_source_format_persist_name(const LogPipe *s)
   PythonPersistMembers options =
   {
     .generate_persist_name_method = self->py.generate_persist_name,
-    .options = self->options,
-    .class = self->class,
+    .options = self->binding.options,
+    .class = self->binding.class,
     .id = self->super.super.super.id
   };
 
@@ -683,20 +661,17 @@ static gboolean
 python_sd_init(LogPipe *s)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!self->class)
-    {
-      msg_error("python-source: Error initializing Python source, the class() option is not specified",
-                evt_tag_str("driver", self->super.super.super.id));
-      return FALSE;
-    }
+  if (!python_binding_init(&self->binding, cfg, self->super.super.super.id))
+    return FALSE;
 
   if(!_py_sd_init(self))
     return FALSE;
 
   msg_verbose("python-source: Python source initialized",
               evt_tag_str("driver", self->super.super.super.id),
-              evt_tag_str("class", self->class));
+              evt_tag_str("class", self->binding.class));
 
   gboolean retval = log_threaded_source_driver_init_method(s);
   if (!retval)
@@ -725,6 +700,8 @@ python_sd_deinit(LogPipe *s)
   _py_invoke_deinit(self);
   PyGILState_Release(gstate);
 
+  python_binding_deinit(&self->binding);
+
   return log_threaded_source_driver_deinit_method(s);
 }
 
@@ -738,10 +715,7 @@ python_sd_free(LogPipe *s)
   _py_free_bindings(self);
   PyGILState_Release(gstate);
 
-  g_free(self->class);
-  python_options_free(self->options);
-  string_list_free(self->loaders);
-
+  python_binding_clear(&self->binding);
   log_threaded_source_driver_free_method(s);
 }
 
@@ -763,8 +737,9 @@ python_sd_new(GlobalConfig *cfg)
   self->super.request_exit = python_sd_request_exit;
   self->super.run = python_sd_run;
 
-  self->options = python_options_new();
   self->post_message = _post_message_blocking;
+
+  python_binding_init_instance(&self->binding);
 
   return &self->super.super.super;
 }

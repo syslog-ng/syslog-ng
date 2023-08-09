@@ -30,6 +30,7 @@
 #include "python-logtemplate.h"
 #include "python-logtemplate-options.h"
 #include "python-main.h"
+#include "python-startup.h"
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "syslog-format.h"

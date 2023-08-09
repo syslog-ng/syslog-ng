@@ -53,7 +53,7 @@ py_log_template_options_init(PyObject *s, PyObject *args, PyObject *kwds)
   if (!PyArg_ParseTuple(args, ""))
     return -1;
 
-  GlobalConfig *cfg = python_get_associated_config();
+  GlobalConfig *cfg = _py_get_config_from_main_module()->cfg;
   memset(&self->template_options, 0, sizeof(self->template_options));
   log_template_options_defaults(&self->template_options);
   log_template_options_init(&self->template_options, cfg);

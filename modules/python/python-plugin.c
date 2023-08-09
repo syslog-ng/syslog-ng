@@ -24,7 +24,7 @@
 
 #include "python-module.h"
 #include "python-tf.h"
-#include "python-main.h"
+#include "python-startup.h"
 #include "python-debugger.h"
 #include "plugin.h"
 #include "plugin-types.h"

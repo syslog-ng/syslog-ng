@@ -24,14 +24,16 @@
 #define PYTHON_MAIN_H_INCLUDED 1
 
 #include "python-config.h"
-#include "cfg-lexer.h"
 
-PyObject *_py_get_current_main_module(void);
+/* we have a GlobalConfig specific main module, which gets switched as
+ * configurations are initialized or deinitialized.  This main module hosts
+ * the code in global python {} blocks.  Also, some functionality (e.g.
+ * Persist or LogTemplate) relate to a GlobalConfig instance */
+
+gboolean _py_init_main_module_for_config(PythonConfig *pc);
+void _py_switch_to_config_main_module(PythonConfig *pc);
+PythonConfig *_py_get_config_from_main_module(void);
+
 PyObject *_py_get_main_module(PythonConfig *pc);
-void _py_switch_main_module(PythonConfig *pc);
-GlobalConfig *python_get_associated_config(void);
-gboolean python_evaluate_global_code(GlobalConfig *cfg, const gchar *code, CFG_LTYPE *yylloc);
-
-gboolean _py_init_interpreter(gboolean use_virtualenv);
 
 #endif

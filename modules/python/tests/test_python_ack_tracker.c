@@ -31,6 +31,7 @@
 #include "python-ack-tracker.h"
 #include "python-bookmark.h"
 #include "python-main.h"
+#include "python-startup.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "ack-tracker/instant_ack_tracker.h"

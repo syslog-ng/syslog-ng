@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2018 Balabit
- * Copyright (c) 2018 László Várady <laszlo.varady@balabit.com>
+ * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,17 +20,27 @@
  *
  */
 
-#ifndef SNG_PYTHON_SOURCE_H
-#define SNG_PYTHON_SOURCE_H
+#ifndef PYTHON_BINDING_H_INCLUDED
+#define PYTHON_BINDING_H_INCLUDED 1
 
-#include "python-module.h"
 #include "python-options.h"
-#include "python-binding.h"
-#include "driver.h"
 
-LogDriver *python_sd_new(GlobalConfig *cfg);
-PythonBinding *python_sd_get_binding(LogDriver *d);
+typedef struct _PythonBinding
+{
+  gchar *class;
+  GList *loaders;
 
-void py_log_source_global_init(void);
+  PythonOptions *options;
+} PythonBinding;
+
+void python_binding_set_loaders(PythonBinding *self, GList *loaders);
+void python_binding_set_class(PythonBinding *self, gchar *class);
+
+gboolean python_binding_init(PythonBinding *self, GlobalConfig *cfg, const gchar *desc);
+void python_binding_deinit(PythonBinding *self);
+
+void python_binding_clone(PythonBinding *self, PythonBinding *cloned);
+void python_binding_init_instance(PythonBinding *self);
+void python_binding_clear(PythonBinding *self);
 
 #endif

@@ -41,11 +41,9 @@ typedef struct
 {
   LogThreadedDestDriver super;
 
-  gchar *class;
-  GList *loaders;
+  PythonBinding binding;
 
   LogTemplateOptions template_options;
-  PythonOptions *options;
   ValuePairs *vp;
 
   struct
@@ -76,21 +74,12 @@ _py_is_log_destination(PyObject *obj)
 
 /** Setters & config glue **/
 
-void
-python_dd_set_class(LogDriver *d, gchar *class_name)
+PythonBinding *
+python_dd_get_binding(LogDriver *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
 
-  g_free(self->class);
-  self->class = g_strdup(class_name);
-}
-
-PythonOptions *
-python_dd_get_options(LogDriver *d)
-{
-  PythonDestDriver *self = (PythonDestDriver *)d;
-
-  return self->options;
+  return &self->binding;
 }
 
 void
@@ -100,15 +89,6 @@ python_dd_set_value_pairs(LogDriver *d, ValuePairs *vp)
 
   value_pairs_unref(self->vp);
   self->vp = vp;
-}
-
-void
-python_dd_set_loaders(LogDriver *d, GList *loaders)
-{
-  PythonDestDriver *self = (PythonDestDriver *)d;
-
-  string_list_free(self->loaders);
-  self->loaders = loaders;
 }
 
 LogTemplateOptions *
@@ -129,8 +109,8 @@ python_dd_format_stats_key(LogThreadedDestDriver *d, StatsClusterKeyBuilder *kb)
   PythonPersistMembers options =
   {
     .generate_persist_name_method = self->py.generate_persist_name,
-    .options = self->options,
-    .class = self->class,
+    .options = self->binding.options,
+    .class = self->binding.class,
     .id = self->super.super.super.id
   };
 
@@ -145,8 +125,8 @@ python_dd_format_persist_name(const LogPipe *s)
   PythonPersistMembers options =
   {
     .generate_persist_name_method = self->py.generate_persist_name,
-    .options = self->options,
-    .class = self->class,
+    .options = self->binding.options,
+    .class = self->binding.class,
     .id = self->super.super.super.id
   };
 
@@ -156,20 +136,20 @@ python_dd_format_persist_name(const LogPipe *s)
 static gboolean
 _dd_py_invoke_bool_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
 {
-  return _py_invoke_bool_function(func, arg, self->class, self->super.super.super.id);
+  return _py_invoke_bool_function(func, arg, self->binding.class, self->super.super.super.id);
 }
 
 static void
 _dd_py_invoke_void_method_by_name(PythonDestDriver *self, const gchar *method_name)
 {
-  _py_invoke_void_method_by_name(self->py.instance, method_name, self->class, self->super.super.super.id);
+  _py_invoke_void_method_by_name(self->py.instance, method_name, self->binding.class, self->super.super.super.id);
 }
 
 static gboolean
 _dd_py_invoke_bool_method_by_name_with_options(PythonDestDriver *self, const gchar *method_name)
 {
-  return _py_invoke_bool_method_by_name_with_options(self->py.instance, method_name, self->options, self->class,
-                                                     self->super.super.super.id);
+  return _py_invoke_bool_method_by_name_with_options(self->py.instance, method_name, self->binding.options,
+                                                     self->binding.class, self->super.super.super.id);
 }
 
 static gboolean
@@ -190,14 +170,14 @@ _py_invoke_open(PythonDestDriver *self)
   PyObject *ret;
   gboolean result = FALSE;
 
-  ret = _py_invoke_function(self->py.open, NULL, self->class, self->super.super.super.id);
+  ret = _py_invoke_function(self->py.open, NULL, self->binding.class, self->super.super.super.id);
   if (ret)
     {
       if (ret == Py_None)
         {
           msg_warning_once("python-dest: Since " VERSION_3_25 ", the return value of the open() method "
                            "is used as success/failure indicator. Please use return True or return False explicitly",
-                           evt_tag_str("class", self->class));
+                           evt_tag_str("class", self->binding.class));
           result = TRUE;
         }
       else
@@ -267,7 +247,7 @@ _py_invoke_flush(PythonDestDriver *self)
   if (!self->py.flush)
     return LTR_SUCCESS;
 
-  PyObject *ret = _py_invoke_function(self->py.flush, NULL, self->class, self->super.super.super.id);
+  PyObject *ret = _py_invoke_function(self->py.flush, NULL, self->binding.class, self->super.super.super.id);
   if (!ret)
     return LTR_ERROR;
 
@@ -280,7 +260,7 @@ static LogThreadedResult
 _py_invoke_send(PythonDestDriver *self, PyObject *dict)
 {
   PyObject *ret;
-  ret = _py_invoke_function(self->py.send, dict, self->class, self->super.super.super.id);
+  ret = _py_invoke_function(self->py.send, dict, self->binding.class, self->super.super.super.id);
 
   if (!ret)
     return LTR_ERROR;
@@ -344,14 +324,14 @@ _py_init_bindings(PythonDestDriver *self)
 
   self->py._refs_to_clean = g_ptr_array_new_with_free_func((GDestroyNotify)_py_clear);
 
-  self->py.class = _py_resolve_qualified_name(self->class);
+  self->py.class = _py_resolve_qualified_name(self->binding.class);
   if (!self->py.class)
     {
       gchar buf[256];
 
       msg_error("python-dest: Error looking up Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
+                evt_tag_str("class", self->binding.class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
       return FALSE;
@@ -367,14 +347,14 @@ _py_init_bindings(PythonDestDriver *self)
   PyObject_SetAttrString(self->py.class, "seqnum", py_seqnum);
   Py_DECREF(py_seqnum);
 
-  self->py.instance = _py_invoke_function(self->py.class, NULL, self->class, self->super.super.super.id);
+  self->py.instance = _py_invoke_function(self->py.class, NULL, self->binding.class, self->super.super.super.id);
   if (!self->py.instance)
     {
       gchar buf1[256], buf2[256];
 
       msg_error("python-dest: Error instantiating Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
+                evt_tag_str("class", self->binding.class),
                 evt_tag_str("class-repr", _py_object_repr(self->py.class, buf1, sizeof(buf1))),
                 evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))));
       _py_finish_exception_handling();
@@ -389,7 +369,7 @@ _py_init_bindings(PythonDestDriver *self)
         {
           msg_error("python-dest: Error initializing Python destination, class is not a subclass of LogDestination",
                     evt_tag_str("driver", self->super.super.super.id),
-                    evt_tag_str("class", self->class),
+                    evt_tag_str("class", self->binding.class),
                     evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
           return FALSE;
         }
@@ -397,7 +377,7 @@ _py_init_bindings(PythonDestDriver *self)
                   "from syslogng.LogDestination. Please change the class declaration to explicitly "
                   "inherit from syslogng.LogDestination. syslog-ng now operates in compatibility mode",
                   evt_tag_str("driver", self->super.super.super.id),
-                  evt_tag_str("class", self->class),
+                  evt_tag_str("class", self->binding.class),
                   evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
 
     }
@@ -412,7 +392,7 @@ _py_init_bindings(PythonDestDriver *self)
     {
       msg_error("python-dest: Error initializing Python destination, class does not have a send() method",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class));
+                evt_tag_str("class", self->binding.class));
       return FALSE;
     }
 
@@ -444,7 +424,7 @@ _py_init_object(PythonDestDriver *self)
     {
       msg_debug("python-dest: Missing Python method, init()",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class));
+                evt_tag_str("class", self->binding.class));
       return TRUE;
     }
 
@@ -452,7 +432,7 @@ _py_init_object(PythonDestDriver *self)
     {
       msg_error("python-dest: Error initializing Python driver object, init() returned FALSE",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class));
+                evt_tag_str("class", self->binding.class));
       return FALSE;
     }
   return TRUE;
@@ -575,18 +555,13 @@ python_dd_init(LogPipe *d)
   GlobalConfig *cfg = log_pipe_get_config(d);
   PyGILState_STATE gstate;
 
-  if (!self->class)
-    {
-      msg_error("python-dest: Error initializing Python destination, the class() option is not specified",
-                evt_tag_str("driver", self->super.super.super.id));
-      return FALSE;
-    }
+  if (!python_binding_init(&self->binding, cfg, self->super.super.super.id))
+    return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
   self->super.time_reopen = 1;
 
   gstate = PyGILState_Ensure();
-  _py_perform_imports(self->loaders);
   if (!_py_init_bindings(self))
     goto fail;
   PyGILState_Release(gstate);
@@ -601,7 +576,7 @@ python_dd_init(LogPipe *d)
 
   msg_verbose("python-dest: Python destination initialized",
               evt_tag_str("driver", self->super.super.super.id),
-              evt_tag_str("class", self->class));
+              evt_tag_str("class", self->binding.class));
 
   return TRUE;
 
@@ -620,6 +595,8 @@ python_dd_deinit(LogPipe *d)
   _py_invoke_deinit(self);
   PyGILState_Release(gstate);
 
+  python_binding_deinit(&self->binding);
+
   return log_threaded_dest_driver_deinit_method(d);
 }
 
@@ -635,14 +612,9 @@ python_dd_free(LogPipe *d)
   _py_free_bindings(self);
   PyGILState_Release(gstate);
 
-  g_free(self->class);
-
   value_pairs_unref(self->vp);
 
-  python_options_free(self->options);
-
-  string_list_free(self->loaders);
-
+  python_binding_clear(&self->binding);
   log_threaded_dest_driver_free(d);
 }
 
@@ -667,7 +639,7 @@ python_dd_new(GlobalConfig *cfg)
   self->super.format_stats_key = python_dd_format_stats_key;
   self->super.stats_source = stats_register_type("python");
 
-  self->options = python_options_new();
+  python_binding_init_instance(&self->binding);
 
   return (LogDriver *)self;
 }
@@ -679,7 +651,7 @@ static PyTypeObject py_log_destination_type =
   .tp_basicsize = sizeof(PyLogDestination),
   .tp_dealloc = py_slng_generic_dealloc,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-  .tp_doc = "The LogDestination class is a base class for custom Python sources.",
+  .tp_doc = "The LogDestination class is a base class for custom Python destinations.",
   .tp_new = PyType_GenericNew,
   0,
 };

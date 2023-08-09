@@ -24,15 +24,13 @@
 #define _SNG_PYTHON_AUTH_HEADERS_H
 
 #include "python-module.h"
-#include "python-options.h"
+#include "python-binding.h"
 
 typedef struct _PythonHttpHeaderPlugin PythonHttpHeaderPlugin;
 
 PythonHttpHeaderPlugin *python_http_header_new(void);
 
-void python_http_header_set_loaders(PythonHttpHeaderPlugin *self, GList *loaders);
-void python_http_header_set_class(PythonHttpHeaderPlugin *self, gchar *class);
-PythonOptions *python_http_header_get_options(PythonHttpHeaderPlugin *self);
+PythonBinding *python_http_header_get_binding(PythonHttpHeaderPlugin *self);
 void python_http_header_set_mark_errors_as_critical(PythonHttpHeaderPlugin *self, gboolean enable);
 
 #endif

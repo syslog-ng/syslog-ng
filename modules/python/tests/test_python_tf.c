@@ -33,6 +33,7 @@
 #include "python-logtemplate-options.h"
 #include "python-integerpointer.h"
 #include "python-main.h"
+#include "python-startup.h"
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "scratch-buffers.h"

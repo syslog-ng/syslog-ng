@@ -24,6 +24,8 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/compat/compat-python.h     \
 	modules/python/compat/compat-python.c     \
 	modules/python/python-module.h		  \
+	modules/python/python-binding.h		  \
+	modules/python/python-binding.c		  \
 	modules/python/python-config.h		  \
 	modules/python/python-config.c		  \
 	modules/python/python-persist.h		  \
@@ -36,6 +38,10 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-grammar.y		  \
 	modules/python/python-value-pairs.c	  \
 	modules/python/python-value-pairs.h	  \
+	modules/python/python-startup.c		  \
+	modules/python/python-startup.h		  \
+	modules/python/python-global.c		  \
+	modules/python/python-global.h		  \
 	modules/python/python-dest.c		  \
 	modules/python/python-dest.h		  \
 	modules/python/python-tf.c		  \
