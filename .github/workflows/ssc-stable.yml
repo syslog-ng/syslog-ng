@@ -39,7 +39,7 @@ jobs:
               return;
             }
 
-            const tag = "v" + context.ref.replace("refs/tags/ssc-", "");
+            const tag = context.ref.replace("refs/tags/ssc-", "");
             console.log('Version from tag: ' + tag);
             core.setOutput('ref', tag);
 
@@ -55,7 +55,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: ${{ env.SC4S_REPO }}
-          ref: ${{ needs.version.outputs.version }}
+          ref: v${{ needs.version.outputs.version }}
           path: ssc/splunk-connect-for-syslog
 
       - name: Set up QEMU
@@ -81,10 +81,11 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
-          context: ssc
-          file: ssc/Dockerfile
+          context: ssc/splunk-connect-for-syslog
+          file: ssc/splunk-connect-for-syslog/package/Dockerfile
           platforms: ${{ env.PLATFORMS }}
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           build-args: |
             SYSLOGNG_VERSION=${{ env.SYSLOG_NG_IMG_VERSION }}
+            VERSION=${{ needs.version.outputs.version }}

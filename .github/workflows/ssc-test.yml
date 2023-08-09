@@ -118,12 +118,13 @@ jobs:
       - name: Build and export Docker image
         uses: docker/build-push-action@v3
         with:
-          context: ssc
-          file: ssc/Dockerfile
+          context: ssc/splunk-connect-for-syslog
+          file: ssc/splunk-connect-for-syslog/package/Dockerfile
           load: true
           tags: ssc:test
           build-args: |
             SYSLOGNG_VERSION=${{ env.SYSLOG_NG_IMG_VERSION }}
+            REVISION=${{ needs.version.outputs.version }}
 
       - name: Smoke test
         working-directory: ssc/splunk-connect-for-syslog
