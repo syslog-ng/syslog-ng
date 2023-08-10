@@ -207,6 +207,7 @@ scl/python/python-modules\.conf$
 scl/splunk/splunk\.conf$
 scl/google/google-pubsub\.conf$
 scl/openobserve/.*\.conf$
+scl/pgsql/pgsql\.conf$
 modules/python-modules/syslogng/modules/kubernetes/.*
 modules/ebpf/.*
 modules/python-modules/syslogng/modules/hypr/.*
