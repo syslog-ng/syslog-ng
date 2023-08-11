@@ -754,7 +754,7 @@ Test(logthrdestdrv, test_connect_failure_kicks_in_suspend_retry_logic_which_keep
 
   dd->super.worker.connect = _connect_failure;
   dd->super.worker.insert = _insert_single_message_success;
-  dd->super.worker.instance.time_reopen = 0;
+  dd->super.time_reopen = 0;
   cr_assert(log_pipe_init(&dd->super.super.super.super));
   cr_assert(log_pipe_post_config_init(&dd->super.super.super.super));
 

@@ -938,25 +938,27 @@ _compat_flush(LogThreadedDestWorker *self, LogThreadedFlushMode mode)
   return LTR_SUCCESS;
 }
 
-static void
-_init_worker_compat_layer(LogThreadedDestWorker *self)
-{
-  self->init = _compat_init;
-  self->deinit = _compat_deinit;
-  self->connect = _compat_connect;
-  self->disconnect = _compat_disconnect;
-  self->insert = _compat_insert;
-  self->flush = _compat_flush;
-}
-
 static gboolean
 _is_worker_compat_mode(LogThreadedDestDriver *self)
 {
   return !self->worker.construct;
 }
 
-/* temporary function until proper LogThreadedDestWorker allocation logic is
- * created.  Right now it is just using a singleton within the driver */
+static LogThreadedDestWorker *
+_init_compat_worker(LogThreadedDestDriver *self)
+{
+  LogThreadedDestWorker *worker = &self->worker.instance;
+  log_threaded_dest_worker_init_instance(worker, self, 0);
+  worker->init = _compat_init;
+  worker->deinit = _compat_deinit;
+  worker->connect = _compat_connect;
+  worker->disconnect = _compat_disconnect;
+  worker->insert = _compat_insert;
+  worker->flush = _compat_flush;
+
+  return worker;
+}
+
 static LogThreadedDestWorker *
 _construct_worker(LogThreadedDestDriver *self, gint worker_index)
 {
@@ -966,8 +968,9 @@ _construct_worker(LogThreadedDestDriver *self, gint worker_index)
        * single worker we have and all Worker related state is in the
        * (derived) Driver class. */
 
-      return &self->worker.instance;
+      return _init_compat_worker(self);
     }
+
   return self->worker.construct(self, worker_index);
 }
 
@@ -1239,6 +1242,22 @@ log_threaded_dest_driver_start_workers(LogPipe *s)
   return TRUE;
 }
 
+static void
+_destroy_worker(LogThreadedDestDriver *self, LogThreadedDestWorker *worker)
+{
+  if (_is_worker_compat_mode(self))
+    log_threaded_dest_worker_free_method(&self->worker.instance);
+  else
+    log_threaded_dest_worker_free(worker);
+}
+
+static void
+_destroy_workers(LogThreadedDestDriver *self)
+{
+  for (int i = 0; i < self->created_workers; i++)
+    _destroy_worker(self, self->workers[i]);
+}
+
 gboolean
 log_threaded_dest_driver_deinit_method(LogPipe *s)
 {
@@ -1253,11 +1272,7 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
 
   _unregister_driver_stats(self);
 
-  if (!_is_worker_compat_mode(self))
-    {
-      for (int i = 0; i < self->created_workers; i++)
-        log_threaded_dest_worker_free(self->workers[i]);
-    }
+  _destroy_workers(self);
 
   return log_dest_driver_deinit_method(s);
 }
@@ -1268,7 +1283,6 @@ log_threaded_dest_driver_free(LogPipe *s)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
-  log_threaded_dest_worker_free_method(&self->worker.instance);
   g_mutex_clear(&self->lock);
   g_free(self->workers);
   log_dest_driver_free((LogPipe *)self);
@@ -1294,6 +1308,4 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->retries_on_error_max = MAX_RETRIES_ON_ERROR_DEFAULT;
   self->retries_max = MAX_RETRIES_BEFORE_SUSPEND_DEFAULT;
   g_mutex_init(&self->lock);
-  log_threaded_dest_worker_init_instance(&self->worker.instance, self, 0);
-  _init_worker_compat_layer(&self->worker.instance);
 }

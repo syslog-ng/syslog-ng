@@ -126,6 +126,9 @@ main_loop_threaded_worker_init(MainLoopThreadedWorker *self,
   g_mutex_init(&self->lock);
 
   self->data = data;
+
+  self->startup.finished = FALSE;
+  self->startup.result = FALSE;
 }
 
 void
