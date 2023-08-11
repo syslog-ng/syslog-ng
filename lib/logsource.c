@@ -694,7 +694,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   /* message setup finished, send it out */
 
   stats_counter_inc(self->metrics.recvd_messages);
-  stats_counter_set(self->metrics.last_message_seen, msg->timestamps[LM_TS_RECVD].ut_sec);
+  stats_counter_set_time(self->metrics.last_message_seen, msg->timestamps[LM_TS_RECVD].ut_sec);
   stats_byte_counter_add(&self->metrics.recvd_bytes, msg->recvd_rawmsg_size);
   log_pipe_forward_msg(s, msg, path_options);
 
