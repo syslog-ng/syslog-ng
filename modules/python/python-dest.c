@@ -414,7 +414,8 @@ _py_init_bindings(PythonDestDriver *self)
 static void
 _py_free_bindings(PythonDestDriver *self)
 {
-  g_ptr_array_free(self->py._refs_to_clean, TRUE);
+  if (self->py._refs_to_clean)
+    g_ptr_array_free(self->py._refs_to_clean, TRUE);
 }
 
 static gboolean
