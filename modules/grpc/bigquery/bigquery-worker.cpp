@@ -81,7 +81,14 @@ DestinationWorker::init()
 
   args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
 
-  this->channel = ::grpc::CreateCustomChannel(owner->get_url(), ::grpc::GoogleDefaultCredentials(), args);
+  auto credentials = ::grpc::GoogleDefaultCredentials();
+  if (!credentials)
+    {
+      msg_error("Error querying BigQuery credentials", log_pipe_location_tag((LogPipe *) this->super->super.owner));
+      return false;
+    }
+
+  this->channel = ::grpc::CreateCustomChannel(owner->get_url(), credentials, args);
   if (!this->channel)
     {
       msg_error("Error creating BigQuery gRPC channel", log_pipe_location_tag((LogPipe *) this->super->super.owner));
