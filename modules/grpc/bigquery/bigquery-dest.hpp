@@ -175,6 +175,7 @@ private:
     std::unique_ptr<google::protobuf::compiler::DiskSourceTree> src_tree;
     std::unique_ptr<google::protobuf::compiler::MultiFileErrorCollector> error_coll;
     std::unique_ptr<google::protobuf::compiler::Importer> importer;
+    bool loaded = false;
   } protobuf_schema;
 
   std::vector<Field> fields;

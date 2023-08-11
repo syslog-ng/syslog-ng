@@ -165,7 +165,7 @@ DestinationDriver::init()
     this->construct_schema_prototype();
   else
     {
-      if (!this->load_protobuf_schema())
+      if (!this->protobuf_schema.loaded && !this->load_protobuf_schema())
         return false;
     }
 
@@ -256,6 +256,7 @@ DestinationDriver::construct_schema_prototype()
 bool
 DestinationDriver::load_protobuf_schema()
 {
+  this->protobuf_schema.loaded = false;
   this->msg_factory = std::make_unique<google::protobuf::DynamicMessageFactory>();
   this->protobuf_schema.importer.reset(nullptr);
 
@@ -313,7 +314,7 @@ DestinationDriver::load_protobuf_schema()
 
 
   this->schema_prototype = this->msg_factory->GetPrototype(this->schema_descriptor);
-
+  this->protobuf_schema.loaded = true;
   return true;
 }
 
