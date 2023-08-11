@@ -211,7 +211,10 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
   this->format_template(field.value, msg, value, &type);
 
   if (type == LM_VT_NULL)
-    goto success;
+    {
+      scratch_buffers_reclaim_marked(m);
+      return true;
+    }
 
   switch (field.field_desc->cpp_type())
     {
@@ -225,7 +228,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       if (!type_cast_to_int32(value->str, &v, NULL))
         {
           type_cast_drop_helper(owner->template_options.on_error, value->str, "integer");
-          return false;
+          goto error;
         }
       reflection->SetInt32(message, field.field_desc, v);
       break;
@@ -236,7 +239,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       if (!type_cast_to_int64(value->str, &v, NULL))
         {
           type_cast_drop_helper(owner->template_options.on_error, value->str, "integer");
-          return false;
+          goto error;
         }
       reflection->SetInt64(message, field.field_desc, v);
       break;
@@ -247,7 +250,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       if (!type_cast_to_int64(value->str, &v, NULL))
         {
           type_cast_drop_helper(owner->template_options.on_error, value->str, "integer");
-          return false;
+          goto error;
         }
       reflection->SetUInt32(message, field.field_desc, (uint32_t) v);
       break;
@@ -258,7 +261,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       if (!type_cast_to_int64(value->str, &v, NULL))
         {
           type_cast_drop_helper(owner->template_options.on_error, value->str, "integer");
-          return false;
+          goto error;
         }
       reflection->SetUInt64(message, field.field_desc, (uint64_t) v);
       break;
@@ -269,7 +272,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       if (!type_cast_to_double(value->str, &v, NULL))
         {
           type_cast_drop_helper(owner->template_options.on_error, value->str, "double");
-          return false;
+          goto error;
         }
       reflection->SetDouble(message, field.field_desc, v);
       break;
@@ -280,7 +283,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       if (!type_cast_to_double(value->str, &v, NULL))
         {
           type_cast_drop_helper(owner->template_options.on_error, value->str, "double");
-          return false;
+          goto error;
         }
       reflection->SetFloat(message, field.field_desc, (float) v);
       break;
@@ -291,18 +294,21 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       if (!type_cast_to_boolean(value->str, &v, NULL))
         {
           type_cast_drop_helper(owner->template_options.on_error, value->str, "boolean");
-          return false;
+          goto error;
         }
       reflection->SetBool(message, field.field_desc, v);
       break;
     }
     default:
-      return false;
+      goto error;
     }
 
-success:
   scratch_buffers_reclaim_marked(m);
   return true;
+
+error:
+  scratch_buffers_reclaim_marked(m);
+  return false;
 }
 
 LogThreadedResult
