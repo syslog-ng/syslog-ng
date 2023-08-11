@@ -40,8 +40,8 @@
 #include <grpcpp/security/credentials.h>
 #include <google/protobuf/compiler/importer.h>
 
-using syslog_ng::bigquery::DestinationWorker;
-using syslog_ng::bigquery::DestinationDriver;
+using syslogng::grpc::bigquery::DestinationWorker;
+using syslogng::grpc::bigquery::DestinationDriver;
 using google::protobuf::FieldDescriptor;
 
 struct _BigQueryDestWorker
@@ -70,7 +70,7 @@ DestinationWorker::init()
 {
   DestinationDriver *owner = this->get_owner();
 
-  grpc::ChannelArguments args{};
+  ::grpc::ChannelArguments args{};
 
   if (owner->keepalive_time != -1)
     args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, owner->keepalive_time);
@@ -81,7 +81,7 @@ DestinationWorker::init()
 
   args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
 
-  this->channel = grpc::CreateCustomChannel(owner->get_url(), grpc::GoogleDefaultCredentials(), args);
+  this->channel = ::grpc::CreateCustomChannel(owner->get_url(), ::grpc::GoogleDefaultCredentials(), args);
   if (!this->channel)
     {
       msg_error("Error creating BigQuery gRPC channel", log_pipe_location_tag((LogPipe *) this->super->super.owner));
@@ -103,7 +103,7 @@ bool
 DestinationWorker::connect()
 {
   this->construct_write_stream();
-  this->batch_writer_ctx = std::make_unique<grpc::ClientContext>();
+  this->batch_writer_ctx = std::make_unique<::grpc::ClientContext>();
   this->batch_writer = this->stub->AppendRows(this->batch_writer_ctx.get());
 
   this->prepare_batch();
@@ -130,8 +130,8 @@ DestinationWorker::disconnect()
     msg_warning("Error closing BigQuery write stream, writes may have been unsuccessful",
                 log_pipe_location_tag((LogPipe *) this->super->super.owner));
 
-  grpc::Status status = this->batch_writer->Finish();
-  if (!status.ok() && status.error_code() != grpc::StatusCode::INVALID_ARGUMENT)
+  ::grpc::Status status = this->batch_writer->Finish();
+  if (!status.ok() && status.error_code() != ::grpc::StatusCode::INVALID_ARGUMENT)
     {
       msg_warning("Error closing BigQuery stream", evt_tag_str("error", status.error_message().c_str()),
                   evt_tag_str("details", status.error_details().c_str()),
@@ -139,7 +139,7 @@ DestinationWorker::disconnect()
                   log_pipe_location_tag((LogPipe *) this->super->super.owner));
     }
 
-  grpc::ClientContext ctx;
+  ::grpc::ClientContext ctx;
   google::cloud::bigquery::storage::v1::FinalizeWriteStreamRequest finalize_request;
   google::cloud::bigquery::storage::v1::FinalizeWriteStreamResponse finalize_response;
   finalize_request.set_name(write_stream.name());
@@ -379,7 +379,7 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
       goto exit;
     }
 
-  if (append_rows_response.has_error() && append_rows_response.error().code() != grpc::StatusCode::ALREADY_EXISTS)
+  if (append_rows_response.has_error() && append_rows_response.error().code() != ::grpc::StatusCode::ALREADY_EXISTS)
     {
       msg_error("Error in BigQuery batch",
                 evt_tag_str("error", append_rows_response.error().message().c_str()),
@@ -405,7 +405,7 @@ exit:
 void
 DestinationWorker::construct_write_stream()
 {
-  grpc::ClientContext ctx;
+  ::grpc::ClientContext ctx;
   google::cloud::bigquery::storage::v1::CreateWriteStreamRequest create_write_stream_request;
   google::cloud::bigquery::storage::v1::WriteStream wstream;
 

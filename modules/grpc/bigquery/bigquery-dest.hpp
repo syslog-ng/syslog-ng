@@ -41,7 +41,8 @@
 #include <memory>
 #include <vector>
 
-namespace syslog_ng {
+namespace syslogng {
+namespace grpc {
 namespace bigquery {
 
 struct Field
@@ -189,7 +190,8 @@ private:
 
 }
 }
+}
 
-syslog_ng::bigquery::DestinationDriver *bigquery_dd_get_cpp(BigQueryDestDriver *self);
+syslogng::grpc::bigquery::DestinationDriver *bigquery_dd_get_cpp(BigQueryDestDriver *self);
 
 #endif

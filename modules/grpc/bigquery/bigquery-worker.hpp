@@ -40,7 +40,8 @@
 
 #include "google/cloud/bigquery/storage/v1/storage.grpc.pb.h"
 
-namespace syslog_ng {
+namespace syslogng {
+namespace grpc {
 namespace bigquery {
 
 class DestinationWorker final
@@ -71,12 +72,12 @@ private:
   std::string table;
   bool connected;
 
-  std::shared_ptr<grpc::Channel> channel;
+  std::shared_ptr<::grpc::Channel> channel;
   std::unique_ptr<google::cloud::bigquery::storage::v1::BigQueryWrite::Stub> stub;
 
   google::cloud::bigquery::storage::v1::WriteStream write_stream;
-  std::unique_ptr<grpc::ClientContext> batch_writer_ctx;
-  std::unique_ptr<grpc::ClientReaderWriter<google::cloud::bigquery::storage::v1::AppendRowsRequest,
+  std::unique_ptr<::grpc::ClientContext> batch_writer_ctx;
+  std::unique_ptr<::grpc::ClientReaderWriter<google::cloud::bigquery::storage::v1::AppendRowsRequest,
       google::cloud::bigquery::storage::v1::AppendRowsResponse>> batch_writer;
 
   /* batch state */
@@ -84,6 +85,7 @@ private:
   size_t batch_size = 0;
 };
 
+}
 }
 }
 

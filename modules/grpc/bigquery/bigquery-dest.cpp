@@ -32,7 +32,7 @@
 
 #include <cstring>
 
-using syslog_ng::bigquery::DestinationDriver;
+using syslogng::grpc::bigquery::DestinationDriver;
 
 struct _BigQueryDestDriver
 {
