@@ -212,6 +212,12 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
 
   if (type == LM_VT_NULL)
     {
+      if (field.field_desc->is_required())
+        {
+          msg_error("Missing required field", evt_tag_str("field", field.name.c_str()));
+          goto error;
+        }
+
       scratch_buffers_reclaim_marked(m);
       return true;
     }
@@ -335,7 +341,7 @@ DestinationWorker::insert(LogMessage *msg)
     goto drop;
 
   this->batch_size++;
-  rows->add_serialized_rows(message->SerializeAsString());
+  rows->add_serialized_rows(message->SerializePartialAsString());
 
   msg_trace("Message added to BigQuery batch", log_pipe_location_tag((LogPipe *) this->super->super.owner));
 
