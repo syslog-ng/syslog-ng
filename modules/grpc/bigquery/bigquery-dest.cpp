@@ -176,6 +176,13 @@ DestinationDriver::init()
       return false;
     }
 
+  if (this->get_project().empty() || this->get_dataset().empty() || this->get_table().empty())
+    {
+      msg_error("Error initializing BigQuery destination, project(), dataset(), and table() are mandatory options",
+                log_pipe_location_tag(&this->super->super.super.super.super));
+      return false;
+    }
+
   return log_threaded_dest_driver_init_method(&this->super->super.super.super.super);
 }
 
