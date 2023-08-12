@@ -75,14 +75,14 @@ feed_some_messages(LogQueue *q, int n)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
-  path_options.ack_needed = q->use_backlog;
+  path_options.ack_needed = TRUE;
   path_options.flow_control_requested = TRUE;
 
   feed_empty_messages(q, &path_options, n);
 }
 
 void
-send_some_messages(LogQueue *q, gint n)
+send_some_messages(LogQueue *q, gint n, gboolean remove_from_backlog)
 {
   gint i;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -91,10 +91,13 @@ send_some_messages(LogQueue *q, gint n)
     {
       LogMessage *msg = log_queue_pop_head(q, &path_options);
       cr_assert_not_null(msg);
-      if (q->use_backlog)
+
+      if (path_options.ack_needed)
         {
           log_msg_ack(msg, &path_options, AT_PROCESSED);
         }
+      if (remove_from_backlog)
+        log_queue_ack_backlog(q, 1);
       log_msg_unref(msg);
     }
 }

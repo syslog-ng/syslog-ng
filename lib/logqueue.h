@@ -61,7 +61,6 @@ struct _LogQueue
 {
   QueueType type;
   GAtomicCounter ref_cnt;
-  gboolean use_backlog;
 
   gint throttle;
   gint throttle_buckets;
@@ -143,27 +142,18 @@ log_queue_pop_head_ignore_throttle(LogQueue *self, LogPathOptions *path_options)
 static inline void
 log_queue_rewind_backlog(LogQueue *self, guint rewind_count)
 {
-  if (!self->use_backlog)
-    return;
-
   self->rewind_backlog(self, rewind_count);
 }
 
 static inline void
 log_queue_rewind_backlog_all(LogQueue *self)
 {
-  if (!self->use_backlog)
-    return;
-
   self->rewind_backlog_all(self);
 }
 
 static inline void
 log_queue_ack_backlog(LogQueue *self, guint rewind_count)
 {
-  if (!self->use_backlog)
-    return;
-
   self->ack_backlog(self, rewind_count);
 }
 
@@ -196,13 +186,6 @@ log_queue_set_throttle(LogQueue *self, gint throttle)
 {
   self->throttle = throttle;
   self->throttle_buckets = throttle;
-}
-
-static inline void
-log_queue_set_use_backlog(LogQueue *self, gboolean use_backlog)
-{
-  if (self)
-    self->use_backlog = use_backlog;
 }
 
 static inline gboolean

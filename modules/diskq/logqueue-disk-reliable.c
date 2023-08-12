@@ -244,12 +244,10 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
       if (!_skip_message(&self->super))
         qdisk_corrupt = TRUE;
 
-      if (s->use_backlog)
-        {
-          log_msg_ref(msg);
-          _push_to_memory_queue_tail(self->backlog, position, msg, path_options);
-          log_queue_memory_usage_add(s, log_msg_get_size(msg));
-        }
+      /* push to backlog */
+      log_msg_ref(msg);
+      _push_to_memory_queue_tail(self->backlog, position, msg, path_options);
+      log_queue_memory_usage_add(s, log_msg_get_size(msg));
 
       goto exit;
     }
@@ -277,9 +275,6 @@ exit:
       g_mutex_unlock(&s->lock);
       return NULL;
     }
-
-  if (!s->use_backlog)
-    qdisk_empty_backlog(self->super.qdisk);
 
   log_queue_disk_update_disk_related_counters(&self->super);
   log_queue_queued_messages_dec(s);

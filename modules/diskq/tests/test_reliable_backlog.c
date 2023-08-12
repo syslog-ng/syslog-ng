@@ -69,7 +69,6 @@ _init_diskq_for_test(const gchar *filename, gint64 size, gint64 membuf_size)
   cr_assert_eq(written, 1, "%s", "Can't write to diskq file");
   fstat(dq->super.qdisk->fd, &st);
   cr_assert_eq(st.st_size, size, "%s", "INITIALIZATION FAILED");
-  dq->super.super.use_backlog = TRUE;
   return dq;
 }
 

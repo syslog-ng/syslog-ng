@@ -313,8 +313,7 @@ success:
   log_queue_disk_update_disk_related_counters(&self->super);
   g_mutex_unlock(&s->lock);
 
-  if (s->use_backlog)
-    _push_tail_backlog(self, msg, path_options);
+  _push_tail_backlog(self, msg, path_options);
 
   if (stats_update)
     log_queue_queued_messages_dec(s);

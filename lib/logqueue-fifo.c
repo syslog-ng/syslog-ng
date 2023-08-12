@@ -460,15 +460,7 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
       if (!node->flow_control_requested)
         self->output_queue.non_flow_controlled_len--;
 
-      if (!self->super.use_backlog)
-        {
-          iv_list_del(&node->list);
-          log_msg_free_queue_node(node);
-        }
-      else
-        {
-          iv_list_del_init(&node->list);
-        }
+      iv_list_del_init(&node->list);
     }
   else
     {
@@ -485,15 +477,13 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
   log_queue_queued_messages_dec(&self->super);
   log_queue_memory_usage_sub(&self->super, log_msg_get_size(msg));
 
-  if (self->super.use_backlog)
-    {
-      log_msg_ref(msg);
-      iv_list_add_tail(&node->list, &self->backlog_queue.items);
-      self->backlog_queue.len++;
+  /* push to backlog */
+  log_msg_ref(msg);
+  iv_list_add_tail(&node->list, &self->backlog_queue.items);
+  self->backlog_queue.len++;
 
-      if (!node->flow_control_requested)
-        self->backlog_queue.non_flow_controlled_len++;
-    }
+  if (!node->flow_control_requested)
+    self->backlog_queue.non_flow_controlled_len++;
 
   return msg;
 }
@@ -640,7 +630,6 @@ log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name, gint stats_lev
 
   log_queue_init_instance(&self->super, persist_name, stats_level, driver_sck_builder, queue_sck_builder);
   self->super.type = log_queue_fifo_type;
-  self->super.use_backlog = FALSE;
   self->super.get_length = log_queue_fifo_get_length;
   self->super.is_empty_racy = log_queue_fifo_is_empty_racy;
   self->super.keep_on_reload = log_queue_fifo_keep_on_reload;

@@ -173,7 +173,6 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
   q = log_queue_fifo_new(OVERFLOW_SIZE, NULL, STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
   stats_cluster_key_builder_free(driver_sck_builder);
   stats_cluster_key_builder_free(queue_sck_builder);
-  log_queue_set_use_backlog(q, TRUE);
 
   cr_assert_eq(atomic_gssize_racy_get(&q->metrics.shared.queued_messages->value), 0);
 
@@ -190,8 +189,7 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
   cr_assert_eq(stats_counter_get(q->metrics.shared.queued_messages), 101);
   cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 101*size_when_single_msg);
 
-  send_some_messages(q, fed_messages);
-  log_queue_ack_backlog(q, fed_messages);
+  send_some_messages(q, fed_messages, TRUE);
 
   cr_assert_eq(fed_messages, acked_messages,
                "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
@@ -206,15 +204,13 @@ Test(logqueue, test_zero_diskbuf_alternating_send_acks)
   gint i;
 
   q = log_queue_fifo_new(OVERFLOW_SIZE, NULL, STATS_LEVEL0, NULL, NULL);
-  log_queue_set_use_backlog(q, TRUE);
 
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
     {
       feed_some_messages(q, 10);
-      send_some_messages(q, 10);
-      log_queue_ack_backlog(q, 10);
+      send_some_messages(q, 10, TRUE);
     }
 
   cr_assert_eq(fed_messages, acked_messages,
@@ -237,7 +233,6 @@ Test(logqueue, test_with_threads)
     {
       fprintf(stderr, "starting testrun: %d\n", i);
       q = log_queue_fifo_new(MESSAGES_SUM, NULL, STATS_LEVEL0, NULL, NULL);
-      log_queue_set_use_backlog(q, TRUE);
 
       for (j = 0; j < FEEDERS; j++)
         {
@@ -268,7 +263,6 @@ Test(logqueue, log_queue_fifo_rewind_all_and_memory_usage)
   LogQueue *q = log_queue_fifo_new(OVERFLOW_SIZE, NULL, STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
   stats_cluster_key_builder_free(driver_sck_builder);
   stats_cluster_key_builder_free(queue_sck_builder);
-  log_queue_set_use_backlog(q, TRUE);
 
   feed_some_messages(q, 1);
   gint size_when_single_msg = stats_counter_get(q->metrics.shared.memory_usage);
@@ -276,7 +270,7 @@ Test(logqueue, log_queue_fifo_rewind_all_and_memory_usage)
   feed_some_messages(q, 9);
   cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 10*size_when_single_msg);
 
-  send_some_messages(q, 10);
+  send_some_messages(q, 10, FALSE);
   cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 0);
   log_queue_rewind_backlog_all(q);
   cr_assert_eq(stats_counter_get(q->metrics.shared.memory_usage), 10*size_when_single_msg);
@@ -299,7 +293,6 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages,
   LogQueue *q = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
   stats_cluster_key_builder_free(driver_sck_builder);
   stats_cluster_key_builder_free(queue_sck_builder);
-  log_queue_set_use_backlog(q, TRUE);
 
   fed_messages = 0;
   acked_messages = 0;
@@ -314,8 +307,7 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages,
   cr_assert_eq(stats_counter_get(q->metrics.shared.dropped_messages), 3);
 
   gint queued_messages = stats_counter_get(q->metrics.shared.queued_messages);
-  send_some_messages(q, queued_messages);
-  log_queue_ack_backlog(q, queued_messages);
+  send_some_messages(q, queued_messages, TRUE);
 
   cr_assert_eq(fed_messages, acked_messages,
                "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
@@ -365,7 +357,6 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages_thre
   LogQueue *q = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
   stats_cluster_key_builder_free(driver_sck_builder);
   stats_cluster_key_builder_free(queue_sck_builder);
-  log_queue_set_use_backlog(q, TRUE);
 
   GThread *thread = g_thread_new(NULL, _flow_control_feed_thread, q);
   g_thread_join(thread);
@@ -373,8 +364,7 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages_thre
   cr_assert_eq(stats_counter_get(q->metrics.shared.dropped_messages), 3);
 
   gint queued_messages = stats_counter_get(q->metrics.shared.queued_messages);
-  send_some_messages(q, queued_messages);
-  log_queue_ack_backlog(q, queued_messages);
+  send_some_messages(q, queued_messages, TRUE);
 
   cr_assert_eq(fed_messages, acked_messages,
                "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
@@ -395,8 +385,6 @@ Test(logqueue, log_queue_fifo_multiple_queues)
   stats_cluster_key_builder_reset(queue_sck_builder);
   stats_cluster_key_builder_add_label(queue_sck_builder, stats_cluster_label("log_queue_fifo_multiple_queues", "2"));
   LogQueue *queue_2 = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
-  log_queue_set_use_backlog(queue_1, TRUE);
-  log_queue_set_use_backlog(queue_2, TRUE);
 
   cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 0);
   cr_assert_eq(stats_counter_get(queue_1->metrics.owned.queued_messages), 0);
@@ -424,7 +412,6 @@ Test(logqueue, log_queue_fifo_multiple_queues)
   stats_cluster_key_builder_reset(queue_sck_builder);
   stats_cluster_key_builder_add_label(queue_sck_builder, stats_cluster_label("queue", "1"));
   queue_1 = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
-  log_queue_set_use_backlog(queue_1, TRUE);
 
   cr_assert_eq(stats_counter_get(queue_1->metrics.shared.queued_messages), 1);
   cr_assert_eq(stats_counter_get(queue_1->metrics.owned.queued_messages), 0);
