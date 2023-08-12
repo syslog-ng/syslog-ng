@@ -38,6 +38,7 @@ usr/lib/syslog-ng/libloggen_helper-*.so.*
 usr/lib/syslog-ng/libloggen_plugin-*.so.*
 usr/share/syslog-ng/xsd/*
 usr/share/syslog-ng/smart-multi-line.fsm
+usr/share/syslog-ng/include/scl.conf
 [linux-any] usr/lib/syslog-ng/*/libsdjournal.so
 [linux-any] usr/lib/syslog-ng/*/libpacctformat.so
 
