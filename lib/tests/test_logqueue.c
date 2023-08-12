@@ -95,7 +95,6 @@ _threaded_consume(gpointer st)
   LogQueue *q = (LogQueue *) st;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  gint loops = 0;
   gint msg_count = 0;
 
   /* just to make sure time is properly cached */
@@ -116,23 +115,14 @@ _threaded_consume(gpointer st)
           if (slept > 10000)
             {
               /* slept for more than 10 seconds */
-              fprintf(stderr, "The wait for messages took too much time, loops=%d, msg_count=%d\n", loops, msg_count);
+              fprintf(stderr, "The wait for messages took too much time, msg_count=%d\n", msg_count);
               return GUINT_TO_POINTER(1);
             }
         }
 
-      if ((loops % 10) == 0)
-        {
-          /* push the message back to the queue */
-          log_queue_push_head(q, msg, &path_options);
-        }
-      else
-        {
-          log_msg_ack(msg, &path_options, AT_PROCESSED);
-          log_msg_unref(msg);
-          msg_count++;
-        }
-      loops++;
+      log_msg_ack(msg, &path_options, AT_PROCESSED);
+      log_msg_unref(msg);
+      msg_count++;
     }
 
   return NULL;

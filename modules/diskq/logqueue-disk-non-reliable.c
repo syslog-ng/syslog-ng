@@ -322,12 +322,6 @@ success:
   return msg;
 }
 
-static void
-_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
-{
-  g_assert_not_reached();
-}
-
 /* _is_msg_serialization_needed_hint() must be called without holding the queue's lock.
  * This can only be used _as a hint_ for performance considerations, because as soon as the lock
  * is released, there will be no guarantee that the result of this function remain correct. */
@@ -549,7 +543,6 @@ _set_logqueue_virtual_functions(LogQueue *s)
   s->rewind_backlog = _rewind_backlog;
   s->rewind_backlog_all = _rewind_backlog_all;
   s->pop_head = _pop_head;
-  s->push_head = _push_head;
   s->push_tail = _push_tail;
   s->free_fn = _free;
 }

@@ -390,12 +390,6 @@ exit:
 }
 
 static void
-_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
-{
-  g_assert_not_reached();
-}
-
-static void
 _free(LogQueue *s)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
@@ -454,7 +448,6 @@ _set_logqueue_virtual_functions(LogQueue *s)
   s->rewind_backlog_all = _rewind_backlog_all;
   s->pop_head = _pop_head;
   s->push_tail = _push_tail;
-  s->push_head = _push_head;
   s->free_fn = _free;
 }
 
