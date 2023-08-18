@@ -36,6 +36,7 @@ struct _StatsClusterKeyBuilder
   GArray *labels;
   GArray *legacy_labels;
   StatsClusterUnit unit;
+  StatsClusterFrameOfReference frame_of_reference;
 
   struct
   {
@@ -85,6 +86,7 @@ stats_cluster_key_builder_clone(const StatsClusterKeyBuilder *self)
       stats_cluster_key_builder_add_label(cloned, stats_cluster_label(label->name, label->value));
     }
   stats_cluster_key_builder_set_unit(cloned, self->unit);
+  stats_cluster_key_builder_set_frame_of_reference(cloned, self->frame_of_reference);
   stats_cluster_key_builder_set_legacy_alias(cloned, self->legacy.component, self->legacy.id, self->legacy.instance);
   stats_cluster_key_builder_set_legacy_alias_name(cloned, self->legacy.name);
   cloned->legacy.set = self->legacy.set;
@@ -148,6 +150,13 @@ stats_cluster_key_builder_set_unit(StatsClusterKeyBuilder *self, StatsClusterUni
 }
 
 void
+stats_cluster_key_builder_set_frame_of_reference(StatsClusterKeyBuilder *self,
+                                                 StatsClusterFrameOfReference frame_of_reference)
+{
+  self->frame_of_reference = frame_of_reference;
+}
+
+void
 stats_cluster_key_builder_set_legacy_alias(StatsClusterKeyBuilder *self, guint16 component, const gchar *id,
                                            const gchar *instance)
 {
@@ -185,6 +194,9 @@ stats_cluster_key_builder_reset(StatsClusterKeyBuilder *self)
   stats_cluster_key_builder_set_legacy_alias(self, 0, NULL, NULL);
   stats_cluster_key_builder_set_legacy_alias_name(self, NULL);
   self->legacy.set = FALSE;
+
+  self->unit = SCU_NONE;
+  self->frame_of_reference = SCFOR_ABSOLUTE;
 }
 
 static gint
@@ -245,6 +257,7 @@ stats_cluster_key_builder_build_single(const StatsClusterKeyBuilder *self)
         stats_cluster_single_key_set(&temp_key, name, (StatsClusterLabel *) self->labels->data, self->labels->len);
 
       stats_cluster_single_key_add_unit(&temp_key, self->unit);
+      stats_cluster_single_key_add_frame_of_reference(&temp_key, self->frame_of_reference);
     }
 
   if (_has_legacy_values(self))

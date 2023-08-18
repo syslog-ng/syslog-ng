@@ -34,6 +34,7 @@
 #include "logqueue.h"
 #include "seqnum.h"
 #include "mainloop-threaded-worker.h"
+#include "timeutils/misc.h"
 
 #include <iv.h>
 #include <iv_event.h>
@@ -93,8 +94,14 @@ struct _LogThreadedDestWorker
   struct
   {
     StatsClusterKey *output_event_bytes_sc_key;
+    StatsClusterKey *message_delay_sample_key;
+    StatsClusterKey *message_delay_sample_age_key;
 
     StatsByteCounter written_bytes;
+    StatsCounterItem *message_delay_sample;
+    StatsCounterItem *message_delay_sample_age;
+
+    gint64 last_delay_update;
   } metrics;
 
   gboolean (*init)(LogThreadedDestWorker *s);
@@ -218,7 +225,26 @@ log_threaded_dest_worker_insert(LogThreadedDestWorker *self, LogMessage *msg)
     }
   else
     self->seq_num = 0;
-  return self->insert(self, msg);
+
+  LogThreadedResult result = self->insert(self, msg);
+
+  if (self->metrics.message_delay_sample
+      && (result == LTR_QUEUED || result == LTR_SUCCESS || result == LTR_EXPLICIT_ACK_MGMT))
+    {
+      UnixTime now;
+
+      unix_time_set_now(&now);
+      gint64 diff_msec = unix_time_diff_in_msec(&now, &msg->timestamps[LM_TS_RECVD]);
+
+      if (self->metrics.last_delay_update != now.ut_sec)
+        {
+          stats_counter_set_time(self->metrics.message_delay_sample, diff_msec);
+          stats_counter_set_time(self->metrics.message_delay_sample_age, now.ut_sec);
+          self->metrics.last_delay_update = now.ut_sec;
+        }
+    }
+
+  return result;
 }
 
 static inline LogThreadedResult

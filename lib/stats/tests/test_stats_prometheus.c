@@ -29,10 +29,13 @@
 #include "stats/stats-cluster-single.h"
 #include "stats/stats-cluster-logpipe.h"
 #include "stats/stats-prometheus.h"
+#include "timeutils/unixtime.h"
 #include "scratch-buffers.h"
 #include "mainloop.h"
+#include "libtest/fake-time.h"
 
 #include <float.h>
+#include <limits.h>
 
 static void
 setup(void)
@@ -167,7 +170,6 @@ Test(stats_prometheus, test_prometheus_format_sanitize)
   stats_cluster_free(cluster);
 }
 
-
 gchar *stats_format_prometheus_format_value(const StatsClusterKey *key, const StatsCounterItem *counter);
 
 Test(stats_prometheus, test_prometheus_format_value)
@@ -204,6 +206,41 @@ Test(stats_prometheus, test_prometheus_format_value)
   stats_cluster_single_key_add_unit(&key, SCU_NANOSECONDS);
   actual = g_ascii_strtod(stats_format_prometheus_format_value(&key, &counter), NULL);
   cr_assert_float_eq(actual, 9e-9, DBL_EPSILON);
+
+  /* Relative to time of query */
+  stats_cluster_single_key_add_frame_of_reference(&key, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
+
+  /* Fri Jan 01 2100 01:01:01 GMT+0000 */
+  fake_time(INT_MAX);
+  fake_time_add(1954964814);
+
+  /* None, bytes and milli/nanoseconds units are unaffected */
+  stats_cluster_single_key_add_unit(&key, SCU_NONE);
+  cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "9");
+  stats_cluster_single_key_add_unit(&key, SCU_GIB);
+  cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "9663676416");
+  stats_cluster_single_key_add_unit(&key, SCU_MIB);
+  cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "9437184");
+  stats_cluster_single_key_add_unit(&key, SCU_KIB);
+  cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "9216");
+  stats_cluster_single_key_add_unit(&key, SCU_BYTES);
+  cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "9");
+
+  stats_cluster_single_key_add_unit(&key, SCU_MILLISECONDS);
+  actual = g_ascii_strtod(stats_format_prometheus_format_value(&key, &counter), NULL);
+  cr_assert_float_eq(actual, 0.009L, DBL_EPSILON);
+
+  stats_cluster_single_key_add_unit(&key, SCU_NANOSECONDS);
+  actual = g_ascii_strtod(stats_format_prometheus_format_value(&key, &counter), NULL);
+  cr_assert_float_eq(actual, 9e-9, DBL_EPSILON);
+
+  /* Hours, minutes and seconds are affected */
+  stats_cluster_single_key_add_unit(&key, SCU_HOURS);
+  cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "4102416061");
+  stats_cluster_single_key_add_unit(&key, SCU_MINUTES);
+  cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "4102447921");
+  stats_cluster_single_key_add_unit(&key, SCU_SECONDS);
+  cr_assert_str_eq(stats_format_prometheus_format_value(&key, &counter), "4102448452");
 }
 
 

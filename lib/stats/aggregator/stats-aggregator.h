@@ -32,10 +32,10 @@ typedef struct _StatsAggregator StatsAggregator;
 
 struct _StatsAggregator
 {
-  void (*insert_data)(StatsAggregator *self, gsize value);
+  void (*add_data_point)(StatsAggregator *self, gsize value);
   void (*aggregate)(StatsAggregator *self);
   void (*reset)(StatsAggregator *self);
-  void (*free)(StatsAggregator *self);
+  void (*free_fn)(StatsAggregator *self);
   gboolean (*is_orphaned)(StatsAggregator *self);
 
   void (*register_aggr)(StatsAggregator *self);
@@ -46,18 +46,62 @@ struct _StatsAggregator
   gint stats_level;
 };
 
+static inline void
+stats_aggregator_add_data_point(StatsAggregator *self, gsize value)
+{
+  if (self && self->add_data_point)
+    self->add_data_point(self, value);
+}
+
+static inline void
+stats_aggregator_aggregate(StatsAggregator *self)
+{
+  if (self && self->aggregate)
+    self->aggregate(self);
+}
+
+static inline void
+stats_aggregator_reset(StatsAggregator *self)
+{
+  if (self && self->reset)
+    self->reset(self);
+}
+
+static inline gboolean
+stats_aggregator_is_orphaned(StatsAggregator *self)
+{
+  if (self && self->is_orphaned)
+    return self->is_orphaned(self);
+
+  return TRUE;
+}
+
+static inline void
+stats_aggregator_register(StatsAggregator *self)
+{
+  if (self && self->register_aggr)
+    self->register_aggr(self);
+}
+
+static inline void
+stats_aggregator_unregister(StatsAggregator *self)
+{
+  if (self && self->unregister_aggr)
+    self->unregister_aggr(self);
+}
+
 /* public */
-void stats_aggregator_insert_data(StatsAggregator *self, gsize value);
+void stats_aggregator_add_data_point(StatsAggregator *self, gsize value);
 void stats_aggregator_aggregate(StatsAggregator *self);
 void stats_aggregator_reset(StatsAggregator *self);
 
 /* stats-internals */
-gboolean stats_aggregator_is_orphaned(StatsAggregator *self);
-void stats_aggregator_track_counter(StatsAggregator *self);
-void stats_aggregator_untrack_counter(StatsAggregator *self);
-void stats_aggregator_free(StatsAggregator *self);
+void stats_aggregator_start(StatsAggregator *self);
+void stats_aggregator_stop(StatsAggregator *self);
 void stats_aggregator_init_instance(StatsAggregator *self, StatsClusterKey *sc_key, gint stats_level);
-void stats_aggregator_unregister(StatsAggregator *self);
+void stats_aggregator_free(StatsAggregator *self);
+
+/* type specific constructors */
 
 StatsAggregator *stats_aggregator_maximum_new(gint level, StatsClusterKey *sc_key);
 

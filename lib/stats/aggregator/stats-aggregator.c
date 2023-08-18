@@ -23,29 +23,20 @@
 
 #include "stats/aggregator/stats-aggregator.h"
 
-gboolean
-stats_aggregator_is_orphaned(StatsAggregator *self)
-{
-  if (self && self->is_orphaned)
-    return self->is_orphaned(self);
-
-  return TRUE;
-}
-
 void
-stats_aggregator_track_counter(StatsAggregator *self)
+stats_aggregator_start(StatsAggregator *self)
 {
   if (!self)
     return;
 
-  if (stats_aggregator_is_orphaned(self) && self->register_aggr)
-    self->register_aggr(self);
+  if (stats_aggregator_is_orphaned(self))
+    stats_aggregator_register(self);
 
   ++self->use_count;
 }
 
 void
-stats_aggregator_untrack_counter(StatsAggregator *self)
+stats_aggregator_stop(StatsAggregator *self)
 {
   if (!self)
     return;
@@ -58,37 +49,6 @@ stats_aggregator_untrack_counter(StatsAggregator *self)
 
   if (stats_aggregator_is_orphaned(self))
     stats_aggregator_unregister(self);
-}
-
-
-void
-stats_aggregator_insert_data(StatsAggregator *self, gsize value)
-{
-  if (self && self->insert_data)
-    self->insert_data(self, value);
-}
-
-void
-stats_aggregator_aggregate(StatsAggregator *self)
-{
-  if (self && self->aggregate)
-    self->aggregate(self);
-}
-
-void
-stats_aggregator_reset(StatsAggregator *self)
-{
-  if (self && self->reset)
-    self->reset(self);
-}
-
-void
-stats_aggregator_free(StatsAggregator *self)
-{
-  if (self && self->free)
-    self->free(self);
-  stats_cluster_key_cloned_free(&self->key);
-  g_free(self);
 }
 
 static gboolean
@@ -113,8 +73,10 @@ stats_aggregator_init_instance(StatsAggregator *self, StatsClusterKey *sc_key, g
 }
 
 void
-stats_aggregator_unregister(StatsAggregator *self)
+stats_aggregator_free(StatsAggregator *self)
 {
-  if (self && self->unregister_aggr)
-    self->unregister_aggr(self);
+  stats_cluster_key_cloned_free(&self->key);
+  if (self && self->free_fn)
+    self->free_fn(self);
+  g_free(self);
 }

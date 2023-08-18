@@ -24,6 +24,7 @@
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster.h"
 #include "stats/stats-counter.h"
+#include "timeutils/unixtime.h"
 #include "utf8utils.h"
 #include "scratch-buffers.h"
 
@@ -78,7 +79,7 @@ stats_format_prometheus_format_value(const StatsClusterKey *key, StatsCounterIte
   gdouble converted_double = stored_value;
   gchar double_buf[G_ASCII_DTOSTR_BUF_SIZE];
 
-  switch (key->stored_unit)
+  switch (key->formatting.stored_unit)
     {
     case SCU_GIB:
       converted_int *= 1024;
@@ -93,6 +94,13 @@ stats_format_prometheus_format_value(const StatsClusterKey *key, StatsCounterIte
       converted_int *= 60;
     case SCU_MINUTES:
       converted_int *= 60;
+    case SCU_SECONDS:
+      if (key->formatting.frame_of_reference == SCFOR_RELATIVE_TO_TIME_OF_QUERY)
+        {
+          UnixTime now;
+          unix_time_set_now(&now);
+          converted_int = now.ut_sec - converted_int;
+        }
       g_string_printf(value, "%"G_GUINT64_FORMAT, converted_int);
       break;
 

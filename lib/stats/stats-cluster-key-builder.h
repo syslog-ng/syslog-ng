@@ -38,6 +38,8 @@ void stats_cluster_key_builder_set_name_prefix(StatsClusterKeyBuilder *self, con
 void stats_cluster_key_builder_set_name_suffix(StatsClusterKeyBuilder *self, const gchar *name_suffix);
 void stats_cluster_key_builder_add_label(StatsClusterKeyBuilder *self, const StatsClusterLabel label);
 void stats_cluster_key_builder_set_unit(StatsClusterKeyBuilder *self, StatsClusterUnit unit);
+void stats_cluster_key_builder_set_frame_of_reference(StatsClusterKeyBuilder *self,
+                                                      StatsClusterFrameOfReference frame_of_reference);
 void stats_cluster_key_builder_set_legacy_alias(StatsClusterKeyBuilder *self, guint16 component, const gchar *id,
                                                 const gchar *instance);
 void stats_cluster_key_builder_set_legacy_alias_name(StatsClusterKeyBuilder *self, const gchar *name);

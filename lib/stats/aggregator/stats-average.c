@@ -58,7 +58,7 @@ _get_count(StatsAggregatorAverage *self)
 }
 
 static void
-_insert_data(StatsAggregator *s, gsize value)
+_add_data_point(StatsAggregator *s, gsize value)
 {
   StatsAggregatorAverage *self = (StatsAggregatorAverage *)s;
   /*
@@ -110,7 +110,7 @@ _unregister(StatsAggregator *s)
 static void
 _set_virtual_function(StatsAggregatorAverage *self )
 {
-  self->super.insert_data = _insert_data;
+  self->super.add_data_point = _add_data_point;
   self->super.reset = _reset;
   self->super.register_aggr = _register;
   self->super.unregister_aggr = _unregister;

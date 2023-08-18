@@ -144,7 +144,13 @@ stats_cluster_single_key_set(StatsClusterKey *key, const gchar *name, StatsClust
 void
 stats_cluster_single_key_add_unit(StatsClusterKey *key, StatsClusterUnit stored_unit)
 {
-  key->stored_unit = stored_unit;
+  key->formatting.stored_unit = stored_unit;
+}
+
+void
+stats_cluster_single_key_add_frame_of_reference(StatsClusterKey *key, StatsClusterFrameOfReference frame_of_reference)
+{
+  key->formatting.frame_of_reference = frame_of_reference;
 }
 
 StatsCounterItem *

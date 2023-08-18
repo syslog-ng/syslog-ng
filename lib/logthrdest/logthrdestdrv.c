@@ -28,7 +28,6 @@
 #include "logthrdestdrv.h"
 #include "seqnum.h"
 #include "scratch-buffers.h"
-#include "timeutils/misc.h"
 #include "mainloop-threaded-worker.h"
 
 #define MAX_RETRIES_ON_ERROR_DEFAULT 3
@@ -767,7 +766,7 @@ _format_legacy_stats_instance(LogThreadedDestDriver *self, StatsClusterKeyBuilde
 }
 
 static void
-_init_queue_sck_builder(LogThreadedDestWorker *self, StatsClusterKeyBuilder *builder)
+_init_worker_sck_builder(LogThreadedDestWorker *self, StatsClusterKeyBuilder *builder)
 {
   stats_cluster_key_builder_add_label(builder, stats_cluster_label("id", self->owner->super.super.id ? : ""));
   _format_stats_key(self->owner, builder);
@@ -782,7 +781,7 @@ _acquire_worker_queue(LogThreadedDestWorker *self, gint stats_level, const Stats
 {
   gchar *persist_name = _format_queue_persist_name(self);
   StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
-  _init_queue_sck_builder(self, queue_sck_builder);
+  _init_worker_sck_builder(self, queue_sck_builder);
 
   self->queue = log_dest_driver_acquire_queue(&self->owner->super, persist_name, stats_level, driver_sck_builder,
                                               queue_sck_builder);
@@ -799,30 +798,80 @@ _acquire_worker_queue(LogThreadedDestWorker *self, gint stats_level, const Stats
 }
 
 static void
-_register_raw_bytes_stats(LogThreadedDestWorker *self)
+_register_worker_stats(LogThreadedDestWorker *self)
 {
+  gint level = log_pipe_is_internal(&self->owner->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1;
+
   StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
-  stats_cluster_key_builder_set_name(kb, "output_event_bytes_total");
   stats_cluster_key_builder_add_label(kb, stats_cluster_label("id", self->owner->super.super.id ? : ""));
   _format_stats_key(self->owner, kb);
 
-  gint level = log_pipe_is_internal(&self->owner->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1;
+  if (self->owner->metrics.raw_bytes_enabled)
+    {
+      stats_cluster_key_builder_set_name(kb, "output_event_bytes_total");
+      self->metrics.output_event_bytes_sc_key = stats_cluster_key_builder_build_single(kb);
+      stats_byte_counter_init(&self->metrics.written_bytes, self->metrics.output_event_bytes_sc_key, level, SBCP_KIB);
+    }
 
-  self->metrics.output_event_bytes_sc_key = stats_cluster_key_builder_build_single(kb);
+  stats_cluster_key_builder_reset(kb);
+  _init_worker_sck_builder(self, kb);
+
+  stats_lock();
+  {
+    /* Up to 49 days and 17 hours on 32 bit machines. */
+    stats_cluster_key_builder_set_name(kb, "output_message_delay_sample_seconds");
+    stats_cluster_key_builder_set_unit(kb, SCU_MILLISECONDS);
+    self->metrics.message_delay_sample_key = stats_cluster_key_builder_build_single(kb);
+    stats_register_counter(level, self->metrics.message_delay_sample_key, SC_TYPE_SINGLE_VALUE,
+                           &self->metrics.message_delay_sample);
+
+    stats_cluster_key_builder_set_name(kb, "output_message_delay_sample_age_seconds");
+    stats_cluster_key_builder_set_unit(kb, SCU_SECONDS);
+    stats_cluster_key_builder_set_frame_of_reference(kb, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
+    self->metrics.message_delay_sample_age_key = stats_cluster_key_builder_build_single(kb);
+    stats_register_counter(level, self->metrics.message_delay_sample_age_key, SC_TYPE_SINGLE_VALUE,
+                           &self->metrics.message_delay_sample_age);
+  }
+  stats_unlock();
+
+  UnixTime now;
+  unix_time_set_now(&now);
+  stats_counter_set_time(self->metrics.message_delay_sample_age, now.ut_sec);
+  self->metrics.last_delay_update = now.ut_sec;
+
   stats_cluster_key_builder_free(kb);
-
-  stats_byte_counter_init(&self->metrics.written_bytes, self->metrics.output_event_bytes_sc_key, level, SBCP_KIB);
 }
 
 static void
-_unregister_raw_bytes_stats(LogThreadedDestWorker *self)
+_unregister_worker_stats(LogThreadedDestWorker *self)
 {
-  if (!self->metrics.output_event_bytes_sc_key)
-    return;
+  if (self->metrics.output_event_bytes_sc_key)
+    {
+      stats_byte_counter_deinit(&self->metrics.written_bytes, self->metrics.output_event_bytes_sc_key);
+      stats_cluster_key_free(self->metrics.output_event_bytes_sc_key);
+      self->metrics.output_event_bytes_sc_key = NULL;
+    }
 
-  stats_byte_counter_deinit(&self->metrics.written_bytes, self->metrics.output_event_bytes_sc_key);
-  stats_cluster_key_free(self->metrics.output_event_bytes_sc_key);
-  self->metrics.output_event_bytes_sc_key = NULL;
+  stats_lock();
+  {
+    if (self->metrics.message_delay_sample_key)
+      {
+        stats_unregister_counter(self->metrics.message_delay_sample_key, SC_TYPE_SINGLE_VALUE,
+                                 &self->metrics.message_delay_sample);
+        stats_cluster_key_free(self->metrics.message_delay_sample_key);
+        self->metrics.message_delay_sample_key = NULL;
+      }
+
+    if (self->metrics.message_delay_sample_age_key)
+      {
+        stats_unregister_counter(self->metrics.message_delay_sample_age_key, SC_TYPE_SINGLE_VALUE,
+                                 &self->metrics.message_delay_sample_age);
+        stats_cluster_key_free(self->metrics.message_delay_sample_age_key);
+        self->metrics.message_delay_sample_age_key = NULL;
+      }
+  }
+  stats_unlock();
+
 }
 
 gboolean
@@ -842,8 +891,7 @@ log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self)
 void
 log_threaded_dest_worker_free_method(LogThreadedDestWorker *self)
 {
-  if (self->owner->metrics.raw_bytes_enabled)
-    _unregister_raw_bytes_stats(self);
+  _unregister_worker_stats(self);
 
   main_loop_threaded_worker_clear(&self->thread);
 }
@@ -865,8 +913,7 @@ log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedD
   _init_watches(self);
 
   /* cannot be moved to the thread's init() as neither StatsByteCounter nor format_stats_key() is thread-safe */
-  if (self->owner->metrics.raw_bytes_enabled)
-    _register_raw_bytes_stats(self);
+  _register_worker_stats(self);
 }
 
 void
@@ -1024,15 +1071,15 @@ log_threaded_dest_worker_written_bytes_add(LogThreadedDestWorker *self, gsize b)
 void
 log_threaded_dest_driver_insert_msg_length_stats(LogThreadedDestDriver *self, gsize len)
 {
-  stats_aggregator_insert_data(self->metrics.max_message_size, len);
-  stats_aggregator_insert_data(self->metrics.average_messages_size, len);
+  stats_aggregator_add_data_point(self->metrics.max_message_size, len);
+  stats_aggregator_add_data_point(self->metrics.average_messages_size, len);
 }
 
 void
 log_threaded_dest_driver_insert_batch_length_stats(LogThreadedDestDriver *self, gsize len)
 {
-  stats_aggregator_insert_data(self->metrics.max_batch_size, len);
-  stats_aggregator_insert_data(self->metrics.average_batch_size, len);
+  stats_aggregator_add_data_point(self->metrics.max_batch_size, len);
+  stats_aggregator_add_data_point(self->metrics.average_batch_size, len);
 }
 
 void
@@ -1078,11 +1125,11 @@ log_threaded_dest_driver_unregister_aggregated_stats(LogThreadedDestDriver *self
 {
   stats_aggregator_lock();
 
-  stats_unregister_aggregator_maximum(&self->metrics.max_message_size);
-  stats_unregister_aggregator_average(&self->metrics.average_messages_size);
-  stats_unregister_aggregator_maximum(&self->metrics.max_batch_size);
-  stats_unregister_aggregator_average(&self->metrics.average_batch_size);
-  stats_unregister_aggregator_cps(&self->metrics.CPS);
+  stats_unregister_aggregator(&self->metrics.max_message_size);
+  stats_unregister_aggregator(&self->metrics.average_messages_size);
+  stats_unregister_aggregator(&self->metrics.max_batch_size);
+  stats_unregister_aggregator(&self->metrics.average_batch_size);
+  stats_unregister_aggregator(&self->metrics.CPS);
 
   stats_aggregator_unlock();
 }

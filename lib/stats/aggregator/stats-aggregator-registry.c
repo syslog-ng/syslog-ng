@@ -44,13 +44,29 @@ static StatsAggregatorContainer stats_container;
 static GMutex stats_aggregator_mutex;
 static gboolean stats_aggregator_locked;
 
+void
+stats_aggregator_lock(void)
+{
+  g_mutex_lock(&stats_aggregator_mutex);
+  stats_aggregator_locked = TRUE;
+}
+
+void
+stats_aggregator_unlock(void)
+{
+  stats_aggregator_locked = FALSE;
+  g_mutex_unlock(&stats_aggregator_mutex);
+}
+
+/* time based aggregation */
+
 static void
 _update_func (gpointer _key, gpointer _value, gpointer _user_data)
 {
-  StatsAggregator *self = (StatsAggregator *) _value;
+  StatsAggregator *aggr = (StatsAggregator *) _value;
 
-  if (!stats_aggregator_is_orphaned(self))
-    stats_aggregator_aggregate(self);
+  if (!stats_aggregator_is_orphaned(aggr))
+    stats_aggregator_aggregate(aggr);
 }
 
 static void
@@ -97,33 +113,15 @@ _deinit_timer(void)
   _stop_timer();
 }
 
-void
-stats_aggregator_lock(void)
-{
-  g_mutex_lock(&stats_aggregator_mutex);
-  stats_aggregator_locked = TRUE;
-}
-
-void
-stats_aggregator_unlock(void)
-{
-  stats_aggregator_locked = FALSE;
-  g_mutex_unlock(&stats_aggregator_mutex);
-}
-
-static void
-_free_aggregator(StatsAggregator *self)
-{
-  stats_aggregator_free(self);
-}
+/* handle orphaned of aggregators */
 
 static gboolean
 _remove_orphaned_helper(gpointer _key, gpointer _value, gpointer _user_data)
 {
-  StatsAggregator *self = (StatsAggregator *) _value;
-  if (stats_aggregator_is_orphaned(self))
+  StatsAggregator *aggr = (StatsAggregator *) _value;
+  if (stats_aggregator_is_orphaned(aggr))
     {
-      _free_aggregator(self);
+      stats_aggregator_free(aggr);
       return TRUE;
     }
   return FALSE;
@@ -137,50 +135,75 @@ stats_aggregator_remove_orphaned_stats(void)
   g_hash_table_foreach_remove(stats_container.aggregators, _remove_orphaned_helper, NULL);
 }
 
-static gboolean
-_remove_helper(gpointer _key, gpointer _value, gpointer _user_data)
-{
-  StatsAggregator *self = (StatsAggregator *) _value;
-  if (!stats_aggregator_is_orphaned(self))
-    stats_aggregator_unregister(self);
+/* reset aggregators, i.e. syslog-ng-ctl stats --reset */
 
-  _free_aggregator(self);
+static void
+_reset_func (gpointer _key, gpointer _value, gpointer _user_data)
+{
+  StatsAggregator *aggr = (StatsAggregator *) _value;
+  stats_aggregator_reset(aggr);
+}
+
+void
+stats_aggregator_registry_reset(void)
+{
+  g_assert(stats_aggregator_locked);
+  main_loop_assert_main_thread();
+
+  g_hash_table_foreach(stats_container.aggregators, _reset_func, NULL);
+}
+
+/* aggregator cleanup */
+
+static gboolean
+_cleanup_aggregator(gpointer _key, gpointer _value, gpointer _user_data)
+{
+  StatsAggregator *aggr = (StatsAggregator *) _value;
+  if (!stats_aggregator_is_orphaned(aggr))
+    stats_aggregator_unregister(aggr);
+
+  stats_aggregator_free(aggr);
   return TRUE;
 }
 
 static void
-stats_aggregator_remove_stats(void)
+stats_aggregator_cleanup(void)
 {
   g_assert(stats_aggregator_locked);
 
-  g_hash_table_foreach_remove(stats_container.aggregators, _remove_helper, NULL);
+  g_hash_table_foreach_remove(stats_container.aggregators, _cleanup_aggregator, NULL);
 }
+
+/* module init/deinit */
 
 void
 stats_aggregator_registry_init(void)
 {
+  g_mutex_init(&stats_aggregator_mutex);
+
   stats_container.aggregators = g_hash_table_new_full((GHashFunc) stats_cluster_key_hash,
                                                       (GEqualFunc) stats_cluster_key_equal, NULL, NULL);
   _init_timer();
-  g_mutex_init(&stats_aggregator_mutex);
 }
 
 void
 stats_aggregator_registry_deinit(void)
 {
+  _deinit_timer();
   stats_aggregator_lock();
-  stats_aggregator_remove_stats();
+  stats_aggregator_cleanup();
   stats_aggregator_unlock();
   g_hash_table_destroy(stats_container.aggregators);
   stats_container.aggregators = NULL;
   g_mutex_clear(&stats_aggregator_mutex);
-  _deinit_timer();
 }
 
+/* type specific registration helpers */
+
 static void
-_insert_to_table(StatsAggregator *value)
+_insert_to_table(StatsAggregator *aggr)
 {
-  g_hash_table_insert(stats_container.aggregators, &value->key, value);
+  g_hash_table_insert(stats_container.aggregators, &aggr->key, aggr);
 
   if (!iv_timer_registered(&stats_container.update_timer))
     _start_timer();
@@ -199,113 +222,82 @@ _get_from_table(StatsClusterKey *sc_key)
 }
 
 void
-stats_register_aggregator_maximum(gint level, StatsClusterKey *sc_key, StatsAggregator **s)
+stats_register_aggregator_maximum(gint level, StatsClusterKey *sc_key, StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
 
   if (!stats_check_level(level))
     {
-      *s = NULL;
+      *aggr = NULL;
       return;
     }
 
   if (!_is_in_table(sc_key))
     {
-      *s = stats_aggregator_maximum_new(level, sc_key);
-      _insert_to_table(*s);
+      *aggr = stats_aggregator_maximum_new(level, sc_key);
+      _insert_to_table(*aggr);
     }
   else
     {
-      *s = _get_from_table(sc_key);
+      *aggr = _get_from_table(sc_key);
     }
 
-  stats_aggregator_track_counter(*s);
+  stats_aggregator_start(*aggr);
 }
 
 void
-stats_unregister_aggregator_maximum(StatsAggregator **s)
-{
-  g_assert(stats_aggregator_locked);
-  stats_aggregator_untrack_counter(*s);
-  *s = NULL;
-}
-
-void
-stats_register_aggregator_average(gint level, StatsClusterKey *sc_key, StatsAggregator **s)
+stats_register_aggregator_average(gint level, StatsClusterKey *sc_key, StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
 
   if (!stats_check_level(level))
     {
-      *s = NULL;
+      *aggr = NULL;
       return;
     }
 
   if (!_is_in_table(sc_key))
     {
-      *s = stats_aggregator_average_new(level, sc_key);
-      _insert_to_table(*s);
+      *aggr = stats_aggregator_average_new(level, sc_key);
+      _insert_to_table(*aggr);
     }
   else
     {
-      *s = _get_from_table(sc_key);
+      *aggr = _get_from_table(sc_key);
     }
 
-  stats_aggregator_track_counter(*s);
-}
-
-void
-stats_unregister_aggregator_average(StatsAggregator **s)
-{
-  g_assert(stats_aggregator_locked);
-  stats_aggregator_untrack_counter(*s);
-  *s = NULL;
+  stats_aggregator_start(*aggr);
 }
 
 void
 stats_register_aggregator_cps(gint level, StatsClusterKey *sc_key, StatsClusterKey *sc_key_input, gint stats_type,
-                              StatsAggregator **s)
+                              StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
 
   if (!stats_check_level(level))
     {
-      *s = NULL;
+      *aggr = NULL;
       return;
     }
 
   if (!_is_in_table(sc_key))
     {
-      *s = stats_aggregator_cps_new(level, sc_key, sc_key_input, stats_type);
-      _insert_to_table(*s);
+      *aggr = stats_aggregator_cps_new(level, sc_key, sc_key_input, stats_type);
+      _insert_to_table(*aggr);
     }
   else
     {
-      *s = _get_from_table(sc_key);
+      *aggr = _get_from_table(sc_key);
     }
 
-  stats_aggregator_track_counter(*s);
+  stats_aggregator_start(*aggr);
 }
 
 void
-stats_unregister_aggregator_cps(StatsAggregator **s)
+stats_unregister_aggregator(StatsAggregator **aggr)
 {
   g_assert(stats_aggregator_locked);
-  stats_aggregator_untrack_counter(*s);
-  *s = NULL;
-}
-
-static void
-_reset_func (gpointer _key, gpointer _value, gpointer _user_data)
-{
-  StatsAggregator *self = (StatsAggregator *) _value;
-  stats_aggregator_reset(self);
-}
-
-void
-stats_aggregator_registry_reset(void)
-{
-  g_assert(stats_aggregator_locked);
-
-  g_hash_table_foreach(stats_container.aggregators, _reset_func, NULL);
+  stats_aggregator_stop(*aggr);
+  *aggr = NULL;
 }

@@ -58,6 +58,7 @@ _assert_built_sc_key_equals(const StatsClusterKeyBuilder *builder, KeyType type,
     }
 
   cr_assert(stats_cluster_key_equal(&expected_sc_key, built_key));
+  cr_assert_eq(memcmp(&expected_sc_key.formatting, &built_key->formatting, sizeof(built_key->formatting)), 0);
 
   stats_cluster_key_free(built_key);
   stats_cluster_key_builder_free(cloned_builder);
@@ -70,7 +71,21 @@ _assert_built_sc_key_has_unit(const StatsClusterKeyBuilder *builder, KeyType typ
   StatsClusterKey *built_key = stats_cluster_key_builder_build_single(cloned_builder);
 
   if (type == TEST_SINGLE)
-    cr_assert(built_key->stored_unit == unit);
+    cr_assert(built_key->formatting.stored_unit == unit);
+
+  stats_cluster_key_free(built_key);
+  stats_cluster_key_builder_free(cloned_builder);
+}
+
+static void
+_assert_built_sc_key_has_frame_of_reference(const StatsClusterKeyBuilder *builder, KeyType type,
+                                            StatsClusterFrameOfReference frame_of_reference)
+{
+  StatsClusterKeyBuilder *cloned_builder = stats_cluster_key_builder_clone(builder);
+  StatsClusterKey *built_key = stats_cluster_key_builder_build_single(cloned_builder);
+
+  if (type == TEST_SINGLE)
+    cr_assert(built_key->formatting.frame_of_reference == frame_of_reference);
 
   stats_cluster_key_free(built_key);
   stats_cluster_key_builder_free(cloned_builder);
@@ -203,6 +218,10 @@ _test_builder(KeyType type)
   /* Unit */
   stats_cluster_key_builder_set_unit(builder, SCU_NANOSECONDS);
   _assert_built_sc_key_has_unit(builder, type, SCU_NANOSECONDS);
+
+  /* Frame of reference */
+  stats_cluster_key_builder_set_frame_of_reference(builder, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
+  _assert_built_sc_key_has_frame_of_reference(builder, type, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
 
   /* Legacy alias */
   stats_cluster_key_builder_set_legacy_alias(builder, dummy_legacy_component, dummy_legacy_id, dummy_legacy_instance);
