@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022 One Identity LLC.
  * Copyright (c) 2016 Marc Falzon
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -65,6 +66,8 @@ static CfgLexerKeyword http_keywords[] =
   { "body_prefix",      KW_BODY_PREFIX },
   { "body_suffix",      KW_BODY_SUFFIX },
   { "delimiter",        KW_DELIMITER },
+  { "accept_encoding",  KW_ACCEPT_ENCODING },
+  { "content_compression",    KW_CONTENT_COMPRESSION },
   { NULL }
 };
 

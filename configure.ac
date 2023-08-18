@@ -1557,6 +1557,7 @@ if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
                           [], [],
                           [[#include <curl/curl.h>]])
            CFLAGS=$old_CFLAGS
+		   AC_CHECK_HEADER(zlib.h, AC_DEFINE(HAVE_ZLIB, , [Define if zlib is available]), AC_MSG_WARN([ZLIB not found.]))
         fi
 fi
 

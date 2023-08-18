@@ -11,6 +11,11 @@ if (NOT Curl_FOUND)
   message(FATAL_ERROR "HTTP module enabled, but libcurl not found")
 endif ()
 
+find_package(ZLIB)
+if(ZLIB_FOUND)
+    add_compile_definitions(SYSLOG_NG_HAVE_ZLIB)
+endif()
+
 set(HTTP_DESTINATION_SOURCES
     http.h
     http.c
@@ -28,6 +33,8 @@ set(HTTP_DESTINATION_SOURCES
     http-signals.h
     autodetect-ca-location.h
     autodetect-ca-location.c
+    compression.h
+    compression.c
 )
 
 set(HTTP_MODULE_DEV_HEADERS

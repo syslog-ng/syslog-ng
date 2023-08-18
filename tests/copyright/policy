@@ -147,6 +147,7 @@ modules/java-modules/common
 modules/java/(native|proxies|src)
 modules/native
 modules/http/http-signals.h
+modules/http/compression\.[ch]
 tests/loggen
 persist-tool
 modules/python-modules/syslogng/__init__\.py
@@ -159,10 +160,9 @@ modules/python/python-global.(c|h)$
 # These files are GPLd and non-balabit contributions.
 ###########################################################################
                                                  GPLv2+_SSL,non-balabit
-
 modules/diskq/tests/test_diskq_counters\.c
-modules/http/(http|http-parser|http-plugin|)\.[ch]
-modules/http/http-grammar.ym
+modules/http/http-plugin\.[ch]
+modules/http/http-parser.h
 modules/timestamp/rewrite-.*$
 modules/timestamp/tf-format-date.*$
 modules/timestamp/tests/test_format_date.*$
@@ -242,3 +242,6 @@ packaging/package-indexer/.*\.py$
 scl
 scripts
 modules/http/tests
+modules/http/http\.[ch]
+modules/http/http-parser.c
+modules/http/http-grammar.ym
