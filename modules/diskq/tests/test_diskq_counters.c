@@ -81,7 +81,7 @@ static void
 _push_one_message(LogQueue *q, gssize *memory_size, gssize *serialized_size)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  path_options.ack_needed = q->use_backlog;
+  path_options.ack_needed = FALSE;
   path_options.flow_control_requested = TRUE;
 
   gchar data[1024] = {0};
@@ -195,14 +195,12 @@ Test(diskq_counters, test_non_reliable,
                    QDISK_RESERVED_SPACE + one_message_serialized_size, __LINE__);
 
   /* Pop one message, disk usage should reduce */
-  send_some_messages(queue, 1);
-  log_queue_ack_backlog(queue, 1);
+  send_some_messages(queue, 1, TRUE);
   _assert_counters(queue, 1, one_message_memory_size, expected_capacity, 0,
                    QDISK_RESERVED_SPACE + one_message_serialized_size, __LINE__);
 
   /* Pop one message, memory usage should reduce */
-  send_some_messages(queue, 1);
-  log_queue_ack_backlog(queue, 1);
+  send_some_messages(queue, 1, TRUE);
   _assert_counters(queue, 0, 0, expected_capacity, 0, QDISK_RESERVED_SPACE + one_message_serialized_size, __LINE__);
 
   stats_cluster_key_builder_free(queue_sck_builder);
@@ -264,8 +262,7 @@ Test(diskq_counters, test_reliable,
                    QDISK_RESERVED_SPACE + one_message_serialized_size, __LINE__);
 
   /* Pop the message, disk usage should reduce */
-  send_some_messages(queue, 1);
-  log_queue_ack_backlog(queue, 1);
+  send_some_messages(queue, 1, TRUE);
   _assert_counters(queue, 0, 0, expected_capacity, 0, QDISK_RESERVED_SPACE + one_message_serialized_size, __LINE__);
 
   stats_cluster_key_builder_free(queue_sck_builder);

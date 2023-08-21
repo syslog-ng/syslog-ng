@@ -73,8 +73,6 @@ test_diskq_become_full(gboolean reliable, const gchar *filename)
   stats_cluster_key_builder_free(driver_sck_builder);
   stats_cluster_key_builder_free(queue_sck_builder);
 
-  log_queue_set_use_backlog(q, TRUE);
-
   unlink(filename);
   log_queue_disk_start(q);
   feed_some_messages(q, 1000);

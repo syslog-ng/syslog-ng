@@ -35,7 +35,7 @@ void test_ack(LogMessage *msg, AckType ack_type);
 void feed_empty_messages(LogQueue *q, const LogPathOptions *path_options, gint n);
 void feed_some_messages(LogQueue *q, int n);
 
-void send_some_messages(LogQueue *q, gint n);
+void send_some_messages(LogQueue *q, gint n, gboolean remove_from_backlog);
 
 gsize get_one_message_serialized_size(void);
 #endif

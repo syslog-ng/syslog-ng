@@ -792,8 +792,6 @@ _acquire_worker_queue(LogThreadedDestWorker *self, gint stats_level, const Stats
   if (!self->queue)
     return FALSE;
 
-  log_queue_set_use_backlog(self->queue, TRUE);
-
   return TRUE;
 }
 

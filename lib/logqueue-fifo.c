@@ -110,7 +110,7 @@ typedef struct _LogQueueFifo
  *
  * In the output thread, this means that this can get race-free. In the
  * input thread, the output_queue can change because of a
- * log_queue_fifo_push_head() or log_queue_fifo_rewind_backlog().
+ * log_queue_fifo_rewind_backlog().
  *
  */
 
@@ -215,9 +215,9 @@ static inline gboolean
 log_queue_fifo_calculate_num_of_messages_to_drop(LogQueueFifo *self, InputQueue *input_queue,
                                                  gint *num_of_messages_to_drop)
 {
-  /* since we're in the input thread, queue_len will be racy.
-   * It can increase due to log_queue_fifo_push_head() and can also decrease as
-   * items are removed from the output queue using log_queue_pop_head().
+  /* since we're in the input thread, queue_len will be racy.  It can
+   * increase due to log_queue_fifo_rewind_backlog() and can also decrease
+   * as items are removed from the output queue using log_queue_pop_head().
    *
    * The only reason we're using it here is to check for qoverflow
    * overflows, however the only side-effect of the race (if lost) is that
@@ -426,37 +426,6 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
 }
 
 /*
- * Put an item back to the front of the queue.
- *
- * This is assumed to be called only from the output thread.
- *
- * NOTE: It consumes the reference passed by the caller.
- */
-static void
-log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
-{
-  LogQueueFifo *self = (LogQueueFifo *) s;
-  LogMessageQueueNode *node;
-
-  /* we don't check limits when putting items "in-front", as it
-   * normally happens when we start processing an item, but at the end
-   * can't deliver it. No checks, no drops either. */
-
-  log_msg_write_protect(msg);
-  node = log_msg_alloc_dynamic_queue_node(msg, path_options);
-  iv_list_add(&node->list, &self->output_queue.items);
-  self->output_queue.len++;
-
-  if (!path_options->flow_control_requested)
-    self->output_queue.non_flow_controlled_len++;
-
-  log_msg_unref(msg);
-
-  log_queue_queued_messages_inc(&self->super);
-  log_queue_memory_usage_add(&self->super, log_msg_get_size(msg));
-}
-
-/*
  * Can only run from the output thread.
  *
  * NOTE: this returns a reference which the caller must take care to free.
@@ -491,15 +460,7 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
       if (!node->flow_control_requested)
         self->output_queue.non_flow_controlled_len--;
 
-      if (!self->super.use_backlog)
-        {
-          iv_list_del(&node->list);
-          log_msg_free_queue_node(node);
-        }
-      else
-        {
-          iv_list_del_init(&node->list);
-        }
+      iv_list_del_init(&node->list);
     }
   else
     {
@@ -516,15 +477,13 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
   log_queue_queued_messages_dec(&self->super);
   log_queue_memory_usage_sub(&self->super, log_msg_get_size(msg));
 
-  if (self->super.use_backlog)
-    {
-      log_msg_ref(msg);
-      iv_list_add_tail(&node->list, &self->backlog_queue.items);
-      self->backlog_queue.len++;
+  /* push to backlog */
+  log_msg_ref(msg);
+  iv_list_add_tail(&node->list, &self->backlog_queue.items);
+  self->backlog_queue.len++;
 
-      if (!node->flow_control_requested)
-        self->backlog_queue.non_flow_controlled_len++;
-    }
+  if (!node->flow_control_requested)
+    self->backlog_queue.non_flow_controlled_len++;
 
   return msg;
 }
@@ -671,12 +630,10 @@ log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name, gint stats_lev
 
   log_queue_init_instance(&self->super, persist_name, stats_level, driver_sck_builder, queue_sck_builder);
   self->super.type = log_queue_fifo_type;
-  self->super.use_backlog = FALSE;
   self->super.get_length = log_queue_fifo_get_length;
   self->super.is_empty_racy = log_queue_fifo_is_empty_racy;
   self->super.keep_on_reload = log_queue_fifo_keep_on_reload;
   self->super.push_tail = log_queue_fifo_push_tail;
-  self->super.push_head = log_queue_fifo_push_head;
   self->super.pop_head = log_queue_fifo_pop_head;
   self->super.ack_backlog = log_queue_fifo_ack_backlog;
   self->super.rewind_backlog = log_queue_fifo_rewind_backlog;
