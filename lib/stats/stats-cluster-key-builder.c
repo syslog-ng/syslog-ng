@@ -75,38 +75,25 @@ stats_cluster_key_builder_new(void)
 StatsClusterKeyBuilder *
 stats_cluster_key_builder_clone(const StatsClusterKeyBuilder *self)
 {
-  StatsClusterKeyBuilder *cloned = stats_cluster_key_builder_new();
-
-  stats_cluster_key_builder_set_name(cloned, self->name);
-  stats_cluster_key_builder_set_name_prefix(cloned, self->name_prefix);
-  stats_cluster_key_builder_set_name_suffix(cloned, self->name_suffix);
-  for (guint i = 0; i < self->labels->len; i++)
-    {
-      StatsClusterLabel *label = &g_array_index(self->labels, StatsClusterLabel, i);
-      stats_cluster_key_builder_add_label(cloned, stats_cluster_label(label->name, label->value));
-    }
-  stats_cluster_key_builder_set_unit(cloned, self->unit);
-  stats_cluster_key_builder_set_frame_of_reference(cloned, self->frame_of_reference);
-  stats_cluster_key_builder_set_legacy_alias(cloned, self->legacy.component, self->legacy.id, self->legacy.instance);
-  stats_cluster_key_builder_set_legacy_alias_name(cloned, self->legacy.name);
-  cloned->legacy.set = self->legacy.set;
-
-  if (!_has_legacy_labels(self))
-    return cloned;
-
-  for (guint i = 0; i < self->legacy_labels->len; i++)
-    {
-      StatsClusterLabel *label = &g_array_index(self->legacy_labels, StatsClusterLabel, i);
-      stats_cluster_key_builder_add_legacy_label(cloned, stats_cluster_label(label->name, label->value));
-    }
-
-  return cloned;
+  /* TODO: Remove */
+  return NULL;
 }
 
 void
 stats_cluster_key_builder_free(StatsClusterKeyBuilder *self)
 {
-  stats_cluster_key_builder_reset(self);
+  stats_cluster_key_builder_set_name(self, NULL);
+  stats_cluster_key_builder_set_name_prefix(self, NULL);
+  stats_cluster_key_builder_set_name_suffix(self, NULL);
+
+  g_array_remove_range(self->labels, 0, self->labels->len);
+
+  if (self->legacy_labels)
+    g_array_remove_range(self->legacy_labels, 0, self->legacy_labels->len);
+
+  stats_cluster_key_builder_set_legacy_alias(self, 0, NULL, NULL);
+  stats_cluster_key_builder_set_legacy_alias_name(self, NULL);
+
   g_array_free(self->labels, TRUE);
 
   if (self->legacy_labels)
@@ -182,21 +169,7 @@ stats_cluster_key_builder_set_legacy_alias_name(StatsClusterKeyBuilder *self, co
 void
 stats_cluster_key_builder_reset(StatsClusterKeyBuilder *self)
 {
-  stats_cluster_key_builder_set_name(self, NULL);
-  stats_cluster_key_builder_set_name_prefix(self, NULL);
-  stats_cluster_key_builder_set_name_suffix(self, NULL);
-
-  g_array_remove_range(self->labels, 0, self->labels->len);
-
-  if (self->legacy_labels)
-    g_array_remove_range(self->legacy_labels, 0, self->legacy_labels->len);
-
-  stats_cluster_key_builder_set_legacy_alias(self, 0, NULL, NULL);
-  stats_cluster_key_builder_set_legacy_alias_name(self, NULL);
-  self->legacy.set = FALSE;
-
-  self->unit = SCU_NONE;
-  self->frame_of_reference = SCFOR_ABSOLUTE;
+  /* TODO: Remove */
 }
 
 static gint
@@ -351,8 +324,7 @@ stats_cluster_key_builder_add_legacy_label(StatsClusterKeyBuilder *self, const S
 void
 stats_cluster_key_builder_clear_legacy_labels(StatsClusterKeyBuilder *self)
 {
-  if (self->legacy_labels)
-    g_array_remove_range(self->legacy_labels, 0, self->legacy_labels->len);
+  /* TODO: Remove */
 }
 
 const gchar *
