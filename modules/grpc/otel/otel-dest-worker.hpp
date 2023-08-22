@@ -59,21 +59,23 @@ class DestWorker
 {
 public:
   DestWorker(OtelDestWorker *s);
+  virtual ~DestWorker();
+  static LogThreadedDestWorker *construct(LogThreadedDestDriver *o, gint worker_index);
 
-  bool init();
-  void deinit();
-  bool connect();
-  void disconnect();
-  LogThreadedResult insert(LogMessage *msg);
-  LogThreadedResult flush(LogThreadedFlushMode mode);
+  virtual bool init();
+  virtual void deinit();
+  virtual bool connect();
+  virtual void disconnect();
+  virtual LogThreadedResult insert(LogMessage *msg);
+  virtual LogThreadedResult flush(LogThreadedFlushMode mode);
 
-private:
+protected:
   void clear_current_msg_metadata();
   void get_metadata_for_current_msg(LogMessage *msg);
 
-  ScopeLogs *lookup_scope_logs(LogMessage *msg);
-  ScopeMetrics *lookup_scope_metrics(LogMessage *msg);
-  ScopeSpans *lookup_scope_spans(LogMessage *msg);
+  virtual ScopeLogs *lookup_scope_logs(LogMessage *msg);
+  virtual ScopeMetrics *lookup_scope_metrics(LogMessage *msg);
+  virtual ScopeSpans *lookup_scope_spans(LogMessage *msg);
 
   bool insert_log_record_from_log_msg(LogMessage *msg);
   void insert_fallback_log_record_from_log_msg(LogMessage *msg);
@@ -84,7 +86,7 @@ private:
   LogThreadedResult flush_metrics();
   LogThreadedResult flush_spans();
 
-private:
+protected:
   OtelDestWorker *super;
   const DestDriver &owner;
 
@@ -121,6 +123,6 @@ struct OtelDestWorker_
   syslogng::grpc::otel::DestWorker *cpp;
 };
 
-LogThreadedDestWorker *otel_dest_worker_new(LogThreadedDestDriver *o, gint worker_index);
+void otel_dw_init_super(LogThreadedDestWorker *s, LogThreadedDestDriver *o, gint worker_index);
 
 #endif

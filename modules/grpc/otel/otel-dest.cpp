@@ -56,7 +56,8 @@ DestDriver::generate_persist_name()
     g_snprintf(persist_name, sizeof(persist_name), "opentelemetry.%s",
                super->super.super.super.super.persist_name);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "opentelemetry");
+    g_snprintf(persist_name, sizeof(persist_name), "opentelemetry(%s)",
+               url.c_str());
 
   return persist_name;
 }
@@ -68,6 +69,12 @@ DestDriver::format_stats_key(StatsClusterKeyBuilder *kb)
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("url", url.c_str()));
 
   return NULL;
+}
+
+LogThreadedDestWorker *
+DestDriver::construct_worker(int worker_index)
+{
+  return DestWorker::construct(&super->super, worker_index);
 }
 
 bool
@@ -141,7 +148,7 @@ _deinit(LogPipe *s)
 static LogThreadedDestWorker *
 _construct_worker(LogThreadedDestDriver *s, gint worker_index)
 {
-  return otel_dest_worker_new(s, worker_index);
+  return get_DestDriver(s)->construct_worker(worker_index);
 }
 
 static void
@@ -151,22 +158,28 @@ _free(LogPipe *s)
   log_threaded_dest_driver_free(s);
 }
 
+void
+otel_dd_init_super(LogThreadedDestDriver *s, GlobalConfig *cfg)
+{
+  log_threaded_dest_driver_init_instance(s, cfg);
+
+  s->super.super.super.init = _init;
+  s->super.super.super.deinit = _deinit;
+  s->super.super.super.free_fn = _free;
+  s->super.super.super.generate_persist_name = _generate_persist_name;
+
+  s->worker.construct = _construct_worker;
+  s->stats_source = stats_register_type("opentelemetry");
+  s->format_stats_key = _format_stats_key;
+}
+
 LogDriver *
 otel_dd_new(GlobalConfig *cfg)
 {
   OtelDestDriver *self = g_new0(OtelDestDriver, 1);
-  log_threaded_dest_driver_init_instance(&self->super, cfg);
 
+  otel_dd_init_super(&self->super, cfg);
   self->cpp = new DestDriver(self);
-
-  self->super.super.super.super.init = _init;
-  self->super.super.super.super.deinit = _deinit;
-  self->super.super.super.super.free_fn = _free;
-  self->super.super.super.super.generate_persist_name = _generate_persist_name;
-
-  self->super.worker.construct = _construct_worker;
-  self->super.stats_source = stats_register_type("opentelemetry");
-  self->super.format_stats_key = _format_stats_key;
 
   return &self->super.super.super;
 }

@@ -16,7 +16,12 @@ set(OTEL_CPP_SOURCES
   otel-dest.cpp
   otel-dest.h
   otel-dest-worker.hpp
-  otel-dest-worker.cpp)
+  otel-dest-worker.cpp
+  syslog-ng-otlp-dest.hpp
+  syslog-ng-otlp-dest.cpp
+  syslog-ng-otlp-dest.h
+  syslog-ng-otlp-dest-worker.hpp
+  syslog-ng-otlp-dest-worker.cpp)
 
 set(OTEL_SOURCES
   otel-plugin.c

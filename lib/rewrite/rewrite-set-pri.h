@@ -27,5 +27,6 @@
 #include "rewrite-expr.h"
 
 LogRewrite *log_rewrite_set_pri_new(LogTemplate *severity, GlobalConfig *cfg);
+gint log_rewrite_set_pri_convert_pri(const gchar *pri_text);
 
 #endif

@@ -41,21 +41,22 @@ class DestDriver
 {
 public:
   DestDriver(OtelDestDriver *s);
+  virtual ~DestDriver();
 
   void set_url(const char *url);
   const std::string &get_url() const;
 
-  bool init();
-  bool deinit();
-  const char *format_stats_key(StatsClusterKeyBuilder *kb);
-  const char *generate_persist_name();
+  virtual bool init();
+  virtual bool deinit();
+  virtual const char *format_stats_key(StatsClusterKeyBuilder *kb);
+  virtual const char *generate_persist_name();
+  virtual LogThreadedDestWorker *construct_worker(int worker_index);
 
   GrpcClientCredentialsBuilderW *get_credentials_builder_wrapper();
-
 public:
   syslogng::grpc::ClientCredentialsBuilder credentials_builder;
 
-private:
+protected:
   friend class DestWorker;
   OtelDestDriver *super;
   std::string url;
@@ -71,5 +72,7 @@ struct OtelDestDriver_
   LogThreadedDestDriver super;
   syslogng::grpc::otel::DestDriver *cpp;
 };
+
+void otel_dd_init_super(LogThreadedDestDriver *s, GlobalConfig *cfg);
 
 #endif

@@ -25,6 +25,7 @@
 
 #include "compat/cpp-start.h"
 #include "logmsg/logmsg.h"
+#include "value-pairs/value-pairs.h"
 #include "compat/cpp-end.h"
 
 #include "opentelemetry/proto/logs/v1/logs.pb.h"
@@ -68,11 +69,15 @@ class ProtobufFormatter
 {
 public:
   ProtobufFormatter(GlobalConfig *cfg);
+  ~ProtobufFormatter();
 
+  static void get_metadata_for_syslog_ng(Resource &resource, std::string &resource_schema_url,
+                                         InstrumentationScope &scope, std::string &scope_schema_url);
   bool get_metadata(LogMessage *msg, Resource &resource, std::string &resource_schema_url,
                     InstrumentationScope &scope, std::string &scope_schema_url);
   bool format(LogMessage *msg, LogRecord &log_record);
   void format_fallback(LogMessage *msg, LogRecord &log_record);
+  void format_syslog_ng(LogMessage *msg, LogRecord &log_record);
   bool format(LogMessage *msg, Metric &metric);
   bool format(LogMessage *msg, Span &span);
 
@@ -95,8 +100,18 @@ private:
   void add_summary_data_points(LogMessage *msg, const char *prefix, RepeatedPtrField<SummaryDataPoint> *data_points);
   void set_metric_summary_values(LogMessage *msg, Summary *summary);
 
+  /* syslog-ng */
+  void set_syslog_ng_nv_pairs(LogMessage *msg, LogRecord &log_record);
+  void set_syslog_ng_macros(LogMessage *msg, LogRecord &log_record);
+
 private:
   GlobalConfig *cfg;
+  struct
+  {
+    ValuePairs *vp;
+    LogTemplateOptions template_options;
+    LogTemplateEvalOptions template_eval_options;
+  } syslog_ng;
 };
 
 }

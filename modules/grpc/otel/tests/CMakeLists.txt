@@ -11,3 +11,10 @@ add_unit_test(
   SOURCES test-otel-protobuf-formatter.cpp
   INCLUDES ${OTEL_PROTO_BUILDDIR}
   DEPENDS otel-cpp)
+
+add_unit_test(
+  CRITERION
+  TARGET test_syslog_ng_otlp
+  SOURCES test-syslog-ng-otlp.cpp
+  INCLUDES ${OTEL_PROTO_BUILDDIR}
+  DEPENDS otel-cpp)
