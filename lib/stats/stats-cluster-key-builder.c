@@ -28,6 +28,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#define LEGACY_COMPONENT_UNSET (G_MAXUINT16)
+
 typedef struct _BuilderOptions
 {
   gchar *name;
@@ -40,7 +42,6 @@ typedef struct _BuilderOptions
 
   struct
   {
-    gboolean set;
     guint16 component;
     gchar *id;
     gchar *instance;
@@ -68,6 +69,8 @@ _options_new(void)
   self->labels = g_array_sized_new(FALSE, FALSE, sizeof(StatsClusterLabel), 4);
   g_array_set_clear_func(self->labels, (GDestroyNotify) _label_free);
 
+  self->legacy.component = LEGACY_COMPONENT_UNSET;
+
   return self;
 }
 
@@ -90,18 +93,12 @@ _options_free(BuilderOptions *self)
   g_free(self);
 }
 
-static gboolean
-_has_legacy_labels(const BuilderOptions *self)
-{
-  return self->legacy_labels && self->legacy_labels->len != 0;
-}
-
 StatsClusterKeyBuilder *
 stats_cluster_key_builder_new(void)
 {
   StatsClusterKeyBuilder *self = g_new0(StatsClusterKeyBuilder, 1);
 
-  self->options_stack = g_list_append(self->options_stack, _options_new());
+  stats_cluster_key_builder_push(self);
 
   return self;
 }
@@ -111,6 +108,22 @@ stats_cluster_key_builder_clone(const StatsClusterKeyBuilder *self)
 {
   /* TODO: Remove */
   return NULL;
+}
+
+void
+stats_cluster_key_builder_push(StatsClusterKeyBuilder *self)
+{
+  self->options_stack = g_list_append(self->options_stack, _options_new());
+}
+
+void
+stats_cluster_key_builder_pop(StatsClusterKeyBuilder *self)
+{
+  GList *last_link = g_list_last(self->options_stack);
+  BuilderOptions *options = (BuilderOptions *) last_link->data;
+
+  self->options_stack = g_list_delete_link(self->options_stack, last_link);
+  _options_free(options);
 }
 
 void
@@ -124,12 +137,6 @@ static BuilderOptions *
 _get_last_options(StatsClusterKeyBuilder *self)
 {
   return (BuilderOptions *) g_list_last(self->options_stack)->data;
-}
-
-static const BuilderOptions *
-_get_last_options_const(const StatsClusterKeyBuilder *self)
-{
-  return (const BuilderOptions *) g_list_last(self->options_stack)->data;
 }
 
 void
@@ -191,7 +198,6 @@ stats_cluster_key_builder_set_legacy_alias(StatsClusterKeyBuilder *self, guint16
 {
   BuilderOptions *options = _get_last_options(self);
 
-  options->legacy.set = TRUE;
   options->legacy.component = component;
 
   g_free(options->legacy.id);
@@ -205,8 +211,6 @@ void
 stats_cluster_key_builder_set_legacy_alias_name(StatsClusterKeyBuilder *self, const gchar *name)
 {
   BuilderOptions *options = _get_last_options(self);
-
-  options->legacy.set = TRUE;
 
   g_free(options->legacy.name);
   options->legacy.name = g_strdup(name);
@@ -227,39 +231,166 @@ _labels_sort(const StatsClusterLabel *a, const StatsClusterLabel *b)
 static gchar *
 _format_name(const StatsClusterKeyBuilder *self)
 {
-  const BuilderOptions *options = _get_last_options_const(self);
+  const gchar *name_prefix = NULL;
+  const gchar *name = NULL;
+  const gchar *name_suffix = NULL;
 
-  return g_strdup_printf("%s%s%s", options->name_prefix ? : "", options->name, options->name_suffix ? : "");
+  for (const GList *link = g_list_last(self->options_stack); link; link = link->prev)
+    {
+      const BuilderOptions *options = (const BuilderOptions *) link->data;
+
+      if (!name_prefix && options->name_prefix)
+        name_prefix = options->name_prefix;
+
+      if (!name && options->name)
+        name = options->name;
+
+      if (!name_suffix && options->name_suffix)
+        name_suffix = options->name_suffix;
+
+      if (name_prefix && name && name_suffix)
+        break;
+    }
+
+  return g_strdup_printf("%s%s%s", name_prefix ? : "", name ? : "", name_suffix ? : "");
 }
 
 static gboolean
 _has_new_style_values(const StatsClusterKeyBuilder *self)
 {
-  const BuilderOptions *options = _get_last_options_const(self);
+  for (const GList *link = g_list_last(self->options_stack); link; link = link->prev)
+    {
+      const BuilderOptions *options = (const BuilderOptions *) link->data;
 
-  return !!options->name;
+      if (options->name)
+        return strlen(options->name) > 0;
+    }
+
+  return FALSE;
 }
 
 static gboolean
 _has_legacy_values(const StatsClusterKeyBuilder *self)
 {
-  const BuilderOptions *options = _get_last_options_const(self);
+  const gchar *name = NULL;
+  const gchar *id = NULL;
 
-  return options->legacy.set;
+  for (const GList *link = g_list_last(self->options_stack); link; link = link->prev)
+    {
+      const BuilderOptions *options = (const BuilderOptions *) link->data;
+
+      if (!name && options->legacy.name)
+        name = options->legacy.name;
+
+      if (!id && options->legacy.id)
+        id = options->legacy.id;
+
+      if (name && id)
+        break;
+    }
+
+  return (name && strlen(name) > 0) || (id && strlen(id) > 0);
 }
 
 static GArray *
 _construct_merged_labels(const StatsClusterKeyBuilder *self)
 {
-  const BuilderOptions *options = _get_last_options_const(self);
+  GArray *merged_labels = g_array_sized_new(FALSE, FALSE, sizeof(StatsClusterLabel), 4);
 
-  GArray *labels = g_array_sized_new(FALSE, FALSE, sizeof(StatsClusterLabel),
-                                     options->labels->len + options->legacy_labels->len);
+  for (const GList *link = g_list_first(self->options_stack); link; link = link->next)
+    {
+      const BuilderOptions *options = (const BuilderOptions *) link->data;
 
-  g_array_append_vals(labels, options->legacy_labels->data, options->legacy_labels->len);
-  g_array_append_vals(labels, options->labels->data, options->labels->len);
+      if (options->legacy_labels)
+        merged_labels = g_array_append_vals(merged_labels, options->legacy_labels->data, options->legacy_labels->len);
+    }
 
-  return labels;
+  GArray *merged_unsorted_labels = g_array_sized_new(FALSE, FALSE, sizeof(StatsClusterLabel), 4);
+  for (const GList *link = g_list_first(self->options_stack); link; link = link->next)
+    {
+      const BuilderOptions *options = (const BuilderOptions *) link->data;
+
+      if (options->labels)
+        merged_unsorted_labels = g_array_append_vals(merged_unsorted_labels, options->labels->data,
+                                                     options->labels->len);
+    }
+  g_array_sort(merged_unsorted_labels, (GCompareFunc) _labels_sort);
+  merged_labels = g_array_append_vals(merged_labels, merged_unsorted_labels->data, merged_unsorted_labels->len);
+
+  g_array_free(merged_unsorted_labels, TRUE);
+  return merged_labels;
+}
+
+static GArray *
+_construct_merged_legacy_labels(const StatsClusterKeyBuilder *self)
+{
+  GArray *merged_labels = g_array_sized_new(FALSE, FALSE, sizeof(StatsClusterLabel), 4);
+
+  for (const GList *link = g_list_first(self->options_stack); link; link = link->next)
+    {
+      const BuilderOptions *options = (const BuilderOptions *) link->data;
+
+      if (options->legacy_labels)
+        merged_labels = g_array_append_vals(merged_labels, options->legacy_labels->data, options->legacy_labels->len);
+    }
+
+  return merged_labels;
+}
+
+static void
+_get_legacy_options(const StatsClusterKeyBuilder *self, guint16 *component, const gchar **id, const gchar **instance,
+                    const gchar **name)
+{
+  *component = LEGACY_COMPONENT_UNSET;
+  *id = *instance = *name = NULL;
+
+  for (const GList *link = g_list_last(self->options_stack); link; link = link->prev)
+    {
+      const BuilderOptions *options = (const BuilderOptions *) link->data;
+
+      if (*component == LEGACY_COMPONENT_UNSET && options->legacy.component != LEGACY_COMPONENT_UNSET)
+        *component = options->legacy.component;
+
+      if (!*id && options->legacy.id)
+        *id = options->legacy.id;
+
+      if (!*instance && options->legacy.instance)
+        *instance = options->legacy.instance;
+
+      if (!*name && options->legacy.name)
+        *name = options->legacy.name;
+
+      if (*component != G_MAXUINT16 && *id && *instance && *name)
+        break;
+    }
+}
+
+StatsClusterUnit
+_get_unit(const StatsClusterKeyBuilder *self)
+{
+  for (const GList *link = g_list_last(self->options_stack); link; link = link->prev)
+    {
+      const BuilderOptions *options = (const BuilderOptions *) link->data;
+
+      if (options->unit != SCU_NONE)
+        return options->unit;
+    }
+
+  return SCU_NONE;
+}
+
+StatsClusterFrameOfReference
+_get_frame_of_reference(const StatsClusterKeyBuilder *self)
+{
+  for (const GList *link = g_list_last(self->options_stack); link; link = link->prev)
+    {
+      const BuilderOptions *options = (const BuilderOptions *) link->data;
+
+      if (options->frame_of_reference != SCFOR_NONE)
+        return options->frame_of_reference;
+    }
+
+  return SCFOR_NONE;
 }
 
 StatsClusterKey *
@@ -268,53 +399,47 @@ stats_cluster_key_builder_build_single(const StatsClusterKeyBuilder *self)
   StatsClusterKey *sc_key = g_new0(StatsClusterKey, 1);
   StatsClusterKey temp_key;
   gchar *name = NULL;
-  GArray *merged_labels = NULL;
-  const BuilderOptions *options = _get_last_options_const(self);
 
-  if (_has_new_style_values(self))
+  gboolean has_new_style_values = _has_new_style_values(self);
+  gboolean has_legacy_values = _has_legacy_values(self);
+
+  GArray *merged_labels = _construct_merged_labels(self);
+
+  if (has_new_style_values)
     {
       name = _format_name(self);
-      g_array_sort(options->labels, (GCompareFunc) _labels_sort);
-
-      if (_has_legacy_labels(options))
-        {
-          merged_labels = _construct_merged_labels(self);
-          stats_cluster_single_key_set(&temp_key, name, (StatsClusterLabel *) merged_labels->data, merged_labels->len);
-        }
-      else
-        stats_cluster_single_key_set(&temp_key, name, (StatsClusterLabel *) options->labels->data, options->labels->len);
-
-      stats_cluster_single_key_add_unit(&temp_key, options->unit);
-      stats_cluster_single_key_add_frame_of_reference(&temp_key, options->frame_of_reference);
+      stats_cluster_single_key_set(&temp_key, name, (StatsClusterLabel *) merged_labels->data, merged_labels->len);
+      stats_cluster_single_key_add_unit(&temp_key, _get_unit(self));
+      stats_cluster_single_key_add_frame_of_reference(&temp_key, _get_frame_of_reference(self));
     }
 
-  if (_has_legacy_values(self))
+  if (has_legacy_values)
     {
-      if (_has_new_style_values(self))
+      guint16 legacy_component;
+      const gchar *legacy_id, *legacy_instance, *legacy_name;
+      _get_legacy_options(self, &legacy_component, &legacy_id, &legacy_instance, &legacy_name);
+
+      if (has_new_style_values)
         {
-          if (options->legacy.name)
-            stats_cluster_single_key_add_legacy_alias_with_name(&temp_key, options->legacy.component, options->legacy.id,
-                                                                options->legacy.instance, options->legacy.name);
+          if (legacy_name && strlen(legacy_name) > 0)
+            stats_cluster_single_key_add_legacy_alias_with_name(&temp_key, legacy_component, legacy_id, legacy_instance,
+                                                                legacy_name);
           else
-            stats_cluster_single_key_add_legacy_alias(&temp_key, options->legacy.component, options->legacy.id,
-                                                      options->legacy.instance);
+            stats_cluster_single_key_add_legacy_alias(&temp_key, legacy_component, legacy_id, legacy_instance);
         }
       else
         {
-          if (options->legacy.name)
-            stats_cluster_single_key_legacy_set_with_name(&temp_key, options->legacy.component, options->legacy.id,
-                                                          options->legacy.instance, options->legacy.name);
+          if (legacy_name && strlen(legacy_name) > 0)
+            stats_cluster_single_key_legacy_set_with_name(&temp_key, legacy_component, legacy_id, legacy_instance,
+                                                          legacy_name);
           else
-            stats_cluster_single_key_legacy_set(&temp_key, options->legacy.component, options->legacy.id,
-                                                options->legacy.instance);
+            stats_cluster_single_key_legacy_set(&temp_key, legacy_component, legacy_id, legacy_instance);
         }
     }
 
   stats_cluster_key_clone(sc_key, &temp_key);
 
-  if (merged_labels)
-    g_array_free(merged_labels, TRUE);
-
+  g_array_free(merged_labels, TRUE);
   g_free(name);
 
   return sc_key;
@@ -326,40 +451,35 @@ stats_cluster_key_builder_build_logpipe(const StatsClusterKeyBuilder *self)
   StatsClusterKey *sc_key = g_new0(StatsClusterKey, 1);
   StatsClusterKey temp_key;
   gchar *name = NULL;
-  GArray *merged_labels = NULL;
-  const BuilderOptions *options = _get_last_options_const(self);
 
-  if (_has_new_style_values(self))
+  gboolean has_new_style_values = _has_new_style_values(self);
+  gboolean has_legacy_values = _has_legacy_values(self);
+
+  GArray *merged_labels = _construct_merged_labels(self);
+
+  if (has_new_style_values)
     {
       name = _format_name(self);
-      g_array_sort(options->labels, (GCompareFunc) _labels_sort);
-
-      if (_has_legacy_labels(options))
-        {
-          merged_labels = _construct_merged_labels(self);
-          stats_cluster_logpipe_key_set(&temp_key, name, (StatsClusterLabel *) merged_labels->data, merged_labels->len);
-        }
-      else
-        stats_cluster_logpipe_key_set(&temp_key, name, (StatsClusterLabel *) options->labels->data,
-                                      options->labels->len);
+      stats_cluster_logpipe_key_set(&temp_key, name, (StatsClusterLabel *) merged_labels->data, merged_labels->len);
     }
 
-  if (_has_legacy_values(self))
+  if (has_legacy_values)
     {
-      g_assert(!options->legacy.name);
-      if (_has_new_style_values(self))
-        stats_cluster_logpipe_key_add_legacy_alias(&temp_key, options->legacy.component, options->legacy.id,
-                                                   options->legacy.instance);
+      guint16 legacy_component;
+      const gchar *legacy_id, *legacy_instance, *legacy_name;
+      _get_legacy_options(self, &legacy_component, &legacy_id, &legacy_instance, &legacy_name);
+
+      g_assert(!legacy_name || strlen(legacy_name) == 0);
+
+      if (has_new_style_values)
+        stats_cluster_logpipe_key_add_legacy_alias(&temp_key, legacy_component, legacy_id, legacy_instance);
       else
-        stats_cluster_logpipe_key_legacy_set(&temp_key, options->legacy.component, options->legacy.id,
-                                             options->legacy.instance);
+        stats_cluster_logpipe_key_legacy_set(&temp_key, legacy_component, legacy_id, legacy_instance);
     }
 
   stats_cluster_key_clone(sc_key, &temp_key);
 
-  if (merged_labels)
-    g_array_free(merged_labels, TRUE);
-
+  g_array_free(merged_labels, TRUE);
   g_free(name);
 
   return sc_key;
@@ -387,22 +507,22 @@ stats_cluster_key_builder_clear_legacy_labels(StatsClusterKeyBuilder *self)
 }
 
 const gchar *
-stats_cluster_key_builder_format_legacy_stats_instance(StatsClusterKeyBuilder *self, gchar *buf, gsize buf_size)
+stats_cluster_key_builder_format_legacy_stats_instance(const StatsClusterKeyBuilder *self, gchar *buf, gsize buf_size)
 {
-  BuilderOptions *options = _get_last_options(self);
+  GArray *merged_legacy_labels = _construct_merged_legacy_labels(self);
 
-  if (!_has_legacy_labels(options))
+  if (merged_legacy_labels->len == 0)
     {
       buf[0] = '\0';
-      return buf;
+      goto exit;
     }
 
   gboolean comma_needed = FALSE;
   gsize pos = 0;
 
-  for (guint i = 0; i < options->legacy_labels->len; ++i)
+  for (guint i = 0; i < merged_legacy_labels->len; ++i)
     {
-      StatsClusterLabel *l = &g_array_index(options->legacy_labels, StatsClusterLabel, i);
+      StatsClusterLabel *l = &g_array_index(merged_legacy_labels, StatsClusterLabel, i);
       pos += g_snprintf(buf + pos, buf_size - pos, "%s%s", comma_needed ? "," : "", l->value);
       pos = MIN(buf_size, pos);
 
@@ -410,5 +530,7 @@ stats_cluster_key_builder_format_legacy_stats_instance(StatsClusterKeyBuilder *s
         comma_needed = TRUE;
     }
 
+exit:
+  g_array_free(merged_legacy_labels, TRUE);
   return buf;
 }

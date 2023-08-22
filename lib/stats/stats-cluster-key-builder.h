@@ -30,6 +30,8 @@
 typedef struct _StatsClusterKeyBuilder StatsClusterKeyBuilder;
 
 StatsClusterKeyBuilder *stats_cluster_key_builder_new(void);
+void stats_cluster_key_builder_push(StatsClusterKeyBuilder *self);
+void stats_cluster_key_builder_pop(StatsClusterKeyBuilder *self);
 StatsClusterKeyBuilder *stats_cluster_key_builder_clone(const StatsClusterKeyBuilder *self);
 void stats_cluster_key_builder_free(StatsClusterKeyBuilder *self);
 
@@ -52,7 +54,7 @@ StatsClusterKey *stats_cluster_key_builder_build_logpipe(const StatsClusterKeyBu
 /* Compatibility functions for reproducing stats_instance names based on unsorted labels */
 void stats_cluster_key_builder_add_legacy_label(StatsClusterKeyBuilder *self, const StatsClusterLabel label);
 void stats_cluster_key_builder_clear_legacy_labels(StatsClusterKeyBuilder *self);
-const gchar *stats_cluster_key_builder_format_legacy_stats_instance(StatsClusterKeyBuilder *self,
+const gchar *stats_cluster_key_builder_format_legacy_stats_instance(const StatsClusterKeyBuilder *self,
     gchar *buf, gsize buf_size);
 
 #endif
