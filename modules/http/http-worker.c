@@ -172,7 +172,7 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
   if (owner->method_type == METHOD_TYPE_PUT)
     curl_easy_setopt(self->curl, CURLOPT_CUSTOMREQUEST, "PUT");
 
-  g_assert(curl_easy_setopt(self->curl, CURLOPT_ACCEPT_ENCODING, owner->accept_encoding->str) == CURLE_OK);
+  curl_easy_setopt(self->curl, CURLOPT_ACCEPT_ENCODING, owner->accept_encoding->str);
 }
 
 
