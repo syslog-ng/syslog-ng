@@ -42,6 +42,7 @@ makedepends="
 	rabbitmq-c-dev
 	riemann-c-client-dev
 	tzdata
+	zlib-dev
 	"
 subpackages="
 	$pkgname-scl::noarch
