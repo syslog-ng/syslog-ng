@@ -1835,49 +1835,53 @@ _set_metric_options(LogWriter *self, const gchar *stats_id, StatsClusterKeyBuild
 
   self->metrics.stats_kb = kb;
 
-  StatsClusterKeyBuilder *new_style_stats_kb = stats_cluster_key_builder_clone(kb);
-
   /* building stats key for counters with legacy representation */
-  gchar stats_instance[1024];
-  const gchar *instance_name = stats_cluster_key_builder_format_legacy_stats_instance(self->metrics.stats_kb,
-                               stats_instance, sizeof(stats_instance));
+  stats_cluster_key_builder_push(self->metrics.stats_kb);
+  {
+    gchar stats_instance[1024];
+    const gchar *instance_name = stats_cluster_key_builder_format_legacy_stats_instance(self->metrics.stats_kb,
+                                 stats_instance, sizeof(stats_instance));
 
-  stats_cluster_key_builder_set_name(self->metrics.stats_kb, "output_events_total");
-  stats_cluster_key_builder_set_legacy_alias(self->metrics.stats_kb, self->options->stats_source | SCS_DESTINATION,
-                                             self->stats_id, instance_name);
-  stats_cluster_key_builder_add_label(self->metrics.stats_kb, stats_cluster_label("id", self->stats_id));
+    stats_cluster_key_builder_set_name(self->metrics.stats_kb, "output_events_total");
+    stats_cluster_key_builder_set_legacy_alias(self->metrics.stats_kb, self->options->stats_source | SCS_DESTINATION,
+                                               self->stats_id, instance_name);
+    stats_cluster_key_builder_add_label(self->metrics.stats_kb, stats_cluster_label("id", self->stats_id));
 
-  if (self->metrics.output_events_key)
-    stats_cluster_key_free(self->metrics.output_events_key);
+    if (self->metrics.output_events_key)
+      stats_cluster_key_free(self->metrics.output_events_key);
 
-  self->metrics.output_events_key = stats_cluster_key_builder_build_logpipe(self->metrics.stats_kb);
+    self->metrics.output_events_key = stats_cluster_key_builder_build_logpipe(self->metrics.stats_kb);
+  }
+  stats_cluster_key_builder_pop(self->metrics.stats_kb);
 
   /* counters without a legacy alias, e.g. prometheus only */
-  stats_cluster_key_builder_add_label(new_style_stats_kb, stats_cluster_label("id", self->stats_id));
+  stats_cluster_key_builder_push(self->metrics.stats_kb);
+  {
+    stats_cluster_key_builder_add_label(self->metrics.stats_kb, stats_cluster_label("id", self->stats_id));
 
-  if (self->metrics.written_bytes_key)
-    stats_cluster_key_free(self->metrics.written_bytes_key);
+    if (self->metrics.written_bytes_key)
+      stats_cluster_key_free(self->metrics.written_bytes_key);
 
-  stats_cluster_key_builder_set_name(new_style_stats_kb, "output_event_bytes_total");
-  self->metrics.written_bytes_key = stats_cluster_key_builder_build_single(new_style_stats_kb);
+    stats_cluster_key_builder_set_name(self->metrics.stats_kb, "output_event_bytes_total");
+    self->metrics.written_bytes_key = stats_cluster_key_builder_build_single(self->metrics.stats_kb);
 
-  if (self->metrics.message_delay_key)
-    stats_cluster_key_free(self->metrics.message_delay_key);
+    if (self->metrics.message_delay_key)
+      stats_cluster_key_free(self->metrics.message_delay_key);
 
-  /* Up to 49 days and 17 hours on 32 bit machines. */
-  stats_cluster_key_builder_set_name(new_style_stats_kb, "output_message_delay_sample_seconds");
-  stats_cluster_key_builder_set_unit(new_style_stats_kb, SCU_MILLISECONDS);
-  self->metrics.message_delay_key = stats_cluster_key_builder_build_single(new_style_stats_kb);
+    /* Up to 49 days and 17 hours on 32 bit machines. */
+    stats_cluster_key_builder_set_name(self->metrics.stats_kb, "output_message_delay_sample_seconds");
+    stats_cluster_key_builder_set_unit(self->metrics.stats_kb, SCU_MILLISECONDS);
+    self->metrics.message_delay_key = stats_cluster_key_builder_build_single(self->metrics.stats_kb);
 
-  if (self->metrics.message_delay_sample_age_key)
-    stats_cluster_key_free(self->metrics.message_delay_sample_age_key);
+    if (self->metrics.message_delay_sample_age_key)
+      stats_cluster_key_free(self->metrics.message_delay_sample_age_key);
 
-  stats_cluster_key_builder_set_name(new_style_stats_kb, "output_message_delay_sample_age_seconds");
-  stats_cluster_key_builder_set_unit(new_style_stats_kb, SCU_SECONDS);
-  stats_cluster_key_builder_set_frame_of_reference(new_style_stats_kb, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
-  self->metrics.message_delay_sample_age_key = stats_cluster_key_builder_build_single(new_style_stats_kb);
-
-  stats_cluster_key_builder_free(new_style_stats_kb);
+    stats_cluster_key_builder_set_name(self->metrics.stats_kb, "output_message_delay_sample_age_seconds");
+    stats_cluster_key_builder_set_unit(self->metrics.stats_kb, SCU_SECONDS);
+    stats_cluster_key_builder_set_frame_of_reference(self->metrics.stats_kb, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
+    self->metrics.message_delay_sample_age_key = stats_cluster_key_builder_build_single(self->metrics.stats_kb);
+  }
+  stats_cluster_key_builder_pop(self->metrics.stats_kb);
 }
 
 void

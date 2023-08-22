@@ -54,7 +54,7 @@ log_queue_disk_is_file_in_directory(const gchar *file, const gchar *directory)
 
 static LogQueue *
 _create_disk_queue(DiskQDestPlugin *self, const gchar *filename, const gchar *persist_name, gint stats_level,
-                   const StatsClusterKeyBuilder *driver_sck_builder, StatsClusterKeyBuilder *queue_sck_builder)
+                   StatsClusterKeyBuilder *driver_sck_builder, StatsClusterKeyBuilder *queue_sck_builder)
 {
   if (self->options.reliable)
     return log_queue_disk_reliable_new(&self->options, filename, persist_name, stats_level, driver_sck_builder,
@@ -78,7 +78,7 @@ _warn_if_dir_changed(const gchar *qfile_name, const gchar *dir)
 static LogQueue *
 _create_and_start_disk_queue_with_filename_from_persist(DiskQDestPlugin *self, const gchar *persist_qfile_name,
                                                         const gchar *persist_name, gint stats_level,
-                                                        const StatsClusterKeyBuilder *driver_sck_builder,
+                                                        StatsClusterKeyBuilder *driver_sck_builder,
                                                         StatsClusterKeyBuilder *queue_sck_builder)
 {
   if (!persist_qfile_name)
@@ -117,7 +117,7 @@ _create_and_start_disk_queue_with_filename_from_persist(DiskQDestPlugin *self, c
 static LogQueue *
 _create_and_start_disk_queue_with_new_filename(DiskQDestPlugin *self, const gchar *new_qfile_name,
                                                const gchar *persist_name, gint stats_level,
-                                               const StatsClusterKeyBuilder *driver_sck_builder,
+                                               StatsClusterKeyBuilder *driver_sck_builder,
                                                StatsClusterKeyBuilder *queue_sck_builder)
 {
   if (!new_qfile_name)
@@ -136,7 +136,7 @@ _create_and_start_disk_queue_with_new_filename(DiskQDestPlugin *self, const gcha
 
 static LogQueue *
 _acquire_queue(LogDestDriver *dd, const gchar *persist_name, gint stats_level,
-               const StatsClusterKeyBuilder *driver_sck_builder, StatsClusterKeyBuilder *queue_sck_builder)
+               StatsClusterKeyBuilder *driver_sck_builder, StatsClusterKeyBuilder *queue_sck_builder)
 {
   DiskQDestPlugin *self = log_driver_get_plugin(&dd->super, DiskQDestPlugin, DISKQ_PLUGIN_NAME);
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);

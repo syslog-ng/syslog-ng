@@ -103,13 +103,6 @@ stats_cluster_key_builder_new(void)
   return self;
 }
 
-StatsClusterKeyBuilder *
-stats_cluster_key_builder_clone(const StatsClusterKeyBuilder *self)
-{
-  /* TODO: Remove */
-  return NULL;
-}
-
 void
 stats_cluster_key_builder_push(StatsClusterKeyBuilder *self)
 {
@@ -214,12 +207,6 @@ stats_cluster_key_builder_set_legacy_alias_name(StatsClusterKeyBuilder *self, co
 
   g_free(options->legacy.name);
   options->legacy.name = g_strdup(name);
-}
-
-void
-stats_cluster_key_builder_reset(StatsClusterKeyBuilder *self)
-{
-  /* TODO: Remove */
 }
 
 static gint
@@ -498,12 +485,6 @@ stats_cluster_key_builder_add_legacy_label(StatsClusterKeyBuilder *self, const S
 
   StatsClusterLabel own_label = stats_cluster_label(g_strdup(label.name), g_strdup(label.value));
   options->legacy_labels = g_array_append_vals(options->legacy_labels, &own_label, 1);
-}
-
-void
-stats_cluster_key_builder_clear_legacy_labels(StatsClusterKeyBuilder *self)
-{
-  /* TODO: Remove */
 }
 
 const gchar *

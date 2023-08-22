@@ -618,7 +618,7 @@ log_queue_fifo_free(LogQueue *s)
 
 LogQueue *
 log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name, gint stats_level,
-                   const StatsClusterKeyBuilder *driver_sck_builder, StatsClusterKeyBuilder *queue_sck_builder)
+                   StatsClusterKeyBuilder *driver_sck_builder, StatsClusterKeyBuilder *queue_sck_builder)
 {
   LogQueueFifo *self;
 
@@ -626,7 +626,10 @@ log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name, gint stats_lev
   self = g_malloc0(sizeof(LogQueueFifo) + max_threads * sizeof(self->input_queues[0]));
 
   if (queue_sck_builder)
-    stats_cluster_key_builder_set_name_prefix(queue_sck_builder, "memory_queue_");
+    {
+      stats_cluster_key_builder_push(queue_sck_builder);
+      stats_cluster_key_builder_set_name_prefix(queue_sck_builder, "memory_queue_");
+    }
 
   log_queue_init_instance(&self->super, persist_name, stats_level, driver_sck_builder, queue_sck_builder);
   self->super.type = log_queue_fifo_type;
@@ -654,12 +657,16 @@ log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name, gint stats_lev
   INIT_IV_LIST_HEAD(&self->backlog_queue.items);
 
   self->log_fifo_size = log_fifo_size;
+
+  if (queue_sck_builder)
+    stats_cluster_key_builder_pop(queue_sck_builder);
+
   return &self->super;
 }
 
 LogQueue *
 log_queue_fifo_legacy_new(gint log_fifo_size, const gchar *persist_name, gint stats_level,
-                          const StatsClusterKeyBuilder *driver_sck_builder, StatsClusterKeyBuilder *queue_sck_builder)
+                          StatsClusterKeyBuilder *driver_sck_builder, StatsClusterKeyBuilder *queue_sck_builder)
 {
   LogQueueFifo *self = (LogQueueFifo *) log_queue_fifo_new(log_fifo_size, persist_name, stats_level,
                                                            driver_sck_builder, queue_sck_builder);

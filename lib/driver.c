@@ -259,7 +259,7 @@ log_src_driver_free(LogPipe *s)
 
 static LogQueue *
 _create_memory_queue(LogDestDriver *self, const gchar *persist_name, gint stats_level,
-                     const StatsClusterKeyBuilder *driver_sck_builder, StatsClusterKeyBuilder *queue_sck_builder)
+                     StatsClusterKeyBuilder *driver_sck_builder, StatsClusterKeyBuilder *queue_sck_builder)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
@@ -282,7 +282,7 @@ _create_memory_queue(LogDestDriver *self, const gchar *persist_name, gint stats_
 /* returns a reference */
 static LogQueue *
 log_dest_driver_acquire_memory_queue(LogDestDriver *self, const gchar *persist_name, gint stats_level,
-                                     const StatsClusterKeyBuilder *driver_sck_builder,
+                                     StatsClusterKeyBuilder *driver_sck_builder,
                                      StatsClusterKeyBuilder *queue_sck_builder)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);

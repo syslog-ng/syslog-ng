@@ -32,7 +32,6 @@ typedef struct _StatsClusterKeyBuilder StatsClusterKeyBuilder;
 StatsClusterKeyBuilder *stats_cluster_key_builder_new(void);
 void stats_cluster_key_builder_push(StatsClusterKeyBuilder *self);
 void stats_cluster_key_builder_pop(StatsClusterKeyBuilder *self);
-StatsClusterKeyBuilder *stats_cluster_key_builder_clone(const StatsClusterKeyBuilder *self);
 void stats_cluster_key_builder_free(StatsClusterKeyBuilder *self);
 
 void stats_cluster_key_builder_set_name(StatsClusterKeyBuilder *self, const gchar *name);
@@ -46,14 +45,11 @@ void stats_cluster_key_builder_set_legacy_alias(StatsClusterKeyBuilder *self, gu
                                                 const gchar *instance);
 void stats_cluster_key_builder_set_legacy_alias_name(StatsClusterKeyBuilder *self, const gchar *name);
 
-void stats_cluster_key_builder_reset(StatsClusterKeyBuilder *self);
-
 StatsClusterKey *stats_cluster_key_builder_build_single(const StatsClusterKeyBuilder *self);
 StatsClusterKey *stats_cluster_key_builder_build_logpipe(const StatsClusterKeyBuilder *self);
 
 /* Compatibility functions for reproducing stats_instance names based on unsorted labels */
 void stats_cluster_key_builder_add_legacy_label(StatsClusterKeyBuilder *self, const StatsClusterLabel label);
-void stats_cluster_key_builder_clear_legacy_labels(StatsClusterKeyBuilder *self);
 const gchar *stats_cluster_key_builder_format_legacy_stats_instance(const StatsClusterKeyBuilder *self,
     gchar *buf, gsize buf_size);
 

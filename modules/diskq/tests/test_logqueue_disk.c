@@ -308,7 +308,8 @@ Test(logqueue_disk, restart_corrupted_non_reliable_with_front_cache)
   gboolean persistent;
   log_queue_disk_stop(queue, &persistent);
   log_queue_unref(queue);
-  stats_cluster_key_builder_reset(queue_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
+  queue_sck_builder = stats_cluster_key_builder_new();
   queue = log_queue_disk_non_reliable_new(&options, filename, "restart_corrupted_non_reliable_with_front_cache",
                                           STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
   cr_assert(log_queue_disk_start(queue));
@@ -345,7 +346,8 @@ Test(logqueue_disk, restart_corrupted_with_multiple_queues)
   StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
   LogQueue *queue_1 = log_queue_disk_reliable_new(&options, filename_1, "restart_corrupted_with_multiple_queues_1",
                                                   STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
-  stats_cluster_key_builder_reset(queue_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
+  queue_sck_builder = stats_cluster_key_builder_new();
   LogQueue *queue_2 = log_queue_disk_reliable_new(&options, filename_2, "restart_corrupted_with_multiple_queues_2",
                                                   STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
 
@@ -373,7 +375,8 @@ Test(logqueue_disk, restart_corrupted_with_multiple_queues)
   cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 1);
   cr_assert_eq(stats_counter_get(queue_2->metrics.owned.queued_messages), 1);
 
-  stats_cluster_key_builder_reset(queue_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
+  queue_sck_builder = stats_cluster_key_builder_new();
   queue_1 = log_queue_disk_reliable_new(&options, filename_1, "restart_corrupted_with_multiple_queues_1",
                                         STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
   cr_assert(log_queue_disk_start(queue_1));

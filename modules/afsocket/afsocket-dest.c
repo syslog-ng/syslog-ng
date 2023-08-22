@@ -505,14 +505,24 @@ _init_stats_key_builders(AFSocketDestDriver *self, StatsClusterKeyBuilder **writ
   stats_cluster_key_builder_add_legacy_label(*writer_sck_builder, stats_cluster_label("address",
                                              afsocket_dd_get_dest_name(self)));
 
-  *driver_sck_builder = stats_cluster_key_builder_clone(*writer_sck_builder);
+  *driver_sck_builder = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_add_label(*driver_sck_builder, stats_cluster_label("driver", "afsocket"));
   stats_cluster_key_builder_add_label(*driver_sck_builder, stats_cluster_label("id", self->super.super.id));
+  stats_cluster_key_builder_add_legacy_label(*driver_sck_builder, stats_cluster_label("transport",
+                                             self->transport_mapper->transport));
+  stats_cluster_key_builder_add_legacy_label(*driver_sck_builder, stats_cluster_label("address",
+                                             afsocket_dd_get_dest_name(self)));
   stats_cluster_key_builder_set_legacy_alias(*driver_sck_builder,
                                              self->writer_options.stats_source | SCS_DESTINATION,
                                              self->super.super.id, afsocket_dd_stats_instance(self));
 
-  *queue_sck_builder = stats_cluster_key_builder_clone(*writer_sck_builder);
+  *queue_sck_builder = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_add_label(*queue_sck_builder, stats_cluster_label("driver", "afsocket"));
   stats_cluster_key_builder_add_label(*queue_sck_builder, stats_cluster_label("id", self->super.super.id));
+  stats_cluster_key_builder_add_legacy_label(*queue_sck_builder, stats_cluster_label("transport",
+                                             self->transport_mapper->transport));
+  stats_cluster_key_builder_add_legacy_label(*queue_sck_builder, stats_cluster_label("address",
+                                             afsocket_dd_get_dest_name(self)));
 }
 
 static gboolean

@@ -228,23 +228,28 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
 }
 
 static void
-_register_shared_counters(LogQueue *self, gint stats_level, const StatsClusterKeyBuilder *builder)
+_register_shared_counters(LogQueue *self, gint stats_level, StatsClusterKeyBuilder *builder)
 {
   if (!builder)
     return;
 
-  StatsClusterKeyBuilder *local_builder = stats_cluster_key_builder_clone(builder);
+  stats_cluster_key_builder_push(builder);
+  {
+    stats_cluster_key_builder_set_name(builder, "output_events_total");
+    self->metrics.shared.output_events_sc_key = stats_cluster_key_builder_build_logpipe(builder);
+  }
+  stats_cluster_key_builder_pop(builder);
 
-  stats_cluster_key_builder_set_name(local_builder, "output_events_total");
-  self->metrics.shared.output_events_sc_key = stats_cluster_key_builder_build_logpipe(local_builder);
-
-  stats_cluster_key_builder_reset(local_builder);
-  stats_cluster_key_builder_set_legacy_alias(local_builder,
-                                             self->metrics.shared.output_events_sc_key->legacy.component,
-                                             self->metrics.shared.output_events_sc_key->legacy.id,
-                                             self->metrics.shared.output_events_sc_key->legacy.instance);
-  stats_cluster_key_builder_set_legacy_alias_name(local_builder, "memory_usage");
-  self->metrics.shared.memory_usage_sc_key = stats_cluster_key_builder_build_single(local_builder);
+  stats_cluster_key_builder_push(builder);
+  {
+    stats_cluster_key_builder_set_legacy_alias(builder,
+                                               self->metrics.shared.output_events_sc_key->legacy.component,
+                                               self->metrics.shared.output_events_sc_key->legacy.id,
+                                               self->metrics.shared.output_events_sc_key->legacy.instance);
+    stats_cluster_key_builder_set_legacy_alias_name(builder, "memory_usage");
+    self->metrics.shared.memory_usage_sc_key = stats_cluster_key_builder_build_single(builder);
+  }
+  stats_cluster_key_builder_pop(builder);
 
   stats_lock();
   {
@@ -256,8 +261,6 @@ _register_shared_counters(LogQueue *self, gint stats_level, const StatsClusterKe
                                      &self->metrics.shared.memory_usage);
   }
   stats_unlock();
-
-  stats_cluster_key_builder_free(local_builder);
 }
 
 static void
@@ -266,11 +269,15 @@ _register_owned_counters(LogQueue *self, gint stats_level, StatsClusterKeyBuilde
   if (!builder)
     return;
 
-  stats_cluster_key_builder_set_name(builder, "events");
-  self->metrics.owned.events_sc_key = stats_cluster_key_builder_build_single(builder);
+  stats_cluster_key_builder_push(builder);
+  {
+    stats_cluster_key_builder_set_name(builder, "events");
+    self->metrics.owned.events_sc_key = stats_cluster_key_builder_build_single(builder);
 
-  stats_cluster_key_builder_set_name(builder, "memory_usage_bytes");
-  self->metrics.owned.memory_usage_sc_key = stats_cluster_key_builder_build_single(builder);
+    stats_cluster_key_builder_set_name(builder, "memory_usage_bytes");
+    self->metrics.owned.memory_usage_sc_key = stats_cluster_key_builder_build_single(builder);
+  }
+  stats_cluster_key_builder_pop(builder);
 
   stats_lock();
   {
@@ -283,7 +290,7 @@ _register_owned_counters(LogQueue *self, gint stats_level, StatsClusterKeyBuilde
 }
 
 static void
-_register_counters(LogQueue *self, gint stats_level, const StatsClusterKeyBuilder *driver_sck_builder,
+_register_counters(LogQueue *self, gint stats_level, StatsClusterKeyBuilder *driver_sck_builder,
                    StatsClusterKeyBuilder *queue_sck_builder)
 {
   g_assert(!driver_sck_builder || queue_sck_builder);
@@ -353,7 +360,7 @@ _unregister_counters(LogQueue *self)
 
 void
 log_queue_init_instance(LogQueue *self, const gchar *persist_name, gint stats_level,
-                        const StatsClusterKeyBuilder *driver_sck_builder, StatsClusterKeyBuilder *queue_sck_builder)
+                        StatsClusterKeyBuilder *driver_sck_builder, StatsClusterKeyBuilder *queue_sck_builder)
 {
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->free_fn = log_queue_free_method;

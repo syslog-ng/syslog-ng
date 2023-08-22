@@ -212,7 +212,7 @@ void log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel
 gboolean log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify,
                                gpointer user_data, GDestroyNotify user_data_destroy);
 void log_queue_init_instance(LogQueue *self, const gchar *persist_name, gint stats_level,
-                             const StatsClusterKeyBuilder *driver_sck_builder,
+                             StatsClusterKeyBuilder *driver_sck_builder,
                              StatsClusterKeyBuilder *queue_sck_builder);
 
 void log_queue_free_method(LogQueue *self);

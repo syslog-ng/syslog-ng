@@ -382,7 +382,8 @@ Test(logqueue, log_queue_fifo_multiple_queues)
   StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
   stats_cluster_key_builder_add_label(queue_sck_builder, stats_cluster_label("log_queue_fifo_multiple_queues", "1"));
   LogQueue *queue_1 = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
-  stats_cluster_key_builder_reset(queue_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
+  queue_sck_builder = stats_cluster_key_builder_new();
   stats_cluster_key_builder_add_label(queue_sck_builder, stats_cluster_label("log_queue_fifo_multiple_queues", "2"));
   LogQueue *queue_2 = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
 
@@ -409,7 +410,8 @@ Test(logqueue, log_queue_fifo_multiple_queues)
   cr_assert_eq(stats_counter_get(queue_2->metrics.shared.queued_messages), 1);
   cr_assert_eq(stats_counter_get(queue_2->metrics.owned.queued_messages), 1);
 
-  stats_cluster_key_builder_reset(queue_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
+  queue_sck_builder = stats_cluster_key_builder_new();
   stats_cluster_key_builder_add_label(queue_sck_builder, stats_cluster_label("queue", "1"));
   queue_1 = log_queue_fifo_new(fifo_size, NULL, STATS_LEVEL0, driver_sck_builder, queue_sck_builder);
 

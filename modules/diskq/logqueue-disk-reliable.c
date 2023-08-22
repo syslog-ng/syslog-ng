@@ -462,7 +462,7 @@ _set_virtual_functions(LogQueueDiskReliable *self)
 
 LogQueue *
 log_queue_disk_reliable_new(DiskQueueOptions *options, const gchar *filename, const gchar *persist_name,
-                            gint stats_level, const StatsClusterKeyBuilder *driver_sck_builder,
+                            gint stats_level, StatsClusterKeyBuilder *driver_sck_builder,
                             StatsClusterKeyBuilder *queue_sck_builder)
 {
   g_assert(options->reliable == TRUE);
