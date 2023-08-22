@@ -45,7 +45,9 @@ add_module(
   TARGET http
   GRAMMAR http-grammar
   INCLUDES ${Curl_INCLUDE_DIR}
+           ${ZLIB_INCLUDE_DIRS}
   DEPENDS ${Curl_LIBRARIES}
+          ${ZLIB_LIBRARIES}
   SOURCES ${HTTP_DESTINATION_SOURCES}
 )
 
