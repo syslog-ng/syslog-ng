@@ -159,80 +159,191 @@ _test_builder(KeyType type)
   const gchar *dummy_name = "dummy_name";
   const gchar *dummy_name_2 = "dummy_name_2";
   const gchar *dummy_name_prefix = "dummy_name_prefix_";
-  const gchar *dummy_name_2_with_prefix = "dummy_name_prefix_dummy_name_2";
+  const gchar *dummy_name_with_prefix = "dummy_name_prefix_dummy_name";
+  const gchar *dummy_name_with_foobar_prefix = "foobardummy_name";
   const gchar *dummy_name_suffix = "_dummy_name_suffix";
-  const gchar *dummy_name_2_with_prefix_and_suffix = "dummy_name_prefix_dummy_name_2_dummy_name_suffix";
+  const gchar *dummy_name_with_suffix = "dummy_name_dummy_name_suffix";
+  const gchar *dummy_name_with_foobar_suffix = "dummy_namefoobar";
 
   guint16 dummy_legacy_component = 42;
   const gchar *dummy_legacy_id = "dummy_legacy_id";
   const gchar *dummy_legacy_instance = "dummy_legacy_instance";
   const gchar *dummy_legacy_name = "dummy_legacy_name";
 
-  /* Name only */
-  stats_cluster_key_builder_set_name(builder, dummy_name);
-  StatsClusterLabel empty_labels[] = {};
-  _assert_built_sc_key_equals(builder, type, dummy_name, empty_labels, G_N_ELEMENTS(empty_labels));
-
-  /* One label */
-  stats_cluster_key_builder_add_label(builder, stats_cluster_label("dummy-label-name-99", "dummy-label-value-99"));
-  StatsClusterLabel one_label[] =
+  stats_cluster_key_builder_push(builder);
   {
-    stats_cluster_label("dummy-label-name-99", "dummy-label-value-99"),
-  };
-  _assert_built_sc_key_equals(builder, type, dummy_name, one_label, G_N_ELEMENTS(one_label));
+    /* Name only */
+    stats_cluster_key_builder_set_name(builder, dummy_name);
+    StatsClusterLabel empty_labels[] = {};
+    _assert_built_sc_key_equals(builder, type, dummy_name, empty_labels, G_N_ELEMENTS(empty_labels));
 
-  /* Two labels, set in wrong ordering */
-  stats_cluster_key_builder_add_label(builder, stats_cluster_label("dummy-label-name-00", "dummy-label-value-00"));
-  StatsClusterLabel two_labels[] =
-  {
-    stats_cluster_label("dummy-label-name-00", "dummy-label-value-00"),
-    stats_cluster_label("dummy-label-name-99", "dummy-label-value-99"),
-  };
-  _assert_built_sc_key_equals(builder, type, dummy_name, two_labels, G_N_ELEMENTS(two_labels));
-
-  /* New name */
-  stats_cluster_key_builder_set_name(builder, dummy_name_2);
-  _assert_built_sc_key_equals(builder, type, dummy_name_2, two_labels, G_N_ELEMENTS(two_labels));
-
-  /* Name prefix */
-  stats_cluster_key_builder_set_name_prefix(builder, dummy_name_prefix);
-  _assert_built_sc_key_equals(builder, type, dummy_name_2_with_prefix, two_labels, G_N_ELEMENTS(two_labels));
-
-  /* Name suffix */
-  stats_cluster_key_builder_set_name_suffix(builder, dummy_name_suffix);
-  _assert_built_sc_key_equals(builder, type, dummy_name_2_with_prefix_and_suffix, two_labels, G_N_ELEMENTS(two_labels));
-
-  /* Unit */
-  stats_cluster_key_builder_set_unit(builder, SCU_NANOSECONDS);
-  _assert_built_sc_key_has_unit(builder, type, SCU_NANOSECONDS);
-
-  /* Frame of reference */
-  stats_cluster_key_builder_set_frame_of_reference(builder, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
-  _assert_built_sc_key_has_frame_of_reference(builder, type, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
-
-  /* Legacy alias */
-  stats_cluster_key_builder_set_legacy_alias(builder, dummy_legacy_component, dummy_legacy_id, dummy_legacy_instance);
-  _assert_built_sc_key_equals_with_legacy(builder, type, dummy_name_2_with_prefix_and_suffix, two_labels,
-                                          G_N_ELEMENTS(two_labels), dummy_legacy_component, dummy_legacy_id,
-                                          dummy_legacy_instance, NULL);
-
-  /* Legacy alias name */
-  if (type == TEST_SINGLE)
+    /* One label */
+    stats_cluster_key_builder_push(builder);
     {
-      /* LOGPIPE does not support setting the legacy name */
-      stats_cluster_key_builder_set_legacy_alias_name(builder, dummy_legacy_name);
-      _assert_built_sc_key_equals_with_legacy(builder, type, dummy_name_2_with_prefix_and_suffix, two_labels,
-                                              G_N_ELEMENTS(two_labels), dummy_legacy_component, dummy_legacy_id,
-                                              dummy_legacy_instance, dummy_legacy_name);
+      stats_cluster_key_builder_add_label(builder, stats_cluster_label("dummy-label-name-99", "dummy-label-value-99"));
+      StatsClusterLabel one_label[] =
+      {
+        stats_cluster_label("dummy-label-name-99", "dummy-label-value-99"),
+      };
+      _assert_built_sc_key_equals(builder, type, dummy_name, one_label, G_N_ELEMENTS(one_label));
     }
+    stats_cluster_key_builder_pop(builder);
+    _assert_built_sc_key_equals(builder, type, dummy_name, empty_labels, G_N_ELEMENTS(empty_labels));
+
+    /* Two labels, set in wrong ordering */
+    stats_cluster_key_builder_push(builder);
+    {
+      stats_cluster_key_builder_add_label(builder, stats_cluster_label("dummy-label-name-99", "dummy-label-value-99"));
+      stats_cluster_key_builder_push(builder);
+      {
+        stats_cluster_key_builder_add_label(builder,
+                                            stats_cluster_label("dummy-label-name-00", "dummy-label-value-00"));
+        StatsClusterLabel two_labels[] =
+        {
+          stats_cluster_label("dummy-label-name-00", "dummy-label-value-00"),
+          stats_cluster_label("dummy-label-name-99", "dummy-label-value-99"),
+        };
+        _assert_built_sc_key_equals(builder, type, dummy_name, two_labels, G_N_ELEMENTS(two_labels));
+      }
+      stats_cluster_key_builder_pop(builder);
+    }
+    stats_cluster_key_builder_pop(builder);
+    _assert_built_sc_key_equals(builder, type, dummy_name, empty_labels, G_N_ELEMENTS(empty_labels));
+
+    /* New name */
+    stats_cluster_key_builder_push(builder);
+    {
+      stats_cluster_key_builder_set_name(builder, dummy_name_2);
+      _assert_built_sc_key_equals(builder, type, dummy_name_2, empty_labels, G_N_ELEMENTS(empty_labels));
+    }
+    stats_cluster_key_builder_pop(builder);
+
+    /* Name prefix */
+    stats_cluster_key_builder_push(builder);
+    {
+      stats_cluster_key_builder_set_name_prefix(builder, dummy_name_prefix);
+      stats_cluster_key_builder_push(builder);
+      {
+        _assert_built_sc_key_equals(builder, type, dummy_name_with_prefix, empty_labels, G_N_ELEMENTS(empty_labels));
+        stats_cluster_key_builder_set_name_prefix(builder, "foobar");
+        _assert_built_sc_key_equals(builder, type, dummy_name_with_foobar_prefix, empty_labels,
+                                    G_N_ELEMENTS(empty_labels));
+      }
+      stats_cluster_key_builder_pop(builder);
+      _assert_built_sc_key_equals(builder, type, dummy_name_with_prefix, empty_labels, G_N_ELEMENTS(empty_labels));
+    }
+    stats_cluster_key_builder_pop(builder);
+
+    /* Name suffix */
+    stats_cluster_key_builder_push(builder);
+    {
+      stats_cluster_key_builder_set_name_suffix(builder, dummy_name_suffix);
+      stats_cluster_key_builder_push(builder);
+      {
+        _assert_built_sc_key_equals(builder, type, dummy_name_with_suffix, empty_labels, G_N_ELEMENTS(empty_labels));
+        stats_cluster_key_builder_set_name_suffix(builder, "foobar");
+        _assert_built_sc_key_equals(builder, type, dummy_name_with_foobar_suffix, empty_labels,
+                                    G_N_ELEMENTS(empty_labels));
+      }
+      stats_cluster_key_builder_pop(builder);
+      _assert_built_sc_key_equals(builder, type, dummy_name_with_suffix, empty_labels, G_N_ELEMENTS(empty_labels));
+    }
+    stats_cluster_key_builder_pop(builder);
+
+    /* Unit */
+    stats_cluster_key_builder_push(builder);
+    {
+      stats_cluster_key_builder_set_unit(builder, SCU_NANOSECONDS);
+      stats_cluster_key_builder_push(builder);
+      {
+        _assert_built_sc_key_has_unit(builder, type, SCU_NANOSECONDS);
+        stats_cluster_key_builder_set_unit(builder, SCU_KIB);
+        _assert_built_sc_key_has_unit(builder, type, SCU_KIB);
+      }
+      stats_cluster_key_builder_pop(builder);
+      _assert_built_sc_key_has_unit(builder, type, SCU_NANOSECONDS);
+    }
+    stats_cluster_key_builder_pop(builder);
+
+    /* Frame of reference */
+    stats_cluster_key_builder_push(builder);
+    {
+      stats_cluster_key_builder_set_frame_of_reference(builder, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
+      stats_cluster_key_builder_push(builder);
+      {
+        _assert_built_sc_key_has_frame_of_reference(builder, type, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
+        stats_cluster_key_builder_set_frame_of_reference(builder, SCFOR_ABSOLUTE);
+        _assert_built_sc_key_has_frame_of_reference(builder, type, SCFOR_ABSOLUTE);
+      }
+      stats_cluster_key_builder_pop(builder);
+      _assert_built_sc_key_has_frame_of_reference(builder, type, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
+    }
+    stats_cluster_key_builder_pop(builder);
+
+    /* Legacy alias */
+    stats_cluster_key_builder_push(builder);
+    {
+      stats_cluster_key_builder_set_legacy_alias(builder, 1337, "foobar", "foobar");
+      stats_cluster_key_builder_push(builder);
+      {
+        _assert_built_sc_key_equals_with_legacy(builder, type, dummy_name, empty_labels,
+                                                G_N_ELEMENTS(empty_labels), 1337, "foobar", "foobar", NULL);
+        stats_cluster_key_builder_set_legacy_alias(builder, dummy_legacy_component, dummy_legacy_id,
+                                                   dummy_legacy_instance);
+        _assert_built_sc_key_equals_with_legacy(builder, type, dummy_name, empty_labels, G_N_ELEMENTS(empty_labels),
+                                                dummy_legacy_component, dummy_legacy_id, dummy_legacy_instance, NULL);
+      }
+      stats_cluster_key_builder_pop(builder);
+      _assert_built_sc_key_equals_with_legacy(builder, type, dummy_name, empty_labels,
+                                              G_N_ELEMENTS(empty_labels), 1337, "foobar", "foobar", NULL);
+    }
+    stats_cluster_key_builder_pop(builder);
+
+    /* Legacy alias name */
+    if (type == TEST_SINGLE)
+      {
+        /* LOGPIPE does not support setting the legacy name */
+        stats_cluster_key_builder_push(builder);
+        {
+          stats_cluster_key_builder_set_legacy_alias(builder, dummy_legacy_component, dummy_legacy_id,
+                                                     dummy_legacy_instance);
+          stats_cluster_key_builder_set_legacy_alias_name(builder, "foobar");
+          stats_cluster_key_builder_push(builder);
+          {
+            _assert_built_sc_key_equals_with_legacy(builder, type, dummy_name, empty_labels, G_N_ELEMENTS(empty_labels),
+                                                    dummy_legacy_component, dummy_legacy_id, dummy_legacy_instance,
+                                                    "foobar");
+            stats_cluster_key_builder_set_legacy_alias_name(builder, dummy_legacy_name);
+            _assert_built_sc_key_equals_with_legacy(builder, type, dummy_name, empty_labels, G_N_ELEMENTS(empty_labels),
+                                                    dummy_legacy_component, dummy_legacy_id, dummy_legacy_instance,
+                                                    dummy_legacy_name);
+          }
+          stats_cluster_key_builder_pop(builder);
+          _assert_built_sc_key_equals_with_legacy(builder, type, dummy_name, empty_labels, G_N_ELEMENTS(empty_labels),
+                                                  dummy_legacy_component, dummy_legacy_id, dummy_legacy_instance,
+                                                  "foobar");
+        }
+        stats_cluster_key_builder_pop(builder);
+      }
+  }
+  stats_cluster_key_builder_pop(builder);
 
   /* Legacy only */
-  StatsClusterKeyBuilder *legacy_only_builder = stats_cluster_key_builder_new();
-  stats_cluster_key_builder_set_legacy_alias(legacy_only_builder, dummy_legacy_component, dummy_legacy_id,
-                                             dummy_legacy_instance);
-  _assert_built_sc_key_equals_with_legacy_only(legacy_only_builder, type, dummy_legacy_component, dummy_legacy_id,
-                                               dummy_legacy_instance);
-  stats_cluster_key_builder_free(legacy_only_builder);
+  stats_cluster_key_builder_push(builder);
+  {
+    stats_cluster_key_builder_set_legacy_alias(builder, 1337, "foobar", "foobar");
+    stats_cluster_key_builder_push(builder);
+    {
+      _assert_built_sc_key_equals_with_legacy_only(builder, type, 1337, "foobar", "foobar");
+      stats_cluster_key_builder_set_legacy_alias(builder, dummy_legacy_component, dummy_legacy_id,
+                                                 dummy_legacy_instance);
+      _assert_built_sc_key_equals_with_legacy_only(builder, type, dummy_legacy_component, dummy_legacy_id,
+                                                   dummy_legacy_instance);
+    }
+    stats_cluster_key_builder_pop(builder);
+    _assert_built_sc_key_equals_with_legacy_only(builder, type, 1337, "foobar", "foobar");
+  }
+  stats_cluster_key_builder_pop(builder);
 
   stats_cluster_key_builder_free(builder);
 }
