@@ -32,11 +32,39 @@
 #include "compat/cpp-end.h"
 
 #include <string>
+#include <vector>
 #include <memory>
 
 namespace syslogng {
 namespace grpc {
 namespace loki {
+
+struct Label
+{
+  std::string name;
+  LogTemplate *value;
+
+  Label(std::string name_, LogTemplate *value_)
+    : name(name_), value(log_template_ref(value_)) {}
+
+  Label(const Label &a)
+    : name(a.name), value(log_template_ref(a.value)) {}
+
+  Label &operator=(const Label &a)
+  {
+    name = a.name;
+    log_template_unref(value);
+    value = log_template_ref(a.value);
+
+    return *this;
+  }
+
+  ~Label()
+  {
+    log_template_unref(value);
+  }
+
+};
 
 class DestinationDriver final
 {
@@ -48,6 +76,8 @@ public:
   const gchar *format_persist_name();
   const gchar *format_stats_key(StatsClusterKeyBuilder *kb);
 
+  void add_label(std::string name, LogTemplate *value);
+
   LogTemplateOptions &get_template_options()
   {
     return this->template_options;
@@ -56,6 +86,12 @@ public:
   void set_url(std::string u)
   {
     this->url = u;
+  }
+
+  void set_message_template_ref(LogTemplate *msg)
+  {
+    log_template_unref(this->message);
+    this->message = msg;
   }
 
   void set_keepalive_time(int t)
@@ -86,6 +122,9 @@ private:
   LogTemplateOptions template_options;
 
   std::string url;
+
+  LogTemplate *message = nullptr;
+  std::vector<Label> labels;
 
   int keepalive_time;
   int keepalive_timeout;

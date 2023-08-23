@@ -56,6 +56,8 @@ public:
   LogThreadedResult flush(LogThreadedFlushMode mode);
 
 private:
+  void prepare_batch();
+  void set_labels(LogMessage *msg);
   DestinationDriver *get_owner();
 
 private:
@@ -65,6 +67,7 @@ private:
 
   std::shared_ptr<::grpc::Channel> channel;
   std::unique_ptr<logproto::Pusher::Stub> stub;
+  logproto::PushRequest current_batch;
 };
 
 }

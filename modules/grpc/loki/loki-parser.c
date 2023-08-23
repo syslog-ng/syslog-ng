@@ -32,6 +32,7 @@ static CfgLexerKeyword loki_keywords[] =
 {
   { "loki", KW_LOKI },
   { "url", KW_URL },
+  { "labels", KW_LABELS },
   { "keep_alive", KW_KEEP_ALIVE },
   { "time", KW_TIME },
   { "timeout", KW_TIMEOUT },

@@ -26,9 +26,14 @@
 #include "compat/cpp-start.h"
 #include "logthrdest/logthrdestdrv.h"
 #include "messages.h"
+#include "template/templates.h"
 #include "compat/cpp-end.h"
 
 #include <cstring>
+#include <string>
+#include <sstream>
+
+constexpr const auto DEFAULT_MESSAGE_TEMPLATE = "$ISODATE $HOST $MSGHDR$MSG";
 
 using syslogng::grpc::loki::DestinationDriver;
 
@@ -48,13 +53,50 @@ DestinationDriver::DestinationDriver(LokiDestDriver *s)
 DestinationDriver::~DestinationDriver()
 {
   log_template_options_destroy(&this->template_options);
+  log_template_unref(this->message);
+}
+
+void
+DestinationDriver::add_label(std::string name, LogTemplate *value)
+{
+  this->labels.push_back(Label{name, value});
 }
 
 bool
 DestinationDriver::init()
 {
   GlobalConfig *cfg = log_pipe_get_config(&this->super->super.super.super.super);
+
+  if (!this->message)
+    {
+      this->message = log_template_new(cfg, NULL);
+      log_template_compile(this->message, DEFAULT_MESSAGE_TEMPLATE, NULL);
+    }
+
   log_template_options_init(&this->template_options, cfg);
+
+  LogTemplate *worker_partition_key = log_template_new(cfg, NULL);
+
+  std::stringstream template_str;
+  bool comma_needed = false;
+  for (const auto &label : this->labels)
+    {
+      if (comma_needed)
+        template_str << ",";
+      template_str << label.name << "=" << label.value->template_str;
+
+      comma_needed = true;
+    }
+
+  std::string worker_partition_key_str = template_str.str();
+  if (!log_template_compile(worker_partition_key, worker_partition_key_str.c_str(), NULL))
+    {
+      msg_error("Error compiling worker partition key template",
+                evt_tag_str("template", worker_partition_key_str.c_str()));
+      return FALSE;
+    }
+
+  log_threaded_dest_driver_set_worker_partition_key_ref(&this->super->super.super.super, worker_partition_key);
 
   return log_threaded_dest_driver_init_method(&this->super->super.super.super.super);
 }
@@ -116,6 +158,20 @@ loki_dd_set_url(LogDriver *d, const gchar *url)
 {
   LokiDestDriver *self = (LokiDestDriver *) d;
   self->cpp->set_url(url);
+}
+
+void
+loki_dd_set_message_template_ref(LogDriver *d, LogTemplate *message)
+{
+  LokiDestDriver *self = (LokiDestDriver *) d;
+  self->cpp->set_message_template_ref(message);
+}
+
+void
+loki_dd_add_label(LogDriver *d, const gchar *name, LogTemplate *value)
+{
+  LokiDestDriver *self = (LokiDestDriver *) d;
+  self->cpp->add_label(name, value);
 }
 
 void
@@ -187,6 +243,8 @@ loki_dd_new(GlobalConfig *cfg)
   self->super.stats_source = stats_register_type("loki");
 
   self->super.worker.construct = loki_dw_new;
+
+  self->super.flush_on_key_change = TRUE;
 
   return &self->super.super.super;
 }

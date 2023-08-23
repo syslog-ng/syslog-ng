@@ -27,6 +27,7 @@
 #include "logthrdest/logthrdestdrv.h"
 #include "scratch-buffers.h"
 #include "logmsg/type-hinting.h"
+#include "utf8utils.h"
 #include "compat/cpp-end.h"
 
 #include "push.grpc.pb.h"
@@ -34,10 +35,12 @@
 #include <string>
 #include <sstream>
 #include <chrono>
+#include <sys/time.h>
 
 #include <grpc/grpc.h>
 #include <grpcpp/create_channel.h>
 #include <grpcpp/security/credentials.h>
+#include <google/protobuf/util/time_util.h>
 
 using syslogng::grpc::loki::DestinationWorker;
 using syslogng::grpc::loki::DestinationDriver;
@@ -101,6 +104,8 @@ DestinationWorker::deinit()
 bool
 DestinationWorker::connect()
 {
+  this->prepare_batch();
+
   msg_debug("Connecting to Loki", log_pipe_location_tag((LogPipe *) this->super->super.owner));
 
   std::chrono::system_clock::time_point connect_timeout =
@@ -122,10 +127,68 @@ DestinationWorker::disconnect()
   this->connected = false;
 }
 
+void
+DestinationWorker::prepare_batch()
+{
+  this->current_batch = logproto::PushRequest{};
+  this->current_batch.add_streams();
+}
+
+void
+DestinationWorker::set_labels(LogMessage *msg)
+{
+  DestinationDriver *owner = this->get_owner();
+  logproto::StreamAdapter *stream = this->current_batch.mutable_streams(0);
+
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, this->super->super.seq_num, NULL, LM_VT_STRING};
+
+  ScratchBuffersMarker m;
+  GString *buf = scratch_buffers_alloc_and_mark(&m);
+  GString *sanitized_value = scratch_buffers_alloc();
+
+  std::stringstream formatted_labels;
+  bool comma_needed = false;
+  formatted_labels << "{";
+  for (const auto &label : owner->labels)
+    {
+      if (comma_needed)
+        formatted_labels << ", ";
+
+      log_template_format(label.value, msg, &options, buf);
+      append_unsafe_utf8_as_escaped_binary(sanitized_value, buf->str, -1, "\"");
+      formatted_labels << label.name << "=\"" << sanitized_value->str << "\"";
+
+      comma_needed = true;
+    }
+  formatted_labels << "}";
+  stream->set_labels(formatted_labels.str());
+
+  scratch_buffers_reclaim_marked(m);
+}
+
 LogThreadedResult
 DestinationWorker::insert(LogMessage *msg)
 {
   DestinationDriver *owner = this->get_owner();
+  logproto::StreamAdapter *stream = this->current_batch.mutable_streams(0);
+
+  if (stream->entries_size() == 0)
+    this->set_labels(msg);
+
+  logproto::EntryAdapter *entry = stream->add_entries();
+
+  UnixTime *time = &msg->timestamps[LM_TS_STAMP];
+  timeval tv{time->ut_sec, time->ut_usec};
+  *entry->mutable_timestamp() = google::protobuf::util::TimeUtil::TimevalToTimestamp(tv);
+
+  ScratchBuffersMarker m;
+  GString *message = scratch_buffers_alloc_and_mark(&m);
+
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, this->super->super.seq_num, NULL, LM_VT_STRING};
+  log_template_format(owner->message, msg, &options, message);
+
+  entry->set_line(message->str);
+  scratch_buffers_reclaim_marked(m);
 
   msg_trace("Message added to Loki batch", log_pipe_location_tag((LogPipe *) this->super->super.owner));
 
@@ -138,9 +201,27 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
   if (this->super->super.batch_size == 0)
     return LTR_SUCCESS;
 
+  LogThreadedResult result;
+  logproto::PushResponse response{};
+
+  ::grpc::ClientContext ctx;
+  ::grpc::Status status = this->stub->Push(&ctx, this->current_batch, &response);
+
+  if (!status.ok())
+    {
+      msg_error("Error sending Loki batch", evt_tag_str("error", status.error_message().c_str()),
+                evt_tag_str("details", status.error_details().c_str()),
+                log_pipe_location_tag((LogPipe *) this->super->super.owner));
+      result = LTR_ERROR;
+      goto exit;
+    }
 
   msg_debug("Loki batch delivered", log_pipe_location_tag((LogPipe *) this->super->super.owner));
-  return LTR_SUCCESS;
+  result = LTR_SUCCESS;
+
+exit:
+  this->prepare_batch();
+  return result;
 }
 
 DestinationDriver *

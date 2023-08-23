@@ -49,6 +49,7 @@
 
 %token KW_LOKI
 %token KW_URL
+%token KW_LABELS
 
 %token KW_KEEP_ALIVE
 %token KW_TIME
@@ -79,10 +80,26 @@ loki_dest_options
 loki_dest_option
   : KW_URL '(' string ')' { loki_dd_set_url(last_driver, $3); free($3); }
   | KW_KEEP_ALIVE '(' loki_keepalive_options ')'
+  | KW_LABELS '(' loki_labels ')'
+  | KW_TEMPLATE '(' template_content ')' { loki_dd_set_message_template_ref(last_driver, $3); }
   | threaded_dest_driver_general_option
   | threaded_dest_driver_workers_option
   | threaded_dest_driver_batch_option
   | { last_template_options = loki_dd_get_template_options(last_driver); } template_option
+  ;
+
+loki_labels
+  : loki_label loki_labels
+  |
+  ;
+
+loki_label
+  : string LL_ARROW template_content
+    {
+	    loki_dd_add_label(last_driver, $1, $3);
+      free($1);
+      log_template_unref($3);
+    }
   ;
 
 loki_keepalive_options
