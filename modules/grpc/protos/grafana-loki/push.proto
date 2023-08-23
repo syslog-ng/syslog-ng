@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package logproto;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/grafana/loki/pkg/push";
+
+service Pusher {
+  rpc Push(PushRequest) returns (PushResponse) {}
+}
+
+message PushRequest {
+  repeated StreamAdapter streams = 1;
+}
+
+message PushResponse {}
+
+message StreamAdapter {
+  string labels = 1;
+  repeated EntryAdapter entries = 2;
+  // hash contains the original hash of the stream.
+  uint64 hash = 3;
+}
+
+message LabelPairAdapter {
+  string name = 1;
+  string value = 2;
+}
+
+message EntryAdapter {
+  google.protobuf.Timestamp timestamp = 1;
+  string line = 2;
+  repeated LabelPairAdapter nonIndexedLabels = 3;
+}

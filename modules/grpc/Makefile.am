@@ -1,12 +1,13 @@
 include modules/grpc/protos/Makefile.am
 
 include modules/grpc/otel/Makefile.am
+include modules/grpc/loki/Makefile.am
 
 if ENABLE_GRPC
-modules/grpc modules/grpc/ mod-grpc: mod-otel
+modules/grpc modules/grpc/ mod-grpc: mod-otel mod-loki
 endif
 
-.PHONY: modules/grpc/otel/ mod-otel
+.PHONY: modules/grpc/otel/ mod-otel modules/grpc/loki/ mod-loki
 
 EXTRA_DIST += \
   modules/grpc/CMakeLists.txt

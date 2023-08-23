@@ -1,0 +1,101 @@
+/*
+ * Copyright (c) 2023 László Várady
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "loki-parser.h"
+
+}
+
+
+%code {
+
+#include "cfg-grammar-internal.h"
+#include "plugin.h"
+#include "syslog-names.h"
+
+#include "loki-dest.h"
+
+#include <stdlib.h>
+
+}
+
+%define api.prefix {loki_}
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_LOKI
+%token KW_URL
+
+%token KW_KEEP_ALIVE
+%token KW_TIME
+%token KW_TIMEOUT
+%token KW_MAX_PINGS_WITHOUT_DATA
+
+%type <ptr> loki_dest
+
+%%
+
+start
+  : LL_CONTEXT_DESTINATION loki_dest { YYACCEPT; }
+  ;
+
+loki_dest
+  : KW_LOKI
+    {
+      last_driver = *instance = loki_dd_new(configuration);
+    }
+    '(' _inner_dest_context_push loki_dest_options _inner_dest_context_pop ')' { $$ = last_driver; }
+  ;
+
+loki_dest_options
+  : loki_dest_option loki_dest_options
+  |
+  ;
+
+loki_dest_option
+  : KW_URL '(' string ')' { loki_dd_set_url(last_driver, $3); free($3); }
+  | KW_KEEP_ALIVE '(' loki_keepalive_options ')'
+  | threaded_dest_driver_general_option
+  | threaded_dest_driver_workers_option
+  | threaded_dest_driver_batch_option
+  | { last_template_options = loki_dd_get_template_options(last_driver); } template_option
+  ;
+
+loki_keepalive_options
+  : loki_keepalive_option loki_keepalive_options
+  |
+  ;
+
+loki_keepalive_option
+  : KW_TIME '(' nonnegative_integer ')' { loki_dd_set_keepalive_time(last_driver, $3); }
+  | KW_TIMEOUT '(' nonnegative_integer ')' { loki_dd_set_keepalive_timeout(last_driver, $3); }
+  | KW_MAX_PINGS_WITHOUT_DATA '(' nonnegative_integer ')' { loki_dd_set_keepalive_max_pings(last_driver, $3); }
+  ;
+
+/* INCLUDE_RULES */
+
+%%
