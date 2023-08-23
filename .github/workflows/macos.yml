@@ -52,6 +52,7 @@ jobs:
           gh_path "${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${PYTHONUSERBASE}/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${PATH}"
 
           ln -s "${HOMEBREW_PREFIX}/bin/gcc-11" "${HOMEBREW_PREFIX}/bin/gcc"
+          ln -s "${HOMEBREW_PREFIX}/bin/g++-11" "${HOMEBREW_PREFIX}/bin/g++"
 
       - name: autogen.sh
         run: |
