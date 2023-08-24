@@ -17,4 +17,3 @@ syslog2ng		- script to convert old syslog.conf to syslog-ng.conf
 relogger.pl		- script to replay syslog messages at the original rate
 fedora-packaging	- directory containing files related to Fedora packaging
 syslog-mc		- syslog multicast client
-vim 			- vim configuration for syslog-ng.conf
