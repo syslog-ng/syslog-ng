@@ -378,6 +378,47 @@ Test(metrics_probe, test_metrics_probe_level)
   log_pipe_unref(&metrics_probe->super);
 }
 
+Test(metrics_probe, test_metrics_probe_dynamic_labels)
+{
+  LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
+  metrics_probe_set_key(tmp_metrics_probe, "custom_key");
+  _add_label(tmp_metrics_probe, "test_label", "${test_field}");
+  ValuePairs *vp = metrics_probe_get_value_pairs(tmp_metrics_probe);
+  value_pairs_add_glob_pattern(vp, "test_prefix.*", TRUE);
+
+  LogParser *metrics_probe = (LogParser *) log_pipe_clone(&tmp_metrics_probe->super);
+  log_pipe_unref(&tmp_metrics_probe->super);
+  cr_assert(log_pipe_init(&metrics_probe->super), "Failed to init metrics-probe");
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, "test_field", "test_field_value", -1);
+  log_msg_set_value_by_name(msg, "test_prefix.test_field_1", "test_prefix_test_field_1_value", -1);
+  log_msg_set_value_by_name(msg, "test_prefix.test_field_2", "test_prefix_test_field_2_value", -1);
+
+  StatsClusterLabel expected_labels[] =
+  {
+    stats_cluster_label("test_label", "test_field_value"),
+    stats_cluster_label("test_prefix.test_field_1", "test_prefix_test_field_1_value"),
+    stats_cluster_label("test_prefix.test_field_2", "test_prefix_test_field_2_value"),
+  };
+
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  _assert_counter_value("custom_key",
+                        expected_labels,
+                        G_N_ELEMENTS(expected_labels),
+                        1);
+
+  cr_assert(log_parser_process(metrics_probe, &msg, NULL, "", -1), "Failed to apply metrics-probe");
+  _assert_counter_value("custom_key",
+                        expected_labels,
+                        G_N_ELEMENTS(expected_labels),
+                        2);
+
+  log_msg_unref(msg);
+  log_pipe_deinit(&metrics_probe->super);
+  log_pipe_unref(&metrics_probe->super);
+}
+
 void setup(void)
 {
   app_startup();

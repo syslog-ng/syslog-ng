@@ -39,6 +39,7 @@ typedef struct _MetricsProbe
   gint level;
 
   LogTemplateOptions template_options;
+  ValuePairs *vp;
 } MetricsProbe;
 
 TLS_BLOCK_START
@@ -117,10 +118,56 @@ metrics_probe_get_template_options(LogParser *s)
   return &self->template_options;
 }
 
+ValuePairs *
+metrics_probe_get_value_pairs(LogParser *s)
+{
+  MetricsProbe *self = (MetricsProbe *) s;
+
+  if (!self->vp)
+    self->vp = value_pairs_new(s->super.cfg);
+
+  return self->vp;
+}
+
+static void
+_clear_dynamic_labels(MetricsProbe *self)
+{
+  self->label_buffers = g_array_remove_range(self->label_buffers, self->num_of_static_labels,
+                                             self->label_buffers->len - self->num_of_static_labels);
+}
+
+static gboolean
+_add_dynamic_labels_vp_helper(const gchar *name, LogMessageValueType type, const gchar *value, gsize value_len,
+                              gpointer user_data)
+{
+  MetricsProbe *self = (MetricsProbe *) user_data;
+
+  GString *name_buffer = scratch_buffers_alloc();
+  GString *value_buffer = scratch_buffers_alloc();
+  g_string_assign(name_buffer, name);
+  g_string_append_len(value_buffer, value, value_len);
+
+  StatsClusterLabel label = stats_cluster_label(name_buffer->str, value_buffer->str);
+  self->label_buffers = g_array_append_vals(self->label_buffers, &label, 1);
+
+  return FALSE;
+}
+
+static void
+_add_dynamic_labels(MetricsProbe *self, LogMessage *msg)
+{
+  LogTemplateEvalOptions template_eval_options = { &self->template_options, LTZ_SEND, 0, NULL, LM_VT_STRING };
+  gpointer user_data = self;
+
+  value_pairs_foreach(self->vp, _add_dynamic_labels_vp_helper, msg, &template_eval_options, user_data);
+}
 
 static void
 _calculate_stats_cluster_key(MetricsProbe *self, LogMessage *msg, StatsClusterKey *key)
 {
+  if (self->vp)
+    _clear_dynamic_labels(self);
+
   gint label_idx = 0;
   for (GList *elem = g_list_first(self->label_templates); elem; elem = elem->next)
     {
@@ -131,6 +178,9 @@ _calculate_stats_cluster_key(MetricsProbe *self, LogMessage *msg, StatsClusterKe
                             &g_array_index(self->label_buffers, StatsClusterLabel, label_idx));
       label_idx++;
     }
+
+  if (self->vp)
+    _add_dynamic_labels(self, msg);
 
   stats_cluster_single_key_set(key, self->key, (StatsClusterLabel *) self->label_buffers->data,
                                self->label_buffers->len);
@@ -317,6 +367,7 @@ _clone(LogPipe *s)
   metrics_probe_set_increment_template(&cloned->super, self->increment_template);
   metrics_probe_set_level(&cloned->super, self->level);
   log_template_options_clone(&self->template_options, &cloned->template_options);
+  cloned->vp = value_pairs_ref(self->vp);
 
   return &cloned->super.super;
 }
@@ -331,6 +382,7 @@ _free(LogPipe *s)
   log_template_unref(self->increment_template);
   log_template_options_destroy(&self->template_options);
   g_array_free(self->label_buffers, TRUE);
+  value_pairs_unref(self->vp);
 
   log_parser_free_method(s);
 }
