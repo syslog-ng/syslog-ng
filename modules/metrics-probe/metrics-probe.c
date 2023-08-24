@@ -27,15 +27,14 @@
 #include "apphook.h"
 #include "tls-support.h"
 
-#define NUM_OF_LABELS_MAX (128)
-
 typedef struct _MetricsProbe
 {
   LogParser super;
 
   gchar *key;
   GList *label_templates;
-  guint8 num_of_labels;
+  GArray *label_buffers;
+  guint num_of_static_labels;
   LogTemplate *increment_template;
   gint level;
 
@@ -85,18 +84,12 @@ metrics_probe_set_key(LogParser *s, const gchar *key)
   self->key = g_strdup(key);
 }
 
-gboolean
+void
 metrics_probe_add_label_template(LogParser *s, const gchar *label, LogTemplate *value_template)
 {
   MetricsProbe *self = (MetricsProbe *) s;
 
-  if (self->num_of_labels >= NUM_OF_LABELS_MAX)
-    return FALSE;
-
   self->label_templates = g_list_append(self->label_templates, label_template_new(label, value_template));
-  self->num_of_labels++;
-
-  return TRUE;
 }
 
 void
@@ -124,8 +117,9 @@ metrics_probe_get_template_options(LogParser *s)
   return &self->template_options;
 }
 
+
 static void
-_calculate_stats_cluster_key(MetricsProbe *self, LogMessage *msg, StatsClusterLabel *labels, StatsClusterKey *key)
+_calculate_stats_cluster_key(MetricsProbe *self, LogMessage *msg, StatsClusterKey *key)
 {
   gint label_idx = 0;
   for (GList *elem = g_list_first(self->label_templates); elem; elem = elem->next)
@@ -133,21 +127,23 @@ _calculate_stats_cluster_key(MetricsProbe *self, LogMessage *msg, StatsClusterLa
       LabelTemplate *label_template = (LabelTemplate *) elem->data;
       GString *value_buffer = scratch_buffers_alloc();
 
-      label_template_format(label_template, &self->template_options, msg, value_buffer, &labels[label_idx++]);
+      label_template_format(label_template, &self->template_options, msg, value_buffer,
+                            &g_array_index(self->label_buffers, StatsClusterLabel, label_idx));
+      label_idx++;
     }
 
-  stats_cluster_single_key_set(key, self->key, labels, label_idx);
+  stats_cluster_single_key_set(key, self->key, (StatsClusterLabel *) self->label_buffers->data,
+                               self->label_buffers->len);
 }
 
 static StatsCounterItem *
 _lookup_stats_counter(MetricsProbe *self, LogMessage *msg)
 {
-  StatsClusterLabel *labels = g_alloca(self->num_of_labels * sizeof(StatsClusterLabel));
   StatsClusterKey key;
   ScratchBuffersMarker marker;
 
   scratch_buffers_mark(&marker);
-  _calculate_stats_cluster_key(self, msg, labels, &key);
+  _calculate_stats_cluster_key(self, msg, &key);
 
   StatsCluster *cluster = g_hash_table_lookup(clusters, &key);
   if (!cluster)
@@ -291,7 +287,9 @@ _init(LogPipe *s)
       return FALSE;
     }
 
+  self->num_of_static_labels = g_list_length(self->label_templates);
   self->label_templates = g_list_sort(self->label_templates, (GCompareFunc) label_template_compare);
+  self->label_buffers = g_array_set_size(self->label_buffers, self->num_of_static_labels);
 
   _register_global_initializers();
 
@@ -311,8 +309,10 @@ _clone(LogPipe *s)
     {
       LabelTemplate *label_template = (LabelTemplate *) elem->data;
       cloned->label_templates = g_list_append(cloned->label_templates, label_template_clone(label_template));
-      cloned->num_of_labels++;
     }
+
+  cloned->num_of_static_labels = self->num_of_static_labels;
+  cloned->label_buffers = g_array_set_size(cloned->label_buffers, cloned->num_of_static_labels);
 
   metrics_probe_set_increment_template(&cloned->super, self->increment_template);
   metrics_probe_set_level(&cloned->super, self->level);
@@ -330,6 +330,7 @@ _free(LogPipe *s)
   g_list_free_full(self->label_templates, (GDestroyNotify) label_template_free);
   log_template_unref(self->increment_template);
   log_template_options_destroy(&self->template_options);
+  g_array_free(self->label_buffers, TRUE);
 
   log_parser_free_method(s);
 }
@@ -345,6 +346,7 @@ metrics_probe_new(GlobalConfig *cfg)
   self->super.super.clone = _clone;
   self->super.process = _process;
 
+  self->label_buffers = g_array_sized_new(FALSE, FALSE, sizeof(StatsClusterLabel), 4);
   log_template_options_defaults(&self->template_options);
 
   return &self->super;
