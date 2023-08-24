@@ -47,54 +47,75 @@ function(_print_summary_line _variableName _maxVarNameLen)
   endif()
 endfunction()
 
-# Lists actual module definition results
-# Behaves similar to the cmake -L option but filters out the relevant information and adds some highlighting
-#
-function(print_config_summary)
-  list(APPEND _importantVariableNames "IVYKIS_INTERNAL" "BUILD_TESTING")
-  get_cmake_property(_variableNames VARIABLES)
-  list(SORT _variableNames)
-
+function(_print_separator)
   message(NOTICE "-----------------------------------")
-  message(NOTICE "syslog-ng Open Source Edition ${SYSLOG_NG_VERSION} configured")
-  message(NOTICE "-----------------------------------")
+endfunction()
 
-  if(SUMMARY_VERBOSE)
-    foreach(_variableName ${_variableNames})
-      string(REGEX MATCH ".*(_LIBRARY|_LIBRARIES)$" _match "${_variableName}")
-      string(REGEX MATCH "^(CMAKE_|_).*" _cmakeInternal "${_variableName}")
+function(_print_libraries _variableNames)
+  foreach(_variableName ${_variableNames})
+    string(REGEX MATCH ".*(_LIBRARY|_LIBRARIES)$" _match_lib "${_variableName}")
+    string(REGEX MATCH ".*(INCLUDE_DIR|INCLUDEDIR|INCLUDE_DIRS)$" _match_incl "${_variableName}")
+    string(REGEX MATCH "^(CMAKE_|_).*" _cmakeInternal "${_variableName}")
 
-      if(_match AND NOT _cmakeInternal)
-        _print_summary_line(${_variableName} 40)
-      endif()
-    endforeach()
-  endif()
+    if((_match_lib OR _match_incl) AND NOT _cmakeInternal)
+      _print_summary_line("${_variableName}" 40)
+    endif()
+  endforeach()
+endfunction()
 
-  message(NOTICE "-----------------------------------")
-
+function(_print_importants _variableNames _importantVariableNames)
   foreach(_variableName ${_variableNames})
     foreach(_importantVariableName ${_importantVariableNames})
       string(REGEX MATCH "^${_importantVariableName}$" _match "${_variableName}")
 
       if(_match)
-        _print_summary_line(${_importantVariableName} 32)
+        _print_summary_line("${_importantVariableName}" 32)
       endif()
     endforeach()
   endforeach()
+endfunction()
 
-  message(NOTICE "-----------------------------------")
-
+function(_print_options _variableNames)
   foreach(_variableName ${_variableNames})
     string(REGEX MATCH "^ENABLE_" _match "${_variableName}")
 
     if(_match)
-      _print_summary_line(${_variableName} 32)
-    else()
-      if(SUMMARY_FULL)
-        message("${_variableName}=${${_variableName}}")
-      endif()
+      _print_summary_line("${_variableName}" 32)
     endif()
   endforeach()
+endfunction()
 
-  message(NOTICE "-----------------------------------")
+function(_print_full _variableNames)
+  foreach(_variableName ${_variableNames})
+    message("${_variableName}=${${_variableName}}")
+  endforeach()
+endfunction()
+
+# Lists actual module definition results
+# Behaves similar to the cmake -L option but filters out the relevant information and adds some highlighting
+#
+function(print_config_summary)
+  get_cmake_property(_variableNames VARIABLES)
+  list(SORT _variableNames)
+
+  _print_separator()
+  message(NOTICE "syslog-ng Open Source Edition ${SYSLOG_NG_VERSION} configured")
+  _print_separator()
+
+  if(SUMMARY_FULL)
+    _print_full("${_variableNames}")
+  else()
+    if(SUMMARY_VERBOSE)
+      _print_libraries("${_variableNames}")
+      _print_separator()
+    endif()
+
+    list(APPEND _importantVariableNames "IVYKIS_INTERNAL" "BUILD_TESTING")
+    _print_importants("${_variableNames}" "${_importantVariableNames}")
+    _print_separator()
+
+    _print_options("${_variableNames}")
+  endif()
+
+  _print_separator()
 endfunction()
