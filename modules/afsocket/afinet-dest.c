@@ -144,7 +144,7 @@ afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
   if (ok && current_cert == cert && self->hostname
       && (tls_context_get_verify_mode(self->tls_context) & TVM_TRUSTED))
     {
-      ok = tls_verify_certificate_name(cert, self->hostname);
+      ok = tls_verify_certificate_name(cert, self->hostname, self->tls_context);
       if (ok)
         {
           AFSocketTLSCertificateValidationSignalData signal_data = {0};

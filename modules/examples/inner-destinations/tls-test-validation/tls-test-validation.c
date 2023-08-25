@@ -44,7 +44,7 @@ static void
 _slot_append_test_identity(TlsTestValidationPlugin *self, AFSocketTLSCertificateValidationSignalData *data)
 {
   X509 *cert = X509_STORE_CTX_get0_cert(data->ctx);
-  data->failure = !tls_verify_certificate_name(cert, self->identity);
+  data->failure = !tls_verify_certificate_name(cert, self->identity, NULL);
 
   msg_debug("TlsTestValidationPlugin validated");
 }

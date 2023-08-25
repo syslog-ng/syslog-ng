@@ -23,6 +23,7 @@
 #include "tls-verifier.h"
 #include "messages.h"
 #include "compat/openssl_support.h"
+#include "transport/tls-context.h"
 #include <openssl/x509v3.h>
 
 /* TLSVerifier */
@@ -110,11 +111,12 @@ exit:
 }
 
 gboolean
-tls_verify_certificate_name(X509 *cert, const gchar *host_name)
+tls_verify_certificate_name(X509 *cert, const gchar *host_name, gpointer user_data)
 {
   gchar pattern_buf[256];
   gint ext_ndx;
   gboolean found = FALSE, result = FALSE;
+  TLSContext *ctx = (TLSContext *)user_data;
 
   ext_ndx = X509_get_ext_by_NID(cert, NID_subject_alt_name, -1);
   if (ext_ndx >= 0)
@@ -185,9 +187,19 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
     }
   if (!result)
     {
-      msg_error("Certificate subject does not match configured hostname",
-                evt_tag_str("hostname", host_name),
-                evt_tag_str("certificate", pattern_buf));
+      if (ctx && tls_context_ignore_hostname_mismatch(ctx))
+        {
+          result = TRUE;
+          msg_error("Ignoring certificate subject mismatched configured hostname",
+                          evt_tag_str("hostname", host_name),
+                          evt_tag_str("certificate", pattern_buf));
+        }
+      else
+        {
+          msg_error("Certificate subject does not match configured hostname",
+                          evt_tag_str("hostname", host_name),
+                          evt_tag_str("certificate", pattern_buf));
+        }
     }
   else
     {
