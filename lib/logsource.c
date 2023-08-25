@@ -33,6 +33,7 @@
 #include "ack-tracker/ack_tracker.h"
 #include "ack-tracker/ack_tracker_factory.h"
 #include "timeutils/misc.h"
+#include "compat/time.h"
 #include "scratch-buffers.h"
 
 #include <string.h>
