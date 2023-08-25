@@ -28,6 +28,7 @@
 #include "apphook.h"
 #include "mainloop.h"
 #include "timeutils/misc.h"
+#include "compat/time.h"
 
 #include <stdio.h>
 #include <unistd.h>
