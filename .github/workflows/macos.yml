@@ -43,14 +43,17 @@ jobs:
           CFLAGS="-I${HOMEBREW_PREFIX}/include/"
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib"
           CC="${{ matrix.cc }}"
-          THREADS="$(sysctl -n hw.physicalcpu)"
+          THREADS=`sysctl -n hw.physicalcpu`
+          RANDOMNUM=`echo $(( ${RANDOM} % 2 ))`
+          IVIKYS_VERSION_1=`[[ ${RANDOMNUM} -eq 0 ]] && echo 'system' || echo 'internal'`
+          IVIKYS_VERSION_2=`[ ${IVIKYS_VERSION_1} = internal ] && echo 'system' || echo 'internal'`
           CONFIGURE_FLAGS="
-            `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
-            `[ $CC = gcc ] && echo '--enable-cpp' || true`
+            `[ ${CC} = clang ] && echo '--enable-force-gnu99' || true`
+            `[ ${CC} = gcc ] && echo '--enable-cpp' || true`
             --prefix=${SYSLOG_NG_INSTALL_DIR}
             --enable-all-modules
             --enable-tests
-            --with-ivykis=system
+            --with-ivykis=`[ ${CC} = clang ] && echo ${IVIKYS_VERSION_1} || echo ${IVIKYS_VERSION_2}`
             --with-python=3
             --disable-smtp
             --disable-grpc
@@ -60,11 +63,11 @@ jobs:
             --disable-pacct
           "
           CMAKE_CONFIGURE_FLAGS="
-            `[ $CC = gcc ] && echo '-DENABLE_CPP=ON' || true`
+            `[ ${CC} = gcc ] && echo '-DENABLE_CPP=ON' || true`
             -DCMAKE_BUILD_TYPE=Debug
             -DSUMMARY_VERBOSE=ON
             -DBUILD_TESTING=ON
-            -DIVYKIS_SOURCE=system
+            -DIVYKIS_SOURCE=`[ ${CC} = clang ] && echo ${IVIKYS_VERSION_2} || echo ${IVIKYS_VERSION_1}`
             -DPYTHON_VERSION=3
             -DENABLE_AFSMTP=OFF
             -DENABLE_GRPC=OFF
