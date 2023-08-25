@@ -32,6 +32,7 @@
 #include "cfg.h"
 #include "stats/stats-counter.h"
 #include "logsource.h"
+#include "compat/time.h"
 
 typedef struct _TestThreadedFetcherDriver
 {
