@@ -35,7 +35,7 @@ gchar *curl_compression_types[] = {"identity", "gzip", "deflate"};
 gboolean
 http_dd_curl_compression_string_match(const gchar *string, gint curl_compression_index)
 {
-  return (strcmp(string, curl_compression_types[curl_compression_index]) == 0);
+  return (g_strcmp0(string, curl_compression_types[curl_compression_index]) == 0);
 }
 
 gboolean
