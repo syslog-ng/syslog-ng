@@ -1275,7 +1275,9 @@ if test "x$with_ivykis" = "xinternal"; then
 		# these can only be used in lib as it assumes
 		# the current directory just one below ivykis
 
-		IVYKIS_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
+		# Please do not ask why libtool does not pick up the libivykis.la file without explicitly defined, but it does not sometimes (e.g. on macOS)
+		# so, added explicit file path too, just for sure
+		IVYKIS_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT} \$(top_builddir)/lib/ivykis/src/libivykis.la"
 		IVYKIS_CFLAGS="-isystem \$(top_srcdir)/lib/ivykis/src/include -isystem \$(top_builddir)/lib/ivykis/src/include"
                 INTERNAL_IVYKIS_CFLAGS="-isystem \${includedir}/syslog-ng/ivykis"
 
