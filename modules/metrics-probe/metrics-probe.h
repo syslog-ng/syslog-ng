@@ -25,14 +25,16 @@
 
 #include "parser/parser-expr.h"
 #include "template/templates.h"
+#include "value-pairs/value-pairs.h"
 
 LogParser *metrics_probe_new(GlobalConfig *cfg);
 
 void metrics_probe_set_key(LogParser *s, const gchar *key);
-gboolean metrics_probe_add_label_template(LogParser *s, const gchar *label, LogTemplate *value_template);
+void metrics_probe_add_label_template(LogParser *s, const gchar *label, LogTemplate *value_template);
 void metrics_probe_set_increment_template(LogParser *s, LogTemplate *increment_template);
 void metrics_probe_set_level(LogParser *s, gint level);
 
 LogTemplateOptions *metrics_probe_get_template_options(LogParser *s);
+ValuePairs *metrics_probe_get_value_pairs(LogParser *s);
 
 #endif
