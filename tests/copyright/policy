@@ -202,6 +202,7 @@ modules/python-modules/syslogng/modules/kubernetes/.*
 modules/ebpf/.*
 modules/python-modules/syslogng/modules/hypr/.*
 modules/python-modules/syslogng/modules/example/.*
+modules/python-modules/syslogng/modules/s3/.*
 modules/python-modules/setup\.py
 scripts/build-python-venv\.sh
 modules/syslogformat/sdata-parser\.[ch]

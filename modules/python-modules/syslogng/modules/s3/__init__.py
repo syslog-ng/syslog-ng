@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 #############################################################################
-# Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
+# Copyright (c) 2023 Attila Szakacs
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -21,46 +20,8 @@
 #
 #############################################################################
 
-from setuptools import setup
-import os
+from .s3_destination import S3Destination
 
-install_addons=int(os.getenv('PYMODULES_BUILTINS_ONLY', '0')) == 0
-
-packages_builtin=[
-  "syslogng",
-  "syslogng.debuggercli",
+__all__ = [
+    "S3Destination",
 ]
-requires_builtin=[]
-
-packages_addons=[
-  "syslogng.modules.example",
-  "syslogng.modules.kubernetes",
-  "syslogng.modules.hypr",
-  "syslogng.modules.s3",
-]
-
-requires_addons=[
-  # kubernetes
-  "kubernetes",
-  # hypr
-  "requests",
-  # S3
-  "boto3",
-]
-
-packages = packages_builtin
-requires = []
-if install_addons:
-  packages = packages + packages_addons
-  requires = requires + requires_addons
-
-setup(name='syslogng',
-      version='1.0',
-      description='syslog-ng Python Core & Modules',
-      author='Balazs Scheidler',
-      author_email='bazsi77@gmail.com',
-      url='https://www.syslog-ng.org',
-      package_data={"": ["scl/*"]},
-      exclude_package_data={"": ["*~"]},
-      packages=packages,
-      install_requires=requires)

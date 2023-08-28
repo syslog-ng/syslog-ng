@@ -55,6 +55,11 @@ EXTRA_DIST += \
 	modules/python-modules/syslogng/modules/hypr/tests/test_hypr_audit_source.py	\
 	modules/python-modules/syslogng/modules/hypr/scl/hypr.conf		\
 	modules/python-modules/syslogng/modules/hypr/__init__.py		\
+	modules/python-modules/syslogng/modules/s3/__init__.py		\
+	modules/python-modules/syslogng/modules/s3/compressable_file_buffer.py		\
+	modules/python-modules/syslogng/modules/s3/s3_object.py		\
+	modules/python-modules/syslogng/modules/s3/s3_destination.py		\
+	modules/python-modules/syslogng/modules/s3/scl/s3.conf		\
 	modules/python-modules/setup.py						\
 	modules/python-modules/README.md
 
