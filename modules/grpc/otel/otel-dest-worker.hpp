@@ -59,7 +59,7 @@ class DestWorker
 {
 public:
   DestWorker(OtelDestWorker *s);
-  virtual ~DestWorker();
+  virtual ~DestWorker() {};
   static LogThreadedDestWorker *construct(LogThreadedDestDriver *o, gint worker_index);
 
   virtual bool init();
