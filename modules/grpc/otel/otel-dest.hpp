@@ -41,7 +41,7 @@ class DestDriver
 {
 public:
   DestDriver(OtelDestDriver *s);
-  virtual ~DestDriver();
+  virtual ~DestDriver() {};
 
   void set_url(const char *url);
   const std::string &get_url() const;
