@@ -4,6 +4,7 @@ include modules/examples/sources/threaded-random-generator/Makefile.am
 include modules/examples/inner-destinations/http-test-slots/Makefile.am
 include modules/examples/inner-destinations/tls-test-validation/Makefile.am
 include modules/examples/destinations/example_destination/Makefile.am
+include modules/examples/sources/random-choice-generator/Makefile.am
 
 
 EXAMPLE_PLUGINS = \
@@ -18,7 +19,6 @@ EXAMPLE_PLUGINS += $(top_builddir)/modules/examples/sources/libthreaded-random-g
 endif
 
 if ENABLE_CPP
-include modules/examples/sources/random-choice-generator/Makefile.am
 EXAMPLE_PLUGINS += $(top_builddir)/modules/examples/sources/librandom_choice_generator.la
 endif
 

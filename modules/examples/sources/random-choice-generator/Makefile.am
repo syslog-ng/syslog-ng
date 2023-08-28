@@ -1,3 +1,4 @@
+if ENABLE_CPP
 # C++ code
 
 noinst_LTLIBRARIES += modules/examples/sources/librandom_choice_generator_cpp.la
@@ -42,6 +43,9 @@ modules_examples_sources_librandom_choice_generator_la_DEPENDENCIES = \
   modules/examples/sources/librandom_choice_generator_cpp.la
 
 modules/examples/sources/random-choice-generator modules/examples/sources/random-choice-generator/ mod-random-choice-generator: modules/examples/sources/random-choice-generator/librandom_choice_generator.la
+else
+modules/examples/sources/random-choice-generator modules/examples/sources/random-choice-generator/ mod-random-choice-generator:
+endif
 
 BUILT_SOURCES += \
   modules/examples/sources/random-choice-generator/random-choice-generator-grammar.y \
