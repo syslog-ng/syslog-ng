@@ -25,8 +25,8 @@
 #define STATS_AGGREGATOR_H
 
 #include "stats/stats-counter.h"
-#include "syslog-ng.h"
 #include "stats/stats-cluster.h"
+#include <iv.h>
 
 typedef struct _StatsAggregator StatsAggregator;
 
@@ -43,7 +43,10 @@ struct _StatsAggregator
 
   gssize use_count;
   StatsClusterKey key;
+  StatsCounterItem *output_counter;
   gint stats_level;
+  gint timer_period;
+  struct iv_timer update_timer;
 };
 
 static inline void
@@ -76,19 +79,8 @@ stats_aggregator_is_orphaned(StatsAggregator *self)
   return TRUE;
 }
 
-static inline void
-stats_aggregator_register(StatsAggregator *self)
-{
-  if (self && self->register_aggr)
-    self->register_aggr(self);
-}
-
-static inline void
-stats_aggregator_unregister(StatsAggregator *self)
-{
-  if (self && self->unregister_aggr)
-    self->unregister_aggr(self);
-}
+void stats_aggregator_register(StatsAggregator *self);
+void stats_aggregator_unregister(StatsAggregator *self);
 
 /* public */
 void stats_aggregator_add_data_point(StatsAggregator *self, gsize value);

@@ -28,7 +28,6 @@
 typedef struct
 {
   StatsAggregator super;
-  StatsCounterItem *output_counter;
   atomic_gssize count;
   atomic_gssize sum;
 } StatsAggregatorAverage;
@@ -68,7 +67,7 @@ _add_data_point(StatsAggregator *s, gsize value)
   gsize sum = _get_sum(self) + value;
   gsize divisor = _get_count(self) + 1;
 
-  stats_counter_set(self->output_counter, sum/divisor);
+  stats_counter_set(self->super.output_counter, sum/divisor);
 
   _add_sum(self, value);
   _inc_count(self);
@@ -80,31 +79,7 @@ _reset(StatsAggregator *s)
   StatsAggregatorAverage *self = (StatsAggregatorAverage *)s;
   atomic_gssize_set(&self->count, 0);
   atomic_gssize_set(&self->sum, 0);
-  stats_counter_set(self->output_counter, 0);
-}
-
-static void
-_register(StatsAggregator *s)
-{
-  StatsAggregatorAverage *self = (StatsAggregatorAverage *)s;
-
-  stats_lock();
-  stats_register_counter(self->super.stats_level, &self->super.key, SC_TYPE_SINGLE_VALUE, &self->output_counter);
-  stats_unlock();
-}
-
-static void
-_unregister(StatsAggregator *s)
-{
-  StatsAggregatorAverage *self = (StatsAggregatorAverage *)s;
-
-  if(self->output_counter)
-    {
-      stats_lock();
-      stats_unregister_counter(&self->super.key, SC_TYPE_SINGLE_VALUE, &self->output_counter);
-      self->output_counter = NULL;
-      stats_unlock();
-    }
+  stats_counter_set(self->super.output_counter, 0);
 }
 
 static void
@@ -112,10 +87,7 @@ _set_virtual_function(StatsAggregatorAverage *self )
 {
   self->super.add_data_point = _add_data_point;
   self->super.reset = _reset;
-  self->super.register_aggr = _register;
-  self->super.unregister_aggr = _unregister;
 }
-
 
 StatsAggregator *
 stats_aggregator_average_new(gint level, StatsClusterKey *sc_key)
