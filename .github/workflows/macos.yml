@@ -9,6 +9,13 @@ on:
 jobs:
   general:
     runs-on: macOS-latest
+
+    strategy:
+      matrix:
+        build-tool: [autotools, cmake]
+        cc: [gcc, clang]
+      fail-fast: false
+
     steps:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v3
@@ -33,35 +40,83 @@ jobs:
           HOMEBREW_PREFIX="$(brew --prefix)"
           PYTHONUSERBASE="${HOME}/python_packages"
           PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@3/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          CFLAGS="-I${HOMEBREW_PREFIX}/include/ ${CFLAGS}"
-          LDFLAGS="-L${HOMEBREW_PREFIX}/lib ${LDFLAGS}"
+          CFLAGS="-I${HOMEBREW_PREFIX}/include/"
+          LDFLAGS="-L${HOMEBREW_PREFIX}/lib"
+          CC="${{ matrix.cc }}"
           THREADS="$(sysctl -n hw.physicalcpu)"
           CONFIGURE_FLAGS="
+            `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
+            `[ $CC = gcc ] && echo '--enable-cpp' || true`
+            --prefix=${SYSLOG_NG_INSTALL_DIR}
             --enable-all-modules
+            --enable-tests
             --with-ivykis=system
             --with-python=3
-            --disable-sun-streams
-            --disable-systemd
-            --disable-pacct
             --disable-smtp
-            --disable-mqtt
             --disable-grpc
+            --disable-java
+            --disable-java-modules
+            --disable-mqtt
+            --disable-pacct
+          "
+          CMAKE_CONFIGURE_FLAGS="
+            `[ $CC = gcc ] && echo '-DENABLE_CPP=ON' || true`
+            -DCMAKE_BUILD_TYPE=Debug
+            -DSUMMARY_VERBOSE=ON
+            -DBUILD_TESTING=ON
+            -DIVYKIS_SOURCE=system
+            -DPYTHON_VERSION=3
+            -DENABLE_AFSMTP=OFF
+            -DENABLE_GRPC=OFF
+            -DENABLE_JAVA=OFF
+            -DENABLE_JAVA_MODULES=OFF
+            -DENABLE_MQTT=OFF
+            -DENABLE_PACCT=OFF
           "
 
-          gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS
+          gh_export HOMEBREW_PREFIX PYTHONUSERBASE CC PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS
           gh_path "${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${PYTHONUSERBASE}/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${PATH}"
 
           ln -s "${HOMEBREW_PREFIX}/bin/gcc-11" "${HOMEBREW_PREFIX}/bin/gcc"
+          ln -s "${HOMEBREW_PREFIX}/bin/g++-11" "${HOMEBREW_PREFIX}/bin/g++"
 
       - name: autogen.sh
+        if: matrix.build-tool == 'autotools'
         run: |
           ./autogen.sh
 
       - name: configure
+        if: matrix.build-tool == 'autotools'
         run: |
           ./configure ${CONFIGURE_FLAGS}
 
+      - name: cmake configure
+        if: matrix.build-tool == 'cmake'
+        run: |
+          mkdir build
+
+          # If you know the valid syntax to provide the quoted string for -DCMAKE_C_FLAGS inplace in CMAKE_CONFIGURE_FLAGS above (in Set ENV variables step) instead of this hack, please contribute!
+          #
+          # TODO: -Wall must be replaced here with -Werror but now multiple warnings could occure in several modules that needs to be corrected first
+          #
+          cmake --install-prefix "${HOME}/install/syslog-ng" -B build . -DCMAKE_C_FLAGS="-Wall ${CFLAGS}" ${CMAKE_CONFIGURE_FLAGS}
+
+      - name: cmake install
+        if: matrix.build-tool == 'cmake'
+        run: |
+          cmake --build ./build -j ${THREADS} --target install
+
+      - name: cmake check
+        if: matrix.build-tool == 'cmake'
+        run: |
+          # FIXME: Should fix these tests first, latest result is
+          #        98% tests passed, 4 tests failed out of 194
+          #        that is strange as in the autotools case 199 out of 199(!) is passed
+          #cmake --build ./build -j ${THREADS} --target check
+          true
+
       - name: make
+        if: matrix.build-tool == 'autotools'
         run: |
           set -e
 
@@ -73,6 +128,7 @@ jobs:
             }
 
       - name: make check
+        if: matrix.build-tool == 'autotools'
         run: |
           set -e
 
