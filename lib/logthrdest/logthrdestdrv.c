@@ -754,8 +754,6 @@ _format_stats_key(LogThreadedDestDriver *self, StatsClusterKeyBuilder *kb)
 static const gchar *
 _format_legacy_stats_instance(LogThreadedDestDriver *self, StatsClusterKeyBuilder *kb)
 {
-  stats_cluster_key_builder_clear_legacy_labels(kb);
-
   const gchar *legacy_stats_instance = self->format_stats_key(self, kb);
   if (legacy_stats_instance)
     return legacy_stats_instance;
@@ -777,7 +775,7 @@ _init_worker_sck_builder(LogThreadedDestWorker *self, StatsClusterKeyBuilder *bu
 }
 
 static gboolean
-_acquire_worker_queue(LogThreadedDestWorker *self, gint stats_level, const StatsClusterKeyBuilder *driver_sck_builder)
+_acquire_worker_queue(LogThreadedDestWorker *self, gint stats_level, StatsClusterKeyBuilder *driver_sck_builder)
 {
   gchar *persist_name = _format_queue_persist_name(self);
   StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
@@ -801,36 +799,43 @@ _register_worker_stats(LogThreadedDestWorker *self)
   gint level = log_pipe_is_internal(&self->owner->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1;
 
   StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
-  stats_cluster_key_builder_add_label(kb, stats_cluster_label("id", self->owner->super.super.id ? : ""));
-  _format_stats_key(self->owner, kb);
-
-  if (self->owner->metrics.raw_bytes_enabled)
-    {
-      stats_cluster_key_builder_set_name(kb, "output_event_bytes_total");
-      self->metrics.output_event_bytes_sc_key = stats_cluster_key_builder_build_single(kb);
-      stats_byte_counter_init(&self->metrics.written_bytes, self->metrics.output_event_bytes_sc_key, level, SBCP_KIB);
-    }
-
-  stats_cluster_key_builder_reset(kb);
-  _init_worker_sck_builder(self, kb);
-
-  stats_lock();
+  stats_cluster_key_builder_push(kb);
   {
-    /* Up to 49 days and 17 hours on 32 bit machines. */
-    stats_cluster_key_builder_set_name(kb, "output_message_delay_sample_seconds");
-    stats_cluster_key_builder_set_unit(kb, SCU_MILLISECONDS);
-    self->metrics.message_delay_sample_key = stats_cluster_key_builder_build_single(kb);
-    stats_register_counter(level, self->metrics.message_delay_sample_key, SC_TYPE_SINGLE_VALUE,
-                           &self->metrics.message_delay_sample);
+    stats_cluster_key_builder_add_label(kb, stats_cluster_label("id", self->owner->super.super.id ? : ""));
+    _format_stats_key(self->owner, kb);
 
-    stats_cluster_key_builder_set_name(kb, "output_message_delay_sample_age_seconds");
-    stats_cluster_key_builder_set_unit(kb, SCU_SECONDS);
-    stats_cluster_key_builder_set_frame_of_reference(kb, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
-    self->metrics.message_delay_sample_age_key = stats_cluster_key_builder_build_single(kb);
-    stats_register_counter(level, self->metrics.message_delay_sample_age_key, SC_TYPE_SINGLE_VALUE,
-                           &self->metrics.message_delay_sample_age);
+    if (self->owner->metrics.raw_bytes_enabled)
+      {
+        stats_cluster_key_builder_set_name(kb, "output_event_bytes_total");
+        self->metrics.output_event_bytes_sc_key = stats_cluster_key_builder_build_single(kb);
+        stats_byte_counter_init(&self->metrics.written_bytes, self->metrics.output_event_bytes_sc_key, level, SBCP_KIB);
+      }
   }
-  stats_unlock();
+  stats_cluster_key_builder_pop(kb);
+
+  stats_cluster_key_builder_push(kb);
+  {
+    _init_worker_sck_builder(self, kb);
+
+    stats_lock();
+    {
+      /* Up to 49 days and 17 hours on 32 bit machines. */
+      stats_cluster_key_builder_set_name(kb, "output_message_delay_sample_seconds");
+      stats_cluster_key_builder_set_unit(kb, SCU_MILLISECONDS);
+      self->metrics.message_delay_sample_key = stats_cluster_key_builder_build_single(kb);
+      stats_register_counter(level, self->metrics.message_delay_sample_key, SC_TYPE_SINGLE_VALUE,
+                             &self->metrics.message_delay_sample);
+
+      stats_cluster_key_builder_set_name(kb, "output_message_delay_sample_age_seconds");
+      stats_cluster_key_builder_set_unit(kb, SCU_SECONDS);
+      stats_cluster_key_builder_set_frame_of_reference(kb, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
+      self->metrics.message_delay_sample_age_key = stats_cluster_key_builder_build_single(kb);
+      stats_register_counter(level, self->metrics.message_delay_sample_age_key, SC_TYPE_SINGLE_VALUE,
+                             &self->metrics.message_delay_sample_age);
+    }
+    stats_unlock();
+  }
+  stats_cluster_key_builder_pop(kb);
 
   UnixTime now;
   unix_time_set_now(&now);
@@ -1140,15 +1145,22 @@ _register_driver_stats(LogThreadedDestDriver *self, StatsClusterKeyBuilder *driv
 
   gint level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL0;
 
-  stats_cluster_key_builder_set_name(driver_sck_builder, "output_events_total");
-  self->metrics.output_events_sc_key = stats_cluster_key_builder_build_logpipe(driver_sck_builder);
+  stats_cluster_key_builder_push(driver_sck_builder);
+  {
+    stats_cluster_key_builder_set_name(driver_sck_builder, "output_events_total");
+    self->metrics.output_events_sc_key = stats_cluster_key_builder_build_logpipe(driver_sck_builder);
+  }
+  stats_cluster_key_builder_pop(driver_sck_builder);
 
-  stats_cluster_key_builder_reset(driver_sck_builder);
-  stats_cluster_key_builder_set_legacy_alias(driver_sck_builder, self->stats_source | SCS_DESTINATION,
-                                             self->super.super.id,
-                                             _format_legacy_stats_instance(self, driver_sck_builder));
-  stats_cluster_key_builder_set_legacy_alias_name(driver_sck_builder, "processed");
-  self->metrics.processed_sc_key = stats_cluster_key_builder_build_single(driver_sck_builder);
+  stats_cluster_key_builder_push(driver_sck_builder);
+  {
+    stats_cluster_key_builder_set_legacy_alias(driver_sck_builder, self->stats_source | SCS_DESTINATION,
+                                               self->super.super.id,
+                                               _format_legacy_stats_instance(self, driver_sck_builder));
+    stats_cluster_key_builder_set_legacy_alias_name(driver_sck_builder, "processed");
+    self->metrics.processed_sc_key = stats_cluster_key_builder_build_single(driver_sck_builder);
+  }
+  stats_cluster_key_builder_pop(driver_sck_builder);
 
   stats_lock();
   {
@@ -1207,7 +1219,7 @@ _format_seqnum_persist_name(LogThreadedDestDriver *self)
 }
 
 static gboolean
-_create_workers(LogThreadedDestDriver *self, gint stats_level, const StatsClusterKeyBuilder *driver_sck_builder)
+_create_workers(LogThreadedDestDriver *self, gint stats_level, StatsClusterKeyBuilder *driver_sck_builder)
 {
   /* free previous workers array if set to cope with num_workers change */
   g_free(self->workers);

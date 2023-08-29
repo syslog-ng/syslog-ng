@@ -64,7 +64,8 @@ typedef enum _StatsClusterUnit
 
 typedef enum _StatsClusterFrameOfReference
 {
-  SCFOR_ABSOLUTE = 0,
+  SCFOR_NONE = 0,
+  SCFOR_ABSOLUTE,
 
   /*
    * Only applicable for counters with seconds, minutes or hours unit.

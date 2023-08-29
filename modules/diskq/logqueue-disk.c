@@ -295,19 +295,21 @@ _register_counters(LogQueueDisk *self, gint stats_level, StatsClusterKeyBuilder 
   if (!builder)
     return;
 
-  StatsClusterKeyBuilder *local_builder = stats_cluster_key_builder_clone(builder);
+  stats_cluster_key_builder_push(builder);
+  {
+    /* Up to 4 TiB with 32 bit atomic counters. */
+    stats_cluster_key_builder_set_unit(builder, SCU_KIB);
 
-  /* Up to 4 TiB with 32 bit atomic counters. */
-  stats_cluster_key_builder_set_unit(local_builder, SCU_KIB);
+    stats_cluster_key_builder_set_name(builder, "capacity_bytes");
+    self->metrics.capacity_sc_key = stats_cluster_key_builder_build_single(builder);
 
-  stats_cluster_key_builder_set_name(local_builder, "capacity_bytes");
-  self->metrics.capacity_sc_key = stats_cluster_key_builder_build_single(local_builder);
+    stats_cluster_key_builder_set_name(builder, "disk_usage_bytes");
+    self->metrics.disk_usage_sc_key = stats_cluster_key_builder_build_single(builder);
 
-  stats_cluster_key_builder_set_name(local_builder, "disk_usage_bytes");
-  self->metrics.disk_usage_sc_key = stats_cluster_key_builder_build_single(local_builder);
-
-  stats_cluster_key_builder_set_name(local_builder, "disk_allocated_bytes");
-  self->metrics.disk_allocated_sc_key = stats_cluster_key_builder_build_single(local_builder);
+    stats_cluster_key_builder_set_name(builder, "disk_allocated_bytes");
+    self->metrics.disk_allocated_sc_key = stats_cluster_key_builder_build_single(builder);
+  }
+  stats_cluster_key_builder_pop(builder);
 
   stats_lock();
   {
@@ -319,18 +321,17 @@ _register_counters(LogQueueDisk *self, gint stats_level, StatsClusterKeyBuilder 
                            &self->metrics.disk_allocated);
   }
   stats_unlock();
-
-  stats_cluster_key_builder_free(local_builder);
 }
 
 void
 log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, const gchar *qdisk_file_id,
                              const gchar *filename, const gchar *persist_name, gint stats_level,
-                             const StatsClusterKeyBuilder *driver_sck_builder,
+                             StatsClusterKeyBuilder *driver_sck_builder,
                              StatsClusterKeyBuilder *queue_sck_builder)
 {
   if (queue_sck_builder)
     {
+      stats_cluster_key_builder_push(queue_sck_builder);
       stats_cluster_key_builder_set_name_prefix(queue_sck_builder, "disk_queue_");
       stats_cluster_key_builder_add_label(queue_sck_builder, stats_cluster_label("path", filename));
       stats_cluster_key_builder_add_label(queue_sck_builder,
@@ -344,6 +345,9 @@ log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, cons
 
   self->qdisk = qdisk_new(options, qdisk_file_id, filename);
   _register_counters(self, stats_level, queue_sck_builder);
+
+  if (queue_sck_builder)
+    stats_cluster_key_builder_pop(queue_sck_builder);
 }
 
 static gboolean

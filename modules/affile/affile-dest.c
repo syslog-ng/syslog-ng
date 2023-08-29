@@ -189,14 +189,18 @@ _init_stats_key_builders(AFFileDestWriter *self, StatsClusterKeyBuilder **writer
   stats_cluster_key_builder_add_label(*writer_sck_builder, stats_cluster_label("driver", "file"));
   stats_cluster_key_builder_add_legacy_label(*writer_sck_builder, stats_cluster_label("filename", self->filename));
 
-  *driver_sck_builder = stats_cluster_key_builder_clone(*writer_sck_builder);
+  *driver_sck_builder = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_add_label(*driver_sck_builder, stats_cluster_label("driver", "file"));
   stats_cluster_key_builder_add_label(*driver_sck_builder, stats_cluster_label("id", self->owner->super.super.id));
+  stats_cluster_key_builder_add_legacy_label(*driver_sck_builder, stats_cluster_label("filename", self->filename));
   stats_cluster_key_builder_set_legacy_alias(*driver_sck_builder,
                                              self->owner->writer_options.stats_source | SCS_DESTINATION,
                                              self->owner->super.super.id, self->filename);
 
-  *queue_sck_builder = stats_cluster_key_builder_clone(*writer_sck_builder);
+  *queue_sck_builder = stats_cluster_key_builder_new();
+  stats_cluster_key_builder_add_label(*queue_sck_builder, stats_cluster_label("driver", "file"));
   stats_cluster_key_builder_add_label(*queue_sck_builder, stats_cluster_label("id", self->owner->super.super.id));
+  stats_cluster_key_builder_add_legacy_label(*queue_sck_builder, stats_cluster_label("filename", self->filename));
 }
 
 static gboolean

@@ -191,7 +191,9 @@ _init(LogPipe *s)
       return FALSE;
     }
 
-  stats_cluster_key_builder_reset(self->queue_sck_builder);
+  stats_cluster_key_builder_free(self->queue_sck_builder);
+  self->queue_sck_builder = stats_cluster_key_builder_new();
+
   stats_cluster_key_builder_add_label(self->queue_sck_builder,
                                       stats_cluster_label("id", self->super.super.super.super.id ? : ""));
   _format_stats_key(&self->super.super, self->queue_sck_builder);

@@ -159,7 +159,7 @@ struct _LogDestDriver
   LogDriver super;
 
   LogQueue *(*acquire_queue)(LogDestDriver *s, const gchar *persist_name, gint stats_level,
-                             const StatsClusterKeyBuilder *driver_sck_builder,
+                             StatsClusterKeyBuilder *driver_sck_builder,
                              StatsClusterKeyBuilder *queue_sck_builder);
   void (*release_queue)(LogDestDriver *s, LogQueue *q);
 
@@ -175,7 +175,7 @@ struct _LogDestDriver
 /* returns a reference */
 static inline LogQueue *
 log_dest_driver_acquire_queue(LogDestDriver *self, const gchar *persist_name, gint stats_level,
-                              const StatsClusterKeyBuilder *driver_sck_builder,
+                              StatsClusterKeyBuilder *driver_sck_builder,
                               StatsClusterKeyBuilder *queue_sck_builder)
 {
   LogQueue *q;

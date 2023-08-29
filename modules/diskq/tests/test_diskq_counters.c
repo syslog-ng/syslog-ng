@@ -187,7 +187,8 @@ Test(diskq_counters, test_non_reliable,
   /* Release and reacquire queue, same counters are expected */
   log_dest_driver_release_queue(driver, queue);
 
-  stats_cluster_key_builder_reset(queue_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
+  queue_sck_builder = stats_cluster_key_builder_new();
   queue = log_queue_ref(log_dest_driver_acquire_queue(driver, queue_persist_name, STATS_LEVEL0, NULL,
                                                       queue_sck_builder));
   cr_assert(queue);
@@ -254,7 +255,8 @@ Test(diskq_counters, test_reliable,
   /* Release and reacquire queue, only disk usage is expected, as front cache is not refilled */
   log_dest_driver_release_queue(driver, queue);
 
-  stats_cluster_key_builder_reset(queue_sck_builder);
+  stats_cluster_key_builder_free(queue_sck_builder);
+  queue_sck_builder = stats_cluster_key_builder_new();
   queue = log_queue_ref(log_dest_driver_acquire_queue(driver, queue_persist_name, STATS_LEVEL0, NULL,
                                                       queue_sck_builder));
   cr_assert(queue);
