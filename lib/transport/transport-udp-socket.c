@@ -63,6 +63,7 @@ _extract_dest_ip4_addr_from_cmsg(struct cmsghdr *cmsg, GSockAddr *bind_addr)
 GSockAddr *
 _extract_dest_ip4_addr_from_cmsg(struct cmsghdr *cmsg, GSockAddr *bind_addr)
 {
+#ifdef IP_PKTINFO
   if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_PKTINFO)
     {
       struct sockaddr_in sin;
@@ -76,6 +77,7 @@ _extract_dest_ip4_addr_from_cmsg(struct cmsghdr *cmsg, GSockAddr *bind_addr)
       sin.sin_addr = inpkt.ipi_addr;
       return g_sockaddr_new((struct sockaddr *) &sin, sizeof(sin));
     }
+#endif
   return NULL;
 }
 #endif
@@ -85,6 +87,7 @@ _extract_dest_ip4_addr_from_cmsg(struct cmsghdr *cmsg, GSockAddr *bind_addr)
 GSockAddr *
 _extract_dest_ip6_addr_from_cmsg(struct cmsghdr *cmsg, GSockAddr *bind_addr)
 {
+#ifdef IPV6_PKTINFO
   if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO)
     {
       struct sockaddr_in6 sin6;
@@ -98,6 +101,7 @@ _extract_dest_ip6_addr_from_cmsg(struct cmsghdr *cmsg, GSockAddr *bind_addr)
       sin6.sin6_addr = in6pkt.ipi6_addr;
       return g_sockaddr_new((struct sockaddr *) &sin6, sizeof(sin6));
     }
+#endif
   return NULL;
 }
 
@@ -142,11 +146,11 @@ _setup_fd(LogTransportUDP *self, gint fd)
     {
 #if defined(__FreeBSD__) || defined(__OpenBSD__)
       setsockopt(fd, IPPROTO_IP, IP_RECVDSTADDR, &on, sizeof(on));
-#else
+#elif defined(IP_PKTINFO)
       setsockopt(fd, IPPROTO_IP, IP_PKTINFO, &on, sizeof(on));
 #endif
     }
-#if SYSLOG_NG_ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6 && defined(IPV6_RECVPKTINFO)
   else if (self->bind_addr->sa.sa_family == AF_INET6)
     setsockopt(fd, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on, sizeof(on));
 #endif
