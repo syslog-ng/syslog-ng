@@ -125,7 +125,7 @@ _set_default_value(MQTTDestinationDriver *self, GlobalConfig *cfg)
 
   log_template_compile(self->message, DEFAULT_MESSAGE_TEMPLATE, NULL);
 
-  log_template_options_init(&self->template_options, cfg);
+  log_template_options_defaults(&self->template_options);
 }
 
 static gboolean
@@ -161,6 +161,7 @@ static gboolean
 _init(LogPipe *d)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+  GlobalConfig *cfg = log_pipe_get_config(d);
 
   if (!self->topic_name)
     {
@@ -185,6 +186,8 @@ _init(LogPipe *d)
     {
       return FALSE;
     }
+
+  log_template_options_init(&self->template_options, cfg);
 
   if (_topic_name_is_a_template(self) && self->fallback_topic == NULL)
     {

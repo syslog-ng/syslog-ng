@@ -1297,14 +1297,6 @@ ProtobufFormatter::format(LogMessage *msg, Span &span)
   return true;
 }
 
-static LogTemplate *
-_create_template(const char *template_string, GlobalConfig *cfg)
-{
-  LogTemplate *template_obj = log_template_new(cfg, NULL);
-  g_assert(log_template_compile(template_obj, template_string, NULL));
-  return template_obj;
-}
-
 syslogng::grpc::otel::ProtobufFormatter::ProtobufFormatter(GlobalConfig *cfg_)
   : cfg(cfg_)
 {

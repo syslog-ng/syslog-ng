@@ -724,8 +724,6 @@ snmpdest_worker_thread_init(LogThreadedDestDriver *d)
   if (!tz && time_zone)
     snmpdest_dd_set_time_zone((LogDriver *)self, time_zone);
 
-  log_template_options_init(&self->template_options, cfg);
-
   snmpdest_dd_session_init(self);
 }
 
