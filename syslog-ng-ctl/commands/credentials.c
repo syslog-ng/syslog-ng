@@ -22,6 +22,7 @@
  */
 
 #include "credentials.h"
+#include "compat/string.h"
 
 #include <termios.h>
 #include <unistd.h>

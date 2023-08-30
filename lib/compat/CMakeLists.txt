@@ -27,6 +27,7 @@ set(COMPAT_SOURCES
     compat/strcasestr.c
     compat/strtok_r.c
     compat/strnlen.c
+    compat/getline.c
     compat/time.c
     compat/openssl_support.c
     compat/getent-sun.c

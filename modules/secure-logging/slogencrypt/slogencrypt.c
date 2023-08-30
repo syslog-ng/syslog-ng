@@ -30,6 +30,7 @@
 
 #include "messages.h"
 #include "slog.h"
+#include "compat/string.h"
 
 // Arguments and options
 static char *hostkey = NULL;

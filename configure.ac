@@ -889,6 +889,7 @@ AC_CHECK_FUNCS(strdup		\
 	getprotobynumber_r	\
 	gmtime_r		\
 	strnlen			\
+	getline			\
 	strtok_r)
 old_LIBS=$LIBS
 LIBS=$BASE_LIBS
