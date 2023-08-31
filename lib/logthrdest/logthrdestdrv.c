@@ -938,6 +938,15 @@ log_threaded_dest_driver_set_num_workers(LogDriver *s, gint num_workers)
   self->num_workers = num_workers;
 }
 
+void
+log_threaded_dest_driver_set_worker_partition_key_ref(LogDriver *s, LogTemplate *key)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
+
+  log_template_unref(self->worker_partition_key);
+  self->worker_partition_key = key;
+}
+
 /* compatibility bridge between LogThreadedDestWorker */
 
 static gboolean
@@ -1034,13 +1043,38 @@ log_threaded_dest_driver_set_max_retries_on_error(LogDriver *s, gint max_retries
   self->retries_on_error_max = max_retries;
 }
 
+static guint
+_get_worker_key_hash(LogThreadedDestDriver *self, LogMessage *msg)
+{
+  if (log_template_is_trivial(self->worker_partition_key))
+    {
+      NVHandle handle = log_template_get_trivial_value_handle(self->worker_partition_key);
+      return g_str_hash(log_msg_get_value(msg, handle, NULL));
+    }
+
+  ScratchBuffersMarker mark;
+  GString *buffer = scratch_buffers_alloc_and_mark(&mark);
+
+  LogTemplateEvalOptions options = DEFAULT_TEMPLATE_EVAL_OPTIONS;
+  log_template_format(self->worker_partition_key, msg, &options, buffer);
+  guint hash = g_str_hash(buffer->str);
+
+  scratch_buffers_reclaim_marked(mark);
+
+  return hash;
+}
+
 LogThreadedDestWorker *
 _lookup_worker(LogThreadedDestDriver *self, LogMessage *msg)
 {
+  if (self->worker_partition_key)
+    {
+      guint worker_index = _get_worker_key_hash(self, msg) % self->num_workers;
+      return self->workers[worker_index];
+    }
+
   guint worker_index = self->last_worker;
   self->last_worker = (self->last_worker + 1) % self->num_workers;
-
-  /* here would come the lookup mechanism that maps msg -> worker that doesn't exist yet. */
   return self->workers[worker_index];
 }
 
@@ -1266,6 +1300,13 @@ log_threaded_dest_driver_init_method(LogPipe *s)
 
   if (!self->shared_seq_num)
     init_sequence_number(&self->shared_seq_num);
+
+  if (self->worker_partition_key && log_template_is_literal_string(self->worker_partition_key))
+    {
+      msg_error("worker-partition-key() should not be literal string, use macros to form proper partitions",
+                log_expr_node_location_tag(self->super.super.super.expr_node));
+      return FALSE;
+    }
 
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
   _init_driver_sck_builder(self, driver_sck_builder);
