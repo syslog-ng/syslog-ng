@@ -1,6 +1,8 @@
 
 <p align="center">
   <picture>
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/axoflow/axosyslog-docker/raw/main/docs/axosyslog.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/axoflow/axosyslog-docker/raw/main/docs/axosyslog-white.svg">
     <img alt="Axoflow" src="https://github.com/axoflow/axosyslog-docker/raw/main/docs/axosyslog.svg" width="550">
   </picture>
 </p>
