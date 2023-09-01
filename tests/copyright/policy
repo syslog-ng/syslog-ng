@@ -170,6 +170,7 @@ modules/timestamp/tests/test_format_date.*$
 modules/add-contextual-data/add-contextual-data-glob-selector\.[ch]$
 modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
+modules/affile/stdout\.[ch]
 modules/afsocket/socket-options-unix\.[ch]$
 modules/basicfuncs/vp-funcs\.[ch]$
 modules/correlation/group-lines\.[ch]$

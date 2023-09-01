@@ -60,6 +60,11 @@ static Plugin affile_plugins[] =
     .name = "pipe",
     .parser = &affile_parser,
   },
+  {
+    .type = LL_CONTEXT_DESTINATION,
+    .name = "stdout",
+    .parser = &affile_parser,
+  },
 };
 
 gboolean
