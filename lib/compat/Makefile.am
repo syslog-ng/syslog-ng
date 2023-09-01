@@ -31,6 +31,7 @@ compat_sources			= 	\
 	lib/compat/strcasestr.c		\
 	lib/compat/strtok_r.c		\
 	lib/compat/strnlen.c		\
+	lib/compat/getline.c		\
 	lib/compat/time.c		\
 	lib/compat/openssl_support.c	\
 	lib/compat/getent-sun.c		\

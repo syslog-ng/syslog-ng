@@ -24,6 +24,7 @@
 #include "atomic.h"
 #include "messages.h"
 #include "scratch-buffers.h"
+#include "compat/string.h"
 
 #include <string.h>
 #include <stdio.h>

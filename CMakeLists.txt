@@ -162,6 +162,7 @@ __thread int a; int main() { a=0; }" SYSLOG_NG_HAVE_THREAD_KEYWORD)
 
 check_symbol_exists(strtoll stdlib.h SYSLOG_NG_HAVE_STRTOLL)
 check_symbol_exists(strnlen string.h SYSLOG_NG_HAVE_STRNLEN)
+check_symbol_exists(getline "stdio.h" SYSLOG_NG_HAVE_GETLINE)
 check_symbol_exists(strtok_r string.h SYSLOG_NG_HAVE_STRTOK_R)
 check_symbol_exists(strtoimax inttypes.h SYSLOG_NG_HAVE_STRTOIMAX)
 check_symbol_exists(inet_aton "sys/socket.h;netinet/in.h;arpa/inet.h" SYSLOG_NG_HAVE_INET_ATON)

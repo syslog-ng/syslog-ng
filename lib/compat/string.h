@@ -25,6 +25,7 @@
 
 #include "compat.h"
 #include <string.h>
+#include <stdio.h>
 
 #include <stddef.h>
 
@@ -54,4 +55,9 @@ char *strtok_r(char *string, const char *delim, char **saveptr);
 #ifndef SYSLOG_NG_HAVE_STRNLEN
 size_t strnlen(const char *s, size_t maxlen);
 #endif
+
+#ifndef SYSLOG_NG_HAVE_GETLINE
+ssize_t getline(char **buf, size_t *bufsiz, FILE *fp);
+#endif
+
 #endif
