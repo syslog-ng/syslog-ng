@@ -47,6 +47,7 @@
 #include "timeutils/cache.h"
 #include "mainloop.h"
 #include "msg-format.h"
+#include "str-utils.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -759,6 +760,64 @@ pdbtool_test_find_conflicts(PatternDB *patterndb, LogMessage *msg)
     }
 }
 
+gboolean
+pdbtool_test_value_type_callback(NVHandle handle, const gchar *name,
+                                 const gchar *value, gssize length,
+                                 LogMessageValueType type, gpointer user_data)
+{
+  gboolean *value_types_are_correct = (gboolean *) user_data;
+  gint64 i64;
+  gdouble d;
+  gboolean b;
+  UnixTime ut;
+  gboolean valid;
+  GError *error = NULL;
+
+  APPEND_ZERO(value, value, length);
+
+  switch (type)
+    {
+    case LM_VT_NULL:
+    case LM_VT_STRING:
+    case LM_VT_JSON:
+    case LM_VT_BYTES:
+    case LM_VT_PROTOBUF:
+    case LM_VT_LIST:
+    default:
+      valid = TRUE;
+      break;
+    case LM_VT_DATETIME:
+      valid = type_cast_to_datetime_unixtime(value, &ut, &error);
+      break;
+    case LM_VT_INTEGER:
+      valid = type_cast_to_int64(value, &i64, &error);
+      break;
+    case LM_VT_DOUBLE:
+      valid = type_cast_to_double(value, &d, &error);
+      break;
+    case LM_VT_BOOLEAN:
+      valid = type_cast_to_boolean(value, &b, &error);
+      break;
+    }
+  if (!valid)
+    {
+      printf(" Value type validation failed, ${%s} did not validate: %s\n",
+             name, error->message);
+      g_clear_error(&error);
+      *value_types_are_correct = FALSE;
+    }
+  return FALSE;
+}
+
+static gboolean
+pdbtool_test_value_types(LogMessage *msg)
+{
+  gboolean result = TRUE;
+
+  log_msg_values_foreach(msg, pdbtool_test_value_type_callback, &result);
+  return result;
+}
+
 static gint
 pdbtool_test(int argc, char *argv[])
 {
@@ -848,6 +907,8 @@ pdbtool_test(int argc, char *argv[])
                     failed_to_match = TRUE;
                 }
 
+              if (!pdbtool_test_value_types(msg))
+                failed_to_match = TRUE;
               log_msg_unref(msg);
             }
           else if (!example->program && example->message)
