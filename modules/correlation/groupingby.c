@@ -204,11 +204,6 @@ _clone(LogPipe *s)
   GroupingBy *self = (GroupingBy *) s;
   GroupingBy *cloned;
 
-  if (self->id_counter == NULL)
-    {
-      self->id_counter = id_counter_new();
-    }
-
   cloned = (GroupingBy *) grouping_by_new(s->cfg);
   grouping_parser_clone_settings(&self->super, &cloned->super);
   grouping_by_set_synthetic_message(&cloned->super.super.super, self->synthetic_message);
@@ -217,6 +212,7 @@ _clone(LogPipe *s)
   grouping_by_set_having_condition(&cloned->super.super.super, filter_expr_clone(self->having_condition_expr));
   grouping_by_set_prefix(&cloned->super.super.super, self->prefix);
 
+  id_counter_unref(cloned->id_counter);
   cloned->id_counter = id_counter_ref(self->id_counter);
   cloned->clone_id = id_counter_get_next_id(cloned->id_counter);
 
@@ -244,6 +240,8 @@ LogParser *
 grouping_by_new(GlobalConfig *cfg)
 {
   GroupingBy *self = g_new0(GroupingBy, 1);
+  self->id_counter = id_counter_new();
+  self->clone_id = id_counter_get_next_id(self->id_counter);
 
   grouping_parser_init_instance(&self->super, cfg);
   self->super.super.super.super.free_fn = _free;

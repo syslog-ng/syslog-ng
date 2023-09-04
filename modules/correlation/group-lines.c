@@ -275,17 +275,13 @@ _clone(LogPipe *s)
   GroupLines *self = (GroupLines *) s;
   GroupLines *cloned;
 
-  if (self->id_counter == NULL)
-    {
-      self->id_counter = id_counter_new();
-    }
-
   cloned = (GroupLines *) group_lines_new(s->cfg);
   grouping_parser_clone_settings(&self->super, &cloned->super);
   group_lines_set_separator(&cloned->super.super.super, self->separator);
 
   multi_line_options_copy(&cloned->multi_line_options, &self->multi_line_options);
 
+  id_counter_unref(cloned->id_counter);
   cloned->id_counter = id_counter_ref(self->id_counter);
   cloned->clone_id = id_counter_get_next_id(cloned->id_counter);
 
@@ -308,6 +304,8 @@ LogParser *
 group_lines_new(GlobalConfig *cfg)
 {
   GroupLines *self = g_new0(GroupLines, 1);
+  self->id_counter = id_counter_new();
+  self->clone_id = id_counter_get_next_id(self->id_counter);
 
   grouping_parser_init_instance(&self->super, cfg);
   self->super.super.super.super.init = _init;
