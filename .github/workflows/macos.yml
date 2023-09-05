@@ -109,11 +109,7 @@ jobs:
       - name: cmake check
         if: matrix.build-tool == 'cmake'
         run: |
-          # FIXME: Should fix these tests first, latest result is
-          #        98% tests passed, 4 tests failed out of 194
-          #        that is strange as in the autotools case 199 out of 199(!) is passed
-          #cmake --build ./build -j ${THREADS} --target check
-          true
+          cmake --build ./build -j ${THREADS} --target check
 
       - name: make
         if: matrix.build-tool == 'autotools'
