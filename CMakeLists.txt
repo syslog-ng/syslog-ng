@@ -427,10 +427,8 @@ add_subdirectory(scripts)
 add_subdirectory(syslog-ng)
 add_subdirectory(syslog-ng-ctl)
 add_subdirectory(persist-tool)
-if (BUILD_TESTING)
-  add_test_subdirectory(libtest)
-  add_subdirectory(tests)
-endif()
+add_subdirectory(tests)
+add_subdirectory(libtest)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
 
