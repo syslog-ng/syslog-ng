@@ -829,7 +829,9 @@ _deinit(LogThreadedDestWorker *s)
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
   g_string_free(self->request_body, TRUE);
-  g_string_free(self->request_body_compressed, TRUE);
+  if (self->request_body_compressed)
+    g_string_free(self->request_body_compressed, TRUE);
+
   if (owner->message_compression != CURL_COMPRESSION_UNCOMPRESSED)
     compressor_free(self->compressor);
   list_free(self->request_headers);
