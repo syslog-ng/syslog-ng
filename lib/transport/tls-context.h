@@ -135,6 +135,7 @@ void tls_context_set_ocsp_stapling_verify(TLSContext *self, gboolean ocsp_stapli
 const gchar *tls_context_get_key_file(TLSContext *self);
 EVTTAG *tls_context_format_tls_error_tag(TLSContext *self);
 EVTTAG *tls_context_format_location_tag(TLSContext *self);
+gboolean tls_context_verify_peer(TLSContext *self, X509 *peer_cert, const gchar *peer_name);
 TLSContextSetupResult tls_context_setup_context(TLSContext *self);
 TLSSession *tls_context_setup_session(TLSContext *self);
 TLSContext *tls_context_new(TLSMode mode, const gchar *config_location);

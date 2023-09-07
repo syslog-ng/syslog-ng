@@ -502,6 +502,26 @@ _set_client_ca_list(TLSContext *self)
 #endif
 }
 
+gboolean
+tls_context_verify_peer(TLSContext *self, X509 *peer_cert, const gchar *peer_name)
+{
+  if ((tls_context_get_verify_mode(self) & TVM_TRUSTED) == 0)
+    {
+      msg_warning("Bypassing certificate validation, peer certificate is always accepted");
+      return TRUE;
+    }
+
+  if (!peer_name)
+    return TRUE;
+
+  if (!tls_verify_certificate_name(peer_cert, peer_name))
+    {
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
 TLSContextSetupResult
 tls_context_setup_context(TLSContext *self)
 {
