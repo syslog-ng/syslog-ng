@@ -516,6 +516,12 @@ tls_context_verify_peer(TLSContext *self, X509 *peer_cert, const gchar *peer_nam
 
   if (!tls_verify_certificate_name(peer_cert, peer_name))
     {
+      if (tls_context_ignore_hostname_mismatch(self))
+        {
+          msg_warning("Ignoring certificate subject validation error due to options(ignore-hostname-mismatch)",
+                      evt_tag_str("hostname", peer_name));
+          return TRUE;
+        }
       return FALSE;
     }
 
@@ -682,6 +688,8 @@ tls_context_set_ssl_options_by_name(TLSContext *self, GList *options)
       else if (strcasecmp(l->data, "ignore-unexpected-eof") == 0 || strcasecmp(l->data, "ignore_unexpected_eof") == 0)
         self->ssl_options |= TSO_IGNORE_UNEXPECTED_EOF;
 #endif
+      else if (strcasecmp(l->data, "ignore-hostname-mismatch") == 0 || strcasecmp(l->data, "ignore_hostname_mismatch") == 0)
+        self->ssl_options |= TSO_IGNORE_HOSTNAME_MISMATCH;
       else
         return FALSE;
     }
@@ -699,6 +707,12 @@ void
 tls_context_set_verify_mode(TLSContext *self, gint verify_mode)
 {
   self->verify_mode = verify_mode;
+}
+
+gboolean
+tls_context_ignore_hostname_mismatch(TLSContext *self)
+{
+  return self->ssl_options & TSO_IGNORE_HOSTNAME_MISMATCH;
 }
 
 static int

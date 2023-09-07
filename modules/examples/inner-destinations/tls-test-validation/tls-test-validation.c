@@ -22,7 +22,7 @@
 
 #include "tls-test-validation.h"
 #include "modules/afsocket/afsocket-signals.h"
-#include "transport/tls-verifier.h"
+#include "transport/tls-context.h"
 #include "compat/openssl_support.h"
 
 #define TLS_TEST_VALIDATION_PLUGIN "tls-test-validation"
@@ -44,7 +44,7 @@ static void
 _slot_append_test_identity(TlsTestValidationPlugin *self, AFSocketTLSCertificateValidationSignalData *data)
 {
   X509 *cert = X509_STORE_CTX_get0_cert(data->ctx);
-  data->failure = !tls_verify_certificate_name(cert, self->identity);
+  data->failure = !tls_context_verify_peer(data->tls_context, cert, self->identity);
 
   msg_debug("TlsTestValidationPlugin validated");
 }
