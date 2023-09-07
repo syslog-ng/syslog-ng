@@ -94,6 +94,11 @@ struct _LogThreadedDestWorker
 
   struct
   {
+    GString *last_key;
+  } partitioning;
+
+  struct
+  {
     StatsClusterKey *output_event_bytes_sc_key;
     StatsClusterKey *message_delay_sample_key;
     StatsClusterKey *message_delay_sample_age_key;
@@ -167,6 +172,7 @@ struct _LogThreadedDestDriver
   gint created_workers;
   guint last_worker;
 
+  gboolean flush_on_key_change;
   LogTemplate *worker_partition_key;
   gint stats_source;
 
@@ -295,6 +301,7 @@ void log_threaded_dest_driver_free(LogPipe *s);
 void log_threaded_dest_driver_set_max_retries_on_error(LogDriver *s, gint max_retries);
 void log_threaded_dest_driver_set_num_workers(LogDriver *s, gint num_workers);
 void log_threaded_dest_driver_set_worker_partition_key_ref(LogDriver *s, LogTemplate *key);
+void log_threaded_dest_driver_set_flush_on_worker_key_change(LogDriver *s, gboolean f);
 void log_threaded_dest_driver_set_batch_lines(LogDriver *s, gint batch_lines);
 void log_threaded_dest_driver_set_batch_timeout(LogDriver *s, gint batch_timeout);
 void log_threaded_dest_driver_set_time_reopen(LogDriver *s, time_t time_reopen);
