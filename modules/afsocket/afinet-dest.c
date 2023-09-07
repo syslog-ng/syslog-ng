@@ -149,6 +149,7 @@ afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
         {
           AFSocketTLSCertificateValidationSignalData signal_data = {0};
           signal_data.ctx = ctx;
+          signal_data.tls_context = self->tls_context;
 
           EMIT(self->signal_connector, signal_afsocket_tls_certificate_validation,
                &signal_data);
