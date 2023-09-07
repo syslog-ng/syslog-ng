@@ -1340,7 +1340,6 @@ log_threaded_dest_driver_free(LogPipe *s)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
-  g_mutex_clear(&self->lock);
   g_free(self->workers);
   log_dest_driver_free((LogPipe *)self);
 }
@@ -1364,5 +1363,4 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
 
   self->retries_on_error_max = MAX_RETRIES_ON_ERROR_DEFAULT;
   self->retries_max = MAX_RETRIES_BEFORE_SUSPEND_DEFAULT;
-  g_mutex_init(&self->lock);
 }
