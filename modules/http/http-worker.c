@@ -424,7 +424,9 @@ _reinit_request_body(HTTPDestinationWorker *self)
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
   g_string_truncate(self->request_body, 0);
-  if(self->request_body_compressed != NULL) g_string_truncate(self->request_body_compressed, 0);
+  if (self->request_body_compressed != NULL)
+    g_string_truncate(self->request_body_compressed, 0);
+
   if (owner->body_prefix->len > 0)
     g_string_append_len(self->request_body, owner->body_prefix->str, owner->body_prefix->len);
 
@@ -525,7 +527,7 @@ _curl_perform_request(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *targe
   curl_easy_setopt(self->curl, CURLOPT_URL, target->url);
   if (owner->message_compression != CURL_COMPRESSION_UNCOMPRESSED)
     {
-      if(compressor_compress(self->compressor, self->request_body_compressed, self->request_body))
+      if (compressor_compress(self->compressor, self->request_body_compressed, self->request_body))
         {
           curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body_compressed->str);
           curl_easy_setopt(self->curl, CURLOPT_POSTFIELDSIZE, self->request_body_compressed->len);
@@ -827,7 +829,9 @@ _deinit(LogThreadedDestWorker *s)
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
   g_string_free(self->request_body, TRUE);
-  g_string_free(self->request_body_compressed, TRUE);
+  if (self->request_body_compressed)
+    g_string_free(self->request_body_compressed, TRUE);
+
   if (owner->message_compression != CURL_COMPRESSION_UNCOMPRESSED)
     compressor_free(self->compressor);
   list_free(self->request_headers);

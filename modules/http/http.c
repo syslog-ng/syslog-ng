@@ -268,9 +268,13 @@ http_dd_set_accept_encoding(LogDriver *d, const gchar *encoding)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
-  if(self->accept_encoding != NULL) g_string_free(self->accept_encoding, TRUE);
-  if(strcmp(encoding, CURL_COMPRESSION_LITERAL_ALL) == 0) self->accept_encoding = g_string_new("");
-  else self->accept_encoding = g_string_new(encoding);
+  if (self->accept_encoding != NULL)
+    g_string_free(self->accept_encoding, TRUE);
+
+  if (strcmp(encoding, CURL_COMPRESSION_LITERAL_ALL) == 0)
+    self->accept_encoding = g_string_new("");
+  else
+    self->accept_encoding = g_string_new(encoding);
 }
 
 void
@@ -282,14 +286,14 @@ http_dd_set_message_compression(LogDriver *d, const gchar *encoding)
   _encoding_valid = http_dd_check_curl_compression(encoding);
   g_assert(_encoding_valid);
 
-  if(http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_UNCOMPRESSED))
+  if (http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_UNCOMPRESSED))
     {
       self->message_compression = CURL_COMPRESSION_UNCOMPRESSED;
       return;
     }
-  else if(http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_GZIP))
+  else if (http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_GZIP))
     self->message_compression = CURL_COMPRESSION_GZIP;
-  else if(http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_DEFLATE))
+  else if (http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_DEFLATE))
     self->message_compression = CURL_COMPRESSION_DEFLATE;
   else
     self->message_compression = CURL_COMPRESSION_DEFAULT;
