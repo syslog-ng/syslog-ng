@@ -29,6 +29,7 @@
 #include "seqnum.h"
 #include "scratch-buffers.h"
 #include "mainloop-threaded-worker.h"
+#include "mainloop-call.h"
 
 #include <string.h>
 
@@ -811,14 +812,81 @@ _format_legacy_stats_instance(LogThreadedDestDriver *self, StatsClusterKeyBuilde
 }
 
 static void
+_init_driver_sck_builder(LogThreadedDestDriver *self, StatsClusterKeyBuilder *builder)
+{
+  stats_cluster_key_builder_add_label(builder, stats_cluster_label("id", self->super.super.id ? : ""));
+  const gchar *legacy_stats_instance = _format_legacy_stats_instance(self, builder);
+  stats_cluster_key_builder_set_legacy_alias(builder, self->stats_source | SCS_DESTINATION,
+                                             self->super.super.id,
+                                             legacy_stats_instance);
+}
+
+static void
+_init_queue_sck_builder(LogThreadedDestDriver *self, StatsClusterKeyBuilder *builder)
+{
+  stats_cluster_key_builder_add_label(builder, stats_cluster_label("id", self->super.super.id ? : ""));
+  _format_stats_key(self, builder);
+}
+
+static void
 _init_worker_sck_builder(LogThreadedDestWorker *self, StatsClusterKeyBuilder *builder)
 {
-  stats_cluster_key_builder_add_label(builder, stats_cluster_label("id", self->owner->super.super.id ? : ""));
-  _format_stats_key(self->owner, builder);
+  _init_queue_sck_builder(self->owner, builder);
 
   gchar worker_index_str[8];
   g_snprintf(worker_index_str, sizeof(worker_index_str), "%d", self->worker_index);
   stats_cluster_key_builder_add_label(builder, stats_cluster_label("worker", worker_index_str));
+}
+
+static LogQueue *
+_acquire_partition_queue(LogThreadedDestDriver *self, const gchar *queue_name)
+{
+  gchar *persist_name = g_strdup_printf("%s.%s.queue", log_pipe_get_persist_name(&self->super.super.super), queue_name);
+
+  StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
+  _init_driver_sck_builder(self, driver_sck_builder);
+
+  StatsClusterKeyBuilder *queue_sck_builder = stats_cluster_key_builder_new();
+  _init_queue_sck_builder(self, queue_sck_builder);
+
+  gint stats_level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL0;
+
+  LogQueue *queue = log_dest_driver_acquire_queue(&self->super, persist_name, stats_level, driver_sck_builder,
+                                                  queue_sck_builder);
+
+  stats_cluster_key_builder_free(queue_sck_builder);
+  stats_cluster_key_builder_free(driver_sck_builder);
+  g_free(persist_name);
+
+  return queue;
+}
+
+static void
+_partition_queue_destroy(gpointer d)
+{
+  LogThreadedPartitionQueue *pq = (LogThreadedPartitionQueue *) d;
+
+  g_string_free(pq->name, TRUE);
+
+  /* freed by LogDestDriver */
+  pq->queue = NULL;
+
+  g_free(pq);
+}
+
+static LogThreadedPartitionQueue *
+_partition_queue_new(LogThreadedDestDriver *d, GString *name)
+{
+  LogQueue *queue = _acquire_partition_queue(d, name->str);
+  if (!queue)
+    return NULL;
+
+  LogThreadedPartitionQueue *pq = g_new(LogThreadedPartitionQueue, 1);
+
+  pq->name = name;
+  pq->queue = queue;
+
+  return pq;
 }
 
 static gboolean
@@ -1009,6 +1077,15 @@ log_threaded_dest_driver_set_flush_on_worker_key_change(LogDriver *s, gboolean f
   self->flush_on_key_change = f;
 }
 
+void
+log_threaded_dest_driver_set_queue_partition_key_ref(LogDriver *s, LogTemplate *key)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
+
+  log_template_unref(self->queue_partition_key);
+  self->queue_partition_key = key;
+}
+
 /* compatibility bridge between LogThreadedDestWorker */
 
 static gboolean
@@ -1114,22 +1191,17 @@ _get_worker_key_hash(LogThreadedDestDriver *self, LogMessage *msg)
       return g_str_hash(log_msg_get_value(msg, handle, NULL));
     }
 
-  ScratchBuffersMarker mark;
-  GString *buffer = scratch_buffers_alloc_and_mark(&mark);
-
+  GString *buffer = scratch_buffers_alloc();
   LogTemplateEvalOptions options = DEFAULT_TEMPLATE_EVAL_OPTIONS;
   log_template_format(self->worker_partition_key, msg, &options, buffer);
-  guint hash = g_str_hash(buffer->str);
 
-  scratch_buffers_reclaim_marked(mark);
-
-  return hash;
+  return g_str_hash(buffer->str);
 }
 
 LogThreadedDestWorker *
 _lookup_worker(LogThreadedDestDriver *self, LogMessage *msg)
 {
-  if (self->worker_partition_key)
+  if (G_UNLIKELY(self->worker_partition_key))
     {
       guint worker_index = _get_worker_key_hash(self, msg) % self->num_workers;
       return self->workers[worker_index];
@@ -1140,6 +1212,69 @@ _lookup_worker(LogThreadedDestDriver *self, LogMessage *msg)
   return self->workers[worker_index];
 }
 
+static gpointer
+_create_partition_queue(gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) args[0];
+  GString *queue_name = (GString *) args[1];
+
+  main_loop_assert_main_thread();
+
+  /* unlocked as the table is written only in this thread */
+  LogThreadedPartitionQueue *pq = g_hash_table_lookup(self->partitioning.queues, queue_name->str);
+  if (!pq)
+    {
+      pq = _partition_queue_new(self, queue_name);
+
+      msg_debug("Creating new partition queue", evt_tag_str("queue_name", queue_name->str));
+
+      g_mutex_lock(&self->partitioning.lock);
+      g_hash_table_insert(self->partitioning.queues, pq->name->str, pq);
+      g_mutex_unlock(&self->partitioning.lock);
+    }
+
+  return pq;
+}
+
+LogQueue *
+_lookup_partition_queue(LogThreadedDestDriver *self, LogMessage *msg)
+{
+  const gchar *queue_name;
+
+  if (log_template_is_literal_string(self->queue_partition_key))
+    queue_name = log_template_get_literal_value(self->queue_partition_key, NULL);
+  else if (log_template_is_trivial(self->queue_partition_key))
+    {
+      NVHandle handle = log_template_get_trivial_value_handle(self->queue_partition_key);
+      queue_name = log_msg_get_value(msg, handle, NULL);
+    }
+  else
+    {
+      GString *buffer = scratch_buffers_alloc();
+
+      LogTemplateEvalOptions options = DEFAULT_TEMPLATE_EVAL_OPTIONS;
+      log_template_format(self->queue_partition_key, msg, &options, buffer);
+      queue_name = buffer->str;
+    }
+
+  g_mutex_lock(&self->partitioning.lock);
+  LogThreadedPartitionQueue *pq = g_hash_table_lookup(self->partitioning.queues, queue_name);
+  if (pq)
+    {
+      g_mutex_unlock(&self->partitioning.lock);
+      msg_trace("Inserting message into partition queue", evt_tag_str("queue_name", queue_name));
+      return pq->queue;
+    }
+
+  g_mutex_unlock(&self->partitioning.lock);
+
+  gpointer args[] = { self, g_string_new(queue_name) };
+  pq = main_loop_call(_create_partition_queue, args, TRUE);
+
+  return pq ? pq->queue : NULL;
+}
+
 /* the feeding side of the driver, runs in the source thread and puts an
  * incoming message to the associated queue.
  */
@@ -1148,14 +1283,36 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
                                const LogPathOptions *path_options)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
-  LogThreadedDestWorker *dw = _lookup_worker(self, msg);
-  LogPathOptions local_options;
 
+  ScratchBuffersMarker mark;
+  scratch_buffers_mark(&mark);
+
+  LogQueue *queue;
+  if (G_UNLIKELY(self->queue_partition_key))
+    {
+      queue = _lookup_partition_queue(self, msg);
+    }
+  else
+    {
+      LogThreadedDestWorker *dw = _lookup_worker(self, msg);
+      queue = dw->queue;
+    }
+
+  scratch_buffers_reclaim_marked(mark);
+
+  if (!queue)
+    {
+      stats_counter_inc(self->metrics.dropped_messages);
+      log_dest_driver_queue_method(s, msg, path_options);
+      return;
+    }
+
+  LogPathOptions local_options;
   if (!path_options->flow_control_requested)
     path_options = log_msg_break_ack(msg, path_options, &local_options);
 
   log_msg_add_ack(msg, path_options);
-  log_queue_push_tail(dw->queue, log_msg_ref(msg), path_options);
+  log_queue_push_tail(queue, log_msg_ref(msg), path_options);
 
   stats_counter_inc(self->metrics.processed_messages);
 
@@ -1270,16 +1427,6 @@ _register_driver_stats(LogThreadedDestDriver *self, StatsClusterKeyBuilder *driv
 }
 
 static void
-_init_driver_sck_builder(LogThreadedDestDriver *self, StatsClusterKeyBuilder *builder)
-{
-  stats_cluster_key_builder_add_label(builder, stats_cluster_label("id", self->super.super.id ? : ""));
-  const gchar *legacy_stats_instance = _format_legacy_stats_instance(self, builder);
-  stats_cluster_key_builder_set_legacy_alias(builder, self->stats_source | SCS_DESTINATION,
-                                             self->super.super.id,
-                                             legacy_stats_instance);
-}
-
-static void
 _unregister_driver_stats(LogThreadedDestDriver *self)
 {
   stats_lock();
@@ -1327,7 +1474,7 @@ _create_workers(LogThreadedDestDriver *self, gint stats_level, StatsClusterKeyBu
       LogThreadedDestWorker *dw = _construct_worker(self, self->created_workers);
 
       self->workers[self->created_workers] = dw;
-      if (!_acquire_worker_queue(dw, stats_level, driver_sck_builder))
+      if (!self->queue_partition_key && !_acquire_worker_queue(dw, stats_level, driver_sck_builder))
         return FALSE;
     }
 
@@ -1369,6 +1516,9 @@ log_threaded_dest_driver_init_method(LogPipe *s)
                 log_expr_node_location_tag(self->super.super.super.expr_node));
       return FALSE;
     }
+
+  if (self->queue_partition_key)
+    self->partitioning.queues = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, _partition_queue_destroy);
 
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
   _init_driver_sck_builder(self, driver_sck_builder);
@@ -1435,6 +1585,9 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
 
   _destroy_workers(self);
 
+  if (self->partitioning.queues)
+    g_hash_table_destroy(self->partitioning.queues);
+
   return log_dest_driver_deinit_method(s);
 }
 
@@ -1444,6 +1597,7 @@ log_threaded_dest_driver_free(LogPipe *s)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
+  g_mutex_clear(&self->partitioning.lock);
   g_free(self->workers);
   log_dest_driver_free((LogPipe *)self);
 }
@@ -1469,4 +1623,6 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->retries_max = MAX_RETRIES_BEFORE_SUSPEND_DEFAULT;
 
   self->flush_on_key_change = FALSE;
+
+  g_mutex_init(&self->partitioning.lock);
 }

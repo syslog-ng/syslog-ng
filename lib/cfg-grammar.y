@@ -196,6 +196,7 @@
 %token KW_HEALTHCHECK_FREQ            10406
 %token KW_WORKER_PARTITION_KEY        10407
 %token KW_FLUSH_ON_WORKER_KEY_CHANGE  10408
+%token KW_QUEUE_PARTITION_KEY         10409
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -1295,6 +1296,7 @@ dest_driver_option
 threaded_dest_driver_batch_option
         : KW_BATCH_LINES '(' nonnegative_integer ')' { log_threaded_dest_driver_set_batch_lines(last_driver, $3); }
         | KW_BATCH_TIMEOUT '(' positive_integer ')' { log_threaded_dest_driver_set_batch_timeout(last_driver, $3); }
+        | KW_QUEUE_PARTITION_KEY '(' template_content ')' { log_threaded_dest_driver_set_queue_partition_key_ref(last_driver, $3); }
         ;
 
 threaded_dest_driver_workers_option
