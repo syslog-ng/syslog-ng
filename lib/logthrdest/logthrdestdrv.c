@@ -820,13 +820,13 @@ _register_worker_stats(LogThreadedDestWorker *self)
     stats_lock();
     {
       /* Up to 49 days and 17 hours on 32 bit machines. */
-      stats_cluster_key_builder_set_name(kb, "output_message_delay_sample_seconds");
+      stats_cluster_key_builder_set_name(kb, "output_event_delay_sample_seconds");
       stats_cluster_key_builder_set_unit(kb, SCU_MILLISECONDS);
       self->metrics.message_delay_sample_key = stats_cluster_key_builder_build_single(kb);
       stats_register_counter(level, self->metrics.message_delay_sample_key, SC_TYPE_SINGLE_VALUE,
                              &self->metrics.message_delay_sample);
 
-      stats_cluster_key_builder_set_name(kb, "output_message_delay_sample_age_seconds");
+      stats_cluster_key_builder_set_name(kb, "output_event_delay_sample_age_seconds");
       stats_cluster_key_builder_set_unit(kb, SCU_SECONDS);
       stats_cluster_key_builder_set_frame_of_reference(kb, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
       self->metrics.message_delay_sample_age_key = stats_cluster_key_builder_build_single(kb);

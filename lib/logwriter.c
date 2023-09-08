@@ -1869,14 +1869,14 @@ _set_metric_options(LogWriter *self, const gchar *stats_id, StatsClusterKeyBuild
       stats_cluster_key_free(self->metrics.message_delay_key);
 
     /* Up to 49 days and 17 hours on 32 bit machines. */
-    stats_cluster_key_builder_set_name(self->metrics.stats_kb, "output_message_delay_sample_seconds");
+    stats_cluster_key_builder_set_name(self->metrics.stats_kb, "output_event_delay_sample_seconds");
     stats_cluster_key_builder_set_unit(self->metrics.stats_kb, SCU_MILLISECONDS);
     self->metrics.message_delay_key = stats_cluster_key_builder_build_single(self->metrics.stats_kb);
 
     if (self->metrics.message_delay_sample_age_key)
       stats_cluster_key_free(self->metrics.message_delay_sample_age_key);
 
-    stats_cluster_key_builder_set_name(self->metrics.stats_kb, "output_message_delay_sample_age_seconds");
+    stats_cluster_key_builder_set_name(self->metrics.stats_kb, "output_event_delay_sample_age_seconds");
     stats_cluster_key_builder_set_unit(self->metrics.stats_kb, SCU_SECONDS);
     stats_cluster_key_builder_set_frame_of_reference(self->metrics.stats_kb, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
     self->metrics.message_delay_sample_age_key = stats_cluster_key_builder_build_single(self->metrics.stats_kb);
