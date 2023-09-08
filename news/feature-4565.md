@@ -4,7 +4,7 @@ The measurement is sampled, e.g. syslog-ng would take the very first message
 in every second and expose its delay as a value of the new metric.
 
 There are two new metrics:
-  * syslogng_output_message_delay_sample_seconds -- contains the latency of
+  * syslogng_output_event_delay_sample_seconds -- contains the latency of
     outgoing messages
-  * output_message_delay_sample_age_seconds -- contains the age of the last
+  * syslogng_output_event_delay_sample_age_seconds -- contains the age of the last
     measurement, relative to the current time.
