@@ -397,7 +397,6 @@ _perform_flush(LogThreadedDestWorker *self)
 static void
 _perform_inserts(LogThreadedDestWorker *self)
 {
-  LogMessage *msg;
   LogThreadedResult result;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
@@ -411,10 +410,12 @@ _perform_inserts(LogThreadedDestWorker *self)
       self->last_flush_time = iv_now;
     }
 
-  while (G_LIKELY(!self->owner->under_termination) &&
-         !self->suspended &&
-         (msg = log_queue_pop_head(self->queue, &path_options)) != NULL)
+  while (G_LIKELY(!self->owner->under_termination) && !self->suspended)
     {
+      LogMessage *msg = log_queue_pop_head(self->queue, &path_options);
+      if (!msg)
+        break;
+
       msg_set_context(msg);
       log_msg_refcache_start_consumer(msg, &path_options);
 
