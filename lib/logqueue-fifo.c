@@ -427,6 +427,44 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
 
 /*
  * Can only run from the output thread.
+ */
+static inline void
+_move_items_from_wait_queue_to_output_queue(LogQueueFifo *self)
+{
+  /* slow path, output queue is empty, get some elements from the wait queue */
+  g_mutex_lock(&self->super.lock);
+  iv_list_splice_tail_init(&self->wait_queue.items, &self->output_queue.items);
+  self->output_queue.len = self->wait_queue.len;
+  self->output_queue.non_flow_controlled_len = self->wait_queue.non_flow_controlled_len;
+  self->wait_queue.len = 0;
+  self->wait_queue.non_flow_controlled_len = 0;
+  g_mutex_unlock(&self->super.lock);
+}
+
+/*
+ * Can only run from the output thread.
+ */
+static LogMessage *
+log_queue_fifo_peek_head(LogQueue *s)
+{
+  LogQueueFifo *self = (LogQueueFifo *) s;
+  LogMessageQueueNode *node;
+  LogMessage *msg = NULL;
+
+  if (self->output_queue.len == 0)
+    _move_items_from_wait_queue_to_output_queue(self);
+
+  if (self->output_queue.len == 0)
+    return NULL;
+
+  node = iv_list_entry(self->output_queue.items.next, LogMessageQueueNode, list);
+  msg = node->msg;
+
+  return msg;
+}
+
+/*
+ * Can only run from the output thread.
  *
  * NOTE: this returns a reference which the caller must take care to free.
  */
@@ -438,16 +476,7 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
   LogMessage *msg = NULL;
 
   if (self->output_queue.len == 0)
-    {
-      /* slow path, output queue is empty, get some elements from the wait queue */
-      g_mutex_lock(&self->super.lock);
-      iv_list_splice_tail_init(&self->wait_queue.items, &self->output_queue.items);
-      self->output_queue.len = self->wait_queue.len;
-      self->output_queue.non_flow_controlled_len = self->wait_queue.non_flow_controlled_len;
-      self->wait_queue.len = 0;
-      self->wait_queue.non_flow_controlled_len = 0;
-      g_mutex_unlock(&self->super.lock);
-    }
+    _move_items_from_wait_queue_to_output_queue(self);
 
   if (self->output_queue.len > 0)
     {
@@ -638,6 +667,7 @@ log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name, gint stats_lev
   self->super.keep_on_reload = log_queue_fifo_keep_on_reload;
   self->super.push_tail = log_queue_fifo_push_tail;
   self->super.pop_head = log_queue_fifo_pop_head;
+  self->super.peek_head = log_queue_fifo_peek_head;
   self->super.ack_backlog = log_queue_fifo_ack_backlog;
   self->super.rewind_backlog = log_queue_fifo_rewind_backlog;
   self->super.rewind_backlog_all = log_queue_fifo_rewind_backlog_all;
