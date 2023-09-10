@@ -72,6 +72,7 @@ void log_queue_disk_free_method(LogQueueDisk *self);
 
 void log_queue_disk_update_disk_related_counters(LogQueueDisk *self);
 LogMessage *log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options);
+LogMessage *log_queue_disk_peek_message(LogQueueDisk *self);
 void log_queue_disk_drop_message(LogQueueDisk *self, LogMessage *msg, const LogPathOptions *path_options);
 gboolean log_queue_disk_serialize_msg(LogQueueDisk *self, LogMessage *msg, GString *serialized);
 gboolean log_queue_disk_deserialize_msg(LogQueueDisk *self, GString *serialized, LogMessage **msg);

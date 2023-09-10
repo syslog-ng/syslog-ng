@@ -62,6 +62,7 @@ gint64 qdisk_get_empty_space(QDisk *self);
 gint64 qdisk_get_used_useful_space(QDisk *self);
 gboolean qdisk_push_tail(QDisk *self, GString *record);
 gboolean qdisk_pop_head(QDisk *self, GString *record);
+gboolean qdisk_peek_head(QDisk *self, GString *record);
 gboolean qdisk_remove_head(QDisk *self);
 gboolean qdisk_ack_backlog(QDisk *self);
 gboolean qdisk_rewind_backlog(QDisk *self, guint rewind_count);

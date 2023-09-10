@@ -276,6 +276,33 @@ _push_tail_backlog(LogQueueDiskNonReliable *self, LogMessage *msg, LogPathOption
 }
 
 static LogMessage *
+_peek_head(LogQueue *s)
+{
+  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
+  LogMessage *msg = NULL;
+
+  g_mutex_lock(&s->lock);
+
+  if (self->front_cache->length > 0)
+    {
+      msg = g_queue_peek_head(self->front_cache);
+      if (msg)
+        goto success;
+    }
+
+  msg = log_queue_disk_peek_message(&self->super);
+  if (msg)
+    goto success;
+
+  if (self->flow_control_window->length > 0 && qdisk_is_read_only(self->super.qdisk))
+    msg = g_queue_peek_head(self->flow_control_window);
+
+success:
+  g_mutex_unlock(&s->lock);
+  return msg;
+}
+
+static LogMessage *
 _pop_head(LogQueue *s, LogPathOptions *path_options)
 {
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
@@ -542,6 +569,7 @@ _set_logqueue_virtual_functions(LogQueue *s)
   s->rewind_backlog = _rewind_backlog;
   s->rewind_backlog_all = _rewind_backlog_all;
   s->pop_head = _pop_head;
+  s->peek_head = _peek_head;
   s->push_tail = _push_tail;
   s->free_fn = _free;
 }

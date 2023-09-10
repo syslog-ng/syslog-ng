@@ -227,6 +227,33 @@ _is_next_message_in_front_cache(LogQueueDiskReliable *self)
 }
 
 static LogMessage *
+_peek_head(LogQueue *s)
+{
+  LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
+  LogMessage *msg = NULL;
+
+  g_mutex_lock(&s->lock);
+
+  if (_is_next_message_in_flow_control_window(self))
+    {
+      msg = g_queue_peek_nth(self->flow_control_window, 1);
+      goto exit;
+    }
+
+  if (_is_next_message_in_front_cache(self))
+    {
+      msg = g_queue_peek_nth(self->front_cache, 1);
+      goto exit;
+    }
+
+  msg = log_queue_disk_peek_message(&self->super);
+
+exit:
+  g_mutex_unlock(&s->lock);
+  return msg;
+}
+
+static LogMessage *
 _pop_head(LogQueue *s, LogPathOptions *path_options)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
@@ -442,6 +469,7 @@ _set_logqueue_virtual_functions(LogQueue *s)
   s->rewind_backlog = _rewind_backlog;
   s->rewind_backlog_all = _rewind_backlog_all;
   s->pop_head = _pop_head;
+  s->peek_head = _peek_head;
   s->push_tail = _push_tail;
   s->free_fn = _free;
 }
