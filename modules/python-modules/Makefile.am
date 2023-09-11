@@ -6,6 +6,7 @@ EXTRA_DIST += \
 	modules/python-modules/syslogng/message.py				\
 	modules/python-modules/syslogng/parser.py				\
 	modules/python-modules/syslogng/persist.py				\
+	modules/python-modules/syslogng/reloc.py				\
 	modules/python-modules/syslogng/source.py				\
 	modules/python-modules/syslogng/template.py				\
 	modules/python-modules/syslogng/debuggercli/__init__.py			\

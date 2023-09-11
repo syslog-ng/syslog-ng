@@ -111,6 +111,7 @@ modules/python-modules/syslogng/dest\.py
 modules/python-modules/syslogng/logger\.py
 modules/python-modules/syslogng/message\.py
 modules/python-modules/syslogng/parser\.py
+modules/python-modules/syslogng/reloc\.py
 modules/python-modules/syslogng/template\.py
 modules/python/python-confgen\.[ch]
 lib/tests/test_logscheduler\.c
@@ -186,9 +187,11 @@ modules/grpc/otel/tests/test-syslog-ng-otlp\.cpp$
 modules/examples/inner-destinations/tls-test-validation
 modules/examples/sources/random-choice-generator
 modules/python/python-options.(c|h)$
+modules/python/python-reloc\.(c|h)$
 modules/python/python-binding.(c|h)$
 modules/python/python-flags.(c|h)$
 modules/python/tests/test_python_options.c$
+modules/python/tests/test_python_reloc\.c$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/logscale/logscale\.conf$
