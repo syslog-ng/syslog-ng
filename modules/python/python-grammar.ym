@@ -255,11 +255,12 @@ python_option
               free($1);
               string_list_free($4);
             }
-          | string optional_arrow KW_LOG_TEMPLATE '(' string ')'
+          | string optional_arrow KW_LOG_TEMPLATE '(' optional_string ')'
             {
-              $$ = python_option_template_new($1, $5);
+              $$ = python_option_template_new($1, $5 ? $5 : "");
               free($1);
-              free($5);
+              if ($5)
+                free($5);
             }
           ;
 
