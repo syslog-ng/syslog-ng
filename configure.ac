@@ -459,15 +459,12 @@ dnl Checks for programs.
 # Currently syslog-ng and all modules can be compiled like
 #       | Comoiler |  C  | C++ | ObjC |
 #       -------------------------------
-#       |    gcc   |  x  |  x  |  x   |
+#       |    gcc   |  x  |  x  |  -   |
 #       -------------------------------
 #       |   clang  |  x  |  -  |  x   |
 #       -------------------------------
-#       |    g++   | n/a |  x  |  x   | (NOTE: g++ fails on C99 compilant test bellow)
+#       |    g++   | n/a |  x  | n/a  | (NOTE: g++ fails on C99 compilant test bellow)
 #       -------------------------------
-# So the best choice is simply using gcc, just
-#       export CC=gcc
-# and you'll be fine in most of the cases
 #
 AC_PROG_CC
 AC_PROG_CC_C99
@@ -475,7 +472,9 @@ AM_PROG_CC_C_O
 if test "x$ac_cv_prog_cc_c99" = "xno"; then
 	AC_MSG_ERROR([C99 standard compliant C compiler required. Try GCC 3.x or later.])
 fi
-AC_PROG_OBJC([$OBJC $CC])
+# Turned out that even the latest gcc has no proper support of the required ObjC version
+# Once gcc was able to compile our ObjC modules properly this could be reverted to AC_PROG_OBJC([$OBJC $CC])
+AC_PROG_OBJC([$OBJC clang])
 AC_PROG_YACC
 AM_PROG_LEX
 AM_MISSING_PROG([GPERF], [gperf])
@@ -1846,9 +1845,20 @@ dnl ***************************************************************************
 
 if test "x$enable_darwin_osl" = "xauto" || test "x$enable_darwin_osl" = "xyes"; then
         if test $ostype = "Darwin"; then
+                if test "x$enable_darwin_osl" = "xyes"; then
+                        WAS_DARWIN_OSL_FORCED="yes"
+                fi
+
                 AC_LANG_PUSH([Objective C])
+
+                # TODO: Once gcc was able to compile our ObjC code correctly we should add here a more sopgisticated check
                 AC_CHECK_HEADERS([OSLog/OSLog.h], [enable_darwin_osl=yes], [enable_darwin_osl=no])
+
                 AC_LANG_POP([Objective C])
+
+                if test "$WAS_DARWIN_OSL_FORCED" = "yes" && test "$enable_darwin_osl" = "no"; then
+                        AC_MSG_ERROR([Could not build Darwin OSLog without OSLog headers])
+                fi
         else
                 enable_darwin_osl=no
         fi

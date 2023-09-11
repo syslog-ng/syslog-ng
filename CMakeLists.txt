@@ -18,6 +18,13 @@ project(syslog-ng C)
 
 if (APPLE)
   option(ENABLE_CPP "Enable C++" OFF)
+
+  # Turned out that even the latest gcc has no proper support of the required ObjC version
+  # Once gcc was able to compile our ObjC modules properly this requirement could be removed again
+  set(CMAKE_OBJC_COMPILER clang)
+
+  set_property(GLOBAL PROPERTY OBJC_STANDARD 11)
+  set_property(GLOBAL PROPERTY OBJC_STANDARD_REQUIRED ON)
 else()
   option(ENABLE_CPP "Enable C++" ON)
 endif()
