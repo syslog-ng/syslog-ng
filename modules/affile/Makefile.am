@@ -33,6 +33,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/linux-kmsg.c				\
 	modules/affile/stdin.c					\
 	modules/affile/stdin.h					\
+	modules/affile/stdout.c					\
+	modules/affile/stdout.h					\
 	modules/affile/affile-source.c				\
 	modules/affile/affile-source.h				\
 	modules/affile/affile-dest.c				\

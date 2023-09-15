@@ -35,6 +35,7 @@ static CfgLexerKeyword affile_keywords[] =
   { "fifo",               KW_PIPE },
   { "pipe",               KW_PIPE },
   { "stdin",              KW_STDIN },
+  { "stdout",             KW_STDOUT },
 
   { "wildcard_file",      KW_WILDCARD_FILE },
   { "base_dir",           KW_BASE_DIR },
