@@ -25,6 +25,7 @@
 #define TRANSPORT_PROXIED_SOCKET_H_INCLUDED
 
 #include "transport-socket.h"
+#include "multitransport.h"
 
 #define IP_BUF_SIZE 64
 
@@ -44,7 +45,7 @@
 typedef struct _LogTransportProxiedSocket LogTransportProxiedSocket;
 struct _LogTransportProxiedSocket
 {
-  LogTransportSocket super;
+  MultiTransport super;
 
   // Info received from the proxy that should be added as LogTransportAuxData to
   // any message received through this server instance.
@@ -63,6 +64,8 @@ struct _LogTransportProxiedSocket
   // Flag to only process proxy header once
   gboolean proxy_header_processed;
 
+  gboolean has_to_switch_to_tls;
+
   enum
   {
     LPPTS_INITIAL,
@@ -79,5 +82,6 @@ struct _LogTransportProxiedSocket
 };
 
 LogTransport *log_transport_proxied_stream_socket_new(gint fd);
+LogTransport *log_transport_proxied_stream_socket_with_tls_passthrough_new(gint fd);
 
 #endif

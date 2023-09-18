@@ -46,6 +46,4 @@ void log_transport_stream_socket_init_instance(LogTransportSocket *self, gint fd
 void log_transport_stream_socket_free_method(LogTransport *s);
 LogTransport *log_transport_stream_socket_new(gint fd);
 
-gssize log_transport_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux);
-
 #endif

@@ -23,6 +23,9 @@
  */
 
 #include "transport/transport-proxied-socket.h"
+#include "transport/transport-factory-registry.h"
+#include "transport-factory-socket.h"
+#include "transport-factory-tls.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -299,15 +302,18 @@ _parse_proxy_header(LogTransportProxiedSocket *self)
     g_assert_not_reached();
 }
 
+static gssize
+_read_with_active_log_transport(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux);
+
 static Status
 _fetch_chunk(LogTransportProxiedSocket *self, gsize upto_bytes)
 {
   g_assert(upto_bytes < sizeof(self->proxy_header_buff));
   if (self->proxy_header_buff_len < upto_bytes)
     {
-      gssize rc = log_transport_socket_read_method(&self->super.super,
-                                                   &(self->proxy_header_buff[self->proxy_header_buff_len]),
-                                                   upto_bytes - self->proxy_header_buff_len, NULL);
+      gssize rc = _read_with_active_log_transport(&self->super.super,
+                                                  &(self->proxy_header_buff[self->proxy_header_buff_len]),
+                                                  upto_bytes - self->proxy_header_buff_len, NULL);
       if (rc < 0)
         {
           if (errno == EAGAIN)
@@ -452,6 +458,19 @@ process_proxy_v2:
 }
 
 static gboolean
+_switch_to_tls(LogTransportProxiedSocket *self)
+{
+  if (!multitransport_switch((MultiTransport *)&self->super, transport_factory_tls_id()))
+    {
+      msg_error("proxied-tls failed to switch to TLS");
+      return FALSE;
+    }
+
+  msg_debug("proxied-tls switch to TLS: OK");
+  return TRUE;
+}
+
+static gboolean
 _proccess_proxy_header(LogTransportProxiedSocket *self)
 {
   Status status = _fetch_into_proxy_buffer(self);
@@ -471,7 +490,8 @@ _proccess_proxy_header(LogTransportProxiedSocket *self)
   if (parsable)
     {
       msg_trace("PROXY protocol header parsed successfully");
-
+      if (self->has_to_switch_to_tls && !_switch_to_tls(self))
+        return FALSE;
       return TRUE;
     }
   else
@@ -505,6 +525,16 @@ _augment_aux_data(LogTransportProxiedSocket *self, LogTransportAuxData *aux)
 }
 
 static gssize
+_read_with_active_log_transport(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+{
+  LogTransportProxiedSocket *self = (LogTransportProxiedSocket *)s;
+  gssize r = log_transport_read(self->super.active_transport, buf, buflen, aux);
+  self->super.super.cond = self->super.active_transport->cond;
+
+  return r;
+}
+
+static gssize
 log_transport_proxied_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportProxiedSocket *self = (LogTransportProxiedSocket *)s;
@@ -519,15 +549,41 @@ log_transport_proxied_socket_read_method(LogTransport *s, gpointer buf, gsize bu
   if (!status) return -1;
 
   _augment_aux_data(self, aux);
-  return log_transport_socket_read_method(s, buf, buflen, aux);
+  return _read_with_active_log_transport(s, buf, buflen, aux);
+}
+
+static void
+_log_transport_proxied_stream_socket_free(LogTransport *s)
+{
+  LogTransportProxiedSocket *self = (LogTransportProxiedSocket *)s;
+  s->fd = log_transport_release_fd(self->super.active_transport);
+  log_transport_free(self->super.active_transport);
+  transport_factory_registry_free(self->super.registry);
+  log_transport_free_method(&self->super.super);
 }
 
 LogTransport *log_transport_proxied_stream_socket_new(gint fd)
 {
   LogTransportProxiedSocket *self = g_new0(LogTransportProxiedSocket, 1);
+  self->super.registry = transport_factory_registry_new();
 
-  log_transport_stream_socket_init_instance(&self->super, fd);
+  TransportFactory *socket_factory = transport_factory_socket_new(SOCK_STREAM);
+  transport_factory_registry_add(self->super.registry, socket_factory);
+
   self->super.super.read = log_transport_proxied_socket_read_method;
+  log_transport_init_instance(&self->super.super, fd);
+  self->super.super.read = log_transport_proxied_socket_read_method;
+  self->super.super.write = NULL;
+  self->super.super.free_fn = _log_transport_proxied_stream_socket_free;
+  self->super.active_transport = transport_factory_construct_transport(socket_factory, fd);
+  self->super.active_transport_factory = socket_factory;
 
+  return &self->super.super;
+}
+
+LogTransport *log_transport_proxied_stream_socket_with_tls_passthrough_new(gint fd)
+{
+  LogTransportProxiedSocket *self = (LogTransportProxiedSocket *)log_transport_proxied_stream_socket_new(fd);
+  self->has_to_switch_to_tls = TRUE;
   return &self->super.super;
 }
