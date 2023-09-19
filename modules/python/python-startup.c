@@ -369,11 +369,11 @@ _py_activate_venv(void)
 
   gchar *python_venv_binary = g_build_path(G_DIR_SEPARATOR_S, python_venv_path, "bin", "python", NULL);
   wchar_t *python_programname = Py_DecodeLocale(python_venv_binary, NULL);
-  g_free(python_venv_binary);
 
-  msg_info("python: activating virtualenv",
-           evt_tag_str("path", python_venv_path),
-           evt_tag_str("executable", python_venv_binary));
+  msg_debug("python: activating virtualenv",
+            evt_tag_str("path", python_venv_path),
+            evt_tag_str("executable", python_venv_binary));
+  g_free(python_venv_binary);
 
   Py_SetProgramName(python_programname);
   return TRUE;
