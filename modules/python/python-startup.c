@@ -371,8 +371,8 @@ _py_activate_venv(void)
   wchar_t *python_programname = Py_DecodeLocale(python_venv_binary, NULL);
 
   msg_debug("python: activating virtualenv",
-           evt_tag_str("path", python_venv_path),
-           evt_tag_str("executable", python_venv_binary));
+            evt_tag_str("path", python_venv_path),
+            evt_tag_str("executable", python_venv_binary));
   g_free(python_venv_binary);
 
   Py_SetProgramName(python_programname);
