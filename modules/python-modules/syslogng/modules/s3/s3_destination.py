@@ -22,8 +22,14 @@
 
 from .s3_object import S3Object, S3ObjectPersist, SharedBool, ConstructorError, PersistLoadError, AlreadyFinishedError
 
-from boto3 import client
-from botocore.exceptions import ClientError, EndpointConnectionError
+try:
+    from boto3 import client
+    from botocore.exceptions import ClientError, EndpointConnectionError
+
+    deps_installed = True
+except ImportError:
+    deps_installed = False
+
 from concurrent.futures import ThreadPoolExecutor
 from glob import glob
 from logging import getLogger
@@ -129,6 +135,13 @@ class S3Destination(LogDestination):
 
     def init(self, options: Dict[str, Any]) -> bool:
         self.logger = getLogger("S3")
+
+        if not deps_installed:
+            self.logger.error(
+                "Unable to start the Python based S3 destination, the required Python dependencies (`boto3` and/or `botocore`) are missing"
+            )
+            return False
+
         self.client: Optional[Any] = None
 
         self.s3_objects: Dict[str, S3Object] = dict()

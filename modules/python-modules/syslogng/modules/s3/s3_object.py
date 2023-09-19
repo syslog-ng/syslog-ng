@@ -24,7 +24,11 @@ from __future__ import annotations
 
 from .compressable_file_buffer import CompressableFileBuffer
 
-from botocore.exceptions import ClientError, EndpointConnectionError
+try:
+    from botocore.exceptions import ClientError, EndpointConnectionError
+except ImportError:
+    pass
+
 from concurrent.futures import Future, ThreadPoolExecutor
 from logging import Logger
 from pathlib import Path
