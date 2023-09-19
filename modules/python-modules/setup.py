@@ -22,6 +22,7 @@
 #############################################################################
 
 from setuptools import setup
+import platform
 import os
 
 install_addons=int(os.getenv('PYMODULES_BUILTINS_ONLY', '0')) == 0
@@ -36,7 +37,6 @@ packages_addons=[
   "syslogng.modules.example",
   "syslogng.modules.kubernetes",
   "syslogng.modules.hypr",
-  "syslogng.modules.s3",
 ]
 
 requires_addons=[
@@ -44,9 +44,14 @@ requires_addons=[
   "kubernetes",
   # hypr
   "requests",
-  # S3
-  "boto3",
 ]
+
+python_version = platform.python_version_tuple()
+if (int(python_version[0]) == 3 and int(python_version[1]) > 6) or int(python_version[0]) > 3:
+  # Compiling type hinted code does not seem to work on <= 3.6.
+  # We can remove this condition when the centos-7 support is dropped.
+  packages_addons.append("syslogng.modules.s3")
+  requires_addons.append("boto3")  # S3
 
 packages = packages_builtin
 requires = []
