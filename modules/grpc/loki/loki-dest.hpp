@@ -29,6 +29,7 @@
 #include "syslog-ng.h"
 #include "template/templates.h"
 #include "stats/stats-cluster-key-builder.h"
+#include "logmsg/logmsg.h"
 #include "compat/cpp-end.h"
 
 #include <string>
@@ -94,6 +95,11 @@ public:
     this->message = msg;
   }
 
+  void set_timestamp(LogMessageTimeStamp t)
+  {
+    this->timestamp = t;
+  }
+
   void set_keepalive_time(int t)
   {
     this->keepalive_time = t;
@@ -125,6 +131,7 @@ private:
 
   LogTemplate *message = nullptr;
   std::vector<Label> labels;
+  LogMessageTimeStamp timestamp;
 
   int keepalive_time;
   int keepalive_timeout;

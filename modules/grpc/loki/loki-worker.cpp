@@ -28,6 +28,7 @@
 #include "scratch-buffers.h"
 #include "logmsg/type-hinting.h"
 #include "utf8utils.h"
+#include "logmsg/logmsg.h"
 #include "compat/cpp-end.h"
 
 #include "push.grpc.pb.h"
@@ -166,6 +167,22 @@ DestinationWorker::set_labels(LogMessage *msg)
   scratch_buffers_reclaim_marked(m);
 }
 
+void
+DestinationWorker::set_timestamp(logproto::EntryAdapter *entry, LogMessage *msg)
+{
+  DestinationDriver *owner = this->get_owner();
+
+  if (owner->timestamp == LM_TS_PROCESSED)
+    {
+      *entry->mutable_timestamp() = google::protobuf::util::TimeUtil::GetCurrentTime();
+      return;
+    }
+
+  UnixTime *time = &msg->timestamps[owner->timestamp];
+  timeval tv{time->ut_sec, time->ut_usec};
+  *entry->mutable_timestamp() = google::protobuf::util::TimeUtil::TimevalToTimestamp(tv);
+}
+
 LogThreadedResult
 DestinationWorker::insert(LogMessage *msg)
 {
@@ -177,9 +194,7 @@ DestinationWorker::insert(LogMessage *msg)
 
   logproto::EntryAdapter *entry = stream->add_entries();
 
-  UnixTime *time = &msg->timestamps[LM_TS_STAMP];
-  timeval tv{time->ut_sec, time->ut_usec};
-  *entry->mutable_timestamp() = google::protobuf::util::TimeUtil::TimevalToTimestamp(tv);
+  this->set_timestamp(entry, msg);
 
   ScratchBuffersMarker m;
   GString *message = scratch_buffers_alloc_and_mark(&m);

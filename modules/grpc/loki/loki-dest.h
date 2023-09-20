@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "driver.h"
+#include "logmsg/logmsg.h"
 #include "template/templates.h"
 
 typedef struct _LokiDestDriver LokiDestDriver;
@@ -36,6 +37,7 @@ LogDriver *loki_dd_new(GlobalConfig *cfg);
 void loki_dd_set_url(LogDriver *d, const gchar *url);
 void loki_dd_set_message_template_ref(LogDriver *d, LogTemplate *message);
 void loki_dd_add_label(LogDriver *d, const gchar *name, LogTemplate *value);
+void loki_dd_set_timestamp(LogDriver *d, LogMessageTimeStamp t);
 
 void loki_dd_set_keepalive_time(LogDriver *d, gint t);
 void loki_dd_set_keepalive_timeout(LogDriver *d, gint t);

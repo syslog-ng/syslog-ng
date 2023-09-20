@@ -58,6 +58,7 @@ public:
 private:
   void prepare_batch();
   void set_labels(LogMessage *msg);
+  void set_timestamp(logproto::EntryAdapter *entry, LogMessage *msg);
   DestinationDriver *get_owner();
 
 private:

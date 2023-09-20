@@ -44,7 +44,7 @@ struct _LokiDestDriver
 };
 
 DestinationDriver::DestinationDriver(LokiDestDriver *s)
-  : super(s), url("localhost:9096"),
+  : super(s), url("localhost:9096"), timestamp(LM_TS_PROCESSED),
     keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1)
 {
   log_template_options_defaults(&this->template_options);
@@ -172,6 +172,13 @@ loki_dd_add_label(LogDriver *d, const gchar *name, LogTemplate *value)
 {
   LokiDestDriver *self = (LokiDestDriver *) d;
   self->cpp->add_label(name, value);
+}
+
+void
+loki_dd_set_timestamp(LogDriver *d, LogMessageTimeStamp t)
+{
+  LokiDestDriver *self = (LokiDestDriver *) d;
+  self->cpp->set_timestamp(t);
 }
 
 void

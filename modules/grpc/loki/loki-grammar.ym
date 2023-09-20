@@ -50,6 +50,10 @@
 %token KW_LOKI
 %token KW_URL
 %token KW_LABELS
+%token KW_TIMESTAMP
+%token KW_CURRENT
+%token KW_RECEIVED
+%token KW_MSG
 
 %token KW_KEEP_ALIVE
 %token KW_TIME
@@ -81,6 +85,7 @@ loki_dest_option
   : KW_URL '(' string ')' { loki_dd_set_url(last_driver, $3); free($3); }
   | KW_KEEP_ALIVE '(' loki_keepalive_options ')'
   | KW_LABELS '(' loki_labels ')'
+  | KW_TIMESTAMP '(' loki_timestamp_enum ')'
   | KW_TEMPLATE '(' template_content ')' { loki_dd_set_message_template_ref(last_driver, $3); }
   | threaded_dest_driver_general_option
   | threaded_dest_driver_workers_option
@@ -100,6 +105,12 @@ loki_label
       free($1);
       log_template_unref($3);
     }
+  ;
+
+loki_timestamp_enum
+  : KW_CURRENT { loki_dd_set_timestamp(last_driver, LM_TS_PROCESSED); }
+  | KW_RECEIVED { loki_dd_set_timestamp(last_driver, LM_TS_RECVD); }
+  | KW_MSG { loki_dd_set_timestamp(last_driver, LM_TS_STAMP); }
   ;
 
 loki_keepalive_options
