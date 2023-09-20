@@ -26,6 +26,8 @@
 
 #include "logpipe.h"
 #include "mainloop-io-worker.h"
+#include "template/templates.h"
+
 #include <iv_list.h>
 #include <iv_event.h>
 

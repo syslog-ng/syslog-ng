@@ -181,6 +181,7 @@ static CfgLexerKeyword main_keywords[] =
 
   { "retries",            KW_RETRIES },
   { "workers",            KW_WORKERS },
+  { "worker_partition_key", KW_WORKER_PARTITION_KEY },
   { "batch_lines",        KW_BATCH_LINES },
   { "batch_timeout",      KW_BATCH_TIMEOUT },
 

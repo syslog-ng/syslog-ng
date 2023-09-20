@@ -81,6 +81,7 @@ struct _LogQueue
   gboolean (*is_empty_racy)(LogQueue *self);
   void (*push_tail)(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options);
   LogMessage *(*pop_head)(LogQueue *self, LogPathOptions *path_options);
+  LogMessage *(*peek_head)(LogQueue *self);
   void (*ack_backlog)(LogQueue *self, gint n);
   void (*rewind_backlog)(LogQueue *self, guint rewind_count);
   void (*rewind_backlog_all)(LogQueue *self);
@@ -131,6 +132,12 @@ log_queue_pop_head(LogQueue *self, LogPathOptions *path_options)
     self->throttle_buckets--;
 
   return msg;
+}
+
+static inline LogMessage *
+log_queue_peek_head(LogQueue *self)
+{
+  return self->peek_head(self);
 }
 
 static inline LogMessage *

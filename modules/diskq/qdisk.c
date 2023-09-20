@@ -883,6 +883,25 @@ qdisk_get_next_head_position(QDisk *self)
 }
 
 gboolean
+qdisk_peek_head(QDisk *self, GString *record)
+{
+  if (self->hdr->read_head == self->hdr->write_head)
+    return FALSE;
+
+  if (self->hdr->read_head > self->hdr->write_head)
+    self->hdr->read_head = _correct_position_if_max_size_is_reached(self, self->hdr->read_head);
+
+  guint32 record_length;
+  if (!_try_reading_record_length(self, self->hdr->read_head, &record_length))
+    return FALSE;
+
+  if (!_read_record_from_disk(self, record, record_length))
+    return FALSE;
+
+  return TRUE;
+}
+
+gboolean
 qdisk_pop_head(QDisk *self, GString *record)
 {
   if (self->hdr->read_head == self->hdr->write_head)

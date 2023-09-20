@@ -194,6 +194,7 @@
 %token KW_MAX_DYNAMIC                 10404
 %token KW_SYSLOG_STATS                10405
 %token KW_HEALTHCHECK_FREQ            10406
+%token KW_WORKER_PARTITION_KEY        10407
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -1297,6 +1298,7 @@ threaded_dest_driver_batch_option
 
 threaded_dest_driver_workers_option
         : KW_WORKERS '(' positive_integer ')'  { log_threaded_dest_driver_set_num_workers(last_driver, $3); }
+        | KW_WORKER_PARTITION_KEY '(' template_content ')' { log_threaded_dest_driver_set_worker_partition_key_ref(last_driver, $3); }
         ;
 
 /* implies dest_driver_option */

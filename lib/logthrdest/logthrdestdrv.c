@@ -28,7 +28,10 @@
 #include "logthrdestdrv.h"
 #include "seqnum.h"
 #include "scratch-buffers.h"
+#include "template/eval.h"
 #include "mainloop-threaded-worker.h"
+
+#include <string.h>
 
 #define MAX_RETRIES_ON_ERROR_DEFAULT 3
 #define MAX_RETRIES_BEFORE_SUSPEND_DEFAULT 3
@@ -368,9 +371,10 @@ _process_result(LogThreadedDestWorker *self, gint result)
 
 }
 
-static void
+static LogThreadedResult
 _perform_flush(LogThreadedDestWorker *self)
 {
+  LogThreadedResult result = LTR_SUCCESS;
   /* NOTE: earlier we had a condition on only calling flush() if batch_size
    * is non-zero.  This was removed, as the language bindings that were done
    * _before_ the batching support in LogThreadedDestDriver relies on
@@ -384,11 +388,33 @@ _perform_flush(LogThreadedDestWorker *self)
                 evt_tag_int("worker_index", self->worker_index),
                 evt_tag_int("batch_size", self->batch_size));
 
-      LogThreadedResult result = log_threaded_dest_worker_flush(self, LTF_FLUSH_NORMAL);
+      result = log_threaded_dest_worker_flush(self, LTF_FLUSH_NORMAL);
       _process_result(self, result);
     }
 
   iv_invalidate_now();
+  return result;
+}
+
+static inline gboolean
+_flush_on_worker_partition_key_change_enabled(LogThreadedDestWorker *self)
+{
+  return self->owner->flush_on_key_change && self->owner->worker_partition_key;
+}
+
+static inline gboolean
+_should_flush_due_to_partition_key_change(LogThreadedDestWorker *self, LogMessage *msg)
+{
+  GString *buffer = scratch_buffers_alloc();
+
+  LogTemplateEvalOptions options = DEFAULT_TEMPLATE_EVAL_OPTIONS;
+  log_template_format(self->owner->worker_partition_key, msg, &options, buffer);
+
+  gboolean should_flush = self->batch_size != 0 && strcmp(self->partitioning.last_key->str, buffer->str) != 0;
+
+  g_string_assign(self->partitioning.last_key, buffer->str);
+
+  return should_flush;
 }
 
 /* NOTE: runs in the worker thread, whenever items on our queue are
@@ -397,7 +423,6 @@ _perform_flush(LogThreadedDestWorker *self)
 static void
 _perform_inserts(LogThreadedDestWorker *self)
 {
-  LogMessage *msg;
   LogThreadedResult result;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
@@ -411,19 +436,40 @@ _perform_inserts(LogThreadedDestWorker *self)
       self->last_flush_time = iv_now;
     }
 
-  while (G_LIKELY(!self->owner->under_termination) &&
-         !self->suspended &&
-         (msg = log_queue_pop_head(self->queue, &path_options)) != NULL)
+  while (G_LIKELY(!self->owner->under_termination) && !self->suspended)
     {
+      ScratchBuffersMarker mark;
+      scratch_buffers_mark(&mark);
+
+      if (G_UNLIKELY(_flush_on_worker_partition_key_change_enabled(self)))
+        {
+          LogMessage *msg = log_queue_peek_head(self->queue);
+          if (!msg)
+            {
+              scratch_buffers_reclaim_marked(mark);
+              break;
+            }
+
+          if (_should_flush_due_to_partition_key_change(self, msg))
+            {
+              gboolean flush_result = _perform_flush(self);
+              if (flush_result != LTR_SUCCESS && flush_result != LTR_EXPLICIT_ACK_MGMT)
+                goto flush_error;
+            }
+        }
+
+      LogMessage *msg = log_queue_pop_head(self->queue, &path_options);
+      if (!msg)
+        {
+          scratch_buffers_reclaim_marked(mark);
+          break;
+        }
+
       msg_set_context(msg);
       log_msg_refcache_start_consumer(msg, &path_options);
 
       self->batch_size++;
-      ScratchBuffersMarker mark;
-      scratch_buffers_mark(&mark);
-
       result = log_threaded_dest_worker_insert(self, msg);
-      scratch_buffers_reclaim_marked(mark);
 
       _process_result(self, result);
 
@@ -434,6 +480,8 @@ _perform_inserts(LogThreadedDestWorker *self)
       msg_set_context(NULL);
       log_msg_refcache_stop();
 
+flush_error:
+      scratch_buffers_reclaim_marked(mark);
       if (self->rewound_batch_size)
         {
           self->rewound_batch_size--;
@@ -883,12 +931,17 @@ log_threaded_dest_worker_init_method(LogThreadedDestWorker *self)
   if (self->time_reopen == -1)
     self->time_reopen = self->owner->time_reopen;
 
+  if (self->owner->flush_on_key_change)
+    self->partitioning.last_key = g_string_sized_new(128);
+
   return TRUE;
 }
 
 void
 log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self)
 {
+  if (self->partitioning.last_key)
+    g_string_free(self->partitioning.last_key, TRUE);
 }
 
 void
@@ -913,6 +966,9 @@ log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedD
   self->free_fn = log_threaded_dest_worker_free_method;
   self->owner = owner;
   self->time_reopen = -1;
+
+  self->partitioning.last_key = NULL;
+
   _init_watches(self);
 
   /* cannot be moved to the thread's init() as neither StatsByteCounter nor format_stats_key() is thread-safe */
@@ -935,6 +991,23 @@ log_threaded_dest_driver_set_num_workers(LogDriver *s, gint num_workers)
   LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
 
   self->num_workers = num_workers;
+}
+
+void
+log_threaded_dest_driver_set_worker_partition_key_ref(LogDriver *s, LogTemplate *key)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
+
+  log_template_unref(self->worker_partition_key);
+  self->worker_partition_key = key;
+}
+
+void
+log_threaded_dest_driver_set_flush_on_worker_key_change(LogDriver *s, gboolean f)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
+
+  self->flush_on_key_change = f;
 }
 
 /* compatibility bridge between LogThreadedDestWorker */
@@ -1036,10 +1109,15 @@ log_threaded_dest_driver_set_max_retries_on_error(LogDriver *s, gint max_retries
 LogThreadedDestWorker *
 _lookup_worker(LogThreadedDestDriver *self, LogMessage *msg)
 {
-  gint worker_index = self->last_worker % self->num_workers;
-  self->last_worker++;
+  if (self->worker_partition_key)
+    {
+      LogTemplateEvalOptions options = DEFAULT_TEMPLATE_EVAL_OPTIONS;
+      guint worker_index = log_template_hash(self->worker_partition_key, msg, &options) % self->num_workers;
+      return self->workers[worker_index];
+    }
 
-  /* here would come the lookup mechanism that maps msg -> worker that doesn't exist yet. */
+  guint worker_index = self->last_worker;
+  self->last_worker = (self->last_worker + 1) % self->num_workers;
   return self->workers[worker_index];
 }
 
@@ -1266,6 +1344,13 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (!self->shared_seq_num)
     init_sequence_number(&self->shared_seq_num);
 
+  if (self->worker_partition_key && log_template_is_literal_string(self->worker_partition_key))
+    {
+      msg_error("worker-partition-key() should not be literal string, use macros to form proper partitions",
+                log_expr_node_location_tag(self->super.super.super.expr_node));
+      return FALSE;
+    }
+
   StatsClusterKeyBuilder *driver_sck_builder = stats_cluster_key_builder_new();
   _init_driver_sck_builder(self, driver_sck_builder);
 
@@ -1363,4 +1448,6 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
 
   self->retries_on_error_max = MAX_RETRIES_ON_ERROR_DEFAULT;
   self->retries_max = MAX_RETRIES_BEFORE_SUSPEND_DEFAULT;
+
+  self->flush_on_key_change = FALSE;
 }

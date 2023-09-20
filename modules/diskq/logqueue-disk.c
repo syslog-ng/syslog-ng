@@ -172,6 +172,39 @@ _pop_disk(LogQueueDisk *self, LogMessage **msg)
   return TRUE;
 }
 
+static gboolean
+_peek_disk(LogQueueDisk *self, LogMessage **msg)
+{
+  if (!qdisk_started(self->qdisk))
+    return FALSE;
+
+  ScratchBuffersMarker marker;
+  GString *read_serialized = scratch_buffers_alloc_and_mark(&marker);
+
+  gint64 read_head = qdisk_get_next_head_position(self->qdisk);
+
+  if (!qdisk_peek_head(self->qdisk, read_serialized))
+    {
+      msg_error("Cannot read correct message from disk-queue file",
+                evt_tag_str("filename", qdisk_get_filename(self->qdisk)),
+                evt_tag_int("read_head", read_head));
+      scratch_buffers_reclaim_marked(marker);
+      return FALSE;
+    }
+
+  if (!log_queue_disk_deserialize_msg(self, read_serialized, msg))
+    {
+      msg_error("Cannot read correct message from disk-queue file",
+                evt_tag_str("filename", qdisk_get_filename(self->qdisk)),
+                evt_tag_int("read_head", read_head));
+      *msg = NULL;
+    }
+
+  scratch_buffers_reclaim_marked(marker);
+
+  return TRUE;
+}
+
 LogMessage *
 log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options)
 {
@@ -201,6 +234,36 @@ log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options)
 
   if (msg)
     path_options->ack_needed = FALSE;
+
+  return msg;
+}
+
+LogMessage *
+log_queue_disk_peek_message(LogQueueDisk *self)
+{
+  LogMessage *msg = NULL;
+  do
+    {
+      if (qdisk_get_length(self->qdisk) == 0)
+        {
+          break;
+        }
+      if (!_peek_disk(self, &msg))
+        {
+          msg_error("Error reading from disk-queue file, dropping disk queue",
+                    evt_tag_str("filename", qdisk_get_filename(self->qdisk)));
+
+          if (!qdisk_is_read_only(self->qdisk))
+            log_queue_disk_restart_corrupted(self);
+
+          if (msg)
+            log_msg_unref(msg);
+          msg = NULL;
+
+          return NULL;
+        }
+    }
+  while (msg == NULL);
 
   return msg;
 }

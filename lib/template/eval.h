@@ -84,4 +84,6 @@ void log_template_format_value_and_type_with_context(LogTemplate *self, LogMessa
 void log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
                                       LogTemplateEvalOptions *options, GString *result);
 
+guint log_template_hash(LogTemplate *self, LogMessage *lm, LogTemplateEvalOptions *options);
+
 #endif
