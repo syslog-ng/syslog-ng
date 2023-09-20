@@ -63,6 +63,7 @@ static CfgLexerKeyword http_keywords[] =
   { "batch_bytes",      KW_BATCH_BYTES },
   { "flush_lines",      KW_BATCH_LINES, KWS_OBSOLETE, "The flush-lines option is deprecated. Use batch-lines instead."},
   { "flush_timeout",    KW_BATCH_TIMEOUT, KWS_OBSOLETE, "The flush-timeout option is deprecated. Use batch-timeout instead."},
+  { "flush_on_worker_key_change", KW_FLUSH_ON_WORKER_KEY_CHANGE },
   { "body_prefix",      KW_BODY_PREFIX },
   { "body_suffix",      KW_BODY_SUFFIX },
   { "delimiter",        KW_DELIMITER },

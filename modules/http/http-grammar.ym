@@ -86,6 +86,7 @@ HttpResponseHandler last_response_handler;
 %token KW_RETRY
 %token KW_DROP
 %token KW_DISCONNECT
+%token KW_FLUSH_ON_WORKER_KEY_CHANGE
 
 
 %type   <ptr> driver
@@ -161,6 +162,7 @@ http_option
     | threaded_dest_driver_batch_option
     | threaded_dest_driver_workers_option
     | http_tls_option
+    | KW_FLUSH_ON_WORKER_KEY_CHANGE '(' yesno ')' { log_threaded_dest_driver_set_flush_on_worker_key_change(last_driver, $3); }
     | KW_TLS '(' http_tls_options ')'
     | KW_ACCEPT_ENCODING '(' string ')' { http_dd_set_accept_encoding(last_driver, $3); free($3); }
     | KW_CONTENT_COMPRESSION '(' string ')' { http_dd_set_message_compression(last_driver, $3); free($3); }
