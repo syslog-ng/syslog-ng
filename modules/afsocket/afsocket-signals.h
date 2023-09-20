@@ -25,10 +25,11 @@
 #define AFSOCKET_SIGNALS_H_INCLUDED
 
 #include "signal-slot-connector/signal-slot-connector.h"
-#include <openssl/x509v3.h>
+#include "transport/tls-context.h"
 
 typedef struct _AFSocketTLSCertificateValidationSignalData
 {
+  TLSContext *tls_context;
   X509_STORE_CTX *ctx;
   gboolean failure;
 } AFSocketTLSCertificateValidationSignalData;

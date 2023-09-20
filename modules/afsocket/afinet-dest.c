@@ -141,14 +141,14 @@ afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
   X509 *current_cert = X509_STORE_CTX_get_current_cert(ctx);
   X509 *cert = X509_STORE_CTX_get0_cert(ctx);
 
-  if (ok && current_cert == cert && self->hostname
-      && (tls_context_get_verify_mode(self->tls_context) & TVM_TRUSTED))
+  if (ok && current_cert == cert)
     {
-      ok = tls_verify_certificate_name(cert, self->hostname);
+      ok = tls_context_verify_peer(self->tls_context, cert, self->hostname);
       if (ok)
         {
           AFSocketTLSCertificateValidationSignalData signal_data = {0};
           signal_data.ctx = ctx;
+          signal_data.tls_context = self->tls_context;
 
           EMIT(self->signal_connector, signal_afsocket_tls_certificate_validation,
                &signal_data);
