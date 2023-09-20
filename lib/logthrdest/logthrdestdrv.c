@@ -28,6 +28,7 @@
 #include "logthrdestdrv.h"
 #include "seqnum.h"
 #include "scratch-buffers.h"
+#include "template/eval.h"
 #include "mainloop-threaded-worker.h"
 
 #include <string.h>
@@ -1105,33 +1106,13 @@ log_threaded_dest_driver_set_max_retries_on_error(LogDriver *s, gint max_retries
   self->retries_on_error_max = max_retries;
 }
 
-static guint
-_get_worker_key_hash(LogThreadedDestDriver *self, LogMessage *msg)
-{
-  if (log_template_is_trivial(self->worker_partition_key))
-    {
-      NVHandle handle = log_template_get_trivial_value_handle(self->worker_partition_key);
-      return g_str_hash(log_msg_get_value(msg, handle, NULL));
-    }
-
-  ScratchBuffersMarker mark;
-  GString *buffer = scratch_buffers_alloc_and_mark(&mark);
-
-  LogTemplateEvalOptions options = DEFAULT_TEMPLATE_EVAL_OPTIONS;
-  log_template_format(self->worker_partition_key, msg, &options, buffer);
-  guint hash = g_str_hash(buffer->str);
-
-  scratch_buffers_reclaim_marked(mark);
-
-  return hash;
-}
-
 LogThreadedDestWorker *
 _lookup_worker(LogThreadedDestDriver *self, LogMessage *msg)
 {
   if (self->worker_partition_key)
     {
-      guint worker_index = _get_worker_key_hash(self, msg) % self->num_workers;
+      LogTemplateEvalOptions options = DEFAULT_TEMPLATE_EVAL_OPTIONS;
+      guint worker_index = log_template_hash(self->worker_partition_key, msg, &options) % self->num_workers;
       return self->workers[worker_index];
     }
 

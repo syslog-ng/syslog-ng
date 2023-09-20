@@ -27,6 +27,8 @@
 #include "macros.h"
 #include "escaping.h"
 #include "cfg.h"
+#include "scratch-buffers.h"
+#include "templates.h"
 
 static LogMessageValueType
 _propagate_type(LogMessageValueType acc_type, LogMessageValueType elem_type)
@@ -237,4 +239,26 @@ void
 log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateEvalOptions *options, GString *result)
 {
   log_template_format_value_and_type(self, lm, options, result, NULL);
+}
+
+guint
+log_template_hash(LogTemplate *self, LogMessage *lm, LogTemplateEvalOptions *options)
+{
+  if (log_template_is_literal_string(self))
+    return g_str_hash(log_template_get_literal_value(self, NULL));
+
+  if (log_template_is_trivial(self))
+    {
+      NVHandle handle = log_template_get_trivial_value_handle(self);
+      g_assert(handle != LM_V_NONE);
+      return g_str_hash(log_msg_get_value(lm, handle, NULL));
+    }
+
+  ScratchBuffersMarker mark;
+  GString *buffer = scratch_buffers_alloc_and_mark(&mark);
+  log_template_format(self, lm, options, buffer);
+  guint hash = g_str_hash(buffer->str);
+  scratch_buffers_reclaim_marked(mark);
+
+  return hash;
 }

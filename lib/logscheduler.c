@@ -22,7 +22,7 @@
  */
 
 #include "logscheduler.h"
-#include "scratch-buffers.h"
+#include "template/eval.h"
 
 static void
 _reinject_message(LogPipe *front_pipe, LogMessage *msg, const LogPathOptions *path_options)
@@ -175,31 +175,6 @@ _partition_clear(LogSchedulerPartition *partition)
 /* LogSchedulerThreadState */
 
 static guint
-_get_template_hash(LogTemplate *template, LogMessage *msg)
-{
-  if (log_template_is_literal_string(template))
-    {
-      return g_str_hash(log_template_get_literal_value(template, NULL));
-    }
-  else if (log_template_is_trivial(template))
-    {
-      NVHandle handle = log_template_get_trivial_value_handle(template);
-
-      g_assert(handle != LM_V_NONE);
-      return g_str_hash(log_msg_get_value(msg, handle, NULL));
-    }
-  else
-    {
-      GString *buffer = scratch_buffers_alloc();
-      LogTemplateEvalOptions options = DEFAULT_TEMPLATE_EVAL_OPTIONS;
-
-      log_template_format(template, msg, &options, buffer);
-      return g_str_hash(buffer->str);
-    }
-}
-
-
-static guint
 _get_partition_index(LogScheduler *self, LogSchedulerThreadState *thread_state, LogMessage *msg)
 {
   if (!self->options->partition_key)
@@ -210,7 +185,8 @@ _get_partition_index(LogScheduler *self, LogSchedulerThreadState *thread_state, 
     }
   else
     {
-      return _get_template_hash(self->options->partition_key, msg) % self->options->num_partitions;
+      LogTemplateEvalOptions options = DEFAULT_TEMPLATE_EVAL_OPTIONS;
+      return log_template_hash(self->options->partition_key, msg, &options) % self->options->num_partitions;
     }
 }
 
