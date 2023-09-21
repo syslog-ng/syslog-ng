@@ -17,6 +17,11 @@ bison_target(NativeGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/native-grammar.y
     ${CMAKE_CURRENT_BINARY_DIR}/native-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
+set_source_files_properties(
+    ${CMAKE_CURRENT_BINARY_DIR}/native-grammar.c
+    PROPERTIES
+    COMPILE_FLAGS ${BISON_BUILT_SOURCE_CFLAGS}
+)
 
 if (ENABLE_NATIVE)
   set(PKG_CONFIG_EXEC_PREFIX "\${prefix}")

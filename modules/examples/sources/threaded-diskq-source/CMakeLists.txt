@@ -18,3 +18,8 @@ bison_target(MsgGeneratorGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/threaded-diskq-source-grammar.y
     ${CMAKE_CURRENT_BINARY_DIR}/threaded-diskq-source-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
+set_source_files_properties(
+    ${CMAKE_CURRENT_BINARY_DIR}/threaded-diskq-source-grammar.c
+    PROPERTIES
+    COMPILE_FLAGS ${BISON_BUILT_SOURCE_CFLAGS}
+)
