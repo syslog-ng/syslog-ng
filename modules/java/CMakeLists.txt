@@ -45,6 +45,11 @@ bison_target(ModJavaGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/java-grammar.y
     ${CMAKE_CURRENT_BINARY_DIR}/java-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
+set_source_files_properties(
+    ${CMAKE_CURRENT_BINARY_DIR}/java-grammar.c
+    PROPERTIES
+    COMPILE_FLAGS ${BISON_BUILT_SOURCE_CFLAGS}
+)
 
 find_package(Java 1.8)
 

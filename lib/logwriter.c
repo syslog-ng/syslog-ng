@@ -120,7 +120,7 @@ struct _LogWriter
   gboolean work_result;
   gint pollable_state;
   LogProtoClient *proto, *pending_proto;
-  gboolean watches_running:1, suspended:1, waiting_for_throttle:1;
+  guint watches_running:1, suspended:1, waiting_for_throttle:1;
   gboolean pending_proto_present;
   GCond pending_proto_cond;
   GMutex pending_proto_lock;

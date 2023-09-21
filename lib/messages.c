@@ -48,7 +48,7 @@ enum
 typedef struct _MsgContext
 {
   guint16 recurse_state;
-  gboolean recurse_warning:1;
+  guint recurse_warning:1;
   gchar recurse_trigger[128];
 } MsgContext;
 

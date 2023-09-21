@@ -21,6 +21,11 @@ bison_target(SystemdJournalGrammar
   ${CMAKE_CURRENT_BINARY_DIR}/systemd-journal-grammar.y
   ${CMAKE_CURRENT_BINARY_DIR}/systemd-journal-grammar.c
 COMPILE_FLAGS ${BISON_FLAGS})
+set_source_files_properties(
+  ${CMAKE_CURRENT_BINARY_DIR}/systemd-journal-grammar.c
+  PROPERTIES
+  COMPILE_FLAGS ${BISON_BUILT_SOURCE_CFLAGS}
+)
 
 if (ENABLE_JOURNALD)
     add_library(sdjournal SHARED ${JOURNALD_SOURCES})

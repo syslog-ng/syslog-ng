@@ -32,6 +32,11 @@ bison_target(openbsdGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/openbsd-grammar.y
     ${CMAKE_CURRENT_BINARY_DIR}/openbsd-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
+set_source_files_properties(
+    ${CMAKE_CURRENT_BINARY_DIR}/openbsd-grammar.c
+    PROPERTIES
+    COMPILE_FLAGS ${BISON_BUILT_SOURCE_CFLAGS}
+)
 
 add_library(openbsd SHARED ${openbsd_SOURCES})
 target_include_directories(openbsd

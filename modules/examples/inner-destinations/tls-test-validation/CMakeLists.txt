@@ -16,6 +16,11 @@ bison_target(HttpTestSlotsGrammar
       ${CMAKE_CURRENT_BINARY_DIR}/tls-test-validation-grammar.y
       ${CMAKE_CURRENT_BINARY_DIR}/tls-test-validation-grammar.c
       COMPILE_FLAGS ${BISON_FLAGS})
+set_source_files_properties(
+      ${CMAKE_CURRENT_BINARY_DIR}/tls-test-validation-grammar.c
+      PROPERTIES
+      COMPILE_FLAGS ${BISON_BUILT_SOURCE_CFLAGS}
+)
 
 add_library(tls-test-validation STATIC ${TLS_TEST_VALIDATION_SOURCES})
 

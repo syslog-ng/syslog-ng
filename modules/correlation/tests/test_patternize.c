@@ -251,7 +251,7 @@ _clusters_find(gpointer key, gpointer value, gpointer user_data)
   clusterfindData *data;
   clusterfind2Data *find_data;
   gboolean found;
-  guint lines_in_cluster = 0, lines_found = 0;
+  guint lines_in_cluster = 0;
   gssize msglen;
 
   data = ((clusterfindData *) user_data);
@@ -272,9 +272,7 @@ _clusters_find(gpointer key, gpointer value, gpointer user_data)
       find_data->lines_in_cluster = 0;
       g_ptr_array_foreach(((Cluster *) value)->loglines, _clusters_loglines_find, find_data);
 
-      if (find_data->found)
-        ++lines_found;
-      else
+      if (!find_data->found)
         found = FALSE;
 
       lines_in_cluster = find_data->lines_in_cluster;

@@ -38,7 +38,7 @@ struct _AFSocketDestDriver
 {
   LogDestDriver super;
 
-  gboolean
+  guint
   connections_kept_alive_across_reloads:1;
   gboolean close_on_input;
   gint fd;

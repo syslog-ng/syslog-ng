@@ -137,7 +137,7 @@ struct _StatsClusterKey
     /* syslog-ng component/driver/subsystem that registered this cluster */
     guint16 component;
     const gchar *instance;
-    gboolean set:1;
+    guint set:1;
   } legacy;
   StatsCounterGroupInit counter_group_init;
 };
