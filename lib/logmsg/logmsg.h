@@ -182,7 +182,7 @@ typedef struct _LogMessageQueueNode
 {
   struct iv_list_head list;
   LogMessage *msg;
-  gboolean ack_needed:1, embedded:1, flow_control_requested:1;
+  guint ack_needed:1, embedded:1, flow_control_requested:1;
 } LogMessageQueueNode;
 
 

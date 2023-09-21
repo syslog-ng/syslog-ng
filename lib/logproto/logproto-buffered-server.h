@@ -69,7 +69,7 @@ struct _LogProtoBufferedServer
   gint (*read_data)(LogProtoBufferedServer *self, guchar *buf, gsize len, LogTransportAuxData *aux);
   void (*flush)(LogProtoBufferedServer *self);
 
-  gboolean
+  guint
   /* track & record the position in the input, to be used for file
    * position tracking.  It's not always on as it's expensive when
    * an encoding is specified and the last record in the input is
