@@ -6,8 +6,7 @@ set(TEST_LOGPROTO_SOURCES
   test-dgram-server.c
   test-framed-server.c
   test-indented-multiline-server.c
-  test-regexp-multiline-server.c
-  test-proxy-proto.c)
+  test-regexp-multiline-server.c)
 
 add_unit_test(LIBTEST CRITERION
   TARGET test_logproto

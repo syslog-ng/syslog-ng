@@ -145,6 +145,15 @@ transport_mapper_inet_construct_log_transport(TransportMapper *s, gint fd)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
 
+  if (self->proxied)
+    {
+      if (_is_tls_required(self))
+        {
+          return log_transport_proxied_stream_socket_with_tls_passthrough_new(fd);
+        }
+      return log_transport_proxied_stream_socket_new(fd);
+    }
+
   if (self->tls_context && _is_tls_required(self))
     {
       return _construct_tls_transport(self, fd);
@@ -153,11 +162,6 @@ transport_mapper_inet_construct_log_transport(TransportMapper *s, gint fd)
   if (self->tls_context)
     {
       return _construct_multitransport_with_plain_and_tls_factories(self, fd);
-    }
-
-  if (self->proxied)
-    {
-      return log_transport_proxied_stream_socket_new(fd);
     }
 
   return _construct_plain_tcp_transport(self, fd);
@@ -301,7 +305,6 @@ transport_mapper_inet_init_instance(TransportMapperInet *self, const gchar *tran
   self->super.address_family = AF_INET;
 }
 
-
 TransportMapperInet *
 transport_mapper_inet_new_instance(const gchar *transport)
 {
@@ -391,9 +394,9 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
   self->server_port = NETWORK_PORT;
   if (strcasecmp(transport, "udp") == 0)
     {
+      self->super.logproto = "dgram";
       self->super.sock_type = SOCK_DGRAM;
       self->super.sock_proto = IPPROTO_UDP;
-      self->super.logproto = "dgram";
       self->super.transport_name = g_strdup("rfc3164+udp");
     }
   else if (strcasecmp(transport, "tcp") == 0)
@@ -402,6 +405,13 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->super.transport_name = g_strdup("rfc3164+tcp");
+    }
+  else if (strcasecmp(transport, "proxied-tcp") == 0)
+    {
+      self->super.logproto = "text";
+      self->super.sock_type = SOCK_STREAM;
+      self->super.sock_proto = IPPROTO_TCP;
+      self->proxied = TRUE;
     }
   else if (strcasecmp(transport, "tls") == 0)
     {
@@ -413,9 +423,10 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
     }
   else if (strcasecmp(transport, "proxied-tls") == 0)
     {
-      self->super.logproto = "proxied-tcp";
+      self->super.logproto = "text";
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
+      self->proxied = TRUE;
       self->require_tls = TRUE;
       self->super.transport_name = g_strdup("rfc3164+proxied-tls");
     }
@@ -470,9 +481,9 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       else
         self->server_port = SYSLOG_TRANSPORT_UDP_PORT;
 
+      self->super.logproto = "dgram";
       self->super.sock_type = SOCK_DGRAM;
       self->super.sock_proto = IPPROTO_UDP;
-      self->super.logproto = "dgram";
       self->super.transport_name = g_strdup("rfc5426");
     }
   else if (strcasecmp(transport, "tcp") == 0)
@@ -486,19 +497,10 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
   else if (strcasecmp(transport, "proxied-tcp") == 0)
     {
       self->server_port = SYSLOG_TRANSPORT_TCP_PORT;
-      self->proxied = TRUE;
       self->super.logproto = "framed";
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
-    }
-  else if (strcasecmp(transport, "proxied-tls") == 0)
-    {
-      self->server_port = SYSLOG_TRANSPORT_TCP_PORT;
       self->proxied = TRUE;
-      self->super.logproto = "framed";
-      self->super.sock_type = SOCK_STREAM;
-      self->super.sock_proto = IPPROTO_TCP;
-      self->require_tls = TRUE;
     }
   else if (strcasecmp(transport, "tls") == 0)
     {
@@ -515,6 +517,15 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_proto = IPPROTO_TCP;
       self->require_tls = TRUE;
       self->super.transport_name = g_strdup("rfc5425");
+    }
+  else if (strcasecmp(transport, "proxied-tls") == 0)
+    {
+      self->server_port = SYSLOG_TRANSPORT_TCP_PORT;
+      self->super.logproto = "framed";
+      self->super.sock_type = SOCK_STREAM;
+      self->super.sock_proto = IPPROTO_TCP;
+      self->proxied = TRUE;
+      self->require_tls = TRUE;
     }
   else
     {
