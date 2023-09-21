@@ -232,6 +232,14 @@ tls_session_verify(TLSSession *self, int ok, X509_STORE_CTX *ctx)
                   tls_context_format_location_tag(self->ctx));
       return 1;
     }
+  if (!ok && tls_context_ignore_validity_period(self->ctx) &&
+      (X509_STORE_CTX_get_error(ctx) == X509_V_ERR_CERT_NOT_YET_VALID ||
+       X509_STORE_CTX_get_error(ctx) == X509_V_ERR_CERT_HAS_EXPIRED))
+    {
+      msg_notice("Ignoring not yet valid / expired certificate error due to ssl_options(ignore-validity-period)",
+                 tls_context_format_location_tag(self->ctx));
+      return 1;
+    }
   return ok;
 }
 
