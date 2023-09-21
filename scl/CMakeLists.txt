@@ -30,6 +30,7 @@ set(SCL_DIRS
     osquery
     pacct
     paloalto
+    pgsql
     python
     rewrite
     slack

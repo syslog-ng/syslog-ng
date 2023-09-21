@@ -31,6 +31,7 @@ SCL_SUBDIRS	= \
 	osquery	\
 	pacct		\
 	paloalto 	\
+	pgsql 	\
 	python		\
 	rewrite	\
 	slack \
