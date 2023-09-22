@@ -35,6 +35,7 @@ typedef struct _MainLoopOptions
 {
   gchar *preprocess_into;
   gboolean syntax_only;
+  gboolean check_startup;
   gboolean config_id;
   gboolean interactive_mode;
   gboolean server_mode;
