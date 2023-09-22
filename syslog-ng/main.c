@@ -116,6 +116,7 @@ interactive_mode(void)
   debug_flag = FALSE;
   verbose_flag = FALSE;
   msg_init(TRUE);
+  g_process_set_mode(G_PM_FOREGROUND);
 }
 
 gboolean
@@ -294,8 +295,10 @@ main(int argc, char *argv[])
   gboolean exit_before_main_loop_run = main_loop_options.syntax_only
                                        || main_loop_options.preprocess_into
                                        || main_loop_options.config_id;
+  if (exit_before_main_loop_run)
+    interactive_mode();
 
-  if (debug_flag || exit_before_main_loop_run)
+  if (debug_flag)
     {
       g_process_set_mode(G_PM_FOREGROUND);
     }
