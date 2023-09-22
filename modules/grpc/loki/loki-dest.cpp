@@ -44,7 +44,7 @@ struct _LokiDestDriver
 };
 
 DestinationDriver::DestinationDriver(LokiDestDriver *s)
-  : super(s), url("localhost:9096"), timestamp(LM_TS_PROCESSED),
+  : super(s), url("localhost:9095"), timestamp(LM_TS_PROCESSED),
     keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1)
 {
   log_template_options_defaults(&this->template_options);
