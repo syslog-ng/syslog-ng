@@ -61,6 +61,8 @@ if (NOT ENABLE_GRPC)
   return()
 endif()
 
+add_subdirectory(credentials)
+
 include(ProtobufGenerateCpp)
 
 set(MODULE_GRPC_LIBS

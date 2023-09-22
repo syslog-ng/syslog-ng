@@ -185,6 +185,7 @@ modules/grpc/otel/syslog-ng-otlp-(dest|dest-worker)\.(h|cpp|hpp)$
 modules/grpc/otel/tests/test-otel-(protobuf-parser|protobuf-formatter)\.cpp$
 modules/grpc/otel/tests/test-syslog-ng-otlp\.cpp$
 modules/grpc/loki
+modules/grpc/credentials
 modules/examples/inner-destinations/tls-test-validation
 modules/examples/sources/random-choice-generator
 modules/python/python-options.(c|h)$

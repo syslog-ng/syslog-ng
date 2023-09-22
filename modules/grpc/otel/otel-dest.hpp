@@ -30,7 +30,7 @@
 #include "compat/cpp-end.h"
 
 #include "otel-dest.h"
-#include "grpc-credentials-builder.hpp"
+#include "credentials/grpc-credentials-builder.hpp"
 
 
 namespace syslogng {

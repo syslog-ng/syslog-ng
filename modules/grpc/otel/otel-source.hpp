@@ -31,7 +31,7 @@
 
 #include "otel-source.h"
 #include "otel-servicecall.hpp"
-#include "grpc-credentials-builder.hpp"
+#include "credentials/grpc-credentials-builder.hpp"
 
 
 namespace syslogng {
