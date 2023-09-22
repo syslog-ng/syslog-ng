@@ -77,7 +77,7 @@ DestinationWorker::init()
 
   args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
 
-  auto credentials = ::grpc::InsecureChannelCredentials();
+  auto credentials = owner->credentials_builder.build();
   if (!credentials)
     {
       msg_error("Error querying Loki credentials", log_pipe_location_tag((LogPipe *) this->super->super.owner));

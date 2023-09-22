@@ -3,6 +3,7 @@ if ENABLE_GRPC
 noinst_LTLIBRARIES += modules/grpc/loki/libloki_cpp.la
 
 modules_grpc_loki_libloki_cpp_la_SOURCES = \
+  $(grpc_credentials_sources) \
   modules/grpc/loki/loki-dest.h \
   modules/grpc/loki/loki-dest.hpp \
   modules/grpc/loki/loki-dest.cpp \
@@ -15,6 +16,7 @@ modules_grpc_loki_libloki_cpp_la_CXXFLAGS = \
   $(PROTOBUF_CLFAGS) \
   $(GRPCPP_CFLAGS) \
   -I$(LOKI_PROTO_BUILDDIR) \
+  -I$(top_srcdir)/modules/grpc \
   -I$(top_srcdir)/modules/grpc/loki \
   -I$(top_builddir)/modules/grpc/loki
 
@@ -32,6 +34,7 @@ modules_grpc_loki_libloki_la_SOURCES = \
 
 modules_grpc_loki_libloki_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
+  -I$(top_srcdir)/modules/grpc \
   -I$(top_srcdir)/modules/grpc/loki \
   -I$(top_builddir)/modules/grpc/loki
 

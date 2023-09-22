@@ -32,6 +32,8 @@
 #include "logmsg/logmsg.h"
 #include "compat/cpp-end.h"
 
+#include "credentials/grpc-credentials-builder.hpp"
+
 #include <string>
 #include <vector>
 #include <memory>
@@ -76,6 +78,7 @@ public:
   bool deinit();
   const gchar *format_persist_name();
   const gchar *format_stats_key(StatsClusterKeyBuilder *kb);
+  GrpcClientCredentialsBuilderW *get_credentials_builder_wrapper();
 
   void add_label(std::string name, LogTemplate *value);
 
@@ -132,6 +135,9 @@ private:
   LogTemplate *message = nullptr;
   std::vector<Label> labels;
   LogMessageTimeStamp timestamp;
+
+  syslogng::grpc::ClientCredentialsBuilder credentials_builder;
+  GrpcClientCredentialsBuilderW credentials_builder_wrapper;
 
   int keepalive_time;
   int keepalive_timeout;

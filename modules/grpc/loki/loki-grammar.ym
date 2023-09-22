@@ -36,6 +36,8 @@
 
 #include <stdlib.h>
 
+GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
+
 }
 
 %define api.prefix {loki_}
@@ -54,6 +56,16 @@
 %token KW_CURRENT
 %token KW_RECEIVED
 %token KW_MSG
+
+%token KW_AUTH
+%token KW_INSECURE
+%token KW_TLS
+%token KW_KEY_FILE
+%token KW_CERT_FILE
+%token KW_CA_FILE
+%token KW_ALTS
+%token KW_TARGET_SERVICE_ACCOUNTS
+%token KW_ADC
 
 %token KW_KEEP_ALIVE
 %token KW_TIME
@@ -87,6 +99,7 @@ loki_dest_option
   | KW_LABELS '(' loki_labels ')'
   | KW_TIMESTAMP '(' loki_timestamp_enum ')'
   | KW_TEMPLATE '(' template_content ')' { loki_dd_set_message_template_ref(last_driver, $3); }
+  | KW_AUTH { last_grpc_client_credentials_builder = loki_dd_get_credentials_builder(last_driver); } '(' grpc_client_credentials_option ')'
   | threaded_dest_driver_general_option
   | threaded_dest_driver_workers_option
   | threaded_dest_driver_batch_option
@@ -122,6 +135,61 @@ loki_keepalive_option
   : KW_TIME '(' nonnegative_integer ')' { loki_dd_set_keepalive_time(last_driver, $3); }
   | KW_TIMEOUT '(' nonnegative_integer ')' { loki_dd_set_keepalive_timeout(last_driver, $3); }
   | KW_MAX_PINGS_WITHOUT_DATA '(' nonnegative_integer ')' { loki_dd_set_keepalive_max_pings(last_driver, $3); }
+  ;
+
+/*
+ * gRPC Credentials Builders
+ *
+ * TODO: These should be in a separate file, which can be included to other gRPC based drivers' grammar.
+ */
+
+grpc_client_credentials_option
+  : KW_INSECURE { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_INSECURE); } '(' ')'
+  | KW_TLS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_TLS); } '(' grpc_client_credentials_builder_tls_options ')'
+  | KW_ALTS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ALTS); } '(' grpc_client_credentials_builder_alts_options ')'
+  | KW_ADC { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ADC); } '(' ')'
+  ;
+
+grpc_client_credentials_builder_tls_options
+  : grpc_client_credentials_builder_tls_option grpc_client_credentials_builder_tls_options
+  |
+  ;
+
+grpc_client_credentials_builder_tls_option
+  : KW_KEY_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_client_credentials_builder_set_tls_key_path(last_grpc_client_credentials_builder, $3), @1, "Failed to set key-file()");
+        free($3);
+      }
+  | KW_CERT_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_client_credentials_builder_set_tls_cert_path(last_grpc_client_credentials_builder, $3), @1, "Failed to set cert-file()");
+        free($3);
+      }
+  | KW_CA_FILE '(' string ')'
+      {
+        CHECK_ERROR(grpc_client_credentials_builder_set_tls_ca_path(last_grpc_client_credentials_builder, $3), @1, "Failed to set ca-file()");
+        free($3);
+      }
+  ;
+
+grpc_client_credentials_builder_alts_options
+  : grpc_client_credentials_builder_alts_option grpc_client_credentials_builder_alts_options
+  |
+  ;
+
+grpc_client_credentials_builder_alts_option
+  : KW_TARGET_SERVICE_ACCOUNTS '(' grpc_client_credentials_builder_alts_target_service_accounts ')'
+  ;
+
+grpc_client_credentials_builder_alts_target_service_accounts
+  : string
+      {
+        grpc_client_credentials_builder_add_alts_target_service_account(last_grpc_client_credentials_builder, $1);
+        free($1);
+      }
+    grpc_client_credentials_builder_alts_target_service_accounts
+  |
   ;
 
 /* INCLUDE_RULES */

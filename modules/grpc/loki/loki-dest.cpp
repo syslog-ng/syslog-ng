@@ -48,6 +48,7 @@ DestinationDriver::DestinationDriver(LokiDestDriver *s)
     keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1)
 {
   log_template_options_defaults(&this->template_options);
+  credentials_builder_wrapper.self = &credentials_builder;
 }
 
 DestinationDriver::~DestinationDriver()
@@ -66,6 +67,11 @@ bool
 DestinationDriver::init()
 {
   GlobalConfig *cfg = log_pipe_get_config(&this->super->super.super.super.super);
+
+  if (!credentials_builder.validate())
+    {
+      return false;
+    }
 
   if (!this->message)
     {
@@ -130,6 +136,12 @@ DestinationDriver::format_stats_key(StatsClusterKeyBuilder *kb)
   return nullptr;
 }
 
+GrpcClientCredentialsBuilderW *
+DestinationDriver::get_credentials_builder_wrapper()
+{
+  return &this->credentials_builder_wrapper;
+}
+
 
 /* C Wrappers */
 
@@ -151,6 +163,13 @@ _format_stats_key(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb)
 {
   LokiDestDriver *self = (LokiDestDriver *) s;
   return self->cpp->format_stats_key(kb);
+}
+
+GrpcClientCredentialsBuilderW *
+loki_dd_get_credentials_builder(LogDriver *s)
+{
+  LokiDestDriver *self = (LokiDestDriver *) s;
+  return self->cpp->get_credentials_builder_wrapper();
 }
 
 void
