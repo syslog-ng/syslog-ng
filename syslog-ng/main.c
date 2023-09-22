@@ -203,6 +203,9 @@ setup_caps (void)
   static gchar *capsstr_syslog = BASE_CAPS "cap_syslog=ep";
   static gchar *capsstr_sys_admin = BASE_CAPS "cap_sys_admin=ep";
 
+  if (geteuid() != 0)
+    g_process_disable_caps();
+
   if (!g_process_is_cap_enabled())
     return;
 
