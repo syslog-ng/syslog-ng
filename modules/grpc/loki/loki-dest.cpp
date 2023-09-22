@@ -99,10 +99,13 @@ DestinationDriver::init()
     {
       msg_error("Error compiling worker partition key template",
                 evt_tag_str("template", worker_partition_key_str.c_str()));
-      return FALSE;
+      return false;
     }
 
-  log_threaded_dest_driver_set_worker_partition_key_ref(&this->super->super.super.super, worker_partition_key);
+  if (log_template_is_literal_string(worker_partition_key))
+    log_template_unref(worker_partition_key);
+  else
+    log_threaded_dest_driver_set_worker_partition_key_ref(&this->super->super.super.super, worker_partition_key);
 
   return log_threaded_dest_driver_init_method(&this->super->super.super.super.super);
 }
