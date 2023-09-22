@@ -976,19 +976,23 @@ g_process_change_caps(void)
 
 #endif
 
-static void
+static gboolean
 g_process_resolve_names(void)
 {
+  gboolean result = TRUE;
   if (process_opts.user && !resolve_user(process_opts.user, &process_opts.uid))
     {
       g_process_message("Error resolving user; user='%s'", process_opts.user);
       process_opts.uid = -1;
+      result = FALSE;
     }
   if (process_opts.group && !resolve_group(process_opts.group, &process_opts.gid))
     {
       g_process_message("Error resolving group; group='%s'", process_opts.group);
       process_opts.gid = -1;
+      result = FALSE;
     }
+  return result;
 }
 
 /**
@@ -1360,7 +1364,10 @@ g_process_start(void)
 
   g_process_detach_tty();
   g_process_change_limits();
-  g_process_resolve_names();
+  if (!g_process_resolve_names())
+    {
+      exit(1);
+    }
 
   if (process_opts.mode == G_PM_BACKGROUND)
     {
