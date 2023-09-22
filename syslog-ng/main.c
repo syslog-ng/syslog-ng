@@ -277,12 +277,12 @@ main(int argc, char *argv[])
 
   setup_caps();
 
-  if(startup_debug_flag && debug_flag)
+  if (startup_debug_flag && debug_flag)
     {
       startup_debug_flag = FALSE;
     }
 
-  if(startup_debug_flag)
+  if (startup_debug_flag)
     {
       debug_flag = TRUE;
     }
