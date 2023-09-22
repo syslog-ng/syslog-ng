@@ -27,7 +27,7 @@
 
 #include "otel-source.hpp"
 #include "otel-source-services.hpp"
-#include "grpc-credentials-builder.hpp"
+#include "credentials/grpc-credentials-builder.hpp"
 
 #include "compat/cpp-start.h"
 #include "messages.h"

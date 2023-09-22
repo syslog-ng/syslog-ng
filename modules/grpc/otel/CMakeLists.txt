@@ -1,4 +1,5 @@
 set(OTEL_CPP_SOURCES
+  ${GRPC_CREDENTIALS_SOURCES}
   otel-source.cpp
   otel-source.hpp
   otel-source.h
@@ -7,9 +8,6 @@ set(OTEL_CPP_SOURCES
   otel-protobuf-parser.hpp
   otel-protobuf-parser.cpp
   otel-protobuf-parser.h
-  grpc-credentials-builder.cpp
-  grpc-credentials-builder.hpp
-  grpc-credentials-builder.h
   otel-protobuf-formatter.hpp
   otel-protobuf-formatter.cpp
   otel-dest.hpp
@@ -33,7 +31,7 @@ add_module(
   TARGET otel-cpp
   SOURCES ${OTEL_CPP_SOURCES}
   DEPENDS ${MODULE_GRPC_LIBS} grpc-protos
-  INCLUDES ${OTEL_PROTO_BUILDDIR}
+  INCLUDES ${OTEL_PROTO_BUILDDIR} ${PROJECT_SOURCE_DIR}/modules/grpc
   LIBRARY_TYPE STATIC
 )
 
@@ -41,6 +39,7 @@ add_module(
   TARGET otel
   GRAMMAR otel-grammar
   DEPENDS otel-cpp
+  INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc
   SOURCES ${OTEL_SOURCES}
 )
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Attila Szakacs
+ * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,19 +20,17 @@
  *
  */
 
-#ifndef OTEL_SOURCE_H
-#define OTEL_SOURCE_H
+#ifndef LOKI_WORKER_H
+#define LOKI_WORKER_H
 
 #include "compat/cpp-start.h"
 
-#include "driver.h"
-#include "credentials/grpc-credentials-builder.h"
+#include "syslog-ng.h"
+#include "logthrdest/logthrdestdrv.h"
 
-typedef struct OtelSourceDriver_ OtelSourceDriver;
+typedef struct _LokiDestWorker LokiDestWorker;
 
-LogDriver *otel_sd_new(GlobalConfig *cfg);
-void otel_sd_set_port(LogDriver *s, guint64 port);
-GrpcServerCredentialsBuilderW *otel_sd_get_credentials_builder(LogDriver *s);
+LogThreadedDestWorker *loki_dw_new(LogThreadedDestDriver *o, gint worker_index);
 
 #include "compat/cpp-end.h"
 

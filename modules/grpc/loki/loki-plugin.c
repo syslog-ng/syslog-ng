@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Attila Szakacs
+ * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,20 +20,34 @@
  *
  */
 
-#ifndef OTEL_SOURCE_H
-#define OTEL_SOURCE_H
+#include "cfg-parser.h"
+#include "plugin.h"
+#include "plugin-types.h"
 
-#include "compat/cpp-start.h"
+extern CfgParser loki_parser;
 
-#include "driver.h"
-#include "credentials/grpc-credentials-builder.h"
+static Plugin loki_plugins[] =
+{
+  {
+    .type = LL_CONTEXT_DESTINATION,
+    .name = "loki",
+    .parser = &loki_parser,
+  },
+};
 
-typedef struct OtelSourceDriver_ OtelSourceDriver;
+gboolean
+loki_module_init(PluginContext *context, CfgArgs *args)
+{
+  plugin_register(context, loki_plugins, G_N_ELEMENTS(loki_plugins));
+  return TRUE;
+}
 
-LogDriver *otel_sd_new(GlobalConfig *cfg);
-void otel_sd_set_port(LogDriver *s, guint64 port);
-GrpcServerCredentialsBuilderW *otel_sd_get_credentials_builder(LogDriver *s);
-
-#include "compat/cpp-end.h"
-
-#endif
+const ModuleInfo module_info =
+{
+  .canonical_name = "loki",
+  .version = SYSLOG_NG_VERSION,
+  .description = "Grafana Loki plugins",
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
+  .plugins = loki_plugins,
+  .plugins_len = G_N_ELEMENTS(loki_plugins),
+};

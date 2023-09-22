@@ -26,7 +26,7 @@
 #include "compat/cpp-start.h"
 
 #include "driver.h"
-#include "grpc-credentials-builder.h"
+#include "credentials/grpc-credentials-builder.h"
 
 typedef struct OtelDestDriver_ OtelDestDriver;
 

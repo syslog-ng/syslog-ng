@@ -3,6 +3,7 @@ if ENABLE_GRPC
 noinst_LTLIBRARIES += modules/grpc/otel/libotel_cpp.la
 
 modules_grpc_otel_libotel_cpp_la_SOURCES = \
+  $(grpc_credentials_sources) \
   modules/grpc/otel/otel-source.h \
   modules/grpc/otel/otel-source.hpp \
   modules/grpc/otel/otel-source.cpp \
@@ -11,9 +12,6 @@ modules_grpc_otel_libotel_cpp_la_SOURCES = \
   modules/grpc/otel/otel-protobuf-parser.h \
   modules/grpc/otel/otel-protobuf-parser.hpp \
   modules/grpc/otel/otel-protobuf-parser.cpp \
-  modules/grpc/otel/grpc-credentials-builder.h \
-  modules/grpc/otel/grpc-credentials-builder.hpp \
-  modules/grpc/otel/grpc-credentials-builder.cpp \
   modules/grpc/otel/otel-protobuf-formatter.hpp \
   modules/grpc/otel/otel-protobuf-formatter.cpp \
   modules/grpc/otel/otel-dest.h \
@@ -32,6 +30,7 @@ modules_grpc_otel_libotel_cpp_la_CXXFLAGS = \
   $(PROTOBUF_CFLAGS) \
   $(GRPCPP_CFLAGS) \
   -I$(OPENTELEMETRY_PROTO_BUILDDIR) \
+  -I$(top_srcdir)/modules/grpc \
   -I$(top_srcdir)/modules/grpc/otel \
   -I$(top_builddir)/modules/grpc/otel
 
@@ -49,6 +48,7 @@ modules_grpc_otel_libotel_la_SOURCES = \
 
 modules_grpc_otel_libotel_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
+  -I$(top_srcdir)/modules/grpc \
   -I$(top_srcdir)/modules/grpc/otel \
   -I$(top_builddir)/modules/grpc/otel
 
