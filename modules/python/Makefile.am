@@ -81,7 +81,9 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-options.h \
 	modules/python/python-options.c \
 	modules/python/python-flags.h \
-	modules/python/python-flags.c
+	modules/python/python-flags.c \
+	modules/python/python-reloc.h \
+	modules/python/python-reloc.c
 
 
 modules_python_libmod_python_la_LDFLAGS		 = \

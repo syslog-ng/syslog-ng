@@ -39,6 +39,7 @@
 #include "python-confgen.h"
 #include "python-global-code-loader.h"
 #include "python-types.h"
+#include "python-reloc.h"
 
 #include "reloc.h"
 
@@ -412,6 +413,7 @@ _py_initialize_builtin_modules(void)
   py_persist_global_init();
   py_bookmark_global_init();
   py_ack_tracker_global_init();
+  py_reloc_global_init();
   py_global_code_loader_global_init();
   py_logger_global_init();
 }

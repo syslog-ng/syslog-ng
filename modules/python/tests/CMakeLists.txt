@@ -53,3 +53,10 @@ add_unit_test(LIBTEST CRITERION
   DEPENDS mod-python "${PYTHON_LIBRARIES}")
 
 set_property(TEST test_python_options APPEND PROPERTY ENVIRONMENT "PYTHONMALLOC=malloc_debug")
+
+add_unit_test(LIBTEST CRITERION
+  TARGET test_python_reloc
+  INCLUDES "${PYTHON_INCLUDE_DIR}" "${PYTHON_INCLUDE_DIRS}"
+  DEPENDS mod-python "${PYTHON_LIBRARIES}")
+
+set_property(TEST test_python_reloc APPEND PROPERTY ENVIRONMENT "PYTHONMALLOC=malloc_debug")

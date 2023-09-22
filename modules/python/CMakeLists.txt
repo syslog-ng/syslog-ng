@@ -67,6 +67,8 @@ set(PYTHON_SOURCES
     compat/compat-python.c
     python-flags.h
     python-flags.c
+    python-reloc.h
+    python-reloc.c
 )
 
 add_module(
