@@ -17,7 +17,6 @@ on:
           "debian-buster",
           "debian-testing",
           "debian-sid",
-          "ubuntu-bionic",
           "debian-bullseye",
           "debian-bookworm",
           "ubuntu-focal",

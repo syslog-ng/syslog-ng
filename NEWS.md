@@ -245,6 +245,9 @@ Additional options include `region()`, `storage-class()` and `canned-acl()`.
 
 ## Other changes
 
+  * APT packages: Dropped support for Ubuntu Bionic.
+  ([#4648](https://github.com/syslog-ng/syslog-ng/pull/4648))
+
   * `vim`: Syntax highlight file is no longer packaged.
 
     vim syntax files where previously installed by the RedHat packages of syslog-ng
