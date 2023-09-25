@@ -36,7 +36,6 @@ jobs:
           - debian-buster
           - debian-sid
           - debian-testing
-          - ubuntu-bionic
           - ubuntu-focal
           - ubuntu-jammy
           - ubuntu-lunar
