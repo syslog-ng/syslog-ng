@@ -89,3 +89,13 @@ jobs:
           build-args: |
             SYSLOGNG_VERSION=${{ env.SYSLOG_NG_IMG_VERSION }}
             VERSION=${{ needs.version.outputs.version }}
+          labels: | # https://github.com/opencontainers/image-spec/blob/main/annotations.md
+            maintainer="axoflow.io"
+            org.opencontainers.image.title="AxoSyslog Splunk Connector"
+            org.opencontainers.image.description="A cloud-native distribution of syslog-ng by Axoflow"
+            org.opencontainers.image.authors="Axoflow"
+            org.opencontainers.image.vendor="Axoflow"
+            org.opencontainers.image.licenses="GPL-3.0-only"
+            org.opencontainers.image.source="https://github.com/axoflow/axosyslog-docker"
+            org.opencontainers.image.documentation="https://axoflow.com/docs/axosyslog/docs/"
+            org.opencontainers.image.url="https://axoflow.io/"
