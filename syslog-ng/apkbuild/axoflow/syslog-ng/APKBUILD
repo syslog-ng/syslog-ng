@@ -5,7 +5,7 @@
 # Contributor: jv <jens@eisfair.org>
 # Maintainer: László Várady <laszlo.varady@axoflow.com>
 pkgname=syslog-ng
-pkgver=4.3.1
+pkgver=4.4.0
 pkgrel=0
 pkgdesc="Next generation logging daemon"
 url="https://www.syslog-ng.com/products/open-source-log-management/"
@@ -150,7 +150,8 @@ _python3() {
 _grpc() {
 	pkgdesc="$pkgdesc (grpc module)"
 
-	_submv usr/lib/syslog-ng/libotel.so
+	_submv usr/lib/syslog-ng/libotel.so \
+		usr/lib/syslog-ng/libloki.so
 }
 
 _module() {
@@ -171,5 +172,5 @@ _submv() {
 }
 
 sha512sums="
-571f6080765983326ee912f2a7e87cdc8527296ef555a0b16589c04ed332c0db58e24c70251dc39b1c79151ca7d463e6409835df99aa45c19734d7003a69ce61  syslog-ng-4.3.1.tar.gz
+1cf18c43321e523d0f49b25a4839fd10ec301b207da1b2c407df5167dba557ac0a7781b07f1c1e5d18241376966b8099d9e41dffa55030f6a8052388139c4107  syslog-ng-4.4.0.tar.gz
 "
