@@ -1,3 +1,13 @@
+if(ENABLE_OTEL AND NOT ENABLE_GRPC)
+  message(FATAL_ERROR "GRPC support is mandatory when the Otel modules are enabled.")
+endif()
+
+module_switch(ENABLE_OTEL "Enable Otel" ENABLE_GRPC)
+
+if(NOT ENABLE_OTEL OR NOT ENABLE_GRPC)
+  return()
+endif()
+
 set(OTEL_CPP_SOURCES
   ${GRPC_CREDENTIALS_SOURCES}
   otel-source.cpp
