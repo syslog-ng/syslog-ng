@@ -150,7 +150,8 @@ _python3() {
 _grpc() {
 	pkgdesc="$pkgdesc (grpc module)"
 
-	_submv usr/lib/syslog-ng/libotel.so
+	_submv usr/lib/syslog-ng/libotel.so \
+		usr/lib/syslog-ng/libloki.so
 }
 
 _module() {
