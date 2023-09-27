@@ -1,0 +1,68 @@
+/*
+ * Copyright (c) 2023 Attila Szakacs
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "cloud-auth-parser.h"
+}
+
+%code {
+#include "cfg-grammar-internal.h"
+#include "plugin.h"
+#include "cloud-auth.h"
+#include "google-auth.h"
+
+LogDriverPlugin *last_plugin;
+CloudAuthenticator *last_authenticator;
+}
+
+%define api.prefix {cloud_auth_}
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriverPlugin **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_CLOUD_AUTH
+
+%%
+
+start
+  : LL_CONTEXT_INNER_DEST inner_destination_cloud_auth { YYACCEPT; }
+  ;
+
+inner_destination_cloud_auth
+  : KW_CLOUD_AUTH
+    {
+      last_plugin = cloud_auth_dest_plugin_new();
+      *instance = (LogDriverPlugin *) last_plugin;
+    }
+    '(' ')'
+  ;
+
+/* INCLUDE_RULES */
+
+%%

@@ -127,6 +127,7 @@ override_dh_auto_configure:
 		--enable-java=auto \
 		--enable-mqtt=auto \
 		--enable-grpc=auto \
+		--enable-cloud-auth=auto \
 		\
 		--with-mongoc=system \
 		--with-ivykis=system \
