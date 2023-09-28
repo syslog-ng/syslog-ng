@@ -13,6 +13,9 @@ set(CLOUD_AUTH_CPP_SOURCES
   cloud-auth.h
   cloud-auth.cpp
   cloud-auth.hpp
+  google-auth.h
+  google-auth.cpp
+  google-auth.hpp
 )
 
 set(OTEL_SOURCES
@@ -26,6 +29,7 @@ add_module(
   SOURCES ${CLOUD_AUTH_CPP_SOURCES}
   INCLUDES ${PROJECT_SOURCE_DIR}
            ${PROJECT_SOURCE_DIR}/modules/cloud-auth
+           ${PROJECT_SOURCE_DIR}/modules/cloud-auth/jwt-cpp/include
   LIBRARY_TYPE STATIC
 )
 

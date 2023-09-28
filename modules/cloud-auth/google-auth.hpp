@@ -20,33 +20,40 @@
  *
  */
 
-#include "cloud-auth.h"
-#include "cfg-parser.h"
-#include "cloud-auth-grammar.h"
+#ifndef GOOGLE_AUTH_HPP
+#define GOOGLE_AUTH_HPP
 
-extern int cloud_auth_debug;
-int cloud_auth_parse(CfgLexer *lexer, LogDriverPlugin **instance, gpointer arg);
+#include "compat/cpp-start.h"
+#include "google-auth.h"
+#include "compat/cpp-end.h"
 
-static CfgLexerKeyword cloud_auth_keywords[] =
+#include "cloud-auth.hpp"
+
+#include <string>
+#include <jwt-cpp/jwt.h>
+#include <picojson/picojson.h>
+
+namespace syslogng {
+namespace cloud_auth {
+namespace google {
+
+class ServiceAccountAuthenticator: public syslogng::cloud_auth::Authenticator
 {
-  { "cloud_auth",               KW_CLOUD_AUTH },
-  { "gcp",                      KW_GCP },
-  { "service_account",          KW_SERVICE_ACCOUNT },
-  { "key",                      KW_KEY },
-  { "audience",                 KW_AUDIENCE },
-  { NULL }
+public:
+  ServiceAccountAuthenticator(const char *key_path, const char *audience);
+  ~ServiceAccountAuthenticator() {};
+
+  void handle_http_header_request(HttpHeaderRequestSignalData *data);
+
+private:
+  std::string audience;
+  std::string email;
+  std::string private_key;
+  std::string private_key_id;
 };
 
-CfgParser cloud_auth_parser =
-{
-#if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &cloud_auth_debug,
+}
+}
+}
+
 #endif
-  .name = "cloud_auth",
-  .keywords = cloud_auth_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer arg)) cloud_auth_parse,
-  .cleanup = (void (*)(gpointer)) log_driver_plugin_free,
-
-};
-
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(cloud_auth_, CLOUD_AUTH_, LogDriverPlugin **)

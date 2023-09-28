@@ -47,6 +47,10 @@ CloudAuthenticator *last_authenticator;
 /* INCLUDE_DECLS */
 
 %token KW_CLOUD_AUTH
+%token KW_GCP
+%token KW_SERVICE_ACCOUNT
+%token KW_KEY
+%token KW_AUDIENCE
 
 %%
 
@@ -60,7 +64,38 @@ inner_destination_cloud_auth
       last_plugin = cloud_auth_dest_plugin_new();
       *instance = (LogDriverPlugin *) last_plugin;
     }
-    '(' ')'
+    '(' inner_destination_cloud_auth_option ')'
+  ;
+
+inner_destination_cloud_auth_option
+  : KW_GCP
+    {
+      last_authenticator = google_authenticator_new();
+    }
+    '(' google_dest_auth_option ')'
+    {
+      cloud_auth_dest_plugin_set_authenticator(last_plugin, last_authenticator);
+    }
+  |
+  ;
+
+google_dest_auth_option
+  : KW_SERVICE_ACCOUNT
+    {
+      google_authenticator_set_auth_mode(last_authenticator, GAAM_SERVICE_ACCOUNT);
+    }
+    '(' google_dest_auth_service_account_options ')'
+  |
+  ;
+
+google_dest_auth_service_account_options
+  : google_dest_auth_service_account_option google_dest_auth_service_account_options
+  |
+  ;
+
+google_dest_auth_service_account_option
+  : KW_KEY '(' path_secret ')' { google_authenticator_set_service_account_key_path(last_authenticator, $3); free($3); }
+  | KW_AUDIENCE '(' string ')' { google_authenticator_set_service_account_audience(last_authenticator, $3); free($3); }
   ;
 
 /* INCLUDE_RULES */

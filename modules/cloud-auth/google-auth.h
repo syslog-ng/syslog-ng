@@ -20,33 +20,20 @@
  *
  */
 
+#ifndef GOOGLE_AUTH_H
+#define GOOGLE_AUTH_H
+
 #include "cloud-auth.h"
-#include "cfg-parser.h"
-#include "cloud-auth-grammar.h"
 
-extern int cloud_auth_debug;
-int cloud_auth_parse(CfgLexer *lexer, LogDriverPlugin **instance, gpointer arg);
-
-static CfgLexerKeyword cloud_auth_keywords[] =
+typedef enum _GoogleAuthenticatorAuthMode
 {
-  { "cloud_auth",               KW_CLOUD_AUTH },
-  { "gcp",                      KW_GCP },
-  { "service_account",          KW_SERVICE_ACCOUNT },
-  { "key",                      KW_KEY },
-  { "audience",                 KW_AUDIENCE },
-  { NULL }
-};
+  GAAM_UNDEFINED,
+  GAAM_SERVICE_ACCOUNT,
+} GoogleAuthenticatorAuthMode;
 
-CfgParser cloud_auth_parser =
-{
-#if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &cloud_auth_debug,
+CloudAuthenticator *google_authenticator_new(void);
+void google_authenticator_set_auth_mode(CloudAuthenticator *s, GoogleAuthenticatorAuthMode auth_mode);
+void google_authenticator_set_service_account_key_path(CloudAuthenticator *s, const gchar *key_path);
+void google_authenticator_set_service_account_audience(CloudAuthenticator *s, const gchar *audience);
+
 #endif
-  .name = "cloud_auth",
-  .keywords = cloud_auth_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer arg)) cloud_auth_parse,
-  .cleanup = (void (*)(gpointer)) log_driver_plugin_free,
-
-};
-
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(cloud_auth_, CLOUD_AUTH_, LogDriverPlugin **)
