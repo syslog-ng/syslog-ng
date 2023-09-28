@@ -57,18 +57,20 @@ endif()
 
 module_switch(ENABLE_GRPC "Enable GRPC" GRPC_DEPS_FOUND)
 
-if (NOT ENABLE_GRPC)
-  return()
+if (ENABLE_GRPC)
+  include(ProtobufGenerateCpp)
+
+  set(MODULE_GRPC_LIBS
+    gRPC::grpc
+    gRPC::grpc++
+    protobuf::libprotobuf)
+
+  add_subdirectory(credentials)
+  add_subdirectory(protos)
 endif()
 
-add_subdirectory(credentials)
-
-include(ProtobufGenerateCpp)
-
-set(MODULE_GRPC_LIBS
-  gRPC::grpc
-  gRPC::grpc++
-  protobuf::libprotobuf)
-
-add_subdirectory(protos)
+# These are intentionally not inside the above if (ENABLE_GRPC) block
+# Let the module_switch-es take effect and is being always visible
+# (both modules are protected via ENABLE_GRPC as well)
+add_subdirectory(loki)
 add_subdirectory(otel)
