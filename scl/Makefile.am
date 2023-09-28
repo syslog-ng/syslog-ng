@@ -10,6 +10,7 @@ SCL_SUBDIRS	= \
 	elasticsearch	\
 	ewmm		\
 	fortigate	\
+	google	\
 	graphite	\
 	graylog2	\
 	hdfs		\
