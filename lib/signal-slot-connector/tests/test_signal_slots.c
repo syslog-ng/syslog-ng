@@ -315,3 +315,18 @@ Test(multiple_signals_slots,
 
   signal_slot_connector_free(ssc);
 }
+
+void
+setup(void)
+{
+  msg_init(TRUE);
+}
+
+void
+teardown(void)
+{
+  msg_deinit();
+}
+
+TestSuite(multiple_signals_slots, .init = setup, .fini = teardown);
+TestSuite(basic_signal_slots, .init = setup, .fini = teardown);

@@ -24,6 +24,14 @@
 
 #include "signal-slot-connector.h"
 
+static EVTTAG *
+evt_tag_slot(SignalSlotConnector *connector, Signal signal, Slot slot, gpointer object)
+{
+  return evt_tag_printf("slot",
+                        "connect(connector=%p,signal=%s,slot=%p,object=%p)",
+                        connector, signal, slot, object);
+}
+
 typedef struct _SlotFunctor SlotFunctor;
 
 struct _SlotFunctor
@@ -113,10 +121,8 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot, gpointe
 
   if (_slot_lookup(slots, slot, object))
     {
-      msg_trace("SignalSlotConnector::connect",
-                evt_tag_printf("already_connected",
-                               "connect(connector=%p,signal=%s,slot=%p, object=%p)",
-                               self, signal, slot, object));
+      msg_warning("WARNING: Duplicate inter-plugin communication signal registration, ignoring connection attempt",
+                  evt_tag_slot(self, signal, slot, object));
       goto exit_;
     }
 
@@ -127,10 +133,8 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot, gpointe
       g_hash_table_insert(self->connections, (gpointer)signal, new_slots);
     }
 
-  msg_trace("SignalSlotConnector::connect",
-            evt_tag_printf("new connection registered",
-                           "connect(connector=%p,signal=%s,slot=%p,object=%p)",
-                           self, signal, slot, object));
+  msg_trace("Inter-plugin communication signal successfully connected",
+            evt_tag_slot(self, signal, slot, object));
 exit_:
   g_mutex_unlock(&self->lock);
 }
@@ -156,11 +160,8 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot, gpoi
   if (!slots)
     goto exit_;
 
-  msg_trace("SignalSlotConnector::disconnect",
-            evt_tag_printf("connector", "%p", self),
-            evt_tag_str("signal", signal),
-            evt_tag_printf("slot", "%p", slot),
-            evt_tag_printf("object", "%p", object));
+  msg_trace("Disconnecting inter-plugin communication signal",
+            evt_tag_slot(self, signal, slot, object));
 
   SlotFunctor slotfunctor =
   {
@@ -171,11 +172,8 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot, gpoi
   GList *slotfunctor_node = g_list_find_custom(slots, &slotfunctor, _slot_functor_cmp);
   if (!slotfunctor_node)
     {
-      msg_trace("SignalSlotConnector::disconnect slot object not found",
-                evt_tag_printf("connector", "%p", self),
-                evt_tag_str("signal", signal),
-                evt_tag_printf("slot", "%p", slot),
-                evt_tag_printf("object", "%p", object));
+      msg_warning("WARNING: Inter-plugin communication signal unregistration failed, slot object not found",
+                  evt_tag_slot(self, signal, slot, object));
       goto exit_;
     }
 
@@ -184,11 +182,8 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot, gpoi
   if (!new_slots)
     {
       g_hash_table_remove(self->connections, signal);
-      msg_trace("SignalSlotConnector::disconnect last slot is disconnected, unregister signal",
-                evt_tag_printf("connector", "%p", self),
-                evt_tag_str("signal", signal),
-                evt_tag_printf("slot", "%p", slot),
-                evt_tag_printf("object", "%p", object));
+      msg_trace("Removing last slot while disconnecting inter-plugin communication signal",
+                evt_tag_slot(self, signal, slot, object));
       goto exit_;
     }
 
@@ -217,20 +212,16 @@ signal_slot_emit(SignalSlotConnector *self, Signal signal, gpointer user_data)
 {
   g_assert(signal != NULL);
 
-  msg_trace("SignalSlotConnector::emit",
-            evt_tag_printf("connector", "%p", self),
-            evt_tag_str("signal", signal),
-            evt_tag_printf("user_data", "%p", user_data));
-
   GList *slots = g_hash_table_lookup(self->connections, signal);
 
-  if (!slots)
-    {
-      msg_trace("SignalSlotConnector: unregistered signal emitted",
-                evt_tag_printf("connector", "%p", self),
-                evt_tag_str("signal", signal));
-      return;
-    }
+  if (slots)
+    msg_trace("Sending inter-plugin communication signal",
+              evt_tag_str("signal", signal),
+              evt_tag_printf("connector", "%p", self));
+  else
+    msg_trace("Ignoring inter-plugin communication signal, no handlers registered",
+              evt_tag_str("signal", signal),
+              evt_tag_printf("connector", "%p", self));
 
   g_list_foreach(slots, _run_slot, user_data);
 }
