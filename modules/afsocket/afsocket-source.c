@@ -1147,6 +1147,16 @@ _sd_open_dgram(AFSocketSourceDriver *self)
 static gboolean
 afsocket_sd_open_listener(AFSocketSourceDriver *self)
 {
+  if (!self->activate_listener)
+    {
+      gchar buf[256];
+
+      msg_debug("Not opening socket, listener activation disabled",
+                evt_tag_str("addr", g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL)),
+                log_pipe_location_tag(&self->super.super.super));
+      return TRUE;
+    }
+
   if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
       return _sd_open_stream(self);
@@ -1392,6 +1402,6 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.super.stats_level = STATS_LEVEL1;
   self->reader_options.super.stats_source = transport_mapper->stats_source;
-
+  self->activate_listener = TRUE;
   afsocket_sd_init_watches(self);
 }

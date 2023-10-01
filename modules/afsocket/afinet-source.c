@@ -92,6 +92,7 @@ afinet_sd_setup_addresses(AFSocketSourceDriver *s)
   else
     g_sockaddr_set_port(self->super.bind_addr, afinet_lookup_service(self->super.transport_mapper, self->bind_port));
 
+  self->super.activate_listener = (g_sockaddr_get_port(self->super.bind_addr) != 0);
   return TRUE;
 }
 
