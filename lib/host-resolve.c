@@ -444,10 +444,6 @@ _init_options(HostResolveOptions *options)
 {
   if (options->use_dns == 0)
     {
-      if (options->use_dns_cache != 0)
-        {
-          msg_warning("WARNING: With use-dns(no), dns-cache() will be forced to 'no' too!");
-        }
       options->use_dns_cache = 0;
     }
 }
