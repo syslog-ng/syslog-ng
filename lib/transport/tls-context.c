@@ -317,6 +317,7 @@ tls_context_setup_sigalgs(TLSContext *self)
 static gboolean
 tls_context_setup_cmd_context(TLSContext *self)
 {
+#if SYSLOG_NG_HAVE_DECL_SSL_CONF_CTX_new
   SSL_CONF_CTX *ssl_conf_ctx = SSL_CONF_CTX_new();
   const int ctx_flags = SSL_CONF_FLAG_FILE | SSL_CONF_FLAG_CLIENT | SSL_CONF_FLAG_SERVER |
                         SSL_CONF_FLAG_CERTIFICATE | SSL_CONF_FLAG_SHOW_ERRORS;
@@ -346,6 +347,12 @@ tls_context_setup_cmd_context(TLSContext *self)
 
   SSL_CONF_CTX_free(ssl_conf_ctx);
   return result;
+#else
+  if (self->conf_cmds_list != NULL)
+    return FALSE;
+  else
+    return TRUE;
+#endif
 }
 
 static PKCS12 *
@@ -851,9 +858,15 @@ tls_context_set_client_sigalgs(TLSContext *self, const gchar *sigalgs, GError **
 gboolean
 tls_context_set_conf_cmds(TLSContext *self, GList *cmds, GError **error)
 {
+#if SYSLOG_NG_HAVE_DECL_SSL_CONF_CTX_new
   g_list_foreach(self->conf_cmds_list, (GFunc) g_free, NULL);
   self->conf_cmds_list = cmds;
   return TRUE;
+#else
+  g_set_error(error, TLSCONTEXT_ERROR, TLSCONTEXT_UNSUPPORTED,
+              "Setting SSL conf context is not supported with the OpenSSL version syslog-ng was compiled with");
+  return FALSE;
+#endif
 }
 
 void
