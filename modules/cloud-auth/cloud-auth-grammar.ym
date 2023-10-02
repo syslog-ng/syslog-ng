@@ -73,10 +73,15 @@ inner_destination_cloud_auth_option
     {
       last_authenticator = google_authenticator_new();
     }
-    '(' google_dest_auth_option ')'
+    '(' google_dest_auth_options ')'
     {
       cloud_auth_dest_plugin_set_authenticator(last_plugin, last_authenticator);
     }
+  |
+  ;
+
+google_dest_auth_options
+  : google_dest_auth_option google_dest_auth_options
   |
   ;
 
@@ -86,7 +91,6 @@ google_dest_auth_option
       google_authenticator_set_auth_mode(last_authenticator, GAAM_SERVICE_ACCOUNT);
     }
     '(' google_dest_auth_service_account_options ')'
-  |
   ;
 
 google_dest_auth_service_account_options
