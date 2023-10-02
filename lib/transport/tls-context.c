@@ -690,6 +690,8 @@ tls_context_set_ssl_options_by_name(TLSContext *self, GList *options)
 #endif
       else if (strcasecmp(l->data, "ignore-hostname-mismatch") == 0 || strcasecmp(l->data, "ignore_hostname_mismatch") == 0)
         self->ssl_options |= TSO_IGNORE_HOSTNAME_MISMATCH;
+      else if (strcasecmp(l->data, "ignore-validity-period") == 0 || strcasecmp(l->data, "ignore_validity_period") == 0)
+        self->ssl_options |= TSO_IGNORE_VALIDITY_PERIOD;
       else
         return FALSE;
     }
@@ -713,6 +715,12 @@ gboolean
 tls_context_ignore_hostname_mismatch(TLSContext *self)
 {
   return self->ssl_options & TSO_IGNORE_HOSTNAME_MISMATCH;
+}
+
+gboolean
+tls_context_ignore_validity_period(TLSContext *self)
+{
+  return self->ssl_options & TSO_IGNORE_VALIDITY_PERIOD;
 }
 
 static int
