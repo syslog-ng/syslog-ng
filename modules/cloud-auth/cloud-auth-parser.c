@@ -34,6 +34,7 @@ static CfgLexerKeyword cloud_auth_keywords[] =
   { "service_account",          KW_SERVICE_ACCOUNT },
   { "key",                      KW_KEY },
   { "audience",                 KW_AUDIENCE },
+  { "token_validity_duration",  KW_TOKEN_VALIDITY_DURATION },
   { NULL }
 };
 

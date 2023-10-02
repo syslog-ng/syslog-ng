@@ -35,5 +35,8 @@ CloudAuthenticator *google_authenticator_new(void);
 void google_authenticator_set_auth_mode(CloudAuthenticator *s, GoogleAuthenticatorAuthMode auth_mode);
 void google_authenticator_set_service_account_key_path(CloudAuthenticator *s, const gchar *key_path);
 void google_authenticator_set_service_account_audience(CloudAuthenticator *s, const gchar *audience);
+void google_authenticator_set_service_account_token_validity_duration(CloudAuthenticator *s,
+    guint64 token_validity_duration);
+
 
 #endif

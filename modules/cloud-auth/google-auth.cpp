@@ -31,7 +31,9 @@
 
 using namespace syslogng::cloud_auth::google;
 
-ServiceAccountAuthenticator::ServiceAccountAuthenticator(const char *key_path, const char *audience_)
+ServiceAccountAuthenticator::ServiceAccountAuthenticator(const char *key_path, const char *audience_,
+                                                         uint64_t token_validity_duration_)
+  : token_validity_duration(token_validity_duration_)
 {
   picojson::value key_json;
 
@@ -73,7 +75,7 @@ ServiceAccountAuthenticator::handle_http_header_request(HttpHeaderRequestSignalD
   g_string_append(buffer, "Authorization: Bearer ");
 
   std::chrono::system_clock::time_point issued_at = jwt::date::clock::now();
-  std::chrono::system_clock::time_point expires_at = issued_at + std::chrono::seconds{3600};
+  std::chrono::system_clock::time_point expires_at = issued_at + std::chrono::seconds{token_validity_duration};
 
   try
     {
@@ -110,6 +112,7 @@ typedef struct _GoogleAuthenticator
   {
     gchar *key_path;
     gchar *audience;
+    guint64 token_validity_duration;
   } service_account_options;
 } GoogleAuthenticator;
 
@@ -139,6 +142,14 @@ google_authenticator_set_service_account_audience(CloudAuthenticator *s, const g
   self->service_account_options.audience = g_strdup(audience);
 }
 
+void
+google_authenticator_set_service_account_token_validity_duration(CloudAuthenticator *s, guint64 token_validity_duration)
+{
+  GoogleAuthenticator *self = (GoogleAuthenticator *) s;
+
+  self->service_account_options.token_validity_duration = token_validity_duration;
+}
+
 static gboolean
 _init(CloudAuthenticator *s)
 {
@@ -150,7 +161,8 @@ _init(CloudAuthenticator *s)
       try
         {
           self->super.cpp = new ServiceAccountAuthenticator(self->service_account_options.key_path,
-                                                            self->service_account_options.audience);
+                                                            self->service_account_options.audience,
+                                                            self->service_account_options.token_validity_duration);
         }
       catch (const std::runtime_error &e)
         {
@@ -171,6 +183,12 @@ _init(CloudAuthenticator *s)
 }
 
 static void
+_set_default_options(GoogleAuthenticator *self)
+{
+  self->service_account_options.token_validity_duration = 3600;
+}
+
+static void
 _free(CloudAuthenticator *s)
 {
   GoogleAuthenticator *self = (GoogleAuthenticator *) s;
@@ -186,6 +204,8 @@ google_authenticator_new(void)
 
   self->super.init = _init;
   self->super.free_fn = _free;
+
+  _set_default_options(self);
 
   return &self->super;
 }
