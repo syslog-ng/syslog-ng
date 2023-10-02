@@ -160,6 +160,9 @@ _init(CloudAuthenticator *s)
         }
       break;
     case GAAM_UNDEFINED:
+      msg_error("cloud_auth::google: Failed to initialize ServiceAccountAuthenticator",
+                evt_tag_str("error", "Authentication mode must be set (e.g. service-account())"));
+      return FALSE;
     default:
       g_assert_not_reached();
     }
