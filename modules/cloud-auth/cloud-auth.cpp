@@ -34,13 +34,17 @@ cloud_authenticator_init(CloudAuthenticator *s)
 }
 
 void
+cloud_authenticator_deinit(CloudAuthenticator *s)
+{
+  if (s->cpp)
+    delete s->cpp;
+}
+
+void
 cloud_authenticator_free(CloudAuthenticator *s)
 {
   if (!s)
     return;
-
-  if (s->cpp)
-    delete s->cpp;
 
   if (s->free_fn)
     s->free_fn(s);

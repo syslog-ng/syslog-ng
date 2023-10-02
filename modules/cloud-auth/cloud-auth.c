@@ -46,6 +46,15 @@ _attach(LogDriverPlugin *s, LogDriver *d)
   return TRUE;
 }
 
+static void
+_detach(LogDriverPlugin *s, LogDriver *d)
+{
+  CloudAuthDestPlugin *self = (CloudAuthDestPlugin *) s;
+  LogDestDriver *driver = (LogDestDriver *) d;
+
+  cloud_authenticator_deinit(self->authenticator);
+}
+
 void
 cloud_auth_dest_plugin_set_authenticator(LogDriverPlugin *s, CloudAuthenticator *authenticator)
 {
@@ -73,6 +82,7 @@ cloud_auth_dest_plugin_new(void)
 
   log_driver_plugin_init_instance(&self->super, CLOUD_AUTH_PLUGIN_NAME);
   self->super.attach = _attach;
+  self->super.detach = _detach;
   self->super.free_fn = _free;
 
   return &self->super;
