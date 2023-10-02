@@ -25,7 +25,10 @@
 gboolean
 cloud_authenticator_init(CloudAuthenticator *s)
 {
-  if (s->init && !s->init(s))
+  g_assert(s->init);
+  g_assert(!s->cpp);
+
+  if (!s->init(s))
     return FALSE;
 
   g_assert(s->cpp);
