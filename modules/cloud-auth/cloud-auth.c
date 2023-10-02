@@ -53,6 +53,9 @@ _detach(LogDriverPlugin *s, LogDriver *d)
   LogDestDriver *driver = (LogDestDriver *) d;
 
   cloud_authenticator_deinit(self->authenticator);
+
+  SignalSlotConnector *ssc = driver->super.super.signal_slot_connector;
+  DISCONNECT(ssc, signal_http_header_request, cloud_authenticator_handle_http_header_request, self->authenticator);
 }
 
 void
