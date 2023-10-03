@@ -27,20 +27,30 @@
 
 /* HTTPLoadBalancerTarget */
 
-void
-http_lb_target_init(HTTPLoadBalancerTarget *self, const gchar *url, gint index_)
+gboolean
+http_lb_target_init(HTTPLoadBalancerTarget *self, const gchar *url, gint index_, GError **error)
 {
   memset(self, 0, sizeof(*self));
 
-  self->url = g_strdup(url);
+  LogTemplate *url_template = log_template_new(configuration, NULL);
+  if (!log_template_compile(url_template, url, error))
+    {
+      log_template_unref(url_template);
+      return FALSE;
+    }
+
+  log_template_unref(self->url_template);
+  self->url_template = url_template;
   self->state = HTTP_TARGET_OPERATIONAL;
   self->index = index_;
+
+  return TRUE;
 }
 
 void
 http_lb_target_deinit(HTTPLoadBalancerTarget *self)
 {
-  g_free(self->url);
+  log_template_unref(self->url_template);
 }
 
 /* HTTPLoadBalancerClient */
@@ -86,7 +96,7 @@ _recalculate_clients_per_target_goals(HTTPLoadBalancer *self)
           remainder--;
         }
       msg_trace("Setting maximum number of workers for HTTP destination",
-                evt_tag_str("url", target->url),
+                evt_tag_str("url", target->url_template->template_str),
                 evt_tag_int("max_clients", target->max_clients));
     }
 }
@@ -202,13 +212,13 @@ http_load_balancer_choose_target(HTTPLoadBalancer *self, HTTPLoadBalancerClient 
   return lbc->target;
 }
 
-void
-http_load_balancer_add_target(HTTPLoadBalancer *self, const gchar *url)
+gboolean
+http_load_balancer_add_target(HTTPLoadBalancer *self, const gchar *url, GError **error)
 {
   gint n = self->num_targets++;
 
   self->targets = g_renew(HTTPLoadBalancerTarget, self->targets, self->num_targets);
-  http_lb_target_init(&self->targets[n], url, n);
+  return http_lb_target_init(&self->targets[n], url, n, error);
 }
 
 void
@@ -235,7 +245,7 @@ http_load_balancer_set_target_failed(HTTPLoadBalancer *self, HTTPLoadBalancerTar
   if (target->state != HTTP_TARGET_FAILED)
     {
       msg_debug("Load balancer target failed, removing from rotation",
-                evt_tag_str("url", target->url));
+                evt_tag_str("url", target->url_template->template_str));
       self->num_failed_targets++;
       target->state = HTTP_TARGET_FAILED;
       _recalculate_clients_per_target_goals(self);
@@ -251,7 +261,7 @@ http_load_balancer_set_target_successful(HTTPLoadBalancer *self, HTTPLoadBalance
   if (target->state != HTTP_TARGET_OPERATIONAL)
     {
       msg_debug("Load balancer target recovered, adding back to rotation",
-                evt_tag_str("url", target->url));
+                evt_tag_str("url", target->url_template->template_str));
       self->num_failed_targets--;
       target->state = HTTP_TARGET_OPERATIONAL;
       _recalculate_clients_per_target_goals(self);

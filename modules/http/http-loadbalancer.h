@@ -25,6 +25,7 @@
 #define HTTP_LOADBALANCER_H_INCLUDED 1
 
 #include "syslog-ng.h"
+#include "template/templates.h"
 
 typedef enum
 {
@@ -46,7 +47,7 @@ typedef struct _HTTPLoadBalancer HTTPLoadBalancer;
 struct _HTTPLoadBalancerTarget
 {
   /* read-only data, no need to lock */
-  gchar *url;
+  LogTemplate *url_template;
   gint index;
   /* read-write data, locking must be in effect */
   HTTPLoadBalancerTargetState state;
@@ -75,7 +76,7 @@ struct _HTTPLoadBalancer
 };
 
 HTTPLoadBalancerTarget *http_load_balancer_choose_target(HTTPLoadBalancer *self, HTTPLoadBalancerClient *lbc);
-void http_load_balancer_add_target(HTTPLoadBalancer *self, const gchar *url);
+gboolean http_load_balancer_add_target(HTTPLoadBalancer *self, const gchar *url, GError **error);
 void http_load_balancer_drop_all_targets(HTTPLoadBalancer *self);
 void http_load_balancer_track_client(HTTPLoadBalancer *self, HTTPLoadBalancerClient *lbc);
 void http_load_balancer_set_target_failed(HTTPLoadBalancer *self, HTTPLoadBalancerTarget *target);

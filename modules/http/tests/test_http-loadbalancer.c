@@ -41,7 +41,8 @@ _construct_load_balancer(void)
     {
       gchar url[256];
       g_snprintf(url, sizeof(url), "http://localhost:%d", 8000 + i);
-      http_load_balancer_add_target(lb, url);
+      GError *error = NULL;
+      cr_assert(http_load_balancer_add_target(lb, url, &error));
     }
   return lb;
 }
@@ -96,7 +97,7 @@ Test(http_loadbalancer, choose_target_selects_the_first_operational_target)
   http_lb_client_init(&lbc, lb);
 
   HTTPLoadBalancerTarget *target = http_load_balancer_choose_target(lb, &lbc);
-  cr_assert(target->url, "http://localhost:8000");
+  cr_assert(log_template_get_literal_value(target->url_template, NULL), "http://localhost:8000");
   cr_assert(target->state == HTTP_TARGET_OPERATIONAL);
 
   http_lb_client_deinit(&lbc);

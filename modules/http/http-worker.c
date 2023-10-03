@@ -671,6 +671,12 @@ _format_request_headers_catch_error(GError **error)
   return !unhandled;
 }
 
+static const gchar *
+_get_url(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
+{
+  return log_template_get_literal_value(target->url_template, NULL);
+}
+
 /* we flush the accumulated data if
  *   1) we reach batch_size,
  *   2) the message queue becomes empty
@@ -700,7 +706,7 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
     }
 
   target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
-  const gchar *url = target->url;
+  const gchar *url = _get_url(self, target);
 
   while (--retry_attempts >= 0)
     {
@@ -727,7 +733,7 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
           break;
         }
 
-      const gchar *alt_url = alt_target->url;
+      const gchar *alt_url = _get_url(self, alt_target);
       msg_debug("Target server down, trying an alternative server",
                 evt_tag_str("url", url),
                 evt_tag_str("alternative_url", alt_url),
