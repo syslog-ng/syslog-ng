@@ -503,6 +503,8 @@ http_dd_new(GlobalConfig *cfg)
   self->super.stats_source = stats_register_type("http");
   self->super.worker.construct = http_dw_new;
 
+  log_threaded_dest_driver_set_flush_on_worker_key_change(&self->super.super.super, TRUE);
+
   curl_global_init(CURL_GLOBAL_ALL);
 
   self->ssl_version = CURL_SSLVERSION_DEFAULT;
