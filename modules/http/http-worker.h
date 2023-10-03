@@ -39,6 +39,8 @@ typedef struct _HTTPDestinationWorker
   GString *request_body_compressed;
   Compressor *compressor;
   List *request_headers;
+  GString *url_buffer;
+  LogMessage *msg_for_templated_url;
 } HTTPDestinationWorker;
 
 LogThreadedResult default_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url,
