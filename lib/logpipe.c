@@ -60,6 +60,7 @@ _arcs(LogPipe *self)
 void
 log_pipe_clone_method(LogPipe *dst, const LogPipe *src)
 {
+  log_pipe_set_persist_name(dst, src->persist_name);
   log_pipe_set_options(dst, &src->options);
 }
 
