@@ -53,6 +53,26 @@ http_lb_target_deinit(HTTPLoadBalancerTarget *self)
   log_template_unref(self->url_template);
 }
 
+gboolean
+http_lb_target_is_url_templated(HTTPLoadBalancerTarget *self)
+{
+  return !log_template_is_literal_string(self->url_template);
+}
+
+const gchar *
+http_lb_target_get_literal_url(HTTPLoadBalancerTarget *self)
+{
+  return log_template_get_literal_value(self->url_template, NULL);
+}
+
+void
+http_lb_target_format_templated_url(HTTPLoadBalancerTarget *self, LogMessage *msg,
+                                    const LogTemplateOptions *template_options, GString *result)
+{
+  LogTemplateEvalOptions template_eval_options = { template_options, LTZ_SEND, -1, NULL, LM_VT_STRING };
+  log_template_format(self->url_template, msg, &template_eval_options, result);
+}
+
 /* HTTPLoadBalancerClient */
 
 void
@@ -267,6 +287,18 @@ http_load_balancer_set_target_successful(HTTPLoadBalancer *self, HTTPLoadBalance
       _recalculate_clients_per_target_goals(self);
     }
   g_mutex_unlock(&self->lock);
+}
+
+gboolean
+http_load_balancer_is_url_templated(HTTPLoadBalancer *self)
+{
+  for (gint i = 0; i < self->num_targets; i++)
+    {
+      if (http_lb_target_is_url_templated(&self->targets[i]))
+        return TRUE;
+    }
+
+  return FALSE;
 }
 
 void
