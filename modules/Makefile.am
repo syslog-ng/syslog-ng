@@ -19,7 +19,11 @@ include modules/csvparser/Makefile.am
 include modules/timestamp/Makefile.am
 include modules/correlation/Makefile.am
 include modules/diskq/Makefile.am
+
+if BUILD_EXAMPLE_MODULES
 include modules/examples/Makefile.am
+endif
+
 include modules/ebpf/Makefile.am
 include modules/geoip2/Makefile.am
 include modules/getent/Makefile.am

@@ -193,6 +193,9 @@ AC_ARG_WITH(package_name,
    [  --with-package-name=package name Package name is printed out when syslog-ng started with --version],
    PACKAGE_NAME=$with_package_name)
 
+AC_ARG_ENABLE(build-example-modules,
+              [  --enable-build-example-modules Enable building example modules.],, enable_build_example_modules="no")
+
 AC_ARG_ENABLE(forced_server_mode,
               [  --enable-forced-server-mode   Enable forced server mode.],, enable_forced_server_mode="yes")
 
@@ -2192,6 +2195,7 @@ AM_CONDITIONAL([HAVE_GETRANDOM], [test x$ac_cv_func_getrandom = xyes])
 AM_CONDITIONAL([HAVE_FMEMOPEN], [test x$ac_cv_func_fmemopen = xyes])
 AM_CONDITIONAL([HAVE_JAVAH], [test -n "$JAVAH_BIN"])
 AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
+AM_CONDITIONAL(BUILD_EXAMPLE_MODULES, [test "$enable_build_example_modules" = "yes"])
 
 
 AC_SUBST(PYTHON_VENV)
@@ -2309,6 +2313,7 @@ echo "  JSON support                : $with_jsonc"
 echo " Build options:"
 echo "  Generate manual pages       : ${enable_manpages:=no}"
 echo "  Install manual pages        : ${enable_manpages_install:=no}"
+echo "  Build example modules       : ${enable_build_example_modules:=no}"
 echo " Modules:"
 echo "  Module search path          : ${module_path}"
 echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"
