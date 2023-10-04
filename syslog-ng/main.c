@@ -82,6 +82,7 @@ static GOptionEntry syslogng_options[] =
   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &resolved_configurable_paths.persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &main_loop_options.preprocess_into, "Write the preprocessed configuration file to the file specified and quit", "output" },
   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &main_loop_options.syntax_only, "Only read and parse config file", NULL},
+  { "check-startup",       0,         0, G_OPTION_ARG_NONE, &main_loop_options.check_startup, "Check if syslog-ng would start up and then exit", NULL},
   { "config-id",           0,         0, G_OPTION_ARG_NONE, &main_loop_options.config_id, "Parse config file, print configuration ID, and quit", NULL},
   { "control",           'c',         0, G_OPTION_ARG_STRING, &resolved_configurable_paths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
   { "interactive",       'i',         0, G_OPTION_ARG_NONE, &main_loop_options.interactive_mode, "Enable interactive mode" },
@@ -116,6 +117,7 @@ interactive_mode(void)
   debug_flag = FALSE;
   verbose_flag = FALSE;
   msg_init(TRUE);
+  g_process_set_mode(G_PM_FOREGROUND);
 }
 
 gboolean
@@ -279,12 +281,12 @@ main(int argc, char *argv[])
 
   setup_caps();
 
-  if(startup_debug_flag && debug_flag)
+  if (startup_debug_flag && debug_flag)
     {
       startup_debug_flag = FALSE;
     }
 
-  if(startup_debug_flag)
+  if (startup_debug_flag)
     {
       debug_flag = TRUE;
     }
@@ -296,9 +298,13 @@ main(int argc, char *argv[])
 
   gboolean exit_before_main_loop_run = main_loop_options.syntax_only
                                        || main_loop_options.preprocess_into
-                                       || main_loop_options.config_id;
+                                       || main_loop_options.config_id
+                                       || main_loop_options.check_startup;
 
-  if (debug_flag || exit_before_main_loop_run)
+  if (exit_before_main_loop_run)
+    interactive_mode();
+
+  if (debug_flag)
     {
       g_process_set_mode(G_PM_FOREGROUND);
     }
