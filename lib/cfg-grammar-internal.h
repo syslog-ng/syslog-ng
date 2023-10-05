@@ -77,7 +77,6 @@ extern LogSchedulerOptions *last_scheduler_options;
 extern LogParser *last_parser;
 extern FilterExprNode *last_filter_expr;
 extern LogTemplateOptions *last_template_options;
-extern LogTemplate *last_template;
 extern ValuePairs *last_value_pairs;
 extern ValuePairsTransformSet *last_vp_transset;
 extern LogMatcherOptions *last_matcher_options;
