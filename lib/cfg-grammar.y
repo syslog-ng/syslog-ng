@@ -143,9 +143,10 @@
 %token LL_CONTEXT_SERVER_PROTO        18
 %token LL_CONTEXT_OPTIONS             19
 %token LL_CONTEXT_CONFIG              20
+%token LL_CONTEXT_TEMPLATE_REF        21
 
 /* this is a placeholder for unit tests, must be the latest & largest */
-%token LL_CONTEXT_MAX                 21
+%token LL_CONTEXT_MAX                 22
 
 
 /* statements */
@@ -337,6 +338,7 @@
 %token <token> LL_TOKEN               10434
 %token <cptr> LL_BLOCK                10435
 %token <cptr> LL_PLUGIN	              10436
+%token <cptr> LL_TEMPLATE_REF         10437
 
 %destructor { free($$); } <cptr>
 
@@ -389,6 +391,7 @@
 %type   <ptr> template_content
 %type   <ptr> template_content_list
 %type   <ptr> template_name_or_content
+%type   <ptr> template_name_or_content_tail
 
 %type   <ptr> filter_content
 
@@ -925,14 +928,12 @@ template_content_list
 	;
 
 template_name_or_content
-        : string
-          {
-            GError *error = NULL;
+        : _template_ref_context_push template_name_or_content_tail          { $$ = $2; };
+        ;
 
-            $$ = cfg_tree_check_inline_template(&configuration->tree, $1, &error);
-            CHECK_ERROR_GERROR(last_writer_options->template != NULL, @1, error, "Error compiling template");
-	    free($3);
-          }
+template_name_or_content_tail
+        : LL_TEMPLATE_REF 						    { $$ = cfg_tree_lookup_template(&configuration->tree, $1); free($1); }
+        | template_content 						    { $$ = $1; };
         ;
 
 /* END_RULES */
@@ -1628,6 +1629,7 @@ _block_content_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CO
 _block_content_context_pop: { cfg_lexer_pop_context(lexer); };
 _block_arg_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_ARG, NULL, "block argument"); };
 _block_arg_context_pop: { cfg_lexer_pop_context(lexer); };
+_template_ref_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_TEMPLATE_REF, NULL, "template reference"); };
 _inner_dest_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_INNER_DEST, NULL, "within destination"); };
 _inner_dest_context_pop: { cfg_lexer_pop_context(lexer); };
 _inner_src_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_INNER_SRC, NULL, "within source"); };
