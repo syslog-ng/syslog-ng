@@ -874,6 +874,11 @@ template_items
 	|
 	;
 
+template_item
+	: KW_TEMPLATE '(' template_content_inner ')'
+	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape(last_template, $3); }
+	;
+
 /* START_RULES */
 
 template_content_inner
@@ -931,10 +936,6 @@ template_name_or_content
 
 /* END_RULES */
 
-template_item
-	: KW_TEMPLATE '(' template_content_inner ')'
-	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape(last_template, $3); }
-	;
 
 
 block_stmt
