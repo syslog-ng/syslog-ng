@@ -34,6 +34,8 @@
 typedef struct _LogTemplateOptions LogTemplateOptions;
 typedef struct _LogTemplate LogTemplate;
 
+typedef void (*LogTemplateEscapeFunction)(GString *target, const gchar *value, gpointer user_data);
+
 /* template expansion options that can be influenced by the user and
  * is static throughout the runtime for a given configuration. There
  * are call-site specific options too, those are specified as
@@ -50,6 +52,10 @@ struct _LogTemplateOptions
   /* timezone for LTZ_LOCAL/LTZ_SEND settings */
   gchar *time_zone[LTZ_MAX];
   TimeZoneInfo *time_zone_info[LTZ_MAX];
+
+  /* escape template args */
+  LogTemplateEscapeFunction format_escape;
+  gpointer format_escape_data;
 
   /* Template error handling settings */
   gint on_error;

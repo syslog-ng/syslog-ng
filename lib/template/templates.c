@@ -355,6 +355,13 @@ log_template_set_name(LogTemplate *self, const gchar *name)
   self->name = g_strdup(name);
 }
 
+void
+log_template_set_format_args(LogTemplate *self, GList *format_args)
+{
+  g_list_free_full(self->format_args, (GDestroyNotify) log_template_unref);
+  self->format_args = format_args;
+}
+
 /* NOTE: the name parameter should not be used, please pass a NULL until it is eliminated */
 LogTemplate *
 log_template_new(GlobalConfig *cfg, const gchar *name)
@@ -376,6 +383,7 @@ static void
 log_template_free(LogTemplate *self)
 {
   log_template_reset_compiled(self);
+  g_list_free_full(self->format_args, (GDestroyNotify) log_template_unref);
   g_free(self->name);
   g_free(self->template_str);
   g_free(self);

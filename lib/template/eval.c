@@ -120,6 +120,48 @@ log_template_append_elem_func(LogTemplate *self, LogTemplateElem *e, LogTemplate
   *type = _propagate_type(*type, value_type);
 }
 
+static void
+log_template_append_format_arg(LogTemplate *self, LogTemplate *format_arg,
+                               LogMessage **messages, gint num_messages,
+                               LogTemplateEvalOptions *options,
+                               GString *result, LogMessageValueType *value_type)
+{
+  GString *target_buffer = result;
+
+  if (options->opts->format_escape)
+    target_buffer = scratch_buffers_alloc();
+
+  log_template_append_format_value_and_type_with_context(format_arg,
+                                                         messages, num_messages,
+                                                         options, target_buffer, value_type);
+  if (options->opts->format_escape)
+    {
+      options->opts->format_escape(result, target_buffer->str, options->opts->format_escape_data);
+      *value_type = LM_VT_STRING;
+    }
+}
+
+static void
+log_template_append_elem_format_arg(LogTemplate *self, LogTemplateElem *e, LogTemplateEvalOptions *options,
+                                    LogMessage **messages, gint num_messages, gint msg_ndx,
+                                    GList *format_arg,
+                                    LogMessageValueType *type, GString *result)
+{
+  LogMessageValueType value_type = LM_VT_NONE;
+
+  if (format_arg)
+    {
+      log_template_append_format_arg(self, (LogTemplate *) format_arg->data, messages, num_messages, options, result, &value_type);
+    }
+  else if (e->default_value)
+    {
+      g_string_append(result, e->default_value);
+      value_type = LM_VT_STRING;
+    }
+
+  *type = _propagate_type(*type, value_type);
+}
+
 void
 log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
                                                        LogTemplateEvalOptions *options,
@@ -128,6 +170,7 @@ log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMes
   LogTemplateElem *e;
   LogMessageValueType t = LM_VT_NONE;
   gboolean first_elem = TRUE;
+  GList *format_arg = self->format_args;
 
   if (!options->opts)
     options->opts = &self->cfg->template_options;
@@ -186,11 +229,10 @@ log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMes
           log_template_append_elem_func(self, e, options, messages, num_messages, msg_ndx, &t, result);
           break;
         case LTE_FORMAT_ARG:
-        {
-          LogMessageValueType value_type = LM_VT_NONE;
-          t = _propagate_type(t, value_type);
+          log_template_append_elem_format_arg(self, e, options, messages, num_messages, msg_ndx, format_arg, &t, result);
+          if (format_arg)
+            format_arg = format_arg->next;
           break;
-        }
         default:
           g_assert_not_reached();
           break;

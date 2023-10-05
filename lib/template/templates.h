@@ -51,6 +51,7 @@ typedef enum
   ON_ERROR_SILENT              = 0x08
 } LogTemplateOnError;
 
+
 /* structure that represents an expandable syslog-ng template */
 struct _LogTemplate
 {
@@ -58,6 +59,7 @@ struct _LogTemplate
   gchar *name;
   gchar *template_str;
   GList *compiled_template;
+  GList *format_args;
   GlobalConfig *cfg;
   guint escape:1, def_inline:1, trivial:1, literal:1;
 
@@ -78,6 +80,8 @@ struct _LogTemplate
 
 void log_template_set_escape(LogTemplate *self, gboolean enable);
 gboolean log_template_set_type_hint(LogTemplate *self, const gchar *hint, GError **error);
+void log_template_set_format_args(LogTemplate *self, GList *template_values);
+void log_template_set_format_escape_fn(LogTemplate *self, LogTemplateEscapeFunction function);
 gboolean log_template_compile(LogTemplate *self, const gchar *template_str, GError **error);
 gboolean log_template_compile_with_type_hint(LogTemplate *self, const gchar *template_and_typehint, GError **error);
 void log_template_forget_template_string(LogTemplate *self);
