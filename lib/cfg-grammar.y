@@ -388,6 +388,7 @@
 
 %type   <ptr> template_content
 %type   <ptr> template_content_list
+%type   <ptr> template_name_or_content
 
 %type   <ptr> filter_content
 
@@ -917,6 +918,17 @@ template_content_list
 	| { $$ = NULL; }
 	;
 
+template_name_or_content
+        : string
+          {
+            GError *error = NULL;
+
+            $$ = cfg_tree_check_inline_template(&configuration->tree, $1, &error);
+            CHECK_ERROR_GERROR(last_writer_options->template != NULL, @1, error, "Error compiling template");
+	    free($3);
+          }
+        ;
+
 /* END_RULES */
 
 template_item
@@ -1207,16 +1219,8 @@ facility_string
         ;
 
 parser_opt
-        : KW_TEMPLATE '(' string ')'            {
-                                                  LogTemplate *template;
-                                                  GError *error = NULL;
-
-                                                  template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
-                                                  CHECK_ERROR_GERROR(template != NULL, @3, error, "Error compiling template");
-                                                  log_parser_set_template(last_parser, template);
-                                                  free($3);
-                                                }
-        | KW_INTERNAL '(' yesno ')' { log_pipe_set_internal(&last_parser->super, $3); }
+        : KW_TEMPLATE '(' template_name_or_content ')'          { log_parser_set_template(last_parser, $3); }
+        | KW_INTERNAL '(' yesno ')'                             { log_pipe_set_internal(&last_parser->super, $3); }
         ;
 
 driver_option
@@ -1422,13 +1426,7 @@ dest_writer_option
 	| KW_FLUSH_LINES '(' nonnegative_integer ')'		{ last_writer_options->flush_lines = $3; }
 	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ }
         | KW_SUPPRESS '(' nonnegative_integer ')'            { last_writer_options->suppress = $3; }
-	| KW_TEMPLATE '(' string ')'       	{
-                                                  GError *error = NULL;
-
-                                                  last_writer_options->template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
-                                                  CHECK_ERROR_GERROR(last_writer_options->template != NULL, @3, error, "Error compiling template");
-	                                          free($3);
-	                                        }
+	| KW_TEMPLATE '(' template_name_or_content ')'       { last_writer_options->template = $3; }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
 	| KW_PAD_SIZE '(' nonnegative_integer ')'         { last_writer_options->padding = $3; }
 	| KW_TRUNCATE_SIZE '(' nonnegative_integer ')'         { last_writer_options->truncate_size = $3; }
