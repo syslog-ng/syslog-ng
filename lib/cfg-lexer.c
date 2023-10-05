@@ -1115,6 +1115,22 @@ cfg_lexer_lex(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc)
 
           tok = cfg_lexer_lex_next_token(self, yylval, yylloc);
           cfg_lexer_append_preprocessed_output(self, self->token_pretext->str);
+
+          if (cfg_lexer_get_context_type(self) == LL_CONTEXT_TEMPLATE_REF)
+            {
+              cfg_lexer_pop_context(self);
+
+              if ((tok == LL_IDENTIFIER || tok == LL_STRING))
+                {
+
+                  LogTemplate *template = cfg_tree_lookup_template(&configuration->tree, yylval->cptr);
+                  if (template != NULL)
+                    {
+                      tok = LL_TEMPLATE_REF;
+                      log_template_unref(template);
+                    }
+                }
+            }
         }
 
       preprocess_result = cfg_lexer_preprocess(self, tok, yylval, yylloc);
@@ -1232,6 +1248,7 @@ static const gchar *lexer_contexts[] =
   [LL_CONTEXT_SERVER_PROTO] = "server-proto",
   [LL_CONTEXT_OPTIONS] = "options",
   [LL_CONTEXT_CONFIG] = "config",
+  [LL_CONTEXT_TEMPLATE_REF] = "template-ref",
 };
 
 gint
