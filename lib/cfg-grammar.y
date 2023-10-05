@@ -834,9 +834,9 @@ template_stmt
           }
         | template_fn
           {
-            user_template_function_register(configuration, last_template->name, last_template);
-            log_template_unref(last_template);
-            last_template = NULL;
+            LogTemplate *template = $1;
+            user_template_function_register(configuration, template->name, template);
+            log_template_unref(template);
           }
         ;
 
@@ -848,15 +848,15 @@ template_def
 template_block
 	: KW_TEMPLATE string
 	  <ptr>{
-	    $$ = last_template = log_template_new(configuration, $2);
+	    $$ = log_template_new(configuration, $2);
 	  }
-	  '{' template_items '}'						{ $$ = $3; free($2); }
+	  '{' { $<ptr>$ = $3; } template_items '}'				{ $$ = $3; free($2); }
         ;
 
 template_simple
         : KW_TEMPLATE string
           <ptr>{
-	    $$ = last_template = log_template_new(configuration, $2);
+	    $$ = log_template_new(configuration, $2);
           }
           template_content_inner						{ $$ = $3; free($2); }
 	;
@@ -864,39 +864,40 @@ template_simple
 template_fn
         : KW_TEMPLATE_FUNCTION string
           <ptr>{
-	    $$ = last_template = log_template_new(configuration, $2);
+	    $$ = log_template_new(configuration, $2);
           }
           template_content_inner						{ $$ = $3; free($2); }
 	;
 
 template_items
-	: template_item semicolons template_items
+	: { $<ptr>$ = $<ptr>0; } template_item semicolons template_items
 	|
 	;
 
 template_item
-	: KW_TEMPLATE '(' template_content_inner ')'
-	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape(last_template, $3); }
+	: KW_TEMPLATE '(' { $<ptr>$ = $<ptr>0; } template_content_inner ')'
+	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_template_set_escape($<ptr>0, $3); }
 	;
 
 /* START_RULES */
 
+/* $0 must be the <ptr> for the LogTemplate to be populated */
 template_content_inner
         : string
         {
           GError *error = NULL;
 
-          CHECK_ERROR_GERROR(log_template_compile(last_template, $1, &error), @1, error, "Error compiling template");
+          CHECK_ERROR_GERROR(log_template_compile($<ptr>0, $1, &error), @1, error, "Error compiling template");
           free($1);
         }
         | LL_IDENTIFIER '(' string_or_number ')'
         {
           GError *error = NULL;
 
-          CHECK_ERROR_GERROR(log_template_compile(last_template, $3, &error), @3, error, "Error compiling template");
+          CHECK_ERROR_GERROR(log_template_compile($<ptr>0, $3, &error), @3, error, "Error compiling template");
           free($3);
 
-          CHECK_ERROR_GERROR(log_template_set_type_hint(last_template, $1, &error), @1, error, "Error setting the template type-hint \"%s\"", $1);
+          CHECK_ERROR_GERROR(log_template_set_type_hint($<ptr>0, $1, &error), @1, error, "Error setting the template type-hint \"%s\"", $1);
           free($1);
         }
         | LL_NUMBER
@@ -904,18 +905,18 @@ template_content_inner
           gchar decimal[32];
 
           g_snprintf(decimal, sizeof(decimal), "%" G_GINT64_FORMAT, $1);
-          log_template_compile_literal_string(last_template, decimal);
-          log_template_set_type_hint(last_template, "int64", NULL);
+          log_template_compile_literal_string($<ptr>0, decimal);
+          log_template_set_type_hint($<ptr>0, "int64", NULL);
         }
         | LL_FLOAT
         {
-          log_template_compile_literal_string(last_template, lexer->token_text->str);
-          log_template_set_type_hint(last_template, "float", NULL);
+          log_template_compile_literal_string($<ptr>0, lexer->token_text->str);
+          log_template_set_type_hint($<ptr>0, "float", NULL);
         }
         ;
 
 template_content
-        : <ptr>{ $$ = last_template = log_template_new(configuration, NULL); } template_content_inner	{ $$ = $1; }
+        : <ptr>{ $$ = log_template_new(configuration, NULL); } template_content_inner	{ $$ = $1; }
         ;
 
 template_content_list
