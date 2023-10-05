@@ -185,6 +185,12 @@ log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMes
         case LTE_FUNC:
           log_template_append_elem_func(self, e, options, messages, num_messages, msg_ndx, &t, result);
           break;
+        case LTE_FORMAT_ARG:
+        {
+          LogMessageValueType value_type = LM_VT_NONE;
+          t = _propagate_type(t, value_type);
+          break;
+        }
         default:
           g_assert_not_reached();
           break;

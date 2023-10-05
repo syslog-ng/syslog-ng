@@ -29,6 +29,15 @@
 #include "plugin.h"
 
 static void
+log_template_add_format_arg_elem(LogTemplateCompiler *self, gchar *default_value)
+{
+  LogTemplateElem *e;
+
+  e = log_template_elem_new_format_arg(self->text->str, default_value);
+  self->result = g_list_prepend(self->result, e);
+}
+
+static void
 log_template_add_macro_elem(LogTemplateCompiler *self, guint macro, gchar *default_value)
 {
   LogTemplateElem *e;
@@ -151,7 +160,11 @@ static void
 log_template_compiler_add_elem(LogTemplateCompiler *self, gchar *start, gint macro_len, gchar *default_value)
 {
   gint macro = log_macro_lookup(start, macro_len);
-  if (macro == M_NONE)
+  if (macro_len == 0)
+    {
+      log_template_add_format_arg_elem(self, default_value);
+    }
+  else if (macro == M_NONE)
     {
       log_template_add_value_elem(self, start, macro_len, default_value);
     }

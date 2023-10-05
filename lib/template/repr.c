@@ -25,6 +25,19 @@
 #include "template/repr.h"
 
 LogTemplateElem *
+log_template_elem_new_format_arg(const gchar *text, gchar *default_value)
+{
+  LogTemplateElem *e;
+
+  e = g_new0(LogTemplateElem, 1);
+  e->type = LTE_FORMAT_ARG;
+  e->text_len = strlen(text);
+  e->text = g_strdup(text);
+  e->default_value = default_value;
+  return e;
+}
+
+LogTemplateElem *
 log_template_elem_new_macro(const gchar *text, guint macro, gchar *default_value, gint msg_ref)
 {
   LogTemplateElem *e;

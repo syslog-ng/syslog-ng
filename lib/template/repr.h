@@ -33,7 +33,8 @@ enum
 {
   LTE_MACRO,
   LTE_VALUE,
-  LTE_FUNC
+  LTE_FUNC,
+  LTE_FORMAT_ARG,
 };
 
 typedef struct _LogTemplateElem
@@ -61,6 +62,7 @@ LogTemplateElem *log_template_elem_new_value(const gchar *text, gchar *value_nam
 LogTemplateElem *log_template_elem_new_func(LogTemplate *template,
                                             const gchar *text, gint argc, gchar *argv[], gint msg_ref,
                                             GError **error);
+LogTemplateElem *log_template_elem_new_format_arg(const gchar *text, gchar *default_value);
 
 static inline gboolean
 log_template_elem_is_literal_string(const LogTemplateElem *self)

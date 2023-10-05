@@ -176,6 +176,8 @@ _calculate_if_trivial(LogTemplate *self)
     case LTE_VALUE:
       /* values are trivial if they don't contain text */
       return e->text_len == 0;
+    case LTE_FORMAT_ARG:
+      return FALSE;
     default:
       g_assert_not_reached();
     }
