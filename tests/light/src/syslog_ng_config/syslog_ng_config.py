@@ -42,10 +42,12 @@ from src.syslog_ng_config.statements.rewrite.rewrite import CreditCardHash
 from src.syslog_ng_config.statements.rewrite.rewrite import CreditCardMask
 from src.syslog_ng_config.statements.rewrite.rewrite import SetPri
 from src.syslog_ng_config.statements.rewrite.rewrite import SetTag
+from src.syslog_ng_config.statements.rewrite.rewrite import Set
 from src.syslog_ng_config.statements.sources.example_msg_generator_source import ExampleMsgGeneratorSource
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.sources.internal_source import InternalSource
 from src.syslog_ng_config.statements.sources.network_source import NetworkSource
+from src.syslog_ng_config.statements.template.template import Template, TemplateFunction
 
 
 logger = logging.getLogger(__name__)
@@ -58,6 +60,7 @@ class SyslogNgConfig(object):
             "version": version,
             "includes": [],
             "global_options": {},
+            "templates": [],
             "statement_groups": [],
             "logpath_groups": [],
         }
@@ -90,6 +93,9 @@ class SyslogNgConfig(object):
     def update_global_options(self, **options):
         self.__syslog_ng_config["global_options"].update(options)
 
+    def add_template(self, template):
+        self.__syslog_ng_config["templates"].append(template)
+
     def create_file_source(self, **options):
         file_source = FileSource(**options)
         self.teardown.register(file_source.close_file)
@@ -112,6 +118,12 @@ class SyslogNgConfig(object):
 
     def create_rewrite_set_pri(self, pri, **options):
         return SetPri(pri, **options)
+
+    def create_template(self, template, **options):
+        return Template(template, **options)
+
+    def create_template_function(self, template, **options):
+        return TemplateFunction(template, **options)
 
     def create_filter(self, expr=None, **options):
         return Filter("", [expr] if expr else [], **options)
