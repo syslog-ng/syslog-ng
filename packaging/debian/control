@@ -847,3 +847,27 @@ Description: Enhanced system logging daemon (GRPC plugins)
  This package provides the GRPC plugin, that allows receiving and sending:
  .
   * OpenTelemetry logs, traces and metrics
+
+Package: syslog-ng-mod-cloud-auth
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}, syslog-ng-core (>= ${source:Version}), syslog-ng-core (<< ${source:Version}.1~)
+Description: Enhanced system logging daemon (Cloud Auth plugins)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the Cloud Auth plugin, that allows authentication to cloud providers:
+ .
+  * Google Cloud Platform

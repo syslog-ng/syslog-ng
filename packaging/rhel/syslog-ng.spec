@@ -46,6 +46,12 @@ Source4: syslog-ng.logrotate7
 %bcond_with java
 %endif
 
+%if 0%{?rhel} == 7
+%bcond_with cloud_auth
+%else
+%bcond_without cloud_auth
+%endif
+
 %global ivykis_ver 0.36.1
 
 BuildRequires: pkgconfig
@@ -202,6 +208,14 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description mqtt
 This module supports sending logs to mqtt through MQTT.
 
+%package cloud-auth
+Summary: cloud auth support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description cloud-auth
+This module supports authentication to cloud providers.
+
 %package java
 Summary:        Java destination support for syslog-ng
 Group:          System/Libraries
@@ -324,6 +338,7 @@ ryslog is not on the system.
     --with-python=%{py_ver} \
     %{?with_kafka:--enable-kafka} \
     %{?with_mqtt:--enable-mqtt} \
+    %{?with_cloud_auth:--enable-cloud-auth} %{!?with_cloud_auth:--disable-cloud-auth} \
     %{?with_afsnmp:--enable-afsnmp} %{!?with_afsnmp:--disable-afsnmp} \
     %{?with_java:--enable-java} %{!?with_java:--disable-java} \
     %{?with_maxminddb:--enable-geoip2} %{!?with_maxminddb:--disable-geoip2} \
@@ -512,6 +527,11 @@ fi
 %if %{with mqtt}
 %files mqtt
 %{_libdir}/%{name}/libmqtt.so
+%endif
+
+%if %{with cloud_auth}
+%files cloud-auth
+%{_libdir}/%{name}/libcloud_auth.so
 %endif
 
 %files smtp
