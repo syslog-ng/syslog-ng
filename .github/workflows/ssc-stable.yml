@@ -77,6 +77,16 @@ jobs:
           images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: type=match,pattern=ssc-(.*),group=1
           sep-tags: ','
+          labels: | # https://github.com/opencontainers/image-spec/blob/main/annotations.md
+            maintainer="axoflow.io"
+            org.opencontainers.image.title="AxoSyslog Splunk Connector"
+            org.opencontainers.image.description="A cloud-native distribution of syslog-ng by Axoflow"
+            org.opencontainers.image.authors="Axoflow"
+            org.opencontainers.image.vendor="Axoflow"
+            org.opencontainers.image.licenses="GPL-3.0-only"
+            org.opencontainers.image.source="https://github.com/axoflow/axosyslog-docker"
+            org.opencontainers.image.documentation="https://axoflow.com/docs/axosyslog/docs/"
+            org.opencontainers.image.url="https://axoflow.io/"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
@@ -89,13 +99,6 @@ jobs:
           build-args: |
             SYSLOGNG_VERSION=${{ env.SYSLOG_NG_IMG_VERSION }}
             VERSION=${{ needs.version.outputs.version }}
-          labels: | # https://github.com/opencontainers/image-spec/blob/main/annotations.md
-            maintainer="axoflow.io"
-            org.opencontainers.image.title="AxoSyslog Splunk Connector"
-            org.opencontainers.image.description="A cloud-native distribution of syslog-ng by Axoflow"
-            org.opencontainers.image.authors="Axoflow"
-            org.opencontainers.image.vendor="Axoflow"
-            org.opencontainers.image.licenses="GPL-3.0-only"
-            org.opencontainers.image.source="https://github.com/axoflow/axosyslog-docker"
-            org.opencontainers.image.documentation="https://axoflow.com/docs/axosyslog/docs/"
-            org.opencontainers.image.url="https://axoflow.io/"
+          # description should be here because it is a multi-arch image
+          # see docs: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
+          outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=${{ fromJSON(steps.tags.outputs.json).labels['org.opencontainers.image.description'] }}
