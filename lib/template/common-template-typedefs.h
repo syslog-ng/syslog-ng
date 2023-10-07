@@ -46,6 +46,7 @@ struct _LogTemplateOptions
   /* number of digits in the fraction of a second part, specified using frac_digits() */
   gint frac_digits;
   gboolean use_fqdn;
+  gboolean escape;
 
   /* timezone for LTZ_LOCAL/LTZ_SEND settings */
   gchar *time_zone[LTZ_MAX];

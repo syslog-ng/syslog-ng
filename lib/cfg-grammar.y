@@ -1432,7 +1432,6 @@ dest_writer_option
 	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ }
         | KW_SUPPRESS '(' nonnegative_integer ')'            { last_writer_options->suppress = $3; }
 	| KW_TEMPLATE '(' template_name_or_content ')'       { last_writer_options->template = $3; }
-	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
 	| KW_PAD_SIZE '(' nonnegative_integer ')'         { last_writer_options->padding = $3; }
 	| KW_TRUNCATE_SIZE '(' nonnegative_integer ')'         { last_writer_options->truncate_size = $3; }
 	| KW_MARK_FREQ '(' nonnegative_integer ')'        { last_writer_options->mark_freq = $3; }
@@ -1473,6 +1472,7 @@ template_option
 	| KW_TIME_ZONE '(' string ')'		{ last_template_options->time_zone[LTZ_SEND] = g_strdup($3); free($3); }
 	| KW_SEND_TIME_ZONE '(' string ')'      { last_template_options->time_zone[LTZ_SEND] = g_strdup($3); free($3); }
 	| KW_LOCAL_TIME_ZONE '(' string ')'     { last_template_options->time_zone[LTZ_LOCAL] = g_strdup($3); free($3); }
+	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ last_template_options->escape = $3; }
 	| KW_ON_ERROR '(' string ')'
         {
           gint on_error;
