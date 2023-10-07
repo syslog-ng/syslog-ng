@@ -27,33 +27,7 @@
 
 #include "syslog-ng.h"
 #include "common-template-typedefs.h"
-#include "timeutils/zoneinfo.h"
 #include "logmsg/logmsg.h"
-
-#define LTZ_LOCAL 0
-#define LTZ_SEND  1
-#define LTZ_MAX   2
-
-/* template expansion options that can be influenced by the user and
- * is static throughout the runtime for a given configuration. There
- * are call-site specific options too, those are specified as
- * arguments to log_template_format() */
-struct _LogTemplateOptions
-{
-  gboolean initialized;
-  /* timestamp format as specified by ts_format() */
-  gint ts_format;
-  /* number of digits in the fraction of a second part, specified using frac_digits() */
-  gint frac_digits;
-  gboolean use_fqdn;
-
-  /* timezone for LTZ_LOCAL/LTZ_SEND settings */
-  gchar *time_zone[LTZ_MAX];
-  TimeZoneInfo *time_zone_info[LTZ_MAX];
-
-  /* Template error handling settings */
-  gint on_error;
-};
 
 typedef struct _LogTemplateEvalOptions
 {
