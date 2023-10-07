@@ -112,3 +112,13 @@ def test_template_function(config, syslog_ng):
     syslog_ng.start(config)
     log = file_destination.read_logs(1)
     assert log == ["template with test.key1=value1 test.key2=value2\n"]
+
+
+def test_template_with_format_args(config, syslog_ng):
+    generator_source = config.create_example_msg_generator_source(num=1, values="test.key1 => value1 test.key2 => value2")
+    file_destination = config.create_file_destination(file_name="output.log", template=config.stringify("template with tv1=${} tv2=${}\n") + '.format("${test.key1}", "${test.key2}")')
+
+    config.create_logpath(statements=[generator_source, file_destination])
+    syslog_ng.start(config)
+    log = file_destination.read_logs(1)
+    assert log == ["template with tv1=value1 tv2=value2\n"]

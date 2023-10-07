@@ -893,6 +893,15 @@ template_content_inner
           CHECK_ERROR_GERROR(log_template_compile($<ptr>0, $1, &error), @1, error, "Error compiling template");
           free($1);
         }
+        | string '.' KW_FORMAT '(' template_content_list ')'
+        {
+          GError *error = NULL;
+
+          CHECK_ERROR_GERROR(log_template_compile($<ptr>0, $1, &error), @1, error, "Error compiling template");
+          free($1);
+
+          log_template_set_format_args($<ptr>0, $5);
+        }
         | LL_IDENTIFIER '(' string_or_number ')'
         {
           GError *error = NULL;
