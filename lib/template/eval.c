@@ -79,6 +79,22 @@ log_template_append_elem_value(LogTemplate *self, LogTemplateElem *e, LogTemplat
   *type = _propagate_type(*type, value_type);
 }
 
+static void
+log_template_append_elem_macro(LogTemplate *self, LogTemplateElem *e, LogTemplateEvalOptions *options,
+                               LogMessage *msg, LogMessageValueType *type, GString *result)
+{
+  gint len = result->len;
+  LogMessageValueType value_type = LM_VT_NONE;
+
+  if (e->macro)
+    {
+      log_macro_expand(e->macro, self->escape, options, msg, result, &value_type);
+      if (len == result->len && e->default_value)
+        g_string_append(result, e->default_value);
+      *type = _propagate_type(*type, value_type);
+    }
+}
+
 void
 log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
                                                        LogTemplateEvalOptions *options,
@@ -139,19 +155,8 @@ log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMes
           log_template_append_elem_value(self, e, options, messages[msg_ndx], &t, result);
           break;
         case LTE_MACRO:
-        {
-          gint len = result->len;
-          LogMessageValueType value_type = LM_VT_NONE;
-
-          if (e->macro)
-            {
-              log_macro_expand(e->macro, self->escape, options, messages[msg_ndx], result, &value_type);
-              if (len == result->len && e->default_value)
-                g_string_append(result, e->default_value);
-              t = _propagate_type(t, value_type);
-            }
+          log_template_append_elem_macro(self, e, options, messages[msg_ndx], &t, result);
           break;
-        }
         case LTE_FUNC:
         {
           LogTemplateInvokeArgs args =
