@@ -28,6 +28,7 @@
 
 #include "template/templates.c"
 #include "template/simple-function.h"
+#include "template/globals.h"
 #include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "cfg.h"

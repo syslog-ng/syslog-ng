@@ -33,7 +33,7 @@
 #include "logsource.h"
 #include "logwriter.h"
 #include "afinter.h"
-#include "template/templates.h"
+#include "template/globals.h"
 #include "hostname.h"
 #include "mainloop-call.h"
 #include "service-management.h"
