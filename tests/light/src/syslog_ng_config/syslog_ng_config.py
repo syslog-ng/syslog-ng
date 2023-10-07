@@ -24,6 +24,7 @@ import logging
 
 from src.common.file import File
 from src.common.operations import cast_to_list
+from src.syslog_ng_config import stringify
 from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statement_group import StatementGroup
 from src.syslog_ng_config.statements.destinations.example_destination import ExampleDestination
@@ -62,9 +63,7 @@ class SyslogNgConfig(object):
         }
         self.teardown = teardown
 
-    @staticmethod
-    def stringify(s):
-        return '"' + s.replace('\\', "\\\\").replace('"', '\\"').replace('\n', '\\n') + '"'
+    stringify = staticmethod(stringify)
 
     def set_raw_config(self, raw_config):
         self.__raw_config = raw_config
