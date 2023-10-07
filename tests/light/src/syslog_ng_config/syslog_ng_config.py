@@ -40,6 +40,7 @@ from src.syslog_ng_config.statements.parsers.db_parser import DBParser
 from src.syslog_ng_config.statements.parsers.parser import Parser
 from src.syslog_ng_config.statements.rewrite.rewrite import CreditCardHash
 from src.syslog_ng_config.statements.rewrite.rewrite import CreditCardMask
+from src.syslog_ng_config.statements.rewrite.rewrite import Set
 from src.syslog_ng_config.statements.rewrite.rewrite import SetPri
 from src.syslog_ng_config.statements.rewrite.rewrite import SetTag
 from src.syslog_ng_config.statements.sources.example_msg_generator_source import ExampleMsgGeneratorSource
@@ -103,6 +104,9 @@ class SyslogNgConfig(object):
 
     def create_network_source(self, **options):
         return NetworkSource(**options)
+
+    def create_rewrite_set(self, template, **options):
+        return Set(template, **options)
 
     def create_rewrite_set_tag(self, tag, **options):
         return SetTag(tag, **options)
