@@ -478,18 +478,6 @@ log_template_error_quark(void)
   return g_quark_from_static_string("log-template-error-quark");
 }
 
-void
-log_template_global_init(void)
-{
-  log_macros_global_init();
-}
-
-void
-log_template_global_deinit(void)
-{
-  log_macros_global_deinit();
-}
-
 gboolean
 log_template_on_error_parse(const gchar *strictness, gint *out)
 {

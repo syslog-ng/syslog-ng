@@ -2,6 +2,7 @@ set(TEMPLATE_HEADERS
     template/templates.h
     template/macros.h
     template/function.h
+    template/globals.h
     template/eval.h
     template/simple-function.h
     template/repr.h
@@ -15,6 +16,7 @@ set(TEMPLATE_SOURCES
     template/templates.c
     template/macros.c
     template/eval.c
+    template/globals.c
     template/simple-function.c
     template/repr.c
     template/compiler.c

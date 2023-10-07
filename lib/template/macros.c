@@ -23,6 +23,7 @@
  */
 
 #include "template/macros.h"
+#include "template/globals.h"
 #include "template/escaping.h"
 #include "timeutils/cache.h"
 #include "timeutils/names.h"
@@ -229,7 +230,6 @@ LogMacroDef macros[] =
 
 static GTimeVal app_uptime;
 static GHashTable *macro_hash;
-static LogTemplateOptions template_options_for_macro_expand;
 
 static void
 _result_append_value(GString *result, const LogMessage *lm, NVHandle handle, gboolean escape)
@@ -724,7 +724,7 @@ log_macro_expand(gint id, gboolean escape, LogTemplateEvalOptions *options, cons
 gboolean
 log_macro_expand_simple(gint id, const LogMessage *msg, GString *result, LogMessageValueType *type)
 {
-  LogTemplateEvalOptions options = {&template_options_for_macro_expand, LTZ_LOCAL, 0, NULL, LM_VT_STRING};
+  LogTemplateEvalOptions options = {log_template_get_global_template_options(), LTZ_LOCAL, 0, NULL, LM_VT_STRING};
   return log_macro_expand(id, FALSE, &options, msg, result, type);
 }
 
@@ -749,7 +749,6 @@ log_macros_global_init(void)
 
   /* init the uptime (SYSUPTIME macro) */
   g_get_current_time(&app_uptime);
-  log_template_options_global_defaults(&template_options_for_macro_expand);
 
   macro_hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   for (i = 0; macros[i].name; i++)

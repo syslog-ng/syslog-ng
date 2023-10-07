@@ -101,9 +101,6 @@ void log_template_options_destroy(LogTemplateOptions *options);
 void log_template_options_defaults(LogTemplateOptions *options);
 void log_template_options_global_defaults(LogTemplateOptions *options);
 
-void log_template_global_init(void);
-void log_template_global_deinit(void);
-
 gboolean log_template_on_error_parse(const gchar *on_error, gint *out);
 void log_template_options_set_on_error(LogTemplateOptions *options, gint on_error);
 
