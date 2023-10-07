@@ -104,6 +104,9 @@ class SyslogNgConfig(object):
     def create_network_source(self, **options):
         return NetworkSource(**options)
 
+    def create_rewrite_set(self, template, **options):
+        return Set(template, **options)
+
     def create_rewrite_set_tag(self, tag, **options):
         return SetTag(tag, **options)
 

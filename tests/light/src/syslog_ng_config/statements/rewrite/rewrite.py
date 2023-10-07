@@ -36,6 +36,11 @@ class SetTag(Rewrite):
         super(SetTag, self).__init__("set_tag", [tag], **options)
 
 
+class Set(Rewrite):
+    def __init__(self, template, **options):
+        super(Set, self).__init__("set", [template], **options)
+
+
 class SetPri(Rewrite):
     def __init__(self, pri, **options):
         super(SetPri, self).__init__("set_pri", [pri], **options)
