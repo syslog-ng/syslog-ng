@@ -54,6 +54,31 @@ _should_render(const gchar *value, LogMessageValueType value_type, LogMessageVal
   return !!value[0];
 }
 
+static void
+log_template_append_elem_value(LogTemplate *self, LogTemplateElem *e, LogTemplateEvalOptions *options,
+                               LogMessage *msg, LogMessageValueType *type, GString *result)
+{
+  const gchar *value = NULL;
+  gssize value_len = -1;
+  LogMessageValueType value_type = LM_VT_NONE;
+
+  value = log_msg_get_value_with_type(msg, e->value_handle, &value_len, &value_type);
+  if (value && _should_render(value, value_type, self->type_hint))
+    {
+      result_append(result, value, value_len, self->escape);
+    }
+  else if (e->default_value)
+    {
+      result_append(result, e->default_value, -1, self->escape);
+      value_type = LM_VT_STRING;
+    }
+  else if (value_type == LM_VT_BYTES || value_type == LM_VT_PROTOBUF)
+    {
+      value_type = LM_VT_NULL;
+    }
+  *type = _propagate_type(*type, value_type);
+}
+
 void
 log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
                                                        LogTemplateEvalOptions *options,
@@ -111,28 +136,8 @@ log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMes
       switch (e->type)
         {
         case LTE_VALUE:
-        {
-          const gchar *value = NULL;
-          gssize value_len = -1;
-          LogMessageValueType value_type = LM_VT_NONE;
-
-          value = log_msg_get_value_with_type(messages[msg_ndx], e->value_handle, &value_len, &value_type);
-          if (value && _should_render(value, value_type, self->type_hint))
-            {
-              result_append(result, value, value_len, self->escape);
-            }
-          else if (e->default_value)
-            {
-              result_append(result, e->default_value, -1, self->escape);
-              value_type = LM_VT_STRING;
-            }
-          else if (value_type == LM_VT_BYTES || value_type == LM_VT_PROTOBUF)
-            {
-              value_type = LM_VT_NULL;
-            }
-          t = _propagate_type(t, value_type);
+          log_template_append_elem_value(self, e, options, messages[msg_ndx], &t, result);
           break;
-        }
         case LTE_MACRO:
         {
           gint len = result->len;
