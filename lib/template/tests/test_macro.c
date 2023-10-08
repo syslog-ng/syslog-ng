@@ -110,7 +110,7 @@ Test(macro, test_context_id_type_is_returned)
 
   LogTemplateEvalOptions options = {NULL, LTZ_SEND, 5555, "5678", LM_VT_INTEGER};
 
-  gboolean result = log_macro_expand(M_CONTEXT_ID, FALSE, &options, msg, resolved, &type);
+  gboolean result = log_macro_expand(M_CONTEXT_ID, &options, msg, resolved, &type);
   cr_assert(result);
   cr_assert_str_eq(resolved->str, "5678");
   cr_assert_eq(type, LM_VT_INTEGER);

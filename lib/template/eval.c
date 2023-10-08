@@ -89,7 +89,7 @@ log_template_append_elem_macro(LogTemplate *self, LogTemplateElem *e, LogTemplat
 
   if (e->macro)
     {
-      log_macro_expand(e->macro, FALSE, options, msg, result, &value_type);
+      log_macro_expand(e->macro, options, msg, result, &value_type);
       if (len == result->len && e->default_value)
         g_string_append(result, e->default_value);
       *type = _propagate_type(*type, value_type);
