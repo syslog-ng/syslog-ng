@@ -24,7 +24,6 @@
 #ifndef HTTP_LOADBALANCER_H_INCLUDED
 #define HTTP_LOADBALANCER_H_INCLUDED 1
 
-#include "syslog-ng.h"
 #include "template/templates.h"
 
 typedef enum
@@ -54,6 +53,7 @@ struct _HTTPLoadBalancerTarget
   gint number_of_clients;
   gint max_clients;
   time_t last_failure_time;
+  gchar formatted_index[16];
 };
 
 gboolean http_lb_target_is_url_templated(HTTPLoadBalancerTarget *self);

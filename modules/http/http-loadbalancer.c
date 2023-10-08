@@ -45,6 +45,7 @@ http_lb_target_init(HTTPLoadBalancerTarget *self, const gchar *url, gint index_,
   self->url_template = url_template;
   self->state = HTTP_TARGET_OPERATIONAL;
   self->index = index_;
+  g_snprintf(self->formatted_index, sizeof(self->formatted_index), "%d", index_);
 
   return TRUE;
 }
@@ -83,6 +84,8 @@ http_lb_target_format_templated_url(HTTPLoadBalancerTarget *self, LogMessage *ms
     .opts = template_options,
     .tz = LTZ_LOCAL,
     .seq_num = -1,
+    .context_id = self->formatted_index,
+    .context_id_type = LM_VT_INTEGER,
     .escape = _escape_urlencoded,
   };
   log_template_format(self->url_template, msg, &template_eval_options, result);
