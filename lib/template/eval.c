@@ -66,11 +66,11 @@ log_template_append_elem_value(LogTemplate *self, LogTemplateElem *e, LogTemplat
   value = log_msg_get_value_with_type(msg, e->value_handle, &value_len, &value_type);
   if (value && _should_render(value, value_type, self->type_hint))
     {
-      result_append(result, value, value_len, FALSE);
+      g_string_append_len(result, value, value_len);
     }
   else if (e->default_value)
     {
-      result_append(result, e->default_value, -1, FALSE);
+      g_string_append_len(result, e->default_value, -1);
       value_type = LM_VT_STRING;
     }
   else if (value_type == LM_VT_BYTES || value_type == LM_VT_PROTOBUF)
