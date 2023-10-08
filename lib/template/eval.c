@@ -99,7 +99,7 @@ log_template_append_elem_macro(LogTemplate *self, LogTemplateElem *e, LogTemplat
 static void
 log_template_append_elem_func(LogTemplate *self, LogTemplateElem *e, LogTemplateEvalOptions *options,
                               LogMessage **messages, gint num_messages, gint msg_ndx,
-                              LogMessageValueType *type, GString *result)
+                              LogMessageValueType *type, GString *result, gboolean escape)
 {
   LogTemplateInvokeArgs args =
   {
@@ -108,7 +108,10 @@ log_template_append_elem_func(LogTemplate *self, LogTemplateElem *e, LogTemplate
     options,
   };
   LogMessageValueType value_type = LM_VT_NONE;
+  GString *target_buffer = result;
 
+  if (escape)
+    target_buffer = scratch_buffers_alloc();
 
   /* if a function call is called with an msg_ref, we only
    * pass that given logmsg to argument resolution, otherwise
@@ -117,7 +120,14 @@ log_template_append_elem_func(LogTemplate *self, LogTemplateElem *e, LogTemplate
    */
   if (e->func.ops->eval)
     e->func.ops->eval(e->func.ops, e->func.state, &args);
-  e->func.ops->call(e->func.ops, e->func.state, &args, result, &value_type);
+  e->func.ops->call(e->func.ops, e->func.state, &args, target_buffer, &value_type);
+
+  if (escape)
+    {
+      result_append(result, target_buffer->str, target_buffer->len, escape);
+      value_type = LM_VT_STRING;
+    }
+
   *type = _propagate_type(*type, value_type);
 }
 
@@ -192,7 +202,7 @@ log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMes
           log_template_append_elem_macro(self, e, options, messages[msg_ndx], &t, result, escape);
           break;
         case LTE_FUNC:
-          log_template_append_elem_func(self, e, options, messages, num_messages, msg_ndx, &t, result);
+          log_template_append_elem_func(self, e, options, messages, num_messages, msg_ndx, &t, result, escape);
           break;
         default:
           g_assert_not_reached();
