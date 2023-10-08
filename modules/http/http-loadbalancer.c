@@ -23,6 +23,7 @@
 
 #include "http-loadbalancer.h"
 #include "messages.h"
+#include "str-utils.h"
 #include <string.h>
 
 /* HTTPLoadBalancerTarget */
@@ -33,6 +34,7 @@ http_lb_target_init(HTTPLoadBalancerTarget *self, const gchar *url, gint index_,
   memset(self, 0, sizeof(*self));
 
   LogTemplate *url_template = log_template_new(configuration, NULL);
+  log_template_set_escape(url_template, TRUE);
   if (!log_template_compile(url_template, url, error))
     {
       log_template_unref(url_template);
@@ -65,11 +67,24 @@ http_lb_target_get_literal_url(HTTPLoadBalancerTarget *self)
   return log_template_get_literal_value(self->url_template, NULL);
 }
 
+static void
+_escape_urlencoded(GString *result, const gchar *value, gsize value_len)
+{
+  APPEND_ZERO(value, value, value_len);
+  g_string_append_uri_escaped(result, value, NULL, FALSE);
+}
+
 void
 http_lb_target_format_templated_url(HTTPLoadBalancerTarget *self, LogMessage *msg,
                                     const LogTemplateOptions *template_options, GString *result)
 {
-  LogTemplateEvalOptions template_eval_options = { template_options, LTZ_SEND, -1, NULL, LM_VT_STRING };
+  LogTemplateEvalOptions template_eval_options =
+  {
+    .opts = template_options,
+    .tz = LTZ_LOCAL,
+    .seq_num = -1,
+    .escape = _escape_urlencoded,
+  };
   log_template_format(self->url_template, msg, &template_eval_options, result);
 }
 
