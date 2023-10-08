@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "common-template-typedefs.h"
+#include "escaping.h"
 #include "logmsg/logmsg.h"
 
 typedef struct _LogTemplateEvalOptions
@@ -37,6 +38,7 @@ typedef struct _LogTemplateEvalOptions
   gint seq_num;
   const gchar *context_id;
   LogMessageValueType context_id_type;
+  LogTemplateEscapeFunction escape;
 } LogTemplateEvalOptions;
 
 #define DEFAULT_TEMPLATE_EVAL_OPTIONS ((LogTemplateEvalOptions){NULL, LTZ_LOCAL, 0, NULL, LM_VT_STRING})

@@ -206,7 +206,10 @@ log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMes
 
       if (escape)
         {
-          result_append(result, target_buffer->str, target_buffer->len, escape);
+          if (options->escape)
+            options->escape(result, target_buffer->str, target_buffer->len);
+          else
+            log_template_default_escape_method(result, target_buffer->str, target_buffer->len);
           t = LM_VT_STRING;
         }
     }

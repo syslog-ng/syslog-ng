@@ -27,6 +27,8 @@
 
 #include "syslog-ng.h"
 
-void result_append(GString *result, const gchar *sstr, gssize len, gboolean escape);
+typedef void (*LogTemplateEscapeFunction)(GString *target, const gchar *value, gsize value_len);
+
+void log_template_default_escape_method(GString *result, const gchar *sstr, gsize len);
 
 #endif
