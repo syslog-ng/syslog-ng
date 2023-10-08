@@ -919,7 +919,9 @@ template_content_inner
         ;
 
 template_content
-        : <ptr>{ $$ = log_template_new(configuration, NULL); } template_content_inner	{ $$ = $1; }
+        : <ptr>{
+            $$ = log_template_new(configuration, NULL);
+          } template_content_inner					    { $$ = $1; }
         ;
 
 template_content_list

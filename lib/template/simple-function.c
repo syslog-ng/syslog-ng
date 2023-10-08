@@ -52,7 +52,7 @@ tf_simple_func_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
    * one. */
   for (i = 0; i < argc - 1; i++)
     {
-      state->argv_templates[i] = log_template_new(parent->cfg, NULL);
+      state->argv_templates[i] = log_template_new_embedded(parent->cfg);
       log_template_set_escape(state->argv_templates[i], parent->escape);
       if (!log_template_compile(state->argv_templates[i], argv[i + 1], error))
         {
