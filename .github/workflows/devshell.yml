@@ -115,26 +115,17 @@ jobs:
         id: prepare-light-reports
         if: always() && steps.light.outcome == 'failure'
         run: |
-          if [ ${{ matrix.build-tool }} = 'autotools' ]
-          then
-            REPORTS_DIR=build/reports
-          elif [ ${{ matrix.build-tool }} = 'cmake' ]
-          then
-            REPORTS_DIR=build/tests/light/reports
-          else
-            echo Unrecognized build tool: ${{ matrix.build-tool }}.
-            exit 1
-          fi
-
+          REPORTS_DIR=tests/light/reports
           cp -r ${REPORTS_DIR} /tmp/light-reports
-          rm -f `find /tmp/light-reports -type p,s`
+          find /tmp/light-reports -type p,s -print0 | xargs -0 rm -f 
+          tar -cz -f /tmp/light-reports.tar.gz /tmp/light-reports 
 
       - name: "Artifact: light-reports"
         uses: actions/upload-artifact@v3
         if: always() && steps.prepare-light-reports.outcome == 'success'
         with:
           name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}
-          path: /tmp/light-reports
+          path: /tmp/light-reports.tar.gz
 
       - name: Dump corefile backtrace
         working-directory: ${{ env.COREFILES_DIR }}
