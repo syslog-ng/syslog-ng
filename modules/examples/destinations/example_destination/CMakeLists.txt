@@ -1,8 +1,3 @@
-module_switch(ENABLE_EXAMPLE_DESTINATION "Enable example_destination")
-if (NOT ENABLE_EXAMPLE_DESTINATION)
-  return()
-endif()
-
 set(example_destination_SOURCES
     "example_destination-parser.h"
     "example_destination-plugin.c"
