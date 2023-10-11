@@ -225,6 +225,9 @@ AC_ARG_ENABLE(dynamic-linking,
 AC_ARG_ENABLE(mixed-linking,
               [  --enable-mixed-linking          Link 3rd party libraries statically, system libraries dynamically],,enable_mixed_linking="auto")
 
+AC_ARG_ENABLE(force-classic-linking,
+              [  --enable-force-classic-linking  Link using ld-classic (default: no)],, enable_force_classic_linking="no")
+
 AC_ARG_ENABLE(ipv6,
               [  --enable-ipv6           Enable support for IPv6.],,enable_ipv6="auto")
 
@@ -661,6 +664,12 @@ case "$ostype" in
 	Darwin)
 		MODULE_LDFLAGS="-avoid-version -dylib"
 		LDFLAGS="$LDFLAGS -Wl,-flat_namespace"
+                # NOTE: This is now seems to be an Apple/Xcode "only" issue, but probably much better a clang one, so later we might want to add this globally
+                # XCode15 new linker has some issues (e.g. https://developer.apple.com/forums/thread/737707)
+                # switch back to classic linking till not fixed (https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking)
+                if test "x$enable_force_classic_linking" = "xyes"; then
+                        LDFLAGS="$LDFLAGS -Wl,-ld_classic"
+                fi
 		CFLAGS="$CFLAGS -D__APPLE_USE_RFC_3542"
     ;;
 	OSF1)
@@ -2309,6 +2318,9 @@ fi
 echo "  linker flags                : $LDFLAGS $LIBS"
 echo "  prefix                      : $prefix"
 echo "  linking mode                : $linking_mode"
+if test $ostype = "Darwin"; then
+echo "  classic linking mode        : ${enable_force_classic_linking:=no}"
+fi
 echo "  embedded crypto             : ${with_embedded_crypto:=no}"
 echo "  __thread keyword            : ${ac_cv_have_tls:=no}"
 echo " Test dependencies:"

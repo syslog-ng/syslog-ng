@@ -111,6 +111,9 @@ function(print_config_summary)
     endif()
 
     list(APPEND _importantVariableNames "IVYKIS_INTERNAL" "BUILD_TESTING")
+    if (APPLE)
+      list(APPEND _importantVariableNames "FORCE_CLASSIC_LINKING")
+    endif()
     _print_importants("${_variableNames}" "${_importantVariableNames}")
     _print_separator()
 
