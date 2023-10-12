@@ -137,6 +137,8 @@ jobs:
             ssc:test
 
           pip3 install poetry
+          #workaround for https://github.com/yaml/pyyaml/issues/728
+          poetry add pyyaml@5.3.1
           poetry install
           poetry run pytest -v -n8 --splunk_type=external --splunk_hec_token=70b6ae71-76b3-4c38-9597-0c5b37ad9630 \
             tests/test_loggen.py
