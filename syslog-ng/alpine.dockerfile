@@ -3,17 +3,6 @@ FROM alpine:3.18 as apkbuilder
 ARG PKG_TYPE=stable
 ARG SNAPSHOT_VERSION
 
-# https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL maintainer="axoflow.io"
-LABEL org.opencontainers.image.title="AxoSyslog"
-LABEL org.opencontainers.image.description="A cloud-native distribution of syslog-ng by Axoflow"
-LABEL org.opencontainers.image.authors="Axoflow"
-LABEL org.opencontainers.image.vendor="Axoflow"
-LABEL org.opencontainers.image.licenses="GPL-3.0-only"
-LABEL org.opencontainers.image.source="https://github.com/axoflow/axosyslog-docker"
-LABEL org.opencontainers.image.documentation="https://axoflow.com/docs/axosyslog/docs/"
-LABEL org.opencontainers.image.url="https://axoflow.io/"
-
 RUN apk add --update-cache \
       alpine-conf \
       alpine-sdk \
@@ -41,7 +30,18 @@ RUN mkdir packages \
 
 
 FROM alpine:3.18
-LABEL maintainer="László Várady <laszlo.varady@axoflow.com>"
+
+# https://github.com/opencontainers/image-spec/blob/main/annotations.md
+LABEL maintainer="axoflow.io"
+LABEL org.opencontainers.image.title="AxoSyslog"
+LABEL org.opencontainers.image.description="A cloud-native distribution of syslog-ng by Axoflow"
+LABEL org.opencontainers.image.authors="Axoflow"
+LABEL org.opencontainers.image.vendor="Axoflow"
+LABEL org.opencontainers.image.licenses="GPL-3.0-only"
+LABEL org.opencontainers.image.source="https://github.com/axoflow/axosyslog-docker"
+LABEL org.opencontainers.image.documentation="https://axoflow.com/docs/axosyslog/docs/"
+LABEL org.opencontainers.image.url="https://axoflow.io/"
+
 COPY --from=apkbuilder /home/builder/packages/ /
 COPY --from=apkbuilder /home/builder/.abuild/*.pub /etc/apk/keys/
 
