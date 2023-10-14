@@ -53,10 +53,20 @@ _attach(LogDriverPlugin *s, LogDriver *driver)
   msg_debug("HttpTestSlotsPlugin::attach()",
             evt_tag_printf("SignalSlotConnector", "%p", ssc));
 
-  /* DISCONNECT: the whole SignalSlotConnector is destroyed when the owner LogDriver is freed up, so DISCONNECT is not required */
   CONNECT(ssc, signal_http_header_request, _slot_append_test_headers, s);
 
   return TRUE;
+}
+
+static void
+_detach(LogDriverPlugin *s, LogDriver *driver)
+{
+  SignalSlotConnector *ssc = driver->super.signal_slot_connector;
+
+  msg_debug("HttpTestSlotsPlugin::detach()",
+            evt_tag_printf("SignalSlotConnector", "%p", ssc));
+
+  DISCONNECT(ssc, signal_http_header_request, _slot_append_test_headers, s);
 }
 
 static void
@@ -76,6 +86,7 @@ http_test_slots_plugin_new(void)
   log_driver_plugin_init_instance(&self->super, HTTP_TEST_SLOTS_PLUGIN);
 
   self->super.attach = _attach;
+  self->super.detach = _detach;
   self->super.free_fn = _free;
 
   return self;
