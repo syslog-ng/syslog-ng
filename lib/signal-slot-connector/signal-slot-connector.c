@@ -121,9 +121,8 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot, gpointe
 
   if (_slot_lookup(slots, slot, object))
     {
-      msg_warning("WARNING: Duplicate inter-plugin communication signal registration, ignoring connection attempt",
-                  evt_tag_slot(self, signal, slot, object));
-      goto exit_;
+      /* Duplicate inter-plugin communication signal registration */
+      g_assert_not_reached();
     }
 
   GList *new_slots = g_list_append(slots, _slot_functor_new(slot, object));
@@ -135,7 +134,6 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot, gpointe
 
   msg_trace("Inter-plugin communication signal successfully connected",
             evt_tag_slot(self, signal, slot, object));
-exit_:
   g_mutex_unlock(&self->lock);
 }
 
@@ -172,8 +170,10 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot, gpoi
   GList *slotfunctor_node = g_list_find_custom(slots, &slotfunctor, _slot_functor_cmp);
   if (!slotfunctor_node)
     {
-      msg_warning("WARNING: Inter-plugin communication signal unregistration failed, slot object not found",
-                  evt_tag_slot(self, signal, slot, object));
+      /* Inter-plugin communication signal unregistration failed,
+       * slot object not found */
+
+      g_assert_not_reached();
       goto exit_;
     }
 

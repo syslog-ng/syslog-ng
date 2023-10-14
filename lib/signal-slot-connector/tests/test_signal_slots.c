@@ -100,7 +100,7 @@ Test(basic_signal_slots, when_the_signal_is_emitted_then_the_connected_slot_is_e
   signal_slot_connector_free(ssc);
 }
 
-Test(basic_signal_slots, when_trying_to_connect_multiple_times_the_same_connection_then_connect_only_the_first)
+Test(basic_signal_slots, abort_when_trying_to_connect_multiple_times_the_same_connection, .signal = SIGABRT)
 {
   SignalSlotConnector *ssc = signal_slot_connector_new();
   TestData test_data;
@@ -108,18 +108,11 @@ Test(basic_signal_slots, when_trying_to_connect_multiple_times_the_same_connecti
   SlotObj slot_obj;
   slot_obj_init(&slot_obj);
 
-  for (gint i = 0; i < 5; i++)
-    CONNECT(ssc, signal_test1, test1_slot, &slot_obj);
-
-  EMIT(ssc, signal_test1, &test_data);
-
-  cr_expect_eq(test_data.slot_ctr, 1);
-  cr_expect_eq(slot_obj.ctr, 1);
-
-  signal_slot_connector_free(ssc);
+  CONNECT(ssc, signal_test1, test1_slot, &slot_obj);
+  CONNECT(ssc, signal_test1, test1_slot, &slot_obj);
 }
 
-Test(basic_signal_slots, when_trying_to_disconnect_multiple_times_the_same_connection_disconnect_only_the_first)
+Test(basic_signal_slots, abort_when_trying_to_disconnect_multiple_times_the_same_connection, .signal = SIGABRT)
 {
   SignalSlotConnector *ssc = signal_slot_connector_new();
   TestData test_data;
@@ -189,7 +182,8 @@ Test(basic_signal_slots, when_disconnect_the_connected_slot_from_a_signal_then_t
 }
 
 Test(basic_signal_slots,
-     when_trying_to_disconnect_a_connected_slot_with_different_slot_object_then_slot_is_not_disconnected)
+     abort_when_trying_to_disconnect_a_connected_slot_with_different_slot_object_then_slot_is_not_disconnected,
+     .signal = SIGABRT)
 {
   SignalSlotConnector *ssc = signal_slot_connector_new();
   TestData test_data;
@@ -201,13 +195,6 @@ Test(basic_signal_slots,
 
   CONNECT(ssc, signal_test1, test1_slot, &slot_obj);
   DISCONNECT(ssc, signal_test1, test1_slot, &slot_obj_another);
-  EMIT(ssc, signal_test1, &test_data);
-
-  cr_expect_eq(test_data.slot_ctr, 1);
-  cr_expect_eq(slot_obj.ctr, 1);
-  cr_expect_eq(slot_obj_another.ctr, 0);
-
-  signal_slot_connector_free(ssc);
 }
 
 #define DEFINE_TEST_SLOT(func_name) \
