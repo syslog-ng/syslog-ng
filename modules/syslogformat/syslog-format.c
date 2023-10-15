@@ -47,7 +47,6 @@ static struct
   gboolean initialized;
   NVHandle is_synced;
   NVHandle cisco_seqid;
-  NVHandle raw_message;
 } handles;
 
 static inline gboolean
@@ -1073,7 +1072,6 @@ syslog_format_init(void)
     {
       handles.is_synced = log_msg_get_value_handle(".SDATA.timeQuality.isSynced");
       handles.cisco_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
-      handles.raw_message = log_msg_get_value_handle("RAWMSG");
       handles.initialized = TRUE;
     }
 
