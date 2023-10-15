@@ -67,6 +67,8 @@ struct _LogThreadedSourceDriver
   LogThreadedSourceWorkerOptions worker_options;
   LogThreadedSourceWorker *worker;
   gboolean auto_close_batches;
+  gchar *transport_name;
+  gsize transport_name_len;
 
   void (*format_stats_key)(LogThreadedSourceDriver *self, StatsClusterKeyBuilder *kb);
   gboolean (*thread_init)(LogThreadedSourceDriver *self);
@@ -81,6 +83,7 @@ void log_threaded_source_worker_options_init(LogThreadedSourceWorkerOptions *opt
                                              const gchar *group_name);
 void log_threaded_source_worker_options_destroy(LogThreadedSourceWorkerOptions *options);
 
+void log_threaded_source_driver_set_transport_name(LogThreadedSourceDriver *self, const gchar *transport_name);
 void log_threaded_source_driver_init_instance(LogThreadedSourceDriver *self, GlobalConfig *cfg);
 gboolean log_threaded_source_driver_init_method(LogPipe *s);
 gboolean log_threaded_source_driver_deinit_method(LogPipe *s);
