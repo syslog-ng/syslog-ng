@@ -62,6 +62,17 @@ typedef struct _PyLogFetcher
 
 static PyTypeObject py_log_fetcher_type;
 
+static PyObject *
+py_log_fetcher_set_transport_name(PyLogFetcher *self, PyObject *args)
+{
+  const gchar *transport_name;
+
+  if (!PyArg_ParseTuple(args, "s", &transport_name))
+    return NULL;
+
+  log_threaded_source_driver_set_transport_name(&self->driver->super.super, transport_name);
+  Py_RETURN_NONE;
+}
 
 PythonBinding *
 python_fetcher_get_binding(LogDriver *s)
@@ -677,6 +688,13 @@ static PyMemberDef py_log_fetcher_members[] =
   {NULL}
 };
 
+static PyMethodDef py_log_fetcher_methods[] =
+{
+  { "set_transport_name", (PyCFunction) py_log_fetcher_set_transport_name, METH_VARARGS, "Set transport name" },
+  {NULL}
+};
+
+
 static PyTypeObject py_log_fetcher_type =
 {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
@@ -686,6 +704,7 @@ static PyTypeObject py_log_fetcher_type =
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "The LogFetcher class is a base class for custom Python fetchers.",
   .tp_new = PyType_GenericNew,
+  .tp_methods = py_log_fetcher_methods,
   .tp_members = py_log_fetcher_members,
   0,
 };

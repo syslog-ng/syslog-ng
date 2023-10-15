@@ -40,9 +40,15 @@ except ImportError:
         def __init__(self):
             pass
 
+        def set_transport_name(self, name):
+            pass
+
     # Fake LogFetcher
     class LogFetcher(dict):
         def __init__(self):
+            pass
+
+        def set_transport_name(self, name):
             pass
 
     class LogFetcherResult(Enum):
@@ -177,6 +183,13 @@ class LogSource(LogSource):
         """
         super().close_batch()
 
+    def set_transport_name(self, name):
+        """Set the transport name used to retrieve messages
+
+        This function can be called to customize the $TRANSPORT name-value pair.
+        """
+        super().set_transport_name(name)
+
     def request_exit(self):
         """Request the main loop to exit
 
@@ -261,6 +274,13 @@ class LogFetcher(LogFetcher):
         The method is optional, use it when fetch() has blocking operations and
         it has to be interrupted when shutting down syslog-ng.
         """
+
+    def set_transport_name(self, name):
+        """Set the transport name used to retrieve messages
+
+        This function can be called to customize the $TRANSPORT name-value pair.
+        """
+        super().set_transport_name(name)
 
 
 class InstantAckTracker(InstantAckTracker):
