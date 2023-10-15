@@ -265,16 +265,15 @@ Test(secretstorage, test_rlimit)
   cr_assert(!setrlimit(RLIMIT_MEMLOCK, &locked_limit));
   const gsize pagesize = sysconf(_SC_PAGE_SIZE);
 
-  gchar *key_fmt = g_strdup("keyXXX");
+  gchar key_fmt[32];
   int i = 0;
   int for_limit = locked_limit.rlim_cur/pagesize;
   for (; i < for_limit; i++)
     {
-      sprintf(key_fmt, "key%03d", i);
+      g_snprintf(key_fmt, sizeof(key_fmt), "key%03d", i);
       cr_assert(secret_storage_store_string(key_fmt, "value"), "offending_key: %s, for_limit: %d", key_fmt, for_limit);
     }
 
-  g_free(key_fmt);
 }
 
 static void
