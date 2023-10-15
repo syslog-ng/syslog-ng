@@ -377,7 +377,10 @@ g_sockaddr_inet6_format(GSockAddr *s, gchar *text, gulong n, gint format)
     }
   else if (format == GSA_ADDRESS_ONLY)
     {
-      inet_ntop(AF_INET6, &self->sin6.sin6_addr, text, n);
+      if (IN6_IS_ADDR_V4MAPPED(&self->sin6.sin6_addr))
+        inet_ntop(AF_INET, &self->sin6.sin6_addr.s6_addr[12], text, n);
+      else
+        inet_ntop(AF_INET6, &self->sin6.sin6_addr, text, n);
     }
   else
     g_assert_not_reached();

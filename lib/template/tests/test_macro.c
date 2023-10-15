@@ -161,7 +161,7 @@ Test(macro, test_ipv6_mapped_ipv4_saddr_related_macros)
 
   log_msg_set_saddr_ref(msg, g_sockaddr_inet6_new("::FFFF:192.168.1.1", 2000));
   log_msg_set_daddr_ref(msg, g_sockaddr_inet6_new("::1", 2020));
-  assert_macro_value(M_SOURCE_IP, msg, "::ffff:192.168.1.1", LM_VT_STRING);
+  assert_macro_value(M_SOURCE_IP, msg, "192.168.1.1", LM_VT_STRING);
   assert_macro_value(M_DEST_IP, msg, "::1", LM_VT_STRING);
   assert_macro_value(M_DEST_PORT, msg, "2020", LM_VT_INTEGER);
   assert_macro_value(M_IP_PROTOCOL, msg, "4", LM_VT_INTEGER);
