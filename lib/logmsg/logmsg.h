@@ -95,6 +95,7 @@ enum
 
   /* these are dynamic values but with a predefined handle */
   LM_V_RAWMSG,
+  LM_V_TRANSPORT,
   LM_V_FILE_NAME,
 
   LM_V_PREDEFINED_MAX,

@@ -1350,6 +1350,21 @@ afsocket_sd_deinit_method(LogPipe *s)
 }
 
 static void
+afsocket_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+  const gchar *transport_name;
+  gsize len;
+
+  transport_name = transport_mapper_get_transport_name(self->transport_mapper, &len);
+  if (transport_name)
+    {
+      log_msg_set_value(msg, LM_V_TRANSPORT, transport_name, len);
+    }
+  log_src_driver_queue_method(s, msg, path_options);
+}
+
+static void
 afsocket_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   switch (notify_code)
@@ -1386,6 +1401,7 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
 {
   log_src_driver_init_instance(&self->super, cfg);
 
+  self->super.super.super.queue = afsocket_sd_queue;
   self->super.super.super.init = afsocket_sd_init_method;
   self->super.super.super.deinit = afsocket_sd_deinit_method;
   self->super.super.super.free_fn = afsocket_sd_free_method;
@@ -1403,5 +1419,6 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   self->reader_options.super.stats_level = STATS_LEVEL1;
   self->reader_options.super.stats_source = transport_mapper->stats_source;
   self->activate_listener = TRUE;
+
   afsocket_sd_init_watches(self);
 }
