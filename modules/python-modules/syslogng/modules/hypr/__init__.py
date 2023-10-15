@@ -170,6 +170,7 @@ class HyprAuditSource(syslogng.LogFetcher):
             # Start search at last fetch window end time
             self.start_time = int(self.persist["last_read"])
 
+        self.set_transport_name("hypr-api")
         self.logger.debug("Driver initialization complete, fetch window starts at %i (%s)",
                           self.start_time, datetime.utcfromtimestamp(self.start_time / 1000))
 
