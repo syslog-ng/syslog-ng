@@ -305,11 +305,28 @@ transport_mapper_inet_new_instance(const gchar *transport)
   return self;
 }
 
+static gboolean
+transport_mapper_tcp_apply_transport(TransportMapper *s, GlobalConfig *cfg)
+{
+  TransportMapperInet *self = (TransportMapperInet *) s;
+
+  if (!transport_mapper_inet_apply_transport_method(s, cfg))
+    return FALSE;
+
+  if (self->tls_context)
+    self->super.transport_name = g_strdup("rfc3164+tls");
+  else
+    self->super.transport_name = g_strdup("rfc3164+tcp");
+
+  return TRUE;
+}
+
 TransportMapper *
 transport_mapper_tcp_new(void)
 {
   TransportMapperInet *self = transport_mapper_inet_new_instance("tcp");
 
+  self->super.apply_transport = transport_mapper_tcp_apply_transport;
   self->super.sock_type = SOCK_STREAM;
   self->super.sock_proto = IPPROTO_TCP;
   self->super.logproto = "text";
@@ -334,6 +351,7 @@ transport_mapper_udp_new(void)
 {
   TransportMapperInet *self = transport_mapper_inet_new_instance("udp");
 
+  self->super.transport_name = g_strdup("rfc3164+udp");
   self->super.sock_type = SOCK_DGRAM;
   self->super.sock_proto = IPPROTO_UDP;
   self->super.logproto = "dgram";
@@ -370,12 +388,14 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_DGRAM;
       self->super.sock_proto = IPPROTO_UDP;
       self->super.logproto = "dgram";
+      self->super.transport_name = g_strdup("rfc3164+udp");
     }
   else if (strcasecmp(transport, "tcp") == 0)
     {
       self->super.logproto = "text";
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
+      self->super.transport_name = g_strdup("rfc3164+tcp");
     }
   else if (strcasecmp(transport, "tls") == 0)
     {
@@ -383,6 +403,7 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->require_tls = TRUE;
+      self->super.transport_name = g_strdup("rfc3164+tls");
     }
   else if (strcasecmp(transport, "proxied-tls") == 0)
     {
@@ -390,6 +411,7 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->require_tls = TRUE;
+      self->super.transport_name = g_strdup("rfc3164+proxied-tls");
     }
   else
     {
@@ -399,6 +421,7 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       /* FIXME: look up port/protocol from the logproto */
       self->server_port = TCP_PORT;
       self->allow_tls = TRUE;
+      self->super.transport_name = g_strdup_printf("rfc3164+%s", self->super.transport);
     }
 
   g_assert(self->server_port != 0);
@@ -444,6 +467,7 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_DGRAM;
       self->super.sock_proto = IPPROTO_UDP;
       self->super.logproto = "dgram";
+      self->super.transport_name = g_strdup("rfc5426");
     }
   else if (strcasecmp(transport, "tcp") == 0)
     {
@@ -451,6 +475,7 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.logproto = "framed";
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
+      self->super.transport_name = g_strdup("rfc6587");
     }
   else if (strcasecmp(transport, "tls") == 0)
     {
@@ -466,6 +491,7 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->require_tls = TRUE;
+      self->super.transport_name = g_strdup("rfc5425");
     }
   else
     {
@@ -475,6 +501,7 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->server_port = 514;
       self->super.sock_proto = IPPROTO_TCP;
       self->allow_tls = TRUE;
+      self->super.transport_name = g_strdup_printf("rfc5424+%s", self->super.transport);
     }
   g_assert(self->server_port != 0);
 

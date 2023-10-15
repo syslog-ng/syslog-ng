@@ -115,6 +115,7 @@ void
 transport_mapper_free_method(TransportMapper *self)
 {
   g_free(self->transport);
+  g_free(self->transport_name);
 }
 
 void
