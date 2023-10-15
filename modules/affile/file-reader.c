@@ -292,12 +292,8 @@ void
 file_reader_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   FileReader *self = (FileReader *)s;
-  static NVHandle filename_handle = 0;
 
-  if (!filename_handle)
-    filename_handle = log_msg_get_value_handle("FILE_NAME");
-
-  log_msg_set_value(msg, filename_handle, self->filename->str, self->filename->len);
+  log_msg_set_value(msg, LM_V_FILE_NAME, self->filename->str, self->filename->len);
   log_pipe_forward_msg(s, msg, path_options);
 }
 
