@@ -47,6 +47,7 @@ log_transport_aux_data_init(LogTransportAuxData *self)
       self->data[0] = 0;
       self->timestamp.tv_sec = 0;
       self->timestamp.tv_nsec = 0;
+      self->proto = 0;
     }
 }
 
