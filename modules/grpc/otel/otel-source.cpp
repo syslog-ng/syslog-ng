@@ -212,7 +212,7 @@ otel_sd_new(GlobalConfig *cfg)
 {
   OtelSourceDriver *s = g_new0(OtelSourceDriver, 1);
   log_threaded_source_driver_init_instance(&s->super, cfg);
-
+  log_threaded_source_driver_set_transport_name(&s->super, "otlp");
   s->cpp = new syslogng::grpc::otel::SourceDriver(s);
 
   s->super.super.super.super.init = _init;
