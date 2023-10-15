@@ -207,6 +207,7 @@ LogMacroDef macros[] =
   { "SOURCEIP", M_SOURCE_IP },
   { "DESTIP", M_DEST_IP },
   { "DESTPORT", M_DEST_PORT },
+  { "IP_PROTO", M_IP_PROTOCOL },
   { "PROTO", M_PROTOCOL },
   { "RAWMSG_SIZE", M_RAWMSG_SIZE },
   { "SEQNUM", M_SEQNUM },
@@ -267,6 +268,22 @@ _is_message_dest_an_ip_address(const LogMessage *msg)
     return TRUE;
 #endif
   return FALSE;
+}
+
+static gint
+_get_originating_ip_protocol(const LogMessage *msg)
+{
+  if (!msg->saddr)
+    return 0;
+  if (g_sockaddr_inet_check(msg->saddr))
+    return 4;
+  if (g_sockaddr_inet6_check(msg->saddr))
+    {
+      if (g_sockaddr_inet6_is_v4_mapped(msg->saddr))
+        return 4;
+      return 6;
+    }
+  return 0;
 }
 
 static void
@@ -617,6 +634,12 @@ log_macro_expand(gint id, LogTemplateEvalOptions *options, const LogMessage *msg
         }
       t = LM_VT_INTEGER;
       format_uint32_padded(result, 0, 0, 10, port);
+      break;
+    }
+    case M_IP_PROTOCOL:
+    {
+      t = LM_VT_INTEGER;
+      format_uint32_padded(result, 0, 0, 10, _get_originating_ip_protocol(msg));
       break;
     }
     case M_PROTOCOL:
