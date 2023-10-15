@@ -104,11 +104,11 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
   self->super.super.cond = G_IO_IN;
 
   /* if we have found the peer has a certificate */
-  if( self->tls_session->peer_info.found )
+  if (self->tls_session->peer_info.found)
     {
-      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_cn", self->tls_session->peer_info.cn );
-      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_o", self->tls_session->peer_info.o );
-      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_ou", self->tls_session->peer_info.ou );
+      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_cn", self->tls_session->peer_info.cn);
+      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_o", self->tls_session->peer_info.o);
+      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_ou", self->tls_session->peer_info.ou);
     }
 
   do
