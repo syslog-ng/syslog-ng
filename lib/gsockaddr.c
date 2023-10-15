@@ -413,6 +413,12 @@ g_sockaddr_inet6_set_port(GSockAddr *s, guint16 port)
   g_sockaddr_inet6_get_sa(s)->sin6_port = htons(port);
 }
 
+gboolean
+g_sockaddr_inet6_is_v4_mapped(GSockAddr *s)
+{
+  return IN6_IS_ADDR_V4MAPPED(&g_sockaddr_inet6_get_sa(s)->sin6_addr);
+}
+
 static GSockAddrFuncs inet6_sockaddr_funcs =
 {
   .bind_prepare = g_sockaddr_inet_bind_prepare,
