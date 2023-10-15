@@ -147,6 +147,36 @@ class LogSource(LogSource):
         """
         super().post_message(msg)
 
+    def close_batch(self):
+        """Close the current source side batch
+
+        Source side batching helps syslog-ng to amortize expensive work
+        across a larger chunk of messages, instead of doing it for each
+        message.
+
+        An example where this batching is beneficial is when feeding a
+        destination queue and instead of taking a lock on the queue for
+        every message (causing contention), we only take it once per batch.
+
+        The native drivers built into syslog-ng will typically close batches
+        once every mainloop iteration, allowing a single iteration to
+        process multiple messages.  For instance, if we are receiving
+        multiple messages in a single TCP datagram, all of those messages
+        will be processed as a part of the same batch.
+
+        In Python based log sources, a batch will automatically be closed
+        after every message posted via `post_message()`, except if
+        `self.auto_close_batches` is set to `False` during initialization.
+
+        In case `self.auto_close_batches` is set to False, the driver has to
+        call `close_batch()` explicitly, preferably at a natural boundary
+        between incoming batches of messages.  A good example is when we
+        retrieve several messages via the same HTTP REST call, then the
+        right time to close the batch would be after the last message in the
+        response is posted.
+        """
+        super().close_batch()
+
     def request_exit(self):
         """Request the main loop to exit
 
