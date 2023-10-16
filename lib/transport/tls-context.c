@@ -317,7 +317,7 @@ tls_context_setup_sigalgs(TLSContext *self)
 static gboolean
 tls_context_setup_cmd_context(TLSContext *self)
 {
-#if SYSLOG_NG_HAVE_DECL_SSL_CONF_CTX_new
+#if SYSLOG_NG_HAVE_DECL_SSL_CONF_CTX_NEW
   SSL_CONF_CTX *ssl_conf_ctx = SSL_CONF_CTX_new();
   const int ctx_flags = SSL_CONF_FLAG_FILE | SSL_CONF_FLAG_CLIENT | SSL_CONF_FLAG_SERVER |
                         SSL_CONF_FLAG_CERTIFICATE | SSL_CONF_FLAG_SHOW_ERRORS;
@@ -866,7 +866,7 @@ tls_context_set_client_sigalgs(TLSContext *self, const gchar *sigalgs, GError **
 gboolean
 tls_context_set_conf_cmds(TLSContext *self, GList *cmds, GError **error)
 {
-#if SYSLOG_NG_HAVE_DECL_SSL_CONF_CTX_new
+#if SYSLOG_NG_HAVE_DECL_SSL_CONF_CTX_NEW
   g_list_foreach(self->conf_cmds_list, (GFunc) g_free, NULL);
   self->conf_cmds_list = cmds;
   return TRUE;
