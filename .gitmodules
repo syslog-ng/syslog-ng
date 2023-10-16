@@ -2,7 +2,7 @@
 	path = lib/ivykis
 	url = https://github.com/bazsi/ivykis.git
 	ignore = dirty
-	branch = iv-work-pool-support-for-slave-work-items
+	branch = tip/syslog-ng
 [submodule "modules/grpc/otel/opentelemetry-proto"]
 	path = modules/grpc/protos/opentelemetry-proto
 	url = https://github.com/open-telemetry/opentelemetry-proto.git
