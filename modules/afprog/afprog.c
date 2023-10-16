@@ -445,11 +445,12 @@ afprogram_dd_open_program(AFProgramDestDriver *self, int *fd)
 static gboolean
 afprogram_dd_reopen(AFProgramDestDriver *self)
 {
-  int fd;
+  int fd = -1;
 
   afprogram_dd_kill_child(self);
 
-  if (!afprogram_dd_open_program(self, &fd))
+  if (!afprogram_dd_open_program(self, &fd) ||
+      fd < 0)
     return FALSE;
 
   log_writer_reopen(self->writer, log_proto_text_client_new(log_transport_pipe_new(fd),
