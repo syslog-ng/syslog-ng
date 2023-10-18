@@ -199,6 +199,9 @@ AC_ARG_ENABLE(forced_server_mode,
 AC_ARG_ENABLE(debug,
               [  --enable-debug      Enable debugging code.],, enable_debug="no")
 
+AC_ARG_ENABLE(example-modules,
+              [  --enable-example-modules Enable example modules.],, enable_example_modules="yes")
+
 AC_ARG_ENABLE(force_gnu99,
               [  --enable-force-gnu99      Enforce C99 with gnu extensions.],, force_gnu99="no")
 
@@ -2217,6 +2220,7 @@ AM_CONDITIONAL(ENABLE_MANPAGES_INSTALL, [test "$enable_manpages_install" != "no"
 AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
 AM_CONDITIONAL(ENABLE_TESTING, [test "$enable_tests" != "no"])
+AM_CONDITIONAL(ENABLE_EXAMPLE_MODULES, [test "$enable_example_modules" = "yes"])
 AM_CONDITIONAL(ENABLE_SANITIZER, [test "$with_sanitizer" != "no"])
 AM_CONDITIONAL(ENABLE_DEBUG, [test "$enable_debug" != "no"])
 AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
@@ -2370,3 +2374,4 @@ echo "  Java modules                : ${enable_java_modules:=no}"
 echo "  afsnmp module               : ${enable_afsnmp:=no}"
 echo "  eBPF module                 : ${enable_ebpf:=no}"
 echo "  native bindings             : ${enable_native:=no}"
+echo "  Example modules             : ${enable_example_modules:=yes}"

@@ -1,3 +1,5 @@
+if ENABLE_EXAMPLE_MODULES
+
 include modules/examples/sources/msg-generator/Makefile.am
 include modules/examples/sources/threaded-diskq-source/Makefile.am
 include modules/examples/sources/threaded-random-generator/Makefile.am
@@ -5,7 +7,6 @@ include modules/examples/inner-destinations/http-test-slots/Makefile.am
 include modules/examples/inner-destinations/tls-test-validation/Makefile.am
 include modules/examples/destinations/example_destination/Makefile.am
 include modules/examples/sources/random-choice-generator/Makefile.am
-
 
 EXAMPLE_PLUGINS = \
   $(top_builddir)/modules/examples/sources/libmsg-generator.la \
@@ -38,5 +39,8 @@ endif
 EXTRA_DIST += modules/examples/CMakeLists.txt
 
 modules/examples modules/examples/ mod-examples: modules/examples/libexamples.la
+else
+modules/examples modules/examples/ mod-examples:
+endif
 
 .PHONY: modules/examples/ mod-examples
