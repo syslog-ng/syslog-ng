@@ -1,4 +1,5 @@
 if ENABLE_GRPC
+if ENABLE_LOKI
 
 noinst_LTLIBRARIES += modules/grpc/loki/libloki_cpp.la
 
@@ -52,6 +53,9 @@ modules_grpc_loki_libloki_la_DEPENDENCIES = \
 
 modules/grpc/loki modules/grpc/loki/ mod-loki: modules/grpc/loki/libloki.la
 
+else
+modules/grpc/loki modules/grpc/loki/ mod-loki:
+endif
 else
 modules/grpc/loki modules/grpc/loki/ mod-loki:
 endif

@@ -327,6 +327,14 @@ AC_ARG_ENABLE(cloud_auth,
               [  --enable-cloud-auth     Enable cloud authentication methods (GCP) (default: auto)]
               ,,enable_cloud_auth="auto")
 
+AC_ARG_ENABLE(otel,
+              [  --enable-otel           Enable OTEL support (OpenTelemetry) (default: auto)]
+              ,,enable_otel="auto")
+
+AC_ARG_ENABLE(loki,
+              [  --enable-loki           Enable LOKI support (default: auto)]
+              ,,enable_loki="auto")
+
 AC_ARG_ENABLE(cpp,
               [  --enable-cpp           Enable C++ support (default: auto)]
               ,,enable_cpp="auto")
@@ -1556,6 +1564,55 @@ if ! test "x$enable_cloud_auth" = "xno"; then
 fi
 
 dnl ***************************************************************************
+dnl OTEL
+dnl ***************************************************************************
+if ! test "x$enable_otel" = "xno"; then
+    if test "x$enable_cpp" = "xno"; then
+        if test "x$enable_otel" = "xyes"; then
+            AC_MSG_ERROR(C++ support is mandatory when the otel module is enabled.)
+        else
+            enable_otel=no
+        fi
+    fi
+    if test "x$enable_grpc" = "xno"; then
+        if test "x$enable_otel" = "xyes"; then
+            AC_MSG_ERROR(GRPC support is mandatory when the otel module is enabled.)
+        else
+            enable_otel=no
+        fi
+    fi
+fi
+
+if ! test "x$enable_otel" = "xno"; then
+    enable_otel=yes
+fi
+
+dnl ***************************************************************************
+dnl Loki
+dnl ***************************************************************************
+if ! test "x$enable_loki" = "xno"; then
+    if test "x$enable_cpp" = "xno"; then
+        if test "x$enable_loki" = "xyes"; then
+            AC_MSG_ERROR(C++ support is mandatory when the loki module is enabled.)
+        else
+            enable_loki=no
+        fi
+    fi
+    if test "x$enable_grpc" = "xno"; then
+        if test "x$enable_loki" = "xyes"; then
+            AC_MSG_ERROR(GRPC support is mandatory when the loki module is enabled.)
+        else
+            enable_loki=no
+        fi
+    fi
+fi
+
+if ! test "x$enable_loki" = "xno"; then
+    enable_loki=yes
+fi
+
+
+dnl ***************************************************************************
 dnl libcurl headers/libraries
 dnl ***************************************************************************
 if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
@@ -2198,6 +2255,8 @@ AM_CONDITIONAL(ENABLE_MQTT, [test "$enable_mqtt" = "yes"])
 AM_CONDITIONAL(ENABLE_CPP, [test "$enable_cpp" = "yes"])
 AM_CONDITIONAL(ENABLE_GRPC, [test "$enable_grpc" = "yes"])
 AM_CONDITIONAL(ENABLE_CLOUD_AUTH, [test "$enable_cloud_auth" = "yes"])
+AM_CONDITIONAL(ENABLE_OTEL, [test "$enable_otel" = "yes"])
+AM_CONDITIONAL(ENABLE_LOKI, [test "$enable_loki" = "yes"])
 AM_CONDITIONAL(ENABLE_HTTP, [test "$enable_http" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
@@ -2363,6 +2422,8 @@ echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  MQTT (module)               : ${enable_mqtt:=no}"
 echo "  GRPC (module)               : ${enable_grpc:=no}"
 echo "  Cloud Auth (module)         : ${enable_cloud_auth:=no}"
+echo "  OTEL (module)               : ${enable_otel:=no}"
+echo "  Loki (module)               : ${enable_loki:=no}"
 echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Kafka support (module)      : ${enable_kafka:=no}"
