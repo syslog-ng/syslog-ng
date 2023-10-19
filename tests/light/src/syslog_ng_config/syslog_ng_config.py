@@ -43,7 +43,6 @@ from src.syslog_ng_config.statements.rewrite.rewrite import CreditCardMask
 from src.syslog_ng_config.statements.rewrite.rewrite import Set
 from src.syslog_ng_config.statements.rewrite.rewrite import SetPri
 from src.syslog_ng_config.statements.rewrite.rewrite import SetTag
-from src.syslog_ng_config.statements.rewrite.rewrite import Set
 from src.syslog_ng_config.statements.sources.example_msg_generator_source import ExampleMsgGeneratorSource
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.sources.internal_source import InternalSource
