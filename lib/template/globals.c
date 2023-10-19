@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2014 Balázs Scheidler
+ * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,14 +22,26 @@
  * COPYING for details.
  *
  */
+#include "templates.h"
+#include "macros.h"
 
-#ifndef TEMPLATE_ESCAPING_H_INCLUDED
-#define TEMPLATE_ESCAPING_H_INCLUDED 1
+static LogTemplateOptions global_template_options;
 
-#include "syslog-ng.h"
+LogTemplateOptions *
+log_template_get_global_template_options(void)
+{
+  return &global_template_options;
+}
 
-typedef void (*LogTemplateEscapeFunction)(GString *target, const gchar *value, gsize value_len);
+void
+log_template_global_init(void)
+{
+  log_template_options_global_defaults(&global_template_options);
+  log_macros_global_init();
+}
 
-void log_template_default_escape_method(GString *result, const gchar *sstr, gsize len);
-
-#endif
+void
+log_template_global_deinit(void)
+{
+  log_macros_global_deinit();
+}

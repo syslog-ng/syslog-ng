@@ -29,6 +29,7 @@
 #include "cfg.h"
 #include "scratch-buffers.h"
 #include "templates.h"
+#include "globals.h"
 
 static LogMessageValueType
 _propagate_type(LogMessageValueType acc_type, LogMessageValueType elem_type)
@@ -54,6 +55,73 @@ _should_render(const gchar *value, LogMessageValueType value_type, LogMessageVal
   return !!value[0];
 }
 
+static void
+log_template_append_elem_value(LogTemplate *self, LogTemplateElem *e, LogTemplateEvalOptions *options,
+                               LogMessage *msg, LogMessageValueType *type, GString *result)
+{
+  const gchar *value = NULL;
+  gssize value_len = -1;
+  LogMessageValueType value_type = LM_VT_NONE;
+
+  value = log_msg_get_value_with_type(msg, e->value_handle, &value_len, &value_type);
+  if (value && _should_render(value, value_type, self->type_hint))
+    {
+      g_string_append_len(result, value, value_len);
+    }
+  else if (e->default_value)
+    {
+      g_string_append_len(result, e->default_value, -1);
+      value_type = LM_VT_STRING;
+    }
+  else if (value_type == LM_VT_BYTES || value_type == LM_VT_PROTOBUF)
+    {
+      value_type = LM_VT_NULL;
+    }
+  *type = _propagate_type(*type, value_type);
+}
+
+static void
+log_template_append_elem_macro(LogTemplate *self, LogTemplateElem *e, LogTemplateEvalOptions *options,
+                               LogMessage *msg, LogMessageValueType *type, GString *result)
+{
+  gint len = result->len;
+  LogMessageValueType value_type = LM_VT_NONE;
+
+  if (e->macro)
+    {
+      log_macro_expand(e->macro, options, msg, result, &value_type);
+      if (len == result->len && e->default_value)
+        g_string_append(result, e->default_value);
+      *type = _propagate_type(*type, value_type);
+    }
+}
+
+static void
+log_template_append_elem_func(LogTemplate *self, LogTemplateElem *e, LogTemplateEvalOptions *options,
+                              LogMessage **messages, gint num_messages, gint msg_ndx,
+                              LogMessageValueType *type, GString *result)
+{
+  LogTemplateInvokeArgs args =
+  {
+    e->msg_ref ? &messages[msg_ndx] : messages,
+    e->msg_ref ? 1 : num_messages,
+    options,
+  };
+  LogMessageValueType value_type = LM_VT_NONE;
+
+
+  /* if a function call is called with an msg_ref, we only
+   * pass that given logmsg to argument resolution, otherwise
+   * we pass the whole set so the arguments can individually
+   * specify which message they want to resolve from
+   */
+  if (e->func.ops->eval)
+    e->func.ops->eval(e->func.ops, e->func.state, &args);
+  e->func.ops->call(e->func.ops, e->func.state, &args, result, &value_type);
+
+  *type = _propagate_type(*type, value_type);
+}
+
 void
 log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
                                                        LogTemplateEvalOptions *options,
@@ -62,12 +130,21 @@ log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMes
   LogTemplateElem *e;
   LogMessageValueType t = LM_VT_NONE;
   gboolean first_elem = TRUE;
+  GString *target_buffer = result;
 
   if (!options->opts)
-    options->opts = &self->cfg->template_options;
+    {
+      /* try the configuration first */
 
-  if (self->escape)
-    t = LM_VT_STRING;
+      if (self->cfg)
+        options->opts = &self->cfg->template_options;
+      else
+        options->opts = log_template_get_global_template_options();
+    }
+
+  gboolean escape = (self->escape || (self->top_level && options->opts->escape));
+  if (escape)
+    target_buffer = scratch_buffers_alloc();
 
   for (GList *p = self->compiled_template; p; p = g_list_next(p), first_elem = FALSE)
     {
@@ -108,70 +185,32 @@ log_template_append_format_value_and_type_with_context(LogTemplate *self, LogMes
       if (e->msg_ref == 0)
         msg_ndx--;
 
+      if (escape)
+        g_string_truncate(target_buffer, 0);
+
       switch (e->type)
         {
         case LTE_VALUE:
-        {
-          const gchar *value = NULL;
-          gssize value_len = -1;
-          LogMessageValueType value_type = LM_VT_NONE;
-
-          value = log_msg_get_value_with_type(messages[msg_ndx], e->value_handle, &value_len, &value_type);
-          if (value && _should_render(value, value_type, self->type_hint))
-            {
-              result_append(result, value, value_len, self->escape);
-            }
-          else if (e->default_value)
-            {
-              result_append(result, e->default_value, -1, self->escape);
-              value_type = LM_VT_STRING;
-            }
-          else if (value_type == LM_VT_BYTES || value_type == LM_VT_PROTOBUF)
-            {
-              value_type = LM_VT_NULL;
-            }
-          t = _propagate_type(t, value_type);
+          log_template_append_elem_value(self, e, options, messages[msg_ndx], &t, target_buffer);
           break;
-        }
         case LTE_MACRO:
-        {
-          gint len = result->len;
-          LogMessageValueType value_type = LM_VT_NONE;
-
-          if (e->macro)
-            {
-              log_macro_expand(e->macro, self->escape, options, messages[msg_ndx], result, &value_type);
-              if (len == result->len && e->default_value)
-                g_string_append(result, e->default_value);
-              t = _propagate_type(t, value_type);
-            }
+          log_template_append_elem_macro(self, e, options, messages[msg_ndx], &t, target_buffer);
           break;
-        }
         case LTE_FUNC:
-        {
-          LogTemplateInvokeArgs args =
-          {
-            e->msg_ref ? &messages[msg_ndx] : messages,
-            e->msg_ref ? 1 : num_messages,
-            options,
-          };
-          LogMessageValueType value_type = LM_VT_NONE;
-
-
-          /* if a function call is called with an msg_ref, we only
-           * pass that given logmsg to argument resolution, otherwise
-           * we pass the whole set so the arguments can individually
-           * specify which message they want to resolve from
-           */
-          if (e->func.ops->eval)
-            e->func.ops->eval(e->func.ops, e->func.state, &args);
-          e->func.ops->call(e->func.ops, e->func.state, &args, result, &value_type);
-          t = _propagate_type(t, value_type);
+          log_template_append_elem_func(self, e, options, messages, num_messages, msg_ndx, &t, target_buffer);
           break;
-        }
         default:
           g_assert_not_reached();
           break;
+        }
+
+      if (escape)
+        {
+          if (options->escape)
+            options->escape(result, target_buffer->str, target_buffer->len);
+          else
+            log_template_default_escape_method(result, target_buffer->str, target_buffer->len);
+          t = LM_VT_STRING;
         }
     }
   if (type)

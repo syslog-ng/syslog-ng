@@ -367,6 +367,15 @@ log_template_new(GlobalConfig *cfg, const gchar *name)
   else
     self->type_hint = LM_VT_NONE;
   self->explicit_type_hint = LM_VT_NONE;
+  self->top_level = TRUE;
+  return self;
+}
+
+LogTemplate *
+log_template_new_embedded(GlobalConfig *cfg)
+{
+  LogTemplate *self = log_template_new(cfg, NULL);
+  self->top_level = FALSE;
   return self;
 }
 
@@ -476,18 +485,6 @@ GQuark
 log_template_error_quark(void)
 {
   return g_quark_from_static_string("log-template-error-quark");
-}
-
-void
-log_template_global_init(void)
-{
-  log_macros_global_init();
-}
-
-void
-log_template_global_deinit(void)
-{
-  log_macros_global_deinit();
 }
 
 gboolean

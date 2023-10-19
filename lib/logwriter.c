@@ -1938,19 +1938,6 @@ log_writer_options_defaults(LogWriterOptions *options)
 }
 
 void
-log_writer_options_set_template_escape(LogWriterOptions *options, gboolean enable)
-{
-  if (options->template && options->template->def_inline)
-    {
-      log_template_set_escape(options->template, enable);
-    }
-  else
-    {
-      msg_error("Macro escaping can only be specified for inline templates");
-    }
-}
-
-void
 log_writer_options_set_mark_mode(LogWriterOptions *options, const gchar *mark_mode)
 {
   options->mark_mode = cfg_lookup_mark_mode(mark_mode);

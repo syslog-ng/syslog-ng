@@ -224,7 +224,9 @@ tests/light/functional_tests/parsers/group-lines-parser/test_group_lines_parser\
 tests/light/functional_tests/logpath/test_conditionals\.py
 tests/light/functional_tests/logpath/test_midpoint_destinations\.py
 tests/light/functional_tests/value-pairs/test_value_pairs\.py
+tests/light/functional_tests/templates/test_template_stmt\.py
 tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py
+tests/light/src/syslog_ng_config/statements/template/template\.py
 modules/correlation/id-counter\.[ch]$
 modules/correlation/group-lines.h
 

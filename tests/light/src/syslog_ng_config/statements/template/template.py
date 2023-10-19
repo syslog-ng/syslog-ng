@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2020 Balabit
+# Copyright (c) 2023 Balázs Scheidler <balazs.scheidler@axoflow.com>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,37 +20,18 @@
 # COPYING for details.
 #
 #############################################################################
+from src.common.random_id import get_unique_id
 
 
-class Rewrite(object):
-    group_type = "rewrite"
-
-    def __init__(self, driver_name, positional_parameters, **options):
-        self.driver_name = driver_name
-        self.options = options
-        self.positional_parameters = positional_parameters
-
-
-class SetTag(Rewrite):
-    def __init__(self, tag, **options):
-        super(SetTag, self).__init__("set_tag", [tag], **options)
+class Template(object):
+    def __init__(self, template, name=None, escape=None, use_simple_statement=False):
+        self.template = template
+        self.template_escape = escape
+        self.name = name or "template_{}".format(get_unique_id())
+        self.use_simple_statement = escape is not None or use_simple_statement
 
 
-class Set(Rewrite):
-    def __init__(self, template, **options):
-        super(Set, self).__init__("set", [template], **options)
-
-
-class SetPri(Rewrite):
-    def __init__(self, pri, **options):
-        super(SetPri, self).__init__("set_pri", [pri], **options)
-
-
-class CreditCardHash(Rewrite):
-    def __init__(self, **options):
-        super(CreditCardHash, self).__init__("credit-card-hash", [], **options)
-
-
-class CreditCardMask(Rewrite):
-    def __init__(self, **options):
-        super(CreditCardMask, self).__init__("credit-card-mask", [], **options)
+class TemplateFunction(object):
+    def __init__(self, template, name):
+        self.template = template
+        self.name = name

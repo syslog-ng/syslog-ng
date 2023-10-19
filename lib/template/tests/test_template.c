@@ -414,6 +414,11 @@ Test(template, test_multi_thread)
 
 Test(template, test_escaping)
 {
+  assert_template_format_with_escaping("$(echo ${APP.QVALUE})", TRUE, "\\\"value\\\"");
+  assert_template_format_with_escaping("$(echo ${APP.QVALUE}) ${APP.QVALUE}", TRUE, "\\\"value\\\" \\\"value\\\"");
+  assert_template_format_with_escaping("$(echo $(echo $(echo ${APP.QVALUE})))", TRUE, "\\\"value\\\"");
+  assert_template_format_with_escaping("$(echo $(echo $(length ${APP.QVALUE})))", TRUE, "7");
+
   assert_template_format_with_escaping("${APP.QVALUE}", FALSE, "\"value\"");
   assert_template_format_with_escaping("${APP.QVALUE}", TRUE, "\\\"value\\\"");
   assert_template_format_with_escaping("$(if (\"${APP.VALUE}\" eq \"value\") \"${APP.QVALUE}\" \"${APP.QVALUE}\")",

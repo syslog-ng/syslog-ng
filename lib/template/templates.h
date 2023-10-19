@@ -59,8 +59,7 @@ struct _LogTemplate
   gchar *template_str;
   GList *compiled_template;
   GlobalConfig *cfg;
-  guint escape:1, def_inline:1, trivial:1, literal:1;
-
+  guint top_level:1, escape:1, def_inline:1, trivial:1, literal:1;
 
   /* This value stores the type-hint the user _explicitly_ specified.  If
    * this is an automatic cast to string (in compat mode), this would be
@@ -92,6 +91,7 @@ const gchar *log_template_get_trivial_value_and_type(LogTemplate *self, LogMessa
 void log_template_set_name(LogTemplate *self, const gchar *name);
 
 LogTemplate *log_template_new(GlobalConfig *cfg, const gchar *name);
+LogTemplate *log_template_new_embedded(GlobalConfig *cfg);
 LogTemplate *log_template_ref(LogTemplate *s);
 void log_template_unref(LogTemplate *s);
 
@@ -100,9 +100,6 @@ void log_template_options_init(LogTemplateOptions *options, GlobalConfig *cfg);
 void log_template_options_destroy(LogTemplateOptions *options);
 void log_template_options_defaults(LogTemplateOptions *options);
 void log_template_options_global_defaults(LogTemplateOptions *options);
-
-void log_template_global_init(void);
-void log_template_global_deinit(void);
 
 gboolean log_template_on_error_parse(const gchar *on_error, gint *out);
 void log_template_options_set_on_error(LogTemplateOptions *options, gint on_error);

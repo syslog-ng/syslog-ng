@@ -23,7 +23,7 @@
 
 #include "syslog-ng.h"
 #include "logqueue.h"
-#include "template/templates.h"
+#include "template/globals.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "logpipe.h"

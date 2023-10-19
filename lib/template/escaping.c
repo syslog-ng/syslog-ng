@@ -28,32 +28,24 @@
 #include <string.h>
 
 void
-result_append(GString *result, const gchar *sstr, gssize len, gboolean escape)
+log_template_default_escape_method(GString *result, const gchar *sstr, gsize len)
 {
-  gint i;
+  gsize i;
   const guchar *ustr = (const guchar *) sstr;
 
-  if (len < 0)
-    len = strlen(sstr);
-
-  if (escape)
+  for (i = 0; i < len; i++)
     {
-      for (i = 0; i < len; i++)
+      if (ustr[i] == '\'' || ustr[i] == '"' || ustr[i] == '\\')
         {
-          if (ustr[i] == '\'' || ustr[i] == '"' || ustr[i] == '\\')
-            {
-              g_string_append_c(result, '\\');
-              g_string_append_c(result, ustr[i]);
-            }
-          else if (ustr[i] < ' ')
-            {
-              g_string_append_c(result, '\\');
-              format_uint32_padded(result, 3, '0', 8, ustr[i]);
-            }
-          else
-            g_string_append_c(result, ustr[i]);
+          g_string_append_c(result, '\\');
+          g_string_append_c(result, ustr[i]);
         }
+      else if (ustr[i] < ' ')
+        {
+          g_string_append_c(result, '\\');
+          format_uint32_padded(result, 3, '0', 8, ustr[i]);
+        }
+      else
+        g_string_append_c(result, ustr[i]);
     }
-  else
-    g_string_append_len(result, sstr, len);
 }
