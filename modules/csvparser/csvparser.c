@@ -165,7 +165,7 @@ dispatch_key_formatter(gchar *prefix)
   return prefix ? _format_key_for_prefix : _return_key;
 }
 
-static void
+static gboolean
 _iterate_columns(CSVParser *self, CSVScanner *scanner, LogMessage *msg)
 {
   GString *key_scratch = scratch_buffers_alloc();
@@ -181,6 +181,18 @@ _iterate_columns(CSVParser *self, CSVScanner *scanner, LogMessage *msg)
       if (self->columns)
         {
           CSVParserColumn *current_column = column_l->data;
+          const gchar *current_value = csv_scanner_get_current_value(scanner);
+          GError *error = NULL;
+
+          if (self->drop_invalid && !type_cast_validate(current_value, current_column->type, &error))
+            {
+              msg_debug("csv-parser: error casting value to the type specified",
+                        evt_tag_str("column", current_column->name),
+                        evt_tag_str("type", log_msg_value_type_to_str(current_column->type)),
+                        evt_tag_str("error", error->message));
+              g_clear_error(&error);
+              return FALSE;
+            }
           log_msg_set_value_by_name_with_type(msg,
                                               _key_formatter(key_scratch, current_column->name, self->prefix_len),
                                               csv_scanner_get_current_value(scanner),
@@ -199,6 +211,7 @@ _iterate_columns(CSVParser *self, CSVScanner *scanner, LogMessage *msg)
           match_index++;
         }
     }
+  return TRUE;
 }
 
 static gboolean
@@ -215,17 +228,21 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
   CSVScanner scanner;
   csv_scanner_init(&scanner, &self->options, input);
 
-  _iterate_columns(self, &scanner, msg);
-
   gboolean result = TRUE;
-  if (self->drop_invalid && !csv_scanner_is_scan_complete(&scanner))
+
+  if (!_iterate_columns(self, &scanner, msg))
+    result = FALSE;
+  if (!csv_scanner_is_scan_complete(&scanner))
+    result = FALSE;
+
+  if (self->drop_invalid && !result)
     {
       msg_debug("csv-parser() failed",
                 evt_tag_str("error", "csv-parser() failed to parse its input and drop-invalid(yes) was specified"),
                 evt_tag_str("input", input));
-
-      result = FALSE;
     }
+  else
+    result = TRUE;
   csv_scanner_deinit(&scanner);
 
   return result;
