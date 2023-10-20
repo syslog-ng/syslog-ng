@@ -53,6 +53,7 @@
 
 %token KW_RATE_LIMIT
 %token KW_RATE
+%token KW_KEY
 
 %type	<ptr> rate_limit
 
@@ -73,7 +74,7 @@ rate_limit_args
   ;
 
 rate_limit_arg
-  : KW_TEMPLATE '(' template_content ')'
+  : KW_KEY '(' template_content ')'
       {
         rate_limit_set_key_template(last_filter_expr, $3);
         log_template_unref($3);
