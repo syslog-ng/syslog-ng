@@ -132,6 +132,40 @@ dispatch_key_formatter(gchar *prefix)
   return prefix ? _format_key_for_prefix : _return_key;
 }
 
+static void
+_iterate_columns(CSVParser *self, CSVScanner *scanner, LogMessage *msg)
+{
+  GString *key_scratch = scratch_buffers_alloc();
+  if (self->prefix)
+    g_string_assign(key_scratch, self->prefix);
+
+  key_formatter_t _key_formatter = dispatch_key_formatter(self->prefix);
+  gint match_index = 1;
+
+  while (csv_scanner_scan_next(scanner))
+    {
+      const gchar *current_name = csv_scanner_get_current_name(scanner);
+
+      if (current_name)
+        {
+          log_msg_set_value_by_name(msg,
+                                    _key_formatter(key_scratch, csv_scanner_get_current_name(scanner), self->prefix_len),
+                                    csv_scanner_get_current_value(scanner),
+                                    csv_scanner_get_current_value_len(scanner));
+        }
+      else
+        {
+          if (match_index == 1)
+            log_msg_unset_match(msg, 0);
+          log_msg_set_match_with_type(msg,
+                                      match_index, csv_scanner_get_current_value(scanner),
+                                      csv_scanner_get_current_value_len(scanner),
+                                      LM_VT_STRING);
+        }
+      match_index++;
+    }
+}
+
 static gboolean
 csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
                    gsize input_len)
@@ -142,39 +176,11 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
   msg_trace("csv-parser message processing started",
             evt_tag_str ("input", input),
             evt_tag_str ("prefix", self->prefix),
-            evt_tag_msg_reference(*pmsg));
+            evt_tag_msg_reference(msg));
   CSVScanner scanner;
   csv_scanner_init(&scanner, &self->options, input);
 
-  GString *key_scratch = scratch_buffers_alloc();
-  if (self->prefix)
-    g_string_assign(key_scratch, self->prefix);
-
-  key_formatter_t _key_formatter = dispatch_key_formatter(self->prefix);
-  gint match_index = 1;
-
-  while (csv_scanner_scan_next(&scanner))
-    {
-      const gchar *current_name = csv_scanner_get_current_name(&scanner);
-
-      if (current_name)
-        {
-          log_msg_set_value_by_name(msg,
-                                    _key_formatter(key_scratch, csv_scanner_get_current_name(&scanner), self->prefix_len),
-                                    csv_scanner_get_current_value(&scanner),
-                                    csv_scanner_get_current_value_len(&scanner));
-        }
-      else
-        {
-          if (match_index == 1)
-            log_msg_unset_match(msg, 0);
-          log_msg_set_match_with_type(msg,
-                                      match_index, csv_scanner_get_current_value(&scanner),
-                                      csv_scanner_get_current_value_len(&scanner),
-                                      LM_VT_STRING);
-        }
-      match_index++;
-    }
+  _iterate_columns(self, &scanner, msg);
 
   gboolean result = TRUE;
   if (self->drop_invalid && !csv_scanner_is_scan_complete(&scanner))
