@@ -100,9 +100,11 @@ _add_name_value(gpointer key, gpointer value, gpointer data)
   gchar *name = (gchar *) key;
   LogTemplate *val = (LogTemplate *) value;
   LogMessage *msg = (LogMessage *) data;
+  LogMessageValueType type;
+
   GString *msg_body = g_string_sized_new(128);
-  log_template_format(val, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, msg_body);
-  log_msg_set_value_by_name(msg, name, msg_body->str, msg_body->len);
+  log_template_format_value_and_type(val, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, msg_body, &type);
+  log_msg_set_value_by_name_with_type(msg, name, msg_body->str, msg_body->len, type);
   g_string_free(msg_body, TRUE);
 
 }
