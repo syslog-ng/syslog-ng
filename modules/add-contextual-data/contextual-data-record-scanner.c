@@ -170,7 +170,6 @@ _fetch_value(ContextualDataRecordScanner *self, ContextualDataRecord *record)
       g_clear_error(&error);
       return FALSE;
     }
-  log_template_forget_template_string(record->value);
   return TRUE;
 }
 
