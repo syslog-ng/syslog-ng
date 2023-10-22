@@ -39,26 +39,6 @@ typedef struct _AppParserGenerator
   gboolean allow_overlaps;
 } AppParserGenerator;
 
-static const gchar *
-_get_filter_expr(Application *app, Application *base_app)
-{
-  if (app->filter_expr)
-    return app->filter_expr;
-  if (base_app)
-    return base_app->filter_expr;
-  return NULL;
-}
-
-static const gchar *
-_get_parser_expr(Application *app, Application *base_app)
-{
-  if (app->parser_expr)
-    return app->parser_expr;
-  if (base_app)
-    return base_app->parser_expr;
-  return NULL;
-}
-
 static void
 _generate_filter(AppParserGenerator *self, const gchar *filter_expr)
 {
@@ -111,7 +91,7 @@ _is_application_excluded(AppParserGenerator *self, Application *app)
 }
 
 static void
-_generate_application(Application *app, Application *base_app, gpointer user_data)
+_generate_application(Application *app, gpointer user_data)
 {
   AppParserGenerator *self = (AppParserGenerator *) user_data;
 
@@ -143,8 +123,8 @@ _generate_application(Application *app, Application *base_app, gpointer user_dat
   g_string_append_printf(self->block,
                          "            #Start Application %s\n", app->name);
 
-  _generate_filter(self, _get_filter_expr(app, base_app));
-  _generate_parser(self, _get_parser_expr(app, base_app));
+  _generate_filter(self, app->filter_expr);
+  _generate_parser(self, app->parser_expr);
   _generate_action(self, app);
   g_string_append_printf(self->block,
                          "            #End Application %s\n", app->name);

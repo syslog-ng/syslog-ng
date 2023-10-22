@@ -46,7 +46,7 @@ Test(appmodel_context, register_application_makes_the_app_available)
 }
 
 static void
-_foreach_app(Application *app, Application *base_app, gpointer user_data)
+_foreach_app(Application *app, gpointer user_data)
 {
   GString *result = (GString *) user_data;
 
@@ -57,11 +57,8 @@ Test(appmodel_context, iter_applications_enumerates_apps_without_asterisk)
 {
   GString *result = g_string_sized_new(128);
 
-  appmodel_context_register_application(ac, application_new("foo", "*"));
   appmodel_context_register_application(ac, application_new("foo", "port514"));
-  appmodel_context_register_application(ac, application_new("bar", "*"));
   appmodel_context_register_application(ac, application_new("bar", "port514"));
-  appmodel_context_register_application(ac, application_new("baz", "*"));
   appmodel_context_register_application(ac, application_new("baz", "port514"));
   appmodel_context_iter_applications(ac, _foreach_app, result);
   cr_assert_str_eq(result->str, "foobarbaz");
@@ -72,11 +69,8 @@ Test(appmodel_context, iter_applications_enumerates_apps_in_the_order_of_registr
 {
   GString *result = g_string_sized_new(128);
 
-  appmodel_context_register_application(ac, application_new("baz", "*"));
   appmodel_context_register_application(ac, application_new("baz", "port514"));
-  appmodel_context_register_application(ac, application_new("bar", "*"));
   appmodel_context_register_application(ac, application_new("bar", "port514"));
-  appmodel_context_register_application(ac, application_new("foo", "*"));
   appmodel_context_register_application(ac, application_new("foo", "port514"));
   appmodel_context_iter_applications(ac, _foreach_app, result);
   cr_assert_str_eq(result->str, "bazbarfoo");
