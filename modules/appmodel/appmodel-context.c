@@ -88,7 +88,7 @@ appmodel_context_lookup_application(AppModelContext *self, const gchar *name, co
 }
 
 void
-appmodel_context_iter_applications(AppModelContext *self, void (*foreach)(Application *app, Application *base_app,
+appmodel_context_iter_applications(AppModelContext *self, void (*foreach)(Application *app,
                                    gpointer user_data), gpointer user_data)
 {
   gint i;
@@ -96,12 +96,7 @@ appmodel_context_iter_applications(AppModelContext *self, void (*foreach)(Applic
   for (i = 0; i < self->application_ptrs->len; i++)
     {
       Application *app = g_ptr_array_index(self->application_ptrs, i);
-
-      if (strcmp(app->topic, "*") == 0)
-        continue;
-
-      Application *base_app = appmodel_context_lookup_application(self, app->name, "*");
-      foreach(app, base_app, user_data);
+      foreach(app, user_data);
     }
 }
 
