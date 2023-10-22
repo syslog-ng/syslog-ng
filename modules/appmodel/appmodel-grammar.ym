@@ -33,8 +33,6 @@
 #include "cfg-grammar-internal.h"
 #include "messages.h"
 
-Application *last_application;
-
 }
 
 %define api.prefix {appmodel_}
@@ -58,8 +56,8 @@ Application *last_application;
 start
         : LL_CONTEXT_ROOT application_definition
           {
-	    appmodel_register_application(configuration, last_application);
-            *instance = last_application;
+	    appmodel_register_application(configuration, $2);
+            *instance = $2;
             YYACCEPT;
           }
         ;
@@ -67,25 +65,25 @@ start
 
 application_definition
         : KW_APPLICATION string '[' string ']'
-          {
-	    last_application = application_new($2, $4);
-          }
-	  '{' application_options '}'
+          <ptr>{
+	    $$ = application_new($2, $4);
+          }[app]
+	  '{' <ptr>{ $$ = $app; } application_options '}'
 	  {
-	    $$ = last_application;
+	    $$ = $app;
             free($2);
             free($4);
           }
         ;
 
 application_options
-	: application_option semicolons application_options
+	: application_option semicolons { $<ptr>$ = $<ptr>0; } application_options
 	|
 	;
 
 application_option
-	: KW_FILTER _block_content_context_push LL_BLOCK _block_content_context_pop  { application_set_filter(last_application, $3); free($3); }
-	| KW_PARSER _block_content_context_push LL_BLOCK _block_content_context_pop  { application_set_parser(last_application, $3); free($3); }
+	: KW_FILTER _block_content_context_push LL_BLOCK _block_content_context_pop  { application_set_filter($<ptr>0, $3); free($3); }
+	| KW_PARSER _block_content_context_push LL_BLOCK _block_content_context_pop  { application_set_parser($<ptr>0, $3); free($3); }
 	;
 
 /* INCLUDE_RULES */
