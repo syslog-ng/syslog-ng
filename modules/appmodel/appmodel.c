@@ -46,3 +46,11 @@ appmodel_register_application(GlobalConfig *cfg, Application *application)
 
   appmodel_context_register_object(ac, &application->super);
 }
+
+void
+appmodel_register_transformation(GlobalConfig *cfg, Transformation *transformation)
+{
+  AppModelContext *ac = appmodel_get_context(cfg);
+
+  appmodel_context_register_object(ac, &transformation->super);
+}

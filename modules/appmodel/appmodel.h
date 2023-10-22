@@ -25,8 +25,10 @@
 
 #include "module-config.h"
 #include "application.h"
+#include "transformation.h"
 
 AppModelContext *appmodel_get_context(GlobalConfig *cfg);
 void appmodel_register_application(GlobalConfig *cfg, Application *application);
+void appmodel_register_transformation(GlobalConfig *cfg, Transformation *transformation);
 
 #endif

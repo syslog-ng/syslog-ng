@@ -48,8 +48,11 @@
 /* INCLUDE_DECLS */
 
 %token KW_APPLICATION
+%token KW_TRANSFORMATION
+%token KW_TRANSLATE
 
 %type	<ptr> application_definition
+%type	<ptr> transformation_definition
 
 %%
 
@@ -57,6 +60,12 @@ start
         : LL_CONTEXT_ROOT application_definition
           {
 	    appmodel_register_application(configuration, $2);
+            *instance = $2;
+            YYACCEPT;
+          }
+	| LL_CONTEXT_ROOT transformation_definition
+          {
+	    appmodel_register_transformation(configuration, $2);
             *instance = $2;
             YYACCEPT;
           }
@@ -85,6 +94,30 @@ application_option
 	: KW_FILTER _block_content_context_push LL_BLOCK _block_content_context_pop  { application_set_filter($<ptr>0, $3); free($3); }
 	| KW_PARSER _block_content_context_push LL_BLOCK _block_content_context_pop  { application_set_parser($<ptr>0, $3); free($3); }
 	;
+
+
+transformation_definition
+	: KW_TRANSFORMATION string '[' string ']'
+          <ptr>{
+            $$ = transformation_new($2, $4);
+          }[transformation]
+	  '{' <ptr>{ $$ = $transformation; } transformation_options '}'
+	  {
+	    $$ = $transformation;
+            free($2);
+            free($4);
+          }
+	;
+
+transformation_options
+	: transformation_option semicolons { $<ptr>$ = $<ptr>0; } transformation_options
+	|
+	;
+
+transformation_option
+        : KW_TRANSLATE _block_content_context_push LL_BLOCK _block_content_context_pop  { transformation_set_translate($<ptr>0, $3); free($3); }
+        ;
+
 
 /* INCLUDE_RULES */
 

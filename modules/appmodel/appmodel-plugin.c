@@ -44,6 +44,11 @@ static Plugin appmodel_plugins[] =
     .parser = &appmodel_parser,
   },
   {
+    .type = LL_CONTEXT_ROOT,
+    .name = "transformation",
+    .parser = &appmodel_parser,
+  },
+  {
     .type = LL_CONTEXT_PARSER | LL_CONTEXT_FLAG_GENERATOR,
     .name = "app-parser",
     .construct = app_parser_construct,
