@@ -31,7 +31,10 @@ int appmodel_parse(CfgLexer *lexer, gpointer *instance, gpointer arg);
 
 static CfgLexerKeyword appmodel_keywords[] =
 {
-  { "application",  KW_APPLICATION },
+  { "application",     KW_APPLICATION },
+  { "transformation",  KW_TRANSFORMATION },
+  { "transform",       KW_TRANSFORM },
+  { "step",            KW_STEP },
   { NULL }
 };
 
