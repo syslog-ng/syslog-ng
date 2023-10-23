@@ -103,6 +103,7 @@ ParameterizedTestParameters(parser, test_csv_parser)
     // string delim & multi char & a char is in the string
     {
       .msg = "PTHREAD support :initialized",
+      .max_columns = -1,
       .drop_invalid = FALSE,
       .dialect = CSV_SCANNER_ESCAPE_NONE,
       .flags = 0,
