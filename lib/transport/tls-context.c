@@ -202,7 +202,9 @@ tls_context_setup_ssl_version(TLSContext *self)
 {
   if (self->ssl_version == 0)
     return;
+#if SYSLOG_NG_HAVE_DECL_SSL_CTX_SET_MIN_PROTO_VERSION
   SSL_CTX_set_min_proto_version(self->ssl_ctx, self->ssl_version);
+#endif
 }
 
 static void
@@ -679,6 +681,7 @@ tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str)
 gboolean
 tls_context_set_ssl_version_by_name(TLSContext *self, const gchar *value)
 {
+#if SYSLOG_NG_HAVE_DECL_SSL_CTX_SET_MIN_PROTO_VERSION
   if (strcasecmp(value, "sslv3") == 0)
     self->ssl_version = SSL3_VERSION;
   else if (strcasecmp(value, "tlsv1") == 0 || strcasecmp(value, "tlsv1_0") == 0)
@@ -692,6 +695,10 @@ tls_context_set_ssl_version_by_name(TLSContext *self, const gchar *value)
   else
     return FALSE;
   return TRUE;
+#else
+  msg_error("This version of syslog-ng was compiled against OpenSSL older than 1.1.0 which does not support ssl-version()");
+  return FALSE;
+#endif
 }
 
 gboolean

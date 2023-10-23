@@ -46,6 +46,7 @@ function (openssl_set_defines)
     SSL_CTX_set_ciphersuites
     SSL_CTX_set1_sigalgs_list
     SSL_CTX_set1_client_sigalgs_list
+    SSL_CTX_set_min_proto_version
     SSL_add_file_cert_subjects_to_stack
     SSL_add_dir_cert_subjects_to_stack)
 
