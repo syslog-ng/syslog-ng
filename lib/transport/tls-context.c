@@ -198,6 +198,14 @@ tls_context_setup_ocsp_stapling(TLSContext *self)
 }
 
 static void
+tls_context_setup_ssl_version(TLSContext *self)
+{
+  if (self->ssl_version == 0)
+    return;
+  SSL_CTX_set_min_proto_version(self->ssl_ctx, self->ssl_version);
+}
+
+static void
 tls_context_setup_ssl_options(TLSContext *self)
 {
   if (self->ssl_options != TSO_NONE)
@@ -587,6 +595,7 @@ tls_context_setup_context(TLSContext *self)
   tls_context_setup_verify_mode(self);
   tls_context_setup_ocsp_stapling(self);
 
+  tls_context_setup_ssl_version(self);
   tls_context_setup_ssl_options(self);
   if (!tls_context_setup_ecdh(self))
     goto error_no_print;
@@ -664,6 +673,24 @@ tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str)
   else
     return FALSE;
 
+  return TRUE;
+}
+
+gboolean
+tls_context_set_ssl_version_by_name(TLSContext *self, const gchar *value)
+{
+  if (strcasecmp(value, "sslv3") == 0)
+    self->ssl_version = SSL3_VERSION;
+  else if (strcasecmp(value, "tlsv1") == 0 || strcasecmp(value, "tlsv1_0") == 0)
+    self->ssl_version = TLS1_VERSION;
+  else if (strcasecmp(value, "tlsv1_1") == 0)
+    self->ssl_version = TLS1_1_VERSION;
+  else if (strcasecmp(value, "tlsv1_2") == 0)
+    self->ssl_version = TLS1_2_VERSION;
+  else if (strcasecmp(value, "tlsv1_3") == 0)
+    self->ssl_version = TLS1_3_VERSION;
+  else
+    return FALSE;
   return TRUE;
 }
 
