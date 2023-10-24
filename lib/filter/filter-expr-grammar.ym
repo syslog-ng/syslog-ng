@@ -330,7 +330,7 @@ filter_match_opt
             filter_match_set_value_handle(last_filter_expr, log_msg_get_value_handle(p));
             free($3);
           }
-	| KW_TEMPLATE '(' template_content ')'
+	| KW_TEMPLATE '(' template_name_or_content ')'
 	  {
             filter_match_set_template_ref(last_filter_expr, $3);
           }

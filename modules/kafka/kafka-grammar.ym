@@ -98,7 +98,7 @@ kafka_option
         {
             kafka_dd_set_key_ref(last_driver, $3);
         }
-        | KW_MESSAGE '(' template_content ')'
+        | KW_MESSAGE '(' template_name_or_content ')'
         {
             kafka_dd_set_message_ref(last_driver, $3);
         }

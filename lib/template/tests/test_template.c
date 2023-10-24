@@ -425,6 +425,10 @@ Test(template, test_escaping)
                                        FALSE, "\"value\"");
   assert_template_format_with_escaping("$(if (\"${APP.VALUE}\" eq \"value\") \"${APP.QVALUE}\" \"${APP.QVALUE}\")",
                                        TRUE, "\\\"value\\\"");
+
+  /* literal parts of the template are not escaped */
+  assert_template_format_with_escaping("\"$(echo $(echo $(length ${APP.QVALUE})))\"", TRUE, "\"7\"");
+  assert_template_format_with_escaping("\"almafa\"", TRUE, "\"almafa\"");
 }
 
 Test(template, test_user_template_function)

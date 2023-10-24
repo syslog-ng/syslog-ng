@@ -83,7 +83,7 @@ afsmtp_option
             afsmtp_dd_set_subject(last_driver, $3);
             log_template_unref($3);
           }
-        | KW_BODY '(' template_content ')'
+        | KW_BODY '(' template_name_or_content ')'
           {
             afsmtp_dd_set_body(last_driver, $3);
             log_template_unref($3);

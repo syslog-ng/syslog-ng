@@ -98,7 +98,7 @@ loki_dest_option
   | KW_KEEP_ALIVE '(' loki_keepalive_options ')'
   | KW_LABELS '(' loki_labels ')'
   | KW_TIMESTAMP '(' loki_timestamp_enum ')'
-  | KW_TEMPLATE '(' template_content ')' { loki_dd_set_message_template_ref(last_driver, $3); }
+  | KW_TEMPLATE '(' template_name_or_content ')' { loki_dd_set_message_template_ref(last_driver, $3); }
   | KW_AUTH { last_grpc_client_credentials_builder = loki_dd_get_credentials_builder(last_driver); } '(' grpc_client_credentials_option ')'
   | threaded_dest_driver_general_option
   | threaded_dest_driver_workers_option
