@@ -1547,25 +1547,9 @@ if ! test "x$enable_grpc" = "xno"; then
 fi
 
 dnl ***************************************************************************
-dnl Cloud Auth
+dnl GRPC - OTEL
 dnl ***************************************************************************
-if ! test "x$enable_cloud_auth" = "xno"; then
-    if test "x$enable_cpp" = "xno"; then
-        if test "x$enable_cloud_auth" = "xyes"; then
-            AC_MSG_ERROR(C++ support is mandatory when the cloud-auth module is enabled.)
-        else
-            enable_cloud_auth=no
-        fi
-    fi
-fi
 
-if ! test "x$enable_cloud_auth" = "xno"; then
-    enable_cloud_auth=yes
-fi
-
-dnl ***************************************************************************
-dnl OTEL
-dnl ***************************************************************************
 if ! test "x$enable_otel" = "xno"; then
     if test "x$enable_cpp" = "xno"; then
         if test "x$enable_otel" = "xyes"; then
@@ -1588,8 +1572,9 @@ if ! test "x$enable_otel" = "xno"; then
 fi
 
 dnl ***************************************************************************
-dnl Loki
+dnl GRPC - Loki
 dnl ***************************************************************************
+
 if ! test "x$enable_loki" = "xno"; then
     if test "x$enable_cpp" = "xno"; then
         if test "x$enable_loki" = "xyes"; then
@@ -1611,6 +1596,33 @@ if ! test "x$enable_loki" = "xno"; then
     enable_loki=yes
 fi
 
+dnl ***************************************************************************
+dnl Final GRPC check based on the state of the GRPC based modules
+dnl ***************************************************************************
+
+if test "x$enable_grpc" = "xyes"; then
+    if test "x$enable_loki" = "xno" && test "x$enable_otel" = "xno"; then
+        AC_MSG_WARN([All GRPC based modules are disabled, disabling GRPC.])
+        enable_grpc=no
+    fi
+fi
+
+dnl ***************************************************************************
+dnl Cloud Auth
+dnl ***************************************************************************
+if ! test "x$enable_cloud_auth" = "xno"; then
+    if test "x$enable_cpp" = "xno"; then
+        if test "x$enable_cloud_auth" = "xyes"; then
+            AC_MSG_ERROR(C++ support is mandatory when the cloud-auth module is enabled.)
+        else
+            enable_cloud_auth=no
+        fi
+    fi
+fi
+
+if ! test "x$enable_cloud_auth" = "xno"; then
+    enable_cloud_auth=yes
+fi
 
 dnl ***************************************************************************
 dnl libcurl headers/libraries
@@ -2254,9 +2266,11 @@ AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
 AM_CONDITIONAL(ENABLE_MQTT, [test "$enable_mqtt" = "yes"])
 AM_CONDITIONAL(ENABLE_CPP, [test "$enable_cpp" = "yes"])
 AM_CONDITIONAL(ENABLE_GRPC, [test "$enable_grpc" = "yes"])
-AM_CONDITIONAL(ENABLE_CLOUD_AUTH, [test "$enable_cloud_auth" = "yes"])
 AM_CONDITIONAL(ENABLE_OTEL, [test "$enable_otel" = "yes"])
+AM_CONDITIONAL(BUILD_OTEL, [test "$enable_grpc" = "yes"] && [test "$enable_otel" = "yes"])
 AM_CONDITIONAL(ENABLE_LOKI, [test "$enable_loki" = "yes"])
+AM_CONDITIONAL(BUILD_LOKI, [test "$enable_grpc" = "yes"] && [test "$enable_loki" = "yes"])
+AM_CONDITIONAL(ENABLE_CLOUD_AUTH, [test "$enable_cloud_auth" = "yes"])
 AM_CONDITIONAL(ENABLE_HTTP, [test "$enable_http" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
@@ -2421,9 +2435,9 @@ echo "  AMQP destination (module)   : ${enable_amqp:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  MQTT (module)               : ${enable_mqtt:=no}"
 echo "  GRPC (module)               : ${enable_grpc:=no}"
-echo "  Cloud Auth (module)         : ${enable_cloud_auth:=no}"
 echo "  OTEL (module)               : ${enable_otel:=no}"
 echo "  Loki (module)               : ${enable_loki:=no}"
+echo "  Cloud Auth (module)         : ${enable_cloud_auth:=no}"
 echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Kafka support (module)      : ${enable_kafka:=no}"

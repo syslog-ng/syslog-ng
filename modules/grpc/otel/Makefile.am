@@ -1,5 +1,4 @@
-if ENABLE_GRPC
-if ENABLE_OTEL
+if BUILD_OTEL # means ENABLE_GRPC && ENABLE_OTEL
 
 noinst_LTLIBRARIES += modules/grpc/otel/libotel_cpp.la
 
@@ -66,21 +65,23 @@ modules_grpc_otel_libotel_la_DEPENDENCIES = \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la \
   $(top_builddir)/modules/grpc/otel/libotel_cpp.la
 
-modules/grpc/otel modules/grpc/otel/ mod-otel: modules/grpc/otel/libotel.la
-else
-modules/grpc/otel modules/grpc/otel/ mod-otel:
-endif
-else
-modules/grpc/otel modules/grpc/otel/ mod-otel:
-endif
-
 BUILT_SOURCES += \
   modules/grpc/otel/otel-grammar.y \
   modules/grpc/otel/otel-grammar.c \
   modules/grpc/otel/otel-grammar.h
 
 EXTRA_DIST += \
-  modules/grpc/otel/otel-grammar.ym \
+  modules/grpc/otel/otel-grammar.ym
+
+modules/grpc/otel modules/grpc/otel/ mod-otel: modules/grpc/otel/libotel.la
+
+else
+
+modules/grpc/otel modules/grpc/otel/ mod-otel:
+
+endif
+
+EXTRA_DIST += \
   modules/grpc/otel/CMakeLists.txt
 
 .PHONY: modules/grpc/otel/ mod-otel

@@ -1,4 +1,4 @@
-if ENABLE_GRPC
+if BUILD_OTEL # means ENABLE_GRPC && ENABLE_OTEL
 
 modules_grpc_otel_tests_TESTS = \
   modules/grpc/otel/tests/test_otel_protobuf_parser \

@@ -1,5 +1,4 @@
-if ENABLE_GRPC
-if ENABLE_LOKI
+if BUILD_LOKI # means ENABLE_GRPC && ENABLE_LOKI
 
 noinst_LTLIBRARIES += modules/grpc/loki/libloki_cpp.la
 
@@ -51,22 +50,23 @@ modules_grpc_loki_libloki_la_DEPENDENCIES = \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la \
   $(top_builddir)/modules/grpc/loki/libloki_cpp.la
 
-modules/grpc/loki modules/grpc/loki/ mod-loki: modules/grpc/loki/libloki.la
-
-else
-modules/grpc/loki modules/grpc/loki/ mod-loki:
-endif
-else
-modules/grpc/loki modules/grpc/loki/ mod-loki:
-endif
-
 BUILT_SOURCES += \
   modules/grpc/loki/loki-grammar.y \
   modules/grpc/loki/loki-grammar.c \
   modules/grpc/loki/loki-grammar.h
 
 EXTRA_DIST += \
-  modules/grpc/loki/loki-grammar.ym \
+  modules/grpc/loki/loki-grammar.ym
+
+modules/grpc/loki modules/grpc/loki/ mod-loki: modules/grpc/loki/libloki.la
+
+else
+
+modules/grpc/loki modules/grpc/loki/ mod-loki:
+
+endif
+
+EXTRA_DIST += \
   modules/grpc/loki/CMakeLists.txt
 
 .PHONY: modules/grpc/loki/ mod-loki
