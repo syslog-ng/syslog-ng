@@ -33,6 +33,12 @@ http_dd_insert_response_handler(LogDriver *d, HttpResponseHandler *response_hand
   http_response_handlers_insert(self->response_handlers, response_handler);
 }
 
+static gboolean
+_is_url_templated(const gchar *url)
+{
+  return strchr(url, '$') != NULL;
+}
+
 gboolean
 http_dd_set_urls(LogDriver *d, GList *url_strings, GError **error)
 {
@@ -42,8 +48,16 @@ http_dd_set_urls(LogDriver *d, GList *url_strings, GError **error)
   for (GList *l = url_strings; l; l = l->next)
     {
       const gchar *url_string = (const gchar *) l->data;
-      gchar **urls = g_strsplit(url_string, " ", -1);
 
+      if (_is_url_templated(url_string))
+        {
+          /* Templated URLs might contain spaces, so we should handle the string as one URL. */
+          if (!http_load_balancer_add_target(self->load_balancer, url_string, error))
+            return FALSE;
+          continue;
+        }
+
+      gchar **urls = g_strsplit(url_string, " ", -1);
       for (gint url = 0; urls[url]; url++)
         {
           if (!http_load_balancer_add_target(self->load_balancer, urls[url], error))

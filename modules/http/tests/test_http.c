@@ -25,12 +25,30 @@
 
 #include "logmsg/logmsg.h"
 #include "apphook.h"
+#include "libtest/cr_template.h"
 #include "http.h"
 #include "http-worker.h"
 #include "logthrdest/logthrdestdrv.h"
 
 
-TestSuite(http, .init = app_startup, .fini = app_shutdown);
+static void
+setup(void)
+{
+  app_startup();
+  configuration = cfg_new_snippet();
+
+  init_template_tests();
+  cfg_load_module(configuration, "basicfuncs");
+}
+
+static void
+teardown(void)
+{
+  app_shutdown();
+  cfg_free(configuration);
+}
+
+TestSuite(http, .init = setup, .fini = teardown);
 
 struct http_action_test_params
 {
@@ -131,4 +149,30 @@ ParameterizedTest(struct http_action_test_params *param, http, http_code_tests)
 
   log_threaded_dest_worker_free(&worker->super);
   log_pipe_unref((LogPipe *)driver);
+}
+
+Test(http, set_urls)
+{
+  HTTPDestinationDriver *driver = (HTTPDestinationDriver *) http_dd_new(configuration);
+
+  GList *urls = NULL;
+  urls = g_list_append(urls, "http://foo.bar");
+  urls = g_list_append(urls, "http://bar.baz http://almafa.kortefa");
+  urls = g_list_append(urls, "http://foo.bar/${FOOBAR}");
+  urls = g_list_append(urls, "http://foo.bar/$(echo ${BARBAZ})");
+
+  GError *error = NULL;
+  cr_assert(http_dd_set_urls(&driver->super.super.super, urls, &error));
+  g_list_free(urls);
+
+  HTTPLoadBalancer *lb = driver->load_balancer;
+  cr_assert_eq(lb->num_targets, 5);
+
+  cr_assert_str_eq(lb->targets[0].url_template->template_str, "http://foo.bar");
+  cr_assert_str_eq(lb->targets[1].url_template->template_str, "http://bar.baz");
+  cr_assert_str_eq(lb->targets[2].url_template->template_str, "http://almafa.kortefa");
+  cr_assert_str_eq(lb->targets[3].url_template->template_str, "http://foo.bar/${FOOBAR}");
+  cr_assert_str_eq(lb->targets[4].url_template->template_str, "http://foo.bar/$(echo ${BARBAZ})");
+
+  log_pipe_unref(&driver->super.super.super.super);
 }
