@@ -33,8 +33,6 @@ typedef struct _MetricsProbe
 
   gchar *key;
   GList *label_templates;
-  GArray *label_buffers;
-  guint num_of_static_labels;
   LogTemplate *increment_template;
   gint level;
 
@@ -45,10 +43,12 @@ typedef struct _MetricsProbe
 TLS_BLOCK_START
 {
   GHashTable *clusters;
+  GArray *label_buffers;
 }
 TLS_BLOCK_END;
 
 #define clusters __tls_deref(clusters)
+#define label_buffers __tls_deref(label_buffers)
 
 static StatsCluster *
 _register_single_cluster_locked(StatsClusterKey *key, gint stats_level)
@@ -129,26 +129,17 @@ metrics_probe_get_value_pairs(LogParser *s)
   return self->vp;
 }
 
-static void
-_clear_dynamic_labels(MetricsProbe *self)
-{
-  self->label_buffers = g_array_remove_range(self->label_buffers, self->num_of_static_labels,
-                                             self->label_buffers->len - self->num_of_static_labels);
-}
-
 static gboolean
 _add_dynamic_labels_vp_helper(const gchar *name, LogMessageValueType type, const gchar *value, gsize value_len,
                               gpointer user_data)
 {
-  MetricsProbe *self = (MetricsProbe *) user_data;
-
   GString *name_buffer = scratch_buffers_alloc();
   GString *value_buffer = scratch_buffers_alloc();
   g_string_assign(name_buffer, name);
   g_string_append_len(value_buffer, value, value_len);
 
   StatsClusterLabel label = stats_cluster_label(name_buffer->str, value_buffer->str);
-  self->label_buffers = g_array_append_vals(self->label_buffers, &label, 1);
+  label_buffers = g_array_append_vals(label_buffers, &label, 1);
 
   return FALSE;
 }
@@ -157,33 +148,28 @@ static void
 _add_dynamic_labels(MetricsProbe *self, LogMessage *msg)
 {
   LogTemplateEvalOptions template_eval_options = { &self->template_options, LTZ_SEND, 0, NULL, LM_VT_STRING };
-  gpointer user_data = self;
-
-  value_pairs_foreach(self->vp, _add_dynamic_labels_vp_helper, msg, &template_eval_options, user_data);
+  value_pairs_foreach(self->vp, _add_dynamic_labels_vp_helper, msg, &template_eval_options, NULL);
 }
 
 static void
 _calculate_stats_cluster_key(MetricsProbe *self, LogMessage *msg, StatsClusterKey *key)
 {
-  if (self->vp)
-    _clear_dynamic_labels(self);
-
   gint label_idx = 0;
   for (GList *elem = g_list_first(self->label_templates); elem; elem = elem->next)
     {
       LabelTemplate *label_template = (LabelTemplate *) elem->data;
       GString *value_buffer = scratch_buffers_alloc();
+      label_buffers = g_array_set_size(label_buffers, label_idx + 1);
 
       label_template_format(label_template, &self->template_options, msg, value_buffer,
-                            &g_array_index(self->label_buffers, StatsClusterLabel, label_idx));
+                            &g_array_index(label_buffers, StatsClusterLabel, label_idx));
       label_idx++;
     }
 
   if (self->vp)
     _add_dynamic_labels(self, msg);
 
-  stats_cluster_single_key_set(key, self->key, (StatsClusterLabel *) self->label_buffers->data,
-                               self->label_buffers->len);
+  stats_cluster_single_key_set(key, self->key, (StatsClusterLabel *) label_buffers->data, label_buffers->len);
 }
 
 static StatsCounterItem *
@@ -271,18 +257,20 @@ _add_default_label_template(MetricsProbe *self, const gchar *label, const gchar 
 static void
 _init_tls_clusters_map_thread_init_hook(gpointer user_data)
 {
-  g_assert(!clusters);
+  g_assert(!clusters && !label_buffers);
 
   clusters = g_hash_table_new_full((GHashFunc) stats_cluster_key_hash,
                                    (GEqualFunc) stats_cluster_key_equal,
                                    NULL,
                                    (GDestroyNotify) _unregister_single_cluster_locked);
+  label_buffers = g_array_new(FALSE, FALSE, sizeof(StatsClusterLabel));
 }
 
 static void
 _deinit_tls_clusters_map_thread_init_hook(gpointer user_data)
 {
   g_hash_table_destroy(clusters);
+  g_array_free(label_buffers, TRUE);
 }
 
 static void
@@ -337,9 +325,7 @@ _init(LogPipe *s)
       return FALSE;
     }
 
-  self->num_of_static_labels = g_list_length(self->label_templates);
   self->label_templates = g_list_sort(self->label_templates, (GCompareFunc) label_template_compare);
-  self->label_buffers = g_array_set_size(self->label_buffers, self->num_of_static_labels);
 
   _register_global_initializers();
 
@@ -361,9 +347,6 @@ _clone(LogPipe *s)
       cloned->label_templates = g_list_append(cloned->label_templates, label_template_clone(label_template));
     }
 
-  cloned->num_of_static_labels = self->num_of_static_labels;
-  cloned->label_buffers = g_array_set_size(cloned->label_buffers, cloned->num_of_static_labels);
-
   metrics_probe_set_increment_template(&cloned->super, self->increment_template);
   metrics_probe_set_level(&cloned->super, self->level);
   log_template_options_clone(&self->template_options, &cloned->template_options);
@@ -381,7 +364,6 @@ _free(LogPipe *s)
   g_list_free_full(self->label_templates, (GDestroyNotify) label_template_free);
   log_template_unref(self->increment_template);
   log_template_options_destroy(&self->template_options);
-  g_array_free(self->label_buffers, TRUE);
   value_pairs_unref(self->vp);
 
   log_parser_free_method(s);
@@ -398,7 +380,6 @@ metrics_probe_new(GlobalConfig *cfg)
   self->super.super.clone = _clone;
   self->super.process = _process;
 
-  self->label_buffers = g_array_sized_new(FALSE, FALSE, sizeof(StatsClusterLabel), 4);
   log_template_options_defaults(&self->template_options);
 
   return &self->super;
