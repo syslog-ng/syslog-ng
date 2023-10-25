@@ -873,7 +873,7 @@ template_fn
 	;
 
 template_items
-	: { $<ptr>$ = $<ptr>0; } template_item semicolons template_items
+	: { $<ptr>$ = $<ptr>0; } template_item semicolons { $<ptr>$ = $<ptr>0; } template_items
 	|
 	;
 
