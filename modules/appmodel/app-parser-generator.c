@@ -69,7 +69,7 @@ _generate_action(AppParserGenerator *self, Application *app)
                              "                set-tag('.app.%s');\n"
                              "                set('%s' value('.app.name'));\n"
                              "            };\n",
-                             app->name, app->name);
+                             app->super.name, app->super.name);
     }
 }
 
@@ -79,7 +79,7 @@ _is_application_included(AppParserGenerator *self, Application *app)
   /* include everything if we don't have the option */
   if (!self->included_apps)
     return TRUE;
-  return strstr(self->included_apps, app->name) != NULL;
+  return strstr(self->included_apps, app->super.name) != NULL;
 }
 
 static gboolean
@@ -87,15 +87,16 @@ _is_application_excluded(AppParserGenerator *self, Application *app)
 {
   if (!self->excluded_apps)
     return FALSE;
-  return strstr(self->excluded_apps, app->name) != NULL;
+  return strstr(self->excluded_apps, app->super.name) != NULL;
 }
 
 static void
-_generate_application(Application *app, gpointer user_data)
+_generate_application(AppModelObject *object, gpointer user_data)
 {
+  Application *app = (Application *) object;
   AppParserGenerator *self = (AppParserGenerator *) user_data;
 
-  if (strcmp(self->topic, app->topic) != 0)
+  if (strcmp(self->topic, app->super.instance) != 0)
     return;
 
   if (!_is_application_included(self, app))
@@ -121,21 +122,20 @@ _generate_application(Application *app, gpointer user_data)
                       "        if {\n");
     }
   g_string_append_printf(self->block,
-                         "            #Start Application %s\n", app->name);
+                         "            #Start Application %s\n", app->super.name);
 
   _generate_filter(self, app->filter_expr);
   _generate_parser(self, app->parser_expr);
   _generate_action(self, app);
   g_string_append_printf(self->block,
-                         "            #End Application %s\n", app->name);
+                         "            #End Application %s\n", app->super.name);
   g_string_append(self->block, "        }\n");
-
 }
 
 static void
 _generate_applications(AppParserGenerator *self, AppModelContext *appmodel)
 {
-  appmodel_context_iter_applications(appmodel, _generate_application, self);
+  appmodel_context_iter_objects(appmodel, APPLICATION_TYPE_NAME, _generate_application, self);
 }
 
 static void

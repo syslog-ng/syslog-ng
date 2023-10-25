@@ -37,22 +37,20 @@ application_set_parser(Application *self, const gchar *parser_expr)
   self->parser_expr = g_strdup(parser_expr);
 }
 
+static void
+application_free(AppModelObject *s)
+{
+  Application *self = (Application *) s;
+  g_free(self->filter_expr);
+  g_free(self->parser_expr);
+}
+
 Application *
 application_new(const gchar *name, const gchar *topic)
 {
   Application *self = g_new0(Application, 1);
 
-  self->name = g_strdup(name);
-  self->topic = g_strdup(topic);
+  appmodel_object_init_instance(&self->super, APPLICATION_TYPE_NAME, name, topic);
+  self->super.free_fn = application_free;
   return self;
-}
-
-void
-application_free(Application *self)
-{
-  g_free(self->name);
-  g_free(self->topic);
-  g_free(self->filter_expr);
-  g_free(self->parser_expr);
-  g_free(self);
 }

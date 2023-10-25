@@ -40,7 +40,7 @@ _parse_application(const char *appmodel, const gchar *name, const gchar *topic)
   cr_assert(parse_config(appmodel, LL_CONTEXT_ROOT, NULL, NULL),
             "Parsing the given configuration failed: %s", appmodel);
   ac = appmodel_get_context(configuration);
-  return appmodel_context_lookup_application(ac, name, topic);
+  return (Application *) appmodel_context_lookup_object(ac, APPLICATION_TYPE_NAME, name, topic);
 }
 
 Test(appmodel, empty_application_can_be_parsed_properly)
@@ -49,8 +49,8 @@ Test(appmodel, empty_application_can_be_parsed_properly)
 
   app = _parse_application("application foobar[*] {};", "foobar", "*");
   cr_assert(app != NULL);
-  cr_assert_str_eq(app->name, "foobar");
-  cr_assert_str_eq(app->topic, "*");
+  cr_assert_str_eq(app->super.name, "foobar");
+  cr_assert_str_eq(app->super.instance, "*");
 }
 
 Test(appmodel, name_is_parsed_into_name_member)
@@ -67,7 +67,7 @@ Test(appmodel, topic_in_brackets_is_parsed_into_topic)
 
   app = _parse_application("application name[port514] {};", "name", "port514");
   cr_assert(app != NULL);
-  cr_assert_str_eq(app->topic, "port514");
+  cr_assert_str_eq(app->super.instance, "port514");
 }
 
 Test(appmodel, filter_expressions_can_be_specified_with_a_filter_keyword)
@@ -81,7 +81,7 @@ Test(appmodel, filter_expressions_can_be_specified_with_a_filter_keyword)
           "};",
           "name", "port514");
   cr_assert(app != NULL);
-  cr_assert_str_eq(app->topic, "port514");
+  cr_assert_str_eq(app->super.instance, "port514");
   cr_assert_str_eq(app->filter_expr, " program(\"kernel\"); ");
 }
 
@@ -96,7 +96,7 @@ Test(appmodel, parser_expressions_can_be_specified_with_a_parser_keyword)
           "};",
           "name", "port514");
   cr_assert(app != NULL);
-  cr_assert_str_eq(app->topic, "port514");
+  cr_assert_str_eq(app->super.instance, "port514");
   cr_assert_str_eq(app->parser_expr, " kv-parser(); ");
 }
 

@@ -30,7 +30,7 @@ Test(application, empty_application_can_be_created_and_freed)
   Application *app;
 
   app = application_new("foobar", "*");
-  application_free(app);
+  appmodel_object_free(&app->super);
 }
 
 Test(application, filter_can_be_set_and_queried)
@@ -45,7 +45,7 @@ Test(application, filter_can_be_set_and_queried)
 
   application_set_filter(app, filter_expr2);
   cr_assert_str_eq(app->filter_expr, filter_expr2);
-  application_free(app);
+  appmodel_object_free(&app->super);
 }
 
 Test(application, parser_can_be_set_and_queried)
@@ -60,5 +60,5 @@ Test(application, parser_can_be_set_and_queried)
 
   application_set_parser(app, parser_expr2);
   cr_assert_str_eq(app->parser_expr, parser_expr2);
-  application_free(app);
+  appmodel_object_free(&app->super);
 }
