@@ -24,7 +24,7 @@
 #define APPMODEL_H_INCLUDED 1
 
 #include "module-config.h"
-#include "appmodel-context.h"
+#include "application.h"
 
 AppModelContext *appmodel_get_context(GlobalConfig *cfg);
 void appmodel_register_application(GlobalConfig *cfg, Application *application);
