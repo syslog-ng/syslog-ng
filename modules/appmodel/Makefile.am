@@ -14,6 +14,8 @@ modules_appmodel_libappmodel_la_SOURCES	=	\
 	modules/appmodel/app-object-generator.h \
 	modules/appmodel/app-parser-generator.c \
 	modules/appmodel/app-parser-generator.h \
+	modules/appmodel/app-transform-generator.c \
+	modules/appmodel/app-transform-generator.h \
 	modules/appmodel/application.c		\
 	modules/appmodel/application.h		\
 	modules/appmodel/transformation.c	\

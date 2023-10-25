@@ -22,11 +22,11 @@
  *
  */
 
-#ifndef APPMODEL_APP_PARSER_GENERATOR_H_INCLUDED
-#define APPMODEL_APP_PARSER_GENERATOR_H_INCLUDED
+#ifndef APPMODEL_APP_TRANSFORM_GENERATOR_H_INCLUDED
+#define APPMODEL_APP_TRANSFORM_GENERATOR_H_INCLUDED
 
 #include "plugin.h"
 
-CfgBlockGenerator *app_parser_generator_new(gint context, const gchar *name);
+CfgBlockGenerator *app_transform_generator_new(gint context, const gchar *name);
 
 #endif
