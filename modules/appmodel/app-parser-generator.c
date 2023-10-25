@@ -262,3 +262,89 @@ app_parser_generator_new(gint context, const gchar *name)
   self->super.generate_config = app_parser_generate_config;
   return &self->super.super;
 }
+
+/* app-transform() */
+
+typedef struct _AppTransformGenerator
+{
+  AppObjectGenerator super;
+  const gchar *target;
+  GString *block;
+} AppTransformGenerator;
+
+static gboolean
+_parse_target_arg(AppTransformGenerator *self, CfgArgs *args, const gchar *reference)
+{
+  self->target = cfg_args_get(args, "target");
+  if (!self->target)
+    {
+      msg_error("app-transform() requires a target() argument",
+                evt_tag_str("reference", reference));
+      return FALSE;
+    }
+  return TRUE;
+}
+
+static gboolean
+app_transform_generator_parse_arguments(AppObjectGenerator *s, CfgArgs *args, const gchar *reference)
+{
+  AppTransformGenerator *self = (AppTransformGenerator *) s;
+  g_assert(args != NULL);
+
+  if (!_parse_target_arg(self, args, reference))
+    return FALSE;
+
+  if (!app_object_generator_parse_arguments_method(&self->super, args, reference))
+    return FALSE;
+
+  return TRUE;
+}
+
+static void
+_generate_app_transform(AppModelObject *object, gpointer user_data)
+{
+  Transformation *transformation = (Transformation *) object;
+  AppTransformGenerator *self = (AppTransformGenerator *) user_data;
+
+  if (strcmp(self->target, object->instance) != 0)
+    return;
+
+  if (!_is_application_included(&self->super, object->name))
+    return;
+
+  if (_is_application_excluded(&self->super, object->name))
+    return;
+
+  g_string_append_printf(self->block, "\n#Start Application %s\n", object->name);
+  g_string_append(self->block, "channel {\n");
+
+  g_string_append_printf(self->block, "    filter { tags(\".app.%s\"); };\n", object->name);
+  g_string_append_printf(self->block, "    %s\n", transformation->translate_expr);
+  g_string_append(self->block, "    flags(final);\n");
+  g_string_append(self->block, "};\n");
+  g_string_append_printf(self->block, "\n#End Application %s\n", object->name);
+}
+
+
+static void
+app_transform_generate_config(AppObjectGenerator *s, AppModelContext *appmodel, GString *result)
+{
+  AppTransformGenerator *self = (AppTransformGenerator *) s;
+
+  self->block = result;
+  g_string_append_printf(result, "## app-transform(target(%s))\nchannel {", self->target);
+  appmodel_context_iter_objects(appmodel, TRANSFORMATION_TYPE_NAME, _generate_app_transform, self);
+  g_string_append(result, "}");
+  self->block = NULL;
+}
+
+CfgBlockGenerator *
+app_transform_generator_new(gint context, const gchar *name)
+{
+  AppTransformGenerator *self = g_new0(AppTransformGenerator, 1);
+
+  app_object_generator_init_instance(&self->super, context, name);
+  self->super.parse_arguments = app_transform_generator_parse_arguments;
+  self->super.generate_config = app_transform_generate_config;
+  return &self->super.super;
+}

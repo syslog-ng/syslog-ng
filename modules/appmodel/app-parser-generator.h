@@ -28,5 +28,6 @@
 #include "plugin.h"
 
 CfgBlockGenerator *app_parser_generator_new(gint context, const gchar *name);
+CfgBlockGenerator *app_transform_generator_new(gint context, const gchar *name);
 
 #endif
