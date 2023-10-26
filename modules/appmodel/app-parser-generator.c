@@ -33,7 +33,7 @@ struct _AppObjectGenerator
 {
   CfgBlockGenerator super;
   gboolean (*parse_arguments)(AppObjectGenerator *self, CfgArgs *args, const gchar *reference);
-  void (*generate_config)(AppObjectGenerator *self, AppModelContext *appmodel, GString *result);
+  void (*generate_config)(AppObjectGenerator *self, GlobalConfig *cfg, GString *result);
   const gchar *included_apps;
   const gchar *excluded_apps;
   gboolean is_parsing_enabled;
@@ -108,12 +108,11 @@ _generate(CfgBlockGenerator *s, GlobalConfig *cfg, gpointer args, GString *resul
 {
   AppObjectGenerator *self = (AppObjectGenerator *) s;
   CfgArgs *cfgargs = (CfgArgs *)args;
-  AppModelContext *appmodel = appmodel_get_context(cfg);
 
   if (!self->parse_arguments(self, cfgargs, reference))
     return FALSE;
 
-  self->generate_config(self, appmodel, result);
+  self->generate_config(self, cfg, result);
 
   return TRUE;
 }
@@ -190,33 +189,32 @@ _generate_action(AppParserGenerator *self, Application *app)
 }
 
 static void
-_generate_application(AppModelObject *object, gpointer user_data)
+_generate_application(Application *app, gpointer user_data)
 {
-  Application *app = (Application *) object;
   AppParserGenerator *self = (AppParserGenerator *) user_data;
 
-  if (strcmp(self->topic, object->instance) != 0)
+  if (strcmp(self->topic, app->super.instance) != 0)
     return;
 
-  if (!_is_application_included(&self->super, object->name))
+  if (!_is_application_included(&self->super, app->super.name))
     return;
 
-  if (_is_application_excluded(&self->super, object->name))
+  if (_is_application_excluded(&self->super, app->super.name))
     return;
 
-  g_string_append_printf(self->block, "\n#Start Application %s\n", object->name);
+  g_string_append_printf(self->block, "\n#Start Application %s\n", app->super.name);
   g_string_append(self->block, "channel {\n");
   _generate_filter(self, app->filter_expr);
   _generate_parser(self, app->parser_expr);
   _generate_action(self, app);
   g_string_append(self->block, "};\n");
-  g_string_append_printf(self->block, "\n#End Application %s\n", object->name);
+  g_string_append_printf(self->block, "\n#End Application %s\n", app->super.name);
 }
 
 static void
-_generate_applications(AppParserGenerator *self, AppModelContext *appmodel)
+_generate_applications(AppParserGenerator *self, GlobalConfig *cfg)
 {
-  appmodel_context_iter_objects(appmodel, APPLICATION_TYPE_NAME, _generate_application, self);
+  appmodel_iter_applications(cfg, _generate_application, self);
 }
 
 static void
@@ -226,26 +224,26 @@ _generate_empty_frame(AppParserGenerator *self)
 }
 
 static void
-_generate_framing(AppParserGenerator *self, AppModelContext *appmodel)
+_generate_framing(AppParserGenerator *self, GlobalConfig *cfg)
 {
   g_string_append(self->block,
                   "\nchannel {\n"
                   "    junction {\n");
 
-  _generate_applications(self, appmodel);
+  _generate_applications(self, cfg);
   _generate_empty_frame(self);
   g_string_append(self->block, "    };\n");
   g_string_append(self->block, "}");
 }
 
 static void
-app_parser_generate_config(AppObjectGenerator *s, AppModelContext *appmodel, GString *result)
+app_parser_generate_config(AppObjectGenerator *s, GlobalConfig *cfg, GString *result)
 {
   AppParserGenerator *self = (AppParserGenerator *) s;
 
   self->block = result;
   if (self->super.is_parsing_enabled)
-    _generate_framing(self, appmodel);
+    _generate_framing(self, cfg);
   else
     _generate_empty_frame(self);
   self->block = NULL;
@@ -301,39 +299,38 @@ app_transform_generator_parse_arguments(AppObjectGenerator *s, CfgArgs *args, co
 }
 
 static void
-_generate_app_transform(AppModelObject *object, gpointer user_data)
+_generate_app_transform(Transformation *transformation, gpointer user_data)
 {
-  Transformation *transformation = (Transformation *) object;
   AppTransformGenerator *self = (AppTransformGenerator *) user_data;
 
-  if (strcmp(self->target, object->instance) != 0)
+  if (strcmp(self->target, transformation->super.instance) != 0)
     return;
 
-  if (!_is_application_included(&self->super, object->name))
+  if (!_is_application_included(&self->super, transformation->super.name))
     return;
 
-  if (_is_application_excluded(&self->super, object->name))
+  if (_is_application_excluded(&self->super, transformation->super.name))
     return;
 
-  g_string_append_printf(self->block, "\n#Start Application %s\n", object->name);
+  g_string_append_printf(self->block, "\n#Start Application %s\n", transformation->super.name);
   g_string_append(self->block, "channel {\n");
 
-  g_string_append_printf(self->block, "    filter { tags(\".app.%s\"); };\n", object->name);
+  g_string_append_printf(self->block, "    filter { tags(\".app.%s\"); };\n", transformation->super.name);
   g_string_append_printf(self->block, "    %s\n", transformation->translate_expr);
   g_string_append(self->block, "    flags(final);\n");
   g_string_append(self->block, "};\n");
-  g_string_append_printf(self->block, "\n#End Application %s\n", object->name);
+  g_string_append_printf(self->block, "\n#End Application %s\n", transformation->super.name);
 }
 
 
 static void
-app_transform_generate_config(AppObjectGenerator *s, AppModelContext *appmodel, GString *result)
+app_transform_generate_config(AppObjectGenerator *s, GlobalConfig *cfg, GString *result)
 {
   AppTransformGenerator *self = (AppTransformGenerator *) s;
 
   self->block = result;
   g_string_append_printf(result, "## app-transform(target(%s))\nchannel {", self->target);
-  appmodel_context_iter_objects(appmodel, TRANSFORMATION_TYPE_NAME, _generate_app_transform, self);
+  appmodel_iter_transformations(cfg, _generate_app_transform, self);
   g_string_append(result, "}");
   self->block = NULL;
 }

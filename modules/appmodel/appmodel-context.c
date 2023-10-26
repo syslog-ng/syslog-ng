@@ -111,9 +111,9 @@ appmodel_context_lookup_object(AppModelContext *self, const gchar *type, const g
 
 void
 appmodel_context_iter_objects(AppModelContext *self,
-                                   const gchar *type,
-                                   void (*foreach)(AppModelObject *app, gpointer user_data),
-                                   gpointer user_data)
+                              const gchar *type,
+                              AppModelContextIterFunc foreach,
+                              gpointer user_data)
 {
   gint i;
 

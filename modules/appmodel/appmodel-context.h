@@ -27,6 +27,7 @@
 
 typedef struct _AppModelContext AppModelContext;
 typedef struct _AppModelObject AppModelObject;
+typedef void(*AppModelContextIterFunc)(AppModelObject *object, gpointer user_data);
 
 struct _AppModelObject
 {
@@ -41,7 +42,7 @@ void appmodel_object_free(AppModelObject *self);
 
 void appmodel_context_iter_objects(AppModelContext *self,
                                    const gchar *type,
-                                   void (*foreach)(AppModelObject *object, gpointer user_data),
+                                   AppModelContextIterFunc foreach,
                                    gpointer user_data);
 AppModelObject *appmodel_context_lookup_object(AppModelContext *self, const gchar *type, const gchar *name, const gchar *instance);
 void appmodel_context_register_object(AppModelContext *self, AppModelObject *object);
