@@ -98,9 +98,17 @@ public:
     this->message = msg;
   }
 
-  void set_timestamp(LogMessageTimeStamp t)
+  bool set_timestamp(const char *t)
   {
-    this->timestamp = t;
+    if (strcasecmp(t, "current") == 0)
+      this->timestamp = LM_TS_PROCESSED;
+    else if (strcasecmp(t, "received") == 0)
+      this->timestamp = LM_TS_RECVD;
+    else if (strcasecmp(t, "msg") == 0)
+      this->timestamp = LM_TS_STAMP;
+    else
+      return false;
+    return true;
   }
 
   void set_keepalive_time(int t)
