@@ -196,11 +196,11 @@ loki_dd_add_label(LogDriver *d, const gchar *name, LogTemplate *value)
   self->cpp->add_label(name, value);
 }
 
-void
-loki_dd_set_timestamp(LogDriver *d, LogMessageTimeStamp t)
+gboolean
+loki_dd_set_timestamp(LogDriver *d, const gchar *t)
 {
   LokiDestDriver *self = (LokiDestDriver *) d;
-  self->cpp->set_timestamp(t);
+  return self->cpp->set_timestamp(t);
 }
 
 void

@@ -38,7 +38,7 @@ LogDriver *loki_dd_new(GlobalConfig *cfg);
 void loki_dd_set_url(LogDriver *d, const gchar *url);
 void loki_dd_set_message_template_ref(LogDriver *d, LogTemplate *message);
 void loki_dd_add_label(LogDriver *d, const gchar *name, LogTemplate *value);
-void loki_dd_set_timestamp(LogDriver *d, LogMessageTimeStamp t);
+gboolean loki_dd_set_timestamp(LogDriver *d, const gchar *t);
 
 GrpcClientCredentialsBuilderW *loki_dd_get_credentials_builder(LogDriver *s);
 
