@@ -232,9 +232,12 @@ filter_identifier
 filter_comparison
 	: template_content operator <cptr>{ $$ = strdup(lexer->token_text->str); } template_content
 	  {
+            gchar buf[256];
             $1 = _translate_number_literals(lexer, $2, $1, &@1);
             $4 = _translate_number_literals(lexer, $2, $4, &@4);
-	    $$ = fop_cmp_new($1, $4, $3, $2, cfg_lexer_format_location_tag(lexer, &@0));
+
+            cfg_lexer_format_location(lexer, &@0, buf, sizeof(buf));
+	    $$ = fop_cmp_new($1, $4, $3, $2, buf);
             free($3);
           }
         ;
