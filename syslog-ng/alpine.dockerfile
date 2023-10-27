@@ -73,6 +73,8 @@ RUN apk add --repository /axoflow -U --upgrade --no-cache \
     syslog-ng-tags-parser \
     syslog-ng-xml
 
+RUN /var/lib/syslog-ng-venv/bin/pip install -U urllib3==1.26.18
+
 EXPOSE 514/udp
 EXPOSE 601/tcp
 EXPOSE 6514/tcp
