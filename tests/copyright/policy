@@ -205,6 +205,7 @@ scl/mariadb/.*\.conf$
 scl/python/python-modules\.conf$
 scl/splunk/splunk\.conf$
 scl/google/google-pubsub\.conf$
+scl/openobserve/.*\.conf$
 modules/python-modules/syslogng/modules/kubernetes/.*
 modules/ebpf/.*
 modules/python-modules/syslogng/modules/hypr/.*
