@@ -58,7 +58,6 @@ log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
 {
   LogFilterPipe *self = (LogFilterPipe *) s;
   gboolean res;
-  gchar *filter_result;
 
   msg_trace(">>>>>> filter rule evaluation begin",
             evt_tag_str("rule", self->name),
@@ -67,25 +66,24 @@ log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
 
   res = filter_expr_eval_root(self->expr, &msg, path_options);
 
+  msg_trace("<<<<<< filter rule evaluation result",
+            evt_tag_str("result", res ? "matched" : "unmatched"),
+            evt_tag_str("rule", self->name),
+            log_pipe_location_tag(s),
+            evt_tag_msg_reference(msg));
+
   if (res)
     {
-      filter_result = "MATCH - Forwarding message to the next LogPipe";
       log_pipe_forward_msg(s, msg, path_options);
       stats_counter_inc(self->matched);
     }
   else
     {
-      filter_result = "UNMATCHED - Dropping message from LogPipe";
       if (path_options->matched)
         (*path_options->matched) = FALSE;
       log_msg_drop(msg, path_options, AT_PROCESSED);
       stats_counter_inc(self->not_matched);
     }
-  msg_trace("<<<<<< filter rule evaluation result",
-            evt_tag_str("result", filter_result),
-            evt_tag_str("rule", self->name),
-            log_pipe_location_tag(s),
-            evt_tag_msg_reference(msg));
 }
 
 static LogPipe *
