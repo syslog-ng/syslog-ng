@@ -1548,6 +1548,7 @@ vp_option
 	| KW_SCOPE '(' vp_scope_list ')'
 	| KW_CAST '(' yesno ')'                          { value_pairs_set_cast_to_strings(last_value_pairs, $3); }
 	| KW_INCLUDE_BYTES '(' yesno ')'                 { value_pairs_set_include_bytes(last_value_pairs, $3); }
+        | KW_LEVEL '(' yesno ')' {}
 	;
 
 vp_scope_list
