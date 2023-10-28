@@ -61,25 +61,31 @@ static void
 _generate_filter(AppParserGenerator *self, const gchar *filter_expr)
 {
   if (filter_expr)
-    g_string_append_printf(self->block, "    filter { %s };\n", filter_expr);
+    g_string_append_printf(self->block,
+                           "            filter {\n"
+                           "                %s\n"
+                           "            };\n", filter_expr);
 }
 
 static void
 _generate_parser(AppParserGenerator *self, const gchar *parser_expr)
 {
   if (parser_expr)
-    g_string_append_printf(self->block, "    parser { %s };\n", parser_expr);
+    g_string_append_printf(self->block,
+                           "            parser {\n"
+                           "                %s\n"
+                           "            };\n", parser_expr);
 }
 
 static void
 _generate_action(AppParserGenerator *self, Application *app)
 {
   g_string_append_printf(self->block,
-                         "    rewrite {\n"
-                         "       set-tag('.app.%s');\n"
-                         "       set('%s' value('.app.name'));\n"
-                         "    };\n"
-                         "    flags(final);\n",
+                         "            rewrite {\n"
+                         "                set-tag('.app.%s');\n"
+                         "                set('%s' value('.app.name'));\n"
+                         "            };\n",
+                         "            flags(final);\n",
                          app->name, app->name);
 }
 
@@ -114,13 +120,13 @@ _generate_application(Application *app, Application *base_app, gpointer user_dat
   if (_is_application_excluded(self, app))
     return;
 
-  g_string_append_printf(self->block, "\n#Start Application %s\n", app->name);
-  g_string_append(self->block, "channel {\n");
+  g_string_append(self->block,        "        channel {\n");
+  g_string_append_printf(self->block, "            #Start Application %s\n", app->name);
   _generate_filter(self, _get_filter_expr(app, base_app));
   _generate_parser(self, _get_parser_expr(app, base_app));
   _generate_action(self, app);
-  g_string_append(self->block, "};\n");
-  g_string_append_printf(self->block, "\n#End Application %s\n", app->name);
+  g_string_append_printf(self->block, "            #End Application %s\n", app->name);
+  g_string_append(self->block,        "        };\n");
 
 }
 
