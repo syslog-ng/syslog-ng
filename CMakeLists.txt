@@ -347,7 +347,7 @@ set_target_properties(check-copyright PROPERTIES
 if (CRITERION_FOUND)
   option(BUILD_TESTING "Enable unit tests" ON)
 else()
-  option(BUILD_TESTING  "Enable unit tests" OFF)
+  option(BUILD_TESTING "Enable unit tests" OFF)
 endif()
 
 include(add_tests)
@@ -365,7 +365,14 @@ if (BUILD_TESTING)
       "G_DEBUG=fatal-warnings,fatal-criticals,gc-friendly")
     include(CTest)
 
+    # This flag might be a security issue, do not use in production code, unfortunately we still need it for criterion tests and the current mocking soution
+    if (APPLE)
+      SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-flat_namespace")
+    endif()
+
     add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -j $$(nproc) --output-on-failure)
+    # This one is useful to see the failed tests in details
+    add_custom_target(check_failed COMMAND ${CMAKE_CTEST_COMMAND} -j $$(nproc) --rerun-failed --output-on-failure)
   endif()
 endif()
 
