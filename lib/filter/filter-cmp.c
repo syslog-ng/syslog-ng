@@ -339,7 +339,7 @@ fop_cmp_clone(FilterExprNode *s)
 }
 
 FilterExprNode *
-fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compare_mode, EVTTAG *location)
+fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compare_mode, const gchar *location)
 {
   FilterCmp *self = g_new0(FilterCmp, 1);
 
@@ -371,7 +371,7 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compa
                           "You seem to be using numeric operators in this filter expression, so "
                           "please make sure that once the type-aware behavior is turned on it remains correct, "
                           "see this blog post for more information: https://syslog-ng-future.blog/syslog-ng-4-theme-typing/",
-                          location);
+                          evt_tag_str("location", location));
             }
           self->compare_mode = (self->compare_mode & ~FCMP_TYPE_AWARE) | FCMP_NUM_BASED;
         }
@@ -385,7 +385,7 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, const gchar *type, gint compa
                   "As we are operating in compatibility mode, syslog-ng will exhibit the buggy "
                   "behaviour as previous versions until you bump the @version value in your "
                   "configuration file",
-                  location);
+                  evt_tag_str("location", location));
       self->compare_mode &= ~FCMP_TYPE_AWARE;
       self->compare_mode |= FCMP_STRING_BASED;
     }

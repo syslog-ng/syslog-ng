@@ -41,6 +41,6 @@
 
 FilterExprNode *fop_cmp_new(LogTemplate *left, LogTemplate *right,
                             const gchar *type, gint compare_mode,
-                            EVTTAG *location);
+                            const gchar *location);
 
 #endif
