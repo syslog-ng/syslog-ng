@@ -35,6 +35,7 @@ typedef struct _AppParserGenerator
   const gchar *included_apps;
   const gchar *excluded_apps;
   gboolean is_parsing_enabled;
+  gboolean first_app_generated;
 } AppParserGenerator;
 
 static const gchar *
@@ -85,7 +86,6 @@ _generate_action(AppParserGenerator *self, Application *app)
                          "                set-tag('.app.%s');\n"
                          "                set('%s' value('.app.name'));\n"
                          "            };\n",
-                         "            flags(final);\n",
                          app->name, app->name);
 }
 
@@ -120,13 +120,20 @@ _generate_application(Application *app, Application *base_app, gpointer user_dat
   if (_is_application_excluded(self, app))
     return;
 
-  g_string_append(self->block,        "        channel {\n");
+  if (!self->first_app_generated)
+    {
+      self->first_app_generated = TRUE;
+      g_string_append(self->block,    "        if {\n");
+    }
+  else
+    g_string_append(self->block,      "        elif {\n");
   g_string_append_printf(self->block, "            #Start Application %s\n", app->name);
+
   _generate_filter(self, _get_filter_expr(app, base_app));
   _generate_parser(self, _get_parser_expr(app, base_app));
   _generate_action(self, app);
   g_string_append_printf(self->block, "            #End Application %s\n", app->name);
-  g_string_append(self->block,        "        };\n");
+  g_string_append(self->block,        "        }\n");
 
 }
 
@@ -136,26 +143,28 @@ _generate_applications(AppParserGenerator *self, AppModelContext *appmodel)
   appmodel_context_iter_applications(appmodel, _generate_application, self);
 }
 
+static void
+_generate_framing(AppParserGenerator *self, AppModelContext *appmodel)
+{
+  g_string_append(self->block,   "\n"
+                                 "channel {\n");
+
+  self->first_app_generated = FALSE;
+  _generate_applications(self, appmodel);
+  if (self->first_app_generated)
+    g_string_append(self->block, "    else {\n");
+  else
+    g_string_append(self->block, "    if {\n");
+  g_string_append(self->block,   "        filter { tags('.app.doesnotexist'); };\n"
+                                 "    };");
+  g_string_append(self->block,   "}");
+}
 
 static void
 _generate_empty_frame(AppParserGenerator *self)
 {
-  g_string_append(self->block, "\nchannel { filter { tags('.app.doesnotexist'); }; flags(final); };");
+  g_string_append(self->block, "channel { filter { tags('.app.doesnotexist'); }; };");
 }
-
-static void
-_generate_framing(AppParserGenerator *self, AppModelContext *appmodel)
-{
-  g_string_append(self->block,
-                  "\nchannel {\n"
-                  "    junction {\n");
-
-  _generate_applications(self, appmodel);
-  _generate_empty_frame(self);
-  g_string_append(self->block, "    };\n");
-  g_string_append(self->block, "}");
-}
-
 
 static gboolean
 _parse_auto_parse_arg(AppParserGenerator *self, CfgArgs *args, const gchar *reference)
