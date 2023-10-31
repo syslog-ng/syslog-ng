@@ -24,12 +24,13 @@
 #ifndef APPMODEL_APPLICATION_H_INCLUDED
 #define APPMODEL_APPLICATION_H_INCLUDED
 
-#include "syslog-ng.h"
+#include "appmodel-context.h"
+
+#define APPLICATION_TYPE_NAME "application"
 
 typedef struct _Application
 {
-  gchar *name;
-  gchar *topic;
+  AppModelObject super;
   gchar *filter_expr;
   gchar *parser_expr;
 } Application;
@@ -38,6 +39,5 @@ void application_set_filter(Application *self, const gchar *filter_expr);
 void application_set_parser(Application *self, const gchar *parser_expr);
 
 Application *application_new(const gchar *name, const gchar *topic);
-void application_free(Application *s);
 
 #endif

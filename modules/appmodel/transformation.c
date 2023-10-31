@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2017 Balabit
- * Copyright (c) 2017 Balazs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2023 Balázs Scheidler <balazs.scheidler@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,18 +19,29 @@
  * COPYING for details.
  *
  */
-#ifndef APPMODEL_H_INCLUDED
-#define APPMODEL_H_INCLUDED 1
 
-#include "module-config.h"
-#include "application.h"
 #include "transformation.h"
 
-AppModelContext *appmodel_get_context(GlobalConfig *cfg);
-void appmodel_register_application(GlobalConfig *cfg, Application *application);
-void appmodel_iter_applications(GlobalConfig *cfg, void (*foreach)(Application *app, gpointer user_data), gpointer user_data);
+void
+transformation_set_translate(Transformation *self, const gchar *translate_expr)
+{
+  g_free(self->translate_expr);
+  self->translate_expr = g_strdup(translate_expr);
+}
 
-void appmodel_register_transformation(GlobalConfig *cfg, Transformation *transformation);
-void appmodel_iter_transformations(GlobalConfig *cfg, void (*foreach)(Transformation *transformation, gpointer user_data), gpointer user_data);
+static void
+transformation_free(AppModelObject *s)
+{
+  Transformation *self = (Transformation *) s;
+  g_free(self->translate_expr);
+}
 
-#endif
+Transformation *
+transformation_new(const gchar *name, const gchar *target)
+{
+  Transformation *self = g_new0(Transformation, 1);
+
+  appmodel_object_init_instance(&self->super, TRANSFORMATION_TYPE_NAME, name, target);
+  self->super.free_fn = transformation_free;
+  return self;
+}
