@@ -203,7 +203,7 @@ http_dd_set_ssl_version(LogDriver *d, const gchar *value)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
-  if (strcmp(value, "default") == 0)
+  if (strcasecmp(value, "default") == 0)
     {
       /*
        * Negotiate the version based on what the remote server supports.
@@ -213,45 +213,45 @@ http_dd_set_ssl_version(LogDriver *d, const gchar *value)
       self->ssl_version = CURL_SSLVERSION_DEFAULT;
 
     }
-  else if (strcmp(value, "tlsv1") == 0)
+  else if (strcasecmp(value, "tlsv1") == 0)
     {
       /* TLS 1.x */
       self->ssl_version = CURL_SSLVERSION_TLSv1;
     }
-  else if (strcmp(value, "sslv2") == 0)
+  else if (strcasecmp(value, "sslv2") == 0)
     {
       /* SSL 2 only */
       self->ssl_version = CURL_SSLVERSION_SSLv2;
 
     }
-  else if (strcmp(value, "sslv3") == 0)
+  else if (strcasecmp(value, "sslv3") == 0)
     {
       /* SSL 3 only */
       self->ssl_version = CURL_SSLVERSION_SSLv3;
     }
 #if SYSLOG_NG_HAVE_DECL_CURL_SSLVERSION_TLSV1_0
-  else if (strcmp(value, "tlsv1_0") == 0)
+  else if (strcasecmp(value, "tlsv1_0") == 0)
     {
       /* TLS 1.0 only */
       self->ssl_version = CURL_SSLVERSION_TLSv1_0;
     }
 #endif
 #if SYSLOG_NG_HAVE_DECL_CURL_SSLVERSION_TLSV1_1
-  else if (strcmp(value, "tlsv1_1") == 0)
+  else if (strcasecmp(value, "tlsv1_1") == 0)
     {
       /* TLS 1.1 only */
       self->ssl_version = CURL_SSLVERSION_TLSv1_1;
     }
 #endif
 #if SYSLOG_NG_HAVE_DECL_CURL_SSLVERSION_TLSV1_2
-  else if (strcmp(value, "tlsv1_2") == 0)
+  else if (strcasecmp(value, "tlsv1_2") == 0)
     {
       /* TLS 1.2 only */
       self->ssl_version = CURL_SSLVERSION_TLSv1_2;
     }
 #endif
 #if SYSLOG_NG_HAVE_DECL_CURL_SSLVERSION_TLSV1_3
-  else if (strcmp(value, "tlsv1_3") == 0)
+  else if (strcasecmp(value, "tlsv1_3") == 0)
     {
       /* TLS 1.3 only */
       self->ssl_version = CURL_SSLVERSION_TLSv1_3;

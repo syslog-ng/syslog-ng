@@ -96,6 +96,7 @@ struct _TLSContext
   GList *trusted_fingerprint_list;
   GList *trusted_dn_list;
   gint ssl_options;
+  gint ssl_version;
   gchar *location;
 };
 
@@ -116,6 +117,7 @@ enum TLSContextError
 
 gboolean tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str);
 gboolean tls_context_set_ssl_options_by_name(TLSContext *self, GList *options);
+gboolean tls_context_set_ssl_version_by_name(TLSContext *self, const gchar *value);
 gint tls_context_get_verify_mode(const TLSContext *self);
 void tls_context_set_verify_mode(TLSContext *self, gint verify_mode);
 gboolean tls_context_ignore_hostname_mismatch(TLSContext *self);
