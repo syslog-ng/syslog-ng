@@ -25,13 +25,87 @@
 #include "messages.h"
 #include "str-utils.h"
 #include <string.h>
+#include <curl/curl.h>
+
+#define HTTP_URL_FORMAT_ERROR http_url_format_error_quark()
+
+static GQuark http_url_format_error_quark(void)
+{
+  return g_quark_from_static_string("http_url_format_error_quark");
+}
+
+enum HttpUrlFormatError
+{
+  HTTP_URL_FORMAT_ERROR_UNSAFE_TEMPLATE,
+};
 
 /* HTTPLoadBalancerTarget */
+
+static gboolean
+_is_url_safely_templated(const gchar *url, GError **error)
+{
+  static const gchar *unsafe_part_names[CURLUE_LAST] =
+  {
+    [CURLUE_BAD_SCHEME] = "Scheme",
+    [CURLUE_BAD_HOSTNAME] = "Host",
+    [CURLUE_BAD_PORT_NUMBER] = "Port",
+    [CURLUE_BAD_USER] = "User",
+    [CURLUE_BAD_PASSWORD] = "Password",
+
+    [CURLUE_MALFORMED_INPUT] = "Failed to parse URL. Scheme, host, port, user or password",
+  };
+
+  static const struct
+  {
+    CURLUPart part;
+    CURLUcode error;
+  } unsafe_parts[] =
+  {
+    { .part = CURLUPART_SCHEME, .error = CURLUE_BAD_SCHEME },
+    { .part = CURLUPART_HOST, .error = CURLUE_BAD_HOSTNAME },
+    { .part = CURLUPART_PORT, .error = CURLUE_BAD_PORT_NUMBER },
+    { .part = CURLUPART_USER, .error = CURLUE_BAD_USER },
+    { .part = CURLUPART_PASSWORD, .error = CURLUE_BAD_PASSWORD },
+  };
+
+  CURLU *h = curl_url();
+  CURLUcode rc = curl_url_set(h, CURLUPART_URL, url, CURLU_ALLOW_SPACE);
+
+  const gchar *unsafe_part_name = unsafe_part_names[rc];
+  if (unsafe_part_name)
+    goto exit;
+
+  for (size_t i = 0; i < G_N_ELEMENTS(unsafe_parts) && !unsafe_part_name; i++)
+    {
+      gchar *part = NULL;
+      curl_url_get(h, unsafe_parts[i].part, &part, 0);
+
+      if (part && strchr(part, '$'))
+        unsafe_part_name = unsafe_part_names[unsafe_parts[i].error];
+
+      curl_free(part);
+    }
+
+exit:
+  curl_url_cleanup(h);
+
+  if (unsafe_part_name)
+    {
+      g_set_error(error, HTTP_URL_FORMAT_ERROR, HTTP_URL_FORMAT_ERROR_UNSAFE_TEMPLATE,
+                  "%s part of URL cannot contain templates: %s", unsafe_part_name, url);
+      return FALSE;
+    }
+
+  return TRUE;
+}
 
 gboolean
 http_lb_target_init(HTTPLoadBalancerTarget *self, const gchar *url, gint index_, GError **error)
 {
   memset(self, 0, sizeof(*self));
+
+  if (!_is_url_safely_templated(url, error))
+    return FALSE;
 
   LogTemplate *url_template = log_template_new(configuration, NULL);
   log_template_set_escape(url_template, TRUE);
