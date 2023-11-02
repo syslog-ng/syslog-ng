@@ -197,6 +197,7 @@ class ConfigRenderer(object):
         version = self.__syslog_ng_config["version"]
         includes = self.__syslog_ng_config["includes"]
         global_options = self.__syslog_ng_config["global_options"]
+        preamble = self.__syslog_ng_config["preamble"]
         templates = self.__syslog_ng_config["templates"]
         statement_groups = self.__syslog_ng_config["statement_groups"]
         logpath_groups = self.__syslog_ng_config["logpath_groups"]
@@ -209,6 +210,8 @@ class ConfigRenderer(object):
             config += render_includes(includes)
         if global_options:
             config += render_global_options(global_options)
+        if preamble:
+            config += preamble
         if templates:
             config += render_templates(templates)
         if statement_groups:
