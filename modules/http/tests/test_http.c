@@ -177,6 +177,7 @@ Test(http, set_urls)
   log_pipe_unref(&driver->super.super.super.super);
 }
 
+#if SYSLOG_NG_HAVE_DECL_CURL_URL && SYSLOG_NG_HAVE_DECL_CURLU_ALLOW_SPACE
 static void
 _test_set_urls_fail(HTTPDestinationDriver *driver, gchar *url, const gchar *expected_error_msg)
 {
@@ -245,3 +246,4 @@ Test(http, set_urls_safe_or_unsafe_template)
 
   log_pipe_unref(&driver->super.super.super.super);
 }
+#endif

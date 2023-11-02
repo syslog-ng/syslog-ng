@@ -25,7 +25,7 @@
 #include "messages.h"
 #include "str-utils.h"
 #include <string.h>
-#include <curl/curl.h>
+#include "compat/curl.h"
 
 #define HTTP_URL_FORMAT_ERROR http_url_format_error_quark()
 
@@ -44,6 +44,13 @@ enum HttpUrlFormatError
 static gboolean
 _is_url_safely_templated(const gchar *url, GError **error)
 {
+#if !SYSLOG_NG_HAVE_DECL_CURL_URL || !SYSLOG_NG_HAVE_DECL_CURLU_ALLOW_SPACE
+    msg_warning_once("http(): Cannot validate whether the url() option is safely templated or not with the libcurl "
+                     "version your syslog-ng was compiled with. Using templates in the scheme, host, port, user "
+                     "or password part of the URL is considered unsafe and not recommended. Please make sure that only "
+                     "the path or query parameters parts are templated in your http() destinations");
+  return TRUE;
+#else
   static const gchar *unsafe_part_names[CURLUE_LAST] =
   {
     [CURLUE_BAD_SCHEME] = "Scheme",
@@ -97,6 +104,7 @@ exit:
     }
 
   return TRUE;
+#endif
 }
 
 gboolean
