@@ -34,13 +34,15 @@ PYTHON=$1
 PYTHON_VENV_DIR=$2
 top_srcdir=$3
 REQUIREMENTS_FILE=${top_srcdir}/dev-requirements.txt
+OPTIONAL_REQUIREMENTS_FILE=${top_srcdir}/optional-dev-requirements.txt
 
 set -e
 
-echo "Building dev virtualenv for syslog-ng at ${PYTHON_VENV_DIR} from ${REQUIREMENTS_FILE}"
+echo "Building dev virtualenv for syslog-ng at ${PYTHON_VENV_DIR} from ${REQUIREMENTS_FILE} and ${OPTIONAL_REQUIREMENTS_FILE}"
 
 rm -rf ${PYTHON_VENV_DIR}
 ${PYTHON} -m venv ${PYTHON_VENV_DIR}
 ${PYTHON_VENV_DIR}/bin/python -m pip install --upgrade pip
 ${PYTHON_VENV_DIR}/bin/python -m pip install --upgrade setuptools
 ${PYTHON_VENV_DIR}/bin/python -m pip install -r $REQUIREMENTS_FILE
+${PYTHON_VENV_DIR}/bin/python -m pip install -r $OPTIONAL_REQUIREMENTS_FILE || echo "Some optional pip packages were not installed. Continuing..."
