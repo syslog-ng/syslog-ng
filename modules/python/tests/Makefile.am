@@ -1,3 +1,5 @@
+if ENABLE_PYTHON
+
 PYTHONMALLOC=malloc_debug
 export PYTHONMALLOC
 
@@ -67,5 +69,7 @@ modules_python_tests_test_python_reloc_CFLAGS = $(TEST_CFLAGS) $(PYTHON_CFLAGS) 
 modules_python_tests_test_python_reloc_LDADD = $(TEST_LDADD) \
 	-dlpreopen $(top_builddir)/modules/python/libmod-python.la \
 	$(PYTHON_LIBS)
+
+endif
 
 EXTRA_DIST += modules/python/tests/CMakeLists.txt
