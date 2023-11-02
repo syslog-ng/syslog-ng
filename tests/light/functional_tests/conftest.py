@@ -32,6 +32,8 @@ from src.common.pytest_operations import calculate_testcase_name
 
 logger = logging.getLogger(__name__)
 
+base_number_of_open_fds = 0
+
 
 def calculate_report_file_path(working_dir):
     return Path(working_dir, "testcase.reportlog")
@@ -55,6 +57,11 @@ def pytest_runtest_setup(item):
     os.chdir(working_dir)
 
 
+def pytest_sessionstart(session):
+    global base_number_of_open_fds
+    base_number_of_open_fds = len(psutil.Process().open_files())
+
+
 def light_extra_files(target_dir):
     if "LIGHT_EXTRA_FILES" in os.environ:
         for f in os.environ["LIGHT_EXTRA_FILES"].split(":"):
@@ -64,7 +71,9 @@ def light_extra_files(target_dir):
 
 @pytest.fixture(autouse=True)
 def setup(request):
-    assert len(psutil.Process().open_files()) == 1, "Previous testcase has unclosed opened fds"
+    global base_number_of_open_fds
+    number_of_open_fds = len(psutil.Process().open_files())
+    assert base_number_of_open_fds + 1 == number_of_open_fds, "Previous testcase has unclosed opened fds"
     assert len(psutil.Process().connections(kind="inet")) == 0, "Previous testcase has unclosed opened sockets"
     testcase_parameters = request.getfixturevalue("testcase_parameters")
 
