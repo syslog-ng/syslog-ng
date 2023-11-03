@@ -77,6 +77,7 @@ modules/secure-logging/slogencrypt
 modules/secure-logging/slogverify
 modules/secure-logging/slogkey
 lib/compat/cpp-(start|end).\h$
+lib/compat/curl.\h$
 lib/compat/getline.\c$
 lib/healthcheck
 lib/healthcheck/tests

@@ -20,7 +20,8 @@ compatinclude_HEADERS		= 	\
 	lib/compat/getent-generic.h	\
 	lib/compat/un.h			\
 	lib/compat/cpp-start.h	\
-	lib/compat/cpp-end.h
+	lib/compat/cpp-end.h	\
+	lib/compat/curl.h
 
 compat_sources			= 	\
 	lib/compat/getutent.c		\
