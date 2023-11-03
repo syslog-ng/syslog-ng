@@ -121,6 +121,42 @@ test_parameters = [
             },
         },
     ),
+    (
+        # Log with query_id(v14+), backend_type(v13+)
+        r'2023-11-03 16:32:35.084 CET,"postgres","bench_test",3451998,"[local]",65451258.34ac5e,632376,"UPDATE",2023-11-03 16:31:36 CET,6/45171,228887,LOG,00000,"duration: 0.081 ms",,,,,,,,,"pgbench","client backend",,1521477082073268809',
+        {
+            "DATE": "Nov  3 16:32:35",
+            "HOST_FROM": "localhost",
+            "MSG": r'automatic vacuum of table "tablename": index scans: 0 pages: 0 removed, 4 remain, 0 skipped due to pins, 0 skipped frozen tuples: 114 removed, 268 remain, 0 are dead but not yet removable, oldest xmin: 149738000 buffer usage: 97 hits, 0 misses, 6 dirtied avg read rate: 0.000 MB/s, avg write rate: 114.609 MB/s system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s',
+            "PID": 3451998,
+            "SEVERITY": "info",
+            "_pgsql": {
+                "application_name": "",
+                "command_tag": "",
+                "connection_from": "localhost",
+                "context": "",
+                "database": "",
+                "detail": "",
+                "hint": "",
+                "internal_query": "",
+                "location": "",
+                "message": r'automatic vacuum of table "tablename": index scans: 0 pages: 0 removed, 4 remain, 0 skipped due to pins, 0 skipped frozen tuples: 114 removed, 268 remain, 0 are dead but not yet removable, oldest xmin: 149738000 buffer usage: 97 hits, 0 misses, 6 dirtied avg read rate: 0.000 MB/s, avg write rate: 114.609 MB/s system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s',
+                "pid": 22113,
+                "query": "",
+                "session_id": "65451258.34ac5e",
+                "session_line_num": 632376,
+                "session_start_time": "2023-11-03 16:31:36 CET",
+                "severity": "LOG",
+                "sql_state_code": "00000",
+                "timestamp": "2023-11-03 16:32:35.084 CET",
+                "transaction_id": "0",
+                "username": "",
+                "virtual_transaction_id": "",
+                "query_id": 1521477082073268809,
+                "backend_type": "client backend",
+            },
+        },
+    ),
 ]
 
 
@@ -159,3 +195,9 @@ def test_postgresql_csvlog_parser(config, port_allocator, syslog_ng, input_messa
     # If field is filled
     if "timestamp" in expected_kv_pairs["_pgsql"]:
         assert output_json["_pgsql"]["timestamp"] == expected_kv_pairs["_pgsql"]["timestamp"]
+
+    # Optional, extra fields
+    extra_fields = ["query_id", "backend_type"]
+    for extra_field in extra_fields:
+        if extra_field in expected_kv_pairs["_pgsql"]:
+            assert output_json["_pgsql"][extra_field] == expected_kv_pairs["_pgsql"][extra_field]
