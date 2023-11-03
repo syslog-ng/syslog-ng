@@ -146,9 +146,10 @@
 %token LL_CONTEXT_OPTIONS             19
 %token LL_CONTEXT_CONFIG              20
 %token LL_CONTEXT_TEMPLATE_REF        21
+%token LL_CONTEXT_FILTERX             22
 
 /* this is a placeholder for unit tests, must be the latest & largest */
-%token LL_CONTEXT_MAX                 22
+%token LL_CONTEXT_MAX                 23
 
 
 /* statements */

@@ -96,6 +96,9 @@ cfg_lexer_push_context(CfgLexer *self, gint type, CfgLexerKeyword *keywords, con
   context->keywords = keywords;
   memcpy(&context->desc, desc, strlen(desc) + 1);
   self->context_stack = g_list_prepend(self->context_stack, context);
+
+  if (cfg_lexer_get_context_type(self) == LL_CONTEXT_FILTERX)
+    cfg_lexer_push_filterx_state(self);
 }
 
 /*
@@ -106,6 +109,9 @@ cfg_lexer_push_context(CfgLexer *self, gint type, CfgLexerKeyword *keywords, con
 void
 cfg_lexer_pop_context(CfgLexer *self)
 {
+  if (cfg_lexer_get_context_type(self) == LL_CONTEXT_FILTERX)
+    cfg_lexer_pop_filterx_state(self);
+
   if (self->context_stack)
     {
       g_free((gchar *) self->context_stack->data);
@@ -1249,6 +1255,7 @@ static const gchar *lexer_contexts[] =
   [LL_CONTEXT_OPTIONS] = "options",
   [LL_CONTEXT_CONFIG] = "config",
   [LL_CONTEXT_TEMPLATE_REF] = "template-ref",
+  [LL_CONTEXT_FILTERX] = "filterx",
 };
 
 gint
