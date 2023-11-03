@@ -8,6 +8,7 @@ include lib/logproto/Makefile.am
 include lib/rewrite/Makefile.am
 include lib/parser/Makefile.am
 include lib/filter/Makefile.am
+include lib/filterx/Makefile.am
 include lib/template/Makefile.am
 include lib/value-pairs/Makefile.am
 include lib/stats/Makefile.am
@@ -53,7 +54,7 @@ lib_libsyslog_ng_la_LIBADD		= @CORE_DEPS_LIBS@ $(libsystemd_LIBS) $(top_builddir
 lib_libsyslog_ng_la_LDFLAGS		= -no-undefined -release ${LSNG_RELEASE} \
 					  -version-info ${LSNG_CURRENT}:${LSNG_REVISION}:${LSNG_AGE}
 
-lib_test_subdirs			= lib_filter lib_logproto lib_parser lib_rewrite lib_template lib_stats lib_control
+lib_test_subdirs			= lib_filter lib_filterx lib_logproto lib_parser lib_rewrite lib_template lib_stats lib_control
 
 lib_libsyslog_ng_la_DEPENDENCIES       = lib/eventlog/src/libevtlog.la lib/secret-storage/libsecret-storage.la
 
@@ -285,6 +286,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(transport_sources)		\
 	$(logproto_sources)		\
 	$(filter_sources)		\
+	$(filterx_sources)		\
 	$(parser_sources)		\
 	$(rewrite_sources)		\
 	$(template_sources)		\

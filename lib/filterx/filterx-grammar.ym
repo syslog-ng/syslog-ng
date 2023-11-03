@@ -1,0 +1,65 @@
+/*
+ * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "filterx/filterx-parser.h"
+
+}
+
+%code {
+
+
+}
+
+%define api.prefix {filterx_}
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {GList **result}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%type <ptr> stmts
+%type <node> stmt
+%type <node> expr
+
+%%
+
+start
+        : stmts					{ *result = $1; if (yychar != FILTERX_EMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+	;
+
+stmts
+	: stmt stmts				{ $$ = g_list_prepend($2, $1); }
+	|					{ $$ = NULL; }
+	;
+
+stmt
+	: expr ';'				{ $$ = $1; }
+
+expr: LL_NUMBER					{ $$ = NULL; }
+
+/* INCLUDE_RULES */
+
+%%
