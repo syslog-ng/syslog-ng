@@ -275,6 +275,7 @@ alphanum	[a-zA-Z0-9]
 word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 
 /* block related states must be last, as we use this fact in YY_INPUT */
+%x filterx
 %x string
 %x qstring
 %x block
@@ -283,16 +284,16 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 %x block_qstring
 %%
 
-<INITIAL>\#                {
+<INITIAL,filterx>\#        {
                              _process_commented_line(yyscanner,yyextra->token_text,yyextra->token_text);
                            }
-<INITIAL>^@                {
+<INITIAL,filterx>^@        {
                              return LL_PRAGMA;
                            }
 
     /* continuation line: just move the location and skip the newline character */
-<INITIAL>\\\r?\n           { _cfg_lex_extend_token_location_to_next_line(yyextra); }
-<INITIAL>\r?\n             {
+<INITIAL,filterx>\\\r?\n   { _cfg_lex_extend_token_location_to_next_line(yyextra); }
+<INITIAL,filterx>\r?\n     {
                              *yylloc = yyextra->include_stack[yyextra->include_depth].lloc;
                              _cfg_lex_move_token_location_to_new_line(yyextra);
                              if (yyextra->tokenize_eol)
@@ -300,44 +301,44 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                              else
                                g_string_append(yyextra->string_buffer, yytext);
                            }
-<INITIAL>{white}+	   ;
-<INITIAL>\.\.              { return LL_DOTDOT; }
-<INITIAL>\.\.\.            { return LL_DOTDOTDOT; }
-<INITIAL>=>                { return LL_ARROW; }
-<INITIAL>(-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
-<INITIAL>0x{xdigit}+ 	   {
+<INITIAL,filterx>{white}+  ;
+<INITIAL,filterx>\.\.      { return LL_DOTDOT; }
+<INITIAL,filterx>\.\.\.    { return LL_DOTDOTDOT; }
+<INITIAL,filterx>=>        { return LL_ARROW; }
+<INITIAL,filterx>(-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
+<INITIAL,filterx>0x{xdigit}+ {
                              if (!parse_int64_base16(yytext, &yylval->num))
                                {
                                  return LL_ERROR;
                                }
                              return LL_NUMBER;
                            }
-<INITIAL>0{odigit}+	   {
+<INITIAL,filterx>0{odigit}+ {
                              if (!parse_int64_base8(yytext, &yylval->num))
                                {
                                  return LL_ERROR;
                                }
                              return LL_NUMBER;
                            }
-<INITIAL>(-|\+)?{digit}+(M|m|G|g|k|K)?(i|I)?(b|B)? {
+<INITIAL,filterx>(-|\+)?{digit}+(M|m|G|g|k|K)?(i|I)?(b|B)? {
                              if (!parse_int64_with_suffix(yytext, &yylval->num))
                                {
                                  return LL_ERROR;
                                }
                              return LL_NUMBER;
                            }
-<INITIAL>({word}+(\.)?)*{word}+ 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
-<INITIAL>\,		   ;
+<INITIAL,filterx>({word}+(\.)?)*{word}+ 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
+<INITIAL,filterx>\,	   ;
 
-<INITIAL>\"                {
+<INITIAL,filterx>\"        {
 			     g_string_truncate(yyextra->string_buffer, 0);
 			     yy_push_state(string, yyscanner);
 			   }
-<INITIAL>\'		   {
+<INITIAL,filterx>\'	   {
 			     g_string_truncate(yyextra->string_buffer, 0);
 			     yy_push_state(qstring, yyscanner);
 			   }
-<INITIAL>.                 { return (unsigned char) yytext[0]; }
+<INITIAL,filterx>.         { return (unsigned char) yytext[0]; }
 
     /* continuation line within a string: just move the location and skip the newline character as if it was never there */
 <string,qstring>\\\r?\n    { _cfg_lex_extend_token_location_to_next_line(yyextra); }
@@ -484,7 +485,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                              _cfg_lex_extend_token_location_to_next_line(yyextra);
                            }
 
-<INITIAL><<EOF>>           {
+<INITIAL,filterx><<EOF>>   {
                              if (!cfg_lexer_start_next_include(yyextra))
                                {
                                  if (yyextra->include_depth == 0)
