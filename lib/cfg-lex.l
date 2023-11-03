@@ -525,5 +525,19 @@ cfg_lexer_start_block_state(CfgLexer *self, const gchar block_boundary[2])
   yy_push_state(block, self->state);
 }
 
+void
+cfg_lexer_push_filterx_state(CfgLexer *self)
+{
+  yy_push_state(filterx, self->state);
+}
+
+void
+cfg_lexer_pop_filterx_state(CfgLexer *self)
+{
+  struct yyguts_t *yyg = self->state;
+  g_assert(YY_START == filterx);
+  yy_pop_state(self->state);
+}
+
 /* avoid warnings of unused symbols */
 gpointer __dummy[] = { yy_top_state, yy_fatal_error };
