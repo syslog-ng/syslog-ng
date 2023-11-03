@@ -151,6 +151,16 @@
 /* this is a placeholder for unit tests, must be the latest & largest */
 %token LL_CONTEXT_MAX                 23
 
+/* operators in the filter language, the order of this determines precedence */
+%right KW_ASSIGN 9000
+%left  KW_OR 9001
+%left  KW_AND 9002
+%left  KW_STR_EQ 9003 KW_STR_NE 9004, KW_TA_EQ 9005, KW_TA_NE 9006, KW_TAV_EQ 9007, KW_TAV_NE 9008
+%left  KW_STR_LT 9009, KW_STR_LE 9010, KW_STR_GE, 9011 KW_STR_GT, 9012, KW_TA_LT 9013, KW_TA_LE 9014, KW_TA_GE 9015, KW_TA_GT 9016
+
+%left  '+' '-'
+%left  '*' '/'
+%left '.' KW_NOT 9017
 
 /* statements */
 %token KW_SOURCE                      10000
