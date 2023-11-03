@@ -323,6 +323,12 @@ log_template_set_type_hint(LogTemplate *self, const gchar *type_hint, GError **e
   return result;
 }
 
+void
+log_template_set_type_hint_value(LogTemplate *self, LogMessageValueType type_hint)
+{
+  self->explicit_type_hint = self->type_hint = type_hint;
+}
+
 /* NOTE: we should completely get rid off the name property of templates,
  * we basically use it at two locations:
  *

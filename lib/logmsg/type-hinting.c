@@ -221,3 +221,34 @@ type_cast_to_datetime_msec(const gchar *value, gint64 *out, GError **error)
   *out = ut.ut_sec * 1000 + ut.ut_usec / 1000;
   return TRUE;
 }
+
+gboolean
+type_cast_validate(const gchar *value, LogMessageValueType type, GError **error)
+{
+  gboolean b;
+  gint64 i64;
+  gdouble d;
+  UnixTime ut;
+
+  switch (type)
+    {
+    case LM_VT_STRING:
+    case LM_VT_JSON:
+    case LM_VT_NULL:
+    case LM_VT_BYTES:
+    case LM_VT_PROTOBUF:
+    case LM_VT_LIST:
+      return TRUE;
+    case LM_VT_BOOLEAN:
+      return type_cast_to_boolean(value, &b, error);
+    case LM_VT_INTEGER:
+      return type_cast_to_int64(value, &i64, error);
+    case LM_VT_DOUBLE:
+      return type_cast_to_double(value, &d, error);
+    case LM_VT_DATETIME:
+      return type_cast_to_datetime_unixtime(value, &ut, error);
+    default:
+      g_assert_not_reached();
+    }
+  return TRUE;
+}

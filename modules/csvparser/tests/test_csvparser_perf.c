@@ -36,51 +36,9 @@ _construct_parser(gint max_columns, gint dialect, gchar *delimiters, gchar *quot
 {
   LogParser *p;
 
-  const gchar *column_array[] =
-  {
-    "C1",
-    "C2",
-    "C3",
-    "C4",
-    "C5",
-    "C6",
-    "C7",
-    "C8",
-    "C9",
-    "C10",
-    "C11",
-    "C12",
-    "C13",
-    "C14",
-    "C15",
-    "C16",
-    "C17",
-    "C18",
-    "C19",
-    "C20",
-    "C21",
-    "C22",
-    "C23",
-    "C24",
-    "C25",
-    "C26",
-    "C27",
-    "C28",
-    "C29",
-    "C30",
-    NULL
-  };
-
-  if (max_columns != -1)
-    {
-      g_assert(max_columns < (sizeof(column_array) / sizeof(column_array[0])));
-
-      column_array[max_columns] = NULL;
-    }
-
   p = csv_parser_new(NULL);
   csv_scanner_options_set_dialect(csv_parser_get_scanner_options(p), dialect);
-  csv_scanner_options_set_columns(csv_parser_get_scanner_options(p), string_array_to_list(column_array));
+  csv_scanner_options_set_expected_columns(csv_parser_get_scanner_options(p), max_columns < 0 ? 30 : max_columns);
   if (delimiters)
     csv_scanner_options_set_delimiters(csv_parser_get_scanner_options(p), delimiters);
   if (quotes)

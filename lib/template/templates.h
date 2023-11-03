@@ -77,6 +77,7 @@ struct _LogTemplate
 
 void log_template_set_escape(LogTemplate *self, gboolean enable);
 gboolean log_template_set_type_hint(LogTemplate *self, const gchar *hint, GError **error);
+void log_template_set_type_hint_value(LogTemplate *self, LogMessageValueType type);
 gboolean log_template_compile(LogTemplate *self, const gchar *template_str, GError **error);
 gboolean log_template_compile_with_type_hint(LogTemplate *self, const gchar *template_and_typehint, GError **error);
 void log_template_forget_template_string(LogTemplate *self);

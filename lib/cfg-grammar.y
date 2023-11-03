@@ -392,6 +392,7 @@
 %type   <ptr> template_content_list
 %type   <ptr> template_name_or_content
 %type   <ptr> template_name_or_content_tail
+%type   <num> type_hint
 
 %type   <ptr> filter_content
 
@@ -893,15 +894,14 @@ template_content_inner
           CHECK_ERROR_GERROR(log_template_compile($<ptr>0, $1, &error), @1, error, "Error compiling template");
           free($1);
         }
-        | LL_IDENTIFIER '(' string_or_number ')'
+        | type_hint '(' string_or_number ')'
         {
           GError *error = NULL;
 
           CHECK_ERROR_GERROR(log_template_compile($<ptr>0, $3, &error), @3, error, "Error compiling template");
           free($3);
 
-          CHECK_ERROR_GERROR(log_template_set_type_hint($<ptr>0, $1, &error), @1, error, "Error setting the template type-hint \"%s\"", $1);
-          free($1);
+          log_template_set_type_hint_value($<ptr>0, $1);
         }
         | LL_NUMBER
         {
@@ -917,6 +917,17 @@ template_content_inner
           log_template_set_type_hint($<ptr>0, "float", NULL);
         }
         ;
+
+type_hint
+        : LL_IDENTIFIER
+          {
+            LogMessageValueType type;
+            GError *error = NULL;
+
+            CHECK_ERROR_GERROR(type_hint_parse($1, &type, &error), @1, error, "Unknown type hint");
+            free($1);
+            $$ = type;
+          };
 
 template_content
         : <ptr>{

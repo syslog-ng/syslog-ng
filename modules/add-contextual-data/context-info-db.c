@@ -221,6 +221,8 @@ void
 context_info_db_insert(ContextInfoDB *self,
                        const ContextualDataRecord *record)
 {
+  log_template_forget_template_string(record->value);
+
   g_array_append_val(self->data, *record);
   self->is_data_indexed = FALSE;
   if (self->is_ordering_enabled && !g_list_find_custom(self->ordered_selectors, record->selector, _g_strcmp))

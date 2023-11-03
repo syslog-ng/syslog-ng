@@ -138,3 +138,50 @@ def test_csv_parser(config, syslog_ng, testcase):
 
     assert file_destination.read_log().strip() == testcase['expected_value']
     assert csv_parser.get_query().get('discarded', -1) == 0
+
+
+def test_csv_parser_into_matches(config, syslog_ng):
+    config.update_global_options(stats_level=1)
+    generator_source = config.create_example_msg_generator_source(num=1, template=config.stringify("FOO,BAR,BAZ"))
+
+    csv_parser = config.create_csv_parser(delimiters=config.stringify(","))
+
+    file_destination = config.create_file_destination(file_name="output.log", template=config.stringify("$*\n"))
+    config.create_logpath(statements=[generator_source, csv_parser, file_destination])
+
+    syslog_ng.start(config)
+
+    assert file_destination.read_log().strip() == "FOO,BAR,BAZ"
+    assert csv_parser.get_query().get('discarded', -1) == 0
+
+
+test_parameters_drop_invalid = [
+    {
+        "id": "too_many_columns_in_input",
+        "input_message": "foo,bar,baz",
+        "columns": "foo,bar",
+    },
+    {
+        "id": "type_does_not_match",
+        "input_message": "foo,bar",
+        "columns": "int(foo),bar",
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "testcase", test_parameters_drop_invalid,
+    ids=map(lambda tc: tc['id'], test_parameters_drop_invalid),
+)
+def test_csv_parser_drop_invalid(config, syslog_ng, testcase):
+    config.update_global_options(stats_level=1)
+    generator_source = config.create_example_msg_generator_source(num=1, template=config.stringify(testcase["input_message"]))
+
+    csv_parser = config.create_csv_parser(delimiters=config.stringify(","), drop_invalid="yes", columns=testcase["columns"])
+
+    file_destination = config.create_file_destination(file_name="output.log", template=config.stringify("$*\n"))
+    config.create_logpath(statements=[generator_source, csv_parser, file_destination])
+
+    syslog_ng.start(config)
+
+    assert csv_parser.get_query().get('discarded', -1) == 1

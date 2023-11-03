@@ -28,10 +28,35 @@
 
 #include <string.h>
 
+
+CSVParserColumn *
+csv_parser_column_new(const gchar *name, LogMessageValueType type)
+{
+  CSVParserColumn *self = g_new0(CSVParserColumn, 1);
+
+  self->name = g_strdup(name);
+  self->type = type;
+  return self;
+}
+
+CSVParserColumn *
+csv_parser_column_clone(CSVParserColumn *other)
+{
+  return csv_parser_column_new(other->name, other->type);
+}
+
+void
+csv_parser_column_free(CSVParserColumn *self)
+{
+  g_free(self->name);
+  g_free(self);
+}
+
 typedef struct _CSVParser
 {
   LogParser super;
   CSVScannerOptions options;
+  GList *columns;
   gboolean drop_invalid;
   gchar *prefix;
   gint prefix_len;
@@ -53,6 +78,14 @@ csv_parser_get_scanner_options(LogParser *s)
   CSVParser *self = (CSVParser *) s;
 
   return &self->options;
+}
+
+void
+csv_parser_set_columns(LogParser *s, GList *columns)
+{
+  CSVParser *self = (CSVParser *) s;
+
+  self->columns = columns;
 }
 
 gboolean
@@ -133,6 +166,55 @@ dispatch_key_formatter(gchar *prefix)
 }
 
 static gboolean
+_iterate_columns(CSVParser *self, CSVScanner *scanner, LogMessage *msg)
+{
+  GString *key_scratch = scratch_buffers_alloc();
+  GList *column_l = self->columns;
+  if (self->prefix)
+    g_string_assign(key_scratch, self->prefix);
+
+  key_formatter_t _key_formatter = dispatch_key_formatter(self->prefix);
+  gint match_index = 1;
+
+  while (csv_scanner_scan_next(scanner))
+    {
+      if (self->columns)
+        {
+          CSVParserColumn *current_column = column_l->data;
+          const gchar *current_value = csv_scanner_get_current_value(scanner);
+          GError *error = NULL;
+
+          if (self->drop_invalid && !type_cast_validate(current_value, current_column->type, &error))
+            {
+              msg_debug("csv-parser: error casting value to the type specified",
+                        evt_tag_str("column", current_column->name),
+                        evt_tag_str("type", log_msg_value_type_to_str(current_column->type)),
+                        evt_tag_str("error", error->message));
+              g_clear_error(&error);
+              return FALSE;
+            }
+          log_msg_set_value_by_name_with_type(msg,
+                                              _key_formatter(key_scratch, current_column->name, self->prefix_len),
+                                              csv_scanner_get_current_value(scanner),
+                                              csv_scanner_get_current_value_len(scanner),
+                                              current_column->type);
+          column_l = g_list_next(column_l);
+        }
+      else
+        {
+          if (match_index == 1)
+            log_msg_unset_match(msg, 0);
+          log_msg_set_match_with_type(msg,
+                                      match_index, csv_scanner_get_current_value(scanner),
+                                      csv_scanner_get_current_value_len(scanner),
+                                      LM_VT_STRING);
+          match_index++;
+        }
+    }
+  return TRUE;
+}
+
+static gboolean
 csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
                    gsize input_len)
 {
@@ -142,49 +224,25 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
   msg_trace("csv-parser message processing started",
             evt_tag_str ("input", input),
             evt_tag_str ("prefix", self->prefix),
-            evt_tag_msg_reference(*pmsg));
+            evt_tag_msg_reference(msg));
   CSVScanner scanner;
   csv_scanner_init(&scanner, &self->options, input);
 
-  GString *key_scratch = scratch_buffers_alloc();
-  if (self->prefix)
-    g_string_assign(key_scratch, self->prefix);
-
-  key_formatter_t _key_formatter = dispatch_key_formatter(self->prefix);
-  gint match_index = 1;
-
-  while (csv_scanner_scan_next(&scanner))
-    {
-      const gchar *current_name = csv_scanner_get_current_name(&scanner);
-
-      if (current_name)
-        {
-          log_msg_set_value_by_name(msg,
-                                    _key_formatter(key_scratch, csv_scanner_get_current_name(&scanner), self->prefix_len),
-                                    csv_scanner_get_current_value(&scanner),
-                                    csv_scanner_get_current_value_len(&scanner));
-        }
-      else
-        {
-          if (match_index == 1)
-            log_msg_unset_match(msg, 0);
-          log_msg_set_match_with_type(msg,
-                                      match_index, csv_scanner_get_current_value(&scanner),
-                                      csv_scanner_get_current_value_len(&scanner),
-                                      LM_VT_STRING);
-        }
-      match_index++;
-    }
-
   gboolean result = TRUE;
-  if (self->drop_invalid && !csv_scanner_is_scan_complete(&scanner))
+
+  if (!_iterate_columns(self, &scanner, msg))
+    result = FALSE;
+  if (!csv_scanner_is_scan_complete(&scanner))
+    result = FALSE;
+
+  if (self->drop_invalid && !result)
     {
       msg_debug("csv-parser() failed",
                 evt_tag_str("error", "csv-parser() failed to parse its input and drop-invalid(yes) was specified"),
                 evt_tag_str("input", input));
-
-      result = FALSE;
     }
+  else
+    result = TRUE;
   csv_scanner_deinit(&scanner);
 
   return result;
@@ -198,6 +256,7 @@ csv_parser_clone(LogPipe *s)
 
   cloned = (CSVParser *) csv_parser_new(s->cfg);
   log_parser_clone_settings(&self->super, &cloned->super);
+  cloned->columns = g_list_copy_deep(self->columns, (GCopyFunc) csv_parser_column_clone, NULL);
   csv_scanner_options_copy(&cloned->options, &self->options);
   csv_parser_set_prefix(&cloned->super, self->prefix);
   csv_parser_set_drop_invalid(&cloned->super, self->drop_invalid);
@@ -219,6 +278,7 @@ csv_parser_init(LogPipe *s)
 {
   CSVParser *self = (CSVParser *) s;
 
+  csv_scanner_options_set_expected_columns(&self->options, g_list_length(self->columns));
   if (!csv_scanner_options_validate(&self->options))
     return FALSE;
 

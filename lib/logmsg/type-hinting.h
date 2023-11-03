@@ -50,4 +50,6 @@ gboolean type_cast_to_double(const gchar *value, gdouble *out, GError **error);
 gboolean type_cast_to_datetime_msec(const gchar *value, gint64 *out, GError **error);
 gboolean type_cast_to_datetime_unixtime(const gchar *value, UnixTime *ut, GError **error);
 
+gboolean type_cast_validate(const gchar *value, LogMessageValueType type, GError **error);
+
 #endif

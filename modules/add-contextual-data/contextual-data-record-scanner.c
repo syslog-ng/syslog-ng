@@ -43,8 +43,11 @@ _fetch_next(ContextualDataRecordScanner *self)
 {
   if (!csv_scanner_scan_next(&self->scanner))
     {
+      const gchar *columns[] = { "selector", "name", "value", NULL };
+      gint column_index = csv_scanner_get_current_column(&self->scanner);
+      const gchar *column_name = column_index < 3 ? columns[column_index] : "out-of-range";
       msg_error("add-contextual-data(): error parsing CSV file, expecting an additional column which was not found. Expecting (selector, name, value) triplets",
-                evt_tag_str("target", csv_scanner_get_current_name(&self->scanner)));
+                evt_tag_str("target", column_name));
       return FALSE;
     }
 
@@ -170,7 +173,6 @@ _fetch_value(ContextualDataRecordScanner *self, ContextualDataRecord *record)
       g_clear_error(&error);
       return FALSE;
     }
-  log_template_forget_template_string(record->value);
   return TRUE;
 }
 
@@ -236,9 +238,7 @@ contextual_data_record_scanner_new(GlobalConfig *cfg, const gchar *name_prefix)
 
   csv_scanner_options_set_delimiters(&self->options, ",");
   csv_scanner_options_set_quote_pairs(&self->options, "\"\"''");
-  const gchar *column_array[] = { "selector", "name", "value", NULL };
-  csv_scanner_options_set_columns(&self->options,
-                                  string_array_to_list(column_array));
+  csv_scanner_options_set_expected_columns(&self->options, 3);
   csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE);
   csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_DOUBLE_CHAR);
   self->name_prefix = g_strdup(name_prefix);

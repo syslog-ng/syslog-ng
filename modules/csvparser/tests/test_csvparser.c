@@ -775,7 +775,6 @@ ParameterizedTest(CsvParserTestParam *param, parser, test_csv_parser)
   LogParser *p, *pclone;
   gint i;
   NVTable *nvtable;
-
   const gchar *column_array[] =
   {
     "C1",
@@ -810,22 +809,16 @@ ParameterizedTest(CsvParserTestParam *param, parser, test_csv_parser)
     "C30",
     NULL
   };
-  gboolean success;
 
-  if (param->max_columns != -1)
-    {
-      cr_assert(param->max_columns < (sizeof(column_array) / sizeof(column_array[0])));
-      column_array[param->max_columns] = NULL;
-    }
+  gboolean success;
 
   logmsg = log_msg_new_empty();
   log_msg_set_value(logmsg, LM_V_MESSAGE, param->msg, -1);
 
-  p = csv_parser_new(NULL);
+  p = csv_parser_new(configuration);
   csv_parser_set_drop_invalid(p, param->drop_invalid);
   csv_scanner_options_set_flags(csv_parser_get_scanner_options(p), param->flags);
   csv_scanner_options_set_dialect(csv_parser_get_scanner_options(p), param->dialect);
-  csv_scanner_options_set_columns(csv_parser_get_scanner_options(p), string_array_to_list(column_array));
   if (param->delimiters)
     csv_scanner_options_set_delimiters(csv_parser_get_scanner_options(p), param->delimiters);
   if (param->quotes)
@@ -836,8 +829,15 @@ ParameterizedTest(CsvParserTestParam *param, parser, test_csv_parser)
   csv_scanner_options_set_string_delimiters(csv_parser_get_scanner_options(p),
                                             string_array_to_list(param->string_delims));
 
+  GList *columns = NULL;
+  for (i = 0; column_array[i] && (param->max_columns < 0 || i < param->max_columns); i++)
+    columns = g_list_append(columns, csv_parser_column_new(column_array[i], LM_VT_STRING));
+  csv_parser_set_columns(p, columns);
+
   pclone = (LogParser *) log_pipe_clone(&p->super);
   log_pipe_unref(&p->super);
+
+  cr_assert(log_pipe_init(&pclone->super));
 
   nvtable = nv_table_ref(logmsg->payload);
   success = log_parser_process(pclone, &logmsg, NULL, log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), -1);
@@ -893,7 +893,8 @@ ParameterizedTest(CsvParserTestParam *param, parser, test_csv_parser)
   log_msg_unref(logmsg);
 }
 
-void setup(void)
+void
+setup(void)
 {
   app_startup();
 
@@ -906,7 +907,8 @@ void setup(void)
   msg_format_options_init(&parse_options, configuration);
 }
 
-void teardown(void)
+void
+teardown(void)
 {
   scratch_buffers_explicit_gc();
   app_shutdown();
