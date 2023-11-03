@@ -43,6 +43,7 @@ EXTRA_DIST		= $(filter-out ${NODIST_BUILT_SOURCES},${BUILT_SOURCES}) VERSION NEW
 			  syslog-ng-ctl/CMakeLists.txt	\
 			  requirements.txt	\
 			  dev-requirements.txt  \
+			  optional-dev-requirements.txt  \
 			  README.md	\
 			  .astylerc
 
