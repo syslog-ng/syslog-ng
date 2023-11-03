@@ -283,16 +283,16 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 %x block_qstring
 %%
 
-\#                         {
+<INITIAL>\#                {
                              _process_commented_line(yyscanner,yyextra->token_text,yyextra->token_text);
                            }
-^@                         {
+<INITIAL>^@                {
                              return LL_PRAGMA;
                            }
 
     /* continuation line: just move the location and skip the newline character */
-\\\r?\n                    { _cfg_lex_extend_token_location_to_next_line(yyextra); }
-\r?\n                      {
+<INITIAL>\\\r?\n           { _cfg_lex_extend_token_location_to_next_line(yyextra); }
+<INITIAL>\r?\n             {
                              *yylloc = yyextra->include_stack[yyextra->include_depth].lloc;
                              _cfg_lex_move_token_location_to_new_line(yyextra);
                              if (yyextra->tokenize_eol)
@@ -300,44 +300,44 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                              else
                                g_string_append(yyextra->string_buffer, yytext);
                            }
-{white}+		   ;
-\.\.                       { return LL_DOTDOT; }
-\.\.\.                     { return LL_DOTDOTDOT; }
-=>                         { return LL_ARROW; }
-(-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
-0x{xdigit}+ 		   {
+<INITIAL>{white}+	   ;
+<INITIAL>\.\.              { return LL_DOTDOT; }
+<INITIAL>\.\.\.            { return LL_DOTDOTDOT; }
+<INITIAL>=>                { return LL_ARROW; }
+<INITIAL>(-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
+<INITIAL>0x{xdigit}+ 	   {
                              if (!parse_int64_base16(yytext, &yylval->num))
                                {
                                  return LL_ERROR;
                                }
                              return LL_NUMBER;
                            }
-0{odigit}+		   {
+<INITIAL>0{odigit}+	   {
                              if (!parse_int64_base8(yytext, &yylval->num))
                                {
                                  return LL_ERROR;
                                }
                              return LL_NUMBER;
                            }
-(-|\+)?{digit}+(M|m|G|g|k|K)?(i|I)?(b|B)? {
+<INITIAL>(-|\+)?{digit}+(M|m|G|g|k|K)?(i|I)?(b|B)? {
                              if (!parse_int64_with_suffix(yytext, &yylval->num))
                                {
                                  return LL_ERROR;
                                }
                              return LL_NUMBER;
                            }
-({word}+(\.)?)*{word}+ 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
-\,			   ;
+<INITIAL>({word}+(\.)?)*{word}+ 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
+<INITIAL>\,		   ;
 
-\"                         {
+<INITIAL>\"                {
 			     g_string_truncate(yyextra->string_buffer, 0);
 			     yy_push_state(string, yyscanner);
 			   }
-\'			   {
+<INITIAL>\'		   {
 			     g_string_truncate(yyextra->string_buffer, 0);
 			     yy_push_state(qstring, yyscanner);
 			   }
-.                          { return (unsigned char) yytext[0]; }
+<INITIAL>.                 { return (unsigned char) yytext[0]; }
 
     /* continuation line within a string: just move the location and skip the newline character as if it was never there */
 <string,qstring>\\\r?\n    { _cfg_lex_extend_token_location_to_next_line(yyextra); }
