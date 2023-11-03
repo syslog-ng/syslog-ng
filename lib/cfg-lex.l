@@ -305,6 +305,15 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 <INITIAL,filterx>\.\.      { return LL_DOTDOT; }
 <INITIAL,filterx>\.\.\.    { return LL_DOTDOTDOT; }
 <INITIAL,filterx>=>        { return LL_ARROW; }
+<INITIAL,filterx><	   { return KW_TA_LT; }
+<INITIAL,filterx><=        { return KW_TA_LE; }
+<INITIAL,filterx>==        { return KW_TA_EQ; }
+<INITIAL,filterx>!=        { return KW_TA_NE; }
+<INITIAL,filterx>>=        { return KW_TA_GE; }
+<INITIAL,filterx>>         { return KW_TA_GT; }
+<INITIAL,filterx>===       { return KW_TAV_EQ; }
+<INITIAL,filterx>!==       { return KW_TAV_NE; }
+
 <INITIAL,filterx>(-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
 <INITIAL,filterx>0x{xdigit}+ {
                              if (!parse_int64_base16(yytext, &yylval->num))
