@@ -52,6 +52,7 @@ static CfgLexerKeyword main_keywords[] =
   /* statements */
   { "source",             KW_SOURCE },
   { "filter",             KW_FILTER },
+  { "filterx",            KW_FILTERX },
   { "parser",             KW_PARSER },
   { "rewrite",            KW_REWRITE },
   { "destination",        KW_DESTINATION },
