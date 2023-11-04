@@ -26,6 +26,7 @@
 #include "type-hinting.h"
 #include "template/templates.h"
 #include "timeutils/scan-timestamp.h"
+#include "str-utils.h"
 
 #include <errno.h>
 #include <math.h>
@@ -52,21 +53,24 @@ type_hint_parse(const gchar *hint, LogMessageValueType *out_type, GError **error
 }
 
 gboolean
-type_cast_drop_helper(gint drop_flags, const gchar *value,
+type_cast_drop_helper(gint drop_flags, const gchar *value, gssize value_len,
                       const gchar *type_hint)
 {
   if (!(drop_flags & ON_ERROR_SILENT))
     {
       msg_error("Casting error",
-                evt_tag_str("value", value),
+                evt_tag_mem("value", value, value_len < 0 ? strlen(value) : value_len),
                 evt_tag_str("type-hint", type_hint));
     }
   return drop_flags & ON_ERROR_DROP_MESSAGE;
 }
 
 gboolean
-type_cast_to_boolean(const gchar *value, gboolean *out, GError **error)
+type_cast_to_boolean(const gchar *value, gssize value_len, gboolean *out, GError **error)
 {
+  if (value_len == 0)
+    return FALSE;
+
   if (value[0] == 'T' || value[0] == 't' || value[0] == '1')
     *out = TRUE;
   else if (value[0] == 'F' || value[0] == 'f' || value[0] == '0')
@@ -74,8 +78,12 @@ type_cast_to_boolean(const gchar *value, gboolean *out, GError **error)
   else
     {
       if (error)
-        g_set_error(error, TYPE_HINTING_ERROR, TYPE_HINTING_INVALID_CAST,
-                    "boolean(%s)", value);
+        {
+          if (value_len < 0)
+            value_len = strlen(value);
+          g_set_error(error, TYPE_HINTING_ERROR, TYPE_HINTING_INVALID_CAST,
+                      "boolean(%.*s)", (gint) value_len, value);
+        }
       return FALSE;
     }
 
@@ -91,9 +99,12 @@ _is_value_hex(const gchar *value)
 }
 
 gboolean
-type_cast_to_int32(const gchar *value, gint32 *out, GError **error)
+type_cast_to_int32(const gchar *value, gssize value_len, gint32 *out, GError **error)
 {
   gchar *endptr;
+
+  if (value_len >= 0)
+    APPEND_ZERO(value, value, value_len);
 
   if (_is_value_hex(value))
     *out = (gint32)strtol(value, &endptr, 16);
@@ -111,9 +122,12 @@ type_cast_to_int32(const gchar *value, gint32 *out, GError **error)
 }
 
 gboolean
-type_cast_to_int64(const gchar *value, gint64 *out, GError **error)
+type_cast_to_int64(const gchar *value, gssize value_len, gint64 *out, GError **error)
 {
   gchar *endptr;
+
+  if (value_len >= 0)
+    APPEND_ZERO(value, value, value_len);
 
   if (_is_value_hex(value))
     *out = (gint64)strtoll(value, &endptr, 16);
@@ -131,10 +145,13 @@ type_cast_to_int64(const gchar *value, gint64 *out, GError **error)
 }
 
 gboolean
-type_cast_to_double(const gchar *value, gdouble *out, GError **error)
+type_cast_to_double(const gchar *value, gssize value_len, gdouble *out, GError **error)
 {
   gchar *endptr = NULL;
   gboolean success = TRUE;
+
+  if (value_len >= 0)
+    APPEND_ZERO(value, value, value_len);
 
   errno = 0;
   *out = g_ascii_strtod(value, &endptr);
@@ -180,11 +197,14 @@ _parse_fixed_point_timestamp_in_nsec(const gchar *value, gchar **endptr, gint64 
 }
 
 gboolean
-type_cast_to_datetime_unixtime(const gchar *value, UnixTime *ut, GError **error)
+type_cast_to_datetime_unixtime(const gchar *value, gssize value_len, UnixTime *ut, GError **error)
 {
   gchar *endptr;
   gint64 sec, nsec;
   gint tzofs = -1;
+
+  if (value_len >= 0)
+    APPEND_ZERO(value, value, value_len);
 
   if (!_parse_fixed_point_timestamp_in_nsec(value, &endptr, &sec, &nsec))
     goto error;
@@ -211,11 +231,11 @@ error:
 }
 
 gboolean
-type_cast_to_datetime_msec(const gchar *value, gint64 *out, GError **error)
+type_cast_to_datetime_msec(const gchar *value, gssize value_len, gint64 *out, GError **error)
 {
   UnixTime ut;
 
-  if (!type_cast_to_datetime_unixtime(value, &ut, error))
+  if (!type_cast_to_datetime_unixtime(value, value_len, &ut, error))
     return FALSE;
 
   *out = ut.ut_sec * 1000 + ut.ut_usec / 1000;
@@ -223,7 +243,7 @@ type_cast_to_datetime_msec(const gchar *value, gint64 *out, GError **error)
 }
 
 gboolean
-type_cast_validate(const gchar *value, LogMessageValueType type, GError **error)
+type_cast_validate(const gchar *value, gssize value_len, LogMessageValueType type, GError **error)
 {
   gboolean b;
   gint64 i64;
@@ -240,13 +260,13 @@ type_cast_validate(const gchar *value, LogMessageValueType type, GError **error)
     case LM_VT_LIST:
       return TRUE;
     case LM_VT_BOOLEAN:
-      return type_cast_to_boolean(value, &b, error);
+      return type_cast_to_boolean(value, value_len, &b, error);
     case LM_VT_INTEGER:
-      return type_cast_to_int64(value, &i64, error);
+      return type_cast_to_int64(value, value_len, &i64, error);
     case LM_VT_DOUBLE:
-      return type_cast_to_double(value, &d, error);
+      return type_cast_to_double(value, value_len, &d, error);
     case LM_VT_DATETIME:
-      return type_cast_to_datetime_unixtime(value, &ut, error);
+      return type_cast_to_datetime_unixtime(value, value_len, &ut, error);
     default:
       g_assert_not_reached();
     }

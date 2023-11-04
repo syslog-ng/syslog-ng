@@ -46,7 +46,7 @@ python_worker_vp_add_one(const gchar *name,
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
-      return type_cast_drop_helper(template_options->on_error, value, log_msg_value_type_to_str(type));
+      return type_cast_drop_helper(template_options->on_error, value, value_len, log_msg_value_type_to_str(type));
     }
 
   PyDict_SetItemString(dict, name, obj);

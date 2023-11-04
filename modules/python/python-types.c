@@ -182,7 +182,7 @@ py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueT
     case LM_VT_INTEGER:
     {
       gint64 l;
-      if (type_cast_to_int64(value, &l, NULL))
+      if (type_cast_to_int64(value, value_len, &l, NULL))
         return py_long_from_long(l);
       goto type_cast_error;
     }
@@ -190,7 +190,7 @@ py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueT
     case LM_VT_DOUBLE:
     {
       gdouble d;
-      if (type_cast_to_double(value, &d, NULL))
+      if (type_cast_to_double(value, value_len, &d, NULL))
         return py_double_from_double(d);
       goto type_cast_error;
     }
@@ -198,7 +198,7 @@ py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueT
     case LM_VT_BOOLEAN:
     {
       gboolean b;
-      if (type_cast_to_boolean(value, &b, NULL))
+      if (type_cast_to_boolean(value, value_len, &b, NULL))
         return py_boolean_from_boolean(b);
       goto type_cast_error;
     }
@@ -213,7 +213,7 @@ py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueT
     {
       gint64 msec = 0;
 
-      if (type_cast_to_datetime_msec(value, &msec, NULL))
+      if (type_cast_to_datetime_msec(value, value_len, &msec, NULL))
         return py_datetime_from_msec(msec);
       goto type_cast_error;
     }

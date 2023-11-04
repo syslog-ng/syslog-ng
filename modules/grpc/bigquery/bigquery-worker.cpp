@@ -231,9 +231,9 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
     case FieldDescriptor::CppType::CPPTYPE_INT32:
     {
       int32_t v;
-      if (!type_cast_to_int32(value.str, &v, NULL))
+      if (!type_cast_to_int32(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, "integer");
+          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "integer");
           goto error;
         }
       reflection->SetInt32(message, field.field_desc, v);
@@ -242,9 +242,9 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
     case FieldDescriptor::CppType::CPPTYPE_INT64:
     {
       int64_t v;
-      if (!type_cast_to_int64(value.str, &v, NULL))
+      if (!type_cast_to_int64(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, "integer");
+          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "integer");
           goto error;
         }
       reflection->SetInt64(message, field.field_desc, v);
@@ -253,9 +253,9 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
     case FieldDescriptor::CppType::CPPTYPE_UINT32:
     {
       int64_t v;
-      if (!type_cast_to_int64(value.str, &v, NULL))
+      if (!type_cast_to_int64(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, "integer");
+          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "integer");
           goto error;
         }
       reflection->SetUInt32(message, field.field_desc, (uint32_t) v);
@@ -264,9 +264,9 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
     case FieldDescriptor::CppType::CPPTYPE_UINT64:
     {
       int64_t v;
-      if (!type_cast_to_int64(value.str, &v, NULL))
+      if (!type_cast_to_int64(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, "integer");
+          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "integer");
           goto error;
         }
       reflection->SetUInt64(message, field.field_desc, (uint64_t) v);
@@ -275,9 +275,9 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
     case FieldDescriptor::CppType::CPPTYPE_DOUBLE:
     {
       double v;
-      if (!type_cast_to_double(value.str, &v, NULL))
+      if (!type_cast_to_double(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, "double");
+          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "double");
           goto error;
         }
       reflection->SetDouble(message, field.field_desc, v);
@@ -286,9 +286,9 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
     case FieldDescriptor::CppType::CPPTYPE_FLOAT:
     {
       double v;
-      if (!type_cast_to_double(value.str, &v, NULL))
+      if (!type_cast_to_double(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, "double");
+          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "double");
           goto error;
         }
       reflection->SetFloat(message, field.field_desc, (float) v);
@@ -297,9 +297,9 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
     case FieldDescriptor::CppType::CPPTYPE_BOOL:
     {
       gboolean v;
-      if (!type_cast_to_boolean(value.str, &v, NULL))
+      if (!type_cast_to_boolean(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, "boolean");
+          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "boolean");
           goto error;
         }
       reflection->SetBool(message, field.field_desc, v);
