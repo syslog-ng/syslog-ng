@@ -251,6 +251,8 @@ _cfg_lex_extend_token_location_to_next_line(CfgLexer *lexer)
 #define YYSTYPE CFG_STYPE
 #define YYLTYPE CFG_LTYPE
 
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
 %}
 
 %option bison-bridge bison-locations reentrant
