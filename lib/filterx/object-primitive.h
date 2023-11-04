@@ -20,18 +20,35 @@
  * COPYING for details.
  *
  */
-#include "filterx/filterx-globals.h"
-#include "filterx/object-primitive.h"
+#ifndef FILTERX_PRIMITIVE_H_INCLUDED
+#define FILTERX_PRIMITIVE_H_INCLUDED
 
-void
-filterx_global_init(void)
+#include "filterx/filterx-object.h"
+#include "generic-number.h"
+
+FILTERX_DECLARE_TYPE(integer);
+FILTERX_DECLARE_TYPE(double);
+FILTERX_DECLARE_TYPE(boolean);
+
+typedef struct _FilterXPrimitive
 {
-  filterx_type_init(&FILTERX_TYPE_NAME(integer));
-  filterx_type_init(&FILTERX_TYPE_NAME(boolean));
-  filterx_type_init(&FILTERX_TYPE_NAME(double));
+  FilterXObject super;
+  GenericNumber value;
+} FilterXPrimitive;
+
+FilterXObject *filterx_integer_new(gint64 value);
+FilterXObject *filterx_double_new(gdouble value);
+FilterXObject *filterx_boolean_new(gboolean value);
+
+static inline gboolean
+filterx_integer_unwrap(FilterXObject *s, gint64 *value)
+{
+  FilterXPrimitive *self = (FilterXPrimitive *) s;
+
+  if (!filterx_object_is_type(s, &FILTERX_TYPE_NAME(integer)))
+    return FALSE;
+  *value = gn_as_int64(&self->value);
+  return TRUE;
 }
 
-void
-filterx_global_deinit(void)
-{
-}
+#endif
