@@ -29,10 +29,6 @@
    with care. If you need additional headers, please look for a
    massive list of includes further below. */
 
-#pragma GCC diagnostic ignored "-Wswitch-default"
-#if (defined(__GNUC__) && __GNUC__ >= 6) || (defined(__clang__) && __clang_major__ >= 10)
-#  pragma GCC diagnostic ignored "-Wmisleading-indentation"
-#endif
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
 #include "cfg-grammar-internal.h"
@@ -61,6 +57,12 @@
 %define parse.error verbose
 
 %code {
+
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#if (defined(__GNUC__) && __GNUC__ >= 6) || (defined(__clang__) && __clang_major__ >= 10)
+#  pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#endif
+
 
 # define YYLLOC_DEFAULT(Current, Rhs, N)                                \
   do {                                                                  \
