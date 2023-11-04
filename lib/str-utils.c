@@ -32,12 +32,14 @@ g_string_assign_len(GString *s, const gchar *val, gint len)
   return s;
 }
 
-void
+gchar *
 g_string_steal(GString *s)
 {
-  s->str = g_malloc0(1);
-  s->allocated_len = 1;
+  gchar *result = s->str;
+  s->str = g_malloc(1);
+  s->allocated_len = 0;
   s->len = 0;
+  return result;
 }
 
 static gchar *
