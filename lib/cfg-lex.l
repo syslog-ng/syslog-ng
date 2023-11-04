@@ -327,8 +327,13 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                                }
                              return LL_NUMBER;
                            }
-<INITIAL,filterx>({word}+(\.)?)*{word}+ 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
-<INITIAL,filterx>\,	   ;
+
+    /* this is the original LL_IDENTIFIER pattern, which basically allows almost everything as an unquoted string */
+<INITIAL>({word}+(\.)?)*{word}+    { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
+
+    /* and this is the version in filterx, which only allows "traditional" identifiers */
+<filterx>[a-zA-Z][_a-zA-Z0-9]* 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
+<INITIAL>\,	   ;
 
 <INITIAL,filterx>\"        {
 			     g_string_truncate(yyextra->string_buffer, 0);
