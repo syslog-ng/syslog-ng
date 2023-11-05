@@ -29,6 +29,9 @@
 
 %code {
 
+/* filterx language constructs */
+#include "filterx/expr-literal.h"
+#include "filterx/object-primitive.h"
 
 }
 
@@ -40,9 +43,14 @@
 
 /* INCLUDE_DECLS */
 
+%token KW_TRUE, KW_FALSE
+
 %type <ptr> stmts
 %type <node> stmt
 %type <node> expr
+%type <node> expr_value
+%type <node> literal
+%type <num> boolean
 
 %%
 
@@ -58,7 +66,25 @@ stmts
 stmt
 	: expr ';'				{ $$ = $1; }
 
-expr: LL_NUMBER					{ $$ = NULL; }
+expr
+	: expr_value				{ $$ = $1; }
+	| '(' expr ')'				{ $$ = $2; }
+	;
+
+expr_value
+	: literal
+	;
+
+literal
+	: LL_NUMBER				{ $$ = filterx_literal_new(filterx_integer_new($1)); }
+	| LL_FLOAT				{ $$ = filterx_literal_new(filterx_double_new($1)); }
+	| boolean				{ $$ = filterx_literal_new(filterx_boolean_new($1)); }
+	;
+
+boolean
+	: KW_TRUE				{ $$ = 1; }
+	| KW_FALSE				{ $$ = 0; }
+	;
 
 /* INCLUDE_RULES */
 

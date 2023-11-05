@@ -20,40 +20,12 @@
  * COPYING for details.
  *
  */
+#ifndef FILTERX_LITERAL_H_INCLUDED
+#define FILTERX_LITERAL_H_INCLUDED
 
-#include "filterx/filterx-parser.h"
-#include "filterx/filterx-grammar.h"
+#include "filterx/filterx-object.h"
+#include "filterx/filterx-expr.h"
 
-extern int filterx_debug;
-int filterx_parse(CfgLexer *lexer, GList **node, gpointer arg);
+FilterXExpr *filterx_literal_new(FilterXObject *object);
 
-static CfgLexerKeyword filterx_keywords[] =
-{
-  { "or",                 KW_OR },
-  { "and",                KW_AND },
-  { "not",                KW_NOT },
-  { "lt",                 KW_STR_LT },
-  { "le",                 KW_STR_LE },
-  { "eq",                 KW_STR_EQ },
-  { "ne",                 KW_STR_NE },
-  { "ge",                 KW_STR_GE },
-  { "gt",                 KW_STR_GT },
-
-  { "true",               KW_TRUE },
-  { "false",              KW_FALSE },
-
-  { NULL }
-};
-
-CfgParser filterx_parser =
-{
-#if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &filterx_debug,
 #endif
-  .name = "filterx expression",
-  .context = LL_CONTEXT_FILTERX,
-  .keywords = filterx_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) filterx_parse,
-};
-
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(filterx_, FILTERX_, GList **)
