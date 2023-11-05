@@ -20,32 +20,15 @@
  * COPYING for details.
  *
  */
-#include "filterx/filterx-globals.h"
-#include "filterx/object-primitive.h"
-#include "filterx/object-null.h"
-#include "filterx/object-string.h"
-#include "filterx/object-json.h"
-#include "filterx/object-datetime.h"
-#include "filterx/object-message-value.h"
+#ifndef FILTERX_MESSAGE_VALUE_H_INCLUDED
+#define FILTERX_MESSAGE_VALUE_H_INCLUDED
 
-void
-filterx_global_init(void)
-{
-  filterx_type_init(&FILTERX_TYPE_NAME(null));
-  filterx_type_init(&FILTERX_TYPE_NAME(integer));
-  filterx_type_init(&FILTERX_TYPE_NAME(boolean));
-  filterx_type_init(&FILTERX_TYPE_NAME(double));
+#include "filterx/filterx-object.h"
 
-  filterx_type_init(&FILTERX_TYPE_NAME(string));
-  filterx_type_init(&FILTERX_TYPE_NAME(bytes));
-  filterx_type_init(&FILTERX_TYPE_NAME(protobuf));
+FILTERX_DECLARE_TYPE(message_value);
 
-  filterx_type_init(&FILTERX_TYPE_NAME(json));
-  filterx_type_init(&FILTERX_TYPE_NAME(datetime));
-  filterx_type_init(&FILTERX_TYPE_NAME(message_value));
-}
+FilterXObject *filterx_message_value_new_borrowed(const gchar *repr, gssize repr_len, LogMessageValueType type);
+FilterXObject *filterx_message_value_new_ref(gchar *repr, gssize repr_len, LogMessageValueType type);
+FilterXObject *filterx_message_value_new(const gchar *repr, gssize repr_len, LogMessageValueType type);
 
-void
-filterx_global_deinit(void)
-{
-}
+#endif

@@ -31,6 +31,7 @@
 
 /* filterx language constructs */
 #include "filterx/expr-literal.h"
+#include "filterx/expr-message-ref.h"
 #include "filterx/expr-json.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-json.h"
@@ -54,6 +55,7 @@
 %type <node> expr
 %type <node> expr_value
 %type <node> literal
+%type <node> lvalue
 %type <ptr> json_object
 %type <ptr> json_object_values
 %type <ptr> json_object_value
@@ -80,6 +82,7 @@ expr
 
 expr_value
 	: literal
+	| lvalue				{ $$ = $1; }
 	| json_object                           { $$ = filterx_json_expr_new($1); }
 	;
 
@@ -89,6 +92,9 @@ literal
 	| KW_NULL				{ $$ = filterx_literal_new(filterx_null_new()); }
 	| boolean				{ $$ = filterx_literal_new(filterx_boolean_new($1)); }
 	;
+
+lvalue: '$' LL_IDENTIFIER			{ $$ = filterx_message_ref_expr_new(log_msg_get_value_handle($2)); free($2); }
+
 
 boolean
 	: KW_TRUE				{ $$ = 1; }
