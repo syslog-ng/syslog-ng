@@ -32,11 +32,13 @@
 /* filterx language constructs */
 #include "filterx/expr-literal.h"
 #include "filterx/expr-message-ref.h"
+#include "filterx/expr-template.h"
 #include "filterx/expr-json.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-json.h"
 #include "filterx/object-null.h"
 
+#include "template/templates.h"
 }
 
 %define api.prefix {filterx_}
@@ -56,6 +58,7 @@
 %type <node> expr_value
 %type <node> literal
 %type <node> lvalue
+%type <ptr> template
 %type <ptr> json_object
 %type <ptr> json_object_values
 %type <ptr> json_object_value
@@ -90,6 +93,7 @@ literal
 	: LL_NUMBER				{ $$ = filterx_literal_new(filterx_integer_new($1)); }
 	| LL_FLOAT				{ $$ = filterx_literal_new(filterx_double_new($1)); }
 	| KW_NULL				{ $$ = filterx_literal_new(filterx_null_new()); }
+	| template				{ $$ = filterx_template_new($1); }
 	| boolean				{ $$ = filterx_literal_new(filterx_boolean_new($1)); }
 	;
 
@@ -99,6 +103,19 @@ lvalue: '$' LL_IDENTIFIER			{ $$ = filterx_message_ref_expr_new(log_msg_get_valu
 boolean
 	: KW_TRUE				{ $$ = 1; }
 	| KW_FALSE				{ $$ = 0; }
+	;
+
+template
+	: LL_STRING
+          {
+            GError *error = NULL;
+	    LogTemplate *template = log_template_new(configuration, NULL);
+
+            CHECK_ERROR_GERROR(log_template_compile(template, $1, &error), @1, error, "Error compiling template");
+            free($1);
+
+            $$ = template;
+          }
 	;
 
 json_object
