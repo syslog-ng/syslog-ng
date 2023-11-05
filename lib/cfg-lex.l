@@ -171,7 +171,7 @@ yy_filter_input(CfgLexer *self, gchar *buf, gsize buf_size)
 
 #define YY_BREAK \
   do {                                                                  \
-    if (yyextra->token_text && YY_START == INITIAL)                     \
+    if (yyextra->token_text && (YY_START == INITIAL || YY_START == filterx)) \
       {                                                                 \
         g_string_append_len(yyextra->token_pretext, yyextra->token_text->str, yyextra->token_text->len); \
         g_string_truncate(yyextra->token_text, 0);                      \
@@ -333,7 +333,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 
     /* and this is the version in filterx, which only allows "traditional" identifiers */
 <filterx>[a-zA-Z][_a-zA-Z0-9]* 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
-<INITIAL>\,	   ;
+<INITIAL>\,	   	   ;
 
 <INITIAL,filterx>\"        {
 			     g_string_truncate(yyextra->string_buffer, 0);
