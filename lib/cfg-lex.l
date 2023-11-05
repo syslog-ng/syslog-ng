@@ -301,7 +301,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                              else
                                g_string_append(yyextra->string_buffer, yytext);
                            }
-<INITIAL,filterx>{white}+  ;
+<INITIAL,filterx>{white}+  { g_string_truncate(yyextra->token_text, 0); }
 <INITIAL,filterx>\.\.      { return LL_DOTDOT; }
 <INITIAL,filterx>\.\.\.    { return LL_DOTDOTDOT; }
 <INITIAL,filterx>=>        { return LL_ARROW; }
@@ -333,7 +333,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 
     /* and this is the version in filterx, which only allows "traditional" identifiers */
 <filterx>[a-zA-Z][_a-zA-Z0-9]* 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
-<INITIAL>\,	   ;
+<INITIAL>\,	   	   { g_string_truncate(yyextra->token_text, 0); }
 
 <INITIAL,filterx>\"        {
 			     g_string_truncate(yyextra->string_buffer, 0);
