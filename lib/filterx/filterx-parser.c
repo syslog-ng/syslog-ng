@@ -39,6 +39,9 @@ static CfgLexerKeyword filterx_keywords[] =
   { "ge",                 KW_STR_GE },
   { "gt",                 KW_STR_GT },
 
+  { "true",               KW_TRUE },
+  { "false",              KW_FALSE },
+
   { NULL }
 };
 
