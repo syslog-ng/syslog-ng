@@ -20,28 +20,19 @@
  * COPYING for details.
  *
  */
-#include "filterx/filterx-globals.h"
-#include "filterx/object-primitive.h"
-#include "filterx/object-null.h"
-#include "filterx/object-string.h"
-#include "filterx/object-json.h"
+#ifndef FILTERX_JSON_H_INCLUDED
+#define FILTERX_JSON_H_INCLUDED
 
-void
-filterx_global_init(void)
-{
-  filterx_type_init(&FILTERX_TYPE_NAME(null));
-  filterx_type_init(&FILTERX_TYPE_NAME(integer));
-  filterx_type_init(&FILTERX_TYPE_NAME(boolean));
-  filterx_type_init(&FILTERX_TYPE_NAME(double));
+#include "filterx/filterx-object.h"
+#include <json-c/json.h>
 
-  filterx_type_init(&FILTERX_TYPE_NAME(string));
-  filterx_type_init(&FILTERX_TYPE_NAME(bytes));
-  filterx_type_init(&FILTERX_TYPE_NAME(protobuf));
+FILTERX_DECLARE_TYPE(json);
 
-  filterx_type_init(&FILTERX_TYPE_NAME(json));
-}
+void filterx_json_associate_cached_object(struct json_object *json, FilterXObject *object);
 
-void
-filterx_global_deinit(void)
-{
-}
+FilterXObject *filterx_json_new_sub(struct json_object *object, FilterXObject *root);
+FilterXObject *filterx_json_new(struct json_object *object);
+FilterXObject *construct_filterx_json_from_repr(const gchar *repr, gssize repr_len);
+FilterXObject *construct_filterx_json_from_list_repr(const gchar *repr, gssize repr_len);
+
+#endif

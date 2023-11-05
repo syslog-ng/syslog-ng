@@ -20,28 +20,17 @@
  * COPYING for details.
  *
  */
-#include "filterx/filterx-globals.h"
-#include "filterx/object-primitive.h"
-#include "filterx/object-null.h"
-#include "filterx/object-string.h"
-#include "filterx/object-json.h"
+#ifndef FILTERX_EXPR_JSON_H_INCLUDED
+#define FILTERX_EXPR_JSON_H_INCLUDED
 
-void
-filterx_global_init(void)
-{
-  filterx_type_init(&FILTERX_TYPE_NAME(null));
-  filterx_type_init(&FILTERX_TYPE_NAME(integer));
-  filterx_type_init(&FILTERX_TYPE_NAME(boolean));
-  filterx_type_init(&FILTERX_TYPE_NAME(double));
+#include "filterx/filterx-expr.h"
 
-  filterx_type_init(&FILTERX_TYPE_NAME(string));
-  filterx_type_init(&FILTERX_TYPE_NAME(bytes));
-  filterx_type_init(&FILTERX_TYPE_NAME(protobuf));
+typedef struct _FilterXJSONKeyValue FilterXJSONKeyValue;
 
-  filterx_type_init(&FILTERX_TYPE_NAME(json));
-}
+FilterXJSONKeyValue *filterx_json_kv_new(const gchar *, FilterXExpr *value_expr);
+void filterx_json_kv_free(FilterXJSONKeyValue *self);
 
-void
-filterx_global_deinit(void)
-{
-}
+FilterXExpr *filterx_json_expr_new(GList *key_values);
+
+
+#endif
