@@ -5,8 +5,9 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/filterx-globals.h		\
 	lib/filterx/filterx-expr.h		\
 	lib/filterx/expr-literal.h		\
-	lib/filterx/expr-message-ref.h		\
+	lib/filterx/expr-template.h		\
 	lib/filterx/expr-json.h			\
+	lib/filterx/expr-message-ref.h		\
 	lib/filterx/filterx-object.h		\
 	lib/filterx/object-primitive.h		\
 	lib/filterx/filterx-scope.h		\
@@ -27,8 +28,9 @@ filterx_sources = 				\
 	lib/filterx/filterx-globals.c		\
 	lib/filterx/filterx-expr.c		\
 	lib/filterx/expr-literal.c		\
-	lib/filterx/expr-message-ref.c		\
+	lib/filterx/expr-template.c		\
 	lib/filterx/expr-json.c			\
+	lib/filterx/expr-message-ref.c		\
 	lib/filterx/filterx-object.c		\
 	lib/filterx/object-primitive.c		\
 	lib/filterx/filterx-scope.c		\
