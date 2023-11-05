@@ -8,6 +8,7 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/filterx-object.h		\
 	lib/filterx/object-primitive.h		\
 	lib/filterx/filterx-scope.h		\
+	lib/filterx/filterx-eval.h		\
 	lib/filterx/filterx-parser.h
 
 
@@ -19,6 +20,7 @@ filterx_sources = 				\
 	lib/filterx/filterx-object.c		\
 	lib/filterx/object-primitive.c		\
 	lib/filterx/filterx-scope.c		\
+	lib/filterx/filterx-eval.c		\
 	lib/filterx/filterx-parser.c		\
 	lib/filterx/filterx-grammar.y
 

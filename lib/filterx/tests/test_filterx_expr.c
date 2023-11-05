@@ -25,7 +25,7 @@ Test(filterx_expr, test_filterx_expr_construction_and_free)
 Test(filterx_expr, test_filterx_literal_evaluates_to_the_literal_object)
 {
   FilterXExpr *fexpr = filterx_literal_new(filterx_integer_new(42));
-  FilterXObject *fobj = filterx_expr_eval(fexpr, NULL);
+  FilterXObject *fobj = filterx_expr_eval(fexpr);
 
   assert_marshaled_object(fobj, "42", LM_VT_INTEGER);
 

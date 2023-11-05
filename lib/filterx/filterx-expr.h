@@ -25,17 +25,9 @@
 #define FILTERX_EXPR_H_INCLUDED
 
 #include "filterx-object.h"
-#include "template/eval.h"
+#include "filterx-eval.h"
 
 typedef struct _FilterXExpr FilterXExpr;
-typedef struct _FilterXEvalContext FilterXEvalContext;
-
-struct _FilterXEvalContext
-{
-  LogMessage **msgs;
-  gint num_msg;
-  LogTemplateEvalOptions *template_eval_options;
-};
 
 struct _FilterXExpr
 {
