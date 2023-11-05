@@ -20,42 +20,25 @@
  * COPYING for details.
  *
  */
+#ifndef FILTERX_EVAL_H_INCLUDED
+#define FILTERX_EVAL_H_INCLUDED
 
-#ifndef FILTERX_EXPR_H_INCLUDED
-#define FILTERX_EXPR_H_INCLUDED
+#include "filterx/filterx-scope.h"
+#include "template/eval.h"
 
-#include "filterx-object.h"
-#include "filterx-eval.h"
+typedef struct _FilterXEvalContext FilterXEvalContext;
 
-typedef struct _FilterXExpr FilterXExpr;
-
-struct _FilterXExpr
+struct _FilterXEvalContext
 {
-  guint32 ref_cnt;
-  const gchar *type;
-  FilterXObject *(*eval)(FilterXExpr *self);
-  FilterXObject *(*eval_typed)(FilterXExpr *self);
-  void (*free_fn)(FilterXExpr *self);
+  LogMessage **msgs;
+  gint num_msg;
+  FilterXScope *scope;
+  LogTemplateEvalOptions *template_eval_options;
 };
 
-static inline FilterXObject *
-filterx_expr_eval(FilterXExpr *self)
-{
-  return self->eval(self);
-}
-
-static inline FilterXObject *
-filterx_expr_eval_typed(FilterXExpr *self)
-{
-  if (!self->eval_typed)
-    return filterx_expr_eval(self);
-  return self->eval_typed(self);
-}
-
-void filterx_expr_init_instance(FilterXExpr *self);
-FilterXExpr *filterx_expr_new(void);
-FilterXExpr *filterx_expr_ref(FilterXExpr *self);
-void filterx_expr_unref(FilterXExpr *self);
-void filterx_expr_free_method(FilterXExpr *self);
+FilterXEvalContext *filterx_eval_get_context(void);
+FilterXScope *filterx_eval_get_scope(void);
+void filterx_eval_set_context(FilterXEvalContext *context);
+gboolean filterx_eval_exec_statements(GList *statements, LogMessage **msg, const LogPathOptions *options);
 
 #endif
