@@ -6,6 +6,7 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/filterx-expr.h		\
 	lib/filterx/expr-literal.h		\
 	lib/filterx/expr-template.h		\
+	lib/filterx/expr-boolalg.h		\
 	lib/filterx/expr-json.h			\
 	lib/filterx/expr-message-ref.h		\
 	lib/filterx/filterx-object.h		\
@@ -29,6 +30,7 @@ filterx_sources = 				\
 	lib/filterx/filterx-expr.c		\
 	lib/filterx/expr-literal.c		\
 	lib/filterx/expr-template.c		\
+	lib/filterx/expr-boolalg.c		\
 	lib/filterx/expr-json.c			\
 	lib/filterx/expr-message-ref.c		\
 	lib/filterx/filterx-object.c		\

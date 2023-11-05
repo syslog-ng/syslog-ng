@@ -64,3 +64,37 @@ filterx_expr_unref(FilterXExpr *self)
       g_free(self);
     }
 }
+
+void
+filterx_unary_op_free_method(FilterXExpr *s)
+{
+  FilterXUnaryOp *self = (FilterXUnaryOp *) s;
+
+  filterx_expr_unref(self->operand);
+}
+
+void
+filterx_unary_op_init_instance(FilterXUnaryOp *self, FilterXExpr *operand)
+{
+  filterx_expr_init_instance(&self->super);
+  self->super.free_fn = filterx_unary_op_free_method;
+  self->operand = operand;
+}
+
+void
+filterx_binary_op_free_method(FilterXExpr *s)
+{
+  FilterXBinaryOp *self = (FilterXBinaryOp *) s;
+
+  filterx_expr_unref(self->lhs);
+  filterx_expr_unref(self->rhs);
+}
+
+void
+filterx_binary_op_init_instance(FilterXBinaryOp *self, FilterXExpr *lhs, FilterXExpr *rhs)
+{
+  filterx_expr_init_instance(&self->super);
+  self->super.free_fn = filterx_binary_op_free_method;
+  self->lhs = lhs;
+  self->rhs = rhs;
+}

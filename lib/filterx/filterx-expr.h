@@ -58,4 +58,22 @@ FilterXExpr *filterx_expr_ref(FilterXExpr *self);
 void filterx_expr_unref(FilterXExpr *self);
 void filterx_expr_free_method(FilterXExpr *self);
 
+typedef struct _FilterXUnaryOp
+{
+  FilterXExpr super;
+  FilterXExpr *operand;
+} FilterXUnaryOp;
+
+void filterx_unary_op_free_method(FilterXExpr *s);
+void filterx_unary_op_init_instance(FilterXUnaryOp *self, FilterXExpr *operand);
+
+typedef struct _FilterXBinaryOp
+{
+  FilterXExpr super;
+  FilterXExpr *lhs, *rhs;
+} FilterXBinaryOp;
+
+void filterx_binary_op_free_method(FilterXExpr *s);
+void filterx_binary_op_init_instance(FilterXBinaryOp *self, FilterXExpr *lhs, FilterXExpr *rhs);
+
 #endif
