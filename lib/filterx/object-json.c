@@ -191,10 +191,14 @@ _setattr(FilterXObject *s, const gchar *attr_name, FilterXObject *new_value)
   FilterXJSON *self = (FilterXJSON *) s;
   struct json_object *attr_value = NULL;
 
+  /* this only clones mutable objects */
+  new_value = filterx_object_clone(new_value);
+
   if (!filterx_object_map_to_json(new_value, &attr_value))
     return FALSE;
 
   filterx_json_associate_cached_object(attr_value, new_value);
+  filterx_object_unref(new_value);
 
   if (json_object_object_add(self->object, attr_name, attr_value) != 0)
     {

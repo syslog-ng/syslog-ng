@@ -34,6 +34,8 @@
 #include "filterx/expr-message-ref.h"
 #include "filterx/expr-template.h"
 #include "filterx/expr-boolalg.h"
+#include "filterx/expr-getattr.h"
+#include "filterx/expr-setattr.h"
 #include "filterx/expr-json.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-json.h"
@@ -84,6 +86,8 @@ expr
 	| KW_NOT expr				{ $$ = filterx_unary_not_new($2); }
 	| expr KW_OR expr			{ $$ = filterx_binary_or_new($1, $3); }
 	| expr KW_AND expr                      { $$ = filterx_binary_and_new($1, $3); }
+	| expr '.' LL_IDENTIFIER		{ $$ = filterx_getattr_new($1, $3); free($3); }
+	| expr '.' LL_IDENTIFIER KW_ASSIGN expr	{ $$ = filterx_setattr_new($1, $3, $5); free($3); }
 	| '(' expr ')'				{ $$ = $2; }
 	;
 
