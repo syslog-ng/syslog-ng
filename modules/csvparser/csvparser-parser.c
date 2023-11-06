@@ -41,6 +41,7 @@ static CfgLexerKeyword csvparser_keywords[] =
   { "chars",        KW_CHARS },
   { "strings",      KW_STRINGS },
   { "drop_invalid", KW_DROP_INVALID },
+  { "on_type_error", KW_ON_TYPE_ERROR},
   { "null",         KW_NULL },
   { NULL }
 };
