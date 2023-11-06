@@ -174,6 +174,28 @@ _should_drop_message(CSVParser *self)
 }
 
 static gboolean
+_process_column_on_invalid_type_cast(CSVParser *self, LogMessageValueType *current_type)
+{
+  if(self->on_error & ON_ERROR_FALLBACK_TO_STRING)
+    {
+      if (!(self->on_error & ON_ERROR_SILENT))
+        {
+          msg_debug("csv-parser: error casting value to the type specified, trying string type because on-error(\"fallback-to-string\") was specified");
+        }
+      *current_type = LM_VT_STRING;
+      return TRUE;
+    }
+  else if (self->on_error & ON_ERROR_DROP_PROPERTY)
+    {
+      if (!(self->on_error & ON_ERROR_SILENT))
+        {
+          msg_debug("csv-parser: error casting value to the type specified, dropping property because on-error(\"drop-property\") was specified");
+        }
+    }
+  return FALSE;
+}
+
+static gboolean
 _process_column(CSVParser *self, CSVScanner *scanner, LogMessage *msg, CSVParserColumn *current_column,
                 GString *key_scratch)
 {
@@ -182,23 +204,38 @@ _process_column(CSVParser *self, CSVScanner *scanner, LogMessage *msg, CSVParser
   const gchar *current_value = csv_scanner_get_current_value(scanner);
   GError *error = NULL;
   key_formatter_t _key_formatter = dispatch_key_formatter(self->prefix);
+  gboolean should_set_value = TRUE;
 
-  if (_should_drop_message(self) && !type_cast_validate(current_value, current_column->type, &error))
+  if (!type_cast_validate(current_value, current_column_type, &error))
     {
-      msg_debug("csv-parser: error casting value to the type specified",
-                evt_tag_str("column", current_column->name),
-                evt_tag_str("type", log_msg_value_type_to_str(current_column->type)),
-                evt_tag_str("error", error->message));
+      if (!(self->on_error & ON_ERROR_SILENT))
+        {
+          msg_debug("csv-parser: error casting value to the type specified",
+                    evt_tag_str("error", error->message)
+                   );
+        }
       g_clear_error(&error);
-      return FALSE;
+
+      gboolean need_drop = type_cast_drop_helper(self->on_error, current_value,
+                                                 log_msg_value_type_to_str(current_column_type));
+      if (need_drop)
+        {
+          return FALSE;
+        }
+
+      should_set_value = _process_column_on_invalid_type_cast(self, &current_column_type);
     }
 
-  log_msg_set_value_by_name_with_type(msg,
-                                      _key_formatter(key_scratch, current_column->name, self->prefix_len),
-                                      csv_scanner_get_current_value(scanner),
-                                      csv_scanner_get_current_value_len(scanner),
-                                      current_column->type);
+  if (should_set_value)
+    {
+      log_msg_set_value_by_name_with_type(msg,
+                                          _key_formatter(key_scratch, current_column->name, self->prefix_len),
+                                          csv_scanner_get_current_value(scanner),
+                                          csv_scanner_get_current_value_len(scanner),
+                                          current_column_type);
+    }
   return TRUE;
+
 }
 
 static gboolean
