@@ -137,7 +137,7 @@ type_cast_to_double(const gchar *value, gdouble *out, GError **error)
   gboolean success = TRUE;
 
   errno = 0;
-  *out = strtod(value, &endptr);
+  *out = g_ascii_strtod(value, &endptr);
   if (errno == ERANGE && (*out >= HUGE_VAL || *out <= -HUGE_VAL))
     success = FALSE;
   if (endptr == value)
