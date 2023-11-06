@@ -39,8 +39,8 @@ typedef struct
   HTTPLoadBalancer *load_balancer;
 
   /* this is the first URL in load-balanced configurations and serves as the
-   * identifier in persist/stats */
-  gchar *url;
+   * identifier in persist/stats. TODO: Templated URLs should have dynamic counters. */
+  const gchar *url;
   gchar *user;
   gchar *password;
   GList *headers;
@@ -73,7 +73,7 @@ gboolean http_dd_init(LogPipe *s);
 gboolean http_dd_deinit(LogPipe *s);
 LogDriver *http_dd_new(GlobalConfig *cfg);
 
-void http_dd_set_urls(LogDriver *d, GList *urls);
+gboolean http_dd_set_urls(LogDriver *d, GList *urls, GError **error);
 void http_dd_set_user(LogDriver *d, const gchar *user);
 void http_dd_set_password(LogDriver *d, const gchar *password);
 void http_dd_set_method(LogDriver *d, const gchar *method);

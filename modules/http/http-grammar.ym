@@ -144,7 +144,12 @@ response_action_item
     ;
 
 http_option
-    : KW_URL        '(' string_list ')'        { http_dd_set_urls(last_driver, $3); g_list_free_full($3, free); }
+    : KW_URL '(' string_list ')'
+      {
+        GError *error = NULL;
+        CHECK_ERROR_GERROR(http_dd_set_urls(last_driver, $3, &error), @3, error, "Error setting url");
+        g_list_free_full($3, free);
+      }
     | KW_USER       '(' string ')'            { http_dd_set_user(last_driver, $3); free($3); }
     | KW_PASSWORD   '(' string ')'            { http_dd_set_password(last_driver, $3); free($3); }
     | KW_USER_AGENT '(' string ')'            { http_dd_set_user_agent(last_driver, $3); free($3); }

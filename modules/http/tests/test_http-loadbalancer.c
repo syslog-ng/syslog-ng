@@ -24,6 +24,8 @@
 #include <criterion/criterion.h>
 
 #include "http-loadbalancer.h"
+#include "apphook.h"
+#include "scratch-buffers.h"
 
 #include <unistd.h>
 
@@ -41,7 +43,8 @@ _construct_load_balancer(void)
     {
       gchar url[256];
       g_snprintf(url, sizeof(url), "http://localhost:%d", 8000 + i);
-      http_load_balancer_add_target(lb, url);
+      GError *error = NULL;
+      cr_assert(http_load_balancer_add_target(lb, url, &error));
     }
   return lb;
 }
@@ -92,13 +95,51 @@ Test(http_loadbalancer, choose_target_selects_the_first_operational_target)
 {
   HTTPLoadBalancer *lb = _construct_load_balancer();
   HTTPLoadBalancerClient lbc;
-
   http_lb_client_init(&lbc, lb);
 
+  LogMessage *msg = log_msg_new_empty();
+  LogTemplateOptions options;
+  log_template_options_defaults(&options);
+  GString *url = g_string_new(NULL);
+
   HTTPLoadBalancerTarget *target = http_load_balancer_choose_target(lb, &lbc);
-  cr_assert(target->url, "http://localhost:8000");
+
+  http_lb_target_format_templated_url(target, msg, &options, url);
+  cr_assert_str_eq(url->str, "http://localhost:8000");
   cr_assert(target->state == HTTP_TARGET_OPERATIONAL);
 
+  g_string_free(url, TRUE);
+  log_template_options_destroy(&options);
+  log_msg_unref(msg);
+  http_lb_client_deinit(&lbc);
+  http_load_balancer_free(lb);
+}
+
+Test(http_loadbalancer, choose_target_escapes_templated_url)
+{
+  GError *error = NULL;
+  HTTPLoadBalancer *lb = http_load_balancer_new();
+  cr_assert(http_load_balancer_add_target(lb, "http://localhost:8000/${my_field}", &error));
+
+  HTTPLoadBalancerClient lbc;
+  http_lb_client_init(&lbc, lb);
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value_by_name(msg, "my_field", "foo bar", -1);
+
+  LogTemplateOptions options;
+  log_template_options_defaults(&options);
+  GString *url = g_string_new(NULL);
+
+  HTTPLoadBalancerTarget *target = http_load_balancer_choose_target(lb, &lbc);
+
+  http_lb_target_format_templated_url(target, msg, &options, url);
+  cr_assert_str_eq(url->str, "http://localhost:8000/foo%20bar");
+  cr_assert(target->state == HTTP_TARGET_OPERATIONAL);
+
+  g_string_free(url, TRUE);
+  log_template_options_destroy(&options);
+  log_msg_unref(msg);
   http_lb_client_deinit(&lbc);
   http_load_balancer_free(lb);
 }
@@ -329,11 +370,14 @@ Test(http_loadbalancer, drop_targets_resets_the_target_list)
 void
 setup(void)
 {
+  app_startup();
 }
 
 void
 teardown(void)
 {
+  scratch_buffers_explicit_gc();
+  app_shutdown();
 }
 
 TestSuite(http_loadbalancer, .init = setup, .fini = teardown);

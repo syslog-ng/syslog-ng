@@ -128,7 +128,7 @@ _calculate_if_literal(LogTemplate *self)
   if (!self->compiled_template)
     return TRUE;
 
-  if (self->escape || self->compiled_template->next)
+  if (self->compiled_template->next)
     return FALSE;
 
   return log_template_elem_is_literal_string((LogTemplateElem *) self->compiled_template->data);

@@ -33,8 +33,14 @@ http_dd_insert_response_handler(LogDriver *d, HttpResponseHandler *response_hand
   http_response_handlers_insert(self->response_handlers, response_handler);
 }
 
-void
-http_dd_set_urls(LogDriver *d, GList *url_strings)
+static gboolean
+_is_url_templated(const gchar *url)
+{
+  return strchr(url, '$') != NULL;
+}
+
+gboolean
+http_dd_set_urls(LogDriver *d, GList *url_strings, GError **error)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
@@ -42,14 +48,28 @@ http_dd_set_urls(LogDriver *d, GList *url_strings)
   for (GList *l = url_strings; l; l = l->next)
     {
       const gchar *url_string = (const gchar *) l->data;
-      gchar **urls = g_strsplit(url_string, " ", -1);
 
+      if (_is_url_templated(url_string))
+        {
+          /* Templated URLs might contain spaces, so we should handle the string as one URL. */
+          if (!http_load_balancer_add_target(self->load_balancer, url_string, error))
+            return FALSE;
+          continue;
+        }
+
+      gchar **urls = g_strsplit(url_string, " ", -1);
       for (gint url = 0; urls[url]; url++)
         {
-          http_load_balancer_add_target(self->load_balancer, urls[url]);
+          if (!http_load_balancer_add_target(self->load_balancer, urls[url], error))
+            {
+              g_strfreev(urls);
+              return FALSE;
+            }
         }
       g_strfreev(urls);
     }
+
+  return TRUE;
 }
 
 void
@@ -400,7 +420,10 @@ http_dd_init(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (self->load_balancer->num_targets == 0)
-    http_load_balancer_add_target(self->load_balancer, HTTP_DEFAULT_URL);
+    {
+      GError *error = NULL;
+      g_assert(http_load_balancer_add_target(self->load_balancer, HTTP_DEFAULT_URL, &error));
+    }
 
   if (self->load_balancer->num_targets > 1 && s->persist_name == NULL)
     {
@@ -408,7 +431,7 @@ http_dd_init(LogPipe *s)
                   "It is recommended that you set persist-name() in this case as syslog-ng will be "
                   "using the first URL in urls() to register persistent data, such as the disk queue "
                   "name, which might change",
-                  evt_tag_str("url", self->load_balancer->targets[0].url),
+                  evt_tag_str("url", self->load_balancer->targets[0].url_template->template_str),
                   log_pipe_location_tag(&self->super.super.super.super));
     }
   if (self->load_balancer->num_targets > self->super.num_workers)
@@ -421,10 +444,21 @@ http_dd_init(LogPipe *s)
                   log_pipe_location_tag(&self->super.super.super.super));
     }
   /* we need to set up url before we call the inherited init method, so our stats key is correct */
-  self->url = self->load_balancer->targets[0].url;
+  self->url = self->load_balancer->targets[0].url_template->template_str;
 
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
+
+  if ((self->super.batch_lines || self->batch_bytes) && http_load_balancer_is_url_templated(self->load_balancer) &&
+      self->super.num_workers > 1 && !self->super.worker_partition_key)
+    {
+      msg_error("worker-partition-key() must be set if using templates in the url() option "
+                "while batching is enabled and multiple workers are configured. "
+                "Make sure to set worker-partition-key() with a template that contains all the templates "
+                "used in the url() option",
+                log_pipe_location_tag(&self->super.super.super.super));
+      return FALSE;
+    }
 
   log_template_options_init(&self->template_options, cfg);
 
@@ -482,6 +516,8 @@ http_dd_new(GlobalConfig *cfg)
   self->super.metrics.raw_bytes_enabled = TRUE;
   self->super.stats_source = stats_register_type("http");
   self->super.worker.construct = http_dw_new;
+
+  log_threaded_dest_driver_set_flush_on_worker_key_change(&self->super.super.super, TRUE);
 
   curl_global_init(CURL_GLOBAL_ALL);
 

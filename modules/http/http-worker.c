@@ -442,7 +442,7 @@ _finish_request_body(HTTPDestinationWorker *self)
 }
 
 static void
-_debug_response_info(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target, glong http_code)
+_debug_response_info(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
@@ -452,7 +452,7 @@ _debug_response_info(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target
   curl_easy_getinfo(self->curl, CURLINFO_TOTAL_TIME, &total_time);
   curl_easy_getinfo(self->curl, CURLINFO_REDIRECT_COUNT, &redirect_count);
   msg_debug("curl: HTTP response received",
-            evt_tag_str("url", target->url),
+            evt_tag_str("url", url),
             evt_tag_int("status_code", http_code),
             evt_tag_int("body_size", self->request_body->len),
             evt_tag_int("batch_size", self->super.batch_size),
@@ -517,14 +517,14 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
 }
 
 static gboolean
-_curl_perform_request(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
+_curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
   msg_trace("Sending HTTP request",
-            evt_tag_str("url", target->url));
+            evt_tag_str("url", url));
 
-  curl_easy_setopt(self->curl, CURLOPT_URL, target->url);
+  curl_easy_setopt(self->curl, CURLOPT_URL, url);
   if (owner->message_compression != CURL_COMPRESSION_UNCOMPRESSED)
     {
       if (compressor_compress(self->compressor, self->request_body_compressed, self->request_body))
@@ -547,7 +547,7 @@ _curl_perform_request(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *targe
   if (ret != CURLE_OK)
     {
       msg_error("curl: error sending HTTP request",
-                evt_tag_str("url", target->url),
+                evt_tag_str("url", url),
                 evt_tag_str("error", curl_easy_strerror(ret)),
                 evt_tag_int("worker_index", self->super.worker_index),
                 evt_tag_str("driver", owner->super.super.super.id),
@@ -559,7 +559,7 @@ _curl_perform_request(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *targe
 }
 
 static gboolean
-_curl_get_status_code(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target, glong *http_code)
+_curl_get_status_code(HTTPDestinationWorker *self, const gchar *url, glong *http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   CURLcode ret = curl_easy_getinfo(self->curl, CURLINFO_RESPONSE_CODE, http_code);
@@ -567,7 +567,7 @@ _curl_get_status_code(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *targe
   if (ret != CURLE_OK)
     {
       msg_error("curl: error querying response code",
-                evt_tag_str("url", target->url),
+                evt_tag_str("url", url),
                 evt_tag_str("error", curl_easy_strerror(ret)),
                 evt_tag_int("worker_index", self->super.worker_index),
                 evt_tag_str("driver", owner->super.super.super.id),
@@ -603,20 +603,20 @@ _map_http_status_code(HTTPDestinationWorker *self, const gchar *url, glong http_
 }
 
 static LogThreadedResult
-_flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
+_flush_on_target(HTTPDestinationWorker *self, const gchar *url)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
-  if (!_curl_perform_request(self, target))
+  if (!_curl_perform_request(self, url))
     return LTR_NOT_CONNECTED;
 
   glong http_code = 0;
 
-  if (!_curl_get_status_code(self, target, &http_code))
+  if (!_curl_get_status_code(self, url, &http_code))
     return LTR_NOT_CONNECTED;
 
   if (debug_flag)
-    _debug_response_info(self, target, http_code);
+    _debug_response_info(self, url, http_code);
 
   HttpResponseReceivedSignalData signal_data =
   {
@@ -633,7 +633,7 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
       return LTR_RETRY;
     }
 
-  return _map_http_status_code(self, target->url, http_code);
+  return _map_http_status_code(self, url, http_code);
 }
 
 static gboolean
@@ -671,6 +671,17 @@ _format_request_headers_catch_error(GError **error)
   return !unhandled;
 }
 
+static const gchar *
+_get_url(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
+{
+  if (!http_lb_target_is_url_templated(target))
+    return http_lb_target_get_literal_url(target);
+
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+  http_lb_target_format_templated_url(target, self->msg_for_templated_url, &owner->template_options, self->url_buffer);
+  return self->url_buffer->str;
+}
+
 /* we flush the accumulated data if
  *   1) we reach batch_size,
  *   2) the message queue becomes empty
@@ -700,10 +711,11 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
     }
 
   target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
+  const gchar *url = _get_url(self, target);
 
   while (--retry_attempts >= 0)
     {
-      retval = _flush_on_target(self, target);
+      retval = _flush_on_target(self, url);
       if (retval == LTR_SUCCESS)
         {
           gsize msg_length = self->request_body->len;
@@ -719,25 +731,30 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
       if (alt_target == target)
         {
           msg_debug("Target server down, but no alternative server available. Falling back to retrying after time-reopen()",
-                    evt_tag_str("url", target->url),
+                    evt_tag_str("url", url),
                     evt_tag_int("worker_index", self->super.worker_index),
                     evt_tag_str("driver", owner->super.super.super.id),
                     log_pipe_location_tag(&owner->super.super.super.super));
           break;
         }
 
+      const gchar *alt_url = _get_url(self, alt_target);
       msg_debug("Target server down, trying an alternative server",
-                evt_tag_str("url", target->url),
-                evt_tag_str("alternative_url", alt_target->url),
+                evt_tag_str("url", url),
+                evt_tag_str("alternative_url", alt_url),
                 evt_tag_int("worker_index", self->super.worker_index),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
 
       target = alt_target;
+      url = alt_url;
     }
 
   _reinit_request_headers(self);
   _reinit_request_body(self);
+
+  log_msg_unref(self->msg_for_templated_url);
+  self->msg_for_templated_url = NULL;
 
   return retval;
 }
@@ -761,6 +778,9 @@ _insert_batched(LogThreadedDestWorker *s, LogMessage *msg)
   gsize diff_msg_len = self->request_body->len - orig_msg_len;
   log_threaded_dest_driver_insert_msg_length_stats(self->super.owner, diff_msg_len);
 
+  if (!self->msg_for_templated_url)
+    self->msg_for_templated_url = log_msg_ref(msg);
+
   if (_should_initiate_flush(self))
     {
       return log_threaded_dest_worker_flush(&self->super, LTF_FLUSH_NORMAL);
@@ -780,6 +800,8 @@ _insert_single(LogThreadedDestWorker *s, LogMessage *msg)
 
   _add_msg_specific_headers(self, msg);
 
+  self->msg_for_templated_url = log_msg_ref(msg);
+
   return log_threaded_dest_worker_flush(&self->super, LTF_FLUSH_NORMAL);
 }
 
@@ -788,6 +810,11 @@ _init(LogThreadedDestWorker *s)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+
+  if (http_load_balancer_is_url_templated(owner->load_balancer))
+    {
+      self->url_buffer = g_string_new(NULL);
+    }
 
   self->request_body = g_string_sized_new(32768);
   if (owner->message_compression != CURL_COMPRESSION_UNCOMPRESSED)
@@ -827,6 +854,9 @@ _deinit(LogThreadedDestWorker *s)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+
+  if (self->url_buffer)
+    g_string_free(self->url_buffer, TRUE);
 
   g_string_free(self->request_body, TRUE);
   if (self->request_body_compressed)

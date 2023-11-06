@@ -25,12 +25,30 @@
 
 #include "logmsg/logmsg.h"
 #include "apphook.h"
+#include "libtest/cr_template.h"
 #include "http.h"
 #include "http-worker.h"
 #include "logthrdest/logthrdestdrv.h"
 
 
-TestSuite(http, .init = app_startup, .fini = app_shutdown);
+static void
+setup(void)
+{
+  app_startup();
+  configuration = cfg_new_snippet();
+
+  init_template_tests();
+  cfg_load_module(configuration, "basicfuncs");
+}
+
+static void
+teardown(void)
+{
+  app_shutdown();
+  cfg_free(configuration);
+}
+
+TestSuite(http, .init = setup, .fini = teardown);
 
 struct http_action_test_params
 {
@@ -132,3 +150,100 @@ ParameterizedTest(struct http_action_test_params *param, http, http_code_tests)
   log_threaded_dest_worker_free(&worker->super);
   log_pipe_unref((LogPipe *)driver);
 }
+
+Test(http, set_urls)
+{
+  HTTPDestinationDriver *driver = (HTTPDestinationDriver *) http_dd_new(configuration);
+
+  GList *urls = NULL;
+  urls = g_list_append(urls, "http://foo.bar");
+  urls = g_list_append(urls, "http://bar.baz http://almafa.kortefa");
+  urls = g_list_append(urls, "http://foo.bar/${FOOBAR}");
+  urls = g_list_append(urls, "http://foo.bar/$(echo ${BARBAZ})");
+
+  GError *error = NULL;
+  cr_assert(http_dd_set_urls(&driver->super.super.super, urls, &error));
+  g_list_free(urls);
+
+  HTTPLoadBalancer *lb = driver->load_balancer;
+  cr_assert_eq(lb->num_targets, 5);
+
+  cr_assert_str_eq(lb->targets[0].url_template->template_str, "http://foo.bar");
+  cr_assert_str_eq(lb->targets[1].url_template->template_str, "http://bar.baz");
+  cr_assert_str_eq(lb->targets[2].url_template->template_str, "http://almafa.kortefa");
+  cr_assert_str_eq(lb->targets[3].url_template->template_str, "http://foo.bar/${FOOBAR}");
+  cr_assert_str_eq(lb->targets[4].url_template->template_str, "http://foo.bar/$(echo ${BARBAZ})");
+
+  log_pipe_unref(&driver->super.super.super.super);
+}
+
+#if SYSLOG_NG_HAVE_DECL_CURL_URL && SYSLOG_NG_HAVE_DECL_CURLU_ALLOW_SPACE
+static void
+_test_set_urls_fail(HTTPDestinationDriver *driver, gchar *url, const gchar *expected_error_msg)
+{
+  GList *urls = NULL;
+  urls = g_list_append(urls, url);
+
+  GError *error = NULL;
+  cr_assert_not(http_dd_set_urls(&driver->super.super.super, urls, &error));
+  g_list_free(urls);
+
+  cr_assert_str_eq(error->message, expected_error_msg);
+  g_error_free(error);
+}
+
+static void
+_test_set_urls_success(HTTPDestinationDriver *driver, gchar *url)
+{
+  GList *urls = NULL;
+  urls = g_list_append(urls, url);
+
+  GError *error = NULL;
+  cr_assert(http_dd_set_urls(&driver->super.super.super, urls, &error));
+
+  g_list_free(urls);
+}
+
+Test(http, set_urls_safe_or_unsafe_template)
+{
+  HTTPDestinationDriver *driver = (HTTPDestinationDriver *) http_dd_new(configuration);
+
+  _test_set_urls_fail(driver, "$(echo $foo)",
+                      "Scheme part of URL cannot contain templates: $(echo $foo)");
+  _test_set_urls_fail(driver, "$foo",
+                      "Scheme part of URL cannot contain templates: $foo");
+
+  _test_set_urls_fail(driver, "http://$(echo $foo)",
+                      "Host part of URL cannot contain templates: http://$(echo $foo)");
+  _test_set_urls_fail(driver, "http://$foo",
+                      "Host part of URL cannot contain templates: http://$foo");
+
+  _test_set_urls_fail(driver, "$(echo $foo)://bar.baz",
+                      "Scheme part of URL cannot contain templates: $(echo $foo)://bar.baz");
+  _test_set_urls_fail(driver, "$foo://bar.baz",
+                      "Scheme part of URL cannot contain templates: $foo://bar.baz");
+
+  _test_set_urls_fail(driver, "http://bar.baz:$(echo $foo)",
+                      "Port part of URL cannot contain templates: http://bar.baz:$(echo $foo)");
+  _test_set_urls_fail(driver, "http://bar.baz:$foo",
+                      "Port part of URL cannot contain templates: http://bar.baz:$foo");
+
+  _test_set_urls_fail(driver, "http://$(echo $foo):almafa@bar.baz",
+                      "User part of URL cannot contain templates: http://$(echo $foo):almafa@bar.baz");
+  _test_set_urls_fail(driver, "http://$foo:almafa@bar.baz",
+                      "User part of URL cannot contain templates: http://$foo:almafa@bar.baz");
+
+  _test_set_urls_fail(driver, "http://almafa:$(echo $foo)@bar.baz",
+                      "Password part of URL cannot contain templates: http://almafa:$(echo $foo)@bar.baz");
+  _test_set_urls_fail(driver, "http://almafa:$foo@bar.baz",
+                      "Password part of URL cannot contain templates: http://almafa:$foo@bar.baz");
+
+  _test_set_urls_success(driver, "http://bar.baz/$(echo $foo)");
+  _test_set_urls_success(driver, "http://bar.baz/$foo");
+
+  _test_set_urls_success(driver, "http://bar.baz?$(echo $foo)");
+  _test_set_urls_success(driver, "http://bar.baz?$foo");
+
+  log_pipe_unref(&driver->super.super.super.super);
+}
+#endif
