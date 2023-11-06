@@ -45,9 +45,6 @@ _reset_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer 
 static inline void
 _reset_counter_if_needed(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
-  if (stats_counter_read_only(counter))
-    return;
-
   if (strcmp(stats_cluster_get_type_name(sc, type), "memory_usage") == 0)
     return;
 
