@@ -171,7 +171,7 @@ _parse_double(const gchar *s, gchar **endptr, gdouble *d)
   gdouble val;
 
   errno = 0;
-  val = strtod(s, endptr);
+  val = g_ascii_strtod(s, endptr);
 
   if (errno == ERANGE)
     return FALSE;
