@@ -60,6 +60,20 @@ function (add_unit_test)
     target_link_libraries(${ADD_UNIT_TEST_TARGET} libtest)
   endif()
 
+  foreach(DEPENDENCY ${ADD_UNIT_TEST_DEPENDS})
+    if (NOT TARGET ${DEPENDENCY})
+      continue()
+    endif()
+
+    get_target_property(DEPENDENCY_TYPE ${DEPENDENCY} TYPE)
+    if (NOT ${DEPENDENCY_TYPE} STREQUAL "SHARED_LIBRARY")
+      continue()
+    endif()
+
+    get_property(DEPENDENCY_COMPILE_DEFINITIONS TARGET ${DEPENDENCY} PROPERTY COMPILE_DEFINITIONS)
+    target_compile_definitions(${ADD_UNIT_TEST_TARGET} PRIVATE ${DEPENDENCY_COMPILE_DEFINITIONS})
+  endforeach()
+
   add_test (${ADD_UNIT_TEST_TARGET} ${ADD_UNIT_TEST_TARGET})
   add_dependencies(check ${ADD_UNIT_TEST_TARGET})
   set_tests_properties(${ADD_UNIT_TEST_TARGET} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_odr_violation=0;CRITERION_TEST_PATTERN=!(*/*performance*)")
