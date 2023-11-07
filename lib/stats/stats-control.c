@@ -36,12 +36,6 @@
 
 #include <string.h>
 
-static void
-_reset_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
-{
-  stats_counter_set(counter, 0);
-}
-
 static inline void
 _reset_counter_if_needed(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
@@ -53,8 +47,14 @@ _reset_counter_if_needed(StatsCluster *sc, gint type, StatsCounterItem *counter,
     case SC_TYPE_QUEUED:
       return;
     default:
-      _reset_counter(sc, type, counter, user_data);
+      stats_counter_set(counter, 0);
     }
+}
+
+void
+stats_control_reset_counter_if_needed(StatsCluster *sc, StatsCounterItem *counter)
+{
+  _reset_counter_if_needed(sc, counter->type, counter, NULL);
 }
 
 static void

@@ -25,7 +25,9 @@
 #define STATS_CONTROL_H_INCLUDED 1
 
 #include "syslog-ng.h"
+#include "stats/stats-cluster.h"
 
 void stats_register_control_commands(void);
+void stats_control_reset_counter_if_needed(StatsCluster *sc, StatsCounterItem *counter);
 
 #endif

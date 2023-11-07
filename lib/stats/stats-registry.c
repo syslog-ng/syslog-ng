@@ -129,6 +129,19 @@ _grab_cluster(gint stats_level, const StatsClusterKey *sc_key, gboolean dynamic)
   return sc;
 }
 
+static gchar *
+_construct_counter_item_name(StatsCluster *sc, gint type)
+{
+  return g_strdup_printf("%s.%s", sc->query_key, stats_cluster_get_type_name(sc, type));
+}
+
+static void
+_update_counter_name_if_needed(StatsCounterItem *counter, StatsCluster *sc, gint type)
+{
+  if (counter->name == NULL)
+    counter->name = _construct_counter_item_name(sc, type);
+}
+
 static StatsCluster *
 _register_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
                   gboolean dynamic, StatsCounterItem **counter)
@@ -144,8 +157,9 @@ _register_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
       *counter = stats_cluster_track_counter(sc, type);
       if (ctr && ctr->external)
         return sc;
-      (*counter)->type = type;
       (*counter)->external = FALSE;
+      (*counter)->type = type;
+      _update_counter_name_if_needed(*counter, sc, type);
     }
   else
     {
@@ -183,6 +197,7 @@ _register_external_counter(gint stats_level, const StatsClusterKey *sc_key, gint
       ctr->external = TRUE;
       ctr->value_ref = external_counter;
       ctr->type = type;
+      _update_counter_name_if_needed(ctr, sc, type);
     }
 
   return sc;
@@ -224,17 +239,6 @@ StatsCluster *
 stats_register_alias_counter(gint level, const StatsClusterKey *sc_key, gint type, StatsCounterItem *aliased_counter)
 {
   return stats_register_external_counter(level, sc_key, type, &aliased_counter->value);
-}
-
-StatsCluster *
-stats_register_counter_and_index(gint stats_level, const StatsClusterKey *sc_key, gint type,
-                                 StatsCounterItem **counter)
-{
-  StatsCluster *cluster =  _register_counter(stats_level, sc_key, type, FALSE, counter);
-  if (cluster)
-    stats_query_index_counter(cluster, type);
-
-  return cluster;
 }
 
 StatsCluster *
@@ -451,10 +455,6 @@ _foreach_cluster_remove_helper(gpointer key, gpointer value, gpointer user_data)
   StatsCluster *sc = (StatsCluster *) value;
 
   gboolean should_be_removed = func(sc, func_data) && stats_cluster_is_orphaned(sc);
-
-  if (should_be_removed)
-    stats_query_deindex_cluster(sc);
-
   return should_be_removed;
 }
 

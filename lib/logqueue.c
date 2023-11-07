@@ -257,8 +257,8 @@ _register_shared_counters(LogQueue *self, gint stats_level, StatsClusterKeyBuild
                            &self->metrics.shared.queued_messages);
     stats_register_counter(stats_level, self->metrics.shared.output_events_sc_key, SC_TYPE_DROPPED,
                            &self->metrics.shared.dropped_messages);
-    stats_register_counter_and_index(stats_level, self->metrics.shared.memory_usage_sc_key, SC_TYPE_SINGLE_VALUE,
-                                     &self->metrics.shared.memory_usage);
+    stats_register_counter(stats_level, self->metrics.shared.memory_usage_sc_key, SC_TYPE_SINGLE_VALUE,
+                           &self->metrics.shared.memory_usage);
   }
   stats_unlock();
 }
