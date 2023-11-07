@@ -20,7 +20,7 @@
 #
 #############################################################################
 
-from .s3_object import S3Object, S3ObjectPersist, SharedBool, ConstructorError, PersistLoadError, AlreadyFinishedError
+from .s3_object import S3Object, S3ObjectPersist, ConstructorError, PersistLoadError, AlreadyFinishedError
 
 try:
     from boto3 import client
