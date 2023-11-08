@@ -176,7 +176,8 @@ scan_bsd_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 {
   if (!scan_month_abbrev(buf, left, &wct->wct_mon) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_positive_int(buf, left, 2, &wct->wct_mday) ||
+      !(scan_positive_int(buf, left, 2, &wct->wct_mday) ||
+        scan_positive_int(buf, left, 1, &wct->wct_mday)) ||
       !scan_expect_char(buf, left, ' ') ||
       !scan_positive_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
@@ -185,6 +186,27 @@ scan_bsd_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
       !scan_positive_int(buf, left, 2, &wct->wct_sec))
     return FALSE;
   return TRUE;
+}
+
+/*******************************************************************************
+ * RFC 3164 timestamp, with a single space between day and month "MMM DD
+ * HH:MM:SS".  This only handles the case where the day is less than 10,
+ * because the other would be handled by the normal BSD parsing code
+ *******************************************************************************/
+
+static gboolean
+__is_bsd_rfc_3164_nopad_day(const guchar *src, guint32 left)
+{
+  if (left < 14)
+    return FALSE;
+
+  if (src[3] != ' ')
+    return FALSE;
+
+  if (!isdigit(src[4]))
+    return FALSE;
+
+  return src[5] == ' ' && src[8] == ':' && src[11] == ':';
 }
 
 /*******************************************************************************
@@ -452,7 +474,8 @@ __parse_bsd_timestamp(const guchar **data, gint *length, WallClockTime *wct)
       if (!scan_linksys_timestamp((const gchar **) &src, &left, wct))
         return FALSE;
     }
-  else if (__is_bsd_rfc_3164(src, left))
+  else if (__is_bsd_rfc_3164(src, left) ||
+           __is_bsd_rfc_3164_nopad_day(src, left))
     {
       if (!scan_bsd_timestamp((const gchar **) &src, &left, wct))
         return FALSE;
