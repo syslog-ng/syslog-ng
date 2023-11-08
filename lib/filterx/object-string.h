@@ -20,26 +20,19 @@
  * COPYING for details.
  *
  */
-#include "filterx/filterx-globals.h"
-#include "filterx/object-primitive.h"
-#include "filterx/object-null.h"
-#include "filterx/object-string.h"
-#include "filterx/filterx-globals.h"
+#ifndef FILTERX_OBJECT_STRING_H_INCLUDED
+#define FILTERX_OBJECT_STRING_H_INCLUDED
 
-void
-filterx_global_init(void)
-{
-  filterx_type_init(&FILTERX_TYPE_NAME(null));
-  filterx_type_init(&FILTERX_TYPE_NAME(integer));
-  filterx_type_init(&FILTERX_TYPE_NAME(boolean));
-  filterx_type_init(&FILTERX_TYPE_NAME(double));
+#include "filterx-object.h"
 
-  filterx_type_init(&FILTERX_TYPE_NAME(string));
-  filterx_type_init(&FILTERX_TYPE_NAME(bytes));
-  filterx_type_init(&FILTERX_TYPE_NAME(protobuf));
-}
+FILTERX_DECLARE_TYPE(string);
+FILTERX_DECLARE_TYPE(bytes);
+FILTERX_DECLARE_TYPE(protobuf);
 
-void
-filterx_global_deinit(void)
-{
-}
+const gchar *filterx_string_get_value(FilterXObject *s, gsize *length);
+
+FilterXObject *filterx_string_new(const gchar *str, gssize str_len);
+FilterXObject *filterx_bytes_new(const gchar *str, gssize str_len);
+FilterXObject *filterx_protobuf_new(const gchar *str, gssize str_len);
+
+#endif
