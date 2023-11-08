@@ -2,6 +2,8 @@
 #include "filterx/object-null.h"
 #include "filterx/object-string.h"
 #include "filterx/object-datetime.h"
+#include "filterx/object-json.h"
+#include "filterx/object-list.h"
 #include "filterx/filterx-globals.h"
 
 void

@@ -3,7 +3,7 @@
 #include "filterx/object-primitive.h"
 #include "filterx/object-list.h"
 #include "filterx/object-string.h"
-
+#include "filterx/filterx-weakrefs.h"
 
 typedef struct _FilterXJSON FilterXJSON;
 struct _FilterXJSON
