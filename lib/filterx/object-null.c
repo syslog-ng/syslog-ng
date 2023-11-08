@@ -20,21 +20,37 @@
  * COPYING for details.
  *
  */
-#include "filterx/filterx-globals.h"
-#include "filterx/object-primitive.h"
-#include "filterx/object-null.h"
-#include "filterx/object-primitive.h"
+#include "object-null.h"
 
-void
-filterx_global_init(void)
+static gboolean
+_truthy(FilterXObject *s)
 {
-  filterx_type_init(&FILTERX_TYPE_NAME(null));
-  filterx_type_init(&FILTERX_TYPE_NAME(integer));
-  filterx_type_init(&FILTERX_TYPE_NAME(boolean));
-  filterx_type_init(&FILTERX_TYPE_NAME(double));
+  return FALSE;
 }
 
-void
-filterx_global_deinit(void)
+static gboolean
+_marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 {
+  *t = LM_VT_NULL;
+  return TRUE;
 }
+
+static gboolean
+_map_to_json(FilterXObject *s, struct json_object **object)
+{
+  *object = NULL;
+  return TRUE;
+}
+
+FilterXObject *
+filterx_null_new(void)
+{
+  FilterXObject *self = filterx_object_new(&FILTERX_TYPE_NAME(null));
+  return self;
+}
+
+FILTERX_DEFINE_TYPE(null, FILTERX_TYPE_NAME(object),
+                    .map_to_json = _map_to_json,
+                    .marshal = _marshal,
+                    .truthy = _truthy,
+                   );
