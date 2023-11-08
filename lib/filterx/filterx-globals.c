@@ -1,6 +1,7 @@
 #include "filterx/object-primitive.h"
 #include "filterx/object-null.h"
 #include "filterx/object-string.h"
+#include "filterx/object-datetime.h"
 #include "filterx/filterx-globals.h"
 
 void
@@ -16,6 +17,7 @@ filterx_global_init(void)
   filterx_type_init(&FILTERX_TYPE_NAME(protobuf));
 
   filterx_type_init(&FILTERX_TYPE_NAME(json));
+  filterx_type_init(&FILTERX_TYPE_NAME(datetime));
 }
 
 void
