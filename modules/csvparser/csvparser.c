@@ -166,6 +166,34 @@ dispatch_key_formatter(gchar *prefix)
 }
 
 static gboolean
+_process_column(CSVParser *self, CSVScanner *scanner, LogMessage *msg, CSVParserColumn *current_column,
+                GString *key_scratch)
+{
+
+  LogMessageValueType current_column_type = current_column->type;
+  const gchar *current_value = csv_scanner_get_current_value(scanner);
+  GError *error = NULL;
+  key_formatter_t _key_formatter = dispatch_key_formatter(self->prefix);
+
+  if (self->drop_invalid && !type_cast_validate(current_value, current_column->type, &error))
+    {
+      msg_debug("csv-parser: error casting value to the type specified",
+                evt_tag_str("column", current_column->name),
+                evt_tag_str("type", log_msg_value_type_to_str(current_column->type)),
+                evt_tag_str("error", error->message));
+      g_clear_error(&error);
+      return FALSE;
+    }
+
+  log_msg_set_value_by_name_with_type(msg,
+                                      _key_formatter(key_scratch, current_column->name, self->prefix_len),
+                                      csv_scanner_get_current_value(scanner),
+                                      csv_scanner_get_current_value_len(scanner),
+                                      current_column->type);
+  return TRUE;
+}
+
+static gboolean
 _iterate_columns(CSVParser *self, CSVScanner *scanner, LogMessage *msg)
 {
   GString *key_scratch = scratch_buffers_alloc();
@@ -173,7 +201,6 @@ _iterate_columns(CSVParser *self, CSVScanner *scanner, LogMessage *msg)
   if (self->prefix)
     g_string_assign(key_scratch, self->prefix);
 
-  key_formatter_t _key_formatter = dispatch_key_formatter(self->prefix);
   gint match_index = 1;
 
   while (csv_scanner_scan_next(scanner))
@@ -181,23 +208,10 @@ _iterate_columns(CSVParser *self, CSVScanner *scanner, LogMessage *msg)
       if (self->columns)
         {
           CSVParserColumn *current_column = column_l->data;
-          const gchar *current_value = csv_scanner_get_current_value(scanner);
-          GError *error = NULL;
-
-          if (self->drop_invalid && !type_cast_validate(current_value, current_column->type, &error))
+          if (!_process_column(self, scanner, msg, current_column, key_scratch))
             {
-              msg_debug("csv-parser: error casting value to the type specified",
-                        evt_tag_str("column", current_column->name),
-                        evt_tag_str("type", log_msg_value_type_to_str(current_column->type)),
-                        evt_tag_str("error", error->message));
-              g_clear_error(&error);
               return FALSE;
             }
-          log_msg_set_value_by_name_with_type(msg,
-                                              _key_formatter(key_scratch, current_column->name, self->prefix_len),
-                                              csv_scanner_get_current_value(scanner),
-                                              csv_scanner_get_current_value_len(scanner),
-                                              current_column->type);
           column_l = g_list_next(column_l);
         }
       else
