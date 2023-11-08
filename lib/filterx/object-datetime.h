@@ -20,30 +20,13 @@
  * COPYING for details.
  *
  */
-#include "filterx/filterx-globals.h"
-#include "filterx/object-primitive.h"
-#include "filterx/object-null.h"
-#include "filterx/object-string.h"
-#include "filterx/object-json.h"
-#include "filterx/object-datetime.h"
+#ifndef FILTERX_OBJECT_DATETIME_H_INCLUDED
+#define FILTERX_OBJECT_DATETIME_H_INCLUDED
 
-void
-filterx_global_init(void)
-{
-  filterx_type_init(&FILTERX_TYPE_NAME(null));
-  filterx_type_init(&FILTERX_TYPE_NAME(integer));
-  filterx_type_init(&FILTERX_TYPE_NAME(boolean));
-  filterx_type_init(&FILTERX_TYPE_NAME(double));
+#include "filterx-object.h"
 
-  filterx_type_init(&FILTERX_TYPE_NAME(string));
-  filterx_type_init(&FILTERX_TYPE_NAME(bytes));
-  filterx_type_init(&FILTERX_TYPE_NAME(protobuf));
+FILTERX_DECLARE_TYPE(datetime);
 
-  filterx_type_init(&FILTERX_TYPE_NAME(json));
-  filterx_type_init(&FILTERX_TYPE_NAME(datetime));
-}
+FilterXObject *filterx_datetime_new(const UnixTime *ut);
 
-void
-filterx_global_deinit(void)
-{
-}
+#endif
