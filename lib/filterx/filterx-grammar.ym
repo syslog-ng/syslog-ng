@@ -32,6 +32,7 @@
 /* filterx language constructs */
 #include "filterx/expr-literal.h"
 #include "filterx/object-primitive.h"
+#include "filterx/object-null.h"
 
 }
 
@@ -44,6 +45,7 @@
 /* INCLUDE_DECLS */
 
 %token KW_TRUE, KW_FALSE
+%token KW_NULL
 
 %type <ptr> stmts
 %type <node> stmt
@@ -78,6 +80,7 @@ expr_value
 literal
 	: LL_NUMBER				{ $$ = filterx_literal_new(filterx_integer_new($1)); }
 	| LL_FLOAT				{ $$ = filterx_literal_new(filterx_double_new($1)); }
+	| KW_NULL				{ $$ = filterx_literal_new(filterx_null_new()); }
 	| boolean				{ $$ = filterx_literal_new(filterx_boolean_new($1)); }
 	;
 
