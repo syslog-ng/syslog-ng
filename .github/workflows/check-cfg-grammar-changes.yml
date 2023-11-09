@@ -1,8 +1,5 @@
 name: Check config grammar changes (PR)
 
-permissions:
-  pull-requests: write
-
 on:
   pull_request:
 
@@ -12,5 +9,5 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: syslog-ng/syslog-ng-cfg-diff-pr@v1
+      - uses: syslog-ng/syslog-ng-cfg-diff-pr@v2
         continue-on-error: true
