@@ -129,10 +129,12 @@ _initialize_counter_hash(void)
 }
 
 static gboolean
-_test_format_log_msg_get(StatsCounterItem *ctr, gpointer user_data)
+_test_format_log_msg_get(gpointer user_data)
 {
+  gpointer *args = (gpointer *) user_data;
+  StatsCounterItem *ctr = (StatsCounterItem *) args[0];
+  LogMessage *msg = (LogMessage *) args[1];
   gchar *name, *value;
-  LogMessage *msg = (LogMessage *)user_data;
 
   name = g_strdup_printf("%s", stats_counter_get_name(ctr));
   value = g_strdup_printf("%"G_GSIZE_FORMAT, stats_counter_get(ctr));
@@ -146,9 +148,11 @@ _test_format_log_msg_get(StatsCounterItem *ctr, gpointer user_data)
 }
 
 static gboolean
-_test_format_str_get(StatsCounterItem *ctr, gpointer user_data)
+_test_format_str_get(gpointer user_data)
 {
-  GString *str = (GString *)user_data;
+  gpointer *args = (gpointer *) user_data;
+  StatsCounterItem *ctr = (StatsCounterItem *) args[0];
+  GString *str = (GString *) args[1];
   g_string_append_printf(str, "%s: %"G_GSIZE_FORMAT"\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
 
   return TRUE;
@@ -185,9 +189,11 @@ _test_format_str_get_sum(gpointer user_data)
 }
 
 static gboolean
-_test_format_list(StatsCounterItem *ctr, gpointer user_data)
+_test_format_list(gpointer user_data)
 {
-  GString *str = (GString *)user_data;
+  gpointer *args = (gpointer *) user_data;
+  StatsCounterItem *ctr = (StatsCounterItem *) args[0];
+  GString *str = (GString *) args[1];
   g_string_append_printf(str, "%s\n", stats_counter_get_name(ctr));
 
   return TRUE;
