@@ -29,7 +29,7 @@
 #include "http.h"
 #include "http-worker.h"
 #include "logthrdest/logthrdestdrv.h"
-
+#include "compat/curl.h"
 
 static void
 setup(void)
@@ -177,7 +177,7 @@ Test(http, set_urls)
   log_pipe_unref(&driver->super.super.super.super);
 }
 
-#if SYSLOG_NG_HAVE_DECL_CURL_URL && SYSLOG_NG_HAVE_DECL_CURLU_ALLOW_SPACE
+#if SYSLOG_NG_CURL_FULLY_SUPPORTS_URL_PARSING
 static void
 _test_set_urls_fail(HTTPDestinationDriver *driver, gchar *url, const gchar *expected_error_msg)
 {
