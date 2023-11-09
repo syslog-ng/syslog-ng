@@ -228,10 +228,9 @@ stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, 
 
   for (type = 0; type < self->counter_group.capacity; type++)
     {
-      if (self->live_mask & (1 << type))
-        {
-          func(self, type, &self->counter_group.counters[type], user_data);
-        }
+      StatsCounterItem *counter = stats_cluster_get_counter(self, type);
+      if (counter)
+        func(self, type, counter, user_data);
     }
 }
 
