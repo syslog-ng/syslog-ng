@@ -44,7 +44,7 @@ enum HttpUrlFormatError
 static gboolean
 _is_url_safely_templated(const gchar *url, GError **error)
 {
-#if !SYSLOG_NG_HAVE_DECL_CURL_URL || !SYSLOG_NG_HAVE_DECL_CURLU_ALLOW_SPACE
+#if !SYSLOG_NG_CURL_FULLY_SUPPORTS_URL_PARSING
   if (strchr(url, '$'))
     msg_warning_once("http(): Cannot validate whether the url() option is safely templated or not with the libcurl "
                      "version your syslog-ng was compiled with. Using templates in the scheme, host, port, user "

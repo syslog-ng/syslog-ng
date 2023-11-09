@@ -71,9 +71,23 @@ curl_detect_compile_option(CURL_SSLVERSION_TLSv1_3)
 curl_detect_compile_option(CURLOPT_TLS13_CIPHERS)
 curl_detect_compile_option(CURLOPT_SSL_VERIFYSTATUS)
 curl_detect_compile_option(CURLOPT_REDIR_PROTOCOLS_STR)
+
+# Full URL parsing support
 curl_detect_compile_option(curl_url)
 curl_detect_compile_option(CURLU_ALLOW_SPACE)
+curl_detect_compile_option(CURLUE_BAD_SCHEME)
+curl_detect_compile_option(CURLUE_BAD_HOSTNAME)
+curl_detect_compile_option(CURLUE_BAD_PORT_NUMBER)
+curl_detect_compile_option(CURLUE_BAD_USER)
+curl_detect_compile_option(CURLUE_BAD_PASSWORD)
+curl_detect_compile_option(CURLUE_MALFORMED_INPUT)
 curl_detect_compile_option(CURLUE_LAST)
+curl_detect_compile_option(CURLUPART_SCHEME)
+curl_detect_compile_option(CURLUPART_HOST)
+curl_detect_compile_option(CURLUPART_PORT)
+curl_detect_compile_option(CURLUPART_USER)
+curl_detect_compile_option(CURLUPART_PASSWORD)
+curl_detect_compile_option(CURLUPART_URL)
 
 install(FILES ${HTTP_MODULE_DEV_HEADERS} DESTINATION include/syslog-ng/modules/http/)
 
