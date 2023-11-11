@@ -38,6 +38,7 @@
 #include "filterx/expr-getattr.h"
 #include "filterx/expr-setattr.h"
 #include "filterx/expr-json.h"
+#include "filterx/expr-comparison.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-json.h"
 #include "filterx/object-null.h"
@@ -90,6 +91,20 @@ expr
 	| expr KW_AND expr                      { $$ = filterx_binary_and_new($1, $3); }
 	| expr '.' LL_IDENTIFIER		{ $$ = filterx_getattr_new($1, $3); free($3); }
 	| expr '.' LL_IDENTIFIER KW_ASSIGN expr	{ $$ = filterx_setattr_new($1, $3, $5); free($3); }
+        | expr KW_TA_LT expr		        { $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT); }
+        | expr KW_TA_LE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT | FCMPX_EQ); }
+        | expr KW_TA_EQ expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_EQ); }
+        | expr KW_TA_NE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT | FCMPX_GT); }
+        | expr KW_TA_GE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_EQ | FCMPX_GT); }
+        | expr KW_TA_GT expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_GT); }
+        | expr KW_STR_LT expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_STRING_BASED | FCMPX_LT); }
+        | expr KW_STR_LE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_STRING_BASED | FCMPX_LT | FCMPX_EQ); }
+        | expr KW_STR_EQ expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_STRING_BASED | FCMPX_EQ); }
+        | expr KW_STR_NE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_STRING_BASED | FCMPX_LT | FCMPX_GT); }
+        | expr KW_STR_GE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_STRING_BASED | FCMPX_EQ | FCMPX_GT); }
+        | expr KW_STR_GT expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_STRING_BASED | FCMPX_GT); }
+        | expr KW_TAV_EQ expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AND_VALUE_BASED | FCMPX_EQ); }
+        | expr KW_TAV_NE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AND_VALUE_BASED | FCMPX_LT | FCMPX_GT); }
 	| '(' expr ')'				{ $$ = $2; }
 	;
 
