@@ -24,6 +24,12 @@
 #ifndef SYSLOG_NG_COMPRESSION_H
 #define SYSLOG_NG_COMPRESSION_H
 
+#ifdef SYSLOG_NG_HAVE_ZLIB
+#define SYSLOG_NG_HTTP_COMPRESSION_ENABLED 1
+#else
+#define SYSLOG_NG_HTTP_COMPRESSION_ENABLED 0
+#endif
+
 #include <glib.h>
 
 enum CurlCompressionTypes
@@ -51,6 +57,7 @@ void compressor_free(Compressor *self);
 
 void compressor_free_method(Compressor *self);
 
+#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
 typedef struct GzipCompressor GzipCompressor;
 
 Compressor *gzip_compressor_new(void);
@@ -58,5 +65,6 @@ Compressor *gzip_compressor_new(void);
 typedef struct DeflateCompressor DeflateCompressor;
 
 Compressor *deflate_compressor_new(void);
+#endif
 
 #endif //SYSLOG_NG_COMPRESSION_H

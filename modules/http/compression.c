@@ -42,10 +42,10 @@ gboolean
 http_dd_check_curl_compression(const gchar *type)
 {
   if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_UNCOMPRESSED)) return TRUE;
-#ifdef SYSLOG_NG_HAVE_ZLIB
+#if defined(SYSLOG_NG_HAVE_ZLIB) && defined(CURL_VERSION_LIBZ)
   if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_GZIP)) return TRUE;
 #endif
-#ifdef SYSLOG_NG_HAVE_ZLIB
+#if defined(SYSLOG_NG_HAVE_ZLIB) && defined(CURL_VERSION_LIBZ)
   if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_DEFLATE)) return TRUE;
 #endif
   return FALSE;
@@ -85,6 +85,7 @@ compressor_init_instance(Compressor *self)
   self->free_fn = compressor_free_method;
 }
 
+#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
 enum _DeflateAlgorithmTypes
 {
   DEFLATE_TYPE_DEFLATE,
@@ -284,3 +285,4 @@ deflate_compressor_new(void)
   rval->super.compress = _deflate_compressor_compress;
   return &rval->super;
 }
+#endif

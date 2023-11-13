@@ -862,6 +862,7 @@ _init(LogThreadedDestWorker *s)
     }
 
   self->request_body = g_string_sized_new(32768);
+#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
   if (owner->message_compression != CURL_COMPRESSION_UNCOMPRESSED)
     {
       self->request_body_compressed = g_string_sized_new(32768);
@@ -879,6 +880,7 @@ _init(LogThreadedDestWorker *s)
       gchar *buffer = g_strdup_printf("Content-Encoding: %s", curl_compression_types[owner->message_compression]);
       owner->headers= g_list_append(owner->headers,  buffer);
     }
+#endif
   self->request_headers = http_curl_header_list_new();
   if (!(self->curl = curl_easy_init()))
     {
