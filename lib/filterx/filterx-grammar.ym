@@ -79,6 +79,7 @@ construct_template_expr(LogTemplate *template)
 %type <node> expr
 %type <node> expr_value
 %type <node> literal
+%type <ptr> literal_object
 %type <node> lvalue
 %type <ptr> template
 %type <ptr> json_object
@@ -128,15 +129,17 @@ expr
 expr_value
 	: literal
 	| lvalue				{ $$ = $1; }
+	| template				{ $$ = construct_template_expr($1); }
 	| json_object                           { $$ = filterx_json_expr_new($1); }
 	;
 
-literal
-	: LL_NUMBER				{ $$ = filterx_literal_new(filterx_integer_new($1)); }
-	| LL_FLOAT				{ $$ = filterx_literal_new(filterx_double_new($1)); }
-	| KW_NULL				{ $$ = filterx_literal_new(filterx_null_new()); }
-	| template				{ $$ = construct_template_expr($1); }
-	| boolean				{ $$ = filterx_literal_new(filterx_boolean_new($1)); }
+literal: literal_object				{ $$ = filterx_literal_new($1); }
+
+literal_object
+	: LL_NUMBER				{ $$ = filterx_integer_new($1); }
+	| LL_FLOAT				{ $$ = filterx_double_new($1); }
+	| KW_NULL				{ $$ = filterx_null_new(); }
+	| boolean				{ $$ = filterx_boolean_new($1); }
 	;
 
 lvalue: '$' LL_IDENTIFIER			{ $$ = filterx_message_ref_expr_new(log_msg_get_value_handle($2)); free($2); }
