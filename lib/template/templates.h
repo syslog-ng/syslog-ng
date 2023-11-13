@@ -31,6 +31,7 @@
 #include "logmsg/type-hinting.h"
 #include "common-template-typedefs.h"
 #include "atomic.h"
+#include "on-error.h"
 
 #define LOG_TEMPLATE_ERROR log_template_error_quark()
 
@@ -42,14 +43,6 @@ enum LogTemplateError
   LOG_TEMPLATE_ERROR_COMPILE,
 };
 
-typedef enum
-{
-  ON_ERROR_DROP_MESSAGE        = 0x01,
-  ON_ERROR_DROP_PROPERTY       = 0x02,
-  ON_ERROR_FALLBACK_TO_STRING  = 0x04, /* Valid for type hinting
-                                          only! */
-  ON_ERROR_SILENT              = 0x08
-} LogTemplateOnError;
 
 /* structure that represents an expandable syslog-ng template */
 struct _LogTemplate

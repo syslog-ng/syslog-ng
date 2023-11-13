@@ -496,34 +496,7 @@ log_template_error_quark(void)
 gboolean
 log_template_on_error_parse(const gchar *strictness, gint *out)
 {
-  const gchar *p = strictness;
-  gboolean silently = FALSE;
-
-  if (!strictness)
-    {
-      *out = ON_ERROR_DROP_MESSAGE;
-      return TRUE;
-    }
-
-  if (strncmp(strictness, "silently-", strlen("silently-")) == 0)
-    {
-      silently = TRUE;
-      p = strictness + strlen("silently-");
-    }
-
-  if (strcmp(p, "drop-message") == 0)
-    *out = ON_ERROR_DROP_MESSAGE;
-  else if (strcmp(p, "drop-property") == 0)
-    *out = ON_ERROR_DROP_PROPERTY;
-  else if (strcmp(p, "fallback-to-string") == 0)
-    *out = ON_ERROR_FALLBACK_TO_STRING;
-  else
-    return FALSE;
-
-  if (silently)
-    *out |= ON_ERROR_SILENT;
-
-  return TRUE;
+  return on_error_parse(strictness, out);
 }
 
 void
