@@ -100,11 +100,14 @@ r_parser_nlstring(gchar *str, gint *len, const gchar *param, gpointer state, RPa
       /* drop CR before to LF */
       if (end - str >= 1 && *(end - 1) == '\r')
         end--;
-      *len = (end - str);
-      return TRUE;
     }
   else
-    return FALSE;
+    {
+      end = strchr(str, '\0');
+    }
+
+  *len = (end - str);
+  return TRUE;
 }
 
 gboolean
