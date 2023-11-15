@@ -156,7 +156,10 @@ DestinationWorker::set_labels(LogMessage *msg)
         formatted_labels << ", ";
 
       log_template_format(label.value, msg, &options, buf);
+
+      g_string_truncate(sanitized_value, 0);
       append_unsafe_utf8_as_escaped_binary(sanitized_value, buf->str, -1, "\"");
+
       formatted_labels << label.name << "=\"" << sanitized_value->str << "\"";
 
       comma_needed = true;
