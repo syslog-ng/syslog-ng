@@ -33,12 +33,12 @@ typedef struct _GenericNumber
     GN_DOUBLE,
     GN_NAN,
   } type;
+  gint precision;
   union
   {
     gint64 raw_int64;
     gdouble raw_double;
   } value;
-  gint precision;
 } GenericNumber;
 
 void gn_set_double(GenericNumber *number, double value, gint precision);
