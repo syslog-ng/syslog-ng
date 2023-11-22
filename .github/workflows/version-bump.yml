@@ -46,7 +46,7 @@ jobs:
 
       - name: Check existing PR
         run: |
-          EXISTS=$(hub pr list --state=open --head=${VERSION_BUMP_BRANCH} | wc -l)
+          EXISTS=$(gh pr list --state open --head "${VERSION_BUMP_BRANCH}" --json "number" --jq ". | length")
 
           if [ ${EXISTS} -ne 0 ]
           then
@@ -87,10 +87,10 @@ jobs:
         run: |
           TITLE="Version: ${RELEASE_VERSION}"
           DESCRIPTION="Tarball is available at: ${CURRENT_RUN_URL}"
-          echo -e "${TITLE}\n\n${DESCRIPTION}" > /tmp/message
 
           git push --force origin ${VERSION_BUMP_BRANCH}
-          hub pull-request \
-            --base ${GITHUB_REF} \
-            --file /tmp/message \
-            --labels "version-bump"
+          gh pr create \
+            --base "${GITHUB_REF}" \
+            --title "${TITLE}" \
+            --body "${DESCRIPTION}" \
+            --label "version-bump"

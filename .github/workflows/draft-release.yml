@@ -25,7 +25,6 @@ env:
   GITHUB_TOKEN: ${{ secrets.PAT_FOR_ACTIONS }}
   WORKFLOW_NAME: "**Draft release** workflow"
   CURRENT_WORKFLOW_RUN_URL: https://github.com/${{ github.repository_owner }}/syslog-ng/actions/runs/${{ github.run_id }}
-  COMMENT_ENDPOINT: repos/${{ github.repository_owner }}/syslog-ng/issues/${{ github.event.number }}/comments
   RELEASES_URL: https://github.com/${{ github.repository_owner }}/syslog-ng/releases
 
 
@@ -39,17 +38,17 @@ jobs:
       RELEASE_NAME: ${{ steps.setup-environment.outputs.RELEASE_NAME }}
       TARBALL_NAME: ${{ steps.setup-environment.outputs.TARBALL_NAME }}
     steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v3
+
       - name: "Comment: job started"
         if: github.event_name == 'pull_request'
         run: |
           COMMENT="${WORKFLOW_NAME} started: ${CURRENT_WORKFLOW_RUN_URL}."
 
-          hub api \
-            ${COMMENT_ENDPOINT} \
-            --field body="${COMMENT}"
-
-      - name: Checkout syslog-ng source
-        uses: actions/checkout@v3
+          gh pr comment \
+            "${{ github.event.number }}" \
+            --body "${COMMENT}"
 
       - name: Setup environment
         id: setup-environment
@@ -105,13 +104,12 @@ jobs:
 
       - name: Create draft release
         run: |
-          sed "1 i${{ needs.create-release-tarball.outputs.RELEASE_NAME }}\n" NEWS.md > /tmp/message
-
-          hub release create \
+          gh release create \
+            "${{ needs.create-release-tarball.outputs.RELEASE_TAG }}" \
+            "${{ needs.create-release-tarball.outputs.TARBALL_NAME }}" \
             --draft \
-            --file /tmp/message \
-            --attach ${{ needs.create-release-tarball.outputs.TARBALL_NAME }} \
-            ${{ needs.create-release-tarball.outputs.RELEASE_TAG }}
+            --title "${{ needs.create-release-tarball.outputs.RELEASE_NAME }}" \
+            --notes-file "NEWS.md"
 
   comment-workflow-result:
     runs-on: ubuntu-latest
@@ -127,6 +125,6 @@ jobs:
             COMMENT="${WORKFLOW_NAME} failed."
           fi
 
-          hub api \
-            ${COMMENT_ENDPOINT} \
-            --field body="${COMMENT}"
+          gh pr comment \
+            "${{ github.event.number }}" \
+            --body "${COMMENT}"
