@@ -27,7 +27,7 @@ jobs:
         run: |
           . .github/workflows/gh-tools.sh
 
-          PR_NUMBER=$(hub pr list --state=open --format="%I %l%n" | grep "version-bump" | grep -Po "^[0-9]+") || true
+          PR_NUMBER=$(gh pr list --state "open" --label "version-bump" --json "number" --jq ".[0].number")
 
           [ -z ${PR_NUMBER} ] && echo "No version bump PR is open. Skipping."
           gh_export PR_NUMBER
@@ -35,9 +35,8 @@ jobs:
       - name: Comment
         if: env.PR_NUMBER != ''
         run: |
-          COMMENT_ENDPOINT=repos/${{ github.repository_owner }}/syslog-ng/issues/${PR_NUMBER}/comments
           COMMENT="There are new commits (${COMMIT_URL}) on master. Please follow-up any necessary changes."
 
-          hub api \
-            ${COMMENT_ENDPOINT} \
-            --field body="${COMMENT}"
+          gh pr comment \
+            "${PR_NUMBER}" \
+            --body "${COMMENT}"
