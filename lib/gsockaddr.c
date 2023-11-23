@@ -377,7 +377,10 @@ g_sockaddr_inet6_format(GSockAddr *s, gchar *text, gulong n, gint format)
     }
   else if (format == GSA_ADDRESS_ONLY)
     {
-      inet_ntop(AF_INET6, &self->sin6.sin6_addr, text, n);
+      if (IN6_IS_ADDR_V4MAPPED(&self->sin6.sin6_addr))
+        inet_ntop(AF_INET, &self->sin6.sin6_addr.s6_addr[12], text, n);
+      else
+        inet_ntop(AF_INET6, &self->sin6.sin6_addr, text, n);
     }
   else
     g_assert_not_reached();
@@ -411,6 +414,12 @@ static void
 g_sockaddr_inet6_set_port(GSockAddr *s, guint16 port)
 {
   g_sockaddr_inet6_get_sa(s)->sin6_port = htons(port);
+}
+
+gboolean
+g_sockaddr_inet6_is_v4_mapped(GSockAddr *s)
+{
+  return IN6_IS_ADDR_V4MAPPED(&g_sockaddr_inet6_get_sa(s)->sin6_addr);
 }
 
 static GSockAddrFuncs inet6_sockaddr_funcs =

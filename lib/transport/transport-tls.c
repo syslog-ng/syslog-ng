@@ -103,14 +103,22 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
    * SSL_ERROR_WANT_WRITE is specified by libssl */
   self->super.super.cond = G_IO_IN;
 
-  /* if we have found the peer has a certificate */
-  if( self->tls_session->peer_info.found )
+  if (aux)
     {
-      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_cn", self->tls_session->peer_info.cn );
-      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_o", self->tls_session->peer_info.o );
-      log_transport_aux_data_add_nv_pair(aux, ".tls.x509_ou", self->tls_session->peer_info.ou );
-    }
+      /* if we have found the peer has a certificate */
+      if (self->tls_session->peer_info.found)
+        {
+          log_transport_aux_data_add_nv_pair(aux, ".tls.x509_cn", self->tls_session->peer_info.cn);
+          log_transport_aux_data_add_nv_pair(aux, ".tls.x509_o", self->tls_session->peer_info.o);
+          log_transport_aux_data_add_nv_pair(aux, ".tls.x509_ou", self->tls_session->peer_info.ou);
+        }
 
+      /* NOTE: we only support TLS on top of TCP for now.  We could reuse the
+       * proto auto detection code from transport-socket to make this more
+       * accurate.  */
+
+      aux->proto = IPPROTO_TCP;
+    }
   do
     {
       rc = SSL_read(self->tls_session->ssl, buf, buflen);

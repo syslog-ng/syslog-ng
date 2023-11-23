@@ -46,6 +46,9 @@ struct _TransportMapper
   gboolean create_multitransport;
 
   const gchar *logproto;
+  /* the user visible summary of the transport, to be put into $TRANSPORT */
+  gchar *transport_name;
+  gsize transport_name_len;
   gint stats_source;
 
   gboolean (*apply_transport)(TransportMapper *self, GlobalConfig *cfg);
@@ -71,10 +74,26 @@ void transport_mapper_init_instance(TransportMapper *self, const gchar *transpor
 void transport_mapper_free(TransportMapper *self);
 void transport_mapper_free_method(TransportMapper *self);
 
+static inline const gchar *
+transport_mapper_get_transport_name(TransportMapper *self, gsize *len)
+{
+  if (self->transport_name)
+    {
+      if (len)
+        *len = self->transport_name_len;
+      return self->transport_name;
+    }
+  return NULL;
+}
+
 static inline gboolean
 transport_mapper_apply_transport(TransportMapper *self, GlobalConfig *cfg)
 {
-  return self->apply_transport(self, cfg);
+  gboolean result = self->apply_transport(self, cfg);
+
+  if (result)
+    self->transport_name_len = self->transport_name ? strlen(self->transport_name) : 0;
+  return result;
 }
 
 static inline LogTransport *

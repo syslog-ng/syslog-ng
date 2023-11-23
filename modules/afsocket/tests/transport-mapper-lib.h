@@ -83,4 +83,16 @@ assert_transport_mapper_sock_proto(TransportMapper *options, gint sock_proto)
   cr_assert_eq(options->sock_proto, sock_proto, "TransportMapper sock_proto mismatch");
 }
 
+static inline void
+assert_transport_mapper_transport_name(TransportMapper *options, const gchar *expected_transport_name)
+{
+  gsize len;
+  const gchar *transport_name;
+
+  transport_name = transport_mapper_get_transport_name(options, &len);
+  cr_assert_str_eq(transport_name, expected_transport_name,
+                   "TransportMapper transport_name mismatch %s <> %s",
+                   transport_name, expected_transport_name);
+}
+
 #endif

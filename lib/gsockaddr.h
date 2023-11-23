@@ -156,6 +156,9 @@ g_sockaddr_inet6_set_address(GSockAddr *s, struct in6_addr *addr)
 {
   g_sockaddr_inet6_get_sa(s)->sin6_addr = *addr;
 }
+
+gboolean g_sockaddr_inet6_is_v4_mapped(GSockAddr *s);
+
 #endif
 
 GSockAddr *g_sockaddr_inet_or_inet6_new(const gchar *name, guint16 port);

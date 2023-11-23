@@ -68,7 +68,7 @@ msg_format_preprocess_message(MsgFormatOptions *options, LogMessage *msg,
 {
   if (options->flags & LP_STORE_RAW_MESSAGE)
     {
-      log_msg_set_value(msg, LOG_MSG_GET_VALUE_HANDLE_STATIC("RAWMSG"),
+      log_msg_set_value(msg, LM_V_RAWMSG,
                         (gchar *) data, _rstripped_message_length(data, length));
     }
 }

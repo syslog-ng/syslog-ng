@@ -269,6 +269,7 @@ mqtt_sd_new(GlobalConfig *cfg)
   MQTTSourceDriver *self = g_new0(MQTTSourceDriver, 1);
 
   log_threaded_fetcher_driver_init_instance(&self->super, cfg);
+  log_threaded_source_driver_set_transport_name(&self->super.super, "mqtt");
 
   mqtt_client_options_defaults(&self->options);
   mqtt_client_options_set_log_ssl_error_fn(&self->options, self, _log_ssl_errors);

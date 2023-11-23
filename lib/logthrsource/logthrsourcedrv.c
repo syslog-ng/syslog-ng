@@ -291,6 +291,7 @@ log_threaded_source_driver_free_method(LogPipe *s)
 {
   LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
 
+  g_free(self->transport_name);
   log_threaded_source_worker_options_destroy(&self->worker_options);
 
   log_src_driver_free(s);
@@ -321,6 +322,14 @@ _apply_default_priority_and_facility(LogThreadedSourceDriver *self, LogMessage *
   msg->pri = parse_options->default_pri;
 }
 
+static void
+_apply_message_attributes(LogThreadedSourceDriver *self, LogMessage *msg)
+{
+  _apply_default_priority_and_facility(self, msg);
+  if (self->transport_name)
+    log_msg_set_value(msg, LM_V_TRANSPORT, self->transport_name, self->transport_name_len);
+}
+
 /*
  * Call this every some messages so consumers that accumulate multiple
  * messages (LogQueueFifo for instance) can finish accumulation and go on
@@ -347,7 +356,7 @@ log_threaded_source_post(LogThreadedSourceDriver *self, LogMessage *msg)
   msg_debug("Incoming log message",
             evt_tag_str("input", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
             evt_tag_msg_reference(msg));
-  _apply_default_priority_and_facility(self, msg);
+  _apply_message_attributes(self, msg);
   log_source_post(&self->worker->super, msg);
 
   if (self->auto_close_batches)
@@ -381,6 +390,14 @@ log_threaded_source_blocking_post(LogThreadedSourceDriver *self, LogMessage *msg
   if (!log_threaded_source_free_to_send(self))
     log_threaded_source_suspend(self);
   wakeup_cond_unlock(&worker->wakeup_cond);
+}
+
+void
+log_threaded_source_driver_set_transport_name(LogThreadedSourceDriver *self, const gchar *transport_name)
+{
+  g_free(self->transport_name);
+  self->transport_name = g_strdup(transport_name);
+  self->transport_name_len = strlen(transport_name);
 }
 
 void

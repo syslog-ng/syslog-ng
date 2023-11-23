@@ -239,6 +239,7 @@ Test(template, test_macros_v3x)
   assert_template_format_value_and_type("$DESTIP", "127.0.0.5", LM_VT_STRING);
   assert_template_format_value_and_type("$DESTPORT", "6514", LM_VT_STRING);
   assert_template_format_value_and_type("$PROTO", "33", LM_VT_STRING);
+  assert_template_format_value_and_type("$IP_PROTO", "4", LM_VT_STRING);
 
   assert_template_format_value_and_type("$SEQNUM", "999", LM_VT_STRING);
   assert_template_format_value_and_type("$CONTEXT_ID", "test-context-id", LM_VT_STRING);
@@ -343,6 +344,7 @@ Test(template, test_macros_v40)
   assert_template_format_value_and_type("$DESTIP", "127.0.0.5", LM_VT_STRING);
   assert_template_format_value_and_type("$DESTPORT", "6514", LM_VT_INTEGER);
   assert_template_format_value_and_type("$PROTO", "33", LM_VT_INTEGER);
+  assert_template_format_value_and_type("$IP_PROTO", "4", LM_VT_INTEGER);
 
   assert_template_format_value_and_type("$SEQNUM", "999", LM_VT_STRING);
   assert_template_format_value_and_type("$CONTEXT_ID", "test-context-id", LM_VT_STRING);

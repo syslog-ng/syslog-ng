@@ -620,6 +620,18 @@ py_log_source_close_batch(PyObject *s)
   Py_RETURN_NONE;
 }
 
+static PyObject *
+py_log_source_set_transport_name(PyLogSource *self, PyObject *args)
+{
+  const gchar *transport_name;
+
+  if (!PyArg_ParseTuple(args, "s", &transport_name))
+    return NULL;
+
+  log_threaded_source_driver_set_transport_name(&self->driver->super, transport_name);
+  Py_RETURN_NONE;
+}
+
 static void
 python_sd_run(LogThreadedSourceDriver *s)
 {
@@ -749,6 +761,7 @@ static PyMethodDef py_log_source_methods[] =
 {
   { "post_message", (PyCFunction) py_log_source_post, METH_VARARGS | METH_KEYWORDS, "Post message" },
   { "close_batch", (PyCFunction) py_log_source_close_batch, METH_NOARGS, "Close input batch" },
+  { "set_transport_name", (PyCFunction) py_log_source_set_transport_name, METH_VARARGS, "Set transport name" },
   {NULL}
 };
 

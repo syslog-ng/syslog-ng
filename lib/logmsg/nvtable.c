@@ -106,6 +106,22 @@ nv_registry_add_alias(NVRegistry *self, NVHandle handle, const gchar *alias)
 }
 
 void
+nv_registry_add_predefined(NVRegistry *self, NVHandle handle, const gchar *name)
+{
+  NVHandle allocated_handle = nv_registry_alloc_handle(self, name);
+
+  g_assert(handle == allocated_handle);
+}
+
+void
+nv_registry_assert_next_handle(NVRegistry *self, NVHandle handle)
+{
+  g_mutex_lock(&nv_registry_lock);
+  g_assert(handle == self->names->len + 1);
+  g_mutex_unlock(&nv_registry_lock);
+}
+
+void
 nv_registry_set_handle_flags(NVRegistry *self, NVHandle handle, guint16 flags)
 {
   NVHandleDesc *stored;
