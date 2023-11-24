@@ -1,0 +1,355 @@
+.TH "pdbtool"1 "" "" pdbtool
+.PP
+.SS "Name"
+.PP
+pdbtool — An application to test and convert pattern database rules
+.SS "Synopsis"
+.PP
+pdbtool [command] [options]
+.PP
+.SS "Description"
+.PP
+The syslog-ng application can match the contents of the log messages to a database of predefined message patterns (also called patterndb). By comparing the messages to the known patterns, syslog-ng is able to identify the exact type of the messages, tag the messages, and sort them into message classes. The message classes can be used to classify the type of the event described in the log message. The functionality of the pattern database is similar to that of the logcheck project, but the syslog-ng approach is faster, scales better, and is much easier to maintain compared to the regular expressions of logcheck.
+.PP
+The pdbtool application is a utility that can be used to:
+.RS
+.IP * 2
+\fBtest messages\fP (\fI#pdbtool-match\fP), or \fBspecific rules\fP (\fI#pdbtool-test\fP)
+.IP *
+convert an older pattern database to the latest database format
+.IP *
+\fBmerge pattern databases\fP (\fI#pdbtool-merge\fP) into a single file
+.IP *
+\fBautomatically create pattern databases\fP (\fI#pdbtool-patternize\fP) from a large amount of log messages
+.IP *
+\fBdump the RADIX tree\fP (\fI#pdbtool-dump\fP) built from the pattern database (or a part of it) to explore how the pattern matching works.
+.RE
+.PP
+.SS "The dictionary command"
+.PP
+dictionary [options]
+.PP
+Lists every name-value pair that can be set by the rules of the pattern database.
+.RS
+.IP * 2
+--dump-tag or -T
+.IP
+List the tags instead of the names of the name-value pairs.
+.IP *
+--pdb \<path-to-file\> or -p \<path-to-file\>
+.IP
+Name of the pattern database file to use.
+.IP *
+--program \<programname\> or -P \<programname\>
+.IP
+List only the name-value pairs that can be set for the messages of the specified $PROGRAM application.
+.RE
+.PP
+.SS "The dump command"
+.PP
+dump [options]
+.PP
+Display the RADIX tree built from the patterns. This shows how are the patterns represented in syslog-ng and it might also help to track down pattern-matching problems. The dump utility can dump the tree used for matching the PROGRAM or the MSG parts.
+.RS
+.IP * 2
+--debug or -d
+.IP
+Enable debug/diagnostic messages on stderr.
+.IP *
+--pdb or -p
+.IP
+Name of the pattern database file to use.
+.IP *
+--program or -P
+.IP
+Displays the RADIX tree built from the patterns belonging to the ${PROGRAM} application.
+.IP *
+--program-tree or -T
+.IP
+Display the ${PROGRAM} tree.
+.IP *
+--verbose or -v
+.IP
+Enable verbose messages on stderr.
+.RE
+.SS "Example and sample output:"
+.PP
+.RS
+.DS L
+.nf
+pdbtool dump -p patterndb.xml  -P 'sshd'
+.fi
+.DE
+.RE
+.PP
+.RS
+.DS L
+.nf
+'p'
+     'assword for'
+    @QSTRING:@
+      'from'
+        @QSTRING:@
+          'port '
+        @NUMBER:@ rule_id='fc49054e-75fd-11dd-9bba-001e6806451b'
+          ' ssh' rule_id='fc55cf86-75fd-11dd-9bba-001e6806451b'
+             '2' rule_id='fc4b7982-75fd-11dd-9bba-001e6806451b'
+     'ublickey for'
+    @QSTRING:@
+      'from'
+        @QSTRING:@
+          'port '
+        @NUMBER:@ rule_id='fc4d377c-75fd-11dd-9bba-001e6806451b'
+          ' ssh' rule_id='fc5441ac-75fd-11dd-9bba-001e6806451b'
+             '2' rule_id='fc44a9fe-75fd-11dd-9bba-001e6806451b'
+                
+.fi
+.DE
+.RE
+.PP
+.SS "The match command"
+.PP
+match [options]
+.PP
+Use the match command to test the rules in a pattern database. The command tries to match the specified message against the patterns of the database, evaluates the parsers of the pattern, and also displays which part of the message was parsed successfully. The command returns with a 0 (success) or 1 (no match) return code and displays the following information:
+.RS
+.IP * 2
+the class assigned to the message (that is, system, violation, and so on),
+.IP *
+the ID of the rule that matched the message, and
+.IP *
+the values of the parsers (if there were parsers in the matching pattern).
+.RE
+.PP
+The match command has the following options:
+.RS
+.IP * 2
+--color-out or -c
+.IP
+Color the terminal output to highlight the part of the message that was successfully parsed.
+.IP *
+--debug or -d
+.IP
+Enable debug/diagnostic messages on stderr.
+.IP *
+--debug-csv or -C
+.IP
+Print the debugging information returned by the --debug-pattern option as comma-separated values.
+.IP *
+--debug-pattern or -D
+.IP
+Print debugging information about the pattern matching. See also the --debug-csv option.
+.IP *
+--file=\<filename-with-path\> or -f
+.IP
+Process the messages of the specified log file with the pattern database. This option allows to classify messages offline, and to apply the pattern database to already existing logfiles. To read the messages from the standard input (stdin), specify a hyphen (-) character instead of a filename.
+.IP *
+--filter=<filter-expression> or -F
+.IP
+Print only messages matching the specified AxoSyslog filter expression.
+.IP *
+--message or -M
+.IP
+The text of the log message to match (only the ${MESSAGE} part without the syslog headers).
+.IP *
+--pdb or -p
+.IP
+Name of the pattern database file to use.
+.IP *
+--program or -P
+.IP
+Name of the program to use, as contained in the ${PROGRAM} part of the syslog message.
+.IP *
+--template=\<template-expression\> or -T
+.IP
+An AxoSyslog template expression that is used to format the output messages.
+.IP *
+--verbose or -v
+.IP
+Enable verbose messages on stderr.
+.RE
+.SS "Example"
+.PP
+The following command checks if the patterndb.xml file recognizes the Accepted publickey for myuser from 127.0.0.1 port 59357 ssh6 message:
+.PP
+.RS
+.DS L
+.nf
+pdbtool match -p patterndb.xml -P sshd -M "Accepted publickey for myuser from 127.0.0.1 port 59357 ssh6"
+.fi
+.DE
+.RE
+.SS "Example"
+.PP
+The following example applies the sshd.pdb pattern database file to the log messages stored in the /var/log/messages file, and displays only the messages that received a useracct tag.
+.PP
+.RS
+.DS L
+.nf
+   pdbtool match -p sshd.pdb \
+                        –file /var/log/messages \
+                    –filter ‘tags(“usracct”);’ 
+.fi
+.DE
+.RE
+.PP
+.SS "The merge command"
+.PP
+merge [options]
+.PP
+Use the merge command to combine separate pattern database files into a single file (pattern databases are usually stored in separate files per applications to simplify maintenance). If a file uses an older database format, it is automatically updated to the latest format (V3). See the \fBAxoSyslog documentation\fP (\fIhttps://axoflow.com/docs/axosyslog-core/\fP) for details on the different pattern database versions.
+.RS
+.IP * 2
+--debug or -d
+.IP
+Enable debug/diagnostic messages on stderr.
+.IP *
+--directory or -D
+.IP
+The directory that contains the pattern database XML files to be merged.
+.IP *
+--glob or -G
+.IP
+Specify filenames to be merged using a glob pattern, for example, using wildcards. For details on glob patterns, see man glob. This pattern is applied only to the filenames, and not on directory names.
+.IP *
+--pdb or -p
+.IP
+Name of the output pattern database file.
+.IP *
+--recursive or -r
+.IP
+Merge files from subdirectories as well.
+.IP *
+--sort or -s
+.IP
+Sort files into alphabetic order during the merge (first sort by filename, then by directory name).
+.IP *
+--verbose or -v
+.IP
+Enable verbose messages on stderr.
+.RE
+.SS "Example"
+.PP
+.RS
+.DS L
+.nf
+pdbtool merge --recursive --directory /home/me/mypatterns/  --pdb /var/lib/syslog-ng/patterndb.xml
+.fi
+.DE
+.RE
+.PP
+Currently it is not possible to convert a file without merging, so if you only want to convert an older pattern database file to the latest format, you have to copy it into an empty directory.
+.PP
+.SS "The patternize command"
+.PP
+patternize [options]
+.PP
+Automatically create a pattern database from a log file containing a large number of log messages. The resulting pattern database is printed to the standard output (stdout). The pdbtool patternize command uses a data clustering technique to find similar log messages and replacing the differing parts with @ESTRING:: @ parsers. For details on pattern databases and message parsers, see the \fBAxoSyslog documentation\fP (\fIhttps://axoflow.com/docs/axosyslog-core/\fP). The patternize command is available only in version 3.2 and later.
+.RS
+.IP * 2
+--debug or -d
+.IP
+Enable debug/diagnostic messages on stderr.
+.IP *
+--file=\<path\> or -f
+.IP
+The logfile containing the log messages to create patterns from. To receive the log messages from the standard input (stdin), use -.
+.IP *
+--iterate-outliers or -o
+.IP
+Recursively iterate on the log lines to cover as many log messages with patterns as possible.
+.IP *
+--named-parsers or -n
+.IP
+The number of example log messages to include in the pattern database for every pattern. Default value: 1
+.IP *
+--no-parse or -p
+.IP
+Do not parse the input file, treat every line as the message part of a log message.
+.IP *
+--samples=\<number-of-samples\>
+.IP
+Include a generated name in the parsers, for example, .dict.string1, .dict.string2, and so on.
+.IP *
+--support=\<number\> or -S
+.IP
+A pattern is added to the output pattern database if at least the specified percentage of log messages from the input logfile match the pattern. For example, if the input logfile contains 1000 log messages and the --support=3.0 option is used, a pattern is created only if the pattern matches at least 3 percent of the log messages (that is, 30 log messages). If patternize does not create enough patterns, try to decrease the support value.
+.IP
+Default value: 4.0
+.IP *
+--verbose or -v
+.IP
+Enable verbose messages on stderr.
+.RE
+.SS "Example"
+.PP
+.RS
+.DS L
+.nf
+pdbtool patternize --support=2.5 --file=/var/log/messages
+.fi
+.DE
+.RE
+.PP
+.SS "The test command"
+.PP
+test [options]
+.PP
+Use the test command to validate a pattern database XML file. Note that you must have the xmllint application installed. The test command is available only in syslog-ng version 3.2 and later.
+.RS
+.IP * 2
+--color-out or -c
+.IP
+Enable coloring in terminal output.
+.IP *
+--debug or -d
+.IP
+Enable debug/diagnostic messages on stderr.
+.IP *
+--debug or -D
+.IP
+Print debugging information on non-matching patterns.
+.IP *
+--rule-id or -r
+.IP
+Test only the patterndb rule (specified by its rule id) against its example.
+.IP *
+--validate
+.IP
+Validate a pattern database XML file.
+.IP *
+--verbose or -v
+.IP
+Enable verbose messages on stderr.
+.RE
+.SS "Example"
+.PP
+.RS
+.DS L
+.nf
+pdbtool test --validate /home/me/mypatterndb.pdb
+.fi
+.DE
+.RE
+.SS "Files"
+.PP
+/opt/syslog-ng/
+.PP
+/opt/syslog-ng/etc/syslog-ng.conf
+.SS "See also"
+.PP
+\fBsyslog-ng.conf.5\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.conf.5/\fP)
+.PP
+\fBsyslog-ng.8\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.8/\fP)
+.SS "Getting help"
+.RS
+.IP * 2
+The up-to-date documentation of syslog-ng is available on the \fBAxoSyslog documentation site\fP (\fIhttps://axoflow.com/docs/axosyslog-core/\fP).
+.IP *
+For news and notifications about syslog-ng, visit the \fBAxoflow blog\fP (\fIhttps://axoflow.com/blog/\fP).
+.IP *
+If you want to contact the developers directly to help with problems or report issues, contact us on \fBDiscord\fP (\fIhttps://discord.gg/583Z4wjem2\fP) or \fBGitHub\fP (\fIhttps://github.com/syslog-ng/syslog-ng/issues/\fP).
+.RE
+.PP
+This manual page is maintained by \fBAxoflow\fP (\fIhttps://axoflow.com/\fP)
+Last modified November 24, 2023: \fBMinor manpage fix (2f0a144)\fP (\fIhttps://github.com/axoflow/axosyslog-core-docs/commit/2f0a144ec391a3182da3af2f2cc136042d5608e9\fP)

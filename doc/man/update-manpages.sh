@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 #############################################################################
 # Copyright (c) 2017 Balabit
 #
@@ -22,31 +22,26 @@
 #
 #############################################################################
 
-GUIDE_REPO=syslog-ng-ose-guides
-
-PROJECT_DIR=$(dirname $(realpath ${BASH_SOURCE}))
+axosyslog_baseurl=https://axoflow.github.io/axosyslog-core-docs/syslog-ng-manpages
+axosyslog_manpages="dqtool.1 \
+	loggen.1 \
+	pdbtool.1 \
+	persist-tool.1 \
+	syslog-ng-debun.1 \
+	syslog-ng-ctl.1 \
+	syslog-ng.8 \
+	syslog-ng.conf.5 \
+	slogencrypt.1 \
+	slogkey.1 \
+	slogverify.1 \
+	secure-logging.7"
 
 set -e
-
-echo -e "\e[33;1mDownload admin guide\e[0m"
-cd $PROJECT_DIR
-rm -rf $GUIDE_REPO
-git clone git@github.com:balabit/${GUIDE_REPO}.git
-cd $GUIDE_REPO/en
-echo -e "\e[33;1mBuild profiled XML source files\e[0m"
-make manpages
-
-echo -e "\e[33;1mUpdate manpage source files\e[0m"
-cd $PROJECT_DIR
-rm *.xml
-for new_file in $GUIDE_REPO/en/out/tmp/man/*.profiled.xml; do
-    original=$(basename ${new_file/.profiled/})
-    echo "Updating file '$original'"
-    cp "$new_file" "./$original"
+for man in ${axosyslog_manpages}; do
+	url=${axosyslog_baseurl}/${man}
+	echo "Downloading ${url}"
+	if ! wget --quiet -O ${man}.in ${url}; then
+		echo "Unable to download $man. Fix and re-run this script. Bailing out"
+		exit 1
+	fi
 done
-
-rm -rf $GUIDE_REPO
-
-echo -e "\e[33;1mDONE.\e[0m"
-
-git status

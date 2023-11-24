@@ -58,7 +58,6 @@ BuildRequires: pkgconfig
 BuildRequires: libtool
 BuildRequires: bison
 BuildRequires: flex
-BuildRequires: libxslt
 BuildRequires: glib2-devel
 BuildRequires: ivykis-devel
 BuildRequires: json-c-devel

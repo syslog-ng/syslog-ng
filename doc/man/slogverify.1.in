@@ -1,0 +1,81 @@
+.TH "slogverify"1 "" "" slogverify
+.PP
+.SS "Name"
+.PP
+slogverify — Verify cryptographically secured logs.
+.SS "Synopsis"
+.PP
+slogverify [options] [arguments]
+.SS "Description"
+.PP
+The slogverify utility is used to verify the integrity of cryptographically secured logs and to decrypt log entries produced in a syslog-ng secure logging environment.
+.RS
+.IP * 2
+Normal mode: slogverify -k &lt;host key file&gt; -m &lt;input MAC file&gt; &lt;input file&gt; &lt;output file&gt; [buffers]
+.IP *
+Iterative mode: slogverify -i -p &lt;previous host key&gt; -r &lt;previous MAC&gt; -m &lt;current MAC&gt; &lt;input file&gt; &lt;output file&gt; [buffers]
+.RE
+.SS "Arguments"
+.RS
+.IP * 2
+input file
+.IP
+An encrypted log file from the syslog-ng secure logging environment that will be verified.
+.IP *
+output file
+.IP
+The file that will contain the plain text log entries after decryption and verification.
+.IP *
+buffers
+.IP
+Optional number of input buffers. The number of buffers can be used for performance adjustments in case the log file to be verified is very large and cannot be processed at once. It is a positive number of log entries that can be held in memory during verification. The minimum number if 10 and the maximum number is 4294967295. If this argument is not supplied the default of 1000 is used.
+.RE
+.SS "Options"
+.RS
+.IP * 2
+--iterative or -i
+.IP
+Iterative mode. This is useful in case the log files are periodically copied from the system on which they where generated to central collector. As log rotation, i.e. overwriting log files in order to preserve space cannot be done in a secure logging environment, the iterative mode can be used instead. This works as follows: If a certain storage limit is reached the log file together with the host key and the MAC file is copied to new destination and the old file is deleted. The verification is then performed in iterations, i.e. separately for each file that was retrieved from the log host. For this to work, it is important to always retrieve the corresponding host key and MAC files. The process can be automated, e.g. by calling slogverify in iterative mode from a script.<
+.IP *
+--key-file or -k
+.IP
+The initial host key (k0). This option is used in normal mode only.
+.IP *
+--mac-file or -m
+.IP
+The current MAC file used.
+.IP *
+--prev-key-file or -p
+.IP
+The host key corresponding to the previous log file. This option can be used in iterative mode only. In theory, this can be initial host key (k0) but using this key might generate warnings, as the gap between the first log entry ever (log entry 0) and the first log entry of the current log file might be large.
+.IP *
+--prev-mac-file or -r
+.IP
+The MAC file from the previous log file. This option can only be used in iterative mode.
+.IP *
+--help or -h
+.IP
+Display a help message.
+.RE
+.SS "Files"
+.PP
+/usr/bin/slogverify
+.PP
+/etc/syslog-ng.conf
+.SS "See also"
+.PP
+\fBsyslog-ng.conf.5\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.conf.5/\fP)
+.PP
+\fBsecure-logging.7\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/secure-logging.7/\fP)
+.SS "Getting help"
+.RS
+.IP * 2
+The up-to-date documentation of syslog-ng is available on the \fBAxoSyslog documentation site\fP (\fIhttps://axoflow.com/docs/axosyslog-core/\fP).
+.IP *
+For news and notifications about syslog-ng, visit the \fBAxoflow blog\fP (\fIhttps://axoflow.com/blog/\fP).
+.IP *
+If you want to contact the developers directly to help with problems or report issues, contact us on \fBDiscord\fP (\fIhttps://discord.gg/583Z4wjem2\fP) or \fBGitHub\fP (\fIhttps://github.com/syslog-ng/syslog-ng/issues/\fP).
+.RE
+.PP
+This manual page is maintained by \fBAxoflow\fP (\fIhttps://axoflow.com/\fP)
+Last modified November 24, 2023: \fBMinor manpage fix (2f0a144)\fP (\fIhttps://github.com/axoflow/axosyslog-core-docs/commit/2f0a144ec391a3182da3af2f2cc136042d5608e9\fP)

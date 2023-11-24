@@ -48,14 +48,6 @@ libbpf-dev			[tarball]
 bpftool				[tarball]
 
 #############################################################################
-# Tarball related tools
-#############################################################################
-
-# docbook to generate man pages
-docbook-xsl                     [tarball]
-docbook-style-xsl               [fedora]
-
-#############################################################################
 # Build environment dependencies that are not strictly required by syslog-ng
 # but are needed by our dbld functionality.
 #############################################################################

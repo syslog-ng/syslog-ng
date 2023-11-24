@@ -1,0 +1,306 @@
+.TH "syslog-ng"conf "" "" syslog-ng
+.SS "Name"
+.PP
+syslog-ng.conf — configuration file
+.SS "Synopsis"
+.PP
+syslog-ng.conf
+.SS "Description"
+.PP
+The syslog-ng application is a flexible and highly scalable system logging application. Typically, syslog-ng is used to manage log messages and implement centralized logging, where the aim is to collect the log messages of several devices on a single, central log server. The different devices - called syslog-ng clients - all run syslog-ng, and collect the log messages from the various applications, files, and other sources. The clients send all important log messages to the remote syslog-ng server, where the server sorts and stores them.
+.PP
+.SS "Basic concepts of syslog-ng"
+.PP
+The syslog-ng application reads incoming messages and forwards them to the selected destinations. The syslog-ng application can receive messages from files, remote hosts, and other sources.
+.PP
+.PP
+Log messages enter syslog-ng in one of the defined sources, and are sent to one or more destinations.
+.PP
+.PP
+Sources and destinations are independent objects, log paths define what syslog-ng does with a message, connecting the sources to the destinations. A log path consists of one or more sources and one or more destinations: messages arriving from a source are sent to every destination listed in the log path. A log path defined in syslog-ng is called a log statement.
+.PP
+Optionally, log paths can include filters. Filters are rules that select only certain messages, for example, selecting only messages sent by a specific application. If a log path includes filters, syslog-ng sends only the messages satisfying the filter rules to the destinations set in the log path.
+.PP
+Other optional elements that can appear in log statements are parsers and rewriting rules. Parsers segment messages into different fields to help processing the messages, while rewrite rules modify the messages by adding, replacing, or removing parts of the messages.
+.SS "Configuring syslog-ng"
+.RS
+.IP * 2
+The main body of the configuration file consists of object definitions: sources, destinations, logpaths define which log message are received and where they are sent. All identifiers, option names and attributes, and any other strings used in the syslog-ng.conf configuration file are case sensitive. Object definitions (also called statements) have the following syntax:
+.PP
+.RS
+.DS L
+.nf
+    type-of-the-object identifier-of-the-object {<parameters>};
+.fi
+.DE
+.RE
+.RS
+.IP * 2
+Type of the object: One of source, destination, log, filter, parser, rewrite rule, or template.
+.IP
+Identifier of the object: A unique name identifying the object. When using a reserved word as an identifier, enclose the identifier in quotation marks ("").
+.IP
+All identifiers, attributes, and any other strings used in the syslog-ng configuration file are case sensitive.
+.SS "Note"
+Use identifiers that refer to the type of the object they identify. For example, prefix source objects with s_, destinations with d_, and so on.
+.IP
+Repeating a definition of an object (that is, defining the same object with the same id more than once) is not allowed, unless you use the @define allow-config-dups 1 definition in the configuration file.
+.IP *
+Parameters: The parameters of the object, enclosed in braces {parameters}.
+.IP *
+Semicolon: Object definitions end with a semicolon (;).
+.RE
+.IP
+For example, the following line defines a source and calls it s_internal.
+.PP
+.RS
+.DS L
+.nf
+    source s_internal { internal(); };
+.fi
+.DE
+.RE
+.IP
+The object can be later referenced in other statements using its ID, for example, the previous source is used as a parameter of the following log statement:
+.PP
+.RS
+.DS L
+.nf
+    log { source(s_internal); destination(d_file); };
+.fi
+.DE
+.RE
+.IP *
+The parameters and options within a statement are similar to function calls of the C programming language: the name of the option followed by a list of its parameters enclosed within brackets and terminated with a semicolon.
+.PP
+.RS
+.DS L
+.nf
+    option(parameter1, parameter2); option2(parameter1, parameter2);
+.fi
+.DE
+.RE
+.IP
+For example, the file() driver in the following source statement has three options: the filename (/var/log/apache/access.log), follow-freq(), and flags(). The follow-freq() option also has a parameter, while the flags() option has two parameters.
+.PP
+.RS
+.DS L
+.nf
+    source s_tail { file("/var/log/apache/access.log"
+    follow-freq(1) flags(no-parse, validate-utf8)); };
+.fi
+.DE
+.RE
+.IP
+Objects may have required and optional parameters. Required parameters are positional, meaning that they must be specified in a defined order. Optional parameters can be specified in any order using the option(value) format. If a parameter (optional or required) is not specified, its default value is used. The parameters and their default values are listed in the reference section of the particular object.
+.RE
+.SS "Example: Using required and optional parameters"
+.PP
+The unix-stream() source driver has a single required argument: the name of the socket to listen on. Optional parameters follow the socket name in any order, so the following source definitions have the same effect:
+.PP
+.RS
+.DS L
+.nf
+source s_demo_stream1 {
+    unix-stream("<path-to-socket>" max-connections(10) group(log)); };
+    source s_demo_stream2 {
+unix-stream("<path-to-socket>" group(log) max-connections(10)); };
+.fi
+.DE
+.RE
+.RS
+.IP * 2
+Some options are global options, or can be set globally, for example, whether syslog-ng should use DNS resolution to resolve IP addresses.
+.PP
+.RS
+.DS L
+.nf
+    options { use-dns(no); };
+.fi
+.DE
+.RE
+.RS
+.IP * 2
+Objects can be used before definition.
+.IP *
+Objects can be defined inline as well. This is useful if you use the object only once (for example, a filter).
+.IP *
+To add comments to the configuration file, start a line with # and write your comments. These lines are ignored by syslog-ng.
+.PP
+.RS
+.DS L
+.nf
+#Comment: This is a stream source
+source s_demo_stream {
+unix-stream("<path-to-socket>" max-connections(10) group(log)); };
+.fi
+.DE
+.RE
+.RE
+.RE
+.PP
+The syntax of log statements is as follows:
+.PP
+.RS
+.DS L
+.nf
+   log {
+        source(s1); source(s2); ...
+    optional_element(filter1|parser1|rewrite1);
+    optional_element(filter2|parser2|rewrite2);
+                ...
+    destination(d1); destination(d2); ...
+    flags(flag1[, flag2...]);
+            };
+.fi
+.DE
+.RE
+.PP
+The following log statement sends all messages arriving to the localhost to a remote server.
+.PP
+.RS
+.DS L
+.nf
+source s_localhost { network(ip(127.0.0.1) port(1999)); };
+destination d_tcp { network("10.1.2.3" port(1999) localport(999)); };
+log { source(s_localhost); destination(d_tcp); };
+.fi
+.DE
+.RE
+.PP
+The syslog-ng application has a number of global options governing DNS usage, the timestamp format used, and other general points. Each option may have parameters, similarly to driver specifications. To set global options add an option statement to the syslog-ng configuration file using the following syntax:
+.PP
+.RS
+.DS L
+.nf
+options { option1(params); option2(params); ... };
+.fi
+.DE
+.RE
+.SS "Example: Using global options"
+.PP
+To disable domain name resolving, add the following line to the syslog-ng configuration file:
+.PP
+.RS
+.DS L
+.nf
+options { use-dns(no); };
+.fi
+.DE
+.RE
+.PP
+The sources, destinations, and filters available in syslog-ng are listed below. For details, see the \fBsyslog-ng documentation\fP (\fIhttps://axoflow.com/\fP).
+.SS "Table: Available source drivers"
+NameDescription
+ \fBdefault-network-drivers()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/source-default-network-drivers/\fP)  Receive and parse common syslog messages 
+ \fBinternal()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/configuring-sources-internal/\fP)  Collect internal messages 
+ \fBfile()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/configuring-sources-file/\fP)  Collect messages from text files 
+ \fBwildcard-file()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/configuring-sources-wildcard-file/\fP)  Collect messages from multiple text files 
+ \fBhypr-audit-trail(), hypr-app-audit-trail()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/hypr-audit-trail/\fP)  Fetch events from the Hypr REST API 
+ \fBlinux-audit()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/configuring-sources-linux-audit/\fP)  Collect messages from Linux audit logs 
+ \fBkubernetes()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/configuring-sources-kubernetes/\fP)  Collect and parse messages in the Kubernetes CRI (Container Runtime Interface) format 
+ \fBmbox()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/configuring-source-mbox/\fP)  Convert local email messages to log messages 
+ \fBmqtt()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/source-mqtt/\fP)  Fetch messages from MQTT brokers 
+ \fBnetwork()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/configuring-sources-network/\fP)  Collect messages using the RFC3164 protocol 
+ \fBnodejs()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/configuring-source-nodejs/\fP)  Receive JSON messages from nodejs applications 
+ \fBosquery()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/syslog-ng-source-osquery/\fP)  Collect and parse osquery result logs 
+ \fBopentelemetry()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/opentelemetry/\fP)  Receive logs, metrics, and traces from OpenTelemetry clients over the OpenTelemetry Protocol (OTLP/gRPC) 
+ \fBpipe()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/source-pipe/\fP)  Collect messages from named pipes 
+ \fBpacct()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/source-pacct/\fP)  Collect process accounting logs on Linux 
+ \fBprogram()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/source-program/\fP)  Receive messages from external applications 
+ \fBpython()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/python-source/\fP)  Server-style Python source that receives messages 
+ \fBpython-fetcher()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/python-fetcher-source/\fP)  Write a fetcher-style Python source 
+ \fBsnmptrap()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/syslog-ng-source-snmptrap/\fP)  Read Net-SNMP traps 
+ \fBsun-streams()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/source-sunstreams/\fP)  Collect messages on Sun Solaris 
+ \fBsyslog()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/source-syslog/\fP)  Collect messages using the IETF-syslog protocol 
+ \fBsyslog-ng-otlp()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/source-syslog-ng-otlp/\fP)  Receive logs from another node using OpenTelemetry 
+ \fBsystem()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/source-system/\fP)  Collect the system-specific log messages of a platform 
+ \fBsystemd-journal()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/configuring-sources-journal/\fP)  Collect messages from the systemd-journal system log storage 
+ \fBsystemd-syslog()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/configuring-sources-systemd-syslog/\fP)  Collect systemd messages using a socket 
+ \fBtcp(), tcp6(), udp(), udp6()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/configuring-sources-tcpudp/\fP)  OBSOLETE - Collect messages from remote hosts using the BSD syslog protocol 
+ \fBunix-stream(), unix-dgram()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/source-unixstream/\fP)  Collect messages from UNIX domain sockets 
+ \fBstdin()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-sources/configuring-sources-stdin/\fP)  Collect messages from the standard input stream 
+.PP
+.SS "Table 2. Available destination drivers"
+NameDescription
+ \fBamqp()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-amqp/\fP)  Publish messages using AMQP 
+ \fBcollectd()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-collectd/\fP)  Send metrics to collectd 
+ \fBdiscord()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-discord/\fP)  Send alerts and notifications to Discord 
+ \fBelasticsearch2()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-elasticsearch2/\fP)  DEPRECATED - Send messages directly to Elasticsearch version 2.0 or higher 
+ \fBelasticsearch-http()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-elasticsearch-http/\fP)  Send messages to Elasticsearch using the HTTP Bulk API 
+ \fBfile()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-file/\fP)  Store messages in plain-text files 
+ \fBgraphite()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-graphite/\fP)  Send metrics to Graphite 
+ \fBgraylog2()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-graylog/\fP)  Send logs to Graylog 
+ \fBhdfs()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-hdfs/\fP)  Store messages on the Hadoop Distributed File System (HDFS) 
+ \fBjava()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-http/\fP)  Post messages over HTTP using Java 
+ \fBhttp()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-http-nonjava/\fP)  Post messages over HTTP without Java 
+ \fBkafka()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-kafka/\fP)  Publish messages to Apache Kafka (Java implementation) 
+ \fBkafka-c()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-kafka-c/\fP)  Publish messages to Apache Kafka (C implementation) 
+ \fBloggly()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-loggly/\fP)  Send logs to Loggly 
+ \fBlogmatic()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-logmatic/\fP)  Send logs to Logmatic.io 
+ \fBlogscale()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/crowdstrike-falcon/\fP)  Send messages to Falcon LogScale 
+ \fBloki()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-loki/\fP)  Send messages to Grafana Loki 
+ \fBmongodb()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-mongodb/\fP)  Store messages in a MongoDB database 
+ \fBmqtt()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-mqtt-intro/\fP)  Send messages to an MQTT broker 
+ \fBnetwork()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-network/\fP)  Send messages to a remote log server using the RFC3164 protocol 
+ \fBopensearch()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-opensearch/\fP)  Send messages to OpenSearch 
+ \fBosquery()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-osquery/\fP)  Send log messages to osquery's syslog table 
+ \fBopentelemetry()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/opentelemetry/\fP)  Send logs, metrics, and traces to OpenTelemetry 
+ \fBpipe()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-pipe/\fP)  Send messages to named pipes 
+ \fBprogram()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-program/\fP)  Send messages to external applications 
+ \fBpseudofile()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-pseudofile/\fP)  Deliver messages to special files 
+ \fBpython()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/python-destination/\fP)  Write custom Python destinations 
+ \fBredis()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-redis/\fP)  Store name-value pairs in Redis 
+ \fBriemann()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-riemann/\fP)  Monitor your data with Riemann 
+ \fBs3()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-s3/\fP)  Send log messages to Amazon Simple Storage Service (S3) 
+ \fBslack()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-slack/\fP)  Send alerts and notifications to a Slack channel 
+ \fBsmtp()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-smtp/\fP)  Generate SMTP messages (emails) from logs 
+ \fBsnmp()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-snmp/\fP)  Send SNMP traps 
+ \fBsplunk-hec-event()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/syslog-ng-with-splunk/\fP)  Send messages to Splunk HEC 
+ \fBsql()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-sql/\fP)  Store messages in an SQL database 
+ \fBstdout()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-stdout/\fP)  Send messages to standard output 
+ \fBstomp()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-stomp/\fP)  Publish messages using STOMP 
+ \fBsumologic-http(), sumologic-syslog()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-sumologic-intro/\fP)  Send messages to Sumo Logic 
+ \fBsyslog()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-syslog/\fP)  Send messages to a remote logserver using the IETF-syslog protocol 
+ \fBsyslog-ng()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-syslog-ng/\fP)  Forward logs to another syslog-ng node 
+ \fBsyslog-ng-otlp()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-syslog-ng-otlp/\fP)  Forward logs to another node using OpenTelemetry 
+ \fBtcp(), tcp6(), udp(), udp6()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-tcpudp/\fP)  OBSOLETE - Send messages to a remote log server using the legacy BSD-syslog protocol 
+ \fBtelegram()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-telegram/\fP)  Send messages to Telegram 
+ \fBunix-stream(), unix-dgram()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/configuring-destinations-unixstream/\fP)  Send messages to UNIX domain sockets 
+ \fBusertty()\fP (\fIhttps://axoflow.github.io/axosyslog-core-docs/chapter-destinations/destination-usertty/\fP)  Send messages to a user terminal 
+.PP
+.SS "Table 3. Filter functions"
+NameDescription
+\fBfacility()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-facility/\fP)Filter messages based on the sending facility.
+\fBfilter()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-filter/\fP)Call another filter function.
+\fBhost()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-host/\fP)Filter messages based on the sending host.
+\fBin-list()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-inlist/\fP)File-based whitelisting and blacklisting.
+\fBlevel() or priority()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-priority/\fP)Filter messages based on their priority.
+\fBmatch()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-match/\fP)Use a regular expression to filter messages based on a specified header or content field.
+\fBmessage()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-message/\fP)Use a regular expression to filter messages based on their content.
+\fBnetmask()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-netmask/\fP)Filter messages based on the IPv4 address of the sending host.
+\fBnetmask6()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-netmask6/\fP)Filter messages based on the IPv6 address of the sending host.
+\fBprogram()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-program/\fP)Filter messages based on the sending application.
+\fBrate-limit()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-rate-limit/\fP)Limit messages rate based on arbitrary keys in each message.
+\fBsource()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-source/\fP)Select messages of the specified syslog-ng source statement.
+\fBtags()\fP (\fI/axosyslog-core-docs/chapter-routing-filters/filters/reference-filters/filter-tags/\fP)Select messages having the specified tag.
+.SS "Files"
+.PP
+/opt/syslog-ng/
+.PP
+/opt/syslog-ng/etc/syslog-ng.conf
+.SS "See also"
+.PP
+\fBsyslog-ng.8\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.8/\fP)
+.SS "Getting help"
+.RS
+.IP * 2
+The up-to-date documentation of syslog-ng is available on the \fBAxoSyslog documentation site\fP (\fIhttps://axoflow.com/docs/axosyslog-core/\fP).
+.IP *
+For news and notifications about syslog-ng, visit the \fBAxoflow blog\fP (\fIhttps://axoflow.com/blog/\fP).
+.IP *
+If you want to contact the developers directly to help with problems or report issues, contact us on \fBDiscord\fP (\fIhttps://discord.gg/583Z4wjem2\fP) or \fBGitHub\fP (\fIhttps://github.com/syslog-ng/syslog-ng/issues/\fP).
+.RE
+.PP
+This manual page is maintained by \fBAxoflow\fP (\fIhttps://axoflow.com/\fP)
+Last modified November 24, 2023: \fBMinor manpage fix (2f0a144)\fP (\fIhttps://github.com/axoflow/axosyslog-core-docs/commit/2f0a144ec391a3182da3af2f2cc136042d5608e9\fP)

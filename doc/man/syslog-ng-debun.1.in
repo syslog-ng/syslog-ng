@@ -1,0 +1,215 @@
+.TH "syslog-ng-debun"1 "" "" syslog-ng-debun
+.SS "Name"
+.PP
+syslog-debun — syslog-ng DEBUg buNdle generator
+.SS "Synopsis"
+.PP
+syslog-debun [options]
+.PP
+.SS "Description"
+.SS "Note"
+The syslog-debun application is distributed with the syslog-ng system logging application, and is usually part of the syslog-ng package.
+.PP
+The syslog-debun tool collects and saves information about your syslog-ng installation, making troubleshooting easier, especially if you ask help about your syslog-ng related problem.
+.SS "General Options"
+.RS
+.IP * 2
+-r
+.IP
+Run syslog-ng-debun. Using this option is required to actually execute the data collection with syslog-ng-debun. It is needed to prevent accidentally running syslog-ng-debun.
+.IP *
+-h
+.IP
+Display the help page.
+.IP *
+-l
+.IP
+Do not collect privacy-sensitive data, for example, process tree, fstab, and so on. If you use with -d, then the following parameters will be used for debug mode:-Fev
+.IP *
+-R <directory>
+.IP
+The directory where syslog-ng is installed instead of /opt/syslog-ng.
+.IP *
+-W <directory>
+.IP
+Set the working directory, where the debug bundle will be saved. Default value: /tmp. The name of the created file is syslog.debun.${host}.${date}.${3-random-characters-or-pid}.tgz
+.RE
+.SS "Debug mode options"
+.RS
+.IP * 2
+-d
+.IP
+Start syslog-ng in debug mode, using the -Fedv --enable-core options.
+.SS "Warning"
+Using this option under high message load may increase disk I/O during the debug, and the resulting debug bundle can be huge. To exit debug mode, press Enter.
+.IP *
+-D <options>
+.IP
+Start syslog-ng in debug mode, using the specified command-line options. To exit debug mode, press Enter.
+.RS
+.IP * 2
+-t <seconds>
+.IP
+Run syslog-ng in noninteractive debug mode for , and automatically exit debug mode after the specified number of seconds.
+.RE
+.IP *
+-w <seconds>
+.IP
+Wait  seconds before starting debug mode.
+.RE
+.SS "System call tracing"
+.RS
+.IP * 2
+-s
+.IP
+Enable syscall tracing (strace -f or truss -f). Note that using -s itself does not enable debug mode, only traces the system calls of an already running syslog-ng process. To trace system calls in debug mode, use both the -s and -d options.
+.RE
+.SS "Packet capture options"
+.PP
+Capturing packets requires a packet capture tool on the host. The syslog-debun tool attempts to use tcpdump on most platforms, except for Solaris, where it uses snoop.
+.RS
+.IP * 2
+-i <interface>
+.IP
+Capture packets only on the specified interface, for example, eth0.
+.IP *
+-p
+.IP
+Capture incoming packets using the following filter: port 514 or port 601 or port 53
+.IP *
+-P <options>
+.IP
+Capture incoming packets using the specified filter.
+.IP *
+-t <seconds>
+.IP
+Run syslog-ng in noninteractive debug mode for <seconds>, and automatically exit debug mode after the specified number of seconds.
+.RE
+.PP
+.SS "Examples"
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-debun -r
+.fi
+.DE
+.RE
+.PP
+Create a simple debug bundle, collecting information about your environment, for example, list packages containing the word: syslog, ldd of your syslog-binary, and so on.
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-debun -r -l
+.fi
+.DE
+.RE
+.PP
+Similar to syslog-ng-debun -r, but without privacy-sensitive information. For example, the following is NOT collected: fstab, df output, mount info, ip / network interface configuration, DNS resolv info, and process tree.
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-debun -r -d
+.fi
+.DE
+.RE
+.PP
+Similar to syslog-ng-debun -r, but it also stops syslog-ng, then restarts it in debug mode (-Fedv --enable-core). To stop debug mode, press Enter. The output of the debug mode collected into a separate file, and also added to the debug bundle.
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-debun -r -s
+.fi
+.DE
+.RE
+.PP
+Trace the system calls (using strace or truss) of an already running syslog-ng process.
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-debun -r -d -s
+.fi
+.DE
+.RE
+.PP
+Restart syslog-ng in debug mode, and also trace the system calls (using strace or truss) of the syslog-ng process.
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-debun -r -p
+.fi
+.DE
+.RE
+.PP
+Run packet capture (pcap) with the filter: port 514 or port 601 or port 53 Also waits for pressing Enter, like debug mode.
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-debun -r -p -t 10
+.fi
+.DE
+.RE
+.PP
+Noninteractive debug mode: Similar to syslog-ng-debun -r -p, but automatically exit after 10 seconds.
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-debun -r -P "host 1.2.3.4"  -D "-Fev --enable-core"
+.fi
+.DE
+.RE
+.PP
+Change the packet-capturing filter from the default to host 1.2.3.4. Also change debugging parameters from the default to -Fev --enable-core. Since a timeout (-t) is not given, waits for pressing Enter.
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-debun -r -p -d -w 5 -t 10
+.fi
+.DE
+.RE
+.PP
+Collect pcap and debug mode output following this scenario:
+.RS
+.IP * 2
+Start packet capture with default parameters (-p)
+.IP *
+Wait 5 seconds (-w 5)
+.IP *
+Stop syslog-ng
+.IP *
+Start syslog-ng in debug mode with default parameters (-d)
+.IP *
+Wait 10 seconds (-t 10)
+.IP *
+Stop syslog-ng debugging
+.IP *
+Start syslog-ng
+.IP *
+Stop packet capturing
+.RE
+.SS "Files"
+.PP
+/opt/syslog-ng/bin/loggen
+.SS "See also"
+.PP
+\fBsyslog-ng.conf.5\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.conf.5/\fP)
+.SS "Getting help"
+.RS
+.IP * 2
+The up-to-date documentation of syslog-ng is available on the \fBAxoSyslog documentation site\fP (\fIhttps://axoflow.com/docs/axosyslog-core/\fP).
+.IP *
+For news and notifications about syslog-ng, visit the \fBAxoflow blog\fP (\fIhttps://axoflow.com/blog/\fP).
+.IP *
+If you want to contact the developers directly to help with problems or report issues, contact us on \fBDiscord\fP (\fIhttps://discord.gg/583Z4wjem2\fP) or \fBGitHub\fP (\fIhttps://github.com/syslog-ng/syslog-ng/issues/\fP).
+.RE
+.PP
+This manual page is maintained by \fBAxoflow\fP (\fIhttps://axoflow.com/\fP)
+Last modified November 24, 2023: \fBMinor manpage fix (2f0a144)\fP (\fIhttps://github.com/axoflow/axosyslog-core-docs/commit/2f0a144ec391a3182da3af2f2cc136042d5608e9\fP)

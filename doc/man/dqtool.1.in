@@ -1,0 +1,138 @@
+.TH "dqtool"1 "" "" dqtool
+.PP
+.SS "Name"
+.PP
+dqtool — Display the contents of a disk-buffer file created with syslog-ng.
+.SS "Synopsis"
+.PP
+dqtool [command] [options]
+.SS "Description"
+.SS "Note"
+The dqtool application is distributed with the syslog-ng system logging application, and is usually part of the syslog-ng package.
+.PP
+The dqtool application is a utility that can be used to display and format the messages stored in a disk-buffer file.
+.SS "The cat command"
+.PP
+cat [options] [file]
+.PP
+Use the cat command to display the log messages stored in the disk-buffer (also called disk-queue) file, and also information from the header of the disk queue file. The messages are printed to the standard output (stdout), so it is possible to use grep and other tools to find particular log messages, for example, dqtool cat /var/log/messages.lgs |grep 192.168.1.1.
+.PP
+The cat command has the following options:
+.RS
+.IP * 2
+--debug or -d
+.IP
+Print diagnostic and debugging messages to stderr.
+.IP *
+--help or -h
+.IP
+Display a brief help message.
+.IP *
+--template=<template> or -t
+.IP
+Format the messages using the specified template.
+.IP *
+--verbose or -v
+.IP
+Print verbose messages to stderr.
+.IP *
+--version or -V
+.IP
+Display version information.
+.RE
+.SS "Example: The cat command"
+.PP
+.RS
+.DS L
+.nf
+./dqtool cat ../var/syslog-ng-00000.qf
+.fi
+.DE
+.RE
+.PP
+The output looks like:
+.PP
+.RS
+.DS L
+.nf
+Disk-buffer state loaded;
+filename='../var/syslog-ng-00000.qf', qout_length='65', qbacklog_length='0', qoverflow_length='9205', qdisk_length='0'
+Mar  3 10:52:05 tristram localprg[1234]: seq: 0000011630, runid: 1267609923, stamp: 2010-03-03T10:52:05 PADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADD
+Mar  3 10:52:05 tristram localprg[1234]: seq: 0000011631, runid: 1267609923, stamp: 2010-03-03T10:52:05 PADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADD
+.fi
+.DE
+.RE
+.PP
+.SS "The relocate command"
+.PP
+relocate [options] [files]
+.PP
+Use the relocate command to move or rename disk-buffer (also called disk-queue) files. Note that this option modifies the persist file. Stop syslog-ng before using this command.
+.PP
+The cat command has the following options:
+.RS
+.IP * 2
+--all or -a
+.IP
+Relocate every disk-buffer file that is listed in the syslog-ng persist file.
+.IP *
+--new_path or -n
+.IP
+The directory where you want to move the disk-bufffer files. For example: /var/disk-buffers
+.IP *
+--persist or -p
+.IP
+The path to the syslog-ng persist file. The relocate command automatically updates the entries of the disk-buffer files in the persist file.
+.RE
+.SS "Examples"
+.PP
+Relocate a single queue file:
+.PP
+.RS
+.DS L
+.nf
+bin/dqtool relocate --new_path /tmp/dq --persist var/syslog-ng.persist /tmp/syslog-ng-00000.rqf
+.fi
+.DE
+.RE
+.PP
+Relocate multiple queue files:
+.PP
+.RS
+.DS L
+.nf
+bin/dqtool relocate --new_path /tmp/dq --persist var/syslog-ng.persist /tmp/syslog-ng-00000.rqf /tmp/syslog-ng-00001.rqf
+.fi
+.DE
+.RE
+.PP
+Relocate every queue file:
+.PP
+.RS
+.DS L
+.nf
+bin/dqtool relocate --new_path /tmp/dq --persist var/syslog-ng.persist --all
+.fi
+.DE
+.RE
+.PP
+.SS "Files"
+.PP
+/opt/syslog-ng/bin/dqtool
+.SS "See also"
+.PP
+\fBsyslog-ng.conf.5\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.conf.5/\fP)
+.PP
+\fBsyslog-ng.8\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.8/\fP)
+.SS "Getting help"
+.RS
+.IP * 2
+The up-to-date documentation of syslog-ng is available on the \fBAxoSyslog documentation site\fP (\fIhttps://axoflow.com/docs/axosyslog-core/\fP).
+.IP *
+For news and notifications about syslog-ng, visit the \fBAxoflow blog\fP (\fIhttps://axoflow.com/blog/\fP).
+.IP *
+If you want to contact the developers directly to help with problems or report issues, contact us on \fBDiscord\fP (\fIhttps://discord.gg/583Z4wjem2\fP) or \fBGitHub\fP (\fIhttps://github.com/syslog-ng/syslog-ng/issues/\fP).
+.RE
+.PP
+This manual page is maintained by \fBAxoflow\fP (\fIhttps://axoflow.com/\fP)
+Last modified November 24, 2023: \fBMinor manpage fix (2f0a144)\fP (\fIhttps://github.com/axoflow/axosyslog-core-docs/commit/2f0a144ec391a3182da3af2f2cc136042d5608e9\fP)

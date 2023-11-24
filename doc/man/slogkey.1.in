@@ -1,0 +1,87 @@
+.TH "slogkey"1 "" "" slogkey
+.PP
+.SS "Name"
+.PP
+slogkey — Manage cryptographic keys for use with the syslog-ng secure logging environment.
+.SS "Synopsis"
+.PP
+slogkey [options] [arguments]
+.SS "Description"
+.PP
+The slogkey utility is used to manage cryptographic keys for use with the secure logging module of syslog-ng. Use this utility to create a master key, derive a host key to be used by a secure logging configuration and to display the current sequence counter of a key. The options determine the operating mode and are mutually exclusive.
+.SS "Arguments"
+.PP
+The arguments depend on the operating mode.
+.RS
+.IP * 2
+Master key generation
+.IP
+Call sequence: slogkey --master-ḱey &lt;filename&gt;
+.IP
+&lt;filename&gt;: The name of the file to which the master key will be written.
+.IP *
+Host key derivation
+.IP
+Call sequence: slogkey --derive-key &lt;master key file&gt; &lt;host MAC address&gt; &lt;host serial number&gt; &lt;host key file&gt;
+.RS
+.IP * 2
+&lt;master key file&gt;: The master key from which the host key will be derived.
+.IP *
+&lt;host MAC address&gt;: The MAC address of the host on which the key will be used. Instead of the MAC address, any other string that uniquely identifies a host can be supplied, e.g. the company inventory number.
+.IP *
+&lt;host serial number&gt;: The serial number of the host on which the key will be used. Instead of the serial number, any other string that uniquely identifies a host can be supplied, for example, the company inventory number.
+.IP *
+&lt;host key file&gt;: The name of the file to which the host key will be written.
+.RE
+.PP
+NOTE: The newly created host key has its counter set to 0 indicating that it represents the initial host key k0. This host key must be kept secret and not be disclosed to third parties. It will be required to successfully decrypt and verify log archives processed by the secure logging environment. As each log entry will be encrypted with its own key, a new host key will be created after successful processing of a log entry and will replace the previous key. Therefore, the initial host key needs to be stored in a safe place before starting the secure logging environment, as it will be deleted from the log host after processing of the first log entry.
+.IP *
+Sequence counter display
+.IP
+Call sequence: slogkey --counter &lt;host key file&gt;
+.RS
+.IP * 2
+&lt;host key file&gt;: The host key file from which the sequence will be read.
+.RE
+.RE
+.SS "Options"
+.RS
+.IP * 2
+--master-key or -m
+.IP
+Generates a mew master key. &lt;filename&gt; is the name of the file storing the newly generated master key.
+.IP *
+--derive-key or -d
+.IP
+Derive a host key using a previously generated master key.
+.IP *
+--counter or -c
+.IP
+Display the current log sequence counter of a key.
+.IP *
+--help or -h
+.IP
+Display a help message.
+.RE
+.SS "Files"
+.PP
+/usr/bin/slogkey
+.PP
+/etc/syslog-ng.conf
+.SS "See also"
+.PP
+\fBsyslog-ng.conf.5\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.conf.5/\fP)
+.PP
+\fBsecure-logging.7\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/secure-logging.7/\fP)
+.SS "Getting help"
+.RS
+.IP * 2
+The up-to-date documentation of syslog-ng is available on the \fBAxoSyslog documentation site\fP (\fIhttps://axoflow.com/docs/axosyslog-core/\fP).
+.IP *
+For news and notifications about syslog-ng, visit the \fBAxoflow blog\fP (\fIhttps://axoflow.com/blog/\fP).
+.IP *
+If you want to contact the developers directly to help with problems or report issues, contact us on \fBDiscord\fP (\fIhttps://discord.gg/583Z4wjem2\fP) or \fBGitHub\fP (\fIhttps://github.com/syslog-ng/syslog-ng/issues/\fP).
+.RE
+.PP
+This manual page is maintained by \fBAxoflow\fP (\fIhttps://axoflow.com/\fP)
+Last modified November 24, 2023: \fBMinor manpage fix (2f0a144)\fP (\fIhttps://github.com/axoflow/axosyslog-core-docs/commit/2f0a144ec391a3182da3af2f2cc136042d5608e9\fP)

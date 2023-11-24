@@ -1,0 +1,105 @@
+.TH "persist-tool"1 "" "" persist-tool
+.PP
+.SS "Name"
+.PP
+persist-tool — Display the content of the persist file
+.SS "Synopsis"
+.PP
+persist-tool [command] [options]
+.SS "Description"
+.PP
+The persist-tool application is a utility that can be used to dump the content of the persist file, and manipulate its content.
+.PP
+WARNING: Persist-tool is a special tool for syslog-ng experts. Do not use the tool unless you know exactly what you are doing. Misconfiguring it will result in irrecoverable damage to the persist file, without any warning.
+.SS "Limitations"
+.PP
+Wildcard characters are not supported in file/directory names.
+.SS "The dump command"
+.PP
+Use the dump command to print the current content of the persist file in JSON format to the console.
+.PP
+dump &lt;options;gt; &lt;persist_file&gt;
+.PP
+Example: persist-tool dump /opt/syslog-ng/var/syslog-ng.persist
+.PP
+The output looks like:
+.PP
+.RS
+.DS L
+.nf
+run_id = { "value": "00 00 00 00 0C 00 00 00 " }
+host_id = { "value": "00 00 00 00 5F 49 2F 01 " }
+.fi
+.DE
+.RE
+.PP
+The dump command has the following options:
+.RS
+.IP * 2
+--help or -?
+.IP
+Display a brief help message.
+.RE
+.SS "The add command"
+.PP
+add &lt;options&gt; &lt;input_file&gt;
+.PP
+Use the add command to add or modify a specified state-entry in the persist file. The state-entry should be in the same format as the dump command displays it. If the given state-entry already exists, it will be updated. Otherwise, a new value will be added. If the given persist state is invalid, it will be skipped.
+.PP
+To use the add command: use persist-tool dump to print the content of the current persist file, and redirect it to a file. Edit the content of this file. Use persist-tool add with this file to modify the persist. The add command has the following options:
+.RS
+.IP * 2
+--help or -?
+.IP
+Display a brief help message.
+.IP *
+--output-dir=&lt;directory&gt; or -o
+.IP
+Required parameter. The directory where the persist file is located at. The name of the persist file stored in this directory must be syslog-ng.persist.
+.RE
+.PP
+Example: /opt/syslog-ng/bin/persist-tool add dump_persist -o .
+.PP
+The valid output looks like:
+.PP
+.RS
+.DS L
+.nf
+log_reader_curpos(Application)      OK
+affile_sd_curpos(/var/aaa.txt)        OK
+.fi
+.DE
+.RE
+.PP
+The invalid output looks like:
+.PP
+.RS
+.DS L
+.nf
+log_reader_curpos(Application)      OK
+wrong
+FAILED (error: Invalid entry syntax)
+affile_sd_curpos(/var/aaa.txt)        OK
+.fi
+.DE
+.RE
+.SS "Files"
+.PP
+/opt/syslog-ng/bin/persist-tool
+.SS "See also"
+.PP
+\fBsyslog-ng.conf.5\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.conf.5/\fP)
+.PP
+\fBsyslog-ng.8\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.8/\fP)
+.SS "Getting help"
+.RS
+.IP * 2
+The up-to-date documentation of syslog-ng is available on the \fBAxoSyslog documentation site\fP (\fIhttps://axoflow.com/docs/axosyslog-core/\fP).
+.IP *
+For news and notifications about syslog-ng, visit the \fBAxoflow blog\fP (\fIhttps://axoflow.com/blog/\fP).
+.IP *
+If you want to contact the developers directly to help with problems or report issues, contact us on \fBDiscord\fP (\fIhttps://discord.gg/583Z4wjem2\fP) or \fBGitHub\fP (\fIhttps://github.com/syslog-ng/syslog-ng/issues/\fP).
+.RE
+.PP
+This manual page is maintained by \fBAxoflow\fP (\fIhttps://axoflow.com/\fP)
+Last modified November 24, 2023: \fBMinor manpage fix (2f0a144)\fP (\fIhttps://github.com/axoflow/axosyslog-core-docs/commit/2f0a144ec391a3182da3af2f2cc136042d5608e9\fP)

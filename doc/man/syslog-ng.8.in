@@ -1,0 +1,152 @@
+.TH "syslog-ng"8 "" "" syslog-ng
+.PP
+.SS "Name"
+.PP
+syslog-ng — syslog-ng system logger application
+.SS "Synopsis"
+.PP
+syslog-ng [options]
+.SS "Description"
+.PP
+The syslog-ng application is a flexible and highly scalable system logging application. Typically, syslog-ng is used to manage log messages and implement centralized logging, where the aim is to collect the log messages of several devices on a single, central log server. The different devices - called clients - all run syslog-ng, and collect the log messages from the various applications, files, and other sources. The clients send all important log messages to the remote syslog-ng server, where the server sorts and stores them.
+.SS "Options"
+.RS
+.IP * 2
+--caps
+.IP
+Run syslog-ng process with the specified POSIX capability flags.
+.RS
+.IP * 2
+If the --no-caps option is not set, syslog-ng has been compiled with the --enable-linux-caps compile option, and the host supports CAP_SYSLOG, syslog-ng uses the following capabilities: cap_net_bind_service, cap_net_broadcast, cap_net_raw, cap_dac_read_search, cap_dac_override, cap_chown, cap_fowner=p cap_syslog=ep
+.IP *
+If the --no-caps option is not set, and the host does not support CAP_SYSLOG, syslog-ng uses the following capabilities: cap_net_bind_service, cap_net_broadcast, cap_net_raw, cap_dac_read_search, cap_dac_override, cap_chown, cap_fowner=p cap_sys_admin=ep
+.RE
+.IP
+For example:
+.PP
+.RS
+.DS L
+.nf
+/opt/syslog-ng/sbin/syslog-ng -Fv --caps cap_sys_admin,cap_chown,cap_dac_override,cap_net_bind_service,cap_fowner=pi
+.fi
+.DE
+.RE
+.IP
+Note that the capabilities are not case sensitive, the following command is also good: /opt/syslog-ng/sbin/syslog-ng -Fv --caps CAP_SYS_ADMIN,CAP_CHOWN,CAP_DAC_OVERRIDE,CAP_NET_BIND_SERVICE,CAP_FOWNER=pi
+.IP
+For details on the capability flags, see the following man pages: cap_from_text(3) and capabilities(7)
+.IP *
+--cfgfile <file> or -f <file>
+.IP
+Use the specified configuration file.
+.IP *
+--chroot <dir> or -C <dir>
+.IP
+Change root to the specified directory. The configuration file is read after chrooting so, the configuration file must be available within the chroot. That way it is also possible to reload the syslog-ng configuration after chrooting. However, note that the --user and --groupoptions are resolved before chrooting.
+.IP *
+--control <file> or -c<file>
+.IP
+Set the location of the syslog-ng control socket. Default value: /var/run/syslog-ng.ctl
+.IP *
+--debug or -d
+.IP
+Start syslog-ng in debug mode.
+.IP *
+--default-modules
+.IP
+A comma-separated list of the modules that are loaded automatically. Modules not loaded automatically can be loaded by including the @module <modulename> statement in the syslog-ng configuration file. Available only in syslog-ng version 4.1 and later.
+.IP *
+--enable-core
+.IP
+Enable syslog-ng to write core files in case of a crash to help support and debugging.
+.IP *
+--fd-limit <number>
+.IP
+Set the minimal number of required file descriptors (fd-s). This sets how many files syslog-ng can keep open simultaneously. Default value: 4096. Note that this does not override the global ulimit setting of the host.
+.IP *
+--foreground or -F
+.IP
+Do not daemonize, run in the foreground. When running in the foreground, syslog-ng starts from the current directory ($CWD) so it can create core files (normally, syslog-ng starts from /$PREFIX/var).
+.IP *
+--group <group> or -g <group>
+.IP
+Switch to the specified group after initializing the configuration file.
+.IP *
+--help or -h
+.IP
+Display a brief help message.
+.IP *
+--log-level <level>
+.IP
+Set the internal log level of syslog-ng to default, verbose, debug, or trace. Available in syslog-ng 4.0 and later.
+.IP *
+--module-registry
+.IP
+Display the list and description of the available modules. Note that not all of these modules are loaded automatically, only the ones specified in the --default-modules option.
+.IP *
+--no-caps
+.IP
+Run syslog-ng as root, without capability-support. This is the default behavior. On Linux, it is possible to run syslog-ng as non-root with capability-support if syslog-ng was compiled with the --enable-linux-caps option enabled. (Run syslog-ng --version to display the list of enabled build parameters.)
+.IP
+To run syslog-ng with specific capabilities, use the --caps option.
+.IP *
+--persist-file <persist-file> or -R <persist-file>
+.IP
+Set the path and name of the syslog-ng.persist file where the persistent options and data are stored.
+.IP *
+--pidfile <pidfile> or -p <pidfile>
+.IP
+Set path to the PID file where the pid of the main process is stored.
+.IP *
+--preprocess-into <output-file>
+.IP
+After processing the configuration file and resolving included files and variables, write the resulting configuration into the specified output file. Available only in syslog-ng 4 F1 and later.
+.IP *
+--process-mode <mode>
+.IP
+Sets how to run syslog-ng: in the foreground (mainly used for debugging), in the background as a daemon, or in safe-background mode. By default, syslog-ng runs in safe-background mode. This mode creates a supervisor process called supervising syslog-ng, that restarts syslog-ng if it crashes.
+.IP *
+--stderr or -e
+.IP
+Log internal messages of syslog-ng to stderr. Mainly used for debugging purposes in conjunction with the --foreground option. If not specified, syslog-ng logs such messages to its internal source.
+.IP *
+--syntax-only or -s
+.IP
+Verify that the configuration file is syntactically correct and exit.
+.IP *
+--user <user> or -u <user>
+.IP
+Switch to the specified user after initializing the configuration file (and optionally chrooting). Note that it is not possible to reload the syslog-ng configuration if the specified user has no privilege to create the /dev/log file.
+.IP *
+--verbose or -v
+.IP
+Enable verbose logging used to troubleshoot syslog-ng.
+.IP *
+--version or -V
+.IP
+Display version number and compilation information, and also the list and short description of the available modules. For detailed description of the available modules, see the --module-registry option. Note that not all of these modules are loaded automatically, only the ones specified in the --default-modulesoption.
+.IP *
+--worker-threads
+.IP
+Sets the number of worker threads syslog-ng can use, including the main syslog-ng thread. Note that certain operations in syslog-ng can use threads that are not limited by this option. This setting has effect only when syslog-ng is running in multithreaded mode. Available only in syslog-ng 4 F1 and later. See The syslog-ng 7 Administrator Guide for details.
+.RE
+.SS "Files"
+.PP
+/opt/syslog-ng/
+.PP
+/opt/syslog-ng/etc/syslog-ng.conf
+.SS "See also"
+.PP
+\fBsyslog-ng.conf.5\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.conf.5/\fP)
+.SS "Getting help"
+.RS
+.IP * 2
+The up-to-date documentation of syslog-ng is available on the \fBAxoSyslog documentation site\fP (\fIhttps://axoflow.com/docs/axosyslog-core/\fP).
+.IP *
+For news and notifications about syslog-ng, visit the \fBAxoflow blog\fP (\fIhttps://axoflow.com/blog/\fP).
+.IP *
+If you want to contact the developers directly to help with problems or report issues, contact us on \fBDiscord\fP (\fIhttps://discord.gg/583Z4wjem2\fP) or \fBGitHub\fP (\fIhttps://github.com/syslog-ng/syslog-ng/issues/\fP).
+.RE
+.PP
+This manual page is maintained by \fBAxoflow\fP (\fIhttps://axoflow.com/\fP)
+Last modified November 24, 2023: \fBMinor manpage fix (2f0a144)\fP (\fIhttps://github.com/axoflow/axosyslog-core-docs/commit/2f0a144ec391a3182da3af2f2cc136042d5608e9\fP)

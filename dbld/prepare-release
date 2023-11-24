@@ -14,7 +14,7 @@ NEW_MINOR=$(echo $VERSION | cut -d. -f2)
 NEW_PATCH=$(echo $VERSION | cut -d. -f3)
 USER_EMAIL=$(git config --get user.email || echo "noemail@set.any.where")
 USER_NAME=$(git config --get user.name || echo "unknown user")
-VERSION_FILE_LIST="README.md doc/man/*.xml
+VERSION_FILE_LIST="README.md doc/man/*.in
 	scl/syslog-ng.conf
 	docker/syslog-ng.conf
 	contrib/openbsd-packaging/syslog-ng.conf
@@ -35,6 +35,10 @@ function update_packaging_rhel() {
 	echo Updating RHEL packaging
 	sed -i -e "s/^Version: [0-9.]*$/Version: $VERSION/g" packaging/rhel/syslog-ng.spec
 	sed -i -e "/^%changelog/ a * `date '+%a %b %e %Y'` $USER_NAME <$USER_EMAIL> - $VERSION-1\n- updated to $VERSION\n" packaging/rhel/syslog-ng.spec
+}
+
+function update_manpages() {
+	doc/man/update-manpages.sh
 }
 
 function update_version_refs_in_source() {
@@ -73,6 +77,7 @@ function perform_updates()
 	update_version && \
 		update_packaging_debian && \
 		update_packaging_rhel && \
+		update_manpages && \
 		update_version_refs_in_source && \
 		update_versioning_h
 }

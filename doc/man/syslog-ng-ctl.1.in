@@ -1,0 +1,408 @@
+.TH "syslog-ng-ctl"1 "" "" syslog-ng-ctl
+.PP
+.SS "Name"
+.PP
+syslog-ng-ctl — Display message statistics and enable verbose, debug and trace modes
+.SS "Synopsis"
+.PP
+syslog-ng-ctl [command] [options]
+.PP
+.SS "Description"
+.SS "Note"
+The syslog-ng-ctl application is distributed with the syslog-ng system logging application, and is usually part of the syslog-ng package.
+.PP
+The syslog-ng-ctl application is a utility that can be used to:
+.RS
+.IP * 2
+enable/disable various syslog-ng messages for troubleshooting
+.IP *
+display statistics about the processed messages
+.IP *
+handling password-protected private keys
+.IP *
+display the currently running configuration of syslog-ng
+.IP *
+reload the configuration of syslog-ng.
+.RE
+.PP
+.SS "Enabling troubleshooting messages"
+.PP
+syslog-ng-ctl log-level <level>
+.PP
+Available in syslog-ng 4.0 and later.
+.PP
+Use the syslog-ng-ctl log-level <level> command to display verbose, trace, or debug messages. If you are trying to solve configuration problems, the verbose (and occasionally debug) messages are usually sufficient. Trace messages are needed mostly for finding software errors. After solving the problem, do not forget to return the log level to the default using the syslog-ng-ctl log-level default command.
+.PP
+Use syslog-ng-ctl log-level without any parameters to display the current log level.
+.PP
+If syslog-ng was started with the --stderr or -e option, the messages will be sent to stderr. If not specified, syslog-ng will log such messages to its internal source.
+.PP
+If you need to use a non-standard control socket to access syslog-ng, use the syslog-ng-ctl <command> --control=<socket> command to specify the socket to use.
+.PP
+Higher log-levels automatically include messages from lower log-levels:
+.RS
+.IP * 2
+default: Just normal log messages.
+.IP *
+verbose: Normal and verbose log messages.
+.IP *
+debug: Include debug messages of syslog-ng.
+.IP *
+trace: Include trace messages of how messages are processed.
+.RE
+.SS "Example"
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-ctl log-level verbose
+.fi
+.DE
+.RE
+.PP
+.SS "syslog-ng-ctl query"
+.PP
+The syslog-ng application stores various data, metrics, and statistics in a hash table. Every property has a name and a value. For example:
+.PP
+.RS
+.DS L
+.nf
+[syslog-ng]
+  |       
+  |_[destinations]-[network]-[tcp]->[stats]->{received=12;dropped=2}
+  |
+  |_[sources]-[sql]-[stats]->{received=501;dropped=0}
+.fi
+.DE
+.RE
+.PP
+You can query the nodes of this tree, and also use filters to select the information you need. A query is actually a path in the tree. You can also use the ? and \* wildcards. For example:
+.RS
+.IP * 2
+Select every property: \*
+.IP *
+Select all dropped value from every stats node: \*.stats.dropped
+.RE
+.PP
+The nodes and properties available in the tree depend on your syslog-ng configuration (that is, the sources, destinations, and other objects you have configured), and also on your stats-level() settings.
+.PP
+.SS "The list command"
+.PP
+syslog-ng-ctl query list
+.PP
+Use the syslog-ng-ctl query list command to display the list of metrics that syslog-ng collects about the processed messages.
+.PP
+An example output:
+.PP
+.RS
+.DS L
+.nf
+  center.received.stats.processed
+  center.queued.stats.processed
+  destination.java.d_elastic#0.java_dst(ElasticSearch,elasticsearch-syslog-ng-test,t7cde889529c034aea9ec_micek).stats.dropped
+  destination.java.d_elastic#0.java_dst(ElasticSearch,elasticsearch-syslog-ng-test,t7cde889529c034aea9ec_micek).stats.processed
+  destination.java.d_elastic#0.java_dst(ElasticSearch,elasticsearch-syslog-ng-test,t7cde889529c034aea9ec_micek).stats.queued
+  destination.d_elastic.stats.processed
+  source.s_tcp.stats.processed
+  source.severity.7.stats.processed
+  source.severity.0.stats.processed
+  source.severity.1.stats.processed
+  source.severity.2.stats.processed
+  source.severity.3.stats.processed
+  source.severity.4.stats.processed
+  source.severity.5.stats.processed
+  source.severity.6.stats.processed
+  source.facility.7.stats.processed
+  source.facility.16.stats.processed
+  source.facility.8.stats.processed
+  source.facility.17.stats.processed
+  source.facility.9.stats.processed
+  source.facility.18.stats.processed
+  source.facility.19.stats.processed
+  source.facility.20.stats.processed
+  source.facility.0.stats.processed
+  source.facility.21.stats.processed
+  source.facility.1.stats.processed
+  source.facility.10.stats.processed
+  source.facility.22.stats.processed
+  source.facility.2.stats.processed
+  source.facility.11.stats.processed
+  source.facility.23.stats.processed
+  source.facility.3.stats.processed
+  source.facility.12.stats.processed
+  source.facility.4.stats.processed
+  source.facility.13.stats.processed
+  source.facility.5.stats.processed
+  source.facility.14.stats.processed
+  source.facility.6.stats.processed
+  source.facility.15.stats.processed
+  source.facility.other.stats.processed
+  global.payload_reallocs.stats.processed
+  global.msg_clones.stats.processed
+  global.sdata_updates.stats.processed
+              tag..source.s_tcp.stats.processed
+.fi
+.DE
+.RE
+.PP
+The syslog-ng-ctl query list command has the following options:
+.RS
+.IP * 2
+--reset
+.IP
+Use --reset to set the selected counters to 0 after executing the query, except for the queued and the memory_usage counters. (The queued counters show the number of messages in the message queue of the destination driver, waiting to be sent to the destination. The memory_usage counters show the amount of memory used by the messages in the different queue types (in bytes). This includes every queue used by the object, including memory buffers (log-fifo) and disk-based buffers (both reliable and non-reliable))
+.RE
+.PP
+.SS "Displaying metrics and statistics"
+.PP
+syslog-ng-ctl query get [options]
+.PP
+The syslog-ng-ctl query get <query> command lists the nodes that match the query, and their values.
+.PP
+For example, the destination query lists the configured destinations, and the metrics related to each destination. An example output:
+.PP
+.RS
+.DS L
+.nf
+destination.java.d_elastic#0.java_dst(ElasticSearch,elasticsearch-syslog-ng-test,t7cde889529c034aea9ec_micek).stats.dropped=0
+destination.java.d_elastic#0.java_dst(ElasticSearch,elasticsearch-syslog-ng-test,t7cde889529c034aea9ec_micek).stats.processed=0
+destination.java.d_elastic#0.java_dst(ElasticSearch,elasticsearch-syslog-ng-test,t7cde889529c034aea9ec_micek).stats.queued=0
+destination.d_elastic.stats.processed=0
+.fi
+.DE
+.RE
+.PP
+The syslog-ng-ctl query get command has the following options:
+.RS
+.IP * 2
+--sum
+.IP
+Add up the result of each matching node and return only a single number.
+.IP
+For example, the syslog-ng-ctl query get --sum "destination\*.dropped" command displays the number of messages dropped by the syslog-ng instance.
+.IP *
+--reset
+.IP
+Use --reset to set the selected counters to 0 after executing the query, except for the queued and the memory_usage counters. (The queued counters show the number of messages in the message queue of the destination driver, waiting to be sent to the destination. The memory_usage counters show the amount of memory used by the messages in the different queue types (in bytes). This includes every queue used by the object, including memory buffers (log-fifo) and disk-based buffers (both reliable and non-reliable))
+.RE
+.PP
+.SS "The stats command"
+.PP
+stats [options]
+.PP
+Use the stats command to display statistics about the processed messages. For details about the displayed statistics, see \fBThe syslog-ng documentation\fP (\fIhttps://axoflow.com/\fP). The stats command has the following options:
+.RS
+.IP * 2
+--control=<socket> or -c
+.IP
+Specify the socket to use to access syslog-ng. Only needed when using a non-standard socket.
+.IP *
+--reset=<socket> or -r
+.IP
+Reset all statistics to zero, except for the queued and the memory_usage counters. (The queued counters show the number of messages in the message queue of the destination driver, waiting to be sent to the destination. The memory_usage counters show the amount of memory used by the messages in the different queue types (in bytes). This includes every queue used by the object, including memory buffers (log-fifo) and disk-based buffers (both reliable and non-reliable))
+.IP *
+--remove-orphans
+.IP
+Safely removes all counters that are not referenced by any syslog-ng stat producer objects.
+.IP
+The flag can be used to prune dynamic and static counters manually. This is useful, for example, when a templated file destination produces a lot of stats:
+.PP
+.RS
+.DS L
+.nf
+    dst.file;#anon-destination0#0;/tmp/2021-08-16.log;o;processed;253592
+    dst.file;#anon-destination0#0;/tmp/2021-08-17.log;o;processed;156
+    dst.file;#anon-destination0#0;/tmp/2021-08-18.log;a;processed;961
+.fi
+.DE
+.RE
+.SS "Note"
+The stats-lifetime() can be used to do the same automatically and periodically, but currently stats-lifetime() removes only dynamic counters that have a timestamp field set.
+.RE
+.SS "Example"
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-ctl stats
+.fi
+.DE
+.RE
+.PP
+An example output:
+.PP
+.RS
+.DS L
+.nf
+src.internal;s_all#0;;a;processed;6445
+src.internal;s_all#0;;a;stamp;1268989330
+destination;df_auth;;a;processed;404
+destination;df_news_dot_notice;;a;processed;0
+destination;df_news_dot_err;;a;processed;0
+destination;d_ssb;;a;processed;7128
+destination;df_uucp;;a;processed;0
+source;s_all;;a;processed;7128
+destination;df_mail;;a;processed;0
+destination;df_user;;a;processed;1
+destination;df_daemon;;a;processed;1
+destination;df_debug;;a;processed;15
+destination;df_messages;;a;processed;54
+destination;dp_xconsole;;a;processed;671
+dst.tcp;d_network#0;10.50.0.111:514;a;dropped;5080
+dst.tcp;d_network#0;10.50.0.111:514;a;processed;7128
+dst.tcp;d_network#0;10.50.0.111:514;a;queued;2048
+destination;df_syslog;;a;processed;6724
+destination;df_facility_dot_warn;;a;processed;0
+destination;df_news_dot_crit;;a;processed;0
+destination;df_lpr;;a;processed;0
+destination;du_all;;a;processed;0
+destination;df_facility_dot_info;;a;processed;0
+center;;received;a;processed;0
+destination;df_kern;;a;processed;70
+center;;queued;a;processed;0
+destination;df_facility_dot_err;;a;processed;0
+.fi
+.DE
+.RE
+.PP
+.SS "Handling password-protected private keys"
+.PP
+syslog-ng-ctl credentials [options]
+.PP
+The syslog-ng-ctl credentials status command allows you to query the status of the private keys that syslog-ng uses in the network() and syslog() drivers. You can also provide the passphrase for password-protected private keys using the syslog-ng-ctl credentials add command. For details on using password-protected keys, see \fBThe syslog-ng Administrator Guide\fP (\fIhttps://www.syslog-ng.com\fP).
+.PP
+.SS "Displaying the status of private keys"
+.PP
+syslog-ng-ctl credentials status [options]
+.PP
+The syslog-ng-ctl credentials status command allows you to query the status of the private keys that syslog-ng uses in the network() and syslog() drivers. The command returns the list of private keys used, and their status. For example:
+.PP
+.RS
+.DS L
+.nf
+  syslog-ng-ctl credentials status
+  Secret store status:
+  /home/user/ssl_test/client-1/client-encrypted.key SUCCESS
+.fi
+.DE
+.RE
+.PP
+If the status of a key is PENDING, you must provide the passphrase for the key, otherwise syslog-ng cannot use it. The sources and destinations that use these keys will not work until you provide the passwords. Other parts of the syslog-ng configuration will be unaffected. You must provide the passphrase of the password-protected keys every time syslog-ng is restarted.
+.PP
+The following log message also notifies you of PENDING passphrases:
+.PP
+.RS
+.DS L
+.nf
+Waiting for password; keyfile='private.key'
+.fi
+.DE
+.RE
+.RS
+.IP * 2
+--control=<socket> or -c
+.IP
+Specify the socket to use to access syslog-ng. Only needed when using a non-standard socket.
+.RE
+.PP
+.SS "Opening password-protected private keys"
+.PP
+syslog-ng-ctl credentials add [options]
+.PP
+You can add the passphrase to a password-protected private key file using the following command. syslog-ng will display a prompt for you to enter the passphrase. We recommend that you use this method.
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-ctl credentials add --id=<path-to-the-key>
+.fi
+.DE
+.RE
+.PP
+Alternatively, you can include the passphrase in the --secret parameter:
+.PP
+.RS
+.DS L
+.nf
+syslog-ng-ctl credentials add --id=<path-to-the-key> --secret=<passphrase-of-the-key>
+.fi
+.DE
+.RE
+.PP
+Or you can pipe the passphrase to the syslog-ng-ctl command, for example:
+.PP
+.RS
+.DS L
+.nf
+echo "<passphrase-of-the-key>" | syslog-ng-ctl credentials add --id=<path-to-the-key>
+.fi
+.DE
+.RE
+.RS
+.IP * 2
+--control=<socket> or -c
+.IP
+Specify the socket to use to access syslog-ng. Only needed when using a non-standard socket.
+.IP *
+--id=<path-to-the-key> or -i
+.IP
+The path to the password-protected private key file. This is the same path that you use in the key-file() option of the syslog-ng configuration file.
+.IP *
+--secret=<passphrase-of-the-key> or -s
+.IP
+The password or passphrase of the private key.
+.RE
+.PP
+.SS "Displaying the configuration"
+.PP
+syslog-ng-ctl config [options]
+.PP
+Use the syslog-ng-ctl config command to display the configuration that syslog-ng is currently running. By default, only the content of the main configuration file is displayed, included files are not resolved. To resolve included files and display the entire configuration, use the syslog-ng-ctl config --preprocessed command.
+.PP
+Starting with syslog-ng version 4.2, you can display the configuration identifier (if set) and the SHA256 has of the output of the syslog-ng-ctl config --preprocessed command by running syslog-ng-ctl config --id. For details, see \fBConfiguration identifier\fP (\fI/axosyslog-core-docs/chapter-configuration-file/configuration-identifier/\fP).
+.PP
+.SS "Reloading the configuration"
+.PP
+syslog-ng-ctl reload [options]
+.PP
+Use the syslog-ng-ctl reload command to reload the configuration file of syslog-ng without having to restart the syslog-ng application. The syslog-ng-ctl reload works like a SIGHUP.
+.PP
+The syslog-ng-ctl reload command returns 0 if the operation was successful, 1 otherwise.
+.PP
+.SS "The healthcheck command"
+.PP
+Available in syslog-ng 4.2 and later.
+.PP
+You can use the syslog-ng-ctl healthcheck command to query the healthcheck status of syslog-ng. The following health values are reported:
+.RS
+.IP * 2
+mainloop_io_worker_roundtrip_latency_nanoseconds: mainloop->io-worker-job->mainloop roundtrip - a basic latency measure for syslog-ng.
+.IP *
+io_worker_latency_nanoseconds: io-worker-job start latency.
+.IP *
+syslogng_internal_events_queue_usage_ratio: If you are using the \fBinternal()\fP (\fI/axosyslog-core-docs/chapter-sources/configuring-sources-internal/\fP) source in your configuration, then this value shows the saturation of the internal source’s queue, ranging from 0 to 1. Non-zero values indicate some kind of disruption in the pipelines.
+.RE
+.PP
+You can run syslog-ng-ctl healthcheck --timeout <seconds> to use as a boolean healthy/unhealthy check.
+.PP
+Health checks are also published as periodically updated metrics. You can configure the frequency of these checks with the stats(healthcheck-freq()) option. The default is 5 minutes.
+.SS "Files"
+.PP
+/opt/syslog-ng/sbin/syslog-ng-ctl
+.SS "See also"
+.PP
+\fBsyslog-ng.conf.5\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.conf.5/\fP)
+.PP
+\fBsyslog-ng.8\fP (\fIhttps://axoflow.com/docs/axosyslog-core/app-man-syslog-ng/syslog-ng.8/\fP)
+.SS "Getting help"
+.RS
+.IP * 2
+The up-to-date documentation of syslog-ng is available on the \fBAxoSyslog documentation site\fP (\fIhttps://axoflow.com/docs/axosyslog-core/\fP).
+.IP *
+For news and notifications about syslog-ng, visit the \fBAxoflow blog\fP (\fIhttps://axoflow.com/blog/\fP).
+.IP *
+If you want to contact the developers directly to help with problems or report issues, contact us on \fBDiscord\fP (\fIhttps://discord.gg/583Z4wjem2\fP) or \fBGitHub\fP (\fIhttps://github.com/syslog-ng/syslog-ng/issues/\fP).
+.RE
+.PP
+This manual page is maintained by \fBAxoflow\fP (\fIhttps://axoflow.com/\fP)
+Last modified November 24, 2023: \fBMinor manpage fix (2f0a144)\fP (\fIhttps://github.com/axoflow/axosyslog-core-docs/commit/2f0a144ec391a3182da3af2f2cc136042d5608e9\fP)
