@@ -34,6 +34,7 @@ newsfile = root_dir / 'NEWS.md'
 
 exclude_contributor_list = [
     "github-actions",
+    "dependabot[bot]",
 ]
 
 
