@@ -731,6 +731,21 @@ ParameterizedTestParameters(dbparser, test_radix_search_matches)
       .expected_pattern = {"qstring", "quoted string", NULL}
     },
     {
+      .node_to_insert = {"@QSTRING:qstring:()@", NULL},
+      .key = "(quoted string) hehehe",
+      .expected_pattern = {"qstring", "quoted string", NULL}
+    },
+    {
+      .node_to_insert = {"@QSTRING:qstring:()@", NULL},
+      .key = "(nested (quoted string())) hehehe",
+      .expected_pattern = {"qstring", "nested (quoted string())", NULL}
+    },
+    {
+      .node_to_insert = {"@QSTRING:qstring:()@", NULL},
+      .key = "(unbalanced (nested (quoted string())) hehehe",
+      .expected_pattern = {NULL}
+    },
+    {
       .node_to_insert = {"@QSTRING:qstring:'@", NULL},
       .key = "v12345",
       .expected_pattern = {NULL}

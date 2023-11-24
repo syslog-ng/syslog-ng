@@ -49,12 +49,12 @@ r_parser_string(gchar *str, gint *len, const gchar *param, gpointer state, RPars
   return FALSE;
 }
 
-gboolean
-r_parser_qstring(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
+static gboolean
+r_parser_single_delimiter_qstring(gchar *str, gint *len, gchar stop_char, gpointer state, RParserMatch *match)
 {
   gchar *end;
 
-  if ((end = strchr(str + 1, ((gchar *)&state)[0])) != NULL)
+  if ((end = strchr(str + 1, stop_char)) != NULL)
     {
       *len = (end - str) + 1;
 
@@ -69,6 +69,60 @@ r_parser_qstring(gchar *str, gint *len, const gchar *param, gpointer state, RPar
     }
   else
     return FALSE;
+}
+
+static gboolean
+r_parser_open_close_delimiter_qstring(gchar *str, gint *len, gchar start_char, gchar stop_char, gpointer state,
+                                      RParserMatch *match)
+{
+  int nesting_level = 0;
+
+  gchar *end = str;
+
+  while (*end)
+    {
+      if (*end == stop_char)
+        {
+          nesting_level--;
+
+          if (nesting_level < 0)
+            return FALSE;
+
+          if (nesting_level == 0)
+            {
+              *len = (end - str) + 1;
+
+              if (match)
+                {
+                  /* skip starting and ending quote */
+                  match->ofs = 1;
+                  match->len = -2;
+                }
+
+              return TRUE;
+            }
+        }
+      else if (*end == start_char)
+        {
+          nesting_level++;
+        }
+
+      end++;
+    }
+
+  return FALSE;
+}
+
+gboolean
+r_parser_qstring(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
+{
+  gchar start_char = param[0];
+  gchar stop_char = param[1] ? param[1] : param[0];
+
+  if (start_char == stop_char)
+    return r_parser_single_delimiter_qstring(str, len, stop_char, state, match);
+  else
+    return r_parser_open_close_delimiter_qstring(str, len, start_char, stop_char, state, match);
 }
 
 gboolean
@@ -761,17 +815,10 @@ r_new_pnode(gchar *key, const gchar *capture_prefix)
     {
       if (params_len == 3)
         {
-          gchar *state = (gchar *) &(parser_node->state);
-
           parser_node->parse = r_parser_qstring;
           parser_node->parser_type = RPT_QSTRING;
           parser_node->first = params[2][0];
           parser_node->last = params[2][0];
-
-          if (params_len >= 2 && params[2] && strlen(params[2]) == 2)
-            state[0] = params[2][1];
-          else
-            state[0] = params[2][0];
         }
       else
         {
