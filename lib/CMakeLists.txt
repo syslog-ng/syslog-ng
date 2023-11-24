@@ -127,6 +127,7 @@ set (LIB_HEADERS
     mainloop-control.h
     msg-format.h
     msg-stats.h
+    on-error.h
     parse-number.h
     pathutils.h
     persist-state.h
@@ -224,6 +225,7 @@ set(LIB_SOURCES
     mainloop-control.c
     msg-format.c
     msg-stats.c
+    on-error.c
     parse-number.c
     pathutils.c
     persist-state.c

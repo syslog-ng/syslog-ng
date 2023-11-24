@@ -60,6 +60,7 @@
 %token KW_CHARS
 %token KW_STRINGS
 %token KW_DROP_INVALID
+%token KW_ON_TYPE_ERROR
 
 %type	<ptr> parser_expr_csv
 %type   <ptr> parser_csv_columns
@@ -102,6 +103,15 @@ parser_csv_opt
         | KW_QUOTE_PAIRS '(' string ')'         { csv_scanner_options_set_quote_pairs(csv_parser_get_scanner_options(last_parser), $3); free($3); }
         | KW_NULL '(' string ')'                { csv_scanner_options_set_null_value(csv_parser_get_scanner_options(last_parser), $3); free($3); }
         | KW_COLUMNS '(' parser_csv_columns ')'        { csv_parser_set_columns(last_parser, $3); }
+        | KW_ON_TYPE_ERROR '(' string ')'
+        {
+          gint on_error;
+
+          CHECK_ERROR(on_error_parse($3, &on_error), @3, "Invalid on-type-error() setting \"%s\"", $3);
+          free($3);
+
+          csv_parser_set_on_error(last_parser, on_error);
+        }
         | parser_opt
         ;
 

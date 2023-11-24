@@ -166,6 +166,9 @@ class SyslogNgConfig(object):
     def create_mariadb_audit_parser(self, **options):
         return Parser("mariadb-audit-parser", **options)
 
+    def create_postgresql_csvlog_parser(self, **options):
+        return Parser("postgresql-csvlog-parser", **options)
+
     def create_file_destination(self, **options):
         file_destination = FileDestination(**options)
         self.teardown.register(file_destination.close_file)

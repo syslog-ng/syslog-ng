@@ -37,6 +37,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/parsers/csv-parser/test_csv_parser.py \
 	tests/light/functional_tests/parsers/db_parser/test_db_parser.py \
 	tests/light/functional_tests/parsers/mariadb-parser/test_mariadb_audit_parser.py \
+	tests/light/functional_tests/parsers/postgresql-csvlog-parser/test_postgresql_csvlog_parser.py \
 	tests/light/functional_tests/parsers/panos/test_panos_parser.py \
 	tests/light/functional_tests/parsers/regexp-parser/test_regexp_parser.py \
 	tests/light/functional_tests/parsers/sdata-parser/test_sdata_parser.py \

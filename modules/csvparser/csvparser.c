@@ -57,9 +57,9 @@ typedef struct _CSVParser
   LogParser super;
   CSVScannerOptions options;
   GList *columns;
-  gboolean drop_invalid;
   gchar *prefix;
   gint prefix_len;
+  gint on_error;
 } CSVParser;
 
 #define CSV_PARSER_FLAGS_SHIFT 16
@@ -113,7 +113,7 @@ csv_parser_set_flags(LogParser *s, guint32 flags)
       return FALSE;
     }
   if (flags & CSV_PARSER_DROP_INVALID)
-    self->drop_invalid = TRUE;
+    csv_parser_set_drop_invalid((LogParser *) self, TRUE);
   return TRUE;
 }
 
@@ -139,8 +139,10 @@ void
 csv_parser_set_drop_invalid(LogParser *s, gboolean drop_invalid)
 {
   CSVParser *self = (CSVParser *) s;
-
-  self->drop_invalid = drop_invalid;
+  if (drop_invalid)
+    self->on_error |= ON_ERROR_DROP_MESSAGE;
+  else
+    self->on_error &= ~ON_ERROR_DROP_MESSAGE;
 }
 
 static const gchar *
@@ -165,6 +167,77 @@ dispatch_key_formatter(gchar *prefix)
   return prefix ? _format_key_for_prefix : _return_key;
 }
 
+gboolean
+_should_drop_message(CSVParser *self)
+{
+  return (self->on_error & ON_ERROR_DROP_MESSAGE);
+}
+
+static gboolean
+_process_column_on_invalid_type_cast(CSVParser *self, LogMessageValueType *current_type)
+{
+  if(self->on_error & ON_ERROR_FALLBACK_TO_STRING)
+    {
+      if (!(self->on_error & ON_ERROR_SILENT))
+        {
+          msg_debug("csv-parser: error casting value to the type specified, trying string type because on-error(\"fallback-to-string\") was specified");
+        }
+      *current_type = LM_VT_STRING;
+      return TRUE;
+    }
+  else if (self->on_error & ON_ERROR_DROP_PROPERTY)
+    {
+      if (!(self->on_error & ON_ERROR_SILENT))
+        {
+          msg_debug("csv-parser: error casting value to the type specified, dropping property because on-error(\"drop-property\") was specified");
+        }
+    }
+  return FALSE;
+}
+
+static gboolean
+_process_column(CSVParser *self, CSVScanner *scanner, LogMessage *msg, CSVParserColumn *current_column,
+                GString *key_scratch)
+{
+
+  LogMessageValueType current_column_type = current_column->type;
+  const gchar *current_value = csv_scanner_get_current_value(scanner);
+  GError *error = NULL;
+  key_formatter_t _key_formatter = dispatch_key_formatter(self->prefix);
+  gboolean should_set_value = TRUE;
+
+  if (!type_cast_validate(current_value, current_column_type, &error))
+    {
+      if (!(self->on_error & ON_ERROR_SILENT))
+        {
+          msg_debug("csv-parser: error casting value to the type specified",
+                    evt_tag_str("error", error->message)
+                   );
+        }
+      g_clear_error(&error);
+
+      gboolean need_drop = type_cast_drop_helper(self->on_error, current_value,
+                                                 log_msg_value_type_to_str(current_column_type));
+      if (need_drop)
+        {
+          return FALSE;
+        }
+
+      should_set_value = _process_column_on_invalid_type_cast(self, &current_column_type);
+    }
+
+  if (should_set_value)
+    {
+      log_msg_set_value_by_name_with_type(msg,
+                                          _key_formatter(key_scratch, current_column->name, self->prefix_len),
+                                          csv_scanner_get_current_value(scanner),
+                                          csv_scanner_get_current_value_len(scanner),
+                                          current_column_type);
+    }
+  return TRUE;
+
+}
+
 static gboolean
 _iterate_columns(CSVParser *self, CSVScanner *scanner, LogMessage *msg)
 {
@@ -173,7 +246,6 @@ _iterate_columns(CSVParser *self, CSVScanner *scanner, LogMessage *msg)
   if (self->prefix)
     g_string_assign(key_scratch, self->prefix);
 
-  key_formatter_t _key_formatter = dispatch_key_formatter(self->prefix);
   gint match_index = 1;
 
   while (csv_scanner_scan_next(scanner))
@@ -181,23 +253,10 @@ _iterate_columns(CSVParser *self, CSVScanner *scanner, LogMessage *msg)
       if (self->columns)
         {
           CSVParserColumn *current_column = column_l->data;
-          const gchar *current_value = csv_scanner_get_current_value(scanner);
-          GError *error = NULL;
-
-          if (self->drop_invalid && !type_cast_validate(current_value, current_column->type, &error))
+          if (!_process_column(self, scanner, msg, current_column, key_scratch))
             {
-              msg_debug("csv-parser: error casting value to the type specified",
-                        evt_tag_str("column", current_column->name),
-                        evt_tag_str("type", log_msg_value_type_to_str(current_column->type)),
-                        evt_tag_str("error", error->message));
-              g_clear_error(&error);
               return FALSE;
             }
-          log_msg_set_value_by_name_with_type(msg,
-                                              _key_formatter(key_scratch, current_column->name, self->prefix_len),
-                                              csv_scanner_get_current_value(scanner),
-                                              csv_scanner_get_current_value_len(scanner),
-                                              current_column->type);
           column_l = g_list_next(column_l);
         }
       else
@@ -235,10 +294,11 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
   if (!csv_scanner_is_scan_complete(&scanner))
     result = FALSE;
 
-  if (self->drop_invalid && !result)
+  if (_should_drop_message(self) && !result && !(self->on_error & ON_ERROR_SILENT))
     {
       msg_debug("csv-parser() failed",
-                evt_tag_str("error", "csv-parser() failed to parse its input and drop-invalid(yes) was specified"),
+                evt_tag_str("error",
+                            "csv-parser() failed to parse its input and drop-invalid(yes) or on-error(\"drop-message\") was specified"),
                 evt_tag_str("input", input));
     }
   else
@@ -259,7 +319,7 @@ csv_parser_clone(LogPipe *s)
   cloned->columns = g_list_copy_deep(self->columns, (GCopyFunc) csv_parser_column_clone, NULL);
   csv_scanner_options_copy(&cloned->options, &self->options);
   csv_parser_set_prefix(&cloned->super, self->prefix);
-  csv_parser_set_drop_invalid(&cloned->super, self->drop_invalid);
+  csv_parser_set_on_error(&cloned->super, self->on_error);
   return &cloned->super.super;
 }
 
@@ -298,6 +358,7 @@ csv_parser_new(GlobalConfig *cfg)
   self->super.super.free_fn = csv_parser_free;
   self->super.super.clone = csv_parser_clone;
   self->super.process = csv_parser_process;
+
   csv_scanner_options_set_delimiters(&self->options, " ");
   csv_scanner_options_set_quote_pairs(&self->options, "\"\"''");
   csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE);
@@ -335,4 +396,11 @@ csv_parser_lookup_dialect(const gchar *flag)
   else if (strcmp(flag, "escape-double-char") == 0)
     return CSV_SCANNER_ESCAPE_DOUBLE_CHAR;
   return -1;
+}
+
+void
+csv_parser_set_on_error(LogParser *s, gint on_error)
+{
+  CSVParser *self = (CSVParser *) s;
+  self->on_error = on_error;
 }
