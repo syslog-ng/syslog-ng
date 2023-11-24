@@ -1,2 +1,0 @@
-`flags()` argument to various drivers: fix a potential crash in case a flag with at least 32 characters is used.
-No such flag is defined by syslog-ng, so the only way to trigger the crash is to use an invalid configuration file.
