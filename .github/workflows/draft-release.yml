@@ -126,5 +126,6 @@ jobs:
           fi
 
           gh pr comment \
+            --repo "${{ github.repository }}" \
             "${{ github.event.number }}" \
             --body "${COMMENT}"
