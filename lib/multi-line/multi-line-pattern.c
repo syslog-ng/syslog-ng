@@ -54,9 +54,9 @@ multi_line_pattern_compile(const gchar *regexp, GError **error)
       PCRE2_UCHAR error_message[128];
 
       pcre2_get_error_message(rc, error_message, sizeof(error_message));
-      msg_warning("multi-line-pattern: Error while JIT compiling regular expression",
-                  evt_tag_str("regexp", regexp),
-                  evt_tag_str("error", (gchar *) error_message));
+      msg_debug("multi-line-pattern: Error while JIT compiling regular expression, continuing without JIT",
+                evt_tag_str("regexp", regexp),
+                evt_tag_str("error", (gchar *) error_message));
     }
 
   return self;

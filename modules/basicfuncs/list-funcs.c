@@ -393,9 +393,9 @@ string_matcher_prepare_pcre(StringMatcher *self)
       PCRE2_UCHAR error_message[128];
 
       pcre2_get_error_message(rc, error_message, sizeof(error_message));
-      msg_warning("$(list-search): Failed to JIT compile regular expression",
-                  evt_tag_str("regexp", self->pattern),
-                  evt_tag_str("error", (gchar *) error_message));
+      msg_debug("$(list-search): Failed to JIT compile regular expression, continuing without JIT",
+                evt_tag_str("regexp", self->pattern),
+                evt_tag_str("error", (gchar *) error_message));
     }
   return TRUE;
 }

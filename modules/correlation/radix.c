@@ -250,10 +250,10 @@ r_parser_pcre_compile_state(const gchar *expr)
       PCRE2_UCHAR error_message[128];
 
       pcre2_get_error_message(rc, error_message, sizeof(error_message));
-      msg_warning("radix: Error while JIT compiling regular expression",
-                  evt_tag_str("regular_expression", expr),
-                  evt_tag_str("error_message", (gchar *) error_message),
-                  evt_tag_int("error_code", rc));
+      msg_debug("radix: Error while JIT compiling regular expression, continuing without using JIT",
+                evt_tag_str("regular_expression", expr),
+                evt_tag_str("error_message", (gchar *) error_message),
+                evt_tag_int("error_code", rc));
     }
 
   return (gpointer) self;
