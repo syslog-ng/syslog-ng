@@ -367,6 +367,27 @@ stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **
   *counter = NULL;
 }
 
+static inline void
+_reset_counter_if_needed(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
+{
+  if (strcmp(stats_cluster_get_type_name(sc, type), "memory_usage") == 0)
+    return;
+
+  switch (type)
+    {
+    case SC_TYPE_QUEUED:
+      return;
+    default:
+      stats_counter_set(counter, 0);
+    }
+}
+
+void
+stats_cluster_reset_counter_if_needed(StatsCluster *sc, StatsCounterItem *counter)
+{
+  _reset_counter_if_needed(sc, counter->type, counter, NULL);
+}
+
 static gchar *
 _stats_build_query_key(StatsCluster *self)
 {

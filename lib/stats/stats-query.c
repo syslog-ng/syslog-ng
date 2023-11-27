@@ -77,7 +77,7 @@ _process_counter_if_matching(StatsCluster *sc, gint type, StatsCounterItem *coun
 
           process_func(counter, process_func_user_data, format_cb, format_cb_user_data);
           if (must_reset)
-            stats_control_reset_counter_if_needed(sc, counter);
+            stats_cluster_reset_counter_if_needed(sc, counter);
 
           if (single_match)
             {
