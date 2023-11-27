@@ -80,6 +80,26 @@ class File(object):
             raise Exception("File was not opened before trying to read from it.")
         return self.__opened_file.readline()
 
+    def read_full_line(self, timeout=DEFAULT_TIMEOUT):
+        def read_full_line_segmented(f, line_segments):
+            line_read = f.readline()
+            if not line_read:
+                if len(line_segments) > 0:
+                    # Has to be called again to collect the rest of the line
+                    return False
+                # EOF reached immediately
+                return True
+
+            line_segments.append(line_read)
+            return line_read[-1] == "\n"
+
+        if not self.is_opened():
+            raise Exception("File was not opened before trying to read from it.")
+
+        line_segments = []
+        wait_until_true_custom(read_full_line_segmented, (self.__opened_file, line_segments), timeout=timeout, poll_freq=0)
+        return "".join(line_segments)
+
     def read(self):
         content = ""
         while True:
@@ -101,7 +121,7 @@ class File(object):
 
     def wait_for_lines(self, lines, timeout=DEFAULT_TIMEOUT):
         def find_lines_in_file(lines_to_find, lines_found, f):
-            line_read = f.readline()
+            line_read = self.read_full_line(timeout=timeout)
             if not line_read and lines_to_find:
                 return False
             for line_to_find in lines_to_find:
