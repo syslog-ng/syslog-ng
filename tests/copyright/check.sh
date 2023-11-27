@@ -106,7 +106,7 @@ main_logged() {
  find \
   -L \
   . \
-  -iname '.git' -prune \
+  -iname '.git' -prune -o -iname 'dbld' -prune \
   -o \
  -type f \
  -exec grep -Iq . {} \; -print |
