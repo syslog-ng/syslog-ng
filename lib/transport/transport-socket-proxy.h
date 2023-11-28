@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef TRANSPORT_PROXIED_SOCKET_H_INCLUDED
-#define TRANSPORT_PROXIED_SOCKET_H_INCLUDED
+#ifndef TRANSPORT_SOCKET_PROXY_H_INCLUDED
+#define TRANSPORT_SOCKET_PROXY_H_INCLUDED
 
 #include "transport-socket.h"
 #include "multitransport.h"

@@ -21,7 +21,7 @@
  *
  */
 
-#include "transport/transport-proxied-socket.h"
+#include "transport/transport-socket-proxy.h"
 
 // private functions used also with tests
 gboolean _parse_proxy_header(LogTransportProxiedSocket *self);

@@ -24,7 +24,7 @@
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 
-#include "transport/transport-proxied-socket-private.h"
+#include "transport/transport-socket-proxy-private.h"
 
 #include "apphook.h"
 #include "cfg.h"

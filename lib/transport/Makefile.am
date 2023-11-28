@@ -9,8 +9,8 @@ transportinclude_HEADERS = \
 	lib/transport/transport-file.h	\
 	lib/transport/transport-pipe.h	\
 	lib/transport/transport-socket.h \
-	lib/transport/transport-proxied-socket.h \
-	lib/transport/transport-proxied-socket-private.h \
+	lib/transport/transport-socket-proxy.h \
+	lib/transport/transport-socket-proxy-private.h \
 	lib/transport/transport-udp-socket.h \
 	lib/transport/transport-factory-id.h \
 	lib/transport/transport-factory.h \
@@ -29,7 +29,7 @@ transport_sources = \
 	lib/transport/transport-file.c	\
 	lib/transport/transport-pipe.c	\
 	lib/transport/transport-socket.c \
-	lib/transport/transport-proxied-socket.c \
+	lib/transport/transport-socket-proxy.c \
 	lib/transport/transport-udp-socket.c \
 	lib/transport/transport-factory-id.c \
 	lib/transport/transport-factory-registry.c \
