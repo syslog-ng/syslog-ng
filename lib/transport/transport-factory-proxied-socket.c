@@ -22,7 +22,7 @@
  */
 
 #include "transport/transport-factory-proxied-socket.h"
-#include "transport/transport-proxied-socket.h"
+#include "transport/transport-socket-proxy.h"
 
 DEFINE_TRANSPORT_FACTORY_ID_FUN("proxied-socket", transport_factory_proxied_socket_id);
 

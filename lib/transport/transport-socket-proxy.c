@@ -22,7 +22,7 @@
  *
  */
 
-#include "transport/transport-proxied-socket.h"
+#include "transport/transport-socket-proxy.h"
 #include "transport/transport-factory-registry.h"
 #include "transport-factory-socket.h"
 #include "transport-factory-tls.h"

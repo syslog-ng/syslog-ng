@@ -25,7 +25,7 @@
 #define TRANSPORT_FACTORY_PROXIED_SOCKET_H_INCLUDED
 
 #include "transport/transport-factory.h"
-#include "transport/transport-proxied-socket.h"
+#include "transport/transport-socket-proxy.h"
 
 typedef struct _TransportFactoryProxiedSocket TransportFactoryProxiedSocket;
 
