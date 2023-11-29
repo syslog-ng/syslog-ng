@@ -128,7 +128,7 @@ _is_proxy_v1_unknown(const guchar *msg, gsize msg_len, gsize *header_len)
 }
 
 static gboolean
-_parse_proxy_v1_unknown_header(LogTransportProxiedSocket *self, const guchar *msg, gsize msg_len)
+_parse_proxy_v1_unknown_header(LogTransportSocketProxy *self, const guchar *msg, gsize msg_len)
 {
   if (msg_len == 0)
     return TRUE;
@@ -140,7 +140,7 @@ _parse_proxy_v1_unknown_header(LogTransportProxiedSocket *self, const guchar *ms
 }
 
 static gboolean
-_parse_proxy_v1_tcp_header(LogTransportProxiedSocket *self, const guchar *msg, gsize msg_len)
+_parse_proxy_v1_tcp_header(LogTransportSocketProxy *self, const guchar *msg, gsize msg_len)
 {
   if (msg_len == 0)
     return FALSE;
@@ -178,7 +178,7 @@ ret:
 }
 
 static gboolean
-_extract_proxy_v1_header(LogTransportProxiedSocket *self, guchar **msg, gsize *msg_len)
+_extract_proxy_v1_header(LogTransportSocketProxy *self, guchar **msg, gsize *msg_len)
 {
   if (self->proxy_header_buff[self->proxy_header_buff_len - 1] == '\n')
     self->proxy_header_buff_len--;
@@ -193,14 +193,13 @@ _extract_proxy_v1_header(LogTransportProxiedSocket *self, guchar **msg, gsize *m
 }
 
 static gboolean
-_parse_proxy_v1_header(LogTransportProxiedSocket *self)
+_parse_proxy_v1_header(LogTransportSocketProxy *self)
 {
   guchar *proxy_line;
   gsize proxy_line_len;
 
   if (!_extract_proxy_v1_header(self, &proxy_line, &proxy_line_len))
     return FALSE;
-
 
   gsize header_len = 0;
 
@@ -229,7 +228,7 @@ _parse_proxy_v1_header(LogTransportProxiedSocket *self)
 }
 
 static gboolean
-_parse_proxy_v2_proxy_address(LogTransportProxiedSocket *self, struct proxy_hdr_v2 *proxy_hdr,
+_parse_proxy_v2_proxy_address(LogTransportSocketProxy *self, struct proxy_hdr_v2 *proxy_hdr,
                               union proxy_addr *proxy_addr)
 {
   gint address_family = (proxy_hdr->fam & 0xF0) >> 4;
@@ -268,7 +267,7 @@ _parse_proxy_v2_proxy_address(LogTransportProxiedSocket *self, struct proxy_hdr_
 }
 
 static gboolean
-_parse_proxy_v2_header(LogTransportProxiedSocket *self)
+_parse_proxy_v2_header(LogTransportSocketProxy *self)
 {
   struct proxy_hdr_v2 *proxy_hdr = (struct proxy_hdr_v2 *) self->proxy_header_buff;
   union proxy_addr *proxy_addr = (union proxy_addr *)(proxy_hdr + 1);
@@ -292,7 +291,7 @@ _parse_proxy_v2_header(LogTransportProxiedSocket *self)
 }
 
 gboolean
-_parse_proxy_header(LogTransportProxiedSocket *self)
+_parse_proxy_header(LogTransportSocketProxy *self)
 {
   if (self->proxy_header_version == 1)
     return _parse_proxy_v1_header(self);
@@ -306,14 +305,14 @@ static gssize
 _read_with_active_log_transport(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux);
 
 static Status
-_fetch_chunk(LogTransportProxiedSocket *self, gsize upto_bytes)
+_fetch_chunk(LogTransportSocketProxy *self, gsize upto_bytes)
 {
   g_assert(upto_bytes < sizeof(self->proxy_header_buff));
   if (self->proxy_header_buff_len < upto_bytes)
     {
       gssize rc = _read_with_active_log_transport(&self->super.super,
-                                                  &(self->proxy_header_buff[self->proxy_header_buff_len]),
-                                                  upto_bytes - self->proxy_header_buff_len, NULL);
+                  &(self->proxy_header_buff[self->proxy_header_buff_len]),
+                  upto_bytes - self->proxy_header_buff_len, NULL);
       if (rc < 0)
         {
           if (errno == EAGAIN)
@@ -340,7 +339,7 @@ _fetch_chunk(LogTransportProxiedSocket *self, gsize upto_bytes)
 }
 
 static inline Status
-_fetch_until_newline(LogTransportProxiedSocket *self)
+_fetch_until_newline(LogTransportSocketProxy *self)
 {
   /* leave 1 character for terminating zero.  We should have plenty of space
    * in our buffer, as the longest line we need to fetch is 107 bytes
@@ -368,7 +367,7 @@ _fetch_until_newline(LogTransportProxiedSocket *self)
 }
 
 static Status
-_fetch_proxy_v2_payload(LogTransportProxiedSocket *self)
+_fetch_proxy_v2_payload(LogTransportSocketProxy *self)
 {
   struct proxy_hdr_v2 *hdr = (struct proxy_hdr_v2 *) self->proxy_header_buff;
   gint proxy_header_len = ntohs(hdr->len);
@@ -385,7 +384,7 @@ _fetch_proxy_v2_payload(LogTransportProxiedSocket *self)
 }
 
 gboolean
-_is_proxy_version_v1(LogTransportProxiedSocket *self)
+_is_proxy_version_v1(LogTransportSocketProxy *self)
 {
   if (self->proxy_header_buff_len < PROXY_PROTO_HDR_MAGIC_LEN)
     return FALSE;
@@ -394,7 +393,7 @@ _is_proxy_version_v1(LogTransportProxiedSocket *self)
 }
 
 gboolean
-_is_proxy_version_v2(LogTransportProxiedSocket *self)
+_is_proxy_version_v2(LogTransportSocketProxy *self)
 {
   if (self->proxy_header_buff_len < PROXY_PROTO_HDR_MAGIC_LEN)
     return FALSE;
@@ -403,7 +402,7 @@ _is_proxy_version_v2(LogTransportProxiedSocket *self)
 }
 
 static inline Status
-_fetch_into_proxy_buffer(LogTransportProxiedSocket *self)
+_fetch_into_proxy_buffer(LogTransportSocketProxy *self)
 {
   Status status;
 
@@ -458,7 +457,7 @@ process_proxy_v2:
 }
 
 static gboolean
-_switch_to_tls(LogTransportProxiedSocket *self)
+_switch_to_tls(LogTransportSocketProxy *self)
 {
   if (!multitransport_switch((MultiTransport *)&self->super, transport_factory_tls_id()))
     {
@@ -471,7 +470,7 @@ _switch_to_tls(LogTransportProxiedSocket *self)
 }
 
 static gboolean
-_proccess_proxy_header(LogTransportProxiedSocket *self)
+_proccess_proxy_header(LogTransportSocketProxy *self)
 {
   Status status = _fetch_into_proxy_buffer(self);
 
@@ -502,7 +501,7 @@ _proccess_proxy_header(LogTransportProxiedSocket *self)
 }
 
 void
-_augment_aux_data(LogTransportProxiedSocket *self, LogTransportAuxData *aux)
+_augment_aux_data(LogTransportSocketProxy *self, LogTransportAuxData *aux)
 {
   gchar buf1[8];
   gchar buf2[8];
@@ -527,7 +526,7 @@ _augment_aux_data(LogTransportProxiedSocket *self, LogTransportAuxData *aux)
 static gssize
 _read_with_active_log_transport(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
-  LogTransportProxiedSocket *self = (LogTransportProxiedSocket *)s;
+  LogTransportSocketProxy *self = (LogTransportSocketProxy *)s;
   gssize r = log_transport_read(self->super.active_transport, buf, buflen, aux);
   self->super.super.cond = self->super.active_transport->cond;
 
@@ -537,7 +536,7 @@ _read_with_active_log_transport(LogTransport *s, gpointer buf, gsize buflen, Log
 static gssize
 log_transport_proxied_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
-  LogTransportProxiedSocket *self = (LogTransportProxiedSocket *)s;
+  LogTransportSocketProxy *self = (LogTransportSocketProxy *)s;
 
   gboolean status = TRUE;
 
@@ -555,7 +554,7 @@ log_transport_proxied_socket_read_method(LogTransport *s, gpointer buf, gsize bu
 static void
 _log_transport_proxied_stream_socket_free(LogTransport *s)
 {
-  LogTransportProxiedSocket *self = (LogTransportProxiedSocket *)s;
+  LogTransportSocketProxy *self = (LogTransportSocketProxy *)s;
   s->fd = log_transport_release_fd(self->super.active_transport);
   log_transport_free(self->super.active_transport);
   transport_factory_registry_free(self->super.registry);
@@ -564,7 +563,7 @@ _log_transport_proxied_stream_socket_free(LogTransport *s)
 
 LogTransport *log_transport_proxied_stream_socket_new(gint fd)
 {
-  LogTransportProxiedSocket *self = g_new0(LogTransportProxiedSocket, 1);
+  LogTransportSocketProxy *self = g_new0(LogTransportSocketProxy, 1);
   self->super.registry = transport_factory_registry_new();
 
   TransportFactory *socket_factory = transport_factory_socket_new(SOCK_STREAM);
@@ -583,7 +582,7 @@ LogTransport *log_transport_proxied_stream_socket_new(gint fd)
 
 LogTransport *log_transport_proxied_stream_socket_with_tls_passthrough_new(gint fd)
 {
-  LogTransportProxiedSocket *self = (LogTransportProxiedSocket *)log_transport_proxied_stream_socket_new(fd);
+  LogTransportSocketProxy *self = (LogTransportSocketProxy *)log_transport_proxied_stream_socket_new(fd);
   self->has_to_switch_to_tls = TRUE;
   return &self->super.super;
 }
