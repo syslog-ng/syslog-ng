@@ -371,6 +371,8 @@ afsmtp_dd_cb_monitor(const gchar *buf, gint buflen, gint writing,
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_mem("data", buf, buflen));
       break;
+    default:
+      break;
     }
 }
 
