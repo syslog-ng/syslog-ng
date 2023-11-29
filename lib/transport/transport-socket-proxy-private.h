@@ -21,6 +21,9 @@
  *
  */
 
+#ifndef TRANSPORT_SOCKET_PROXY_PRIVATE_H_INCLUDED
+#define TRANSPORT_SOCKET_PROXY_PRIVATE_H_INCLUDED
+
 #include "transport/transport-socket-proxy.h"
 
 // private functions used also with tests
@@ -31,3 +34,5 @@ gboolean _is_proxy_version_v1(LogTransportSocketProxy *self);
 gboolean _is_proxy_version_v2(LogTransportSocketProxy *self);
 
 void _augment_aux_data(LogTransportSocketProxy *self, LogTransportAuxData *aux);
+
+#endif
