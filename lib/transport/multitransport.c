@@ -36,6 +36,10 @@ _do_transport_switch(MultiTransport *self, LogTransport *new_transport, const Tr
 {
   self->super.fd = log_transport_release_fd(self->active_transport);
   self->super.cond = new_transport->cond;
+  /* At this point the proxy of the active transport must be released, and would be nice to handle the ownership passing here, but
+   *   - the proxy is not in the LogTransport, it is socket only now, and
+   *   - multitransport is a generic class, can handle none LogTransportSocket based transports
+   */
   log_transport_free(self->active_transport);
   self->active_transport = new_transport;
   self->active_transport_factory = new_transport_factory;

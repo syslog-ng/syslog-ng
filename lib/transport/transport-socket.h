@@ -23,10 +23,11 @@
  *
  */
 
-#ifndef TRANSPORT_TRANSPORT_SOCKET_H_INCLUDED
-#define TRANSPORT_TRANSPORT_SOCKET_H_INCLUDED 1
+#ifndef TRANSPORT_SOCKET_H_INCLUDED
+#define TRANSPORT_SOCKET_H_INCLUDED 1
 
 #include "logtransport.h"
+#include "transport-socket-proxy.h"
 
 typedef struct _LogTransportSocket LogTransportSocket;
 struct _LogTransportSocket
@@ -35,6 +36,12 @@ struct _LogTransportSocket
   gint address_family;
   gint proto;
   void (*parse_cmsg)(LogTransportSocket *self, struct cmsghdr *cmsg, LogTransportAuxData *aux);
+  /* Having this in the LogTransport could be a huge advantage, and
+   * could make the proxied state handling and implementation simpler and cleaner
+   * Consider to add it to LogTransport even though that is a storage overhead, and
+   * far from optimal, as LogTransportSocketProxy actually is needed only for `LogTransportSocket`s
+   */
+  LogTransportSocketProxy *proxy;
 };
 
 void log_transport_socket_parse_cmsg_method(LogTransportSocket *s, struct cmsghdr *cmsg, LogTransportAuxData *aux);
@@ -45,5 +52,7 @@ LogTransport *log_transport_dgram_socket_new(gint fd);
 void log_transport_stream_socket_init_instance(LogTransportSocket *self, gint fd);
 void log_transport_stream_socket_free_method(LogTransport *s);
 LogTransport *log_transport_stream_socket_new(gint fd);
+
+void log_transport_socket_set_proxied(LogTransportSocket *self, LogTransportSocketProxy *proxy);
 
 #endif

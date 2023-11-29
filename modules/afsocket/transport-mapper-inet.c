@@ -112,7 +112,6 @@ static LogTransport *
 _construct_multitransport_with_plain_tcp_factory(TransportMapperInet *self, gint fd)
 {
   TransportFactory *default_factory = transport_factory_socket_new(self->super.sock_type);
-
   return multitransport_new(default_factory, fd);
 }
 
@@ -144,26 +143,27 @@ transport_mapper_inet_construct_log_transport(TransportMapper *s, gint fd)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
 
-  if (self->proxied)
-    {
-      if (_is_tls_required(self))
-        {
-          return log_transport_proxied_stream_socket_with_tls_passthrough_new(fd);
-        }
-      return log_transport_proxied_stream_socket_new(fd);
-    }
+  gboolean is_multi = FALSE;
+  LogTransport *transport = NULL;
 
   if (self->tls_context && _is_tls_required(self))
     {
-      return _construct_tls_transport(self, fd);
+      transport = _construct_tls_transport(self, fd);
     }
-
-  if (self->tls_context)
+  else if (self->tls_context)
     {
-      return _construct_multitransport_with_plain_and_tls_factories(self, fd);
+      is_multi = TRUE;
+      transport = _construct_multitransport_with_plain_and_tls_factories(self, fd);
+    }
+  else
+    {
+      transport = _construct_plain_tcp_transport(self, fd);
     }
 
-  return _construct_plain_tcp_transport(self, fd);
+  if (self->proxied)
+    log_transport_socket_proxy_new(transport, is_multi);
+
+  return transport;
 }
 
 static gboolean
@@ -411,6 +411,7 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->proxied = TRUE;
+      self->super.transport_name = g_strdup("rfc3164+proxied-tcp"); // ???
     }
   else if (strcasecmp(transport, "tls") == 0)
     {
@@ -428,6 +429,15 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->proxied = TRUE;
       self->require_tls = TRUE;
       self->super.transport_name = g_strdup("rfc3164+proxied-tls");
+    }
+  else if (strcasecmp(transport, "proxied-tls-passthrough") == 0)
+    {
+      self->super.logproto = "text";
+      self->super.sock_type = SOCK_STREAM;
+      self->super.sock_proto = IPPROTO_TCP;
+      self->proxied = TRUE;
+      self->allow_tls = TRUE;
+      self->super.transport_name = g_strdup("rfc3164+proxied-tls-passthrough"); // ???
     }
   else
     {
@@ -500,6 +510,7 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->proxied = TRUE;
+      self->super.transport_name = g_strdup("rfc6587+proxied-tcp"); // ???
     }
   else if (strcasecmp(transport, "tls") == 0)
     {
@@ -525,6 +536,17 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_proto = IPPROTO_TCP;
       self->proxied = TRUE;
       self->require_tls = TRUE;
+      self->super.transport_name = g_strdup("rfc5424+proxied-tls"); // ???
+    }
+  else if (strcasecmp(transport, "proxied-tls-passthrough") == 0)
+    {
+      self->server_port = SYSLOG_TRANSPORT_TCP_PORT;
+      self->super.logproto = "framed";
+      self->super.sock_type = SOCK_STREAM;
+      self->super.sock_proto = IPPROTO_TCP;
+      self->proxied = TRUE;
+      self->allow_tls = TRUE;
+      self->super.transport_name = g_strdup("rfc5424+proxied-tls-passthrough"); // ???
     }
   else
     {
