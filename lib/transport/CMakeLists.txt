@@ -14,7 +14,6 @@ set(TRANSPORT_HEADERS
     transport/multitransport.h
     transport/transport-factory-tls.h
     transport/transport-factory-socket.h
-    transport/transport-factory-proxied-socket.h
     transport/tls-context.h
     transport/tls-verifier.h
     transport/tls-session.h
@@ -34,7 +33,6 @@ set(TRANSPORT_SOURCES
     transport/multitransport.c
     transport/transport-factory-tls.c
     transport/transport-factory-socket.c
-    transport/transport-factory-proxied-socket.c
     transport/tls-context.c
     transport/tls-verifier.c
     transport/tls-session.c
