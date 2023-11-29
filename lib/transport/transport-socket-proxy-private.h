@@ -24,10 +24,10 @@
 #include "transport/transport-socket-proxy.h"
 
 // private functions used also with tests
-gboolean _parse_proxy_header(LogTransportProxiedSocket *self);
+gboolean _parse_proxy_header(LogTransportSocketProxy *self);
 
-gboolean _is_proxy_version_v1(LogTransportProxiedSocket *self);
+gboolean _is_proxy_version_v1(LogTransportSocketProxy *self);
 
-gboolean _is_proxy_version_v2(LogTransportProxiedSocket *self);
+gboolean _is_proxy_version_v2(LogTransportSocketProxy *self);
 
-void _augment_aux_data(LogTransportProxiedSocket *self, LogTransportAuxData *aux);
+void _augment_aux_data(LogTransportSocketProxy *self, LogTransportAuxData *aux);

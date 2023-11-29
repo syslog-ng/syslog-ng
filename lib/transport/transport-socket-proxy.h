@@ -42,8 +42,8 @@
 /* the amount of bytes we need from the client to detect protocol version */
 #define PROXY_PROTO_HDR_MAGIC_LEN   5
 
-typedef struct _LogTransportProxiedSocket LogTransportProxiedSocket;
-struct _LogTransportProxiedSocket
+typedef struct _LogTransportSocketProxy LogTransportSocketProxy;
+struct _LogTransportSocketProxy
 {
   MultiTransport super;
 

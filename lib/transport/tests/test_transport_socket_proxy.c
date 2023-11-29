@@ -45,7 +45,7 @@ teardown(void)
 }
 
 static void
-fill_proxy_header_buffer(LogTransportProxiedSocket *self, const gchar *msg)
+fill_proxy_header_buffer(LogTransportSocketProxy *self, const gchar *msg)
 {
   self->proxy_header_buff_len = strlen(msg) + 1;
   g_strlcpy((gchar *)self->proxy_header_buff, msg, sizeof(self->proxy_header_buff));
@@ -98,7 +98,6 @@ ParameterizedTestParameters(log_transport_proxy, test_proxy_protocol_parse_heade
     /* EXTRA WHITESPACE BEFORE PARAMETERS */
     { "PROXY  TCP4 1.1.1.1 2.2.2.2 3333 4444\r\n",            FALSE },
 
-
     /* INVALID ARGUMENTS - PERMISSIVE */
     { "PROXY TCP6 1.1.1.1 2.2.2.2 3333 4444\r\n",             TRUE }, // WRONG IP PROTO
     { "PROXY TCP4 ::1 ::2 3333 4444\r\n",                     TRUE }, // WRONG IP PROTO
@@ -111,7 +110,6 @@ ParameterizedTestParameters(log_transport_proxy, test_proxy_protocol_parse_heade
 
     /* INVALID ARGUMENT(S)*/
     { "PROXY TCP3 1.1.1.1 2.2.2.2 3333 4444\r\n",             FALSE}, // WRONG IP PROTO
-
 
     {
       "PROXY TCP4 padpadpadpadpadpadpadpadpadpadpadpadpad"
@@ -126,7 +124,7 @@ ParameterizedTestParameters(log_transport_proxy, test_proxy_protocol_parse_heade
 ParameterizedTest(ProtocolHeaderTestParams *params, log_transport_proxy, test_proxy_protocol_parse_header)
 {
   LogTransport *transport = log_transport_proxied_stream_socket_new(0);
-  LogTransportProxiedSocket *self = (LogTransportProxiedSocket *)transport;
+  LogTransportSocketProxy *self = (LogTransportSocketProxy *)transport;
 
   fill_proxy_header_buffer(self, params->proxy_header);
   cr_assert(_is_proxy_version_v1(self));
@@ -142,7 +140,7 @@ ParameterizedTest(ProtocolHeaderTestParams *params, log_transport_proxy, test_pr
 Test(log_transport_proxy, test_proxy_invalid_header)
 {
   LogTransport *transport = log_transport_proxied_stream_socket_new(0);
-  LogTransportProxiedSocket *self = (LogTransportProxiedSocket *)transport;
+  LogTransportSocketProxy *self = (LogTransportSocketProxy *)transport;
 
   fill_proxy_header_buffer(self, "invalid header\r\n");
 
@@ -158,7 +156,7 @@ Test(log_transport_proxy, test_proxy_aux_data)
                           "PROXIED_IP_VERSION:4 ";
 
   LogTransport *transport = log_transport_proxied_stream_socket_new(0);
-  LogTransportProxiedSocket *self = (LogTransportProxiedSocket *)transport;
+  LogTransportSocketProxy *self = (LogTransportSocketProxy *)transport;
 
   fill_proxy_header_buffer(self, "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\r\n");
   cr_assert(_is_proxy_version_v1(self));
@@ -185,7 +183,7 @@ Test(log_transport_proxy, test_proxy_v2_header)
                           "PROXIED_IP_VERSION:4 ";
 
   LogTransport *transport = log_transport_proxied_stream_socket_new(0);
-  LogTransportProxiedSocket *self = (LogTransportProxiedSocket *)transport;
+  LogTransportSocketProxy *self = (LogTransportSocketProxy *)transport;
 
   gchar binary_msg[] = "\r\n\r\n\0\r\nQUIT\n!\21\0\f\1\1\1\1\2\2\2\2\2025\255\234";
   self->proxy_header_buff_len = 28;
