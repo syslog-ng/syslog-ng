@@ -22,6 +22,8 @@
  *
  */
 
+#include <string.h>
+
 #include "on-error.h"
 
 gboolean
