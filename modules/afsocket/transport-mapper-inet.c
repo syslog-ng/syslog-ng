@@ -29,7 +29,6 @@
 #include "transport/multitransport.h"
 #include "transport/transport-factory-tls.h"
 #include "transport/transport-factory-socket.h"
-#include "transport/transport-factory-proxied-socket.h"
 #include "transport/transport-udp-socket.h"
 #include "secret-storage/secret-storage.h"
 
