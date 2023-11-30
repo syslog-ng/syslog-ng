@@ -12,6 +12,7 @@ BUILDER_IMAGES=		\
 	ubuntu-focal	\
 	ubuntu-jammy \
 	ubuntu-lunar	\
+	ubuntu-mantic	\
 	kira		\
 	tarball
 
