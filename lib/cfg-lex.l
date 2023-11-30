@@ -252,6 +252,9 @@ _cfg_lex_extend_token_location_to_next_line(CfgLexer *lexer)
 #define YYLTYPE CFG_LTYPE
 
 #pragma GCC diagnostic ignored "-Wswitch-default"
+#if (defined(__GNUC__) && __GNUC__ >= 6) || (defined(__clang__) && __clang_major__ >= 10)
+#  pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#endif
 
 %}
 
