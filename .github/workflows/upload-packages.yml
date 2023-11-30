@@ -18,7 +18,8 @@ on:
           "debian-bookworm",
           "ubuntu-focal",
           "ubuntu-jammy",
-          "ubuntu-lunar"
+          "ubuntu-lunar",
+          "ubuntu-mantic"
         ]'
     secrets:
       azure-sas-token:
