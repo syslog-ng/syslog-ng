@@ -1,4 +1,5 @@
 #include "filterx-object.h"
+#include "filterx-eval.h"
 
 void
 filterx_type_init(FilterXType *type)
