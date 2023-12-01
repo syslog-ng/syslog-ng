@@ -20,20 +20,18 @@
  * COPYING for details.
  *
  */
-#ifndef FILTERX_SCOPE_H_INCLUDED
-#define FILTERX_SCOPE_H_INCLUDED
+#ifndef FILTERX_WEAKREFS_H_INCLUDED
+#define FILTERX_WEAKREFS_H_INCLUDED
 
-#include "filterx-object.h"
-#include "logmsg/logmsg.h"
+#include "filterx/filterx-object.h"
 
-typedef struct _FilterXScope FilterXScope;
+typedef struct _FilterXWeakRef
+{
+  FilterXObject *object;
+} FilterXWeakRef;
 
-void filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg);
-FilterXObject *filterx_scope_lookup_message_ref(FilterXScope *self, NVHandle handle);
-void filterx_scope_register_message_ref(FilterXScope *self, NVHandle handle, FilterXObject *value);
-void filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object);
-
-FilterXScope *filterx_scope_new(void);
-void filterx_scope_free(FilterXScope *self);
+void filterx_weakref_set(FilterXWeakRef *self, FilterXObject *object);
+void filterx_weakref_clear(FilterXWeakRef *self);
+FilterXObject *filterx_weakref_get(FilterXWeakRef *self);
 
 #endif

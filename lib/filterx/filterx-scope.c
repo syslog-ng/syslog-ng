@@ -26,6 +26,7 @@
 struct _FilterXScope
 {
   GHashTable *value_cache;
+  GPtrArray *weak_refs;
 };
 
 FilterXObject *
@@ -45,6 +46,13 @@ filterx_scope_register_message_ref(FilterXScope *self, NVHandle handle, FilterXO
 {
   value->shadow = TRUE;
   g_hash_table_insert(self->value_cache, GINT_TO_POINTER(handle), filterx_object_ref(value));
+}
+
+void
+filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object)
+{
+  if (object)
+    g_ptr_array_add(self->weak_refs, filterx_object_ref(object));
 }
 
 void
@@ -76,6 +84,7 @@ filterx_scope_new(void)
   FilterXScope *self = g_new0(FilterXScope, 1);
 
   self->value_cache = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, (GDestroyNotify) filterx_object_unref);
+  self->weak_refs = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
   return self;
 }
 
@@ -83,5 +92,6 @@ void
 filterx_scope_free(FilterXScope *self)
 {
   g_hash_table_unref(self->value_cache);
+  g_ptr_array_free(self->weak_refs, TRUE);
   g_free(self);
 }
