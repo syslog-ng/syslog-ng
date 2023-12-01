@@ -21,6 +21,7 @@
  *
  */
 #include "filterx/filterx-weakrefs.h"
+#include "filterx/filterx-eval.h"
 
 /*
  * Weakrefs can be used to break up circular references between objects

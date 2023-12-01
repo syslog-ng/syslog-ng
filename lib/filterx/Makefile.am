@@ -14,6 +14,7 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/expr-message-ref.h		\
 	lib/filterx/expr-comparison.h		\
 	lib/filterx/filterx-object.h		\
+	lib/filterx/filterx-weakrefs.h		\
 	lib/filterx/object-primitive.h		\
 	lib/filterx/filterx-scope.h		\
 	lib/filterx/filterx-eval.h		\
@@ -22,9 +23,7 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/object-datetime.h		\
 	lib/filterx/object-null.h		\
 	lib/filterx/object-message-value.h	\
-	lib/filterx/object-message-ref.h	\
-	lib/filterx/filterx-conversions.h	\
-	lib/filterx/filterx-parser.h		\
+	lib/filterx/filterx-config.h		\
 	lib/filterx/filterx-pipe.h
 
 
@@ -42,6 +41,7 @@ filterx_sources = 				\
 	lib/filterx/expr-message-ref.c		\
 	lib/filterx/expr-comparison.c		\
 	lib/filterx/filterx-object.c		\
+	lib/filterx/filterx-weakrefs.c		\
 	lib/filterx/object-primitive.c		\
 	lib/filterx/filterx-scope.c		\
 	lib/filterx/filterx-eval.c		\
@@ -50,9 +50,7 @@ filterx_sources = 				\
 	lib/filterx/object-datetime.c		\
 	lib/filterx/object-null.c		\
 	lib/filterx/object-message-value.c	\
-	lib/filterx/object-message-ref.c	\
-	lib/filterx/filterx-conversions.c	\
-	lib/filterx/filterx-parser.c		\
+	lib/filterx/filterx-config.c		\
 	lib/filterx/filterx-pipe.c		\
 	lib/filterx/filterx-grammar.y
 
