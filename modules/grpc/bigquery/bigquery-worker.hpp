@@ -37,6 +37,7 @@
 
 #include <string>
 #include <memory>
+#include <cstddef>
 
 #include "google/cloud/bigquery/storage/v1/storage.grpc.pb.h"
 
@@ -46,6 +47,13 @@ namespace bigquery {
 
 class DestinationWorker final
 {
+private:
+  struct Slice
+  {
+    const char *str;
+    std::size_t len;
+  };
+
 public:
   DestinationWorker(BigQueryDestWorker *s);
   ~DestinationWorker();
@@ -63,7 +71,7 @@ private:
   bool insert_field(const google::protobuf::Reflection *reflection, const Field &field,
                     LogMessage *msg, google::protobuf::Message *message);
   LogThreadedResult handle_row_errors(const google::cloud::bigquery::storage::v1::AppendRowsResponse &response);
-  void format_template(LogTemplate *tmpl, LogMessage *msg, GString *value, LogMessageValueType *type);
+  Slice format_template(LogTemplate *tmpl, LogMessage *msg, GString *value, LogMessageValueType *type);
   DestinationDriver *get_owner();
 
 private:
