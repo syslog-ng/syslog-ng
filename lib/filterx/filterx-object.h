@@ -98,6 +98,8 @@ struct _FilterXObject
 FilterXObject *filterx_object_new(FilterXType *type);
 FilterXObject *filterx_object_ref(FilterXObject *self);
 void filterx_object_unref(FilterXObject *self);
+gboolean filterx_object_freeze(FilterXObject *self);
+void filterx_object_unfreeze_and_free(FilterXObject *self);
 void filterx_object_init_instance(FilterXObject *self, FilterXType *type);
 void filterx_object_free_method(FilterXObject *self);
 
