@@ -7,6 +7,9 @@
 GRPC_PROTOS_SRCDIR = $(top_srcdir)/modules/grpc/protos
 GRPC_PROTOS_BUILDDIR = $(top_builddir)/modules/grpc/protos
 
+GOOGLEAPIS_PROTO_SRCDIR = $(GRPC_PROTOS_SRCDIR)/googleapis-proto
+GOOGLEAPIS_PROTO_BUILDDIR = $(GRPC_PROTOS_BUILDDIR)/google-proto
+
 OPENTELEMETRY_PROTO_SRCDIR = $(GRPC_PROTOS_SRCDIR)/opentelemetry-proto
 OPENTELEMETRY_PROTO_BUILDDIR = $(GRPC_PROTOS_BUILDDIR)/otlp
 
@@ -17,6 +20,7 @@ if ENABLE_GRPC
 
 OPENTELEMETRY_PROTO_PROTOC_FLAGS = $(PROTOC_GEN_GRPC_CPP_PLUGIN_FLAGS) --proto_path=$(OPENTELEMETRY_PROTO_SRCDIR) --cpp_out=$(OPENTELEMETRY_PROTO_BUILDDIR)
 LOKI_PROTO_PROTOC_FLAGS = $(PROTOC_GEN_GRPC_CPP_PLUGIN_FLAGS) --proto_path=$(LOKI_PROTO_SRCDIR) --cpp_out=$(LOKI_PROTO_BUILDDIR)
+GOOGLEAPIS_PROTO_PROTOC_FLAGS = $(PROTOC_GEN_GRPC_CPP_PLUGIN_FLAGS) --proto_path=$(GOOGLEAPIS_PROTO_SRCDIR) --cpp_out=$(GOOGLEAPIS_PROTO_BUILDDIR)
 
 modules/grpc/protos/otlp/%.grpc.pb.cc modules/grpc/protos/otlp/%.grpc.pb.h:
 	mkdir -p $(OPENTELEMETRY_PROTO_BUILDDIR)
@@ -33,6 +37,14 @@ modules/grpc/protos/loki/%.grpc.pb.cc modules/grpc/protos/loki/%.grpc.pb.h:
 modules/grpc/protos/loki/%.pb.cc modules/grpc/protos/loki/%.pb.h:
 	mkdir -p $(LOKI_PROTO_BUILDDIR)
 	$(PROTOC) $(LOKI_PROTO_PROTOC_FLAGS) $*.proto
+
+modules/grpc/protos/google-proto/%.grpc.pb.cc modules/grpc/protos/google-proto/%.grpc.pb.h:
+	mkdir -p $(GOOGLEAPIS_PROTO_BUILDDIR)
+	$(PROTOC) $(GOOGLEAPIS_PROTO_PROTOC_FLAGS) --grpc-cpp_out=$(GOOGLEAPIS_PROTO_BUILDDIR) $*.proto
+
+modules/grpc/protos/google-proto/%.pb.cc modules/grpc/protos/google-proto/%.pb.h:
+	mkdir -p $(GOOGLEAPIS_PROTO_BUILDDIR)
+	$(PROTOC) $(GOOGLEAPIS_PROTO_PROTOC_FLAGS) $*.proto
 
 GRPC_PROTOS_BUILT_SOURCES = \
   $(OPENTELEMETRY_PROTO_BUILDDIR)/opentelemetry/proto/collector/logs/v1/logs_service.grpc.pb.cc \
@@ -61,7 +73,38 @@ GRPC_PROTOS_BUILT_SOURCES = \
   $(LOKI_PROTO_BUILDDIR)/push.grpc.pb.cc \
   $(LOKI_PROTO_BUILDDIR)/push.grpc.pb.h \
   $(LOKI_PROTO_BUILDDIR)/push.pb.cc \
-  $(LOKI_PROTO_BUILDDIR)/push.pb.h
+  $(LOKI_PROTO_BUILDDIR)/push.pb.h \
+  \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/api/annotations.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/api/annotations.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/api/client.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/api/client.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/api/field_behavior.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/api/field_behavior.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/api/http.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/api/http.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/api/launch_stage.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/api/launch_stage.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/api/resource.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/api/resource.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/annotations.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/annotations.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/arrow.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/arrow.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/avro.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/avro.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/protobuf.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/protobuf.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/storage.grpc.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/storage.grpc.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/storage.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/storage.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/stream.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/stream.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/table.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/table.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/rpc/status.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/rpc/status.pb.h
 
 lib_LTLIBRARIES += modules/grpc/protos/libgrpc-protos.la
 
@@ -71,6 +114,8 @@ modules_grpc_protos_libgrpc_protos_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
   $(PROTOBUF_CLFAGS) \
   $(GRPCPP_CFLAGS) \
+  -I$(GOOGLEAPIS_PROTO_SRCDIR) \
+  -I$(GOOGLEAPIS_PROTO_BUILDDIR) \
   -I$(OPENTELEMETRY_PROTO_SRCDIR) \
   -I$(OPENTELEMETRY_PROTO_BUILDDIR) \
   -I$(LOKI_PROTO_SRCDIR) \
@@ -96,4 +141,5 @@ endif
 
 EXTRA_DIST += \
   $(OPENTELEMETRY_PROTO_SRCDIR) \
-  $(LOKI_PROTO_SRCDIR)
+  $(LOKI_PROTO_SRCDIR) \
+  $(GOOGLEAPIS_PROTO_SRCDIR)
