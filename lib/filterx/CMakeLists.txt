@@ -2,6 +2,7 @@ set(FILTERX_HEADERS
     filterx/expr-assign.h
     filterx/expr-boolalg.h
     filterx/expr-comparison.h
+    filterx/expr-function.h
     filterx/expr-getattr.h
     filterx/expr-get-subscript.h
     filterx/expr-dict.h
@@ -33,6 +34,7 @@ set(FILTERX_SOURCES
     filterx/expr-assign.c
     filterx/expr-boolalg.c
     filterx/expr-comparison.c
+    filterx/expr-function.c
     filterx/expr-getattr.c
     filterx/expr-get-subscript.c
     filterx/expr-dict.c

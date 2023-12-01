@@ -309,3 +309,21 @@ $MSG = $list;
     assert "processed" not in file_false.get_stats()
     # foo remains unchanged while baz is changed
     assert file_true.read_log() == """foo,bar,baz\n"""
+
+
+def test_function_call(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+$list = [];
+$list[] = "foo";
+$list[] = "bar";
+$list[] = "baz";
+$MSG = example_echo($list);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    # foo remains unchanged while baz is changed
+    assert file_true.read_log() == """foo,bar,baz\n"""
