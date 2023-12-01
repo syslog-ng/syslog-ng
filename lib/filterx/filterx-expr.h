@@ -35,6 +35,7 @@ struct _FilterXExpr
   const gchar *type;
   FilterXObject *(*eval)(FilterXExpr *self);
   FilterXObject *(*eval_typed)(FilterXExpr *self);
+  gboolean (*assign)(FilterXExpr *self, FilterXObject *new_value);
   void (*free_fn)(FilterXExpr *self);
 };
 
@@ -50,6 +51,14 @@ filterx_expr_eval_typed(FilterXExpr *self)
   if (!self->eval_typed)
     return filterx_expr_eval(self);
   return self->eval_typed(self);
+}
+
+static inline gboolean
+filterx_expr_assign(FilterXExpr *self, FilterXObject *new_value)
+{
+  if (self->assign)
+    return self->assign(self, new_value);
+  return FALSE;
 }
 
 void filterx_expr_init_instance(FilterXExpr *self);
