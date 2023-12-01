@@ -43,6 +43,7 @@
 #include "filterx/object-json.h"
 #include "filterx/object-null.h"
 #include "filterx/object-string.h"
+#include "filterx/filterx-config.h"
 
 #include "template/templates.h"
 
@@ -52,9 +53,11 @@ construct_template_expr(LogTemplate *template)
   FilterXExpr *result;
 
   if (log_template_is_literal_string(template))
-    result = filterx_literal_new(filterx_string_new(log_template_get_literal_value(template, NULL), -1));
+    result = filterx_literal_new(
+		filterx_config_freeze_object(configuration,
+			filterx_string_new(log_template_get_literal_value(template, NULL), -1)));
   else if (log_template_is_trivial(template))
-    result = filterx_message_ref_resolver_new(log_template_get_trivial_value_handle(template));
+    result = filterx_message_ref_expr_new(log_template_get_trivial_value_handle(template));
   else
     result = filterx_template_new(log_template_ref(template));
   log_template_unref(template);
@@ -133,7 +136,7 @@ expr_value
 	| json_object                           { $$ = filterx_json_expr_new($1); }
 	;
 
-literal: literal_object				{ $$ = filterx_literal_new($1); }
+literal: literal_object				{ $$ = filterx_literal_new(filterx_config_freeze_object(configuration, $1)); }
 
 literal_object
 	: LL_NUMBER				{ $$ = filterx_integer_new($1); }
