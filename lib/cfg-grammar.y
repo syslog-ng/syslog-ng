@@ -355,6 +355,7 @@
 %token <cptr> LL_BLOCK                10435
 %token <cptr> LL_PLUGIN	              10436
 %token <cptr> LL_TEMPLATE_REF         10437
+%token <cptr> LL_MESSAGE_REF          10438
 
 %destructor { free($$); } <cptr>
 

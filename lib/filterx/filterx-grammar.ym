@@ -145,7 +145,10 @@ literal_object
 	| boolean				{ $$ = filterx_boolean_new($1); }
 	;
 
-lvalue: '$' LL_IDENTIFIER			{ $$ = filterx_message_ref_expr_new(log_msg_get_value_handle($2)); free($2); }
+lvalue
+	: '$' LL_IDENTIFIER			{ $$ = filterx_message_ref_expr_new(log_msg_get_value_handle($2)); free($2); }
+	| LL_MESSAGE_REF			{ $$ = filterx_message_ref_expr_new(log_msg_get_value_handle($1)); free($1); }
+	;
 
 
 boolean
