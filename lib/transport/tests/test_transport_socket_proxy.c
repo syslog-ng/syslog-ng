@@ -25,6 +25,7 @@
 #include <criterion/parameterized.h>
 
 #include "transport/transport-socket-proxy-private.h"
+#include "transport/transport-socket.h"
 
 #include "apphook.h"
 #include "cfg.h"
@@ -123,8 +124,10 @@ ParameterizedTestParameters(log_transport_proxy, test_proxy_protocol_parse_heade
 
 ParameterizedTest(ProtocolHeaderTestParams *params, log_transport_proxy, test_proxy_protocol_parse_header)
 {
-  LogTransport *transport = log_transport_proxied_stream_socket_new(0);
-  LogTransportSocketProxy *self = (LogTransportSocketProxy *)transport;
+  LogTransport *transport = log_transport_stream_socket_new(0);
+  LogTransportSocket *transport_socket = (LogTransportSocket *)transport;
+  transport_socket->proto = IPPROTO_TCP;
+  LogTransportSocketProxy *self = log_transport_socket_proxy_new(transport, false);
 
   fill_proxy_header_buffer(self, params->proxy_header);
   cr_assert(_is_proxy_version_v1(self));
@@ -139,8 +142,10 @@ ParameterizedTest(ProtocolHeaderTestParams *params, log_transport_proxy, test_pr
 
 Test(log_transport_proxy, test_proxy_invalid_header)
 {
-  LogTransport *transport = log_transport_proxied_stream_socket_new(0);
-  LogTransportSocketProxy *self = (LogTransportSocketProxy *)transport;
+  LogTransport *transport = log_transport_stream_socket_new(0);
+  LogTransportSocket *transport_socket = (LogTransportSocket *)transport;
+  transport_socket->proto = IPPROTO_TCP;
+  LogTransportSocketProxy *self = log_transport_socket_proxy_new(transport, false);
 
   fill_proxy_header_buffer(self, "invalid header\r\n");
 
@@ -155,8 +160,10 @@ Test(log_transport_proxy, test_proxy_aux_data)
                           "PROXIED_SRCPORT:3333 PROXIED_DSTPORT:4444 "
                           "PROXIED_IP_VERSION:4 ";
 
-  LogTransport *transport = log_transport_proxied_stream_socket_new(0);
-  LogTransportSocketProxy *self = (LogTransportSocketProxy *)transport;
+  LogTransport *transport = log_transport_stream_socket_new(0);
+  LogTransportSocket *transport_socket = (LogTransportSocket *)transport;
+  transport_socket->proto = IPPROTO_TCP;
+  LogTransportSocketProxy *self = log_transport_socket_proxy_new(transport, false);
 
   fill_proxy_header_buffer(self, "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\r\n");
   cr_assert(_is_proxy_version_v1(self));
@@ -182,8 +189,10 @@ Test(log_transport_proxy, test_proxy_v2_header)
                           "PROXIED_SRCPORT:33333 PROXIED_DSTPORT:44444 "
                           "PROXIED_IP_VERSION:4 ";
 
-  LogTransport *transport = log_transport_proxied_stream_socket_new(0);
-  LogTransportSocketProxy *self = (LogTransportSocketProxy *)transport;
+  LogTransport *transport = log_transport_stream_socket_new(0);
+  LogTransportSocket *transport_socket = (LogTransportSocket *)transport;
+  transport_socket->proto = IPPROTO_TCP;
+  LogTransportSocketProxy *self = log_transport_socket_proxy_new(transport, false);
 
   gchar binary_msg[] = "\r\n\r\n\0\r\nQUIT\n!\21\0\f\1\1\1\1\2\2\2\2\2025\255\234";
   self->proxy_header_buff_len = 28;

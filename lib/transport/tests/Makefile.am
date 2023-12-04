@@ -4,7 +4,7 @@ lib_transport_tests_TESTS		 = \
 	lib/transport/tests/test_transport_factory \
 	lib/transport/tests/test_transport_factory_registry \
 	lib/transport/tests/test_multitransport \
-	lib/transport/tests/test_transport_proxied_socket
+	lib/transport/tests/test_transport_socket_proxy
 
 EXTRA_DIST += lib/transport/tests/CMakeLists.txt
 
@@ -40,8 +40,8 @@ lib_transport_tests_test_multitransport_LDADD	 = $(TEST_LDADD)
 lib_transport_tests_test_multitransport_SOURCES = 			\
 	lib/transport/tests/test_multitransport.c
 
-lib_transport_tests_test_transport_proxied_socket_CFLAGS  = $(TEST_CFLAGS) \
+lib_transport_tests_test_transport_socket_proxy_CFLAGS  = $(TEST_CFLAGS) \
 	-I${top_srcdir}/lib/transport/tests
-lib_transport_tests_test_transport_proxied_socket_LDADD	 = $(TEST_LDADD)
-lib_transport_tests_test_transport_proxied_socket_SOURCES = 			\
-	lib/transport/tests/test_transport_proxied_socket.c
+lib_transport_tests_test_transport_socket_proxy_LDADD	 = $(TEST_LDADD)
+lib_transport_tests_test_transport_socket_proxy_SOURCES = 			\
+	lib/transport/tests/test_transport_socket_proxy.c

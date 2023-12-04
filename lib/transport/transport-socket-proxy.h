@@ -26,8 +26,52 @@
 
 #include "logtransport.h"
 
-typedef struct _LogTransportSocket LogTransportSocket;
+#define IP_BUF_SIZE 64
+
+/* This class implements: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt */
+
+/* the size of the buffer we use to fetch the PROXY header into */
+#define PROXY_PROTO_HDR_BUFFER_SIZE 1500
+
 typedef struct _LogTransportSocketProxy LogTransportSocketProxy;
+struct _LogTransportSocketProxy
+{
+  LogTransport *base_transport;
+  gssize (*base_read)(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux);
+  gssize (*base_write)(LogTransport *self, const gpointer buf, gsize count);
+  gboolean is_multi;
+
+  /* Info received from the proxy that should be added as LogTransportAuxData to
+   * any message received through this server instance. */
+  struct
+  {
+    gboolean unknown;
+
+    gchar src_ip[IP_BUF_SIZE];
+    gchar dst_ip[IP_BUF_SIZE];
+
+    int ip_version;
+    int src_port;
+    int dst_port;
+  } info;
+
+  /* Flag to only process proxy header once */
+  gboolean proxy_header_processed;
+
+  enum
+  {
+    LPPTS_INITIAL,
+    LPPTS_DETERMINE_VERSION,
+    LPPTS_PROXY_V1_READ_LINE,
+    LPPTS_PROXY_V2_READ_HEADER,
+    LPPTS_PROXY_V2_READ_PAYLOAD,
+  } header_fetch_state;
+
+  /* 0 unknown, 1 or 2 indicate proxy header version */
+  gint proxy_header_version;
+  guchar proxy_header_buff[PROXY_PROTO_HDR_BUFFER_SIZE];
+  gsize proxy_header_buff_len;
+};
 
 LogTransportSocketProxy *log_transport_socket_proxy_new(LogTransport *base_transport, gboolean is_multi);
 void log_transport_socket_proxy_free(LogTransportSocketProxy *self);
