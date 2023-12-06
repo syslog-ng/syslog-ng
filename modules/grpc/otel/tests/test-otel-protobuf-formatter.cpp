@@ -61,7 +61,7 @@ static void
 _assert_dummy_resource_and_scope(const Resource &resource, const std::string &resource_schema_url,
                                  const InstrumentationScope &scope, const std::string &scope_schema_url)
 {
-  cr_assert_eq(resource.attributes_size(), 1, "%d");
+  cr_assert_eq(resource.attributes_size(), 1);
   cr_assert_str_eq(resource.attributes(0).key().c_str(), "attr_0");
   cr_assert_str_eq(resource.attributes(0).value().string_value().c_str(), "val_0");
   cr_assert_eq(resource.dropped_attributes_count(), 1);
