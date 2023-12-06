@@ -21,6 +21,7 @@
  */
 
 #include "rate-limit.h"
+#include "timeutils/cache.h"
 #include "timeutils/misc.h"
 #include "scratch-buffers.h"
 #include "str-utils.h"

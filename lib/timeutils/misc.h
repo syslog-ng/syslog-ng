@@ -27,8 +27,6 @@
 
 #include "syslog-ng.h"
 
-long get_local_timezone_ofs(time_t when);
-
 gboolean check_nanosleep(void);
 
 glong g_time_val_diff(GTimeVal *t1, GTimeVal *t2);

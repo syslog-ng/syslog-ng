@@ -27,7 +27,7 @@
 #include "cfg.h"
 #include "str-format.h"
 #include "scratch-buffers.h"
-#include "timeutils/misc.h"
+#include "timeutils/cache.h"
 
 #include <ctype.h>
 #include <string.h>

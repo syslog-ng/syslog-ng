@@ -23,7 +23,7 @@
 #include "libtest/cr_template.h"
 
 #include "logmsg/logmsg.h"
-#include "timeutils/misc.h"
+#include "timeutils/cache.h"
 #include "apphook.h"
 #include "cfg.h"
 

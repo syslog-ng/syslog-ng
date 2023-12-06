@@ -30,7 +30,7 @@
 #include "cfg.h"
 #include "plugin.h"
 #include "logqueue-fifo.h"
-#include "timeutils/misc.h"
+#include "timeutils/cache.h"
 #include "msg-format.h"
 
 #include <time.h>

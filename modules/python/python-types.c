@@ -25,7 +25,7 @@
 #include "scanner/list-scanner/list-scanner.h"
 #include "str-repr/encode.h"
 #include "timeutils/conv.h"
-#include "timeutils/misc.h"
+#include "timeutils/cache.h"
 #include "messages.h"
 
 /* Python datetime API */

@@ -27,6 +27,7 @@
 #include "msg_parse_lib.h"
 
 #include "timeutils/misc.h"
+#include "timeutils/cache.h"
 #include "logmsg/logmsg.h"
 #include "gsockaddr.h"
 #include "cfg.h"

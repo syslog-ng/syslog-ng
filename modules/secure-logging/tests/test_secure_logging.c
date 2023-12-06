@@ -33,7 +33,7 @@
 #include "apphook.h"
 #include "cfg.h"
 #include "logmatcher.h"
-#include "timeutils/misc.h"
+#include "timeutils/cache.h"
 
 #include <errno.h>
 #include <string.h>
