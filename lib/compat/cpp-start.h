@@ -62,6 +62,28 @@
  *     functions with wrapper functions of your real C++ functions in the
  *     ctor of the C style "class" == struct.
  *
+ * Header ordering:
+ *   - syslog-ng.h needs to come first even in cpp/hpp files.  You don't
+ *     need cpp-start/end wrapper around syslog-ng.h.  This include can
+ *     happen indirectly, e.g.  if you include any other header that should
+ *     take care of syslog-ng.h
+ *
+ *   - syslog-ng.h will include glib too, which is also C++ safe.  This is
+ *     needed as some constructs in glib only work if it is outside of an
+ *     extern "C" block.
+ *
+ *   - Use the usual header ordering conventions, e.g.  include the closest
+ *     header first (e.g.  the one associated with your module) and then
+ *     iterate to furthest.  This ensures that each header is actually
+ *     standalone and includes all its dependencies.
+ *
+ *   - If you use a .hpp file, include .h from it and make sure the .h
+ *     includes syslog-ng.h and includes all other .h files by wrapping them
+ *     using cpp-start/end.h as needed. This takes care of the first rule.
+ *
+ *   - In your .cpp files, include the .hpp file but not the .h file which is
+ *     already included.
+ *
  * You can see an example usage of the C++ plugin support at:
  *      modules/examples/sources/random-choice-generator
  */
