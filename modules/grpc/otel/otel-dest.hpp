@@ -23,15 +23,15 @@
 #ifndef OTEL_DEST_HPP
 #define OTEL_DEST_HPP
 
-#include <grpcpp/server.h>
+#include "otel-dest.h"
 
 #include "compat/cpp-start.h"
 #include "logthrdest/logthrdestdrv.h"
 #include "compat/cpp-end.h"
 
-#include "otel-dest.h"
 #include "credentials/grpc-credentials-builder.hpp"
 
+#include <grpcpp/server.h>
 
 namespace syslogng {
 namespace grpc {

@@ -23,9 +23,9 @@
 #ifndef LOKI_WORKER_H
 #define LOKI_WORKER_H
 
-#include "compat/cpp-start.h"
-
 #include "syslog-ng.h"
+
+#include "compat/cpp-start.h"
 #include "logthrdest/logthrdestdrv.h"
 
 typedef struct _LokiDestWorker LokiDestWorker;

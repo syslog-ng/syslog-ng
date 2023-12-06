@@ -23,6 +23,10 @@
 #ifndef CLOUD_AUTH_H
 #define CLOUD_AUTH_H
 
+#include "syslog-ng.h"
+
+#include "compat/cpp-start.h"
+
 #include "logqueue.h"
 #include "driver.h"
 
@@ -43,5 +47,8 @@ typedef struct _CloudAuthDestPlugin CloudAuthDestPlugin;
 
 LogDriverPlugin *cloud_auth_dest_plugin_new(void);
 void cloud_auth_dest_plugin_set_authenticator(LogDriverPlugin *s, CloudAuthenticator *authenticator);
+
+#include "compat/cpp-end.h"
+
 
 #endif

@@ -25,6 +25,8 @@
 
 #include "cloud-auth.h"
 
+#include "compat/cpp-start.h"
+
 typedef enum _GoogleAuthenticatorAuthMode
 {
   GAAM_UNDEFINED,
@@ -44,5 +46,6 @@ void google_authenticator_set_user_managed_service_account_name(CloudAuthenticat
 void google_authenticator_set_user_managed_service_account_metadata_url(CloudAuthenticator *s,
     const gchar *metadata_url);
 
+#include "compat/cpp-end.h"
 
 #endif

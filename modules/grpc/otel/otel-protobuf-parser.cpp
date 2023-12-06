@@ -20,7 +20,6 @@
  *
  */
 
-#include <inttypes.h>
 
 #include "otel-protobuf-parser.hpp"
 
@@ -29,6 +28,8 @@
 #include "scanner/list-scanner/list-scanner.h"
 #include "rewrite/rewrite-set-pri.h"
 #include "compat/cpp-end.h"
+
+#include <inttypes.h>
 
 using namespace google::protobuf;
 using namespace opentelemetry::proto::resource::v1;

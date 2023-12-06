@@ -20,13 +20,13 @@
  *
  */
 
-#include <fstream>
-
 #include "grpc-credentials-builder.hpp"
 
 #include "compat/cpp-start.h"
 #include "messages.h"
 #include "compat/cpp-end.h"
+
+#include <fstream>
 
 using namespace syslogng::grpc;
 

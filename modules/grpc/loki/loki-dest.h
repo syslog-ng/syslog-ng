@@ -23,9 +23,9 @@
 #ifndef LOKI_DEST_H
 #define LOKI_DEST_H
 
-#include "compat/cpp-start.h"
-
 #include "syslog-ng.h"
+
+#include "compat/cpp-start.h"
 #include "driver.h"
 #include "logmsg/logmsg.h"
 #include "template/templates.h"

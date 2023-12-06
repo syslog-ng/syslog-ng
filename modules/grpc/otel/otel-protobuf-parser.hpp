@@ -23,7 +23,7 @@
 #ifndef OTEL_PROTOBUF_PARSER_HPP
 #define OTEL_PROTOBUF_PARSER_HPP
 
-#include <grpcpp/support/config.h>
+#include "otel-protobuf-parser.h"
 
 #include "compat/cpp-start.h"
 #include "logmsg/logmsg.h"
@@ -35,7 +35,7 @@
 #include "opentelemetry/proto/metrics/v1/metrics.pb.h"
 #include "opentelemetry/proto/trace/v1/trace.pb.h"
 
-#include "otel-protobuf-parser.h"
+#include <grpcpp/support/config.h>
 
 namespace syslogng {
 namespace grpc {

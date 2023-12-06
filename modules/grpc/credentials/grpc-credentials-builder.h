@@ -23,9 +23,9 @@
 #ifndef GRPC_CREDENTIALS_BUILDER_H
 #define GRPC_CREDENTIALS_BUILDER_H
 
-#include "compat/cpp-start.h"
+#include "syslog-ng.h"
 
-#include "compat/glib.h"
+#include "compat/cpp-start.h"
 
 /* Server */
 

@@ -23,6 +23,8 @@
 #ifndef RANDOM_CHOICE_GENERATOR_H
 #define RANDOM_CHOICE_GENERATOR_H
 
+#include "syslog-ng.h"
+
 #include "compat/cpp-start.h"
 
 #include "driver.h"

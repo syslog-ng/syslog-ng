@@ -23,6 +23,8 @@
 #ifndef OTEL_PROTOBUF_FORMATTER_HPP
 #define OTEL_PROTOBUF_FORMATTER_HPP
 
+#include "syslog-ng.h"
+
 #include "compat/cpp-start.h"
 #include "logmsg/logmsg.h"
 #include "value-pairs/value-pairs.h"

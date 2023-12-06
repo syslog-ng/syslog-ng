@@ -20,11 +20,6 @@
  *
  */
 
-#include <string>
-
-#include <grpcpp/grpcpp.h>
-#include <grpcpp/server_builder.h>
-
 #include "otel-source.hpp"
 #include "otel-source-services.hpp"
 #include "credentials/grpc-credentials-builder.hpp"
@@ -32,6 +27,11 @@
 #include "compat/cpp-start.h"
 #include "messages.h"
 #include "compat/cpp-end.h"
+
+#include <string>
+
+#include <grpcpp/grpcpp.h>
+#include <grpcpp/server_builder.h>
 
 #define get_SourceDriver(s) (((OtelSourceDriver *) s)->cpp)
 #define get_SourceWorker(s) (((OtelSourceWorker *) s)->cpp)
