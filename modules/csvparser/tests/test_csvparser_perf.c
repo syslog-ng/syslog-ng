@@ -67,19 +67,19 @@ static void
 iterate_pattern(LogParser *p, const gchar *input)
 {
   LogMessage *msg;
-  GTimeVal start, end;
+  struct timespec start, end;
   gint i;
 
   msg = _construct_msg(input);
-  g_get_current_time(&start);
+  clock_gettime(CLOCK_MONOTONIC, &start);
   for (i = 0; i < 100000; i++)
     {
       log_parser_process(p, &msg, NULL, log_msg_get_value(msg, LM_V_MESSAGE, NULL), -1);
     }
   log_msg_unref(msg);
 
-  g_get_current_time(&end);
-  printf("      %-90.*s speed: %12.3f msg/sec\n", (int) strlen(input), input, i * 1e6 / g_time_val_diff(&end, &start));
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  printf("      %-90.*s speed: %12.3f msg/sec\n", (int) strlen(input), input, i * 1e6 / timespec_diff_usec(&end, &start));
 
 }
 
