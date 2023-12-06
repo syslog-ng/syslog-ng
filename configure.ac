@@ -481,14 +481,6 @@ dnl C++
 # Ok, here is the deal
 # clang cannot compile the current source, it has nultiple issues
 # replace it till not fixed them
-if test "x$CXX" = "xclang"; then
-        AC_MSG_ERROR(["clang cannot compile syslog-ng C++ sources, try using gcc instead (export CXX=gcc) for C++ compilation (NOTE: on macOS you need Homebrew gcc not the Apple one)"])
-elif test "x$CC" = "xclang"; then
-        CPP_COMPILER="gcc"
-        AC_MSG_WARN(["clang cannot compile syslog-ng C++ sources, switched to $CPP_COMPILER for C++ compilation (NOTE: on macOS you need Homebrew gcc not the Apple one)"])
-else
-        CPP_COMPILER="$CXX $CC"
-fi
 # This one is useful for checking the available compilers
 # AC_MSG_RESULT(gcc = $(which gcc) - g++ = $(which g++) - clang = $(which clang))
 # AC_MSG_RESULT(Paths: gcc = $(ls -Al $(which gcc)) - g++ = $(ls -Al $(which g++)) - clang = $(ls -Al $(which clang)))
