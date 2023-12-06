@@ -37,6 +37,7 @@
 #include <string.h>
 #include <time.h>
 
+#include <iv.h>
 #include <iv_list.h>
 
 typedef struct _DNSCacheEntry DNSCacheEntry;
@@ -149,6 +150,8 @@ dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, co
   DNSCacheEntry *entry;
   guint hash_size;
 
+  iv_validate_now();
+
   entry = g_new(DNSCacheEntry, 1);
 
   dns_cache_fill_key(&entry->key, family, addr);
@@ -158,7 +161,7 @@ dns_cache_store(DNSCache *self, gboolean persistent, gint family, void *addr, co
   INIT_IV_LIST_HEAD(&entry->list);
   if (!persistent)
     {
-      entry->resolved = cached_g_current_time_sec();
+      entry->resolved = iv_now.tv_sec;
       iv_list_add(&entry->list, &self->cache_list);
     }
   else
@@ -301,7 +304,8 @@ dns_cache_lookup(DNSCache *self, gint family, void *addr, const gchar **hostname
   DNSCacheEntry *entry;
   time_t now;
 
-  now = cached_g_current_time_sec();
+  iv_validate_now();
+  now = iv_now.tv_sec;
   dns_cache_check_hosts(self, now);
 
   dns_cache_fill_key(&key, family, addr);
