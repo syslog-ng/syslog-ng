@@ -1034,8 +1034,6 @@ if test "$linking_mode" != "dynamic"; then
 	LIBS=$old_LIBS
 fi
 
-GLIB_CFLAGS="${GLIB_CFLAGS} -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_32"
-
 old_CPPFLAGS=$CPPFLAGS
 CPPFLAGS="$GLIB_CFLAGS"
 old_LDFLAGS=$LDFLAGS
@@ -1048,6 +1046,20 @@ AC_CHECK_FUNCS(g_list_copy_deep \
   g_memdup2 \
   g_canonicalize_filename)
 LIBS=$old_LIBS
+
+if test "x$ac_cv_func_g_memdup2" = "xyes"; then
+    dnl only set MIN_REQUIRED to 2.68 if we know that we are at least on that version.
+    dnl On CentOS7/SLES12 we don't have recent enough glib but with compat
+    dnl wrappers we can compile. Bad news is that if we don't set to 2.68 at least,
+    dnl we can't compile on new platforms with clang.
+
+    dnl Best of both worlds: we set to 2.68 if we have that version, so we
+    dnl get clang to compile our code, otherwise we set it to 2.32.
+
+    GLIB_CFLAGS="${GLIB_CFLAGS} -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_68"
+else
+    GLIB_CFLAGS="${GLIB_CFLAGS} -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_32"
+fi
 
 AC_CACHE_CHECK(sanity checking Glib headers,
                blb_cv_glib_sane,
