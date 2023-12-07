@@ -932,14 +932,10 @@ _syslog_format_parse_legacy(const MsgFormatOptions *parse_options,
       else
         msg->flags |= LF_UTF8;
     }
+  else if ((parse_options->flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
+    msg->flags |= LF_UTF8;
 
   log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) src, left);
-
-  /* we don't need revalidation if sanitize already said it was valid utf8 */
-  if ((parse_options->flags & LP_VALIDATE_UTF8) &&
-      ((parse_options->flags & LP_SANITIZE_UTF8) == 0) &&
-      g_utf8_validate((gchar *) src, left, NULL))
-    msg->flags |= LF_UTF8;
 
   return TRUE;
 error:
