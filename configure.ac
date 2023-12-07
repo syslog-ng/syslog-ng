@@ -1044,6 +1044,7 @@ old_LIBS=$LIBS
 LIBS="$LIBS $GLIB_LIBS"
 AC_CHECK_FUNCS(g_list_copy_deep \
   g_ptr_array_find_with_equal_func \
+  g_memdup2 \
   g_canonicalize_filename)
 LIBS=$old_LIBS
 
