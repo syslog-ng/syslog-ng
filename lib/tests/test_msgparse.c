@@ -1241,6 +1241,14 @@ Test(msgparse, test_sanitize_utf8)
       .expected_host = "",
       .expected_msg = "hello\\xf0(\\x8c\\xbcrena",
     },
+    {
+      .msg = "<7>1 - bzorp openvpn 2499 - - PTHREAD \xf0\x28\x8c\x28 initialized",
+      .parse_flags = LP_SYSLOG_PROTOCOL | LP_SANITIZE_UTF8,
+      .expected_pri = 7,
+      .expected_program = "openvpn",
+      .expected_host = "bzorp",
+      .expected_msg = "PTHREAD \\xf0(\\x8c( initialized",
+    },
     {NULL}
   };
   run_parameterized_test(params);
