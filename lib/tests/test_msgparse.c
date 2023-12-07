@@ -1228,3 +1228,20 @@ Test(msgparse, test_no_rfc3164_fallback_flag)
   };
   run_parameterized_test(params);
 }
+
+Test(msgparse, test_sanitize_utf8)
+{
+  struct msgparse_params params[] =
+  {
+    {
+      .msg = "<189>program hello\xf0\x28\x8c\xbcrena",
+      .parse_flags = LP_SANITIZE_UTF8,
+      .expected_pri = 189,
+      .expected_program = "program",
+      .expected_host = "",
+      .expected_msg = "hello\\xf0(\\x8c\\xbcrena",
+    },
+    {NULL}
+  };
+  run_parameterized_test(params);
+}

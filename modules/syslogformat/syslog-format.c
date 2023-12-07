@@ -929,6 +929,8 @@ _syslog_format_parse_legacy(const MsgFormatOptions *parse_options,
           msg->flags |= LF_UTF8;
           return TRUE;
         }
+      else
+        msg->flags |= LF_UTF8;
     }
 
   log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) src, left);
