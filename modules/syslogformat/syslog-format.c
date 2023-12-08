@@ -39,7 +39,6 @@
 #include <string.h>
 
 #define SD_NAME_SIZE 256
-#define SANITIZE_UTF8_BUFFER_SIZE(l) (l * 6 + 1)
 
 static const char aix_fwd_string[] = "Message forwarded from ";
 static const char repeat_msg_string[] = "last message repeated";
@@ -870,25 +869,6 @@ _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *l
   return TRUE;
 }
 
-static inline const gchar *
-_sanitize_utf8(const guchar *data, gint length, gsize *new_length, gchar *out, gsize out_size)
-{
-  GString sanitized_message;
-
-  /* avoid GString allocation */
-  sanitized_message.str = out;
-  sanitized_message.len = 0;
-  sanitized_message.allocated_len = out_size;
-
-  append_unsafe_utf8_as_escaped_binary(&sanitized_message, (const gchar *) data, length, NULL);
-
-  /* MUST NEVER BE REALLOCATED */
-  g_assert(sanitized_message.str == out);
-
-  *new_length = sanitized_message.len;
-  return out;
-}
-
 /**
  * _syslog_format_parse_legacy:
  * @msg: LogMessage instance to store parsed information into
@@ -924,7 +904,7 @@ _syslog_format_parse_legacy(const MsgFormatOptions *parse_options,
         {
           gchar buf[SANITIZE_UTF8_BUFFER_SIZE(left)];
           gsize sanitized_length;
-          _sanitize_utf8(src, left, &sanitized_length, buf, sizeof(buf));
+          optimized_sanitize_utf8_to_escaped_binary(src, left, &sanitized_length, buf, sizeof(buf));
           log_msg_set_value(msg, LM_V_MESSAGE, buf, sanitized_length);
           msg->flags |= LF_UTF8;
           return TRUE;
@@ -1053,7 +1033,7 @@ _syslog_format_parse_syslog_proto(const MsgFormatOptions *parse_options, const g
             {
               gchar buf[SANITIZE_UTF8_BUFFER_SIZE(left)];
               gsize sanitized_length;
-              _sanitize_utf8(src, left, &sanitized_length, buf, sizeof(buf));
+              optimized_sanitize_utf8_to_escaped_binary(src, left, &sanitized_length, buf, sizeof(buf));
               log_msg_set_value(msg, LM_V_MESSAGE, buf, sanitized_length);
               msg->flags |= LF_UTF8;
               return TRUE;

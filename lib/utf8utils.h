@@ -41,4 +41,30 @@ void append_unsafe_utf8_as_escaped(GString *escaped_output, const gchar *raw,
                                    gssize raw_len, const gchar *unsafe_chars,
                                    const gchar *control_format,
                                    const gchar *invalid_format);
+
+
+/* for performance-critical use only */
+
+#define SANITIZE_UTF8_BUFFER_SIZE(l) (l * 6 + 1)
+
+static inline const gchar *
+optimized_sanitize_utf8_to_escaped_binary(const guchar *data, gint length, gsize *new_length, gchar *out,
+                                          gsize out_size)
+{
+  GString sanitized_message;
+
+  /* avoid GString allocation */
+  sanitized_message.str = out;
+  sanitized_message.len = 0;
+  sanitized_message.allocated_len = out_size;
+
+  append_unsafe_utf8_as_escaped_binary(&sanitized_message, (const gchar *) data, length, NULL);
+
+  /* MUST NEVER BE REALLOCATED */
+  g_assert(sanitized_message.str == out);
+
+  *new_length = sanitized_message.len;
+  return out;
+}
+
 #endif
