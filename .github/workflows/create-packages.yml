@@ -24,7 +24,7 @@ on:
           "ubuntu-lunar",
           "ubuntu-mantic",
           "centos-7",
-          "fedora-37"
+          "fedora-39"
         ]'
 
 

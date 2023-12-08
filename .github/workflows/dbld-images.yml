@@ -30,7 +30,7 @@ jobs:
       matrix:
         image:
           - centos-7
-          - fedora-37
+          - fedora-39
           - debian-bullseye
           - debian-bookworm
           - debian-buster
