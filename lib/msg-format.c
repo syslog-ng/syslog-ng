@@ -28,6 +28,7 @@
 #include "plugin-types.h"
 #include "find-crlf.h"
 #include "scratch-buffers.h"
+#include "utf8utils.h"
 
 static gsize
 _rstripped_message_length(const guchar *data, gsize length)
@@ -114,8 +115,26 @@ msg_format_process_message(MsgFormatOptions *options, LogMessage *msg,
     }
   else
     {
-      log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) data, _rstripped_message_length(data, length));
       msg->pri = options->default_pri;
+
+      if (options->flags & LP_SANITIZE_UTF8)
+        {
+          if (!g_utf8_validate((gchar *) data, length, NULL))
+            {
+              gchar buf[SANITIZE_UTF8_BUFFER_SIZE(length)];
+              gsize sanitized_length;
+              optimized_sanitize_utf8_to_escaped_binary(data, length, &sanitized_length, buf, sizeof(buf));
+              log_msg_set_value(msg, LM_V_MESSAGE, buf, _rstripped_message_length((guchar *) buf, sanitized_length));
+              msg->flags |= LF_UTF8;
+              return TRUE;
+            }
+          else
+            msg->flags |= LF_UTF8;
+        }
+      else if ((options->flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) data, length, NULL))
+        msg->flags |= LF_UTF8;
+
+      log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) data, _rstripped_message_length(data, length));
       return TRUE;
     }
 }

@@ -1249,6 +1249,12 @@ Test(msgparse, test_sanitize_utf8)
       .expected_host = "bzorp",
       .expected_msg = "PTHREAD \\xf0(\\x8c( initialized",
     },
+    {
+      .msg = "rena\xa0\xa1",
+      .parse_flags = LP_NOPARSE | LP_SANITIZE_UTF8,
+      .expected_pri = 65535,
+      .expected_msg = "rena\\xa0\\xa1",
+    },
     {NULL}
   };
   run_parameterized_test(params);
