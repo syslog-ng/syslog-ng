@@ -81,14 +81,16 @@
  *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <ctype.h>
-#include <stdint.h>
-#include <string.h>
 
 #include "timeutils/wallclocktime.h"
 #include "timeutils/unixtime.h"
 #include "timeutils/cache.h"
 #include "timeutils/misc.h"
+
+#include <ctype.h>
+#include <stdint.h>
+#include <string.h>
+
 
 void
 wall_clock_time_unset(WallClockTime *self)
@@ -872,10 +874,9 @@ wall_clock_time_guess_missing_year(WallClockTime *self)
 {
   if (self->wct_year == -1)
     {
-      time_t now;
+      time_t now = get_cached_realtime_sec();
       struct tm tm;
 
-      now = cached_g_current_time_sec();
       cached_localtime(&now, &tm);
       self->wct_year = determine_year_for_month(self->wct_mon, &tm);
     }
@@ -893,10 +894,9 @@ wall_clock_time_guess_missing_fields(WallClockTime *self)
    * the missing field makes sense. And the year is initializeed to the current
    *  one.
    */
-  time_t now;
+  time_t now = get_cached_realtime_sec();
   struct tm tm;
 
-  now = cached_g_current_time_sec();
   cached_localtime(&now, &tm);
 
   if (self->wct_year == -1 && self->wct_mon == -1 && self->wct_mday == -1)

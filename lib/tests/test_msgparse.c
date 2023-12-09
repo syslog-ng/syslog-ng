@@ -167,7 +167,7 @@ test_log_messages_can_be_parsed(struct msgparse_params *param)
     }
   else
     {
-      now = cached_g_current_time_sec();
+      now = get_cached_realtime_sec();
       cr_assert(_absolute_value(parsed_timestamp->ut_sec - now) <= 5,
                 "Expected parsed message timestamp to be set to now; now='%d', timestamp->tv_sec='%d'",
                 (gint)now, (gint)parsed_timestamp->ut_sec);

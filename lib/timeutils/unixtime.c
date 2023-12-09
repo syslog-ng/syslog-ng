@@ -39,12 +39,12 @@ unix_time_unset(UnixTime *self)
 void
 unix_time_set_now(UnixTime *self)
 {
-  GTimeVal tv;
+  struct timespec now;
 
-  cached_g_current_time(&tv);
-  self->ut_sec = tv.tv_sec;
-  self->ut_usec = tv.tv_usec;
-  self->ut_gmtoff = get_local_timezone_ofs(self->ut_sec);
+  get_cached_realtime(&now);
+  self->ut_sec = now.tv_sec;
+  self->ut_usec = now.tv_nsec / 1000;
+  self->ut_gmtoff = get_local_timezone_ofs(now.tv_sec);
 }
 
 static glong
@@ -133,9 +133,9 @@ _is_gmtoff_valid(long gmtoff)
 static glong
 _guess_recv_timezone_offset_based_on_time_difference(UnixTime *self)
 {
-  GTimeVal now;
+  struct timespec now;
 
-  cached_g_current_time(&now);
+  get_cached_realtime(&now);
 
   glong diff_in_sec = now.tv_sec - self->ut_sec;
 

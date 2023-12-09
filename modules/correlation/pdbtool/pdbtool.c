@@ -513,7 +513,7 @@ pdbtool_match(int argc, char *argv[])
   ret = 0;
   while (!eof && (buf || match_message))
     {
-      invalidate_cached_time();
+      invalidate_cached_realtime();
       if (G_LIKELY(proto))
         {
           log_msg_unref(msg);

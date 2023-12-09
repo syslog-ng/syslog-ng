@@ -195,7 +195,7 @@ py_log_message_init(PyObject *s, PyObject *args, PyObject *kwds)
 
   self->msg = log_msg_new_empty();
   self->bookmark_data = NULL;
-  invalidate_cached_time();
+  invalidate_cached_realtime();
 
   if (message)
     log_msg_set_value(self->msg, LM_V_MESSAGE, message, message_length);

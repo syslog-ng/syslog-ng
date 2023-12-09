@@ -27,6 +27,7 @@
 #include "apphook.h"
 #include "timeutils/cache.h"
 #include "timeutils/misc.h"
+#include "libtest/fake-time.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -67,8 +68,7 @@ _fill_benchmark_dns_cache(DNSCache *cache, gint cache_size)
 static void
 _invalidate_with_sleep(guint seconds)
 {
-  sleep(seconds);
-  invalidate_cached_time();
+  fake_time_add(seconds);
 }
 
 void
