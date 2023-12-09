@@ -45,7 +45,7 @@ static gboolean
 _is_pattern_matches_key(GPatternSpec *pattern, gpointer key)
 {
   gchar *counter_name = (gchar *) key;
-  return g_pattern_match_string(pattern, counter_name);
+  return g_pattern_spec_match_string(pattern, counter_name);
 }
 
 static gboolean

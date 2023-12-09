@@ -305,7 +305,7 @@ value_pairs_transform_set_free(ValuePairsTransformSet *vpts)
 void
 value_pairs_transform_set_apply(ValuePairsTransformSet *vpts, GString *key)
 {
-  if (g_pattern_match_string(vpts->pattern, key->str))
+  if (g_pattern_spec_match_string(vpts->pattern, key->str))
     {
       GList *l;
 

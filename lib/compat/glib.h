@@ -63,4 +63,9 @@ gunichar g_utf8_get_char_validated_fixed (const gchar *p, gssize max_len);
 #define g_memdup2 g_memdup
 #endif
 
+#if !GLIB_CHECK_VERSION(2, 70, 0)
+#define g_pattern_spec_match_string g_pattern_match_string
+#define g_pattern_spec_match g_pattern_match
+#endif
+
 #endif

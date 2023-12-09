@@ -445,7 +445,7 @@ string_matcher_match(StringMatcher *self, const char *string, gsize string_len)
     case SMM_SUBSTRING:
       return (strstr(string, self->pattern) != NULL);
     case SMM_GLOB:
-      return (g_pattern_match_string(self->glob, string));
+      return (g_pattern_spec_match_string(self->glob, string));
     case SMM_PCRE:
       return (string_matcher_match_pcre(self, string, string_len));
     default:
