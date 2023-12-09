@@ -64,6 +64,12 @@ typedef enum
   LTR_MAX
 } LogThreadedResult;
 
+enum
+{
+  LTDF_SEQNUM_ALL = 0x0001,
+  /* NOTE: everything >= 0x1000 is driver specific */
+};
+
 typedef struct _LogThreadedDestDriver LogThreadedDestDriver;
 typedef struct _LogThreadedDestWorker LogThreadedDestWorker;
 
@@ -182,6 +188,7 @@ struct _LogThreadedDestDriver
    * increased in parallel by the multiple threads. */
 
   gint32 shared_seq_num;
+  guint32 flags;
 
   const gchar *(*format_stats_key)(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb);
 };
@@ -223,7 +230,7 @@ log_threaded_dest_worker_disconnect(LogThreadedDestWorker *self)
 static inline LogThreadedResult
 log_threaded_dest_worker_insert(LogThreadedDestWorker *self, LogMessage *msg)
 {
-  if (msg->flags & LF_LOCAL)
+  if ((self->owner->flags & LTDF_SEQNUM_ALL) || (msg->flags & LF_LOCAL))
     {
       if (self->owner->num_workers > 1)
         self->seq_num = step_sequence_number_atomic(&self->owner->shared_seq_num);
@@ -305,5 +312,6 @@ void log_threaded_dest_driver_set_flush_on_worker_key_change(LogDriver *s, gbool
 void log_threaded_dest_driver_set_batch_lines(LogDriver *s, gint batch_lines);
 void log_threaded_dest_driver_set_batch_timeout(LogDriver *s, gint batch_timeout);
 void log_threaded_dest_driver_set_time_reopen(LogDriver *s, time_t time_reopen);
+gboolean log_threaded_dest_driver_process_flag(LogDriver *driver, const gchar *flag);
 
 #endif

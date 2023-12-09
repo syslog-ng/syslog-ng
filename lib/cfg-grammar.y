@@ -1325,12 +1325,26 @@ threaded_dest_driver_workers_option
 
 /* implies dest_driver_option */
 threaded_dest_driver_general_option
+        : threaded_dest_driver_general_option_noflags
+        | threaded_dest_driver_flags_option
+        ;
+
+threaded_dest_driver_general_option_noflags
 	: KW_RETRIES '(' positive_integer ')'
         {
           log_threaded_dest_driver_set_max_retries_on_error(last_driver, $3);
         }
         | KW_TIME_REOPEN '(' positive_integer ')' { log_threaded_dest_driver_set_time_reopen(last_driver, $3); }
         | dest_driver_option
+        ;
+
+threaded_dest_driver_flags_option
+        : KW_FLAGS '(' threaded_dest_driver_flags ')'
+        ;
+
+threaded_dest_driver_flags
+        : string threaded_dest_driver_flags     { CHECK_ERROR(log_threaded_dest_driver_process_flag(last_driver, $1), @1, "Unknown flag \"%s\"", $1); free($1); }
+        |
         ;
 
 /* implies source_driver_option and source_option */

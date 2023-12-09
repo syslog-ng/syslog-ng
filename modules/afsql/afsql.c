@@ -211,14 +211,6 @@ afsql_dd_set_session_statements(LogDriver *s, GList *session_statements)
 }
 
 void
-afsql_dd_set_flags(LogDriver *s, gint flags)
-{
-  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-
-  self->flags = flags;
-}
-
-void
 afsql_dd_set_create_statement_append(LogDriver *s, const gchar *create_statement_append)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
@@ -624,7 +616,7 @@ afsql_dd_ensure_table_is_syslogng_conform(AFSqlDestDriver *self, GString *table)
   dbi_result db_res = NULL;
   gboolean success = FALSE;
 
-  if (self->flags & AFSQL_DDF_DONT_CREATE_TABLES)
+  if (self->super.flags & AFSQL_DDF_DONT_CREATE_TABLES)
     return TRUE;
 
   _sanitize_sql_identifier(table->str);
@@ -724,7 +716,7 @@ afsql_dd_connect(LogThreadedDestDriver *s)
   dbi_conn_set_option(self->dbi_ctx, "password", self->password);
   dbi_conn_set_option(self->dbi_ctx, "dbname", self->database);
   dbi_conn_set_option(self->dbi_ctx, "encoding", self->encoding);
-  dbi_conn_set_option(self->dbi_ctx, "auto-commit", self->flags & AFSQL_DDF_EXPLICIT_COMMITS ? "false" : "true");
+  dbi_conn_set_option(self->dbi_ctx, "auto-commit", self->super.flags & AFSQL_DDF_EXPLICIT_COMMITS ? "false" : "true");
 
   _enable_database_specific_hacks(self);
 
@@ -965,7 +957,7 @@ drop:
 static inline gboolean
 afsql_dd_is_transaction_handling_enabled(const AFSqlDestDriver *self)
 {
-  return !!(self->flags & AFSQL_DDF_EXPLICIT_COMMITS);
+  return !!(self->super.flags & AFSQL_DDF_EXPLICIT_COMMITS);
 }
 
 static inline gboolean
@@ -1365,15 +1357,17 @@ afsql_dd_new(GlobalConfig *cfg)
   return &self->super.super.super;
 }
 
-gint
-afsql_dd_lookup_flag(const gchar *flag)
+CfgFlagHandler afsql_dd_flag_handlers[] =
 {
-  if (strcmp(flag, "explicit-commits") == 0)
-    return AFSQL_DDF_EXPLICIT_COMMITS;
-  else if (strcmp(flag, "dont-create-tables") == 0)
-    return AFSQL_DDF_DONT_CREATE_TABLES;
-  else
-    msg_warning("Unknown SQL flag",
-                evt_tag_str("flag", flag));
-  return 0;
+  { "explicit-commits",   CFH_SET, offsetof(LogThreadedDestDriver, flags), AFSQL_DDF_EXPLICIT_COMMITS },
+  { "dont-create-tables", CFH_SET, offsetof(LogThreadedDestDriver, flags), AFSQL_DDF_DONT_CREATE_TABLES },
+  { NULL },
+};
+
+gboolean
+afsql_dd_process_flag(LogDriver *driver, const gchar *flag)
+{
+  if (!log_threaded_dest_driver_process_flag(driver, flag))
+    return cfg_process_flag(afsql_dd_flag_handlers, driver, flag);
+  return TRUE;
 }
