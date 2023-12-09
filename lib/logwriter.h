@@ -94,6 +94,6 @@ void log_writer_options_defaults(LogWriterOptions *options);
 void log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 option_flags);
 void log_writer_options_destroy(LogWriterOptions *options);
 void log_writer_options_set_mark_mode(LogWriterOptions *options, const gchar *mark_mode);
-gint log_writer_options_lookup_flag(const gchar *flag);
+gboolean log_writer_options_process_flag(LogWriterOptions *options, const gchar *flag);
 
 #endif

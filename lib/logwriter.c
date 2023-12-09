@@ -2015,17 +2015,18 @@ log_writer_options_destroy(LogWriterOptions *options)
   options->initialized = FALSE;
 }
 
-gint
-log_writer_options_lookup_flag(const gchar *flag)
+CfgFlagHandler log_writer_flag_handlers[] =
 {
-  if (strcmp(flag, "syslog-protocol") == 0)
-    return LWO_SYSLOG_PROTOCOL;
-  if (strcmp(flag, "no-multi-line") == 0)
-    return LWO_NO_MULTI_LINE;
-  if (strcmp(flag, "threaded") == 0)
-    return LWO_THREADED;
-  if (strcmp(flag, "ignore-errors") == 0)
-    return LWO_IGNORE_ERRORS;
-  msg_error("Unknown dest writer flag", evt_tag_str("flag", flag));
-  return 0;
+  /* LogReaderOptions */
+  { "syslog-protocol", CFH_SET, offsetof(LogWriterOptions, options), LWO_SYSLOG_PROTOCOL },
+  { "no-multi-line",   CFH_SET, offsetof(LogWriterOptions, options), LWO_NO_MULTI_LINE },
+  { "threaded",        CFH_SET, offsetof(LogWriterOptions, options), LWO_THREADED },
+  { "ignore-errors",   CFH_SET, offsetof(LogWriterOptions, options), LWO_IGNORE_ERRORS },
+  { NULL },
+};
+
+gboolean
+log_writer_options_process_flag(LogWriterOptions *options, const gchar *flag)
+{
+  return cfg_process_flag(log_writer_flag_handlers, options, flag);
 }
