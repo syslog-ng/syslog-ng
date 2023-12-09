@@ -64,7 +64,7 @@ struct _LogQueue
 
   gint throttle;
   gint throttle_buckets;
-  GTimeVal last_throttle_check;
+  struct timespec last_throttle_check;
 
   gchar *persist_name;
 

@@ -185,20 +185,20 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
     {
       gint64 diff;
       gint new_buckets;
-      GTimeVal now;
+      struct timespec now;
 
-      g_get_current_time(&now);
+      clock_gettime(CLOCK_MONOTONIC, &now);
       /* throttling is enabled, calculate new buckets */
       if (self->last_throttle_check.tv_sec != 0)
         {
-          diff = g_time_val_diff(&now, &self->last_throttle_check);
+          diff = timespec_diff_nsec(&now, &self->last_throttle_check);
         }
       else
         {
           diff = 0;
           self->last_throttle_check = now;
         }
-      new_buckets = (self->throttle * diff) / G_USEC_PER_SEC;
+      new_buckets = (self->throttle * diff) / NSEC_PER_SEC;
       if (new_buckets)
         {
 
