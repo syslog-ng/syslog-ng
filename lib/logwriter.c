@@ -938,6 +938,9 @@ _get_seq_num(LogWriter *self, LogMessage  *lm)
 {
   static NVHandle meta_seqid = 0;
 
+  if (self->options->options & LWO_SEQNUM_ALL)
+    return self->seq_num;
+
   if (!meta_seqid)
     meta_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
 
@@ -1260,9 +1263,8 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
 
   if (consumed)
     {
-      if (msg->flags & LF_LOCAL)
+      if ((self->options->options & LWO_SEQNUM_ALL) || (msg->flags & LF_LOCAL))
         step_sequence_number(&self->seq_num);
-
 
       log_writer_update_message_stats(self, msg, msg_len);
       stats_byte_counter_add(&self->metrics.written_bytes, msg_len);
@@ -2023,11 +2025,12 @@ log_writer_options_destroy(LogWriterOptions *options)
 
 CfgFlagHandler log_writer_flag_handlers[] =
 {
-  /* LogReaderOptions */
   { "syslog-protocol", CFH_SET, offsetof(LogWriterOptions, options), LWO_SYSLOG_PROTOCOL },
   { "no-multi-line",   CFH_SET, offsetof(LogWriterOptions, options), LWO_NO_MULTI_LINE },
   { "threaded",        CFH_SET, offsetof(LogWriterOptions, options), LWO_THREADED },
   { "ignore-errors",   CFH_SET, offsetof(LogWriterOptions, options), LWO_IGNORE_ERRORS },
+  { "seqnum-all",      CFH_SET, offsetof(LogWriterOptions, options), LWO_SEQNUM_ALL },
+  { "no-seqnum-all",   CFH_CLEAR, offsetof(LogWriterOptions, options), LWO_SEQNUM_ALL },
   { NULL },
 };
 
