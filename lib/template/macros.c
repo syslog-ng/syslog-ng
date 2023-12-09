@@ -229,7 +229,7 @@ LogMacroDef macros[] =
 };
 
 
-static GTimeVal app_uptime;
+static struct timespec app_uptime;
 static GHashTable *macro_hash;
 
 static void
@@ -713,10 +713,10 @@ log_macro_expand(gint id, LogTemplateEvalOptions *options, const LogMessage *msg
     }
     case M_SYSUPTIME:
     {
-      GTimeVal ct;
+      struct timespec ct;
 
-      g_get_current_time(&ct);
-      format_uint64_padded(result, 0, 0, 10, g_time_val_diff(&ct, &app_uptime) / 1000 / 10);
+      clock_gettime(CLOCK_MONOTONIC, &ct);
+      format_uint64_padded(result, 0, 0, 10, timespec_diff_msec(&ct, &app_uptime) / 10);
       break;
     }
 
@@ -760,7 +760,7 @@ log_macros_global_init(void)
   gint i;
 
   /* init the uptime (SYSUPTIME macro) */
-  g_get_current_time(&app_uptime);
+  clock_gettime(CLOCK_MONOTONIC, &app_uptime);
 
   macro_hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   for (i = 0; macros[i].name; i++)
