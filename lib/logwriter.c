@@ -933,12 +933,9 @@ log_writer_do_padding(LogWriter *self, GString *result)
   memset(result->str + len - 1, '\0', padd_bytes);
 }
 
-void
-log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
+static guint32
+_get_seq_num(LogWriter *self, LogMessage  *lm)
 {
-  LogTemplate *template = NULL;
-  UnixTime *stamp;
-  guint32 seq_num;
   static NVHandle meta_seqid = 0;
 
   if (!meta_seqid)
@@ -946,7 +943,7 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 
   if (lm->flags & LF_LOCAL)
     {
-      seq_num = self->seq_num;
+      return self->seq_num;
     }
   else
     {
@@ -956,13 +953,22 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       seqid = log_msg_get_value(lm, meta_seqid, &seqid_length);
       APPEND_ZERO(seqid, seqid, seqid_length);
       if (seqid[0])
-        seq_num = strtol(seqid, NULL, 10);
+        return strtol(seqid, NULL, 10);
       else
-        seq_num = 0;
+        return 0;
     }
+}
+
+void
+log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
+{
+  LogTemplate *template = NULL;
+  UnixTime *stamp;
+  guint32 seq_num;
 
   /* no template was specified, use default */
   stamp = &lm->timestamps[LM_TS_STAMP];
+  seq_num = _get_seq_num(self, lm);
 
   g_string_truncate(result, 0);
 
