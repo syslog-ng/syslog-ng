@@ -155,8 +155,8 @@ static void
 teardown(void)
 {
   stop_grabbing_messages();
-  app_shutdown();
   cfg_free(configuration);
+  app_shutdown();
 }
 
 TestSuite(kafka_config, .init = setup, .fini = teardown);

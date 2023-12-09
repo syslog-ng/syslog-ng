@@ -190,6 +190,8 @@ threaded_feed(gpointer args)
   struct timespec start, end;
   glong diff;
 
+  iv_init();
+
   /* emulate main loop for LogQueue */
   main_loop_worker_thread_start(MLW_ASYNC_WORKER);
 
@@ -215,6 +217,7 @@ threaded_feed(gpointer args)
   g_mutex_unlock(&tlock);
   main_loop_worker_thread_stop();
   log_msg_unref(tmpl);
+  iv_deinit();
   return NULL;
 }
 
@@ -224,6 +227,8 @@ threaded_consume(gpointer st)
   LogQueue *q = (LogQueue *) st;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   gint i;
+
+  iv_init();
 
   /* just to make sure time is properly cached */
   main_loop_worker_thread_start(MLW_ASYNC_WORKER);
@@ -260,6 +265,7 @@ threaded_consume(gpointer st)
 
   main_loop_worker_thread_stop();
 
+  iv_deinit();
   return NULL;
 }
 

@@ -184,6 +184,7 @@ Test(scratch_buffers_stats, stats_counters_are_updated)
 static void
 setup(void)
 {
+  iv_init();
   main_loop_thread_resource_init();
   stats_init();
   scratch_buffers_global_init();
@@ -199,6 +200,7 @@ teardown(void)
   scratch_buffers_allocator_deinit();
   scratch_buffers_global_deinit();
   stats_destroy();
+  iv_deinit();
 }
 
 static void
