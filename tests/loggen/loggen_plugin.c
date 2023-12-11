@@ -42,6 +42,19 @@ thread_check_exit_criteria(ThreadData *thread_context)
       return TRUE;
     }
 
+  long seq_check;
+
+  /* 0.1 sec */
+  seq_check = thread_context->option->rate / 10;
+
+  /* or every 1000 messages */
+  if (seq_check > 1000)
+    seq_check = 1000;
+
+
+  if (seq_check > 1 && (thread_context->sent_messages % seq_check) != 0)
+    return FALSE;
+
   struct timeval now;
   gettimeofday(&now, NULL);
 
@@ -59,28 +72,30 @@ gboolean
 thread_check_time_bucket(ThreadData *thread_context)
 {
   struct timeval now;
+
+  if (thread_context->buckets > 0)
+    return FALSE;
+
   gettimeofday(&now, NULL);
 
   double diff_usec = time_val_diff_in_usec(&now, &thread_context->last_throttle_check);
-  if (thread_context->buckets == 0 || diff_usec > 1e5)
+  long new_buckets = (long)((thread_context->option->rate * diff_usec) / USEC_PER_SEC);
+  if (new_buckets)
     {
-      /* check rate every 0.1sec */
-      long new_buckets = (long)((thread_context->option->rate * diff_usec) / USEC_PER_SEC);
-      if (new_buckets)
-        {
-          thread_context->buckets = (thread_context->option->rate < thread_context->buckets + new_buckets) ?
-                                    thread_context->option->rate : thread_context->buckets + new_buckets;
-          thread_context->last_throttle_check = now;
-        }
+      thread_context->buckets = (thread_context->option->rate < thread_context->buckets + new_buckets) ?
+                                thread_context->option->rate : thread_context->buckets + new_buckets;
+      thread_context->last_throttle_check = now;
     }
 
   if (thread_context->buckets == 0)
     {
       struct timespec tspec;
-      long msec = (1000 / thread_context->option->rate) + 1;
 
-      tspec.tv_sec = msec / 1000;
-      tspec.tv_nsec = (msec % 1000) * 1000000;
+      /* wait at least 3 messages worth of time but not more than 1s */
+      tspec.tv_sec = 0;
+      tspec.tv_nsec = 3 * (1000000000LL / thread_context->option->rate);
+      if (tspec.tv_nsec >= 100000000)
+        tspec.tv_nsec = 100000000;
       while (nanosleep(&tspec, &tspec) < 0 && errno == EINTR)
         ;
       return TRUE;

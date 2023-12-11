@@ -137,7 +137,9 @@ generate_message(char *buffer, int buffer_size, ThreadData *thread_context, unsi
   if (read_from_file)
     str_len = read_next_message_from_file(buffer, buffer_size, syslog_proto, thread_context->index);
   else
-    str_len = generate_log_line(buffer, buffer_size, syslog_proto, thread_context->index, seq);
+    str_len = generate_log_line(thread_context,
+                                buffer, buffer_size,
+                                syslog_proto, thread_context->index, global_plugin_option.rate, seq);
 
   if (str_len < 0)
     return -1;
@@ -396,10 +398,16 @@ print_statistic(struct timeval *start_time)
 {
   gint64 count;
   static gint64 last_count = 0;
-  static struct timeval last_ts_format;
+  static struct timeval last_ts_format = {0};
 
   struct timeval now;
   gettimeofday(&now, NULL);
+
+  if (!last_ts_format.tv_sec)
+    {
+      last_ts_format = now;
+      return;
+    }
 
   if (!quiet && !csv)
     {
@@ -410,7 +418,7 @@ print_statistic(struct timeval *start_time)
           count = sent_messages_num;
           g_mutex_unlock(&message_counter_lock);
 
-          if (count > last_count && last_count > 0)
+          if (count > last_count)
             {
               fprintf(stderr, "count=%"G_GINT64_FORMAT", rate = %.2lf msg/sec\n",
                       count,
