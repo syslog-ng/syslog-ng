@@ -65,6 +65,7 @@ void filterx_expr_init_instance(FilterXExpr *self);
 FilterXExpr *filterx_expr_new(void);
 FilterXExpr *filterx_expr_ref(FilterXExpr *self);
 void filterx_expr_unref(FilterXExpr *self);
+void filterx_expr_free_method(FilterXExpr *self);
 
 typedef struct _FilterXUnaryOp
 {
