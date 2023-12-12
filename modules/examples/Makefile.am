@@ -7,13 +7,15 @@ include modules/examples/inner-destinations/http-test-slots/Makefile.am
 include modules/examples/inner-destinations/tls-test-validation/Makefile.am
 include modules/examples/destinations/example_destination/Makefile.am
 include modules/examples/sources/random-choice-generator/Makefile.am
+include modules/examples/filterx/example-filterx-func/Makefile.am
 
 EXAMPLE_PLUGINS = \
   $(top_builddir)/modules/examples/sources/libmsg-generator.la \
   $(top_builddir)/modules/examples/sources/libthreaded-diskq-source.la \
   $(top_builddir)/modules/examples/inner-destinations/http-test-slots/libhttp-test-slots.la \
   $(top_builddir)/modules/examples/inner-destinations/tls-test-validation/libtls-test-validation.la \
-  $(top_builddir)/modules/examples/destinations/example_destination/libexample_destination.la
+  $(top_builddir)/modules/examples/destinations/example_destination/libexample_destination.la \
+  $(top_builddir)/modules/examples/filterx/example-filterx-func/libexample-filterx-func.la
 
 if HAVE_GETRANDOM
 EXAMPLE_PLUGINS += $(top_builddir)/modules/examples/sources/libthreaded-random-generator.la
