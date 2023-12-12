@@ -128,7 +128,7 @@ ParameterizedTest(StringBoolPair *string_value_pair, type_hints, test_bool_cast)
   gboolean value;
   GError *error = NULL;
 
-  cr_assert_eq(type_cast_to_boolean(string_value_pair->string, &value, &error), TRUE,
+  cr_assert_eq(type_cast_to_boolean(string_value_pair->string, -1, &value, &error), TRUE,
                "Type cast of \"%s\" to gboolean failed", string_value_pair->string);
   cr_assert_eq(value, string_value_pair->value);
   cr_assert_null(error);
@@ -140,7 +140,7 @@ Test(type_hints, test_invalid_bool_cast)
   gboolean value;
 
   /* test invalid boolean value cast */
-  cr_assert_eq(type_cast_to_boolean("booyah", &value, &error), FALSE,
+  cr_assert_eq(type_cast_to_boolean("booyah", -1, &value, &error), FALSE,
                "Type cast \"booyah\" to gboolean should be failed");
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
@@ -154,20 +154,20 @@ Test(type_hints, test_int32_cast)
   GError *error = NULL;
   gint32 value;
 
-  cr_assert(type_cast_to_int32("12345", &value, &error), "Type cast of \"12345\" to gint32 failed");
+  cr_assert(type_cast_to_int32("12345", -1, &value, &error), "Type cast of \"12345\" to gint32 failed");
   cr_assert_eq(value, 12345);
   cr_assert_null(error);
 
-  cr_assert(type_cast_to_int32("0x1000", &value, &error), "Type cast of \"0x1000\" to gint32 failed");
+  cr_assert(type_cast_to_int32("0x1000", -1, &value, &error), "Type cast of \"0x1000\" to gint32 failed");
   cr_assert_eq(value, 0x1000);
   cr_assert_null(error);
 
-  cr_assert(type_cast_to_int32("0111", &value, &error), "Type cast of \"0111\" to gint32 failed");
+  cr_assert(type_cast_to_int32("0111", -1, &value, &error), "Type cast of \"0111\" to gint32 failed");
   cr_assert_eq(value, 111);
   cr_assert_null(error);
 
   /* test for invalid string */
-  cr_assert_not(type_cast_to_int32("12345a", &value, &error),
+  cr_assert_not(type_cast_to_int32("12345a", -1, &value, &error),
                 "Type cast of invalid string to gint32 should be failed");
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
@@ -175,7 +175,7 @@ Test(type_hints, test_int32_cast)
   g_clear_error(&error);
 
   /* empty string */
-  cr_assert_not(type_cast_to_int32("", &value, &error),
+  cr_assert_not(type_cast_to_int32("", -1, &value, &error),
                 "Type cast of empty string to gint32 should be failed");
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
@@ -184,26 +184,62 @@ Test(type_hints, test_int32_cast)
   g_clear_error(&error);
 }
 
+Test(type_hints, test_int32_nonzero_terminated)
+{
+  GError *error = NULL;
+  gint32 int32_value;
+  gint64 int64_value;
+  gboolean bool_value;
+  gdouble dbl_value;
+  UnixTime ut_value;
+
+  cr_assert(type_cast_to_int32("12345", 3, &int32_value, &error),
+            "Type cast of non-zero terminated \"123\" to gint32 failed");
+  cr_assert_eq(int32_value, 123);
+  cr_assert_null(error);
+
+  cr_assert(type_cast_to_int64("12345", 3, &int64_value, &error),
+            "Type cast of non-zero terminated \"123\" to gint64 failed");
+  cr_assert_eq(int64_value, 123);
+  cr_assert_null(error);
+
+  cr_assert(type_cast_to_boolean("12", 1, &bool_value, &error),
+            "Type cast of non-zero terminated \"1\" to gboolean failed");
+  cr_assert_eq(bool_value, 1);
+  cr_assert_null(error);
+
+  cr_assert(type_cast_to_double("123456", 3, &dbl_value, &error),
+            "Type cast of non-zero terminated \"123\" to gdouble failed");
+  cr_assert(dbl_value - 123 < 0.1);
+  cr_assert_null(error);
+
+  cr_assert(type_cast_to_datetime_unixtime("1699134067.123", 12, &ut_value, &error),
+            "Type cast of non-zero terminated \"1699134067.1\" to unixtime failed");
+  cr_assert(ut_value.ut_sec == 1699134067);
+  cr_assert(ut_value.ut_usec == 100000);
+  cr_assert_null(error);
+}
+
 Test(type_hints, test_int64_cast)
 {
   GError *error = NULL;
   gint64 value;
 
-  cr_assert(type_cast_to_int64("12345", &value, &error), "Type cast of \"12345\" to gint64 failed");
+  cr_assert(type_cast_to_int64("12345", -1, &value, &error), "Type cast of \"12345\" to gint64 failed");
   cr_assert_eq(value, 12345);
   cr_assert_null(error);
 
-  cr_assert(type_cast_to_int64("0x1000", &value, &error), "Type cast of \"0x1000\" to gint64 failed");
+  cr_assert(type_cast_to_int64("0x1000", -1, &value, &error), "Type cast of \"0x1000\" to gint64 failed");
   cr_assert_eq(value, 0x1000);
   cr_assert_null(error);
 
-  cr_assert(type_cast_to_int64("0111", &value, &error), "Type cast of \"0111\" to gint64 failed");
+  cr_assert(type_cast_to_int64("0111", -1, &value, &error), "Type cast of \"0111\" to gint64 failed");
   cr_assert_eq(value, 111);
   cr_assert_null(error);
 
 
   /* test for invalid string */
-  cr_assert_not(type_cast_to_int64("12345a", &value, &error),
+  cr_assert_not(type_cast_to_int64("12345a", -1, &value, &error),
                 "Type cast of invalid string to gint64 should be failed");
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
@@ -211,7 +247,7 @@ Test(type_hints, test_int64_cast)
   g_clear_error(&error);
 
   /* empty string */
-  cr_assert_not(type_cast_to_int64("", &value, &error),
+  cr_assert_not(type_cast_to_int64("", -1, &value, &error),
                 "Type cast of empty string to gint64 should be failed");
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
@@ -255,7 +291,7 @@ ParameterizedTest(StringDoublePair *string_value_pair, type_hints, test_double_c
   gdouble value;
   GError *error = NULL;
 
-  cr_assert(type_cast_to_double(string_value_pair->string, &value, &error),
+  cr_assert(type_cast_to_double(string_value_pair->string, -1, &value, &error),
             "Type cast of \"%s\" to double failed", string_value_pair->string);
 
   cr_assert_gdouble_eq(value, string_value_pair->value);
@@ -281,7 +317,7 @@ ParameterizedTest(StringDoublePair *string_value_pair, type_hints, test_invalid_
   gdouble value;
   GError *error = NULL;
 
-  cr_assert_not(type_cast_to_double(string_value_pair->string, &value, &error),
+  cr_assert_not(type_cast_to_double(string_value_pair->string, -1, &value, &error),
                 "Type cast of invalid string (%s) to double should be failed", string_value_pair->string);
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
@@ -313,7 +349,7 @@ ParameterizedTest(StringUInt64Pair *string_value_pair, type_hints, test_datetime
   gint64 value;
   GError *error = NULL;
 
-  cr_assert_eq(type_cast_to_datetime_msec(string_value_pair->string, &value, &error), TRUE,
+  cr_assert_eq(type_cast_to_datetime_msec(string_value_pair->string, -1, &value, &error), TRUE,
                "Type cast of \"%s\" to msecs failed", string_value_pair->string);
   cr_assert_eq(value, string_value_pair->value,
                "datetime cast failed %" G_GINT64_FORMAT " != %" G_GINT64_FORMAT,
@@ -345,7 +381,7 @@ ParameterizedTest(StringUInt64Pair *string_value_pair, type_hints, test_invalid_
   GError *error = NULL;
   gint64 value;
 
-  cr_assert_eq(type_cast_to_datetime_msec(string_value_pair->string, &value, &error), FALSE,
+  cr_assert_eq(type_cast_to_datetime_msec(string_value_pair->string, -1, &value, &error), FALSE,
                "Type cast of invalid string to gint64 should have failed %s", string_value_pair->string);
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);

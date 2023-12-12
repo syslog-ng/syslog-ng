@@ -285,11 +285,11 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
     {
       gboolean b;
 
-      if (type_cast_to_boolean(value, &b, NULL))
+      if (type_cast_to_boolean(value, value_len, &b, NULL))
         bson_append_bool(o, name, -1, b);
       else
         {
-          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, "boolean");
+          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, value_len, "boolean");
 
           if (fallback)
             bson_append_utf8(o, name, -1, value, value_len);
@@ -302,7 +302,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
     {
       gint64 i;
 
-      if (type_cast_to_int64(value, &i, NULL))
+      if (type_cast_to_int64(value, value_len, &i, NULL))
         {
           if (G_MININT32 <= i && i <= G_MAXINT32)
             bson_append_int32(o, name, -1, i);
@@ -311,7 +311,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
         }
       else
         {
-          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, "integer");
+          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, value_len, "integer");
 
           if (fallback)
             bson_append_utf8(o, name, -1, value, value_len);
@@ -325,11 +325,11 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
     {
       gdouble d;
 
-      if (type_cast_to_double(value, &d, NULL))
+      if (type_cast_to_double(value, value_len, &d, NULL))
         bson_append_double(o, name, -1, d);
       else
         {
-          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, "double");
+          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, value_len, "double");
           if (fallback)
             bson_append_utf8(o, name, -1, value, value_len);
           else
@@ -342,11 +342,11 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
     {
       gint64 msec;
 
-      if (type_cast_to_datetime_msec(value, &msec, NULL))
+      if (type_cast_to_datetime_msec(value, value_len, &msec, NULL))
         bson_append_date_time(o, name, -1, msec);
       else
         {
-          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, "datetime");
+          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, value_len, "datetime");
 
           if (fallback)
             bson_append_utf8(o, name, -1, value, value_len);
@@ -394,7 +394,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
         }
       else
         {
-          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, "json");
+          gboolean r = type_cast_drop_helper(owner->template_options.on_error, value, value_len, "json");
 
           if (fallback)
             bson_append_utf8(o, name, -1, value, value_len);

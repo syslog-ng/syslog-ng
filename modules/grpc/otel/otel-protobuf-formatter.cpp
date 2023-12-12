@@ -113,7 +113,7 @@ _get_bool(LogMessage *msg, const gchar *name)
     return false;
 
   gboolean b = false;
-  if (!type_cast_to_boolean(value, &b, NULL))
+  if (!type_cast_to_boolean(value, len, &b, NULL))
     return false;
 
   return b;
@@ -130,7 +130,7 @@ _get_double(LogMessage *msg, const gchar *name)
     return 0;
 
   gdouble d = 0;
-  if (!type_cast_to_double(value, &d, NULL))
+  if (!type_cast_to_double(value, len, &d, NULL))
     return 0;
 
   return d;
@@ -195,7 +195,7 @@ _set_AnyValue(const gchar *value, gssize len, LogMessageValueType type, AnyValue
     case LM_VT_BOOLEAN:
     {
       gboolean b = FALSE;
-      if (!type_cast_to_boolean(value, &b, &error))
+      if (!type_cast_to_boolean(value, len, &b, &error))
         {
           msg_error("OpenTelemetry: Cannot parse boolean value, falling back to FALSE",
                     evt_tag_str("name", name_for_error_log),
@@ -209,7 +209,7 @@ _set_AnyValue(const gchar *value, gssize len, LogMessageValueType type, AnyValue
     case LM_VT_DOUBLE:
     {
       gdouble d = 0;
-      if (!type_cast_to_double(value, &d, &error))
+      if (!type_cast_to_double(value, len, &d, &error))
         {
           msg_error("OpenTelemetry: Cannot parse double value, falling back to 0",
                     evt_tag_str("name", name_for_error_log),
@@ -223,7 +223,7 @@ _set_AnyValue(const gchar *value, gssize len, LogMessageValueType type, AnyValue
     case LM_VT_INTEGER:
     {
       gint64 ll = 0;
-      if (!type_cast_to_int64(value, &ll, &error))
+      if (!type_cast_to_int64(value, len, &ll, &error))
         {
           msg_error("OpenTelemetry: Cannot parse integer value, falling back to 0",
                     evt_tag_str("name", name_for_error_log),
@@ -589,7 +589,7 @@ ProtobufFormatter::add_exemplars(LogMessage *msg, std::string &key_buffer, Repea
       if (type == LM_VT_INTEGER)
         {
           gint64 ll = 0;
-          if (!type_cast_to_int64(value, &ll, &error))
+          if (!type_cast_to_int64(value, len, &ll, &error))
             {
               msg_error("OpenTelemetry: Cannot parse integer value, falling back to 0",
                         evt_tag_str("name", key_buffer.c_str()),
@@ -602,7 +602,7 @@ ProtobufFormatter::add_exemplars(LogMessage *msg, std::string &key_buffer, Repea
       else if (type == LM_VT_DOUBLE)
         {
           gdouble d = 0;
-          if (!type_cast_to_double(value, &d, &error))
+          if (!type_cast_to_double(value, len, &d, &error))
             {
               msg_error("OpenTelemetry: Cannot parse double value, falling back to 0",
                         evt_tag_str("name", key_buffer.c_str()),
@@ -675,7 +675,7 @@ ProtobufFormatter::add_number_data_points(LogMessage *msg, const char *prefix,
       if (type == LM_VT_INTEGER)
         {
           gint64 ll = 0;
-          if (!type_cast_to_int64(value, &ll, &error))
+          if (!type_cast_to_int64(value, len, &ll, &error))
             {
               msg_error("OpenTelemetry: Cannot parse integer value, falling back to 0",
                         evt_tag_str("name", key_buffer.c_str()),
@@ -688,7 +688,7 @@ ProtobufFormatter::add_number_data_points(LogMessage *msg, const char *prefix,
       else if (type == LM_VT_DOUBLE)
         {
           gdouble d = 0;
-          if (!type_cast_to_double(value, &d, &error))
+          if (!type_cast_to_double(value, len, &d, &error))
             {
               msg_error("OpenTelemetry: Cannot parse double value, falling back to 0",
                         evt_tag_str("name", key_buffer.c_str()),

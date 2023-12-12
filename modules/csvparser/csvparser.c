@@ -206,7 +206,7 @@ _process_column(CSVParser *self, CSVScanner *scanner, LogMessage *msg, CSVParser
   key_formatter_t _key_formatter = dispatch_key_formatter(self->prefix);
   gboolean should_set_value = TRUE;
 
-  if (!type_cast_validate(current_value, current_column_type, &error))
+  if (!type_cast_validate(current_value, -1, current_column_type, &error))
     {
       if (!(self->on_error & ON_ERROR_SILENT))
         {
@@ -216,7 +216,7 @@ _process_column(CSVParser *self, CSVScanner *scanner, LogMessage *msg, CSVParser
         }
       g_clear_error(&error);
 
-      gboolean need_drop = type_cast_drop_helper(self->on_error, current_value,
+      gboolean need_drop = type_cast_drop_helper(self->on_error, current_value, -1,
                                                  log_msg_value_type_to_str(current_column_type));
       if (need_drop)
         {

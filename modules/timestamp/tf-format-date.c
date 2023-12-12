@@ -116,7 +116,7 @@ tf_format_date_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvo
   if (state->super.argc != 0)
     {
       const gchar *ts = args->argv[0]->str;
-      if (!type_cast_to_datetime_unixtime(ts, &ut, NULL))
+      if (!type_cast_to_datetime_unixtime(ts, -1, &ut, NULL))
         {
           ut.ut_sec = 0;
           ut.ut_usec = 0;

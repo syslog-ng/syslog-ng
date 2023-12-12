@@ -315,7 +315,7 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
       const gchar *v = value;
       gsize v_len = value_len;
 
-      if (!type_cast_to_int64(value, &i64, NULL))
+      if (!type_cast_to_int64(value, value_len, &i64, NULL))
         {
           if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
             {
@@ -323,7 +323,7 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
               return TRUE;
             }
 
-          *drop = type_cast_drop_helper(on_error, value, "integer");
+          *drop = type_cast_drop_helper(on_error, value, value_len, "integer");
           return FALSE;
         }
 
@@ -336,7 +336,7 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
       const gchar *v = value;
       gsize v_len = value_len;
 
-      if (!type_cast_to_double(value, &d, NULL))
+      if (!type_cast_to_double(value, value_len, &d, NULL))
         {
           if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
             {
@@ -344,7 +344,7 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
               return TRUE;
             }
 
-          *drop = type_cast_drop_helper(on_error, value, "double");
+          *drop = type_cast_drop_helper(on_error, value, value_len, "double");
           return FALSE;
         }
 
@@ -357,7 +357,7 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
       const gchar *v = value;
       gsize v_len = value_len;
 
-      if (!type_cast_to_boolean(value, &b, NULL))
+      if (!type_cast_to_boolean(value, value_len, &b, NULL))
         {
           if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
             {
@@ -365,7 +365,7 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
               return TRUE;
             }
 
-          *drop = type_cast_drop_helper(on_error, value, "boolean");
+          *drop = type_cast_drop_helper(on_error, value, value_len, "boolean");
           return FALSE;
         }
 
