@@ -154,6 +154,8 @@ _add_dynamic_labels(MetricsProbe *self, LogMessage *msg)
 static void
 _calculate_stats_cluster_key(MetricsProbe *self, LogMessage *msg, StatsClusterKey *key)
 {
+  label_buffers = g_array_set_size(label_buffers, 0);
+
   gint label_idx = 0;
   for (GList *elem = g_list_first(self->label_templates); elem; elem = elem->next)
     {
