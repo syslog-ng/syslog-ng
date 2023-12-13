@@ -25,6 +25,10 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 
       containers:
         - name: {{ .Chart.Name }}
@@ -32,6 +36,14 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.extraArgs }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
           - name: tcp-port
             containerPort: 601
@@ -47,6 +59,9 @@ spec:
           - mountPath: /var/log
             name: logs
         {{- end }}
+        {{- with .Values.extraVolumeMounts }}
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
       volumes:
       - name: config
         configMap:
@@ -56,7 +71,9 @@ spec:
         persistentVolumeClaim:
           claimName: {{ include "syslog-ng.fullname" . }}-pvc
       {{- end }}
-
+      {{- with .Values.extraVolumes }}
+        {{ toYaml . | nindent 6 }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

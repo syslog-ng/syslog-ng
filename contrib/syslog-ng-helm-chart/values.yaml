@@ -72,7 +72,7 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
-# syslog-ng have fixed ports tcp 601  and udp 514
+# syslog-ng have fixed ports tcp 601 and udp 514
 service:
   type: ClusterIP
   # use externalip for a pre routede exter al ip.
@@ -80,6 +80,13 @@ service:
   # type: externalip
   # externalIPs: 
   #   - 10.205.212.12
+  annotations: {}
+    # external-dns.alpha.kubernetes.io/hostname: "syslog.example.com"
+  loadBalancerSourceRanges: []
+    # - 10.2.3.0/24
+  loadBalancerClass: ~
+  sessionAffinity: ~
+  externalTrafficPolicy: Cluster
 
 
 resources: {}
