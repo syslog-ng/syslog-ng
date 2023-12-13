@@ -66,18 +66,6 @@ DestinationWorker::~DestinationWorker()
 }
 
 bool
-DestinationWorker::init()
-{
-  return log_threaded_dest_worker_init_method(&this->super->super);
-}
-
-void
-DestinationWorker::deinit()
-{
-  log_threaded_dest_worker_deinit_method(&this->super->super);
-}
-
-bool
 DestinationWorker::connect()
 {
   if (!this->channel)
@@ -486,20 +474,6 @@ _disconnect(LogThreadedDestWorker *s)
   self->cpp->disconnect();
 }
 
-static gboolean
-_init(LogThreadedDestWorker *s)
-{
-  BigQueryDestWorker *self = (BigQueryDestWorker *) s;
-  return self->cpp->init();
-}
-
-static void
-_deinit(LogThreadedDestWorker *s)
-{
-  BigQueryDestWorker *self = (BigQueryDestWorker *) s;
-  self->cpp->deinit();
-}
-
 static void
 _free(LogThreadedDestWorker *s)
 {
@@ -518,8 +492,6 @@ bigquery_dw_new(LogThreadedDestDriver *o, gint worker_index)
 
   self->cpp = new DestinationWorker(self);
 
-  self->super.init = _init;
-  self->super.deinit = _deinit;
   self->super.connect = _connect;
   self->super.disconnect = _disconnect;
   self->super.insert = _insert;
