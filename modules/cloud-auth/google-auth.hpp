@@ -54,6 +54,19 @@ private:
   uint64_t token_validity_duration;
 };
 
+class UserManagedServiceAccountAuthenticator: public syslogng::cloud_auth::Authenticator
+{
+public:
+  UserManagedServiceAccountAuthenticator(const char *name, const char *metadata_url);
+  ~UserManagedServiceAccountAuthenticator() {};
+
+  void handle_http_header_request(HttpHeaderRequestSignalData *data);
+
+private:
+  std::string name;
+  uint64_t token_validity_duration;
+  std::string metadata_url;
+};
 }
 }
 }

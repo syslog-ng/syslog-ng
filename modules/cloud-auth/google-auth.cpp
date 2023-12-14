@@ -101,6 +101,19 @@ ServiceAccountAuthenticator::handle_http_header_request(HttpHeaderRequestSignalD
   data->result = HTTP_SLOT_SUCCESS;
 }
 
+UserManagedServiceAccountAuthenticator::UserManagedServiceAccountAuthenticator(const char *name_,
+    const char *metadata_url_)
+  : name(name_), metadata_url(metadata_url_)
+{
+}
+
+void
+UserManagedServiceAccountAuthenticator::handle_http_header_request(HttpHeaderRequestSignalData *data)
+{
+  /* TODO: implement based on https://cloud.google.com/compute/docs/access/authenticate-workloads#curl */
+  data->result = HTTP_SLOT_SUCCESS;
+}
+
 /* C Wrappers */
 
 typedef struct _GoogleAuthenticator
@@ -114,6 +127,13 @@ typedef struct _GoogleAuthenticator
     gchar *audience;
     guint64 token_validity_duration;
   } service_account_options;
+
+  struct
+  {
+    gchar *name;
+    gchar *metadata_url;
+  } user_managed_service_account_options;
+
 } GoogleAuthenticator;
 
 void
@@ -150,6 +170,24 @@ google_authenticator_set_service_account_token_validity_duration(CloudAuthentica
   self->service_account_options.token_validity_duration = token_validity_duration;
 }
 
+void
+google_authenticator_set_user_managed_service_account_name(CloudAuthenticator *s, const gchar *name)
+{
+  GoogleAuthenticator *self = (GoogleAuthenticator *) s;
+
+  g_free(self->user_managed_service_account_options.name);
+  self->user_managed_service_account_options.name = g_strdup(name);
+}
+
+void
+google_authenticator_set_user_managed_service_account_metadata_url(CloudAuthenticator *s, const gchar *metadata_url)
+{
+  GoogleAuthenticator *self = (GoogleAuthenticator *) s;
+
+  g_free(self->user_managed_service_account_options.metadata_url);
+  self->user_managed_service_account_options.metadata_url = g_strdup(metadata_url);
+}
+
 static gboolean
 _init(CloudAuthenticator *s)
 {
@@ -171,6 +209,19 @@ _init(CloudAuthenticator *s)
           return FALSE;
         }
       break;
+    case GAAM_USER_MANAGED_SERVICE_ACCOUNT:
+      try
+        {
+          self->super.cpp = new UserManagedServiceAccountAuthenticator(self->user_managed_service_account_options.name,
+              self->user_managed_service_account_options.metadata_url);
+        }
+      catch (const std::runtime_error &e)
+        {
+          msg_error("cloud_auth::google: Failed to initialize UserManagedServiceAccountAuthenticator",
+                    evt_tag_str("error", e.what()));
+          return FALSE;
+        }
+      break;
     case GAAM_UNDEFINED:
       msg_error("cloud_auth::google: Failed to initialize ServiceAccountAuthenticator",
                 evt_tag_str("error", "Authentication mode must be set (e.g. service-account())"));
@@ -186,6 +237,10 @@ static void
 _set_default_options(GoogleAuthenticator *self)
 {
   self->service_account_options.token_validity_duration = 3600;
+
+  self->user_managed_service_account_options.name = g_strdup("default");
+  self->user_managed_service_account_options.metadata_url =
+    g_strdup("http://metadata.google.internal/computeMetadata/v1/instance/service-accounts");
 }
 
 static void
@@ -195,6 +250,9 @@ _free(CloudAuthenticator *s)
 
   g_free(self->service_account_options.key_path);
   g_free(self->service_account_options.audience);
+
+  g_free(self->user_managed_service_account_options.name);
+  g_free(self->user_managed_service_account_options.metadata_url);
 }
 
 CloudAuthenticator *
