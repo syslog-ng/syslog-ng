@@ -29,9 +29,12 @@
 
 #include "cloud-auth.hpp"
 
+#include <mutex>
 #include <string>
 #include <jwt-cpp/jwt.h>
 #include <picojson/picojson.h>
+
+#include "compat/curl.h"
 
 namespace syslogng {
 namespace cloud_auth {
@@ -58,14 +61,25 @@ class UserManagedServiceAccountAuthenticator: public syslogng::cloud_auth::Authe
 {
 public:
   UserManagedServiceAccountAuthenticator(const char *name, const char *metadata_url);
-  ~UserManagedServiceAccountAuthenticator() {};
+  ~UserManagedServiceAccountAuthenticator();
 
   void handle_http_header_request(HttpHeaderRequestSignalData *data);
 
 private:
+  static void add_token_to_headers(HttpHeaderRequestSignalData *data, const std::string &token);
+  static size_t curl_write_callback(void *contents, size_t size, size_t nmemb, void *userp);
+  bool send_token_get_request(std::string &response_payload_buffer);
+  bool parse_token_and_expiry_from_response(const std::string &response_payload, std::string &token, long *expiry);
+
+private:
   std::string name;
-  uint64_t token_validity_duration;
-  std::string metadata_url;
+  std::string auth_url;
+
+  struct curl_slist *curl_headers;
+
+  std::mutex lock;
+  std::string cached_token;
+  std::chrono::system_clock::time_point refresh_token_after;
 };
 }
 }

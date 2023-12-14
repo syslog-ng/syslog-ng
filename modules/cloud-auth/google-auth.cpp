@@ -24,6 +24,7 @@
 
 #include <exception>
 #include <fstream>
+#include <cmath>
 
 #include "compat/cpp-start.h"
 #include "scratch-buffers.h"
@@ -103,14 +104,172 @@ ServiceAccountAuthenticator::handle_http_header_request(HttpHeaderRequestSignalD
 
 UserManagedServiceAccountAuthenticator::UserManagedServiceAccountAuthenticator(const char *name_,
     const char *metadata_url_)
-  : name(name_), metadata_url(metadata_url_)
+  : name(name_)
 {
+  auth_url = metadata_url_;
+  auth_url.append("/");
+  auth_url.append(name);
+  auth_url.append("/token");
+
+  curl_headers = curl_slist_append(NULL, "Metadata-Flavor: Google");
+}
+
+UserManagedServiceAccountAuthenticator::~UserManagedServiceAccountAuthenticator()
+{
+  curl_slist_free_all(curl_headers);
+}
+
+void
+UserManagedServiceAccountAuthenticator::add_token_to_headers(HttpHeaderRequestSignalData *data,
+    const std::string &token)
+{
+  /* Scratch Buffers are marked at this point in http-worker.c */
+  GString *header_buffer = scratch_buffers_alloc();
+  g_string_append(header_buffer, "Authorization: Bearer ");
+  g_string_append(header_buffer, token.c_str());
+
+  list_append(data->request_headers, header_buffer->str);
+}
+
+size_t
+UserManagedServiceAccountAuthenticator::curl_write_callback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+  const char *data = (const char *) contents;
+  std::string *response_payload_buffer = (std::string *) userp;
+
+  size_t real_size = size * nmemb;
+  response_payload_buffer->append(data, real_size);
+
+  return real_size;
+}
+
+bool
+UserManagedServiceAccountAuthenticator::send_token_get_request(std::string &response_payload_buffer)
+{
+  CURLcode res;
+  CURL *curl = curl_easy_init();
+  if (!curl)
+    {
+      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+                "failed to init cURL handle",
+                evt_tag_str("url", auth_url.c_str()));
+      goto error;
+    }
+
+  curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
+  curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_callback);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &response_payload_buffer);
+
+  res = curl_easy_perform(curl);
+  if (res != CURLE_OK)
+    {
+      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+                "error sending HTTP request to metadata server",
+                evt_tag_str("url", auth_url.c_str()),
+                evt_tag_str("error", curl_easy_strerror(res)));
+      goto error;
+    }
+
+  long http_result_code;
+  res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_result_code);
+  if (res != CURLE_OK)
+    {
+      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+                "failed to get HTTP result code",
+                evt_tag_str("url", auth_url.c_str()),
+                evt_tag_str("error", curl_easy_strerror(res)));
+      goto error;
+    }
+
+  if (http_result_code != 200)
+    {
+      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+                "non 200 HTTP result code received",
+                evt_tag_str("url", auth_url.c_str()),
+                evt_tag_int("http_result_code", http_result_code));
+      goto error;
+    }
+
+  curl_easy_cleanup(curl);
+  return true;
+
+error:
+  if (curl)
+    curl_easy_cleanup(curl);
+  return false;
+}
+
+bool
+UserManagedServiceAccountAuthenticator::parse_token_and_expiry_from_response(const std::string &response_payload,
+    std::string &token, long *expiry)
+{
+  picojson::value json;
+  std::string json_parse_error = picojson::parse(json, response_payload);
+  if (!json_parse_error.empty())
+    {
+      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+                "failed to parse response JSON",
+                evt_tag_str("url", auth_url.c_str()),
+                evt_tag_str("response_json", response_payload.c_str()));
+      return false;
+    }
+
+  if (!json.is<picojson::object>() || !json.contains("access_token") || !json.contains("expires_in"))
+    {
+      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+                "unexpected response JSON",
+                evt_tag_str("url", auth_url.c_str()),
+                evt_tag_str("response_json", response_payload.c_str()));
+      return false;
+    }
+
+  token.assign(json.get("access_token").get<std::string>());
+  *expiry = lround(json.get("expires_in").get<double>()); /* getting a long from picojson is not always available */
+  return true;
 }
 
 void
 UserManagedServiceAccountAuthenticator::handle_http_header_request(HttpHeaderRequestSignalData *data)
 {
-  /* TODO: implement based on https://cloud.google.com/compute/docs/access/authenticate-workloads#curl */
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+
+  lock.lock();
+
+  if (now <= refresh_token_after && !cached_token.empty())
+    {
+      add_token_to_headers(data, cached_token);
+      lock.unlock();
+
+      data->result = HTTP_SLOT_SUCCESS;
+      return;
+    }
+
+  cached_token.clear();
+
+  std::string response_payload_buffer;
+  if (!send_token_get_request(response_payload_buffer))
+    {
+      lock.unlock();
+
+      data->result = HTTP_SLOT_CRITICAL_ERROR;
+      return;
+    }
+
+  long expiry;
+  if (!parse_token_and_expiry_from_response(response_payload_buffer, cached_token, &expiry))
+    {
+      lock.unlock();
+
+      data->result = HTTP_SLOT_CRITICAL_ERROR;
+      return;
+    }
+
+  refresh_token_after = now + std::chrono::seconds{expiry - 60};
+  add_token_to_headers(data, cached_token);
+
+  lock.unlock();
+
   data->result = HTTP_SLOT_SUCCESS;
 }
 
