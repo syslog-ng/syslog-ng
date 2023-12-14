@@ -66,49 +66,17 @@ DestinationWorker::~DestinationWorker()
 }
 
 bool
-DestinationWorker::init()
-{
-  DestinationDriver *owner = this->get_owner();
-
-  ::grpc::ChannelArguments args{};
-
-  if (owner->keepalive_time != -1)
-    args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, owner->keepalive_time);
-  if (owner->keepalive_timeout != -1)
-    args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, owner->keepalive_timeout);
-  if (owner->keepalive_max_pings_without_data != -1)
-    args.SetInt(GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA, owner->keepalive_max_pings_without_data);
-
-  args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
-
-  auto credentials = ::grpc::GoogleDefaultCredentials();
-  if (!credentials)
-    {
-      msg_error("Error querying BigQuery credentials", log_pipe_location_tag((LogPipe *) this->super->super.owner));
-      return false;
-    }
-
-  this->channel = ::grpc::CreateCustomChannel(owner->get_url(), credentials, args);
-  if (!this->channel)
-    {
-      msg_error("Error creating BigQuery gRPC channel", log_pipe_location_tag((LogPipe *) this->super->super.owner));
-      return false;
-    }
-
-  this->stub = google::cloud::bigquery::storage::v1::BigQueryWrite().NewStub(channel);
-
-  return log_threaded_dest_worker_init_method(&this->super->super);
-}
-
-void
-DestinationWorker::deinit()
-{
-  log_threaded_dest_worker_deinit_method(&this->super->super);
-}
-
-bool
 DestinationWorker::connect()
 {
+  if (!this->channel)
+    {
+      this->channel = this->create_channel();
+      if (!this->channel)
+        return false;
+
+      this->stub = google::cloud::bigquery::storage::v1::BigQueryWrite().NewStub(this->channel);
+    }
+
   this->construct_write_stream();
   this->batch_writer_ctx = std::make_unique<::grpc::ClientContext>();
   this->batch_writer = this->stub->AppendRows(this->batch_writer_ctx.get());
@@ -421,6 +389,39 @@ exit:
   return result;
 }
 
+std::shared_ptr<::grpc::Channel>
+DestinationWorker::create_channel()
+{
+  DestinationDriver *owner = this->get_owner();
+
+  ::grpc::ChannelArguments args{};
+
+  if (owner->keepalive_time != -1)
+    args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, owner->keepalive_time);
+  if (owner->keepalive_timeout != -1)
+    args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, owner->keepalive_timeout);
+  if (owner->keepalive_max_pings_without_data != -1)
+    args.SetInt(GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA, owner->keepalive_max_pings_without_data);
+
+  args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
+
+  auto credentials = ::grpc::GoogleDefaultCredentials();
+  if (!credentials)
+    {
+      msg_error("Error querying BigQuery credentials", log_pipe_location_tag((LogPipe *) this->super->super.owner));
+      return nullptr;
+    }
+
+  auto channel_ = ::grpc::CreateCustomChannel(owner->get_url(), credentials, args);
+  if (!channel_)
+    {
+      msg_error("Error creating BigQuery gRPC channel", log_pipe_location_tag((LogPipe *) this->super->super.owner));
+      return nullptr;
+    }
+
+  return channel_;
+}
+
 void
 DestinationWorker::construct_write_stream()
 {
@@ -473,20 +474,6 @@ _disconnect(LogThreadedDestWorker *s)
   self->cpp->disconnect();
 }
 
-static gboolean
-_init(LogThreadedDestWorker *s)
-{
-  BigQueryDestWorker *self = (BigQueryDestWorker *) s;
-  return self->cpp->init();
-}
-
-static void
-_deinit(LogThreadedDestWorker *s)
-{
-  BigQueryDestWorker *self = (BigQueryDestWorker *) s;
-  self->cpp->deinit();
-}
-
 static void
 _free(LogThreadedDestWorker *s)
 {
@@ -505,8 +492,6 @@ bigquery_dw_new(LogThreadedDestDriver *o, gint worker_index)
 
   self->cpp = new DestinationWorker(self);
 
-  self->super.init = _init;
-  self->super.deinit = _deinit;
   self->super.connect = _connect;
   self->super.disconnect = _disconnect;
   self->super.insert = _insert;

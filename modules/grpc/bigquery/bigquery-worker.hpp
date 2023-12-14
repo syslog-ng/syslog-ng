@@ -66,6 +66,7 @@ public:
   LogThreadedResult flush(LogThreadedFlushMode mode);
 
 private:
+  std::shared_ptr<::grpc::Channel> create_channel();
   void construct_write_stream();
   void prepare_batch();
   bool insert_field(const google::protobuf::Reflection *reflection, const Field &field,
