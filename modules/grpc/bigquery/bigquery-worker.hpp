@@ -69,6 +69,7 @@ private:
   std::shared_ptr<::grpc::Channel> create_channel();
   void construct_write_stream();
   void prepare_batch();
+  bool should_initiate_flush();
   bool insert_field(const google::protobuf::Reflection *reflection, const Field &field,
                     LogMessage *msg, google::protobuf::Message *message);
   LogThreadedResult handle_row_errors(const google::cloud::bigquery::storage::v1::AppendRowsResponse &response);
@@ -92,6 +93,7 @@ private:
   /* batch state */
   google::cloud::bigquery::storage::v1::AppendRowsRequest current_batch;
   size_t batch_size = 0;
+  size_t current_batch_bytes = 0;
 };
 
 }

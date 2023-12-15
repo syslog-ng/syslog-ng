@@ -114,6 +114,11 @@ public:
     this->table = t;
   }
 
+  void set_batch_bytes(size_t b)
+  {
+    this->batch_bytes = b;
+  }
+
   void set_keepalive_time(int t)
   {
     this->keepalive_time = t;
@@ -162,6 +167,8 @@ private:
   std::string project;
   std::string dataset;
   std::string table;
+
+  size_t batch_bytes;
 
   int keepalive_time;
   int keepalive_timeout;
