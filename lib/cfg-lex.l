@@ -361,6 +361,9 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 			     yylval->cptr = strdup(yyextra->string_buffer->str);
 			     return LL_STRING;
 			   }
+<qstring><<EOF>>           {
+                             YY_FATAL_ERROR( "Unterminated quote" );
+                           }
 
     /* the rule below will only be applied to embedded newlines within
      * string/qstring.  There's a difference how we handle backslash quotation
