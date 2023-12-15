@@ -280,9 +280,6 @@ log_transport_socket_set_proxied(LogTransportSocket *self, LogTransportSocketPro
 void
 log_transport_dgram_socket_init_instance(LogTransportSocket *self, gint fd)
 {
-  g_assert(self->proxy == NULL
-           && "log_transport_dgram_socket_init_instance must be called before log_transport_socket_set_proxied ");
-
   log_transport_socket_init_instance(self, fd);
   self->super.read = log_transport_dgram_socket_read_method;
   self->super.write = log_transport_dgram_socket_write_method;

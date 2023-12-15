@@ -36,11 +36,6 @@ struct _LogTransportSocket
   gint address_family;
   gint proto;
   void (*parse_cmsg)(LogTransportSocket *self, struct cmsghdr *cmsg, LogTransportAuxData *aux);
-  /* Having this in the LogTransport could be a huge advantage, and
-   * could make the proxied state handling and implementation simpler and cleaner
-   * Consider to add it to LogTransport even though that is a storage overhead, and
-   * far from optimal, as LogTransportSocketProxy actually is needed only for `LogTransportSocket`s
-   */
   LogTransportSocketProxy *proxy;
 };
 
