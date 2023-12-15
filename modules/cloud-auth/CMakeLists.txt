@@ -49,7 +49,7 @@ add_module(
 )
 
 add_module(
-  TARGET cloud-auth
+  TARGET cloud_auth
   GRAMMAR cloud-auth-grammar
   DEPENDS cloud-auth-cpp
   INCLUDES ${PROJECT_SOURCE_DIR}
