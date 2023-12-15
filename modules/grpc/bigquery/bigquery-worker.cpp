@@ -324,6 +324,7 @@ DestinationWorker::insert(LogMessage *msg)
   rows->add_serialized_rows(std::move(serialized_row));
 
   this->current_batch_bytes += row_bytes;
+  log_threaded_dest_driver_insert_msg_length_stats(this->super->super.owner, row_bytes);
 
   msg_trace("Message added to BigQuery batch", log_pipe_location_tag((LogPipe *) this->super->super.owner));
 
@@ -398,6 +399,9 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
 
       goto exit;
     }
+
+  log_threaded_dest_worker_written_bytes_add(&this->super->super, this->current_batch_bytes);
+  log_threaded_dest_driver_insert_batch_length_stats(this->super->super.owner, this->current_batch_bytes);
 
   msg_debug("BigQuery batch delivered", log_pipe_location_tag((LogPipe *) this->super->super.owner));
   result = LTR_SUCCESS;
