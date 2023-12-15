@@ -90,7 +90,7 @@ private:
 
 DestinationDriver::DestinationDriver(BigQueryDestDriver *s)
   : super(s), url("bigquerystorage.googleapis.com"),
-    keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1)
+    keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1), batch_bytes(10 * 1000 * 1000)
 {
   log_template_options_defaults(&this->template_options);
 }
@@ -380,6 +380,13 @@ bigquery_dd_set_protobuf_schema(LogDriver *d, const gchar *proto_path, GList *va
 {
   BigQueryDestDriver *self = (BigQueryDestDriver *) d;
   self->cpp->set_protobuf_schema(proto_path, values);
+}
+
+void
+bigquery_dd_set_batch_bytes(LogDriver *d, glong b)
+{
+  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
+  self->cpp->set_batch_bytes((size_t) b);
 }
 
 void
