@@ -134,6 +134,7 @@ void
 DestinationWorker::prepare_batch()
 {
   this->batch_size = 0;
+  this->current_batch_bytes = 0;
   this->current_batch = google::cloud::bigquery::storage::v1::AppendRowsRequest{};
 
   this->current_batch.set_write_stream(write_stream.name());
@@ -142,6 +143,12 @@ DestinationWorker::prepare_batch()
     this->current_batch.mutable_proto_rows();
   google::cloud::bigquery::storage::v1::ProtoSchema *schema = proto_rows->mutable_writer_schema();
   this->get_owner()->schema_descriptor->CopyTo(schema->mutable_proto_descriptor());
+}
+
+bool
+DestinationWorker::should_initiate_flush()
+{
+  return (this->current_batch_bytes >= this->get_owner()->batch_bytes);
 }
 
 DestinationWorker::Slice
@@ -289,6 +296,8 @@ LogThreadedResult
 DestinationWorker::insert(LogMessage *msg)
 {
   DestinationDriver *owner = this->get_owner();
+  std::string serialized_row;
+  size_t row_bytes = 0;
 
   google::cloud::bigquery::storage::v1::ProtoRows *rows = this->current_batch.mutable_proto_rows()->mutable_rows();
 
@@ -309,11 +318,20 @@ DestinationWorker::insert(LogMessage *msg)
     goto drop;
 
   this->batch_size++;
-  rows->add_serialized_rows(message->SerializePartialAsString());
+
+  message->SerializePartialToString(&serialized_row);
+  row_bytes = serialized_row.size();
+  rows->add_serialized_rows(std::move(serialized_row));
+
+  this->current_batch_bytes += row_bytes;
 
   msg_trace("Message added to BigQuery batch", log_pipe_location_tag((LogPipe *) this->super->super.owner));
 
   delete message;
+
+  if (this->should_initiate_flush())
+    return log_threaded_dest_worker_flush(&this->super->super, LTF_FLUSH_NORMAL);
+
   return LTR_QUEUED;
 
 drop:
