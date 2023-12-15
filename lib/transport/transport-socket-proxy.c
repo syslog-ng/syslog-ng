@@ -500,7 +500,6 @@ _apply_proxied_state(LogTransportSocketProxy *self, LogTransportSocket *transpor
   self->base_read = transport_socket->super.read;
   transport_socket->super.read = _log_transport_proxied_read_method;
 
-  //g_assert(base_transport->super.write == NULL && "proxied write is not implemented yet for LogTransportSocket");
   self->base_write = transport_socket->super.write;
   transport_socket->super.write = NULL;
 
