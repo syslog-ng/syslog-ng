@@ -24,6 +24,7 @@
 
 #include <exception>
 #include <fstream>
+#include <cmath>
 
 #include "compat/cpp-start.h"
 #include "scratch-buffers.h"
@@ -101,6 +102,177 @@ ServiceAccountAuthenticator::handle_http_header_request(HttpHeaderRequestSignalD
   data->result = HTTP_SLOT_SUCCESS;
 }
 
+UserManagedServiceAccountAuthenticator::UserManagedServiceAccountAuthenticator(const char *name_,
+    const char *metadata_url_)
+  : name(name_)
+{
+  auth_url = metadata_url_;
+  auth_url.append("/");
+  auth_url.append(name);
+  auth_url.append("/token");
+
+  curl_headers = curl_slist_append(NULL, "Metadata-Flavor: Google");
+}
+
+UserManagedServiceAccountAuthenticator::~UserManagedServiceAccountAuthenticator()
+{
+  curl_slist_free_all(curl_headers);
+}
+
+void
+UserManagedServiceAccountAuthenticator::add_token_to_headers(HttpHeaderRequestSignalData *data,
+    const std::string &token)
+{
+  /* Scratch Buffers are marked at this point in http-worker.c */
+  GString *header_buffer = scratch_buffers_alloc();
+  g_string_append(header_buffer, "Authorization: Bearer ");
+  g_string_append(header_buffer, token.c_str());
+
+  list_append(data->request_headers, header_buffer->str);
+}
+
+size_t
+UserManagedServiceAccountAuthenticator::curl_write_callback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+  const char *data = (const char *) contents;
+  std::string *response_payload_buffer = (std::string *) userp;
+
+  size_t real_size = size * nmemb;
+  response_payload_buffer->append(data, real_size);
+
+  return real_size;
+}
+
+bool
+UserManagedServiceAccountAuthenticator::send_token_get_request(std::string &response_payload_buffer)
+{
+  CURLcode res;
+  CURL *curl = curl_easy_init();
+  if (!curl)
+    {
+      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+                "failed to init cURL handle",
+                evt_tag_str("url", auth_url.c_str()));
+      goto error;
+    }
+
+  curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
+  curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_callback);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &response_payload_buffer);
+
+  res = curl_easy_perform(curl);
+  if (res != CURLE_OK)
+    {
+      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+                "error sending HTTP request to metadata server",
+                evt_tag_str("url", auth_url.c_str()),
+                evt_tag_str("error", curl_easy_strerror(res)));
+      goto error;
+    }
+
+  long http_result_code;
+  res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_result_code);
+  if (res != CURLE_OK)
+    {
+      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+                "failed to get HTTP result code",
+                evt_tag_str("url", auth_url.c_str()),
+                evt_tag_str("error", curl_easy_strerror(res)));
+      goto error;
+    }
+
+  if (http_result_code != 200)
+    {
+      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+                "non 200 HTTP result code received",
+                evt_tag_str("url", auth_url.c_str()),
+                evt_tag_int("http_result_code", http_result_code));
+      goto error;
+    }
+
+  curl_easy_cleanup(curl);
+  return true;
+
+error:
+  if (curl)
+    curl_easy_cleanup(curl);
+  return false;
+}
+
+bool
+UserManagedServiceAccountAuthenticator::parse_token_and_expiry_from_response(const std::string &response_payload,
+    std::string &token, long *expiry)
+{
+  picojson::value json;
+  std::string json_parse_error = picojson::parse(json, response_payload);
+  if (!json_parse_error.empty())
+    {
+      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+                "failed to parse response JSON",
+                evt_tag_str("url", auth_url.c_str()),
+                evt_tag_str("response_json", response_payload.c_str()));
+      return false;
+    }
+
+  if (!json.is<picojson::object>() || !json.contains("access_token") || !json.contains("expires_in"))
+    {
+      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+                "unexpected response JSON",
+                evt_tag_str("url", auth_url.c_str()),
+                evt_tag_str("response_json", response_payload.c_str()));
+      return false;
+    }
+
+  token.assign(json.get("access_token").get<std::string>());
+  *expiry = lround(json.get("expires_in").get<double>()); /* getting a long from picojson is not always available */
+  return true;
+}
+
+void
+UserManagedServiceAccountAuthenticator::handle_http_header_request(HttpHeaderRequestSignalData *data)
+{
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+
+  lock.lock();
+
+  if (now <= refresh_token_after && !cached_token.empty())
+    {
+      add_token_to_headers(data, cached_token);
+      lock.unlock();
+
+      data->result = HTTP_SLOT_SUCCESS;
+      return;
+    }
+
+  cached_token.clear();
+
+  std::string response_payload_buffer;
+  if (!send_token_get_request(response_payload_buffer))
+    {
+      lock.unlock();
+
+      data->result = HTTP_SLOT_CRITICAL_ERROR;
+      return;
+    }
+
+  long expiry;
+  if (!parse_token_and_expiry_from_response(response_payload_buffer, cached_token, &expiry))
+    {
+      lock.unlock();
+
+      data->result = HTTP_SLOT_CRITICAL_ERROR;
+      return;
+    }
+
+  refresh_token_after = now + std::chrono::seconds{expiry - 60};
+  add_token_to_headers(data, cached_token);
+
+  lock.unlock();
+
+  data->result = HTTP_SLOT_SUCCESS;
+}
+
 /* C Wrappers */
 
 typedef struct _GoogleAuthenticator
@@ -114,6 +286,13 @@ typedef struct _GoogleAuthenticator
     gchar *audience;
     guint64 token_validity_duration;
   } service_account_options;
+
+  struct
+  {
+    gchar *name;
+    gchar *metadata_url;
+  } user_managed_service_account_options;
+
 } GoogleAuthenticator;
 
 void
@@ -150,6 +329,24 @@ google_authenticator_set_service_account_token_validity_duration(CloudAuthentica
   self->service_account_options.token_validity_duration = token_validity_duration;
 }
 
+void
+google_authenticator_set_user_managed_service_account_name(CloudAuthenticator *s, const gchar *name)
+{
+  GoogleAuthenticator *self = (GoogleAuthenticator *) s;
+
+  g_free(self->user_managed_service_account_options.name);
+  self->user_managed_service_account_options.name = g_strdup(name);
+}
+
+void
+google_authenticator_set_user_managed_service_account_metadata_url(CloudAuthenticator *s, const gchar *metadata_url)
+{
+  GoogleAuthenticator *self = (GoogleAuthenticator *) s;
+
+  g_free(self->user_managed_service_account_options.metadata_url);
+  self->user_managed_service_account_options.metadata_url = g_strdup(metadata_url);
+}
+
 static gboolean
 _init(CloudAuthenticator *s)
 {
@@ -171,6 +368,19 @@ _init(CloudAuthenticator *s)
           return FALSE;
         }
       break;
+    case GAAM_USER_MANAGED_SERVICE_ACCOUNT:
+      try
+        {
+          self->super.cpp = new UserManagedServiceAccountAuthenticator(self->user_managed_service_account_options.name,
+              self->user_managed_service_account_options.metadata_url);
+        }
+      catch (const std::runtime_error &e)
+        {
+          msg_error("cloud_auth::google: Failed to initialize UserManagedServiceAccountAuthenticator",
+                    evt_tag_str("error", e.what()));
+          return FALSE;
+        }
+      break;
     case GAAM_UNDEFINED:
       msg_error("cloud_auth::google: Failed to initialize ServiceAccountAuthenticator",
                 evt_tag_str("error", "Authentication mode must be set (e.g. service-account())"));
@@ -186,6 +396,10 @@ static void
 _set_default_options(GoogleAuthenticator *self)
 {
   self->service_account_options.token_validity_duration = 3600;
+
+  self->user_managed_service_account_options.name = g_strdup("default");
+  self->user_managed_service_account_options.metadata_url =
+    g_strdup("http://metadata.google.internal/computeMetadata/v1/instance/service-accounts");
 }
 
 static void
@@ -195,6 +409,9 @@ _free(CloudAuthenticator *s)
 
   g_free(self->service_account_options.key_path);
   g_free(self->service_account_options.audience);
+
+  g_free(self->user_managed_service_account_options.name);
+  g_free(self->user_managed_service_account_options.metadata_url);
 }
 
 CloudAuthenticator *

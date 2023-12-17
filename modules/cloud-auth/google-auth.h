@@ -29,14 +29,20 @@ typedef enum _GoogleAuthenticatorAuthMode
 {
   GAAM_UNDEFINED,
   GAAM_SERVICE_ACCOUNT,
+  GAAM_USER_MANAGED_SERVICE_ACCOUNT,
 } GoogleAuthenticatorAuthMode;
 
 CloudAuthenticator *google_authenticator_new(void);
 void google_authenticator_set_auth_mode(CloudAuthenticator *s, GoogleAuthenticatorAuthMode auth_mode);
+
 void google_authenticator_set_service_account_key_path(CloudAuthenticator *s, const gchar *key_path);
 void google_authenticator_set_service_account_audience(CloudAuthenticator *s, const gchar *audience);
 void google_authenticator_set_service_account_token_validity_duration(CloudAuthenticator *s,
     guint64 token_validity_duration);
+
+void google_authenticator_set_user_managed_service_account_name(CloudAuthenticator *s, const gchar *name);
+void google_authenticator_set_user_managed_service_account_metadata_url(CloudAuthenticator *s,
+    const gchar *metadata_url);
 
 
 #endif

@@ -10,6 +10,7 @@ set(SCL_DIRS
     elasticsearch
     ewmm
     fortigate
+    google
     graphite
     graylog2
     hdfs
