@@ -186,89 +186,20 @@ _feed_aux_from_procfs(LogTransportAuxData *aux, pid_t pid)
 #endif
 
 static void
-_feed_credentials_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
+_parse_cmsg(LogTransportSocket *s, struct cmsghdr *cmsg, LogTransportAuxData *aux)
 {
 #if defined(CRED_PASS_SUPPORTED)
-  struct cmsghdr *cmsg;
   cred_t uc;
 
-  for (cmsg = CMSG_FIRSTHDR(msg); cmsg != NULL; cmsg = CMSG_NXTHDR(msg, cmsg))
+  if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_CREDENTIALS)
     {
-      if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_CREDENTIALS)
-        {
-          memcpy(&uc, CMSG_DATA(cmsg), sizeof(uc));
+      memcpy(&uc, CMSG_DATA(cmsg), sizeof(uc));
 
-          _feed_aux_from_procfs(aux, cred_get(&uc, pid));
-          _feed_aux_from_ucred(aux, &uc);
-          break;
-        }
+      _feed_aux_from_procfs(aux, cred_get(&uc, pid));
+      _feed_aux_from_ucred(aux, &uc);
     }
 #endif
-}
-
-static void
-_feed_aux_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
-{
-  if (G_UNLIKELY(msg->msg_flags & MSG_CTRUNC))
-    {
-      msg_warning_once("WARNING: recvmsg() returned truncated control data, the size of the control data buffer needs to be increased",
-                       evt_tag_int("control_len", msg->msg_controllen));
-    }
-
-  _feed_credentials_from_cmsg(aux, msg);
-}
-
-static gssize
-_unix_socket_read(gint fd, gpointer buf, gsize buflen, LogTransportAuxData *aux)
-{
-  gint rc;
-  struct msghdr msg;
-  struct iovec iov[1];
-  struct sockaddr_storage ss;
-#if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
-  gchar ctlbuf[256];
-  msg.msg_control = ctlbuf;
-  msg.msg_controllen = sizeof(ctlbuf);
-#endif
-
-
-
-  msg.msg_name = (struct sockaddr *) &ss;
-  msg.msg_namelen = sizeof(ss);
-  msg.msg_iovlen = 1;
-  msg.msg_iov = iov;
-  iov[0].iov_base = buf;
-  iov[0].iov_len = buflen;
-  do
-    {
-      rc = recvmsg(fd, &msg, 0);
-    }
-  while (rc == -1 && errno == EINTR);
-
-  if (rc >= 0)
-    {
-      if (msg.msg_namelen && aux)
-        log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) &ss, msg.msg_namelen));
-
-      _feed_aux_from_cmsg(aux, &msg);
-    }
-
-  return rc;
-}
-
-static gssize
-log_transport_unix_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
-{
-  gint rc;
-
-  rc = _unix_socket_read(s->fd, buf, buflen, aux);
-  if (rc == 0)
-    {
-      /* DGRAM sockets should never return EOF, they just need to be read again */
-      rc = -1;
-      errno = EAGAIN;
-    }
-  return rc;
+  log_transport_socket_parse_cmsg_method(s, cmsg, aux);
 }
 
 LogTransport *
@@ -277,15 +208,8 @@ log_transport_unix_dgram_socket_new(gint fd)
   LogTransportSocket *self = g_new0(LogTransportSocket, 1);
 
   log_transport_dgram_socket_init_instance(self, fd);
-  self->super.read = log_transport_unix_dgram_socket_read_method;
-
+  self->parse_cmsg = _parse_cmsg;
   return &self->super;
-}
-
-static gssize
-log_transport_unix_stream_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
-{
-  return _unix_socket_read(s->fd, buf, buflen, aux);
 }
 
 LogTransport *
@@ -294,7 +218,7 @@ log_transport_unix_stream_socket_new(gint fd)
   LogTransportSocket *self = g_new0(LogTransportSocket, 1);
 
   log_transport_stream_socket_init_instance(self, fd);
-  self->super.read = log_transport_unix_stream_socket_read_method;
+  self->parse_cmsg = _parse_cmsg;
 
   return &self->super;
 }
