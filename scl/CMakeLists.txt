@@ -31,6 +31,7 @@ set(SCL_DIRS
     osquery
     pacct
     paloalto
+    pihole
     pgsql
     python
     qbittorrent
