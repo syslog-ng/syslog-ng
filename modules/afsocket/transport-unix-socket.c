@@ -26,6 +26,7 @@
 #include "scratch-buffers.h"
 #include "str-format.h"
 #include "compat-unix-creds.h"
+#include "messages.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -208,6 +209,12 @@ _feed_credentials_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
 static void
 _feed_aux_from_cmsg(LogTransportAuxData *aux, struct msghdr *msg)
 {
+  if (G_UNLIKELY(msg->msg_flags & MSG_CTRUNC))
+    {
+      msg_warning_once("WARNING: recvmsg() returned truncated control data, the size of the control data buffer needs to be increased",
+                       evt_tag_int("control_len", msg->msg_controllen));
+    }
+
   _feed_credentials_from_cmsg(aux, msg);
 }
 
@@ -219,7 +226,7 @@ _unix_socket_read(gint fd, gpointer buf, gsize buflen, LogTransportAuxData *aux)
   struct iovec iov[1];
   struct sockaddr_storage ss;
 #if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
-  gchar ctlbuf[32];
+  gchar ctlbuf[256];
   msg.msg_control = ctlbuf;
   msg.msg_controllen = sizeof(ctlbuf);
 #endif
