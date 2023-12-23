@@ -448,6 +448,41 @@ Test(matcher, test_matcher_matches_against_buffers_are_captured_directly)
   log_msg_unref(msg);
 }
 
+Test(matcher, test_matcher_matches_are_captured_directly_if_source_handle_changes)
+{
+  LogMatcherOptions matcher_options;
+  LogMessage *msg;
+  gboolean result;
+
+  const gchar *input = "kiwi-wiki-kiki";
+
+  msg = create_empty_message();
+  log_msg_set_value_with_type(msg, LM_V_FILE_NAME, input, -1, LM_VT_STRING);
+
+  log_matcher_options_defaults(&matcher_options);
+  matcher_options.flags = LMF_STORE_MATCHES;
+  LogMatcher *m = log_matcher_pcre_re_new(&matcher_options);
+  log_matcher_compile(m, "^(?<A_foobar>kiwi)-(?<FILE_NAME>wiki)-(?<Z_barbaz>kiki)", NULL);
+
+  result = log_matcher_match(m, msg, LM_V_FILE_NAME, input, 14);
+  cr_assert(result);
+
+  assert_log_message_match_value(msg, 1, "kiwi");
+  assert_log_message_match_value(msg, 2, "wiki");
+  assert_log_message_match_value(msg, 3, "kiki");
+  assert_log_message_value_by_name(msg, "A_foobar", "kiwi");
+  assert_log_message_value_by_name(msg, "FILE_NAME", "wiki");
+  assert_log_message_value_by_name(msg, "Z_barbaz", "kiki");
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("1"));
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("2"));
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("3"));
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("A_foobar"));
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("FILE_NAME"));
+  assert_log_message_value_is_direct(msg, log_msg_get_value_handle("Z_barbaz"));
+  log_matcher_unref(m);
+  log_msg_unref(msg);
+}
+
 Test(matcher, test_replace_works_correctly_if_capture_group_overwrites_the_input_in_a_match_variable)
 {
   gssize value_len;
