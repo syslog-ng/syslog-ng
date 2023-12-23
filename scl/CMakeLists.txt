@@ -33,6 +33,7 @@ set(SCL_DIRS
     paloalto
     pgsql
     python
+    qbittorrent
     rewrite
     slack
     snmptrap

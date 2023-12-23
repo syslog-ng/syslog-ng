@@ -33,6 +33,7 @@ SCL_SUBDIRS	= \
 	paloalto 	\
 	pgsql 	\
 	python		\
+	qbittorrent	\
 	rewrite	\
 	slack \
 	snmptrap	\
