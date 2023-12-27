@@ -93,9 +93,9 @@ _construct_multitransport_with_tls_factory(TransportMapperInet *self, gint fd)
 }
 
 static LogTransport *
-_construct_tls_transport(TransportMapperInet *self, gint fd)
+_construct_tls_or_multi_transport(TransportMapperInet *self, gboolean create_multi_transport, gint fd)
 {
-  if (self->super.create_multitransport)
+  if (create_multi_transport)
     return _construct_multitransport_with_tls_factory(self, fd);
 
   TLSSession *tls_session = tls_context_setup_session(self->tls_context);
@@ -127,9 +127,9 @@ _construct_multitransport_with_plain_and_tls_factories(TransportMapperInet *self
 }
 
 static LogTransport *
-_construct_plain_tcp_transport(TransportMapperInet *self, gint fd)
+_construct_plain_tcp_or_multi_transport(TransportMapperInet *self, gboolean create_multi_transport, gint fd)
 {
-  if (self->super.create_multitransport)
+  if (create_multi_transport)
     return _construct_multitransport_with_plain_tcp_factory(self, fd);
 
   if (self->super.sock_type == SOCK_DGRAM)
@@ -143,25 +143,25 @@ transport_mapper_inet_construct_log_transport(TransportMapper *s, gint fd)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
 
-  gboolean is_multi = FALSE;
+  gboolean proxy_should_switch_transport = FALSE;
   LogTransport *transport = NULL;
 
   if (self->tls_context && _is_tls_required(self))
     {
-      transport = _construct_tls_transport(self, fd);
+      transport = _construct_tls_or_multi_transport(self, self->super.create_multitransport, fd);
     }
   else if (self->tls_context)
     {
-      is_multi = TRUE;
+      proxy_should_switch_transport = TRUE;
       transport = _construct_multitransport_with_plain_and_tls_factories(self, fd);
     }
   else
     {
-      transport = _construct_plain_tcp_transport(self, fd);
+      transport = _construct_plain_tcp_or_multi_transport(self, self->super.create_multitransport, fd);
     }
 
   if (self->proxied)
-    log_transport_socket_proxy_new(transport, is_multi);
+    log_transport_socket_proxy_new(transport, proxy_should_switch_transport);
 
   return transport;
 }
@@ -411,7 +411,7 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->proxied = TRUE;
-      self->super.transport_name = g_strdup("rfc3164+proxied-tcp"); // ???
+      self->super.transport_name = g_strdup("rfc3164+proxied-tcp");
     }
   else if (strcasecmp(transport, "tls") == 0)
     {
@@ -437,7 +437,7 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_proto = IPPROTO_TCP;
       self->proxied = TRUE;
       self->allow_tls = TRUE;
-      self->super.transport_name = g_strdup("rfc3164+proxied-tls-passthrough"); // ???
+      self->super.transport_name = g_strdup("rfc3164+proxied-tls-passthrough");
     }
   else
     {
@@ -510,7 +510,7 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->proxied = TRUE;
-      self->super.transport_name = g_strdup("rfc6587+proxied-tcp"); // ???
+      self->super.transport_name = g_strdup("rfc6587+proxied-tcp");
     }
   else if (strcasecmp(transport, "tls") == 0)
     {
@@ -536,7 +536,7 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_proto = IPPROTO_TCP;
       self->proxied = TRUE;
       self->require_tls = TRUE;
-      self->super.transport_name = g_strdup("rfc5424+proxied-tls"); // ???
+      self->super.transport_name = g_strdup("rfc5424+proxied-tls");
     }
   else if (strcasecmp(transport, "proxied-tls-passthrough") == 0)
     {
@@ -546,7 +546,7 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_proto = IPPROTO_TCP;
       self->proxied = TRUE;
       self->allow_tls = TRUE;
-      self->super.transport_name = g_strdup("rfc5424+proxied-tls-passthrough"); // ???
+      self->super.transport_name = g_strdup("rfc5424+proxied-tls-passthrough");
     }
   else
     {
