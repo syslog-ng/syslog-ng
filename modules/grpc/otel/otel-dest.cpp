@@ -30,7 +30,7 @@ using namespace syslogng::grpc::otel;
 /* C++ Implementations */
 
 DestDriver::DestDriver(OtelDestDriver *s)
-  : super(s)
+  : super(s), compression(false)
 {
   credentials_builder_wrapper.self = &credentials_builder;
 }
@@ -45,6 +45,18 @@ const std::string &
 DestDriver::get_url() const
 {
   return url;
+}
+
+void
+DestDriver::set_compression(bool compression_)
+{
+  compression = compression_;
+}
+
+bool
+DestDriver::get_compression() const
+{
+  return compression;
 }
 
 const char *
@@ -113,6 +125,12 @@ void
 otel_dd_set_url(LogDriver *s, const gchar *url)
 {
   get_DestDriver(s)->set_url(url);
+}
+
+void
+otel_dd_set_compression(LogDriver *s, gboolean enable)
+{
+  get_DestDriver(s)->set_compression(enable);
 }
 
 GrpcClientCredentialsBuilderW *
