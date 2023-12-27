@@ -316,7 +316,7 @@ _parse_proxy_header(LogTransportSocketProxy *self)
 static LogTransport *
 _active_log_transport(LogTransportSocketProxy *self)
 {
-  return (self->is_multi ?
+  return (self->should_switch_transport ?
           &((MultiTransport *)self->base_transport)->super :
           self->base_transport);
 }
@@ -325,7 +325,7 @@ static LogTransportSocket *
 _active_log_transport_socket(LogTransportSocketProxy *self)
 {
   LogTransport *active_log_transport = _active_log_transport(self);
-  return (self->is_multi ?
+  return (self->should_switch_transport ?
           (LogTransportSocket *) ((MultiTransport *)active_log_transport)->active_transport :
           (LogTransportSocket *) active_log_transport);
 }
@@ -548,7 +548,7 @@ _proccess_proxy_header(LogTransportSocketProxy *self)
   if (parsable)
     {
       msg_trace("PROXY protocol header parsed successfully");
-      if (self->is_multi && !_switch_to_tls(self))
+      if (self->should_switch_transport && !_switch_to_tls(self))
         return FALSE;
       return TRUE;
     }
@@ -606,12 +606,12 @@ log_transport_socket_proxy_free(LogTransportSocketProxy *self)
 }
 
 LogTransportSocketProxy *
-log_transport_socket_proxy_new(LogTransport *base_transport, gboolean is_multi)
+log_transport_socket_proxy_new(LogTransport *base_transport, gboolean should_switch_transport)
 {
   LogTransportSocketProxy *self = g_new0(LogTransportSocketProxy, 1);
 
   self->base_transport = base_transport;
-  self->is_multi = is_multi;
+  self->should_switch_transport = should_switch_transport;
 
   /* As the proxy is presented now only in LogTransportSocket (not in LogTransport :( )
    * we cannot simply manipulate the MultiTransport read/write because in that case we do not have

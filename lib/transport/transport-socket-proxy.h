@@ -39,7 +39,7 @@ struct _LogTransportSocketProxy
   LogTransport *base_transport;
   gssize (*base_read)(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux);
   gssize (*base_write)(LogTransport *self, const gpointer buf, gsize count);
-  gboolean is_multi;
+  gboolean should_switch_transport;
 
   /* Info received from the proxy that should be added as LogTransportAuxData to
    * any message received through this server instance. */
