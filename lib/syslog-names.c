@@ -77,7 +77,7 @@ struct sl_name sl_facilities[] =
   {NULL, -1}
 };
 
-static inline int
+static inline gint
 syslog_name_find_name(const char *name, struct sl_name names[])
 {
   int i;
@@ -92,13 +92,13 @@ syslog_name_find_name(const char *name, struct sl_name names[])
   return -1;
 }
 
-int
+gint
 syslog_name_lookup_id_by_name(const char *name, struct sl_name names[])
 {
   return syslog_name_find_name(name, names);
 }
 
-int
+gint
 syslog_name_lookup_value_by_name(const char *name, struct sl_name names[])
 {
   int i;
