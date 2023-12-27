@@ -23,7 +23,6 @@
  */
 
 #include "syslog-names.h"
-#include "syslog-ng.h"
 #include <string.h>
 
 struct sl_name sl_severities[] =
@@ -138,4 +137,15 @@ syslog_make_range(guint32 value1, guint32 value2)
       value1 = x;
     }
   return ((1 << (value2 + 1)) - 1) & ~((1 << value1) - 1);
+}
+
+#include "severity-aliases.h"
+
+gint
+syslog_name_lookup_severity_by_name_alias(const gchar *name, gssize name_len)
+{
+  const struct severity_alias *sa = gperf_lookup_severity_alias(name, name_len < 0 ? strlen(name) : name_len);
+  if (sa)
+    return sa->severity;
+  return -1;
 }

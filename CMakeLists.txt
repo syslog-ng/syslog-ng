@@ -40,6 +40,7 @@ include(ExternalProject)
 include(external_or_find_package)
 include(add_module)
 include(module_switch)
+include(FindGperf)
 
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")

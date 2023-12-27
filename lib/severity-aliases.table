@@ -1,0 +1,27 @@
+%{
+
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
+%}
+%define lookup-function-name gperf_lookup_severity_alias
+%ignore-case
+%struct-type
+%readonly-tables
+%switch=1
+struct severity_alias { char *name; int severity; };
+%%
+emerg,		SYSLOG_SEVERITY_CODE(0)
+emergency,	SYSLOG_SEVERITY_CODE(0)
+panic,		SYSLOG_SEVERITY_CODE(0)
+alert,		SYSLOG_SEVERITY_CODE(1)
+crit,		SYSLOG_SEVERITY_CODE(2)
+critical,	SYSLOG_SEVERITY_CODE(2)
+fatal,		SYSLOG_SEVERITY_CODE(2)
+err,		SYSLOG_SEVERITY_CODE(3)
+error,		SYSLOG_SEVERITY_CODE(3)
+warning,	SYSLOG_SEVERITY_CODE(4)
+warn,		SYSLOG_SEVERITY_CODE(4)
+notice,		SYSLOG_SEVERITY_CODE(5)
+info,		SYSLOG_SEVERITY_CODE(6)
+log,		SYSLOG_SEVERITY_CODE(6)
+debug,		SYSLOG_SEVERITY_CODE(7)

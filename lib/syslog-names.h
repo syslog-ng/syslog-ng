@@ -60,6 +60,8 @@ syslog_name_lookup_severity_by_name(const gchar *name)
   return syslog_name_lookup_value_by_name(name, sl_severities);
 }
 
+gint syslog_name_lookup_severity_by_name_alias(const gchar *name, gssize name_len);
+
 static inline gint
 syslog_name_lookup_facility_by_name(const gchar *name)
 {
