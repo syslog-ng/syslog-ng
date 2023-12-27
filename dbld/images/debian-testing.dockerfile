@@ -12,7 +12,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV DEBCONF_NONINTERACTIVE_SEEN=true
 ENV LANG C.UTF-8
 
-COPY images/fake-sudo.sh /usr/bin/sudo
 COPY images/entrypoint.sh /
 COPY . /dbld/
 

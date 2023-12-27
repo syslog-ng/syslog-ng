@@ -2,9 +2,7 @@
 # packages required to build the docker image
 ##################################################
 
-# packages to run gosu installation
 gnupg                           [centos, fedora]
-gosu				[ubuntu, debian]
 
 # download various stuff over https
 wget                            [centos, fedora, debian, ubuntu]
@@ -23,6 +21,7 @@ bzip2                           [centos, fedora, debian, ubuntu]
 # Basic interactive tools
 less                            [centos, fedora, debian, ubuntu]
 vim                             [centos, fedora, debian, ubuntu]
+sudo				[centos, fedora, debian, ubuntu]
 
 #############################################################################
 # Essential build tools not explicitly referenced from

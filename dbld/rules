@@ -261,7 +261,7 @@ exec-%: setup
 	$(DOCKER) exec -ti  $$container $(EXEC_COMMAND)
 
 login: login-$(DEFAULT_IMAGE)
-login-%: EXEC_COMMAND=gosu $(shell whoami) /dbld/shell
+login-%: EXEC_COMMAND=sudo -u $(shell whoami) /dbld/shell
 login-%: exec-%
 	@true
 

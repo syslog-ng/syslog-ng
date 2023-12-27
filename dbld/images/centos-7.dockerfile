@@ -8,7 +8,6 @@ ARG COMMIT
 ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
 LABEL COMMIT=${COMMIT}
 
-COPY images/fake-sudo.sh /usr/bin/sudo
 COPY images/entrypoint.sh /
 COPY . /dbld/
 
@@ -20,7 +19,6 @@ RUN /dbld/builddeps install_rpm_build_deps
 
 RUN /dbld/builddeps install_criterion
 RUN /dbld/builddeps install_gradle
-RUN /dbld/builddeps install_gosu amd64
 
 VOLUME /source
 VOLUME /build
