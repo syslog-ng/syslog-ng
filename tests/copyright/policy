@@ -178,6 +178,7 @@ modules/affile/tests/test_file_writer\.c$
 modules/affile/stdout\.[ch]
 modules/afsocket/socket-options-unix\.[ch]$
 modules/basicfuncs/vp-funcs\.[ch]$
+modules/basicfuncs/tf-tag\.c$
 modules/diskq/diskq-global-metrics\.[ch]$
 modules/diskq/tests/test_logqueue_disk\.c$
 modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
