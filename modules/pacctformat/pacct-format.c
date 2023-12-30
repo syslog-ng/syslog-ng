@@ -155,6 +155,7 @@ pacct_format_handler(const MsgFormatOptions *options, LogMessage *msg,
   else
     len = ACCT_COMM;
   log_msg_set_value(msg, handle_ac_comm, rec->ac_comm, len);
+  log_msg_set_value_to_string(msg, LM_V_MSGFORMAT, "linux:pacct");
   return TRUE;
 }
 
