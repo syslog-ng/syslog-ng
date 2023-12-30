@@ -2021,6 +2021,7 @@ log_msg_registry_init(void)
 
   nv_registry_add_predefined(logmsg_registry, LM_V_RAWMSG, "RAWMSG");
   nv_registry_add_predefined(logmsg_registry, LM_V_TRANSPORT, "TRANSPORT");
+  nv_registry_add_predefined(logmsg_registry, LM_V_MSGFORMAT, "MSGFORMAT");
   nv_registry_add_predefined(logmsg_registry, LM_V_FILE_NAME, "FILE_NAME");
 
   nv_registry_assert_next_handle(logmsg_registry, LM_V_PREDEFINED_MAX);
