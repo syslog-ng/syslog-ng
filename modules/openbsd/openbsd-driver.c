@@ -102,6 +102,13 @@ openbsd_close_newsyslog_socket(OpenBSDDriver *self)
   self->klog    = -1;
 }
 
+static void
+_openbsd_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+{
+  log_msg_set_value_to_string(msg, LM_V_TRANSPORT, "local+openbsd");
+  log_src_driver_queue_method(s, msg, path_options);
+}
+
 static gboolean
 _openbsd_sd_init(LogPipe *s)
 {
@@ -184,6 +191,7 @@ openbsd_sd_new(GlobalConfig *cfg)
   self->super.super.super.init    = _openbsd_sd_init;
   self->super.super.super.deinit  = _openbsd_sd_deinit;
   self->super.super.super.free_fn = _openbsd_sd_free;
+  self->super.super.super.queue   = _openbsd_sd_queue;
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.parse_options.flags |= LP_LOCAL;
   self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
