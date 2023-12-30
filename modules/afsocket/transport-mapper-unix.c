@@ -61,7 +61,7 @@ transport_mapper_unix_dgram_new(void)
   TransportMapperUnix *self = transport_mapper_unix_new_instance("unix-dgram", SOCK_DGRAM);
 
   self->super.logproto = "dgram";
-  self->super.transport_name = g_strdup("unix-dgram");
+  self->super.transport_name = g_strdup("local+unix-dgram");
   self->super.stats_source = stats_register_type("unix-dgram");
 
   return &self->super;
@@ -73,7 +73,7 @@ transport_mapper_unix_stream_new(void)
   TransportMapperUnix *self = transport_mapper_unix_new_instance("unix-stream", SOCK_STREAM);
 
   self->super.logproto = "text";
-  self->super.transport_name = g_strdup("unix-stream");
+  self->super.transport_name = g_strdup("local+unix-stream");
   self->super.stats_source = stats_register_type("unix-stream");
 
   return &self->super;
