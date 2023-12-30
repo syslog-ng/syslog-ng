@@ -275,6 +275,12 @@ _set_program(JournalReaderOptions *options, LogMessage *msg)
 }
 
 static void
+_set_transport(LogMessage *msg)
+{
+  log_msg_set_value_to_string(msg, LM_V_TRANSPORT, "local+journal");
+}
+
+static void
 _set_message_timestamp(JournalReader *self, LogMessage *msg)
 {
   guint64 ts;
@@ -303,6 +309,7 @@ _handle_message(JournalReader *self)
 
   _set_message_timestamp(self, msg);
   _set_program(self->options, msg);
+  _set_transport(msg);
 
   msg_debug("Incoming log entry from journal",
             evt_tag_printf("input", "%s", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
