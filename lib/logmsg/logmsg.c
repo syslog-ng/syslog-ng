@@ -1429,7 +1429,7 @@ _merge_value(NVHandle handle,
 {
   LogMessage *msg = (LogMessage *) user_data;
 
-  if (!nv_table_is_value_set(msg->payload, handle))
+  if (!log_msg_is_value_set(msg, handle))
     log_msg_set_value_with_type(msg, handle, value, value_len, type);
   return FALSE;
 }
