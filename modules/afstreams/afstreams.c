@@ -156,6 +156,13 @@ afstreams_init_door(int hook_type G_GNUC_UNUSED, gpointer user_data)
     }
 }
 
+static void
+afstreams_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+{
+  log_msg_set_value_to_string(msg, LM_V_TRANSPORT, "local+sunstreams");
+  log_src_driver_queue_method(s, msg, path_options);
+}
+
 static gboolean
 afstreams_sd_init(LogPipe *s)
 {
@@ -278,6 +285,7 @@ afstreams_sd_new(gchar *filename, GlobalConfig *cfg)
   self->super.super.super.init = afstreams_sd_init;
   self->super.super.super.deinit = afstreams_sd_deinit;
   self->super.super.super.free_fn = afstreams_sd_free;
+  self->super.super.super.queue = afstreams_sd_queue;
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.parse_options.flags |= LP_LOCAL;
   self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
