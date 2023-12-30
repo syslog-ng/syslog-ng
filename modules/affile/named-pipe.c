@@ -139,6 +139,7 @@ pipe_sd_new(gchar *filename, GlobalConfig *cfg)
 
   self->file_opener = file_opener_for_named_pipes_new();
 
+  affile_sd_set_transport_name(self, "local+pipe");
   return &self->super.super;
 }
 

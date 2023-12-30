@@ -63,5 +63,6 @@ stdin_sd_new(GlobalConfig *cfg)
   self->file_reader_options.exit_on_eof = TRUE;
   self->file_reader_options.reader_options.super.stats_source = stats_register_type("stdin");
   self->file_opener = file_opener_for_stdin_new();
+  affile_sd_set_transport_name(self, "local+stdin");
   return &self->super.super;
 }
