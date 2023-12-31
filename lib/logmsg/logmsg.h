@@ -450,6 +450,12 @@ log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *valu
   log_msg_set_value_by_name_with_type(self, name, value, length, LM_VT_STRING);
 }
 
+static inline void
+log_msg_set_value_to_string(LogMessage *self, NVHandle handle, const gchar *literal_string)
+{
+  log_msg_set_value(self, handle, literal_string, strlen(literal_string));
+}
+
 void log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to);
 
 void log_msg_append_format_sdata(const LogMessage *self, GString *result, guint32 seq_num);
