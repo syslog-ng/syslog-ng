@@ -185,18 +185,17 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
     {
       affile_sd_set_transport_name(self, "local+file");
       self->file_reader_options.follow_freq = 1000;
+      self->file_opener = file_opener_for_regular_source_files_new();
     }
 
-  if (self->file_reader_options.follow_freq > 0)
-    self->file_opener = file_opener_for_regular_source_files_new();
-  else if (_is_linux_proc_kmsg(self->filename->str))
+  if (_is_linux_proc_kmsg(self->filename->str))
     {
       self->file_opener_options.needs_privileges = TRUE;
       self->file_opener = file_opener_for_prockmsg_new();
     }
   else if (_is_linux_dev_kmsg(self->filename->str))
     self->file_opener = file_opener_for_devkmsg_new();
-  else
+  else if (self->file_reader_options.follow_freq == 0)
     self->file_opener = file_opener_for_regular_source_files_new();
 
   self->file_reader_options.restore_state = self->file_reader_options.follow_freq > 0;
