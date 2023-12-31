@@ -173,12 +173,17 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 
   if (_is_device_node(filename))
     {
-      affile_sd_set_transport_name(self, "local+device");
       self->file_reader_options.follow_freq = 0;
       if (_is_linux_dev_kmsg(self->filename->str))
-        self->file_opener = file_opener_for_devkmsg_new();
+        {
+          self->file_opener = file_opener_for_devkmsg_new();
+          affile_sd_set_transport_name(self, "local+devkmsg");
+        }
       else
-        self->file_opener = file_opener_for_regular_source_files_new();
+        {
+          self->file_opener = file_opener_for_regular_source_files_new();
+          affile_sd_set_transport_name(self, "local+device");
+        }
     }
   else if (_is_linux_proc_kmsg(filename))
     {
