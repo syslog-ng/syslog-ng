@@ -26,5 +26,5 @@ else
         chown $USER_NAME:$GROUP_ID /home/$USER_NAME
     fi
 
-    exec sudo --preserve-env -u "${USER_NAME}" "$@"
+    exec sudo --preserve-env -Hu "${USER_NAME}" "$@"
 fi
