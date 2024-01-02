@@ -20,7 +20,6 @@ EXTRA_DIST += \
 	dbld/pip_packages.manifest \
 	dbld/images/entrypoint.sh \
 	dbld/images/fake-sudo.sh \
-	dbld/images/gosu.pubkey \
 	dbld/images/yum-builddep.sha1 \
 	dbld/images/debian.prepare.sh \
 	dbld/images/ubuntu.prepare.sh \

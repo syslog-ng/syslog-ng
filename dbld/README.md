@@ -131,21 +131,3 @@ All artifacts (tarball, deb/rpm packages) are stored in `./dbld/release/<VERSION
 The script does not undertake publishing the artifacts or the tag in any
 way. It is expected that some kind of CI system will perform this (jenkins,
 travis, github-actions).
-
-## sudo
-The `sudo` command is not available inside this development container.
-
->Short explanation:
->
->Many of the image maintainers (mostly for security reasons) do not install the sudo package by default. Additionally (to avoid access problems to your repository outside of this container), we
->- mount directories
->- run commands
->
->inside this container using your external Username and ID.
-
-There are many options to circumvent this limitation (i.e. Create your own image, based on this one.), but probably the easiest way is to start a new privileged shell in the already running container, using `docker exec`.
-```bash
-$ docker exec -it <container-name or ID> /bin/bash
-```
-
-> note: We installed a fake `sudo` command inside the container, which will print out a copy-paste ready version of the `docker exec` command in case someone accidentally calls it.

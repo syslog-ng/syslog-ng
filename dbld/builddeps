@@ -68,17 +68,6 @@ function install_criterion() {
 
 }
 
-function install_gosu() {
-    GOSU_VERSION=1.10
-    ARCHITECTURE=$1
-    cat $DBLD_DIR/images/gosu.pubkey | gpg --import
-    download_target "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${ARCHITECTURE}" /usr/local/bin/gosu
-    download_target "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${ARCHITECTURE}.asc" /usr/local/bin/gosu.asc
-    gpg --verify /usr/local/bin/gosu.asc
-    rm /usr/local/bin/gosu.asc
-    chmod +x /usr/local/bin/gosu
-}
-
 function set_jvm_paths() {
     find / -name 'libjvm.so' | sed 's@/libjvm.so@@g' | tee --append /etc/ld.so.conf.d/openjdk-libjvm.conf
     ldconfig

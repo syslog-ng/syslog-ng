@@ -19,9 +19,12 @@ else
         useradd $USER_NAME --uid=$USER_ID --gid=$GROUP_ID &>/dev/null || \
             useradd dockerguest --uid=$USER_ID --gid=$GROUP_ID &>/dev/null || \
             echo "Failed to add user $USER_NAME/$USER_ID in docker entrypoint-debian.sh";
+	usermod -a -G sudo $USER_NAME || usermod -a -G wheel $USER_NAME
+	sed -i -e '/^%sudo\s\+ALL=/s,ALL$,NOPASSWD: ALL,' /etc/sudoers
+	sed -i -e '/^%wheel\s\+ALL=/s,ALL$,NOPASSWD: ALL,' /etc/sudoers
         mkdir -p /home/$USER_NAME
         chown $USER_NAME:$GROUP_ID /home/$USER_NAME
     fi
 
-    exec gosu "${USER_NAME}" "$@"
+    exec sudo --preserve-env -u "${USER_NAME}" "$@"
 fi

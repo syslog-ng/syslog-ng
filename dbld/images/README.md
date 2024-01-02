@@ -34,11 +34,7 @@ In this section we will install all the dependencies we need, in the following o
 | install_pip_packages | [python -m pip](https://packaging.python.org/tutorials/installing-packages/) | See [pip_packages.manifest](/dbld/pip_packages.manifest) |
 | install_criterion | [Criterion](https://github.com/Snaipe/Criterion) | We use criterion for unit testing. |
 | install_gradle | [Gradle](https://gradle.org/) | We use gradle to build Java based drivers. |
-| install_gosu \<platform\> | [Gosu](https://github.com/tianon/gosu) | We use gosu to drop root privileges inside the containers. |
 > Note: These functions can be found in [dbld/builddeps](/dbld/builddeps)
-
-### fake sudo
-Just a simple `echo` command to make life easier. Reasons are explained in details in [/dbld/README.md](/dbld/README.md)
 
 ### volumes
 Creating the `/source` and `/build` folders for our work. (note: `install` folder will be placed inside the build folder)
