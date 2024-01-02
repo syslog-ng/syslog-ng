@@ -46,6 +46,9 @@ public:
   void set_url(const char *url);
   const std::string &get_url() const;
 
+  void set_compression(bool enable);
+  bool get_compression() const;
+
   virtual bool init();
   virtual bool deinit();
   virtual const char *format_stats_key(StatsClusterKeyBuilder *kb);
@@ -60,6 +63,7 @@ protected:
   friend class DestWorker;
   OtelDestDriver *super;
   std::string url;
+  bool compression;
   GrpcClientCredentialsBuilderW credentials_builder_wrapper;
 };
 

@@ -90,7 +90,7 @@ private:
 
 DestinationDriver::DestinationDriver(BigQueryDestDriver *s)
   : super(s), url("bigquerystorage.googleapis.com"),
-    keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1), batch_bytes(10 * 1000 * 1000)
+    batch_bytes(10 * 1000 * 1000), keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1)
 {
   log_template_options_defaults(&this->template_options);
 }
