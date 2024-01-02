@@ -5,6 +5,7 @@ Maintainer: syslog-ng maintainers <syslog-ng-maintainers@alioth-lists.debian.net
 Uploaders: Laszlo Boszormenyi (GCS) <gcs@debian.org>,
            SZALAY Attila <sasa@debian.org>
 Build-Depends: debhelper (>= 10~),
+               fakeroot,
                automake (>= 1:1.11.1),
                autoconf-archive,
                tzdata,
