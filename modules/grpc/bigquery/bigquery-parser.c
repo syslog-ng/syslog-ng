@@ -38,6 +38,7 @@ static CfgLexerKeyword bigquery_keywords[] =
   { "schema", KW_SCHEMA },
   { "protobuf_schema", KW_PROTOBUF_SCHEMA },
   { "batch_bytes", KW_BATCH_BYTES },
+  { "compression", KW_COMPRESSION },
   { "keep_alive", KW_KEEP_ALIVE },
   { "time", KW_TIME },
   { "timeout", KW_TIMEOUT },

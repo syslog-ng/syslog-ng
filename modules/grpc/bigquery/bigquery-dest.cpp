@@ -90,7 +90,8 @@ private:
 
 DestinationDriver::DestinationDriver(BigQueryDestDriver *s)
   : super(s), url("bigquerystorage.googleapis.com"),
-    batch_bytes(10 * 1000 * 1000), keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1)
+    batch_bytes(10 * 1000 * 1000), keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1),
+    compression(false)
 {
   log_template_options_defaults(&this->template_options);
 }
@@ -391,6 +392,13 @@ bigquery_dd_set_batch_bytes(LogDriver *d, glong b)
 {
   BigQueryDestDriver *self = (BigQueryDestDriver *) d;
   self->cpp->set_batch_bytes((size_t) b);
+}
+
+void
+bigquery_dd_set_compression(LogDriver *d, gboolean b)
+{
+  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
+  self->cpp->set_compression((bool) b);
 }
 
 void

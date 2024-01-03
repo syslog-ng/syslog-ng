@@ -42,6 +42,7 @@ gboolean bigquery_dd_add_field(LogDriver *d, const gchar *name, const gchar *typ
 void bigquery_dd_set_protobuf_schema(LogDriver *d, const gchar *proto_path, GList *values);
 
 void bigquery_dd_set_batch_bytes(LogDriver *d, glong b);
+void bigquery_dd_set_compression(LogDriver *d, gboolean b);
 
 void bigquery_dd_set_keepalive_time(LogDriver *d, gint t);
 void bigquery_dd_set_keepalive_timeout(LogDriver *d, gint t);
