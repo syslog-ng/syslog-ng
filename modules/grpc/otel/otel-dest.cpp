@@ -30,7 +30,7 @@ using namespace syslogng::grpc::otel;
 /* C++ Implementations */
 
 DestDriver::DestDriver(OtelDestDriver *s)
-  : super(s), compression(false)
+  : super(s), compression(false), batch_bytes(4 * 1000 * 1000)
 {
   credentials_builder_wrapper.self = &credentials_builder;
 }
@@ -57,6 +57,18 @@ bool
 DestDriver::get_compression() const
 {
   return compression;
+}
+
+void
+DestDriver::set_batch_bytes(size_t batch_bytes_)
+{
+  batch_bytes = batch_bytes_;
+}
+
+size_t
+DestDriver::get_batch_bytes() const
+{
+  return batch_bytes;
 }
 
 const char *
@@ -104,7 +116,11 @@ DestDriver::init()
       return false;
     }
 
-  return log_threaded_dest_driver_init_method(&super->super.super.super.super);
+  if (!log_threaded_dest_driver_init_method(&this->super->super.super.super.super))
+    return false;
+
+  log_threaded_dest_driver_register_aggregated_stats(&this->super->super);
+  return true;
 }
 
 bool
@@ -131,6 +147,12 @@ void
 otel_dd_set_compression(LogDriver *s, gboolean enable)
 {
   get_DestDriver(s)->set_compression(enable);
+}
+
+void
+otel_dd_set_batch_bytes(LogDriver *s, glong b)
+{
+  get_DestDriver(s)->set_batch_bytes((size_t) b);
 }
 
 GrpcClientCredentialsBuilderW *
@@ -189,6 +211,7 @@ otel_dd_init_super(LogThreadedDestDriver *s, GlobalConfig *cfg)
   s->worker.construct = _construct_worker;
   s->stats_source = stats_register_type("opentelemetry");
   s->format_stats_key = _format_stats_key;
+  s->metrics.raw_bytes_enabled = TRUE;
 }
 
 LogDriver *

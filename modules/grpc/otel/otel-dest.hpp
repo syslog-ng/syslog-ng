@@ -49,6 +49,9 @@ public:
   void set_compression(bool enable);
   bool get_compression() const;
 
+  void set_batch_bytes(size_t bytes);
+  size_t get_batch_bytes() const;
+
   virtual bool init();
   virtual bool deinit();
   virtual const char *format_stats_key(StatsClusterKeyBuilder *kb);
@@ -64,6 +67,7 @@ protected:
   OtelDestDriver *super;
   std::string url;
   bool compression;
+  size_t batch_bytes;
   GrpcClientCredentialsBuilderW credentials_builder_wrapper;
 };
 
