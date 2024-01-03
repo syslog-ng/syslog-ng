@@ -387,7 +387,15 @@ DestWorker::flush_log_records()
   logs_service_response.Clear();
   ::grpc::Status status = logs_service_stub->Export(&client_context, logs_service_request,
                                                     &logs_service_response);
-  return _map_grpc_status_to_log_threaded_result(status);
+  LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
+
+  if (result == LTR_SUCCESS)
+    {
+      log_threaded_dest_worker_written_bytes_add(&super->super, logs_current_batch_bytes);
+      log_threaded_dest_driver_insert_batch_length_stats(super->super.owner, logs_current_batch_bytes);
+    }
+
+  return result;
 }
 
 LogThreadedResult
@@ -397,7 +405,15 @@ DestWorker::flush_metrics()
   metrics_service_response.Clear();
   ::grpc::Status status = metrics_service_stub->Export(&client_context, metrics_service_request,
                                                        &metrics_service_response);
-  return _map_grpc_status_to_log_threaded_result(status);
+  LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
+
+  if (result == LTR_SUCCESS)
+    {
+      log_threaded_dest_worker_written_bytes_add(&super->super, metrics_current_batch_bytes);
+      log_threaded_dest_driver_insert_batch_length_stats(super->super.owner, metrics_current_batch_bytes);
+    }
+
+  return result;
 }
 
 LogThreadedResult
@@ -407,7 +423,15 @@ DestWorker::flush_spans()
   trace_service_response.Clear();
   ::grpc::Status status = trace_service_stub->Export(&client_context, trace_service_request,
                                                      &trace_service_response);
-  return _map_grpc_status_to_log_threaded_result(status);
+  LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
+
+  if (result == LTR_SUCCESS)
+    {
+      log_threaded_dest_worker_written_bytes_add(&super->super, spans_current_batch_bytes);
+      log_threaded_dest_driver_insert_batch_length_stats(super->super.owner, spans_current_batch_bytes);
+    }
+
+  return result;
 }
 
 LogThreadedResult

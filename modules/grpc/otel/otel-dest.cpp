@@ -211,6 +211,7 @@ otel_dd_init_super(LogThreadedDestDriver *s, GlobalConfig *cfg)
   s->worker.construct = _construct_worker;
   s->stats_source = stats_register_type("opentelemetry");
   s->format_stats_key = _format_stats_key;
+  s->metrics.raw_bytes_enabled = TRUE;
 }
 
 LogDriver *
