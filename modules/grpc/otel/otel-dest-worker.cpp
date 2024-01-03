@@ -43,7 +43,10 @@ using namespace opentelemetry::proto::trace::v1;
 DestWorker::DestWorker(OtelDestWorker *s)
   : super(s),
     owner(*((OtelDestDriver *) s->super.owner)->cpp),
-    formatter(s->super.owner->super.super.super.cfg)
+    formatter(s->super.owner->super.super.super.cfg),
+    logs_current_batch_bytes(0),
+    metrics_current_batch_bytes(0),
+    spans_current_batch_bytes(0)
 {
   ::grpc::ChannelArguments args;
 
@@ -237,7 +240,15 @@ DestWorker::insert_log_record_from_log_msg(LogMessage *msg)
 {
   ScopeLogs *scope_logs = lookup_scope_logs(msg);
   LogRecord *log_record = scope_logs->add_log_records();
-  return formatter.format(msg, *log_record);
+  bool result = formatter.format(msg, *log_record);
+
+  if (result)
+    {
+      size_t log_record_bytes = log_record->ByteSizeLong();
+      logs_current_batch_bytes += log_record_bytes;
+    }
+
+  return result;
 }
 
 void
@@ -246,6 +257,9 @@ DestWorker::insert_fallback_log_record_from_log_msg(LogMessage *msg)
   ScopeLogs *scope_logs = lookup_scope_logs(msg);
   LogRecord *log_record = scope_logs->add_log_records();
   formatter.format_fallback(msg, *log_record);
+
+  size_t log_record_bytes = log_record->ByteSizeLong();
+  logs_current_batch_bytes += log_record_bytes;
 }
 
 bool
@@ -253,7 +267,15 @@ DestWorker::insert_metric_from_log_msg(LogMessage *msg)
 {
   ScopeMetrics *scope_metrics = lookup_scope_metrics(msg);
   Metric *metric = scope_metrics->add_metrics();
-  return formatter.format(msg, *metric);
+  bool result = formatter.format(msg, *metric);
+
+  if (result)
+    {
+      size_t metric_bytes = metric->ByteSizeLong();
+      metrics_current_batch_bytes += metric_bytes;
+    }
+
+  return result;
 }
 
 bool
@@ -261,7 +283,24 @@ DestWorker::insert_span_from_log_msg(LogMessage *msg)
 {
   ScopeSpans *scope_spans = lookup_scope_spans(msg);
   Span *span = scope_spans->add_spans();
-  return formatter.format(msg, *span);
+  bool result = formatter.format(msg, *span);
+
+  if (result)
+    {
+      size_t span_bytes = span->ByteSizeLong();
+      spans_current_batch_bytes += span_bytes;
+    }
+
+  return result;
+}
+
+bool
+DestWorker::should_initiate_flush()
+{
+  size_t batch_bytes = owner.get_batch_bytes();
+  return logs_current_batch_bytes >= batch_bytes ||
+         metrics_current_batch_bytes >= batch_bytes ||
+         spans_current_batch_bytes >= batch_bytes;
 }
 
 LogThreadedResult
@@ -288,6 +327,9 @@ DestWorker::insert(LogMessage *msg)
     default:
       g_assert_not_reached();
     }
+
+  if (should_initiate_flush())
+    return log_threaded_dest_worker_flush(&super->super, LTF_FLUSH_NORMAL);
 
   return LTR_QUEUED;
 
@@ -397,6 +439,8 @@ exit:
   logs_service_request.Clear();
   metrics_service_request.Clear();
   trace_service_request.Clear();
+
+  logs_current_batch_bytes = metrics_current_batch_bytes = spans_current_batch_bytes = 0;
 
   return result;
 }

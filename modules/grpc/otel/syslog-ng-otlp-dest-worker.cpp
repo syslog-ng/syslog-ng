@@ -64,5 +64,11 @@ SyslogNgDestWorker::insert(LogMessage *msg)
   LogRecord *log_record = scope_logs->add_log_records();
   formatter.format_syslog_ng(msg, *log_record);
 
+  size_t log_record_bytes = log_record->ByteSizeLong();
+  logs_current_batch_bytes += log_record_bytes;
+
+  if (should_initiate_flush())
+    return log_threaded_dest_worker_flush(&super->super, LTF_FLUSH_NORMAL);
+
   return LTR_QUEUED;
 }

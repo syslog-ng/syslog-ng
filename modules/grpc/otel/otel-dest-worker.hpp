@@ -77,6 +77,8 @@ protected:
   virtual ScopeMetrics *lookup_scope_metrics(LogMessage *msg);
   virtual ScopeSpans *lookup_scope_spans(LogMessage *msg);
 
+  bool should_initiate_flush();
+
   bool insert_log_record_from_log_msg(LogMessage *msg);
   void insert_fallback_log_record_from_log_msg(LogMessage *msg);
   bool insert_metric_from_log_msg(LogMessage *msg);
@@ -97,10 +99,13 @@ protected:
 
   ExportLogsServiceRequest logs_service_request;
   ExportLogsServiceResponse logs_service_response;
+  size_t logs_current_batch_bytes;
   ExportMetricsServiceRequest metrics_service_request;
   ExportMetricsServiceResponse metrics_service_response;
+  size_t metrics_current_batch_bytes;
   ExportTraceServiceRequest trace_service_request;
   ExportTraceServiceResponse trace_service_response;
+  size_t spans_current_batch_bytes;
 
   ProtobufFormatter formatter;
 
