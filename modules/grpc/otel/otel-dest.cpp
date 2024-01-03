@@ -116,7 +116,11 @@ DestDriver::init()
       return false;
     }
 
-  return log_threaded_dest_driver_init_method(&super->super.super.super.super);
+  if (!log_threaded_dest_driver_init_method(&this->super->super.super.super.super))
+    return false;
+
+  log_threaded_dest_driver_register_aggregated_stats(&this->super->super);
+  return true;
 }
 
 bool

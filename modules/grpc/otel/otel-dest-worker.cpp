@@ -246,6 +246,7 @@ DestWorker::insert_log_record_from_log_msg(LogMessage *msg)
     {
       size_t log_record_bytes = log_record->ByteSizeLong();
       logs_current_batch_bytes += log_record_bytes;
+      log_threaded_dest_driver_insert_msg_length_stats(super->super.owner, log_record_bytes);
     }
 
   return result;
@@ -260,6 +261,7 @@ DestWorker::insert_fallback_log_record_from_log_msg(LogMessage *msg)
 
   size_t log_record_bytes = log_record->ByteSizeLong();
   logs_current_batch_bytes += log_record_bytes;
+  log_threaded_dest_driver_insert_msg_length_stats(super->super.owner, log_record_bytes);
 }
 
 bool
@@ -273,6 +275,7 @@ DestWorker::insert_metric_from_log_msg(LogMessage *msg)
     {
       size_t metric_bytes = metric->ByteSizeLong();
       metrics_current_batch_bytes += metric_bytes;
+      log_threaded_dest_driver_insert_msg_length_stats(super->super.owner, metric_bytes);
     }
 
   return result;
@@ -289,6 +292,7 @@ DestWorker::insert_span_from_log_msg(LogMessage *msg)
     {
       size_t span_bytes = span->ByteSizeLong();
       spans_current_batch_bytes += span_bytes;
+      log_threaded_dest_driver_insert_msg_length_stats(super->super.owner, span_bytes);
     }
 
   return result;
