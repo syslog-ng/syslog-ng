@@ -313,7 +313,7 @@ _map_grpc_status_to_log_threaded_result(const ::grpc::Status &status)
     case ::grpc::StatusCode::ABORTED:
     case ::grpc::StatusCode::OUT_OF_RANGE:
     case ::grpc::StatusCode::DATA_LOSS:
-      return LTR_NOT_CONNECTED;
+      goto temporary_error;
     case ::grpc::StatusCode::UNKNOWN:
     case ::grpc::StatusCode::INVALID_ARGUMENT:
     case ::grpc::StatusCode::NOT_FOUND:
@@ -323,15 +323,28 @@ _map_grpc_status_to_log_threaded_result(const ::grpc::Status &status)
     case ::grpc::StatusCode::FAILED_PRECONDITION:
     case ::grpc::StatusCode::UNIMPLEMENTED:
     case ::grpc::StatusCode::INTERNAL:
-      return LTR_DROP;
+      goto permanent_error;
     case ::grpc::StatusCode::RESOURCE_EXHAUSTED:
       if (status.error_details().length() > 0)
-        return LTR_NOT_CONNECTED;
-      return LTR_DROP;
+        goto temporary_error;
+      goto permanent_error;
     default:
       g_assert_not_reached();
     }
-  g_assert_not_reached();
+
+temporary_error:
+  msg_debug("OpenTelemetry server responded with a temporary error status code, retrying after time-reopen() seconds",
+            evt_tag_int("error_code", status.error_code()),
+            evt_tag_str("error_message", status.error_message().c_str()),
+            evt_tag_str("error_details", status.error_details().c_str()));
+  return LTR_NOT_CONNECTED;
+
+permanent_error:
+  msg_error("OpenTelemetry server responded with a permanent error status code, dropping batch",
+            evt_tag_int("error_code", status.error_code()),
+            evt_tag_str("error_message", status.error_message().c_str()),
+            evt_tag_str("error_details", status.error_details().c_str()));
+  return LTR_DROP;
 }
 
 LogThreadedResult
