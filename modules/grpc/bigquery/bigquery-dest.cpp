@@ -468,6 +468,7 @@ bigquery_dd_new(GlobalConfig *cfg)
 
   self->super.format_stats_key = _format_stats_key;
   self->super.stats_source = stats_register_type("bigquery");
+  self->super.metrics.raw_bytes_enabled = TRUE;
 
   self->super.worker.construct = bigquery_dw_new;
 
