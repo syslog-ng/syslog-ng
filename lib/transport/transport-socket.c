@@ -22,6 +22,7 @@
  */
 
 #include "transport-socket.h"
+#include "messages.h"
 
 #include <errno.h>
 #include <string.h>
@@ -128,6 +129,13 @@ _parse_cmsg_to_aux(LogTransportSocket *self, struct msghdr *msg, LogTransportAux
 {
   struct cmsghdr *cmsg;
 
+  if (G_UNLIKELY(msg->msg_flags & MSG_CTRUNC))
+    {
+      msg_warning_once("WARNING: recvmsg() returned truncated control data, the size of the control data buffer needs to be increased",
+                       evt_tag_int("control_len", msg->msg_controllen));
+      return;
+    }
+
   if (!self->parse_cmsg || !aux)
     return;
 
@@ -160,7 +168,7 @@ log_transport_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, Lo
   struct iovec iov[1];
   struct sockaddr_storage ss;
 #if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
-  gchar ctlbuf[64];
+  gchar ctlbuf[256];
   msg.msg_control = ctlbuf;
   msg.msg_controllen = sizeof(ctlbuf);
 #endif
