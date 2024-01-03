@@ -562,6 +562,15 @@ Test(basicfuncs, test_vp_funcs)
   assert_template_format_with_context("$(names)", "");
 }
 
+Test(basicfuncs, test_tag)
+{
+  assert_template_format_value_and_type("$(tag alma)", "1", LM_VT_BOOLEAN);
+  assert_template_format_value_and_type("$(tag korte)", "1", LM_VT_BOOLEAN);
+  assert_template_format_value_and_type("$(tag narancs)", "0", LM_VT_BOOLEAN);
+
+  assert_template_format_value_and_type("$(tag alma true false)", "true", LM_VT_STRING);
+  assert_template_format_value_and_type("$(tag narancs true false)", "false", LM_VT_STRING);
+}
 
 Test(basicfuncs, test_tfurlencode)
 {
