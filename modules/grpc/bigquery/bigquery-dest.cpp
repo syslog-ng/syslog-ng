@@ -394,6 +394,13 @@ bigquery_dd_set_batch_bytes(LogDriver *d, glong b)
 }
 
 void
+bigquery_dd_set_compression(LogDriver *d, gboolean b)
+{
+  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
+  self->cpp->set_compression((bool) b);
+}
+
+void
 bigquery_dd_set_keepalive_time(LogDriver *d, gint t)
 {
   BigQueryDestDriver *self = (BigQueryDestDriver *) d;

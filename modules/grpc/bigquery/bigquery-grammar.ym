@@ -55,6 +55,7 @@
 %token KW_SCHEMA
 %token KW_PROTOBUF_SCHEMA
 %token KW_BATCH_BYTES
+%token KW_COMPRESSION
 
 %token KW_KEEP_ALIVE
 %token KW_TIME
@@ -97,6 +98,10 @@ bigquery_dest_option
     {
       CHECK_ERROR($3 <= (10 * 1000 * 1000), @3, "batch-bytes() cannot be larger than 10 MB. For more info see https://cloud.google.com/bigquery/quotas#write-api-limits");
       bigquery_dd_set_batch_bytes(last_driver, $3);
+    }
+  | KW_COMPRESSION '(' yesno ')'
+    {
+      bigquery_dd_set_compression(last_driver, $3);
     }
   | KW_KEEP_ALIVE '(' bigquery_keepalive_options ')'
   | threaded_dest_driver_general_option

@@ -425,6 +425,9 @@ DestinationWorker::create_channel()
   if (owner->keepalive_max_pings_without_data != -1)
     args.SetInt(GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA, owner->keepalive_max_pings_without_data);
 
+  if (owner->compression)
+    args.SetCompressionAlgorithm(GRPC_COMPRESS_DEFLATE);
+
   args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
 
   auto credentials = ::grpc::GoogleDefaultCredentials();

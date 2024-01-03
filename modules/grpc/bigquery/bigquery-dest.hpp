@@ -119,6 +119,11 @@ public:
     this->batch_bytes = b;
   }
 
+  void set_compression(bool b)
+  {
+    this->compression = b;
+  }
+
   void set_keepalive_time(int t)
   {
     this->keepalive_time = t;
@@ -173,6 +178,7 @@ private:
   int keepalive_time;
   int keepalive_timeout;
   int keepalive_max_pings_without_data;
+  bool compression;
 
   struct
   {
