@@ -49,6 +49,7 @@ static CfgLexerKeyword otel_keywords[] =
   { "adc",                       KW_ADC },
   { "syslog_ng_otlp",            KW_SYSLOG_NG_OTLP },
   { "compression",               KW_COMPRESSION },
+  { "batch_bytes",               KW_BATCH_BYTES },
   { NULL }
 };
 

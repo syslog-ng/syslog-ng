@@ -71,6 +71,7 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_ADC
 %token KW_SYSLOG_NG_OTLP
 %token KW_COMPRESSION
+%token KW_BATCH_BYTES
 
 %type <ptr> source_otel
 %type <ptr> parser_otel
@@ -145,6 +146,7 @@ destination_otel_option
   : KW_URL '(' string ')' { otel_dd_set_url(last_driver, $3); free($3); }
   | KW_AUTH { last_grpc_client_credentials_builder = otel_dd_get_credentials_builder(last_driver); } '(' grpc_client_credentials_option ')'
   | KW_COMPRESSION '(' yesno ')' { otel_dd_set_compression(last_driver, $3); }
+  | KW_BATCH_BYTES '(' positive_integer ')' { otel_dd_set_batch_bytes(last_driver, $3); }
   | threaded_dest_driver_general_option
   | threaded_dest_driver_batch_option
   | threaded_dest_driver_workers_option
