@@ -426,7 +426,7 @@ DestinationWorker::create_channel()
     args.SetInt(GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA, owner->keepalive_max_pings_without_data);
 
   if (owner->compression)
-    args.SetCompressionAlgorithm(GRPC_COMPRESS_DEFLATE);
+    args.SetCompressionAlgorithm(GRPC_COMPRESS_GZIP);
 
   args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
 
