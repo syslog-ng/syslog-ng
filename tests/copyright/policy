@@ -107,6 +107,7 @@ lib/multi-line/tests/test_smart_multi_line\.c
 libtest/mock-logpipe\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
+lib/severity-aliases\.table
 syslog-ng-ctl/commands/log-level.[ch]
 modules/afsocket/afsocket-signals.h
 syslog-ng-ctl/commands/healthcheck.[ch]
