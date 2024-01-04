@@ -381,6 +381,8 @@ set_target_properties(syslog-ng
     PROPERTIES VERSION ${SYSLOG_NG_VERSION}
     SOVERSION ${SYSLOG_NG_VERSION})
 
+gperf_generate(severity-aliases.table ${CMAKE_CURRENT_BINARY_DIR}/severity-aliases.h syslog-ng)
+
 if (${IVYKIS_INTERNAL})
    add_dependencies(syslog-ng IVYKIS)
 endif()

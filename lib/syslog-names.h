@@ -54,13 +54,15 @@ const char *syslog_name_lookup_name_by_value(int value, struct sl_name names[]);
 
 guint32 syslog_make_range(guint32 r1, guint32 r2);
 
-static inline guint32
+static inline gint
 syslog_name_lookup_severity_by_name(const gchar *name)
 {
   return syslog_name_lookup_value_by_name(name, sl_severities);
 }
 
-static inline guint32
+gint syslog_name_lookup_severity_by_name_alias(const gchar *name, gssize name_len);
+
+static inline gint
 syslog_name_lookup_facility_by_name(const gchar *name)
 {
   return syslog_name_lookup_value_by_name(name, sl_facilities);

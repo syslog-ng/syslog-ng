@@ -311,15 +311,21 @@ lib_libsyslog_ng_la_LIBADD		+= @OPENSSL_LIBS@
 BUILT_SOURCES += lib/cfg-lex.c lib/cfg-lex.h						\
 	lib/cfg-grammar.c lib/cfg-grammar.h						\
 	lib/block-ref-grammar.y lib/block-ref-grammar.c lib/block-ref-grammar.h		\
-	lib/pragma-grammar.y lib/pragma-grammar.h lib/pragma-grammar.c
+	lib/pragma-grammar.y lib/pragma-grammar.h lib/pragma-grammar.c			\
+	lib/severity-aliases.h
 
 EXTRA_DIST += \
 	lib/block-ref-grammar.ym	\
 	lib/pragma-grammar.ym		\
 	lib/merge-grammar.py		\
+	lib/severity-aliases.table	\
+	lib/severity-aliases.h		\
 	lib/hostname-unix.c
 
 lib/plugin-types.h: lib/cfg-grammar.h
+
+%.h: %.table
+	$(GPERF) $< --output $@
 
 lib/ libsyslog-ng: lib/libsyslog-ng.la
 if IVYKIS_INTERNAL

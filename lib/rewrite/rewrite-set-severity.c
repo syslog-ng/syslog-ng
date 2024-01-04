@@ -57,17 +57,17 @@ _convert_severity_as_number(GString *severity_text)
 static gint
 _convert_severity_as_text(GString *severity_text)
 {
-  return syslog_name_lookup_severity_by_name(severity_text->str);
+  return syslog_name_lookup_severity_by_name_alias(severity_text->str, severity_text->len);
 }
 
 static gint
 _convert_severity(GString *severity_text)
 {
-  gint severity = _convert_severity_as_number(severity_text);
+  gint severity = _convert_severity_as_text(severity_text);
   if (severity >= 0)
     return severity;
 
-  severity = _convert_severity_as_text(severity_text);
+  severity = _convert_severity_as_number(severity_text);
   if (severity >= 0)
     return severity;
 

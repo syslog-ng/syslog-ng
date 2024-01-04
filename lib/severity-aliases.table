@@ -1,0 +1,50 @@
+/*
+ * Copyright (c) 2024 Balazs Scheidler
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%{
+
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
+%}
+%define lookup-function-name gperf_lookup_severity_alias
+%ignore-case
+%struct-type
+%readonly-tables
+%switch=1
+struct severity_alias { char *name; int severity; };
+%%
+emerg,		SYSLOG_SEVERITY_CODE(0)
+emergency,	SYSLOG_SEVERITY_CODE(0)
+panic,		SYSLOG_SEVERITY_CODE(0)
+alert,		SYSLOG_SEVERITY_CODE(1)
+crit,		SYSLOG_SEVERITY_CODE(2)
+critical,	SYSLOG_SEVERITY_CODE(2)
+fatal,		SYSLOG_SEVERITY_CODE(2)
+err,		SYSLOG_SEVERITY_CODE(3)
+error,		SYSLOG_SEVERITY_CODE(3)
+warning,	SYSLOG_SEVERITY_CODE(4)
+warn,		SYSLOG_SEVERITY_CODE(4)
+notice,		SYSLOG_SEVERITY_CODE(5)
+info,		SYSLOG_SEVERITY_CODE(6)
+log,		SYSLOG_SEVERITY_CODE(6)
+debug,		SYSLOG_SEVERITY_CODE(7)
