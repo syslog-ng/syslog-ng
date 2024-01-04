@@ -52,6 +52,10 @@ public:
 
   GrpcServerCredentialsBuilderW *get_credentials_builder_wrapper();
 
+  TraceService::AsyncService trace_service;
+  LogsService::AsyncService logs_service;
+  MetricsService::AsyncService metrics_service;
+
 private:
   bool post(LogMessage *msg);
 

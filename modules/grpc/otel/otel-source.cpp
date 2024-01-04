@@ -48,31 +48,6 @@ syslogng::grpc::otel::SourceDriver::SourceDriver(OtelSourceDriver *s)
 void
 syslogng::grpc::otel::SourceDriver::run()
 {
-  std::string address = std::string("[::]:").append(std::to_string(port));
-
-  ::grpc::EnableDefaultHealthCheckService(true);
-
-  ::grpc::ServerBuilder builder;
-  builder.AddListeningPort(address, credentials_builder.build());
-
-  TraceService::AsyncService trace_service;
-  LogsService::AsyncService logs_service;
-  MetricsService::AsyncService metrics_service;
-
-  builder.RegisterService(&trace_service);
-  builder.RegisterService(&logs_service);
-  builder.RegisterService(&metrics_service);
-
-  cq = builder.AddCompletionQueue();
-  server = builder.BuildAndStart();
-  if (!server)
-    {
-      msg_error("Failed to start OpenTelemetry server", evt_tag_int("port", port));
-      return;
-    }
-
-  msg_info("OpenTelemetry server accepting connections", evt_tag_int("port", port));
-
   new TraceServiceCall(*this, &trace_service, cq.get());
   new LogsServiceCall(*this, &logs_service, cq.get());
   new MetricsServiceCall(*this, &metrics_service, cq.get());
@@ -122,6 +97,27 @@ syslogng::grpc::otel::SourceDriver::init()
 {
   if (!credentials_builder.validate())
     return FALSE;
+
+  std::string address = std::string("[::]:").append(std::to_string(port));
+
+  ::grpc::EnableDefaultHealthCheckService(true);
+
+  ::grpc::ServerBuilder builder;
+  builder.AddListeningPort(address, credentials_builder.build());
+
+  builder.RegisterService(&trace_service);
+  builder.RegisterService(&logs_service);
+  builder.RegisterService(&metrics_service);
+
+  cq = builder.AddCompletionQueue();
+  server = builder.BuildAndStart();
+  if (!server)
+    {
+      msg_error("Failed to start OpenTelemetry server", evt_tag_int("port", port));
+      return false;
+    }
+
+  msg_info("OpenTelemetry server accepting connections", evt_tag_int("port", port));
 
   return log_threaded_source_driver_init_method(&super->super.super.super.super);
 }
