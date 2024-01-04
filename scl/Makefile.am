@@ -31,8 +31,10 @@ SCL_SUBDIRS	= \
 	osquery	\
 	pacct		\
 	paloalto 	\
+	pihole		\
 	pgsql 	\
 	python		\
+	qbittorrent	\
 	rewrite	\
 	slack \
 	snmptrap	\
