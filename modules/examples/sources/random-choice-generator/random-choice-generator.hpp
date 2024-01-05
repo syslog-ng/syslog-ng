@@ -33,10 +33,14 @@
 
 typedef struct RandomChoiceGeneratorSourceDriver_ RandomChoiceGeneratorSourceDriver;
 
-class RandomChoiceGeneratorCpp
+namespace syslogng {
+namespace examples {
+namespace random_choice_generator {
+
+class SourceDriver
 {
 public:
-  RandomChoiceGeneratorCpp(RandomChoiceGeneratorSourceDriver *s);
+  SourceDriver(RandomChoiceGeneratorSourceDriver *s);
 
   void run();
   void set_choices(GList *choices);
@@ -53,10 +57,14 @@ private:
   gdouble freq = 1000;
 };
 
+}
+}
+}
+
 struct RandomChoiceGeneratorSourceDriver_
 {
   LogThreadedSourceDriver super;
-  RandomChoiceGeneratorCpp *cpp;
+  syslogng::examples::random_choice_generator::SourceDriver *cpp;
 };
 
 #endif

@@ -29,17 +29,19 @@
 #include "string-list.h"
 #include "compat/cpp-end.h"
 
-#define get_RandomChoiceGeneratorCpp(s) (((RandomChoiceGeneratorSourceDriver *) (s))->cpp)
+#define get_SourceDriver(s) (((RandomChoiceGeneratorSourceDriver *) (s))->cpp)
+
+using namespace syslogng::examples::random_choice_generator;
 
 /* C++ Implementations */
 
-RandomChoiceGeneratorCpp::RandomChoiceGeneratorCpp(RandomChoiceGeneratorSourceDriver *s)
+SourceDriver::SourceDriver(RandomChoiceGeneratorSourceDriver *s)
   : super(s)
 {
 }
 
 void
-RandomChoiceGeneratorCpp::run()
+SourceDriver::run()
 {
   while (!exit_requested)
     {
@@ -55,7 +57,7 @@ RandomChoiceGeneratorCpp::run()
 }
 
 void
-RandomChoiceGeneratorCpp::set_choices(GList *choices_)
+SourceDriver::set_choices(GList *choices_)
 {
   for (GList *elem = g_list_first(choices_); elem; elem = elem->next)
     {
@@ -67,25 +69,25 @@ RandomChoiceGeneratorCpp::set_choices(GList *choices_)
 }
 
 void
-RandomChoiceGeneratorCpp::set_freq(gdouble freq_)
+SourceDriver::set_freq(gdouble freq_)
 {
   freq = freq_;
 }
 
 void
-RandomChoiceGeneratorCpp::request_exit()
+SourceDriver::request_exit()
 {
   exit_requested = true;
 }
 
 void
-RandomChoiceGeneratorCpp::format_stats_key(StatsClusterKeyBuilder *kb)
+SourceDriver::format_stats_key(StatsClusterKeyBuilder *kb)
 {
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "random-choice-generator"));
 }
 
 gboolean
-RandomChoiceGeneratorCpp::init()
+SourceDriver::init()
 {
   if (choices.size() == 0)
     {
@@ -98,7 +100,7 @@ RandomChoiceGeneratorCpp::init()
 }
 
 gboolean
-RandomChoiceGeneratorCpp::deinit()
+SourceDriver::deinit()
 {
   return log_threaded_source_driver_deinit_method(&super->super.super.super.super);
 }
@@ -108,49 +110,49 @@ RandomChoiceGeneratorCpp::deinit()
 static void
 _run(LogThreadedSourceDriver *s)
 {
-  get_RandomChoiceGeneratorCpp(s)->run();
+  get_SourceDriver(s)->run();
 }
 
 void
 random_choice_generator_set_choices(LogDriver *s, GList *choices)
 {
-  get_RandomChoiceGeneratorCpp(s)->set_choices(choices);
+  get_SourceDriver(s)->set_choices(choices);
 }
 
 void
 random_choice_generator_set_freq(LogDriver *s, gdouble freq)
 {
-  get_RandomChoiceGeneratorCpp(s)->set_freq(freq);
+  get_SourceDriver(s)->set_freq(freq);
 }
 
 static void
 _request_exit(LogThreadedSourceDriver *s)
 {
-  get_RandomChoiceGeneratorCpp(s)->request_exit();
+  get_SourceDriver(s)->request_exit();
 }
 
 static void
 _format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
-  get_RandomChoiceGeneratorCpp(s)->format_stats_key(kb);
+  get_SourceDriver(s)->format_stats_key(kb);
 }
 
 static gboolean
 _init(LogPipe *s)
 {
-  return get_RandomChoiceGeneratorCpp(s)->init();
+  return get_SourceDriver(s)->init();
 }
 
 static gboolean
 _deinit(LogPipe *s)
 {
-  return get_RandomChoiceGeneratorCpp(s)->deinit();
+  return get_SourceDriver(s)->deinit();
 }
 
 static void
 _free(LogPipe *s)
 {
-  delete get_RandomChoiceGeneratorCpp(s);
+  delete get_SourceDriver(s);
   log_threaded_source_driver_free_method(s);
 }
 
@@ -160,7 +162,7 @@ random_choice_generator_sd_new(GlobalConfig *cfg)
   RandomChoiceGeneratorSourceDriver *s = g_new0(RandomChoiceGeneratorSourceDriver, 1);
   log_threaded_source_driver_init_instance(&s->super, cfg);
 
-  s->cpp = new RandomChoiceGeneratorCpp(s);
+  s->cpp = new SourceDriver(s);
 
   s->super.super.super.super.init = _init;
   s->super.super.super.super.deinit = _deinit;
