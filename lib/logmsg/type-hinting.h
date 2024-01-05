@@ -40,16 +40,16 @@ enum TypeHintingError
 
 gboolean type_hint_parse(const gchar *hint, LogMessageValueType *out_hint, GError **error);
 
-gboolean type_cast_drop_helper(gint drop_flags, const gchar *value,
+gboolean type_cast_drop_helper(gint drop_flags, const gchar *value, gssize value_len,
                                const gchar *type_hint);
 
-gboolean type_cast_to_boolean(const gchar *value, gboolean *out, GError **error);
-gboolean type_cast_to_int32(const gchar *value, gint32 *out, GError **error);
-gboolean type_cast_to_int64(const gchar *value, gint64 *out, GError **error);
-gboolean type_cast_to_double(const gchar *value, gdouble *out, GError **error);
-gboolean type_cast_to_datetime_msec(const gchar *value, gint64 *out, GError **error);
-gboolean type_cast_to_datetime_unixtime(const gchar *value, UnixTime *ut, GError **error);
+gboolean type_cast_to_boolean(const gchar *value, gssize value_len, gboolean *out, GError **error);
+gboolean type_cast_to_int32(const gchar *value, gssize value_len, gint32 *out, GError **error);
+gboolean type_cast_to_int64(const gchar *value, gssize value_len, gint64 *out, GError **error);
+gboolean type_cast_to_double(const gchar *value, gssize value_len, gdouble *out, GError **error);
+gboolean type_cast_to_datetime_msec(const gchar *value, gssize value_len, gint64 *out, GError **error);
+gboolean type_cast_to_datetime_unixtime(const gchar *value, gssize value_len, UnixTime *ut, GError **error);
 
-gboolean type_cast_validate(const gchar *value, LogMessageValueType type, GError **error);
+gboolean type_cast_validate(const gchar *value, gssize value_len, LogMessageValueType type, GError **error);
 
 #endif

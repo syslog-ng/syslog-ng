@@ -138,7 +138,7 @@ _convert_to_number(const GString *value, LogMessageValueType type, GenericNumber
     {
       gboolean b;
 
-      if (type_cast_to_boolean(value->str, &b, NULL))
+      if (type_cast_to_boolean(value->str, -1, &b, NULL))
         gn_set_int64(number, b);
       else
         gn_set_int64(number, 0);
@@ -148,7 +148,7 @@ _convert_to_number(const GString *value, LogMessageValueType type, GenericNumber
     {
       gint64 msec;
 
-      if (type_cast_to_datetime_msec(value->str, &msec, NULL))
+      if (type_cast_to_datetime_msec(value->str, -1, &msec, NULL))
         gn_set_int64(number, msec);
       else
         gn_set_int64(number, 0);

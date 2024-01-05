@@ -787,16 +787,16 @@ pdbtool_test_value_type_callback(NVHandle handle, const gchar *name,
       valid = TRUE;
       break;
     case LM_VT_DATETIME:
-      valid = type_cast_to_datetime_unixtime(value, &ut, &error);
+      valid = type_cast_to_datetime_unixtime(value, length, &ut, &error);
       break;
     case LM_VT_INTEGER:
-      valid = type_cast_to_int64(value, &i64, &error);
+      valid = type_cast_to_int64(value, length, &i64, &error);
       break;
     case LM_VT_DOUBLE:
-      valid = type_cast_to_double(value, &d, &error);
+      valid = type_cast_to_double(value, length, &d, &error);
       break;
     case LM_VT_BOOLEAN:
-      valid = type_cast_to_boolean(value, &b, &error);
+      valid = type_cast_to_boolean(value, length, &b, &error);
       break;
     }
   if (!valid)

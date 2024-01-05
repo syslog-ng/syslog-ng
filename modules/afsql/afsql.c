@@ -840,14 +840,14 @@ afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
     case LM_VT_INTEGER:
     {
       gint64 k;
-      if (type_cast_to_int64(value->str, &k, NULL))
+      if (type_cast_to_int64(value->str, -1, &k, NULL))
         {
           g_string_append_len(insert_command, value->str, value->len);
         }
       else
         {
           need_drop = type_cast_drop_helper(self->template_options.on_error,
-                                            value->str, "int");
+                                            value->str, -1, "int");
           if (fallback)
             afsql_dd_append_quoted_value(self, value, insert_command);
         }
@@ -856,14 +856,14 @@ afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
     case LM_VT_DOUBLE:
     {
       gdouble d;
-      if (type_cast_to_double(value->str, &d, NULL))
+      if (type_cast_to_double(value->str, -1, &d, NULL))
         {
           g_string_append_len(insert_command, value->str, value->len);
         }
       else
         {
           need_drop = type_cast_drop_helper(self->template_options.on_error,
-                                            value->str, "double");
+                                            value->str, -1, "double");
           if (fallback)
             afsql_dd_append_quoted_value(self, value, insert_command);
         }
@@ -872,7 +872,7 @@ afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
     case LM_VT_BOOLEAN:
     {
       gboolean b;
-      if (type_cast_to_boolean(value->str, &b, NULL))
+      if (type_cast_to_boolean(value->str, -1, &b, NULL))
         {
           if (b)
             g_string_append(insert_command, "TRUE");
@@ -882,7 +882,7 @@ afsql_dd_append_value_to_be_inserted(AFSqlDestDriver *self,
       else
         {
           need_drop = type_cast_drop_helper(self->template_options.on_error,
-                                            value->str, "boolean");
+                                            value->str, -1, "boolean");
           if (fallback)
             afsql_dd_append_quoted_value(self, value, insert_command);
         }

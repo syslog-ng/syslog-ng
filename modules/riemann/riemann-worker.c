@@ -190,12 +190,12 @@ riemann_add_metric_to_event(RiemannDestWorker *self, riemann_event_t *event, Log
     {
       gint64 i;
 
-      if (type_cast_to_int64(str->str, &i, NULL))
+      if (type_cast_to_int64(str->str, -1, &i, NULL))
         riemann_event_set(event, RIEMANN_EVENT_FIELD_METRIC_S64, i,
                           RIEMANN_EVENT_FIELD_NONE);
       else
         return !type_cast_drop_helper(owner->template_options.on_error,
-                                      str->str, "int");
+                                      str->str, -1, "int");
       break;
     }
     case LM_VT_DOUBLE:
@@ -203,17 +203,17 @@ riemann_add_metric_to_event(RiemannDestWorker *self, riemann_event_t *event, Log
     {
       gdouble d;
 
-      if (type_cast_to_double(str->str, &d, NULL))
+      if (type_cast_to_double(str->str, -1, &d, NULL))
         riemann_event_set(event, RIEMANN_EVENT_FIELD_METRIC_D, d,
                           RIEMANN_EVENT_FIELD_NONE);
       else
         return !type_cast_drop_helper(owner->template_options.on_error,
-                                      str->str, "double");
+                                      str->str, -1, "double");
       break;
     }
     default:
       return !type_cast_drop_helper(owner->template_options.on_error,
-                                    str->str, "<unknown>");
+                                    str->str, -1, "<unknown>");
       break;
     }
   return TRUE;
@@ -233,12 +233,12 @@ riemann_add_ttl_to_event(RiemannDestWorker *self, riemann_event_t *event, LogMes
   if (str->len == 0)
     return TRUE;
 
-  if (type_cast_to_double (str->str, &d, NULL))
+  if (type_cast_to_double (str->str, -1, &d, NULL))
     riemann_event_set(event, RIEMANN_EVENT_FIELD_TTL, d,
                       RIEMANN_EVENT_FIELD_NONE);
   else
     return !type_cast_drop_helper(owner->template_options.on_error,
-                                  str->str, "double");
+                                  str->str, -1, "double");
   return TRUE;
 }
 
