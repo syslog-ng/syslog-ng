@@ -55,7 +55,7 @@ jobs:
         run: |
           . .github/workflows/gh-tools.sh
 
-          VERSION=`cat VERSION`
+          VERSION=`cat VERSION.txt`
           RELEASE_TAG=syslog-ng-$VERSION
           RELEASE_NAME=${RELEASE_TAG}
           TARBALL_NAME=${RELEASE_NAME}.tar.gz

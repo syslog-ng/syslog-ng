@@ -32,5 +32,5 @@ if [ "$VERSION" != "" ]; then
 elif [ -d .git ] && GIT_VERSION=$(git describe --tags --dirty --abbrev=7); then
   echo $GIT_VERSION | sed 's/^syslog-ng-//' | tr '-' '.' | tr -d '\n'
 else
-  cat VERSION | tr -d '\n'
+  cat VERSION.txt | tr -d '\n'
 fi

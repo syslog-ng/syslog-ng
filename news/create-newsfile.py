@@ -83,7 +83,7 @@ def get_last_version():
 
 
 def get_next_version():
-    next_version = (root_dir / 'VERSION').read_text().rstrip()
+    next_version = (root_dir / 'VERSION.txt').read_text().rstrip()
     return next_version
 
 def create_version():
@@ -158,8 +158,8 @@ def main():
 
     if check_if_news_is_already_uptodate():
         if check_if_news_entries_are_present():
-            print('NEWS.md file is already up-to-date with VERSION but news entries still exist (news/*.md).\n'
-                  'Remove NEWS entries or bump the VERSION file.\n')
+            print('NEWS.md file is already up-to-date with VERSION.txt but news entries still exist (news/*.md).\n'
+                  'Remove NEWS entries or bump the VERSION.txt file.\n')
             return 1
         print("NEWS file is already up-to-date, no new NEWS entries, assuming it has been manually prepared")
     else:
