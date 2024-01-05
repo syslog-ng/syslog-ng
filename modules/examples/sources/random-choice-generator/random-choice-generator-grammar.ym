@@ -80,6 +80,7 @@ source_random_choice_generator_option
       random_choice_generator_set_freq(last_driver, $3);
     }
   | threaded_source_driver_option
+  | threaded_source_driver_workers_option
   ;
 
 /* INCLUDE_RULES */

@@ -92,71 +92,90 @@ _start_no_data_timer(LogThreadedFetcherDriver *self)
 }
 
 static gboolean
-_worker_thread_init(LogThreadedSourceDriver *s)
+_worker_thread_init(LogThreadedSourceWorker *w)
 {
-  LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) s;
+  LogThreadedFetcherDriver *control = (LogThreadedFetcherDriver *) w->control;
 
-  iv_event_register(&self->shutdown_event);
+  iv_event_register(&control->shutdown_event);
 
-  msg_trace("Fetcher thread_init()", _tag_driver(self));
-  if (self->thread_init)
-    self->thread_init(self);
+  msg_trace("Fetcher thread_init()", _tag_driver(control));
+  if (control->thread_init)
+    control->thread_init(control);
   return TRUE;
 }
 
 static void
-_worker_thread_deinit(LogThreadedSourceDriver *s)
+_worker_thread_deinit(LogThreadedSourceWorker *w)
 {
-  LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) s;
+  LogThreadedFetcherDriver *control = (LogThreadedFetcherDriver *) w->control;
 
-  msg_trace("Fetcher thread_deinit()", _tag_driver(self));
-  if (self->thread_deinit)
-    self->thread_deinit(self);
-  iv_event_unregister(&self->shutdown_event);
+  msg_trace("Fetcher thread_deinit()", _tag_driver(control));
+  if (control->thread_deinit)
+    control->thread_deinit(control);
+  iv_event_unregister(&control->shutdown_event);
 }
 
 static void
-_worker_run(LogThreadedSourceDriver *s)
+_worker_run(LogThreadedSourceWorker *w)
 {
-  LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) s;
+  LogThreadedFetcherDriver *control = (LogThreadedFetcherDriver *) w->control;
 
-  iv_event_register(&self->wakeup_event);
-  if (_connect(self))
-    iv_task_register(&self->fetch_task);
+  iv_event_register(&control->wakeup_event);
+  if (_connect(control))
+    iv_task_register(&control->fetch_task);
   else
-    _start_reconnect_timer(self);
+    _start_reconnect_timer(control);
 
   iv_main();
 
-  _disconnect(self);
+  _disconnect(control);
 }
 
 static void
-_worker_request_exit(LogThreadedSourceDriver *s)
+_worker_request_exit(LogThreadedSourceWorker *w)
 {
-  LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) s;
+  LogThreadedFetcherDriver *control = (LogThreadedFetcherDriver *) w->control;
 
-  self->under_termination = TRUE;
+  control->under_termination = TRUE;
 
-  iv_event_post(&self->shutdown_event);
+  iv_event_post(&control->shutdown_event);
 
-  if (self->request_exit)
-    self->request_exit(self);
+  if (control->request_exit)
+    control->request_exit(control);
 }
 
 static void
-_wakeup(LogThreadedSourceDriver *s)
+_worker_wakeup(LogSource *s)
 {
-  LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) s;
+  LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s;
+  LogThreadedFetcherDriver *control = (LogThreadedFetcherDriver *) self->control;
 
-  if (!self->under_termination)
-    iv_event_post(&self->wakeup_event);
+  if (!control->under_termination)
+    iv_event_post(&control->wakeup_event);
+}
+
+static LogThreadedSourceWorker *
+_construct_worker(LogThreadedSourceDriver *s, gint worker_index)
+{
+  /* LogThreadedFetcherDriver uses the multi-worker API, but it is not prepared to work with more than one worker. */
+  g_assert(s->num_workers == 1);
+
+  LogThreadedSourceWorker *worker = g_new0(LogThreadedSourceWorker, 1);
+  log_threaded_source_worker_init_instance(worker, s, worker_index);
+
+  worker->super.wakeup = _worker_wakeup;
+  worker->thread_init = _worker_thread_init;
+  worker->thread_deinit = _worker_thread_deinit;
+  worker->run = _worker_run;
+  worker->request_exit = _worker_request_exit;
+
+  return worker;
 }
 
 static inline void
 _schedule_next_fetch_if_free_to_send(LogThreadedFetcherDriver *self)
 {
-  if (log_threaded_source_free_to_send(&self->super))
+  if (log_threaded_source_worker_free_to_send(self->super.workers[0]))
     iv_task_register(&self->fetch_task);
   else
     self->suspended = TRUE;
@@ -180,7 +199,7 @@ _on_not_connected(LogThreadedFetcherDriver *self)
 static void
 _on_fetch_success(LogThreadedFetcherDriver *self, LogMessage *msg)
 {
-  log_threaded_source_post(&self->super, msg);
+  log_threaded_source_worker_post(self->super.workers[0], msg);
   _schedule_next_fetch_if_free_to_send(self);
 }
 
@@ -240,7 +259,7 @@ _wakeup_event_handler(gpointer data)
 {
   LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) data;
 
-  if (self->suspended && log_threaded_source_free_to_send(&self->super))
+  if (self->suspended && log_threaded_source_worker_free_to_send(self->super.workers[0]))
     {
       self->suspended = FALSE;
 
@@ -365,9 +384,5 @@ log_threaded_fetcher_driver_init_instance(LogThreadedFetcherDriver *self, Global
   self->super.super.super.super.deinit = log_threaded_fetcher_driver_deinit_method;
   self->super.super.super.super.free_fn = log_threaded_fetcher_driver_free_method;
 
-  self->super.wakeup = _wakeup;
-  self->super.thread_init = _worker_thread_init;
-  self->super.thread_deinit = _worker_thread_deinit;
-  self->super.run = _worker_run;
-  self->super.request_exit = _worker_request_exit;
+  self->super.worker_construct = _construct_worker;
 }

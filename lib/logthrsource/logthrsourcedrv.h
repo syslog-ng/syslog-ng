@@ -59,23 +59,27 @@ struct _LogThreadedSourceWorker
   LogThreadedSourceDriver *control;
   WakeupCondition wakeup_cond;
   gboolean under_termination;
+  gint worker_index;
+
+  gboolean (*thread_init)(LogThreadedSourceWorker *self);
+  void (*thread_deinit)(LogThreadedSourceWorker *self);
+  void (*run)(LogThreadedSourceWorker *self);
+  void (*request_exit)(LogThreadedSourceWorker *self);
+  void (*wakeup)(LogThreadedSourceWorker *self);
 };
 
 struct _LogThreadedSourceDriver
 {
   LogSrcDriver super;
   LogThreadedSourceWorkerOptions worker_options;
-  LogThreadedSourceWorker *worker;
+  LogThreadedSourceWorker **workers;
+  gint num_workers;
   gboolean auto_close_batches;
   gchar *transport_name;
   gsize transport_name_len;
 
   void (*format_stats_key)(LogThreadedSourceDriver *self, StatsClusterKeyBuilder *kb);
-  gboolean (*thread_init)(LogThreadedSourceDriver *self);
-  void (*thread_deinit)(LogThreadedSourceDriver *self);
-  void (*run)(LogThreadedSourceDriver *self);
-  void (*request_exit)(LogThreadedSourceDriver *self);
-  void (*wakeup)(LogThreadedSourceDriver *self);
+  LogThreadedSourceWorker *(*worker_construct)(LogThreadedSourceDriver *self, gint worker_index);
 };
 
 void log_threaded_source_worker_options_defaults(LogThreadedSourceWorkerOptions *options);
@@ -88,6 +92,13 @@ void log_threaded_source_driver_init_instance(LogThreadedSourceDriver *self, Glo
 gboolean log_threaded_source_driver_init_method(LogPipe *s);
 gboolean log_threaded_source_driver_deinit_method(LogPipe *s);
 void log_threaded_source_driver_free_method(LogPipe *s);
+
+static inline void
+log_threaded_source_driver_set_num_workers(LogDriver *s, gint num_workers)
+{
+  LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
+  self->num_workers = num_workers;
+}
 
 static inline LogSourceOptions *
 log_threaded_source_driver_get_source_options(LogDriver *s)
@@ -105,13 +116,19 @@ log_threaded_source_driver_get_parse_options(LogDriver *s)
   return &self->worker_options.parse_options;
 }
 
-void log_threaded_source_close_batch(LogThreadedSourceDriver *self);
+/* Worker */
+
+void log_threaded_source_worker_init_instance(LogThreadedSourceWorker *self, LogThreadedSourceDriver *driver,
+                                              gint worker_index);
+void log_threaded_source_worker_free(LogPipe *s);
+
+void log_threaded_source_worker_close_batch(LogThreadedSourceWorker *self);
 
 /* blocking API */
-void log_threaded_source_blocking_post(LogThreadedSourceDriver *self, LogMessage *msg);
+void log_threaded_source_worker_blocking_post(LogThreadedSourceWorker *self, LogMessage *msg);
 
 /* non-blocking API, use it wisely (thread boundaries) */
-void log_threaded_source_post(LogThreadedSourceDriver *self, LogMessage *msg);
-gboolean log_threaded_source_free_to_send(LogThreadedSourceDriver *self);
+void log_threaded_source_worker_post(LogThreadedSourceWorker *self, LogMessage *msg);
+gboolean log_threaded_source_worker_free_to_send(LogThreadedSourceWorker *self);
 
 #endif

@@ -28,6 +28,7 @@
 #include "driver.h"
 #include "credentials/grpc-credentials-builder.h"
 
+typedef struct OtelSourceWorker_ OtelSourceWorker;
 typedef struct OtelSourceDriver_ OtelSourceDriver;
 
 LogDriver *otel_sd_new(GlobalConfig *cfg);

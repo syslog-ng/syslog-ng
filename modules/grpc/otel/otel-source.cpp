@@ -34,6 +34,7 @@
 #include "compat/cpp-end.h"
 
 #define get_SourceDriver(s) (((OtelSourceDriver *) s)->cpp)
+#define get_SourceWorker(s) (((OtelSourceWorker *) s)->cpp)
 
 using namespace syslogng::grpc::otel;
 
@@ -46,25 +47,16 @@ syslogng::grpc::otel::SourceDriver::SourceDriver(OtelSourceDriver *s)
 }
 
 void
-syslogng::grpc::otel::SourceDriver::run()
-{
-  new TraceServiceCall(*this, &trace_service, cq.get());
-  new LogsServiceCall(*this, &logs_service, cq.get());
-  new MetricsServiceCall(*this, &metrics_service, cq.get());
-
-  void *tag;
-  bool ok;
-  while (cq->Next(&tag, &ok))
-    {
-      static_cast<AsyncServiceCallInterface *>(tag)->Proceed(ok);
-    }
-}
-
-void
 syslogng::grpc::otel::SourceDriver::request_exit()
 {
+  if (server == nullptr || cq == nullptr)
+    return;
+
   server->Shutdown();
   cq->Shutdown();
+
+  server = nullptr;
+  cq = nullptr;
 }
 
 void
@@ -128,20 +120,46 @@ syslogng::grpc::otel::SourceDriver::deinit()
   return log_threaded_source_driver_deinit_method(&super->super.super.super.super);
 }
 
-bool
-syslogng::grpc::otel::SourceDriver::post(LogMessage *msg)
-{
-  if (!log_threaded_source_free_to_send(&super->super))
-    return false;
-
-  log_threaded_source_post(&super->super, msg);
-  return true;
-}
-
 GrpcServerCredentialsBuilderW *
 SourceDriver::get_credentials_builder_wrapper()
 {
   return &credentials_builder_wrapper;
+}
+
+SourceWorker::SourceWorker(OtelSourceWorker *s, SourceDriver &d)
+  : super(s), driver(d)
+{
+}
+
+void
+syslogng::grpc::otel::SourceWorker::run()
+{
+  new TraceServiceCall(*this, &driver.trace_service, driver.cq.get());
+  new LogsServiceCall(*this, &driver.logs_service, driver.cq.get());
+  new MetricsServiceCall(*this, &driver.metrics_service, driver.cq.get());
+
+  void *tag;
+  bool ok;
+  while (driver.cq != nullptr && driver.cq->Next(&tag, &ok))
+    {
+      static_cast<AsyncServiceCallInterface *>(tag)->Proceed(ok);
+    }
+}
+
+void
+syslogng::grpc::otel::SourceWorker::request_exit()
+{
+  driver.request_exit();
+}
+
+bool
+SourceWorker::post(LogMessage *msg)
+{
+  if (!log_threaded_source_worker_free_to_send(&super->super))
+    return false;
+
+  log_threaded_source_worker_post(&super->super, msg);
+  return true;
 }
 
 /* Config setters */
@@ -161,15 +179,37 @@ otel_sd_get_credentials_builder(LogDriver *s)
 /* C Wrappers */
 
 static void
-_run(LogThreadedSourceDriver *s)
+_worker_free(LogPipe *s)
 {
-  get_SourceDriver(s)->run();
+  delete get_SourceWorker(s);
+  log_threaded_source_worker_free(s);
 }
 
 static void
-_request_exit(LogThreadedSourceDriver *s)
+_worker_run(LogThreadedSourceWorker *s)
 {
-  get_SourceDriver(s)->request_exit();
+  get_SourceWorker(s)->run();
+}
+
+static void
+_worker_request_exit(LogThreadedSourceWorker *s)
+{
+  get_SourceWorker(s)->request_exit();
+}
+
+static LogThreadedSourceWorker *
+_construct_worker(LogThreadedSourceDriver *s, gint worker_index)
+{
+  OtelSourceWorker *worker = g_new0(OtelSourceWorker, 1);
+  log_threaded_source_worker_init_instance(&worker->super, s, worker_index);
+
+  worker->cpp = new SourceWorker(worker, *get_SourceDriver(s));
+
+  worker->super.run = _worker_run;
+  worker->super.request_exit = _worker_request_exit;
+  worker->super.super.super.free_fn = _worker_free;
+
+  return &worker->super;
 }
 
 static void
@@ -218,8 +258,7 @@ otel_sd_new(GlobalConfig *cfg)
 
   s->super.worker_options.super.stats_source = stats_register_type("opentelemetry");
   s->super.format_stats_key = _format_stats_key;
-  s->super.run = _run;
-  s->super.request_exit = _request_exit;
+  s->super.worker_construct = _construct_worker;
 
   return &s->super.super.super;
 }

@@ -98,6 +98,7 @@ source_threaded_random_generator_option
       free($3);
     }
   | threaded_source_driver_option
+  | threaded_source_driver_workers_option
   ;
 
 /* INCLUDE_RULES */

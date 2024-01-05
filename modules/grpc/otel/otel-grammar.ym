@@ -110,6 +110,7 @@ source_otel_option
   : KW_PORT '(' positive_integer ')' { otel_sd_set_port(last_driver, $3); }
   | KW_AUTH { last_grpc_server_credentials_builder = otel_sd_get_credentials_builder(last_driver); } '(' grpc_server_credentials_builder_option ')'
   | threaded_source_driver_option
+  | threaded_source_driver_workers_option
   ;
 
 parser_otel

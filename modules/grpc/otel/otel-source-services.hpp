@@ -63,14 +63,14 @@ public:
   void Proceed(bool ok) override;
 
 public:
-  AsyncServiceCall(SourceDriver &driver_, S *service_, ::grpc::ServerCompletionQueue *cq_)
-    : driver(driver_), service(service_), responder(&ctx), cq(cq_), status(PROCESS)
+  AsyncServiceCall(SourceWorker &worker_, S *service_, ::grpc::ServerCompletionQueue *cq_)
+    : worker(worker_), service(service_), responder(&ctx), cq(cq_), status(PROCESS)
   {
     service->RequestExport(&ctx, &request, &responder, cq, cq, this);
   }
 
 private:
-  SourceDriver &driver;
+  SourceWorker &worker;
   S *service;
   ::grpc::ServerAsyncResponseWriter<Res> responder;
   Req request;
@@ -96,7 +96,7 @@ syslogng::grpc::otel::TraceServiceCall::Proceed(bool ok)
       return;
     }
 
-  new TraceServiceCall(driver, service, cq);
+  new TraceServiceCall(worker, service, cq);
 
   ::grpc::Status response_status = ::grpc::Status::OK;
 
@@ -116,7 +116,7 @@ syslogng::grpc::otel::TraceServiceCall::Proceed(bool ok)
               ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_spans_schema_url, scope,
                                                  scope_spans_schema_url);
               ProtobufParser::store_raw(msg, span);
-              if (!driver.post(msg))
+              if (!worker.post(msg))
                 {
                   response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");
                   break;
@@ -138,7 +138,7 @@ syslogng::grpc::otel::LogsServiceCall::Proceed(bool ok)
       return;
     }
 
-  new LogsServiceCall(driver, service, cq);
+  new LogsServiceCall(worker, service, cq);
 
   ::grpc::Status response_status = ::grpc::Status::OK;
 
@@ -166,7 +166,7 @@ syslogng::grpc::otel::LogsServiceCall::Proceed(bool ok)
                                                      scope_logs_schema_url);
                   ProtobufParser::store_raw(msg, log_record);
                 }
-              if (!driver.post(msg))
+              if (!worker.post(msg))
                 {
                   response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");
                   break;
@@ -188,7 +188,7 @@ syslogng::grpc::otel::MetricsServiceCall::Proceed(bool ok)
       return;
     }
 
-  new MetricsServiceCall(driver, service, cq);
+  new MetricsServiceCall(worker, service, cq);
 
   ::grpc::Status response_status = ::grpc::Status::OK;
 
@@ -208,7 +208,7 @@ syslogng::grpc::otel::MetricsServiceCall::Proceed(bool ok)
               ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_metrics_schema_url, scope,
                                                  scope_metrics_schema_url);
               ProtobufParser::store_raw(msg, metric);
-              if (!driver.post(msg))
+              if (!worker.post(msg))
                 {
                   response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");
                   break;

@@ -33,17 +33,17 @@
 #include "otel-servicecall.hpp"
 #include "credentials/grpc-credentials-builder.hpp"
 
-
 namespace syslogng {
 namespace grpc {
 namespace otel {
+
+class SourceWorker;
 
 class SourceDriver
 {
 public:
   SourceDriver(OtelSourceDriver *s);
 
-  void run();
   void request_exit();
   void format_stats_key(StatsClusterKeyBuilder *kb);
   const char *generate_persist_name();
@@ -57,11 +57,7 @@ public:
   MetricsService::AsyncService metrics_service;
 
 private:
-  bool post(LogMessage *msg);
-
-  friend TraceServiceCall;
-  friend LogsServiceCall;
-  friend MetricsServiceCall;
+  friend SourceWorker;
 
 public:
   guint64 port = 4317;
@@ -74,9 +70,36 @@ private:
   std::unique_ptr<::grpc::ServerCompletionQueue> cq;
 };
 
+class SourceWorker
+{
+public:
+  SourceWorker(OtelSourceWorker *s, SourceDriver &d);
+
+  void run();
+  void request_exit();
+
+private:
+  bool post(LogMessage *msg);
+
+private:
+  friend TraceServiceCall;
+  friend LogsServiceCall;
+  friend MetricsServiceCall;
+
+private:
+  OtelSourceWorker *super;
+  SourceDriver &driver;
+};
+
 }
 }
 }
+
+struct OtelSourceWorker_
+{
+  LogThreadedSourceWorker super;
+  syslogng::grpc::otel::SourceWorker *cpp;
+};
 
 struct OtelSourceDriver_
 {

@@ -457,12 +457,12 @@ python_sd_suspend(PythonSourceDriver *self)
 }
 
 static void
-python_sd_wakeup(LogThreadedSourceDriver *s)
+python_sd_worker_wakeup(LogThreadedSourceWorker *w)
 {
-  PythonSourceDriver *self = (PythonSourceDriver *) s;
+  PythonSourceDriver *control = (PythonSourceDriver *) w->control;
 
   PyGILState_STATE gstate = PyGILState_Ensure();
-  _py_invoke_wakeup(self);
+  _py_invoke_wakeup(control);
   PyGILState_Release(gstate);
 }
 
@@ -470,11 +470,11 @@ static void
 _post_message_non_blocking(PythonSourceDriver *self, LogMessage *msg)
 {
   PyThreadState *state = PyEval_SaveThread();
-  log_threaded_source_post(&self->super, msg);
+  log_threaded_source_worker_post(self->super.workers[0], msg);
   PyEval_RestoreThread(state);
 
   /* GIL is used to synchronize free_to_send(), suspend() and wakeup() */
-  if (!log_threaded_source_free_to_send(&self->super))
+  if (!log_threaded_source_worker_free_to_send(self->super.workers[0]))
     python_sd_suspend(self);
 }
 
@@ -482,7 +482,7 @@ static void
 _post_message_blocking(PythonSourceDriver *self, LogMessage *msg)
 {
   PyThreadState *state = PyEval_SaveThread();
-  log_threaded_source_blocking_post(&self->super, msg);
+  log_threaded_source_worker_blocking_post(self->super.workers[0], msg);
   PyEval_RestoreThread(state);
 }
 
@@ -517,7 +517,7 @@ error:
 static inline AckTracker *
 _py_sd_get_ack_tracker(PythonSourceDriver *self)
 {
-  return ((LogSource *) self->super.worker)->ack_tracker;
+  return self->super.workers[0]->super.ack_tracker;
 }
 
 static gboolean
@@ -576,7 +576,7 @@ py_log_source_post(PyObject *s, PyObject *args, PyObject *kwrds)
       return NULL;
     }
 
-  if (!log_threaded_source_free_to_send(&sd->super))
+  if (!log_threaded_source_worker_free_to_send(sd->super.workers[0]))
     {
       msg_error("python-source: Incorrectly suspended source, dropping message",
                 evt_tag_str("driver", sd->super.super.super.id));
@@ -615,7 +615,7 @@ py_log_source_close_batch(PyObject *s)
     }
 
   PythonSourceDriver *sd = self->driver;
-  log_threaded_source_close_batch(&sd->super);
+  log_threaded_source_worker_close_batch(sd->super.workers[0]);
 
   Py_RETURN_NONE;
 }
@@ -633,23 +633,23 @@ py_log_source_set_transport_name(PyLogSource *self, PyObject *args)
 }
 
 static void
-python_sd_run(LogThreadedSourceDriver *s)
+python_sd_worker_run(LogThreadedSourceWorker *w)
 {
-  PythonSourceDriver *self = (PythonSourceDriver *) s;
+  PythonSourceDriver *control = (PythonSourceDriver *) w->control;
 
-  self->thread_id = get_thread_id();
+  control->thread_id = get_thread_id();
   PyGILState_STATE gstate = PyGILState_Ensure();
-  _py_invoke_run(self);
+  _py_invoke_run(control);
   PyGILState_Release(gstate);
 }
 
 static void
-python_sd_request_exit(LogThreadedSourceDriver *s)
+python_sd_worker_request_exit(LogThreadedSourceWorker *w)
 {
-  PythonSourceDriver *self = (PythonSourceDriver *) s;
+  PythonSourceDriver *control = (PythonSourceDriver *) w->control;
 
   PyGILState_STATE gstate = PyGILState_Ensure();
-  _py_invoke_request_exit(self);
+  _py_invoke_request_exit(control);
   PyGILState_Release(gstate);
 }
 
@@ -692,12 +692,31 @@ python_sd_init(LogPipe *s)
   if (self->py.suspend_method && self->py.wakeup_method)
     {
       self->post_message = _post_message_non_blocking;
-      self->super.wakeup = python_sd_wakeup;
     }
 
   self->super.auto_close_batches = ((PyLogSource *) self->py.instance)->auto_close_batches;
 
   return TRUE;
+}
+
+static LogThreadedSourceWorker *
+_construct_worker(LogThreadedSourceDriver *s, gint worker_index)
+{
+  /* PythonSourceDriver uses the multi-worker API, but it is not prepared to work with more than one worker. */
+  g_assert(s->num_workers == 1);
+
+  PythonSourceDriver *self = (PythonSourceDriver *) s;
+
+  LogThreadedSourceWorker *worker = g_new0(LogThreadedSourceWorker, 1);
+  log_threaded_source_worker_init_instance(worker, s, worker_index);
+
+  worker->request_exit = python_sd_worker_request_exit;
+  worker->run = python_sd_worker_run;
+
+  if (self->py.suspend_method && self->py.wakeup_method)
+    worker->wakeup = python_sd_worker_wakeup;
+
+  return worker;
 }
 
 static gboolean
@@ -745,9 +764,7 @@ python_sd_new(GlobalConfig *cfg)
   self->super.format_stats_key = python_sd_format_stats_key;
   self->super.worker_options.super.stats_level = STATS_LEVEL0;
   self->super.worker_options.super.stats_source = stats_register_type("python");
-
-  self->super.request_exit = python_sd_request_exit;
-  self->super.run = python_sd_run;
+  self->super.worker_construct = _construct_worker;
 
   self->post_message = _post_message_blocking;
 

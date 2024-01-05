@@ -31,24 +31,29 @@
 #include "logthrsource/logthrsourcedrv.h"
 #include "compat/cpp-end.h"
 
+typedef struct RandomChoiceGeneratorSourceWorker_ RandomChoiceGeneratorSourceWorker;
 typedef struct RandomChoiceGeneratorSourceDriver_ RandomChoiceGeneratorSourceDriver;
 
 namespace syslogng {
 namespace examples {
 namespace random_choice_generator {
 
+class SourceWorker;
+
 class SourceDriver
 {
 public:
   SourceDriver(RandomChoiceGeneratorSourceDriver *s);
 
-  void run();
   void set_choices(GList *choices);
   void set_freq(gdouble freq);
-  void request_exit();
   void format_stats_key(StatsClusterKeyBuilder *kb);
   gboolean init();
   gboolean deinit();
+  void request_exit();
+
+private:
+  friend SourceWorker;
 
 private:
   RandomChoiceGeneratorSourceDriver *super;
@@ -57,9 +62,28 @@ private:
   gdouble freq = 1000;
 };
 
+class SourceWorker
+{
+public:
+  SourceWorker(RandomChoiceGeneratorSourceWorker *s, SourceDriver &d);
+
+  void run();
+  void request_exit();
+
+private:
+  RandomChoiceGeneratorSourceWorker *super;
+  SourceDriver &driver;
+};
+
 }
 }
 }
+
+struct RandomChoiceGeneratorSourceWorker_
+{
+  LogThreadedSourceWorker super;
+  syslogng::examples::random_choice_generator::SourceWorker *cpp;
+};
 
 struct RandomChoiceGeneratorSourceDriver_
 {

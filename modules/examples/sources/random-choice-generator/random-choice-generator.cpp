@@ -30,6 +30,7 @@
 #include "compat/cpp-end.h"
 
 #define get_SourceDriver(s) (((RandomChoiceGeneratorSourceDriver *) (s))->cpp)
+#define get_SourceWorker(s) (((RandomChoiceGeneratorSourceWorker *) (s))->cpp)
 
 using namespace syslogng::examples::random_choice_generator;
 
@@ -38,22 +39,6 @@ using namespace syslogng::examples::random_choice_generator;
 SourceDriver::SourceDriver(RandomChoiceGeneratorSourceDriver *s)
   : super(s)
 {
-}
-
-void
-SourceDriver::run()
-{
-  while (!exit_requested)
-    {
-      std::string random_choice = choices[rand() % choices.size()];
-
-      LogMessage *msg = log_msg_new_empty();
-      log_msg_set_value(msg, LM_V_MESSAGE, random_choice.c_str(), -1);
-
-      log_threaded_source_blocking_post(&super->super, msg);
-
-      usleep((useconds_t)(freq * 1000));
-    }
 }
 
 void
@@ -105,13 +90,34 @@ SourceDriver::deinit()
   return log_threaded_source_driver_deinit_method(&super->super.super.super.super);
 }
 
-/* C Wrappers */
-
-static void
-_run(LogThreadedSourceDriver *s)
+SourceWorker::SourceWorker(RandomChoiceGeneratorSourceWorker *s, SourceDriver &d)
+  : super(s), driver(d)
 {
-  get_SourceDriver(s)->run();
 }
+
+void
+SourceWorker::run()
+{
+  while (!driver.exit_requested)
+    {
+      std::string random_choice = driver.choices[rand() % driver.choices.size()];
+
+      LogMessage *msg = log_msg_new_empty();
+      log_msg_set_value(msg, LM_V_MESSAGE, random_choice.c_str(), -1);
+
+      log_threaded_source_worker_blocking_post(&super->super, msg);
+
+      usleep((useconds_t)(driver.freq * 1000));
+    }
+}
+
+void
+SourceWorker::request_exit()
+{
+  driver.request_exit();
+}
+
+/* C Wrappers */
 
 void
 random_choice_generator_set_choices(LogDriver *s, GList *choices)
@@ -126,9 +132,15 @@ random_choice_generator_set_freq(LogDriver *s, gdouble freq)
 }
 
 static void
-_request_exit(LogThreadedSourceDriver *s)
+_worker_run(LogThreadedSourceWorker *s)
 {
-  get_SourceDriver(s)->request_exit();
+  get_SourceWorker(s)->run();
+}
+
+static void
+_worker_request_exit(LogThreadedSourceWorker *s)
+{
+  get_SourceWorker(s)->request_exit();
 }
 
 static void
@@ -156,6 +168,28 @@ _free(LogPipe *s)
   log_threaded_source_driver_free_method(s);
 }
 
+static void
+_worker_free(LogPipe *s)
+{
+  delete get_SourceWorker(s);
+  log_threaded_source_worker_free(s);
+}
+
+static LogThreadedSourceWorker *
+_construct_worker(LogThreadedSourceDriver *s, gint worker_index)
+{
+  RandomChoiceGeneratorSourceWorker *worker = g_new0(RandomChoiceGeneratorSourceWorker, 1);
+  log_threaded_source_worker_init_instance(&worker->super, s, worker_index);
+
+  worker->cpp = new SourceWorker(worker, *get_SourceDriver(s));
+
+  worker->super.run = _worker_run;
+  worker->super.request_exit = _worker_request_exit;
+  worker->super.super.super.free_fn = _worker_free;
+
+  return &worker->super;
+}
+
 LogDriver *
 random_choice_generator_sd_new(GlobalConfig *cfg)
 {
@@ -169,8 +203,7 @@ random_choice_generator_sd_new(GlobalConfig *cfg)
   s->super.super.super.super.free_fn = _free;
 
   s->super.format_stats_key = _format_stats_key;
-  s->super.run = _run;
-  s->super.request_exit = _request_exit;
+  s->super.worker_construct = _construct_worker;
 
   return &s->super.super.super;
 }
