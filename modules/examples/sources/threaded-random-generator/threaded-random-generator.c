@@ -62,31 +62,36 @@ _generate_random_bytes(guint8 *random, guint size, guint flags)
   return TRUE;
 }
 
+static void
+_request_exit(ThreadedRandomGeneratorSourceDriver *self)
+{
+  g_atomic_counter_set(&self->exit_requested, TRUE);
+}
 
 /* runs in a dedicated thread */
 static void
-_run(LogThreadedSourceDriver *s)
+_worker_run(LogThreadedSourceWorker *w)
 {
-  ThreadedRandomGeneratorSourceDriver *self = (ThreadedRandomGeneratorSourceDriver *) s;
+  ThreadedRandomGeneratorSourceDriver *control = (ThreadedRandomGeneratorSourceDriver *) w->control;
 
-  guint8 *random_bytes = g_malloc(self->bytes);
+  guint8 *random_bytes = g_malloc(control->bytes);
 
-  const gsize random_hex_str_size = self->bytes * 2 + 1;
+  const gsize random_hex_str_size = control->bytes * 2 + 1;
   gchar *random_hex_str = g_malloc(random_hex_str_size);
 
-  while (!g_atomic_counter_get(&self->exit_requested))
+  while (!g_atomic_counter_get(&control->exit_requested))
     {
-      if (_generate_random_bytes(random_bytes, self->bytes, self->flags))
+      if (_generate_random_bytes(random_bytes, control->bytes, control->flags))
         {
-          format_hex_string(random_bytes, self->bytes, random_hex_str, random_hex_str_size);
+          format_hex_string(random_bytes, control->bytes, random_hex_str, random_hex_str_size);
 
           LogMessage *msg = log_msg_new_empty();
           log_msg_set_value(msg, LM_V_MESSAGE, random_hex_str, -1);
 
-          log_threaded_source_blocking_post(s, msg);
+          log_threaded_source_worker_blocking_post(w, msg);
         }
 
-      usleep(self->freq * 1000);
+      usleep(control->freq * 1000);
     }
 
   g_free(random_hex_str);
@@ -94,11 +99,11 @@ _run(LogThreadedSourceDriver *s)
 }
 
 static void
-_request_exit(LogThreadedSourceDriver *s)
+_worker_request_exit(LogThreadedSourceWorker *w)
 {
-  ThreadedRandomGeneratorSourceDriver *self = (ThreadedRandomGeneratorSourceDriver *) s;
+  ThreadedRandomGeneratorSourceDriver *control = (ThreadedRandomGeneratorSourceDriver *) w->control;
 
-  g_atomic_counter_set(&self->exit_requested, TRUE);
+  _request_exit(control);
 }
 
 static gboolean
@@ -114,7 +119,6 @@ _init(LogPipe *s)
 
   if (!log_threaded_source_driver_init_method(s))
     return FALSE;
-
 
   return TRUE;
 }
@@ -135,6 +139,18 @@ _format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 
   g_snprintf(num, sizeof(num), "%u", self->flags);
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("flags", num));
+}
+
+static LogThreadedSourceWorker *
+_construct_worker(LogThreadedSourceDriver *s, gint worker_index)
+{
+  LogThreadedSourceWorker *worker = g_new0(LogThreadedSourceWorker, 1);
+  log_threaded_source_worker_init_instance(worker, s, worker_index);
+
+  worker->run = _worker_run;
+  worker->request_exit = _worker_request_exit;
+
+  return worker;
 }
 
 void
@@ -178,9 +194,7 @@ threaded_random_generator_sd_new(GlobalConfig *cfg)
 
   self->super.super.super.super.init = _init;
   self->super.format_stats_key = _format_stats_key;
-
-  self->super.run = _run;
-  self->super.request_exit = _request_exit;
+  self->super.worker_construct = _construct_worker;
 
   return &self->super.super.super;
 }

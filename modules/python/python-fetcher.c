@@ -174,7 +174,7 @@ _ulong_to_fetch_result(unsigned long ulong, ThreadedFetchResult *result)
 static inline AckTracker *
 _py_fetcher_get_ack_tracker(PythonFetcherDriver *self)
 {
-  return ((LogSource *) self->super.super.worker)->ack_tracker;;
+  return (&self->super.super.workers[0]->super)->ack_tracker;
 }
 
 static gboolean

@@ -78,15 +78,15 @@ wakeup_cond_signal(WakeupCondition *cond)
 }
 
 static LogPipe *
-log_threaded_source_worker_logpipe(LogThreadedSourceWorker *self)
+_worker_logpipe(LogThreadedSourceWorker *self)
 {
   return &self->super.super;
 }
 
 static void
-log_threaded_source_worker_set_options(LogThreadedSourceWorker *self, LogThreadedSourceDriver *control,
-                                       LogThreadedSourceWorkerOptions *options,
-                                       const gchar *stats_id, StatsClusterKeyBuilder *kb)
+_worker_set_options(LogThreadedSourceWorker *self, LogThreadedSourceDriver *control,
+                    LogThreadedSourceWorkerOptions *options,
+                    const gchar *stats_id, StatsClusterKeyBuilder *kb)
 {
   log_source_set_options(&self->super, &options->super, stats_id, kb, TRUE,
                          control->super.super.super.expr_node);
@@ -124,65 +124,45 @@ log_threaded_source_worker_options_destroy(LogThreadedSourceWorkerOptions *optio
 
 /* The wakeup lock must be held before calling this function. */
 static void
-log_threaded_source_suspend(LogThreadedSourceDriver *self)
+_worker_suspend(LogThreadedSourceWorker *self)
 {
-  LogThreadedSourceWorker *worker = self->worker;
-
-  while (!log_threaded_source_free_to_send(self) && !worker->under_termination)
-    wakeup_cond_wait(&worker->wakeup_cond);
-}
-
-static void
-log_threaded_source_wakeup(LogThreadedSourceDriver *self)
-{
-  LogThreadedSourceWorker *worker = self->worker;
-
-  wakeup_cond_signal(&worker->wakeup_cond);
+  while (!log_threaded_source_worker_free_to_send(self) && !self->under_termination)
+    wakeup_cond_wait(&self->wakeup_cond);
 }
 
 static gboolean
-log_threaded_source_worker_thread_init(MainLoopThreadedWorker *s)
+_worker_thread_init(MainLoopThreadedWorker *s)
 {
   LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s->data;
 
-  if (self->control->thread_init)
-    return self->control->thread_init(self->control);
+  if (self->thread_init)
+    return self->thread_init(self);
   return TRUE;
 }
 
 static void
-log_threaded_source_worker_thread_deinit(MainLoopThreadedWorker *s)
+_worker_thread_deinit(MainLoopThreadedWorker *s)
 {
   LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s->data;
 
-  if (self->control->thread_deinit)
-    self->control->thread_deinit(self->control);
+  if (self->thread_deinit)
+    self->thread_deinit(self);
 }
 
 static void
-log_threaded_source_worker_run(MainLoopThreadedWorker *s)
+_worker_thread_run(MainLoopThreadedWorker *s)
 {
   LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s->data;
 
   msg_debug("Worker thread started",
-            evt_tag_str("driver", self->control->super.super.id));
+            evt_tag_str("driver", self->control->super.super.id),
+            evt_tag_int("worker_index", self->worker_index));
 
-  self->control->run(self->control);
+  self->run(self);
 
   msg_debug("Worker thread finished",
-            evt_tag_str("driver", self->control->super.super.id));
-}
-
-static void
-log_threaded_source_worker_request_exit(MainLoopThreadedWorker *s)
-{
-  LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s->data;
-
-  msg_debug("Requesting worker thread exit",
-            evt_tag_str("driver", self->control->super.super.id));
-  self->under_termination = TRUE;
-  self->control->request_exit(self->control);
-  log_threaded_source_wakeup(self->control);
+            evt_tag_str("driver", self->control->super.super.id),
+            evt_tag_int("worker_index", self->worker_index));
 }
 
 static void
@@ -190,11 +170,27 @@ _worker_wakeup(LogSource *s)
 {
   LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s;
 
-  self->control->wakeup(self->control);
+  wakeup_cond_signal(&self->wakeup_cond);
+
+  if (self->wakeup)
+    self->wakeup(self);
+}
+
+static void
+_worker_thread_request_exit(MainLoopThreadedWorker *s)
+{
+  LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s->data;
+
+  msg_debug("Requesting worker thread exit",
+            evt_tag_str("driver", self->control->super.super.id),
+            evt_tag_int("worker_index", self->worker_index));
+  self->under_termination = TRUE;
+  self->request_exit(self);
+  _worker_wakeup(&self->super);
 }
 
 static gboolean
-log_threaded_source_worker_init(LogPipe *s)
+_worker_init(LogPipe *s)
 {
   if (!log_source_init(s))
     return FALSE;
@@ -202,7 +198,7 @@ log_threaded_source_worker_init(LogPipe *s)
   return TRUE;
 }
 
-static void
+void
 log_threaded_source_worker_free(LogPipe *s)
 {
   LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s;
@@ -216,30 +212,94 @@ log_threaded_source_worker_free(LogPipe *s)
   log_source_free(s);
 }
 
-static LogThreadedSourceWorker *
-log_threaded_source_worker_new(GlobalConfig *cfg)
+void
+log_threaded_source_worker_init_instance(LogThreadedSourceWorker *self, LogThreadedSourceDriver *driver,
+                                         gint worker_index)
 {
-  LogThreadedSourceWorker *self = g_new0(LogThreadedSourceWorker, 1);
-  log_source_init_instance(&self->super, cfg);
+  log_source_init_instance(&self->super, log_pipe_get_config(&driver->super.super.super));
   main_loop_threaded_worker_init(&self->thread, MLW_THREADED_INPUT_WORKER, self);
-  self->thread.thread_init = log_threaded_source_worker_thread_init;
-  self->thread.thread_deinit = log_threaded_source_worker_thread_deinit;
-  self->thread.run = log_threaded_source_worker_run;
-  self->thread.request_exit = log_threaded_source_worker_request_exit;
+  self->thread.thread_init = _worker_thread_init;
+  self->thread.thread_deinit = _worker_thread_deinit;
+  self->thread.run = _worker_thread_run;
+  self->thread.request_exit = _worker_thread_request_exit;
 
   wakeup_cond_init(&self->wakeup_cond);
 
-  self->super.super.init = log_threaded_source_worker_init;
+  self->super.super.init = _worker_init;
   self->super.super.free_fn = log_threaded_source_worker_free;
   self->super.wakeup = _worker_wakeup;
 
-  return self;
+  self->worker_index = worker_index;
+}
+
+static LogThreadedSourceWorker *
+_construct_worker(LogThreadedSourceDriver *self, gint worker_index)
+{
+  LogThreadedSourceWorker *worker = g_new0(LogThreadedSourceWorker, 1);
+  log_threaded_source_worker_init_instance(worker, self, worker_index);
+  return worker;
 }
 
 gboolean
 log_threaded_source_driver_pre_config_init(LogPipe *s)
 {
-  main_loop_worker_allocate_thread_space(1);
+  LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
+  main_loop_worker_allocate_thread_space(self->num_workers);
+  return TRUE;
+}
+
+static void
+_create_workers(LogThreadedSourceDriver *self)
+{
+  g_assert(!self->workers);
+
+  self->workers = g_new0(LogThreadedSourceWorker *, self->num_workers);
+  for (size_t i = 0; i < self->num_workers; i++)
+    {
+      self->workers[i] = self->worker_construct(self, i);
+    }
+}
+
+static void
+_destroy_workers(LogThreadedSourceDriver *self)
+{
+  for (size_t i = 0; i < self->num_workers; i++)
+    {
+      LogPipe *worker_pipe = _worker_logpipe(self->workers[i]);
+      if (!worker_pipe)
+        break;
+
+      log_pipe_deinit(worker_pipe);
+      log_pipe_unref(worker_pipe);
+      self->workers[i] = NULL;
+    }
+
+  g_free(self->workers);
+  self->workers = NULL;
+}
+
+static gboolean
+_init_workers(LogThreadedSourceDriver *self)
+{
+  g_assert(self->format_stats_key);
+
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+
+  log_threaded_source_worker_options_init(&self->worker_options, cfg, self->super.super.group);
+
+  for (size_t i = 0; i < self->num_workers; i++)
+    {
+      StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+      self->format_stats_key(self, kb);
+      _worker_set_options(self->workers[i], self,
+                          &self->worker_options, self->super.super.id, kb);
+
+      LogPipe *worker_pipe = _worker_logpipe(self->workers[i]);
+      log_pipe_append(worker_pipe, &self->super.super.super);
+      if (!log_pipe_init(worker_pipe))
+        return FALSE;
+    }
+
   return TRUE;
 }
 
@@ -247,41 +307,28 @@ gboolean
 log_threaded_source_driver_init_method(LogPipe *s)
 {
   LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
 
-  self->worker = log_threaded_source_worker_new(cfg);
+  _create_workers(self);
 
   if (!log_src_driver_init_method(s))
-    return FALSE;
+    goto error;
 
-  g_assert(self->format_stats_key);
-
-  StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
-  self->format_stats_key(self, kb);
-  log_threaded_source_worker_options_init(&self->worker_options, cfg, self->super.super.group);
-  log_threaded_source_worker_set_options(self->worker, self, &self->worker_options,
-                                         self->super.super.id, kb);
-
-  LogPipe *worker_pipe = log_threaded_source_worker_logpipe(self->worker);
-  log_pipe_append(worker_pipe, s);
-  if (!log_pipe_init(worker_pipe))
-    {
-      log_pipe_unref(worker_pipe);
-      self->worker = NULL;
-      return FALSE;
-    }
+  if (!_init_workers(self))
+    goto error;
 
   return TRUE;
+
+error:
+  _destroy_workers(self);
+  return FALSE;
 }
 
 gboolean
 log_threaded_source_driver_deinit_method(LogPipe *s)
 {
   LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
-  LogPipe *worker_pipe = log_threaded_source_worker_logpipe(self->worker);
 
-  log_pipe_deinit(worker_pipe);
-  log_pipe_unref(worker_pipe);
+  _destroy_workers(self);
 
   return log_src_driver_deinit_method(s);
 }
@@ -298,11 +345,12 @@ log_threaded_source_driver_free_method(LogPipe *s)
 }
 
 gboolean
-log_threaded_source_driver_start_worker(LogPipe *s)
+log_threaded_source_driver_start_workers(LogPipe *s)
 {
   LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
 
-  main_loop_threaded_worker_start(&self->worker->thread);
+  for (size_t i = 0; i < self->num_workers; i++)
+    g_assert(main_loop_threaded_worker_start(&self->workers[i]->thread));
 
   return TRUE;
 }
@@ -337,7 +385,7 @@ _apply_message_attributes(LogThreadedSourceDriver *self, LogMessage *msg)
  *
  * Basically this calls main_loop_worker_invoke_batch_callbacks(), which is
  * done by the minaloop-io-worker layer whenever we go back to the main
- * loop.  Whether this is done automatically by LogThreadedSourceDriver is
+ * loop.  Whether this is done automatically by LogThreadedSourceWorker is
  * controlled by the auto_close_batches member, in which case we do this
  * every message.
  *
@@ -345,36 +393,36 @@ _apply_message_attributes(LogThreadedSourceDriver *self, LogMessage *msg)
  * tend to do batching to improve performance.
  */
 void
-log_threaded_source_close_batch(LogThreadedSourceDriver *self)
+log_threaded_source_worker_close_batch(LogThreadedSourceWorker *self)
 {
   main_loop_worker_invoke_batch_callbacks();
 }
 
 void
-log_threaded_source_post(LogThreadedSourceDriver *self, LogMessage *msg)
+log_threaded_source_worker_post(LogThreadedSourceWorker *self, LogMessage *msg)
 {
   msg_debug("Incoming log message",
             evt_tag_str("input", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
+            evt_tag_str("driver", self->control->super.super.id),
+            evt_tag_int("worker_index", self->worker_index),
             evt_tag_msg_reference(msg));
-  _apply_message_attributes(self, msg);
-  log_source_post(&self->worker->super, msg);
+  _apply_message_attributes(self->control, msg);
+  log_source_post(&self->super, msg);
 
-  if (self->auto_close_batches)
-    log_threaded_source_close_batch(self);
+  if (self->control->auto_close_batches)
+    log_threaded_source_worker_close_batch(self);
 }
 
 gboolean
-log_threaded_source_free_to_send(LogThreadedSourceDriver *self)
+log_threaded_source_worker_free_to_send(LogThreadedSourceWorker *self)
 {
-  return log_source_free_to_send(&self->worker->super);
+  return log_source_free_to_send(&self->super);
 }
 
 void
-log_threaded_source_blocking_post(LogThreadedSourceDriver *self, LogMessage *msg)
+log_threaded_source_worker_blocking_post(LogThreadedSourceWorker *self, LogMessage *msg)
 {
-  LogThreadedSourceWorker *worker = self->worker;
-
-  log_threaded_source_post(self, msg);
+  log_threaded_source_worker_post(self, msg);
 
   /*
    * The wakeup lock must be held before calling free_to_send() and suspend(),
@@ -386,10 +434,10 @@ log_threaded_source_blocking_post(LogThreadedSourceDriver *self, LogMessage *msg
    * "schedule_wakeup" event are guaranteed to be scheduled in the right order.
    */
 
-  wakeup_cond_lock(&worker->wakeup_cond);
-  if (!log_threaded_source_free_to_send(self))
-    log_threaded_source_suspend(self);
-  wakeup_cond_unlock(&worker->wakeup_cond);
+  wakeup_cond_lock(&self->wakeup_cond);
+  if (!log_threaded_source_worker_free_to_send(self))
+    _worker_suspend(self);
+  wakeup_cond_unlock(&self->wakeup_cond);
 }
 
 void
@@ -411,9 +459,10 @@ log_threaded_source_driver_init_instance(LogThreadedSourceDriver *self, GlobalCo
   self->super.super.super.deinit = log_threaded_source_driver_deinit_method;
   self->super.super.super.free_fn = log_threaded_source_driver_free_method;
   self->super.super.super.pre_config_init = log_threaded_source_driver_pre_config_init;
-  self->super.super.super.post_config_init = log_threaded_source_driver_start_worker;
+  self->super.super.super.post_config_init = log_threaded_source_driver_start_workers;
 
-  self->wakeup = log_threaded_source_wakeup;
+  self->worker_construct = _construct_worker;
 
   self->auto_close_batches = TRUE;
+  self->num_workers = 1;
 }

@@ -39,14 +39,15 @@ typedef struct _TestThreadedSourceDriver
   gint num_of_messages_to_generate;
   gboolean suspended;
   gboolean exit_requested;
+  gboolean blocking_post;
 } TestThreadedSourceDriver;
 
 MainLoopOptions main_loop_options = {0};
 MainLoop *main_loop;
 
-static void _request_exit(LogThreadedSourceDriver *s);
-static void _run_simple(LogThreadedSourceDriver *s);
-static void _run_using_blocking_posts(LogThreadedSourceDriver *s);
+static void _worker_request_exit(LogThreadedSourceWorker *s);
+static void _worker_run_simple(LogThreadedSourceWorker *s);
+static void _worker_run_using_blocking_posts(LogThreadedSourceWorker *s);
 
 static const gchar *
 _generate_persist_name(const LogPipe *s)
@@ -72,7 +73,7 @@ _source_queue_mock(LogPipe *s, LogMessage *msg, const LogPathOptions *path_optio
 static LogSource *
 _get_source(TestThreadedSourceDriver *self)
 {
-  return (LogSource *) self->super.worker;
+  return (LogSource *) self->super.workers[0];
 }
 
 gboolean
@@ -91,6 +92,23 @@ test_threaded_source_driver_init_method(LogPipe *s)
 }
 
 
+static LogThreadedSourceWorker *
+_construct_worker(LogThreadedSourceDriver *s, gint worker_index)
+{
+  TestThreadedSourceDriver *self = (TestThreadedSourceDriver *) s;
+
+  LogThreadedSourceWorker *worker = g_new0(LogThreadedSourceWorker, 1);
+  log_threaded_source_worker_init_instance(worker, s, worker_index);
+
+  worker->request_exit = _worker_request_exit;
+  if (self->blocking_post)
+    worker->run = _worker_run_using_blocking_posts;
+  else
+    worker->run = _worker_run_simple;
+
+  return worker;
+}
+
 static TestThreadedSourceDriver *
 test_threaded_sd_new(GlobalConfig *cfg, gboolean blocking_post)
 {
@@ -101,12 +119,9 @@ test_threaded_sd_new(GlobalConfig *cfg, gboolean blocking_post)
   self->super.super.super.super.init = test_threaded_source_driver_init_method;
   self->super.format_stats_key = _format_stats_key;
   self->super.super.super.super.generate_persist_name = _generate_persist_name;
+  self->super.worker_construct = _construct_worker;
 
-  self->super.request_exit = _request_exit;
-  if (blocking_post)
-    self->super.run = _run_using_blocking_posts;
-  else
-    self->super.run = _run_simple;
+  self->blocking_post = blocking_post;
 
   return self;
 }
@@ -159,40 +174,40 @@ teardown(void)
 }
 
 static void
-_run_using_blocking_posts(LogThreadedSourceDriver *s)
+_worker_run_using_blocking_posts(LogThreadedSourceWorker *s)
 {
-  TestThreadedSourceDriver *self = (TestThreadedSourceDriver *) s;
+  TestThreadedSourceDriver *driver = (TestThreadedSourceDriver *) s->control;
 
-  for (gint i = 0; i < self->num_of_messages_to_generate; ++i)
+  for (gint i = 0; i < driver->num_of_messages_to_generate; ++i)
     {
       LogMessage *msg = create_sample_message();
-      log_threaded_source_blocking_post(&self->super, msg);
+      log_threaded_source_worker_blocking_post(s, msg);
     }
 }
 
 static void
-_run_simple(LogThreadedSourceDriver *s)
+_worker_run_simple(LogThreadedSourceWorker *s)
 {
-  TestThreadedSourceDriver *self = (TestThreadedSourceDriver *) s;
+  TestThreadedSourceDriver *driver = (TestThreadedSourceDriver *) s->control;
 
-  for (gint i = 0; i < self->num_of_messages_to_generate; ++i)
+  for (gint i = 0; i < driver->num_of_messages_to_generate; ++i)
     {
       LogMessage *msg = create_sample_message();
-      log_threaded_source_post(&self->super, msg);
+      log_threaded_source_worker_post(s, msg);
 
-      if (!log_threaded_source_free_to_send(&self->super))
+      if (!log_threaded_source_worker_free_to_send(s))
         {
-          self->suspended = TRUE;
+          driver->suspended = TRUE;
           break;
         }
     }
 }
 
 static void
-_request_exit(LogThreadedSourceDriver *s)
+_worker_request_exit(LogThreadedSourceWorker *s)
 {
-  TestThreadedSourceDriver *self = (TestThreadedSourceDriver *) s;
-  self->exit_requested = TRUE;
+  TestThreadedSourceDriver *driver = (TestThreadedSourceDriver *) s->control;
+  driver->exit_requested = TRUE;
 }
 
 static void
