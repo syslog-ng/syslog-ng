@@ -28,7 +28,7 @@ using namespace syslogng::grpc::otel;
 /* C++ Implementations */
 
 const char *
-SyslogNgDestDriver::generate_persist_name()
+SyslogNgDestDriver::generate_legacy_persist_name()
 {
   static char persist_name[1024];
 
@@ -37,6 +37,21 @@ SyslogNgDestDriver::generate_persist_name()
                super->super.super.super.super.persist_name);
   else
     g_snprintf(persist_name, sizeof(persist_name), "syslog-ng-otlp");
+
+  return persist_name;
+}
+
+const char *
+SyslogNgDestDriver::generate_persist_name()
+{
+  static char persist_name[1024];
+
+  if (super->super.super.super.super.persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "syslog-ng-otlp.%s",
+               super->super.super.super.super.persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "syslog-ng-otlp(%s)",
+               url.c_str());
 
   return persist_name;
 }
@@ -54,6 +69,37 @@ LogThreadedDestWorker *
 SyslogNgDestDriver::construct_worker(int worker_index)
 {
   return SyslogNgDestWorker::construct(&super->super, worker_index);
+}
+
+bool
+SyslogNgDestDriver::update_legacy_persist_name_if_exists()
+{
+  GlobalConfig *cfg = log_pipe_get_config(&super->super.super.super.super);
+  const char *current_persist_name = generate_persist_name();
+  const char *legacy_persist_name = generate_legacy_persist_name();
+
+  if (persist_state_entry_exists(cfg->state, current_persist_name))
+    return true;
+
+  if (!persist_state_entry_exists(cfg->state, legacy_persist_name))
+    return true;
+
+  if (strcmp(current_persist_name, legacy_persist_name) == 0)
+    return true;
+
+  return persist_state_move_entry(cfg->state, legacy_persist_name, current_persist_name);
+}
+
+bool
+SyslogNgDestDriver::init()
+{
+  if (!DestDriver::init())
+    return false;
+
+  if (!update_legacy_persist_name_if_exists())
+    return false;
+
+  return true;
 }
 
 /* C Wrappers */
