@@ -67,17 +67,17 @@ start
   ;
 
 source_darwinosl
-	: KW_DARWIN_OSL
+  : KW_DARWIN_OSL
     {
       last_driver = *instance = darwinosl_sd_new(configuration);
     }
     '(' _inner_src_context_push source_darwinosl_options _inner_src_context_pop ')' { $$ = last_driver; }
-	;
+  ;
 
 source_darwinosl_options
-	: source_darwinosl_option source_darwinosl_options
-	|
-	;
+  : source_darwinosl_option source_darwinosl_options
+  |
+  ;
 
 /* via threaded_source_driver_option this implies msg_format_option, source_driver_option, source_option, inner_source and driver_option */
 source_darwinosl_option
@@ -86,16 +86,17 @@ source_darwinosl_option
       darwinosl_sd_set_filter_predicate(last_driver, $3);
       free($3);
     }
-  | KW_GO_REVERSE '(' yesno ')'	{ darwinosl_sd_set_go_reverse(last_driver, $3); }
-  | KW_DO_NOT_USE_BOOKMARK '(' yesno ')'	{ darwinosl_sd_set_do_not_use_bookmark(last_driver, $3); }
-  | KW_MAX_BOOKMARK_DISTANCE '(' nonnegative_integer ')'	{ darwinosl_sd_set_max_bookmark_distance(last_driver, $3); }
-  | KW_FETCH_DELAY '(' positive_integer ')'	{ darwinosl_sd_set_log_fetch_delay(last_driver, $3); }
-  | KW_FETCH_RETRY_DELAY '(' nonnegative_integer ')'	{ darwinosl_sd_set_log_fetch_retry_delay(last_driver, $3); }
+  | KW_GO_REVERSE '(' yesno ')'  { darwinosl_sd_set_go_reverse(last_driver, $3); }
+  | KW_DO_NOT_USE_BOOKMARK '(' yesno ')'  { darwinosl_sd_set_do_not_use_bookmark(last_driver, $3); }
+  | KW_MAX_BOOKMARK_DISTANCE '(' nonnegative_integer ')'  { darwinosl_sd_set_max_bookmark_distance(last_driver, $3); }
+  | KW_FETCH_DELAY '(' positive_integer ')'  { darwinosl_sd_set_log_fetch_delay(last_driver, $3); }
+  | KW_FETCH_RETRY_DELAY '(' nonnegative_integer ')'  { darwinosl_sd_set_log_fetch_retry_delay(last_driver, $3); }
   /*
-    TODO: This cannot be used due to an actual macOS API bug now, as this would lead to unclosed enumerator threads with
+    TODO: This cannot be used now due to an actual macOS API bug https://openradar.appspot.com/radar?id=5597032077066240, as
+          this would lead to unclosed enumerator threads with
           an unreleased OSLogEntry item array in each.
           Once the issue is fixed we can allow this option again.
-  | KW_LOG_FETCH_LIMIT '(' nonnegative_integer ')'	{ darwinosl_sd_set_log_fetch_limit(last_driver, $3); }
+  | KW_LOG_FETCH_LIMIT '(' nonnegative_integer ')'  { darwinosl_sd_set_log_fetch_limit(last_driver, $3); }
   */
   | threaded_source_driver_option
   ;
