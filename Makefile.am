@@ -33,7 +33,7 @@ endif
 
 ACLOCAL_AMFLAGS		= -I m4 --install
 
-EXTRA_DIST		= $(filter-out ${NODIST_BUILT_SOURCES},${BUILT_SOURCES}) VERSION NEWS.md autogen.sh \
+EXTRA_DIST		= $(filter-out ${NODIST_BUILT_SOURCES},${BUILT_SOURCES}) VERSION.txt NEWS.md autogen.sh \
 			  dist.conf dist.conf.in syslog-ng.pc.in \
 			  syslog-ng-config.h.in	\
 			  CONTRIBUTING.md	\

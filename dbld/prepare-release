@@ -5,7 +5,7 @@ set -e
 cd /source
 VERSION=$1
 
-OLD_VERSION=`cat VERSION`
+OLD_VERSION=`cat VERSION.txt`
 OLD_MAJOR=$(echo $OLD_VERSION | cut -d. -f1)
 OLD_MINOR=$(echo $OLD_VERSION | cut -d. -f2)
 OLD_PATCH=$(echo $OLD_VERSION | cut -d. -f3)
@@ -23,7 +23,7 @@ VERSION_FILE_LIST="README.md doc/man/*.xml
 
 function update_version() {
 	echo Updating VERSION file
-	echo $VERSION > VERSION
+	echo $VERSION > VERSION.txt
 }
 
 function update_packaging_debian() {
