@@ -71,7 +71,6 @@ typedef struct _DarwinOSLogSourceDriver
   __strong OSLogSource *osLogSource;
 } DarwinOSLogSourceDriver;
 
-
 static void
 _log_reader_insert_msg_length_stats(DarwinOSLogSourceDriver *self, gsize len)
 {
@@ -82,39 +81,41 @@ _log_reader_insert_msg_length_stats(DarwinOSLogSourceDriver *self, gsize len)
 static void
 _register_aggregated_stats(DarwinOSLogSourceDriver *self)
 {
-  StatsClusterKeyBuilder *kb = self->super.worker->super.metrics.stats_kb; //stats_cluster_key_builder_new();
-
+  LogThreadedSourceWorker *worker = self->super.workers[0];
+  StatsClusterKeyBuilder *kb = worker->super.metrics.stats_kb;
   stats_cluster_key_builder_push(kb);
   {
-    StatsClusterKey sc_key;
+    LogSourceOptions *super_options = &self->options.super_source_options->super;
+    gchar *stats_id = worker->super.stats_id;
     gchar stats_instance[1024];
     const gchar *instance_name = stats_cluster_key_builder_format_legacy_stats_instance(kb, stats_instance,
                                  sizeof(stats_instance));
     stats_aggregator_lock();
+    StatsClusterKey sc_key;
 
     // msg_size_max
     stats_cluster_single_key_legacy_set_with_name(&sc_key,
-                                                  self->options.super_source_options->super.stats_source | SCS_SOURCE,
-                                                  self->super.worker->super.stats_id,
+                                                  super_options->stats_source | SCS_SOURCE,
+                                                  stats_id,
                                                   instance_name, "msg_size_max");
-    stats_register_aggregator_maximum(self->options.super_source_options->super.stats_level, &sc_key,
+    stats_register_aggregator_maximum(super_options->stats_level, &sc_key,
                                       &self->max_message_size);
 
     // msg_size_avg
     stats_cluster_single_key_legacy_set_with_name(&sc_key,
-                                                  self->options.super_source_options->super.stats_source | SCS_SOURCE,
-                                                  self->super.worker->super.stats_id,
+                                                  super_options->stats_source | SCS_SOURCE,
+                                                  stats_id,
                                                   instance_name, "msg_size_avg");
-    stats_register_aggregator_average(self->options.super_source_options->super.stats_level, &sc_key,
+    stats_register_aggregator_average(super_options->stats_level, &sc_key,
                                       &self->average_messages_size);
 
     // eps
     stats_cluster_single_key_legacy_set_with_name(&sc_key,
-                                                  self->options.super_source_options->super.stats_source | SCS_SOURCE,
-                                                  self->super.worker->super.stats_id,
+                                                  super_options->stats_source | SCS_SOURCE,
+                                                  stats_id,
                                                   instance_name, "eps");
-    stats_register_aggregator_cps(self->options.super_source_options->super.stats_level, &sc_key,
-                                  self->super.worker->super.metrics.recvd_messages_key,
+    stats_register_aggregator_cps(super_options->stats_level, &sc_key,
+                                  worker->super.metrics.recvd_messages_key,
                                   SC_TYPE_SINGLE_VALUE,
                                   &self->CPS);
     stats_aggregator_unlock();
@@ -143,20 +144,20 @@ _check_restored_postion(DarwinOSLogSourceDriver *self, OSLogEntry *nextLogEntry)
     {
       msg_debug("darwinosl: Bookmark is restored fine",
                 evt_tag_str("bookmark", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
-                                                                          nextLogEntry.date].UTF8String));
+                                         nextLogEntry.date].UTF8String));
     }
   else
     {
       if (self->log_source_position.last_msg_hash)
         msg_info("darwinosl: Could not restore last bookmark (filter might be changed or max_bookmark_distance took effect?)",
                  evt_tag_str("bookmark", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
-                                                                           [NSDate dateWithTimeIntervalSince1970:self->log_source_position.log_position]].UTF8String),
+                                          [NSDate dateWithTimeIntervalSince1970:self->log_source_position.log_position]].UTF8String),
                  evt_tag_str("new_start_position", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
-                                                                                     nextLogEntry.date].UTF8String));
+                                                    nextLogEntry.date].UTF8String));
       else
         msg_debug("darwinosl: No last msg hash found",
                   evt_tag_str("new_start_position", [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:
-                                                                                      nextLogEntry.date].UTF8String));
+                                                     nextLogEntry.date].UTF8String));
     }
 }
 
@@ -169,7 +170,7 @@ _log_position_date_from_persist(DarwinOSLogSourceDriver *self, NSDate **startDat
            based on read-old-records() we just let the user manually solve this (e.g. clear the persis-file if needed)
   */
   NSDate *maxBookmarkDistanceDate = [NSDate dateWithTimeIntervalSinceNow:-1 * (NSTimeInterval)(
-                                              self->options.max_bookmark_distance)];
+                                       self->options.max_bookmark_distance)];
   if (self->options.max_bookmark_distance > 0)
     *startDate = maxBookmarkDistanceDate;
 
@@ -198,10 +199,8 @@ _log_message_from_string(const char *msg_cstring, MsgFormatOptions *format_optio
 }
 
 static gboolean
-_open_osl(LogThreadedSourceDriver *s)
+_open_osl(DarwinOSLogSourceDriver *self)
 {
-  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *)s;
-
   self->curr_fetch_in_run = 0;
 
   if ([self->osLogSource openStore] == nil)
@@ -216,8 +215,8 @@ _open_osl(LogThreadedSourceDriver *s)
                          "no saved position")));
 
   if ([self->osLogSource openEnumeratorWithDate:startDate
-                         filterString:(self->options.filter_predicate ? [NSString stringWithUTF8String:self->options.filter_predicate] : nil)
-                         options:(self->options.go_reverse ? OSLogEnumeratorReverse : 0)] == nil)
+       filterString:(self->options.filter_predicate ? [NSString stringWithUTF8String:self->options.filter_predicate] : nil)
+       options:(self->options.go_reverse ? OSLogEnumeratorReverse : 0)] == nil)
     {
       [self->osLogSource closeAll];
       return FALSE;
@@ -238,19 +237,16 @@ _open_osl(LogThreadedSourceDriver *s)
   return TRUE;
 }
 
-static void
-_close_osl(LogThreadedSourceDriver *s)
+static inline void
+_close_osl(DarwinOSLogSourceDriver *self)
 {
-  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *)s;
   [self->osLogSource closeAll];
 }
 
 /* runs in a dedicated thread */
 static LogThreadedFetchResult
-_fetch(LogThreadedSourceDriver *s)
+_fetch(DarwinOSLogSourceDriver *self)
 {
-  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *)s;
-
   gboolean fetchedEnough = (self->options.fetch_limit && self->curr_fetch_in_run > self->options.fetch_limit);
   OSLogEntry *nextLogEntry = (fetchedEnough ? nil :[self->osLogSource fetchNextEntry]);
 
@@ -274,7 +270,7 @@ _fetch(LogThreadedSourceDriver *s)
   self->log_source_position.log_position = [nextLogEntry.date timeIntervalSince1970];
   self->log_source_position.last_msg_hash = g_str_hash(log_string);
 
-  LogSource *worker = (LogSource *) self->super.worker;
+  LogSource *worker = (LogSource *) self->super.workers[0];
   Bookmark *bookmark = ack_tracker_request_bookmark(worker->ack_tracker);
   darwinosl_source_persist_fill_bookmark(self->log_source_persist, bookmark, self->log_source_position);
   msg_trace("darwinosl: Bookmark created",
@@ -289,16 +285,16 @@ _fetch(LogThreadedSourceDriver *s)
   return result;
 }
 
-static void
-_send(LogThreadedSourceDriver *s, LogMessage *msg)
+static inline void
+_send(LogThreadedSourceWorker *worker, LogMessage *msg)
 {
-  log_threaded_source_blocking_post(s, msg);
+  log_threaded_source_worker_blocking_post(worker, msg);
 }
 
 static void
-_request_exit(LogThreadedSourceDriver *s)
+_request_exit(LogThreadedSourceWorker *worker)
 {
-  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) s;
+  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) worker->control;
   g_atomic_counter_set(&self->exit_requested, TRUE);
 }
 
@@ -314,7 +310,7 @@ _sleep(DarwinOSLogSourceDriver *self, gdouble wait_time)
   g_get_current_time(&now);
   last_check = now;
 
-  while (false == g_atomic_counter_get(&self->exit_requested))
+  while (FALSE == g_atomic_counter_get(&self->exit_requested))
     {
       usleep(sleep_time);
 
@@ -327,32 +323,32 @@ _sleep(DarwinOSLogSourceDriver *self, gdouble wait_time)
 
 /* runs in a dedicated thread */
 static void
-_run(LogThreadedSourceDriver *s)
+_run(LogThreadedSourceWorker *worker)
 {
-  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) s;
+  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) worker->control;
   const gdouble iteration_sleep_time = 1.0 / self->options.fetch_delay;
 
-  while (false == g_atomic_counter_get(&self->exit_requested))
+  while (FALSE == g_atomic_counter_get(&self->exit_requested))
     {
       @autoreleasepool
       {
-        if (FALSE == _open_osl(s))
+        if (FALSE == _open_osl(self))
           break;
 
-        while (false == g_atomic_counter_get(&self->exit_requested))
+        while (FALSE == g_atomic_counter_get(&self->exit_requested))
           {
             @autoreleasepool
             {
-              LogThreadedFetchResult res = _fetch(s);
+              LogThreadedFetchResult res = _fetch(self);
               if (res.result == THREADED_FETCH_SUCCESS)
-                _send(s, res.msg);
+                _send(worker, res.msg);
               else
                 break;
             }
             _sleep(self, iteration_sleep_time);
           }
 
-        _close_osl(s);
+        _close_osl(self);
       }
       if (self->options.fetch_retry_delay)
         _sleep(self, self->options.fetch_retry_delay);
@@ -388,15 +384,13 @@ _get_persist_name(const LogPipe *s)
   return self->persist_name;
 }
 
-static const gchar *
-_format_stats_key(LogThreadedSourceDriver *s)
+static void
+_format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
 {
   DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *)s;
 
   if (self->stat_persist_name == NULL)
     self->stat_persist_name = _generate_persist_name(self, "darwinosl", s->super.super.super.persist_name);
-
-  return self->stat_persist_name;
 }
 
 static gboolean
@@ -443,31 +437,49 @@ _free(LogPipe *s)
   log_threaded_source_driver_free_method(s);
 }
 
+static LogThreadedSourceWorker *
+_construct_worker(LogThreadedSourceDriver *s, gint worker_index)
+{
+  /* TODO: DarwinOSLogSourceDriver uses the multi-worker API, but it is not prepared now to work with more than one worker. */
+  g_assert(s->num_workers == 1);
+
+  LogThreadedSourceWorker *worker = g_new0(LogThreadedSourceWorker, 1);
+  log_threaded_source_worker_init_instance(worker, s, worker_index);
+
+  DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *) s;
+  g_atomic_counter_set(&self->exit_requested, FALSE);
+  worker->run = _run;
+  worker->request_exit = _request_exit;
+
+  return worker;
+}
+
 LogDriver *
 darwinosl_sd_new(GlobalConfig *cfg)
 {
   DarwinOSLogSourceDriver *self = g_new0(DarwinOSLogSourceDriver, 1);
   log_threaded_source_driver_init_instance(&self->super, cfg);
 
-  g_atomic_counter_set(&self->exit_requested, FALSE);
-  self->super.run = _run;
-  self->super.request_exit = _request_exit;
-
   self->super.super.super.super.init = _init;
   self->super.super.super.super.deinit = _deinit;
   self->super.super.super.super.free_fn = _free;
   self->super.super.super.super.generate_persist_name = _get_persist_name;
 
+  self->super.worker_options.ack_tracker_factory = consecutive_ack_tracker_factory_new();
+  self->super.worker_construct = _construct_worker;
+
   self->super.format_stats_key = _format_stats_key;
 
-  self->super.worker_options.ack_tracker_factory = consecutive_ack_tracker_factory_new();
   self->log_source_persist = darwinosl_source_persist_new();
 
   self->osLogSource = [OSLogSource new];
+
   darwinosl_sd_options_defaults(&self->options, &self->super.worker_options);
 
   return &self->super.super.super;
 }
+
+/* Options */
 
 gboolean
 darwinosl_sd_set_filter_predicate(LogDriver *s, const gchar *filter_predicate_str)
@@ -532,14 +544,13 @@ darwinosl_sd_options_defaults(DarwinOSLogSourceOptions *self,
                               LogThreadedSourceWorkerOptions *super_source_options)
 {
   self->super_source_options = super_source_options;
+  self->super_source_options->super.stats_level = STATS_LEVEL0;
+  self->super_source_options->super.stats_source = stats_register_type("darwinosl");
+  self->super_source_options->super.read_old_records = TRUE;
 
   /* No additional format options now, so intentionally referencing only, and not using msg_format_options_copy */
   self->format_options = &self->super_source_options->parse_options;
 
-  self->super_source_options->super.stats_level = STATS_LEVEL0;
-  self->super_source_options->super.stats_source = stats_register_type("darwinosl");
-
-  self->super_source_options->super.read_old_records = TRUE;
   self->filter_predicate = NULL;
   self->go_reverse = FALSE;
   self->do_not_use_bookmark = FALSE;
