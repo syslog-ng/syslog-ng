@@ -301,23 +301,23 @@ _request_exit(LogThreadedSourceWorker *worker)
 static void
 _sleep(DarwinOSLogSourceDriver *self, gdouble wait_time)
 {
-  const useconds_t microseconds_in_second = 1000 * 1000;
   const useconds_t min_sleep_time = 1;
   const useconds_t def_sleep_time = 1000;
-  const useconds_t sleep_time = MAX(min_sleep_time, (useconds_t) MIN(def_sleep_time, wait_time * microseconds_in_second));
-  GTimeVal now, last_check;
+  const useconds_t sleep_time = MAX(min_sleep_time, (useconds_t) MIN(def_sleep_time, wait_time * USEC_PER_SEC));
+  struct timespec now, last_check;
 
-  g_get_current_time(&now);
+  clock_gettime(CLOCK_MONOTONIC, &now);
   last_check = now;
 
   while (FALSE == g_atomic_counter_get(&self->exit_requested))
     {
       usleep(sleep_time);
 
-      gdouble diff = g_time_val_diff(&last_check, &now) / (gdouble) microseconds_in_second;
+      gdouble diff = timespec_diff_usec(&last_check, &now) / (gdouble) USEC_PER_SEC;
+
       if (diff >= wait_time)
         break;
-      g_get_current_time(&last_check);
+      clock_gettime(CLOCK_MONOTONIC, &last_check);
     }
 }
 

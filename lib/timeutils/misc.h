@@ -27,9 +27,11 @@
 
 #include "syslog-ng.h"
 
-#define NSEC_PER_SEC 1000000000L
-#define USEC_PER_SEC 1000000L
-#define MSEC_PER_SEC 1000L
+#if ! defined(NSEC_PER_SEC)
+# define NSEC_PER_SEC 1000000000L
+# define USEC_PER_SEC 1000000L
+# define MSEC_PER_SEC 1000L
+#endif
 
 #define MSEC_TO_NSEC(msec)   ((msec) * NSEC_PER_SEC / MSEC_PER_SEC)
 #define MSEC_TO_USEC(msec)   ((msec) * USEC_PER_SEC / MSEC_PER_SEC)
