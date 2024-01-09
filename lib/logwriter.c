@@ -933,20 +933,20 @@ log_writer_do_padding(LogWriter *self, GString *result)
   memset(result->str + len - 1, '\0', padd_bytes);
 }
 
-void
-log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
+static guint32
+_get_seq_num(LogWriter *self, LogMessage  *lm)
 {
-  LogTemplate *template = NULL;
-  UnixTime *stamp;
-  guint32 seq_num;
   static NVHandle meta_seqid = 0;
+
+  if (self->options->options & LWO_SEQNUM_ALL)
+    return self->seq_num;
 
   if (!meta_seqid)
     meta_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
 
   if (lm->flags & LF_LOCAL)
     {
-      seq_num = self->seq_num;
+      return self->seq_num;
     }
   else
     {
@@ -956,13 +956,22 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       seqid = log_msg_get_value(lm, meta_seqid, &seqid_length);
       APPEND_ZERO(seqid, seqid, seqid_length);
       if (seqid[0])
-        seq_num = strtol(seqid, NULL, 10);
+        return strtol(seqid, NULL, 10);
       else
-        seq_num = 0;
+        return 0;
     }
+}
+
+void
+log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
+{
+  LogTemplate *template = NULL;
+  UnixTime *stamp;
+  guint32 seq_num;
 
   /* no template was specified, use default */
   stamp = &lm->timestamps[LM_TS_STAMP];
+  seq_num = _get_seq_num(self, lm);
 
   g_string_truncate(result, 0);
 
@@ -1254,9 +1263,8 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
 
   if (consumed)
     {
-      if (msg->flags & LF_LOCAL)
+      if ((self->options->options & LWO_SEQNUM_ALL) || (msg->flags & LF_LOCAL))
         step_sequence_number(&self->seq_num);
-
 
       log_writer_update_message_stats(self, msg, msg_len);
       stats_byte_counter_add(&self->metrics.written_bytes, msg_len);
@@ -2015,17 +2023,19 @@ log_writer_options_destroy(LogWriterOptions *options)
   options->initialized = FALSE;
 }
 
-gint
-log_writer_options_lookup_flag(const gchar *flag)
+CfgFlagHandler log_writer_flag_handlers[] =
 {
-  if (strcmp(flag, "syslog-protocol") == 0)
-    return LWO_SYSLOG_PROTOCOL;
-  if (strcmp(flag, "no-multi-line") == 0)
-    return LWO_NO_MULTI_LINE;
-  if (strcmp(flag, "threaded") == 0)
-    return LWO_THREADED;
-  if (strcmp(flag, "ignore-errors") == 0)
-    return LWO_IGNORE_ERRORS;
-  msg_error("Unknown dest writer flag", evt_tag_str("flag", flag));
-  return 0;
+  { "syslog-protocol", CFH_SET, offsetof(LogWriterOptions, options), LWO_SYSLOG_PROTOCOL },
+  { "no-multi-line",   CFH_SET, offsetof(LogWriterOptions, options), LWO_NO_MULTI_LINE },
+  { "threaded",        CFH_SET, offsetof(LogWriterOptions, options), LWO_THREADED },
+  { "ignore-errors",   CFH_SET, offsetof(LogWriterOptions, options), LWO_IGNORE_ERRORS },
+  { "seqnum-all",      CFH_SET, offsetof(LogWriterOptions, options), LWO_SEQNUM_ALL },
+  { "no-seqnum-all",   CFH_CLEAR, offsetof(LogWriterOptions, options), LWO_SEQNUM_ALL },
+  { NULL },
+};
+
+gboolean
+log_writer_options_process_flag(LogWriterOptions *options, const gchar *flag)
+{
+  return cfg_process_flag(log_writer_flag_handlers, options, flag);
 }

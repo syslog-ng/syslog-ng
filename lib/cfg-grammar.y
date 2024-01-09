@@ -1325,12 +1325,26 @@ threaded_dest_driver_workers_option
 
 /* implies dest_driver_option */
 threaded_dest_driver_general_option
+        : threaded_dest_driver_general_option_noflags
+        | threaded_dest_driver_flags_option
+        ;
+
+threaded_dest_driver_general_option_noflags
 	: KW_RETRIES '(' positive_integer ')'
         {
           log_threaded_dest_driver_set_max_retries_on_error(last_driver, $3);
         }
         | KW_TIME_REOPEN '(' positive_integer ')' { log_threaded_dest_driver_set_time_reopen(last_driver, $3); }
         | dest_driver_option
+        ;
+
+threaded_dest_driver_flags_option
+        : KW_FLAGS '(' threaded_dest_driver_flags ')'
+        ;
+
+threaded_dest_driver_flags
+        : string threaded_dest_driver_flags     { CHECK_ERROR(log_threaded_dest_driver_process_flag(last_driver, $1), @1, "Unknown flag \"%s\"", $1); free($1); }
+        |
         ;
 
 /* implies source_driver_option and source_option */
@@ -1441,10 +1455,10 @@ dest_writer_options
 	|
 	;
 
-dest_writer_option
-        /* NOTE: plugins need to set "last_writer_options" in order to incorporate this rule in their grammar */
 
-	: KW_FLAGS '(' dest_writer_options_flags ')' { last_writer_options->options = $3; }
+/* NOTE: plugins need to set "last_writer_options" in order to incorporate this rule in their grammar */
+dest_writer_option
+        : KW_FLAGS '(' dest_writer_options_flags ')'
 	| KW_FLUSH_LINES '(' nonnegative_integer ')'		{ last_writer_options->flush_lines = $3; }
 	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ }
         | KW_SUPPRESS '(' nonnegative_integer ')'            { last_writer_options->suppress = $3; }
@@ -1464,9 +1478,9 @@ dest_writer_option
 	;
 
 dest_writer_options_flags
-	: normalized_flag dest_writer_options_flags   { $$ = log_writer_options_lookup_flag($1) | $2; free($1); }
-	|					      { $$ = 0; }
-	;
+        : string dest_writer_options_flags     { CHECK_ERROR(log_writer_options_process_flag(last_writer_options, $1), @1, "Unknown flag \"%s\"", $1); free($1); }
+        |
+        ;
 
 file_perm_option
 	: KW_OWNER '(' string_or_number ')'	{ file_perm_options_set_file_uid(last_file_perm_options, $3); free($3); }

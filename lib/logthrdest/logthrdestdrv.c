@@ -54,7 +54,6 @@ log_threaded_result_to_str(LogThreadedResult self)
   return as_str[self];
 }
 
-/* LogThreadedDestWorker */
 
 void
 log_threaded_dest_driver_set_batch_lines(LogDriver *s, gint batch_lines)
@@ -79,6 +78,22 @@ log_threaded_dest_driver_set_time_reopen(LogDriver *s, time_t time_reopen)
 
   self->time_reopen = time_reopen;
 }
+
+CfgFlagHandler log_threaded_dest_driver_flag_handlers[] =
+{
+  { "seqnum-all",      CFH_SET, offsetof(LogThreadedDestDriver, flags), LTDF_SEQNUM_ALL },
+  { "no-seqnum-all",   CFH_CLEAR, offsetof(LogThreadedDestDriver, flags), LTDF_SEQNUM_ALL },
+  { NULL },
+};
+
+gboolean
+log_threaded_dest_driver_process_flag(LogDriver *s, const gchar *flag)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
+  return cfg_process_flag(log_threaded_dest_driver_flag_handlers, self, flag);
+}
+
+/* LogThreadedDestWorker */
 
 /* this should be used in combination with LTR_EXPLICIT_ACK_MGMT to actually confirm message delivery. */
 void

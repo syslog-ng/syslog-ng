@@ -39,8 +39,8 @@ enum
 /* destination driver flags */
 enum
 {
-  AFSQL_DDF_EXPLICIT_COMMITS = 0x0001,
-  AFSQL_DDF_DONT_CREATE_TABLES = 0x0002,
+  AFSQL_DDF_EXPLICIT_COMMITS = 0x1000,
+  AFSQL_DDF_DONT_CREATE_TABLES = 0x2000,
 };
 
 typedef struct _AFSqlField
@@ -82,7 +82,6 @@ typedef struct _AFSqlDestDriver
   AFSqlField *fields;
   gchar *null_value;
   gchar *quote_as_string;
-  gint flags;
   gboolean ignore_tns_config;
   GList *session_statements;
 
@@ -113,7 +112,6 @@ void afsql_dd_set_values(LogDriver *s, GList *values);
 void afsql_dd_set_null_value(LogDriver *s, const gchar *null);
 void afsql_dd_set_indexes(LogDriver *s, GList *indexes);
 void afsql_dd_set_session_statements(LogDriver *s, GList *session_statements);
-void afsql_dd_set_flags(LogDriver *s, gint flags);
 void afsql_dd_set_create_statement_append(LogDriver *s, const gchar *create_statement_append);
 LogDriver *afsql_dd_new(GlobalConfig *cfg);
 gint afsql_dd_lookup_flag(const gchar *flag);
@@ -122,5 +120,8 @@ void afsql_dd_add_dbd_option_numeric(LogDriver *s, const gchar *name, gint value
 void afsql_dd_set_dbi_driver_dir(LogDriver *s, const gchar *dbi_driver_dir);
 void afsql_dd_set_quote_char(LogDriver *s, const gchar *quote);
 void afsql_dd_set_ignore_tns_config(LogDriver *s, const gboolean ignore_tns_config);
+
+gboolean afsql_dd_process_flag(LogDriver *driver, const gchar *flag);
+
 
 #endif
