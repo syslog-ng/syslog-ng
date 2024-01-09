@@ -20,14 +20,13 @@
  *
  */
 
-#include <unistd.h>
-
-#include "random-choice-generator.h"
 #include "random-choice-generator.hpp"
 
 #include "compat/cpp-start.h"
 #include "string-list.h"
 #include "compat/cpp-end.h"
+
+#include <unistd.h>
 
 #define get_SourceDriver(s) (((RandomChoiceGeneratorSourceDriver *) (s))->cpp)
 #define get_SourceWorker(s) (((RandomChoiceGeneratorSourceWorker *) (s))->cpp)

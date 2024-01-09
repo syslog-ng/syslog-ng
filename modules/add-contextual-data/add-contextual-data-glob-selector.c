@@ -99,7 +99,7 @@ _find_first_matching_glob(AddContextualDataGlobSelector *self, LogMessage *msg)
   for (gint i = 0; i < self->globs->len; i++)
     {
       GlobExpression *gs = &g_array_index(self->globs, GlobExpression, i);
-      gboolean result = g_pattern_match(gs->expr, string->len, string->str, string_reversed->str);
+      gboolean result = g_pattern_spec_match(gs->expr, string->len, string->str, string_reversed->str);
 
       msg_trace("add-contextual-data(): Evaluating glob against message",
                 evt_tag_str("glob-template", self->glob_template->template_str),

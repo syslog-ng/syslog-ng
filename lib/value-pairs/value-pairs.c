@@ -142,7 +142,7 @@ static CfgFlagHandler value_pair_scope[] =
 static gboolean
 vp_pattern_spec_eval(VPPatternSpec *self, const gchar *input)
 {
-  return g_pattern_match_string(self->pattern, input);
+  return g_pattern_spec_match_string(self->pattern, input);
 }
 
 static void

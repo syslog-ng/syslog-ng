@@ -825,7 +825,7 @@ Try to increase stolen memory size if available in BIOS.",
     {}
   };
 
-  return g_memdup(tc, sizeof(tc));
+  return g_memdup2(tc, sizeof(tc));
 }
 
 static Testcase *
@@ -964,7 +964,7 @@ _provide_cases_for_performance_test_parse_long_msg(void)
     },
     {}
   };
-  return g_memdup(tc, sizeof(tc));
+  return g_memdup2(tc, sizeof(tc));
 }
 
 #define ITERATION_NUMBER 100000

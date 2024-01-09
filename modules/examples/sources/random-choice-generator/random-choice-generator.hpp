@@ -23,13 +23,15 @@
 #ifndef RANDOM_CHOICE_GENERATOR_HPP
 #define RANDOM_CHOICE_GENERATOR_HPP
 
-#include <atomic>
-#include <string>
-#include <vector>
+#include "random-choice-generator.h"
 
 #include "compat/cpp-start.h"
 #include "logthrsource/logthrsourcedrv.h"
 #include "compat/cpp-end.h"
+
+#include <atomic>
+#include <string>
+#include <vector>
 
 typedef struct RandomChoiceGeneratorSourceWorker_ RandomChoiceGeneratorSourceWorker;
 typedef struct RandomChoiceGeneratorSourceDriver_ RandomChoiceGeneratorSourceDriver;

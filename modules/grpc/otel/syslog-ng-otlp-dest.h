@@ -23,6 +23,8 @@
 #ifndef SYSLOG_NG_OTLP_DEST_H
 #define SYSLOG_NG_OTLP_DEST_H
 
+#include "syslog-ng.h"
+
 #include "compat/cpp-start.h"
 
 #include "otel-dest.h"

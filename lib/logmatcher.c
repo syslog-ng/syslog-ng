@@ -244,7 +244,7 @@ log_matcher_glob_match(LogMatcher *s, LogMessage *msg, gint value_handle, const 
           warned = TRUE;
         }
       APPEND_ZERO(buf, value, value_len);
-      return g_pattern_match(self->pattern, value_len, buf, NULL);
+      return g_pattern_spec_match(self->pattern, value_len, buf, NULL);
     }
   else
     {

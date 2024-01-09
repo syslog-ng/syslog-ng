@@ -93,11 +93,11 @@ test_wheel(gint seed)
         latest = expires;
 
       timer1 = timer_wheel_add_timer(wheel, expires - 1, timer_callback,
-                                     g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
+                                     g_memdup2(&expires, sizeof(expires)), (GDestroyNotify) g_free);
       timer2 = timer_wheel_add_timer(wheel, expires - 1, timer_callback,
-                                     g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
+                                     g_memdup2(&expires, sizeof(expires)), (GDestroyNotify) g_free);
       timer3 = timer_wheel_add_timer(wheel, expires - 1, timer_callback,
-                                     g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
+                                     g_memdup2(&expires, sizeof(expires)), (GDestroyNotify) g_free);
       expected_callbacks += 3;
       r = rand() & 0xFF;
       if (r < 64)

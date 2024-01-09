@@ -39,6 +39,7 @@ jobs:
           # Setup build time environment variables
           PYTHONUSERBASE="${HOME}/python_packages"
           CC="${{ matrix.cc }}"
+          CXX=`[ $CC = gcc ] && echo g++ || echo clang++`
           SYSLOG_NG_INSTALL_DIR=${HOME}/install/syslog-ng
           CONFIGURE_FLAGS="
             --prefix=${SYSLOG_NG_INSTALL_DIR}
@@ -56,7 +57,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=${HOME}/install/syslog-ng
             -DPYTHON_VERSION=3
           "
-          gh_export COREFILES_DIR PYTHONUSERBASE CC SYSLOG_NG_INSTALL_DIR CONFIGURE_FLAGS CMAKE_FLAGS
+          gh_export COREFILES_DIR PYTHONUSERBASE CC CXX SYSLOG_NG_INSTALL_DIR CONFIGURE_FLAGS CMAKE_FLAGS
           gh_path "${PYTHONUSERBASE}"
 
       - name: autogen.sh

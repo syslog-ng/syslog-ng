@@ -61,7 +61,7 @@ static void
 _assert_dummy_resource_and_scope(const Resource &resource, const std::string &resource_schema_url,
                                  const InstrumentationScope &scope, const std::string &scope_schema_url)
 {
-  cr_assert_eq(resource.attributes_size(), 1, "%d");
+  cr_assert_eq(resource.attributes_size(), 1);
   cr_assert_str_eq(resource.attributes(0).key().c_str(), "attr_0");
   cr_assert_str_eq(resource.attributes(0).value().string_value().c_str(), "val_0");
   cr_assert_eq(resource.dropped_attributes_count(), 1);
@@ -530,8 +530,8 @@ _metric_histogram_tc_asserts(const Metric &metric)
   cr_assert_eq(data_point_0.bucket_counts().at(0), 22);
   cr_assert_eq(data_point_0.bucket_counts().at(1), 33);
   cr_assert_eq(data_point_0.explicit_bounds_size(), 2);
-  cr_assert_eq(data_point_0.explicit_bounds().at(0), 44.44);
-  cr_assert_eq(data_point_0.explicit_bounds().at(1), 55.55);
+  cr_assert_float_eq(data_point_0.explicit_bounds().at(0), 44.44, std::numeric_limits<double>::epsilon());
+  cr_assert_float_eq(data_point_0.explicit_bounds().at(1), 55.55, std::numeric_limits<double>::epsilon());
   cr_assert_eq(data_point_0.exemplars_size(), 1);
   cr_assert_eq(data_point_0.exemplars().at(0).filtered_attributes_size(), 1);
   cr_assert_str_eq(data_point_0.exemplars().at(0).filtered_attributes().at(0).key().c_str(), "a_0");

@@ -23,10 +23,7 @@
 #ifndef GOOGLE_AUTH_HPP
 #define GOOGLE_AUTH_HPP
 
-#include "compat/cpp-start.h"
 #include "google-auth.h"
-#include "compat/cpp-end.h"
-
 #include "cloud-auth.hpp"
 
 #include <mutex>

@@ -26,7 +26,6 @@
 #include "loki-dest.h"
 
 #include "compat/cpp-start.h"
-#include "syslog-ng.h"
 #include "template/templates.h"
 #include "stats/stats-cluster-key-builder.h"
 #include "logmsg/logmsg.h"

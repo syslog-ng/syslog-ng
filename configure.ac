@@ -481,14 +481,6 @@ dnl C++
 # Ok, here is the deal
 # clang cannot compile the current source, it has nultiple issues
 # replace it till not fixed them
-if test "x$CXX" = "xclang"; then
-        AC_MSG_ERROR(["clang cannot compile syslog-ng C++ sources, try using gcc instead (export CXX=gcc) for C++ compilation (NOTE: on macOS you need Homebrew gcc not the Apple one)"])
-elif test "x$CC" = "xclang"; then
-        CPP_COMPILER="gcc"
-        AC_MSG_WARN(["clang cannot compile syslog-ng C++ sources, switched to $CPP_COMPILER for C++ compilation (NOTE: on macOS you need Homebrew gcc not the Apple one)"])
-else
-        CPP_COMPILER="$CXX $CC"
-fi
 # This one is useful for checking the available compilers
 # AC_MSG_RESULT(gcc = $(which gcc) - g++ = $(which g++) - clang = $(which clang))
 # AC_MSG_RESULT(Paths: gcc = $(ls -Al $(which gcc)) - g++ = $(ls -Al $(which g++)) - clang = $(ls -Al $(which clang)))
@@ -630,9 +622,10 @@ dnl We are checking for the postive warning flag, as gcc handles the
 dnl -Wno-XXX version oddly, so if no other warnings are present, it is not
 dnl reported at all, causing it to be unusable for detection purposes.
 
-AX_CFLAGS_GCC_OPTION(-Winitializer-overrides,
-		     CFLAGS_INITIALIZER_OVERRIDES,
-		     CFLAGS_ADD="${CFLAGS_ADD} -Wno-initializer-overrides")
+AX_CFLAGS_GCC_OPTION(-Winitializer-overrides, CFLAGS_W_INITIALIZER_OVERRIDES, CFLAGS_W_NO_INITIALIZER_OVERRIDES="-Wno-initializer-overrides")
+AX_CFLAGS_GCC_OPTION(-Wold-style-declaration, CFLAGS_W_OLD_STYLE_DECLARATION)
+AC_SUBST(CFLAGS_W_NO_INITIALIZER_OVERRIDES)
+AC_SUBST(CFLAGS_W_OLD_STYLE_DECLARATION)
 
 dnl User supplied CFLAGS come last
 CFLAGS="${CFLAGS_ADD} ${ac_cv_env_CFLAGS_value}"
@@ -1033,8 +1026,6 @@ if test "$linking_mode" != "dynamic"; then
 	LIBS=$old_LIBS
 fi
 
-GLIB_CFLAGS="${GLIB_CFLAGS} -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_32"
-
 old_CPPFLAGS=$CPPFLAGS
 CPPFLAGS="$GLIB_CFLAGS"
 old_LDFLAGS=$LDFLAGS
@@ -1044,8 +1035,23 @@ old_LIBS=$LIBS
 LIBS="$LIBS $GLIB_LIBS"
 AC_CHECK_FUNCS(g_list_copy_deep \
   g_ptr_array_find_with_equal_func \
+  g_memdup2 \
   g_canonicalize_filename)
 LIBS=$old_LIBS
+
+if test "x$ac_cv_func_g_memdup2" = "xyes"; then
+    dnl only set MIN_REQUIRED to 2.68 if we know that we are at least on that version.
+    dnl On CentOS7/SLES12 we don't have recent enough glib but with compat
+    dnl wrappers we can compile. Bad news is that if we don't set to 2.68 at least,
+    dnl we can't compile on new platforms with clang.
+
+    dnl Best of both worlds: we set to 2.68 if we have that version, so we
+    dnl get clang to compile our code, otherwise we set it to 2.32.
+
+    GLIB_CFLAGS="${GLIB_CFLAGS} -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_68"
+else
+    GLIB_CFLAGS="${GLIB_CFLAGS} -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_32"
+fi
 
 AC_CACHE_CHECK(sanity checking Glib headers,
                blb_cv_glib_sane,

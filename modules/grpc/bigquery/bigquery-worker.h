@@ -23,9 +23,9 @@
 #ifndef BIGQUERY_WORKER_H
 #define BIGQUERY_WORKER_H
 
-#include "compat/cpp-start.h"
-
 #include "syslog-ng.h"
+
+#include "compat/cpp-start.h"
 #include "logthrdest/logthrdestdrv.h"
 
 typedef struct _BigQueryDestWorker BigQueryDestWorker;

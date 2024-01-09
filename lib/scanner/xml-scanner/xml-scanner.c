@@ -34,7 +34,7 @@
   the same matchstring must be matched against different patterns,
   because memory is allocated each time and string is copied as
   reversed, though it would be enough to execute this reverse once. For
-  that reason one can use g_pattern_match(), which accepts both the
+  that reason one can use g_pattern_spec_match(), which accepts both the
   matchstring and a reversed matchstring as parameters.
 
   Though there are cases when no reverse is needed at all. This is
@@ -150,8 +150,8 @@ tag_matches_patterns(const GPtrArray *patterns, const gint tag_length,
                      const gchar *element_name, const gchar *reversed_name)
 {
   for (int i = 0; i < patterns->len; i++)
-    if (g_pattern_match((GPatternSpec *)g_ptr_array_index(patterns, i),
-                        tag_length, element_name, reversed_name))
+    if (g_pattern_spec_match((GPatternSpec *)g_ptr_array_index(patterns, i),
+                             tag_length, element_name, reversed_name))
       {
         return TRUE;
       }

@@ -136,7 +136,7 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
 static void
 _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
 {
-  if (g_pattern_match_string(self->compiled_pattern, event->name))
+  if (g_pattern_spec_match_string(self->compiled_pattern, event->name))
     {
       WildcardFileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
 

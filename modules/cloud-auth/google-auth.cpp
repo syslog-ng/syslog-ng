@@ -22,13 +22,13 @@
 
 #include "google-auth.hpp"
 
-#include <exception>
-#include <fstream>
-#include <cmath>
-
 #include "compat/cpp-start.h"
 #include "scratch-buffers.h"
 #include "compat/cpp-end.h"
+
+#include <exception>
+#include <fstream>
+#include <cmath>
 
 using namespace syslogng::cloud_auth::google;
 

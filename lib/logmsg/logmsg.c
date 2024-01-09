@@ -970,7 +970,7 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
             evt_tag_printf("msg", "%p", self));
   if (!log_msg_chk_flag(self, LF_STATE_OWN_TAGS) && self->num_tags)
     {
-      self->tags = g_memdup(self->tags, sizeof(self->tags[0]) * self->num_tags);
+      self->tags = g_memdup2(self->tags, sizeof(self->tags[0]) * self->num_tags);
     }
   log_msg_set_flag(self, LF_STATE_OWN_TAGS);
 

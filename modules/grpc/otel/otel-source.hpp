@@ -23,15 +23,16 @@
 #ifndef OTEL_SOURCE_HPP
 #define OTEL_SOURCE_HPP
 
-#include <grpcpp/server.h>
+#include "otel-source.h"
 
 #include "compat/cpp-start.h"
 #include "logthrsource/logthrsourcedrv.h"
 #include "compat/cpp-end.h"
 
-#include "otel-source.h"
 #include "otel-servicecall.hpp"
 #include "credentials/grpc-credentials-builder.hpp"
+
+#include <grpcpp/server.h>
 
 namespace syslogng {
 namespace grpc {

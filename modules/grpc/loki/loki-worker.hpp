@@ -27,7 +27,6 @@
 #include "loki-dest.hpp"
 
 #include "compat/cpp-start.h"
-#include "syslog-ng.h"
 #include "messages.h"
 #include "compat/cpp-end.h"
 

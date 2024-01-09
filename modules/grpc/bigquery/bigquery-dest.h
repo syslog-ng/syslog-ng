@@ -23,9 +23,9 @@
 #ifndef BIGQUERY_DEST_H
 #define BIGQUERY_DEST_H
 
-#include "compat/cpp-start.h"
-
 #include "syslog-ng.h"
+
+#include "compat/cpp-start.h"
 #include "driver.h"
 #include "template/templates.h"
 

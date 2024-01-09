@@ -59,6 +59,8 @@
 %code {
 
 #pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+
 #if (defined(__GNUC__) && __GNUC__ >= 6) || (defined(__clang__) && __clang_major__ >= 10)
 #  pragma GCC diagnostic ignored "-Wmisleading-indentation"
 #endif

@@ -23,9 +23,7 @@
 #ifndef CLOUD_AUTH_HPP
 #define CLOUD_AUTH_HPP
 
-#include "compat/cpp-start.h"
 #include "cloud-auth.h"
-#include "compat/cpp-end.h"
 
 namespace syslogng {
 namespace cloud_auth {

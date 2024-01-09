@@ -23,6 +23,8 @@
 #ifndef OTEL_DEST_H
 #define OTEL_DEST_H
 
+#include "syslog-ng.h"
+
 #include "compat/cpp-start.h"
 
 #include "driver.h"
