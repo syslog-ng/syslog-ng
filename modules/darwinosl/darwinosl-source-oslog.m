@@ -81,7 +81,7 @@ static NSString *customBugFixDateFormat = @"yyyy-MM-dd'T'HH:mm:ss'.%06.0f'ZZZZZ"
 
   if (self.logStore == nil)
     msg_error("darwinosl: Error getting handle to OSLog store",
-              evt_tag_long("error code", error.code),
+              evt_tag_long("error_code", error.code),
               evt_tag_str("error", error.localizedDescription.UTF8String));
 
   return self.logStore;
@@ -107,7 +107,7 @@ static NSString *customBugFixDateFormat = @"yyyy-MM-dd'T'HH:mm:ss'.%06.0f'ZZZZZ"
                                        error:&error];
       if (self.enumerator == nil)
         msg_error("darwinosl: Could not get OSLog enumerator",
-                  evt_tag_long("error code", error.code),
+                  evt_tag_long("error_code", error.code),
                   evt_tag_str("error", error.localizedDescription.UTF8String));
 
     }

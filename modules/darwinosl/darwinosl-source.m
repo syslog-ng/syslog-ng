@@ -253,7 +253,7 @@ _fetch(DarwinOSLogSourceDriver *self)
   if (nextLogEntry == nil)
     {
       msg_trace(nextLogEntry ? "darwinosl: Fetch limit reached" : "darwinosl: No more log data currently");
-      msg_debug("darwinosl: Fetched logs in this run", evt_tag_long("fetch count", (long) self->curr_fetch_in_run));
+      msg_debug("darwinosl: Fetched logs in this run", evt_tag_long("fetch_count", (long) self->curr_fetch_in_run));
       LogThreadedFetchResult result = {THREADED_FETCH_NO_DATA, NULL};
       return result;
     }
