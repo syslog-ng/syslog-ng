@@ -43,10 +43,10 @@ jobs:
           CFLAGS="-I${HOMEBREW_PREFIX}/include/"
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib"
           CC="${{ matrix.cc }}"
+          CXX=`[ $CC = gcc ] && echo g++ || echo clang++`
           THREADS="$(sysctl -n hw.physicalcpu)"
           CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
-            `[ $CC = gcc ] && echo '--enable-cpp' || true`
             --prefix=${SYSLOG_NG_INSTALL_DIR}
             --enable-all-modules
             --enable-tests
@@ -61,7 +61,6 @@ jobs:
             --disable-pacct
           "
           CMAKE_CONFIGURE_FLAGS="
-            `[ $CC = gcc ] && echo '-DENABLE_CPP=ON' || true`
             -DCMAKE_BUILD_TYPE=Debug
             -DSUMMARY_VERBOSE=ON
             -DBUILD_TESTING=ON
@@ -76,7 +75,7 @@ jobs:
             -DENABLE_PACCT=OFF
           "
 
-          gh_export HOMEBREW_PREFIX PYTHONUSERBASE CC PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS
+          gh_export HOMEBREW_PREFIX PYTHONUSERBASE CC CXX PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS
           gh_path "${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${PYTHONUSERBASE}/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${PATH}"
 
           ln -s "${HOMEBREW_PREFIX}/bin/gcc-11" "${HOMEBREW_PREFIX}/bin/gcc"
