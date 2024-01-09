@@ -316,7 +316,7 @@ AC_ARG_WITH(libpaho-mqtt,
                             [use libpaho-mqtt library from (prefix) directory DIR]),,)
 
 AC_ARG_ENABLE(grpc,
-              [  --enable-grpc           Enable GRPC based driver support (OpenTelemetry) (default: auto)]
+              [  --enable-grpc           Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery) (default: auto)]
               ,,enable_grpc="auto")
 
 AC_ARG_WITH(protoc,
@@ -461,7 +461,7 @@ dnl Checks for programs.
 #       -------------------------------
 #       |    gcc   |  x  |  x  |  -   |
 #       -------------------------------
-#       |   clang  |  x  |  -  |  x   |
+#       |   clang  |  x  |  x  |  x   |
 #       -------------------------------
 #       |    g++   | n/a |  x  | n/a  | (NOTE: g++ fails on C99 compilant test bellow)
 #       -------------------------------
@@ -496,9 +496,6 @@ AM_CONDITIONAL([HAVE_PYTHON_INTERPRETER], [test "$PYTHON" != :])
 dnl ***************************************************************************
 dnl C++
 
-# Ok, here is the deal
-# clang cannot compile the current source, it has nultiple issues
-# replace it till not fixed them
 # This one is useful for checking the available compilers
 # AC_MSG_RESULT(gcc = $(which gcc) - g++ = $(which g++) - clang = $(which clang))
 # AC_MSG_RESULT(Paths: gcc = $(ls -Al $(which gcc)) - g++ = $(ls -Al $(which g++)) - clang = $(ls -Al $(which clang)))
