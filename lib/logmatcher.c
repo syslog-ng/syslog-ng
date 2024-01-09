@@ -384,6 +384,7 @@ typedef struct _LogMatcherPcreMatchResult
   const gchar *source_value;
   gssize source_value_len;
   pcre2_match_data *match_data;
+  gboolean source_handles_value_changed;
 } LogMatcherPcreMatchResult;
 
 static inline void
@@ -404,7 +405,8 @@ log_matcher_pcre_re_feed_value(LogMatcherPcreRe *self, LogMessage *msg,
 {
   gboolean indirect = result->source_handle != LM_V_NONE &&
                       log_msg_is_handle_settable_with_an_indirect_value(target_handle) &&
-                      log_msg_is_handle_referencable_from_an_indirect_value(result->source_handle);
+                      log_msg_is_handle_referencable_from_an_indirect_value(result->source_handle) &&
+                      !result->source_handles_value_changed;
 
   if (target_handle == result->source_handle)
     {
@@ -416,6 +418,8 @@ log_matcher_pcre_re_feed_value(LogMatcherPcreRe *self, LogMessage *msg,
        * make it less appearent, this is not always the case: it does not
        * happen if the new value does not fit the old NVEntry).  */
       log_matcher_pcre_re_save_source_value_to_avoid_clobbering(result);
+      result->source_handles_value_changed = TRUE;
+      indirect = FALSE;
     }
 
   if (indirect)
@@ -509,6 +513,7 @@ log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, con
   result.source_value = value;
   result.source_value_len = value_len;
   result.source_handle = value_handle;
+  result.source_handles_value_changed = FALSE;
 
   rc = pcre2_match(self->pattern,
                    (PCRE2_SPTR) result.source_value,
