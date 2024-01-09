@@ -354,9 +354,9 @@ _jit_pcre2_regexp(LogMatcherPcreRe *self, const gchar *re, GError **error)
       PCRE2_UCHAR error_message[128];
 
       pcre2_get_error_message(rc, error_message, sizeof(error_message));
-      msg_warning("Failed to JIT compile regular expression, you might want to use flags(disable-jit)",
-                  evt_tag_str("regexp", re),
-                  evt_tag_str("error", (gchar *) error_message));
+      msg_debug("Failed to JIT compile regular expression, you might want to use flags(disable-jit) to stop trying",
+                evt_tag_str("regexp", re),
+                evt_tag_str("error", (gchar *) error_message));
     }
   return TRUE;
 }
