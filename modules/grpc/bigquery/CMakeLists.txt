@@ -1,10 +1,4 @@
-module_switch(ENABLE_BIGQUERY "Enable bigquery")
-
 if(NOT ENABLE_GRPC)
-  return()
-endif()
-
-if (NOT ENABLE_BIGQUERY)
   return()
 endif()
 
