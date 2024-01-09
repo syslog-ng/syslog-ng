@@ -291,7 +291,7 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
   AFFileDestWriter *self = (AFFileDestWriter *) s;
 
   g_mutex_lock(&self->lock);
-  self->last_msg_stamp = cached_g_current_time_sec();
+  self->last_msg_stamp = get_cached_realtime_sec();
   if (self->last_open_stamp == 0)
     self->last_open_stamp = self->last_msg_stamp;
 

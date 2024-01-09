@@ -58,15 +58,16 @@ _threaded_feed(gpointer args)
   gint i;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg, *tmpl;
-  GTimeVal start, end;
+  struct timespec start, end;
   glong diff;
 
+  iv_init();
   /* emulate main loop for LogQueue */
   main_loop_worker_thread_start(MLW_ASYNC_WORKER);
 
   tmpl = log_msg_new_empty();
 
-  g_get_current_time(&start);
+  clock_gettime(CLOCK_MONOTONIC, &start);
   for (i = 0; i < MESSAGES_PER_FEEDER; i++)
     {
       msg = log_msg_clone_cow(tmpl, &path_options);
@@ -79,13 +80,14 @@ _threaded_feed(gpointer args)
         main_loop_worker_invoke_batch_callbacks();
     }
   main_loop_worker_invoke_batch_callbacks();
-  g_get_current_time(&end);
-  diff = g_time_val_diff(&end, &start);
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  diff = timespec_diff_usec(&end, &start);
   g_mutex_lock(&tlock);
   sum_time += diff;
   g_mutex_unlock(&tlock);
   log_msg_unref(tmpl);
   main_loop_worker_thread_stop();
+  iv_deinit();
   return NULL;
 }
 
@@ -97,6 +99,7 @@ _threaded_consume(gpointer st)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   gint msg_count = 0;
 
+  iv_init();
   /* just to make sure time is properly cached */
   while (msg_count < MESSAGES_SUM)
     {
@@ -125,12 +128,14 @@ _threaded_consume(gpointer st)
       msg_count++;
     }
 
+  iv_deinit();
   return NULL;
 }
 
 static gpointer
 _output_thread(gpointer args)
 {
+  iv_init();
   main_loop_worker_thread_start(MLW_THREADED_OUTPUT_WORKER);
   struct timespec ns;
 
@@ -139,6 +144,7 @@ _output_thread(gpointer args)
   ns.tv_nsec = 1000000;
   nanosleep(&ns, NULL);
   main_loop_worker_thread_stop();
+  iv_deinit();
   return NULL;
 }
 
@@ -327,6 +333,8 @@ _flow_control_feed_thread(gpointer args)
   LogPathOptions non_flow_controlled_path = LOG_PATH_OPTIONS_INIT;
   non_flow_controlled_path.flow_control_requested = FALSE;
 
+  iv_init();
+
   main_loop_worker_thread_start(MLW_ASYNC_WORKER);
 
   fed_messages = 0;
@@ -341,6 +349,7 @@ _flow_control_feed_thread(gpointer args)
 
   main_loop_worker_invoke_batch_callbacks();
   main_loop_worker_thread_stop();
+  iv_deinit();
   return NULL;
 }
 

@@ -36,7 +36,7 @@ typedef struct _CorrelationState
   GHashTable *state;
   TimerWheel *timer_wheel;
   TWCallbackFunc expire_callback;
-  GTimeVal last_tick;
+  struct timespec last_tick;
 } CorrelationState;
 
 void correlation_state_tx_begin(CorrelationState *self);

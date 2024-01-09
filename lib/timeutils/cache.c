@@ -39,7 +39,9 @@ typedef struct _TimeCache
 
 TLS_BLOCK_START
 {
-  GTimeVal current_time_value;
+  /* we have a cached realtime value here, that is distinct from iv_now, as
+   * iv_now is tracking a monotonic time */
+  struct timespec current_realtime;
   struct iv_task invalidate_time_task;
   gint local_gencounter;
   struct
@@ -74,7 +76,7 @@ TLS_BLOCK_END;
 /* this indicates that a test program is faking the current time */
 static gboolean faking_time;
 
-#define current_time_value   __tls_deref(current_time_value)
+#define current_realtime     __tls_deref(current_realtime)
 #define invalidate_time_task __tls_deref(invalidate_time_task)
 #define local_gencounter     __tls_deref(local_gencounter)
 #define cache                __tls_deref(cache)
@@ -101,6 +103,44 @@ static struct
 
 
 static GMutex localtime_lock;
+
+/**
+ * get_local_timezone_ofs:
+ * @when: time in UTC
+ *
+ * Return the zone offset (measured in seconds) of @when expressed in local
+ * time. The function also takes care about daylight saving.
+ **/
+long
+get_local_timezone_ofs(time_t when)
+{
+#ifdef SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF
+  struct tm ltm;
+
+  cached_localtime(&when, &ltm);
+  return ltm.tm_gmtoff;
+
+#else
+
+  struct tm gtm;
+  struct tm ltm;
+  long tzoff;
+
+  cached_localtime(&when, &ltm);
+  cached_gmtime(&when, &gtm);
+
+  tzoff = (ltm.tm_hour - gtm.tm_hour) * 3600;
+  tzoff += (ltm.tm_min - gtm.tm_min) * 60;
+  tzoff += ltm.tm_sec - gtm.tm_sec;
+
+  if (tzoff > 0 && (ltm.tm_year < gtm.tm_year || ltm.tm_mon < gtm.tm_mon || ltm.tm_mday < gtm.tm_mday))
+    tzoff -= 86400;
+  else if (tzoff < 0 && (ltm.tm_year > gtm.tm_year || ltm.tm_mon > gtm.tm_mon || ltm.tm_mday > gtm.tm_mday))
+    tzoff += 86400;
+
+  return tzoff;
+#endif /* SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF */
+}
 
 static glong
 _get_system_tzofs(void)
@@ -206,31 +246,30 @@ invalidate_timeutils_cache(void)
 }
 
 void
-invalidate_cached_time(void)
+invalidate_cached_realtime(void)
 {
-  current_time_value.tv_sec = 0;
+  current_realtime.tv_sec = 0;
 }
 
 void
-set_cached_time(GTimeVal *timeval)
+set_cached_realtime(struct timespec *ts)
 {
-  current_time_value = *timeval;
+  current_realtime = *ts;
   faking_time = TRUE;
 }
 
-/*
- * this shuld replace the g_get_current_time and the g_source_get_current_time calls in the main thread
- * (log_msg_init, afinter_postpone_mark)
- */
-void
-cached_g_current_time(GTimeVal *result)
+static void
+_validate_current_time(void)
 {
-  if (current_time_value.tv_sec == 0)
+  if (current_realtime.tv_sec == 0)
     {
-      g_get_current_time(&current_time_value);
+      clock_gettime(CLOCK_REALTIME, &current_realtime);
     }
-  *result = current_time_value;
+}
 
+static void
+_invalidate_current_time(void)
+{
   if (G_UNLIKELY(faking_time))
     return;
   else if (iv_inited())
@@ -238,24 +277,32 @@ cached_g_current_time(GTimeVal *result)
       if (invalidate_time_task.handler == NULL)
         {
           IV_TASK_INIT(&invalidate_time_task);
-          invalidate_time_task.handler = (void (*)(void *)) invalidate_cached_time;
+          invalidate_time_task.handler = (void (*)(void *)) invalidate_cached_realtime;
         }
       if (!iv_task_registered(&invalidate_time_task))
         iv_task_register(&invalidate_time_task);
     }
   else
     {
-      invalidate_cached_time();
+      invalidate_cached_realtime();
     }
 }
 
-time_t
-cached_g_current_time_sec(void)
+void
+get_cached_realtime(struct timespec *ts)
 {
-  GTimeVal now;
+  _validate_current_time();
+  *ts = current_realtime;
+  _invalidate_current_time();
+}
 
-  cached_g_current_time(&now);
-  return now.tv_sec;
+time_t
+get_cached_realtime_sec(void)
+{
+  struct timespec now;
+
+  get_cached_realtime(&now);
+  return (time_t) now.tv_sec;
 }
 
 time_t

@@ -63,6 +63,7 @@ _thread(gpointer user_data)
 {
   ControlCommandThread *self = (ControlCommandThread *) user_data;
 
+  iv_init();
   scratch_buffers_allocator_init();
 
   msg_debug("Control command thread has started",
@@ -83,6 +84,7 @@ _thread(gpointer user_data)
   scratch_buffers_explicit_gc();
   scratch_buffers_allocator_deinit();
   control_command_thread_unref(self);
+  iv_deinit();
 }
 
 const gchar *

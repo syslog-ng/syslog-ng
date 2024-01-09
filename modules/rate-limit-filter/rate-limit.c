@@ -24,6 +24,7 @@
 #include "timeutils/misc.h"
 #include "scratch-buffers.h"
 #include "str-utils.h"
+#include <iv.h>
 
 typedef struct _RateLimit
 {
@@ -38,7 +39,7 @@ typedef struct _RateLimiter
 {
   gint tokens;
   gint rate;
-  GTimeVal last_check;
+  struct timespec last_check;
   GMutex lock;
 } RateLimiter;
 
@@ -47,9 +48,8 @@ rate_limiter_new(gint rate)
 {
   RateLimiter *self = g_new0(RateLimiter, 1);
 
-  GTimeVal now;
-  g_get_current_time(&now);
-  self->last_check = now;
+  iv_validate_now();
+  self->last_check = iv_now;
   g_mutex_init(&self->lock);
   self->rate = rate;
   self->tokens = rate;
@@ -69,11 +69,13 @@ rate_limiter_add_new_tokens(RateLimiter *self)
 {
   glong usec_since_last_fill;
   gint num_new_tokens;
-  GTimeVal now;
-  g_get_current_time(&now);
+  struct timespec now;
+
+  iv_validate_now();
+  now = iv_now;
   g_mutex_lock(&self->lock);
   {
-    usec_since_last_fill = g_time_val_diff(&now, &self->last_check);
+    usec_since_last_fill = timespec_diff_usec(&now, &self->last_check);
 
     num_new_tokens = (usec_since_last_fill * self->rate) / G_USEC_PER_SEC;
     if (num_new_tokens)

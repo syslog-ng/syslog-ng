@@ -23,7 +23,6 @@
 
 #include <criterion/criterion.h>
 
-#include "syslog-ng.h"
 #include "stats/stats.h"
 #include "stats/stats-cluster.h"
 #include "stats/stats-cluster-single.h"
@@ -32,6 +31,7 @@
 #include "timeutils/unixtime.h"
 #include "scratch-buffers.h"
 #include "mainloop.h"
+#include "apphook.h"
 #include "libtest/fake-time.h"
 
 #include <float.h>
@@ -40,20 +40,14 @@
 static void
 setup(void)
 {
-  main_loop_thread_resource_init();
-  stats_init();
-  scratch_buffers_global_init();
-  scratch_buffers_allocator_init();
+  app_startup();
 }
 
 static void
 teardown(void)
 {
   scratch_buffers_explicit_gc();
-  scratch_buffers_allocator_deinit();
-  scratch_buffers_global_deinit();
-  stats_destroy();
-  main_loop_thread_resource_deinit();
+  app_shutdown();
 }
 
 TestSuite(stats_prometheus, .init = setup, .fini = teardown);

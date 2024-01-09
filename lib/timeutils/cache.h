@@ -34,6 +34,9 @@ glong cached_get_system_tzofs(void);
 /* the thread safe variant of the global "tzname" */
 const gchar *const *cached_get_system_tznames(void);
 
+/* the timezone offset at the specified UTC time */
+long get_local_timezone_ofs(time_t when);
+
 time_t cached_mktime(struct tm *tm);
 void cached_localtime(time_t *when, struct tm *tm);
 void cached_gmtime(time_t *when, struct tm *tm);
@@ -58,10 +61,11 @@ cached_gmtime_wct(time_t *when, WallClockTime *wct)
   cached_gmtime(when, &wct->tm);
 }
 
-void invalidate_cached_time(void);
-void set_cached_time(GTimeVal *timeval);
-void cached_g_current_time(GTimeVal *result);
-time_t cached_g_current_time_sec(void);
+void invalidate_cached_realtime(void);
+void set_cached_realtime(struct timespec *ts);
+void get_cached_realtime(struct timespec *ts);
+time_t get_cached_realtime_sec(void);
+
 TimeZoneInfo *cached_get_time_zone_info(const gchar *tz);
 
 void invalidate_timeutils_cache(void);

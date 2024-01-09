@@ -254,7 +254,8 @@ _aggregate(StatsAggregator *s)
 {
   StatsAggregatorCPS *self = (StatsAggregatorCPS *)s;
 
-  time_t now = cached_g_current_time_sec();
+  iv_validate_now();
+  time_t now = iv_now.tv_sec;
   _aggregate_CPS_logic(self, &self->hour, &now);
   _aggregate_CPS_logic(self, &self->day, &now);
   _aggregate_CPS_logic(self, &self->start, &now);
@@ -263,7 +264,8 @@ _aggregate(StatsAggregator *s)
 static void
 _reset_time(StatsAggregatorCPS *self)
 {
-  self->init_time = cached_g_current_time_sec();
+  iv_validate_now();
+  self->init_time = iv_now.tv_sec;
   self->last_add_time = 0;
 }
 

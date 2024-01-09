@@ -30,6 +30,8 @@
 #include "timeutils/cache.h"
 #include "timeutils/format.h"
 
+#include "apphook.h"
+
 
 static void
 _wct_initialize(WallClockTime *wct, const gchar *timestamp)
@@ -574,11 +576,13 @@ setup(void)
 {
   setenv("TZ", "CET", TRUE);
   tzset();
+  app_startup();
 }
 
 static void
 teardown(void)
 {
+  app_shutdown();
 }
 
 TestSuite(unixtime, .init = setup, .fini = teardown);

@@ -32,7 +32,7 @@
 #include "ack-tracker/ack_tracker.h"
 #include "parse-number.h"
 #include "journal-reader.h"
-#include "timeutils/misc.h"
+#include "timeutils/cache.h"
 #include "ack-tracker/ack_tracker_factory.h"
 #include "string-list.h"
 

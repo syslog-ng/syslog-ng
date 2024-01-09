@@ -24,6 +24,7 @@
 
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
+#include "libtest/fake-time.h"
 
 #include "date-parser.h"
 #include "apphook.h"
@@ -81,12 +82,7 @@ setup(void)
   /* year heuristics depends on the current time */
 
   /* Dec  30 2015 */
-  GTimeVal faked_time =
-  {
-    .tv_sec = 1451473200,
-    .tv_usec = 0
-  };
-  set_cached_time(&faked_time);
+  fake_time(1451473200);
 }
 
 void

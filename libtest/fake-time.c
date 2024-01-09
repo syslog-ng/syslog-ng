@@ -23,21 +23,22 @@
  */
 #include "fake-time.h"
 #include "timeutils/cache.h"
+#include <iv.h>
 
 void
 fake_time(time_t now)
 {
-  GTimeVal tv = { now, 123 * 1000 };
-
-  set_cached_time(&tv);
+  struct timespec ts = { now, 123LL * 1000000LL };
+  set_cached_realtime(&ts);
 }
 
 void
 fake_time_add(time_t diff)
 {
-  GTimeVal tv;
+  fake_time(get_cached_realtime_sec() + diff);
 
-  cached_g_current_time(&tv);
-  tv.tv_sec += diff;
-  set_cached_time(&tv);
+  /* HACK to bump iv_now */
+  struct timespec *writable_iv_now = (struct timespec *) &iv_now;
+  iv_validate_now();
+  writable_iv_now->tv_sec += diff;
 }

@@ -790,15 +790,15 @@ _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *l
 {
   const guchar *src = *data;
   gint left = *length;
-  GTimeVal now;
+  time_t now;
 
   _syslog_format_parse_cisco_sequence_id(msg, &src, &left);
   _skip_chars(&src, &left, " ", -1);
   _syslog_format_parse_cisco_timestamp_attributes(msg, &src, &left, parse_options->flags);
 
-  cached_g_current_time(&now);
+  now = get_cached_realtime_sec();
   if (_syslog_format_parse_date(msg, &src, &left, parse_options->flags & ~LP_SYSLOG_PROTOCOL,
-                                time_zone_info_get_offset(parse_options->recv_time_zone_info, (time_t)now.tv_sec)))
+                                time_zone_info_get_offset(parse_options->recv_time_zone_info, now)))
     {
       /* Expected format: hostname program[pid]: */
       /* Possibly: Message forwarded from hostname: ... */

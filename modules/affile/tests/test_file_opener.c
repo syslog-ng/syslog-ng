@@ -26,6 +26,7 @@
 #include "named-pipe.h"
 #include "file-specializations.h"
 #include "messages.h"
+#include "apphook.h"
 
 #include <fcntl.h>
 #include <stdlib.h>
@@ -159,6 +160,7 @@ Test(file_opener, test_file_flags)
 static void
 setup(void)
 {
+  app_startup();
   msg_init(FALSE);
   configuration = cfg_new_snippet();
 }
@@ -166,6 +168,7 @@ setup(void)
 void
 teardown(void)
 {
+  app_shutdown();
 }
 
 TestSuite(file_opener, .init = setup, .fini = teardown);

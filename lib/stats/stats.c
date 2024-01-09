@@ -109,7 +109,7 @@ stats_cluster_is_expired(StatsOptions *options, StatsCluster *sc, time_t now)
 
 typedef struct _StatsTimerState
 {
-  GTimeVal now;
+  struct timespec now;
   time_t oldest_counter;
   gint dropped_counters;
   EVTREC *stats_event;
@@ -148,11 +148,13 @@ stats_publish_and_prune_counters(StatsOptions *options)
   StatsTimerState st;
   gboolean publish = (options->log_freq > 0);
 
+  iv_validate_now();
+
   st.oldest_counter = 0;
   st.dropped_counters = 0;
   st.stats_event = NULL;
   st.options = options;
-  cached_g_current_time(&st.now);
+  st.now = iv_now;
 
   if (publish)
     st.stats_event = msg_event_create(EVT_PRI_INFO, "Log statistics", NULL);

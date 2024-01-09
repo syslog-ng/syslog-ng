@@ -127,17 +127,17 @@ msg_limit_internal_message(const gchar *msg)
 static gchar *
 msg_format_timestamp(gchar *buf, gsize buflen)
 {
-  struct tm tm;
-  GTimeVal now;
+  UnixTime now;
+  WallClockTime wct_now;
   gint len;
   time_t now_sec;
 
-  g_get_current_time(&now);
-  now_sec = now.tv_sec;
-  cached_localtime(&now_sec, &tm);
-  len = strftime(buf, buflen, "%Y-%m-%dT%H:%M:%S", &tm);
+  unix_time_set_now(&now);
+  now_sec = now.ut_sec;
+  cached_localtime_wct(&now_sec, &wct_now);
+  len = strftime(buf, buflen, "%Y-%m-%dT%H:%M:%S", &wct_now.tm);
   if (len < buflen)
-    g_snprintf(buf + len, buflen - len, ".%06ld", now.tv_usec);
+    g_snprintf(buf + len, buflen - len, ".%06u", now.ut_usec);
   return buf;
 }
 

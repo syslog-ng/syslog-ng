@@ -39,6 +39,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <iv.h>
+
 GCond thread_ping;
 GMutex thread_lock;
 gboolean thread_start;
@@ -53,6 +55,7 @@ format_template_thread(gpointer s)
   GString *result;
   gint i;
 
+  iv_init();
   scratch_buffers_allocator_init();
 
 
@@ -71,6 +74,7 @@ format_template_thread(gpointer s)
     }
   g_string_free(result, TRUE);
   scratch_buffers_allocator_deinit();
+  iv_deinit();
   return NULL;
 }
 

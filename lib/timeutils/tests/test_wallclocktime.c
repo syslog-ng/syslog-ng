@@ -27,6 +27,7 @@
 #include "timeutils/wallclocktime.h"
 #include "timeutils/cache.h"
 #include "timeutils/conv.h"
+#include "apphook.h"
 
 /* timeutils cache mock */
 
@@ -429,11 +430,13 @@ setup(void)
 {
   setenv("TZ", "CET", TRUE);
   invalidate_timeutils_cache();
+  app_startup();
 }
 
 static void
 teardown(void)
 {
+  app_shutdown();
 }
 
 TestSuite(wallclocktime, .init = setup, .fini = teardown);

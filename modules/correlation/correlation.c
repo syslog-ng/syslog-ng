@@ -95,14 +95,14 @@ correlation_state_advance_time(CorrelationState *self, gint timeout, gpointer ca
 void
 correlation_state_set_time(CorrelationState *self, guint64 sec, gpointer caller_context)
 {
-  GTimeVal now;
+  struct timespec now;
 
   /* clamp the current time between the timestamp of the current message
    * (low limit) and the current system time (high limit).  This ensures
    * that incorrect clocks do not skew the current time know by the
    * correlation engine too much. */
 
-  cached_g_current_time(&now);
+  get_cached_realtime(&now);
   self->last_tick = now;
 
   if (sec < now.tv_sec)
@@ -122,13 +122,13 @@ correlation_state_get_time(CorrelationState *self)
 gboolean
 correlation_state_timer_tick(CorrelationState *self, gpointer caller_context)
 {
-  GTimeVal now;
+  struct timespec now;
   glong diff;
   gboolean updated = FALSE;
 
   g_mutex_lock(&self->lock);
-  cached_g_current_time(&now);
-  diff = g_time_val_diff(&now, &self->last_tick);
+  get_cached_realtime(&now);
+  diff = timespec_diff_usec(&now, &self->last_tick);
 
   if (diff > 1e6)
     {
@@ -138,7 +138,7 @@ correlation_state_timer_tick(CorrelationState *self, gpointer caller_context)
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
 
       self->last_tick = now;
-      g_time_val_add(&self->last_tick, - (glong)(diff - diff_sec * 1e6));
+      timespec_add_usec(&self->last_tick, - (glong)(diff - diff_sec * 1e6));
       updated = TRUE;
     }
   else if (diff < 0)
@@ -163,7 +163,7 @@ correlation_state_new(TWCallbackFunc expire_callback)
   self->state = g_hash_table_new_full(correlation_key_hash, correlation_key_equal, NULL,
                                       (GDestroyNotify) correlation_context_unref);
   self->timer_wheel = timer_wheel_new();
-  cached_g_current_time(&self->last_tick);
+  get_cached_realtime(&self->last_tick);
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->expire_callback = expire_callback;
   return self;

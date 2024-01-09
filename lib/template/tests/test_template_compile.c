@@ -380,11 +380,9 @@ Test(template_compile, test_unknown_function)
 static void
 setup(void)
 {
-  msg_init(FALSE);
+  app_startup();
 
   configuration = cfg_new_snippet();
-  log_msg_registry_init();
-  log_template_global_init();
   plugin_register(&configuration->plugin_context, &hello_plugin, 1);
 
   template = log_template_new(configuration, NULL);
@@ -394,13 +392,11 @@ setup(void)
 static void
 teardown(void)
 {
-  log_msg_registry_deinit();
-  msg_deinit();
-
   log_template_unref(template);
   template = NULL;
 
   stop_grabbing_messages();
+  app_shutdown();
 }
 
 TestSuite(template_compile, .init = setup, .fini = teardown);
