@@ -1,5 +1,7 @@
 if ENABLE_DARWIN_OSL
 
+AM_LIBTOOLFLAGS="--tag=CC"
+
 module_LTLIBRARIES += modules/darwinosl/libdarwinosl.la
 modules_darwinosl_libdarwinosl_la_SOURCES = \
 modules/darwinosl/darwinosl-plugin.c \
