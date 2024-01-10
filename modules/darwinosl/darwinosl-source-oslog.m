@@ -92,6 +92,8 @@ static NSString *customBugFixDateFormat = @"yyyy-MM-dd'T'HH:mm:ss'.%06.0f'ZZZZZ"
   options:(OSLogEnumeratorOptions)options
 {
   g_assert(self.enumerator == nil);
+  // NOTE: This still can rise an uncought exception regardless the try/catch block here,
+  //       see darwinosl-source.m _try_test_filter_predicate_str for more info
   @try
     {
       NSPredicate *filterPredicate = (filterString.length > 0 ? [NSPredicate predicateWithFormat:filterString] : nil);

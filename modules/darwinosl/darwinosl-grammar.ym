@@ -83,7 +83,7 @@ source_darwinosl_options
 source_darwinosl_option
   : KW_FILTER_PREDICATE '(' string ')'
     {
-      darwinosl_sd_set_filter_predicate(last_driver, $3);
+      CHECK_ERROR(darwinosl_sd_set_filter_predicate(last_driver, $3), @3, "Could not parse filter predicate %s", $3);
       free($3);
     }
   | KW_GO_REVERSE '(' yesno ')'  { darwinosl_sd_set_go_reverse(last_driver, $3); }

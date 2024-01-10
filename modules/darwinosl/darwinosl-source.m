@@ -208,15 +208,16 @@ _open_osl(DarwinOSLogSourceDriver *self)
 
   NSDate *startDate = nil;
   bool positionRestored = _log_position_date_from_persist(self, &startDate);
+  NSString *filterString = (self->options.filter_predicate ? [NSString stringWithUTF8String:
+                                                              self->options.filter_predicate] : nil);
+  OSLogEnumeratorOptions options = (self->options.go_reverse ? OSLogEnumeratorReverse : 0);
+
   msg_trace("darwinosl: Should start from",
             evt_tag_str("start_position",
                         (startDate ?
                          [OSLogSource.RFC3339DateFormatter stringFromDateWithMicroseconds:startDate].UTF8String :
                          "no saved position")));
-
-  if ([self->osLogSource openEnumeratorWithDate:startDate
-       filterString:(self->options.filter_predicate ? [NSString stringWithUTF8String:self->options.filter_predicate] : nil)
-       options:(self->options.go_reverse ? OSLogEnumeratorReverse : 0)] == nil)
+  if ([self->osLogSource openEnumeratorWithDate:startDate filterString:filterString options:options] == nil)
     {
       [self->osLogSource closeAll];
       return FALSE;
@@ -481,13 +482,48 @@ darwinosl_sd_new(GlobalConfig *cfg)
 
 /* Options */
 
+/*
+ * FIXME: Seems, in a debug build, there is no chance to catch the NSInvalidArgumentException, so
+ *        this will always crash if the predicte string has certain parsing issues.
+ */
+gboolean
+_try_test_filter_predicate_str(const gchar *filter_predicate_str)
+{
+  gboolean succ = TRUE;
+  if (filter_predicate_str)
+    {
+      NSString *filterString = [NSString stringWithUTF8String:filter_predicate_str];
+      if (filterString.length > 0)
+        {
+          NSPredicate *filterPredicate = nil;
+          succ = FALSE;
+          @try
+            {
+              if ((filterPredicate = [NSPredicate predicateWithFormat:filterString]) != nil)
+                succ = TRUE;
+            }
+          @catch(NSException *e)
+            {
+              msg_error("darwinosl: Error in filter predicate",
+                        evt_tag_str("predicate", filter_predicate_str),
+                        evt_tag_str("error", [NSString stringWithFormat:@"%@", e].UTF8String));
+            }
+        }
+    }
+  return succ;
+}
+
 gboolean
 darwinosl_sd_set_filter_predicate(LogDriver *s, const gchar *filter_predicate_str)
 {
   DarwinOSLogSourceDriver *self = (DarwinOSLogSourceDriver *)s;
+
   if (self->options.filter_predicate)
     free (self->options.filter_predicate);
   self->options.filter_predicate = g_strdup(filter_predicate_str);
+
+  if (self->options.filter_predicate)
+    return _try_test_filter_predicate_str(self->options.filter_predicate);
   return TRUE;
 }
 
