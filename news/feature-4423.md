@@ -2,10 +2,11 @@
 
 'darwin-oslog()' replaced the earlier file source based solution with a native OSLog framework based one, and is automatically used in the `system()` source on darwin platform if the **darwinosl** plugin is presented.
 
+This plugin available only on macOS 10.15 Catalina and above, the first version that has the OSLog API.
 
 ### darwin-oslog
 
-This is a native OSLog framework based source to read logs from the local store of the unified logging system on darwin OSes.
+This is a native OSLog Framework based source to read logs from the local store of the unified logging system on darwin OSes.
 For more info, see https://developer.apple.com/documentation/oslog?language=objc
 
 
@@ -41,7 +42,7 @@ The following parameters can be used for customization:
     - integer value, that limits the number of logs syslog-ng will send in one run
     - default value: 0, which means no limit
 
-Please NOTE, the persistent OSLog store is not infinite, depending on your system setting usually, it keeps about 7 days of logs on disk, so it could happen that the above options cannot operate the way you expect, e.g. if syslog-ng was stopped for about more then a week it could happen that will not be able to restart from the last saved bookmark position (as that might not be presented in the persistent log already)
+NOTE: the persistent OSLog store is not infinite, depending on your system setting usually, it keeps about 7 days of logs on disk, so it could happen that the above options cannot operate the way you expect, e.g. if syslog-ng was stopped for about more then a week it could happen that will not be able to restart from the last saved bookmark position (as that might not be presented in the persistent log anymore)
 
 ### darwin-oslog-stream
 
@@ -49,11 +50,10 @@ This is a wrapper around the OS command line "log stream" command that can provi
 Unlike in the case of `darwin-oslog()` the live stream can contain non-persistent log events too, so take care, there might be a huge number of log events every second that could put an unusual load on the device running syslog-ng with this source.
 Unfortunately, there's no public API to get the same programmatically, so this one is implemented using a program() source.
 
-The following parameters can be used for customization:
+Possible parameters:
 
-- filter-predicate
-    - defaults to an empty string, so all logs are fed by default, use carefully
-    - see, `man log` for more details
-- various command line options are available to filter/customize further the stream
-    - please see, `log --help stream` for full reference
-    - default value: `--type log --type trace --level info --level debug`
+- params
+    - a string that can contain all the possible params the macOS `log` tool can accept, please see, `log --help stream` for full reference, and `man log` for more details.
+
+      IMPORTANT: the parameter --style is used internally (defaults to `ndjson`), so it cannot be overridden, please use other sysylog-ng features (templates, rewrite rules, etc.) for final output formatting
+    - default value: `--type log --type trace --level info --level debug`, you can use \``def-osl-stream-params`\` for referencing it if you wish to keep the defaults when you add your own
