@@ -67,6 +67,7 @@ public:
 private:
   static void set_syslog_ng_nv_pairs(LogMessage *msg, const KeyValueList &types);
   static void set_syslog_ng_macros(LogMessage *msg, const KeyValueList &macros);
+  static void set_syslog_ng_address(LogMessage *msg, GSockAddr **sa, const KeyValueList &addr);
   static void parse_syslog_ng_tags(LogMessage *msg, const std::string &tags_as_str);
 };
 
