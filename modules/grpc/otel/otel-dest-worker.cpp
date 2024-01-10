@@ -52,7 +52,7 @@ DestWorker::DestWorker(OtelDestWorker *s)
 
   if (owner.get_compression())
     {
-      args.SetCompressionAlgorithm(GRPC_COMPRESS_DEFLATE);
+      args.SetCompressionAlgorithm(GRPC_COMPRESS_GZIP);
     }
   channel = ::grpc::CreateCustomChannel(owner.get_url(), owner.credentials_builder.build(), args);
   logs_service_stub = LogsService::NewStub(channel);
