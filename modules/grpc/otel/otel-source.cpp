@@ -259,6 +259,8 @@ otel_sd_new(GlobalConfig *cfg)
   s->super.worker_options.super.stats_source = stats_register_type("opentelemetry");
   s->super.format_stats_key = _format_stats_key;
   s->super.worker_construct = _construct_worker;
+  s->super.worker_options.super.keep_hostname = TRUE;
+  s->super.worker_options.super.chain_hostnames = FALSE;
 
   return &s->super.super.super;
 }
