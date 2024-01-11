@@ -1,0 +1,106 @@
+/*
+ * Copyright (c) 2023 Hofi <hofione@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "darwinosl-parser.h"
+}
+
+%code {
+
+#include "darwinosl-source.h"
+#include "cfg-parser.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "plugin.h"
+#include "cfg-grammar-internal.h"
+
+#include <string.h>
+
+}
+
+%define api.prefix {darwinosl_}
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_DARWIN_OSL
+%token KW_FILTER_PREDICATE
+%token KW_GO_REVERSE
+%token KW_DO_NOT_USE_BOOKMARK
+%token KW_MAX_BOOKMARK_DISTANCE
+%token KW_FETCH_DELAY
+%token KW_FETCH_RETRY_DELAY
+
+%type   <ptr> source_darwinosl
+%type   <ptr> source_darwinosl_params
+
+%%
+
+start
+  : LL_CONTEXT_SOURCE source_darwinosl { YYACCEPT; }
+  ;
+
+source_darwinosl
+  : KW_DARWIN_OSL
+    {
+      last_driver = *instance = darwinosl_sd_new(configuration);
+    }
+    '(' _inner_src_context_push source_darwinosl_options _inner_src_context_pop ')' { $$ = last_driver; }
+  ;
+
+source_darwinosl_options
+  : source_darwinosl_option source_darwinosl_options
+  |
+  ;
+
+/* via threaded_source_driver_option this implies msg_format_option, source_driver_option, source_option, inner_source and driver_option */
+source_darwinosl_option
+  : KW_FILTER_PREDICATE '(' string ')'
+    {
+      CHECK_ERROR(darwinosl_sd_set_filter_predicate(last_driver, $3), @3, "Could not parse filter predicate %s", $3);
+      free($3);
+    }
+  | KW_GO_REVERSE '(' yesno ')'  { darwinosl_sd_set_go_reverse(last_driver, $3); }
+  | KW_DO_NOT_USE_BOOKMARK '(' yesno ')'  { darwinosl_sd_set_do_not_use_bookmark(last_driver, $3); }
+  | KW_MAX_BOOKMARK_DISTANCE '(' nonnegative_integer ')'  { darwinosl_sd_set_max_bookmark_distance(last_driver, $3); }
+  | KW_FETCH_DELAY '(' positive_integer ')'  { darwinosl_sd_set_log_fetch_delay(last_driver, $3); }
+  | KW_FETCH_RETRY_DELAY '(' nonnegative_integer ')'  { darwinosl_sd_set_log_fetch_retry_delay(last_driver, $3); }
+  /*
+    TODO: This cannot be used now due to an actual macOS API bug https://openradar.appspot.com/radar?id=5597032077066240, as
+          this would lead to unclosed enumerator threads with
+          an unreleased OSLogEntry item array in each.
+          Once the issue is fixed we can allow this option again.
+  | KW_LOG_FETCH_LIMIT '(' nonnegative_integer ')'  { darwinosl_sd_set_log_fetch_limit(last_driver, $3); }
+  */
+  | threaded_source_driver_option
+  ;
+
+/* INCLUDE_RULES */
+
+%%

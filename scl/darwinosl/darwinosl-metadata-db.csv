@@ -1,0 +1,6 @@
+Fault,unixpri,2
+Error,unixpri,3
+Notice,unixpri,5
+Info,unixpri,6
+Debug,unixpri,7
+unknown,unixpri,5

@@ -245,6 +245,10 @@ AC_ARG_ENABLE(sun-streams,
               [  --enable-sun-streams    Enable support for Solaris /dev/log STREAMS device.]
               ,,enable_sun_streams="auto")
 
+AC_ARG_ENABLE(darwin-osl,
+              [  --enable-darwin-osl    Enable support for Darwin OS Log source. (default: auto)]
+              ,,enable_darwin_osl="auto")
+
 AC_ARG_ENABLE(openbsd-system-source,
               [  --enable-openbsd-system-source    Enable support for OpenBSD /dev/klog device.]
               ,,enable_openbsd_system_source="auto")
@@ -312,7 +316,7 @@ AC_ARG_WITH(libpaho-mqtt,
                             [use libpaho-mqtt library from (prefix) directory DIR]),,)
 
 AC_ARG_ENABLE(grpc,
-              [  --enable-grpc           Enable GRPC based driver support (OpenTelemetry) (default: auto)]
+              [  --enable-grpc           Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery) (default: auto)]
               ,,enable_grpc="auto")
 
 AC_ARG_WITH(protoc,
@@ -451,12 +455,26 @@ patheval()
 dnl ***************************************************************************
 dnl Checks for programs.
 
+# Do not mix the used compilers or you might have to deal with further libtool issues
+# Currently syslog-ng and all modules can be compiled like
+#       | Comoiler |  C  | C++ | ObjC |
+#       -------------------------------
+#       |    gcc   |  x  |  x  |  -   |
+#       -------------------------------
+#       |   clang  |  x  |  x  |  x   |
+#       -------------------------------
+#       |    g++   | n/a |  x  | n/a  | (NOTE: g++ fails on C99 compilant test bellow)
+#       -------------------------------
+#
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
 if test "x$ac_cv_prog_cc_c99" = "xno"; then
-	AC_MSG_ERROR("C99 standard compliant C compiler required. Try GCC 3.x or later.")
+	AC_MSG_ERROR([C99 standard compliant C compiler required. Try GCC 3.x or later.])
 fi
+# Turned out that even the latest gcc has no proper support of the required ObjC version
+# Once gcc was able to compile our ObjC modules properly this could be reverted to AC_PROG_OBJC([$OBJC $CC])
+AC_PROG_OBJC([$OBJC clang])
 AC_PROG_YACC
 AM_PROG_LEX
 AM_MISSING_PROG([GPERF], [gperf])
@@ -478,9 +496,6 @@ AM_CONDITIONAL([HAVE_PYTHON_INTERPRETER], [test "$PYTHON" != :])
 dnl ***************************************************************************
 dnl C++
 
-# Ok, here is the deal
-# clang cannot compile the current source, it has nultiple issues
-# replace it till not fixed them
 # This one is useful for checking the available compilers
 # AC_MSG_RESULT(gcc = $(which gcc) - g++ = $(which g++) - clang = $(which clang))
 # AC_MSG_RESULT(Paths: gcc = $(ls -Al $(which gcc)) - g++ = $(ls -Al $(which g++)) - clang = $(ls -Al $(which clang)))
@@ -1822,6 +1837,31 @@ else
 fi
 
 dnl ***************************************************************************
+dnl darwin osl headers/libraries
+dnl ***************************************************************************
+
+if test "x$enable_darwin_osl" = "xauto" || test "x$enable_darwin_osl" = "xyes"; then
+        if test $ostype = "Darwin"; then
+                if test "x$enable_darwin_osl" = "xyes"; then
+                        WAS_DARWIN_OSL_FORCED="yes"
+                fi
+
+                AC_LANG_PUSH([Objective C])
+
+                # TODO: Once gcc was able to compile our ObjC code correctly we should add here a more sopgisticated check
+                AC_CHECK_HEADERS([OSLog/OSLog.h], [enable_darwin_osl=yes], [enable_darwin_osl=no])
+
+                AC_LANG_POP([Objective C])
+
+                if test "$WAS_DARWIN_OSL_FORCED" = "yes" && test "$enable_darwin_osl" = "no"; then
+                        AC_MSG_ERROR([Could not build Darwin OSLog without OSLog headers])
+                fi
+        else
+                enable_darwin_osl=no
+        fi
+fi
+
+dnl ***************************************************************************
 dnl misc features to be enabled
 dnl ***************************************************************************
 
@@ -2200,6 +2240,7 @@ AM_CONDITIONAL(ENABLE_SYSTEMD, [test "$enable_systemd" = "yes"])
 AM_CONDITIONAL(ENABLE_SYSTEMD_UNIT_INSTALL, [test "$systemdsystemunitdir" != ""])
 AM_CONDITIONAL(ENABLE_SQL, [test "$enable_sql" = "yes"])
 AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
+AM_CONDITIONAL(ENABLE_DARWIN_OSL, [test "$enable_darwin_osl" = "yes"])
 AM_CONDITIONAL(ENABLE_OPENBSD_SYSTEM_SOURCE, [test "$enable_openbsd_system_source" = "yes"])
 AM_CONDITIONAL(ENABLE_EBPF, [test "$enable_ebpf" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
@@ -2325,6 +2366,7 @@ echo "  Package name                : $PACKAGE_NAME"
 echo " Compiler options:"
 echo "  compiler                    : $CC"
 echo "  compiler options            : $CFLAGS $CPPFLAGS"
+echo "  ObjC compiler               : $OBJC"
 echo "  C++ enabled                 : ${enable_cpp:=no}"
 if test "x$enable_cpp" = "xyes"; then
 echo "  C++ compiler                : $CXX"
@@ -2362,6 +2404,7 @@ echo "  Install manual pages        : ${enable_manpages_install:=no}"
 echo " Modules:"
 echo "  Module search path          : ${module_path}"
 echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"
+echo "  Darwin OSL support (module) : ${enable_darwin_osl:=no}"
 echo "  OpenBSD syslog (module)     : ${enable_openbsd_system_source:=no}"
 echo "  SQL support (module)        : ${enable_sql:=no}"
 echo "  PACCT module (EXPERIMENTAL) : ${enable_pacct:=no}"

@@ -16,10 +16,15 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 project(syslog-ng C)
 
-if (APPLE)
-  option(ENABLE_CPP "Enable C++" OFF)
-else()
-  option(ENABLE_CPP "Enable C++" ON)
+option(ENABLE_CPP "Enable C++" ON)
+
+if(APPLE)
+  # Turned out that even the latest gcc has no proper support of the required ObjC version
+  # Once gcc was able to compile our ObjC modules properly this requirement could be removed again
+  set(CMAKE_OBJC_COMPILER clang)
+
+  set_property(GLOBAL PROPERTY OBJC_STANDARD 11)
+  set_property(GLOBAL PROPERTY OBJC_STANDARD_REQUIRED ON)
 endif()
 
 if (ENABLE_CPP)
@@ -446,10 +451,15 @@ add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNING
 # Sanatizer configuration
 set(SANITIZER "OFF" CACHE STRING "Enable clang sanitizer")
 
-set_property(CACHE SANITIZER PROPERTY STRINGS OFF address undefined)
+set_property(CACHE SANITIZER PROPERTY STRINGS OFF address thread undefined address-all)
 
 if (SANITIZER)
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -fsanitize=${SANITIZER} -fno-omit-frame-pointer")
+  SET(SANITIZE_MODE "${SANITIZER}")
+  if (SANITIZER MATCHES address-all)
+    SET(SANITIZE_MODE "address")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize-address-use-after-scope -fsanitize-address-use-after-return=runtime")
+  endif()
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -fsanitize=${SANITIZE_MODE} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 endif()
 
 
