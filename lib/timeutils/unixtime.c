@@ -339,3 +339,14 @@ unix_time_diff_in_msec(const UnixTime *a, const UnixTime *b)
     diff_msec++;
   return diff_msec;
 }
+
+struct timeval
+timeval_from_unix_time(UnixTime *ut)
+{
+#ifdef __APPLE__
+  struct timeval tv = {ut->ut_sec, (__darwin_suseconds_t)ut->ut_usec};
+#else
+  struct timeval tv = {ut->ut_sec, ut->ut_usec};
+#endif
+  return tv;
+}

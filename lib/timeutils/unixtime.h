@@ -68,7 +68,6 @@ unix_time_is_timezone_set(const UnixTime *self)
   return self->ut_gmtoff != -1;
 }
 
-
 void unix_time_unset(UnixTime *ut);
 void unix_time_set_now(UnixTime *self);
 
@@ -81,5 +80,7 @@ gboolean unix_time_fix_timezone_assuming_the_time_matches_real_time(UnixTime *se
 gboolean unix_time_eq(const UnixTime *a, const UnixTime *b);
 gint64 unix_time_diff_in_seconds(const UnixTime *a, const UnixTime *b);
 gint64 unix_time_diff_in_msec(const UnixTime *a, const UnixTime *b);
+
+struct timeval timeval_from_unix_time(UnixTime *ut);
 
 #endif
