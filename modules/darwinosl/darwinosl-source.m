@@ -582,7 +582,7 @@ darwinosl_sd_options_defaults(DarwinOSLogSourceOptions *self,
   self->super_source_options = super_source_options;
   self->super_source_options->super.stats_level = STATS_LEVEL0;
   self->super_source_options->super.stats_source = stats_register_type("darwinosl");
-  self->super_source_options->super.read_old_records = TRUE;
+  self->super_source_options->super.read_old_records = FALSE;
 
   /* No additional format options now, so intentionally referencing only, and not using msg_format_options_copy */
   self->format_options = &self->super_source_options->parse_options;
