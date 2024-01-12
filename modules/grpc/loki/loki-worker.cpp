@@ -182,7 +182,7 @@ DestinationWorker::set_timestamp(logproto::EntryAdapter *entry, LogMessage *msg)
     }
 
   UnixTime *time = &msg->timestamps[owner->timestamp];
-  timeval tv{time->ut_sec, time->ut_usec};
+  struct timeval tv = timeval_from_unix_time(time);
   *entry->mutable_timestamp() = google::protobuf::util::TimeUtil::TimevalToTimestamp(tv);
 }
 
