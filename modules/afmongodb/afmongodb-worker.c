@@ -383,6 +383,34 @@ _vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType ty
       bson_append_array_end(o, &array);
       break;
     }
+    case LM_VT_KVLIST:
+    {
+      bson_t *sub_object = bson_new();
+      ListScanner scanner;
+
+      ScratchBuffersMarker marker;
+      GString *sub_key = scratch_buffers_alloc_and_mark(&marker);
+
+      list_scanner_init(&scanner);
+      list_scanner_input_string(&scanner, value, value_len);
+      while (list_scanner_scan_next(&scanner))
+        {
+          if (sub_key->len == 0)
+            {
+              g_string_assign(sub_key, list_scanner_get_current_value(&scanner));
+              continue;
+            }
+
+          bson_append_utf8(sub_object, sub_key->str, -1, list_scanner_get_current_value(&scanner), -1);
+          g_string_truncate(sub_key, 0);
+        }
+
+      list_scanner_deinit(&scanner);
+      scratch_buffers_reclaim_marked(marker);
+      bson_append_document(o, name, -1, sub_object);
+      bson_destroy(sub_object);
+      break;
+    }
     case LM_VT_JSON:
     {
       bson_t embedded_bson;
