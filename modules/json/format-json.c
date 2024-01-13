@@ -272,6 +272,44 @@ tf_json_append_list(const gchar *name, const gchar *value, gsize value_len,
   g_string_append_c(state->buffer, ']');
 }
 
+static gboolean
+tf_json_append_kvlist(const gchar *name, const gchar *value, gsize value_len,
+                      json_state_t *state)
+{
+  tf_json_append_key(name, state);
+
+  g_string_append_c(state->buffer, ':');
+  g_string_append_c(state->buffer, '{');
+
+  ListScanner scanner;
+  gboolean first = TRUE;
+  gboolean is_key = TRUE;
+
+  list_scanner_init(&scanner);
+  list_scanner_input_string(&scanner, value, value_len);
+  while (list_scanner_scan_next(&scanner))
+    {
+      if (!first && is_key)
+        g_string_append_c(state->buffer, ',');
+      else
+        first = FALSE;
+
+      g_string_append_c(state->buffer, '"');
+      tf_json_append_escaped(state->buffer, list_scanner_get_current_value(&scanner), -1);
+      g_string_append_c(state->buffer, '"');
+
+      if (is_key)
+        g_string_append_c(state->buffer, ':');
+
+      is_key = !is_key;
+    }
+
+  list_scanner_deinit(&scanner);
+  g_string_append_c(state->buffer, '}');
+
+  return is_key;
+}
+
 /* RFC8259 numbers: '+' sign, leading zeros are not allowed. */
 static inline void
 tf_json_append_double(const gchar *name, gdouble d, json_state_t *state)
@@ -308,6 +346,19 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
       return TRUE;
     case LM_VT_LIST:
       tf_json_append_list(name, value, value_len, state);
+      return TRUE;
+    case LM_VT_KVLIST:
+      if (!tf_json_append_kvlist(name, value, value_len, state))
+        {
+          if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
+            {
+              tf_json_append_value(name, value, value_len, state, TRUE);
+              return TRUE;
+            }
+
+          *drop = type_cast_drop_helper(on_error, value, value_len, "kvlist");
+          return FALSE;
+        }
       return TRUE;
     case LM_VT_INTEGER:
     {
