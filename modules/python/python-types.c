@@ -118,6 +118,8 @@ py_list_from_list(const gchar *list, gssize list_len)
           Py_XDECREF(element);
           return NULL;
         }
+
+      Py_DECREF(element);
     }
 
   list_scanner_deinit(&scanner);
