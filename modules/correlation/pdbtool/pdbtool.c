@@ -783,6 +783,7 @@ pdbtool_test_value_type_callback(NVHandle handle, const gchar *name,
     case LM_VT_BYTES:
     case LM_VT_PROTOBUF:
     case LM_VT_LIST:
+    case LM_VT_KVLIST:
     default:
       valid = TRUE;
       break;

@@ -68,7 +68,7 @@ fop_compare_bytes(const GString *left, const GString *right)
 static inline gboolean
 _is_object(LogMessageValueType type)
 {
-  return type == LM_VT_JSON || type == LM_VT_LIST;
+  return type == LM_VT_JSON || type == LM_VT_LIST || type == LM_VT_KVLIST;
 }
 
 static inline gboolean
@@ -127,6 +127,7 @@ _convert_to_number(const GString *value, LogMessageValueType type, GenericNumber
       break;
     case LM_VT_JSON:
     case LM_VT_LIST:
+    case LM_VT_KVLIST:
     case LM_VT_BYTES:
     case LM_VT_PROTOBUF:
       gn_set_nan(number);

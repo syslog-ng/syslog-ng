@@ -75,6 +75,7 @@ ParameterizedTestParameters(type_hints, test_type_hint_parse)
     {"null",      LM_VT_NULL},
     {"bytes",     LM_VT_BYTES},
     {"protobuf",  LM_VT_PROTOBUF},
+    {"kvlist",    LM_VT_KVLIST},
   };
 
   return cr_make_param_array(StringHintPair, string_value_pairs,

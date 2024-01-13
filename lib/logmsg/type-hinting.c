@@ -258,6 +258,7 @@ type_cast_validate(const gchar *value, gssize value_len, LogMessageValueType typ
     case LM_VT_BYTES:
     case LM_VT_PROTOBUF:
     case LM_VT_LIST:
+    case LM_VT_KVLIST:
       return TRUE;
     case LM_VT_BOOLEAN:
       return type_cast_to_boolean(value, value_len, &b, error);
