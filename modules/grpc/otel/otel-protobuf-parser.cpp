@@ -27,6 +27,8 @@
 #include "logmsg/type-hinting.h"
 #include "scanner/list-scanner/list-scanner.h"
 #include "rewrite/rewrite-set-pri.h"
+#include "str-repr/encode.h"
+#include "scratch-buffers.h"
 #include "compat/cpp-end.h"
 
 #include <inttypes.h>
@@ -111,6 +113,90 @@ _set_value_with_prefix(LogMessage *msg, std::string &key_buffer, size_t key_pref
 }
 
 static const std::string &
+_serialize_ArrayValue(const AnyValue &value, LogMessageValueType *type, std::string *buffer)
+{
+  bool is_all_strings = true;
+
+  for (const AnyValue &element : value.array_value().values())
+    {
+      if (element.value_case() == AnyValue::kStringValue)
+        continue;
+
+      is_all_strings = false;
+      break;
+    }
+
+  if (!is_all_strings)
+    {
+      *type = LM_VT_PROTOBUF;
+      value.SerializePartialToString(buffer);
+      return *buffer;
+    }
+
+  ScratchBuffersMarker marker;
+  GString *scratch_buffer = scratch_buffers_alloc_and_mark(&marker);
+  bool first = true;
+
+  for (const AnyValue &element : value.array_value().values())
+    {
+      if (!first)
+        g_string_append_c(scratch_buffer, ',');
+
+      str_repr_encode_append(scratch_buffer, element.string_value().c_str(), -1, ",");
+      first = false;
+    }
+
+  *type = LM_VT_LIST;
+  buffer->assign(scratch_buffer->str, scratch_buffer->len);
+
+  scratch_buffers_reclaim_marked(marker);
+  return *buffer;
+}
+
+static const std::string &
+_serialize_KvlistValue(const AnyValue &value, LogMessageValueType *type, std::string *buffer)
+{
+  bool is_all_strings = true;
+
+  for (const KeyValue &element : value.kvlist_value().values())
+    {
+      if (element.value().value_case() == AnyValue::kStringValue)
+        continue;
+
+      is_all_strings = false;
+      break;
+    }
+
+  if (!is_all_strings)
+    {
+      *type = LM_VT_PROTOBUF;
+      value.SerializePartialToString(buffer);
+      return *buffer;
+    }
+
+  ScratchBuffersMarker marker;
+  GString *scratch_buffer = scratch_buffers_alloc_and_mark(&marker);
+  bool first = true;
+
+  for (const KeyValue &element : value.kvlist_value().values())
+    {
+      if (!first)
+        g_string_append_c(scratch_buffer, ',');
+
+      str_repr_encode_append(scratch_buffer, element.key().c_str(), -1, ",");
+      g_string_append_c(scratch_buffer, ',');
+      str_repr_encode_append(scratch_buffer, element.value().string_value().c_str(), -1, ",");
+      first = false;
+    }
+
+  *type = LM_VT_KVLIST;
+  buffer->assign(scratch_buffer->str, scratch_buffer->len);
+
+  scratch_buffers_reclaim_marked(marker);
+  return *buffer;
+}
+
+static const std::string &
 _serialize_AnyValue(const AnyValue &value, LogMessageValueType *type, std::string *buffer)
 {
   char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
@@ -118,10 +204,9 @@ _serialize_AnyValue(const AnyValue &value, LogMessageValueType *type, std::strin
   switch (value.value_case())
     {
     case AnyValue::kArrayValue:
+      return _serialize_ArrayValue(value, type, buffer);
     case AnyValue::kKvlistValue:
-      *type = LM_VT_PROTOBUF;
-      value.SerializePartialToString(buffer);
-      return *buffer;
+      return _serialize_KvlistValue(value, type, buffer);
     case AnyValue::kBytesValue:
       *type = LM_VT_BYTES;
       return value.bytes_value();

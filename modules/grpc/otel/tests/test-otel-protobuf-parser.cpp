@@ -116,21 +116,37 @@ Test(otel_protobuf_parser, metadata)
   scope.set_name("my_scope_name");
   scope.set_version("v1.2.3");
 
-  KeyValue *array_attr = scope.add_attributes();
-  array_attr->set_key("array_key");
-  ArrayValue *array_value = array_attr->mutable_value()->mutable_array_value();
-  array_value->add_values()->set_string_value("inner_array_attribute_value_1");
-  array_value->add_values()->set_string_value("inner_array_attribute_value_2");
+  KeyValue *list_attr = scope.add_attributes();
+  list_attr->set_key("list_key");
+  ArrayValue *list_value = list_attr->mutable_value()->mutable_array_value();
+  list_value->add_values()->set_string_value("inner_list_attribute_value_1,");
+  list_value->add_values()->set_string_value("inner_list_attribute_value_2");
 
   KeyValue *kvlist_attr = scope.add_attributes();
   kvlist_attr->set_key("kvlist_key");
   KeyValueList *key_value_list =  kvlist_attr->mutable_value()->mutable_kvlist_value();
   KeyValue *inner_kvlist_attr_1 = key_value_list->add_values();
-  inner_kvlist_attr_1->set_key("inner_kvlist_attribute_key_1");
-  inner_kvlist_attr_1->mutable_value()->set_string_value("inner_kvlist_attribute_value_1");
+  inner_kvlist_attr_1->set_key("inner_kvlist_attribute_key_1,");
+  inner_kvlist_attr_1->mutable_value()->set_string_value("inner_kvlist_attribute_value_1,");
   KeyValue *inner_kvlist_attr_2 = key_value_list->add_values();
   inner_kvlist_attr_2->set_key("inner_kvlist_attribute_key_2");
   inner_kvlist_attr_2->mutable_value()->set_string_value("inner_kvlist_attribute_value_2");
+
+  KeyValue *protobuf_list_attr = scope.add_attributes();
+  protobuf_list_attr->set_key("protobuf_list_key");
+  ArrayValue *protobuf_list_value = protobuf_list_attr->mutable_value()->mutable_array_value();
+  protobuf_list_value->add_values()->set_string_value("inner_protobuf_list_attribute_value_1,");
+  protobuf_list_value->add_values()->set_int_value(42);
+
+  KeyValue *protobuf_kvlist_attr = scope.add_attributes();
+  protobuf_kvlist_attr->set_key("protobuf_kvlist_key");
+  KeyValueList *protobuf_key_value_list =  protobuf_kvlist_attr->mutable_value()->mutable_kvlist_value();
+  KeyValue *inner_protobuf_kvlist_attr_1 = protobuf_key_value_list->add_values();
+  inner_protobuf_kvlist_attr_1->set_key("inner_protobuf_kvlist_attribute_key_1,");
+  inner_protobuf_kvlist_attr_1->mutable_value()->set_string_value("inner_protobuf_kvlist_attribute_value_1,");
+  KeyValue *inner_protobuf_kvlist_attr_2 = protobuf_key_value_list->add_values();
+  inner_protobuf_kvlist_attr_2->set_key("inner_protobuf_kvlist_attribute_key_2");
+  inner_protobuf_kvlist_attr_2->mutable_value()->set_int_value(42);
 
   KeyValue *bytes_attr = scope.add_attributes();
   bytes_attr->set_key("bytes_key");
@@ -156,12 +172,19 @@ Test(otel_protobuf_parser, metadata)
   _assert_log_msg_value(msg, ".otel.scope.name", "my_scope_name", -1, LM_VT_STRING);
   _assert_log_msg_value(msg, ".otel.scope.version", "v1.2.3", -1, LM_VT_STRING);
 
-  std::string serialized_array_attr = array_attr->value().SerializeAsString();
-  _assert_log_msg_value(msg, ".otel.scope.attributes.array_key", serialized_array_attr.c_str(),
-                        serialized_array_attr.length(), LM_VT_PROTOBUF);
-  std::string serialized_kvlist_attr = kvlist_attr->value().SerializeAsString();
-  _assert_log_msg_value(msg, ".otel.scope.attributes.kvlist_key", serialized_kvlist_attr.c_str(),
-                        serialized_kvlist_attr.length(), LM_VT_PROTOBUF);
+  _assert_log_msg_value(msg, ".otel.scope.attributes.list_key",
+                        "\"inner_list_attribute_value_1,\",inner_list_attribute_value_2", -1, LM_VT_LIST);
+  _assert_log_msg_value(msg, ".otel.scope.attributes.kvlist_key",
+                        "\"inner_kvlist_attribute_key_1,\",\"inner_kvlist_attribute_value_1,\","
+                        "inner_kvlist_attribute_key_2,inner_kvlist_attribute_value_2", -1, LM_VT_KVLIST);
+
+  std::string serialized_protobuf_list_attr = protobuf_list_attr->value().SerializeAsString();
+  _assert_log_msg_value(msg, ".otel.scope.attributes.protobuf_list_key", serialized_protobuf_list_attr.c_str(),
+                        serialized_protobuf_list_attr.length(), LM_VT_PROTOBUF);
+  std::string serialized_protobuf_kvlist_attr = protobuf_kvlist_attr->value().SerializeAsString();
+  _assert_log_msg_value(msg, ".otel.scope.attributes.protobuf_kvlist_key", serialized_protobuf_kvlist_attr.c_str(),
+                        serialized_protobuf_kvlist_attr.length(), LM_VT_PROTOBUF);
+
   std::string serialized_bytes_attr = bytes_attr->SerializeAsString();
   _assert_log_msg_value(msg, ".otel.scope.attributes.bytes_key", "\0\1\2\3\4\5\6\7", 8, LM_VT_BYTES);
   _assert_log_msg_value(msg, ".otel.scope.schema_url", "my_scope_schema_url", -1, LM_VT_STRING);
@@ -262,28 +285,53 @@ Test(otel_protobuf_parser, log_record_body_types)
   log_msg_unref(msg);
 
   msg = _create_dummy_log_msg();
-  ArrayValue *array_value = log_record.mutable_body()->mutable_array_value();
-  array_value->add_values()->set_string_value("array_value_1");
-  array_value->add_values()->set_string_value("array_value_2");
+  ArrayValue *list_value = log_record.mutable_body()->mutable_array_value();
+  list_value->add_values()->set_string_value("list_value_1,");
+  list_value->add_values()->set_string_value("list_value_2");
   ProtobufParser::store_raw(msg, log_record);
   parser.process(msg);
-  std::string serialized_array_value = log_record.body().SerializeAsString();
-  _assert_log_msg_value(msg, ".otel.log.body", serialized_array_value.c_str(), serialized_array_value.length(),
-                        LM_VT_PROTOBUF);
+  _assert_log_msg_value(msg, ".otel.log.body", "\"list_value_1,\",list_value_2", -1, LM_VT_LIST);
   log_msg_unref(msg);
 
   msg = _create_dummy_log_msg();
   KeyValueList *kvlist_value =  log_record.mutable_body()->mutable_kvlist_value();
   KeyValue *inner_kvlist_kv_1 = kvlist_value->add_values();
-  inner_kvlist_kv_1->set_key("inner_kvlist_key_1");
-  inner_kvlist_kv_1->mutable_value()->set_string_value("inner_kvlist_value_1");
+  inner_kvlist_kv_1->set_key("inner_kvlist_key_1,");
+  inner_kvlist_kv_1->mutable_value()->set_string_value("inner_kvlist_value_1,");
   KeyValue *inner_kvlist_kv_2 = kvlist_value->add_values();
   inner_kvlist_kv_2->set_key("inner_kvlist_key_2");
   inner_kvlist_kv_2->mutable_value()->set_string_value("inner_kvlist_value_2");
   ProtobufParser::store_raw(msg, log_record);
   parser.process(msg);
-  std::string serialized_kvlist_value = log_record.body().SerializeAsString();
-  _assert_log_msg_value(msg, ".otel.log.body", serialized_kvlist_value.c_str(), serialized_kvlist_value.length(),
+  _assert_log_msg_value(msg, ".otel.log.body", "\"inner_kvlist_key_1,\",\"inner_kvlist_value_1,\","
+                        "inner_kvlist_key_2,inner_kvlist_value_2", -1, LM_VT_KVLIST);
+  log_msg_unref(msg);
+
+  msg = _create_dummy_log_msg();
+  ArrayValue *protobuf_list_value = log_record.mutable_body()->mutable_array_value();
+  protobuf_list_value->add_values()->set_string_value("protobuf_list_value_1");
+  protobuf_list_value->add_values()->set_int_value(42);
+  ProtobufParser::store_raw(msg, log_record);
+  parser.process(msg);
+  std::string serialized_protobuf_list_value = log_record.body().SerializeAsString();
+  _assert_log_msg_value(msg, ".otel.log.body",
+                        serialized_protobuf_list_value.c_str(), serialized_protobuf_list_value.length(),
+                        LM_VT_PROTOBUF);
+  log_msg_unref(msg);
+
+  msg = _create_dummy_log_msg();
+  KeyValueList *protobuf_kvlist_value =  log_record.mutable_body()->mutable_kvlist_value();
+  KeyValue *inner_protobuf_kvlist_kv_1 = protobuf_kvlist_value->add_values();
+  inner_protobuf_kvlist_kv_1->set_key("inner_protobuf_kvlist_key_1");
+  inner_protobuf_kvlist_kv_1->mutable_value()->set_string_value("inner_protobuf_kvlist_value_1");
+  KeyValue *inner_protobuf_kvlist_kv_2 = protobuf_kvlist_value->add_values();
+  inner_protobuf_kvlist_kv_2->set_key("inner_protobuf_kvlist_key_2");
+  inner_protobuf_kvlist_kv_2->mutable_value()->set_int_value(42);
+  ProtobufParser::store_raw(msg, log_record);
+  parser.process(msg);
+  std::string serialized_protobuf_kvlist_value = log_record.body().SerializeAsString();
+  _assert_log_msg_value(msg, ".otel.log.body",
+                        serialized_protobuf_kvlist_value.c_str(), serialized_protobuf_kvlist_value.length(),
                         LM_VT_PROTOBUF);
   log_msg_unref(msg);
 
