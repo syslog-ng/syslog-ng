@@ -25,6 +25,7 @@
 #include "compat/cpp-start.h"
 #include "logmsg/type-hinting.h"
 #include "value-pairs/value-pairs.h"
+#include "scanner/list-scanner/list-scanner.h"
 #include "compat/cpp-end.h"
 
 #include <syslog.h>
@@ -232,6 +233,45 @@ _set_AnyValue(const gchar *value, gssize len, LogMessageValueType type, AnyValue
           g_error_free(error);
         }
       any_value->set_int_value(ll);
+      break;
+    }
+    case LM_VT_LIST:
+    {
+      ArrayValue *array = any_value->mutable_array_value();
+
+      ListScanner scanner;
+      list_scanner_init(&scanner);
+      list_scanner_input_string(&scanner, value, len);
+      while (list_scanner_scan_next(&scanner))
+        {
+          array->add_values()->set_string_value(list_scanner_get_current_value(&scanner),
+                                                list_scanner_get_current_value_len(&scanner));
+        }
+      list_scanner_deinit(&scanner);
+      break;
+    }
+    case LM_VT_KVLIST:
+    {
+      KeyValueList *kvlist = any_value->mutable_kvlist_value();
+      KeyValue *kv = nullptr;
+
+      ListScanner scanner;
+      list_scanner_init(&scanner);
+      list_scanner_input_string(&scanner, value, len);
+      while (list_scanner_scan_next(&scanner))
+        {
+          if (!kv)
+            {
+              kv = kvlist->add_values();
+              kv->set_key(list_scanner_get_current_value(&scanner),
+                          list_scanner_get_current_value_len(&scanner));
+              continue;
+            }
+          kv->mutable_value()->set_string_value(list_scanner_get_current_value(&scanner),
+                                                list_scanner_get_current_value_len(&scanner));
+          kv = nullptr;
+        }
+      list_scanner_deinit(&scanner);
       break;
     }
     case LM_VT_STRING:

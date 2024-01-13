@@ -157,7 +157,7 @@ _log_record_tc_asserts(const LogRecord &log_record)
   cr_assert_str_eq(log_record.body().string_value().c_str(), "string_body");
 
   auto &attributes = log_record.attributes();
-  cr_assert_eq(log_record.attributes_size(), 8);
+  cr_assert_eq(log_record.attributes_size(), 10);
   cr_assert_str_eq(attributes.at(0).key().c_str(), "a_string_key");
   cr_assert_eq(attributes.at(0).value().value_case(), AnyValue::kStringValue);
   cr_assert_str_eq(attributes.at(0).value().string_value().c_str(), "string");
@@ -188,6 +188,20 @@ _log_record_tc_asserts(const LogRecord &log_record)
   cr_assert_eq(attributes.at(7).value().array_value().values_size(), 2);
   cr_assert_eq(attributes.at(7).value().array_value().values().at(0).int_value(), 1337);
   cr_assert_eq(attributes.at(7).value().array_value().values().at(1).int_value(), 7331);
+  cr_assert_str_eq(attributes.at(8).key().c_str(), "i_list_key");
+  cr_assert_eq(attributes.at(8).value().value_case(), AnyValue::kArrayValue);
+  cr_assert_eq(attributes.at(8).value().array_value().values_size(), 4);
+  cr_assert_str_eq(attributes.at(8).value().array_value().values().at(0).string_value().c_str(), "a,");
+  cr_assert_str_eq(attributes.at(8).value().array_value().values().at(1).string_value().c_str(), "b");
+  cr_assert_str_eq(attributes.at(8).value().array_value().values().at(2).string_value().c_str(), "c,");
+  cr_assert_str_eq(attributes.at(8).value().array_value().values().at(3).string_value().c_str(), "d");
+  cr_assert_str_eq(attributes.at(9).key().c_str(), "j_kvlist_key");
+  cr_assert_eq(attributes.at(9).value().value_case(), AnyValue::kKvlistValue);
+  cr_assert_eq(attributes.at(9).value().kvlist_value().values_size(), 2);
+  cr_assert_str_eq(attributes.at(9).value().kvlist_value().values().at(0).key().c_str(), "a,");
+  cr_assert_str_eq(attributes.at(9).value().kvlist_value().values().at(0).value().string_value().c_str(), "b");
+  cr_assert_str_eq(attributes.at(9).value().kvlist_value().values().at(1).key().c_str(), "c,");
+  cr_assert_str_eq(attributes.at(9).value().kvlist_value().values().at(1).value().string_value().c_str(), "d");
 
   cr_assert_eq(log_record.dropped_attributes_count(), 11);
   cr_assert_eq(log_record.flags(), 22);
@@ -238,6 +252,9 @@ Test(otel_protobuf_formatter, log_record)
   log_msg_set_value_by_name_with_type(msg, ".otel.log.attributes.h_protobuf_array_key",
                                       any_value_array_serialized.c_str(), any_value_array_serialized.length(),
                                       LM_VT_PROTOBUF);
+
+  log_msg_set_value_by_name_with_type(msg, ".otel.log.attributes.i_list_key", "\"a,\",b,\"c,\",d", -1, LM_VT_LIST);
+  log_msg_set_value_by_name_with_type(msg, ".otel.log.attributes.j_kvlist_key", "\"a,\",b,\"c,\",d", -1, LM_VT_KVLIST);
 
   log_msg_set_value_by_name_with_type(msg, ".otel.log.dropped_attributes_count", "11", -1, LM_VT_INTEGER);
   log_msg_set_value_by_name_with_type(msg, ".otel.log.flags", "22", -1, LM_VT_INTEGER);
