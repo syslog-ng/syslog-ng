@@ -130,6 +130,12 @@ ParameterizedTestParameters(python_tf, test_python_tf)
       .expected_type = LM_VT_LIST
     },
     {
+      .value = "a,b,c,d",
+      .value_length = -1,
+      .type = LM_VT_KVLIST,
+      .expected_type = LM_VT_KVLIST
+    },
+    {
       .value = "1680456974",
       .value_length = -1,
       .v4_x_expected_value = "1680456974.000",

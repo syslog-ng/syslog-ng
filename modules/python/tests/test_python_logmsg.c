@@ -170,6 +170,12 @@ ParameterizedTestParameters(python_log_message, test_python_logmessage_set_value
       .expected_log_msg_type = LM_VT_LIST
     },
     {
+      .py_value_to_set = "{'a,': b' b', 'c': b'd,'}",
+      .py_value_to_check = "{'a,': b' b', 'c': b'd,'}",
+      .expected_log_msg_value = "\"a,\",\" b\",c,\"d,\"",
+      .expected_log_msg_type = LM_VT_KVLIST
+    },
+    {
       .py_value_to_set = "datetime.datetime(2022, 10, 4, 14, 48, 12, 123000)",
       .py_value_to_check = "datetime.datetime(2022, 10, 4, 14, 48, 12, 123000)",
       .expected_log_msg_value = "1664894892.123",
@@ -326,6 +332,12 @@ ParameterizedTestParameters(python_log_message, test_python_logmessage_get)
       .expected_value = "[b'a,', b' b', b'c']"
     },
     {
+      .value = "\"a,\",\" b\",c,\"d,\"",
+      .value_length = -1,
+      .type = LM_VT_KVLIST,
+      .expected_value = "{'a,': b' b', 'c': b'd,'}"
+    },
+    {
       .value = "",
       .value_length = -1,
       .type = LM_VT_NULL,
@@ -444,6 +456,12 @@ ParameterizedTestParameters(python_log_message, test_python_logmessage_get_as_st
       .value_length = -1,
       .type = LM_VT_LIST,
       .expected_value = "'\"a,\",\" b\",c'"
+    },
+    {
+      .value = "\"a,\",\" b\",c,\"d,\"",
+      .value_length = -1,
+      .type = LM_VT_KVLIST,
+      .expected_value = "'\"a,\",\" b\",c,\"d,\"'"
     },
     {
       .value = "",

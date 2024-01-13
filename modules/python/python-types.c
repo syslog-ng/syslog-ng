@@ -128,6 +128,55 @@ py_list_from_list(const gchar *list, gssize list_len)
 }
 
 PyObject *
+py_dict_from_kvlist(const gchar *kvlist, gssize kvlist_len)
+{
+  PyObject *obj = PyDict_New();
+  if (!obj)
+    return NULL;
+
+  PyObject *key = NULL;
+  PyObject *value = NULL;
+
+  ListScanner scanner;
+  list_scanner_init(&scanner);
+  list_scanner_input_string(&scanner, kvlist, kvlist_len);
+
+  while (list_scanner_scan_next(&scanner))
+    {
+      if (!key)
+        {
+          key = py_string_from_string(list_scanner_get_current_value(&scanner),
+                                      list_scanner_get_current_value_len(&scanner));
+          if (!key)
+            goto error;
+          continue;
+        }
+
+      value = py_bytes_from_string(list_scanner_get_current_value(&scanner),
+                                   list_scanner_get_current_value_len(&scanner));
+      if (!value)
+        goto error;
+
+      if (PyDict_SetItem(obj, key, value) != 0)
+        goto error;
+
+      Py_DECREF(key);
+      Py_DECREF(value);
+      key = value = NULL;
+    }
+
+  list_scanner_deinit(&scanner);
+  return obj;
+
+error:
+  list_scanner_deinit(&scanner);
+  Py_XDECREF(obj);
+  Py_XDECREF(key);
+  Py_XDECREF(value);
+  return NULL;
+}
+
+PyObject *
 py_string_list_from_string_list(const GList *string_list)
 {
   PyObject *obj = PyList_New(0);
@@ -210,6 +259,9 @@ py_obj_from_log_msg_value(const gchar *value, gssize value_len, LogMessageValueT
 
     case LM_VT_LIST:
       return py_list_from_list(value, value_len);
+
+    case LM_VT_KVLIST:
+      return py_dict_from_kvlist(value, value_len);
 
     case LM_VT_DATETIME:
     {
@@ -384,6 +436,43 @@ py_list_to_list(PyObject *obj, GString *list)
 }
 
 gboolean
+py_dict_to_kvlist(PyObject *obj, GString *kvlist)
+{
+  g_string_truncate(kvlist, 0);
+
+  if (!PyDict_Check(obj))
+    {
+      PyErr_Format(PyExc_ValueError, "Error extracting value from dict");
+      return FALSE;
+    }
+
+  PyObject *key_obj, *value_obj;
+  Py_ssize_t pos = 0;
+  gboolean first = TRUE;
+
+  while (PyDict_Next(obj, &pos, &key_obj, &value_obj))
+    {
+      const gchar *key, *value;
+      if (!py_bytes_or_string_to_string(key_obj, &key) || !py_bytes_or_string_to_string(value_obj, &value))
+        {
+          PyErr_Format(PyExc_ValueError, "Error extracting value from dict");
+          return FALSE;
+        }
+
+      if (!first)
+        g_string_append_c(kvlist, ',');
+
+      str_repr_encode_append(kvlist, key, -1, ",");
+      g_string_append_c(kvlist, ',');
+      str_repr_encode_append(kvlist, value, -1, ",");
+
+      first = FALSE;
+    }
+
+  return TRUE;
+}
+
+gboolean
 py_string_list_to_string_list(PyObject *obj, GList **string_list)
 {
   *string_list = NULL;
@@ -535,6 +624,16 @@ py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type
         return FALSE;
 
       *type = LM_VT_LIST;
+
+      return TRUE;
+    }
+
+  if (PyDict_CheckExact(obj))
+    {
+      if (!py_dict_to_kvlist(obj, value))
+        return FALSE;
+
+      *type = LM_VT_KVLIST;
 
       return TRUE;
     }
