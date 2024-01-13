@@ -125,8 +125,8 @@ py_list_from_list(const gchar *list, gssize list_len)
   return obj;
 }
 
-PyObject
-*py_string_list_from_string_list(const GList *string_list)
+PyObject *
+py_string_list_from_string_list(const GList *string_list)
 {
   PyObject *obj = PyList_New(0);
   if (!obj)
