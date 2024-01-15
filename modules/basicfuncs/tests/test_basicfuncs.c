@@ -533,6 +533,14 @@ Test(basicfuncs, test_list_funcs)
   assert_template_format("$(list-search --mode pcre ^bar$ '\"foo,\",\"bar\",\"baz\"')", "1");
   assert_template_format("$(list-search --mode pcre ba. '\"foo,\",\"bar\",\"baz\"')", "1");
   assert_template_format("$(list-search --mode pcre a...fa '\"foo,\",\"bar\",\"baz\"')", "");
+
+  assert_template_format("$(kvlist-from-keys-and-values '\"foo,\",bar,baz' '\"fooval,\",barval,bazval')",
+                         "\"foo,\",\"fooval,\",bar,barval,baz,bazval");
+  assert_template_format("$(kvlist-from-keys-and-values)", "");
+  assert_template_format("$(kvlist-from-keys-and-values '\"foo,\"')", "");
+  assert_template_format("$(kvlist-from-keys-and-values '\"foo,\"' 'bar' 'baz')", "");
+  assert_template_format("$(kvlist-from-keys-and-values '\"foo,\",bar,baz' '\"fooval,\"')", "");
+  assert_template_format("$(kvlist-from-keys-and-values '\"foo,\"' '\"fooval,\",barval,bazval')", "");
 }
 
 Test(basicfuncs, test_context_funcs)

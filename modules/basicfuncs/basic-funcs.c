@@ -113,6 +113,7 @@ static Plugin basicfuncs_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_list_count, "list-count"),
   TEMPLATE_FUNCTION_PLUGIN(tf_list_append, "list-append"),
   TEMPLATE_FUNCTION_PLUGIN(tf_list_search, "list-search"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_kvlist_from_keys_and_values, "kvlist-from-keys-and-values"),
 
   /* numeric-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_num_plus, "+"),

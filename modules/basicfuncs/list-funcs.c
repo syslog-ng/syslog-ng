@@ -630,3 +630,50 @@ tf_list_search_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvo
 
 TEMPLATE_FUNCTION(ListSearchState, tf_list_search, tf_list_search_prepare, tf_simple_func_eval,
                   tf_list_search_call, list_search_state_free, NULL);
+
+static void
+tf_kvlist_from_keys_and_values(LogMessage *msg, gint argc, GString *argv[], GString *result, LogMessageValueType *type)
+{
+  *type = LM_VT_KVLIST;
+
+  if (argc != 2)
+    return;
+
+  gsize initial_len = result->len;
+
+  ListScanner keys_scanner, values_scanner;
+  list_scanner_init(&keys_scanner);
+  list_scanner_input_string(&keys_scanner, argv[0]->str, argv[0]->len);
+  list_scanner_init(&values_scanner);
+  list_scanner_input_string(&values_scanner, argv[1]->str, argv[1]->len);
+
+  while (list_scanner_scan_next(&keys_scanner))
+    {
+      if (result->len > initial_len)
+        g_string_append_c(result, ',');
+
+      if (!list_scanner_scan_next(&values_scanner))
+        goto error;
+
+      str_repr_encode_append(result, list_scanner_get_current_value(&keys_scanner),
+                             list_scanner_get_current_value_len(&keys_scanner), ",");
+      g_string_append_c(result, ',');
+      str_repr_encode_append(result, list_scanner_get_current_value(&values_scanner),
+                             list_scanner_get_current_value_len(&values_scanner), ",");
+    }
+
+  if (list_scanner_scan_next(&values_scanner))
+    goto error;
+
+  list_scanner_deinit(&keys_scanner);
+  list_scanner_deinit(&values_scanner);
+
+  return;
+
+error:
+  list_scanner_deinit(&keys_scanner);
+  list_scanner_deinit(&values_scanner);
+  g_string_truncate(result, initial_len);
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_kvlist_from_keys_and_values);
