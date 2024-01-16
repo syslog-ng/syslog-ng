@@ -171,7 +171,7 @@ yy_filter_input(CfgLexer *self, gchar *buf, gsize buf_size)
 
 #define YY_BREAK \
   do {                                                                  \
-    if (yyextra->token_text && YY_START == INITIAL)                     \
+    if (yyextra->token_text && (YY_START == INITIAL || YY_START == filterx)) \
       {                                                                 \
         g_string_append_len(yyextra->token_pretext, yyextra->token_text->str, yyextra->token_text->len); \
         g_string_truncate(yyextra->token_text, 0);                      \
@@ -275,6 +275,7 @@ alphanum	[a-zA-Z0-9]
 word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 
 /* block related states must be last, as we use this fact in YY_INPUT */
+%x filterx
 %x string
 %x qstring
 %x block
@@ -283,16 +284,16 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 %x block_qstring
 %%
 
-\#                         {
+<INITIAL,filterx>\#        {
                              _process_commented_line(yyscanner,yyextra->token_text,yyextra->token_text);
                            }
-^@                         {
+<INITIAL,filterx>^@        {
                              return LL_PRAGMA;
                            }
 
     /* continuation line: just move the location and skip the newline character */
-\\\r?\n                    { _cfg_lex_extend_token_location_to_next_line(yyextra); }
-\r?\n                      {
+<INITIAL,filterx>\\\r?\n   { _cfg_lex_extend_token_location_to_next_line(yyextra); }
+<INITIAL,filterx>\r?\n     {
                              *yylloc = yyextra->include_stack[yyextra->include_depth].lloc;
                              _cfg_lex_move_token_location_to_new_line(yyextra);
                              if (yyextra->tokenize_eol)
@@ -300,44 +301,58 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                              else
                                g_string_append(yyextra->string_buffer, yytext);
                            }
-{white}+		   ;
-\.\.                       { return LL_DOTDOT; }
-\.\.\.                     { return LL_DOTDOTDOT; }
-=>                         { return LL_ARROW; }
-(-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
-0x{xdigit}+ 		   {
+<INITIAL,filterx>{white}+  ;
+<INITIAL,filterx>\.\.      { return LL_DOTDOT; }
+<INITIAL,filterx>\.\.\.    { return LL_DOTDOTDOT; }
+<INITIAL,filterx>=>        { return LL_ARROW; }
+<INITIAL,filterx><	   { return KW_TA_LT; }
+<INITIAL,filterx><=        { return KW_TA_LE; }
+<INITIAL,filterx>==        { return KW_TA_EQ; }
+<INITIAL,filterx>!=        { return KW_TA_NE; }
+<INITIAL,filterx>>=        { return KW_TA_GE; }
+<INITIAL,filterx>>         { return KW_TA_GT; }
+<INITIAL,filterx>===       { return KW_TAV_EQ; }
+<INITIAL,filterx>!==       { return KW_TAV_NE; }
+
+<INITIAL,filterx>(-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
+<INITIAL,filterx>0x{xdigit}+ {
                              if (!parse_int64_base16(yytext, &yylval->num))
                                {
                                  return LL_ERROR;
                                }
                              return LL_NUMBER;
                            }
-0{odigit}+		   {
+<INITIAL,filterx>0{odigit}+ {
                              if (!parse_int64_base8(yytext, &yylval->num))
                                {
                                  return LL_ERROR;
                                }
                              return LL_NUMBER;
                            }
-(-|\+)?{digit}+(M|m|G|g|k|K)?(i|I)?(b|B)? {
+<INITIAL,filterx>(-|\+)?{digit}+(M|m|G|g|k|K)?(i|I)?(b|B)? {
                              if (!parse_int64_with_suffix(yytext, &yylval->num))
                                {
                                  return LL_ERROR;
                                }
                              return LL_NUMBER;
                            }
-({word}+(\.)?)*{word}+ 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
-\,			   ;
 
-\"                         {
+    /* this is the original LL_IDENTIFIER pattern, which basically allows almost everything as an unquoted string */
+<INITIAL>({word}+(\.)?)*{word}+    { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
+
+    /* and this is the version in filterx, which only allows "traditional" identifiers */
+<filterx>[a-zA-Z][_a-zA-Z0-9]* 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
+<INITIAL>\,	   	   ;
+
+<INITIAL,filterx>\"        {
 			     g_string_truncate(yyextra->string_buffer, 0);
 			     yy_push_state(string, yyscanner);
 			   }
-\'			   {
+<INITIAL,filterx>\'	   {
 			     g_string_truncate(yyextra->string_buffer, 0);
 			     yy_push_state(qstring, yyscanner);
 			   }
-.                          { return (unsigned char) yytext[0]; }
+<INITIAL,filterx>.         { return (unsigned char) yytext[0]; }
 
     /* continuation line within a string: just move the location and skip the newline character as if it was never there */
 <string,qstring>\\\r?\n    { _cfg_lex_extend_token_location_to_next_line(yyextra); }
@@ -487,7 +502,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                              _cfg_lex_extend_token_location_to_next_line(yyextra);
                            }
 
-<INITIAL><<EOF>>           {
+<INITIAL,filterx><<EOF>>   {
                              if (!cfg_lexer_start_next_include(yyextra))
                                {
                                  if (yyextra->include_depth == 0)
@@ -522,6 +537,20 @@ cfg_lexer_start_block_state(CfgLexer *self, const gchar block_boundary[2])
 {
   memcpy(&self->block_boundary, block_boundary, sizeof(self->block_boundary));
   yy_push_state(block, self->state);
+}
+
+void
+cfg_lexer_push_filterx_state(CfgLexer *self)
+{
+  yy_push_state(filterx, self->state);
+}
+
+void
+cfg_lexer_pop_filterx_state(CfgLexer *self)
+{
+  struct yyguts_t *yyg = self->state;
+  g_assert(YY_START == filterx);
+  yy_pop_state(self->state);
 }
 
 /* avoid warnings of unused symbols */

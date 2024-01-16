@@ -41,18 +41,6 @@ static CfgLexerKeyword filter_expr_keywords[] =
   { "ge",                 KW_STR_GE },
   { "gt",                 KW_STR_GT },
 
-  /* type aware comparisons */
-  { "<",                  KW_TA_LT },
-  { "<=",                 KW_TA_LE },
-  { "==",                 KW_TA_EQ },
-  { "!=",                 KW_TA_NE },
-  { ">=",                 KW_TA_GE },
-  { ">",                  KW_TA_GT },
-
-  /* equal type and value */
-  { "===",                KW_TAV_EQ },
-  { "!==",                KW_TAV_NE },
-
   /* filter expressions */
   { "severity",           KW_SEVERITY },
   { "level",              KW_SEVERITY },
