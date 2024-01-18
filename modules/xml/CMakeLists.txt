@@ -7,6 +7,7 @@ endif()
 set(xml_SOURCES
     "xml-parser.h"
     "xml.h"
+    "xml-private.h"
     "xml-plugin.c"
     "xml-parser.c"
     "xml.c"

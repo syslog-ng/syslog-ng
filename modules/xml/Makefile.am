@@ -5,7 +5,8 @@ modules_xml_libxml_la_SOURCES = \
   modules/xml/xml-parser.h        \
   modules/xml/xml-plugin.c        \
   modules/xml/xml.h               \
-  modules/xml/xml.c
+  modules/xml/xml.c               \
+  modules/xml/xml-private.h
 
 
 BUILT_SOURCES       +=      \

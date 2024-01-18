@@ -54,10 +54,10 @@ encode_and_append_value(GString *result, const gchar *current_value, gssize curr
   str_repr_encode_append(result, current_value, current_value_len, ",");
 }
 
-static GString *
-append_values(const gchar *previous_value, gssize previous_value_len,
-              const gchar *current_value, gssize current_value_len,
-              gboolean create_lists, LogMessageValueType *type)
+GString *
+xml_parser_append_values(const gchar *previous_value, gssize previous_value_len,
+                         const gchar *current_value, gssize current_value_len,
+                         gboolean create_lists, LogMessageValueType *type)
 {
   GString *result = scratch_buffers_alloc();
   g_string_append_len(result, previous_value, previous_value_len);
@@ -90,8 +90,8 @@ scanner_push_function(const gchar *name, const gchar *value, gssize value_length
 
   ScratchBuffersMarker marker;
   scratch_buffers_mark(&marker);
-  GString *values_appended = append_values(current_value, current_value_len, value, value_length,
-                                           push_params->create_lists, &type);
+  GString *values_appended = xml_parser_append_values(current_value, current_value_len, value, value_length,
+                                                      push_params->create_lists, &type);
   log_msg_set_value_by_name_with_type(push_params->msg, name, values_appended->str, values_appended->len, type);
   scratch_buffers_reclaim_marked(marker);
 }
