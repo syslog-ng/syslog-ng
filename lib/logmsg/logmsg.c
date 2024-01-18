@@ -671,6 +671,13 @@ log_msg_unset_value(LogMessage *self, NVHandle handle)
 {
   g_assert(!log_msg_is_write_protected(self));
 
+  if (_log_name_value_updates(self))
+    {
+      msg_trace("Unsetting value",
+                evt_tag_str("name", log_msg_get_value_name(handle, NULL)),
+                evt_tag_msg_reference(self));
+    }
+
   if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     {
       self->payload = nv_table_clone(self->payload, 0);
