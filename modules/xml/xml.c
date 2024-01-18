@@ -56,18 +56,25 @@ encode_and_append_value(GString *result, const gchar *current_value, gssize curr
 
 static GString *
 append_values(const gchar *previous_value, gssize previous_value_len,
-              const gchar *current_value, gssize current_value_len, gboolean create_lists)
+              const gchar *current_value, gssize current_value_len,
+              gboolean create_lists, LogMessageValueType *type)
 {
   GString *result = scratch_buffers_alloc();
   g_string_append_len(result, previous_value, previous_value_len);
+
+  *type = LM_VT_STRING;
+
   if (create_lists)
     {
+      if (previous_value_len != 0)
+        *type = LM_VT_LIST;
       encode_and_append_value(result, current_value, current_value_len);
     }
   else
     {
       g_string_append_len(result, current_value, current_value_len);
     }
+
   return result;
 }
 
@@ -79,11 +86,13 @@ scanner_push_function(const gchar *name, const gchar *value, gssize value_length
   gssize current_value_len = 0;
   const gchar *current_value = log_msg_get_value_by_name(push_params->msg, name, &current_value_len);
 
+  LogMessageValueType type;
+
   ScratchBuffersMarker marker;
   scratch_buffers_mark(&marker);
   GString *values_appended = append_values(current_value, current_value_len, value, value_length,
-                                           push_params->create_lists);
-  log_msg_set_value_by_name(push_params->msg, name, values_appended->str, values_appended->len);
+                                           push_params->create_lists, &type);
+  log_msg_set_value_by_name_with_type(push_params->msg, name, values_appended->str, values_appended->len, type);
   scratch_buffers_reclaim_marked(marker);
 }
 
