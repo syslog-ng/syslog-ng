@@ -23,7 +23,7 @@
 #include "expr-dict.h"
 #include "object-json.h"
 #include "scratch-buffers.h"
-#include <json-c/json.h>
+#include "compat/json.h"
 
 struct _FilterXKeyValue
 {

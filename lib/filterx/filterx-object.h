@@ -24,7 +24,7 @@
 #define FILTERX_OBJECT_H_INCLUDED
 
 #include "logmsg/logmsg.h"
-#include <json-c/json.h>
+#include "compat/json.h"
 
 typedef struct _FilterXType FilterXType;
 typedef struct _FilterXObject FilterXObject;

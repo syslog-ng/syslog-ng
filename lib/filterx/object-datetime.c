@@ -24,7 +24,7 @@
 #include "scratch-buffers.h"
 #include "str-format.h"
 
-#include <json-c/json.h>
+#include "compat/json.h"
 
 
 typedef struct _FilterXDateTime

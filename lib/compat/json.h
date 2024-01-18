@@ -20,19 +20,17 @@
  * COPYING for details.
  *
  */
-#ifndef FILTERX_JSON_H_INCLUDED
-#define FILTERX_JSON_H_INCLUDED
+#ifndef COMPAT_JSON_C_H_INCLUDED
+#define COMPAT_JSON_C_H_INCLUDED 1
 
-#include "filterx/filterx-object.h"
-#include "compat/json.h"
+#include "compat/compat.h"
+#include <json-c/json.h>
 
-FILTERX_DECLARE_TYPE(json);
+#if JSON_C_MAJOR_VERSION == 0 && JSON_C_MINOR_VERSION < 15
 
-void filterx_json_associate_cached_object(struct json_object *json, FilterXObject *object);
+/* earlier than 0.15 did not have json_object_new_array_ext() */
+#define json_object_new_array_ext(num) json_object_new_array()
 
-FilterXObject *filterx_json_new_sub(struct json_object *object, FilterXObject *root);
-FilterXObject *filterx_json_new(struct json_object *object);
-FilterXObject *construct_filterx_json_from_repr(const gchar *repr, gssize repr_len);
-FilterXObject *construct_filterx_json_from_list_repr(const gchar *repr, gssize repr_len);
+#endif
 
 #endif

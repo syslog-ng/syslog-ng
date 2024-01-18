@@ -24,7 +24,7 @@
 #include "generic-number.h"
 #include "str-format.h"
 
-#include <json-c/json.h>
+#include "compat/json.h"
 
 static gboolean
 _truthy(FilterXObject *s)
