@@ -54,32 +54,13 @@ _eval(FilterXExpr *s)
   return msg_ref;
 }
 
-static FilterXObject *
-_eval_typed(FilterXExpr *s)
+static void
+_update_repr(FilterXExpr *s, FilterXObject *new_repr)
 {
   FilterXMessageRefExpr *self = (FilterXMessageRefExpr *) s;
   FilterXEvalContext *context = filterx_eval_get_context();
 
-  FilterXObject *result = filterx_expr_eval(s);
-  if (!result)
-    return NULL;
-
-  if (filterx_object_is_type(result, &FILTERX_TYPE_NAME(message_value)))
-    {
-      FilterXObject *unmarshalled = filterx_object_unmarshal(result);
-      if (!unmarshalled)
-        {
-          filterx_object_unref(result);
-          return NULL;
-        }
-      if (result != unmarshalled)
-        {
-          filterx_object_unref(result);
-          filterx_scope_register_message_ref(context->scope, self->handle, unmarshalled);
-          result = unmarshalled;
-        }
-    }
-  return result;
+  filterx_scope_register_message_ref(context->scope, self->handle, new_repr);
 }
 
 static gboolean
@@ -111,7 +92,7 @@ filterx_message_ref_expr_new(NVHandle handle)
 
   filterx_expr_init_instance(&self->super);
   self->super.eval = _eval;
-  self->super.eval_typed = _eval_typed;
+  self->super._update_repr = _update_repr;
   self->super.assign = _assign;
   self->super.free_fn = _free;
   self->handle = handle;

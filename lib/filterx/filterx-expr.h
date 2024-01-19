@@ -33,25 +33,65 @@ struct _FilterXExpr
 {
   guint32 ref_cnt;
   const gchar *type;
+
+  /* evaluate expression */
   FilterXObject *(*eval)(FilterXExpr *self);
-  FilterXObject *(*eval_typed)(FilterXExpr *self);
+  /* not to be used except for FilterXMessageRef, replace any cached values
+   * with the unmarshaled version */
+  void (*_update_repr)(FilterXExpr *self, FilterXObject *new_repr);
+
+  /* assign a new value to this expr */
   gboolean (*assign)(FilterXExpr *self, FilterXObject *new_value);
+
   void (*free_fn)(FilterXExpr *self);
 };
 
+/*
+ * Evaluate the expression and return the result as a FilterXObject.  The
+ * result can either be a
+ *
+ *   1) raw representation (e.g.  a marshalled series of bytes + syslog-ng
+ *      type hint encapsulated into a FilterXMessageValue)
+ *
+ *   2) typed representation (e.g.  a demarshalled object, something other
+ *      than FilterXMessageValue, like FilterXJSON)
+ *
+ * If the caller is not ok with handling the raw representation, just use
+ * filterx_expr_eval_typed() which will unmarshall any values before
+ * returning them.
+ */
 static inline FilterXObject *
 filterx_expr_eval(FilterXExpr *self)
 {
   return self->eval(self);
 }
 
+/*
+ * Evaluate the expression and return the result as a typed FilterXObject.
+ * This function will call filterx_expr_eval() and then unmarshal the result
+ * so the result is always a typed object.
+ */
 static inline FilterXObject *
 filterx_expr_eval_typed(FilterXExpr *self)
 {
-  if (!self->eval_typed)
-    return filterx_expr_eval(self);
-  return self->eval_typed(self);
+  FilterXObject *result = filterx_expr_eval(self);
+  FilterXObject *unmarshalled = filterx_object_unmarshal(result);
+
+  if (!unmarshalled)
+    {
+      filterx_object_unref(result);
+      return NULL;
+    }
+  if (result != unmarshalled)
+    {
+      filterx_object_unref(result);
+      if (self->_update_repr)
+        self->_update_repr(self, unmarshalled);
+      result = unmarshalled;
+    }
+  return result;
 }
+
 
 static inline gboolean
 filterx_expr_assign(FilterXExpr *self, FilterXObject *new_value)
