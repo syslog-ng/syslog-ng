@@ -29,7 +29,6 @@ jobs:
     strategy:
       matrix:
         image:
-          - centos-7
           - fedora-39
           - debian-bullseye
           - debian-bookworm
