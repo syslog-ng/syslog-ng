@@ -91,7 +91,7 @@ struct _FilterXObject
    *                          this needs to be copied.
    *
    */
-  guint modified_in_place:1, shadow:1, assigned:1;
+  guint thread_index:16, modified_in_place:1, shadow:1, assigned:1;
   FilterXType *type;
 };
 
