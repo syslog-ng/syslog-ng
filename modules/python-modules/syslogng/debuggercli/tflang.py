@@ -109,8 +109,8 @@ class TemplateFunctionLang(CompleterLang):
 
     def _convert_known_commands_to_tokens(self, tokens):
         for command in self.known_commands:
-            tokens.append("COMMAND_{}".format(self._tokenize_argument(command)))
+            tokens.append(f"COMMAND_{self._tokenize_argument(command)}")
 
     def _convert_known_options_to_tokens(self, tokens):
         for option in self.known_options:
-            tokens.append("OPT{}".format(self._tokenize_argument(option)))
+            tokens.append(f"OPT{self._tokenize_argument(option)}")
