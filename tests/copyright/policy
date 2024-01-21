@@ -242,6 +242,8 @@ tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py
 tests/light/src/syslog_ng_config/statements/template/template\.py
 modules/correlation/id-counter\.[ch]$
 modules/correlation/group-lines.h
+modules/xml/windows-eventlog-xml-parser\.h
+modules/xml/tests/test_windows_eventlog_xml_parser\.c
 
 ###########################################################################
 # These files are GPLd with Balabit origin.

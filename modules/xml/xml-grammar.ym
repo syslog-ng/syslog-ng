@@ -27,6 +27,7 @@
 
 %code {
 #include "xml.h"
+#include "windows-eventlog-xml-parser.h"
 #include "cfg-parser.h"
 #include "cfg-grammar-internal.h"
 #include "syslog-names.h"
@@ -57,19 +58,36 @@ XMLScannerOptions *last_xml_scanner_options;
 %token KW_EXCLUDE_TAGS
 %token KW_STRIP_WHITESPACES
 %token KW_CREATE_LISTS
+%token KW_WINDOWS_EVENTLOG_XML_PARSER
 
 
 %type	<ptr> parser_xml
+%type <ptr> parser_windows_eventlog
 %%
 
 start
   : LL_CONTEXT_PARSER parser_xml          { YYACCEPT; }
+  | LL_CONTEXT_PARSER parser_windows_eventlog { YYACCEPT; }
   ;
 
 parser_xml
   : KW_XML '('
      {
         last_parser = *instance = (LogParser *) xml_parser_new(configuration);
+        last_xml_scanner_options = xml_parser_get_scanner_options(last_parser);
+     }
+
+        xml_options
+                       ')'
+     {
+        $$ = last_parser;
+     }
+  ;
+
+parser_windows_eventlog
+  : KW_WINDOWS_EVENTLOG_XML_PARSER '('
+     {
+        last_parser = *instance = (LogParser *) windows_eventlog_xml_parser_new(configuration);
         last_xml_scanner_options = xml_parser_get_scanner_options(last_parser);
      }
 

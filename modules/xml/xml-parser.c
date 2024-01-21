@@ -36,6 +36,7 @@ static CfgLexerKeyword xml_keywords[] =
   { "exclude_tags", KW_EXCLUDE_TAGS },
   { "strip_whitespaces", KW_STRIP_WHITESPACES },
   { "create_lists", KW_CREATE_LISTS },
+  { "windows_eventlog_xml_parser", KW_WINDOWS_EVENTLOG_XML_PARSER },
   { NULL }
 };
 
