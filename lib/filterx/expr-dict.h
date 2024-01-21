@@ -25,12 +25,12 @@
 
 #include "filterx/filterx-expr.h"
 
-typedef struct _FilterXJSONKeyValue FilterXJSONKeyValue;
+typedef struct _FilterXKeyValue FilterXKeyValue;
 
-FilterXJSONKeyValue *filterx_json_kv_new(const gchar *, FilterXExpr *value_expr);
-void filterx_json_kv_free(FilterXJSONKeyValue *self);
+FilterXKeyValue *filterx_kv_new(const gchar *key, FilterXExpr *value_expr);
+void filterx_kv_free(FilterXKeyValue *self);
 
-FilterXExpr *filterx_json_expr_new(GList *key_values);
+FilterXExpr *filterx_dict_expr_new(GList *key_values);
 
 
 #endif

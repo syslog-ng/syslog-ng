@@ -20,42 +20,42 @@
  * COPYING for details.
  *
  */
-#include "expr-json.h"
+#include "expr-dict.h"
 #include "object-json.h"
 #include "scratch-buffers.h"
 #include <json-c/json.h>
 
-struct _FilterXJSONKeyValue
+struct _FilterXKeyValue
 {
   gchar *key;
   FilterXExpr *value_expr;
 };
 
-FilterXJSONKeyValue *
-filterx_json_kv_new(const gchar *key, FilterXExpr *value_expr)
+FilterXKeyValue *
+filterx_kv_new(const gchar *key, FilterXExpr *value_expr)
 {
-  FilterXJSONKeyValue *self = g_new0(FilterXJSONKeyValue, 1);
+  FilterXKeyValue *self = g_new0(FilterXKeyValue, 1);
   self->key = g_strdup(key);
   self->value_expr = value_expr;
   return self;
 }
 
 void
-filterx_json_kv_free(FilterXJSONKeyValue *self)
+filterx_kv_free(FilterXKeyValue *self)
 {
   g_free(self->key);
   filterx_expr_unref(self->value_expr);
   g_free(self);
 }
 
-typedef struct _FilterXJSONExpr
+typedef struct _FilterXDictExpr
 {
   FilterXExpr super;
   GList *key_values;
-} FilterXJSONExpr;
+} FilterXDictExpr;
 
 static gboolean
-_eval_key_value(FilterXJSONExpr *self, FilterXObject *object, FilterXJSONKeyValue *kv)
+_eval_key_value(FilterXDictExpr *self, FilterXObject *object, FilterXKeyValue *kv)
 {
   FilterXObject *value = filterx_expr_eval_typed(kv->value_expr);
   gboolean success = FALSE;
@@ -81,7 +81,7 @@ fail:
 static FilterXObject *
 _eval(FilterXExpr *s)
 {
-  FilterXJSONExpr *self = (FilterXJSONExpr *) s;
+  FilterXDictExpr *self = (FilterXDictExpr *) s;
   FilterXObject *object = filterx_json_new(json_object_new_object());
 
   for (GList *l = self->key_values; l; l = l->next)
@@ -98,15 +98,15 @@ fail:
 static void
 _free(FilterXExpr *s)
 {
-  FilterXJSONExpr *self = (FilterXJSONExpr *) s;
+  FilterXDictExpr *self = (FilterXDictExpr *) s;
 
-  g_list_free_full(self->key_values, (GDestroyNotify) filterx_json_kv_free);
+  g_list_free_full(self->key_values, (GDestroyNotify) filterx_kv_free);
 }
 
 FilterXExpr *
-filterx_json_expr_new(GList *key_values)
+filterx_dict_expr_new(GList *key_values)
 {
-  FilterXJSONExpr *self = g_new0(FilterXJSONExpr, 1);
+  FilterXDictExpr *self = g_new0(FilterXDictExpr, 1);
 
   filterx_expr_init_instance(&self->super);
   self->super.eval = _eval;

@@ -3,7 +3,7 @@ set(FILTERX_HEADERS
     filterx/expr-boolalg.h
     filterx/expr-comparison.h
     filterx/expr-getattr.h
-    filterx/expr-json.h
+    filterx/expr-dict.h
     filterx/expr-literal.h
     filterx/expr-message-ref.h
     filterx/expr-setattr.h
@@ -31,7 +31,7 @@ set(FILTERX_SOURCES
     filterx/expr-boolalg.c
     filterx/expr-comparison.c
     filterx/expr-getattr.c
-    filterx/expr-json.c
+    filterx/expr-dict.c
     filterx/expr-literal.c
     filterx/expr-message-ref.c
     filterx/expr-setattr.c
