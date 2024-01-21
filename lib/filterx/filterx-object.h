@@ -45,9 +45,11 @@ struct _FilterXType
       gboolean (*truthy)(FilterXObject *self);
       FilterXObject *(*getattr)(FilterXObject *self, const gchar *attr_name);
       gboolean (*setattr)(FilterXObject *self, const gchar *attr_name, FilterXObject *new_value);
+      FilterXObject *(*get_subscript)(FilterXObject *self, FilterXObject *index);
+      gboolean (*set_subscript)(FilterXObject *self, FilterXObject *index, FilterXObject *new_value);
       void (*free_fn)(FilterXObject *self);
     };
-    gpointer __methods[8];
+    gpointer __methods[10];
   };
 };
 
@@ -173,6 +175,22 @@ filterx_object_setattr(FilterXObject *self, const gchar *attr_name, FilterXObjec
 {
   if (self->type->setattr)
     return self->type->setattr(self, attr_name, new_value);
+  return FALSE;
+}
+
+static inline FilterXObject *
+filterx_object_get_subscript(FilterXObject *self, FilterXObject *index)
+{
+  if (self->type->get_subscript)
+    return self->type->get_subscript(self, index);
+  return NULL;
+}
+
+static inline gboolean
+filterx_object_set_subscript(FilterXObject *self, FilterXObject *index, FilterXObject *new_value)
+{
+  if (self->type->set_subscript)
+    return self->type->set_subscript(self, index, new_value);
   return FALSE;
 }
 
