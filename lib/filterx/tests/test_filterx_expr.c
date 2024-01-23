@@ -31,17 +31,7 @@
 #include "apphook.h"
 #include "scratch-buffers.h"
 
-static void
-assert_marshaled_object(FilterXObject *obj, const gchar *repr, LogMessageValueType type)
-{
-  GString *b = g_string_sized_new(0);
-  LogMessageValueType t;
-
-  filterx_object_marshal(obj, b, &t);
-  cr_assert_str_eq(b->str, repr);
-  cr_assert_eq(t, type);
-  g_string_free(b, TRUE);
-}
+#include "filterx-lib.h"
 
 Test(filterx_expr, test_filterx_expr_construction_and_free)
 {

@@ -7,7 +7,8 @@ lib_filterx_tests_TESTS		 =              \
 		lib/filterx/tests/test_object_string	\
 		lib/filterx/tests/test_filterx_expr
 
-EXTRA_DIST += lib/filterx/tests/CMakeLists.txt
+EXTRA_DIST += lib/filterx/tests/CMakeLists.txt \
+	lib/filterx/tests/filterx-lib.h
 
 check_PROGRAMS				+= ${lib_filterx_tests_TESTS}
 

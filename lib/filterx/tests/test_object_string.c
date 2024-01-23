@@ -23,18 +23,7 @@
 #include <criterion/criterion.h>
 #include "filterx/object-string.h"
 #include "apphook.h"
-
-static void
-assert_marshaled_object(FilterXObject *obj, const gchar *repr, LogMessageValueType type)
-{
-  GString *b = g_string_sized_new(0);
-  LogMessageValueType t;
-
-  filterx_object_marshal(obj, b, &t);
-  cr_assert_str_eq(b->str, repr);
-  cr_assert_eq(t, type);
-  g_string_free(b, TRUE);
-}
+#include "filterx-lib.h"
 
 static void
 assert_object_json_equals(FilterXObject *obj, const gchar *expected_json_repr)
