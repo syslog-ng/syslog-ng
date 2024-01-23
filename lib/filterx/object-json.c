@@ -29,6 +29,8 @@
 #include "scanner/list-scanner/list-scanner.h"
 #include "str-repr/encode.h"
 
+#define JSON_ARRAY_MAX_SIZE 65536
+
 typedef struct _FilterXJSON FilterXJSON;
 struct _FilterXJSON
 {
@@ -36,7 +38,6 @@ struct _FilterXJSON
   FilterXWeakRef root_container;
   struct json_object *object;
 };
-
 
 static gboolean
 _truthy(FilterXObject *s)
@@ -133,8 +134,8 @@ _convert_json_to_object(FilterXJSON *self, struct json_object *object)
       return filterx_integer_new(json_object_get_int64(object));
     case json_type_string:
       return filterx_string_new(json_object_get_string(object), -1);
-    case json_type_object:
     case json_type_array:
+    case json_type_object:
     default:
       return filterx_json_new_sub(json_object_get(object),
                                   filterx_weakref_get(&self->root_container) ? : filterx_object_ref(&self->super));
@@ -215,6 +216,129 @@ _setattr(FilterXObject *s, const gchar *attr_name, FilterXObject *new_value)
   return TRUE;
 }
 
+static json_object *
+_get_subscript_array(FilterXJSON *self, FilterXObject *index)
+{
+  gint64 index_value;
+  if (!filterx_integer_unwrap(index, &index_value))
+    return NULL;
+
+  if (index_value < 0 || json_object_array_length(self->object) <= index_value)
+    return NULL;
+  return json_object_array_get_idx(self->object, index_value);
+}
+
+static json_object *
+_get_subscript_object(FilterXJSON *self, FilterXObject *index)
+{
+  struct json_object *result = NULL;
+  gsize attr_name_len;
+  const gchar *attr_name = filterx_string_get_value(index, &attr_name_len);
+
+  if (!attr_name)
+    return NULL;
+  if (!json_object_object_get_ex(self->object, attr_name, &result))
+    return NULL;
+  return result;
+}
+
+static FilterXObject *
+_get_subscript(FilterXObject *s, FilterXObject *index)
+{
+  FilterXJSON *self = (FilterXJSON *) s;
+  struct json_object *result = NULL;
+
+  if (json_object_is_type(self->object, json_type_array))
+    result = _get_subscript_array(self, index);
+  else if (json_object_is_type(self->object, json_type_object))
+    result = _get_subscript_object(self, index);
+  else
+    return NULL;
+
+  return _convert_json_to_object_cached(self, result);
+}
+
+static gboolean
+_set_subscript_array(FilterXJSON *self, FilterXObject *index, struct json_object *attr_value)
+{
+  gint64 index_value;
+
+  if (index)
+    {
+      if (!filterx_integer_unwrap(index, &index_value))
+        return FALSE;
+
+      if (index_value < 0 || index_value >= JSON_ARRAY_MAX_SIZE)
+        return FALSE;
+
+      /* put_idx extends the length of the array as needed by the index */
+      if (json_object_array_put_idx(self->object, index_value, attr_value) != 0)
+        return FALSE;
+    }
+  else
+    {
+      if (json_object_array_add(self->object, attr_value) != 0)
+        return FALSE;
+    }
+  return TRUE;
+}
+
+static gboolean
+_set_subscript_object(FilterXJSON *self, FilterXObject *index, struct json_object *attr_value)
+{
+  if (!index)
+    return FALSE;
+
+  const gchar *attr_name = filterx_string_get_value(index, NULL);
+
+  if (!attr_name)
+    return FALSE;
+
+  if (json_object_object_add(self->object, attr_name, attr_value) != 0)
+    return FALSE;
+  return TRUE;
+}
+
+static gboolean
+_set_subscript(FilterXObject *s, FilterXObject *index, FilterXObject *new_value)
+{
+  FilterXJSON *self = (FilterXJSON *) s;
+  struct json_object *attr_value = NULL;
+  gboolean result = FALSE;
+
+  /* this only clones mutable objects */
+  new_value = filterx_object_clone(new_value);
+
+  if (!filterx_object_map_to_json(new_value, &attr_value))
+    return FALSE;
+
+  filterx_json_associate_cached_object(attr_value, new_value);
+  filterx_object_unref(new_value);
+
+  if (json_object_is_type(self->object, json_type_array))
+    result = _set_subscript_array(self, index, attr_value);
+  else if (json_object_is_type(self->object, json_type_object))
+    result = _set_subscript_object(self, index, attr_value);
+  else
+    result = FALSE;
+
+  if (result)
+    {
+      self->super.modified_in_place = TRUE;
+      FilterXObject *root_container = filterx_weakref_get(&self->root_container);
+      if (root_container)
+        {
+          root_container->modified_in_place = TRUE;
+          filterx_object_unref(root_container);
+        }
+    }
+  else
+    {
+      json_object_put(attr_value);
+    }
+  return result;
+}
+
 static gboolean
 _map_to_json(FilterXObject *s, struct json_object **object)
 {
@@ -280,7 +404,9 @@ construct_filterx_json_from_list_repr(const gchar *repr, gssize repr_len)
   list_scanner_input_string(&scanner, repr, repr_len);
   for (gint i = 0; list_scanner_scan_next(&scanner); i++)
     {
-      json_object_array_put_idx(object, i, json_object_new_string_len(list_scanner_get_current_value(&scanner), list_scanner_get_current_value_len(&scanner)));
+      json_object_array_put_idx(object, i,
+                                json_object_new_string_len(list_scanner_get_current_value(&scanner),
+                                                           list_scanner_get_current_value_len(&scanner)));
     }
   list_scanner_deinit(&scanner);
   return filterx_json_new(object);
@@ -307,5 +433,7 @@ FILTERX_DEFINE_TYPE(json, FILTERX_TYPE_NAME(object),
                     .clone = _clone,
                     .getattr = _getattr,
                     .setattr = _setattr,
+                    .get_subscript = _get_subscript,
+                    .set_subscript = _set_subscript,
                     .map_to_json = _map_to_json,
                    );
