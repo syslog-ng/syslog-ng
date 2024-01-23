@@ -162,7 +162,7 @@
 
 %left  '+' '-'
 %left  '*' '/'
-%left '.' KW_NOT 9017
+%left '.' '[' ']' KW_NOT 9017
 
 /* statements */
 %token KW_SOURCE                      10000

@@ -37,6 +37,8 @@
 #include "filterx/expr-assign.h"
 #include "filterx/expr-getattr.h"
 #include "filterx/expr-setattr.h"
+#include "filterx/expr-get-subscript.h"
+#include "filterx/expr-set-subscript.h"
 #include "filterx/expr-dict.h"
 #include "filterx/expr-comparison.h"
 #include "filterx/object-primitive.h"
@@ -112,6 +114,9 @@ expr
 	| expr KW_AND expr                      { $$ = filterx_binary_and_new($1, $3); }
 	| expr '.' LL_IDENTIFIER		{ $$ = filterx_getattr_new($1, $3); free($3); }
 	| expr '.' LL_IDENTIFIER KW_ASSIGN expr	{ $$ = filterx_setattr_new($1, $3, $5); free($3); }
+	| expr '[' expr ']'			{ $$ = filterx_get_subscript_new($1, $3); }
+	| expr '[' expr ']' KW_ASSIGN expr      { $$ = filterx_set_subscript_new($1, $3, $6); }
+	| expr '[' ']' KW_ASSIGN expr      	{ $$ = filterx_set_subscript_new($1, NULL, $5); }
         | expr KW_TA_LT expr		        { $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT); }
         | expr KW_TA_LE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT | FCMPX_EQ); }
         | expr KW_TA_EQ expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_EQ); }

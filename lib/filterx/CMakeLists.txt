@@ -3,10 +3,12 @@ set(FILTERX_HEADERS
     filterx/expr-boolalg.h
     filterx/expr-comparison.h
     filterx/expr-getattr.h
+    filterx/expr-get-subscript.h
     filterx/expr-dict.h
     filterx/expr-literal.h
     filterx/expr-message-ref.h
     filterx/expr-setattr.h
+    filterx/expr-set-subscript.h
     filterx/expr-template.h
     filterx/filterx-config.h
     filterx/filterx-eval.h
@@ -31,10 +33,12 @@ set(FILTERX_SOURCES
     filterx/expr-boolalg.c
     filterx/expr-comparison.c
     filterx/expr-getattr.c
+    filterx/expr-get-subscript.c
     filterx/expr-dict.c
     filterx/expr-literal.c
     filterx/expr-message-ref.c
     filterx/expr-setattr.c
+    filterx/expr-set-subscript.c
     filterx/expr-template.c
     filterx/filterx-config.c
     filterx/filterx-eval.c

@@ -10,6 +10,8 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/expr-assign.h		\
 	lib/filterx/expr-getattr.h		\
 	lib/filterx/expr-setattr.h		\
+	lib/filterx/expr-get-subscript.h	\
+	lib/filterx/expr-set-subscript.h	\
 	lib/filterx/expr-dict.h			\
 	lib/filterx/expr-message-ref.h		\
 	lib/filterx/expr-comparison.h		\
@@ -37,6 +39,8 @@ filterx_sources = 				\
 	lib/filterx/expr-assign.c		\
 	lib/filterx/expr-getattr.c		\
 	lib/filterx/expr-setattr.c		\
+	lib/filterx/expr-get-subscript.c	\
+	lib/filterx/expr-set-subscript.c	\
 	lib/filterx/expr-dict.c			\
 	lib/filterx/expr-message-ref.c		\
 	lib/filterx/expr-comparison.c		\
