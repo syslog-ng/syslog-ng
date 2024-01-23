@@ -5,6 +5,7 @@ set(FILTERX_HEADERS
     filterx/expr-getattr.h
     filterx/expr-get-subscript.h
     filterx/expr-dict.h
+    filterx/expr-list.h
     filterx/expr-literal.h
     filterx/expr-message-ref.h
     filterx/expr-setattr.h
@@ -35,6 +36,7 @@ set(FILTERX_SOURCES
     filterx/expr-getattr.c
     filterx/expr-get-subscript.c
     filterx/expr-dict.c
+    filterx/expr-list.c
     filterx/expr-literal.c
     filterx/expr-message-ref.c
     filterx/expr-setattr.c

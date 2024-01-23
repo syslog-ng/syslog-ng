@@ -13,6 +13,7 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/expr-get-subscript.h	\
 	lib/filterx/expr-set-subscript.h	\
 	lib/filterx/expr-dict.h			\
+	lib/filterx/expr-list.h			\
 	lib/filterx/expr-message-ref.h		\
 	lib/filterx/expr-comparison.h		\
 	lib/filterx/filterx-object.h		\
@@ -42,6 +43,7 @@ filterx_sources = 				\
 	lib/filterx/expr-get-subscript.c	\
 	lib/filterx/expr-set-subscript.c	\
 	lib/filterx/expr-dict.c			\
+	lib/filterx/expr-list.c			\
 	lib/filterx/expr-message-ref.c		\
 	lib/filterx/expr-comparison.c		\
 	lib/filterx/filterx-object.c		\
