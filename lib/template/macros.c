@@ -500,7 +500,7 @@ log_macro_expand(gint id, LogTemplateEvalOptions *options, const LogMessage *msg
     case M_TAGS:
     {
       t = LM_VT_LIST;
-      log_msg_format_tags(msg, result);
+      log_msg_format_tags(msg, result, TRUE);
       break;
     }
     case M__ASTERISK:
