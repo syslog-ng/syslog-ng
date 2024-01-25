@@ -147,8 +147,7 @@ g_sockaddr_get_address(GSockAddr *self, guint8 *buffer, socklen_t buffer_size)
 #endif
   else
     {
-      errno = EAFNOSUPPORT;
-      return NULL;
+      g_assert_not_reached();
     }
 }
 
