@@ -1209,9 +1209,9 @@ syslogng::grpc::otel::ProtobufParser::set_syslog_ng_macros(LogMessage *msg, cons
 
       if (name.compare("PRI") == 0)
         {
-          if (!_value_case_equals(msg, macro, AnyValue::kBytesValue))
+          if (!_value_case_equals(msg, macro, AnyValue::kIntValue))
             continue;
-          msg->pri = log_rewrite_set_pri_convert_pri(macro.value().bytes_value().c_str());
+          msg->pri = macro.value().int_value();
         }
       else if (name.compare("TAGS") == 0)
         {

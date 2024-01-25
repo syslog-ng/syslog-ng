@@ -588,10 +588,9 @@ ProtobufFormatter::set_syslog_ng_macros(LogMessage *msg, LogRecord &log_record)
   gssize len;
   const char *value;
 
-  value = log_msg_get_value_by_name_with_type(msg, "PRI", &len, &type);
   KeyValue *pri_attr = macros_kvlist->add_values();
   pri_attr->set_key("PRI");
-  pri_attr->mutable_value()->set_bytes_value(value, len);
+  pri_attr->mutable_value()->set_int_value(msg->pri);
 
   value = log_msg_get_value_by_name_with_type(msg, "TAGS", &len, &type);
   KeyValue *tags_attr = macros_kvlist->add_values();
