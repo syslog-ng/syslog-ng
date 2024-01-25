@@ -117,31 +117,33 @@ g_sockaddr_set_port(GSockAddr *a, guint16 port)
 }
 
 guint8 *
-g_sockaddr_get_address(GSockAddr *self, guint8 *buffer, socklen_t buffer_size)
+g_sockaddr_get_address(GSockAddr *self, guint8 *buffer, gsize buffer_size, gsize *addr_len)
 {
   if (self->sa.sa_family == AF_INET)
     {
       struct in_addr addr = g_sockaddr_inet_get_address(self);
-      socklen_t len = sizeof(addr);
+      gsize len = sizeof(addr);
       if (buffer_size < len)
         {
           errno = EINVAL;
           return NULL;
         }
       memcpy(buffer, &addr, len);
+      *addr_len = len;
       return buffer;
     }
 #if SYSLOG_NG_ENABLE_IPV6
   else if (self->sa.sa_family == AF_INET6)
     {
       struct in6_addr *addr = g_sockaddr_inet6_get_address(self);
-      socklen_t len = sizeof(struct in6_addr);
+      gsize len = sizeof(struct in6_addr);
       if (buffer_size < len)
         {
           errno = EINVAL;
           return NULL;
         }
       memcpy(buffer, addr, len);
+      *addr_len = len;
       return buffer;
     }
 #endif
