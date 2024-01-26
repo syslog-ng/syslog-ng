@@ -1,4 +1,4 @@
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/syslog-ng/syslog-ng?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge)
+[![Discord](https://img.shields.io/discord/1082023686028148877?label=Discord&logo=discord&logoColor=white)](https://discord.gg/qmq53uBm2c)
 [![Build Status](https://github.com/syslog-ng/syslog-ng/actions/workflows/devshell.yml/badge.svg)](https://github.com/syslog-ng/syslog-ng/actions/workflows/devshell.yml)
 [![Nightly](https://github.com/syslog-ng/syslog-ng/actions/workflows/nightly-release.yml/badge.svg)](https://github.com/syslog-ng/syslog-ng/actions/workflows/nightly-release.yml)
 [![Binary packages](https://github.com/syslog-ng/syslog-ng/actions/workflows/packages.yml/badge.svg)](https://github.com/syslog-ng/syslog-ng/actions/workflows/packages.yml)
