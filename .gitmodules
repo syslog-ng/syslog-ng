@@ -1,8 +1,7 @@
 [submodule "lib/ivykis"]
 	path = lib/ivykis
-	url = https://github.com/bazsi/ivykis.git
+	url = https://github.com/buytenh/ivykis.git
 	ignore = dirty
-	branch = tip/syslog-ng
 [submodule "modules/grpc/otel/opentelemetry-proto"]
 	path = modules/grpc/protos/opentelemetry-proto
 	url = https://github.com/open-telemetry/opentelemetry-proto.git
