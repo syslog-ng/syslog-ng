@@ -217,6 +217,7 @@ scl/openobserve/.*\.conf$
 scl/pgsql/pgsql\.conf$
 scl/qbittorrent/qbittorrent\.conf$
 scl/pihole/pihole\.conf$
+scl/jellyfin/jellyfin\.conf$
 modules/python-modules/syslogng/modules/kubernetes/.*
 modules/ebpf/.*
 modules/python-modules/syslogng/modules/hypr/.*

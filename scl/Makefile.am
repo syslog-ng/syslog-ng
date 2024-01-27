@@ -16,6 +16,7 @@ SCL_SUBDIRS	= \
 	graylog2	\
 	hdfs		\
 	iptables	\
+	jellyfin	\
 	junos		\
 	kafka		\
 	linux-audit	\
