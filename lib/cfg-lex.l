@@ -305,6 +305,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 <INITIAL,filterx>\.\.      { return LL_DOTDOT; }
 <INITIAL,filterx>\.\.\.    { return LL_DOTDOTDOT; }
 <INITIAL,filterx>=>        { return LL_ARROW; }
+<INITIAL,filterx>=         { return KW_ASSIGN; }
 <INITIAL,filterx><	   { return KW_TA_LT; }
 <INITIAL,filterx><=        { return KW_TA_LE; }
 <INITIAL,filterx>==        { return KW_TA_EQ; }
@@ -342,6 +343,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 
     /* and this is the version in filterx, which only allows "traditional" identifiers */
 <filterx>[a-zA-Z][_a-zA-Z0-9]* 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
+<filterx>\$\{({word}+(\.)?)*{word}+\}   { yylval->cptr = strndup(yytext+2, strlen(yytext) - 3); return LL_MESSAGE_REF; }
 <INITIAL>\,	   	   ;
 
 <INITIAL,filterx>\"        {

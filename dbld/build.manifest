@@ -9,7 +9,7 @@
 #
 #   OS              -- either Linux distribution name (e.g.  ubuntu, centos
 #                      etc), or a distro + version combination separated by
-#                      a dash (e.g.  ubuntu-bionic, centos-7, etc). If used
+#                      a dash (e.g.  ubuntu-bionic, centos-8, etc). If used
 #                      without version number, it denotes a wildcard (e.g.
 #                      applied to any versions of the distro).
 #
@@ -41,5 +41,4 @@ ubuntu-jammy		python3,notzdatalegacy
 ubuntu-lunar		python3
 ubuntu-mantic		python3
 
-centos-7		python3
 fedora			python3

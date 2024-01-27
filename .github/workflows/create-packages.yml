@@ -23,7 +23,6 @@ on:
           "ubuntu-jammy",
           "ubuntu-lunar",
           "ubuntu-mantic",
-          "centos-7",
           "fedora-39"
         ]'
 

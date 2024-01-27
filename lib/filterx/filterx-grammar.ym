@@ -1,0 +1,236 @@
+/*
+ * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "filterx/filterx-parser.h"
+
+}
+
+%code {
+
+/* filterx language constructs */
+#include "filterx/expr-literal.h"
+#include "filterx/expr-message-ref.h"
+#include "filterx/expr-template.h"
+#include "filterx/expr-boolalg.h"
+#include "filterx/expr-assign.h"
+#include "filterx/expr-getattr.h"
+#include "filterx/expr-setattr.h"
+#include "filterx/expr-get-subscript.h"
+#include "filterx/expr-set-subscript.h"
+#include "filterx/expr-dict.h"
+#include "filterx/expr-list.h"
+#include "filterx/expr-comparison.h"
+#include "filterx/object-primitive.h"
+#include "filterx/object-json.h"
+#include "filterx/object-null.h"
+#include "filterx/object-string.h"
+#include "filterx/filterx-config.h"
+#include "filterx/expr-function.h"
+
+#include "template/templates.h"
+
+FilterXExpr *
+construct_template_expr(LogTemplate *template)
+{
+  FilterXExpr *result;
+
+  if (log_template_is_literal_string(template))
+    result = filterx_literal_new(
+		filterx_config_freeze_object(configuration,
+			filterx_string_new(log_template_get_literal_value(template, NULL), -1)));
+  else if (log_template_is_trivial(template))
+    result = filterx_message_ref_expr_new(log_template_get_trivial_value_handle(template));
+  else
+    result = filterx_template_new(log_template_ref(template));
+  log_template_unref(template);
+  return result;
+}
+
+}
+
+%define api.prefix {filterx_}
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {GList **result}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_TRUE, KW_FALSE
+%token KW_NULL
+
+%type <ptr> stmts
+%type <node> stmt
+%type <node> expr
+%type <node> expr_value
+%type <node> function_call
+%type <ptr> arguments
+%type <ptr> argument
+%type <node> literal
+%type <ptr> literal_object
+%type <node> lvalue
+%type <ptr> template
+%type <ptr> dict_expr
+%type <ptr> dict_key_values
+%type <ptr> dict_key_value
+%type <ptr> list_expr
+%type <ptr> list_values
+%type <ptr> list_value
+%type <num> boolean
+
+%%
+
+start
+        : stmts					{ *result = $1; if (yychar != FILTERX_EMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+	;
+
+stmts
+	: stmt stmts				{ $$ = g_list_prepend($2, $1); }
+	|					{ $$ = NULL; }
+	;
+
+stmt
+	: expr ';'				{ $$ = $1; }
+	;
+
+expr
+	: expr_value				{ $$ = $1; }
+	| function_call				{ $$ = $1; }
+	| lvalue KW_ASSIGN expr			{ $$ = filterx_assign_new($1, $3); }
+	| KW_NOT expr				{ $$ = filterx_unary_not_new($2); }
+	| expr KW_OR expr			{ $$ = filterx_binary_or_new($1, $3); }
+	| expr KW_AND expr                      { $$ = filterx_binary_and_new($1, $3); }
+	| expr '.' LL_IDENTIFIER		{ $$ = filterx_getattr_new($1, $3); free($3); }
+	| expr '.' LL_IDENTIFIER KW_ASSIGN expr	{ $$ = filterx_setattr_new($1, $3, $5); free($3); }
+	| expr '[' expr ']'			{ $$ = filterx_get_subscript_new($1, $3); }
+	| expr '[' expr ']' KW_ASSIGN expr      { $$ = filterx_set_subscript_new($1, $3, $6); }
+	| expr '[' ']' KW_ASSIGN expr      	{ $$ = filterx_set_subscript_new($1, NULL, $5); }
+        | expr KW_TA_LT expr		        { $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT); }
+        | expr KW_TA_LE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT | FCMPX_EQ); }
+        | expr KW_TA_EQ expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_EQ); }
+        | expr KW_TA_NE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT | FCMPX_GT); }
+        | expr KW_TA_GE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_EQ | FCMPX_GT); }
+        | expr KW_TA_GT expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_GT); }
+        | expr KW_STR_LT expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_STRING_BASED | FCMPX_LT); }
+        | expr KW_STR_LE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_STRING_BASED | FCMPX_LT | FCMPX_EQ); }
+        | expr KW_STR_EQ expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_STRING_BASED | FCMPX_EQ); }
+        | expr KW_STR_NE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_STRING_BASED | FCMPX_LT | FCMPX_GT); }
+        | expr KW_STR_GE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_STRING_BASED | FCMPX_EQ | FCMPX_GT); }
+        | expr KW_STR_GT expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_STRING_BASED | FCMPX_GT); }
+        | expr KW_TAV_EQ expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AND_VALUE_BASED | FCMPX_EQ); }
+        | expr KW_TAV_NE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AND_VALUE_BASED | FCMPX_LT | FCMPX_GT); }
+	| '(' expr ')'				{ $$ = $2; }
+	;
+
+expr_value
+	: literal
+	| lvalue				{ $$ = $1; }
+	| template				{ $$ = construct_template_expr($1); }
+	| dict_expr                             { $$ = filterx_dict_expr_new($1); }
+	| list_expr				{ $$ = filterx_list_expr_new($1); }
+	;
+
+function_call
+	: LL_IDENTIFIER '(' arguments ')'	{ 
+							FilterXExpr *res = filterx_function_lookup(configuration, $1, $3);
+							CHECK_ERROR(res, @1, "filterx function %s not found", $1);
+							$$ = res;
+						}
+	;
+
+arguments
+	: arguments ',' argument		{ $$ = g_list_append($1, $3); }
+	| argument				{ $$ = g_list_append(NULL, $1); }
+	|					{ $$ = NULL; }
+	;
+
+argument
+	: expr
+	;
+
+literal: literal_object				{ $$ = filterx_literal_new(filterx_config_freeze_object(configuration, $1)); }
+
+literal_object
+	: LL_NUMBER				{ $$ = filterx_integer_new($1); }
+	| LL_FLOAT				{ $$ = filterx_double_new($1); }
+	| KW_NULL				{ $$ = filterx_null_new(); }
+	| boolean				{ $$ = filterx_boolean_new($1); }
+	;
+
+lvalue
+	: '$' LL_IDENTIFIER			{ $$ = filterx_message_ref_expr_new(log_msg_get_value_handle($2)); free($2); }
+	| LL_MESSAGE_REF			{ $$ = filterx_message_ref_expr_new(log_msg_get_value_handle($1)); free($1); }
+	;
+
+
+boolean
+	: KW_TRUE				{ $$ = 1; }
+	| KW_FALSE				{ $$ = 0; }
+	;
+
+template
+	: LL_STRING
+          {
+            GError *error = NULL;
+	    LogTemplate *template = log_template_new(configuration, NULL);
+
+            CHECK_ERROR_GERROR(log_template_compile(template, $1, &error), @1, error, "Error compiling template");
+            free($1);
+
+            $$ = template;
+          }
+	;
+
+dict_expr
+	: '{' dict_key_values '}'               { $$ = $2; }
+	;
+
+dict_key_values
+	: dict_key_value ',' dict_key_values    { $$ = g_list_prepend($3, $1); }
+	| dict_key_value                        { $$ = g_list_append(NULL, $1); }
+	|                                       { $$ = NULL; }
+	;
+
+dict_key_value
+	: LL_STRING ':' expr                    { $$ = filterx_kv_new($1, $3); free($1); }
+	;
+
+list_expr
+	: '[' list_values ']'                   { $$ = $2; }
+	;
+
+list_values
+	: list_value ',' list_values            { $$ = g_list_prepend($3, $1); }
+	| list_value                            { $$ = g_list_append(NULL, $1); }
+	|                                       { $$ = NULL; }
+	;
+
+list_value
+	: expr                                  { $$ = $1; }
+	;
+
+/* INCLUDE_RULES */
+
+%%

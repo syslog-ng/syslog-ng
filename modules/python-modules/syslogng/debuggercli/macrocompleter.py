@@ -193,11 +193,11 @@ class MacroCompleter(Completer):
 
     def _collect_date_wildcards(self):
         for (wildcard, description) in self._date_wildcards.items():
-            yield '${}* ({})'.format(wildcard, description)
+            yield f"${wildcard}* ({description})"
 
     def _collect_date_wildcard_with_brace(self):
         for (wildcard, description) in self._date_wildcards.items():
-            yield '${{{}*}} ({})'.format(wildcard, description)
+            yield f"${{{wildcard}*}} ({description})"
 
     def _reset_completions(self):
         self._completions = []

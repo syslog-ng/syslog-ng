@@ -7,6 +7,7 @@ compatinclude_HEADERS		= 	\
 	lib/compat/compat.h		\
 	lib/compat/getutent.h		\
 	lib/compat/glib.h		\
+	lib/compat/json.h		\
 	lib/compat/lfs.h		\
 	lib/compat/pio.h		\
 	lib/compat/socket.h		\

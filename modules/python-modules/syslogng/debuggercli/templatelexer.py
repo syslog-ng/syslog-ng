@@ -175,7 +175,7 @@ class TemplateLexer(LexBasedLexer):
         t.lexer.pop_state()
 
     def t_error(self, t):
-        raise TemplateLexerError("Illegal character {} in state {}".format(t.value, self._lexer.lexstate))
+        raise TemplateLexerError(f"Illegal character {t.value} in state {self._lexer.lexstate}")
 
     def t_dollar_error(self, t):
         return self.t_error(t)

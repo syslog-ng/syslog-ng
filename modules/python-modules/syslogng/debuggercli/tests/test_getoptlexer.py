@@ -50,12 +50,12 @@ class TestGetoptLexer(TestLexer):
     def test_lexer_returns_specific_token_for_known_commands(self):
         for command in self._known_commands:
             self._lexer.input(command)
-            self._assert_next_token_type_equals('COMMAND_{}'.format(command.upper().replace('-', '_')))
+            self._assert_next_token_type_equals(f"COMMAND_{command.upper().replace('-', '_')}")
 
     def test_lexer_translates_aliases(self):
         for (alias, command) in self._aliases.items():
             self._lexer.input(alias)
-            self._assert_next_token_type_equals('COMMAND_{}'.format(command.upper().replace('-', '_')))
+            self._assert_next_token_type_equals(f"COMMAND_{command.upper().replace('-', '_')}")
 
     def test_known_commands_are_not_returned_as_tokens_for_non_first_arguments(self):
         self._lexer.input("print print")

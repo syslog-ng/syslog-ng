@@ -81,6 +81,7 @@ modules/secure-logging/slogkey
 lib/compat/cpp-(start|end).\h$
 lib/compat/curl.\h$
 lib/compat/getline.\c$
+lib/compat/json.\h$
 lib/healthcheck
 lib/healthcheck/tests
 lib/cfg-monitor\.[ch]
@@ -121,6 +122,8 @@ modules/python-modules/syslogng/reloc\.py
 modules/python-modules/syslogng/template\.py
 modules/python/python-confgen\.[ch]
 lib/tests/test_logscheduler\.c
+lib/filterx/.*\.[ch]
+lib/filterx/filterx-grammar\.ym
 
 ###########################################################################
 # These tests are GPLd even though they reside under lib/ and are excluded
@@ -238,12 +241,14 @@ tests/light/functional_tests/logpath/test_conditionals\.py
 tests/light/functional_tests/logpath/test_midpoint_destinations\.py
 tests/light/functional_tests/value-pairs/test_value_pairs\.py
 tests/light/functional_tests/templates/test_template_stmt\.py
+tests/light/functional_tests/filterx/test_filterx\.py
 tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py
 tests/light/src/syslog_ng_config/statements/template/template\.py
 modules/correlation/id-counter\.[ch]$
 modules/correlation/group-lines.h
 modules/xml/windows-eventlog-xml-parser\.h
 modules/xml/tests/test_windows_eventlog_xml_parser\.c
+modules/examples/filterx/example-filterx-func/example-filterx-func-plugin\.[ch]
 
 ###########################################################################
 # These files are GPLd with Balabit origin.

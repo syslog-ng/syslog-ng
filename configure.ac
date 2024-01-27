@@ -47,7 +47,7 @@ LIBRABBITMQ_MIN_VERSION="0.5.3"
 LIBRDKAFKA_MIN_VERSION="1.1.0"
 IVYKIS_MIN_VERSION="0.36.1"
 IVYKIS_UPDATED_VERSION="0.39"
-JSON_C_MIN_VERSION="0.9"
+JSON_C_MIN_VERSION="0.13"
 PCRE2_MIN_VERSION="10.0"
 LMC_MIN_VERSION="1.0.0"
 LRMQ_MIN_VERSION="0.0.1"
@@ -2134,14 +2134,14 @@ if test "x$linking_mode" = "xdynamic"; then
 		# when using the internal ivykis, we're linking it statically into libsyslog-ng.so
 
 		TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
-		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
+		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS $JSON_LIBS"
 	else
 		# otherwise everything needs to link against libivykis.so
 
 		SYSLOGNG_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $IVYKIS_LIBS"
 
 		TOOL_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
-		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS"
+		CORE_DEPS_LIBS="$SYSLOGNG_DEPS_LIBS $JSON_LIBS"
 	fi
 
 	# syslog-ng binary is linked with the default link command (e.g. libtool)

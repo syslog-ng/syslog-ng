@@ -24,6 +24,7 @@
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
+#include "filterx/example-filterx-func/example-filterx-func-plugin.h"
 
 extern CfgParser msg_generator_parser;
 
@@ -83,7 +84,12 @@ static Plugin example_plugins[] =
     .type = LL_CONTEXT_DESTINATION,
     .name = "example_destination",
     .parser = &example_destination_parser
-  }
+  },
+  {
+    .type = LL_CONTEXT_FILTERX_FUNC,
+    .name = "example_echo",
+    .construct = example_filterx_func_construct_echo,
+  },
 };
 
 gboolean

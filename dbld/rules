@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 BUILDER_IMAGES=		\
-	centos-7 	\
+	centos-8 	\
 	fedora-39	\
 	debian-stretch	\
 	debian-buster	\
@@ -20,7 +20,7 @@ IMAGES=${BUILDER_IMAGES} devshell
 DEFAULT_IMAGE ?= ubuntu-jammy
 TARBALL_IMAGE ?= tarball
 DEFAULT_DEB_IMAGE=ubuntu-jammy
-DEFAULT_RPM_IMAGE=centos-7
+DEFAULT_RPM_IMAGE=centos-8
 DOCKER=docker
 CONTAINER_REGISTRY ?= ghcr.io/syslog-ng
 MODE ?= snapshot
