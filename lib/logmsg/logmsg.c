@@ -2067,6 +2067,7 @@ void
 log_msg_global_init(void)
 {
   log_msg_registry_init();
+  log_tags_global_init();
 
   /* NOTE: we always initialize counters as they are on stats-level(0),
    * however we need to defer that as the stats subsystem may not be
@@ -2084,6 +2085,7 @@ log_msg_get_handle_name(NVHandle handle, gssize *length)
 void
 log_msg_global_deinit(void)
 {
+  log_tags_global_deinit();
   log_msg_registry_deinit();
 }
 

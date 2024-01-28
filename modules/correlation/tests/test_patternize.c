@@ -48,7 +48,6 @@ static void setup(void)
 
 static void teardown(void)
 {
-  log_tags_global_deinit();
   msg_format_options_destroy(&parse_options);
   app_shutdown();
 }
