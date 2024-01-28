@@ -42,6 +42,33 @@ static guint32 log_tags_num = 0;
 static guint32 log_tags_list_size = 4;
 static GMutex log_tags_lock;
 
+static void
+_allocate_tag(const gchar *name, guint id)
+{
+  if (id == log_tags_list_size)
+    {
+      log_tags_list_size *= 2;
+      log_tags_list = g_renew(LogTag, log_tags_list, log_tags_list_size);
+    }
+  log_tags_list[id].id = id;
+  log_tags_list[id].name = g_strdup(name);
+  log_tags_list[id].counter = NULL;
+
+  /* NOTE: stats-level may not be set for calls that happen during
+   * config file parsing, those get fixed up by
+   * log_tags_reinit_stats() below */
+
+  stats_lock();
+  StatsClusterKey sc_key;
+  StatsClusterLabel labels[] = { stats_cluster_label("id", name) };
+  stats_cluster_single_key_set(&sc_key, "tagged_events_total", labels, G_N_ELEMENTS(labels));
+  stats_cluster_single_key_add_legacy_alias_with_name(&sc_key, SCS_TAG, name, NULL, "processed");
+  stats_register_counter(3, &sc_key, SC_TYPE_SINGLE_VALUE, &log_tags_list[id].counter);
+  stats_unlock();
+
+  g_hash_table_insert(log_tags_hash, log_tags_list[id].name, GUINT_TO_POINTER(log_tags_list[id].id + 1));
+
+}
 
 /*
  * log_tags_get_by_name
@@ -64,44 +91,26 @@ log_tags_get_by_name(const gchar *name)
 
      In both cases the return value is 0.
    */
+  guint id = 0;
 
   g_assert(log_tags_hash != NULL);
 
   g_mutex_lock(&log_tags_lock);
 
   gpointer key = g_hash_table_lookup(log_tags_hash, name);
-  guint id = GPOINTER_TO_UINT(key) - 1;
-
-  if (id == 0xffffffff)
+  if (!key)
     {
       if (log_tags_num < LOG_TAGS_MAX - 1)
         {
           id = log_tags_num++;
-          if (id == log_tags_list_size)
-            {
-              log_tags_list_size *= 2;
-              log_tags_list = g_renew(LogTag, log_tags_list, log_tags_list_size);
-            }
-          log_tags_list[id].id = id;
-          log_tags_list[id].name = g_strdup(name);
-          log_tags_list[id].counter = NULL;
-
-          /* NOTE: stats-level may not be set for calls that happen during
-           * config file parsing, those get fixed up by
-           * log_tags_reinit_stats() below */
-
-          stats_lock();
-          StatsClusterKey sc_key;
-          StatsClusterLabel labels[] = { stats_cluster_label("id", name) };
-          stats_cluster_single_key_set(&sc_key, "tagged_events_total", labels, G_N_ELEMENTS(labels));
-          stats_cluster_single_key_add_legacy_alias_with_name(&sc_key, SCS_TAG, name, NULL, "processed");
-          stats_register_counter(3, &sc_key, SC_TYPE_SINGLE_VALUE, &log_tags_list[id].counter);
-          stats_unlock();
-
-          g_hash_table_insert(log_tags_hash, log_tags_list[id].name, GUINT_TO_POINTER(log_tags_list[id].id + 1));
+          _allocate_tag(name, id);
         }
       else
         id = 0;
+    }
+  else
+    {
+      id = GPOINTER_TO_UINT(key) - 1;
     }
 
   g_mutex_unlock(&log_tags_lock);
