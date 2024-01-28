@@ -1992,6 +1992,13 @@ log_msg_refcache_stop(void)
 }
 
 void
+log_msg_tags_init(void)
+{
+  log_tags_register_predefined_tag("message.utf8_sanitized", LM_T_MSG_UTF8_SANITIZED);
+  log_tags_register_predefined_tag("message.parse_error", LM_T_MSG_PARSE_ERROR);
+}
+
+void
 log_msg_registry_init(void)
 {
   gint i;
@@ -2068,6 +2075,7 @@ log_msg_global_init(void)
 {
   log_msg_registry_init();
   log_tags_global_init();
+  log_msg_tags_init();
 
   /* NOTE: we always initialize counters as they are on stats-level(0),
    * however we need to defer that as the stats subsystem may not be

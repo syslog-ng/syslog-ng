@@ -103,6 +103,15 @@ enum
 
 enum
 {
+  /* means that the message is not valid utf8 */
+  LM_T_MSG_UTF8_SANITIZED,
+  /* msg-format parsing failed, "Error parsing ..." */
+  LM_T_MSG_PARSE_ERROR,
+  LM_T_PREDEFINED_MAX,
+};
+
+enum
+{
   LM_VF_SDATA = 0x0001,
   LM_VF_MATCH = 0x0002,
   LM_VF_MACRO = 0x0004,
