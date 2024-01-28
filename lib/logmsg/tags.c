@@ -73,6 +73,12 @@ _register_tag(const gchar *name, guint id)
   g_hash_table_insert(log_tags_hash, new_tag.name, GUINT_TO_POINTER(id + 1));
   return id;
 }
+
+static guint
+_register_new_tag(const gchar *name)
+{
+  guint id = log_tags->len;
+  return _register_tag(name, id);
 }
 
 /*
@@ -107,7 +113,7 @@ log_tags_get_by_name(const gchar *name)
     {
       if (log_tags->len < LOG_TAGS_MAX - 1)
         {
-          id = _register_tag(name, log_tags->len);
+          id = _register_new_tag(name);
         }
       else
         id = 0;
@@ -120,6 +126,19 @@ log_tags_get_by_name(const gchar *name)
   g_mutex_unlock(&log_tags_lock);
 
   return id;
+}
+
+void
+log_tags_register_predefined_tag(const gchar *name, LogTagId id)
+{
+  g_mutex_lock(&log_tags_lock);
+
+  gpointer key = g_hash_table_lookup(log_tags_hash, name);
+  g_assert(key == NULL);
+
+  LogTagId rid = _register_tag(name, id);
+  g_assert(rid == id);
+  g_mutex_unlock(&log_tags_lock);
 }
 
 /*
