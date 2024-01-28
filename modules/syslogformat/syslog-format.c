@@ -966,8 +966,9 @@ _syslog_format_parse_syslog_proto(const MsgFormatOptions *parse_options, const g
     }
 
   /* ISO time format */
+  time_t now = get_cached_realtime_sec();
   if (!_syslog_format_parse_date(msg, &src, &left, parse_options->flags,
-                                 time_zone_info_get_offset(parse_options->recv_time_zone_info, time(NULL))))
+                                 time_zone_info_get_offset(parse_options->recv_time_zone_info, now)))
     goto error;
 
   if (!_skip_space(&src, &left))
