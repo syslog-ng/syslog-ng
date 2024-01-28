@@ -107,6 +107,8 @@ enum
   LM_T_MSG_UTF8_SANITIZED,
   /* msg-format parsing failed, "Error parsing ..." */
   LM_T_MSG_PARSE_ERROR,
+  __LM_T_SYSLOG_TAGS_START,
+  __LM_T_SYSLOG_TAGS_END=__LM_T_SYSLOG_TAGS_START + 5,
   LM_T_PREDEFINED_MAX,
 };
 
