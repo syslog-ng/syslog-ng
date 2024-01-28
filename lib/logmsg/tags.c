@@ -231,22 +231,15 @@ log_tags_reinit_stats(void)
 void
 log_tags_global_init(void)
 {
-  /* Necessary only in case of reinitialized tags */
-  g_mutex_lock(&log_tags_lock);
-
   log_tags_hash = g_hash_table_new(g_str_hash, g_str_equal);
   log_tags = g_array_new(FALSE, TRUE, sizeof(LogTag));
 
-
-  g_mutex_unlock(&log_tags_lock);
   register_application_hook(AH_CONFIG_CHANGED, (ApplicationHookFunc) log_tags_reinit_stats, NULL, AHM_RUN_REPEAT);
 }
 
 void
 log_tags_global_deinit(void)
 {
-  g_mutex_lock(&log_tags_lock);
-
   g_hash_table_destroy(log_tags_hash);
 
   stats_lock();
@@ -263,6 +256,4 @@ log_tags_global_deinit(void)
     }
   stats_unlock();
   g_array_free(log_tags, TRUE);
-
-  g_mutex_unlock(&log_tags_lock);
 }
