@@ -42,48 +42,53 @@
 #define FILTER_TAGS 100
 
 static gchar *
-get_tag_by_id(LogTagId id)
+get_tag_name(guint index)
 {
-  return g_strdup_printf("tags%d", id);
+  return g_strdup_printf("tags%d", index);
 }
 
 Test(tags, test_tags)
 {
   guint i, check;
-  guint id;
   gchar *name;
   const gchar *tag_name;
+  LogTagId first_tag_id = 0;
 
   for (check = 0; check < 2; check++)
     for (i = 0; i < NUM_TAGS; i++)
       {
-        name = get_tag_by_id(i);
-        id = log_tags_get_by_name(name);
+        name = get_tag_name(i);
+        LogTagId id = log_tags_get_by_name(name);
+        if (i == 0)
+          first_tag_id = id;
         cr_log_info("%s tag %s %d\n", check ? "Checking" : "Adding", name, id);
 
-        cr_assert_eq(id, i, "Invalid tag id %d %s", id, name);
+        cr_assert_eq(id, first_tag_id + i, "Invalid tag id %d %s", id, name);
 
         g_free(name);
       }
 
   for (i = 0; i < NUM_TAGS; i++)
     {
-      name = get_tag_by_id(i);
+      name = get_tag_name(i);
 
-      tag_name = log_tags_get_by_id(i);
-      cr_log_info("Looking up tag by id %d %s(%s)\n", i, tag_name, name);
+      LogTagId id = first_tag_id + i;
+      tag_name = log_tags_get_by_id(id);
+      cr_log_info("Looking up tag by id %d %s(%s)\n", id, tag_name, name);
 
-      cr_assert_not_null(tag_name, "Error looking up tag by id %d %s\n", i, name);
-      cr_assert_str_eq(name, tag_name, "Bad tag name for id %d %s (%s)\n", i, tag_name, name);
+      cr_assert_not_null(tag_name, "Error looking up tag by id %d %s\n", id, name);
+      cr_assert_str_eq(name, tag_name, "Bad tag name for id %d %s (%s)\n", id, tag_name, name);
 
       g_free(name);
     }
 
   for (i = NUM_TAGS; i < (NUM_TAGS + 3); i++)
     {
-      cr_log_info("Looking up tag by invalid id %d\n", i);
-      tag_name = log_tags_get_by_id(i);
-      cr_assert_not(tag_name, "Found tag name for invalid id %d %s\n", i, tag_name);
+      LogTagId id = first_tag_id + i;
+
+      cr_log_info("Looking up tag by invalid id %d\n", id);
+      tag_name = log_tags_get_by_id(id);
+      cr_assert_not(tag_name, "Found tag name for invalid id %d %s\n", id, tag_name);
     }
 }
 
@@ -97,9 +102,9 @@ Test(tags, test_msg_tags)
   LogMessage *msg = log_msg_new_empty();
   for (set = 1; set != -1; set--)
     {
-      for (i = 0; i < NUM_TAGS; i++)
+      for (i = 0; i < 1024; i++)
         {
-          name = get_tag_by_id(i);
+          name = get_tag_name(i);
           LogTagId id = log_tags_get_by_name(name);
 
           if (set)
@@ -108,7 +113,7 @@ Test(tags, test_msg_tags)
             log_msg_clear_tag_by_name(msg, name);
           cr_log_info("%s tag %d %s\n", set ? "Setting" : "Clearing", id, name);
 
-          cr_assert_not(set ^ log_msg_is_tag_by_id(msg, id), "Tag is %sset now (by id) %d", set ? "not " : "", id);
+          cr_assert_not(set ^ log_msg_is_tag_by_id(msg, id), "Tag %s is %sset now (by id) %d", name, set ? "not " : "", id);
 
           g_free(name);
         }
@@ -118,20 +123,21 @@ Test(tags, test_msg_tags)
   msg = log_msg_new_empty();
   for (set = 1; set != -1; set--)
     {
-      for (i = 0; i < NUM_TAGS; i++)
+      for (i = 0; i < 1024; i++)
         {
-          name = get_tag_by_id(i);
+          name = get_tag_name(i);
+          LogTagId id = log_tags_get_by_name(name);
 
           if (set)
             log_msg_set_tag_by_name(msg, name);
           else
             log_msg_clear_tag_by_name(msg, name);
 
-          cr_log_info("%s tag %d %s\n", set ? "Setting" : "Clearing", i, name);
+          cr_log_info("%s tag %d %s\n", set ? "Setting" : "Clearing", id, name);
 
-          cr_assert_not(set ^ log_msg_is_tag_by_id(msg, i), "Tag is %sset now (by id) %d\n", set ? "not " : "", i);
+          cr_assert_not(set ^ log_msg_is_tag_by_id(msg, id), "Tag is %sset now (by id) %d\n", set ? "not " : "", id);
 
-          cr_assert_not(set && i < sizeof(gulong) * 8
+          cr_assert_not(set && id < sizeof(gulong) * 8
                         && msg->num_tags != 0, "Small IDs are set which should be stored in-line but num_tags is non-zero");
 
           g_free(name);
@@ -152,7 +158,7 @@ Test(tags, test_filters_true)
   cr_log_info("=== filter tests not===\n");
 
   for (i = 1; i < FILTER_TAGS; i += 3)
-    l = g_list_prepend(l, get_tag_by_id(i));
+    l = g_list_prepend(l, get_tag_name(i));
 
   filter_tags_add(f, l);
   f->comp = TRUE;
@@ -161,7 +167,7 @@ Test(tags, test_filters_true)
     {
       cr_log_info("Testing filter, message has tag %d\n", i);
 
-      name = get_tag_by_id(i);
+      name = get_tag_name(i);
       LogTagId id = log_tags_get_by_name(name);
       g_free(name);
 
@@ -191,7 +197,7 @@ Test(tags, test_filters_false)
   cr_log_info("=== filter tests ===\n");
 
   for (i = 1; i < FILTER_TAGS; i += 3)
-    l = g_list_prepend(l, get_tag_by_id(i));
+    l = g_list_prepend(l, get_tag_name(i));
 
   filter_tags_add(f, l);
   f->comp = FALSE;
@@ -200,7 +206,7 @@ Test(tags, test_filters_false)
     {
       cr_log_info("Testing filter, message has tag %d\n", i);
 
-      name = get_tag_by_id(i);
+      name = get_tag_name(i);
       LogTagId id = log_tags_get_by_name(name);
       g_free(name);
 

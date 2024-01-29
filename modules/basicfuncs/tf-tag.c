@@ -73,3 +73,67 @@ tf_tag_free_state(gpointer s)
 }
 
 TEMPLATE_FUNCTION(TFTagState, tf_tag, tf_tag_prepare, NULL, tf_tag_call, tf_tag_free_state, NULL);
+
+typedef struct _TFTagsHeadState
+{
+  LogTagId *tags;
+  gint tags_count;
+} TFTagsHeadState;
+
+static gboolean
+tf_tags_head_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
+                     gint argc, gchar *argv[],
+                     GError **error)
+{
+  TFTagsHeadState *state = (TFTagsHeadState *) s;
+
+  if (argc < 2)
+    {
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "At least one tag is required. Example: $(tags-head tag1 tag2 ... ).\n");
+      return FALSE;
+    }
+
+  GArray *l = g_array_new(FALSE, TRUE, sizeof(LogTagId));
+  for (gint i = 1; i < argc; i++)
+    {
+      LogTagId tag_id = log_tags_get_by_name(argv[i]);
+      g_array_append_val(l, tag_id);
+    }
+  state->tags_count = l->len;
+  state->tags = (LogTagId *) g_array_free(l, FALSE);
+  return TRUE;
+}
+
+
+static void
+tf_tags_head_call(LogTemplateFunction *self, gpointer s,
+                  const LogTemplateInvokeArgs *args,
+                  GString *result, LogMessageValueType *type)
+{
+  TFTagsHeadState *state = (TFTagsHeadState *) s;
+  LogMessage *msg = args->messages[0];
+
+  for (gint i = 0; i < state->tags_count; i++)
+    {
+      LogTagId id = state->tags[i];
+      if (log_msg_is_tag_by_id(msg, id))
+        {
+          g_string_append(result, log_tags_get_by_id(id));
+          *type = LM_VT_STRING;
+          return;
+        }
+    }
+  *type = LM_VT_NULL;
+}
+
+static void
+tf_tags_head_free_state(gpointer s)
+{
+  TFTagsHeadState *state = (TFTagsHeadState *) s;
+  g_free(state->tags);
+}
+
+TEMPLATE_FUNCTION(TFTagsHeadState, tf_tags_head,
+                  tf_tags_head_prepare, NULL, tf_tags_head_call, tf_tags_head_free_state,
+                  NULL);

@@ -230,7 +230,6 @@ app_startup(void)
   healthcheck_stats_global_init();
   tzset();
   log_msg_global_init();
-  log_tags_global_init();
   log_source_global_init();
   log_template_global_init();
   value_pairs_global_init();
@@ -279,7 +278,6 @@ app_shutdown(void)
   scratch_buffers_global_deinit();
   value_pairs_global_deinit();
   log_template_global_deinit();
-  log_tags_global_deinit();
   log_msg_global_deinit();
 
   afinter_global_deinit();

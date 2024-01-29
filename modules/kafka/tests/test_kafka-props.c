@@ -78,6 +78,7 @@ static void
 setup(void)
 {
   msg_init(FALSE);
+  log_tags_global_init();
   log_msg_global_init();
 }
 

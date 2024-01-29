@@ -29,7 +29,6 @@
 #include "stats/stats-cluster-logpipe.h"
 #include "stats/stats-cluster-single.h"
 #include "msg-stats.h"
-#include "logmsg/tags.h"
 #include "ack-tracker/ack_tracker.h"
 #include "ack-tracker/ack_tracker_factory.h"
 #include "timeutils/misc.h"

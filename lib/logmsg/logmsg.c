@@ -1992,6 +1992,20 @@ log_msg_refcache_stop(void)
 }
 
 void
+log_msg_tags_init(void)
+{
+  log_tags_register_predefined_tag("message.utf8_sanitized", LM_T_MSG_UTF8_SANITIZED);
+  log_tags_register_predefined_tag("message.parse_error", LM_T_MSG_PARSE_ERROR);
+
+  log_tags_register_predefined_tag("syslog.missing_pri", LM_T_SYSLOG_MISSING_PRI);
+  log_tags_register_predefined_tag("syslog.missing_timestamp", LM_T_SYSLOG_MISSING_TIMESTAMP);
+  log_tags_register_predefined_tag("syslog.invalid_hostname", LM_T_SYSLOG_INVALID_HOSTNAME);
+  log_tags_register_predefined_tag("syslog.unexpected_framing", LM_T_SYSLOG_UNEXPECTED_FRAMING);
+  log_tags_register_predefined_tag("syslog.rfc3164_missing_header", LM_T_SYSLOG_RFC3164_MISSING_HEADER);
+  log_tags_register_predefined_tag("syslog.rfc5424_unquoted_sdata_value", LM_T_SYSLOG_RFC5424_UNQUOTED_SDATA_VALUE);
+}
+
+void
 log_msg_registry_init(void)
 {
   gint i;
@@ -2067,6 +2081,8 @@ void
 log_msg_global_init(void)
 {
   log_msg_registry_init();
+  log_tags_global_init();
+  log_msg_tags_init();
 
   /* NOTE: we always initialize counters as they are on stats-level(0),
    * however we need to defer that as the stats subsystem may not be
@@ -2084,6 +2100,7 @@ log_msg_get_handle_name(NVHandle handle, gssize *length)
 void
 log_msg_global_deinit(void)
 {
+  log_tags_global_deinit();
   log_msg_registry_deinit();
 }
 

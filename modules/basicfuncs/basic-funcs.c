@@ -142,6 +142,7 @@ static Plugin basicfuncs_plugins[] =
 
   /* tags */
   TEMPLATE_FUNCTION_PLUGIN(tf_tag, "tag"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_tags_head, "tags-head"),
 
   /* functional */
   TEMPLATE_FUNCTION_PLUGIN(tf_iterate, "iterate"),

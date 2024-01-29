@@ -125,6 +125,7 @@ msg_format_process_message(MsgFormatOptions *options, LogMessage *msg,
               gsize sanitized_length;
               optimized_sanitize_utf8_to_escaped_binary(data, length, &sanitized_length, buf, sizeof(buf));
               log_msg_set_value(msg, LM_V_MESSAGE, buf, _rstripped_message_length((guchar *) buf, sanitized_length));
+              log_msg_set_tag_by_id(msg, LM_T_MSG_UTF8_SANITIZED);
               msg->flags |= LF_UTF8;
               return TRUE;
             }
@@ -170,6 +171,7 @@ msg_format_parse_into(MsgFormatOptions *options, LogMessage *msg,
 
   if (!msg_format_try_parse_into(options, msg, data, length, &problem_position))
     {
+      log_msg_set_tag_by_id(msg, LM_T_MSG_PARSE_ERROR);
       msg_format_inject_parse_error(msg, data, _rstripped_message_length(data, length), problem_position);
 
       /* the injected error message needs to be postprocessed too */
