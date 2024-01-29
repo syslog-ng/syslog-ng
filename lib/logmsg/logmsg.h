@@ -107,8 +107,18 @@ enum
   LM_T_MSG_UTF8_SANITIZED,
   /* msg-format parsing failed, "Error parsing ..." */
   LM_T_MSG_PARSE_ERROR,
-  __LM_T_SYSLOG_TAGS_START,
-  __LM_T_SYSLOG_TAGS_END=__LM_T_SYSLOG_TAGS_START + 5,
+  /* missing <pri> value */
+  LM_T_SYSLOG_MISSING_PRI,
+  /* no timestamp present in the original message */
+  LM_T_SYSLOG_MISSING_TIMESTAMP,
+  /* hostname field does not seem valid, check-hostname(yes) failed */
+  LM_T_SYSLOG_INVALID_HOSTNAME,
+  /* we seem to have found an octet count in front of the message */
+  LM_T_SYSLOG_UNEXPECTED_FRAMING,
+  /* no date & host information in the syslog message */
+  LM_T_SYSLOG_RFC3164_MISSING_HEADER,
+  /* incorrectly quoted RFC5424 SDATA */
+  LM_T_SYSLOG_RFC5424_UNQUOTED_SDATA_VALUE,
   LM_T_PREDEFINED_MAX,
 };
 

@@ -40,25 +40,6 @@
 
 #define SD_NAME_SIZE 256
 
-enum
-{
-  /* missing <pri> value */
-  LM_T_SYSLOG_MISSING_PRI = __LM_T_SYSLOG_TAGS_START,
-  /* no timestamp present in the original message */
-  LM_T_SYSLOG_MISSING_TIMESTAMP,
-  /* hostname field does not seem valid, check-hostname(yes) failed */
-  LM_T_SYSLOG_INVALID_HOSTNAME,
-  /* we seem to have found an octet count in front of the message */
-  LM_T_SYSLOG_UNEXPECTED_FRAMING,
-  /* no date & host information in the syslog message */
-  LM_T_SYSLOG_RFC3164_MISSING_HEADER,
-  /* incorrectly quoted RFC5424 SDATA */
-  LM_T_SYSLOG_RFC5424_UNQUOTED_SDATA_VALUE,
-  __LM_T_SYSLOG_TAGS_MAX,
-};
-
-G_STATIC_ASSERT(__LM_T_SYSLOG_TAGS_END == __LM_T_SYSLOG_TAGS_MAX - 1);
-
 static const char aix_fwd_string[] = "Message forwarded from ";
 static const char repeat_msg_string[] = "last message repeated";
 static struct
@@ -1141,13 +1122,6 @@ syslog_format_init(void)
       handles.cisco_seqid = log_msg_get_value_handle(".SDATA.meta.sequenceId");
       handles.initialized = TRUE;
     }
-
-  log_tags_register_predefined_tag("syslog.missing_pri", LM_T_SYSLOG_MISSING_PRI);
-  log_tags_register_predefined_tag("syslog.missing_timestamp", LM_T_SYSLOG_MISSING_TIMESTAMP);
-  log_tags_register_predefined_tag("syslog.invalid_hostname", LM_T_SYSLOG_INVALID_HOSTNAME);
-  log_tags_register_predefined_tag("syslog.unexpected_framing", LM_T_SYSLOG_UNEXPECTED_FRAMING);
-  log_tags_register_predefined_tag("syslog.rfc3164_missing_header", LM_T_SYSLOG_RFC3164_MISSING_HEADER);
-  log_tags_register_predefined_tag("syslog.rfc5424_unquoted_sdata_value", LM_T_SYSLOG_RFC5424_UNQUOTED_SDATA_VALUE);
 
   _init_parse_hostname_invalid_chars();
 }
