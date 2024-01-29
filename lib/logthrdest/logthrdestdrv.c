@@ -265,6 +265,7 @@ _drop_batch(LogThreadedDestWorker *self)
 static void
 _rewind_batch(LogThreadedDestWorker *self)
 {
+  stats_counter_inc(self->owner->metrics.output_event_retries);
   log_threaded_dest_worker_rewind_messages(self, self->batch_size);
 }
 
@@ -1247,6 +1248,15 @@ _register_driver_stats(LogThreadedDestDriver *self, StatsClusterKeyBuilder *driv
 
   stats_cluster_key_builder_push(driver_sck_builder);
   {
+    stats_cluster_key_builder_set_name(driver_sck_builder, "output_event_retries_total");
+    stats_cluster_key_builder_set_legacy_alias(driver_sck_builder, -1, "", "");
+    stats_cluster_key_builder_set_legacy_alias_name(driver_sck_builder, "");
+    self->metrics.output_event_retries_sc_key = stats_cluster_key_builder_build_single(driver_sck_builder);
+  }
+  stats_cluster_key_builder_pop(driver_sck_builder);
+
+  stats_cluster_key_builder_push(driver_sck_builder);
+  {
     stats_cluster_key_builder_set_legacy_alias(driver_sck_builder, self->stats_source | SCS_DESTINATION,
                                                self->super.super.id,
                                                _format_legacy_stats_instance(self, driver_sck_builder));
@@ -1261,6 +1271,8 @@ _register_driver_stats(LogThreadedDestDriver *self, StatsClusterKeyBuilder *driv
     stats_register_counter(level, self->metrics.output_events_sc_key, SC_TYPE_WRITTEN, &self->metrics.written_messages);
     stats_register_counter(level, self->metrics.processed_sc_key, SC_TYPE_SINGLE_VALUE,
                            &self->metrics.processed_messages);
+    stats_register_counter(level, self->metrics.output_event_retries_sc_key, SC_TYPE_SINGLE_VALUE,
+                           &self->metrics.output_event_retries);
   }
   stats_unlock();
 }
