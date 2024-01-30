@@ -16,6 +16,7 @@ set(SCL_DIRS
     graylog2
     hdfs
     iptables
+    jellyfin
     junos
     kafka
     linux-audit
