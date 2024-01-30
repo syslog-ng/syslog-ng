@@ -28,6 +28,16 @@
 #include "scratch-buffers.h"
 #include "http-signals.h"
 
+enum HttpRequestsMetricLabelIds
+{
+  HTTP_REQUESTS_METRIC_URL_LABEL_ID = 0,
+  HTTP_REQUESTS_METRIC_RESPONSE_CODE_LABEL_ID,
+  HTTP_REQUESTS_METRIC_DRIVER_LABEL_ID,
+  HTTP_REQUESTS_METRIC_ID_LABEL_ID,
+
+  HTTP_REQUESTS_METRIC_LABELS_SIZE,
+};
+
 #define HTTP_HEADER_FORMAT_ERROR http_header_format_error_quark()
 
 static GQuark http_header_format_error_quark(void)
@@ -602,6 +612,28 @@ _map_http_status_code(HTTPDestinationWorker *self, const gchar *url, glong http_
   return default_map_http_status_to_worker_status(self, url, http_code);
 }
 
+static void
+_update_status_code_metrics(HTTPDestinationWorker *self, const gchar *url, glong http_code)
+{
+  gint level = log_pipe_is_internal(&self->super.owner->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1;
+
+  self->metrics.requests_labels[HTTP_REQUESTS_METRIC_URL_LABEL_ID].value = url;
+  g_snprintf(self->metrics.requests_response_code_str_buffer, sizeof(self->metrics.requests_response_code_str_buffer),
+             "%ld", http_code);
+
+  StatsClusterKey key;
+  stats_cluster_single_key_set(&key, "output_http_requests_total",
+                               self->metrics.requests_labels, HTTP_REQUESTS_METRIC_LABELS_SIZE);
+
+  StatsCounterItem *counter;
+
+  stats_lock();
+  StatsCluster *sc = stats_register_dynamic_counter(level, &key, SC_TYPE_SINGLE_VALUE, &counter);
+  stats_counter_inc(counter);
+  stats_unregister_dynamic_counter(sc, SC_TYPE_SINGLE_VALUE, &counter);
+  stats_unlock();
+}
+
 static LogThreadedResult
 _flush_on_target(HTTPDestinationWorker *self, const gchar *url)
 {
@@ -617,6 +649,8 @@ _flush_on_target(HTTPDestinationWorker *self, const gchar *url)
 
   if (debug_flag)
     _debug_response_info(self, url, http_code);
+
+  _update_status_code_metrics(self, url, http_code);
 
   HttpResponseReceivedSignalData signal_data =
   {
@@ -805,6 +839,17 @@ _insert_single(LogThreadedDestWorker *s, LogMessage *msg)
   return log_threaded_dest_worker_flush(&self->super, LTF_FLUSH_NORMAL);
 }
 
+static void
+_init_http_request_metrics(HTTPDestinationWorker *self)
+{
+  self->metrics.requests_labels[HTTP_REQUESTS_METRIC_URL_LABEL_ID] = stats_cluster_label("url", "");
+  self->metrics.requests_labels[HTTP_REQUESTS_METRIC_RESPONSE_CODE_LABEL_ID] = \
+      stats_cluster_label("response_code", self->metrics.requests_response_code_str_buffer);
+  self->metrics.requests_labels[HTTP_REQUESTS_METRIC_DRIVER_LABEL_ID] = stats_cluster_label("driver", "http");
+  self->metrics.requests_labels[HTTP_REQUESTS_METRIC_ID_LABEL_ID] = \
+      stats_cluster_label("id", self->super.owner->super.super.id);
+}
+
 static gboolean
 _init(LogThreadedDestWorker *s)
 {
@@ -846,6 +891,7 @@ _init(LogThreadedDestWorker *s)
   _setup_static_options_in_curl(self);
   _reinit_request_headers(self);
   _reinit_request_body(self);
+  _init_http_request_metrics(self);
   return log_threaded_dest_worker_init_method(s);
 }
 
@@ -874,6 +920,7 @@ http_dw_free(LogThreadedDestWorker *s)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
 
+  g_free(self->metrics.requests_labels);
   http_lb_client_deinit(&self->lbc);
   log_threaded_dest_worker_free_method(s);
 }
@@ -894,6 +941,8 @@ http_dw_new(LogThreadedDestDriver *o, gint worker_index)
     self->super.insert = _insert_batched;
   else
     self->super.insert = _insert_single;
+
+  self->metrics.requests_labels = g_new0(StatsClusterLabel, HTTP_REQUESTS_METRIC_LABELS_SIZE);
 
   http_lb_client_init(&self->lbc, owner->load_balancer);
   return &self->super;
