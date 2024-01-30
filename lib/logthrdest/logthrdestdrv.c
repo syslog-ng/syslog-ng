@@ -81,8 +81,11 @@ log_threaded_dest_driver_set_time_reopen(LogDriver *s, time_t time_reopen)
 
 CfgFlagHandler log_threaded_dest_driver_flag_handlers[] =
 {
-  { "seqnum-all",      CFH_SET, offsetof(LogThreadedDestDriver, flags), LTDF_SEQNUM_ALL },
+  /* seqnum-all turns on seqnums */
+  { "seqnum-all",      CFH_SET, offsetof(LogThreadedDestDriver, flags), LTDF_SEQNUM_ALL + LTDF_SEQNUM },
   { "no-seqnum-all",   CFH_CLEAR, offsetof(LogThreadedDestDriver, flags), LTDF_SEQNUM_ALL },
+  { "seqnum",          CFH_SET, offsetof(LogThreadedDestDriver, flags), LTDF_SEQNUM },
+  { "no-seqnum",       CFH_CLEAR, offsetof(LogThreadedDestDriver, flags), LTDF_SEQNUM },
   { NULL },
 };
 
@@ -1460,6 +1463,7 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->batch_timeout = -1;
   self->num_workers = 1;
   self->last_worker = 0;
+  self->flags = LTDF_SEQNUM;
 
   self->retries_on_error_max = MAX_RETRIES_ON_ERROR_DEFAULT;
   self->retries_max = MAX_RETRIES_BEFORE_SUSPEND_DEFAULT;
