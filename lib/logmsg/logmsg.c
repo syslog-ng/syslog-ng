@@ -40,6 +40,8 @@
 #include "host-id.h"
 #include "ack-tracker/ack_tracker.h"
 #include "apphook.h"
+#include "scratch-buffers.h"
+#include "str-format.h"
 
 #include <glib/gprintf.h>
 #include <sys/types.h>
@@ -1213,11 +1215,11 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
          if seq_num isn't 0 */
       if (!has_seq_num && seq_num!=0 && strncmp(sdata_elem, "meta.", 5) == 0)
         {
-          gchar sequence_id[16];
-          g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
+          GString *sequence_id = scratch_buffers_alloc();
+          format_uint64_padded(sequence_id, 0, 0, 10, seq_num);
           g_string_append_c(result, ' ');
           g_string_append_len(result, "sequenceId=\"", 12);
-          g_string_append_len(result, sequence_id, strlen(sequence_id));
+          g_string_append_len(result, sequence_id->str, sequence_id->len);
           g_string_append_c(result, '"');
           has_seq_num = TRUE;
         }
@@ -1243,11 +1245,12 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
   */
   if (!has_seq_num && seq_num!=0)
     {
-      gchar sequence_id[16];
-      g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
+      GString *sequence_id = scratch_buffers_alloc();
+      format_uint64_padded(sequence_id, 0, 0, 10, seq_num);
+
       g_string_append_c(result, '[');
       g_string_append_len(result, "meta sequenceId=\"", 17);
-      g_string_append_len(result, sequence_id, strlen(sequence_id));
+      g_string_append_len(result, sequence_id->str, sequence_id->len);
       g_string_append_len(result, "\"]", 2);
     }
 }
