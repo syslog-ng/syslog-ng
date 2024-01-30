@@ -938,6 +938,9 @@ _get_seq_num(LogWriter *self, LogMessage  *lm)
 {
   static NVHandle meta_seqid = 0;
 
+  if ((self->options->options & LWO_SEQNUM) == 0)
+    return 0;
+
   if (self->options->options & LWO_SEQNUM_ALL)
     return self->seq_num;
 
@@ -1942,6 +1945,7 @@ log_writer_options_defaults(LogWriterOptions *options)
   options->mark_mode = MM_GLOBAL;
   options->mark_freq = -1;
   options->truncate_size = -1;
+  options->options = LWO_SEQNUM;
   host_resolve_options_defaults(&options->host_resolve_options);
 }
 
@@ -2029,8 +2033,10 @@ CfgFlagHandler log_writer_flag_handlers[] =
   { "no-multi-line",   CFH_SET, offsetof(LogWriterOptions, options), LWO_NO_MULTI_LINE },
   { "threaded",        CFH_SET, offsetof(LogWriterOptions, options), LWO_THREADED },
   { "ignore-errors",   CFH_SET, offsetof(LogWriterOptions, options), LWO_IGNORE_ERRORS },
-  { "seqnum-all",      CFH_SET, offsetof(LogWriterOptions, options), LWO_SEQNUM_ALL },
+  { "seqnum-all",      CFH_SET, offsetof(LogWriterOptions, options), LWO_SEQNUM_ALL + LWO_SEQNUM },
   { "no-seqnum-all",   CFH_CLEAR, offsetof(LogWriterOptions, options), LWO_SEQNUM_ALL },
+  { "seqnum",          CFH_SET, offsetof(LogWriterOptions, options),   LWO_SEQNUM },
+  { "no-seqnum",       CFH_CLEAR, offsetof(LogWriterOptions, options), LWO_SEQNUM },
   { NULL },
 };
 
