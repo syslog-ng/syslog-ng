@@ -230,6 +230,37 @@ _extract_hostname(const grpc::string &peer)
   return "";
 }
 
+static GSockAddr *
+_extract_saddr(const grpc::string &peer)
+{
+  size_t first = peer.find_first_of(':');
+  size_t last = peer.find_last_of(':');
+
+  /* expected format:  ipv6:[::1]:32768 or ipv4:1.2.3.4:32768 */
+  if (first != grpc::string::npos && last != grpc::string::npos)
+    {
+      const std::string ip_version = peer.substr(0, first);
+      std::string host;
+      int port = std::stoi(peer.substr(last + 1, grpc::string::npos), nullptr, 10);
+
+      if (peer.at(first + 1) == '[')
+        host = peer.substr(first + 2, last - first - 3);
+      else
+        host = peer.substr(first + 1, last - first - 1);
+
+      if (ip_version.compare("ipv6") == 0)
+        {
+          return g_sockaddr_inet6_new(host.c_str(), port);
+        }
+      else if (ip_version.compare("ipv4") == 0)
+        {
+          return g_sockaddr_inet_new(host.c_str(), port);
+        }
+    }
+
+  return NULL;
+}
+
 static bool
 _parse_metadata(LogMessage *msg)
 {
@@ -1086,6 +1117,8 @@ syslogng::grpc::otel::ProtobufParser::store_raw_metadata(LogMessage *msg, const 
   std::string hostname = _extract_hostname(peer);
   if (hostname.length())
     log_msg_set_value(msg, LM_V_HOST, hostname.c_str(), hostname.length());
+
+  msg->saddr = _extract_saddr(peer);
 
   /* .otel_raw.resource */
   resource.SerializePartialToString(&serialized);
