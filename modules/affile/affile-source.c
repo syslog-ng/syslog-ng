@@ -37,6 +37,13 @@
 
 #include <iv.h>
 
+void
+affile_sd_set_transport_name(AFFileSourceDriver *self, const gchar *transport_name)
+{
+  g_free(self->transport_name);
+  self->transport_name = g_strdup(transport_name);
+  self->transport_name_len = strlen(transport_name);
+}
 
 static gboolean
 _is_linux_proc_kmsg(const gchar *filename)
@@ -78,6 +85,9 @@ affile_sd_format_persist_name(const LogPipe *s)
 static void
 affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  log_msg_set_value(msg, LM_V_TRANSPORT, self->transport_name, self->transport_name_len);
   log_src_driver_queue_method(s, msg, path_options);
 }
 
@@ -123,6 +133,7 @@ affile_sd_free(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
 
+  g_free(self->transport_name);
   file_opener_free(self->file_opener);
   log_pipe_unref(&self->file_reader->super);
   g_string_free(self->filename, TRUE);
@@ -160,22 +171,33 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 
   self->file_reader_options.reader_options.super.stats_source = stats_register_type("file");
 
-  if (_is_device_node(filename) || _is_linux_proc_kmsg(filename))
-    self->file_reader_options.follow_freq = 0;
-  else
-    self->file_reader_options.follow_freq = 1000;
-
-  if (self->file_reader_options.follow_freq > 0)
-    self->file_opener = file_opener_for_regular_source_files_new();
-  else if (_is_linux_proc_kmsg(self->filename->str))
+  if (_is_device_node(filename))
     {
+      self->file_reader_options.follow_freq = 0;
+      if (_is_linux_dev_kmsg(self->filename->str))
+        {
+          self->file_opener = file_opener_for_devkmsg_new();
+          affile_sd_set_transport_name(self, "local+devkmsg");
+        }
+      else
+        {
+          self->file_opener = file_opener_for_regular_source_files_new();
+          affile_sd_set_transport_name(self, "local+device");
+        }
+    }
+  else if (_is_linux_proc_kmsg(filename))
+    {
+      affile_sd_set_transport_name(self, "local+prockmsg");
+      self->file_reader_options.follow_freq = 0;
       self->file_opener_options.needs_privileges = TRUE;
       self->file_opener = file_opener_for_prockmsg_new();
     }
-  else if (_is_linux_dev_kmsg(self->filename->str))
-    self->file_opener = file_opener_for_devkmsg_new();
   else
-    self->file_opener = file_opener_for_regular_source_files_new();
+    {
+      affile_sd_set_transport_name(self, "local+file");
+      self->file_reader_options.follow_freq = 1000;
+      self->file_opener = file_opener_for_regular_source_files_new();
+    }
 
   self->file_reader_options.restore_state = self->file_reader_options.follow_freq > 0;
   file_opener_options_defaults_dont_change_permissions(&self->file_opener_options);

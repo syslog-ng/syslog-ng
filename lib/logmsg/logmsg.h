@@ -371,6 +371,12 @@ log_msg_get_value_if_set_with_type(const LogMessage *self, NVHandle handle,
     return nv_table_get_value(self->payload, handle, value_len, type);
 }
 
+static inline gboolean
+log_msg_is_value_set(const LogMessage *self, NVHandle handle)
+{
+  return nv_table_is_value_set(self->payload, handle);
+}
+
 static inline const gchar *
 log_msg_get_value_with_type(const LogMessage *self, NVHandle handle, gssize *value_len, LogMessageValueType *type)
 {
@@ -463,6 +469,12 @@ static inline void
 log_msg_set_value_by_name(LogMessage *self, const gchar *name, const gchar *value, gssize length)
 {
   log_msg_set_value_by_name_with_type(self, name, value, length, LM_VT_STRING);
+}
+
+static inline void
+log_msg_set_value_to_string(LogMessage *self, NVHandle handle, const gchar *literal_string)
+{
+  log_msg_set_value(self, handle, literal_string, strlen(literal_string));
 }
 
 void log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to);

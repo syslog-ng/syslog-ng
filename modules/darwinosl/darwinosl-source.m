@@ -281,6 +281,7 @@ _fetch(DarwinOSLogSourceDriver *self)
 
   LogMessage *msg;
   gsize msg_len = _log_message_from_string(log_string, self->options.format_options, &msg);
+  log_msg_set_value_to_string(msg, LM_V_TRANSPORT, "local+darwinoslog");
   LogThreadedFetchResult result = {THREADED_FETCH_SUCCESS, msg};
   _log_reader_insert_msg_length_stats(self, msg_len);
   return result;
