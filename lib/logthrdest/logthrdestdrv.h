@@ -135,10 +135,12 @@ struct _LogThreadedDestDriver
   {
     StatsClusterKey *output_events_sc_key;
     StatsClusterKey *processed_sc_key;
+    StatsClusterKey *output_event_retries_sc_key;
 
     StatsCounterItem *dropped_messages;
     StatsCounterItem *processed_messages;
     StatsCounterItem *written_messages;
+    StatsCounterItem *output_event_retries;
 
     gboolean raw_bytes_enabled;
 
