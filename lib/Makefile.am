@@ -28,6 +28,7 @@ include lib/logthrsource/Makefile.am
 include lib/logthrdest/Makefile.am
 include lib/signal-slot-connector/Makefile.am
 include lib/multi-line/Makefile.am
+include lib/exponential-backoff/Makefile.am
 
 LSNG_RELEASE		= $(shell echo @PACKAGE_VERSION@ | cut -d. -f1,2)
 
@@ -302,7 +303,8 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(multiline_sources)		\
 	$(logthrsource_sources)		\
 	$(logthrdest_sources) \
-	$(signal_slot_connector_sources)
+	$(signal_slot_connector_sources)	\
+	$(exponential_backoff_sources)
 
 lib_libsyslog_ng_la_CFLAGS		= \
 	$(AM_CFLAGS) \

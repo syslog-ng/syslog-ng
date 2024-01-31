@@ -381,6 +381,13 @@
 %token KW_RETRIES                     10521
 
 %token KW_FETCH_NO_DATA_DELAY         10522
+
+%token KW_REOPEN                      10600
+
+%token KW_INITIAL_SECONDS             10601
+%token KW_MAXIMUM_SECONDS             10602
+%token KW_MULTIPLIER                  10603
+
 /* END_DECLS */
 
 %type   <ptr> expr_stmt
@@ -1667,6 +1674,17 @@ multi_line_option
             free($3);
 	  }
 	;
+
+exponential_backoff_options
+        : exponential_backoff_option exponential_backoff_options
+        |
+        ;
+
+exponential_backoff_option
+        : KW_INITIAL_SECONDS '(' nonnegative_float ')' { exponential_backoff_options_set_initial_seconds(last_exponential_backoff_options, $3); }
+        | KW_MAXIMUM_SECONDS '(' nonnegative_float ')' { exponential_backoff_options_set_maximum_seconds(last_exponential_backoff_options, $3); }
+        | KW_MULTIPLIER '(' positive_float ')' { exponential_backoff_options_set_multiplier(last_exponential_backoff_options, $3); }
+        ;
 
 _root_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_ROOT, NULL, "root context"); };
 _root_context_pop: { cfg_lexer_pop_context(lexer); };
