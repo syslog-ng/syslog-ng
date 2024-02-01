@@ -3,6 +3,7 @@ if ENABLE_GRPC
 noinst_LTLIBRARIES += modules/grpc/bigquery/libbigquery_cpp.la
 
 modules_grpc_bigquery_libbigquery_cpp_la_SOURCES = \
+  $(grpc_metrics_sources) \
   modules/grpc/bigquery/bigquery-dest.h \
   modules/grpc/bigquery/bigquery-dest.hpp \
   modules/grpc/bigquery/bigquery-dest.cpp \
@@ -15,6 +16,7 @@ modules_grpc_bigquery_libbigquery_cpp_la_CXXFLAGS = \
   $(PROTOBUF_CLFAGS) \
   $(GRPCPP_CFLAGS) \
   -I$(GOOGLEAPIS_PROTO_BUILDDIR) \
+  -I$(top_srcdir)/modules/grpc \
   -I$(top_srcdir)/modules/grpc/bigquery \
   -I$(top_builddir)/modules/grpc/bigquery
 

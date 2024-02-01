@@ -30,6 +30,8 @@
 #include "stats/stats-cluster-key-builder.h"
 #include "compat/cpp-end.h"
 
+#include "metrics/grpc-metrics.hpp"
+
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/dynamic_message.h>
@@ -198,6 +200,8 @@ private:
   std::unique_ptr<google::protobuf::DynamicMessageFactory> msg_factory;
   const google::protobuf::Descriptor *schema_descriptor = nullptr;
   const google::protobuf::Message *schema_prototype  = nullptr;
+
+  DestDriverMetrics metrics;
 };
 
 
