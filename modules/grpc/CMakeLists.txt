@@ -71,6 +71,7 @@ if (ENABLE_GRPC)
     protobuf::libprotobuf)
 
   add_subdirectory(credentials)
+  add_subdirectory(metrics)
   add_subdirectory(protos)
 endif()
 

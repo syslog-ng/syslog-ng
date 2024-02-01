@@ -198,6 +198,7 @@ modules/grpc/otel/tests/test-syslog-ng-otlp\.cpp$
 modules/grpc/loki
 modules/grpc/bigquery
 modules/grpc/credentials
+modules/grpc/metrics
 modules/cloud-auth/cloud-auth(|-grammar|-parser|-plugin)\.(c|h|cpp|hpp|ym)$
 modules/cloud-auth/google-auth\.(h|cpp|hpp)$
 modules/examples/inner-destinations/tls-test-validation
