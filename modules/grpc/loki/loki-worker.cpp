@@ -230,6 +230,7 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
     ctx.AddMetadata("x-scope-orgid", owner->tenant_id);
 
   ::grpc::Status status = this->stub->Push(&ctx, this->current_batch, &response);
+  this->get_owner()->metrics.insert_grpc_request_stats(status);
 
   if (!status.ok())
     {

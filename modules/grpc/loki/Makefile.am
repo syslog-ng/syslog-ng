@@ -4,6 +4,7 @@ noinst_LTLIBRARIES += modules/grpc/loki/libloki_cpp.la
 
 modules_grpc_loki_libloki_cpp_la_SOURCES = \
   $(grpc_credentials_sources) \
+  $(grpc_metrics_sources) \
   modules/grpc/loki/loki-dest.h \
   modules/grpc/loki/loki-dest.hpp \
   modules/grpc/loki/loki-dest.cpp \

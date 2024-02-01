@@ -4,6 +4,7 @@ endif()
 
 set(LOKI_CPP_SOURCES
   ${GRPC_CREDENTIALS_SOURCES}
+  ${GRPC_METRICS_SOURCES}
   loki-dest.hpp
   loki-dest.cpp
   loki-dest.h
