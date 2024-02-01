@@ -120,12 +120,18 @@ DestDriver::init()
     return false;
 
   log_threaded_dest_driver_register_aggregated_stats(&this->super->super);
+
+  StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+  format_stats_key(kb);
+  metrics.init(kb, log_pipe_is_internal(&super->super.super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1);
+
   return true;
 }
 
 bool
 DestDriver::deinit()
 {
+  metrics.deinit();
   return log_threaded_dest_driver_deinit_method(&super->super.super.super.super);
 }
 

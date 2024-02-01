@@ -90,7 +90,7 @@ protected:
 
 protected:
   OtelDestWorker *super;
-  const DestDriver &owner;
+  DestDriver &owner;
 
   std::shared_ptr<::grpc::Channel> channel;
   std::unique_ptr<LogsService::Stub> logs_service_stub;

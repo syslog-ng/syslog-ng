@@ -4,6 +4,7 @@ endif()
 
 set(OTEL_CPP_SOURCES
   ${GRPC_CREDENTIALS_SOURCES}
+  ${GRPC_METRICS_SOURCES}
   otel-source.cpp
   otel-source.hpp
   otel-source.h

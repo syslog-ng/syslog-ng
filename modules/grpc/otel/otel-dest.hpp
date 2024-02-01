@@ -30,6 +30,7 @@
 #include "compat/cpp-end.h"
 
 #include "credentials/grpc-credentials-builder.hpp"
+#include "metrics/grpc-metrics.hpp"
 
 #include <grpcpp/server.h>
 
@@ -59,6 +60,7 @@ public:
   virtual LogThreadedDestWorker *construct_worker(int worker_index);
 
   GrpcClientCredentialsBuilderW *get_credentials_builder_wrapper();
+
 public:
   syslogng::grpc::ClientCredentialsBuilder credentials_builder;
 
@@ -69,6 +71,7 @@ protected:
   bool compression;
   size_t batch_bytes;
   GrpcClientCredentialsBuilderW credentials_builder_wrapper;
+  DestDriverMetrics metrics;
 };
 
 }

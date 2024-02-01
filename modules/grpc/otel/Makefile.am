@@ -4,6 +4,7 @@ noinst_LTLIBRARIES += modules/grpc/otel/libotel_cpp.la
 
 modules_grpc_otel_libotel_cpp_la_SOURCES = \
   $(grpc_credentials_sources) \
+  $(grpc_metrics_sources) \
   modules/grpc/otel/otel-source.h \
   modules/grpc/otel/otel-source.hpp \
   modules/grpc/otel/otel-source.cpp \
