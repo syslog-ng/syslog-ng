@@ -63,6 +63,7 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_ALTS
 %token KW_TARGET_SERVICE_ACCOUNTS
 %token KW_ADC
+%token KW_TENANT_ID
 
 %token KW_KEEP_ALIVE
 %token KW_TIME
@@ -94,6 +95,7 @@ loki_dest_option
   : KW_URL '(' string ')' { loki_dd_set_url(last_driver, $3); free($3); }
   | KW_KEEP_ALIVE '(' loki_keepalive_options ')'
   | KW_LABELS '(' loki_labels ')'
+  | KW_TENANT_ID '(' string ')' { loki_dd_set_tenant_id(last_driver, $3); free($3); }
   | KW_TIMESTAMP '(' string ')'
     {
       CHECK_ERROR(loki_dd_set_timestamp(last_driver, $3), @1, "Failed to set timestamp(). Valid values are: \"current\", \"received\", \"msg\"");

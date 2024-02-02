@@ -204,6 +204,13 @@ loki_dd_set_timestamp(LogDriver *d, const gchar *t)
 }
 
 void
+loki_dd_set_tenant_id(LogDriver *d, const gchar *tid)
+{
+  LokiDestDriver *self = (LokiDestDriver *) d;
+  return self->cpp->set_tenant_id(tid);
+}
+
+void
 loki_dd_set_keepalive_time(LogDriver *d, gint t)
 {
   LokiDestDriver *self = (LokiDestDriver *) d;

@@ -216,6 +216,8 @@ DestinationWorker::insert(LogMessage *msg)
 LogThreadedResult
 DestinationWorker::flush(LogThreadedFlushMode mode)
 {
+  DestinationDriver *owner = this->get_owner();
+
   if (this->super->super.batch_size == 0)
     return LTR_SUCCESS;
 
@@ -223,6 +225,10 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
   logproto::PushResponse response{};
 
   ::grpc::ClientContext ctx;
+
+  if (!owner->tenant_id.empty())
+    ctx.AddMetadata("x-scope-orgid", owner->tenant_id);
+
   ::grpc::Status status = this->stub->Push(&ctx, this->current_batch, &response);
 
   if (!status.ok())
