@@ -46,6 +46,7 @@
 #define LWO_THREADED        0x0010
 #define LWO_IGNORE_ERRORS   0x0020
 #define LWO_SEQNUM_ALL      0x0040
+#define LWO_SEQNUM          0x0080
 
 typedef struct _LogWriterOptions
 {

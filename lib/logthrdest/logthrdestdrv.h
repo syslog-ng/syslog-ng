@@ -67,6 +67,7 @@ typedef enum
 enum
 {
   LTDF_SEQNUM_ALL = 0x0001,
+  LTDF_SEQNUM = 0x0002,
   /* NOTE: everything >= 0x1000 is driver specific */
 };
 
@@ -232,7 +233,8 @@ log_threaded_dest_worker_disconnect(LogThreadedDestWorker *self)
 static inline LogThreadedResult
 log_threaded_dest_worker_insert(LogThreadedDestWorker *self, LogMessage *msg)
 {
-  if ((self->owner->flags & LTDF_SEQNUM_ALL) || (msg->flags & LF_LOCAL))
+  if ((self->owner->flags & LTDF_SEQNUM) &&
+      ((self->owner->flags & LTDF_SEQNUM_ALL) || (msg->flags & LF_LOCAL)))
     {
       if (self->owner->num_workers > 1)
         self->seq_num = step_sequence_number_atomic(&self->owner->shared_seq_num);
