@@ -125,6 +125,11 @@ public:
     this->keepalive_max_pings_without_data = p;
   }
 
+  void set_tenant_id(std::string tid)
+  {
+    this->tenant_id = tid;
+  }
+
   const std::string &get_url()
   {
     return this->url;
@@ -138,6 +143,7 @@ private:
   LogTemplateOptions template_options;
 
   std::string url;
+  std::string tenant_id;
 
   LogTemplate *message = nullptr;
   std::vector<Label> labels;

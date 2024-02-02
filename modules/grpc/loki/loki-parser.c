@@ -47,6 +47,7 @@ static CfgLexerKeyword loki_keywords[] =
   { "alts", KW_ALTS },
   { "target_service_accounts", KW_TARGET_SERVICE_ACCOUNTS },
   { "adc", KW_ADC },
+  { "tenant_id", KW_TENANT_ID },
   { NULL }
 };
 
