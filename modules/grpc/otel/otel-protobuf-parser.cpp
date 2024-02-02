@@ -1241,6 +1241,52 @@ syslogng::grpc::otel::ProtobufParser::set_syslog_ng_macros(LogMessage *msg, cons
 }
 
 void
+syslogng::grpc::otel::ProtobufParser::set_syslog_ng_address(LogMessage *msg, GSockAddr **sa,
+                                                            const KeyValueList &addr_attributes)
+{
+  const std::string *addr_bytes = NULL;
+  int port = 0;
+
+  for (const KeyValue &attr : addr_attributes.values())
+    {
+      const std::string &name = attr.key();
+      if (name.compare("addr") == 0)
+        {
+          if (!_value_case_equals(msg, attr, AnyValue::kBytesValue))
+            continue;
+          addr_bytes = &attr.value().bytes_value();
+        }
+      else if (name.compare("port") == 0)
+        {
+          if (!_value_case_equals(msg, attr, AnyValue::kIntValue))
+            continue;
+          port = attr.value().int_value();
+        }
+    }
+  if (!addr_bytes)
+    return;
+
+  if (addr_bytes->length() == 4)
+    {
+      /* ipv4 */
+      struct sockaddr_in sin;
+      sin.sin_family = AF_INET;
+      sin.sin_addr = *(struct in_addr *) addr_bytes->c_str();
+      sin.sin_port = htons(port);
+      *sa = g_sockaddr_inet_new2(&sin);
+    }
+  else if (addr_bytes->length() == 16)
+    {
+      /* ipv6 */
+      struct sockaddr_in6 sin6 = {0};
+      sin6.sin6_family = AF_INET6;
+      sin6.sin6_addr = *(struct in6_addr *) addr_bytes->c_str();
+      sin6.sin6_port = htons(port);
+      *sa = g_sockaddr_inet6_new2(&sin6);
+    }
+}
+
+void
 syslogng::grpc::otel::ProtobufParser::parse_syslog_ng_tags(LogMessage *msg, const std::string &tags_as_str)
 {
   ListScanner list_scanner;
@@ -1280,6 +1326,14 @@ syslogng::grpc::otel::ProtobufParser::store_syslog_ng(LogMessage *msg, const Log
       else if (key.compare("m") == 0)
         {
           set_syslog_ng_macros(msg, value);
+        }
+      else if (key.compare("sa") == 0)
+        {
+          set_syslog_ng_address(msg, &msg->saddr, value);
+        }
+      else if (key.compare("da") == 0)
+        {
+          set_syslog_ng_address(msg, &msg->daddr, value);
         }
       else
         {

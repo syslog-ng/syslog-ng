@@ -532,6 +532,48 @@ ProtobufFormatter::set_syslog_ng_nv_pairs(LogMessage *msg, LogRecord &log_record
 }
 
 void
+ProtobufFormatter::set_syslog_ng_address_attrs(GSockAddr *sa, KeyValueList *address_attrs, bool include_port)
+{
+  gchar addr_buf[32];
+  gsize addr_len;
+
+  if (!g_sockaddr_get_address(sa, (guint8 *) addr_buf, sizeof(addr_buf), &addr_len))
+    return;
+
+  KeyValue *addr = address_attrs->add_values();
+  addr->set_key("addr");
+  addr->mutable_value()->set_bytes_value(addr_buf, addr_len);
+
+  if (include_port)
+    {
+      KeyValue *port = address_attrs->add_values();
+      port->set_key("port");
+      port->mutable_value()->set_int_value(g_sockaddr_get_port(sa));
+    }
+}
+
+void
+ProtobufFormatter::set_syslog_ng_addresses(LogMessage *msg, LogRecord &log_record)
+{
+  /* source address */
+
+  if (msg->saddr)
+    {
+      KeyValue *sa = log_record.add_attributes();
+      sa->set_key("sa");
+      set_syslog_ng_address_attrs(msg->saddr, sa->mutable_value()->mutable_kvlist_value(), false);
+    }
+
+  if (msg->daddr)
+    {
+      /* dest address */
+      KeyValue *da = log_record.add_attributes();
+      da->set_key("da");
+      set_syslog_ng_address_attrs(msg->daddr, da->mutable_value()->mutable_kvlist_value(), true);
+    }
+}
+
+void
 ProtobufFormatter::set_syslog_ng_macros(LogMessage *msg, LogRecord &log_record)
 {
   /*
@@ -573,6 +615,7 @@ ProtobufFormatter::format_syslog_ng(LogMessage *msg, LogRecord &log_record)
 
   set_syslog_ng_nv_pairs(msg, log_record);
   set_syslog_ng_macros(msg, log_record);
+  set_syslog_ng_addresses(msg, log_record);
 }
 
 void
