@@ -1370,6 +1370,7 @@ threaded_dest_driver_general_option_noflags
           log_threaded_dest_driver_set_max_retries_on_error(last_driver, $3);
         }
         | KW_TIME_REOPEN '(' positive_integer ')' { log_threaded_dest_driver_set_time_reopen(last_driver, $3); }
+        | KW_REOPEN { last_exponential_backoff_options = log_threaded_dest_driver_get_exponential_backoff_options(last_driver); } '(' exponential_backoff_options ')'
         | dest_driver_option
         ;
 

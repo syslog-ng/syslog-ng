@@ -30,6 +30,7 @@
 #include "scratch-buffers.h"
 #include "template/eval.h"
 #include "mainloop-threaded-worker.h"
+#include "timeutils/misc.h"
 
 #include <string.h>
 
@@ -76,7 +77,13 @@ log_threaded_dest_driver_set_time_reopen(LogDriver *s, time_t time_reopen)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
 
-  self->time_reopen = time_reopen;
+  if (cfg_is_config_version_older(log_pipe_get_config(&s->super), VERSION_VALUE_4_7))
+    {
+      self->time_reopen = time_reopen;
+      return;
+    }
+
+  exponential_backoff_options_set_maximum_seconds(&self->exponential_backoff_options, time_reopen);
 }
 
 CfgFlagHandler log_threaded_dest_driver_flag_handlers[] =
@@ -106,6 +113,7 @@ log_threaded_dest_worker_ack_messages(LogThreadedDestWorker *self, gint batch_si
   stats_counter_add(self->owner->metrics.written_messages, batch_size);
   self->retries_on_error_counter = 0;
   self->batch_size -= batch_size;
+  exponential_backoff_reset(self->exponential_backoff);
 }
 
 void
@@ -272,13 +280,31 @@ _rewind_batch(LogThreadedDestWorker *self)
   log_threaded_dest_worker_rewind_messages(self, self->batch_size);
 }
 
+static gdouble
+_get_next_reopen_seconds(LogThreadedDestWorker *self)
+{
+  if (self->time_reopen != -1)
+    return self->time_reopen;
+
+  return exponential_backoff_get_next_wait_seconds(self->exponential_backoff);
+}
+
+static gdouble
+_peek_next_reopen_seconds(LogThreadedDestWorker *self)
+{
+  if (self->time_reopen != -1)
+    return self->time_reopen;
+
+  return exponential_backoff_peek_next_wait_seconds(self->exponential_backoff);
+}
+
 static void
 _process_result_drop(LogThreadedDestWorker *self)
 {
   msg_error("Message(s) dropped while sending message to destination",
             evt_tag_str("driver", self->owner->super.super.id),
             evt_tag_int("worker_index", self->worker_index),
-            evt_tag_int("time_reopen", self->time_reopen),
+            evt_tag_printf("reopen", "%.2f", _peek_next_reopen_seconds(self)),
             evt_tag_int("batch_size", self->batch_size));
 
   _drop_batch(self);
@@ -308,7 +334,7 @@ _process_result_error(LogThreadedDestWorker *self)
                 log_expr_node_location_tag(self->owner->super.super.super.expr_node),
                 evt_tag_int("worker_index", self->worker_index),
                 evt_tag_int("retries", self->retries_on_error_counter),
-                evt_tag_int("time_reopen", self->time_reopen),
+                evt_tag_printf("reopen", "%.2f", _peek_next_reopen_seconds(self)),
                 evt_tag_int("batch_size", self->batch_size));
       _rewind_batch(self);
       _disconnect_and_suspend(self);
@@ -322,7 +348,7 @@ _process_result_not_connected(LogThreadedDestWorker *self)
            evt_tag_str("driver", self->owner->super.super.id),
            log_expr_node_location_tag(self->owner->super.super.super.expr_node),
            evt_tag_int("worker_index", self->worker_index),
-           evt_tag_int("time_reopen", self->time_reopen),
+           evt_tag_printf("reopen", "%.2f", _peek_next_reopen_seconds(self)),
            evt_tag_int("batch_size", self->batch_size));
   self->retries_counter = 0;
   _rewind_batch(self);
@@ -333,6 +359,7 @@ static void
 _process_result_success(LogThreadedDestWorker *self)
 {
   _accept_batch(self);
+  exponential_backoff_reset(self->exponential_backoff);
 }
 
 static void
@@ -534,7 +561,7 @@ _schedule_restart_on_suspend_timeout(LogThreadedDestWorker *self)
 {
   iv_validate_now();
   self->timer_reopen.expires  = iv_now;
-  self->timer_reopen.expires.tv_sec += self->time_reopen;
+  timespec_add_usec(&self->timer_reopen.expires, (glong) (_get_next_reopen_seconds(self) * USEC_PER_SEC));
   iv_timer_register(&self->timer_reopen);
 }
 
@@ -947,8 +974,14 @@ _unregister_worker_stats(LogThreadedDestWorker *self)
 gboolean
 log_threaded_dest_worker_init_method(LogThreadedDestWorker *self)
 {
-  if (self->time_reopen == -1)
-    self->time_reopen = self->owner->time_reopen;
+  if (cfg_is_config_version_older(log_pipe_get_config(&self->owner->super.super.super), VERSION_VALUE_4_7))
+    {
+      if (self->time_reopen == -1)
+        self->time_reopen = self->owner->time_reopen;
+    }
+
+  self->exponential_backoff = exponential_backoff_new(self->owner->exponential_backoff_options);
+  g_assert(self->exponential_backoff);
 
   if (self->owner->flush_on_key_change)
     self->partitioning.last_key = g_string_sized_new(128);
@@ -961,6 +994,8 @@ log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self)
 {
   if (self->partitioning.last_key)
     g_string_free(self->partitioning.last_key, TRUE);
+
+  exponential_backoff_free(self->exponential_backoff);
 }
 
 void
@@ -1027,6 +1062,14 @@ log_threaded_dest_driver_set_flush_on_worker_key_change(LogDriver *s, gboolean f
   LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
 
   self->flush_on_key_change = f;
+}
+
+ExponentialBackoffOptions *
+log_threaded_dest_driver_get_exponential_backoff_options(LogDriver *s)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
+
+  return &self->exponential_backoff_options;
 }
 
 /* compatibility bridge between LogThreadedDestWorker */
@@ -1365,8 +1408,14 @@ log_threaded_dest_driver_init_method(LogPipe *s)
 
   self->under_termination = FALSE;
 
-  if (self->time_reopen == -1)
-    self->time_reopen = cfg->time_reopen;
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_4_7))
+    {
+      if (self->time_reopen == -1)
+        self->time_reopen = cfg->time_reopen;
+    }
+
+  if (!exponential_backoff_options_validate(&self->exponential_backoff_options))
+    return FALSE;
 
   gpointer persisted_value = cfg_persist_config_fetch(cfg, _format_seqnum_persist_name(self));
   self->shared_seq_num = GPOINTER_TO_INT(persisted_value);
@@ -1481,4 +1530,6 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->retries_max = MAX_RETRIES_BEFORE_SUSPEND_DEFAULT;
 
   self->flush_on_key_change = FALSE;
+
+  exponential_backoff_options_set_defaults(&self->exponential_backoff_options);
 }
