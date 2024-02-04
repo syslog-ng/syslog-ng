@@ -97,7 +97,12 @@ ParameterizedTest(ProtocolHeaderTestParams *params, log_proto, test_proxy_protoc
                                                             -1, LTM_EOF),
                                                             get_inited_proto_server_options());
 
-  gboolean valid = log_proto_server_handshake(proto) == LPS_SUCCESS;
+  gboolean handshake_finished = FALSE;
+  gboolean valid = log_proto_server_handshake(proto, &handshake_finished) == LPS_SUCCESS;
+
+  if (valid)
+    cr_assert(handshake_finished == TRUE);
+
   cr_assert_eq(valid, params->valid,
                "This should be %s: %s", params->valid ? "valid" : "invalid", params->proxy_header);
 
@@ -111,7 +116,9 @@ Test(log_proto, test_proxy_protocol_handshake_and_fetch_success)
                                                            LTM_EOF);
   LogProtoServer *proto = log_proto_proxied_text_server_new(transport, get_inited_proto_server_options());
 
-  cr_assert_eq(log_proto_server_handshake(proto), LPS_SUCCESS);
+  gboolean handshake_finished = FALSE;
+  cr_assert_eq(log_proto_server_handshake(proto, &handshake_finished), LPS_SUCCESS);
+  cr_assert(handshake_finished == TRUE);
   assert_proto_server_fetch(proto, "test message", -1);
 
   log_proto_server_free(proto);
@@ -124,7 +131,9 @@ Test(log_proto, test_proxy_protocol_handshake_failed)
                                                            LTM_EOF);
   LogProtoServer *proto = log_proto_proxied_text_server_new(transport, get_inited_proto_server_options());
 
-  cr_assert_eq(log_proto_server_handshake(proto), LPS_ERROR);
+  gboolean handshake_finished = FALSE;
+  cr_assert_eq(log_proto_server_handshake(proto, &handshake_finished), LPS_ERROR);
+  cr_assert(handshake_finished == FALSE);
 
   log_proto_server_free(proto);
 }
@@ -166,7 +175,9 @@ Test(log_proto, test_proxy_protocol_aux_data)
                                                            LTM_EOF);
   LogProtoServer *proto = log_proto_proxied_text_server_new(transport, get_inited_proto_server_options());
 
-  cr_assert_eq(log_proto_server_handshake(proto), LPS_SUCCESS);
+  gboolean handshake_finished = FALSE;
+  cr_assert_eq(log_proto_server_handshake(proto, &handshake_finished), LPS_SUCCESS);
+  cr_assert(handshake_finished == TRUE);
 
   LogTransportAuxData aux;
   log_transport_aux_data_init(&aux);
@@ -193,7 +204,9 @@ Test(log_proto, test_proxy_protocol_v2_parse_header)
                                                             ),
                                                             get_inited_proto_server_options());
 
-  cr_assert_eq(log_proto_server_handshake(proto), LPS_SUCCESS, "Proxy protocol v2 parsing failed");
+  gboolean handshake_finished = FALSE;
+  cr_assert_eq(log_proto_server_handshake(proto, &handshake_finished), LPS_SUCCESS, "Proxy protocol v2 parsing failed");
+  cr_assert(handshake_finished == TRUE);
 
   LogTransportAuxData aux;
   log_transport_aux_data_init(&aux);
@@ -206,19 +219,6 @@ Test(log_proto, test_proxy_protocol_v2_parse_header)
   g_string_free(aux_nv_concated, TRUE);
   log_transport_aux_data_destroy(&aux);
   log_proto_server_free(proto);
-}
-
-static void
-assert_handshake_is_taking_place(LogProtoServer *proto)
-{
-  gint timeout;
-  GIOCondition cond;
-
-
-  cr_assert_eq(log_proto_server_prepare(proto, &cond, &timeout), LPPA_POLL_IO);
-  cr_assert_eq(cond, G_IO_IN);
-
-  cr_assert(log_proto_server_handshake_in_progress(proto));
 }
 
 Test(log_proto, test_proxy_protocol_header_partial_read)
@@ -238,14 +238,15 @@ Test(log_proto, test_proxy_protocol_header_partial_read)
   LogProtoServer *proto = log_proto_proxied_text_server_new((LogTransport *) transport,
                                                             get_inited_proto_server_options());
 
+  gboolean handshake_finished = FALSE;
   for(size_t i = 0; i < length; i++)
     {
-      assert_handshake_is_taking_place(proto);
-      cr_assert_eq(log_proto_server_handshake(proto), LPS_AGAIN);
+      cr_assert_eq(log_proto_server_handshake(proto, &handshake_finished), LPS_AGAIN);
+      cr_assert(handshake_finished == FALSE);
     }
 
-  cr_assert_eq(log_proto_server_handshake(proto), LPS_SUCCESS);
-  cr_assert_not(log_proto_server_handshake_in_progress(proto));
+  cr_assert_eq(log_proto_server_handshake(proto, &handshake_finished), LPS_SUCCESS);
+  cr_assert(handshake_finished == TRUE);
 
 
 

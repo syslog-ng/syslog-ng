@@ -524,13 +524,13 @@ log_proto_proxied_text_server_prepare(LogProtoServer *s, GIOCondition *cond, gin
 }
 
 static LogProtoStatus
-log_proto_proxied_text_server_handshake(LogProtoServer *s)
+log_proto_proxied_text_server_handshake(LogProtoServer *s, gboolean *handshake_finished)
 {
   LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
 
   LogProtoStatus status = _fetch_into_proxy_buffer(self);
 
-  self->handshake_done = (status == LPS_SUCCESS);
+  self->handshake_done = *handshake_finished = (status == LPS_SUCCESS);
   if (status != LPS_SUCCESS)
     return status;
 
@@ -556,13 +556,6 @@ log_proto_proxied_text_server_handshake(LogProtoServer *s)
       msg_error("Error parsing PROXY protocol header");
       return LPS_ERROR;
     }
-}
-
-static gboolean
-log_proto_proxied_text_server_handshake_in_progress(LogProtoServer *s)
-{
-  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
-  return !self->handshake_done;
 }
 
 static void
@@ -626,7 +619,6 @@ log_proto_proxied_text_server_init(LogProtoProxiedTextServer *self, LogTransport
   log_proto_text_server_init(&self->super, transport, options);
 
   self->super.super.super.prepare = log_proto_proxied_text_server_prepare;
-  self->super.super.super.handshake_in_progess = log_proto_proxied_text_server_handshake_in_progress;
   self->super.super.super.handshake = log_proto_proxied_text_server_handshake;
   self->super.super.super.fetch = log_proto_proxied_text_server_fetch;
   self->super.super.super.free_fn = log_proto_proxied_text_server_free;
