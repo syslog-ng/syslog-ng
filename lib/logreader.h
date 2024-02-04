@@ -60,7 +60,7 @@ struct _LogReader
 {
   LogSource super;
   LogProtoServer *proto;
-  gboolean immediate_check;
+  gboolean immediate_check, handshake_in_progress;
   LogPipe *control;
   LogReaderOptions *options;
   PollEvents *poll_events;

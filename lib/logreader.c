@@ -419,7 +419,8 @@ _add_aux_nvpair(const gchar *name, const gchar *value, gsize value_len, gpointer
 static inline gint
 log_reader_process_handshake(LogReader *self)
 {
-  LogProtoStatus status = log_proto_server_handshake(self->proto);
+  gboolean handshake_finished = FALSE;
+  LogProtoStatus status = log_proto_server_handshake(self->proto, &handshake_finished);
 
   switch (status)
     {
@@ -427,6 +428,8 @@ log_reader_process_handshake(LogReader *self)
     case LPS_ERROR:
       return status == LPS_ERROR ? NC_READ_ERROR : NC_CLOSE;
     case LPS_SUCCESS:
+      if (handshake_finished)
+        self->handshake_in_progress = FALSE;
       break;
     case LPS_AGAIN:
       break;
@@ -494,7 +497,7 @@ log_reader_fetch_log(LogReader *self)
     aux = NULL;
 
   log_transport_aux_data_init(aux);
-  if (log_proto_server_handshake_in_progress(self->proto))
+  if (self->handshake_in_progress)
     {
       return log_reader_process_handshake(self);
     }
@@ -768,6 +771,7 @@ log_reader_new(GlobalConfig *cfg)
   self->super.schedule_dynamic_window_realloc = _schedule_dynamic_window_realloc;
   self->super.metrics.raw_bytes_enabled = TRUE;
   self->immediate_check = FALSE;
+  self->handshake_in_progress = TRUE;
   log_reader_init_watches(self);
   g_mutex_init(&self->pending_close_lock);
   g_cond_init(&self->pending_close_cond);

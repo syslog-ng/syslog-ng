@@ -83,25 +83,13 @@ log_proto_auto_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_le
   g_assert_not_reached();
 }
 
-static gboolean
-log_proto_auto_handshake_in_progress(LogProtoServer *s)
-{
-  LogProtoAutoServer *self = (LogProtoAutoServer *) s;
-
-  if (self->proto_impl)
-    return log_proto_server_handshake_in_progress(self->proto_impl);
-
-  /* as long as the auto detection is not yet finished we are in handshake mode */
-  return TRUE;
-}
-
 static LogProtoStatus
-log_proto_auto_handshake(LogProtoServer *s)
+log_proto_auto_handshake(LogProtoServer *s, gboolean *handshake_finished)
 {
   LogProtoAutoServer *self = (LogProtoAutoServer *) s;
   /* allow the impl to do its handshake */
   if (self->proto_impl)
-    return log_proto_server_handshake(self->proto_impl);
+    return log_proto_server_handshake(self->proto_impl, handshake_finished);
 
   gchar detect_buffer[8];
   gint rc;
@@ -138,7 +126,6 @@ log_proto_auto_server_new(LogTransport *transport, const LogProtoServerOptions *
   LogProtoAutoServer *self = g_new0(LogProtoAutoServer, 1);
 
   log_proto_server_init(&self->super, transport, options);
-  self->super.handshake_in_progess = log_proto_auto_handshake_in_progress;
   self->super.handshake = log_proto_auto_handshake;
   self->super.prepare = log_proto_auto_server_prepare;
   self->super.fetch = log_proto_auto_server_fetch;
