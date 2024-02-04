@@ -211,7 +211,7 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTr
   switch (g_array_index(self->value, data_t, self->current_value_ndx).type)
     {
     case DATA_STRING:
-      if (self->input_is_a_stream)
+      if (self->input_is_a_stream && count > 0)
         count = 1;
 
       current_iov = &g_array_index(self->value, data_t, self->current_value_ndx).iov;
