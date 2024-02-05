@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2024 Gergo Ferenc Kovacs
  * Copyright (c) 2019 Airbus Commercial Aircraft
  *
  * This library is free software; you can redistribute it and/or
@@ -157,7 +158,7 @@ int main(int argc, char **argv)
           msg_error("[SLOG] ERROR: Unable to read key file", evt_tag_str("file", keyfile));
           return ret;
         }
-      printf("counter=%zu\n", counterValue);
+      printf("counter=%" G_GUINT64_FORMAT "\n", counterValue);
     }
   else if (host)
     {
