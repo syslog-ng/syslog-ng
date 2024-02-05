@@ -56,8 +56,8 @@ static Plugin framed_server_plugins[] =
   LOG_PROTO_SERVER_PLUGIN(log_proto_proxied_text, "proxied-tcp"),
   LOG_PROTO_SERVER_PLUGIN(log_proto_proxied_text_tls_passthrough, "proxied-tls-passthrough"),
   LOG_PROTO_CLIENT_PLUGIN(log_proto_framed, "framed"),
-  LOG_PROTO_SERVER_PLUGIN(log_proto_framed, "framed"),
-  LOG_PROTO_SERVER_PLUGIN(log_proto_auto, "frame-detect"),
+  LOG_PROTO_SERVER_PLUGIN(log_proto_framed, "force-framed"),
+  LOG_PROTO_SERVER_PLUGIN(log_proto_auto, "framed"),
 };
 
 void
