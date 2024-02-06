@@ -116,11 +116,7 @@ syslogng::grpc::otel::TraceServiceCall::Proceed(bool ok)
               ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_spans_schema_url, scope,
                                                  scope_spans_schema_url);
               ProtobufParser::store_raw(msg, span);
-              if (!worker.post(msg))
-                {
-                  response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");
-                  break;
-                }
+              worker.post(msg);
             }
         }
     }
@@ -166,11 +162,7 @@ syslogng::grpc::otel::LogsServiceCall::Proceed(bool ok)
                                                      scope_logs_schema_url);
                   ProtobufParser::store_raw(msg, log_record);
                 }
-              if (!worker.post(msg))
-                {
-                  response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");
-                  break;
-                }
+              worker.post(msg);
             }
         }
     }
@@ -208,11 +200,7 @@ syslogng::grpc::otel::MetricsServiceCall::Proceed(bool ok)
               ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_metrics_schema_url, scope,
                                                  scope_metrics_schema_url);
               ProtobufParser::store_raw(msg, metric);
-              if (!worker.post(msg))
-                {
-                  response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");
-                  break;
-                }
+              worker.post(msg);
             }
         }
     }

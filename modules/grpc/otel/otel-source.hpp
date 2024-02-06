@@ -80,7 +80,7 @@ public:
   void request_exit();
 
 private:
-  bool post(LogMessage *msg);
+  void post(LogMessage *msg);
 
 private:
   friend TraceServiceCall;

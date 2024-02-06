@@ -152,14 +152,10 @@ syslogng::grpc::otel::SourceWorker::request_exit()
   driver.request_exit();
 }
 
-bool
+void
 SourceWorker::post(LogMessage *msg)
 {
-  if (!log_threaded_source_worker_free_to_send(&super->super))
-    return false;
-
-  log_threaded_source_worker_post(&super->super, msg);
-  return true;
+  log_threaded_source_worker_blocking_post(&super->super, msg);
 }
 
 /* Config setters */
