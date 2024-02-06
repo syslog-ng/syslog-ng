@@ -426,7 +426,7 @@ filterx_json_associate_cached_object(struct json_object *jso, FilterXObject *obj
 }
 
 FILTERX_DEFINE_TYPE(json, FILTERX_TYPE_NAME(object),
-                    .mutable = TRUE,
+                    .is_mutable = TRUE,
                     .free_fn = _free,
                     .truthy = _truthy,
                     .marshal = _marshal,
