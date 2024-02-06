@@ -62,7 +62,7 @@ destination dest_false {{
 log {{
     source(genmsg);
     if {{
-        filterx {{ {filterx_expr} }};
+        filterx {{ {filterx_expr} \n}};
         destination(dest_true);
     }} else {{
         destination(dest_false);
@@ -71,6 +71,77 @@ log {{
 """
     config.set_raw_config(preamble)
     return (file_true, file_false)
+
+
+def test_otel_logrecord_int32_setter_getter(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+                                            $olr = otel_logrecord();
+                                            $olr.dropped_attributes_count = ${values.int};
+                                            $MSG = $olr.dropped_attributes_count; """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "5\n"
+
+
+def test_otel_logrecord_string_setter_getter(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+                                            $olr = otel_logrecord();
+                                            $olr.severity_text = "${values.str}";
+                                            $MSG = $olr.severity_text; """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "string\n"
+
+
+def test_otel_logrecord_bytes_setter_getter(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+                                            $olr = otel_logrecord();
+                                            $olr.trace_id = ${values.bytes};
+                                            $MSG = $olr.trace_id; """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "binary whatever\n"
+
+
+def test_otel_logrecord_datetime_setter_getter(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+                                            $olr = otel_logrecord();
+                                            $olr.time_unix_nano = ${values.datetime};
+                                            $MSG = $olr.time_unix_nano; """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "1701353998.123000+00:00\n"
+
+
+# upcoming feature will change this behaviour
+def test_otel_logrecord_body_setter_getter(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+                                            $olr = otel_logrecord();
+                                            $olr.body = "my body";
+                                            $MSG = $olr.body; """,
+    )
+    syslog_ng.start(config)
+
+    assert "processed" not in file_true.get_stats()
+    assert file_false.get_stats()["processed"] == 1
+    assert file_false.read_log() == "foobar\n"
 
 
 def test_simple_true_condition(config, syslog_ng):
