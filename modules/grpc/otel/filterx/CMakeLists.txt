@@ -8,6 +8,8 @@ set(OTEL_LOGRECORD_CPP_SOURCES
   otel-logrecord.cpp
   otel-logrecord.hpp
   otel-logrecord.h
+  protobuf-field.cpp
+  protobuf-field.hpp
 )
 
 add_module(
