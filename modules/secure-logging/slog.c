@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2024 Gergo Ferenc Kovacs
  * Copyright (c) 2019 Airbus Commercial Aircraft
  *
  * This library is free software; you can redistribute it and/or
@@ -932,7 +933,7 @@ int writeKey(char *key, guint64 counter, gchar *keypath)
       return 0;
     }
 
-  guint64 outlen = 0;
+  gsize outlen = 0;
   // Write key
   status = g_io_channel_write_chars(keyfile, key, KEY_LENGTH, &outlen, &error);
   if(status != G_IO_STATUS_NORMAL)
