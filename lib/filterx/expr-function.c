@@ -30,7 +30,11 @@
 static GPtrArray *
 filterx_function_eval_expressions(GList *expressions)
 {
-  GPtrArray *res = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
+  if (expressions == NULL)
+    {
+      return NULL;
+    }
+  GPtrArray *res = g_ptr_array_sized_new(g_list_length(expressions));
   for (GList *head = expressions; head; head = head->next)
     {
       FilterXObject *fxo = filterx_expr_eval(head->data);
@@ -64,14 +68,19 @@ _eval(FilterXExpr *s)
   return res;
 }
 
+void
+filterx_function_free_method(FilterXFunction *s)
+{
+  g_free(s->function_name);
+  g_list_free_full(s->argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_expr_free_method(&s->super);
+}
+
 static void
 _free(FilterXExpr *s)
 {
   FilterXFunction *self = (FilterXFunction *) s;
-
-  g_free(self->function_name);
-  g_list_free_full(self->argument_expressions, (GDestroyNotify) filterx_expr_unref);
-  filterx_expr_free_method(&self->super);
+  filterx_function_free_method(self);
 }
 
 FilterXExpr *
