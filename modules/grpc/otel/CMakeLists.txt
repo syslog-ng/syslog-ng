@@ -50,4 +50,7 @@ add_module(
 
 set_target_properties(otel PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${CMAKE_INSTALL_PREFIX}/lib/syslog-ng")
 
+add_subdirectory(filterx)
+target_link_libraries(otel PRIVATE otel_filterx_logrecord_cpp)
+
 add_test_subdirectory(tests)
