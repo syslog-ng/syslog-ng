@@ -30,6 +30,7 @@ FILTERX_DECLARE_TYPE(bytes);
 FILTERX_DECLARE_TYPE(protobuf);
 
 const gchar *filterx_string_get_value(FilterXObject *s, gsize *length);
+const gchar *filterx_bytes_get_value(FilterXObject *s, gsize *length);
 
 FilterXObject *filterx_string_new(const gchar *str, gssize str_len);
 FilterXObject *filterx_bytes_new(const gchar *str, gssize str_len);
