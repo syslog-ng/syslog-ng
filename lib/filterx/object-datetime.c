@@ -97,3 +97,11 @@ FILTERX_DEFINE_TYPE(datetime, FILTERX_TYPE_NAME(object),
                     .map_to_json = _map_to_json,
                     .marshal = _marshal,
                    );
+
+UnixTime
+filterx_datetime_get_value(FilterXObject *s)
+{
+  FilterXDateTime *self = (FilterXDateTime *) s;
+
+  return self->ut;
+}

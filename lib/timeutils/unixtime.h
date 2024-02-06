@@ -83,7 +83,7 @@ gint64 unix_time_diff_in_seconds(const UnixTime *a, const UnixTime *b);
 gint64 unix_time_diff_in_msec(const UnixTime *a, const UnixTime *b);
 
 struct timeval timeval_from_unix_time(UnixTime *ut);
-UnixTime unixtime_from_unix_epoch(uint64_t unix_epoch);
-uint64_t unixtime_to_unix_epoch(const UnixTime ut);
+UnixTime unix_time_from_unix_epoch(guint64 unix_epoch);
+guint64 unix_time_to_unix_epoch(const UnixTime ut);
 
 #endif

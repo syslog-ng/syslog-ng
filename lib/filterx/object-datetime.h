@@ -28,5 +28,6 @@
 FILTERX_DECLARE_TYPE(datetime);
 
 FilterXObject *filterx_datetime_new(const UnixTime *ut);
+UnixTime filterx_datetime_get_value(FilterXObject *s);
 
 #endif

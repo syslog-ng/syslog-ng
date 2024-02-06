@@ -351,21 +351,20 @@ timeval_from_unix_time(UnixTime *ut)
   return tv;
 }
 
-const uint64_t USEC_MULTIPLIER = 1000000;
-
 UnixTime
-unixtime_from_unix_epoch(uint64_t unix_epoch)
+unix_time_from_unix_epoch(guint64 unix_epoch)
 {
   UnixTime ut =
   {
-    .ut_sec = (int64_t)(unix_epoch / USEC_MULTIPLIER),
-    .ut_usec = (guint32)(unix_epoch % USEC_MULTIPLIER),
+    .ut_sec = (int64_t)(unix_epoch / USEC_PER_SEC),
+    .ut_usec = (guint32)(unix_epoch % USEC_PER_SEC),
     .ut_gmtoff = 0,
   };
   return ut;
 }
 
-uint64_t unixtime_to_unix_epoch(const UnixTime ut)
+guint64
+unix_time_to_unix_epoch(const UnixTime ut)
 {
-  return (uint64_t)((ut.ut_sec + ut.ut_gmtoff) * USEC_MULTIPLIER + ut.ut_usec);
+  return (guint64)((ut.ut_sec + ut.ut_gmtoff) * USEC_PER_SEC + ut.ut_usec);
 }
