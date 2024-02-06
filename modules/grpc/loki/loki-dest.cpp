@@ -107,12 +107,20 @@ DestinationDriver::init()
   else
     log_threaded_dest_driver_set_worker_partition_key_ref(&this->super->super.super.super, worker_partition_key);
 
-  return log_threaded_dest_driver_init_method(&this->super->super.super.super.super);
+  if (!log_threaded_dest_driver_init_method(&this->super->super.super.super.super))
+    return false;
+
+  StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
+  this->format_stats_key(kb);
+  this->metrics.init(kb, log_pipe_is_internal(&this->super->super.super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1);
+
+  return true;
 }
 
 bool
 DestinationDriver::deinit()
 {
+  this->metrics.deinit();
   return log_threaded_dest_driver_deinit_method(&this->super->super.super.super.super);
 }
 

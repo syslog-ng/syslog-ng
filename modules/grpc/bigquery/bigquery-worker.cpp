@@ -362,6 +362,15 @@ DestinationWorker::handle_row_errors(const google::cloud::bigquery::storage::v1:
   return LTR_DROP;
 }
 
+static ::grpc::Status
+_append_rows_response_get_status(const google::cloud::bigquery::storage::v1::AppendRowsResponse &response)
+{
+  if (!response.has_error())
+    return ::grpc::Status::OK;
+
+  return ::grpc::Status((::grpc::StatusCode) response.error().code(), response.error().message());
+}
+
 LogThreadedResult
 DestinationWorker::flush(LogThreadedFlushMode mode)
 {
@@ -407,6 +416,7 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
   result = LTR_SUCCESS;
 
 exit:
+  this->get_owner()->metrics.insert_grpc_request_stats(_append_rows_response_get_status(append_rows_response));
   this->prepare_batch();
   return result;
 }

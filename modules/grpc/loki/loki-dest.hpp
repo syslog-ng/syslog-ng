@@ -32,6 +32,7 @@
 #include "compat/cpp-end.h"
 
 #include "credentials/grpc-credentials-builder.hpp"
+#include "metrics/grpc-metrics.hpp"
 
 #include <string>
 #include <vector>
@@ -155,6 +156,8 @@ private:
   int keepalive_time;
   int keepalive_timeout;
   int keepalive_max_pings_without_data;
+
+  DestDriverMetrics metrics;
 };
 
 

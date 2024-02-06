@@ -3,6 +3,7 @@ if(NOT ENABLE_GRPC)
 endif()
 
 set(BIGQUERY_CPP_SOURCES
+  ${GRPC_METRICS_SOURCES}
   bigquery-dest.hpp
   bigquery-dest.cpp
   bigquery-dest.h
