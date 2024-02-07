@@ -55,8 +55,6 @@ _eval(FilterXExpr *s)
   FilterXFunction *self = (FilterXFunction *) s;
 
   GPtrArray *args = filterx_function_eval_expressions(self->argument_expressions);
-  if (!args)
-    return NULL;
 
   FilterXFunctionProto f = self->function_proto;
 
