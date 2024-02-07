@@ -140,9 +140,17 @@ SourceWorker::SourceWorker(OtelSourceWorker *s, SourceDriver &d)
 void
 syslogng::grpc::otel::SourceWorker::run()
 {
-  new TraceServiceCall(*this, &driver.trace_service, cq.get());
-  new LogsServiceCall(*this, &driver.logs_service, cq.get());
-  new MetricsServiceCall(*this, &driver.metrics_service, cq.get());
+  /* Proceed() will immediately create a new ServiceCall,
+   * so creating 1 ServiceCall here results in 2 concurrent requests.
+   *
+   * Because of this we should create (concurrent_requests - 1) ServiceCalls here.
+   */
+  for (int i = 0; i < driver.concurrent_requests - 1; i++)
+    {
+      new TraceServiceCall(*this, &driver.trace_service, cq.get());
+      new LogsServiceCall(*this, &driver.logs_service, cq.get());
+      new MetricsServiceCall(*this, &driver.metrics_service, cq.get());
+    }
 
   void *tag;
   bool ok;
@@ -177,6 +185,12 @@ void
 otel_sd_set_fetch_limit(LogDriver *s, gint fetch_limit)
 {
   get_SourceDriver(s)->fetch_limit = fetch_limit;
+}
+
+void
+otel_sd_set_concurrent_requests(LogDriver *s, gint concurrent_requests)
+{
+  get_SourceDriver(s)->concurrent_requests = concurrent_requests;
 }
 
 GrpcServerCredentialsBuilderW *

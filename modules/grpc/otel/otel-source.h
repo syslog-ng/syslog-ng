@@ -36,6 +36,8 @@ typedef struct OtelSourceDriver_ OtelSourceDriver;
 LogDriver *otel_sd_new(GlobalConfig *cfg);
 void otel_sd_set_port(LogDriver *s, guint64 port);
 void otel_sd_set_fetch_limit(LogDriver *s, gint fetch_limit);
+void otel_sd_set_concurrent_requests(LogDriver *s, gint concurrent_requests);
+
 GrpcServerCredentialsBuilderW *otel_sd_get_credentials_builder(LogDriver *s);
 
 #include "compat/cpp-end.h"

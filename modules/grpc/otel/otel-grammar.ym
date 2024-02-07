@@ -72,6 +72,7 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_SYSLOG_NG_OTLP
 %token KW_COMPRESSION
 %token KW_BATCH_BYTES
+%token KW_CONCURRENT_REQUESTS
 
 %type <ptr> source_otel
 %type <ptr> parser_otel
@@ -109,6 +110,7 @@ source_otel_options
 source_otel_option
   : KW_PORT '(' positive_integer ')' { otel_sd_set_port(last_driver, $3); }
   | KW_LOG_FETCH_LIMIT '(' nonnegative_integer ')' { otel_sd_set_fetch_limit(last_driver, $3); }
+  | KW_CONCURRENT_REQUESTS '(' positive_integer ')' { CHECK_ERROR($3 >= 2, @1, "concurrent-requests() must be greater than 1"); otel_sd_set_concurrent_requests(last_driver, $3); }
   | KW_AUTH { last_grpc_server_credentials_builder = otel_sd_get_credentials_builder(last_driver); } '(' grpc_server_credentials_builder_option ')'
   | threaded_source_driver_option
   | threaded_source_driver_workers_option

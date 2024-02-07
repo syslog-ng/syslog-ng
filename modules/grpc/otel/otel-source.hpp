@@ -65,6 +65,7 @@ private:
 public:
   guint64 port = 4317;
   int fetch_limit = -1;
+  int concurrent_requests = 2;
   syslogng::grpc::ServerCredentialsBuilder credentials_builder;
 
 private:
