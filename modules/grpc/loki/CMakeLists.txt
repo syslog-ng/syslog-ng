@@ -34,3 +34,5 @@ add_module(
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc
   SOURCES ${LOKI_SOURCES}
 )
+
+set_target_properties(loki PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${CMAKE_INSTALL_PREFIX}/lib/syslog-ng")

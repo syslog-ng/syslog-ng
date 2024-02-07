@@ -33,3 +33,5 @@ add_module(
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc
   SOURCES ${BIGQUERY_SOURCES}
 )
+
+set_target_properties(bigquery PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${CMAKE_INSTALL_PREFIX}/lib/syslog-ng")
