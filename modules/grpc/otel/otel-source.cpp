@@ -110,6 +110,8 @@ syslogng::grpc::otel::SourceDriver::init()
 
   msg_info("OpenTelemetry server accepting connections", evt_tag_int("port", port));
 
+  super->super.worker_options.super.init_window_size /= super->super.num_workers;
+
   return log_threaded_source_driver_init_method(&super->super.super.super.super);
 }
 
