@@ -96,7 +96,8 @@ syslogng::grpc::otel::TraceServiceCall::Proceed(bool ok)
       return;
     }
 
-  new TraceServiceCall(worker, service, cq);
+  if (!worker.super->super.under_termination)
+    new TraceServiceCall(worker, service, cq);
 
   ::grpc::Status response_status = ::grpc::Status::OK;
 
@@ -112,6 +113,12 @@ syslogng::grpc::otel::TraceServiceCall::Proceed(bool ok)
 
           for (const Span &span : scope_spans.spans())
             {
+              if (worker.super->super.under_termination)
+                {
+                  response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");
+                  break;
+                }
+
               LogMessage *msg = log_msg_new_empty();
               ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_spans_schema_url, scope,
                                                  scope_spans_schema_url);
@@ -134,7 +141,8 @@ syslogng::grpc::otel::LogsServiceCall::Proceed(bool ok)
       return;
     }
 
-  new LogsServiceCall(worker, service, cq);
+  if (!worker.super->super.under_termination)
+    new LogsServiceCall(worker, service, cq);
 
   ::grpc::Status response_status = ::grpc::Status::OK;
 
@@ -150,6 +158,12 @@ syslogng::grpc::otel::LogsServiceCall::Proceed(bool ok)
 
           for (const LogRecord &log_record : scope_logs.log_records())
             {
+              if (worker.super->super.under_termination)
+                {
+                  response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");
+                  break;
+                }
+
               LogMessage *msg = log_msg_new_empty();
               if (ProtobufParser::is_syslog_ng_log_record(resource, resource_logs_schema_url, scope,
                                                           scope_logs_schema_url))
@@ -180,7 +194,8 @@ syslogng::grpc::otel::MetricsServiceCall::Proceed(bool ok)
       return;
     }
 
-  new MetricsServiceCall(worker, service, cq);
+  if (!worker.super->super.under_termination)
+    new MetricsServiceCall(worker, service, cq);
 
   ::grpc::Status response_status = ::grpc::Status::OK;
 
@@ -196,6 +211,12 @@ syslogng::grpc::otel::MetricsServiceCall::Proceed(bool ok)
 
           for (const Metric &metric : scope_metrics.metrics())
             {
+              if (worker.super->super.under_termination)
+                {
+                  response_status = ::grpc::Status(::grpc::StatusCode::UNAVAILABLE, "Server is unavailable");
+                  break;
+                }
+
               LogMessage *msg = log_msg_new_empty();
               ProtobufParser::store_raw_metadata(msg, ctx.peer(), resource, resource_metrics_schema_url, scope,
                                                  scope_metrics_schema_url);
