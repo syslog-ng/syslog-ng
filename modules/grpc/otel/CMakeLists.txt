@@ -48,4 +48,6 @@ add_module(
   SOURCES ${OTEL_SOURCES}
 )
 
+set_target_properties(otel PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${CMAKE_INSTALL_PREFIX}/lib/syslog-ng")
+
 add_test_subdirectory(tests)
