@@ -34,6 +34,8 @@
 
 #include <grpcpp/server.h>
 
+#include <list>
+
 namespace syslogng {
 namespace grpc {
 namespace otel {
@@ -68,7 +70,7 @@ private:
   OtelSourceDriver *super;
   GrpcServerCredentialsBuilderW credentials_builder_wrapper;
   std::unique_ptr<::grpc::Server> server;
-  std::unique_ptr<::grpc::ServerCompletionQueue> cq;
+  std::list<std::unique_ptr<::grpc::ServerCompletionQueue>> cqs;
 };
 
 class SourceWorker
@@ -90,6 +92,7 @@ private:
 private:
   OtelSourceWorker *super;
   SourceDriver &driver;
+  std::unique_ptr<::grpc::ServerCompletionQueue> cq;
 };
 
 }

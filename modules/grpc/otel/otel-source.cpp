@@ -49,14 +49,11 @@ syslogng::grpc::otel::SourceDriver::SourceDriver(OtelSourceDriver *s)
 void
 syslogng::grpc::otel::SourceDriver::request_exit()
 {
-  if (server == nullptr || cq == nullptr)
+  if (server == nullptr)
     return;
 
   server->Shutdown();
-  cq->Shutdown();
-
   server = nullptr;
-  cq = nullptr;
 }
 
 void
@@ -101,7 +98,9 @@ syslogng::grpc::otel::SourceDriver::init()
   builder.RegisterService(&logs_service);
   builder.RegisterService(&metrics_service);
 
-  cq = builder.AddCompletionQueue();
+  for (int i = 0; i < super->super.num_workers; i++)
+    cqs.push_back(std::move(builder.AddCompletionQueue()));
+
   server = builder.BuildAndStart();
   if (!server)
     {
@@ -129,18 +128,20 @@ SourceDriver::get_credentials_builder_wrapper()
 SourceWorker::SourceWorker(OtelSourceWorker *s, SourceDriver &d)
   : super(s), driver(d)
 {
+  cq = std::move(driver.cqs.front());
+  driver.cqs.pop_front();
 }
 
 void
 syslogng::grpc::otel::SourceWorker::run()
 {
-  new TraceServiceCall(*this, &driver.trace_service, driver.cq.get());
-  new LogsServiceCall(*this, &driver.logs_service, driver.cq.get());
-  new MetricsServiceCall(*this, &driver.metrics_service, driver.cq.get());
+  new TraceServiceCall(*this, &driver.trace_service, cq.get());
+  new LogsServiceCall(*this, &driver.logs_service, cq.get());
+  new MetricsServiceCall(*this, &driver.metrics_service, cq.get());
 
   void *tag;
   bool ok;
-  while (driver.cq != nullptr && driver.cq->Next(&tag, &ok))
+  while (cq->Next(&tag, &ok))
     {
       static_cast<AsyncServiceCallInterface *>(tag)->Proceed(ok);
     }
@@ -150,6 +151,7 @@ void
 syslogng::grpc::otel::SourceWorker::request_exit()
 {
   driver.request_exit();
+  cq->Shutdown();
 }
 
 void
