@@ -112,6 +112,9 @@ syslogng::grpc::otel::SourceDriver::init()
 
   super->super.worker_options.super.init_window_size /= super->super.num_workers;
 
+  if (fetch_limit == -1)
+    fetch_limit = super->super.worker_options.super.init_window_size;
+
   return log_threaded_source_driver_init_method(&super->super.super.super.super);
 }
 
@@ -168,6 +171,12 @@ void
 otel_sd_set_port(LogDriver *s, guint64 port)
 {
   get_SourceDriver(s)->port = port;
+}
+
+void
+otel_sd_set_fetch_limit(LogDriver *s, gint fetch_limit)
+{
+  get_SourceDriver(s)->fetch_limit = fetch_limit;
 }
 
 GrpcServerCredentialsBuilderW *
@@ -259,6 +268,8 @@ otel_sd_new(GlobalConfig *cfg)
   s->super.worker_options.super.stats_source = stats_register_type("opentelemetry");
   s->super.format_stats_key = _format_stats_key;
   s->super.worker_construct = _construct_worker;
+
+  s->super.auto_close_batches = FALSE;
 
   return &s->super.super.super;
 }

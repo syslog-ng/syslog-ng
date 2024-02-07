@@ -101,6 +101,8 @@ syslogng::grpc::otel::TraceServiceCall::Proceed(bool ok)
 
   ::grpc::Status response_status = ::grpc::Status::OK;
 
+  int msgs_in_fetch_round = 0;
+
   for (const ResourceSpans &resource_spans : request.resource_spans())
     {
       const Resource &resource = resource_spans.resource();
@@ -124,9 +126,19 @@ syslogng::grpc::otel::TraceServiceCall::Proceed(bool ok)
                                                  scope_spans_schema_url);
               ProtobufParser::store_raw(msg, span);
               worker.post(msg);
+
+              msgs_in_fetch_round++;
+              if (msgs_in_fetch_round == worker.driver.fetch_limit)
+                {
+                  log_threaded_source_worker_close_batch(&worker.super->super);
+                  msgs_in_fetch_round = 0;
+                }
             }
         }
     }
+
+  if (msgs_in_fetch_round != 0)
+    log_threaded_source_worker_close_batch(&worker.super->super);
 
   status = FINISH;
   responder.Finish(response, response_status, this);
@@ -145,6 +157,8 @@ syslogng::grpc::otel::LogsServiceCall::Proceed(bool ok)
     new LogsServiceCall(worker, service, cq);
 
   ::grpc::Status response_status = ::grpc::Status::OK;
+
+  int msgs_in_fetch_round = 0;
 
   for (const ResourceLogs &resource_logs : request.resource_logs())
     {
@@ -177,9 +191,19 @@ syslogng::grpc::otel::LogsServiceCall::Proceed(bool ok)
                   ProtobufParser::store_raw(msg, log_record);
                 }
               worker.post(msg);
+
+              msgs_in_fetch_round++;
+              if (msgs_in_fetch_round == worker.driver.fetch_limit)
+                {
+                  log_threaded_source_worker_close_batch(&worker.super->super);
+                  msgs_in_fetch_round = 0;
+                }
             }
         }
     }
+
+  if (msgs_in_fetch_round != 0)
+    log_threaded_source_worker_close_batch(&worker.super->super);
 
   status = FINISH;
   responder.Finish(response, response_status, this);
@@ -198,6 +222,8 @@ syslogng::grpc::otel::MetricsServiceCall::Proceed(bool ok)
     new MetricsServiceCall(worker, service, cq);
 
   ::grpc::Status response_status = ::grpc::Status::OK;
+
+  int msgs_in_fetch_round = 0;
 
   for (const ResourceMetrics &resource_metrics : request.resource_metrics())
     {
@@ -222,9 +248,19 @@ syslogng::grpc::otel::MetricsServiceCall::Proceed(bool ok)
                                                  scope_metrics_schema_url);
               ProtobufParser::store_raw(msg, metric);
               worker.post(msg);
+
+              msgs_in_fetch_round++;
+              if (msgs_in_fetch_round == worker.driver.fetch_limit)
+                {
+                  log_threaded_source_worker_close_batch(&worker.super->super);
+                  msgs_in_fetch_round = 0;
+                }
             }
         }
     }
+
+  if (msgs_in_fetch_round != 0)
+    log_threaded_source_worker_close_batch(&worker.super->super);
 
   status = FINISH;
   responder.Finish(response, response_status, this);
