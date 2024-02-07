@@ -1356,24 +1356,19 @@ dnl ***************************************************************************
 dnl json headers/libraries
 dnl ***************************************************************************
 
-enable_json="no"
-
 if test "x$with_jsonc" = "xinternal"; then
    AC_MSG_ERROR([The internal (bundled) json-c library is no longer supported!])
 fi
 
-if test "x$with_jsonc" = "xsystem"; then
-   with_jsonc="yes"
-fi
+# became hard-dependency
+with_jsonc="yes"
 
-if test "x$with_jsonc" = "xyes" -o "x$with_jsonc" = "xauto"; then
-   enable_json="yes"
-   PKG_CHECK_EXISTS(json-c, json_module_name="json-c",
-   PKG_CHECK_EXISTS(json, json_module_name="json"))
-   PKG_CHECK_MODULES(JSON, $json_module_name >= $JSON_C_MIN_VERSION,[with_jsonc="yes"], [JSON_LIBS=""; enable_json="no"])
-   if test "x$with_jsonc" = "xyes" -a "x$enable_json" = "xno"; then
-     AC_MSG_ERROR([json-c library development files cannot be not found on system!])
-   fi
+enable_json="yes"
+PKG_CHECK_EXISTS(json-c, json_module_name="json-c",
+PKG_CHECK_EXISTS(json, json_module_name="json"))
+PKG_CHECK_MODULES(JSON, $json_module_name >= $JSON_C_MIN_VERSION,[with_jsonc="yes"], [JSON_LIBS=""; enable_json="no"])
+if test "x$enable_json" = "xno"; then
+  AC_MSG_ERROR([json-c library development files cannot be not found on system!])
 fi
 
 dnl ***************************************************************************
