@@ -73,6 +73,7 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_COMPRESSION
 %token KW_BATCH_BYTES
 %token KW_CONCURRENT_REQUESTS
+%token KW_CHANNEL_ARGS
 
 %type <ptr> source_otel
 %type <ptr> parser_otel
@@ -111,9 +112,20 @@ source_otel_option
   : KW_PORT '(' positive_integer ')' { otel_sd_set_port(last_driver, $3); }
   | KW_LOG_FETCH_LIMIT '(' nonnegative_integer ')' { otel_sd_set_fetch_limit(last_driver, $3); }
   | KW_CONCURRENT_REQUESTS '(' positive_integer ')' { CHECK_ERROR($3 >= 2, @1, "concurrent-requests() must be greater than 1"); otel_sd_set_concurrent_requests(last_driver, $3); }
+  | KW_CHANNEL_ARGS '(' source_otel_channel_args ')'
   | KW_AUTH { last_grpc_server_credentials_builder = otel_sd_get_credentials_builder(last_driver); } '(' grpc_server_credentials_builder_option ')'
   | threaded_source_driver_option
   | threaded_source_driver_workers_option
+  ;
+
+source_otel_channel_args
+  : source_otel_channel_arg source_otel_channel_args
+  |
+  ;
+
+source_otel_channel_arg
+  : string LL_ARROW LL_NUMBER { otel_sd_add_int_channel_arg(last_driver, $1, $3); free($1); }
+  | string LL_ARROW string { otel_sd_add_string_channel_arg(last_driver, $1, $3); free($1); free($3); }
   ;
 
 parser_otel
@@ -151,9 +163,20 @@ destination_otel_option
   | KW_AUTH { last_grpc_client_credentials_builder = otel_dd_get_credentials_builder(last_driver); } '(' grpc_client_credentials_option ')'
   | KW_COMPRESSION '(' yesno ')' { otel_dd_set_compression(last_driver, $3); }
   | KW_BATCH_BYTES '(' positive_integer ')' { otel_dd_set_batch_bytes(last_driver, $3); }
+  | KW_CHANNEL_ARGS '(' destination_otel_channel_args ')'
   | threaded_dest_driver_general_option
   | threaded_dest_driver_batch_option
   | threaded_dest_driver_workers_option
+  ;
+
+destination_otel_channel_args
+  : destination_otel_channel_arg destination_otel_channel_args
+  |
+  ;
+
+destination_otel_channel_arg
+  : string LL_ARROW LL_NUMBER { otel_dd_add_int_channel_arg(last_driver, $1, $3); free($1); }
+  | string LL_ARROW string { otel_dd_add_string_channel_arg(last_driver, $1, $3); free($1); free($3); }
   ;
 
 destination_syslog_ng_otlp

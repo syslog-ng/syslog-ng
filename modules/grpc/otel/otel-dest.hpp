@@ -34,6 +34,8 @@
 
 #include <grpcpp/server.h>
 
+#include <list>
+
 namespace syslogng {
 namespace grpc {
 namespace otel {
@@ -53,6 +55,9 @@ public:
   void set_batch_bytes(size_t bytes);
   size_t get_batch_bytes() const;
 
+  void add_extra_channel_arg(std::string name, long value);
+  void add_extra_channel_arg(std::string name, std::string value);
+
   virtual bool init();
   virtual bool deinit();
   virtual const char *format_stats_key(StatsClusterKeyBuilder *kb);
@@ -70,6 +75,8 @@ protected:
   std::string url;
   bool compression;
   size_t batch_bytes;
+  std::list<std::pair<std::string, long>> int_extra_channel_args;
+  std::list<std::pair<std::string, std::string>> string_extra_channel_args;
   GrpcClientCredentialsBuilderW credentials_builder_wrapper;
   DestDriverMetrics metrics;
 };

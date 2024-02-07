@@ -71,6 +71,18 @@ DestDriver::get_batch_bytes() const
   return batch_bytes;
 }
 
+void
+DestDriver::add_extra_channel_arg(std::string name, long value)
+{
+  int_extra_channel_args.push_back(std::pair<std::string, long> {name, value});
+}
+
+void
+DestDriver::add_extra_channel_arg(std::string name, std::string value)
+{
+  string_extra_channel_args.push_back(std::pair<std::string, std::string> {name, value});
+}
+
 const char *
 DestDriver::generate_persist_name()
 {
@@ -159,6 +171,18 @@ void
 otel_dd_set_batch_bytes(LogDriver *s, glong b)
 {
   get_DestDriver(s)->set_batch_bytes((size_t) b);
+}
+
+void
+otel_dd_add_int_channel_arg(LogDriver *s, const gchar *name, glong value)
+{
+  get_DestDriver(s)->add_extra_channel_arg(name, value);
+}
+
+void
+otel_dd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value)
+{
+  get_DestDriver(s)->add_extra_channel_arg(name, value);
 }
 
 GrpcClientCredentialsBuilderW *

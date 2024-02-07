@@ -53,6 +53,8 @@ public:
   gboolean init();
   gboolean deinit();
 
+  void add_extra_channel_arg(std::string name, long value);
+  void add_extra_channel_arg(std::string name, std::string value);
   GrpcServerCredentialsBuilderW *get_credentials_builder_wrapper();
 
   TraceService::AsyncService trace_service;
@@ -67,6 +69,8 @@ public:
   int fetch_limit = -1;
   int concurrent_requests = 2;
   syslogng::grpc::ServerCredentialsBuilder credentials_builder;
+  std::list<std::pair<std::string, long>> int_extra_channel_args;
+  std::list<std::pair<std::string, std::string>> string_extra_channel_args;
 
 private:
   OtelSourceDriver *super;

@@ -94,6 +94,11 @@ syslogng::grpc::otel::SourceDriver::init()
   ::grpc::ServerBuilder builder;
   builder.AddListeningPort(address, credentials_builder.build());
 
+  for (auto nv : int_extra_channel_args)
+    builder.AddChannelArgument(nv.first, nv.second);
+  for (auto nv : string_extra_channel_args)
+    builder.AddChannelArgument(nv.first, nv.second);
+
   builder.RegisterService(&trace_service);
   builder.RegisterService(&logs_service);
   builder.RegisterService(&metrics_service);
@@ -122,6 +127,18 @@ gboolean
 syslogng::grpc::otel::SourceDriver::deinit()
 {
   return log_threaded_source_driver_deinit_method(&super->super.super.super.super);
+}
+
+void
+SourceDriver::add_extra_channel_arg(std::string name, long value)
+{
+  int_extra_channel_args.push_back(std::pair<std::string, long> {name, value});
+}
+
+void
+SourceDriver::add_extra_channel_arg(std::string name, std::string value)
+{
+  string_extra_channel_args.push_back(std::pair<std::string, std::string> {name, value});
 }
 
 GrpcServerCredentialsBuilderW *
@@ -191,6 +208,18 @@ void
 otel_sd_set_concurrent_requests(LogDriver *s, gint concurrent_requests)
 {
   get_SourceDriver(s)->concurrent_requests = concurrent_requests;
+}
+
+void
+otel_sd_add_int_channel_arg(LogDriver *s, const gchar *name, gint64 value)
+{
+  get_SourceDriver(s)->add_extra_channel_arg(name, value);
+}
+
+void
+otel_sd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value)
+{
+  get_SourceDriver(s)->add_extra_channel_arg(name, value);
 }
 
 GrpcServerCredentialsBuilderW *
