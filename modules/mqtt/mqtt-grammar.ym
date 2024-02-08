@@ -111,6 +111,7 @@ mqtt_source_options
 
 mqtt_source_option
         : threaded_source_driver_option
+	| threaded_fetcher_driver_option
         | mqtt_option
         | KW_TOPIC '(' string ')' { mqtt_sd_set_topic(last_driver, $3); free($3); }
         ;
