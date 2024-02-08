@@ -138,7 +138,7 @@ _connect(LogThreadedFetcherDriver *s)
 
   if ((rc = MQTTClient_connect(self->client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
-      msg_error("Error connecting mqtt client",
+      msg_error("Error connecting to mqtt server",
                 evt_tag_str("error_code", MQTTClient_strerror(rc)),
                 evt_tag_str("client_id", mqtt_client_options_get_client_id(&self->options)),
                 log_pipe_location_tag(&self->super.super.super.super.super));
