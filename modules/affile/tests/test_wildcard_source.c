@@ -130,7 +130,7 @@ Test(wildcard_source, test_filename_pattern_required_options)
   cr_assert(_parse_config("base-dir(/tmp)"));
   cr_assert(!cfg_init(configuration), "Config initialization should be failed");
   stop_grabbing_messages();
-  assert_grabbed_log_contains("filename-pattern option is required");
+  assert_grabbed_log_contains("filename-pattern() option is required");
   reset_grabbed_messages();
 }
 
@@ -140,7 +140,7 @@ Test(wildcard_source, test_base_dir_required_options)
   cr_assert(_parse_config("filename-pattern(/tmp)"));
   cr_assert(!cfg_init(configuration), "Config initialization should be failed");
   stop_grabbing_messages();
-  assert_grabbed_log_contains("base-dir option is required");
+  assert_grabbed_log_contains("base-dir() option is required");
   reset_grabbed_messages();
 }
 
@@ -149,7 +149,7 @@ Test(wildcard_source, test_invalid_monitor_method)
   start_grabbing_messages();
   cr_assert(!_parse_config("monitor-method(\"something else\""));
   stop_grabbing_messages();
-  assert_grabbed_log_contains("Invalid monitor-method");
+  assert_grabbed_log_contains("Invalid value for monitor-method()");
   reset_grabbed_messages();
 }
 
