@@ -254,8 +254,7 @@ _ensure_minimum_window_size(WildcardSourceDriver *self, GlobalConfig *cfg)
   if (self->file_reader_options.reader_options.super.init_window_size < cfg->min_iw_size_per_reader)
     {
       msg_warning("log_iw_size configuration value was divided by the value of max-files()."
-                  " The result was too small, clamping to minimum entries."
-                  " Ensure you have a proper log_fifo_size setting to avoid message loss.",
+                  " The result was too small, increasing to a reasonable default",
                   evt_tag_int("orig_log_iw_size", self->file_reader_options.reader_options.super.init_window_size),
                   evt_tag_int("new_log_iw_size", cfg->min_iw_size_per_reader),
                   evt_tag_int("min_iw_size_per_reader", cfg->min_iw_size_per_reader),
