@@ -440,6 +440,11 @@ DestinationWorker::create_channel()
 
   args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
 
+  for (auto nv : owner->int_extra_channel_args)
+    args.SetInt(nv.first, nv.second);
+  for (auto nv : owner->string_extra_channel_args)
+    args.SetString(nv.first, nv.second);
+
   auto credentials = ::grpc::GoogleDefaultCredentials();
   if (!credentials)
     {

@@ -131,6 +131,16 @@ public:
     this->tenant_id = tid;
   }
 
+  void add_extra_channel_arg(std::string name, long value)
+  {
+    this->int_extra_channel_args.push_back(std::pair<std::string, long> {name, value});
+  }
+
+  void add_extra_channel_arg(std::string name, std::string value)
+  {
+    this->string_extra_channel_args.push_back(std::pair<std::string, std::string> {name, value});
+  }
+
   const std::string &get_url()
   {
     return this->url;
@@ -156,6 +166,9 @@ private:
   int keepalive_time;
   int keepalive_timeout;
   int keepalive_max_pings_without_data;
+
+  std::list<std::pair<std::string, long>> int_extra_channel_args;
+  std::list<std::pair<std::string, std::string>> string_extra_channel_args;
 
   DestDriverMetrics metrics;
 };

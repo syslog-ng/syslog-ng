@@ -43,10 +43,10 @@ using namespace opentelemetry::proto::trace::v1;
 DestWorker::DestWorker(OtelDestWorker *s)
   : super(s),
     owner(*((OtelDestDriver *) s->super.owner)->cpp),
-    formatter(s->super.owner->super.super.super.cfg),
     logs_current_batch_bytes(0),
     metrics_current_batch_bytes(0),
-    spans_current_batch_bytes(0)
+    spans_current_batch_bytes(0),
+    formatter(s->super.owner->super.super.super.cfg)
 {
   ::grpc::ChannelArguments args;
 
@@ -54,6 +54,12 @@ DestWorker::DestWorker(OtelDestWorker *s)
     {
       args.SetCompressionAlgorithm(GRPC_COMPRESS_GZIP);
     }
+
+  for (auto nv : owner.int_extra_channel_args)
+    args.SetInt(nv.first, nv.second);
+  for (auto nv : owner.string_extra_channel_args)
+    args.SetString(nv.first, nv.second);
+
   channel = ::grpc::CreateCustomChannel(owner.get_url(), owner.credentials_builder.build(), args);
   logs_service_stub = LogsService::NewStub(channel);
   metrics_service_stub = MetricsService::NewStub(channel);

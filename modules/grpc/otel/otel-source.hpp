@@ -34,6 +34,8 @@
 
 #include <grpcpp/server.h>
 
+#include <list>
+
 namespace syslogng {
 namespace grpc {
 namespace otel {
@@ -51,6 +53,8 @@ public:
   gboolean init();
   gboolean deinit();
 
+  void add_extra_channel_arg(std::string name, long value);
+  void add_extra_channel_arg(std::string name, std::string value);
   GrpcServerCredentialsBuilderW *get_credentials_builder_wrapper();
 
   TraceService::AsyncService trace_service;
@@ -62,13 +66,17 @@ private:
 
 public:
   guint64 port = 4317;
+  int fetch_limit = -1;
+  int concurrent_requests = 2;
   syslogng::grpc::ServerCredentialsBuilder credentials_builder;
+  std::list<std::pair<std::string, long>> int_extra_channel_args;
+  std::list<std::pair<std::string, std::string>> string_extra_channel_args;
 
 private:
   OtelSourceDriver *super;
   GrpcServerCredentialsBuilderW credentials_builder_wrapper;
   std::unique_ptr<::grpc::Server> server;
-  std::unique_ptr<::grpc::ServerCompletionQueue> cq;
+  std::list<std::unique_ptr<::grpc::ServerCompletionQueue>> cqs;
 };
 
 class SourceWorker
@@ -80,7 +88,7 @@ public:
   void request_exit();
 
 private:
-  bool post(LogMessage *msg);
+  void post(LogMessage *msg);
 
 private:
   friend TraceServiceCall;
@@ -90,6 +98,7 @@ private:
 private:
   OtelSourceWorker *super;
   SourceDriver &driver;
+  std::unique_ptr<::grpc::ServerCompletionQueue> cq;
 };
 
 }

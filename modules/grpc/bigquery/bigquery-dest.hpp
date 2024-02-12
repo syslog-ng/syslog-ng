@@ -140,6 +140,16 @@ public:
     this->keepalive_max_pings_without_data = p;
   }
 
+  void add_extra_channel_arg(std::string name, long value)
+  {
+    this->int_extra_channel_args.push_back(std::pair<std::string, long> {name, value});
+  }
+
+  void add_extra_channel_arg(std::string name, std::string value)
+  {
+    this->string_extra_channel_args.push_back(std::pair<std::string, std::string> {name, value});
+  }
+
   const std::string &get_url()
   {
     return this->url;
@@ -200,6 +210,9 @@ private:
   std::unique_ptr<google::protobuf::DynamicMessageFactory> msg_factory;
   const google::protobuf::Descriptor *schema_descriptor = nullptr;
   const google::protobuf::Message *schema_prototype  = nullptr;
+
+  std::list<std::pair<std::string, long>> int_extra_channel_args;
+  std::list<std::pair<std::string, std::string>> string_extra_channel_args;
 
   DestDriverMetrics metrics;
 };

@@ -49,14 +49,11 @@ syslogng::grpc::otel::SourceDriver::SourceDriver(OtelSourceDriver *s)
 void
 syslogng::grpc::otel::SourceDriver::request_exit()
 {
-  if (server == nullptr || cq == nullptr)
+  if (server == nullptr)
     return;
 
   server->Shutdown();
-  cq->Shutdown();
-
   server = nullptr;
-  cq = nullptr;
 }
 
 void
@@ -97,11 +94,18 @@ syslogng::grpc::otel::SourceDriver::init()
   ::grpc::ServerBuilder builder;
   builder.AddListeningPort(address, credentials_builder.build());
 
+  for (auto nv : int_extra_channel_args)
+    builder.AddChannelArgument(nv.first, nv.second);
+  for (auto nv : string_extra_channel_args)
+    builder.AddChannelArgument(nv.first, nv.second);
+
   builder.RegisterService(&trace_service);
   builder.RegisterService(&logs_service);
   builder.RegisterService(&metrics_service);
 
-  cq = builder.AddCompletionQueue();
+  for (int i = 0; i < super->super.num_workers; i++)
+    cqs.push_back(std::move(builder.AddCompletionQueue()));
+
   server = builder.BuildAndStart();
   if (!server)
     {
@@ -111,6 +115,11 @@ syslogng::grpc::otel::SourceDriver::init()
 
   msg_info("OpenTelemetry server accepting connections", evt_tag_int("port", port));
 
+  super->super.worker_options.super.init_window_size /= super->super.num_workers;
+
+  if (fetch_limit == -1)
+    fetch_limit = super->super.worker_options.super.init_window_size;
+
   return log_threaded_source_driver_init_method(&super->super.super.super.super);
 }
 
@@ -118,6 +127,18 @@ gboolean
 syslogng::grpc::otel::SourceDriver::deinit()
 {
   return log_threaded_source_driver_deinit_method(&super->super.super.super.super);
+}
+
+void
+SourceDriver::add_extra_channel_arg(std::string name, long value)
+{
+  int_extra_channel_args.push_back(std::pair<std::string, long> {name, value});
+}
+
+void
+SourceDriver::add_extra_channel_arg(std::string name, std::string value)
+{
+  string_extra_channel_args.push_back(std::pair<std::string, std::string> {name, value});
 }
 
 GrpcServerCredentialsBuilderW *
@@ -129,18 +150,28 @@ SourceDriver::get_credentials_builder_wrapper()
 SourceWorker::SourceWorker(OtelSourceWorker *s, SourceDriver &d)
   : super(s), driver(d)
 {
+  cq = std::move(driver.cqs.front());
+  driver.cqs.pop_front();
 }
 
 void
 syslogng::grpc::otel::SourceWorker::run()
 {
-  new TraceServiceCall(*this, &driver.trace_service, driver.cq.get());
-  new LogsServiceCall(*this, &driver.logs_service, driver.cq.get());
-  new MetricsServiceCall(*this, &driver.metrics_service, driver.cq.get());
+  /* Proceed() will immediately create a new ServiceCall,
+   * so creating 1 ServiceCall here results in 2 concurrent requests.
+   *
+   * Because of this we should create (concurrent_requests - 1) ServiceCalls here.
+   */
+  for (int i = 0; i < driver.concurrent_requests - 1; i++)
+    {
+      new TraceServiceCall(*this, &driver.trace_service, cq.get());
+      new LogsServiceCall(*this, &driver.logs_service, cq.get());
+      new MetricsServiceCall(*this, &driver.metrics_service, cq.get());
+    }
 
   void *tag;
   bool ok;
-  while (driver.cq != nullptr && driver.cq->Next(&tag, &ok))
+  while (cq->Next(&tag, &ok))
     {
       static_cast<AsyncServiceCallInterface *>(tag)->Proceed(ok);
     }
@@ -150,16 +181,13 @@ void
 syslogng::grpc::otel::SourceWorker::request_exit()
 {
   driver.request_exit();
+  cq->Shutdown();
 }
 
-bool
+void
 SourceWorker::post(LogMessage *msg)
 {
-  if (!log_threaded_source_worker_free_to_send(&super->super))
-    return false;
-
-  log_threaded_source_worker_post(&super->super, msg);
-  return true;
+  log_threaded_source_worker_blocking_post(&super->super, msg);
 }
 
 /* Config setters */
@@ -168,6 +196,30 @@ void
 otel_sd_set_port(LogDriver *s, guint64 port)
 {
   get_SourceDriver(s)->port = port;
+}
+
+void
+otel_sd_set_fetch_limit(LogDriver *s, gint fetch_limit)
+{
+  get_SourceDriver(s)->fetch_limit = fetch_limit;
+}
+
+void
+otel_sd_set_concurrent_requests(LogDriver *s, gint concurrent_requests)
+{
+  get_SourceDriver(s)->concurrent_requests = concurrent_requests;
+}
+
+void
+otel_sd_add_int_channel_arg(LogDriver *s, const gchar *name, gint64 value)
+{
+  get_SourceDriver(s)->add_extra_channel_arg(name, value);
+}
+
+void
+otel_sd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value)
+{
+  get_SourceDriver(s)->add_extra_channel_arg(name, value);
 }
 
 GrpcServerCredentialsBuilderW *
@@ -259,6 +311,8 @@ otel_sd_new(GlobalConfig *cfg)
   s->super.worker_options.super.stats_source = stats_register_type("opentelemetry");
   s->super.format_stats_key = _format_stats_key;
   s->super.worker_construct = _construct_worker;
+
+  s->super.auto_close_batches = FALSE;
 
   return &s->super.super.super;
 }

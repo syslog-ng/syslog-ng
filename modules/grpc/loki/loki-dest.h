@@ -47,6 +47,9 @@ void loki_dd_set_keepalive_time(LogDriver *d, gint t);
 void loki_dd_set_keepalive_timeout(LogDriver *d, gint t);
 void loki_dd_set_keepalive_max_pings(LogDriver *d, gint p);
 
+void loki_dd_add_int_channel_arg(LogDriver *s, const gchar *name, glong value);
+void loki_dd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value);
+
 LogTemplateOptions *loki_dd_get_template_options(LogDriver *d);
 
 #include "compat/cpp-end.h"
