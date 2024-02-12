@@ -43,10 +43,10 @@ using namespace opentelemetry::proto::trace::v1;
 DestWorker::DestWorker(OtelDestWorker *s)
   : super(s),
     owner(*((OtelDestDriver *) s->super.owner)->cpp),
-    formatter(s->super.owner->super.super.super.cfg),
     logs_current_batch_bytes(0),
     metrics_current_batch_bytes(0),
-    spans_current_batch_bytes(0)
+    spans_current_batch_bytes(0),
+    formatter(s->super.owner->super.super.super.cfg)
 {
   ::grpc::ChannelArguments args;
 
