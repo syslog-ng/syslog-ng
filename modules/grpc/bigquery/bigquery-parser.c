@@ -43,6 +43,7 @@ static CfgLexerKeyword bigquery_keywords[] =
   { "time", KW_TIME },
   { "timeout", KW_TIMEOUT },
   { "max_pings_without_data", KW_MAX_PINGS_WITHOUT_DATA },
+  { "channel_args", KW_CHANNEL_ARGS },
   { NULL }
 };
 
