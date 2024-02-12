@@ -239,6 +239,20 @@ loki_dd_set_keepalive_max_pings(LogDriver *d, gint p)
   self->cpp->set_keepalive_max_pings(p);
 }
 
+void
+loki_dd_add_int_channel_arg(LogDriver *d, const gchar *name, glong value)
+{
+  LokiDestDriver *self = (LokiDestDriver *) d;
+  self->cpp->add_extra_channel_arg(name, value);
+}
+
+void
+loki_dd_add_string_channel_arg(LogDriver *d, const gchar *name, const gchar *value)
+{
+  LokiDestDriver *self = (LokiDestDriver *) d;
+  self->cpp->add_extra_channel_arg(name, value);
+}
+
 LogTemplateOptions *
 loki_dd_get_template_options(LogDriver *d)
 {

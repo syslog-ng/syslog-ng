@@ -70,6 +70,8 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_TIMEOUT
 %token KW_MAX_PINGS_WITHOUT_DATA
 
+%token KW_CHANNEL_ARGS
+
 %type <ptr> loki_dest
 
 %%
@@ -103,6 +105,7 @@ loki_dest_option
     }
   | KW_TEMPLATE '(' template_name_or_content ')' { loki_dd_set_message_template_ref(last_driver, $3); }
   | KW_AUTH { last_grpc_client_credentials_builder = loki_dd_get_credentials_builder(last_driver); } '(' grpc_client_credentials_option ')'
+  | KW_CHANNEL_ARGS '(' loki_dest_channel_args ')'
   | threaded_dest_driver_general_option
   | threaded_dest_driver_workers_option
   | threaded_dest_driver_batch_option
@@ -132,6 +135,16 @@ loki_keepalive_option
   : KW_TIME '(' nonnegative_integer ')' { loki_dd_set_keepalive_time(last_driver, $3); }
   | KW_TIMEOUT '(' nonnegative_integer ')' { loki_dd_set_keepalive_timeout(last_driver, $3); }
   | KW_MAX_PINGS_WITHOUT_DATA '(' nonnegative_integer ')' { loki_dd_set_keepalive_max_pings(last_driver, $3); }
+  ;
+
+loki_dest_channel_args
+  : loki_dest_channel_arg loki_dest_channel_args
+  |
+  ;
+
+loki_dest_channel_arg
+  : string LL_ARROW LL_NUMBER { loki_dd_add_int_channel_arg(last_driver, $1, $3); free($1); }
+  | string LL_ARROW string { loki_dd_add_string_channel_arg(last_driver, $1, $3); free($1); free($3); }
   ;
 
 /*
