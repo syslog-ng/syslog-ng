@@ -26,6 +26,8 @@
 
 #define RECEIVE_TIMEOUT 1000
 
+static NVHandle handle_mqtt_topic = 0;
+
 void
 mqtt_sd_set_topic(LogDriver *s, const gchar *topic)
 {
@@ -58,15 +60,6 @@ _format_stats_key(LogThreadedSourceDriver *s, StatsClusterKeyBuilder *kb)
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("address",
                                              mqtt_client_options_get_address(&self->options)));
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("topic", self->topic));
-}
-
-static LogMessage *
-_create_message(MQTTSourceDriver *self, const gchar *message, gint length)
-{
-  LogMessage *msg = log_msg_new_empty();
-  log_msg_set_value(msg, LM_V_MESSAGE, message, length);
-  log_msg_set_value_to_string(msg, LM_V_TRANSPORT, "mqtt");
-  return msg;
 }
 
 static gboolean
@@ -145,7 +138,7 @@ _connect(LogThreadedFetcherDriver *s)
 
   if ((rc = MQTTClient_connect(self->client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
-      msg_error("Error connecting mqtt client",
+      msg_error("Error connecting to mqtt server",
                 evt_tag_str("error_code", MQTTClient_strerror(rc)),
                 evt_tag_str("client_id", mqtt_client_options_get_client_id(&self->options)),
                 log_pipe_location_tag(&self->super.super.super.super.super));
@@ -197,7 +190,11 @@ _fetch(LogThreadedFetcherDriver *s)
 
   if (result == THREADED_FETCH_SUCCESS)
     {
-      msg = _create_message(self, (gchar *)message->payload, message->payloadlen);
+      msg = log_msg_new_empty();
+      log_msg_set_value(msg, LM_V_MESSAGE, (gchar *)message->payload, message->payloadlen);
+      log_msg_set_value(msg, handle_mqtt_topic, topicName, topicLen);
+      log_msg_set_value_to_string(msg, LM_V_TRANSPORT, "mqtt");
+
       MQTTClient_freeMessage(&message);
       MQTTClient_free(topicName);
     }
@@ -221,6 +218,7 @@ _init(LogPipe *s)
 {
   MQTTSourceDriver *self = (MQTTSourceDriver *)s;
 
+  handle_mqtt_topic = log_msg_get_value_handle("MQTT_TOPIC");
   if (!self->topic)
     {
       msg_error("mqtt: the topic() argument is required for mqtt source",
