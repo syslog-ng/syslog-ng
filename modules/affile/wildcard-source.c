@@ -41,13 +41,13 @@ _check_required_options(WildcardSourceDriver *self)
 {
   if (!self->base_dir)
     {
-      msg_error("Error: base-dir option is required",
+      msg_error("wildcard-file(): base-dir() option is required",
                 evt_tag_str("driver", self->super.super.id));
       return FALSE;
     }
   if (!self->filename_pattern)
     {
-      msg_error("Error: filename-pattern option is required",
+      msg_error("wildcard-file(): filename-pattern() option is required",
                 evt_tag_str("driver", self->super.super.id));
       return FALSE;
     }
@@ -59,7 +59,7 @@ _remove_file_reader(FileReader *reader, gpointer user_data)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *) user_data;
 
-  msg_debug("Stop following file, because of deleted and eof",
+  msg_debug("wildcard-file(): file tailing stopped, file was deleted and eof was reached",
             evt_tag_str("filename", reader->filename->str));
   file_reader_stop_follow_file(reader);
 
@@ -69,11 +69,13 @@ _remove_file_reader(FileReader *reader, gpointer user_data)
   log_pipe_ref(&reader->super);
   if (g_hash_table_remove(self->file_readers, reader->filename->str))
     {
-      msg_debug("File is removed from the file list", evt_tag_str("Filename", reader->filename->str));
+      msg_debug("wildcard-file(): file successfully removed from the file reader hash",
+                evt_tag_str("filename", reader->filename->str));
     }
   else
     {
-      msg_error("Can't remove the file reader", evt_tag_str("Filename", reader->filename->str));
+      msg_error("wildcard-file(): unable to remove the file from the file reader hash",
+                evt_tag_str("filename", reader->filename->str));
     }
   log_pipe_unref(&reader->super);
 
@@ -102,7 +104,7 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
 
   if (g_hash_table_size(self->file_readers) >= self->max_files)
     {
-      msg_warning("Number of allowed monitorod file is reached, rejecting read file",
+      msg_warning("wildcard-file(): number of monitored files reached the configured maximum, rejecting to tail file, increase max-files() along with scaling log-iw-size()",
                   evt_tag_str("source", self->super.super.group),
                   evt_tag_str("filename", full_path),
                   evt_tag_int("max_files", self->max_files));
@@ -122,7 +124,7 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
   log_pipe_append(&reader->super.super, &self->super.super.super);
   if (!log_pipe_init(&reader->super.super))
     {
-      msg_warning("File reader initialization failed",
+      msg_warning("wildcard-file(): file reader initialization failed",
                   evt_tag_str("filename", full_path),
                   evt_tag_str("source_driver", self->super.super.group));
       log_pipe_unref(&reader->super.super);
@@ -143,25 +145,27 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
       if (!reader)
         {
           _create_file_reader(self, event->full_path);
-          msg_debug("Wildcard: file created", evt_tag_str("filename", event->full_path));
+          msg_debug("wildcard-file(): file created, start tailing",
+                    evt_tag_str("filename", event->full_path));
         }
       else
         {
           if (wildcard_file_reader_is_deleted(reader))
             {
-              msg_info("File is deleted, new file create with same name. "
-                       "While old file is reading, skip the new one",
-                       evt_tag_str("filename", event->full_path));
+              msg_debug("wildcard-file(): File was deleted, and a new file was created with the same name"
+                        "Schedule reading the new once, once the old is finished",
+                        evt_tag_str("filename", event->full_path));
               pending_file_list_add(self->waiting_list, event->full_path);
             }
           else if (!log_pipe_init(&reader->super.super))
             {
-              msg_error("Can not re-initialize reader for file",
+              msg_error("wildcard-file(): can not re-initialize reader for file",
                         evt_tag_str("filename", event->full_path));
             }
           else
             {
-              msg_debug("Wildcard: file reader reinitialized", evt_tag_str("filename", event->full_path));
+              msg_debug("wildcard-file(): file reader reinitialized",
+                        evt_tag_str("filename", event->full_path));
             }
         }
     }
@@ -172,7 +176,7 @@ _handle_directory_created(WildcardSourceDriver *self, const DirectoryMonitorEven
 {
   if (self->recursive)
     {
-      msg_debug("Directory created",
+      msg_debug("wildcard-file(): directory created, start monitoring its contents",
                 evt_tag_str("name", event->full_path));
       DirectoryMonitor *monitor = g_hash_table_lookup(self->directory_monitors, event->full_path);
       if (!monitor)
@@ -189,13 +193,15 @@ _handle_file_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
 
   if (reader)
     {
-      msg_debug("Monitored file is deleted", evt_tag_str("filename", event->full_path));
+      msg_debug("wildcard-file(): Monitored file was deleted, reading it to the end",
+                evt_tag_str("filename", event->full_path));
       log_pipe_notify(&reader->super, NC_FILE_DELETED, NULL);
     }
 
   if (pending_file_list_remove(self->waiting_list, event->full_path))
     {
-      msg_warning("Waiting file was deleted, it wasn't read at all", evt_tag_str("filename", event->full_path));
+      msg_warning("wildcard-file(): File was removed before syslog-ng started tailing it, its contents will be lost",
+                  evt_tag_str("filename", event->full_path));
     }
 }
 
@@ -208,7 +214,8 @@ _handler_directory_deleted(WildcardSourceDriver *self, const DirectoryMonitorEve
                                                 (gpointer *)&key, (gpointer *)&monitor);
   if (found)
     {
-      msg_debug("Monitored directory is deleted", evt_tag_str("dir", event->full_path));
+      msg_debug("wildcard-source(): Monitored directory is deleted",
+                evt_tag_str("dir", event->full_path));
       g_hash_table_steal(self->directory_monitors, event->full_path);
       g_free(key);
       directory_monitor_schedule_destroy(monitor);
@@ -247,8 +254,7 @@ _ensure_minimum_window_size(WildcardSourceDriver *self, GlobalConfig *cfg)
   if (self->file_reader_options.reader_options.super.init_window_size < cfg->min_iw_size_per_reader)
     {
       msg_warning("log_iw_size configuration value was divided by the value of max-files()."
-                  " The result was too small, clamping to minimum entries."
-                  " Ensure you have a proper log_fifo_size setting to avoid message loss.",
+                  " The result was too small, increasing to a reasonable default",
                   evt_tag_int("orig_log_iw_size", self->file_reader_options.reader_options.super.init_window_size),
                   evt_tag_int("new_log_iw_size", cfg->min_iw_size_per_reader),
                   evt_tag_int("min_iw_size_per_reader", cfg->min_iw_size_per_reader),
@@ -283,7 +289,7 @@ _init_filename_pattern(WildcardSourceDriver *self)
   self->compiled_pattern = g_pattern_spec_new(self->filename_pattern);
   if (!self->compiled_pattern)
     {
-      msg_error("Invalid filename-pattern",
+      msg_error("wildcard-file(): Invalid value for filename-pattern()",
                 evt_tag_str("filename-pattern", self->filename_pattern));
       return FALSE;
     }
@@ -302,7 +308,7 @@ _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
   DirectoryMonitor *monitor = create_directory_monitor(&options);
   if (!monitor)
     {
-      msg_error("Wildcard source: could not create directory monitoring object! Possible message loss",
+      msg_error("wildcard-file(): could not create directory monitoring object",
                 evt_tag_str("dir", directory),
                 log_pipe_location_tag(&self->super.super.super));
       return NULL;
@@ -397,7 +403,7 @@ wildcard_sd_set_monitor_method(LogDriver *s, const gchar *method)
 
   if (new_method == MM_UNKNOWN)
     {
-      msg_error("Invalid monitor-method",
+      msg_error("wildcard-file(): Invalid value for monitor-method()",
                 evt_tag_str("monitor-method", method));
       return FALSE;
     }
