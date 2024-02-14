@@ -49,11 +49,8 @@ syslogng::grpc::otel::SourceDriver::SourceDriver(OtelSourceDriver *s)
 void
 syslogng::grpc::otel::SourceDriver::request_exit()
 {
-  if (server == nullptr)
-    return;
-
-  server->Shutdown();
-  server = nullptr;
+  msg_debug("Shutting down OpenTelemetry server", evt_tag_int("port", port));
+  server->Shutdown(std::chrono::system_clock::now() + std::chrono::seconds(30));
 }
 
 void
