@@ -32,6 +32,10 @@ spec:
           containers:
           - name: compress
             image: "ubuntu:20.10"
+            resources:
+              limits:
+                cpu: 500m
+                memory: 2048Mi
             command:
             - /bin/entrypoint.sh
             volumeMounts:

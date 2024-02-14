@@ -13,4 +13,8 @@ spec:
       image: busybox
       command: ['wget']
       args: ['{{ include "syslog-ng.fullname" . }}:{{ .Values.service.port }}']
+      resources:
+        limits:
+          cpu: 100m
+          memory: 256Mi
   restartPolicy: Never
