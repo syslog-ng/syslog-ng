@@ -1156,8 +1156,11 @@ log_writer_broken(LogWriter *self, gint notify_code)
 }
 
 static void
-log_writer_realloc_line_buffer(LogWriter *self)
+log_writer_realloc_line_buffer(LogWriter *self, gboolean ownership_transferred)
 {
+  if (!ownership_transferred)
+    g_free(self->line_buffer->str);
+
   self->line_buffer->str = g_malloc(self->line_buffer->allocated_len);
   self->line_buffer->str[0] = 0;
   self->line_buffer->len = 0;
@@ -1237,8 +1240,7 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
 
       self->partial_write = (status == LPS_PARTIAL);
 
-      if (consumed)
-        log_writer_realloc_line_buffer(self);
+      log_writer_realloc_line_buffer(self, consumed);
 
       if (status == LPS_ERROR)
         {
@@ -1246,8 +1248,7 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
             {
               if (!consumed)
                 {
-                  g_free(self->line_buffer->str);
-                  log_writer_realloc_line_buffer(self);
+                  log_writer_realloc_line_buffer(self, consumed);
                   consumed = TRUE;
                 }
             }

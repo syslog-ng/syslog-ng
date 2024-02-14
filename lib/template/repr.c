@@ -63,6 +63,7 @@ _setup_function_call(LogTemplate *template, Plugin *p, LogTemplateElem *e,
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
   e->func.ops = plugin_construct(p);
+  g_return_val_if_fail(e->func.ops != NULL, FALSE);
   e->func.state = e->func.ops->size_of_state > 0 ? g_malloc0(e->func.ops->size_of_state) : NULL;
 
   /* prepare may modify the argv array: remove and rearrange elements */
