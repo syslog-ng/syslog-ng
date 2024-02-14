@@ -27,6 +27,8 @@
 #include "messages.h"
 #include "serialize.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-counter.h"
+#include "stats/stats-cluster-single.h"
 #include "mainloop-worker.h"
 
 #include <sys/types.h>
@@ -100,6 +102,12 @@ typedef struct _LogQueueFifo
 
   /* legacy: flow-controlled messages are included in the log_fifo_size limit */
   gboolean use_legacy_fifo_size;
+
+  struct
+  {
+    StatsClusterKey *capacity_sc_key;
+    StatsCounterItem *capacity;
+  } metrics;
 
   gint num_input_queues;
   InputQueue input_queues[0];
@@ -627,6 +635,45 @@ log_queue_fifo_free_queue(struct iv_list_head *q)
     }
 }
 
+static inline void
+_register_counters(LogQueueFifo *self, gint stats_level, StatsClusterKeyBuilder *builder)
+{
+  if (!builder)
+    return;
+
+  {
+    stats_cluster_key_builder_push(builder);
+
+    stats_cluster_key_builder_set_name(builder, "capacity");
+    self->metrics.capacity_sc_key = stats_cluster_key_builder_build_single(builder);
+
+    stats_cluster_key_builder_pop(builder);
+  }
+
+  {
+    stats_lock();
+    stats_register_counter(stats_level, self->metrics.capacity_sc_key, SC_TYPE_SINGLE_VALUE,
+                           &self->metrics.capacity);
+    stats_unlock();
+  }
+}
+
+static void
+_unregister_counters(LogQueueFifo *self)
+{
+  {
+    stats_lock();
+    if (self->metrics.capacity_sc_key)
+      {
+        stats_unregister_counter(self->metrics.capacity_sc_key, SC_TYPE_SINGLE_VALUE,
+                                 &self->metrics.capacity);
+
+        stats_cluster_key_free(self->metrics.capacity_sc_key);
+      }
+    stats_unlock();
+  }
+}
+
 static void
 log_queue_fifo_free(LogQueue *s)
 {
@@ -642,6 +689,9 @@ log_queue_fifo_free(LogQueue *s)
   log_queue_fifo_free_queue(&self->wait_queue.items);
   log_queue_fifo_free_queue(&self->output_queue.items);
   log_queue_fifo_free_queue(&self->backlog_queue.items);
+
+  _unregister_counters(self);
+
   log_queue_free_method(s);
 }
 
@@ -687,6 +737,10 @@ log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name, gint stats_lev
   INIT_IV_LIST_HEAD(&self->backlog_queue.items);
 
   self->log_fifo_size = log_fifo_size;
+
+  _register_counters(self, stats_level, queue_sck_builder);
+
+  stats_counter_set(self->metrics.capacity, self->log_fifo_size);
 
   if (queue_sck_builder)
     stats_cluster_key_builder_pop(queue_sck_builder);
