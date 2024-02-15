@@ -171,6 +171,28 @@ metrics_template_build_sck(MetricsTemplate *self, LogTemplateOptions *template_o
   stats_cluster_single_key_set(key, self->key, (StatsClusterLabel *) label_buffers->data, label_buffers->len);
 }
 
+static StatsCounterItem *
+metrics_template_get_stats_counter(MetricsTemplate *self, LogTemplateOptions *template_options, LogMessage *msg)
+{
+  StatsClusterKey key;
+  ScratchBuffersMarker marker;
+
+  scratch_buffers_mark(&marker);
+  metrics_template_build_sck(self, template_options, msg, &key);
+
+  StatsCluster *cluster = g_hash_table_lookup(clusters, &key);
+  if (!cluster)
+    {
+      cluster = _register_single_cluster_locked(&key, self->level);
+      if (cluster)
+        g_hash_table_insert(clusters, &cluster->key, cluster);
+    }
+
+  scratch_buffers_reclaim_marked(marker);
+
+  return stats_cluster_single_get_counter(cluster);
+}
+
 gboolean
 metrics_template_init(MetricsTemplate *self)
 {
@@ -260,28 +282,6 @@ metrics_probe_get_metrics_template(LogParser *s)
   return self->metrics_template;
 }
 
-static StatsCounterItem *
-_lookup_stats_counter(MetricsProbe *self, LogMessage *msg)
-{
-  StatsClusterKey key;
-  ScratchBuffersMarker marker;
-
-  scratch_buffers_mark(&marker);
-  metrics_template_build_sck(self->metrics_template, &self->template_options, msg, &key);
-
-  StatsCluster *cluster = g_hash_table_lookup(clusters, &key);
-  if (!cluster)
-    {
-      cluster = _register_single_cluster_locked(&key, self->metrics_template->level);
-      if (cluster)
-        g_hash_table_insert(clusters, &cluster->key, cluster);
-    }
-
-  scratch_buffers_reclaim_marked(marker);
-
-  return stats_cluster_single_get_counter(cluster);
-}
-
 static const gchar *
 _format_increment_template(MetricsProbe *self, LogMessage *msg, GString *buffer)
 {
@@ -326,7 +326,7 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
   if (!metrics_template_is_enabled(self->metrics_template))
     return TRUE;
 
-  StatsCounterItem *counter = _lookup_stats_counter(self, *pmsg);
+  StatsCounterItem *counter = metrics_template_get_stats_counter(self->metrics_template, &self->template_options, *pmsg);
   gssize increment = _calculate_increment(self, *pmsg);
   stats_counter_add(counter, increment);
 
