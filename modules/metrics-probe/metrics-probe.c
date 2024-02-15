@@ -37,6 +37,63 @@ TLS_BLOCK_END;
 #define clusters __tls_deref(clusters)
 #define label_buffers __tls_deref(label_buffers)
 
+static StatsCluster *
+_register_single_cluster_locked(StatsClusterKey *key, gint stats_level)
+{
+  StatsCluster *cluster;
+
+  stats_lock();
+  {
+    StatsCounterItem *counter;
+    cluster = stats_register_dynamic_counter(stats_level, key, SC_TYPE_SINGLE_VALUE, &counter);
+  }
+  stats_unlock();
+
+  return cluster;
+}
+
+static void
+_unregister_single_cluster_locked(StatsCluster *cluster)
+{
+  stats_lock();
+  {
+    StatsCounterItem *counter = stats_cluster_single_get_counter(cluster);
+    stats_unregister_dynamic_counter(cluster, SC_TYPE_SINGLE_VALUE, &counter);
+  }
+  stats_unlock();
+}
+
+static void
+_init_tls_clusters_map_thread_init_hook(gpointer user_data)
+{
+  g_assert(!clusters && !label_buffers);
+
+  clusters = g_hash_table_new_full((GHashFunc) stats_cluster_key_hash,
+                                   (GEqualFunc) stats_cluster_key_equal,
+                                   NULL,
+                                   (GDestroyNotify) _unregister_single_cluster_locked);
+  label_buffers = g_array_new(FALSE, FALSE, sizeof(StatsClusterLabel));
+}
+
+static void
+_deinit_tls_clusters_map_thread_init_hook(gpointer user_data)
+{
+  g_hash_table_destroy(clusters);
+  g_array_free(label_buffers, TRUE);
+}
+
+static void
+_init_tls_clusters_map_apphook(gint type, gpointer user_data)
+{
+  _init_tls_clusters_map_thread_init_hook(user_data);
+}
+
+static void
+_deinit_tls_clusters_map_apphook(gint type, gpointer user_data)
+{
+  _deinit_tls_clusters_map_thread_init_hook(user_data);
+}
+
 
 void
 metrics_template_set_level(MetricsTemplate *self, gint level)
@@ -139,6 +196,21 @@ metrics_template_free(MetricsTemplate *self)
   g_free(self);
 }
 
+static void
+metrics_template_global_init(void)
+{
+  static gboolean initialized = FALSE;
+
+  if (!initialized)
+    {
+      register_application_thread_init_hook(_init_tls_clusters_map_thread_init_hook, NULL);
+      register_application_thread_deinit_hook(_deinit_tls_clusters_map_thread_init_hook, NULL);
+      register_application_hook(AH_STARTUP, _init_tls_clusters_map_apphook, NULL, AHM_RUN_ONCE);
+      register_application_hook(AH_SHUTDOWN, _deinit_tls_clusters_map_apphook, NULL, AHM_RUN_ONCE);
+      initialized = TRUE;
+    }
+}
+
 MetricsTemplate *
 metrics_template_clone(MetricsTemplate *self, GlobalConfig *cfg)
 {
@@ -162,32 +234,6 @@ typedef struct _MetricsProbe
   MetricsTemplate *metrics_template;
   LogTemplate *increment_template;
 } MetricsProbe;
-
-static StatsCluster *
-_register_single_cluster_locked(StatsClusterKey *key, gint stats_level)
-{
-  StatsCluster *cluster;
-
-  stats_lock();
-  {
-    StatsCounterItem *counter;
-    cluster = stats_register_dynamic_counter(stats_level, key, SC_TYPE_SINGLE_VALUE, &counter);
-  }
-  stats_unlock();
-
-  return cluster;
-}
-
-static void
-_unregister_single_cluster_locked(StatsCluster *cluster)
-{
-  stats_lock();
-  {
-    StatsCounterItem *counter = stats_cluster_single_get_counter(cluster);
-    stats_unregister_dynamic_counter(cluster, SC_TYPE_SINGLE_VALUE, &counter);
-  }
-  stats_unlock();
-}
 
 void
 metrics_probe_set_increment_template(LogParser *s, LogTemplate *increment_template)
@@ -296,52 +342,6 @@ _add_default_label_template(MetricsProbe *self, const gchar *label, const gchar 
   log_template_unref(value_template);
 }
 
-static void
-_init_tls_clusters_map_thread_init_hook(gpointer user_data)
-{
-  g_assert(!clusters && !label_buffers);
-
-  clusters = g_hash_table_new_full((GHashFunc) stats_cluster_key_hash,
-                                   (GEqualFunc) stats_cluster_key_equal,
-                                   NULL,
-                                   (GDestroyNotify) _unregister_single_cluster_locked);
-  label_buffers = g_array_new(FALSE, FALSE, sizeof(StatsClusterLabel));
-}
-
-static void
-_deinit_tls_clusters_map_thread_init_hook(gpointer user_data)
-{
-  g_hash_table_destroy(clusters);
-  g_array_free(label_buffers, TRUE);
-}
-
-static void
-_init_tls_clusters_map_apphook(gint type, gpointer user_data)
-{
-  _init_tls_clusters_map_thread_init_hook(user_data);
-}
-
-static void
-_deinit_tls_clusters_map_apphook(gint type, gpointer user_data)
-{
-  _deinit_tls_clusters_map_thread_init_hook(user_data);
-}
-
-static void
-_register_global_initializers(void)
-{
-  static gboolean initialized = FALSE;
-
-  if (!initialized)
-    {
-      register_application_thread_init_hook(_init_tls_clusters_map_thread_init_hook, NULL);
-      register_application_thread_deinit_hook(_deinit_tls_clusters_map_thread_init_hook, NULL);
-      register_application_hook(AH_STARTUP, _init_tls_clusters_map_apphook, NULL, AHM_RUN_ONCE);
-      register_application_hook(AH_SHUTDOWN, _deinit_tls_clusters_map_apphook, NULL, AHM_RUN_ONCE);
-      initialized = TRUE;
-    }
-}
-
 static gboolean
 _init(LogPipe *s)
 {
@@ -370,7 +370,8 @@ _init(LogPipe *s)
   if (!metrics_template_init(self->metrics_template))
     return FALSE;
 
-  _register_global_initializers();
+  /* FIXME: move this to earlier, e.g. module loading */
+  metrics_template_global_init();
 
   return log_parser_init_method(s);
 }
