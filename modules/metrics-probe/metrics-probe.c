@@ -85,6 +85,12 @@ _add_dynamic_labels(MetricsTemplate *self, LogTemplateOptions *template_options,
   value_pairs_foreach(self->vp, _add_dynamic_labels_vp_helper, msg, &template_eval_options, NULL);
 }
 
+static gboolean
+metrics_template_is_enabled(MetricsTemplate *self)
+{
+  return stats_check_level(self->level);
+}
+
 static void
 metrics_template_build_sck(MetricsTemplate *self, LogTemplateOptions *template_options, LogMessage *msg, StatsClusterKey *key)
 {
@@ -271,8 +277,7 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
             evt_tag_str("key", self->metrics_template->key),
             evt_tag_msg_reference(*pmsg));
 
-  /* FIXME: envy */
-  if (!stats_check_level(self->metrics_template->level))
+  if (!metrics_template_is_enabled(self->metrics_template))
     return TRUE;
 
   StatsCounterItem *counter = _lookup_stats_counter(self, *pmsg);
