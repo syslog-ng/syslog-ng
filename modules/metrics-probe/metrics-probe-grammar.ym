@@ -33,6 +33,8 @@
 #include "cfg-parser.h"
 #include "cfg-grammar-internal.h"
 
+static MetricsTemplate *last_metrics_template;
+
 }
 
 %define api.prefix {metrics_probe_}
@@ -74,29 +76,35 @@ metrics_probe_opts
         |
         ;
 
+	;
+
 metrics_probe_opt
-        : KW_KEY '(' string ')' { metrics_probe_set_key(last_parser, $3); g_free($3); }
-        | KW_LABELS '(' metrics_probe_labels_opts ')'
-        | KW_INCREMENT '(' template_content ')' { metrics_probe_set_increment_template(last_parser, $3); log_template_unref($3); }
-        | KW_LEVEL '(' nonnegative_integer ')' { metrics_probe_set_level(last_parser, $3); }
+        : KW_INCREMENT '(' template_content ')' { metrics_probe_set_increment_template(last_parser, $3); log_template_unref($3); }
         | { last_template_options = metrics_probe_get_template_options(last_parser); } template_option
         | parser_opt
+	| { last_metrics_template = metrics_probe_get_metrics_template(last_parser); } metrics_template_opt
         ;
 
-metrics_probe_labels_opts
-        : metrics_probe_labels_opt metrics_probe_labels_opts
+
+metrics_template_opt
+        : KW_KEY '(' string ')' { metrics_template_set_key(last_metrics_template, $3); g_free($3); }
+        | KW_LABELS '(' metrics_template_labels_opts ')'
+        | KW_LEVEL '(' nonnegative_integer ')' { metrics_template_set_level(last_metrics_template, $3); }
+
+metrics_template_labels_opts
+        : metrics_template_labels_opt metrics_template_labels_opts
         |
         ;
 
-metrics_probe_labels_opt
-        : metrics_probe_label_template
-        | { last_value_pairs = metrics_probe_get_value_pairs(last_parser); } vp_option
+metrics_template_labels_opt
+        : metrics_template_label_template
+        | { last_value_pairs = metrics_template_get_value_pairs(last_metrics_template); } vp_option
         ;
 
-metrics_probe_label_template
+metrics_template_label_template
         : string LL_ARROW template_content
           {
-            metrics_probe_add_label_template(last_parser, $1, $3);
+            metrics_template_add_label_template(last_metrics_template, $1, $3);
             free($1);
             log_template_unref($3);
           }

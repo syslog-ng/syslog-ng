@@ -27,14 +27,23 @@
 #include "template/templates.h"
 #include "value-pairs/value-pairs.h"
 
-LogParser *metrics_probe_new(GlobalConfig *cfg);
+typedef struct _MetricsTemplate
+{
+  gchar *key;
+  GList *label_templates;
+  ValuePairs *vp;
+  gint level;
+} MetricsTemplate;
 
-void metrics_probe_set_key(LogParser *s, const gchar *key);
-void metrics_probe_add_label_template(LogParser *s, const gchar *label, LogTemplate *value_template);
+void metrics_template_set_key(MetricsTemplate *s, const gchar *key);
+void metrics_template_add_label_template(MetricsTemplate *s, const gchar *label, LogTemplate *value_template);
+void metrics_template_set_level(MetricsTemplate *s, gint level);
+ValuePairs *metrics_template_get_value_pairs(MetricsTemplate *s);
+
+LogParser *metrics_probe_new(GlobalConfig *cfg);
 void metrics_probe_set_increment_template(LogParser *s, LogTemplate *increment_template);
-void metrics_probe_set_level(LogParser *s, gint level);
 
 LogTemplateOptions *metrics_probe_get_template_options(LogParser *s);
-ValuePairs *metrics_probe_get_value_pairs(LogParser *s);
+MetricsTemplate *metrics_probe_get_metrics_template(LogParser *s);
 
 #endif
