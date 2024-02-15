@@ -45,7 +45,7 @@ GOptionEntry log_level_options[] =
 {
   {
     G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_CALLBACK, _store_log_level,
-    "Set log level", "<verbose|debug|trace>"
+    "Set log level", "<default|verbose|debug|trace>"
   },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
