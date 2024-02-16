@@ -8,13 +8,14 @@ on:
 
 jobs:
   general:
-    runs-on: macOS-latest
-
     strategy:
       matrix:
+        version: [latest, 14]
         build-tool: [autotools, cmake]
         cc: [gcc, clang]
       fail-fast: false
+
+    runs-on: macOS-${{ matrix.version }}
 
     steps:
       - name: Checkout syslog-ng source
@@ -81,6 +82,8 @@ jobs:
           ln -s "${HOMEBREW_PREFIX}/bin/gcc-11" "${HOMEBREW_PREFIX}/bin/gcc"
           ln -s "${HOMEBREW_PREFIX}/bin/g++-11" "${HOMEBREW_PREFIX}/bin/g++"
 
+          echo "ARCH: " $(arch)
+
       - name: autogen.sh
         if: matrix.build-tool == 'autotools'
         run: |
@@ -108,7 +111,8 @@ jobs:
           cmake --build ./build -j ${THREADS} --target install
 
       - name: cmake check
-        if: matrix.build-tool == 'cmake'
+        # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
+        if: matrix.build-tool == 'cmake' && matrix.version != 14
         run: |
           cmake --build ./build -j ${THREADS} --target check
 
@@ -125,7 +129,8 @@ jobs:
             }
 
       - name: make check
-        if: matrix.build-tool == 'autotools'
+        # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
+        if: matrix.build-tool == 'autotools' && matrix.version != 14
         run: |
           set -e
 
