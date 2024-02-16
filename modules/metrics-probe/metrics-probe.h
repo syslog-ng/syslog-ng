@@ -23,22 +23,9 @@
 #ifndef METRICS_PROBE_H_INCLUDED
 #define METRICS_PROBE_H_INCLUDED
 
+#include "metrics-template.h"
 #include "parser/parser-expr.h"
 #include "template/templates.h"
-#include "value-pairs/value-pairs.h"
-
-typedef struct _MetricsTemplate
-{
-  gchar *key;
-  GList *label_templates;
-  ValuePairs *vp;
-  gint level;
-} MetricsTemplate;
-
-void metrics_template_set_key(MetricsTemplate *s, const gchar *key);
-void metrics_template_add_label_template(MetricsTemplate *s, const gchar *label, LogTemplate *value_template);
-void metrics_template_set_level(MetricsTemplate *s, gint level);
-ValuePairs *metrics_template_get_value_pairs(MetricsTemplate *s);
 
 LogParser *metrics_probe_new(GlobalConfig *cfg);
 void metrics_probe_set_increment_template(LogParser *s, LogTemplate *increment_template);
