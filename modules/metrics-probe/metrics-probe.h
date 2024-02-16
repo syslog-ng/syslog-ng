@@ -23,7 +23,7 @@
 #ifndef METRICS_PROBE_H_INCLUDED
 #define METRICS_PROBE_H_INCLUDED
 
-#include "metrics-template.h"
+#include "metrics/metrics-template.h"
 #include "parser/parser-expr.h"
 #include "template/templates.h"
 

@@ -21,7 +21,7 @@
  */
 
 #include "metrics-probe.h"
-#include "metrics-template.h"
+#include "metrics/metrics-template.h"
 #include "scratch-buffers.h"
 
 typedef struct _MetricsProbe

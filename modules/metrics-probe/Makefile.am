@@ -2,14 +2,10 @@ module_LTLIBRARIES				+= modules/metrics-probe/libmetrics-probe.la
 modules_metrics_probe_libmetrics_probe_la_SOURCES	=	\
 	modules/metrics-probe/metrics-probe.c			\
 	modules/metrics-probe/metrics-probe.h			\
-	modules/metrics-probe/metrics-template.c		\
-	modules/metrics-probe/metrics-template.h		\
 	modules/metrics-probe/metrics-probe-grammar.y		\
 	modules/metrics-probe/metrics-probe-parser.c		\
 	modules/metrics-probe/metrics-probe-parser.h		\
-	modules/metrics-probe/metrics-probe-plugin.c		\
-	modules/metrics-probe/label-template.c			\
-	modules/metrics-probe/label-template.h
+	modules/metrics-probe/metrics-probe-plugin.c
 
 modules_metrics_probe_libmetrics_probe_la_CPPFLAGS	=	\
 	$(AM_CPPFLAGS)					\
