@@ -27,6 +27,7 @@ from src.common.operations import cast_to_list
 from src.syslog_ng_config import stringify
 from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statement_group import StatementGroup
+from src.syslog_ng_config.statements import ArrowedOptions
 from src.syslog_ng_config.statements.destinations.example_destination import ExampleDestination
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
 from src.syslog_ng_config.statements.destinations.network_destination import NetworkDestination
@@ -69,6 +70,9 @@ class SyslogNgConfig(object):
         self.teardown = teardown
 
     stringify = staticmethod(stringify)
+
+    def arrowed_options(self, *args, **kwargs):
+        return ArrowedOptions(*args, **kwargs)
 
     def set_raw_config(self, raw_config):
         self.__raw_config = raw_config

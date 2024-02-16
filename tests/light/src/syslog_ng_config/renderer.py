@@ -21,6 +21,7 @@
 #
 #############################################################################
 from src.syslog_ng_config import stringify
+from src.syslog_ng_config.statements import ArrowedOptions
 from src.syslog_ng_config.statements.filters.filter import Filter
 from src.syslog_ng_config.statements.template.template import Template
 from src.syslog_ng_config.statements.template.template import TemplateFunction
@@ -59,6 +60,15 @@ def render_options(name, options):
     config_snippet = ""
     config_snippet += "        {}(\n".format(name)
     config_snippet += render_driver_options(options)
+    config_snippet += "        )\n"
+
+    return config_snippet
+
+
+def render_arrowed_options(name, keys):
+    config_snippet = "         {}(\n".format(name)
+    for key, value in keys.items():
+        config_snippet += "        {} => {}\n".format(stringify(key), value)
     config_snippet += "        )\n"
 
     return config_snippet
@@ -115,7 +125,9 @@ def render_driver_options(driver_options):
     config_snippet = ""
 
     for option_name, option_value in driver_options.items():
-        if isinstance(option_value, dict):
+        if isinstance(option_value, ArrowedOptions):
+            config_snippet += render_arrowed_options(option_name, option_value)
+        elif isinstance(option_value, dict):
             config_snippet += render_options(option_name, option_value)
         elif (isinstance(option_value, tuple) or isinstance(option_value, list)):
             config_snippet += render_list(option_name, option_value)
