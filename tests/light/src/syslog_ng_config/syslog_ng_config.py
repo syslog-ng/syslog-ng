@@ -155,6 +155,9 @@ class SyslogNgConfig(object):
     def create_csv_parser(self, **options):
         return Parser("csv-parser", **options)
 
+    def create_metrics_probe(self, **options):
+        return Parser("metrics_probe", **options)
+
     def create_syslog_parser(self, **options):
         return Parser("syslog-parser", **options)
 
