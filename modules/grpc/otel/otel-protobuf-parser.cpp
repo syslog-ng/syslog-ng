@@ -223,16 +223,35 @@ _add_repeated_KeyValue_fields(LogMessage *msg, const char *key, const RepeatedPt
   _add_repeated_KeyValue_fields_with_prefix(msg, key_buffer, 0, key, key_values);
 }
 
-static std::string
-_extract_hostname(const grpc::string &peer)
+static GSockAddr *
+_extract_saddr(const grpc::string &peer)
 {
   size_t first = peer.find_first_of(':');
   size_t last = peer.find_last_of(':');
 
+  /* expected format:  ipv6:[::1]:32768 or ipv4:1.2.3.4:32768 */
   if (first != grpc::string::npos && last != grpc::string::npos)
-    return peer.substr(first + 1, last - first - 1);
+    {
+      const std::string ip_version = peer.substr(0, first);
+      std::string host;
+      int port = std::stoi(peer.substr(last + 1, grpc::string::npos), nullptr, 10);
 
-  return "";
+      if (peer.at(first + 1) == '[')
+        host = peer.substr(first + 2, last - first - 3);
+      else
+        host = peer.substr(first + 1, last - first - 1);
+
+      if (ip_version.compare("ipv6") == 0)
+        {
+          return g_sockaddr_inet6_new(host.c_str(), port);
+        }
+      else if (ip_version.compare("ipv4") == 0)
+        {
+          return g_sockaddr_inet_new(host.c_str(), port);
+        }
+    }
+
+  return NULL;
 }
 
 static bool
@@ -1091,10 +1110,7 @@ syslogng::grpc::otel::ProtobufParser::store_raw_metadata(LogMessage *msg, const 
 {
   std::string serialized;
 
-  /* HOST */
-  std::string hostname = _extract_hostname(peer);
-  if (hostname.length())
-    log_msg_set_value(msg, LM_V_HOST, hostname.c_str(), hostname.length());
+  msg->saddr = _extract_saddr(peer);
 
   /* .otel_raw.resource */
   resource.SerializePartialToString(&serialized);
@@ -1209,9 +1225,9 @@ syslogng::grpc::otel::ProtobufParser::set_syslog_ng_macros(LogMessage *msg, cons
 
       if (name.compare("PRI") == 0)
         {
-          if (!_value_case_equals(msg, macro, AnyValue::kBytesValue))
+          if (!_value_case_equals(msg, macro, AnyValue::kIntValue))
             continue;
-          msg->pri = log_rewrite_set_pri_convert_pri(macro.value().bytes_value().c_str());
+          msg->pri = macro.value().int_value();
         }
       else if (name.compare("TAGS") == 0)
         {

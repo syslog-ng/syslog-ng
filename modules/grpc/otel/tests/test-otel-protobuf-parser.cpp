@@ -45,7 +45,7 @@ _create_dummy_log_msg()
 {
   LogMessage *msg = log_msg_new_empty();
 
-  grpc::string peer = "ipv6:[::1]:36372";
+  grpc::string peer = "ipv4:127.0.0.5:36372";
   Resource resource;
   std::string resource_schema_url = "dummy_resource_schema_url";
   InstrumentationScope scope;
@@ -149,7 +149,8 @@ Test(otel_protobuf_parser, metadata)
   ProtobufParser::store_raw(msg, LogRecord());
   ProtobufParser().process(msg);
 
-  _assert_log_msg_value(msg, "HOST", "[::1]", -1, LM_VT_STRING);
+  cr_assert(msg->saddr != NULL);
+  _assert_log_msg_value(msg, "SOURCEIP", "::1", -1, LM_VT_STRING);
 
   _assert_log_msg_value(msg, ".otel.resource.attributes.null_key", "", -1, LM_VT_NULL);
   _assert_log_msg_value(msg, ".otel.resource.attributes.string_key", "string_attribute", -1, LM_VT_STRING);
@@ -205,6 +206,10 @@ Test(otel_protobuf_parser, log_record)
 
   ProtobufParser::store_raw(msg, log_record);
   cr_assert(ProtobufParser().process(msg));
+
+  cr_assert(msg->saddr != NULL);
+
+  _assert_log_msg_value(msg, "SOURCEIP", "127.0.0.5", -1, LM_VT_STRING);
 
   _assert_log_msg_value(msg, ".otel.type", "log", -1, LM_VT_STRING);
   _assert_log_msg_value(msg, ".otel.log.time_unix_nano", "111000222000", -1, LM_VT_INTEGER);

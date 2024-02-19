@@ -371,7 +371,7 @@ pdbtool_pdb_emit(LogMessage *msg, gpointer user_data)
 
           nv_table_foreach(msg->payload, logmsg_registry, pdbtool_match_values, ret);
           g_string_truncate(output, 0);
-          log_msg_format_tags(msg, output);
+          log_msg_format_tags(msg, output, TRUE);
           printf("TAGS=%s\n", output->str);
           printf("\n");
         }
