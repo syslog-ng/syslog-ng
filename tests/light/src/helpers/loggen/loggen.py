@@ -91,6 +91,9 @@ class Loggen(object):
         if proxied is True:
             start_parameters.append("--proxied")
 
+        if proxied == 1 or proxied == 2:
+            start_parameters.append("--proxied={}".format(proxied))
+
         if proxy_src_ip is not None:
             start_parameters.append("--proxy-src-ip={}".format(proxy_src_ip))
 

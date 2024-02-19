@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 One Identity
+ * Copyright (c) 2020-2023 One Identity LLC.
  * Copyright (c) 2022 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -22,67 +22,39 @@
  *
  */
 
+#include "transport-socket-proxy.h"
+#include "transport/multitransport.h"
+#include "transport-factory-socket.h"
+#include "transport-factory-tls.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
+
 #include "messages.h"
-#include "logproto-proxied-text-server.h"
-#include "transport/multitransport.h"
-#include "transport/transport-factory-tls.h"
 #include "str-utils.h"
 
-#define IP_BUF_SIZE 64
 
-/* This file implements: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt */
+/* This class implements: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt */
 
 /* PROXYv1 line without newlines or terminating zero character.  The
  * protocol specification contains the number 108 that includes both the
  * CRLF sequence and the NUL */
 #define PROXY_PROTO_HDR_MAX_LEN_RFC 105
 
-/* the size of the buffer we use to fetch the PROXY header into */
-#define PROXY_PROTO_HDR_BUFFER_SIZE 1500
-
 /* the amount of bytes we need from the client to detect protocol version */
 #define PROXY_PROTO_HDR_MAGIC_LEN   5
 
-typedef struct _LogProtoProxiedTextServer
+typedef enum
 {
-  LogProtoTextServer super;
-
-  // Info received from the proxied that should be added as LogTransportAuxData to
-  // any message received through this server instance.
-  struct
-  {
-    gboolean unknown;
-
-    gchar src_ip[IP_BUF_SIZE];
-    gchar dst_ip[IP_BUF_SIZE];
-
-    int ip_version;
-    int src_port;
-    int dst_port;
-  } info;
-
-  // Flag to only run handshake() once
-  gboolean handshake_done;
-  gboolean has_to_switch_to_tls;
-
-  enum
-  {
-    LPPTS_INITIAL,
-    LPPTS_DETERMINE_VERSION,
-    LPPTS_PROXY_V1_READ_LINE,
-    LPPTS_PROXY_V2_READ_HEADER,
-    LPPTS_PROXY_V2_READ_PAYLOAD,
-  } header_fetch_state;
-
-  /* 0 unknown, 1 or 2 indicate proxy header version */
-  gint proxy_header_version;
-  guchar proxy_header_buff[PROXY_PROTO_HDR_BUFFER_SIZE];
-  gsize proxy_header_buff_len;
-} LogProtoProxiedTextServer;
-
+  STATUS_SUCCESS,
+  STATUS_ERROR,
+  STATUS_EOF,
+  STATUS_PARTIAL,
+  STATUS_AGAIN,
+} Status;
 
 struct proxy_hdr_v2
 {
@@ -167,7 +139,7 @@ _is_proxy_v1_unknown(const guchar *msg, gsize msg_len, gsize *header_len)
 }
 
 static gboolean
-_parse_proxy_v1_unknown_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
+_parse_proxy_v1_unknown_header(LogTransportSocketProxy *self, const guchar *msg, gsize msg_len)
 {
   if (msg_len == 0)
     return TRUE;
@@ -179,7 +151,7 @@ _parse_proxy_v1_unknown_header(LogProtoProxiedTextServer *self, const guchar *ms
 }
 
 static gboolean
-_parse_proxy_v1_tcp_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
+_parse_proxy_v1_tcp_header(LogTransportSocketProxy *self, const guchar *msg, gsize msg_len)
 {
   if (msg_len == 0)
     return FALSE;
@@ -217,7 +189,7 @@ ret:
 }
 
 static gboolean
-_extract_proxy_v1_header(LogProtoProxiedTextServer *self, guchar **msg, gsize *msg_len)
+_extract_proxy_v1_header(LogTransportSocketProxy *self, guchar **msg, gsize *msg_len)
 {
   if (self->proxy_header_buff[self->proxy_header_buff_len - 1] == '\n')
     self->proxy_header_buff_len--;
@@ -232,14 +204,13 @@ _extract_proxy_v1_header(LogProtoProxiedTextServer *self, guchar **msg, gsize *m
 }
 
 static gboolean
-_parse_proxy_v1_header(LogProtoProxiedTextServer *self)
+_parse_proxy_v1_header(LogTransportSocketProxy *self)
 {
   guchar *proxy_line;
   gsize proxy_line_len;
 
   if (!_extract_proxy_v1_header(self, &proxy_line, &proxy_line_len))
     return FALSE;
-
 
   gsize header_len = 0;
 
@@ -268,7 +239,7 @@ _parse_proxy_v1_header(LogProtoProxiedTextServer *self)
 }
 
 static gboolean
-_parse_proxy_v2_proxy_address(LogProtoProxiedTextServer *self, struct proxy_hdr_v2 *proxy_hdr,
+_parse_proxy_v2_proxy_address(LogTransportSocketProxy *self, struct proxy_hdr_v2 *proxy_hdr,
                               union proxy_addr *proxy_addr)
 {
   gint address_family = (proxy_hdr->fam & 0xF0) >> 4;
@@ -292,6 +263,7 @@ _parse_proxy_v2_proxy_address(LogProtoProxiedTextServer *self, struct proxy_hdr_
       self->info.src_port = ntohs(proxy_addr->ipv6_addr.src_port);
       self->info.dst_port = ntohs(proxy_addr->ipv6_addr.dst_port);
       self->info.ip_version = 6;
+      return TRUE;
     }
   else if (address_family == 0)
     {
@@ -307,7 +279,7 @@ _parse_proxy_v2_proxy_address(LogProtoProxiedTextServer *self, struct proxy_hdr_
 }
 
 static gboolean
-_parse_proxy_v2_header(LogProtoProxiedTextServer *self)
+_parse_proxy_v2_header(LogTransportSocketProxy *self)
 {
   struct proxy_hdr_v2 *proxy_hdr = (struct proxy_hdr_v2 *) self->proxy_header_buff;
   union proxy_addr *proxy_addr = (union proxy_addr *)(proxy_hdr + 1);
@@ -330,8 +302,8 @@ _parse_proxy_v2_header(LogProtoProxiedTextServer *self)
   return FALSE;
 }
 
-static gboolean
-_parse_proxy_header(LogProtoProxiedTextServer *self)
+gboolean
+_parse_proxy_header(LogTransportSocketProxy *self)
 {
   if (self->proxy_header_version == 1)
     return _parse_proxy_v1_header(self);
@@ -341,42 +313,67 @@ _parse_proxy_header(LogProtoProxiedTextServer *self)
     g_assert_not_reached();
 }
 
-static LogProtoStatus
-_fetch_chunk(LogProtoProxiedTextServer *self, gsize upto_bytes)
+static LogTransport *
+_active_log_transport(LogTransportSocketProxy *self)
+{
+  return (self->should_switch_transport ?
+          &((MultiTransport *)self->base_transport)->super :
+          self->base_transport);
+}
+
+static LogTransportSocket *
+_active_log_transport_socket(LogTransportSocketProxy *self)
+{
+  LogTransport *active_log_transport = _active_log_transport(self);
+  return (self->should_switch_transport ?
+          (LogTransportSocket *) ((MultiTransport *)active_log_transport)->active_transport :
+          (LogTransportSocket *) active_log_transport);
+}
+
+static gssize
+_read_with_active_log_transport(LogTransportSocketProxy *self, gpointer buf, gsize buflen, LogTransportAuxData *aux)
+{
+  LogTransportSocket *active_log_transport_socket = _active_log_transport_socket(self);
+  return self->base_read(&active_log_transport_socket->super, buf, buflen, aux);
+}
+
+static Status
+_fetch_chunk(LogTransportSocketProxy *self, gsize upto_bytes)
 {
   g_assert(upto_bytes < sizeof(self->proxy_header_buff));
   if (self->proxy_header_buff_len < upto_bytes)
     {
-      gssize rc = log_transport_read(self->super.super.super.transport,
-                                     &(self->proxy_header_buff[self->proxy_header_buff_len]),
-                                     upto_bytes - self->proxy_header_buff_len, NULL);
+      gssize rc = _read_with_active_log_transport(self,
+                                                  &(self->proxy_header_buff[self->proxy_header_buff_len]),
+                                                  upto_bytes - self->proxy_header_buff_len, NULL);
       if (rc < 0)
         {
           if (errno == EAGAIN)
-            return LPS_AGAIN;
+            return STATUS_AGAIN;
           else
             {
+              LogTransportSocket *active_log_transport_socket = _active_log_transport_socket(self);
               msg_error("I/O error occurred while reading proxy header",
-                        evt_tag_int(EVT_TAG_FD, self->super.super.super.transport->fd),
+                        evt_tag_int(EVT_TAG_FD, active_log_transport_socket->super.fd),
                         evt_tag_error(EVT_TAG_OSERROR));
-              return LPS_ERROR;
+              return STATUS_ERROR;
             }
         }
       /* EOF without data */
       if (rc == 0)
         {
-          return LPS_EOF;
+          return STATUS_EOF;
         }
 
       self->proxy_header_buff_len += rc;
     }
   if (self->proxy_header_buff_len == upto_bytes)
-    return LPS_SUCCESS;
-  return LPS_AGAIN;
+    return STATUS_SUCCESS;
+  return STATUS_AGAIN;
 }
 
-static inline LogProtoStatus
-_fetch_until_newline(LogProtoProxiedTextServer *self)
+static inline Status
+_fetch_until_newline(LogTransportSocketProxy *self)
 {
   /* leave 1 character for terminating zero.  We should have plenty of space
    * in our buffer, as the longest line we need to fetch is 107 bytes
@@ -384,14 +381,14 @@ _fetch_until_newline(LogProtoProxiedTextServer *self)
 
   while (self->proxy_header_buff_len < sizeof(self->proxy_header_buff) - 1)
     {
-      LogProtoStatus status = _fetch_chunk(self, self->proxy_header_buff_len + 1);
+      Status status = _fetch_chunk(self, self->proxy_header_buff_len + 1);
 
-      if (status != LPS_SUCCESS)
+      if (status != STATUS_SUCCESS)
         return status;
 
       if (self->proxy_header_buff[self->proxy_header_buff_len - 1] == '\n')
         {
-          return LPS_SUCCESS;
+          return STATUS_SUCCESS;
         }
     }
 
@@ -400,11 +397,11 @@ _fetch_until_newline(LogProtoProxiedTextServer *self)
             evt_tag_int("max_length_by_spec", PROXY_PROTO_HDR_MAX_LEN_RFC),
             evt_tag_long("length", self->proxy_header_buff_len),
             evt_tag_str("header", (const gchar *)self->proxy_header_buff));
-  return LPS_ERROR;
+  return STATUS_ERROR;
 }
 
-static LogProtoStatus
-_fetch_proxy_v2_payload(LogProtoProxiedTextServer *self)
+static Status
+_fetch_proxy_v2_payload(LogTransportSocketProxy *self)
 {
   struct proxy_hdr_v2 *hdr = (struct proxy_hdr_v2 *) self->proxy_header_buff;
   gint proxy_header_len = ntohs(hdr->len);
@@ -414,14 +411,14 @@ _fetch_proxy_v2_payload(LogProtoProxiedTextServer *self)
       msg_error("PROXYv2 proto header with invalid header length",
                 evt_tag_int("max_parsable_length", sizeof(self->proxy_header_buff)),
                 evt_tag_long("length", proxy_header_len));
-      return LPS_ERROR;
+      return STATUS_ERROR;
     }
 
   return _fetch_chunk(self, self->proxy_header_buff_len + proxy_header_len);
 }
 
-static gboolean
-_is_proxy_version_v1(LogProtoProxiedTextServer *self)
+gboolean
+_is_proxy_version_v1(LogTransportSocketProxy *self)
 {
   if (self->proxy_header_buff_len < PROXY_PROTO_HDR_MAGIC_LEN)
     return FALSE;
@@ -429,8 +426,8 @@ _is_proxy_version_v1(LogProtoProxiedTextServer *self)
   return memcmp(self->proxy_header_buff, "PROXY", PROXY_PROTO_HDR_MAGIC_LEN) == 0;
 }
 
-static gboolean
-_is_proxy_version_v2(LogProtoProxiedTextServer *self)
+gboolean
+_is_proxy_version_v2(LogTransportSocketProxy *self)
 {
   if (self->proxy_header_buff_len < PROXY_PROTO_HDR_MAGIC_LEN)
     return FALSE;
@@ -438,10 +435,10 @@ _is_proxy_version_v2(LogProtoProxiedTextServer *self)
   return memcmp(self->proxy_header_buff, "\x0D\x0A\x0D\x0A\x00", PROXY_PROTO_HDR_MAGIC_LEN) == 0;
 }
 
-static inline LogProtoStatus
-_fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
+static inline Status
+_fetch_into_proxy_buffer(LogTransportSocketProxy *self)
 {
-  LogProtoStatus status;
+  Status status;
 
   switch (self->header_fetch_state)
     {
@@ -451,7 +448,7 @@ _fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
     case LPPTS_DETERMINE_VERSION:
       status = _fetch_chunk(self, PROXY_PROTO_HDR_MAGIC_LEN);
 
-      if (status != LPS_SUCCESS)
+      if (status != STATUS_SUCCESS)
         return status;
 
       if (_is_proxy_version_v1(self))
@@ -468,20 +465,21 @@ _fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
         }
       else
         {
+          LogTransportSocket *active_log_transport_socket = _active_log_transport_socket(self);
           msg_error("Unable to determine PROXY protocol version",
-                    evt_tag_int(EVT_TAG_FD, self->super.super.super.transport->fd));
-          return LPS_ERROR;
+                    evt_tag_int(EVT_TAG_FD, active_log_transport_socket->super.fd));
+          return STATUS_ERROR;
         }
       g_assert_not_reached();
 
     case LPPTS_PROXY_V1_READ_LINE:
-
 process_proxy_v1:
       return _fetch_until_newline(self);
+
     case LPPTS_PROXY_V2_READ_HEADER:
 process_proxy_v2:
       status = _fetch_chunk(self, sizeof(struct proxy_hdr_v2));
-      if (status != LPS_SUCCESS)
+      if (status != STATUS_SUCCESS)
         return status;
 
       self->header_fetch_state = LPPTS_PROXY_V2_READ_PAYLOAD;
@@ -493,46 +491,51 @@ process_proxy_v2:
     }
 }
 
-static gboolean
-_switch_to_tls(LogProtoProxiedTextServer *self)
+static gssize
+_log_transport_proxied_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux);
+
+static void
+_apply_proxied_state(LogTransportSocketProxy *self, LogTransportSocket *transport_socket)
 {
-  if (!multitransport_switch((MultiTransport *)self->super.super.super.transport, transport_factory_tls_id()))
+  self->base_read = transport_socket->super.read;
+  transport_socket->super.read = _log_transport_proxied_read_method;
+
+  self->base_write = transport_socket->super.write;
+  transport_socket->super.write = NULL;
+
+  log_transport_socket_set_proxied(transport_socket, self);
+}
+
+static gboolean
+_switch_to_tls(LogTransportSocketProxy *self)
+{
+  /* NOTE: We should handle the proxy ownership here as the proxy is in LogTransportSocket,
+   *       and not presented in LogTransport
+   *       See more at _do_transport_switch
+   * Re-assigned back immediately in _apply_proxied_state to the new owner (the socket we switched to)
+   */
+  LogTransportSocket *transport_socket = _active_log_transport_socket(self);
+  transport_socket->proxy = NULL;
+
+  if (!multitransport_switch((MultiTransport *)self->base_transport, transport_factory_tls_id()))
     {
-      msg_error("proxied-tls failed to switch to TLS");
+      msg_error("socket-proxy failed to switch to TLS");
       return FALSE;
     }
+  _apply_proxied_state(self, _active_log_transport_socket(self));
 
-  msg_debug("proxied-tls switch to TLS: OK");
+  msg_debug("socket-proxy switch to TLS: OK");
   return TRUE;
 }
 
-static LogProtoPrepareAction
-log_proto_proxied_text_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
+static gboolean
+_proccess_proxy_header(LogTransportSocketProxy *self)
 {
-  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
+  Status status = _fetch_into_proxy_buffer(self);
 
-  *cond = s->transport->cond;
-
-  if(self->handshake_done)
-    return log_proto_text_server_prepare_method(s, cond, timeout);
-
-  /* if there's no pending I/O in the transport layer, then we want to do a read */
-  if (*cond == 0)
-    *cond = G_IO_IN;
-
-  return LPPA_POLL_IO;
-}
-
-static LogProtoStatus
-log_proto_proxied_text_server_handshake(LogProtoServer *s)
-{
-  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
-
-  LogProtoStatus status = _fetch_into_proxy_buffer(self);
-
-  self->handshake_done = (status == LPS_SUCCESS);
-  if (status != LPS_SUCCESS)
-    return status;
+  self->proxy_header_processed = (status == STATUS_SUCCESS);
+  if (status != STATUS_SUCCESS)
+    return FALSE;
 
   gboolean parsable = _parse_proxy_header(self);
 
@@ -545,28 +548,19 @@ log_proto_proxied_text_server_handshake(LogProtoServer *s)
   if (parsable)
     {
       msg_trace("PROXY protocol header parsed successfully");
-
-      if (self->has_to_switch_to_tls && !_switch_to_tls(self))
-        return LPS_ERROR;
-
-      return LPS_SUCCESS;
+      if (self->should_switch_transport && !_switch_to_tls(self))
+        return FALSE;
+      return TRUE;
     }
   else
     {
       msg_error("Error parsing PROXY protocol header");
-      return LPS_ERROR;
+      return FALSE;
     }
 }
 
-static gboolean
-log_proto_proxied_text_server_handshake_in_progress(LogProtoServer *s)
-{
-  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
-  return !self->handshake_done;
-}
-
-static void
-_augment_aux_data(LogProtoProxiedTextServer *self, LogTransportAuxData *aux)
+void
+_augment_aux_data(LogTransportSocketProxy *self, LogTransportAuxData *aux)
 {
   gchar buf1[8];
   gchar buf2[8];
@@ -588,68 +582,44 @@ _augment_aux_data(LogProtoProxiedTextServer *self, LogTransportAuxData *aux)
   return;
 }
 
-static LogProtoStatus
-log_proto_proxied_text_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
-                                    LogTransportAuxData *aux, Bookmark *bookmark)
+static gssize
+_log_transport_proxied_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
-  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
+  LogTransportSocket *socket = (LogTransportSocket *)s;
+  LogTransportSocketProxy *self = socket->proxy;
 
-  LogProtoStatus status = log_proto_buffered_server_fetch(&self->super.super.super, msg, msg_len, may_read, aux,
-                                                          bookmark);
+  gboolean status = TRUE;
+  if (!self->proxy_header_processed)
+    status = _proccess_proxy_header(self);
 
-  if (status != LPS_SUCCESS)
-    return status;
+  if (!status)
+    return -1;
 
   _augment_aux_data(self, aux);
-
-  return LPS_SUCCESS;
+  return _read_with_active_log_transport(self, buf, buflen, aux);
 }
 
-static void
-log_proto_proxied_text_server_free(LogProtoServer *s)
+void
+log_transport_socket_proxy_free(LogTransportSocketProxy *self)
 {
-  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
-
-  msg_debug("Freeing PROXY protocol source driver", evt_tag_printf("driver", "%p", self));
-
-  log_proto_text_server_free(&self->super.super.super);
-
-  return;
+  g_free(self);
 }
 
-static void
-log_proto_proxied_text_server_init(LogProtoProxiedTextServer *self, LogTransport *transport,
-                                   const LogProtoServerOptions *options)
+LogTransportSocketProxy *
+log_transport_socket_proxy_new(LogTransport *base_transport, gboolean should_switch_transport)
 {
-  msg_info("Initializing PROXY protocol source driver", evt_tag_printf("driver", "%p", self));
+  LogTransportSocketProxy *self = g_new0(LogTransportSocketProxy, 1);
 
-  log_proto_text_server_init(&self->super, transport, options);
+  self->base_transport = base_transport;
+  self->should_switch_transport = should_switch_transport;
 
-  self->super.super.super.prepare = log_proto_proxied_text_server_prepare;
-  self->super.super.super.handshake_in_progess = log_proto_proxied_text_server_handshake_in_progress;
-  self->super.super.super.handshake = log_proto_proxied_text_server_handshake;
-  self->super.super.super.fetch = log_proto_proxied_text_server_fetch;
-  self->super.super.super.free_fn = log_proto_proxied_text_server_free;
+  /* As the proxy is presented now only in LogTransportSocket (not in LogTransport :( )
+   * we cannot simply manipulate the MultiTransport read/write because in that case we do not have
+   * the proxy in the newly set read func (_log_transport_proxied_read_method)
+   * so, will attach ourself to the active transport (that would lead other problems during transport switcth, see there)
+   */
+  LogTransportSocket *transport_socket = _active_log_transport_socket(self);
+  _apply_proxied_state(self, transport_socket);
 
-  return;
-}
-
-LogProtoServer *
-log_proto_proxied_text_server_new(LogTransport *transport, const LogProtoServerOptions *options)
-{
-  LogProtoProxiedTextServer *self = g_new0(LogProtoProxiedTextServer, 1);
-  log_proto_proxied_text_server_init(self, transport, options);
-
-  return &self->super.super.super;
-}
-
-
-LogProtoServer *
-log_proto_proxied_text_tls_passthrough_server_new(LogTransport *transport, const LogProtoServerOptions *options)
-{
-  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) log_proto_proxied_text_server_new(transport, options);
-
-  self->has_to_switch_to_tls = TRUE;
-
-  return &self->super.super.super;
+  return self;
 }

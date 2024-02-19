@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2023 One Identity LLC.
  * Copyright (c) 2002-2013 Balabit
  * Copyright (c) 1998-2013 Balázs Scheidler
  *
@@ -22,10 +23,11 @@
  *
  */
 
-#ifndef TRANSPORT_TRANSPORT_SOCKET_H_INCLUDED
-#define TRANSPORT_TRANSPORT_SOCKET_H_INCLUDED 1
+#ifndef TRANSPORT_SOCKET_H_INCLUDED
+#define TRANSPORT_SOCKET_H_INCLUDED 1
 
 #include "logtransport.h"
+#include "transport-socket-proxy.h"
 
 typedef struct _LogTransportSocket LogTransportSocket;
 struct _LogTransportSocket
@@ -34,6 +36,7 @@ struct _LogTransportSocket
   gint address_family;
   gint proto;
   void (*parse_cmsg)(LogTransportSocket *self, struct cmsghdr *cmsg, LogTransportAuxData *aux);
+  LogTransportSocketProxy *proxy;
 };
 
 void log_transport_socket_parse_cmsg_method(LogTransportSocket *s, struct cmsghdr *cmsg, LogTransportAuxData *aux);
@@ -44,5 +47,7 @@ LogTransport *log_transport_dgram_socket_new(gint fd);
 void log_transport_stream_socket_init_instance(LogTransportSocket *self, gint fd);
 void log_transport_stream_socket_free_method(LogTransport *s);
 LogTransport *log_transport_stream_socket_new(gint fd);
+
+void log_transport_socket_set_proxied(LogTransportSocket *self, LogTransportSocketProxy *proxy);
 
 #endif
