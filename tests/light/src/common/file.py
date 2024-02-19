@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 def open_file(file_path, mode):
-    return open(file_path, mode)
+    return open(file_path, mode, errors="backslashreplace")
 
 
 def copy_file(src_file_path, dst_dir):

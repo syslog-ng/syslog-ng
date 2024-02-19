@@ -155,6 +155,13 @@ filterx_boolean_new(gboolean value)
     }
 }
 
+GenericNumber
+filterx_primitive_get_value(FilterXObject *s)
+{
+  FilterXPrimitive *self = (FilterXPrimitive *) s;
+  return self->value;
+}
+
 FILTERX_DEFINE_TYPE(integer, FILTERX_TYPE_NAME(object),
                     .truthy = _truthy,
                     .marshal = _integer_marshal,

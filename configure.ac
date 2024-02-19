@@ -1356,24 +1356,19 @@ dnl ***************************************************************************
 dnl json headers/libraries
 dnl ***************************************************************************
 
-enable_json="no"
-
 if test "x$with_jsonc" = "xinternal"; then
    AC_MSG_ERROR([The internal (bundled) json-c library is no longer supported!])
 fi
 
-if test "x$with_jsonc" = "xsystem"; then
-   with_jsonc="yes"
-fi
+# became hard-dependency
+with_jsonc="yes"
 
-if test "x$with_jsonc" = "xyes" -o "x$with_jsonc" = "xauto"; then
-   enable_json="yes"
-   PKG_CHECK_EXISTS(json-c, json_module_name="json-c",
-   PKG_CHECK_EXISTS(json, json_module_name="json"))
-   PKG_CHECK_MODULES(JSON, $json_module_name >= $JSON_C_MIN_VERSION,[with_jsonc="yes"], [JSON_LIBS=""; enable_json="no"])
-   if test "x$with_jsonc" = "xyes" -a "x$enable_json" = "xno"; then
-     AC_MSG_ERROR([json-c library development files cannot be not found on system!])
-   fi
+enable_json="yes"
+PKG_CHECK_EXISTS(json-c, json_module_name="json-c",
+PKG_CHECK_EXISTS(json, json_module_name="json"))
+PKG_CHECK_MODULES(JSON, $json_module_name >= $JSON_C_MIN_VERSION,[with_jsonc="yes"], [JSON_LIBS=""; enable_json="no"])
+if test "x$enable_json" = "xno"; then
+  AC_MSG_ERROR([json-c library development files cannot be not found on system!])
 fi
 
 dnl ***************************************************************************
@@ -2080,7 +2075,7 @@ fi
 python_moduledir="$moduledir"/python
 python_sysconf_moduledir="${sysconfdir}/python"
 
-CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE2_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS $LIBCAP_CFLAGS -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE2_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS $JSON_CFLAGS $LIBCAP_CFLAGS -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 ########################################################
 ## NOTES: on how syslog-ng is linked

@@ -33,7 +33,7 @@ struct _FilterXType
 {
   FilterXType *super_type;
   const gchar *name;
-  gboolean mutable;
+  gboolean is_mutable;
   union
   {
     struct
@@ -133,7 +133,7 @@ filterx_object_marshal(FilterXObject *self, GString *repr, LogMessageValueType *
 static inline FilterXObject *
 filterx_object_clone(FilterXObject *self)
 {
-  if (self->type->mutable)
+  if (self->type->is_mutable)
     {
       /* mutable object that shadows a name-value pair must have clone */
       return self->type->clone(self);

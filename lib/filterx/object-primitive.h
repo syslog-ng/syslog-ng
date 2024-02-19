@@ -39,6 +39,7 @@ typedef struct _FilterXPrimitive
 FilterXObject *filterx_integer_new(gint64 value);
 FilterXObject *filterx_double_new(gdouble value);
 FilterXObject *filterx_boolean_new(gboolean value);
+GenericNumber filterx_primitive_get_value(FilterXObject *s);
 
 static inline gboolean
 filterx_integer_unwrap(FilterXObject *s, gint64 *value)

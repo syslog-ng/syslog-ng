@@ -24,6 +24,8 @@
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
+#include "filterx/otel-logrecord.h"
+
 
 extern CfgParser otel_parser;
 
@@ -54,11 +56,17 @@ static Plugin otel_plugins[] =
     .name = "syslog_ng_otlp",
     .parser = &otel_parser,
   },
+  {
+    .type = LL_CONTEXT_FILTERX_FUNC,
+    .name = "otel_logrecord",
+    .construct = grpc_otel_filterx_logrecord_contruct_new,
+  },
 };
 
 gboolean
 otel_module_init(PluginContext *context, CfgArgs *args)
 {
+  filterx_type_init(&FILTERX_TYPE_NAME(olr));
   plugin_register(context, otel_plugins, G_N_ELEMENTS(otel_plugins));
 
   return TRUE;

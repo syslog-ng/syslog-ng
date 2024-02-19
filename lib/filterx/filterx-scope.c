@@ -71,6 +71,7 @@ filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg)
       if (!(value->modified_in_place || value->assigned))
         continue;
       LogMessageValueType t;
+      g_string_truncate(buffer, 0);
       if (!filterx_object_marshal(value, buffer, &t))
         g_assert_not_reached();
       log_msg_set_value_with_type(msg, handle, buffer->str, buffer->len, t);
