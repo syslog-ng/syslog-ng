@@ -90,8 +90,16 @@ public class SyslogNgClassLoader extends URLClassLoader {
     List<String> result = new ArrayList<String>();
     File f = new File(path);
     final String basename = f.getName();
-    String dirname = f.getParent();
-    File dir = new File(dirname);
+    File dir;
+    try {
+      String dirname = f.getParent();
+      dir = new File(dirname);
+    }
+    catch (NullPointerException e) {
+      InternalMessageSender.error("Error. Null pointer dereference. Path or pattern might not exist:" + path + ". Error:" + e.getMessage());
+      e.printStackTrace(System.err);
+      return result;
+    }
     File[] files = dir.listFiles(new FilenameFilter() {
 
       public boolean accept(File dir, String name) {

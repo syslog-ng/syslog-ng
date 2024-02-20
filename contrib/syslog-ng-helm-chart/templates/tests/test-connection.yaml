@@ -7,9 +7,14 @@ metadata:
   annotations:
     "helm.sh/hook": test-success
 spec:
+  automountServiceAccountToken: false
   containers:
     - name: wget
       image: busybox
       command: ['wget']
       args: ['{{ include "syslog-ng.fullname" . }}:{{ .Values.service.port }}']
+      resources:
+        limits:
+          cpu: 100m
+          memory: 256Mi
   restartPolicy: Never
