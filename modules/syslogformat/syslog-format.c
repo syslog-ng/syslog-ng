@@ -1023,6 +1023,7 @@ _syslog_format_parse_legacy(const MsgFormatOptions *parse_options,
 
   _syslog_format_parse_legacy_message(msg, &src, &left, parse_options);
 
+  log_msg_set_value_to_string(msg, LM_V_MSGFORMAT, "rfc3164");
   return TRUE;
 error:
   *position = src - data;
@@ -1118,6 +1119,7 @@ _syslog_format_parse_syslog_proto(const MsgFormatOptions *parse_options, const g
   if (!_syslog_format_parse_message_column(msg, &src, &left, parse_options))
     goto error;
 
+  log_msg_set_value_to_string(msg, LM_V_MSGFORMAT, "rfc5424");
 
   return TRUE;
 error:

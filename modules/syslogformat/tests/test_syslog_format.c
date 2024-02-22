@@ -86,6 +86,45 @@ Test(syslog_format, cisco_sequence_id_non_zero_termination)
   log_msg_unref(msg);
 }
 
+Test(syslog_format, rfc3164_style_message_when_parsed_as_rfc5424_is_marked_as_such_in_msgformat)
+{
+  const gchar *data = "<189>Feb  3 12:34:56 host program[pid]: message";
+  gsize data_length = strlen(data);
+
+  parse_options.flags |= LP_SYSLOG_PROTOCOL;
+  LogMessage *msg = log_msg_new_empty();
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  assert_log_message_value_by_name(msg, "HOST", "host");
+  assert_log_message_value_by_name(msg, "PROGRAM", "program");
+  assert_log_message_value_by_name(msg, "PID", "pid");
+  assert_log_message_value_by_name(msg, "MSG", "message");
+  assert_log_message_value_by_name(msg, "MSGFORMAT", "rfc3164");
+
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, rfc5424_style_message_when_parsed_as_rfc5424_is_marked_as_such_in_msgformat)
+{
+  const gchar *data = "<189>1 2024-02-03T12:34:56Z host program pid msgid [foo bar=baz] message";
+  gsize data_length = strlen(data);
+
+  parse_options.flags |= LP_SYSLOG_PROTOCOL;
+  LogMessage *msg = log_msg_new_empty();
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  assert_log_message_value_by_name(msg, "HOST", "host");
+  assert_log_message_value_by_name(msg, "PROGRAM", "program");
+  assert_log_message_value_by_name(msg, "PID", "pid");
+  assert_log_message_value_by_name(msg, "MSGID", "msgid");
+  assert_log_message_value_by_name(msg, "MSG", "message");
+  assert_log_message_value_by_name(msg, "MSGFORMAT", "rfc5424");
+
+  log_msg_unref(msg);
+}
+
 Test(syslog_format, minimal_non_zero_terminated_numeric_message_is_parsed_as_program_name)
 {
   const gchar *data = "<189>65536";
