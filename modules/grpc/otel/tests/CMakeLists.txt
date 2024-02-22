@@ -18,3 +18,10 @@ add_unit_test(
   SOURCES test-syslog-ng-otlp.cpp
   INCLUDES ${OTEL_PROTO_BUILDDIR}
   DEPENDS otel-cpp)
+
+add_unit_test(
+  CRITERION
+  TARGET test_otel_filterx
+  SOURCES test-otel-filterx.cpp
+  INCLUDES ${OTEL_PROTO_BUILDDIR}
+  DEPENDS otel-cpp otel_filterx_logrecord_cpp)
