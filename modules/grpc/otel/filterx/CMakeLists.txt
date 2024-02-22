@@ -8,6 +8,8 @@ set(OTEL_LOGRECORD_CPP_SOURCES
   otel-filterx.h
   otel-logrecord.cpp
   otel-logrecord.hpp
+  otel-resource.cpp
+  otel-resource.hpp
   protobuf-field.cpp
   protobuf-field.hpp
 )

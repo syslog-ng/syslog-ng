@@ -61,6 +61,11 @@ static Plugin otel_plugins[] =
     .name = "otel_logrecord",
     .construct = grpc_otel_filterx_logrecord_contruct_new,
   },
+  {
+    .type = LL_CONTEXT_FILTERX_FUNC,
+    .name = "otel_resource",
+    .construct = grpc_otel_filterx_resource_construct_new,
+  },
 };
 
 gboolean
