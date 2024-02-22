@@ -64,7 +64,7 @@ Test(syslog_format, parser_should_not_spin_on_non_zero_terminated_input, .timeou
   /* chosen carefully to reproduce a bug */
   gsize data_length = 27;
 
-  LogMessage *msg = msg_format_construct_message(&parse_options, (const guchar *) data, data_length);
+  LogMessage *msg = log_msg_new_empty();
 
   gsize problem_position;
   cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
@@ -77,7 +77,7 @@ Test(syslog_format, cisco_sequence_id_non_zero_termination)
   const gchar *data = "<189>65536: ";
   gsize data_length = strlen(data);
 
-  LogMessage *msg = msg_format_construct_message(&parse_options, (const guchar *) data, data_length);
+  LogMessage *msg = log_msg_new_empty();
 
   gsize problem_position;
   cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
@@ -91,7 +91,7 @@ Test(syslog_format, minimal_non_zero_terminated_numeric_message_is_parsed_as_pro
   const gchar *data = "<189>65536";
   gsize data_length = strlen(data);
 
-  LogMessage *msg = msg_format_construct_message(&parse_options, (const guchar *) data, data_length);
+  LogMessage *msg = log_msg_new_empty();
 
   gsize problem_position;
   cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
