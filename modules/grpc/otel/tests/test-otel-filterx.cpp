@@ -37,6 +37,16 @@ using namespace opentelemetry::proto::logs::v1;
 using namespace opentelemetry::proto::common::v1;
 using namespace google::protobuf::util;
 
+Test(otel_filterx, logrecord_empty)
+{
+  FilterXOtelLogRecord *filterx_otel_logrecord = (FilterXOtelLogRecord *) otel_logrecord(NULL);
+  cr_assert(filterx_otel_logrecord);
+
+  cr_assert(MessageDifferencer::Equals(LogRecord(), filterx_otel_logrecord->cpp->GetValue()));
+
+  filterx_object_unref(&filterx_otel_logrecord->super);
+}
+
 Test(otel_filterx, logrecord_from_protobuf)
 {
   LogRecord log_record;
@@ -75,6 +85,18 @@ Test(otel_filterx, logrecord_from_protobuf_malformed_data)
 {
   GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
   g_ptr_array_insert(args, 0, filterx_protobuf_new("1234", 4));
+
+  FilterXOtelLogRecord *filterx_otel_logrecord = (FilterXOtelLogRecord *) otel_logrecord(args);
+  cr_assert_not(filterx_otel_logrecord);
+
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(otel_filterx, logrecord_too_many_args)
+{
+  GPtrArray *args = g_ptr_array_new_full(2, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(args, 0, filterx_string_new("foo", 3));
+  g_ptr_array_insert(args, 1, filterx_protobuf_new("bar", 3));
 
   FilterXOtelLogRecord *filterx_otel_logrecord = (FilterXOtelLogRecord *) otel_logrecord(args);
   cr_assert_not(filterx_otel_logrecord);
