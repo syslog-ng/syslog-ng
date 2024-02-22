@@ -27,7 +27,7 @@
 
 #include "compat/cpp-start.h"
 #include "filterx/filterx-object.h"
-#include "otel-logrecord.h"
+#include "otel-filterx.h"
 #include "compat/cpp-end.h"
 
 #include "opentelemetry/proto/logs/v1/logs.pb.h"

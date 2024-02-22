@@ -24,7 +24,7 @@
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
-#include "filterx/otel-logrecord.h"
+#include "filterx/otel-filterx.h"
 
 
 extern CfgParser otel_parser;

@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef OTEL_LOG_RECORD_H
-#define OTEL_LOG_RECORD_H
+#ifndef OTEL_FILTERX_H
+#define OTEL_FILTERX_H
 
 #include "syslog-ng.h"
 
