@@ -117,6 +117,7 @@ msg_format_process_message(MsgFormatOptions *options, LogMessage *msg,
     {
       msg->pri = options->default_pri;
 
+      log_msg_set_value_to_string(msg, LM_V_MSGFORMAT, "raw");
       if (options->flags & LP_SANITIZE_UTF8)
         {
           if (!g_utf8_validate((gchar *) data, length, NULL))
