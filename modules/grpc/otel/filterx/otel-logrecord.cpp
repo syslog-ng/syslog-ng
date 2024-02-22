@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <cstdio>
 #include <memory>
+#include <stdexcept>
 
 using namespace syslogng::grpc::otel;
 
@@ -143,7 +144,14 @@ _filterx_otel_logrecord_clone(FilterXObject *s)
 
   FilterXOtelLogRecord *folr = g_new0(FilterXOtelLogRecord, 1);
   filterx_object_init_instance((FilterXObject *)folr, &FILTERX_TYPE_NAME(olr));
-  folr->cpp = new OtelLogRecordCpp(*self->cpp, folr);
+  try
+    {
+      folr->cpp = new OtelLogRecordCpp(*self->cpp, folr);
+    }
+  catch (const std::runtime_error &)
+    {
+      g_assert_not_reached();
+    }
 
   return folr->cpp->FilterX();
 }
@@ -197,7 +205,21 @@ otel_logrecord(GPtrArray *args)
 {
   FilterXOtelLogRecord *folr = g_new0(FilterXOtelLogRecord, 1);
   filterx_object_init_instance((FilterXObject *)folr, &FILTERX_TYPE_NAME(olr));
-  folr->cpp = new OtelLogRecordCpp(folr);
+
+  try
+    {
+      if (!args || args->len == 0)
+        folr->cpp = new OtelLogRecordCpp(folr);
+      else
+        throw std::runtime_error("Invalid number of arguments");
+    }
+  catch (const std::runtime_error &e)
+    {
+      msg_error("FilterX: Failed to create OTel LogRecord object", evt_tag_str("error", e.what()));
+      filterx_object_unref(&folr->super);
+      return NULL;
+    }
+
   return folr->cpp->FilterX();
 }
 
