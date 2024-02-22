@@ -9,6 +9,8 @@ modules_grpc_otel_filterx_libfilterx_la_SOURCES = \
   modules/grpc/otel/filterx/otel-logrecord.hpp \
   modules/grpc/otel/filterx/otel-resource.cpp \
   modules/grpc/otel/filterx/otel-resource.hpp \
+  modules/grpc/otel/filterx/otel-scope.cpp \
+  modules/grpc/otel/filterx/otel-scope.hpp \
   modules/grpc/otel/filterx/protobuf-field.cpp \
   modules/grpc/otel/filterx/protobuf-field.hpp
 

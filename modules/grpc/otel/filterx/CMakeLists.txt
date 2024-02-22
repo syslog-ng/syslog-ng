@@ -10,6 +10,8 @@ set(OTEL_LOGRECORD_CPP_SOURCES
   otel-logrecord.hpp
   otel-resource.cpp
   otel-resource.hpp
+  otel-scope.cpp
+  otel-scope.hpp
   protobuf-field.cpp
   protobuf-field.hpp
 )

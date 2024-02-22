@@ -22,6 +22,7 @@
 
 #include "filterx/otel-logrecord.hpp"
 #include "filterx/otel-resource.hpp"
+#include "filterx/otel-scope.hpp"
 
 #include "compat/cpp-start.h"
 #include "filterx/object-string.h"
@@ -169,6 +170,75 @@ Test(otel_filterx, resource_too_many_args)
 
   FilterXOtelResource *filterx_otel_resource = (FilterXOtelResource *) otel_resource_new(args);
   cr_assert_not(filterx_otel_resource);
+
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(otel_filterx, scope_empty)
+{
+  FilterXOtelScope *filterx_otel_scope = (FilterXOtelScope *) otel_scope_new(NULL);
+  cr_assert(filterx_otel_scope);
+
+  cr_assert(MessageDifferencer::Equals(opentelemetry::proto::common::v1::InstrumentationScope(),
+                                       filterx_otel_scope->cpp->get_value()));
+
+  filterx_object_unref(&filterx_otel_scope->super);
+}
+
+Test(otel_filterx, scope_from_protobuf)
+{
+  opentelemetry::proto::common::v1::InstrumentationScope scope;
+  scope.set_dropped_attributes_count(42);
+  KeyValue *attribute = scope.add_attributes();
+  scope.set_name("name");
+  scope.set_version("version");
+  attribute->set_key("attribute_key");
+  attribute->mutable_value()->set_int_value(42);
+
+  std::string serialized_scope = scope.SerializePartialAsString();
+  GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(args, 0, filterx_protobuf_new(serialized_scope.c_str(), serialized_scope.length()));
+
+  FilterXOtelScope *filterx_otel_scope = (FilterXOtelScope *) otel_scope_new(args);
+  cr_assert(filterx_otel_scope);
+
+  const opentelemetry::proto::common::v1::InstrumentationScope &scope_from_filterx = filterx_otel_scope->cpp->get_value();
+  cr_assert(MessageDifferencer::Equals(scope, scope_from_filterx));
+
+  filterx_object_unref(&filterx_otel_scope->super);
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(otel_filterx, scope_from_protobuf_invalid_arg)
+{
+  GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(args, 0, filterx_string_new("", 0));
+
+  FilterXOtelScope *filterx_otel_scope = (FilterXOtelScope *) otel_scope_new(args);
+  cr_assert_not(filterx_otel_scope);
+
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(otel_filterx, scope_from_protobuf_malformed_data)
+{
+  GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(args, 0, filterx_protobuf_new("1234", 4));
+
+  FilterXOtelScope *filterx_otel_scope = (FilterXOtelScope *) otel_scope_new(args);
+  cr_assert_not(filterx_otel_scope);
+
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(otel_filterx, scope_too_many_args)
+{
+  GPtrArray *args = g_ptr_array_new_full(2, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(args, 0, filterx_string_new("foo", 3));
+  g_ptr_array_insert(args, 1, filterx_protobuf_new("bar", 3));
+
+  FilterXOtelScope *filterx_otel_scope = (FilterXOtelScope *) otel_scope_new(args);
+  cr_assert_not(filterx_otel_scope);
 
   g_ptr_array_free(args, TRUE);
 }
