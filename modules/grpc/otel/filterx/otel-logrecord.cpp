@@ -101,6 +101,18 @@ OtelLogRecordCpp::OtelLogRecordCpp(FilterXOtelLogRecord *folr) : super(folr)
 {
 }
 
+OtelLogRecordCpp::OtelLogRecordCpp(FilterXOtelLogRecord *folr, FilterXObject *protobuf_object) : super(folr)
+{
+  gsize length;
+  const gchar *value = filterx_protobuf_get_value(protobuf_object, &length);
+
+  if (!value)
+    throw std::runtime_error("Argument is not a protobuf object");
+
+  if (!logRecord.ParsePartialFromArray(value, length))
+    throw std::runtime_error("Failed to parse from protobuf object");
+}
+
 OtelLogRecordCpp::OtelLogRecordCpp(const OtelLogRecordCpp &o, FilterXOtelLogRecord *folr) : super(folr),
   logRecord(o.logRecord)
 {
@@ -127,6 +139,12 @@ FilterXObject *
 OtelLogRecordCpp::GetField(const gchar *attribute)
 {
   return otel_converter.Get(this->logRecord, attribute);
+}
+
+const LogRecord &
+OtelLogRecordCpp::GetValue() const
+{
+  return this->logRecord;
 }
 
 /* C Wrappers */
@@ -210,6 +228,8 @@ otel_logrecord(GPtrArray *args)
     {
       if (!args || args->len == 0)
         folr->cpp = new OtelLogRecordCpp(folr);
+      else if (args->len == 1)
+        folr->cpp = new OtelLogRecordCpp(folr, (FilterXObject *) g_ptr_array_index(args, 0));
       else
         throw std::runtime_error("Invalid number of arguments");
     }
