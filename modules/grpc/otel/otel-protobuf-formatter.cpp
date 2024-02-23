@@ -619,12 +619,14 @@ ProtobufFormatter::set_syslog_ng_macros(LogMessage *msg, LogRecord &log_record)
   gssize len;
   const char *value;
 
-  value = log_msg_get_value_by_name_with_type(msg, "PRI", &len, &type);
+  static const NVHandle PRI_HANDLE = log_msg_get_value_handle("PRI");
+  value = log_msg_get_value_with_type(msg, PRI_HANDLE, &len, &type);
   KeyValue *pri_attr = macros_kvlist->add_values();
   pri_attr->set_key("PRI");
   pri_attr->mutable_value()->set_bytes_value(value, len);
 
-  value = log_msg_get_value_by_name_with_type(msg, "TAGS", &len, &type);
+  static const NVHandle TAGS_HANDLE = log_msg_get_value_handle("TAGS");
+  value = log_msg_get_value_with_type(msg, TAGS_HANDLE, &len, &type);
   KeyValue *tags_attr = macros_kvlist->add_values();
   tags_attr->set_key("TAGS");
   tags_attr->mutable_value()->set_bytes_value(value, len);
