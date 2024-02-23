@@ -26,6 +26,7 @@
 
 #include "compat/cpp-start.h"
 #include "filterx/object-string.h"
+#include "filterx/object-primitive.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "compat/cpp-end.h"
@@ -39,6 +40,35 @@ using namespace opentelemetry::proto::logs::v1;
 using namespace opentelemetry::proto::common::v1;
 using namespace opentelemetry::proto::resource::v1;
 using namespace google::protobuf::util;
+
+static void
+_assert_filterx_integer_attribute(FilterXObject *obj, const std::string &attribute_name, gint64 expected_value)
+{
+  FilterXObject *filterx_integer = filterx_object_getattr(obj, attribute_name.c_str());
+  cr_assert(filterx_object_is_type(filterx_integer, &FILTERX_TYPE_NAME(integer)));
+
+  GenericNumber value = filterx_primitive_get_value(filterx_integer);
+  cr_assert_eq(gn_as_int64(&value), expected_value);
+
+  filterx_object_unref(filterx_integer);
+}
+
+static void
+_assert_filterx_string_attribute(FilterXObject *obj, const std::string &attribute_name,
+                                 const std::string &expected_value)
+{
+  FilterXObject *filterx_string = filterx_object_getattr(obj, attribute_name.c_str());
+  cr_assert(filterx_object_is_type(filterx_string, &FILTERX_TYPE_NAME(string)));
+
+  gsize len;
+  const gchar *value = filterx_string_get_value(filterx_string, &len);
+  cr_assert_eq(expected_value.compare(std::string(value, len)), 0);
+
+  filterx_object_unref(filterx_string);
+}
+
+
+/* LogRecord */
 
 Test(otel_filterx, logrecord_empty)
 {
@@ -107,6 +137,9 @@ Test(otel_filterx, logrecord_too_many_args)
   g_ptr_array_free(args, TRUE);
 }
 
+
+/* Resource */
+
 Test(otel_filterx, resource_empty)
 {
   FilterXOtelResource *filterx_otel_resource = (FilterXOtelResource *) otel_resource_new(NULL);
@@ -173,6 +206,59 @@ Test(otel_filterx, resource_too_many_args)
 
   g_ptr_array_free(args, TRUE);
 }
+
+Test(otel_filterx, resource_get_field)
+{
+  opentelemetry::proto::resource::v1::Resource resource;
+  resource.set_dropped_attributes_count(42);
+
+  std::string serialized_resource = resource.SerializePartialAsString();
+  GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(args, 0, filterx_protobuf_new(serialized_resource.c_str(), serialized_resource.length()));
+
+  FilterXObject *filterx_otel_resource = (FilterXObject *) otel_resource_new(args);
+  cr_assert(filterx_otel_resource);
+
+  _assert_filterx_integer_attribute(filterx_otel_resource, "dropped_attributes_count", 42);
+
+  // TODO: check the "attributes" repeated KeyValue when we implement support for that.
+
+  FilterXObject *filterx_invalid = filterx_object_getattr(filterx_otel_resource, "invalid_attr");
+  cr_assert_not(filterx_invalid);
+
+  filterx_object_unref(filterx_otel_resource);
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(otel_filterx, resource_set_field)
+{
+  FilterXObject *filterx_otel_resource = (FilterXObject *) otel_resource_new(NULL);
+  cr_assert(filterx_otel_resource);
+
+  FilterXObject *filterx_integer = filterx_integer_new(42);
+  cr_assert(filterx_object_setattr(filterx_otel_resource, "dropped_attributes_count", filterx_integer));
+
+  // TODO: check the "attributes" repeated KeyValue when we implement support for that.
+
+  cr_assert_not(filterx_object_setattr(filterx_otel_resource, "invalid_attr", filterx_integer));
+
+  GString *serialized = g_string_new(NULL);
+  LogMessageValueType type;
+  cr_assert(filterx_object_marshal(filterx_otel_resource, serialized, &type));
+
+  cr_assert_eq(type, LM_VT_PROTOBUF);
+
+  opentelemetry::proto::resource::v1::Resource resource;
+  cr_assert(resource.ParsePartialFromArray(serialized->str, serialized->len));
+  cr_assert_eq(resource.dropped_attributes_count(), 42);
+
+  g_string_free(serialized, TRUE);
+  filterx_object_unref(filterx_integer);
+  filterx_object_unref(filterx_otel_resource);
+}
+
+
+/* Scope */
 
 Test(otel_filterx, scope_empty)
 {
@@ -242,6 +328,64 @@ Test(otel_filterx, scope_too_many_args)
 
   g_ptr_array_free(args, TRUE);
 }
+
+Test(otel_filterx, scope_get_field)
+{
+  opentelemetry::proto::common::v1::InstrumentationScope scope;
+  scope.set_dropped_attributes_count(42);
+  scope.set_name("foobar");
+
+  std::string serialized_scope = scope.SerializePartialAsString();
+  GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(args, 0, filterx_protobuf_new(serialized_scope.c_str(), serialized_scope.length()));
+
+  FilterXObject *filterx_otel_scope = (FilterXObject *) otel_scope_new(args);
+  cr_assert(filterx_otel_scope);
+
+  _assert_filterx_integer_attribute(filterx_otel_scope, "dropped_attributes_count", 42);
+  _assert_filterx_string_attribute(filterx_otel_scope, "name", "foobar");
+
+  // TODO: check the "attributes" repeated KeyValue when we implement support for that.
+
+  FilterXObject *filterx_invalid = filterx_object_getattr(filterx_otel_scope, "invalid_attr");
+  cr_assert_not(filterx_invalid);
+
+  filterx_object_unref(filterx_otel_scope);
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(otel_filterx, scope_set_field)
+{
+  FilterXObject *filterx_otel_scope = (FilterXObject *) otel_scope_new(NULL);
+  cr_assert(filterx_otel_scope);
+
+  FilterXObject *filterx_integer = filterx_integer_new(42);
+  cr_assert(filterx_object_setattr(filterx_otel_scope, "dropped_attributes_count", filterx_integer));
+
+  FilterXObject *filterx_string = filterx_string_new("foobar", -1);
+  cr_assert(filterx_object_setattr(filterx_otel_scope, "name", filterx_string));
+
+  // TODO: check the "attributes" repeated KeyValue when we implement support for that.
+
+  cr_assert_not(filterx_object_setattr(filterx_otel_scope, "invalid_attr", filterx_integer));
+
+  GString *serialized = g_string_new(NULL);
+  LogMessageValueType type;
+  cr_assert(filterx_object_marshal(filterx_otel_scope, serialized, &type));
+
+  cr_assert_eq(type, LM_VT_PROTOBUF);
+
+  opentelemetry::proto::common::v1::InstrumentationScope scope;
+  cr_assert(scope.ParsePartialFromArray(serialized->str, serialized->len));
+  cr_assert_eq(scope.dropped_attributes_count(), 42);
+  cr_assert_eq(scope.name().compare("foobar"), 0);
+
+  g_string_free(serialized, TRUE);
+  filterx_object_unref(filterx_string);
+  filterx_object_unref(filterx_integer);
+  filterx_object_unref(filterx_otel_scope);
+}
+
 
 void
 setup(void)

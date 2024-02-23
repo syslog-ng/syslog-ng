@@ -21,7 +21,7 @@
  */
 
 #include "otel-resource.hpp"
-#include "protobuf-field.hpp"
+#include "otel-field.hpp"
 
 #include "compat/cpp-start.h"
 #include "filterx/object-string.h"
@@ -62,15 +62,35 @@ Resource::marshal(void)
 bool
 Resource::set_field(const gchar *attribute, FilterXObject *value)
 {
-  // TODO
-  return false;
+  try
+    {
+      ProtoReflectors reflectors(resource, attribute);
+      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Set(&resource, attribute, value);
+    }
+  catch (const std::invalid_argument &e)
+    {
+      msg_error("FilterX: Failed to set OTel Resource field",
+                evt_tag_str("field_name", attribute),
+                evt_tag_str("error", e.what()));
+      return false;
+    }
 }
 
 FilterXObject *
 Resource::get_field(const gchar *attribute)
 {
-  // TODO
-  return NULL;
+  try
+    {
+      ProtoReflectors reflectors(resource, attribute);
+      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Get(resource, attribute);
+    }
+  catch (const std::invalid_argument &e)
+    {
+      msg_error("FilterX: Failed to get OTel Resource field",
+                evt_tag_str("field_name", attribute),
+                evt_tag_str("error", e.what()));
+      return nullptr;
+    }
 }
 
 const opentelemetry::proto::resource::v1::Resource &
