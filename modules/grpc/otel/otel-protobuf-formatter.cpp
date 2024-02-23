@@ -305,12 +305,16 @@ _get_and_set_AnyValue(LogMessage *msg, NVHandle handle, AnyValue *any_value)
 }
 
 gboolean
-_set_KeyValue_vp_fn(const gchar *name, LogMessageValueType type, const gchar *value,
-                    gsize value_len, gpointer user_data)
+_set_KeyValue_log_msg_foreach_fn(NVHandle handle, const gchar *name, const gchar *value, gssize value_len,
+                                 NVType type, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   RepeatedPtrField<KeyValue> *key_values = (RepeatedPtrField<KeyValue> *) args[0];
-  size_t prefix_len = *(size_t *) args[1];
+  const char *prefix = (const char *) args[1];
+  guint prefix_len = GPOINTER_TO_UINT(args[2]);
+
+  if (strncmp(name, prefix, prefix_len) != 0)
+    return FALSE;
 
   KeyValue *key_value = key_values->Add();
   key_value->set_key(name + prefix_len);
@@ -341,25 +345,12 @@ void
 ProtobufFormatter::get_and_set_repeated_KeyValues(LogMessage *msg, const char *prefix,
                                                   RepeatedPtrField<KeyValue> *key_values)
 {
-  ValuePairs *vp = value_pairs_new(cfg);
-  value_pairs_set_include_bytes(vp, TRUE);
-
-  std::string glob_pattern = prefix;
-  size_t prefix_len = glob_pattern.length();
-  glob_pattern.append("*");
-  value_pairs_add_glob_pattern(vp, glob_pattern.c_str(), TRUE);
-
-  LogTemplateOptions template_options;
-  log_template_options_defaults(&template_options);
-  LogTemplateEvalOptions options = {&template_options, LTZ_LOCAL, -1, NULL, LM_VT_STRING};
-
-  gpointer user_data[2];
+  gpointer user_data[3];
   user_data[0] = key_values;
-  user_data[1] = &prefix_len;
+  user_data[1] = (gpointer) prefix;
+  user_data[2] = GUINT_TO_POINTER(strlen(prefix));
 
-  value_pairs_foreach(vp, _set_KeyValue_vp_fn, msg, &options, &user_data);
-
-  value_pairs_unref(vp);
+  log_msg_values_foreach(msg, _set_KeyValue_log_msg_foreach_fn, user_data);
 }
 
 bool
