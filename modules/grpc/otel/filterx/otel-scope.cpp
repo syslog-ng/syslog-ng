@@ -21,7 +21,7 @@
  */
 
 #include "otel-scope.hpp"
-#include "protobuf-field.hpp"
+#include "otel-field.hpp"
 
 #include "compat/cpp-start.h"
 #include "filterx/object-string.h"
@@ -62,15 +62,35 @@ Scope::marshal(void)
 bool
 Scope::set_field(const gchar *attribute, FilterXObject *value)
 {
-  // TODO
-  return false;
+  try
+    {
+      ProtoReflectors reflectors(scope, attribute);
+      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Set(&scope, attribute, value);
+    }
+  catch (const std::invalid_argument &e)
+    {
+      msg_error("FilterX: Failed to set OTel Scope field",
+                evt_tag_str("field_name", attribute),
+                evt_tag_str("error", e.what()));
+      return false;
+    }
 }
 
 FilterXObject *
 Scope::get_field(const gchar *attribute)
 {
-  // TODO
-  return NULL;
+  try
+    {
+      ProtoReflectors reflectors(scope, attribute);
+      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Get(scope, attribute);
+    }
+  catch (const std::invalid_argument &e)
+    {
+      msg_error("FilterX: Failed to get OTel Scope field",
+                evt_tag_str("field_name", attribute),
+                evt_tag_str("error", e.what()));
+      return nullptr;
+    }
 }
 
 const opentelemetry::proto::common::v1::InstrumentationScope &
