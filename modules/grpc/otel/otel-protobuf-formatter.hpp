@@ -107,6 +107,7 @@ private:
   void set_syslog_ng_nv_pairs(LogMessage *msg, LogRecord &log_record);
   void set_syslog_ng_macros(LogMessage *msg, LogRecord &log_record);
   void set_syslog_ng_addresses(LogMessage *msg, LogRecord &log_record);
+  void set_syslog_ng_address_attrs(GSockAddr *sa, KeyValueList *address_attrs, bool include_port);
 
 private:
   GlobalConfig *cfg;
@@ -116,8 +117,6 @@ private:
     LogTemplateOptions template_options;
     LogTemplateEvalOptions template_eval_options;
   } syslog_ng;
-
-  void set_syslog_ng_address_attrs(GSockAddr *sa, KeyValueList *address_attrs, bool include_port);
 };
 
 }
