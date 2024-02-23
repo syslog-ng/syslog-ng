@@ -5,9 +5,13 @@ endif()
 # C++ code
 
 set(OTEL_LOGRECORD_CPP_SOURCES
+  otel-filterx.h
   otel-logrecord.cpp
   otel-logrecord.hpp
-  otel-logrecord.h
+  otel-resource.cpp
+  otel-resource.hpp
+  otel-scope.cpp
+  otel-scope.hpp
   protobuf-field.cpp
   protobuf-field.hpp
 )

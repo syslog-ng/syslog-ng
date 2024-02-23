@@ -24,7 +24,7 @@
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
-#include "filterx/otel-logrecord.h"
+#include "filterx/otel-filterx.h"
 
 
 extern CfgParser otel_parser;
@@ -60,6 +60,16 @@ static Plugin otel_plugins[] =
     .type = LL_CONTEXT_FILTERX_FUNC,
     .name = "otel_logrecord",
     .construct = grpc_otel_filterx_logrecord_contruct_new,
+  },
+  {
+    .type = LL_CONTEXT_FILTERX_FUNC,
+    .name = "otel_resource",
+    .construct = grpc_otel_filterx_resource_construct_new,
+  },
+  {
+    .type = LL_CONTEXT_FILTERX_FUNC,
+    .name = "otel_scope",
+    .construct = grpc_otel_filterx_scope_construct_new,
   },
 };
 
