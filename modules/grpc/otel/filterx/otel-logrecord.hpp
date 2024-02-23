@@ -46,12 +46,14 @@ class OtelLogRecordCpp
 {
 public:
   OtelLogRecordCpp(FilterXOtelLogRecord *folr);
+  OtelLogRecordCpp(FilterXOtelLogRecord *folr, FilterXObject *protobuf_object);
   OtelLogRecordCpp(OtelLogRecordCpp &o) = delete;
   OtelLogRecordCpp(OtelLogRecordCpp &&o) = delete;
   FilterXObject *FilterX();
   bool SetField(const gchar *attribute, FilterXObject *value);
   std::string Marshal(void);
   FilterXObject *GetField(const gchar *attribute);
+  const LogRecord &GetValue() const;
 private:
   FilterXOtelLogRecord *super;
   LogRecord logRecord;

@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <cstdio>
 #include <memory>
+#include <stdexcept>
 
 using namespace syslogng::grpc::otel;
 
@@ -100,6 +101,18 @@ OtelLogRecordCpp::OtelLogRecordCpp(FilterXOtelLogRecord *folr) : super(folr)
 {
 }
 
+OtelLogRecordCpp::OtelLogRecordCpp(FilterXOtelLogRecord *folr, FilterXObject *protobuf_object) : super(folr)
+{
+  gsize length;
+  const gchar *value = filterx_protobuf_get_value(protobuf_object, &length);
+
+  if (!value)
+    throw std::runtime_error("Argument is not a protobuf object");
+
+  if (!logRecord.ParsePartialFromArray(value, length))
+    throw std::runtime_error("Failed to parse from protobuf object");
+}
+
 OtelLogRecordCpp::OtelLogRecordCpp(const OtelLogRecordCpp &o, FilterXOtelLogRecord *folr) : super(folr),
   logRecord(o.logRecord)
 {
@@ -128,6 +141,12 @@ OtelLogRecordCpp::GetField(const gchar *attribute)
   return otel_converter.Get(this->logRecord, attribute);
 }
 
+const LogRecord &
+OtelLogRecordCpp::GetValue() const
+{
+  return this->logRecord;
+}
+
 /* C Wrappers */
 
 gpointer
@@ -143,7 +162,14 @@ _filterx_otel_logrecord_clone(FilterXObject *s)
 
   FilterXOtelLogRecord *folr = g_new0(FilterXOtelLogRecord, 1);
   filterx_object_init_instance((FilterXObject *)folr, &FILTERX_TYPE_NAME(olr));
-  folr->cpp = new OtelLogRecordCpp(*self->cpp, folr);
+  try
+    {
+      folr->cpp = new OtelLogRecordCpp(*self->cpp, folr);
+    }
+  catch (const std::runtime_error &)
+    {
+      g_assert_not_reached();
+    }
 
   return folr->cpp->FilterX();
 }
@@ -197,7 +223,23 @@ otel_logrecord(GPtrArray *args)
 {
   FilterXOtelLogRecord *folr = g_new0(FilterXOtelLogRecord, 1);
   filterx_object_init_instance((FilterXObject *)folr, &FILTERX_TYPE_NAME(olr));
-  folr->cpp = new OtelLogRecordCpp(folr);
+
+  try
+    {
+      if (!args || args->len == 0)
+        folr->cpp = new OtelLogRecordCpp(folr);
+      else if (args->len == 1)
+        folr->cpp = new OtelLogRecordCpp(folr, (FilterXObject *) g_ptr_array_index(args, 0));
+      else
+        throw std::runtime_error("Invalid number of arguments");
+    }
+  catch (const std::runtime_error &e)
+    {
+      msg_error("FilterX: Failed to create OTel LogRecord object", evt_tag_str("error", e.what()));
+      filterx_object_unref(&folr->super);
+      return NULL;
+    }
+
   return folr->cpp->FilterX();
 }
 
