@@ -72,6 +72,19 @@ log {{
     config.set_raw_config(preamble)
     return (file_true, file_false)
 
+# TODO: take care of _evaluate_statement methods result, to fix this test
+# def test_filterx_falsey_value_assign(config, syslog_ng):
+#     (file_true, file_false) = create_config(
+#         config, """
+#                     $myvar = 0;
+#                     $MSG = $myvar; """,
+#     )
+#     syslog_ng.start(config)
+
+#     assert file_true.get_stats()["processed"] == 1
+#     assert "processed" not in file_false.get_stats()
+#     assert file_true.read_log() == "0\n"
+
 
 def test_otel_logrecord_int32_setter_getter(config, syslog_ng):
     (file_true, file_false) = create_config(
@@ -129,19 +142,133 @@ def test_otel_logrecord_datetime_setter_getter(config, syslog_ng):
     assert file_true.read_log() == "1701353998.123000+00:00\n"
 
 
-# upcoming feature will change this behaviour
-def test_otel_logrecord_body_setter_getter(config, syslog_ng):
+def test_otel_logrecord_body_string_setter_getter(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
                                             $olr = otel_logrecord();
-                                            $olr.body = "my body";
+                                            $olr.body = ${values.str};
                                             $MSG = $olr.body; """,
     )
     syslog_ng.start(config)
 
-    assert "processed" not in file_true.get_stats()
-    assert file_false.get_stats()["processed"] == 1
-    assert file_false.read_log() == "foobar\n"
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "string\n"
+
+
+def test_otel_logrecord_body_bool_setter_getter(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+                                            $olr = otel_logrecord();
+                                            $olr.body = ${values.bool};
+                                            $MSG = $olr.body; """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "true\n"
+
+
+def test_otel_logrecord_body_int_setter_getter(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+                                            $olr = otel_logrecord();
+                                            $olr.body = ${values.int};
+                                            $MSG = $olr.body; """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "5\n"
+
+
+def test_otel_logrecord_body_double_setter_getter(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+                                            $olr = otel_logrecord();
+                                            $olr.body = ${values.double};
+                                            $MSG = $olr.body; """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "32.5\n"
+
+
+def test_otel_logrecord_body_datetime_setter_getter(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+                                            $olr = otel_logrecord();
+                                            $olr.body = ${values.datetime};
+                                            $MSG = $olr.body; """,
+    )
+    syslog_ng.start(config)
+
+    # there is no implicit conversion back to datetime because anyvalue field
+    # does not distinguish int_value and datetime.
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "1701353998123000\n"
+
+
+# TODO: figure out null type's proper behaviour
+# def test_otel_logrecord_body_null_setter_getter(config, syslog_ng):
+#     (file_true, file_false) = create_config(
+#         config, """
+#                                             $olr = otel_logrecord();
+#                                             $olr.body = ${values.null};
+#                                             $MSG = $olr.body; """,
+#     )
+#     syslog_ng.start(config)
+
+#     assert file_true.get_stats()["processed"] == 1
+#     assert "processed" not in file_false.get_stats()
+#     assert file_true.read_log() == "\n"
+
+
+def test_otel_logrecord_body_bytes_setter_getter(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+                                            $olr = otel_logrecord();
+                                            $olr.body = ${values.bytes};
+                                            $MSG = $olr.body; """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "binary whatever\n"
+
+
+def test_otel_logrecord_body_protobuf_setter_getter(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+                                            $olr = otel_logrecord();
+                                            $olr.body = ${values.protobuf};
+                                            $MSG = $olr.body; """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "this is not a valid protobuf!!\n"
+
+
+def test_otel_logrecord_body_json_setter_getter(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+                                            $olr = otel_logrecord();
+                                            $olr.body = ${values.json};
+                                            $MSG = $olr.body; """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == '{"emb_key1":"emb_key1 value","emb_key2":"emb_key2 value"}\n'
 
 
 def test_simple_true_condition(config, syslog_ng):

@@ -14,6 +14,8 @@ set(OTEL_LOGRECORD_CPP_SOURCES
   otel-scope.hpp
   protobuf-field.cpp
   protobuf-field.hpp
+  otel-field.hpp
+  otel-field.cpp
 )
 
 add_module(
