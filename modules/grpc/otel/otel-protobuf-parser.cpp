@@ -22,6 +22,7 @@
 
 
 #include "otel-protobuf-parser.hpp"
+#include "otel-logmsg-handles.hpp"
 
 #include "compat/cpp-start.h"
 #include "logmsg/type-hinting.h"
@@ -33,6 +34,7 @@
 
 #include <inttypes.h>
 
+using namespace syslogng::grpc::otel;
 using namespace google::protobuf;
 using namespace opentelemetry::proto::resource::v1;
 using namespace opentelemetry::proto::common::v1;
@@ -49,16 +51,16 @@ struct OtelProtobufParser_
 };
 
 static const gchar *
-_get_string_field(LogMessage *msg, const char *name, gssize *len)
+_get_string_field(LogMessage *msg, NVHandle handle, gssize *len)
 {
   LogMessageValueType type;
-  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, len, &type);
+  const gchar *value = log_msg_get_value_with_type(msg, handle, len, &type);
 
   if (type != LM_VT_STRING)
     {
       msg_error("OpenTelemetry: unexpected LogMessage type, while getting string field",
                 evt_tag_msg_reference(msg),
-                evt_tag_str("name", name),
+                evt_tag_str("name", log_msg_get_value_name(handle, NULL)),
                 evt_tag_str("type", log_msg_value_type_to_str(type)));
       return nullptr;
     }
@@ -66,18 +68,17 @@ _get_string_field(LogMessage *msg, const char *name, gssize *len)
   return value;
 }
 
-
 static const gchar *
-_get_protobuf_field(LogMessage *msg, const char *name, gssize *len)
+_get_protobuf_field(LogMessage *msg, NVHandle handle, gssize *len)
 {
   LogMessageValueType type;
-  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, len, &type);
+  const gchar *value = log_msg_get_value_with_type(msg, handle, len, &type);
 
   if (type != LM_VT_PROTOBUF)
     {
       msg_error("OpenTelemetry: unexpected LogMessage type, while getting protobuf field",
                 evt_tag_msg_reference(msg),
-                evt_tag_str("name", name),
+                evt_tag_str("name", log_msg_get_value_name(handle, NULL)),
                 evt_tag_str("type", log_msg_value_type_to_str(type)));
       return nullptr;
     }
@@ -89,12 +90,6 @@ static void
 _set_value(LogMessage *msg, const char *key, const char *value, LogMessageValueType type)
 {
   log_msg_set_value_by_name_with_type(msg, key, value, -1, type);
-}
-
-static void
-_set_value(LogMessage *msg, const char *key, const std::string &value, LogMessageValueType type)
-{
-  log_msg_set_value_by_name_with_type(msg, key, value.c_str(), value.length(), type);
 }
 
 static void
@@ -243,7 +238,7 @@ _parse_metadata(LogMessage *msg)
   const gchar *value;
 
   /* .otel.resource.<...> */
-  value = _get_protobuf_field(msg, ".otel_raw.resource", &len);
+  value = _get_protobuf_field(msg, logmsg_handle::RAW_RESOURCE, &len);
   if (!value)
     return false;
   Resource resource;
@@ -259,16 +254,16 @@ _parse_metadata(LogMessage *msg)
 
   /* .otel.resource.dropped_attributes_count */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, resource.dropped_attributes_count());
-  _set_value(msg, ".otel.resource.dropped_attributes_count", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::RESOURCE_DROPPED_ATTRIBUTES_COUNT, number_buf, LM_VT_INTEGER);
 
   /* .otel.resource.schema_url */
-  value = _get_string_field(msg, ".otel_raw.resource_schema_url", &len);
+  value = _get_string_field(msg, logmsg_handle::RAW_RESOURCE_SCHEMA_URL, &len);
   if (!value)
     return false;
-  log_msg_set_value_by_name_with_type(msg, ".otel.resource.schema_url", value, len, LM_VT_STRING);
+  log_msg_set_value_with_type(msg, logmsg_handle::RESOURCE_SCHEMA_URL, value, len, LM_VT_STRING);
 
   /* .otel.scope.<...> */
-  value = _get_protobuf_field(msg, ".otel_raw.scope", &len);
+  value = _get_protobuf_field(msg, logmsg_handle::RAW_SCOPE, &len);
   if (!value)
     return false;
   InstrumentationScope scope;
@@ -280,23 +275,23 @@ _parse_metadata(LogMessage *msg)
     }
 
   /* .otel.scope.name */
-  _set_value(msg, ".otel.scope.name", scope.name(), LM_VT_STRING);
+  _set_value(msg, logmsg_handle::SCOPE_NAME, scope.name(), LM_VT_STRING);
 
   /* .otel.scope.version */
-  _set_value(msg, ".otel.scope.version", scope.version(), LM_VT_STRING);
+  _set_value(msg, logmsg_handle::SCOPE_VERSION, scope.version(), LM_VT_STRING);
 
   /* .otel.scope.attributes */
   _add_repeated_KeyValue_fields(msg, ".otel.scope.attributes", scope.attributes());
 
   /* .otel.scope.dropped_attributes_count */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, scope.dropped_attributes_count());
-  _set_value(msg, ".otel.scope.dropped_attributes_count", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::SCOPE_DROPPED_ATTRIBUTES_COUNT, number_buf, LM_VT_INTEGER);
 
   /* .otel.scope.schema_url */
-  value = _get_string_field(msg, ".otel_raw.scope_schema_url", &len);
+  value = _get_string_field(msg, logmsg_handle::RAW_SCOPE_SCHEMA_URL, &len);
   if (!value)
     return false;
-  log_msg_set_value_by_name_with_type(msg, ".otel.scope.schema_url", value, len, LM_VT_STRING);
+  log_msg_set_value_with_type(msg, logmsg_handle::SCOPE_SCHEMA_URL, value, len, LM_VT_STRING);
 
   return true;
 }
@@ -347,7 +342,7 @@ static bool
 _parse_log_record(LogMessage *msg)
 {
   gssize len;
-  const gchar *raw_value = _get_protobuf_field(msg, ".otel_raw.log", &len);
+  const gchar *raw_value = _get_protobuf_field(msg, logmsg_handle::RAW_LOG, &len);
   if (!raw_value)
     return false;
 
@@ -362,12 +357,12 @@ _parse_log_record(LogMessage *msg)
   char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
 
   /* .otel.type */
-  log_msg_set_value_by_name_with_type(msg, ".otel.type", "log", -1, LM_VT_STRING);
+  log_msg_set_value_with_type(msg, logmsg_handle::TYPE, "log", -1, LM_VT_STRING);
 
   /* .otel.log.time_unix_nano */
   const guint64 time_unix_nano = log_record.time_unix_nano();
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, time_unix_nano);
-  _set_value(msg, ".otel.log.time_unix_nano", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::LOG_TIME_UNIX_NANO, number_buf, LM_VT_INTEGER);
 
   if (time_unix_nano != 0)
     {
@@ -378,7 +373,7 @@ _parse_log_record(LogMessage *msg)
   /* .otel.log.observed_time_unix_nano */
   const guint64 observed_time_unix_nano = log_record.observed_time_unix_nano();
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, observed_time_unix_nano);
-  _set_value(msg, ".otel.log.observed_time_unix_nano", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::LOG_OBSERVED_TIME_UNIX_NANO, number_buf, LM_VT_INTEGER);
 
   if (observed_time_unix_nano != 0)
     {
@@ -388,12 +383,12 @@ _parse_log_record(LogMessage *msg)
 
   /* .otel.log.severity_number */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIi32, log_record.severity_number());
-  _set_value(msg, ".otel.log.severity_number", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::LOG_SEVERITY_NUMBER, number_buf, LM_VT_INTEGER);
 
   msg->pri = LOG_MAKEPRI(LOG_USER, _map_severity_number_to_syslog_pri(log_record.severity_number()));
 
   /* .otel.log.severity_text */
-  _set_value(msg, ".otel.log.severity_text", log_record.severity_text(), LM_VT_STRING);
+  _set_value(msg, logmsg_handle::LOG_SEVERITY_TEXT, log_record.severity_text(), LM_VT_STRING);
 
   /* MESSAGE */
   LogMessageValueType body_lmvt;
@@ -402,25 +397,24 @@ _parse_log_record(LogMessage *msg)
   _set_value(msg, LM_V_MESSAGE, body_str, body_lmvt);
 
   /* .otel.log.body */
-  NVHandle body_handle = log_msg_get_value_handle(".otel.log.body");
-  log_msg_set_value_indirect_with_type(msg, body_handle, LM_V_MESSAGE, 0, body_str.length(), body_lmvt);
+  log_msg_set_value_indirect_with_type(msg, logmsg_handle::LOG_BODY, LM_V_MESSAGE, 0, body_str.length(), body_lmvt);
 
   /* .otel.log.attributes */
   _add_repeated_KeyValue_fields(msg, ".otel.log.attributes", log_record.attributes());
 
   /* .otel.log.dropped_attributes_count */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, log_record.dropped_attributes_count());
-  _set_value(msg, ".otel.log.dropped_attributes_count", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::LOG_DROPPED_ATTRIBUTES_COUNT, number_buf, LM_VT_INTEGER);
 
   /* .otel.log.flags */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, log_record.flags());
-  _set_value(msg, ".otel.log.flags", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::LOG_FLAGS, number_buf, LM_VT_INTEGER);
 
   /* .otel.log.trace_id */
-  _set_value(msg, ".otel.log.trace_id", log_record.trace_id(), LM_VT_BYTES);
+  _set_value(msg, logmsg_handle::LOG_TRACE_ID, log_record.trace_id(), LM_VT_BYTES);
 
   /* .otel.log.span_id */
-  _set_value(msg, ".otel.log.span_id", log_record.span_id(), LM_VT_BYTES);
+  _set_value(msg, logmsg_handle::LOG_SPAN_ID, log_record.span_id(), LM_VT_BYTES);
 
   return true;
 }
@@ -562,10 +556,10 @@ _add_metric_data_sum_fields(LogMessage *msg, const Sum &sum)
 
   /* .otel.metric.data.sum.aggregation_temporality */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIi32, sum.aggregation_temporality());
-  _set_value(msg, ".otel.metric.data.sum.aggregation_temporality", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::METRIC_DATA_SUM_AGGREGATION_TEMPORALITY, number_buf, LM_VT_INTEGER);
 
   /* .otel.metric.data.sum.is_monotonic */
-  _set_value(msg, ".otel.metric.data.sum.is_monotonic", sum.is_monotonic() ? "true" : "false", LM_VT_BOOLEAN);
+  _set_value(msg, logmsg_handle::METRIC_DATA_SUM_IS_MONOTONIC, sum.is_monotonic() ? "true" : "false", LM_VT_BOOLEAN);
 }
 
 static void
@@ -664,7 +658,7 @@ _add_metric_data_histogram_fields(LogMessage *msg, const Histogram &histogram)
 
   /* .otel.metric.data.histogram.aggregation_temporality */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIi32, histogram.aggregation_temporality());
-  _set_value(msg, ".otel.metric.data.histogram.aggregation_temporality", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::METRIC_DATA_HISTOGRAM_AGGREGATION_TEMPORALITY, number_buf, LM_VT_INTEGER);
 }
 
 static void
@@ -777,7 +771,7 @@ _add_metric_data_exponential_histogram_fields(LogMessage *msg, const Exponential
 
   /* .otel.metric.data.exponential_histogram.aggregation_temporality */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIi32, exponential_histogram.aggregation_temporality());
-  _set_value(msg, ".otel.metric.data.exponential_histogram.aggregation_temporality", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::METRIC_DATA_EXPONENTIAL_HISTOGRAM_AGGREGATION_TEMPORALITY, number_buf, LM_VT_INTEGER);
 }
 
 static void
@@ -886,14 +880,14 @@ _add_metric_data_fields(LogMessage *msg, const Metric &metric)
 
   /* .otel.metric.data.type */
   if (type)
-    log_msg_set_value_by_name_with_type(msg, ".otel.metric.data.type", type, -1, LM_VT_STRING);
+    log_msg_set_value_with_type(msg, logmsg_handle::METRIC_DATA_TYPE, type, -1, LM_VT_STRING);
 }
 
 static bool
 _parse_metric(LogMessage *msg)
 {
   gssize len;
-  const gchar *raw_value = _get_protobuf_field(msg, ".otel_raw.metric", &len);
+  const gchar *raw_value = _get_protobuf_field(msg, logmsg_handle::RAW_METRIC, &len);
   if (!raw_value)
     return false;
 
@@ -906,16 +900,16 @@ _parse_metric(LogMessage *msg)
     }
 
   /* .otel.type */
-  log_msg_set_value_by_name_with_type(msg, ".otel.type", "metric", -1, LM_VT_STRING);
+  log_msg_set_value_with_type(msg, logmsg_handle::TYPE, "metric", -1, LM_VT_STRING);
 
   /* .otel.metric.name */
-  _set_value(msg, ".otel.metric.name", metric.name(), LM_VT_STRING);
+  _set_value(msg, logmsg_handle::METRIC_NAME, metric.name(), LM_VT_STRING);
 
   /* .otel.metric.description */
-  _set_value(msg, ".otel.metric.description", metric.description(), LM_VT_STRING);
+  _set_value(msg, logmsg_handle::METRIC_DESCRIPTION, metric.description(), LM_VT_STRING);
 
   /* .otel.metric.unit */
-  _set_value(msg, ".otel.metric.unit", metric.unit(), LM_VT_STRING);
+  _set_value(msg, logmsg_handle::METRIC_UNIT, metric.unit(), LM_VT_STRING);
 
   _add_metric_data_fields(msg, metric);
 
@@ -926,7 +920,7 @@ static bool
 _parse_span(LogMessage *msg)
 {
   gssize len;
-  const gchar *raw_value = _get_protobuf_field(msg, ".otel_raw.span", &len);
+  const gchar *raw_value = _get_protobuf_field(msg, logmsg_handle::RAW_SPAN, &len);
   if (!raw_value)
     return false;
 
@@ -939,45 +933,45 @@ _parse_span(LogMessage *msg)
     }
 
   /* .otel.type */
-  log_msg_set_value_by_name_with_type(msg, ".otel.type", "span", -1, LM_VT_STRING);
+  log_msg_set_value_with_type(msg, logmsg_handle::TYPE, "span", -1, LM_VT_STRING);
 
   std::string key_buffer = ".otel.span.";
   size_t key_prefix_length = key_buffer.length();
   char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
 
   /* .otel.span.trace_id */
-  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "trace_id", span.trace_id(), LM_VT_BYTES);
+  _set_value(msg, logmsg_handle::SPAN_TRACE_ID, span.trace_id(), LM_VT_BYTES);
 
   /* .otel.span.span_id */
-  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "span_id", span.span_id(), LM_VT_BYTES);
+  _set_value(msg, logmsg_handle::SPAN_SPAN_ID, span.span_id(), LM_VT_BYTES);
 
   /* .otel.span.trace_state */
-  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "trace_state", span.trace_state(), LM_VT_STRING);
+  _set_value(msg, logmsg_handle::SPAN_TRACE_STATE, span.trace_state(), LM_VT_STRING);
 
   /* .otel.span.parent_span_id */
-  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "parent_span_id", span.parent_span_id(), LM_VT_BYTES);
+  _set_value(msg, logmsg_handle::SPAN_PARENT_SPAN_ID, span.parent_span_id(), LM_VT_BYTES);
 
   /* .otel.span.name */
-  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "name", span.name(), LM_VT_STRING);
+  _set_value(msg, logmsg_handle::SPAN_NAME, span.name(), LM_VT_STRING);
 
   /* .otel.span.kind */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIi32, span.kind());
-  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "kind", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::SPAN_KIND, number_buf, LM_VT_INTEGER);
 
   /* .otel.span.start_time_unix_nano */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, span.start_time_unix_nano());
-  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "start_time_unix_nano", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::SPAN_START_TIME_UNIX_NANO, number_buf, LM_VT_INTEGER);
 
   /* .otel.span.end_time_unix_nano */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu64, span.end_time_unix_nano());
-  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "end_time_unix_nano", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::SPAN_END_TIME_UNIX_NANO, number_buf, LM_VT_INTEGER);
 
   /* .otel.span.attributes.<...> */
   _add_repeated_KeyValue_fields_with_prefix(msg, key_buffer, key_prefix_length, "attributes", span.attributes());
 
   /* .otel.span.dropped_attributes_count */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, span.dropped_attributes_count());
-  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "dropped_attributes_count", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::SPAN_DROPPED_ATTRIBUTES_COUNT, number_buf, LM_VT_INTEGER);
 
   /* .otel.span.events.<...> */
   key_buffer.resize(key_prefix_length);
@@ -1013,7 +1007,7 @@ _parse_span(LogMessage *msg)
 
   /* .otel.span.dropped_events_count */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, span.dropped_events_count());
-  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "dropped_events_count", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::SPAN_DROPPED_EVENTS_COUNT, number_buf, LM_VT_INTEGER);
 
   /* .otel.span.links.<...> */
   key_buffer.resize(key_prefix_length);
@@ -1051,20 +1045,17 @@ _parse_span(LogMessage *msg)
 
   /* .otel.span.dropped_links_count */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, span.dropped_links_count());
-  _set_value_with_prefix(msg, key_buffer, key_prefix_length, "dropped_links_count", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::SPAN_DROPPED_LINKS_COUNT, number_buf, LM_VT_INTEGER);
 
   /* .otel.span.status.<...> */
-  key_buffer.resize(key_prefix_length);
-  key_buffer.append("status.");
-  size_t length_with_status = key_buffer.length();
   const Status &status = span.status();
 
   /* .otel.span.status.message */
-  _set_value_with_prefix(msg, key_buffer, length_with_status, "message", status.message(), LM_VT_STRING);
+  _set_value(msg, logmsg_handle::SPAN_STATUS_MESSAGE, status.message(), LM_VT_STRING);
 
   /* .otel.span.status.code */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIi32, status.code());
-  _set_value_with_prefix(msg, key_buffer, length_with_status, "code", number_buf, LM_VT_INTEGER);
+  _set_value(msg, logmsg_handle::SPAN_STATUS_CODE, number_buf, LM_VT_INTEGER);
 
   return true;
 }
@@ -1072,14 +1063,14 @@ _parse_span(LogMessage *msg)
 static void
 _unset_raw_fields(LogMessage *msg)
 {
-  log_msg_unset_value_by_name(msg, ".otel_raw.resource");
-  log_msg_unset_value_by_name(msg, ".otel_raw.resource_schema_url");
-  log_msg_unset_value_by_name(msg, ".otel_raw.scope");
-  log_msg_unset_value_by_name(msg, ".otel_raw.scope_schema_url");
-  log_msg_unset_value_by_name(msg, ".otel_raw.type");
-  log_msg_unset_value_by_name(msg, ".otel_raw.log");
-  log_msg_unset_value_by_name(msg, ".otel_raw.metric");
-  log_msg_unset_value_by_name(msg, ".otel_raw.span");
+  log_msg_unset_value(msg, logmsg_handle::RAW_RESOURCE);
+  log_msg_unset_value(msg, logmsg_handle::RAW_RESOURCE_SCHEMA_URL);
+  log_msg_unset_value(msg, logmsg_handle::RAW_SCOPE);
+  log_msg_unset_value(msg, logmsg_handle::RAW_SCOPE_SCHEMA_URL);
+  log_msg_unset_value(msg, logmsg_handle::RAW_TYPE);
+  log_msg_unset_value(msg, logmsg_handle::RAW_LOG);
+  log_msg_unset_value(msg, logmsg_handle::RAW_METRIC);
+  log_msg_unset_value(msg, logmsg_handle::RAW_SPAN);
 }
 
 void
@@ -1098,50 +1089,50 @@ syslogng::grpc::otel::ProtobufParser::store_raw_metadata(LogMessage *msg, const 
 
   /* .otel_raw.resource */
   resource.SerializePartialToString(&serialized);
-  _set_value(msg, ".otel_raw.resource", serialized, LM_VT_PROTOBUF);
+  _set_value(msg, logmsg_handle::RAW_RESOURCE, serialized, LM_VT_PROTOBUF);
 
   /* .otel_raw.resource_schema_url */
-  _set_value(msg, ".otel_raw.resource_schema_url", resource_schema_url, LM_VT_STRING);
+  _set_value(msg, logmsg_handle::RAW_RESOURCE_SCHEMA_URL, resource_schema_url, LM_VT_STRING);
 
   /* .otel_raw.scope */
   scope.SerializePartialToString(&serialized);
-  _set_value(msg, ".otel_raw.scope", serialized, LM_VT_PROTOBUF);
+  _set_value(msg, logmsg_handle::RAW_SCOPE, serialized, LM_VT_PROTOBUF);
 
   /* .otel_raw.scope_schema_url */
-  _set_value(msg, ".otel_raw.scope_schema_url", scope_schema_url, LM_VT_STRING);
+  _set_value(msg, logmsg_handle::RAW_SCOPE_SCHEMA_URL, scope_schema_url, LM_VT_STRING);
 }
 
 void
 syslogng::grpc::otel::ProtobufParser::store_raw(LogMessage *msg, const LogRecord &log_record)
 {
   /* .otel_raw.type */
-  _set_value(msg, ".otel_raw.type", "log", LM_VT_STRING);
+  _set_value(msg, logmsg_handle::RAW_TYPE, "log", LM_VT_STRING);
 
   /* .otel_raw.log */
   std::string serialized = log_record.SerializePartialAsString();
-  _set_value(msg, ".otel_raw.log", serialized, LM_VT_PROTOBUF);
+  _set_value(msg, logmsg_handle::RAW_LOG, serialized, LM_VT_PROTOBUF);
 }
 
 void
 syslogng::grpc::otel::ProtobufParser::store_raw(LogMessage *msg, const Metric &metric)
 {
   /* .otel_raw.type */
-  _set_value(msg, ".otel_raw.type", "metric", LM_VT_STRING);
+  _set_value(msg, logmsg_handle::RAW_TYPE, "metric", LM_VT_STRING);
 
   /* .otel_raw.metric */
   std::string serialized = metric.SerializePartialAsString();
-  _set_value(msg, ".otel_raw.metric", serialized, LM_VT_PROTOBUF);
+  _set_value(msg, logmsg_handle::RAW_METRIC, serialized, LM_VT_PROTOBUF);
 }
 
 void
 syslogng::grpc::otel::ProtobufParser::store_raw(LogMessage *msg, const Span &span)
 {
   /* .otel_raw.type */
-  _set_value(msg, ".otel_raw.type", "span", LM_VT_STRING);
+  _set_value(msg, logmsg_handle::RAW_TYPE, "span", LM_VT_STRING);
 
   /* .otel_raw.span */
   std::string serialized = span.SerializePartialAsString();
-  _set_value(msg, ".otel_raw.span", serialized, LM_VT_PROTOBUF);
+  _set_value(msg, logmsg_handle::RAW_SPAN, serialized, LM_VT_PROTOBUF);
 }
 
 static void
@@ -1361,7 +1352,7 @@ syslogng::grpc::otel::ProtobufParser::process(LogMessage *msg)
 
   gssize len;
   LogMessageValueType log_msg_type;
-  const gchar *type = log_msg_get_value_by_name_with_type(msg, ".otel_raw.type", &len, &log_msg_type);
+  const gchar *type = log_msg_get_value_with_type(msg, logmsg_handle::RAW_TYPE, &len, &log_msg_type);
 
   if (log_msg_type == LM_VT_NULL)
     {

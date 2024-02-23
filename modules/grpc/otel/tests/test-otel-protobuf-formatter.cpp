@@ -23,6 +23,7 @@
 
 #include "otel-protobuf-formatter.hpp"
 #include "otel-protobuf-parser.hpp"
+#include "otel-logmsg-handles.hpp"
 
 #include "compat/cpp-start.h"
 #include "apphook.h"
@@ -1000,6 +1001,7 @@ setup(void)
 {
   app_startup();
   configuration = cfg_new_snippet();
+  otel_logmsg_handles_global_init();
 }
 
 void
