@@ -74,6 +74,7 @@ protected:
   void get_metadata_for_current_msg(LogMessage *msg);
 
   virtual ScopeLogs *lookup_scope_logs(LogMessage *msg);
+  virtual ScopeLogs *lookup_fallback_scope_logs(LogMessage *msg);
   virtual ScopeMetrics *lookup_scope_metrics(LogMessage *msg);
   virtual ScopeSpans *lookup_scope_spans(LogMessage *msg);
 
@@ -116,6 +117,8 @@ protected:
     InstrumentationScope scope;
     std::string scope_schema_url;
   } current_msg_metadata;
+
+  ScopeLogs *fallback_msg_scope_logs = nullptr;
 };
 
 }

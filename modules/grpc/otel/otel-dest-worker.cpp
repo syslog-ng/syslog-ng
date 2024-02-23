@@ -153,6 +153,38 @@ DestWorker::lookup_scope_logs(LogMessage *msg)
   return scope_logs;
 }
 
+ScopeLogs *
+DestWorker::lookup_fallback_scope_logs(LogMessage *msg)
+{
+  /*
+   * For fallback logs, most likely the resource and scope related fields are also empty.
+   * We can skip some LogMessage::get()s and NVTable iterations and Protobuf::Message comparisons.
+   */
+
+  if (fallback_msg_scope_logs)
+    return fallback_msg_scope_logs;
+
+  ResourceLogs *resource_logs = nullptr;
+  for (int i = 0; i < logs_service_request.resource_logs_size(); i++)
+    {
+      ResourceLogs *possible_resource_logs = logs_service_request.mutable_resource_logs(i);
+      if (MessageDifferencer::Equals(possible_resource_logs->resource(), current_msg_metadata.resource) &&
+          possible_resource_logs->schema_url() == current_msg_metadata.resource_schema_url)
+        {
+          resource_logs = possible_resource_logs;
+          break;
+        }
+    }
+  if (!resource_logs)
+    {
+      resource_logs = logs_service_request.add_resource_logs();
+    }
+
+  fallback_msg_scope_logs = resource_logs->add_scope_logs();
+
+  return fallback_msg_scope_logs;
+}
+
 ScopeMetrics *
 DestWorker::lookup_scope_metrics(LogMessage *msg)
 {
@@ -261,7 +293,7 @@ DestWorker::insert_log_record_from_log_msg(LogMessage *msg)
 void
 DestWorker::insert_fallback_log_record_from_log_msg(LogMessage *msg)
 {
-  ScopeLogs *scope_logs = lookup_scope_logs(msg);
+  ScopeLogs *scope_logs = lookup_fallback_scope_logs(msg);
   LogRecord *log_record = scope_logs->add_log_records();
   formatter.format_fallback(msg, *log_record);
 
@@ -489,6 +521,7 @@ exit:
   logs_service_request.Clear();
   metrics_service_request.Clear();
   trace_service_request.Clear();
+  fallback_msg_scope_logs = nullptr;
 
   logs_current_batch_bytes = metrics_current_batch_bytes = spans_current_batch_bytes = 0;
 
