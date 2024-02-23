@@ -273,6 +273,15 @@ _get_and_set_AnyValue(LogMessage *msg, const gchar *name, AnyValue *any_value)
   _set_AnyValue(value, len, type, any_value, name);
 }
 
+static void
+_get_and_set_AnyValue(LogMessage *msg, NVHandle handle, AnyValue *any_value)
+{
+  LogMessageValueType type;
+  gssize len;
+  const gchar *value = log_msg_get_value_with_type(msg, handle, &len, &type);
+  _set_AnyValue(value, len, type, any_value, log_msg_get_value_name(handle, NULL));
+}
+
 gboolean
 _set_KeyValue_vp_fn(const gchar *name, LogMessageValueType type, const gchar *value,
                     gsize value_len, gpointer user_data)
@@ -456,7 +465,7 @@ ProtobufFormatter::format_fallback(LogMessage *msg, LogRecord &log_record)
   log_record.set_observed_time_unix_nano(msg->timestamps[LM_TS_RECVD].ut_sec * 1000000000 +
                                          msg->timestamps[LM_TS_RECVD].ut_usec * 1000);
   log_record.set_severity_number(_get_log_msg_severity_number(msg));
-  _get_and_set_AnyValue(msg, "MESSAGE", log_record.mutable_body());
+  _get_and_set_AnyValue(msg, LM_V_MESSAGE, log_record.mutable_body());
 }
 
 static uint64_t
