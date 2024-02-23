@@ -72,7 +72,6 @@ class ProtobufFormatter
 {
 public:
   ProtobufFormatter(GlobalConfig *cfg);
-  ~ProtobufFormatter();
 
   static void get_metadata_for_syslog_ng(Resource &resource, std::string &resource_schema_url,
                                          InstrumentationScope &scope, std::string &scope_schema_url);
@@ -111,12 +110,6 @@ private:
 
 private:
   GlobalConfig *cfg;
-  struct
-  {
-    ValuePairs *vp;
-    LogTemplateOptions template_options;
-    LogTemplateEvalOptions template_eval_options;
-  } syslog_ng;
 };
 
 }

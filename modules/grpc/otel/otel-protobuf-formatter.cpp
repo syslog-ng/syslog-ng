@@ -511,14 +511,17 @@ _create_types_kvlist_for_type(LogMessageValueType type, KeyValueList *types)
 }
 
 static gboolean
-_set_syslog_ng_nv_pairs_vp_helper(const gchar *name, LogMessageValueType type, const gchar *value, gsize value_len,
-                                  gpointer user_data)
+_set_syslog_ng_nv_pairs_log_msg_foreach_fn(NVHandle handle, const gchar *name, const gchar *value, gssize value_len,
+                                           NVType type, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   KeyValueList *types = (KeyValueList *) args[0];
   KeyValueList **lmvt_to_types_kvlist_mapping = (KeyValueList **) args[1];
 
   if (_is_number(name))
+    return FALSE;
+
+  if (strcmp(name, "SOURCE") == 0)
     return FALSE;
 
   KeyValueList *type_kvlist = lmvt_to_types_kvlist_mapping[type];
@@ -549,8 +552,7 @@ ProtobufFormatter::set_syslog_ng_nv_pairs(LogMessage *msg, LogRecord &log_record
   gpointer user_data[2];
   user_data[0] = types;
   user_data[1] = lmvt_to_types_kvlist_mapping;
-  value_pairs_foreach(syslog_ng.vp, _set_syslog_ng_nv_pairs_vp_helper, msg, &syslog_ng.template_eval_options,
-                      &user_data);
+  log_msg_values_foreach(msg, _set_syslog_ng_nv_pairs_log_msg_foreach_fn, user_data);
 }
 
 void
@@ -1383,17 +1385,4 @@ ProtobufFormatter::format(LogMessage *msg, Span &span)
 syslogng::grpc::otel::ProtobufFormatter::ProtobufFormatter(GlobalConfig *cfg_)
   : cfg(cfg_)
 {
-  syslog_ng.vp = value_pairs_new(cfg);
-  value_pairs_add_scope(syslog_ng.vp, "all-nv-pairs");
-  value_pairs_set_include_bytes(syslog_ng.vp, TRUE);
-
-  value_pairs_add_glob_pattern(syslog_ng.vp, "SOURCE", FALSE);
-
-  log_template_options_defaults(&syslog_ng.template_options);
-  syslog_ng.template_eval_options = {&syslog_ng.template_options, LTZ_LOCAL, -1, NULL, LM_VT_STRING};
-}
-
-syslogng::grpc::otel::ProtobufFormatter::~ProtobufFormatter()
-{
-  value_pairs_unref(syslog_ng.vp);
 }
