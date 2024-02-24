@@ -25,6 +25,7 @@
 #include "opentelemetry/proto/trace/v1/trace.pb.h"
 
 #include "otel-protobuf-parser.hpp"
+#include "otel-logmsg-handles.hpp"
 
 #include "compat/cpp-start.h"
 #include "apphook.h"
@@ -796,4 +797,17 @@ Test(otel_protobuf_parser, span)
   log_msg_unref(msg);
 }
 
-TestSuite(otel_protobuf_parser, .init = app_startup, .fini = app_shutdown);
+static void
+_setup(void)
+{
+  app_startup();
+  otel_logmsg_handles_global_init();
+}
+
+static void
+_teardown(void)
+{
+  app_shutdown();
+}
+
+TestSuite(otel_protobuf_parser, .init = _setup, .fini = _teardown);

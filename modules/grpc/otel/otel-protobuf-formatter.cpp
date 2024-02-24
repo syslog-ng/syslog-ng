@@ -21,6 +21,7 @@
  */
 
 #include "otel-protobuf-formatter.hpp"
+#include "otel-logmsg-handles.hpp"
 
 #include "compat/cpp-start.h"
 #include "logmsg/type-hinting.h"
@@ -44,10 +45,10 @@ syslogng::grpc::otel::get_message_type(LogMessage *msg)
 {
   gssize len;
   LogMessageValueType type;
-  const gchar *value = log_msg_get_value_by_name_with_type(msg, ".otel_raw.type", &len, &type);
+  const gchar *value = log_msg_get_value_with_type(msg, logmsg_handle::RAW_TYPE, &len, &type);
 
   if (type == LM_VT_NULL)
-    value = log_msg_get_value_by_name_with_type(msg, ".otel.type", &len, &type);
+    value = log_msg_get_value_with_type(msg, logmsg_handle::TYPE, &len, &type);
 
   if (type != LM_VT_STRING)
     return MessageType::UNKNOWN;
@@ -65,11 +66,11 @@ syslogng::grpc::otel::get_message_type(LogMessage *msg)
 }
 
 static uint64_t
-_get_uint64(LogMessage *msg, const gchar *name)
+_get_uint64(LogMessage *msg, NVHandle handle)
 {
   gssize len;
   LogMessageValueType type;
-  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, &len, &type);
+  const gchar *value = log_msg_get_value_with_type(msg, handle, &len, &type);
 
   if (type != LM_VT_INTEGER)
     return 0;
@@ -77,12 +78,18 @@ _get_uint64(LogMessage *msg, const gchar *name)
   return std::strtoull(value, nullptr, 10);
 }
 
+static uint64_t
+_get_uint64(LogMessage *msg, const gchar *name)
+{
+  return _get_uint64(msg, log_msg_get_value_handle(name));
+}
+
 static int32_t
-_get_int32(LogMessage *msg, const gchar *name)
+_get_int32(LogMessage *msg, NVHandle handle)
 {
   gssize len;
   LogMessageValueType type;
-  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, &len, &type);
+  const gchar *value = log_msg_get_value_with_type(msg, handle, &len, &type);
 
   if (type != LM_VT_INTEGER)
     return 0;
@@ -90,12 +97,18 @@ _get_int32(LogMessage *msg, const gchar *name)
   return std::strtol(value, nullptr, 10);
 }
 
+static int32_t
+_get_int32(LogMessage *msg, const gchar *name)
+{
+  return _get_int32(msg, log_msg_get_value_handle(name));
+}
+
 static uint32_t
-_get_uint32(LogMessage *msg, const gchar *name)
+_get_uint32(LogMessage *msg, NVHandle handle)
 {
   gssize len;
   LogMessageValueType type;
-  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, &len, &type);
+  const gchar *value = log_msg_get_value_with_type(msg, handle, &len, &type);
 
   if (type != LM_VT_INTEGER)
     return 0;
@@ -103,12 +116,18 @@ _get_uint32(LogMessage *msg, const gchar *name)
   return std::strtoul(value, nullptr, 10);
 }
 
+static uint32_t
+_get_uint32(LogMessage *msg, const gchar *name)
+{
+  return _get_uint32(msg, log_msg_get_value_handle(name));
+}
+
 static bool
-_get_bool(LogMessage *msg, const gchar *name)
+_get_bool(LogMessage *msg, NVHandle handle)
 {
   gssize len;
   LogMessageValueType type;
-  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, &len, &type);
+  const gchar *value = log_msg_get_value_with_type(msg, handle, &len, &type);
 
   if (type != LM_VT_BOOLEAN)
     return false;
@@ -138,10 +157,10 @@ _get_double(LogMessage *msg, const gchar *name)
 }
 
 static const gchar *
-_get_string(LogMessage *msg, const gchar *name, gssize *len)
+_get_string(LogMessage *msg, NVHandle handle, gssize *len)
 {
   LogMessageValueType type;
-  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, len, &type);
+  const gchar *value = log_msg_get_value_with_type(msg, handle, len, &type);
 
   if (type != LM_VT_STRING)
     return "";
@@ -150,10 +169,16 @@ _get_string(LogMessage *msg, const gchar *name, gssize *len)
 }
 
 static const gchar *
-_get_bytes(LogMessage *msg, const gchar *name, gssize *len)
+_get_string(LogMessage *msg, const gchar *name, gssize *len)
+{
+  return _get_string(msg, log_msg_get_value_handle(name), len);
+}
+
+static const gchar *
+_get_bytes(LogMessage *msg, NVHandle handle, gssize *len)
 {
   LogMessageValueType type;
-  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, len, &type);
+  const gchar *value = log_msg_get_value_with_type(msg, handle, len, &type);
 
   if (type != LM_VT_BYTES)
     {
@@ -165,10 +190,16 @@ _get_bytes(LogMessage *msg, const gchar *name, gssize *len)
 }
 
 static const gchar *
-_get_protobuf(LogMessage *msg, const gchar *name, gssize *len)
+_get_bytes(LogMessage *msg, const gchar *name, gssize *len)
+{
+  return _get_bytes(msg, log_msg_get_value_handle(name), len);
+}
+
+static const gchar *
+_get_protobuf(LogMessage *msg, NVHandle handle, gssize *len)
 {
   LogMessageValueType type;
-  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, len, &type);
+  const gchar *value = log_msg_get_value_with_type(msg, handle, len, &type);
 
   if (type != LM_VT_PROTOBUF)
     {
@@ -265,21 +296,25 @@ _set_AnyValue(const gchar *value, gssize len, LogMessageValueType type, AnyValue
 }
 
 static void
-_get_and_set_AnyValue(LogMessage *msg, const gchar *name, AnyValue *any_value)
+_get_and_set_AnyValue(LogMessage *msg, NVHandle handle, AnyValue *any_value)
 {
   LogMessageValueType type;
   gssize len;
-  const gchar *value = log_msg_get_value_by_name_with_type(msg, name, &len, &type);
-  _set_AnyValue(value, len, type, any_value, name);
+  const gchar *value = log_msg_get_value_with_type(msg, handle, &len, &type);
+  _set_AnyValue(value, len, type, any_value, log_msg_get_value_name(handle, NULL));
 }
 
 gboolean
-_set_KeyValue_vp_fn(const gchar *name, LogMessageValueType type, const gchar *value,
-                    gsize value_len, gpointer user_data)
+_set_KeyValue_log_msg_foreach_fn(NVHandle handle, const gchar *name, const gchar *value, gssize value_len,
+                                 NVType type, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   RepeatedPtrField<KeyValue> *key_values = (RepeatedPtrField<KeyValue> *) args[0];
-  size_t prefix_len = *(size_t *) args[1];
+  const char *prefix = (const char *) args[1];
+  guint prefix_len = GPOINTER_TO_UINT(args[2]);
+
+  if (strncmp(name, prefix, prefix_len) != 0)
+    return FALSE;
 
   KeyValue *key_value = key_values->Add();
   key_value->set_key(name + prefix_len);
@@ -310,25 +345,12 @@ void
 ProtobufFormatter::get_and_set_repeated_KeyValues(LogMessage *msg, const char *prefix,
                                                   RepeatedPtrField<KeyValue> *key_values)
 {
-  ValuePairs *vp = value_pairs_new(cfg);
-  value_pairs_set_include_bytes(vp, TRUE);
-
-  std::string glob_pattern = prefix;
-  size_t prefix_len = glob_pattern.length();
-  glob_pattern.append("*");
-  value_pairs_add_glob_pattern(vp, glob_pattern.c_str(), TRUE);
-
-  LogTemplateOptions template_options;
-  log_template_options_defaults(&template_options);
-  LogTemplateEvalOptions options = {&template_options, LTZ_LOCAL, -1, NULL, LM_VT_STRING};
-
-  gpointer user_data[2];
+  gpointer user_data[3];
   user_data[0] = key_values;
-  user_data[1] = &prefix_len;
+  user_data[1] = (gpointer) prefix;
+  user_data[2] = GUINT_TO_POINTER(strlen(prefix));
 
-  value_pairs_foreach(vp, _set_KeyValue_vp_fn, msg, &options, &user_data);
-
-  value_pairs_unref(vp);
+  log_msg_values_foreach(msg, _set_KeyValue_log_msg_foreach_fn, user_data);
 }
 
 bool
@@ -337,23 +359,23 @@ ProtobufFormatter::get_resource_and_schema_url(LogMessage *msg, Resource &resour
   gssize len;
   const gchar *value;
 
-  value = _get_protobuf(msg, ".otel_raw.resource", &len);
+  value = _get_protobuf(msg, logmsg_handle::RAW_RESOURCE, &len);
   if (value)
     {
       if (!resource.ParsePartialFromArray(value, len))
         return false;
 
-      value = _get_string(msg, ".otel_raw.resource_schema_url", &len);
+      value = _get_string(msg, logmsg_handle::RAW_RESOURCE_SCHEMA_URL, &len);
       schema_url.assign(value, len);
 
       return true;
     }
 
-  resource.set_dropped_attributes_count(_get_uint32(msg, ".otel.resource.dropped_attributes_count"));
+  resource.set_dropped_attributes_count(_get_uint32(msg, logmsg_handle::RESOURCE_DROPPED_ATTRIBUTES_COUNT));
 
   get_and_set_repeated_KeyValues(msg, ".otel.resource.attributes.", resource.mutable_attributes());
 
-  value = _get_string(msg, ".otel.resource.schema_url", &len);
+  value = _get_string(msg, logmsg_handle::RESOURCE_SCHEMA_URL, &len);
   schema_url.assign(value, len);
 
   return true;
@@ -365,29 +387,29 @@ ProtobufFormatter::get_scope_and_schema_url(LogMessage *msg, InstrumentationScop
   gssize len;
   const gchar *value;
 
-  value = _get_protobuf(msg, ".otel_raw.scope", &len);
+  value = _get_protobuf(msg, logmsg_handle::RAW_SCOPE, &len);
   if (value)
     {
       if (!scope.ParsePartialFromArray(value, len))
         return false;
 
-      value = _get_string(msg, ".otel_raw.scope_schema_url", &len);
+      value = _get_string(msg, logmsg_handle::RAW_SCOPE_SCHEMA_URL, &len);
       schema_url.assign(value, len);
 
       return true;
     }
 
-  value = _get_string(msg, ".otel.scope.name", &len);
+  value = _get_string(msg, logmsg_handle::SCOPE_NAME, &len);
   scope.set_name(value, len);
 
-  value = _get_string(msg, ".otel.scope.version", &len);
+  value = _get_string(msg, logmsg_handle::SCOPE_VERSION, &len);
   scope.set_version(value, len);
 
-  scope.set_dropped_attributes_count(_get_uint32(msg, ".otel.scope.dropped_attributes_count"));
+  scope.set_dropped_attributes_count(_get_uint32(msg, logmsg_handle::SCOPE_DROPPED_ATTRIBUTES_COUNT));
 
   get_and_set_repeated_KeyValues(msg, ".otel.scope.attributes.", scope.mutable_attributes());
 
-  value = _get_string(msg, ".otel.scope.schema_url", &len);
+  value = _get_string(msg, logmsg_handle::SCOPE_SCHEMA_URL, &len);
   schema_url.assign(value, len);
 
   return true;
@@ -415,34 +437,34 @@ ProtobufFormatter::format(LogMessage *msg, LogRecord &log_record)
   gssize len;
   const gchar *value;
 
-  value = _get_protobuf(msg, ".otel_raw.log", &len);
+  value = _get_protobuf(msg, logmsg_handle::RAW_LOG, &len);
   if (value)
     return log_record.ParsePartialFromArray(value, len);
 
-  log_record.set_time_unix_nano(_get_uint64(msg, ".otel.log.time_unix_nano"));
-  log_record.set_observed_time_unix_nano(_get_uint64(msg, ".otel.log.observed_time_unix_nano"));
+  log_record.set_time_unix_nano(_get_uint64(msg, logmsg_handle::LOG_TIME_UNIX_NANO));
+  log_record.set_observed_time_unix_nano(_get_uint64(msg, logmsg_handle::LOG_OBSERVED_TIME_UNIX_NANO));
 
-  int32_t severity_number_int = _get_int32(msg, ".otel.log.severity_number");
+  int32_t severity_number_int = _get_int32(msg, logmsg_handle::LOG_SEVERITY_NUMBER);
   SeverityNumber severity_number = SeverityNumber_IsValid(severity_number_int)
                                    ? (SeverityNumber) severity_number_int
                                    : SEVERITY_NUMBER_UNSPECIFIED;
   log_record.set_severity_number(severity_number);
 
-  value = _get_string(msg, ".otel.log.severity_text", &len);
+  value = _get_string(msg, logmsg_handle::LOG_SEVERITY_TEXT, &len);
   log_record.set_severity_text(value, len);
 
-  _get_and_set_AnyValue(msg, ".otel.log.body", log_record.mutable_body());
+  _get_and_set_AnyValue(msg, logmsg_handle::LOG_BODY, log_record.mutable_body());
 
   get_and_set_repeated_KeyValues(msg, ".otel.log.attributes.", log_record.mutable_attributes());
 
-  log_record.set_dropped_attributes_count(_get_uint32(msg, ".otel.log.dropped_attributes_count"));
+  log_record.set_dropped_attributes_count(_get_uint32(msg, logmsg_handle::LOG_DROPPED_ATTRIBUTES_COUNT));
 
-  log_record.set_flags(_get_uint32(msg, ".otel.log.flags"));
+  log_record.set_flags(_get_uint32(msg, logmsg_handle::LOG_FLAGS));
 
-  value = _get_bytes(msg, ".otel.log.trace_id", &len);
+  value = _get_bytes(msg, logmsg_handle::LOG_TRACE_ID, &len);
   log_record.set_trace_id(value, len);
 
-  value = _get_bytes(msg, ".otel.log.span_id", &len);
+  value = _get_bytes(msg, logmsg_handle::LOG_SPAN_ID, &len);
   log_record.set_span_id(value, len);
 
   return true;
@@ -456,7 +478,7 @@ ProtobufFormatter::format_fallback(LogMessage *msg, LogRecord &log_record)
   log_record.set_observed_time_unix_nano(msg->timestamps[LM_TS_RECVD].ut_sec * 1000000000 +
                                          msg->timestamps[LM_TS_RECVD].ut_usec * 1000);
   log_record.set_severity_number(_get_log_msg_severity_number(msg));
-  _get_and_set_AnyValue(msg, "MESSAGE", log_record.mutable_body());
+  _get_and_set_AnyValue(msg, LM_V_MESSAGE, log_record.mutable_body());
 }
 
 static uint64_t
@@ -489,14 +511,17 @@ _create_types_kvlist_for_type(LogMessageValueType type, KeyValueList *types)
 }
 
 static gboolean
-_set_syslog_ng_nv_pairs_vp_helper(const gchar *name, LogMessageValueType type, const gchar *value, gsize value_len,
-                                  gpointer user_data)
+_set_syslog_ng_nv_pairs_log_msg_foreach_fn(NVHandle handle, const gchar *name, const gchar *value, gssize value_len,
+                                           NVType type, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   KeyValueList *types = (KeyValueList *) args[0];
   KeyValueList **lmvt_to_types_kvlist_mapping = (KeyValueList **) args[1];
 
   if (_is_number(name))
+    return FALSE;
+
+  if (strcmp(name, "SOURCE") == 0)
     return FALSE;
 
   KeyValueList *type_kvlist = lmvt_to_types_kvlist_mapping[type];
@@ -527,8 +552,7 @@ ProtobufFormatter::set_syslog_ng_nv_pairs(LogMessage *msg, LogRecord &log_record
   gpointer user_data[2];
   user_data[0] = types;
   user_data[1] = lmvt_to_types_kvlist_mapping;
-  value_pairs_foreach(syslog_ng.vp, _set_syslog_ng_nv_pairs_vp_helper, msg, &syslog_ng.template_eval_options,
-                      &user_data);
+  log_msg_values_foreach(msg, _set_syslog_ng_nv_pairs_log_msg_foreach_fn, user_data);
 }
 
 void
@@ -588,12 +612,14 @@ ProtobufFormatter::set_syslog_ng_macros(LogMessage *msg, LogRecord &log_record)
   gssize len;
   const char *value;
 
-  value = log_msg_get_value_by_name_with_type(msg, "PRI", &len, &type);
+  static const NVHandle PRI_HANDLE = log_msg_get_value_handle("PRI");
+  value = log_msg_get_value_with_type(msg, PRI_HANDLE, &len, &type);
   KeyValue *pri_attr = macros_kvlist->add_values();
   pri_attr->set_key("PRI");
   pri_attr->mutable_value()->set_bytes_value(value, len);
 
-  value = log_msg_get_value_by_name_with_type(msg, "TAGS", &len, &type);
+  static const NVHandle TAGS_HANDLE = log_msg_get_value_handle("TAGS");
+  value = log_msg_get_value_with_type(msg, TAGS_HANDLE, &len, &type);
   KeyValue *tags_attr = macros_kvlist->add_values();
   tags_attr->set_key("TAGS");
   tags_attr->mutable_value()->set_bytes_value(value, len);
@@ -801,13 +827,13 @@ ProtobufFormatter::set_metric_sum_values(LogMessage *msg, Sum *sum)
 {
   add_number_data_points(msg, ".otel.metric.data.sum.data_points.", sum->mutable_data_points());
 
-  int32_t aggregation_temporality_int = _get_int32(msg, ".otel.metric.data.sum.aggregation_temporality");
+  int32_t aggregation_temporality_int = _get_int32(msg, logmsg_handle::METRIC_DATA_SUM_AGGREGATION_TEMPORALITY);
   AggregationTemporality aggregation_temporality = AggregationTemporality_IsValid(aggregation_temporality_int) \
                                                    ? (AggregationTemporality) aggregation_temporality_int \
                                                    : AGGREGATION_TEMPORALITY_UNSPECIFIED;
   sum->set_aggregation_temporality(aggregation_temporality);
 
-  sum->set_is_monotonic(_get_bool(msg, ".otel.metric.data.sum.is_monotonic"));
+  sum->set_is_monotonic(_get_bool(msg, logmsg_handle::METRIC_DATA_SUM_IS_MONOTONIC));
 }
 
 void
@@ -923,7 +949,7 @@ ProtobufFormatter::set_metric_histogram_values(LogMessage *msg, Histogram *histo
 {
   add_histogram_data_points(msg, ".otel.metric.data.histogram.data_points.", histogram->mutable_data_points());
 
-  int32_t aggregation_temporality_int = _get_int32(msg, ".otel.metric.data.histogram.aggregation_temporality");
+  int32_t aggregation_temporality_int = _get_int32(msg, logmsg_handle::METRIC_DATA_HISTOGRAM_AGGREGATION_TEMPORALITY);
   AggregationTemporality aggregation_temporality = AggregationTemporality_IsValid(aggregation_temporality_int) \
                                                    ? (AggregationTemporality) aggregation_temporality_int \
                                                    : AGGREGATION_TEMPORALITY_UNSPECIFIED;
@@ -1061,7 +1087,7 @@ ProtobufFormatter::set_metric_exponential_histogram_values(LogMessage *msg, Expo
                                         exponential_histogram->mutable_data_points());
 
   int32_t aggregation_temporality_int = _get_int32(msg,
-                                                   ".otel.metric.data.exponential_histogram.aggregation_temporality");
+                                                   logmsg_handle::METRIC_DATA_EXPONENTIAL_HISTOGRAM_AGGREGATION_TEMPORALITY);
   AggregationTemporality aggregation_temporality = AggregationTemporality_IsValid(aggregation_temporality_int) \
                                                    ? (AggregationTemporality) aggregation_temporality_int \
                                                    : AGGREGATION_TEMPORALITY_UNSPECIFIED;
@@ -1165,22 +1191,22 @@ ProtobufFormatter::format(LogMessage *msg, Metric &metric)
   gssize len;
   const gchar *value;
 
-  value = _get_protobuf(msg, ".otel_raw.metric", &len);
+  value = _get_protobuf(msg, logmsg_handle::RAW_METRIC, &len);
   if (value)
     return metric.ParsePartialFromArray(value, len);
 
   LogMessageValueType type;
 
-  value = _get_string(msg, ".otel.metric.name", &len);
+  value = _get_string(msg, logmsg_handle::METRIC_NAME, &len);
   metric.set_name(value, len);
 
-  value = _get_string(msg, ".otel.metric.description", &len);
+  value = _get_string(msg, logmsg_handle::METRIC_DESCRIPTION, &len);
   metric.set_description(value, len);
 
-  value = _get_string(msg, ".otel.metric.unit", &len);
+  value = _get_string(msg, logmsg_handle::METRIC_UNIT, &len);
   metric.set_unit(value, len);
 
-  value = log_msg_get_value_by_name_with_type(msg, ".otel.metric.data.type", &len, &type);
+  value = log_msg_get_value_with_type(msg, logmsg_handle::METRIC_DATA_TYPE, &len, &type);
   if (type != LM_VT_STRING)
     {
       msg_error("OpenTelemetry: Failed to determine metric data type, invalid log message type",
@@ -1227,7 +1253,7 @@ ProtobufFormatter::format(LogMessage *msg, Span &span)
   gssize len;
   const gchar *value;
 
-  value = _get_protobuf(msg, ".otel_raw.span", &len);
+  value = _get_protobuf(msg, logmsg_handle::RAW_SPAN, &len);
   if (value)
     return span.ParsePartialFromArray(value, len);
 
@@ -1236,29 +1262,29 @@ ProtobufFormatter::format(LogMessage *msg, Span &span)
   NVHandle handle;
   LogMessageValueType type;
 
-  value = _get_bytes(msg, ".otel.span.trace_id", &len);
+  value = _get_bytes(msg, logmsg_handle::SPAN_TRACE_ID, &len);
   span.set_trace_id(value, len);
 
-  value = _get_bytes(msg, ".otel.span.span_id", &len);
+  value = _get_bytes(msg, logmsg_handle::SPAN_SPAN_ID, &len);
   span.set_span_id(value, len);
 
-  value = _get_string(msg, ".otel.span.trace_state", &len);
+  value = _get_string(msg, logmsg_handle::SPAN_TRACE_STATE, &len);
   span.set_trace_state(value, len);
 
-  value = _get_bytes(msg, ".otel.span.parent_span_id", &len);
+  value = _get_bytes(msg, logmsg_handle::SPAN_PARENT_SPAN_ID, &len);
   span.set_parent_span_id(value, len);
 
-  value = _get_string(msg, ".otel.span.name", &len);
+  value = _get_string(msg, logmsg_handle::SPAN_NAME, &len);
   span.set_name(value, len);
 
-  int32_t kind_int = _get_int32(msg, ".otel.span.kind");
+  int32_t kind_int = _get_int32(msg, logmsg_handle::SPAN_KIND);
   Span_SpanKind kind = Span_SpanKind_IsValid(kind_int) ? (Span_SpanKind) kind_int : Span_SpanKind_SPAN_KIND_UNSPECIFIED;
   span.set_kind(kind);
 
-  span.set_start_time_unix_nano(_get_uint64(msg, ".otel.span.start_time_unix_nano"));
-  span.set_end_time_unix_nano(_get_uint64(msg, ".otel.span.end_time_unix_nano"));
+  span.set_start_time_unix_nano(_get_uint64(msg, logmsg_handle::SPAN_START_TIME_UNIX_NANO));
+  span.set_end_time_unix_nano(_get_uint64(msg, logmsg_handle::SPAN_END_TIME_UNIX_NANO));
   get_and_set_repeated_KeyValues(msg, ".otel.span.attributes.", span.mutable_attributes());
-  span.set_dropped_attributes_count(_get_uint32(msg, ".otel.span.dropped_attributes_count"));
+  span.set_dropped_attributes_count(_get_uint32(msg, logmsg_handle::SPAN_DROPPED_ATTRIBUTES_COUNT));
 
   key_buffer = ".otel.span.events.";
   size_t len_with_events = key_buffer.length();
@@ -1297,7 +1323,7 @@ ProtobufFormatter::format(LogMessage *msg, Span &span)
       event_idx++;
     }
 
-  span.set_dropped_events_count(_get_uint32(msg, ".otel.span.dropped_events_count"));
+  span.set_dropped_events_count(_get_uint32(msg, logmsg_handle::SPAN_DROPPED_EVENTS_COUNT));
 
   key_buffer = ".otel.span.links.";
   size_t len_with_links = key_buffer.length();
@@ -1342,13 +1368,13 @@ ProtobufFormatter::format(LogMessage *msg, Span &span)
       link_idx++;
     }
 
-  span.set_dropped_links_count(_get_uint32(msg, ".otel.span.dropped_links_count"));
+  span.set_dropped_links_count(_get_uint32(msg, logmsg_handle::SPAN_DROPPED_LINKS_COUNT));
 
   Status *status = span.mutable_status();
-  value = _get_string(msg, ".otel.span.status.message", &len);
+  value = _get_string(msg, logmsg_handle::SPAN_STATUS_MESSAGE, &len);
   status->set_message(value, len);
 
-  int32_t code_int = _get_int32(msg, ".otel.span.status.code");
+  int32_t code_int = _get_int32(msg, logmsg_handle::SPAN_STATUS_CODE);
   Status_StatusCode code = Status_StatusCode_IsValid(code_int) ? (Status_StatusCode) code_int
                            : Status_StatusCode_STATUS_CODE_UNSET;
   status->set_code(code);
@@ -1359,17 +1385,4 @@ ProtobufFormatter::format(LogMessage *msg, Span &span)
 syslogng::grpc::otel::ProtobufFormatter::ProtobufFormatter(GlobalConfig *cfg_)
   : cfg(cfg_)
 {
-  syslog_ng.vp = value_pairs_new(cfg);
-  value_pairs_add_scope(syslog_ng.vp, "all-nv-pairs");
-  value_pairs_set_include_bytes(syslog_ng.vp, TRUE);
-
-  value_pairs_add_glob_pattern(syslog_ng.vp, "SOURCE", FALSE);
-
-  log_template_options_defaults(&syslog_ng.template_options);
-  syslog_ng.template_eval_options = {&syslog_ng.template_options, LTZ_LOCAL, -1, NULL, LM_VT_STRING};
-}
-
-syslogng::grpc::otel::ProtobufFormatter::~ProtobufFormatter()
-{
-  value_pairs_unref(syslog_ng.vp);
 }

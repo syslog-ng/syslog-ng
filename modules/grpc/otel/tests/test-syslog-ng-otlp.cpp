@@ -78,6 +78,7 @@ Test(syslog_ng_otlp, formatting_and_parsing)
   log_msg_set_value_by_name_with_type(msg, dot_nv_name, dot_nv_value, -1, dot_nv_type);
   log_msg_set_value_by_name_with_type(msg, nv_name, nv_value, -1, nv_type);
   log_msg_set_value_by_name_with_type(msg, temp_nv_name, temp_nv_value, -1, temp_nv_type);
+  log_msg_set_value_by_name_with_type(msg, "SOURCE", "almafa", -1, LM_VT_STRING);
 
   LogRecord log_record;
   ProtobufFormatter(configuration).format_syslog_ng(msg, log_record);
@@ -109,6 +110,9 @@ Test(syslog_ng_otlp, formatting_and_parsing)
   cr_assert_eq(type, nv_type);
   /* Temp NVs (0, 1, ..., 256) are skipped. */
   cr_assert_str_eq(log_msg_get_value_by_name_with_type(msg, temp_nv_name, NULL, &type), "");
+  cr_assert_eq(type, LM_VT_NULL);
+  /* SOURCE should not be transferred .*/
+  cr_assert_str_eq(log_msg_get_value_by_name_with_type(msg, "SOURCE", NULL, &type), "");
   cr_assert_eq(type, LM_VT_NULL);
 
   log_msg_unref(msg);
