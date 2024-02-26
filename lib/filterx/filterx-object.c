@@ -24,16 +24,24 @@
 #include "filterx-eval.h"
 #include "mainloop-worker.h"
 
+#define INIT_TYPE_METHOD(type, method_name) do { \
+    if (!type->method_name) \
+      type->method_name = type->super_type->method_name; \
+  } while (0)
+
 void
 filterx_type_init(FilterXType *type)
 {
-  FilterXType *parent = type->super_type;
-
-  for (gint i = 0; i < G_N_ELEMENTS(type->__methods); i++)
-    {
-      if (!type->__methods[i])
-        type->__methods[i] = parent->__methods[i];
-    }
+  INIT_TYPE_METHOD(type, unmarshal);
+  INIT_TYPE_METHOD(type, marshal);
+  INIT_TYPE_METHOD(type, clone);
+  INIT_TYPE_METHOD(type, map_to_json);
+  INIT_TYPE_METHOD(type, truthy);
+  INIT_TYPE_METHOD(type, getattr);
+  INIT_TYPE_METHOD(type, setattr);
+  INIT_TYPE_METHOD(type, get_subscript);
+  INIT_TYPE_METHOD(type, set_subscript);
+  INIT_TYPE_METHOD(type, free_fn);
 }
 
 #define FILTERX_OBJECT_MAGIC_BIAS G_MAXINT32
