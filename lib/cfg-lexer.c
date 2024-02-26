@@ -628,6 +628,8 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, CfgIncludeLevel *level, const gch
 
   r = glob(pattern, GLOB_NOMAGIC, _cfg_lexer_glob_err, &globbuf);
 
+  if (r == 0 && globbuf.gl_pathc == 0)
+    r = GLOB_NOMATCH;
   if (r != 0)
     {
       globfree(&globbuf);
