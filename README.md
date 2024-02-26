@@ -177,7 +177,6 @@ syslog-ng packages are released for the following distribution versions (x86-64)
 | Ubuntu 20.04 | ubuntu-focal |
 | Debian 12 | debian-bookworm |
 | Debian 11 | debian-bullseye |
-| Debian 10 | debian-buster |
 | Debian Unstable | debian-sid |
 | Debian Testing | debian-testing |
 

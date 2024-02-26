@@ -32,7 +32,6 @@ jobs:
           - fedora-39
           - debian-bullseye
           - debian-bookworm
-          - debian-buster
           - debian-sid
           - debian-testing
           - ubuntu-focal
