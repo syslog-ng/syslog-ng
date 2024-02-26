@@ -15,7 +15,6 @@ jobs:
     strategy:
       matrix:
         distro:
-          - "debian:buster"
           - "debian:bullseye"
           - "debian:bookworm"
           - "debian:testing"
