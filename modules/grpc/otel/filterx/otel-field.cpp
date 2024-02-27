@@ -22,6 +22,9 @@
 
 #include "syslog-ng.h"
 
+#include "otel-field.hpp"
+#include "object-otel-kvlist.hpp"
+
 #include "compat/cpp-start.h"
 #include "filterx/filterx-object.h"
 #include "filterx/object-string.h"
@@ -35,7 +38,6 @@
 
 #include "opentelemetry/proto/logs/v1/logs.pb.h"
 
-#include "otel-field.hpp"
 
 using namespace syslogng::grpc::otel;
 using namespace google::protobuf;
@@ -46,6 +48,8 @@ class AnyField : public ProtobufField
 public:
   FilterXObject *FilterXObjectGetter(const Message &message, ProtoReflectors reflectors)
   {
+    AnyValue::ValueCase valueCase = AnyValue::VALUE_NOT_SET;
+
     if (reflectors.fieldDescriptor->type() == FieldDescriptor::TYPE_MESSAGE)
       {
         const Message &nestedMessage = reflectors.reflection->GetMessage(message, reflectors.fieldDescriptor);
@@ -60,7 +64,7 @@ public:
             g_assert_not_reached();
           }
 
-        AnyValue::ValueCase valueCase = anyValue->value_case();
+        valueCase = anyValue->value_case();
 
         ProtobufField *converter = nullptr;
         std::string typeFieldName;
@@ -87,6 +91,10 @@ public:
             converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BYTES);
             typeFieldName = "bytes_value";
             break;
+          case AnyValue::kKvlistValue:
+            converter = &filterx::otel_kvlist_converter;
+            typeFieldName = "kvlist_value";
+            break;
           default:
             goto error;
             break;
@@ -101,7 +109,8 @@ public:
 error:
     msg_error("otel:logrecord:anyfield:get field type not yet implemented",
               evt_tag_str("name", reflectors.fieldDescriptor->name().c_str()),
-              evt_tag_int("type", reflectors.fieldType));
+              evt_tag_int("type", reflectors.fieldType),
+              evt_tag_int("value_case", valueCase));
     return nullptr;
   }
   bool FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object)
@@ -149,6 +158,11 @@ error:
       {
         converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BYTES);
         typeFieldName = "bytes_value";
+      }
+    else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_kvlist)))
+      {
+        converter = &filterx::otel_kvlist_converter;
+        typeFieldName = "kvlist_value";
       }
     else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(json)))
       {

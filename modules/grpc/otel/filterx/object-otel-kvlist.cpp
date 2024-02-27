@@ -234,6 +234,57 @@ grpc_otel_filterx_kvlist_construct_new(Plugin *self)
   return (gpointer) &otel_kvlist_new;
 }
 
+FilterXObject *
+OtelKVListField::FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+{
+  FilterXOtelKVList *filterx_kvlist = (FilterXOtelKVList *) otel_kvlist_new(NULL);
+
+  try
+    {
+      const Message &nestedMessage = reflectors.reflection->GetMessage(message, reflectors.fieldDescriptor);
+      const KeyValueList &kvlist = dynamic_cast<const KeyValueList &>(nestedMessage);
+      filterx_kvlist->cpp->kvlist.CopyFrom(kvlist);
+    }
+  catch(const std::bad_cast &e)
+    {
+      g_assert_not_reached();
+    }
+
+  return &filterx_kvlist->super;
+}
+
+bool
+OtelKVListField::FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors,
+                                     FilterXObject *object)
+{
+  if (!filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_kvlist)))
+    {
+      msg_error("otel-kvlist: Failed to convert field, type is unsupported",
+                evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()),
+                evt_tag_str("expected_type", reflectors.fieldDescriptor->type_name()),
+                evt_tag_str("type", object->type->name));
+      return false;
+    }
+
+  FilterXOtelKVList *filterx_kvlist = (FilterXOtelKVList *) object;
+  KeyValueList *kvlist;
+
+  try
+    {
+      kvlist = dynamic_cast<KeyValueList *>(reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor));
+    }
+  catch(const std::bad_cast &e)
+    {
+      g_assert_not_reached();
+    }
+
+  kvlist->CopyFrom(filterx_kvlist->cpp->get_value());
+
+  return true;
+}
+
+OtelKVListField syslogng::grpc::otel::filterx::otel_kvlist_converter;
+
 FILTERX_DEFINE_TYPE(otel_kvlist, FILTERX_TYPE_NAME(object),
                     .is_mutable = TRUE,
                     .marshal = _marshal,

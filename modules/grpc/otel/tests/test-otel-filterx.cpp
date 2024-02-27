@@ -94,6 +94,20 @@ _assert_filterx_string_element(FilterXObject *obj, FilterXObject *key,
   filterx_object_unref(filterx_string);
 }
 
+static void
+_assert_filterx_otel_kvlist_element(FilterXObject *obj, FilterXObject *key,
+                                    const KeyValueList &expected_otel_kvlist)
+{
+  FilterXObject *filterx_otel_kvlist = filterx_object_get_subscript(obj, key);
+  cr_assert(filterx_object_is_type(filterx_otel_kvlist, &FILTERX_TYPE_NAME(otel_kvlist)));
+
+  const KeyValueList &kvlist = ((FilterXOtelKVList *) filterx_otel_kvlist)->cpp->get_value();
+  cr_assert(MessageDifferencer::Equals(kvlist, expected_otel_kvlist));
+
+  filterx_object_unref(filterx_otel_kvlist);
+}
+
+
 /* LogRecord */
 
 Test(otel_filterx, logrecord_empty)
@@ -493,6 +507,12 @@ Test(otel_filterx, kvlist_get_subscript)
   KeyValue *element_2 = kvlist.add_values();
   element_2->set_key("element_2_key");
   element_2->mutable_value()->set_string_value("foobar");
+  KeyValue *element_3 = kvlist.add_values();
+  element_3->set_key("element_3_key");
+  KeyValueList *inner_kvlist = element_3->mutable_value()->mutable_kvlist_value();
+  KeyValue *inner_kv = inner_kvlist->add_values();
+  inner_kv->set_key("inner_element");
+  inner_kv->mutable_value()->set_int_value(1337);
 
   std::string serialized_kvlist = kvlist.SerializePartialAsString();
   GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
@@ -503,9 +523,11 @@ Test(otel_filterx, kvlist_get_subscript)
 
   FilterXObject *element_1_key = filterx_string_new("element_1_key", -1);
   FilterXObject *element_2_key = filterx_string_new("element_2_key", -1);
+  FilterXObject *element_3_key = filterx_string_new("element_3_key", -1);
   _assert_filterx_integer_element(filterx_otel_kvlist, element_1_key, 42);
   _assert_filterx_string_element(filterx_otel_kvlist, element_2_key, "foobar");
-  // TODO: test kvlist and array here as well
+  _assert_filterx_otel_kvlist_element(filterx_otel_kvlist, element_3_key, *inner_kvlist);
+  // TODO: test array here as well
 
   FilterXObject *invalid_element_key = filterx_string_new("invalid_element_key", -1);
   FilterXObject *filterx_invalid = filterx_object_get_subscript(filterx_otel_kvlist, invalid_element_key);
@@ -514,6 +536,7 @@ Test(otel_filterx, kvlist_get_subscript)
   filterx_object_unref(invalid_element_key);
   filterx_object_unref(element_1_key);
   filterx_object_unref(element_2_key);
+  filterx_object_unref(element_3_key);
   filterx_object_unref(filterx_otel_kvlist);
   g_ptr_array_free(args, TRUE);
 }
@@ -527,9 +550,12 @@ Test(otel_filterx, kvlist_set_subscript)
   FilterXObject *element_1_value = filterx_integer_new(42);
   FilterXObject *element_2_key = filterx_string_new("element_2_key", -1);
   FilterXObject *element_2_value = filterx_string_new("foobar", -1);
+  FilterXObject *element_3_key = filterx_string_new("element_3_key", -1);
+  FilterXObject *element_3_value = otel_kvlist_new(NULL);
   cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_1_key, element_1_value));
   cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_2_key, element_2_value));
-  // TODO: test kvlist and array here as well
+  cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_3_key, element_3_value));
+  // TODO: test array here as well
 
   FilterXObject *invalid_element_key = filterx_integer_new(1234);
   cr_assert_not(filterx_object_set_subscript(filterx_otel_kvlist, invalid_element_key, element_1_value));
@@ -542,17 +568,19 @@ Test(otel_filterx, kvlist_set_subscript)
 
   opentelemetry::proto::common::v1::KeyValueList kvlist;
   cr_assert(kvlist.ParsePartialFromArray(serialized->str, serialized->len));
-  cr_assert_eq(kvlist.values_size(), 2);
+  cr_assert_eq(kvlist.values_size(), 3);
   cr_assert_eq(kvlist.values(0).value().int_value(), 42);
   cr_assert_eq(kvlist.values(1).value().string_value().compare("foobar"), 0);
   cr_assert_eq(kvlist.values(2).value().value_case(), AnyValue::kKvlistValue);
-  cr_assert(MessageDifferencer::Equals(kvlist.values(2).value(), KeyValueList()));
+  cr_assert(MessageDifferencer::Equals(kvlist.values(2).value().kvlist_value(), KeyValueList()));
 
   g_string_free(serialized, TRUE);
   filterx_object_unref(element_1_key);
   filterx_object_unref(element_1_value);
   filterx_object_unref(element_2_key);
   filterx_object_unref(element_2_value);
+  filterx_object_unref(element_3_key);
+  filterx_object_unref(element_3_value);
   filterx_object_unref(invalid_element_key);
   filterx_object_unref(filterx_otel_kvlist);
 }

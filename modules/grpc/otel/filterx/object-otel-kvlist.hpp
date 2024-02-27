@@ -30,6 +30,7 @@
 #include "object-otel.h"
 #include "compat/cpp-end.h"
 
+#include "protobuf-field.hpp"
 #include "opentelemetry/proto/common/v1/common.pb.h"
 
 typedef struct FilterXOtelKVList_ FilterXOtelKVList;
@@ -63,7 +64,18 @@ private:
 private:
   FilterXOtelKVList *super;
   opentelemetry::proto::common::v1::KeyValueList kvlist;
+
+  friend class OtelKVListField;
 };
+
+class OtelKVListField : public ProtobufField
+{
+public:
+  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors);
+  bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object);
+};
+
+extern OtelKVListField otel_kvlist_converter;
 
 }
 }
