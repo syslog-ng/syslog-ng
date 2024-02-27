@@ -24,7 +24,7 @@
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
-#include "filterx/otel-filterx.h"
+#include "filterx/object-otel.h"
 #include "otel-logmsg-handles.h"
 
 

@@ -20,7 +20,7 @@
  *
  */
 
-#include "otel-logrecord.hpp"
+#include "object-otel-logrecord.hpp"
 #include "protobuf-field.hpp"
 #include "otel-field.hpp"
 

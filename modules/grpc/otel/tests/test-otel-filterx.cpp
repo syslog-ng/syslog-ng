@@ -20,9 +20,9 @@
  *
  */
 
-#include "filterx/otel-logrecord.hpp"
-#include "filterx/otel-resource.hpp"
-#include "filterx/otel-scope.hpp"
+#include "filterx/object-otel-logrecord.hpp"
+#include "filterx/object-otel-resource.hpp"
+#include "filterx/object-otel-scope.hpp"
 
 #include "compat/cpp-start.h"
 #include "filterx/object-string.h"
