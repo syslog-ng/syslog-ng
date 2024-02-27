@@ -44,8 +44,8 @@ namespace filterx {
 class LogRecord
 {
 public:
-  LogRecord(FilterXOtelLogRecord *folr);
-  LogRecord(FilterXOtelLogRecord *folr, FilterXObject *protobuf_object);
+  LogRecord(FilterXOtelLogRecord *super);
+  LogRecord(FilterXOtelLogRecord *super, FilterXObject *protobuf_object);
   LogRecord(LogRecord &o) = delete;
   LogRecord(LogRecord &&o) = delete;
   bool SetField(const gchar *attribute, FilterXObject *value);
@@ -55,7 +55,7 @@ public:
 private:
   FilterXOtelLogRecord *super;
   opentelemetry::proto::logs::v1::LogRecord logRecord;
-  LogRecord(const LogRecord &o, FilterXOtelLogRecord *folr);
+  LogRecord(const LogRecord &o, FilterXOtelLogRecord *super);
   friend FilterXObject *::_filterx_otel_logrecord_clone(FilterXObject *s);
 };
 

@@ -43,11 +43,11 @@ using namespace syslogng::grpc::otel::filterx;
 
 /* C++ Implementations */
 
-LogRecord::LogRecord(FilterXOtelLogRecord *folr) : super(folr)
+LogRecord::LogRecord(FilterXOtelLogRecord *super_) : super(super_)
 {
 }
 
-LogRecord::LogRecord(FilterXOtelLogRecord *folr, FilterXObject *protobuf_object) : super(folr)
+LogRecord::LogRecord(FilterXOtelLogRecord *super_, FilterXObject *protobuf_object) : super(super_)
 {
   gsize length;
   const gchar *value = filterx_protobuf_get_value(protobuf_object, &length);
@@ -59,7 +59,7 @@ LogRecord::LogRecord(FilterXOtelLogRecord *folr, FilterXObject *protobuf_object)
     throw std::runtime_error("Failed to parse from protobuf object");
 }
 
-LogRecord::LogRecord(const LogRecord &o, FilterXOtelLogRecord *folr) : super(folr),
+LogRecord::LogRecord(const LogRecord &o, FilterXOtelLogRecord *super_) : super(super_),
   logRecord(o.logRecord)
 {
 }
@@ -124,18 +124,19 @@ _filterx_otel_logrecord_clone(FilterXObject *s)
 {
   FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
 
-  FilterXOtelLogRecord *folr = g_new0(FilterXOtelLogRecord, 1);
-  filterx_object_init_instance((FilterXObject *)folr, &FILTERX_TYPE_NAME(olr));
+  FilterXOtelLogRecord *clone = g_new0(FilterXOtelLogRecord, 1);
+  filterx_object_init_instance((FilterXObject *) clone, &FILTERX_TYPE_NAME(olr));
+
   try
     {
-      folr->cpp = new LogRecord(*self->cpp, folr);
+      clone->cpp = new LogRecord(*self->cpp, clone);
     }
   catch (const std::runtime_error &)
     {
       g_assert_not_reached();
     }
 
-  return &folr->super;
+  return &clone->super;
 }
 
 static void
@@ -185,26 +186,26 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 FilterXObject *
 otel_logrecord(GPtrArray *args)
 {
-  FilterXOtelLogRecord *folr = g_new0(FilterXOtelLogRecord, 1);
-  filterx_object_init_instance((FilterXObject *)folr, &FILTERX_TYPE_NAME(olr));
+  FilterXOtelLogRecord *self = g_new0(FilterXOtelLogRecord, 1);
+  filterx_object_init_instance((FilterXObject *) self, &FILTERX_TYPE_NAME(olr));
 
   try
     {
       if (!args || args->len == 0)
-        folr->cpp = new LogRecord(folr);
+        self->cpp = new LogRecord(self);
       else if (args->len == 1)
-        folr->cpp = new LogRecord(folr, (FilterXObject *) g_ptr_array_index(args, 0));
+        self->cpp = new LogRecord(self, (FilterXObject *) g_ptr_array_index(args, 0));
       else
         throw std::runtime_error("Invalid number of arguments");
     }
   catch (const std::runtime_error &e)
     {
       msg_error("FilterX: Failed to create OTel LogRecord object", evt_tag_str("error", e.what()));
-      filterx_object_unref(&folr->super);
+      filterx_object_unref(&self->super);
       return NULL;
     }
 
-  return &folr->super;
+  return &self->super;
 }
 
 FILTERX_DEFINE_TYPE(olr, FILTERX_TYPE_NAME(object),
