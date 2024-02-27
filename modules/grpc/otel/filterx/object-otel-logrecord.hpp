@@ -48,7 +48,6 @@ public:
   LogRecord(FilterXOtelLogRecord *folr, FilterXObject *protobuf_object);
   LogRecord(LogRecord &o) = delete;
   LogRecord(LogRecord &&o) = delete;
-  FilterXObject *FilterX();
   bool SetField(const gchar *attribute, FilterXObject *value);
   std::string Marshal(void);
   FilterXObject *GetField(const gchar *attribute);

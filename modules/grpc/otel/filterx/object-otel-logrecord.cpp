@@ -64,12 +64,6 @@ LogRecord::LogRecord(const LogRecord &o, FilterXOtelLogRecord *folr) : super(fol
 {
 }
 
-FilterXObject *
-LogRecord::FilterX()
-{
-  return (FilterXObject *)this->super;
-}
-
 std::string
 LogRecord::Marshal(void)
 {
@@ -141,7 +135,7 @@ _filterx_otel_logrecord_clone(FilterXObject *s)
       g_assert_not_reached();
     }
 
-  return folr->cpp->FilterX();
+  return &folr->super;
 }
 
 static void
@@ -210,7 +204,7 @@ otel_logrecord(GPtrArray *args)
       return NULL;
     }
 
-  return folr->cpp->FilterX();
+  return &folr->super;
 }
 
 FILTERX_DEFINE_TYPE(olr, FILTERX_TYPE_NAME(object),
