@@ -34,23 +34,17 @@ struct _FilterXType
   FilterXType *super_type;
   const gchar *name;
   gboolean is_mutable;
-  union
-  {
-    struct
-    {
-      FilterXObject *(*unmarshal)(FilterXObject *self);
-      gboolean (*marshal)(FilterXObject *self, GString *repr, LogMessageValueType *t);
-      FilterXObject *(*clone)(FilterXObject *self);
-      gboolean (*map_to_json)(FilterXObject *self, struct json_object **object);
-      gboolean (*truthy)(FilterXObject *self);
-      FilterXObject *(*getattr)(FilterXObject *self, const gchar *attr_name);
-      gboolean (*setattr)(FilterXObject *self, const gchar *attr_name, FilterXObject *new_value);
-      FilterXObject *(*get_subscript)(FilterXObject *self, FilterXObject *index);
-      gboolean (*set_subscript)(FilterXObject *self, FilterXObject *index, FilterXObject *new_value);
-      void (*free_fn)(FilterXObject *self);
-    };
-    gpointer __methods[10];
-  };
+
+  FilterXObject *(*unmarshal)(FilterXObject *self);
+  gboolean (*marshal)(FilterXObject *self, GString *repr, LogMessageValueType *t);
+  FilterXObject *(*clone)(FilterXObject *self);
+  gboolean (*map_to_json)(FilterXObject *self, struct json_object **object);
+  gboolean (*truthy)(FilterXObject *self);
+  FilterXObject *(*getattr)(FilterXObject *self, const gchar *attr_name);
+  gboolean (*setattr)(FilterXObject *self, const gchar *attr_name, FilterXObject *new_value);
+  FilterXObject *(*get_subscript)(FilterXObject *self, FilterXObject *index);
+  gboolean (*set_subscript)(FilterXObject *self, FilterXObject *index, FilterXObject *new_value);
+  void (*free_fn)(FilterXObject *self);
 };
 
 void filterx_type_init(FilterXType *type);
