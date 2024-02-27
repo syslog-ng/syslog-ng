@@ -77,7 +77,7 @@ static Plugin otel_plugins[] =
 gboolean
 otel_module_init(PluginContext *context, CfgArgs *args)
 {
-  filterx_type_init(&FILTERX_TYPE_NAME(olr));
+  filterx_type_init(&FILTERX_TYPE_NAME(otel_logrecord));
   plugin_register(context, otel_plugins, G_N_ELEMENTS(otel_plugins));
   otel_logmsg_handles_global_init();
 

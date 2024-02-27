@@ -116,7 +116,7 @@ LogRecord::GetValue() const
 gpointer
 grpc_otel_filterx_logrecord_contruct_new(Plugin *self)
 {
-  return (gpointer) &otel_logrecord;
+  return (gpointer) &otel_logrecord_new;
 }
 
 FilterXObject *
@@ -125,7 +125,7 @@ _filterx_otel_logrecord_clone(FilterXObject *s)
   FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
 
   FilterXOtelLogRecord *clone = g_new0(FilterXOtelLogRecord, 1);
-  filterx_object_init_instance((FilterXObject *) clone, &FILTERX_TYPE_NAME(olr));
+  filterx_object_init_instance((FilterXObject *) clone, &FILTERX_TYPE_NAME(otel_logrecord));
 
   try
     {
@@ -184,10 +184,10 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 FilterXObject *
-otel_logrecord(GPtrArray *args)
+otel_logrecord_new(GPtrArray *args)
 {
   FilterXOtelLogRecord *self = g_new0(FilterXOtelLogRecord, 1);
-  filterx_object_init_instance((FilterXObject *) self, &FILTERX_TYPE_NAME(olr));
+  filterx_object_init_instance((FilterXObject *) self, &FILTERX_TYPE_NAME(otel_logrecord));
 
   try
     {
@@ -208,7 +208,7 @@ otel_logrecord(GPtrArray *args)
   return &self->super;
 }
 
-FILTERX_DEFINE_TYPE(olr, FILTERX_TYPE_NAME(object),
+FILTERX_DEFINE_TYPE(otel_logrecord, FILTERX_TYPE_NAME(object),
                     .is_mutable = TRUE,
                     .marshal = _marshal,
                     .clone = _filterx_otel_logrecord_clone,
