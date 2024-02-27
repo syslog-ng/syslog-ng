@@ -23,6 +23,7 @@
 #include "filterx/object-otel-logrecord.hpp"
 #include "filterx/object-otel-resource.hpp"
 #include "filterx/object-otel-scope.hpp"
+#include "filterx/object-otel-kvlist.hpp"
 
 #include "compat/cpp-start.h"
 #include "filterx/object-string.h"
@@ -67,6 +68,31 @@ _assert_filterx_string_attribute(FilterXObject *obj, const std::string &attribut
   filterx_object_unref(filterx_string);
 }
 
+static void
+_assert_filterx_integer_element(FilterXObject *obj, FilterXObject *key, gint64 expected_value)
+{
+  FilterXObject *filterx_integer = filterx_object_get_subscript(obj, key);
+  cr_assert(filterx_object_is_type(filterx_integer, &FILTERX_TYPE_NAME(integer)));
+
+  GenericNumber value = filterx_primitive_get_value(filterx_integer);
+  cr_assert_eq(gn_as_int64(&value), expected_value);
+
+  filterx_object_unref(filterx_integer);
+}
+
+static void
+_assert_filterx_string_element(FilterXObject *obj, FilterXObject *key,
+                               const std::string &expected_value)
+{
+  FilterXObject *filterx_string = filterx_object_get_subscript(obj, key);
+  cr_assert(filterx_object_is_type(filterx_string, &FILTERX_TYPE_NAME(string)));
+
+  gsize len;
+  const gchar *value = filterx_string_get_value(filterx_string, &len);
+  cr_assert_eq(expected_value.compare(std::string(value, len)), 0);
+
+  filterx_object_unref(filterx_string);
+}
 
 /* LogRecord */
 
@@ -386,6 +412,150 @@ Test(otel_filterx, scope_set_field)
   filterx_object_unref(filterx_otel_scope);
 }
 
+
+/* KVList */
+
+Test(otel_filterx, kvlist_empty)
+{
+  FilterXOtelKVList *filterx_otel_kvlist = (FilterXOtelKVList *) otel_kvlist_new(NULL);
+  cr_assert(filterx_otel_kvlist);
+
+  cr_assert(MessageDifferencer::Equals(opentelemetry::proto::common::v1::KeyValueList(),
+                                       filterx_otel_kvlist->cpp->get_value()));
+
+  filterx_object_unref(&filterx_otel_kvlist->super);
+}
+
+Test(otel_filterx, kvlist_from_protobuf)
+{
+  opentelemetry::proto::common::v1::KeyValueList kvlist;
+  KeyValue *element_1 = kvlist.add_values();
+  element_1->set_key("element_1_key");
+  element_1->mutable_value()->set_int_value(42);
+  KeyValue *element_2 = kvlist.add_values();
+  element_2->set_key("element_2_key");
+  element_2->mutable_value()->set_string_value("foobar");
+
+  std::string serialized_kvlist = kvlist.SerializePartialAsString();
+  GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(args, 0, filterx_protobuf_new(serialized_kvlist.c_str(), serialized_kvlist.length()));
+
+  FilterXOtelKVList *filterx_otel_kvlist = (FilterXOtelKVList *) otel_kvlist_new(args);
+  cr_assert(filterx_otel_kvlist);
+
+  const opentelemetry::proto::common::v1::KeyValueList &kvlist_from_filterx = filterx_otel_kvlist->cpp->get_value();
+  cr_assert(MessageDifferencer::Equals(kvlist, kvlist_from_filterx));
+
+  filterx_object_unref(&filterx_otel_kvlist->super);
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(otel_filterx, kvlist_from_protobuf_invalid_arg)
+{
+  GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(args, 0, filterx_string_new("", 0));
+
+  FilterXOtelKVList *filterx_otel_kvlist = (FilterXOtelKVList *) otel_kvlist_new(args);
+  cr_assert_not(filterx_otel_kvlist);
+
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(otel_filterx, kvlist_from_protobuf_malformed_data)
+{
+  GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(args, 0, filterx_protobuf_new("1234", 4));
+
+  FilterXOtelKVList *filterx_otel_kvlist = (FilterXOtelKVList *) otel_kvlist_new(args);
+  cr_assert_not(filterx_otel_kvlist);
+
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(otel_filterx, kvlist_too_many_args)
+{
+  GPtrArray *args = g_ptr_array_new_full(2, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(args, 0, filterx_string_new("foo", 3));
+  g_ptr_array_insert(args, 1, filterx_protobuf_new("bar", 3));
+
+  FilterXOtelKVList *filterx_otel_kvlist = (FilterXOtelKVList *) otel_kvlist_new(args);
+  cr_assert_not(filterx_otel_kvlist);
+
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(otel_filterx, kvlist_get_subscript)
+{
+  opentelemetry::proto::common::v1::KeyValueList kvlist;
+  KeyValue *element_1 = kvlist.add_values();
+  element_1->set_key("element_1_key");
+  element_1->mutable_value()->set_int_value(42);
+  KeyValue *element_2 = kvlist.add_values();
+  element_2->set_key("element_2_key");
+  element_2->mutable_value()->set_string_value("foobar");
+
+  std::string serialized_kvlist = kvlist.SerializePartialAsString();
+  GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(args, 0, filterx_protobuf_new(serialized_kvlist.c_str(), serialized_kvlist.length()));
+
+  FilterXObject *filterx_otel_kvlist = (FilterXObject *) otel_kvlist_new(args);
+  cr_assert(filterx_otel_kvlist);
+
+  FilterXObject *element_1_key = filterx_string_new("element_1_key", -1);
+  FilterXObject *element_2_key = filterx_string_new("element_2_key", -1);
+  _assert_filterx_integer_element(filterx_otel_kvlist, element_1_key, 42);
+  _assert_filterx_string_element(filterx_otel_kvlist, element_2_key, "foobar");
+  // TODO: test kvlist and array here as well
+
+  FilterXObject *invalid_element_key = filterx_string_new("invalid_element_key", -1);
+  FilterXObject *filterx_invalid = filterx_object_get_subscript(filterx_otel_kvlist, invalid_element_key);
+  cr_assert_not(filterx_invalid);
+
+  filterx_object_unref(invalid_element_key);
+  filterx_object_unref(element_1_key);
+  filterx_object_unref(element_2_key);
+  filterx_object_unref(filterx_otel_kvlist);
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(otel_filterx, kvlist_set_subscript)
+{
+  FilterXObject *filterx_otel_kvlist = (FilterXObject *) otel_kvlist_new(NULL);
+  cr_assert(filterx_otel_kvlist);
+
+  FilterXObject *element_1_key = filterx_string_new("element_1_key", -1);
+  FilterXObject *element_1_value = filterx_integer_new(42);
+  FilterXObject *element_2_key = filterx_string_new("element_2_key", -1);
+  FilterXObject *element_2_value = filterx_string_new("foobar", -1);
+  cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_1_key, element_1_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_2_key, element_2_value));
+  // TODO: test kvlist and array here as well
+
+  FilterXObject *invalid_element_key = filterx_integer_new(1234);
+  cr_assert_not(filterx_object_set_subscript(filterx_otel_kvlist, invalid_element_key, element_1_value));
+
+  GString *serialized = g_string_new(NULL);
+  LogMessageValueType type;
+  cr_assert(filterx_object_marshal(filterx_otel_kvlist, serialized, &type));
+
+  cr_assert_eq(type, LM_VT_PROTOBUF);
+
+  opentelemetry::proto::common::v1::KeyValueList kvlist;
+  cr_assert(kvlist.ParsePartialFromArray(serialized->str, serialized->len));
+  cr_assert_eq(kvlist.values_size(), 2);
+  cr_assert_eq(kvlist.values(0).value().int_value(), 42);
+  cr_assert_eq(kvlist.values(1).value().string_value().compare("foobar"), 0);
+  cr_assert_eq(kvlist.values(2).value().value_case(), AnyValue::kKvlistValue);
+  cr_assert(MessageDifferencer::Equals(kvlist.values(2).value(), KeyValueList()));
+
+  g_string_free(serialized, TRUE);
+  filterx_object_unref(element_1_key);
+  filterx_object_unref(element_1_value);
+  filterx_object_unref(element_2_key);
+  filterx_object_unref(element_2_value);
+  filterx_object_unref(invalid_element_key);
+  filterx_object_unref(filterx_otel_kvlist);
+}
 
 void
 setup(void)

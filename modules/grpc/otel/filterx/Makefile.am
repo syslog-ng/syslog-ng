@@ -11,6 +11,8 @@ modules_grpc_otel_filterx_libfilterx_la_SOURCES = \
   modules/grpc/otel/filterx/object-otel-resource.hpp \
   modules/grpc/otel/filterx/object-otel-scope.cpp \
   modules/grpc/otel/filterx/object-otel-scope.hpp \
+  modules/grpc/otel/filterx/object-otel-kvlist.cpp \
+  modules/grpc/otel/filterx/object-otel-kvlist.hpp \
   modules/grpc/otel/filterx/protobuf-field.cpp \
   modules/grpc/otel/filterx/protobuf-field.hpp \
   modules/grpc/otel/filterx/otel-field.cpp \
