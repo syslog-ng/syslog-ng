@@ -215,6 +215,57 @@ grpc_otel_filterx_array_construct_new(Plugin *self)
   return (gpointer) &otel_array_new;
 }
 
+FilterXObject *
+OtelArrayField::FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+{
+  FilterXOtelArray *filterx_array = (FilterXOtelArray *) otel_array_new(NULL);
+
+  try
+    {
+      const Message &nestedMessage = reflectors.reflection->GetMessage(message, reflectors.fieldDescriptor);
+      const ArrayValue &array = dynamic_cast<const ArrayValue &>(nestedMessage);
+      filterx_array->cpp->array.CopyFrom(array);
+    }
+  catch(const std::bad_cast &e)
+    {
+      g_assert_not_reached();
+    }
+
+  return &filterx_array->super;
+}
+
+bool
+OtelArrayField::FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors,
+                                    FilterXObject *object)
+{
+  if (!filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_array)))
+    {
+      msg_error("otel-array: Failed to convert field, type is unsupported",
+                evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()),
+                evt_tag_str("expected_type", reflectors.fieldDescriptor->type_name()),
+                evt_tag_str("type", object->type->name));
+      return false;
+    }
+
+  FilterXOtelArray *filterx_array = (FilterXOtelArray *) object;
+  ArrayValue *array;
+
+  try
+    {
+      array = dynamic_cast<ArrayValue *>(reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor));
+    }
+  catch(const std::bad_cast &e)
+    {
+      g_assert_not_reached();
+    }
+
+  array->CopyFrom(filterx_array->cpp->get_value());
+
+  return true;
+}
+
+OtelArrayField syslogng::grpc::otel::filterx::otel_array_converter;
+
 FILTERX_DEFINE_TYPE(otel_array, FILTERX_TYPE_NAME(object),
                     .is_mutable = TRUE,
                     .marshal = _marshal,

@@ -24,6 +24,7 @@
 
 #include "otel-field.hpp"
 #include "object-otel-kvlist.hpp"
+#include "object-otel-array.hpp"
 
 #include "compat/cpp-start.h"
 #include "filterx/filterx-object.h"
@@ -117,6 +118,10 @@ AnyField::FilterXObjectDirectGetter(const AnyValue &anyValue)
       converter = &filterx::otel_kvlist_converter;
       typeFieldName = "kvlist_value";
       break;
+    case AnyValue::kArrayValue:
+      converter = &filterx::otel_array_converter;
+      typeFieldName = "array_value";
+      break;
     default:
       break;
     }
@@ -171,6 +176,11 @@ AnyField::FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object)
     {
       converter = &filterx::otel_kvlist_converter;
       typeFieldName = "kvlist_value";
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_array)))
+    {
+      converter = &filterx::otel_array_converter;
+      typeFieldName = "array_value";
     }
   else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(json)))
     {

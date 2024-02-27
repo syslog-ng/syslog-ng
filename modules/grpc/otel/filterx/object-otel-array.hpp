@@ -62,7 +62,18 @@ private:
 private:
   FilterXOtelArray *super;
   opentelemetry::proto::common::v1::ArrayValue array;
+
+  friend class OtelArrayField;
 };
+
+class OtelArrayField : public ProtobufField
+{
+public:
+  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors);
+  bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object);
+};
+
+extern OtelArrayField otel_array_converter;
 
 }
 }
