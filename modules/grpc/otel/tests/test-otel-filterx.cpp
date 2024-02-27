@@ -69,6 +69,23 @@ _assert_filterx_string_attribute(FilterXObject *obj, const std::string &attribut
 }
 
 static void
+_assert_filterx_repeated_kv_attribute(FilterXObject *obj, const std::string &attribute_name,
+                                      const google::protobuf::RepeatedPtrField<KeyValue> &expected_repeated_kv)
+{
+  FilterXObject *filterx_otel_kvlist = filterx_object_getattr(obj, attribute_name.c_str());
+  cr_assert(filterx_object_is_type(filterx_otel_kvlist, &FILTERX_TYPE_NAME(otel_kvlist)));
+
+  const KeyValueList &kvlist = ((FilterXOtelKVList *) filterx_otel_kvlist)->cpp->get_value();
+  cr_assert_eq(kvlist.values_size(), expected_repeated_kv.size());
+  for (int i = 0; i < kvlist.values_size(); i++)
+    {
+      cr_assert(MessageDifferencer::Equals(kvlist.values(i), expected_repeated_kv.at(i)));
+    }
+
+  filterx_object_unref(filterx_otel_kvlist);
+}
+
+static void
 _assert_filterx_integer_element(FilterXObject *obj, FilterXObject *key, gint64 expected_value)
 {
   FilterXObject *filterx_integer = filterx_object_get_subscript(obj, key);
@@ -99,6 +116,7 @@ _assert_filterx_otel_kvlist_element(FilterXObject *obj, FilterXObject *key,
                                     const KeyValueList &expected_otel_kvlist)
 {
   FilterXObject *filterx_otel_kvlist = filterx_object_get_subscript(obj, key);
+  cr_assert(filterx_otel_kvlist);
   cr_assert(filterx_object_is_type(filterx_otel_kvlist, &FILTERX_TYPE_NAME(otel_kvlist)));
 
   const KeyValueList &kvlist = ((FilterXOtelKVList *) filterx_otel_kvlist)->cpp->get_value();
@@ -251,6 +269,9 @@ Test(otel_filterx, resource_get_field)
 {
   opentelemetry::proto::resource::v1::Resource resource;
   resource.set_dropped_attributes_count(42);
+  KeyValue *attribute_1 = resource.add_attributes();
+  attribute_1->set_key("attribute_1");
+  attribute_1->mutable_value()->set_int_value(1337);
 
   std::string serialized_resource = resource.SerializePartialAsString();
   GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
@@ -260,8 +281,7 @@ Test(otel_filterx, resource_get_field)
   cr_assert(filterx_otel_resource);
 
   _assert_filterx_integer_attribute(filterx_otel_resource, "dropped_attributes_count", 42);
-
-  // TODO: check the "attributes" repeated KeyValue when we implement support for that.
+  _assert_filterx_repeated_kv_attribute(filterx_otel_resource, "attributes", resource.attributes());
 
   FilterXObject *filterx_invalid = filterx_object_getattr(filterx_otel_resource, "invalid_attr");
   cr_assert_not(filterx_invalid);
@@ -278,7 +298,16 @@ Test(otel_filterx, resource_set_field)
   FilterXObject *filterx_integer = filterx_integer_new(42);
   cr_assert(filterx_object_setattr(filterx_otel_resource, "dropped_attributes_count", filterx_integer));
 
-  // TODO: check the "attributes" repeated KeyValue when we implement support for that.
+  KeyValueList attributes;
+  KeyValue *attribute_1 = attributes.add_values();
+  attribute_1->set_key("attribute_1");
+  attribute_1->mutable_value()->set_int_value(1337);
+  std::string serialized_attributes = attributes.SerializePartialAsString();
+  GPtrArray *attributes_kvlist_args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(attributes_kvlist_args, 0, filterx_protobuf_new(serialized_attributes.c_str(),
+                     serialized_attributes.length()));
+  FilterXObject *filterx_kvlist = otel_kvlist_new(attributes_kvlist_args);
+  cr_assert(filterx_object_setattr(filterx_otel_resource, "attributes", filterx_kvlist));
 
   cr_assert_not(filterx_object_setattr(filterx_otel_resource, "invalid_attr", filterx_integer));
 
@@ -293,6 +322,7 @@ Test(otel_filterx, resource_set_field)
   cr_assert_eq(resource.dropped_attributes_count(), 42);
 
   g_string_free(serialized, TRUE);
+  g_ptr_array_unref(attributes_kvlist_args);
   filterx_object_unref(filterx_integer);
   filterx_object_unref(filterx_otel_resource);
 }
@@ -374,6 +404,9 @@ Test(otel_filterx, scope_get_field)
   opentelemetry::proto::common::v1::InstrumentationScope scope;
   scope.set_dropped_attributes_count(42);
   scope.set_name("foobar");
+  KeyValue *attribute_1 = scope.add_attributes();
+  attribute_1->set_key("attribute_1");
+  attribute_1->mutable_value()->set_int_value(1337);
 
   std::string serialized_scope = scope.SerializePartialAsString();
   GPtrArray *args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
@@ -384,8 +417,7 @@ Test(otel_filterx, scope_get_field)
 
   _assert_filterx_integer_attribute(filterx_otel_scope, "dropped_attributes_count", 42);
   _assert_filterx_string_attribute(filterx_otel_scope, "name", "foobar");
-
-  // TODO: check the "attributes" repeated KeyValue when we implement support for that.
+  _assert_filterx_repeated_kv_attribute(filterx_otel_scope, "attributes", scope.attributes());
 
   FilterXObject *filterx_invalid = filterx_object_getattr(filterx_otel_scope, "invalid_attr");
   cr_assert_not(filterx_invalid);
@@ -405,7 +437,16 @@ Test(otel_filterx, scope_set_field)
   FilterXObject *filterx_string = filterx_string_new("foobar", -1);
   cr_assert(filterx_object_setattr(filterx_otel_scope, "name", filterx_string));
 
-  // TODO: check the "attributes" repeated KeyValue when we implement support for that.
+  KeyValueList attributes;
+  KeyValue *attribute_1 = attributes.add_values();
+  attribute_1->set_key("attribute_1");
+  attribute_1->mutable_value()->set_int_value(1337);
+  std::string serialized_attributes = attributes.SerializePartialAsString();
+  GPtrArray *attributes_kvlist_args = g_ptr_array_new_full(1, (GDestroyNotify) filterx_object_unref);
+  g_ptr_array_insert(attributes_kvlist_args, 0, filterx_protobuf_new(serialized_attributes.c_str(),
+                     serialized_attributes.length()));
+  FilterXObject *filterx_kvlist = otel_kvlist_new(attributes_kvlist_args);
+  cr_assert(filterx_object_setattr(filterx_otel_scope, "attributes", filterx_kvlist));
 
   cr_assert_not(filterx_object_setattr(filterx_otel_scope, "invalid_attr", filterx_integer));
 
@@ -421,6 +462,8 @@ Test(otel_filterx, scope_set_field)
   cr_assert_eq(scope.name().compare("foobar"), 0);
 
   g_string_free(serialized, TRUE);
+  g_ptr_array_unref(attributes_kvlist_args);
+  filterx_object_unref(filterx_kvlist);
   filterx_object_unref(filterx_string);
   filterx_object_unref(filterx_integer);
   filterx_object_unref(filterx_otel_scope);

@@ -246,6 +246,11 @@ ProtobufField *syslogng::grpc::otel::otel_converter_by_field_descriptor(const Fi
       return &otel_datetime_converter;
     }
 
+  if (fieldName.compare("attributes") == 0)
+    {
+      return &filterx::otel_kvlist_converter;
+    }
+
   const FieldDescriptor::Type fieldType = fd->type();
   return otel_converter_by_type(fieldType);
 }

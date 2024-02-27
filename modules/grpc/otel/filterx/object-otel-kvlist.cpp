@@ -27,11 +27,13 @@
 #include "filterx/object-string.h"
 #include "compat/cpp-end.h"
 
+#include <google/protobuf/reflection.h>
 #include <stdexcept>
 
 using namespace syslogng::grpc::otel::filterx;
 using opentelemetry::proto::common::v1::KeyValue;
 using opentelemetry::proto::common::v1::KeyValueList;
+using opentelemetry::proto::common::v1::AnyValue;
 
 /* C++ Implementations */
 
@@ -239,6 +241,17 @@ OtelKVListField::FilterXObjectGetter(const google::protobuf::Message &message, P
 {
   FilterXOtelKVList *filterx_kvlist = (FilterXOtelKVList *) otel_kvlist_new(NULL);
 
+  if (reflectors.fieldDescriptor->is_repeated())
+    {
+      auto repeated_fields = reflectors.reflection->GetRepeatedFieldRef<KeyValue>(message, reflectors.fieldDescriptor);
+      for (const KeyValue &kv : repeated_fields)
+        {
+          filterx_kvlist->cpp->kvlist.add_values()->CopyFrom(kv);
+        }
+
+      return &filterx_kvlist->super;
+    }
+
   try
     {
       const Message &nestedMessage = reflectors.reflection->GetMessage(message, reflectors.fieldDescriptor);
@@ -267,6 +280,22 @@ OtelKVListField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRe
     }
 
   FilterXOtelKVList *filterx_kvlist = (FilterXOtelKVList *) object;
+
+  if (reflectors.fieldDescriptor->is_repeated())
+    {
+      try
+        {
+          auto repeated_fields = reflectors.reflection->GetMutableRepeatedFieldRef<KeyValue>(message, reflectors.fieldDescriptor);
+          repeated_fields.CopyFrom(filterx_kvlist->cpp->get_value().values());
+        }
+      catch(const std::bad_cast &e)
+        {
+          g_assert_not_reached();
+        }
+
+      return true;
+    }
+
   KeyValueList *kvlist;
 
   try
