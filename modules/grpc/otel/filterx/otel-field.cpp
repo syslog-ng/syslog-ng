@@ -122,15 +122,10 @@ AnyField::FilterXObjectDirectGetter(const AnyValue &anyValue)
       converter = &filterx::otel_array_converter;
       typeFieldName = "array_value";
       break;
+    case AnyValue::VALUE_NOT_SET:
+      return filterx_null_new();
     default:
-      break;
-    }
-
-  if (!converter)
-    {
-      msg_error("otel-field: AnyValue field type not yet implemented",
-                evt_tag_int("value_case", valueCase));
-      return nullptr;
+      g_assert_not_reached();
     }
 
   return converter->Get(anyValue, typeFieldName.c_str());
