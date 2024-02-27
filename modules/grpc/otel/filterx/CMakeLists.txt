@@ -14,6 +14,8 @@ set(OTEL_LOGRECORD_CPP_SOURCES
   object-otel-scope.hpp
   object-otel-kvlist.cpp
   object-otel-kvlist.hpp
+  object-otel-array.cpp
+  object-otel-array.hpp
   protobuf-field.cpp
   protobuf-field.hpp
   otel-field.hpp
