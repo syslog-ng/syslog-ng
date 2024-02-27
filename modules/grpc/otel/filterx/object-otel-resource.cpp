@@ -20,7 +20,7 @@
  *
  */
 
-#include "otel-resource.hpp"
+#include "object-otel-resource.hpp"
 #include "otel-field.hpp"
 
 #include "compat/cpp-start.h"

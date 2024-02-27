@@ -20,47 +20,47 @@
  *
  */
 
-#ifndef OTEL_RESOURCE_HPP
-#define OTEL_RESOURCE_HPP
+#ifndef OBJECT_OTEL_SCOPE_HPP
+#define OBJECT_OTEL_SCOPE_HPP
 
 #include "syslog-ng.h"
 
 #include "compat/cpp-start.h"
 #include "filterx/filterx-object.h"
-#include "otel-filterx.h"
+#include "object-otel.h"
 #include "compat/cpp-end.h"
 
-#include "opentelemetry/proto/resource/v1/resource.pb.h"
+#include "opentelemetry/proto/common/v1/common.pb.h"
 
-typedef struct FilterXOtelResource_ FilterXOtelResource;
+typedef struct FilterXOtelScope_ FilterXOtelScope;
 
-FilterXObject *_filterx_otel_resource_clone(FilterXObject *s);
+FilterXObject *_filterx_otel_scope_clone(FilterXObject *s);
 
 namespace syslogng {
 namespace grpc {
 namespace otel {
 namespace filterx {
 
-class Resource
+class Scope
 {
 public:
-  Resource(FilterXOtelResource *s);
-  Resource(FilterXOtelResource *s, FilterXObject *protobuf_object);
-  Resource(Resource &o) = delete;
-  Resource(Resource &&o) = delete;
+  Scope(FilterXOtelScope *s);
+  Scope(FilterXOtelScope *s, FilterXObject *protobuf_object);
+  Scope(Scope &o) = delete;
+  Scope(Scope &&o) = delete;
 
   std::string marshal();
   bool set_field(const gchar *attribute, FilterXObject *value);
   FilterXObject *get_field(const gchar *attribute);
-  const opentelemetry::proto::resource::v1::Resource &get_value() const;
+  const opentelemetry::proto::common::v1::InstrumentationScope &get_value() const;
 
 private:
-  Resource(const Resource &o, FilterXOtelResource *s);
-  friend FilterXObject *::_filterx_otel_resource_clone(FilterXObject *s);
+  Scope(const Scope &o, FilterXOtelScope *s);
+  friend FilterXObject *::_filterx_otel_scope_clone(FilterXObject *s);
 
 private:
-  FilterXOtelResource *super;
-  opentelemetry::proto::resource::v1::Resource resource;
+  FilterXOtelScope *super;
+  opentelemetry::proto::common::v1::InstrumentationScope scope;
 };
 
 }
@@ -68,10 +68,10 @@ private:
 }
 }
 
-struct FilterXOtelResource_
+struct FilterXOtelScope_
 {
   FilterXObject super;
-  syslogng::grpc::otel::filterx::Resource *cpp;
+  syslogng::grpc::otel::filterx::Scope *cpp;
 };
 
 #endif

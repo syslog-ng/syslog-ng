@@ -24,7 +24,7 @@
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
-#include "filterx/otel-filterx.h"
+#include "filterx/object-otel.h"
 #include "otel-logmsg-handles.h"
 
 
@@ -72,12 +72,22 @@ static Plugin otel_plugins[] =
     .name = "otel_scope",
     .construct = grpc_otel_filterx_scope_construct_new,
   },
+  {
+    .type = LL_CONTEXT_FILTERX_FUNC,
+    .name = "otel_kvlist",
+    .construct = grpc_otel_filterx_kvlist_construct_new,
+  },
+  {
+    .type = LL_CONTEXT_FILTERX_FUNC,
+    .name = "otel_kvlist",
+    .construct = grpc_otel_filterx_array_construct_new,
+  },
 };
 
 gboolean
 otel_module_init(PluginContext *context, CfgArgs *args)
 {
-  filterx_type_init(&FILTERX_TYPE_NAME(olr));
+  otel_filterx_objects_global_init();
   plugin_register(context, otel_plugins, G_N_ELEMENTS(otel_plugins));
   otel_logmsg_handles_global_init();
 

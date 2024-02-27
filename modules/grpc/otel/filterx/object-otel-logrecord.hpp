@@ -20,14 +20,14 @@
  *
  */
 
-#ifndef OTEL_LOG_RECORD_HPP
-#define OTEL_LOG_RECORD_HPP
+#ifndef OBJECT_OTEL_LOGRECORD_HPP
+#define OBJECT_OTEL_LOGRECORD_HPP
 
 #include "syslog-ng.h"
 
 #include "compat/cpp-start.h"
 #include "filterx/filterx-object.h"
-#include "otel-filterx.h"
+#include "object-otel.h"
 #include "compat/cpp-end.h"
 
 #include "opentelemetry/proto/logs/v1/logs.pb.h"
@@ -39,28 +39,27 @@ FilterXObject *_filterx_otel_logrecord_clone(FilterXObject *s);
 namespace syslogng {
 namespace grpc {
 namespace otel {
+namespace filterx {
 
-using opentelemetry::proto::logs::v1::LogRecord;
-
-class OtelLogRecordCpp
+class LogRecord
 {
 public:
-  OtelLogRecordCpp(FilterXOtelLogRecord *folr);
-  OtelLogRecordCpp(FilterXOtelLogRecord *folr, FilterXObject *protobuf_object);
-  OtelLogRecordCpp(OtelLogRecordCpp &o) = delete;
-  OtelLogRecordCpp(OtelLogRecordCpp &&o) = delete;
-  FilterXObject *FilterX();
+  LogRecord(FilterXOtelLogRecord *super);
+  LogRecord(FilterXOtelLogRecord *super, FilterXObject *protobuf_object);
+  LogRecord(LogRecord &o) = delete;
+  LogRecord(LogRecord &&o) = delete;
   bool SetField(const gchar *attribute, FilterXObject *value);
   std::string Marshal(void);
   FilterXObject *GetField(const gchar *attribute);
-  const LogRecord &GetValue() const;
+  const opentelemetry::proto::logs::v1::LogRecord &GetValue() const;
 private:
   FilterXOtelLogRecord *super;
-  LogRecord logRecord;
-  OtelLogRecordCpp(const OtelLogRecordCpp &o, FilterXOtelLogRecord *folr);
+  opentelemetry::proto::logs::v1::LogRecord logRecord;
+  LogRecord(const LogRecord &o, FilterXOtelLogRecord *super);
   friend FilterXObject *::_filterx_otel_logrecord_clone(FilterXObject *s);
 };
 
+}
 }
 }
 }
@@ -68,7 +67,7 @@ private:
 struct FilterXOtelLogRecord_
 {
   FilterXObject super;
-  syslogng::grpc::otel::OtelLogRecordCpp *cpp;
+  syslogng::grpc::otel::filterx::LogRecord *cpp;
 };
 
 #endif

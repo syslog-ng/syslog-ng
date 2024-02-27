@@ -32,6 +32,20 @@ namespace otel {
 
 using namespace google::protobuf;
 
+class AnyField : public ProtobufField
+{
+  using AnyValue = opentelemetry::proto::common::v1::AnyValue;
+
+public:
+  FilterXObject *FilterXObjectGetter(const Message &message, ProtoReflectors reflectors);
+  bool FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object);
+
+  FilterXObject *FilterXObjectDirectGetter(const AnyValue &anyValue);
+  bool FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object);
+};
+
+extern AnyField any_field_converter;
+
 ProtobufField *otel_converter_by_type(FieldDescriptor::Type fieldType);
 ProtobufField *otel_converter_by_field_descriptor(const FieldDescriptor *fd);
 

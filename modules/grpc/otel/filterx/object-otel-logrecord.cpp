@@ -20,7 +20,7 @@
  *
  */
 
-#include "otel-logrecord.hpp"
+#include "object-otel-logrecord.hpp"
 #include "protobuf-field.hpp"
 #include "otel-field.hpp"
 
@@ -39,15 +39,15 @@
 #include <memory>
 #include <stdexcept>
 
-using namespace syslogng::grpc::otel;
+using namespace syslogng::grpc::otel::filterx;
 
 /* C++ Implementations */
 
-OtelLogRecordCpp::OtelLogRecordCpp(FilterXOtelLogRecord *folr) : super(folr)
+LogRecord::LogRecord(FilterXOtelLogRecord *super_) : super(super_)
 {
 }
 
-OtelLogRecordCpp::OtelLogRecordCpp(FilterXOtelLogRecord *folr, FilterXObject *protobuf_object) : super(folr)
+LogRecord::LogRecord(FilterXOtelLogRecord *super_, FilterXObject *protobuf_object) : super(super_)
 {
   gsize length;
   const gchar *value = filterx_protobuf_get_value(protobuf_object, &length);
@@ -59,25 +59,20 @@ OtelLogRecordCpp::OtelLogRecordCpp(FilterXOtelLogRecord *folr, FilterXObject *pr
     throw std::runtime_error("Failed to parse from protobuf object");
 }
 
-OtelLogRecordCpp::OtelLogRecordCpp(const OtelLogRecordCpp &o, FilterXOtelLogRecord *folr) : super(folr),
+LogRecord::LogRecord(const LogRecord &o, FilterXOtelLogRecord *super_) : super(super_),
   logRecord(o.logRecord)
 {
 }
 
-FilterXObject *OtelLogRecordCpp::FilterX()
-{
-  return (FilterXObject *)this->super;
-}
-
 std::string
-OtelLogRecordCpp::Marshal(void)
+LogRecord::Marshal(void)
 {
   std::string serializedString = this->logRecord.SerializePartialAsString();
   return serializedString;
 }
 
 bool
-OtelLogRecordCpp::SetField(const gchar *attribute, FilterXObject *value)
+LogRecord::SetField(const gchar *attribute, FilterXObject *value)
 {
   try
     {
@@ -94,7 +89,7 @@ OtelLogRecordCpp::SetField(const gchar *attribute, FilterXObject *value)
 }
 
 FilterXObject *
-OtelLogRecordCpp::GetField(const gchar *attribute)
+LogRecord::GetField(const gchar *attribute)
 {
   try
     {
@@ -110,8 +105,8 @@ OtelLogRecordCpp::GetField(const gchar *attribute)
     }
 }
 
-const LogRecord &
-OtelLogRecordCpp::GetValue() const
+const opentelemetry::proto::logs::v1::LogRecord &
+LogRecord::GetValue() const
 {
   return this->logRecord;
 }
@@ -121,7 +116,7 @@ OtelLogRecordCpp::GetValue() const
 gpointer
 grpc_otel_filterx_logrecord_contruct_new(Plugin *self)
 {
-  return (gpointer) &otel_logrecord;
+  return (gpointer) &otel_logrecord_new;
 }
 
 FilterXObject *
@@ -129,18 +124,19 @@ _filterx_otel_logrecord_clone(FilterXObject *s)
 {
   FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
 
-  FilterXOtelLogRecord *folr = g_new0(FilterXOtelLogRecord, 1);
-  filterx_object_init_instance((FilterXObject *)folr, &FILTERX_TYPE_NAME(olr));
+  FilterXOtelLogRecord *clone = g_new0(FilterXOtelLogRecord, 1);
+  filterx_object_init_instance((FilterXObject *) clone, &FILTERX_TYPE_NAME(otel_logrecord));
+
   try
     {
-      folr->cpp = new OtelLogRecordCpp(*self->cpp, folr);
+      clone->cpp = new LogRecord(*self->cpp, clone);
     }
   catch (const std::runtime_error &)
     {
       g_assert_not_reached();
     }
 
-  return folr->cpp->FilterX();
+  return &clone->super;
 }
 
 static void
@@ -188,35 +184,34 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 FilterXObject *
-otel_logrecord(GPtrArray *args)
+otel_logrecord_new(GPtrArray *args)
 {
-  FilterXOtelLogRecord *folr = g_new0(FilterXOtelLogRecord, 1);
-  filterx_object_init_instance((FilterXObject *)folr, &FILTERX_TYPE_NAME(olr));
+  FilterXOtelLogRecord *self = g_new0(FilterXOtelLogRecord, 1);
+  filterx_object_init_instance((FilterXObject *) self, &FILTERX_TYPE_NAME(otel_logrecord));
 
   try
     {
       if (!args || args->len == 0)
-        folr->cpp = new OtelLogRecordCpp(folr);
+        self->cpp = new LogRecord(self);
       else if (args->len == 1)
-        folr->cpp = new OtelLogRecordCpp(folr, (FilterXObject *) g_ptr_array_index(args, 0));
+        self->cpp = new LogRecord(self, (FilterXObject *) g_ptr_array_index(args, 0));
       else
         throw std::runtime_error("Invalid number of arguments");
     }
   catch (const std::runtime_error &e)
     {
       msg_error("FilterX: Failed to create OTel LogRecord object", evt_tag_str("error", e.what()));
-      filterx_object_unref(&folr->super);
+      filterx_object_unref(&self->super);
       return NULL;
     }
 
-  return folr->cpp->FilterX();
+  return &self->super;
 }
 
-FILTERX_DEFINE_TYPE(olr, FILTERX_TYPE_NAME(object),
+FILTERX_DEFINE_TYPE(otel_logrecord, FILTERX_TYPE_NAME(object),
                     .is_mutable = TRUE,
                     .marshal = _marshal,
                     .clone = _filterx_otel_logrecord_clone,
-                    // .map_to_json = _map_to_json,
                     .truthy = _truthy,
                     .getattr = _getattr,
                     .setattr = _setattr,

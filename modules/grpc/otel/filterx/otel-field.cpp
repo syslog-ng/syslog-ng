@@ -22,6 +22,10 @@
 
 #include "syslog-ng.h"
 
+#include "otel-field.hpp"
+#include "object-otel-kvlist.hpp"
+#include "object-otel-array.hpp"
+
 #include "compat/cpp-start.h"
 #include "filterx/filterx-object.h"
 #include "filterx/object-string.h"
@@ -35,153 +39,172 @@
 
 #include "opentelemetry/proto/logs/v1/logs.pb.h"
 
-#include "otel-field.hpp"
 
 using namespace syslogng::grpc::otel;
 using namespace google::protobuf;
 
-class AnyField : public ProtobufField
+FilterXObject *
+AnyField::FilterXObjectGetter(const Message &message, ProtoReflectors reflectors)
 {
-  using AnyValue = opentelemetry::proto::common::v1::AnyValue;
-public:
-  FilterXObject *FilterXObjectGetter(const Message &message, ProtoReflectors reflectors)
-  {
-    if (reflectors.fieldDescriptor->type() == FieldDescriptor::TYPE_MESSAGE)
-      {
-        const Message &nestedMessage = reflectors.reflection->GetMessage(message, reflectors.fieldDescriptor);
+  if (reflectors.fieldDescriptor->type() == FieldDescriptor::TYPE_MESSAGE)
+    {
+      const Message &nestedMessage = reflectors.reflection->GetMessage(message, reflectors.fieldDescriptor);
 
-        const AnyValue *anyValue;
-        try
-          {
-            anyValue = dynamic_cast<const AnyValue *>(&nestedMessage);
-          }
-        catch(const std::bad_cast &e)
-          {
-            g_assert_not_reached();
-          }
+      const AnyValue *anyValue;
+      try
+        {
+          anyValue = dynamic_cast<const AnyValue *>(&nestedMessage);
+        }
+      catch(const std::bad_cast &e)
+        {
+          g_assert_not_reached();
+        }
 
-        AnyValue::ValueCase valueCase = anyValue->value_case();
+      return this->FilterXObjectDirectGetter(*anyValue);
+    }
 
-        ProtobufField *converter = nullptr;
-        std::string typeFieldName;
+  msg_error("otel-field: Unexpected protobuf field type",
+            evt_tag_str("name", reflectors.fieldDescriptor->name().c_str()),
+            evt_tag_int("type", reflectors.fieldType));
+  return nullptr;
+}
 
-        switch (valueCase)
-          {
-          case AnyValue::kStringValue:
-            converter = protobuf_converter_by_type(FieldDescriptor::TYPE_STRING);
-            typeFieldName = "string_value";
-            break;
-          case AnyValue::kBoolValue:
-            converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BOOL);
-            typeFieldName = "bool_value";
-            break;
-          case AnyValue::kIntValue:
-            converter = protobuf_converter_by_type(FieldDescriptor::TYPE_INT64);
-            typeFieldName = "int_value";
-            break;
-          case AnyValue::kDoubleValue:
-            converter = protobuf_converter_by_type(FieldDescriptor::TYPE_DOUBLE);
-            typeFieldName = "double_value";
-            break;
-          case AnyValue::kBytesValue:
-            converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BYTES);
-            typeFieldName = "bytes_value";
-            break;
-          default:
-            goto error;
-            break;
-          }
+bool
+AnyField::FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object)
+{
+  AnyValue *anyValue;
+  try
+    {
+      anyValue = dynamic_cast<AnyValue *>(reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor));
+    }
+  catch(const std::bad_cast &e)
+    {
+      g_assert_not_reached();
+    }
 
-        if (converter)
-          {
-            return converter->Get(*anyValue, typeFieldName.c_str());
-          }
-      }
+  return FilterXObjectDirectSetter(anyValue, object);
+}
 
-error:
-    msg_error("otel:logrecord:anyfield:get field type not yet implemented",
-              evt_tag_str("name", reflectors.fieldDescriptor->name().c_str()),
-              evt_tag_int("type", reflectors.fieldType));
-    return nullptr;
-  }
-  bool FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object)
-  {
+FilterXObject *
+AnyField::FilterXObjectDirectGetter(const AnyValue &anyValue)
+{
+  ProtobufField *converter = nullptr;
+  std::string typeFieldName;
+  AnyValue::ValueCase valueCase = anyValue.value_case();
 
-    AnyValue *anyValue;
-    try
-      {
-        anyValue = dynamic_cast<AnyValue *>(reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor));
-      }
-    catch(const std::bad_cast &e)
-      {
-        g_assert_not_reached();
-      }
+  switch (valueCase)
+    {
+    case AnyValue::kStringValue:
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_STRING);
+      typeFieldName = "string_value";
+      break;
+    case AnyValue::kBoolValue:
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BOOL);
+      typeFieldName = "bool_value";
+      break;
+    case AnyValue::kIntValue:
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_INT64);
+      typeFieldName = "int_value";
+      break;
+    case AnyValue::kDoubleValue:
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_DOUBLE);
+      typeFieldName = "double_value";
+      break;
+    case AnyValue::kBytesValue:
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BYTES);
+      typeFieldName = "bytes_value";
+      break;
+    case AnyValue::kKvlistValue:
+      converter = &filterx::otel_kvlist_converter;
+      typeFieldName = "kvlist_value";
+      break;
+    case AnyValue::kArrayValue:
+      converter = &filterx::otel_array_converter;
+      typeFieldName = "array_value";
+      break;
+    case AnyValue::VALUE_NOT_SET:
+      return filterx_null_new();
+    default:
+      g_assert_not_reached();
+    }
 
-    ProtobufField *converter = nullptr;
-    std::string typeFieldName;
+  return converter->Get(anyValue, typeFieldName.c_str());
+}
 
-    if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(boolean)))
-      {
-        converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BOOL);
-        typeFieldName = "bool_value";
-      }
-    else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(integer)))
-      {
-        converter = protobuf_converter_by_type(FieldDescriptor::TYPE_INT64);
-        typeFieldName = "int_value";
-      }
-    else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(double)))
-      {
-        converter = protobuf_converter_by_type(FieldDescriptor::TYPE_DOUBLE);
-        typeFieldName = "double_value";
-      }
-    else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(string)))
-      {
-        converter = protobuf_converter_by_type(FieldDescriptor::TYPE_STRING);
-        typeFieldName = "string_value";
-      }
-    else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(bytes)))
-      {
-        converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BYTES);
-        typeFieldName = "bytes_value";
-      }
-    else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(protobuf)))
-      {
-        converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BYTES);
-        typeFieldName = "bytes_value";
-      }
-    else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(json)))
-      {
-        converter = protobuf_converter_by_type(FieldDescriptor::TYPE_STRING);
-        typeFieldName = "string_value";
-      }
-    else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(datetime)))
-      {
-        // notice int64_t (sfixed64) instead of uint64_t (fixed64) since anyvalue's int_value is int64_t
-        converter = protobuf_converter_by_type(FieldDescriptor::TYPE_SFIXED64);
-        typeFieldName = "int_value";
-      }
-    else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(null)))
-      {
-        anyValue->clear_value();
-        return true;
-      }
-    else
-      {
-        goto error;
-      }
+bool
+AnyField::FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object)
+{
+  ProtobufField *converter = nullptr;
+  const char *typeFieldName;
 
-    if (converter)
-      return converter->Set(anyValue, typeFieldName.c_str(), object);
-error:
-    msg_error("otel:logrecord:anyfield:set field type not yet implemented",
-              evt_tag_str("name", reflectors.fieldDescriptor->name().c_str()),
-              evt_tag_int("type", reflectors.fieldType));
-    return false;
-  }
-};
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(boolean)))
+    {
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BOOL);
+      typeFieldName = "bool_value";
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(integer)))
+    {
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_INT64);
+      typeFieldName = "int_value";
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(double)))
+    {
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_DOUBLE);
+      typeFieldName = "double_value";
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(string)))
+    {
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_STRING);
+      typeFieldName = "string_value";
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(bytes)))
+    {
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BYTES);
+      typeFieldName = "bytes_value";
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(protobuf)))
+    {
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BYTES);
+      typeFieldName = "bytes_value";
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_kvlist)))
+    {
+      converter = &filterx::otel_kvlist_converter;
+      typeFieldName = "kvlist_value";
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_array)))
+    {
+      converter = &filterx::otel_array_converter;
+      typeFieldName = "array_value";
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(json)))
+    {
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_STRING);
+      typeFieldName = "string_value";
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(datetime)))
+    {
+      // notice int64_t (sfixed64) instead of uint64_t (fixed64) since anyvalue's int_value is int64_t
+      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_SFIXED64);
+      typeFieldName = "int_value";
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(null)))
+    {
+      anyValue->clear_value();
+      return true;
+    }
 
-static AnyField any_field_converter;
+  if (!converter)
+    {
+      msg_error("otel-field: FilterX type -> AnyValue field type conversion not yet implemented",
+                evt_tag_str("type", object->type->name));
+      return false;
+    }
+
+  return converter->Set(anyValue, typeFieldName, object);
+}
+
+AnyField syslogng::grpc::otel::any_field_converter;
 
 class OtelDatetimeConverter : public ProtobufField
 {
@@ -230,6 +253,11 @@ ProtobufField *syslogng::grpc::otel::otel_converter_by_field_descriptor(const Fi
       fieldName.compare("observed_time_unix_nano") == 0)
     {
       return &otel_datetime_converter;
+    }
+
+  if (fieldName.compare("attributes") == 0)
+    {
+      return &filterx::otel_kvlist_converter;
     }
 
   const FieldDescriptor::Type fieldType = fd->type();

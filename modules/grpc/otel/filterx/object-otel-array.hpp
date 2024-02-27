@@ -20,58 +20,70 @@
  *
  */
 
-#ifndef OTEL_SCOPE_HPP
-#define OTEL_SCOPE_HPP
+#ifndef OBJECT_OTEL_ARRAY_HPP
+#define OBJECT_OTEL_ARRAY_HPP
 
 #include "syslog-ng.h"
 
 #include "compat/cpp-start.h"
 #include "filterx/filterx-object.h"
-#include "otel-filterx.h"
+#include "object-otel.h"
 #include "compat/cpp-end.h"
 
+#include "protobuf-field.hpp"
 #include "opentelemetry/proto/common/v1/common.pb.h"
 
-typedef struct FilterXOtelScope_ FilterXOtelScope;
+typedef struct FilterXOtelArray_ FilterXOtelArray;
 
-FilterXObject *_filterx_otel_scope_clone(FilterXObject *s);
+FilterXObject *_filterx_otel_array_clone(FilterXObject *s);
 
 namespace syslogng {
 namespace grpc {
 namespace otel {
 namespace filterx {
 
-class Scope
+class Array
 {
 public:
-  Scope(FilterXOtelScope *s);
-  Scope(FilterXOtelScope *s, FilterXObject *protobuf_object);
-  Scope(Scope &o) = delete;
-  Scope(Scope &&o) = delete;
+  Array(FilterXOtelArray *s);
+  Array(FilterXOtelArray *s, FilterXObject *protobuf_object);
+  Array(Array &o) = delete;
+  Array(Array &&o) = delete;
 
   std::string marshal();
-  bool set_field(const gchar *attribute, FilterXObject *value);
-  FilterXObject *get_field(const gchar *attribute);
-  const opentelemetry::proto::common::v1::InstrumentationScope &get_value() const;
+  bool set_subscript(FilterXObject *key, FilterXObject *value);
+  FilterXObject *get_subscript(FilterXObject *key);
+  const opentelemetry::proto::common::v1::ArrayValue &get_value() const;
 
 private:
-  Scope(const Scope &o, FilterXOtelScope *s);
-  friend FilterXObject *::_filterx_otel_scope_clone(FilterXObject *s);
+  Array(const Array &o, FilterXOtelArray *s);
+  friend FilterXObject *::_filterx_otel_array_clone(FilterXObject *s);
 
 private:
-  FilterXOtelScope *super;
-  opentelemetry::proto::common::v1::InstrumentationScope scope;
+  FilterXOtelArray *super;
+  opentelemetry::proto::common::v1::ArrayValue array;
+
+  friend class OtelArrayField;
 };
 
+class OtelArrayField : public ProtobufField
+{
+public:
+  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors);
+  bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object);
+};
+
+extern OtelArrayField otel_array_converter;
+
 }
 }
 }
 }
 
-struct FilterXOtelScope_
+struct FilterXOtelArray_
 {
   FilterXObject super;
-  syslogng::grpc::otel::filterx::Scope *cpp;
+  syslogng::grpc::otel::filterx::Array *cpp;
 };
 
 #endif

@@ -4,13 +4,17 @@ if ENABLE_GRPC
 noinst_LTLIBRARIES += modules/grpc/otel/filterx/libfilterx.la
 
 modules_grpc_otel_filterx_libfilterx_la_SOURCES = \
-  modules/grpc/otel/filterx/otel-filterx.h \
-  modules/grpc/otel/filterx/otel-logrecord.cpp \
-  modules/grpc/otel/filterx/otel-logrecord.hpp \
-  modules/grpc/otel/filterx/otel-resource.cpp \
-  modules/grpc/otel/filterx/otel-resource.hpp \
-  modules/grpc/otel/filterx/otel-scope.cpp \
-  modules/grpc/otel/filterx/otel-scope.hpp \
+  modules/grpc/otel/filterx/object-otel.h \
+  modules/grpc/otel/filterx/object-otel-logrecord.cpp \
+  modules/grpc/otel/filterx/object-otel-logrecord.hpp \
+  modules/grpc/otel/filterx/object-otel-resource.cpp \
+  modules/grpc/otel/filterx/object-otel-resource.hpp \
+  modules/grpc/otel/filterx/object-otel-scope.cpp \
+  modules/grpc/otel/filterx/object-otel-scope.hpp \
+  modules/grpc/otel/filterx/object-otel-kvlist.cpp \
+  modules/grpc/otel/filterx/object-otel-kvlist.hpp \
+  modules/grpc/otel/filterx/object-otel-array.cpp \
+  modules/grpc/otel/filterx/object-otel-array.hpp \
   modules/grpc/otel/filterx/protobuf-field.cpp \
   modules/grpc/otel/filterx/protobuf-field.hpp \
   modules/grpc/otel/filterx/otel-field.cpp \
