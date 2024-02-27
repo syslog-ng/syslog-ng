@@ -38,10 +38,18 @@ FilterXObject *otel_resource_new(GPtrArray *args);
 gpointer grpc_otel_filterx_scope_construct_new(Plugin *self);
 FilterXObject *otel_scope_new(GPtrArray *args);
 
-#include "compat/cpp-end.h"
-
 FILTERX_DECLARE_TYPE(otel_logrecord);
 FILTERX_DECLARE_TYPE(otel_resource);
 FILTERX_DECLARE_TYPE(otel_scope);
+
+static inline void
+otel_filterx_objects_global_init(void)
+{
+  filterx_type_init(&FILTERX_TYPE_NAME(otel_logrecord));
+  filterx_type_init(&FILTERX_TYPE_NAME(otel_resource));
+  filterx_type_init(&FILTERX_TYPE_NAME(otel_scope));
+}
+
+#include "compat/cpp-end.h"
 
 #endif
