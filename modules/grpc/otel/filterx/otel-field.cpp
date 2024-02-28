@@ -224,13 +224,9 @@ public:
         reflectors.reflection->SetUInt64(message, reflectors.fieldDescriptor, unix_epoch);
         return true;
       }
-    else
-      {
-        msg_error("field type not yet implemented",
-                  evt_tag_str("name", reflectors.fieldDescriptor->name().c_str()),
-                  evt_tag_int("type", reflectors.fieldType));
-        return false;
-      }
+
+    return protobuf_converter_by_type(reflectors.fieldDescriptor->type())->Set(message, reflectors.fieldDescriptor->name(),
+           object);
   }
 };
 
