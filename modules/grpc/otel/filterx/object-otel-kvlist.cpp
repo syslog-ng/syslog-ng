@@ -31,47 +31,80 @@
 #include <stdexcept>
 
 using namespace syslogng::grpc::otel::filterx;
-using opentelemetry::proto::common::v1::KeyValue;
 using opentelemetry::proto::common::v1::KeyValueList;
 using opentelemetry::proto::common::v1::AnyValue;
 
 /* C++ Implementations */
 
-KVList::KVList(FilterXOtelKVList *s) : super(s)
+KVList::KVList(FilterXOtelKVList *s) :
+  super(s),
+  repeated_kv(new RepeatedPtrField<KeyValue>()),
+  borrowed(false)
 {
 }
 
-KVList::KVList(FilterXOtelKVList *s, FilterXObject *protobuf_object) : super(s)
+KVList::KVList(FilterXOtelKVList *s, RepeatedPtrField<KeyValue> *k) :
+  super(s),
+  repeated_kv(k),
+  borrowed(true)
+{
+}
+
+KVList::KVList(FilterXOtelKVList *s, FilterXObject *protobuf_object) :
+  super(s),
+  repeated_kv(new RepeatedPtrField<KeyValue>()),
+  borrowed(false)
 {
   gsize length;
   const gchar *value = filterx_protobuf_get_value(protobuf_object, &length);
 
   if (!value)
-    throw std::runtime_error("Argument is not a protobuf object");
+    {
+      delete repeated_kv;
+      throw std::runtime_error("Argument is not a protobuf object");
+    }
 
-  if (!kvlist.ParsePartialFromArray(value, length))
-    throw std::runtime_error("Failed to parse from protobuf object");
+  KeyValueList temp_kvlist;
+  if (!temp_kvlist.ParsePartialFromArray(value, length))
+    {
+      delete repeated_kv;
+      throw std::runtime_error("Failed to parse from protobuf object");
+    }
+
+  repeated_kv->CopyFrom(*temp_kvlist.mutable_values());
 }
 
-KVList::KVList(const KVList &o, FilterXOtelKVList *s) : super(s), kvlist(o.kvlist)
+KVList::KVList(const KVList &o, FilterXOtelKVList *s) :
+  super(s),
+  repeated_kv(new RepeatedPtrField<KeyValue>()),
+  borrowed(false)
 {
+  repeated_kv->CopyFrom(*o.repeated_kv);
+}
+
+KVList::~KVList()
+{
+  if (!borrowed)
+    delete repeated_kv;
 }
 
 std::string
 KVList::marshal(void)
 {
-  return kvlist.SerializePartialAsString();
+  KeyValueList temp_kvlist;
+  temp_kvlist.mutable_values()->CopyFrom(*repeated_kv);
+  return temp_kvlist.SerializePartialAsString();
 }
 
-opentelemetry::proto::common::v1::KeyValue *
+KeyValue *
 KVList::get_mutable_kv_for_key(const char *key)
 {
-  for (int i = 0; i < kvlist.values_size(); i++)
+  for (int i = 0; i < repeated_kv->size(); i++)
     {
-      KeyValue *possible_kv = kvlist.mutable_values(i);
+      KeyValue &possible_kv = repeated_kv->at(i);
 
-      if (possible_kv->key().compare(key) == 0)
-        return possible_kv;
+      if (possible_kv.key().compare(key) == 0)
+        return &possible_kv;
     }
 
   return nullptr;
@@ -93,7 +126,7 @@ KVList::set_subscript(FilterXObject *key, FilterXObject *value)
   KeyValue *kv = get_mutable_kv_for_key(key_c_str);
   if (!kv)
     {
-      kv = kvlist.add_values();
+      kv = repeated_kv->Add();
       kv->set_key(key_c_str);
     }
 
@@ -124,10 +157,10 @@ KVList::get_subscript(FilterXObject *key)
   return converter->Get(kv, "value");
 }
 
-const KeyValueList &
+const RepeatedPtrField<KeyValue> &
 KVList::get_value() const
 {
-  return kvlist;
+  return *repeated_kv;
 }
 
 /* C Wrappers */
@@ -221,6 +254,17 @@ otel_kvlist_new(GPtrArray *args)
   return &s->super;
 }
 
+static FilterXObject *
+_new_borrowed(RepeatedPtrField<KeyValue> *kvlist)
+{
+  FilterXOtelKVList *s = g_new0(FilterXOtelKVList, 1);
+  filterx_object_init_instance((FilterXObject *) s, &FILTERX_TYPE_NAME(otel_kvlist));
+
+  s->cpp = new KVList(s, kvlist);
+
+  return &s->super;
+}
+
 gpointer
 grpc_otel_filterx_kvlist_construct_new(Plugin *self)
 {
@@ -230,31 +274,22 @@ grpc_otel_filterx_kvlist_construct_new(Plugin *self)
 FilterXObject *
 OtelKVListField::FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
 {
-  FilterXOtelKVList *filterx_kvlist = (FilterXOtelKVList *) otel_kvlist_new(NULL);
-
   if (reflectors.fieldDescriptor->is_repeated())
     {
-      auto repeated_fields = reflectors.reflection->GetRepeatedFieldRef<KeyValue>(*message, reflectors.fieldDescriptor);
-      for (const KeyValue &kv : repeated_fields)
-        {
-          filterx_kvlist->cpp->kvlist.add_values()->CopyFrom(kv);
-        }
-
-      return &filterx_kvlist->super;
+      auto repeated_fields = reflectors.reflection->MutableRepeatedPtrField<KeyValue>(message, reflectors.fieldDescriptor);
+      return _new_borrowed(repeated_fields);
     }
 
   try
     {
       Message *nestedMessage = reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor);
       KeyValueList *kvlist = dynamic_cast<KeyValueList *>(nestedMessage);
-      filterx_kvlist->cpp->kvlist.CopyFrom(*kvlist);
+      return _new_borrowed(kvlist->mutable_values());
     }
   catch(const std::bad_cast &e)
     {
       g_assert_not_reached();
     }
-
-  return &filterx_kvlist->super;
 }
 
 bool
@@ -276,8 +311,8 @@ OtelKVListField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRe
     {
       try
         {
-          auto repeated_fields = reflectors.reflection->GetMutableRepeatedFieldRef<KeyValue>(message, reflectors.fieldDescriptor);
-          repeated_fields.CopyFrom(filterx_kvlist->cpp->get_value().values());
+          auto repeated_fields = reflectors.reflection->MutableRepeatedPtrField<KeyValue>(message, reflectors.fieldDescriptor);
+          repeated_fields->CopyFrom(filterx_kvlist->cpp->get_value());
         }
       catch(const std::bad_cast &e)
         {
@@ -298,7 +333,7 @@ OtelKVListField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRe
       g_assert_not_reached();
     }
 
-  kvlist->CopyFrom(filterx_kvlist->cpp->get_value());
+  kvlist->mutable_values()->CopyFrom(filterx_kvlist->cpp->get_value());
 
   return true;
 }

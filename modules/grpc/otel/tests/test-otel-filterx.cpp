@@ -70,18 +70,26 @@ _assert_filterx_string_attribute(FilterXObject *obj, const std::string &attribut
 }
 
 static void
+_assert_repeated_kvs(const google::protobuf::RepeatedPtrField<KeyValue> &repeated_kv,
+                     const google::protobuf::RepeatedPtrField<KeyValue> &expected_repeated_kv)
+{
+  cr_assert_eq(expected_repeated_kv.size(), repeated_kv.size());
+  for (int i = 0; i < repeated_kv.size(); i++)
+    {
+      cr_assert(MessageDifferencer::Equals(repeated_kv.at(i), expected_repeated_kv.at(i)));
+    }
+}
+
+static void
 _assert_filterx_repeated_kv_attribute(FilterXObject *obj, const std::string &attribute_name,
                                       const google::protobuf::RepeatedPtrField<KeyValue> &expected_repeated_kv)
 {
   FilterXObject *filterx_otel_kvlist = filterx_object_getattr(obj, attribute_name.c_str());
   cr_assert(filterx_object_is_type(filterx_otel_kvlist, &FILTERX_TYPE_NAME(otel_kvlist)));
 
-  const KeyValueList &kvlist = ((FilterXOtelKVList *) filterx_otel_kvlist)->cpp->get_value();
-  cr_assert_eq(kvlist.values_size(), expected_repeated_kv.size());
-  for (int i = 0; i < kvlist.values_size(); i++)
-    {
-      cr_assert(MessageDifferencer::Equals(kvlist.values(i), expected_repeated_kv.at(i)));
-    }
+  const google::protobuf::RepeatedPtrField<KeyValue> &kvlist = ((FilterXOtelKVList *)
+      filterx_otel_kvlist)->cpp->get_value();
+  _assert_repeated_kvs(kvlist, expected_repeated_kv);
 
   filterx_object_unref(filterx_otel_kvlist);
 }
@@ -120,8 +128,7 @@ _assert_filterx_otel_kvlist_element(FilterXObject *obj, FilterXObject *key,
   cr_assert(filterx_otel_kvlist);
   cr_assert(filterx_object_is_type(filterx_otel_kvlist, &FILTERX_TYPE_NAME(otel_kvlist)));
 
-  const KeyValueList &kvlist = ((FilterXOtelKVList *) filterx_otel_kvlist)->cpp->get_value();
-  cr_assert(MessageDifferencer::Equals(kvlist, expected_otel_kvlist));
+  _assert_repeated_kvs(((FilterXOtelKVList *) filterx_otel_kvlist)->cpp->get_value(), expected_otel_kvlist.values());
 
   filterx_object_unref(filterx_otel_kvlist);
 }
@@ -493,8 +500,7 @@ Test(otel_filterx, kvlist_empty)
   FilterXOtelKVList *filterx_otel_kvlist = (FilterXOtelKVList *) otel_kvlist_new(NULL);
   cr_assert(filterx_otel_kvlist);
 
-  cr_assert(MessageDifferencer::Equals(opentelemetry::proto::common::v1::KeyValueList(),
-                                       filterx_otel_kvlist->cpp->get_value()));
+  cr_assert_eq(filterx_otel_kvlist->cpp->get_value().size(), 0);
 
   filterx_object_unref(&filterx_otel_kvlist->super);
 }
@@ -516,8 +522,7 @@ Test(otel_filterx, kvlist_from_protobuf)
   FilterXOtelKVList *filterx_otel_kvlist = (FilterXOtelKVList *) otel_kvlist_new(args);
   cr_assert(filterx_otel_kvlist);
 
-  const opentelemetry::proto::common::v1::KeyValueList &kvlist_from_filterx = filterx_otel_kvlist->cpp->get_value();
-  cr_assert(MessageDifferencer::Equals(kvlist, kvlist_from_filterx));
+  _assert_repeated_kvs(filterx_otel_kvlist->cpp->get_value(), kvlist.values());
 
   filterx_object_unref(&filterx_otel_kvlist->super);
   g_ptr_array_free(args, TRUE);
