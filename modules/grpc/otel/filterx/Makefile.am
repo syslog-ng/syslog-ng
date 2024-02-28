@@ -26,7 +26,8 @@ modules_grpc_otel_filterx_libfilterx_la_CXXFLAGS = \
   $(GRPCPP_CFLAGS) \
   -I$(OPENTELEMETRY_PROTO_BUILDDIR) \
   -I$(top_srcdir)/modules/grpc/otel/filterx \
-  -I$(top_builddir)/modules/grpc/otel/filterx
+  -I$(top_builddir)/modules/grpc/otel/filterx \
+  -Wno-deprecated-declarations
 
 modules_grpc_otel_filterx_libfilterx_la_LIBADD = \
   $(MODULE_DEPS_LIBS) \
