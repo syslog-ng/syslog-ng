@@ -42,18 +42,22 @@ namespace grpc {
 namespace otel {
 namespace filterx {
 
+using opentelemetry::proto::common::v1::ArrayValue;
+
 class Array
 {
 public:
   Array(FilterXOtelArray *s);
+  Array(FilterXOtelArray *s, ArrayValue *a);
   Array(FilterXOtelArray *s, FilterXObject *protobuf_object);
   Array(Array &o) = delete;
   Array(Array &&o) = delete;
+  ~Array();
 
   std::string marshal();
   bool set_subscript(FilterXObject *key, FilterXObject *value);
   FilterXObject *get_subscript(FilterXObject *key);
-  const opentelemetry::proto::common::v1::ArrayValue &get_value() const;
+  const ArrayValue &get_value() const;
 
 private:
   Array(const Array &o, FilterXOtelArray *s);
@@ -61,7 +65,8 @@ private:
 
 private:
   FilterXOtelArray *super;
-  opentelemetry::proto::common::v1::ArrayValue array;
+  ArrayValue *array;
+  bool borrowed;
 
   friend class OtelArrayField;
 };
