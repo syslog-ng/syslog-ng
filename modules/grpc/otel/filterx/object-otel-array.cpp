@@ -70,7 +70,7 @@ Array::set_subscript(FilterXObject *key, FilterXObject *value)
     {
       msg_error("FilterX: Failed to get OTel Array element",
                 evt_tag_str("error", "Key must be integer type"));
-      return NULL;
+      return false;
     }
 
   GenericNumber gn = filterx_primitive_get_value(key);
