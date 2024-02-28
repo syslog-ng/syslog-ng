@@ -74,7 +74,9 @@ KVList::get_mutable_kv_for_key(const char *key)
         return possible_kv;
     }
 
-  return kvlist.add_values();
+  KeyValue *kv = kvlist.add_values();
+  kv->set_key(key);
+  return kv;
 }
 
 const opentelemetry::proto::common::v1::KeyValue &
