@@ -68,7 +68,7 @@ Array::set_subscript(FilterXObject *key, FilterXObject *value)
 {
   if (!filterx_object_is_type(key, &FILTERX_TYPE_NAME(integer)))
     {
-      msg_error("FilterX: Failed to get OTel Array element",
+      msg_error("FilterX: Failed to set OTel Array element",
                 evt_tag_str("error", "Key must be integer type"));
       return false;
     }
