@@ -59,7 +59,6 @@ private:
   KVList(const KVList &o, FilterXOtelKVList *s);
   friend FilterXObject *::_filterx_otel_kvlist_clone(FilterXObject *s);
   opentelemetry::proto::common::v1::KeyValue *get_mutable_kv_for_key(const char *key);
-  const opentelemetry::proto::common::v1::KeyValue &get_kv_for_key(const char *key);
 
 private:
   FilterXOtelKVList *super;
@@ -71,7 +70,7 @@ private:
 class OtelKVListField : public ProtobufField
 {
 public:
-  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors);
+  FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors);
   bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object);
 };
 

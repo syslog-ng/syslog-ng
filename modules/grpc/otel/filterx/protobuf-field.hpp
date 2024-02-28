@@ -71,11 +71,11 @@ struct ProtoReflectors
 class ProtobufField
 {
 public:
-  FilterXObject *Get(const google::protobuf::Message &message, std::string fieldName)
+  FilterXObject *Get(google::protobuf::Message *message, std::string fieldName)
   {
     try
       {
-        ProtoReflectors reflectors(message, fieldName);
+        ProtoReflectors reflectors(*message, fieldName);
         return this->FilterXObjectGetter(message, reflectors);
       }
     catch(const std::exception &ex)
@@ -98,7 +98,7 @@ public:
       }
   }
 protected:
-  virtual FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors) = 0;
+  virtual FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors) = 0;
   virtual bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors,
                                    FilterXObject *object) = 0;
 };

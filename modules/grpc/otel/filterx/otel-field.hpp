@@ -37,10 +37,10 @@ class AnyField : public ProtobufField
   using AnyValue = opentelemetry::proto::common::v1::AnyValue;
 
 public:
-  FilterXObject *FilterXObjectGetter(const Message &message, ProtoReflectors reflectors);
+  FilterXObject *FilterXObjectGetter(Message *message, ProtoReflectors reflectors);
   bool FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object);
 
-  FilterXObject *FilterXObjectDirectGetter(const AnyValue &anyValue);
+  FilterXObject *FilterXObjectDirectGetter(AnyValue *anyValue);
   bool FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object);
 };
 

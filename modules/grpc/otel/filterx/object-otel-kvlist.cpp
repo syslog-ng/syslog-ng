@@ -74,21 +74,7 @@ KVList::get_mutable_kv_for_key(const char *key)
         return possible_kv;
     }
 
-  KeyValue *kv = kvlist.add_values();
-  kv->set_key(key);
-  return kv;
-}
-
-const opentelemetry::proto::common::v1::KeyValue &
-KVList::get_kv_for_key(const char *key)
-{
-  for (const KeyValue &possible_kv : kvlist.values())
-    {
-      if (possible_kv.key().compare(key) == 0)
-        return possible_kv;
-    }
-
-  throw std::out_of_range(std::string("Key is not found: ") + key);
+  return nullptr;
 }
 
 bool
@@ -105,6 +91,12 @@ KVList::set_subscript(FilterXObject *key, FilterXObject *value)
   ProtobufField *converter = otel_converter_by_type(FieldDescriptor::TYPE_MESSAGE);
 
   KeyValue *kv = get_mutable_kv_for_key(key_c_str);
+  if (!kv)
+    {
+      kv = kvlist.add_values();
+      kv->set_key(key_c_str);
+    }
+
   return converter->Set(kv, "value", value);
 }
 
@@ -120,19 +112,16 @@ KVList::get_subscript(FilterXObject *key)
     }
 
   ProtobufField *converter = otel_converter_by_type(FieldDescriptor::TYPE_MESSAGE);
-
-  try
-    {
-      const KeyValue &kv = get_kv_for_key(key_c_str);
-      return converter->Get(kv, "value");
-    }
-  catch (const std::out_of_range &e)
+  KeyValue *kv = get_mutable_kv_for_key(key_c_str);
+  if (!kv)
     {
       msg_error("FilterX: Failed to get OTel KVList element",
                 evt_tag_str("key", key_c_str),
-                evt_tag_str("error", e.what()));
+                evt_tag_str("error", "Key is not found"));
       return NULL;
     }
+
+  return converter->Get(kv, "value");
 }
 
 const KeyValueList &
@@ -239,13 +228,13 @@ grpc_otel_filterx_kvlist_construct_new(Plugin *self)
 }
 
 FilterXObject *
-OtelKVListField::FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+OtelKVListField::FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
 {
   FilterXOtelKVList *filterx_kvlist = (FilterXOtelKVList *) otel_kvlist_new(NULL);
 
   if (reflectors.fieldDescriptor->is_repeated())
     {
-      auto repeated_fields = reflectors.reflection->GetRepeatedFieldRef<KeyValue>(message, reflectors.fieldDescriptor);
+      auto repeated_fields = reflectors.reflection->GetRepeatedFieldRef<KeyValue>(*message, reflectors.fieldDescriptor);
       for (const KeyValue &kv : repeated_fields)
         {
           filterx_kvlist->cpp->kvlist.add_values()->CopyFrom(kv);
@@ -256,9 +245,9 @@ OtelKVListField::FilterXObjectGetter(const google::protobuf::Message &message, P
 
   try
     {
-      const Message &nestedMessage = reflectors.reflection->GetMessage(message, reflectors.fieldDescriptor);
-      const KeyValueList &kvlist = dynamic_cast<const KeyValueList &>(nestedMessage);
-      filterx_kvlist->cpp->kvlist.CopyFrom(kvlist);
+      Message *nestedMessage = reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor);
+      KeyValueList *kvlist = dynamic_cast<KeyValueList *>(nestedMessage);
+      filterx_kvlist->cpp->kvlist.CopyFrom(*kvlist);
     }
   catch(const std::bad_cast &e)
     {

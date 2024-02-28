@@ -64,9 +64,9 @@ double_to_float_safe(double val)
 class BoolField : public ProtobufField
 {
 public:
-  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+  FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
   {
-    return filterx_boolean_new(reflectors.reflection->GetBool(message, reflectors.fieldDescriptor));
+    return filterx_boolean_new(reflectors.reflection->GetBool(*message, reflectors.fieldDescriptor));
   }
   bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object)
   {
@@ -79,9 +79,9 @@ public:
 class i32Field : public ProtobufField
 {
 public:
-  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+  FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
   {
-    return filterx_integer_new(gint32(reflectors.reflection->GetInt32(message, reflectors.fieldDescriptor)));
+    return filterx_integer_new(gint32(reflectors.reflection->GetInt32(*message, reflectors.fieldDescriptor)));
   }
   bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object)
   {
@@ -100,9 +100,9 @@ public:
 class i64Field : public ProtobufField
 {
 public:
-  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+  FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
   {
-    return filterx_integer_new(gint64(reflectors.reflection->GetInt64(message, reflectors.fieldDescriptor)));
+    return filterx_integer_new(gint64(reflectors.reflection->GetInt64(*message, reflectors.fieldDescriptor)));
   }
   bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object)
   {
@@ -129,9 +129,9 @@ public:
 class u32Field : public ProtobufField
 {
 public:
-  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+  FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
   {
-    return filterx_integer_new(guint32(reflectors.reflection->GetUInt32(message, reflectors.fieldDescriptor)));
+    return filterx_integer_new(guint32(reflectors.reflection->GetUInt32(*message, reflectors.fieldDescriptor)));
   }
   bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object)
   {
@@ -150,9 +150,9 @@ public:
 class u64Field : public ProtobufField
 {
 public:
-  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+  FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
   {
-    uint64_t val = reflectors.reflection->GetUInt64(message, reflectors.fieldDescriptor);
+    uint64_t val = reflectors.reflection->GetUInt64(*message, reflectors.fieldDescriptor);
     if (val > INT64_MAX)
       {
         msg_error("protobuf-field: exceeding FilterX number value range",
@@ -189,10 +189,10 @@ public:
 class StringField : public ProtobufField
 {
 public:
-  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+  FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
   {
     std::string bytesBuffer;
-    const std::string &bytesRef = reflectors.reflection->GetStringReference(message, reflectors.fieldDescriptor,
+    const std::string &bytesRef = reflectors.reflection->GetStringReference(*message, reflectors.fieldDescriptor,
                                   &bytesBuffer);
     return filterx_string_new(bytesRef.c_str(), bytesRef.length());
   }
@@ -228,9 +228,9 @@ public:
 class DoubleField : public ProtobufField
 {
 public:
-  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+  FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
   {
-    return filterx_double_new(gdouble(reflectors.reflection->GetDouble(message, reflectors.fieldDescriptor)));
+    return filterx_double_new(gdouble(reflectors.reflection->GetDouble(*message, reflectors.fieldDescriptor)));
   }
   bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object)
   {
@@ -260,9 +260,9 @@ public:
 class FloatField : public ProtobufField
 {
 public:
-  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+  FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
   {
-    return filterx_double_new(gdouble(reflectors.reflection->GetFloat(message, reflectors.fieldDescriptor)));
+    return filterx_double_new(gdouble(reflectors.reflection->GetFloat(*message, reflectors.fieldDescriptor)));
   }
   bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object)
   {
@@ -292,10 +292,10 @@ public:
 class BytesField : public ProtobufField
 {
 public:
-  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+  FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
   {
     std::string bytesBuffer;
-    const std::string &bytesRef = reflectors.reflection->GetStringReference(message, reflectors.fieldDescriptor,
+    const std::string &bytesRef = reflectors.reflection->GetStringReference(*message, reflectors.fieldDescriptor,
                                   &bytesBuffer);
     return filterx_bytes_new(bytesRef.c_str(), bytesRef.length());
   }

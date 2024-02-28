@@ -136,7 +136,7 @@ Array::get_subscript(FilterXObject *key)
       return NULL;
     }
 
-  const AnyValue &any_value = array->values(index);
+  AnyValue *any_value = array->mutable_values(index);
   return any_field_converter.FilterXObjectDirectGetter(any_value);
 }
 
@@ -255,13 +255,13 @@ grpc_otel_filterx_array_construct_new(Plugin *self)
 }
 
 FilterXObject *
-OtelArrayField::FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+OtelArrayField::FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
 {
   try
     {
-      const Message &nestedMessage = reflectors.reflection->GetMessage(message, reflectors.fieldDescriptor);
-      const ArrayValue &array = dynamic_cast<const ArrayValue &>(nestedMessage);
-      return _new_borrowed(&(ArrayValue &) array);
+      Message *nestedMessage = reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor);
+      ArrayValue *array = dynamic_cast<ArrayValue *>(nestedMessage);
+      return _new_borrowed(array);
     }
   catch(const std::bad_cast &e)
     {

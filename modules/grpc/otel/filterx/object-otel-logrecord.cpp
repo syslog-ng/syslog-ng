@@ -94,7 +94,7 @@ LogRecord::GetField(const gchar *attribute)
   try
     {
       ProtoReflectors reflectors(this->logRecord, attribute);
-      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Get(this->logRecord, attribute);
+      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Get(&this->logRecord, attribute);
     }
   catch(const std::exception &ex)
     {

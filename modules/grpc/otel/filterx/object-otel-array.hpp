@@ -74,7 +74,7 @@ private:
 class OtelArrayField : public ProtobufField
 {
 public:
-  FilterXObject *FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors);
+  FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors);
   bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object);
 };
 

@@ -82,7 +82,7 @@ Scope::get_field(const gchar *attribute)
   try
     {
       ProtoReflectors reflectors(scope, attribute);
-      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Get(scope, attribute);
+      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Get(&scope, attribute);
     }
   catch (const std::invalid_argument &e)
     {
