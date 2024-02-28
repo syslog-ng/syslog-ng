@@ -338,6 +338,7 @@ Test(otel_filterx, resource_set_field)
 
   g_string_free(serialized, TRUE);
   g_ptr_array_unref(attributes_kvlist_args);
+  filterx_object_unref(filterx_kvlist);
   filterx_object_unref(filterx_integer);
   filterx_object_unref(filterx_otel_resource);
 }
