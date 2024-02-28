@@ -820,6 +820,82 @@ Test(otel_filterx, array_set_subscript)
   filterx_object_unref(filterx_otel_array);
 }
 
+Test(otel_filterx, array_through_logrecord)
+{
+  FilterXObject *fx_logrecord = otel_logrecord_new(NULL);
+  FilterXObject *fx_array = otel_array_new(NULL);
+
+  FilterXObject *fx_2 = filterx_integer_new(2);
+
+  FilterXObject *fx_foo = filterx_string_new("foo", -1);
+  FilterXObject *fx_bar = filterx_string_new("bar", -1);
+  FilterXObject *fx_baz = filterx_string_new("baz", -1);
+
+  FilterXObject *fx_inner_array = otel_array_new(NULL);
+
+  /* objects for storing the result of getattr() and get_subscript() */
+  FilterXObject *fx_get_1 = nullptr;
+  FilterXObject *fx_get_2 = nullptr;
+
+  /* $array[] = "foo"; */
+  cr_assert(filterx_object_set_subscript(fx_array, nullptr, fx_foo));
+
+  /* $log.body = $array; */
+  cr_assert(filterx_object_setattr(fx_logrecord, "body", fx_array));
+
+  /* $log.body[] = "bar"; */
+  fx_get_1 = filterx_object_getattr(fx_logrecord, "body");
+  cr_assert(fx_get_1);
+  cr_assert(filterx_object_set_subscript(fx_get_1, nullptr, fx_bar));
+
+  /* $array[] = "baz"; */
+  cr_assert(filterx_object_set_subscript(fx_array, nullptr, fx_baz));
+
+  /* $log.body[] = $inner_array; */
+  filterx_object_unref(fx_get_1);
+  fx_get_1 = filterx_object_getattr(fx_logrecord, "body");
+  cr_assert(fx_get_1);
+  cr_assert(filterx_object_set_subscript(fx_get_1, nullptr, fx_inner_array));
+
+  /* $inner_array[] = "foo"; */
+  cr_assert(filterx_object_set_subscript(fx_inner_array, nullptr, fx_foo));
+
+  /* $log.body[2][] = "baz"; */
+  filterx_object_unref(fx_get_1);
+  fx_get_1 = filterx_object_getattr(fx_logrecord, "body");
+  cr_assert(fx_get_1);
+  filterx_object_unref(fx_get_2);
+  fx_get_2 = filterx_object_get_subscript(fx_get_1, fx_2);
+  cr_assert(fx_get_2);
+  cr_assert(filterx_object_set_subscript(fx_get_2, nullptr, fx_baz));
+
+  LogRecord expected_logrecord;
+  ArrayValue *expected_logrecord_array = expected_logrecord.mutable_body()->mutable_array_value();
+  expected_logrecord_array->add_values()->set_string_value("foo");
+  expected_logrecord_array->add_values()->set_string_value("bar");
+  ArrayValue *inner_array = expected_logrecord_array->add_values()->mutable_array_value();
+  inner_array->add_values()->set_string_value("baz");
+  cr_assert(MessageDifferencer::Equals(expected_logrecord, ((FilterXOtelLogRecord *) fx_logrecord)->cpp->GetValue()));
+
+  ArrayValue expected_array;
+  expected_array.add_values()->set_string_value("foo");
+  expected_array.add_values()->set_string_value("baz");
+  cr_assert(MessageDifferencer::Equals(expected_array, ((FilterXOtelArray *) fx_array)->cpp->get_value()));
+
+  ArrayValue expected_inner_array;
+  expected_inner_array.add_values()->set_string_value("foo");
+  cr_assert(MessageDifferencer::Equals(expected_inner_array, ((FilterXOtelArray *) fx_inner_array)->cpp->get_value()));
+
+  filterx_object_unref(fx_get_2);
+  filterx_object_unref(fx_get_1);
+  filterx_object_unref(fx_inner_array);
+  filterx_object_unref(fx_baz);
+  filterx_object_unref(fx_bar);
+  filterx_object_unref(fx_foo);
+  filterx_object_unref(fx_2);
+  filterx_object_unref(fx_array);
+  filterx_object_unref(fx_logrecord);
+}
 
 void
 setup(void)
