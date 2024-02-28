@@ -662,6 +662,101 @@ Test(otel_filterx, kvlist_set_subscript)
   filterx_object_unref(filterx_otel_kvlist);
 }
 
+Test(otel_filterx, kvlist_through_logrecord)
+{
+  FilterXObject *fx_logrecord = otel_logrecord_new(NULL);
+  FilterXObject *fx_kvlist = otel_kvlist_new(NULL);
+
+  FilterXObject *fx_key_0 = filterx_string_new("key_0", -1);
+  FilterXObject *fx_key_1 = filterx_string_new("key_1", -1);
+  FilterXObject *fx_key_2 = filterx_string_new("key_2", -1);
+  FilterXObject *fx_key_3 = filterx_string_new("key_3", -1);
+
+  FilterXObject *fx_foo = filterx_string_new("foo", -1);
+  FilterXObject *fx_bar = filterx_string_new("bar", -1);
+  FilterXObject *fx_baz = filterx_string_new("baz", -1);
+
+  FilterXObject *fx_inner_kvlist = otel_kvlist_new(NULL);
+
+  /* objects for storing the result of getattr() and get_subscript() */
+  FilterXObject *fx_get_1 = nullptr;
+  FilterXObject *fx_get_2 = nullptr;
+
+  /* $kvlist["key_0"] = "foo"; */
+  cr_assert(filterx_object_set_subscript(fx_kvlist, fx_key_0, fx_foo));
+
+  /* $log.attributes = $kvlist; */
+  cr_assert(filterx_object_setattr(fx_logrecord, "attributes", fx_kvlist));
+
+  /* $log.attributes["key_1"] = "bar"; */
+  fx_get_1 = filterx_object_getattr(fx_logrecord, "attributes");
+  cr_assert(fx_get_1);
+  cr_assert(filterx_object_set_subscript(fx_get_1, fx_key_1, fx_bar));
+
+  /* $kvlist["key_2"] = "baz"; */
+  cr_assert(filterx_object_set_subscript(fx_kvlist, fx_key_2, fx_baz));
+
+  /* $log.attributes["key_3"] = $inner_kvlist; */
+  filterx_object_unref(fx_get_1);
+  fx_get_1 = filterx_object_getattr(fx_logrecord, "attributes");
+  cr_assert(fx_get_1);
+  cr_assert(filterx_object_set_subscript(fx_get_1, fx_key_3, fx_inner_kvlist));
+
+  /* $inner_kvlist["key_0"] = "foo"; */
+  cr_assert(filterx_object_set_subscript(fx_inner_kvlist, fx_key_0, fx_foo));
+
+  /* $log.attributes["key_3"]["key_2"] = "baz"; */
+  filterx_object_unref(fx_get_1);
+  fx_get_1 = filterx_object_getattr(fx_logrecord, "attributes");
+  cr_assert(fx_get_1);
+  filterx_object_unref(fx_get_2);
+  fx_get_2 = filterx_object_get_subscript(fx_get_1, fx_key_3);
+  cr_assert(fx_get_2);
+  cr_assert(filterx_object_set_subscript(fx_get_2, fx_key_2, fx_baz));
+
+  LogRecord expected_logrecord;
+  KeyValue *expected_logrecord_attr_0 = expected_logrecord.add_attributes();
+  expected_logrecord_attr_0->set_key("key_0");
+  expected_logrecord_attr_0->mutable_value()->set_string_value("foo");
+  KeyValue *expected_logrecord_attr_1 = expected_logrecord.add_attributes();
+  expected_logrecord_attr_1->set_key("key_1");
+  expected_logrecord_attr_1->mutable_value()->set_string_value("bar");
+  KeyValue *expected_logrecord_attr_3 = expected_logrecord.add_attributes();
+  expected_logrecord_attr_3->set_key("key_3");
+  KeyValueList *expected_logrecord_inner_kvlist = expected_logrecord_attr_3->mutable_value()->mutable_kvlist_value();
+  KeyValue *expected_logrecord_inner_attr_2 = expected_logrecord_inner_kvlist->add_values();
+  expected_logrecord_inner_attr_2->set_key("key_2");
+  expected_logrecord_inner_attr_2->mutable_value()->set_string_value("baz");
+  cr_assert(MessageDifferencer::Equals(expected_logrecord, ((FilterXOtelLogRecord *) fx_logrecord)->cpp->GetValue()));
+
+  KeyValueList expected_kvlist;
+  KeyValue *expected_kvlist_value_0 = expected_kvlist.add_values();
+  expected_kvlist_value_0->set_key("key_0");
+  expected_kvlist_value_0->mutable_value()->set_string_value("foo");
+  KeyValue *expected_kvlist_value_2 = expected_kvlist.add_values();
+  expected_kvlist_value_2->set_key("key_2");
+  expected_kvlist_value_2->mutable_value()->set_string_value("baz");
+  _assert_repeated_kvs(expected_kvlist.values(), ((FilterXOtelKVList *) fx_kvlist)->cpp->get_value());
+
+  KeyValueList expected_inner_kvlist;
+  KeyValue *expected_inner_kvlist_value_0 = expected_inner_kvlist.add_values();
+  expected_inner_kvlist_value_0->set_key("key_0");
+  expected_inner_kvlist_value_0->mutable_value()->set_string_value("foo");
+  _assert_repeated_kvs(expected_inner_kvlist.values(), ((FilterXOtelKVList *) fx_inner_kvlist)->cpp->get_value());
+
+  filterx_object_unref(fx_get_2);
+  filterx_object_unref(fx_get_1);
+  filterx_object_unref(fx_inner_kvlist);
+  filterx_object_unref(fx_baz);
+  filterx_object_unref(fx_bar);
+  filterx_object_unref(fx_foo);
+  filterx_object_unref(fx_key_3);
+  filterx_object_unref(fx_key_2);
+  filterx_object_unref(fx_key_1);
+  filterx_object_unref(fx_key_0);
+  filterx_object_unref(fx_kvlist);
+  filterx_object_unref(fx_logrecord);
+}
 
 /* Array */
 
