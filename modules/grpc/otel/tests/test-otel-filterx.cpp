@@ -217,6 +217,76 @@ Test(otel_filterx, logrecord_too_many_args)
   g_ptr_array_free(args, TRUE);
 }
 
+Test(otel_filterx, logrecord_implicit_kvlist)
+{
+  FilterXObject *fx_logrecord = otel_logrecord_new(NULL);
+  FilterXObject *fx_body = nullptr;
+
+  FilterXObject *fx_key_0 = filterx_string_new("key_0", -1);
+  FilterXObject *fx_key_1 = filterx_string_new("key_1", -1);
+
+  FilterXObject *fx_foo = filterx_string_new("foo", -1);
+  FilterXObject *fx_bar = filterx_string_new("bar", -1);
+
+  /* objects for storing the result of getattr() and get_subscript() */
+  FilterXObject *fx_get = nullptr;
+
+  /* $log.body["key_0"] = "foo"; */
+  fx_body = filterx_object_getattr(fx_logrecord, "body");
+  cr_assert(fx_body);
+  cr_assert(filterx_object_set_subscript(fx_body, fx_key_0, fx_foo));
+
+  /* $log.body["key_0"]["key_0"] = "foo"; */
+  filterx_object_unref(fx_body);
+  fx_body = filterx_object_getattr(fx_logrecord, "body");
+  cr_assert(fx_body);
+  fx_get = filterx_object_get_subscript(fx_body, fx_key_0);
+  cr_assert(fx_get);
+  cr_assert_not(filterx_object_set_subscript(fx_get, fx_key_0, fx_foo));
+
+  /* $log.body["key_1"]["key_0"] = "bar"; */
+  filterx_object_unref(fx_body);
+  fx_body = filterx_object_getattr(fx_logrecord, "body");
+  cr_assert(fx_body);
+  filterx_object_unref(fx_get);
+  fx_get = filterx_object_get_subscript(fx_body, fx_key_1);
+  cr_assert(fx_get);
+  cr_assert(filterx_object_set_subscript(fx_get, fx_key_0, fx_bar));
+
+  AnyValue expected_body_1;
+  KeyValueList *expected_kvlist = expected_body_1.mutable_kvlist_value();
+  KeyValue *expected_kv_0 = expected_kvlist->add_values();
+  expected_kv_0->set_key("key_0");
+  expected_kv_0->mutable_value()->set_string_value("foo");
+  KeyValue *expected_kv_1 = expected_kvlist->add_values();
+  expected_kv_1->set_key("key_1");
+  KeyValue *expected_inner_kv_0 = expected_kv_1->mutable_value()->mutable_kvlist_value()->add_values();
+  expected_inner_kv_0->set_key("key_0");
+  expected_inner_kv_0->mutable_value()->set_string_value("bar");
+  cr_assert(MessageDifferencer::Equals(expected_body_1, ((FilterXOtelLogRecord *) fx_logrecord)->cpp->GetValue().body()));
+
+  /* $log.body = "foo"; */
+  cr_assert(filterx_object_setattr(fx_logrecord, "body", fx_foo));
+
+  /* $log.body["key_0"] = "foo"; */
+  filterx_object_unref(fx_body);
+  fx_body = filterx_object_getattr(fx_logrecord, "body");
+  cr_assert(fx_body);
+  cr_assert_not(filterx_object_set_subscript(fx_body, fx_key_0, fx_foo));
+
+  AnyValue expected_body_2;
+  expected_body_2.set_string_value("foo");
+  cr_assert(MessageDifferencer::Equals(expected_body_2, ((FilterXOtelLogRecord *) fx_logrecord)->cpp->GetValue().body()));
+
+  filterx_object_unref(fx_get);
+  filterx_object_unref(fx_bar);
+  filterx_object_unref(fx_foo);
+  filterx_object_unref(fx_key_1);
+  filterx_object_unref(fx_key_0);
+  filterx_object_unref(fx_body);
+  filterx_object_unref(fx_logrecord);
+}
+
 
 /* Resource */
 
@@ -599,11 +669,6 @@ Test(otel_filterx, kvlist_get_subscript)
   _assert_filterx_otel_kvlist_element(filterx_otel_kvlist, element_3_key, *inner_kvlist);
   _assert_filterx_otel_array_element(filterx_otel_kvlist, element_4_key, *inner_array);
 
-  FilterXObject *invalid_element_key = filterx_string_new("invalid_element_key", -1);
-  FilterXObject *filterx_invalid = filterx_object_get_subscript(filterx_otel_kvlist, invalid_element_key);
-  cr_assert_not(filterx_invalid);
-
-  filterx_object_unref(invalid_element_key);
   filterx_object_unref(element_1_key);
   filterx_object_unref(element_2_key);
   filterx_object_unref(element_3_key);

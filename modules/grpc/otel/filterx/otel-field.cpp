@@ -159,7 +159,7 @@ AnyField::FilterXObjectDirectGetter(AnyValue *anyValue)
       typeFieldName = "array_value";
       break;
     case AnyValue::VALUE_NOT_SET:
-      return filterx_null_new();
+      return otel_implicit_kvlist_new(anyValue);
     default:
       g_assert_not_reached();
     }
