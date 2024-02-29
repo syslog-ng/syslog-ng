@@ -783,18 +783,14 @@ Test(otel_filterx, array_set_subscript)
   FilterXObject *filterx_otel_array = (FilterXObject *) otel_array_new(NULL);
   cr_assert(filterx_otel_array);
 
-  FilterXObject *element_1_key = filterx_integer_new(0);
   FilterXObject *element_1_value = filterx_integer_new(42);
-  FilterXObject *element_2_key = filterx_integer_new(1);
   FilterXObject *element_2_value = filterx_string_new("foobar", -1);
-  FilterXObject *element_3_key = filterx_integer_new(2);
   FilterXObject *element_3_value = otel_kvlist_new(NULL);
-  FilterXObject *element_4_key = filterx_integer_new(3);
   FilterXObject *element_4_value = otel_array_new(NULL);
-  cr_assert(filterx_object_set_subscript(filterx_otel_array, element_1_key, element_1_value));
-  cr_assert(filterx_object_set_subscript(filterx_otel_array, element_2_key, element_2_value));
-  cr_assert(filterx_object_set_subscript(filterx_otel_array, element_3_key, element_3_value));
-  cr_assert(filterx_object_set_subscript(filterx_otel_array, element_4_key, element_4_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_array, NULL, element_1_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_array, NULL, element_2_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_array, NULL, element_3_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_array, NULL, element_4_value));
 
   FilterXObject *invalid_element_key = filterx_string_new("invalid_key", -1);
   cr_assert_not(filterx_object_set_subscript(filterx_otel_array, invalid_element_key, element_1_value));
@@ -816,13 +812,9 @@ Test(otel_filterx, array_set_subscript)
   cr_assert(MessageDifferencer::Equals(array.values(3).array_value(), ArrayValue()));
 
   g_string_free(serialized, TRUE);
-  filterx_object_unref(element_1_key);
   filterx_object_unref(element_1_value);
-  filterx_object_unref(element_2_key);
   filterx_object_unref(element_2_value);
-  filterx_object_unref(element_3_key);
   filterx_object_unref(element_3_value);
-  filterx_object_unref(element_4_key);
   filterx_object_unref(element_4_value);
   filterx_object_unref(invalid_element_key);
   filterx_object_unref(filterx_otel_array);

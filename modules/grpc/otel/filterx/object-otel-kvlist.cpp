@@ -113,6 +113,13 @@ KVList::get_mutable_kv_for_key(const char *key)
 bool
 KVList::set_subscript(FilterXObject *key, FilterXObject *value)
 {
+  if (!key)
+    {
+      msg_error("FilterX: Failed to set OTel KVList element",
+                evt_tag_str("error", "Key is mandatory"));
+      return false;
+    }
+
   const gchar *key_c_str = filterx_string_get_value(key, NULL);
   if (!key_c_str)
     {

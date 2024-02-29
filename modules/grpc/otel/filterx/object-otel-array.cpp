@@ -94,6 +94,9 @@ Array::marshal(void)
 bool
 Array::set_subscript(FilterXObject *key, FilterXObject *value)
 {
+  if (!key)
+    return any_field_converter.FilterXObjectDirectSetter(array->add_values(), value);
+
   if (!filterx_object_is_type(key, &FILTERX_TYPE_NAME(integer)))
     {
       msg_error("FilterX: Failed to set OTel Array element",
@@ -105,14 +108,9 @@ Array::set_subscript(FilterXObject *key, FilterXObject *value)
   gint64 index = gn_as_int64(&gn);
 
   if (index >= array->values_size())
-    {
-      for (int i = 0; i < index + 1 - array->values_size(); i++)
-        array->add_values();
-    }
+    return false;
 
-  AnyValue *any_value = array->mutable_values(index);
-
-  return any_field_converter.FilterXObjectDirectSetter(any_value, value);
+  return any_field_converter.FilterXObjectDirectSetter(array->mutable_values(index), value);
 }
 
 FilterXObject *
