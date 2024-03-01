@@ -224,7 +224,8 @@ AnyField::FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object)
       converter = protobuf_converter_by_type(FieldDescriptor::TYPE_SFIXED64);
       typeFieldName = "int_value";
     }
-  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(null)))
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(null)) ||
+           filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_implicit_kvlist)))
     {
       anyValue->clear_value();
       return true;
