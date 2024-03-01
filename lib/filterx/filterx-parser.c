@@ -44,7 +44,7 @@ static CfgLexerKeyword filterx_keywords[] =
   { "null",               KW_NULL },
   { "enum",               KW_ENUM },
 
-  { NULL }
+  { CFG_KEYWORD_STOP },
 };
 
 CfgParser filterx_parser =
