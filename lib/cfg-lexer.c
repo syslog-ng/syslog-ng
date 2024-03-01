@@ -1259,6 +1259,7 @@ static const gchar *lexer_contexts[] =
   [LL_CONTEXT_TEMPLATE_REF] = "template-ref",
   [LL_CONTEXT_FILTERX] = "filterx",
   [LL_CONTEXT_FILTERX_FUNC] = "filterx-func",
+  [LL_CONTEXT_FILTERX_ENUM] = "filterx-enum",
 };
 
 gint

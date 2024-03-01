@@ -42,6 +42,7 @@ static CfgLexerKeyword filterx_keywords[] =
   { "true",               KW_TRUE },
   { "false",              KW_FALSE },
   { "null",               KW_NULL },
+  { "enum",               KW_ENUM },
 
   { NULL }
 };
