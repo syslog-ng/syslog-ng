@@ -36,9 +36,16 @@ typedef struct _FilterXPrimitive
   GenericNumber value;
 } FilterXPrimitive;
 
+typedef struct _FilterXEnumDefinition
+{
+  const gchar *name;
+  gint64 value;
+} FilterXEnumDefinition;
+
 FilterXObject *filterx_integer_new(gint64 value);
 FilterXObject *filterx_double_new(gdouble value);
 FilterXObject *filterx_boolean_new(gboolean value);
+FilterXObject *filterx_enum_new(GlobalConfig *cfg, const gchar *namespace_name, const gchar *enum_name);
 GenericNumber filterx_primitive_get_value(FilterXObject *s);
 
 static inline gboolean

@@ -58,6 +58,11 @@ static Plugin otel_plugins[] =
     .parser = &otel_parser,
   },
   {
+    .type = LL_CONTEXT_FILTERX_ENUM,
+    .name = "otel",
+    .construct = grpc_otel_filterx_enum_construct,
+  },
+  {
     .type = LL_CONTEXT_FILTERX_FUNC,
     .name = "otel_logrecord",
     .construct = grpc_otel_filterx_logrecord_contruct_new,

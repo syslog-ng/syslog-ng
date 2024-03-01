@@ -21,8 +21,11 @@
  *
  */
 #include "filterx/object-primitive.h"
+#include "filterx/filterx-grammar.h"
 #include "generic-number.h"
 #include "str-format.h"
+#include "plugin.h"
+#include "cfg.h"
 
 #include "compat/json.h"
 
@@ -153,6 +156,59 @@ filterx_boolean_new(gboolean value)
         }
       return filterx_object_ref(false_object);
     }
+}
+
+static gboolean
+_lookup_enum_value_from_array(const FilterXEnumDefinition *enum_defs, const gchar *enum_name, gint64 *value)
+{
+  gint64 i = 0;
+  while (TRUE)
+    {
+      const FilterXEnumDefinition *enum_def = &enum_defs[i];
+
+      if (!enum_def->name)
+        return FALSE;
+
+      if (strcasecmp(enum_def->name, enum_name) != 0)
+        {
+          i++;
+          continue;
+        }
+
+      *value = enum_def->value;
+      return TRUE;
+    }
+}
+
+static gboolean
+_lookup_enum_value(GlobalConfig *cfg, const gchar *namespace_name, const gchar *enum_name, gint64 *value)
+{
+  Plugin *p = cfg_find_plugin(cfg, LL_CONTEXT_FILTERX_ENUM, namespace_name);
+
+  if (p == NULL)
+    return FALSE;
+
+  const FilterXEnumDefinition *enum_defs = plugin_construct(p);
+  if (enum_defs == NULL)
+    return FALSE;
+
+  return _lookup_enum_value_from_array(enum_defs, enum_name, value);
+}
+
+FilterXObject *
+filterx_enum_new(GlobalConfig *cfg, const gchar *namespace_name, const gchar *enum_name)
+{
+  FilterXPrimitive *self = filterx_primitive_new(&FILTERX_TYPE_NAME(integer));
+
+  gint64 value;
+  if (!_lookup_enum_value(cfg, namespace_name, enum_name, &value))
+    {
+      filterx_object_unref(&self->super);
+      return NULL;
+    }
+
+  gn_set_int64(&self->value, value);
+  return &self->super;
 }
 
 GenericNumber

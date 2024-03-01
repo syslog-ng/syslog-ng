@@ -80,6 +80,7 @@ construct_template_expr(LogTemplate *template)
 
 %token KW_TRUE, KW_FALSE
 %token KW_NULL
+%token KW_ENUM
 
 %type <ptr> stmts
 %type <node> stmt
@@ -177,6 +178,13 @@ literal_object
 	| LL_FLOAT				{ $$ = filterx_double_new($1); }
 	| KW_NULL				{ $$ = filterx_null_new(); }
 	| boolean				{ $$ = filterx_boolean_new($1); }
+	| KW_ENUM '(' string '.' string ')'	{
+							FilterXObject *res = filterx_enum_new(configuration, $3, $5);
+							CHECK_ERROR(res, @1, "enum %s.%s not found", $3, $5);
+							free($3);
+							free($5);
+							$$ = res;
+						}
 	;
 
 lvalue
