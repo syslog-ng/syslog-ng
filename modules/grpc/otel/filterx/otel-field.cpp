@@ -42,6 +42,42 @@
 
 using namespace syslogng::grpc::otel;
 using namespace google::protobuf;
+using namespace opentelemetry::proto::logs::v1;
+
+gpointer
+grpc_otel_filterx_enum_construct(Plugin *self)
+{
+  static FilterXEnumDefinition enums[] =
+  {
+    { "SEVERITY_NUMBER_TRACE", SeverityNumber::SEVERITY_NUMBER_TRACE },
+    { "SEVERITY_NUMBER_TRACE2", SeverityNumber::SEVERITY_NUMBER_TRACE2 },
+    { "SEVERITY_NUMBER_TRACE3", SeverityNumber::SEVERITY_NUMBER_TRACE3 },
+    { "SEVERITY_NUMBER_TRACE4", SeverityNumber::SEVERITY_NUMBER_TRACE4 },
+    { "SEVERITY_NUMBER_DEBUG", SeverityNumber::SEVERITY_NUMBER_DEBUG },
+    { "SEVERITY_NUMBER_DEBUG2", SeverityNumber::SEVERITY_NUMBER_DEBUG2 },
+    { "SEVERITY_NUMBER_DEBUG3", SeverityNumber::SEVERITY_NUMBER_DEBUG3 },
+    { "SEVERITY_NUMBER_DEBUG4", SeverityNumber::SEVERITY_NUMBER_DEBUG4 },
+    { "SEVERITY_NUMBER_INFO", SeverityNumber::SEVERITY_NUMBER_INFO },
+    { "SEVERITY_NUMBER_INFO2", SeverityNumber::SEVERITY_NUMBER_INFO2 },
+    { "SEVERITY_NUMBER_INFO3", SeverityNumber::SEVERITY_NUMBER_INFO3 },
+    { "SEVERITY_NUMBER_INFO4", SeverityNumber::SEVERITY_NUMBER_INFO4 },
+    { "SEVERITY_NUMBER_WARN", SeverityNumber::SEVERITY_NUMBER_WARN },
+    { "SEVERITY_NUMBER_WARN2", SeverityNumber::SEVERITY_NUMBER_WARN2 },
+    { "SEVERITY_NUMBER_WARN3", SeverityNumber::SEVERITY_NUMBER_WARN3 },
+    { "SEVERITY_NUMBER_WARN4", SeverityNumber::SEVERITY_NUMBER_WARN4 },
+    { "SEVERITY_NUMBER_ERROR", SeverityNumber::SEVERITY_NUMBER_ERROR },
+    { "SEVERITY_NUMBER_ERROR2", SeverityNumber::SEVERITY_NUMBER_ERROR2 },
+    { "SEVERITY_NUMBER_ERROR3", SeverityNumber::SEVERITY_NUMBER_ERROR3 },
+    { "SEVERITY_NUMBER_ERROR4", SeverityNumber::SEVERITY_NUMBER_ERROR4 },
+    { "SEVERITY_NUMBER_FATAL", SeverityNumber::SEVERITY_NUMBER_FATAL },
+    { "SEVERITY_NUMBER_FATAL2", SeverityNumber::SEVERITY_NUMBER_FATAL2 },
+    { "SEVERITY_NUMBER_FATAL3", SeverityNumber::SEVERITY_NUMBER_FATAL3 },
+    { "SEVERITY_NUMBER_FATAL4", SeverityNumber::SEVERITY_NUMBER_FATAL4 },
+    { NULL },
+  };
+
+  return enums;
+}
 
 FilterXObject *
 AnyField::FilterXObjectGetter(Message *message, ProtoReflectors reflectors)
@@ -232,6 +268,41 @@ public:
 
 static OtelDatetimeConverter otel_datetime_converter;
 
+class OtelSeverityNumberEnumConverter : public ProtobufField
+{
+public:
+  FilterXObject *FilterXObjectGetter(Message *message, ProtoReflectors reflectors)
+  {
+    int value = reflectors.reflection->GetEnumValue(*message, reflectors.fieldDescriptor);
+    return filterx_integer_new(value);
+  }
+  bool FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object)
+  {
+    if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(integer)))
+      {
+        int64_t value;
+        filterx_integer_unwrap(object, &value);
+        if (!SeverityNumber_IsValid((int) value))
+          {
+            msg_error("otel-field: Failed to set severity_number",
+                      evt_tag_str("error", "Value is invalid"),
+                      evt_tag_int("value", value));
+            return false;
+          }
+
+        reflectors.reflection->SetEnumValue(message, reflectors.fieldDescriptor, (int) value);
+        return true;
+      }
+
+    msg_error("otel-field: Failed to set severity_number",
+              evt_tag_str("error", "Value type is invalid"),
+              evt_tag_str("type", object->type->name));
+    return false;
+  }
+};
+
+static OtelSeverityNumberEnumConverter otel_severity_number_enum_converter;
+
 ProtobufField *syslogng::grpc::otel::otel_converter_by_type(FieldDescriptor::Type fieldType)
 {
   g_assert(fieldType <= FieldDescriptor::MAX_TYPE && fieldType > 0);
@@ -254,6 +325,11 @@ ProtobufField *syslogng::grpc::otel::otel_converter_by_field_descriptor(const Fi
   if (fieldName.compare("attributes") == 0)
     {
       return &filterx::otel_kvlist_converter;
+    }
+
+  if (fd->type() == FieldDescriptor::TYPE_ENUM)
+    {
+      return &otel_severity_number_enum_converter;
     }
 
   const FieldDescriptor::Type fieldType = fd->type();

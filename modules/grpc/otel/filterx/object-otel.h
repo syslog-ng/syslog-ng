@@ -44,6 +44,8 @@ FilterXObject *otel_kvlist_new(GPtrArray *args);
 gpointer grpc_otel_filterx_array_construct_new(Plugin *self);
 FilterXObject *otel_array_new(GPtrArray *args);
 
+gpointer grpc_otel_filterx_enum_construct(Plugin *self);
+
 FILTERX_DECLARE_TYPE(otel_logrecord);
 FILTERX_DECLARE_TYPE(otel_resource);
 FILTERX_DECLARE_TYPE(otel_scope);
