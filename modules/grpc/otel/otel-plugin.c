@@ -79,7 +79,7 @@ static Plugin otel_plugins[] =
   },
   {
     .type = LL_CONTEXT_FILTERX_FUNC,
-    .name = "otel_kvlist",
+    .name = "otel_array",
     .construct = grpc_otel_filterx_array_construct_new,
   },
 };

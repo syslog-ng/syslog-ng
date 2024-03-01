@@ -44,23 +44,23 @@ using namespace syslogng::grpc::otel;
 using namespace google::protobuf;
 
 FilterXObject *
-AnyField::FilterXObjectGetter(const Message &message, ProtoReflectors reflectors)
+AnyField::FilterXObjectGetter(Message *message, ProtoReflectors reflectors)
 {
   if (reflectors.fieldDescriptor->type() == FieldDescriptor::TYPE_MESSAGE)
     {
-      const Message &nestedMessage = reflectors.reflection->GetMessage(message, reflectors.fieldDescriptor);
+      Message *nestedMessage = reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor);
 
-      const AnyValue *anyValue;
+      AnyValue *anyValue;
       try
         {
-          anyValue = dynamic_cast<const AnyValue *>(&nestedMessage);
+          anyValue = dynamic_cast<AnyValue *>(nestedMessage);
         }
       catch(const std::bad_cast &e)
         {
           g_assert_not_reached();
         }
 
-      return this->FilterXObjectDirectGetter(*anyValue);
+      return this->FilterXObjectDirectGetter(anyValue);
     }
 
   msg_error("otel-field: Unexpected protobuf field type",
@@ -86,11 +86,11 @@ AnyField::FilterXObjectSetter(Message *message, ProtoReflectors reflectors, Filt
 }
 
 FilterXObject *
-AnyField::FilterXObjectDirectGetter(const AnyValue &anyValue)
+AnyField::FilterXObjectDirectGetter(AnyValue *anyValue)
 {
   ProtobufField *converter = nullptr;
   std::string typeFieldName;
-  AnyValue::ValueCase valueCase = anyValue.value_case();
+  AnyValue::ValueCase valueCase = anyValue->value_case();
 
   switch (valueCase)
     {
@@ -209,9 +209,9 @@ AnyField syslogng::grpc::otel::any_field_converter;
 class OtelDatetimeConverter : public ProtobufField
 {
 public:
-  FilterXObject *FilterXObjectGetter(const Message &message, ProtoReflectors reflectors)
+  FilterXObject *FilterXObjectGetter(Message *message, ProtoReflectors reflectors)
   {
-    uint64_t val = reflectors.reflection->GetUInt64(message, reflectors.fieldDescriptor);
+    uint64_t val = reflectors.reflection->GetUInt64(*message, reflectors.fieldDescriptor);
     UnixTime utime = unix_time_from_unix_epoch(val);
     return filterx_datetime_new(&utime);
   }
@@ -224,13 +224,9 @@ public:
         reflectors.reflection->SetUInt64(message, reflectors.fieldDescriptor, unix_epoch);
         return true;
       }
-    else
-      {
-        msg_error("field type not yet implemented",
-                  evt_tag_str("name", reflectors.fieldDescriptor->name().c_str()),
-                  evt_tag_int("type", reflectors.fieldType));
-        return false;
-      }
+
+    return protobuf_converter_by_type(reflectors.fieldDescriptor->type())->Set(message, reflectors.fieldDescriptor->name(),
+           object);
   }
 };
 

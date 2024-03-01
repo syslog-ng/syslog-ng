@@ -82,7 +82,7 @@ Resource::get_field(const gchar *attribute)
   try
     {
       ProtoReflectors reflectors(resource, attribute);
-      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Get(resource, attribute);
+      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Get(&resource, attribute);
     }
   catch (const std::invalid_argument &e)
     {

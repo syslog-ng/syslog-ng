@@ -33,58 +33,84 @@
 
 using namespace syslogng::grpc::otel::filterx;
 using opentelemetry::proto::common::v1::AnyValue;
-using opentelemetry::proto::common::v1::ArrayValue;
 
 /* C++ Implementations */
 
-Array::Array(FilterXOtelArray *s) : super(s)
+Array::Array(FilterXOtelArray *s) :
+  super(s),
+  array(new ArrayValue()),
+  borrowed(false)
 {
 }
 
-Array::Array(FilterXOtelArray *s, FilterXObject *protobuf_object) : super(s)
+Array::Array(FilterXOtelArray *s, ArrayValue *a) :
+  super(s),
+  array(a),
+  borrowed(true)
+{
+}
+
+Array::Array(const Array &o, FilterXOtelArray *s) :
+  super(s),
+  array(new ArrayValue()),
+  borrowed(false)
+{
+  array->CopyFrom(*o.array);
+}
+
+Array::Array(FilterXOtelArray *s, FilterXObject *protobuf_object) :
+  super(s),
+  array(new ArrayValue()),
+  borrowed(false)
 {
   gsize length;
   const gchar *value = filterx_protobuf_get_value(protobuf_object, &length);
 
   if (!value)
-    throw std::runtime_error("Argument is not a protobuf object");
+    {
+      delete array;
+      throw std::runtime_error("Argument is not a protobuf object");
+    }
 
-  if (!array.ParsePartialFromArray(value, length))
-    throw std::runtime_error("Failed to parse from protobuf object");
+  if (!array->ParsePartialFromArray(value, length))
+    {
+      delete array;
+      throw std::runtime_error("Failed to parse from protobuf object");
+    }
 }
 
-Array::Array(const Array &o, FilterXOtelArray *s) : super(s), array(o.array)
+Array::~Array()
 {
+  if (!borrowed)
+    delete array;
 }
 
 std::string
 Array::marshal(void)
 {
-  return array.SerializePartialAsString();
+  return array->SerializePartialAsString();
 }
 
 bool
 Array::set_subscript(FilterXObject *key, FilterXObject *value)
 {
+  if (!key)
+    return any_field_converter.FilterXObjectDirectSetter(array->add_values(), value);
+
   if (!filterx_object_is_type(key, &FILTERX_TYPE_NAME(integer)))
     {
-      msg_error("FilterX: Failed to get OTel Array element",
+      msg_error("FilterX: Failed to set OTel Array element",
                 evt_tag_str("error", "Key must be integer type"));
-      return NULL;
+      return false;
     }
 
   GenericNumber gn = filterx_primitive_get_value(key);
   gint64 index = gn_as_int64(&gn);
 
-  if (index >= array.values_size())
-    {
-      for (int i = 0; i < index + 1 - array.values_size(); i++)
-        array.add_values();
-    }
+  if (index >= array->values_size())
+    return false;
 
-  AnyValue *any_value = array.mutable_values(index);
-
-  return any_field_converter.FilterXObjectDirectSetter(any_value, value);
+  return any_field_converter.FilterXObjectDirectSetter(array->mutable_values(index), value);
 }
 
 FilterXObject *
@@ -100,7 +126,7 @@ Array::get_subscript(FilterXObject *key)
   GenericNumber gn = filterx_primitive_get_value(key);
   gint64 index = gn_as_int64(&gn);
 
-  if (index >= array.values_size())
+  if (index >= array->values_size())
     {
       msg_error("FilterX: Failed to get OTel Array element",
                 evt_tag_int("index", index),
@@ -108,14 +134,14 @@ Array::get_subscript(FilterXObject *key)
       return NULL;
     }
 
-  const AnyValue &any_value = array.values(index);
+  AnyValue *any_value = array->mutable_values(index);
   return any_field_converter.FilterXObjectDirectGetter(any_value);
 }
 
 const ArrayValue &
 Array::get_value() const
 {
-  return array;
+  return *array;
 }
 
 /* C Wrappers */
@@ -209,6 +235,17 @@ otel_array_new(GPtrArray *args)
   return &s->super;
 }
 
+static FilterXObject *
+_new_borrowed(ArrayValue *array)
+{
+  FilterXOtelArray *s = g_new0(FilterXOtelArray, 1);
+  filterx_object_init_instance((FilterXObject *) s, &FILTERX_TYPE_NAME(otel_array));
+
+  s->cpp = new Array(s, array);
+
+  return &s->super;
+}
+
 gpointer
 grpc_otel_filterx_array_construct_new(Plugin *self)
 {
@@ -216,22 +253,18 @@ grpc_otel_filterx_array_construct_new(Plugin *self)
 }
 
 FilterXObject *
-OtelArrayField::FilterXObjectGetter(const google::protobuf::Message &message, ProtoReflectors reflectors)
+OtelArrayField::FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
 {
-  FilterXOtelArray *filterx_array = (FilterXOtelArray *) otel_array_new(NULL);
-
   try
     {
-      const Message &nestedMessage = reflectors.reflection->GetMessage(message, reflectors.fieldDescriptor);
-      const ArrayValue &array = dynamic_cast<const ArrayValue &>(nestedMessage);
-      filterx_array->cpp->array.CopyFrom(array);
+      Message *nestedMessage = reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor);
+      ArrayValue *array = dynamic_cast<ArrayValue *>(nestedMessage);
+      return _new_borrowed(array);
     }
   catch(const std::bad_cast &e)
     {
       g_assert_not_reached();
     }
-
-  return &filterx_array->super;
 }
 
 bool

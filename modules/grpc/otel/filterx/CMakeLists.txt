@@ -29,3 +29,5 @@ add_module(
   INCLUDES ${OTEL_PROTO_BUILDDIR} ${PROJECT_SOURCE_DIR}/modules/grpc
   LIBRARY_TYPE STATIC
 )
+
+set_target_properties(otel_filterx_logrecord_cpp PROPERTIES COMPILE_FLAGS "-Wno-deprecated-declarations")
