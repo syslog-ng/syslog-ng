@@ -25,6 +25,7 @@
 
 #include "compat/cpp-start.h"
 #include "filterx/object-string.h"
+#include "filterx/object-null.h"
 #include "compat/cpp-end.h"
 
 #include <google/protobuf/reflection.h>
@@ -155,10 +156,8 @@ KVList::get_subscript(FilterXObject *key)
   KeyValue *kv = get_mutable_kv_for_key(key_c_str);
   if (!kv)
     {
-      msg_error("FilterX: Failed to get OTel KVList element",
-                evt_tag_str("key", key_c_str),
-                evt_tag_str("error", "Key is not found"));
-      return NULL;
+      kv = repeated_kv->Add();
+      kv->set_key(key_c_str);
     }
 
   return converter->Get(kv, "value");
@@ -279,6 +278,82 @@ grpc_otel_filterx_kvlist_construct_new(Plugin *self)
 }
 
 FilterXObject *
+_filterx_otel_implicit_kvlist_clone(FilterXObject *s)
+{
+  FilterXOtelImplicitKVList *self = (FilterXOtelImplicitKVList *) s;
+  g_assert(!self->super.cpp);
+
+  /*
+   * We are here, because someone tried to set this implicit KVList to an lvalue.
+   * We need to clone, because this is a mutable type.
+   *
+   * We do not want to modify our AnyValue through the lvalue, so the implicit KVList
+   * should just behave as a null.
+   */
+
+  return filterx_null_new();
+}
+
+static gboolean
+_implicit_set_subscript(FilterXObject *s, FilterXObject *key, FilterXObject *new_value)
+{
+  FilterXOtelImplicitKVList *self = (FilterXOtelImplicitKVList *) s;
+  g_assert(!self->super.cpp);
+
+  s->type = &FILTERX_TYPE_NAME(otel_kvlist);
+  try
+    {
+      self->super.cpp = new KVList(&self->super, self->any_value->mutable_kvlist_value()->mutable_values());
+    }
+  catch (const std::runtime_error &e)
+    {
+      g_assert_not_reached();
+    }
+
+  return self->super.cpp->set_subscript(key, new_value);
+}
+
+static FilterXObject *
+_implicit_get_subscript(FilterXObject *s, FilterXObject *key)
+{
+  FilterXOtelImplicitKVList *self = (FilterXOtelImplicitKVList *) s;
+  g_assert(!self->super.cpp);
+
+  s->type = &FILTERX_TYPE_NAME(otel_kvlist);
+  try
+    {
+      self->super.cpp = new KVList(&self->super, self->any_value->mutable_kvlist_value()->mutable_values());
+    }
+  catch (const std::runtime_error &e)
+    {
+      g_assert_not_reached();
+    }
+
+  return self->super.cpp->get_subscript(key);
+}
+
+static gboolean
+_implicit_marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
+{
+  FilterXOtelImplicitKVList *self = (FilterXOtelImplicitKVList *) s;
+  g_assert(!self->super.cpp);
+
+  *t = LM_VT_NULL;
+  return TRUE;
+}
+
+FilterXObject *
+otel_implicit_kvlist_new(AnyValue *a)
+{
+  FilterXOtelImplicitKVList *s = g_new0(FilterXOtelImplicitKVList, 1);
+  filterx_object_init_instance((FilterXObject *)s, &FILTERX_TYPE_NAME(otel_implicit_kvlist));
+
+  s->any_value = a;
+
+  return &s->super.super;
+}
+
+FilterXObject *
 OtelKVListField::FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors)
 {
   if (reflectors.fieldDescriptor->is_repeated())
@@ -355,4 +430,13 @@ FILTERX_DEFINE_TYPE(otel_kvlist, FILTERX_TYPE_NAME(object),
                     .get_subscript = _get_subscript,
                     .set_subscript = _set_subscript,
                     .free_fn = _free,
+                   );
+
+FILTERX_DEFINE_TYPE(otel_implicit_kvlist, FILTERX_TYPE_NAME(object),
+                    .is_mutable = TRUE,
+                    .marshal = _implicit_marshal,
+                    .clone = _filterx_otel_implicit_kvlist_clone,
+                    .truthy = _truthy,
+                    .get_subscript = _implicit_get_subscript,
+                    .set_subscript = _implicit_set_subscript,
                    );

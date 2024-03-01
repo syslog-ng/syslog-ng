@@ -50,6 +50,7 @@ FILTERX_DECLARE_TYPE(otel_logrecord);
 FILTERX_DECLARE_TYPE(otel_resource);
 FILTERX_DECLARE_TYPE(otel_scope);
 FILTERX_DECLARE_TYPE(otel_kvlist);
+FILTERX_DECLARE_TYPE(otel_implicit_kvlist);
 FILTERX_DECLARE_TYPE(otel_array);
 
 static inline void
@@ -59,6 +60,7 @@ otel_filterx_objects_global_init(void)
   filterx_type_init(&FILTERX_TYPE_NAME(otel_resource));
   filterx_type_init(&FILTERX_TYPE_NAME(otel_scope));
   filterx_type_init(&FILTERX_TYPE_NAME(otel_kvlist));
+  filterx_type_init(&FILTERX_TYPE_NAME(otel_implicit_kvlist));
   filterx_type_init(&FILTERX_TYPE_NAME(otel_array));
 }
 
