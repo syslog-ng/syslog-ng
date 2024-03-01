@@ -587,11 +587,12 @@ log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to)
     return;
 
   gssize value_len = 0;
-  const gchar *value = log_msg_get_value_if_set(self, from, &value_len);
+  LogMessageValueType type;
+  const gchar *value = log_msg_get_value_if_set_with_type(self, from, &value_len, &type);
   if (!value)
     return;
 
-  log_msg_set_value(self, to, value, value_len);
+  log_msg_set_value_with_type(self, to, value, value_len, type);
   log_msg_unset_value(self, from);
 }
 
