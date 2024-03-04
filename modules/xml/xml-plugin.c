@@ -20,6 +20,8 @@
  *
  */
 
+#include "filterx-parse-xml.h"
+
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
@@ -37,6 +39,11 @@ static Plugin xml_plugins[] =
     .type = LL_CONTEXT_PARSER,
     .name = "windows-eventlog-xml-parser",
     .parser = &xml_parser,
+  },
+  {
+    .type = LL_CONTEXT_FILTERX_GEN_FUNC,
+    .name = "parse_xml",
+    .construct = filterx_parse_xml_new_construct,
   },
 };
 

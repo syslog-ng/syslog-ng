@@ -252,6 +252,7 @@ tests/light/src/syslog_ng_config/statements/template/template\.py
 modules/correlation/id-counter\.[ch]$
 modules/correlation/group-lines.h
 modules/xml/windows-eventlog-xml-parser\.h
+modules/xml/filterx-parse-xml\.[ch]$
 modules/xml/tests/test_windows_eventlog_xml_parser\.c
 modules/examples/filterx/example-filterx-func/example-filterx-func-plugin\.[ch]
 modules/grpc/otel/filterx

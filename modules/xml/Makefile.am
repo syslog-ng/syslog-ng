@@ -8,7 +8,9 @@ modules_xml_libxml_la_SOURCES = \
   modules/xml/xml.c               \
   modules/xml/xml-private.h       \
   modules/xml/windows-eventlog-xml-parser.h \
-  modules/xml/windows-eventlog-xml-parser.c
+  modules/xml/windows-eventlog-xml-parser.c \
+  modules/xml/filterx-parse-xml.h \
+  modules/xml/filterx-parse-xml.c
 
 
 BUILT_SOURCES       +=      \
