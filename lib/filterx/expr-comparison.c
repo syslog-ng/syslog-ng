@@ -72,33 +72,29 @@ convert_filterx_object_to_generic_number(FilterXObject *obj, GenericNumber *gn)
     }
 }
 
-static void
-convert_filterx_object_to_string(FilterXObject *obj, GString *dump)
+static const gchar *
+_convert_filterx_object_to_string(FilterXObject *obj, gsize *len)
 {
   if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(string)))
     {
-      gsize len;
-      const gchar *str = filterx_string_get_value(obj, &len);
-      g_string_assign(dump, str);
+      return filterx_string_get_value(obj, len);
     }
   else if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(bytes)))
     {
-      gsize len;
-      const gchar *str = filterx_bytes_get_value(obj, &len);
-      g_string_assign(dump, str);
+      return filterx_bytes_get_value(obj, len);
     }
   else if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(protobuf)))
     {
-      gsize len;
-      const gchar *str = filterx_protobuf_get_value(obj, &len);
-      g_string_assign(dump, str);
+      return filterx_protobuf_get_value(obj, len);
     }
-  else
-    {
-      LogMessageValueType lmvt;
-      if (!filterx_object_marshal(obj, dump, &lmvt))
-        return;
-    }
+
+  GString *buffer = scratch_buffers_alloc();
+  LogMessageValueType lmvt;
+  if (!filterx_object_marshal(obj, buffer, &lmvt))
+    return NULL;
+
+  *len = buffer->len;
+  return buffer->str;
 }
 
 static gboolean
@@ -123,14 +119,13 @@ _evaluate_comparison(gint cmp, gint operator)
 static gboolean
 _evaluate_as_string(FilterXObject *lhs, FilterXObject *rhs, gint operator)
 {
-  GString *lhs_repr = scratch_buffers_alloc();
-  GString *rhs_repr = scratch_buffers_alloc();
-  convert_filterx_object_to_string(lhs, lhs_repr);
-  convert_filterx_object_to_string(rhs, rhs_repr);
+  gsize lhs_len, rhs_len;
+  const gchar *lhs_repr = _convert_filterx_object_to_string(lhs, &lhs_len);
+  const gchar *rhs_repr = _convert_filterx_object_to_string(rhs, &rhs_len);
 
-  gint result = memcmp(lhs_repr->str, rhs_repr->str, MIN(lhs_repr->len, rhs_repr->len));
+  gint result = memcmp(lhs_repr, rhs_repr, MIN(lhs_len, rhs_len));
   if (result == 0)
-    result = lhs_repr->len - rhs_repr->len;
+    result = lhs_len - rhs_len;
   return _evaluate_comparison(result, operator);
 }
 
