@@ -102,7 +102,7 @@ convert_filterx_object_to_string(FilterXObject *obj, GString *dump)
 }
 
 static gboolean
-evaluate_comparison(gint cmp, gint operator)
+_evaluate_comparison(gint cmp, gint operator)
 {
   gboolean result = FALSE;
   if (cmp == 0)
@@ -118,19 +118,10 @@ evaluate_comparison(gint cmp, gint operator)
       result = !!(operator & FCMPX_GT);
     }
   return result;
-
 }
 
 static gboolean
-evaluate_comparison_gn(generic_number_cmp cmp, gint operator)
-{
-  if (cmp.is_nan)
-    return (operator & FCMPX_NE) == FCMPX_NE;
-  return evaluate_comparison(cmp.cmp, operator);
-}
-
-static gint
-cmp_as_string(FilterXObject *lhs, FilterXObject *rhs)
+_evaluate_as_string(FilterXObject *lhs, FilterXObject *rhs, gint operator)
 {
   gint result = 0;
   GString *lhs_repr = scratch_buffers_alloc();
@@ -139,39 +130,30 @@ cmp_as_string(FilterXObject *lhs, FilterXObject *rhs)
   convert_filterx_object_to_string(rhs, rhs_repr);
   if ((result = (lhs_repr->len - rhs_repr->len), result == 0))
     result = memcmp(lhs_repr->str, rhs_repr->str, MIN(lhs_repr->len, rhs_repr->len));
-  return result;
+  return _evaluate_comparison(result, operator);
 }
 
-static generic_number_cmp
-cmp_as_num(FilterXObject *lhs, FilterXObject *rhs)
+static gboolean
+_evaluate_as_num(FilterXObject *lhs, FilterXObject *rhs, gint operator)
 {
   GenericNumber lhs_number, rhs_number;
   convert_filterx_object_to_generic_number(lhs, &lhs_number);
   convert_filterx_object_to_generic_number(rhs, &rhs_number);
 
   if (gn_is_nan(&lhs_number) || gn_is_nan(&rhs_number))
-    {
-      return (generic_number_cmp)
-      {
-        .is_nan = TRUE
-      };
-    }
-  else
-    return (generic_number_cmp)
-    {
-      .cmp = gn_compare(&lhs_number, &rhs_number)
-    };
+    return operator == FCMPX_NE;
+  return _evaluate_comparison(gn_compare(&lhs_number, &rhs_number), operator);
 }
 
 static gboolean
-evaluate_typed(FilterXObject *lhs, FilterXObject *rhs, gint operator)
+_evaluate_type_aware(FilterXObject *lhs, FilterXObject *rhs, gint operator)
 {
   if (filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(string)) ||
       filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(bytes)) ||
       filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(protobuf)) ||
       filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(message_value)) ||
       filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(json)))
-    return evaluate_comparison(cmp_as_string(lhs, rhs), operator);
+    return _evaluate_as_string(lhs, rhs, operator);
 
   if (filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(null)) ||
       filterx_object_is_type(rhs, &FILTERX_TYPE_NAME(null))
@@ -183,11 +165,11 @@ evaluate_typed(FilterXObject *lhs, FilterXObject *rhs, gint operator)
         return lhs->type == rhs->type;
     }
 
-  return evaluate_comparison_gn(cmp_as_num(lhs, rhs), operator);
+  return _evaluate_as_num(lhs, rhs, operator);
 }
 
 static gboolean
-evaluate_type_and_value(FilterXObject *lhs, FilterXObject *rhs, gint operator)
+_evaluate_type_and_value_based(FilterXObject *lhs, FilterXObject *rhs, gint operator)
 {
   if (operator == FCMPX_EQ)
     {
@@ -201,8 +183,7 @@ evaluate_type_and_value(FilterXObject *lhs, FilterXObject *rhs, gint operator)
     }
   else
     g_assert_not_reached();
-  return evaluate_typed(lhs, rhs, operator);
-
+  return _evaluate_type_aware(lhs, rhs, operator);
 }
 
 static FilterXObject *
@@ -226,13 +207,13 @@ _eval(FilterXExpr *s)
 
   gboolean result = TRUE;
   if (compare_mode & FCMPX_TYPE_AWARE)
-    result = evaluate_typed(lhs_object, rhs_object, operator);
+    result = _evaluate_type_aware(lhs_object, rhs_object, operator);
   else if (compare_mode & FCMPX_STRING_BASED)
-    result = evaluate_comparison(cmp_as_string(lhs_object, rhs_object), operator);
+    result = _evaluate_as_string(lhs_object, rhs_object, operator);
   else if (compare_mode & FCMPX_NUM_BASED)
-    result = evaluate_comparison_gn(cmp_as_num(lhs_object, rhs_object), operator);
+    result = _evaluate_as_num(lhs_object, rhs_object, operator);
   else if (compare_mode & FCMPX_TYPE_AND_VALUE_BASED)
-    result = evaluate_type_and_value(lhs_object, rhs_object, operator);
+    result = _evaluate_type_and_value_based(lhs_object, rhs_object, operator);
   else
     g_assert_not_reached();
 

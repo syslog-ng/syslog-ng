@@ -37,12 +37,6 @@
 #define FCMPX_OP_MASK      0x0007
 #define FCMPX_MODE_MASK    0x00F0
 
-typedef struct
-{
-  gint cmp;
-  gboolean is_nan;
-} generic_number_cmp;
-
 FilterXExpr *filterx_comparison_new(FilterXExpr *lhs, FilterXExpr *rhs, gint operator);
 
 
