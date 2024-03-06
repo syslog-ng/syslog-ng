@@ -312,34 +312,47 @@ OtelKVListField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRe
     }
 
   FilterXOtelKVList *filterx_kvlist = (FilterXOtelKVList *) object;
+  RepeatedPtrField<KeyValue> *repeated_kv;
 
   if (reflectors.fieldDescriptor->is_repeated())
     {
       try
         {
-          auto repeated_fields = reflectors.reflection->MutableRepeatedPtrField<KeyValue>(message, reflectors.fieldDescriptor);
-          repeated_fields->CopyFrom(filterx_kvlist->cpp->get_value());
+          repeated_kv = reflectors.reflection->MutableRepeatedPtrField<KeyValue>(message, reflectors.fieldDescriptor);
         }
       catch(const std::bad_cast &e)
         {
           g_assert_not_reached();
         }
-
-      return true;
+    }
+  else
+    {
+      KeyValueList *kvlist;
+      try
+        {
+          kvlist = dynamic_cast<KeyValueList *>(reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor));
+          repeated_kv = kvlist->mutable_values();
+        }
+      catch(const std::bad_cast &e)
+        {
+          g_assert_not_reached();
+        }
     }
 
-  KeyValueList *kvlist;
+  repeated_kv->CopyFrom(filterx_kvlist->cpp->get_value());
 
+  KVList *new_kvlist;
   try
     {
-      kvlist = dynamic_cast<KeyValueList *>(reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor));
+      new_kvlist = new KVList(filterx_kvlist, repeated_kv);
     }
-  catch(const std::bad_cast &e)
+  catch (const std::runtime_error &)
     {
       g_assert_not_reached();
     }
 
-  kvlist->mutable_values()->CopyFrom(filterx_kvlist->cpp->get_value());
+  delete filterx_kvlist->cpp;
+  filterx_kvlist->cpp = new_kvlist;
 
   return true;
 }

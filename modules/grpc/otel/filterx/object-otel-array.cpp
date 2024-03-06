@@ -281,18 +281,31 @@ OtelArrayField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRef
     }
 
   FilterXOtelArray *filterx_array = (FilterXOtelArray *) object;
-  ArrayValue *array;
+  ArrayValue *array_value;
 
   try
     {
-      array = dynamic_cast<ArrayValue *>(reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor));
+      array_value = dynamic_cast<ArrayValue *>(reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor));
     }
   catch(const std::bad_cast &e)
     {
       g_assert_not_reached();
     }
 
-  array->CopyFrom(filterx_array->cpp->get_value());
+  array_value->CopyFrom(filterx_array->cpp->get_value());
+
+  Array *new_array;
+  try
+    {
+      new_array = new Array(filterx_array, array_value);
+    }
+  catch (const std::runtime_error &)
+    {
+      g_assert_not_reached();
+    }
+
+  delete filterx_array->cpp;
+  filterx_array->cpp = new_array;
 
   return true;
 }

@@ -37,18 +37,14 @@ _eval_value(FilterXListExpr *self, FilterXObject *object, gint i, FilterXExpr *e
 {
   FilterXObject *index = filterx_integer_new(i);
   FilterXObject *value = filterx_expr_eval_typed(expr);
-  gboolean success = FALSE;
-
   if (!value)
-    goto fail;
+    return FALSE;
 
-  if (!filterx_object_set_subscript(object, index, value))
-    goto fail;
-
-  success = TRUE;
-fail:
+  FilterXObject *cloned_value = filterx_object_clone(value);
   filterx_object_unref(value);
-  filterx_object_unref(index);
+
+  gboolean success = filterx_object_set_subscript(object, index, cloned_value);
+  filterx_object_unref(cloned_value);
   return success;
 }
 

@@ -58,11 +58,16 @@ _eval(FilterXExpr *s)
   if (!new_value)
     goto exit;
 
-  if (!filterx_object_set_subscript(object, index, new_value))
-    goto exit;
-  result = filterx_object_ref(new_value);
-exit:
+  result = filterx_object_clone(new_value);
   filterx_object_unref(new_value);
+
+  if (!filterx_object_set_subscript(object, index, result))
+    {
+      filterx_object_unref(result);
+      result = NULL;
+    }
+
+exit:
   filterx_object_unref(index);
   filterx_object_unref(object);
   return result;
