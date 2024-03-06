@@ -42,7 +42,7 @@ typedef struct _FilterXComparison
 } FilterXComparison;
 
 static void
-convert_filterx_object_to_generic_number(FilterXObject *obj, GenericNumber *gn)
+_convert_filterx_object_to_generic_number(FilterXObject *obj, GenericNumber *gn)
 {
   if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(integer)) ||
       filterx_object_is_type(obj, &FILTERX_TYPE_NAME(double)) ||
@@ -133,8 +133,8 @@ static gboolean
 _evaluate_as_num(FilterXObject *lhs, FilterXObject *rhs, gint operator)
 {
   GenericNumber lhs_number, rhs_number;
-  convert_filterx_object_to_generic_number(lhs, &lhs_number);
-  convert_filterx_object_to_generic_number(rhs, &rhs_number);
+  _convert_filterx_object_to_generic_number(lhs, &lhs_number);
+  _convert_filterx_object_to_generic_number(rhs, &rhs_number);
 
   if (gn_is_nan(&lhs_number) || gn_is_nan(&rhs_number))
     return operator == FCMPX_NE;
