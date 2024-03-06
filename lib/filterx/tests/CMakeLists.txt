@@ -5,3 +5,4 @@ add_unit_test(LIBTEST CRITERION TARGET test_object_message DEPENDS json-plugin $
 add_unit_test(LIBTEST CRITERION TARGET test_object_null DEPENDS json-plugin ${JSONC_LIBRARY})
 add_unit_test(LIBTEST CRITERION TARGET test_object_primitive DEPENDS json-plugin ${JSONC_LIBRARY})
 add_unit_test(LIBTEST CRITERION TARGET test_object_string DEPENDS json-plugin ${JSONC_LIBRARY})
+add_unit_test(LIBTEST CRITERION TARGET test_expr_comparison DEPENDS json-plugin ${JSONC_LIBRARY})

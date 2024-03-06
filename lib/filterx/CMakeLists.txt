@@ -62,4 +62,4 @@ set(FILTERX_SOURCES
     PARENT_SCOPE
     )
 
-# add_test_subdirectory(tests)
+add_test_subdirectory(tests)
