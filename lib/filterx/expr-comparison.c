@@ -177,9 +177,9 @@ evaluate_typed(FilterXObject *lhs, FilterXObject *rhs, gint operator)
       filterx_object_is_type(rhs, &FILTERX_TYPE_NAME(null))
      )
     {
-      if ((operator & FCMPX_OP_MASK) == FCMPX_NE)
+      if (operator == FCMPX_NE)
         return lhs->type != rhs->type;
-      if ((operator & FCMPX_OP_MASK) == FCMPX_EQ)
+      if (operator == FCMPX_EQ)
         return lhs->type == rhs->type;
     }
 
@@ -189,12 +189,12 @@ evaluate_typed(FilterXObject *lhs, FilterXObject *rhs, gint operator)
 static gboolean
 evaluate_type_and_value(FilterXObject *lhs, FilterXObject *rhs, gint operator)
 {
-  if ((operator & FCMPX_OP_MASK) == FCMPX_EQ)
+  if (operator == FCMPX_EQ)
     {
       if (lhs->type != rhs->type)
         return FALSE;
     }
-  else if ((operator & FCMPX_OP_MASK) == FCMPX_NE)
+  else if (operator == FCMPX_NE)
     {
       if (lhs->type != rhs->type)
         return TRUE;
