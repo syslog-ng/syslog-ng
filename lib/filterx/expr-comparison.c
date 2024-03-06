@@ -123,13 +123,14 @@ _evaluate_comparison(gint cmp, gint operator)
 static gboolean
 _evaluate_as_string(FilterXObject *lhs, FilterXObject *rhs, gint operator)
 {
-  gint result = 0;
   GString *lhs_repr = scratch_buffers_alloc();
   GString *rhs_repr = scratch_buffers_alloc();
   convert_filterx_object_to_string(lhs, lhs_repr);
   convert_filterx_object_to_string(rhs, rhs_repr);
-  if ((result = (lhs_repr->len - rhs_repr->len), result == 0))
-    result = memcmp(lhs_repr->str, rhs_repr->str, MIN(lhs_repr->len, rhs_repr->len));
+
+  gint result = memcmp(lhs_repr->str, rhs_repr->str, MIN(lhs_repr->len, rhs_repr->len));
+  if (result == 0)
+    result = lhs_repr->len - rhs_repr->len;
   return _evaluate_comparison(result, operator);
 }
 

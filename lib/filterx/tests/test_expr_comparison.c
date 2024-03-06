@@ -452,6 +452,11 @@ Test(expr_comparison, test_string_to_string_string_based_comparison)
   _assert_comparison(filterx_string_new("", 0), filterx_string_new("", 0), FCMPX_LT | FCMPX_STRING_BASED, FALSE);
   _assert_comparison(filterx_string_new("", 0), filterx_string_new("", 0), FCMPX_GT | FCMPX_STRING_BASED, FALSE);
   _assert_comparison(filterx_string_new("", 0), filterx_string_new("", 0), FCMPX_NE | FCMPX_STRING_BASED, FALSE);
+
+  _assert_comparison(filterx_string_new("foo", 3), filterx_string_new("alma", 4), FCMPX_EQ | FCMPX_STRING_BASED, FALSE);
+  _assert_comparison(filterx_string_new("foo", 3), filterx_string_new("alma", 4), FCMPX_LT | FCMPX_STRING_BASED, FALSE);
+  _assert_comparison(filterx_string_new("foo", 3), filterx_string_new("alma", 4), FCMPX_GT | FCMPX_STRING_BASED, TRUE);
+  _assert_comparison(filterx_string_new("foo", 3), filterx_string_new("alma", 4), FCMPX_NE | FCMPX_STRING_BASED, TRUE);
 }
 
 Test(expr_comparison, test_string_to_numeric_string_based_comparison)
@@ -575,8 +580,8 @@ Test(expr_comparison, test_string_cases_type_aware_comparison)
   _assert_comparison(filterx_bytes_new("true", 4), filterx_boolean_new(true), FCMPX_NE | FCMPX_TYPE_AWARE, FALSE);
 
   _assert_comparison(filterx_bytes_new("true", 4), filterx_boolean_new(false), FCMPX_EQ | FCMPX_TYPE_AWARE, FALSE);
-  _assert_comparison(filterx_bytes_new("true", 4), filterx_boolean_new(false), FCMPX_LT | FCMPX_TYPE_AWARE, TRUE);
-  _assert_comparison(filterx_bytes_new("true", 4), filterx_boolean_new(false), FCMPX_GT | FCMPX_TYPE_AWARE, FALSE);
+  _assert_comparison(filterx_bytes_new("true", 4), filterx_boolean_new(false), FCMPX_LT | FCMPX_TYPE_AWARE, FALSE);
+  _assert_comparison(filterx_bytes_new("true", 4), filterx_boolean_new(false), FCMPX_GT | FCMPX_TYPE_AWARE, TRUE);
   _assert_comparison(filterx_bytes_new("true", 4), filterx_boolean_new(false), FCMPX_NE | FCMPX_TYPE_AWARE, TRUE);
 
   // protobuf - double
