@@ -48,6 +48,7 @@
 #include "filterx/object-string.h"
 #include "filterx/filterx-config.h"
 #include "filterx/expr-function.h"
+#include "filterx/expr-condition.h"
 
 #include "template/templates.h"
 
@@ -100,6 +101,9 @@ construct_template_expr(LogTemplate *template)
 %type <ptr> list_values
 %type <ptr> list_value
 %type <num> boolean
+%type <ptr> fxcondition
+%type <ptr> fxif
+%type <ptr> fxcodeblock
 
 %%
 
@@ -114,6 +118,7 @@ stmts
 
 stmt
 	: expr ';'				{ $$ = $1; }
+	| fxcondition ';'			{ $$ = $1; }
 	;
 
 expr
@@ -237,6 +242,27 @@ list_values
 
 list_value
 	: expr                                  { $$ = $1; }
+	;
+
+fxcondition
+	: fxif					{ $$ = $1; }
+	| fxif KW_ELSE fxcodeblock		{
+							$$ = filterx_conditional_add_false_branch((FilterXConditional*)$1, (FilterXConditional*)filterx_conditional_new_codeblock($3));
+						}
+	;
+
+fxif
+	: KW_IF '(' expr ')' fxcodeblock	{
+							$$ = filterx_conditional_new_conditional_codeblock($3, $5);
+						}
+	| fxif KW_ELIF '(' expr ')' fxcodeblock {
+							$$ = filterx_conditional_add_false_branch((FilterXConditional*)$1, (FilterXConditional*)filterx_conditional_new_conditional_codeblock($4, $6));
+						}
+	;
+
+
+fxcodeblock
+	: '{' stmts '}'				{ $$ = $2; }
 	;
 
 /* INCLUDE_RULES */
