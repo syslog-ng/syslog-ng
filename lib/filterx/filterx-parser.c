@@ -44,6 +44,10 @@ static CfgLexerKeyword filterx_keywords[] =
   { "null",               KW_NULL },
   { "enum",               KW_ENUM },
 
+  { "if",                 KW_IF },
+  { "else",               KW_ELSE },
+  { "elif",               KW_ELIF },
+
   { CFG_KEYWORD_STOP },
 };
 
