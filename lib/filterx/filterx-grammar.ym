@@ -104,6 +104,7 @@ construct_template_expr(LogTemplate *template)
 %type <ptr> fxcondition
 %type <ptr> fxif
 %type <ptr> fxcodeblock
+%type <ptr> tenary
 
 %%
 
@@ -148,6 +149,7 @@ expr
         | expr KW_TAV_EQ expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AND_VALUE_BASED | FCMPX_EQ); }
         | expr KW_TAV_NE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AND_VALUE_BASED | FCMPX_NE ); }
 	| '(' expr ')'				{ $$ = $2; }
+	| tenary				{ $$ = $1; }
 	;
 
 expr_value
@@ -263,6 +265,13 @@ fxif
 
 fxcodeblock
 	: '{' stmts '}'				{ $$ = $2; }
+	;
+
+tenary
+	: '(' expr '?' expr ':' expr ')'		{
+							FilterXConditional *cond = (FilterXConditional*)filterx_conditional_new_conditional_codeblock($2, g_list_append(NULL, $4));
+							$$ = filterx_conditional_add_false_branch(cond, (FilterXConditional*)filterx_conditional_new_codeblock(g_list_append(NULL, $6)));
+						}
 	;
 
 /* INCLUDE_RULES */
