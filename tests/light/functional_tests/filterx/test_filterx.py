@@ -605,3 +605,153 @@ def test_tenary_operator_inline_tenary_expression_false(config, syslog_ng):
     assert file_true.get_stats()["processed"] == 1
     assert "processed" not in file_false.get_stats()
     assert file_true.read_log() == "inner:false\n"
+
+
+def test_if_condition_without_else_branch_match(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $out = "default";
+    if (true) {
+        $out = "matched";
+    };
+    $MSG = $out;
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "matched\n"
+
+
+def test_if_condition_without_else_branch_nomatch(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $out = "default";
+    if (false) {
+        $out = "matched";
+    };
+    $MSG = $out;
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "default\n"
+
+
+def test_if_condition_no_matching_condition(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $out = "default";
+    if (false) {
+        $out = "matched";
+    } elif (false) {
+        $out = "elif-matched";
+    };
+    $MSG = $out;
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "default\n"
+
+
+def test_if_condition_matching_main_condition(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $out = "default";
+    if (true) {
+        $out = "matched";
+    } elif (true) {
+        $out = "elif-matched";
+    } else {
+        $out = "else-matched";
+    };
+    $MSG = $out;
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "matched\n"
+
+
+def test_if_condition_matching_elif_condition(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $out = "default";
+    if (false) {
+        $out = "matched";
+    } elif (true) {
+        $out = "elif-matched";
+    } else {
+        $out = "else-matched";
+    };
+    $MSG = $out;
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "elif-matched\n"
+
+
+def test_if_condition_matching_else_condition(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $out = "default";
+    if (false) {
+        $out = "matched";
+    } elif (false) {
+        $out = "elif-matched";
+    } else {
+        $out = "else-matched";
+    };
+    $MSG = $out;
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "else-matched\n"
+
+
+def test_if_condition_matching_expression(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $out = "default";
+    if ("foo" eq "foo") {
+        $out = "matched";
+    };
+    $MSG = $out;
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "matched\n"
+
+
+def test_if_condition_non_matching_expression(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $out = "default";
+    if ("foo" eq "bar") {
+        $out = "matched";
+    };
+    $MSG = $out;
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "default\n"
