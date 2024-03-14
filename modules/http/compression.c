@@ -55,9 +55,16 @@ http_dd_check_curl_compression(const gchar *type)
 
 struct Compressor
 {
+  const gchar *encoding_name;
   gboolean (*compress) (Compressor *, GString *, const GString *);
   void (*free_fn) (Compressor *self);
 };
+
+const gchar *
+compressor_get_encoding_name(Compressor *self)
+{
+  return self->encoding_name;
+}
 
 gboolean
 compressor_compress(Compressor *self, GString *compressed, const GString *message)
@@ -82,9 +89,10 @@ compressor_free_method(Compressor *self)
 }
 
 void
-compressor_init_instance(Compressor *self)
+compressor_init_instance(Compressor *self, enum CurlCompressionTypes type)
 {
   self->free_fn = compressor_free_method;
+  self->encoding_name = curl_compression_types[type];
 }
 
 #if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
@@ -262,7 +270,7 @@ Compressor *
 gzip_compressor_new(void)
 {
   GzipCompressor *rval = g_new0(struct GzipCompressor, 1);
-  compressor_init_instance(&rval->super);
+  compressor_init_instance(&rval->super, CURL_COMPRESSION_GZIP);
   rval->super.compress = _gzip_compressor_compress;
   return &rval->super;
 }
@@ -283,7 +291,7 @@ Compressor *
 deflate_compressor_new(void)
 {
   DeflateCompressor *rval = g_new0(struct DeflateCompressor, 1);
-  compressor_init_instance(&rval->super);
+  compressor_init_instance(&rval->super, CURL_COMPRESSION_DEFLATE);
   rval->super.compress = _deflate_compressor_compress;
   return &rval->super;
 }

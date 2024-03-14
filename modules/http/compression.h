@@ -51,6 +51,7 @@ gboolean http_dd_check_curl_compression(const gchar *type);
 
 typedef struct Compressor Compressor;
 
+const gchar *compressor_get_encoding_name(Compressor *self);
 gboolean compressor_compress(Compressor *self, GString *compressed, const GString *message);
 void compressor_free(Compressor *self);
 

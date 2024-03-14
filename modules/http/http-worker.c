@@ -541,7 +541,7 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
         {
           curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body_compressed->str);
           curl_easy_setopt(self->curl, CURLOPT_POSTFIELDSIZE, self->request_body_compressed->len);
-          _add_header(self->request_headers, "Content-Encoding", curl_compression_types[owner->content_compression]);
+          _add_header(self->request_headers, "Content-Encoding", compressor_get_encoding_name(self->compressor));
         }
       else
         {
