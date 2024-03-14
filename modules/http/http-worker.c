@@ -899,7 +899,6 @@ static void
 _deinit(LogThreadedDestWorker *s)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
-  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
   if (self->url_buffer)
     g_string_free(self->url_buffer, TRUE);
@@ -908,7 +907,7 @@ _deinit(LogThreadedDestWorker *s)
   if (self->request_body_compressed)
     g_string_free(self->request_body_compressed, TRUE);
 
-  if (owner->content_compression != CURL_COMPRESSION_UNCOMPRESSED)
+  if (self->compressor)
     compressor_free(self->compressor);
   list_free(self->request_headers);
   curl_easy_cleanup(self->curl);
