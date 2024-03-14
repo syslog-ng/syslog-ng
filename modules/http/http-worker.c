@@ -535,7 +535,7 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
             evt_tag_str("url", url));
 
   curl_easy_setopt(self->curl, CURLOPT_URL, url);
-  if (owner->message_compression != CURL_COMPRESSION_UNCOMPRESSED)
+  if (owner->content_compression != CURL_COMPRESSION_UNCOMPRESSED)
     {
       if (compressor_compress(self->compressor, self->request_body_compressed, self->request_body))
         {
@@ -863,10 +863,10 @@ _init(LogThreadedDestWorker *s)
 
   self->request_body = g_string_sized_new(32768);
 #if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
-  if (owner->message_compression != CURL_COMPRESSION_UNCOMPRESSED)
+  if (owner->content_compression != CURL_COMPRESSION_UNCOMPRESSED)
     {
       self->request_body_compressed = g_string_sized_new(32768);
-      switch (owner->message_compression)
+      switch (owner->content_compression)
         {
         case CURL_COMPRESSION_GZIP:
           self->compressor = gzip_compressor_new();
@@ -877,7 +877,7 @@ _init(LogThreadedDestWorker *s)
         default:
           g_assert_not_reached();
         }
-      gchar *buffer = g_strdup_printf("Content-Encoding: %s", curl_compression_types[owner->message_compression]);
+      gchar *buffer = g_strdup_printf("Content-Encoding: %s", curl_compression_types[owner->content_compression]);
       owner->headers= g_list_append(owner->headers,  buffer);
     }
 #endif
@@ -910,7 +910,7 @@ _deinit(LogThreadedDestWorker *s)
   if (self->request_body_compressed)
     g_string_free(self->request_body_compressed, TRUE);
 
-  if (owner->message_compression != CURL_COMPRESSION_UNCOMPRESSED)
+  if (owner->content_compression != CURL_COMPRESSION_UNCOMPRESSED)
     compressor_free(self->compressor);
   list_free(self->request_headers);
   curl_easy_cleanup(self->curl);

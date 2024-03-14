@@ -302,26 +302,23 @@ http_dd_set_accept_encoding(LogDriver *d, const gchar *encoding)
 #endif
 }
 
-void
-http_dd_set_message_compression(LogDriver *d, const gchar *encoding)
+gboolean
+http_dd_set_content_compression(LogDriver *d, const gchar *encoding)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
 #if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
-  gboolean _encoding_valid = FALSE;
-  _encoding_valid = http_dd_check_curl_compression(encoding);
-  g_assert(_encoding_valid);
-
   if (http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_UNCOMPRESSED))
-    self->message_compression = CURL_COMPRESSION_UNCOMPRESSED;
+    self->content_compression = CURL_COMPRESSION_UNCOMPRESSED;
   else if (http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_GZIP))
-    self->message_compression = CURL_COMPRESSION_GZIP;
+    self->content_compression = CURL_COMPRESSION_GZIP;
   else if (http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_DEFLATE))
-    self->message_compression = CURL_COMPRESSION_DEFLATE;
+    self->content_compression = CURL_COMPRESSION_DEFLATE;
   else
-    self->message_compression = CURL_COMPRESSION_DEFAULT;
+    return FALSE;
+  return TRUE;
 #else
-  self->message_compression = CURL_COMPRESSION_UNCOMPRESSED;
+  return FALSE;
 #endif
 }
 
