@@ -51,10 +51,8 @@ gboolean http_dd_check_curl_compression(const gchar *type);
 
 typedef struct Compressor Compressor;
 
-void compressor_init_instance(Compressor *self);
 gboolean compressor_compress(Compressor *self, GString *compressed, const GString *message);
 void compressor_free(Compressor *self);
-void compressor_free_method(Compressor *self);
 
 #if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
 typedef struct GzipCompressor GzipCompressor;
