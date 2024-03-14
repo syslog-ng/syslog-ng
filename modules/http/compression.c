@@ -29,29 +29,8 @@
 #define _DEFLATE_WBITS_DEFLATE MAX_WBITS
 #define _DEFLATE_WBITS_GZIP MAX_WBITS + 16
 
-gint8 CURL_COMPRESSION_DEFAULT = CURL_COMPRESSION_UNCOMPRESSED;
 gchar *CURL_COMPRESSION_LITERAL_ALL = "all";
-gchar *curl_compression_types[] = {"identity", "gzip", "deflate"};
-
-gboolean
-http_dd_curl_compression_string_match(const gchar *string, gint curl_compression_index)
-{
-  return (g_strcmp0(string, curl_compression_types[curl_compression_index]) == 0);
-}
-
-gboolean
-http_dd_check_curl_compression(const gchar *type)
-{
-  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_UNCOMPRESSED))
-    return TRUE;
-#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
-  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_GZIP))
-    return TRUE;
-  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_DEFLATE))
-    return TRUE;
-#endif
-  return FALSE;
-}
+static gchar *curl_compression_types[] = {"unknown", "identity", "gzip", "deflate"};
 
 struct Compressor
 {
@@ -313,4 +292,24 @@ construct_compressor_by_type(enum CurlCompressionTypes type)
     default:
       return NULL;
     }
+}
+
+static gboolean
+_curl_compression_string_match(const gchar *string, gint curl_compression_index)
+{
+  return (g_strcmp0(string, curl_compression_types[curl_compression_index]) == 0);
+}
+
+enum CurlCompressionTypes
+compressor_lookup_type(const gchar *name)
+{
+  if (_curl_compression_string_match(name, CURL_COMPRESSION_UNCOMPRESSED))
+    return CURL_COMPRESSION_UNCOMPRESSED;
+#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
+  if (_curl_compression_string_match(name, CURL_COMPRESSION_GZIP))
+    return CURL_COMPRESSION_GZIP;
+  if (_curl_compression_string_match(name, CURL_COMPRESSION_DEFLATE))
+    return CURL_COMPRESSION_DEFLATE;
+#endif
+  return CURL_COMPRESSION_UNKNOWN;
 }

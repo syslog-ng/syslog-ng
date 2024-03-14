@@ -307,19 +307,8 @@ http_dd_set_content_compression(LogDriver *d, const gchar *encoding)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
-#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
-  if (http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_UNCOMPRESSED))
-    self->content_compression = CURL_COMPRESSION_UNCOMPRESSED;
-  else if (http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_GZIP))
-    self->content_compression = CURL_COMPRESSION_GZIP;
-  else if (http_dd_curl_compression_string_match(encoding, CURL_COMPRESSION_DEFLATE))
-    self->content_compression = CURL_COMPRESSION_DEFLATE;
-  else
-    return FALSE;
-  return TRUE;
-#else
-  return FALSE;
-#endif
+  self->content_compression = compressor_lookup_type(encoding);
+  return self->content_compression != CURL_COMPRESSION_UNKNOWN;
 }
 
 
@@ -541,6 +530,7 @@ http_dd_new(GlobalConfig *cfg)
                                        SYSLOG_NG_VERSION, curl_info->version);
 
   self->response_handlers = http_response_handlers_new();
+  self->content_compression = CURL_COMPRESSION_DEFAULT;
 
   return &self->super.super.super;
 }

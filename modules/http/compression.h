@@ -35,19 +35,15 @@
 
 enum CurlCompressionTypes
 {
-  CURL_COMPRESSION_UNCOMPRESSED = 0,
-  CURL_COMPRESSION_GZIP = 1,
-  CURL_COMPRESSION_DEFLATE = 2
+  CURL_COMPRESSION_UNKNOWN,
+
+  CURL_COMPRESSION_UNCOMPRESSED,
+  CURL_COMPRESSION_DEFAULT = CURL_COMPRESSION_UNCOMPRESSED,
+  CURL_COMPRESSION_GZIP,
+  CURL_COMPRESSION_DEFLATE,
 };
 
-extern gint8 CURL_COMPRESSION_DEFAULT;
 extern gchar *CURL_COMPRESSION_LITERAL_ALL;
-
-extern gchar *curl_compression_types[];
-gboolean http_dd_curl_compression_string_match(const gchar *string, gint curl_compression_index);
-gboolean http_dd_check_curl_compression(const gchar *type);
-
-
 
 typedef struct Compressor Compressor;
 
@@ -67,5 +63,7 @@ Compressor *deflate_compressor_new(void);
 
 Compressor *
 construct_compressor_by_type(enum CurlCompressionTypes type);
+enum CurlCompressionTypes
+compressor_lookup_type(const gchar *name);
 
 #endif //SYSLOG_NG_COMPRESSION_H
