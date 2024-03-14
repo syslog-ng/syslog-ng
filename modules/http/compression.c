@@ -21,12 +21,13 @@
  *
  */
 
-#define _DEFLATE_WBITS_DEFLATE MAX_WBITS
-#define _DEFLATE_WBITS_GZIP MAX_WBITS + 16
 
 #include "compression.h"
 #include "messages.h"
 #include <zlib.h>
+
+#define _DEFLATE_WBITS_DEFLATE MAX_WBITS
+#define _DEFLATE_WBITS_GZIP MAX_WBITS + 16
 
 gint8 CURL_COMPRESSION_DEFAULT = CURL_COMPRESSION_UNCOMPRESSED;
 gchar *CURL_COMPRESSION_LITERAL_ALL = "all";
