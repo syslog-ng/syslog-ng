@@ -288,3 +288,21 @@ deflate_compressor_new(void)
   return &rval->super;
 }
 #endif
+
+
+Compressor *
+construct_compressor_by_type(enum CurlCompressionTypes type)
+{
+  switch (type)
+    {
+#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
+    case CURL_COMPRESSION_GZIP:
+      return gzip_compressor_new();
+    case CURL_COMPRESSION_DEFLATE:
+      return deflate_compressor_new();
+#endif
+    case CURL_COMPRESSION_UNCOMPRESSED:
+    default:
+      return NULL;
+    }
+}

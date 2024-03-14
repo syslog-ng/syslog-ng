@@ -862,23 +862,11 @@ _init(LogThreadedDestWorker *s)
     }
 
   self->request_body = g_string_sized_new(32768);
-#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
   if (owner->content_compression != CURL_COMPRESSION_UNCOMPRESSED)
     {
       self->request_body_compressed = g_string_sized_new(32768);
-      switch (owner->content_compression)
-        {
-        case CURL_COMPRESSION_GZIP:
-          self->compressor = gzip_compressor_new();
-          break;
-        case CURL_COMPRESSION_DEFLATE:
-          self->compressor = deflate_compressor_new();
-          break;
-        default:
-          g_assert_not_reached();
-        }
+      self->compressor = construct_compressor_by_type(owner->content_compression);
     }
-#endif
   self->request_headers = http_curl_header_list_new();
   if (!(self->curl = curl_easy_init()))
     {

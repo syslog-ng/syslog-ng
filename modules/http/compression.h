@@ -48,14 +48,12 @@ gboolean http_dd_curl_compression_string_match(const gchar *string, gint curl_co
 gboolean http_dd_check_curl_compression(const gchar *type);
 
 
+
 typedef struct Compressor Compressor;
 
 void compressor_init_instance(Compressor *self);
-
 gboolean compressor_compress(Compressor *self, GString *compressed, const GString *message);
-
 void compressor_free(Compressor *self);
-
 void compressor_free_method(Compressor *self);
 
 #if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
@@ -67,5 +65,8 @@ typedef struct DeflateCompressor DeflateCompressor;
 
 Compressor *deflate_compressor_new(void);
 #endif
+
+Compressor *
+construct_compressor_by_type(enum CurlCompressionTypes type);
 
 #endif //SYSLOG_NG_COMPRESSION_H
