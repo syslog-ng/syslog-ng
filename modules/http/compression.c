@@ -42,12 +42,13 @@ http_dd_curl_compression_string_match(const gchar *string, gint curl_compression
 gboolean
 http_dd_check_curl_compression(const gchar *type)
 {
-  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_UNCOMPRESSED)) return TRUE;
-#if defined(SYSLOG_NG_HAVE_ZLIB) && defined(CURL_VERSION_LIBZ)
-  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_GZIP)) return TRUE;
-#endif
-#if defined(SYSLOG_NG_HAVE_ZLIB) && defined(CURL_VERSION_LIBZ)
-  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_DEFLATE)) return TRUE;
+  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_UNCOMPRESSED))
+    return TRUE;
+#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
+  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_GZIP))
+    return TRUE;
+  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_DEFLATE))
+    return TRUE;
 #endif
   return FALSE;
 }

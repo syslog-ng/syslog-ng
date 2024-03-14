@@ -25,8 +25,9 @@
 #define SYSLOG_NG_COMPRESSION_H
 
 #include "syslog-ng.h"
+#include "compat/curl.h"
 
-#ifdef SYSLOG_NG_HAVE_ZLIB
+#if defined(SYSLOG_NG_HAVE_ZLIB) && defined(CURL_VERSION_LIBZ)
 #define SYSLOG_NG_HTTP_COMPRESSION_ENABLED 1
 #else
 #define SYSLOG_NG_HTTP_COMPRESSION_ENABLED 0

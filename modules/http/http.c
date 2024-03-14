@@ -290,7 +290,7 @@ http_dd_set_accept_encoding(LogDriver *d, const gchar *encoding)
 
   if (self->accept_encoding != NULL)
     g_string_free(self->accept_encoding, TRUE);
-#ifdef CURL_VERSION_LIBZ
+#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
   if (strcmp(encoding, CURL_COMPRESSION_LITERAL_ALL) == 0)
     self->accept_encoding = g_string_new("");
   else
