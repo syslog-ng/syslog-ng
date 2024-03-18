@@ -25,8 +25,18 @@
 #include "mainloop-worker.h"
 
 #define INIT_TYPE_METHOD(type, method_name) do { \
-    if (!type->method_name) \
-      type->method_name = type->super_type->method_name; \
+    if (type->method_name) \
+      break; \
+    FilterXType *super_type = type->super_type; \
+    while (super_type) \
+      { \
+        if (super_type->method_name) \
+          { \
+            type->method_name = super_type->method_name; \
+            break; \
+          } \
+        super_type = super_type->super_type; \
+      } \
   } while (0)
 
 void

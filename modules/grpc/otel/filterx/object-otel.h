@@ -30,19 +30,19 @@
 #include "plugin.h"
 
 gpointer grpc_otel_filterx_logrecord_contruct_new(Plugin *self);
-FilterXObject *otel_logrecord_new(GPtrArray *args);
+FilterXObject *filterx_otel_logrecord_new_from_args(GPtrArray *args);
 
 gpointer grpc_otel_filterx_resource_construct_new(Plugin *self);
-FilterXObject *otel_resource_new(GPtrArray *args);
+FilterXObject *filterx_otel_resource_new_from_args(GPtrArray *args);
 
 gpointer grpc_otel_filterx_scope_construct_new(Plugin *self);
-FilterXObject *otel_scope_new(GPtrArray *args);
+FilterXObject *filterx_otel_scope_new_from_args(GPtrArray *args);
 
 gpointer grpc_otel_filterx_kvlist_construct_new(Plugin *self);
-FilterXObject *otel_kvlist_new(GPtrArray *args);
+FilterXObject *filterx_otel_kvlist_new_from_args(GPtrArray *args);
 
 gpointer grpc_otel_filterx_array_construct_new(Plugin *self);
-FilterXObject *otel_array_new(GPtrArray *args);
+FilterXObject *filterx_otel_array_new_from_args(GPtrArray *args);
 
 gpointer grpc_otel_filterx_enum_construct(Plugin *self);
 
@@ -50,7 +50,6 @@ FILTERX_DECLARE_TYPE(otel_logrecord);
 FILTERX_DECLARE_TYPE(otel_resource);
 FILTERX_DECLARE_TYPE(otel_scope);
 FILTERX_DECLARE_TYPE(otel_kvlist);
-FILTERX_DECLARE_TYPE(otel_implicit_kvlist);
 FILTERX_DECLARE_TYPE(otel_array);
 
 static inline void
@@ -60,7 +59,6 @@ otel_filterx_objects_global_init(void)
   filterx_type_init(&FILTERX_TYPE_NAME(otel_resource));
   filterx_type_init(&FILTERX_TYPE_NAME(otel_scope));
   filterx_type_init(&FILTERX_TYPE_NAME(otel_kvlist));
-  filterx_type_init(&FILTERX_TYPE_NAME(otel_implicit_kvlist));
   filterx_type_init(&FILTERX_TYPE_NAME(otel_array));
 }
 

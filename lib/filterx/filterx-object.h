@@ -102,7 +102,14 @@ void filterx_object_free_method(FilterXObject *self);
 static inline gboolean
 filterx_object_is_type(FilterXObject *object, FilterXType *type)
 {
-  return object->type == type;
+  FilterXType *self_type = object->type;
+  while (self_type)
+    {
+      if (type == self_type)
+        return TRUE;
+      self_type = self_type->super_type;
+    }
+  return FALSE;
 }
 
 static inline FilterXObject *

@@ -34,7 +34,6 @@
 #include "opentelemetry/proto/common/v1/common.pb.h"
 
 typedef struct FilterXOtelKVList_ FilterXOtelKVList;
-typedef struct FilterXOtelImplicitKVList_ FilterXOtelImplicitKVList;
 
 FilterXObject *_filterx_otel_kvlist_clone(FilterXObject *s);
 
@@ -94,13 +93,5 @@ struct FilterXOtelKVList_
   FilterXObject super;
   syslogng::grpc::otel::filterx::KVList *cpp;
 };
-
-struct FilterXOtelImplicitKVList_
-{
-  FilterXOtelKVList super;
-  opentelemetry::proto::common::v1::AnyValue *any_value;
-};
-
-FilterXObject *otel_implicit_kvlist_new(opentelemetry::proto::common::v1::AnyValue *a);
 
 #endif

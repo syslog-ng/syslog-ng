@@ -159,7 +159,7 @@ AnyField::FilterXObjectDirectGetter(AnyValue *anyValue)
       typeFieldName = "array_value";
       break;
     case AnyValue::VALUE_NOT_SET:
-      return otel_implicit_kvlist_new(anyValue);
+      return filterx_null_new();
     default:
       g_assert_not_reached();
     }
@@ -224,8 +224,7 @@ AnyField::FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object)
       converter = protobuf_converter_by_type(FieldDescriptor::TYPE_SFIXED64);
       typeFieldName = "int_value";
     }
-  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(null)) ||
-           filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_implicit_kvlist)))
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(null)))
     {
       anyValue->clear_value();
       return true;
