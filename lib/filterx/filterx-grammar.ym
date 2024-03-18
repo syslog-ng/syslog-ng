@@ -48,6 +48,7 @@
 #include "filterx/object-string.h"
 #include "filterx/filterx-config.h"
 #include "filterx/expr-function.h"
+#include "filterx/expr-condition.h"
 
 #include "template/templates.h"
 
@@ -100,6 +101,10 @@ construct_template_expr(LogTemplate *template)
 %type <ptr> list_values
 %type <ptr> list_value
 %type <num> boolean
+%type <ptr> fxcondition
+%type <ptr> fxif
+%type <ptr> fxcodeblock
+%type <ptr> tenary
 
 %%
 
@@ -114,6 +119,7 @@ stmts
 
 stmt
 	: expr ';'				{ $$ = $1; }
+	| fxcondition ';'			{ $$ = $1; }
 	;
 
 expr
@@ -143,6 +149,7 @@ expr
         | expr KW_TAV_EQ expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AND_VALUE_BASED | FCMPX_EQ); }
         | expr KW_TAV_NE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AND_VALUE_BASED | FCMPX_NE ); }
 	| '(' expr ')'				{ $$ = $2; }
+	| tenary				{ $$ = $1; }
 	;
 
 expr_value
@@ -237,6 +244,34 @@ list_values
 
 list_value
 	: expr                                  { $$ = $1; }
+	;
+
+fxcondition
+	: fxif					{ $$ = $1; }
+	| fxif KW_ELSE fxcodeblock		{
+							$$ = filterx_conditional_add_false_branch((FilterXConditional*)$1, (FilterXConditional*)filterx_conditional_new_codeblock($3));
+						}
+	;
+
+fxif
+	: KW_IF '(' expr ')' fxcodeblock	{
+							$$ = filterx_conditional_new_conditional_codeblock($3, $5);
+						}
+	| fxif KW_ELIF '(' expr ')' fxcodeblock {
+							$$ = filterx_conditional_add_false_branch((FilterXConditional*)$1, (FilterXConditional*)filterx_conditional_new_conditional_codeblock($4, $6));
+						}
+	;
+
+
+fxcodeblock
+	: '{' stmts '}'				{ $$ = $2; }
+	;
+
+tenary
+	: '(' expr '?' expr ':' expr ')'		{
+							FilterXConditional *cond = (FilterXConditional*)filterx_conditional_new_conditional_codeblock($2, g_list_append(NULL, $4));
+							$$ = filterx_conditional_add_false_branch(cond, (FilterXConditional*)filterx_conditional_new_codeblock(g_list_append(NULL, $6)));
+						}
 	;
 
 /* INCLUDE_RULES */

@@ -28,7 +28,8 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/object-message-value.h	\
 	lib/filterx/filterx-config.h		\
 	lib/filterx/filterx-pipe.h		\
-	lib/filterx/expr-function.h
+	lib/filterx/expr-function.h	\
+	lib/filterx/expr-condition.h
 
 
 filterx_sources = 				\
@@ -60,6 +61,7 @@ filterx_sources = 				\
 	lib/filterx/filterx-config.c		\
 	lib/filterx/filterx-pipe.c		\
 	lib/filterx/expr-function.c		\
+	lib/filterx/expr-condition.c		\
 	lib/filterx/filterx-grammar.y
 
 BUILT_SOURCES += 				\
