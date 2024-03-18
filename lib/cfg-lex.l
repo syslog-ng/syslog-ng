@@ -314,6 +314,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 <INITIAL,filterx>>         { return KW_TA_GT; }
 <INITIAL,filterx>===       { return KW_TAV_EQ; }
 <INITIAL,filterx>!==       { return KW_TAV_NE; }
+<INITIAL,filterx><<        { return KW_SHIFT_LEFT; }
 
 <INITIAL,filterx>(-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
 <INITIAL,filterx>0x{xdigit}+ {
