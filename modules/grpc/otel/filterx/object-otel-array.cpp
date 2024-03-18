@@ -211,7 +211,7 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 FilterXObject *
-otel_array_new(GPtrArray *args)
+filterx_otel_array_new_from_args(GPtrArray *args)
 {
   FilterXOtelArray *s = g_new0(FilterXOtelArray, 1);
   filterx_object_init_instance((FilterXObject *)s, &FILTERX_TYPE_NAME(otel_array));
@@ -249,7 +249,7 @@ _new_borrowed(ArrayValue *array)
 gpointer
 grpc_otel_filterx_array_construct_new(Plugin *self)
 {
-  return (gpointer) &otel_array_new;
+  return (gpointer) &filterx_otel_array_new_from_args;
 }
 
 FilterXObject *

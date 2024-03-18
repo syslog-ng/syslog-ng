@@ -166,7 +166,7 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 FilterXObject *
-otel_resource_new(GPtrArray *args)
+filterx_otel_resource_new_from_args(GPtrArray *args)
 {
   FilterXOtelResource *s = g_new0(FilterXOtelResource, 1);
   filterx_object_init_instance((FilterXObject *)s, &FILTERX_TYPE_NAME(otel_resource));
@@ -193,7 +193,7 @@ otel_resource_new(GPtrArray *args)
 gpointer
 grpc_otel_filterx_resource_construct_new(Plugin *self)
 {
-  return (gpointer) &otel_resource_new;
+  return (gpointer) &filterx_otel_resource_new_from_args;
 }
 
 FILTERX_DEFINE_TYPE(otel_resource, FILTERX_TYPE_NAME(object),

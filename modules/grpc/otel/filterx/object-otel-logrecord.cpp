@@ -116,7 +116,7 @@ LogRecord::GetValue() const
 gpointer
 grpc_otel_filterx_logrecord_contruct_new(Plugin *self)
 {
-  return (gpointer) &otel_logrecord_new;
+  return (gpointer) &filterx_otel_logrecord_new_from_args;
 }
 
 FilterXObject *
@@ -184,7 +184,7 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 FilterXObject *
-otel_logrecord_new(GPtrArray *args)
+filterx_otel_logrecord_new_from_args(GPtrArray *args)
 {
   FilterXOtelLogRecord *self = g_new0(FilterXOtelLogRecord, 1);
   filterx_object_init_instance((FilterXObject *) self, &FILTERX_TYPE_NAME(otel_logrecord));

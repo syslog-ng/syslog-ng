@@ -236,7 +236,7 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 FilterXObject *
-otel_kvlist_new(GPtrArray *args)
+filterx_otel_kvlist_new_from_args(GPtrArray *args)
 {
   FilterXOtelKVList *s = g_new0(FilterXOtelKVList, 1);
   filterx_object_init_instance((FilterXObject *)s, &FILTERX_TYPE_NAME(otel_kvlist));
@@ -274,7 +274,7 @@ _new_borrowed(RepeatedPtrField<KeyValue> *kvlist)
 gpointer
 grpc_otel_filterx_kvlist_construct_new(Plugin *self)
 {
-  return (gpointer) &otel_kvlist_new;
+  return (gpointer) &filterx_otel_kvlist_new_from_args;
 }
 
 FilterXObject *

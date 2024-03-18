@@ -30,19 +30,19 @@
 #include "plugin.h"
 
 gpointer grpc_otel_filterx_logrecord_contruct_new(Plugin *self);
-FilterXObject *otel_logrecord_new(GPtrArray *args);
+FilterXObject *filterx_otel_logrecord_new_from_args(GPtrArray *args);
 
 gpointer grpc_otel_filterx_resource_construct_new(Plugin *self);
-FilterXObject *otel_resource_new(GPtrArray *args);
+FilterXObject *filterx_otel_resource_new_from_args(GPtrArray *args);
 
 gpointer grpc_otel_filterx_scope_construct_new(Plugin *self);
-FilterXObject *otel_scope_new(GPtrArray *args);
+FilterXObject *filterx_otel_scope_new_from_args(GPtrArray *args);
 
 gpointer grpc_otel_filterx_kvlist_construct_new(Plugin *self);
-FilterXObject *otel_kvlist_new(GPtrArray *args);
+FilterXObject *filterx_otel_kvlist_new_from_args(GPtrArray *args);
 
 gpointer grpc_otel_filterx_array_construct_new(Plugin *self);
-FilterXObject *otel_array_new(GPtrArray *args);
+FilterXObject *filterx_otel_array_new_from_args(GPtrArray *args);
 
 gpointer grpc_otel_filterx_enum_construct(Plugin *self);
 
