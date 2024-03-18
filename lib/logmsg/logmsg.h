@@ -319,6 +319,7 @@ gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);
 /* generic values that encapsulate log message fields, dynamic values and structured data */
 NVHandle log_msg_get_value_handle(const gchar *value_name);
 gboolean log_msg_is_value_name_valid(const gchar *value);
+const gchar *log_msg_get_handle_name(NVHandle handle, gssize *length);
 
 gboolean log_msg_is_handle_macro(NVHandle handle);
 gboolean log_msg_is_handle_sdata(NVHandle handle);
