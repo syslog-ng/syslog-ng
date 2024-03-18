@@ -21,8 +21,7 @@
  *
  */
 #include "expr-dict.h"
-#include "object-json.h"
-#include "object-message-value.h"
+#include "object-dict-interface.h"
 #include "scratch-buffers.h"
 #include "compat/json.h"
 
@@ -52,11 +51,12 @@ filterx_kv_free(FilterXKeyValue *self)
 typedef struct _FilterXDictExpr
 {
   FilterXExpr super;
+  FilterXExpr *fillable;
   GList *key_values;
 } FilterXDictExpr;
 
 static gboolean
-_eval_key_value(FilterXDictExpr *self, FilterXObject *object, FilterXKeyValue *kv)
+_eval_key_value(FilterXDictExpr *self, FilterXObject *fillable, FilterXKeyValue *kv)
 {
   FilterXObject *value = filterx_expr_eval_typed(kv->value_expr);
   if (!value)
@@ -65,7 +65,7 @@ _eval_key_value(FilterXDictExpr *self, FilterXObject *object, FilterXKeyValue *k
   FilterXObject *cloned_value = filterx_object_clone(value);
   filterx_object_unref(value);
 
-  gboolean result = filterx_object_setattr(object, kv->key, cloned_value);
+  gboolean result = filterx_object_setattr(fillable, kv->key, cloned_value);
   filterx_object_unref(cloned_value);
   return result;
 }
@@ -74,16 +74,23 @@ static FilterXObject *
 _eval(FilterXExpr *s)
 {
   FilterXDictExpr *self = (FilterXDictExpr *) s;
-  FilterXObject *object = filterx_json_object_new_empty();
+
+  FilterXObject *fillable = filterx_expr_eval_typed(self->fillable);
+  if (!fillable)
+    return NULL;
+
+  if (!filterx_object_is_type(fillable, &FILTERX_TYPE_NAME(dict)))
+    goto fail;
 
   for (GList *l = self->key_values; l; l = l->next)
     {
-      if (!_eval_key_value(self, object, l->data))
+      if (!_eval_key_value(self, fillable, l->data))
         goto fail;
     }
-  return object;
+  return fillable;
+
 fail:
-  filterx_object_unref(object);
+  filterx_object_unref(fillable);
   return NULL;
 }
 
@@ -93,10 +100,11 @@ _free(FilterXExpr *s)
   FilterXDictExpr *self = (FilterXDictExpr *) s;
 
   g_list_free_full(self->key_values, (GDestroyNotify) filterx_kv_free);
+  filterx_expr_unref(self->fillable);
 }
 
 FilterXExpr *
-filterx_dict_expr_new(GList *key_values)
+filterx_dict_expr_new(FilterXExpr *fillable, GList *key_values)
 {
   FilterXDictExpr *self = g_new0(FilterXDictExpr, 1);
 
@@ -104,5 +112,48 @@ filterx_dict_expr_new(GList *key_values)
   self->super.eval = _eval;
   self->super.free_fn = _free;
   self->key_values = key_values;
+  self->fillable = filterx_expr_ref(fillable);
+  return &self->super;
+}
+
+static FilterXObject *
+_inner_eval(FilterXExpr *s)
+{
+  FilterXDictExpr *self = (FilterXDictExpr *) s;
+
+  FilterXObject *root_fillable = filterx_expr_eval_typed(self->fillable);
+  if (!root_fillable)
+    return NULL;
+
+  FilterXObject *fillable = filterx_object_create_dict(root_fillable);
+  filterx_object_unref(root_fillable);
+  if (!fillable)
+    return NULL;
+
+  if (!filterx_object_is_type(fillable, &FILTERX_TYPE_NAME(dict)))
+    goto fail;
+
+  for (GList *l = self->key_values; l; l = l->next)
+    {
+      if (!_eval_key_value(self, fillable, l->data))
+        goto fail;
+    }
+  return fillable;
+
+fail:
+  filterx_object_unref(fillable);
+  return NULL;
+}
+
+FilterXExpr *
+filterx_dict_expr_inner_new(FilterXExpr *fillable, GList *key_values)
+{
+  FilterXDictExpr *self = g_new0(FilterXDictExpr, 1);
+
+  filterx_expr_init_instance(&self->super);
+  self->super.eval = _inner_eval;
+  self->super.free_fn = _free;
+  self->key_values = key_values;
+  self->fillable = filterx_expr_ref(fillable);
   return &self->super;
 }

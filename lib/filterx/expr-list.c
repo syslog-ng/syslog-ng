@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,19 +22,19 @@
  *
  */
 #include "expr-list.h"
-#include "object-json.h"
+#include "object-list-interface.h"
 #include "object-primitive.h"
 #include "scratch-buffers.h"
-// #include "compat/json.h"
 
 typedef struct _FilterXListExpr
 {
   FilterXExpr super;
+  FilterXExpr *fillable;
   GList *values;
 } FilterXListExpr;
 
 static gboolean
-_eval_value(FilterXListExpr *self, FilterXObject *object, FilterXExpr *expr)
+_eval_value(FilterXListExpr *self, FilterXObject *fillable, FilterXExpr *expr)
 {
   FilterXObject *value = filterx_expr_eval_typed(expr);
   if (!value)
@@ -42,7 +43,7 @@ _eval_value(FilterXListExpr *self, FilterXObject *object, FilterXExpr *expr)
   FilterXObject *cloned_value = filterx_object_clone(value);
   filterx_object_unref(value);
 
-  gboolean success = filterx_object_set_subscript(object, NULL, cloned_value);
+  gboolean success = filterx_list_append(fillable, cloned_value);
   filterx_object_unref(cloned_value);
   return success;
 }
@@ -51,16 +52,24 @@ static FilterXObject *
 _eval(FilterXExpr *s)
 {
   FilterXListExpr *self = (FilterXListExpr *) s;
-  FilterXObject *object = filterx_json_array_new_empty();
+
+  FilterXObject *fillable = filterx_expr_eval_typed(self->fillable);
+  if (!fillable)
+    return NULL;
+
+  if (!filterx_object_is_type(fillable, &FILTERX_TYPE_NAME(list)))
+    goto fail;
 
   for (GList *l = self->values; l; l = l->next)
     {
-      if (!_eval_value(self, object, l->data))
+      if (!_eval_value(self, fillable, l->data))
         goto fail;
     }
-  return object;
+
+  return fillable;
+
 fail:
-  filterx_object_unref(object);
+  filterx_object_unref(fillable);
   return NULL;
 }
 
@@ -70,16 +79,61 @@ _free(FilterXExpr *s)
   FilterXListExpr *self = (FilterXListExpr *) s;
 
   g_list_free_full(self->values, (GDestroyNotify) filterx_expr_unref);
+  filterx_expr_unref(self->fillable);
 }
 
 FilterXExpr *
-filterx_list_expr_new(GList *values)
+filterx_list_expr_new(FilterXExpr *fillable, GList *values)
 {
   FilterXListExpr *self = g_new0(FilterXListExpr, 1);
 
   filterx_expr_init_instance(&self->super);
   self->super.eval = _eval;
   self->super.free_fn = _free;
+  self->fillable = filterx_expr_ref(fillable);
+  self->values = values;
+  return &self->super;
+}
+
+static FilterXObject *
+_inner_eval(FilterXExpr *s)
+{
+  FilterXListExpr *self = (FilterXListExpr *) s;
+
+  FilterXObject *root_fillable = filterx_expr_eval_typed(self->fillable);
+  if (!root_fillable)
+    return NULL;
+
+  FilterXObject *fillable = filterx_object_create_list(root_fillable);
+  filterx_object_unref(root_fillable);
+  if (!fillable)
+    return NULL;
+
+  if (!filterx_object_is_type(fillable, &FILTERX_TYPE_NAME(list)))
+    goto fail;
+
+  for (GList *l = self->values; l; l = l->next)
+    {
+      if (!_eval_value(self, fillable, l->data))
+        goto fail;
+    }
+
+  return fillable;
+
+fail:
+  filterx_object_unref(fillable);
+  return NULL;
+}
+
+FilterXExpr *
+filterx_list_expr_inner_new(FilterXExpr *fillable, GList *values)
+{
+  FilterXListExpr *self = g_new0(FilterXListExpr, 1);
+
+  filterx_expr_init_instance(&self->super);
+  self->super.eval = _inner_eval;
+  self->super.free_fn = _free;
+  self->fillable = filterx_expr_ref(fillable);
   self->values = values;
   return &self->super;
 }

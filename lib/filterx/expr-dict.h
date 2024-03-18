@@ -30,7 +30,8 @@ typedef struct _FilterXKeyValue FilterXKeyValue;
 FilterXKeyValue *filterx_kv_new(const gchar *key, FilterXExpr *value_expr);
 void filterx_kv_free(FilterXKeyValue *self);
 
-FilterXExpr *filterx_dict_expr_new(GList *key_values);
+FilterXExpr *filterx_dict_expr_new(FilterXExpr *fillable, GList *key_values);
+FilterXExpr *filterx_dict_expr_inner_new(FilterXExpr *fillable, GList *key_values);
 
 
 #endif
