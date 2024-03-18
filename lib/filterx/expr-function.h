@@ -41,4 +41,22 @@ FilterXExpr *filterx_function_new(const gchar *function_name, GList *arguments, 
 FilterXExpr *filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *arguments);
 void filterx_function_free_method(FilterXFunction *s);
 
+typedef FilterXObject *(*FilterXGeneratorFunctionProto)(FilterXObject *, GPtrArray *);
+
+typedef struct _FilterXGeneratorFunction
+{
+  FilterXExpr super;
+  gchar *function_name;
+  FilterXExpr *fillable;
+  GList *argument_expressions;
+  FilterXGeneratorFunctionProto function_proto;
+} FilterXGeneratorFunction;
+
+FilterXExpr *filterx_generator_function_new(const gchar *function_name, FilterXExpr *fillable, GList *arguments,
+                                            FilterXGeneratorFunctionProto function_proto);
+FilterXExpr *filterx_generator_function_lookup(GlobalConfig *cfg, const gchar *function_name, FilterXExpr *fillable,
+                                               GList *arguments);
+void filterx_generator_function_free_method(FilterXGeneratorFunction *s);
+
+
 #endif

@@ -120,3 +120,76 @@ filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *ar
 
   return filterx_function_new(function_name, arguments, f);
 }
+
+static FilterXObject *
+_generator_eval(FilterXExpr *s)
+{
+  FilterXGeneratorFunction *self = (FilterXGeneratorFunction *) s;
+
+  FilterXObject *fillable = filterx_expr_eval_typed(self->fillable);
+  if (!fillable)
+    return NULL;
+
+  GPtrArray *args = filterx_function_eval_expressions(self->argument_expressions);
+
+  FilterXGeneratorFunctionProto f = self->function_proto;
+
+  g_assert(f != NULL);
+  FilterXObject *res = f(fillable, args);
+
+  if (args != NULL)
+    g_ptr_array_free(args, TRUE);
+
+  filterx_object_unref(fillable);
+  return res;
+}
+
+void
+filterx_generator_function_free_method(FilterXGeneratorFunction *s)
+{
+  g_free(s->function_name);
+  filterx_expr_unref(s->fillable);
+  g_list_free_full(s->argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_expr_free_method(&s->super);
+}
+
+static void
+_generator_free(FilterXExpr *s)
+{
+  FilterXGeneratorFunction *self = (FilterXGeneratorFunction *) s;
+  filterx_generator_function_free_method(self);
+}
+
+FilterXExpr *
+filterx_generator_function_new(const gchar *function_name, FilterXExpr *fillable, GList *arguments,
+                               FilterXGeneratorFunctionProto function_proto)
+{
+  FilterXGeneratorFunction *self = g_new0(FilterXGeneratorFunction, 1);
+
+  filterx_expr_init_instance(&self->super);
+  self->super.eval = _generator_eval;
+  self->super.free_fn = _generator_free;
+  self->function_name = g_strdup(function_name);
+  self->fillable = filterx_expr_ref(fillable);
+  self->argument_expressions = arguments;
+  self->function_proto = function_proto;
+
+  return &self->super;
+}
+
+/* NOTE: takes the references of objects passed in "arguments" */
+FilterXExpr *
+filterx_generator_function_lookup(GlobalConfig *cfg, const gchar *function_name, FilterXExpr *fillable,
+                                  GList *arguments)
+{
+  Plugin *p = cfg_find_plugin(cfg, LL_CONTEXT_FILTERX_GEN_FUNC, function_name);
+
+  if (p == NULL)
+    return NULL;
+
+  FilterXGeneratorFunctionProto f = plugin_construct(p);
+  if (f == NULL)
+    return NULL;
+
+  return filterx_generator_function_new(function_name, fillable, arguments, f);
+}
