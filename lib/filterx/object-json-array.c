@@ -239,4 +239,6 @@ FILTERX_DEFINE_TYPE(json_array, FILTERX_TYPE_NAME(list),
                     .marshal = _marshal,
                     .map_to_json = _map_to_json,
                     .clone = _clone,
+                    .list_factory = filterx_json_array_new_empty,
+                    .dict_factory = filterx_json_object_new_empty,
                    );
