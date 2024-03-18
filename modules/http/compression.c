@@ -21,41 +21,29 @@
  *
  */
 
-#define _DEFLATE_WBITS_DEFLATE MAX_WBITS
-#define _DEFLATE_WBITS_GZIP MAX_WBITS + 16
 
 #include "compression.h"
 #include "messages.h"
 #include <zlib.h>
 
-gint8 CURL_COMPRESSION_DEFAULT = CURL_COMPRESSION_UNCOMPRESSED;
+#define _DEFLATE_WBITS_DEFLATE MAX_WBITS
+#define _DEFLATE_WBITS_GZIP MAX_WBITS + 16
+
 gchar *CURL_COMPRESSION_LITERAL_ALL = "all";
-gchar *curl_compression_types[] = {"identity", "gzip", "deflate"};
-
-gboolean
-http_dd_curl_compression_string_match(const gchar *string, gint curl_compression_index)
-{
-  return (g_strcmp0(string, curl_compression_types[curl_compression_index]) == 0);
-}
-
-gboolean
-http_dd_check_curl_compression(const gchar *type)
-{
-  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_UNCOMPRESSED)) return TRUE;
-#ifdef SYSLOG_NG_HAVE_ZLIB
-  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_GZIP)) return TRUE;
-#endif
-#ifdef SYSLOG_NG_HAVE_ZLIB
-  if(http_dd_curl_compression_string_match(type, CURL_COMPRESSION_DEFLATE)) return TRUE;
-#endif
-  return FALSE;
-}
+static gchar *curl_compression_types[] = {"unknown", "identity", "gzip", "deflate"};
 
 struct Compressor
 {
+  const gchar *encoding_name;
   gboolean (*compress) (Compressor *, GString *, const GString *);
   void (*free_fn) (Compressor *self);
 };
+
+const gchar *
+compressor_get_encoding_name(Compressor *self)
+{
+  return self->encoding_name;
+}
 
 gboolean
 compressor_compress(Compressor *self, GString *compressed, const GString *message)
@@ -80,11 +68,13 @@ compressor_free_method(Compressor *self)
 }
 
 void
-compressor_init_instance(Compressor *self)
+compressor_init_instance(Compressor *self, enum CurlCompressionTypes type)
 {
   self->free_fn = compressor_free_method;
+  self->encoding_name = curl_compression_types[type];
 }
 
+#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
 enum _DeflateAlgorithmTypes
 {
   DEFLATE_TYPE_DEFLATE,
@@ -259,7 +249,7 @@ Compressor *
 gzip_compressor_new(void)
 {
   GzipCompressor *rval = g_new0(struct GzipCompressor, 1);
-  compressor_init_instance(&rval->super);
+  compressor_init_instance(&rval->super, CURL_COMPRESSION_GZIP);
   rval->super.compress = _gzip_compressor_compress;
   return &rval->super;
 }
@@ -280,7 +270,46 @@ Compressor *
 deflate_compressor_new(void)
 {
   DeflateCompressor *rval = g_new0(struct DeflateCompressor, 1);
-  compressor_init_instance(&rval->super);
+  compressor_init_instance(&rval->super, CURL_COMPRESSION_DEFLATE);
   rval->super.compress = _deflate_compressor_compress;
   return &rval->super;
+}
+#endif
+
+
+Compressor *
+construct_compressor_by_type(enum CurlCompressionTypes type)
+{
+  switch (type)
+    {
+#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
+    case CURL_COMPRESSION_GZIP:
+      return gzip_compressor_new();
+    case CURL_COMPRESSION_DEFLATE:
+      return deflate_compressor_new();
+#endif
+    case CURL_COMPRESSION_UNCOMPRESSED:
+    default:
+      return NULL;
+    }
+}
+
+static gboolean
+_curl_compression_string_match(const gchar *string, gint curl_compression_index)
+{
+  return (g_strcmp0(string, curl_compression_types[curl_compression_index]) == 0);
+}
+
+enum CurlCompressionTypes
+compressor_lookup_type(const gchar *name)
+{
+  if (_curl_compression_string_match(name, CURL_COMPRESSION_UNCOMPRESSED))
+    return CURL_COMPRESSION_UNCOMPRESSED;
+#if SYSLOG_NG_HTTP_COMPRESSION_ENABLED
+  if (_curl_compression_string_match(name, CURL_COMPRESSION_GZIP))
+    return CURL_COMPRESSION_GZIP;
+  if (_curl_compression_string_match(name, CURL_COMPRESSION_DEFLATE))
+    return CURL_COMPRESSION_DEFLATE;
+#endif
+  return CURL_COMPRESSION_UNKNOWN;
 }
