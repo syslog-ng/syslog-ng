@@ -26,7 +26,7 @@
 #include "syslog-ng.h"
 
 #include "compat/cpp-start.h"
-#include "filterx/filterx-object.h"
+#include "filterx/object-list-interface.h"
 #include "object-otel.h"
 #include "compat/cpp-end.h"
 
@@ -55,8 +55,10 @@ public:
   ~Array();
 
   std::string marshal();
-  bool set_subscript(FilterXObject *key, FilterXObject *value);
-  FilterXObject *get_subscript(FilterXObject *key);
+  bool set_subscript(uint64_t index, FilterXObject *value);
+  FilterXObject *get_subscript(uint64_t index);
+  bool append(FilterXObject *value);
+  uint64_t len() const;
   const ArrayValue &get_value() const;
 
 private:
@@ -87,7 +89,7 @@ extern OtelArrayField otel_array_converter;
 
 struct FilterXOtelArray_
 {
-  FilterXObject super;
+  FilterXList super;
   syslogng::grpc::otel::filterx::Array *cpp;
 };
 

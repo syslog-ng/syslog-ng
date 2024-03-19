@@ -92,50 +92,28 @@ Array::marshal(void)
 }
 
 bool
-Array::set_subscript(FilterXObject *key, FilterXObject *value)
+Array::set_subscript(uint64_t index, FilterXObject *value)
 {
-  if (!key)
-    return any_field_converter.FilterXObjectDirectSetter(array->add_values(), value);
-
-  if (!filterx_object_is_type(key, &FILTERX_TYPE_NAME(integer)))
-    {
-      msg_error("FilterX: Failed to set OTel Array element",
-                evt_tag_str("error", "Key must be integer type"));
-      return false;
-    }
-
-  GenericNumber gn = filterx_primitive_get_value(key);
-  gint64 index = gn_as_int64(&gn);
-
-  if (index >= array->values_size())
-    return false;
-
   return any_field_converter.FilterXObjectDirectSetter(array->mutable_values(index), value);
 }
 
-FilterXObject *
-Array::get_subscript(FilterXObject *key)
+bool
+Array::append(FilterXObject *value)
 {
-  if (!filterx_object_is_type(key, &FILTERX_TYPE_NAME(integer)))
-    {
-      msg_error("FilterX: Failed to get OTel Array element",
-                evt_tag_str("error", "Key must be integer type"));
-      return NULL;
-    }
+  return any_field_converter.FilterXObjectDirectSetter(array->add_values(), value);
+}
 
-  GenericNumber gn = filterx_primitive_get_value(key);
-  gint64 index = gn_as_int64(&gn);
-
-  if (index >= array->values_size())
-    {
-      msg_error("FilterX: Failed to get OTel Array element",
-                evt_tag_int("index", index),
-                evt_tag_str("error", "Index out of range"));
-      return NULL;
-    }
-
+FilterXObject *
+Array::get_subscript(uint64_t index)
+{
   AnyValue *any_value = array->mutable_values(index);
   return any_field_converter.FilterXObjectDirectGetter(any_value);
+}
+
+uint64_t
+Array::len() const
+{
+  return (uint64_t) array->values_size();
 }
 
 const ArrayValue &
@@ -145,26 +123,6 @@ Array::get_value() const
 }
 
 /* C Wrappers */
-
-FilterXObject *
-_filterx_otel_array_clone(FilterXObject *s)
-{
-  FilterXOtelArray *self = (FilterXOtelArray *) s;
-
-  FilterXOtelArray *clone = g_new0(FilterXOtelArray, 1);
-  filterx_object_init_instance(&clone->super, &FILTERX_TYPE_NAME(otel_array));
-
-  try
-    {
-      clone->cpp = new Array(*self->cpp, self);
-    }
-  catch (const std::runtime_error &)
-    {
-      g_assert_not_reached();
-    }
-
-  return &clone->super;
-}
 
 static void
 _free(FilterXObject *s)
@@ -176,19 +134,35 @@ _free(FilterXObject *s)
 }
 
 static gboolean
-_set_subscript(FilterXObject *s, FilterXObject *key, FilterXObject *new_value)
+_set_subscript(FilterXList *s, uint64_t index, FilterXObject *new_value)
 {
   FilterXOtelArray *self = (FilterXOtelArray *) s;
 
-  return self->cpp->set_subscript(key, new_value);
+  return self->cpp->set_subscript(index, new_value);
+}
+
+static gboolean
+_append(FilterXList *s, FilterXObject *new_value)
+{
+  FilterXOtelArray *self = (FilterXOtelArray *) s;
+
+  return self->cpp->append(new_value);
 }
 
 static FilterXObject *
-_get_subscript(FilterXObject *s, FilterXObject *key)
+_get_subscript(FilterXList *s, uint64_t index)
 {
   FilterXOtelArray *self = (FilterXOtelArray *) s;
 
-  return self->cpp->get_subscript(key);
+  return self->cpp->get_subscript(index);
+}
+
+static uint64_t
+_len(FilterXList *s)
+{
+  FilterXOtelArray *self = (FilterXOtelArray *) s;
+
+  return self->cpp->len();
 }
 
 static gboolean
@@ -210,40 +184,71 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
   return TRUE;
 }
 
+static void
+_init_instance(FilterXOtelArray *self)
+{
+  filterx_list_init_instance(&self->super, &FILTERX_TYPE_NAME(otel_array));
+
+  self->super.get_subscript = _get_subscript;
+  self->super.set_subscript = _set_subscript;
+  self->super.append = _append;
+  self->super.len = _len;
+}
+
+FilterXObject *
+_filterx_otel_array_clone(FilterXObject *s)
+{
+  FilterXOtelArray *self = (FilterXOtelArray *) s;
+
+  FilterXOtelArray *clone = g_new0(FilterXOtelArray, 1);
+  _init_instance(clone);
+
+  try
+    {
+      clone->cpp = new Array(*self->cpp, clone);
+    }
+  catch (const std::runtime_error &)
+    {
+      g_assert_not_reached();
+    }
+
+  return &clone->super.super;
+}
+
 FilterXObject *
 filterx_otel_array_new_from_args(GPtrArray *args)
 {
-  FilterXOtelArray *s = g_new0(FilterXOtelArray, 1);
-  filterx_object_init_instance((FilterXObject *)s, &FILTERX_TYPE_NAME(otel_array));
+  FilterXOtelArray *self = g_new0(FilterXOtelArray, 1);
+  _init_instance(self);
 
   try
     {
       if (!args || args->len == 0)
-        s->cpp = new Array(s);
+        self->cpp = new Array(self);
       else if (args->len == 1)
-        s->cpp = new Array(s, (FilterXObject *) g_ptr_array_index(args, 0));
+        self->cpp = new Array(self, (FilterXObject *) g_ptr_array_index(args, 0));
       else
         throw std::runtime_error("Invalid number of arguments");
     }
   catch (const std::runtime_error &e)
     {
       msg_error("FilterX: Failed to create OTel Array object", evt_tag_str("error", e.what()));
-      filterx_object_unref(&s->super);
+      filterx_object_unref(&self->super.super);
       return NULL;
     }
 
-  return &s->super;
+  return &self->super.super;
 }
 
 static FilterXObject *
 _new_borrowed(ArrayValue *array)
 {
-  FilterXOtelArray *s = g_new0(FilterXOtelArray, 1);
-  filterx_object_init_instance((FilterXObject *) s, &FILTERX_TYPE_NAME(otel_array));
+  FilterXOtelArray *self = g_new0(FilterXOtelArray, 1);
+  _init_instance(self);
 
-  s->cpp = new Array(s, array);
+  self->cpp = new Array(self, array);
 
-  return &s->super;
+  return &self->super.super;
 }
 
 gpointer
@@ -312,12 +317,10 @@ OtelArrayField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRef
 
 OtelArrayField syslogng::grpc::otel::filterx::otel_array_converter;
 
-FILTERX_DEFINE_TYPE(otel_array, FILTERX_TYPE_NAME(object),
+FILTERX_DEFINE_TYPE(otel_array, FILTERX_TYPE_NAME(list),
                     .is_mutable = TRUE,
                     .marshal = _marshal,
                     .clone = _filterx_otel_array_clone,
                     .truthy = _truthy,
-                    .get_subscript = _get_subscript,
-                    .set_subscript = _set_subscript,
                     .free_fn = _free,
                    );

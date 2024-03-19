@@ -502,7 +502,7 @@ Test(otel_filterx, kvlist_empty)
 
   cr_assert_eq(filterx_otel_kvlist->cpp->get_value().size(), 0);
 
-  filterx_object_unref(&filterx_otel_kvlist->super);
+  filterx_object_unref(&filterx_otel_kvlist->super.super);
 }
 
 Test(otel_filterx, kvlist_from_protobuf)
@@ -524,7 +524,7 @@ Test(otel_filterx, kvlist_from_protobuf)
 
   _assert_repeated_kvs(filterx_otel_kvlist->cpp->get_value(), kvlist.values());
 
-  filterx_object_unref(&filterx_otel_kvlist->super);
+  filterx_object_unref(&filterx_otel_kvlist->super.super);
   g_ptr_array_free(args, TRUE);
 }
 
@@ -767,7 +767,7 @@ Test(otel_filterx, array_empty)
   cr_assert(MessageDifferencer::Equals(opentelemetry::proto::common::v1::ArrayValue(),
                                        filterx_otel_kvlist->cpp->get_value()));
 
-  filterx_object_unref(&filterx_otel_kvlist->super);
+  filterx_object_unref(&filterx_otel_kvlist->super.super);
 }
 
 Test(otel_filterx, array_from_protobuf)
@@ -788,7 +788,7 @@ Test(otel_filterx, array_from_protobuf)
   const opentelemetry::proto::common::v1::ArrayValue &array_from_filterx = filterx_otel_array->cpp->get_value();
   cr_assert(MessageDifferencer::Equals(array, array_from_filterx));
 
-  filterx_object_unref(&filterx_otel_array->super);
+  filterx_object_unref(&filterx_otel_array->super.super);
   g_ptr_array_free(args, TRUE);
 }
 
@@ -1000,6 +1000,7 @@ setup(void)
 {
   app_startup();
   configuration = cfg_new_snippet();
+  otel_filterx_objects_global_init();
 }
 
 void
