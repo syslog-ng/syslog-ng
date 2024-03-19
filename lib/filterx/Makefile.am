@@ -22,6 +22,7 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/filterx-scope.h		\
 	lib/filterx/filterx-eval.h		\
 	lib/filterx/object-json.h		\
+	lib/filterx/object-json-internal.h		\
 	lib/filterx/object-string.h		\
 	lib/filterx/object-datetime.h		\
 	lib/filterx/object-null.h		\
@@ -57,6 +58,8 @@ filterx_sources = 				\
 	lib/filterx/filterx-scope.c		\
 	lib/filterx/filterx-eval.c		\
 	lib/filterx/object-json.c		\
+	lib/filterx/object-json-object.c		\
+	lib/filterx/object-json-array.c		\
 	lib/filterx/object-string.c		\
 	lib/filterx/object-datetime.c		\
 	lib/filterx/object-null.c		\

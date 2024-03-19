@@ -213,7 +213,8 @@ AnyField::FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object)
       converter = &filterx::otel_array_converter;
       typeFieldName = "array_value";
     }
-  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(json)))
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(json_object)) ||
+           filterx_object_is_type(object, &FILTERX_TYPE_NAME(json_array)))
     {
       converter = protobuf_converter_by_type(FieldDescriptor::TYPE_STRING);
       typeFieldName = "string_value";

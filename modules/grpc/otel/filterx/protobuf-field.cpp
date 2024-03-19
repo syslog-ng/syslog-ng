@@ -206,7 +206,9 @@ public:
         reflectors.reflection->SetString(message, reflectors.fieldDescriptor, stdString);
         return true;
       }
-    else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(json)))
+    else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(json_object)) ||
+             filterx_object_is_type(object, &FILTERX_TYPE_NAME(
+                                      json_array))) // TODO: how legit is returning syslog-ng style list here?
       {
         GString *buf = scratch_buffers_alloc();
         LogMessageValueType t;

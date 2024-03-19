@@ -74,7 +74,7 @@ static FilterXObject *
 _eval(FilterXExpr *s)
 {
   FilterXDictExpr *self = (FilterXDictExpr *) s;
-  FilterXObject *object = filterx_json_new(json_object_new_object());
+  FilterXObject *object = filterx_json_object_new_empty();
 
   for (GList *l = self->key_values; l; l = l->next)
     {

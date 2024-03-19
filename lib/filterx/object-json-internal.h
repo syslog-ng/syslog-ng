@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,23 +21,19 @@
  * COPYING for details.
  *
  */
-#ifndef OBJECT_JSON_H_INCLUDED
-#define OBJECT_JSON_H_INCLUDED
+#ifndef OBJECT_JSON_INTERNAL_H_INCLUDED
+#define OBJECT_JSON_INTERNAL_H_INCLUDED
 
-#include "filterx/filterx-object.h"
-#include "compat/json.h"
+#include "object-json.h"
+#include "filterx/filterx-weakrefs.h"
 
-typedef struct FilterXJsonObject_ FilterXJsonObject;
-typedef struct FilterXJsonArray_ FilterXJsonArray;
+void filterx_json_associate_cached_object(struct json_object *json_obj, FilterXObject *filterx_object);
+FilterXObject *filterx_json_convert_json_to_object_cached(FilterXObject *self, FilterXWeakRef *root_container,
+                                                          struct json_object *json_obj);
 
-FILTERX_DECLARE_TYPE(json_object);
-FILTERX_DECLARE_TYPE(json_array);
+struct json_object *filterx_json_deep_copy(struct json_object *json_obj);
 
-FilterXObject *filterx_json_new_from_repr(const gchar *repr, gssize repr_len);
-FilterXObject *filterx_json_object_new_from_repr(const gchar *repr, gssize repr_len);
-FilterXObject *filterx_json_array_new_from_repr(const gchar *repr, gssize repr_len);
-
-FilterXObject *filterx_json_object_new_empty(void);
-FilterXObject *filterx_json_array_new_empty(void);
+FilterXObject *filterx_json_object_new_sub(struct json_object *json_obj, FilterXObject *root);
+FilterXObject *filterx_json_array_new_sub(struct json_object *json_obj, FilterXObject *root);
 
 #endif

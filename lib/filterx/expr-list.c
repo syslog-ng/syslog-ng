@@ -52,7 +52,7 @@ static FilterXObject *
 _eval(FilterXExpr *s)
 {
   FilterXListExpr *self = (FilterXListExpr *) s;
-  FilterXObject *object = filterx_json_new(json_object_new_array());
+  FilterXObject *object = filterx_json_array_new_empty();
 
   gint index = 0;
   for (GList *l = self->values; l; l = l->next)

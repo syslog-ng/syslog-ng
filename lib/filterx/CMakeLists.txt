@@ -23,6 +23,7 @@ set(FILTERX_HEADERS
     filterx/filterx-weakrefs.h
     filterx/object-datetime.h
     filterx/object-json.h
+    filterx/object-json-internal.h
     filterx/object-message-value.h
     filterx/object-null.h
     filterx/object-primitive.h
@@ -59,6 +60,8 @@ set(FILTERX_SOURCES
     filterx/filterx-weakrefs.c
     filterx/object-datetime.c
     filterx/object-json.c
+    filterx/object-json-object.c
+    filterx/object-json-array.c
     filterx/object-message-value.c
     filterx/object-null.c
     filterx/object-primitive.c
