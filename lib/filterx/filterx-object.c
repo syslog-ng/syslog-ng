@@ -51,6 +51,7 @@ filterx_type_init(FilterXType *type)
   INIT_TYPE_METHOD(type, setattr);
   INIT_TYPE_METHOD(type, get_subscript);
   INIT_TYPE_METHOD(type, set_subscript);
+  INIT_TYPE_METHOD(type, has_subscript);
   INIT_TYPE_METHOD(type, free_fn);
 }
 
