@@ -24,6 +24,7 @@
 
 #include "filterx/expr-function.h"
 #include "filterx/filterx-grammar.h"
+#include "filterx/filterx-globals.h"
 #include "plugin.h"
 #include "cfg.h"
 
@@ -100,12 +101,20 @@ filterx_function_new(const gchar *function_name, GList *arguments, FilterXFuncti
 FilterXExpr *
 filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *arguments)
 {
+  // Checking filterx builtin functions first
+  FilterXFunctionProto f = filterx_builtin_function_lookup(function_name);
+  if (f != NULL)
+    {
+      return filterx_function_new(function_name, arguments, f);
+    }
+
+  // fallback to plugin lookup
   Plugin *p = cfg_find_plugin(cfg, LL_CONTEXT_FILTERX_FUNC, function_name);
 
   if (p == NULL)
     return NULL;
 
-  FilterXFunctionProto f = plugin_construct(p);
+  f = plugin_construct(p);
   if (f == NULL)
     return NULL;
 
