@@ -33,9 +33,8 @@ typedef struct _FilterXListExpr
 } FilterXListExpr;
 
 static gboolean
-_eval_value(FilterXListExpr *self, FilterXObject *object, gint i, FilterXExpr *expr)
+_eval_value(FilterXListExpr *self, FilterXObject *object, FilterXExpr *expr)
 {
-  FilterXObject *index = filterx_integer_new(i);
   FilterXObject *value = filterx_expr_eval_typed(expr);
   if (!value)
     return FALSE;
@@ -43,7 +42,7 @@ _eval_value(FilterXListExpr *self, FilterXObject *object, gint i, FilterXExpr *e
   FilterXObject *cloned_value = filterx_object_clone(value);
   filterx_object_unref(value);
 
-  gboolean success = filterx_object_set_subscript(object, index, cloned_value);
+  gboolean success = filterx_object_set_subscript(object, NULL, cloned_value);
   filterx_object_unref(cloned_value);
   return success;
 }
@@ -54,12 +53,10 @@ _eval(FilterXExpr *s)
   FilterXListExpr *self = (FilterXListExpr *) s;
   FilterXObject *object = filterx_json_array_new_empty();
 
-  gint index = 0;
   for (GList *l = self->values; l; l = l->next)
     {
-      if (!_eval_value(self, object, index, l->data))
+      if (!_eval_value(self, object, l->data))
         goto fail;
-      index += 1;
     }
   return object;
 fail:
