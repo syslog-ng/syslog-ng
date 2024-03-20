@@ -22,6 +22,9 @@
  */
 #include <criterion/criterion.h>
 #include "filterx/object-json.h"
+#include "filterx/object-string.h"
+#include "filterx/object-message-value.h"
+#include "filterx/expr-function.h"
 #include "apphook.h"
 #include "filterx-lib.h"
 
@@ -69,6 +72,106 @@ Test(filterx_json, test_filterx_object_json_from_repr)
   cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
   assert_object_json_equals(fobj, "[\"1\",\"2\"]");
   assert_marshaled_object(fobj, "1,2", LM_VT_LIST);
+  filterx_object_unref(fobj);
+}
+
+static FilterXObject *
+_exec_func(FilterXFunctionProto func, FilterXObject *arg)
+{
+  if (!arg)
+    return func(NULL);
+
+  GPtrArray *args = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
+  g_ptr_array_add(args, arg);
+  FilterXObject *result = func(args);
+  g_ptr_array_unref(args);
+  return result;
+}
+
+static FilterXObject *
+_exec_json_func(FilterXObject *arg)
+{
+  return _exec_func(filterx_json_new_from_args, arg);
+}
+
+static FilterXObject *
+_exec_json_array_func(FilterXObject *arg)
+{
+  return _exec_func(filterx_json_array_new_from_args, arg);
+}
+
+Test(filterx_json, test_json_function)
+{
+  FilterXObject *fobj;
+
+  fobj = _exec_json_func(NULL);
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_object)));
+  assert_object_json_equals(fobj, "{}");
+  filterx_object_unref(fobj);
+
+  fobj = _exec_json_func(filterx_string_new("{\"foo\": 1}", -1));
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_object)));
+  assert_object_json_equals(fobj, "{\"foo\":1}");
+  filterx_object_unref(fobj);
+
+  fobj = _exec_json_func(filterx_message_value_new("{\"foo\": 1}", -1, LM_VT_JSON));
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_object)));
+  assert_object_json_equals(fobj, "{\"foo\":1}");
+  filterx_object_unref(fobj);
+
+  fobj = _exec_json_func(filterx_string_new("[1, 2]", -1));
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[1,2]");
+  filterx_object_unref(fobj);
+
+  fobj = _exec_json_func(filterx_message_value_new("[1, 2]", -1, LM_VT_JSON));
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[1,2]");
+  filterx_object_unref(fobj);
+
+  fobj = _exec_json_func(filterx_message_value_new("foo,bar", -1, LM_VT_LIST));
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[\"foo\",\"bar\"]");
+  filterx_object_unref(fobj);
+
+  fobj = _exec_json_func(filterx_json_object_new_from_repr("{\"foo\": 1}", -1));
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_object)));
+  assert_object_json_equals(fobj, "{\"foo\":1}");
+  filterx_object_unref(fobj);
+
+  fobj = _exec_json_func(filterx_json_array_new_from_repr("[1, 2]", -1));
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[1,2]");
+  filterx_object_unref(fobj);
+}
+
+Test(filterx_json, test_json_array_function)
+{
+  FilterXObject *fobj;
+
+  fobj = _exec_json_array_func(NULL);
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[]");
+  filterx_object_unref(fobj);
+
+  fobj = _exec_json_array_func(filterx_string_new("[1, 2]", -1));
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[1,2]");
+  filterx_object_unref(fobj);
+
+  fobj = _exec_json_array_func(filterx_message_value_new("[1, 2]", -1, LM_VT_JSON));
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[1,2]");
+  filterx_object_unref(fobj);
+
+  fobj = _exec_json_array_func(filterx_message_value_new("foo,bar", -1, LM_VT_LIST));
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[\"foo\",\"bar\"]");
+  filterx_object_unref(fobj);
+
+  fobj = _exec_json_array_func(filterx_json_array_new_from_repr("[1, 2]", -1));
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[1,2]");
   filterx_object_unref(fobj);
 }
 

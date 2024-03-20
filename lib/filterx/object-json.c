@@ -24,6 +24,7 @@
 #include "filterx/object-null.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-string.h"
+#include "filterx/object-message-value.h"
 #include "filterx/filterx-weakrefs.h"
 
 #include "scanner/list-scanner/list-scanner.h"
@@ -146,6 +147,50 @@ filterx_json_new_from_repr(const gchar *repr, gssize repr_len)
     return filterx_json_object_new_from_repr(repr, repr_len);
   return filterx_json_array_new_from_repr(repr, repr_len);
 }
+
+FilterXObject *
+filterx_json_new_from_args(GPtrArray *args)
+{
+  if (!args || args->len == 0)
+    return filterx_json_object_new_empty();
+
+  if (args->len != 1)
+    {
+      msg_error("FilterX: Failed to create JSON object: invalid number of arguments. "
+                "Usage: json() or json($raw_json_string) or json($existing_json)");
+      return NULL;
+    }
+
+  FilterXObject *arg = (FilterXObject *) g_ptr_array_index(args, 0);
+
+  if (filterx_object_is_type(arg, &FILTERX_TYPE_NAME(json_array)) ||
+      filterx_object_is_type(arg, &FILTERX_TYPE_NAME(json_object)))
+    return filterx_object_ref(arg);
+
+  if (filterx_object_is_type(arg, &FILTERX_TYPE_NAME(message_value)))
+    {
+      FilterXObject *unmarshalled = filterx_object_unmarshal(arg);
+      if (!filterx_object_is_type(unmarshalled, &FILTERX_TYPE_NAME(json_array)) &&
+          !filterx_object_is_type(unmarshalled, &FILTERX_TYPE_NAME(json_object)))
+        {
+          filterx_object_unref(unmarshalled);
+          goto error;
+        }
+      return unmarshalled;
+    }
+
+  gsize repr_len;
+  const gchar *repr = filterx_string_get_value(arg, &repr_len);
+  if (repr)
+    return filterx_json_new_from_repr(repr, repr_len);
+
+error:
+  msg_error("FilterX: Failed to create JSON object: invalid argument type. "
+            "Usage: json() or json($raw_json_string) or json($syslog_ng_list) or json($existing_json)",
+            evt_tag_str("type", arg->type->name));
+  return NULL;
+}
+
 const gchar *
 filterx_json_to_json_literal(FilterXObject *s)
 {
