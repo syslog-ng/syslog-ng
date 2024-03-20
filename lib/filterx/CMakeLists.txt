@@ -28,6 +28,7 @@ set(FILTERX_HEADERS
     filterx/object-primitive.h
     filterx/object-string.h
     filterx/expr-condition.h
+    filterx/filterx-globals-tests.h
     PARENT_SCOPE
     )
 

@@ -29,7 +29,8 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/filterx-config.h		\
 	lib/filterx/filterx-pipe.h		\
 	lib/filterx/expr-function.h	\
-	lib/filterx/expr-condition.h
+	lib/filterx/expr-condition.h \
+	lib/filterx/filterx-globals-tests.h
 
 
 filterx_sources = 				\
