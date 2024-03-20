@@ -372,7 +372,8 @@ $envelope.json.another_key = "this is another new key which is not added to $MSG
 def test_json_simple_literal_assignment(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$MSG = {
+$MSG = json();
+$MSG << {
     "foo": "foovalue",
     "bar": "barvalue",
     "baz": "bazvalue"
@@ -389,7 +390,8 @@ $MSG = {
 def test_json_recursive_literal_assignment(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$MSG = {
+$MSG = json();
+$MSG << {
     "foo": "foovalue",
     "bar": "barvalue",
     "baz": "bazvalue",
@@ -416,7 +418,8 @@ $MSG = {
 def test_json_change_recursive_literal(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$MSG = {
+$MSG = json();
+$MSG << {
     "foo": "foovalue",
     "bar": "barvalue",
     "baz": "bazvalue",
@@ -449,7 +452,8 @@ $MSG.recursive.recursive.newattr = "newattrvalue";
 def test_list_literal_becomes_syslogng_list_as_string(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$MSG = ["foo", "bar", "baz"];
+$MSG = json_array();
+$MSG << ["foo", "bar", "baz"];
 """,
     )
     syslog_ng.start(config)
@@ -462,8 +466,10 @@ $MSG = ["foo", "bar", "baz"];
 def test_list_literal_becomes_json_list_as_a_part_of_json(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$list = ["foo", "bar", "baz"];
-$MSG = {
+$list = json_array();
+$list << ["foo", "bar", "baz"];
+$MSG = json();
+$MSG << {
     "key": "value",
     "list": $list,
 };
@@ -479,7 +485,8 @@ $MSG = {
 def test_list_is_cloned_upon_assignment(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$list = ["foo", "bar", "baz"];
+$list = json_array();
+$list << ["foo", "bar", "baz"];
 $MSG = $list;
 $list[0] = "changed foo";
 $MSG[2] = "changed baz";
@@ -496,7 +503,7 @@ $MSG[2] = "changed baz";
 def test_list_subscript_without_index_appends_an_element(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$list = [];
+$list = json_array();
 $list[] = "foo";
 $list[] = "bar";
 $list[] = "baz";
@@ -514,7 +521,7 @@ $MSG = $list;
 def test_function_call(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$list = [];
+$list = json_array();
 $list[] = "foo";
 $list[] = "bar";
 $list[] = "baz";
