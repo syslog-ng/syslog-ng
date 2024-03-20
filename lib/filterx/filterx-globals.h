@@ -24,8 +24,10 @@
 #define FILTERX_GLOBALS_H_INCLUDED
 
 #include "filterx-object.h"
+#include "filterx/expr-function.h"
 
 void filterx_global_init(void);
 void filterx_global_deinit(void);
+FilterXFunctionProto filterx_builtin_function_lookup(const gchar *);
 
 #endif

@@ -28,6 +28,56 @@
 #include "filterx/object-datetime.h"
 #include "filterx/object-message-value.h"
 
+static GHashTable *filterx_builtin_functions = NULL;
+
+gboolean
+filterx_builtin_function_register_inner(GHashTable *ht, const gchar *fn_name, FilterXFunctionProto func)
+{
+  return g_hash_table_insert(ht, g_strdup(fn_name), func);
+}
+
+gboolean
+filterx_builtin_function_register(const gchar *fn_name, FilterXFunctionProto func)
+{
+  return filterx_builtin_function_register_inner(filterx_builtin_functions, fn_name, func);
+}
+
+FilterXFunctionProto
+filterx_builtin_function_lookup_inner(GHashTable *ht, const gchar *fn_name)
+{
+  return (FilterXFunctionProto)g_hash_table_lookup(ht, fn_name);
+}
+
+FilterXFunctionProto
+filterx_builtin_function_lookup(const gchar *fn_name)
+{
+  return filterx_builtin_function_lookup_inner(filterx_builtin_functions, fn_name);
+}
+
+void
+filterx_builtin_functions_init_inner(GHashTable **ht)
+{
+  *ht = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) NULL);
+}
+
+void
+filterx_builtin_functions_init(void)
+{
+  filterx_builtin_functions_init_inner(&filterx_builtin_functions);
+}
+
+void
+filterx_builtin_functions_deinit_inner(GHashTable *ht)
+{
+  g_hash_table_destroy(ht);
+}
+
+void
+filterx_builtin_functions_deinit(void)
+{
+  filterx_builtin_functions_deinit_inner(filterx_builtin_functions);
+}
+
 void
 filterx_global_init(void)
 {
@@ -43,9 +93,12 @@ filterx_global_init(void)
   filterx_type_init(&FILTERX_TYPE_NAME(json));
   filterx_type_init(&FILTERX_TYPE_NAME(datetime));
   filterx_type_init(&FILTERX_TYPE_NAME(message_value));
+
+  filterx_builtin_functions_init();
 }
 
 void
 filterx_global_deinit(void)
 {
+  filterx_builtin_functions_deinit();
 }
