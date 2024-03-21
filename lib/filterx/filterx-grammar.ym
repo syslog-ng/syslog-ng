@@ -42,6 +42,7 @@
 #include "filterx/expr-dict.h"
 #include "filterx/expr-list.h"
 #include "filterx/expr-comparison.h"
+#include "filterx/expr-merge.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-json.h"
 #include "filterx/object-null.h"
@@ -90,6 +91,7 @@ construct_template_expr(LogTemplate *template)
 %type <node> expr
 %type <node> expr_value
 %type <node> expr_generator
+%type <node> merge_expr
 %type <node> function_call
 %type <ptr> arguments
 %type <ptr> argument
@@ -167,6 +169,7 @@ expr_value
 expr_generator
 	: dict_expr
 	| list_expr
+	| merge_expr
 	;
 
 function_call
@@ -185,6 +188,10 @@ arguments
 
 argument
 	: expr
+	;
+
+merge_expr
+	: expr_value				{ $$ = filterx_merge_new(last_fillable, $1); }
 	;
 
 literal: literal_object				{ $$ = filterx_literal_new(filterx_config_freeze_object(configuration, $1)); }
