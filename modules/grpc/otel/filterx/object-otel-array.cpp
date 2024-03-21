@@ -103,6 +103,13 @@ Array::append(FilterXObject *value)
   return any_field_converter.FilterXObjectDirectSetter(array->add_values(), value);
 }
 
+bool
+Array::del_subscript(uint64_t index)
+{
+  array->mutable_values()->DeleteSubrange(index, 1);
+  return true;
+}
+
 FilterXObject *
 Array::get_subscript(uint64_t index)
 {
@@ -157,6 +164,14 @@ _get_subscript(FilterXList *s, uint64_t index)
   return self->cpp->get_subscript(index);
 }
 
+static gboolean
+_del_subscript(FilterXList *s, uint64_t index)
+{
+  FilterXOtelArray *self = (FilterXOtelArray *) s;
+
+  return self->cpp->del_subscript(index);
+}
+
 static uint64_t
 _len(FilterXList *s)
 {
@@ -192,6 +207,7 @@ _init_instance(FilterXOtelArray *self)
   self->super.get_subscript = _get_subscript;
   self->super.set_subscript = _set_subscript;
   self->super.append = _append;
+  self->super.del_subscript = _del_subscript;
   self->super.len = _len;
 }
 

@@ -60,6 +60,7 @@ public:
   bool set_subscript(FilterXObject *key, FilterXObject *value);
   bool has_subscript(FilterXObject *key) const;
   FilterXObject *get_subscript(FilterXObject *key);
+  bool del_subscript(FilterXObject *key);
   uint64_t len() const;
   bool iter(FilterXDictIterFunc func, gpointer user_data) const;
   const RepeatedPtrField<KeyValue> &get_value() const;

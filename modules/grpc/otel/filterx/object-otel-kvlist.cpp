@@ -170,6 +170,30 @@ KVList::has_subscript(FilterXObject *key) const
   return !!get_mutable_kv_for_key(key_c_str);
 }
 
+bool
+KVList::del_subscript(FilterXObject *key)
+{
+  const gchar *key_c_str = filterx_string_get_value(key, NULL);
+  if (!key_c_str)
+    {
+      msg_error("FilterX: Failed to delete OTel KVList element",
+                evt_tag_str("error", "Key must be string type"));
+      return false;
+    }
+
+  for (int i = 0; i < repeated_kv->size(); i++)
+    {
+      KeyValue &possible_kv = repeated_kv->at(i);
+      if (possible_kv.key().compare(key_c_str) == 0)
+        {
+          repeated_kv->DeleteSubrange(i, 1);
+          return true;
+        }
+    }
+
+  return false;
+}
+
 uint64_t
 KVList::len() const
 {
@@ -239,6 +263,14 @@ _has_subscript(FilterXDict *s, FilterXObject *key)
   return self->cpp->has_subscript(key);
 }
 
+static gboolean
+_del_subscript(FilterXDict *s, FilterXObject *key)
+{
+  FilterXOtelKVList *self = (FilterXOtelKVList *) s;
+
+  return self->cpp->del_subscript(key);
+}
+
 static uint64_t
 _len(FilterXDict *s)
 {
@@ -282,6 +314,7 @@ _init_instance(FilterXOtelKVList *self)
   self->super.get_subscript = _get_subscript;
   self->super.set_subscript = _set_subscript;
   self->super.has_subscript = _has_subscript;
+  self->super.del_subscript = _del_subscript;
   self->super.len = _len;
   self->super.iter = _iter;
 }
