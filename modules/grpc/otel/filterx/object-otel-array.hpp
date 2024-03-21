@@ -58,6 +58,7 @@ public:
   bool set_subscript(uint64_t index, FilterXObject *value);
   FilterXObject *get_subscript(uint64_t index);
   bool append(FilterXObject *value);
+  bool unset_index(uint64_t index);
   uint64_t len() const;
   const ArrayValue &get_value() const;
 
