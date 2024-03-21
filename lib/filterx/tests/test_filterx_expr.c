@@ -28,6 +28,7 @@
 #include "filterx/expr-template.h"
 #include "filterx/expr-list.h"
 #include "filterx/expr-dict.h"
+#include "filterx/expr-merge.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-string.h"
 #include "filterx/object-json.h"
@@ -291,6 +292,118 @@ Test(filterx_expr, test_filterx_dict_merge)
   filterx_object_unref(bar);
   filterx_object_unref(foo);
   filterx_expr_unref(fillable);
+  log_msg_unref(msg);
+  filterx_scope_free(scope);
+  filterx_eval_set_context(NULL);
+}
+
+Test(filterx_expr, test_filterx_merge_expr_with_lists)
+{
+  LogMessage *msg = create_sample_message();
+  FilterXScope *scope = filterx_scope_new();
+
+  FilterXEvalContext context =
+  {
+    .msgs = &msg,
+    .num_msg = 1,
+    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .scope = scope,
+  };
+  filterx_eval_set_context(&context);
+
+  FilterXObject *fx_1 = filterx_integer_new(1);
+  FilterXObject *fx_2 = filterx_integer_new(2);
+  FilterXObject *fx_3 = filterx_integer_new(3);
+  FilterXObject *fx_4 = filterx_integer_new(4);
+
+  FilterXObject *lhs_obj = filterx_json_array_new_empty();
+  FilterXObject *rhs_obj = filterx_json_array_new_empty();
+  filterx_list_append(lhs_obj, fx_1);
+  filterx_list_append(lhs_obj, fx_2);
+  filterx_list_append(rhs_obj, fx_3);
+  filterx_list_append(rhs_obj, fx_4);
+
+  FilterXExpr *lhs = filterx_literal_new(lhs_obj);
+  FilterXExpr *rhs = filterx_literal_new(rhs_obj);
+
+  FilterXExpr *merge = filterx_merge_new(lhs, rhs);
+  FilterXObject *result = filterx_expr_eval(merge);
+  cr_assert(result);
+
+  cr_assert(filterx_object_is_type(result, &FILTERX_TYPE_NAME(list)));
+  cr_assert_eq(filterx_list_len(result), 4);
+  _assert_int_value_and_unref(filterx_list_get_subscript(result, 0), 1);
+  _assert_int_value_and_unref(filterx_list_get_subscript(result, 1), 2);
+  _assert_int_value_and_unref(filterx_list_get_subscript(result, 2), 3);
+  _assert_int_value_and_unref(filterx_list_get_subscript(result, 3), 4);
+
+  filterx_object_unref(result);
+
+  filterx_expr_unref(merge);
+  filterx_object_unref(fx_1);
+  filterx_object_unref(fx_2);
+  filterx_object_unref(fx_3);
+  filterx_object_unref(fx_4);
+  log_msg_unref(msg);
+  filterx_scope_free(scope);
+  filterx_eval_set_context(NULL);
+}
+
+Test(filterx_expr, test_filterx_merge_expr_with_dicts)
+{
+  LogMessage *msg = create_sample_message();
+  FilterXScope *scope = filterx_scope_new();
+
+  FilterXEvalContext context =
+  {
+    .msgs = &msg,
+    .num_msg = 1,
+    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .scope = scope,
+  };
+  filterx_eval_set_context(&context);
+
+  FilterXObject *fx_foo = filterx_string_new("foo", -1);
+  FilterXObject *fx_bar = filterx_string_new("bar", -1);
+  FilterXObject *fx_baz = filterx_string_new("baz", -1);
+  FilterXObject *fx_alm = filterx_string_new("almafa", -1);
+  FilterXObject *fx_1 = filterx_integer_new(1);
+  FilterXObject *fx_2 = filterx_integer_new(2);
+  FilterXObject *fx_3 = filterx_integer_new(3);
+  FilterXObject *fx_4 = filterx_integer_new(4);
+
+  FilterXObject *lhs_obj = filterx_json_object_new_empty();
+  FilterXObject *rhs_obj = filterx_json_object_new_empty();
+  filterx_object_set_subscript(lhs_obj, fx_foo, fx_1);
+  filterx_object_set_subscript(lhs_obj, fx_bar, fx_2);
+  filterx_object_set_subscript(rhs_obj, fx_baz, fx_3);
+  filterx_object_set_subscript(rhs_obj, fx_alm, fx_4);
+
+  FilterXExpr *lhs = filterx_literal_new(lhs_obj);
+  FilterXExpr *rhs = filterx_literal_new(rhs_obj);
+
+  FilterXExpr *merge = filterx_merge_new(lhs, rhs);
+  FilterXObject *result = filterx_expr_eval(merge);
+  cr_assert(result);
+
+  cr_assert(filterx_object_is_type(result, &FILTERX_TYPE_NAME(dict)));
+  cr_assert_eq(filterx_dict_len(result), 4);
+  _assert_int_value_and_unref(filterx_object_get_subscript(result, fx_foo), 1);
+  _assert_int_value_and_unref(filterx_object_get_subscript(result, fx_bar), 2);
+  _assert_int_value_and_unref(filterx_object_get_subscript(result, fx_baz), 3);
+  _assert_int_value_and_unref(filterx_object_get_subscript(result, fx_alm), 4);
+
+  filterx_object_unref(result);
+
+  filterx_expr_unref(merge);
+  filterx_object_unref(fx_1);
+  filterx_object_unref(fx_2);
+  filterx_object_unref(fx_3);
+  filterx_object_unref(fx_4);
+  filterx_object_unref(fx_foo);
+  filterx_object_unref(fx_bar);
+  filterx_object_unref(fx_baz);
+  filterx_object_unref(fx_alm);
   log_msg_unref(msg);
   filterx_scope_free(scope);
   filterx_eval_set_context(NULL);
