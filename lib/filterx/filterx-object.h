@@ -45,6 +45,7 @@ struct _FilterXType
   FilterXObject *(*get_subscript)(FilterXObject *self, FilterXObject *index);
   gboolean (*set_subscript)(FilterXObject *self, FilterXObject *index, FilterXObject *new_value);
   gboolean (*has_subscript)(FilterXObject *self, FilterXObject *key);
+  gboolean (*unset_key)(FilterXObject *self, FilterXObject *key);
   FilterXObject *(*list_factory)(void);
   FilterXObject *(*dict_factory)(void);
   gboolean (*repr)(FilterXObject *self, GString *repr);
@@ -216,6 +217,14 @@ filterx_object_has_subscript(FilterXObject *self, FilterXObject *index)
 {
   if (self->type->has_subscript)
     return self->type->has_subscript(self, index);
+  return FALSE;
+}
+
+static inline gboolean
+filterx_object_unset_key(FilterXObject *self, FilterXObject *index)
+{
+  if (self->type->unset_key)
+    return self->type->unset_key(self, index);
   return FALSE;
 }
 

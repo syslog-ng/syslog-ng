@@ -52,6 +52,7 @@ filterx_type_init(FilterXType *type)
   INIT_TYPE_METHOD(type, get_subscript);
   INIT_TYPE_METHOD(type, set_subscript);
   INIT_TYPE_METHOD(type, has_subscript);
+  INIT_TYPE_METHOD(type, unset_key);
   INIT_TYPE_METHOD(type, list_factory);
   INIT_TYPE_METHOD(type, dict_factory);
   INIT_TYPE_METHOD(type, repr);
