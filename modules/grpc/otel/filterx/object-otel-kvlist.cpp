@@ -176,6 +176,28 @@ KVList::len() const
   return (uint64_t) repeated_kv->size();
 }
 
+bool
+KVList::iter(FilterXDictIterFunc func, gpointer user_data) const
+{
+  ProtobufField *converter = otel_converter_by_type(FieldDescriptor::TYPE_MESSAGE);
+
+  for (int i = 0; i < repeated_kv->size(); i++)
+    {
+      KeyValue &kv = repeated_kv->at(i);
+      FilterXObject *key = filterx_string_new(kv.key().c_str(), kv.key().length());
+      FilterXObject *value = converter->Get(&kv, "value");
+
+      bool result = func(key, value, user_data);
+
+      filterx_object_unref(key);
+      filterx_object_unref(value);
+      if (!result)
+        return false;
+    }
+
+  return true;
+}
+
 const RepeatedPtrField<KeyValue> &
 KVList::get_value() const
 {
@@ -226,6 +248,14 @@ _len(FilterXDict *s)
 }
 
 static gboolean
+_iter(FilterXDict *s, FilterXDictIterFunc func, gpointer user_data)
+{
+  FilterXOtelKVList *self = (FilterXOtelKVList *) s;
+
+  return self->cpp->iter(func, user_data);
+}
+
+static gboolean
 _truthy(FilterXObject *s)
 {
   return TRUE;
@@ -253,6 +283,7 @@ _init_instance(FilterXOtelKVList *self)
   self->super.set_subscript = _set_subscript;
   self->super.has_subscript = _has_subscript;
   self->super.len = _len;
+  self->super.iter = _iter;
 }
 
 FilterXObject *
