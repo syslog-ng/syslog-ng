@@ -78,6 +78,20 @@ _has_subscript(FilterXObject *s, FilterXObject *key)
   return !!value;
 }
 
+static gboolean
+_unset_key(FilterXObject *s, FilterXObject *key)
+{
+  FilterXDict *self = (FilterXDict *) s;
+
+  if (!key)
+    {
+      msg_error("FilterX: Failed to unset element of dict, key is mandatory");
+      return FALSE;
+    }
+
+  return self->unset_key(self, key);
+}
+
 static FilterXObject *
 _getattr(FilterXObject *s, const gchar *attr_name)
 {
@@ -113,6 +127,7 @@ filterx_dict_init_instance(FilterXDict *self, FilterXType *type)
   g_assert(type->get_subscript == _get_subscript);
   g_assert(type->set_subscript == _set_subscript);
   g_assert(type->has_subscript == _has_subscript);
+  g_assert(type->unset_key == _unset_key);
   g_assert(type->getattr == _getattr);
   g_assert(type->setattr == _setattr);
 
@@ -126,6 +141,7 @@ FILTERX_DEFINE_TYPE(dict, FILTERX_TYPE_NAME(object),
                     .get_subscript = _get_subscript,
                     .set_subscript = _set_subscript,
                     .has_subscript = _has_subscript,
+                    .unset_key = _unset_key,
                     .getattr = _getattr,
                     .setattr = _setattr,
                    );
