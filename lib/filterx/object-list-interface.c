@@ -175,6 +175,41 @@ _has_subscript(FilterXObject *s, FilterXObject *key)
   return _normalize_index(self, index, &normalized_index, &error);
 }
 
+static gboolean
+_del_subscript(FilterXObject *s, FilterXObject *key)
+{
+  FilterXList *self = (FilterXList *) s;
+
+  if (!key)
+    {
+      msg_error("FilterX: Failed to delete element of list",
+                evt_tag_str("error", "Index must be set"));
+      return FALSE;
+    }
+
+  gint64 index;
+  if (!filterx_integer_unwrap(key, &index))
+    {
+      msg_error("FilterX: Failed to delete element of list",
+                evt_tag_str("error", "Index must be integer"),
+                evt_tag_str("index_type", key->type->name));
+      return FALSE;
+    }
+
+  guint64 normalized_index;
+  const gchar *error;
+  if (!_normalize_index(self, index, &normalized_index, &error))
+    {
+      msg_error("FilterX: Failed to delete element of list",
+                evt_tag_str("error", error),
+                evt_tag_printf("index", "%" G_GINT64_FORMAT, index),
+                evt_tag_printf("len", "%" G_GUINT64_FORMAT, filterx_list_len(s)));
+      return FALSE;
+    }
+
+  return self->del_subscript(self, normalized_index);
+}
+
 void
 filterx_list_init_instance(FilterXList *self, FilterXType *type)
 {
@@ -182,6 +217,7 @@ filterx_list_init_instance(FilterXList *self, FilterXType *type)
   g_assert(type->get_subscript == _get_subscript);
   g_assert(type->set_subscript == _set_subscript);
   g_assert(type->has_subscript == _has_subscript);
+  g_assert(type->del_subscript == _del_subscript);
 
   filterx_object_init_instance(&self->super, type);
 }
@@ -191,4 +227,5 @@ FILTERX_DEFINE_TYPE(list, FILTERX_TYPE_NAME(object),
                     .get_subscript = _get_subscript,
                     .set_subscript = _set_subscript,
                     .has_subscript = _has_subscript,
+                    .del_subscript = _del_subscript,
                    );
