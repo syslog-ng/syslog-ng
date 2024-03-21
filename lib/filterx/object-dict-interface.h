@@ -28,6 +28,8 @@
 
 typedef struct FilterXDict_ FilterXDict;
 
+typedef gboolean (*FilterXDictIterFunc)(FilterXObject *, FilterXObject *, gpointer);
+
 struct FilterXDict_
 {
   FilterXObject super;
@@ -37,9 +39,11 @@ struct FilterXDict_
   gboolean (*set_subscript)(FilterXDict *s, FilterXObject *key, FilterXObject *new_value);
   gboolean (*has_subscript)(FilterXDict *s, FilterXObject *key);
   guint64 (*len)(FilterXDict *s);
+  gboolean (*iter)(FilterXDict *s, FilterXDictIterFunc func, gpointer user_data);
 };
 
 guint64 filterx_dict_len(FilterXObject *s);
+gboolean filterx_dict_iter(FilterXObject *s, FilterXDictIterFunc func, gpointer user_data);
 
 void filterx_dict_init_instance(FilterXDict *self, FilterXType *type);
 
