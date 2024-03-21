@@ -130,6 +130,35 @@ _len(FilterXDict *s)
   return json_object_object_length(self->object);
 }
 
+static gboolean
+_iter_inner(FilterXJsonObject *self, const gchar *obj_key, struct json_object *obj_value,
+            FilterXDictIterFunc func, gpointer user_data)
+{
+  FilterXObject *key = filterx_string_new(obj_key, -1);
+  FilterXObject *value = filterx_json_convert_json_to_object_cached(&self->super.super, &self->root_container,
+                         obj_value);
+
+  gboolean result = func(key, value, user_data);
+
+  filterx_object_unref(key);
+  filterx_object_unref(value);
+  return result;
+}
+
+static gboolean
+_iter(FilterXDict *s, FilterXDictIterFunc func, gpointer user_data)
+{
+  FilterXJsonObject *self = (FilterXJsonObject *) s;
+
+  struct json_object_iter itr;
+  json_object_object_foreachC(self->object, itr)
+  {
+    if (!_iter_inner(self, itr.key, itr.val, func, user_data))
+      return FALSE;
+  }
+  return TRUE;
+}
+
 /* NOTE: consumes root ref */
 FilterXObject *
 filterx_json_object_new_sub(struct json_object *json_obj, FilterXObject *root)
@@ -140,6 +169,7 @@ filterx_json_object_new_sub(struct json_object *json_obj, FilterXObject *root)
   self->super.get_subscript = _get_subscript;
   self->super.set_subscript = _set_subscript;
   self->super.len = _len;
+  self->super.iter = _iter;
 
   filterx_weakref_set(&self->root_container, root);
   filterx_object_unref(root);
