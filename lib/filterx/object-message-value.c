@@ -183,8 +183,9 @@ filterx_message_value_new_borrowed(const gchar *repr, gssize repr_len, LogMessag
 FilterXObject *
 filterx_message_value_new(const gchar *repr, gssize repr_len, LogMessageValueType type)
 {
-  gchar *buf = g_memdup2(repr, repr_len);
-  FilterXMessageValue *self = (FilterXMessageValue *) filterx_message_value_new_borrowed(buf, repr_len, type);
+  gssize len = repr_len < 0 ? strlen(repr) : repr_len;
+  gchar *buf = g_memdup2(repr, len);
+  FilterXMessageValue *self = (FilterXMessageValue *) filterx_message_value_new_borrowed(buf, len, type);
   self->buf = buf;
   return &self->super;
 }
