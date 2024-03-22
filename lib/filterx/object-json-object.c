@@ -180,6 +180,16 @@ filterx_json_object_new_empty(void)
   return filterx_json_object_new_sub(json_object_new_object(), NULL);
 }
 
+const gchar *
+filterx_json_object_to_json_literal(FilterXObject *s)
+{
+  FilterXJsonObject *self = (FilterXJsonObject *) s;
+
+  if (!filterx_object_is_type(s, &FILTERX_TYPE_NAME(json_object)))
+    return NULL;
+  return json_object_to_json_string_ext(self->object, JSON_C_TO_STRING_PLAIN);
+}
+
 FILTERX_DEFINE_TYPE(json_object, FILTERX_TYPE_NAME(dict),
                     .is_mutable = TRUE,
                     .truthy = _truthy,
