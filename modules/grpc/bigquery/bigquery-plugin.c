@@ -23,6 +23,7 @@
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
+#include "protos/apphook.h"
 
 extern CfgParser bigquery_parser;
 
@@ -39,6 +40,7 @@ gboolean
 bigquery_module_init(PluginContext *context, CfgArgs *args)
 {
   plugin_register(context, bigquery_plugins, G_N_ELEMENTS(bigquery_plugins));
+  grpc_register_global_initializers();
   return TRUE;
 }
 

@@ -54,7 +54,8 @@ modules_grpc_otel_libotel_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
   -I$(top_srcdir)/modules/grpc \
   -I$(top_srcdir)/modules/grpc/otel \
-  -I$(top_builddir)/modules/grpc/otel
+  -I$(top_builddir)/modules/grpc/otel \
+  -I$(top_srcdir)/modules/grpc
 
 modules_grpc_otel_libotel_la_LIBADD = \
   $(MODULE_DEPS_LIBS) \

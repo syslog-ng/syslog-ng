@@ -109,6 +109,9 @@ GRPC_PROTOS_BUILT_SOURCES = \
 lib_LTLIBRARIES += modules/grpc/protos/libgrpc-protos.la
 
 nodist_modules_grpc_protos_libgrpc_protos_la_SOURCES = $(GRPC_PROTOS_BUILT_SOURCES)
+modules_grpc_protos_libgrpc_protos_la_SOURCES = \
+  modules/grpc/protos/apphook.cpp \
+  modules/grpc/protos/apphook.h
 
 modules_grpc_protos_libgrpc_protos_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \

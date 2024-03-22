@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 László Várady
+ * Copyright (c) 2024 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,36 +20,41 @@
  *
  */
 
-#include "cfg-parser.h"
-#include "plugin.h"
-#include "plugin-types.h"
-#include "protos/apphook.h"
+#include "apphook.h"
 
-extern CfgParser loki_parser;
+#include "syslog-ng.h"
 
-static Plugin loki_plugins[] =
+#include "compat/cpp-start.h"
+#include "lib/apphook.h"
+#include "compat/cpp-end.h"
+
+#include <google/protobuf/message_lite.h>
+
+namespace {
+
+void
+grpc_global_init(gint type, gpointer user_data)
 {
-  {
-    .type = LL_CONTEXT_DESTINATION,
-    .name = "loki",
-    .parser = &loki_parser,
-  },
-};
 
-gboolean
-loki_module_init(PluginContext *context, CfgArgs *args)
-{
-  plugin_register(context, loki_plugins, G_N_ELEMENTS(loki_plugins));
-  grpc_register_global_initializers();
-  return TRUE;
 }
 
-const ModuleInfo module_info =
+void
+grpc_global_deinit(gint type, gpointer user_data)
 {
-  .canonical_name = "loki",
-  .version = SYSLOG_NG_VERSION,
-  .description = "Grafana Loki plugins",
-  .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = loki_plugins,
-  .plugins_len = G_N_ELEMENTS(loki_plugins),
-};
+  google::protobuf::ShutdownProtobufLibrary();
+}
+
+}
+
+void
+grpc_register_global_initializers(void)
+{
+  static gboolean initialized = FALSE;
+
+  if (!initialized)
+    {
+      register_application_hook(AH_STARTUP, grpc_global_init, NULL, AHM_RUN_ONCE);
+      register_application_hook(AH_SHUTDOWN, grpc_global_deinit, NULL, AHM_RUN_ONCE);
+      initialized = TRUE;
+    }
+}

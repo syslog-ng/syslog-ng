@@ -37,7 +37,8 @@ modules_grpc_loki_libloki_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
   -I$(top_srcdir)/modules/grpc \
   -I$(top_srcdir)/modules/grpc/loki \
-  -I$(top_builddir)/modules/grpc/loki
+  -I$(top_builddir)/modules/grpc/loki \
+  -I$(top_srcdir)/modules/grpc
 
 modules_grpc_loki_libloki_la_LIBADD = \
   $(MODULE_DEPS_LIBS) \
