@@ -27,6 +27,8 @@
 
 #include "transport/logtransport.h"
 
+#define RFC6587_MAX_FRAME_LEN_DIGITS 10
+
 typedef enum
 {
   LPS_SUCCESS,
