@@ -284,7 +284,7 @@ public:
       }
 
     float floatVal = double_to_float_safe(val);
-    reflectors.reflection->SetDouble(message, reflectors.fieldDescriptor, floatVal);
+    reflectors.reflection->SetFloat(message, reflectors.fieldDescriptor, floatVal);
     return true;
   }
 };
