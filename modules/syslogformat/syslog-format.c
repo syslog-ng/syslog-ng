@@ -897,7 +897,7 @@ _syslog_format_check_framing(LogMessage *msg, const guchar **data, gint *length)
         return;
     }
 
-  if (*src != ' ')
+  if (i == 0 || *src != ' ')
     return;
 
   /* we did indeed find a series of digits that look like framing, that's
