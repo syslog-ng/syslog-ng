@@ -52,6 +52,7 @@
 #include "cfg-block.h"
 #include "cfg-path.h"
 #include "multi-line/multi-line-factory.h"
+#include "exponential-backoff/exponential-backoff.h"
 
 #include "logthrsource/logthrfetcherdrv.h"
 #include "logthrdest/logthrdestdrv.h"
@@ -90,6 +91,7 @@ extern LogRewrite *last_rewrite;
 extern CfgArgs *last_block_args;
 extern DNSCacheOptions *last_dns_cache_options;
 extern MultiLineOptions *last_multi_line_options;
+extern ExponentialBackoffOptions *last_exponential_backoff_options;
 
 
 #endif

@@ -84,6 +84,7 @@ lib/compat/getline.\c$
 lib/compat/json.\h$
 lib/healthcheck
 lib/healthcheck/tests
+lib/exponential-backoff
 lib/cfg-monitor\.[ch]
 lib/metrics-pipe\.[ch]
 lib/rewrite/rewrite-set-facility\.h

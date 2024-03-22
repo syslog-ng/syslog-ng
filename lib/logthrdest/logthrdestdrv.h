@@ -36,6 +36,7 @@
 #include "mainloop-threaded-worker.h"
 #include "timeutils/misc.h"
 #include "template/templates.h"
+#include "exponential-backoff/exponential-backoff.h"
 
 #include <iv.h>
 #include <iv_event.h>
@@ -98,6 +99,8 @@ struct _LogThreadedDestWorker
   gboolean enable_batching;
   gboolean suspended;
   time_t time_reopen;
+
+  ExponentialBackoff *exponential_backoff;
 
   struct
   {
@@ -184,6 +187,7 @@ struct _LogThreadedDestDriver
   gboolean flush_on_key_change;
   LogTemplate *worker_partition_key;
   gint stats_source;
+  ExponentialBackoffOptions exponential_backoff_options;
 
   /* this counter is not thread safe if there are multiple worker threads,
    * in that case, one needs to use LogThreadedDestWorker->seq_num, which is
@@ -317,5 +321,6 @@ void log_threaded_dest_driver_set_batch_lines(LogDriver *s, gint batch_lines);
 void log_threaded_dest_driver_set_batch_timeout(LogDriver *s, gint batch_timeout);
 void log_threaded_dest_driver_set_time_reopen(LogDriver *s, time_t time_reopen);
 gboolean log_threaded_dest_driver_process_flag(LogDriver *driver, const gchar *flag);
+ExponentialBackoffOptions *log_threaded_dest_driver_get_exponential_backoff_options(LogDriver *s);
 
 #endif
