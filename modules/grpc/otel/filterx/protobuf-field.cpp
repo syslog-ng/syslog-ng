@@ -169,7 +169,7 @@ public:
     if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(integer)))
       {
         GenericNumber gn = filterx_primitive_get_value(object);
-        uint64_t val = MAX(0, MIN(UINT64_MAX, gn_as_int64(&gn)));
+        uint64_t val = MAX(0, MIN(UINT64_MAX, (uint64_t) gn_as_int64(&gn)));
         reflectors.reflection->SetUInt64(message, reflectors.fieldDescriptor, val);
         return true;
       }
