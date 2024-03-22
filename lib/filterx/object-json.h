@@ -39,4 +39,8 @@ FilterXObject *filterx_json_array_new_from_repr(const gchar *repr, gssize repr_l
 FilterXObject *filterx_json_object_new_empty(void);
 FilterXObject *filterx_json_array_new_empty(void);
 
+const gchar *filterx_json_to_json_literal(FilterXObject *s);
+const gchar *filterx_json_object_to_json_literal(FilterXObject *s);
+const gchar *filterx_json_array_to_json_literal(FilterXObject *s);
+
 #endif

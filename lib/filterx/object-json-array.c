@@ -232,6 +232,16 @@ filterx_json_array_new_empty(void)
   return filterx_json_array_new_sub(json_object_new_array(), NULL);
 }
 
+const gchar *
+filterx_json_array_to_json_literal(FilterXObject *s)
+{
+  FilterXJsonArray *self = (FilterXJsonArray *) s;
+
+  if (!filterx_object_is_type(s, &FILTERX_TYPE_NAME(json_array)))
+    return NULL;
+  return json_object_to_json_string_ext(self->object, JSON_C_TO_STRING_PLAIN);
+}
+
 FILTERX_DEFINE_TYPE(json_array, FILTERX_TYPE_NAME(list),
                     .is_mutable = TRUE,
                     .truthy = _truthy,

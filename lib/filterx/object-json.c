@@ -146,3 +146,12 @@ filterx_json_new_from_repr(const gchar *repr, gssize repr_len)
     return filterx_json_object_new_from_repr(repr, repr_len);
   return filterx_json_array_new_from_repr(repr, repr_len);
 }
+const gchar *
+filterx_json_to_json_literal(FilterXObject *s)
+{
+  if (filterx_object_is_type(s, &FILTERX_TYPE_NAME(json_object)))
+    return filterx_json_object_to_json_literal(s);
+  if (filterx_object_is_type(s, &FILTERX_TYPE_NAME(json_array)))
+    return filterx_json_array_to_json_literal(s);
+  return NULL;
+}
