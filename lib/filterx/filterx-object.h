@@ -134,6 +134,14 @@ filterx_object_marshal(FilterXObject *self, GString *repr, LogMessageValueType *
   return FALSE;
 }
 
+static inline gboolean
+filterx_object_marshal_append(FilterXObject *self, GString *repr, LogMessageValueType *t)
+{
+  if (self->type->marshal)
+    return self->type->marshal(self, repr, t);
+  return FALSE;
+}
+
 static inline FilterXObject *
 filterx_object_clone(FilterXObject *self)
 {
