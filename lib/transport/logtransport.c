@@ -27,6 +27,76 @@
 
 #include <unistd.h>
 
+gssize
+_log_transport_combined_read_with_read_ahead(LogTransport *self,
+                                             gpointer buf, gsize count,
+                                             LogTransportAuxData *aux)
+{
+  /* prepend the read ahead buflen to the output buffer */
+  g_assert(count >= self->read_ahead_buf_len);
+
+  memcpy(buf, self->read_ahead_buf, self->read_ahead_buf_len);
+  gint read_ahead_shifted = self->read_ahead_buf_len;
+  self->read_ahead_buf_len = 0;
+
+  buf = ((gchar *) buf) + read_ahead_shifted;
+  count -= read_ahead_shifted;
+
+  if (count > 0)
+    {
+      /* need to read more */
+      gssize rc = self->read(self, buf, count, aux);
+      if (rc < 0)
+        {
+          /* error, we put the bytes back to our read_ahead_buf */
+          self->read_ahead_buf_len = read_ahead_shifted;
+          return rc;
+        }
+      else
+        return rc + read_ahead_shifted;
+    }
+  else
+    return read_ahead_shifted;
+}
+
+
+/* NOTE: this would repeat the entire read operation if you invoke it
+ * multiple times.  The maximum size of read_ahead is limited by the size of
+ * self->read_ahead_buf[]
+ */
+gssize
+log_transport_read_ahead(LogTransport *self, gpointer buf, gsize buflen)
+{
+  g_assert(buflen < sizeof(self->read_ahead_buf));
+  gint rc = 0;
+
+  while (buflen > self->read_ahead_buf_len)
+    {
+      /* read at the end of the read_ahead buffer */
+      rc = self->read(self,
+                      &self->read_ahead_buf[self->read_ahead_buf_len],
+                      MIN(buflen, sizeof(self->read_ahead_buf)) - self->read_ahead_buf_len,
+                      NULL);
+
+      if (rc < 0 && errno == EAGAIN)
+        break;
+
+      if (rc <= 0)
+        return rc;
+      self->read_ahead_buf_len += rc;
+    }
+
+  if (self->read_ahead_buf_len > 0)
+    {
+      rc = MIN(self->read_ahead_buf_len, buflen);
+      memcpy(buf, self->read_ahead_buf, rc);
+      return rc;
+    }
+  errno = EAGAIN;
+  return -1;
+}
+
+
 void
 log_transport_free_method(LogTransport *s)
 {
