@@ -49,7 +49,6 @@ _truthy(FilterXObject *s)
 static gboolean
 _marshal_to_json_literal(FilterXJsonArray *self, GString *repr, LogMessageValueType *t)
 {
-  g_string_truncate(repr, 0);
   *t = LM_VT_JSON;
 
   const gchar *json_repr = json_object_to_json_string_ext(self->object, JSON_C_TO_STRING_PLAIN);
