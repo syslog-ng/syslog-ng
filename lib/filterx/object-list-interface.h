@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,23 +20,31 @@
  * COPYING for details.
  *
  */
-#ifndef OBJECT_JSON_H_INCLUDED
-#define OBJECT_JSON_H_INCLUDED
+
+#ifndef FILTERX_OBJECT_LIST_INTERFACE_H_INCLUDED
+#define FILTERX_OBJECT_LIST_INTERFACE_H_INCLUDED
 
 #include "filterx/filterx-object.h"
-#include "compat/json.h"
 
-typedef struct FilterXJsonObject_ FilterXJsonObject;
-typedef struct FilterXJsonArray_ FilterXJsonArray;
+typedef struct FilterXList_ FilterXList;
 
-FILTERX_DECLARE_TYPE(json_object);
-FILTERX_DECLARE_TYPE(json_array);
+struct FilterXList_
+{
+  FilterXObject super;
 
-FilterXObject *filterx_json_new_from_repr(const gchar *repr, gssize repr_len);
-FilterXObject *filterx_json_object_new_from_repr(const gchar *repr, gssize repr_len);
-FilterXObject *filterx_json_array_new_from_repr(const gchar *repr, gssize repr_len);
+  FilterXObject *(*get_subscript)(FilterXList *s, guint64 index);
+  gboolean (*set_subscript)(FilterXList *s, guint64 index, FilterXObject *new_value);
+  gboolean (*append)(FilterXList *s, FilterXObject *new_value);
+  guint64 (*len)(FilterXList *s);
+};
 
-FilterXObject *filterx_json_object_new_empty(void);
-FilterXObject *filterx_json_array_new_empty(void);
+guint64 filterx_list_len(FilterXObject *s);
+FilterXObject *filterx_list_get_subscript(FilterXObject *s, gint64 index);
+gboolean filterx_list_set_subscript(FilterXObject *s, gint64 index, FilterXObject *new_value);
+gboolean filterx_list_append(FilterXObject *s, FilterXObject *new_value);
+
+void filterx_list_init_instance(FilterXList *self, FilterXType *type);
+
+FILTERX_DECLARE_TYPE(list);
 
 #endif

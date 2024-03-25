@@ -23,10 +23,13 @@ set(FILTERX_HEADERS
     filterx/filterx-weakrefs.h
     filterx/object-datetime.h
     filterx/object-json.h
+    filterx/object-json-internal.h
     filterx/object-message-value.h
     filterx/object-null.h
     filterx/object-primitive.h
     filterx/object-string.h
+    filterx/object-list-interface.h
+    filterx/object-dict-interface.h
     filterx/expr-condition.h
     filterx/filterx-globals-tests.h
     PARENT_SCOPE
@@ -57,10 +60,14 @@ set(FILTERX_SOURCES
     filterx/filterx-weakrefs.c
     filterx/object-datetime.c
     filterx/object-json.c
+    filterx/object-json-object.c
+    filterx/object-json-array.c
     filterx/object-message-value.c
     filterx/object-null.c
     filterx/object-primitive.c
     filterx/object-string.c
+    filterx/object-list-interface.c
+    filterx/object-dict-interface.c
     filterx/expr-condition.c
     PARENT_SCOPE
     )

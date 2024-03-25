@@ -98,7 +98,7 @@ KVList::marshal(void)
 }
 
 KeyValue *
-KVList::get_mutable_kv_for_key(const char *key)
+KVList::get_mutable_kv_for_key(const char *key) const
 {
   for (int i = 0; i < repeated_kv->size(); i++)
     {
@@ -114,13 +114,6 @@ KVList::get_mutable_kv_for_key(const char *key)
 bool
 KVList::set_subscript(FilterXObject *key, FilterXObject *value)
 {
-  if (!key)
-    {
-      msg_error("FilterX: Failed to set OTel KVList element",
-                evt_tag_str("error", "Key is mandatory"));
-      return false;
-    }
-
   const gchar *key_c_str = filterx_string_get_value(key, NULL);
   if (!key_c_str)
     {
@@ -163,6 +156,26 @@ KVList::get_subscript(FilterXObject *key)
   return converter->Get(kv, "value");
 }
 
+bool
+KVList::has_subscript(FilterXObject *key) const
+{
+  const gchar *key_c_str = filterx_string_get_value(key, NULL);
+  if (!key_c_str)
+    {
+      msg_error("FilterX: Failed to check OTel KVList key",
+                evt_tag_str("error", "Key must be string type"));
+      return false;
+    }
+
+  return !!get_mutable_kv_for_key(key_c_str);
+}
+
+uint64_t
+KVList::len() const
+{
+  return (uint64_t) repeated_kv->size();
+}
+
 const RepeatedPtrField<KeyValue> &
 KVList::get_value() const
 {
@@ -170,26 +183,6 @@ KVList::get_value() const
 }
 
 /* C Wrappers */
-
-FilterXObject *
-_filterx_otel_kvlist_clone(FilterXObject *s)
-{
-  FilterXOtelKVList *self = (FilterXOtelKVList *) s;
-
-  FilterXOtelKVList *clone = g_new0(FilterXOtelKVList, 1);
-  filterx_object_init_instance(&clone->super, &FILTERX_TYPE_NAME(otel_kvlist));
-
-  try
-    {
-      clone->cpp = new KVList(*self->cpp, self);
-    }
-  catch (const std::runtime_error &)
-    {
-      g_assert_not_reached();
-    }
-
-  return &clone->super;
-}
 
 static void
 _free(FilterXObject *s)
@@ -201,7 +194,7 @@ _free(FilterXObject *s)
 }
 
 static gboolean
-_set_subscript(FilterXObject *s, FilterXObject *key, FilterXObject *new_value)
+_set_subscript(FilterXDict *s, FilterXObject *key, FilterXObject *new_value)
 {
   FilterXOtelKVList *self = (FilterXOtelKVList *) s;
 
@@ -209,11 +202,27 @@ _set_subscript(FilterXObject *s, FilterXObject *key, FilterXObject *new_value)
 }
 
 static FilterXObject *
-_get_subscript(FilterXObject *s, FilterXObject *key)
+_get_subscript(FilterXDict *s, FilterXObject *key)
 {
   FilterXOtelKVList *self = (FilterXOtelKVList *) s;
 
   return self->cpp->get_subscript(key);
+}
+
+static gboolean
+_has_subscript(FilterXDict *s, FilterXObject *key)
+{
+  FilterXOtelKVList *self = (FilterXOtelKVList *) s;
+
+  return self->cpp->has_subscript(key);
+}
+
+static uint64_t
+_len(FilterXDict *s)
+{
+  FilterXOtelKVList *self = (FilterXOtelKVList *) s;
+
+  return self->cpp->len();
 }
 
 static gboolean
@@ -235,40 +244,71 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
   return TRUE;
 }
 
+static void
+_init_instance(FilterXOtelKVList *self)
+{
+  filterx_dict_init_instance(&self->super, &FILTERX_TYPE_NAME(otel_kvlist));
+
+  self->super.get_subscript = _get_subscript;
+  self->super.set_subscript = _set_subscript;
+  self->super.has_subscript = _has_subscript;
+  self->super.len = _len;
+}
+
+FilterXObject *
+_filterx_otel_kvlist_clone(FilterXObject *s)
+{
+  FilterXOtelKVList *self = (FilterXOtelKVList *) s;
+
+  FilterXOtelKVList *clone = g_new0(FilterXOtelKVList, 1);
+  _init_instance(clone);
+
+  try
+    {
+      clone->cpp = new KVList(*self->cpp, clone);
+    }
+  catch (const std::runtime_error &)
+    {
+      g_assert_not_reached();
+    }
+
+  return &clone->super.super;
+}
+
 FilterXObject *
 filterx_otel_kvlist_new_from_args(GPtrArray *args)
 {
-  FilterXOtelKVList *s = g_new0(FilterXOtelKVList, 1);
-  filterx_object_init_instance((FilterXObject *)s, &FILTERX_TYPE_NAME(otel_kvlist));
+  FilterXOtelKVList *self = g_new0(FilterXOtelKVList, 1);
+  _init_instance(self);
 
   try
     {
       if (!args || args->len == 0)
-        s->cpp = new KVList(s);
+        self->cpp = new KVList(self);
       else if (args->len == 1)
-        s->cpp = new KVList(s, (FilterXObject *) g_ptr_array_index(args, 0));
+        self->cpp = new KVList(self, (FilterXObject *) g_ptr_array_index(args, 0));
       else
         throw std::runtime_error("Invalid number of arguments");
     }
   catch (const std::runtime_error &e)
     {
       msg_error("FilterX: Failed to create OTel KVList object", evt_tag_str("error", e.what()));
-      filterx_object_unref(&s->super);
+      filterx_object_unref(&self->super.super);
       return NULL;
     }
 
-  return &s->super;
+  return &self->super.super;
 }
 
 static FilterXObject *
 _new_borrowed(RepeatedPtrField<KeyValue> *kvlist)
 {
-  FilterXOtelKVList *s = g_new0(FilterXOtelKVList, 1);
-  filterx_object_init_instance((FilterXObject *) s, &FILTERX_TYPE_NAME(otel_kvlist));
+  FilterXOtelKVList *self = g_new0(FilterXOtelKVList, 1);
+  _init_instance(self);
 
-  s->cpp = new KVList(s, kvlist);
+  self->cpp = new KVList(self, kvlist);
 
-  return &s->super;
+  return &self->super.super;
 }
 
 gpointer
@@ -359,12 +399,10 @@ OtelKVListField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRe
 
 OtelKVListField syslogng::grpc::otel::filterx::otel_kvlist_converter;
 
-FILTERX_DEFINE_TYPE(otel_kvlist, FILTERX_TYPE_NAME(object),
+FILTERX_DEFINE_TYPE(otel_kvlist, FILTERX_TYPE_NAME(dict),
                     .is_mutable = TRUE,
                     .marshal = _marshal,
                     .clone = _filterx_otel_kvlist_clone,
                     .truthy = _truthy,
-                    .get_subscript = _get_subscript,
-                    .set_subscript = _set_subscript,
                     .free_fn = _free,
                    );

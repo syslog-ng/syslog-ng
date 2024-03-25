@@ -26,7 +26,7 @@
 #include "syslog-ng.h"
 
 #include "compat/cpp-start.h"
-#include "filterx/filterx-object.h"
+#include "filterx/object-dict-interface.h"
 #include "object-otel.h"
 #include "compat/cpp-end.h"
 
@@ -58,13 +58,15 @@ public:
 
   std::string marshal();
   bool set_subscript(FilterXObject *key, FilterXObject *value);
+  bool has_subscript(FilterXObject *key) const;
   FilterXObject *get_subscript(FilterXObject *key);
+  uint64_t len() const;
   const RepeatedPtrField<KeyValue> &get_value() const;
 
 private:
   KVList(const KVList &o, FilterXOtelKVList *s);
   friend FilterXObject *::_filterx_otel_kvlist_clone(FilterXObject *s);
-  KeyValue *get_mutable_kv_for_key(const char *key);
+  KeyValue *get_mutable_kv_for_key(const char *key) const;
 
 private:
   FilterXOtelKVList *super;
@@ -90,7 +92,7 @@ extern OtelKVListField otel_kvlist_converter;
 
 struct FilterXOtelKVList_
 {
-  FilterXObject super;
+  FilterXDict super;
   syslogng::grpc::otel::filterx::KVList *cpp;
 };
 

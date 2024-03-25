@@ -44,6 +44,7 @@ struct _FilterXType
   gboolean (*setattr)(FilterXObject *self, const gchar *attr_name, FilterXObject *new_value);
   FilterXObject *(*get_subscript)(FilterXObject *self, FilterXObject *index);
   gboolean (*set_subscript)(FilterXObject *self, FilterXObject *index, FilterXObject *new_value);
+  gboolean (*has_subscript)(FilterXObject *self, FilterXObject *key);
   void (*free_fn)(FilterXObject *self);
 };
 
@@ -192,6 +193,14 @@ filterx_object_set_subscript(FilterXObject *self, FilterXObject *index, FilterXO
 {
   if (self->type->set_subscript)
     return self->type->set_subscript(self, index, new_value);
+  return FALSE;
+}
+
+static inline gboolean
+filterx_object_has_subscript(FilterXObject *self, FilterXObject *index)
+{
+  if (self->type->has_subscript)
+    return self->type->has_subscript(self, index);
   return FALSE;
 }
 

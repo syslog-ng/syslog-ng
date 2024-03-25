@@ -27,6 +27,8 @@
 #include "filterx/object-json.h"
 #include "filterx/object-datetime.h"
 #include "filterx/object-message-value.h"
+#include "filterx/object-list-interface.h"
+#include "filterx/object-dict-interface.h"
 
 static GHashTable *filterx_builtin_functions = NULL;
 
@@ -81,6 +83,9 @@ filterx_builtin_functions_deinit(void)
 void
 filterx_global_init(void)
 {
+  filterx_type_init(&FILTERX_TYPE_NAME(list));
+  filterx_type_init(&FILTERX_TYPE_NAME(dict));
+
   filterx_type_init(&FILTERX_TYPE_NAME(null));
   filterx_type_init(&FILTERX_TYPE_NAME(integer));
   filterx_type_init(&FILTERX_TYPE_NAME(boolean));
@@ -90,7 +95,8 @@ filterx_global_init(void)
   filterx_type_init(&FILTERX_TYPE_NAME(bytes));
   filterx_type_init(&FILTERX_TYPE_NAME(protobuf));
 
-  filterx_type_init(&FILTERX_TYPE_NAME(json));
+  filterx_type_init(&FILTERX_TYPE_NAME(json_object));
+  filterx_type_init(&FILTERX_TYPE_NAME(json_array));
   filterx_type_init(&FILTERX_TYPE_NAME(datetime));
   filterx_type_init(&FILTERX_TYPE_NAME(message_value));
 

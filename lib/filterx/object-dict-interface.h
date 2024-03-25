@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,23 +20,29 @@
  * COPYING for details.
  *
  */
-#ifndef OBJECT_JSON_H_INCLUDED
-#define OBJECT_JSON_H_INCLUDED
+
+#ifndef FILTERX_OBJECT_DICT_INTERFACE_H_INCLUDED
+#define FILTERX_OBJECT_DICT_INTERFACE_H_INCLUDED
 
 #include "filterx/filterx-object.h"
-#include "compat/json.h"
 
-typedef struct FilterXJsonObject_ FilterXJsonObject;
-typedef struct FilterXJsonArray_ FilterXJsonArray;
+typedef struct FilterXDict_ FilterXDict;
 
-FILTERX_DECLARE_TYPE(json_object);
-FILTERX_DECLARE_TYPE(json_array);
+struct FilterXDict_
+{
+  FilterXObject super;
+  gboolean support_attr;
 
-FilterXObject *filterx_json_new_from_repr(const gchar *repr, gssize repr_len);
-FilterXObject *filterx_json_object_new_from_repr(const gchar *repr, gssize repr_len);
-FilterXObject *filterx_json_array_new_from_repr(const gchar *repr, gssize repr_len);
+  FilterXObject *(*get_subscript)(FilterXDict *s, FilterXObject *key);
+  gboolean (*set_subscript)(FilterXDict *s, FilterXObject *key, FilterXObject *new_value);
+  gboolean (*has_subscript)(FilterXDict *s, FilterXObject *key);
+  guint64 (*len)(FilterXDict *s);
+};
 
-FilterXObject *filterx_json_object_new_empty(void);
-FilterXObject *filterx_json_array_new_empty(void);
+guint64 filterx_dict_len(FilterXObject *s);
+
+void filterx_dict_init_instance(FilterXDict *self, FilterXType *type);
+
+FILTERX_DECLARE_TYPE(dict);
 
 #endif

@@ -55,11 +55,6 @@ _convert_filterx_object_to_generic_number(FilterXObject *obj, GenericNumber *gn)
     }
   else if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(null)))
     gn_set_int64(gn, 0);
-  else if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(bytes)) ||
-           filterx_object_is_type(obj, &FILTERX_TYPE_NAME(protobuf)) ||
-           filterx_object_is_type(obj, &FILTERX_TYPE_NAME(message_value)) ||
-           filterx_object_is_type(obj, &FILTERX_TYPE_NAME(json)))
-    gn_set_nan(gn);
   else if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(datetime)))
     {
       const UnixTime utime = filterx_datetime_get_value(obj);
@@ -148,7 +143,8 @@ _evaluate_type_aware(FilterXObject *lhs, FilterXObject *rhs, gint operator)
       filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(bytes)) ||
       filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(protobuf)) ||
       filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(message_value)) ||
-      filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(json)))
+      filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(json_object)) || // TODO: we should have generic map and array cmp
+      filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(json_array)))
     return _evaluate_as_string(lhs, rhs, operator);
 
   if (filterx_object_is_type(lhs, &FILTERX_TYPE_NAME(null)) ||

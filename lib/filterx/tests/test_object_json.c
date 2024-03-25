@@ -39,14 +39,14 @@ assert_object_json_equals(FilterXObject *obj, const gchar *expected_json_repr)
 
 Test(filterx_json, test_filterx_object_json_marshals_to_the_stored_values)
 {
-  FilterXObject *fobj = construct_filterx_json_from_repr("{\"foo\": \"foovalue\"}", -1);
+  FilterXObject *fobj = filterx_json_object_new_from_repr("{\"foo\": \"foovalue\"}", -1);
   assert_marshaled_object(fobj, "{\"foo\":\"foovalue\"}", LM_VT_JSON);
   filterx_object_unref(fobj);
 }
 
 Test(filterx_json, test_filterx_object_value_maps_to_the_right_json_value)
 {
-  FilterXObject *fobj = construct_filterx_json_from_repr("{\"foo\": \"foovalue\"}", -1);
+  FilterXObject *fobj = filterx_json_object_new_from_repr("{\"foo\": \"foovalue\"}", -1);
   assert_object_json_equals(fobj, "{\"foo\":\"foovalue\"}");
   filterx_object_unref(fobj);
 }
