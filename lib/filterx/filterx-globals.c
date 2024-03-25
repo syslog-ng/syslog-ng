@@ -73,6 +73,7 @@ filterx_builtin_functions_init(void)
   g_assert(filterx_builtin_function_register("string", filterx_typecast_string));
   g_assert(filterx_builtin_function_register("bytes", filterx_typecast_bytes));
   g_assert(filterx_builtin_function_register("protobuf", filterx_typecast_protobuf));
+  g_assert(filterx_builtin_function_register("bool", filterx_typecast_boolean));
 }
 
 void
