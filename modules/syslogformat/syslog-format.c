@@ -790,6 +790,56 @@ _syslog_format_parse_sd_column(LogMessage *msg, const guchar **data, gint *lengt
   return TRUE;
 }
 
+gboolean
+_syslog_format_parse_message_column(LogMessage *msg,
+                                    const guchar **data, gint *length,
+                                    const MsgFormatOptions *parse_options)
+{
+  const guchar *src = (guchar *) *data;
+  gint left = *length;
+
+  /* checking if there are remaining data in log message */
+  if (left != 0)
+    {
+      /* optional part of the log message [SP MSG] */
+      if (!_skip_space(&src, &left))
+        {
+          return FALSE;
+        }
+
+      if (left >= 3 && memcmp(src, "\xEF\xBB\xBF", 3) == 0)
+        {
+          /* we have a BOM, this is UTF8 */
+          msg->flags |= LF_UTF8;
+          src += 3;
+          left -= 3;
+
+          log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) src, left);
+          return TRUE;
+        }
+
+      if ((parse_options->flags & LP_SANITIZE_UTF8))
+        {
+          if (!g_utf8_validate((gchar *) src, left, NULL))
+            {
+              gchar buf[SANITIZE_UTF8_BUFFER_SIZE(left)];
+              gsize sanitized_length;
+              optimized_sanitize_utf8_to_escaped_binary(src, left, &sanitized_length, buf, sizeof(buf));
+              log_msg_set_value(msg, LM_V_MESSAGE, buf, sanitized_length);
+              log_msg_set_tag_by_id(msg, LM_T_MSG_UTF8_SANITIZED);
+              msg->flags |= LF_UTF8;
+              return TRUE;
+            }
+          else
+            msg->flags |= LF_UTF8;
+        }
+      else if ((parse_options->flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
+        msg->flags |= LF_UTF8;
+    }
+  log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) src, left);
+  return TRUE;
+}
+
 static gboolean
 _syslog_format_parse_legacy_header(LogMessage *msg, const guchar **data, gint *length,
                                    const MsgFormatOptions *parse_options)
@@ -910,6 +960,42 @@ _syslog_format_check_framing(LogMessage *msg, const guchar **data, gint *length)
   *length = left;
 }
 
+static void
+_syslog_format_parse_legacy_message(LogMessage *msg,
+                                    const guchar **data, gint *length,
+                                    const MsgFormatOptions *parse_options)
+{
+  const guchar *src = (const guchar *) *data;
+  gint left = *length;
+
+  if (parse_options->flags & LP_SANITIZE_UTF8)
+    {
+      if (!g_utf8_validate((gchar *) src, left, NULL))
+        {
+          /* invalid utf8, sanitize it and then remember it is now utf8 clean */
+          gchar buf[SANITIZE_UTF8_BUFFER_SIZE(left)];
+          gsize sanitized_length;
+          optimized_sanitize_utf8_to_escaped_binary(src, left, &sanitized_length, buf, sizeof(buf));
+          log_msg_set_value(msg, LM_V_MESSAGE, buf, sanitized_length);
+          log_msg_set_tag_by_id(msg, LM_T_MSG_UTF8_SANITIZED);
+          msg->flags |= LF_UTF8;
+          return;
+        }
+      else
+        {
+          /* valid utf8, no need to sanitize, store it and mark it as utf8 clean */
+          msg->flags |= LF_UTF8;
+        }
+    }
+  else if ((parse_options->flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
+    {
+      /* valid utf8, mark it as utf8 clean */
+      msg->flags |= LF_UTF8;
+    }
+
+  log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) src, left);
+}
+
 /**
  * _syslog_format_parse_legacy:
  * @msg: LogMessage instance to store parsed information into
@@ -940,26 +1026,9 @@ _syslog_format_parse_legacy(const MsgFormatOptions *parse_options,
   if ((parse_options->flags & LP_NO_HEADER) == 0)
     _syslog_format_parse_legacy_header(msg, &src, &left, parse_options);
 
-  if (parse_options->flags & LP_SANITIZE_UTF8)
-    {
-      if (!g_utf8_validate((gchar *) src, left, NULL))
-        {
-          gchar buf[SANITIZE_UTF8_BUFFER_SIZE(left)];
-          gsize sanitized_length;
-          optimized_sanitize_utf8_to_escaped_binary(src, left, &sanitized_length, buf, sizeof(buf));
-          log_msg_set_value(msg, LM_V_MESSAGE, buf, sanitized_length);
-          log_msg_set_tag_by_id(msg, LM_T_MSG_UTF8_SANITIZED);
-          msg->flags |= LF_UTF8;
-          return TRUE;
-        }
-      else
-        msg->flags |= LF_UTF8;
-    }
-  else if ((parse_options->flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
-    msg->flags |= LF_UTF8;
+  _syslog_format_parse_legacy_message(msg, &src, &left, parse_options);
 
-  log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) src, left);
-
+  log_msg_set_value_to_string(msg, LM_V_MSGFORMAT, "rfc3164");
   return TRUE;
 error:
   *position = src - data;
@@ -1052,45 +1121,11 @@ _syslog_format_parse_syslog_proto(const MsgFormatOptions *parse_options, const g
   if (!_syslog_format_parse_sd_column(msg, &src, &left, parse_options))
     goto error;
 
-  /* checking if there are remaining data in log message */
-  if (left != 0)
-    {
-      /* optional part of the log message [SP MSG] */
-      if (!_skip_space(&src, &left))
-        {
-          goto error;
-        }
+  if (!_syslog_format_parse_message_column(msg, &src, &left, parse_options))
+    goto error;
 
-      if (left >= 3 && memcmp(src, "\xEF\xBB\xBF", 3) == 0)
-        {
-          /* we have a BOM, this is UTF8 */
-          msg->flags |= LF_UTF8;
-          src += 3;
-          left -= 3;
+  log_msg_set_value_to_string(msg, LM_V_MSGFORMAT, "rfc5424");
 
-          log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) src, left);
-          return TRUE;
-        }
-
-      if ((parse_options->flags & LP_SANITIZE_UTF8))
-        {
-          if (!g_utf8_validate((gchar *) src, left, NULL))
-            {
-              gchar buf[SANITIZE_UTF8_BUFFER_SIZE(left)];
-              gsize sanitized_length;
-              optimized_sanitize_utf8_to_escaped_binary(src, left, &sanitized_length, buf, sizeof(buf));
-              log_msg_set_value(msg, LM_V_MESSAGE, buf, sanitized_length);
-              log_msg_set_tag_by_id(msg, LM_T_MSG_UTF8_SANITIZED);
-              msg->flags |= LF_UTF8;
-              return TRUE;
-            }
-          else
-            msg->flags |= LF_UTF8;
-        }
-      else if ((parse_options->flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
-        msg->flags |= LF_UTF8;
-    }
-  log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) src, left);
   return TRUE;
 error:
   *position = src - data;

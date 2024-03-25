@@ -369,7 +369,7 @@ linux_kmsg_format_handler(const MsgFormatOptions *parse_options,
   msg->initial_parse = TRUE;
   success = log_msg_parse_kmsg(msg, data, length, problem_position);
   msg->initial_parse = FALSE;
-
+  log_msg_set_value_to_string(msg, LM_V_MSGFORMAT, "linux:devkmsg");
   return success;
 }
 
