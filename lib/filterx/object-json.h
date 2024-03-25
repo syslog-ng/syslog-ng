@@ -35,6 +35,7 @@ FILTERX_DECLARE_TYPE(json_array);
 FilterXObject *filterx_json_new_from_repr(const gchar *repr, gssize repr_len);
 FilterXObject *filterx_json_object_new_from_repr(const gchar *repr, gssize repr_len);
 FilterXObject *filterx_json_array_new_from_repr(const gchar *repr, gssize repr_len);
+FilterXObject *filterx_json_array_new_from_syslog_ng_list(const gchar *repr, gssize repr_len);
 
 FilterXObject *filterx_json_object_new_empty(void);
 FilterXObject *filterx_json_array_new_empty(void);
