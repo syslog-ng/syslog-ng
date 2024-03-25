@@ -537,7 +537,8 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
   curl_easy_setopt(self->curl, CURLOPT_URL, url);
   if (self->compressor)
     {
-      if (compressor_compress(self->compressor, self->request_body_compressed, self->request_body))
+      if (compressor_compress(self->compressor, self->request_body_compressed, self->request_body) &&
+          self->request_body_compressed->len < self->request_body->len)
         {
           curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body_compressed->str);
           curl_easy_setopt(self->curl, CURLOPT_POSTFIELDSIZE, self->request_body_compressed->len);
