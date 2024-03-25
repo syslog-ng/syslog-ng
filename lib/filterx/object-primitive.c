@@ -275,6 +275,43 @@ filterx_typecast_integer(GPtrArray *args)
   return NULL;
 }
 
+FilterXObject *
+filterx_typecast_double(GPtrArray *args)
+{
+  if (!args || args->len == 0)
+    return NULL;
+
+  FilterXObject *object = g_ptr_array_index(args, 0);
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(double)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(integer)))
+    {
+      GenericNumber gn = filterx_primitive_get_value(object);
+      return filterx_double_new(gn_as_double(&gn));
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(string)))
+    {
+      gsize size;
+      gchar *endptr;
+      const gchar *str = filterx_string_get_value(object, &size);
+
+      gdouble val = g_ascii_strtod(str, &endptr);
+      if (str != endptr && *endptr == '\0')
+        return filterx_double_new(val);
+    }
+
+  msg_error("filterx: invalid typecast",
+            evt_tag_str("from", object->type->name),
+            evt_tag_str("to", "double"));
+  return NULL;
+}
+
 FILTERX_DEFINE_TYPE(integer, FILTERX_TYPE_NAME(object),
                     .truthy = _truthy,
                     .marshal = _integer_marshal,
