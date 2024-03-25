@@ -22,6 +22,7 @@
  */
 #include "filterx/object-primitive.h"
 #include "filterx/filterx-grammar.h"
+#include "filterx/object-string.h"
 #include "generic-number.h"
 #include "str-format.h"
 #include "plugin.h"
@@ -235,6 +236,43 @@ filterx_typecast_boolean(GPtrArray *args)
     }
 
   return filterx_boolean_new(filterx_object_truthy(object));
+}
+
+FilterXObject *
+filterx_typecast_integer(GPtrArray *args)
+{
+  if (!args || args->len == 0)
+    return NULL;
+
+  FilterXObject *object = g_ptr_array_index(args, 0);
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(integer)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(double)))
+    {
+      GenericNumber gn = filterx_primitive_get_value(object);
+      return filterx_integer_new(gn_as_int64(&gn));
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(string)))
+    {
+      gsize size;
+      gchar *endptr;
+      const gchar *str = filterx_string_get_value(object, &size);
+
+      gint64 val = g_ascii_strtoll(str, &endptr, 10);
+      if (str != endptr && *endptr == '\0')
+        return filterx_integer_new(val);
+    }
+
+  msg_error("filterx: invalid typecast",
+            evt_tag_str("from", object->type->name),
+            evt_tag_str("to", "integer"));
+  return NULL;
 }
 
 FILTERX_DEFINE_TYPE(integer, FILTERX_TYPE_NAME(object),

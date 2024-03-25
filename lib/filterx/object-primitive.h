@@ -49,6 +49,7 @@ FilterXObject *filterx_enum_new(GlobalConfig *cfg, const gchar *namespace_name, 
 GenericNumber filterx_primitive_get_value(FilterXObject *s);
 
 FilterXObject *filterx_typecast_boolean(GPtrArray *args);
+FilterXObject *filterx_typecast_integer(GPtrArray *args);
 static inline gboolean
 filterx_integer_unwrap(FilterXObject *s, gint64 *value)
 {
