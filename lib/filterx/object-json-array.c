@@ -210,6 +210,30 @@ _free(FilterXObject *s)
 FilterXObject *
 filterx_json_array_new_from_repr(const gchar *repr, gssize repr_len)
 {
+  struct json_tokener *tokener = json_tokener_new();
+  struct json_object *json_obj;
+
+  json_obj = json_tokener_parse_ex(tokener, repr, repr_len < 0 ? strlen(repr) : repr_len);
+  if (repr_len >= 0 && json_tokener_get_error(tokener) == json_tokener_continue)
+    {
+      /* pass the closing NUL character */
+      json_obj = json_tokener_parse_ex(tokener, "", 1);
+    }
+
+  json_tokener_free(tokener);
+
+  if (!json_object_is_type(json_obj, json_type_array))
+    {
+      json_object_put(json_obj);
+      return NULL;
+    }
+
+  return filterx_json_array_new_sub(json_obj, NULL);
+}
+
+FilterXObject *
+filterx_json_array_new_from_syslog_ng_list(const gchar *repr, gssize repr_len)
+{
   struct json_object *object = json_object_new_array();
 
   ListScanner scanner;

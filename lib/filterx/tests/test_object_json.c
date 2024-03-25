@@ -37,17 +37,38 @@ assert_object_json_equals(FilterXObject *obj, const gchar *expected_json_repr)
   json_object_put(jso);
 }
 
-Test(filterx_json, test_filterx_object_json_marshals_to_the_stored_values)
+Test(filterx_json, test_filterx_object_json_from_repr)
 {
-  FilterXObject *fobj = filterx_json_object_new_from_repr("{\"foo\": \"foovalue\"}", -1);
+  FilterXObject *fobj;
+
+  fobj = filterx_json_new_from_repr("{\"foo\": \"foovalue\"}", -1);
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_object)));
+  assert_object_json_equals(fobj, "{\"foo\":\"foovalue\"}");
   assert_marshaled_object(fobj, "{\"foo\":\"foovalue\"}", LM_VT_JSON);
   filterx_object_unref(fobj);
-}
 
-Test(filterx_json, test_filterx_object_value_maps_to_the_right_json_value)
-{
-  FilterXObject *fobj = filterx_json_object_new_from_repr("{\"foo\": \"foovalue\"}", -1);
-  assert_object_json_equals(fobj, "{\"foo\":\"foovalue\"}");
+  fobj = filterx_json_new_from_repr("[\"foo\", \"bar\"]", -1);
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[\"foo\",\"bar\"]");
+  assert_marshaled_object(fobj, "foo,bar", LM_VT_LIST);
+  filterx_object_unref(fobj);
+
+  fobj = filterx_json_new_from_repr("[1, 2]", -1);
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[1,2]");
+  assert_marshaled_object(fobj, "[1,2]", LM_VT_JSON);
+  filterx_object_unref(fobj);
+
+  fobj = filterx_json_array_new_from_syslog_ng_list("\"foo\",bar", -1);
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[\"foo\",\"bar\"]");
+  assert_marshaled_object(fobj, "foo,bar", LM_VT_LIST);
+  filterx_object_unref(fobj);
+
+  fobj = filterx_json_array_new_from_syslog_ng_list("1,2", -1);
+  cr_assert(filterx_object_is_type(fobj, &FILTERX_TYPE_NAME(json_array)));
+  assert_object_json_equals(fobj, "[\"1\",\"2\"]");
+  assert_marshaled_object(fobj, "1,2", LM_VT_LIST);
   filterx_object_unref(fobj);
 }
 

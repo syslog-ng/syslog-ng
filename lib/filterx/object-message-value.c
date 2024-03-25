@@ -106,7 +106,7 @@ _unmarshal_repr(const gchar *repr, gssize repr_len, LogMessageValueType t)
         return NULL;
       return filterx_datetime_new(&ut);
     case LM_VT_LIST:
-      return filterx_json_array_new_from_repr(repr, repr_len);
+      return filterx_json_array_new_from_syslog_ng_list(repr, repr_len);
     case LM_VT_NULL:
       return filterx_null_new();
     case LM_VT_BYTES:
