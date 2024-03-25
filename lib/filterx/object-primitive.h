@@ -59,4 +59,26 @@ filterx_integer_unwrap(FilterXObject *s, gint64 *value)
   return TRUE;
 }
 
+static inline gboolean
+filterx_double_unwrap(FilterXObject *s, gdouble *value)
+{
+  FilterXPrimitive *self = (FilterXPrimitive *) s;
+
+  if (!filterx_object_is_type(s, &FILTERX_TYPE_NAME(double)))
+    return FALSE;
+  *value = gn_as_double(&self->value);
+  return TRUE;
+}
+
+static inline gboolean
+filterx_boolean_unwrap(FilterXObject *s, gboolean *value)
+{
+  FilterXPrimitive *self = (FilterXPrimitive *) s;
+
+  if (!filterx_object_is_type(s, &FILTERX_TYPE_NAME(boolean)))
+    return FALSE;
+  *value = !!gn_as_int64(&self->value);
+  return TRUE;
+}
+
 #endif
