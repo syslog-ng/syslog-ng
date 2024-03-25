@@ -31,4 +31,7 @@ FilterXObject *filterx_message_value_new_borrowed(const gchar *repr, gssize repr
 FilterXObject *filterx_message_value_new_ref(gchar *repr, gssize repr_len, LogMessageValueType type);
 FilterXObject *filterx_message_value_new(const gchar *repr, gssize repr_len, LogMessageValueType type);
 
+LogMessageValueType filterx_message_value_get_type(FilterXObject *s);
+const gchar *filterx_message_value_get_value(FilterXObject *s, gsize *len);
+
 #endif

@@ -139,8 +139,6 @@ _map_to_json(FilterXObject *s, struct json_object **jso)
     return FALSE;
 }
 
-
-
 static gboolean
 _truthy(FilterXObject *s)
 {
@@ -164,6 +162,23 @@ _unmarshal(FilterXObject *s)
 {
   FilterXMessageValue *self = (FilterXMessageValue *) s;
   return _unmarshal_repr(self->repr, self->repr_len, self->type);
+}
+
+LogMessageValueType
+filterx_message_value_get_type(FilterXObject *s)
+{
+  FilterXMessageValue *self = (FilterXMessageValue *) s;
+  return self->type;
+}
+
+const gchar *
+filterx_message_value_get_value(FilterXObject *s, gsize *len)
+{
+  FilterXMessageValue *self = (FilterXMessageValue *) s;
+
+  g_assert(len);
+  *len = self->repr_len;
+  return self->repr;
 }
 
 /* NOTE: the caller must ensure that repr lives as long as the constructed object, avoids copying */
