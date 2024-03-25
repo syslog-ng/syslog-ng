@@ -45,12 +45,17 @@ _eval(FilterXExpr *s)
   if (!new_value)
     goto exit;
 
-  if (!filterx_object_setattr(object, self->attr_name, new_value))
-    goto exit;
-  result = filterx_object_ref(new_value);
+  result = filterx_object_clone(new_value);
+  filterx_object_unref(new_value);
+
+  if (!filterx_object_setattr(object, self->attr_name, result))
+    {
+      filterx_object_unref(result);
+      result = NULL;
+    }
+
 exit:
   filterx_object_unref(object);
-  filterx_object_unref(new_value);
   return result;
 }
 

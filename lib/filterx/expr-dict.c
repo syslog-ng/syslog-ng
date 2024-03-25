@@ -22,6 +22,7 @@
  */
 #include "expr-dict.h"
 #include "object-json.h"
+#include "object-message-value.h"
 #include "scratch-buffers.h"
 #include "compat/json.h"
 
@@ -58,24 +59,15 @@ static gboolean
 _eval_key_value(FilterXDictExpr *self, FilterXObject *object, FilterXKeyValue *kv)
 {
   FilterXObject *value = filterx_expr_eval_typed(kv->value_expr);
-  gboolean success = FALSE;
-
   if (!value)
-    goto fail;
+    return FALSE;
 
-  /*
-   * NOTE: setattr() will clone the value, which could be avoided if we
-   * tracked when a FilterXObject is still floating (e.g.  not assigned to
-   * anything) or is associated with a FilterXMessageRef or addedd to a
-   * dict.
-   */
-  if (!filterx_object_setattr(object, kv->key, value))
-    goto fail;
-
-  success = TRUE;
-fail:
+  FilterXObject *cloned_value = filterx_object_clone(value);
   filterx_object_unref(value);
-  return success;
+
+  gboolean result = filterx_object_setattr(object, kv->key, cloned_value);
+  filterx_object_unref(cloned_value);
+  return result;
 }
 
 static FilterXObject *

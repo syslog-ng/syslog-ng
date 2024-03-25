@@ -82,14 +82,18 @@ filterx_expr_eval_typed(FilterXExpr *self)
       filterx_object_unref(result);
       return NULL;
     }
-  if (result != unmarshalled)
+
+  if (result == unmarshalled)
     {
-      filterx_object_unref(result);
-      if (self->_update_repr)
-        self->_update_repr(self, unmarshalled);
-      result = unmarshalled;
+      filterx_object_unref(unmarshalled);
+      return result;
     }
-  return result;
+
+  filterx_object_unref(result);
+  if (self->_update_repr)
+    self->_update_repr(self, unmarshalled);
+
+  return unmarshalled;
 }
 
 
