@@ -34,6 +34,8 @@
 #include "str-utils.h"
 #include "syslog-names.h"
 
+#include "logproto/logproto.h"
+
 #include <regex.h>
 #include <ctype.h>
 #include <string.h>
@@ -888,11 +890,14 @@ _syslog_format_check_framing(LogMessage *msg, const guchar **data, gint *length)
     {
       if (!_skip_char(&src, &left))
         return;
-      if (i > 10)
+
+      i++;
+
+      if (i > RFC6587_MAX_FRAME_LEN_DIGITS)
         return;
     }
 
-  if (*src != ' ')
+  if (i == 0 || *src != ' ')
     return;
 
   /* we did indeed find a series of digits that look like framing, that's

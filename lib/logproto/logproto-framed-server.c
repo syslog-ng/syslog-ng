@@ -22,13 +22,13 @@
  *
  */
 #include "logproto-framed-server.h"
+#include "logproto.h"
 #include "messages.h"
 
 #include <errno.h>
 #include <ctype.h>
 #include <string.h>
 
-#define MAX_FRAME_LEN_DIGITS 10
 static const guint MAX_FETCH_COUNT = 3;
 
 typedef enum
@@ -147,7 +147,7 @@ log_proto_framed_server_extract_frame_length(LogProtoFramedServer *self, gboolea
   self->frame_len = 0;
   for (i = self->buffer_pos; i < self->buffer_end; i++)
     {
-      if (isdigit(self->buffer[i]) && (i - self->buffer_pos < MAX_FRAME_LEN_DIGITS))
+      if (isdigit(self->buffer[i]) && (i - self->buffer_pos < RFC6587_MAX_FRAME_LEN_DIGITS))
         {
           self->frame_len = self->frame_len * 10 + (self->buffer[i] - '0');
         }
@@ -250,7 +250,7 @@ _on_frame_extract(LogProtoFramedServer *self, LogTransportAuxData *aux, LogProto
   if (need_more_data)
     {
       self->state = LPFSS_FRAME_READ;
-      _adjust_buffer_if_needed(self, MAX_FRAME_LEN_DIGITS);
+      _adjust_buffer_if_needed(self, RFC6587_MAX_FRAME_LEN_DIGITS);
       return LPFSSCTRL_NEXT_STATE;
     }
 

@@ -295,3 +295,54 @@ Test(syslog_format, test_long_sdata)
   strcpy(long_sdata + 1 + long_sdata_id, " a=b]");
   cr_expect_not(_extract_sdata_into_message_with_prefix(long_sdata, NULL, sdata_prefix));
 }
+
+Test(syslog_format, test_frame_checking)
+{
+  const gchar *data = "5 aaaaa";
+  gsize data_length = strlen(data);
+
+  msg_format_options_init(&parse_options, cfg);
+  LogMessage *msg = msg_format_construct_message(&parse_options, (const guchar *) data, data_length);
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+
+  cr_assert(log_msg_is_tag_by_id(msg, LM_T_SYSLOG_UNEXPECTED_FRAMING));
+
+  log_msg_unref(msg);
+  msg_format_options_destroy(&parse_options);
+}
+
+Test(syslog_format, test_framing_not_detected_when_frame_length_is_too_long)
+{
+  const gchar *data = "99999999999 a";
+  gsize data_length = strlen(data);
+
+  msg_format_options_init(&parse_options, cfg);
+  LogMessage *msg = msg_format_construct_message(&parse_options, (const guchar *) data, data_length);
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+
+  cr_assert_not(log_msg_is_tag_by_id(msg, LM_T_SYSLOG_UNEXPECTED_FRAMING));
+
+  log_msg_unref(msg);
+  msg_format_options_destroy(&parse_options);
+}
+
+Test(syslog_format, test_framing_not_detected_on_input_starting_with_whitespace)
+{
+  const gchar *data = " non-framed-whitespace";
+  gsize data_length = strlen(data);
+
+  msg_format_options_init(&parse_options, cfg);
+  LogMessage *msg = msg_format_construct_message(&parse_options, (const guchar *) data, data_length);
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+
+  cr_assert_not(log_msg_is_tag_by_id(msg, LM_T_SYSLOG_UNEXPECTED_FRAMING));
+
+  log_msg_unref(msg);
+  msg_format_options_destroy(&parse_options);
+}
