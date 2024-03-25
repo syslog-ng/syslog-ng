@@ -101,7 +101,7 @@ syslogng::grpc::otel::SourceDriver::init()
   builder.RegisterService(&metrics_service);
 
   for (int i = 0; i < super->super.num_workers; i++)
-    cqs.push_back(std::move(builder.AddCompletionQueue()));
+    cqs.push_back(builder.AddCompletionQueue());
 
   server = builder.BuildAndStart();
   if (!server)

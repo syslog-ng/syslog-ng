@@ -35,7 +35,8 @@ modules_grpc_bigquery_libbigquery_la_SOURCES = \
 modules_grpc_bigquery_libbigquery_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
   -I$(top_srcdir)/modules/grpc/bigquery \
-  -I$(top_builddir)/modules/grpc/bigquery
+  -I$(top_builddir)/modules/grpc/bigquery \
+  -I$(top_srcdir)/modules/grpc
 
 modules_grpc_bigquery_libbigquery_la_LIBADD = \
   $(MODULE_DEPS_LIBS) \

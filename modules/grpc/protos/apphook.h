@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 László Várady
+ * Copyright (c) 2024 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,36 +20,13 @@
  *
  */
 
-#include "cfg-parser.h"
-#include "plugin.h"
-#include "plugin-types.h"
-#include "protos/apphook.h"
+#ifndef GRPC_APPHOOK_H
+#define GRPC_APPHOOK_H
 
-extern CfgParser loki_parser;
+#include "compat/cpp-start.h"
 
-static Plugin loki_plugins[] =
-{
-  {
-    .type = LL_CONTEXT_DESTINATION,
-    .name = "loki",
-    .parser = &loki_parser,
-  },
-};
+void grpc_register_global_initializers(void);
 
-gboolean
-loki_module_init(PluginContext *context, CfgArgs *args)
-{
-  plugin_register(context, loki_plugins, G_N_ELEMENTS(loki_plugins));
-  grpc_register_global_initializers();
-  return TRUE;
-}
+#include "compat/cpp-end.h"
 
-const ModuleInfo module_info =
-{
-  .canonical_name = "loki",
-  .version = SYSLOG_NG_VERSION,
-  .description = "Grafana Loki plugins",
-  .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = loki_plugins,
-  .plugins_len = G_N_ELEMENTS(loki_plugins),
-};
+#endif

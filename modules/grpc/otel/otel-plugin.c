@@ -26,6 +26,7 @@
 #include "plugin-types.h"
 #include "filterx/object-otel.h"
 #include "otel-logmsg-handles.h"
+#include "protos/apphook.h"
 
 
 extern CfgParser otel_parser;
@@ -94,6 +95,7 @@ otel_module_init(PluginContext *context, CfgArgs *args)
 {
   otel_filterx_objects_global_init();
   plugin_register(context, otel_plugins, G_N_ELEMENTS(otel_plugins));
+  grpc_register_global_initializers();
   otel_logmsg_handles_global_init();
 
   return TRUE;

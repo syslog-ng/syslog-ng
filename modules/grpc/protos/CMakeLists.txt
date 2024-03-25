@@ -81,13 +81,14 @@ add_library(grpc-protos SHARED
   ${LOKI_PROTO_GENERATED_GRPC_SOURCES}
   ${BIGQUERY_PROTO_GENERATED_SOURCES}
   ${BIGQUERY_PROTO_GENERATED_GRPC_SOURCES}
+  apphook.cpp
 )
 
-target_link_libraries(grpc-protos PRIVATE ${MODULE_GRPC_LIBS})
+target_link_libraries(grpc-protos PRIVATE ${MODULE_GRPC_LIBS} syslog-ng)
 target_include_directories(grpc-protos
   PUBLIC ${OTEL_PROTO_BUILDDIR} ${LOKI_PROTO_BUILDDIR} ${BIGQUERY_PROTO_BUILDDIR}
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/modules/grpc
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}
 )
 
 target_compile_options(grpc-protos PRIVATE -Wno-switch-default)
