@@ -68,6 +68,8 @@ filterx_builtin_functions_init(void)
   filterx_builtin_functions_init_inner(&filterx_builtin_functions);
   filterx_builtin_function_register("json", filterx_json_new_from_args);
   filterx_builtin_function_register("json_array", filterx_json_array_new_from_args);
+  g_assert(filterx_builtin_function_register("datetime", filterx_typecast_datetime));
+  g_assert(filterx_builtin_function_register("rfc3339", filterx_typecast_datetime_rfc3339));
 }
 
 void
