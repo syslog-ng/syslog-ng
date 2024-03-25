@@ -211,6 +211,7 @@ modules/python/python-binding.(c|h)$
 modules/python/python-flags.(c|h)$
 modules/python/tests/test_python_options.c$
 modules/python/tests/test_python_reloc\.c$
+modules/json/filterx-format-json\.[ch]$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/logscale/logscale\.conf$
