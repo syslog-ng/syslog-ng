@@ -16,6 +16,7 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/expr-list.h			\
 	lib/filterx/expr-message-ref.h		\
 	lib/filterx/expr-comparison.h		\
+	lib/filterx/expr-merge.h		\
 	lib/filterx/filterx-object.h		\
 	lib/filterx/filterx-weakrefs.h		\
 	lib/filterx/object-primitive.h		\
@@ -52,6 +53,7 @@ filterx_sources = 				\
 	lib/filterx/expr-list.c			\
 	lib/filterx/expr-message-ref.c		\
 	lib/filterx/expr-comparison.c		\
+	lib/filterx/expr-merge.c		\
 	lib/filterx/filterx-object.c		\
 	lib/filterx/filterx-weakrefs.c		\
 	lib/filterx/object-primitive.c		\

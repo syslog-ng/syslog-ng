@@ -106,7 +106,7 @@ _unmarshal_repr(const gchar *repr, gssize repr_len, LogMessageValueType t)
         return NULL;
       return filterx_datetime_new(&ut);
     case LM_VT_LIST:
-      return filterx_json_array_new_from_repr(repr, repr_len);
+      return filterx_json_array_new_from_syslog_ng_list(repr, repr_len);
     case LM_VT_NULL:
       return filterx_null_new();
     case LM_VT_BYTES:
@@ -183,8 +183,9 @@ filterx_message_value_new_borrowed(const gchar *repr, gssize repr_len, LogMessag
 FilterXObject *
 filterx_message_value_new(const gchar *repr, gssize repr_len, LogMessageValueType type)
 {
-  gchar *buf = g_memdup2(repr, repr_len);
-  FilterXMessageValue *self = (FilterXMessageValue *) filterx_message_value_new_borrowed(buf, repr_len, type);
+  gssize len = repr_len < 0 ? strlen(repr) : repr_len;
+  gchar *buf = g_memdup2(repr, len);
+  FilterXMessageValue *self = (FilterXMessageValue *) filterx_message_value_new_borrowed(buf, len, type);
   self->buf = buf;
   return &self->super;
 }
