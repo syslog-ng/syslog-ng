@@ -106,7 +106,7 @@ _unmarshal_repr(const gchar *repr, gssize repr_len, LogMessageValueType t)
         return NULL;
       return filterx_datetime_new(&ut);
     case LM_VT_LIST:
-      return filterx_json_array_new_from_repr(repr, repr_len);
+      return filterx_json_array_new_from_syslog_ng_list(repr, repr_len);
     case LM_VT_NULL:
       return filterx_null_new();
     case LM_VT_BYTES:
@@ -139,8 +139,6 @@ _map_to_json(FilterXObject *s, struct json_object **jso)
     return FALSE;
 }
 
-
-
 static gboolean
 _truthy(FilterXObject *s)
 {
@@ -166,6 +164,23 @@ _unmarshal(FilterXObject *s)
   return _unmarshal_repr(self->repr, self->repr_len, self->type);
 }
 
+LogMessageValueType
+filterx_message_value_get_type(FilterXObject *s)
+{
+  FilterXMessageValue *self = (FilterXMessageValue *) s;
+  return self->type;
+}
+
+const gchar *
+filterx_message_value_get_value(FilterXObject *s, gsize *len)
+{
+  FilterXMessageValue *self = (FilterXMessageValue *) s;
+
+  g_assert(len);
+  *len = self->repr_len;
+  return self->repr;
+}
+
 /* NOTE: the caller must ensure that repr lives as long as the constructed object, avoids copying */
 FilterXObject *
 filterx_message_value_new_borrowed(const gchar *repr, gssize repr_len, LogMessageValueType type)
@@ -183,8 +198,9 @@ filterx_message_value_new_borrowed(const gchar *repr, gssize repr_len, LogMessag
 FilterXObject *
 filterx_message_value_new(const gchar *repr, gssize repr_len, LogMessageValueType type)
 {
-  gchar *buf = g_memdup2(repr, repr_len);
-  FilterXMessageValue *self = (FilterXMessageValue *) filterx_message_value_new_borrowed(buf, repr_len, type);
+  gssize len = repr_len < 0 ? strlen(repr) : repr_len;
+  gchar *buf = g_memdup2(repr, len);
+  FilterXMessageValue *self = (FilterXMessageValue *) filterx_message_value_new_borrowed(buf, len, type);
   self->buf = buf;
   return &self->super;
 }

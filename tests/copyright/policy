@@ -211,6 +211,7 @@ modules/python/python-binding.(c|h)$
 modules/python/python-flags.(c|h)$
 modules/python/tests/test_python_options.c$
 modules/python/tests/test_python_reloc\.c$
+modules/json/filterx-format-json\.[ch]$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/logscale/logscale\.conf$
@@ -252,6 +253,7 @@ tests/light/src/syslog_ng_config/statements/template/template\.py
 modules/correlation/id-counter\.[ch]$
 modules/correlation/group-lines.h
 modules/xml/windows-eventlog-xml-parser\.h
+modules/xml/filterx-parse-xml\.[ch]$
 modules/xml/tests/test_windows_eventlog_xml_parser\.c
 modules/examples/filterx/example-filterx-func/example-filterx-func-plugin\.[ch]
 modules/grpc/otel/filterx

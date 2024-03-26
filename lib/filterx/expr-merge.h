@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,18 +20,12 @@
  * COPYING for details.
  *
  */
-#ifndef FILTERX_EXPR_JSON_H_INCLUDED
-#define FILTERX_EXPR_JSON_H_INCLUDED
+#ifndef FILTERX_EXPR_MERGE_H_INCLUDED
+#define FILTERX_EXPR_MERGE_H_INCLUDED
 
 #include "filterx/filterx-expr.h"
 
-typedef struct _FilterXKeyValue FilterXKeyValue;
-
-FilterXKeyValue *filterx_kv_new(const gchar *key, FilterXExpr *value_expr);
-void filterx_kv_free(FilterXKeyValue *self);
-
-FilterXExpr *filterx_dict_expr_new(FilterXExpr *fillable, GList *key_values);
-FilterXExpr *filterx_dict_expr_inner_new(FilterXExpr *fillable, GList *key_values);
+FilterXExpr *filterx_merge_new(FilterXExpr *lhs, FilterXExpr *rhs);
 
 
 #endif

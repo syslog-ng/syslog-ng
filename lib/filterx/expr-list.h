@@ -25,7 +25,8 @@
 
 #include "filterx/filterx-expr.h"
 
-FilterXExpr *filterx_list_expr_new(GList *values);
 
+FilterXExpr *filterx_list_expr_new(FilterXExpr *fillable, GList *values);
+FilterXExpr *filterx_list_expr_inner_new(FilterXExpr *fillable, GList *values);
 
 #endif
