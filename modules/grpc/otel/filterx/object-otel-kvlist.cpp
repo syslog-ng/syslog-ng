@@ -170,10 +170,56 @@ KVList::has_subscript(FilterXObject *key) const
   return !!get_mutable_kv_for_key(key_c_str);
 }
 
+bool
+KVList::del_subscript(FilterXObject *key)
+{
+  const gchar *key_c_str = filterx_string_get_value(key, NULL);
+  if (!key_c_str)
+    {
+      msg_error("FilterX: Failed to delete OTel KVList element",
+                evt_tag_str("error", "Key must be string type"));
+      return false;
+    }
+
+  for (int i = 0; i < repeated_kv->size(); i++)
+    {
+      KeyValue &possible_kv = repeated_kv->at(i);
+      if (possible_kv.key().compare(key_c_str) == 0)
+        {
+          repeated_kv->DeleteSubrange(i, 1);
+          return true;
+        }
+    }
+
+  return false;
+}
+
 uint64_t
 KVList::len() const
 {
   return (uint64_t) repeated_kv->size();
+}
+
+bool
+KVList::iter(FilterXDictIterFunc func, gpointer user_data) const
+{
+  ProtobufField *converter = otel_converter_by_type(FieldDescriptor::TYPE_MESSAGE);
+
+  for (int i = 0; i < repeated_kv->size(); i++)
+    {
+      KeyValue &kv = repeated_kv->at(i);
+      FilterXObject *key = filterx_string_new(kv.key().c_str(), kv.key().length());
+      FilterXObject *value = converter->Get(&kv, "value");
+
+      bool result = func(key, value, user_data);
+
+      filterx_object_unref(key);
+      filterx_object_unref(value);
+      if (!result)
+        return false;
+    }
+
+  return true;
 }
 
 const RepeatedPtrField<KeyValue> &
@@ -217,12 +263,28 @@ _has_subscript(FilterXDict *s, FilterXObject *key)
   return self->cpp->has_subscript(key);
 }
 
+static gboolean
+_del_subscript(FilterXDict *s, FilterXObject *key)
+{
+  FilterXOtelKVList *self = (FilterXOtelKVList *) s;
+
+  return self->cpp->del_subscript(key);
+}
+
 static uint64_t
 _len(FilterXDict *s)
 {
   FilterXOtelKVList *self = (FilterXOtelKVList *) s;
 
   return self->cpp->len();
+}
+
+static gboolean
+_iter(FilterXDict *s, FilterXDictIterFunc func, gpointer user_data)
+{
+  FilterXOtelKVList *self = (FilterXOtelKVList *) s;
+
+  return self->cpp->iter(func, user_data);
 }
 
 static gboolean
@@ -252,7 +314,9 @@ _init_instance(FilterXOtelKVList *self)
   self->super.get_subscript = _get_subscript;
   self->super.set_subscript = _set_subscript;
   self->super.has_subscript = _has_subscript;
+  self->super.del_subscript = _del_subscript;
   self->super.len = _len;
+  self->super.iter = _iter;
 }
 
 FilterXObject *
@@ -404,5 +468,7 @@ FILTERX_DEFINE_TYPE(otel_kvlist, FILTERX_TYPE_NAME(dict),
                     .marshal = _marshal,
                     .clone = _filterx_otel_kvlist_clone,
                     .truthy = _truthy,
+                    .list_factory = filterx_otel_array_new,
+                    .dict_factory = filterx_otel_kvlist_new,
                     .free_fn = _free,
                    );

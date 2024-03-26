@@ -45,6 +45,9 @@ struct _FilterXType
   FilterXObject *(*get_subscript)(FilterXObject *self, FilterXObject *index);
   gboolean (*set_subscript)(FilterXObject *self, FilterXObject *index, FilterXObject *new_value);
   gboolean (*has_subscript)(FilterXObject *self, FilterXObject *key);
+  gboolean (*del_subscript)(FilterXObject *self, FilterXObject *key);
+  FilterXObject *(*list_factory)(void);
+  FilterXObject *(*dict_factory)(void);
   void (*free_fn)(FilterXObject *self);
 };
 
@@ -202,6 +205,32 @@ filterx_object_has_subscript(FilterXObject *self, FilterXObject *index)
   if (self->type->has_subscript)
     return self->type->has_subscript(self, index);
   return FALSE;
+}
+
+static inline gboolean
+filterx_object_del_subscript(FilterXObject *self, FilterXObject *index)
+{
+  if (self->type->del_subscript)
+    return self->type->del_subscript(self, index);
+  return FALSE;
+}
+
+static inline FilterXObject *
+filterx_object_create_list(FilterXObject *self)
+{
+  if (!self->type->list_factory)
+    return NULL;
+
+  return self->type->list_factory();
+}
+
+static inline FilterXObject *
+filterx_object_create_dict(FilterXObject *self)
+{
+  if (!self->type->dict_factory)
+    return NULL;
+
+  return self->type->dict_factory();
 }
 
 #endif

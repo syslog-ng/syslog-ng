@@ -1260,6 +1260,7 @@ static const gchar *lexer_contexts[] =
   [LL_CONTEXT_FILTERX] = "filterx",
   [LL_CONTEXT_FILTERX_FUNC] = "filterx-func",
   [LL_CONTEXT_FILTERX_ENUM] = "filterx-enum",
+  [LL_CONTEXT_FILTERX_GEN_FUNC] = "filterx-gen-func",
 };
 
 gint

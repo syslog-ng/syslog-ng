@@ -207,19 +207,16 @@ public:
         return true;
       }
     else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(json_object)) ||
-             filterx_object_is_type(object, &FILTERX_TYPE_NAME(
-                                      json_array))) // TODO: how legit is returning syslog-ng style list here?
+             filterx_object_is_type(object, &FILTERX_TYPE_NAME(json_array)))
       {
-        GString *buf = scratch_buffers_alloc();
-        LogMessageValueType t;
-        if (!filterx_object_marshal(object, buf, &t))
+        const gchar *json_literal = filterx_json_to_json_literal(object);
+        if (!json_literal)
           {
             msg_error("protobuf-field: json marshal error",
                       evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()));
             return false;
           }
-        std::string jsonString(buf->str);
-        reflectors.reflection->SetString(message, reflectors.fieldDescriptor, jsonString);
+        reflectors.reflection->SetString(message, reflectors.fieldDescriptor, json_literal);
         return true;
       }
     log_type_error(reflectors, object->type->name);
