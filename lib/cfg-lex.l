@@ -306,6 +306,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 <INITIAL,filterx>\.\.\.    { return LL_DOTDOTDOT; }
 <INITIAL,filterx>=>        { return LL_ARROW; }
 <INITIAL,filterx>=         { return KW_ASSIGN; }
+<INITIAL,filterx>\+=        { return KW_PLUS_ASSIGN; }
 <INITIAL,filterx><	   { return KW_TA_LT; }
 <INITIAL,filterx><=        { return KW_TA_LE; }
 <INITIAL,filterx>==        { return KW_TA_EQ; }

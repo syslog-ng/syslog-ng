@@ -24,6 +24,7 @@
 #include "filterx/object-null.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-string.h"
+#include "filterx/object-message-value.h"
 #include "filterx/filterx-weakrefs.h"
 #include "filterx/object-list-interface.h"
 
@@ -210,6 +211,30 @@ _free(FilterXObject *s)
 FilterXObject *
 filterx_json_array_new_from_repr(const gchar *repr, gssize repr_len)
 {
+  struct json_tokener *tokener = json_tokener_new();
+  struct json_object *json_obj;
+
+  json_obj = json_tokener_parse_ex(tokener, repr, repr_len < 0 ? strlen(repr) : repr_len);
+  if (repr_len >= 0 && json_tokener_get_error(tokener) == json_tokener_continue)
+    {
+      /* pass the closing NUL character */
+      json_obj = json_tokener_parse_ex(tokener, "", 1);
+    }
+
+  json_tokener_free(tokener);
+
+  if (!json_object_is_type(json_obj, json_type_array))
+    {
+      json_object_put(json_obj);
+      return NULL;
+    }
+
+  return filterx_json_array_new_sub(json_obj, NULL);
+}
+
+FilterXObject *
+filterx_json_array_new_from_syslog_ng_list(const gchar *repr, gssize repr_len)
+{
   struct json_object *object = json_object_new_array();
 
   ListScanner scanner;
@@ -227,9 +252,61 @@ filterx_json_array_new_from_repr(const gchar *repr, gssize repr_len)
 }
 
 FilterXObject *
+filterx_json_array_new_from_args(GPtrArray *args)
+{
+  if (!args || args->len == 0)
+    return filterx_json_array_new_empty();
+
+  if (args->len != 1)
+    {
+      msg_error("FilterX: Failed to create JSON array: invalid number of arguments. "
+                "Usage: json_array() or json_array($raw_json_string) or json_array($existing_json_array)");
+      return NULL;
+    }
+
+  FilterXObject *arg = (FilterXObject *) g_ptr_array_index(args, 0);
+
+  if (filterx_object_is_type(arg, &FILTERX_TYPE_NAME(json_array)))
+    return filterx_object_ref(arg);
+
+  if (filterx_object_is_type(arg, &FILTERX_TYPE_NAME(message_value)))
+    {
+      FilterXObject *unmarshalled = filterx_object_unmarshal(arg);
+      if (!filterx_object_is_type(unmarshalled, &FILTERX_TYPE_NAME(json_array)))
+        {
+          filterx_object_unref(unmarshalled);
+          goto error;
+        }
+      return unmarshalled;
+    }
+
+  gsize repr_len;
+  const gchar *repr = filterx_string_get_value(arg, &repr_len);
+  if (repr)
+    return filterx_json_array_new_from_repr(repr, repr_len);
+
+error:
+  msg_error("FilterX: Failed to create JSON object: invalid argument type. "
+            "Usage: json_array() or json_array($raw_json_string) or json_array($syslog_ng_list) or "
+            "json_array($existing_json_array)",
+            evt_tag_str("type", arg->type->name));
+  return NULL;
+}
+
+FilterXObject *
 filterx_json_array_new_empty(void)
 {
   return filterx_json_array_new_sub(json_object_new_array(), NULL);
+}
+
+const gchar *
+filterx_json_array_to_json_literal(FilterXObject *s)
+{
+  FilterXJsonArray *self = (FilterXJsonArray *) s;
+
+  if (!filterx_object_is_type(s, &FILTERX_TYPE_NAME(json_array)))
+    return NULL;
+  return json_object_to_json_string_ext(self->object, JSON_C_TO_STRING_PLAIN);
 }
 
 FILTERX_DEFINE_TYPE(json_array, FILTERX_TYPE_NAME(list),
@@ -239,4 +316,6 @@ FILTERX_DEFINE_TYPE(json_array, FILTERX_TYPE_NAME(list),
                     .marshal = _marshal,
                     .map_to_json = _map_to_json,
                     .clone = _clone,
+                    .list_factory = filterx_json_array_new_empty,
+                    .dict_factory = filterx_json_object_new_empty,
                    );

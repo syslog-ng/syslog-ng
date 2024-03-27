@@ -52,6 +52,8 @@
 
 #include "template/templates.h"
 
+FilterXExpr *last_fillable;
+
 FilterXExpr *
 construct_template_expr(LogTemplate *template)
 {
@@ -87,6 +89,7 @@ construct_template_expr(LogTemplate *template)
 %type <node> stmt
 %type <node> expr
 %type <node> expr_value
+%type <node> expr_generator
 %type <node> function_call
 %type <ptr> arguments
 %type <ptr> argument
@@ -95,9 +98,11 @@ construct_template_expr(LogTemplate *template)
 %type <node> lvalue
 %type <ptr> template
 %type <ptr> dict_expr
+%type <ptr> dict_expr_inner
 %type <ptr> dict_key_values
 %type <ptr> dict_key_value
 %type <ptr> list_expr
+%type <ptr> list_expr_inner
 %type <ptr> list_values
 %type <ptr> list_value
 %type <num> boolean
@@ -134,6 +139,7 @@ expr
 	| expr '[' expr ']'			{ $$ = filterx_get_subscript_new($1, $3); }
 	| expr '[' expr ']' KW_ASSIGN expr      { $$ = filterx_set_subscript_new($1, $3, $6); }
 	| expr '[' ']' KW_ASSIGN expr      	{ $$ = filterx_set_subscript_new($1, NULL, $5); }
+	| expr KW_PLUS_ASSIGN { last_fillable = $1; } expr_generator { $$ = $4; }
         | expr KW_TA_LT expr		        { $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT); }
         | expr KW_TA_LE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT | FCMPX_EQ); }
         | expr KW_TA_EQ expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_EQ); }
@@ -156,8 +162,11 @@ expr_value
 	: literal
 	| lvalue				{ $$ = $1; }
 	| template				{ $$ = construct_template_expr($1); }
-	| dict_expr                             { $$ = filterx_dict_expr_new($1); }
-	| list_expr				{ $$ = filterx_list_expr_new($1); }
+	;
+
+expr_generator
+	: dict_expr
+	| list_expr
 	;
 
 function_call
@@ -219,7 +228,11 @@ template
 	;
 
 dict_expr
-	: '{' dict_key_values '}'               { $$ = $2; }
+	: '{' dict_key_values '}'               { $$ = filterx_dict_expr_new(last_fillable, $2); }
+	;
+
+dict_expr_inner
+	: '{' dict_key_values '}'               { $$ = filterx_dict_expr_inner_new(last_fillable, $2); }
 	;
 
 dict_key_values
@@ -230,10 +243,16 @@ dict_key_values
 
 dict_key_value
 	: LL_STRING ':' expr                    { $$ = filterx_kv_new($1, $3); free($1); }
+	| LL_STRING ':' dict_expr_inner         { $$ = filterx_kv_new($1, $3); free($1); }
+	| LL_STRING ':' list_expr_inner         { $$ = filterx_kv_new($1, $3); free($1); }
 	;
 
 list_expr
-	: '[' list_values ']'                   { $$ = $2; }
+	: '[' list_values ']'                   { $$ = filterx_list_expr_new(last_fillable, $2); }
+	;
+
+list_expr_inner
+	: '[' list_values ']'                   { $$ = filterx_list_expr_inner_new(last_fillable, $2); }
 	;
 
 list_values
@@ -244,6 +263,8 @@ list_values
 
 list_value
 	: expr                                  { $$ = $1; }
+	| dict_expr_inner                       { $$ = $1; }
+	| list_expr_inner                       { $$ = $1; }
 	;
 
 fxcondition

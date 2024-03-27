@@ -47,7 +47,7 @@ _eval(FilterXExpr *s)
   LogMessageValueType t;
   const gchar *value = log_msg_get_value_if_set_with_type(msg, self->handle, &value_len, &t);
   if (!value)
-    return FALSE;
+    return NULL;
 
   msg_ref = filterx_message_value_new_borrowed(value, value_len, t);
   filterx_scope_register_message_ref(context->scope, self->handle, msg_ref);
