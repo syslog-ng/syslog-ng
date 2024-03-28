@@ -44,3 +44,18 @@ lib_filterx_tests_test_expr_condition_LDADD	 = $(TEST_LDADD) $(JSON_LIBS)
 
 lib_filterx_tests_test_builtin_functions_CFLAGS = $(TEST_CFLAGS)
 lib_filterx_tests_test_builtin_functions_LDADD = $(TEST_LDADD) $(JSON_LIBS)
+
+lib_filterx_tests_test_object_bytes_CFLAGS  = $(TEST_CFLAGS)
+lib_filterx_tests_test_object_bytes_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
+
+lib_filterx_tests_test_object_protobuf_CFLAGS  = $(TEST_CFLAGS)
+lib_filterx_tests_test_object_protobuf_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
+
+lib_filterx_tests_test_object_boolean_CFLAGS  = $(TEST_CFLAGS)
+lib_filterx_tests_test_object_boolean_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
+
+lib_filterx_tests_test_object_integer_CFLAGS  = $(TEST_CFLAGS)
+lib_filterx_tests_test_object_integer_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
+
+lib_filterx_tests_test_object_double_CFLAGS  = $(TEST_CFLAGS)
+lib_filterx_tests_test_object_double_LDADD   = $(TEST_LDADD) $(JSON_LIBS)

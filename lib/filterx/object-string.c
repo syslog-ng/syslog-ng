@@ -174,6 +174,103 @@ filterx_protobuf_new(const gchar *mem, gssize mem_len)
   return &self->super;
 }
 
+FilterXObject *
+filterx_typecast_string(GPtrArray *args)
+{
+  if (!args || args->len == 0)
+    return NULL;
+
+  FilterXObject *object = g_ptr_array_index(args, 0);
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(string)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(bytes)))
+    {
+      gsize size;
+      const gchar *data = filterx_bytes_get_value(object, &size);
+      return filterx_string_new(data, size);
+    }
+
+  GString *buf = scratch_buffers_alloc();
+  LogMessageValueType t;
+
+  if (!filterx_object_marshal(object, buf, &t))
+    {
+      msg_error("filterx: unable to marshal",
+                evt_tag_str("from", object->type->name),
+                evt_tag_str("to", "string"));
+      return NULL;
+    }
+
+  return filterx_string_new(buf->str, -1);
+}
+
+FilterXObject *
+filterx_typecast_bytes(GPtrArray *args)
+{
+  if (!args || args->len == 0)
+    return NULL;
+
+  FilterXObject *object = g_ptr_array_index(args, 0);
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(bytes)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(string)))
+    {
+      gsize size;
+      const gchar *data = filterx_string_get_value(object, &size);
+      return filterx_bytes_new(data, size);
+    }
+
+  msg_error("filterx: invalid typecast",
+            evt_tag_str("from", object->type->name),
+            evt_tag_str("to", "bytes"));
+  return NULL;
+}
+
+FilterXObject *
+filterx_typecast_protobuf(GPtrArray *args)
+{
+  if (!args || args->len == 0)
+    return NULL;
+
+  FilterXObject *object = g_ptr_array_index(args, 0);
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(protobuf)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(bytes)))
+    {
+      gsize size;
+      const gchar *data = filterx_bytes_get_value(object, &size);
+      return filterx_protobuf_new(data, size);
+    }
+
+  msg_error("filterx: invalid typecast",
+            evt_tag_str("from", object->type->name),
+            evt_tag_str("to", "protobuf"));
+
+  return NULL;
+}
+
+
 /* these types are independent type-wise but share a lot of the details */
 
 FILTERX_DEFINE_TYPE(string, FILTERX_TYPE_NAME(object),
