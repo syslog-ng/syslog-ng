@@ -100,9 +100,9 @@ static GOptionEntry assign_options[] =
 };
 
 static gboolean
-open_queue(char *filename, LogQueue **lq, DiskQueueOptions *options)
+open_queue(char *filename, LogQueue **lq, DiskQueueOptions *options, gboolean read_only)
 {
-  options->read_only = TRUE;
+  options->read_only = read_only;
   options->reliable = FALSE;
   FILE *f = fopen(filename, "rb");
   if (f)
@@ -178,7 +178,7 @@ dqtool_cat(int argc, char *argv[])
       LogPathOptions local_options = LOG_PATH_OPTIONS_INIT;
       LogQueue *lq;
 
-      if (!open_queue(argv[i], &lq, &options))
+      if (!open_queue(argv[i], &lq, &options, TRUE))
         continue;
 
       log_queue_rewind_backlog_all(lq);
@@ -213,7 +213,7 @@ dqtool_info(int argc, char *argv[])
       DiskQueueOptions options = {0};
       disk_queue_options_set_default_options(&options);
 
-      if (!open_queue(argv[i], &lq, &options))
+      if (!open_queue(argv[i], &lq, &options, TRUE))
         continue;
 
       gboolean persistent;
