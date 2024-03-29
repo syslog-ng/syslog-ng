@@ -30,6 +30,8 @@
 #include "timeutils/misc.h"
 #include "hostname.h"
 #include "persist-state.h"
+#include "stats/stats-registry.h"
+#include "stats/stats-cluster-single.h"
 
 #include <string.h>
 #include <sys/types.h>
@@ -229,6 +231,8 @@ afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
   self->reconnect_timer.expires = iv_now;
   timespec_add_msec(&self->reconnect_timer.expires, self->writer_options.time_reopen * 1000L);
   iv_timer_register(&self->reconnect_timer);
+
+  stats_counter_set(self->metrics.output_unreachable, 1);
 }
 
 static gboolean
@@ -263,6 +267,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
 
   main_loop_assert_main_thread();
 
+  stats_counter_set(self->metrics.output_unreachable, 0);
   msg_notice("Syslog connection established",
              evt_tag_int("fd", self->fd),
              evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
@@ -525,6 +530,45 @@ _init_stats_key_builders(AFSocketDestDriver *self, StatsClusterKeyBuilder **writ
                                              afsocket_dd_get_dest_name(self)));
 }
 
+static void
+afsocket_dd_register_stats(AFSocketDestDriver *self)
+{
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("id", self->super.super.id),
+    stats_cluster_label("driver", "afsocket"),
+    stats_cluster_label("transport", self->transport_mapper->transport),
+    stats_cluster_label("address", afsocket_dd_get_dest_name(self)),
+  };
+
+  gint level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL0;
+  StatsClusterKey sc_key;
+  stats_cluster_single_key_set(&sc_key, "output_unreachable", labels, G_N_ELEMENTS(labels));
+
+  stats_lock();
+  stats_register_counter(level, &sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.output_unreachable);
+  stats_unlock();
+}
+
+static void
+afsocket_dd_unregister_stats(AFSocketDestDriver *self)
+{
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("id", self->super.super.id),
+    stats_cluster_label("driver", "afsocket"),
+    stats_cluster_label("transport", self->transport_mapper->transport),
+    stats_cluster_label("address", afsocket_dd_get_dest_name(self)),
+  };
+
+  StatsClusterKey sc_key;
+  stats_cluster_single_key_set(&sc_key, "output_unreachable", labels, G_N_ELEMENTS(labels));
+
+  stats_lock();
+  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->metrics.output_unreachable);
+  stats_unlock();
+}
+
 static gboolean
 afsocket_dd_setup_writer(AFSocketDestDriver *self)
 {
@@ -648,6 +692,8 @@ afsocket_dd_init(LogPipe *s)
   if (!_update_legacy_connection_persist_name(self))
     return FALSE;
 
+  afsocket_dd_register_stats(self);
+
   if (!_dd_init_socket(self))
     {
       return FALSE;
@@ -692,6 +738,7 @@ afsocket_dd_deinit(LogPipe *s)
       afsocket_dd_save_connection(self);
     }
 
+  afsocket_dd_unregister_stats(self);
   return log_dest_driver_deinit_method(s);
 }
 
