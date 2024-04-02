@@ -149,6 +149,16 @@ open_queue(char *filename, LogQueue **lq, DiskQueueOptions *options, gboolean re
   return TRUE;
 }
 
+static inline off_t
+get_file_size(const char *path)
+{
+  struct stat s;
+  if (stat(path, &s) != 0)
+    return 0;
+
+  return s.st_size;
+}
+
 static gint
 dqtool_truncate(int argc, char *argv[])
 {
@@ -165,8 +175,8 @@ dqtool_truncate(int argc, char *argv[])
       DiskQueueOptions options = {0};
       disk_queue_options_set_default_options(&options);
 
-      printf("Truncating disk-buffer %s\n", argv[i]);
       options.truncate_size_ratio = 0;
+      off_t orig_size = get_file_size(argv[i]);
 
       if (!open_queue(argv[i], &lq, &options, FALSE))
         continue;
@@ -174,6 +184,11 @@ dqtool_truncate(int argc, char *argv[])
       gboolean persistent;
       log_queue_disk_stop(lq, &persistent);
       log_queue_unref(lq);
+
+      off_t truncated_size = get_file_size(argv[i]);
+
+      double reclaimed_gib = (orig_size - truncated_size) / 1024.0 / 1024.0 / 1024.0;
+      printf("Disk-buffer %s has been truncated, reclaimed space: %f GiB\n", argv[i], reclaimed_gib);
     }
 
   return 0;
