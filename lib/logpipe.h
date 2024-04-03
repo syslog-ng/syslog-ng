@@ -214,7 +214,7 @@ struct _LogPathOptions
   gboolean flow_control_requested;
 
   gboolean *matched;
-  const LogPathOptions *parent;
+  const LogPathOptions *lpo_parent_junction;
 };
 
 #define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL, NULL }
@@ -229,11 +229,13 @@ struct _LogPathOptions
  * logmpx.c for details.
  * */
 static inline void
-log_path_options_push_junction(LogPathOptions *local_path_options, gboolean *matched, const LogPathOptions *parent)
+log_path_options_push_junction(LogPathOptions *local_path_options,
+                               gboolean *matched,
+                               const LogPathOptions *lpo_parent_junction)
 {
-  *local_path_options = *parent;
+  *local_path_options = *lpo_parent_junction;
   local_path_options->matched = matched;
-  local_path_options->parent = parent;
+  local_path_options->lpo_parent_junction = lpo_parent_junction;
 }
 
 /* Part of the junction related state needs to be "popped" once the
@@ -244,8 +246,8 @@ log_path_options_push_junction(LogPathOptions *local_path_options, gboolean *mat
 static inline void
 log_path_options_pop_conditional(LogPathOptions *local_path_options)
 {
-  if (local_path_options->parent)
-    local_path_options->matched = local_path_options->parent->matched;
+  if (local_path_options->lpo_parent_junction)
+    local_path_options->matched = local_path_options->lpo_parent_junction->matched;
 }
 
 /*
@@ -266,8 +268,8 @@ log_path_options_pop_junction(LogPathOptions *local_path_options)
 {
   log_path_options_pop_conditional(local_path_options);
 
-  if (local_path_options->parent)
-    local_path_options->parent = local_path_options->parent->parent;
+  if (local_path_options->lpo_parent_junction)
+    local_path_options->lpo_parent_junction = local_path_options->lpo_parent_junction->lpo_parent_junction;
 }
 
 typedef struct _LogPipeOptions LogPipeOptions;
