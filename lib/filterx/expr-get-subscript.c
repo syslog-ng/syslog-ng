@@ -26,7 +26,7 @@ typedef struct _FilterXGetSubscript
 {
   FilterXExpr super;
   FilterXExpr *operand;
-  FilterXExpr *index;
+  FilterXExpr *key;
 } FilterXGetSubscript;
 
 static FilterXObject *
@@ -39,12 +39,12 @@ _eval(FilterXExpr *s)
   if (!variable)
     return NULL;
 
-  FilterXObject *index = filterx_expr_eval_typed(self->index);
-  if (!index)
+  FilterXObject *key = filterx_expr_eval_typed(self->key);
+  if (!key)
     goto exit;
-  result = filterx_object_get_subscript(variable, index);
+  result = filterx_object_get_subscript(variable, key);
 exit:
-  filterx_object_unref(index);
+  filterx_object_unref(key);
   filterx_object_unref(variable);
   return result;
 }
@@ -53,13 +53,13 @@ static void
 _free(FilterXExpr *s)
 {
   FilterXGetSubscript *self = (FilterXGetSubscript *) s;
-  filterx_expr_unref(self->index);
+  filterx_expr_unref(self->key);
   filterx_expr_unref(self->operand);
 }
 
 /* NOTE: takes the object reference */
 FilterXExpr *
-filterx_get_subscript_new(FilterXExpr *operand, FilterXExpr *index)
+filterx_get_subscript_new(FilterXExpr *operand, FilterXExpr *key)
 {
   FilterXGetSubscript *self = g_new0(FilterXGetSubscript, 1);
 
@@ -67,6 +67,6 @@ filterx_get_subscript_new(FilterXExpr *operand, FilterXExpr *index)
   self->super.eval = _eval;
   self->super.free_fn = _free;
   self->operand = operand;
-  self->index = index;
+  self->key = key;
   return &self->super;
 }

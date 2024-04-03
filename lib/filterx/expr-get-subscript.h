@@ -25,7 +25,7 @@
 
 #include "filterx/filterx-expr.h"
 
-FilterXExpr *filterx_get_subscript_new(FilterXExpr *lhs, FilterXExpr *index);
+FilterXExpr *filterx_get_subscript_new(FilterXExpr *lhs, FilterXExpr *key);
 
 
 #endif
