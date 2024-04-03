@@ -69,7 +69,7 @@ _set_subscript(FilterXObject *s, FilterXObject *key, FilterXObject *new_value)
 }
 
 static gboolean
-_has_subscript(FilterXObject *s, FilterXObject *key)
+_is_key_set(FilterXObject *s, FilterXObject *key)
 {
   FilterXDict *self = (FilterXDict *) s;
 
@@ -79,8 +79,8 @@ _has_subscript(FilterXObject *s, FilterXObject *key)
       return FALSE;
     }
 
-  if (self->has_subscript)
-    return self->has_subscript(self, key);
+  if (self->is_key_set)
+    return self->is_key_set(self, key);
 
   FilterXObject *value = self->get_subscript(self, key);
   filterx_object_unref(value);
@@ -135,7 +135,7 @@ filterx_dict_init_instance(FilterXDict *self, FilterXType *type)
   g_assert(type->is_mutable);
   g_assert(type->get_subscript == _get_subscript);
   g_assert(type->set_subscript == _set_subscript);
-  g_assert(type->has_subscript == _has_subscript);
+  g_assert(type->is_key_set == _is_key_set);
   g_assert(type->unset_key == _unset_key);
   g_assert(type->getattr == _getattr);
   g_assert(type->setattr == _setattr);
@@ -149,7 +149,7 @@ FILTERX_DEFINE_TYPE(dict, FILTERX_TYPE_NAME(object),
                     .is_mutable = TRUE,
                     .get_subscript = _get_subscript,
                     .set_subscript = _set_subscript,
-                    .has_subscript = _has_subscript,
+                    .is_key_set = _is_key_set,
                     .unset_key = _unset_key,
                     .getattr = _getattr,
                     .setattr = _setattr,
