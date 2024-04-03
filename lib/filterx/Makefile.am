@@ -33,6 +33,8 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/filterx-pipe.h		\
 	lib/filterx/expr-function.h	\
 	lib/filterx/expr-condition.h \
+	lib/filterx/expr-isset.h \
+	lib/filterx/expr-unset.h		\
 	lib/filterx/filterx-globals-tests.h
 
 
@@ -70,6 +72,8 @@ filterx_sources = 				\
 	lib/filterx/filterx-pipe.c		\
 	lib/filterx/expr-function.c		\
 	lib/filterx/expr-condition.c		\
+	lib/filterx/expr-isset.c		\
+	lib/filterx/expr-unset.c		\
 	lib/filterx/filterx-grammar.y
 
 BUILT_SOURCES += 				\

@@ -31,6 +31,8 @@ set(FILTERX_HEADERS
     filterx/object-list-interface.h
     filterx/object-dict-interface.h
     filterx/expr-condition.h
+    filterx/expr-isset.h
+    filterx/expr-unset.h
     filterx/filterx-globals-tests.h
     PARENT_SCOPE
     )
@@ -69,6 +71,8 @@ set(FILTERX_SOURCES
     filterx/object-list-interface.c
     filterx/object-dict-interface.c
     filterx/expr-condition.c
+    filterx/expr-isset.c
+    filterx/expr-unset.c
     PARENT_SCOPE
     )
 
