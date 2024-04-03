@@ -32,9 +32,11 @@ libtest_libsyslog_ng_test_a_SOURCES =   \
 	libtest/queue_utils_lib.c	\
 	libtest/queue_utils_lib.h	\
 	libtest/stopwatch.c		\
-	libtest/stopwatch.h
+	libtest/stopwatch.h		\
+	libtest/filterx.c	\
+	libtest/filterx.h
 
-libtest_libsyslog_ng_test_a_CFLAGS = $(AM_CFLAGS) $(CRITERION_CFLAGS)
+libtest_libsyslog_ng_test_a_CFLAGS = $(AM_CFLAGS) $(CRITERION_CFLAGS) $(JSON_CFLAGS)
 
 libtestinclude_HEADERS		    =	\
 	libtest/config_parse_lib.h		\
@@ -47,11 +49,12 @@ libtestinclude_HEADERS		    =	\
 	libtest/persist_lib.h		\
 	libtest/proto_lib.h		\
 	libtest/queue_utils_lib.h		\
-	libtest/stopwatch.h
+	libtest/stopwatch.h		\
+	libtest/filterx.h
 
 pkgconfig_DATA			   +=	\
 	libtest/syslog-ng-test.pc
 
-LIBTEST_LIBS = $(top_builddir)/libtest/libsyslog-ng-test.a
+LIBTEST_LIBS = $(top_builddir)/libtest/libsyslog-ng-test.a $(JSON_LIBS)
 
 include libtest/tests/Makefile.am
