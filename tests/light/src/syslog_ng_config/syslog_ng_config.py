@@ -50,6 +50,7 @@ from src.syslog_ng_config.statements.sources.internal_source import InternalSour
 from src.syslog_ng_config.statements.sources.network_source import NetworkSource
 from src.syslog_ng_config.statements.template.template import Template
 from src.syslog_ng_config.statements.template.template import TemplateFunction
+from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
 
 
 logger = logging.getLogger(__name__)
@@ -248,3 +249,6 @@ class SyslogNgConfig(object):
         if flags:
             logpath.add_flags(cast_to_list(flags))
         return logpath
+
+    def get_prometheus_samples(self, metric_filter):
+        return PrometheusStatsHandler(metric_filter).get_samples()
