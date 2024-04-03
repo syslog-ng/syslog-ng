@@ -184,7 +184,8 @@ FilterXObject *
 filterx_message_value_new(const gchar *repr, gssize repr_len, LogMessageValueType type)
 {
   gssize len = repr_len < 0 ? strlen(repr) : repr_len;
-  gchar *buf = g_memdup2(repr, len);
+  gssize alloc_len = repr_len < 0 ? len + 1 : repr_len;
+  gchar *buf = g_memdup2(repr, alloc_len);
   FilterXMessageValue *self = (FilterXMessageValue *) filterx_message_value_new_borrowed(buf, len, type);
   self->buf = buf;
   return &self->super;
