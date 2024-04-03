@@ -24,7 +24,7 @@
 #include "filterx/expr-unset.h"
 #include "filterx/object-primitive.h"
 
-FilterXObject *
+static FilterXObject *
 _eval(FilterXExpr *s)
 {
   FilterXUnaryOp *self = (FilterXUnaryOp *) s;
