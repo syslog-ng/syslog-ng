@@ -886,6 +886,11 @@ _register_worker_stats(LogThreadedDestWorker *self)
 
     stats_lock();
     {
+      stats_cluster_key_builder_set_name(kb, "output_unreachable");
+      self->metrics.output_unreachable_key = stats_cluster_key_builder_build_single(kb);
+      stats_register_counter(level, self->metrics.output_unreachable_key, SC_TYPE_SINGLE_VALUE,
+                             &self->metrics.output_unreachable);
+
       /* Up to 49 days and 17 hours on 32 bit machines. */
       stats_cluster_key_builder_set_name(kb, "output_event_delay_sample_seconds");
       stats_cluster_key_builder_set_unit(kb, SCU_MILLISECONDS);
@@ -924,6 +929,14 @@ _unregister_worker_stats(LogThreadedDestWorker *self)
 
   stats_lock();
   {
+    if (self->metrics.output_unreachable_key)
+      {
+        stats_unregister_counter(self->metrics.output_unreachable_key, SC_TYPE_SINGLE_VALUE,
+                                 &self->metrics.output_unreachable);
+        stats_cluster_key_free(self->metrics.output_unreachable_key);
+        self->metrics.output_unreachable_key = NULL;
+      }
+
     if (self->metrics.message_delay_sample_key)
       {
         stats_unregister_counter(self->metrics.message_delay_sample_key, SC_TYPE_SINGLE_VALUE,
