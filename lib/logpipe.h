@@ -220,6 +220,14 @@ struct _LogPathOptions
 #define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL, NULL }
 #define LOG_PATH_OPTIONS_INIT_NOACK { FALSE, FALSE, NULL, NULL }
 
+/* LogPathOptions are chained up at the start of a junction and teared down
+ * at the end (see log_path_options_pop_junction().
+ *
+ * The "matched" value is kept separate on the parent level and the junction
+ * level.  This way the junction can separately act on matching/non-matching
+ * messages and potentially propagate it to the parent (or not), see
+ * logmpx.c for details.
+ * */
 static inline void
 log_path_options_push_junction(LogPathOptions *local_path_options, gboolean *matched, const LogPathOptions *parent)
 {
@@ -228,6 +236,11 @@ log_path_options_push_junction(LogPathOptions *local_path_options, gboolean *mat
   local_path_options->parent = parent;
 }
 
+/* Part of the junction related state needs to be "popped" once the
+ * conditional decision is concluded.  This happens in the `if (filter)`
+ * form, once the filter is evaluated, or at the end of the junction.  This
+ * basically resets the "matched" pointer to that of the parent junction.
+ */
 static inline void
 log_path_options_pop_conditional(LogPathOptions *local_path_options)
 {
@@ -236,6 +249,11 @@ log_path_options_pop_conditional(LogPathOptions *local_path_options)
 }
 
 /*
+ * Tear down the embedded junction related state from the LogPathOptions
+ * chain.  This implies log_path_options_pop_conditional() as well, which
+ * will do nothing if there was a conditional midpoint (e.g.  `if
+ * (filter)`).
+ *
  * NOTE: we need to be optional about ->parent being set, as synthetic
  * messages (e.g.  the likes emitted by db-parser/grouping-by() may arrive
  * at the end of a junction without actually crossing the beginning of the
