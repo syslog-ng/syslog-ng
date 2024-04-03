@@ -42,8 +42,8 @@ struct _FilterXType
   gboolean (*truthy)(FilterXObject *self);
   FilterXObject *(*getattr)(FilterXObject *self, const gchar *attr_name);
   gboolean (*setattr)(FilterXObject *self, const gchar *attr_name, FilterXObject *new_value);
-  FilterXObject *(*get_subscript)(FilterXObject *self, FilterXObject *index);
-  gboolean (*set_subscript)(FilterXObject *self, FilterXObject *index, FilterXObject *new_value);
+  FilterXObject *(*get_subscript)(FilterXObject *self, FilterXObject *key);
+  gboolean (*set_subscript)(FilterXObject *self, FilterXObject *key, FilterXObject *new_value);
   gboolean (*is_key_set)(FilterXObject *self, FilterXObject *key);
   gboolean (*unset_key)(FilterXObject *self, FilterXObject *key);
   FilterXObject *(*list_factory)(void);
@@ -184,34 +184,34 @@ filterx_object_setattr(FilterXObject *self, const gchar *attr_name, FilterXObjec
 }
 
 static inline FilterXObject *
-filterx_object_get_subscript(FilterXObject *self, FilterXObject *index)
+filterx_object_get_subscript(FilterXObject *self, FilterXObject *key)
 {
   if (self->type->get_subscript)
-    return self->type->get_subscript(self, index);
+    return self->type->get_subscript(self, key);
   return NULL;
 }
 
 static inline gboolean
-filterx_object_set_subscript(FilterXObject *self, FilterXObject *index, FilterXObject *new_value)
+filterx_object_set_subscript(FilterXObject *self, FilterXObject *key, FilterXObject *new_value)
 {
   if (self->type->set_subscript)
-    return self->type->set_subscript(self, index, new_value);
+    return self->type->set_subscript(self, key, new_value);
   return FALSE;
 }
 
 static inline gboolean
-filterx_object_is_key_set(FilterXObject *self, FilterXObject *index)
+filterx_object_is_key_set(FilterXObject *self, FilterXObject *key)
 {
   if (self->type->is_key_set)
-    return self->type->is_key_set(self, index);
+    return self->type->is_key_set(self, key);
   return FALSE;
 }
 
 static inline gboolean
-filterx_object_unset_key(FilterXObject *self, FilterXObject *index)
+filterx_object_unset_key(FilterXObject *self, FilterXObject *key)
 {
   if (self->type->unset_key)
-    return self->type->unset_key(self, index);
+    return self->type->unset_key(self, key);
   return FALSE;
 }
 

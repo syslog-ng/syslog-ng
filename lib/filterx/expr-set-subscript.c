@@ -27,7 +27,7 @@ typedef struct _FilterXSetSubscript
 {
   FilterXExpr super;
   FilterXExpr *object;
-  FilterXExpr *index;
+  FilterXExpr *key;
   FilterXExpr *new_value;
 } FilterXSetSubscript;
 
@@ -36,22 +36,22 @@ _eval(FilterXExpr *s)
 {
   FilterXSetSubscript *self = (FilterXSetSubscript *) s;
   FilterXObject *result = NULL;
-  FilterXObject *new_value = NULL, *index = NULL, *object = NULL;
+  FilterXObject *new_value = NULL, *key = NULL, *object = NULL;
 
   object = filterx_expr_eval_typed(self->object);
   if (!object)
     return NULL;
 
-  if (self->index)
+  if (self->key)
     {
-      index = filterx_expr_eval_typed(self->index);
-      if (!index)
+      key = filterx_expr_eval_typed(self->key);
+      if (!key)
         goto exit;
     }
   else
     {
       /* append */
-      index = NULL;
+      key = NULL;
     }
 
   new_value = filterx_expr_eval_typed(self->new_value);
@@ -61,14 +61,14 @@ _eval(FilterXExpr *s)
   result = filterx_object_clone(new_value);
   filterx_object_unref(new_value);
 
-  if (!filterx_object_set_subscript(object, index, result))
+  if (!filterx_object_set_subscript(object, key, result))
     {
       filterx_object_unref(result);
       result = NULL;
     }
 
 exit:
-  filterx_object_unref(index);
+  filterx_object_unref(key);
   filterx_object_unref(object);
   return result;
 }
@@ -78,13 +78,13 @@ _free(FilterXExpr *s)
 {
   FilterXSetSubscript *self = (FilterXSetSubscript *) s;
 
-  filterx_expr_unref(self->index);
+  filterx_expr_unref(self->key);
   filterx_expr_unref(self->object);
   filterx_expr_unref(self->new_value);
 }
 
 FilterXExpr *
-filterx_set_subscript_new(FilterXExpr *object, FilterXExpr *index, FilterXExpr *new_value)
+filterx_set_subscript_new(FilterXExpr *object, FilterXExpr *key, FilterXExpr *new_value)
 {
   FilterXSetSubscript *self = g_new0(FilterXSetSubscript, 1);
 
@@ -92,7 +92,7 @@ filterx_set_subscript_new(FilterXExpr *object, FilterXExpr *index, FilterXExpr *
   self->super.eval = _eval;
   self->super.free_fn = _free;
   self->object = object;
-  self->index = index;
+  self->key = key;
   self->new_value = new_value;
   return &self->super;
 }
