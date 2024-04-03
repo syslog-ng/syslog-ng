@@ -81,11 +81,11 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   LogMultiplexer *self = (LogMultiplexer *) s;
   gint i;
   gboolean matched;
-  LogPathOptions local_options;
+  LogPathOptions local_path_options;
   gboolean delivered = FALSE;
   gint fallback;
 
-  log_path_options_push_junction(&local_options, &matched, path_options);
+  log_path_options_push_junction(&local_path_options, &matched, path_options);
   if (_has_multiple_arcs(self))
     {
       log_msg_write_protect(msg);
@@ -106,8 +106,8 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
             }
 
           matched = TRUE;
-          log_msg_add_ack(msg, &local_options);
-          log_pipe_queue(next_hop, log_msg_ref(msg), &local_options);
+          log_msg_add_ack(msg, &local_path_options);
+          log_pipe_queue(next_hop, log_msg_ref(msg), &local_path_options);
 
           if (matched)
             {

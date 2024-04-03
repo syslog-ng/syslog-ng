@@ -1806,7 +1806,7 @@ log_msg_ack(LogMessage *self, const LogPathOptions *path_options, AckType ack_ty
  * to send to further consuming pipes.
  */
 const LogPathOptions *
-log_msg_break_ack(LogMessage *msg, const LogPathOptions *path_options, LogPathOptions *local_options)
+log_msg_break_ack(LogMessage *msg, const LogPathOptions *path_options, LogPathOptions *local_path_options)
 {
   /* NOTE: in case the user requested flow control, we can't break the
    * ACK chain, as that would lead to early acks, that would cause
@@ -1816,10 +1816,10 @@ log_msg_break_ack(LogMessage *msg, const LogPathOptions *path_options, LogPathOp
 
   log_msg_ack(msg, path_options, AT_PROCESSED);
 
-  *local_options = *path_options;
-  local_options->ack_needed = FALSE;
+  *local_path_options = *path_options;
+  local_path_options->ack_needed = FALSE;
 
-  return local_options;
+  return local_path_options;
 }
 
 
