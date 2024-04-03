@@ -50,6 +50,7 @@ gchar *assign_persist_name;
 gboolean relocate_all;
 gboolean display_version;
 gboolean assign_help;
+gboolean truncate_confirm;
 
 static GOptionEntry cat_options[] =
 {
@@ -62,6 +63,12 @@ static GOptionEntry cat_options[] =
 
 static GOptionEntry info_options[] =
 {
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
+static GOptionEntry truncate_options[] =
+{
+  { "force", 'f', 0, G_OPTION_ARG_NONE, &truncate_confirm },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -100,9 +107,9 @@ static GOptionEntry assign_options[] =
 };
 
 static gboolean
-open_queue(char *filename, LogQueue **lq, DiskQueueOptions *options)
+open_queue(char *filename, LogQueue **lq, DiskQueueOptions *options, gboolean read_only)
 {
-  options->read_only = TRUE;
+  options->read_only = read_only;
   options->reliable = FALSE;
   FILE *f = fopen(filename, "rb");
   if (f)
@@ -142,6 +149,51 @@ open_queue(char *filename, LogQueue **lq, DiskQueueOptions *options)
   return TRUE;
 }
 
+static inline off_t
+get_file_size(const char *path)
+{
+  struct stat s;
+  if (stat(path, &s) != 0)
+    return 0;
+
+  return s.st_size;
+}
+
+static gint
+dqtool_truncate(int argc, char *argv[])
+{
+  if (!truncate_confirm)
+    {
+      printf("Truncating disk-buffer files is not recommended in case they are actively used by syslog-ng.\n"
+             "Repeat this command with the --force flag if you are sure you want to truncate them.\n");
+      return 1;
+    }
+
+  for (gint i = optind; i < argc; i++)
+    {
+      LogQueue *lq;
+      DiskQueueOptions options = {0};
+      disk_queue_options_set_default_options(&options);
+
+      options.truncate_size_ratio = 0;
+      off_t orig_size = get_file_size(argv[i]);
+
+      if (!open_queue(argv[i], &lq, &options, FALSE))
+        continue;
+
+      gboolean persistent;
+      log_queue_disk_stop(lq, &persistent);
+      log_queue_unref(lq);
+
+      off_t truncated_size = get_file_size(argv[i]);
+
+      double reclaimed_gib = (orig_size - truncated_size) / 1024.0 / 1024.0 / 1024.0;
+      printf("Disk-buffer %s has been truncated, reclaimed space: %f GiB\n", argv[i], reclaimed_gib);
+    }
+
+  return 0;
+}
+
 static gint
 dqtool_cat(int argc, char *argv[])
 {
@@ -178,7 +230,7 @@ dqtool_cat(int argc, char *argv[])
       LogPathOptions local_options = LOG_PATH_OPTIONS_INIT;
       LogQueue *lq;
 
-      if (!open_queue(argv[i], &lq, &options))
+      if (!open_queue(argv[i], &lq, &options, TRUE))
         continue;
 
       log_queue_rewind_backlog_all(lq);
@@ -200,7 +252,6 @@ dqtool_cat(int argc, char *argv[])
     }
   g_string_free(msg, TRUE);
   return 0;
-
 }
 
 static gint
@@ -213,7 +264,7 @@ dqtool_info(int argc, char *argv[])
       DiskQueueOptions options = {0};
       disk_queue_options_set_default_options(&options);
 
-      if (!open_queue(argv[i], &lq, &options))
+      if (!open_queue(argv[i], &lq, &options, TRUE))
         continue;
 
       gboolean persistent;
@@ -629,6 +680,7 @@ static struct
   { "info", info_options, "Print infos about the given disk queue file", dqtool_info },
   { "relocate", relocate_options, "Relocate(rename) diskq file. Note that this option modifies the persist file.", dqtool_relocate },
   { "assign", assign_options, "Assign diskq file to the given persist file with the given persist name.", dqtool_assign },
+  { "truncate", truncate_options, "Truncate unused space in abandoned disk queues", dqtool_truncate },
   { NULL, NULL },
 };
 
