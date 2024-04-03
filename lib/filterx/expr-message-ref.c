@@ -22,14 +22,15 @@
  */
 #include "filterx/expr-message-ref.h"
 #include "filterx/object-message-value.h"
+#include "filterx/object-primitive.h"
 #include "filterx/filterx-scope.h"
 #include "logmsg/logmsg.h"
 
-typedef struct _FilterXMessageRefExpr
+struct _FilterXMessageRefExpr
 {
   FilterXExpr super;
   NVHandle handle;
-} FilterXMessageRefExpr;
+};
 
 static FilterXObject *
 _eval(FilterXExpr *s)
@@ -96,5 +97,27 @@ filterx_message_ref_expr_new(NVHandle handle)
   self->super.assign = _assign;
   self->super.free_fn = _free;
   self->handle = handle;
+  return &self->super;
+}
+
+FilterXObject *
+_isset_eval(FilterXExpr *s)
+{
+  FilterXUnaryOp *self = (FilterXUnaryOp *) s;
+
+  FilterXObject *message_ref = filterx_expr_eval(self->operand);
+  if (!message_ref)
+    return filterx_boolean_new(FALSE);
+
+  filterx_object_unref(message_ref);
+  return filterx_boolean_new(TRUE);
+}
+
+FilterXExpr *
+filterx_message_ref_isset_expr_new(FilterXMessageRefExpr *message_ref_expr)
+{
+  FilterXUnaryOp *self = g_new0(FilterXUnaryOp, 1);
+  filterx_unary_op_init_instance(self, &message_ref_expr->super);
+  self->super.eval = _isset_eval;
   return &self->super;
 }

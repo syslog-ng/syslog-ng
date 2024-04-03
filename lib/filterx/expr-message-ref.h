@@ -25,6 +25,9 @@
 
 #include "filterx/filterx-expr.h"
 
+typedef struct _FilterXMessageRefExpr FilterXMessageRefExpr;
+
 FilterXExpr *filterx_message_ref_expr_new(NVHandle handle);
+FilterXExpr *filterx_message_ref_isset_expr_new(FilterXMessageRefExpr *message_ref_expr);
 
 #endif
