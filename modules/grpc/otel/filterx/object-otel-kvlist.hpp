@@ -58,7 +58,7 @@ public:
 
   std::string marshal();
   bool set_subscript(FilterXObject *key, FilterXObject *value);
-  bool has_subscript(FilterXObject *key) const;
+  bool is_key_set(FilterXObject *key) const;
   FilterXObject *get_subscript(FilterXObject *key);
   bool unset_key(FilterXObject *key);
   uint64_t len() const;

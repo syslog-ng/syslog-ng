@@ -157,7 +157,7 @@ KVList::get_subscript(FilterXObject *key)
 }
 
 bool
-KVList::has_subscript(FilterXObject *key) const
+KVList::is_key_set(FilterXObject *key) const
 {
   const gchar *key_c_str = filterx_string_get_value(key, NULL);
   if (!key_c_str)
@@ -234,11 +234,11 @@ _get_subscript(FilterXDict *s, FilterXObject *key)
 }
 
 static gboolean
-_has_subscript(FilterXDict *s, FilterXObject *key)
+_is_key_set(FilterXDict *s, FilterXObject *key)
 {
   FilterXOtelKVList *self = (FilterXOtelKVList *) s;
 
-  return self->cpp->has_subscript(key);
+  return self->cpp->is_key_set(key);
 }
 
 static gboolean
@@ -283,7 +283,7 @@ _init_instance(FilterXOtelKVList *self)
 
   self->super.get_subscript = _get_subscript;
   self->super.set_subscript = _set_subscript;
-  self->super.has_subscript = _has_subscript;
+  self->super.is_key_set = _is_key_set;
   self->super.unset_key = _unset_key;
   self->super.len = _len;
 }
