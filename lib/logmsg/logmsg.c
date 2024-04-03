@@ -1816,7 +1816,7 @@ log_msg_break_ack(LogMessage *msg, const LogPathOptions *path_options, LogPathOp
 
   log_msg_ack(msg, path_options, AT_PROCESSED);
 
-  *local_path_options = *path_options;
+  log_path_options_chain(local_path_options, path_options);
   local_path_options->ack_needed = FALSE;
 
   return local_path_options;

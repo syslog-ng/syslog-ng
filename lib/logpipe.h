@@ -220,6 +220,16 @@ struct _LogPathOptions
 #define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL, NULL }
 #define LOG_PATH_OPTIONS_INIT_NOACK { FALSE, FALSE, NULL, NULL }
 
+/*
+ * Embed a step in our LogPathOptions chain.
+ */
+static inline LogPathOptions *
+log_path_options_chain(LogPathOptions *local_path_options, const LogPathOptions *lpo_previous_hop)
+{
+  *local_path_options = *lpo_previous_hop;
+  return local_path_options;
+}
+
 /* LogPathOptions are chained up at the start of a junction and teared down
  * at the end (see log_path_options_pop_junction().
  *
@@ -446,7 +456,7 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 
   if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT)))
     {
-      local_path_options = *path_options;
+      path_options = log_path_options_chain(&local_path_options, path_options);
       if (s->flags & PIF_HARD_FLOW_CONTROL)
         {
           local_path_options.flow_control_requested = 1;
@@ -460,7 +470,6 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
         {
           log_path_options_pop_conditional(&local_path_options);
         }
-      path_options = &local_path_options;
     }
 
   if (s->queue)

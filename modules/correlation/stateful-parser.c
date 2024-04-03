@@ -68,8 +68,10 @@ void
 _queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   StatefulParser *self = (StatefulParser *) s;
-  LogPathOptions local_path_options = *path_options;
+  LogPathOptions local_path_options;
   gboolean matched = TRUE;
+
+  log_path_options_chain(&local_path_options, path_options);
 
   /* if we consume messages into our state, then let's consider these
    * messages matched, even though we are dropping them */
