@@ -762,3 +762,21 @@ def test_if_condition_non_matching_expression(config, syslog_ng):
     assert file_true.get_stats()["processed"] == 1
     assert "processed" not in file_false.get_stats()
     assert file_true.read_log() == "default\n"
+
+
+def test_isset(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $MSG = json();
+    $MSG.inner_key = "foo";
+
+    isset(${values.int});
+    not isset($almafa);
+    isset($MSG["inner_key"]);
+    not isset($MSG["almafa"]);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()

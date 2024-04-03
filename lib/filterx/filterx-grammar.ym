@@ -49,6 +49,7 @@
 #include "filterx/filterx-config.h"
 #include "filterx/expr-function.h"
 #include "filterx/expr-condition.h"
+#include "filterx/expr-is-key-set.h"
 
 #include "template/templates.h"
 
@@ -84,6 +85,7 @@ construct_template_expr(LogTemplate *template)
 %token KW_TRUE, KW_FALSE
 %token KW_NULL
 %token KW_ENUM
+%token KW_ISSET
 
 %type <ptr> stmts
 %type <node> stmt
@@ -156,6 +158,8 @@ expr
         | expr KW_TAV_NE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AND_VALUE_BASED | FCMPX_NE ); }
 	| '(' expr ')'				{ $$ = $2; }
 	| tenary				{ $$ = $1; }
+	| KW_ISSET '(' lvalue ')'		{ $$ = filterx_message_ref_isset_expr_new((FilterXMessageRefExpr *) $3); }
+	| KW_ISSET '(' expr '[' expr ']' ')'	{ $$ = filterx_is_key_set_new($3, $5); }
 	;
 
 expr_value
