@@ -40,6 +40,9 @@ _eval(FilterXExpr *s)
   LogMessage *msg = context->msgs[0];
   FilterXObject *msg_ref;
 
+  if (filterx_scope_is_message_ref_unset(context->scope, self->handle))
+    return NULL;
+
   msg_ref = filterx_scope_lookup_message_ref(context->scope, self->handle);
   if (msg_ref)
     return msg_ref;
@@ -119,5 +122,32 @@ filterx_message_ref_isset_expr_new(FilterXMessageRefExpr *message_ref_expr)
   FilterXUnaryOp *self = g_new0(FilterXUnaryOp, 1);
   filterx_unary_op_init_instance(self, &message_ref_expr->super);
   self->super.eval = _isset_eval;
+  return &self->super;
+}
+
+FilterXObject *
+_unset_eval(FilterXExpr *s)
+{
+  FilterXUnaryOp *self = (FilterXUnaryOp *) s;
+
+  FilterXObject *message_ref = filterx_expr_eval(self->operand);
+  if (!message_ref)
+    return filterx_boolean_new(FALSE);
+
+  filterx_object_unref(message_ref);
+
+  FilterXScope *scope = filterx_eval_get_scope();
+  FilterXMessageRefExpr *message_ref_expr = (FilterXMessageRefExpr *) self->operand;
+  filterx_scope_unset_message_ref(scope, message_ref_expr->handle);
+
+  return filterx_boolean_new(TRUE);
+}
+
+FilterXExpr *
+filterx_message_ref_unset_expr_new(FilterXMessageRefExpr *message_ref_expr)
+{
+  FilterXUnaryOp *self = g_new0(FilterXUnaryOp, 1);
+  filterx_unary_op_init_instance(self, &message_ref_expr->super);
+  self->super.eval = _unset_eval;
   return &self->super;
 }
