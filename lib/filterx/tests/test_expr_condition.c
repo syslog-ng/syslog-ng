@@ -42,12 +42,14 @@
 #include "scratch-buffers.h"
 
 
-FilterXExpr *_string_to_filterXExpr(const gchar *str)
+FilterXExpr *
+_string_to_filterXExpr(const gchar *str)
 {
   return filterx_literal_new(filterx_string_new(str, -1));
 }
 
-gint _assert_cmp_string_to_filterx_object(const char *str, FilterXObject *obj)
+gint
+_assert_cmp_string_to_filterx_object(const char *str, FilterXObject *obj)
 {
   cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(string)));
   gsize string_len;
@@ -55,7 +57,8 @@ gint _assert_cmp_string_to_filterx_object(const char *str, FilterXObject *obj)
   return strcmp(string, str);
 }
 
-FilterXExpr *_assert_assign_var(const char *var_name, FilterXExpr *value)
+FilterXExpr *
+_assert_assign_var(const char *var_name, FilterXExpr *value)
 {
   FilterXExpr *control_variable = filterx_message_ref_expr_new(log_msg_get_value_handle(var_name));
   cr_assert(control_variable != NULL);
@@ -63,7 +66,8 @@ FilterXExpr *_assert_assign_var(const char *var_name, FilterXExpr *value)
   return filterx_assign_new(control_variable, value);
 }
 
-void _assert_set_test_variable(const char *var_name, FilterXExpr *expr)
+void
+_assert_set_test_variable(const char *var_name, FilterXExpr *expr)
 {
   FilterXExpr *assign = _assert_assign_var(var_name, expr);
   cr_assert(assign != NULL);
@@ -76,7 +80,8 @@ void _assert_set_test_variable(const char *var_name, FilterXExpr *expr)
   filterx_object_unref(assign_eval_res);
 }
 
-FilterXObject *_assert_get_test_variable(const char *var_name)
+FilterXObject *
+_assert_get_test_variable(const char *var_name)
 {
   FilterXExpr *control_variable = filterx_message_ref_expr_new(log_msg_get_value_handle(var_name));
   cr_assert(control_variable != NULL);
@@ -92,7 +97,8 @@ typedef struct _TestEnv
   FilterXEvalContext context;
 } TestEnv;
 
-void init_test(TestEnv *env)
+void
+init_test(TestEnv *env)
 {
 
   cr_assert(env != NULL);
@@ -110,7 +116,8 @@ void init_test(TestEnv *env)
 
 }
 
-void deinit_test(const TestEnv *env)
+void
+deinit_test(const TestEnv *env)
 {
   cr_assert(env != NULL);
   log_msg_unref(env->msg);
