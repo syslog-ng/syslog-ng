@@ -57,7 +57,7 @@ _eval_condition(FilterXConditional *c)
     {
       return _eval_condition(c->false_branch);
     }
-  FilterXObject *result;
+  FilterXObject *result = NULL;
   for (GList *l = c->statements; l; l = l->next)
     {
       FilterXExpr *expr = l->data;
