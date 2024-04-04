@@ -47,6 +47,7 @@ struct _FilterXType
   gboolean (*has_subscript)(FilterXObject *self, FilterXObject *key);
   FilterXObject *(*list_factory)(void);
   FilterXObject *(*dict_factory)(void);
+  gboolean (*repr)(FilterXObject *self, GString *repr);
   void (*free_fn)(FilterXObject *self);
 };
 
@@ -121,6 +122,17 @@ filterx_object_unmarshal(FilterXObject *self)
   if (self->type->unmarshal)
     return self->type->unmarshal(self);
   return filterx_object_ref(self);
+}
+
+static inline gboolean
+filterx_object_repr(FilterXObject *self, GString *repr)
+{
+  if (self->type->repr)
+    {
+      g_string_truncate(repr, 0);
+      return self->type->repr(self, repr);
+    }
+  return FALSE;
 }
 
 static inline gboolean

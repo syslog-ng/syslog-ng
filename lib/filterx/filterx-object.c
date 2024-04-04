@@ -54,6 +54,7 @@ filterx_type_init(FilterXType *type)
   INIT_TYPE_METHOD(type, has_subscript);
   INIT_TYPE_METHOD(type, list_factory);
   INIT_TYPE_METHOD(type, dict_factory);
+  INIT_TYPE_METHOD(type, repr);
   INIT_TYPE_METHOD(type, free_fn);
 }
 
@@ -154,9 +155,17 @@ filterx_object_unref(FilterXObject *self)
     }
 }
 
+static gboolean
+_repr(FilterXObject *self, GString *repr)
+{
+  /* empty */
+  return FALSE;
+}
+
 FilterXType FILTERX_TYPE_NAME(object) =
 {
   .super_type = NULL,
   .name = "object",
   .free_fn = filterx_object_free_method,
+  .repr = _repr,
 };
