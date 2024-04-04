@@ -277,12 +277,14 @@ _get_originating_ip_protocol(const LogMessage *msg)
     return 0;
   if (g_sockaddr_inet_check(msg->saddr))
     return 4;
+#if SYSLOG_NG_ENABLE_IPV6
   if (g_sockaddr_inet6_check(msg->saddr))
     {
       if (g_sockaddr_inet6_is_v4_mapped(msg->saddr))
         return 4;
       return 6;
     }
+#endif
   return 0;
 }
 
