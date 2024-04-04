@@ -56,3 +56,6 @@ lib_filterx_tests_test_object_boolean_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
 
 lib_filterx_tests_test_object_integer_CFLAGS  = $(TEST_CFLAGS)
 lib_filterx_tests_test_object_integer_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
+
+lib_filterx_tests_test_object_double_CFLAGS  = $(TEST_CFLAGS)
+lib_filterx_tests_test_object_double_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
