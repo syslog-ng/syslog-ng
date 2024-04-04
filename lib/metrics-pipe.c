@@ -54,8 +54,8 @@ _queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   if (matched)
     stats_counter_inc(self->egress_counter);
 
-  if (path_options->matched)
-    *path_options->matched = *local_path_options.matched;
+  if (path_options->matched && !matched)
+    *path_options->matched = FALSE;
 }
 
 static gboolean
