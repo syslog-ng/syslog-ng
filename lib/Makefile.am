@@ -12,6 +12,7 @@ include lib/filterx/Makefile.am
 include lib/template/Makefile.am
 include lib/value-pairs/Makefile.am
 include lib/stats/Makefile.am
+include lib/metrics/Makefile.am
 include lib/control/Makefile.am
 include lib/healthcheck/Makefile.am
 include lib/debugger/Makefile.am
@@ -292,6 +293,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(template_sources)		\
 	$(value_pairs_sources)		\
 	$(stats_sources)		\
+	$(metrics_sources)		\
 	$(control_sources)		\
 	$(healthcheck_sources) \
 	$(debugger_sources)		\

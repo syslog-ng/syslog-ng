@@ -27,6 +27,7 @@ from src.common.operations import cast_to_list
 from src.syslog_ng_config import stringify
 from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statement_group import StatementGroup
+from src.syslog_ng_config.statements import ArrowedOptions
 from src.syslog_ng_config.statements.destinations.example_destination import ExampleDestination
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
 from src.syslog_ng_config.statements.destinations.network_destination import NetworkDestination
@@ -49,6 +50,7 @@ from src.syslog_ng_config.statements.sources.internal_source import InternalSour
 from src.syslog_ng_config.statements.sources.network_source import NetworkSource
 from src.syslog_ng_config.statements.template.template import Template
 from src.syslog_ng_config.statements.template.template import TemplateFunction
+from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
 
 
 logger = logging.getLogger(__name__)
@@ -69,6 +71,9 @@ class SyslogNgConfig(object):
         self.teardown = teardown
 
     stringify = staticmethod(stringify)
+
+    def arrowed_options(self, *args, **kwargs):
+        return ArrowedOptions(*args, **kwargs)
 
     def set_raw_config(self, raw_config):
         self.__raw_config = raw_config
@@ -150,6 +155,9 @@ class SyslogNgConfig(object):
 
     def create_csv_parser(self, **options):
         return Parser("csv-parser", **options)
+
+    def create_metrics_probe(self, **options):
+        return Parser("metrics_probe", **options)
 
     def create_syslog_parser(self, **options):
         return Parser("syslog-parser", **options)
@@ -241,3 +249,6 @@ class SyslogNgConfig(object):
         if flags:
             logpath.add_flags(cast_to_list(flags))
         return logpath
+
+    def get_prometheus_samples(self, metric_filter):
+        return PrometheusStatsHandler(metric_filter).get_samples()

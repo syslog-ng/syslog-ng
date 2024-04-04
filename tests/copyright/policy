@@ -86,6 +86,8 @@ lib/healthcheck
 lib/healthcheck/tests
 lib/cfg-monitor\.[ch]
 lib/metrics-pipe\.[ch]
+lib/metrics/label-template\.(c|h)$
+lib/metrics/metrics-template\.(c|h)$
 lib/rewrite/rewrite-set-facility\.h
 lib/rewrite/rewrite-set-matches\.[ch]
 lib/rewrite/rewrite-unset-matches\.[ch]
@@ -187,7 +189,6 @@ modules/basicfuncs/tf-tag\.c$
 modules/diskq/diskq-global-metrics\.[ch]$
 modules/diskq/tests/test_logqueue_disk\.c$
 modules/metrics-probe/metrics-probe(|-parser|-plugin|-grammar)\.(c|h|ym)$
-modules/metrics-probe/label-template\.(c|h)$
 modules/metrics-probe/tests/test_metrics_probe\.c$
 modules/darwinosl/darwinosl(|-parser|-plugin|-grammar|-source|-source-oslog|-source-persist)\.(c|h|m|ym)$
 modules/grpc/otel/otel-(grammar|parser|plugin|source|source-services|servicecall|protobuf-parser|protobuf-formatter|dest|dest-worker|logmsg-handles)\.(c|h|cpp|hpp|ym)$
@@ -247,8 +248,10 @@ tests/light/functional_tests/logpath/test_midpoint_destinations\.py
 tests/light/functional_tests/value-pairs/test_value_pairs\.py
 tests/light/functional_tests/templates/test_template_stmt\.py
 tests/light/functional_tests/filterx/test_filterx\.py
+tests/light/functional_tests/parsers/metrics-probe/test_metrics_probe\.py
 tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py
 tests/light/src/syslog_ng_config/statements/template/template\.py
+tests/light/src/syslog_ng_config/statements/__init__\.py
 modules/correlation/id-counter\.[ch]$
 modules/correlation/group-lines.h
 modules/xml/windows-eventlog-xml-parser\.h

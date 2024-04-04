@@ -26,6 +26,7 @@ add_subdirectory(multi-line)
 add_subdirectory(parser)
 add_subdirectory(rewrite)
 add_subdirectory(stats)
+add_subdirectory(metrics)
 add_subdirectory(template)
 add_subdirectory(transport)
 add_subdirectory(value-pairs)
@@ -52,6 +53,7 @@ set(LIB_SUBDIR_HEADERS
     ${PARSER_HEADERS}
     ${REWRITE_HEADERS}
     ${STATS_HEADERS}
+    ${METRICS_HEADERS}
     ${TEMPLATE_HEADERS}
     ${TRANSPORT_HEADERS}
     ${VALUE_PAIRS_HEADERS}
@@ -268,6 +270,7 @@ set(LIB_SOURCES
     ${PARSER_SOURCES}
     ${REWRITE_SOURCES}
     ${STATS_SOURCES}
+    ${METRICS_SOURCES}
     ${TEMPLATE_SOURCES}
     ${TRANSPORT_SOURCES}
     ${VALUE_PAIRS_SOURCES}
@@ -420,6 +423,7 @@ install(FILES ${LOGPROTO_HEADERS} DESTINATION include/syslog-ng/logproto)
 install(FILES ${PARSER_HEADERS} DESTINATION include/syslog-ng/parser)
 install(FILES ${REWRITE_HEADERS} DESTINATION include/syslog-ng/rewrite)
 install(FILES ${STATS_HEADERS} DESTINATION include/syslog-ng/stats)
+install(FILES ${METRICS_HEADERS} DESTINATION include/syslog-ng/metrics)
 install(FILES ${TEMPLATE_HEADERS} DESTINATION include/syslog-ng/template)
 install(FILES ${TRANSPORT_HEADERS} DESTINATION include/syslog-ng/transport)
 install(FILES ${CSV_SCANNER_HEADERS} DESTINATION include/syslog-ng/scanner/csv-scanner)
