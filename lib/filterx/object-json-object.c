@@ -131,6 +131,10 @@ _unset_key(FilterXDict *s, FilterXObject *key)
   if (!key_str)
     return FALSE;
 
+  struct json_object *value = NULL;
+  if (!json_object_object_get_ex(self->object, key_str, &value))
+    return FALSE;
+
   json_object_object_del(self->object, key_str);
 
   self->super.super.modified_in_place = TRUE;
