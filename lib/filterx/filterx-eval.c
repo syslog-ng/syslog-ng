@@ -82,12 +82,11 @@ exit:
 
 
 gboolean
-filterx_eval_exec_statements(GList *statements, LogMessage **pmsg, const LogPathOptions *path_options)
+filterx_eval_exec_statements(FilterXScope *scope, GList *statements, LogMessage *msg)
 {
-  FilterXScope *scope = filterx_scope_new();
   FilterXEvalContext local_context =
   {
-    .msgs = pmsg,
+    .msgs = &msg,
     .num_msg = 1,
     .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
     .scope = scope,
@@ -102,13 +101,15 @@ filterx_eval_exec_statements(GList *statements, LogMessage **pmsg, const LogPath
           goto fail;
         }
     }
-  log_msg_make_writable(pmsg, path_options);
   /* NOTE: we only store the results into the message if the entire evaluation was successful */
-  filterx_scope_sync_to_message(scope, *pmsg);
   success = TRUE;
 fail:
   filterx_eval_set_context(NULL);
-  filterx_scope_free(scope);
   return success;
+}
 
+void
+filterx_eval_sync_scope_and_message(FilterXScope *scope, LogMessage *msg)
+{
+  filterx_scope_sync_to_message(scope, msg);
 }

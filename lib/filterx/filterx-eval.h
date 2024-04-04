@@ -39,6 +39,8 @@ struct _FilterXEvalContext
 FilterXEvalContext *filterx_eval_get_context(void);
 FilterXScope *filterx_eval_get_scope(void);
 void filterx_eval_set_context(FilterXEvalContext *context);
-gboolean filterx_eval_exec_statements(GList *statements, LogMessage **msg, const LogPathOptions *options);
+gboolean filterx_eval_exec_statements(FilterXScope *scope, GList *statements, LogMessage *msg);
+void filterx_eval_sync_scope_and_message(FilterXScope *scope, LogMessage *msg);
+
 
 #endif

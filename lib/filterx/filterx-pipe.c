@@ -57,7 +57,14 @@ log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
             evt_tag_msg_reference(msg));
 
   NVTable *payload = nv_table_ref(msg->payload);
-  res = filterx_eval_exec_statements(self->stmts, &msg, path_options);
+  FilterXScope *scope = filterx_scope_new();
+  res = filterx_eval_exec_statements(scope, self->stmts, msg);
+  if (res)
+    {
+      log_msg_make_writable(&msg, path_options);
+      filterx_eval_sync_scope_and_message(scope, msg);
+    }
+  filterx_scope_free(scope);
   nv_table_unref(payload);
 
   msg_trace("<<<<<< filterx rule evaluation result",
