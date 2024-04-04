@@ -23,9 +23,15 @@
 #include "object-datetime.h"
 #include "scratch-buffers.h"
 #include "str-format.h"
-
+#include "timeutils/wallclocktime.h"
+#include "timeutils/conv.h"
+#include "timeutils/misc.h"
+#include "timeutils/format.h"
+#include "filterx/object-string.h"
+#include "filterx/object-primitive.h"
+#include "generic-number.h"
+#include "filterx-globals.h"
 #include "compat/json.h"
-
 
 typedef struct _FilterXDateTime
 {
@@ -99,6 +105,88 @@ filterx_datetime_get_value(FilterXObject *s)
 
   return self->ut;
 }
+
+
+FilterXObject *
+filterx_typecast_datetime(GPtrArray *args)
+{
+  FilterXObject *object = filterx_typecast_get_arg(args,
+                                                   "FilterX: Failed to create datetime object: invalid number of arguments. "
+                                                   "Usage: datetime($isodate_str), datetime($unix_int_ms) or datetime($unix_float_s)");
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(datetime)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(integer)))
+    {
+      GenericNumber gn = filterx_primitive_get_value(object);
+      int64_t val = gn_as_int64(&gn);
+      UnixTime ut = unix_time_from_unix_epoch(val);
+      return filterx_datetime_new(&ut);
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(double)))
+    {
+      GenericNumber gn = filterx_primitive_get_value(object);
+      double val = gn_as_double(&gn);
+      UnixTime ut = unix_time_from_unix_epoch((gint64)(val * USEC_PER_SEC));
+      return filterx_datetime_new(&ut);
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(string)))
+    {
+      return filterx_typecast_datetime_isodate(args);
+    }
+  msg_error("filterx: invalid typecast",
+            evt_tag_str("from", object->type->name),
+            evt_tag_str("to", "datetime"));
+  return NULL;
+}
+
+FilterXObject *
+filterx_typecast_datetime_isodate(GPtrArray *args)
+{
+  FilterXObject *object = filterx_typecast_get_arg(args,
+                                                   "FilterX: Failed to create datetime object: invalid number of arguments. "
+                                                   "Usage: datetime($isodate_str), datetime($unix_int_ms) or datetime($unix_float_s)");
+  if (!object)
+    return NULL;
+
+  if (!filterx_object_is_type(object, &FILTERX_TYPE_NAME(string)))
+    return NULL;
+
+  UnixTime ut = UNIX_TIME_INIT;
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+
+  gsize len;
+  const gchar *timestr = filterx_string_get_value(object, &len);
+  if (len == 0)
+    {
+      msg_error("filterx: empty time string",
+                evt_tag_str("from", object->type->name),
+                evt_tag_str("to", "datetime"),
+                evt_tag_str("format", "isodate"));
+      return NULL;
+    }
+
+  gchar *end = wall_clock_time_strptime(&wct, datefmt_isodate, timestr);
+  if (end && *end != 0)
+    {
+      msg_error("filterx: unable to parse time",
+                evt_tag_str("from", object->type->name),
+                evt_tag_str("to", "datetime"),
+                evt_tag_str("format", "isodate"),
+                evt_tag_str("time_string", timestr),
+                evt_tag_str("end", end));
+      return NULL;
+    }
+
+  convert_wall_clock_time_to_unix_time(&wct, &ut);
+  return filterx_datetime_new(&ut);
+}
+
 static gboolean
 _repr(FilterXObject *s, GString *repr)
 {
