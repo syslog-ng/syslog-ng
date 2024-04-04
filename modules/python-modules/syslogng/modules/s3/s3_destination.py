@@ -239,8 +239,8 @@ class S3Destination(LogDestination):
         self.client = client(
             service_name="s3",
             endpoint_url=self.url if self.url != "" else None,
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
+            aws_access_key_id=self.access_key if self.access_key != "" else None,
+            aws_secret_access_key=self.secret_key if self.secret_key != "" else None,
             region_name=self.region,
         )
 
