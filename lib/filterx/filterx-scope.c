@@ -26,6 +26,7 @@
 struct _FilterXScope
 {
   GHashTable *value_cache;
+  GHashTable *unset_value_cache;
   GPtrArray *weak_refs;
 };
 
@@ -33,7 +34,6 @@ FilterXObject *
 filterx_scope_lookup_message_ref(FilterXScope *self, NVHandle handle)
 {
   FilterXObject *object = NULL;
-
   if (g_hash_table_lookup_extended(self->value_cache, GINT_TO_POINTER(handle), NULL, (gpointer *) &object))
     {
       filterx_object_ref(object);
@@ -45,7 +45,21 @@ void
 filterx_scope_register_message_ref(FilterXScope *self, NVHandle handle, FilterXObject *value)
 {
   value->shadow = TRUE;
+  g_hash_table_remove(self->unset_value_cache, GINT_TO_POINTER(handle));
   g_hash_table_insert(self->value_cache, GINT_TO_POINTER(handle), filterx_object_ref(value));
+}
+
+void
+filterx_scope_unset_message_ref(FilterXScope *self, NVHandle handle)
+{
+  g_hash_table_remove(self->value_cache, GINT_TO_POINTER(handle));
+  g_hash_table_add(self->unset_value_cache, GINT_TO_POINTER(handle));
+}
+
+gboolean
+filterx_scope_is_message_ref_unset(FilterXScope *self, NVHandle handle)
+{
+  return g_hash_table_contains(self->unset_value_cache, GINT_TO_POINTER(handle));
 }
 
 void
@@ -77,6 +91,12 @@ filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg)
       log_msg_set_value_with_type(msg, handle, buffer->str, buffer->len, t);
     }
 
+  g_hash_table_iter_init(&iter, self->unset_value_cache);
+  while (g_hash_table_iter_next(&iter, &_key, &_value))
+    {
+      NVHandle handle = GPOINTER_TO_INT(_key);
+      log_msg_unset_value(msg, handle);
+    }
 }
 
 FilterXScope *
@@ -85,6 +105,7 @@ filterx_scope_new(void)
   FilterXScope *self = g_new0(FilterXScope, 1);
 
   self->value_cache = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, (GDestroyNotify) filterx_object_unref);
+  self->unset_value_cache = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, NULL);
   self->weak_refs = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
   return self;
 }
@@ -93,6 +114,7 @@ void
 filterx_scope_free(FilterXScope *self)
 {
   g_hash_table_unref(self->value_cache);
+  g_hash_table_unref(self->unset_value_cache);
   g_ptr_array_free(self->weak_refs, TRUE);
   g_free(self);
 }

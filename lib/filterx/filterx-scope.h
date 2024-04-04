@@ -31,6 +31,8 @@ typedef struct _FilterXScope FilterXScope;
 void filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg);
 FilterXObject *filterx_scope_lookup_message_ref(FilterXScope *self, NVHandle handle);
 void filterx_scope_register_message_ref(FilterXScope *self, NVHandle handle, FilterXObject *value);
+void filterx_scope_unset_message_ref(FilterXScope *self, NVHandle handle);
+gboolean filterx_scope_is_message_ref_unset(FilterXScope *self, NVHandle handle);
 void filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object);
 
 FilterXScope *filterx_scope_new(void);
