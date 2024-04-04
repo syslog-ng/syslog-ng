@@ -89,6 +89,8 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   if (_has_multiple_arcs(self))
     {
       log_msg_write_protect(msg);
+      if (path_options->filterx_scope)
+        filterx_scope_write_protect(path_options->filterx_scope);
     }
   for (fallback = 0; (fallback == 0) || (fallback == 1 && self->fallback_exists && !delivered); fallback++)
     {
