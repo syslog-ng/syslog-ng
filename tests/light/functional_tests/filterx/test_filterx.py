@@ -780,3 +780,24 @@ def test_isset(config, syslog_ng):
 
     assert file_true.get_stats()["processed"] == 1
     assert "processed" not in file_false.get_stats()
+
+
+def test_unset(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $MSG = json();
+    $MSG["inner_key"] = "foo";
+
+    unset(${values.int});
+    not unset($almafa);
+    unset($MSG["inner_key"]);
+    not unset($MSG["almafa"]);
+
+    not isset(${values.int});
+    not isset($MSG["inner_key"]);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()

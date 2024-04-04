@@ -50,6 +50,7 @@
 #include "filterx/expr-function.h"
 #include "filterx/expr-condition.h"
 #include "filterx/expr-is-key-set.h"
+#include "filterx/expr-unset-key.h"
 
 #include "template/templates.h"
 
@@ -86,6 +87,7 @@ construct_template_expr(LogTemplate *template)
 %token KW_NULL
 %token KW_ENUM
 %token KW_ISSET
+%token KW_UNSET
 
 %type <ptr> stmts
 %type <node> stmt
@@ -160,6 +162,8 @@ expr
 	| tenary				{ $$ = $1; }
 	| KW_ISSET '(' lvalue ')'		{ $$ = filterx_message_ref_isset_expr_new((FilterXMessageRefExpr *) $3); }
 	| KW_ISSET '(' expr '[' expr ']' ')'	{ $$ = filterx_is_key_set_new($3, $5); }
+	| KW_UNSET '(' lvalue ')'		{ $$ = filterx_message_ref_unset_expr_new((FilterXMessageRefExpr *) $3); }
+	| KW_UNSET '(' expr '[' expr ']' ')'	{ $$ = filterx_unset_key_new($3, $5); }
 	;
 
 expr_value
