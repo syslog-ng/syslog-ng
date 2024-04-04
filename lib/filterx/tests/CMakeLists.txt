@@ -11,3 +11,4 @@ add_unit_test(LIBTEST CRITERION TARGET test_builtin_functions DEPENDS json-plugi
 add_unit_test(LIBTEST CRITERION TARGET test_object_bytes DEPENDS json-plugin ${JSONC_LIBRARY})
 add_unit_test(LIBTEST CRITERION TARGET test_object_protobuf DEPENDS json-plugin ${JSONC_LIBRARY})
 add_unit_test(LIBTEST CRITERION TARGET test_object_boolean DEPENDS json-plugin ${JSONC_LIBRARY})
+add_unit_test(LIBTEST CRITERION TARGET test_object_integer DEPENDS json-plugin ${JSONC_LIBRARY})
