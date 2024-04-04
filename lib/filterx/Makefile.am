@@ -34,6 +34,7 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/expr-function.h	\
 	lib/filterx/expr-condition.h \
 	lib/filterx/expr-is-key-set.h \
+	lib/filterx/expr-unset-key.h		\
 	lib/filterx/filterx-globals-tests.h
 
 
@@ -72,6 +73,7 @@ filterx_sources = 				\
 	lib/filterx/expr-function.c		\
 	lib/filterx/expr-condition.c		\
 	lib/filterx/expr-is-key-set.c		\
+	lib/filterx/expr-unset-key.c		\
 	lib/filterx/filterx-grammar.y
 
 BUILT_SOURCES += 				\
