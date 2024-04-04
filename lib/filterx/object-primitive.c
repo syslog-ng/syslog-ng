@@ -26,6 +26,7 @@
 #include "str-format.h"
 #include "plugin.h"
 #include "cfg.h"
+#include "filterx-globals.h"
 
 #include "compat/json.h"
 
@@ -216,6 +217,22 @@ filterx_primitive_get_value(FilterXObject *s)
 {
   FilterXPrimitive *self = (FilterXPrimitive *) s;
   return self->value;
+}
+
+FilterXObject *
+filterx_typecast_boolean(GPtrArray *args)
+{
+  FilterXObject *object = filterx_typecast_get_arg(args, NULL);
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(boolean)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+
+  return filterx_boolean_new(filterx_object_truthy(object));
 }
 
 static gboolean
