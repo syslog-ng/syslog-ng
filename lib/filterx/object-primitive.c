@@ -218,20 +218,30 @@ filterx_primitive_get_value(FilterXObject *s)
   return self->value;
 }
 
+static gboolean
+_repr(FilterXObject *s, GString *repr)
+{
+  LogMessageValueType t;
+  return filterx_object_marshal(s, repr, &t);
+}
+
 FILTERX_DEFINE_TYPE(integer, FILTERX_TYPE_NAME(object),
                     .truthy = _truthy,
                     .marshal = _integer_marshal,
                     .map_to_json = _integer_map_to_json,
+                    .repr = _repr,
                    );
 
 FILTERX_DEFINE_TYPE(double, FILTERX_TYPE_NAME(object),
                     .truthy = _truthy,
                     .marshal = _double_marshal,
                     .map_to_json = _double_map_to_json,
+                    .repr = _repr,
                    );
 
 FILTERX_DEFINE_TYPE(boolean, FILTERX_TYPE_NAME(object),
                     .truthy = _truthy,
                     .marshal = _bool_marshal,
                     .map_to_json = _bool_map_to_json,
+                    .repr = _repr,
                    );

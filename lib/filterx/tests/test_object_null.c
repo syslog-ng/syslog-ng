@@ -24,6 +24,7 @@
 #include "filterx/object-null.h"
 #include "apphook.h"
 #include "filterx-lib.h"
+#include "scratch-buffers.h"
 
 static void
 assert_object_json_equals(FilterXObject *obj, const gchar *expected_json_repr)
@@ -51,6 +52,14 @@ Test(filterx_null, test_filterx_object_null_maps_to_the_right_json_value)
   filterx_object_unref(fobj);
 }
 
+Test(filterx_null, test_filterx_object_null_repr)
+{
+  FilterXObject *fobj = filterx_null_new();
+  GString *repr = scratch_buffers_alloc();
+  cr_assert(filterx_object_repr(fobj, repr));
+  cr_assert_str_eq("null", repr->str);
+}
+
 static void
 setup(void)
 {
@@ -60,6 +69,7 @@ setup(void)
 static void
 teardown(void)
 {
+  scratch_buffers_explicit_gc();
   app_shutdown();
 }
 

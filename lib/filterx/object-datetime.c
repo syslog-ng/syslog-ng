@@ -92,12 +92,6 @@ filterx_datetime_new(const UnixTime *ut)
   return &self->super;
 }
 
-FILTERX_DEFINE_TYPE(datetime, FILTERX_TYPE_NAME(object),
-                    .truthy = _truthy,
-                    .map_to_json = _map_to_json,
-                    .marshal = _marshal,
-                   );
-
 UnixTime
 filterx_datetime_get_value(FilterXObject *s)
 {
@@ -105,3 +99,22 @@ filterx_datetime_get_value(FilterXObject *s)
 
   return self->ut;
 }
+static gboolean
+_repr(FilterXObject *s, GString *repr)
+{
+  UnixTime ut = filterx_datetime_get_value(s);
+
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  convert_unix_time_to_wall_clock_time(&ut, &wct);
+
+  append_format_wall_clock_time(&wct, repr, TS_FMT_ISO, 3);
+
+  return TRUE;
+}
+
+FILTERX_DEFINE_TYPE(datetime, FILTERX_TYPE_NAME(object),
+                    .truthy = _truthy,
+                    .map_to_json = _map_to_json,
+                    .marshal = _marshal,
+                    .repr = _repr,
+                   );

@@ -23,6 +23,8 @@
 #include "object-string.h"
 #include "str-utils.h"
 #include "scratch-buffers.h"
+#include "utf8utils.h"
+#include "str-format.h"
 
 typedef struct _FilterXString
 {
@@ -100,6 +102,14 @@ _map_to_json(FilterXObject *s, struct json_object **object)
   return TRUE;
 }
 
+static gboolean
+_string_repr(FilterXObject *s, GString *repr)
+{
+  FilterXString *self = (FilterXString *) s;
+  repr = g_string_append_len(repr, self->str, self->str_len);
+  return TRUE;
+}
+
 FilterXObject *
 filterx_string_new(const gchar *str, gssize str_len)
 {
@@ -158,6 +168,18 @@ _bytes_marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
   return TRUE;
 }
 
+static gboolean
+_bytes_repr(FilterXObject *s, GString *repr)
+{
+  FilterXString *self = (FilterXString *) s;
+
+  gsize target_len = self->str_len * 2;
+  gsize repr_len = repr->len;
+  g_string_set_size(repr, target_len + repr_len);
+  format_hex_string_with_delimiter(self->str, self->str_len, repr->str + repr_len, target_len, 0);
+  return TRUE;
+}
+
 FilterXObject *
 filterx_bytes_new(const gchar *mem, gssize mem_len)
 {
@@ -180,16 +202,19 @@ FILTERX_DEFINE_TYPE(string, FILTERX_TYPE_NAME(object),
                     .marshal = _marshal,
                     .map_to_json = _map_to_json,
                     .truthy = _truthy,
+                    .repr = _string_repr,
                    );
 
 FILTERX_DEFINE_TYPE(bytes, FILTERX_TYPE_NAME(object),
                     .marshal = _bytes_marshal,
                     .map_to_json = _bytes_map_to_json,
                     .truthy = _truthy,
+                    .repr = _bytes_repr,
                    );
 
 FILTERX_DEFINE_TYPE(protobuf, FILTERX_TYPE_NAME(object),
                     .marshal = _bytes_marshal,
                     .map_to_json = _bytes_map_to_json,
                     .truthy = _truthy,
+                    .repr = _bytes_repr,
                    );
