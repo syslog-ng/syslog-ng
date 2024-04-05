@@ -21,6 +21,42 @@ jobs:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v3
 
+      - name: Set xcode version
+        if: matrix.version == 14
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.2.app
+
+      - name: Hack around SDK version
+              # FIXME: (Temporary?!) gcc/macOS SDK/autotools issue workaround
+              #
+              #   __has_extension cannot be compiled
+              #
+              # This is a triple issue
+              #
+              # - gcc version lower than 14 doe snot know __has_extension (https://github.com/orgs/Homebrew/discussions/5216)
+              # - xcode 15.3 with macOS SDK 14.4 and older is uses __has_extension
+              # - autotools ignores the xcode-select -s selected SDK, and
+              #     - wants to use the command line version in some cases
+              #     - the command line version is using /Library/Developer/CommandLineTools/SDKs/MacOSX14.sdk/ that
+              #         - is a symlink to MacOSX14.4.sdk (that is belonging to xcode 15.3), and
+              #         - 14.4.sdk definitly will not be compiled gcc version < 14 now
+              #
+              # The goal was here not adding a new, hopefully temporally syslog-ng build modification/workaround in the source
+              # Possible solutions I could find so far
+              #   1. trivial solution could be to define __has_extension to do nothing, like -D__has_extension(x)=0, but it had several issues using utotools again, see bellow in set ENV step
+              #   2. hacking around the SDK usage, to force use an earlier SDK than 14.4 (the one that really belongs to the given xcode version)
+              #
+              # Stayed with the 2nd one, here bellow
+              #
+        if: matrix.version == 14 && matrix.cc == 'gcc'
+        run: |
+          ls -Al /Library/Developer/CommandLineTools/SDKs/
+          sudo rm -f /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+          sudo rm -f /Library/Developer/CommandLineTools/SDKs/MacOSX14.sdk
+          sudo ln -s /Applications/Xcode_15.2.app//Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+          sudo ln -s /Applications/Xcode_15.2.app//Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Library/Developer/CommandLineTools/SDKs/MacOSX14.sdk
+          ls -Al /Library/Developer/CommandLineTools/SDKs/
+
       - name: Unlinking preinstalled Python (workaround)
               # The python@3 brew package has to be installed and linked system-wide (it's a dependency of glib and syslog-ng)
               # The macos-latest GitHub runner has Python preinstalled as a pkg, this prevents linking the python@3
@@ -40,11 +76,20 @@ jobs:
 
           HOMEBREW_PREFIX="$(brew --prefix)"
           PYTHONUSERBASE="${HOME}/python_packages"
-          PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@3/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          CFLAGS="-I${HOMEBREW_PREFIX}/include/"
-          LDFLAGS="-L${HOMEBREW_PREFIX}/lib"
           CC="${{ matrix.cc }}"
           CXX=`[ $CC = gcc ] && echo g++ || echo clang++`
+          PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@3/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${HOMEBREW_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}"
+          CFLAGS="-I${HOMEBREW_PREFIX}/include/"
+
+          # FIXME: This sould work as well as a workaround for the above mentioned issue, but is not help either actually, as autoools cannot handle this CFLAGS construct, none of the tried form has worked
+          #   - escaped versions fail immediately at configure compiler probing phase
+          #   - none escaped version failes at compile time, as () must be escaped
+          #
+          #if [ "$CC" = "gcc" ] && [ "$(arch)" = "arm64" ]; then
+          #  CFLAGS="${CFLAGS} -D__has_extension\(x\)=0" # -D\"__has_extension(x)=0\"   -D__has_extension(x)=0
+          #fi
+
+          LDFLAGS="-L${HOMEBREW_PREFIX}/lib"
           THREADS="$(sysctl -n hw.physicalcpu)"
           CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
@@ -75,14 +120,17 @@ jobs:
             -DENABLE_MQTT=OFF
             -DENABLE_PACCT=OFF
           "
+          PATH="${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/sbin:${PYTHONUSERBASE}/bin:${PATH}"
 
-          gh_export HOMEBREW_PREFIX PYTHONUSERBASE CC CXX PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS
-          gh_path "${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${PYTHONUSERBASE}/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${PATH}"
+          gh_export HOMEBREW_PREFIX PYTHONUSERBASE CC CXX PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS PATH
+          gh_path "${PATH}"
 
           ln -s "${HOMEBREW_PREFIX}/bin/gcc-11" "${HOMEBREW_PREFIX}/bin/gcc"
           ln -s "${HOMEBREW_PREFIX}/bin/g++-11" "${HOMEBREW_PREFIX}/bin/g++"
 
           echo "ARCH: " $(arch)
+          echo "xcode:" $(xcode-select -p)
+          env | sort
 
       - name: autogen.sh
         if: matrix.build-tool == 'autotools'
