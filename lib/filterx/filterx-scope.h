@@ -26,12 +26,33 @@
 #include "filterx-object.h"
 #include "logmsg/logmsg.h"
 
+typedef struct _FilterXVariable FilterXVariable;
+
+FilterXObject *filterx_variable_get_value(FilterXVariable *v);
+void filterx_variable_set_value(FilterXVariable *v, FilterXObject *new_value);
+
+/*
+ * FilterXScope represents variables in a filterx scope.
+ *
+ * Variables are either tied to a LogMessage (when we are caching
+ * demarshalled values in the scope) or are values that are "floating", e.g.
+ * not yet tied to any values in the underlying LogMessage.
+ *
+ * Floating values are "temp" values that are not synced to the LogMessage
+ * upon the exit from the scope.
+ *
+ */
 typedef struct _FilterXScope FilterXScope;
 
 void filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg);
-FilterXObject *filterx_scope_lookup_message_ref(FilterXScope *self, NVHandle handle);
-void filterx_scope_register_message_ref(FilterXScope *self, NVHandle handle, FilterXObject *value);
+
+FilterXVariable *filterx_scope_lookup_variable(FilterXScope *self, NVHandle handle);
+FilterXVariable *filterx_scope_register_variable(FilterXScope *self,
+                                                 NVHandle handle, gboolean floating,
+                                                 FilterXObject *initial_value);
+
 void filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object);
+
 
 /* copy on write */
 void filterx_scope_write_protect(FilterXScope *self);

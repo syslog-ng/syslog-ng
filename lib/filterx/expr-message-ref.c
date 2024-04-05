@@ -37,11 +37,11 @@ _eval(FilterXExpr *s)
   FilterXMessageRefExpr *self = (FilterXMessageRefExpr *) s;
   FilterXEvalContext *context = filterx_eval_get_context();
   LogMessage *msg = context->msgs[0];
-  FilterXObject *msg_ref;
+  FilterXVariable *variable;
 
-  msg_ref = filterx_scope_lookup_message_ref(context->scope, self->handle);
-  if (msg_ref)
-    return msg_ref;
+  variable = filterx_scope_lookup_variable(context->scope, self->handle);
+  if (variable)
+    return filterx_variable_get_value(variable);
 
   gssize value_len;
   LogMessageValueType t;
@@ -49,8 +49,8 @@ _eval(FilterXExpr *s)
   if (!value)
     return NULL;
 
-  msg_ref = filterx_message_value_new_borrowed(value, value_len, t);
-  filterx_scope_register_message_ref(context->scope, self->handle, msg_ref);
+  FilterXObject *msg_ref = filterx_message_value_new_borrowed(value, value_len, t);
+  variable = filterx_scope_register_variable(context->scope, self->handle, FALSE, msg_ref);
   return msg_ref;
 }
 
@@ -58,9 +58,11 @@ static void
 _update_repr(FilterXExpr *s, FilterXObject *new_repr)
 {
   FilterXMessageRefExpr *self = (FilterXMessageRefExpr *) s;
-  FilterXEvalContext *context = filterx_eval_get_context();
+  FilterXScope *scope = filterx_eval_get_scope();
+  FilterXVariable *variable = filterx_scope_lookup_variable(scope, self->handle);
 
-  filterx_scope_register_message_ref(context->scope, self->handle, new_repr);
+  g_assert(variable != NULL);
+  filterx_variable_set_value(variable, new_repr);
 }
 
 static gboolean
@@ -68,12 +70,20 @@ _assign(FilterXExpr *s, FilterXObject *new_value)
 {
   FilterXMessageRefExpr *self = (FilterXMessageRefExpr *) s;
   FilterXScope *scope = filterx_eval_get_scope();
+  FilterXVariable *variable = filterx_scope_lookup_variable(scope, self->handle);
+
+  if (!variable)
+    {
+      /* NOTE: we pass NULL as initial_value to make sure the new variable
+       * is considered changed due to the assignment */
+      variable = filterx_scope_register_variable(scope, self->handle, FALSE, NULL);
+    }
 
   /* this only clones mutable objects */
   new_value = filterx_object_clone(new_value);
+  filterx_variable_set_value(variable, new_value);
 
-  filterx_scope_register_message_ref(scope, self->handle, new_value);
-  new_value->assigned = TRUE;
+
 
   filterx_object_unref(new_value);
   return TRUE;

@@ -23,33 +23,87 @@
 #include "filterx/filterx-scope.h"
 #include "scratch-buffers.h"
 
+struct _FilterXVariable
+{
+  NVHandle handle;
+  /*
+   * floating -- Indicates that this variable is not tied to the log
+   *             message, it is a floating variable
+   * assigned -- Indicates that the variable was assigned to a new value
+   */
+  guint32 floating:1,
+          assigned:1;
+  FilterXObject *value;
+};
+
+FilterXObject *
+filterx_variable_get_value(FilterXVariable *v)
+{
+  return filterx_object_ref(v->value);
+}
+
+void
+filterx_variable_set_value(FilterXVariable *v, FilterXObject *new_value)
+{
+  filterx_object_unref(v->value);
+  v->value = filterx_object_ref(new_value);
+  v->assigned = TRUE;
+}
+
+static void
+_variable_free(FilterXVariable *v)
+{
+  filterx_object_unref(v->value);
+}
+
 struct _FilterXScope
 {
   GAtomicCounter ref_cnt;
-  GHashTable *value_cache;
+  GArray *variables;
+  GHashTable *by_handle;
   GPtrArray *weak_refs;
   gboolean write_protected;
 };
 
-FilterXObject *
-filterx_scope_lookup_message_ref(FilterXScope *self, NVHandle handle)
+static gboolean
+_lookup_variable(FilterXScope *self, NVHandle handle, FilterXVariable **v)
 {
-  FilterXObject *object = NULL;
+  gpointer _value = NULL;
 
-  if (g_hash_table_lookup_extended(self->value_cache, GINT_TO_POINTER(handle), NULL, (gpointer *) &object))
+  if (g_hash_table_lookup_extended(self->by_handle, GINT_TO_POINTER(handle), NULL, &_value))
     {
-      filterx_object_ref(object);
+      *v = (FilterXVariable *) _value;
+      return *v != NULL;
     }
-  return object;
+  return FALSE;
 }
 
-void
-filterx_scope_register_message_ref(FilterXScope *self, NVHandle handle, FilterXObject *value)
+FilterXVariable *
+filterx_scope_lookup_variable(FilterXScope *self, NVHandle handle)
 {
-  g_assert(self->write_protected == FALSE);
+  FilterXVariable *v;
 
-  value->shadow = TRUE;
-  g_hash_table_insert(self->value_cache, GINT_TO_POINTER(handle), filterx_object_ref(value));
+  if (_lookup_variable(self, handle, &v))
+    return v;
+  return NULL;
+}
+
+FilterXVariable *
+filterx_scope_register_variable(FilterXScope *self,
+                                NVHandle handle, gboolean floating,
+                                FilterXObject *initial_value)
+{
+  FilterXVariable v, *v_slot;
+
+  v.handle = handle;
+  v.assigned = FALSE;
+  v.floating = floating;
+  v.value = filterx_object_ref(initial_value);
+  v_slot = &g_array_index(self->variables, FilterXVariable, self->variables->len);
+  g_array_append_val(self->variables, v);
+
+  g_hash_table_insert(self->by_handle, GINT_TO_POINTER(handle), v_slot);
+  return v_slot;
 }
 
 void
@@ -65,24 +119,30 @@ void
 filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg)
 {
   GString *buffer = scratch_buffers_alloc();
-  GHashTableIter iter;
-  gpointer _key, _value;
 
-  g_hash_table_iter_init(&iter, self->value_cache);
-  while (g_hash_table_iter_next(&iter, &_key, &_value))
+  for (gint i = 0; i < self->variables->len; i++)
     {
-      NVHandle handle = GPOINTER_TO_INT(_key);
-      FilterXObject *value = (FilterXObject *) _value;
+      FilterXVariable *v = &g_array_index(self->variables, FilterXVariable, i);
 
-      if (!(value->modified_in_place || value->assigned))
+      /* we don't need to sync the value if:
+       *
+       *  1) this is a floating variable; OR
+       *
+       *  2) the value was extracted from the message but was not changed in
+       *     place (for mutable objects), and was not assigned to
+       *
+       */
+      if (v->floating ||
+          !(v->assigned || v->value->modified_in_place))
         continue;
       LogMessageValueType t;
       g_string_truncate(buffer, 0);
-      if (!filterx_object_marshal(value, buffer, &t))
+      if (!filterx_object_marshal(v->value, buffer, &t))
         g_assert_not_reached();
-      log_msg_set_value_with_type(msg, handle, buffer->str, buffer->len, t);
+      log_msg_set_value_with_type(msg, v->handle, buffer->str, buffer->len, t);
+      v->value->modified_in_place = FALSE;
+      v->assigned = FALSE;
     }
-
 }
 
 FilterXScope *
@@ -91,7 +151,9 @@ filterx_scope_new(void)
   FilterXScope *self = g_new0(FilterXScope, 1);
 
   g_atomic_counter_set(&self->ref_cnt, 1);
-  self->value_cache = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, (GDestroyNotify) filterx_object_unref);
+  self->variables = g_array_sized_new(FALSE, TRUE, sizeof(FilterXVariable), 16);
+  g_array_set_clear_func(self->variables, (GDestroyNotify) _variable_free);
+  self->by_handle = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, NULL);
   self->weak_refs = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
   return self;
 }
@@ -101,18 +163,14 @@ filterx_scope_clone(FilterXScope *other)
 {
   FilterXScope *self = filterx_scope_new();
 
-  GHashTableIter iter;
-  gpointer _key, _value;
-
-  g_hash_table_iter_init(&iter, self->value_cache);
-  while (g_hash_table_iter_next(&iter, &_key, &_value))
+  for (gint i = 0; i < other->variables->len; i++)
     {
-      NVHandle handle = GPOINTER_TO_INT(_key);
-      FilterXObject *value = (FilterXObject *) _value;
+      FilterXVariable *v = &g_array_index(other->variables, FilterXVariable, i);
+      g_array_append_val(self->variables, *v);
+      FilterXVariable *v_clone = &g_array_index(self->variables, FilterXVariable, i);
 
-      /* NOTE: clone will not actually clone inmutable objects, in those
-       * cases we just take a reference */
-      g_hash_table_insert(self->value_cache, GINT_TO_POINTER(handle), filterx_object_clone(value));
+      v_clone->value = filterx_object_clone(v->value);
+      g_hash_table_insert(self->by_handle, GINT_TO_POINTER(v->handle), v_clone);
     }
 
   /* NOTE: we don't clone weak references, those only relate to mutable
@@ -143,7 +201,8 @@ filterx_scope_make_writable(FilterXScope **pself)
 static void
 _free(FilterXScope *self)
 {
-  g_hash_table_unref(self->value_cache);
+  g_array_free(self->variables, TRUE);
+  g_hash_table_unref(self->by_handle);
   g_ptr_array_free(self->weak_refs, TRUE);
   g_free(self);
 }
