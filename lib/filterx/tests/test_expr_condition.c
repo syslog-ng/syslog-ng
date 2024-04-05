@@ -121,7 +121,7 @@ deinit_test(const TestEnv *env)
 {
   cr_assert(env != NULL);
   log_msg_unref(env->msg);
-  filterx_scope_free(env->scope);
+  filterx_scope_unref(env->scope);
   filterx_eval_set_context(NULL);
 }
 

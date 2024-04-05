@@ -25,6 +25,7 @@
 
 struct _FilterXScope
 {
+  GAtomicCounter ref_cnt;
   GHashTable *value_cache;
   GPtrArray *weak_refs;
 };
@@ -84,15 +85,31 @@ filterx_scope_new(void)
 {
   FilterXScope *self = g_new0(FilterXScope, 1);
 
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->value_cache = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, (GDestroyNotify) filterx_object_unref);
   self->weak_refs = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
   return self;
 }
 
-void
-filterx_scope_free(FilterXScope *self)
+static void
+_free(FilterXScope *self)
 {
   g_hash_table_unref(self->value_cache);
   g_ptr_array_free(self->weak_refs, TRUE);
   g_free(self);
+}
+
+FilterXScope *
+filterx_scope_ref(FilterXScope *self)
+{
+  if (self)
+    g_atomic_counter_inc(&self->ref_cnt);
+  return self;
+}
+
+void
+filterx_scope_unref(FilterXScope *self)
+{
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    _free(self);
 }

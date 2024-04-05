@@ -34,6 +34,7 @@ void filterx_scope_register_message_ref(FilterXScope *self, NVHandle handle, Fil
 void filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object);
 
 FilterXScope *filterx_scope_new(void);
-void filterx_scope_free(FilterXScope *self);
+FilterXScope *filterx_scope_ref(FilterXScope *self);
+void filterx_scope_unref(FilterXScope *self);
 
 #endif
