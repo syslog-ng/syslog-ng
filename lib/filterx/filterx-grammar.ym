@@ -106,9 +106,9 @@ construct_template_expr(LogTemplate *template)
 %type <ptr> list_values
 %type <ptr> list_value
 %type <num> boolean
-%type <ptr> fxcondition
-%type <ptr> fxif
-%type <ptr> fxcodeblock
+%type <ptr> conditional
+%type <ptr> if
+%type <ptr> codeblock
 %type <ptr> tenary
 
 %%
@@ -124,7 +124,7 @@ stmts
 
 stmt
 	: expr ';'				{ $$ = $1; }
-	| fxcondition ';'			{ $$ = $1; }
+	| conditional ';'			{ $$ = $1; }
 	;
 
 expr
@@ -267,32 +267,36 @@ list_value
 	| list_expr_inner                       { $$ = $1; }
 	;
 
-fxcondition
-	: fxif					{ $$ = $1; }
-	| fxif KW_ELSE fxcodeblock		{
-							$$ = filterx_conditional_add_false_branch((FilterXConditional*)$1, (FilterXConditional*)filterx_conditional_new_codeblock($3));
-						}
+conditional
+	: if					{ $$ = $1; }
+	| if KW_ELSE codeblock
+	  {
+	    $$ = filterx_conditional_add_false_branch((FilterXConditional*)$1, (FilterXConditional*)filterx_conditional_new_codeblock($3));
+	  }
 	;
 
-fxif
-	: KW_IF '(' expr ')' fxcodeblock	{
-							$$ = filterx_conditional_new_conditional_codeblock($3, $5);
-						}
-	| fxif KW_ELIF '(' expr ')' fxcodeblock {
-							$$ = filterx_conditional_add_false_branch((FilterXConditional*)$1, (FilterXConditional*)filterx_conditional_new_conditional_codeblock($4, $6));
-						}
+if
+	: KW_IF '(' expr ')' codeblock
+	  {
+	    $$ = filterx_conditional_new_conditional_codeblock($3, $5);
+	  }
+	| if KW_ELIF '(' expr ')' codeblock
+	  {
+	    $$ = filterx_conditional_add_false_branch((FilterXConditional*)$1, (FilterXConditional*)filterx_conditional_new_conditional_codeblock($4, $6));
+	  }
 	;
 
 
-fxcodeblock
+codeblock
 	: '{' stmts '}'				{ $$ = $2; }
 	;
 
 tenary
-	: '(' expr '?' expr ':' expr ')'		{
-							FilterXConditional *cond = (FilterXConditional*)filterx_conditional_new_conditional_codeblock($2, g_list_append(NULL, $4));
-							$$ = filterx_conditional_add_false_branch(cond, (FilterXConditional*)filterx_conditional_new_codeblock(g_list_append(NULL, $6)));
-						}
+	: '(' expr '?' expr ':' expr ')'
+	  {
+	    FilterXConditional *cond = (FilterXConditional*)filterx_conditional_new_conditional_codeblock($2, g_list_append(NULL, $4));
+	    $$ = filterx_conditional_add_false_branch(cond, (FilterXConditional*)filterx_conditional_new_codeblock(g_list_append(NULL, $6)));
+	  }
 	;
 
 /* INCLUDE_RULES */
