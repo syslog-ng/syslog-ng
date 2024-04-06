@@ -75,6 +75,10 @@ static inline FilterXObject *
 filterx_expr_eval_typed(FilterXExpr *self)
 {
   FilterXObject *result = filterx_expr_eval(self);
+
+  if (!result)
+    return NULL;
+
   FilterXObject *unmarshalled = filterx_object_unmarshal(result);
 
   if (!unmarshalled)
