@@ -50,6 +50,18 @@ filterx_variable_set_value(FilterXVariable *v, FilterXObject *new_value)
   v->assigned = TRUE;
 }
 
+void
+filterx_variable_unset_value(FilterXVariable *v)
+{
+  filterx_variable_set_value(v, NULL);
+}
+
+gboolean
+filterx_variable_is_set(FilterXVariable *v)
+{
+  return v->value != NULL;
+}
+
 static void
 _variable_free(FilterXVariable *v)
 {
@@ -133,6 +145,7 @@ filterx_scope_register_variable(FilterXScope *self,
   return &g_array_index(self->variables, FilterXVariable, v_index);
 }
 
+
 void
 filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object)
 {
@@ -156,19 +169,28 @@ filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg)
        *  1) this is a floating variable; OR
        *
        *  2) the value was extracted from the message but was not changed in
-       *     place (for mutable objects), and was not assigned to
+       *     place (for mutable objects), and was not assigned to.
        *
        */
-      if (v->floating ||
-          !(v->assigned || v->value->modified_in_place))
+      if (v->floating)
         continue;
-      LogMessageValueType t;
-      g_string_truncate(buffer, 0);
-      if (!filterx_object_marshal(v->value, buffer, &t))
-        g_assert_not_reached();
-      log_msg_set_value_with_type(msg, v->handle, buffer->str, buffer->len, t);
-      v->value->modified_in_place = FALSE;
-      v->assigned = FALSE;
+
+      if (v->value == NULL)
+        {
+          /* we need to unset */
+          log_msg_unset_value(msg, v->handle);
+          v->assigned = FALSE;
+        }
+      else if (v->assigned || v->value->modified_in_place)
+        {
+          LogMessageValueType t;
+          g_string_truncate(buffer, 0);
+          if (!filterx_object_marshal(v->value, buffer, &t))
+            g_assert_not_reached();
+          log_msg_set_value_with_type(msg, v->handle, buffer->str, buffer->len, t);
+          v->value->modified_in_place = FALSE;
+          v->assigned = FALSE;
+        }
     }
 }
 
