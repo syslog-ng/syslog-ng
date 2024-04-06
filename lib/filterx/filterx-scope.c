@@ -60,21 +60,40 @@ struct _FilterXScope
 {
   GAtomicCounter ref_cnt;
   GArray *variables;
-  GHashTable *by_handle;
   GPtrArray *weak_refs;
   gboolean write_protected;
 };
 
 static gboolean
-_lookup_variable(FilterXScope *self, NVHandle handle, FilterXVariable **v)
+_lookup_variable(FilterXScope *self, NVHandle handle, FilterXVariable **v_slot)
 {
-  gpointer _value = NULL;
+  gint l, h, m;
 
-  if (g_hash_table_lookup_extended(self->by_handle, GINT_TO_POINTER(handle), NULL, &_value))
+  /* open-coded binary search */
+  l = 0;
+  h = self->variables->len - 1;
+  while (l <= h)
     {
-      *v = (FilterXVariable *) _value;
-      return *v != NULL;
+      m = (l + h) >> 1;
+
+      FilterXVariable *m_elem = &g_array_index(self->variables, FilterXVariable, m);
+
+      NVHandle mv = m_elem->handle;
+      if (mv == handle)
+        {
+          *v_slot = m_elem;
+          return TRUE;
+        }
+      else if (mv > handle)
+        {
+          h = m - 1;
+        }
+      else
+        {
+          l = m + 1;
+        }
     }
+  *v_slot = &g_array_index(self->variables, FilterXVariable, l);
   return FALSE;
 }
 
@@ -95,15 +114,23 @@ filterx_scope_register_variable(FilterXScope *self,
 {
   FilterXVariable v, *v_slot;
 
+  if (_lookup_variable(self, handle, &v_slot))
+    {
+      /* already present */
+      return v_slot;
+    }
+  /* turn v_slot into an index */
+  gsize v_index = ((guint8 *) v_slot - (guint8 *) self->variables->data) / sizeof(FilterXVariable);
+  g_assert(v_index <= self->variables->len);
+  g_assert(&g_array_index(self->variables, FilterXVariable, v_index) == v_slot);
+
   v.handle = handle;
   v.assigned = FALSE;
   v.floating = floating;
   v.value = filterx_object_ref(initial_value);
-  v_slot = &g_array_index(self->variables, FilterXVariable, self->variables->len);
-  g_array_append_val(self->variables, v);
+  g_array_insert_val(self->variables, v_index, v);
 
-  g_hash_table_insert(self->by_handle, GINT_TO_POINTER(handle), v_slot);
-  return v_slot;
+  return &g_array_index(self->variables, FilterXVariable, v_index);
 }
 
 void
@@ -153,7 +180,6 @@ filterx_scope_new(void)
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->variables = g_array_sized_new(FALSE, TRUE, sizeof(FilterXVariable), 16);
   g_array_set_clear_func(self->variables, (GDestroyNotify) _variable_free);
-  self->by_handle = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, NULL);
   self->weak_refs = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
   return self;
 }
@@ -170,7 +196,6 @@ filterx_scope_clone(FilterXScope *other)
       FilterXVariable *v_clone = &g_array_index(self->variables, FilterXVariable, i);
 
       v_clone->value = filterx_object_clone(v->value);
-      g_hash_table_insert(self->by_handle, GINT_TO_POINTER(v->handle), v_clone);
     }
 
   /* NOTE: we don't clone weak references, those only relate to mutable
@@ -202,7 +227,6 @@ static void
 _free(FilterXScope *self)
 {
   g_array_free(self->variables, TRUE);
-  g_hash_table_unref(self->by_handle);
   g_ptr_array_free(self->weak_refs, TRUE);
   g_free(self);
 }
