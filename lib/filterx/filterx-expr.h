@@ -26,6 +26,7 @@
 
 #include "filterx-object.h"
 #include "filterx-eval.h"
+#include "cfg-lexer.h"
 
 typedef struct _FilterXExpr FilterXExpr;
 
@@ -44,6 +45,7 @@ struct _FilterXExpr
   gboolean (*assign)(FilterXExpr *self, FilterXObject *new_value);
 
   void (*free_fn)(FilterXExpr *self);
+  CFG_LTYPE lloc;
 };
 
 /*
@@ -105,6 +107,7 @@ filterx_expr_assign(FilterXExpr *self, FilterXObject *new_value)
   return FALSE;
 }
 
+void filterx_expr_set_location(FilterXExpr *self, CfgLexer *lexer, CFG_LTYPE *lloc);
 void filterx_expr_init_instance(FilterXExpr *self);
 FilterXExpr *filterx_expr_new(void);
 FilterXExpr *filterx_expr_ref(FilterXExpr *self);

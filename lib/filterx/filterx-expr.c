@@ -25,6 +25,12 @@
 #include "messages.h"
 
 void
+filterx_expr_set_location(FilterXExpr *self, CfgLexer *lexer, CFG_LTYPE *lloc)
+{
+  self->lloc = *lloc;
+}
+
+void
 filterx_expr_free_method(FilterXExpr *self)
 {
   ;
