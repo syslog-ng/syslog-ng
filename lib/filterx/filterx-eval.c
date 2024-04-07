@@ -59,23 +59,38 @@ _evaluate_statement(FilterXExpr *expr)
   FilterXObject *res = filterx_expr_eval(expr);
   gboolean success = FALSE;
 
-  if (!res)
-    {
-      /* FIXME: propagate error message */
-      return FALSE;
-    }
-  GString *buf = scratch_buffers_alloc();
-  LogMessageValueType t;
+  if (res)
+    success = filterx_object_truthy(res);
 
-  if (!filterx_object_marshal(res, buf, &t))
-    goto exit;
-  msg_debug("FILTERX",
-            evt_tag_printf("expr", "%p", expr),
-            evt_tag_printf("object", "%p", res),
-            evt_tag_str("value", buf->str),
-            evt_tag_str("type", log_msg_value_type_to_str(t)));
-  success = filterx_object_truthy(res);
-exit:
+  if (!success || trace_flag)
+    {
+      GString *buf = scratch_buffers_alloc();
+      LogMessageValueType t;
+
+      if (!filterx_object_marshal(res, buf, &t))
+        {
+          g_assert_not_reached();
+        }
+
+      if (!success)
+        msg_debug("Filterx expression failed",
+                  evt_tag_printf("expr", "%s:%d:%d| %s",
+                                 expr->lloc.name, expr->lloc.first_line, expr->lloc.first_column,
+                                 expr->expr_text ? : "n/a"),
+                  evt_tag_str("status", res == NULL ? "error" : "falsy"),
+                  evt_tag_str("value", buf->str),
+                  evt_tag_str("type", log_msg_value_type_to_str(t)));
+      else
+        msg_trace("FILTERX",
+                  evt_tag_printf("expr", "%s:%d:%d| %s",
+                                 expr->lloc.name, expr->lloc.first_line, expr->lloc.first_column,
+                                 expr->expr_text ? : "n/a"),
+                  evt_tag_str("status", res == NULL ? "error" : (success ? "truthy" : "falsy")),
+                  evt_tag_str("value", buf->str),
+                  evt_tag_str("type", log_msg_value_type_to_str(t)),
+                  evt_tag_printf("result", "%p", res));
+    }
+
   filterx_object_unref(res);
   return success;
 }
