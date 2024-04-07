@@ -44,6 +44,11 @@ struct _FilterXExpr
   /* assign a new value to this expr */
   gboolean (*assign)(FilterXExpr *self, FilterXObject *new_value);
 
+  /* is the expression set? */
+  gboolean (*isset)(FilterXExpr *self);
+  /* unset the expression */
+  gboolean (*unset)(FilterXExpr *self);
+
   void (*free_fn)(FilterXExpr *self);
   CFG_LTYPE lloc;
   gchar *expr_text;
@@ -109,6 +114,22 @@ filterx_expr_assign(FilterXExpr *self, FilterXObject *new_value)
 {
   if (self->assign)
     return self->assign(self, new_value);
+  return FALSE;
+}
+
+static inline gboolean
+filterx_expr_isset(FilterXExpr *self)
+{
+  if (self->isset)
+    return self->isset(self);
+  return FALSE;
+}
+
+static inline gboolean
+filterx_expr_unset(FilterXExpr *self)
+{
+  if (self->unset)
+    return self->unset(self);
   return FALSE;
 }
 
