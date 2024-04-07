@@ -28,12 +28,18 @@ void
 filterx_expr_set_location(FilterXExpr *self, CfgLexer *lexer, CFG_LTYPE *lloc)
 {
   self->lloc = *lloc;
+  if (debug_flag)
+    {
+      GString *res = g_string_sized_new(lloc->last_column - lloc->first_column);
+      cfg_parser_extract_source_line(lexer, lloc, res);
+      self->expr_text = g_string_free(res, FALSE);
+    }
 }
 
 void
 filterx_expr_free_method(FilterXExpr *self)
 {
-  ;
+  g_free(self->expr_text);
 }
 
 void

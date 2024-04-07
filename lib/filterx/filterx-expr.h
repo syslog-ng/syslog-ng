@@ -46,6 +46,7 @@ struct _FilterXExpr
 
   void (*free_fn)(FilterXExpr *self);
   CFG_LTYPE lloc;
+  gchar *expr_text;
 };
 
 /*
