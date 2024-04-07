@@ -107,6 +107,8 @@ extern CfgParser main_parser;
 void report_syntax_error(CfgLexer *lexer, const CFG_LTYPE *yylloc, const char *what, const char *msg,
                          gboolean in_main_grammar);
 
+gboolean cfg_parser_extract_source_line(CfgLexer *lexer, const CFG_LTYPE *yylloc, GString *result);
+
 CFG_PARSER_DECLARE_LEXER_BINDING(main_, MAIN_, gpointer *)
 
 #endif

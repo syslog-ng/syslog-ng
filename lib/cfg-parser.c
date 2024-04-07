@@ -416,6 +416,121 @@ report_syntax_error(CfgLexer *lexer, const CFG_LTYPE *yylloc, const char *what, 
 
 }
 
+static gboolean
+_extract_source_from_file_location(GString *result, const gchar *filename, const CFG_LTYPE *yylloc)
+{
+  FILE *f;
+  gint lineno = 0;
+  gint buflen = 65520;
+  gchar *line = g_malloc(buflen);
+
+  if (yylloc->first_column < 1 || yylloc->last_column < 1 ||
+      yylloc->first_column > buflen-1 || yylloc->last_column > buflen-1)
+    return FALSE;
+
+  f = fopen(filename, "r");
+  if (!f)
+    return FALSE;
+
+  while (fgets(line, buflen, f))
+    {
+      lineno++;
+      gint linelen = strlen(line);
+      if (line[linelen-1] == '\n')
+        {
+          line[linelen-1] = 0;
+          linelen--;
+        }
+
+      if (lineno > (gint) yylloc->last_line)
+        break;
+      else if (lineno < (gint) yylloc->first_line)
+        continue;
+      else if (lineno == yylloc->first_line)
+        {
+          if (yylloc->first_line == yylloc->last_line)
+            g_string_append_len(result, &line[MIN(linelen, yylloc->first_column-1)], yylloc->last_column - yylloc->first_column);
+          else
+            g_string_append(result, &line[MIN(linelen, yylloc->first_column-1)]);
+        }
+      else if (lineno < yylloc->last_line)
+        {
+          g_string_append_c(result, ' ');
+          g_string_append(result, line);
+        }
+      else if (lineno == yylloc->last_line)
+        {
+          g_string_append_c(result, ' ');
+          g_string_append_len(result, line, yylloc->last_column);
+        }
+    }
+  fclose(f);
+
+  /* NOTE: do we have the appropriate number of lines? */
+  if (lineno <= yylloc->first_line)
+    return FALSE;
+
+  g_free(line);
+  return TRUE;
+}
+
+static gboolean
+_extract_source_from_buffer_location(GString *result, const gchar *buffer_content, const CFG_LTYPE *yylloc)
+{
+  gchar **lines = g_strsplit(buffer_content, "\n", yylloc->last_line + 1);
+  gint num_lines = g_strv_length(lines);
+
+  if (num_lines <= yylloc->first_line)
+    goto exit;
+
+  for (gint lineno = yylloc->first_line; lineno <= yylloc->last_line; lineno++)
+    {
+      gchar *line = lines[lineno - 1];
+      gint linelen = strlen(line);
+
+      if (lineno == yylloc->first_line)
+        {
+          if (yylloc->first_line == yylloc->last_line)
+            g_string_append_len(result, &line[MIN(linelen, yylloc->first_column)], yylloc->last_column - yylloc->first_column);
+          else
+            g_string_append(result, &line[MIN(linelen, yylloc->first_column)]);
+        }
+      else if (lineno < yylloc->last_line)
+        {
+          g_string_append_c(result, ' ');
+          g_string_append(result, line);
+        }
+      else if (lineno == yylloc->last_line)
+        {
+          g_string_append_c(result, ' ');
+          g_string_append_len(result, line, yylloc->last_column);
+        }
+    }
+
+exit:
+  g_strfreev(lines);
+  return TRUE;
+}
+
+gboolean
+cfg_parser_extract_source_line(CfgLexer *lexer, const CFG_LTYPE *yylloc, GString *result)
+{
+  CfgIncludeLevel *level = &lexer->include_stack[lexer->include_depth];
+
+  g_string_truncate(result, 0);
+  if (level->include_type == CFGI_FILE)
+    return _extract_source_from_file_location(result, yylloc->name, yylloc);
+  else if (level->include_type == CFGI_BUFFER)
+    {
+      if (level->lloc_changed_by_at_line)
+        return _extract_source_from_file_location(result, yylloc->name, yylloc);
+      else
+        return _extract_source_from_buffer_location(result, level->buffer.original_content, yylloc);
+    }
+  else
+    g_assert_not_reached();
+}
+
 /* the debug flag for the main parser will be used for all parsers */
 extern int cfg_parser_debug;
 
