@@ -33,7 +33,12 @@ FilterXObject *filterx_scope_lookup_message_ref(FilterXScope *self, NVHandle han
 void filterx_scope_register_message_ref(FilterXScope *self, NVHandle handle, FilterXObject *value);
 void filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object);
 
+/* copy on write */
+void filterx_scope_write_protect(FilterXScope *self);
+FilterXScope *filterx_scope_make_writable(FilterXScope **pself);
+
 FilterXScope *filterx_scope_new(void);
-void filterx_scope_free(FilterXScope *self);
+FilterXScope *filterx_scope_ref(FilterXScope *self);
+void filterx_scope_unref(FilterXScope *self);
 
 #endif

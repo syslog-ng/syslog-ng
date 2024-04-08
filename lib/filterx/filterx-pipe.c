@@ -49,16 +49,28 @@ static void
 log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogFilterXPipe *self = (LogFilterXPipe *) s;
+  LogPathOptions local_path_options;
   gboolean res;
 
+  path_options = log_path_options_chain(&local_path_options, path_options);
   msg_trace(">>>>>> filterx rule evaluation begin",
             evt_tag_str("rule", self->name),
             log_pipe_location_tag(s),
             evt_tag_msg_reference(msg));
 
+  FilterXScope *scope = filterx_scope_ref(path_options->filterx_scope);
+  if (!scope)
+    local_path_options.filterx_scope = scope = filterx_scope_new();
+
+  filterx_scope_make_writable(&scope);
+
   NVTable *payload = nv_table_ref(msg->payload);
-  res = filterx_eval_exec_statements(self->stmts, &msg, path_options);
-  nv_table_unref(payload);
+  res = filterx_eval_exec_statements(scope, self->stmts, msg);
+  if (res)
+    {
+      log_msg_make_writable(&msg, path_options);
+      filterx_eval_sync_scope_and_message(scope, msg);
+    }
 
   msg_trace("<<<<<< filterx rule evaluation result",
             evt_tag_str("result", res ? "matched" : "unmatched"),
@@ -76,6 +88,9 @@ log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
         (*path_options->matched) = FALSE;
       log_msg_drop(msg, path_options, AT_PROCESSED);
     }
+
+  filterx_scope_unref(scope);
+  nv_table_unref(payload);
 }
 
 static LogPipe *

@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "logmsg/logmsg.h"
+#include "filterx/filterx-scope.h"
 #include "cfg.h"
 #include "atomic.h"
 #include "messages.h"
@@ -214,28 +215,59 @@ struct _LogPathOptions
   gboolean flow_control_requested;
 
   gboolean *matched;
-  const LogPathOptions *parent;
+  const LogPathOptions *lpo_parent_junction;
+  FilterXScope *filterx_scope;
 };
 
 #define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL, NULL }
 #define LOG_PATH_OPTIONS_INIT_NOACK { FALSE, FALSE, NULL, NULL }
 
-static inline void
-log_path_options_push_junction(LogPathOptions *local_path_options, gboolean *matched, const LogPathOptions *parent)
+/*
+ * Embed a step in our LogPathOptions chain.
+ */
+static inline LogPathOptions *
+log_path_options_chain(LogPathOptions *local_path_options, const LogPathOptions *lpo_previous_hop)
 {
-  *local_path_options = *parent;
-  local_path_options->matched = matched;
-  local_path_options->parent = parent;
+  *local_path_options = *lpo_previous_hop;
+  return local_path_options;
 }
 
+/* LogPathOptions are chained up at the start of a junction and teared down
+ * at the end (see log_path_options_pop_junction().
+ *
+ * The "matched" value is kept separate on the parent level and the junction
+ * level.  This way the junction can separately act on matching/non-matching
+ * messages and potentially propagate it to the parent (or not), see
+ * logmpx.c for details.
+ * */
+static inline void
+log_path_options_push_junction(LogPathOptions *local_path_options,
+                               gboolean *matched,
+                               const LogPathOptions *lpo_parent_junction)
+{
+  *local_path_options = *lpo_parent_junction;
+  local_path_options->matched = matched;
+  local_path_options->lpo_parent_junction = lpo_parent_junction;
+}
+
+/* Part of the junction related state needs to be "popped" once the
+ * conditional decision is concluded.  This happens in the `if (filter)`
+ * form, once the filter is evaluated, or at the end of the junction.  This
+ * basically resets the "matched" pointer to that of the parent junction.
+ */
 static inline void
 log_path_options_pop_conditional(LogPathOptions *local_path_options)
 {
-  if (local_path_options->parent)
-    local_path_options->matched = local_path_options->parent->matched;
+  if (local_path_options->lpo_parent_junction)
+    local_path_options->matched = local_path_options->lpo_parent_junction->matched;
 }
 
 /*
+ * Tear down the embedded junction related state from the LogPathOptions
+ * chain.  This implies log_path_options_pop_conditional() as well, which
+ * will do nothing if there was a conditional midpoint (e.g.  `if
+ * (filter)`).
+ *
  * NOTE: we need to be optional about ->parent being set, as synthetic
  * messages (e.g.  the likes emitted by db-parser/grouping-by() may arrive
  * at the end of a junction without actually crossing the beginning of the
@@ -248,8 +280,8 @@ log_path_options_pop_junction(LogPathOptions *local_path_options)
 {
   log_path_options_pop_conditional(local_path_options);
 
-  if (local_path_options->parent)
-    local_path_options->parent = local_path_options->parent->parent;
+  if (local_path_options->lpo_parent_junction)
+    local_path_options->lpo_parent_junction = local_path_options->lpo_parent_junction->lpo_parent_junction;
 }
 
 typedef struct _LogPipeOptions LogPipeOptions;
@@ -426,7 +458,7 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 
   if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT)))
     {
-      local_path_options = *path_options;
+      path_options = log_path_options_chain(&local_path_options, path_options);
       if (s->flags & PIF_HARD_FLOW_CONTROL)
         {
           local_path_options.flow_control_requested = 1;
@@ -440,7 +472,6 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
         {
           log_path_options_pop_conditional(&local_path_options);
         }
-      path_options = &local_path_options;
     }
 
   if (s->queue)

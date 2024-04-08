@@ -525,7 +525,7 @@ void log_msg_add_ack(LogMessage *msg, const LogPathOptions *path_options);
 void log_msg_ack(LogMessage *msg, const LogPathOptions *path_options, AckType ack_type);
 void log_msg_drop(LogMessage *msg, const LogPathOptions *path_options, AckType ack_type);
 const LogPathOptions *log_msg_break_ack(LogMessage *msg, const LogPathOptions *path_options,
-                                        LogPathOptions *local_options);
+                                        LogPathOptions *local_path_options);
 
 void log_msg_refcache_start_producer(LogMessage *self);
 void log_msg_refcache_start_consumer(LogMessage *self, const LogPathOptions *path_options);

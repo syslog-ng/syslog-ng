@@ -113,24 +113,24 @@ set_mark_message_serialized_size(void)
 static void
 _prepare_eof_test(LogQueueDiskReliable *dq, LogMessage **msg1, LogMessage **msg2)
 {
-  LogPathOptions local_options = LOG_PATH_OPTIONS_INIT;
+  LogPathOptions local_path_options = LOG_PATH_OPTIONS_INIT;
   gint64 start_pos = TEST_DISKQ_SIZE - 1;
 
   *msg1 = log_msg_new_mark();
   *msg2 = log_msg_new_mark();
 
   (*msg1)->ack_func = _dummy_ack;
-  log_msg_add_ack(*msg1, &local_options);
+  log_msg_add_ack(*msg1, &local_path_options);
 
   (*msg2)->ack_func = _dummy_ack;
-  log_msg_add_ack(*msg2, &local_options);
+  log_msg_add_ack(*msg2, &local_path_options);
 
   dq->super.qdisk->hdr->write_head = start_pos;
   dq->super.qdisk->hdr->read_head = QDISK_RESERVED_SPACE + mark_message_serialized_size + 1;
   dq->super.qdisk->hdr->backlog_head = dq->super.qdisk->hdr->read_head;
 
-  log_queue_push_tail(&dq->super.super, *msg1, &local_options);
-  log_queue_push_tail(&dq->super.super, *msg2, &local_options);
+  log_queue_push_tail(&dq->super.super, *msg1, &local_path_options);
+  log_queue_push_tail(&dq->super.super, *msg2, &local_path_options);
 
   cr_assert_eq(dq->flow_control_window->length, NUMBER_MESSAGES_IN_QUEUE(2), "%s",
                "Messages aren't in flow_control_window");
@@ -168,12 +168,12 @@ test_rewind_over_eof(LogQueueDiskReliable *dq)
   LogMessage *msg3 = log_msg_new_mark();
   LogMessage *read_message3;
 
-  LogPathOptions local_options = LOG_PATH_OPTIONS_INIT;
+  LogPathOptions local_path_options = LOG_PATH_OPTIONS_INIT;
   msg3->ack_func = _dummy_ack;
 
-  log_queue_push_tail(&dq->super.super, msg3, &local_options);
+  log_queue_push_tail(&dq->super.super, msg3, &local_path_options);
   gint64 previous_read_head = dq->super.qdisk->hdr->read_head;
-  read_message3 = log_queue_pop_head(&dq->super.super, &local_options);
+  read_message3 = log_queue_pop_head(&dq->super.super, &local_path_options);
   cr_assert_not_null(read_message3, "%s", "Can't read message from queue");
   cr_assert_eq(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->write_head,
                "%s", "Read head in bad position");
@@ -185,13 +185,13 @@ test_rewind_over_eof(LogQueueDiskReliable *dq)
 
   cr_assert_eq(dq->super.qdisk->hdr->read_head, previous_read_head, "%s", "Read head is corrupted");
 
-  read_message3 = log_queue_pop_head(&dq->super.super, &local_options);
+  read_message3 = log_queue_pop_head(&dq->super.super, &local_path_options);
   cr_assert_not_null(read_message3, "%s", "Can't read message from queue");
   cr_assert_eq(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->write_head,
                "%s", "Read head in bad position");
   cr_assert_eq(msg3, read_message3, "%s", "Message 3 isn't read from flow_control_window");
 
-  log_msg_drop(msg3, &local_options, AT_PROCESSED);
+  log_msg_drop(msg3, &local_path_options, AT_PROCESSED);
 }
 
 static void

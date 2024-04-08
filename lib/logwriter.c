@@ -852,7 +852,7 @@ static void
 log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
 {
   LogWriter *self = (LogWriter *) s;
-  LogPathOptions local_options;
+  LogPathOptions local_path_options;
   gint mark_mode = self->options->mark_mode;
 
   if (!path_options->flow_control_requested &&
@@ -861,7 +861,7 @@ log_writer_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
       /* NOTE: this code ACKs the message back if there's a write error in
        * order not to hang the client in case of a disk full */
 
-      path_options = log_msg_break_ack(lm, path_options, &local_options);
+      path_options = log_msg_break_ack(lm, path_options, &local_path_options);
     }
 
   if (log_writer_is_msg_suppressed(self, lm))

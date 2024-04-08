@@ -88,7 +88,7 @@ Test(filterx_expr, test_filterx_template_evaluates_to_the_expanded_value)
   filterx_expr_unref(fexpr);
   log_msg_unref(msg);
   filterx_object_unref(fobj);
-  filterx_scope_free(scope);
+  filterx_scope_unref(scope);
   filterx_eval_set_context(NULL);
 }
 
@@ -166,7 +166,7 @@ Test(filterx_expr, test_filterx_list_merge)
 
   filterx_expr_unref(fillable);
   log_msg_unref(msg);
-  filterx_scope_free(scope);
+  filterx_scope_unref(scope);
   filterx_eval_set_context(NULL);
 }
 
@@ -292,7 +292,7 @@ Test(filterx_expr, test_filterx_dict_merge)
   filterx_object_unref(foo);
   filterx_expr_unref(fillable);
   log_msg_unref(msg);
-  filterx_scope_free(scope);
+  filterx_scope_unref(scope);
   filterx_eval_set_context(NULL);
 }
 

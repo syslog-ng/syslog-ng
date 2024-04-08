@@ -227,7 +227,7 @@ dqtool_cat(int argc, char *argv[])
   msg = g_string_sized_new(128);
   for (i = optind; i < argc; i++)
     {
-      LogPathOptions local_options = LOG_PATH_OPTIONS_INIT;
+      LogPathOptions local_path_options = LOG_PATH_OPTIONS_INIT;
       LogQueue *lq;
 
       if (!open_queue(argv[i], &lq, &options, TRUE))
@@ -235,7 +235,7 @@ dqtool_cat(int argc, char *argv[])
 
       log_queue_rewind_backlog_all(lq);
 
-      while ((log_msg = log_queue_pop_head(lq, &local_options)) != NULL)
+      while ((log_msg = log_queue_pop_head(lq, &local_path_options)) != NULL)
         {
           /* format log */
           LogTemplateEvalOptions eval_options = {&configuration->template_options, LTZ_LOCAL, 0, NULL, LM_VT_STRING};

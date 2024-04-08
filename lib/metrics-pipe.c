@@ -44,16 +44,18 @@ _queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   stats_counter_inc(self->ingress_counter);
 
   gboolean matched = TRUE;
-  LogPathOptions local_options = *path_options;
-  local_options.matched = &matched;
+  LogPathOptions local_path_options;
+  log_path_options_chain(&local_path_options, path_options);
+  local_path_options.matched = &matched;
 
-  log_pipe_forward_msg(s, msg, &local_options);
+  log_pipe_forward_msg(s, msg, &local_path_options);
 
-  if (*local_options.matched)
+  /* this is populated via local_path_options->matched */
+  if (matched)
     stats_counter_inc(self->egress_counter);
 
-  if (path_options->matched)
-    *path_options->matched = *local_options.matched;
+  if (path_options->matched && !matched)
+    *path_options->matched = FALSE;
 }
 
 static gboolean
