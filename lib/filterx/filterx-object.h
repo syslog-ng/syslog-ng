@@ -81,16 +81,9 @@ struct _FilterXObject
    *     modified_in_place -- set to TRUE in case the value in this
    *                          FilterXObject was changed
    *
-   *     assigned          -- should be stored in the FilterXScope but we
-   *                          can reuse a bit here.  Signifies if the value was assigned to a
-   *                          name-value pair.
-   *
-   *     shadow            -- this object is a shadow of a LogMessage
-   *                          name-value pair.  Whenever assigned to another name-value pair,
-   *                          this needs to be copied.
    *
    */
-  guint thread_index:16, modified_in_place:1, shadow:1, assigned:1;
+  guint thread_index:16, modified_in_place:1;
   FilterXType *type;
 };
 
