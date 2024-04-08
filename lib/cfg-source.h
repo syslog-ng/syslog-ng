@@ -26,6 +26,8 @@
 
 #include "cfg-lexer.h"
 
+/* These functions are only available during parsing */
+gboolean cfg_source_print_source_context(CfgLexer *lexer, CfgIncludeLevel *level, const CFG_LTYPE *yylloc);
 gboolean cfg_source_extract_source_text(CfgLexer *lexer, const CFG_LTYPE *yylloc, GString *result);
 
 #endif
