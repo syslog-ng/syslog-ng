@@ -34,7 +34,7 @@ lib_filterx_tests_test_object_string_CFLAGS  = $(TEST_CFLAGS)
 lib_filterx_tests_test_object_string_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
 
 lib_filterx_tests_test_filterx_expr_CFLAGS  = $(TEST_CFLAGS)
-lib_filterx_tests_test_filterx_expr_LDADD   = $(TEST_LDADD) $(PREOPEN_SYSLOGFORMAT)
+lib_filterx_tests_test_filterx_expr_LDADD   = $(TEST_LDADD) $(PREOPEN_SYSLOGFORMAT) $(JSON_LIBS)
 
 lib_filterx_tests_test_expr_comparison_CFLAGS  = $(TEST_CFLAGS)
 lib_filterx_tests_test_expr_comparison_LDADD   = $(TEST_LDADD) $(JSON_LIBS)

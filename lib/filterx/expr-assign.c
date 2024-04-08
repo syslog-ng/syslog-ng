@@ -21,6 +21,7 @@
  *
  */
 #include "filterx/expr-assign.h"
+#include "filterx/object-primitive.h"
 
 static FilterXObject *
 _eval(FilterXExpr *s)
@@ -28,14 +29,15 @@ _eval(FilterXExpr *s)
   FilterXBinaryOp *self = (FilterXBinaryOp *) s;
 
   FilterXObject *value = filterx_expr_eval(self->rhs);
+  FilterXObject *result = NULL;
   if (!value)
     return NULL;
 
   if (filterx_expr_assign(self->lhs, value))
-    return value;
+    result = filterx_boolean_new(TRUE);
 
   filterx_object_unref(value);
-  return NULL;
+  return result;
 }
 
 /* NOTE: takes the object reference */

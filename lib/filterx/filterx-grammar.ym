@@ -91,6 +91,7 @@ construct_template_expr(LogTemplate *template)
 
 %type <ptr> stmts
 %type <node> stmt
+%type <node> assignment
 %type <node> expr
 %type <node> expr_value
 %type <node> expr_generator
@@ -129,20 +130,24 @@ stmts
 stmt
 	: expr ';'				{ $$ = $1; }
 	| conditional ';'			{ $$ = $1; }
+	| assignment ';'			{ $$ = $1; }
+	;
+
+assignment
+	: lvalue KW_ASSIGN expr			{ $$ = filterx_assign_new($1, $3); }
+	| expr '.' LL_IDENTIFIER KW_ASSIGN expr	{ $$ = filterx_setattr_new($1, $3, $5); free($3); }
+	| expr '[' expr ']' KW_ASSIGN expr	{ $$ = filterx_set_subscript_new($1, $3, $6); }
+	| expr '[' ']' KW_ASSIGN expr  		{ $$ = filterx_set_subscript_new($1, NULL, $5); }
 	;
 
 expr
 	: expr_value				{ $$ = $1; }
 	| function_call				{ $$ = $1; }
-	| lvalue KW_ASSIGN expr			{ $$ = filterx_assign_new($1, $3); }
 	| KW_NOT expr				{ $$ = filterx_unary_not_new($2); }
 	| expr KW_OR expr			{ $$ = filterx_binary_or_new($1, $3); }
 	| expr KW_AND expr                      { $$ = filterx_binary_and_new($1, $3); }
 	| expr '.' LL_IDENTIFIER		{ $$ = filterx_getattr_new($1, $3); free($3); }
-	| expr '.' LL_IDENTIFIER KW_ASSIGN expr	{ $$ = filterx_setattr_new($1, $3, $5); free($3); }
 	| expr '[' expr ']'			{ $$ = filterx_get_subscript_new($1, $3); }
-	| expr '[' expr ']' KW_ASSIGN expr      { $$ = filterx_set_subscript_new($1, $3, $6); }
-	| expr '[' ']' KW_ASSIGN expr      	{ $$ = filterx_set_subscript_new($1, NULL, $5); }
 	| expr KW_PLUS_ASSIGN { last_fillable = $1; } expr_generator { $$ = $4; }
         | expr KW_TA_LT expr		        { $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT); }
         | expr KW_TA_LE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT | FCMPX_EQ); }
@@ -176,7 +181,7 @@ expr_generator
 	;
 
 function_call
-	: LL_IDENTIFIER '(' arguments ')'	{ 
+	: LL_IDENTIFIER '(' arguments ')'	{
 							FilterXExpr *res = filterx_function_lookup(configuration, $1, $3);
 							CHECK_ERROR(res, @1, "filterx function %s not found", $1);
 							$$ = res;
