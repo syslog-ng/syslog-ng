@@ -49,6 +49,51 @@ exit:
   return result;
 }
 
+static gboolean
+_isset(FilterXExpr *s)
+{
+  FilterXGetSubscript *self = (FilterXGetSubscript *) s;
+  FilterXObject *variable = filterx_expr_eval_typed(self->operand);
+  if (!variable)
+    return FALSE;
+
+  FilterXObject *key = filterx_expr_eval_typed(self->key);
+  if (!key)
+    {
+      filterx_object_unref(variable);
+      return FALSE;
+    }
+
+  gboolean result = filterx_object_is_key_set(variable, key);
+
+  filterx_object_unref(key);
+  filterx_object_unref(variable);
+  return result;
+}
+
+static gboolean
+_unset(FilterXExpr *s)
+{
+  FilterXGetSubscript *self = (FilterXGetSubscript *) s;
+
+  FilterXObject *variable = filterx_expr_eval_typed(self->operand);
+  if (!variable)
+    return FALSE;
+
+  FilterXObject *key = filterx_expr_eval_typed(self->key);
+  if (!key)
+    {
+      filterx_object_unref(variable);
+      return FALSE;
+    }
+
+  gboolean result = filterx_object_unset_key(variable, key);
+
+  filterx_object_unref(key);
+  filterx_object_unref(variable);
+  return result;
+}
+
 static void
 _free(FilterXExpr *s)
 {
@@ -65,6 +110,8 @@ filterx_get_subscript_new(FilterXExpr *operand, FilterXExpr *key)
 
   filterx_expr_init_instance(&self->super);
   self->super.eval = _eval;
+  self->super.isset = _isset;
+  self->super.unset = _unset;
   self->super.free_fn = _free;
   self->operand = operand;
   self->key = key;
