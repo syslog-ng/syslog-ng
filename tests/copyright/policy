@@ -110,6 +110,7 @@ lib/logmsg/tests/dump_logmsg\.c
 lib/multi-line/smart-multi-line\.[ch]
 lib/multi-line/tests/test_smart_multi_line\.c
 libtest/mock-logpipe\.[ch]
+libtest/filterx\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
 lib/severity-aliases\.table
@@ -213,6 +214,8 @@ modules/python/python-binding.(c|h)$
 modules/python/python-flags.(c|h)$
 modules/python/tests/test_python_options.c$
 modules/python/tests/test_python_reloc\.c$
+modules/json/filterx-format-json\.[ch]$
+modules/json/tests/test_filterx_format_json\.c$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
 scl/logscale/logscale\.conf$

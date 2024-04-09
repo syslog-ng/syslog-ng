@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,18 +20,23 @@
  * COPYING for details.
  *
  */
-#ifndef FILTERX_MESSAGE_VALUE_H_INCLUDED
-#define FILTERX_MESSAGE_VALUE_H_INCLUDED
+
+#ifndef LIBTEST_FILTERX_H_INCLUDED
+#define LIBTEST_FILTERX_H_INCLUDED
 
 #include "filterx/filterx-object.h"
 
-FILTERX_DECLARE_TYPE(message_value);
+FILTERX_DECLARE_TYPE(test_dict);
+FILTERX_DECLARE_TYPE(test_list);
+FILTERX_DECLARE_TYPE(test_unknown_object);
 
-FilterXObject *filterx_message_value_new_borrowed(const gchar *repr, gssize repr_len, LogMessageValueType type);
-FilterXObject *filterx_message_value_new_ref(gchar *repr, gssize repr_len, LogMessageValueType type);
-FilterXObject *filterx_message_value_new(const gchar *repr, gssize repr_len, LogMessageValueType type);
+FilterXObject *filterx_test_dict_new(void);
+FilterXObject *filterx_test_list_new(void);
+FilterXObject *filterx_test_unknown_object_new(void);
 
-LogMessageValueType filterx_message_value_get_type(FilterXObject *s);
-const gchar *filterx_message_value_get_value(FilterXObject *s, gsize *len);
+const gchar *filterx_test_unknown_object_marshaled_repr(gssize *len);
+
+void init_libtest_filterx(void);
+void deinit_libtest_filterx(void);
 
 #endif

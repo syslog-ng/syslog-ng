@@ -16,6 +16,8 @@ set(JSON_SOURCES
     json-parser-parser.h
     dot-notation.c
     dot-notation.h
+    filterx-format-json.c
+    filterx-format-json.h
     json-plugin.c
 )
 

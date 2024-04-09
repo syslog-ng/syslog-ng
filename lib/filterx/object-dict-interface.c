@@ -31,6 +31,15 @@ filterx_dict_len(FilterXObject *s)
   return self->len(self);
 }
 
+gboolean
+filterx_dict_iter(FilterXObject *s, FilterXDictIterFunc func, gpointer user_data)
+{
+  FilterXDict *self = (FilterXDict *) s;
+  if (!self->iter)
+    return FALSE;
+  return self->iter(self, func, user_data);
+}
+
 static FilterXObject *
 _get_subscript(FilterXObject *s, FilterXObject *key)
 {
