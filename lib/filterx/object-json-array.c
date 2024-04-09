@@ -171,6 +171,28 @@ _set_subscript(FilterXList *s, guint64 index, FilterXObject *new_value)
   return TRUE;
 }
 
+static gboolean
+_unset_index(FilterXList *s, guint64 index)
+{
+  FilterXJsonArray *self = (FilterXJsonArray *) s;
+
+  if (G_UNLIKELY(index >= JSON_ARRAY_MAX_SIZE))
+    return FALSE;
+
+  if (json_object_array_del_idx(self->object, index, 1) != 0)
+    return FALSE;
+
+  self->super.super.modified_in_place = TRUE;
+  FilterXObject *root_container = filterx_weakref_get(&self->root_container);
+  if (root_container)
+    {
+      root_container->modified_in_place = TRUE;
+      filterx_object_unref(root_container);
+    }
+
+  return TRUE;
+}
+
 static guint64
 _len(FilterXList *s)
 {
@@ -189,6 +211,7 @@ filterx_json_array_new_sub(struct json_object *object, FilterXObject *root)
   self->super.get_subscript = _get_subscript;
   self->super.set_subscript = _set_subscript;
   self->super.append = _append;
+  self->super.unset_index = _unset_index;
   self->super.len = _len;
 
   filterx_weakref_set(&self->root_container, root);

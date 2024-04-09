@@ -30,6 +30,9 @@ typedef struct _FilterXVariable FilterXVariable;
 
 FilterXObject *filterx_variable_get_value(FilterXVariable *v);
 void filterx_variable_set_value(FilterXVariable *v, FilterXObject *new_value);
+void filterx_variable_unset_value(FilterXVariable *v);
+gboolean filterx_variable_is_set(FilterXVariable *v);
+
 
 /*
  * FilterXScope represents variables in a filterx scope.

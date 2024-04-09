@@ -48,6 +48,9 @@ static CfgLexerKeyword filterx_keywords[] =
   { "else",               KW_ELSE },
   { "elif",               KW_ELIF },
 
+  { "isset",              KW_ISSET },
+  { "unset",              KW_UNSET },
+
   { CFG_KEYWORD_STOP },
 };
 

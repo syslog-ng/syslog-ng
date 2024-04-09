@@ -762,3 +762,178 @@ def test_if_condition_non_matching_expression(config, syslog_ng):
     assert file_true.get_stats()["processed"] == 1
     assert "processed" not in file_false.get_stats()
     assert file_true.read_log() == "default\n"
+
+
+def test_isset_existing_value_not_in_scope_yet(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    isset($MSG);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+
+
+def test_isset_existing_value_already_in_scope(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $MSG;
+    isset($MSG);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+
+
+def test_isset_inexisting_value_not_in_scope_yet(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    not isset($almafa);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+
+
+def test_isset_inexisting_value_already_in_scope(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $almafa = "x";
+    unset($almafa);
+    not isset($almafa);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+
+
+def test_isset(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $MSG = json();
+    $MSG.inner_key = "foo";
+
+    isset(${values.int});
+    not isset($almafa);
+    isset($MSG["inner_key"]);
+    not isset($MSG["almafa"]);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+
+
+def test_unset_value_not_in_scope_yet(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    unset($MSG);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "\n"
+
+
+def test_unset_value_already_in_scope(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $MSG;
+    unset($MSG);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "\n"
+
+
+def test_unset_existing_key(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $MSG = json();
+    $MSG["foo"] = "bar";
+    unset($MSG["foo"]);
+    not isset($MSG["foo"]);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "{}\n"
+
+
+def test_unset_inexisting_key(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $MSG = json();
+    unset($MSG["foo"]);
+    not isset($MSG["foo"]);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "{}\n"
+
+
+def test_setting_an_unset_key_will_contain_the_right_value(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $MSG = json();
+    $MSG["foo"] = "first";
+    unset($MSG["foo"]);
+    not isset($MSG["foo"]);
+    $MSG["foo"] = "second";
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == '{"foo":"second"}\n'
+
+
+def test_unset(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $MSG = json();
+    $MSG["inner_key"] = "foo";
+    $arr = json_array();
+    $arr[] = "first";
+    $arr[] = "second";
+
+    unset(${values.int});
+    unset($almafa);
+    unset($MSG["inner_key"]);
+    unset($MSG["almafa"]);
+    unset($arr[0]);
+
+    not isset(${values.int});
+    not isset($almafa);
+    not isset($MSG["inner_key"]);
+    not isset($MSG["almafa"]);
+    isset($arr[0]);
+    not isset($arr[1]);
+    unset($MSG);
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "\n"

@@ -157,7 +157,7 @@ KVList::get_subscript(FilterXObject *key)
 }
 
 bool
-KVList::has_subscript(FilterXObject *key) const
+KVList::is_key_set(FilterXObject *key) const
 {
   const gchar *key_c_str = filterx_string_get_value(key, NULL);
   if (!key_c_str)
@@ -168,6 +168,30 @@ KVList::has_subscript(FilterXObject *key) const
     }
 
   return !!get_mutable_kv_for_key(key_c_str);
+}
+
+bool
+KVList::unset_key(FilterXObject *key)
+{
+  const gchar *key_c_str = filterx_string_get_value(key, NULL);
+  if (!key_c_str)
+    {
+      msg_error("FilterX: Failed to unset OTel KVList element",
+                evt_tag_str("error", "Key must be string type"));
+      return false;
+    }
+
+  for (int i = 0; i < repeated_kv->size(); i++)
+    {
+      KeyValue &possible_kv = repeated_kv->at(i);
+      if (possible_kv.key().compare(key_c_str) == 0)
+        {
+          repeated_kv->DeleteSubrange(i, 1);
+          return true;
+        }
+    }
+
+  return true;
 }
 
 uint64_t
@@ -232,11 +256,19 @@ _get_subscript(FilterXDict *s, FilterXObject *key)
 }
 
 static gboolean
-_has_subscript(FilterXDict *s, FilterXObject *key)
+_is_key_set(FilterXDict *s, FilterXObject *key)
 {
   FilterXOtelKVList *self = (FilterXOtelKVList *) s;
 
-  return self->cpp->has_subscript(key);
+  return self->cpp->is_key_set(key);
+}
+
+static gboolean
+_unset_key(FilterXDict *s, FilterXObject *key)
+{
+  FilterXOtelKVList *self = (FilterXOtelKVList *) s;
+
+  return self->cpp->unset_key(key);
 }
 
 static uint64_t
@@ -281,7 +313,8 @@ _init_instance(FilterXOtelKVList *self)
 
   self->super.get_subscript = _get_subscript;
   self->super.set_subscript = _set_subscript;
-  self->super.has_subscript = _has_subscript;
+  self->super.is_key_set = _is_key_set;
+  self->super.unset_key = _unset_key;
   self->super.len = _len;
   self->super.iter = _iter;
 }

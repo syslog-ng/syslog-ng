@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,12 +20,25 @@
  * COPYING for details.
  *
  */
-#ifndef FILTERX_GET_SUBSCRIPT_H_INCLUDED
-#define FILTERX_GET_SUBSCRIPT_H_INCLUDED
 
-#include "filterx/filterx-expr.h"
+#include "filterx/expr-unset.h"
+#include "filterx/object-primitive.h"
 
-FilterXExpr *filterx_get_subscript_new(FilterXExpr *lhs, FilterXExpr *key);
+static FilterXObject *
+_eval(FilterXExpr *s)
+{
+  FilterXUnaryOp *self = (FilterXUnaryOp *) s;
 
+  if (!filterx_expr_unset(self->operand))
+    return NULL;
+  return filterx_boolean_new(TRUE);
+}
 
-#endif
+FilterXExpr *
+filterx_unset_new(FilterXExpr *expr)
+{
+  FilterXUnaryOp *self = g_new0(FilterXUnaryOp, 1);
+  filterx_unary_op_init_instance(self, expr);
+  self->super.eval = _eval;
+  return &self->super;
+}

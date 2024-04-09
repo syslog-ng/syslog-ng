@@ -26,7 +26,7 @@ typedef struct _FilterXGetSubscript
 {
   FilterXExpr super;
   FilterXExpr *operand;
-  FilterXExpr *index;
+  FilterXExpr *key;
 } FilterXGetSubscript;
 
 static FilterXObject *
@@ -39,12 +39,57 @@ _eval(FilterXExpr *s)
   if (!variable)
     return NULL;
 
-  FilterXObject *index = filterx_expr_eval_typed(self->index);
-  if (!index)
+  FilterXObject *key = filterx_expr_eval_typed(self->key);
+  if (!key)
     goto exit;
-  result = filterx_object_get_subscript(variable, index);
+  result = filterx_object_get_subscript(variable, key);
 exit:
-  filterx_object_unref(index);
+  filterx_object_unref(key);
+  filterx_object_unref(variable);
+  return result;
+}
+
+static gboolean
+_isset(FilterXExpr *s)
+{
+  FilterXGetSubscript *self = (FilterXGetSubscript *) s;
+  FilterXObject *variable = filterx_expr_eval_typed(self->operand);
+  if (!variable)
+    return FALSE;
+
+  FilterXObject *key = filterx_expr_eval_typed(self->key);
+  if (!key)
+    {
+      filterx_object_unref(variable);
+      return FALSE;
+    }
+
+  gboolean result = filterx_object_is_key_set(variable, key);
+
+  filterx_object_unref(key);
+  filterx_object_unref(variable);
+  return result;
+}
+
+static gboolean
+_unset(FilterXExpr *s)
+{
+  FilterXGetSubscript *self = (FilterXGetSubscript *) s;
+
+  FilterXObject *variable = filterx_expr_eval_typed(self->operand);
+  if (!variable)
+    return FALSE;
+
+  FilterXObject *key = filterx_expr_eval_typed(self->key);
+  if (!key)
+    {
+      filterx_object_unref(variable);
+      return FALSE;
+    }
+
+  gboolean result = filterx_object_unset_key(variable, key);
+
+  filterx_object_unref(key);
   filterx_object_unref(variable);
   return result;
 }
@@ -53,20 +98,22 @@ static void
 _free(FilterXExpr *s)
 {
   FilterXGetSubscript *self = (FilterXGetSubscript *) s;
-  filterx_expr_unref(self->index);
+  filterx_expr_unref(self->key);
   filterx_expr_unref(self->operand);
 }
 
 /* NOTE: takes the object reference */
 FilterXExpr *
-filterx_get_subscript_new(FilterXExpr *operand, FilterXExpr *index)
+filterx_get_subscript_new(FilterXExpr *operand, FilterXExpr *key)
 {
   FilterXGetSubscript *self = g_new0(FilterXGetSubscript, 1);
 
   filterx_expr_init_instance(&self->super);
   self->super.eval = _eval;
+  self->super.isset = _isset;
+  self->super.unset = _unset;
   self->super.free_fn = _free;
   self->operand = operand;
-  self->index = index;
+  self->key = key;
   return &self->super;
 }

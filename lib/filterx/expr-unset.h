@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,12 +20,11 @@
  * COPYING for details.
  *
  */
-#ifndef FILTERX_GET_SUBSCRIPT_H_INCLUDED
-#define FILTERX_GET_SUBSCRIPT_H_INCLUDED
+#ifndef FILTERX_UNSET_KEY_H_INCLUDED
+#define FILTERX_UNSET_KEY_H_INCLUDED
 
 #include "filterx/filterx-expr.h"
 
-FilterXExpr *filterx_get_subscript_new(FilterXExpr *lhs, FilterXExpr *key);
-
+FilterXExpr *filterx_unset_new(FilterXExpr *expr);
 
 #endif
