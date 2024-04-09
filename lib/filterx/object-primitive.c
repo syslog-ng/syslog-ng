@@ -22,10 +22,12 @@
  */
 #include "filterx/object-primitive.h"
 #include "filterx/filterx-grammar.h"
+#include "filterx/object-string.h"
 #include "generic-number.h"
 #include "str-format.h"
 #include "plugin.h"
 #include "cfg.h"
+#include "filterx-globals.h"
 
 #include "compat/json.h"
 
@@ -218,20 +220,114 @@ filterx_primitive_get_value(FilterXObject *s)
   return self->value;
 }
 
+FilterXObject *
+filterx_typecast_boolean(GPtrArray *args)
+{
+  FilterXObject *object = filterx_typecast_get_arg(args, NULL);
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(boolean)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+
+  return filterx_boolean_new(filterx_object_truthy(object));
+}
+
+FilterXObject *
+filterx_typecast_integer(GPtrArray *args)
+{
+  FilterXObject *object = filterx_typecast_get_arg(args, NULL);
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(integer)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(double)))
+    {
+      GenericNumber gn = filterx_primitive_get_value(object);
+      return filterx_integer_new(gn_as_int64(&gn));
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(string)))
+    {
+      gsize size;
+      gchar *endptr;
+      const gchar *str = filterx_string_get_value(object, &size);
+
+      gint64 val = g_ascii_strtoll(str, &endptr, 10);
+      if (str != endptr && *endptr == '\0')
+        return filterx_integer_new(val);
+    }
+
+  msg_error("filterx: invalid typecast",
+            evt_tag_str("from", object->type->name),
+            evt_tag_str("to", "integer"));
+  return NULL;
+}
+
+FilterXObject *
+filterx_typecast_double(GPtrArray *args)
+{
+  FilterXObject *object = filterx_typecast_get_arg(args, NULL);
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(double)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(integer)))
+    {
+      GenericNumber gn = filterx_primitive_get_value(object);
+      return filterx_double_new(gn_as_double(&gn));
+    }
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(string)))
+    {
+      gsize size;
+      gchar *endptr;
+      const gchar *str = filterx_string_get_value(object, &size);
+
+      gdouble val = g_ascii_strtod(str, &endptr);
+      if (str != endptr && *endptr == '\0')
+        return filterx_double_new(val);
+    }
+
+  msg_error("filterx: invalid typecast",
+            evt_tag_str("from", object->type->name),
+            evt_tag_str("to", "double"));
+  return NULL;
+}
+
+static gboolean
+_repr(FilterXObject *s, GString *repr)
+{
+  LogMessageValueType t;
+  return filterx_object_marshal(s, repr, &t);
+}
+
 FILTERX_DEFINE_TYPE(integer, FILTERX_TYPE_NAME(object),
                     .truthy = _truthy,
                     .marshal = _integer_marshal,
                     .map_to_json = _integer_map_to_json,
+                    .repr = _repr,
                    );
 
 FILTERX_DEFINE_TYPE(double, FILTERX_TYPE_NAME(object),
                     .truthy = _truthy,
                     .marshal = _double_marshal,
                     .map_to_json = _double_map_to_json,
+                    .repr = _repr,
                    );
 
 FILTERX_DEFINE_TYPE(boolean, FILTERX_TYPE_NAME(object),
                     .truthy = _truthy,
                     .marshal = _bool_marshal,
                     .map_to_json = _bool_map_to_json,
+                    .repr = _repr,
                    );

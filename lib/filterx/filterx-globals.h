@@ -29,5 +29,6 @@
 void filterx_global_init(void);
 void filterx_global_deinit(void);
 FilterXFunctionProto filterx_builtin_function_lookup(const gchar *);
+FilterXObject *filterx_typecast_get_arg(GPtrArray *args, gchar *alt_msg);
 
 #endif

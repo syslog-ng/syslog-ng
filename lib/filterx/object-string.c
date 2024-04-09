@@ -23,6 +23,9 @@
 #include "object-string.h"
 #include "str-utils.h"
 #include "scratch-buffers.h"
+#include "filterx-globals.h"
+#include "utf8utils.h"
+#include "str-format.h"
 
 typedef struct _FilterXString
 {
@@ -100,6 +103,14 @@ _map_to_json(FilterXObject *s, struct json_object **object)
   return TRUE;
 }
 
+static gboolean
+_string_repr(FilterXObject *s, GString *repr)
+{
+  FilterXString *self = (FilterXString *) s;
+  repr = g_string_append_len(repr, self->str, self->str_len);
+  return TRUE;
+}
+
 FilterXObject *
 filterx_string_new(const gchar *str, gssize str_len)
 {
@@ -158,6 +169,18 @@ _bytes_marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
   return TRUE;
 }
 
+static gboolean
+_bytes_repr(FilterXObject *s, GString *repr)
+{
+  FilterXString *self = (FilterXString *) s;
+
+  gsize target_len = self->str_len * 2;
+  gsize repr_len = repr->len;
+  g_string_set_size(repr, target_len + repr_len);
+  format_hex_string_with_delimiter(self->str, self->str_len, repr->str + repr_len, target_len, 0);
+  return TRUE;
+}
+
 FilterXObject *
 filterx_bytes_new(const gchar *mem, gssize mem_len)
 {
@@ -174,22 +197,112 @@ filterx_protobuf_new(const gchar *mem, gssize mem_len)
   return &self->super;
 }
 
+FilterXObject *
+filterx_typecast_string(GPtrArray *args)
+{
+  FilterXObject *object = filterx_typecast_get_arg(args, NULL);
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(string)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+
+  GString *buf = scratch_buffers_alloc();
+
+  if (!filterx_object_repr(object, buf))
+    {
+      msg_error("filterx: unable to repr",
+                evt_tag_str("from", object->type->name),
+                evt_tag_str("to", "string"));
+      return NULL;
+    }
+
+  return filterx_string_new(buf->str, -1);
+}
+
+FilterXObject *
+filterx_typecast_bytes(GPtrArray *args)
+{
+  FilterXObject *object = filterx_typecast_get_arg(args, NULL);
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(bytes)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(string)))
+    {
+      gsize size;
+      const gchar *data = filterx_string_get_value(object, &size);
+      return filterx_bytes_new(data, size);
+    }
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(protobuf)))
+    {
+      gsize size;
+      const gchar *data = filterx_protobuf_get_value(object, &size);
+      return filterx_bytes_new(data, size);
+    }
+
+  msg_error("filterx: invalid typecast",
+            evt_tag_str("from", object->type->name),
+            evt_tag_str("to", "bytes"));
+  return NULL;
+}
+
+FilterXObject *
+filterx_typecast_protobuf(GPtrArray *args)
+{
+  FilterXObject *object = filterx_typecast_get_arg(args, NULL);
+  if (!object)
+    return NULL;
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(protobuf)))
+    {
+      filterx_object_ref(object);
+      return object;
+    }
+
+  if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(bytes)))
+    {
+      gsize size;
+      const gchar *data = filterx_bytes_get_value(object, &size);
+      return filterx_protobuf_new(data, size);
+    }
+
+  msg_error("filterx: invalid typecast",
+            evt_tag_str("from", object->type->name),
+            evt_tag_str("to", "protobuf"));
+
+  return NULL;
+}
+
+
 /* these types are independent type-wise but share a lot of the details */
 
 FILTERX_DEFINE_TYPE(string, FILTERX_TYPE_NAME(object),
                     .marshal = _marshal,
                     .map_to_json = _map_to_json,
                     .truthy = _truthy,
+                    .repr = _string_repr,
                    );
 
 FILTERX_DEFINE_TYPE(bytes, FILTERX_TYPE_NAME(object),
                     .marshal = _bytes_marshal,
                     .map_to_json = _bytes_map_to_json,
                     .truthy = _truthy,
+                    .repr = _bytes_repr,
                    );
 
 FILTERX_DEFINE_TYPE(protobuf, FILTERX_TYPE_NAME(object),
                     .marshal = _bytes_marshal,
                     .map_to_json = _bytes_map_to_json,
                     .truthy = _truthy,
+                    .repr = _bytes_repr,
                    );

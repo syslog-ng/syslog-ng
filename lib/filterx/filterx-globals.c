@@ -68,6 +68,14 @@ filterx_builtin_functions_init(void)
   filterx_builtin_functions_init_inner(&filterx_builtin_functions);
   filterx_builtin_function_register("json", filterx_json_new_from_args);
   filterx_builtin_function_register("json_array", filterx_json_array_new_from_args);
+  g_assert(filterx_builtin_function_register("datetime", filterx_typecast_datetime));
+  g_assert(filterx_builtin_function_register("isodate", filterx_typecast_datetime_isodate));
+  g_assert(filterx_builtin_function_register("string", filterx_typecast_string));
+  g_assert(filterx_builtin_function_register("bytes", filterx_typecast_bytes));
+  g_assert(filterx_builtin_function_register("protobuf", filterx_typecast_protobuf));
+  g_assert(filterx_builtin_function_register("bool", filterx_typecast_boolean));
+  g_assert(filterx_builtin_function_register("int", filterx_typecast_integer));
+  g_assert(filterx_builtin_function_register("double", filterx_typecast_double));
 }
 
 void
@@ -109,4 +117,22 @@ void
 filterx_global_deinit(void)
 {
   filterx_builtin_functions_deinit();
+}
+
+FilterXObject *filterx_typecast_get_arg(GPtrArray *args, gchar *alt_msg)
+{
+  if (args == NULL || args->len != 1)
+    {
+      msg_error(alt_msg ? alt_msg : "filterx: typecast functions must have exactly 1 argument");
+      return NULL;
+    }
+
+  FilterXObject *object = g_ptr_array_index(args, 0);
+  if (!object)
+    {
+      msg_error(alt_msg ? alt_msg : "filterx: invalid typecast argument, object can not be null" );
+      return NULL;
+    }
+
+  return object;
 }

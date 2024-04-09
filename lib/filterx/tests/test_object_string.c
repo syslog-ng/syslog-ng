@@ -22,7 +22,10 @@
  */
 #include <criterion/criterion.h>
 #include "filterx/object-string.h"
+#include "filterx/object-null.h"
+
 #include "apphook.h"
+#include "scratch-buffers.h"
 #include "filterx-lib.h"
 
 static void
@@ -51,6 +54,107 @@ Test(filterx_string, test_filterx_object_string_maps_to_the_right_json_value)
   filterx_object_unref(fobj);
 }
 
+Test(filterx_string, test_filterx_string_typecast_null_args)
+{
+  GPtrArray *args = NULL;
+
+  FilterXObject *obj = filterx_typecast_string(args);
+  cr_assert_null(obj);
+}
+
+Test(filterx_string, test_filterx_string_typecast_empty_args)
+{
+  GPtrArray *args = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
+
+  FilterXObject *obj = filterx_typecast_string(args);
+  cr_assert_null(obj);
+
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(filterx_string, test_filterx_string_typecast_null_arg)
+{
+  GPtrArray *args = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
+
+  g_ptr_array_add(args, NULL);
+
+  FilterXObject *obj = filterx_typecast_string(args);
+  cr_assert_null(obj);
+
+  g_ptr_array_free(args, TRUE);
+}
+
+Test(filterx_string, test_filterx_string_typecast_null_object_arg)
+{
+  GPtrArray *args = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
+  FilterXObject *in = filterx_null_new();
+  g_ptr_array_add(args, in);
+
+  FilterXObject *obj = filterx_typecast_string(args);
+  cr_assert_not_null(obj);
+  cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(string)));
+
+  gsize size;
+  const gchar *str = filterx_string_get_value(obj, &size);
+
+  cr_assert(strcmp("null", str) == 0);
+
+  g_ptr_array_free(args, TRUE);
+  filterx_object_unref(obj);
+}
+
+Test(filterx_string, test_filterx_string_typecast_from_string)
+{
+  GPtrArray *args = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
+  FilterXObject *in = filterx_string_new("foobar", -1);
+  g_ptr_array_add(args, in);
+
+  FilterXObject *obj = filterx_typecast_string(args);
+
+  cr_assert_eq(in, obj);
+
+  g_ptr_array_free(args, TRUE);
+  filterx_object_unref(obj);
+}
+
+Test(filterx_string, test_filterx_string_typecast_from_bytes)
+{
+  GPtrArray *args = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
+  FilterXObject *in = filterx_bytes_new("\x00\x1f byte \\sequence \x7f \xff", 21);
+  g_ptr_array_add(args, in);
+
+  FilterXObject *obj = filterx_typecast_string(args);
+  cr_assert_not_null(obj);
+  cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(string)));
+
+  gsize size;
+  const gchar *str = filterx_string_get_value(obj, &size);
+  cr_assert(memcmp("001f2062797465205c73657175656e6365207f20ff", str, size) == 0);
+
+
+  g_ptr_array_free(args, TRUE);
+  filterx_object_unref(obj);
+}
+
+Test(filterx_string, test_filterx_string_typecast_from_protobuf)
+{
+  GPtrArray *args = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
+  FilterXObject *in = filterx_protobuf_new("\xffnot a valid protobuf! \xd9", 23);
+  g_ptr_array_add(args, in);
+
+  FilterXObject *obj = filterx_typecast_string(args);
+  cr_assert_not_null(obj);
+  cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(string)));
+
+  gsize size;
+  const gchar *str = filterx_string_get_value(obj, &size);
+  cr_assert(memcmp("ff6e6f7420612076616c69642070726f746f6275662120d9", str, size) == 0);
+
+
+  g_ptr_array_free(args, TRUE);
+  filterx_object_unref(obj);
+}
+
 static void
 setup(void)
 {
@@ -60,6 +164,7 @@ setup(void)
 static void
 teardown(void)
 {
+  scratch_buffers_explicit_gc();
   app_shutdown();
 }
 
