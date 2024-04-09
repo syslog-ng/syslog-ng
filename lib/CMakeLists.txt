@@ -89,6 +89,7 @@ set (LIB_HEADERS
     cfg-grammar-internal.h
     cfg-parser.h
     cfg-path.h
+    cfg-source.h
     cfg-tree.h
     cfg-walker.h
     cfg-persist.h
@@ -187,6 +188,7 @@ set(LIB_SOURCES
     cfg-grammar-internal.c
     cfg-parser.c
     cfg-path.c
+    cfg-source.c
     cfg-tree.c
     cfg-walker.c
     cfg-persist.c

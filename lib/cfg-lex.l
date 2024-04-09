@@ -159,7 +159,7 @@ yy_filter_input(CfgLexer *self, gchar *buf, gsize buf_size)
 #define YY_USER_ACTION                                                  \
   do {                                                                  \
     CFG_LTYPE *cur_lloc = &yyextra->include_stack[yyextra->include_depth].lloc; \
-    if (YY_START == INITIAL)                                            \
+    if (YY_START == INITIAL || YY_START == filterx) 			\
       {                                                                 \
         cur_lloc->first_column = cur_lloc->last_column;                 \
       }                                                                 \
