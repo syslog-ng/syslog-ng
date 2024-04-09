@@ -155,17 +155,9 @@ filterx_object_unref(FilterXObject *self)
     }
 }
 
-static gboolean
-_repr(FilterXObject *self, GString *repr)
-{
-  /* empty */
-  return FALSE;
-}
-
 FilterXType FILTERX_TYPE_NAME(object) =
 {
   .super_type = NULL,
   .name = "object",
   .free_fn = filterx_object_free_method,
-  .repr = _repr,
 };
