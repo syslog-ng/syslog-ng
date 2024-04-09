@@ -127,8 +127,10 @@ Test(filterx_format_json, test_filterx_format_json)
   _assert_filterx_format_json_and_unref(filterx_message_value_new("[\"foo\" , 42]", -1, LM_VT_JSON), "[\"foo\" , 42]");
 
   /* unknown type */
-  _assert_filterx_format_json_and_unref(filterx_test_unknown_object_new(),
-                                        filterx_test_unknown_object_marshaled_repr(NULL));
+  GString *repr = g_string_new(NULL);
+  g_string_printf(repr, "\"%s\"", filterx_test_unknown_object_repr(NULL));
+  _assert_filterx_format_json_and_unref(filterx_test_unknown_object_new(), repr->str);
+  g_string_free(repr, TRUE);
 
   FilterXObject *foo = filterx_string_new("foo", -1);
   FilterXObject *bar = filterx_string_new("bar", -1);
