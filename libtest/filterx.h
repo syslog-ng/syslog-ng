@@ -35,6 +35,7 @@ FilterXObject *filterx_test_list_new(void);
 FilterXObject *filterx_test_unknown_object_new(void);
 
 const gchar *filterx_test_unknown_object_marshaled_repr(gssize *len);
+const gchar *filterx_test_unknown_object_repr(gssize *len);
 
 void init_libtest_filterx(void);
 void deinit_libtest_filterx(void);

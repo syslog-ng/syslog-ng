@@ -43,10 +43,19 @@ filterx_test_list_new(void)
 const gchar *
 filterx_test_unknown_object_marshaled_repr(gssize *len)
 {
-  static const gchar *marshalled = "test_unknown_object";
+  static const gchar *marshaled = "test_unknown_object_marshaled";
   if (len)
-    *len = strlen(marshalled);
-  return marshalled;
+    *len = strlen(marshaled);
+  return marshaled;
+}
+
+const gchar *
+filterx_test_unknown_object_repr(gssize *len)
+{
+  static const gchar *repr = "test_unknown_object_repr";
+  if (len)
+    *len = strlen(repr);
+  return repr;
 }
 
 static gboolean
@@ -54,6 +63,13 @@ _unknown_marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 {
   *t = LM_VT_STRING;
   g_string_append(repr, filterx_test_unknown_object_marshaled_repr(NULL));
+  return TRUE;
+}
+
+static gboolean
+_unknown_repr(FilterXObject *s, GString *repr)
+{
+  g_string_append(repr, filterx_test_unknown_object_repr(NULL));
   return TRUE;
 }
 
@@ -101,6 +117,7 @@ FILTERX_DEFINE_TYPE(test_unknown_object, FILTERX_TYPE_NAME(object),
                     .is_mutable = FALSE,
                     .truthy = _unknown_truthy,
                     .marshal = _unknown_marshal,
+                    .repr = _unknown_repr,
                     .map_to_json = _unknown_map_to_json,
                     .list_factory = filterx_test_list_new,
                     .dict_factory = filterx_test_dict_new);
