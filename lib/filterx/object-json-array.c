@@ -47,7 +47,7 @@ _truthy(FilterXObject *s)
 }
 
 static gboolean
-_marshal_to_json_literal(FilterXJsonArray *self, GString *repr, LogMessageValueType *t)
+_marshal_to_json_literal_append(FilterXJsonArray *self, GString *repr, LogMessageValueType *t)
 {
   *t = LM_VT_JSON;
 
@@ -66,7 +66,7 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
     {
       struct json_object *el = json_object_array_get_idx(self->object, i);
       if (json_object_get_type(el) != json_type_string)
-        return _marshal_to_json_literal(self, repr, t);
+        return _marshal_to_json_literal_append(self, repr, t);
 
       if (i != 0)
         g_string_append_c(repr, ',');

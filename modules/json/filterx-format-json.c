@@ -233,12 +233,23 @@ _format_and_append_list(FilterXObject *value, GString *result)
 }
 
 static gboolean
-_marshal_and_append(FilterXObject *value, GString *result)
+_repr_append(FilterXObject *value, GString *result)
 {
-  _append_comma_if_needed(result);
+  ScratchBuffersMarker marker;
+  GString *repr = scratch_buffers_alloc_and_mark(&marker);
 
-  LogMessageValueType type;
-  return filterx_object_marshal_append(value, result, &type);
+  gboolean success = filterx_object_repr(value, repr);
+  if (!success)
+    goto exit;
+
+  _append_comma_if_needed(result);
+  g_string_append_c(result, '"');
+  append_unsafe_utf8_as_escaped(result, repr->str, repr->len, "\"", "\\u%04x", "\\\\x%02x");
+  g_string_append_c(result, '"');
+
+exit:
+  scratch_buffers_reclaim_marked(marker);
+  return success;
 }
 
 static gboolean
@@ -278,7 +289,7 @@ _format_and_append_value(FilterXObject *value, GString *result)
   if (filterx_object_is_type(value, &FILTERX_TYPE_NAME(list)))
     return _format_and_append_list(value, result);
 
-  return _marshal_and_append(value, result);
+  return _repr_append(value, result);
 }
 
 static FilterXObject *
