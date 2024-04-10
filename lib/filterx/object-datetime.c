@@ -23,12 +23,14 @@
 #include "object-datetime.h"
 #include "scratch-buffers.h"
 #include "str-format.h"
+#include "str-utils.h"
 #include "timeutils/wallclocktime.h"
 #include "timeutils/conv.h"
 #include "timeutils/misc.h"
 #include "timeutils/format.h"
 #include "filterx/object-string.h"
 #include "filterx/object-primitive.h"
+#include "filterx/object-message-value.h"
 #include "generic-number.h"
 #include "filterx-globals.h"
 #include "compat/json.h"
@@ -198,6 +200,84 @@ _repr(FilterXObject *s, GString *repr)
   append_format_wall_clock_time(&wct, repr, TS_FMT_ISO, 3);
 
   return TRUE;
+}
+
+const gchar *
+_strptime_get_time_str_from_object(FilterXObject *obj, gsize *len)
+{
+  if (!obj)
+    return NULL;
+
+  if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(string)))
+    return filterx_string_get_value(obj, len);
+
+  if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(message_value)))
+    {
+      if (filterx_message_value_get_type(obj) == LM_VT_STRING)
+        return filterx_message_value_get_value(obj, len);
+    }
+
+  return NULL;
+}
+
+FilterXObject *
+filterx_datetime_strptime(GPtrArray *args)
+{
+  if (args == NULL || args->len < 2)
+    {
+      msg_error("FilterX: Failed to create datetime object: invalid number of arguments. "
+                "Usage: strptime(time_str, format_str0, ..., format_strN)");
+      return NULL;
+    }
+
+  FilterXObject *object = g_ptr_array_index(args, 0);
+  gsize len;
+  const gchar *timestr = _strptime_get_time_str_from_object(object, &len);
+  if (!timestr)
+    {
+      msg_error("FilterX: Failed to create datetime object: bad argument. "
+                "Usage: strptime(time_str, format_str0, ..., format_strN)",
+                evt_tag_int("arg_pos", 0));
+      return NULL;
+    }
+
+  APPEND_ZERO(timestr, timestr, len);
+  FilterXObject *result = NULL;
+
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  UnixTime ut = UNIX_TIME_INIT;
+  gchar *end = NULL;
+
+  for (int i = 1; i < args->len; i++)
+    {
+      FilterXObject *time_fmt_obj = g_ptr_array_index(args, i);
+      if (!time_fmt_obj || !filterx_object_is_type(time_fmt_obj, &FILTERX_TYPE_NAME(string)))
+        {
+          msg_error("FilterX: Failed to create datetime object: bad argument. "
+                    "Usage: strptime(time_str, format_str0, ..., format_strN)",
+                    evt_tag_int("arg_pos", i));
+          return NULL;
+        }
+
+      const gchar *time_fmt = filterx_string_get_value(time_fmt_obj, NULL);
+      end = wall_clock_time_strptime(&wct, time_fmt, timestr);
+      if (!end)
+        {
+          msg_debug("filterx: unable to parse time",
+                    evt_tag_str("time_string", timestr),
+                    evt_tag_str("format", time_fmt));
+        }
+      else
+        break;
+    }
+
+  if (end)
+    {
+      convert_wall_clock_time_to_unix_time(&wct, &ut);
+      result = filterx_datetime_new(&ut);
+    }
+
+  return result;
 }
 
 FILTERX_DEFINE_TYPE(datetime, FILTERX_TYPE_NAME(object),

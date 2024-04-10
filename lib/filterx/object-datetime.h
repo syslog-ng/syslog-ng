@@ -33,5 +33,6 @@ FilterXObject *filterx_datetime_new(const UnixTime *ut);
 UnixTime filterx_datetime_get_value(FilterXObject *s);
 FilterXObject *filterx_typecast_datetime(GPtrArray *args);
 FilterXObject *filterx_typecast_datetime_isodate(GPtrArray *args);
+FilterXObject *filterx_datetime_strptime(GPtrArray *args);
 
 #endif
