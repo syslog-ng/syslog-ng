@@ -25,6 +25,6 @@
 
 #include "filterx/filterx-expr.h"
 
-FilterXExpr *filterx_variable_expr_new(NVHandle handle);
+FilterXExpr *filterx_variable_expr_new(const gchar *name);
 
 #endif

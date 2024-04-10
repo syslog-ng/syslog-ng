@@ -137,7 +137,7 @@ _unset(FilterXExpr *s)
 }
 
 FilterXExpr *
-filterx_variable_expr_new(NVHandle handle)
+filterx_variable_expr_new(const gchar *name)
 {
   FilterXVariableExpr *self = g_new0(FilterXVariableExpr, 1);
 
@@ -147,6 +147,6 @@ filterx_variable_expr_new(NVHandle handle)
   self->super.assign = _assign;
   self->super.isset = _isset;
   self->super.unset = _unset;
-  self->handle = handle;
+  self->handle = log_msg_get_value_handle(name);
   return &self->super;
 }
