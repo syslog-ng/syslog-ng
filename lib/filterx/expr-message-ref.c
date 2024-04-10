@@ -136,12 +136,6 @@ _unset(FilterXExpr *s)
   return TRUE;
 }
 
-static void
-_free(FilterXExpr *s)
-{
-//  FilterXMessageRefExpr *self = (FilterXMessageRefExpr *) s;
-}
-
 FilterXExpr *
 filterx_message_ref_expr_new(NVHandle handle)
 {
@@ -153,7 +147,6 @@ filterx_message_ref_expr_new(NVHandle handle)
   self->super.assign = _assign;
   self->super.isset = _isset;
   self->super.unset = _unset;
-  self->super.free_fn = _free;
   self->handle = handle;
   return &self->super;
 }

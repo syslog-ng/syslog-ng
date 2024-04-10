@@ -66,6 +66,7 @@ _free(FilterXExpr *s)
   g_free(self->attr_name);
   filterx_expr_unref(self->object);
   filterx_expr_unref(self->new_value);
+  filterx_expr_free_method(s);
 }
 
 FilterXExpr *

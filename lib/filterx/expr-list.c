@@ -80,6 +80,7 @@ _free(FilterXExpr *s)
 
   g_list_free_full(self->values, (GDestroyNotify) filterx_expr_unref);
   filterx_expr_unref(self->fillable);
+  filterx_expr_free_method(s);
 }
 
 FilterXExpr *

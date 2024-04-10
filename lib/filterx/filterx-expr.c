@@ -84,6 +84,7 @@ filterx_unary_op_free_method(FilterXExpr *s)
   FilterXUnaryOp *self = (FilterXUnaryOp *) s;
 
   filterx_expr_unref(self->operand);
+  filterx_expr_free_method(s);
 }
 
 void
@@ -101,6 +102,7 @@ filterx_binary_op_free_method(FilterXExpr *s)
 
   filterx_expr_unref(self->lhs);
   filterx_expr_unref(self->rhs);
+  filterx_expr_free_method(s);
 }
 
 void

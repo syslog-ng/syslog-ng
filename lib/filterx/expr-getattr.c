@@ -53,6 +53,7 @@ _free(FilterXExpr *s)
   FilterXGetAttr *self = (FilterXGetAttr *) s;
   g_free(self->attr_name);
   filterx_expr_unref(self->operand);
+  filterx_expr_free_method(s);
 }
 
 /* NOTE: takes the object reference */
