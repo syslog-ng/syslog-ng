@@ -45,14 +45,13 @@ _eval(FilterXExpr *s)
   if (!new_value)
     goto exit;
 
-  result = filterx_object_clone(new_value);
+  FilterXObject *cloned = filterx_object_clone(new_value);
   filterx_object_unref(new_value);
 
-  if (!filterx_object_setattr(object, self->attr_name, result))
-    {
-      filterx_object_unref(result);
-      result = NULL;
-    }
+  if (filterx_object_setattr(object, self->attr_name, cloned))
+    result = filterx_boolean_new(TRUE);
+
+  filterx_object_unref(cloned);
 
 exit:
   filterx_object_unref(object);

@@ -33,6 +33,9 @@
 #include "filterx/object-json.h"
 #include "filterx/object-list-interface.h"
 #include "filterx/object-dict-interface.h"
+#include "filterx/expr-assign.h"
+#include "filterx/expr-message-ref.h"
+#include "filterx/expr-setattr.h"
 
 #include "apphook.h"
 #include "scratch-buffers.h"
@@ -291,6 +294,90 @@ Test(filterx_expr, test_filterx_dict_merge)
   filterx_object_unref(bar);
   filterx_object_unref(foo);
   filterx_expr_unref(fillable);
+  log_msg_unref(msg);
+  filterx_scope_unref(scope);
+  filterx_eval_set_context(NULL);
+}
+
+Test(filterx_expr, test_filterx_assign)
+{
+  LogMessage *msg = create_sample_message();
+  FilterXScope *scope = filterx_scope_new();
+
+  FilterXEvalContext context =
+  {
+    .msgs = &msg,
+    .num_msg = 1,
+    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .scope = scope,
+  };
+  filterx_eval_set_context(&context);
+
+  FilterXExpr *result_var = filterx_message_ref_expr_new(log_msg_get_value_handle("$result-var"));
+  cr_assert(result_var != NULL);
+
+  FilterXExpr *assign = filterx_assign_new(result_var, filterx_literal_new(filterx_string_new("foobar", -1)));
+
+  FilterXObject *res = filterx_expr_eval(assign);
+  cr_assert_not_null(res);
+  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(boolean)));
+  cr_assert(filterx_object_truthy(res));
+
+  cr_assert_not_null(result_var);
+  FilterXObject *result_obj = filterx_expr_eval(result_var);
+  cr_assert_not_null(result_obj);
+  cr_assert(filterx_object_is_type(result_obj, &FILTERX_TYPE_NAME(string)));
+  const gchar *result_val = filterx_string_get_value(result_obj, NULL);
+  cr_assert_str_eq("foobar", result_val);
+
+  filterx_object_unref(res);
+  filterx_expr_unref(assign);
+  filterx_object_unref(result_obj);
+  log_msg_unref(msg);
+  filterx_scope_unref(scope);
+  filterx_eval_set_context(NULL);
+}
+
+static void
+assert_object_json_equals(FilterXObject *obj, const gchar *expected_json_repr)
+{
+  struct json_object *jso = NULL;
+
+  cr_assert(filterx_object_map_to_json(obj, &jso) == TRUE, "error mapping to json, expected json was: %s",
+            expected_json_repr);
+  const gchar *json_repr = json_object_to_json_string_ext(jso, JSON_C_TO_STRING_PLAIN);
+  cr_assert_str_eq(json_repr, expected_json_repr);
+  json_object_put(jso);
+}
+
+Test(filterx_expr, test_filterx_setattr)
+{
+  LogMessage *msg = create_sample_message();
+  FilterXScope *scope = filterx_scope_new();
+
+  FilterXEvalContext context =
+  {
+    .msgs = &msg,
+    .num_msg = 1,
+    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .scope = scope,
+  };
+  filterx_eval_set_context(&context);
+
+  FilterXObject *json = filterx_json_object_new_empty();
+  FilterXExpr *fillable = filterx_literal_new(json);
+
+  FilterXExpr *setattr = filterx_setattr_new(fillable, "foo", filterx_literal_new(filterx_string_new("bar", -1)));
+  cr_assert_not_null(setattr);
+
+  FilterXObject *res = filterx_expr_eval(setattr);
+  cr_assert_not_null(res);
+  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(boolean)));
+  cr_assert(filterx_object_truthy(res));
+
+  assert_object_json_equals(json, "{\"foo\":\"bar\"}");
+
+  filterx_expr_unref(setattr);
   log_msg_unref(msg);
   filterx_scope_unref(scope);
   filterx_eval_set_context(NULL);
