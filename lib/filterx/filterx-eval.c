@@ -67,7 +67,7 @@ _evaluate_statement(FilterXExpr *expr)
       GString *buf = scratch_buffers_alloc();
       LogMessageValueType t;
 
-      if (!filterx_object_marshal(res, buf, &t))
+      if (res && !filterx_object_marshal(res, buf, &t))
         {
           g_assert_not_reached();
         }
