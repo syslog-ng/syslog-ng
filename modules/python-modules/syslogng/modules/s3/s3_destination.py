@@ -251,13 +251,13 @@ class S3Destination(LogDestination):
             # NOTE: child of the Credentials class.
             self.session._session._credentials = DeferredRefreshableCredentials(
                 refresh_using=create_assume_role_refresher(
-                    self.session.client( "sts" ),
-                    { "RoleArn": self.role, "RoleSessionName": "syslog-ng" }
+                    self.session.client("sts"),
+                    {"RoleArn": self.role, "RoleSessionName": "syslog-ng"}
                 ),
                 method="sts-assume-role",
             )
 
-        sts = self.session.client( "sts" )
+        sts = self.session.client("sts")
         whoami = sts.get_caller_identity().get("Arn")
         self.logger.info(f"Using {whoami} to access the bucket")
 
