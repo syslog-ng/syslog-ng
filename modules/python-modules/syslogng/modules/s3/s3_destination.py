@@ -23,7 +23,8 @@
 from .s3_object import S3Object, S3ObjectPersist, ConstructorError, PersistLoadError, AlreadyFinishedError
 
 try:
-    from boto3 import client
+    from boto3 import client, Session
+    from botocore.credentials import create_assume_role_refresher, DeferredRefreshableCredentials
     from botocore.exceptions import ClientError, EndpointConnectionError
 
     deps_installed = True
@@ -53,6 +54,7 @@ class S3Destination(LogDestination):
             self.bucket = str(options["bucket"])
             self.access_key = str(options["access_key"])
             self.secret_key = str(options["secret_key"])
+            self.role = str(options["role"])
             self.object_key: LogTemplate = options["object_key"]
             self.object_key_timestamp: Optional[LogTemplate] = options["object_key_timestamp"]
             self.message_template: LogTemplate = options["template"]
@@ -142,6 +144,7 @@ class S3Destination(LogDestination):
             )
             return False
 
+        self.session: Optional[Session] = None
         self.client: Optional[Any] = None
 
         self.s3_objects: Dict[str, S3Object] = dict()
@@ -236,12 +239,31 @@ class S3Destination(LogDestination):
         if self.is_opened():
             return True
 
-        self.client = client(
-            service_name="s3",
-            endpoint_url=self.url if self.url != "" else None,
+        self.session = Session(
             aws_access_key_id=self.access_key if self.access_key != "" else None,
             aws_secret_access_key=self.secret_key if self.secret_key != "" else None,
             region_name=self.region,
+        )
+
+        if self.role != "":
+            # NOTE: The Session.set_credentials always creates a new Credentials object from the given keys.
+            # NOTE: The DeferredRefreshableCredentials class is a child of RefreshableCredentials which is a
+            # NOTE: child of the Credentials class.
+            self.session._session._credentials = DeferredRefreshableCredentials(
+                refresh_using=create_assume_role_refresher(
+                    self.session.client( "sts" ),
+                    { "RoleArn": self.role, "RoleSessionName": "syslog-ng" }
+                ),
+                method="sts-assume-role",
+            )
+
+        sts = self.session.client( "sts" )
+        whoami = sts.get_caller_identity().get("Arn")
+        self.logger.info(f"Using {whoami} to access the bucket")
+
+        self.client = self.session.client(
+            service_name="s3",
+            endpoint_url=self.url if self.url != "" else None,
         )
 
         is_opened = False
