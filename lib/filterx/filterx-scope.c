@@ -102,6 +102,7 @@ struct _FilterXScope
   GArray *variables;
   GPtrArray *weak_refs;
   gboolean write_protected;
+  gboolean dirty;
 };
 
 static gboolean
@@ -135,6 +136,18 @@ _lookup_variable(FilterXScope *self, FilterXVariableHandle handle, FilterXVariab
     }
   *v_slot = &g_array_index(self->variables, FilterXVariable, l);
   return FALSE;
+}
+
+void
+filterx_scope_set_dirty(FilterXScope *self)
+{
+  self->dirty = TRUE;
+}
+
+gboolean
+filterx_scope_is_dirty(FilterXScope *self)
+{
+  return self->dirty;
 }
 
 FilterXVariableHandle
@@ -200,6 +213,14 @@ filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object)
 void
 filterx_scope_sync(FilterXScope *self, LogMessage *msg)
 {
+
+  if (!self->dirty)
+    {
+      msg_trace("Filterx sync: not syncing as scope is not dirty",
+                evt_tag_printf("scope", "%p", self));
+      return;
+    }
+
   GString *buffer = scratch_buffers_alloc();
 
   for (gint i = 0; i < self->variables->len; i++)
@@ -256,6 +277,7 @@ filterx_scope_sync(FilterXScope *self, LogMessage *msg)
                     evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
         }
     }
+  self->dirty = FALSE;
 }
 
 FilterXScope *
@@ -291,6 +313,13 @@ filterx_scope_clone(FilterXScope *other)
         }
     }
 
+  if (other->variables->len > 0)
+    self->dirty = other->dirty;
+  msg_trace("Filterx clone finished",
+            evt_tag_printf("scope", "%p", self),
+            evt_tag_printf("other", "%p", other),
+            evt_tag_int("dirty", self->dirty),
+            evt_tag_int("write_protected", self->write_protected));
   /* NOTE: we don't clone weak references, those only relate to mutable
    * objects, which we are cloning anyway */
   return self;

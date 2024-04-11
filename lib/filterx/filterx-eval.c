@@ -118,6 +118,7 @@ filterx_eval_exec_statements(FilterXScope *scope, GList *statements, LogMessage 
   /* NOTE: we only store the results into the message if the entire evaluation was successful */
   success = TRUE;
 fail:
+  filterx_scope_set_dirty(scope);
   filterx_eval_set_context(NULL);
   return success;
 }

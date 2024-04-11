@@ -56,6 +56,8 @@ void filterx_variable_mark_declared(FilterXVariable *v);
  */
 typedef struct _FilterXScope FilterXScope;
 
+void filterx_scope_set_dirty(FilterXScope *self);
+gboolean filterx_scope_is_dirty(FilterXScope *self);
 void filterx_scope_sync(FilterXScope *self, LogMessage *msg);
 
 FilterXVariableHandle filterx_scope_map_variable_to_handle(const gchar *name, FilterXVariableType type);
