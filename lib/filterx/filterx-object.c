@@ -23,6 +23,8 @@
 #include "filterx-object.h"
 #include "filterx-eval.h"
 #include "mainloop-worker.h"
+#include "filterx/object-primitive.h"
+#include "filterx/object-string.h"
 #include "filterx/filterx-globals.h"
 
 #define INIT_TYPE_METHOD(type, method_name) do { \
@@ -156,6 +158,44 @@ filterx_object_unref(FilterXObject *self)
       self->type->free_fn(self);
       g_free(self);
     }
+}
+
+FilterXObject *
+filterx_object_is_type_builtin(GPtrArray *args)
+{
+  if (args == NULL || args->len != 2)
+    {
+      msg_error("FilterX: is_type: invalid number of arguments. "
+                "Usage: is_type(object, type_str)");
+      return NULL;
+    }
+
+  FilterXObject *object = g_ptr_array_index(args, 0);
+  if (!object)
+    {
+      msg_error("FilterX: is_type: invalid argument: object"
+                "Usage: is_type(object, type_str)");
+      return NULL;
+    }
+
+  FilterXObject *type_arg = g_ptr_array_index(args, 1);
+  if (!type_arg || !filterx_object_is_type(type_arg, &FILTERX_TYPE_NAME(string)))
+    {
+      msg_error("FilterX: is_type: invalid argument: type_str"
+                "Usage: is_type(object, type_str)");
+      return NULL;
+    }
+
+  const gchar *type_name = filterx_string_get_value(type_arg, NULL);
+  FilterXType *fxtype = filterx_type_lookup(type_name);
+  if (!fxtype)
+    {
+      msg_error("FilterX: is_type: unknown type name",
+                evt_tag_str("type_name", type_name));
+      return NULL;
+    }
+
+  return filterx_boolean_new(filterx_object_is_type(object, fxtype));
 }
 
 FilterXType FILTERX_TYPE_NAME(object) =

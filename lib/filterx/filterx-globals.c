@@ -63,6 +63,7 @@ filterx_builtin_functions_init(void)
   g_assert(filterx_builtin_function_register("int", filterx_typecast_integer));
   g_assert(filterx_builtin_function_register("double", filterx_typecast_double));
   g_assert(filterx_builtin_function_register("strptime", filterx_datetime_strptime));
+  g_assert(filterx_builtin_function_register("istype", filterx_object_is_type_builtin));
 }
 
 void
