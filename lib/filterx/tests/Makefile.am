@@ -13,7 +13,8 @@ lib_filterx_tests_TESTS		 =              \
 		lib/filterx/tests/test_filterx_expr	\
 		lib/filterx/tests/test_expr_comparison \
 		lib/filterx/tests/test_expr_condition \
-		lib/filterx/tests/test_builtin_functions
+		lib/filterx/tests/test_builtin_functions \
+		lib/filterx/tests/test_type_registry
 
 EXTRA_DIST += lib/filterx/tests/CMakeLists.txt \
 	lib/filterx/tests/filterx-lib.h
@@ -64,3 +65,6 @@ lib_filterx_tests_test_object_integer_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
 
 lib_filterx_tests_test_object_double_CFLAGS  = $(TEST_CFLAGS)
 lib_filterx_tests_test_object_double_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
+
+lib_filterx_tests_test_type_registry_CFLAGS  = $(TEST_CFLAGS)
+lib_filterx_tests_test_type_registry_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
