@@ -24,7 +24,7 @@
 #define COMPAT_JSON_C_H_INCLUDED 1
 
 #include "compat/compat.h"
-#include <json-c/json.h>
+#include <json.h>
 
 #if JSON_C_MAJOR_VERSION == 0 && JSON_C_MINOR_VERSION < 15
 
