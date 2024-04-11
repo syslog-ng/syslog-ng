@@ -88,9 +88,13 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   log_path_options_push_junction(&local_path_options, &matched, path_options);
   if (_has_multiple_arcs(self))
     {
-      log_msg_write_protect(msg);
       if (path_options->filterx_scope)
-        filterx_scope_write_protect(path_options->filterx_scope);
+        {
+          log_msg_make_writable(&msg, path_options);
+          filterx_scope_sync(path_options->filterx_scope, msg);
+          filterx_scope_write_protect(path_options->filterx_scope);
+        }
+      log_msg_write_protect(msg);
     }
   for (fallback = 0; (fallback == 0) || (fallback == 1 && self->fallback_exists && !delivered); fallback++)
     {
@@ -216,6 +220,7 @@ log_multiplexer_new(GlobalConfig *cfg)
   LogMultiplexer *self = g_new0(LogMultiplexer, 1);
 
   log_pipe_init_instance(&self->super, cfg);
+  self->super.flags = self->super.flags & ~PIF_SYNC_SCOPE;
   self->super.init = log_multiplexer_init;
   self->super.deinit = log_multiplexer_deinit;
   self->super.queue = log_multiplexer_queue;

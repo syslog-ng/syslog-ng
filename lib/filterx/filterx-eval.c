@@ -122,9 +122,3 @@ fail:
   filterx_eval_set_context(NULL);
   return success;
 }
-
-void
-filterx_eval_sync_scope_and_message(FilterXScope *scope, LogMessage *msg)
-{
-  filterx_scope_sync(scope, msg);
-}
