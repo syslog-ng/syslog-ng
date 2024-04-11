@@ -35,6 +35,7 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/expr-condition.h \
 	lib/filterx/expr-isset.h \
 	lib/filterx/expr-unset.h		\
+	lib/filterx/expr-shorthand.h		\
 	lib/filterx/filterx-private.h
 
 
@@ -74,6 +75,7 @@ filterx_sources = 				\
 	lib/filterx/expr-condition.c		\
 	lib/filterx/expr-isset.c		\
 	lib/filterx/expr-unset.c		\
+	lib/filterx/expr-shorthand.c		\
 	lib/filterx/filterx-private.c	\
 	lib/filterx/filterx-grammar.y
 
