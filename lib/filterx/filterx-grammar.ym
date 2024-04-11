@@ -39,8 +39,6 @@
 #include "filterx/expr-setattr.h"
 #include "filterx/expr-get-subscript.h"
 #include "filterx/expr-set-subscript.h"
-#include "filterx/expr-dict.h"
-#include "filterx/expr-list.h"
 #include "filterx/expr-comparison.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-json.h"
@@ -51,10 +49,11 @@
 #include "filterx/expr-condition.h"
 #include "filterx/expr-isset.h"
 #include "filterx/expr-unset.h"
+#include "filterx/expr-literal-generator.h"
 
 #include "template/templates.h"
 
-FilterXExpr *last_fillable;
+FilterXExpr *last_literal_generator;
 
 FilterXExpr *
 construct_template_expr(LogTemplate *template)
@@ -102,14 +101,14 @@ construct_template_expr(LogTemplate *template)
 %type <ptr> literal_object
 %type <node> lvalue
 %type <ptr> template
-%type <ptr> dict_expr
-%type <ptr> dict_expr_inner
-%type <ptr> dict_key_values
-%type <ptr> dict_key_value
-%type <ptr> list_expr
-%type <ptr> list_expr_inner
-%type <ptr> list_values
-%type <ptr> list_value
+%type <ptr> dict_generator
+%type <ptr> inner_dict_generator
+%type <ptr> dict_element
+%type <ptr> dict_elements
+%type <ptr> list_generator
+%type <ptr> inner_list_generator
+%type <ptr> list_element
+%type <ptr> list_elements
 %type <num> boolean
 %type <ptr> conditional
 %type <ptr> if
@@ -138,6 +137,7 @@ assignment
 	| expr '.' LL_IDENTIFIER KW_ASSIGN expr	{ $$ = filterx_setattr_new($1, $3, $5); free($3); }
 	| expr '[' expr ']' KW_ASSIGN expr	{ $$ = filterx_set_subscript_new($1, $3, $6); }
 	| expr '[' ']' KW_ASSIGN expr  		{ $$ = filterx_set_subscript_new($1, NULL, $5); }
+	| expr KW_PLUS_ASSIGN expr_generator	{ $$ = $3; filterx_generator_set_fillable($3, $1); }
 	;
 
 expr
@@ -148,7 +148,6 @@ expr
 	| expr KW_AND expr                      { $$ = filterx_binary_and_new($1, $3); }
 	| expr '.' LL_IDENTIFIER		{ $$ = filterx_getattr_new($1, $3); free($3); }
 	| expr '[' expr ']'			{ $$ = filterx_get_subscript_new($1, $3); }
-	| expr KW_PLUS_ASSIGN { last_fillable = $1; } expr_generator { $$ = $4; }
         | expr KW_TA_LT expr		        { $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT); }
         | expr KW_TA_LE expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_LT | FCMPX_EQ); }
         | expr KW_TA_EQ expr			{ $$ = filterx_comparison_new($1, $3, FCMPX_TYPE_AWARE | FCMPX_EQ); }
@@ -176,8 +175,8 @@ expr_value
 	;
 
 expr_generator
-	: dict_expr
-	| list_expr
+	: dict_generator
+	| list_generator
 	;
 
 function_call
@@ -238,44 +237,46 @@ template
           }
 	;
 
-dict_expr
-	: '{' dict_key_values '}'               { $$ = filterx_dict_expr_new(last_fillable, $2); }
+dict_generator
+	: '{' { last_literal_generator = filterx_literal_generator_new(); } dict_elements '}'
+						{ filterx_literal_generator_set_elements(last_literal_generator, $3); $$ = last_literal_generator; }
 	;
 
-dict_expr_inner
-	: '{' dict_key_values '}'               { $$ = filterx_dict_expr_inner_new(last_fillable, $2); }
+inner_dict_generator
+	: '{' dict_elements '}'			{ $$ = filterx_literal_inner_dict_generator_new(last_literal_generator, $2); }
 	;
 
-dict_key_values
-	: dict_key_value ',' dict_key_values    { $$ = g_list_prepend($3, $1); }
-	| dict_key_value                        { $$ = g_list_append(NULL, $1); }
-	|                                       { $$ = NULL; }
+dict_elements
+	: dict_element ',' dict_elements	{ $$ = g_list_prepend($3, $1); }
+	| dict_element				{ $$ = g_list_append(NULL, $1); }
+	|					{ $$ = NULL; }
 	;
 
-dict_key_value
-	: LL_STRING ':' expr                    { $$ = filterx_kv_new($1, $3); free($1); }
-	| LL_STRING ':' dict_expr_inner         { $$ = filterx_kv_new($1, $3); free($1); }
-	| LL_STRING ':' list_expr_inner         { $$ = filterx_kv_new($1, $3); free($1); }
+dict_element
+	: expr ':' expr				{ $$ = filterx_literal_generator_elem_new($1, $3, TRUE); }
+	| expr ':' inner_dict_generator		{ $$ = filterx_literal_generator_elem_new($1, $3, FALSE); }
+	| expr ':' inner_list_generator		{ $$ = filterx_literal_generator_elem_new($1, $3, FALSE); }
 	;
 
-list_expr
-	: '[' list_values ']'                   { $$ = filterx_list_expr_new(last_fillable, $2); }
+list_generator
+	: '[' { last_literal_generator = filterx_literal_generator_new(); } list_elements ']'
+						{ filterx_literal_generator_set_elements(last_literal_generator, $3); $$ = last_literal_generator; }
 	;
 
-list_expr_inner
-	: '[' list_values ']'                   { $$ = filterx_list_expr_inner_new(last_fillable, $2); }
+inner_list_generator
+	: '[' list_elements ']'			{ $$ = filterx_literal_inner_list_generator_new(last_literal_generator, $2); }
 	;
 
-list_values
-	: list_value ',' list_values            { $$ = g_list_prepend($3, $1); }
-	| list_value                            { $$ = g_list_append(NULL, $1); }
-	|                                       { $$ = NULL; }
+list_elements
+	: list_element ',' list_elements	{ $$ = g_list_prepend($3, $1); }
+	| list_element				{ $$ = g_list_append(NULL, $1); }
+	|					{ $$ = NULL; }
 	;
 
-list_value
-	: expr                                  { $$ = $1; }
-	| dict_expr_inner                       { $$ = $1; }
-	| list_expr_inner                       { $$ = $1; }
+list_element
+	: expr					{ $$ = filterx_literal_generator_elem_new(NULL, $1, TRUE); }
+	| inner_dict_generator			{ $$ = filterx_literal_generator_elem_new(NULL, $1, FALSE); }
+	| inner_list_generator			{ $$ = filterx_literal_generator_elem_new(NULL, $1, FALSE); }
 	;
 
 conditional

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,18 +20,29 @@
  * COPYING for details.
  *
  */
-#ifndef FILTERX_EXPR_JSON_H_INCLUDED
-#define FILTERX_EXPR_JSON_H_INCLUDED
 
-#include "filterx/filterx-expr.h"
+#include "filterx/expr-generator.h"
 
-typedef struct _FilterXKeyValue FilterXKeyValue;
+/* Takes reference of fillable */
+void
+filterx_generator_set_fillable(FilterXExpr *s, FilterXExpr *fillable)
+{
+  FilterXExprGenerator *self = (FilterXExprGenerator *) s;
 
-FilterXKeyValue *filterx_kv_new(const gchar *key, FilterXExpr *value_expr);
-void filterx_kv_free(FilterXKeyValue *self);
+  self->fillable = fillable;
+}
 
-FilterXExpr *filterx_dict_expr_new(FilterXExpr *fillable, GList *key_values);
-FilterXExpr *filterx_dict_expr_inner_new(FilterXExpr *fillable, GList *key_values);
+void
+filterx_generator_init_instance(FilterXExpr *s)
+{
+  filterx_expr_init_instance(s);
+}
 
+void
+filterx_generator_free_method(FilterXExpr *s)
+{
+  FilterXExprGenerator *self = (FilterXExprGenerator *) s;
 
-#endif
+  filterx_expr_unref(self->fillable);
+  filterx_expr_free_method(s);
+}

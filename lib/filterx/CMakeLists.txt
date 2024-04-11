@@ -5,8 +5,6 @@ set(FILTERX_HEADERS
     filterx/expr-function.h
     filterx/expr-getattr.h
     filterx/expr-get-subscript.h
-    filterx/expr-dict.h
-    filterx/expr-list.h
     filterx/expr-literal.h
     filterx/expr-message-ref.h
     filterx/expr-setattr.h
@@ -34,6 +32,8 @@ set(FILTERX_HEADERS
     filterx/expr-isset.h
     filterx/expr-unset.h
     filterx/expr-shorthand.h
+    filterx/expr-generator.h
+    filterx/expr-literal-generator.h
     filterx/filterx-private.h
     PARENT_SCOPE
     )
@@ -45,8 +45,6 @@ set(FILTERX_SOURCES
     filterx/expr-function.c
     filterx/expr-getattr.c
     filterx/expr-get-subscript.c
-    filterx/expr-dict.c
-    filterx/expr-list.c
     filterx/expr-literal.c
     filterx/expr-message-ref.c
     filterx/expr-setattr.c
@@ -75,6 +73,8 @@ set(FILTERX_SOURCES
     filterx/expr-isset.c
     filterx/expr-unset.c
     filterx/expr-shorthand.c
+    filterx/expr-generator.c
+    filterx/expr-literal-generator.c
     filterx/filterx-private.c
     PARENT_SCOPE
     )

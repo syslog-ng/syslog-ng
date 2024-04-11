@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,13 +20,20 @@
  * COPYING for details.
  *
  */
-#ifndef FILTERX_EXPR_LIST_H_INCLUDED
-#define FILTERX_EXPR_LIST_H_INCLUDED
+
+#ifndef FILTERX_EXPR_GENERATOR_H_INCLUDED
+#define FILTERX_EXPR_GENERATOR_H_INCLUDED
 
 #include "filterx/filterx-expr.h"
 
+typedef struct FilterXExprGenerator_
+{
+  FilterXExpr super;
+  FilterXExpr *fillable;
+} FilterXExprGenerator;
 
-FilterXExpr *filterx_list_expr_new(FilterXExpr *fillable, GList *values);
-FilterXExpr *filterx_list_expr_inner_new(FilterXExpr *fillable, GList *values);
+void filterx_generator_set_fillable(FilterXExpr *s, FilterXExpr *fillable);
+void filterx_generator_init_instance(FilterXExpr *s);
+void filterx_generator_free_method(FilterXExpr *s);
 
 #endif
