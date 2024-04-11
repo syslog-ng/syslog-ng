@@ -319,6 +319,7 @@ literal_object
 lvalue
 	: '$' LL_IDENTIFIER			{ $$ = filterx_msg_variable_expr_new($2); free($2); }
 	| LL_MESSAGE_REF			{ $$ = filterx_msg_variable_expr_new($1); free($1); }
+	| LL_IDENTIFIER				{ $$ = filterx_floating_variable_expr_new($1); free($1); }
 	;
 
 boolean
