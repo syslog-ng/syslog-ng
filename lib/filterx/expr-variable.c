@@ -41,7 +41,7 @@ _pull_variable_from_message(FilterXVariableExpr *self, FilterXEvalContext *conte
     return NULL;
 
   FilterXObject *msg_ref = filterx_message_value_new_borrowed(value, value_len, t);
-  filterx_scope_register_variable(context->scope, self->handle, FALSE, msg_ref);
+  filterx_scope_register_variable(context->scope, self->handle, msg_ref);
   return msg_ref;
 }
 
@@ -49,7 +49,7 @@ _pull_variable_from_message(FilterXVariableExpr *self, FilterXEvalContext *conte
 static void
 _whiteout_variable(FilterXVariableExpr *self, FilterXEvalContext *context)
 {
-  filterx_scope_register_variable(context->scope, self->handle, FALSE, NULL);
+  filterx_scope_register_variable(context->scope, self->handle, NULL);
 }
 
 static FilterXObject *
@@ -63,7 +63,9 @@ _eval(FilterXExpr *s)
   if (variable)
     return filterx_variable_get_value(variable);
 
-  return _pull_variable_from_message(self, context, context->msgs[0]);
+  if (!filterx_variable_handle_is_floating(self->handle))
+    return _pull_variable_from_message(self, context, context->msgs[0]);
+  return NULL;
 }
 
 static void
@@ -88,15 +90,13 @@ _assign(FilterXExpr *s, FilterXObject *new_value)
     {
       /* NOTE: we pass NULL as initial_value to make sure the new variable
        * is considered changed due to the assignment */
-      variable = filterx_scope_register_variable(scope, self->handle, FALSE, NULL);
+
+      variable = filterx_scope_register_variable(scope, self->handle, NULL);
     }
 
   /* this only clones mutable objects */
   new_value = filterx_object_clone(new_value);
   filterx_variable_set_value(variable, new_value);
-
-
-
   filterx_object_unref(new_value);
   return TRUE;
 }
@@ -136,8 +136,8 @@ _unset(FilterXExpr *s)
   return TRUE;
 }
 
-FilterXExpr *
-filterx_variable_expr_new(const gchar *name)
+static FilterXExpr *
+filterx_variable_expr_new(const gchar *name, FilterXVariableType type)
 {
   FilterXVariableExpr *self = g_new0(FilterXVariableExpr, 1);
 
@@ -147,6 +147,18 @@ filterx_variable_expr_new(const gchar *name)
   self->super.assign = _assign;
   self->super.isset = _isset;
   self->super.unset = _unset;
-  self->handle = log_msg_get_value_handle(name);
+  self->handle = filterx_scope_map_variable_to_handle(name, type);
   return &self->super;
+}
+
+FilterXExpr *
+filterx_msg_variable_expr_new(const gchar *name)
+{
+  return filterx_variable_expr_new(name, FX_VAR_MESSAGE);
+}
+
+FilterXExpr *
+filterx_floating_variable_expr_new(const gchar *name)
+{
+  return filterx_variable_expr_new(name, FX_VAR_FLOATING);
 }

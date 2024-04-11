@@ -354,7 +354,7 @@ Test(filterx_expr, test_filterx_assign)
   };
   filterx_eval_set_context(&context);
 
-  FilterXExpr *result_var = filterx_variable_expr_new("$result-var");
+  FilterXExpr *result_var = filterx_msg_variable_expr_new("$result-var");
   cr_assert(result_var != NULL);
 
   FilterXExpr *assign = filterx_assign_new(result_var, filterx_literal_new(filterx_string_new("foobar", -1)));

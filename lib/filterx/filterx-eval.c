@@ -125,5 +125,5 @@ fail:
 void
 filterx_eval_sync_scope_and_message(FilterXScope *scope, LogMessage *msg)
 {
-  filterx_scope_sync_to_message(scope, msg);
+  filterx_scope_sync(scope, msg);
 }

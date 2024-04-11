@@ -25,6 +25,7 @@
 
 #include "filterx/filterx-expr.h"
 
-FilterXExpr *filterx_variable_expr_new(const gchar *name);
+FilterXExpr *filterx_msg_variable_expr_new(const gchar *name);
+FilterXExpr *filterx_floating_variable_expr_new(const gchar *name);
 
 #endif

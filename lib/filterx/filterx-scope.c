@@ -23,18 +23,40 @@
 #include "filterx/filterx-scope.h"
 #include "scratch-buffers.h"
 
+#define FILTERX_HANDLE_FLOATING_BIT (1UL << 31)
+
 struct _FilterXVariable
 {
-  NVHandle handle;
+  /* the MSB indicates that the variable is a floating one */
+  FilterXVariableHandle handle;
   /*
-   * floating -- Indicates that this variable is not tied to the log
-   *             message, it is a floating variable
    * assigned -- Indicates that the variable was assigned to a new value
+   *
+   * declared -- this variable is declared (e.g. retained for the entire input pipeline)
    */
-  guint32 floating:1,
-          assigned:1;
+  guint32 assigned:1,
+          declared:1;
   FilterXObject *value;
 };
+
+gboolean
+filterx_variable_handle_is_floating(FilterXVariableHandle handle)
+{
+  return !!(handle & FILTERX_HANDLE_FLOATING_BIT);
+}
+
+gboolean
+filterx_variable_is_floating(FilterXVariable *v)
+{
+  return filterx_variable_handle_is_floating(v->handle);
+}
+
+
+static NVHandle
+filterx_variable_get_nv_handle(FilterXVariable *v)
+{
+  return v->handle & ~FILTERX_HANDLE_FLOATING_BIT;
+}
 
 FilterXObject *
 filterx_variable_get_value(FilterXVariable *v)
@@ -77,7 +99,7 @@ struct _FilterXScope
 };
 
 static gboolean
-_lookup_variable(FilterXScope *self, NVHandle handle, FilterXVariable **v_slot)
+_lookup_variable(FilterXScope *self, FilterXVariableHandle handle, FilterXVariable **v_slot)
 {
   gint l, h, m;
 
@@ -90,7 +112,7 @@ _lookup_variable(FilterXScope *self, NVHandle handle, FilterXVariable **v_slot)
 
       FilterXVariable *m_elem = &g_array_index(self->variables, FilterXVariable, m);
 
-      NVHandle mv = m_elem->handle;
+      FilterXVariableHandle mv = m_elem->handle;
       if (mv == handle)
         {
           *v_slot = m_elem;
@@ -109,8 +131,18 @@ _lookup_variable(FilterXScope *self, NVHandle handle, FilterXVariable **v_slot)
   return FALSE;
 }
 
+FilterXVariableHandle
+filterx_scope_map_variable_to_handle(const gchar *name, FilterXVariableType type)
+{
+  NVHandle nv_handle = log_msg_get_value_handle(name);
+
+  if (type == FX_VAR_MESSAGE)
+    return (FilterXVariableHandle) nv_handle;
+  return (FilterXVariableHandle) nv_handle | FILTERX_HANDLE_FLOATING_BIT;
+}
+
 FilterXVariable *
-filterx_scope_lookup_variable(FilterXScope *self, NVHandle handle)
+filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle)
 {
   FilterXVariable *v;
 
@@ -121,7 +153,7 @@ filterx_scope_lookup_variable(FilterXScope *self, NVHandle handle)
 
 FilterXVariable *
 filterx_scope_register_variable(FilterXScope *self,
-                                NVHandle handle, gboolean floating,
+                                FilterXVariableHandle handle,
                                 FilterXObject *initial_value)
 {
   FilterXVariable v, *v_slot;
@@ -138,7 +170,7 @@ filterx_scope_register_variable(FilterXScope *self,
 
   v.handle = handle;
   v.assigned = FALSE;
-  v.floating = floating;
+  v.declared = FALSE;
   v.value = filterx_object_ref(initial_value);
   g_array_insert_val(self->variables, v_index, v);
 
@@ -172,10 +204,10 @@ filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg)
        *     place (for mutable objects), and was not assigned to.
        *
        */
-      if (v->floating)
-        continue;
-
-      if (v->value == NULL)
+      if (filterx_variable_is_floating(v))
+        {
+        }
+      else if (v->value == NULL)
         {
           /* we need to unset */
           log_msg_unset_value(msg, v->handle);
@@ -211,13 +243,20 @@ filterx_scope_clone(FilterXScope *other)
 {
   FilterXScope *self = filterx_scope_new();
 
-  for (gint i = 0; i < other->variables->len; i++)
+  for (gint src_index = 0, dst_index = 0; src_index < other->variables->len; src_index++)
     {
-      FilterXVariable *v = &g_array_index(other->variables, FilterXVariable, i);
-      g_array_append_val(self->variables, *v);
-      FilterXVariable *v_clone = &g_array_index(self->variables, FilterXVariable, i);
+      FilterXVariable *v = &g_array_index(other->variables, FilterXVariable, src_index);
 
-      v_clone->value = filterx_object_clone(v->value);
+      if (v->declared || !filterx_variable_is_floating(v))
+        {
+          g_array_append_val(self->variables, *v);
+          FilterXVariable *v_clone = &g_array_index(self->variables, FilterXVariable, dst_index);
+
+          v_clone->value = filterx_object_clone(v->value);
+          dst_index++;
+          msg_trace("Filterx scope, cloning scope variable",
+                    evt_tag_str("variable", log_msg_get_value_name((v->handle & ~FILTERX_HANDLE_FLOATING_BIT), NULL)));
+        }
     }
 
   /* NOTE: we don't clone weak references, those only relate to mutable
