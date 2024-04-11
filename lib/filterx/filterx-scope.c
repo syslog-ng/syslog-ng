@@ -218,11 +218,20 @@ filterx_scope_sync(FilterXScope *self, LogMessage *msg)
         {
           if (!v->declared)
             {
+              msg_trace("Filterx sync: undeclared floating variable, unsetting",
+                        evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
               filterx_variable_set_value(v, NULL);
+            }
+          else
+            {
+              msg_trace("Filterx sync: declared floating variable, keeping it",
+                        evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
             }
         }
       else if (v->value == NULL)
         {
+          msg_trace("Filterx sync: whiteout variable, unsetting in message",
+                    evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
           /* we need to unset */
           log_msg_unset_value(msg, v->handle);
           v->assigned = FALSE;
@@ -230,12 +239,21 @@ filterx_scope_sync(FilterXScope *self, LogMessage *msg)
       else if (v->assigned || v->value->modified_in_place)
         {
           LogMessageValueType t;
+
+          msg_trace("Filterx sync: changed variable in scope, overwriting in message",
+                    evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
+
           g_string_truncate(buffer, 0);
           if (!filterx_object_marshal(v->value, buffer, &t))
             g_assert_not_reached();
           log_msg_set_value_with_type(msg, v->handle, buffer->str, buffer->len, t);
           v->value->modified_in_place = FALSE;
           v->assigned = FALSE;
+        }
+      else
+        {
+          msg_trace("Filterx sync: variable in scope and message in sync, not doing anything",
+                    evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
         }
     }
 }
