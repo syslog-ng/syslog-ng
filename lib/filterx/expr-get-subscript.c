@@ -100,6 +100,7 @@ _free(FilterXExpr *s)
   FilterXGetSubscript *self = (FilterXGetSubscript *) s;
   filterx_expr_unref(self->key);
   filterx_expr_unref(self->operand);
+  filterx_expr_free_method(s);
 }
 
 /* NOTE: takes the object reference */

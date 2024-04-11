@@ -59,6 +59,7 @@ _free(FilterXExpr *s)
 {
   FilterXTemplate *self = (FilterXTemplate *) s;
   log_template_unref(self->template);
+  filterx_expr_free_method(s);
 }
 
 /* NOTE: takes the object reference */

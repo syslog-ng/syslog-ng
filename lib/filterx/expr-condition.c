@@ -82,6 +82,7 @@ _free (FilterXExpr *s)
   g_list_free_full(self->statements, (GDestroyNotify) filterx_expr_unref);
   if (self->false_branch != NULL)
     filterx_expr_unref(&self->false_branch->super);
+  filterx_expr_free_method(s);
 }
 
 static FilterXObject *

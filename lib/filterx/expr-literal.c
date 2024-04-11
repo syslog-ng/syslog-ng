@@ -40,6 +40,7 @@ _free(FilterXExpr *s)
 {
   FilterXLiteral *self = (FilterXLiteral *) s;
   filterx_object_unref(self->object);
+  filterx_expr_free_method(s);
 }
 
 /* NOTE: takes the object reference */

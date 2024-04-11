@@ -101,6 +101,7 @@ _free(FilterXExpr *s)
 
   g_list_free_full(self->key_values, (GDestroyNotify) filterx_kv_free);
   filterx_expr_unref(self->fillable);
+  filterx_expr_free_method(s);
 }
 
 FilterXExpr *
