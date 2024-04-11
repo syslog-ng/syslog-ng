@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 shifter <shifter@axoflow.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,15 +20,15 @@
  * COPYING for details.
  *
  */
-#ifndef FILTERX_GLOBALS_TESTS_H_INCLUDED
-#define FILTERX_GLOBALS_TESTS_H_INCLUDED
+#ifndef FILTERX_PRIVATE_H_INCLUDED
+#define FILTERX_PRIVATE_H_INCLUDED
 
 #include "filterx-object.h"
 #include "filterx/expr-function.h"
 
-gboolean filterx_builtin_function_register_inner(GHashTable *ht, const gchar *fn_name, FilterXFunctionProto func);
-FilterXFunctionProto filterx_builtin_function_lookup_inner(GHashTable *ht, const gchar *fn_name);
-void filterx_builtin_functions_init_inner(GHashTable **ht);
-void filterx_builtin_functions_deinit_inner(GHashTable *ht);
+gboolean filterx_builtin_function_register_private(GHashTable *ht, const gchar *fn_name, FilterXFunctionProto func);
+FilterXFunctionProto filterx_builtin_function_lookup_private(GHashTable *ht, const gchar *fn_name);
+void filterx_builtin_functions_init_private(GHashTable **ht);
+void filterx_builtin_functions_deinit_private(GHashTable *ht);
 
 #endif

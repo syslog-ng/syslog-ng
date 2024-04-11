@@ -21,6 +21,7 @@
  *
  */
 #include "filterx/filterx-globals.h"
+#include "filterx/filterx-private.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-null.h"
 #include "filterx/object-string.h"
@@ -33,39 +34,21 @@
 static GHashTable *filterx_builtin_functions = NULL;
 
 gboolean
-filterx_builtin_function_register_inner(GHashTable *ht, const gchar *fn_name, FilterXFunctionProto func)
-{
-  return g_hash_table_insert(ht, g_strdup(fn_name), func);
-}
-
-gboolean
 filterx_builtin_function_register(const gchar *fn_name, FilterXFunctionProto func)
 {
-  return filterx_builtin_function_register_inner(filterx_builtin_functions, fn_name, func);
-}
-
-FilterXFunctionProto
-filterx_builtin_function_lookup_inner(GHashTable *ht, const gchar *fn_name)
-{
-  return (FilterXFunctionProto)g_hash_table_lookup(ht, fn_name);
+  return filterx_builtin_function_register_private(filterx_builtin_functions, fn_name, func);
 }
 
 FilterXFunctionProto
 filterx_builtin_function_lookup(const gchar *fn_name)
 {
-  return filterx_builtin_function_lookup_inner(filterx_builtin_functions, fn_name);
-}
-
-void
-filterx_builtin_functions_init_inner(GHashTable **ht)
-{
-  *ht = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) NULL);
+  return filterx_builtin_function_lookup_private(filterx_builtin_functions, fn_name);
 }
 
 void
 filterx_builtin_functions_init(void)
 {
-  filterx_builtin_functions_init_inner(&filterx_builtin_functions);
+  filterx_builtin_functions_init_private(&filterx_builtin_functions);
   filterx_builtin_function_register("json", filterx_json_new_from_args);
   filterx_builtin_function_register("json_array", filterx_json_array_new_from_args);
   g_assert(filterx_builtin_function_register("datetime", filterx_typecast_datetime));
@@ -80,15 +63,9 @@ filterx_builtin_functions_init(void)
 }
 
 void
-filterx_builtin_functions_deinit_inner(GHashTable *ht)
-{
-  g_hash_table_destroy(ht);
-}
-
-void
 filterx_builtin_functions_deinit(void)
 {
-  filterx_builtin_functions_deinit_inner(filterx_builtin_functions);
+  filterx_builtin_functions_deinit_private(filterx_builtin_functions);
 }
 
 void
