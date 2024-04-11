@@ -23,6 +23,7 @@
 #include "filterx-object.h"
 #include "filterx-eval.h"
 #include "mainloop-worker.h"
+#include "filterx/filterx-globals.h"
 
 #define INIT_TYPE_METHOD(type, method_name) do { \
     if (type->method_name) \
@@ -57,6 +58,7 @@ filterx_type_init(FilterXType *type)
   INIT_TYPE_METHOD(type, dict_factory);
   INIT_TYPE_METHOD(type, repr);
   INIT_TYPE_METHOD(type, free_fn);
+  g_assert(filterx_type_register(type->name, type));
 }
 
 #define FILTERX_OBJECT_MAGIC_BIAS G_MAXINT32

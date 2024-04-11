@@ -30,6 +30,8 @@
 #include "filterx/object-list-interface.h"
 #include "filterx/object-dict-interface.h"
 
+// Builtin functions
+
 gboolean
 filterx_builtin_function_register_private(GHashTable *ht, const gchar *fn_name, FilterXFunctionProto func)
 {
@@ -50,6 +52,32 @@ filterx_builtin_functions_init_private(GHashTable **ht)
 
 void
 filterx_builtin_functions_deinit_private(GHashTable *ht)
+{
+  g_hash_table_destroy(ht);
+}
+
+// FilterX Types
+
+gboolean
+filterx_type_register_private(GHashTable *ht, const gchar *type_name, FilterXType *fxtype)
+{
+  return g_hash_table_insert(ht, g_strdup(type_name), fxtype);
+}
+
+FilterXType *
+filterx_type_lookup_private(GHashTable *ht, const gchar *type_name)
+{
+  return (FilterXType *)g_hash_table_lookup(ht, type_name);
+}
+
+void
+filterx_types_init_private(GHashTable **ht)
+{
+  *ht = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) NULL);
+}
+
+void
+filterx_types_deinit_private(GHashTable *ht)
 {
   g_hash_table_destroy(ht);
 }

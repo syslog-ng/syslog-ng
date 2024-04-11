@@ -32,6 +32,9 @@
 #include "filterx/object-dict-interface.h"
 
 static GHashTable *filterx_builtin_functions = NULL;
+static GHashTable *filterx_types = NULL;
+
+// Builtin functions
 
 gboolean
 filterx_builtin_function_register(const gchar *fn_name, FilterXFunctionProto func)
@@ -68,9 +71,40 @@ filterx_builtin_functions_deinit(void)
   filterx_builtin_functions_deinit_private(filterx_builtin_functions);
 }
 
+// FilterX types
+
+FilterXType *
+filterx_type_lookup(const gchar *type_name)
+{
+  return filterx_type_lookup_private(filterx_types, type_name);
+}
+
+gboolean
+filterx_type_register(const gchar *type_name, FilterXType *fxtype)
+{
+  return filterx_type_register_private(filterx_types, type_name, fxtype);
+}
+
+void
+filterx_types_init(void)
+{
+  filterx_types_init_private(&filterx_types);
+  filterx_type_register("object", &FILTERX_TYPE_NAME(object));
+}
+
+void
+filterx_types_deinit(void)
+{
+  filterx_types_deinit_private(filterx_types);
+}
+
+// Globals
+
 void
 filterx_global_init(void)
 {
+  filterx_types_init();
+
   filterx_type_init(&FILTERX_TYPE_NAME(list));
   filterx_type_init(&FILTERX_TYPE_NAME(dict));
 
@@ -95,6 +129,7 @@ void
 filterx_global_deinit(void)
 {
   filterx_builtin_functions_deinit();
+  filterx_types_deinit();
 }
 
 FilterXObject *filterx_typecast_get_arg(GPtrArray *args, gchar *alt_msg)
