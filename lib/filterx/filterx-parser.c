@@ -52,6 +52,9 @@ static CfgLexerKeyword filterx_keywords[] =
   { "unset",              KW_UNSET },
   { "declare",            KW_DECLARE },
 
+  /* TODO: This should be done via generator function. */
+  { "regexp_search",      KW_REGEXP_SEARCH },
+
   { CFG_KEYWORD_STOP },
 };
 
