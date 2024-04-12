@@ -23,12 +23,45 @@
 
 #include "filterx/expr-regexp.h"
 #include "filterx/object-primitive.h"
+#include "compat/pcre.h"
+
+static pcre2_code_8 *
+_compile_pattern(const gchar *pattern)
+{
+  gint rc;
+  PCRE2_SIZE error_offset;
+  gint flags = PCRE2_DUPNAMES;
+
+  pcre2_code_8 *compiled = pcre2_compile((PCRE2_SPTR) pattern, PCRE2_ZERO_TERMINATED, flags, &rc, &error_offset, NULL);
+  if (!compiled)
+    {
+      PCRE2_UCHAR error_message[128];
+      pcre2_get_error_message(rc, error_message, sizeof(error_message));
+      msg_error("FilterX: Failed to compile regexp pattern",
+                evt_tag_str("pattern", pattern),
+                evt_tag_str("error", (const gchar *) error_message),
+                evt_tag_int("error_offset", (gint) error_offset));
+      return NULL;
+    }
+
+  rc = pcre2_jit_compile(compiled, PCRE2_JIT_COMPLETE);
+  if (rc < 0)
+    {
+      PCRE2_UCHAR error_message[128];
+      pcre2_get_error_message(rc, error_message, sizeof(error_message));
+      msg_debug("FilterX: Failed to JIT compile regular expression",
+                evt_tag_str("pattern", pattern),
+                evt_tag_str("error", (const gchar *) error_message));
+    }
+
+  return compiled;
+}
 
 typedef struct FilterXExprRegexpMatch_
 {
   FilterXExpr super;
   FilterXExpr *lhs;
-  gchar *pattern;
+  pcre2_code_8 *pattern;
 } FilterXExprRegexpMatch;
 
 static FilterXObject *
@@ -46,7 +79,8 @@ _regexp_match_free(FilterXExpr *s)
   FilterXExprRegexpMatch *self = (FilterXExprRegexpMatch *) s;
 
   filterx_expr_unref(self->lhs);
-  g_free(self->pattern);
+  if (self->pattern)
+    pcre2_code_free(self->pattern);
   filterx_expr_free_method(s);
 }
 
@@ -61,7 +95,12 @@ filterx_expr_regexp_match_new(FilterXExpr *lhs, const gchar *pattern)
   self->super.free_fn = _regexp_match_free;
 
   self->lhs = lhs;
-  self->pattern = g_strdup(pattern);
+  self->pattern = _compile_pattern(pattern);
+  if (!self->pattern)
+    {
+      filterx_expr_unref(&self->super);
+      return NULL;
+    }
 
   return &self->super;
 }
@@ -71,7 +110,7 @@ typedef struct FilterXExprRegexpSearchGenerator_
 {
   FilterXExprGenerator super;
   FilterXExpr *lhs;
-  gchar *pattern;
+  pcre2_code_8 *pattern;
 } FilterXExprRegexpSearchGenerator;
 
 static FilterXObject *
@@ -110,7 +149,8 @@ _regexp_search_generator_free(FilterXExpr *s)
   FilterXExprRegexpSearchGenerator *self = (FilterXExprRegexpSearchGenerator *) s;
 
   filterx_expr_unref(self->lhs);
-  g_free(self->pattern);
+  if (self->pattern)
+    pcre2_code_free(self->pattern);
   filterx_generator_free_method(s);
 }
 
@@ -126,7 +166,12 @@ filterx_expr_regexp_search_generator_new(FilterXExpr *lhs, const gchar *pattern)
   self->super.create_container = _regexp_search_generator_create_container;
 
   self->lhs = lhs;
-  self->pattern = g_strdup(pattern);
+  self->pattern = _compile_pattern(pattern);
+  if (!self->pattern)
+    {
+      filterx_expr_unref(&self->super.super);
+      return NULL;
+    }
 
   return &self->super.super;
 }
