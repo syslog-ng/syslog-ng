@@ -4,7 +4,7 @@ cachetools==4.2.4
 certifi==2023.7.22
 charset-normalizer==2.0.12
 google-auth==2.13.0
-idna==3.4
+idna==3.7
 kubernetes==25.3.0
 oauthlib==3.2.2
 pyasn1==0.4.8
