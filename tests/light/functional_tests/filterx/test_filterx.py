@@ -518,6 +518,24 @@ $MSG = $list;
     assert file_true.read_log() == """foo,bar,baz\n"""
 
 
+def test_literal_generator_assignment(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+$MSG = json();
+$MSG.foo = {"answer": 42, "leet": 1337};
+$MSG["bar"] = {"answer+1": 43, "leet+1": 1338};
+$MSG.list = ["will be replaced"];
+$MSG.list[0] = [1, 2, 3];
+$MSG.list[] = [4, 5, 6];
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == """{"foo":{"answer":42,"leet":1337},"bar":{"answer+1":43,"leet+1":1338},"list":[[1,2,3],[4,5,6]]}\n"""
+
+
 def test_function_call(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
