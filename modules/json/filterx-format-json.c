@@ -289,6 +289,8 @@ _format_and_append_value(FilterXObject *value, GString *result)
   if (filterx_object_is_type(value, &FILTERX_TYPE_NAME(list)))
     return _format_and_append_list(value, result);
 
+  /* FIXME: handle datetime based on object-datetime.c:_convert_unix_time_to_string() */
+
   return _repr_append(value, result);
 }
 
