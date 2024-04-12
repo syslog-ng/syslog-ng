@@ -32,7 +32,8 @@ typedef struct FilterXExprLiteralGenerator_ FilterXExprLiteralGenerator;
 FilterXLiteralGeneratorElem *filterx_literal_generator_elem_new(FilterXExpr *key, FilterXExpr *value,
     gboolean cloneable);
 
-FilterXExpr *filterx_literal_generator_new(void);
+FilterXExpr *filterx_literal_dict_generator_new(void);
+FilterXExpr *filterx_literal_list_generator_new(void);
 void filterx_literal_generator_set_elements(FilterXExpr *s, GList *elements);
 
 FilterXExpr *filterx_literal_inner_dict_generator_new(FilterXExpr *root_literal_generator, GList *elements);

@@ -46,3 +46,42 @@ filterx_generator_free_method(FilterXExpr *s)
   filterx_expr_unref(self->fillable);
   filterx_expr_free_method(s);
 }
+
+typedef struct FilterXExprGeneratorCreateContainer_
+{
+  FilterXExpr super;
+  FilterXExprGenerator *generator;
+  FilterXExpr *fillable_parent;
+} FilterXExprGeneratorCreateContainer;
+
+static FilterXObject *
+_create_container_eval(FilterXExpr *s)
+{
+  FilterXExprGeneratorCreateContainer *self = (FilterXExprGeneratorCreateContainer *) s;
+
+  return self->generator->create_container(self->generator, self->fillable_parent);
+}
+
+static void
+_create_container_free(FilterXExpr *s)
+{
+  FilterXExprGeneratorCreateContainer *self = (FilterXExprGeneratorCreateContainer *) s;
+
+  filterx_expr_unref(&self->generator->super);
+  filterx_expr_unref(self->fillable_parent);
+  filterx_expr_free_method(s);
+}
+
+FilterXExpr *
+filterx_generator_create_container_new(FilterXExpr *g, FilterXExpr *fillable_parent)
+{
+  FilterXExprGeneratorCreateContainer *self = g_new0(FilterXExprGeneratorCreateContainer, 1);
+
+  filterx_expr_init_instance(&self->super);
+  self->generator = (FilterXExprGenerator *) filterx_expr_ref(g);
+  self->fillable_parent = filterx_expr_ref(fillable_parent);
+  self->super.eval = _create_container_eval;
+  self->super.free_fn = _create_container_free;
+
+  return &self->super;
+}

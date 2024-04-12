@@ -238,7 +238,7 @@ template
 	;
 
 dict_generator
-	: '{' { last_literal_generator = filterx_literal_generator_new(); } dict_elements '}'
+	: '{' { last_literal_generator = filterx_literal_dict_generator_new(); } dict_elements '}'
 						{ filterx_literal_generator_set_elements(last_literal_generator, $3); $$ = last_literal_generator; }
 	;
 
@@ -259,7 +259,7 @@ dict_element
 	;
 
 list_generator
-	: '[' { last_literal_generator = filterx_literal_generator_new(); } list_elements ']'
+	: '[' { last_literal_generator = filterx_literal_list_generator_new(); } list_elements ']'
 						{ filterx_literal_generator_set_elements(last_literal_generator, $3); $$ = last_literal_generator; }
 	;
 

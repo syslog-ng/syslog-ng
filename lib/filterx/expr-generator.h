@@ -26,14 +26,18 @@
 
 #include "filterx/filterx-expr.h"
 
-typedef struct FilterXExprGenerator_
+typedef struct FilterXExprGenerator_ FilterXExprGenerator;
+struct FilterXExprGenerator_
 {
   FilterXExpr super;
   FilterXExpr *fillable;
-} FilterXExprGenerator;
+  FilterXObject *(*create_container)(FilterXExprGenerator *self, FilterXExpr *fillable_parent);
+};
 
 void filterx_generator_set_fillable(FilterXExpr *s, FilterXExpr *fillable);
 void filterx_generator_init_instance(FilterXExpr *s);
 void filterx_generator_free_method(FilterXExpr *s);
+
+FilterXExpr *filterx_generator_create_container_new(FilterXExpr *g, FilterXExpr *fillable_parent);
 
 #endif

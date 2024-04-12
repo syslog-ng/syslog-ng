@@ -110,6 +110,30 @@ _eval_elements(FilterXObject *fillable, GList *elements)
 }
 
 static FilterXObject *
+_dict_generator_create_container(FilterXExprGenerator *s, FilterXExpr *fillable_parent)
+{
+  FilterXObject *fillable_parent_obj = filterx_expr_eval_typed(fillable_parent);
+  if (!fillable_parent_obj)
+    return NULL;
+
+  FilterXObject *result = filterx_object_create_dict(fillable_parent_obj);
+  filterx_object_unref(fillable_parent_obj);
+  return result;
+}
+
+static FilterXObject *
+_list_generator_create_container(FilterXExprGenerator *s, FilterXExpr *fillable_parent)
+{
+  FilterXObject *fillable_parent_obj = filterx_expr_eval_typed(fillable_parent);
+  if (!fillable_parent_obj)
+    return NULL;
+
+  FilterXObject *result = filterx_object_create_list(fillable_parent_obj);
+  filterx_object_unref(fillable_parent_obj);
+  return result;
+}
+
+static FilterXObject *
 _literal_generator_eval(FilterXExpr *s)
 {
   FilterXExprLiteralGenerator *self = (FilterXExprLiteralGenerator *) s;
@@ -132,14 +156,32 @@ _literal_generator_free(FilterXExpr *s)
   filterx_generator_free_method(s);
 }
 
-FilterXExpr *
-filterx_literal_generator_new(void)
+static void
+_literal_generator_init_instance(FilterXExprLiteralGenerator *self)
 {
-  FilterXExprLiteralGenerator *self = g_new0(FilterXExprLiteralGenerator, 1);
-
   filterx_generator_init_instance(&self->super.super);
   self->super.super.eval = _literal_generator_eval;
   self->super.super.free_fn = _literal_generator_free;
+}
+
+FilterXExpr *
+filterx_literal_dict_generator_new(void)
+{
+  FilterXExprLiteralGenerator *self = g_new0(FilterXExprLiteralGenerator, 1);
+
+  _literal_generator_init_instance(self);
+  self->super.create_container = _dict_generator_create_container;
+
+  return &self->super.super;
+}
+
+FilterXExpr *
+filterx_literal_list_generator_new(void)
+{
+  FilterXExprLiteralGenerator *self = g_new0(FilterXExprLiteralGenerator, 1);
+
+  _literal_generator_init_instance(self);
+  self->super.create_container = _list_generator_create_container;
 
   return &self->super.super;
 }
