@@ -57,6 +57,15 @@ _compile_pattern(const gchar *pattern)
   return compiled;
 }
 
+static gboolean
+_has_named_capture_groups(pcre2_code_8 *pattern)
+{
+  guint32 namecount = 0;
+  pcre2_pattern_info(pattern, PCRE2_INFO_NAMECOUNT, &namecount);
+  return namecount > 0;
+}
+
+
 typedef struct FilterXExprRegexpMatch_
 {
   FilterXExpr super;
@@ -137,8 +146,12 @@ _regexp_search_generator_create_container(FilterXExprGenerator *s, FilterXExpr *
   if (!fillable_parent_obj)
     return NULL;
 
-  /* TODO: if (has_named_capture_groups) */
-  FilterXObject *result = filterx_object_create_dict(fillable_parent_obj);
+  FilterXObject *result;
+  if (_has_named_capture_groups(self->pattern))
+    result = filterx_object_create_dict(fillable_parent_obj);
+  else
+    result = filterx_object_create_list(fillable_parent_obj);
+
   filterx_object_unref(fillable_parent_obj);
   return result;
 }
