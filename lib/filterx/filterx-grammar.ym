@@ -300,6 +300,7 @@ expr_generator
 	: dict_generator
 	| list_generator
 	| regexp_search
+	| '(' expr_generator ')'		{ $$ = $2; }
 	;
 
 function_call
