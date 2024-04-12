@@ -335,7 +335,7 @@ set_source_files_properties(
     ${CMAKE_CURRENT_BINARY_DIR}/filterx/filterx-grammar.c
     PROPERTIES
     COMPILE_FLAGS ${BISON_BUILT_SOURCE_CFLAGS})
-    
+
 generate_y_from_ym (lib/rewrite/rewrite-expr-grammar)
 bison_target(RewriteExprGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/rewrite/rewrite-expr-grammar.y
@@ -361,6 +361,7 @@ set_source_files_properties(
 set(CORE_INCLUDE_DIRS
     ${Gettext_INCLUDE_DIR}
     ${IVYKIS_INCLUDE_DIR}
+    ${JSONC_INCLUDE_DIR}
     ${LIBPCRE_INCLUDE_DIRS}
     ${Libsystemd_INCLUDE_DIRS}
 )
@@ -388,6 +389,7 @@ target_link_libraries(
     GLib::GModule
     ${Gettext_LIBRARIES}
     ${IVYKIS_LIBRARY}
+    ${JSONC_LIBRARY}
     ${LIBPCRE_LIBRARIES}
     ${Libsystemd_LIBRARIES}
     resolv
@@ -396,7 +398,6 @@ target_link_libraries(
     OpenSSL::Crypto
     Threads::Threads
     secret-storage
-    json-c
 )
 
 set_target_properties(syslog-ng

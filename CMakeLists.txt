@@ -274,6 +274,8 @@ if ((NOT IVYKIS_INTERNAL) AND (IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
   set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 0)
 endif()
 
+external_or_find_package(JSONC REQUIRED)
+
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(LIBNET REQUIRED)
