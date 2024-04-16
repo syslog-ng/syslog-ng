@@ -308,7 +308,6 @@ filterx_word	[^ \#'"/\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 <INITIAL,filterx>\.\.\.    { return LL_DOTDOTDOT; }
 <INITIAL,filterx>=>        { return LL_ARROW; }
 <INITIAL,filterx>=         { return KW_ASSIGN; }
-<INITIAL,filterx>\+=        { return KW_PLUS_ASSIGN; }
 <INITIAL,filterx><	   { return KW_TA_LT; }
 <INITIAL,filterx><=        { return KW_TA_LE; }
 <INITIAL,filterx>==        { return KW_TA_EQ; }
@@ -317,6 +316,7 @@ filterx_word	[^ \#'"/\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 <INITIAL,filterx>>         { return KW_TA_GT; }
 <INITIAL,filterx>===       { return KW_TAV_EQ; }
 <INITIAL,filterx>!==       { return KW_TAV_NE; }
+<filterx>\+=               { return KW_PLUS_ASSIGN; }
 <filterx>=~                { return KW_REGEXP_MATCH; }
 
 <INITIAL,filterx>(-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
