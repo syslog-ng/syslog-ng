@@ -36,6 +36,7 @@ filterx_function_eval_expressions(GList *expressions)
       return NULL;
     }
   GPtrArray *res = g_ptr_array_sized_new(g_list_length(expressions));
+  g_ptr_array_set_free_func(res, (GDestroyNotify) filterx_object_unref);
   for (GList *head = expressions; head; head = head->next)
     {
       FilterXObject *fxo = filterx_expr_eval(head->data);

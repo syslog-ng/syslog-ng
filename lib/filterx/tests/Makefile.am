@@ -72,3 +72,5 @@ lib_filterx_tests_test_type_registry_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
 
 lib_filterx_tests_test_filterx_object_CFLAGS  = $(TEST_CFLAGS)
 lib_filterx_tests_test_filterx_object_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
+lib_filterx_tests_test_expr_function_CFLAGS	= $(TEST_CFLAGS)
+lib_filterx_tests_test_expr_function_LDADD	= $(TEST_LDADD) $(JSON_LIBS)
