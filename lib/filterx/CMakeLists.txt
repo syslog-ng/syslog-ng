@@ -33,7 +33,7 @@ set(FILTERX_HEADERS
     filterx/expr-condition.h
     filterx/expr-isset.h
     filterx/expr-unset.h
-    filterx/filterx-globals-tests.h
+    filterx/filterx-private.h
     PARENT_SCOPE
     )
 
@@ -73,6 +73,7 @@ set(FILTERX_SOURCES
     filterx/expr-condition.c
     filterx/expr-isset.c
     filterx/expr-unset.c
+    filterx/filterx-private.c
     PARENT_SCOPE
     )
 

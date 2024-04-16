@@ -37,7 +37,7 @@
 #include "filterx/expr-assign.h"
 #include "filterx/expr-template.h"
 #include "filterx/expr-message-ref.h"
-#include "filterx/filterx-globals-tests.h"
+#include "filterx/filterx-private.h"
 
 #include "apphook.h"
 #include "scratch-buffers.h"
@@ -54,28 +54,28 @@ test_builtin_dummy_function(GPtrArray *args)
 Test(builtin_functions, test_builtin_functions_registering_existing_key_returns_false)
 {
   GHashTable *ht;
-  filterx_builtin_functions_init_inner(&ht);
+  filterx_builtin_functions_init_private(&ht);
   // first register returns TRUE
-  cr_assert(filterx_builtin_function_register_inner(ht, TEST_BUILTIN_FUNCTION_NAME, test_builtin_dummy_function));
+  cr_assert(filterx_builtin_function_register_private(ht, TEST_BUILTIN_FUNCTION_NAME, test_builtin_dummy_function));
   // second attampt of register must return FALSE
-  cr_assert(!filterx_builtin_function_register_inner(ht, TEST_BUILTIN_FUNCTION_NAME, test_builtin_dummy_function));
-  filterx_builtin_functions_deinit_inner(ht);
+  cr_assert(!filterx_builtin_function_register_private(ht, TEST_BUILTIN_FUNCTION_NAME, test_builtin_dummy_function));
+  filterx_builtin_functions_deinit_private(ht);
 }
 
 Test(builtin_functions, test_builtin_functions_lookup)
 {
   GHashTable *ht;
-  filterx_builtin_functions_init_inner(&ht);
+  filterx_builtin_functions_init_private(&ht);
 
   // func not found
-  FilterXFunctionProto func = filterx_builtin_function_lookup_inner(ht, TEST_BUILTIN_FUNCTION_NAME);
+  FilterXFunctionProto func = filterx_builtin_function_lookup_private(ht, TEST_BUILTIN_FUNCTION_NAME);
   cr_assert(func == NULL);
 
   // add dummy function
-  cr_assert(filterx_builtin_function_register_inner(ht, TEST_BUILTIN_FUNCTION_NAME, test_builtin_dummy_function));
+  cr_assert(filterx_builtin_function_register_private(ht, TEST_BUILTIN_FUNCTION_NAME, test_builtin_dummy_function));
 
   // lookup returns dummy function
-  func = filterx_builtin_function_lookup_inner(ht, TEST_BUILTIN_FUNCTION_NAME);
+  func = filterx_builtin_function_lookup_private(ht, TEST_BUILTIN_FUNCTION_NAME);
   cr_assert(func != NULL);
 
   // check dummy function as result
@@ -88,7 +88,7 @@ Test(builtin_functions, test_builtin_functions_lookup)
 
   cr_assert(strcmp(str, "test-builtin-functions") == 0);
 
-  filterx_builtin_functions_deinit_inner(ht);
+  filterx_builtin_functions_deinit_private(ht);
   filterx_object_unref(res);
 }
 

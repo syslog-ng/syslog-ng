@@ -21,6 +21,7 @@
  *
  */
 #include "filterx/filterx-globals.h"
+#include "filterx/filterx-private.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-null.h"
 #include "filterx/object-string.h"
@@ -31,41 +32,26 @@
 #include "filterx/object-dict-interface.h"
 
 static GHashTable *filterx_builtin_functions = NULL;
+static GHashTable *filterx_types = NULL;
 
-gboolean
-filterx_builtin_function_register_inner(GHashTable *ht, const gchar *fn_name, FilterXFunctionProto func)
-{
-  return g_hash_table_insert(ht, g_strdup(fn_name), func);
-}
+// Builtin functions
 
 gboolean
 filterx_builtin_function_register(const gchar *fn_name, FilterXFunctionProto func)
 {
-  return filterx_builtin_function_register_inner(filterx_builtin_functions, fn_name, func);
-}
-
-FilterXFunctionProto
-filterx_builtin_function_lookup_inner(GHashTable *ht, const gchar *fn_name)
-{
-  return (FilterXFunctionProto)g_hash_table_lookup(ht, fn_name);
+  return filterx_builtin_function_register_private(filterx_builtin_functions, fn_name, func);
 }
 
 FilterXFunctionProto
 filterx_builtin_function_lookup(const gchar *fn_name)
 {
-  return filterx_builtin_function_lookup_inner(filterx_builtin_functions, fn_name);
-}
-
-void
-filterx_builtin_functions_init_inner(GHashTable **ht)
-{
-  *ht = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) NULL);
+  return filterx_builtin_function_lookup_private(filterx_builtin_functions, fn_name);
 }
 
 void
 filterx_builtin_functions_init(void)
 {
-  filterx_builtin_functions_init_inner(&filterx_builtin_functions);
+  filterx_builtin_functions_init_private(&filterx_builtin_functions);
   filterx_builtin_function_register("json", filterx_json_new_from_args);
   filterx_builtin_function_register("json_array", filterx_json_array_new_from_args);
   g_assert(filterx_builtin_function_register("datetime", filterx_typecast_datetime));
@@ -77,23 +63,49 @@ filterx_builtin_functions_init(void)
   g_assert(filterx_builtin_function_register("int", filterx_typecast_integer));
   g_assert(filterx_builtin_function_register("double", filterx_typecast_double));
   g_assert(filterx_builtin_function_register("strptime", filterx_datetime_strptime));
-}
-
-void
-filterx_builtin_functions_deinit_inner(GHashTable *ht)
-{
-  g_hash_table_destroy(ht);
+  g_assert(filterx_builtin_function_register("istype", filterx_object_is_type_builtin));
 }
 
 void
 filterx_builtin_functions_deinit(void)
 {
-  filterx_builtin_functions_deinit_inner(filterx_builtin_functions);
+  filterx_builtin_functions_deinit_private(filterx_builtin_functions);
 }
+
+// FilterX types
+
+FilterXType *
+filterx_type_lookup(const gchar *type_name)
+{
+  return filterx_type_lookup_private(filterx_types, type_name);
+}
+
+gboolean
+filterx_type_register(const gchar *type_name, FilterXType *fxtype)
+{
+  return filterx_type_register_private(filterx_types, type_name, fxtype);
+}
+
+void
+filterx_types_init(void)
+{
+  filterx_types_init_private(&filterx_types);
+  filterx_type_register("object", &FILTERX_TYPE_NAME(object));
+}
+
+void
+filterx_types_deinit(void)
+{
+  filterx_types_deinit_private(filterx_types);
+}
+
+// Globals
 
 void
 filterx_global_init(void)
 {
+  filterx_types_init();
+
   filterx_type_init(&FILTERX_TYPE_NAME(list));
   filterx_type_init(&FILTERX_TYPE_NAME(dict));
 
@@ -118,6 +130,7 @@ void
 filterx_global_deinit(void)
 {
   filterx_builtin_functions_deinit();
+  filterx_types_deinit();
 }
 
 FilterXObject *filterx_typecast_get_arg(GPtrArray *args, gchar *alt_msg)

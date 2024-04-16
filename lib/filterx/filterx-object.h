@@ -96,6 +96,7 @@ gboolean filterx_object_freeze(FilterXObject *self);
 void filterx_object_unfreeze_and_free(FilterXObject *self);
 void filterx_object_init_instance(FilterXObject *self, FilterXType *type);
 void filterx_object_free_method(FilterXObject *self);
+FilterXObject *filterx_object_is_type_builtin(GPtrArray *args);
 
 static inline gboolean
 filterx_object_is_type(FilterXObject *object, FilterXType *type)
