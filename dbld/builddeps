@@ -30,7 +30,7 @@ function workaround_rpm_repos() {
 function install_dbld_dependencies()
 {
     case "${OS_DISTRIBUTION}" in
-        centos)
+        centos|almalinux)
             $YUM_INSTALL wget yum-utils
             ;;
         debian|ubuntu)
@@ -112,9 +112,10 @@ function add_copr_repo {
     # install a couple of Python dependencies which then conflict with our
     # PIP installation later.
     case "${OS_DISTRIBUTION}" in
-        centos)
+        centos|almalinux)
             $YUM_INSTALL yum-plugin-copr
             yum copr enable -y czanik/syslog-ng-githead
+            yum config-manager --set-enabled powertools
             ;;
         fedora)
             $DNF_INSTALL -y dnf-plugins-core
@@ -149,7 +150,7 @@ function install_rpm_build_deps {
     fi
 
     case "${OS_DISTRIBUTION}" in
-        centos)
+        centos|almalinux)
             rpm_run_build_command yum-builddep -y ${RPM_SPEC_FILE}
             ;;
         fedora)
