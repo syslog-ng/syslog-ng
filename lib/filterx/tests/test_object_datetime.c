@@ -28,6 +28,8 @@
 #include "apphook.h"
 #include "filterx-lib.h"
 #include "scratch-buffers.h"
+#include "filterx/expr-literal.h"
+#include "filterx/expr-function.h"
 
 static void
 assert_object_json_equals(FilterXObject *obj, const gchar *expected_json_repr)
@@ -359,6 +361,32 @@ Test(filterx_datetime, test_filterx_datetime_strptime_invalid_arg_type)
 
   g_ptr_array_free(args, TRUE);
   filterx_object_unref(obj);
+}
+
+Test(filterx_datetime, test_filterx_datetime_strptime_matching_nth_timefmt_call_as_filterx_func)
+{
+  const gchar *test_time_str = "2024-04-08T10:11:12+01:00";
+  FilterXObject *in = filterx_string_new(test_time_str, -1);
+  FilterXObject *bad_fmt1 = filterx_string_new("bad format 1", -1);
+  FilterXObject *bad_fmt2 = filterx_string_new("bad format 2", -1);
+  FilterXObject *time_fmt = filterx_string_new(datefmt_isodate, -1);
+
+  GList *args = NULL;
+  args = g_list_append(args, filterx_literal_new(in));
+  args = g_list_append(args, filterx_literal_new(bad_fmt1));
+  args = g_list_append(args, filterx_literal_new(bad_fmt2));
+  args = g_list_append(args, filterx_literal_new(time_fmt));
+  FilterXExpr *func = filterx_function_new("test_strptime", args, filterx_datetime_strptime);
+  cr_assert_not_null(func);
+  FilterXObject *res = filterx_expr_eval(func);
+  cr_assert_not_null(res);
+  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(datetime)));
+  GString *repr = scratch_buffers_alloc();
+  cr_assert(filterx_object_repr(in, repr));
+  cr_assert_str_eq(test_time_str, repr->str);
+  filterx_expr_unref(func);
+  filterx_object_unref(res);
+
 }
 
 static void
