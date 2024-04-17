@@ -34,29 +34,30 @@ _tail_condition(FilterXConditional *c)
     return c;
 }
 
-static gboolean
-_handle_condition_expression(FilterXConditional *c)
-{
-  g_assert(c != NULL);
-  if (c->condition == FILTERX_CONDITIONAL_NO_CONDITION)
-    return TRUE;
-  FilterXObject *cond = filterx_expr_eval(c->condition);
-  if (!cond) return FALSE;
-  return filterx_object_truthy(cond);
-}
-
 static FilterXObject *
 _eval_condition(FilterXConditional *c)
 {
   if (c == NULL)
     {
       // no condition-expression match, no elif or else case
+      // returning true to avoid filterx failure on non matching if's
       return filterx_boolean_new(TRUE);
     }
-  if (!_handle_condition_expression(c))
+
+  FilterXObject *condition_value = NULL;
+  if (c->condition != FILTERX_CONDITIONAL_NO_CONDITION)
     {
-      return _eval_condition(c->false_branch);
+      condition_value = filterx_expr_eval(c->condition);
+      if (!condition_value)
+        return NULL;
+      if (filterx_object_falsy(condition_value))
+        return _eval_condition(c->false_branch);
     }
+
+  // returning true to avoid filterx failure on empty else block
+  if (!c->statements)
+    return c->condition ? condition_value : filterx_boolean_new(TRUE);
+
   FilterXObject *result = NULL;
   for (GList *l = c->statements; l; l = l->next)
     {
