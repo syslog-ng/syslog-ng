@@ -614,6 +614,20 @@ def test_tenary_operator_inline_tenary_expression_false(config, syslog_ng):
     assert file_true.read_log() == "inner:false\n"
 
 
+def test_tenary_return_condition_expression_value_without_true_branch(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $MSG = (${values.true_string}?:${values.false_string});
+""",
+    )
+
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "boolean:true\n"
+
+
 def test_if_condition_without_else_branch_match(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
