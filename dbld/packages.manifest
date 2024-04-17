@@ -2,26 +2,26 @@
 # packages required to build the docker image
 ##################################################
 
-gnupg                           [centos, fedora]
+gnupg                           [centos, almalinux, fedora]
 
 # download various stuff over https
-wget                            [centos, fedora, debian, ubuntu]
-ca-certificates       	        [centos, fedora, debian, ubuntu]
+wget                            [centos, almalinux, fedora, debian, ubuntu]
+ca-certificates       	        [centos, almalinux, fedora, debian, ubuntu]
 
 # criterion compilation
-cmake                           [centos, fedora, debian, ubuntu]
-gcc-c++				[centos, fedora]
+cmake                           [centos, almalinux, fedora, debian, ubuntu]
+gcc-c++				[centos, almalinux, fedora]
 
 # to unpack gradle binary package (zip file)
-unzip                           [centos, fedora, debian, ubuntu]
+unzip                           [centos, almalinux, fedora, debian, ubuntu]
 
 # I dont know why this is needed.
-bzip2                           [centos, fedora, debian, ubuntu]
+bzip2                           [centos, almalinux, fedora, debian, ubuntu]
 
 # Basic interactive tools
-less                            [centos, fedora, debian, ubuntu]
-vim                             [centos, fedora, debian, ubuntu]
-sudo				[centos, fedora, debian, ubuntu]
+less                            [centos, almalinux, fedora, debian, ubuntu]
+vim                             [centos, almalinux, fedora, debian, ubuntu]
+sudo				[centos, almalinux, fedora, debian, ubuntu]
 
 #############################################################################
 # Essential build tools not explicitly referenced from
@@ -35,8 +35,8 @@ dh-exec                         [debian, ubuntu]
 dpkg-dev                        [debian, ubuntu]
 equivs                          [debian, ubuntu]
 libdistro-info-perl		[debian, ubuntu]
-make                            [centos, fedora]
-rpm-build                       [centos, fedora]
+make                            [centos, almalinux, fedora]
+rpm-build                       [centos, almalinux, fedora]
 which				[fedora]
 
 #############################################################################
@@ -58,8 +58,8 @@ docbook-style-xsl               [fedora]
 # Build environment dependencies that are not strictly required by syslog-ng
 # but are needed by our dbld functionality.
 #############################################################################
-git                             [centos, fedora, debian, ubuntu]
-ccache                          [centos, fedora, debian, ubuntu]
+git                             [centos, almalinux, fedora, debian, ubuntu]
+ccache                          [centos, almalinux, fedora, debian, ubuntu]
 
 #############################################################################
 # packages to run successful autogen.sh
@@ -74,9 +74,9 @@ ccache                          [centos, fedora, debian, ubuntu]
 # lines, so we don't need to list them here.
 #############################################################################
 
-autoconf                    [centos, fedora]
+autoconf                    [centos, almalinux, fedora]
 autoconf-archive            [centos, fedora]
-automake                    [centos, fedora]
+automake                    [centos, almalinux, fedora]
 
 #############################################################################
 # syslog-ng core dependencies

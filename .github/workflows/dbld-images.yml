@@ -29,6 +29,7 @@ jobs:
     strategy:
       matrix:
         image:
+          - almalinux-8
           - fedora-39
           - debian-bullseye
           - debian-bookworm

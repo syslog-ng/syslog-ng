@@ -34,6 +34,7 @@ jobs:
       source-tarball-artifact-name: source-tarball
       dbld-image-mode: cache
       distros: '[
+        "almalinux-8",
         "debian-bookworm",
         "debian-testing",
         "fedora-39",
