@@ -937,3 +937,42 @@ def test_unset(config, syslog_ng):
     assert file_true.get_stats()["processed"] == 1
     assert "processed" not in file_false.get_stats()
     assert file_true.read_log() == "\n"
+
+
+def test_strptime_error_result(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+        $MSG = strptime("2024-04-10T08:09:10Z"); # wrong arg set
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_false.get_stats()["processed"] == 1
+    assert "processed" not in file_true.get_stats()
+    assert file_false.read_log() == "foobar\n"
+
+
+def test_strptime_success_result(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+        $MSG = strptime("2024-04-10T08:09:10Z", "%Y-%m-%dT%H:%M:%S%z");
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "1712736550.000000+00:00\n"
+
+
+def test_strptime_failure_result(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+        $MSG = string(strptime("2024-04-10T08:09:10Z", "no", "valid", "parse", "fmt"));
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "null\n"
