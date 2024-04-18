@@ -25,6 +25,30 @@
 #include "filterx/object-primitive.h"
 #include "compat/pcre.h"
 
+typedef struct FilterXReMatchState_
+{
+  pcre2_match_data *match_data;
+  FilterXObject *lhs_obj;
+  const gchar *lhs_str;
+  gsize lhs_str_len;
+} FilterXReMatchState;
+
+static void
+_state_init(FilterXReMatchState *state)
+{
+  memset(state, 0, sizeof(FilterXReMatchState));
+}
+
+static void
+_state_cleanup(FilterXReMatchState *state)
+{
+  if (state->match_data)
+    pcre2_match_data_free(state->match_data);
+  filterx_object_unref(state->lhs_obj);
+  memset(state, 0, sizeof(FilterXReMatchState));
+}
+
+
 static pcre2_code_8 *
 _compile_pattern(const gchar *pattern)
 {
