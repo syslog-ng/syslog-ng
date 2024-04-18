@@ -157,15 +157,16 @@
 
 /* operators in the filter language, the order of this determines precedence */
 %right KW_ASSIGN 9000
-%left  KW_OR 9001
-%left  KW_AND 9002
-%left  KW_STR_EQ 9003 KW_STR_NE 9004, KW_TA_EQ 9005, KW_TA_NE 9006, KW_TAV_EQ 9007, KW_TAV_NE 9008
-%left  KW_STR_LT 9009, KW_STR_LE 9010, KW_STR_GE, 9011 KW_STR_GT, 9012, KW_TA_LT 9013, KW_TA_LE 9014, KW_TA_GE 9015, KW_TA_GT 9016
-%right KW_PLUS_ASSIGN 9018
+%right '?' ':'
+%left  KW_OR 9010
+%left  KW_AND 9020
+%left  KW_STR_EQ 9030 KW_STR_NE 9031, KW_TA_EQ 9032, KW_TA_NE 9033, KW_TAV_EQ 9034, KW_TAV_NE 9035
+%left  KW_STR_LT 9040, KW_STR_LE 9041, KW_STR_GE, 9042 KW_STR_GT, 9043, KW_TA_LT 9044, KW_TA_LE 9045, KW_TA_GE 9046, KW_TA_GT 9047
+%right KW_PLUS_ASSIGN 9050
 
 %left  '+' '-'
 %left  '*' '/'
-%left '.' '[' ']' KW_NOT 9017
+%left '.' '[' ']' KW_NOT 9049
 
 /* statements */
 %token KW_SOURCE                      10000

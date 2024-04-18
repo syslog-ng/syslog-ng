@@ -303,15 +303,15 @@ codeblock
 	;
 
 tenary
-	: '(' expr '?' expr ':' expr ')'
+	: expr '?' expr ':' expr
 	  {
-	    FilterXConditional *cond = (FilterXConditional*)filterx_conditional_new_conditional_codeblock($2, g_list_append(NULL, $4));
-	    $$ = filterx_conditional_add_false_branch(cond, (FilterXConditional*)filterx_conditional_new_codeblock(g_list_append(NULL, $6)));
-	  }
-	| '(' expr '?' ':' expr ')'
-	  {
-	    FilterXConditional *cond = (FilterXConditional*)filterx_conditional_new_conditional_codeblock($2, NULL);
+	    FilterXConditional *cond = (FilterXConditional*)filterx_conditional_new_conditional_codeblock($1, g_list_append(NULL, $3));
 	    $$ = filterx_conditional_add_false_branch(cond, (FilterXConditional*)filterx_conditional_new_codeblock(g_list_append(NULL, $5)));
+	  }
+	| expr '?' ':' expr
+	  {
+	    FilterXConditional *cond = (FilterXConditional*)filterx_conditional_new_conditional_codeblock($1, NULL);
+	    $$ = filterx_conditional_add_false_branch(cond, (FilterXConditional*)filterx_conditional_new_codeblock(g_list_append(NULL, $4)));
 	  }
 	;
 
