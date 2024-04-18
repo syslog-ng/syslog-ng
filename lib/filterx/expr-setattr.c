@@ -23,6 +23,7 @@
 #include "filterx/expr-setattr.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-string.h"
+#include "filterx/filterx-eval.h"
 #include "scratch-buffers.h"
 
 typedef struct _FilterXSetAttr
@@ -66,6 +67,10 @@ _eval(FilterXExpr *s)
                     evt_tag_str("attr", filterx_string_get_value(self->attr, NULL)),
                     evt_tag_mem("value", buf->str, buf->len));
         }
+    }
+  else
+    {
+      filterx_eval_push_error("Attribute set failed", s, self->attr);
     }
 
   filterx_object_unref(cloned);

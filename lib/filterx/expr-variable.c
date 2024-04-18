@@ -40,7 +40,10 @@ _pull_variable_from_message(FilterXVariableExpr *self, FilterXEvalContext *conte
   LogMessageValueType t;
   const gchar *value = log_msg_get_value_if_set_with_type(msg, self->handle, &value_len, &t);
   if (!value)
-    return NULL;
+    {
+      filterx_eval_push_error("Missing name-value pair in log message", &self->super, NULL);
+      return NULL;
+    }
 
   FilterXObject *msg_ref = filterx_message_value_new_borrowed(value, value_len, t);
   filterx_scope_register_variable(context->scope, self->handle, msg_ref);
@@ -63,10 +66,18 @@ _eval(FilterXExpr *s)
 
   variable = filterx_scope_lookup_variable(context->scope, self->handle);
   if (variable)
-    return filterx_variable_get_value(variable);
+    {
+      FilterXObject *value = filterx_variable_get_value(variable);
+      if (!value)
+        {
+          filterx_eval_push_error("No value set for variable", &self->super, NULL);
+        }
+      return value;
+    }
 
   if (!filterx_variable_handle_is_floating(self->handle))
     return _pull_variable_from_message(self, context, context->msgs[0]);
+  filterx_eval_push_error("Undeclared floating variable", s, NULL);
   return NULL;
 }
 

@@ -22,6 +22,7 @@
  */
 #include "filterx/expr-getattr.h"
 #include "filterx/object-string.h"
+#include "filterx/filterx-eval.h"
 
 typedef struct _FilterXGetAttr
 {
@@ -42,7 +43,10 @@ _eval(FilterXExpr *s)
 
   FilterXObject *attr = filterx_object_getattr(variable, self->attr);
   if (!attr)
-    goto exit;
+    {
+      filterx_eval_push_error("Attribute lookup failed", s, self->attr);
+      goto exit;
+    }
 exit:
   filterx_object_unref(variable);
   return attr;

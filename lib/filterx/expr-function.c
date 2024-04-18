@@ -25,6 +25,7 @@
 #include "filterx/expr-function.h"
 #include "filterx/filterx-grammar.h"
 #include "filterx/filterx-globals.h"
+#include "filterx/filterx-eval.h"
 #include "plugin.h"
 #include "cfg.h"
 
@@ -65,6 +66,9 @@ _eval(FilterXExpr *s)
 
   if (args != NULL)
     g_ptr_array_free(args, TRUE);
+  if (!res)
+    filterx_eval_push_error("Function call failed", s, NULL);
+
   return res;
 }
 

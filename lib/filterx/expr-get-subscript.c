@@ -21,6 +21,7 @@
  *
  */
 #include "filterx/expr-get-subscript.h"
+#include "filterx/filterx-eval.h"
 
 typedef struct _FilterXGetSubscript
 {
@@ -43,6 +44,8 @@ _eval(FilterXExpr *s)
   if (!key)
     goto exit;
   result = filterx_object_get_subscript(variable, key);
+  if (!result)
+    filterx_eval_push_error("Object get-subscript failed", s, key);
 exit:
   filterx_object_unref(key);
   filterx_object_unref(variable);
