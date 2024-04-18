@@ -37,6 +37,14 @@ filterx_expr_set_location(FilterXExpr *self, CfgLexer *lexer, CFG_LTYPE *lloc)
     }
 }
 
+EVTTAG *
+filterx_expr_format_location_tag(FilterXExpr *self)
+{
+  return evt_tag_printf("expr", "%s:%d:%d| %s",
+                        self->lloc.name, self->lloc.first_line, self->lloc.first_column,
+                        self->expr_text ? : "n/a");
+}
+
 void
 filterx_expr_free_method(FilterXExpr *self)
 {
