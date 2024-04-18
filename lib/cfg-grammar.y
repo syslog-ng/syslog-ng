@@ -166,7 +166,7 @@
 %right KW_PLUS_ASSIGN 9050
 
 %left  '+' '-'
-%left  '*' '/'
+%left  '*'
 %left '.' '[' ']' KW_NOT 9049
 
 /* statements */

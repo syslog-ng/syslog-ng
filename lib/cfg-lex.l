@@ -273,11 +273,13 @@ odigit  [0-7]
 alpha		[a-zA-Z]
 alphanum	[a-zA-Z0-9]
 word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
+filterx_word	[^ \#'"/\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 
 /* block related states must be last, as we use this fact in YY_INPUT */
 %x filterx
 %x string
 %x qstring
+%x slash_string
 %x block
 %x block_content
 %x block_string
@@ -344,7 +346,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 
     /* and this is the version in filterx, which only allows "traditional" identifiers */
 <filterx>[a-zA-Z][_a-zA-Z0-9]* 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
-<filterx>\$\{({word}+(\.)?)*{word}+\}   { yylval->cptr = strndup(yytext+2, strlen(yytext) - 3); return LL_MESSAGE_REF; }
+<filterx>\$\{({filterx_word}+(\.)?)*{filterx_word}+\}   { yylval->cptr = strndup(yytext+2, strlen(yytext) - 3); return LL_MESSAGE_REF; }
 <INITIAL>\,	   	   ;
 
 <INITIAL,filterx>\"        {
@@ -355,10 +357,14 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 			     g_string_truncate(yyextra->string_buffer, 0);
 			     yy_push_state(qstring, yyscanner);
 			   }
+<filterx>\/		   {
+			     g_string_truncate(yyextra->string_buffer, 0);
+			     yy_push_state(slash_string, yyscanner);
+			   }
 <INITIAL,filterx>.         { return (unsigned char) yytext[0]; }
 
     /* continuation line within a string: just move the location and skip the newline character as if it was never there */
-<string,qstring>\\\r?\n    { _cfg_lex_extend_token_location_to_next_line(yyextra); }
+<string,qstring,slash_string>\\\r?\n   { _cfg_lex_extend_token_location_to_next_line(yyextra); }
 <string>\\a		   { g_string_append_c(yyextra->string_buffer, 7); }
 <string>\\n	   	   { g_string_append_c(yyextra->string_buffer, 10); }
 <string>\\r		   { g_string_append_c(yyextra->string_buffer, 13); }
@@ -372,6 +378,13 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 			     yylval->cptr = strdup(yyextra->string_buffer->str);
 			     return LL_STRING;
 		           }
+<slash_string>\\\/	   { g_string_append_c(yyextra->string_buffer, '/'); }
+<slash_string>[^/\r\n]+	   { g_string_append(yyextra->string_buffer, yytext); }
+<slash_string>\/	   {
+			     yy_pop_state(yyscanner);
+			     yylval->cptr = strdup(yyextra->string_buffer->str);
+			     return LL_STRING;
+			   }
 <string>[^"\\\r\n]+	   { g_string_append(yyextra->string_buffer, yytext); }
 <qstring>[^'\r\n]+	   { g_string_append(yyextra->string_buffer, yytext); }
 <qstring>\'		   {
