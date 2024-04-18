@@ -84,20 +84,55 @@ filterx_eval_clear_errors(void)
   });
 }
 
+EVTTAG *
+filterx_format_last_error(void)
+{
+  FilterXEvalContext *context = filterx_eval_get_context();
+
+  if (!context->error.message)
+    return evt_tag_str("error", "Error information unset");
+
+  GString *buf = NULL;
+
+  if (context->error.object)
+    {
+      buf = scratch_buffers_alloc();
+
+      if (!filterx_object_repr(context->error.object, buf))
+        {
+          LogMessageValueType t;
+          if (!filterx_object_marshal(context->error.object, buf, &t))
+            g_assert_not_reached();
+        }
+    }
+
+  return evt_tag_printf("error", "%s: %.*s",
+                        context->error.message,
+                        buf ? (gint) buf->len : 0,
+                        buf ? buf->str : "");
+}
+
 static gboolean
 _evaluate_statement(FilterXExpr *expr)
 {
   FilterXObject *res = filterx_expr_eval(expr);
   gboolean success = FALSE;
 
-  if (res)
-    success = filterx_object_truthy(res);
+  if (!res)
+    {
+      msg_debug("FILTERX  ERROR",
+                filterx_expr_format_location_tag(expr),
+                filterx_format_last_error());
+      return FALSE;
+    }
+  filterx_eval_clear_errors();
 
+  success = filterx_object_truthy(res);
   if (!success || trace_flag)
     {
       GString *buf = scratch_buffers_alloc();
 
-      if (res && !filterx_object_repr(res, buf))
+      if (!filterx_object_repr(res, buf))
         {
           LogMessageValueType t;
           if (!filterx_object_marshal(res, buf, &t))
@@ -105,20 +140,13 @@ _evaluate_statement(FilterXExpr *expr)
         }
 
       if (!success)
-        msg_debug("Filterx expression failed",
-                  evt_tag_printf("expr", "%s:%d:%d| %s",
-                                 expr->lloc.name, expr->lloc.first_line, expr->lloc.first_column,
-                                 expr->expr_text ? : "n/a"),
-                  evt_tag_str("status", res == NULL ? "error" : "falsy"),
+        msg_debug("FILTERX  FALSY",
+                  filterx_expr_format_location_tag(expr),
                   evt_tag_mem("value", buf->str, buf->len));
       else
-        msg_trace("FILTERX",
-                  evt_tag_printf("expr", "%s:%d:%d| %s",
-                                 expr->lloc.name, expr->lloc.first_line, expr->lloc.first_column,
-                                 expr->expr_text ? : "n/a"),
-                  evt_tag_str("status", res == NULL ? "error" : (success ? "truthy" : "falsy")),
-                  evt_tag_mem("value", buf->str, buf->len),
-                  evt_tag_printf("result", "%p", res));
+        msg_trace("FILTERX TRUTHY",
+                  filterx_expr_format_location_tag(expr),
+                  evt_tag_mem("value", buf->str, buf->len));
     }
 
   filterx_object_unref(res);
