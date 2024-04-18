@@ -53,6 +53,37 @@ filterx_eval_set_context(FilterXEvalContext *context)
   eval_context = context;
 }
 
+void
+filterx_eval_push_error(const gchar *message, FilterXExpr *expr, FilterXObject *object)
+{
+  FilterXEvalContext *context = filterx_eval_get_context();
+
+  filterx_object_unref(context->error.object);
+  context->error.message = message;
+  context->error.expr = expr;
+  context->error.object = filterx_object_ref(object);
+}
+
+const gchar *
+filterx_eval_get_last_error(void)
+{
+  FilterXEvalContext *context = filterx_eval_get_context();
+
+  return context->error.message;
+}
+
+void
+filterx_eval_clear_errors(void)
+{
+  FilterXEvalContext *context = filterx_eval_get_context();
+
+  filterx_object_unref(context->error.object);
+  context->error = ((FilterXError )
+  {
+    0
+  });
+}
+
 static gboolean
 _evaluate_statement(FilterXExpr *expr)
 {
