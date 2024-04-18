@@ -25,6 +25,8 @@
 #include "filterx/object-primitive.h"
 #include "filterx/object-string.h"
 #include "filterx/object-message-value.h"
+#include "filterx/object-list-interface.h"
+#include "filterx/object-dict-interface.h"
 #include "compat/pcre.h"
 
 typedef struct FilterXReMatchState_
@@ -151,6 +153,118 @@ _has_named_capture_groups(pcre2_code_8 *pattern)
   return namecount > 0;
 }
 
+static gboolean
+_store_matches_to_list(pcre2_code_8 *pattern, const FilterXReMatchState *state, FilterXObject *fillable)
+{
+  guint32 num_matches = pcre2_get_ovector_count(state->match_data);
+  PCRE2_SIZE *matches = pcre2_get_ovector_pointer(state->match_data);
+
+  for (gint i = 0; i < num_matches; i++)
+    {
+      gint begin_index = matches[2 * i];
+      gint end_index = matches[2 * i + 1];
+      if (begin_index < 0 || end_index < 0)
+        continue;
+
+      FilterXObject *value = filterx_string_new(state->lhs_str + begin_index, end_index - begin_index);
+      gboolean success = filterx_list_append(fillable, value);
+      filterx_object_unref(value);
+
+      if (!success)
+        {
+          msg_error("FilterX: Failed to append regexp match to list", evt_tag_int("index", i));
+          return FALSE;
+        }
+    }
+
+  return TRUE;
+}
+
+static gboolean
+_store_matches_to_dict(pcre2_code_8 *pattern, const FilterXReMatchState *state, FilterXObject *fillable)
+{
+  PCRE2_SIZE *matches = pcre2_get_ovector_pointer(state->match_data);
+  guint32 num_matches = pcre2_get_ovector_count(state->match_data);
+  gchar num_str_buf[G_ASCII_DTOSTR_BUF_SIZE];
+
+  /* First store all matches with string formatted indexes as keys. */
+  for (guint32 i = 0; i < num_matches; i++)
+    {
+      PCRE2_SIZE begin_index = matches[2 * i];
+      PCRE2_SIZE end_index = matches[2 * i + 1];
+      if (begin_index < 0 || end_index < 0)
+        continue;
+
+      g_snprintf(num_str_buf, sizeof(num_str_buf), "%" G_GUINT32_FORMAT, i);
+      FilterXObject *key = filterx_string_new(num_str_buf, -1);
+      FilterXObject *value = filterx_string_new(state->lhs_str + begin_index, end_index - begin_index);
+
+      gboolean success = filterx_object_set_subscript(fillable, key, value);
+
+      filterx_object_unref(key);
+      filterx_object_unref(value);
+
+      if (!success)
+        {
+          msg_error("FilterX: Failed to add regexp match to dict", evt_tag_str("key", num_str_buf));
+          return FALSE;
+        }
+    }
+
+  gchar *name_table = NULL;
+  guint32 name_entry_size = 0;
+  guint32 namecount = 0;
+  pcre2_pattern_info(pattern, PCRE2_INFO_NAMETABLE, &name_table);
+  pcre2_pattern_info(pattern, PCRE2_INFO_NAMEENTRYSIZE, &name_entry_size);
+  pcre2_pattern_info(pattern, PCRE2_INFO_NAMECOUNT, &namecount);
+
+  /* Rename named matches. */
+  for (guint32 i = 0; i < namecount; i++, name_table += name_entry_size)
+    {
+      int n = (name_table[0] << 8) | name_table[1];
+      PCRE2_SIZE begin_index = matches[2 * n];
+      PCRE2_SIZE end_index = matches[2 * n + 1];
+      const gchar *namedgroup_name = name_table + 2;
+
+      if (begin_index < 0 || end_index < 0)
+        continue;
+
+      g_snprintf(num_str_buf, sizeof(num_str_buf), "%" G_GUINT32_FORMAT, n);
+      FilterXObject *num_key = filterx_string_new(num_str_buf, -1);
+      FilterXObject *key = filterx_string_new(namedgroup_name, -1);
+      FilterXObject *value = filterx_object_get_subscript(fillable, num_key);
+
+      gboolean success = filterx_object_set_subscript(fillable, key, value);
+      g_assert(filterx_object_unset_key(fillable, num_key));
+
+      filterx_object_unref(key);
+      filterx_object_unref(num_key);
+      filterx_object_unref(value);
+
+      if (!success)
+        {
+          msg_error("FilterX: Failed to add regexp match to dict", evt_tag_str("key", namedgroup_name));
+          return FALSE;
+        }
+    }
+
+  return TRUE;
+}
+
+static gboolean
+_store_matches(pcre2_code_8 *pattern, const FilterXReMatchState *state, FilterXObject *fillable)
+{
+  if (filterx_object_is_type(fillable, &FILTERX_TYPE_NAME(list)))
+    return _store_matches_to_list(pattern, state, fillable);
+
+  if (filterx_object_is_type(fillable, &FILTERX_TYPE_NAME(dict)))
+    return _store_matches_to_dict(pattern, state, fillable);
+
+  msg_error("FilterX: Failed to store regexp match data, invalid fillable type",
+            evt_tag_str("type", fillable->type->name));
+  return FALSE;
+}
+
 
 typedef struct FilterXExprRegexpMatch_
 {
@@ -242,7 +356,11 @@ _regexp_search_generator_eval(FilterXExpr *s)
       goto exit;
     }
 
-  /* TODO: store matches */
+  if (matched)
+    {
+      if (!_store_matches(self->pattern, &state, fillable))
+        goto exit;
+    }
 
   result = filterx_boolean_new(TRUE);
 
