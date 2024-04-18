@@ -274,6 +274,9 @@ The prefix can be modified with the `prefix()` option.
     be available on Debian Buster
     ([#4840](https://github.com/syslog-ng/syslog-ng/pull/4840))
 
+  * `dbld`: AlmaLinux 8 support
+    ([#4902](https://github.com/syslog-ng/syslog-ng/pull/4902))
+
 
 ## syslog-ng Discord
 
