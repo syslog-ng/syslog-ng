@@ -84,6 +84,12 @@ filterx_variable_is_set(FilterXVariable *v)
   return v->value != NULL;
 }
 
+void
+filterx_variable_mark_declared(FilterXVariable *v)
+{
+  v->declared = TRUE;
+}
+
 static void
 _variable_free(FilterXVariable *v)
 {
@@ -187,8 +193,12 @@ filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object)
     g_ptr_array_add(self->weak_refs, filterx_object_ref(object));
 }
 
+/*
+ * 1) sync objects to message
+ * 2) drop undeclared objects
+ */
 void
-filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg)
+filterx_scope_sync(FilterXScope *self, LogMessage *msg)
 {
   GString *buffer = scratch_buffers_alloc();
 
@@ -206,6 +216,10 @@ filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg)
        */
       if (filterx_variable_is_floating(v))
         {
+          if (!v->declared)
+            {
+              filterx_variable_set_value(v, NULL);
+            }
         }
       else if (v->value == NULL)
         {

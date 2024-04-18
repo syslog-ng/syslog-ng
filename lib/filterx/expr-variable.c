@@ -29,6 +29,7 @@ typedef struct _FilterXVariableExpr
 {
   FilterXExpr super;
   NVHandle handle;
+  gboolean declared;
 } FilterXVariableExpr;
 
 static FilterXObject *
@@ -92,6 +93,8 @@ _assign(FilterXExpr *s, FilterXObject *new_value)
        * is considered changed due to the assignment */
 
       variable = filterx_scope_register_variable(scope, self->handle, NULL);
+      if (self->declared)
+        filterx_variable_mark_declared(variable);
     }
 
   /* this only clones mutable objects */
@@ -161,4 +164,13 @@ FilterXExpr *
 filterx_floating_variable_expr_new(const gchar *name)
 {
   return filterx_variable_expr_new(name, FX_VAR_FLOATING);
+}
+
+void
+filterx_variable_expr_declare(FilterXExpr *s)
+{
+  FilterXVariableExpr *self = (FilterXVariableExpr *) s;
+
+  g_assert(s->eval == _eval);
+  self->declared = TRUE;
 }

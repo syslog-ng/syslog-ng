@@ -32,6 +32,7 @@ typedef enum
 {
   FX_VAR_MESSAGE,
   FX_VAR_FLOATING,
+  FX_VAR_DECLARED,
 } FilterXVariableType;
 
 gboolean filterx_variable_is_floating(FilterXVariable *v);
@@ -40,7 +41,7 @@ FilterXObject *filterx_variable_get_value(FilterXVariable *v);
 void filterx_variable_set_value(FilterXVariable *v, FilterXObject *new_value);
 void filterx_variable_unset_value(FilterXVariable *v);
 gboolean filterx_variable_is_set(FilterXVariable *v);
-
+void filterx_variable_mark_declared(FilterXVariable *v);
 
 /*
  * FilterXScope represents variables in a filterx scope.

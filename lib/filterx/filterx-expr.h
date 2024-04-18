@@ -108,7 +108,6 @@ filterx_expr_eval_typed(FilterXExpr *self)
   return unmarshalled;
 }
 
-
 static inline gboolean
 filterx_expr_assign(FilterXExpr *self, FilterXObject *new_value)
 {

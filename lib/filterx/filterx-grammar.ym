@@ -89,12 +89,14 @@ construct_template_expr(LogTemplate *template)
 %token KW_ENUM
 %token KW_ISSET
 %token KW_UNSET
+%token KW_DECLARE
 
 %type <ptr> stmts
 %type <node> stmt
 %type <node> assignment
 %type <node> generator_assignment
 %type <node> generator_casted_assignment
+%type <node> declaration
 %type <node> expr
 %type <node> expr_value
 %type <node> expr_generator
@@ -104,6 +106,7 @@ construct_template_expr(LogTemplate *template)
 %type <node> literal
 %type <ptr> literal_object
 %type <node> lvalue
+%type <node> lvalue_floating
 %type <ptr> template
 %type <ptr> dict_generator
 %type <ptr> inner_dict_generator
@@ -134,6 +137,7 @@ stmt
 	: expr ';'				{ $$ = $1; }
 	| conditional ';'			{ $$ = $1; }
 	| assignment ';'			{ $$ = $1; }
+	| declaration ';'			{ $$ = $1; }
 	;
 
 assignment
@@ -243,6 +247,11 @@ generator_casted_assignment
 						}
 	;
 
+declaration
+	: KW_DECLARE lvalue_floating KW_ASSIGN expr	{ filterx_variable_expr_declare($2); $$ = filterx_assign_new($2, $4); }
+	;
+
+
 expr
 	: expr_value				{ $$ = $1; }
 	| function_call				{ $$ = $1; }
@@ -319,7 +328,11 @@ literal_object
 lvalue
 	: '$' LL_IDENTIFIER			{ $$ = filterx_msg_variable_expr_new($2); free($2); }
 	| LL_MESSAGE_REF			{ $$ = filterx_msg_variable_expr_new($1); free($1); }
-	| LL_IDENTIFIER				{ $$ = filterx_floating_variable_expr_new($1); free($1); }
+	| lvalue_floating
+	;
+
+lvalue_floating
+	: LL_IDENTIFIER				{ $$ = filterx_floating_variable_expr_new($1); free($1); }
 	;
 
 boolean
