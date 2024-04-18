@@ -25,7 +25,6 @@
 #define FILTERX_EXPR_H_INCLUDED
 
 #include "filterx-object.h"
-#include "filterx-eval.h"
 #include "cfg-lexer.h"
 
 typedef struct _FilterXExpr FilterXExpr;

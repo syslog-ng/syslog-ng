@@ -24,6 +24,7 @@
 #define FILTERX_EVAL_H_INCLUDED
 
 #include "filterx/filterx-scope.h"
+#include "filterx/filterx-expr.h"
 #include "template/eval.h"
 
 typedef struct _FilterXEvalContext FilterXEvalContext;

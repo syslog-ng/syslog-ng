@@ -22,6 +22,7 @@
  */
 #include "filterx/expr-template.h"
 #include "filterx/object-message-value.h"
+#include "filterx/filterx-eval.h"
 #include "template/templates.h"
 #include "scratch-buffers.h"
 

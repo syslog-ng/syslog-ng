@@ -24,7 +24,7 @@
 #include <criterion/criterion.h>
 #include "libtest/cr_template.h"
 
-#include "filterx/filterx-object.h"
+#include "filterx/filterx-eval.h"
 #include "filterx/object-primitive.h"
 #include "filterx/expr-comparison.h"
 #include "filterx/expr-condition.h"

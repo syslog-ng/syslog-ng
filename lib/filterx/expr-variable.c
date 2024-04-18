@@ -23,6 +23,7 @@
 #include "filterx/expr-variable.h"
 #include "filterx/object-message-value.h"
 #include "filterx/filterx-scope.h"
+#include "filterx/filterx-eval.h"
 #include "logmsg/logmsg.h"
 
 typedef struct _FilterXVariableExpr
