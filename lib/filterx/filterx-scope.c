@@ -24,6 +24,7 @@
 #include "scratch-buffers.h"
 
 #define FILTERX_HANDLE_FLOATING_BIT (1UL << 31)
+#define FILTERX_SCOPE_MAX_GENERATION ((1UL << 20) - 1)
 
 struct _FilterXVariable
 {
@@ -35,7 +36,8 @@ struct _FilterXVariable
    * declared -- this variable is declared (e.g. retained for the entire input pipeline)
    */
   guint32 assigned:1,
-          declared:1;
+          declared:1,
+          generation:20;
   FilterXObject *value;
 };
 
@@ -103,6 +105,7 @@ struct _FilterXScope
   GPtrArray *weak_refs;
   gboolean write_protected;
   gboolean dirty;
+  gint generation;
 };
 
 static gboolean
@@ -166,7 +169,12 @@ filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle)
   FilterXVariable *v;
 
   if (_lookup_variable(self, handle, &v))
-    return v;
+    {
+      if (filterx_variable_handle_is_floating(handle) &&
+          !v->declared && v->generation != self->generation)
+        return NULL;
+      return v;
+    }
   return NULL;
 }
 
@@ -180,6 +188,16 @@ filterx_scope_register_variable(FilterXScope *self,
   if (_lookup_variable(self, handle, &v_slot))
     {
       /* already present */
+      if (v_slot->generation != self->generation)
+        {
+          /* existing value is from a previous generation, override it as if
+           * it was a new value */
+
+          v_slot->generation = self->generation;
+          filterx_variable_set_value(v_slot, initial_value);
+          /* consider this to be unset just as an initial registration is */
+          v_slot->assigned = FALSE;
+        }
       return v_slot;
     }
   /* turn v_slot into an index */
@@ -191,6 +209,7 @@ filterx_scope_register_variable(FilterXScope *self,
   v.assigned = FALSE;
   v.declared = FALSE;
   v.value = filterx_object_ref(initial_value);
+  v.generation = self->generation;
   g_array_insert_val(self->variables, v_index, v);
 
   return &g_array_index(self->variables, FilterXVariable, v_index);
@@ -306,6 +325,7 @@ filterx_scope_clone(FilterXScope *other)
           g_array_append_val(self->variables, *v);
           FilterXVariable *v_clone = &g_array_index(self->variables, FilterXVariable, dst_index);
 
+          v_clone->generation = 0;
           v_clone->value = filterx_object_clone(v->value);
           dst_index++;
           msg_trace("Filterx scope, cloning scope variable",
@@ -342,6 +362,8 @@ filterx_scope_make_writable(FilterXScope **pself)
       filterx_scope_unref(*pself);
       *pself = new;
     }
+  (*pself)->generation++;
+  g_assert((*pself)->generation < FILTERX_SCOPE_MAX_GENERATION);
   return *pself;
 }
 
