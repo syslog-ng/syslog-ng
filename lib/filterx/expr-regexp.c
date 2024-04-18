@@ -23,6 +23,8 @@
 
 #include "filterx/expr-regexp.h"
 #include "filterx/object-primitive.h"
+#include "filterx/object-string.h"
+#include "filterx/object-message-value.h"
 #include "compat/pcre.h"
 
 typedef struct FilterXReMatchState_
@@ -81,6 +83,66 @@ _compile_pattern(const gchar *pattern)
   return compiled;
 }
 
+/*
+ * Returns whether lhs matched the pattern.
+ * Populates state if no error happened.
+ */
+static gboolean
+_match(FilterXExpr *lhs_expr, pcre2_code_8 *pattern, FilterXReMatchState *state)
+{
+  state->lhs_obj = filterx_expr_eval(lhs_expr);
+  if (!state->lhs_obj)
+    goto error;
+
+  if (filterx_object_is_type(state->lhs_obj, &FILTERX_TYPE_NAME(message_value)))
+    {
+      if (filterx_message_value_get_type(state->lhs_obj) != LM_VT_STRING)
+        {
+          msg_error("FilterX: Regexp matching left hand side must be string type",
+                    evt_tag_str("type", state->lhs_obj->type->name));
+          goto error;
+        }
+      state->lhs_str = filterx_message_value_get_value(state->lhs_obj, &state->lhs_str_len);
+    }
+  else if (filterx_object_is_type(state->lhs_obj, &FILTERX_TYPE_NAME(string)))
+    {
+      state->lhs_str = filterx_string_get_value(state->lhs_obj, &state->lhs_str_len);
+    }
+  else
+    {
+      msg_error("FilterX: Regexp matching left hand side must be string type",
+                evt_tag_str("type", state->lhs_obj->type->name));
+      goto error;
+    }
+
+  state->match_data = pcre2_match_data_create_from_pattern(pattern, NULL);
+  gint rc = pcre2_match(pattern, (PCRE2_SPTR) state->lhs_str, (PCRE2_SIZE) state->lhs_str_len, (PCRE2_SIZE) 0, 0,
+                        state->match_data, NULL);
+  if (rc < 0)
+    {
+      switch (rc)
+        {
+        case PCRE2_ERROR_NOMATCH:
+          return FALSE;
+        default:
+          /* Handle other special cases */
+          msg_error("FilterX: Error while matching regexp", evt_tag_int("error_code", rc));
+          goto error;
+        }
+    }
+  else if (rc == 0)
+    {
+      msg_error("FilterX: Error while storing matching substrings, more than 256 capture groups encountered");
+      goto error;
+    }
+
+  return TRUE;
+
+error:
+  _state_cleanup(state);
+  return FALSE;
+}
+
 static gboolean
 _has_named_capture_groups(pcre2_code_8 *pattern)
 {
@@ -102,8 +164,22 @@ _regexp_match_eval(FilterXExpr *s)
 {
   FilterXExprRegexpMatch *self = (FilterXExprRegexpMatch *) s;
 
-  /* TODO: regexp match */
-  return filterx_boolean_new(TRUE);
+  FilterXObject *result = NULL;
+  FilterXReMatchState state;
+  _state_init(&state);
+
+  gboolean matched = _match(self->lhs, self->pattern, &state);
+  if (!state.match_data)
+    {
+      /* Error happened during matching. */
+      goto exit;
+    }
+
+  result = filterx_boolean_new(matched);
+
+exit:
+  _state_cleanup(&state);
+  return result;
 }
 
 static void
@@ -155,8 +231,23 @@ _regexp_search_generator_eval(FilterXExpr *s)
   if (!fillable)
     return NULL;
 
-  /* TODO: regexp match */
-  FilterXObject *result = filterx_boolean_new(TRUE);
+  FilterXObject *result = NULL;
+  FilterXReMatchState state;
+  _state_init(&state);
+
+  gboolean matched = _match(self->lhs, self->pattern, &state);
+  if (!state.match_data)
+    {
+      /* Error happened during matching. */
+      goto exit;
+    }
+
+  /* TODO: store matches */
+
+  result = filterx_boolean_new(TRUE);
+
+exit:
+  _state_cleanup(&state);
   filterx_object_unref(fillable);
   return result;
 }
