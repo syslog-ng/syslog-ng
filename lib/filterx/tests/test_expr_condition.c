@@ -569,6 +569,28 @@ Test(expr_condition, test_condition_must_not_fail_on_empty_else_block)
   deinit_test(&env);
 }
 
+Test(expr_condition, test_condition_with_complex_expression_to_check_memory_leaks)
+{
+  TestEnv env;
+  init_test(&env);
+
+  GList *stmts = NULL;
+  stmts = g_list_append(stmts, filterx_literal_new(filterx_string_new("foobar", -1)));
+
+  FilterXExpr *cond = filterx_conditional_new_conditional_codeblock(filterx_literal_new(filterx_integer_new(0)), NULL);
+  cond = filterx_conditional_add_false_branch((FilterXConditional *)cond,
+                                              (FilterXConditional *)filterx_conditional_new_codeblock(stmts));
+  FilterXObject *res = filterx_expr_eval(cond);
+  cr_assert_not_null(res);
+  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(string)));
+  const gchar *str = filterx_string_get_value(res, NULL);
+  cr_assert_str_eq(str, "foobar");
+
+  filterx_expr_unref(cond);
+  filterx_object_unref(res);
+
+  deinit_test(&env);
+}
 
 static void
 setup(void)
