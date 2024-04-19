@@ -123,6 +123,7 @@ Test(filterx_expr, test_filterx_list_merge)
   FilterXObject *result = NULL;
   gboolean success = FALSE;
   GList *values = NULL, *inner_values = NULL;
+  guint64 len;
 
 
   // [42];
@@ -138,7 +139,8 @@ Test(filterx_expr, test_filterx_list_merge)
   cr_assert(result);
   cr_assert(filterx_boolean_unwrap(result, &success));
   cr_assert(success);
-  cr_assert_eq(filterx_list_len(json_array), 1);
+  cr_assert(filterx_object_len(json_array, &len));
+  cr_assert_eq(len, 1);
   _assert_int_value_and_unref(filterx_list_get_subscript(json_array, 0), 42);
   filterx_object_unref(result);
 
@@ -147,7 +149,8 @@ Test(filterx_expr, test_filterx_list_merge)
   cr_assert(result);
   cr_assert(filterx_boolean_unwrap(result, &success));
   cr_assert(success);
-  cr_assert_eq(filterx_list_len(json_array), 2);
+  cr_assert(filterx_object_len(json_array, &len));
+  cr_assert_eq(len, 2);
   _assert_int_value_and_unref(filterx_list_get_subscript(json_array, 0), 42);
   _assert_int_value_and_unref(filterx_list_get_subscript(json_array, 1), 42);
   filterx_object_unref(result);
@@ -171,12 +174,14 @@ Test(filterx_expr, test_filterx_list_merge)
   cr_assert(result);
   cr_assert(filterx_boolean_unwrap(result, &success));
   cr_assert(success);
-  cr_assert_eq(filterx_list_len(json_array), 3);
+  cr_assert(filterx_object_len(json_array, &len));
+  cr_assert_eq(len, 3);
 
   FilterXObject *stored_inner_list = filterx_list_get_subscript(json_array, 2);
   cr_assert(stored_inner_list);
   cr_assert(filterx_object_is_type(stored_inner_list, &FILTERX_TYPE_NAME(list)));
-  cr_assert_eq(filterx_list_len(stored_inner_list), 1);
+  cr_assert(filterx_object_len(stored_inner_list, &len));
+  cr_assert_eq(len, 1);
   _assert_int_value_and_unref(filterx_list_get_subscript(stored_inner_list, 0), 1337);
   filterx_object_unref(stored_inner_list);
 
@@ -211,6 +216,7 @@ Test(filterx_expr, test_filterx_dict_merge)
   FilterXObject *result = NULL;
   gboolean success = FALSE;
   GList *values = NULL, *inner_values = NULL;
+  guint64 len;
 
   FilterXObject *foo = filterx_string_new("foo", -1);
   FilterXObject *bar = filterx_string_new("bar", -1);
@@ -230,7 +236,8 @@ Test(filterx_expr, test_filterx_dict_merge)
   cr_assert(result);
   cr_assert(filterx_boolean_unwrap(result, &success));
   cr_assert(success);
-  cr_assert_eq(filterx_dict_len(json), 1);
+  cr_assert(filterx_object_len(json, &len));
+  cr_assert_eq(len, 1);
   _assert_int_value_and_unref(filterx_object_get_subscript(json, foo), 42);
   filterx_object_unref(result);
 
@@ -239,7 +246,8 @@ Test(filterx_expr, test_filterx_dict_merge)
   cr_assert(result);
   cr_assert(filterx_boolean_unwrap(result, &success));
   cr_assert(success);
-  cr_assert_eq(filterx_dict_len(json), 1);
+  cr_assert(filterx_object_len(json, &len));
+  cr_assert_eq(len, 1);
   _assert_int_value_and_unref(filterx_object_get_subscript(json, foo), 42);
   filterx_object_unref(result);
 
@@ -259,7 +267,8 @@ Test(filterx_expr, test_filterx_dict_merge)
   cr_assert(result);
   cr_assert(filterx_boolean_unwrap(result, &success));
   cr_assert(success);
-  cr_assert_eq(filterx_dict_len(json), 1);
+  cr_assert(filterx_object_len(json, &len));
+  cr_assert_eq(len, 1);
   _assert_int_value_and_unref(filterx_object_get_subscript(json, foo), 420);
   filterx_object_unref(result);
 
@@ -279,7 +288,8 @@ Test(filterx_expr, test_filterx_dict_merge)
   cr_assert(result);
   cr_assert(filterx_boolean_unwrap(result, &success));
   cr_assert(success);
-  cr_assert_eq(filterx_dict_len(json), 2);
+  cr_assert(filterx_object_len(json, &len));
+  cr_assert_eq(len, 2);
   _assert_int_value_and_unref(filterx_object_get_subscript(json, foo), 420);
   _assert_int_value_and_unref(filterx_object_get_subscript(json, bar), 1337);
   filterx_object_unref(result);
@@ -303,12 +313,13 @@ Test(filterx_expr, test_filterx_dict_merge)
   cr_assert(result);
   cr_assert(filterx_boolean_unwrap(result, &success));
   cr_assert(success);
-  cr_assert_eq(filterx_dict_len(json), 3);
+  cr_assert(filterx_object_len(json, &len));
+  cr_assert_eq(len, 3);
 
   FilterXObject *stored_inner_dict = filterx_object_get_subscript(json, baz);
   cr_assert(stored_inner_dict);
   cr_assert(filterx_object_is_type(stored_inner_dict, &FILTERX_TYPE_NAME(dict)));
-  cr_assert_eq(filterx_dict_len(stored_inner_dict), 1);
+  cr_assert_eq(filterx_object_len(stored_inner_dict, &len), 1);
   _assert_int_value_and_unref(filterx_object_get_subscript(stored_inner_dict, foo), 1);
   filterx_object_unref(stored_inner_dict);
 
@@ -320,12 +331,14 @@ Test(filterx_expr, test_filterx_dict_merge)
   cr_assert(result);
   cr_assert(filterx_boolean_unwrap(result, &success));
   cr_assert(success);
-  cr_assert_eq(filterx_dict_len(json), 3);
+  cr_assert(filterx_object_len(json, &len));
+  cr_assert_eq(len, 3);
 
   stored_inner_dict = filterx_object_get_subscript(json, baz);
   cr_assert(stored_inner_dict);
   cr_assert(filterx_object_is_type(stored_inner_dict, &FILTERX_TYPE_NAME(dict)));
-  cr_assert_eq(filterx_dict_len(stored_inner_dict), 1);
+  cr_assert(filterx_object_len(stored_inner_dict, &len));
+  cr_assert_eq(len, 1);
   _assert_int_value_and_unref(filterx_object_get_subscript(stored_inner_dict, foo), 1);
   filterx_object_unref(stored_inner_dict);
 

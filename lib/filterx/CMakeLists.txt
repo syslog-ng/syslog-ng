@@ -37,6 +37,7 @@ set(FILTERX_HEADERS
     filterx/expr-regexp.h
     filterx/filterx-private.h
     filterx/func-istype.h
+    filterx/func-len.h
     PARENT_SCOPE
     )
 
@@ -79,6 +80,7 @@ set(FILTERX_SOURCES
     filterx/expr-literal-generator.c
     filterx/expr-regexp.c
     filterx/func-istype.c
+    filterx/func-len.c
     filterx/filterx-private.c
     PARENT_SCOPE
     )

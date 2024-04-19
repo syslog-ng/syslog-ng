@@ -24,13 +24,6 @@
 #include "filterx/object-list-interface.h"
 #include "filterx/object-primitive.h"
 
-guint64
-filterx_list_len(FilterXObject *s)
-{
-  FilterXList *self = (FilterXList *) s;
-  return self->len(self);
-}
-
 FilterXObject *
 filterx_list_get_subscript(FilterXObject *s, gint64 index)
 {
@@ -68,9 +61,17 @@ filterx_list_unset_index(FilterXObject *s, gint64 index)
 }
 
 static gboolean
+_len(FilterXObject *s, guint64 *len)
+{
+  FilterXList *self = (FilterXList *) s;
+  *len = self->len(self);
+  return TRUE;
+}
+
+static gboolean
 _normalize_index(FilterXList *self, gint64 index, guint64 *normalized_index, const gchar **error)
 {
-  guint64 len = filterx_list_len(&self->super);
+  guint64 len = self->len(self);
 
   if (index >= 0)
     {
@@ -121,7 +122,7 @@ _get_subscript(FilterXObject *s, FilterXObject *key)
       msg_error("FilterX: Failed to get element from list",
                 evt_tag_str("error", error),
                 evt_tag_printf("index", "%" G_GINT64_FORMAT, index),
-                evt_tag_printf("len", "%" G_GUINT64_FORMAT, filterx_list_len(s)));
+                evt_tag_printf("len", "%" G_GUINT64_FORMAT, self->len(self)));
       return NULL;
     }
 
@@ -152,7 +153,7 @@ _set_subscript(FilterXObject *s, FilterXObject *key, FilterXObject *new_value)
       msg_error("FilterX: Failed to set element of list",
                 evt_tag_str("error", error),
                 evt_tag_printf("index", "%" G_GINT64_FORMAT, index),
-                evt_tag_printf("len", "%" G_GUINT64_FORMAT, filterx_list_len(s)));
+                evt_tag_printf("len", "%" G_GUINT64_FORMAT, self->len(self)));
       return FALSE;
     }
 
@@ -213,7 +214,7 @@ _unset_key(FilterXObject *s, FilterXObject *key)
       msg_error("FilterX: Failed to unset element of list",
                 evt_tag_str("error", error),
                 evt_tag_printf("index", "%" G_GINT64_FORMAT, index),
-                evt_tag_printf("len", "%" G_GUINT64_FORMAT, filterx_list_len(s)));
+                evt_tag_printf("len", "%" G_GUINT64_FORMAT, self->len(self)));
       return FALSE;
     }
 
@@ -224,6 +225,7 @@ void
 filterx_list_init_instance(FilterXList *self, FilterXType *type)
 {
   g_assert(type->is_mutable);
+  g_assert(type->len == _len);
   g_assert(type->get_subscript == _get_subscript);
   g_assert(type->set_subscript == _set_subscript);
   g_assert(type->is_key_set == _is_key_set);
@@ -234,6 +236,7 @@ filterx_list_init_instance(FilterXList *self, FilterXType *type)
 
 FILTERX_DEFINE_TYPE(list, FILTERX_TYPE_NAME(object),
                     .is_mutable = TRUE,
+                    .len = _len,
                     .get_subscript = _get_subscript,
                     .set_subscript = _set_subscript,
                     .is_key_set = _is_key_set,

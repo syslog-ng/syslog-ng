@@ -217,7 +217,11 @@ _format_and_append_list(FilterXObject *value, GString *result)
   _append_comma_if_needed(result);
   g_string_append_c(result, '[');
 
-  guint64 list_len = filterx_list_len(value);
+  guint64 list_len;
+  gboolean len_success = filterx_object_len(value, &list_len);
+  if (!len_success)
+    return FALSE;
+
   for (guint64 i = 0; i < list_len; i++)
     {
       FilterXObject *elem = filterx_list_get_subscript(value, i);

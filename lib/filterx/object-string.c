@@ -95,6 +95,15 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 static gboolean
+_len(FilterXObject *s, guint64 *len)
+{
+  FilterXString *self = (FilterXString *) s;
+
+  *len = self->str_len;
+  return TRUE;
+}
+
+static gboolean
 _map_to_json(FilterXObject *s, struct json_object **object)
 {
   FilterXString *self = (FilterXString *) s;
@@ -288,6 +297,7 @@ filterx_typecast_protobuf(GPtrArray *args)
 
 FILTERX_DEFINE_TYPE(string, FILTERX_TYPE_NAME(object),
                     .marshal = _marshal,
+                    .len = _len,
                     .map_to_json = _map_to_json,
                     .truthy = _truthy,
                     .repr = _string_repr,
@@ -295,12 +305,14 @@ FILTERX_DEFINE_TYPE(string, FILTERX_TYPE_NAME(object),
 
 FILTERX_DEFINE_TYPE(bytes, FILTERX_TYPE_NAME(object),
                     .marshal = _bytes_marshal,
+                    .len = _len,
                     .map_to_json = _bytes_map_to_json,
                     .truthy = _truthy,
                     .repr = _bytes_repr,
                    );
 
 FILTERX_DEFINE_TYPE(protobuf, FILTERX_TYPE_NAME(object),
+                    .len = _len,
                     .marshal = _bytes_marshal,
                     .map_to_json = _bytes_map_to_json,
                     .truthy = _truthy,
