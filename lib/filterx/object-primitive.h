@@ -52,6 +52,10 @@ FilterXObject *filterx_typecast_boolean(GPtrArray *args);
 FilterXObject *filterx_typecast_integer(GPtrArray *args);
 FilterXObject *filterx_typecast_double(GPtrArray *args);
 
+gboolean bool_repr(gboolean bool_val, GString *repr);
+gboolean double_repr(double val, GString *repr);
+gboolean integer_repr(gint64 val, GString *repr);
+
 static inline gboolean
 filterx_integer_unwrap(FilterXObject *s, gint64 *value)
 {

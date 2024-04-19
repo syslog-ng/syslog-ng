@@ -35,4 +35,6 @@ FilterXObject *filterx_typecast_datetime(GPtrArray *args);
 FilterXObject *filterx_typecast_datetime_isodate(GPtrArray *args);
 FilterXObject *filterx_datetime_strptime(GPtrArray *args);
 
+gboolean datetime_repr(const UnixTime *ut, GString *repr);
+
 #endif

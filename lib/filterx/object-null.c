@@ -42,11 +42,17 @@ _map_to_json(FilterXObject *s, struct json_object **object)
   return TRUE;
 }
 
-static gboolean
-_null_repr(FilterXObject *s, GString *repr)
+gboolean
+null_repr(GString *repr)
 {
   g_string_append_len(repr, "null", 4);
   return TRUE;
+}
+
+static gboolean
+_null_repr(FilterXObject *s, GString *repr)
+{
+  return null_repr(repr);
 }
 
 FilterXObject *
