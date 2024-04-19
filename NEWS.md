@@ -1,5 +1,8 @@
-4.7.0
+4.7.1
 =====
+
+*This is the combination of the news entries of `4.7.0` and `4.7.1`.*
+*`4.7.1` hotfixed two crashes related to configuration reload.*
 
 Read Axoflow's [blog post](https://axoflow.com/axosyslog-release-4-7/) for more details.
 You can read more about the new features in the AxoSyslog [documentation](https://axoflow.com/docs/axosyslog-core/).
@@ -167,6 +170,12 @@ The prefix can be modified with the `prefix()` option.
     ([#4875](https://github.com/syslog-ng/syslog-ng/pull/4875))
 
 ## Bugfixes
+
+  * `opentelemetry()`: fix crash when an invalid configuration needs to be reverted
+    ([#4910](https://github.com/syslog-ng/syslog-ng/pull/4910))
+
+  * gRPC drivers: fixed a crash when gRPC drivers were used and syslog-ng was reloaded
+    ([#4909](https://github.com/syslog-ng/syslog-ng/pull/4909))
 
   * `opentelemetry()`, `syslog-ng-otlp()` source: Fixed a crash.
 
