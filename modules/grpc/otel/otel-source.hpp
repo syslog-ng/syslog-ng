@@ -57,9 +57,9 @@ public:
   void add_extra_channel_arg(std::string name, std::string value);
   GrpcServerCredentialsBuilderW *get_credentials_builder_wrapper();
 
-  TraceService::AsyncService trace_service;
-  LogsService::AsyncService logs_service;
-  MetricsService::AsyncService metrics_service;
+  std::unique_ptr<TraceService::AsyncService> trace_service;
+  std::unique_ptr<LogsService::AsyncService> logs_service;
+  std::unique_ptr<MetricsService::AsyncService> metrics_service;
 
 private:
   friend SourceWorker;
