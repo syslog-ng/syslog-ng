@@ -57,6 +57,16 @@ filterx_list_append(FilterXObject *s, FilterXObject *new_value)
   return filterx_object_set_subscript(s, NULL, new_value);
 }
 
+gboolean
+filterx_list_unset_index(FilterXObject *s, gint64 index)
+{
+  FilterXObject *index_obj = filterx_integer_new(index);
+  gboolean result = filterx_object_unset_key(s, index_obj);
+
+  filterx_object_unref(index_obj);
+  return result;
+}
+
 static gboolean
 _normalize_index(FilterXList *self, gint64 index, guint64 *normalized_index, const gchar **error)
 {
