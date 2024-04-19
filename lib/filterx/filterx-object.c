@@ -60,7 +60,9 @@ filterx_type_init(FilterXType *type)
   INIT_TYPE_METHOD(type, dict_factory);
   INIT_TYPE_METHOD(type, repr);
   INIT_TYPE_METHOD(type, free_fn);
-  g_assert(filterx_type_register(type->name, type));
+
+  if (!filterx_type_register(type->name, type))
+    msg_error("Reregistering filterx type", evt_tag_str("name", type->name));
 }
 
 #define FILTERX_OBJECT_MAGIC_BIAS G_MAXINT32
