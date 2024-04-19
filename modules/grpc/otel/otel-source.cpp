@@ -96,9 +96,13 @@ syslogng::grpc::otel::SourceDriver::init()
   for (auto nv : string_extra_channel_args)
     builder.AddChannelArgument(nv.first, nv.second);
 
-  builder.RegisterService(&trace_service);
-  builder.RegisterService(&logs_service);
-  builder.RegisterService(&metrics_service);
+  trace_service = std::make_unique<TraceService::AsyncService>();
+  logs_service = std::make_unique<LogsService::AsyncService>();
+  metrics_service = std::make_unique<MetricsService::AsyncService>();
+
+  builder.RegisterService(trace_service.get());
+  builder.RegisterService(logs_service.get());
+  builder.RegisterService(metrics_service.get());
 
   for (int i = 0; i < super->super.num_workers; i++)
     cqs.push_back(builder.AddCompletionQueue());
@@ -123,6 +127,10 @@ syslogng::grpc::otel::SourceDriver::init()
 gboolean
 syslogng::grpc::otel::SourceDriver::deinit()
 {
+  trace_service = nullptr;
+  logs_service = nullptr;
+  metrics_service = nullptr;
+
   return log_threaded_source_driver_deinit_method(&super->super.super.super.super);
 }
 
@@ -161,9 +169,9 @@ syslogng::grpc::otel::SourceWorker::run()
    */
   for (int i = 0; i < driver.concurrent_requests - 1; i++)
     {
-      new TraceServiceCall(*this, &driver.trace_service, cq.get());
-      new LogsServiceCall(*this, &driver.logs_service, cq.get());
-      new MetricsServiceCall(*this, &driver.metrics_service, cq.get());
+      new TraceServiceCall(*this, driver.trace_service.get(), cq.get());
+      new LogsServiceCall(*this, driver.logs_service.get(), cq.get());
+      new MetricsServiceCall(*this, driver.metrics_service.get(), cq.get());
     }
 
   void *tag;
