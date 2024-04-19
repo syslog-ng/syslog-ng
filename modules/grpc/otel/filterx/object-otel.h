@@ -67,11 +67,17 @@ FILTERX_DECLARE_TYPE(otel_array);
 static inline void
 otel_filterx_objects_global_init(void)
 {
-  filterx_type_init(&FILTERX_TYPE_NAME(otel_logrecord));
-  filterx_type_init(&FILTERX_TYPE_NAME(otel_resource));
-  filterx_type_init(&FILTERX_TYPE_NAME(otel_scope));
-  filterx_type_init(&FILTERX_TYPE_NAME(otel_kvlist));
-  filterx_type_init(&FILTERX_TYPE_NAME(otel_array));
+  static gboolean initialized = FALSE;
+
+  if (!initialized)
+    {
+      filterx_type_init(&FILTERX_TYPE_NAME(otel_logrecord));
+      filterx_type_init(&FILTERX_TYPE_NAME(otel_resource));
+      filterx_type_init(&FILTERX_TYPE_NAME(otel_scope));
+      filterx_type_init(&FILTERX_TYPE_NAME(otel_kvlist));
+      filterx_type_init(&FILTERX_TYPE_NAME(otel_array));
+      initialized = TRUE;
+    }
 }
 
 #include "compat/cpp-end.h"
