@@ -1018,3 +1018,28 @@ def test_strptime_failure_result(config, syslog_ng):
     assert file_true.get_stats()["processed"] == 1
     assert "processed" not in file_false.get_stats()
     assert file_true.read_log() == "null\n"
+
+
+def test_len(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, r"""
+    $dict = json();
+    $list = json_array();
+    len($dict) == 0;
+    len($list) == 0;
+
+    $dict.foo = "bar";
+    $list[] = "foo";
+    len($dict) == 1;
+    len($list) == 1;
+
+    len(${values.str}) == 6;
+
+    $MSG = "success";
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "success\n"
