@@ -262,7 +262,8 @@ Test(filterx_datetime, test_filterx_datetime_strptime_non_matching_timefmt)
   g_ptr_array_add(args, time_fmt);
 
   FilterXObject *obj = filterx_datetime_strptime(args);
-  cr_assert_null(obj);
+  cr_assert_not_null(obj);
+  cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(null)));
 
   g_ptr_array_free(args, TRUE);
   filterx_object_unref(obj);
@@ -337,7 +338,8 @@ Test(filterx_datetime, test_filterx_datetime_strptime_non_matching_nth_timefmt)
   g_ptr_array_add(args, time_fmt);
 
   FilterXObject *obj = filterx_datetime_strptime(args);
-  cr_assert_null(obj);
+  cr_assert_not_null(obj);
+  cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(null)));
 
   g_ptr_array_free(args, TRUE);
   filterx_object_unref(obj);

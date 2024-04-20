@@ -31,6 +31,7 @@
 #include "filterx/object-string.h"
 #include "filterx/object-primitive.h"
 #include "filterx/object-message-value.h"
+#include "filterx/object-null.h"
 #include "generic-number.h"
 #include "filterx-globals.h"
 #include "compat/json.h"
@@ -276,6 +277,8 @@ filterx_datetime_strptime(GPtrArray *args)
       convert_wall_clock_time_to_unix_time(&wct, &ut);
       result = filterx_datetime_new(&ut);
     }
+  else
+    result = filterx_null_new();
 
   return result;
 }
