@@ -11,6 +11,7 @@ lib_filterx_tests_TESTS		 =              \
 		lib/filterx/tests/test_object_integer	\
 		lib/filterx/tests/test_object_bytes	\
 		lib/filterx/tests/test_filterx_expr	\
+		lib/filterx/tests/test_expr_function	\
 		lib/filterx/tests/test_expr_comparison \
 		lib/filterx/tests/test_expr_condition \
 		lib/filterx/tests/test_builtin_functions \
