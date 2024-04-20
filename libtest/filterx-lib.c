@@ -21,8 +21,37 @@
  *
  */
 
-#include "filterx.h"
+#include <criterion/criterion.h>
+#include "filterx-lib.h"
 #include "filterx/object-json.h"
+
+void
+assert_marshaled_object(FilterXObject *obj, const gchar *repr, LogMessageValueType type)
+{
+  GString *b = g_string_sized_new(0);
+  LogMessageValueType t;
+
+  /* check if we _overwrite_ the string with the marshalled value */
+  g_string_append(b, "PREFIX");
+
+  cr_assert(filterx_object_marshal(obj, b, &t) == TRUE);
+  cr_assert_str_eq(b->str, repr);
+  cr_assert_eq(t, type);
+  g_string_free(b, TRUE);
+}
+
+void
+assert_object_json_equals(FilterXObject *obj, const gchar *expected_json_repr)
+{
+  struct json_object *jso = NULL;
+
+  cr_assert(filterx_object_map_to_json(obj, &jso) == TRUE, "error mapping to json, expected json was: %s",
+            expected_json_repr);
+  const gchar *json_repr = json_object_to_json_string_ext(jso, JSON_C_TO_STRING_PLAIN);
+  cr_assert_str_eq(json_repr, expected_json_repr);
+  json_object_put(jso);
+}
+
 
 FilterXObject *
 filterx_test_dict_new(void)

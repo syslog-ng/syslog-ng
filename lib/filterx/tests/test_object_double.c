@@ -21,10 +21,11 @@
  *
  */
 #include <criterion/criterion.h>
+#include "libtest/filterx-lib.h"
+
 #include "filterx/object-string.h"
 #include "filterx/object-null.h"
 #include "filterx/object-primitive.h"
-
 #include "apphook.h"
 #include "scratch-buffers.h"
 

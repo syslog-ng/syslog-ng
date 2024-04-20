@@ -110,7 +110,7 @@ lib/logmsg/tests/dump_logmsg\.c
 lib/multi-line/smart-multi-line\.[ch]
 lib/multi-line/tests/test_smart_multi_line\.c
 libtest/mock-logpipe\.[ch]
-libtest/filterx\.[ch]
+libtest/filterx-lib\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
 lib/severity-aliases\.table

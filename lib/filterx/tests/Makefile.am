@@ -18,8 +18,7 @@ lib_filterx_tests_TESTS		 =              \
 		lib/filterx/tests/test_type_registry \
 		lib/filterx/tests/test_filterx_object
 
-EXTRA_DIST += lib/filterx/tests/CMakeLists.txt \
-	lib/filterx/tests/filterx-lib.h
+EXTRA_DIST += lib/filterx/tests/CMakeLists.txt
 
 check_PROGRAMS				+= ${lib_filterx_tests_TESTS}
 

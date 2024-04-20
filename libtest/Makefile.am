@@ -33,8 +33,8 @@ libtest_libsyslog_ng_test_a_SOURCES =   \
 	libtest/queue_utils_lib.h	\
 	libtest/stopwatch.c		\
 	libtest/stopwatch.h		\
-	libtest/filterx.c	\
-	libtest/filterx.h
+	libtest/filterx-lib.c	\
+	libtest/filterx-lib.h
 
 libtest_libsyslog_ng_test_a_CFLAGS = $(AM_CFLAGS) $(CRITERION_CFLAGS) $(JSON_CFLAGS)
 
@@ -50,7 +50,7 @@ libtestinclude_HEADERS		    =	\
 	libtest/proto_lib.h		\
 	libtest/queue_utils_lib.h		\
 	libtest/stopwatch.h		\
-	libtest/filterx.h
+	libtest/filterx-lib.h
 
 pkgconfig_DATA			   +=	\
 	libtest/syslog-ng-test.pc
