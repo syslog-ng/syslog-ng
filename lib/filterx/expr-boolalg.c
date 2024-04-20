@@ -29,6 +29,9 @@ _eval_not(FilterXExpr *s)
   FilterXUnaryOp *self = (FilterXUnaryOp *) s;
 
   FilterXObject *result = filterx_expr_eval(self->operand);
+  if (!result)
+    return NULL;
+
   gboolean truthy = filterx_object_truthy(result);
   filterx_object_unref(result);
 
@@ -57,6 +60,9 @@ _eval_and(FilterXExpr *s)
    * evaluation just like most languages */
 
   FilterXObject *result = filterx_expr_eval(self->lhs);
+  if (!result)
+    return NULL;
+
   gboolean lhs_truthy = filterx_object_truthy(result);
   filterx_object_unref(result);
 
@@ -64,6 +70,9 @@ _eval_and(FilterXExpr *s)
     return filterx_boolean_new(FALSE);
 
   result = filterx_expr_eval(self->rhs);
+  if (!result)
+    return NULL;
+
   gboolean rhs_truthy = filterx_object_truthy(result);
   filterx_object_unref(result);
 
@@ -92,6 +101,9 @@ _eval_or(FilterXExpr *s)
    * evaluation just like most languages */
 
   FilterXObject *result = filterx_expr_eval(self->lhs);
+  if (!result)
+    return NULL;
+
   gboolean lhs_truthy = filterx_object_truthy(result);
   filterx_object_unref(result);
 
@@ -99,6 +111,9 @@ _eval_or(FilterXExpr *s)
     return filterx_boolean_new(TRUE);
 
   result = filterx_expr_eval(self->rhs);
+  if (!result)
+    return NULL;
+
   gboolean rhs_truthy = filterx_object_truthy(result);
   filterx_object_unref(result);
 
