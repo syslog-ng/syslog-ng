@@ -26,6 +26,9 @@
 #include "filterx-object.h"
 #include "filterx/expr-function.h"
 
+void filterx_cache_object(FilterXObject **cache_slot, FilterXObject *object);
+void filterx_uncache_object(FilterXObject **cache_slot);
+
 void filterx_global_init(void);
 void filterx_global_deinit(void);
 // Builtin functions

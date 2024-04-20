@@ -34,6 +34,21 @@
 static GHashTable *filterx_builtin_functions = NULL;
 static GHashTable *filterx_types = NULL;
 
+void
+filterx_cache_object(FilterXObject **cache_slot, FilterXObject *object)
+{
+  *cache_slot = object;
+  filterx_object_freeze(object);
+}
+
+void
+filterx_uncache_object(FilterXObject **cache_slot)
+{
+  filterx_object_unfreeze_and_free(*cache_slot);
+  *cache_slot = NULL;
+}
+
+
 // Builtin functions
 
 gboolean
