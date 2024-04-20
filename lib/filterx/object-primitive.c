@@ -31,6 +31,12 @@
 
 #include "compat/json.h"
 
+#define FILTERX_BOOL_CACHE_LIMIT 2
+#define FILTERX_INTEGER_CACHE_LIMIT 100
+
+static FilterXObject *bool_cache[FILTERX_BOOL_CACHE_LIMIT];
+static FilterXObject *integer_cache[FILTERX_INTEGER_CACHE_LIMIT];
+
 static gboolean
 _truthy(FilterXObject *s)
 {
@@ -72,12 +78,20 @@ _integer_marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
   return integer_repr(gn_as_int64(&self->value), repr);
 }
 
-FilterXObject *
-filterx_integer_new(gint64 value)
+static inline FilterXObject *
+_integer_wrap(gint64 value)
 {
   FilterXPrimitive *self = filterx_primitive_new(&FILTERX_TYPE_NAME(integer));
   gn_set_int64(&self->value, value);
   return &self->super;
+}
+
+FilterXObject *
+filterx_integer_new(gint64 value)
+{
+  if (value >= -1 && value < FILTERX_INTEGER_CACHE_LIMIT - 1)
+    return filterx_object_ref(integer_cache[value + 1]);
+  return _integer_wrap(value);
 }
 
 static gboolean
@@ -142,7 +156,7 @@ _bool_map_to_json(FilterXObject *s, struct json_object **object)
 }
 
 FilterXObject *
-_filterx_boolean_new(gboolean value)
+_bool_wrap(gboolean value)
 {
   FilterXPrimitive *self = filterx_primitive_new(&FILTERX_TYPE_NAME(boolean));
   gn_set_int64(&self->value, (gint64) value);
@@ -152,27 +166,7 @@ _filterx_boolean_new(gboolean value)
 FilterXObject *
 filterx_boolean_new(gboolean value)
 {
-  static FilterXObject *true_object = NULL;
-  static FilterXObject *false_object = NULL;
-
-  if (value)
-    {
-      if (!true_object)
-        {
-          true_object = _filterx_boolean_new(TRUE);
-          filterx_object_freeze(true_object);
-        }
-      return filterx_object_ref(true_object);
-    }
-  else
-    {
-      if (!false_object)
-        {
-          false_object = _filterx_boolean_new(FALSE);
-          filterx_object_freeze(false_object);
-        }
-      return filterx_object_ref(false_object);
-    }
+  return filterx_object_ref(bool_cache[!!(value)]);
 }
 
 static gboolean
@@ -346,3 +340,21 @@ FILTERX_DEFINE_TYPE(boolean, FILTERX_TYPE_NAME(object),
                     .map_to_json = _bool_map_to_json,
                     .repr = _repr,
                    );
+
+void
+filterx_primitive_global_init(void)
+{
+  filterx_cache_object(&bool_cache[FALSE], _bool_wrap(FALSE));
+  filterx_cache_object(&bool_cache[TRUE], _bool_wrap(TRUE));
+  for (guint64 i = 0; i < FILTERX_INTEGER_CACHE_LIMIT; i++)
+    filterx_cache_object(&integer_cache[i], _integer_wrap(i - 1));
+}
+
+void
+filterx_primitive_global_deinit(void)
+{
+  filterx_uncache_object(&bool_cache[FALSE]);
+  filterx_uncache_object(&bool_cache[TRUE]);
+  for (guint64 i = 0; i < FILTERX_INTEGER_CACHE_LIMIT; i++)
+    filterx_uncache_object(&integer_cache[i]);
+}

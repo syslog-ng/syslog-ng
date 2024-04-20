@@ -21,6 +21,9 @@
  *
  */
 #include "object-null.h"
+#include "filterx-globals.h"
+
+static FilterXObject *null_object;
 
 static gboolean
 _truthy(FilterXObject *s)
@@ -56,10 +59,15 @@ _null_repr(FilterXObject *s, GString *repr)
 }
 
 FilterXObject *
+_null_wrap(void)
+{
+  return filterx_object_new(&FILTERX_TYPE_NAME(null));
+}
+
+FilterXObject *
 filterx_null_new(void)
 {
-  FilterXObject *self = filterx_object_new(&FILTERX_TYPE_NAME(null));
-  return self;
+  return filterx_object_ref(null_object);
 }
 
 FILTERX_DEFINE_TYPE(null, FILTERX_TYPE_NAME(object),
@@ -68,3 +76,15 @@ FILTERX_DEFINE_TYPE(null, FILTERX_TYPE_NAME(object),
                     .repr = _null_repr,
                     .truthy = _truthy,
                    );
+
+void
+filterx_null_global_init(void)
+{
+  filterx_cache_object(&null_object, _null_wrap());
+}
+
+void
+filterx_null_global_deinit(void)
+{
+  filterx_uncache_object(&null_object);
+}

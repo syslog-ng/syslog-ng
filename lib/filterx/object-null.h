@@ -30,5 +30,7 @@ FILTERX_DECLARE_TYPE(null);
 FilterXObject *filterx_null_new(void);
 
 gboolean null_repr(GString *repr);
+void filterx_null_global_init(void);
+void filterx_null_global_deinit(void);
 
 #endif
