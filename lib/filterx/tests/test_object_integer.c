@@ -30,6 +30,35 @@
 #include "apphook.h"
 #include "scratch-buffers.h"
 
+
+
+Test(filterx_integer, test_filterx_primitive_int_marshales_to_integer_repr)
+{
+  FilterXObject *fobj = filterx_integer_new(36);
+  assert_marshaled_object(fobj, "36", LM_VT_INTEGER);
+  filterx_object_unref(fobj);
+}
+
+Test(filterx_integer, test_filterx_primitive_int_is_mapped_to_a_json_int)
+{
+  FilterXObject *fobj = filterx_integer_new(36);
+  assert_object_json_equals(fobj, "36");
+  filterx_object_unref(fobj);
+}
+
+Test(filterx_integer, test_filterx_primitive_int_is_truthy_if_nonzero)
+{
+  FilterXObject *fobj = filterx_integer_new(36);
+  cr_assert(filterx_object_truthy(fobj));
+  cr_assert_not(filterx_object_falsy(fobj));
+  filterx_object_unref(fobj);
+
+  fobj = filterx_integer_new(0);
+  cr_assert_not(filterx_object_truthy(fobj));
+  cr_assert(filterx_object_falsy(fobj));
+  filterx_object_unref(fobj);
+}
+
 Test(filterx_integer, test_filterx_integer_typecast_null_args)
 {
   GPtrArray *args = NULL;

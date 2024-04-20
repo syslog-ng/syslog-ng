@@ -30,6 +30,37 @@
 #include "apphook.h"
 #include "scratch-buffers.h"
 
+Test(filterx_boolean, test_filterx_primitive_bool_marshales_to_bool_repr)
+{
+  FilterXObject *fobj = filterx_boolean_new(TRUE);
+  assert_marshaled_object(fobj, "true", LM_VT_BOOLEAN);
+  filterx_object_unref(fobj);
+}
+
+Test(filterx_boolean, test_filterx_primitive_bool_is_mapped_to_a_json_bool)
+{
+  FilterXObject *fobj = filterx_boolean_new(TRUE);
+  assert_object_json_equals(fobj, "true");
+  filterx_object_unref(fobj);
+
+  fobj = filterx_boolean_new(FALSE);
+  assert_object_json_equals(fobj, "false");
+  filterx_object_unref(fobj);
+}
+
+Test(filterx_boolean, test_filterx_primitive_bool_is_truthy_if_true)
+{
+  FilterXObject *fobj = filterx_boolean_new(TRUE);
+  cr_assert(filterx_object_truthy(fobj));
+  cr_assert_not(filterx_object_falsy(fobj));
+  filterx_object_unref(fobj);
+
+  fobj = filterx_boolean_new(0.0);
+  cr_assert_not(filterx_object_truthy(fobj));
+  cr_assert(filterx_object_falsy(fobj));
+  filterx_object_unref(fobj);
+}
+
 Test(filterx_boolean, test_filterx_boolean_typecast_null_args)
 {
   GPtrArray *args = NULL;
