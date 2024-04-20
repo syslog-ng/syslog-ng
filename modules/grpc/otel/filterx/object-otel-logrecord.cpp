@@ -149,19 +149,19 @@ _free(FilterXObject *s)
 }
 
 static gboolean
-_setattr(FilterXObject *s, const gchar *attr_name, FilterXObject *new_value)
+_setattr(FilterXObject *s, FilterXObject *attr, FilterXObject *new_value)
 {
   FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
 
-  return self->cpp->SetField(attr_name, new_value);
+  return self->cpp->SetField(filterx_string_get_value(attr, NULL), new_value);
 }
 
 static FilterXObject *
-_getattr(FilterXObject *s, const gchar *attr_name)
+_getattr(FilterXObject *s, FilterXObject *attr)
 {
   FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
 
-  return self->cpp->GetField(attr_name);
+  return self->cpp->GetField(filterx_string_get_value(attr, NULL));
 }
 
 static gboolean

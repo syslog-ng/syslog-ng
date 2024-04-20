@@ -46,7 +46,7 @@ using namespace google::protobuf::util;
 static void
 _assert_filterx_integer_attribute(FilterXObject *obj, const std::string &attribute_name, gint64 expected_value)
 {
-  FilterXObject *filterx_integer = filterx_object_getattr(obj, attribute_name.c_str());
+  FilterXObject *filterx_integer = filterx_object_getattr_string(obj, attribute_name.c_str());
   cr_assert(filterx_object_is_type(filterx_integer, &FILTERX_TYPE_NAME(integer)));
 
   GenericNumber value = filterx_primitive_get_value(filterx_integer);
@@ -59,7 +59,7 @@ static void
 _assert_filterx_string_attribute(FilterXObject *obj, const std::string &attribute_name,
                                  const std::string &expected_value)
 {
-  FilterXObject *filterx_string = filterx_object_getattr(obj, attribute_name.c_str());
+  FilterXObject *filterx_string = filterx_object_getattr_string(obj, attribute_name.c_str());
   cr_assert(filterx_object_is_type(filterx_string, &FILTERX_TYPE_NAME(string)));
 
   gsize len;
@@ -84,7 +84,7 @@ static void
 _assert_filterx_repeated_kv_attribute(FilterXObject *obj, const std::string &attribute_name,
                                       const google::protobuf::RepeatedPtrField<KeyValue> &expected_repeated_kv)
 {
-  FilterXObject *filterx_otel_kvlist = filterx_object_getattr(obj, attribute_name.c_str());
+  FilterXObject *filterx_otel_kvlist = filterx_object_getattr_string(obj, attribute_name.c_str());
   cr_assert(filterx_object_is_type(filterx_otel_kvlist, &FILTERX_TYPE_NAME(otel_kvlist)));
 
   const google::protobuf::RepeatedPtrField<KeyValue> &kvlist = ((FilterXOtelKVList *)
@@ -305,7 +305,7 @@ Test(otel_filterx, resource_get_field)
   _assert_filterx_integer_attribute(filterx_otel_resource, "dropped_attributes_count", 42);
   _assert_filterx_repeated_kv_attribute(filterx_otel_resource, "attributes", resource.attributes());
 
-  FilterXObject *filterx_invalid = filterx_object_getattr(filterx_otel_resource, "invalid_attr");
+  FilterXObject *filterx_invalid = filterx_object_getattr_string(filterx_otel_resource, "invalid_attr");
   cr_assert_not(filterx_invalid);
 
   filterx_object_unref(filterx_otel_resource);
@@ -318,7 +318,7 @@ Test(otel_filterx, resource_set_field)
   cr_assert(filterx_otel_resource);
 
   FilterXObject *filterx_integer = filterx_integer_new(42);
-  cr_assert(filterx_object_setattr(filterx_otel_resource, "dropped_attributes_count", filterx_integer));
+  cr_assert(filterx_object_setattr_string(filterx_otel_resource, "dropped_attributes_count", filterx_integer));
 
   KeyValueList attributes;
   KeyValue *attribute_1 = attributes.add_values();
@@ -329,9 +329,9 @@ Test(otel_filterx, resource_set_field)
   g_ptr_array_insert(attributes_kvlist_args, 0, filterx_protobuf_new(serialized_attributes.c_str(),
                      serialized_attributes.length()));
   FilterXObject *filterx_kvlist = filterx_otel_kvlist_new_from_args(attributes_kvlist_args);
-  cr_assert(filterx_object_setattr(filterx_otel_resource, "attributes", filterx_kvlist));
+  cr_assert(filterx_object_setattr_string(filterx_otel_resource, "attributes", filterx_kvlist));
 
-  cr_assert_not(filterx_object_setattr(filterx_otel_resource, "invalid_attr", filterx_integer));
+  cr_assert_not(filterx_object_setattr_string(filterx_otel_resource, "invalid_attr", filterx_integer));
 
   GString *serialized = g_string_new(NULL);
   LogMessageValueType type;
@@ -442,7 +442,7 @@ Test(otel_filterx, scope_get_field)
   _assert_filterx_string_attribute(filterx_otel_scope, "name", "foobar");
   _assert_filterx_repeated_kv_attribute(filterx_otel_scope, "attributes", scope.attributes());
 
-  FilterXObject *filterx_invalid = filterx_object_getattr(filterx_otel_scope, "invalid_attr");
+  FilterXObject *filterx_invalid = filterx_object_getattr_string(filterx_otel_scope, "invalid_attr");
   cr_assert_not(filterx_invalid);
 
   filterx_object_unref(filterx_otel_scope);
@@ -455,10 +455,10 @@ Test(otel_filterx, scope_set_field)
   cr_assert(filterx_otel_scope);
 
   FilterXObject *filterx_integer = filterx_integer_new(42);
-  cr_assert(filterx_object_setattr(filterx_otel_scope, "dropped_attributes_count", filterx_integer));
+  cr_assert(filterx_object_setattr_string(filterx_otel_scope, "dropped_attributes_count", filterx_integer));
 
   FilterXObject *filterx_string = filterx_string_new("foobar", -1);
-  cr_assert(filterx_object_setattr(filterx_otel_scope, "name", filterx_string));
+  cr_assert(filterx_object_setattr_string(filterx_otel_scope, "name", filterx_string));
 
   KeyValueList attributes;
   KeyValue *attribute_1 = attributes.add_values();
@@ -469,9 +469,9 @@ Test(otel_filterx, scope_set_field)
   g_ptr_array_insert(attributes_kvlist_args, 0, filterx_protobuf_new(serialized_attributes.c_str(),
                      serialized_attributes.length()));
   FilterXObject *filterx_kvlist = filterx_otel_kvlist_new_from_args(attributes_kvlist_args);
-  cr_assert(filterx_object_setattr(filterx_otel_scope, "attributes", filterx_kvlist));
+  cr_assert(filterx_object_setattr_string(filterx_otel_scope, "attributes", filterx_kvlist));
 
-  cr_assert_not(filterx_object_setattr(filterx_otel_scope, "invalid_attr", filterx_integer));
+  cr_assert_not(filterx_object_setattr_string(filterx_otel_scope, "invalid_attr", filterx_integer));
 
   GString *serialized = g_string_new(NULL);
   LogMessageValueType type;
@@ -682,11 +682,11 @@ Test(otel_filterx, kvlist_through_logrecord)
 
   /* $log.attributes = $kvlist; */
   FilterXObject *fx_kvlist_clone = filterx_object_clone(fx_kvlist);
-  cr_assert(filterx_object_setattr(fx_logrecord, "attributes", fx_kvlist_clone));
+  cr_assert(filterx_object_setattr_string(fx_logrecord, "attributes", fx_kvlist_clone));
   filterx_object_unref(fx_kvlist_clone);
 
   /* $log.attributes["key_1"] = "bar"; */
-  fx_get_1 = filterx_object_getattr(fx_logrecord, "attributes");
+  fx_get_1 = filterx_object_getattr_string(fx_logrecord, "attributes");
   cr_assert(fx_get_1);
   cr_assert(filterx_object_set_subscript(fx_get_1, fx_key_1, fx_bar));
 
@@ -695,7 +695,7 @@ Test(otel_filterx, kvlist_through_logrecord)
 
   /* $log.attributes["key_3"] = $inner_kvlist; */
   filterx_object_unref(fx_get_1);
-  fx_get_1 = filterx_object_getattr(fx_logrecord, "attributes");
+  fx_get_1 = filterx_object_getattr_string(fx_logrecord, "attributes");
   cr_assert(fx_get_1);
   FilterXObject *fx_inner_kvlist_clone = filterx_object_clone(fx_inner_kvlist);
   cr_assert(filterx_object_set_subscript(fx_get_1, fx_key_3, fx_inner_kvlist_clone));
@@ -706,7 +706,7 @@ Test(otel_filterx, kvlist_through_logrecord)
 
   /* $log.attributes["key_3"]["key_2"] = "baz"; */
   filterx_object_unref(fx_get_1);
-  fx_get_1 = filterx_object_getattr(fx_logrecord, "attributes");
+  fx_get_1 = filterx_object_getattr_string(fx_logrecord, "attributes");
   cr_assert(fx_get_1);
   filterx_object_unref(fx_get_2);
   fx_get_2 = filterx_object_get_subscript(fx_get_1, fx_key_3);
@@ -936,11 +936,11 @@ Test(otel_filterx, array_through_logrecord)
 
   /* $log.body = $array; */
   FilterXObject *fx_array_clone = filterx_object_clone(fx_array);
-  cr_assert(filterx_object_setattr(fx_logrecord, "body", fx_array_clone));
+  cr_assert(filterx_object_setattr_string(fx_logrecord, "body", fx_array_clone));
   filterx_object_unref(fx_array_clone);
 
   /* $log.body[] = "bar"; */
-  fx_get_1 = filterx_object_getattr(fx_logrecord, "body");
+  fx_get_1 = filterx_object_getattr_string(fx_logrecord, "body");
   cr_assert(fx_get_1);
   cr_assert(filterx_object_set_subscript(fx_get_1, nullptr, fx_bar));
 
@@ -949,7 +949,7 @@ Test(otel_filterx, array_through_logrecord)
 
   /* $log.body[] = $inner_array; */
   filterx_object_unref(fx_get_1);
-  fx_get_1 = filterx_object_getattr(fx_logrecord, "body");
+  fx_get_1 = filterx_object_getattr_string(fx_logrecord, "body");
   cr_assert(fx_get_1);
   FilterXObject *fx_inner_array_clone = filterx_object_clone(fx_inner_array);
   cr_assert(filterx_object_set_subscript(fx_get_1, nullptr, fx_inner_array_clone));
@@ -960,7 +960,7 @@ Test(otel_filterx, array_through_logrecord)
 
   /* $log.body[2][] = "baz"; */
   filterx_object_unref(fx_get_1);
-  fx_get_1 = filterx_object_getattr(fx_logrecord, "body");
+  fx_get_1 = filterx_object_getattr_string(fx_logrecord, "body");
   cr_assert(fx_get_1);
   filterx_object_unref(fx_get_2);
   fx_get_2 = filterx_object_get_subscript(fx_get_1, fx_2);

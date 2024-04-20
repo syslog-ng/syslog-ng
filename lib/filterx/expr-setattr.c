@@ -22,13 +22,14 @@
  */
 #include "filterx/expr-setattr.h"
 #include "filterx/object-primitive.h"
+#include "filterx/object-string.h"
 #include "scratch-buffers.h"
 
 typedef struct _FilterXSetAttr
 {
   FilterXExpr super;
   FilterXExpr *object;
-  gchar *attr_name;
+  FilterXObject *attr;
   FilterXExpr *new_value;
 } FilterXSetAttr;
 
@@ -49,7 +50,7 @@ _eval(FilterXExpr *s)
   FilterXObject *cloned = filterx_object_clone(new_value);
   filterx_object_unref(new_value);
 
-  if (filterx_object_setattr(object, self->attr_name, cloned))
+  if (filterx_object_setattr(object, self->attr, cloned))
     {
       result = filterx_boolean_new(TRUE);
       if (trace_flag)
@@ -62,7 +63,7 @@ _eval(FilterXExpr *s)
                 g_assert_not_reached();
             }
           msg_trace("Filterx setattr",
-                    evt_tag_str("attr_name", self->attr_name),
+                    evt_tag_str("attr", filterx_string_get_value(self->attr, NULL)),
                     evt_tag_mem("value", buf->str, buf->len));
         }
     }
@@ -79,7 +80,7 @@ _free(FilterXExpr *s)
 {
   FilterXSetAttr *self = (FilterXSetAttr *) s;
 
-  g_free(self->attr_name);
+  filterx_object_unref(self->attr);
   filterx_expr_unref(self->object);
   filterx_expr_unref(self->new_value);
   filterx_expr_free_method(s);
@@ -94,7 +95,7 @@ filterx_setattr_new(FilterXExpr *object, const gchar *attr_name, FilterXExpr *ne
   self->super.eval = _eval;
   self->super.free_fn = _free;
   self->object = object;
-  self->attr_name = g_strdup(attr_name);
+  self->attr = filterx_string_new(attr_name, -1);
   self->new_value = new_value;
   return &self->super;
 }

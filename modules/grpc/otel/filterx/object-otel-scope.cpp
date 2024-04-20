@@ -131,19 +131,19 @@ _free(FilterXObject *s)
 }
 
 static gboolean
-_setattr(FilterXObject *s, const gchar *attr_name, FilterXObject *new_value)
+_setattr(FilterXObject *s, FilterXObject *attr, FilterXObject *new_value)
 {
   FilterXOtelScope *self = (FilterXOtelScope *) s;
 
-  return self->cpp->set_field(attr_name, new_value);
+  return self->cpp->set_field(filterx_string_get_value(attr, NULL), new_value);
 }
 
 static FilterXObject *
-_getattr(FilterXObject *s, const gchar *attr_name)
+_getattr(FilterXObject *s, FilterXObject *attr)
 {
   FilterXOtelScope *self = (FilterXOtelScope *) s;
 
-  return self->cpp->get_field(attr_name);
+  return self->cpp->get_field(filterx_string_get_value(attr, NULL));
 }
 
 static gboolean

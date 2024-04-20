@@ -27,6 +27,24 @@
 #include "filterx/object-string.h"
 #include "filterx/filterx-globals.h"
 
+FilterXObject *
+filterx_object_getattr_string(FilterXObject *self, const gchar *attr_name)
+{
+  FilterXObject *attr = filterx_string_new(attr_name, -1);
+  FilterXObject *res = filterx_object_getattr(self, attr);
+  filterx_object_unref(attr);
+  return res;
+}
+
+gboolean
+filterx_object_setattr_string(FilterXObject *self, const gchar *attr_name, FilterXObject *new_value)
+{
+  FilterXObject *attr = filterx_string_new(attr_name, -1);
+  gboolean res = filterx_object_setattr(self, attr, new_value);
+  filterx_object_unref(attr);
+  return res;
+}
+
 #define INIT_TYPE_METHOD(type, method_name) do { \
     if (type->method_name) \
       break; \
