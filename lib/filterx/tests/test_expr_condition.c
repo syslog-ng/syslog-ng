@@ -37,6 +37,7 @@
 #include "filterx/expr-assign.h"
 #include "filterx/expr-template.h"
 #include "filterx/expr-message-ref.h"
+#include "filterx/expr-function.h"
 
 #include "apphook.h"
 #include "scratch-buffers.h"
@@ -494,6 +495,99 @@ Test(expr_condition, test_condition_do_not_allow_to_add_else_into_else, .signal=
 
   filterx_expr_unref(cond);
   ////
+
+  deinit_test(&env);
+}
+
+FilterXObject *
+_fail_func(GPtrArray *args)
+{
+  return NULL;
+}
+
+Test(expr_condition, test_condition_return_null_on_illegal_expr)
+{
+  TestEnv env;
+  init_test(&env);
+
+  GList *stmts = g_list_append(NULL, _assert_assign_var("$control-value", _string_to_filterXExpr("matching")));
+
+  FilterXExpr *func = filterx_function_new("test_fn", NULL, _fail_func);
+
+  FilterXExpr *cond = filterx_conditional_new_conditional_codeblock(func, stmts);
+  FilterXObject *res = filterx_expr_eval(cond);
+  cr_assert_null(res);
+
+  filterx_expr_unref(cond);
+
+  deinit_test(&env);
+}
+
+FilterXObject *
+_dummy_func(GPtrArray *args)
+{
+  return filterx_string_new("foobar", -1);
+}
+
+Test(expr_condition, test_condition_return_expr_result_on_missing_stmts)
+{
+  TestEnv env;
+  init_test(&env);
+
+  FilterXExpr *func = filterx_function_new("test_fn", NULL, _dummy_func);
+
+  FilterXExpr *cond = filterx_conditional_new_conditional_codeblock(func, NULL);
+  FilterXObject *res = filterx_expr_eval(cond);
+  cr_assert_not_null(res);
+  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(string)));
+  const gchar *strval = filterx_string_get_value(res, NULL);
+  cr_assert_str_eq(strval, "foobar");
+
+  filterx_expr_unref(cond);
+  filterx_object_unref(res);
+
+  deinit_test(&env);
+}
+
+Test(expr_condition, test_condition_must_not_fail_on_empty_else_block)
+{
+  TestEnv env;
+  init_test(&env);
+
+  FilterXExpr *cond = filterx_conditional_new_conditional_codeblock(filterx_literal_new(filterx_boolean_new(FALSE)),
+                      NULL);
+  cond = filterx_conditional_add_false_branch((FilterXConditional *)cond,
+                                              (FilterXConditional *)filterx_conditional_new_codeblock(NULL));
+  FilterXObject *res = filterx_expr_eval(cond);
+  cr_assert_not_null(res);
+  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(boolean)));
+  cr_assert(filterx_object_truthy(res));
+
+  filterx_expr_unref(cond);
+  filterx_object_unref(res);
+
+  deinit_test(&env);
+}
+
+Test(expr_condition, test_condition_with_complex_expression_to_check_memory_leaks)
+{
+  TestEnv env;
+  init_test(&env);
+
+  GList *stmts = NULL;
+  stmts = g_list_append(stmts, filterx_literal_new(filterx_string_new("foobar", -1)));
+
+  FilterXExpr *cond = filterx_conditional_new_conditional_codeblock(filterx_literal_new(filterx_integer_new(0)), NULL);
+  cond = filterx_conditional_add_false_branch((FilterXConditional *)cond,
+                                              (FilterXConditional *)filterx_conditional_new_codeblock(stmts));
+  FilterXObject *res = filterx_expr_eval(cond);
+  cr_assert_not_null(res);
+  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(string)));
+  const gchar *str = filterx_string_get_value(res, NULL);
+  cr_assert_str_eq(str, "foobar");
+
+  filterx_expr_unref(cond);
+  filterx_object_unref(res);
 
   deinit_test(&env);
 }

@@ -34,30 +34,37 @@ _tail_condition(FilterXConditional *c)
     return c;
 }
 
-static gboolean
-_handle_condition_expression(FilterXConditional *c)
-{
-  g_assert(c != NULL);
-  if (c->condition == FILTERX_CONDITIONAL_NO_CONDITION)
-    return TRUE;
-  FilterXObject *cond = filterx_expr_eval(c->condition);
-  if (!cond) return FALSE;
-  return filterx_object_truthy(cond);
-}
-
 static FilterXObject *
 _eval_condition(FilterXConditional *c)
 {
-  if (c == NULL)
-    {
-      // no condition-expression match, no elif or else case
-      return filterx_boolean_new(TRUE);
-    }
-  if (!_handle_condition_expression(c))
-    {
-      return _eval_condition(c->false_branch);
-    }
   FilterXObject *result = NULL;
+  FilterXObject *condition_value = NULL;
+  if (c->condition != FILTERX_CONDITIONAL_NO_CONDITION)
+    {
+      condition_value = filterx_expr_eval(c->condition);
+      if (!condition_value)
+        return NULL;
+      if (filterx_object_falsy(condition_value))
+        {
+          // no condition-expression match, no elif or else case
+          // returning true to avoid filterx failure on non matching if's
+          if (c->false_branch == NULL)
+            result = filterx_boolean_new(TRUE);
+          else
+            result = _eval_condition(c->false_branch);
+          goto exit;
+        }
+    }
+
+  if (!c->statements)
+    {
+      if (c->condition)
+        return condition_value;
+      // returning true to avoid filterx failure on empty else block
+      result = filterx_boolean_new(TRUE);
+      goto exit;
+    }
+
   for (GList *l = c->statements; l; l = l->next)
     {
       FilterXExpr *expr = l->data;
@@ -70,6 +77,8 @@ _eval_condition(FilterXConditional *c)
       if (l->next != NULL)
         filterx_object_unref(result);
     }
+exit:
+  filterx_object_unref(condition_value);
   return result;
 }
 

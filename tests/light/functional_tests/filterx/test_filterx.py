@@ -536,10 +536,10 @@ $MSG = example_echo($list);
     assert file_true.read_log() == """foo,bar,baz\n"""
 
 
-def test_tenary_operator_true(config, syslog_ng):
+def test_ternary_operator_true(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-    $MSG = (true?${values.true_string}:${values.false_string});
+    $MSG = true?${values.true_string}:${values.false_string};
 """,
     )
     syslog_ng.start(config)
@@ -549,10 +549,10 @@ def test_tenary_operator_true(config, syslog_ng):
     assert file_true.read_log() == "boolean:true\n"
 
 
-def test_tenary_operator_false(config, syslog_ng):
+def test_ternary_operator_false(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-    $MSG = (false?${values.true_string}:${values.false_string});
+    $MSG = false?${values.true_string}:${values.false_string};
 """,
     )
     syslog_ng.start(config)
@@ -562,10 +562,10 @@ def test_tenary_operator_false(config, syslog_ng):
     assert file_true.read_log() == "boolean:false\n"
 
 
-def test_tenary_operator_expression_true(config, syslog_ng):
+def test_ternary_operator_expression_true(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-    $MSG = ((0 === 0)?${values.true_string}:${values.false_string});
+    $MSG = (0 === 0)?${values.true_string}:${values.false_string};
 """,
     )
     syslog_ng.start(config)
@@ -575,10 +575,10 @@ def test_tenary_operator_expression_true(config, syslog_ng):
     assert file_true.read_log() == "boolean:true\n"
 
 
-def test_tenary_operator_expression_false(config, syslog_ng):
+def test_ternary_operator_expression_false(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-    $MSG = ((0 === 1)?${values.true_string}:${values.false_string});
+    $MSG = (0 === 1)?${values.true_string}:${values.false_string};
 """,
     )
     syslog_ng.start(config)
@@ -588,10 +588,10 @@ def test_tenary_operator_expression_false(config, syslog_ng):
     assert file_true.read_log() == "boolean:false\n"
 
 
-def test_tenary_operator_inline_tenary_expression_true(config, syslog_ng):
+def test_ternary_operator_inline_ternary_expression_true(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-    $MSG = ((0 === 0)?("foo" eq "foo"? ${values.true_string} : "inner:false"):${values.false_string});
+    $MSG = (0 === 0)?("foo" eq "foo"? ${values.true_string} : "inner:false"):${values.false_string};
 """,
     )
     syslog_ng.start(config)
@@ -601,10 +601,10 @@ def test_tenary_operator_inline_tenary_expression_true(config, syslog_ng):
     assert file_true.read_log() == "boolean:true\n"
 
 
-def test_tenary_operator_inline_tenary_expression_false(config, syslog_ng):
+def test_ternary_operator_inline_ternary_expression_false(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-    $MSG = ((0 === 0)?("foo" eq "bar"? ${values.true_string} : "inner:false"):${values.false_string});
+    $MSG = (0 === 0)?("foo" eq "bar"? ${values.true_string} : "inner:false"):${values.false_string};
 """,
     )
     syslog_ng.start(config)
@@ -612,6 +612,20 @@ def test_tenary_operator_inline_tenary_expression_false(config, syslog_ng):
     assert file_true.get_stats()["processed"] == 1
     assert "processed" not in file_false.get_stats()
     assert file_true.read_log() == "inner:false\n"
+
+
+def test_ternary_return_condition_expression_value_without_true_branch(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    $MSG = ${values.true_string}?:${values.false_string};
+""",
+    )
+
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "boolean:true\n"
 
 
 def test_if_condition_without_else_branch_match(config, syslog_ng):
