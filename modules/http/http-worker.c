@@ -321,7 +321,7 @@ static LogThreadedResult
 _default_1XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  msg_error("Server returned with a 1XX (continuation) status code, which was not handled by curl. ",
+  msg_error("http: Server returned with a 1XX (continuation) status code, which was not handled by curl. ",
             evt_tag_str("url", url),
             evt_tag_int("status_code", http_code),
             evt_tag_str("driver", owner->super.super.super.id),
@@ -338,7 +338,7 @@ static LogThreadedResult
 _default_3XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  msg_notice("Server returned with a 3XX (redirect) status code. "
+  msg_notice("http: Server returned with a 3XX (redirect) status code. "
              "Either accept-redirect() is set to no, or this status code is unknown.",
              evt_tag_str("url", url),
              evt_tag_int("status_code", http_code),
@@ -354,7 +354,7 @@ static LogThreadedResult
 _default_4XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  msg_notice("Server returned with a 4XX (client errors) status code, which means we are not "
+  msg_notice("http: Server returned with a 4XX (client errors) status code, which means we are not "
              "authorized or the URL is not found.",
              evt_tag_str("url", url),
              evt_tag_int("status_code", http_code),
@@ -376,7 +376,7 @@ static LogThreadedResult
 _default_5XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  msg_notice("Server returned with a 5XX (server errors) status code, which indicates server failure.",
+  msg_notice("http: Server returned with a 5XX (server errors) status code, which indicates server failure.",
              evt_tag_str("url", url),
              evt_tag_int("status_code", http_code),
              evt_tag_str("driver", owner->super.super.super.id),
@@ -411,7 +411,7 @@ default_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gcha
     case 5:
       return _default_5XX(self, url, http_code);
     default:
-      msg_error("Unknown HTTP response code",
+      msg_error("http: Unknown HTTP response code",
                 evt_tag_str("url", url),
                 evt_tag_int("status_code", http_code),
                 evt_tag_str("driver", owner->super.super.super.id),
@@ -461,7 +461,7 @@ _debug_response_info(HTTPDestinationWorker *self, const gchar *url, glong http_c
 
   curl_easy_getinfo(self->curl, CURLINFO_TOTAL_TIME, &total_time);
   curl_easy_getinfo(self->curl, CURLINFO_REDIRECT_COUNT, &redirect_count);
-  msg_debug("curl: HTTP response received",
+  msg_debug("http: HTTP response received",
             evt_tag_str("url", url),
             evt_tag_int("status_code", http_code),
             evt_tag_int("body_size", self->request_body->len),
@@ -531,7 +531,7 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
-  msg_trace("Sending HTTP request",
+  msg_trace("http: Sending HTTP request",
             evt_tag_str("url", url));
 
   curl_easy_setopt(self->curl, CURLOPT_URL, url);
@@ -557,7 +557,7 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
   CURLcode ret = curl_easy_perform(self->curl);
   if (ret != CURLE_OK)
     {
-      msg_error("curl: error sending HTTP request",
+      msg_error("http: error sending HTTP request",
                 evt_tag_str("url", url),
                 evt_tag_str("error", curl_easy_strerror(ret)),
                 evt_tag_int("worker_index", self->super.worker_index),
@@ -577,7 +577,7 @@ _curl_get_status_code(HTTPDestinationWorker *self, const gchar *url, glong *http
 
   if (ret != CURLE_OK)
     {
-      msg_error("curl: error querying response code",
+      msg_error("http: error querying response code",
                 evt_tag_str("url", url),
                 evt_tag_str("error", curl_easy_strerror(ret)),
                 evt_tag_int("worker_index", self->super.worker_index),
@@ -663,7 +663,7 @@ _flush_on_target(HTTPDestinationWorker *self, const gchar *url)
 
   if (signal_data.result == HTTP_SLOT_RESOLVED)
     {
-      msg_debug("HTTP error resolved issue, retry",
+      msg_debug("http: HTTP error resolved issue, retry",
                 evt_tag_long("http_code", http_code));
       return LTR_RETRY;
     }
@@ -682,13 +682,13 @@ _format_request_headers_report_error(GError *error)
 {
   if (error->code == HTTP_HEADER_FORMAT_SLOT_CRITICAL_ERROR)
     {
-      msg_error("Failed to format HTTP request headers.",
+      msg_error("http: Failed to format HTTP request headers",
                 evt_tag_str("reason", error->message),
                 evt_tag_printf("action", "request disconnect"));
     }
   else
     {
-      msg_warning("Failed to format HTTP request headers",
+      msg_warning("http: Failed to format HTTP request headers",
                   evt_tag_str("reason", error->message),
                   evt_tag_printf("action", "trying to send the request"));
     }
@@ -765,7 +765,7 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
       alt_target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
       if (alt_target == target)
         {
-          msg_debug("Target server down, but no alternative server available. Falling back to retrying after time-reopen()",
+          msg_debug("http: Target server down, but no alternative server available. Falling back to retrying after time-reopen()",
                     evt_tag_str("url", url),
                     evt_tag_int("worker_index", self->super.worker_index),
                     evt_tag_str("driver", owner->super.super.super.id),
@@ -774,7 +774,7 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
         }
 
       const gchar *alt_url = _get_url(self, alt_target);
-      msg_debug("Target server down, trying an alternative server",
+      msg_debug("http: Target server down, trying an alternative server",
                 evt_tag_str("url", url),
                 evt_tag_str("alternative_url", alt_url),
                 evt_tag_int("worker_index", self->super.worker_index),
@@ -871,7 +871,7 @@ _init(LogThreadedDestWorker *s)
   self->request_headers = http_curl_header_list_new();
   if (!(self->curl = curl_easy_init()))
     {
-      msg_error("curl: cannot initialize libcurl",
+      msg_error("http: cannot initialize libcurl",
                 evt_tag_int("worker_index", self->super.worker_index),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
