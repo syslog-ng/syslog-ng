@@ -26,6 +26,8 @@
 #include "logthrdest/logthrdestdrv.h"
 #include "thread-utils.h"
 
+#include <iv.h>
+
 #include <MQTTClient.h>
 
 typedef struct _MQTTDestinationWorker
@@ -36,6 +38,8 @@ typedef struct _MQTTDestinationWorker
 
   GString *string_to_write;
   GString *topic_name_buffer;
+
+  struct iv_timer yield_timer;
 } MQTTDestinationWorker;
 
 LogThreadedDestWorker *mqtt_dw_new(LogThreadedDestDriver *o, gint worker_index);

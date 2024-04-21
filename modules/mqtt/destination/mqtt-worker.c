@@ -26,10 +26,35 @@
 #include "thread-utils.h"
 #include "apphook.h"
 #include "messages.h"
+#include "timeutils/misc.h"
 
 #include <stdio.h>
 
 #define PUBLISH_TIMEOUT    10000L
+#define YIELD_INTERVAL_MSEC 500
+
+static void
+_start_yield_timer(MQTTDestinationWorker *self)
+{
+  if (iv_timer_registered(&self->yield_timer))
+    iv_timer_unregister(&self->yield_timer);
+
+  iv_validate_now();
+  self->yield_timer.expires = iv_now;
+  timespec_add_msec(&self->yield_timer.expires, YIELD_INTERVAL_MSEC);
+
+  iv_timer_register(&self->yield_timer);
+}
+
+static void
+_yield_mqtt(void *cookie)
+{
+  MQTTDestinationWorker *self = cookie;
+
+  MQTTClient_yield();
+
+  _start_yield_timer(self);
+}
 
 static LogThreadedResult
 _publish_result_evaluation (LogThreadedDestWorker *self, gint result)
@@ -234,6 +259,12 @@ _init(LogThreadedDestWorker *s)
       return FALSE;
     }
 
+  IV_TIMER_INIT(&self->yield_timer);
+  self->yield_timer.cookie = self;
+  self->yield_timer.handler = _yield_mqtt;
+
+  _start_yield_timer(self);
+
   return log_threaded_dest_worker_init_method(s);
 }
 
@@ -241,6 +272,9 @@ static void
 _deinit(LogThreadedDestWorker *s)
 {
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
+
+  if (iv_timer_registered(&self->yield_timer))
+    iv_timer_unregister(&self->yield_timer);
 
   MQTTClient_destroy(&self->client);
 
