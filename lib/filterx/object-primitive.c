@@ -57,14 +57,19 @@ _integer_map_to_json(FilterXObject *s, struct json_object **object)
   return TRUE;
 }
 
+gboolean
+integer_repr(gint64 val, GString *repr)
+{
+  format_int64_padded(repr, 0, 0, 10, val);
+  return TRUE;
+}
+
 static gboolean
 _integer_marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 {
   FilterXPrimitive *self = (FilterXPrimitive *) s;
-
-  format_int64_padded(repr, 0, 0, 10, gn_as_int64(&self->value));
   *t = LM_VT_INTEGER;
-  return TRUE;
+  return integer_repr(gn_as_int64(&self->value), repr);
 }
 
 FilterXObject *
@@ -84,16 +89,21 @@ _double_map_to_json(FilterXObject *s, struct json_object **object)
   return TRUE;
 }
 
+gboolean
+double_repr(double val, GString *repr)
+{
+  gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+  g_ascii_dtostr(buf, sizeof(buf), val);
+  g_string_append(repr, buf);
+  return TRUE;
+}
+
 static gboolean
 _double_marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 {
   FilterXPrimitive *self = (FilterXPrimitive *) s;
-  gchar buf[32];
-
-  g_ascii_dtostr(buf, sizeof(buf), gn_as_double(&self->value));
-  g_string_append(repr, buf);
   *t = LM_VT_DOUBLE;
-  return TRUE;
+  return double_repr(gn_as_double(&self->value), repr);
 }
 
 FilterXObject *
@@ -104,17 +114,22 @@ filterx_double_new(gdouble value)
   return &self->super;
 }
 
+gboolean
+bool_repr(gboolean bool_val, GString *repr)
+{
+  if (bool_val)
+    g_string_append(repr, "true");
+  else
+    g_string_append(repr, "false");
+  return TRUE;
+}
+
 static gboolean
 _bool_marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 {
   FilterXPrimitive *self = (FilterXPrimitive *) s;
-
-  if (!gn_is_zero(&self->value))
-    g_string_append(repr, "true");
-  else
-    g_string_append(repr, "false");
   *t = LM_VT_BOOLEAN;
-  return TRUE;
+  return bool_repr(!gn_is_zero(&self->value), repr);
 }
 
 static gboolean

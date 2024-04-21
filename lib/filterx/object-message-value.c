@@ -223,6 +223,68 @@ _free(FilterXObject *s)
   g_free(self->buf);
 }
 
+static gboolean
+_repr(FilterXObject *s, GString *repr)
+{
+  FilterXMessageValue *self = (FilterXMessageValue *) s;
+
+  switch (self->type)
+    {
+    case LM_VT_STRING:
+      g_string_append_len(repr, self->repr, self->repr_len);
+      return TRUE;
+    case LM_VT_JSON:
+      g_string_append_len(repr, self->repr, self->repr_len);
+      return TRUE;
+    case LM_VT_BOOLEAN:
+    {
+      gboolean val;
+      if (!type_cast_to_boolean(self->repr, self->repr_len, &val, NULL))
+        return FALSE;
+      return bool_repr(val, repr);
+    }
+    case LM_VT_INTEGER:
+    {
+      gint64 val;
+      if (!type_cast_to_int64(self->repr, self->repr_len, &val, NULL))
+        return FALSE;
+      return integer_repr(val, repr);
+    }
+    case LM_VT_DOUBLE:
+    {
+      double val;
+      if (!type_cast_to_double(self->repr, self->repr_len, &val, NULL))
+        return FALSE;
+      return double_repr(val, repr);
+    }
+    case LM_VT_DATETIME:
+    {
+      UnixTime ut = UNIX_TIME_INIT;
+      if (!type_cast_to_datetime_unixtime(self->repr, self->repr_len, &ut, NULL))
+        return FALSE;
+      return datetime_repr(&ut, repr);
+    }
+    case LM_VT_LIST:
+    {
+      FilterXObject *obj = filterx_object_unmarshal(s);
+      filterx_object_repr(obj, repr);
+      filterx_object_unref(obj);
+      return TRUE;
+    }
+    case LM_VT_NULL:
+      return null_repr(repr);
+    case LM_VT_BYTES:
+      g_string_append_len(repr, self->repr, self->repr_len);
+      return TRUE;
+    case LM_VT_PROTOBUF:
+      g_string_append_len(repr, self->repr, self->repr_len);
+      return TRUE;
+    default:
+      g_assert_not_reached();
+    }
+
+  return FALSE;
+}
 
 FILTERX_DEFINE_TYPE(message_value, FILTERX_TYPE_NAME(object),
                     .free_fn = _free,
@@ -230,4 +292,5 @@ FILTERX_DEFINE_TYPE(message_value, FILTERX_TYPE_NAME(object),
                     .marshal = _marshal,
                     .unmarshal = _unmarshal,
                     .map_to_json = _map_to_json,
+                    .repr = _repr,
                    );
