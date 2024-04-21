@@ -372,12 +372,11 @@ $envelope.json.another_key = "this is another new key which is not added to $MSG
 def test_json_simple_literal_assignment(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$MSG = json();
-$MSG += {
+$MSG = json({
     "foo": "foovalue",
     "bar": "barvalue",
     "baz": "bazvalue"
-};
+});
 """,
     )
     syslog_ng.start(config)
@@ -390,8 +389,7 @@ $MSG += {
 def test_json_recursive_literal_assignment(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$MSG = json();
-$MSG += {
+$MSG = json({
     "foo": "foovalue",
     "bar": "barvalue",
     "baz": "bazvalue",
@@ -405,7 +403,7 @@ $MSG += {
             "baz": "bazvalue",
         },
     },
-};
+});
 """,
     )
     syslog_ng.start(config)
@@ -418,8 +416,7 @@ $MSG += {
 def test_json_change_recursive_literal(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$MSG = json();
-$MSG += {
+$MSG = json({
     "foo": "foovalue",
     "bar": "barvalue",
     "baz": "bazvalue",
@@ -433,7 +430,7 @@ $MSG += {
             "baz": "bazvalue",
         },
     },
-};
+});
 
 $MSG.recursive.recursive.foo = "changedfoovalue";
 $MSG.recursive.recursive.newattr = "newattrvalue";
@@ -452,8 +449,7 @@ $MSG.recursive.recursive.newattr = "newattrvalue";
 def test_list_literal_becomes_syslogng_list_as_string(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$MSG = json_array();
-$MSG += ["foo", "bar", "baz"];
+$MSG = json_array(["foo", "bar", "baz"]);
 """,
     )
     syslog_ng.start(config)
@@ -466,13 +462,11 @@ $MSG += ["foo", "bar", "baz"];
 def test_list_literal_becomes_json_list_as_a_part_of_json(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$list = json_array();
-$list += ["foo", "bar", "baz"];
-$MSG = json();
-$MSG += {
+$list = json_array(["foo", "bar", "baz"]);
+$MSG = json({
     "key": "value",
     "list": $list,
-};
+});
 """,
     )
     syslog_ng.start(config)
@@ -485,8 +479,7 @@ $MSG += {
 def test_list_is_cloned_upon_assignment(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-$list = json_array();
-$list += ["foo", "bar", "baz"];
+$list = json_array(["foo", "bar", "baz"]);
 $MSG = $list;
 $list[0] = "changed foo";
 $MSG[2] = "changed baz";
@@ -527,6 +520,24 @@ $MSG["bar"] = {"answer+1": 43, "leet+1": 1338};
 $MSG.list = ["will be replaced"];
 $MSG.list[0] = [1, 2, 3];
 $MSG.list[] = [4, 5, 6];
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == """{"foo":{"answer":42,"leet":1337},"bar":{"answer+1":43,"leet+1":1338},"list":[[1,2,3],[4,5,6]]}\n"""
+
+
+def test_literal_generator_casted_assignment(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+$MSG = json();
+$MSG.foo = json({"answer": 42, "leet": 1337});
+$MSG["bar"] = json({"answer+1": 43, "leet+1": 1338});
+$MSG.list = json_array(["will be replaced"]);
+$MSG.list[0] = json_array([1, 2, 3]);
+$MSG.list[] = json_array([4, 5, 6]);
 """,
     )
     syslog_ng.start(config)

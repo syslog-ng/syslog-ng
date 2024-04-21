@@ -93,6 +93,7 @@ construct_template_expr(LogTemplate *template)
 %type <node> stmt
 %type <node> assignment
 %type <node> generator_assignment
+%type <node> generator_casted_assignment
 %type <node> expr
 %type <node> expr_value
 %type <node> expr_generator
@@ -178,6 +179,67 @@ generator_assignment
 						  $$ = shorthand;
 						}
 	| expr KW_PLUS_ASSIGN expr_generator	{ $$ = $3; filterx_generator_set_fillable($3, $1); }
+	| generator_casted_assignment
+	;
+
+generator_casted_assignment
+	: lvalue KW_ASSIGN LL_IDENTIFIER '(' expr_generator ')'
+						{
+						  FilterXExpr *func = filterx_function_lookup(configuration, $3, NULL);
+						  CHECK_ERROR(func, @3, "filterx function %s not found", $3);
+
+						  FilterXExpr *assign = filterx_assign_new($1, func);
+						  filterx_generator_set_fillable($5, filterx_expr_ref($1));
+
+						  FilterXExpr *shorthand = filterx_shorthand_new();
+						  filterx_shorthand_add(shorthand, assign);
+						  filterx_shorthand_add(shorthand, $5);
+
+						  $$ = shorthand;
+						}
+	| expr '.' LL_IDENTIFIER KW_ASSIGN LL_IDENTIFIER '(' expr_generator ')'
+						{
+						  FilterXExpr *func = filterx_function_lookup(configuration, $5, NULL);
+						  CHECK_ERROR(func, @5, "filterx function %s not found", $5);
+
+						  FilterXExpr *setattr = filterx_setattr_new($1, $3, func);
+						  filterx_generator_set_fillable($7, filterx_getattr_new(filterx_expr_ref($1), $3));
+
+						  FilterXExpr *shorthand = filterx_shorthand_new();
+						  filterx_shorthand_add(shorthand, setattr);
+						  filterx_shorthand_add(shorthand, $7);
+
+						  $$ = shorthand;
+						}
+	| expr '[' expr ']' KW_ASSIGN LL_IDENTIFIER '(' expr_generator ')'
+						{
+						  FilterXExpr *func = filterx_function_lookup(configuration, $6, NULL);
+						  CHECK_ERROR(func, @6, "filterx function %s not found", $6);
+
+						  FilterXExpr *set_subscript = filterx_set_subscript_new($1, $3, func);
+						  filterx_generator_set_fillable($8, filterx_get_subscript_new(filterx_expr_ref($1), filterx_expr_ref($3)));
+
+						  FilterXExpr *shorthand = filterx_shorthand_new();
+						  filterx_shorthand_add(shorthand, set_subscript);
+						  filterx_shorthand_add(shorthand, $8);
+
+						  $$ = shorthand;
+						}
+	| expr '[' ']' KW_ASSIGN LL_IDENTIFIER '(' expr_generator ')'
+						{
+						  FilterXExpr *func = filterx_function_lookup(configuration, $5, NULL);
+						  CHECK_ERROR(func, @5, "filterx function %s not found", $5);
+
+						  FilterXExpr *minus_one = filterx_literal_new(filterx_config_freeze_object(configuration, filterx_integer_new(-1)));
+						  FilterXExpr *set_subscript = filterx_set_subscript_new($1, NULL, func);
+						  filterx_generator_set_fillable($7, filterx_get_subscript_new(filterx_expr_ref($1), minus_one));
+
+						  FilterXExpr *shorthand = filterx_shorthand_new();
+						  filterx_shorthand_add(shorthand, set_subscript);
+						  filterx_shorthand_add(shorthand, $7);
+
+						  $$ = shorthand;
+						}
 	;
 
 expr
