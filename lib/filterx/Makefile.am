@@ -12,8 +12,6 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/expr-setattr.h		\
 	lib/filterx/expr-get-subscript.h	\
 	lib/filterx/expr-set-subscript.h	\
-	lib/filterx/expr-dict.h			\
-	lib/filterx/expr-list.h			\
 	lib/filterx/expr-message-ref.h		\
 	lib/filterx/expr-comparison.h		\
 	lib/filterx/filterx-object.h		\
@@ -35,6 +33,9 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/expr-condition.h \
 	lib/filterx/expr-isset.h \
 	lib/filterx/expr-unset.h		\
+	lib/filterx/expr-shorthand.h		\
+	lib/filterx/expr-generator.h		\
+	lib/filterx/expr-literal-generator.h		\
 	lib/filterx/filterx-private.h
 
 
@@ -50,8 +51,6 @@ filterx_sources = 				\
 	lib/filterx/expr-setattr.c		\
 	lib/filterx/expr-get-subscript.c	\
 	lib/filterx/expr-set-subscript.c	\
-	lib/filterx/expr-dict.c			\
-	lib/filterx/expr-list.c			\
 	lib/filterx/expr-message-ref.c		\
 	lib/filterx/expr-comparison.c		\
 	lib/filterx/filterx-object.c		\
@@ -74,6 +73,9 @@ filterx_sources = 				\
 	lib/filterx/expr-condition.c		\
 	lib/filterx/expr-isset.c		\
 	lib/filterx/expr-unset.c		\
+	lib/filterx/expr-shorthand.c		\
+	lib/filterx/expr-generator.c		\
+	lib/filterx/expr-literal-generator.c		\
 	lib/filterx/filterx-private.c	\
 	lib/filterx/filterx-grammar.y
 

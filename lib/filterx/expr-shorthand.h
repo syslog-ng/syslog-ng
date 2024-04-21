@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,13 +20,12 @@
  * COPYING for details.
  *
  */
-#ifndef FILTERX_EXPR_LIST_H_INCLUDED
-#define FILTERX_EXPR_LIST_H_INCLUDED
+#ifndef FILTERX_SHORTHAND_H_INCLUDED
+#define FILTERX_SHORTHAND_H_INCLUDED
 
 #include "filterx/filterx-expr.h"
 
-
-FilterXExpr *filterx_list_expr_new(FilterXExpr *fillable, GList *values);
-FilterXExpr *filterx_list_expr_inner_new(FilterXExpr *fillable, GList *values);
+FilterXExpr *filterx_shorthand_new(void);
+void filterx_shorthand_add(FilterXExpr *s, FilterXExpr *expr);
 
 #endif
