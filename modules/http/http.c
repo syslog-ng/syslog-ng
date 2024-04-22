@@ -119,7 +119,7 @@ http_dd_set_method(LogDriver *d, const gchar *method)
     self->method_type = METHOD_TYPE_PUT;
   else
     {
-      msg_warning("Unsupported method is set(Only POST and PUT are supported), default method POST will be used",
+      msg_warning("http: Unsupported method is set(Only POST and PUT are supported), default method POST will be used",
                   evt_tag_str("method", method));
       self->method_type = METHOD_TYPE_POST;
     }
@@ -297,7 +297,7 @@ http_dd_set_accept_encoding(LogDriver *d, const gchar *encoding)
     self->accept_encoding = g_string_new(encoding);
 #else
   self->accept_encoding = NULL;
-  msg_warning("libcurl has been compiled without libZ support. Accept Encoding not supported",
+  msg_warning("http: libcurl has been compiled without compression support. accept-encoding() not supported",
               evt_tag_str("encoding", encoding));
 #endif
 }
@@ -445,7 +445,7 @@ http_dd_init(LogPipe *s)
   if ((self->super.batch_lines || self->batch_bytes) && http_load_balancer_is_url_templated(self->load_balancer) &&
       self->super.num_workers > 1 && !self->super.worker_partition_key)
     {
-      msg_error("worker-partition-key() must be set if using templates in the url() option "
+      msg_error("http: worker-partition-key() must be set if using templates in the url() option "
                 "while batching is enabled and multiple workers are configured. "
                 "Make sure to set worker-partition-key() with a template that contains all the templates "
                 "used in the url() option",
