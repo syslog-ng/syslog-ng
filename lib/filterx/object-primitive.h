@@ -89,4 +89,8 @@ filterx_boolean_unwrap(FilterXObject *s, gboolean *value)
   return TRUE;
 }
 
+void filterx_primitive_global_init(void);
+void filterx_primitive_global_deinit(void);
+
+
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,17 +21,26 @@
  *
  */
 
-static void
-assert_marshaled_object(FilterXObject *obj, const gchar *repr, LogMessageValueType type)
-{
-  GString *b = g_string_sized_new(0);
-  LogMessageValueType t;
+#ifndef LIBTEST_FILTERX_LIB_H_INCLUDED
+#define LIBTEST_FILTERX_LIB_H_INCLUDED
 
-  /* check if we _overwrite_ the string with the marshalled value */
-  g_string_append(b, "PREFIX");
+#include "filterx/filterx-object.h"
 
-  cr_assert(filterx_object_marshal(obj, b, &t) == TRUE);
-  cr_assert_str_eq(b->str, repr);
-  cr_assert_eq(t, type);
-  g_string_free(b, TRUE);
-}
+void assert_marshaled_object(FilterXObject *obj, const gchar *repr, LogMessageValueType type);
+void assert_object_json_equals(FilterXObject *obj, const gchar *expected_json_repr);
+
+FILTERX_DECLARE_TYPE(test_dict);
+FILTERX_DECLARE_TYPE(test_list);
+FILTERX_DECLARE_TYPE(test_unknown_object);
+
+FilterXObject *filterx_test_dict_new(void);
+FilterXObject *filterx_test_list_new(void);
+FilterXObject *filterx_test_unknown_object_new(void);
+
+const gchar *filterx_test_unknown_object_marshaled_repr(gssize *len);
+const gchar *filterx_test_unknown_object_repr(gssize *len);
+
+void init_libtest_filterx(void);
+void deinit_libtest_filterx(void);
+
+#endif

@@ -22,7 +22,7 @@
 
 #include <criterion/criterion.h>
 #include "libtest/cr_template.h"
-#include "libtest/filterx.h"
+#include "libtest/filterx-lib.h"
 
 #include "filterx-format-json.h"
 #include "filterx/object-primitive.h"

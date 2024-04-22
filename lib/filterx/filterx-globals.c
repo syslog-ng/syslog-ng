@@ -34,6 +34,21 @@
 static GHashTable *filterx_builtin_functions = NULL;
 static GHashTable *filterx_types = NULL;
 
+void
+filterx_cache_object(FilterXObject **cache_slot, FilterXObject *object)
+{
+  *cache_slot = object;
+  filterx_object_freeze(object);
+}
+
+void
+filterx_uncache_object(FilterXObject **cache_slot)
+{
+  filterx_object_unfreeze_and_free(*cache_slot);
+  *cache_slot = NULL;
+}
+
+
 // Builtin functions
 
 gboolean
@@ -123,6 +138,8 @@ filterx_global_init(void)
   filterx_type_init(&FILTERX_TYPE_NAME(datetime));
   filterx_type_init(&FILTERX_TYPE_NAME(message_value));
 
+  filterx_primitive_global_init();
+  filterx_null_global_init();
   filterx_builtin_functions_init();
 }
 
@@ -130,6 +147,8 @@ void
 filterx_global_deinit(void)
 {
   filterx_builtin_functions_deinit();
+  filterx_null_global_deinit();
+  filterx_primitive_global_deinit();
   filterx_types_deinit();
 }
 

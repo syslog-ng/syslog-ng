@@ -39,7 +39,7 @@
 #include "apphook.h"
 #include "scratch-buffers.h"
 
-#include "filterx-lib.h"
+#include "libtest/filterx-lib.h"
 
 static void
 _assert_int_value_and_unref(FilterXObject *object, gint64 expected_value)
@@ -377,18 +377,6 @@ Test(filterx_expr, test_filterx_assign)
   log_msg_unref(msg);
   filterx_scope_unref(scope);
   filterx_eval_set_context(NULL);
-}
-
-static void
-assert_object_json_equals(FilterXObject *obj, const gchar *expected_json_repr)
-{
-  struct json_object *jso = NULL;
-
-  cr_assert(filterx_object_map_to_json(obj, &jso) == TRUE, "error mapping to json, expected json was: %s",
-            expected_json_repr);
-  const gchar *json_repr = json_object_to_json_string_ext(jso, JSON_C_TO_STRING_PLAIN);
-  cr_assert_str_eq(json_repr, expected_json_repr);
-  json_object_put(jso);
 }
 
 Test(filterx_expr, test_filterx_setattr)

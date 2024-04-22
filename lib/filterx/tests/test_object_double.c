@@ -21,12 +21,41 @@
  *
  */
 #include <criterion/criterion.h>
+#include "libtest/filterx-lib.h"
+
 #include "filterx/object-string.h"
 #include "filterx/object-null.h"
 #include "filterx/object-primitive.h"
-
 #include "apphook.h"
 #include "scratch-buffers.h"
+
+
+Test(filterx_double, test_filterx_primitive_double_marshales_to_double_repr)
+{
+  FilterXObject *fobj = filterx_double_new(36.07);
+  assert_marshaled_object(fobj, "36.07", LM_VT_DOUBLE);
+  filterx_object_unref(fobj);
+}
+
+Test(filterx_double, test_filterx_primitive_double_is_mapped_to_a_json_float)
+{
+  FilterXObject *fobj = filterx_double_new(36.0);
+  assert_object_json_equals(fobj, "36.0");
+  filterx_object_unref(fobj);
+}
+
+Test(filterx_double, test_filterx_primitive_double_is_truthy_if_nonzero)
+{
+  FilterXObject *fobj = filterx_double_new(1);
+  cr_assert(filterx_object_truthy(fobj));
+  cr_assert_not(filterx_object_falsy(fobj));
+  filterx_object_unref(fobj);
+
+  fobj = filterx_double_new(0.0);
+  cr_assert_not(filterx_object_truthy(fobj));
+  cr_assert(filterx_object_falsy(fobj));
+  filterx_object_unref(fobj);
+}
 
 Test(filterx_double, test_filterx_double_typecast_null_args)
 {
