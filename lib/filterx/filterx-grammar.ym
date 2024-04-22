@@ -134,7 +134,11 @@ start
 	;
 
 stmts
-	: stmt stmts				{ filterx_expr_set_location($1, lexer, &@1); $$ = g_list_prepend($2, $1); }
+	: stmt stmts				{
+						  CHECK_ERROR($1, @1, "failed to initialize statement");
+						  filterx_expr_set_location($1, lexer, &@1);
+						  $$ = g_list_prepend($2, $1);
+						}
 	|					{ $$ = NULL; }
 	;
 
