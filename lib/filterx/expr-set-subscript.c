@@ -22,6 +22,7 @@
  */
 #include "filterx/expr-set-subscript.h"
 #include "filterx/object-primitive.h"
+#include "scratch-buffers.h"
 
 typedef struct _FilterXSetSubscript
 {
@@ -62,7 +63,35 @@ _eval(FilterXExpr *s)
   filterx_object_unref(new_value);
 
   if (filterx_object_set_subscript(object, key, cloned))
-    result = filterx_boolean_new(TRUE);
+    {
+      result = filterx_boolean_new(TRUE);
+      if (trace_flag)
+        {
+          GString *buf = scratch_buffers_alloc();
+          if (cloned && !filterx_object_repr(cloned, buf))
+            {
+              LogMessageValueType t;
+              if (!filterx_object_marshal(cloned, buf, &t))
+                g_assert_not_reached();
+            }
+
+          GString *key_buf = scratch_buffers_alloc();
+          if (!key)
+            {
+              g_string_assign(key_buf, "(null)");
+            }
+          else if (!filterx_object_repr(key, buf))
+            {
+              LogMessageValueType t;
+              if (!filterx_object_marshal(key, buf, &t))
+                g_assert_not_reached();
+            }
+
+          msg_trace("Filterx set-subscript",
+                    evt_tag_mem("key", key_buf->str, key_buf->len),
+                    evt_tag_mem("value", buf->str, buf->len));
+        }
+    }
 
   filterx_object_unref(cloned);
 
