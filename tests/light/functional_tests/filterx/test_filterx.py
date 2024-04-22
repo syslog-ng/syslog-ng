@@ -20,6 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
+import json
+
 import pytest
 
 from src.syslog_ng_config.renderer import render_statement
@@ -1043,3 +1045,78 @@ def test_len(config, syslog_ng):
     assert file_true.get_stats()["processed"] == 1
     assert "processed" not in file_false.get_stats()
     assert file_true.read_log() == "success\n"
+
+
+def test_regexp_match(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, r"""
+    ${values.str} =~ /string/;
+    ${values.str} =~ /.*/;
+    not (${values.str} =~ /foobar/);
+    "\"" =~ /"/;
+    $MSG = "success";
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "success\n"
+
+
+def test_regexp_match_error_in_pattern(config, syslog_ng):
+    _ = create_config(
+        config, r"""
+    "foo" =~ /(/;
+""",
+    )
+    with pytest.raises(Exception):
+        syslog_ng.start(config)
+
+
+def test_regexp_search(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, r"""
+    $MSG = json();
+    $MSG.unnamed = regexp_search("foobarbaz", /(foo)(bar)(baz)/);
+    $MSG.named = regexp_search("foobarbaz", /(?<first>foo)(?<second>bar)(?<third>baz)/);
+    $MSG.mixed = regexp_search("foobarbaz", /(?<first>foo)(bar)(?<third>baz)/);
+    $MSG.force_list = json_array(regexp_search("foobarbaz", /(?<first>foo)(bar)(?<third>baz)/));
+    $MSG.force_dict = json(regexp_search("foobarbaz", /(foo)(bar)(baz)/));
+
+    $MSG.no_match_unnamed = regexp_search("foobarbaz", /(almafa)/);
+    if (len($MSG.no_match_unnamed) == 0) {
+        $MSG.no_match_unnamed_handling = true;
+    };
+
+    $MSG.no_match_named = regexp_search("foobarbaz", /(?<first>almafa)/);
+    if (len($MSG.no_match_named) == 0) {
+        $MSG.no_match_named_handling = true;
+    };
+""",
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert json.loads(file_true.read_log()) == {
+        "unnamed": ["foobarbaz", "foo", "bar", "baz"],
+        "named": {"0": "foobarbaz", "first": "foo", "second": "bar", "third": "baz"},
+        "mixed": {"0": "foobarbaz", "first": "foo", "2": "bar", "third": "baz"},
+        "force_list": ["foobarbaz", "foo", "bar", "baz"],
+        "force_dict": {"0": "foobarbaz", "1": "foo", "2": "bar", "3": "baz"},
+        "no_match_unnamed": [],
+        "no_match_unnamed_handling": True,
+        "no_match_named": {},
+        "no_match_named_handling": True,
+    }
+
+
+def test_regexp_search_error_in_pattern(config, syslog_ng):
+    _ = create_config(
+        config, r"""
+    $MSG = json(regexp_search("foo", /(/));
+""",
+    )
+    with pytest.raises(Exception):
+        syslog_ng.start(config)
