@@ -146,9 +146,36 @@ _lookup_simple_function(GlobalConfig *cfg, const gchar *function_name, GList *ar
   return filterx_simple_function_new(function_name, arguments, f);
 }
 
+static FilterXExpr *
+_lookup_function(GlobalConfig *cfg, const gchar *function_name, GList *arguments)
+{
+  // Checking filterx builtin functions first
+  FilterXFunctionCtor ctor = filterx_builtin_function_ctor_lookup(function_name);
+
+  if (!ctor)
+    {
+      // fallback to plugin lookup
+      Plugin *p = cfg_find_plugin(cfg, LL_CONTEXT_FILTERX_FUNC, function_name);
+      if (!p)
+        return NULL;
+      ctor = plugin_construct(p);
+    }
+
+  if (!ctor)
+    return NULL;
+
+  FilterXFunction *func_expr = ctor(function_name, arguments);
+  if (!func_expr)
+    return NULL;
+  return &func_expr->super;
+}
+
 /* NOTE: takes the references of objects passed in "arguments" */
 FilterXExpr *
 filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *arguments)
 {
-  return _lookup_simple_function(cfg, function_name, arguments);
+  FilterXExpr *expr = _lookup_simple_function(cfg, function_name, arguments);
+  if (expr)
+    return expr;
+  return _lookup_function(cfg, function_name, arguments);;
 }

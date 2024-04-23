@@ -56,6 +56,30 @@ filterx_builtin_simple_functions_deinit_private(GHashTable *ht)
   g_hash_table_destroy(ht);
 }
 
+gboolean
+filterx_builtin_function_ctor_register_private(GHashTable *ht, const gchar *fn_name, FilterXFunctionCtor ctor)
+{
+  return g_hash_table_insert(ht, g_strdup(fn_name), ctor);
+}
+
+FilterXFunctionCtor
+filterx_builtin_function_ctor_lookup_private(GHashTable *ht, const gchar *fn_name)
+{
+  return (FilterXFunctionCtor)g_hash_table_lookup(ht, fn_name);
+}
+
+void
+filterx_builtin_function_ctors_init_private(GHashTable **ht)
+{
+  *ht = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) NULL);
+}
+
+void
+filterx_builtin_function_ctors_deinit_private(GHashTable *ht)
+{
+  g_hash_table_destroy(ht);
+}
+
 // FilterX Types
 
 gboolean

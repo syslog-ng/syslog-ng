@@ -35,6 +35,8 @@ typedef struct _FilterXFunction
   gchar *function_name;
 } FilterXFunction;
 
+typedef FilterXFunction *(*FilterXFunctionCtor)(const gchar *, GList *);
+
 void filterx_function_init_instance(FilterXFunction *s, const gchar *function_name);
 void filterx_function_free_method(FilterXFunction *s);
 

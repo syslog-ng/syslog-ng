@@ -95,6 +95,70 @@ Test(builtin_functions, test_builtin_simple_functions_lookup)
   filterx_object_unref(res);
 }
 
+FilterXObject *
+_dummy_eval(FilterXExpr *s)
+{
+  return filterx_string_new("test-builtin-functions", -1);
+}
+
+static FilterXFunction *
+_test_builtin_dummy_function_ctor(const gchar *function_name, GList *argument_expressions)
+{
+  FilterXFunction *self = g_new0(FilterXFunction, 1);
+  filterx_function_init_instance(self, function_name);
+  self->super.eval = _dummy_eval;
+
+  g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  return self;
+}
+
+Test(builtin_functions, test_builtin_function_ctors_registering_existing_key_returns_false)
+{
+  GHashTable *ht;
+  filterx_builtin_function_ctors_init_private(&ht);
+  // first register returns TRUE
+  cr_assert(filterx_builtin_function_ctor_register_private(ht, TEST_BUILTIN_FUNCTION_NAME,
+                                                           _test_builtin_dummy_function_ctor));
+  // second attampt of register must return FALSE
+  cr_assert(!filterx_builtin_function_ctor_register_private(ht, TEST_BUILTIN_FUNCTION_NAME,
+                                                            _test_builtin_dummy_function_ctor));
+  filterx_builtin_function_ctors_deinit_private(ht);
+}
+
+Test(builtin_functions, test_builtin_function_ctors_lookup)
+{
+  GHashTable *ht;
+  filterx_builtin_function_ctors_init_private(&ht);
+
+  // func not found
+  FilterXFunctionCtor ctor = filterx_builtin_function_ctor_lookup_private(ht, TEST_BUILTIN_FUNCTION_NAME);
+  cr_assert(ctor == NULL);
+
+  // add dummy function
+  cr_assert(filterx_builtin_function_ctor_register_private(ht, TEST_BUILTIN_FUNCTION_NAME,
+                                                           _test_builtin_dummy_function_ctor));
+
+  // lookup returns dummy ctor
+  ctor = filterx_builtin_function_ctor_lookup_private(ht, TEST_BUILTIN_FUNCTION_NAME);
+  cr_assert(ctor != NULL);
+
+  // check dummy ctor as result
+  FilterXFunction *func_expr = ctor(TEST_BUILTIN_FUNCTION_NAME, NULL);
+  cr_assert(func_expr != NULL);
+
+  FilterXObject *res = filterx_expr_eval(&func_expr->super);
+  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(string)));
+  gsize len;
+  const gchar *str = filterx_string_get_value(res, &len);
+  cr_assert(len > 0);
+
+  cr_assert(strcmp(str, "test-builtin-functions") == 0);
+
+  filterx_builtin_function_ctors_deinit_private(ht);
+  filterx_object_unref(res);
+  filterx_expr_unref(&func_expr->super);
+}
+
 static void
 setup(void)
 {
