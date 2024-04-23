@@ -31,8 +31,7 @@
 
 typedef struct _FilterXSimpleFunction
 {
-  FilterXExpr super;
-  gchar *function_name;
+  FilterXFunction super;
   GList *argument_expressions;
   FilterXSimpleFunctionProto function_proto;
 } FilterXSimpleFunction;
@@ -84,10 +83,8 @@ static void
 _simple_free(FilterXExpr *s)
 {
   FilterXSimpleFunction *self = (FilterXSimpleFunction *) s;
-
-  g_free(self->function_name);
   g_list_free_full(self->argument_expressions, (GDestroyNotify) filterx_expr_unref);
-  filterx_expr_free_method(s);
+  filterx_function_free_method(&self->super);
 }
 
 FilterXExpr *
@@ -95,14 +92,35 @@ filterx_simple_function_new(const gchar *function_name, GList *arguments, Filter
 {
   FilterXSimpleFunction *self = g_new0(FilterXSimpleFunction, 1);
 
-  filterx_expr_init_instance(&self->super);
-  self->super.eval = _simple_eval;
-  self->super.free_fn = _simple_free;
-  self->function_name = g_strdup(function_name);
+  filterx_function_init_instance(&self->super, function_name);
+  self->super.super.eval = _simple_eval;
+  self->super.super.free_fn = _simple_free;
   self->argument_expressions = arguments;
   self->function_proto = function_proto;
 
-  return &self->super;
+  return &self->super.super;
+}
+
+void
+filterx_function_free_method(FilterXFunction *s)
+{
+  g_free(s->function_name);
+  filterx_expr_free_method(&s->super);
+}
+
+static void
+_function_free(FilterXExpr *s)
+{
+  FilterXFunction *self = (FilterXFunction *) s;
+  filterx_function_free_method(self);
+}
+
+void
+filterx_function_init_instance(FilterXFunction *s, const gchar *function_name)
+{
+  filterx_expr_init_instance(&s->super);
+  s->function_name = g_strdup(function_name);
+  s->super.free_fn = _function_free;
 }
 
 static FilterXExpr *
