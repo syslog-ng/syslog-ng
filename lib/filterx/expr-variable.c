@@ -172,7 +172,7 @@ filterx_variable_expr_new(const gchar *name, FilterXVariableType type)
   self->super.eval = _eval;
   self->super._update_repr = _update_repr;
   self->super.assign = _assign;
-  self->super.isset = _isset;
+  self->super.is_set = _isset;
   self->super.unset = _unset;
   self->handle = filterx_scope_map_variable_to_handle(name, type);
   if (type == FX_VAR_MESSAGE)

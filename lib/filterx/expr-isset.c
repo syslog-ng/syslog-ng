@@ -29,7 +29,7 @@ _eval(FilterXExpr *s)
 {
   FilterXUnaryOp *self = (FilterXUnaryOp *) s;
 
-  return filterx_boolean_new(filterx_expr_isset(self->operand));
+  return filterx_boolean_new(filterx_expr_is_set(self->operand));
 }
 
 FilterXExpr *

@@ -114,7 +114,7 @@ filterx_get_subscript_new(FilterXExpr *operand, FilterXExpr *key)
 
   filterx_expr_init_instance(&self->super);
   self->super.eval = _eval;
-  self->super.isset = _isset;
+  self->super.is_set = _isset;
   self->super.unset = _unset;
   self->super.free_fn = _free;
   self->operand = operand;
