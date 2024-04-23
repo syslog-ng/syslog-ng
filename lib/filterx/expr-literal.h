@@ -27,5 +27,6 @@
 #include "filterx/filterx-expr.h"
 
 FilterXExpr *filterx_literal_new(FilterXObject *object);
+gboolean filterx_expr_is_literal(FilterXExpr *expr);
 
 #endif
