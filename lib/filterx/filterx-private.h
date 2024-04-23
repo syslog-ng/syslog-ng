@@ -27,16 +27,17 @@
 #include "filterx/expr-function.h"
 
 // Builtin functions
+FilterXExpr *filterx_function_new(const gchar *function_name, GList *arguments, FilterXFunctionProto function_proto);
 gboolean filterx_builtin_function_register_private(GHashTable *ht, const gchar *fn_name, FilterXFunctionProto func);
 FilterXFunctionProto filterx_builtin_function_lookup_private(GHashTable *ht, const gchar *fn_name);
 void filterx_builtin_functions_init_private(GHashTable **ht);
 void filterx_builtin_functions_deinit_private(GHashTable *ht);
+
 // Types
 gboolean filterx_type_register_private(GHashTable *ht, const gchar *type_name, FilterXType *fxtype);
 FilterXType *filterx_type_lookup_private(GHashTable *ht, const gchar *type_name);
 void filterx_types_init_private(GHashTable **ht);
 void filterx_types_deinit_private(GHashTable *ht);
-
 
 
 #endif

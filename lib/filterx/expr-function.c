@@ -29,6 +29,14 @@
 #include "plugin.h"
 #include "cfg.h"
 
+typedef struct _FilterXFunction
+{
+  FilterXExpr super;
+  gchar *function_name;
+  GList *argument_expressions;
+  FilterXFunctionProto function_proto;
+} FilterXFunction;
+
 static GPtrArray *
 filterx_function_eval_expressions(GList *expressions)
 {
@@ -72,19 +80,14 @@ _eval(FilterXExpr *s)
   return res;
 }
 
-void
-filterx_function_free_method(FilterXFunction *s)
-{
-  g_free(s->function_name);
-  g_list_free_full(s->argument_expressions, (GDestroyNotify) filterx_expr_unref);
-  filterx_expr_free_method(&s->super);
-}
-
 static void
 _free(FilterXExpr *s)
 {
-  FilterXFunction *self = (FilterXFunction *) s;
-  filterx_function_free_method(self);
+  FilterXSimpleFunction *self = (FilterXSimpleFunction *) s;
+
+  g_free(self->function_name);
+  g_list_free_full(self->argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_expr_free_method(s);
 }
 
 FilterXExpr *

@@ -29,16 +29,6 @@
 
 typedef FilterXObject *(*FilterXFunctionProto)(GPtrArray *);
 
-typedef struct _FilterXFunction
-{
-  FilterXExpr super;
-  gchar *function_name;
-  GList *argument_expressions;
-  FilterXFunctionProto function_proto;
-} FilterXFunction;
-
-FilterXExpr *filterx_function_new(const gchar *function_name, GList *arguments, FilterXFunctionProto function_proto);
 FilterXExpr *filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *arguments);
-void filterx_function_free_method(FilterXFunction *s);
 
 #endif

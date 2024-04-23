@@ -31,6 +31,7 @@
 #include "scratch-buffers.h"
 #include "filterx/expr-literal.h"
 #include "filterx/expr-function.h"
+#include "filterx/filterx-private.h"
 
 
 Test(filterx_datetime, test_filterx_object_datetime_marshals_to_the_stored_values)

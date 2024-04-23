@@ -38,6 +38,7 @@
 #include "filterx/expr-template.h"
 #include "filterx/expr-variable.h"
 #include "filterx/expr-function.h"
+#include "filterx/filterx-private.h"
 
 #include "apphook.h"
 #include "scratch-buffers.h"
