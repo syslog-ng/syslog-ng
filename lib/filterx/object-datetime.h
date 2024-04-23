@@ -24,6 +24,7 @@
 #define FILTERX_OBJECT_DATETIME_H_INCLUDED
 
 #include "filterx-object.h"
+#include "filterx/expr-function.h"
 
 FILTERX_DECLARE_TYPE(datetime);
 
@@ -33,7 +34,7 @@ FilterXObject *filterx_datetime_new(const UnixTime *ut);
 UnixTime filterx_datetime_get_value(FilterXObject *s);
 FilterXObject *filterx_typecast_datetime(GPtrArray *args);
 FilterXObject *filterx_typecast_datetime_isodate(GPtrArray *args);
-FilterXObject *filterx_datetime_strptime(GPtrArray *args);
+FilterXFunction *filterx_function_strptime_new(const gchar *function_name, GList *argument_expressions);
 
 gboolean datetime_repr(const UnixTime *ut, GString *repr);
 

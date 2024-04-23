@@ -32,6 +32,7 @@
 #include "filterx/object-primitive.h"
 #include "filterx/object-message-value.h"
 #include "filterx/object-null.h"
+#include "filterx/expr-literal.h"
 #include "generic-number.h"
 #include "filterx-globals.h"
 #include "compat/json.h"
@@ -224,52 +225,46 @@ _strptime_get_time_str_from_object(FilterXObject *obj, gsize *len)
   return NULL;
 }
 
-FilterXObject *
-filterx_datetime_strptime(GPtrArray *args)
+
+typedef struct FilterXFunctionStrptime_
 {
-  if (args == NULL || args->len < 2)
+  FilterXFunction super;
+  FilterXExpr *time_str_expr;
+  GPtrArray *formats;
+} FilterXFunctionStrptime;
+
+static FilterXObject *
+_strptime_eval(FilterXExpr *s)
+{
+  FilterXFunctionStrptime *self = (FilterXFunctionStrptime *) s;
+
+  FilterXObject *result = NULL;
+
+  gsize time_str_len;
+  FilterXObject *time_str_obj = filterx_expr_eval(self->time_str_expr);
+  const gchar *time_str = _strptime_get_time_str_from_object(time_str_obj, &time_str_len);
+  filterx_object_unref(time_str_obj);
+
+  if (!time_str)
     {
-      msg_error("FilterX: Failed to create datetime object: invalid number of arguments. "
+      msg_error("FilterX: Failed to create datetime object: first argument must be string typed. "
                 "Usage: strptime(time_str, format_str0, ..., format_strN)");
       return NULL;
     }
-
-  FilterXObject *object = g_ptr_array_index(args, 0);
-  gsize len;
-  const gchar *timestr = _strptime_get_time_str_from_object(object, &len);
-  if (!timestr)
-    {
-      msg_error("FilterX: Failed to create datetime object: bad argument. "
-                "Usage: strptime(time_str, format_str0, ..., format_strN)",
-                evt_tag_int("arg_pos", 0));
-      return NULL;
-    }
-
-  APPEND_ZERO(timestr, timestr, len);
-  FilterXObject *result = NULL;
 
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
   UnixTime ut = UNIX_TIME_INIT;
   gchar *end = NULL;
 
-  for (int i = 1; i < args->len; i++)
+  for (guint i = 0; i < self->formats->len; i++)
     {
-      FilterXObject *time_fmt_obj = g_ptr_array_index(args, i);
-      if (!time_fmt_obj || !filterx_object_is_type(time_fmt_obj, &FILTERX_TYPE_NAME(string)))
-        {
-          msg_error("FilterX: Failed to create datetime object: bad argument. "
-                    "Usage: strptime(time_str, format_str0, ..., format_strN)",
-                    evt_tag_int("arg_pos", i));
-          return NULL;
-        }
-
-      const gchar *time_fmt = filterx_string_get_value(time_fmt_obj, NULL);
-      end = wall_clock_time_strptime(&wct, time_fmt, timestr);
+      const gchar *format = g_ptr_array_index(self->formats, i);
+      end = wall_clock_time_strptime(&wct, format, time_str);
       if (!end)
         {
           msg_debug("filterx: unable to parse time",
-                    evt_tag_str("time_string", timestr),
-                    evt_tag_str("format", time_fmt));
+                    evt_tag_str("time_string", time_str),
+                    evt_tag_str("format", format));
         }
       else
         break;
@@ -284,6 +279,95 @@ filterx_datetime_strptime(GPtrArray *args)
     result = filterx_null_new();
 
   return result;
+}
+
+static void
+_strptime_free(FilterXExpr *s)
+{
+  FilterXFunctionStrptime *self = (FilterXFunctionStrptime *) s;
+
+  filterx_expr_unref(self->time_str_expr);
+  g_ptr_array_free(self->formats, TRUE);
+  filterx_function_free_method(&self->super);
+}
+
+static GPtrArray *
+_extract_strptime_formats(GList *argument_expressions)
+{
+  gsize arguments_len = argument_expressions ? g_list_length(argument_expressions) : 0;
+  if (arguments_len < 2)
+    {
+      msg_error("FilterX: Failed to create datetime object: invalid number of arguments. "
+                "Usage: strptime(time_str, format_str0, ..., format_strN)");
+      return NULL;
+    }
+
+  GPtrArray *formats = g_ptr_array_new_full(arguments_len - 1, g_free);
+
+  for (GList *elem = argument_expressions->next; elem; elem = elem->next)
+    {
+      FilterXExpr *argument_expr = (FilterXExpr *) elem->data;
+
+      if (!argument_expr || !filterx_expr_is_literal(argument_expr))
+        {
+          msg_error("FilterX: Failed to create datetime object: format must be a string literal. "
+                    "Usage: strptime(time_str, format_str0, ..., format_strN)");
+          goto error;
+        }
+
+      FilterXObject *format_obj = filterx_expr_eval(argument_expr);
+      if (!format_obj)
+        {
+          msg_error("FilterX: Failed to create datetime object: format must be a string literal. "
+                    "Usage: strptime(time_str, format_str0, ..., format_strN)");
+          goto error;
+        }
+
+      gsize format_len;
+      const gchar *format = filterx_string_get_value(format_obj, &format_len);
+      filterx_object_unref(format_obj);
+
+      if (!format)
+        {
+          msg_error("FilterX: Failed to create datetime object: format must be a string literal. "
+                    "Usage: strptime(time_str, format_str0, ..., format_strN)");
+          goto error;
+        }
+
+      g_ptr_array_add(formats, g_strdup(format));
+    }
+
+  return formats;
+
+error:
+  g_ptr_array_free(formats, TRUE);
+  return NULL;
+}
+
+/* Takes reference of argument_expressions */
+FilterXFunction *
+filterx_function_strptime_new(const gchar *function_name, GList *argument_expressions)
+{
+  FilterXFunctionStrptime *self = g_new0(FilterXFunctionStrptime, 1);
+  filterx_function_init_instance(&self->super, function_name);
+  self->super.super.eval = _strptime_eval;
+  self->super.super.free_fn = _strptime_free;
+
+  self->formats = _extract_strptime_formats(argument_expressions);
+  if (!self->formats)
+    goto error;
+
+  self->time_str_expr = filterx_expr_ref(((FilterXExpr *) argument_expressions->data));
+  if (!self->time_str_expr)
+    goto error;
+
+  g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  return &self->super;
+
+error:
+  g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_expr_unref(&self->super.super);
+  return NULL;
 }
 
 FILTERX_DEFINE_TYPE(datetime, FILTERX_TYPE_NAME(object),

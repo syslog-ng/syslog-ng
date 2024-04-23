@@ -20,6 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
+import pytest
+
 from src.syslog_ng_config.renderer import render_statement
 
 
@@ -983,16 +985,13 @@ def test_unset(config, syslog_ng):
 
 
 def test_strptime_error_result(config, syslog_ng):
-    (file_true, file_false) = create_config(
+    _ = create_config(
         config, """
         $MSG = strptime("2024-04-10T08:09:10Z"); # wrong arg set
 """,
     )
-    syslog_ng.start(config)
-
-    assert file_false.get_stats()["processed"] == 1
-    assert "processed" not in file_true.get_stats()
-    assert file_false.read_log() == "foobar\n"
+    with pytest.raises(Exception):
+        syslog_ng.start(config)
 
 
 def test_strptime_success_result(config, syslog_ng):
