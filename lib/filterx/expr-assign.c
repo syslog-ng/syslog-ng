@@ -22,6 +22,7 @@
  */
 #include "filterx/expr-assign.h"
 #include "filterx/object-primitive.h"
+#include "scratch-buffers.h"
 
 static FilterXObject *
 _eval(FilterXExpr *s)
@@ -34,7 +35,21 @@ _eval(FilterXExpr *s)
     return NULL;
 
   if (filterx_expr_assign(self->lhs, value))
-    result = filterx_boolean_new(TRUE);
+    {
+      result = filterx_boolean_new(TRUE);
+      if (trace_flag)
+        {
+          GString *buf = scratch_buffers_alloc();
+          if (value && !filterx_object_repr(value, buf))
+            {
+              LogMessageValueType t;
+              if (!filterx_object_marshal(value, buf, &t))
+                g_assert_not_reached();
+            }
+          msg_trace("Filterx assignment",
+                    evt_tag_mem("value", buf->str, buf->len));
+        }
+    }
 
   filterx_object_unref(value);
   return result;

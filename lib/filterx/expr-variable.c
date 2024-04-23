@@ -20,19 +20,20 @@
  * COPYING for details.
  *
  */
-#include "filterx/expr-message-ref.h"
+#include "filterx/expr-variable.h"
 #include "filterx/object-message-value.h"
 #include "filterx/filterx-scope.h"
 #include "logmsg/logmsg.h"
 
-typedef struct _FilterXMessageRefExpr
+typedef struct _FilterXVariableExpr
 {
   FilterXExpr super;
   NVHandle handle;
-} FilterXMessageRefExpr;
+  gboolean declared;
+} FilterXVariableExpr;
 
 static FilterXObject *
-_pull_variable_from_message(FilterXMessageRefExpr *self, FilterXEvalContext *context, LogMessage *msg)
+_pull_variable_from_message(FilterXVariableExpr *self, FilterXEvalContext *context, LogMessage *msg)
 {
   gssize value_len;
   LogMessageValueType t;
@@ -41,21 +42,21 @@ _pull_variable_from_message(FilterXMessageRefExpr *self, FilterXEvalContext *con
     return NULL;
 
   FilterXObject *msg_ref = filterx_message_value_new_borrowed(value, value_len, t);
-  filterx_scope_register_variable(context->scope, self->handle, FALSE, msg_ref);
+  filterx_scope_register_variable(context->scope, self->handle, msg_ref);
   return msg_ref;
 }
 
 /* NOTE: unset on a variable that only exists in the LogMessage, without making the message writable */
 static void
-_whiteout_variable(FilterXMessageRefExpr *self, FilterXEvalContext *context)
+_whiteout_variable(FilterXVariableExpr *self, FilterXEvalContext *context)
 {
-  filterx_scope_register_variable(context->scope, self->handle, FALSE, NULL);
+  filterx_scope_register_variable(context->scope, self->handle, NULL);
 }
 
 static FilterXObject *
 _eval(FilterXExpr *s)
 {
-  FilterXMessageRefExpr *self = (FilterXMessageRefExpr *) s;
+  FilterXVariableExpr *self = (FilterXVariableExpr *) s;
   FilterXEvalContext *context = filterx_eval_get_context();
   FilterXVariable *variable;
 
@@ -63,13 +64,15 @@ _eval(FilterXExpr *s)
   if (variable)
     return filterx_variable_get_value(variable);
 
-  return _pull_variable_from_message(self, context, context->msgs[0]);
+  if (!filterx_variable_handle_is_floating(self->handle))
+    return _pull_variable_from_message(self, context, context->msgs[0]);
+  return NULL;
 }
 
 static void
 _update_repr(FilterXExpr *s, FilterXObject *new_repr)
 {
-  FilterXMessageRefExpr *self = (FilterXMessageRefExpr *) s;
+  FilterXVariableExpr *self = (FilterXVariableExpr *) s;
   FilterXScope *scope = filterx_eval_get_scope();
   FilterXVariable *variable = filterx_scope_lookup_variable(scope, self->handle);
 
@@ -80,7 +83,7 @@ _update_repr(FilterXExpr *s, FilterXObject *new_repr)
 static gboolean
 _assign(FilterXExpr *s, FilterXObject *new_value)
 {
-  FilterXMessageRefExpr *self = (FilterXMessageRefExpr *) s;
+  FilterXVariableExpr *self = (FilterXVariableExpr *) s;
   FilterXScope *scope = filterx_eval_get_scope();
   FilterXVariable *variable = filterx_scope_lookup_variable(scope, self->handle);
 
@@ -88,15 +91,15 @@ _assign(FilterXExpr *s, FilterXObject *new_value)
     {
       /* NOTE: we pass NULL as initial_value to make sure the new variable
        * is considered changed due to the assignment */
-      variable = filterx_scope_register_variable(scope, self->handle, FALSE, NULL);
+
+      variable = filterx_scope_register_variable(scope, self->handle, NULL);
+      if (self->declared)
+        filterx_variable_mark_declared(variable);
     }
 
   /* this only clones mutable objects */
   new_value = filterx_object_clone(new_value);
   filterx_variable_set_value(variable, new_value);
-
-
-
   filterx_object_unref(new_value);
   return TRUE;
 }
@@ -104,7 +107,7 @@ _assign(FilterXExpr *s, FilterXObject *new_value)
 static gboolean
 _isset(FilterXExpr *s)
 {
-  FilterXMessageRefExpr *self = (FilterXMessageRefExpr *) s;
+  FilterXVariableExpr *self = (FilterXVariableExpr *) s;
   FilterXScope *scope = filterx_eval_get_scope();
 
   FilterXVariable *variable = filterx_scope_lookup_variable(scope, self->handle);
@@ -119,7 +122,7 @@ _isset(FilterXExpr *s)
 static gboolean
 _unset(FilterXExpr *s)
 {
-  FilterXMessageRefExpr *self = (FilterXMessageRefExpr *) s;
+  FilterXVariableExpr *self = (FilterXVariableExpr *) s;
   FilterXEvalContext *context = filterx_eval_get_context();
 
   FilterXVariable *variable = filterx_scope_lookup_variable(context->scope, self->handle);
@@ -136,10 +139,10 @@ _unset(FilterXExpr *s)
   return TRUE;
 }
 
-FilterXExpr *
-filterx_message_ref_expr_new(NVHandle handle)
+static FilterXExpr *
+filterx_variable_expr_new(const gchar *name, FilterXVariableType type)
 {
-  FilterXMessageRefExpr *self = g_new0(FilterXMessageRefExpr, 1);
+  FilterXVariableExpr *self = g_new0(FilterXVariableExpr, 1);
 
   filterx_expr_init_instance(&self->super);
   self->super.eval = _eval;
@@ -147,6 +150,27 @@ filterx_message_ref_expr_new(NVHandle handle)
   self->super.assign = _assign;
   self->super.isset = _isset;
   self->super.unset = _unset;
-  self->handle = handle;
+  self->handle = filterx_scope_map_variable_to_handle(name, type);
   return &self->super;
+}
+
+FilterXExpr *
+filterx_msg_variable_expr_new(const gchar *name)
+{
+  return filterx_variable_expr_new(name, FX_VAR_MESSAGE);
+}
+
+FilterXExpr *
+filterx_floating_variable_expr_new(const gchar *name)
+{
+  return filterx_variable_expr_new(name, FX_VAR_FLOATING);
+}
+
+void
+filterx_variable_expr_declare(FilterXExpr *s)
+{
+  FilterXVariableExpr *self = (FilterXVariableExpr *) s;
+
+  g_assert(s->eval == _eval);
+  self->declared = TRUE;
 }

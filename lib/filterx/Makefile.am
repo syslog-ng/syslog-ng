@@ -12,7 +12,7 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/expr-setattr.h		\
 	lib/filterx/expr-get-subscript.h	\
 	lib/filterx/expr-set-subscript.h	\
-	lib/filterx/expr-message-ref.h		\
+	lib/filterx/expr-variable.h		\
 	lib/filterx/expr-comparison.h		\
 	lib/filterx/filterx-object.h		\
 	lib/filterx/filterx-weakrefs.h		\
@@ -51,7 +51,7 @@ filterx_sources = 				\
 	lib/filterx/expr-setattr.c		\
 	lib/filterx/expr-get-subscript.c	\
 	lib/filterx/expr-set-subscript.c	\
-	lib/filterx/expr-message-ref.c		\
+	lib/filterx/expr-variable.c		\
 	lib/filterx/expr-comparison.c		\
 	lib/filterx/filterx-object.c		\
 	lib/filterx/filterx-weakrefs.c		\

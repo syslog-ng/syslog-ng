@@ -33,7 +33,7 @@
 #include "filterx/object-list-interface.h"
 #include "filterx/object-dict-interface.h"
 #include "filterx/expr-assign.h"
-#include "filterx/expr-message-ref.h"
+#include "filterx/expr-variable.h"
 #include "filterx/expr-setattr.h"
 
 #include "apphook.h"
@@ -354,7 +354,7 @@ Test(filterx_expr, test_filterx_assign)
   };
   filterx_eval_set_context(&context);
 
-  FilterXExpr *result_var = filterx_message_ref_expr_new(log_msg_get_value_handle("$result-var"));
+  FilterXExpr *result_var = filterx_msg_variable_expr_new("$result-var");
   cr_assert(result_var != NULL);
 
   FilterXExpr *assign = filterx_assign_new(result_var, filterx_literal_new(filterx_string_new("foobar", -1)));

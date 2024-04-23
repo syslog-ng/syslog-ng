@@ -65,11 +65,12 @@ _evaluate_statement(FilterXExpr *expr)
   if (!success || trace_flag)
     {
       GString *buf = scratch_buffers_alloc();
-      LogMessageValueType t;
 
-      if (res && !filterx_object_marshal(res, buf, &t))
+      if (res && !filterx_object_repr(res, buf))
         {
-          g_assert_not_reached();
+          LogMessageValueType t;
+          if (!filterx_object_marshal(res, buf, &t))
+            g_assert_not_reached();
         }
 
       if (!success)
@@ -78,16 +79,14 @@ _evaluate_statement(FilterXExpr *expr)
                                  expr->lloc.name, expr->lloc.first_line, expr->lloc.first_column,
                                  expr->expr_text ? : "n/a"),
                   evt_tag_str("status", res == NULL ? "error" : "falsy"),
-                  evt_tag_str("value", buf->str),
-                  evt_tag_str("type", log_msg_value_type_to_str(t)));
+                  evt_tag_mem("value", buf->str, buf->len));
       else
         msg_trace("FILTERX",
                   evt_tag_printf("expr", "%s:%d:%d| %s",
                                  expr->lloc.name, expr->lloc.first_line, expr->lloc.first_column,
                                  expr->expr_text ? : "n/a"),
                   evt_tag_str("status", res == NULL ? "error" : (success ? "truthy" : "falsy")),
-                  evt_tag_str("value", buf->str),
-                  evt_tag_str("type", log_msg_value_type_to_str(t)),
+                  evt_tag_mem("value", buf->str, buf->len),
                   evt_tag_printf("result", "%p", res));
     }
 
@@ -119,12 +118,7 @@ filterx_eval_exec_statements(FilterXScope *scope, GList *statements, LogMessage 
   /* NOTE: we only store the results into the message if the entire evaluation was successful */
   success = TRUE;
 fail:
+  filterx_scope_set_dirty(scope);
   filterx_eval_set_context(NULL);
   return success;
-}
-
-void
-filterx_eval_sync_scope_and_message(FilterXScope *scope, LogMessage *msg)
-{
-  filterx_scope_sync_to_message(scope, msg);
 }

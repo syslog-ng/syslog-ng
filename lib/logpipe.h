@@ -72,6 +72,8 @@
 /* node created directly by the user */
 #define PIF_CONFIG_RELATED    0x0100
 
+#define PIF_SYNC_SCOPE        0x0200
+
 /* private flags range, to be used by other LogPipe instances for their own purposes */
 
 #define PIF_PRIVATE(x)       ((x) << 16)
@@ -454,6 +456,14 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
           log_msg_drop(msg, path_options, AT_PROCESSED);
           return;
         }
+    }
+
+  if ((s->flags & PIF_SYNC_SCOPE) &&
+      path_options->filterx_scope &&
+      filterx_scope_is_dirty(path_options->filterx_scope))
+    {
+      log_msg_make_writable(&msg, path_options);
+      filterx_scope_sync(path_options->filterx_scope, msg);
     }
 
   if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT)))

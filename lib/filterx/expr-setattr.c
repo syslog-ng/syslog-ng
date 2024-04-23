@@ -22,6 +22,7 @@
  */
 #include "filterx/expr-setattr.h"
 #include "filterx/object-primitive.h"
+#include "scratch-buffers.h"
 
 typedef struct _FilterXSetAttr
 {
@@ -49,7 +50,22 @@ _eval(FilterXExpr *s)
   filterx_object_unref(new_value);
 
   if (filterx_object_setattr(object, self->attr_name, cloned))
-    result = filterx_boolean_new(TRUE);
+    {
+      result = filterx_boolean_new(TRUE);
+      if (trace_flag)
+        {
+          GString *buf = scratch_buffers_alloc();
+          if (cloned && !filterx_object_repr(cloned, buf))
+            {
+              LogMessageValueType t;
+              if (!filterx_object_marshal(cloned, buf, &t))
+                g_assert_not_reached();
+            }
+          msg_trace("Filterx setattr",
+                    evt_tag_str("attr_name", self->attr_name),
+                    evt_tag_mem("value", buf->str, buf->len));
+        }
+    }
 
   filterx_object_unref(cloned);
 

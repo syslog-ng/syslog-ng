@@ -36,7 +36,7 @@
 #include "filterx/object-message-value.h"
 #include "filterx/expr-assign.h"
 #include "filterx/expr-template.h"
-#include "filterx/expr-message-ref.h"
+#include "filterx/expr-variable.h"
 #include "filterx/filterx-private.h"
 
 #include "apphook.h"

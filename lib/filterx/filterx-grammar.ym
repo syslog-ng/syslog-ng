@@ -31,7 +31,7 @@
 
 /* filterx language constructs */
 #include "filterx/expr-literal.h"
-#include "filterx/expr-message-ref.h"
+#include "filterx/expr-variable.h"
 #include "filterx/expr-template.h"
 #include "filterx/expr-boolalg.h"
 #include "filterx/expr-assign.h"
@@ -66,7 +66,8 @@ construct_template_expr(LogTemplate *template)
 		filterx_config_freeze_object(configuration,
 			filterx_string_new(log_template_get_literal_value(template, NULL), -1)));
   else if (log_template_is_trivial(template))
-    result = filterx_message_ref_expr_new(log_template_get_trivial_value_handle(template));
+    result = filterx_msg_variable_expr_new(
+                log_msg_get_value_name(log_template_get_trivial_value_handle(template), NULL));
   else
     result = filterx_template_new(log_template_ref(template));
   log_template_unref(template);
@@ -88,12 +89,14 @@ construct_template_expr(LogTemplate *template)
 %token KW_ENUM
 %token KW_ISSET
 %token KW_UNSET
+%token KW_DECLARE
 
 %type <ptr> stmts
 %type <node> stmt
 %type <node> assignment
 %type <node> generator_assignment
 %type <node> generator_casted_assignment
+%type <node> declaration
 %type <node> expr
 %type <node> expr_value
 %type <node> expr_generator
@@ -103,6 +106,7 @@ construct_template_expr(LogTemplate *template)
 %type <node> literal
 %type <ptr> literal_object
 %type <node> lvalue
+%type <node> lvalue_floating
 %type <ptr> template
 %type <ptr> dict_generator
 %type <ptr> inner_dict_generator
@@ -133,6 +137,7 @@ stmt
 	: expr ';'				{ $$ = $1; }
 	| conditional ';'			{ $$ = $1; }
 	| assignment ';'			{ $$ = $1; }
+	| declaration ';'			{ $$ = $1; }
 	;
 
 assignment
@@ -242,6 +247,11 @@ generator_casted_assignment
 						}
 	;
 
+declaration
+	: KW_DECLARE lvalue_floating KW_ASSIGN expr	{ filterx_variable_expr_declare($2); $$ = filterx_assign_new($2, $4); }
+	;
+
+
 expr
 	: expr_value				{ $$ = $1; }
 	| function_call				{ $$ = $1; }
@@ -316,10 +326,14 @@ literal_object
 	;
 
 lvalue
-	: '$' LL_IDENTIFIER			{ $$ = filterx_message_ref_expr_new(log_msg_get_value_handle($2)); free($2); }
-	| LL_MESSAGE_REF			{ $$ = filterx_message_ref_expr_new(log_msg_get_value_handle($1)); free($1); }
+	: '$' LL_IDENTIFIER			{ $$ = filterx_msg_variable_expr_new($2); free($2); }
+	| LL_MESSAGE_REF			{ $$ = filterx_msg_variable_expr_new($1); free($1); }
+	| lvalue_floating
 	;
 
+lvalue_floating
+	: LL_IDENTIFIER				{ $$ = filterx_floating_variable_expr_new($1); free($1); }
+	;
 
 boolean
 	: KW_TRUE				{ $$ = 1; }

@@ -23,18 +23,42 @@
 #include "filterx/filterx-scope.h"
 #include "scratch-buffers.h"
 
+#define FILTERX_HANDLE_FLOATING_BIT (1UL << 31)
+#define FILTERX_SCOPE_MAX_GENERATION ((1UL << 20) - 1)
+
 struct _FilterXVariable
 {
-  NVHandle handle;
+  /* the MSB indicates that the variable is a floating one */
+  FilterXVariableHandle handle;
   /*
-   * floating -- Indicates that this variable is not tied to the log
-   *             message, it is a floating variable
    * assigned -- Indicates that the variable was assigned to a new value
+   *
+   * declared -- this variable is declared (e.g. retained for the entire input pipeline)
    */
-  guint32 floating:1,
-          assigned:1;
+  guint32 assigned:1,
+          declared:1,
+          generation:20;
   FilterXObject *value;
 };
+
+gboolean
+filterx_variable_handle_is_floating(FilterXVariableHandle handle)
+{
+  return !!(handle & FILTERX_HANDLE_FLOATING_BIT);
+}
+
+gboolean
+filterx_variable_is_floating(FilterXVariable *v)
+{
+  return filterx_variable_handle_is_floating(v->handle);
+}
+
+
+static NVHandle
+filterx_variable_get_nv_handle(FilterXVariable *v)
+{
+  return v->handle & ~FILTERX_HANDLE_FLOATING_BIT;
+}
 
 FilterXObject *
 filterx_variable_get_value(FilterXVariable *v)
@@ -62,6 +86,12 @@ filterx_variable_is_set(FilterXVariable *v)
   return v->value != NULL;
 }
 
+void
+filterx_variable_mark_declared(FilterXVariable *v)
+{
+  v->declared = TRUE;
+}
+
 static void
 _variable_free(FilterXVariable *v)
 {
@@ -74,10 +104,12 @@ struct _FilterXScope
   GArray *variables;
   GPtrArray *weak_refs;
   gboolean write_protected;
+  gboolean dirty;
+  gint generation;
 };
 
 static gboolean
-_lookup_variable(FilterXScope *self, NVHandle handle, FilterXVariable **v_slot)
+_lookup_variable(FilterXScope *self, FilterXVariableHandle handle, FilterXVariable **v_slot)
 {
   gint l, h, m;
 
@@ -90,7 +122,7 @@ _lookup_variable(FilterXScope *self, NVHandle handle, FilterXVariable **v_slot)
 
       FilterXVariable *m_elem = &g_array_index(self->variables, FilterXVariable, m);
 
-      NVHandle mv = m_elem->handle;
+      FilterXVariableHandle mv = m_elem->handle;
       if (mv == handle)
         {
           *v_slot = m_elem;
@@ -109,19 +141,46 @@ _lookup_variable(FilterXScope *self, NVHandle handle, FilterXVariable **v_slot)
   return FALSE;
 }
 
+void
+filterx_scope_set_dirty(FilterXScope *self)
+{
+  self->dirty = TRUE;
+}
+
+gboolean
+filterx_scope_is_dirty(FilterXScope *self)
+{
+  return self->dirty;
+}
+
+FilterXVariableHandle
+filterx_scope_map_variable_to_handle(const gchar *name, FilterXVariableType type)
+{
+  NVHandle nv_handle = log_msg_get_value_handle(name);
+
+  if (type == FX_VAR_MESSAGE)
+    return (FilterXVariableHandle) nv_handle;
+  return (FilterXVariableHandle) nv_handle | FILTERX_HANDLE_FLOATING_BIT;
+}
+
 FilterXVariable *
-filterx_scope_lookup_variable(FilterXScope *self, NVHandle handle)
+filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle)
 {
   FilterXVariable *v;
 
   if (_lookup_variable(self, handle, &v))
-    return v;
+    {
+      if (filterx_variable_handle_is_floating(handle) &&
+          !v->declared && v->generation != self->generation)
+        return NULL;
+      return v;
+    }
   return NULL;
 }
 
 FilterXVariable *
 filterx_scope_register_variable(FilterXScope *self,
-                                NVHandle handle, gboolean floating,
+                                FilterXVariableHandle handle,
                                 FilterXObject *initial_value)
 {
   FilterXVariable v, *v_slot;
@@ -129,6 +188,16 @@ filterx_scope_register_variable(FilterXScope *self,
   if (_lookup_variable(self, handle, &v_slot))
     {
       /* already present */
+      if (v_slot->generation != self->generation)
+        {
+          /* existing value is from a previous generation, override it as if
+           * it was a new value */
+
+          v_slot->generation = self->generation;
+          filterx_variable_set_value(v_slot, initial_value);
+          /* consider this to be unset just as an initial registration is */
+          v_slot->assigned = FALSE;
+        }
       return v_slot;
     }
   /* turn v_slot into an index */
@@ -138,8 +207,9 @@ filterx_scope_register_variable(FilterXScope *self,
 
   v.handle = handle;
   v.assigned = FALSE;
-  v.floating = floating;
+  v.declared = FALSE;
   v.value = filterx_object_ref(initial_value);
+  v.generation = self->generation;
   g_array_insert_val(self->variables, v_index, v);
 
   return &g_array_index(self->variables, FilterXVariable, v_index);
@@ -155,9 +225,21 @@ filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object)
     g_ptr_array_add(self->weak_refs, filterx_object_ref(object));
 }
 
+/*
+ * 1) sync objects to message
+ * 2) drop undeclared objects
+ */
 void
-filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg)
+filterx_scope_sync(FilterXScope *self, LogMessage *msg)
 {
+
+  if (!self->dirty)
+    {
+      msg_trace("Filterx sync: not syncing as scope is not dirty",
+                evt_tag_printf("scope", "%p", self));
+      return;
+    }
+
   GString *buffer = scratch_buffers_alloc();
 
   for (gint i = 0; i < self->variables->len; i++)
@@ -172,11 +254,24 @@ filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg)
        *     place (for mutable objects), and was not assigned to.
        *
        */
-      if (v->floating)
-        continue;
-
-      if (v->value == NULL)
+      if (filterx_variable_is_floating(v))
         {
+          if (!v->declared)
+            {
+              msg_trace("Filterx sync: undeclared floating variable, unsetting",
+                        evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
+              filterx_variable_set_value(v, NULL);
+            }
+          else
+            {
+              msg_trace("Filterx sync: declared floating variable, keeping it",
+                        evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
+            }
+        }
+      else if (v->value == NULL)
+        {
+          msg_trace("Filterx sync: whiteout variable, unsetting in message",
+                    evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
           /* we need to unset */
           log_msg_unset_value(msg, v->handle);
           v->assigned = FALSE;
@@ -184,6 +279,10 @@ filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg)
       else if (v->assigned || v->value->modified_in_place)
         {
           LogMessageValueType t;
+
+          msg_trace("Filterx sync: changed variable in scope, overwriting in message",
+                    evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
+
           g_string_truncate(buffer, 0);
           if (!filterx_object_marshal(v->value, buffer, &t))
             g_assert_not_reached();
@@ -191,7 +290,13 @@ filterx_scope_sync_to_message(FilterXScope *self, LogMessage *msg)
           v->value->modified_in_place = FALSE;
           v->assigned = FALSE;
         }
+      else
+        {
+          msg_trace("Filterx sync: variable in scope and message in sync, not doing anything",
+                    evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
+        }
     }
+  self->dirty = FALSE;
 }
 
 FilterXScope *
@@ -211,15 +316,30 @@ filterx_scope_clone(FilterXScope *other)
 {
   FilterXScope *self = filterx_scope_new();
 
-  for (gint i = 0; i < other->variables->len; i++)
+  for (gint src_index = 0, dst_index = 0; src_index < other->variables->len; src_index++)
     {
-      FilterXVariable *v = &g_array_index(other->variables, FilterXVariable, i);
-      g_array_append_val(self->variables, *v);
-      FilterXVariable *v_clone = &g_array_index(self->variables, FilterXVariable, i);
+      FilterXVariable *v = &g_array_index(other->variables, FilterXVariable, src_index);
 
-      v_clone->value = filterx_object_clone(v->value);
+      if (v->declared || !filterx_variable_is_floating(v))
+        {
+          g_array_append_val(self->variables, *v);
+          FilterXVariable *v_clone = &g_array_index(self->variables, FilterXVariable, dst_index);
+
+          v_clone->generation = 0;
+          v_clone->value = filterx_object_clone(v->value);
+          dst_index++;
+          msg_trace("Filterx scope, cloning scope variable",
+                    evt_tag_str("variable", log_msg_get_value_name((v->handle & ~FILTERX_HANDLE_FLOATING_BIT), NULL)));
+        }
     }
 
+  if (other->variables->len > 0)
+    self->dirty = other->dirty;
+  msg_trace("Filterx clone finished",
+            evt_tag_printf("scope", "%p", self),
+            evt_tag_printf("other", "%p", other),
+            evt_tag_int("dirty", self->dirty),
+            evt_tag_int("write_protected", self->write_protected));
   /* NOTE: we don't clone weak references, those only relate to mutable
    * objects, which we are cloning anyway */
   return self;
@@ -242,6 +362,8 @@ filterx_scope_make_writable(FilterXScope **pself)
       filterx_scope_unref(*pself);
       *pself = new;
     }
+  (*pself)->generation++;
+  g_assert((*pself)->generation < FILTERX_SCOPE_MAX_GENERATION);
   return *pself;
 }
 

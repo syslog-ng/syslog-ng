@@ -20,11 +20,13 @@
  * COPYING for details.
  *
  */
-#ifndef FILTERX_MESSAGE_RESOLVER_H_INCLUDED
-#define FILTERX_MESSAGE_RESOLVER_H_INCLUDED
+#ifndef FILTERX_EXPR_VARIABLE_H_INCLUDED
+#define FILTERX_EXPR_VARIABLE_H_INCLUDED
 
 #include "filterx/filterx-expr.h"
 
-FilterXExpr *filterx_message_ref_expr_new(NVHandle handle);
+FilterXExpr *filterx_msg_variable_expr_new(const gchar *name);
+FilterXExpr *filterx_floating_variable_expr_new(const gchar *name);
+void filterx_variable_expr_declare(FilterXExpr *s);
 
 #endif

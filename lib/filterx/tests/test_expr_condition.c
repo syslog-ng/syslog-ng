@@ -36,7 +36,7 @@
 #include "filterx/object-message-value.h"
 #include "filterx/expr-assign.h"
 #include "filterx/expr-template.h"
-#include "filterx/expr-message-ref.h"
+#include "filterx/expr-variable.h"
 #include "filterx/expr-function.h"
 
 #include "apphook.h"
@@ -61,7 +61,7 @@ _assert_cmp_string_to_filterx_object(const char *str, FilterXObject *obj)
 FilterXExpr *
 _assert_assign_var(const char *var_name, FilterXExpr *value)
 {
-  FilterXExpr *control_variable = filterx_message_ref_expr_new(log_msg_get_value_handle(var_name));
+  FilterXExpr *control_variable = filterx_msg_variable_expr_new(var_name);
   cr_assert(control_variable != NULL);
 
   return filterx_assign_new(control_variable, value);
@@ -84,7 +84,7 @@ _assert_set_test_variable(const char *var_name, FilterXExpr *expr)
 FilterXObject *
 _assert_get_test_variable(const char *var_name)
 {
-  FilterXExpr *control_variable = filterx_message_ref_expr_new(log_msg_get_value_handle(var_name));
+  FilterXExpr *control_variable = filterx_msg_variable_expr_new(var_name);
   cr_assert(control_variable != NULL);
   FilterXObject *result = filterx_expr_eval(control_variable);
   filterx_expr_unref(control_variable);
