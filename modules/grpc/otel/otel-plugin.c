@@ -64,27 +64,27 @@ static Plugin otel_plugins[] =
     .construct = grpc_otel_filterx_enum_construct,
   },
   {
-    .type = LL_CONTEXT_FILTERX_FUNC,
+    .type = LL_CONTEXT_FILTERX_SIMPLE_FUNC,
     .name = "otel_logrecord",
     .construct = grpc_otel_filterx_logrecord_contruct_new,
   },
   {
-    .type = LL_CONTEXT_FILTERX_FUNC,
+    .type = LL_CONTEXT_FILTERX_SIMPLE_FUNC,
     .name = "otel_resource",
     .construct = grpc_otel_filterx_resource_construct_new,
   },
   {
-    .type = LL_CONTEXT_FILTERX_FUNC,
+    .type = LL_CONTEXT_FILTERX_SIMPLE_FUNC,
     .name = "otel_scope",
     .construct = grpc_otel_filterx_scope_construct_new,
   },
   {
-    .type = LL_CONTEXT_FILTERX_FUNC,
+    .type = LL_CONTEXT_FILTERX_SIMPLE_FUNC,
     .name = "otel_kvlist",
     .construct = grpc_otel_filterx_kvlist_construct_new,
   },
   {
-    .type = LL_CONTEXT_FILTERX_FUNC,
+    .type = LL_CONTEXT_FILTERX_SIMPLE_FUNC,
     .name = "otel_array",
     .construct = grpc_otel_filterx_array_construct_new,
   },

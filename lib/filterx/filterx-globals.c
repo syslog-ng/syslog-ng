@@ -31,7 +31,7 @@
 #include "filterx/object-list-interface.h"
 #include "filterx/object-dict-interface.h"
 
-static GHashTable *filterx_builtin_functions = NULL;
+static GHashTable *filterx_builtin_simple_functions = NULL;
 static GHashTable *filterx_types = NULL;
 
 void
@@ -52,39 +52,51 @@ filterx_uncache_object(FilterXObject **cache_slot)
 // Builtin functions
 
 gboolean
-filterx_builtin_function_register(const gchar *fn_name, FilterXFunctionProto func)
+filterx_builtin_simple_function_register(const gchar *fn_name, FilterXSimpleFunctionProto func)
 {
-  return filterx_builtin_function_register_private(filterx_builtin_functions, fn_name, func);
+  return filterx_builtin_simple_function_register_private(filterx_builtin_simple_functions, fn_name, func);
 }
 
-FilterXFunctionProto
-filterx_builtin_function_lookup(const gchar *fn_name)
+FilterXSimpleFunctionProto
+filterx_builtin_simple_function_lookup(const gchar *fn_name)
 {
-  return filterx_builtin_function_lookup_private(filterx_builtin_functions, fn_name);
+  return filterx_builtin_simple_function_lookup_private(filterx_builtin_simple_functions, fn_name);
+}
+
+static void
+_simple_init(void)
+{
+  filterx_builtin_simple_functions_init_private(&filterx_builtin_simple_functions);
+  g_assert(filterx_builtin_simple_function_register("json", filterx_json_new_from_args));
+  g_assert(filterx_builtin_simple_function_register("json_array", filterx_json_array_new_from_args));
+  g_assert(filterx_builtin_simple_function_register("datetime", filterx_typecast_datetime));
+  g_assert(filterx_builtin_simple_function_register("isodate", filterx_typecast_datetime_isodate));
+  g_assert(filterx_builtin_simple_function_register("string", filterx_typecast_string));
+  g_assert(filterx_builtin_simple_function_register("bytes", filterx_typecast_bytes));
+  g_assert(filterx_builtin_simple_function_register("protobuf", filterx_typecast_protobuf));
+  g_assert(filterx_builtin_simple_function_register("bool", filterx_typecast_boolean));
+  g_assert(filterx_builtin_simple_function_register("int", filterx_typecast_integer));
+  g_assert(filterx_builtin_simple_function_register("double", filterx_typecast_double));
+  g_assert(filterx_builtin_simple_function_register("strptime", filterx_datetime_strptime));
+  g_assert(filterx_builtin_simple_function_register("istype", filterx_object_is_type_builtin));
+}
+
+static void
+_simple_deinit(void)
+{
+  filterx_builtin_simple_functions_deinit_private(filterx_builtin_simple_functions);
 }
 
 void
 filterx_builtin_functions_init(void)
 {
-  filterx_builtin_functions_init_private(&filterx_builtin_functions);
-  g_assert(filterx_builtin_function_register("json", filterx_json_new_from_args));
-  g_assert(filterx_builtin_function_register("json_array", filterx_json_array_new_from_args));
-  g_assert(filterx_builtin_function_register("datetime", filterx_typecast_datetime));
-  g_assert(filterx_builtin_function_register("isodate", filterx_typecast_datetime_isodate));
-  g_assert(filterx_builtin_function_register("string", filterx_typecast_string));
-  g_assert(filterx_builtin_function_register("bytes", filterx_typecast_bytes));
-  g_assert(filterx_builtin_function_register("protobuf", filterx_typecast_protobuf));
-  g_assert(filterx_builtin_function_register("bool", filterx_typecast_boolean));
-  g_assert(filterx_builtin_function_register("int", filterx_typecast_integer));
-  g_assert(filterx_builtin_function_register("double", filterx_typecast_double));
-  g_assert(filterx_builtin_function_register("strptime", filterx_datetime_strptime));
-  g_assert(filterx_builtin_function_register("istype", filterx_object_is_type_builtin));
+  _simple_init();
 }
 
 void
 filterx_builtin_functions_deinit(void)
 {
-  filterx_builtin_functions_deinit_private(filterx_builtin_functions);
+  _simple_deinit();
 }
 
 // FilterX types

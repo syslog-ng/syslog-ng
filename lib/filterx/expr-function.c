@@ -29,16 +29,16 @@
 #include "plugin.h"
 #include "cfg.h"
 
-typedef struct _FilterXFunction
+typedef struct _FilterXSimpleFunction
 {
   FilterXExpr super;
   gchar *function_name;
   GList *argument_expressions;
-  FilterXFunctionProto function_proto;
-} FilterXFunction;
+  FilterXSimpleFunctionProto function_proto;
+} FilterXSimpleFunction;
 
 static GPtrArray *
-filterx_function_eval_expressions(GList *expressions)
+_simple_function_eval_expressions(GList *expressions)
 {
   if (expressions == NULL)
     {
@@ -61,13 +61,13 @@ error:
 }
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_simple_eval(FilterXExpr *s)
 {
-  FilterXFunction *self = (FilterXFunction *) s;
+  FilterXSimpleFunction *self = (FilterXSimpleFunction *) s;
 
-  GPtrArray *args = filterx_function_eval_expressions(self->argument_expressions);
+  GPtrArray *args = _simple_function_eval_expressions(self->argument_expressions);
 
-  FilterXFunctionProto f = self->function_proto;
+  FilterXSimpleFunctionProto f = self->function_proto;
 
   g_assert(f != NULL);
   FilterXObject *res = f(args);
@@ -81,7 +81,7 @@ _eval(FilterXExpr *s)
 }
 
 static void
-_free(FilterXExpr *s)
+_simple_free(FilterXExpr *s)
 {
   FilterXSimpleFunction *self = (FilterXSimpleFunction *) s;
 
@@ -91,13 +91,13 @@ _free(FilterXExpr *s)
 }
 
 FilterXExpr *
-filterx_function_new(const gchar *function_name, GList *arguments, FilterXFunctionProto function_proto)
+filterx_simple_function_new(const gchar *function_name, GList *arguments, FilterXSimpleFunctionProto function_proto)
 {
-  FilterXFunction *self = g_new0(FilterXFunction, 1);
+  FilterXSimpleFunction *self = g_new0(FilterXSimpleFunction, 1);
 
   filterx_expr_init_instance(&self->super);
-  self->super.eval = _eval;
-  self->super.free_fn = _free;
+  self->super.eval = _simple_eval;
+  self->super.free_fn = _simple_free;
   self->function_name = g_strdup(function_name);
   self->argument_expressions = arguments;
   self->function_proto = function_proto;
@@ -105,19 +105,18 @@ filterx_function_new(const gchar *function_name, GList *arguments, FilterXFuncti
   return &self->super;
 }
 
-/* NOTE: takes the references of objects passed in "arguments" */
-FilterXExpr *
-filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *arguments)
+static FilterXExpr *
+_lookup_simple_function(GlobalConfig *cfg, const gchar *function_name, GList *arguments)
 {
   // Checking filterx builtin functions first
-  FilterXFunctionProto f = filterx_builtin_function_lookup(function_name);
+  FilterXSimpleFunctionProto f = filterx_builtin_simple_function_lookup(function_name);
   if (f != NULL)
     {
-      return filterx_function_new(function_name, arguments, f);
+      return filterx_simple_function_new(function_name, arguments, f);
     }
 
   // fallback to plugin lookup
-  Plugin *p = cfg_find_plugin(cfg, LL_CONTEXT_FILTERX_FUNC, function_name);
+  Plugin *p = cfg_find_plugin(cfg, LL_CONTEXT_FILTERX_SIMPLE_FUNC, function_name);
 
   if (p == NULL)
     return NULL;
@@ -126,5 +125,12 @@ filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *ar
   if (f == NULL)
     return NULL;
 
-  return filterx_function_new(function_name, arguments, f);
+  return filterx_simple_function_new(function_name, arguments, f);
+}
+
+/* NOTE: takes the references of objects passed in "arguments" */
+FilterXExpr *
+filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *arguments)
+{
+  return _lookup_simple_function(cfg, function_name, arguments);
 }

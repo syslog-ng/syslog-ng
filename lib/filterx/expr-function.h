@@ -27,7 +27,7 @@
 #include "filterx/filterx-expr.h"
 #include "filterx-object.h"
 
-typedef FilterXObject *(*FilterXFunctionProto)(GPtrArray *);
+typedef FilterXObject *(*FilterXSimpleFunctionProto)(GPtrArray *);
 
 FilterXExpr *filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *arguments);
 

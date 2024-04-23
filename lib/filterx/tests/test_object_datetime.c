@@ -369,7 +369,7 @@ Test(filterx_datetime, test_filterx_datetime_strptime_matching_nth_timefmt_call_
   args = g_list_append(args, filterx_literal_new(bad_fmt1));
   args = g_list_append(args, filterx_literal_new(bad_fmt2));
   args = g_list_append(args, filterx_literal_new(time_fmt));
-  FilterXExpr *func = filterx_function_new("test_strptime", args, filterx_datetime_strptime);
+  FilterXExpr *func = filterx_simple_function_new("test_strptime", args, filterx_datetime_strptime);
   cr_assert_not_null(func);
   FilterXObject *res = filterx_expr_eval(func);
   cr_assert_not_null(res);

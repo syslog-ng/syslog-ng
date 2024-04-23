@@ -33,25 +33,25 @@
 // Builtin functions
 
 gboolean
-filterx_builtin_function_register_private(GHashTable *ht, const gchar *fn_name, FilterXFunctionProto func)
+filterx_builtin_simple_function_register_private(GHashTable *ht, const gchar *fn_name, FilterXSimpleFunctionProto func)
 {
   return g_hash_table_insert(ht, g_strdup(fn_name), func);
 }
 
-FilterXFunctionProto
-filterx_builtin_function_lookup_private(GHashTable *ht, const gchar *fn_name)
+FilterXSimpleFunctionProto
+filterx_builtin_simple_function_lookup_private(GHashTable *ht, const gchar *fn_name)
 {
-  return (FilterXFunctionProto)g_hash_table_lookup(ht, fn_name);
+  return (FilterXSimpleFunctionProto)g_hash_table_lookup(ht, fn_name);
 }
 
 void
-filterx_builtin_functions_init_private(GHashTable **ht)
+filterx_builtin_simple_functions_init_private(GHashTable **ht)
 {
   *ht = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) NULL);
 }
 
 void
-filterx_builtin_functions_deinit_private(GHashTable *ht)
+filterx_builtin_simple_functions_deinit_private(GHashTable *ht)
 {
   g_hash_table_destroy(ht);
 }
