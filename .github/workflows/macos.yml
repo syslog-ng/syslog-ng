@@ -10,7 +10,7 @@ jobs:
   general:
     strategy:
       matrix:
-        version: [latest, 14]
+        version: [13, 14]
         build-tool: [autotools, cmake]
       fail-fast: false
 
@@ -27,7 +27,7 @@ jobs:
 
       - name: Unlinking preinstalled Python (workaround)
               # The python@3 brew package has to be installed and linked system-wide (it's a dependency of glib and syslog-ng)
-              # The macos-latest GitHub runner has Python preinstalled as a pkg, this prevents linking the python@3
+              # The macos-13 GitHub runner has Python preinstalled as a pkg, this prevents linking the python@3
               # brew package, even when linking is forced. `brew "python@3", link: true, force: true`
               # also, brew cannot update the links even these cretated by itself for an earlier python version
         run : |
