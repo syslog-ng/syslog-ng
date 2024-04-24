@@ -1559,22 +1559,6 @@ if ! test "x$enable_grpc" = "xno"; then
     enable_grpc=yes
 fi
 
-dnl ***************************************************************************
-dnl Cloud Auth
-dnl ***************************************************************************
-if ! test "x$enable_cloud_auth" = "xno"; then
-    if test "x$enable_cpp" = "xno"; then
-        if test "x$enable_cloud_auth" = "xyes"; then
-            AC_MSG_ERROR(C++ support is mandatory when the cloud-auth module is enabled.)
-        else
-            enable_cloud_auth=no
-        fi
-    fi
-fi
-
-if ! test "x$enable_cloud_auth" = "xno"; then
-    enable_cloud_auth=yes
-fi
 
 dnl ***************************************************************************
 dnl libcurl headers/libraries
@@ -1615,7 +1599,34 @@ if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
            CFLAGS=$old_CFLAGS
 		   AC_CHECK_HEADER(zlib.h, AC_DEFINE(HAVE_ZLIB, , [Define if zlib is available]), AC_MSG_WARN([ZLIB not found.]))
         fi
+else
+	enable_http="no"
 fi
+
+dnl ***************************************************************************
+dnl Cloud Auth
+dnl ***************************************************************************
+if ! test "x$enable_cloud_auth" = "xno"; then
+    if test "x$enable_cpp" = "xno"; then
+        if test "x$enable_cloud_auth" = "xyes"; then
+            AC_MSG_ERROR(C++ support is mandatory when the cloud-auth module is enabled.)
+        else
+            enable_cloud_auth=no
+        fi
+    fi
+    if test "x$enable_http" = "xno"; then
+        if test "x$enable_cloud_auth" = "xyes"; then
+            AC_MSG_ERROR(http support is mandatory when the cloud-auth module is enabled.)
+        else
+            enable_cloud_auth=no
+        fi
+    fi
+fi
+
+if ! test "x$enable_cloud_auth" = "xno"; then
+    enable_cloud_auth=yes
+fi
+
 
 dnl ***************************************************************************
 dnl libhiredis headers/libraries
