@@ -257,6 +257,9 @@ stats_format_prometheus(StatsCluster *sc, gint type, StatsCounterItem *counter, 
   if (!sc->key.name && !with_legacy)
     return;
 
+  if (stats_cluster_is_orphaned(sc))
+    return;
+
   ScratchBuffersMarker marker;
   scratch_buffers_mark(&marker);
 
