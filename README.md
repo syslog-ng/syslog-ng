@@ -107,7 +107,7 @@ For a brief introduction to configuring the syslog-ng application, see the [quic
 ### Sponsors
 
 - [Axoflow](https://axoflow.com) is the company of Balazs Scheidler, the original creator and main developer of syslog-ng, and the creators of the Kubernetes Logging Operator. Currently Axoflow is the most active contributor of syslog-ng, and offers commercial support, professional services, and related products.
-- [Balabit](http://www.balabit.com/) is the original commercial sponsor of the syslog-ng project, which was acquired by One Identity in 2018. One Identity offers a commercial edition for syslog-ng, called the syslog-ng Premium Edition.
+- [Balabit](http://www.balabit.com/) is the original commercial sponsor of the syslog-ng project, and was acquired by One Identity in 2018. One Identity offers a commercial edition for syslog-ng, called the syslog-ng Premium Edition.
 
 ## Feedback
 
