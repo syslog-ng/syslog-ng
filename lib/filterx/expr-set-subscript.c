@@ -22,6 +22,7 @@
  */
 #include "filterx/expr-set-subscript.h"
 #include "filterx/object-primitive.h"
+#include "filterx/filterx-eval.h"
 #include "scratch-buffers.h"
 
 typedef struct _FilterXSetSubscript
@@ -91,6 +92,10 @@ _eval(FilterXExpr *s)
                     evt_tag_mem("key", key_buf->str, key_buf->len),
                     evt_tag_mem("value", buf->str, buf->len));
         }
+    }
+  else
+    {
+      filterx_eval_push_error("Object set-subscript failed", s, key);
     }
 
   filterx_object_unref(cloned);

@@ -24,6 +24,7 @@
 #define FILTERX_TEMPLATE_H_INCLUDED
 
 #include "filterx/filterx-expr.h"
+#include "template/templates.h"
 
 FilterXExpr *filterx_template_new(LogTemplate *template);
 

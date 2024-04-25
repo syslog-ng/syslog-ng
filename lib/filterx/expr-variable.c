@@ -22,12 +22,15 @@
  */
 #include "filterx/expr-variable.h"
 #include "filterx/object-message-value.h"
+#include "filterx/object-string.h"
 #include "filterx/filterx-scope.h"
+#include "filterx/filterx-eval.h"
 #include "logmsg/logmsg.h"
 
 typedef struct _FilterXVariableExpr
 {
   FilterXExpr super;
+  FilterXObject *variable_name;
   NVHandle handle;
   gboolean declared;
 } FilterXVariableExpr;
@@ -39,7 +42,10 @@ _pull_variable_from_message(FilterXVariableExpr *self, FilterXEvalContext *conte
   LogMessageValueType t;
   const gchar *value = log_msg_get_value_if_set_with_type(msg, self->handle, &value_len, &t);
   if (!value)
-    return NULL;
+    {
+      filterx_eval_push_error("No such name-value pair in the log message", &self->super, self->variable_name);
+      return NULL;
+    }
 
   FilterXObject *msg_ref = filterx_message_value_new_borrowed(value, value_len, t);
   filterx_scope_register_variable(context->scope, self->handle, msg_ref);
@@ -62,10 +68,18 @@ _eval(FilterXExpr *s)
 
   variable = filterx_scope_lookup_variable(context->scope, self->handle);
   if (variable)
-    return filterx_variable_get_value(variable);
+    {
+      FilterXObject *value = filterx_variable_get_value(variable);
+      if (!value)
+        {
+          filterx_eval_push_error("Variable is unset", &self->super, self->variable_name);
+        }
+      return value;
+    }
 
   if (!filterx_variable_handle_is_floating(self->handle))
     return _pull_variable_from_message(self, context, context->msgs[0]);
+  filterx_eval_push_error("No such variable", s, self->variable_name);
   return NULL;
 }
 
@@ -139,18 +153,37 @@ _unset(FilterXExpr *s)
   return TRUE;
 }
 
+static void
+_free(FilterXExpr *s)
+{
+  FilterXVariableExpr *self = (FilterXVariableExpr *) s;
+
+  filterx_object_unref(self->variable_name);
+  filterx_expr_free_method(s);
+}
+
 static FilterXExpr *
 filterx_variable_expr_new(const gchar *name, FilterXVariableType type)
 {
   FilterXVariableExpr *self = g_new0(FilterXVariableExpr, 1);
 
   filterx_expr_init_instance(&self->super);
+  self->super.free_fn = _free;
   self->super.eval = _eval;
   self->super._update_repr = _update_repr;
   self->super.assign = _assign;
   self->super.isset = _isset;
   self->super.unset = _unset;
   self->handle = filterx_scope_map_variable_to_handle(name, type);
+  if (type == FX_VAR_MESSAGE)
+    {
+      gchar *dollar_name = g_strdup_printf("$%s", name);
+      self->variable_name = filterx_string_new(dollar_name, -1);
+      g_free(dollar_name);
+    }
+  else
+    self->variable_name = filterx_string_new(name, -1);
+
   return &self->super;
 }
 

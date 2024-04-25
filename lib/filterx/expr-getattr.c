@@ -21,12 +21,14 @@
  *
  */
 #include "filterx/expr-getattr.h"
+#include "filterx/object-string.h"
+#include "filterx/filterx-eval.h"
 
 typedef struct _FilterXGetAttr
 {
   FilterXExpr super;
   FilterXExpr *operand;
-  gchar *attr_name;
+  FilterXObject *attr;
 } FilterXGetAttr;
 
 static FilterXObject *
@@ -39,9 +41,12 @@ _eval(FilterXExpr *s)
   if (!variable)
     return NULL;
 
-  FilterXObject *attr = filterx_object_getattr(variable, self->attr_name);
+  FilterXObject *attr = filterx_object_getattr(variable, self->attr);
   if (!attr)
-    goto exit;
+    {
+      filterx_eval_push_error("Attribute lookup failed", s, self->attr);
+      goto exit;
+    }
 exit:
   filterx_object_unref(variable);
   return attr;
@@ -51,7 +56,7 @@ static void
 _free(FilterXExpr *s)
 {
   FilterXGetAttr *self = (FilterXGetAttr *) s;
-  g_free(self->attr_name);
+  filterx_object_unref(self->attr);
   filterx_expr_unref(self->operand);
   filterx_expr_free_method(s);
 }
@@ -66,6 +71,6 @@ filterx_getattr_new(FilterXExpr *operand, const gchar *attr_name)
   self->super.eval = _eval;
   self->super.free_fn = _free;
   self->operand = operand;
-  self->attr_name = g_strdup(attr_name);
+  self->attr = filterx_string_new(attr_name, -1);
   return &self->super;
 }

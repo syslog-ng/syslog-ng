@@ -25,7 +25,6 @@
 #define FILTERX_EXPR_H_INCLUDED
 
 #include "filterx-object.h"
-#include "filterx-eval.h"
 #include "cfg-lexer.h"
 
 typedef struct _FilterXExpr FilterXExpr;
@@ -133,6 +132,7 @@ filterx_expr_unset(FilterXExpr *self)
 }
 
 void filterx_expr_set_location(FilterXExpr *self, CfgLexer *lexer, CFG_LTYPE *lloc);
+EVTTAG *filterx_expr_format_location_tag(FilterXExpr *self);
 void filterx_expr_init_instance(FilterXExpr *self);
 FilterXExpr *filterx_expr_new(void);
 FilterXExpr *filterx_expr_ref(FilterXExpr *self);

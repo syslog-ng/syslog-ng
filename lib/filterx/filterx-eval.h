@@ -24,20 +24,29 @@
 #define FILTERX_EVAL_H_INCLUDED
 
 #include "filterx/filterx-scope.h"
+#include "filterx/filterx-expr.h"
 #include "template/eval.h"
 
-typedef struct _FilterXEvalContext FilterXEvalContext;
+typedef struct _FilterXError
+{
+  const gchar *message;
+  FilterXExpr *expr;
+  FilterXObject *object;
+} FilterXError;
 
+typedef struct _FilterXEvalContext FilterXEvalContext;
 struct _FilterXEvalContext
 {
   LogMessage **msgs;
   gint num_msg;
   FilterXScope *scope;
+  FilterXError error;
   LogTemplateEvalOptions *template_eval_options;
 };
 
 FilterXEvalContext *filterx_eval_get_context(void);
 FilterXScope *filterx_eval_get_scope(void);
+void filterx_eval_push_error(const gchar *message, FilterXExpr *expr, FilterXObject *object);
 void filterx_eval_set_context(FilterXEvalContext *context);
 gboolean filterx_eval_exec_statements(FilterXScope *scope, GList *statements, LogMessage *msg);
 void filterx_eval_sync_scope_and_message(FilterXScope *scope, LogMessage *msg);

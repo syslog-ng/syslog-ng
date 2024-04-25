@@ -40,8 +40,8 @@ struct _FilterXType
   FilterXObject *(*clone)(FilterXObject *self);
   gboolean (*map_to_json)(FilterXObject *self, struct json_object **object);
   gboolean (*truthy)(FilterXObject *self);
-  FilterXObject *(*getattr)(FilterXObject *self, const gchar *attr_name);
-  gboolean (*setattr)(FilterXObject *self, const gchar *attr_name, FilterXObject *new_value);
+  FilterXObject *(*getattr)(FilterXObject *self, FilterXObject *attr);
+  gboolean (*setattr)(FilterXObject *self, FilterXObject *attr, FilterXObject *new_value);
   FilterXObject *(*get_subscript)(FilterXObject *self, FilterXObject *key);
   gboolean (*set_subscript)(FilterXObject *self, FilterXObject *key, FilterXObject *new_value);
   gboolean (*is_key_set)(FilterXObject *self, FilterXObject *key);
@@ -88,6 +88,9 @@ struct _FilterXObject
   guint thread_index:16, modified_in_place:1;
   FilterXType *type;
 };
+
+FilterXObject *filterx_object_getattr_string(FilterXObject *self, const gchar *attr_name);
+gboolean filterx_object_setattr_string(FilterXObject *self, const gchar *attr_name, FilterXObject *new_value);
 
 FilterXObject *filterx_object_new(FilterXType *type);
 FilterXObject *filterx_object_ref(FilterXObject *self);
@@ -182,18 +185,18 @@ filterx_object_falsy(FilterXObject *self)
 }
 
 static inline FilterXObject *
-filterx_object_getattr(FilterXObject *self, const gchar *attr_name)
+filterx_object_getattr(FilterXObject *self, FilterXObject *attr)
 {
   if (self->type->getattr)
-    return self->type->getattr(self, attr_name);
+    return self->type->getattr(self, attr);
   return NULL;
 }
 
 static inline gboolean
-filterx_object_setattr(FilterXObject *self, const gchar *attr_name, FilterXObject *new_value)
+filterx_object_setattr(FilterXObject *self, FilterXObject *attr, FilterXObject *new_value)
 {
   if (self->type->setattr)
-    return self->type->setattr(self, attr_name, new_value);
+    return self->type->setattr(self, attr, new_value);
   return FALSE;
 }
 

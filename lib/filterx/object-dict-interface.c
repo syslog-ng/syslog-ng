@@ -102,30 +102,26 @@ _unset_key(FilterXObject *s, FilterXObject *key)
 }
 
 static FilterXObject *
-_getattr(FilterXObject *s, const gchar *attr_name)
+_getattr(FilterXObject *s, FilterXObject *attr)
 {
   FilterXDict *self = (FilterXDict *) s;
 
   if (!self->support_attr)
     return NULL;
 
-  FilterXObject *key = filterx_string_new(attr_name, -1);
-  FilterXObject *result = self->get_subscript(self, key);
-  filterx_object_unref(key);
+  FilterXObject *result = self->get_subscript(self, attr);
   return result;
 }
 
 static gboolean
-_setattr(FilterXObject *s, const gchar *attr_name, FilterXObject *new_value)
+_setattr(FilterXObject *s, FilterXObject *attr, FilterXObject *new_value)
 {
   FilterXDict *self = (FilterXDict *) s;
 
   if (!self->support_attr)
     return FALSE;
 
-  FilterXObject *key = filterx_string_new(attr_name, -1);
-  gboolean result = self->set_subscript(self, key, new_value);
-  filterx_object_unref(key);
+  gboolean result = self->set_subscript(self, attr, new_value);
   return result;
 }
 
