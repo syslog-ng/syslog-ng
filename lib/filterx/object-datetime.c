@@ -34,6 +34,7 @@
 #include "filterx/object-null.h"
 #include "filterx/expr-literal.h"
 #include "generic-number.h"
+#include "filterx/filterx-eval.h"
 #include "filterx-globals.h"
 #include "compat/json.h"
 
@@ -242,13 +243,18 @@ _strptime_eval(FilterXExpr *s)
 
   gsize time_str_len;
   FilterXObject *time_str_obj = filterx_expr_eval(self->time_str_expr);
+  if (!time_str_obj)
+    {
+      filterx_eval_push_error("Failed to evaluate first argument", s, NULL);
+      return NULL;
+    }
+
   const gchar *time_str = _strptime_get_time_str_from_object(time_str_obj, &time_str_len);
   filterx_object_unref(time_str_obj);
 
   if (!time_str)
     {
-      msg_error("FilterX: Failed to create datetime object: first argument must be string typed. "
-                "Usage: strptime(time_str, format_str0, ..., format_strN)");
+      filterx_eval_push_error("First argument must be string typed", s, NULL);
       return NULL;
     }
 

@@ -26,6 +26,7 @@
 #include "filterx/object-string.h"
 #include "filterx/object-primitive.h"
 #include "filterx/expr-literal.h"
+#include "filterx/filterx-eval.h"
 #include "filterx/filterx-globals.h"
 
 typedef struct FilterXFunctionIsType_
@@ -43,7 +44,7 @@ _eval(FilterXExpr *s)
   FilterXObject *lhs = filterx_expr_eval(self->lhs);
   if (!lhs)
     {
-      msg_error("FilterX: istype: Failed to check type of object");
+      filterx_eval_push_error("Failed to evaluate first argument", s, NULL);
       return NULL;
     }
 
