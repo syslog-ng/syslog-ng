@@ -774,6 +774,7 @@ afsocket_transport
         : KW_TRANSPORT '(' KW_TCP ')'                    { transport_mapper_set_transport(last_transport_mapper, "tcp"); }
         | KW_TRANSPORT '(' KW_UDP ')'                    { transport_mapper_set_transport(last_transport_mapper, "udp"); }
         | KW_TRANSPORT '(' KW_TLS ')'                    { transport_mapper_set_transport(last_transport_mapper, "tls"); }
+        | KW_TRANSPORT '(' KW_AUTO ')'                   { transport_mapper_set_transport(last_transport_mapper, "auto"); }
         | KW_IP_PROTOCOL '(' inet_ip_protocol_option ')' { transport_mapper_set_address_family(last_transport_mapper, $3); }
         ;
 
