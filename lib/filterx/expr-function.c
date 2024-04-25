@@ -29,6 +29,12 @@
 #include "plugin.h"
 #include "cfg.h"
 
+GQuark
+filterx_function_error_quark(void)
+{
+  return g_quark_from_static_string("filterx-function-error-quark");
+}
+
 typedef struct _FilterXSimpleFunction
 {
   FilterXFunction super;
@@ -147,7 +153,7 @@ _lookup_simple_function(GlobalConfig *cfg, const gchar *function_name, GList *ar
 }
 
 static FilterXExpr *
-_lookup_function(GlobalConfig *cfg, const gchar *function_name, GList *arguments)
+_lookup_function(GlobalConfig *cfg, const gchar *function_name, GList *arguments, GError **error)
 {
   // Checking filterx builtin functions first
   FilterXFunctionCtor ctor = filterx_builtin_function_ctor_lookup(function_name);
@@ -164,7 +170,7 @@ _lookup_function(GlobalConfig *cfg, const gchar *function_name, GList *arguments
   if (!ctor)
     return NULL;
 
-  FilterXFunction *func_expr = ctor(function_name, arguments);
+  FilterXFunction *func_expr = ctor(function_name, arguments, error);
   if (!func_expr)
     return NULL;
   return &func_expr->super;
@@ -172,10 +178,17 @@ _lookup_function(GlobalConfig *cfg, const gchar *function_name, GList *arguments
 
 /* NOTE: takes the references of objects passed in "arguments" */
 FilterXExpr *
-filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *arguments)
+filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *arguments, GError **error)
 {
   FilterXExpr *expr = _lookup_simple_function(cfg, function_name, arguments);
   if (expr)
     return expr;
-  return _lookup_function(cfg, function_name, arguments);;
+
+  expr = _lookup_function(cfg, function_name, arguments, error);
+  if (expr)
+    return expr;
+
+  if (!(*error))
+    g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_FUNCTION_NOT_FOUND, "function not found");
+  return NULL;
 }

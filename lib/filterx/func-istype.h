@@ -27,6 +27,6 @@
 
 #include "filterx/expr-function.h"
 
-FilterXFunction *filterx_function_istype_new(const gchar *function_name, GList *argument_expressions);
+FilterXFunction *filterx_function_istype_new(const gchar *function_name, GList *argument_expressions, GError **error);
 
 #endif

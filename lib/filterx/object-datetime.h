@@ -34,7 +34,8 @@ FilterXObject *filterx_datetime_new(const UnixTime *ut);
 UnixTime filterx_datetime_get_value(FilterXObject *s);
 FilterXObject *filterx_typecast_datetime(GPtrArray *args);
 FilterXObject *filterx_typecast_datetime_isodate(GPtrArray *args);
-FilterXFunction *filterx_function_strptime_new(const gchar *function_name, GList *argument_expressions);
+FilterXFunction *filterx_function_strptime_new(const gchar *function_name, GList *argument_expressions,
+                                               GError **error);
 
 gboolean datetime_repr(const UnixTime *ut, GString *repr);
 

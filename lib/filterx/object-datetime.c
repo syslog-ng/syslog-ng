@@ -38,6 +38,8 @@
 #include "filterx-globals.h"
 #include "compat/json.h"
 
+#define FILTERX_FUNC_STRPTIME_USAGE "Usage: strptime(time_str, format_str_1, ..., format_str_N)"
+
 typedef struct _FilterXDateTime
 {
   FilterXObject super;
@@ -211,9 +213,6 @@ _repr(FilterXObject *s, GString *repr)
 const gchar *
 _strptime_get_time_str_from_object(FilterXObject *obj, gsize *len)
 {
-  if (!obj)
-    return NULL;
-
   if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(string)))
     return filterx_string_get_value(obj, len);
 
@@ -245,7 +244,7 @@ _strptime_eval(FilterXExpr *s)
   FilterXObject *time_str_obj = filterx_expr_eval(self->time_str_expr);
   if (!time_str_obj)
     {
-      filterx_eval_push_error("Failed to evaluate first argument", s, NULL);
+      filterx_eval_push_error("Failed to evaluate first argument. " FILTERX_FUNC_STRPTIME_USAGE, s, NULL);
       return NULL;
     }
 
@@ -254,7 +253,7 @@ _strptime_eval(FilterXExpr *s)
 
   if (!time_str)
     {
-      filterx_eval_push_error("First argument must be string typed", s, NULL);
+      filterx_eval_push_error("First argument must be string typed. " FILTERX_FUNC_STRPTIME_USAGE, s, NULL);
       return NULL;
     }
 
@@ -298,34 +297,36 @@ _strptime_free(FilterXExpr *s)
 }
 
 static GPtrArray *
-_extract_strptime_formats(GList *argument_expressions)
+_extract_strptime_formats(GList *argument_expressions, GError **error)
 {
   gsize arguments_len = argument_expressions ? g_list_length(argument_expressions) : 0;
   if (arguments_len < 2)
     {
-      msg_error("FilterX: Failed to create datetime object: invalid number of arguments. "
-                "Usage: strptime(time_str, format_str0, ..., format_strN)");
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "invalid number of arguments. " FILTERX_FUNC_STRPTIME_USAGE);
       return NULL;
     }
 
   GPtrArray *formats = g_ptr_array_new_full(arguments_len - 1, g_free);
 
+  guint32 i = 1;
   for (GList *elem = argument_expressions->next; elem; elem = elem->next)
     {
       FilterXExpr *argument_expr = (FilterXExpr *) elem->data;
 
       if (!argument_expr || !filterx_expr_is_literal(argument_expr))
         {
-          msg_error("FilterX: Failed to create datetime object: format must be a string literal. "
-                    "Usage: strptime(time_str, format_str0, ..., format_strN)");
+          g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                      "format_str_%" G_GUINT32_FORMAT " argument must be string literal. " FILTERX_FUNC_STRPTIME_USAGE,
+                      i);
           goto error;
         }
 
       FilterXObject *format_obj = filterx_expr_eval(argument_expr);
       if (!format_obj)
         {
-          msg_error("FilterX: Failed to create datetime object: format must be a string literal. "
-                    "Usage: strptime(time_str, format_str0, ..., format_strN)");
+          g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                      "failed to evaluate format_str_%" G_GUINT32_FORMAT " argument. " FILTERX_FUNC_STRPTIME_USAGE, i);
           goto error;
         }
 
@@ -335,12 +336,14 @@ _extract_strptime_formats(GList *argument_expressions)
 
       if (!format)
         {
-          msg_error("FilterX: Failed to create datetime object: format must be a string literal. "
-                    "Usage: strptime(time_str, format_str0, ..., format_strN)");
+          g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                      "format_str_%" G_GUINT32_FORMAT " argument must be string literal. " FILTERX_FUNC_STRPTIME_USAGE,
+                      i);
           goto error;
         }
 
       g_ptr_array_add(formats, g_strdup(format));
+      i++;
     }
 
   return formats;
@@ -350,20 +353,34 @@ error:
   return NULL;
 }
 
+static FilterXExpr *
+_extract_time_str_expr(GList *argument_expressions, GError **error)
+{
+  FilterXExpr *time_str_expr = filterx_expr_ref(((FilterXExpr *) argument_expressions->data));
+  if (!time_str_expr)
+    {
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "argument must be set: time_str. " FILTERX_FUNC_STRPTIME_USAGE);
+      return NULL;
+    }
+
+  return time_str_expr;
+}
+
 /* Takes reference of argument_expressions */
 FilterXFunction *
-filterx_function_strptime_new(const gchar *function_name, GList *argument_expressions)
+filterx_function_strptime_new(const gchar *function_name, GList *argument_expressions, GError **error)
 {
   FilterXFunctionStrptime *self = g_new0(FilterXFunctionStrptime, 1);
   filterx_function_init_instance(&self->super, function_name);
   self->super.super.eval = _strptime_eval;
   self->super.super.free_fn = _strptime_free;
 
-  self->formats = _extract_strptime_formats(argument_expressions);
+  self->formats = _extract_strptime_formats(argument_expressions, error);
   if (!self->formats)
     goto error;
 
-  self->time_str_expr = filterx_expr_ref(((FilterXExpr *) argument_expressions->data));
+  self->time_str_expr = _extract_time_str_expr(argument_expressions, error);
   if (!self->time_str_expr)
     goto error;
 

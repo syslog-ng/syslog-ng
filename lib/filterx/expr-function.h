@@ -35,11 +35,20 @@ typedef struct _FilterXFunction
   gchar *function_name;
 } FilterXFunction;
 
-typedef FilterXFunction *(*FilterXFunctionCtor)(const gchar *, GList *);
+typedef FilterXFunction *(*FilterXFunctionCtor)(const gchar *, GList *, GError **);
+
+#define FILTERX_FUNCTION_ERROR filterx_function_error_quark()
+GQuark filterx_function_error_quark(void);
+
+enum FilterXFunctionError
+{
+  FILTERX_FUNCTION_ERROR_FUNCTION_NOT_FOUND,
+  FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+};
 
 void filterx_function_init_instance(FilterXFunction *s, const gchar *function_name);
 void filterx_function_free_method(FilterXFunction *s);
 
-FilterXExpr *filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *arguments);
+FilterXExpr *filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *arguments, GError **error);
 
 #endif

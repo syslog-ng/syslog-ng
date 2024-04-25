@@ -29,10 +29,12 @@
 #include "filterx/filterx-eval.h"
 #include "filterx/filterx-globals.h"
 
+#define FILTERX_FUNC_ISTYPE_USAGE "Usage: istype(object, type_str)"
+
 typedef struct FilterXFunctionIsType_
 {
   FilterXFunction super;
-  FilterXExpr *lhs;
+  FilterXExpr *object_expr;
   FilterXType *type;
 } FilterXFunctionIsType;
 
@@ -41,15 +43,15 @@ _eval(FilterXExpr *s)
 {
   FilterXFunctionIsType *self = (FilterXFunctionIsType *) s;
 
-  FilterXObject *lhs = filterx_expr_eval(self->lhs);
-  if (!lhs)
+  FilterXObject *object_expr = filterx_expr_eval(self->object_expr);
+  if (!object_expr)
     {
-      filterx_eval_push_error("Failed to evaluate first argument", s, NULL);
+      filterx_eval_push_error("Failed to evaluate first argument. " FILTERX_FUNC_ISTYPE_USAGE, s, NULL);
       return NULL;
     }
 
-  gboolean result = filterx_object_is_type(lhs, self->type);
-  filterx_object_unref(lhs);
+  gboolean result = filterx_object_is_type(object_expr, self->type);
+  filterx_object_unref(object_expr);
   return filterx_boolean_new(result);
 }
 
@@ -57,33 +59,33 @@ static void
 _free(FilterXExpr *s)
 {
   FilterXFunctionIsType *self = (FilterXFunctionIsType *) s;
-  filterx_expr_unref(self->lhs);
+  filterx_expr_unref(self->object_expr);
   filterx_function_free_method(&self->super);
 }
 
 static FilterXType *
-_extract_type(GList *argument_expressions)
+_extract_type(GList *argument_expressions, GError **error)
 {
   if (argument_expressions == NULL || g_list_length(argument_expressions) != 2)
     {
-      msg_error("FilterX: istype: invalid number of arguments. "
-                "Usage: istype(object, type_str)");
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "invalid number of arguments. " FILTERX_FUNC_ISTYPE_USAGE);
       return NULL;
     }
 
   FilterXExpr *type_expr = (FilterXExpr *) argument_expressions->next->data;
   if (!type_expr || !filterx_expr_is_literal(type_expr))
     {
-      msg_error("FilterX: istype: invalid argument: type_str "
-                "Usage: istype(object, type_str)");
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "argument must be string literal: type_str. " FILTERX_FUNC_ISTYPE_USAGE);
       return NULL;
     }
 
   FilterXObject *type_obj = filterx_expr_eval(type_expr);
   if (!type_obj)
     {
-      msg_error("FilterX: istype: invalid argument: type_str "
-                "Usage: istype(object, type_str)");
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "failed to evaluate argument: type_str. " FILTERX_FUNC_ISTYPE_USAGE);
       return NULL;
     }
 
@@ -93,36 +95,50 @@ _extract_type(GList *argument_expressions)
 
   if (!type)
     {
-      msg_error("FilterX: istype: invalid argument: type_str "
-                "Usage: istype(object, type_str)");
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "argument must be string literal: type_str. " FILTERX_FUNC_ISTYPE_USAGE);
       return NULL;
     }
 
   FilterXType *fxtype = filterx_type_lookup(type);
   if (!fxtype)
     {
-      msg_error("FilterX: istype: unknown type name",
-                evt_tag_str("type", type));
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "unknown type: %s. " FILTERX_FUNC_ISTYPE_USAGE, type);
       return NULL;
     }
 
   return fxtype;
 }
 
+static FilterXExpr *
+_extract_object_expr(GList *argument_expressions, GError **error)
+{
+  FilterXExpr *object_expr = filterx_expr_ref(((FilterXExpr *) argument_expressions->data));
+  if (!object_expr)
+    {
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "argument must be set: object. " FILTERX_FUNC_ISTYPE_USAGE);
+      return NULL;
+    }
+
+  return object_expr;
+}
+
 FilterXFunction *
-filterx_function_istype_new(const gchar *function_name, GList *argument_expressions)
+filterx_function_istype_new(const gchar *function_name, GList *argument_expressions, GError **error)
 {
   FilterXFunctionIsType *self = g_new0(FilterXFunctionIsType, 1);
   filterx_function_init_instance(&self->super, function_name);
   self->super.super.eval = _eval;
   self->super.super.free_fn = _free;
 
-  self->type = _extract_type(argument_expressions);
+  self->type = _extract_type(argument_expressions, error);
   if (!self->type)
     goto error;
 
-  self->lhs = filterx_expr_ref(((FilterXExpr *) argument_expressions->data));
-  if (!self->lhs)
+  self->object_expr = _extract_object_expr(argument_expressions, error);
+  if (!self->object_expr)
     goto error;
 
   g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
