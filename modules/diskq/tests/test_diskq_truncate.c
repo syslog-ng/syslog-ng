@@ -139,7 +139,8 @@ _assert_diskq_actual_file_size_with_stored(LogQueue *q)
 
   gint64 actual_file_size = _get_file_size(q);
   cr_assert_eq(qdisk->cached_file_size, actual_file_size,
-               "File size does not match with stored size; Actual file size: %ld, Expected file size: %ld\n", actual_file_size,
+               "File size does not match with stored size; Actual file size: %"G_GINT64_FORMAT", Expected file size: %"G_GINT64_FORMAT"\n",
+               actual_file_size,
                qdisk->cached_file_size);
 }
 
@@ -279,12 +280,14 @@ Test(diskq_truncate, test_diskq_truncate_on_push)
   feed_some_messages(q, write_wraps_message_number);
   // file size can even grow, if not the whole capacity_bytes is filled (i.e. capacity_bytes is not an integer multiple of one message size)
   cr_assert(_get_file_size(q) >= file_size_full,
-            "Unexpected disk-queue truncate during push! size:%ld expected:%ld", _get_file_size(q), file_size_full);
+            "Unexpected disk-queue truncate during push! size:%"G_GINT64_FORMAT" expected:%"G_GINT64_FORMAT, _get_file_size(q),
+            file_size_full);
 
   // 4. wrap around read pointer. Truncate only happens if read < write < file_size
   send_some_messages(q, read_wraps_message_number, TRUE);
   cr_assert(_get_file_size(q) >= file_size_full,
-            "Unexpected disk-queue truncate while read wrapped! size:%ld expected:%ld", _get_file_size(q), file_size_full);
+            "Unexpected disk-queue truncate while read wrapped! size:%"G_GINT64_FORMAT" expected:%"G_GINT64_FORMAT,
+            _get_file_size(q), file_size_full);
 
   // 5. push some messages to trigger truncate after push
   feed_some_messages(q, trigger_truncate_message_number);

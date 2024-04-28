@@ -21,8 +21,8 @@
  *
  */
 
-#include <criterion/parameterized.h>
 #include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
 #include "logproto/logproto-server.h"
 #include "logmsg/logmsg.h"
