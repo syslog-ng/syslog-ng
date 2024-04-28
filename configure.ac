@@ -726,8 +726,10 @@ dnl Check for --whole-archive flag
 dnl ***************************************************************************
 
 if test $ostype = "Darwin"; then
+  # -all_load loads all members of static archive libraries, it can't be selectively disabled (do not use -noall_load)
+  # use -force_load for each static library if mixed linking needs to be supported on macOS
   WHOLE_ARCHIVE_OPT="-all_load"
-  NO_WHOLE_ARCHIVE_OPT="-noall_load"
+  NO_WHOLE_ARCHIVE_OPT=""
 else
   WHOLE_ARCHIVE_OPT="--whole-archive"
   NO_WHOLE_ARCHIVE_OPT="--no-whole-archive"
