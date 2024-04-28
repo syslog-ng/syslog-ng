@@ -507,6 +507,7 @@ AC_PROG_CXX([$CPP_COMPILER])
 
 if test "x$enable_cpp" = "xyes"; then
         AX_CXX_COMPILE_STDCXX(11,, mandatory)
+        AX_CXX_COMPILE_STDCXX(17,, optional)
 elif test "x$enable_cpp" = "xauto"; then
         AX_CXX_COMPILE_STDCXX(11,, optional)
         if test "x$HAVE_CXX11" = "x1"; then
@@ -514,6 +515,7 @@ elif test "x$enable_cpp" = "xauto"; then
         else
                 enable_cpp=no
         fi
+        AX_CXX_COMPILE_STDCXX(17,, optional)
 fi
 
 dnl ***************************************************************************
