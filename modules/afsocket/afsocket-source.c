@@ -37,7 +37,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#if SYSLOG_NG_HAVE_LINUX_SOCK_DIAG_H
+#ifdef SYSLOG_NG_HAVE_LINUX_SOCK_DIAG_H
 #include <linux/sock_diag.h>
 #endif
 
