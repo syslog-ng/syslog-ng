@@ -58,5 +58,5 @@ stop_stopwatch_and_display_result(gint iterations, const gchar *message_template
   va_end(args);
 
   printf("; %.2f iterations/sec", iterations * 1e6 / diff);
-  printf(", runtime=%lu.%06lus\n", diff / 1000000, diff % 1000000);
+  printf(", runtime=%"G_GUINT64_FORMAT".%06"G_GUINT64_FORMAT"s\n", diff / 1000000, diff % 1000000);
 }
