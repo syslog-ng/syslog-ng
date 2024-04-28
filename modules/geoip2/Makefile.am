@@ -17,7 +17,8 @@ modules_geoip2_libgeoip2_plugin_la_CPPFLAGS	=	\
 	-I$(top_builddir)/modules/geoip2
 modules_geoip2_libgeoip2_plugin_la_CFLAGS		=	\
 	$(AM_CFLAGS) \
-	$(GEOIP_CFLAGS)
+	$(GEOIP_CFLAGS) \
+	$(MAXMINDDB_CFLAGS)
 modules_geoip2_libgeoip2_plugin_la_LIBADD		=	\
 	$(MODULE_DEPS_LIBS) $(MAXMINDDB_LIBS)
 modules_geoip2_libgeoip2_plugin_la_LDFLAGS	=	\
