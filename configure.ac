@@ -648,6 +648,9 @@ dnl User supplied CFLAGS come last
 CFLAGS="${CFLAGS_ADD} ${ac_cv_env_CFLAGS_value}"
 CXXFLAGS="${CXXFLAGS_ADD} ${ac_cv_env_CXXFLAGS_value}"
 
+TEST_NO_INSTALL_FLAG="-no-install"
+AC_SUBST(TEST_NO_INSTALL_FLAG)
+
 AC_SYS_LARGEFILE
 
 # FIXME: skip tests on unsupported platforms/architectures...
@@ -677,6 +680,7 @@ case "$ostype" in
 		;;
 	Darwin)
 		MODULE_LDFLAGS="-avoid-version -dylib"
+                TEST_NO_INSTALL_FLAG="-no-fast-install"
                 # This flag might be a security issue, do not use in production code, unfortunately we still need it for criterion tests and the current mocking solution
                 if test "x$enable_tests" = "xyes"; then
 		        LDFLAGS="$LDFLAGS -Wl,-flat_namespace"
