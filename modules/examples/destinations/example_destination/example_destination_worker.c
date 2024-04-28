@@ -33,7 +33,7 @@ _dw_insert(LogThreadedDestWorker *s, LogMessage *msg)
 
   GString *string_to_write = g_string_new("");
   g_string_printf(string_to_write, "thread_id=%lu message=%s\n",
-                  self->thread_id, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
+                  (unsigned long) self->thread_id, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
 
   size_t retval = fwrite(string_to_write->str, 1, string_to_write->len, self->file);
   gsize string_to_write_len = string_to_write->len;
