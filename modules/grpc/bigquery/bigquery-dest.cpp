@@ -76,12 +76,12 @@ public:
 
 private:
   /* deprecated interface */
-  void AddError(const std::string &filename, int line, int column, const std::string &message) override
+  void AddError(const std::string &filename, int line, int column, const std::string &message)
   {
     this->RecordError(filename, line, column, message);
   }
 
-  void AddWarning(const std::string &filename, int line, int column, const std::string &message) override
+  void AddWarning(const std::string &filename, int line, int column, const std::string &message)
   {
     this->RecordWarning(filename, line, column, message);
   }
