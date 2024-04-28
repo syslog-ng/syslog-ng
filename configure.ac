@@ -1103,9 +1103,12 @@ if test "x$enable_geoip2" = "xyes" || test "x$enable_geoip2" = "xauto"; then
                 AC_MSG_RESULT([yes (MAXMINDDB_LIBS set, will use that.)])
                 with_maxminddb="yes"
         else
-                AC_MSG_CHECKING([for MAXMINDDB])
-                AC_CHECK_LIB(maxminddb, MMDB_open, MAXMINDDB_LIBS="-lmaxminddb"; with_maxminddb="yes", with_maxminddb="no")
-                AC_SUBST(MAXMINDDB_LIBS)
+                PKG_CHECK_MODULES(MAXMINDDB, libmaxminddb, [with_maxminddb="yes"], [with_maxminddb="no"])
+                if test "x$with_maxminddb" = "xno"; then
+                        AC_MSG_CHECKING([for MAXMINDDB])
+                        AC_CHECK_LIB(maxminddb, MMDB_open, MAXMINDDB_LIBS="-lmaxminddb"; with_maxminddb="yes", with_maxminddb="no")
+                        AC_SUBST(MAXMINDDB_LIBS)
+                fi
         fi
 
         if test "x$with_maxminddb" = "xno" && test "x$enable_geoip2" = "xyes"; then
