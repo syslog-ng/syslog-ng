@@ -10,15 +10,16 @@ BUILDER_IMAGES=		\
 	debian-sid	\
 	ubuntu-focal	\
 	ubuntu-jammy \
+	ubuntu-noble \
 	ubuntu-lunar	\
 	ubuntu-mantic	\
 	kira		\
 	tarball
 
 IMAGES=${BUILDER_IMAGES} devshell
-DEFAULT_IMAGE ?= ubuntu-jammy
+DEFAULT_IMAGE ?= ubuntu-noble
 TARBALL_IMAGE ?= tarball
-DEFAULT_DEB_IMAGE=ubuntu-jammy
+DEFAULT_DEB_IMAGE=ubuntu-noble
 DEFAULT_RPM_IMAGE=almalinux-8
 DOCKER=docker
 CONTAINER_REGISTRY ?= ghcr.io/syslog-ng

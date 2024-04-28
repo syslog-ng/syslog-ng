@@ -38,5 +38,5 @@ jobs:
         "debian-bookworm",
         "debian-testing",
         "fedora-39",
-        "ubuntu-jammy"
+        "ubuntu-noble"
       ]'

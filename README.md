@@ -170,6 +170,7 @@ syslog-ng packages are released for the following distribution versions (x86-64)
 
 | Distro version | sources.list component name |
 |---|---|
+| Ubuntu 24.04 | ubuntu-noble |
 | Ubuntu 23.10 | ubuntu-mantic |
 | Ubuntu 23.04 | ubuntu-lunar |
 | Ubuntu 22.04 | ubuntu-jammy |
@@ -190,7 +191,7 @@ syslog-ng packages are released for the following distribution versions (x86-64)
 2. Add the repository containing the latest build of syslog-ng to the APT sources. For example, stable releases on Ubuntu 22.04:
 
     ```
-    echo "deb https://ose-repo.syslog-ng.com/apt/ stable ubuntu-jammy" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
+    echo "deb https://ose-repo.syslog-ng.com/apt/ stable ubuntu-noble" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
     ```
 
 3. Run `apt update`
@@ -202,7 +203,7 @@ Nightly packages are built and released from the git `master` branch everyday.
 Use `nightly` instead of `stable` in step 2 to use the nightly APT repository. E.g.:
 
 ```
-echo "deb https://ose-repo.syslog-ng.com/apt/ nightly ubuntu-jammy" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
+echo "deb https://ose-repo.syslog-ng.com/apt/ nightly ubuntu-noble" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
 ```
 
 Nightly builds can be used for testing purposes (obtaining new features and bugfixes) at the risk of breakage.
