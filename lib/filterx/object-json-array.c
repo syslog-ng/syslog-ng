@@ -111,12 +111,20 @@ _get_subscript(FilterXList *s, guint64 index)
   return filterx_json_convert_json_to_object_cached(&s->super, &self->root_container, result);
 }
 
+static guint64
+_len(FilterXList *s)
+{
+  FilterXJsonArray *self = (FilterXJsonArray *) s;
+
+  return json_object_array_length(self->object);
+}
+
 static gboolean
 _append(FilterXList *s, FilterXObject *new_value)
 {
   FilterXJsonArray *self = (FilterXJsonArray *) s;
 
-  if (G_UNLIKELY(filterx_list_len(&s->super) >= JSON_ARRAY_MAX_SIZE))
+  if (G_UNLIKELY(_len(s) >= JSON_ARRAY_MAX_SIZE))
     return FALSE;
 
   struct json_object *new_json_value = NULL;
@@ -191,14 +199,6 @@ _unset_index(FilterXList *s, guint64 index)
     }
 
   return TRUE;
-}
-
-static guint64
-_len(FilterXList *s)
-{
-  FilterXJsonArray *self = (FilterXJsonArray *) s;
-
-  return json_object_array_length(self->object);
 }
 
 /* NOTE: consumes root ref */

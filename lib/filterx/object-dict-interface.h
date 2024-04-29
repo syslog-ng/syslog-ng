@@ -43,7 +43,6 @@ struct FilterXDict_
   gboolean (*iter)(FilterXDict *s, FilterXDictIterFunc func, gpointer user_data);
 };
 
-guint64 filterx_dict_len(FilterXObject *s);
 gboolean filterx_dict_iter(FilterXObject *s, FilterXDictIterFunc func, gpointer user_data);
 
 void filterx_dict_init_instance(FilterXDict *self, FilterXType *type);

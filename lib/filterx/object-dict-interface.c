@@ -24,13 +24,6 @@
 #include "filterx/object-dict-interface.h"
 #include "filterx/object-string.h"
 
-guint64
-filterx_dict_len(FilterXObject *s)
-{
-  FilterXDict *self = (FilterXDict *) s;
-  return self->len(self);
-}
-
 gboolean
 filterx_dict_iter(FilterXObject *s, FilterXDictIterFunc func, gpointer user_data)
 {
@@ -38,6 +31,14 @@ filterx_dict_iter(FilterXObject *s, FilterXDictIterFunc func, gpointer user_data
   if (!self->iter)
     return FALSE;
   return self->iter(self, func, user_data);
+}
+
+static gboolean
+_len(FilterXObject *s, guint64 *len)
+{
+  FilterXDict *self = (FilterXDict *) s;
+  *len = self->len(self);
+  return TRUE;
 }
 
 static FilterXObject *
@@ -129,6 +130,7 @@ void
 filterx_dict_init_instance(FilterXDict *self, FilterXType *type)
 {
   g_assert(type->is_mutable);
+  g_assert(type->len == _len);
   g_assert(type->get_subscript == _get_subscript);
   g_assert(type->set_subscript == _set_subscript);
   g_assert(type->is_key_set == _is_key_set);
@@ -143,6 +145,7 @@ filterx_dict_init_instance(FilterXDict *self, FilterXType *type)
 
 FILTERX_DEFINE_TYPE(dict, FILTERX_TYPE_NAME(object),
                     .is_mutable = TRUE,
+                    .len = _len,
                     .get_subscript = _get_subscript,
                     .set_subscript = _set_subscript,
                     .is_key_set = _is_key_set,

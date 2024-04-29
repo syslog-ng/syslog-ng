@@ -164,6 +164,39 @@ _unmarshal(FilterXObject *s)
   return _unmarshal_repr(self->repr, self->repr_len, self->type);
 }
 
+static gboolean
+_len(FilterXObject *s, guint64 *len)
+{
+  FilterXMessageValue *self = (FilterXMessageValue *) s;
+
+  switch (self->type)
+    {
+    case LM_VT_STRING:
+    case LM_VT_BYTES:
+    case LM_VT_PROTOBUF:
+      *len = self->repr_len;
+      return TRUE;
+    case LM_VT_JSON:
+    case LM_VT_LIST:
+    {
+      /* These get lost here, but we cannot do better without knowing the handle. */
+      FilterXObject *unmarshaled = filterx_object_unmarshal(s);
+      gboolean result = filterx_object_len(unmarshaled, len);
+      filterx_object_unref(unmarshaled);
+      return result;
+    }
+    case LM_VT_BOOLEAN:
+    case LM_VT_INTEGER:
+    case LM_VT_DOUBLE:
+    case LM_VT_DATETIME:
+    case LM_VT_NULL:
+      return FALSE;
+    default:
+      g_assert_not_reached();
+    }
+  return FALSE;
+}
+
 LogMessageValueType
 filterx_message_value_get_type(FilterXObject *s)
 {
@@ -291,6 +324,7 @@ FILTERX_DEFINE_TYPE(message_value, FILTERX_TYPE_NAME(object),
                     .truthy = _truthy,
                     .marshal = _marshal,
                     .unmarshal = _unmarshal,
+                    .len = _len,
                     .map_to_json = _map_to_json,
                     .repr = _repr,
                    );

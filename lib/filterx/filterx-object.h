@@ -49,6 +49,7 @@ struct _FilterXType
   FilterXObject *(*list_factory)(void);
   FilterXObject *(*dict_factory)(void);
   gboolean (*repr)(FilterXObject *self, GString *repr);
+  gboolean (*len)(FilterXObject *self, guint64 *len);
   void (*free_fn)(FilterXObject *self);
 };
 
@@ -130,6 +131,14 @@ filterx_object_repr(FilterXObject *self, GString *repr)
       return self->type->repr(self, repr);
     }
   return FALSE;
+}
+
+static inline gboolean
+filterx_object_len(FilterXObject *self, guint64 *len)
+{
+  if (!self->type->len)
+    return FALSE;
+  return self->type->len(self, len);
 }
 
 static inline gboolean

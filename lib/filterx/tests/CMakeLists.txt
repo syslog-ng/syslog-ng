@@ -16,3 +16,5 @@ add_unit_test(LIBTEST CRITERION TARGET test_object_double DEPENDS json-plugin ${
 add_unit_test(LIBTEST CRITERION TARGET test_type_registry DEPENDS json-plugin ${JSONC_LIBRARY})
 add_unit_test(LIBTEST CRITERION TARGET test_func_istype DEPENDS json-plugin ${JSONC_LIBRARY})
 add_unit_test(LIBTEST CRITERION TARGET test_expr_function DEPENDS json-plugin ${JSONC_LIBRARY})
+add_unit_test(LIBTEST CRITERION TARGET test_expr_regexp DEPENDS json-plugin ${JSONC_LIBRARY})
+

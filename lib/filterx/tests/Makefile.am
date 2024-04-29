@@ -17,7 +17,8 @@ lib_filterx_tests_TESTS		 =              \
 		lib/filterx/tests/test_expr_function \
 		lib/filterx/tests/test_builtin_functions \
 		lib/filterx/tests/test_type_registry \
-		lib/filterx/tests/test_func_istype
+		lib/filterx/tests/test_func_istype \
+		lib/filterx/tests/test_expr_regexp
 
 EXTRA_DIST += lib/filterx/tests/CMakeLists.txt
 
@@ -73,5 +74,9 @@ lib_filterx_tests_test_type_registry_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
 
 lib_filterx_tests_test_func_istype_CFLAGS  = $(TEST_CFLAGS)
 lib_filterx_tests_test_func_istype_LDADD   = $(TEST_LDADD) $(JSON_LIBS)
+
 lib_filterx_tests_test_expr_function_CFLAGS	= $(TEST_CFLAGS)
 lib_filterx_tests_test_expr_function_LDADD	= $(TEST_LDADD) $(JSON_LIBS)
+
+lib_filterx_tests_test_expr_regexp_CFLAGS  = $(TEST_CFLAGS)
+lib_filterx_tests_test_expr_regexp_LDADD   = $(TEST_LDADD) $(JSON_LIBS)

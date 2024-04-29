@@ -36,7 +36,9 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/expr-shorthand.h		\
 	lib/filterx/expr-generator.h		\
 	lib/filterx/expr-literal-generator.h		\
+	lib/filterx/expr-regexp.h		\
 	lib/filterx/func-istype.h		\
+	lib/filterx/func-len.h		\
 	lib/filterx/filterx-private.h
 
 
@@ -77,7 +79,9 @@ filterx_sources = 				\
 	lib/filterx/expr-shorthand.c		\
 	lib/filterx/expr-generator.c		\
 	lib/filterx/expr-literal-generator.c		\
+	lib/filterx/expr-regexp.c		\
 	lib/filterx/func-istype.c		\
+	lib/filterx/func-len.c		\
 	lib/filterx/filterx-private.c	\
 	lib/filterx/filterx-grammar.y
 

@@ -21,31 +21,13 @@
  *
  */
 
-#ifndef FILTERX_OBJECT_LIST_INTERFACE_H_INCLUDED
-#define FILTERX_OBJECT_LIST_INTERFACE_H_INCLUDED
+#ifndef FILTERX_EXPR_REGEXP_H_INCLUDED
+#define FILTERX_EXPR_REGEXP_H_INCLUDED
 
-#include "filterx/filterx-object.h"
+#include "filterx/filterx-expr.h"
+#include "filterx/expr-generator.h"
 
-typedef struct FilterXList_ FilterXList;
-
-struct FilterXList_
-{
-  FilterXObject super;
-
-  FilterXObject *(*get_subscript)(FilterXList *s, guint64 index);
-  gboolean (*set_subscript)(FilterXList *s, guint64 index, FilterXObject *new_value);
-  gboolean (*append)(FilterXList *s, FilterXObject *new_value);
-  gboolean (*unset_index)(FilterXList *s, guint64 index);
-  guint64 (*len)(FilterXList *s);
-};
-
-FilterXObject *filterx_list_get_subscript(FilterXObject *s, gint64 index);
-gboolean filterx_list_set_subscript(FilterXObject *s, gint64 index, FilterXObject *new_value);
-gboolean filterx_list_append(FilterXObject *s, FilterXObject *new_value);
-gboolean filterx_list_unset_index(FilterXObject *s, gint64 index);
-
-void filterx_list_init_instance(FilterXList *self, FilterXType *type);
-
-FILTERX_DECLARE_TYPE(list);
+FilterXExpr *filterx_expr_regexp_match_new(FilterXExpr *lhs, const gchar *pattern);
+FilterXExpr *filterx_expr_regexp_search_generator_new(FilterXExpr *lhs, const gchar *pattern);
 
 #endif

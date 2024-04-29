@@ -21,31 +21,35 @@
  *
  */
 
-#ifndef FILTERX_OBJECT_LIST_INTERFACE_H_INCLUDED
-#define FILTERX_OBJECT_LIST_INTERFACE_H_INCLUDED
+#include "filterx/func-len.h"
+#include "filterx/object-primitive.h"
 
-#include "filterx/filterx-object.h"
+#define FILTERX_FUNC_LEN_USAGE "Usage: len(object)"
 
-typedef struct FilterXList_ FilterXList;
-
-struct FilterXList_
+FilterXObject *
+filterx_simple_function_len(GPtrArray *args)
 {
-  FilterXObject super;
+  if (args == NULL || args->len != 1)
+    {
+      msg_error("FilterX: len: invalid number of arguments. " FILTERX_FUNC_LEN_USAGE);
+      return NULL;
+    }
 
-  FilterXObject *(*get_subscript)(FilterXList *s, guint64 index);
-  gboolean (*set_subscript)(FilterXList *s, guint64 index, FilterXObject *new_value);
-  gboolean (*append)(FilterXList *s, FilterXObject *new_value);
-  gboolean (*unset_index)(FilterXList *s, guint64 index);
-  guint64 (*len)(FilterXList *s);
-};
+  FilterXObject *object = g_ptr_array_index(args, 0);
+  if (!object)
+    {
+      msg_error("FilterX: len: invalid argument: object." FILTERX_FUNC_LEN_USAGE);
+      return NULL;
+    }
 
-FilterXObject *filterx_list_get_subscript(FilterXObject *s, gint64 index);
-gboolean filterx_list_set_subscript(FilterXObject *s, gint64 index, FilterXObject *new_value);
-gboolean filterx_list_append(FilterXObject *s, FilterXObject *new_value);
-gboolean filterx_list_unset_index(FilterXObject *s, gint64 index);
+  guint64 len;
+  gboolean success = filterx_object_len(object, &len);
+  if (!success)
+    {
+      msg_error("FilterX: len: object type is not supported",
+                evt_tag_str("type", object->type->name));
+      return NULL;
+    }
 
-void filterx_list_init_instance(FilterXList *self, FilterXType *type);
-
-FILTERX_DECLARE_TYPE(list);
-
-#endif
+  return filterx_integer_new((gint64) MIN(len, G_MAXINT64));
+}

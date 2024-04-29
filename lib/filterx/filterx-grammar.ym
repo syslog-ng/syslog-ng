@@ -51,6 +51,7 @@
 #include "filterx/expr-unset.h"
 #include "filterx/expr-literal-generator.h"
 #include "filterx/expr-shorthand.h"
+#include "filterx/expr-regexp.h"
 
 #include "template/templates.h"
 
@@ -90,6 +91,7 @@ construct_template_expr(LogTemplate *template)
 %token KW_ISSET
 %token KW_UNSET
 %token KW_DECLARE
+%token KW_REGEXP_SEARCH
 
 %type <ptr> stmts
 %type <node> stmt
@@ -116,8 +118,11 @@ construct_template_expr(LogTemplate *template)
 %type <ptr> inner_list_generator
 %type <ptr> list_element
 %type <ptr> list_elements
+%type <ptr> regexp_search
+%type <ptr> regexp_match
 %type <num> boolean
 %type <ptr> conditional
+%type <ptr> condition
 %type <ptr> if
 %type <ptr> codeblock
 %type <ptr> ternary
@@ -129,7 +134,11 @@ start
 	;
 
 stmts
-	: stmt stmts				{ filterx_expr_set_location($1, lexer, &@1); $$ = g_list_prepend($2, $1); }
+	: stmt stmts				{
+						  CHECK_ERROR($1, @1, "failed to initialize statement");
+						  filterx_expr_set_location($1, lexer, &@1);
+						  $$ = g_list_prepend($2, $1);
+						}
 	|					{ $$ = NULL; }
 	;
 
@@ -282,6 +291,7 @@ expr
 	| ternary				{ $$ = $1; }
 	| KW_ISSET '(' expr ')'			{ $$ = filterx_isset_new($3); }
 	| KW_UNSET '(' expr ')'			{ $$ = filterx_unset_new($3); }
+	| regexp_match				{ $$ = $1; }
 	;
 
 expr_value
@@ -293,6 +303,8 @@ expr_value
 expr_generator
 	: dict_generator
 	| list_generator
+	| regexp_search
+	| '(' expr_generator ')'		{ $$ = $2; }
 	;
 
 function_call
@@ -398,6 +410,14 @@ list_element
 	: expr					{ $$ = filterx_literal_generator_elem_new(NULL, $1, TRUE); }
 	| inner_dict_generator			{ $$ = filterx_literal_generator_elem_new(NULL, $1, FALSE); }
 	| inner_list_generator			{ $$ = filterx_literal_generator_elem_new(NULL, $1, FALSE); }
+	;
+
+regexp_search
+	: KW_REGEXP_SEARCH '(' expr ',' string ')'	{ $$ = filterx_expr_regexp_search_generator_new($3, $5); free($5); }
+	;
+
+regexp_match
+	: expr KW_REGEXP_MATCH string		{ $$ = filterx_expr_regexp_match_new($1, $3); free($3); }
 	;
 
 conditional
