@@ -20,6 +20,7 @@ on:
           "debian-bookworm",
           "ubuntu-focal",
           "ubuntu-jammy",
+          "ubuntu-noble",
           "ubuntu-lunar",
           "ubuntu-mantic",
           "almalinux-8",

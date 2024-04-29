@@ -37,6 +37,7 @@ jobs:
           - debian-testing
           - ubuntu-focal
           - ubuntu-jammy
+          - ubuntu-noble
           - ubuntu-lunar
           - ubuntu-mantic
           - devshell
