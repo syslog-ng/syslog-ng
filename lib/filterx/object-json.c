@@ -191,6 +191,18 @@ error:
   return NULL;
 }
 
+FilterXObject *
+filterx_json_new_from_object(struct json_object *object)
+{
+  if (json_object_get_type(object) == json_type_object)
+    return filterx_json_object_new_sub(object, NULL);
+
+  if (json_object_get_type(object) == json_type_array)
+    return filterx_json_array_new_sub(object, NULL);
+
+  return NULL;
+}
+
 const gchar *
 filterx_json_to_json_literal(FilterXObject *s)
 {
