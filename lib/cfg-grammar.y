@@ -149,11 +149,12 @@
 %token LL_CONTEXT_CONFIG              20
 %token LL_CONTEXT_TEMPLATE_REF        21
 %token LL_CONTEXT_FILTERX             22
-%token LL_CONTEXT_FILTERX_FUNC        23
+%token LL_CONTEXT_FILTERX_SIMPLE_FUNC 23
 %token LL_CONTEXT_FILTERX_ENUM        24
+%token LL_CONTEXT_FILTERX_FUNC        25
 
 /* this is a placeholder for unit tests, must be the latest & largest */
-%token LL_CONTEXT_MAX                 25
+%token LL_CONTEXT_MAX                 26
 
 /* operators in the filter language, the order of this determines precedence */
 %right KW_ASSIGN 9000

@@ -38,6 +38,7 @@
 #include "filterx/expr-template.h"
 #include "filterx/expr-variable.h"
 #include "filterx/expr-function.h"
+#include "filterx/filterx-private.h"
 
 #include "apphook.h"
 #include "scratch-buffers.h"
@@ -512,7 +513,7 @@ Test(expr_condition, test_condition_return_null_on_illegal_expr)
 
   GList *stmts = g_list_append(NULL, _assert_assign_var("$control-value", _string_to_filterXExpr("matching")));
 
-  FilterXExpr *func = filterx_function_new("test_fn", NULL, _fail_func);
+  FilterXExpr *func = filterx_simple_function_new("test_fn", NULL, _fail_func);
 
   FilterXExpr *cond = filterx_conditional_new_conditional_codeblock(func, stmts);
   FilterXObject *res = filterx_expr_eval(cond);
@@ -534,7 +535,7 @@ Test(expr_condition, test_condition_return_expr_result_on_missing_stmts)
   TestEnv env;
   init_test(&env);
 
-  FilterXExpr *func = filterx_function_new("test_fn", NULL, _dummy_func);
+  FilterXExpr *func = filterx_simple_function_new("test_fn", NULL, _dummy_func);
 
   FilterXExpr *cond = filterx_conditional_new_conditional_codeblock(func, NULL);
   FilterXObject *res = filterx_expr_eval(cond);

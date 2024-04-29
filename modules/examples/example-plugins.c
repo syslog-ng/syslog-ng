@@ -86,9 +86,9 @@ static Plugin example_plugins[] =
     .parser = &example_destination_parser
   },
   {
-    .type = LL_CONTEXT_FILTERX_FUNC,
+    .type = LL_CONTEXT_FILTERX_SIMPLE_FUNC,
     .name = "example_echo",
-    .construct = example_filterx_func_construct_echo,
+    .construct = example_filterx_simple_func_construct_echo,
   },
 };
 

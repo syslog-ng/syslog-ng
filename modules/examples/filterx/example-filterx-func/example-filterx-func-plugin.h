@@ -23,6 +23,6 @@
 #ifndef EXAMPLE_FILTERX_FUNC_PLUGIN_H_INCLUDED
 #define EXAMPLE_FILTERX_FUNC_PLUGIN_H_INCLUDED
 
-gpointer example_filterx_func_construct_echo(Plugin *self);
+gpointer example_filterx_simple_func_construct_echo(Plugin *self);
 
 #endif

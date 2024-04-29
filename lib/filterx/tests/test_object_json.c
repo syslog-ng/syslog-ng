@@ -65,7 +65,7 @@ Test(filterx_json, test_filterx_object_json_from_repr)
 }
 
 static FilterXObject *
-_exec_func(FilterXFunctionProto func, FilterXObject *arg)
+_exec_func(FilterXSimpleFunctionProto func, FilterXObject *arg)
 {
   if (!arg)
     return func(NULL);

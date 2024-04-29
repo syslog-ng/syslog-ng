@@ -69,6 +69,9 @@ filterx_expr_new(void)
 FilterXExpr *
 filterx_expr_ref(FilterXExpr *self)
 {
+  if (!self)
+    return NULL;
+
   self->ref_cnt++;
   return self;
 }

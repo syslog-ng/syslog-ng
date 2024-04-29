@@ -55,7 +55,7 @@ exit:
 }
 
 gpointer
-example_filterx_func_construct_echo(Plugin *self)
+example_filterx_simple_func_construct_echo(Plugin *self)
 {
   return (gpointer) &echo;
 }

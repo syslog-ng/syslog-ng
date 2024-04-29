@@ -44,7 +44,7 @@ struct _FilterXExpr
   gboolean (*assign)(FilterXExpr *self, FilterXObject *new_value);
 
   /* is the expression set? */
-  gboolean (*isset)(FilterXExpr *self);
+  gboolean (*is_set)(FilterXExpr *self);
   /* unset the expression */
   gboolean (*unset)(FilterXExpr *self);
 
@@ -116,10 +116,10 @@ filterx_expr_assign(FilterXExpr *self, FilterXObject *new_value)
 }
 
 static inline gboolean
-filterx_expr_isset(FilterXExpr *self)
+filterx_expr_is_set(FilterXExpr *self)
 {
-  if (self->isset)
-    return self->isset(self);
+  if (self->is_set)
+    return self->is_set(self);
   return FALSE;
 }
 

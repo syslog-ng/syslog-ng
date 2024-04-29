@@ -31,11 +31,15 @@ void filterx_uncache_object(FilterXObject **cache_slot);
 
 void filterx_global_init(void);
 void filterx_global_deinit(void);
+
 // Builtin functions
-FilterXFunctionProto filterx_builtin_function_lookup(const gchar *);
+FilterXSimpleFunctionProto filterx_builtin_simple_function_lookup(const gchar *);
+FilterXFunctionCtor filterx_builtin_function_ctor_lookup(const gchar *function_name);
+
 // FilterX types
 FilterXType *filterx_type_lookup(const gchar *type_name);
 gboolean filterx_type_register(const gchar *type_name, FilterXType *fxtype);
+
 // Helpers
 FilterXObject *filterx_typecast_get_arg(GPtrArray *args, gchar *alt_msg);
 

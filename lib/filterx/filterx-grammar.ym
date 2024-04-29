@@ -190,8 +190,9 @@ generator_assignment
 generator_casted_assignment
 	: lvalue KW_ASSIGN LL_IDENTIFIER '(' expr_generator ')'
 						{
-						  FilterXExpr *func = filterx_function_lookup(configuration, $3, NULL);
-						  CHECK_ERROR(func, @3, "filterx function %s not found", $3);
+						  GError *error = NULL;
+						  FilterXExpr *func = filterx_function_lookup(configuration, $3, NULL, &error);
+						  CHECK_ERROR_GERROR(func, @3, error, "function lookup failed: %s()", $3);
 
 						  FilterXExpr *assign = filterx_assign_new($1, func);
 						  filterx_generator_set_fillable($5, filterx_expr_ref($1));
@@ -204,8 +205,9 @@ generator_casted_assignment
 						}
 	| expr '.' LL_IDENTIFIER KW_ASSIGN LL_IDENTIFIER '(' expr_generator ')'
 						{
-						  FilterXExpr *func = filterx_function_lookup(configuration, $5, NULL);
-						  CHECK_ERROR(func, @5, "filterx function %s not found", $5);
+						  GError *error = NULL;
+						  FilterXExpr *func = filterx_function_lookup(configuration, $5, NULL, &error);
+						  CHECK_ERROR_GERROR(func, @5, error, "function lookup failed: %s()", $5);
 
 						  FilterXExpr *setattr = filterx_setattr_new($1, $3, func);
 						  filterx_generator_set_fillable($7, filterx_getattr_new(filterx_expr_ref($1), $3));
@@ -218,8 +220,9 @@ generator_casted_assignment
 						}
 	| expr '[' expr ']' KW_ASSIGN LL_IDENTIFIER '(' expr_generator ')'
 						{
-						  FilterXExpr *func = filterx_function_lookup(configuration, $6, NULL);
-						  CHECK_ERROR(func, @6, "filterx function %s not found", $6);
+						  GError *error = NULL;
+						  FilterXExpr *func = filterx_function_lookup(configuration, $6, NULL, &error);
+						  CHECK_ERROR_GERROR(func, @6, error, "function lookup failed: %s()", $6);
 
 						  FilterXExpr *set_subscript = filterx_set_subscript_new($1, $3, func);
 						  filterx_generator_set_fillable($8, filterx_get_subscript_new(filterx_expr_ref($1), filterx_expr_ref($3)));
@@ -232,8 +235,9 @@ generator_casted_assignment
 						}
 	| expr '[' ']' KW_ASSIGN LL_IDENTIFIER '(' expr_generator ')'
 						{
-						  FilterXExpr *func = filterx_function_lookup(configuration, $5, NULL);
-						  CHECK_ERROR(func, @5, "filterx function %s not found", $5);
+						  GError *error = NULL;
+						  FilterXExpr *func = filterx_function_lookup(configuration, $5, NULL, &error);
+						  CHECK_ERROR_GERROR(func, @5, error, "function lookup failed: %s()", $5);
 
 						  FilterXExpr *minus_one = filterx_literal_new(filterx_config_freeze_object(configuration, filterx_integer_new(-1)));
 						  FilterXExpr *set_subscript = filterx_set_subscript_new($1, NULL, func);
@@ -293,9 +297,10 @@ expr_generator
 
 function_call
 	: LL_IDENTIFIER '(' arguments ')'	{
-							FilterXExpr *res = filterx_function_lookup(configuration, $1, $3);
-							CHECK_ERROR(res, @1, "filterx function %s not found", $1);
-							$$ = res;
+						  GError *error = NULL;
+						  FilterXExpr *res = filterx_function_lookup(configuration, $1, $3, &error);
+						  CHECK_ERROR_GERROR(res, @$, error, "function lookup failed: %s()", $1);
+						  $$ = res;
 						}
 	;
 

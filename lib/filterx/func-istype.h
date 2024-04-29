@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 shifter
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,23 +21,12 @@
  * COPYING for details.
  *
  */
-#ifndef FILTERX_OBJECT_DATETIME_H_INCLUDED
-#define FILTERX_OBJECT_DATETIME_H_INCLUDED
 
-#include "filterx-object.h"
+#ifndef FILTERX_FUNC_ISTYPE_H_INCLUDED
+#define FILTERX_FUNC_ISTYPE_H_INCLUDED
+
 #include "filterx/expr-function.h"
 
-FILTERX_DECLARE_TYPE(datetime);
-
-#define datefmt_isodate "%Y-%m-%dT%H:%M:%S%z"
-
-FilterXObject *filterx_datetime_new(const UnixTime *ut);
-UnixTime filterx_datetime_get_value(FilterXObject *s);
-FilterXObject *filterx_typecast_datetime(GPtrArray *args);
-FilterXObject *filterx_typecast_datetime_isodate(GPtrArray *args);
-FilterXFunction *filterx_function_strptime_new(const gchar *function_name, GList *argument_expressions,
-                                               GError **error);
-
-gboolean datetime_repr(const UnixTime *ut, GString *repr);
+FilterXFunction *filterx_function_istype_new(const gchar *function_name, GList *argument_expressions, GError **error);
 
 #endif

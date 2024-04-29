@@ -55,3 +55,9 @@ filterx_literal_new(FilterXObject *object)
   self->object = object;
   return &self->super;
 }
+
+gboolean
+filterx_expr_is_literal(FilterXExpr *expr)
+{
+  return expr->eval == _eval;
+}
