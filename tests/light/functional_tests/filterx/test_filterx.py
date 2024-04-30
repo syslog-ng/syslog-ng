@@ -278,6 +278,58 @@ def test_otel_logrecord_body_json_setter_getter(config, syslog_ng):
     assert file_true.read_log() == '{"emb_key1":"emb_key1 value","emb_key2":"emb_key2 value"}\n'
 
 
+def test_json_to_otel(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, r"""
+                                            js = json({"foo": 42});
+                                            js_arr = json_array([1, 2]);
+
+                                            otel_kvl = otel_kvlist();
+
+                                            otel_kvl.js = js;
+                                            istype(otel_kvl.js, "otel_kvlist");
+                                            otel_kvl.js += {"bar": 1337};
+
+                                            otel_kvl.js_arr = js_arr;
+                                            istype(otel_kvl.js_arr, "otel_array");
+                                            otel_kvl.js_arr += [3, 4];
+
+                                            $MSG = format_json(otel_kvl);
+                """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == '{"js":{"foo":42,"bar":1337},"js_arr":[1,2,3,4]}\n'
+
+
+def test_otel_to_json(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, r"""
+                                            otel_kvl = otel_kvlist({"foo": 42});
+                                            otel_arr = otel_array([1, 2]);
+
+                                            js = json();
+
+                                            js.otel_kvl = otel_kvl;
+                                            istype(js.otel_kvl, "json_object");
+                                            js.otel_kvl += {"bar": 1337};
+
+                                            js.otel_arr = otel_arr;
+                                            istype(js.otel_arr, "json_array");
+                                            js.otel_arr += [3, 4];
+
+                                            $MSG = js;
+                """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == '{"otel_kvl":{"foo":42,"bar":1337},"otel_arr":[1,2,3,4]}\n'
+
+
 def test_simple_true_condition(config, syslog_ng):
     (file_true, file_false) = create_config(config, """ true; """)
     syslog_ng.start(config)
