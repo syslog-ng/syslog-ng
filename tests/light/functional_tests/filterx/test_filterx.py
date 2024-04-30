@@ -268,7 +268,8 @@ def test_otel_logrecord_body_json_setter_getter(config, syslog_ng):
         config, """
                                             $olr = otel_logrecord();
                                             $olr.body = ${values.json};
-                                            $MSG = $olr.body; """,
+                                            istype($olr.body, "otel_kvlist");
+                                            $MSG = format_json($olr.body); """,
     )
     syslog_ng.start(config)
 

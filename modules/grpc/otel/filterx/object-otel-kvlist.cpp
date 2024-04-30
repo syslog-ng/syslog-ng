@@ -408,20 +408,9 @@ OtelKVListField::FilterXObjectGetter(google::protobuf::Message *message, ProtoRe
     }
 }
 
-bool
-OtelKVListField::FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors,
-                                     FilterXObject *object, FilterXObject **assoc_object)
+static RepeatedPtrField<KeyValue> *
+_get_repeated_kv(google::protobuf::Message *message, syslogng::grpc::otel::ProtoReflectors reflectors)
 {
-  if (!filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_kvlist)))
-    {
-      msg_error("otel-kvlist: Failed to convert field, type is unsupported",
-                evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()),
-                evt_tag_str("expected_type", reflectors.fieldDescriptor->type_name()),
-                evt_tag_str("type", object->type->name));
-      return false;
-    }
-
-  FilterXOtelKVList *filterx_kvlist = (FilterXOtelKVList *) object;
   RepeatedPtrField<KeyValue> *repeated_kv;
 
   if (reflectors.fieldDescriptor->is_repeated())
@@ -449,6 +438,61 @@ OtelKVListField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRe
         }
     }
 
+  return repeated_kv;
+}
+
+static gboolean
+_add_elem_to_repeated_kv(FilterXObject *key_obj, FilterXObject *value_obj, gpointer user_data)
+{
+  RepeatedPtrField<KeyValue> *repeated_kv = (RepeatedPtrField<KeyValue> *) user_data;
+
+  /* FilterX strings are always NUL terminated. */
+  const gchar *key = filterx_string_get_value(key_obj, NULL);
+  if (!key)
+    return FALSE;
+
+  KeyValue *kv = repeated_kv->Add();
+  kv->set_key(key);
+
+  FilterXObject *assoc_object = NULL;
+  if (!syslogng::grpc::otel::any_field_converter.FilterXObjectDirectSetter(kv->mutable_value(), value_obj, &assoc_object))
+    return false;
+
+  filterx_object_unref(assoc_object);
+  return true;
+}
+
+static bool
+_set_kvlist_field_from_dict(google::protobuf::Message *message, syslogng::grpc::otel::ProtoReflectors reflectors,
+                            FilterXObject *object, FilterXObject **assoc_object)
+{
+  RepeatedPtrField<KeyValue> *repeated_kv = _get_repeated_kv(message, reflectors);
+  if (!filterx_dict_iter(object, _add_elem_to_repeated_kv, repeated_kv))
+    return false;
+
+  *assoc_object = _new_borrowed(repeated_kv);
+  return true;
+}
+
+bool
+OtelKVListField::FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors,
+                                     FilterXObject *object, FilterXObject **assoc_object)
+{
+  if (!filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_kvlist)))
+    {
+      if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(dict)))
+        return _set_kvlist_field_from_dict(message, reflectors, object, assoc_object);
+
+      msg_error("otel-kvlist: Failed to convert field, type is unsupported",
+                evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()),
+                evt_tag_str("expected_type", reflectors.fieldDescriptor->type_name()),
+                evt_tag_str("type", object->type->name));
+      return false;
+    }
+
+  FilterXOtelKVList *filterx_kvlist = (FilterXOtelKVList *) object;
+
+  RepeatedPtrField<KeyValue> *repeated_kv = _get_repeated_kv(message, reflectors);
   repeated_kv->CopyFrom(filterx_kvlist->cpp->get_value());
 
   KVList *new_kvlist;

@@ -204,21 +204,15 @@ AnyField::FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object, F
       converter = protobuf_converter_by_type(FieldDescriptor::TYPE_BYTES);
       typeFieldName = "bytes_value";
     }
-  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_kvlist)))
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(dict)))
     {
       converter = &filterx::otel_kvlist_converter;
       typeFieldName = "kvlist_value";
     }
-  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_array)))
+  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(list)))
     {
       converter = &filterx::otel_array_converter;
       typeFieldName = "array_value";
-    }
-  else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(json_object)) ||
-           filterx_object_is_type(object, &FILTERX_TYPE_NAME(json_array)))
-    {
-      converter = protobuf_converter_by_type(FieldDescriptor::TYPE_STRING);
-      typeFieldName = "string_value";
     }
   else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(datetime)))
     {
