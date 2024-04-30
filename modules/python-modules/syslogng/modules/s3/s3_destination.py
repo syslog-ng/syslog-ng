@@ -257,9 +257,9 @@ class S3Destination(LogDestination):
                 method="sts-assume-role",
             )
 
-        sts = self.session.client("sts")
-        whoami = sts.get_caller_identity().get("Arn")
-        self.logger.info(f"Using {whoami} to access the bucket")
+            sts = self.session.client("sts")
+            whoami = sts.get_caller_identity().get("Arn")
+            self.logger.info(f"Using {whoami} to access the bucket")
 
         self.client = self.session.client(
             service_name="s3",
