@@ -92,15 +92,27 @@ Array::marshal(void)
 }
 
 bool
-Array::set_subscript(uint64_t index, FilterXObject *value)
+Array::set_subscript(uint64_t index, FilterXObject **value)
 {
-  return any_field_converter.FilterXObjectDirectSetter(array->mutable_values(index), value);
+  FilterXObject *assoc_object = NULL;
+  if (!any_field_converter.FilterXObjectDirectSetter(array->mutable_values(index), *value, &assoc_object))
+    return false;
+
+  filterx_object_unref(*value);
+  *value = assoc_object;
+  return true;
 }
 
 bool
-Array::append(FilterXObject *value)
+Array::append(FilterXObject **value)
 {
-  return any_field_converter.FilterXObjectDirectSetter(array->add_values(), value);
+  FilterXObject *assoc_object = NULL;
+  if (!any_field_converter.FilterXObjectDirectSetter(array->add_values(), *value, &assoc_object))
+    return false;
+
+  filterx_object_unref(*value);
+  *value = assoc_object;
+  return true;
 }
 
 bool
@@ -141,7 +153,7 @@ _free(FilterXObject *s)
 }
 
 static gboolean
-_set_subscript(FilterXList *s, uint64_t index, FilterXObject *new_value)
+_set_subscript(FilterXList *s, uint64_t index, FilterXObject **new_value)
 {
   FilterXOtelArray *self = (FilterXOtelArray *) s;
 
@@ -149,7 +161,7 @@ _set_subscript(FilterXList *s, uint64_t index, FilterXObject *new_value)
 }
 
 static gboolean
-_append(FilterXList *s, FilterXObject *new_value)
+_append(FilterXList *s, FilterXObject **new_value)
 {
   FilterXOtelArray *self = (FilterXOtelArray *) s;
 
@@ -290,7 +302,7 @@ OtelArrayField::FilterXObjectGetter(google::protobuf::Message *message, ProtoRef
 
 bool
 OtelArrayField::FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors,
-                                    FilterXObject *object)
+                                    FilterXObject *object, FilterXObject **assoc_object)
 {
   if (!filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_array)))
     {
@@ -327,6 +339,7 @@ OtelArrayField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRef
 
   delete filterx_array->cpp;
   filterx_array->cpp = new_array;
+  *assoc_object = filterx_object_ref(object);
 
   return true;
 }

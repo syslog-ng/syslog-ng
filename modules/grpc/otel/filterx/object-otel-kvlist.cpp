@@ -112,7 +112,7 @@ KVList::get_mutable_kv_for_key(const char *key) const
 }
 
 bool
-KVList::set_subscript(FilterXObject *key, FilterXObject *value)
+KVList::set_subscript(FilterXObject *key, FilterXObject **value)
 {
   const gchar *key_c_str = filterx_string_get_value(key, NULL);
   if (!key_c_str)
@@ -131,7 +131,13 @@ KVList::set_subscript(FilterXObject *key, FilterXObject *value)
       kv->set_key(key_c_str);
     }
 
-  return converter->Set(kv, "value", value);
+  FilterXObject *assoc_object = NULL;
+  if (!converter->Set(kv, "value", *value, &assoc_object))
+    return false;
+
+  filterx_object_unref(*value);
+  *value = assoc_object;
+  return true;
 }
 
 FilterXObject *
@@ -240,7 +246,7 @@ _free(FilterXObject *s)
 }
 
 static gboolean
-_set_subscript(FilterXDict *s, FilterXObject *key, FilterXObject *new_value)
+_set_subscript(FilterXDict *s, FilterXObject *key, FilterXObject **new_value)
 {
   FilterXOtelKVList *self = (FilterXOtelKVList *) s;
 
@@ -404,7 +410,7 @@ OtelKVListField::FilterXObjectGetter(google::protobuf::Message *message, ProtoRe
 
 bool
 OtelKVListField::FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors,
-                                     FilterXObject *object)
+                                     FilterXObject *object, FilterXObject **assoc_object)
 {
   if (!filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_kvlist)))
     {
@@ -457,6 +463,7 @@ OtelKVListField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRe
 
   delete filterx_kvlist->cpp;
   filterx_kvlist->cpp = new_kvlist;
+  *assoc_object = filterx_object_ref(object);
 
   return true;
 }

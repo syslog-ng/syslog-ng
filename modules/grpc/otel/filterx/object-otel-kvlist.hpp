@@ -57,7 +57,7 @@ public:
   ~KVList();
 
   std::string marshal();
-  bool set_subscript(FilterXObject *key, FilterXObject *value);
+  bool set_subscript(FilterXObject *key, FilterXObject **value);
   bool is_key_set(FilterXObject *key) const;
   FilterXObject *get_subscript(FilterXObject *key);
   bool unset_key(FilterXObject *key);
@@ -82,7 +82,8 @@ class OtelKVListField : public ProtobufField
 {
 public:
   FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors);
-  bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object);
+  bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object,
+                           FilterXObject **assoc_object);
 };
 
 extern OtelKVListField otel_kvlist_converter;

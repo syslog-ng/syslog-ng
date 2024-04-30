@@ -139,14 +139,14 @@ Test(filterx_format_json, test_filterx_format_json)
 
   /* dict */
   FilterXObject *dict = filterx_test_dict_new();
-  cr_assert(filterx_object_set_subscript(dict, foo, fx_42));
-  cr_assert(filterx_object_set_subscript(dict, bar, fx_1337));
+  cr_assert(filterx_object_set_subscript(dict, foo, &fx_42));
+  cr_assert(filterx_object_set_subscript(dict, bar, &fx_1337));
   _assert_filterx_format_json_and_unref(dict, "{\"foo\":42,\"bar\":1337}");
 
   /* list */
   FilterXObject *list = filterx_test_list_new();
-  cr_assert(filterx_list_append(list, foo));
-  cr_assert(filterx_list_append(list, bar));
+  cr_assert(filterx_list_append(list, &foo));
+  cr_assert(filterx_list_append(list, &bar));
   _assert_filterx_format_json_and_unref(list, "[\"foo\",\"bar\"]");
 
   filterx_object_unref(foo);

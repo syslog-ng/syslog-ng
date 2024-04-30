@@ -337,7 +337,7 @@ Test(filterx_datetime, test_filterx_datetime_strptime_with_non_literal_format)
 {
   FilterXObject *list = filterx_test_list_new();
   FilterXObject *format = filterx_string_new(datefmt_isodate, -1);
-  cr_assert(filterx_list_append(list, format));
+  cr_assert(filterx_list_append(list, &format));
   filterx_object_unref(format);
   FilterXExpr *format_expr = filterx_get_subscript_new(filterx_literal_new(list),
                                                        filterx_literal_new(filterx_integer_new(-1)));

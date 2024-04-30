@@ -33,15 +33,15 @@ struct FilterXList_
   FilterXObject super;
 
   FilterXObject *(*get_subscript)(FilterXList *s, guint64 index);
-  gboolean (*set_subscript)(FilterXList *s, guint64 index, FilterXObject *new_value);
-  gboolean (*append)(FilterXList *s, FilterXObject *new_value);
+  gboolean (*set_subscript)(FilterXList *s, guint64 index, FilterXObject **new_value);
+  gboolean (*append)(FilterXList *s, FilterXObject **new_value);
   gboolean (*unset_index)(FilterXList *s, guint64 index);
   guint64 (*len)(FilterXList *s);
 };
 
 FilterXObject *filterx_list_get_subscript(FilterXObject *s, gint64 index);
-gboolean filterx_list_set_subscript(FilterXObject *s, gint64 index, FilterXObject *new_value);
-gboolean filterx_list_append(FilterXObject *s, FilterXObject *new_value);
+gboolean filterx_list_set_subscript(FilterXObject *s, gint64 index, FilterXObject **new_value);
+gboolean filterx_list_append(FilterXObject *s, FilterXObject **new_value);
 gboolean filterx_list_unset_index(FilterXObject *s, gint64 index);
 
 void filterx_list_init_instance(FilterXList *self, FilterXType *type);

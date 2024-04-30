@@ -36,7 +36,7 @@ struct FilterXDict_
   gboolean support_attr;
 
   FilterXObject *(*get_subscript)(FilterXDict *s, FilterXObject *key);
-  gboolean (*set_subscript)(FilterXDict *s, FilterXObject *key, FilterXObject *new_value);
+  gboolean (*set_subscript)(FilterXDict *s, FilterXObject *key, FilterXObject **new_value);
   gboolean (*is_key_set)(FilterXDict *s, FilterXObject *key);
   gboolean (*unset_key)(FilterXDict *s, FilterXObject *key);
   guint64 (*len)(FilterXDict *s);

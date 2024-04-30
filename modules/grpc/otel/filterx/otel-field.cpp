@@ -106,7 +106,8 @@ AnyField::FilterXObjectGetter(Message *message, ProtoReflectors reflectors)
 }
 
 bool
-AnyField::FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object)
+AnyField::FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object,
+                              FilterXObject **assoc_object)
 {
   AnyValue *anyValue;
   try
@@ -118,7 +119,7 @@ AnyField::FilterXObjectSetter(Message *message, ProtoReflectors reflectors, Filt
       g_assert_not_reached();
     }
 
-  return FilterXObjectDirectSetter(anyValue, object);
+  return FilterXObjectDirectSetter(anyValue, object, assoc_object);
 }
 
 FilterXObject *
@@ -168,7 +169,7 @@ AnyField::FilterXObjectDirectGetter(AnyValue *anyValue)
 }
 
 bool
-AnyField::FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object)
+AnyField::FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object, FilterXObject **assoc_object)
 {
   ProtobufField *converter = nullptr;
   const char *typeFieldName;
@@ -238,7 +239,7 @@ AnyField::FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object)
       return false;
     }
 
-  return converter->Set(anyValue, typeFieldName, object);
+  return converter->Set(anyValue, typeFieldName, object, assoc_object);
 }
 
 AnyField syslogng::grpc::otel::any_field_converter;
@@ -252,7 +253,8 @@ public:
     UnixTime utime = unix_time_from_unix_epoch(val);
     return filterx_datetime_new(&utime);
   }
-  bool FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object)
+  bool FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object,
+                           FilterXObject **assoc_object)
   {
     if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(datetime)))
       {
@@ -263,7 +265,7 @@ public:
       }
 
     return protobuf_converter_by_type(reflectors.fieldDescriptor->type())->Set(message, reflectors.fieldDescriptor->name(),
-           object);
+           object, assoc_object);
   }
 };
 
@@ -277,7 +279,8 @@ public:
     int value = reflectors.reflection->GetEnumValue(*message, reflectors.fieldDescriptor);
     return filterx_integer_new(value);
   }
-  bool FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object)
+  bool FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object,
+                           FilterXObject **assoc_object)
   {
     if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(integer)))
       {
@@ -292,6 +295,7 @@ public:
           }
 
         reflectors.reflection->SetEnumValue(message, reflectors.fieldDescriptor, (int) value);
+        *assoc_object = object;
         return true;
       }
 

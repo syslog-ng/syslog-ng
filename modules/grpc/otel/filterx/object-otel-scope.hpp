@@ -50,7 +50,7 @@ public:
   Scope(Scope &&o) = delete;
 
   std::string marshal();
-  bool set_field(const gchar *attribute, FilterXObject *value);
+  bool set_field(const gchar *attribute, FilterXObject **value);
   FilterXObject *get_field(const gchar *attribute);
   const opentelemetry::proto::common::v1::InstrumentationScope &get_value() const;
 

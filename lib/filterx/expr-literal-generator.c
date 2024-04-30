@@ -97,7 +97,7 @@ _eval_elements(FilterXObject *fillable, GList *elements)
           value = cloned_value;
         }
 
-      gboolean success = filterx_object_set_subscript(fillable, key, value);
+      gboolean success = filterx_object_set_subscript(fillable, key, &value);
 
       filterx_object_unref(key);
       filterx_object_unref(value);

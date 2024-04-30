@@ -167,7 +167,7 @@ _store_matches_to_list(pcre2_code_8 *pattern, const FilterXReMatchState *state, 
         continue;
 
       FilterXObject *value = filterx_string_new(state->lhs_str + begin_index, end_index - begin_index);
-      gboolean success = filterx_list_append(fillable, value);
+      gboolean success = filterx_list_append(fillable, &value);
       filterx_object_unref(value);
 
       if (!success)
@@ -199,7 +199,7 @@ _store_matches_to_dict(pcre2_code_8 *pattern, const FilterXReMatchState *state, 
       FilterXObject *key = filterx_string_new(num_str_buf, -1);
       FilterXObject *value = filterx_string_new(state->lhs_str + begin_index, end_index - begin_index);
 
-      gboolean success = filterx_object_set_subscript(fillable, key, value);
+      gboolean success = filterx_object_set_subscript(fillable, key, &value);
 
       filterx_object_unref(key);
       filterx_object_unref(value);
@@ -234,7 +234,7 @@ _store_matches_to_dict(pcre2_code_8 *pattern, const FilterXReMatchState *state, 
       FilterXObject *key = filterx_string_new(namedgroup_name, -1);
       FilterXObject *value = filterx_object_get_subscript(fillable, num_key);
 
-      gboolean success = filterx_object_set_subscript(fillable, key, value);
+      gboolean success = filterx_object_set_subscript(fillable, key, &value);
       g_assert(filterx_object_unset_key(fillable, num_key));
 
       filterx_object_unref(key);

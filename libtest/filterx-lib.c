@@ -25,6 +25,7 @@
 #include "filterx-lib.h"
 #include "cr_template.h"
 #include "filterx/object-json.h"
+#include "filterx/object-string.h"
 #include "filterx/filterx-eval.h"
 
 void
@@ -46,12 +47,14 @@ void
 assert_object_json_equals(FilterXObject *obj, const gchar *expected_json_repr)
 {
   struct json_object *jso = NULL;
+  FilterXObject *assoc_object = NULL;
 
-  cr_assert(filterx_object_map_to_json(obj, &jso) == TRUE, "error mapping to json, expected json was: %s",
+  cr_assert(filterx_object_map_to_json(obj, &jso, &assoc_object) == TRUE, "error mapping to json, expected json was: %s",
             expected_json_repr);
   const gchar *json_repr = json_object_to_json_string_ext(jso, JSON_C_TO_STRING_PLAIN);
   cr_assert_str_eq(json_repr, expected_json_repr);
   json_object_put(jso);
+  filterx_object_unref(assoc_object);
 }
 
 
@@ -111,11 +114,12 @@ _unknown_truthy(FilterXObject *s)
 }
 
 static gboolean
-_unknown_map_to_json(FilterXObject *s, struct json_object **object)
+_unknown_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **assoc_object)
 {
   gssize len;
   const gchar *repr = filterx_test_unknown_object_marshaled_repr(&len);
   *object = json_object_new_string_len(repr, len);
+  *assoc_object = filterx_string_new(repr, len);
   return TRUE;
 }
 

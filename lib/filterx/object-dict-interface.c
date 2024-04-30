@@ -56,7 +56,7 @@ _get_subscript(FilterXObject *s, FilterXObject *key)
 }
 
 static gboolean
-_set_subscript(FilterXObject *s, FilterXObject *key, FilterXObject *new_value)
+_set_subscript(FilterXObject *s, FilterXObject *key, FilterXObject **new_value)
 {
   FilterXDict *self = (FilterXDict *) s;
 
@@ -115,7 +115,7 @@ _getattr(FilterXObject *s, FilterXObject *attr)
 }
 
 static gboolean
-_setattr(FilterXObject *s, FilterXObject *attr, FilterXObject *new_value)
+_setattr(FilterXObject *s, FilterXObject *attr, FilterXObject **new_value)
 {
   FilterXDict *self = (FilterXDict *) s;
 

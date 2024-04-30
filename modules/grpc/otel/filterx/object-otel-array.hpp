@@ -55,9 +55,9 @@ public:
   ~Array();
 
   std::string marshal();
-  bool set_subscript(uint64_t index, FilterXObject *value);
+  bool set_subscript(uint64_t index, FilterXObject **value);
   FilterXObject *get_subscript(uint64_t index);
-  bool append(FilterXObject *value);
+  bool append(FilterXObject **value);
   bool unset_index(uint64_t index);
   uint64_t len() const;
   const ArrayValue &get_value() const;
@@ -78,7 +78,8 @@ class OtelArrayField : public ProtobufField
 {
 public:
   FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors);
-  bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object);
+  bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors, FilterXObject *object,
+                           FilterXObject **assoc_object);
 };
 
 extern OtelArrayField otel_array_converter;

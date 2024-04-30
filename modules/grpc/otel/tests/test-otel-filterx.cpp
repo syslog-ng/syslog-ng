@@ -318,7 +318,7 @@ Test(otel_filterx, resource_set_field)
   cr_assert(filterx_otel_resource);
 
   FilterXObject *filterx_integer = filterx_integer_new(42);
-  cr_assert(filterx_object_setattr_string(filterx_otel_resource, "dropped_attributes_count", filterx_integer));
+  cr_assert(filterx_object_setattr_string(filterx_otel_resource, "dropped_attributes_count", &filterx_integer));
 
   KeyValueList attributes;
   KeyValue *attribute_1 = attributes.add_values();
@@ -329,9 +329,9 @@ Test(otel_filterx, resource_set_field)
   g_ptr_array_insert(attributes_kvlist_args, 0, filterx_protobuf_new(serialized_attributes.c_str(),
                      serialized_attributes.length()));
   FilterXObject *filterx_kvlist = filterx_otel_kvlist_new_from_args(attributes_kvlist_args);
-  cr_assert(filterx_object_setattr_string(filterx_otel_resource, "attributes", filterx_kvlist));
+  cr_assert(filterx_object_setattr_string(filterx_otel_resource, "attributes", &filterx_kvlist));
 
-  cr_assert_not(filterx_object_setattr_string(filterx_otel_resource, "invalid_attr", filterx_integer));
+  cr_assert_not(filterx_object_setattr_string(filterx_otel_resource, "invalid_attr", &filterx_integer));
 
   GString *serialized = g_string_new(NULL);
   LogMessageValueType type;
@@ -455,10 +455,10 @@ Test(otel_filterx, scope_set_field)
   cr_assert(filterx_otel_scope);
 
   FilterXObject *filterx_integer = filterx_integer_new(42);
-  cr_assert(filterx_object_setattr_string(filterx_otel_scope, "dropped_attributes_count", filterx_integer));
+  cr_assert(filterx_object_setattr_string(filterx_otel_scope, "dropped_attributes_count", &filterx_integer));
 
   FilterXObject *filterx_string = filterx_string_new("foobar", -1);
-  cr_assert(filterx_object_setattr_string(filterx_otel_scope, "name", filterx_string));
+  cr_assert(filterx_object_setattr_string(filterx_otel_scope, "name", &filterx_string));
 
   KeyValueList attributes;
   KeyValue *attribute_1 = attributes.add_values();
@@ -469,9 +469,9 @@ Test(otel_filterx, scope_set_field)
   g_ptr_array_insert(attributes_kvlist_args, 0, filterx_protobuf_new(serialized_attributes.c_str(),
                      serialized_attributes.length()));
   FilterXObject *filterx_kvlist = filterx_otel_kvlist_new_from_args(attributes_kvlist_args);
-  cr_assert(filterx_object_setattr_string(filterx_otel_scope, "attributes", filterx_kvlist));
+  cr_assert(filterx_object_setattr_string(filterx_otel_scope, "attributes", &filterx_kvlist));
 
-  cr_assert_not(filterx_object_setattr_string(filterx_otel_scope, "invalid_attr", filterx_integer));
+  cr_assert_not(filterx_object_setattr_string(filterx_otel_scope, "invalid_attr", &filterx_integer));
 
   GString *serialized = g_string_new(NULL);
   LogMessageValueType type;
@@ -620,13 +620,13 @@ Test(otel_filterx, kvlist_set_subscript)
   FilterXObject *element_3_value = filterx_otel_kvlist_new_from_args(NULL);
   FilterXObject *element_4_key = filterx_string_new("element_4_key", -1);
   FilterXObject *element_4_value = filterx_otel_array_new_from_args(NULL);
-  cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_1_key, element_1_value));
-  cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_2_key, element_2_value));
-  cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_3_key, element_3_value));
-  cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_4_key, element_4_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_1_key, &element_1_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_2_key, &element_2_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_3_key, &element_3_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_kvlist, element_4_key, &element_4_value));
 
   FilterXObject *invalid_element_key = filterx_integer_new(1234);
-  cr_assert_not(filterx_object_set_subscript(filterx_otel_kvlist, invalid_element_key, element_1_value));
+  cr_assert_not(filterx_object_set_subscript(filterx_otel_kvlist, invalid_element_key, &element_1_value));
 
   GString *serialized = g_string_new(NULL);
   LogMessageValueType type;
@@ -678,31 +678,31 @@ Test(otel_filterx, kvlist_through_logrecord)
   FilterXObject *fx_get_2 = nullptr;
 
   /* $kvlist["key_0"] = "foo"; */
-  cr_assert(filterx_object_set_subscript(fx_kvlist, fx_key_0, fx_foo));
+  cr_assert(filterx_object_set_subscript(fx_kvlist, fx_key_0, &fx_foo));
 
   /* $log.attributes = $kvlist; */
   FilterXObject *fx_kvlist_clone = filterx_object_clone(fx_kvlist);
-  cr_assert(filterx_object_setattr_string(fx_logrecord, "attributes", fx_kvlist_clone));
+  cr_assert(filterx_object_setattr_string(fx_logrecord, "attributes", &fx_kvlist_clone));
   filterx_object_unref(fx_kvlist_clone);
 
   /* $log.attributes["key_1"] = "bar"; */
   fx_get_1 = filterx_object_getattr_string(fx_logrecord, "attributes");
   cr_assert(fx_get_1);
-  cr_assert(filterx_object_set_subscript(fx_get_1, fx_key_1, fx_bar));
+  cr_assert(filterx_object_set_subscript(fx_get_1, fx_key_1, &fx_bar));
 
   /* $kvlist["key_2"] = "baz"; */
-  cr_assert(filterx_object_set_subscript(fx_kvlist, fx_key_2, fx_baz));
+  cr_assert(filterx_object_set_subscript(fx_kvlist, fx_key_2, &fx_baz));
 
   /* $log.attributes["key_3"] = $inner_kvlist; */
   filterx_object_unref(fx_get_1);
   fx_get_1 = filterx_object_getattr_string(fx_logrecord, "attributes");
   cr_assert(fx_get_1);
   FilterXObject *fx_inner_kvlist_clone = filterx_object_clone(fx_inner_kvlist);
-  cr_assert(filterx_object_set_subscript(fx_get_1, fx_key_3, fx_inner_kvlist_clone));
+  cr_assert(filterx_object_set_subscript(fx_get_1, fx_key_3, &fx_inner_kvlist_clone));
   filterx_object_unref(fx_inner_kvlist_clone);
 
   /* $inner_kvlist["key_0"] = "foo"; */
-  cr_assert(filterx_object_set_subscript(fx_inner_kvlist, fx_key_0, fx_foo));
+  cr_assert(filterx_object_set_subscript(fx_inner_kvlist, fx_key_0, &fx_foo));
 
   /* $log.attributes["key_3"]["key_2"] = "baz"; */
   filterx_object_unref(fx_get_1);
@@ -711,7 +711,7 @@ Test(otel_filterx, kvlist_through_logrecord)
   filterx_object_unref(fx_get_2);
   fx_get_2 = filterx_object_get_subscript(fx_get_1, fx_key_3);
   cr_assert(fx_get_2);
-  cr_assert(filterx_object_set_subscript(fx_get_2, fx_key_2, fx_baz));
+  cr_assert(filterx_object_set_subscript(fx_get_2, fx_key_2, &fx_baz));
 
   LogRecord expected_logrecord;
   KeyValue *expected_logrecord_attr_0 = expected_logrecord.add_attributes();
@@ -881,13 +881,13 @@ Test(otel_filterx, array_set_subscript)
   FilterXObject *element_2_value = filterx_string_new("foobar", -1);
   FilterXObject *element_3_value = filterx_otel_kvlist_new_from_args(NULL);
   FilterXObject *element_4_value = filterx_otel_array_new_from_args(NULL);
-  cr_assert(filterx_object_set_subscript(filterx_otel_array, NULL, element_1_value));
-  cr_assert(filterx_object_set_subscript(filterx_otel_array, NULL, element_2_value));
-  cr_assert(filterx_object_set_subscript(filterx_otel_array, NULL, element_3_value));
-  cr_assert(filterx_object_set_subscript(filterx_otel_array, NULL, element_4_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_array, NULL, &element_1_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_array, NULL, &element_2_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_array, NULL, &element_3_value));
+  cr_assert(filterx_object_set_subscript(filterx_otel_array, NULL, &element_4_value));
 
   FilterXObject *invalid_element_key = filterx_string_new("invalid_key", -1);
-  cr_assert_not(filterx_object_set_subscript(filterx_otel_array, invalid_element_key, element_1_value));
+  cr_assert_not(filterx_object_set_subscript(filterx_otel_array, invalid_element_key, &element_1_value));
 
   GString *serialized = g_string_new(NULL);
   LogMessageValueType type;
@@ -932,31 +932,31 @@ Test(otel_filterx, array_through_logrecord)
   FilterXObject *fx_get_2 = nullptr;
 
   /* $array[] = "foo"; */
-  cr_assert(filterx_object_set_subscript(fx_array, nullptr, fx_foo));
+  cr_assert(filterx_object_set_subscript(fx_array, nullptr, &fx_foo));
 
   /* $log.body = $array; */
   FilterXObject *fx_array_clone = filterx_object_clone(fx_array);
-  cr_assert(filterx_object_setattr_string(fx_logrecord, "body", fx_array_clone));
+  cr_assert(filterx_object_setattr_string(fx_logrecord, "body", &fx_array_clone));
   filterx_object_unref(fx_array_clone);
 
   /* $log.body[] = "bar"; */
   fx_get_1 = filterx_object_getattr_string(fx_logrecord, "body");
   cr_assert(fx_get_1);
-  cr_assert(filterx_object_set_subscript(fx_get_1, nullptr, fx_bar));
+  cr_assert(filterx_object_set_subscript(fx_get_1, nullptr, &fx_bar));
 
   /* $array[] = "baz"; */
-  cr_assert(filterx_object_set_subscript(fx_array, nullptr, fx_baz));
+  cr_assert(filterx_object_set_subscript(fx_array, nullptr, &fx_baz));
 
   /* $log.body[] = $inner_array; */
   filterx_object_unref(fx_get_1);
   fx_get_1 = filterx_object_getattr_string(fx_logrecord, "body");
   cr_assert(fx_get_1);
   FilterXObject *fx_inner_array_clone = filterx_object_clone(fx_inner_array);
-  cr_assert(filterx_object_set_subscript(fx_get_1, nullptr, fx_inner_array_clone));
+  cr_assert(filterx_object_set_subscript(fx_get_1, nullptr, &fx_inner_array_clone));
   filterx_object_unref(fx_inner_array_clone);
 
   /* $inner_array[] = "foo"; */
-  cr_assert(filterx_object_set_subscript(fx_inner_array, nullptr, fx_foo));
+  cr_assert(filterx_object_set_subscript(fx_inner_array, nullptr, &fx_foo));
 
   /* $log.body[2][] = "baz"; */
   filterx_object_unref(fx_get_1);
@@ -965,7 +965,7 @@ Test(otel_filterx, array_through_logrecord)
   filterx_object_unref(fx_get_2);
   fx_get_2 = filterx_object_get_subscript(fx_get_1, fx_2);
   cr_assert(fx_get_2);
-  cr_assert(filterx_object_set_subscript(fx_get_2, nullptr, fx_baz));
+  cr_assert(filterx_object_set_subscript(fx_get_2, nullptr, &fx_baz));
 
   LogRecord expected_logrecord;
   ArrayValue *expected_logrecord_array = expected_logrecord.mutable_body()->mutable_array_value();

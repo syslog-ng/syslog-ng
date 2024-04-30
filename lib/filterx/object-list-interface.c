@@ -35,7 +35,7 @@ filterx_list_get_subscript(FilterXObject *s, gint64 index)
 }
 
 gboolean
-filterx_list_set_subscript(FilterXObject *s, gint64 index, FilterXObject *new_value)
+filterx_list_set_subscript(FilterXObject *s, gint64 index, FilterXObject **new_value)
 {
   FilterXObject *index_obj = filterx_integer_new(index);
   gboolean result = filterx_object_set_subscript(s, index_obj, new_value);
@@ -45,7 +45,7 @@ filterx_list_set_subscript(FilterXObject *s, gint64 index, FilterXObject *new_va
 }
 
 gboolean
-filterx_list_append(FilterXObject *s, FilterXObject *new_value)
+filterx_list_append(FilterXObject *s, FilterXObject **new_value)
 {
   return filterx_object_set_subscript(s, NULL, new_value);
 }
@@ -130,7 +130,7 @@ _get_subscript(FilterXObject *s, FilterXObject *key)
 }
 
 static gboolean
-_set_subscript(FilterXObject *s, FilterXObject *key, FilterXObject *new_value)
+_set_subscript(FilterXObject *s, FilterXObject *key, FilterXObject **new_value)
 {
   FilterXList *self = (FilterXList *) s;
 

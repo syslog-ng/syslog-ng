@@ -79,11 +79,12 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 static gboolean
-_map_to_json(FilterXObject *s, struct json_object **object)
+_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **assoc_object)
 {
   FilterXJsonArray *self = (FilterXJsonArray *) s;
 
   *object = json_object_get(self->object);
+  *assoc_object = filterx_object_ref(s);
   return TRUE;
 }
 
@@ -120,7 +121,7 @@ _len(FilterXList *s)
 }
 
 static gboolean
-_append(FilterXList *s, FilterXObject *new_value)
+_append(FilterXList *s, FilterXObject **new_value)
 {
   FilterXJsonArray *self = (FilterXJsonArray *) s;
 
@@ -128,11 +129,15 @@ _append(FilterXList *s, FilterXObject *new_value)
     return FALSE;
 
   struct json_object *new_json_value = NULL;
-  if (!filterx_object_map_to_json(new_value, &new_json_value))
+  FilterXObject *assoc_object = NULL;
+  if (!filterx_object_map_to_json(*new_value, &new_json_value, &assoc_object))
     return FALSE;
+
+  filterx_json_associate_cached_object(new_json_value, assoc_object);
 
   if (json_object_array_add(self->object, new_json_value) != 0)
     {
+      filterx_object_unref(assoc_object);
       json_object_put(new_json_value);
       return FALSE;
     }
@@ -145,11 +150,14 @@ _append(FilterXList *s, FilterXObject *new_value)
       filterx_object_unref(root_container);
     }
 
+  filterx_object_unref(*new_value);
+  *new_value = assoc_object;
+
   return TRUE;
 }
 
 static gboolean
-_set_subscript(FilterXList *s, guint64 index, FilterXObject *new_value)
+_set_subscript(FilterXList *s, guint64 index, FilterXObject **new_value)
 {
   FilterXJsonArray *self = (FilterXJsonArray *) s;
 
@@ -157,13 +165,15 @@ _set_subscript(FilterXList *s, guint64 index, FilterXObject *new_value)
     return FALSE;
 
   struct json_object *new_json_value = NULL;
-  if (!filterx_object_map_to_json(new_value, &new_json_value))
+  FilterXObject *assoc_object = NULL;
+  if (!filterx_object_map_to_json(*new_value, &new_json_value, &assoc_object))
     return FALSE;
 
-  filterx_json_associate_cached_object(new_json_value, new_value);
+  filterx_json_associate_cached_object(new_json_value, assoc_object);
 
   if (json_object_array_put_idx(self->object, index, new_json_value) != 0)
     {
+      filterx_object_unref(assoc_object);
       json_object_put(new_json_value);
       return FALSE;
     }
@@ -175,6 +185,9 @@ _set_subscript(FilterXList *s, guint64 index, FilterXObject *new_value)
       root_container->modified_in_place = TRUE;
       filterx_object_unref(root_container);
     }
+
+  filterx_object_unref(*new_value);
+  *new_value = assoc_object;
 
   return TRUE;
 }

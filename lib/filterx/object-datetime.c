@@ -84,7 +84,7 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 static gboolean
-_map_to_json(FilterXObject *s, struct json_object **object)
+_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **assoc_object)
 {
   FilterXDateTime *self = (FilterXDateTime *) s;
   GString *time_stamp = scratch_buffers_alloc();
@@ -92,6 +92,7 @@ _map_to_json(FilterXObject *s, struct json_object **object)
   _convert_unix_time_to_string(&self->ut, time_stamp);
 
   *object = json_object_new_string_len(time_stamp->str, time_stamp->len);
+  *assoc_object = filterx_object_ref(s);
   return TRUE;
 }
 

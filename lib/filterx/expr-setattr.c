@@ -57,7 +57,7 @@ _eval(FilterXExpr *s)
   FilterXObject *cloned = filterx_object_clone(new_value);
   filterx_object_unref(new_value);
 
-  if (filterx_object_setattr(object, self->attr, cloned))
+  if (filterx_object_setattr(object, self->attr, &cloned))
     {
       result = filterx_boolean_new(TRUE);
       if (trace_flag)
