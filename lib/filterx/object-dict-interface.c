@@ -23,6 +23,7 @@
 
 #include "filterx/object-dict-interface.h"
 #include "filterx/object-string.h"
+#include "filterx/object-json.h"
 
 gboolean
 filterx_dict_iter(FilterXObject *s, FilterXDictIterFunc func, gpointer user_data)
@@ -126,6 +127,48 @@ _setattr(FilterXObject *s, FilterXObject *attr, FilterXObject **new_value)
   return result;
 }
 
+static gboolean
+_add_elem_to_json_object(FilterXObject *key_obj, FilterXObject *value_obj, gpointer user_data)
+{
+  struct json_object *object = (struct json_object *) user_data;
+
+  /* FilterX strings are always NUL terminated. */
+  const gchar *key = filterx_string_get_value(key_obj, NULL);
+  if (!key)
+    return FALSE;
+
+  struct json_object *value = NULL;
+  FilterXObject *assoc_object = NULL;
+  if (!filterx_object_map_to_json(value_obj, &value, &assoc_object))
+    return FALSE;
+
+  filterx_json_associate_cached_object(object, assoc_object);
+  filterx_object_unref(assoc_object);
+
+  if (json_object_object_add(object, key, value) != 0)
+    {
+      json_object_put(value);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **assoc_object)
+{
+  *object = json_object_new_object();
+  if (!filterx_dict_iter(s, _add_elem_to_json_object, *object))
+    {
+      json_object_put(*object);
+      *object = NULL;
+      return FALSE;
+    }
+
+  *assoc_object = filterx_json_new_from_object(json_object_get(*object));
+  return TRUE;
+}
+
 void
 filterx_dict_init_instance(FilterXDict *self, FilterXType *type)
 {
@@ -152,4 +195,5 @@ FILTERX_DEFINE_TYPE(dict, FILTERX_TYPE_NAME(object),
                     .unset_key = _unset_key,
                     .getattr = _getattr,
                     .setattr = _setattr,
+                    .map_to_json = _map_to_json,
                    );

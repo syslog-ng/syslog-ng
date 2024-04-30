@@ -27,7 +27,6 @@
 #include "object-json.h"
 #include "filterx/filterx-weakrefs.h"
 
-void filterx_json_associate_cached_object(struct json_object *json_obj, FilterXObject *filterx_object);
 FilterXObject *filterx_json_convert_json_to_object_cached(FilterXObject *self, FilterXWeakRef *root_container,
                                                           struct json_object *json_obj);
 

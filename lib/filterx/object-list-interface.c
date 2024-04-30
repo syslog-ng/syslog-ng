@@ -23,6 +23,7 @@
 
 #include "filterx/object-list-interface.h"
 #include "filterx/object-primitive.h"
+#include "filterx/object-json.h"
 
 FilterXObject *
 filterx_list_get_subscript(FilterXObject *s, gint64 index)
@@ -221,6 +222,47 @@ _unset_key(FilterXObject *s, FilterXObject *key)
   return self->unset_index(self, normalized_index);
 }
 
+static gboolean
+_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **assoc_object)
+{
+  *object = json_object_new_array();
+
+  guint64 len;
+  g_assert(filterx_object_len(s, &len));
+
+  for (guint64 i = 0; i < len; i++)
+    {
+      FilterXObject *value_obj = filterx_list_get_subscript(s, (gint64) MIN(i, G_MAXINT64));
+
+      struct json_object *value;
+      FilterXObject *elem_assoc_object = NULL;
+      if (!filterx_object_map_to_json(value_obj, &value, &elem_assoc_object))
+        {
+          filterx_object_unref(value_obj);
+          goto error;
+        }
+
+      filterx_json_associate_cached_object(*object, elem_assoc_object);
+
+      filterx_object_unref(elem_assoc_object);
+      filterx_object_unref(value_obj);
+
+      if (json_object_array_add(*object, value) != 0)
+        {
+          json_object_put(value);
+          goto error;
+        }
+    }
+
+  *assoc_object = filterx_json_new_from_object(json_object_get(*object));
+  return TRUE;
+
+error:
+  json_object_put(*object);
+  *object = NULL;
+  return FALSE;
+}
+
 void
 filterx_list_init_instance(FilterXList *self, FilterXType *type)
 {
@@ -241,4 +283,5 @@ FILTERX_DEFINE_TYPE(list, FILTERX_TYPE_NAME(object),
                     .set_subscript = _set_subscript,
                     .is_key_set = _is_key_set,
                     .unset_key = _unset_key,
+                    .map_to_json = _map_to_json,
                    );
