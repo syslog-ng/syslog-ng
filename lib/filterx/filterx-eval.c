@@ -142,11 +142,13 @@ _evaluate_statement(FilterXExpr *expr)
       if (!success)
         msg_debug("FILTERX  FALSY",
                   filterx_expr_format_location_tag(expr),
-                  evt_tag_mem("value", buf->str, buf->len));
+                  evt_tag_mem("value", buf->str, buf->len),
+                  evt_tag_str("type", res->type->name));
       else
         msg_trace("FILTERX TRUTHY",
                   filterx_expr_format_location_tag(expr),
-                  evt_tag_mem("value", buf->str, buf->len));
+                  evt_tag_mem("value", buf->str, buf->len),
+                  evt_tag_str("type", res->type->name));
     }
 
   filterx_object_unref(res);
