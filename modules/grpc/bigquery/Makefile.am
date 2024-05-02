@@ -13,7 +13,7 @@ modules_grpc_bigquery_libbigquery_cpp_la_SOURCES = \
 
 modules_grpc_bigquery_libbigquery_cpp_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
-  $(PROTOBUF_CLFAGS) \
+  $(PROTOBUF_CFLAGS) \
   $(GRPCPP_CFLAGS) \
   -I$(GOOGLEAPIS_PROTO_BUILDDIR) \
   -I$(top_srcdir)/modules/grpc \

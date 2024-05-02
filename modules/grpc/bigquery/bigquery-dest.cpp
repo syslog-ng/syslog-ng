@@ -54,6 +54,7 @@ public:
   ErrorCollector() {}
   ~ErrorCollector() override {}
 
+  // override is missing for compatibility with older protobuf versions
   void RecordError(absl::string_view filename, int line, int column, absl::string_view message)
   {
     std::string file{filename};
@@ -64,6 +65,7 @@ public:
               evt_tag_str("error", msg.c_str()));
   }
 
+  // override is missing for compatibility with older protobuf versions
   void RecordWarning(absl::string_view filename, int line, int column, absl::string_view message)
   {
     std::string file{filename};
@@ -76,12 +78,12 @@ public:
 
 private:
   /* deprecated interface */
-  void AddError(const std::string &filename, int line, int column, const std::string &message) override
+  void AddError(const std::string &filename, int line, int column, const std::string &message)
   {
     this->RecordError(filename, line, column, message);
   }
 
-  void AddWarning(const std::string &filename, int line, int column, const std::string &message) override
+  void AddWarning(const std::string &filename, int line, int column, const std::string &message)
   {
     this->RecordWarning(filename, line, column, message);
   }

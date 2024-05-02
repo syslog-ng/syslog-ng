@@ -70,7 +70,7 @@ static GModule *journald_ext_module;
 typedef struct sd_journal sd_journal;
 
 static GModule *
-_journald_module_open(char **libraries)
+_journald_module_open(const char *const *libraries)
 {
   GModule *module = NULL;
 

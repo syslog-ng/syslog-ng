@@ -159,7 +159,7 @@ public:
                   evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()),
                   evt_tag_long("range_min", INT64_MIN),
                   evt_tag_long("range_max", INT64_MAX),
-                  evt_tag_printf("current", "%lu", val));
+                  evt_tag_printf("current", "%" G_GUINT64_FORMAT, val));
         return NULL;
       }
     return filterx_integer_new(guint64(val));

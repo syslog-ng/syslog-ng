@@ -507,6 +507,7 @@ AC_PROG_CXX([$CPP_COMPILER])
 
 if test "x$enable_cpp" = "xyes"; then
         AX_CXX_COMPILE_STDCXX(11,, mandatory)
+        AX_CXX_COMPILE_STDCXX(17,, optional)
 elif test "x$enable_cpp" = "xauto"; then
         AX_CXX_COMPILE_STDCXX(11,, optional)
         if test "x$HAVE_CXX11" = "x1"; then
@@ -514,6 +515,7 @@ elif test "x$enable_cpp" = "xauto"; then
         else
                 enable_cpp=no
         fi
+        AX_CXX_COMPILE_STDCXX(17,, optional)
 fi
 
 dnl ***************************************************************************
@@ -646,6 +648,9 @@ dnl User supplied CFLAGS come last
 CFLAGS="${CFLAGS_ADD} ${ac_cv_env_CFLAGS_value}"
 CXXFLAGS="${CXXFLAGS_ADD} ${ac_cv_env_CXXFLAGS_value}"
 
+TEST_NO_INSTALL_FLAG="-no-install"
+AC_SUBST(TEST_NO_INSTALL_FLAG)
+
 AC_SYS_LARGEFILE
 
 # FIXME: skip tests on unsupported platforms/architectures...
@@ -675,6 +680,7 @@ case "$ostype" in
 		;;
 	Darwin)
 		MODULE_LDFLAGS="-avoid-version -dylib"
+                TEST_NO_INSTALL_FLAG="-no-fast-install"
                 # This flag might be a security issue, do not use in production code, unfortunately we still need it for criterion tests and the current mocking solution
                 if test "x$enable_tests" = "xyes"; then
 		        LDFLAGS="$LDFLAGS -Wl,-flat_namespace"
@@ -724,8 +730,10 @@ dnl Check for --whole-archive flag
 dnl ***************************************************************************
 
 if test $ostype = "Darwin"; then
+  # -all_load loads all members of static archive libraries, it can't be selectively disabled (do not use -noall_load)
+  # use -force_load for each static library if mixed linking needs to be supported on macOS
   WHOLE_ARCHIVE_OPT="-all_load"
-  NO_WHOLE_ARCHIVE_OPT="-noall_load"
+  NO_WHOLE_ARCHIVE_OPT=""
 else
   WHOLE_ARCHIVE_OPT="--whole-archive"
   NO_WHOLE_ARCHIVE_OPT="--no-whole-archive"
@@ -1103,9 +1111,12 @@ if test "x$enable_geoip2" = "xyes" || test "x$enable_geoip2" = "xauto"; then
                 AC_MSG_RESULT([yes (MAXMINDDB_LIBS set, will use that.)])
                 with_maxminddb="yes"
         else
-                AC_MSG_CHECKING([for MAXMINDDB])
-                AC_CHECK_LIB(maxminddb, MMDB_open, MAXMINDDB_LIBS="-lmaxminddb"; with_maxminddb="yes", with_maxminddb="no")
-                AC_SUBST(MAXMINDDB_LIBS)
+                PKG_CHECK_MODULES(MAXMINDDB, libmaxminddb, [with_maxminddb="yes"], [with_maxminddb="no"])
+                if test "x$with_maxminddb" = "xno"; then
+                        AC_MSG_CHECKING([for MAXMINDDB])
+                        AC_CHECK_LIB(maxminddb, MMDB_open, MAXMINDDB_LIBS="-lmaxminddb"; with_maxminddb="yes", with_maxminddb="no")
+                        AC_SUBST(MAXMINDDB_LIBS)
+                fi
         fi
 
         if test "x$with_maxminddb" = "xno" && test "x$enable_geoip2" = "xyes"; then
@@ -1211,6 +1222,7 @@ fi
 
 if test -n "$LIBNET_CONFIG" -a -x "$LIBNET_CONFIG"; then
         LIBNET_CFLAGS="`$LIBNET_CONFIG --defines`"
+        LIBNET_CFLAGS="$LIBNET_CFLAGS `$LIBNET_CONFIG --cflags`"
         LIBNET_LIBS="`$LIBNET_CONFIG --libs`"
         AC_MSG_RESULT(yes)
 dnl libnet-config does not provide the _DEFAULT_SOURCE define, that can cause warning during build

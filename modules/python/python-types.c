@@ -466,7 +466,7 @@ py_datetime_to_datetime(PyObject *obj, GString *dt)
 
   if (!py_datetime_to_unix_time(obj, &ut))
     return FALSE;
-  g_string_printf(dt, "%ld.%03d", ut.ut_sec, ut.ut_usec / 1000);
+  g_string_printf(dt, "%"G_GINT64_FORMAT".%03"G_GUINT32_FORMAT, ut.ut_sec, ut.ut_usec / 1000);
   return TRUE;
 }
 
@@ -493,7 +493,7 @@ py_obj_to_log_msg_value(PyObject *obj, GString *value, LogMessageValueType *type
         return FALSE;
 
       *type = LM_VT_INTEGER;
-      g_string_printf(value, "%ld", l);
+      g_string_printf(value, "%"G_GINT64_FORMAT, l);
 
       return TRUE;
     }

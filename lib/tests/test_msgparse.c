@@ -159,7 +159,7 @@ test_log_messages_can_be_parsed(struct msgparse_params *param)
     {
       if (param->expected_stamp_sec != 1)
         cr_assert_eq(parsed_timestamp->ut_sec, param->expected_stamp_sec,
-                     "Unexpected timestamp, value=%ld, expected=%ld, msg=%s",
+                     "Unexpected timestamp, value=%"G_GINT64_FORMAT", expected=%lu, msg=%s",
                      parsed_timestamp->ut_sec, param->expected_stamp_sec, param->msg);
 
       cr_assert_eq(parsed_timestamp->ut_usec, param->expected_stamp_usec, "Unexpected microseconds");

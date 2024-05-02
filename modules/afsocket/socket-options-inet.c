@@ -131,7 +131,6 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
 {
   SocketOptionsInet *self = (SocketOptionsInet *) s;
   gint off = 0;
-  gint on = 1;
 
   if (!socket_options_setup_socket_method(s, fd, addr, dir))
     return FALSE;
@@ -177,6 +176,7 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
       if (self->ip_freebind && (dir & AFSOCKET_DIR_RECV))
         {
 #ifdef IP_FREEBIND
+          gint on = 1;
           setsockopt(fd, SOL_IP, IP_FREEBIND, &on, sizeof(on));
 #else
           msg_error("ip-freebind() is set but no IP_FREEBIND setsockopt on this platform");
@@ -215,6 +215,7 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
       if (self->ip_freebind && (dir & AFSOCKET_DIR_RECV))
         {
 #ifdef IP_FREEBIND
+          gint on = 1;
           /* NOTE: there's no separate IP_FREEBIND option for IPV6, it re-uses the IPv4 one */
           setsockopt(fd, SOL_IP, IP_FREEBIND, &on, sizeof(on));
 #else

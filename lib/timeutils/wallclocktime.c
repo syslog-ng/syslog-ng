@@ -687,7 +687,7 @@ recurse:
                 {
                   wct->tm.tm_isdst = i;
                   wct->wct_gmtoff = -cached_get_system_tzofs() + wct->tm.tm_isdst*3600;
-                  wct->wct_zone = system_tznames[i];
+                  wct->wct_zone = __UNCONST(system_tznames[i]);
                   bp = ep;
                   continue;
                 }

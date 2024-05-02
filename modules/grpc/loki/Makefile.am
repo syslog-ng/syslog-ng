@@ -14,7 +14,7 @@ modules_grpc_loki_libloki_cpp_la_SOURCES = \
 
 modules_grpc_loki_libloki_cpp_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
-  $(PROTOBUF_CLFAGS) \
+  $(PROTOBUF_CFLAGS) \
   $(GRPCPP_CFLAGS) \
   -I$(LOKI_PROTO_BUILDDIR) \
   -I$(top_srcdir)/modules/grpc \

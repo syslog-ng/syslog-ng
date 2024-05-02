@@ -419,10 +419,10 @@ static void
 _assert_backlog_and_write_head_pos(QDisk *qdisk, gint64 backlog_head_pos, gint64 write_head_pos)
 {
   cr_assert_eq(qdisk_get_backlog_head(qdisk), QDISK_RESERVED_SPACE + backlog_head_pos,
-               "Backlog head positions does not match. Expected: %ld Actual: %ld",
+               "Backlog head positions does not match. Expected: %"G_GINT64_FORMAT" Actual: %"G_GINT64_FORMAT,
                QDISK_RESERVED_SPACE + backlog_head_pos, qdisk_get_backlog_head(qdisk));
   cr_assert_eq(qdisk_get_writer_head(qdisk), QDISK_RESERVED_SPACE + write_head_pos,
-               "Write head positions does not match. Expected: %ld Actual: %ld",
+               "Write head positions does not match. %"G_GINT64_FORMAT" Actual: %"G_GINT64_FORMAT,
                QDISK_RESERVED_SPACE + backlog_head_pos, qdisk_get_writer_head(qdisk));
 }
 

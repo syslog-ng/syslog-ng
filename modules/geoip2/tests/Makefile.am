@@ -4,7 +4,7 @@ modules_geoip2_tests_TESTS		= \
 
 check_PROGRAMS				+= ${modules_geoip2_tests_TESTS}
 
-modules_geoip2_tests_test_geoip_parser_CFLAGS	= $(TEST_CFLAGS) \
+modules_geoip2_tests_test_geoip_parser_CFLAGS	= $(TEST_CFLAGS) $(MAXMINDDB_CFLAGS) \
 	-I$(top_srcdir)/modules/geoip2
 modules_geoip2_tests_test_geoip_parser_LDADD	= $(TEST_LDADD)
 modules_geoip2_tests_test_geoip_parser_LDFLAGS	= \

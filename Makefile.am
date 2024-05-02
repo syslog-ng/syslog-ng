@@ -132,7 +132,7 @@ TEST_LDADD		= $(LIBTEST_LIBS) $(CRITERION_LIBS) \
 			  $(top_builddir)/lib/libsyslog-ng.la \
 			  $(TOOL_DEPS_LIBS)
 
-test_ldflags		= -no-install $(NO_PIE_LDFLAG)
+test_ldflags		= $(TEST_NO_INSTALL_FLAG) $(NO_PIE_LDFLAG)
 
 PREOPEN_SYSLOGFORMAT	= -dlpreopen ${top_builddir}/modules/syslogformat/libsyslogformat.la
 PREOPEN_BASICFUNCS	= -dlpreopen ${top_builddir}/modules/basicfuncs/libbasicfuncs.la
