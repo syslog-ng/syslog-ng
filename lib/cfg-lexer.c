@@ -983,10 +983,9 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, CFG_STYPE *yy
 
   gint saved_line = level->lloc.first_line;
   gint saved_column = level->lloc.first_column;
-  CfgParser *gen_parser = p->parser;
-  if (gen_parser && !cfg_parser_parse(gen_parser, self, (gpointer *) &args, NULL))
+  if (!cfg_parser_parse(p->parser, self, (gpointer *) &args, NULL))
     {
-      cfg_parser_cleanup(gen_parser, args);
+      cfg_parser_cleanup(p->parser, args);
 
       level->lloc.first_line = saved_line;
       level->lloc.first_column = saved_column;
@@ -1006,7 +1005,7 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, CFG_STYPE *yy
                                          cfg_lexer_format_location(self, &level->lloc, buf, sizeof(buf)));
 
   cfg_lexer_free_token(yylval);
-  cfg_parser_cleanup(gen_parser, args);
+  cfg_parser_cleanup(p->parser, args);
 
   if (!success)
     {
