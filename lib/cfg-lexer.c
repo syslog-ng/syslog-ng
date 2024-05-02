@@ -1005,7 +1005,7 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, CFG_STYPE *yy
   success = cfg_block_generator_generate(gen, self->cfg, args, result,
                                          cfg_lexer_format_location(self, &level->lloc, buf, sizeof(buf)));
 
-  free(yylval->cptr);
+  cfg_lexer_free_token(yylval);
   cfg_parser_cleanup(gen_parser, args);
 
   if (!success)
