@@ -43,18 +43,33 @@
 %%
 
 start
-        : {
-            *result = cfg_args_new();
-          }
-          '(' block_args ')'                                    { YYACCEPT; }
+        : { *result = cfg_args_new(); } block_args        { YYACCEPT; }
 	;
 
+
 block_args
-        : block_arg block_args
-        |
+        : driver_like_context '(' driver_block_args ')'
         ;
 
-block_arg
+driver_like_context
+        : LL_CONTEXT_ROOT
+        | LL_CONTEXT_DESTINATION
+        | LL_CONTEXT_SOURCE
+        | LL_CONTEXT_PARSER
+        | LL_CONTEXT_REWRITE
+        | LL_CONTEXT_FILTER
+        | LL_CONTEXT_LOG
+        | LL_CONTEXT_INNER_DEST
+        | LL_CONTEXT_INNER_SRC
+        | LL_CONTEXT_OPTIONS
+	;
+/* generator(arg1(value) arg2(value)...) */
+driver_block_args
+        : driver_block_arg driver_block_args
+	|
+        ;
+
+driver_block_arg
         : LL_IDENTIFIER _block_arg_context_push LL_BLOCK _block_arg_context_pop  { cfg_args_set(*result, $1, $3); free($1); free($3); }
         ;
 

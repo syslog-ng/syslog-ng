@@ -971,6 +971,26 @@ cfg_lexer_append_preprocessed_output(CfgLexer *self, const gchar *token_text)
     g_string_append_printf(self->preprocess_output, "%s", token_text);
 }
 
+static CfgTokenBlock *
+_construct_block_ref_prelude(CfgLexer *self)
+{
+  CfgTokenBlock *block;
+  CFG_STYPE token;
+
+  /* we inject one token to a new token-block:
+   *  1) the context from which the block ref parser is invoked
+   */
+  block = cfg_token_block_new();
+
+  /* add plugin->type as a token */
+  memset(&token, 0, sizeof(token));
+  token.type = LL_TOKEN;
+  token.token = cfg_lexer_get_context_type(self);
+  cfg_token_block_add_and_consume_token(block, &token);
+
+  return block;
+}
+
 static gboolean
 cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, CFG_STYPE *yylval)
 {
@@ -983,6 +1003,8 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, CFG_STYPE *yy
 
   gint saved_line = level->lloc.first_line;
   gint saved_column = level->lloc.first_column;
+
+  cfg_lexer_inject_token_block(self, _construct_block_ref_prelude(self));
   if (!cfg_parser_parse(p->parser, self, (gpointer *) &args, NULL))
     {
       cfg_parser_cleanup(p->parser, args);
