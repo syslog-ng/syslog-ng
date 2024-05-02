@@ -138,23 +138,24 @@
 %token LL_CONTEXT_BLOCK_REF           9
 %token LL_CONTEXT_BLOCK_CONTENT       10
 %token LL_CONTEXT_BLOCK_ARG           11
-%token LL_CONTEXT_PRAGMA              12
-%token LL_CONTEXT_FORMAT              13
-%token LL_CONTEXT_TEMPLATE_FUNC       14
-%token LL_CONTEXT_INNER_DEST          15
-%token LL_CONTEXT_INNER_SRC           16
-%token LL_CONTEXT_CLIENT_PROTO        17
-%token LL_CONTEXT_SERVER_PROTO        18
-%token LL_CONTEXT_OPTIONS             19
-%token LL_CONTEXT_CONFIG              20
-%token LL_CONTEXT_TEMPLATE_REF        21
-%token LL_CONTEXT_FILTERX             22
-%token LL_CONTEXT_FILTERX_SIMPLE_FUNC 23
-%token LL_CONTEXT_FILTERX_ENUM        24
-%token LL_CONTEXT_FILTERX_FUNC        25
+%token LL_CONTEXT_BLOCK_FUNCARG       12
+%token LL_CONTEXT_PRAGMA              13
+%token LL_CONTEXT_FORMAT              14
+%token LL_CONTEXT_TEMPLATE_FUNC       15
+%token LL_CONTEXT_INNER_DEST          16
+%token LL_CONTEXT_INNER_SRC           17
+%token LL_CONTEXT_CLIENT_PROTO        18
+%token LL_CONTEXT_SERVER_PROTO        19
+%token LL_CONTEXT_OPTIONS             20
+%token LL_CONTEXT_CONFIG              21
+%token LL_CONTEXT_TEMPLATE_REF        22
+%token LL_CONTEXT_FILTERX             23
+%token LL_CONTEXT_FILTERX_SIMPLE_FUNC 24
+%token LL_CONTEXT_FILTERX_ENUM        25
+%token LL_CONTEXT_FILTERX_FUNC        26
 
 /* this is a placeholder for unit tests, must be the latest & largest */
-%token LL_CONTEXT_MAX                 26
+%token LL_CONTEXT_MAX                 27
 
 /* operators in the filter language, the order of this determines precedence */
 %right KW_ASSIGN 9000
@@ -1727,6 +1728,8 @@ _block_content_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CO
 _block_content_context_pop: { cfg_lexer_pop_context(lexer); };
 _block_arg_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_ARG, NULL, "block argument"); };
 _block_arg_context_pop: { cfg_lexer_pop_context(lexer); };
+_block_func_arg_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_FUNCARG, NULL, "block argument"); };
+_block_func_arg_context_pop: { cfg_lexer_pop_context(lexer); };
 _template_ref_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_TEMPLATE_REF, NULL, "template reference"); };
 _inner_dest_context_push: { cfg_lexer_push_context(lexer, LL_CONTEXT_INNER_DEST, NULL, "within destination"); };
 _inner_dest_context_pop: { cfg_lexer_pop_context(lexer); };

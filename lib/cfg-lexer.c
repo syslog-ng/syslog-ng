@@ -1141,6 +1141,8 @@ cfg_lexer_lex(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc)
             cfg_lexer_start_block_state(self, "{}");
           else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_ARG)
             cfg_lexer_start_block_state(self, "()");
+          else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_FUNCARG)
+            cfg_lexer_start_block_arg_state(self);
 
           tok = cfg_lexer_lex_next_token(self, yylval, yylloc);
           cfg_lexer_append_preprocessed_output(self, self->token_pretext->str);
@@ -1268,6 +1270,7 @@ static const gchar *lexer_contexts[] =
   [LL_CONTEXT_BLOCK_ARG] = "block-arg",
   [LL_CONTEXT_BLOCK_REF] = "block-ref",
   [LL_CONTEXT_BLOCK_CONTENT] = "block-content",
+  [LL_CONTEXT_BLOCK_FUNCARG] = "block-func-arg",
   [LL_CONTEXT_PRAGMA] = "pragma",
   [LL_CONTEXT_FORMAT] = "format",
   [LL_CONTEXT_TEMPLATE_FUNC] = "template-func",
