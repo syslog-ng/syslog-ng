@@ -162,7 +162,7 @@ _free(FilterXExpr *s)
   FilterXFuntionCachedJsonFile *self = (FilterXFuntionCachedJsonFile *) s;
 
   g_free(self->filepath);
-  filterx_object_unref(self->cached_json);
+  filterx_object_unfreeze_and_free(self->cached_json);
   filterx_function_free_method(&self->super);
 }
 
@@ -183,6 +183,7 @@ filterx_function_cached_json_file_new(const gchar *function_name, GList *argumen
   if (!self->cached_json)
     goto error;
 
+  filterx_object_freeze(self->cached_json);
   g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
   return &self->super;
 
