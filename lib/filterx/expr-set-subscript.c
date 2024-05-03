@@ -56,6 +56,12 @@ _eval(FilterXExpr *s)
       key = NULL;
     }
 
+  if (object->readonly)
+    {
+      filterx_eval_push_error("Object set-subscript failed, object is readonly", s, key);
+      goto exit;
+    }
+
   new_value = filterx_expr_eval_typed(self->new_value);
   if (!new_value)
     goto exit;

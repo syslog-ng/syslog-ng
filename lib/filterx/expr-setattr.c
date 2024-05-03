@@ -44,6 +44,12 @@ _eval(FilterXExpr *s)
   if (!object)
     return NULL;
 
+  if (object->readonly)
+    {
+      filterx_eval_push_error("Attribute set failed, object is readonly", s, self->attr);
+      goto exit;
+    }
+
   FilterXObject *new_value = filterx_expr_eval_typed(self->new_value);
   if (!new_value)
     goto exit;
@@ -91,6 +97,7 @@ _free(FilterXExpr *s)
   filterx_expr_free_method(s);
 }
 
+/* Takes reference of object and new_value */
 FilterXExpr *
 filterx_setattr_new(FilterXExpr *object, const gchar *attr_name, FilterXExpr *new_value)
 {

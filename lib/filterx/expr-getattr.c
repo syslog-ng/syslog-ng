@@ -63,8 +63,15 @@ _unset(FilterXExpr *s)
   if (!variable)
     return FALSE;
 
+  if (variable->readonly)
+    {
+      filterx_eval_push_error("Object unset-attr failed, object is readonly", s, self->attr);
+      goto exit;
+    }
+
   result = filterx_object_unset_key(variable, self->attr);
 
+exit:
   filterx_object_unref(variable);
   return result;
 }

@@ -37,6 +37,9 @@
 #include "filterx/expr-assign.h"
 #include "filterx/expr-variable.h"
 #include "filterx/expr-setattr.h"
+#include "filterx/expr-getattr.h"
+#include "filterx/expr-set-subscript.h"
+#include "filterx/expr-get-subscript.h"
 
 #include "apphook.h"
 #include "scratch-buffers.h"
@@ -427,16 +430,96 @@ Test(filterx_expr, test_filterx_setattr)
   filterx_eval_set_context(NULL);
 }
 
+Test(filterx_expr, test_filterx_readonly)
+{
+  LogMessage *msg = create_sample_message();
+  FilterXScope *scope = filterx_scope_new();
+
+  FilterXEvalContext context =
+  {
+    .msgs = &msg,
+    .num_msg = 1,
+    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .scope = scope,
+  };
+  filterx_eval_set_context(&context);
+
+  FilterXObject *foo = filterx_string_new("foo", -1);
+  FilterXObject *bar = filterx_string_new("bar", -1);
+
+  FilterXObject *dict = filterx_test_dict_new();
+
+  FilterXObject *inner_dict = filterx_test_dict_new();
+  cr_assert(filterx_object_set_subscript(dict, foo, inner_dict));
+  filterx_object_unref(inner_dict);
+
+  filterx_object_make_readonly(dict);
+
+  FilterXExpr *literal = filterx_literal_new(dict);
+
+
+  FilterXExpr *setattr = filterx_setattr_new(filterx_expr_ref(literal),
+                                             "bar",
+                                             filterx_literal_new(filterx_object_ref(foo)));
+  cr_assert_not(filterx_expr_eval(setattr));
+  cr_assert(strstr(filterx_eval_get_last_error(), "readonly"));
+  filterx_eval_clear_errors();
+  filterx_expr_unref(setattr);
+
+
+  FilterXExpr *set_subscript = filterx_set_subscript_new(filterx_expr_ref(literal),
+                                                         filterx_literal_new(filterx_object_ref(bar)),
+                                                         filterx_literal_new(filterx_object_ref(foo)));
+  cr_assert_not(filterx_expr_eval(set_subscript));
+  cr_assert(strstr(filterx_eval_get_last_error(), "readonly"));
+  filterx_eval_clear_errors();
+  filterx_expr_unref(set_subscript);
+
+
+  FilterXExpr *getattr = filterx_getattr_new(filterx_expr_ref(literal), "foo");
+  cr_assert_not(filterx_expr_unset(getattr));
+  cr_assert(strstr(filterx_eval_get_last_error(), "readonly"));
+  filterx_eval_clear_errors();
+  filterx_expr_unref(getattr);
+
+
+  FilterXExpr *get_subscript = filterx_get_subscript_new(filterx_expr_ref(literal),
+                                                         filterx_literal_new(filterx_object_ref(foo)));
+  cr_assert_not(filterx_expr_unset(get_subscript));
+  cr_assert(strstr(filterx_eval_get_last_error(), "readonly"));
+  filterx_eval_clear_errors();
+  filterx_expr_unref(get_subscript);
+
+
+  FilterXExpr *inner = filterx_setattr_new(filterx_getattr_new(filterx_expr_ref(literal), "foo"),
+                                           "bar",
+                                           filterx_literal_new(filterx_object_ref(bar)));
+  cr_assert_not(filterx_expr_eval(inner));
+  cr_assert(strstr(filterx_eval_get_last_error(), "readonly"));
+  filterx_eval_clear_errors();
+  filterx_expr_unref(inner);
+
+
+  filterx_expr_unref(literal);
+  filterx_object_unref(bar);
+  filterx_object_unref(foo);
+  log_msg_unref(msg);
+  filterx_scope_unref(scope);
+  filterx_eval_set_context(NULL);
+}
+
 static void
 setup(void)
 {
   app_startup();
   init_template_tests();
+  init_libtest_filterx();
 }
 
 static void
 teardown(void)
 {
+  deinit_libtest_filterx();
   scratch_buffers_explicit_gc();
   deinit_template_tests();
   app_shutdown();

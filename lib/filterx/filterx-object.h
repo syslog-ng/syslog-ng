@@ -83,10 +83,11 @@ struct _FilterXObject
    *
    *     modified_in_place -- set to TRUE in case the value in this
    *                          FilterXObject was changed
-   *
+   *     readonly          -- marks the object as unmodifiable,
+   *                          propagates to the inner elements lazily
    *
    */
-  guint thread_index:16, modified_in_place:1;
+  guint thread_index:16, modified_in_place:1, readonly:1;
   FilterXType *type;
 };
 
@@ -112,6 +113,12 @@ filterx_object_is_type(FilterXObject *object, FilterXType *type)
       self_type = self_type->super_type;
     }
   return FALSE;
+}
+
+static inline void
+filterx_object_make_readonly(FilterXObject *self)
+{
+  self->readonly = TRUE;
 }
 
 static inline FilterXObject *
@@ -163,13 +170,9 @@ filterx_object_marshal_append(FilterXObject *self, GString *repr, LogMessageValu
 static inline FilterXObject *
 filterx_object_clone(FilterXObject *self)
 {
-  if (self->type->is_mutable)
-    {
-      /* mutable object that shadows a name-value pair must have clone */
-      return self->type->clone(self);
-    }
-  /* unmutable objects don't need to be cloned */
-  return filterx_object_ref(self);
+  if (self->readonly)
+    return filterx_object_ref(self);
+  return self->type->clone(self);
 }
 
 static inline gboolean
@@ -195,14 +198,20 @@ filterx_object_falsy(FilterXObject *self)
 static inline FilterXObject *
 filterx_object_getattr(FilterXObject *self, FilterXObject *attr)
 {
-  if (self->type->getattr)
-    return self->type->getattr(self, attr);
-  return NULL;
+  if (!self->type->getattr)
+    return NULL;
+
+  FilterXObject *result = self->type->getattr(self, attr);
+  if (result && self->readonly)
+    filterx_object_make_readonly(result);
+  return result;
 }
 
 static inline gboolean
 filterx_object_setattr(FilterXObject *self, FilterXObject *attr, FilterXObject *new_value)
 {
+  g_assert(!self->readonly);
+
   if (self->type->setattr)
     return self->type->setattr(self, attr, new_value);
   return FALSE;
@@ -211,14 +220,20 @@ filterx_object_setattr(FilterXObject *self, FilterXObject *attr, FilterXObject *
 static inline FilterXObject *
 filterx_object_get_subscript(FilterXObject *self, FilterXObject *key)
 {
-  if (self->type->get_subscript)
-    return self->type->get_subscript(self, key);
-  return NULL;
+  if (!self->type->get_subscript)
+    return NULL;
+
+  FilterXObject *result = self->type->get_subscript(self, key);
+  if (result && self->readonly)
+    filterx_object_make_readonly(result);
+  return result;
 }
 
 static inline gboolean
 filterx_object_set_subscript(FilterXObject *self, FilterXObject *key, FilterXObject *new_value)
 {
+  g_assert(!self->readonly);
+
   if (self->type->set_subscript)
     return self->type->set_subscript(self, key, new_value);
   return FALSE;
@@ -235,6 +250,8 @@ filterx_object_is_key_set(FilterXObject *self, FilterXObject *key)
 static inline gboolean
 filterx_object_unset_key(FilterXObject *self, FilterXObject *key)
 {
+  g_assert(!self->readonly);
+
   if (self->type->unset_key)
     return self->type->unset_key(self, key);
   return FALSE;
