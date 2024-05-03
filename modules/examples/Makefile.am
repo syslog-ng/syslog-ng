@@ -35,7 +35,7 @@ EXTRA_modules_examples_libexamples_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(EXAMP
 modules_examples_libexamples_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 if ENABLE_CPP
-modules_examples_libexamples_la_LIBADD += -lstdc++
+nodist_EXTRA_modules_examples_libexamples_la_SOURCES = force-cpp-linker-with-default-stdlib.cpp
 endif
 
 EXTRA_DIST += modules/examples/CMakeLists.txt
