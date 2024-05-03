@@ -26,6 +26,7 @@
 #include "filterx/object-string.h"
 #include "filterx/object-message-value.h"
 #include "filterx/filterx-weakrefs.h"
+#include "filterx/filterx-eval.h"
 
 #include "scanner/list-scanner/list-scanner.h"
 #include "str-repr/encode.h"
@@ -117,8 +118,8 @@ filterx_json_convert_json_to_object_cached(FilterXObject *self, FilterXWeakRef *
       json_object_set_double(json_obj, json_object_get_double(json_obj));
     }
 
+  /* NOTE: userdata is a weak reference */
   filterx_obj = json_object_get_userdata(json_obj);
-
   if (filterx_obj)
     return filterx_object_ref(filterx_obj);
 
@@ -127,17 +128,17 @@ filterx_json_convert_json_to_object_cached(FilterXObject *self, FilterXWeakRef *
   return filterx_obj;
 }
 
-static void
-_free_cached_filterx_object(struct json_object *object, void *userdata)
-{
-  FilterXObject *filterx_obj = (FilterXObject *) userdata;
-  filterx_object_unref(filterx_obj);
-}
-
 void
 filterx_json_associate_cached_object(struct json_object *json_obj, FilterXObject *filterx_obj)
 {
-  json_object_set_userdata(json_obj, filterx_object_ref(filterx_obj), _free_cached_filterx_object);
+  FilterXScope *scope = filterx_eval_get_scope();
+
+  filterx_scope_store_weak_ref(scope, filterx_obj);
+
+  /* we are not storing a reference in userdata to avoid circular
+   * references.  That ref is retained by the filterx_scope_store_weak_ref()
+   * call above, which is automatically terminated when the scope ends */
+  json_object_set_userdata(json_obj, filterx_obj, NULL);
 }
 
 FilterXObject *
