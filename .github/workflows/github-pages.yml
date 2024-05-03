@@ -1,0 +1,56 @@
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy static redirection content to Pages
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}    
+    runs-on: ubuntu-latest    
+    steps:
+      #- name: Checkout
+      #  uses: actions/checkout@v4
+        
+      - name: Setup Pages
+        run: |
+          pwd
+          mkdir github-pages.tmp
+          cd github-pages.tmp
+          cat <<EOF > index.html
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                  <meta charset="UTF-8">
+                  <meta http-equiv="refresh" content="0; url=https://syslog-ng.github.io/doc/">
+                  <title>Redirecting...</title>
+              </head>
+              <body>
+                  <p>If you are not redirected automatically, <a href="https://syslog-ng.github.io/doc/">click here</a>.</p>
+              </body>
+              </html>
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './github-pages.tmp'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
