@@ -18,8 +18,8 @@ set(JSON_SOURCES
     dot-notation.h
     filterx-format-json.c
     filterx-format-json.h
-    filterx-cached-json-file.c
-    filterx-cached-json-file.h
+    filterx-cache-json-file.c
+    filterx-cache-json-file.h
     json-plugin.c
 )
 

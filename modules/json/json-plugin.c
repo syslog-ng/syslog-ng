@@ -22,7 +22,7 @@
 #include "json-parser.h"
 #include "format-json.h"
 #include "filterx-format-json.h"
-#include "filterx-cached-json-file.h"
+#include "filterx-cache-json-file.h"
 #include "json-parser-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
@@ -45,8 +45,8 @@ static Plugin json_plugins[] =
   },
   {
     .type = LL_CONTEXT_FILTERX_FUNC,
-    .name = "cached_json_file",
-    .construct = filterx_function_cached_json_file_new_construct,
+    .name = "cache_json_file",
+    .construct = filterx_function_cache_json_file_new_construct,
   },
 
 };

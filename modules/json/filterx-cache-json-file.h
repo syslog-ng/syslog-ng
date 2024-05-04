@@ -18,14 +18,14 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
-#ifndef FILTERX_CACHED_JSON_FILE_H_INCLUDED
-#define FILTERX_CACHED_JSON_FILE_H_INCLUDED
+#ifndef FILTERX_CACHE_JSON_FILE_H_INCLUDED
+#define FILTERX_CACHE_JSON_FILE_H_INCLUDED
 
 #include "filterx/expr-function.h"
 #include "plugin.h"
 
-FilterXFunction *filterx_function_cached_json_file_new(const gchar *function_name, GList *argument_expressions,
+FilterXFunction *filterx_function_cache_json_file_new(const gchar *function_name, GList *argument_expressions,
                                                        GError **error);
-gpointer filterx_function_cached_json_file_new_construct(Plugin *self);
+gpointer filterx_function_cache_json_file_new_construct(Plugin *self);
 
 #endif
