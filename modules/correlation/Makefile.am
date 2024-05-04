@@ -48,7 +48,7 @@ modules_correlation_libsyslog_ng_patterndb_la_CFLAGS	=	\
 	$(AM_CFLAGS) -fPIC
 modules_correlation_libsyslog_ng_patterndb_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS)
-modules_correlation_libsyslog_ng_patterndb_la_DEPENDENCIES	=	\
+EXTRA_modules_correlation_libsyslog_ng_patterndb_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
 module_LTLIBRARIES					+= modules/correlation/libcorrelation.la
@@ -76,7 +76,7 @@ modules_correlation_libcorrelation_la_LIBADD			=	\
 	$(MODULE_DEPS_LIBS)
 modules_correlation_libcorrelation_la_LDFLAGS			=	\
 	$(MODULE_LDFLAGS)
-modules_correlation_libcorrelation_la_DEPENDENCIES		=	\
+EXTRA_modules_correlation_libcorrelation_la_DEPENDENCIES		=	\
 	$(MODULE_DEPS_LIBS)
 
 BUILT_SOURCES						+=	\

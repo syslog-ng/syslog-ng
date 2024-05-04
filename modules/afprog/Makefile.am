@@ -23,7 +23,7 @@ modules_afprog_libafprog_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS)
 modules_afprog_libafprog_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
-modules_afprog_libafprog_la_DEPENDENCIES=	\
+EXTRA_modules_afprog_libafprog_la_DEPENDENCIES=	\
 	$(MODULE_DEPS_LIBS)
 
 modules/afprog modules/afprog/ mod-afprog mod-prog: \

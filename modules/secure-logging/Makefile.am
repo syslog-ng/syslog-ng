@@ -13,7 +13,7 @@ modules_secure_logging_libsyslog_ng_secure_logging_la_LIBADD		=	\
 	$(MODULE_DEPS_LIBS) $(OPENSSL_LIBS)
 modules_secure_logging_libsyslog_ng_secure_logging_la_LDFLAGS		=	\
 	$(MODULE_LDFLAGS) $(OPENSSL_CFLAGS)
-modules_secure_logging_libsyslog_ng_secure_logging_la_DEPENDENCIES	=	\
+EXTRA_modules_secure_logging_libsyslog_ng_secure_logging_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
 LIBSYSLOG_SECURE_LOGGING = $(top_builddir)/modules/secure-logging/libsyslog-ng-secure-logging.la
@@ -27,7 +27,7 @@ modules_secure_logging_libsecure_logging_la_CFLAGS = \
 	-I$(top_builddir)/modules/secure-logging
 modules_secure_logging_libsecure_logging_la_LIBADD = $(MODULE_DEPS_LIBS) $(OPENSSL_LIBS) $(LIBSYSLOG_SECURE_LOGGING)
 modules_secure_logging_libsecure_logging_la_LDFLAGS = $(MODULE_LDFLAGS) $(OPENSSL_CFLAGS)
-modules_secure_logging_libsecure_logging_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(LIBSYSLOG_SECURE_LOGGING)
+EXTRA_modules_secure_logging_libsecure_logging_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(LIBSYSLOG_SECURE_LOGGING)
 
 EXTRA_DIST += modules/secure-logging/CMakeLists.txt
 

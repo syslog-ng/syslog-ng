@@ -15,7 +15,7 @@ modules_metrics_probe_libmetrics_probe_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS)
 modules_metrics_probe_libmetrics_probe_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
-modules_metrics_probe_libmetrics_probe_la_DEPENDENCIES	=	\
+EXTRA_modules_metrics_probe_libmetrics_probe_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
 BUILT_SOURCES					+=	\

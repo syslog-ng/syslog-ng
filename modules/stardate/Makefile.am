@@ -12,7 +12,7 @@ modules_stardate_libstardate_la_CPPFLAGS  =     \
   -I$(top_builddir)/modules/stardate
 modules_stardate_libstardate_la_LIBADD  = $(MODULE_DEPS_LIBS)
 modules_stardate_libstardate_la_LDFLAGS = $(MODULE_LDFLAGS) -lm
-modules_stardate_libstardate_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
+EXTRA_modules_stardate_libstardate_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
 modules/stardate modules/stardate/ mod-stardate: modules/stardate/libstardate.la
 .PHONY: modules/stardate/ mod-stardate

@@ -29,7 +29,7 @@ modules_json_libjson_plugin_la_LIBADD	= 	\
 
 modules_json_libjson_plugin_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
-modules_json_libjson_plugin_la_DEPENDENCIES =	\
+EXTRA_modules_json_libjson_plugin_la_DEPENDENCIES =	\
 	$(MODULE_DEPS_LIBS) $(JSON_DEPENDENCY)
 
 modules/json modules/json/ mod-json: modules/json/libjson-plugin.la

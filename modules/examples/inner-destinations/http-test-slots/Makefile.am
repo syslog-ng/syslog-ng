@@ -19,6 +19,6 @@ EXTRA_DIST += \
 modules_examples_inner_destinations_http_test_slots_libhttp_test_slots_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/modules/examples/inner-destinations/http-test-slots -I$(top_builddir)/modules/examples/inner-destinations/http-test-slots
 modules_examples_inner_destinations_http_test_slots_libhttp_test_slots_la_LIBADD = $(MODULE_DEPS_LIBS)
 modules_examples_inner_destinations_http_test_slots_libhttp_test_slots_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_examples_inner_destinations_http_test_slots_libhttp_test_slots_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+EXTRA_modules_examples_inner_destinations_http_test_slots_libhttp_test_slots_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 PHONY: modules/examples/inner-destinations/http-test-slots/ mod-http-test-slots

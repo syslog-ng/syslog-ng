@@ -40,7 +40,7 @@ modules_grpc_otel_libotel_cpp_la_CXXFLAGS = \
 
 modules_grpc_otel_libotel_cpp_la_LIBADD = $(MODULE_DEPS_LIBS) $(PROTOBUF_LIBS) $(GRPCPP_LIBS)
 modules_grpc_otel_libotel_cpp_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_grpc_otel_libotel_cpp_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+EXTRA_modules_grpc_otel_libotel_cpp_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 module_LTLIBRARIES += modules/grpc/otel/libotel.la
 
@@ -66,7 +66,7 @@ modules_grpc_otel_libotel_la_LIBADD = \
 
 modules_grpc_otel_libotel_la_LDFLAGS = $(MODULE_LDFLAGS)
 
-modules_grpc_otel_libotel_la_DEPENDENCIES = \
+EXTRA_modules_grpc_otel_libotel_la_DEPENDENCIES = \
   $(MODULE_DEPS_LIBS) \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la \
   $(top_builddir)/modules/grpc/otel/libotel_cpp.la \

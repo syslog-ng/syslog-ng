@@ -22,7 +22,7 @@ modules_rate_limit_filter_librate_limit_filter_la_CPPFLAGS  =     \
   -I$(top_builddir)/modules/rate-limit-filter
 modules_rate_limit_filter_librate_limit_filter_la_LIBADD  = $(MODULE_DEPS_LIBS)
 modules_rate_limit_filter_librate_limit_filter_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_rate_limit_filter_librate_limit_filter_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
+EXTRA_modules_rate_limit_filter_librate_limit_filter_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
 modules/rate-limit-filter modules/rate-limit-filter/ mod-rate-limit-filter: modules/rate-limit-filter/librate-limit-filter.la
 .PHONY: modules/rate-limit-filter/ mod-rate-limit-filter

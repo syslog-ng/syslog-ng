@@ -26,4 +26,4 @@ modules_examples_sources_libmsg_generator_la_CPPFLAGS  = \
 
 modules_examples_sources_libmsg_generator_la_LIBADD  = $(MODULE_DEPS_LIBS)
 modules_examples_sources_libmsg_generator_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_examples_sources_libmsg_generator_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+EXTRA_modules_examples_sources_libmsg_generator_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)

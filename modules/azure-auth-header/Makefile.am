@@ -19,7 +19,7 @@ EXTRA_DIST        +=      \
 modules_azure_auth_header_libazure_auth_header_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/modules/azure-auth-header -I$(top_builddir)/modules/azure-auth-header
 modules_azure_auth_header_libazure_auth_header_la_LIBADD = $(MODULE_DEPS_LIBS)
 modules_azure_auth_header_libazure_auth_header_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_azure_auth_header_libazure_auth_header_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+EXTRA_modules_azure_auth_header_libazure_auth_header_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 modules/azure-auth-header modules/azure-auth-header/ mod-azure-auth-header: modules/azure-auth-header/libazure-auth-header.la
 

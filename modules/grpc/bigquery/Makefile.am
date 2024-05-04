@@ -22,7 +22,7 @@ modules_grpc_bigquery_libbigquery_cpp_la_CXXFLAGS = \
 
 modules_grpc_bigquery_libbigquery_cpp_la_LIBADD = $(MODULE_DEPS_LIBS) $(PROTOBUF_LIBS) $(GRPCPP_LIBS)
 modules_grpc_bigquery_libbigquery_cpp_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_grpc_bigquery_libbigquery_cpp_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+EXTRA_modules_grpc_bigquery_libbigquery_cpp_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 module_LTLIBRARIES += modules/grpc/bigquery/libbigquery.la
 
@@ -45,7 +45,7 @@ modules_grpc_bigquery_libbigquery_la_LIBADD = \
   -lstdc++
 
 modules_grpc_bigquery_libbigquery_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_grpc_bigquery_libbigquery_la_DEPENDENCIES = \
+EXTRA_modules_grpc_bigquery_libbigquery_la_DEPENDENCIES = \
   $(MODULE_DEPS_LIBS) \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la \
   $(top_builddir)/modules/grpc/bigquery/libbigquery_cpp.la

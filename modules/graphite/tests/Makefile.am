@@ -9,4 +9,4 @@ modules_graphite_tests_test_graphite_output_CFLAGS = $(TEST_CFLAGS)
 modules_graphite_tests_test_graphite_output_LDADD = $(TEST_LDADD)
 modules_graphite_tests_test_graphite_output_LDFLAGS = \
   -dlpreopen $(top_builddir)/modules/graphite/libgraphite.la
-modules_graphite_tests_test_graphite_output_DEPENDENCIES = $(top_builddir)/modules/graphite/libgraphite.la
+EXTRA_modules_graphite_tests_test_graphite_output_DEPENDENCIES = $(top_builddir)/modules/graphite/libgraphite.la

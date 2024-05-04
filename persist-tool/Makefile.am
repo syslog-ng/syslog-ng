@@ -19,4 +19,4 @@ persist_tool_persist_tool_LDADD	= \
 
 EXTRA_DIST += persist-tool/CMakeLists.txt
 
-persist_tool_persist_tool_DEPENDENCIES	= lib/libsyslog-ng.la
+EXTRA_persist_tool_persist_tool_DEPENDENCIES	= lib/libsyslog-ng.la
