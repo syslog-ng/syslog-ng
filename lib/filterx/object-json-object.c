@@ -31,7 +31,7 @@ struct FilterXJsonObject_
 {
   FilterXDict super;
   FilterXWeakRef root_container;
-  struct json_object *object;
+  struct json_object *jso;
 };
 
 static gboolean
@@ -47,18 +47,18 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 
   *t = LM_VT_JSON;
 
-  const gchar *json_repr = json_object_to_json_string_ext(self->object, JSON_C_TO_STRING_PLAIN);
+  const gchar *json_repr = json_object_to_json_string_ext(self->jso, JSON_C_TO_STRING_PLAIN);
   g_string_append(repr, json_repr);
 
   return TRUE;
 }
 
 static gboolean
-_map_to_json(FilterXObject *s, struct json_object **json_obj)
+_map_to_json(FilterXObject *s, struct json_object **jso)
 {
   FilterXJsonObject *self = (FilterXJsonObject *) s;
 
-  *json_obj = json_object_get(self->object);
+  *jso = json_object_get(self->jso);
   return TRUE;
 }
 
@@ -67,11 +67,11 @@ _clone(FilterXObject *s)
 {
   FilterXJsonObject *self = (FilterXJsonObject *) s;
 
-  struct json_object *json_obj = filterx_json_deep_copy(self->object);
-  if (!json_obj)
+  struct json_object *jso = filterx_json_deep_copy(self->jso);
+  if (!jso)
     return NULL;
 
-  return filterx_json_object_new_sub(json_obj, NULL);
+  return filterx_json_object_new_sub(jso, NULL);
 }
 
 static FilterXObject *
@@ -83,11 +83,11 @@ _get_subscript(FilterXDict *s, FilterXObject *key)
   if (!key_str)
     return NULL;
 
-  struct json_object *result = NULL;
-  if (!json_object_object_get_ex(self->object, key_str, &result))
+  struct json_object *jso = NULL;
+  if (!json_object_object_get_ex(self->jso, key_str, &jso))
     return NULL;
 
-  return filterx_json_convert_json_to_object_cached(&s->super, &self->root_container, result);
+  return filterx_json_convert_json_to_object_cached(&s->super, &self->root_container, jso);
 }
 
 static gboolean
@@ -99,15 +99,15 @@ _set_subscript(FilterXDict *s, FilterXObject *key, FilterXObject *new_value)
   if (!key_str)
     return FALSE;
 
-  struct json_object *new_json_value = NULL;
-  if (!filterx_object_map_to_json(new_value, &new_json_value))
+  struct json_object *jso = NULL;
+  if (!filterx_object_map_to_json(new_value, &jso))
     return FALSE;
 
-  filterx_json_associate_cached_object(new_json_value, new_value);
+  filterx_json_associate_cached_object(jso, new_value);
 
-  if (json_object_object_add(self->object, key_str, new_json_value) != 0)
+  if (json_object_object_add(self->jso, key_str, jso) != 0)
     {
-      json_object_put(new_json_value);
+      json_object_put(jso);
       return FALSE;
     }
 
@@ -131,7 +131,7 @@ _unset_key(FilterXDict *s, FilterXObject *key)
   if (!key_str)
     return FALSE;
 
-  json_object_object_del(self->object, key_str);
+  json_object_object_del(self->jso, key_str);
 
   self->super.super.modified_in_place = TRUE;
   FilterXObject *root_container = filterx_weakref_get(&self->root_container);
@@ -149,16 +149,16 @@ _len(FilterXDict *s)
 {
   FilterXJsonObject *self = (FilterXJsonObject *) s;
 
-  return json_object_object_length(self->object);
+  return json_object_object_length(self->jso);
 }
 
 static gboolean
-_iter_inner(FilterXJsonObject *self, const gchar *obj_key, struct json_object *obj_value,
+_iter_inner(FilterXJsonObject *self, const gchar *obj_key, struct json_object *jso,
             FilterXDictIterFunc func, gpointer user_data)
 {
   FilterXObject *key = filterx_string_new(obj_key, -1);
   FilterXObject *value = filterx_json_convert_json_to_object_cached(&self->super.super, &self->root_container,
-                         obj_value);
+                         jso);
 
   gboolean result = func(key, value, user_data);
 
@@ -173,7 +173,7 @@ _iter(FilterXDict *s, FilterXDictIterFunc func, gpointer user_data)
   FilterXJsonObject *self = (FilterXJsonObject *) s;
 
   struct json_object_iter itr;
-  json_object_object_foreachC(self->object, itr)
+  json_object_object_foreachC(self->jso, itr)
   {
     if (!_iter_inner(self, itr.key, itr.val, func, user_data))
       return FALSE;
@@ -183,7 +183,7 @@ _iter(FilterXDict *s, FilterXDictIterFunc func, gpointer user_data)
 
 /* NOTE: consumes root ref */
 FilterXObject *
-filterx_json_object_new_sub(struct json_object *json_obj, FilterXObject *root)
+filterx_json_object_new_sub(struct json_object *jso, FilterXObject *root)
 {
   FilterXJsonObject *self = g_new0(FilterXJsonObject, 1);
   filterx_dict_init_instance(&self->super, &FILTERX_TYPE_NAME(json_object));
@@ -196,7 +196,7 @@ filterx_json_object_new_sub(struct json_object *json_obj, FilterXObject *root)
 
   filterx_weakref_set(&self->root_container, root);
   filterx_object_unref(root);
-  self->object = json_obj;
+  self->jso = jso;
 
   return &self->super.super;
 }
@@ -206,7 +206,7 @@ _free(FilterXObject *s)
 {
   FilterXJsonObject *self = (FilterXJsonObject *) s;
 
-  json_object_put(self->object);
+  json_object_put(self->jso);
   filterx_weakref_clear(&self->root_container);
 }
 
@@ -240,7 +240,7 @@ filterx_json_object_to_json_literal(FilterXObject *s)
 
   if (!filterx_object_is_type(s, &FILTERX_TYPE_NAME(json_object)))
     return NULL;
-  return json_object_to_json_string_ext(self->object, JSON_C_TO_STRING_PLAIN);
+  return json_object_to_json_string_ext(self->jso, JSON_C_TO_STRING_PLAIN);
 }
 
 FILTERX_DEFINE_TYPE(json_object, FILTERX_TYPE_NAME(dict),

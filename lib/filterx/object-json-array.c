@@ -37,7 +37,7 @@ struct FilterXJsonArray_
 {
   FilterXList super;
   FilterXWeakRef root_container;
-  struct json_object *object;
+  struct json_object *jso;
 };
 
 static gboolean
@@ -51,7 +51,7 @@ _marshal_to_json_literal_append(FilterXJsonArray *self, GString *repr, LogMessag
 {
   *t = LM_VT_JSON;
 
-  const gchar *json_repr = json_object_to_json_string_ext(self->object, JSON_C_TO_STRING_PLAIN);
+  const gchar *json_repr = json_object_to_json_string_ext(self->jso, JSON_C_TO_STRING_PLAIN);
   g_string_append(repr, json_repr);
 
   return TRUE;
@@ -62,9 +62,9 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 {
   FilterXJsonArray *self = (FilterXJsonArray *) s;
 
-  for (gint i = 0; i < json_object_array_length(self->object); i++)
+  for (gint i = 0; i < json_object_array_length(self->jso); i++)
     {
-      struct json_object *el = json_object_array_get_idx(self->object, i);
+      struct json_object *el = json_object_array_get_idx(self->jso, i);
       if (json_object_get_type(el) != json_type_string)
         return _marshal_to_json_literal_append(self, repr, t);
 
@@ -79,11 +79,11 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 static gboolean
-_map_to_json(FilterXObject *s, struct json_object **object)
+_map_to_json(FilterXObject *s, struct json_object **jso)
 {
   FilterXJsonArray *self = (FilterXJsonArray *) s;
 
-  *object = json_object_get(self->object);
+  *jso = json_object_get(self->jso);
   return TRUE;
 }
 
@@ -92,11 +92,11 @@ _clone(FilterXObject *s)
 {
   FilterXJsonArray *self = (FilterXJsonArray *) s;
 
-  struct json_object *json_obj = filterx_json_deep_copy(self->object);
-  if (!json_obj)
+  struct json_object *jso = filterx_json_deep_copy(self->jso);
+  if (!jso)
     return NULL;
 
-  return filterx_json_array_new_sub(json_obj, NULL);
+  return filterx_json_array_new_sub(jso, NULL);
 }
 
 static FilterXObject *
@@ -104,11 +104,11 @@ _get_subscript(FilterXList *s, guint64 index)
 {
   FilterXJsonArray *self = (FilterXJsonArray *) s;
 
-  struct json_object *result = json_object_array_get_idx(self->object, index);
-  if (!result)
+  struct json_object *jso = json_object_array_get_idx(self->jso, index);
+  if (!jso)
     return NULL;
 
-  return filterx_json_convert_json_to_object_cached(&s->super, &self->root_container, result);
+  return filterx_json_convert_json_to_object_cached(&s->super, &self->root_container, jso);
 }
 
 static guint64
@@ -116,7 +116,7 @@ _len(FilterXList *s)
 {
   FilterXJsonArray *self = (FilterXJsonArray *) s;
 
-  return json_object_array_length(self->object);
+  return json_object_array_length(self->jso);
 }
 
 static gboolean
@@ -127,13 +127,13 @@ _append(FilterXList *s, FilterXObject *new_value)
   if (G_UNLIKELY(_len(s) >= JSON_ARRAY_MAX_SIZE))
     return FALSE;
 
-  struct json_object *new_json_value = NULL;
-  if (!filterx_object_map_to_json(new_value, &new_json_value))
+  struct json_object *jso = NULL;
+  if (!filterx_object_map_to_json(new_value, &jso))
     return FALSE;
 
-  if (json_object_array_add(self->object, new_json_value) != 0)
+  if (json_object_array_add(self->jso, jso) != 0)
     {
-      json_object_put(new_json_value);
+      json_object_put(jso);
       return FALSE;
     }
 
@@ -156,15 +156,15 @@ _set_subscript(FilterXList *s, guint64 index, FilterXObject *new_value)
   if (G_UNLIKELY(index >= JSON_ARRAY_MAX_SIZE))
     return FALSE;
 
-  struct json_object *new_json_value = NULL;
-  if (!filterx_object_map_to_json(new_value, &new_json_value))
+  struct json_object *jso = NULL;
+  if (!filterx_object_map_to_json(new_value, &jso))
     return FALSE;
 
-  filterx_json_associate_cached_object(new_json_value, new_value);
+  filterx_json_associate_cached_object(jso, new_value);
 
-  if (json_object_array_put_idx(self->object, index, new_json_value) != 0)
+  if (json_object_array_put_idx(self->jso, index, jso) != 0)
     {
-      json_object_put(new_json_value);
+      json_object_put(jso);
       return FALSE;
     }
 
@@ -187,7 +187,7 @@ _unset_index(FilterXList *s, guint64 index)
   if (G_UNLIKELY(index >= JSON_ARRAY_MAX_SIZE))
     return FALSE;
 
-  if (json_object_array_del_idx(self->object, index, 1) != 0)
+  if (json_object_array_del_idx(self->jso, index, 1) != 0)
     return FALSE;
 
   self->super.super.modified_in_place = TRUE;
@@ -203,7 +203,7 @@ _unset_index(FilterXList *s, guint64 index)
 
 /* NOTE: consumes root ref */
 FilterXObject *
-filterx_json_array_new_sub(struct json_object *object, FilterXObject *root)
+filterx_json_array_new_sub(struct json_object *jso, FilterXObject *root)
 {
   FilterXJsonArray *self = g_new0(FilterXJsonArray, 1);
   filterx_list_init_instance(&self->super, &FILTERX_TYPE_NAME(json_array));
@@ -216,7 +216,7 @@ filterx_json_array_new_sub(struct json_object *object, FilterXObject *root)
 
   filterx_weakref_set(&self->root_container, root);
   filterx_object_unref(root);
-  self->object = object;
+  self->jso = jso;
 
   return &self->super.super;
 }
@@ -226,7 +226,7 @@ _free(FilterXObject *s)
 {
   FilterXJsonArray *self = (FilterXJsonArray *) s;
 
-  json_object_put(self->object);
+  json_object_put(self->jso);
   filterx_weakref_clear(&self->root_container);
 }
 
@@ -234,43 +234,43 @@ FilterXObject *
 filterx_json_array_new_from_repr(const gchar *repr, gssize repr_len)
 {
   struct json_tokener *tokener = json_tokener_new();
-  struct json_object *json_obj;
+  struct json_object *jso;
 
-  json_obj = json_tokener_parse_ex(tokener, repr, repr_len < 0 ? strlen(repr) : repr_len);
+  jso = json_tokener_parse_ex(tokener, repr, repr_len < 0 ? strlen(repr) : repr_len);
   if (repr_len >= 0 && json_tokener_get_error(tokener) == json_tokener_continue)
     {
       /* pass the closing NUL character */
-      json_obj = json_tokener_parse_ex(tokener, "", 1);
+      jso = json_tokener_parse_ex(tokener, "", 1);
     }
 
   json_tokener_free(tokener);
 
-  if (!json_object_is_type(json_obj, json_type_array))
+  if (!json_object_is_type(jso, json_type_array))
     {
-      json_object_put(json_obj);
+      json_object_put(jso);
       return NULL;
     }
 
-  return filterx_json_array_new_sub(json_obj, NULL);
+  return filterx_json_array_new_sub(jso, NULL);
 }
 
 FilterXObject *
 filterx_json_array_new_from_syslog_ng_list(const gchar *repr, gssize repr_len)
 {
-  struct json_object *object = json_object_new_array();
+  struct json_object *jso = json_object_new_array();
 
   ListScanner scanner;
   list_scanner_init(&scanner);
   list_scanner_input_string(&scanner, repr, repr_len);
   for (gint i = 0; list_scanner_scan_next(&scanner); i++)
     {
-      json_object_array_put_idx(object, i,
+      json_object_array_put_idx(jso, i,
                                 json_object_new_string_len(list_scanner_get_current_value(&scanner),
                                                            list_scanner_get_current_value_len(&scanner)));
     }
   list_scanner_deinit(&scanner);
 
-  return filterx_json_array_new_sub(object, NULL);
+  return filterx_json_array_new_sub(jso, NULL);
 }
 
 FilterXObject *
@@ -328,7 +328,7 @@ filterx_json_array_to_json_literal(FilterXObject *s)
 
   if (!filterx_object_is_type(s, &FILTERX_TYPE_NAME(json_array)))
     return NULL;
-  return json_object_to_json_string_ext(self->object, JSON_C_TO_STRING_PLAIN);
+  return json_object_to_json_string_ext(self->jso, JSON_C_TO_STRING_PLAIN);
 }
 
 FILTERX_DEFINE_TYPE(json_array, FILTERX_TYPE_NAME(list),
