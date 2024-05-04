@@ -22,7 +22,7 @@
  */
 
 #include <criterion/criterion.h>
-#include "libtest/cr_template.h"
+#include "libtest/filterx-lib.h"
 
 #include "filterx/filterx-eval.h"
 #include "filterx/object-primitive.h"
@@ -92,48 +92,10 @@ _assert_get_test_variable(const char *var_name)
   return result;
 }
 
-typedef struct _TestEnv
-{
-  LogMessage *msg;
-  FilterXScope *scope;
-  FilterXEvalContext context;
-} TestEnv;
-
-void
-init_test(TestEnv *env)
-{
-
-  cr_assert(env != NULL);
-  env->msg = create_sample_message();
-  env->scope = filterx_scope_new();
-
-  env->context = (FilterXEvalContext)
-  {
-    .msgs = &env->msg,
-    .num_msg = 1,
-    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
-    .scope = env->scope,
-  };
-  filterx_eval_set_context(&env->context);
-
-}
-
-void
-deinit_test(const TestEnv *env)
-{
-  cr_assert(env != NULL);
-  log_msg_unref(env->msg);
-  filterx_scope_unref(env->scope);
-  filterx_eval_set_context(NULL);
-}
-
 //// Actual tests
 
 Test(expr_condition, test_control_variable_set_get)
 {
-  TestEnv env;
-  init_test(&env);
-
   _assert_set_test_variable("$control-value", _string_to_filterXExpr("default"));
 
   FilterXObject *control_value = _assert_get_test_variable("$control-value");
@@ -141,17 +103,11 @@ Test(expr_condition, test_control_variable_set_get)
   cr_assert_eq(0, _assert_cmp_string_to_filterx_object("default", control_value));
 
   filterx_object_unref(control_value);
-
-  deinit_test(&env);
-
 }
 
 
 Test(expr_condition, test_condition_with_null_expr_must_evaluated)
 {
-  TestEnv env;
-  init_test(&env);
-
   _assert_set_test_variable("$control-value", _string_to_filterXExpr("default"));
 
   /////
@@ -170,15 +126,10 @@ Test(expr_condition, test_condition_with_null_expr_must_evaluated)
   filterx_object_unref(control_value);
   filterx_object_unref(cond_eval);
   ////
-
-  deinit_test(&env);
 }
 
 Test(expr_condition, test_condition_matching_expression)
 {
-  TestEnv env;
-  init_test(&env);
-
   _assert_set_test_variable("$control-value", _string_to_filterXExpr("default"));
 
   /////
@@ -198,16 +149,11 @@ Test(expr_condition, test_condition_matching_expression)
   filterx_object_unref(control_value);
   filterx_object_unref(cond_eval);
   ////
-
-  deinit_test(&env);
 }
 
 
 Test(expr_condition, test_condition_non_matching_expression)
 {
-  TestEnv env;
-  init_test(&env);
-
   _assert_set_test_variable("$control-value", _string_to_filterXExpr("default"));
 
   /////
@@ -227,16 +173,11 @@ Test(expr_condition, test_condition_non_matching_expression)
   filterx_object_unref(control_value);
   filterx_object_unref(cond_eval);
   ////
-
-  deinit_test(&env);
 }
 
 
 Test(expr_condition, test_condition_matching_elif_expression)
 {
-  TestEnv env;
-  init_test(&env);
-
   _assert_set_test_variable("$control-value", _string_to_filterXExpr("default"));
 
   /////
@@ -261,16 +202,11 @@ Test(expr_condition, test_condition_matching_elif_expression)
   filterx_object_unref(control_value);
   filterx_object_unref(cond_eval);
   ////
-
-  deinit_test(&env);
 }
 
 
 Test(expr_condition, test_condition_non_matching_elif_expression)
 {
-  TestEnv env;
-  init_test(&env);
-
   _assert_set_test_variable("$control-value", _string_to_filterXExpr("default"));
 
   /////
@@ -295,15 +231,10 @@ Test(expr_condition, test_condition_non_matching_elif_expression)
   filterx_object_unref(control_value);
   filterx_object_unref(cond_eval);
   ////
-
-  deinit_test(&env);
 }
 
 Test(expr_condition, test_condition_matching_else_expression)
 {
-  TestEnv env;
-  init_test(&env);
-
   _assert_set_test_variable("$control-value", _string_to_filterXExpr("default"));
 
   /////
@@ -332,15 +263,10 @@ Test(expr_condition, test_condition_matching_else_expression)
   filterx_object_unref(control_value);
   filterx_object_unref(cond_eval);
   ////
-
-  deinit_test(&env);
 }
 
 Test(expr_condition, test_condition_subsequent_conditions_must_create_nested_condition)
 {
-  TestEnv env;
-  init_test(&env);
-
   _assert_set_test_variable("$control-value", _string_to_filterXExpr("default"));
 
   /////
@@ -372,15 +298,10 @@ Test(expr_condition, test_condition_subsequent_conditions_must_create_nested_con
   filterx_expr_unref(cond);
 
   ////
-
-  deinit_test(&env);
 }
 
 Test(expr_condition, test_condition_all_the_statements_must_executed)
 {
-  TestEnv env;
-  init_test(&env);
-
   _assert_set_test_variable("$control-value", _string_to_filterXExpr("default"));
 
   /////
@@ -410,16 +331,11 @@ Test(expr_condition, test_condition_all_the_statements_must_executed)
   filterx_object_unref(cond_eval);
 
   ////
-
-  deinit_test(&env);
 }
 
 
 Test(expr_condition, test_condition_must_return_last_expression_from_evaluated_codeblock)
 {
-  TestEnv env;
-  init_test(&env);
-
   _assert_set_test_variable("$control-value", _string_to_filterXExpr("default"));
 
   /////
@@ -438,16 +354,11 @@ Test(expr_condition, test_condition_must_return_last_expression_from_evaluated_c
   filterx_expr_unref(cond);
   filterx_object_unref(cond_eval);
   ////
-
-  deinit_test(&env);
 }
 
 
 Test(expr_condition, test_condition_falsey_expression_must_interrupt_sequential_code_execution)
 {
-  TestEnv env;
-  init_test(&env);
-
   _assert_set_test_variable("$control-value", _string_to_filterXExpr("default"));
   _assert_set_test_variable("$control-value3", _string_to_filterXExpr("default3"));
 
@@ -475,16 +386,11 @@ Test(expr_condition, test_condition_falsey_expression_must_interrupt_sequential_
   filterx_expr_unref(cond);
   filterx_object_unref(cond_eval);
   ////
-
-  deinit_test(&env);
 }
 
 
 Test(expr_condition, test_condition_do_not_allow_to_add_else_into_else, .signal=SIGABRT)
 {
-  TestEnv env;
-  init_test(&env);
-
   /////
 
   GList *stmts = g_list_append(NULL, _assert_assign_var("$control-value", _string_to_filterXExpr("matching")));
@@ -496,8 +402,6 @@ Test(expr_condition, test_condition_do_not_allow_to_add_else_into_else, .signal=
 
   filterx_expr_unref(cond);
   ////
-
-  deinit_test(&env);
 }
 
 FilterXObject *
@@ -508,9 +412,6 @@ _fail_func(GPtrArray *args)
 
 Test(expr_condition, test_condition_return_null_on_illegal_expr)
 {
-  TestEnv env;
-  init_test(&env);
-
   GList *stmts = g_list_append(NULL, _assert_assign_var("$control-value", _string_to_filterXExpr("matching")));
 
   FilterXExpr *func = filterx_simple_function_new("test_fn", NULL, _fail_func);
@@ -520,8 +421,6 @@ Test(expr_condition, test_condition_return_null_on_illegal_expr)
   cr_assert_null(res);
 
   filterx_expr_unref(cond);
-
-  deinit_test(&env);
 }
 
 FilterXObject *
@@ -532,9 +431,6 @@ _dummy_func(GPtrArray *args)
 
 Test(expr_condition, test_condition_return_expr_result_on_missing_stmts)
 {
-  TestEnv env;
-  init_test(&env);
-
   FilterXExpr *func = filterx_simple_function_new("test_fn", NULL, _dummy_func);
 
   FilterXExpr *cond = filterx_conditional_new_conditional_codeblock(func, NULL);
@@ -546,15 +442,10 @@ Test(expr_condition, test_condition_return_expr_result_on_missing_stmts)
 
   filterx_expr_unref(cond);
   filterx_object_unref(res);
-
-  deinit_test(&env);
 }
 
 Test(expr_condition, test_condition_must_not_fail_on_empty_else_block)
 {
-  TestEnv env;
-  init_test(&env);
-
   FilterXExpr *cond = filterx_conditional_new_conditional_codeblock(filterx_literal_new(filterx_boolean_new(FALSE)),
                       NULL);
   cond = filterx_conditional_add_false_branch((FilterXConditional *)cond,
@@ -566,15 +457,10 @@ Test(expr_condition, test_condition_must_not_fail_on_empty_else_block)
 
   filterx_expr_unref(cond);
   filterx_object_unref(res);
-
-  deinit_test(&env);
 }
 
 Test(expr_condition, test_condition_with_complex_expression_to_check_memory_leaks)
 {
-  TestEnv env;
-  init_test(&env);
-
   GList *stmts = NULL;
   stmts = g_list_append(stmts, filterx_literal_new(filterx_string_new("foobar", -1)));
 
@@ -589,20 +475,20 @@ Test(expr_condition, test_condition_with_complex_expression_to_check_memory_leak
 
   filterx_expr_unref(cond);
   filterx_object_unref(res);
-
-  deinit_test(&env);
 }
 
 static void
 setup(void)
 {
   app_startup();
+  init_libtest_filterx();
 }
 
 static void
 teardown(void)
 {
   scratch_buffers_explicit_gc();
+  deinit_libtest_filterx();
   app_shutdown();
 }
 

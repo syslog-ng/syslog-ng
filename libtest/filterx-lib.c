@@ -23,7 +23,9 @@
 
 #include <criterion/criterion.h>
 #include "filterx-lib.h"
+#include "cr_template.h"
 #include "filterx/object-json.h"
+#include "filterx/filterx-eval.h"
 
 void
 assert_marshaled_object(FilterXObject *obj, const gchar *repr, LogMessageValueType type)
@@ -123,6 +125,13 @@ filterx_test_unknown_object_new(void)
   return filterx_object_new(&FILTERX_TYPE_NAME(test_unknown_object));
 }
 
+static struct
+{
+  LogMessage *msg;
+  FilterXScope *scope;
+  FilterXEvalContext context;
+} filterx_env;
+
 void
 init_libtest_filterx(void)
 {
@@ -133,11 +142,27 @@ init_libtest_filterx(void)
   filterx_type_init(&FILTERX_TYPE_NAME(test_list));
   FILTERX_TYPE_NAME(test_dict) = FILTERX_TYPE_NAME(json_object);
   FILTERX_TYPE_NAME(test_list) = FILTERX_TYPE_NAME(json_array);
+
+  memset(&filterx_env, 0, sizeof(filterx_env));
+  filterx_env.msg = create_sample_message();
+  filterx_env.scope = filterx_scope_new();
+
+  filterx_env.context = (FilterXEvalContext)
+  {
+    .msgs = &filterx_env.msg,
+    .num_msg = 1,
+    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .scope = filterx_env.scope,
+  };
+  filterx_eval_set_context(&filterx_env.context);
 }
 
 void
 deinit_libtest_filterx(void)
 {
+  log_msg_unref(filterx_env.msg);
+  filterx_scope_unref(filterx_env.scope);
+  filterx_eval_set_context(NULL);
 }
 
 FILTERX_DEFINE_TYPE(test_dict, FILTERX_TYPE_NAME(object));
