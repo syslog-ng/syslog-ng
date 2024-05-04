@@ -84,12 +84,12 @@ public:
         return nullptr;
       }
   };
-  bool Set(google::protobuf::Message *message, std::string fieldName, FilterXObject *object)
+  bool Set(google::protobuf::Message *message, std::string fieldName, FilterXObject *object, FilterXObject **assoc_object)
   {
     try
       {
         ProtoReflectors reflectors(*message, fieldName);
-        return this->FilterXObjectSetter(message, reflectors, object);
+        return this->FilterXObjectSetter(message, reflectors, object, assoc_object);
       }
     catch(const std::exception &ex)
       {
@@ -102,7 +102,7 @@ public:
 protected:
   virtual FilterXObject *FilterXObjectGetter(google::protobuf::Message *message, ProtoReflectors reflectors) = 0;
   virtual bool FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors,
-                                   FilterXObject *object) = 0;
+                                   FilterXObject *object, FilterXObject **assoc_object) = 0;
 };
 
 std::unique_ptr<ProtobufField> *all_protobuf_converters();

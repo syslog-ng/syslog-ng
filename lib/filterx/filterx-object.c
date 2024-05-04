@@ -37,7 +37,7 @@ filterx_object_getattr_string(FilterXObject *self, const gchar *attr_name)
 }
 
 gboolean
-filterx_object_setattr_string(FilterXObject *self, const gchar *attr_name, FilterXObject *new_value)
+filterx_object_setattr_string(FilterXObject *self, const gchar *attr_name, FilterXObject **new_value)
 {
   FilterXObject *attr = filterx_string_new(attr_name, -1);
   gboolean res = filterx_object_setattr(self, attr, new_value);

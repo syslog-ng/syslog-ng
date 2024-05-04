@@ -50,7 +50,7 @@ public:
   Resource(Resource &&o) = delete;
 
   std::string marshal();
-  bool set_field(const gchar *attribute, FilterXObject *value);
+  bool set_field(const gchar *attribute, FilterXObject **value);
   FilterXObject *get_field(const gchar *attribute);
   const opentelemetry::proto::resource::v1::Resource &get_value() const;
 

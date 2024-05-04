@@ -38,12 +38,12 @@ struct _FilterXType
   FilterXObject *(*unmarshal)(FilterXObject *self);
   gboolean (*marshal)(FilterXObject *self, GString *repr, LogMessageValueType *t);
   FilterXObject *(*clone)(FilterXObject *self);
-  gboolean (*map_to_json)(FilterXObject *self, struct json_object **object);
+  gboolean (*map_to_json)(FilterXObject *self, struct json_object **object, FilterXObject **assoc_object);
   gboolean (*truthy)(FilterXObject *self);
   FilterXObject *(*getattr)(FilterXObject *self, FilterXObject *attr);
-  gboolean (*setattr)(FilterXObject *self, FilterXObject *attr, FilterXObject *new_value);
+  gboolean (*setattr)(FilterXObject *self, FilterXObject *attr, FilterXObject **new_value);
   FilterXObject *(*get_subscript)(FilterXObject *self, FilterXObject *key);
-  gboolean (*set_subscript)(FilterXObject *self, FilterXObject *key, FilterXObject *new_value);
+  gboolean (*set_subscript)(FilterXObject *self, FilterXObject *key, FilterXObject **new_value);
   gboolean (*is_key_set)(FilterXObject *self, FilterXObject *key);
   gboolean (*unset_key)(FilterXObject *self, FilterXObject *key);
   FilterXObject *(*list_factory)(void);
@@ -92,7 +92,7 @@ struct _FilterXObject
 };
 
 FilterXObject *filterx_object_getattr_string(FilterXObject *self, const gchar *attr_name);
-gboolean filterx_object_setattr_string(FilterXObject *self, const gchar *attr_name, FilterXObject *new_value);
+gboolean filterx_object_setattr_string(FilterXObject *self, const gchar *attr_name, FilterXObject **new_value);
 
 FilterXObject *filterx_object_new(FilterXType *type);
 FilterXObject *filterx_object_ref(FilterXObject *self);
@@ -176,10 +176,16 @@ filterx_object_clone(FilterXObject *self)
 }
 
 static inline gboolean
-filterx_object_map_to_json(FilterXObject *self, struct json_object **object)
+filterx_object_map_to_json(FilterXObject *self, struct json_object **object, FilterXObject **assoc_object)
 {
+  *assoc_object = NULL;
   if (self->type->map_to_json)
-    return self->type->map_to_json(self, object);
+    {
+      gboolean result = self->type->map_to_json(self, object, assoc_object);
+      if (!(*assoc_object))
+        *assoc_object = filterx_object_ref(self);
+      return result;
+    }
   return FALSE;
 }
 
@@ -208,7 +214,7 @@ filterx_object_getattr(FilterXObject *self, FilterXObject *attr)
 }
 
 static inline gboolean
-filterx_object_setattr(FilterXObject *self, FilterXObject *attr, FilterXObject *new_value)
+filterx_object_setattr(FilterXObject *self, FilterXObject *attr, FilterXObject **new_value)
 {
   g_assert(!self->readonly);
 
@@ -230,7 +236,7 @@ filterx_object_get_subscript(FilterXObject *self, FilterXObject *key)
 }
 
 static inline gboolean
-filterx_object_set_subscript(FilterXObject *self, FilterXObject *key, FilterXObject *new_value)
+filterx_object_set_subscript(FilterXObject *self, FilterXObject *key, FilterXObject **new_value)
 {
   g_assert(!self->readonly);
 

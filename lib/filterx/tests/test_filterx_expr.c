@@ -450,7 +450,7 @@ Test(filterx_expr, test_filterx_readonly)
   FilterXObject *dict = filterx_test_dict_new();
 
   FilterXObject *inner_dict = filterx_test_dict_new();
-  cr_assert(filterx_object_set_subscript(dict, foo, inner_dict));
+  cr_assert(filterx_object_set_subscript(dict, foo, &inner_dict));
   filterx_object_unref(inner_dict);
 
   filterx_object_make_readonly(dict);

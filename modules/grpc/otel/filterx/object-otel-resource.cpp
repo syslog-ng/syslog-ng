@@ -60,12 +60,18 @@ Resource::marshal(void)
 }
 
 bool
-Resource::set_field(const gchar *attribute, FilterXObject *value)
+Resource::set_field(const gchar *attribute, FilterXObject **value)
 {
   try
     {
       ProtoReflectors reflectors(resource, attribute);
-      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Set(&resource, attribute, value);
+      FilterXObject *assoc_object = NULL;
+      if (!otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Set(&resource, attribute, *value, &assoc_object))
+        return false;
+
+      filterx_object_unref(*value);
+      *value = assoc_object;
+      return true;
     }
   catch (const std::invalid_argument &e)
     {
@@ -131,7 +137,7 @@ _free(FilterXObject *s)
 }
 
 static gboolean
-_setattr(FilterXObject *s, FilterXObject *attr, FilterXObject *new_value)
+_setattr(FilterXObject *s, FilterXObject *attr, FilterXObject **new_value)
 {
   FilterXOtelResource *self = (FilterXOtelResource *) s;
 

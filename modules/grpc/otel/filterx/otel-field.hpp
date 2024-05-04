@@ -38,10 +38,11 @@ class AnyField : public ProtobufField
 
 public:
   FilterXObject *FilterXObjectGetter(Message *message, ProtoReflectors reflectors);
-  bool FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object);
+  bool FilterXObjectSetter(Message *message, ProtoReflectors reflectors, FilterXObject *object,
+                           FilterXObject **assoc_object);
 
   FilterXObject *FilterXObjectDirectGetter(AnyValue *anyValue);
-  bool FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object);
+  bool FilterXObjectDirectSetter(AnyValue *anyValue, FilterXObject *object, FilterXObject **assoc_object);
 };
 
 extern AnyField any_field_converter;

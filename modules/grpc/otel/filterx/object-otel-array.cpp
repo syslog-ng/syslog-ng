@@ -92,15 +92,27 @@ Array::marshal(void)
 }
 
 bool
-Array::set_subscript(uint64_t index, FilterXObject *value)
+Array::set_subscript(uint64_t index, FilterXObject **value)
 {
-  return any_field_converter.FilterXObjectDirectSetter(array->mutable_values(index), value);
+  FilterXObject *assoc_object = NULL;
+  if (!any_field_converter.FilterXObjectDirectSetter(array->mutable_values(index), *value, &assoc_object))
+    return false;
+
+  filterx_object_unref(*value);
+  *value = assoc_object;
+  return true;
 }
 
 bool
-Array::append(FilterXObject *value)
+Array::append(FilterXObject **value)
 {
-  return any_field_converter.FilterXObjectDirectSetter(array->add_values(), value);
+  FilterXObject *assoc_object = NULL;
+  if (!any_field_converter.FilterXObjectDirectSetter(array->add_values(), *value, &assoc_object))
+    return false;
+
+  filterx_object_unref(*value);
+  *value = assoc_object;
+  return true;
 }
 
 bool
@@ -141,7 +153,7 @@ _free(FilterXObject *s)
 }
 
 static gboolean
-_set_subscript(FilterXList *s, uint64_t index, FilterXObject *new_value)
+_set_subscript(FilterXList *s, uint64_t index, FilterXObject **new_value)
 {
   FilterXOtelArray *self = (FilterXOtelArray *) s;
 
@@ -149,7 +161,7 @@ _set_subscript(FilterXList *s, uint64_t index, FilterXObject *new_value)
 }
 
 static gboolean
-_append(FilterXList *s, FilterXObject *new_value)
+_append(FilterXList *s, FilterXObject **new_value)
 {
   FilterXOtelArray *self = (FilterXOtelArray *) s;
 
@@ -288,12 +300,58 @@ OtelArrayField::FilterXObjectGetter(google::protobuf::Message *message, ProtoRef
     }
 }
 
+static ArrayValue *
+_get_array_value(google::protobuf::Message *message, syslogng::grpc::otel::ProtoReflectors reflectors)
+{
+  try
+    {
+      return dynamic_cast<ArrayValue *>(reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor));
+    }
+  catch(const std::bad_cast &e)
+    {
+      g_assert_not_reached();
+    }
+}
+
+static bool
+_set_array_field_from_list(google::protobuf::Message *message, syslogng::grpc::otel::ProtoReflectors reflectors,
+                           FilterXObject *object, FilterXObject **assoc_object)
+{
+  ArrayValue *array = _get_array_value(message, reflectors);
+
+  guint64 len;
+  g_assert(filterx_object_len(object, &len));
+
+  for (guint64 i = 0; i < len; i++)
+    {
+      FilterXObject *value_obj = filterx_list_get_subscript(object, (gint64) MIN(i, G_MAXINT64));
+
+      AnyValue *any_value = array->add_values();
+
+      FilterXObject *elem_assoc_object = NULL;
+      if (!syslogng::grpc::otel::any_field_converter.FilterXObjectDirectSetter(any_value, value_obj, &elem_assoc_object))
+        {
+          filterx_object_unref(value_obj);
+          return false;
+        }
+
+      filterx_object_unref(elem_assoc_object);
+      filterx_object_unref(value_obj);
+    }
+
+  *assoc_object = _new_borrowed(array);
+  return true;
+}
+
 bool
 OtelArrayField::FilterXObjectSetter(google::protobuf::Message *message, ProtoReflectors reflectors,
-                                    FilterXObject *object)
+                                    FilterXObject *object, FilterXObject **assoc_object)
 {
   if (!filterx_object_is_type(object, &FILTERX_TYPE_NAME(otel_array)))
     {
+      if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(list)))
+        return _set_array_field_from_list(message, reflectors, object, assoc_object);
+
       msg_error("otel-array: Failed to convert field, type is unsupported",
                 evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()),
                 evt_tag_str("expected_type", reflectors.fieldDescriptor->type_name()),
@@ -302,17 +360,8 @@ OtelArrayField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRef
     }
 
   FilterXOtelArray *filterx_array = (FilterXOtelArray *) object;
-  ArrayValue *array_value;
 
-  try
-    {
-      array_value = dynamic_cast<ArrayValue *>(reflectors.reflection->MutableMessage(message, reflectors.fieldDescriptor));
-    }
-  catch(const std::bad_cast &e)
-    {
-      g_assert_not_reached();
-    }
-
+  ArrayValue *array_value = _get_array_value(message, reflectors);
   array_value->CopyFrom(filterx_array->cpp->get_value());
 
   Array *new_array;
@@ -327,6 +376,7 @@ OtelArrayField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRef
 
   delete filterx_array->cpp;
   filterx_array->cpp = new_array;
+  *assoc_object = filterx_object_ref(object);
 
   return true;
 }

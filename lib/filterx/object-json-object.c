@@ -54,7 +54,7 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 static gboolean
-_map_to_json(FilterXObject *s, struct json_object **json_obj)
+_map_to_json(FilterXObject *s, struct json_object **json_obj, FilterXObject **assoc_object)
 {
   FilterXJsonObject *self = (FilterXJsonObject *) s;
 
@@ -91,7 +91,7 @@ _get_subscript(FilterXDict *s, FilterXObject *key)
 }
 
 static gboolean
-_set_subscript(FilterXDict *s, FilterXObject *key, FilterXObject *new_value)
+_set_subscript(FilterXDict *s, FilterXObject *key, FilterXObject **new_value)
 {
   FilterXJsonObject *self = (FilterXJsonObject *) s;
 
@@ -100,13 +100,15 @@ _set_subscript(FilterXDict *s, FilterXObject *key, FilterXObject *new_value)
     return FALSE;
 
   struct json_object *new_json_value = NULL;
-  if (!filterx_object_map_to_json(new_value, &new_json_value))
+  FilterXObject *assoc_object = NULL;
+  if (!filterx_object_map_to_json(*new_value, &new_json_value, &assoc_object))
     return FALSE;
 
-  filterx_json_associate_cached_object(new_json_value, new_value);
+  filterx_json_associate_cached_object(new_json_value, assoc_object);
 
   if (json_object_object_add(self->object, key_str, new_json_value) != 0)
     {
+      filterx_object_unref(assoc_object);
       json_object_put(new_json_value);
       return FALSE;
     }
@@ -118,6 +120,9 @@ _set_subscript(FilterXDict *s, FilterXObject *key, FilterXObject *new_value)
       root_container->modified_in_place = TRUE;
       filterx_object_unref(root_container);
     }
+
+  filterx_object_unref(*new_value);
+  *new_value = assoc_object;
 
   return TRUE;
 }

@@ -55,7 +55,7 @@ filterx_primitive_new(FilterXType *type)
 }
 
 static gboolean
-_integer_map_to_json(FilterXObject *s, struct json_object **object)
+_integer_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **assoc_object)
 {
   FilterXPrimitive *self = (FilterXPrimitive *) s;
 
@@ -95,7 +95,7 @@ filterx_integer_new(gint64 value)
 }
 
 static gboolean
-_double_map_to_json(FilterXObject *s, struct json_object **object)
+_double_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **assoc_object)
 {
   FilterXPrimitive *self = (FilterXPrimitive *) s;
 
@@ -147,7 +147,7 @@ _bool_marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 static gboolean
-_bool_map_to_json(FilterXObject *s, struct json_object **object)
+_bool_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **assoc_object)
 {
   FilterXPrimitive *self = (FilterXPrimitive *) s;
 

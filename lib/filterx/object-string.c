@@ -104,7 +104,7 @@ _len(FilterXObject *s, guint64 *len)
 }
 
 static gboolean
-_map_to_json(FilterXObject *s, struct json_object **object)
+_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **assoc_object)
 {
   FilterXString *self = (FilterXString *) s;
 
@@ -141,7 +141,7 @@ _get_base64_encoded_size(gsize len)
 }
 
 static gboolean
-_bytes_map_to_json(FilterXObject *s, struct json_object **object)
+_bytes_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **assoc_object)
 {
   FilterXString *self = (FilterXString *) s;
   GString *encode_buffer = scratch_buffers_alloc();

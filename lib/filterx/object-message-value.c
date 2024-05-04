@@ -125,13 +125,13 @@ _unmarshal_repr(const gchar *repr, gssize repr_len, LogMessageValueType t)
  * and call map_to_json on the unmarshalled object.
  */
 static gboolean
-_map_to_json(FilterXObject *s, struct json_object **jso)
+_map_to_json(FilterXObject *s, struct json_object **jso, FilterXObject **assoc_object)
 {
   FilterXObject *unmarshalled_object = filterx_object_unmarshal(filterx_object_ref(s));
 
   if (unmarshalled_object)
     {
-      gboolean result = filterx_object_map_to_json(unmarshalled_object, jso);
+      gboolean result = filterx_object_map_to_json(unmarshalled_object, jso, assoc_object);
       filterx_object_unref(unmarshalled_object);
       return result;
     }
