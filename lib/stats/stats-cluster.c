@@ -358,8 +358,7 @@ stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **
 
   if (self->use_count == 0 && (*counter)->external)
     {
-      (*counter)->external = FALSE;
-      (*counter)->value_ref = NULL;
+      stats_counter_clear(*counter);
       gint type_mask = 1 << type;
       self->live_mask &= ~type_mask;
     }
@@ -450,7 +449,7 @@ stats_counter_group_free(StatsCounterGroup *self)
 static void
 stats_cluster_free_counter(StatsCluster *self, gint type, StatsCounterItem *item, gpointer user_data)
 {
-  stats_counter_free(item);
+  stats_counter_clear(item);
 }
 
 void

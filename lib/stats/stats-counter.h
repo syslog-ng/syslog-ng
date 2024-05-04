@@ -128,9 +128,10 @@ stats_counter_get_name(StatsCounterItem *counter)
 }
 
 static inline void
-stats_counter_free(StatsCounterItem *counter)
+stats_counter_clear(StatsCounterItem *counter)
 {
   g_free(counter->name);
+  memset(counter, 0, sizeof(*counter));
 }
 
 #endif
