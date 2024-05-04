@@ -20,7 +20,7 @@
  *
  */
 
-#include "filterx-cached-json-file.h"
+#include "filterx-cache-json-file.h"
 #include "filterx/object-json.h"
 #include "filterx/object-string.h"
 #include "filterx/expr-literal.h"
@@ -32,29 +32,29 @@
 #include <stdio.h>
 #include <errno.h>
 
-#define FILTERX_FUNC_CACHED_JSON_FILE_USAGE "Usage: cached_json_file(\"/path/to/file.json\")"
+#define FILTERX_FUNC_CACHE_JSON_FILE_USAGE "Usage: cache_json_file(\"/path/to/file.json\")"
 
-#define CACHED_JSON_FILE_ERROR cached_json_file_error_quark()
+#define CACHE_JSON_FILE_ERROR cache_json_file_error_quark()
 
-enum FilterXFunctionCachedJsonFileError
+enum FilterXFunctionCacheJsonFileError
 {
-  CACHED_JSON_FILE_ERROR_FILE_OPEN_ERROR,
-  CACHED_JSON_FILE_ERROR_FILE_READ_ERROR,
-  CACHED_JSON_FILE_ERROR_JSON_PARSE_ERROR,
+  CACHE_JSON_FILE_ERROR_FILE_OPEN_ERROR,
+  CACHE_JSON_FILE_ERROR_FILE_READ_ERROR,
+  CACHE_JSON_FILE_ERROR_JSON_PARSE_ERROR,
 };
 
 static GQuark
-cached_json_file_error_quark(void)
+cache_json_file_error_quark(void)
 {
-  return g_quark_from_static_string("filterx-function-cached-json-file-error-quark");
+  return g_quark_from_static_string("filterx-function-cache-json-file-error-quark");
 }
 
-typedef struct FilterXFunctionCachedJsonFile_
+typedef struct FilterXFunctionCacheJsonFile_
 {
   FilterXFunction super;
   gchar *filepath;
   FilterXObject *cached_json;
-} FilterXFuntionCachedJsonFile;
+} FilterXFuntionCacheJsonFile;
 
 static gchar *
 _extract_filepath(GList *argument_expressions, GError **error)
@@ -62,7 +62,7 @@ _extract_filepath(GList *argument_expressions, GError **error)
   if (argument_expressions == NULL || g_list_length(argument_expressions) != 1)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "invalid number of arguments. " FILTERX_FUNC_CACHED_JSON_FILE_USAGE);
+                  "invalid number of arguments. " FILTERX_FUNC_CACHE_JSON_FILE_USAGE);
       return NULL;
     }
 
@@ -70,7 +70,7 @@ _extract_filepath(GList *argument_expressions, GError **error)
   if (!filepath_expr || !filterx_expr_is_literal(filepath_expr))
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "argument must be string literal. " FILTERX_FUNC_CACHED_JSON_FILE_USAGE);
+                  "argument must be string literal. " FILTERX_FUNC_CACHE_JSON_FILE_USAGE);
       return NULL;
     }
 
@@ -78,7 +78,7 @@ _extract_filepath(GList *argument_expressions, GError **error)
   if (!filepath_obj)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "failed to evaluate argument. " FILTERX_FUNC_CACHED_JSON_FILE_USAGE);
+                  "failed to evaluate argument. " FILTERX_FUNC_CACHE_JSON_FILE_USAGE);
       return NULL;
     }
 
@@ -89,7 +89,7 @@ _extract_filepath(GList *argument_expressions, GError **error)
   if (!filepath)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "argument must be string literal. " FILTERX_FUNC_CACHED_JSON_FILE_USAGE);
+                  "argument must be string literal. " FILTERX_FUNC_CACHE_JSON_FILE_USAGE);
       g_free(filepath);
       return NULL;
     }
@@ -103,7 +103,7 @@ _load_json_file(const gchar *filepath, GError **error)
   FILE *file = fopen(filepath, "rb");
   if (!file)
     {
-      g_set_error(error, CACHED_JSON_FILE_ERROR, CACHED_JSON_FILE_ERROR_FILE_OPEN_ERROR,
+      g_set_error(error, CACHE_JSON_FILE_ERROR, CACHE_JSON_FILE_ERROR_FILE_OPEN_ERROR,
                   "failed to open file: %s (%s)", filepath, g_strerror(errno));
       return FALSE;
     }
@@ -118,7 +118,7 @@ _load_json_file(const gchar *filepath, GError **error)
       if (bytes_read <= 0)
         {
           if (ferror(file))
-            g_set_error(error, CACHED_JSON_FILE_ERROR, CACHED_JSON_FILE_ERROR_FILE_READ_ERROR,
+            g_set_error(error, CACHE_JSON_FILE_ERROR, CACHE_JSON_FILE_ERROR_FILE_READ_ERROR,
                         "failed to read file: %s (%s)", filepath, g_strerror(errno));
           break;
         }
@@ -131,7 +131,7 @@ _load_json_file(const gchar *filepath, GError **error)
       if (parse_result == json_tokener_continue)
         continue;
 
-      g_set_error(error, CACHED_JSON_FILE_ERROR, CACHED_JSON_FILE_ERROR_JSON_PARSE_ERROR,
+      g_set_error(error, CACHE_JSON_FILE_ERROR, CACHE_JSON_FILE_ERROR_JSON_PARSE_ERROR,
                   "failed to parse JSON file: %s (%s)", filepath, json_tokener_error_desc(parse_result));
       break;
     }
@@ -151,7 +151,7 @@ _load_json_file(const gchar *filepath, GError **error)
 static FilterXObject *
 _eval(FilterXExpr *s)
 {
-  FilterXFuntionCachedJsonFile *self = (FilterXFuntionCachedJsonFile *) s;
+  FilterXFuntionCacheJsonFile *self = (FilterXFuntionCacheJsonFile *) s;
 
   return filterx_object_ref(self->cached_json);
 }
@@ -159,7 +159,7 @@ _eval(FilterXExpr *s)
 static void
 _free(FilterXExpr *s)
 {
-  FilterXFuntionCachedJsonFile *self = (FilterXFuntionCachedJsonFile *) s;
+  FilterXFuntionCacheJsonFile *self = (FilterXFuntionCacheJsonFile *) s;
 
   g_free(self->filepath);
   filterx_object_unfreeze_and_free(self->cached_json);
@@ -167,9 +167,9 @@ _free(FilterXExpr *s)
 }
 
 FilterXFunction *
-filterx_function_cached_json_file_new(const gchar *function_name, GList *argument_expressions, GError **error)
+filterx_function_cache_json_file_new(const gchar *function_name, GList *argument_expressions, GError **error)
 {
-  FilterXFuntionCachedJsonFile *self = g_new0(FilterXFuntionCachedJsonFile, 1);
+  FilterXFuntionCacheJsonFile *self = g_new0(FilterXFuntionCacheJsonFile, 1);
   filterx_function_init_instance(&self->super, function_name);
 
   self->super.super.eval = _eval;
@@ -194,7 +194,7 @@ error:
 }
 
 gpointer
-filterx_function_cached_json_file_new_construct(Plugin *self)
+filterx_function_cache_json_file_new_construct(Plugin *self)
 {
-  return (gpointer) &filterx_function_cached_json_file_new;
+  return (gpointer) &filterx_function_cache_json_file_new;
 }
