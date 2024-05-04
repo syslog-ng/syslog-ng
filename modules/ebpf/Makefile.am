@@ -12,7 +12,7 @@ modules_ebpf_libebpf_la_SOURCES = \
 modules_ebpf_libebpf_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/modules/ebpf -I$(top_builddir)/modules/ebpf
 modules_ebpf_libebpf_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBBPF_LIBS)
 modules_ebpf_libebpf_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_ebpf_libebpf_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+EXTRA_modules_ebpf_libebpf_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 modules/ebpf modules/ebpf/ mod-ebpf: modules/ebpf/libebpf.la
 

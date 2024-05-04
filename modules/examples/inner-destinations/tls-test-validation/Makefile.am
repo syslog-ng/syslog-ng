@@ -19,6 +19,6 @@ EXTRA_DIST += \
 modules_examples_inner_destinations_tls_test_validation_libtls_test_validation_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/modules/examples/inner-destinations/tls-test-validation -I$(top_builddir)/modules/examples/inner-destinations/tls-test-validation
 modules_examples_inner_destinations_tls_test_validation_libtls_test_validation_la_LIBADD = $(MODULE_DEPS_LIBS)
 modules_examples_inner_destinations_tls_test_validation_libtls_test_validation_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_examples_inner_destinations_tls_test_validation_libtls_test_validation_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+EXTRA_modules_examples_inner_destinations_tls_test_validation_libtls_test_validation_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 PHONY: modules/examples/inner-destinations/tls-test-validation/ mod-tls-test-validation

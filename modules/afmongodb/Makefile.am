@@ -23,7 +23,7 @@ modules_afmongodb_libafmongodb_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS) $(LIBMONGO_LIBS)
 modules_afmongodb_libafmongodb_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
-modules_afmongodb_libafmongodb_la_DEPENDENCIES	=	\
+EXTRA_modules_afmongodb_libafmongodb_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS) $(lmc_EXTRA_DEPS)
 
 modules/afmongodb modules/afmongodb/ mod-afmongodb mod-mongodb: \

@@ -57,10 +57,10 @@ lib_libsyslog_ng_la_LDFLAGS		= -no-undefined -release ${LSNG_RELEASE} \
 
 lib_test_subdirs			= lib_filter lib_filterx lib_logproto lib_parser lib_rewrite lib_template lib_stats lib_control
 
-lib_libsyslog_ng_la_DEPENDENCIES       = lib/eventlog/src/libevtlog.la lib/secret-storage/libsecret-storage.la
+EXTRA_lib_libsyslog_ng_la_DEPENDENCIES       = lib/eventlog/src/libevtlog.la lib/secret-storage/libsecret-storage.la
 
 if IVYKIS_INTERNAL
-lib_libsyslog_ng_la_DEPENDENCIES	+= lib/ivykis/src/libivykis.la
+EXTRA_lib_libsyslog_ng_la_DEPENDENCIES	+= lib/ivykis/src/libivykis.la
 
 lib/ivykis/src/libivykis.la:
 	${MAKE} CFLAGS="${CFLAGS} -Wno-error" -C lib/ivykis

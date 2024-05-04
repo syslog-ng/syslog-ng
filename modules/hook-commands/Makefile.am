@@ -19,7 +19,7 @@ EXTRA_DIST += modules/hook-commands/hook-commands-grammar.ym	\
 modules_hook_commands_libhook_commands_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/modules/hook-commands -I$(top_builddir)/modules/hook-commands
 modules_hook_commands_libhook_commands_la_LIBADD = $(MODULE_DEPS_LIBS)
 modules_hook_commands_libhook_commands_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_hook_commands_libhook_commands_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+EXTRA_modules_hook_commands_libhook_commands_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 modules/hook-commands modules/hook-commands/ mod-hook-commands: modules/hook-commands/libhook-commands.la
 

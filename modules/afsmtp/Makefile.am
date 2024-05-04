@@ -16,7 +16,7 @@ modules_afsmtp_libafsmtp_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS) $(LIBESMTP_LIBS)
 modules_afsmtp_libafsmtp_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
-modules_afsmtp_libafsmtp_la_DEPENDENCIES=	\
+EXTRA_modules_afsmtp_libafsmtp_la_DEPENDENCIES=	\
 	$(MODULE_DEPS_LIBS)
 
 modules/afsmtp modules/afsmtp/ mod-afsmtp mod-smtp: \

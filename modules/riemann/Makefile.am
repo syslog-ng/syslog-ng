@@ -23,7 +23,7 @@ modules_riemann_libriemann_la_LIBADD		 = \
 
 modules_riemann_libriemann_la_LDFLAGS		 = \
 	$(MODULE_LDFLAGS)
-modules_riemann_libriemann_la_DEPENDENCIES	 = \
+EXTRA_modules_riemann_libriemann_la_DEPENDENCIES	 = \
 	$(MODULE_DEPS_LIBS)
 
 modules/riemann mod-riemann: modules/riemann/libriemann.la

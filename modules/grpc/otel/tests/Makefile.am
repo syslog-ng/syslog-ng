@@ -11,7 +11,7 @@ check_PROGRAMS += ${modules_grpc_otel_tests_TESTS}
 modules_grpc_otel_tests_test_otel_protobuf_parser_SOURCES = \
   modules/grpc/otel/tests/test-otel-protobuf-parser.cpp
 
-modules_grpc_otel_tests_test_otel_protobuf_parser_DEPENDENCIES = \
+EXTRA_modules_grpc_otel_tests_test_otel_protobuf_parser_DEPENDENCIES = \
   $(top_builddir)/modules/grpc/otel/libotel_cpp.la \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la
 
@@ -30,7 +30,7 @@ modules_grpc_otel_tests_test_otel_protobuf_parser_LDADD = \
 modules_grpc_otel_tests_test_otel_protobuf_formatter_SOURCES = \
   modules/grpc/otel/tests/test-otel-protobuf-formatter.cpp
 
-modules_grpc_otel_tests_test_otel_protobuf_formatter_DEPENDENCIES = \
+EXTRA_modules_grpc_otel_tests_test_otel_protobuf_formatter_DEPENDENCIES = \
   $(top_builddir)/modules/grpc/otel/libotel_cpp.la \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la
 
@@ -49,7 +49,7 @@ modules_grpc_otel_tests_test_otel_protobuf_formatter_LDADD = \
 modules_grpc_otel_tests_test_syslog_ng_otlp_SOURCES = \
   modules/grpc/otel/tests/test-syslog-ng-otlp.cpp
 
-modules_grpc_otel_tests_test_syslog_ng_otlp_DEPENDENCIES = \
+EXTRA_modules_grpc_otel_tests_test_syslog_ng_otlp_DEPENDENCIES = \
   $(top_builddir)/modules/grpc/otel/libotel_cpp.la \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la
 
@@ -68,7 +68,7 @@ modules_grpc_otel_tests_test_syslog_ng_otlp_LDADD = \
 modules_grpc_otel_tests_test_otel_filterx_SOURCES = \
   modules/grpc/otel/tests/test-otel-filterx.cpp
 
-modules_grpc_otel_tests_test_otel_filterx_DEPENDENCIES = \
+EXTRA_modules_grpc_otel_tests_test_otel_filterx_DEPENDENCIES = \
   $(top_builddir)/modules/grpc/otel/libotel_cpp.la \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la
 

@@ -167,6 +167,7 @@ generator_assignment
 						  filterx_shorthand_add(shorthand, setattr);
 						  filterx_shorthand_add(shorthand, $5);
 
+						  free($3);
 						  $$ = shorthand;
 						}
 	| expr '[' expr ']' KW_ASSIGN expr_generator
@@ -209,6 +210,7 @@ generator_casted_assignment
 						  FilterXExpr *shorthand = filterx_shorthand_new();
 						  filterx_shorthand_add(shorthand, assign);
 						  filterx_shorthand_add(shorthand, $5);
+						  free($3);
 
 						  $$ = shorthand;
 						}
@@ -224,6 +226,7 @@ generator_casted_assignment
 						  FilterXExpr *shorthand = filterx_shorthand_new();
 						  filterx_shorthand_add(shorthand, setattr);
 						  filterx_shorthand_add(shorthand, $7);
+						  free($3);
 
 						  $$ = shorthand;
 						}
@@ -239,6 +242,7 @@ generator_casted_assignment
 						  FilterXExpr *shorthand = filterx_shorthand_new();
 						  filterx_shorthand_add(shorthand, set_subscript);
 						  filterx_shorthand_add(shorthand, $8);
+						  free($6);
 
 						  $$ = shorthand;
 						}
@@ -255,6 +259,7 @@ generator_casted_assignment
 						  FilterXExpr *shorthand = filterx_shorthand_new();
 						  filterx_shorthand_add(shorthand, set_subscript);
 						  filterx_shorthand_add(shorthand, $7);
+						  free($5);
 
 						  $$ = shorthand;
 						}
@@ -312,6 +317,7 @@ function_call
 						  GError *error = NULL;
 						  FilterXExpr *res = filterx_function_lookup(configuration, $1, $3, &error);
 						  CHECK_ERROR_GERROR(res, @$, error, "function lookup failed: %s()", $1);
+						  free($1);
 						  $$ = res;
 						}
 	;

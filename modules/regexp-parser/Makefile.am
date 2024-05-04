@@ -16,7 +16,7 @@ modules_regexp_parser_libregexp_parser_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS)
 modules_regexp_parser_libregexp_parser_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
-modules_regexp_parser_libregexp_parser_la_DEPENDENCIES	=	\
+EXTRA_modules_regexp_parser_libregexp_parser_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
 modules/regexp-parser modules/regexp-parser mod-regexp-parser: modules/regexp-parser/libregexp-parser.la

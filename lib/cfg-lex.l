@@ -393,8 +393,8 @@ filterx_word	[^ \#'"/\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 			     yylval->cptr = strdup(yyextra->string_buffer->str);
 			     return LL_STRING;
 			   }
-<qstring><<EOF>>           {
-                             YY_FATAL_ERROR( "Unterminated quote" );
+<string,qstring,slash_string><<EOF>>  {
+                             yy_pop_state(yyscanner); YY_FATAL_ERROR( "Unterminated quote" );
                            }
 
     /* the rule below will only be applied to embedded newlines within
@@ -433,7 +433,7 @@ filterx_word	[^ \#'"/\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 
     /* rules to parse a block as a LL_BLOCK token */
 <block>{white}+            ;
-<block>[^{( \t\r\n]+       { YY_FATAL_ERROR("Expected opening bracket as block boundary, e.g. opening brace or parenthesis"); }
+<block>[^{( \t\r\n]+       { yy_pop_state(yyscanner); YY_FATAL_ERROR("Expected opening bracket as block boundary, e.g. opening brace or parenthesis"); }
 <block>\r?\n		   { _cfg_lex_move_token_location_to_new_line(yyextra); };
 <block>\({white}*\)        { yy_pop_state(yyscanner); yylval->cptr = NULL; return LL_BLOCK; }
 <block>\({white}*\"\"{white}*\) { yy_pop_state(yyscanner); yylval->cptr = g_strdup(""); return LL_BLOCK; }

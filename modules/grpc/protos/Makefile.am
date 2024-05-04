@@ -129,7 +129,7 @@ modules_grpc_protos_libgrpc_protos_la_CXXFLAGS += -Wno-switch-default
 endif
 
 modules_grpc_protos_libgrpc_protos_la_LIBADD = $(MODULE_DEPS_LIBS) $(PROTOBUF_LIBS) $(GRPCPP_LIBS) -lstdc++
-modules_grpc_protos_libgrpc_protos_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+EXTRA_modules_grpc_protos_libgrpc_protos_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 CLEANFILES += \
   $(GRPC_PROTOS_BUILT_SOURCES)

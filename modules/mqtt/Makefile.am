@@ -28,7 +28,7 @@ modules_mqtt_libmqtt_la_SOURCES = \
   modules/mqtt/mqtt-parser.h
 
 modules_mqtt_libmqtt_la_LIBADD = $(MODULE_DEPS_LIBS) $(MQTT_PLUGINS)
-modules_mqtt_libmqtt_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(MQTT_PLUGINS)
+EXTRA_modules_mqtt_libmqtt_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(MQTT_PLUGINS)
 modules_mqtt_libmqtt_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 modules/mqtt modules/mqtt/ mod-mqtt: modules/mqtt/libmqtt.la

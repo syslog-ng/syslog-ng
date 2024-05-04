@@ -16,7 +16,7 @@ modules_graphite_libgraphite_la_LIBADD		 = \
   $(MODULE_DEPS_LIBS)
 modules_graphite_libgraphite_la_LDFLAGS		 = \
   $(MODULE_LDFLAGS)
-modules_graphite_libgraphite_la_DEPENDENCIES	 = \
+EXTRA_modules_graphite_libgraphite_la_DEPENDENCIES	 = \
   $(MODULE_DEPS_LIBS)
 
 modules/graphite mod-graphite: modules/graphite/libgraphite.la

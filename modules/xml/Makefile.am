@@ -26,7 +26,7 @@ modules_xml_libxml_la_CPPFLAGS  =     \
   -I$(top_builddir)/modules/xml
 modules_xml_libxml_la_LIBADD  = $(MODULE_DEPS_LIBS)
 modules_xml_libxml_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_xml_libxml_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
+EXTRA_modules_xml_libxml_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
 modules/xml modules/xml/ mod-xml: modules/xml/libxml.la
 .PHONY: modules/xml/ mod-xml

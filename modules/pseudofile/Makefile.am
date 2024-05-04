@@ -15,7 +15,7 @@ modules_pseudofile_libpseudofile_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS)
 modules_pseudofile_libpseudofile_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
-modules_pseudofile_libpseudofile_la_DEPENDENCIES=	\
+EXTRA_modules_pseudofile_libpseudofile_la_DEPENDENCIES=	\
 	$(MODULE_DEPS_LIBS)
 
 BUILT_SOURCES				+=	\

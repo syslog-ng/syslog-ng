@@ -9,7 +9,7 @@ modules_cryptofuncs_libcryptofuncs_la_LIBADD		=	\
 	$(MODULE_DEPS_LIBS) $(OPENSSL_LIBS)
 modules_cryptofuncs_libcryptofuncs_la_LDFLAGS		=	\
 	$(MODULE_LDFLAGS) $(OPENSSL_CFLAGS)
-modules_cryptofuncs_libcryptofuncs_la_DEPENDENCIES	=	\
+EXTRA_modules_cryptofuncs_libcryptofuncs_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
 modules/cryptofuncs modules/cryptofuncs/ mod-cryptofuncs: modules/cryptofuncs/libcryptofuncs.la

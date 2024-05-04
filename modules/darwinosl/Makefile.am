@@ -18,7 +18,7 @@ modules/darwinosl/darwinosl-grammar.y
 modules_darwinosl_libdarwinosl_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/modules/darwinosl -I$(top_builddir)/modules/darwinosl
 modules_darwinosl_libdarwinosl_la_LIBADD = $(MODULE_DEPS_LIBS)
 modules_darwinosl_libdarwinosl_la_LDFLAGS = $(MODULE_LDFLAGS) -ObjC -framework Foundation -framework OSLog
-modules_darwinosl_libdarwinosl_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+EXTRA_modules_darwinosl_libdarwinosl_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 modules/darwinosl mod-darwinosl: modules/darwinosl/libdarwinosl.la
 else

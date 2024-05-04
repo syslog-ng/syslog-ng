@@ -15,7 +15,7 @@ modules_cef_libcef_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS)
 modules_cef_libcef_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
-modules_cef_libcef_la_DEPENDENCIES=	\
+EXTRA_modules_cef_libcef_la_DEPENDENCIES=	\
 	$(MODULE_DEPS_LIBS)
 
 modules/cef modules/cef/ mod-cef: modules/cef/libcef.la

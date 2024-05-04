@@ -28,6 +28,6 @@ modules_examples_sources_libthreaded_diskq_source_la_LIBADD  = \
 
 modules_examples_sources_libthreaded_diskq_source_la_LDFLAGS = $(MODULE_LDFLAGS)
 
-modules_examples_sources_libthreaded_diskq_source_la_DEPENDENCIES = \
+EXTRA_modules_examples_sources_libthreaded_diskq_source_la_DEPENDENCIES = \
   $(MODULE_DEPS_LIBS) \
   $(top_builddir)/modules/diskq/libsyslog-ng-disk-buffer.la

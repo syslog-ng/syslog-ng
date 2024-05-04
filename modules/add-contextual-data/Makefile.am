@@ -33,7 +33,7 @@ modules_add_contextual_data_libadd_contextual_data_la_LIBADD	=		\
 	$(MODULE_DEPS_LIBS)
 modules_add_contextual_data_libadd_contextual_data_la_LDFLAGS	=		\
 	$(MODULE_LDFLAGS)
-modules_add_contextual_data_libadd_contextual_data_la_DEPENDENCIES	=	\
+EXTRA_modules_add_contextual_data_libadd_contextual_data_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
 BUILT_SOURCES					+=				\

@@ -21,7 +21,7 @@ modules_redis_libredis_la_LIBADD	=	\
 	$(HIREDIS_LIBS) $(MODULE_DEPS_LIBS)
 modules_redis_libredis_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
-modules_redis_libredis_la_DEPENDENCIES	=	\
+EXTRA_modules_redis_libredis_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
 modules/redis modules/redis/ mod-redis: \
