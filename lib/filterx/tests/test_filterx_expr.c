@@ -379,8 +379,10 @@ Test(filterx_expr, test_filterx_assign)
 
   FilterXObject *res = filterx_expr_eval(assign);
   cr_assert_not_null(res);
-  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(boolean)));
+  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(string)));
+  cr_assert_str_eq(filterx_string_get_value(res, NULL), "foobar");
   cr_assert(filterx_object_truthy(res));
+  cr_assert(assign->ignore_falsy_result);
 
   cr_assert_not_null(result_var);
   FilterXObject *result_obj = filterx_expr_eval(result_var);
@@ -419,8 +421,47 @@ Test(filterx_expr, test_filterx_setattr)
 
   FilterXObject *res = filterx_expr_eval(setattr);
   cr_assert_not_null(res);
-  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(boolean)));
+  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(string)));
+  cr_assert_str_eq(filterx_string_get_value(res, NULL), "bar");
   cr_assert(filterx_object_truthy(res));
+  cr_assert(setattr->ignore_falsy_result);
+
+  assert_object_json_equals(json, "{\"foo\":\"bar\"}");
+
+  filterx_expr_unref(setattr);
+  log_msg_unref(msg);
+  filterx_scope_unref(scope);
+  filterx_eval_set_context(NULL);
+}
+
+Test(filterx_expr, test_filterx_set_subscript)
+{
+  LogMessage *msg = create_sample_message();
+  FilterXScope *scope = filterx_scope_new();
+
+  FilterXEvalContext context =
+  {
+    .msgs = &msg,
+    .num_msg = 1,
+    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .scope = scope,
+  };
+  filterx_eval_set_context(&context);
+
+  FilterXObject *json = filterx_json_object_new_empty();
+  FilterXExpr *fillable = filterx_literal_new(json);
+
+  FilterXExpr *setattr = filterx_set_subscript_new(fillable,
+                                                   filterx_literal_new(filterx_string_new("foo", -1)),
+                                                   filterx_literal_new(filterx_string_new("bar", -1)));
+  cr_assert_not_null(setattr);
+
+  FilterXObject *res = filterx_expr_eval(setattr);
+  cr_assert_not_null(res);
+  cr_assert(filterx_object_is_type(res, &FILTERX_TYPE_NAME(string)));
+  cr_assert_str_eq(filterx_string_get_value(res, NULL), "bar");
+  cr_assert(filterx_object_truthy(res));
+  cr_assert(setattr->ignore_falsy_result);
 
   assert_object_json_equals(json, "{\"foo\":\"bar\"}");
 

@@ -136,7 +136,8 @@ filterx_expr_list_eval(GList *expressions, FilterXObject **result)
       FilterXExpr *expr = elem->data;
       *result = filterx_expr_eval(expr);
 
-      if (!(*result) || filterx_object_falsy(*result))
+      if (!(*result) ||
+          (!expr->ignore_falsy_result && filterx_object_falsy(*result)))
         return FALSE;
     }
 

@@ -120,14 +120,14 @@ _evaluate_statement(FilterXExpr *expr)
 
   if (!res)
     {
-      msg_debug("FILTERX  ERROR",
+      msg_debug("FILTERX ERROR",
                 filterx_expr_format_location_tag(expr),
                 filterx_format_last_error());
       return FALSE;
     }
   filterx_eval_clear_errors();
 
-  success = filterx_object_truthy(res);
+  success = expr->ignore_falsy_result || filterx_object_truthy(res);
   if (!success || trace_flag)
     {
       GString *buf = scratch_buffers_alloc();
@@ -140,14 +140,15 @@ _evaluate_statement(FilterXExpr *expr)
         }
 
       if (!success)
-        msg_debug("FILTERX  FALSY",
+        msg_debug("FILTERX FALSY",
                   filterx_expr_format_location_tag(expr),
                   evt_tag_mem("value", buf->str, buf->len),
                   evt_tag_str("type", res->type->name));
       else
-        msg_trace("FILTERX TRUTHY",
+        msg_trace("FILTERX ESTEP",
                   filterx_expr_format_location_tag(expr),
                   evt_tag_mem("value", buf->str, buf->len),
+                  evt_tag_int("truthy", filterx_object_truthy(res)),
                   evt_tag_str("type", res->type->name));
     }
 
