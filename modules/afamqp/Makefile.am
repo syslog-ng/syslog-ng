@@ -19,7 +19,7 @@ modules_afamqp_libafamqp_la_LIBADD	= 	\
 	$(MODULE_DEPS_LIBS) $(LIBRABBITMQ_LIBS)
 modules_afamqp_libafamqp_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
-modules_afamqp_libafamqp_la_DEPENDENCIES=	\
+EXTRA_modules_afamqp_libafamqp_la_DEPENDENCIES=	\
 	$(MODULE_DEPS_LIBS)			\
 	$(lr_EXTRA_DEPS)
 

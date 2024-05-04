@@ -121,7 +121,7 @@ modules_java_libmod_java_la_LIBADD =  $(JNI_LIBS) $(MODULE_DEPS_LIBS)
 modules_java_libmod_java_la_LDFLAGS = \
     -avoid-version -module -no-undefined $(MODULE_LDFLAGS)
 
-modules_java_libmod_java_la_DEPENDENCIES  = \
+EXTRA_modules_java_libmod_java_la_DEPENDENCIES  = \
         $(MODULE_DEPS_LIBS)
 
 JAVA_HEADER_FILES = \

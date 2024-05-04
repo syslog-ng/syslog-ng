@@ -36,7 +36,7 @@ modules_grpc_otel_filterx_libfilterx_la_LIBADD = \
 
 modules_grpc_otel_filterx_libfilterx_la_LDFLAGS = $(MODULE_LDFLAGS)
 
-modules_grpc_otel_filterx_libfilterx_la_DEPENDENCIES = \
+EXTRA_modules_grpc_otel_filterx_libfilterx_la_DEPENDENCIES = \
   $(MODULE_DEPS_LIBS) \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la
 

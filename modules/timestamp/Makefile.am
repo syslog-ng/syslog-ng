@@ -26,7 +26,7 @@ modules_timestamp_libtimestamp_la_LIBADD = \
 
 modules_timestamp_libtimestamp_la_LDFLAGS	 = \
 	$(MODULE_LDFLAGS)
-modules_timestamp_libtimestamp_la_DEPENDENCIES	=  \
+EXTRA_modules_timestamp_libtimestamp_la_DEPENDENCIES	=  \
 	$(MODULE_DEPS_LIBS)
 
 BUILT_SOURCES				+= \

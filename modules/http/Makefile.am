@@ -37,7 +37,7 @@ modules_http_libhttp_la_LIBADD  = $(MODULE_DEPS_LIBS) $(LIBCURL_LIBS)
 
 modules_http_libhttp_la_LDFLAGS = $(MODULE_LDFLAGS)
 
-modules_http_libhttp_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
+EXTRA_modules_http_libhttp_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
 modules/http modules/http/ mod-http: modules/http/libhttp.la
 else

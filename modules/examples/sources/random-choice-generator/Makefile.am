@@ -15,7 +15,7 @@ modules_examples_sources_librandom_choice_generator_cpp_la_CXXFLAGS = \
 
 modules_examples_sources_librandom_choice_generator_cpp_la_LIBADD = $(MODULE_DEPS_LIBS)
 modules_examples_sources_librandom_choice_generator_cpp_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_examples_sources_librandom_choice_generator_cpp_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+EXTRA_modules_examples_sources_librandom_choice_generator_cpp_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 # C code
 
@@ -38,7 +38,7 @@ modules_examples_sources_librandom_choice_generator_la_LIBADD = \
 modules_examples_sources_librandom_choice_generator_la_LDFLAGS = \
   $(MODULE_LDFLAGS)
 
-modules_examples_sources_librandom_choice_generator_la_DEPENDENCIES = \
+EXTRA_modules_examples_sources_librandom_choice_generator_la_DEPENDENCIES = \
   $(MODULE_DEPS_LIBS) \
   modules/examples/sources/librandom_choice_generator_cpp.la
 

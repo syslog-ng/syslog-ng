@@ -11,5 +11,5 @@ modules_cef_tests_test_format_cef_extension_LDFLAGS	= \
 	$(PREOPEN_SYSLOGFORMAT)		  \
 	-dlpreopen $(top_builddir)/modules/cef/libcef.la
 
-modules_cef_tests_test_format_cef_extension_DEPENDENCIES =	\
+EXTRA_modules_cef_tests_test_format_cef_extension_DEPENDENCIES =	\
 	$(top_builddir)/modules/cef/libcef.la

@@ -90,7 +90,7 @@ modules_python_libmod_python_la_LDFLAGS		 = \
 	$(MODULE_LDFLAGS) \
 	$(PYTHON_LDADD)
 
-modules_python_libmod_python_la_DEPENDENCIES=	\
+EXTRA_modules_python_libmod_python_la_DEPENDENCIES=	\
 	$(MODULE_DEPS_LIBS)
 
 modules/python mod-python: modules/python/libmod-python.la

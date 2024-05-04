@@ -30,7 +30,7 @@ modules_afsnmp_libafsnmp_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS) \
 	$(NETSNMP_LIBS)
 
-modules_afsnmp_libafsnmp_la_DEPENDENCIES	=	\
+EXTRA_modules_afsnmp_libafsnmp_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
 modules/afsnmp mod-afsnmp: modules/afsnmp/libafsnmp.la

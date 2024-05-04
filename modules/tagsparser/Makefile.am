@@ -15,7 +15,7 @@ modules_tagsparser_libtags_parser_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS)
 modules_tagsparser_libtags_parser_la_LDFLAGS	=	\
 	$(MODULE_LDFLAGS)
-modules_tagsparser_libtags_parser_la_DEPENDENCIES	=	\
+EXTRA_modules_tagsparser_libtags_parser_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
 BUILT_SOURCES					+=	\

@@ -31,7 +31,7 @@ modules_examples_libexamples_la_SOURCES = \
   modules/examples/example-plugins.c
 
 modules_examples_libexamples_la_LIBADD = $(MODULE_DEPS_LIBS) $(EXAMPLE_PLUGINS)
-modules_examples_libexamples_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(EXAMPLE_PLUGINS)
+EXTRA_modules_examples_libexamples_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(EXAMPLE_PLUGINS)
 modules_examples_libexamples_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 if ENABLE_CPP

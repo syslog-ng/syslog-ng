@@ -71,7 +71,7 @@ modules_affile_libaffile_la_CPPFLAGS	=			\
 	-I$(top_builddir)/modules/affile
 modules_affile_libaffile_la_LIBADD	= $(MODULE_DEPS_LIBS) $(IVYKIS_LIBS)
 modules_affile_libaffile_la_LDFLAGS	= $(MODULE_LDFLAGS)
-modules_affile_libaffile_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
+EXTRA_modules_affile_libaffile_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
 modules/affile modules/affile/ mod-affile mod-file: modules/affile/libaffile.la
 .PHONY: modules/affile/ mod-affile mod-file

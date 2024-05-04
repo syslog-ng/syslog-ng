@@ -20,7 +20,7 @@ modules_map_value_pairs_libmap_value_pairs_la_SOURCES		= \
 modules_map_value_pairs_libmap_value_pairs_la_LDFLAGS		 = \
 	$(MODULE_LDFLAGS)
 
-modules_map_value_pairs_libmap_value_pairs_la_DEPENDENCIES=	\
+EXTRA_modules_map_value_pairs_libmap_value_pairs_la_DEPENDENCIES=	\
 	$(MODULE_DEPS_LIBS)
 
 BUILT_SOURCES					+= \

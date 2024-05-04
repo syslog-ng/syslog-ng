@@ -37,4 +37,4 @@ syslog_ng_ctl_syslog_ng_ctl_CPPFLAGS  =     \
   $(AM_CPPFLAGS)            \
   -I$(top_srcdir)/syslog-ng-ctl
 
-syslog_ng_ctl_syslog_ng_ctl_DEPENDENCIES	= lib/libsyslog-ng.la lib/secret-storage/libsecret-storage.la
+EXTRA_syslog_ng_ctl_syslog_ng_ctl_DEPENDENCIES	= lib/libsyslog-ng.la lib/secret-storage/libsecret-storage.la

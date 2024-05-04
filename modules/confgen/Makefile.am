@@ -8,7 +8,7 @@ modules_confgen_libconfgen_la_LIBADD		=	\
 	$(MODULE_DEPS_LIBS)
 modules_confgen_libconfgen_la_LDFLAGS		=	\
 	$(MODULE_LDFLAGS)
-modules_confgen_libconfgen_la_DEPENDENCIES	=	\
+EXTRA_modules_confgen_libconfgen_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
 EXTRA_DIST += modules/confgen/CMakeLists.txt

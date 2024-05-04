@@ -15,7 +15,7 @@ modules_openbsd_libopenbsd_la_CPPFLAGS  =     \
   -I$(top_builddir)/modules/openbsd
 modules_openbsd_libopenbsd_la_LIBADD  = $(MODULE_DEPS_LIBS)
 modules_openbsd_libopenbsd_la_LDFLAGS = $(MODULE_LDFLAGS)
-modules_openbsd_libopenbsd_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
+EXTRA_modules_openbsd_libopenbsd_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
 modules/openbsd modules/openbsd/ mod-openbsd: modules/openbsd/libopenbsd.la
 endif

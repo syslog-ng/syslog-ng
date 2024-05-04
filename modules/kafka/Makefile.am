@@ -30,7 +30,7 @@ modules_kafka_libkafka_la_LIBADD  = \
 
 modules_kafka_libkafka_la_LDFLAGS = $(MODULE_LDFLAGS)
 
-modules_kafka_libkafka_la_DEPENDENCIES = \
+EXTRA_modules_kafka_libkafka_la_DEPENDENCIES = \
   $(MODULE_DEPS_LIBS)
 
 modules/kafka modules/kafka/ mod-kafka: \
