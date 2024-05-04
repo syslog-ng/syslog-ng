@@ -52,6 +52,30 @@ exit:
   return attr;
 }
 
+static gboolean
+_unset(FilterXExpr *s)
+{
+  FilterXGetAttr *self = (FilterXGetAttr *) s;
+
+  gboolean result = FALSE;
+
+  FilterXObject *variable = filterx_expr_eval_typed(self->operand);
+  if (!variable)
+    return FALSE;
+
+  if (variable->readonly)
+    {
+      filterx_eval_push_error("Object unset-attr failed, object is readonly", s, self->attr);
+      goto exit;
+    }
+
+  result = filterx_object_unset_key(variable, self->attr);
+
+exit:
+  filterx_object_unref(variable);
+  return result;
+}
+
 static void
 _free(FilterXExpr *s)
 {
@@ -69,6 +93,7 @@ filterx_getattr_new(FilterXExpr *operand, const gchar *attr_name)
 
   filterx_expr_init_instance(&self->super);
   self->super.eval = _eval;
+  self->super.unset = _unset;
   self->super.free_fn = _free;
   self->operand = operand;
   self->attr = filterx_string_new(attr_name, -1);

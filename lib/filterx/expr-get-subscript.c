@@ -79,19 +79,25 @@ _unset(FilterXExpr *s)
 {
   FilterXGetSubscript *self = (FilterXGetSubscript *) s;
 
+  gboolean result = FALSE;
+
   FilterXObject *variable = filterx_expr_eval_typed(self->operand);
   if (!variable)
     return FALSE;
 
   FilterXObject *key = filterx_expr_eval_typed(self->key);
   if (!key)
+    goto exit;
+
+  if (variable->readonly)
     {
-      filterx_object_unref(variable);
-      return FALSE;
+      filterx_eval_push_error("Object unset-subscript failed, object is readonly", s, key);
+      goto exit;
     }
 
-  gboolean result = filterx_object_unset_key(variable, key);
+  result = filterx_object_unset_key(variable, key);
 
+exit:
   filterx_object_unref(key);
   filterx_object_unref(variable);
   return result;

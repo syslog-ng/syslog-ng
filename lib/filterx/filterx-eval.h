@@ -50,6 +50,8 @@ void filterx_eval_push_error(const gchar *message, FilterXExpr *expr, FilterXObj
 void filterx_eval_set_context(FilterXEvalContext *context);
 gboolean filterx_eval_exec_statements(FilterXScope *scope, GList *statements, LogMessage *msg);
 void filterx_eval_sync_scope_and_message(FilterXScope *scope, LogMessage *msg);
+const gchar *filterx_eval_get_last_error(void);
+void filterx_eval_clear_errors(void);
 
 
 #endif

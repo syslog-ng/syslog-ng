@@ -98,6 +98,7 @@ filterx_object_init_instance(FilterXObject *self, FilterXType *type)
   self->ref_cnt = 1;
   self->type = type;
   self->thread_index = (guint16) main_loop_worker_get_thread_index();
+  self->readonly = !type->is_mutable;
 }
 
 FilterXObject *
