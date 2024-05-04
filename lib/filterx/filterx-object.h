@@ -87,7 +87,7 @@ struct _FilterXObject
    *                          propagates to the inner elements lazily
    *
    */
-  guint thread_index:16, modified_in_place:1, readonly:1;
+  guint thread_index:16, modified_in_place:1, readonly:1, weak_referenced:1;
   FilterXType *type;
 };
 

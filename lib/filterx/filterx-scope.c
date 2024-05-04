@@ -215,14 +215,29 @@ filterx_scope_register_variable(FilterXScope *self,
   return &g_array_index(self->variables, FilterXVariable, v_index);
 }
 
-
+/*
+ * This is not a real weakref implementation as we will never get rid off
+ * weak references until the very end of a scope.  If this wasn't the case
+ * we would have to:
+ *    1) run a proper GC
+ *    2) notify weak references once the object is detroyed
+ *
+ * None of that exists now and I doubt ever will (but never say never).
+ * Right now a weak ref is destroyed as a part of the scope finalization
+ * process at which point circular references will be broken so the rest can
+ * go too.
+ */
 void
 filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object)
 {
   g_assert(self->write_protected == FALSE);
 
-  if (object)
-    g_ptr_array_add(self->weak_refs, filterx_object_ref(object));
+  if (object && !object->weak_referenced)
+    {
+      /* avoid putting object to the list multiple times */
+      object->weak_referenced = TRUE;
+      g_ptr_array_add(self->weak_refs, filterx_object_ref(object));
+    }
 }
 
 /*
