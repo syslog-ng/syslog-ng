@@ -84,7 +84,6 @@ _map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **asso
   FilterXJsonArray *self = (FilterXJsonArray *) s;
 
   *object = json_object_get(self->object);
-  *assoc_object = filterx_object_ref(s);
   return TRUE;
 }
 

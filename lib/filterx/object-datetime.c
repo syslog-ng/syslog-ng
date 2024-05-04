@@ -92,7 +92,6 @@ _map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **asso
   _convert_unix_time_to_string(&self->ut, time_stamp);
 
   *object = json_object_new_string_len(time_stamp->str, time_stamp->len);
-  *assoc_object = filterx_object_ref(s);
   return TRUE;
 }
 

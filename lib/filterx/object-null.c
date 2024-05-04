@@ -42,7 +42,6 @@ static gboolean
 _map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **assoc_object)
 {
   *object = NULL;
-  *assoc_object = filterx_object_ref(s);
   return TRUE;
 }
 

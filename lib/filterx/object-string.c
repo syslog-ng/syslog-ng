@@ -109,7 +109,6 @@ _map_to_json(FilterXObject *s, struct json_object **object, FilterXObject **asso
   FilterXString *self = (FilterXString *) s;
 
   *object = json_object_new_string_len(self->str, self->str_len);
-  *assoc_object = filterx_object_ref(s);
   return TRUE;
 }
 
@@ -166,7 +165,6 @@ _bytes_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject 
   g_string_set_size(encode_buffer, out_len);
 
   *object = json_object_new_string_len(encode_buffer->str, encode_buffer->len);
-  *assoc_object = filterx_object_ref(s);
   return TRUE;
 }
 

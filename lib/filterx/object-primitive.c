@@ -60,7 +60,6 @@ _integer_map_to_json(FilterXObject *s, struct json_object **object, FilterXObjec
   FilterXPrimitive *self = (FilterXPrimitive *) s;
 
   *object = json_object_new_int64(gn_as_int64(&self->value));
-  *assoc_object = filterx_object_ref(s);
   return TRUE;
 }
 
@@ -101,7 +100,6 @@ _double_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject
   FilterXPrimitive *self = (FilterXPrimitive *) s;
 
   *object = json_object_new_double(gn_as_double(&self->value));
-  *assoc_object = filterx_object_ref(s);
   return TRUE;
 }
 
@@ -154,7 +152,6 @@ _bool_map_to_json(FilterXObject *s, struct json_object **object, FilterXObject *
   FilterXPrimitive *self = (FilterXPrimitive *) s;
 
   *object = json_object_new_boolean(gn_as_int64(&self->value));
-  *assoc_object = filterx_object_ref(s);
   return TRUE;
 }
 

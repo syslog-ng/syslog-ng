@@ -178,8 +178,14 @@ filterx_object_clone(FilterXObject *self)
 static inline gboolean
 filterx_object_map_to_json(FilterXObject *self, struct json_object **object, FilterXObject **assoc_object)
 {
+  *assoc_object = NULL;
   if (self->type->map_to_json)
-    return self->type->map_to_json(self, object, assoc_object);
+    {
+      gboolean result = self->type->map_to_json(self, object, assoc_object);
+      if (!(*assoc_object))
+        *assoc_object = filterx_object_ref(self);
+      return result;
+    }
   return FALSE;
 }
 
