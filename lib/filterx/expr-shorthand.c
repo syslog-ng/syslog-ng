@@ -33,19 +33,9 @@ static FilterXObject *
 _eval(FilterXExpr *s)
 {
   FilterXShorthand *self = (FilterXShorthand *) s;
-
   FilterXObject *result = NULL;
-  for (GList *elem = self->exprs; elem; elem = elem->next)
-    {
-      filterx_object_unref(result);
 
-      FilterXExpr *expr = elem->data;
-      result = filterx_expr_eval(expr);
-
-      if (!result || filterx_object_falsy(result))
-        break;
-    }
-
+  filterx_expr_list_eval(self->exprs, &result);
   return result;
 }
 

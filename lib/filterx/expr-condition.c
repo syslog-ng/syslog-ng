@@ -65,17 +65,10 @@ _eval_condition(FilterXConditional *c)
       goto exit;
     }
 
-  for (GList *l = c->statements; l; l = l->next)
+  if (!filterx_expr_list_eval(c->statements, &result))
     {
-      FilterXExpr *expr = l->data;
-      result = filterx_expr_eval(expr);
-      if (!result || !filterx_object_truthy(result))
-        {
-          filterx_object_unref(result);
-          return filterx_boolean_new(FALSE);
-        }
-      if (l->next != NULL)
-        filterx_object_unref(result);
+      filterx_object_unref(result);
+      return filterx_boolean_new(FALSE);
     }
 exit:
   filterx_object_unref(condition_value);

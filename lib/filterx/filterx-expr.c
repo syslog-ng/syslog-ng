@@ -124,3 +124,21 @@ filterx_binary_op_init_instance(FilterXBinaryOp *self, FilterXExpr *lhs, FilterX
   self->lhs = lhs;
   self->rhs = rhs;
 }
+
+gboolean
+filterx_expr_list_eval(GList *expressions, FilterXObject **result)
+{
+  *result = NULL;
+  for (GList *elem = expressions; elem; elem = elem->next)
+    {
+      filterx_object_unref(*result);
+
+      FilterXExpr *expr = elem->data;
+      *result = filterx_expr_eval(expr);
+
+      if (!(*result) || filterx_object_falsy(*result))
+        return FALSE;
+    }
+
+  return TRUE;
+}

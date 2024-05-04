@@ -157,4 +157,6 @@ typedef struct _FilterXBinaryOp
 void filterx_binary_op_free_method(FilterXExpr *s);
 void filterx_binary_op_init_instance(FilterXBinaryOp *self, FilterXExpr *lhs, FilterXExpr *rhs);
 
+gboolean filterx_expr_list_eval(GList *expressions, FilterXObject **result);
+
 #endif

@@ -155,7 +155,6 @@ _evaluate_statement(FilterXExpr *expr)
   return success;
 }
 
-
 gboolean
 filterx_eval_exec_statements(FilterXScope *scope, GList *statements, LogMessage *msg)
 {
