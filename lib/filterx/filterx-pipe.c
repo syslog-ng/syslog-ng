@@ -54,10 +54,7 @@ log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
 
   path_options = log_path_options_chain(&local_path_options, path_options);
 
-  FilterXScope *scope = filterx_scope_ref(path_options->filterx_scope);
-  if (!scope)
-    scope = filterx_scope_new();
-  filterx_scope_make_writable(&scope);
+  FilterXScope *scope = filterx_eval_begin_scope(path_options);
 
   msg_trace(">>>>>> filterx rule evaluation begin",
             evt_tag_str("rule", self->name),
@@ -89,7 +86,7 @@ log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
       log_msg_drop(msg, path_options, AT_PROCESSED);
     }
 
-  filterx_scope_unref(scope);
+  filterx_eval_end_scope(scope);
   nv_table_unref(payload);
 }
 

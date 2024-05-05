@@ -22,6 +22,7 @@
  */
 #include "filterx/filterx-eval.h"
 #include "filterx/filterx-expr.h"
+#include "logpipe.h"
 #include "scratch-buffers.h"
 #include "tls-support.h"
 
@@ -182,4 +183,21 @@ fail:
   filterx_scope_set_dirty(scope);
   filterx_eval_set_context(NULL);
   return success;
+}
+
+
+FilterXScope *
+filterx_eval_begin_scope(const LogPathOptions *path_options)
+{
+  FilterXScope *scope = filterx_scope_ref(path_options->filterx_scope);
+  if (!scope)
+    scope = filterx_scope_new();
+  filterx_scope_make_writable(&scope);
+  return scope;
+}
+
+void
+filterx_eval_end_scope(FilterXScope *scope)
+{
+  filterx_scope_unref(scope);
 }
