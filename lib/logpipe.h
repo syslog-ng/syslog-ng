@@ -458,13 +458,8 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
         }
     }
 
-  if ((s->flags & PIF_SYNC_SCOPE) &&
-      path_options->filterx_scope &&
-      filterx_scope_is_dirty(path_options->filterx_scope))
-    {
-      log_msg_make_writable(&msg, path_options);
-      filterx_scope_sync(path_options->filterx_scope, msg);
-    }
+  if ((s->flags & PIF_SYNC_SCOPE))
+    filterx_eval_sync_message(path_options->filterx_context, &msg, path_options);
 
   if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT)))
     {
