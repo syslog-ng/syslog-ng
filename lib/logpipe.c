@@ -82,7 +82,6 @@ log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
   self->queue = NULL;
   self->free_fn = log_pipe_free_method;
   self->arcs = _arcs;
-  self->flags = PIF_SYNC_SCOPE;
 }
 
 LogPipe *

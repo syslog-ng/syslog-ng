@@ -114,7 +114,7 @@ log_filterx_pipe_new(GList *stmts, GlobalConfig *cfg)
   LogFilterXPipe *self = g_new0(LogFilterXPipe, 1);
 
   log_pipe_init_instance(&self->super, cfg);
-  self->super.flags = (self->super.flags | PIF_CONFIG_RELATED) & ~PIF_SYNC_SCOPE;
+  self->super.flags = (self->super.flags | PIF_CONFIG_RELATED);
   self->super.init = log_filterx_pipe_init;
   self->super.queue = log_filterx_pipe_queue;
   self->super.free_fn = log_filterx_pipe_free;

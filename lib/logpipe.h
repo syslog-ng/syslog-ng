@@ -72,7 +72,8 @@
 /* node created directly by the user */
 #define PIF_CONFIG_RELATED    0x0100
 
-#define PIF_SYNC_SCOPE        0x0200
+/* sync filterx state and message in right before calling queue() */
+#define PIF_SYNC_FILTERX      0x0200
 
 /* private flags range, to be used by other LogPipe instances for their own purposes */
 
@@ -458,7 +459,7 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
         }
     }
 
-  if ((s->flags & PIF_SYNC_SCOPE))
+  if ((s->flags & PIF_SYNC_FILTERX))
     filterx_eval_sync_message(path_options->filterx_context, &msg, path_options);
 
   if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT)))
