@@ -113,6 +113,33 @@ filterx_format_last_error(void)
                         buf ? buf->str : "");
 }
 
+
+/*
+ * This is not a real weakref implementation as we will never get rid off
+ * weak references until the very end of a scope.  If this wasn't the case
+ * we would have to:
+ *    1) run a proper GC
+ *    2) notify weak references once the object is detroyed
+ *
+ * None of that exists now and I doubt ever will (but never say never).
+ * Right now a weak ref is destroyed as a part of the scope finalization
+ * process at which point circular references will be broken so the rest can
+ * go too.
+ */
+void
+filterx_eval_store_weak_ref(FilterXObject *object)
+{
+  FilterXEvalContext *context = filterx_eval_get_context();
+
+  if (object && !object->weak_referenced)
+    {
+      /* avoid putting object to the list multiple times */
+      object->weak_referenced = TRUE;
+      g_ptr_array_add(context->weak_refs, filterx_object_ref(object));
+    }
+}
+
+
 static gboolean
 _evaluate_statement(FilterXExpr *expr)
 {
@@ -192,6 +219,11 @@ filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previ
   memset(context, 0, sizeof(*context));
   context->template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS;
   context->scope = scope;
+
+  if (previous_context)
+    context->weak_refs = previous_context->weak_refs;
+  else
+    context->weak_refs = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
   context->previous_context = previous_context;
 
   filterx_eval_set_context(context);
@@ -200,6 +232,8 @@ filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previ
 void
 filterx_eval_deinit_context(FilterXEvalContext *context)
 {
+  if (!context->previous_context)
+    g_ptr_array_free(context->weak_refs, TRUE);
   filterx_scope_unref(context->scope);
   filterx_eval_set_context(context->previous_context);
 }
