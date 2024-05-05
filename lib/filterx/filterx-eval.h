@@ -42,16 +42,19 @@ struct _FilterXEvalContext
   FilterXScope *scope;
   FilterXError error;
   LogTemplateEvalOptions *template_eval_options;
+  FilterXEvalContext *previous_context;
 };
 
 FilterXEvalContext *filterx_eval_get_context(void);
 FilterXScope *filterx_eval_get_scope(void);
 void filterx_eval_push_error(const gchar *message, FilterXExpr *expr, FilterXObject *object);
 void filterx_eval_set_context(FilterXEvalContext *context);
-gboolean filterx_eval_exec_statements(FilterXScope *scope, GList *statements, LogMessage *msg);
+gboolean filterx_eval_exec_statements(FilterXEvalContext *context, GList *statements, LogMessage *msg);
 void filterx_eval_sync_scope_and_message(FilterXScope *scope, LogMessage *msg);
 const gchar *filterx_eval_get_last_error(void);
 void filterx_eval_clear_errors(void);
 
+void filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previous_context);
+void filterx_eval_deinit_context(FilterXEvalContext *context);
 
 #endif

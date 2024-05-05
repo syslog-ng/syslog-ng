@@ -158,16 +158,10 @@ _evaluate_statement(FilterXExpr *expr)
 
 
 gboolean
-filterx_eval_exec_statements(FilterXScope *scope, GList *statements, LogMessage *msg)
+filterx_eval_exec_statements(FilterXEvalContext *context, GList *statements, LogMessage *msg)
 {
-  FilterXEvalContext local_context =
-  {
-    .msgs = &msg,
-    .num_msg = 1,
-    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
-    .scope = scope,
-  };
-  filterx_eval_set_context(&local_context);
+  context->msgs = &msg;
+  context->num_msg = 1;
   gboolean success = FALSE;
   for (GList *l = statements; l; l = l->next)
     {
@@ -180,24 +174,32 @@ filterx_eval_exec_statements(FilterXScope *scope, GList *statements, LogMessage 
   /* NOTE: we only store the results into the message if the entire evaluation was successful */
   success = TRUE;
 fail:
-  filterx_scope_set_dirty(scope);
-  filterx_eval_set_context(NULL);
+  filterx_scope_set_dirty(context->scope);
   return success;
 }
 
-
-FilterXScope *
-filterx_eval_begin_scope(const LogPathOptions *path_options)
+void
+filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previous_context)
 {
-  FilterXScope *scope = filterx_scope_ref(path_options->filterx_scope);
-  if (!scope)
+  FilterXScope *scope;
+
+  if (previous_context)
+    scope = filterx_scope_ref(previous_context->scope);
+  else
     scope = filterx_scope_new();
   filterx_scope_make_writable(&scope);
-  return scope;
+
+  memset(context, 0, sizeof(*context));
+  context->template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS;
+  context->scope = scope;
+  context->previous_context = previous_context;
+
+  filterx_eval_set_context(context);
 }
 
 void
-filterx_eval_end_scope(FilterXScope *scope)
+filterx_eval_deinit_context(FilterXEvalContext *context)
 {
-  filterx_scope_unref(scope);
+  filterx_scope_unref(context->scope);
+  filterx_eval_set_context(context->previous_context);
 }

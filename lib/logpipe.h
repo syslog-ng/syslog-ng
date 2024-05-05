@@ -27,7 +27,7 @@
 
 #include "syslog-ng.h"
 #include "logmsg/logmsg.h"
-#include "filterx/filterx-scope.h"
+#include "filterx/filterx-eval.h"
 #include "cfg.h"
 #include "atomic.h"
 #include "messages.h"
@@ -218,7 +218,7 @@ struct _LogPathOptions
 
   gboolean *matched;
   const LogPathOptions *lpo_parent_junction;
-  FilterXScope *filterx_scope;
+  FilterXEvalContext *filterx_context;
 };
 
 #define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL, NULL }
