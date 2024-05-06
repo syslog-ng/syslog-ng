@@ -971,6 +971,26 @@ cfg_lexer_append_preprocessed_output(CfgLexer *self, const gchar *token_text)
     g_string_append_printf(self->preprocess_output, "%s", token_text);
 }
 
+static CfgTokenBlock *
+_construct_block_ref_prelude(CfgLexer *self)
+{
+  CfgTokenBlock *block;
+  CFG_STYPE token;
+
+  /* we inject one token to a new token-block:
+   *  1) the context from which the block ref parser is invoked
+   */
+  block = cfg_token_block_new();
+
+  /* add plugin->type as a token */
+  memset(&token, 0, sizeof(token));
+  token.type = LL_TOKEN;
+  token.token = cfg_lexer_get_context_type(self);
+  cfg_token_block_add_and_consume_token(block, &token);
+
+  return block;
+}
+
 static gboolean
 cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, CFG_STYPE *yylval)
 {
@@ -983,10 +1003,11 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, CFG_STYPE *yy
 
   gint saved_line = level->lloc.first_line;
   gint saved_column = level->lloc.first_column;
-  CfgParser *gen_parser = p->parser;
-  if (gen_parser && !cfg_parser_parse(gen_parser, self, (gpointer *) &args, NULL))
+
+  cfg_lexer_inject_token_block(self, _construct_block_ref_prelude(self));
+  if (!cfg_parser_parse(p->parser, self, (gpointer *) &args, NULL))
     {
-      cfg_parser_cleanup(gen_parser, args);
+      cfg_parser_cleanup(p->parser, args);
 
       level->lloc.first_line = saved_line;
       level->lloc.first_column = saved_column;
@@ -1005,8 +1026,8 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, CFG_STYPE *yy
   success = cfg_block_generator_generate(gen, self->cfg, args, result,
                                          cfg_lexer_format_location(self, &level->lloc, buf, sizeof(buf)));
 
-  free(yylval->cptr);
-  cfg_parser_cleanup(gen_parser, args);
+  cfg_lexer_free_token(yylval);
+  cfg_parser_cleanup(p->parser, args);
 
   if (!success)
     {
@@ -1120,6 +1141,8 @@ cfg_lexer_lex(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc)
             cfg_lexer_start_block_state(self, "{}");
           else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_ARG)
             cfg_lexer_start_block_state(self, "()");
+          else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_FUNCARG)
+            cfg_lexer_start_block_arg_state(self);
 
           tok = cfg_lexer_lex_next_token(self, yylval, yylloc);
           cfg_lexer_append_preprocessed_output(self, self->token_pretext->str);
@@ -1247,6 +1270,7 @@ static const gchar *lexer_contexts[] =
   [LL_CONTEXT_BLOCK_ARG] = "block-arg",
   [LL_CONTEXT_BLOCK_REF] = "block-ref",
   [LL_CONTEXT_BLOCK_CONTENT] = "block-content",
+  [LL_CONTEXT_BLOCK_FUNCARG] = "block-func-arg",
   [LL_CONTEXT_PRAGMA] = "pragma",
   [LL_CONTEXT_FORMAT] = "format",
   [LL_CONTEXT_TEMPLATE_FUNC] = "template-func",

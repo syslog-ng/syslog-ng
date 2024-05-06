@@ -95,6 +95,7 @@ construct_template_expr(LogTemplate *template)
 
 %type <ptr> stmts
 %type <node> stmt
+%type <node> stmt_expr
 %type <node> assignment
 %type <node> generator_assignment
 %type <node> generator_casted_assignment
@@ -134,19 +135,25 @@ start
 	;
 
 stmts
-	: stmt stmts				{
-						  CHECK_ERROR($1, @1, "failed to initialize statement");
-						  filterx_expr_set_location($1, lexer, &@1);
-						  $$ = g_list_prepend($2, $1);
-						}
+	: stmt stmts				{ if ($1) $$ = g_list_prepend($2, $1); else $$ = $2; }
 	|					{ $$ = NULL; }
 	;
 
+
 stmt
-	: expr ';'				{ $$ = $1; }
-	| conditional ';'			{ $$ = $1; }
-	| assignment ';'			{ $$ = $1; }
-	| declaration ';'			{ $$ = $1; }
+	: stmt_expr ';'				{
+						  CHECK_ERROR($1, @1, "failed to initialize statement");
+						  filterx_expr_set_location($1, lexer, &@1);
+						  $$ = $1;
+						}
+	| ';'					{ $$ = NULL; }
+	;
+
+stmt_expr
+	: expr 					{ $$ = $1; }
+	| conditional 				{ $$ = $1; }
+	| assignment 				{ $$ = $1; }
+	| declaration 				{ $$ = $1; }
 	;
 
 assignment
