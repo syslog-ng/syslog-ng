@@ -62,33 +62,33 @@ _deep_copy_filterx_object_ref(json_object *src, json_object *parent, const char 
 }
 
 struct json_object *
-filterx_json_deep_copy(struct json_object *json_obj)
+filterx_json_deep_copy(struct json_object *jso)
 {
   struct json_object *clone = NULL;
-  if (json_object_deep_copy(json_obj, &clone, _deep_copy_filterx_object_ref) != 0)
+  if (json_object_deep_copy(jso, &clone, _deep_copy_filterx_object_ref) != 0)
     return NULL;
 
   return clone;
 }
 
 static FilterXObject *
-_convert_json_to_object(FilterXObject *self, FilterXWeakRef *root_container, struct json_object *json_obj)
+_convert_json_to_object(FilterXObject *self, FilterXWeakRef *root_container, struct json_object *jso)
 {
-  switch (json_object_get_type(json_obj))
+  switch (json_object_get_type(jso))
     {
     case json_type_double:
-      return filterx_double_new(json_object_get_double(json_obj));
+      return filterx_double_new(json_object_get_double(jso));
     case json_type_boolean:
-      return filterx_boolean_new(json_object_get_boolean(json_obj));
+      return filterx_boolean_new(json_object_get_boolean(jso));
     case json_type_int:
-      return filterx_integer_new(json_object_get_int64(json_obj));
+      return filterx_integer_new(json_object_get_int64(jso));
     case json_type_string:
-      return filterx_string_new(json_object_get_string(json_obj), -1);
+      return filterx_string_new(json_object_get_string(jso), -1);
     case json_type_array:
-      return filterx_json_array_new_sub(json_object_get(json_obj),
+      return filterx_json_array_new_sub(json_object_get(jso),
                                         filterx_weakref_get(root_container) ? : filterx_object_ref(self));
     case json_type_object:
-      return filterx_json_object_new_sub(json_object_get(json_obj),
+      return filterx_json_object_new_sub(json_object_get(jso),
                                          filterx_weakref_get(root_container) ? : filterx_object_ref(self));
     default:
       g_assert_not_reached();
@@ -97,14 +97,14 @@ _convert_json_to_object(FilterXObject *self, FilterXWeakRef *root_container, str
 
 FilterXObject *
 filterx_json_convert_json_to_object_cached(FilterXObject *self, FilterXWeakRef *root_container,
-                                           struct json_object *json_obj)
+                                           struct json_object *jso)
 {
   FilterXObject *filterx_obj;
 
-  if (!json_obj || json_object_get_type(json_obj) == json_type_null)
+  if (!jso || json_object_get_type(jso) == json_type_null)
     return filterx_null_new();
 
-  if (json_object_get_type(json_obj) == json_type_double)
+  if (json_object_get_type(jso) == json_type_double)
     {
       /* this is a workaround to ditch builtin serializer for double objects
        * that are set when parsing from a string representation.
@@ -115,21 +115,21 @@ filterx_json_convert_json_to_object_cached(FilterXObject *self, FilterXWeakRef *
        * but only if necessary.
        */
 
-      json_object_set_double(json_obj, json_object_get_double(json_obj));
+      json_object_set_double(jso, json_object_get_double(jso));
     }
 
   /* NOTE: userdata is a weak reference */
-  filterx_obj = json_object_get_userdata(json_obj);
+  filterx_obj = json_object_get_userdata(jso);
   if (filterx_obj)
     return filterx_object_ref(filterx_obj);
 
-  filterx_obj = _convert_json_to_object(self, root_container, json_obj);
-  filterx_json_associate_cached_object(json_obj, filterx_obj);
+  filterx_obj = _convert_json_to_object(self, root_container, jso);
+  filterx_json_associate_cached_object(jso, filterx_obj);
   return filterx_obj;
 }
 
 void
-filterx_json_associate_cached_object(struct json_object *json_obj, FilterXObject *filterx_obj)
+filterx_json_associate_cached_object(struct json_object *jso, FilterXObject *filterx_obj)
 {
   FilterXScope *scope = filterx_eval_get_scope();
 
@@ -138,7 +138,7 @@ filterx_json_associate_cached_object(struct json_object *json_obj, FilterXObject
   /* we are not storing a reference in userdata to avoid circular
    * references.  That ref is retained by the filterx_scope_store_weak_ref()
    * call above, which is automatically terminated when the scope ends */
-  json_object_set_userdata(json_obj, filterx_obj, NULL);
+  json_object_set_userdata(jso, filterx_obj, NULL);
 }
 
 FilterXObject *
@@ -193,13 +193,13 @@ error:
 }
 
 FilterXObject *
-filterx_json_new_from_object(struct json_object *object)
+filterx_json_new_from_object(struct json_object *jso)
 {
-  if (json_object_get_type(object) == json_type_object)
-    return filterx_json_object_new_sub(object, NULL);
+  if (json_object_get_type(jso) == json_type_object)
+    return filterx_json_object_new_sub(jso, NULL);
 
-  if (json_object_get_type(object) == json_type_array)
-    return filterx_json_array_new_sub(object, NULL);
+  if (json_object_get_type(jso) == json_type_array)
+    return filterx_json_array_new_sub(jso, NULL);
 
   return NULL;
 }

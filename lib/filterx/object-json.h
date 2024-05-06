@@ -49,6 +49,6 @@ const gchar *filterx_json_to_json_literal(FilterXObject *s);
 const gchar *filterx_json_object_to_json_literal(FilterXObject *s);
 const gchar *filterx_json_array_to_json_literal(FilterXObject *s);
 
-void filterx_json_associate_cached_object(struct json_object *json_obj, FilterXObject *filterx_object);
+void filterx_json_associate_cached_object(struct json_object *jso, FilterXObject *filterx_object);
 
 #endif

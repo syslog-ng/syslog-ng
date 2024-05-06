@@ -28,11 +28,11 @@
 #include "filterx/filterx-weakrefs.h"
 
 FilterXObject *filterx_json_convert_json_to_object_cached(FilterXObject *self, FilterXWeakRef *root_container,
-                                                          struct json_object *json_obj);
+                                                          struct json_object *jso);
 
-struct json_object *filterx_json_deep_copy(struct json_object *json_obj);
+struct json_object *filterx_json_deep_copy(struct json_object *jso);
 
-FilterXObject *filterx_json_object_new_sub(struct json_object *json_obj, FilterXObject *root);
-FilterXObject *filterx_json_array_new_sub(struct json_object *json_obj, FilterXObject *root);
+FilterXObject *filterx_json_object_new_sub(struct json_object *jso, FilterXObject *root);
+FilterXObject *filterx_json_array_new_sub(struct json_object *jso, FilterXObject *root);
 
 #endif
