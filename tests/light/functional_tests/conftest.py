@@ -69,6 +69,7 @@ def pytest_sessionstart(session):
     report_dir.mkdir(parents=True, exist_ok=True)
     if report_dir.parent.name == "reports":
         last_report_dir = Path(report_dir.parent, "last")
+        last_report_dir.unlink(True)
         last_report_dir.symlink_to(report_dir)
 
 
