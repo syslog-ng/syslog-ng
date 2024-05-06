@@ -336,36 +336,30 @@ typedef struct FilterXExprRegexpSearchGenerator_
   pcre2_code_8 *pattern;
 } FilterXExprRegexpSearchGenerator;
 
-static FilterXObject *
-_regexp_search_generator_eval(FilterXExpr *s)
+static gboolean
+_regexp_search_generator_generate(FilterXExprGenerator *s, FilterXObject *fillable)
 {
   FilterXExprRegexpSearchGenerator *self = (FilterXExprRegexpSearchGenerator *) s;
 
-  FilterXObject *fillable = filterx_expr_eval_typed(self->super.fillable);
-  if (!fillable)
-    return NULL;
-
-  FilterXObject *result = NULL;
+  gboolean result;
   FilterXReMatchState state;
   _state_init(&state);
 
   gboolean matched = _match(self->lhs, self->pattern, &state);
-  if (!state.match_data)
+  if (!matched)
     {
-      /* Error happened during matching. */
+      result = TRUE;
       goto exit;
     }
 
-  if (matched)
+  if (!state.match_data)
     {
-      if (!_store_matches(self->pattern, &state, fillable))
-        {
-          filterx_object_unref(fillable);
-          goto exit;
-        }
+      /* Error happened during matching. */
+      result = FALSE;
+      goto exit;
     }
 
-  result = fillable;
+  result = _store_matches(self->pattern, &state, fillable);
 
 exit:
   _state_cleanup(&state);
@@ -409,7 +403,7 @@ filterx_expr_regexp_search_generator_new(FilterXExpr *lhs, const gchar *pattern)
   FilterXExprRegexpSearchGenerator *self = g_new0(FilterXExprRegexpSearchGenerator, 1);
 
   filterx_generator_init_instance(&self->super.super);
-  self->super.super.eval = _regexp_search_generator_eval;
+  self->super.generate = _regexp_search_generator_generate;
   self->super.super.free_fn = _regexp_search_generator_free;
   self->super.create_container = _regexp_search_generator_create_container;
 

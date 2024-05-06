@@ -32,10 +32,27 @@ filterx_generator_set_fillable(FilterXExpr *s, FilterXExpr *fillable)
   self->fillable = fillable;
 }
 
+static FilterXObject *
+_eval(FilterXExpr *s)
+{
+  FilterXExprGenerator *self = (FilterXExprGenerator *) s;
+
+  FilterXObject *fillable = filterx_expr_eval_typed(self->fillable);
+  if (!fillable)
+    return NULL;
+
+  if (self->generate(self, fillable))
+    return fillable;
+
+  filterx_object_unref(fillable);
+  return NULL;
+}
+
 void
 filterx_generator_init_instance(FilterXExpr *s)
 {
   filterx_expr_init_instance(s);
+  s->eval = _eval;
   s->ignore_falsy_result = TRUE;
 }
 
