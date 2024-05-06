@@ -124,7 +124,6 @@ Test(filterx_expr, test_filterx_list_merge)
   FilterXExpr *fillable = filterx_literal_new(json_array);
   FilterXExpr *list_expr = NULL;
   FilterXObject *result = NULL;
-  gboolean success = FALSE;
   GList *values = NULL, *inner_values = NULL;
   guint64 len;
 
@@ -140,8 +139,7 @@ Test(filterx_expr, test_filterx_list_merge)
   // $fillable += [42];
   result = filterx_expr_eval(list_expr);
   cr_assert(result);
-  cr_assert(filterx_boolean_unwrap(result, &success));
-  cr_assert(success);
+  cr_assert(filterx_object_truthy(result));
   cr_assert(filterx_object_len(json_array, &len));
   cr_assert_eq(len, 1);
   _assert_int_value_and_unref(filterx_list_get_subscript(json_array, 0), 42);
@@ -150,8 +148,7 @@ Test(filterx_expr, test_filterx_list_merge)
   // $fillable += [42];
   result = filterx_expr_eval(list_expr);
   cr_assert(result);
-  cr_assert(filterx_boolean_unwrap(result, &success));
-  cr_assert(success);
+  cr_assert(filterx_object_truthy(result));
   cr_assert(filterx_object_len(json_array, &len));
   cr_assert_eq(len, 2);
   _assert_int_value_and_unref(filterx_list_get_subscript(json_array, 0), 42);
@@ -175,8 +172,7 @@ Test(filterx_expr, test_filterx_list_merge)
   // $fillable += [[1337]];
   result = filterx_expr_eval(list_expr);
   cr_assert(result);
-  cr_assert(filterx_boolean_unwrap(result, &success));
-  cr_assert(success);
+  cr_assert(filterx_object_truthy(result));
   cr_assert(filterx_object_len(json_array, &len));
   cr_assert_eq(len, 3);
 
@@ -217,7 +213,6 @@ Test(filterx_expr, test_filterx_dict_merge)
   FilterXExpr *fillable = filterx_literal_new(json);
   FilterXExpr *dict_expr = NULL;
   FilterXObject *result = NULL;
-  gboolean success = FALSE;
   GList *values = NULL, *inner_values = NULL;
   guint64 len;
 
@@ -237,8 +232,7 @@ Test(filterx_expr, test_filterx_dict_merge)
   // $fillable += {"foo": 42};
   result = filterx_expr_eval(dict_expr);
   cr_assert(result);
-  cr_assert(filterx_boolean_unwrap(result, &success));
-  cr_assert(success);
+  cr_assert(filterx_object_truthy(result));
   cr_assert(filterx_object_len(json, &len));
   cr_assert_eq(len, 1);
   _assert_int_value_and_unref(filterx_object_get_subscript(json, foo), 42);
@@ -247,8 +241,7 @@ Test(filterx_expr, test_filterx_dict_merge)
   // $fillable += {"foo": 42};
   result = filterx_expr_eval(dict_expr);
   cr_assert(result);
-  cr_assert(filterx_boolean_unwrap(result, &success));
-  cr_assert(success);
+  cr_assert(filterx_object_truthy(result));
   cr_assert(filterx_object_len(json, &len));
   cr_assert_eq(len, 1);
   _assert_int_value_and_unref(filterx_object_get_subscript(json, foo), 42);
@@ -268,8 +261,7 @@ Test(filterx_expr, test_filterx_dict_merge)
   // $fillable += {"foo": 420};
   result = filterx_expr_eval(dict_expr);
   cr_assert(result);
-  cr_assert(filterx_boolean_unwrap(result, &success));
-  cr_assert(success);
+  cr_assert(filterx_object_truthy(result));
   cr_assert(filterx_object_len(json, &len));
   cr_assert_eq(len, 1);
   _assert_int_value_and_unref(filterx_object_get_subscript(json, foo), 420);
@@ -289,8 +281,7 @@ Test(filterx_expr, test_filterx_dict_merge)
   // $fillable += {"bar": 1337};
   result = filterx_expr_eval(dict_expr);
   cr_assert(result);
-  cr_assert(filterx_boolean_unwrap(result, &success));
-  cr_assert(success);
+  cr_assert(filterx_object_truthy(result));
   cr_assert(filterx_object_len(json, &len));
   cr_assert_eq(len, 2);
   _assert_int_value_and_unref(filterx_object_get_subscript(json, foo), 420);
@@ -314,8 +305,7 @@ Test(filterx_expr, test_filterx_dict_merge)
   // $fillable += {"baz": {"foo": 1}};
   result = filterx_expr_eval(dict_expr);
   cr_assert(result);
-  cr_assert(filterx_boolean_unwrap(result, &success));
-  cr_assert(success);
+  cr_assert(filterx_object_truthy(result));
   cr_assert(filterx_object_len(json, &len));
   cr_assert_eq(len, 3);
 
@@ -332,8 +322,7 @@ Test(filterx_expr, test_filterx_dict_merge)
   // Shallow merge.
   result = filterx_expr_eval(dict_expr);
   cr_assert(result);
-  cr_assert(filterx_boolean_unwrap(result, &success));
-  cr_assert(success);
+  cr_assert(filterx_object_truthy(result));
   cr_assert(filterx_object_len(json, &len));
   cr_assert_eq(len, 3);
 

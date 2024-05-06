@@ -86,9 +86,7 @@ _search(const gchar *lhs, const gchar *pattern)
 
   FilterXObject *result_obj = filterx_expr_eval(expr);
   cr_assert(result_obj);
-  gboolean result;
-  cr_assert(filterx_boolean_unwrap(result_obj, &result));
-  cr_assert(result);
+  cr_assert(filterx_object_truthy(result_obj));
 
   FilterXObject *fillable = filterx_expr_eval(fillable_expr);
   cr_assert(fillable);
@@ -109,9 +107,7 @@ _search_with_fillable(const gchar *lhs, const gchar *pattern, FilterXObject *fil
 
   FilterXObject *result_obj = filterx_expr_eval(expr);
   cr_assert(result_obj);
-  gboolean result;
-  cr_assert(filterx_boolean_unwrap(result_obj, &result));
-  cr_assert(result);
+  cr_assert(filterx_object_truthy(result_obj));
 
   filterx_object_unref(result_obj);
   filterx_expr_unref(expr);

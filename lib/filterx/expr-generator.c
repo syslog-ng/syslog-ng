@@ -36,6 +36,7 @@ void
 filterx_generator_init_instance(FilterXExpr *s)
 {
   filterx_expr_init_instance(s);
+  s->ignore_falsy_result = TRUE;
 }
 
 void

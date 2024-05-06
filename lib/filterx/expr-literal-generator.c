@@ -142,9 +142,10 @@ _literal_generator_eval(FilterXExpr *s)
   if (!fillable)
     return NULL;
 
-  FilterXObject *result = _eval_elements(fillable, self->elements) ? filterx_boolean_new(TRUE) : NULL;
-  filterx_object_unref(fillable);
-  return result;
+  if (!_eval_elements(fillable, self->elements))
+    return NULL;
+
+  return fillable;
 }
 
 void

@@ -359,14 +359,16 @@ _regexp_search_generator_eval(FilterXExpr *s)
   if (matched)
     {
       if (!_store_matches(self->pattern, &state, fillable))
-        goto exit;
+        {
+          filterx_object_unref(fillable);
+          goto exit;
+        }
     }
 
-  result = filterx_boolean_new(TRUE);
+  result = fillable;
 
 exit:
   _state_cleanup(&state);
-  filterx_object_unref(fillable);
   return result;
 }
 
