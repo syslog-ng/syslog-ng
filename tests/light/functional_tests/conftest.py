@@ -44,9 +44,13 @@ def chdir_to_light_base_dir():
     os.chdir(absolute_light_base_dir)
 
 
-def calculate_working_dir(pytest_config_object, testcase_name):
+def get_report_dir(pytest_config_object):
     chdir_to_light_base_dir()
-    report_dir = Path(pytest_config_object.getoption("--reports")).resolve().absolute()
+    return Path(pytest_config_object.getoption("--reports")).resolve().absolute()
+
+
+def calculate_working_dir(pytest_config_object, testcase_name):
+    report_dir = get_report_dir(pytest_config_object)
     return Path(report_dir, calculate_testcase_name(testcase_name))
 
 
@@ -60,6 +64,12 @@ def pytest_runtest_setup(item):
 def pytest_sessionstart(session):
     global base_number_of_open_fds
     base_number_of_open_fds = len(psutil.Process().open_files())
+
+    report_dir = get_report_dir(session.config)
+    report_dir.mkdir(parents=True, exist_ok=True)
+    if report_dir.parent.name == "reports":
+        last_report_dir = Path(report_dir.parent, "last")
+        last_report_dir.symlink_to(report_dir)
 
 
 def light_extra_files(target_dir):
