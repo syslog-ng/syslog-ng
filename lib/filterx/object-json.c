@@ -131,9 +131,7 @@ filterx_json_convert_json_to_object_cached(FilterXObject *self, FilterXWeakRef *
 void
 filterx_json_associate_cached_object(struct json_object *jso, FilterXObject *filterx_obj)
 {
-  FilterXScope *scope = filterx_eval_get_scope();
-
-  filterx_scope_store_weak_ref(scope, filterx_obj);
+  filterx_eval_store_weak_ref(filterx_obj);
 
   /* we are not storing a reference in userdata to avoid circular
    * references.  That ref is retained by the filterx_scope_store_weak_ref()

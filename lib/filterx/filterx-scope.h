@@ -66,9 +66,6 @@ FilterXVariable *filterx_scope_register_variable(FilterXScope *self,
                                                  FilterXVariableHandle handle,
                                                  FilterXObject *initial_value);
 
-void filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object);
-
-
 /* copy on write */
 void filterx_scope_write_protect(FilterXScope *self);
 FilterXScope *filterx_scope_make_writable(FilterXScope **pself);

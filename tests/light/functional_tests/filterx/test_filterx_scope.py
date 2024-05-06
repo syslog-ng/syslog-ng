@@ -30,9 +30,10 @@ def render_filterx_exprs(expressions):
     return '\n'.join(f"filterx {{ { expr } }};" for expr in expressions)
 
 
-def create_config(config, init_exprs, true_exprs=(), false_exprs=(), msg="foobar"):
+def create_config(config, init_exprs, true_exprs=(), false_exprs=(), final_exprs=(), msg="foobar"):
     file_true = config.create_file_destination(file_name="dest-true.log", template="'$MSG\n'")
     file_false = config.create_file_destination(file_name="dest-false.log", template="'$MSG\n'")
+    file_final = config.create_file_destination(file_name="dest-final.log", template="'$MSG\n'")
 
     preamble = f"""
 @version: {config.get_version()}
@@ -68,6 +69,10 @@ destination dest_false {{
     {render_statement(file_false)};
 }};
 
+destination dest_final {{
+    {render_statement(file_final)};
+}};
+
 log {{
     source(genmsg);
     {render_filterx_exprs(init_exprs)};
@@ -78,14 +83,16 @@ log {{
         {render_filterx_exprs(false_exprs)}
         destination(dest_false);
     }};
+    {render_filterx_exprs(final_exprs)}
+    destination(dest_final);
 }};
 """
     config.set_raw_config(preamble)
-    return (file_true, file_false)
+    return (file_true, file_false, file_final)
 
 
 def test_message_tied_variables_are_propagated_to_the_output(config, syslog_ng):
-    (file_true, file_false) = create_config(
+    (file_true, file_false, _) = create_config(
         config, [
             """
                 $foo = "kecske";
@@ -105,7 +112,7 @@ def test_message_tied_variables_are_propagated_to_the_output(config, syslog_ng):
 
 
 def test_message_tied_variables_are_propagated_to_the_output_in_junctions(config, syslog_ng):
-    (file_true, file_false) = create_config(
+    (file_true, file_false, _) = create_config(
         config, init_exprs=[
             """
                 $foo = "kecske";
@@ -126,7 +133,7 @@ def test_message_tied_variables_are_propagated_to_the_output_in_junctions(config
 
 
 def test_message_tied_variables_do_not_propagate_to_parallel_branches(config, syslog_ng):
-    (file_true, file_false) = create_config(
+    (file_true, file_false, _) = create_config(
         config, init_exprs=[
             """
             $foo = "kecske";
@@ -156,7 +163,7 @@ def test_message_tied_variables_do_not_propagate_to_parallel_branches(config, sy
 
 
 def test_floating_variables_are_dropped_at_the_end_of_the_scope(config, syslog_ng):
-    (file_true, file_false) = create_config(
+    (file_true, file_false, _) = create_config(
         config, [
             """
             foo = "kecske";
@@ -175,7 +182,7 @@ def test_floating_variables_are_dropped_at_the_end_of_the_scope(config, syslog_n
 
 
 def test_floating_variables_are_dropped_at_the_end_of_the_scope_but_can_be_recreated(config, syslog_ng):
-    (file_true, file_false) = create_config(
+    (file_true, file_false, _) = create_config(
         config, [
             """
             foo = "kecske";
@@ -197,7 +204,7 @@ def test_floating_variables_are_dropped_at_the_end_of_the_scope_but_can_be_recre
 
 
 def test_declared_variables_are_retained_across_scopes(config, syslog_ng):
-    (file_true, file_false) = create_config(
+    (file_true, file_false, _) = create_config(
         config, [
             """
             declare foo = "kecske";
@@ -221,7 +228,7 @@ def test_declared_variables_are_retained_across_scopes(config, syslog_ng):
 
 
 def test_declared_variables_are_retained_across_scopes_and_junctions(config, syslog_ng):
-    (file_true, file_false) = create_config(
+    (file_true, file_false, _) = create_config(
         config, init_exprs=[
             """
             declare foo = "kecske";
@@ -243,3 +250,36 @@ def test_declared_variables_are_retained_across_scopes_and_junctions(config, sys
     assert file_true.get_stats()["processed"] == 1
     assert "processed" not in file_false.get_stats()
     assert file_true.read_log() == "barka\n"
+
+
+def test_changes_in_abandoned_branches_are_ignored(config, syslog_ng):
+    (file_true, file_false, file_final) = create_config(
+        config, init_exprs=[
+            """
+                $json = json({"common": "common"});
+            """,
+        ], true_exprs=[
+            """
+                $json += {"iftrue": "true"};
+                $json;
+                false;
+            """,
+        ], false_exprs=[
+            """
+                $json += {"iffalse": "false"};
+                $json;
+            """,
+        ], final_exprs=[
+            """
+                $MSG = $json;
+            """,
+        ],
+    )
+    syslog_ng.start(config)
+
+    assert file_false.get_stats()["processed"] == 1
+    assert "processed" not in file_true.get_stats()
+    assert file_false.read_log() == "foobar\n"
+
+    assert file_final.get_stats()["processed"] == 1
+    assert file_final.read_log() == '{"common":"common","iffalse":"false"}\n'

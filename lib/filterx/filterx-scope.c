@@ -102,7 +102,6 @@ struct _FilterXScope
 {
   GAtomicCounter ref_cnt;
   GArray *variables;
-  GPtrArray *weak_refs;
   gboolean write_protected;
   gboolean dirty;
   gint generation;
@@ -215,16 +214,6 @@ filterx_scope_register_variable(FilterXScope *self,
   return &g_array_index(self->variables, FilterXVariable, v_index);
 }
 
-
-void
-filterx_scope_store_weak_ref(FilterXScope *self, FilterXObject *object)
-{
-  g_assert(self->write_protected == FALSE);
-
-  if (object)
-    g_ptr_array_add(self->weak_refs, filterx_object_ref(object));
-}
-
 /*
  * 1) sync objects to message
  * 2) drop undeclared objects
@@ -307,7 +296,6 @@ filterx_scope_new(void)
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->variables = g_array_sized_new(FALSE, TRUE, sizeof(FilterXVariable), 16);
   g_array_set_clear_func(self->variables, (GDestroyNotify) _variable_free);
-  self->weak_refs = g_ptr_array_new_with_free_func((GDestroyNotify) filterx_object_unref);
   return self;
 }
 
@@ -371,7 +359,6 @@ static void
 _free(FilterXScope *self)
 {
   g_array_free(self->variables, TRUE);
-  g_ptr_array_free(self->weak_refs, TRUE);
   g_free(self);
 }
 

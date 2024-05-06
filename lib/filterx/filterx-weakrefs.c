@@ -54,9 +54,7 @@
 void
 filterx_weakref_set(FilterXWeakRef *self, FilterXObject *object)
 {
-  FilterXScope *scope = filterx_eval_get_scope();
-  if (scope)
-    filterx_scope_store_weak_ref(scope, object);
+  filterx_eval_store_weak_ref(object);
   self->object = object;
 }
 

@@ -49,35 +49,29 @@ static void
 log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogFilterXPipe *self = (LogFilterXPipe *) s;
+  FilterXEvalContext eval_context;
   LogPathOptions local_path_options;
   gboolean res;
 
   path_options = log_path_options_chain(&local_path_options, path_options);
-
-  FilterXScope *scope = filterx_scope_ref(path_options->filterx_scope);
-  if (!scope)
-    scope = filterx_scope_new();
-  filterx_scope_make_writable(&scope);
+  filterx_eval_init_context(&eval_context, path_options->filterx_context);
 
   msg_trace(">>>>>> filterx rule evaluation begin",
             evt_tag_str("rule", self->name),
             log_pipe_location_tag(s),
-            evt_tag_printf("path_scope", "%p", path_options->filterx_scope),
-            evt_tag_printf("scope", "%p", scope),
             evt_tag_msg_reference(msg));
 
   NVTable *payload = nv_table_ref(msg->payload);
-  res = filterx_eval_exec_statements(scope, self->stmts, msg);
+  res = filterx_eval_exec_statements(&eval_context, self->stmts, msg);
 
   msg_trace("<<<<<< filterx rule evaluation result",
             evt_tag_str("result", res ? "matched" : "unmatched"),
             evt_tag_str("rule", self->name),
             log_pipe_location_tag(s),
-            evt_tag_printf("scope", "%p", scope),
-            evt_tag_int("dirty", filterx_scope_is_dirty(scope)),
+            evt_tag_int("dirty", filterx_scope_is_dirty(eval_context.scope)),
             evt_tag_msg_reference(msg));
 
-  local_path_options.filterx_scope = scope;
+  local_path_options.filterx_context = &eval_context;
   if (res)
     {
       log_pipe_forward_msg(s, msg, path_options);
@@ -89,7 +83,7 @@ log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
       log_msg_drop(msg, path_options, AT_PROCESSED);
     }
 
-  filterx_scope_unref(scope);
+  filterx_eval_deinit_context(&eval_context);
   nv_table_unref(payload);
 }
 
@@ -120,7 +114,7 @@ log_filterx_pipe_new(GList *stmts, GlobalConfig *cfg)
   LogFilterXPipe *self = g_new0(LogFilterXPipe, 1);
 
   log_pipe_init_instance(&self->super, cfg);
-  self->super.flags = (self->super.flags | PIF_CONFIG_RELATED) & ~PIF_SYNC_SCOPE;
+  self->super.flags = (self->super.flags | PIF_CONFIG_RELATED);
   self->super.init = log_filterx_pipe_init;
   self->super.queue = log_filterx_pipe_queue;
   self->super.free_fn = log_filterx_pipe_free;
