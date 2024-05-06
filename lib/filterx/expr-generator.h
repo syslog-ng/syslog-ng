@@ -31,6 +31,7 @@ struct FilterXExprGenerator_
 {
   FilterXExpr super;
   FilterXExpr *fillable;
+  gboolean (*generate)(FilterXExprGenerator *self, FilterXObject *fillable);
   FilterXObject *(*create_container)(FilterXExprGenerator *self, FilterXExpr *fillable_parent);
 };
 

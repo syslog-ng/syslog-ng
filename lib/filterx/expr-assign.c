@@ -30,29 +30,17 @@ _eval(FilterXExpr *s)
   FilterXBinaryOp *self = (FilterXBinaryOp *) s;
 
   FilterXObject *value = filterx_expr_eval(self->rhs);
-  FilterXObject *result = NULL;
+
   if (!value)
     return NULL;
 
-  if (filterx_expr_assign(self->lhs, value))
+  if (!filterx_expr_assign(self->lhs, value))
     {
-      result = filterx_boolean_new(TRUE);
-      if (trace_flag)
-        {
-          GString *buf = scratch_buffers_alloc();
-          if (value && !filterx_object_repr(value, buf))
-            {
-              LogMessageValueType t;
-              if (!filterx_object_marshal(value, buf, &t))
-                g_assert_not_reached();
-            }
-          msg_trace("Filterx assignment",
-                    evt_tag_mem("value", buf->str, buf->len));
-        }
+      filterx_object_unref(value);
+      return NULL;
     }
 
-  filterx_object_unref(value);
-  return result;
+  return value;
 }
 
 /* NOTE: takes the object reference */
@@ -63,5 +51,6 @@ filterx_assign_new(FilterXExpr *lhs, FilterXExpr *rhs)
 
   filterx_binary_op_init_instance(self, lhs, rhs);
   self->super.eval = _eval;
+  self->super.ignore_falsy_result = TRUE;
   return &self->super;
 }

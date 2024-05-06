@@ -57,29 +57,15 @@ _eval(FilterXExpr *s)
   FilterXObject *cloned = filterx_object_clone(new_value);
   filterx_object_unref(new_value);
 
-  if (filterx_object_setattr(object, self->attr, &cloned))
+  if (!filterx_object_setattr(object, self->attr, &cloned))
     {
-      result = filterx_boolean_new(TRUE);
-      if (trace_flag)
-        {
-          GString *buf = scratch_buffers_alloc();
-          if (cloned && !filterx_object_repr(cloned, buf))
-            {
-              LogMessageValueType t;
-              if (!filterx_object_marshal(cloned, buf, &t))
-                g_assert_not_reached();
-            }
-          msg_trace("Filterx setattr",
-                    evt_tag_str("attr", filterx_string_get_value(self->attr, NULL)),
-                    evt_tag_mem("value", buf->str, buf->len));
-        }
+      filterx_eval_push_error("Attribute set failed", s, self->attr);
+      filterx_object_unref(cloned);
     }
   else
     {
-      filterx_eval_push_error("Attribute set failed", s, self->attr);
+      result = cloned;
     }
-
-  filterx_object_unref(cloned);
 
 exit:
   filterx_object_unref(object);
@@ -109,5 +95,6 @@ filterx_setattr_new(FilterXExpr *object, const gchar *attr_name, FilterXExpr *ne
   self->object = object;
   self->attr = filterx_string_new(attr_name, -1);
   self->new_value = new_value;
+  self->super.ignore_falsy_result = TRUE;
   return &self->super;
 }

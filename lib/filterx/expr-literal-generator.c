@@ -133,18 +133,12 @@ _list_generator_create_container(FilterXExprGenerator *s, FilterXExpr *fillable_
   return result;
 }
 
-static FilterXObject *
-_literal_generator_eval(FilterXExpr *s)
+static gboolean
+_literal_generator_generate(FilterXExprGenerator *s, FilterXObject *fillable)
 {
   FilterXExprLiteralGenerator *self = (FilterXExprLiteralGenerator *) s;
 
-  FilterXObject *fillable = filterx_expr_eval_typed(self->super.fillable);
-  if (!fillable)
-    return NULL;
-
-  FilterXObject *result = _eval_elements(fillable, self->elements) ? filterx_boolean_new(TRUE) : NULL;
-  filterx_object_unref(fillable);
-  return result;
+  return _eval_elements(fillable, self->elements);
 }
 
 void
@@ -160,7 +154,7 @@ static void
 _literal_generator_init_instance(FilterXExprLiteralGenerator *self)
 {
   filterx_generator_init_instance(&self->super.super);
-  self->super.super.eval = _literal_generator_eval;
+  self->super.generate = _literal_generator_generate;
   self->super.super.free_fn = _literal_generator_free;
 }
 
