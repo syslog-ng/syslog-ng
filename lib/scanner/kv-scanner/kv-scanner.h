@@ -70,16 +70,34 @@ kv_scanner_get_current_key(KVScanner *self)
   return self->key->str;
 }
 
+static inline gsize
+kv_scanner_get_current_key_len(KVScanner *self)
+{
+  return self->key->len;
+}
+
 static inline const gchar *
 kv_scanner_get_current_value(KVScanner *self)
 {
   return self->value->str;
 }
 
+static inline gsize
+kv_scanner_get_current_value_len(KVScanner *self)
+{
+  return self->value->len;
+}
+
 static inline const gchar *
 kv_scanner_get_stray_words(KVScanner *self)
 {
   return self->stray_words ? self->stray_words->str : NULL;
+}
+
+static inline gsize
+kv_scanner_get_stray_words_len(KVScanner *self)
+{
+  return self->stray_words ? self->stray_words->len : 0;
 }
 
 static inline void
