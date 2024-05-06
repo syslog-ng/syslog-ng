@@ -376,7 +376,6 @@ OtelArrayField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRef
 
   delete filterx_array->cpp;
   filterx_array->cpp = new_array;
-  *assoc_object = filterx_object_ref(object);
 
   return true;
 }

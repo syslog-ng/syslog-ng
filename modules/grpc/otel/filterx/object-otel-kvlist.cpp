@@ -507,7 +507,6 @@ OtelKVListField::FilterXObjectSetter(google::protobuf::Message *message, ProtoRe
 
   delete filterx_kvlist->cpp;
   filterx_kvlist->cpp = new_kvlist;
-  *assoc_object = filterx_object_ref(object);
 
   return true;
 }

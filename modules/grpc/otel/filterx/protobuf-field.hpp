@@ -89,7 +89,13 @@ public:
     try
       {
         ProtoReflectors reflectors(*message, fieldName);
-        return this->FilterXObjectSetter(message, reflectors, object, assoc_object);
+        if (this->FilterXObjectSetter(message, reflectors, object, assoc_object))
+          {
+            if (!(*assoc_object))
+              *assoc_object = filterx_object_ref(object);
+            return true;
+          }
+        return false;
       }
     catch(const std::exception &ex)
       {

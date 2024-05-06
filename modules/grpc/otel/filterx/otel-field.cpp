@@ -289,7 +289,6 @@ public:
           }
 
         reflectors.reflection->SetEnumValue(message, reflectors.fieldDescriptor, (int) value);
-        *assoc_object = object;
         return true;
       }
 

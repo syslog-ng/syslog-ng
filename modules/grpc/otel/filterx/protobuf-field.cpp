@@ -73,7 +73,6 @@ public:
   {
     gboolean truthy = filterx_object_truthy(object);
     reflectors.reflection->SetBool(message, reflectors.fieldDescriptor, truthy);
-    *assoc_object = filterx_object_ref(object);
     return true;
   }
 };
@@ -96,7 +95,6 @@ public:
     GenericNumber gn = filterx_primitive_get_value(object);
     int32_t val = MAX(INT32_MIN, MIN(INT32_MAX, gn_as_int64(&gn)));
     reflectors.reflection->SetInt32(message, reflectors.fieldDescriptor, val);
-    *assoc_object = filterx_object_ref(object);
     return true;
   }
 };
@@ -116,7 +114,6 @@ public:
         GenericNumber gn = filterx_primitive_get_value(object);
         int64_t val = gn_as_int64(&gn);
         reflectors.reflection->SetInt64(message, reflectors.fieldDescriptor, val);
-        *assoc_object = filterx_object_ref(object);
         return true;
       }
     else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(datetime)))
@@ -124,7 +121,6 @@ public:
         const UnixTime utime = filterx_datetime_get_value(object);
         uint64_t unix_epoch = unix_time_to_unix_epoch(utime);
         reflectors.reflection->SetInt64(message, reflectors.fieldDescriptor, (int64_t)(unix_epoch));
-        *assoc_object = filterx_object_ref(object);
         return true;
       }
 
@@ -151,7 +147,6 @@ public:
     GenericNumber gn = filterx_primitive_get_value(object);
     uint32_t val = MAX(0, MIN(UINT32_MAX, gn_as_int64(&gn)));
     reflectors.reflection->SetUInt32(message, reflectors.fieldDescriptor, val);
-    *assoc_object = filterx_object_ref(object);
     return true;
   }
 };
@@ -181,7 +176,6 @@ public:
         GenericNumber gn = filterx_primitive_get_value(object);
         uint64_t val = MAX(0, MIN(UINT64_MAX, (uint64_t) gn_as_int64(&gn)));
         reflectors.reflection->SetUInt64(message, reflectors.fieldDescriptor, val);
-        *assoc_object = filterx_object_ref(object);
         return true;
       }
     else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(datetime)))
@@ -189,7 +183,6 @@ public:
         const UnixTime utime = filterx_datetime_get_value(object);
         uint64_t unix_epoch = unix_time_to_unix_epoch(utime);
         reflectors.reflection->SetUInt64(message, reflectors.fieldDescriptor, unix_epoch);
-        *assoc_object = filterx_object_ref(object);
         return true;
       }
 
@@ -217,7 +210,6 @@ public:
         const gchar *str = filterx_string_get_value(object, &value_len);
         std::string stdString(str, value_len);
         reflectors.reflection->SetString(message, reflectors.fieldDescriptor, stdString);
-        *assoc_object = filterx_object_ref(object);
         return true;
       }
     else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(json_object)) ||
@@ -231,7 +223,6 @@ public:
             return false;
           }
         reflectors.reflection->SetString(message, reflectors.fieldDescriptor, json_literal);
-        *assoc_object = filterx_object_ref(object);
         return true;
       }
     log_type_error(reflectors, object->type->name);
@@ -267,7 +258,6 @@ public:
       }
 
     reflectors.reflection->SetDouble(message, reflectors.fieldDescriptor, val);
-    *assoc_object = filterx_object_ref(object);
     return true;
   }
 };
@@ -301,7 +291,6 @@ public:
 
     float floatVal = double_to_float_safe(val);
     reflectors.reflection->SetFloat(message, reflectors.fieldDescriptor, floatVal);
-    *assoc_object = filterx_object_ref(object);
     return true;
   }
 };
@@ -325,7 +314,7 @@ public:
         const gchar *str = filterx_bytes_get_value(object, &value_len);
         std::string stdString(str, value_len);
         reflectors.reflection->SetString(message, reflectors.fieldDescriptor, stdString);
-        *assoc_object = filterx_object_ref(object);
+
         return true;
       }
     else if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(protobuf)))
@@ -334,7 +323,6 @@ public:
         const gchar *str = filterx_protobuf_get_value(object, &value_len);
         std::string stdString(str, value_len);
         reflectors.reflection->SetString(message, reflectors.fieldDescriptor, stdString);
-        *assoc_object = filterx_object_ref(object);
         return true;
       }
     log_type_error(reflectors, object->type->name);
