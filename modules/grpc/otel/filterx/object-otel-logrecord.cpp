@@ -129,6 +129,23 @@ LogRecord::unset_key(FilterXObject *key)
     }
 }
 
+bool
+LogRecord::is_key_set(FilterXObject *key)
+{
+  try
+    {
+      std::string key_str = extract_string_from_object(key);
+      ProtoReflectors reflectors(this->logRecord, key_str);
+      ProtobufField *converter = otel_converter_by_field_descriptor(reflectors.fieldDescriptor);
+
+      return converter->IsSet(&this->logRecord, key_str);
+    }
+  catch(const std::exception &ex)
+    {
+      return false;
+    }
+}
+
 uint64_t
 LogRecord::len() const
 {
@@ -182,6 +199,14 @@ _unset_key(FilterXDict *s, FilterXObject *key)
   return self->cpp->unset_key(key);
 }
 
+static gboolean
+_is_key_set(FilterXDict *s, FilterXObject *key)
+{
+  FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
+
+  return self->cpp->is_key_set(key);
+}
+
 static guint64
 _len(FilterXDict *s)
 {
@@ -217,6 +242,7 @@ _init_instance(FilterXOtelLogRecord *self)
   self->super.get_subscript = _get_subscript;
   self->super.set_subscript = _set_subscript;
   self->super.unset_key = _unset_key;
+  self->super.is_key_set = _is_key_set;
   self->super.len = _len;
 }
 
