@@ -251,9 +251,12 @@ _parse_character_with_quotation(CSVScanner *self)
             case 'x':
               if (*(self->src+1) && *(self->src+2))
                 {
-                  ch = _decode_xbyte(*(self->src+1), *(self->src+2));
-                  if (ch >= 0)
-                    self->src += 2;
+                  gint decoded = _decode_xbyte(*(self->src+1), *(self->src+2));
+                  if (decoded >= 0)
+                    {
+                      self->src += 2;
+                      ch = decoded;
+                    }
                   else
                     ch = 'x';
                 }
