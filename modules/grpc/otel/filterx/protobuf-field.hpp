@@ -115,6 +115,8 @@ protected:
 std::unique_ptr<ProtobufField> *all_protobuf_converters();
 ProtobufField *protobuf_converter_by_type(google::protobuf::FieldDescriptor::Type fieldType);
 
+std::string extract_string_from_object(FilterXObject *object);
+
 }
 }
 }
