@@ -429,6 +429,51 @@ Test(otel_filterx, resource_set_field)
   filterx_object_unref(filterx_otel_resource);
 }
 
+Test(otel_filterx, resource_len_and_unset_and_is_key_set)
+{
+  FilterXObject *resource = filterx_otel_resource_new_from_args(NULL);
+  FilterXObject *dropped_attributes_count = filterx_string_new("dropped_attributes_count", -1);
+  FilterXObject *dropped_attributes_count_val = filterx_integer_new(42);
+
+  guint64 len;
+  cr_assert(filterx_object_len(resource, &len));
+  cr_assert_eq(len, 0);
+
+  cr_assert_not(filterx_object_is_key_set(resource, dropped_attributes_count));
+  cr_assert(filterx_object_set_subscript(resource, dropped_attributes_count, &dropped_attributes_count_val));
+  cr_assert(filterx_object_len(resource, &len));
+  cr_assert_eq(len, 1);
+  cr_assert(filterx_object_is_key_set(resource, dropped_attributes_count));
+
+  cr_assert(filterx_object_unset_key(resource, dropped_attributes_count));
+  cr_assert(filterx_object_len(resource, &len));
+  cr_assert_eq(len, 0);
+  cr_assert_not(filterx_object_is_key_set(resource, dropped_attributes_count));
+
+  filterx_object_unref(dropped_attributes_count);
+  filterx_object_unref(dropped_attributes_count_val);
+  filterx_object_unref(resource);
+}
+
+Test(otel_filterx, resource_iter)
+{
+  FilterXObject *resource = filterx_otel_resource_new_from_args(NULL);
+  FilterXObject *dropped_attributes_count = filterx_string_new("dropped_attributes_count", -1);
+  FilterXObject *dropped_attributes_count_val = filterx_integer_new(42);
+
+  cr_assert(filterx_object_set_subscript(resource, dropped_attributes_count, &dropped_attributes_count_val));
+
+  GString *output = g_string_new(NULL);
+  cr_assert(filterx_dict_iter(resource, _append_to_str, output));
+
+  cr_assert_str_eq(output->str, "dropped_attributes_count\n42\n");
+
+  g_string_free(output, TRUE);
+  filterx_object_unref(dropped_attributes_count);
+  filterx_object_unref(dropped_attributes_count_val);
+  filterx_object_unref(resource);
+}
+
 
 /* Scope */
 

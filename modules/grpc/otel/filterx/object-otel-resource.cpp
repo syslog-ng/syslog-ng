@@ -99,6 +99,52 @@ Resource::get_subscript(FilterXObject *key)
     }
 }
 
+bool
+Resource::unset_key(FilterXObject *key)
+{
+  try
+    {
+      std::string key_str = extract_string_from_object(key);
+      ProtoReflectors reflectors(resource, key_str);
+      ProtobufField *converter = otel_converter_by_field_descriptor(reflectors.fieldDescriptor);
+
+      return converter->Unset(&resource, key_str);
+    }
+  catch(const std::exception &ex)
+    {
+      return false;
+    }
+}
+
+bool
+Resource::is_key_set(FilterXObject *key)
+{
+  try
+    {
+      std::string key_str = extract_string_from_object(key);
+      ProtoReflectors reflectors(resource, key_str);
+      ProtobufField *converter = otel_converter_by_field_descriptor(reflectors.fieldDescriptor);
+
+      return converter->IsSet(&resource, key_str);
+    }
+  catch(const std::exception &ex)
+    {
+      return false;
+    }
+}
+
+uint64_t
+Resource::len() const
+{
+  return get_protobuf_message_set_field_count(resource);
+}
+
+bool
+Resource::iter(FilterXDictIterFunc func, void *user_data)
+{
+  return iter_on_otel_protobuf_message_fields(resource, func, user_data);
+}
+
 const opentelemetry::proto::resource::v1::Resource &
 Resource::get_value() const
 {
@@ -133,6 +179,38 @@ _get_subscript(FilterXDict *s, FilterXObject *key)
 }
 
 static gboolean
+_unset_key(FilterXDict *s, FilterXObject *key)
+{
+  FilterXOtelResource *self = (FilterXOtelResource *) s;
+
+  return self->cpp->unset_key(key);
+}
+
+static gboolean
+_is_key_set(FilterXDict *s, FilterXObject *key)
+{
+  FilterXOtelResource *self = (FilterXOtelResource *) s;
+
+  return self->cpp->is_key_set(key);
+}
+
+static guint64
+_len(FilterXDict *s)
+{
+  FilterXOtelResource *self = (FilterXOtelResource *) s;
+
+  return self->cpp->len();
+}
+
+static gboolean
+_iter(FilterXDict *s, FilterXDictIterFunc func, gpointer user_data)
+{
+  FilterXOtelResource *self = (FilterXOtelResource *) s;
+
+  return self->cpp->iter(func, user_data);
+}
+
+static gboolean
 _truthy(FilterXObject *s)
 {
   return TRUE;
@@ -158,6 +236,10 @@ _init_instance(FilterXOtelResource *self)
 
   self->super.get_subscript = _get_subscript;
   self->super.set_subscript = _set_subscript;
+  self->super.unset_key = _unset_key;
+  self->super.is_key_set = _is_key_set;
+  self->super.len = _len;
+  self->super.iter = _iter;
 }
 
 FilterXObject *
