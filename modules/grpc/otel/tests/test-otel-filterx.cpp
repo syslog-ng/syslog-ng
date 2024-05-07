@@ -881,6 +881,72 @@ Test(otel_filterx, kvlist_through_logrecord)
   filterx_object_unref(fx_logrecord);
 }
 
+Test(otel_filterx, scope_len_and_unset_and_is_key_set)
+{
+  FilterXObject *scope = filterx_otel_scope_new_from_args(NULL);
+  FilterXObject *name = filterx_string_new("name", -1);
+  FilterXObject *name_val = filterx_string_new("name_val", -1);
+  FilterXObject *version = filterx_string_new("version", -1);
+  FilterXObject *version_val = filterx_string_new("version_val", -1);
+
+  guint64 len;
+  cr_assert(filterx_object_len(scope, &len));
+  cr_assert_eq(len, 0);
+
+  cr_assert_not(filterx_object_is_key_set(scope, name));
+  cr_assert(filterx_object_set_subscript(scope, name, &name_val));
+  cr_assert(filterx_object_len(scope, &len));
+  cr_assert_eq(len, 1);
+  cr_assert(filterx_object_is_key_set(scope, name));
+
+  cr_assert_not(filterx_object_is_key_set(scope, version));
+  cr_assert(filterx_object_set_subscript(scope, version, &version_val));
+  cr_assert(filterx_object_len(scope, &len));
+  cr_assert_eq(len, 2);
+  cr_assert(filterx_object_is_key_set(scope, version));
+
+  cr_assert(filterx_object_unset_key(scope, name));
+  cr_assert(filterx_object_len(scope, &len));
+  cr_assert_eq(len, 1);
+  cr_assert_not(filterx_object_is_key_set(scope, name));
+
+  cr_assert(filterx_object_unset_key(scope, version));
+  cr_assert(filterx_object_len(scope, &len));
+  cr_assert_eq(len, 0);
+  cr_assert_not(filterx_object_is_key_set(scope, version));
+
+  filterx_object_unref(version);
+  filterx_object_unref(version_val);
+  filterx_object_unref(name);
+  filterx_object_unref(name_val);
+  filterx_object_unref(scope);
+}
+
+Test(otel_filterx, scope_iter)
+{
+  FilterXObject *scope = filterx_otel_scope_new_from_args(NULL);
+  FilterXObject *name = filterx_string_new("name", -1);
+  FilterXObject *name_val = filterx_string_new("name_val", -1);
+  FilterXObject *version = filterx_string_new("version", -1);
+  FilterXObject *version_val = filterx_string_new("version_val", -1);
+
+  cr_assert(filterx_object_set_subscript(scope, name, &name_val));
+  cr_assert(filterx_object_set_subscript(scope, version, &version_val));
+
+  GString *output = g_string_new(NULL);
+  cr_assert(filterx_dict_iter(scope, _append_to_str, output));
+
+  cr_assert_str_eq(output->str, "name\nname_val\nversion\nversion_val\n");
+
+  g_string_free(output, TRUE);
+  filterx_object_unref(version);
+  filterx_object_unref(version_val);
+  filterx_object_unref(name);
+  filterx_object_unref(name_val);
+  filterx_object_unref(scope);
+}
+
+
 /* Array */
 
 Test(otel_filterx, array_empty)
