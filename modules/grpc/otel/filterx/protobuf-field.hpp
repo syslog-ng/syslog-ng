@@ -43,7 +43,7 @@ struct ProtoReflectors
   const google::protobuf::Descriptor *descriptor;
   const google::protobuf::FieldDescriptor *fieldDescriptor;
   google::protobuf::FieldDescriptor::Type fieldType;
-  ProtoReflectors(const google::protobuf::Message &message, std::string fieldName)
+  ProtoReflectors(const google::protobuf::Message &message, const std::string &fieldName)
   {
     this->reflection = message.GetReflection();
     this->descriptor = message.GetDescriptor();
@@ -71,7 +71,7 @@ struct ProtoReflectors
 class ProtobufField
 {
 public:
-  FilterXObject *Get(google::protobuf::Message *message, std::string fieldName)
+  FilterXObject *Get(google::protobuf::Message *message, const std::string &fieldName)
   {
     try
       {
@@ -84,7 +84,8 @@ public:
         return nullptr;
       }
   };
-  bool Set(google::protobuf::Message *message, std::string fieldName, FilterXObject *object, FilterXObject **assoc_object)
+  bool Set(google::protobuf::Message *message, const std::string &fieldName, FilterXObject *object,
+           FilterXObject **assoc_object)
   {
     try
       {
