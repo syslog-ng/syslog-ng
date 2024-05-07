@@ -48,10 +48,10 @@ public:
   LogRecord(FilterXOtelLogRecord *super, FilterXObject *protobuf_object);
   LogRecord(LogRecord &o) = delete;
   LogRecord(LogRecord &&o) = delete;
-  bool SetField(const gchar *attribute, FilterXObject **value);
-  std::string Marshal(void);
-  FilterXObject *GetField(const gchar *attribute);
-  const opentelemetry::proto::logs::v1::LogRecord &GetValue() const;
+  bool set_field(const gchar *attribute, FilterXObject **value);
+  std::string marshal(void);
+  FilterXObject *get_field(const gchar *attribute);
+  const opentelemetry::proto::logs::v1::LogRecord &get_value() const;
 private:
   FilterXOtelLogRecord *super;
   opentelemetry::proto::logs::v1::LogRecord logRecord;

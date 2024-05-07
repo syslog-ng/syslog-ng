@@ -65,14 +65,14 @@ LogRecord::LogRecord(const LogRecord &o, FilterXOtelLogRecord *super_) : super(s
 }
 
 std::string
-LogRecord::Marshal(void)
+LogRecord::marshal(void)
 {
   std::string serializedString = this->logRecord.SerializePartialAsString();
   return serializedString;
 }
 
 bool
-LogRecord::SetField(const gchar *attribute, FilterXObject **value)
+LogRecord::set_field(const gchar *attribute, FilterXObject **value)
 {
   try
     {
@@ -96,7 +96,7 @@ LogRecord::SetField(const gchar *attribute, FilterXObject **value)
 }
 
 FilterXObject *
-LogRecord::GetField(const gchar *attribute)
+LogRecord::get_field(const gchar *attribute)
 {
   try
     {
@@ -113,7 +113,7 @@ LogRecord::GetField(const gchar *attribute)
 }
 
 const opentelemetry::proto::logs::v1::LogRecord &
-LogRecord::GetValue() const
+LogRecord::get_value() const
 {
   return this->logRecord;
 }
@@ -160,7 +160,7 @@ _setattr(FilterXObject *s, FilterXObject *attr, FilterXObject **new_value)
 {
   FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
 
-  return self->cpp->SetField(filterx_string_get_value(attr, NULL), new_value);
+  return self->cpp->set_field(filterx_string_get_value(attr, NULL), new_value);
 }
 
 static FilterXObject *
@@ -168,7 +168,7 @@ _getattr(FilterXObject *s, FilterXObject *attr)
 {
   FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
 
-  return self->cpp->GetField(filterx_string_get_value(attr, NULL));
+  return self->cpp->get_field(filterx_string_get_value(attr, NULL));
 }
 
 static gboolean
@@ -182,7 +182,7 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 {
   FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
 
-  std::string serialized = self->cpp->Marshal();
+  std::string serialized = self->cpp->marshal();
 
   g_string_truncate(repr, 0);
   g_string_append_len(repr, serialized.c_str(), serialized.length());

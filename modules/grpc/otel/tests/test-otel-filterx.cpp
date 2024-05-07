@@ -155,7 +155,7 @@ Test(otel_filterx, logrecord_empty)
   FilterXOtelLogRecord *filterx_otel_logrecord = (FilterXOtelLogRecord *) filterx_otel_logrecord_new_from_args(NULL);
   cr_assert(filterx_otel_logrecord);
 
-  cr_assert(MessageDifferencer::Equals(LogRecord(), filterx_otel_logrecord->cpp->GetValue()));
+  cr_assert(MessageDifferencer::Equals(LogRecord(), filterx_otel_logrecord->cpp->get_value()));
 
   filterx_object_unref(&filterx_otel_logrecord->super);
 }
@@ -176,7 +176,7 @@ Test(otel_filterx, logrecord_from_protobuf)
   FilterXOtelLogRecord *filterx_otel_logrecord = (FilterXOtelLogRecord *) filterx_otel_logrecord_new_from_args(args);
   cr_assert(filterx_otel_logrecord);
 
-  const LogRecord &log_record_from_filterx = filterx_otel_logrecord->cpp->GetValue();
+  const LogRecord &log_record_from_filterx = filterx_otel_logrecord->cpp->get_value();
   cr_assert(MessageDifferencer::Equals(log_record, log_record_from_filterx));
 
   filterx_object_unref(&filterx_otel_logrecord->super);
@@ -726,7 +726,7 @@ Test(otel_filterx, kvlist_through_logrecord)
   KeyValue *expected_logrecord_inner_attr_2 = expected_logrecord_inner_kvlist->add_values();
   expected_logrecord_inner_attr_2->set_key("key_2");
   expected_logrecord_inner_attr_2->mutable_value()->set_string_value("baz");
-  cr_assert(MessageDifferencer::Equals(expected_logrecord, ((FilterXOtelLogRecord *) fx_logrecord)->cpp->GetValue()));
+  cr_assert(MessageDifferencer::Equals(expected_logrecord, ((FilterXOtelLogRecord *) fx_logrecord)->cpp->get_value()));
 
   KeyValueList expected_kvlist;
   KeyValue *expected_kvlist_value_0 = expected_kvlist.add_values();
@@ -973,7 +973,7 @@ Test(otel_filterx, array_through_logrecord)
   expected_logrecord_array->add_values()->set_string_value("bar");
   ArrayValue *inner_array = expected_logrecord_array->add_values()->mutable_array_value();
   inner_array->add_values()->set_string_value("baz");
-  cr_assert(MessageDifferencer::Equals(expected_logrecord, ((FilterXOtelLogRecord *) fx_logrecord)->cpp->GetValue()));
+  cr_assert(MessageDifferencer::Equals(expected_logrecord, ((FilterXOtelLogRecord *) fx_logrecord)->cpp->get_value()));
 
   ArrayValue expected_array;
   expected_array.add_values()->set_string_value("foo");
