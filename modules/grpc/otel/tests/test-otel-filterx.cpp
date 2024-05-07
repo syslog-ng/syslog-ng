@@ -258,6 +258,45 @@ Test(otel_filterx, logrecord_len_and_unset_and_is_key_set)
   filterx_object_unref(logrecord);
 }
 
+static gboolean
+_append_to_str(FilterXObject *key, FilterXObject *value, gpointer user_data)
+{
+  GString *output = (GString *) user_data;
+
+  LogMessageValueType type;
+  filterx_object_marshal_append(key, output, &type);
+  g_string_append_c(output, '\n');
+  filterx_object_marshal_append(value, output, &type);
+  g_string_append_c(output, '\n');
+
+  return TRUE;
+}
+
+Test(otel_filterx, logrecord_iter)
+{
+  FilterXObject *logrecord = filterx_otel_logrecord_new_from_args(NULL);
+  FilterXObject *body = filterx_string_new("body", -1);
+  FilterXObject *body_val = filterx_string_new("body_val", -1);
+  FilterXObject *time_unix_nano = filterx_string_new("time_unix_nano", -1);
+  FilterXObject *time_unix_nano_val = filterx_integer_new(123);
+
+  cr_assert(filterx_object_set_subscript(logrecord, body, &body_val));
+  cr_assert(filterx_object_set_subscript(logrecord, time_unix_nano, &time_unix_nano_val));
+
+  GString *output = g_string_new(NULL);
+  cr_assert(filterx_dict_iter(logrecord, _append_to_str, output));
+
+  cr_assert_str_eq(output->str, "time_unix_nano\n0.000123+00:00\nbody\nbody_val\n");
+
+  g_string_free(output, TRUE);
+  filterx_object_unref(time_unix_nano);
+  filterx_object_unref(time_unix_nano_val);
+  filterx_object_unref(body);
+  filterx_object_unref(body_val);
+  filterx_object_unref(logrecord);
+}
+
+
 /* Resource */
 
 Test(otel_filterx, resource_empty)

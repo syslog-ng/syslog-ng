@@ -152,6 +152,12 @@ LogRecord::len() const
   return get_protobuf_message_set_field_count(logRecord);
 }
 
+bool
+LogRecord::iter(FilterXDictIterFunc func, void *user_data)
+{
+  return iter_on_otel_protobuf_message_fields(logRecord, func, user_data);
+}
+
 const opentelemetry::proto::logs::v1::LogRecord &
 LogRecord::get_value() const
 {
@@ -216,6 +222,14 @@ _len(FilterXDict *s)
 }
 
 static gboolean
+_iter(FilterXDict *s, FilterXDictIterFunc func, gpointer user_data)
+{
+  FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
+
+  return self->cpp->iter(func, user_data);
+}
+
+static gboolean
 _truthy(FilterXObject *s)
 {
   return TRUE;
@@ -244,6 +258,7 @@ _init_instance(FilterXOtelLogRecord *self)
   self->super.unset_key = _unset_key;
   self->super.is_key_set = _is_key_set;
   self->super.len = _len;
+  self->super.iter = _iter;
 }
 
 FilterXObject *
