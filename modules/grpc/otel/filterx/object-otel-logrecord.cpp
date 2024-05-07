@@ -72,14 +72,16 @@ LogRecord::marshal(void)
 }
 
 bool
-LogRecord::set_field(const gchar *attribute, FilterXObject **value)
+LogRecord::set_subscript(FilterXObject *key, FilterXObject **value)
 {
   try
     {
-      ProtoReflectors reflectors(this->logRecord, attribute);
+      std::string key_str = extract_string_from_object(key);
+      ProtoReflectors reflectors(this->logRecord, key_str);
+      ProtobufField *converter = otel_converter_by_field_descriptor(reflectors.fieldDescriptor);
+
       FilterXObject *assoc_object = NULL;
-      if (!otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Set(&this->logRecord, attribute, *value,
-          &assoc_object))
+      if (!converter->Set(&this->logRecord, key_str, *value, &assoc_object))
         return false;
 
       filterx_object_unref(*value);
@@ -88,26 +90,23 @@ LogRecord::set_field(const gchar *attribute, FilterXObject **value)
     }
   catch(const std::exception &ex)
     {
-      msg_error("protobuf-field: Failed to set field:",
-                evt_tag_str("message", ex.what()),
-                evt_tag_str("field_name", attribute));
       return false;
     }
 }
 
 FilterXObject *
-LogRecord::get_field(const gchar *attribute)
+LogRecord::get_subscript(FilterXObject *key)
 {
   try
     {
-      ProtoReflectors reflectors(this->logRecord, attribute);
-      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Get(&this->logRecord, attribute);
+      std::string key_str = extract_string_from_object(key);
+      ProtoReflectors reflectors(this->logRecord, key_str);
+      ProtobufField *converter = otel_converter_by_field_descriptor(reflectors.fieldDescriptor);
+
+      return converter->Get(&this->logRecord, key_str);
     }
   catch(const std::exception &ex)
     {
-      msg_error("protobuf-field: Failed to get field:",
-                evt_tag_str("message", ex.what()),
-                evt_tag_str("field_name", attribute));
       return nullptr;
     }
 }
@@ -126,26 +125,6 @@ grpc_otel_filterx_logrecord_contruct_new(Plugin *self)
   return (gpointer) &filterx_otel_logrecord_new_from_args;
 }
 
-FilterXObject *
-_filterx_otel_logrecord_clone(FilterXObject *s)
-{
-  FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
-
-  FilterXOtelLogRecord *clone = g_new0(FilterXOtelLogRecord, 1);
-  filterx_object_init_instance((FilterXObject *) clone, &FILTERX_TYPE_NAME(otel_logrecord));
-
-  try
-    {
-      clone->cpp = new LogRecord(*self->cpp, clone);
-    }
-  catch (const std::runtime_error &)
-    {
-      g_assert_not_reached();
-    }
-
-  return &clone->super;
-}
-
 static void
 _free(FilterXObject *s)
 {
@@ -156,19 +135,19 @@ _free(FilterXObject *s)
 }
 
 static gboolean
-_setattr(FilterXObject *s, FilterXObject *attr, FilterXObject **new_value)
+_set_subscript(FilterXDict *s, FilterXObject *key, FilterXObject **new_value)
 {
   FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
 
-  return self->cpp->set_field(filterx_string_get_value(attr, NULL), new_value);
+  return self->cpp->set_subscript(key, new_value);
 }
 
 static FilterXObject *
-_getattr(FilterXObject *s, FilterXObject *attr)
+_get_subscript(FilterXDict *s, FilterXObject *key)
 {
   FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
 
-  return self->cpp->get_field(filterx_string_get_value(attr, NULL));
+  return self->cpp->get_subscript(key);
 }
 
 static gboolean
@@ -190,11 +169,40 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
   return TRUE;
 }
 
+static void
+_init_instance(FilterXOtelLogRecord *self)
+{
+  filterx_dict_init_instance(&self->super, &FILTERX_TYPE_NAME(otel_logrecord));
+
+  self->super.get_subscript = _get_subscript;
+  self->super.set_subscript = _set_subscript;
+}
+
+FilterXObject *
+_filterx_otel_logrecord_clone(FilterXObject *s)
+{
+  FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
+
+  FilterXOtelLogRecord *clone = g_new0(FilterXOtelLogRecord, 1);
+  _init_instance(clone);
+
+  try
+    {
+      clone->cpp = new LogRecord(*self->cpp, clone);
+    }
+  catch (const std::runtime_error &)
+    {
+      g_assert_not_reached();
+    }
+
+  return &clone->super.super;
+}
+
 FilterXObject *
 filterx_otel_logrecord_new_from_args(GPtrArray *args)
 {
   FilterXOtelLogRecord *self = g_new0(FilterXOtelLogRecord, 1);
-  filterx_object_init_instance((FilterXObject *) self, &FILTERX_TYPE_NAME(otel_logrecord));
+  _init_instance(self);
 
   try
     {
@@ -208,11 +216,11 @@ filterx_otel_logrecord_new_from_args(GPtrArray *args)
   catch (const std::runtime_error &e)
     {
       msg_error("FilterX: Failed to create OTel LogRecord object", evt_tag_str("error", e.what()));
-      filterx_object_unref(&self->super);
+      filterx_object_unref(&self->super.super);
       return NULL;
     }
 
-  return &self->super;
+  return &self->super.super;
 }
 
 FILTERX_DEFINE_TYPE(otel_logrecord, FILTERX_TYPE_NAME(object),
@@ -220,7 +228,5 @@ FILTERX_DEFINE_TYPE(otel_logrecord, FILTERX_TYPE_NAME(object),
                     .marshal = _marshal,
                     .clone = _filterx_otel_logrecord_clone,
                     .truthy = _truthy,
-                    .getattr = _getattr,
-                    .setattr = _setattr,
                     .free_fn = _free,
                    );

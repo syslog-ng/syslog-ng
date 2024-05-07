@@ -157,7 +157,7 @@ Test(otel_filterx, logrecord_empty)
 
   cr_assert(MessageDifferencer::Equals(LogRecord(), filterx_otel_logrecord->cpp->get_value()));
 
-  filterx_object_unref(&filterx_otel_logrecord->super);
+  filterx_object_unref(&filterx_otel_logrecord->super.super);
 }
 
 Test(otel_filterx, logrecord_from_protobuf)
@@ -179,7 +179,7 @@ Test(otel_filterx, logrecord_from_protobuf)
   const LogRecord &log_record_from_filterx = filterx_otel_logrecord->cpp->get_value();
   cr_assert(MessageDifferencer::Equals(log_record, log_record_from_filterx));
 
-  filterx_object_unref(&filterx_otel_logrecord->super);
+  filterx_object_unref(&filterx_otel_logrecord->super.super);
   g_ptr_array_free(args, TRUE);
 }
 
