@@ -314,7 +314,10 @@ filterx_scope_clone(FilterXScope *other)
           FilterXVariable *v_clone = &g_array_index(self->variables, FilterXVariable, dst_index);
 
           v_clone->generation = 0;
-          v_clone->value = filterx_object_clone(v->value);
+          if (v->value)
+            v_clone->value = filterx_object_clone(v->value);
+          else
+            v_clone->value = NULL;
           dst_index++;
           msg_trace("Filterx scope, cloning scope variable",
                     evt_tag_str("variable", log_msg_get_value_name((v->handle & ~FILTERX_HANDLE_FLOATING_BIT), NULL)));

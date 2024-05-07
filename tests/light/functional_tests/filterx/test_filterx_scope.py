@@ -257,6 +257,8 @@ def test_changes_in_abandoned_branches_are_ignored(config, syslog_ng):
         config, init_exprs=[
             """
                 $json = json({"common": "common"});
+                $variable = "something";
+                unset($variable);
             """,
         ], true_exprs=[
             """
