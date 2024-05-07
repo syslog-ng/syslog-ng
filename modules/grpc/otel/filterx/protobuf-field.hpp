@@ -118,6 +118,19 @@ public:
         return false;
       }
   }
+  bool IsSet(google::protobuf::Message *message, const std::string &fieldName)
+  {
+    try
+      {
+        ProtoReflectors reflectors(*message, fieldName);
+        return reflectors.reflection->HasField(*message, reflectors.fieldDescriptor);
+      }
+    catch(const std::exception &ex)
+      {
+        msg_error("protobuf-field: Failed to check field:", evt_tag_str("message", ex.what()));
+        return false;
+      }
+  }
 
   virtual ~ProtobufField() {}
 protected:
