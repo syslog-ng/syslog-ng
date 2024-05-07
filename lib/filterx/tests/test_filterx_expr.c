@@ -82,7 +82,7 @@ Test(filterx_expr, test_filterx_template_evaluates_to_the_expanded_value)
   {
     .msgs = &msg,
     .num_msg = 1,
-    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
     .scope = scope,
   };
 
@@ -114,7 +114,7 @@ Test(filterx_expr, test_filterx_list_merge)
   {
     .msgs = &msg,
     .num_msg = 1,
-    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
     .scope = scope,
   };
   filterx_eval_set_context(&context);
@@ -203,7 +203,7 @@ Test(filterx_expr, test_filterx_dict_merge)
   {
     .msgs = &msg,
     .num_msg = 1,
-    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
     .scope = scope,
   };
   filterx_eval_set_context(&context);
@@ -356,7 +356,7 @@ Test(filterx_expr, test_filterx_assign)
   {
     .msgs = &msg,
     .num_msg = 1,
-    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
     .scope = scope,
   };
   filterx_eval_set_context(&context);
@@ -397,7 +397,7 @@ Test(filterx_expr, test_filterx_setattr)
   {
     .msgs = &msg,
     .num_msg = 1,
-    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
     .scope = scope,
   };
   filterx_eval_set_context(&context);
@@ -432,7 +432,7 @@ Test(filterx_expr, test_filterx_set_subscript)
   {
     .msgs = &msg,
     .num_msg = 1,
-    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
     .scope = scope,
   };
   filterx_eval_set_context(&context);
@@ -469,7 +469,7 @@ Test(filterx_expr, test_filterx_readonly)
   {
     .msgs = &msg,
     .num_msg = 1,
-    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
     .scope = scope,
   };
   filterx_eval_set_context(&context);

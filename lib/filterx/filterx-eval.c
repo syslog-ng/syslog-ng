@@ -217,7 +217,7 @@ filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previ
   filterx_scope_make_writable(&scope);
 
   memset(context, 0, sizeof(*context));
-  context->template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS;
+  context->template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS;
   context->scope = scope;
 
   if (previous_context)

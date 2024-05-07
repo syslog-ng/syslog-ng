@@ -41,7 +41,7 @@ struct _FilterXEvalContext
   gint num_msg;
   FilterXScope *scope;
   FilterXError error;
-  LogTemplateEvalOptions *template_eval_options;
+  LogTemplateEvalOptions template_eval_options;
   GPtrArray *weak_refs;
   FilterXEvalContext *previous_context;
 };
