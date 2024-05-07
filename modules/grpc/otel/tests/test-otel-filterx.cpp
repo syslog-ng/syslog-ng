@@ -307,7 +307,7 @@ Test(otel_filterx, resource_empty)
   cr_assert(MessageDifferencer::Equals(opentelemetry::proto::resource::v1::Resource(),
                                        filterx_otel_resource->cpp->get_value()));
 
-  filterx_object_unref(&filterx_otel_resource->super);
+  filterx_object_unref(&filterx_otel_resource->super.super);
 }
 
 Test(otel_filterx, resource_from_protobuf)
@@ -328,7 +328,7 @@ Test(otel_filterx, resource_from_protobuf)
   const opentelemetry::proto::resource::v1::Resource &resource_from_filterx = filterx_otel_resource->cpp->get_value();
   cr_assert(MessageDifferencer::Equals(resource, resource_from_filterx));
 
-  filterx_object_unref(&filterx_otel_resource->super);
+  filterx_object_unref(&filterx_otel_resource->super.super);
   g_ptr_array_free(args, TRUE);
 }
 

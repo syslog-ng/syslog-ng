@@ -60,41 +60,41 @@ Resource::marshal(void)
 }
 
 bool
-Resource::set_field(const gchar *attribute, FilterXObject **value)
+Resource::set_subscript(FilterXObject *key, FilterXObject **value)
 {
   try
     {
-      ProtoReflectors reflectors(resource, attribute);
+      std::string key_str = extract_string_from_object(key);
+      ProtoReflectors reflectors(resource, key_str);
+      ProtobufField *converter = otel_converter_by_field_descriptor(reflectors.fieldDescriptor);
+
       FilterXObject *assoc_object = NULL;
-      if (!otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Set(&resource, attribute, *value, &assoc_object))
+      if (!converter->Set(&resource, key_str, *value, &assoc_object))
         return false;
 
       filterx_object_unref(*value);
       *value = assoc_object;
       return true;
     }
-  catch (const std::invalid_argument &e)
+  catch(const std::exception &ex)
     {
-      msg_error("FilterX: Failed to set OTel Resource field",
-                evt_tag_str("field_name", attribute),
-                evt_tag_str("error", e.what()));
       return false;
     }
 }
 
 FilterXObject *
-Resource::get_field(const gchar *attribute)
+Resource::get_subscript(FilterXObject *key)
 {
   try
     {
-      ProtoReflectors reflectors(resource, attribute);
-      return otel_converter_by_field_descriptor(reflectors.fieldDescriptor)->Get(&resource, attribute);
+      std::string key_str = extract_string_from_object(key);
+      ProtoReflectors reflectors(resource, key_str);
+      ProtobufField *converter = otel_converter_by_field_descriptor(reflectors.fieldDescriptor);
+
+      return converter->Get(&resource, key_str);
     }
-  catch (const std::invalid_argument &e)
+  catch(const std::exception &ex)
     {
-      msg_error("FilterX: Failed to get OTel Resource field",
-                evt_tag_str("field_name", attribute),
-                evt_tag_str("error", e.what()));
       return nullptr;
     }
 }
@@ -107,26 +107,6 @@ Resource::get_value() const
 
 /* C Wrappers */
 
-FilterXObject *
-_filterx_otel_resource_clone(FilterXObject *s)
-{
-  FilterXOtelResource *self = (FilterXOtelResource *) s;
-
-  FilterXOtelResource *clone = g_new0(FilterXOtelResource, 1);
-  filterx_object_init_instance(&clone->super, &FILTERX_TYPE_NAME(otel_resource));
-
-  try
-    {
-      clone->cpp = new Resource(*self->cpp, self);
-    }
-  catch (const std::runtime_error &)
-    {
-      g_assert_not_reached();
-    }
-
-  return &clone->super;
-}
-
 static void
 _free(FilterXObject *s)
 {
@@ -137,19 +117,19 @@ _free(FilterXObject *s)
 }
 
 static gboolean
-_setattr(FilterXObject *s, FilterXObject *attr, FilterXObject **new_value)
+_set_subscript(FilterXDict *s, FilterXObject *key, FilterXObject **new_value)
 {
   FilterXOtelResource *self = (FilterXOtelResource *) s;
 
-  return self->cpp->set_field(filterx_string_get_value(attr, NULL), new_value);
+  return self->cpp->set_subscript(key, new_value);
 }
 
 static FilterXObject *
-_getattr(FilterXObject *s, FilterXObject *attr)
+_get_subscript(FilterXDict *s, FilterXObject *key)
 {
   FilterXOtelResource *self = (FilterXOtelResource *) s;
 
-  return self->cpp->get_field(filterx_string_get_value(attr, NULL));
+  return self->cpp->get_subscript(key);
 }
 
 static gboolean
@@ -171,11 +151,40 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
   return TRUE;
 }
 
+static void
+_init_instance(FilterXOtelResource *self)
+{
+  filterx_dict_init_instance(&self->super, &FILTERX_TYPE_NAME(otel_resource));
+
+  self->super.get_subscript = _get_subscript;
+  self->super.set_subscript = _set_subscript;
+}
+
+FilterXObject *
+_filterx_otel_resource_clone(FilterXObject *s)
+{
+  FilterXOtelResource *self = (FilterXOtelResource *) s;
+
+  FilterXOtelResource *clone = g_new0(FilterXOtelResource, 1);
+  _init_instance(clone);
+
+  try
+    {
+      clone->cpp = new Resource(*self->cpp, self);
+    }
+  catch (const std::runtime_error &)
+    {
+      g_assert_not_reached();
+    }
+
+  return &clone->super.super;
+}
+
 FilterXObject *
 filterx_otel_resource_new_from_args(GPtrArray *args)
 {
   FilterXOtelResource *s = g_new0(FilterXOtelResource, 1);
-  filterx_object_init_instance((FilterXObject *)s, &FILTERX_TYPE_NAME(otel_resource));
+  _init_instance(s);
 
   try
     {
@@ -189,11 +198,11 @@ filterx_otel_resource_new_from_args(GPtrArray *args)
   catch (const std::runtime_error &e)
     {
       msg_error("FilterX: Failed to create OTel Resource object", evt_tag_str("error", e.what()));
-      filterx_object_unref(&s->super);
+      filterx_object_unref(&s->super.super);
       return NULL;
     }
 
-  return &s->super;
+  return &s->super.super;
 }
 
 gpointer
@@ -202,12 +211,10 @@ grpc_otel_filterx_resource_construct_new(Plugin *self)
   return (gpointer) &filterx_otel_resource_new_from_args;
 }
 
-FILTERX_DEFINE_TYPE(otel_resource, FILTERX_TYPE_NAME(object),
+FILTERX_DEFINE_TYPE(otel_resource, FILTERX_TYPE_NAME(dict),
                     .is_mutable = TRUE,
                     .marshal = _marshal,
                     .clone = _filterx_otel_resource_clone,
                     .truthy = _truthy,
-                    .getattr = _getattr,
-                    .setattr = _setattr,
                     .free_fn = _free,
                    );
