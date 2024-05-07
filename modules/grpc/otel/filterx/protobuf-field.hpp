@@ -104,6 +104,20 @@ public:
         return false;
       }
   }
+  bool Unset(google::protobuf::Message *message, const std::string &fieldName)
+  {
+    try
+      {
+        ProtoReflectors reflectors(*message, fieldName);
+        reflectors.reflection->ClearField(message, reflectors.fieldDescriptor);
+        return true;
+      }
+    catch(const std::exception &ex)
+      {
+        msg_error("protobuf-field: Failed to unset field:", evt_tag_str("message", ex.what()));
+        return false;
+      }
+  }
 
   virtual ~ProtobufField() {}
 protected:
