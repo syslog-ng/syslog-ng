@@ -26,7 +26,7 @@
 #include "syslog-ng.h"
 
 #include "compat/cpp-start.h"
-#include "filterx/filterx-object.h"
+#include "filterx/object-dict-interface.h"
 #include "object-otel.h"
 #include "compat/cpp-end.h"
 
@@ -50,8 +50,8 @@ public:
   Scope(Scope &&o) = delete;
 
   std::string marshal();
-  bool set_field(const gchar *attribute, FilterXObject **value);
-  FilterXObject *get_field(const gchar *attribute);
+  bool set_subscript(FilterXObject *key, FilterXObject **value);
+  FilterXObject *get_subscript(FilterXObject *key);
   const opentelemetry::proto::common::v1::InstrumentationScope &get_value() const;
 
 private:
@@ -70,7 +70,7 @@ private:
 
 struct FilterXOtelScope_
 {
-  FilterXObject super;
+  FilterXDict super;
   syslogng::grpc::otel::filterx::Scope *cpp;
 };
 

@@ -485,7 +485,7 @@ Test(otel_filterx, scope_empty)
   cr_assert(MessageDifferencer::Equals(opentelemetry::proto::common::v1::InstrumentationScope(),
                                        filterx_otel_scope->cpp->get_value()));
 
-  filterx_object_unref(&filterx_otel_scope->super);
+  filterx_object_unref(&filterx_otel_scope->super.super);
 }
 
 Test(otel_filterx, scope_from_protobuf)
@@ -508,7 +508,7 @@ Test(otel_filterx, scope_from_protobuf)
   const opentelemetry::proto::common::v1::InstrumentationScope &scope_from_filterx = filterx_otel_scope->cpp->get_value();
   cr_assert(MessageDifferencer::Equals(scope, scope_from_filterx));
 
-  filterx_object_unref(&filterx_otel_scope->super);
+  filterx_object_unref(&filterx_otel_scope->super.super);
   g_ptr_array_free(args, TRUE);
 }
 
