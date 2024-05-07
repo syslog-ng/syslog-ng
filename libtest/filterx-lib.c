@@ -155,7 +155,7 @@ init_libtest_filterx(void)
   {
     .msgs = &filterx_env.msg,
     .num_msg = 1,
-    .template_eval_options = &DEFAULT_TEMPLATE_EVAL_OPTIONS,
+    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
     .scope = filterx_env.scope,
   };
   filterx_eval_set_context(&filterx_env.context);
