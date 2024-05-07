@@ -26,6 +26,10 @@
 #include "syslog-ng.h"
 #include "protobuf-field.hpp"
 
+#include "compat/cpp-start.h"
+#include "filterx/object-dict-interface.h"
+#include "compat/cpp-end.h"
+
 namespace syslogng {
 namespace grpc {
 namespace otel {
@@ -49,6 +53,9 @@ extern AnyField any_field_converter;
 
 ProtobufField *otel_converter_by_type(FieldDescriptor::Type fieldType);
 ProtobufField *otel_converter_by_field_descriptor(const FieldDescriptor *fd);
+
+bool iter_on_otel_protobuf_message_fields(google::protobuf::Message &message, FilterXDictIterFunc func,
+                                          void *user_data);
 
 }
 }

@@ -333,3 +333,44 @@ ProtobufField *syslogng::grpc::otel::otel_converter_by_field_descriptor(const Fi
   const FieldDescriptor::Type fieldType = fd->type();
   return otel_converter_by_type(fieldType);
 }
+
+bool
+syslogng::grpc::otel::iter_on_otel_protobuf_message_fields(google::protobuf::Message &message, FilterXDictIterFunc func,
+                                                           void *user_data)
+{
+  const google::protobuf::Reflection *reflection = message.GetReflection();
+  std::vector<const google::protobuf::FieldDescriptor *> fields;
+  reflection->ListFields(message, &fields);
+
+  try
+    {
+      for (const google::protobuf::FieldDescriptor *field : fields)
+        {
+          const std::string &name = field->name();
+          ProtoReflectors field_reflectors(message, name);
+          ProtobufField *converter = syslogng::grpc::otel::otel_converter_by_field_descriptor(field_reflectors.fieldDescriptor);
+
+          FilterXObject *key = filterx_string_new(name.c_str(), name.size());
+          FilterXObject *value = converter->Get(&message, name);
+          if (!value)
+            {
+              filterx_object_unref(key);
+              return false;
+            }
+
+          bool success = func(key, value, user_data);
+
+          filterx_object_unref(key);
+          filterx_object_unref(value);
+
+          if (!success)
+            return false;
+        }
+    }
+  catch (const std::exception &)
+    {
+      return false;
+    }
+
+  return true;
+}
