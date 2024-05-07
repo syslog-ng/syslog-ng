@@ -38,6 +38,7 @@
 #include <cstdio>
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 using namespace syslogng::grpc::otel::filterx;
 
@@ -111,6 +112,12 @@ LogRecord::get_subscript(FilterXObject *key)
     }
 }
 
+uint64_t
+LogRecord::len() const
+{
+  return get_protobuf_message_set_field_count(logRecord);
+}
+
 const opentelemetry::proto::logs::v1::LogRecord &
 LogRecord::get_value() const
 {
@@ -150,6 +157,14 @@ _get_subscript(FilterXDict *s, FilterXObject *key)
   return self->cpp->get_subscript(key);
 }
 
+static guint64
+_len(FilterXDict *s)
+{
+  FilterXOtelLogRecord *self = (FilterXOtelLogRecord *) s;
+
+  return self->cpp->len();
+}
+
 static gboolean
 _truthy(FilterXObject *s)
 {
@@ -176,6 +191,7 @@ _init_instance(FilterXOtelLogRecord *self)
 
   self->super.get_subscript = _get_subscript;
   self->super.set_subscript = _set_subscript;
+  self->super.len = _len;
 }
 
 FilterXObject *
@@ -223,7 +239,7 @@ filterx_otel_logrecord_new_from_args(GPtrArray *args)
   return &self->super.super;
 }
 
-FILTERX_DEFINE_TYPE(otel_logrecord, FILTERX_TYPE_NAME(object),
+FILTERX_DEFINE_TYPE(otel_logrecord, FILTERX_TYPE_NAME(dict),
                     .is_mutable = TRUE,
                     .marshal = _marshal,
                     .clone = _filterx_otel_logrecord_clone,
