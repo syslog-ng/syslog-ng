@@ -381,3 +381,12 @@ syslogng::grpc::otel::extract_string_from_object(FilterXObject *object)
 
   return std::string{key_c_str, len};
 }
+
+uint64_t
+syslogng::grpc::otel::get_protobuf_message_set_field_count(const google::protobuf::Message &message)
+{
+  const google::protobuf::Reflection *reflection = message.GetReflection();
+  std::vector<const google::protobuf::FieldDescriptor *> fields;
+  reflection->ListFields(message, &fields);
+  return fields.size();
+}
