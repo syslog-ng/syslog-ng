@@ -38,7 +38,16 @@ static void
 _report_generator_args(gpointer key, gpointer value, gpointer user_data)
 {
   GString *result = (GString *) user_data;
-  g_string_append_printf(result, "## %s=%s\n", (gchar *) key, (gchar *) value);
+  g_string_append_printf(result, "## %s=", (gchar *) key);
+  for (const gchar *c = (const gchar *) value; *c; c++)
+    {
+      if (*c == '\n' && *(c + 1))
+        g_string_append(result, "\n## ");
+      else
+        g_string_append_c(result, *c);
+    }
+
+  g_string_append_c(result, '\n');
 }
 
 gboolean
