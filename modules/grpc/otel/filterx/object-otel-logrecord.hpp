@@ -51,6 +51,7 @@ public:
   std::string marshal(void);
   FilterXObject *get_subscript(FilterXObject *key);
   bool set_subscript(FilterXObject *key, FilterXObject **value);
+  bool unset_key(FilterXObject *key);
   uint64_t len() const;
   const opentelemetry::proto::logs::v1::LogRecord &get_value() const;
 private:

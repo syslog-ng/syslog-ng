@@ -217,7 +217,7 @@ Test(otel_filterx, logrecord_too_many_args)
   g_ptr_array_free(args, TRUE);
 }
 
-Test(otel_filterx, logrecord_len)
+Test(otel_filterx, logrecord_len_and_unset)
 {
   FilterXObject *logrecord = filterx_otel_logrecord_new_from_args(NULL);
   FilterXObject *body = filterx_string_new("body", -1);
@@ -236,6 +236,14 @@ Test(otel_filterx, logrecord_len)
   cr_assert(filterx_object_set_subscript(logrecord, time_unix_nano, &time_unix_nano_val));
   cr_assert(filterx_object_len(logrecord, &len));
   cr_assert_eq(len, 2);
+
+  cr_assert(filterx_object_unset_key(logrecord, body));
+  cr_assert(filterx_object_len(logrecord, &len));
+  cr_assert_eq(len, 1);
+
+  cr_assert(filterx_object_unset_key(logrecord, time_unix_nano));
+  cr_assert(filterx_object_len(logrecord, &len));
+  cr_assert_eq(len, 0);
 
   filterx_object_unref(time_unix_nano);
   filterx_object_unref(time_unix_nano_val);
