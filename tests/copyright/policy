@@ -264,6 +264,8 @@ modules/xml/windows-eventlog-xml-parser\.h
 modules/xml/tests/test_windows_eventlog_xml_parser\.c
 modules/examples/filterx/example-filterx-func/example-filterx-func-plugin\.[ch]
 modules/grpc/otel/filterx
+modules/kvformat/filterx-func-parse-kv\.[ch]
+modules/kvformat/tests/test_filterx_func_parse_kv.c
 
 ###########################################################################
 # These files are GPLd with Balabit origin.
