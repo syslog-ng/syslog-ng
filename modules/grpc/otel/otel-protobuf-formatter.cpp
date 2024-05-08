@@ -608,21 +608,16 @@ ProtobufFormatter::set_syslog_ng_macros(LogMessage *msg, LogRecord &log_record)
   m->set_key("m");
   KeyValueList *macros_kvlist = m->mutable_value()->mutable_kvlist_value();
 
-  LogMessageValueType type;
-  gssize len;
-  const char *value;
-
-  static const NVHandle PRI_HANDLE = log_msg_get_value_handle("PRI");
-  value = log_msg_get_value_with_type(msg, PRI_HANDLE, &len, &type);
   KeyValue *pri_attr = macros_kvlist->add_values();
   pri_attr->set_key("PRI");
-  pri_attr->mutable_value()->set_bytes_value(value, len);
+  pri_attr->mutable_value()->set_int_value(msg->pri);
 
-  static const NVHandle TAGS_HANDLE = log_msg_get_value_handle("TAGS");
-  value = log_msg_get_value_with_type(msg, TAGS_HANDLE, &len, &type);
+  GString *tags_value = g_string_sized_new(64);
+  log_msg_format_tags(msg, tags_value, FALSE);
   KeyValue *tags_attr = macros_kvlist->add_values();
   tags_attr->set_key("TAGS");
-  tags_attr->mutable_value()->set_bytes_value(value, len);
+  tags_attr->mutable_value()->set_bytes_value(tags_value->str, tags_value->len);
+  g_string_free(tags_value, TRUE);
 
   KeyValue *stamp_gmtoff = macros_kvlist->add_values();
   stamp_gmtoff->set_key("STAMP_GMTOFF");

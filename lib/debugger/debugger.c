@@ -74,7 +74,7 @@ _display_msg_details(Debugger *self, LogMessage *msg)
 
   log_msg_values_foreach(msg, _format_nvpair, NULL);
   g_string_truncate(output, 0);
-  log_msg_format_tags(msg, output);
+  log_msg_format_tags(msg, output, TRUE);
   printf("TAGS=%s\n", output->str);
   printf("\n");
   g_string_free(output, TRUE);

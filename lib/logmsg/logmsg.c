@@ -1268,20 +1268,22 @@ log_msg_append_tags_callback(const LogMessage *self, LogTagId tag_id, const gcha
 {
   GString *result = (GString *) ((gpointer *) user_data)[0];
   gint original_length = GPOINTER_TO_UINT(((gpointer *) user_data)[1]);
+  gboolean include_localtags = GPOINTER_TO_UINT(((gpointer *) user_data)[2]);
 
   g_assert(result);
 
   if (result->len > original_length)
     g_string_append_c(result, ',');
 
-  str_repr_encode_append(result, name, -1, ",");
+  if (include_localtags || name[0] != '.')
+    str_repr_encode_append(result, name, -1, ",");
   return TRUE;
 }
 
 void
-log_msg_format_tags(const LogMessage *self, GString *result)
+log_msg_format_tags(const LogMessage *self, GString *result, gboolean include_localtags)
 {
-  gpointer args[] = { result, GUINT_TO_POINTER(result->len) };
+  gpointer args[] = { result, GUINT_TO_POINTER(result->len), GUINT_TO_POINTER(include_localtags) };
 
   log_msg_tags_foreach(self, log_msg_append_tags_callback, args);
 }
