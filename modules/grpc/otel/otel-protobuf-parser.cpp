@@ -1200,9 +1200,17 @@ syslogng::grpc::otel::ProtobufParser::set_syslog_ng_macros(LogMessage *msg, cons
 
       if (name.compare("PRI") == 0)
         {
-          if (!_value_case_equals_or_error(msg, macro, AnyValue::kBytesValue))
-            continue;
-          msg->pri = log_rewrite_set_pri_convert_pri(macro.value().bytes_value().c_str());
+          if (macro.value().value_case() == AnyValue::kIntValue)
+            msg->pri = macro.value().int_value();
+          else if (macro.value().value_case() == AnyValue::kBytesValue)
+            msg->pri = log_rewrite_set_pri_convert_pri(macro.value().bytes_value().c_str());
+          else
+            {
+              msg_error("OpenTelemetry: unexpected attribute value type, skipping",
+                        evt_tag_msg_reference(msg),
+                        evt_tag_str("name", macro.key().c_str()),
+                        evt_tag_int("type", macro.value().value_case()));
+            }
         }
       else if (name.compare("TAGS") == 0)
         {
