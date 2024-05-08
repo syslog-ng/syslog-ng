@@ -311,5 +311,7 @@ FILTERX_DEFINE_TYPE(otel_logrecord, FILTERX_TYPE_NAME(dict),
                     .marshal = _marshal,
                     .clone = _filterx_otel_logrecord_clone,
                     .truthy = _truthy,
+                    .list_factory = filterx_otel_array_new,
+                    .dict_factory = filterx_otel_kvlist_new,
                     .free_fn = _free,
                    );
