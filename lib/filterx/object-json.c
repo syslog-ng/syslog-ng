@@ -25,6 +25,7 @@
 #include "filterx/object-primitive.h"
 #include "filterx/object-string.h"
 #include "filterx/object-dict-interface.h"
+#include "filterx/object-list-interface.h"
 #include "filterx/object-message-value.h"
 #include "filterx/filterx-weakrefs.h"
 #include "filterx/filterx-eval.h"
@@ -171,6 +172,17 @@ filterx_json_new_from_args(GPtrArray *args)
     {
       FilterXObject *self = filterx_json_object_new_empty();
       if (!filterx_dict_merge(self, arg))
+        {
+          filterx_object_unref(self);
+          return NULL;
+        }
+      return self;
+    }
+
+  if (filterx_object_is_type(arg, &FILTERX_TYPE_NAME(list)))
+    {
+      FilterXObject *self = filterx_json_array_new_empty();
+      if (!filterx_list_merge(self, arg))
         {
           filterx_object_unref(self);
           return NULL;

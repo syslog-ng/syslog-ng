@@ -252,11 +252,27 @@ filterx_otel_array_new_from_args(GPtrArray *args)
   try
     {
       if (!args || args->len == 0)
-        self->cpp = new Array(self);
+        {
+          self->cpp = new Array(self);
+        }
       else if (args->len == 1)
-        self->cpp = new Array(self, (FilterXObject *) g_ptr_array_index(args, 0));
+        {
+          FilterXObject *arg = (FilterXObject *) g_ptr_array_index(args, 0);
+          if (filterx_object_is_type(arg, &FILTERX_TYPE_NAME(list)))
+            {
+              self->cpp = new Array(self);
+              if (!filterx_list_merge(&self->super.super, arg))
+                throw std::runtime_error("Failed to merge list");
+            }
+          else
+            {
+              self->cpp = new Array(self, arg);
+            }
+        }
       else
-        throw std::runtime_error("Invalid number of arguments");
+        {
+          throw std::runtime_error("Invalid number of arguments");
+        }
     }
   catch (const std::runtime_error &e)
     {
