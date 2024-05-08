@@ -330,6 +330,153 @@ def test_otel_to_json(config, syslog_ng):
     assert file_true.read_log() == '{"otel_kvl":{"foo":42,"bar":1337},"otel_arr":[1,2,3,4]}\n'
 
 
+def test_otel_resource_scope_log_to_json(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, r"""
+                                            log = otel_logrecord();
+                                            log += {
+                                                "body": "fit",
+                                                "time_unix_nano": 123456789,
+                                                "attributes": {
+                                                    "answer": 42,
+                                                    "cool": true
+                                                }
+                                            };
+
+                                            resource = otel_resource();
+                                            resource.attributes["host.name"] = "szami.to";
+
+                                            scope = otel_scope({
+                                                "name": "oszcillo",
+                                                "version": "ceta"
+                                            });
+
+                                            resource_js = json(resource);
+                                            scope_js = json(scope);
+                                            log_js = json(log);
+
+                                            js = json({
+                                                "in_dict_generator": {
+                                                    "resource": resource,
+                                                    "scope": scope,
+                                                    "log": log,
+                                                },
+                                                "from_json_cast": {
+                                                    "resource": resource_js,
+                                                    "scope": scope_js,
+                                                    "log": log_js,
+                                                }
+                                            });
+
+                                            $MSG = js;
+                """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert json.loads(file_true.read_log()) == {
+        "in_dict_generator": {
+            "resource": {
+                "attributes": {
+                    "host.name": "szami.to",
+                },
+            },
+            "scope": {
+                "name": "oszcillo",
+                "version": "ceta",
+            },
+            "log": {
+                "time_unix_nano": "123.456789+00:00",
+                "body": "fit",
+                "attributes": {
+                    "answer": 42,
+                    "cool": True,
+                },
+            },
+        },
+        "from_json_cast": {
+            "resource": {
+                "attributes": {
+                    "host.name": "szami.to",
+                },
+            },
+            "scope": {
+                "name": "oszcillo",
+                "version": "ceta",
+            },
+            "log": {
+                "time_unix_nano": "123.456789+00:00",
+                "body": "fit",
+                "attributes": {
+                    "answer": 42,
+                    "cool": True,
+                },
+            },
+        },
+    }
+
+
+def test_json_to_otel_resource_scope_log(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, r"""
+                                            log_js = json();
+                                            log_js += {
+                                                "body": "fit",
+                                                "time_unix_nano": 123456789,
+                                                "attributes": {
+                                                    "answer": 42,
+                                                    "cool": true
+                                                }
+                                            };
+
+                                            resource_js = json();
+                                            resource_js.attributes = {};
+                                            resource_js.attributes["host.name"] = "szami.to";
+
+                                            scope_js = json({
+                                                "name": "oszcillo",
+                                                "version": "ceta"
+                                            });
+
+                                            resource = otel_resource(resource_js);
+                                            scope = otel_scope(scope_js);
+                                            log = otel_logrecord(log_js);
+
+                                            js = json({
+                                                "resource": resource,
+                                                "scope": scope,
+                                                "log": log,
+                                            });
+
+                                            $MSG = js;
+                """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert json.loads(file_true.read_log()) == {
+        "resource": {
+            "attributes": {
+                "host.name": "szami.to",
+            },
+        },
+        "scope": {
+            "name": "oszcillo",
+            "version": "ceta",
+        },
+        "log": {
+            "time_unix_nano": "123.456789+00:00",
+            "body": "fit",
+            "attributes": {
+                "answer": 42,
+                "cool": True,
+            },
+        },
+    }
+
+
 def test_simple_true_condition(config, syslog_ng):
     (file_true, file_false) = create_config(config, """ true; """)
     syslog_ng.start(config)
