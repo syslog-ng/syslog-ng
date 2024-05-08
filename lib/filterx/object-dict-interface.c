@@ -35,6 +35,27 @@ filterx_dict_iter(FilterXObject *s, FilterXDictIterFunc func, gpointer user_data
 }
 
 static gboolean
+_add_elem_to_dict(FilterXObject *key_obj, FilterXObject *value_obj, gpointer user_data)
+{
+  FilterXObject *dict = (FilterXObject *) user_data;
+
+  FilterXObject *new_value = filterx_object_ref(value_obj);
+  gboolean success = filterx_object_set_subscript(dict, key_obj, &new_value);
+  filterx_object_unref(new_value);
+
+  return success;
+}
+
+gboolean
+filterx_dict_merge(FilterXObject *s, FilterXObject *other)
+{
+  FilterXDict *self = (FilterXDict *) s;
+
+  g_assert(filterx_object_is_type(other, &FILTERX_TYPE_NAME(dict)));
+  return filterx_dict_iter(other, _add_elem_to_dict, self);
+}
+
+static gboolean
 _len(FilterXObject *s, guint64 *len)
 {
   FilterXDict *self = (FilterXDict *) s;
