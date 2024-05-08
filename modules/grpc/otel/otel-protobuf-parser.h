@@ -32,6 +32,7 @@
 typedef struct OtelProtobufParser_ OtelProtobufParser;
 
 LogParser *otel_protobuf_parser_new(GlobalConfig *cfg);
+void otel_protobuf_parser_set_hostname(LogParser *s, gboolean set_hostname);
 
 #include "compat/cpp-end.h"
 
