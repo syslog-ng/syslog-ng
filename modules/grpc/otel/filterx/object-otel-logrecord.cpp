@@ -290,11 +290,27 @@ filterx_otel_logrecord_new_from_args(GPtrArray *args)
   try
     {
       if (!args || args->len == 0)
-        self->cpp = new LogRecord(self);
+        {
+          self->cpp = new LogRecord(self);
+        }
       else if (args->len == 1)
-        self->cpp = new LogRecord(self, (FilterXObject *) g_ptr_array_index(args, 0));
+        {
+          FilterXObject *arg = (FilterXObject *) g_ptr_array_index(args, 0);
+          if (filterx_object_is_type(arg, &FILTERX_TYPE_NAME(dict)))
+            {
+              self->cpp = new LogRecord(self);
+              if (!filterx_dict_merge(&self->super.super, arg))
+                throw std::runtime_error("Failed to merge dict");
+            }
+          else
+            {
+              self->cpp = new LogRecord(self, arg);
+            }
+        }
       else
-        throw std::runtime_error("Invalid number of arguments");
+        {
+          throw std::runtime_error("Invalid number of arguments");
+        }
     }
   catch (const std::runtime_error &e)
     {

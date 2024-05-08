@@ -354,11 +354,27 @@ filterx_otel_kvlist_new_from_args(GPtrArray *args)
   try
     {
       if (!args || args->len == 0)
-        self->cpp = new KVList(self);
+        {
+          self->cpp = new KVList(self);
+        }
       else if (args->len == 1)
-        self->cpp = new KVList(self, (FilterXObject *) g_ptr_array_index(args, 0));
+        {
+          FilterXObject *arg = (FilterXObject *) g_ptr_array_index(args, 0);
+          if (filterx_object_is_type(arg, &FILTERX_TYPE_NAME(dict)))
+            {
+              self->cpp = new KVList(self);
+              if (!filterx_dict_merge(&self->super.super, arg))
+                throw std::runtime_error("Failed to merge dict");
+            }
+          else
+            {
+              self->cpp = new KVList(self, arg);
+            }
+        }
       else
-        throw std::runtime_error("Invalid number of arguments");
+        {
+          throw std::runtime_error("Invalid number of arguments");
+        }
     }
   catch (const std::runtime_error &e)
     {

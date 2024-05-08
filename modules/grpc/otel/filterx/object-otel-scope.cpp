@@ -271,11 +271,27 @@ filterx_otel_scope_new_from_args(GPtrArray *args)
   try
     {
       if (!args || args->len == 0)
-        s->cpp = new Scope(s);
+        {
+          s->cpp = new Scope(s);
+        }
       else if (args->len == 1)
-        s->cpp = new Scope(s, (FilterXObject *) g_ptr_array_index(args, 0));
+        {
+          FilterXObject *arg = (FilterXObject *) g_ptr_array_index(args, 0);
+          if (filterx_object_is_type(arg, &FILTERX_TYPE_NAME(dict)))
+            {
+              s->cpp = new Scope(s);
+              if (!filterx_dict_merge(&s->super.super, arg))
+                throw std::runtime_error("Failed to merge dict");
+            }
+          else
+            {
+              s->cpp = new Scope(s, arg);
+            }
+        }
       else
-        throw std::runtime_error("Invalid number of arguments");
+        {
+          throw std::runtime_error("Invalid number of arguments");
+        }
     }
   catch (const std::runtime_error &e)
     {
