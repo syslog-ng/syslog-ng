@@ -1376,7 +1376,9 @@ syslogng::grpc::otel::ProtobufParser::process(LogMessage *msg)
 
   gssize len;
   LogMessageValueType log_msg_type;
-  const gchar *type = log_msg_get_value_with_type(msg, logmsg_handle::RAW_TYPE, &len, &log_msg_type);
+
+  /* _parse_metadata() may invalidate the returned char pointer, so a copy is made with std::string */
+  std::string type = log_msg_get_value_with_type(msg, logmsg_handle::RAW_TYPE, &len, &log_msg_type);
 
   if (log_msg_type == LM_VT_NULL)
     {
@@ -1392,17 +1394,20 @@ syslogng::grpc::otel::ProtobufParser::process(LogMessage *msg)
       return false;
     }
 
-  if (strncmp(type, "log", len) == 0)
+  if (!_parse_metadata(msg))
+    return false;
+
+  if (type == "log")
     {
       if (!_parse_log_record(msg))
         return false;
     }
-  else if (strncmp(type, "metric", len) == 0)
+  else if (type == "metric")
     {
       if (!_parse_metric(msg))
         return false;
     }
-  else if (strncmp(type, "span", len) == 0)
+  else if (type == "span")
     {
       if (!_parse_span(msg))
         return false;
@@ -1411,12 +1416,9 @@ syslogng::grpc::otel::ProtobufParser::process(LogMessage *msg)
     {
       msg_error("OpenTelemetry: unexpected .otel_raw.type",
                 evt_tag_msg_reference(msg),
-                evt_tag_str("type", type));
+                evt_tag_str("type", type.c_str()));
       return false;
     }
-
-  if (!_parse_metadata(msg))
-    return false;
 
   _unset_raw_fields(msg);
 
