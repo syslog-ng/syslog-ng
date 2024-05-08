@@ -75,28 +75,13 @@ Test(filterx_expr, test_filterx_literal_evaluates_to_the_literal_object)
 
 Test(filterx_expr, test_filterx_template_evaluates_to_the_expanded_value)
 {
-  LogMessage *msg = create_sample_message();
-  FilterXScope *scope = filterx_scope_new();
-
-  FilterXEvalContext context =
-  {
-    .msgs = &msg,
-    .num_msg = 1,
-    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
-    .scope = scope,
-  };
-
-  filterx_eval_set_context(&context);
   FilterXExpr *fexpr = filterx_template_new(compile_template("$HOST $PROGRAM"));
   FilterXObject *fobj = filterx_expr_eval(fexpr);
 
   assert_marshaled_object(fobj, "bzorp syslog-ng", LM_VT_STRING);
 
   filterx_expr_unref(fexpr);
-  log_msg_unref(msg);
   filterx_object_unref(fobj);
-  filterx_scope_unref(scope);
-  filterx_eval_set_context(NULL);
 }
 
 struct _FilterXScope
@@ -107,18 +92,6 @@ struct _FilterXScope
 
 Test(filterx_expr, test_filterx_list_merge)
 {
-  LogMessage *msg = create_sample_message();
-  FilterXScope *scope = filterx_scope_new();
-
-  FilterXEvalContext context =
-  {
-    .msgs = &msg,
-    .num_msg = 1,
-    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
-    .scope = scope,
-  };
-  filterx_eval_set_context(&context);
-
   // $fillable = json_array();
   FilterXObject *json_array = filterx_json_array_new_empty();
   FilterXExpr *fillable = filterx_literal_new(json_array);
@@ -189,25 +162,10 @@ Test(filterx_expr, test_filterx_list_merge)
 
 
   filterx_expr_unref(fillable);
-  log_msg_unref(msg);
-  filterx_scope_unref(scope);
-  filterx_eval_set_context(NULL);
 }
 
 Test(filterx_expr, test_filterx_dict_merge)
 {
-  LogMessage *msg = create_sample_message();
-  FilterXScope *scope = filterx_scope_new();
-
-  FilterXEvalContext context =
-  {
-    .msgs = &msg,
-    .num_msg = 1,
-    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
-    .scope = scope,
-  };
-  filterx_eval_set_context(&context);
-
   // $fillable = json();
   FilterXObject *json = filterx_json_object_new_empty();
   FilterXExpr *fillable = filterx_literal_new(json);
@@ -342,25 +300,10 @@ Test(filterx_expr, test_filterx_dict_merge)
   filterx_object_unref(bar);
   filterx_object_unref(foo);
   filterx_expr_unref(fillable);
-  log_msg_unref(msg);
-  filterx_scope_unref(scope);
-  filterx_eval_set_context(NULL);
 }
 
 Test(filterx_expr, test_filterx_assign)
 {
-  LogMessage *msg = create_sample_message();
-  FilterXScope *scope = filterx_scope_new();
-
-  FilterXEvalContext context =
-  {
-    .msgs = &msg,
-    .num_msg = 1,
-    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
-    .scope = scope,
-  };
-  filterx_eval_set_context(&context);
-
   FilterXExpr *result_var = filterx_msg_variable_expr_new("$result-var");
   cr_assert(result_var != NULL);
 
@@ -383,25 +326,10 @@ Test(filterx_expr, test_filterx_assign)
   filterx_object_unref(res);
   filterx_expr_unref(assign);
   filterx_object_unref(result_obj);
-  log_msg_unref(msg);
-  filterx_scope_unref(scope);
-  filterx_eval_set_context(NULL);
 }
 
 Test(filterx_expr, test_filterx_setattr)
 {
-  LogMessage *msg = create_sample_message();
-  FilterXScope *scope = filterx_scope_new();
-
-  FilterXEvalContext context =
-  {
-    .msgs = &msg,
-    .num_msg = 1,
-    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
-    .scope = scope,
-  };
-  filterx_eval_set_context(&context);
-
   FilterXObject *json = filterx_json_object_new_empty();
   FilterXExpr *fillable = filterx_literal_new(json);
 
@@ -418,25 +346,10 @@ Test(filterx_expr, test_filterx_setattr)
   assert_object_json_equals(json, "{\"foo\":\"bar\"}");
 
   filterx_expr_unref(setattr);
-  log_msg_unref(msg);
-  filterx_scope_unref(scope);
-  filterx_eval_set_context(NULL);
 }
 
 Test(filterx_expr, test_filterx_set_subscript)
 {
-  LogMessage *msg = create_sample_message();
-  FilterXScope *scope = filterx_scope_new();
-
-  FilterXEvalContext context =
-  {
-    .msgs = &msg,
-    .num_msg = 1,
-    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
-    .scope = scope,
-  };
-  filterx_eval_set_context(&context);
-
   FilterXObject *json = filterx_json_object_new_empty();
   FilterXExpr *fillable = filterx_literal_new(json);
 
@@ -455,25 +368,10 @@ Test(filterx_expr, test_filterx_set_subscript)
   assert_object_json_equals(json, "{\"foo\":\"bar\"}");
 
   filterx_expr_unref(setattr);
-  log_msg_unref(msg);
-  filterx_scope_unref(scope);
-  filterx_eval_set_context(NULL);
 }
 
 Test(filterx_expr, test_filterx_readonly)
 {
-  LogMessage *msg = create_sample_message();
-  FilterXScope *scope = filterx_scope_new();
-
-  FilterXEvalContext context =
-  {
-    .msgs = &msg,
-    .num_msg = 1,
-    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
-    .scope = scope,
-  };
-  filterx_eval_set_context(&context);
-
   FilterXObject *foo = filterx_string_new("foo", -1);
   FilterXObject *bar = filterx_string_new("bar", -1);
 
@@ -533,9 +431,6 @@ Test(filterx_expr, test_filterx_readonly)
   filterx_expr_unref(literal);
   filterx_object_unref(bar);
   filterx_object_unref(foo);
-  log_msg_unref(msg);
-  filterx_scope_unref(scope);
-  filterx_eval_set_context(NULL);
 }
 
 static void

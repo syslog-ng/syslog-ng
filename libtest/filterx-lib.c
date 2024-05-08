@@ -147,26 +147,18 @@ init_libtest_filterx(void)
   FILTERX_TYPE_NAME(test_dict) = FILTERX_TYPE_NAME(json_object);
   FILTERX_TYPE_NAME(test_list) = FILTERX_TYPE_NAME(json_array);
 
-  memset(&filterx_env, 0, sizeof(filterx_env));
   filterx_env.msg = create_sample_message();
-  filterx_env.scope = filterx_scope_new();
+  filterx_eval_init_context(&filterx_env.context, NULL);
+  filterx_env.context.msgs = &filterx_env.msg;
+  filterx_env.context.num_msg = 1;
 
-  filterx_env.context = (FilterXEvalContext)
-  {
-    .msgs = &filterx_env.msg,
-    .num_msg = 1,
-    .template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS,
-    .scope = filterx_env.scope,
-  };
-  filterx_eval_set_context(&filterx_env.context);
 }
 
 void
 deinit_libtest_filterx(void)
 {
   log_msg_unref(filterx_env.msg);
-  filterx_scope_unref(filterx_env.scope);
-  filterx_eval_set_context(NULL);
+  filterx_eval_deinit_context(&filterx_env.context);
 }
 
 FILTERX_DEFINE_TYPE(test_dict, FILTERX_TYPE_NAME(object));
