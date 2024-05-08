@@ -218,18 +218,6 @@ _add_repeated_KeyValue_fields(LogMessage *msg, const char *key, const RepeatedPt
   _add_repeated_KeyValue_fields_with_prefix(msg, key_buffer, 0, key, key_values);
 }
 
-static std::string
-_extract_hostname(const grpc::string &peer)
-{
-  size_t first = peer.find_first_of(':');
-  size_t last = peer.find_last_of(':');
-
-  if (first != grpc::string::npos && last != grpc::string::npos)
-    return peer.substr(first + 1, last - first - 1);
-
-  return "";
-}
-
 static GSockAddr *
 _extract_saddr(const grpc::string &peer)
 {
@@ -1112,11 +1100,6 @@ syslogng::grpc::otel::ProtobufParser::store_raw_metadata(LogMessage *msg, const 
                                                          const std::string &scope_schema_url)
 {
   std::string serialized;
-
-  /* HOST */
-  std::string hostname = _extract_hostname(peer);
-  if (hostname.length())
-    log_msg_set_value(msg, LM_V_HOST, hostname.c_str(), hostname.length());
 
   msg->saddr = _extract_saddr(peer);
 
