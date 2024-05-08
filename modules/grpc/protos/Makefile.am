@@ -128,7 +128,8 @@ if ENABLE_EXTRA_WARNINGS
 modules_grpc_protos_libgrpc_protos_la_CXXFLAGS += -Wno-switch-default
 endif
 
-modules_grpc_protos_libgrpc_protos_la_LIBADD = $(MODULE_DEPS_LIBS) $(PROTOBUF_LIBS) $(GRPCPP_LIBS) -lstdc++
+modules_grpc_protos_libgrpc_protos_la_LIBADD = $(MODULE_DEPS_LIBS) $(PROTOBUF_LIBS) $(GRPCPP_LIBS)
+nodist_EXTRA_modules_grpc_protos_libgrpc_protos_la_SOURCES = force-cpp-linker-with-default-stdlib.cpp
 EXTRA_modules_grpc_protos_libgrpc_protos_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
 CLEANFILES += \

@@ -49,9 +49,10 @@
  *     and plugin.c.  This minimizes the chance of including an incompatible
  *     C header.
  *   - Build/link the C++ code as C++ separately and link to that from your
- *     C lib.  Adding -lstdc++ to LIBADD is neccessary in this case as it is
- *     automatically added while linking the C++ object itself, but not when
- *     linking to the C++ object from a C lib.
+ *     C lib. In case your C++ library is static, add the following to the
+ *     the C lib to force linking against the appropriate C++ standard
+ *     library (libc++, libstdc++):
+ *       nodist_EXTRA_*_SOURCES = force-cpp-linker-with-default-stdlib.cpp
  *   - In your C++ code it is not possible to derive from a C class in the
  *     usual C way by adding a super field and filling its free_fn, because
  *     we do our own reference counting and freeing logic and we cannot rely
