@@ -43,6 +43,7 @@ FilterXObject *filterx_list_get_subscript(FilterXObject *s, gint64 index);
 gboolean filterx_list_set_subscript(FilterXObject *s, gint64 index, FilterXObject **new_value);
 gboolean filterx_list_append(FilterXObject *s, FilterXObject **new_value);
 gboolean filterx_list_unset_index(FilterXObject *s, gint64 index);
+gboolean filterx_list_merge(FilterXObject *s, FilterXObject *other);
 
 void filterx_list_init_instance(FilterXList *self, FilterXType *type);
 

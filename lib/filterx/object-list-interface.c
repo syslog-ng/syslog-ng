@@ -61,6 +61,28 @@ filterx_list_unset_index(FilterXObject *s, gint64 index)
   return result;
 }
 
+gboolean
+filterx_list_merge(FilterXObject *s, FilterXObject *other)
+{
+  g_assert(filterx_object_is_type(other, &FILTERX_TYPE_NAME(list)));
+
+  guint64 len;
+  g_assert(filterx_object_len(other, &len));
+
+  for (guint64 i = 0; i < len; i++)
+    {
+      FilterXObject *value_obj = filterx_list_get_subscript(other, (gint64) MIN(i, G_MAXINT64));
+      gboolean success = filterx_list_append(s, &value_obj);
+
+      filterx_object_unref(value_obj);
+
+      if (!success)
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
 static gboolean
 _len(FilterXObject *s, guint64 *len)
 {
