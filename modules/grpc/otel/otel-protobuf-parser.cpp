@@ -1143,7 +1143,7 @@ _nanosec_to_unix_time(uint64_t nanosec, UnixTime *unix_time)
 }
 
 static bool
-_value_case_equals(LogMessage *msg, const KeyValue &kv, const AnyValue::ValueCase &expected_value_case)
+_value_case_equals_or_error(LogMessage *msg, const KeyValue &kv, const AnyValue::ValueCase &expected_value_case)
 {
   if (kv.value().value_case() != expected_value_case)
     {
@@ -1182,7 +1182,7 @@ syslogng::grpc::otel::ProtobufParser::set_syslog_ng_nv_pairs(LogMessage *msg, co
 
       for (const KeyValue &nv_pair : nv_pairs.values())
         {
-          if (!_value_case_equals(msg, nv_pair, AnyValue::kBytesValue))
+          if (!_value_case_equals_or_error(msg, nv_pair, AnyValue::kBytesValue))
             continue;
           const std::string &name = nv_pair.key();
           const std::string &value = nv_pair.value().bytes_value();
@@ -1200,25 +1200,25 @@ syslogng::grpc::otel::ProtobufParser::set_syslog_ng_macros(LogMessage *msg, cons
 
       if (name.compare("PRI") == 0)
         {
-          if (!_value_case_equals(msg, macro, AnyValue::kBytesValue))
+          if (!_value_case_equals_or_error(msg, macro, AnyValue::kBytesValue))
             continue;
           msg->pri = log_rewrite_set_pri_convert_pri(macro.value().bytes_value().c_str());
         }
       else if (name.compare("TAGS") == 0)
         {
-          if (!_value_case_equals(msg, macro, AnyValue::kBytesValue))
+          if (!_value_case_equals_or_error(msg, macro, AnyValue::kBytesValue))
             continue;
           parse_syslog_ng_tags(msg, macro.value().bytes_value());
         }
       else if (name.compare("STAMP_GMTOFF") == 0)
         {
-          if (!_value_case_equals(msg, macro, AnyValue::kIntValue))
+          if (!_value_case_equals_or_error(msg, macro, AnyValue::kIntValue))
             continue;
           msg->timestamps[LM_TS_STAMP].ut_gmtoff = (gint32) macro.value().int_value();
         }
       else if (name.compare("RECVD_GMTOFF") == 0)
         {
-          if (!_value_case_equals(msg, macro, AnyValue::kIntValue))
+          if (!_value_case_equals_or_error(msg, macro, AnyValue::kIntValue))
             continue;
           msg->timestamps[LM_TS_RECVD].ut_gmtoff = (gint32) macro.value().int_value();
         }
@@ -1243,13 +1243,13 @@ syslogng::grpc::otel::ProtobufParser::set_syslog_ng_address(LogMessage *msg, GSo
       const std::string &name = attr.key();
       if (name.compare("addr") == 0)
         {
-          if (!_value_case_equals(msg, attr, AnyValue::kBytesValue))
+          if (!_value_case_equals_or_error(msg, attr, AnyValue::kBytesValue))
             continue;
           addr_bytes = &attr.value().bytes_value();
         }
       else if (name.compare("port") == 0)
         {
-          if (!_value_case_equals(msg, attr, AnyValue::kIntValue))
+          if (!_value_case_equals_or_error(msg, attr, AnyValue::kIntValue))
             continue;
           port = attr.value().int_value();
         }
