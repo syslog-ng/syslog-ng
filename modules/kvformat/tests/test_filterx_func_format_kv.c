@@ -23,9 +23,151 @@
 #include "libtest/filterx-lib.h"
 
 #include "filterx-func-format-kv.h"
+#include "filterx/expr-literal.h"
+#include "filterx/object-string.h"
+#include "filterx/object-primitive.h"
+#include "filterx/object-null.h"
+#include "filterx/object-json.h"
 
 #include "apphook.h"
 #include "scratch-buffers.h"
+
+static void
+_assert_format_kv_init_fail(GList *argument_expressions)
+{
+  GError *err = NULL;
+  FilterXFunction *func = filterx_function_format_kv_new("test", argument_expressions, &err);
+  cr_assert(!func);
+  cr_assert(err);
+  g_error_free(err);
+}
+
+static void
+_assert_format_kv(GList *argument_expressions, const gchar *expected_output)
+{
+  GError *err = NULL;
+  FilterXFunction *func = filterx_function_format_kv_new("test", argument_expressions, &err);
+  cr_assert(!err);
+
+  FilterXObject *obj = filterx_expr_eval(&func->super);
+  cr_assert(obj);
+
+  const gchar *output = filterx_string_get_value(obj, NULL);
+  cr_assert(output);
+
+  cr_assert_str_eq(output, expected_output);
+
+  filterx_object_unref(obj);
+  filterx_expr_unref(&func->super);
+}
+
+Test(filterx_func_format_kv, test_invalid_args)
+{
+  GList *args = NULL;
+
+  /* no args */
+  _assert_format_kv_init_fail(NULL);
+
+  /* empty value_separator */
+  args = g_list_append(args, filterx_literal_new(filterx_test_dict_new()));
+  args = g_list_append(args, filterx_literal_new(filterx_string_new("", -1)));
+  _assert_format_kv_init_fail(args);
+  args = NULL;
+
+  /* too long value_separator */
+  args = g_list_append(args, filterx_literal_new(filterx_test_dict_new()));
+  args = g_list_append(args, filterx_literal_new(filterx_string_new("->", -1)));
+  _assert_format_kv_init_fail(args);
+  args = NULL;
+
+  /* non-literal value_separator */
+  args = g_list_append(args, filterx_literal_new(filterx_test_dict_new()));
+  args = g_list_append(args, filterx_non_literal_new(filterx_string_new("=", -1)));
+  _assert_format_kv_init_fail(args);
+  args = NULL;
+
+  /* non-string value_separator */
+  args = g_list_append(args, filterx_literal_new(filterx_test_dict_new()));
+  args = g_list_append(args, filterx_literal_new(filterx_integer_new(42)));
+  _assert_format_kv_init_fail(args);
+  args = NULL;
+
+  /* error value_separator */
+  args = g_list_append(args, filterx_literal_new(filterx_test_dict_new()));
+  args = g_list_append(args, filterx_error_expr_new());
+  _assert_format_kv_init_fail(args);
+  args = NULL;
+
+  /* empty pair_separator */
+  args = g_list_append(args, filterx_literal_new(filterx_test_dict_new()));
+  args = g_list_append(args, filterx_literal_new(filterx_string_new("=", -1)));
+  args = g_list_append(args, filterx_literal_new(filterx_string_new("", -1)));
+  _assert_format_kv_init_fail(args);
+  args = NULL;
+
+  /* non-literal pair_separator */
+  args = g_list_append(args, filterx_literal_new(filterx_test_dict_new()));
+  args = g_list_append(args, filterx_literal_new(filterx_string_new("=", -1)));
+  args = g_list_append(args, filterx_non_literal_new(filterx_string_new("", -1)));
+  _assert_format_kv_init_fail(args);
+  args = NULL;
+
+  /* non-string pair_separator */
+  args = g_list_append(args, filterx_literal_new(filterx_test_dict_new()));
+  args = g_list_append(args, filterx_literal_new(filterx_string_new("=", -1)));
+  args = g_list_append(args, filterx_literal_new(filterx_integer_new(42)));
+  _assert_format_kv_init_fail(args);
+  args = NULL;
+
+  /* error pair_separator */
+  args = g_list_append(args, filterx_literal_new(filterx_test_dict_new()));
+  args = g_list_append(args, filterx_literal_new(filterx_string_new("=", -1)));
+  args = g_list_append(args, filterx_error_expr_new());
+  _assert_format_kv_init_fail(args);
+  args = NULL;
+
+  /* too_many_args */
+  args = g_list_append(args, filterx_literal_new(filterx_test_dict_new()));
+  args = g_list_append(args, filterx_literal_new(filterx_string_new("=", -1)));
+  args = g_list_append(args, filterx_literal_new(filterx_string_new(", ", -1)));
+  args = g_list_append(args, filterx_literal_new(filterx_string_new("foobar", -1)));
+  _assert_format_kv_init_fail(args);
+  args = NULL;
+}
+
+Test(filterx_func_format_kv, test_optional_arguments)
+{
+  FilterXExpr *kvs = filterx_literal_new(filterx_json_object_new_from_repr("{\"foo\":\"bar\",\"bar\":\"baz\"}", -1));
+  GList *args = NULL;
+
+  args = g_list_append(args, filterx_expr_ref(kvs));
+  _assert_format_kv(args, "foo=bar, bar=baz");
+  args = NULL;
+
+  args = g_list_append(args, filterx_expr_ref(kvs));
+  args = g_list_append(args, filterx_literal_new(filterx_null_new()));
+  _assert_format_kv(args, "foo=bar, bar=baz");
+  args = NULL;
+
+  args = g_list_append(args, filterx_expr_ref(kvs));
+  args = g_list_append(args, filterx_literal_new(filterx_null_new()));
+  args = g_list_append(args, filterx_literal_new(filterx_null_new()));
+  _assert_format_kv(args, "foo=bar, bar=baz");
+  args = NULL;
+
+  filterx_expr_unref(kvs);
+}
+
+Test(filterx_func_format_kv, test_full)
+{
+  FilterXExpr *kvs = filterx_literal_new(filterx_json_object_new_from_repr("{\"foo\":\"bar\",\"bar\":\"baz\"}", -1));
+  GList *args = NULL;
+
+  args = g_list_append(args, kvs);
+  args = g_list_append(args, filterx_literal_new(filterx_string_new("@", -1)));
+  args = g_list_append(args, filterx_literal_new(filterx_string_new(" | ", -1)));
+  _assert_format_kv(args, "foo@bar | bar@baz");
+}
 
 static void
 setup(void)
