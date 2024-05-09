@@ -229,7 +229,7 @@ filterx_json_object_new_from_repr(const gchar *repr, gssize repr_len)
     }
 
   json_tokener_free(tokener);
-  return filterx_json_object_new_sub(jso, NULL);
+  return jso ? filterx_json_object_new_sub(jso, NULL) : NULL;
 }
 
 FilterXObject *
