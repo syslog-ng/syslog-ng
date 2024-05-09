@@ -135,6 +135,7 @@ filterx_eval_store_weak_ref(FilterXObject *object)
     {
       /* avoid putting object to the list multiple times */
       object->weak_referenced = TRUE;
+      g_assert(context->weak_refs);
       g_ptr_array_add(context->weak_refs, filterx_object_ref(object));
     }
 }
