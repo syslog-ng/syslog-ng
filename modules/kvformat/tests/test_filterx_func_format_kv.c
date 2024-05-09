@@ -179,6 +179,16 @@ Test(filterx_func_format_kv, test_inner_dict_and_list_is_skipped)
   _assert_format_kv(args, "foo=bar, bar=baz");
 }
 
+Test(filterx_func_format_kv, test_space_gets_double_quoted)
+{
+  FilterXExpr *kvs = filterx_literal_new(
+                       filterx_json_object_new_from_repr("{\"foo\":\"bar\",\"bar\": \"almafa korte\\\"fa\"}", -1));
+  GList *args = NULL;
+
+  args = g_list_append(args, kvs);
+  _assert_format_kv(args, "foo=bar, bar=\"almafa korte\\\"fa\"");
+}
+
 static void
 setup(void)
 {

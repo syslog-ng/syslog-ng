@@ -29,6 +29,7 @@
 #include "filterx/filterx-eval.h"
 
 #include "scratch-buffers.h"
+#include "utf8utils.h"
 
 #define FILTERX_FUNC_FORMAT_KV_USAGE "Usage: format_kv(kvs_dict, optional_value_separator, optional_pair_separator)"
 
@@ -62,8 +63,24 @@ _append_kv_to_buffer(FilterXObject *key, FilterXObject *value, gpointer user_dat
 
   g_string_append_c(buffer, self->value_separator);
 
+  gsize len_before_value = buffer->len;
   if (!filterx_object_repr_append(value, buffer))
     return FALSE;
+
+  /* TODO: make the characters here configurable. */
+  if (memchr(buffer->str + len_before_value, ' ', buffer->len - len_before_value) != NULL)
+    {
+      ScratchBuffersMarker marker;
+      GString *value_buffer = scratch_buffers_alloc_and_mark(&marker);
+
+      g_string_assign(value_buffer, buffer->str + len_before_value);
+      g_string_truncate(buffer, len_before_value);
+      g_string_append_c(buffer, '"');
+      append_unsafe_utf8_as_escaped_binary(buffer, value_buffer->str, value_buffer->len, "\"");
+      g_string_append_c(buffer, '"');
+
+      scratch_buffers_reclaim_marked(marker);
+    }
 
   return TRUE;
 }
