@@ -25,6 +25,7 @@
 #define LIBTEST_FILTERX_LIB_H_INCLUDED
 
 #include "filterx/filterx-object.h"
+#include "filterx/filterx-expr.h"
 
 void assert_marshaled_object(FilterXObject *obj, const gchar *repr, LogMessageValueType type);
 void assert_object_json_equals(FilterXObject *obj, const gchar *expected_json_repr);
@@ -39,6 +40,9 @@ FilterXObject *filterx_test_unknown_object_new(void);
 
 const gchar *filterx_test_unknown_object_marshaled_repr(gssize *len);
 const gchar *filterx_test_unknown_object_repr(gssize *len);
+
+FilterXExpr *filterx_non_literal_new(FilterXObject *object);
+FilterXExpr *filterx_error_expr_new(void);
 
 void init_libtest_filterx(void);
 void deinit_libtest_filterx(void);

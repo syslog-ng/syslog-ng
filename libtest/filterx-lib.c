@@ -26,6 +26,8 @@
 #include "cr_template.h"
 #include "filterx/object-json.h"
 #include "filterx/object-string.h"
+#include "filterx/expr-shorthand.h"
+#include "filterx/expr-literal.h"
 #include "filterx/filterx-eval.h"
 
 void
@@ -127,6 +129,20 @@ FilterXObject *
 filterx_test_unknown_object_new(void)
 {
   return filterx_object_new(&FILTERX_TYPE_NAME(test_unknown_object));
+}
+
+FilterXExpr *
+filterx_non_literal_new(FilterXObject *object)
+{
+  FilterXExpr *shorthand = filterx_shorthand_new();
+  filterx_shorthand_add(shorthand, filterx_literal_new(object));
+  return shorthand;
+}
+
+FilterXExpr *
+filterx_error_expr_new(void)
+{
+  return filterx_literal_new(NULL);
 }
 
 static struct
