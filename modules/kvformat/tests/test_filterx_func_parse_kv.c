@@ -37,7 +37,7 @@
 Test(filterx_func_parse_kv, test_empty_args_error)
 {
   GError *err = NULL;
-  FilterXExpr *func = filterx_function_parse_kv_new("test", NULL, &err);
+  FilterXFunction *func = filterx_function_parse_kv_new("test", filterx_function_args_new(NULL), &err);
 
   cr_assert_null(func);
   cr_assert_not_null(err);
@@ -52,11 +52,11 @@ Test(filterx_func_parse_kv, test_skipped_opts_causes_default_behaviour)
   args = g_list_append(args, filterx_literal_new(filterx_string_new("foo=bar, bar=baz", -1)));
 
   GError *err = NULL;
-  FilterXExpr *func = filterx_function_parse_kv_new("test", args, &err);
+  FilterXFunction *func = filterx_function_parse_kv_new("test", filterx_function_args_new(args), &err);
 
   cr_assert_null(err);
 
-  FilterXObject *obj = filterx_expr_eval(func);
+  FilterXObject *obj = filterx_expr_eval(&func->super);
 
   cr_assert_not_null(obj);
   cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(json_object)));
@@ -69,7 +69,7 @@ Test(filterx_func_parse_kv, test_skipped_opts_causes_default_behaviour)
   cr_assert(ok);
 
   cr_assert_str_eq(repr->str, "{\"foo\":\"bar\",\"bar\":\"baz\"}");
-  filterx_expr_unref(func);
+  filterx_expr_unref(&func->super);
   filterx_object_unref(obj);
   g_error_free(err);
 }
@@ -81,11 +81,11 @@ Test(filterx_func_parse_kv, test_optional_value_separator_option_first_character
   args = g_list_append(args, filterx_literal_new(filterx_string_new("@#$", -1))); // value separator
 
   GError *err = NULL;
-  FilterXExpr *func = filterx_function_parse_kv_new("test", args, &err);
+  FilterXFunction *func = filterx_function_parse_kv_new("test", filterx_function_args_new(args), &err);
 
   cr_assert_null(err);
 
-  FilterXObject *obj = filterx_expr_eval(func);
+  FilterXObject *obj = filterx_expr_eval(&func->super);
 
   cr_assert_not_null(obj);
   cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(json_object)));
@@ -98,7 +98,7 @@ Test(filterx_func_parse_kv, test_optional_value_separator_option_first_character
   cr_assert(ok);
 
   cr_assert_str_eq(repr->str, "{\"foo\":\"bar\",\"bar\":\"baz\"}");
-  filterx_expr_unref(func);
+  filterx_expr_unref(&func->super);
   filterx_object_unref(obj);
   g_error_free(err);
 }
@@ -110,7 +110,7 @@ Test(filterx_func_parse_kv, test_optional_empty_value_separator_option)
   args = g_list_append(args, filterx_literal_new(filterx_string_new("", -1))); // value separator
 
   GError *err = NULL;
-  FilterXExpr *func = filterx_function_parse_kv_new("test", args, &err);
+  FilterXFunction *func = filterx_function_parse_kv_new("test", filterx_function_args_new(args), &err);
 
   cr_assert_null(func);
   cr_assert_not_null(err);
@@ -128,11 +128,11 @@ Test(filterx_func_parse_kv, test_optional_pair_separator_option)
   args = g_list_append(args, filterx_literal_new(filterx_string_new("-=|=-", -1))); // pair separator
 
   GError *err = NULL;
-  FilterXExpr *func = filterx_function_parse_kv_new("test", args, &err);
+  FilterXFunction *func = filterx_function_parse_kv_new("test", filterx_function_args_new(args), &err);
 
   cr_assert_null(err);
 
-  FilterXObject *obj = filterx_expr_eval(func);
+  FilterXObject *obj = filterx_expr_eval(&func->super);
 
   cr_assert_not_null(obj);
   cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(json_object)));
@@ -145,7 +145,7 @@ Test(filterx_func_parse_kv, test_optional_pair_separator_option)
   cr_assert(ok);
 
   cr_assert_str_eq(repr->str, "{\"foo\":\"bar\",\"bar\":\"baz\"}");
-  filterx_expr_unref(func);
+  filterx_expr_unref(&func->super);
   filterx_object_unref(obj);
   g_error_free(err);
 }
@@ -159,11 +159,11 @@ Test(filterx_func_parse_kv, test_optional_stray_words_key_option)
   args = g_list_append(args, filterx_literal_new(filterx_string_new("straywords", -1))); // stray words
 
   GError *err = NULL;
-  FilterXExpr *func = filterx_function_parse_kv_new("test", args, &err);
+  FilterXFunction *func = filterx_function_parse_kv_new("test", filterx_function_args_new(args), &err);
 
   cr_assert_null(err);
 
-  FilterXObject *obj = filterx_expr_eval(func);
+  FilterXObject *obj = filterx_expr_eval(&func->super);
 
   cr_assert_not_null(obj);
   cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(json_object)));
@@ -176,7 +176,7 @@ Test(filterx_func_parse_kv, test_optional_stray_words_key_option)
   cr_assert(ok);
 
   cr_assert_str_eq(repr->str, "{\"foo\":\"bar\",\"bar\":\"baz\",\"straywords\":\"lookslikenonKV\"}");
-  filterx_expr_unref(func);
+  filterx_expr_unref(&func->super);
   filterx_object_unref(obj);
   g_error_free(err);
 }

@@ -27,7 +27,7 @@
 #include "filterx/expr-function.h"
 
 // Builtin functions
-FilterXExpr *filterx_simple_function_new(const gchar *function_name, GList *arguments,
+FilterXExpr *filterx_simple_function_new(const gchar *function_name, FilterXFunctionArgs *args,
                                          FilterXSimpleFunctionProto function_proto);
 
 gboolean filterx_builtin_simple_function_register_private(GHashTable *ht, const gchar *fn_name,

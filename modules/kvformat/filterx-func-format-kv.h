@@ -26,8 +26,7 @@
 #include "plugin.h"
 #include "filterx/expr-function.h"
 
-FilterXFunction *filterx_function_format_kv_new(const gchar *function_name, GList *argument_expressions,
-                                                GError **error);
+FilterXFunction *filterx_function_format_kv_new(const gchar *function_name, FilterXFunctionArgs *args, GError **error);
 gpointer filterx_function_construct_format_kv(Plugin *self);
 
 #endif

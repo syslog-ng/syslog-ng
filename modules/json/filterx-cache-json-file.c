@@ -57,44 +57,25 @@ typedef struct FilterXFunctionCacheJsonFile_
 } FilterXFuntionCacheJsonFile;
 
 static gchar *
-_extract_filepath(GList *argument_expressions, GError **error)
+_extract_filepath(FilterXFunctionArgs *args, GError **error)
 {
-  if (argument_expressions == NULL || g_list_length(argument_expressions) != 1)
+  if (filterx_function_args_len(args) != 1)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
                   "invalid number of arguments. " FILTERX_FUNC_CACHE_JSON_FILE_USAGE);
       return NULL;
     }
 
-  FilterXExpr *filepath_expr = (FilterXExpr *) argument_expressions->data;
-  if (!filepath_expr || !filterx_expr_is_literal(filepath_expr))
-    {
-      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "argument must be string literal. " FILTERX_FUNC_CACHE_JSON_FILE_USAGE);
-      return NULL;
-    }
-
-  FilterXObject *filepath_obj = filterx_expr_eval(filepath_expr);
-  if (!filepath_obj)
-    {
-      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "failed to evaluate argument. " FILTERX_FUNC_CACHE_JSON_FILE_USAGE);
-      return NULL;
-    }
-
   gsize filepath_len;
-  gchar *filepath = g_strdup(filterx_string_get_value(filepath_obj, &filepath_len));
-  filterx_object_unref(filepath_obj);
-
+  const gchar *filepath = filterx_function_args_get_literal_string(args, 0, &filepath_len);
   if (!filepath)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
                   "argument must be string literal. " FILTERX_FUNC_CACHE_JSON_FILE_USAGE);
-      g_free(filepath);
       return NULL;
     }
 
-  return filepath;
+  return g_strdup(filepath);
 }
 
 static FilterXObject *
@@ -167,7 +148,7 @@ _free(FilterXExpr *s)
 }
 
 FilterXFunction *
-filterx_function_cache_json_file_new(const gchar *function_name, GList *argument_expressions, GError **error)
+filterx_function_cache_json_file_new(const gchar *function_name, FilterXFunctionArgs *args, GError **error)
 {
   FilterXFuntionCacheJsonFile *self = g_new0(FilterXFuntionCacheJsonFile, 1);
   filterx_function_init_instance(&self->super, function_name);
@@ -175,7 +156,7 @@ filterx_function_cache_json_file_new(const gchar *function_name, GList *argument
   self->super.super.eval = _eval;
   self->super.super.free_fn = _free;
 
-  self->filepath = _extract_filepath(argument_expressions, error);
+  self->filepath = _extract_filepath(args, error);
   if (!self->filepath)
     goto error;
 
@@ -184,11 +165,11 @@ filterx_function_cache_json_file_new(const gchar *function_name, GList *argument
     goto error;
 
   filterx_object_freeze(self->cached_json);
-  g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_function_args_free(args);
   return &self->super;
 
 error:
-  g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_function_args_free(args);
   filterx_expr_unref(&self->super.super);
   return NULL;
 }

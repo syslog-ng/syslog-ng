@@ -24,7 +24,7 @@
 #include "filterx/expr-function.h"
 #include "plugin.h"
 
-FilterXFunction *filterx_function_cache_json_file_new(const gchar *function_name, GList *argument_expressions,
+FilterXFunction *filterx_function_cache_json_file_new(const gchar *function_name, FilterXFunctionArgs *args,
                                                       GError **error);
 gpointer filterx_function_cache_json_file_new_construct(Plugin *self);
 

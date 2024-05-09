@@ -33,20 +33,20 @@
 #include "scratch-buffers.h"
 
 static void
-_assert_format_kv_init_fail(GList *argument_expressions)
+_assert_format_kv_init_fail(GList *positional_args)
 {
   GError *err = NULL;
-  FilterXFunction *func = filterx_function_format_kv_new("test", argument_expressions, &err);
+  FilterXFunction *func = filterx_function_format_kv_new("test", filterx_function_args_new(positional_args), &err);
   cr_assert(!func);
   cr_assert(err);
   g_error_free(err);
 }
 
 static void
-_assert_format_kv(GList *argument_expressions, const gchar *expected_output)
+_assert_format_kv(GList *positional_args, const gchar *expected_output)
 {
   GError *err = NULL;
-  FilterXFunction *func = filterx_function_format_kv_new("test", argument_expressions, &err);
+  FilterXFunction *func = filterx_function_format_kv_new("test", filterx_function_args_new(positional_args), &err);
   cr_assert(!err);
 
   FilterXObject *obj = filterx_expr_eval(&func->super);

@@ -37,7 +37,7 @@ typedef struct _FilterXFunction
 
 typedef struct _FilterXFunctionArgs FilterXFunctionArgs;
 
-typedef FilterXFunction *(*FilterXFunctionCtor)(const gchar *, GList *, GError **);
+typedef FilterXFunction *(*FilterXFunctionCtor)(const gchar *, FilterXFunctionArgs *, GError **);
 
 #define FILTERX_FUNCTION_ERROR filterx_function_error_quark()
 GQuark filterx_function_error_quark(void);

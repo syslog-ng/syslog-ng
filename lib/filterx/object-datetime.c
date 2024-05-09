@@ -297,53 +297,23 @@ _strptime_free(FilterXExpr *s)
 }
 
 static GPtrArray *
-_extract_strptime_formats(GList *argument_expressions, GError **error)
+_extract_strptime_formats(FilterXFunctionArgs *args, GError **error)
 {
-  gsize arguments_len = argument_expressions ? g_list_length(argument_expressions) : 0;
-  if (arguments_len < 2)
+  guint64 num_formats = filterx_function_args_len(args) - 1;
+  GPtrArray *formats = g_ptr_array_new_full(num_formats, g_free);
+
+  for (guint64 i = 0; i < num_formats; i++)
     {
-      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "invalid number of arguments. " FILTERX_FUNC_STRPTIME_USAGE);
-      return NULL;
-    }
-
-  GPtrArray *formats = g_ptr_array_new_full(arguments_len - 1, g_free);
-
-  guint32 i = 1;
-  for (GList *elem = argument_expressions->next; elem; elem = elem->next)
-    {
-      FilterXExpr *argument_expr = (FilterXExpr *) elem->data;
-
-      if (!argument_expr || !filterx_expr_is_literal(argument_expr))
-        {
-          g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                      "format_str_%" G_GUINT32_FORMAT " argument must be string literal. " FILTERX_FUNC_STRPTIME_USAGE,
-                      i);
-          goto error;
-        }
-
-      FilterXObject *format_obj = filterx_expr_eval(argument_expr);
-      if (!format_obj)
-        {
-          g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                      "failed to evaluate format_str_%" G_GUINT32_FORMAT " argument. " FILTERX_FUNC_STRPTIME_USAGE, i);
-          goto error;
-        }
-
-      gsize format_len;
-      const gchar *format = filterx_string_get_value(format_obj, &format_len);
-      filterx_object_unref(format_obj);
-
+      const gchar *format = filterx_function_args_get_literal_string(args, i+1, NULL);
       if (!format)
         {
           g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                      "format_str_%" G_GUINT32_FORMAT " argument must be string literal. " FILTERX_FUNC_STRPTIME_USAGE,
-                      i);
+                      "format_str_%" G_GUINT64_FORMAT " argument must be string literal. " FILTERX_FUNC_STRPTIME_USAGE,
+                      i+1);
           goto error;
         }
 
       g_ptr_array_add(formats, g_strdup(format));
-      i++;
     }
 
   return formats;
@@ -354,9 +324,9 @@ error:
 }
 
 static FilterXExpr *
-_extract_time_str_expr(GList *argument_expressions, GError **error)
+_extract_time_str_expr(FilterXFunctionArgs *args, GError **error)
 {
-  FilterXExpr *time_str_expr = filterx_expr_ref(((FilterXExpr *) argument_expressions->data));
+  FilterXExpr *time_str_expr = filterx_function_args_get_expr(args, 0);
   if (!time_str_expr)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
@@ -367,28 +337,45 @@ _extract_time_str_expr(GList *argument_expressions, GError **error)
   return time_str_expr;
 }
 
-/* Takes reference of argument_expressions */
+static gboolean
+_extract_args(FilterXFunctionStrptime *self, FilterXFunctionArgs *args, GError **error)
+{
+  gsize len = filterx_function_args_len(args);
+  if (len < 2)
+    {
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "invalid number of arguments. " FILTERX_FUNC_STRPTIME_USAGE);
+      return FALSE;
+    }
+
+  self->time_str_expr = _extract_time_str_expr(args, error);
+  if (!self->time_str_expr)
+    return FALSE;
+
+  self->formats = _extract_strptime_formats(args, error);
+  if (!self->formats)
+    return FALSE;
+
+  return TRUE;
+}
+
+/* Takes reference of args */
 FilterXFunction *
-filterx_function_strptime_new(const gchar *function_name, GList *argument_expressions, GError **error)
+filterx_function_strptime_new(const gchar *function_name, FilterXFunctionArgs *args, GError **error)
 {
   FilterXFunctionStrptime *self = g_new0(FilterXFunctionStrptime, 1);
   filterx_function_init_instance(&self->super, function_name);
   self->super.super.eval = _strptime_eval;
   self->super.super.free_fn = _strptime_free;
 
-  self->formats = _extract_strptime_formats(argument_expressions, error);
-  if (!self->formats)
+  if (!_extract_args(self, args, error))
     goto error;
 
-  self->time_str_expr = _extract_time_str_expr(argument_expressions, error);
-  if (!self->time_str_expr)
-    goto error;
-
-  g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_function_args_free(args);
   return &self->super;
 
 error:
-  g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_function_args_free(args);
   filterx_expr_unref(&self->super.super);
   return NULL;
 }
