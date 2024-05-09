@@ -25,6 +25,7 @@
 #include "filterx/object-string.h"
 #include "filterx/object-null.h"
 #include "filterx/object-dict-interface.h"
+#include "filterx/object-list-interface.h"
 #include "filterx/filterx-eval.h"
 
 #include "scratch-buffers.h"
@@ -44,6 +45,14 @@ _append_kv_to_buffer(FilterXObject *key, FilterXObject *value, gpointer user_dat
 {
   FilterXFunctionFormatKV *self = ((gpointer *) user_data)[0];
   GString *buffer = ((gpointer *) user_data)[1];
+
+  if (filterx_object_is_type(value, &FILTERX_TYPE_NAME(dict)) ||
+      filterx_object_is_type(value, &FILTERX_TYPE_NAME(list)))
+    {
+      msg_debug("FilterX: format_kv(): skipping object, type not supported",
+                evt_tag_str("type", value->type->name));
+      return TRUE;
+    }
 
   if (buffer->len)
     g_string_append(buffer, self->pair_separator);
