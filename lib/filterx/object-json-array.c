@@ -257,6 +257,9 @@ filterx_json_array_new_from_repr(const gchar *repr, gssize repr_len)
 
   json_tokener_free(tokener);
 
+  if (!jso)
+    return NULL;
+
   if (!json_object_is_type(jso, json_type_array))
     {
       json_object_put(jso);

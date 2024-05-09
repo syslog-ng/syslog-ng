@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 shifter
+ * Copyright (c) 2024 Attila Szakacs
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,15 +20,14 @@
  *
  */
 
-#ifndef FILTERX_FUNC_PARSE_KV_H_INCLUDED
-#define FILTERX_FUNC_PARSE_KV_H_INCLUDED
+#ifndef FILTERX_FUNC_FORMAT_KV_H_INCLUDED
+#define FILTERX_FUNC_FORMAT_KV_H_INCLUDED
 
 #include "plugin.h"
 #include "filterx/expr-function.h"
 
-#define FILTERX_FUNC_PARSE_KV_USAGE "Usage: parse_kv(msg, value_separator, pair_separator, stray_words_key)"
-
-FilterXExpr *filterx_function_parse_kv_new(const gchar *function_name, GList *argument_expressions, GError **error);
-gpointer filterx_function_construct_parse_kv(Plugin *self);
+FilterXFunction *filterx_function_format_kv_new(const gchar *function_name, GList *argument_expressions,
+                                                GError **error);
+gpointer filterx_function_construct_format_kv(Plugin *self);
 
 #endif

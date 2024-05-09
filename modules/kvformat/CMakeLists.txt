@@ -10,6 +10,8 @@ set(KVFORMAT_SOURCES
     kvformat-plugin.c
     filterx-func-parse-kv.h
     filterx-func-parse-kv.c
+    filterx-func-format-kv.h
+    filterx-func-format-kv.c
 )
 
 add_module(
