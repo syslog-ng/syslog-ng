@@ -26,7 +26,7 @@
 #include "plugin.h"
 #include "filterx/expr-function.h"
 
-#define FILTERX_FUNC_PARSE_KV_USAGE "Usage: parse_kv(msg, prefix, value_separator, pair_separator, stray_words_key)"
+#define FILTERX_FUNC_PARSE_KV_USAGE "Usage: parse_kv(msg, value_separator, pair_separator, stray_words_key)"
 
 FilterXExpr *filterx_function_parse_kv_new(const gchar *function_name, GList *argument_expressions, GError **error);
 gpointer filterx_function_construct_parse_kv(Plugin *self);
