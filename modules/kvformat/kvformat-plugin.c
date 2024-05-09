@@ -24,6 +24,7 @@
 #include "plugin-types.h"
 #include "format-welf.h"
 #include "filterx-func-parse-kv.h"
+#include "filterx-func-format-kv.h"
 
 extern CfgParser kv_parser_parser;
 
@@ -44,6 +45,11 @@ static Plugin kvformat_plugins[] =
     .type =  LL_CONTEXT_FILTERX_FUNC,
     .name = "parse_kv",
     .construct = filterx_function_construct_parse_kv,
+  },
+  {
+    .type =  LL_CONTEXT_FILTERX_FUNC,
+    .name = "format_kv",
+    .construct = filterx_function_construct_format_kv,
   },
 };
 

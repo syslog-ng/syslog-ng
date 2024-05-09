@@ -2,3 +2,4 @@ add_unit_test(LIBTEST CRITERION TARGET test_format_welf DEPENDS syslogformat kvf
 add_unit_test(CRITERION TARGET test_linux_audit_scanner DEPENDS kvformat)
 add_unit_test(LIBTEST CRITERION TARGET test_kv_parser DEPENDS kvformat)
 add_unit_test(LIBTEST CRITERION TARGET test_filterx_func_parse_kv DEPENDS kvformat)
+add_unit_test(LIBTEST CRITERION TARGET test_filterx_func_format_kv DEPENDS kvformat)
