@@ -141,6 +141,16 @@ filterx_object_repr(FilterXObject *self, GString *repr)
 }
 
 static inline gboolean
+filterx_object_repr_append(FilterXObject *self, GString *repr)
+{
+  if (self->type->repr)
+    {
+      return self->type->repr(self, repr);
+    }
+  return FALSE;
+}
+
+static inline gboolean
 filterx_object_len(FilterXObject *self, guint64 *len)
 {
   if (!self->type->len)
