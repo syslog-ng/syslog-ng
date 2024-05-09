@@ -26,6 +26,9 @@
 #include "filterx/filterx-grammar.h"
 #include "filterx/filterx-globals.h"
 #include "filterx/filterx-eval.h"
+#include "filterx/expr-literal.h"
+#include "filterx/object-string.h"
+#include "filterx/object-null.h"
 #include "plugin.h"
 #include "cfg.h"
 
@@ -128,6 +131,109 @@ filterx_function_init_instance(FilterXFunction *s, const gchar *function_name)
   s->function_name = g_strdup(function_name);
   s->super.free_fn = _function_free;
 }
+
+struct _FilterXFunctionArgs
+{
+  GList *positional_exprs;
+};
+
+/* Takes reference of positional_exprs. */
+FilterXFunctionArgs *
+filterx_function_args_new(GList *positional_exprs)
+{
+  FilterXFunctionArgs *self = g_new0(FilterXFunctionArgs, 1);
+  self->positional_exprs = positional_exprs;
+  return self;
+}
+
+guint64
+filterx_function_args_len(FilterXFunctionArgs *self)
+{
+  return g_list_length(self->positional_exprs);
+}
+
+FilterXExpr *
+filterx_function_args_get_expr(FilterXFunctionArgs *self, guint64 index)
+{
+  if (g_list_length(self->positional_exprs) <= index)
+    return FALSE;
+
+  return filterx_expr_ref((FilterXExpr *) g_list_nth_data(self->positional_exprs, index));
+}
+
+FilterXObject *
+filterx_function_args_get_object(FilterXFunctionArgs *self, guint64 index)
+{
+  FilterXExpr *expr = filterx_function_args_get_expr(self, index);
+  if (!expr)
+    return NULL;
+
+  FilterXObject *obj = filterx_expr_eval(expr);
+  filterx_expr_unref(expr);
+  return obj;
+}
+
+const gchar *
+filterx_function_args_get_literal_string(FilterXFunctionArgs *self, guint64 index, gsize *len)
+{
+  FilterXExpr *expr = filterx_function_args_get_expr(self, index);
+  if (!expr)
+    return NULL;
+
+  FilterXObject *obj = NULL;
+  const gchar *str = NULL;
+
+  if (!filterx_expr_is_literal(expr))
+    goto error;
+
+  obj = filterx_expr_eval(expr);
+  if (!obj)
+    goto error;
+
+  str = filterx_string_get_value(obj, len);
+
+  /*
+   * We can unref both obj and expr, the underlying string will be kept alive as long as the literal expr is alive,
+   * which is kept alive in self->positional_args.
+   */
+
+error:
+  filterx_object_unref(obj);
+  filterx_expr_unref(expr);
+  return str;
+}
+
+gboolean
+filterx_function_args_is_literal_null(FilterXFunctionArgs *self, guint64 index)
+{
+  gboolean is_literal_null = FALSE;
+
+  FilterXExpr *expr = filterx_function_args_get_expr(self, index);
+  if (!expr)
+    goto error;
+
+  if (!filterx_expr_is_literal(expr))
+    goto error;
+
+  FilterXObject *obj = filterx_expr_eval(expr);
+  if (!obj)
+    goto error;
+
+  is_literal_null = filterx_object_is_type(obj, &FILTERX_TYPE_NAME(null));
+  filterx_object_unref(obj);
+
+error:
+  filterx_expr_unref(expr);
+  return is_literal_null;
+}
+
+void
+filterx_function_args_free(FilterXFunctionArgs *self)
+{
+  g_list_free_full(self->positional_exprs, (GDestroyNotify) filterx_expr_unref);
+  g_free(self);
+}
+
 
 static FilterXExpr *
 _lookup_simple_function(GlobalConfig *cfg, const gchar *function_name, GList *arguments)

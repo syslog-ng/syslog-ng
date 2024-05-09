@@ -35,6 +35,8 @@ typedef struct _FilterXFunction
   gchar *function_name;
 } FilterXFunction;
 
+typedef struct _FilterXFunctionArgs FilterXFunctionArgs;
+
 typedef FilterXFunction *(*FilterXFunctionCtor)(const gchar *, GList *, GError **);
 
 #define FILTERX_FUNCTION_ERROR filterx_function_error_quark()
@@ -49,6 +51,15 @@ enum FilterXFunctionError
 void filterx_function_init_instance(FilterXFunction *s, const gchar *function_name);
 void filterx_function_free_method(FilterXFunction *s);
 
-FilterXExpr *filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *arguments, GError **error);
+FilterXFunctionArgs *filterx_function_args_new(GList *positional_exprs);
+guint64 filterx_function_args_len(FilterXFunctionArgs *self);
+FilterXExpr *filterx_function_args_get_expr(FilterXFunctionArgs *self, guint64 index);
+FilterXObject *filterx_function_args_get_object(FilterXFunctionArgs *self, guint64 index);
+const gchar *filterx_function_args_get_literal_string(FilterXFunctionArgs *self, guint64 index, gsize *len);
+gboolean filterx_function_args_is_literal_null(FilterXFunctionArgs *self, guint64 index);
+void filterx_function_args_free(FilterXFunctionArgs *self);
+
+FilterXExpr *filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *positional_args,
+                                     GError **error);
 
 #endif
