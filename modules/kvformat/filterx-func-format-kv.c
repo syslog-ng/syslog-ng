@@ -21,10 +21,18 @@
  */
 
 #include "filterx-func-format-kv.h"
+#include "filterx/expr-literal.h"
+#include "filterx/object-string.h"
+#include "filterx/object-null.h"
+
+#define FILTERX_FUNC_FORMAT_KV_USAGE "Usage: format_kv(kvs_dict, optional_value_separator, optional_pair_separator)"
 
 typedef struct FilterXFunctionFormatKV_
 {
   FilterXFunction super;
+  FilterXExpr *kvs;
+  gchar value_separator;
+  gchar *pair_separator;
 } FilterXFunctionFormatKV;
 
 static FilterXObject *
@@ -40,7 +48,122 @@ _free(FilterXExpr *s)
 {
   FilterXFunctionFormatKV *self = (FilterXFunctionFormatKV *) s;
 
+  filterx_expr_unref(self->kvs);
+  g_free(self->pair_separator);
   filterx_function_free_method(&self->super);
+}
+
+static gboolean
+_extract_value_separator_arg(FilterXFunctionFormatKV *self, FilterXExpr *value_separator_expr, GError **error)
+{
+  FilterXObject *value_separator_obj = filterx_expr_eval_typed(value_separator_expr);
+
+  if (!value_separator_obj ||
+      !(filterx_object_is_type(value_separator_obj, &FILTERX_TYPE_NAME(null)) ||
+        filterx_object_is_type(value_separator_obj, &FILTERX_TYPE_NAME(string))) ||
+      !filterx_expr_is_literal(value_separator_expr))
+    {
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "value_separator must be a string literal or null. " FILTERX_FUNC_FORMAT_KV_USAGE);
+      filterx_object_unref(value_separator_obj);
+      return FALSE;
+    }
+
+  if (filterx_object_is_type(value_separator_obj, &FILTERX_TYPE_NAME(null)))
+    {
+      filterx_object_unref(value_separator_obj);
+      return TRUE;
+    }
+
+  gsize value_separator_len;
+  const gchar *value_separator_str = filterx_string_get_value(value_separator_obj, &value_separator_len);
+  if (value_separator_len != 1)
+    {
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "value_separator must be a single character. " FILTERX_FUNC_FORMAT_KV_USAGE);
+      filterx_object_unref(value_separator_obj);
+      return FALSE;
+    }
+
+  self->value_separator = value_separator_str[0];
+  filterx_object_unref(value_separator_obj);
+  return TRUE;
+}
+
+static gboolean
+_extract_pair_separator_arg(FilterXFunctionFormatKV *self, FilterXExpr *pair_separator_expr, GError **error)
+{
+  FilterXObject *pair_separator_obj = filterx_expr_eval_typed(pair_separator_expr);
+
+  if (!pair_separator_obj ||
+      !(filterx_object_is_type(pair_separator_obj, &FILTERX_TYPE_NAME(null)) ||
+        filterx_object_is_type(pair_separator_obj, &FILTERX_TYPE_NAME(string))) ||
+      !filterx_expr_is_literal(pair_separator_expr))
+    {
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "pair_separator must be a string literal or null. " FILTERX_FUNC_FORMAT_KV_USAGE);
+      filterx_object_unref(pair_separator_obj);
+      return FALSE;
+    }
+
+  if (filterx_object_is_type(pair_separator_obj, &FILTERX_TYPE_NAME(null)))
+    {
+      filterx_object_unref(pair_separator_obj);
+      return TRUE;
+    }
+
+  gsize pair_separator_len;
+  const gchar *pair_separator_str = filterx_string_get_value(pair_separator_obj, &pair_separator_len);
+  if (pair_separator_len == 0)
+    {
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "pair_separator must be non-zero length. " FILTERX_FUNC_FORMAT_KV_USAGE);
+      filterx_object_unref(pair_separator_obj);
+      return FALSE;
+    }
+
+  g_free(self->pair_separator);
+  self->pair_separator = g_strdup(pair_separator_str);
+  filterx_object_unref(pair_separator_obj);
+  return TRUE;
+}
+
+static gboolean
+_extract_arguments(FilterXFunctionFormatKV *self, GList *argument_expressions, GError **error)
+{
+  gsize arguments_len = argument_expressions ? g_list_length(argument_expressions) : 0;
+  if (arguments_len < 1 || arguments_len > 3)
+    {
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "invalid number of arguments. " FILTERX_FUNC_FORMAT_KV_USAGE);
+      return FALSE;
+    }
+
+  self->kvs = filterx_expr_ref((FilterXExpr *) argument_expressions->data);
+  if (!self->kvs)
+    {
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "kvs_dict must be set. " FILTERX_FUNC_FORMAT_KV_USAGE);
+      return FALSE;
+    }
+
+  if (!argument_expressions->next)
+    return TRUE;
+
+  FilterXExpr *value_separator_expr = (FilterXExpr *) argument_expressions->next->data;
+  if (value_separator_expr && !_extract_value_separator_arg(self, value_separator_expr, error))
+    return FALSE;
+
+  if (!argument_expressions->next->next)
+    return TRUE;
+
+  FilterXExpr *pair_separator_expr = (FilterXExpr *) argument_expressions->next->next->data;
+  if (pair_separator_expr && !_extract_pair_separator_arg(self, pair_separator_expr, error))
+    return FALSE;
+
+  g_assert(!argument_expressions->next->next->next);
+
+  return TRUE;
 }
 
 FilterXFunction *
@@ -51,9 +174,19 @@ filterx_function_format_kv_new(const gchar *function_name, GList *argument_expre
 
   self->super.super.eval = _eval;
   self->super.super.free_fn = _free;
+  self->value_separator = '=';
+  self->pair_separator = g_strdup(", ");
+
+  if (!_extract_arguments(self, argument_expressions, error))
+    goto error;
 
   g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
   return &self->super;
+
+error:
+  g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_expr_unref(&self->super.super);
+  return NULL;
 }
 
 gpointer
