@@ -24,6 +24,10 @@
 #include "filterx/expr-literal.h"
 #include "filterx/object-string.h"
 #include "filterx/object-null.h"
+#include "filterx/object-dict-interface.h"
+#include "filterx/filterx-eval.h"
+
+#include "scratch-buffers.h"
 
 #define FILTERX_FUNC_FORMAT_KV_USAGE "Usage: format_kv(kvs_dict, optional_value_separator, optional_pair_separator)"
 
@@ -35,12 +39,51 @@ typedef struct FilterXFunctionFormatKV_
   gchar *pair_separator;
 } FilterXFunctionFormatKV;
 
+static gboolean
+_append_kv_to_buffer(FilterXObject *key, FilterXObject *value, gpointer user_data)
+{
+  FilterXFunctionFormatKV *self = ((gpointer *) user_data)[0];
+  GString *buffer = ((gpointer *) user_data)[1];
+
+  if (buffer->len)
+    g_string_append(buffer, self->pair_separator);
+
+  if (!filterx_object_repr_append(key, buffer))
+    return FALSE;
+
+  g_string_append_c(buffer, self->value_separator);
+
+  if (!filterx_object_repr_append(value, buffer))
+    return FALSE;
+
+  return TRUE;
+}
+
 static FilterXObject *
 _eval(FilterXExpr *s)
 {
   FilterXFunctionFormatKV *self = (FilterXFunctionFormatKV *) s;
 
-  return NULL;
+  FilterXObject *kvs = filterx_expr_eval_typed(self->kvs);
+  if (!kvs)
+    {
+      filterx_eval_push_error("Failed to evaluate kvs_dict. " FILTERX_FUNC_FORMAT_KV_USAGE, s, NULL);
+      return NULL;
+    }
+
+  if (!filterx_object_is_type(kvs, &FILTERX_TYPE_NAME(dict)))
+    {
+      filterx_eval_push_error("kvs_dict must be a dict. " FILTERX_FUNC_FORMAT_KV_USAGE, s, kvs);
+      filterx_object_unref(kvs);
+      return NULL;
+    }
+
+  GString *formatted = scratch_buffers_alloc();
+  gpointer user_data[] = { self, formatted };
+  gboolean success = filterx_dict_iter(kvs, _append_kv_to_buffer, user_data);
+
+  filterx_object_unref(kvs);
+  return success ? filterx_string_new(formatted->str, formatted->len) : NULL;
 }
 
 static void
