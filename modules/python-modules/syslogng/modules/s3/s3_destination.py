@@ -478,4 +478,5 @@ class S3Destination(LogDestination):
         if s3_object.size >= self.max_object_size:
             self.__finish_s3_object(s3_object)
 
+        self.stats_written_bytes_add(len(data))
         return self.SUCCESS
