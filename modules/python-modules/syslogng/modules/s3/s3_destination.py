@@ -66,6 +66,8 @@ class S3Destination(LogDestination):
             self.max_pending_uploads = int(options["max_pending_uploads"])
             self.flush_grace_period = int(options["flush_grace_period"])
             self.region: Optional[str] = str(options["region"])
+            self.server_side_encryption = str(options["server_side_encryption"])
+            self.kms_key = str(options["kms_key"])
             self.storage_class = str(options["storage_class"]).upper().replace("-", "_")
             self.canned_acl = str(options["canned_acl"]).lower().replace("_", "-")
         except KeyError:
@@ -100,6 +102,16 @@ class S3Destination(LogDestination):
 
         if self.region == "":
             self.region = None
+
+        if self.server_side_encryption != "" and self.server_side_encryption != "aws:kms":
+            assert False, "server-side-encryption() supports only aws:kms"
+
+        if self.server_side_encryption == "aws:kms" and self.kms_key == "":
+            assert False, "kms-key() must be set when server-side-encryption() is aws:kms"
+
+        if self.kms_key != "" and self.server_side_encryption == "":
+            self.logger.warn("ignoring kms-key() as server-side-encryption() is disabled")
+            self.kms_key = ""
 
         VALID_STORAGE_CLASSES = {
             "STANDARD",
@@ -363,6 +375,8 @@ class S3Destination(LogDestination):
             target_key=target_key,
             timestamp=timestamp,
             compress=self.compression,
+            server_side_encryption=self.server_side_encryption,
+            kms_key=self.kms_key,
             storage_class=self.storage_class,
             persist_name=self.persist_name,
             executor=self.executor,
