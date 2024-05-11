@@ -607,8 +607,8 @@ if test "x$ac_compiler_gnu" = "xyes"; then
 	# default supplied by autoconf (which defaults to -O2), which
 	# we don't want to use with our debugging builds.
 
-	CFLAGS_ADD=""
-        CXXFLAGS_ADD=""
+        CFLAGS_ADD="-fno-omit-frame-pointer"
+        CXXFLAGS_ADD="-fno-omit-frame-pointer"
         if test "x$enable_debug" = "xyes"; then
                 CFLAGS_ADD="${CFLAGS_ADD} -g"
                 CXXFLAGS_ADD="${CXXFLAGS_ADD} -g"
