@@ -76,10 +76,6 @@ _set_json_value(FilterXObject *out,
                 const gchar *key, gsize key_len,
                 const gchar *value, gsize value_len)
 {
-  msg_trace("filterx: parse_kv() key-value found",
-            evt_tag_str("key", key),
-            evt_tag_str("value", value));
-
   FilterXObject *json_key = filterx_string_new(key, key_len);
   FilterXObject *json_val = filterx_string_new(value, value_len);
 
