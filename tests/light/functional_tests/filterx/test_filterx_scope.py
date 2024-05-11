@@ -111,6 +111,26 @@ def test_message_tied_variables_are_propagated_to_the_output(config, syslog_ng):
     assert file_true.read_log() == "kecske\n"
 
 
+def test_message_tied_variables_in_braces_are_propagated_to_the_output(config, syslog_ng):
+    (file_true, file_false, _) = create_config(
+        config, [
+            """
+                ${.foo.bar.baz} = "kecske";
+                isset(${.foo.bar.baz});
+            """,
+            """
+                isset(${.foo.bar.baz});
+                $MSG = ${.foo.bar.baz};
+            """,
+        ],
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "kecske\n"
+
+
 def test_message_tied_variables_are_propagated_to_the_output_in_junctions(config, syslog_ng):
     (file_true, file_false, _) = create_config(
         config, init_exprs=[
