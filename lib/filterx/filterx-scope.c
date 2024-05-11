@@ -53,7 +53,6 @@ filterx_variable_is_floating(FilterXVariable *v)
   return filterx_variable_handle_is_floating(v->handle);
 }
 
-
 static NVHandle
 filterx_variable_get_nv_handle(FilterXVariable *v)
 {
@@ -86,11 +85,6 @@ filterx_variable_is_set(FilterXVariable *v)
   return v->value != NULL;
 }
 
-void
-filterx_variable_mark_declared(FilterXVariable *v)
-{
-  v->declared = TRUE;
-}
 
 static void
 _variable_free(FilterXVariable *v)
@@ -177,10 +171,10 @@ filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle)
   return NULL;
 }
 
-FilterXVariable *
-filterx_scope_register_variable(FilterXScope *self,
-                                FilterXVariableHandle handle,
-                                FilterXObject *initial_value)
+static FilterXVariable *
+_register_variable(FilterXScope *self,
+                   FilterXVariableHandle handle,
+                   FilterXObject *initial_value)
 {
   FilterXVariable v, *v_slot;
 
@@ -206,12 +200,35 @@ filterx_scope_register_variable(FilterXScope *self,
 
   v.handle = handle;
   v.assigned = FALSE;
-  v.declared = FALSE;
   v.value = filterx_object_ref(initial_value);
   v.generation = self->generation;
   g_array_insert_val(self->variables, v_index, v);
 
   return &g_array_index(self->variables, FilterXVariable, v_index);
+}
+
+FilterXVariable *
+filterx_scope_register_variable(FilterXScope *self,
+                                FilterXVariableHandle handle,
+                                FilterXObject *initial_value)
+{
+  FilterXVariable *v = _register_variable(self, handle, initial_value);
+  v->declared = FALSE;
+
+  return v;
+}
+
+FilterXVariable *
+filterx_scope_register_declared_variable(FilterXScope *self,
+                                         FilterXVariableHandle handle,
+                                         FilterXObject *initial_value)
+
+{
+  g_assert(filterx_variable_handle_is_floating(handle));
+
+  FilterXVariable *v = _register_variable(self, handle, initial_value);
+  v->declared = TRUE;
+  return v;
 }
 
 /*
