@@ -99,17 +99,35 @@ _generate_parser(AppParserGenerator *self, const gchar *parser_expr)
 }
 
 static void
+_generate_filterx(AppParserGenerator *self, const gchar *filterx_expr)
+{
+  if (filterx_expr)
+    g_string_append_printf(self->block,
+                           "            filterx {\n"
+                           "                %s\n"
+                           "            };\n", filterx_expr);
+}
+
+static void
 _generate_action(AppParserGenerator *self, Application *app)
 {
-  if (!self->allow_overlaps)
-    {
-      g_string_append_printf(self->block,
+  if (self->allow_overlaps)
+    return;
+
+  if (app->filterx_expr)
+    g_string_append_printf(self->block,
+                             "            filterx {\n"
+                             "                meta.app_name = '%s';\n"
+                             "            };\n",
+                             app->super.name);
+
+  else
+    g_string_append_printf(self->block,
                              "            rewrite {\n"
                              "                set-tag('.app.%s');\n"
                              "                set('%s' value('.app.name'));\n"
                              "            };\n",
                              app->super.name, app->super.name);
-    }
 }
 
 static void
@@ -147,6 +165,7 @@ _generate_application(Application *app, gpointer user_data)
 
   _generate_filter(self, app->filter_expr);
   _generate_parser(self, app->parser_expr);
+  _generate_filterx(self, app->filterx_expr);
   _generate_action(self, app);
   g_string_append_printf(self->block,
                          "            #End Application %s\n", app->super.name);
@@ -175,7 +194,7 @@ _generate_framing(AppParserGenerator *self, GlobalConfig *cfg)
         g_string_append(self->block, "        channel {\n");
 
       g_string_append(self->block,
-                      "            filter { tags('.app.doesnotexist'); };\n"
+                      "            filterx { false; };\n"
                       "        };\n");
     }
   else
@@ -190,7 +209,7 @@ _generate_framing(AppParserGenerator *self, GlobalConfig *cfg)
 static void
 _generate_empty_frame(AppParserGenerator *self)
 {
-  g_string_append(self->block, "channel { filter { tags('.app.doesnotexist'); }; };");
+  g_string_append(self->block, "channel { filterx { false; }; };");
 }
 
 void

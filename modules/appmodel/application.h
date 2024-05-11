@@ -33,10 +33,12 @@ typedef struct _Application
   AppModelObject super;
   gchar *filter_expr;
   gchar *parser_expr;
+  gchar *filterx_expr;
 } Application;
 
 void application_set_filter(Application *self, const gchar *filter_expr);
 void application_set_parser(Application *self, const gchar *parser_expr);
+void application_set_filterx(Application *self, const gchar *parser_expr);
 
 Application *application_new(const gchar *name, const gchar *topic);
 

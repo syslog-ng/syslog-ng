@@ -84,6 +84,7 @@ application_options
 application_option
 	: KW_FILTER _block_content_context_push LL_BLOCK _block_content_context_pop  { application_set_filter($<ptr>0, $3); free($3); }
 	| KW_PARSER _block_content_context_push LL_BLOCK _block_content_context_pop  { application_set_parser($<ptr>0, $3); free($3); }
+	| KW_FILTERX _block_content_context_push LL_BLOCK _block_content_context_pop  {	application_set_filterx($<ptr>0, $3); free($3); }
 	;
 
 /* INCLUDE_RULES */

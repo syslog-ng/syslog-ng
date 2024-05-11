@@ -37,12 +37,20 @@ application_set_parser(Application *self, const gchar *parser_expr)
   self->parser_expr = g_strdup(parser_expr);
 }
 
+void
+application_set_filterx(Application *self, const gchar *filterx_expr)
+{
+  g_free(self->filterx_expr);
+  self->filterx_expr = g_strdup(filterx_expr);
+}
+
 static void
 application_free(AppModelObject *s)
 {
   Application *self = (Application *) s;
   g_free(self->filter_expr);
   g_free(self->parser_expr);
+  g_free(self->filterx_expr);
 }
 
 Application *
