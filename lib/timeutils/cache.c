@@ -305,31 +305,42 @@ get_cached_realtime_sec(void)
   return (time_t) now.tv_sec;
 }
 
+static time_t
+_calculate_and_adjust_mktime_result_based_on_cache(struct tm *tm)
+{
+  /* our cached value is valid for 1 hour, as we cache the min==sec==0 value
+   * for every second */
+  int sec = tm->tm_sec;
+  int min = tm->tm_min;
+  *tm = cache.mktime.mutated_key;
+  tm->tm_sec = sec;
+  tm->tm_min = min;
+  return cache.mktime.value + tm->tm_min * 60 + tm->tm_sec;
+}
+
 time_t
 cached_mktime(struct tm *tm)
 {
   _validate_timeutils_cache();
-  if (G_LIKELY(tm->tm_sec == cache.mktime.key.tm_sec &&
-               tm->tm_min == cache.mktime.key.tm_min &&
-               tm->tm_hour == cache.mktime.key.tm_hour &&
+  if (G_LIKELY(tm->tm_hour == cache.mktime.key.tm_hour &&
                tm->tm_mday == cache.mktime.key.tm_mday &&
                tm->tm_mon == cache.mktime.key.tm_mon &&
                tm->tm_year == cache.mktime.key.tm_year &&
                tm->tm_isdst == cache.mktime.key.tm_isdst))
     {
-      *tm = cache.mktime.mutated_key;
-      return cache.mktime.value;
+      return _calculate_and_adjust_mktime_result_based_on_cache(tm);
     }
 
-  /* we need to store the incoming value first, as mktime() might change the
-   * fields in *tm, for instance in the daylight saving transition hour */
-  cache.mktime.key = *tm;
-  cache.mktime.value = mktime(tm);
+  /* we need to store both the incoming value (key) and the one mutated by
+   * mktime(), as mktime() might change the fields in *tm for instance in
+   * the daylight saving transition hour */
+  cache.mktime.key = cache.mktime.mutated_key = *tm;
 
-  /* the result we yield consists of both the return value and the mutated
-   * key, so we need to save both */
-  cache.mktime.mutated_key = *tm;
-  return cache.mktime.value;
+  /* let's cache the top of the hour */
+  cache.mktime.mutated_key.tm_sec = 0;
+  cache.mktime.mutated_key.tm_min = 0;
+  cache.mktime.value = mktime(&cache.mktime.mutated_key);
+  return _calculate_and_adjust_mktime_result_based_on_cache(tm);
 }
 
 void
