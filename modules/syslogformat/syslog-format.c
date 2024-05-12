@@ -270,7 +270,7 @@ _syslog_format_parse_timestamp(LogMessage *msg, UnixTime *stamp,
       result = scan_rfc5424_timestamp(data, length, &wct);
     }
 
-  if ((parse_flags & LP_NO_PARSE_DATE) == 0)
+  if (result && (parse_flags & LP_NO_PARSE_DATE) == 0)
     {
       convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(&wct, stamp, recv_timezone_ofs);
 
