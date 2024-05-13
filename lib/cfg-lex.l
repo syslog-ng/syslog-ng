@@ -348,7 +348,7 @@ filterx_word	[^ \#'"/\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 
     /* and this is the version in filterx, which only allows "traditional" identifiers */
 <filterx>[a-zA-Z][_a-zA-Z0-9]* 	   { return cfg_lexer_map_word_to_token(yyextra, yylval, yylloc, yytext); }
-<filterx>\$\{({filterx_word}+(\.)?)*{filterx_word}+\}   { yylval->cptr = strndup(yytext+2, strlen(yytext) - 3); return LL_MESSAGE_REF; }
+<filterx>\$\{([^}]+)\}   { yylval->cptr = strndup(yytext+2, strlen(yytext) - 3); return LL_MESSAGE_REF; }
 <INITIAL>\,	   	   ;
 
 <INITIAL,filterx>\"        {
