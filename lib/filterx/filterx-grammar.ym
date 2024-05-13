@@ -336,7 +336,8 @@ arguments
 	;
 
 argument
-	: expr
+	: expr					{ $$ = filterx_function_arg_new(NULL, $1); }
+	| string KW_ASSIGN expr			{ $$ = filterx_function_arg_new($1, $3); free($1); }
 	;
 
 literal: literal_object				{ $$ = filterx_literal_new(filterx_config_freeze_object(configuration, $1)); }

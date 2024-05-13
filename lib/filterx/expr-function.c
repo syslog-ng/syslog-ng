@@ -137,31 +137,79 @@ filterx_function_init_instance(FilterXFunction *s, const gchar *function_name)
 
 struct _FilterXFunctionArgs
 {
-  GList *positional_exprs;
+  GList *positional_args;
+  GHashTable *named_args;
 };
 
-/* Takes reference of positional_exprs. */
+/* Takes reference of value */
+FilterXFunctionArg *
+filterx_function_arg_new(const gchar *name, FilterXExpr *value)
+{
+  FilterXFunctionArg *self = g_new0(FilterXFunctionArg, 1);
+
+  self->name = g_strdup(name);
+  self->value = value;
+
+  return self;
+}
+
+static void
+filterx_function_arg_free(FilterXFunctionArg *self)
+{
+  g_free(self->name);
+  filterx_expr_unref(self->value);
+  g_free(self);
+}
+
+/* Takes reference of positional_args. */
 FilterXFunctionArgs *
-filterx_function_args_new(GList *positional_exprs)
+filterx_function_args_new(GList *args, GError **error)
 {
   FilterXFunctionArgs *self = g_new0(FilterXFunctionArgs, 1);
-  self->positional_exprs = positional_exprs;
+
+  self->named_args = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) filterx_expr_unref);
+
+  gboolean has_named = FALSE;
+  for (GList *elem = args; elem; elem = elem->next)
+    {
+      FilterXFunctionArg *arg = (FilterXFunctionArg *) elem->data;
+      if (!arg->name)
+        {
+          if (has_named)
+            {
+              g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                          "cannot set positional argument after a named argument");
+              filterx_function_args_free(self);
+              self = NULL;
+              goto exit;
+            }
+          self->positional_args = g_list_append(self->positional_args, filterx_expr_ref(arg->value));
+        }
+      else
+        {
+          g_hash_table_insert(self->named_args, g_strdup(arg->name), filterx_expr_ref(arg->value));
+          has_named = TRUE;
+        }
+    }
+
+exit:
+  g_list_free_full(args, (GDestroyNotify) filterx_function_arg_free);
   return self;
 }
 
 guint64
 filterx_function_args_len(FilterXFunctionArgs *self)
 {
-  return g_list_length(self->positional_exprs);
+  return g_list_length(self->positional_args);
 }
 
 FilterXExpr *
 filterx_function_args_get_expr(FilterXFunctionArgs *self, guint64 index)
 {
-  if (g_list_length(self->positional_exprs) <= index)
-    return FALSE;
+  if (g_list_length(self->positional_args) <= index)
+    return NULL;
 
-  return filterx_expr_ref((FilterXExpr *) g_list_nth_data(self->positional_exprs, index));
+  return filterx_expr_ref((FilterXExpr *) g_list_nth_data(self->positional_args, index));
 }
 
 FilterXObject *
@@ -176,13 +224,9 @@ filterx_function_args_get_object(FilterXFunctionArgs *self, guint64 index)
   return obj;
 }
 
-const gchar *
-filterx_function_args_get_literal_string(FilterXFunctionArgs *self, guint64 index, gsize *len)
+static const gchar *
+_get_literal_string_from_expr(FilterXExpr *expr, gsize *len)
 {
-  FilterXExpr *expr = filterx_function_args_get_expr(self, index);
-  if (!expr)
-    return NULL;
-
   FilterXObject *obj = NULL;
   const gchar *str = NULL;
 
@@ -197,11 +241,23 @@ filterx_function_args_get_literal_string(FilterXFunctionArgs *self, guint64 inde
 
   /*
    * We can unref both obj and expr, the underlying string will be kept alive as long as the literal expr is alive,
-   * which is kept alive in self->positional_args.
+   * which is kept alive in either in the positional or named args container.
    */
 
 error:
   filterx_object_unref(obj);
+  return str;
+}
+
+const gchar *
+filterx_function_args_get_literal_string(FilterXFunctionArgs *self, guint64 index, gsize *len)
+{
+  FilterXExpr *expr = filterx_function_args_get_expr(self, index);
+  if (!expr)
+    return NULL;
+
+  const gchar *str = _get_literal_string_from_expr(expr, len);
+
   filterx_expr_unref(expr);
   return str;
 }
@@ -230,10 +286,45 @@ error:
   return is_literal_null;
 }
 
+FilterXExpr *
+filterx_function_args_get_named_expr(FilterXFunctionArgs *self, const gchar *name)
+{
+  return filterx_expr_ref((FilterXExpr *) g_hash_table_lookup(self->named_args, name));
+}
+
+FilterXObject *
+filterx_function_args_get_named_object(FilterXFunctionArgs *self, const gchar *name, gboolean *exists)
+{
+  FilterXExpr *expr = filterx_function_args_get_named_expr(self, name);
+  *exists = !!expr;
+  if (!expr)
+    return NULL;
+
+  FilterXObject *obj = filterx_expr_eval(expr);
+  filterx_expr_unref(expr);
+  return obj;
+}
+
+const gchar *
+filterx_function_args_get_named_literal_string(FilterXFunctionArgs *self, const gchar *name, gsize *len,
+                                               gboolean *exists)
+{
+  FilterXExpr *expr = filterx_function_args_get_named_expr(self, name);
+  *exists = !!expr;
+  if (!expr)
+    return NULL;
+
+  const gchar *str = _get_literal_string_from_expr(expr, len);
+
+  filterx_expr_unref(expr);
+  return str;
+}
+
 void
 filterx_function_args_free(FilterXFunctionArgs *self)
 {
-  g_list_free_full(self->positional_exprs, (GDestroyNotify) filterx_expr_unref);
+  g_list_free_full(self->positional_args, (GDestroyNotify) filterx_expr_unref);
+  g_hash_table_unref(self->named_args);
   g_free(self);
 }
 
@@ -285,11 +376,13 @@ _lookup_function(GlobalConfig *cfg, const gchar *function_name, FilterXFunctionA
   return &func_expr->super;
 }
 
-/* NOTE: takes the references of objects passed in "arguments" */
+/* NOTE: takes the reference of "args_list" */
 FilterXExpr *
-filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *positional_args, GError **error)
+filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *args_list, GError **error)
 {
-  FilterXFunctionArgs *args = filterx_function_args_new(positional_args);
+  FilterXFunctionArgs *args = filterx_function_args_new(args_list, error);
+  if (!args)
+    return NULL;
 
   FilterXExpr *expr = _lookup_simple_function(cfg, function_name, args);
   if (expr)

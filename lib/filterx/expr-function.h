@@ -36,6 +36,11 @@ typedef struct _FilterXFunction
 } FilterXFunction;
 
 typedef struct _FilterXFunctionArgs FilterXFunctionArgs;
+typedef struct _FilterXFunctionArg
+{
+  gchar *name;
+  FilterXExpr *value;
+} FilterXFunctionArg;
 
 typedef FilterXFunction *(*FilterXFunctionCtor)(const gchar *, FilterXFunctionArgs *, GError **);
 
@@ -51,15 +56,19 @@ enum FilterXFunctionError
 void filterx_function_init_instance(FilterXFunction *s, const gchar *function_name);
 void filterx_function_free_method(FilterXFunction *s);
 
-FilterXFunctionArgs *filterx_function_args_new(GList *positional_exprs);
+FilterXFunctionArg *filterx_function_arg_new(const gchar *name, FilterXExpr *value);
+FilterXFunctionArgs *filterx_function_args_new(GList *args, GError **error);
 guint64 filterx_function_args_len(FilterXFunctionArgs *self);
 FilterXExpr *filterx_function_args_get_expr(FilterXFunctionArgs *self, guint64 index);
 FilterXObject *filterx_function_args_get_object(FilterXFunctionArgs *self, guint64 index);
 const gchar *filterx_function_args_get_literal_string(FilterXFunctionArgs *self, guint64 index, gsize *len);
 gboolean filterx_function_args_is_literal_null(FilterXFunctionArgs *self, guint64 index);
+FilterXExpr *filterx_function_args_get_named_expr(FilterXFunctionArgs *self, const gchar *name);
+FilterXObject *filterx_function_args_get_named_object(FilterXFunctionArgs *self, const gchar *name, gboolean *exists);
+const gchar *filterx_function_args_get_named_literal_string(FilterXFunctionArgs *self, const gchar *name,
+                                                            gsize *len, gboolean *exists);
 void filterx_function_args_free(FilterXFunctionArgs *self);
 
-FilterXExpr *filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *positional_args,
-                                     GError **error);
+FilterXExpr *filterx_function_lookup(GlobalConfig *cfg, const gchar *function_name, GList *args, GError **error);
 
 #endif

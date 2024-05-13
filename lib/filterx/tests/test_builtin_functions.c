@@ -143,7 +143,7 @@ Test(builtin_functions, test_builtin_function_ctors_lookup)
   cr_assert(ctor != NULL);
 
   // check dummy ctor as result
-  FilterXFunction *func_expr = ctor(TEST_BUILTIN_FUNCTION_NAME, filterx_function_args_new(NULL), NULL);
+  FilterXFunction *func_expr = ctor(TEST_BUILTIN_FUNCTION_NAME, filterx_function_args_new(NULL, NULL), NULL);
   cr_assert(func_expr != NULL);
 
   FilterXObject *res = filterx_expr_eval(&func_expr->super);
