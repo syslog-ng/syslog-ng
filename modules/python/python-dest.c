@@ -62,6 +62,7 @@ typedef struct
 typedef struct _PyLogDestination
 {
   PyObject_HEAD
+  PythonDestDriver *driver;
 } PyLogDestination;
 
 static PyTypeObject py_log_destination_type;
@@ -381,6 +382,10 @@ _py_init_bindings(PythonDestDriver *self)
                   evt_tag_str("class-repr", _py_object_repr(self->py.class, buf, sizeof(buf))));
 
     }
+  else
+    {
+      ((PyLogDestination *) self->py.instance)->driver = self;
+    }
 
   /* these are fast paths, store references to be faster */
   self->py.is_opened = _py_get_attr_or_null(self->py.instance, "is_opened");
@@ -459,6 +464,26 @@ _py_construct_message(PythonDestDriver *self, LogMessage *msg, PyObject **msg_ob
     }
 
   return TRUE;
+}
+
+static PyObject *
+py_log_destination_stats_written_bytes_add(PyObject *s, PyObject *args)
+{
+  if (!_py_is_log_destination(s))
+    {
+      msg_warning_once("stats_written_bytes_add() is not available in compatibility mode");
+      Py_RETURN_NONE;
+    }
+
+  PyLogDestination *self = (PyLogDestination *) s;
+
+  Py_ssize_t b;
+
+  if (!PyArg_ParseTuple(args, "n", &b))
+    return NULL;
+
+  log_threaded_dest_worker_written_bytes_add(&self->driver->super.worker.instance, (gsize) b);
+  Py_RETURN_NONE;
 }
 
 
@@ -632,6 +657,8 @@ python_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = python_dd_free;
   self->super.super.super.super.generate_persist_name = python_dd_format_persist_name;
 
+  self->super.metrics.raw_bytes_enabled = TRUE;
+
   self->super.worker.connect = python_dd_connect;
   self->super.worker.disconnect = python_dd_disconnect;
   self->super.worker.insert = python_dd_insert;
@@ -645,6 +672,12 @@ python_dd_new(GlobalConfig *cfg)
   return (LogDriver *)self;
 }
 
+static PyMethodDef py_log_destination_methods[] =
+{
+  { "stats_written_bytes_add", py_log_destination_stats_written_bytes_add, METH_VARARGS, "Update written_bytes statistics" },
+  {NULL}
+};
+
 static PyTypeObject py_log_destination_type =
 {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
@@ -654,6 +687,7 @@ static PyTypeObject py_log_destination_type =
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "The LogDestination class is a base class for custom Python destinations.",
   .tp_new = PyType_GenericNew,
+  .tp_methods = py_log_destination_methods,
   0,
 };
 
