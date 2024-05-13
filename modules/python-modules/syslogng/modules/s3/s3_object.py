@@ -790,16 +790,14 @@ class S3Object:
 
     def __list_pending_multiparts_in_s3(self) -> Optional[Set[str]]:
         uploads: Set[str] = set()
-        key_marker: str = ""
-        upload_id_marker: str = ""
+        pagination_options: Dict[str, str] = {}
 
         while True:
             try:
                 response: Dict[str, Any] = self.__client.list_multipart_uploads(
                     Bucket=self.bucket,
                     Prefix=self.target_key,
-                    KeyMarker=key_marker,
-                    UploadIdMarker=upload_id_marker,
+                    **pagination_options,
                 )
             except (ClientError, EndpointConnectionError) as e:
                 self.__logger.error(f"Failed to list multipart uploads: {self.bucket}/{self.key} => {e}")
@@ -810,8 +808,10 @@ class S3Object:
                     uploads.add(obj["Key"])
                 if not response["IsTruncated"]:
                     break
-                key_marker = response["NextKeyMarker"]
-                upload_id_marker = response["NextUploadIdMarker"]
+                pagination_options = {
+                        "KeyMarker": response["NextKeyMarker"],
+                        "UploadIdMarker": response["NextUploadIdMarker"],
+                }
             except KeyError:
                 self.__logger.error(
                     f"Failed to list multipart uploads: {self.bucket}/{self.key} => Unexpected response: {response}"
@@ -822,14 +822,14 @@ class S3Object:
 
     def __list_existing_objects_in_s3(self) -> Optional[Set[str]]:
         objects: Set[str] = set()
-        marker: str = ""
+        pagination_options: Dict[str, str] = {}
 
         while True:
             try:
                 response: Dict[str, Any] = self.__client.list_objects(
                     Bucket=self.bucket,
                     Prefix=self.target_key,
-                    Marker=marker,
+                    **pagination_options,
                 )
             except (ClientError, EndpointConnectionError) as e:
                 self.__logger.error(f"Failed to list objects: {self.bucket}/{self.key} => {e}")
@@ -840,7 +840,9 @@ class S3Object:
                     objects.add(obj["Key"])
                 if not response["IsTruncated"]:
                     break
-                marker = response["Contents"][-1]["Key"]
+                pagination_options = {
+                        "Marker": response["Contents"][-1]["Key"]
+                }
             except KeyError:
                 self.__logger.error(
                     f"Failed to list objects: {self.bucket}/{self.key} => Unexpected response: {response}"
