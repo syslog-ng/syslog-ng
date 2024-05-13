@@ -31,7 +31,7 @@
 #include "scratch-buffers.h"
 #include "utf8utils.h"
 
-#define FILTERX_FUNC_FORMAT_KV_USAGE "Usage: format_kv(kvs_dict, optional_value_separator, optional_pair_separator)"
+#define FILTERX_FUNC_FORMAT_KV_USAGE "Usage: format_kv(kvs_dict, value_separator=\"=\", pair_separator=\", \")"
 
 typedef struct FilterXFunctionFormatKV_
 {
@@ -125,15 +125,17 @@ _free(FilterXExpr *s)
 static gboolean
 _extract_value_separator_arg(FilterXFunctionFormatKV *self, FilterXFunctionArgs *args, GError **error)
 {
-  if (filterx_function_args_is_literal_null(args, 1))
+  gboolean exists;
+  gsize value_separator_len;
+  const gchar *value_separator = filterx_function_args_get_named_literal_string(args, "value_separator",
+                                 &value_separator_len, &exists);
+  if (!exists)
     return TRUE;
 
-  gsize value_separator_len;
-  const gchar *value_separator = filterx_function_args_get_literal_string(args, 1, &value_separator_len);
   if (!value_separator)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "value_separator must be a string literal or null. " FILTERX_FUNC_FORMAT_KV_USAGE);
+                  "value_separator must be a string literal. " FILTERX_FUNC_FORMAT_KV_USAGE);
       return FALSE;
     }
 
@@ -151,11 +153,20 @@ _extract_value_separator_arg(FilterXFunctionFormatKV *self, FilterXFunctionArgs 
 static gboolean
 _extract_pair_separator_arg(FilterXFunctionFormatKV *self, FilterXFunctionArgs *args, GError **error)
 {
-  if (filterx_function_args_is_literal_null(args, 2))
+  gboolean exists;
+  gsize pair_separator_len;
+  const gchar *pair_separator = filterx_function_args_get_named_literal_string(args, "pair_separator",
+                                &pair_separator_len, &exists);
+  if (!exists)
     return TRUE;
 
-  gsize pair_separator_len = 0;
-  const gchar *pair_separator = filterx_function_args_get_literal_string(args, 2, &pair_separator_len);
+  if (!pair_separator)
+    {
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "pair_separator must be a string literal. " FILTERX_FUNC_FORMAT_KV_USAGE);
+      return FALSE;
+    }
+
   if (pair_separator_len == 0)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
@@ -172,7 +183,7 @@ static gboolean
 _extract_arguments(FilterXFunctionFormatKV *self, FilterXFunctionArgs *args, GError **error)
 {
   gsize args_len = filterx_function_args_len(args);
-  if (args_len < 1 || args_len > 3)
+  if (args_len != 1)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
                   "invalid number of arguments. " FILTERX_FUNC_FORMAT_KV_USAGE);
@@ -187,14 +198,8 @@ _extract_arguments(FilterXFunctionFormatKV *self, FilterXFunctionArgs *args, GEr
       return FALSE;
     }
 
-  if (args_len < 2)
-    return TRUE;
-
   if (!_extract_value_separator_arg(self, args, error))
     return FALSE;
-
-  if (args_len < 3)
-    return TRUE;
 
   if (!_extract_pair_separator_arg(self, args, error))
     return FALSE;

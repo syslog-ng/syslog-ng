@@ -72,92 +72,67 @@ Test(filterx_func_format_kv, test_invalid_args)
 
   /* empty value_separator */
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_test_dict_new())));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("", -1))));
+  args = g_list_append(args, filterx_function_arg_new("value_separator", filterx_literal_new(filterx_string_new("",
+                                                      -1))));
   _assert_format_kv_init_fail(args);
   args = NULL;
 
   /* too long value_separator */
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_test_dict_new())));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("->", -1))));
+  args = g_list_append(args, filterx_function_arg_new("value_separator", filterx_literal_new(filterx_string_new("->",
+                                                      -1))));
   _assert_format_kv_init_fail(args);
   args = NULL;
 
   /* non-literal value_separator */
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_test_dict_new())));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_non_literal_new(filterx_string_new("=", -1))));
+  args = g_list_append(args, filterx_function_arg_new("value_separator", filterx_non_literal_new(filterx_string_new("=",
+                                                      -1))));
   _assert_format_kv_init_fail(args);
   args = NULL;
 
   /* non-string value_separator */
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_test_dict_new())));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_integer_new(42))));
+  args = g_list_append(args, filterx_function_arg_new("value_separator", filterx_literal_new(filterx_integer_new(42))));
   _assert_format_kv_init_fail(args);
   args = NULL;
 
   /* error value_separator */
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_test_dict_new())));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_error_expr_new()));
+  args = g_list_append(args, filterx_function_arg_new("value_separator", filterx_error_expr_new()));
   _assert_format_kv_init_fail(args);
   args = NULL;
 
   /* empty pair_separator */
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_test_dict_new())));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("=", -1))));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("", -1))));
+  args = g_list_append(args, filterx_function_arg_new("pair_separator", filterx_literal_new(filterx_string_new("", -1))));
   _assert_format_kv_init_fail(args);
   args = NULL;
 
   /* non-literal pair_separator */
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_test_dict_new())));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("=", -1))));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_non_literal_new(filterx_string_new("", -1))));
+  args = g_list_append(args, filterx_function_arg_new("pair_separator", filterx_non_literal_new(filterx_string_new("",
+                                                      -1))));
   _assert_format_kv_init_fail(args);
   args = NULL;
 
   /* non-string pair_separator */
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_test_dict_new())));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("=", -1))));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_integer_new(42))));
+  args = g_list_append(args, filterx_function_arg_new("pair_separator", filterx_literal_new(filterx_integer_new(42))));
   _assert_format_kv_init_fail(args);
   args = NULL;
 
   /* error pair_separator */
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_test_dict_new())));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("=", -1))));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_error_expr_new()));
+  args = g_list_append(args, filterx_function_arg_new("pair_separator", filterx_error_expr_new()));
   _assert_format_kv_init_fail(args);
   args = NULL;
 
   /* too_many_args */
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_test_dict_new())));
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("=", -1))));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new(", ", -1))));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("foobar", -1))));
   _assert_format_kv_init_fail(args);
   args = NULL;
-}
-
-Test(filterx_func_format_kv, test_optional_arguments)
-{
-  FilterXExpr *kvs = filterx_literal_new(filterx_json_object_new_from_repr("{\"foo\":\"bar\",\"bar\":\"baz\"}", -1));
-  GList *args = NULL;
-
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_expr_ref(kvs)));
-  _assert_format_kv(args, "foo=bar, bar=baz");
-  args = NULL;
-
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_expr_ref(kvs)));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_null_new())));
-  _assert_format_kv(args, "foo=bar, bar=baz");
-  args = NULL;
-
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_expr_ref(kvs)));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_null_new())));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_null_new())));
-  _assert_format_kv(args, "foo=bar, bar=baz");
-  args = NULL;
-
-  filterx_expr_unref(kvs);
 }
 
 Test(filterx_func_format_kv, test_full)
@@ -166,8 +141,10 @@ Test(filterx_func_format_kv, test_full)
   GList *args = NULL;
 
   args = g_list_append(args, filterx_function_arg_new(NULL, kvs));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("@", -1))));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new(" | ", -1))));
+  args = g_list_append(args, filterx_function_arg_new("value_separator", filterx_literal_new(filterx_string_new("@",
+                                                      -1))));
+  args = g_list_append(args, filterx_function_arg_new("pair_separator", filterx_literal_new(filterx_string_new(" | ",
+                                                      -1))));
   _assert_format_kv(args, "foo@bar | bar@baz");
 }
 
