@@ -84,8 +84,8 @@ Test(filterx_func_parse_kv, test_optional_value_separator_option_first_character
   GList *args = NULL;
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("foo@bar, bar@baz",
                                                       -1))));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("@#$",
-                                                      -1)))); // value separator
+  args = g_list_append(args, filterx_function_arg_new("value_separator", filterx_literal_new(filterx_string_new("@#$",
+                                                      -1))));
 
   GError *err = NULL;
   GError *args_err = NULL;
@@ -117,8 +117,8 @@ Test(filterx_func_parse_kv, test_optional_empty_value_separator_option)
   GList *args = NULL;
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("foo=bar, bar=baz",
                                                       -1))));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("",
-                                                      -1)))); // value separator
+  args = g_list_append(args, filterx_function_arg_new("value_separator", filterx_literal_new(filterx_string_new("",
+                                                      -1))));
 
   GError *err = NULL;
   GError *args_err = NULL;
@@ -138,9 +138,8 @@ Test(filterx_func_parse_kv, test_optional_pair_separator_option)
   GList *args = NULL;
   args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("foo=bar-=|=-bar=baz",
                                                       -1))));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_null_new()))); // value separator
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("-=|=-",
-                                                      -1)))); // pair separator
+  args = g_list_append(args, filterx_function_arg_new("pair_separator", filterx_literal_new(filterx_string_new("-=|=-",
+                                                      -1))));
 
   GError *err = NULL;
   GError *args_err = NULL;
@@ -172,10 +171,9 @@ Test(filterx_func_parse_kv, test_optional_stray_words_key_option)
   GList *args = NULL;
   args = g_list_append(args, filterx_function_arg_new(NULL,
                                                       filterx_literal_new(filterx_string_new("foo=bar, lookslikenonKV bar=baz", -1))));
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_null_new()))); // value separator
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_null_new()))); // pair separator
-  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("straywords",
-                                                      -1)))); // stray words
+  args = g_list_append(args, filterx_function_arg_new("stray_words_key",
+                                                      filterx_literal_new(filterx_string_new("straywords",
+                                                          -1))));
 
   GError *err = NULL;
   GError *args_err = NULL;

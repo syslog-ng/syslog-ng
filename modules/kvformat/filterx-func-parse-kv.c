@@ -34,24 +34,6 @@
 #include "parser/parser-expr.h"
 #include "scratch-buffers.h"
 
-#define PARSE_KV_OPTS_COUNT (4)
-
-enum parse_kv_opts
-{
-  PARSE_KV_OPTS_MSG = 0,
-  PARSE_KV_OPTS_VALUE_SEP = 1,
-  PARSE_KV_OPTS_PAIR_SEP = 2,
-  PARSE_KV_OPTS_STRAY_WORDS_KEY = 3,
-};
-
-static const gchar *parse_kv_opts_names[PARSE_KV_OPTS_COUNT] =
-{
-  "msg",
-  "value_separator",
-  "pair_separator",
-  "stray_words_key"
-};
-
 typedef struct FilterXFunctionParseKV_
 {
   FilterXFunction super;
@@ -87,43 +69,6 @@ _set_stray_words_key(FilterXFunctionParseKV *self, const gchar *value_name)
 {
   g_free(self->stray_words_key);
   self->stray_words_key = g_strdup(value_name);
-}
-
-static gboolean
-_apply_parse_kv_option(FilterXFunctionParseKV *self, int opt, const gchar *opt_val, GError **error)
-{
-  switch (opt)
-    {
-    case PARSE_KV_OPTS_VALUE_SEP:
-    {
-      if (strlen(opt_val) < 1)
-        {
-          g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                      "%s argument can not be empty. " FILTERX_FUNC_PARSE_KV_USAGE,
-                      parse_kv_opts_names[opt]);
-          return FALSE;
-        }
-      if (!_is_valid_separator_character(opt_val[0]))
-        {
-          g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                      "%s argument contains invalid separator character. " FILTERX_FUNC_PARSE_KV_USAGE,
-                      parse_kv_opts_names[opt]);
-          return FALSE;
-        }
-      _set_value_separator(self, opt_val[0]);
-      break;
-    }
-    case PARSE_KV_OPTS_PAIR_SEP:
-      _set_pair_separator(self, opt_val);
-      break;
-    case PARSE_KV_OPTS_STRAY_WORDS_KEY:
-      _set_stray_words_key(self, opt_val);
-      break;
-    default:
-      g_assert_not_reached();
-      break;
-    }
-  return TRUE;
 }
 
 gboolean
@@ -217,7 +162,7 @@ _free(FilterXExpr *s)
 }
 
 static FilterXExpr *
-_extract_parse_kv_msg_expr(FilterXFunctionArgs *args, GError **error)
+_extract_msg_expr_arg(FilterXFunctionArgs *args, GError **error)
 {
   FilterXExpr *msg_expr = filterx_function_args_get_expr(args, 0);
   if (!msg_expr)
@@ -231,49 +176,80 @@ _extract_parse_kv_msg_expr(FilterXFunctionArgs *args, GError **error)
 }
 
 static gboolean
-_extract_parse_kv_opts(FilterXFunctionParseKV *self, FilterXFunctionArgs *args, GError **error)
+_extract_optional_args(FilterXFunctionParseKV *self, FilterXFunctionArgs *args, GError **error)
 {
-  guint64 args_len = filterx_function_args_len(args);
+  const gchar *error_str = "";
+  gboolean exists;
+  gsize len;
+  const gchar *value;
 
-  for (guint i = 1; i < args_len; i++)
+  value = filterx_function_args_get_named_literal_string(args, "value_separator", &len, &exists);
+  if (exists)
     {
-      g_assert(i < PARSE_KV_OPTS_COUNT);
-
-      if (filterx_function_args_is_literal_null(args, i))
-        continue;
-
-      const gchar *arg_str = filterx_function_args_get_literal_string(args, i, NULL);
-      if (!arg_str)
+      if (len < 1)
         {
-          g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                      "%s argument must be string literal or null. " FILTERX_FUNC_PARSE_KV_USAGE,
-                      parse_kv_opts_names[i]);
-          return FALSE;
+          error_str = "value_separator argument can not be empty";
+          goto error;
         }
+      if (!value)
+        {
+          error_str = "value_separator argument must be string literal";
+          goto error;
+        }
+      if (!_is_valid_separator_character(value[0]))
+        {
+          error_str = "value_separator argument contains invalid separator character";
+          goto error;
+        }
+      _set_value_separator(self, value[0]);
+    }
 
-      if (!_apply_parse_kv_option(self, i, arg_str, error))
-        return FALSE;
+  value = filterx_function_args_get_named_literal_string(args, "pair_separator", &len, &exists);
+  if (exists)
+    {
+      if (!value)
+        {
+          error_str = "pair_separator argument must be string literal";
+          goto error;
+        }
+      _set_pair_separator(self, value);
+    }
+
+  value = filterx_function_args_get_named_literal_string(args, "stray_words_key", &len, &exists);
+  if (exists)
+    {
+      if (!value)
+        {
+          error_str = "stray_words_key argument must be string literal";
+          goto error;
+        }
+      _set_stray_words_key(self, value);
     }
 
   return TRUE;
+
+error:
+  g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+              "%s. %s", error_str, FILTERX_FUNC_PARSE_KV_USAGE);
+  return FALSE;
 }
 
 static gboolean
 _extract_args(FilterXFunctionParseKV *self, FilterXFunctionArgs *args, GError **error)
 {
   gsize args_len = filterx_function_args_len(args);
-  if (args_len < 1 || args_len > PARSE_KV_OPTS_COUNT)
+  if (args_len != 1)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
                   "invalid number of arguments. " FILTERX_FUNC_PARSE_KV_USAGE);
       return FALSE;
     }
 
-  self->msg = _extract_parse_kv_msg_expr(args, error);
+  self->msg = _extract_msg_expr_arg(args, error);
   if (!self->msg)
     return FALSE;
 
-  if (!_extract_parse_kv_opts(self, args, error))
+  if (!_extract_optional_args(self, args, error))
     return FALSE;
 
   return TRUE;

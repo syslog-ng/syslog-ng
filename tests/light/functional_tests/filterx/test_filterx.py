@@ -1188,36 +1188,10 @@ def test_parse_kv_default_option_set_is_skippable(config, syslog_ng):
     assert file_true.read_log() == '{"foo":"bar","bar":"baz"}\n'
 
 
-def test_parse_kv_default_options_are_nullable(config, syslog_ng):
-    (file_true, file_false) = create_config(
-        config, """
-    $MSG = parse_kv("foo=bar, thisisstray bar=baz", null, null);
-    """,
-    )
-    syslog_ng.start(config)
-
-    assert file_true.get_stats()["processed"] == 1
-    assert "processed" not in file_false.get_stats()
-    assert file_true.read_log() == '{"foo":"bar","bar":"baz"}\n'
-
-
-def test_parse_kv_opts_over_max_opt_are_skipped(config, syslog_ng):
-    (file_true, file_false) = create_config(
-        config, """
-    $MSG = parse_kv("foo=bar, bar=baz", null, null, null, null, null, null, null, null, null);
-    """,
-    )
-    syslog_ng.start(config)
-
-    assert file_true.get_stats()["processed"] == 1
-    assert "processed" not in file_false.get_stats()
-    assert file_true.read_log() == "{\"foo\":\"bar\",\"bar\":\"baz\"}\n"
-
-
 def test_parse_kv_value_separator(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-    $MSG = parse_kv("foo@bar, bar@baz", "@");
+    $MSG = parse_kv("foo@bar, bar@baz", value_separator="@");
     """,
     )
     syslog_ng.start(config)
@@ -1230,7 +1204,7 @@ def test_parse_kv_value_separator(config, syslog_ng):
 def test_parse_kv_value_separator_use_first_character(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-    $MSG = parse_kv("foo@bar, bar@baz", "@!$");
+    $MSG = parse_kv("foo@bar, bar@baz", value_separator="@!$");
     """,
     )
     syslog_ng.start(config)
@@ -1243,7 +1217,7 @@ def test_parse_kv_value_separator_use_first_character(config, syslog_ng):
 def test_parse_kv_pair_separator(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-    $MSG = parse_kv("foo=bar#bar=baz", null, "#");
+    $MSG = parse_kv("foo=bar#bar=baz", pair_separator="#");
     """,
     )
     syslog_ng.start(config)
@@ -1256,7 +1230,7 @@ def test_parse_kv_pair_separator(config, syslog_ng):
 def test_parse_kv_stray_words_value_name(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, """
-    $MSG = parse_kv("foo=bar, thisisstray bar=baz", null, null, "stray_words");
+    $MSG = parse_kv("foo=bar, thisisstray bar=baz", stray_words_key="stray_words");
     """,
     )
     syslog_ng.start(config)
