@@ -124,7 +124,8 @@ filterx_json_convert_json_to_object_cached(FilterXObject *self, FilterXWeakRef *
     return filterx_object_ref(filterx_obj);
 
   filterx_obj = _convert_json_to_object(self, root_container, jso);
-  filterx_json_associate_cached_object(jso, filterx_obj);
+  if (!filterx_object_is_frozen(self))
+    filterx_json_associate_cached_object(jso, filterx_obj);
   return filterx_obj;
 }
 

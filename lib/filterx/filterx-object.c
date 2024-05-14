@@ -112,17 +112,23 @@ filterx_object_new(FilterXType *type)
 gboolean
 filterx_object_freeze(FilterXObject *self)
 {
-  if (self->ref_cnt == FILTERX_OBJECT_MAGIC_BIAS)
+  if (filterx_object_is_frozen(self))
     return FALSE;
   g_assert(self->ref_cnt == 1);
   self->ref_cnt = FILTERX_OBJECT_MAGIC_BIAS;
   return TRUE;
 }
 
+gboolean
+filterx_object_is_frozen(FilterXObject *self)
+{
+  return self->ref_cnt == FILTERX_OBJECT_MAGIC_BIAS;
+}
+
 void
 filterx_object_unfreeze_and_free(FilterXObject *self)
 {
-  g_assert(self->ref_cnt == FILTERX_OBJECT_MAGIC_BIAS);
+  g_assert(filterx_object_is_frozen(self));
   self->ref_cnt = 1;
   filterx_object_unref(self);
 }
@@ -133,7 +139,7 @@ filterx_object_ref(FilterXObject *self)
   if (!self)
     return NULL;
 
-  if (self->ref_cnt == FILTERX_OBJECT_MAGIC_BIAS)
+  if (filterx_object_is_frozen(self))
     return self;
   self->ref_cnt++;
   return self;
@@ -145,7 +151,7 @@ filterx_object_unref(FilterXObject *self)
   if (!self)
     return;
 
-  if (self->ref_cnt == FILTERX_OBJECT_MAGIC_BIAS)
+  if (filterx_object_is_frozen(self))
     return;
 
   /* this asserts that the 16 bit wide thread_index suffices to hold a
