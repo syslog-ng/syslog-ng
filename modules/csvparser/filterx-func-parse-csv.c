@@ -36,7 +36,8 @@
 #include "scanner/csv-scanner/csv-scanner.h"
 #include "parser/parser-expr.h"
 #include "scratch-buffers.h"
-
+#include "str-utils.h"
+#include "csvparser.h"
 
 typedef struct FilterXFunctionParseCSV_
 {
@@ -45,61 +46,6 @@ typedef struct FilterXFunctionParseCSV_
   CSVScannerOptions options;
   FilterXExpr *columns;
 } FilterXFunctionParseCSV;
-
-#define STRINGIFY(lit) #lit
-#define NUM_MANDATORY_ARGS 1
-
-typedef enum FxFnParseCSVOpt_
-{
-  FxFnParseCSVOptColumns = NUM_MANDATORY_ARGS,
-  FxFnParseCSVOptDelimiters,
-  FxFnParseCSVOptDialect,
-  FxFnParseCSVOptGreedy,
-  FxFnParseCSVOptStripWhiteSpace,
-
-  FxFnParseCSVOptFirst = FxFnParseCSVOptDelimiters, // workaround, since columns need to parse on a different way yet (orig val: FxFnParseCSVOptColumns)
-  FxFnParseCSVOptLast = FxFnParseCSVOptStripWhiteSpace
-} FxFnParseCSVOpt;
-
-struct ArgumentDescriptor
-{
-  const gchar *name;
-  FilterXType *acceptable_type;
-};
-
-static const struct ArgumentDescriptor args_descs[FxFnParseCSVOptLast - FxFnParseCSVOptFirst + 1] =
-{
-  // {
-  //   .name = "columns",
-  //   .acceptable_type = &FILTERX_TYPE_NAME(json_array),
-  // },
-  {
-    .name = "delimiters",
-    .acceptable_type = &FILTERX_TYPE_NAME(string),
-  },
-  {
-    .name = "dialect",
-    .acceptable_type = &FILTERX_TYPE_NAME(string),
-  },
-  {
-    .name = "greedy",
-    .acceptable_type = &FILTERX_TYPE_NAME(boolean),
-  },
-  {
-    .name = "strip_whitespaces",
-    .acceptable_type = &FILTERX_TYPE_NAME(boolean),
-  },
-};
-
-#define NUM_CVS_SCANNER_DIALECTS 4
-
-static const gchar *parse_csv_dialect_enum_names[NUM_CVS_SCANNER_DIALECTS] =
-{
-  STRINGIFY(CSV_SCANNER_ESCAPE_NONE),
-  STRINGIFY(CSV_SCANNER_ESCAPE_BACKSLASH),
-  STRINGIFY(CSV_SCANNER_ESCAPE_BACKSLASH_WITH_SEQUENCES),
-  STRINGIFY(CSV_SCANNER_ESCAPE_DOUBLE_CHAR),
-};
 
 static gboolean
 _parse_columns(FilterXFunctionParseCSV *self, GList **col_names)
@@ -156,13 +102,14 @@ _eval(FilterXExpr *s)
   const gchar *input;
   if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(string)))
     input = filterx_string_get_value(obj, &len);
-  else if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(message_value)))
+  else if (filterx_object_is_type(obj, &FILTERX_TYPE_NAME(message_value))
+           && filterx_message_value_get_type(obj) == LM_VT_STRING)
     input = filterx_message_value_get_value(obj, &len);
   else
     goto exit;
 
-  FilterXObject *result = NULL;
-  GList *cols = NULL;
+  APPEND_ZERO(input, input, len);
+
   if (!_parse_columns(self, &cols))
     goto exit;
 
@@ -231,13 +178,13 @@ _free(FilterXExpr *s)
 }
 
 static FilterXExpr *
-_extract_parse_csv_msg_expr(GList *argument_expressions, GError **error)
+_extract_msg_expr(FilterXFunctionArgs *args, GError **error)
 {
-  FilterXExpr *msg_expr = filterx_expr_ref(((FilterXExpr *) argument_expressions->data));
+  FilterXExpr *msg_expr = filterx_function_args_get_expr(args, 0);
   if (!msg_expr)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "argument must be set: message. " FILTERX_FUNC_PARSE_CSV_USAGE);
+                  "argument must be set: msg_str. " FILTERX_FUNC_PARSE_CSV_USAGE);
       return NULL;
     }
 
@@ -245,135 +192,128 @@ _extract_parse_csv_msg_expr(GList *argument_expressions, GError **error)
 }
 
 static FilterXExpr *
-_extract_parse_csv_columns_expr(GList *argument_expressions, GError **error)
+_extract_columns_expr(FilterXFunctionArgs *args, GError **error)
 {
-  gsize arguments_len = argument_expressions ? g_list_length(argument_expressions) : 0;
-  if (arguments_len - NUM_MANDATORY_ARGS >= FxFnParseCSVOptColumns)
-    {
-      return filterx_expr_ref((FilterXExpr *) g_list_nth_data(argument_expressions, FxFnParseCSVOptColumns));
-    }
-  return NULL;
+  return filterx_function_args_get_named_expr(args, FILTERX_FUNC_PARSE_CSV_ARG_NAME_COLUMNS);
 }
 
 static gboolean
-_extract_parse_csv_opts(FilterXFunctionParseCSV *self, GList *argument_expressions, GError **error)
+_extract_opts(FilterXFunctionParseCSV *self, FilterXFunctionArgs *args, GError **error)
 {
-  gsize arguments_len = argument_expressions ? g_list_length(argument_expressions) : 0;
-  if (arguments_len < NUM_MANDATORY_ARGS)
-    {
-      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "invalid number of arguments. " FILTERX_FUNC_PARSE_CSV_USAGE);
-      return FALSE;
-    }
-
   guint32 opt_flags = self->options.flags;
 
-  FilterXObject *arg_obj = NULL;
-  int opt_id = FxFnParseCSVOptFirst;
-  for (GList *elem = g_list_nth(argument_expressions, opt_id); elem; elem = elem->next)
+  const gchar *error_str = "";
+  gboolean exists;
+  gsize len;
+  const gchar *value;
+  FilterXObject *obj;
+
+  value = filterx_function_args_get_named_literal_string(args, FILTERX_FUNC_PARSE_CSV_ARG_NAME_DELIMITERS, &len, &exists);
+  if (exists)
     {
-      if (opt_id > FxFnParseCSVOptLast)
-        break;
-
-      FilterXExpr *argument_expr = (FilterXExpr *)elem->data;
-      if (!argument_expr || !filterx_expr_is_literal(argument_expr))
+      if (len < 1)
         {
-          g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                      "'%s' argument must be string literal. " FILTERX_FUNC_PARSE_CSV_USAGE, args_descs[opt_id - FxFnParseCSVOptFirst].name);
-          return FALSE;
-        }
-
-      arg_obj = filterx_expr_eval(argument_expr);
-      if (!arg_obj)
-        {
-          g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                      "unable to parse argument '%s'. " FILTERX_FUNC_PARSE_CSV_USAGE, args_descs[opt_id - FxFnParseCSVOptFirst].name);
-          return FALSE;
-        }
-
-      // optional args must be nullable
-      if (filterx_object_is_type(arg_obj, &FILTERX_TYPE_NAME(null)))
-        goto next;
-
-
-      const gchar *opt_str = NULL;
-      gboolean opt_bool = FALSE;
-      if (!filterx_object_is_type(arg_obj, args_descs[opt_id - FxFnParseCSVOptFirst].acceptable_type))
-        {
-          g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                      "'%s' argument must be string literal " FILTERX_FUNC_PARSE_CSV_USAGE, args_descs[opt_id - FxFnParseCSVOptFirst].name);
+          error_str = FILTERX_FUNC_PARSE_CSV_ARG_NAME_DELIMITERS " can not be empty";
           goto error;
         }
-      if (filterx_object_is_type(arg_obj, &FILTERX_TYPE_NAME(string)))
+      if (!value)
         {
-          opt_str = filterx_string_get_value(arg_obj, NULL);
-          if (!opt_str)
-            {
-              g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                          "'%s' argument must be string literal " FILTERX_FUNC_PARSE_CSV_USAGE, args_descs[opt_id - FxFnParseCSVOptFirst].name);
-              goto error;
-            }
+          error_str = FILTERX_FUNC_PARSE_CSV_ARG_NAME_DELIMITERS " must be a string literal";
+          goto error;
         }
-      else if (filterx_object_is_type(arg_obj, &FILTERX_TYPE_NAME(boolean)))
-        opt_bool = filterx_object_truthy(arg_obj);
+      csv_scanner_options_set_delimiters(&self->options, value);
+    }
 
+  value = filterx_function_args_get_named_literal_string(args, FILTERX_FUNC_PARSE_CSV_ARG_NAME_DIALECT, &len, &exists);
+  if (exists)
+    {
+      if (len < 1)
+        {
+          error_str = FILTERX_FUNC_PARSE_CSV_ARG_NAME_DIALECT " can not be empty";
+          goto error;
+        }
+      if (!value)
+        {
+          error_str = FILTERX_FUNC_PARSE_CSV_ARG_NAME_DIALECT " must be a string literal";
+          goto error;
+        }
+      CSVScannerDialect dialect = csv_parser_lookup_dialect(value);
+      if (dialect == -1)
+        {
+          error_str = FILTERX_FUNC_PARSE_CSV_ARG_NAME_DIALECT " argument must be one of: [" \
+                      "escape-none, " \
+                      "escape-backslash, " \
+                      "escape-backslash-with-sequences, " \
+                      "escape-double-char]";
+          goto error;
+        }
+      csv_scanner_options_set_dialect(&self->options, dialect);
+    }
 
-      switch (opt_id)
+  obj = filterx_function_args_get_named_object(args, FILTERX_FUNC_PARSE_CSV_ARG_NAME_GREEDY, &exists);
+  if (exists)
+    {
+      if (!obj)
         {
-        case FxFnParseCSVOptColumns:
-          // this should not happened
-          // the framework is not yet able to handle lists/dicts on parse phase
-          // do nothing, parse columns in eval temporary
-          break;
-        case FxFnParseCSVOptDelimiters:
-          csv_scanner_options_set_delimiters(&self->options, opt_str);
-          break;
-        case FxFnParseCSVOptDialect:
+          error_str = FILTERX_FUNC_PARSE_CSV_ARG_NAME_GREEDY " argument evaluation error";
+          goto error;
+        }
+      if (filterx_object_truthy(obj))
+        opt_flags |= CSV_SCANNER_GREEDY;
+      else
+        opt_flags &= ~CSV_SCANNER_GREEDY;
+      filterx_object_unref(obj);
+    }
+
+  obj = filterx_function_args_get_named_object(args, FILTERX_FUNC_PARSE_CSV_ARG_NAME_STRIP_WHITESPACES, &exists);
+  if (exists)
+    {
+      if (!obj)
         {
-          CSVScannerDialect dialect = -1;
-          for (int e = 0; e < NUM_CVS_SCANNER_DIALECTS; e++)
-            {
-              if (strcmp(parse_csv_dialect_enum_names[e], opt_str) == 0)
-                {
-                  dialect = e;
-                  break;
-                }
-            }
-          if (dialect != -1)
-            csv_scanner_options_set_dialect(&self->options, dialect);
-          break;
+          error_str = FILTERX_FUNC_PARSE_CSV_ARG_NAME_STRIP_WHITESPACES " argument evaluation error";
+          goto error;
         }
-        case FxFnParseCSVOptGreedy:
-          if (opt_bool)
-            opt_flags |= CSV_SCANNER_GREEDY;
-          else
-            opt_flags &= ~CSV_SCANNER_GREEDY;
-          break;
-        case FxFnParseCSVOptStripWhiteSpace:
-          if (opt_bool)
-            opt_flags |= CSV_SCANNER_STRIP_WHITESPACE;
-          else
-            opt_flags &= ~CSV_SCANNER_STRIP_WHITESPACE;
-          break;
-        default:
-          g_assert_not_reached();
-          break;
-        }
-next:
-      filterx_object_unref(arg_obj);
-      opt_id++;
+      if (filterx_object_truthy(obj))
+        opt_flags |= CSV_SCANNER_GREEDY;
+      else
+        opt_flags &= ~CSV_SCANNER_GREEDY;
+      filterx_object_unref(obj);
     }
 
   csv_scanner_options_set_flags(&self->options, opt_flags);
 
   return TRUE;
 error:
-  filterx_object_unref(arg_obj);
+  g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+              "%s. %s", error_str, FILTERX_FUNC_PARSE_CSV_USAGE);
   return FALSE;
 }
 
+static gboolean
+_extract_args(FilterXFunctionParseCSV *self, FilterXFunctionArgs *args, GError **error)
+{
+  gsize args_len = filterx_function_args_len(args);
+  if (args_len != 1)
+    {
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "invalid number of arguments. " FILTERX_FUNC_PARSE_CSV_USAGE);
+      return FALSE;
+    }
+
+  self->msg = _extract_msg_expr(args, error);
+  if (!self->msg)
+    return FALSE;
+
+  self->columns = _extract_columns_expr(args, error);
+
+  if (!_extract_opts(self, args, error))
+    return FALSE;
+
+  return TRUE;
+}
+
 FilterXExpr *
-filterx_function_parse_csv_new(const gchar *function_name, GList *argument_expressions, GError **error)
+filterx_function_parse_csv_new(const gchar *function_name, FilterXFunctionArgs *args, GError **error)
 
 {
   FilterXFunctionParseCSV *self = g_new0(FilterXFunctionParseCSV, 1);
@@ -385,22 +325,14 @@ filterx_function_parse_csv_new(const gchar *function_name, GList *argument_expre
   csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE);
   csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_NONE);
 
-  // there is no filterx context in construct phase, unable to parse json variable
-  // and json literals are not yet supported
-  if (!_extract_parse_csv_opts(self, argument_expressions, error))
+  if (!_extract_args(self, args, error))
     goto error;
 
-  self->columns = _extract_parse_csv_columns_expr(argument_expressions, error);
-
-  self->msg = _extract_parse_csv_msg_expr(argument_expressions, error);
-  if (!self->msg)
-    goto error;
-
-  g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_function_args_free(args);
   return &self->super.super;
 
 error:
-  g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_function_args_free(args);
   filterx_expr_unref(&self->super.super);
   return NULL;
 }
