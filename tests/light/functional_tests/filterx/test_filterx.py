@@ -1238,3 +1238,104 @@ def test_parse_kv_stray_words_value_name(config, syslog_ng):
     assert file_true.get_stats()["processed"] == 1
     assert "processed" not in file_false.get_stats()
     assert file_true.read_log() == "{\"foo\":\"bar\",\"bar\":\"baz\",\"stray_words\":\"thisisstray\"}\n"
+
+
+def test_parse_csv_default_arguments(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    custom_message = "foo bar baz";
+    $MSG = parse_csv(custom_message);
+    """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "foo,bar,baz\n"
+
+
+def test_parse_csv_optional_arg_columns(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    custom_message = "foo bar baz";
+    cols = json_array(["1st","2nd","3rd"]);
+    $MSG = parse_csv(custom_message, columns=cols);
+    """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == '{"1st":"foo","2nd":"bar","3rd":"baz"}\n'
+
+
+def test_parse_csv_optional_arg_delimiters(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    custom_message = "foo bar,baz.tik;tak!toe";
+    $MSG = parse_csv(custom_message, delimiters=" ,.");
+    """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == 'foo,bar,baz,tik;tak!toe\n'
+
+
+def test_parse_csv_optional_arg_non_greedy(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    custom_message = "foo bar baz tik tak toe";
+    cols = json_array(["1st","2nd","3rd"]);
+    $MSG = parse_csv(custom_message, columns=cols, greedy=false);
+    """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == '{"1st":"foo","2nd":"bar","3rd":"baz"}\n'
+
+
+def test_parse_csv_optional_arg_greedy(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    custom_message = "foo bar baz tik tak toe";
+    cols = json_array(["1st","2nd","3rd","rest"]);
+    $MSG = parse_csv(custom_message, columns=cols, greedy=true);
+    """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == '{"1st":"foo","2nd":"bar","3rd":"baz","rest":"tik tak toe"}\n'
+
+
+def test_parse_csv_optional_arg_strip_whitespace(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, """
+    custom_message = " foo   ,  bar  ,  baz, tik,   tak,    toe   ";
+    $MSG = parse_csv(custom_message, delimiters=",", strip_whitespace=true);
+    """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == 'foo,bar,baz,tik,tak,toe\n'
+
+
+def test_parse_csv_dialect(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, r"""
+    custom_message = "\"PTHREAD \\\"support initialized\"";
+    $MSG = format_json(parse_csv(custom_message, dialect="escape-backslash")); # ["PTHREAD \"support initialized"]
+    """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == '["PTHREAD \\"support initialized"]\n'
