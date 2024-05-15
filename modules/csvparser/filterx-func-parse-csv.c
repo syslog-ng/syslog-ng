@@ -96,7 +96,10 @@ _eval(FilterXExpr *s)
   if (!obj)
     return NULL;
 
+  CSVScanner scanner;
   gboolean ok = FALSE;
+  FilterXObject *result = NULL;
+  GList *cols = NULL;
 
   gsize len;
   const gchar *input;
@@ -121,7 +124,6 @@ _eval(FilterXExpr *s)
   else
     result = filterx_json_array_new_empty();
 
-  CSVScanner scanner;
   csv_scanner_init(&scanner, &self->options, input);
 
   GList *col = cols;
