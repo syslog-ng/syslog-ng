@@ -355,7 +355,7 @@ Test(expr_condition, test_condition_return_null_on_illegal_expr)
 {
   GList *stmts = g_list_append(NULL, _assert_assign_var("$control-value", _string_to_filterXExpr("matching")));
 
-  FilterXExpr *func = filterx_simple_function_new("test_fn", NULL, _fail_func);
+  FilterXExpr *func = filterx_simple_function_new("test_fn", filterx_function_args_new(NULL, NULL), _fail_func);
 
   FilterXExpr *cond = filterx_conditional_new_conditional_codeblock(func, stmts);
   FilterXObject *res = filterx_expr_eval(cond);
@@ -372,7 +372,7 @@ _dummy_func(GPtrArray *args)
 
 Test(expr_condition, test_condition_return_expr_result_on_missing_stmts)
 {
-  FilterXExpr *func = filterx_simple_function_new("test_fn", NULL, _dummy_func);
+  FilterXExpr *func = filterx_simple_function_new("test_fn", filterx_function_args_new(NULL, NULL), _dummy_func);
 
   FilterXExpr *cond = filterx_conditional_new_conditional_codeblock(func, NULL);
   FilterXObject *res = filterx_expr_eval(cond);

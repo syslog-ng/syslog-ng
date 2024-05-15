@@ -37,9 +37,11 @@
 Test(filterx_func_parse_kv, test_empty_args_error)
 {
   GError *err = NULL;
-  FilterXExpr *func = filterx_function_parse_kv_new("test", NULL, &err);
+  GError *args_err = NULL;
+  FilterXFunction *func = filterx_function_parse_kv_new("test", filterx_function_args_new(NULL, &args_err), &err);
 
   cr_assert_null(func);
+  cr_assert_null(args_err);
   cr_assert_not_null(err);
   cr_assert(strstr(err->message, FILTERX_FUNC_PARSE_KV_USAGE) != NULL);
   g_error_free(err);
@@ -49,14 +51,17 @@ Test(filterx_func_parse_kv, test_empty_args_error)
 Test(filterx_func_parse_kv, test_skipped_opts_causes_default_behaviour)
 {
   GList *args = NULL;
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("foo=bar, bar=baz", -1)));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("foo=bar, bar=baz",
+                                                      -1))));
 
   GError *err = NULL;
-  FilterXExpr *func = filterx_function_parse_kv_new("test", args, &err);
+  GError *args_err = NULL;
+  FilterXFunction *func = filterx_function_parse_kv_new("test", filterx_function_args_new(args, &args_err), &err);
 
+  cr_assert_null(args_err);
   cr_assert_null(err);
 
-  FilterXObject *obj = filterx_expr_eval(func);
+  FilterXObject *obj = filterx_expr_eval(&func->super);
 
   cr_assert_not_null(obj);
   cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(json_object)));
@@ -69,7 +74,7 @@ Test(filterx_func_parse_kv, test_skipped_opts_causes_default_behaviour)
   cr_assert(ok);
 
   cr_assert_str_eq(repr->str, "{\"foo\":\"bar\",\"bar\":\"baz\"}");
-  filterx_expr_unref(func);
+  filterx_expr_unref(&func->super);
   filterx_object_unref(obj);
   g_error_free(err);
 }
@@ -77,15 +82,19 @@ Test(filterx_func_parse_kv, test_skipped_opts_causes_default_behaviour)
 Test(filterx_func_parse_kv, test_optional_value_separator_option_first_character)
 {
   GList *args = NULL;
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("foo@bar, bar@baz", -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("@#$", -1))); // value separator
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("foo@bar, bar@baz",
+                                                      -1))));
+  args = g_list_append(args, filterx_function_arg_new("value_separator", filterx_literal_new(filterx_string_new("@#$",
+                                                      -1))));
 
   GError *err = NULL;
-  FilterXExpr *func = filterx_function_parse_kv_new("test", args, &err);
+  GError *args_err = NULL;
+  FilterXFunction *func = filterx_function_parse_kv_new("test", filterx_function_args_new(args, &args_err), &err);
 
+  cr_assert_null(args_err);
   cr_assert_null(err);
 
-  FilterXObject *obj = filterx_expr_eval(func);
+  FilterXObject *obj = filterx_expr_eval(&func->super);
 
   cr_assert_not_null(obj);
   cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(json_object)));
@@ -98,7 +107,7 @@ Test(filterx_func_parse_kv, test_optional_value_separator_option_first_character
   cr_assert(ok);
 
   cr_assert_str_eq(repr->str, "{\"foo\":\"bar\",\"bar\":\"baz\"}");
-  filterx_expr_unref(func);
+  filterx_expr_unref(&func->super);
   filterx_object_unref(obj);
   g_error_free(err);
 }
@@ -106,13 +115,17 @@ Test(filterx_func_parse_kv, test_optional_value_separator_option_first_character
 Test(filterx_func_parse_kv, test_optional_empty_value_separator_option)
 {
   GList *args = NULL;
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("foo=bar, bar=baz", -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("", -1))); // value separator
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("foo=bar, bar=baz",
+                                                      -1))));
+  args = g_list_append(args, filterx_function_arg_new("value_separator", filterx_literal_new(filterx_string_new("",
+                                                      -1))));
 
   GError *err = NULL;
-  FilterXExpr *func = filterx_function_parse_kv_new("test", args, &err);
+  GError *args_err = NULL;
+  FilterXFunction *func = filterx_function_parse_kv_new("test", filterx_function_args_new(args, &args_err), &err);
 
   cr_assert_null(func);
+  cr_assert_null(args_err);
   cr_assert_not_null(err);
 
   cr_assert(strstr(err->message, FILTERX_FUNC_PARSE_KV_USAGE) != NULL);
@@ -123,16 +136,19 @@ Test(filterx_func_parse_kv, test_optional_empty_value_separator_option)
 Test(filterx_func_parse_kv, test_optional_pair_separator_option)
 {
   GList *args = NULL;
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("foo=bar-=|=-bar=baz", -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_null_new())); // value separator
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("-=|=-", -1))); // pair separator
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("foo=bar-=|=-bar=baz",
+                                                      -1))));
+  args = g_list_append(args, filterx_function_arg_new("pair_separator", filterx_literal_new(filterx_string_new("-=|=-",
+                                                      -1))));
 
   GError *err = NULL;
-  FilterXExpr *func = filterx_function_parse_kv_new("test", args, &err);
+  GError *args_err = NULL;
+  FilterXFunction *func = filterx_function_parse_kv_new("test", filterx_function_args_new(args, &args_err), &err);
 
+  cr_assert_null(args_err);
   cr_assert_null(err);
 
-  FilterXObject *obj = filterx_expr_eval(func);
+  FilterXObject *obj = filterx_expr_eval(&func->super);
 
   cr_assert_not_null(obj);
   cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(json_object)));
@@ -145,7 +161,7 @@ Test(filterx_func_parse_kv, test_optional_pair_separator_option)
   cr_assert(ok);
 
   cr_assert_str_eq(repr->str, "{\"foo\":\"bar\",\"bar\":\"baz\"}");
-  filterx_expr_unref(func);
+  filterx_expr_unref(&func->super);
   filterx_object_unref(obj);
   g_error_free(err);
 }
@@ -153,17 +169,20 @@ Test(filterx_func_parse_kv, test_optional_pair_separator_option)
 Test(filterx_func_parse_kv, test_optional_stray_words_key_option)
 {
   GList *args = NULL;
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("foo=bar, lookslikenonKV bar=baz", -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_null_new())); // value separator
-  args = g_list_append(args, filterx_literal_new(filterx_null_new())); // pair separator
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("straywords", -1))); // stray words
+  args = g_list_append(args, filterx_function_arg_new(NULL,
+                                                      filterx_literal_new(filterx_string_new("foo=bar, lookslikenonKV bar=baz", -1))));
+  args = g_list_append(args, filterx_function_arg_new("stray_words_key",
+                                                      filterx_literal_new(filterx_string_new("straywords",
+                                                          -1))));
 
   GError *err = NULL;
-  FilterXExpr *func = filterx_function_parse_kv_new("test", args, &err);
+  GError *args_err = NULL;
+  FilterXFunction *func = filterx_function_parse_kv_new("test", filterx_function_args_new(args, &args_err), &err);
 
+  cr_assert_null(args_err);
   cr_assert_null(err);
 
-  FilterXObject *obj = filterx_expr_eval(func);
+  FilterXObject *obj = filterx_expr_eval(&func->super);
 
   cr_assert_not_null(obj);
   cr_assert(filterx_object_is_type(obj, &FILTERX_TYPE_NAME(json_object)));
@@ -176,7 +195,7 @@ Test(filterx_func_parse_kv, test_optional_stray_words_key_option)
   cr_assert(ok);
 
   cr_assert_str_eq(repr->str, "{\"foo\":\"bar\",\"bar\":\"baz\",\"straywords\":\"lookslikenonKV\"}");
-  filterx_expr_unref(func);
+  filterx_expr_unref(&func->super);
   filterx_object_unref(obj);
   g_error_free(err);
 }

@@ -212,17 +212,18 @@ Test(filterx_datetime, test_filterx_datetime_repr_isodate_Z)
 
 Test(filterx_datetime, test_filterx_datetime_strptime_with_null_args)
 {
-  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", NULL, NULL);
+  GError *error = NULL;
+  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", filterx_function_args_new(NULL, &error), NULL);
   cr_assert_null(func_expr);
 }
 
 Test(filterx_datetime, test_filterx_datetime_strptime_without_args)
 {
   GList *args = NULL;
-  args = g_list_append(args, NULL);
-  args = g_list_append(args, NULL);
+  args = g_list_append(args, filterx_function_arg_new(NULL, NULL));
+  args = g_list_append(args, filterx_function_arg_new(NULL, NULL));
 
-  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", args, NULL);
+  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", filterx_function_args_new(args, NULL), NULL);
   cr_assert_null(func_expr);
 }
 
@@ -230,9 +231,9 @@ Test(filterx_datetime, test_filterx_datetime_strptime_without_timefmt)
 {
   const gchar *test_time_str = "2024-04-08T10:11:12Z";
   GList *args = NULL;
-  args = g_list_append(args, filterx_literal_new(filterx_string_new(test_time_str, -1)));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new(test_time_str, -1))));
 
-  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", args, NULL);
+  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", filterx_function_args_new(args, NULL), NULL);
   cr_assert_null(func_expr);
 }
 
@@ -240,10 +241,11 @@ Test(filterx_datetime, test_filterx_datetime_strptime_non_matching_timefmt)
 {
   const gchar *test_time_str = "2024-04-08T10:11:12Z";
   GList *args = NULL;
-  args = g_list_append(args, filterx_literal_new(filterx_string_new(test_time_str, -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("non matching timefmt", -1)));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new(test_time_str, -1))));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("non matching timefmt",
+                                                      -1))));
 
-  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", args, NULL);
+  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", filterx_function_args_new(args, NULL), NULL);
   cr_assert(func_expr);
 
   FilterXObject *obj = filterx_expr_eval(&func_expr->super);
@@ -258,10 +260,11 @@ Test(filterx_datetime, test_filterx_datetime_strptime_matching_timefmt)
 {
   const gchar *test_time_str = "2024-04-08T10:11:12Z";
   GList *args = NULL;
-  args = g_list_append(args, filterx_literal_new(filterx_string_new(test_time_str, -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_string_new(datefmt_isodate, -1)));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new(test_time_str, -1))));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new(datefmt_isodate,
+                                                      -1))));
 
-  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", args, NULL);
+  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", filterx_function_args_new(args, NULL), NULL);
   cr_assert(func_expr);
 
   FilterXObject *obj = filterx_expr_eval(&func_expr->super);
@@ -280,12 +283,13 @@ Test(filterx_datetime, test_filterx_datetime_strptime_matching_nth_timefmt)
 {
   const gchar *test_time_str = "2024-04-08T10:11:12+01:00";
   GList *args = NULL;
-  args = g_list_append(args, filterx_literal_new(filterx_string_new(test_time_str, -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("bad format 1", -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("bad format 2", -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_string_new(datefmt_isodate, -1)));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new(test_time_str, -1))));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("bad format 1", -1))));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("bad format 2", -1))));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new(datefmt_isodate,
+                                                      -1))));
 
-  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", args, NULL);
+  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", filterx_function_args_new(args, NULL), NULL);
   cr_assert(func_expr);
 
   FilterXObject *obj = filterx_expr_eval(&func_expr->super);
@@ -304,12 +308,13 @@ Test(filterx_datetime, test_filterx_datetime_strptime_non_matching_nth_timefmt)
 {
   const gchar *test_time_str = "2024-04-08T10:11:12Z";
   GList *args = NULL;
-  args = g_list_append(args, filterx_literal_new(filterx_string_new(test_time_str, -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("bad format 1", -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("bad format 2", -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_string_new("non matching fmt", -1)));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new(test_time_str, -1))));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("bad format 1", -1))));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("bad format 2", -1))));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new("non matching fmt",
+                                                      -1))));
 
-  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", args, NULL);
+  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", filterx_function_args_new(args, NULL), NULL);
   cr_assert(func_expr);
 
   FilterXObject *obj = filterx_expr_eval(&func_expr->super);
@@ -324,11 +329,12 @@ Test(filterx_datetime, test_filterx_datetime_strptime_invalid_arg_type)
 {
   const gchar *test_time_str = "2024-04-08T10:11:12Z";
   GList *args = NULL;
-  args = g_list_append(args, filterx_literal_new(filterx_string_new(test_time_str, -1)));
-  args = g_list_append(args, filterx_literal_new(filterx_integer_new(1337)));
-  args = g_list_append(args, filterx_literal_new(filterx_string_new(datefmt_isodate, -1)));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new(test_time_str, -1))));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_integer_new(1337))));
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new(datefmt_isodate,
+                                                      -1))));
 
-  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", args, NULL);
+  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", filterx_function_args_new(args, NULL), NULL);
   cr_assert_null(func_expr);
 }
 
@@ -344,11 +350,11 @@ Test(filterx_datetime, test_filterx_datetime_strptime_with_non_literal_format)
 
   const gchar *test_time_str = "2024-04-08T10:11:12Z";
   GList *args = NULL;
-  args = g_list_append(args, filterx_literal_new(filterx_string_new(test_time_str, -1)));
-  args = g_list_append(args, format_expr);
+  args = g_list_append(args, filterx_function_arg_new(NULL, filterx_literal_new(filterx_string_new(test_time_str, -1))));
+  args = g_list_append(args, filterx_function_arg_new(NULL, format_expr));
 
-  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", args, NULL);
-  cr_assert_null(func_expr);
+  FilterXFunction *func_expr = filterx_function_strptime_new("strptime", filterx_function_args_new(args, NULL), NULL);
+  cr_assert_null(func_expr, "%p", func_expr);
 }
 
 static void

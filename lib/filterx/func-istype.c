@@ -64,57 +64,31 @@ _free(FilterXExpr *s)
 }
 
 static FilterXType *
-_extract_type(GList *argument_expressions, GError **error)
+_extract_type(FilterXFunctionArgs *args, GError **error)
 {
-  if (argument_expressions == NULL || g_list_length(argument_expressions) != 2)
+  const gchar *type_str = filterx_function_args_get_literal_string(args, 1, NULL);
+  if (!type_str)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "invalid number of arguments. " FILTERX_FUNC_ISTYPE_USAGE);
+                  "argument must be string literal: type. " FILTERX_FUNC_ISTYPE_USAGE);
       return NULL;
     }
 
-  FilterXExpr *type_expr = (FilterXExpr *) argument_expressions->next->data;
-  if (!type_expr || !filterx_expr_is_literal(type_expr))
-    {
-      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "argument must be string literal: type_str. " FILTERX_FUNC_ISTYPE_USAGE);
-      return NULL;
-    }
-
-  FilterXObject *type_obj = filterx_expr_eval(type_expr);
-  if (!type_obj)
-    {
-      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "failed to evaluate argument: type_str. " FILTERX_FUNC_ISTYPE_USAGE);
-      return NULL;
-    }
-
-  gsize type_len;
-  const gchar *type = filterx_string_get_value(type_obj, &type_len);
-  filterx_object_unref(type_obj);
-
+  FilterXType *type = filterx_type_lookup(type_str);
   if (!type)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "argument must be string literal: type_str. " FILTERX_FUNC_ISTYPE_USAGE);
+                  "unknown type: %s. " FILTERX_FUNC_ISTYPE_USAGE, type_str);
       return NULL;
     }
 
-  FilterXType *fxtype = filterx_type_lookup(type);
-  if (!fxtype)
-    {
-      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                  "unknown type: %s. " FILTERX_FUNC_ISTYPE_USAGE, type);
-      return NULL;
-    }
-
-  return fxtype;
+  return type;
 }
 
 static FilterXExpr *
-_extract_object_expr(GList *argument_expressions, GError **error)
+_extract_object_expr(FilterXFunctionArgs *args, GError **error)
 {
-  FilterXExpr *object_expr = filterx_expr_ref(((FilterXExpr *) argument_expressions->data));
+  FilterXExpr *object_expr = filterx_function_args_get_expr(args, 0);
   if (!object_expr)
     {
       g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
@@ -125,27 +99,43 @@ _extract_object_expr(GList *argument_expressions, GError **error)
   return object_expr;
 }
 
+static gboolean
+_extract_args(FilterXFunctionIsType *self, FilterXFunctionArgs *args, GError **error)
+{
+  if (filterx_function_args_len(args) != 2)
+    {
+      g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
+                  "invalid number of arguments. " FILTERX_FUNC_ISTYPE_USAGE);
+      return FALSE;
+    }
+
+  self->object_expr = _extract_object_expr(args, error);
+  if (!self->object_expr)
+    return FALSE;
+
+  self->type = _extract_type(args, error);
+  if (!self->type)
+    return FALSE;
+
+  return TRUE;
+}
+
 FilterXFunction *
-filterx_function_istype_new(const gchar *function_name, GList *argument_expressions, GError **error)
+filterx_function_istype_new(const gchar *function_name, FilterXFunctionArgs *args, GError **error)
 {
   FilterXFunctionIsType *self = g_new0(FilterXFunctionIsType, 1);
   filterx_function_init_instance(&self->super, function_name);
   self->super.super.eval = _eval;
   self->super.super.free_fn = _free;
 
-  self->type = _extract_type(argument_expressions, error);
-  if (!self->type)
+  if (!_extract_args(self, args, error))
     goto error;
 
-  self->object_expr = _extract_object_expr(argument_expressions, error);
-  if (!self->object_expr)
-    goto error;
-
-  g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_function_args_free(args);
   return &self->super;
 
 error:
-  g_list_free_full(argument_expressions, (GDestroyNotify) filterx_expr_unref);
+  filterx_function_args_free(args);
   filterx_expr_unref(&self->super.super);
   return NULL;
 }
