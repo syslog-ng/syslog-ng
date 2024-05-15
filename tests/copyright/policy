@@ -268,6 +268,8 @@ modules/kvformat/filterx-func-parse-kv\.[ch]
 modules/kvformat/filterx-func-format-kv\.[ch]
 modules/kvformat/tests/test_filterx_func_parse_kv.c
 modules/kvformat/tests/test_filterx_func_format_kv.c
+modules/csvparser/filterx-func-parse-csv\.[ch]
+modules/csvparser/tests/test_filterx_func_parse_csv.c
 
 ###########################################################################
 # These files are GPLd with Balabit origin.
