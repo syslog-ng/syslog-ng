@@ -85,14 +85,18 @@ DestinationWorker::init()
   auto credentials = owner->credentials_builder.build();
   if (!credentials)
     {
-      msg_error("Error querying Loki credentials", log_pipe_location_tag((LogPipe *) this->super->super.owner));
+      msg_error("Error querying Loki credentials",
+                evt_tag_str("url", owner->get_url().c_str()),
+                log_pipe_location_tag((LogPipe *) this->super->super.owner));
       return false;
     }
 
   this->channel = ::grpc::CreateCustomChannel(owner->get_url(), credentials, args);
   if (!this->channel)
     {
-      msg_error("Error creating Loki gRPC channel", log_pipe_location_tag((LogPipe *) this->super->super.owner));
+      msg_error("Error creating Loki gRPC channel",
+                evt_tag_str("url", owner->get_url().c_str()),
+                log_pipe_location_tag((LogPipe *) this->super->super.owner));
       return false;
     }
 
@@ -110,6 +114,8 @@ DestinationWorker::deinit()
 bool
 DestinationWorker::connect()
 {
+  DestinationDriver *owner = this->get_owner();
+
   this->prepare_batch();
 
   msg_debug("Connecting to Loki", log_pipe_location_tag((LogPipe *) this->super->super.owner));
@@ -118,7 +124,12 @@ DestinationWorker::connect()
     std::chrono::system_clock::now() + std::chrono::seconds(10);
 
   if (!this->channel->WaitForConnected(connect_timeout))
-    return false;
+    {
+      msg_error("Time out connecting to Loki",
+                evt_tag_str("url", owner->get_url().c_str()),
+                log_pipe_location_tag((LogPipe *) this->super->super.owner));
+      return false;
+    }
 
   this->connected = true;
   return true;
@@ -240,6 +251,7 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
   if (!status.ok())
     {
       msg_error("Error sending Loki batch", evt_tag_str("error", status.error_message().c_str()),
+                evt_tag_str("url", owner->get_url().c_str()),
                 evt_tag_str("details", status.error_details().c_str()),
                 log_pipe_location_tag((LogPipe *) this->super->super.owner));
       result = LTR_ERROR;
