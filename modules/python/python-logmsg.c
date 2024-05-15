@@ -35,6 +35,7 @@
 #include "msg-format.h"
 #include "scratch-buffers.h"
 #include "cfg.h"
+#include "gsockaddr.h"
 
 #include <datetime.h>
 
@@ -353,6 +354,28 @@ py_log_message_get_pri(PyLogMessage *self, PyObject *args, PyObject *kwrds)
 }
 
 static PyObject *
+py_log_message_set_source_ipaddress(PyLogMessage *self, PyObject *args, PyObject *kwrds)
+{
+  const gchar *ip;
+  Py_ssize_t ip_length;
+  guint port = 0;
+
+  static const gchar *kwlist[] = {"ip", "port", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwrds, "z#|I", (gchar **) kwlist, &ip, &ip_length, &port))
+    return NULL;
+
+  if (!ip)
+    Py_RETURN_FALSE;
+
+  GSockAddr *saddr = g_sockaddr_inet_or_inet6_new(ip, (guint16) port);
+  if (!saddr)
+    Py_RETURN_FALSE;
+
+  log_msg_set_saddr(self->msg, saddr);
+  Py_RETURN_TRUE;
+}
+
+static PyObject *
 py_log_message_set_timestamp(PyLogMessage *self, PyObject *args, PyObject *kwrds)
 {
   PyObject *py_timestamp;
@@ -442,6 +465,7 @@ static PyMethodDef py_log_message_methods[] =
   { "get_as_str", (PyCFunction)py_log_message_get_as_str, METH_VARARGS | METH_KEYWORDS, "Get value as string" },
   { "set_pri", (PyCFunction)py_log_message_set_pri, METH_VARARGS | METH_KEYWORDS, "Set syslog priority" },
   { "get_pri", (PyCFunction)py_log_message_get_pri, METH_VARARGS | METH_KEYWORDS, "Get syslog priority" },
+  { "set_source_ipaddress", (PyCFunction)py_log_message_set_source_ipaddress, METH_VARARGS | METH_KEYWORDS, "Set source address" },
   { "set_timestamp", (PyCFunction)py_log_message_set_timestamp, METH_VARARGS | METH_KEYWORDS, "Set timestamp" },
   { "get_timestamp", (PyCFunction)py_log_message_get_timestamp, METH_VARARGS | METH_KEYWORDS, "Get timestamp" },
   { "set_bookmark", (PyCFunction)py_log_message_set_bookmark, METH_VARARGS | METH_KEYWORDS, "Set bookmark" },
