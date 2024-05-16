@@ -54,6 +54,17 @@ _marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 }
 
 static gboolean
+_repr(FilterXObject *s, GString *repr)
+{
+  FilterXJsonObject *self = (FilterXJsonObject *) s;
+
+  const gchar *json_repr = json_object_to_json_string_ext(self->jso, JSON_C_TO_STRING_PLAIN);
+  g_string_append(repr, json_repr);
+
+  return TRUE;
+}
+
+static gboolean
 _map_to_json(FilterXObject *s, struct json_object **jso, FilterXObject **assoc_object)
 {
   FilterXJsonObject *self = (FilterXJsonObject *) s;
@@ -253,6 +264,7 @@ FILTERX_DEFINE_TYPE(json_object, FILTERX_TYPE_NAME(dict),
                     .truthy = _truthy,
                     .free_fn = _free,
                     .marshal = _marshal,
+                    .repr = _repr,
                     .map_to_json = _map_to_json,
                     .clone = _clone,
                     .list_factory = filterx_json_array_new_empty,
