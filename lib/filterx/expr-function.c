@@ -28,6 +28,7 @@
 #include "filterx/filterx-eval.h"
 #include "filterx/expr-literal.h"
 #include "filterx/object-string.h"
+#include "filterx/object-primitive.h"
 #include "filterx/object-null.h"
 #include "plugin.h"
 #include "cfg.h"
@@ -318,6 +319,40 @@ filterx_function_args_get_named_literal_string(FilterXFunctionArgs *self, const 
 
   filterx_expr_unref(expr);
   return str;
+}
+
+gboolean
+filterx_function_args_get_named_literal_boolean(FilterXFunctionArgs *self, const gchar *name, gboolean *exists,
+                                                gboolean *error)
+{
+  *error = FALSE;
+
+  FilterXExpr *expr = filterx_function_args_get_named_expr(self, name);
+  *exists = !!expr;
+  if (!expr)
+    return FALSE;
+
+  FilterXObject *obj = NULL;
+  gboolean value = FALSE;
+
+  if (!filterx_expr_is_literal(expr))
+    goto error;
+
+  obj = filterx_expr_eval(expr);
+  if (!obj)
+    goto error;
+
+  if (!filterx_boolean_unwrap(obj, &value))
+    goto error;
+
+  goto success;
+
+error:
+  *error = TRUE;
+success:
+  filterx_object_unref(obj);
+  filterx_expr_unref(expr);
+  return value;
 }
 
 void
