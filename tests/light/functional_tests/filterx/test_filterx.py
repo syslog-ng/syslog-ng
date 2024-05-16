@@ -1238,3 +1238,28 @@ def test_parse_kv_stray_words_value_name(config, syslog_ng):
     assert file_true.get_stats()["processed"] == 1
     assert "processed" not in file_false.get_stats()
     assert file_true.read_log() == "{\"foo\":\"bar\",\"bar\":\"baz\",\"stray_words\":\"thisisstray\"}\n"
+
+
+def test_unset_empties(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, r"""
+    dict = json({"foo": "", "bar": 0, "baz": 0.0, "almafa": null, "kortefa": {"a":{"s":{"d":{}}}}, "szilvafa": [[[]]]});
+    defaults_dict = dict;
+    explicit_dict = dict;
+    unset_empties(defaults_dict);
+    unset_empties(explicit_dict, recursive=true, string=true, number=true, null=true, dict=true, list=true);
+
+    list = json_array(["", 0, 0.0, null, {"a":{"s":{"d":{}}}}, [[[]]]]);
+    defaults_list = list;
+    explicit_list = list;
+    unset_empties(defaults_list);
+    unset_empties(explicit_list, recursive=true, string=true, number=true, null=true, dict=true, list=true);
+
+    $MSG = json_array([defaults_dict, explicit_dict, defaults_list, explicit_list]);
+    """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "[{},{},[],[]]\n"
