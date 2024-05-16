@@ -64,7 +64,7 @@ In which case the resulting message will be:
 ```
 name1=value1 name2=value2
 ```
-For a brief introduction to configuring the syslog-ng application, see the [quickstart guide](https://support.oneidentity.com/technical-documents/syslog-ng-open-source-edition/administration-guide/the-syslog-ng-ose-quick-start-guide).
+For a brief introduction to configuring the syslog-ng application, see the [quickstart guide](https://syslog-ng.github.io/admin-guide/040_Quick-start_guide/README).
 
 
 ## Features
@@ -144,7 +144,7 @@ run `./autogen.sh` to generate it.
 Some of the functionality of syslog-ng is compiled only if the required
 development libraries are present. The configure script displays a
 summary of enabled features at the end of its run.
-For details, see the [syslog-ng compiling instructions](https://support.oneidentity.com/technical-documents/syslog-ng-open-source-edition/administration-guide/installing-syslog-ng).
+For details, see the [syslog-ng compiling instructions](https://syslog-ng.github.io/admin-guide/030_Installing_syslog-ng/000_Compiling_syslog-ng_from_source).
 
 
 ## Installation from binaries
@@ -219,7 +219,7 @@ Nightly builds can be used for testing purposes (obtaining new features and bugf
 syslog-ng is available as a Fedora package that you can install using
 dnf:
 
-    # dnf install syslog-ng
+# dnf install syslog-ng
 
 You can download packages for the latest versions from [here](https://copr.fedoraproject.org/coprs/czanik/).
 
@@ -255,15 +255,14 @@ for running syslog-ng in Kubernetes.
 
 ## Documentation
 
-The official documentation of the latest released version of syslog-ng Open
-Source Edition provided by One Identity is available
-[here](https://www.syslog-ng.com/technical-documents/doc/syslog-ng-open-source-edition/3.26/administration-guide).
-For earlier versions, see the syslog-ng [Documentation Page](https://www.syslog-ng.com/technical-documents).
+For the latest, markdown based version, see the [syslog-ng documentation](https://syslog-ng.github.io) center.
+The official documentation of the earlier versions of syslog-ng Open Source Edition provided by One Identity is available
+[here](https://www.syslog-ng.com/technical-documents/doc/syslog-ng-open-source-edition/).
 
 An alternative, markdown based, improved, community maintained version of the
 documentation is available [as AxoSyslog Core documentation](https://axoflow.com/docs/axosyslog-core/).
-[source code](https://github.com/axoflow/axosyslog-core-docs/)
+[Source code](https://github.com/axoflow/axosyslog-core-docs/)
 
 ## Contributing
 
-If you would like to contribute to syslog-ng, to fix a bug or create a new module, the [syslog-ng gitbook](https://syslog-ng.gitbooks.io/getting-started/content/) helps you take the first steps to working with the code base.
+If you would like to contribute to syslog-ng, to fix a bug or create a new module, the [syslog-ng pages](https://syslog-ng.github.io/dev-guide/README) helps you take the first steps to working with the code base.
