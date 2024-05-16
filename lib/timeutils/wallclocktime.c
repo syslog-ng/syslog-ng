@@ -723,6 +723,13 @@ recurse:
                   i++;
                   continue;
                 }
+              if (i == 1 && *bp == ':')
+                {
+                  /* colon after the first digit, behave as if we had two digits */
+                  bp++;
+                  i++;
+                  continue;
+                }
               if (i == 2 && *bp == ':')
                 {
                   bp++;
@@ -733,9 +740,11 @@ recurse:
           switch (i)
             {
             case 2:
+              /* just hours, HH */
               offs *= 3600;
               break;
             case 4:
+              /* full offset HH:MM */
               i = offs % 100;
               offs /= 100;
               if (i >= 60)
