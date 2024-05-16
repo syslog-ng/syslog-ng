@@ -143,7 +143,8 @@ _free(FilterXExpr *s)
   FilterXFuntionCacheJsonFile *self = (FilterXFuntionCacheJsonFile *) s;
 
   g_free(self->filepath);
-  filterx_object_unfreeze_and_free(self->cached_json);
+  if (self->cached_json)
+    filterx_object_unfreeze_and_free(self->cached_json);
   filterx_function_free_method(&self->super);
 }
 
