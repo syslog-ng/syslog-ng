@@ -218,16 +218,23 @@ _add_repeated_KeyValue_fields(LogMessage *msg, const char *key, const RepeatedPt
   _add_repeated_KeyValue_fields_with_prefix(msg, key_buffer, 0, key, key_values);
 }
 
-static std::string
-_extract_hostname(const grpc::string &peer)
+static void
+_set_hostname_from_attributes(LogMessage *msg, const RepeatedPtrField<KeyValue> &key_values)
 {
-  size_t first = peer.find_first_of(':');
-  size_t last = peer.find_last_of(':');
+  for (const KeyValue &kv : key_values)
+    {
+      if (kv.key() == "host.name")
+        {
+          if (kv.value().value_case() != AnyValue::kStringValue)
+            return;
 
-  if (first != grpc::string::npos && last != grpc::string::npos)
-    return peer.substr(first + 1, last - first - 1);
+          std::string hostname = kv.value().string_value();
+          if (!hostname.empty())
+            log_msg_set_value(msg, LM_V_HOST, hostname.c_str(), hostname.length());
 
-  return "";
+          return;
+        }
+    }
 }
 
 static GSockAddr *
@@ -262,7 +269,7 @@ _extract_saddr(const grpc::string &peer)
 }
 
 static bool
-_parse_metadata(LogMessage *msg)
+_parse_metadata(LogMessage *msg, bool set_hostname)
 {
   char number_buf[G_ASCII_DTOSTR_BUF_SIZE];
   gssize len;
@@ -282,6 +289,8 @@ _parse_metadata(LogMessage *msg)
 
   /* .otel.resource.attributes */
   _add_repeated_KeyValue_fields(msg, ".otel.resource.attributes", resource.attributes());
+  if (set_hostname)
+    _set_hostname_from_attributes(msg, resource.attributes());
 
   /* .otel.resource.dropped_attributes_count */
   std::snprintf(number_buf, G_N_ELEMENTS(number_buf), "%" PRIu32, resource.dropped_attributes_count());
@@ -1113,11 +1122,6 @@ syslogng::grpc::otel::ProtobufParser::store_raw_metadata(LogMessage *msg, const 
 {
   std::string serialized;
 
-  /* HOST */
-  std::string hostname = _extract_hostname(peer);
-  if (hostname.length())
-    log_msg_set_value(msg, LM_V_HOST, hostname.c_str(), hostname.length());
-
   msg->saddr = _extract_saddr(peer);
 
   /* .otel_raw.resource */
@@ -1393,7 +1397,9 @@ syslogng::grpc::otel::ProtobufParser::process(LogMessage *msg)
 
   gssize len;
   LogMessageValueType log_msg_type;
-  const gchar *type = log_msg_get_value_with_type(msg, logmsg_handle::RAW_TYPE, &len, &log_msg_type);
+
+  /* _parse_metadata() may invalidate the returned char pointer, so a copy is made with std::string */
+  std::string type = log_msg_get_value_with_type(msg, logmsg_handle::RAW_TYPE, &len, &log_msg_type);
 
   if (log_msg_type == LM_VT_NULL)
     {
@@ -1409,17 +1415,20 @@ syslogng::grpc::otel::ProtobufParser::process(LogMessage *msg)
       return false;
     }
 
-  if (strncmp(type, "log", len) == 0)
+  if (!_parse_metadata(msg, this->set_host))
+    return false;
+
+  if (type == "log")
     {
       if (!_parse_log_record(msg))
         return false;
     }
-  else if (strncmp(type, "metric", len) == 0)
+  else if (type == "metric")
     {
       if (!_parse_metric(msg))
         return false;
     }
-  else if (strncmp(type, "span", len) == 0)
+  else if (type == "span")
     {
       if (!_parse_span(msg))
         return false;
@@ -1428,12 +1437,9 @@ syslogng::grpc::otel::ProtobufParser::process(LogMessage *msg)
     {
       msg_error("OpenTelemetry: unexpected .otel_raw.type",
                 evt_tag_msg_reference(msg),
-                evt_tag_str("type", type));
+                evt_tag_str("type", type.c_str()));
       return false;
     }
-
-  if (!_parse_metadata(msg))
-    return false;
 
   _unset_raw_fields(msg);
 
@@ -1456,6 +1462,12 @@ _clone(LogPipe *s)
   log_parser_clone_settings(&self->super, &cloned->super);
 
   return &cloned->super.super;
+}
+
+void
+otel_protobuf_parser_set_hostname(LogParser *s, gboolean set_hostname)
+{
+  get_ProtobufParser(s)->set_hostname(set_hostname);
 }
 
 static void

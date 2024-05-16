@@ -74,6 +74,7 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_BATCH_BYTES
 %token KW_CONCURRENT_REQUESTS
 %token KW_CHANNEL_ARGS
+%token KW_SET_HOSTNAME
 
 %type <ptr> source_otel
 %type <ptr> parser_otel
@@ -143,6 +144,7 @@ parser_otel_options
 
 parser_otel_option
   : parser_opt
+  | KW_SET_HOSTNAME '(' yesno ')' { otel_protobuf_parser_set_hostname(last_parser, $3); }
   ;
 
 destination_otel
@@ -294,4 +296,3 @@ grpc_client_credentials_builder_alts_target_service_accounts
 /* INCLUDE_RULES */
 
 %%
-

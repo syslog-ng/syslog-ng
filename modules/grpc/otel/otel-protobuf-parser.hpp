@@ -53,6 +53,11 @@ class ProtobufParser
 public:
   bool process(LogMessage *msg);
 
+  void set_hostname(bool s)
+  {
+    this->set_host = s;
+  }
+
   static void store_raw_metadata(LogMessage *msg, const ::grpc::string &peer,
                                  const Resource &resource, const std::string &resource_schema_url,
                                  const InstrumentationScope &scope, const std::string &scope_schema_url);
@@ -69,6 +74,9 @@ private:
   static void set_syslog_ng_macros(LogMessage *msg, const KeyValueList &macros);
   static void set_syslog_ng_address(LogMessage *msg, GSockAddr **sa, const KeyValueList &addr);
   static void parse_syslog_ng_tags(LogMessage *msg, const std::string &tags_as_str);
+
+private:
+  bool set_host = true;
 };
 
 }

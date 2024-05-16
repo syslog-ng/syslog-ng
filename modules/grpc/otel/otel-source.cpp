@@ -121,6 +121,12 @@ syslogng::grpc::otel::SourceDriver::init()
   if (fetch_limit == -1)
     fetch_limit = super->super.worker_options.super.init_window_size;
 
+  /*
+   * syslog-ng-otlp(): the original HOST is always kept
+   * opentelemetry(): there is no parsing in this source, HOST always falls back to saddr (LogSource)
+   */
+  super->super.worker_options.super.keep_hostname = TRUE;
+
   return log_threaded_source_driver_init_method(&super->super.super.super.super);
 }
 
