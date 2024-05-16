@@ -76,6 +76,8 @@ _convert_json_to_object(FilterXObject *self, FilterXWeakRef *root_container, str
 {
   switch (json_object_get_type(jso))
     {
+    case json_type_null:
+      return filterx_null_new();
     case json_type_double:
       return filterx_double_new(json_object_get_double(jso));
     case json_type_boolean:
@@ -132,6 +134,10 @@ filterx_json_convert_json_to_object_cached(FilterXObject *self, FilterXWeakRef *
 void
 filterx_json_associate_cached_object(struct json_object *jso, FilterXObject *filterx_obj)
 {
+  /* null JSON value turns into NULL pointer. */
+  if (!jso)
+    return;
+
   filterx_eval_store_weak_ref(filterx_obj);
 
   /* we are not storing a reference in userdata to avoid circular

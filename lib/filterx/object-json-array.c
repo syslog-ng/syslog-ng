@@ -117,7 +117,11 @@ _get_subscript(FilterXList *s, guint64 index)
 
   struct json_object *jso = json_object_array_get_idx(self->jso, index);
   if (!jso)
-    return NULL;
+    {
+      /* NULL is returned if the stored value is null. */
+      if (json_object_array_length(self->jso) > index + 1)
+        return NULL;
+    }
 
   return filterx_json_convert_json_to_object_cached(&s->super, &self->root_container, jso);
 }
