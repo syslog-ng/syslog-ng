@@ -243,6 +243,37 @@ Test(wallclocktime, test_strptime_percent_Z_allows_timezone_to_be_optional)
   cr_expect_str_eq(end, "+3");
 }
 
+Test(wallclocktime, test_strptime_percent_Z_numeric_formats)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gchar *end;
+
+  /* NOTE: %Z accepts the same formats as %z, except that it allows the timezone to be optional */
+
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %Z", "Jan 16 2019 18:23:12 +02:00");
+  cr_expect(*end == '\0');
+  cr_expect(wct.wct_gmtoff == 2*3600, "Unexpected timezone offset: %ld, expected 2*3600", wct.wct_gmtoff);
+
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %Z", "Jan 16 2019 18:23:12 +0200");
+  cr_expect(*end == '\0');
+  cr_expect(wct.wct_gmtoff == 2*3600, "Unexpected timezone offset: %ld, expected 2*3600", wct.wct_gmtoff);
+
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %Z", "Jan 16 2019 18:23:12 +2:00");
+  cr_expect(*end == '\0');
+  cr_expect(wct.wct_gmtoff == 2*3600, "Unexpected timezone offset: %ld, expected 2*3600", wct.wct_gmtoff);
+
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %Z", "Jan 16 2019 18:23:12 +200");
+  cr_expect(*end != '\0');
+
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %Z", "Jan 16 2019 18:23:12 +02");
+  cr_expect(*end == '\0');
+  cr_expect(wct.wct_gmtoff == 2*3600, "Unexpected timezone offset: %ld, expected 2*3600", wct.wct_gmtoff);
+
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %Z", "Jan 16 2019 18:23:12 +2");
+  cr_expect(*end != '\0');
+
+}
+
 Test(wallclocktime, test_strptime_zone_parsing_takes_daylight_saving_into_account_when_using_the_local_timezone)
 {
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
