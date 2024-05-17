@@ -106,9 +106,10 @@ _assign(FilterXExpr *s, FilterXObject *new_value)
       /* NOTE: we pass NULL as initial_value to make sure the new variable
        * is considered changed due to the assignment */
 
-      variable = filterx_scope_register_variable(scope, self->handle, NULL);
       if (self->declared)
-        filterx_variable_mark_declared(variable);
+        variable = filterx_scope_register_declared_variable(scope, self->handle, NULL);
+      else
+        variable = filterx_scope_register_variable(scope, self->handle, NULL);
     }
 
   /* this only clones mutable objects */

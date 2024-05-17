@@ -41,7 +41,6 @@ FilterXObject *filterx_variable_get_value(FilterXVariable *v);
 void filterx_variable_set_value(FilterXVariable *v, FilterXObject *new_value);
 void filterx_variable_unset_value(FilterXVariable *v);
 gboolean filterx_variable_is_set(FilterXVariable *v);
-void filterx_variable_mark_declared(FilterXVariable *v);
 
 /*
  * FilterXScope represents variables in a filterx scope.
@@ -65,6 +64,9 @@ FilterXVariable *filterx_scope_lookup_variable(FilterXScope *self, FilterXVariab
 FilterXVariable *filterx_scope_register_variable(FilterXScope *self,
                                                  FilterXVariableHandle handle,
                                                  FilterXObject *initial_value);
+FilterXVariable *filterx_scope_register_declared_variable(FilterXScope *self,
+                                                          FilterXVariableHandle handle,
+                                                          FilterXObject *initial_value);
 
 /* copy on write */
 void filterx_scope_write_protect(FilterXScope *self);

@@ -53,7 +53,6 @@ filterx_variable_is_floating(FilterXVariable *v)
   return filterx_variable_handle_is_floating(v->handle);
 }
 
-
 static NVHandle
 filterx_variable_get_nv_handle(FilterXVariable *v)
 {
@@ -86,11 +85,6 @@ filterx_variable_is_set(FilterXVariable *v)
   return v->value != NULL;
 }
 
-void
-filterx_variable_mark_declared(FilterXVariable *v)
-{
-  v->declared = TRUE;
-}
 
 static void
 _variable_free(FilterXVariable *v)
@@ -102,9 +96,7 @@ struct _FilterXScope
 {
   GAtomicCounter ref_cnt;
   GArray *variables;
-  gboolean write_protected;
-  gboolean dirty;
-  gint generation;
+  guint32 generation:20, write_protected, dirty, syncable;
 };
 
 static gboolean
@@ -177,10 +169,10 @@ filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle)
   return NULL;
 }
 
-FilterXVariable *
-filterx_scope_register_variable(FilterXScope *self,
-                                FilterXVariableHandle handle,
-                                FilterXObject *initial_value)
+static FilterXVariable *
+_register_variable(FilterXScope *self,
+                   FilterXVariableHandle handle,
+                   FilterXObject *initial_value)
 {
   FilterXVariable v, *v_slot;
 
@@ -206,12 +198,39 @@ filterx_scope_register_variable(FilterXScope *self,
 
   v.handle = handle;
   v.assigned = FALSE;
-  v.declared = FALSE;
   v.value = filterx_object_ref(initial_value);
   v.generation = self->generation;
   g_array_insert_val(self->variables, v_index, v);
 
   return &g_array_index(self->variables, FilterXVariable, v_index);
+}
+
+FilterXVariable *
+filterx_scope_register_variable(FilterXScope *self,
+                                FilterXVariableHandle handle,
+                                FilterXObject *initial_value)
+{
+  FilterXVariable *v = _register_variable(self, handle, initial_value);
+  v->declared = FALSE;
+
+  /* the scope needs to be synced with the message if it holds a
+   * message-tied variable (e.g.  $MSG) */
+  if (!filterx_variable_handle_is_floating(handle))
+    self->syncable = TRUE;
+  return v;
+}
+
+FilterXVariable *
+filterx_scope_register_declared_variable(FilterXScope *self,
+                                         FilterXVariableHandle handle,
+                                         FilterXObject *initial_value)
+
+{
+  g_assert(filterx_variable_handle_is_floating(handle));
+
+  FilterXVariable *v = _register_variable(self, handle, initial_value);
+  v->declared = TRUE;
+  return v;
 }
 
 /*
@@ -226,6 +245,13 @@ filterx_scope_sync(FilterXScope *self, LogMessage *msg)
     {
       msg_trace("Filterx sync: not syncing as scope is not dirty",
                 evt_tag_printf("scope", "%p", self));
+      return;
+    }
+  if (!self->syncable)
+    {
+      msg_trace("Filterx sync: not syncing as there are no variables to sync",
+                evt_tag_printf("scope", "%p", self));
+      self->dirty = FALSE;
       return;
     }
 
@@ -245,17 +271,16 @@ filterx_scope_sync(FilterXScope *self, LogMessage *msg)
        */
       if (filterx_variable_is_floating(v))
         {
-          if (!v->declared)
-            {
-              msg_trace("Filterx sync: undeclared floating variable, unsetting",
-                        evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
-              filterx_variable_set_value(v, NULL);
-            }
-          else
-            {
-              msg_trace("Filterx sync: declared floating variable, keeping it",
-                        evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
-            }
+          /* we could unset undeclared, floating values here as we are
+           * transitioning to the next filterx block.  But this is also
+           * addressed by the variable generation counter mechanism.  This
+           * means that we will unset those if some expr actually refers to
+           * it.  Also, we skip the entire sync exercise, unless we have
+           * message tied values, so we need to work even if floating
+           * variables are not synced.
+           *
+           * With that said, let's not clear these.
+           */
         }
       else if (v->value == NULL)
         {
@@ -326,10 +351,12 @@ filterx_scope_clone(FilterXScope *other)
 
   if (other->variables->len > 0)
     self->dirty = other->dirty;
+  self->syncable = other->syncable;
   msg_trace("Filterx clone finished",
             evt_tag_printf("scope", "%p", self),
             evt_tag_printf("other", "%p", other),
             evt_tag_int("dirty", self->dirty),
+            evt_tag_int("syncable", self->syncable),
             evt_tag_int("write_protected", self->write_protected));
   /* NOTE: we don't clone weak references, those only relate to mutable
    * objects, which we are cloning anyway */
