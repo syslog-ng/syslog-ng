@@ -115,7 +115,14 @@ filterx_json_convert_json_to_object_cached(FilterXObject *self, FilterXWeakRef *
        *
        * Changing the value of the double to the same value, ditches this,
        * but only if necessary.
+       *
+       * This only works starting with 0.14, before that json_object_set_double()
+       * does not drop the string user data, so we cannot check if it is our
+       * filterx object or the string, which means we cannot cache doubles.
        */
+
+      if (JSON_C_MAJOR_VERSION == 0 && JSON_C_MINOR_VERSION < 14)
+        return _convert_json_to_object(self, root_container, jso);
 
       json_object_set_double(jso, json_object_get_double(jso));
     }
