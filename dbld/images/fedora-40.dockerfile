@@ -1,7 +1,7 @@
-FROM fedora:39
-LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <bazsi77@gmail.com>"
+FROM fedora:40
+LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
 ENV OS_DISTRIBUTION=fedora
-ENV OS_DISTRIBUTION_CODE_NAME=39
+ENV OS_DISTRIBUTION_CODE_NAME=40
 
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
