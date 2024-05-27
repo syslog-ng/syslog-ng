@@ -94,7 +94,8 @@ _process_counter_if_matching(StatsCluster *sc, gint type, StatsCounterItem *coun
 static void
 _process_counters(StatsCluster *sc, gpointer user_data /*, gboolean* cancelled */)
 {
-  stats_cluster_foreach_counter(sc, _process_counter_if_matching, user_data /*, cancelled*/);
+  if (stats_cluster_key_is_legacy(&sc->key))
+    stats_cluster_foreach_counter(sc, _process_counter_if_matching, user_data /*, cancelled*/);
 }
 
 static gboolean
