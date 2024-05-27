@@ -387,10 +387,9 @@ _log_dest_driver_unregister_counters(LogDestDriver *self)
   stats_unlock();
 }
 
-gboolean
-log_dest_driver_deinit_method(LogPipe *s)
+static inline void
+_log_dest_driver_release_queues(LogDestDriver *self)
 {
-  LogDestDriver *self = (LogDestDriver *) s;
   GList *l, *l_next;
 
   for (l = self->queues; l; l = l_next)
@@ -404,7 +403,16 @@ log_dest_driver_deinit_method(LogPipe *s)
        * which automatically frees the ref on the list too */
       log_dest_driver_release_queue(self, log_queue_ref(q));
     }
+
   g_assert(self->queues == NULL);
+}
+
+gboolean
+log_dest_driver_deinit_method(LogPipe *s)
+{
+  LogDestDriver *self = (LogDestDriver *) s;
+
+  _log_dest_driver_release_queues(self);
 
   _log_dest_driver_unregister_counters(self);
 
