@@ -439,12 +439,9 @@ void
 log_dest_driver_free(LogPipe *s)
 {
   LogDestDriver *self = (LogDestDriver *) s;
-  GList *l;
 
-  for (l = self->queues; l; l = l->next)
-    {
-      log_queue_unref((LogQueue *) l->data);
-    }
-  g_list_free(self->queues);
+  /* half-initialized pipes can't release their queue in deinit() */
+  _log_dest_driver_release_queues(self);
+
   log_driver_free(s);
 }
