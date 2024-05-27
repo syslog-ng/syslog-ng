@@ -295,6 +295,7 @@ stats_register_associated_counter(StatsCluster *sc, gint type, StatsCounterItem 
   g_assert(sc->dynamic);
 
   *counter = stats_cluster_track_counter(sc, type);
+  _update_counter_name_if_needed(*counter, sc, type);
 }
 
 void
