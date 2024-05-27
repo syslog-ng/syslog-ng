@@ -1352,7 +1352,11 @@ _create_workers(LogThreadedDestDriver *self, gint stats_level, StatsClusterKeyBu
 
       self->workers[self->created_workers] = dw;
       if (!_acquire_worker_queue(dw, stats_level, driver_sck_builder))
-        return FALSE;
+        {
+          /* failed worker needs to be destroyed */
+          self->created_workers++;
+          return FALSE;
+        }
     }
 
   return TRUE;
