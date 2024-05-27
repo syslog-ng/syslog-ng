@@ -165,8 +165,6 @@ class S3ObjectPersist:
                 "compress",
                 "compresslevel",
                 "chunk-size",
-                "server-side-encryption",
-                "kms-key",
                 "storage-class",
                 "finished",
                 "upload-id",
