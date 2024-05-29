@@ -6,13 +6,13 @@ image:
   repository: balabit/syslog-ng
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "3.27.1"
+  tag: "4.7.1"
 
 # By default, the network() driver binds to 0.0.0.0, meaning that it listens 
 # on every available IPV4 interface on the TCP/601 port.
 
 config: |
-  @version: 3.27
+  @version: 4.7
   @include "scl.conf"
   options {
     # enable or disable directory creation for destination files
