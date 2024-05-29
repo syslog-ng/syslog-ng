@@ -16,12 +16,12 @@ spec:
   {{- end }}
   ports:
     - name: udp-port
-      port: 514
-      targetPort: 514
-      protocol: UDP
-    - name: tcp-port
       port: 601
       targetPort: 601
+      protocol: UDP
+    - name: tcp-port
+      port: 514
+      targetPort: 514
       protocol: TCP 
   selector:
     {{- include "syslog-ng.selectorLabels" . | nindent 4 }}

@@ -34,10 +34,10 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
           - name: tcp-port
-            containerPort: 601
+            containerPort: 514
             protocol: TCP
           - name: udp-port
-            containerPort: 514
+            containerPort: 601
             protocol: UDP
           volumeMounts:
           - mountPath: /etc/syslog-ng/syslog-ng.conf
