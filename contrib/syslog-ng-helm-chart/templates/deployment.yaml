@@ -33,10 +33,16 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-          - name: tcp-port
+          - name: tcp-port-601
             containerPort: 601
             protocol: TCP
-          - name: udp-port
+          - name: tcp-port-514
+            containerPort: 514
+            protocol: TCP
+          - name: tcp-port-6514
+            containerPort: 6514
+            protocol: TCP
+          - name: udp-port-514
             containerPort: 514
             protocol: UDP
           volumeMounts:
