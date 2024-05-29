@@ -18,7 +18,7 @@ data:
        fi
       done
 ---
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ include "syslog-ng.fullname" . }}-compressor
