@@ -523,7 +523,7 @@ void
 tls_session_info_callback(const SSL *ssl, int where, int ret)
 {
   TLSSession *self = (TLSSession *)SSL_get_app_data(ssl);
-  if( !self->peer_info.found && where == (SSL_ST_ACCEPT|SSL_CB_LOOP) )
+  if (!self->peer_info.found && where == (SSL_ST_ACCEPT|SSL_CB_LOOP))
     {
       X509 *cert = SSL_get_peer_certificate(ssl);
 
@@ -532,9 +532,9 @@ tls_session_info_callback(const SSL *ssl, int where, int ret)
           self->peer_info.found = 1; /* mark this found so we don't keep checking on every callback */
           X509_NAME *name = X509_get_subject_name(cert);
 
-          X509_NAME_get_text_by_NID( name, NID_commonName, self->peer_info.cn, X509_MAX_CN_LEN );
-          X509_NAME_get_text_by_NID( name, NID_organizationName, self->peer_info.o, X509_MAX_O_LEN );
-          X509_NAME_get_text_by_NID( name, NID_organizationalUnitName, self->peer_info.ou, X509_MAX_OU_LEN );
+          X509_NAME_get_text_by_NID(name, NID_commonName, self->peer_info.cn, X509_MAX_CN_LEN);
+          X509_NAME_get_text_by_NID(name, NID_organizationName, self->peer_info.o, X509_MAX_O_LEN);
+          X509_NAME_get_text_by_NID(name, NID_organizationalUnitName, self->peer_info.ou, X509_MAX_OU_LEN);
 
           X509_free(cert);
         }
