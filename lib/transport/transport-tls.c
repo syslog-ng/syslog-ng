@@ -112,6 +112,8 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
           log_transport_aux_data_add_nv_pair(aux, ".tls.x509_o", self->tls_session->peer_info.o);
           log_transport_aux_data_add_nv_pair(aux, ".tls.x509_ou", self->tls_session->peer_info.ou);
         }
+      if (self->tls_session->peer_info.fingerprint[0])
+        log_transport_aux_data_add_nv_pair(aux, ".tls.x509_fp", self->tls_session->peer_info.fingerprint);
 
       /* NOTE: we only support TLS on top of TCP for now.  We could reuse the
        * proto auto detection code from transport-socket to make this more

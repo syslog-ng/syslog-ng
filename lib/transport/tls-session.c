@@ -132,6 +132,7 @@ tls_session_verify_fingerprint(X509_STORE_CTX *ctx)
           if (strcmp((const gchar *)(current_fingerprint->data), hash->str) == 0)
             {
               match = TRUE;
+              g_strlcpy(self->peer_info.fingerprint, hash->str, sizeof(self->peer_info.fingerprint));
               break;
             }
         }
