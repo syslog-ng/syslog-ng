@@ -156,6 +156,16 @@ class S3ObjectPersist:
                     raise PersistLoadError from e
 
         if path:
+            # fields added in later releases can be missing from the persist JSON
+            # set a sane default value which can be overriden later if the user set
+            # the appropriate configuration directives
+            for upgrade_field in {
+                "canned-acl",
+                "kms-key",
+                "server-side-encryption",
+            }:
+                cache[upgrade_field] = cache.get(upgrade_field, "")
+
             for field in {
                 "persist-name",
                 "bucket",
@@ -170,12 +180,16 @@ class S3ObjectPersist:
                 "upload-id",
                 "uploaded-parts",
                 "pending-parts",
+                "canned-acl",
+                "kms-key",
+                "server-side-encryption",
             }:
                 try:
                     cache[field]
                 except KeyError as e:
                     raise PersistLoadError from e
 
+        # fields
         self.__persist_name: str = cache.get("persist-name", persist_name)
         self.__bucket: str = cache.get("bucket", bucket)
         self.__target_key: str = cache.get("target-key", target_key)
@@ -184,14 +198,15 @@ class S3ObjectPersist:
         self.__compress: bool = cache.get("compress", compress)
         self.__compresslevel: bool = cache.get("compresslevel", compresslevel)
         self.__chunk_size: bool = cache.get("chunk-size", chunk_size)
-        self.__server_side_encryption: str = cache.get("server-side-encryption", server_side_encryption)
-        self.__kms_key: str = cache.get("kms-key", kms_key)
         self.__storage_class: str = cache.get("storage-class", storage_class)
-        self.__canned_acl: str = cache.get("canned-acl", canned_acl)
         self.__finished: bool = cache.get("finished", False)
         self.__upload_id: str = cache.get("upload-id", "")
         self.__uploaded_parts: List[Dict[str, Any]] = cache.get("uploaded-parts", [])
         self.__pending_parts: Dict[str, Any] = cache.get("pending-parts", dict())
+        # upgrade fields
+        self.__canned_acl: str = cache.get("canned-acl", canned_acl)
+        self.__kms_key: str = cache.get("kms-key", kms_key)
+        self.__server_side_encryption: str = cache.get("server-side-encryption", server_side_encryption)
 
         self.__flush()
 
