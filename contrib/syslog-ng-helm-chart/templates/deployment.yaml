@@ -33,24 +33,34 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-          - name: tcp-port
+          - name: tcp-port-601
             containerPort: 601
             protocol: TCP
-          - name: udp-port
+          - name: tcp-port-514
+            containerPort: 514
+            protocol: TCP
+          - name: tcp-port-6514
+            containerPort: 6514
+            protocol: TCP
+          - name: udp-port-514
             containerPort: 514
             protocol: UDP
           volumeMounts:
+        {{- if .Values.config }}
           - mountPath: /etc/syslog-ng/syslog-ng.conf
             name: config
             subPath: syslog-ng.conf
+        {{- end }}
         {{- if .Values.storage.enable }}
           - mountPath: /var/log
             name: logs
         {{- end }}
       volumes:
+      {{- if .Values.config }}
       - name: config
         configMap:
           name: {{ include "syslog-ng.fullname" . }}
+      {{- end }}
       {{- if .Values.storage.enable }}
       - name: logs
         persistentVolumeClaim:
