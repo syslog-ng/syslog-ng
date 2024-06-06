@@ -27,6 +27,7 @@
 #include "logproto-proxied-text-server.h"
 #include "logproto-framed-client.h"
 #include "logproto-framed-server.h"
+#include "logproto-auto-server.h"
 #include "plugin.h"
 #include "plugin-types.h"
 
@@ -42,6 +43,7 @@ DEFINE_LOG_PROTO_SERVER(log_proto_proxied_text);
 DEFINE_LOG_PROTO_SERVER(log_proto_proxied_text_tls_passthrough, .use_multitransport = TRUE);
 DEFINE_LOG_PROTO_CLIENT(log_proto_framed);
 DEFINE_LOG_PROTO_SERVER(log_proto_framed);
+DEFINE_LOG_PROTO_SERVER(log_proto_auto);
 
 static Plugin framed_server_plugins[] =
 {
@@ -54,7 +56,8 @@ static Plugin framed_server_plugins[] =
   LOG_PROTO_SERVER_PLUGIN(log_proto_proxied_text, "proxied-tcp"),
   LOG_PROTO_SERVER_PLUGIN(log_proto_proxied_text_tls_passthrough, "proxied-tls-passthrough"),
   LOG_PROTO_CLIENT_PLUGIN(log_proto_framed, "framed"),
-  LOG_PROTO_SERVER_PLUGIN(log_proto_framed, "framed"),
+  LOG_PROTO_SERVER_PLUGIN(log_proto_framed, "force-framed"),
+  LOG_PROTO_SERVER_PLUGIN(log_proto_auto, "framed"),
 };
 
 void
