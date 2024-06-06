@@ -34,11 +34,13 @@ struct _LogTransport
 {
   gint fd;
   GIOCondition cond;
-  const gchar *name;
+  guint read_ahead_buf_len;
   gssize (*read)(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux);
   gssize (*write)(LogTransport *self, const gpointer buf, gsize count);
   gssize (*writev)(LogTransport *self, struct iovec *iov, gint iov_count);
   void (*free_fn)(LogTransport *self);
+  const gchar *name;
+  gchar read_ahead_buf[16];
 };
 
 static inline gssize
@@ -53,11 +55,20 @@ log_transport_writev(LogTransport *self, struct iovec *iov, gint iov_count)
   return self->writev(self, iov, iov_count);
 }
 
+gssize _log_transport_combined_read_with_read_ahead(LogTransport *self,
+                                                    gpointer buf, gsize count,
+                                                    LogTransportAuxData *aux);
+
 static inline gssize
 log_transport_read(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux)
 {
-  return self->read(self, buf, count, aux);
+  if (G_LIKELY(self->read_ahead_buf_len == 0))
+    return self->read(self, buf, count, aux);
+
+  return _log_transport_combined_read_with_read_ahead(self, buf, count, aux);
 }
+
+gssize log_transport_read_ahead(LogTransport *self, gpointer buf, gsize count);
 
 void log_transport_init_instance(LogTransport *s, gint fd);
 void log_transport_free_method(LogTransport *s);

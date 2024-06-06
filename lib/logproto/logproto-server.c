@@ -124,7 +124,8 @@ log_proto_server_validate_options_method(LogProtoServer *s)
 void
 log_proto_server_free_method(LogProtoServer *s)
 {
-  log_transport_free(s->transport);
+  if (s->transport)
+    log_transport_free(s->transport);
 }
 
 void

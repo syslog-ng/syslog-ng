@@ -128,6 +128,8 @@ modules/python/python-confgen\.[ch]
 lib/tests/test_logscheduler\.c
 lib/filterx/.*\.[ch]
 lib/filterx/filterx-grammar\.ym
+lib/logproto/logproto-auto-server\.[ch]
+lib/transport/tests/test_transport\.c
 
 ###########################################################################
 # These tests are GPLd even though they reside under lib/ and are excluded
