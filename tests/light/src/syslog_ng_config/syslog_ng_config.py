@@ -48,6 +48,7 @@ from src.syslog_ng_config.statements.sources.example_msg_generator_source import
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.sources.internal_source import InternalSource
 from src.syslog_ng_config.statements.sources.network_source import NetworkSource
+from src.syslog_ng_config.statements.sources.syslog_source import SyslogSource
 from src.syslog_ng_config.statements.template.template import Template
 from src.syslog_ng_config.statements.template.template import TemplateFunction
 from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
@@ -119,6 +120,9 @@ class SyslogNgConfig(object):
 
     def create_network_source(self, **options):
         return NetworkSource(**options)
+
+    def create_syslog_source(self, **options):
+        return SyslogSource(**options)
 
     def create_rewrite_set(self, template, **options):
         return Set(template, **options)
