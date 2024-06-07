@@ -157,6 +157,8 @@
 /* this is a placeholder for unit tests, must be the latest & largest */
 %token LL_CONTEXT_MAX                 27
 
+%left ';'
+
 /* operators in the filter language, the order of this determines precedence */
 %right KW_ASSIGN 9000
 %right '?' ':'
