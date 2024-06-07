@@ -1,4 +1,3 @@
-[![Discord](https://img.shields.io/discord/1082023686028148877?label=Discord&logo=discord&logoColor=white)](https://discord.gg/qmq53uBm2c)
 [![Build Status](https://github.com/syslog-ng/syslog-ng/actions/workflows/devshell.yml/badge.svg)](https://github.com/syslog-ng/syslog-ng/actions/workflows/devshell.yml)
 [![Nightly](https://github.com/syslog-ng/syslog-ng/actions/workflows/nightly-release.yml/badge.svg)](https://github.com/syslog-ng/syslog-ng/actions/workflows/nightly-release.yml)
 [![Binary packages](https://github.com/syslog-ng/syslog-ng/actions/workflows/packages.yml/badge.svg)](https://github.com/syslog-ng/syslog-ng/actions/workflows/packages.yml)
@@ -106,8 +105,8 @@ For a brief introduction to configuring the syslog-ng application, see the [quic
 
 ### Sponsors
 
-- [Axoflow](https://axoflow.com) is the company of Balazs Scheidler, the original creator and main developer of syslog-ng, and the creators of the Kubernetes Logging Operator. Currently Axoflow is the most active contributor of syslog-ng, and offers commercial support, professional services, and related products.
 - [Balabit](http://www.balabit.com/) is the original commercial sponsor of the syslog-ng project, and was acquired by One Identity in 2018. One Identity offers a commercial edition for syslog-ng, called the syslog-ng Premium Edition.
+- [Axoflow](https://axoflow.com) is the company of Balazs Scheidler, the original creator and main developer of syslog-ng.
 
 ## Feedback
 
@@ -244,24 +243,11 @@ official [third party page][3rd-party].
 
 Binaries are also available as a Docker image. To find out more, check out the blog post, [Your central log server in Docker](https://syslog-ng.com/blog/central-log-server-docker/).
 
-There are alternatives to the upstream provided, bare syslog-ng image, such
-as the [AxoSyslog image](https://github.com/axoflow/axosyslog-docker/pkgs/container/axosyslog)
-for running syslog-ng in Kubernetes.
-
-  * [AxoSyslog, a cloud native distribution for syslog-ng announcement](https://axoflow.com/cloud-ready-syslog-ng-images/)
-  * [AxoSyslog log collection for Kubernetes](https://axoflow.com/axosyslog-log-collection-for-kubernetes/)
-  * [AxoSyslog Documentation](https://axoflow.com/docs/axosyslog/)
-  * [GitHub](https://github.com/axoflow/axosyslog-docker)
-
 ## Documentation
 
-For the latest, markdown based version, see the [syslog-ng documentation](https://syslog-ng.github.io) center.
+For the latest, markdown based version, see the [syslog-ng documentation](https://syslog-ng.github.io) center. \
 The official documentation of the earlier versions of syslog-ng Open Source Edition provided by One Identity is available
 [here](https://www.syslog-ng.com/technical-documents/doc/syslog-ng-open-source-edition/).
-
-An alternative, markdown based, improved, community maintained version of the
-documentation is available [as AxoSyslog Core documentation](https://axoflow.com/docs/axosyslog-core/).
-[Source code](https://github.com/axoflow/axosyslog-core-docs/)
 
 ## Contributing
 
