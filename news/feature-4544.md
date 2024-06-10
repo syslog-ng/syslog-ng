@@ -1,3 +1,3 @@
-#### Added a new option to the `syslog()` source driver
+#### Added new proxy options to the `syslog()` and `network()` source drivers
 
-The `transport(proxied-tcp)` option is now available when configuring `syslog()` sources.
+The `transport(proxied-tcp)`, `transport(proxied-tls)`, and `transport(proxied-tls-passthrough)` options are now available when configuring `syslog()` and `network()` sources.
