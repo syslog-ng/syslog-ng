@@ -91,10 +91,11 @@ _set_deleted(WildcardFileReader *self)
   _schedule_state_change_handling(self);
 }
 
-static void
+static gint
 _notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   WildcardFileReader *self = (WildcardFileReader *)s;
+  gint result = NR_OK;
   switch(notify_code)
     {
     case NC_FILE_DELETED:
@@ -104,9 +105,10 @@ _notify(LogPipe *s, gint notify_code, gpointer user_data)
       _set_eof(self);
       break;
     default:
-      file_reader_notify_method(s, notify_code, user_data);
+      result = file_reader_notify_method(s, notify_code, user_data);
       break;
     }
+  return result;
 }
 
 static void
