@@ -37,6 +37,6 @@ jobs:
         "almalinux-8",
         "debian-bookworm",
         "debian-testing",
-        "fedora-39",
+        "fedora-40",
         "ubuntu-noble"
       ]'
