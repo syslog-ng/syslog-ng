@@ -742,7 +742,7 @@ afsocket_dd_deinit(LogPipe *s)
   return log_dest_driver_deinit_method(s);
 }
 
-static void
+static gint
 afsocket_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *) s;
@@ -763,6 +763,7 @@ afsocket_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
     default:
       break;
     }
+  return NR_OK;
 }
 
 void

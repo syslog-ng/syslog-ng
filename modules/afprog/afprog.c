@@ -352,7 +352,7 @@ afprogram_sd_free(LogPipe *s)
   log_src_driver_free(s);
 }
 
-static void
+static gint
 afprogram_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   switch (notify_code)
@@ -365,6 +365,7 @@ afprogram_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
     default:
       break;
     }
+  return NR_OK;
 }
 
 LogDriver *
@@ -668,7 +669,7 @@ afprogram_dd_free(LogPipe *s)
   log_dest_driver_free(s);
 }
 
-static void
+static gint
 afprogram_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   AFProgramDestDriver *self = (AFProgramDestDriver *) s;
@@ -686,6 +687,7 @@ afprogram_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
     default:
       break;
     }
+  return NR_OK;
 }
 
 LogDriver *

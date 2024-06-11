@@ -259,7 +259,7 @@ _reopen_on_notify(LogPipe *s, gboolean recover_state)
 }
 
 /* NOTE: runs in the main thread */
-void
+gint
 file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
 {
   FileReader *self = (FileReader *) s;
@@ -286,6 +286,7 @@ file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
     default:
       break;
     }
+  return NR_OK;
 }
 
 void
