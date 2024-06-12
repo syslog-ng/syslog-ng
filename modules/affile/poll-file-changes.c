@@ -60,7 +60,8 @@ poll_file_changes_on_eof(PollFileChanges *self)
   gboolean result = TRUE;
   if (self->on_eof)
     result = self->on_eof(self);
-  log_pipe_notify(self->control, NC_FILE_EOF, self);
+  if (log_pipe_notify(self->control, NC_FILE_EOF, self) & NR_STOP_ON_EOF)
+    result = FALSE;
   return result;
 }
 

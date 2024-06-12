@@ -40,7 +40,7 @@ typedef struct _FileStateEvent
 typedef struct _FileState
 {
   gboolean deleted;
-  gboolean eof;
+  gboolean deleted_eof;
 } FileState;
 
 
