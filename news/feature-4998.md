@@ -1,0 +1,3 @@
+`wildcard-file()`: Added a dedicated `monitor_freq` option to control the poll frequency of the change detection in the directories separately when the `poll` method is selected via the `monitor-method()` option.
+
+The `monitor-method()` option controls only the change detection method in the directories, not the following of the file changes, and if `poll` is the selected method the frequency must not necessarily be the same, e.g. if the (earlier) commonly used `follow-freq()` is set to 0 for switching to the `poll_fd_events` method for file content change detection, that also might be meant a directory change poll with zero delays (if `monitor-method()` was set to `poll` as well), and that could cause a heavy CPU load unnecessarily.
