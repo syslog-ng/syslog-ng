@@ -199,6 +199,8 @@ _set_real_path(DirectoryMonitor *self)
 void
 directory_monitor_start(DirectoryMonitor *self)
 {
+  msg_debug("Starting directory monitor", evt_tag_str("dir", self->dir));
+
   GDir *directory = NULL;
   GError *error = NULL;
   if (self->watches_running)

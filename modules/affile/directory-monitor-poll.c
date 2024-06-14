@@ -132,6 +132,7 @@ _start_watches(DirectoryMonitor *s)
         }
       g_dir_close(directory);
     }
+  msg_trace("Starting to poll directory changes", evt_tag_str("dir", self->super.dir), evt_tag_int("freq", self->super.recheck_time));
   _rearm_rescan_timer(self);
 }
 
