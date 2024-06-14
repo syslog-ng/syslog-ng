@@ -153,7 +153,7 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
           if (wildcard_file_reader_is_deleted(reader))
             {
               msg_debug("wildcard-file(): File was deleted, and a new file was created with the same name"
-                        "Schedule reading the new once, once the old is finished",
+                        "Schedule reading the new one, once the old is finished",
                         evt_tag_str("filename", event->full_path));
               pending_file_list_add(self->waiting_list, event->full_path);
             }

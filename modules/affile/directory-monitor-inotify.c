@@ -83,6 +83,7 @@ _start_watches(DirectoryMonitor *s)
   self->watcher.mask = IN_CREATE | IN_DELETE | IN_MOVE | IN_DELETE_SELF | IN_MOVE_SELF;
   self->watcher.cookie = self;
   self->watcher.handler = _handle_event;
+  msg_trace("Starting to watch directory changes", evt_tag_str("dir", self->super.dir));
   iv_inotify_watch_register(&self->watcher);
 }
 
