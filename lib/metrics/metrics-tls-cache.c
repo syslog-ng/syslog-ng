@@ -84,15 +84,15 @@ _deinit_tls_clusters_map_thread_init_hook(gpointer user_data)
 }
 
 static void
-_init_tls_clusters_map_apphook(gint type, gpointer user_data)
+_init_tls_clusters_map_apphook(void)
 {
-  _init_tls_clusters_map_thread_init_hook(user_data);
+  _init_tls_clusters_map_thread_init_hook(NULL);
 }
 
 static void
-_deinit_tls_clusters_map_apphook(gint type, gpointer user_data)
+_deinit_tls_clusters_map_apphook(void)
 {
-  _deinit_tls_clusters_map_thread_init_hook(user_data);
+  _deinit_tls_clusters_map_thread_init_hook(NULL);
 }
 
 
@@ -144,14 +144,13 @@ metrics_tls_cache_get_labels_len(void)
 void
 metrics_tls_cache_global_init(void)
 {
-  static gboolean initialized = FALSE;
+  register_application_thread_init_hook(_init_tls_clusters_map_thread_init_hook, NULL);
+  register_application_thread_deinit_hook(_deinit_tls_clusters_map_thread_init_hook, NULL);
+  _init_tls_clusters_map_apphook();
+}
 
-  if (!initialized)
-    {
-      register_application_thread_init_hook(_init_tls_clusters_map_thread_init_hook, NULL);
-      register_application_thread_deinit_hook(_deinit_tls_clusters_map_thread_init_hook, NULL);
-      register_application_hook(AH_STARTUP, _init_tls_clusters_map_apphook, NULL, AHM_RUN_ONCE);
-      register_application_hook(AH_SHUTDOWN, _deinit_tls_clusters_map_apphook, NULL, AHM_RUN_ONCE);
-      initialized = TRUE;
-    }
+void
+metrics_tls_cache_global_deinit(void)
+{
+  _deinit_tls_clusters_map_apphook();
 }

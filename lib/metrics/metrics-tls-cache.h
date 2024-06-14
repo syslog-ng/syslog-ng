@@ -37,5 +37,6 @@ StatsClusterLabel *metrics_tls_cache_get_labels(void);
 guint metrics_tls_cache_get_labels_len(void);
 
 void metrics_tls_cache_global_init(void);
+void metrics_tls_cache_global_deinit(void);
 
 #endif
