@@ -22,6 +22,7 @@
 
 #include "metrics-probe.h"
 #include "metrics/metrics-template.h"
+#include "metrics/metrics-tls-cache.h"
 #include "scratch-buffers.h"
 
 typedef struct _MetricsProbe
@@ -146,7 +147,7 @@ _init(LogPipe *s)
     return FALSE;
 
   /* FIXME: move this to earlier, e.g. module loading */
-  metrics_template_global_init();
+  metrics_tls_cache_global_init();
 
   return log_parser_init_method(s);
 }
