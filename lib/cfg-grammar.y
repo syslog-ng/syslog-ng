@@ -798,23 +798,23 @@ log_forks
         ;
 
 log_fork
-        : KW_LOG optional_string '{' log_content '}'
+        : KW_LOG optional_string '{' _log_context_push log_content _log_context_pop '}'
           {
             if ($2)
               {
-                log_expr_node_set_name($4, $2);
+                log_expr_node_set_name($5, $2);
                 free($2);
               }
-            $$ = $4;
+            $$ = $5;
           }
-        | KW_CHANNEL optional_string '{' log_content '}'
+        | KW_CHANNEL optional_string '{' _log_context_push log_content _log_context_pop '}'
           {
             if ($2)
               {
-                log_expr_node_set_name($4, $2);
+                log_expr_node_set_name($5, $2);
                 free($2);
               }
-            $$ = $4;
+            $$ = $5;
           }
         ;
 
