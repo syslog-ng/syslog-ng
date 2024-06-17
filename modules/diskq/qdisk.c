@@ -216,7 +216,7 @@ _grab_dirlock(const gchar *dir, gint *fd)
 
   g_mutex_lock(&filename_lock);
 
-  *fd = open(dirlock_file_path, O_RDONLY | O_CREAT, 0600);
+  *fd = open(dirlock_file_path, O_RDWR | O_CREAT, 0600);
   if (*fd < 0)
     {
       msg_error("Failed to open disk-buffer dirlock file",
