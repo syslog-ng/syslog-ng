@@ -112,8 +112,6 @@ _translate_number_literals(CfgLexer *lexer, gint compare_mode, LogTemplate *expr
 %token KW_PROGRAM
 %token KW_IN_LIST
 
-%left   ';'
-
 %type	<node> filter_expr
 %type	<node> filter_simple_expr
 %type	<node> filter_plugin

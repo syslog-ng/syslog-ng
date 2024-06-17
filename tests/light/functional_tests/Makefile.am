@@ -18,6 +18,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/destination_drivers/unix_stream_destination/test_unix_stream_destination.py \
 	tests/light/functional_tests/filters/rate-limit/test_rate_limit_filter_acceptance.py \
 	tests/light/functional_tests/filters/test_filter_reference.py \
+	tests/light/functional_tests/filters/test_multiple_filters.py \
 	tests/light/functional_tests/logpath/__init__.py \
 	tests/light/functional_tests/logpath/test_conditionals.py \
 	tests/light/functional_tests/logpath/test_flags_catch_all.py \

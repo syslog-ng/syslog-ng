@@ -252,6 +252,7 @@ tests/light/functional_tests/logpath/test_conditionals\.py
 tests/light/functional_tests/logpath/test_midpoint_destinations\.py
 tests/light/functional_tests/value-pairs/test_value_pairs\.py
 tests/light/functional_tests/templates/test_template_stmt\.py
+tests/light/functional_tests/filters/test_multiple_filters\.py
 tests/light/functional_tests/filterx/test_filterx\.py
 tests/light/functional_tests/filterx/test_filterx_scope\.py
 tests/light/functional_tests/parsers/metrics-probe/test_metrics_probe\.py
