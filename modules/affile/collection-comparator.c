@@ -28,6 +28,7 @@
 
 typedef struct _CollectionComparatorEntry
 {
+  gint64 key[2];
   gchar *value;
   guint8 flag;
 } CollectionComparatorEntry;
@@ -43,6 +44,22 @@ struct _CollectionComparator
   void (*handle_new_entry)(const gchar *name, gpointer callback_data);
   void (*handle_deleted_entry)(const gchar *name, gpointer callback_data);
 };
+
+static inline guint
+_hash_int64_array(const void *key)
+{
+  const gint64 *array = key;
+  gint64 hash1 = g_int64_hash(&array[0]);
+  gint64 hash2 = g_int64_hash(&array[1]);
+  guint hash = hash1 ^ hash2;
+  return hash;
+}
+
+static inline gboolean
+_equal_int64_array(const void *a, const void *b)
+{
+  return memcmp(a, b, 2 * sizeof(gint64)) == 0;
+}
 
 static void
 _free_poll_entry(gpointer s)
@@ -64,7 +81,7 @@ CollectionComparator *
 collection_comparator_new(void)
 {
   CollectionComparator *self = g_new0(CollectionComparator, 1);
-  self->original_map = g_hash_table_new(g_str_hash, g_str_equal);
+  self->original_map = g_hash_table_new(_hash_int64_array, _equal_int64_array);
   return self;
 }
 
@@ -79,9 +96,9 @@ collection_comparator_start(CollectionComparator *self)
 }
 
 void
-collection_comparator_add_value(CollectionComparator *self, const gchar *value)
+collection_comparator_add_value(CollectionComparator *self, const gint64 key[2], const gchar *value)
 {
-  CollectionComparatorEntry *entry = g_hash_table_lookup(self->original_map, value);
+  CollectionComparatorEntry *entry = g_hash_table_lookup(self->original_map, key);
   if (entry)
     {
       entry->flag = IN_BOTH;
@@ -89,22 +106,24 @@ collection_comparator_add_value(CollectionComparator *self, const gchar *value)
   else
     {
       entry = g_new0(CollectionComparatorEntry, 1);
+      memcpy(entry->key, key, 2 * sizeof(gint64));
       entry->value = g_strdup(value);
       entry->flag = IN_NEW;
       self->original_list = g_list_append(self->original_list, entry);
-      g_hash_table_insert(self->original_map, entry->value, entry);
+      g_hash_table_insert(self->original_map, (void*) key, entry);
       self->handle_new_entry(entry->value, self->callback_data);
     }
 }
 
 void
-collection_comparator_add_initial_value(CollectionComparator *self, const gchar *value)
+collection_comparator_add_initial_value(CollectionComparator *self, const gint64 key[2], const gchar *value)
 {
   CollectionComparatorEntry *entry = g_new0(CollectionComparatorEntry, 1);
+  memcpy(entry->key, key, 2 * sizeof(gint64));
   entry->value = g_strdup(value);
   entry->flag = IN_OLD;
   self->original_list = g_list_append(self->original_list, entry);
-  g_hash_table_insert(self->original_map, entry->value, entry);
+  g_hash_table_insert(self->original_map, (void*) key, entry);
 }
 
 void
@@ -133,7 +152,7 @@ collection_comparator_collect_deleted_entries(CollectionComparator *self)
       if (entry->flag == IN_OLD)
         {
           GList *next = iter->next;
-          g_hash_table_remove(self->original_map, entry->value);
+          g_hash_table_remove(self->original_map, entry->key);
           _move_link(iter, &self->original_list, &self->deleted_entries);
           iter = next;
         }

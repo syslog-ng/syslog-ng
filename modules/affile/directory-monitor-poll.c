@@ -24,6 +24,8 @@
 #include "directory-monitor-poll.h"
 #include "messages.h"
 #include "timeutils/misc.h"
+#include "glib.h"
+#include "glib/gstdio.h"
 
 #include <iv.h>
 
@@ -99,10 +101,23 @@ _rescan_directory(DirectoryMonitorPoll *self, gboolean initial_scan)
       const gchar *filename;
       while((filename = g_dir_read_name(directory)))
         {
-          if (initial_scan)
-            collection_comparator_add_initial_value(self->comparator, filename);
+          gchar *full_filename = build_filename(self->super.real_path, filename);
+          GStatBuf file_stat;
+
+          if (g_stat(full_filename, &file_stat) == 0)
+            {
+              g_free(full_filename);
+              gint64 fids[2] = { file_stat.st_dev, file_stat.st_ino };
+              if (initial_scan)
+                collection_comparator_add_initial_value(self->comparator, fids, filename);
+              else
+                collection_comparator_add_value(self->comparator, fids, filename);
+            }
           else
-            collection_comparator_add_value(self->comparator, filename);
+            {
+              g_free(full_filename);
+              msg_error("Error while stat() monitored file", evt_tag_str("filename", filename));
+            }
         }
       g_dir_close(directory);
 
