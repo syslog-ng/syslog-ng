@@ -81,24 +81,34 @@ _handle_deleted_self(DirectoryMonitorPoll *self)
 }
 
 static void
-_rescan_directory(DirectoryMonitorPoll *self)
+_rescan_directory(DirectoryMonitorPoll *self, gboolean initial_scan)
 {
   GError *error = NULL;
   GDir *directory = g_dir_open(self->super.real_path, 0, &error);
-  collection_comparator_start(self->comparator);
+
+  if (FALSE == initial_scan)
+    collection_comparator_start(self->comparator);
+
   if (directory)
     {
       const gchar *filename;
       while((filename = g_dir_read_name(directory)))
         {
-          collection_comparator_add_value(self->comparator, filename);
+          if (initial_scan)
+            collection_comparator_add_initial_value(self->comparator, filename);
+          else
+            collection_comparator_add_value(self->comparator, filename);
         }
       g_dir_close(directory);
-      collection_comparator_stop(self->comparator);
+
+      if (FALSE == initial_scan)
+        collection_comparator_stop(self->comparator);
     }
   else
     {
-      collection_comparator_stop(self->comparator);
+      if (FALSE == initial_scan)
+        collection_comparator_stop(self->comparator);
+
       _handle_deleted_self(self);
       msg_debug("Error while opening directory",
                 evt_tag_str("dirname", self->super.real_path),
@@ -120,19 +130,10 @@ static void
 _start_watches(DirectoryMonitor *s)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)s;
-  GDir *directory = NULL;
-  directory = g_dir_open(self->super.real_path, 0, NULL);
-  if (directory)
-    {
-      const gchar *filename = g_dir_read_name(directory);
-      while (filename)
-        {
-          collection_comparator_add_initial_value(self->comparator, filename);
-          filename = g_dir_read_name(directory);
-        }
-      g_dir_close(directory);
-    }
-  msg_trace("Starting to poll directory changes", evt_tag_str("dir", self->super.dir), evt_tag_int("freq", self->super.recheck_time));
+  msg_trace("Starting to poll directory changes",
+            evt_tag_str("dir", self->super.dir),
+            evt_tag_int("freq", self->super.recheck_time));
+  _rescan_directory(self, TRUE);
   _rearm_rescan_timer(self);
 }
 
@@ -142,9 +143,7 @@ _stop_watches(DirectoryMonitor *s)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)s;
   if (iv_timer_registered(&self->rescan_timer))
-    {
-      iv_timer_unregister(&self->rescan_timer);
-    }
+    iv_timer_unregister(&self->rescan_timer);
 }
 
 static void
@@ -158,7 +157,7 @@ static void
 _triggered_timer(gpointer data)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)data;
-  _rescan_directory(self);
+  _rescan_directory(self, FALSE);
   _rearm_rescan_timer(self);
 }
 
