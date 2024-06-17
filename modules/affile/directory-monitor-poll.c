@@ -38,44 +38,49 @@ static void
 _handle_new_entry(const gchar *filename, gpointer user_data)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)user_data;
-  DirectoryMonitorEvent event;
-
-  event.name = filename;
-  event.full_path = build_filename(self->super.real_path, event.name);
-  event.event_type = g_file_test(event.full_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
   if (self->super.callback)
     {
+      DirectoryMonitorEvent event;
+
+      event.name = filename;
+      event.full_path = build_filename(self->super.real_path, event.name);
+      event.event_type = g_file_test(event.full_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
+
       self->super.callback(&event, self->super.callback_data);
+
+      g_free(event.full_path);
     }
-  g_free(event.full_path);
 }
 
 static void
 _handle_deleted_entry(const gchar *filename, gpointer user_data)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)user_data;
-  DirectoryMonitorEvent event;
-
-  event.name = filename;
-  event.event_type = FILE_DELETED;
-  event.full_path = build_filename(self->super.real_path, event.name);
   if (self->super.callback)
     {
+      DirectoryMonitorEvent event;
+
+      event.name = filename;
+      event.event_type = FILE_DELETED;
+      event.full_path = build_filename(self->super.real_path, event.name);
+
       self->super.callback(&event, self->super.callback_data);
+
+      g_free(event.full_path);
     }
-  g_free(event.full_path);
 }
 
 static void
 _handle_deleted_self(DirectoryMonitorPoll *self)
 {
-  DirectoryMonitorEvent event;
-
-  event.name = self->super.real_path;
-  event.event_type = DIRECTORY_DELETED;
-  event.full_path = self->super.real_path;
   if (self->super.callback)
     {
+      DirectoryMonitorEvent event;
+
+      event.name = self->super.real_path;
+      event.event_type = DIRECTORY_DELETED;
+      event.full_path = self->super.real_path;
+
       self->super.callback(&event, self->super.callback_data);
     }
 }
