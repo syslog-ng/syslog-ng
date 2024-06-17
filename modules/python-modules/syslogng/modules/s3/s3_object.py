@@ -117,6 +117,8 @@ class S3ObjectPersist:
         compress: Optional[bool] = None,
         compresslevel: Optional[int] = None,
         chunk_size: Optional[int] = None,
+        server_side_encryption: Optional[str] = None,
+        kms_key: Optional[str] = None,
         storage_class: Optional[str] = None,
         canned_acl: Optional[str] = None,
     ):
@@ -133,6 +135,8 @@ class S3ObjectPersist:
                 and compresslevel is not None
                 and chunk_size is not None
                 and storage_class is not None
+                and server_side_encryption is not None
+                and kms_key is not None
                 and canned_acl is not None
             )
         else:
@@ -152,6 +156,16 @@ class S3ObjectPersist:
                     raise PersistLoadError from e
 
         if path:
+            # fields added in later releases can be missing from the persist JSON
+            # set a sane default value which can be overriden later if the user set
+            # the appropriate configuration directives
+            for upgrade_field in {
+                "canned-acl",
+                "kms-key",
+                "server-side-encryption",
+            }:
+                cache[upgrade_field] = cache.get(upgrade_field, "")
+
             for field in {
                 "persist-name",
                 "bucket",
@@ -166,12 +180,16 @@ class S3ObjectPersist:
                 "upload-id",
                 "uploaded-parts",
                 "pending-parts",
+                "canned-acl",
+                "kms-key",
+                "server-side-encryption",
             }:
                 try:
                     cache[field]
                 except KeyError as e:
                     raise PersistLoadError from e
 
+        # fields
         self.__persist_name: str = cache.get("persist-name", persist_name)
         self.__bucket: str = cache.get("bucket", bucket)
         self.__target_key: str = cache.get("target-key", target_key)
@@ -181,11 +199,14 @@ class S3ObjectPersist:
         self.__compresslevel: bool = cache.get("compresslevel", compresslevel)
         self.__chunk_size: bool = cache.get("chunk-size", chunk_size)
         self.__storage_class: str = cache.get("storage-class", storage_class)
-        self.__canned_acl: str = cache.get("canned-acl", canned_acl)
         self.__finished: bool = cache.get("finished", False)
         self.__upload_id: str = cache.get("upload-id", "")
         self.__uploaded_parts: List[Dict[str, Any]] = cache.get("uploaded-parts", [])
         self.__pending_parts: Dict[str, Any] = cache.get("pending-parts", dict())
+        # upgrade fields
+        self.__canned_acl: str = cache.get("canned-acl", canned_acl)
+        self.__kms_key: str = cache.get("kms-key", kms_key)
+        self.__server_side_encryption: str = cache.get("server-side-encryption", server_side_encryption)
 
         self.__flush()
 
@@ -202,6 +223,8 @@ class S3ObjectPersist:
             "index": self.__index,
             "compress": self.__compress,
             "compresslevel": self.__compresslevel,
+            "server-side-encryption": self.__server_side_encryption,
+            "kms-key": self.__kms_key,
             "storage-class": self.__storage_class,
             "canned-acl": self.__canned_acl,
             "chunk-size": self.__chunk_size,
@@ -263,6 +286,14 @@ class S3ObjectPersist:
     @property
     def chunk_size(self) -> bool:
         return self.__chunk_size
+
+    @property
+    def server_side_encryption(self) -> str:
+        return self.__server_side_encryption
+
+    @property
+    def kms_key(self) -> str:
+        return self.__kms_key
 
     @property
     def storage_class(self) -> str:
@@ -345,6 +376,8 @@ class S3Object:
         compress: Optional[bool] = None,
         chunk_size: Optional[int] = None,
         compresslevel: Optional[int] = None,
+        server_side_encryption: Optional[str] = None,
+        kms_key: Optional[str] = None,
         storage_class: Optional[str] = None,
         canned_acl: Optional[str] = None,
         persist: Optional[S3ObjectPersist] = None,
@@ -377,6 +410,8 @@ class S3Object:
                 and compress is not None
                 and chunk_size is not None
                 and compresslevel is not None
+                and server_side_encryption is not None
+                and kms_key is not None
                 and storage_class is not None
                 and canned_acl is not None
             )
@@ -389,6 +424,8 @@ class S3Object:
                 compress=compress,
                 compresslevel=compresslevel,
                 chunk_size=chunk_size,
+                server_side_encryption=server_side_encryption,
+                kms_key=kms_key,
                 storage_class=storage_class,
                 canned_acl=canned_acl,
             )
@@ -431,6 +468,8 @@ class S3Object:
         timestamp: str,
         compress: bool,
         compresslevel: int,
+        server_side_encryption: str,
+        kms_key: str,
         storage_class: str,
         canned_acl: str,
         persist_name: str,
@@ -451,6 +490,8 @@ class S3Object:
             target_index=0,
             compress=compress,
             compresslevel=compresslevel,
+            server_side_encryption=server_side_encryption,
+            kms_key=kms_key,
             storage_class=storage_class,
             canned_acl=canned_acl,
             chunk_size=chunk_size,
@@ -480,6 +521,8 @@ class S3Object:
             target_index=self.index + 1,
             compress=self.__persist.compress,
             compresslevel=self.__persist.compresslevel,
+            server_side_encryption=self.__persist.server_side_encryption,
+            kms_key=self.__persist.kms_key,
             storage_class=self.__persist.storage_class,
             canned_acl=self.__persist.canned_acl,
             chunk_size=self.__persist.chunk_size,
@@ -546,6 +589,13 @@ class S3Object:
         if self.__persist.upload_id != "":
             return True
 
+        sse_arguments = {}
+        if self.__persist.server_side_encryption != "":
+            sse_arguments["ServerSideEncryption"] = self.__persist.server_side_encryption
+
+        if self.__persist.kms_key != "":
+            sse_arguments["SSEKMSKeyId"] = self.__persist.kms_key
+
         try:
             if self.__persist.canned_acl != "":
                 response = self.__client.create_multipart_upload(
@@ -553,12 +603,14 @@ class S3Object:
                     Key=self.key,
                     StorageClass=self.__persist.storage_class,
                     ACL=self.__persist.canned_acl,
+                    **sse_arguments,
                 )
             else:
                 response = self.__client.create_multipart_upload(
                     Bucket=self.bucket,
                     Key=self.key,
                     StorageClass=self.__persist.storage_class,
+                    **sse_arguments,
                 )
         except (ClientError, EndpointConnectionError) as e:
             self.__logger.error(f"Failed to create multipart upload: {self.bucket}/{self.key} => {e}")
