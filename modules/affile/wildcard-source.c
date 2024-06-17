@@ -302,7 +302,7 @@ _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
   DirectoryMonitorOptions options =
   {
     .dir = directory,
-    .follow_freq = self->file_reader_options.follow_freq,
+    .follow_freq = (self->monitor_freq ? self->monitor_freq : self->file_reader_options.follow_freq),
     .method = self->monitor_method
   };
   DirectoryMonitor *monitor = create_directory_monitor(&options);
@@ -409,6 +409,14 @@ wildcard_sd_set_monitor_method(LogDriver *s, const gchar *method)
     }
   self->monitor_method = new_method;
   return TRUE;
+}
+
+void
+wildcard_sd_set_monitor_freq(LogDriver *s, gint monitor_freq)
+{
+  WildcardSourceDriver *self = (WildcardSourceDriver *)s;
+
+  self->monitor_freq = monitor_freq;
 }
 
 void
