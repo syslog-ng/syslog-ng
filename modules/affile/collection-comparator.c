@@ -39,6 +39,7 @@ struct _CollectionComparator
   GHashTable *original_map;
   gboolean running;
   GList *deleted_entries;
+  GList *added_entries;
   gpointer callback_data;
 
   void (*handle_new_entry)(const gchar *name, gpointer callback_data);
@@ -92,6 +93,7 @@ collection_comparator_start(CollectionComparator *self)
     {
       self->running = TRUE;
       self->deleted_entries = NULL;
+      self->added_entries = NULL;
     }
 }
 
@@ -111,7 +113,7 @@ collection_comparator_add_value(CollectionComparator *self, const gint64 key[2],
       entry->flag = IN_NEW;
       self->original_list = g_list_append(self->original_list, entry);
       g_hash_table_insert(self->original_map, (void*) key, entry);
-      self->handle_new_entry(entry->value, self->callback_data);
+      self->added_entries = g_list_prepend(self->added_entries, entry);
     }
 }
 
@@ -165,11 +167,21 @@ collection_comparator_collect_deleted_entries(CollectionComparator *self)
 }
 
 void
+_added_entries_callback(gpointer data, gpointer user_data)
+{
+  CollectionComparatorEntry *entry = (CollectionComparatorEntry *)data;
+  CollectionComparator *self = (CollectionComparator *)user_data;
+  self->handle_new_entry(entry->value, self->callback_data);
+}
+
+void
 collection_comparator_stop(CollectionComparator *self)
 {
   collection_comparator_collect_deleted_entries(self);
   g_list_foreach(self->deleted_entries, _deleted_entries_callback, self);
   g_list_free_full(self->deleted_entries, _free_poll_entry);
+  g_list_foreach(self->added_entries, _added_entries_callback, self);
+  g_list_free(self->added_entries);
   self->running = FALSE;
 }
 
