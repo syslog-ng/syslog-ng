@@ -119,7 +119,7 @@ Test(directory_monitor_factory, check_monitor_method)
 
 Test(directory_monitor_factory, check_constructor)
 {
-  DirectoryMonitorOptions options = {.dir = "/tmp", .follow_freq = 1, .method = MM_AUTO};
+  DirectoryMonitorOptions options = {.dir = "/tmp", .monitor_freq = 1, .method = MM_AUTO};
 #if SYSLOG_NG_HAVE_INOTIFY
   cr_assert_eq(directory_monitor_factory_get_constructor(&options), directory_monitor_inotify_new);
   options.method = MM_INOTIFY;
