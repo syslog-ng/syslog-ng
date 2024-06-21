@@ -47,19 +47,22 @@ struct _CollectionComparator
 };
 
 static inline guint
-_hash_int64_array(const void *key)
+_hash_collection_entry(const void *data)
 {
-  const gint64 *array = key;
-  gint64 hash1 = g_int64_hash(&array[0]);
-  gint64 hash2 = g_int64_hash(&array[1]);
-  guint hash = hash1 ^ hash2;
+  const CollectionComparatorEntry *entry = data;
+  gint64 hash1 = g_int64_hash(&entry->key[0]);
+  gint64 hash2 = g_int64_hash(&entry->key[1]);
+  gint64 hash3 = g_str_hash(entry->value);
+  guint hash = hash1 ^ hash2 ^ hash3;
   return hash;
 }
 
 static inline gboolean
-_equal_int64_array(const void *a, const void *b)
+_equal_collection_entry(const void *a, const void *b)
 {
-  return memcmp(a, b, 2 * sizeof(gint64)) == 0;
+  CollectionComparatorEntry *entry1 = (CollectionComparatorEntry *) a;
+  CollectionComparatorEntry *entry2 = (CollectionComparatorEntry *) b;
+  return memcmp(entry1->key, entry2->key, 2 * sizeof(gint64)) == 0 && g_str_equal(entry1->value, entry2->value);
 }
 
 static void
@@ -82,7 +85,7 @@ CollectionComparator *
 collection_comparator_new(void)
 {
   CollectionComparator *self = g_new0(CollectionComparator, 1);
-  self->original_map = g_hash_table_new(_hash_int64_array, _equal_int64_array);
+  self->original_map = g_hash_table_new(_hash_collection_entry, _equal_collection_entry);
   return self;
 }
 
@@ -100,7 +103,8 @@ collection_comparator_start(CollectionComparator *self)
 void
 collection_comparator_add_value(CollectionComparator *self, const gint64 key[2], const gchar *value)
 {
-  CollectionComparatorEntry *entry = g_hash_table_lookup(self->original_map, key);
+  CollectionComparatorEntry lookup_entry = { { key[0], key[1] }, (gchar *) value, 0};
+  CollectionComparatorEntry *entry = g_hash_table_lookup(self->original_map, &lookup_entry);
   if (entry)
     {
       entry->flag = IN_BOTH;
@@ -112,7 +116,7 @@ collection_comparator_add_value(CollectionComparator *self, const gint64 key[2],
       entry->value = g_strdup(value);
       entry->flag = IN_NEW;
       self->original_list = g_list_append(self->original_list, entry);
-      g_hash_table_insert(self->original_map, (void*) key, entry);
+      g_hash_table_insert(self->original_map, entry, entry);
       self->added_entries = g_list_prepend(self->added_entries, entry);
     }
 }
@@ -125,7 +129,7 @@ collection_comparator_add_initial_value(CollectionComparator *self, const gint64
   entry->value = g_strdup(value);
   entry->flag = IN_OLD;
   self->original_list = g_list_append(self->original_list, entry);
-  g_hash_table_insert(self->original_map, (void*) key, entry);
+  g_hash_table_insert(self->original_map, entry, entry);
 }
 
 void
@@ -154,7 +158,7 @@ collection_comparator_collect_deleted_entries(CollectionComparator *self)
       if (entry->flag == IN_OLD)
         {
           GList *next = iter->next;
-          g_hash_table_remove(self->original_map, entry->key);
+          g_hash_table_remove(self->original_map, entry);
           _move_link(iter, &self->original_list, &self->deleted_entries);
           iter = next;
         }
