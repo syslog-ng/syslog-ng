@@ -283,7 +283,7 @@ log_reader_open(LogReader *self, LogProtoServer *proto, PollEvents *poll_events)
   log_reader_apply_proto_and_poll_events(self, proto, poll_events);
 }
 
-static gboolean
+gboolean
 log_reader_is_opened(LogReader *self)
 {
   return self->proto && self->poll_events;
@@ -349,6 +349,26 @@ log_reader_update_watches(LogReader *self)
     }
 }
 
+static inline gboolean
+log_reader_work_in_progress(LogReader *self)
+{
+  return g_atomic_counter_get(&self->io_work_in_progress);
+}
+
+static inline void
+log_reader_set_work_in_progress(LogReader *self, gboolean state)
+{
+  g_atomic_counter_set(&self->io_work_in_progress, state);
+}
+
+/* NOTE: See file-reader, file_reader_notify_method() why this is needed */
+inline void
+log_reader_trigger_one_read(LogReader *self)
+{
+  if (FALSE == log_reader_work_in_progress(self))
+    log_reader_force_check_in_next_poll(self);
+}
+
 /*****************************************************************************
  * Glue into MainLoopIOWorker
  *****************************************************************************/
@@ -357,6 +377,8 @@ static void
 log_reader_work_perform(void *s, gpointer arg)
 {
   LogReader *self = (LogReader *) s;
+
+  log_reader_set_work_in_progress(self, TRUE);
 
   self->notify_code = log_reader_fetch_log(self);
 }
@@ -389,6 +411,7 @@ log_reader_work_finished(void *s, gpointer arg)
       self->notify_code = 0;
       log_pipe_notify(self->control, notify_code, self);
     }
+
   if (self->super.super.flags & PIF_INITIALIZED)
     {
       /* reenable polling the source assuming that we're still in
@@ -402,6 +425,8 @@ log_reader_work_finished(void *s, gpointer arg)
       log_proto_server_reset_error(self->proto);
       log_reader_update_watches(self);
     }
+
+  log_reader_set_work_in_progress(self, FALSE);
 }
 
 /*****************************************************************************
@@ -567,6 +592,7 @@ log_reader_io_handle_in(gpointer s)
   LogReader *self = (LogReader *) s;
 
   log_reader_disable_watches(self);
+
   if ((self->options->flags & LR_THREADED))
     {
       main_loop_io_worker_job_submit(&self->io_job, NULL);
