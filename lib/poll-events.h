@@ -28,18 +28,37 @@
 
 typedef struct _PollEvents PollEvents;
 typedef void (*PollCallback)(gpointer user_data);
+typedef gboolean (*PollChecker)(PollEvents *self, gpointer user_data);
 
 struct _PollEvents
 {
+  gboolean system_polled;
   PollCallback callback;
   gpointer callback_data;
+  gpointer checker_data;
 
   void (*start_watches)(PollEvents *self);
   void (*stop_watches)(PollEvents *self);
+  PollChecker check_watches;
   void (*update_watches)(PollEvents *self, GIOCondition cond);
   void (*suspend_watches)(PollEvents *self);
+  gint (*get_fd)(PollEvents *self);
   void (*free_fn)(PollEvents *self);
 };
+
+static inline gint
+poll_events_get_fd(PollEvents *self)
+{
+  if (self->get_fd)
+    return self->get_fd(self);
+  return -1;
+}
+
+static inline gboolean
+poll_events_system_polled(PollEvents *self)
+{
+  return self->system_polled;
+}
 
 static inline void
 poll_events_start_watches(PollEvents *self)
@@ -52,6 +71,14 @@ static inline void
 poll_events_stop_watches(PollEvents *self)
 {
   self->stop_watches(self);
+}
+
+static inline gboolean
+poll_events_check_watches(PollEvents *self)
+{
+  if (self->check_watches)
+    return self->check_watches(self, self->checker_data);
+  return TRUE;
 }
 
 static inline void
@@ -70,6 +97,7 @@ poll_events_suspend_watches(PollEvents *self)
 
 void poll_events_invoke_callback(PollEvents *self);
 void poll_events_set_callback(PollEvents *self, PollCallback callback, gpointer user_data);
+void poll_events_set_checker(PollEvents *self, PollChecker check_watches, gpointer user_data);
 void poll_events_init(PollEvents *self);
 void poll_events_free(PollEvents *self);
 
