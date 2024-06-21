@@ -22,6 +22,7 @@
  */
 #include "poll-file-changes.h"
 #include "logpipe.h"
+#include "file-reader.h"
 #include "timeutils/misc.h"
 
 #include <sys/types.h>
@@ -37,6 +38,13 @@
 #include <iv.h>
 #include <iv_work.h>
 
+
+static inline gint
+_get_fd(PollEvents *s)
+{
+  PollFileChanges *self = (PollFileChanges *) s;
+  return self->fd;
+}
 
 static inline void
 poll_file_changes_on_read(PollFileChanges *self)
@@ -55,13 +63,12 @@ poll_file_changes_on_file_moved(PollFileChanges *self)
 }
 
 static inline gboolean
-poll_file_changes_on_eof(PollFileChanges *self)
+poll_file_changes_check_watches(PollFileChanges *self)
 {
-  gboolean result = TRUE;
-  if (self->on_eof)
-    result = self->on_eof(self);
-  if (log_pipe_notify(self->control, NC_FILE_EOF, self) & NR_STOP_ON_EOF)
-    result = FALSE;
+  gboolean result = poll_events_check_watches(&self->super);
+
+  if (result && self->on_eof)
+    result &= self->on_eof(self);
   return result;
 }
 
@@ -172,46 +179,16 @@ poll_file_changes_rearm_timer(PollFileChanges *self)
   iv_timer_register(&self->follow_timer);
 }
 
-static gboolean
-poll_file_changes_check_eof(PollFileChanges *self)
-{
-  gint fd = self->fd;
-  if (fd < 0)
-    return FALSE;
-
-  off_t pos = lseek(fd, 0, SEEK_CUR);
-  if (pos == (off_t) -1)
-    {
-      msg_error("Error invoking seek on followed file",
-                evt_tag_str("follow_filename", self->follow_filename),
-                evt_tag_error("error"));
-      return FALSE;
-    }
-
-  struct stat st;
-  gboolean end_of_file = fstat(fd, &st) == 0 && pos == st.st_size;
-  return end_of_file;
-}
-
 void
 poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
 {
   PollFileChanges *self = (PollFileChanges *) s;
-  gboolean check_again = TRUE;
-
   /* we can only provide input events */
   g_assert((cond & ~G_IO_IN) == 0);
 
   poll_file_changes_stop_watches(s);
 
-  if (poll_file_changes_check_eof(self))
-    {
-      msg_trace("End of file, following file",
-                evt_tag_str("follow_filename", self->follow_filename));
-      check_again = poll_file_changes_on_eof(self);
-    }
-
-  if (check_again)
+  if (poll_file_changes_check_watches(self))
     poll_file_changes_rearm_timer(self);
 }
 
@@ -230,6 +207,8 @@ poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *fol
 {
   self->super.stop_watches = poll_file_changes_stop_watches;
   self->super.update_watches = poll_file_changes_update_watches;
+  self->super.system_polled = FALSE;
+  self->super.get_fd = _get_fd;
   self->super.free_fn = poll_file_changes_free;
 
   self->fd = fd;
