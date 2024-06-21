@@ -152,7 +152,7 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
         {
           if (wildcard_file_reader_is_deleted(reader))
             {
-              msg_debug("wildcard-file(): File was deleted, and a new file was created with the same name. "
+              msg_debug("wildcard-file(): file was deleted, and a new file was created with the same name"
                         "Schedule reading the new one, once the old is finished",
                         evt_tag_str("filename", event->full_path));
               pending_file_list_add(self->waiting_list, event->full_path);
@@ -302,7 +302,7 @@ _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
   DirectoryMonitorOptions options =
   {
     .dir = directory,
-    .follow_freq = (self->monitor_freq ? self->monitor_freq : self->file_reader_options.follow_freq),
+    .monitor_freq = (self->monitor_freq ? self->monitor_freq : self->file_reader_options.follow_freq),
     .method = self->monitor_method
   };
   DirectoryMonitor *monitor = create_directory_monitor(&options);

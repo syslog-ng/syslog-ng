@@ -79,7 +79,7 @@ create_directory_monitor(DirectoryMonitorOptions *options)
   DirectoryMonitorConstructor constructor = directory_monitor_factory_get_constructor(options);
   if (constructor)
     {
-      monitor = constructor(options->dir, options->follow_freq);
+      monitor = constructor(options->dir, options->monitor_freq);
     }
   return monitor;
 }
