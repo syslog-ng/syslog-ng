@@ -73,9 +73,9 @@ _set_eof(WildcardFileReader *self)
 }
 
 static gboolean
-_is_reader_poll_stopped(FileReader *reader)
+_is_reader_poll_stopped(LogReader *reader)
 {
-  return (reader->reader == NULL || reader->reader->poll_events == NULL);
+  return (reader == NULL || FALSE == log_reader_is_opened(reader));
 }
 
 static void
@@ -87,7 +87,7 @@ _set_deleted(WildcardFileReader *self)
    */
   self->file_state.deleted = TRUE;
 
-  if (_is_reader_poll_stopped(&self->super))
+  if (_is_reader_poll_stopped(self->super.reader))
     {
       self->file_state.deleted_eof = TRUE;
       _schedule_state_change_handling(self);
@@ -114,9 +114,10 @@ _notify(LogPipe *s, gint notify_code, gpointer user_data)
       _set_eof(self);
       break;
     default:
-      result = file_reader_notify_method(s, notify_code, user_data);
       break;
     }
+  result = file_reader_notify_method(s, notify_code, user_data);
+
   if (_is_deleted_file_eof(self))
     result |= NR_STOP_ON_EOF;
   return result;
