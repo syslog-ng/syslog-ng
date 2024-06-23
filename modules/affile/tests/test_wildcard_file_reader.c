@@ -44,6 +44,9 @@ static void
 _eof(FileReader *reader, gpointer user_data)
 {
   TestFileStateEvent *test = (TestFileStateEvent *) user_data;
+
+  cr_assert_eq(test->deleted_eof_called, FALSE);
+
   test->deleted_eof_called = TRUE;
 }
 
@@ -78,6 +81,12 @@ void file_reader_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions 
 gint file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
 {
   return NR_OK;
+}
+
+gboolean
+log_reader_is_opened(LogReader *self)
+{
+  return TRUE;
 }
 
 #if SYSLOG_NG_USE_CONST_IVYKIS_MOCK
@@ -137,6 +146,7 @@ Test(test_wildcard_file_reader, notif_deleted)
   log_pipe_queue(&reader->super.super, NULL, &path_options);
   log_pipe_notify(&reader->super.super, NC_FILE_DELETED, NULL);
   cr_assert_eq(reader->file_state.deleted, TRUE);
+  cr_assert_eq(reader->file_state.deleted_eof, FALSE);
 }
 
 Test(test_wildcard_file_reader, notif_eof)
@@ -150,6 +160,9 @@ Test(test_wildcard_file_reader, notif_eof_after_deleted)
 {
   log_pipe_queue(&reader->super.super, NULL, &path_options);
 
+  cr_assert_eq(reader->file_state.deleted_eof, FALSE);
+  cr_assert_eq(reader->file_state.deleted, FALSE);
+
   gint result = log_pipe_notify(&reader->super.super, NC_FILE_DELETED, NULL);
   cr_assert_eq(result & NR_STOP_ON_EOF, 0);
 
@@ -161,6 +174,9 @@ Test(test_wildcard_file_reader, notif_eof_after_deleted)
 Test(test_wildcard_file_reader, status_change_deleted_eof)
 {
   log_pipe_queue(&reader->super.super, NULL, &path_options);
+
+  cr_assert_eq(reader->file_state.deleted_eof, FALSE);
+  cr_assert_eq(reader->file_state.deleted, FALSE);
 
   log_pipe_notify(&reader->super.super, NC_FILE_EOF, NULL);
   cr_assert_eq(test_event->deleted_eof_called, FALSE);
