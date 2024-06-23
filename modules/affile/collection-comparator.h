@@ -33,7 +33,7 @@ typedef struct _CollectionComparatorEntry
 
 typedef struct _CollectionComparator CollectionComparator;
 
-typedef void (*cc_callback)(const gchar *value, gpointer user_data);
+typedef void (*cc_callback)(CollectionComparatorEntry *entry, gpointer user_data);
 
 guint hash_collection_comparator_entry(const void *data);
 gboolean equal_collection_comparator_entry(const void *a, const void *b);
