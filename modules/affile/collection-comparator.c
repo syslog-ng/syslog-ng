@@ -26,13 +26,6 @@
 #define IN_NEW   0x02
 #define IN_BOTH  0x03
 
-typedef struct _CollectionComparatorEntry
-{
-  gint64 key[2];
-  gchar *value;
-  guint8 flag;
-} CollectionComparatorEntry;
-
 struct _CollectionComparator
 {
   GList *original_list;
@@ -46,8 +39,8 @@ struct _CollectionComparator
   void (*handle_deleted_entry)(const gchar *name, gpointer callback_data);
 };
 
-static inline guint
-_hash_collection_entry(const void *data)
+inline guint
+hash_collection_comparator_entry(const void *data)
 {
   const CollectionComparatorEntry *entry = data;
   gint64 hash1 = g_int64_hash(&entry->key[0]);
@@ -57,16 +50,16 @@ _hash_collection_entry(const void *data)
   return hash;
 }
 
-static inline gboolean
-_equal_collection_entry(const void *a, const void *b)
+inline gboolean
+equal_collection_comparator_entry(const void *a, const void *b)
 {
   CollectionComparatorEntry *entry1 = (CollectionComparatorEntry *) a;
   CollectionComparatorEntry *entry2 = (CollectionComparatorEntry *) b;
   return memcmp(entry1->key, entry2->key, 2 * sizeof(gint64)) == 0 && g_str_equal(entry1->value, entry2->value);
 }
 
-static void
-_free_poll_entry(gpointer s)
+inline void
+free_collection_comparator_entry(gpointer s)
 {
   CollectionComparatorEntry *entry = (CollectionComparatorEntry *)s;
   g_free(entry->value);
@@ -77,7 +70,7 @@ void
 collection_comparator_free(CollectionComparator *self)
 {
   g_hash_table_unref(self->original_map);
-  g_list_free_full(self->original_list, _free_poll_entry);
+  g_list_free_full(self->original_list, free_collection_comparator_entry);
   g_free(self);
 }
 
@@ -85,7 +78,7 @@ CollectionComparator *
 collection_comparator_new(void)
 {
   CollectionComparator *self = g_new0(CollectionComparator, 1);
-  self->original_map = g_hash_table_new(_hash_collection_entry, _equal_collection_entry);
+  self->original_map = g_hash_table_new(hash_collection_comparator_entry, equal_collection_comparator_entry);
   return self;
 }
 
@@ -183,7 +176,7 @@ collection_comparator_stop(CollectionComparator *self)
 {
   collection_comparator_collect_deleted_entries(self);
   g_list_foreach(self->deleted_entries, _deleted_entries_callback, self);
-  g_list_free_full(self->deleted_entries, _free_poll_entry);
+  g_list_free_full(self->deleted_entries, free_collection_comparator_entry);
   g_list_foreach(self->added_entries, _added_entries_callback, self);
   g_list_free(self->added_entries);
   self->running = FALSE;
