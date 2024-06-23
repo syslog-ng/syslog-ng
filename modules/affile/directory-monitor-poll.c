@@ -37,14 +37,14 @@ typedef struct _DirectoryMonitorPoll
 } DirectoryMonitorPoll;
 
 static void
-_handle_new_entry(const gchar *filename, gpointer user_data)
+_handle_new_entry(CollectionComparatorEntry *entry, gpointer user_data)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)user_data;
   if (self->super.callback)
     {
       DirectoryMonitorEvent event;
 
-      event.name = filename;
+      event.name = entry->value;
       event.full_path = build_filename(self->super.real_path, event.name);
       event.event_type = g_file_test(event.full_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
 
@@ -55,14 +55,14 @@ _handle_new_entry(const gchar *filename, gpointer user_data)
 }
 
 static void
-_handle_deleted_entry(const gchar *filename, gpointer user_data)
+_handle_deleted_entry(CollectionComparatorEntry *entry, gpointer user_data)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)user_data;
   if (self->super.callback)
     {
       DirectoryMonitorEvent event;
 
-      event.name = filename;
+      event.name = entry->value;
       event.event_type = FILE_DELETED;
       event.full_path = build_filename(self->super.real_path, event.name);
 

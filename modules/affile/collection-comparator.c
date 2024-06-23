@@ -35,8 +35,8 @@ struct _CollectionComparator
   GList *added_entries;
   gpointer callback_data;
 
-  void (*handle_new_entry)(const gchar *name, gpointer callback_data);
-  void (*handle_deleted_entry)(const gchar *name, gpointer callback_data);
+  cc_callback handle_new_entry;
+  cc_callback handle_deleted_entry;
 };
 
 inline guint
@@ -137,7 +137,7 @@ _deleted_entries_callback(gpointer data, gpointer user_data)
 {
   CollectionComparatorEntry *entry = (CollectionComparatorEntry *)data;
   CollectionComparator *self = (CollectionComparator *)user_data;
-  self->handle_deleted_entry(entry->value, self->callback_data);
+  self->handle_deleted_entry(entry, self->callback_data);
 }
 
 void
@@ -168,7 +168,7 @@ _added_entries_callback(gpointer data, gpointer user_data)
 {
   CollectionComparatorEntry *entry = (CollectionComparatorEntry *)data;
   CollectionComparator *self = (CollectionComparator *)user_data;
-  self->handle_new_entry(entry->value, self->callback_data);
+  self->handle_new_entry(entry, self->callback_data);
 }
 
 void
