@@ -199,7 +199,7 @@ _set_real_path(DirectoryMonitor *self)
 void
 directory_monitor_start(DirectoryMonitor *self)
 {
-  msg_debug("Starting directory monitor", evt_tag_str("dir", self->dir));
+  msg_debug("Starting directory monitor", evt_tag_str("dir", self->dir), evt_tag_str("method", self->method));
 
   GDir *directory = NULL;
   GError *error = NULL;
@@ -253,8 +253,9 @@ directory_monitor_stop_and_destroy(DirectoryMonitor *self)
 }
 
 void
-directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint recheck_time)
+directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint recheck_time, const gchar *method)
 {
+  self->method = method;
   self->dir = g_strdup(dir);
   self->recheck_time = recheck_time;
   IV_TIMER_INIT(&self->check_timer);
@@ -267,7 +268,7 @@ DirectoryMonitor *
 directory_monitor_new(const gchar *dir, guint recheck_time)
 {
   DirectoryMonitor *self = g_new0(DirectoryMonitor, 1);
-  directory_monitor_init_instance(self, dir, recheck_time);
+  directory_monitor_init_instance(self, dir, recheck_time, "unknown");
   return self;
 }
 

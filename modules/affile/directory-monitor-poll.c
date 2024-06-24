@@ -185,7 +185,7 @@ DirectoryMonitor *
 directory_monitor_poll_new(const gchar *dir, guint recheck_time)
 {
   DirectoryMonitorPoll *self = g_new0(DirectoryMonitorPoll, 1);
-  directory_monitor_init_instance(&self->super, dir, recheck_time);
+  directory_monitor_init_instance(&self->super, dir, recheck_time, "poll");
 
   IV_TIMER_INIT(&self->rescan_timer);
   self->rescan_timer.cookie = self;
