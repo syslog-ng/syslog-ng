@@ -105,7 +105,7 @@ DirectoryMonitor *
 directory_monitor_inotify_new(const gchar *dir, guint recheck_time)
 {
   DirectoryMonitorInotify *self = g_new0(DirectoryMonitorInotify, 1);
-  directory_monitor_init_instance(&self->super, dir, recheck_time);
+  directory_monitor_init_instance(&self->super, dir, recheck_time, "inotify");
 
   IV_INOTIFY_INIT(&self->inotify);
   if (iv_inotify_register(&self->inotify))
