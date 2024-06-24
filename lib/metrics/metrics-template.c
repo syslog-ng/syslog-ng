@@ -94,7 +94,7 @@ metrics_template_build_sck(MetricsTemplate *self,
       GString *value_buffer = scratch_buffers_alloc();
 
       label_template_format(label_template, template_options, msg, value_buffer,
-                            metrics_tls_cache_get_next_label());
+                            metrics_tls_cache_alloc_label());
     }
 
   if (self->vp)
