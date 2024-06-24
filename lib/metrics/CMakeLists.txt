@@ -1,10 +1,12 @@
 set(METRICS_HEADERS
+    metrics/metrics.h
     metrics/metrics-tls-cache.h
     metrics/metrics-template.h
     metrics/label-template.h
     PARENT_SCOPE)
 
 set(METRICS_SOURCES
+    metrics/metrics.c
     metrics/metrics-tls-cache.c
     metrics/metrics-template.c
     metrics/label-template.c

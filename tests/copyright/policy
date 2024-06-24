@@ -90,6 +90,7 @@ lib/metrics-pipe\.[ch]
 lib/metrics/label-template\.(c|h)$
 lib/metrics/metrics-template\.(c|h)$
 lib/metrics/metrics-tls-cache\.(c|h)$
+lib/metrics/metrics\.(c|h)$
 lib/rewrite/rewrite-set-facility\.h
 lib/rewrite/rewrite-set-matches\.[ch]
 lib/rewrite/rewrite-unset-matches\.[ch]
