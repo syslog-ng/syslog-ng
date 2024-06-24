@@ -62,8 +62,9 @@ _add_dynamic_labels_vp_helper(const gchar *name, LogMessageValueType type, const
   g_string_assign(name_buffer, name);
   g_string_append_len(value_buffer, value, value_len);
 
-  StatsClusterLabel label = stats_cluster_label(name_buffer->str, value_buffer->str);
-  metrics_tls_cache_append_label(&label);
+  StatsClusterLabel *label = metrics_tls_cache_alloc_label();
+  label->name = name_buffer->str;
+  label->value = value_buffer->str;
 
   return FALSE;
 }

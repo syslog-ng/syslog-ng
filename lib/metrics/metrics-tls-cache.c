@@ -103,12 +103,6 @@ metrics_tls_cache_reset_labels(void)
   label_buffers = g_array_set_size(label_buffers, 0);
 }
 
-void
-metrics_tls_cache_append_label(StatsClusterLabel *label)
-{
-  label_buffers = g_array_append_vals(label_buffers, label, 1);
-}
-
 StatsClusterLabel *
 metrics_tls_cache_alloc_label(void)
 {

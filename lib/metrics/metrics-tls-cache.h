@@ -31,7 +31,6 @@
 StatsCounterItem *metrics_tls_cache_get_counter(StatsClusterKey *key, gint level);
 
 void metrics_tls_cache_reset_labels(void);
-void metrics_tls_cache_append_label(StatsClusterLabel *label);
 StatsClusterLabel *metrics_tls_cache_alloc_label(void);
 StatsClusterLabel *metrics_tls_cache_get_labels(void);
 guint metrics_tls_cache_get_labels_len(void);
