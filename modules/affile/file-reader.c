@@ -310,6 +310,49 @@ _reopen_on_notify(LogPipe *s, gboolean recover_state)
   _reader_open_file(s, recover_state);
 }
 
+static void
+_on_file_close(FileReader *self)
+{
+  if (self->options->exit_on_eof)
+    cfg_shutdown(log_pipe_get_config(&self->super));
+}
+
+static void
+_on_file_moved(FileReader *self)
+{
+  msg_verbose("Follow-mode file source moved, tracking of the new file is started",
+              evt_tag_str("filename", self->filename->str));
+  if (self->on_file_moved)
+    self->on_file_moved(self);
+  else
+    _reopen_on_notify(&self->super, TRUE);
+}
+
+static void
+_on_file_deleted(FileReader *self)
+{
+  /* We want to handle the events like file deleted in the same workflow.
+   * Manually polled file readers like poll-file-changes can handle this case,
+   * read the remaining file content to the end, and signal the EOF, this is
+   * happening from poll_events_update_watches, but that one is not always triggered
+   * automatically for system file event notifications (like poll-fd-events), as there
+   * might be no more file events after the file is fully read.
+   * So, we have to trigger one more read.
+   * NOTE: Do not try to close the reader directly from here, as there might already be
+   *       an io-operation in progress!
+   */
+  if (poll_events_system_polled(self->reader->poll_events))
+    log_reader_trigger_one_read(self->reader);
+}
+
+static void
+_on_read_error(FileReader *self)
+{
+  msg_verbose("Error while following source file, reopening in the hope it would work",
+              evt_tag_str("filename", self->filename->str));
+  _reopen_on_notify(&self->super, FALSE);
+}
+
 /* NOTE: runs in the main thread */
 gint
 file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
@@ -319,35 +362,19 @@ file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
   switch (notify_code)
     {
     case NC_CLOSE:
-      if (self->options->exit_on_eof)
-        cfg_shutdown(log_pipe_get_config(s));
+      _on_file_close(self);
       break;
 
     case NC_FILE_MOVED:
-      msg_verbose("Follow-mode file source moved, tracking of the new file is started",
-                  evt_tag_str("filename", self->filename->str));
-      _reopen_on_notify(s, TRUE);
+      _on_file_moved(self);
       break;
 
     case NC_READ_ERROR:
-      msg_verbose("Error while following source file, reopening in the hope it would work",
-                  evt_tag_str("filename", self->filename->str));
-      _reopen_on_notify(s, FALSE);
+      _on_read_error(self);
       break;
 
     case NC_FILE_DELETED:
-      /* We want to handle the events like file deleted in the same workflow.
-         Manually polled file readers like poll-file-changes can handle this case,
-         read the remaining file content to the end, and signal the EOF, this is
-         happening from poll_events_update_watches, but that one is not always triggered
-         automatically for system file event notifications (like poll-fd-events), as there
-         might be no more file events after the file is fully read.
-         So, we have to trigger one more read.
-         NOTE: Do not try to close the reader directly from here, as there might already be
-               an io-operation in progress!
-       */
-      if (poll_events_system_polled(self->reader->poll_events))
-        log_reader_trigger_one_read(self->reader);
+      _on_file_deleted(self);
       break;
 
     default:

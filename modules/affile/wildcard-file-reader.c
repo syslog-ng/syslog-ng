@@ -135,6 +135,13 @@ _handle_file_state_event(gpointer s)
     _deleted_file_eof(&self->file_state_event, &self->super);
 }
 
+static void
+_on_file_moved(FileReader *self)
+{
+  log_pipe_notify(&self->super, NC_FILE_DELETED, self);
+  log_pipe_notify(&self->super, NC_FILE_EOF, self);
+}
+
 void
 wildcard_file_reader_on_deleted_file_eof(WildcardFileReader *self,
                                          FileStateEventCallback cb,
@@ -159,6 +166,7 @@ wildcard_file_reader_new(const gchar *filename, FileReaderOptions *options, File
   self->super.super.init = _init;
   self->super.super.notify = _notify;
   self->super.super.deinit = _deinit;
+  self->super.on_file_moved = _on_file_moved;
   IV_TASK_INIT(&self->file_state_event_handler);
   self->file_state_event_handler.cookie = self;
   self->file_state_event_handler.handler = _handle_file_state_event;
