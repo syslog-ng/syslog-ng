@@ -35,7 +35,8 @@ typedef struct _FileReaderOptions
   gboolean exit_on_eof;
 } FileReaderOptions;
 
-typedef struct _FileReader
+typedef struct _FileReader FileReader;
+struct _FileReader
 {
   LogPipe super;
   LogSrcDriver *owner;
@@ -43,7 +44,9 @@ typedef struct _FileReader
   FileReaderOptions *options;
   FileOpener *opener;
   LogReader *reader;
-} FileReader;
+
+  void (*on_file_moved)(FileReader *);
+};
 
 static inline LogProtoFileReaderOptions *
 file_reader_options_get_log_proto_options(FileReaderOptions *options)
