@@ -22,11 +22,28 @@
  *
  */
 
-#ifndef APPMODEL_APP_PARSER_GENERATOR_H_INCLUDED
-#define APPMODEL_APP_PARSER_GENERATOR_H_INCLUDED
+#ifndef APPMODEL_APP_OBJECT_GENERATOR_H_INCLUDED
+#define APPMODEL_APP_OBJECT_GENERATOR_H_INCLUDED
 
 #include "plugin.h"
 
-CfgBlockGenerator *app_parser_generator_new(gint context, const gchar *name);
+typedef struct _AppObjectGenerator AppObjectGenerator;
+
+struct _AppObjectGenerator
+{
+  CfgBlockGenerator super;
+  gboolean (*parse_arguments)(AppObjectGenerator *self, CfgArgs *args, const gchar *reference);
+  void (*generate_config)(AppObjectGenerator *self, GlobalConfig *cfg, GString *result);
+  const gchar *included_apps;
+  const gchar *excluded_apps;
+  gboolean is_parsing_enabled;
+};
+
+gboolean app_object_generator_is_application_included(AppObjectGenerator *self, const gchar *app_name);
+gboolean app_object_generator_is_application_excluded(AppObjectGenerator *self, const gchar *app_name);
+
+gboolean app_object_generator_parse_arguments_method(AppObjectGenerator *self, CfgArgs *args, const gchar *reference);
+void app_object_generator_init_instance(AppObjectGenerator *self, gint context, const gchar *name);
+
 
 #endif
