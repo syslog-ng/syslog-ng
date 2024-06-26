@@ -62,7 +62,7 @@ _add_dynamic_labels_vp_helper(const gchar *name, LogMessageValueType type, const
   g_string_assign(name_buffer, name);
   g_string_append_len(value_buffer, value, value_len);
 
-  StatsClusterLabel *label = metrics_tls_cache_alloc_label();
+  StatsClusterLabel *label = metrics_cache_alloc_label(metrics_tls_cache());
   label->name = name_buffer->str;
   label->value = value_buffer->str;
 
@@ -87,7 +87,9 @@ metrics_template_build_sck(MetricsTemplate *self,
                            LogTemplateOptions *template_options,
                            LogMessage *msg, StatsClusterKey *key)
 {
-  metrics_tls_cache_reset_labels();
+  MetricsCache *tls_cache = metrics_tls_cache();
+
+  metrics_cache_reset_labels(tls_cache);
 
   for (GList *elem = g_list_first(self->label_templates); elem; elem = elem->next)
     {
@@ -95,13 +97,15 @@ metrics_template_build_sck(MetricsTemplate *self,
       GString *value_buffer = scratch_buffers_alloc();
 
       label_template_format(label_template, template_options, msg, value_buffer,
-                            metrics_tls_cache_alloc_label());
+                            metrics_cache_alloc_label(tls_cache));
     }
 
   if (self->vp)
     _add_dynamic_labels(self, template_options, msg);
 
-  stats_cluster_single_key_set(key, self->key, metrics_tls_cache_get_labels(), metrics_tls_cache_get_labels_len());
+  stats_cluster_single_key_set(key, self->key,
+                               metrics_cache_get_labels(tls_cache),
+                               metrics_cache_get_labels_len(tls_cache));
 }
 
 StatsCounterItem *
@@ -115,7 +119,7 @@ metrics_template_get_stats_counter(MetricsTemplate *self,
   scratch_buffers_mark(&marker);
   metrics_template_build_sck(self, template_options, msg, &key);
 
-  StatsCounterItem *counter = metrics_tls_cache_get_counter(&key, self->level);
+  StatsCounterItem *counter = metrics_cache_get_counter(metrics_tls_cache(), &key, self->level);
 
   scratch_buffers_reclaim_marked(marker);
   return counter;

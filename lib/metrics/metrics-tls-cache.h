@@ -27,13 +27,9 @@
 #define METRICS_TLS_CACHE_H_INCLUDED
 
 #include "stats/stats-registry.h"
+#include "metrics-cache.h"
 
-StatsCounterItem *metrics_tls_cache_get_counter(StatsClusterKey *key, gint level);
-
-void metrics_tls_cache_reset_labels(void);
-StatsClusterLabel *metrics_tls_cache_alloc_label(void);
-StatsClusterLabel *metrics_tls_cache_get_labels(void);
-guint metrics_tls_cache_get_labels_len(void);
+MetricsCache *metrics_tls_cache(void);
 
 void metrics_tls_cache_global_init(void);
 void metrics_tls_cache_global_deinit(void);

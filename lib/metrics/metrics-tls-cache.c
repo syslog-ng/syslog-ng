@@ -24,102 +24,35 @@
  */
 
 #include "metrics-tls-cache.h"
-#include "stats/stats-cluster-single.h"
 #include "apphook.h"
 #include "tls-support.h"
 
 TLS_BLOCK_START
 {
-  GHashTable *clusters;
-  GArray *label_buffers;
+  MetricsCache *metrics_cache;
 }
 TLS_BLOCK_END;
 
-#define clusters __tls_deref(clusters)
-#define label_buffers __tls_deref(label_buffers)
-
-static StatsCluster *
-_register_single_cluster_locked(StatsClusterKey *key, gint stats_level)
-{
-  StatsCluster *cluster;
-
-  stats_lock();
-  {
-    StatsCounterItem *counter;
-    cluster = stats_register_dynamic_counter(stats_level, key, SC_TYPE_SINGLE_VALUE, &counter);
-  }
-  stats_unlock();
-
-  return cluster;
-}
-
-static void
-_unregister_single_cluster_locked(StatsCluster *cluster)
-{
-  stats_lock();
-  {
-    StatsCounterItem *counter = stats_cluster_single_get_counter(cluster);
-    stats_unregister_dynamic_counter(cluster, SC_TYPE_SINGLE_VALUE, &counter);
-  }
-  stats_unlock();
-}
+#define metrics_cache __tls_deref(metrics_cache)
 
 static void
 _init_tls_cache(gpointer user_data)
 {
-  g_assert(!clusters && !label_buffers);
+  g_assert(!metrics_cache);
 
-  clusters = g_hash_table_new_full((GHashFunc) stats_cluster_key_hash,
-                                   (GEqualFunc) stats_cluster_key_equal,
-                                   NULL,
-                                   (GDestroyNotify) _unregister_single_cluster_locked);
-  label_buffers = g_array_new(FALSE, FALSE, sizeof(StatsClusterLabel));
+  metrics_cache = metrics_cache_new();
 }
 
 static void
 _deinit_tls_cache(gpointer user_data)
 {
-  g_hash_table_destroy(clusters);
-  g_array_free(label_buffers, TRUE);
+  metrics_cache_free(metrics_cache);
 }
 
-StatsCounterItem *
-metrics_tls_cache_get_counter(StatsClusterKey *key, gint level)
+MetricsCache *
+metrics_tls_cache(void)
 {
-  StatsCluster *cluster = g_hash_table_lookup(clusters, key);
-  if (!cluster)
-    {
-      cluster = _register_single_cluster_locked(key, level);
-      if (cluster)
-        g_hash_table_insert(clusters, &cluster->key, cluster);
-    }
-
-  return stats_cluster_single_get_counter(cluster);
-}
-
-void
-metrics_tls_cache_reset_labels(void)
-{
-  label_buffers = g_array_set_size(label_buffers, 0);
-}
-
-StatsClusterLabel *
-metrics_tls_cache_alloc_label(void)
-{
-  label_buffers = g_array_set_size(label_buffers, label_buffers->len + 1);
-  return &g_array_index(label_buffers, StatsClusterLabel, label_buffers->len - 1);
-}
-
-StatsClusterLabel *
-metrics_tls_cache_get_labels(void)
-{
-  return (StatsClusterLabel *) label_buffers->data;
-}
-
-guint
-metrics_tls_cache_get_labels_len(void)
-{
-  return label_buffers->len;
+  return metrics_cache;
 }
 
 void
