@@ -384,7 +384,7 @@ plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *ar
   g_module_make_resident(mod);
   module_info = _get_module_info(mod);
 
-  if (module_info->canonical_name)
+  if (module_info && module_info->canonical_name)
     {
       g_free(module_init_func);
       module_init_func = _format_module_init_name(module_info->canonical_name ? : module_name);
