@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2018-2022 One Identity LLC.
  * Copyright (c) 2018 Balazs Scheidler
  * Copyright (c) 2016 Marc Falzon
@@ -27,16 +29,6 @@
 #include "syslog-names.h"
 #include "scratch-buffers.h"
 #include "http-signals.h"
-
-enum HttpRequestsMetricLabelIds
-{
-  HTTP_REQUESTS_METRIC_URL_LABEL_ID = 0,
-  HTTP_REQUESTS_METRIC_RESPONSE_CODE_LABEL_ID,
-  HTTP_REQUESTS_METRIC_DRIVER_LABEL_ID,
-  HTTP_REQUESTS_METRIC_ID_LABEL_ID,
-
-  HTTP_REQUESTS_METRIC_LABELS_SIZE,
-};
 
 #define HTTP_HEADER_FORMAT_ERROR http_header_format_error_quark()
 
@@ -620,21 +612,33 @@ _update_status_code_metrics(HTTPDestinationWorker *self, const gchar *url, glong
 {
   gint level = log_pipe_is_internal(&self->super.owner->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1;
 
-  self->metrics.requests_labels[HTTP_REQUESTS_METRIC_URL_LABEL_ID].value = url;
+  metrics_cache_reset_labels(self->metrics.cache);
+
+  StatsClusterLabel *url_label = metrics_cache_alloc_label(self->metrics.cache);
+  url_label->name = "url";
+  url_label->value = url;
+
+  StatsClusterLabel *response_code_label = metrics_cache_alloc_label(self->metrics.cache);
   g_snprintf(self->metrics.requests_response_code_str_buffer, sizeof(self->metrics.requests_response_code_str_buffer),
              "%ld", http_code);
+  response_code_label->name = "response_code";
+  response_code_label->value = self->metrics.requests_response_code_str_buffer;
+
+  StatsClusterLabel *driver_label = metrics_cache_alloc_label(self->metrics.cache);
+  driver_label->name = "driver";
+  driver_label->value = "http";
+
+  StatsClusterLabel *id_label = metrics_cache_alloc_label(self->metrics.cache);
+  id_label->name = "id";
+  id_label->value = self->super.owner->super.super.id;
 
   StatsClusterKey key;
   stats_cluster_single_key_set(&key, "output_http_requests_total",
-                               self->metrics.requests_labels, HTTP_REQUESTS_METRIC_LABELS_SIZE);
+                               metrics_cache_get_labels(self->metrics.cache),
+                               metrics_cache_get_labels_len(self->metrics.cache));
 
-  StatsCounterItem *counter;
-
-  stats_lock();
-  StatsCluster *sc = stats_register_dynamic_counter(level, &key, SC_TYPE_SINGLE_VALUE, &counter);
+  StatsCounterItem *counter = metrics_cache_get_counter(self->metrics.cache, &key, level);
   stats_counter_inc(counter);
-  stats_unregister_dynamic_counter(sc, SC_TYPE_SINGLE_VALUE, &counter);
-  stats_unlock();
 }
 
 static LogThreadedResult
@@ -842,17 +846,6 @@ _insert_single(LogThreadedDestWorker *s, LogMessage *msg)
   return log_threaded_dest_worker_flush(&self->super, LTF_FLUSH_NORMAL);
 }
 
-static void
-_init_http_request_metrics(HTTPDestinationWorker *self)
-{
-  self->metrics.requests_labels[HTTP_REQUESTS_METRIC_URL_LABEL_ID] = stats_cluster_label("url", "");
-  self->metrics.requests_labels[HTTP_REQUESTS_METRIC_RESPONSE_CODE_LABEL_ID] = \
-      stats_cluster_label("response_code", self->metrics.requests_response_code_str_buffer);
-  self->metrics.requests_labels[HTTP_REQUESTS_METRIC_DRIVER_LABEL_ID] = stats_cluster_label("driver", "http");
-  self->metrics.requests_labels[HTTP_REQUESTS_METRIC_ID_LABEL_ID] = \
-      stats_cluster_label("id", self->super.owner->super.super.id);
-}
-
 static gboolean
 _init(LogThreadedDestWorker *s)
 {
@@ -882,7 +875,6 @@ _init(LogThreadedDestWorker *s)
   _setup_static_options_in_curl(self);
   _reinit_request_headers(self);
   _reinit_request_body(self);
-  _init_http_request_metrics(self);
   return log_threaded_dest_worker_init_method(s);
 }
 
@@ -910,7 +902,7 @@ http_dw_free(LogThreadedDestWorker *s)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
 
-  g_free(self->metrics.requests_labels);
+  metrics_cache_free(self->metrics.cache);
   http_lb_client_deinit(&self->lbc);
   log_threaded_dest_worker_free_method(s);
 }
@@ -932,7 +924,7 @@ http_dw_new(LogThreadedDestDriver *o, gint worker_index)
   else
     self->super.insert = _insert_single;
 
-  self->metrics.requests_labels = g_new0(StatsClusterLabel, HTTP_REQUESTS_METRIC_LABELS_SIZE);
+  self->metrics.cache = metrics_cache_new();
 
   http_lb_client_init(&self->lbc, owner->load_balancer);
   return &self->super;
