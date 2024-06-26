@@ -4,12 +4,14 @@ EXTRA_DIST += lib/metrics/CMakeLists.txt
 
 metricsinclude_HEADERS = \
 	lib/metrics/metrics.h	\
+	lib/metrics/metrics-cache.h	\
 	lib/metrics/metrics-tls-cache.h	\
 	lib/metrics/metrics-template.h	\
 	lib/metrics/label-template.h
 
 metrics_sources = \
 	lib/metrics/metrics.c	\
+	lib/metrics/metrics-cache.c	\
 	lib/metrics/metrics-tls-cache.c	\
 	lib/metrics/metrics-template.c	\
 	lib/metrics/label-template.c
