@@ -1238,3 +1238,60 @@ def test_parse_kv_stray_words_value_name(config, syslog_ng):
     assert file_true.get_stats()["processed"] == 1
     assert "processed" not in file_false.get_stats()
     assert file_true.read_log() == "{\"foo\":\"bar\",\"bar\":\"baz\",\"stray_words\":\"thisisstray\"}\n"
+
+
+def test_slash_string_features(config, syslog_ng):
+    cfg = r"""
+            $MSG = json();
+            $MSG.base = /foo bar/;
+            $MSG.line_break = /foo
+bar/;
+            $MSG.joint_lines = /foo \
+bar/;
+            ## escaped characters
+            $MSG.escaped_backslash = /foo\\bar/;
+            $MSG.escaped_slash = /foo\/bar/;
+            $MSG.non_escaped_single_quotes = /foo'bar/;
+            $MSG.non_escaped_double_quotes = /foo"bar/;
+
+            ## special characters
+            $MSG.new_line = /foo\nbar/;
+            $MSG.tab = /foo\tbar/;
+            $MSG.carrige_return = /foo\rbar/;
+            $MSG.vertical_tab = /foo\vbar/;
+            $MSG.form_feed = /foo\fbar/;
+            $MSG.backspace = /foo\bbar/;
+            $MSG.alert = /foo\abar/;
+
+            ##
+            $MSG.hexadecimal_value = /foo\x40bar/;
+            $MSG.octal_value = /foo\o100bar/;
+        """
+
+    (file_true, file_false) = create_config(
+        config, cfg,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    exp = (
+        r"""{"base":"foo bar","""
+        r""""line_break":"foo\nbar","""
+        r""""joint_lines":"foo bar","""
+        r""""escaped_backslash":"foo\\bar","""
+        r""""escaped_slash":"foo\/bar","""
+        r""""non_escaped_single_quotes":"foo'bar","""
+        r""""non_escaped_double_quotes":"foo\"bar","""
+        r""""new_line":"foo\nbar","""
+        r""""tab":"foo\tbar","""
+        r""""carrige_return":"foo\rbar","""
+        r""""vertical_tab":"foo\u000bbar","""
+        r""""form_feed":"foo\fbar","""
+        r""""backspace":"foo\bbar","""
+        r""""alert":"foo\u0007bar","""
+        r""""hexadecimal_value":"foo@bar","""
+        r""""octal_value":"foo@bar"}""" + "\n"
+    )
+    res = file_true.read_log()
+    assert res == exp
