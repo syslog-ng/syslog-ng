@@ -54,6 +54,7 @@ MetricsCache *metrics_cache_new(void);
 void metrics_cache_free(MetricsCache *self);
 
 StatsCounterItem *metrics_cache_get_counter(MetricsCache *self, StatsClusterKey *key, gint level);
+gboolean metrics_cache_remove_counter(MetricsCache *self, StatsClusterKey *key);
 void metrics_cache_reset_labels(MetricsCache *self);
 StatsClusterLabel *metrics_cache_alloc_label(MetricsCache *self);
 StatsClusterLabel *metrics_cache_get_labels(MetricsCache *self);

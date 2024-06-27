@@ -94,6 +94,12 @@ metrics_cache_get_counter(MetricsCache *self, StatsClusterKey *key, gint level)
   return stats_cluster_single_get_counter(cluster);
 }
 
+gboolean
+metrics_cache_remove_counter(MetricsCache *self, StatsClusterKey *key)
+{
+  return g_hash_table_remove(self->clusters, key);
+}
+
 void
 metrics_cache_reset_labels(MetricsCache *self)
 {
