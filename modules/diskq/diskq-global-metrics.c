@@ -30,6 +30,7 @@
 #include "messages.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster-single.h"
+#include "metrics/metrics-cache.h"
 #include "timeutils/misc.h"
 #include "qdisk.h"
 
@@ -48,6 +49,7 @@ typedef struct DiskQGlobalMetrics_
   GMutex lock;
   struct iv_timer dir_watch_timer;
 
+  MetricsCache *cache;
   GHashTable *dirs;
   gint freq;
 } DiskQGlobalMetrics;
@@ -173,30 +175,19 @@ _set_abandoned_disk_buffer_file_metrics(const gchar *dir, const gchar *filename)
     }
 
   StatsCounterItem *queued, *capacity, *disk_allocated, *disk_usage;
-  StatsCluster *queued_c, *capacity_c, *disk_allocated_c, *disk_usage_c;
   StatsClusterKey queued_sc_key, capacity_sc_key, disk_allocated_sc_key, disk_usage_sc_key;
   _init_abandoned_disk_buffer_sc_keys(&queued_sc_key, &capacity_sc_key, &disk_allocated_sc_key, &disk_usage_sc_key,
                                       abs_filename, options.reliable);
 
-  stats_lock();
-  {
-    queued_c = stats_register_dynamic_counter(STATS_LEVEL1, &queued_sc_key, SC_TYPE_SINGLE_VALUE, &queued);
-    capacity_c = stats_register_dynamic_counter(STATS_LEVEL1, &capacity_sc_key, SC_TYPE_SINGLE_VALUE, &capacity);
-    disk_allocated_c = stats_register_dynamic_counter(STATS_LEVEL1, &disk_allocated_sc_key, SC_TYPE_SINGLE_VALUE,
-                                                      &disk_allocated);
-    disk_usage_c = stats_register_dynamic_counter(STATS_LEVEL1, &disk_usage_sc_key, SC_TYPE_SINGLE_VALUE, &disk_usage);
+  queued = metrics_cache_get_counter(diskq_global_metrics.cache, &queued_sc_key, STATS_LEVEL1);
+  capacity = metrics_cache_get_counter(diskq_global_metrics.cache, &capacity_sc_key, STATS_LEVEL1);
+  disk_allocated = metrics_cache_get_counter(diskq_global_metrics.cache, &disk_allocated_sc_key, STATS_LEVEL1);
+  disk_usage = metrics_cache_get_counter(diskq_global_metrics.cache, &disk_usage_sc_key, STATS_LEVEL1);
 
-    stats_counter_set(queued, log_queue_get_length(&queue->super));
-    stats_counter_set(capacity, B_TO_KiB(qdisk_get_max_useful_space(queue->qdisk)));
-    stats_counter_set(disk_allocated, B_TO_KiB(qdisk_get_file_size(queue->qdisk)));
-    stats_counter_set(disk_usage, B_TO_KiB(qdisk_get_used_useful_space(queue->qdisk)));
-
-    stats_unregister_dynamic_counter(queued_c, SC_TYPE_SINGLE_VALUE, &queued);
-    stats_unregister_dynamic_counter(capacity_c, SC_TYPE_SINGLE_VALUE, &capacity);
-    stats_unregister_dynamic_counter(disk_allocated_c, SC_TYPE_SINGLE_VALUE, &disk_allocated);
-    stats_unregister_dynamic_counter(disk_usage_c, SC_TYPE_SINGLE_VALUE, &disk_usage);
-  }
-  stats_unlock();
+  stats_counter_set(queued, log_queue_get_length(&queue->super));
+  stats_counter_set(capacity, B_TO_KiB(qdisk_get_max_useful_space(queue->qdisk)));
+  stats_counter_set(disk_allocated, B_TO_KiB(qdisk_get_file_size(queue->qdisk)));
+  stats_counter_set(disk_usage, B_TO_KiB(qdisk_get_used_useful_space(queue->qdisk)));
 
   gboolean persistent;
   log_queue_disk_stop(&queue->super, &persistent);
@@ -217,14 +208,10 @@ _unset_abandoned_disk_buffer_file_metrics(const gchar *dir, const gchar *filenam
   _init_abandoned_disk_buffer_sc_keys(&queued_sc_key, &capacity_sc_key, &disk_allocated_sc_key, &disk_usage_sc_key,
                                       abs_filename, reliable);
 
-  stats_lock();
-  {
-    stats_remove_cluster(&queued_sc_key);
-    stats_remove_cluster(&capacity_sc_key);
-    stats_remove_cluster(&disk_allocated_sc_key);
-    stats_remove_cluster(&disk_usage_sc_key);
-  }
-  stats_unlock();
+  metrics_cache_remove_counter(diskq_global_metrics.cache, &queued_sc_key);
+  metrics_cache_remove_counter(diskq_global_metrics.cache, &capacity_sc_key);
+  metrics_cache_remove_counter(diskq_global_metrics.cache, &disk_allocated_sc_key);
+  metrics_cache_remove_counter(diskq_global_metrics.cache, &disk_usage_sc_key);
 
   g_free(abs_filename);
 }
@@ -302,15 +289,9 @@ _update_dir_metrics(gpointer key, gpointer value, gpointer user_data)
   StatsClusterKey available_bytes_sc_key;
   _init_dir_sc_keys(&available_bytes_sc_key, dir);
 
-  stats_lock();
-  {
-    StatsCounterItem *counter;
-    StatsCluster *cluster = stats_register_dynamic_counter(STATS_LEVEL1, &available_bytes_sc_key, SC_TYPE_SINGLE_VALUE,
-                                                           &counter);
-    stats_counter_set(counter, available_space_mib);
-    stats_unregister_dynamic_counter(cluster, SC_TYPE_SINGLE_VALUE, &counter);
-  }
-  stats_unlock();
+  StatsCounterItem *counter = metrics_cache_get_counter(diskq_global_metrics.cache, &available_bytes_sc_key,
+                                                        STATS_LEVEL1);
+  stats_counter_set(counter, available_space_mib);
 }
 
 static void
@@ -375,6 +356,7 @@ _new(gint type, gpointer c)
   self->dir_watch_timer.handler = _update_all_dir_metrics;
   self->dir_watch_timer.cookie = self;
 
+  self->cache = metrics_cache_new();
   self->dirs = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_hash_table_destroy);
 }
 
@@ -415,6 +397,7 @@ _free(gint type, gpointer c)
   DiskQGlobalMetrics *self = &diskq_global_metrics;
 
   g_hash_table_destroy(self->dirs);
+  metrics_cache_free(self->cache);
 }
 
 void
