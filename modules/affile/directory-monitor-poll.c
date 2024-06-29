@@ -116,7 +116,7 @@ _rescan_directory(DirectoryMonitorPoll *self, gboolean initial_scan)
           else
             {
               g_free(full_filename);
-              msg_error("Error while stat() monitored file", evt_tag_str("filename", filename));
+              msg_error("Error invoking g_stat() on file", evt_tag_str("filename", filename));
             }
         }
       g_dir_close(directory);
