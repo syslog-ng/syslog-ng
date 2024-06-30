@@ -28,7 +28,7 @@ _init(LogPipe *s)
 {
   WildcardFileReader *self = (WildcardFileReader *)s;
   self->file_state.deleted = FALSE;
-  self->file_state.eof = FALSE;
+  self->file_state.deleted_eof = FALSE;
   return file_reader_init_method(s);
 }
 
@@ -41,14 +41,6 @@ _deinit(LogPipe *s)
       iv_task_unregister(&self->file_state_event_handler);
     }
   return file_reader_deinit_method(s);
-}
-
-static void
-_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
-{
-  WildcardFileReader *self = (WildcardFileReader *)s;
-  self->file_state.eof = FALSE;
-  file_reader_queue_method(s, msg, path_options);
 }
 
 static void
@@ -73,11 +65,17 @@ _schedule_state_change_handling(WildcardFileReader *self)
 static void
 _set_eof(WildcardFileReader *self)
 {
-  self->file_state.eof = TRUE;
   if (self->file_state.deleted)
     {
+      self->file_state.deleted_eof = TRUE;
       _schedule_state_change_handling(self);
     }
+}
+
+static gboolean
+_is_reader_poll_stopped(LogReader *reader)
+{
+  return (reader == NULL || FALSE == log_reader_is_opened(reader));
 }
 
 static void
@@ -88,13 +86,25 @@ _set_deleted(WildcardFileReader *self)
    * before we set it
    */
   self->file_state.deleted = TRUE;
-  _schedule_state_change_handling(self);
+
+  if (_is_reader_poll_stopped(self->super.reader))
+    {
+      self->file_state.deleted_eof = TRUE;
+      _schedule_state_change_handling(self);
+    }
 }
 
-static void
+static gboolean
+_is_deleted_file_eof(WildcardFileReader *self)
+{
+  return (self->file_state.deleted && self->file_state.deleted_eof);
+}
+
+static gint
 _notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   WildcardFileReader *self = (WildcardFileReader *)s;
+  gint result = NR_OK;
   switch(notify_code)
     {
     case NC_FILE_DELETED:
@@ -104,9 +114,13 @@ _notify(LogPipe *s, gint notify_code, gpointer user_data)
       _set_eof(self);
       break;
     default:
-      file_reader_notify_method(s, notify_code, user_data);
       break;
     }
+  result = file_reader_notify_method(s, notify_code, user_data);
+
+  if (_is_deleted_file_eof(self))
+    result |= NR_STOP_ON_EOF;
+  return result;
 }
 
 static void
@@ -114,11 +128,18 @@ _handle_file_state_event(gpointer s)
 {
   WildcardFileReader *self = (WildcardFileReader *)s;
   msg_debug("File status changed",
-            evt_tag_int("EOF", self->file_state.eof),
+            evt_tag_int("EOF", self->file_state.deleted_eof),
             evt_tag_int("DELETED", self->file_state.deleted),
             evt_tag_str("Filename", self->super.filename->str));
-  if (self->file_state.deleted && self->file_state.eof)
+  if (_is_deleted_file_eof(self))
     _deleted_file_eof(&self->file_state_event, &self->super);
+}
+
+static void
+_on_file_moved(FileReader *self)
+{
+  log_pipe_notify(&self->super, NC_FILE_DELETED, self);
+  log_pipe_notify(&self->super, NC_FILE_EOF, self);
 }
 
 void
@@ -143,9 +164,9 @@ wildcard_file_reader_new(const gchar *filename, FileReaderOptions *options, File
   WildcardFileReader *self = g_new0(WildcardFileReader, 1);
   file_reader_init_instance(&self->super, filename, options, opener, owner, cfg);
   self->super.super.init = _init;
-  self->super.super.queue = _queue;
   self->super.super.notify = _notify;
   self->super.super.deinit = _deinit;
+  self->super.on_file_moved = _on_file_moved;
   IV_TASK_INIT(&self->file_state_event_handler);
   self->file_state_event_handler.cookie = self;
   self->file_state_event_handler.handler = _handle_file_state_event;

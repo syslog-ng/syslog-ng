@@ -217,7 +217,7 @@ afsocket_sc_deinit(LogPipe *s)
   return TRUE;
 }
 
-static void
+static gint
 afsocket_sc_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
@@ -234,6 +234,7 @@ afsocket_sc_notify(LogPipe *s, gint notify_code, gpointer user_data)
     default:
       break;
     }
+  return NR_OK;
 }
 
 static void
@@ -1364,7 +1365,7 @@ afsocket_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_option
   log_src_driver_queue_method(s, msg, path_options);
 }
 
-static void
+static gint
 afsocket_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   switch (notify_code)
@@ -1378,6 +1379,7 @@ afsocket_sd_notify(LogPipe *s, gint notify_code, gpointer user_data)
     default:
       break;
     }
+  return NR_OK;
 }
 
 void

@@ -89,6 +89,7 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
 
 %token KW_FSYNC
 %token KW_FOLLOW_FREQ
+%token KW_MONITOR_FREQ
 %token KW_OVERWRITE_IF_OLDER
 %token KW_SYMLINK_AS
 %token KW_MULTI_LINE_TIMEOUT
@@ -189,15 +190,16 @@ source_affile_option
         ;
 
 source_wildcard_option
-        : KW_BASE_DIR '(' string ')' { wildcard_sd_set_base_dir(last_driver, $3); free($3); }
-        | KW_FILENAME_PATTERN '(' string ')'
-          {
-	    wildcard_sd_set_filename_pattern(last_driver, $3);
-	    free($3);
-          }
+  : KW_BASE_DIR '(' string ')' { wildcard_sd_set_base_dir(last_driver, $3); free($3); }
+  | KW_FILENAME_PATTERN '(' string ')'
+    {
+      wildcard_sd_set_filename_pattern(last_driver, $3);
+      free($3);
+    }
 	| KW_RECURSIVE '(' yesno ')' { wildcard_sd_set_recursive(last_driver, $3); }
 	| KW_MAX_FILES '(' positive_integer ')' { wildcard_sd_set_max_files(last_driver, $3); }
 	| KW_MONITOR_METHOD '(' string ')' { CHECK_ERROR(wildcard_sd_set_monitor_method(last_driver, $3), @3, "Invalid monitor-method"); free($3); }
+	| KW_MONITOR_FREQ '(' nonnegative_float ')' { wildcard_sd_set_monitor_freq(last_driver, (gint) ($3 * 1000)); }
 	| source_affile_option
 	;
 

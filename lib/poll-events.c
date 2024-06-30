@@ -37,6 +37,13 @@ poll_events_set_callback(PollEvents *self, PollCallback callback, gpointer user_
 }
 
 void
+poll_events_set_checker(PollEvents *self, PollChecker check_watches, gpointer user_data)
+{
+  self->check_watches = check_watches;
+  self->checker_data = user_data;
+}
+
+void
 poll_events_init(PollEvents *self)
 {
 }

@@ -24,16 +24,27 @@
 
 #include "syslog-ng.h"
 
+typedef struct _CollectionComparatorEntry
+{
+  gint64 key[2];
+  gchar *value;
+  guint8 flag;
+} CollectionComparatorEntry;
+
 typedef struct _CollectionComparator CollectionComparator;
 
-typedef void (*cc_callback)(const gchar *value, gpointer user_data);
+typedef void (*cc_callback)(CollectionComparatorEntry *entry, gpointer user_data);
+
+guint hash_collection_comparator_entry(const void *data);
+gboolean equal_collection_comparator_entry(const void *a, const void *b);
+void free_collection_comparator_entry(gpointer s);
 
 CollectionComparator *collection_comparator_new(void);
 void collection_comparator_free(CollectionComparator *self);
 void collection_comparator_start(CollectionComparator *self);
 void collection_comparator_stop(CollectionComparator *self);
-void collection_comparator_add_value(CollectionComparator *self, const gchar *value);
-void collection_comparator_add_initial_value(CollectionComparator *self, const gchar *value);
+void collection_comparator_add_value(CollectionComparator *self, const gint64 key[2], const gchar *value);
+void collection_comparator_add_initial_value(CollectionComparator *self, const gint64 key[2], const gchar *value);
 
 void collection_comporator_set_callbacks(CollectionComparator *self, cc_callback handle_new, cc_callback handle_delete,
                                          gpointer user_data);

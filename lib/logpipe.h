@@ -42,6 +42,10 @@
 #define NC_REOPEN_REQUIRED 6
 #define NC_FILE_DELETED 7
 
+/* notify result mask values */
+#define NR_OK          0x0000
+#define NR_STOP_ON_EOF 0x0001
+
 /* indicates that the LogPipe was initialized */
 #define PIF_INITIALIZED       0x0001
 /* indicates that this LogPipe got cloned into the tree already */
@@ -332,7 +336,7 @@ struct _LogPipe
   LogPipe *(*clone)(LogPipe *self);
 
   void (*free_fn)(LogPipe *self);
-  void (*notify)(LogPipe *self, gint notify_code, gpointer user_data);
+  gint (*notify)(LogPipe *self, gint notify_code, gpointer user_data);
   GList *info;
 };
 
@@ -498,11 +502,12 @@ log_pipe_clone(LogPipe *self)
   return self->clone(self);
 }
 
-static inline void
+static inline gint
 log_pipe_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   if (s->notify)
-    s->notify(s, notify_code, user_data);
+    return s->notify(s, notify_code, user_data);
+  return NR_OK;
 }
 
 static inline void
