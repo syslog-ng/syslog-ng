@@ -30,7 +30,7 @@ jobs:
       matrix:
         image:
           - almalinux-8
-          - fedora-40
+          - fedora-latest
           - fedora-rawhide
           - debian-bullseye
           - debian-bookworm
