@@ -2,6 +2,7 @@
 
 BUILDER_IMAGES=		\
 	almalinux-8	\
+	centos-stream9  \
 	fedora-latest	\
 	fedora-rawhide	\
 	debian-stretch	\
