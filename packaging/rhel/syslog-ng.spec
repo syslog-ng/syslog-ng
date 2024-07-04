@@ -369,6 +369,9 @@ make DESTDIR=%{buildroot} install
 %if 0%{?rhel} == 8
 %{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog
 %endif
+%if 0%{?rhel} == 9
+%{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog-ng
+%endif
 %if 0%{?fedora} >= 28
 %{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog-ng
 %endif

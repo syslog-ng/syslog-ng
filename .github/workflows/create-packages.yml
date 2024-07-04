@@ -24,6 +24,7 @@ on:
           "ubuntu-lunar",
           "ubuntu-mantic",
           "almalinux-8",
+          "almalinux-9",
           "centos-stream9",
           "fedora-latest",
           "fedora-rawhide"

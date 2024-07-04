@@ -27,6 +27,7 @@ EXTRA_DIST += \
 	dbld/images/centos.prepare.sh \
 	dbld/images/fedora.prepare.sh \
 	dbld/images/almalinux-8.dockerfile \
+	dbld/images/almalinux-9.dockerfile \
 	dbld/images/centos-stream9.dockerfile \
 	dbld/images/devshell.dockerfile \
 	dbld/images/fedora-latest.dockerfile \
