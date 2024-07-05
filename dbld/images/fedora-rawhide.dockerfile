@@ -1,7 +1,7 @@
-FROM fedora:40
+FROM fedora:rawhide
 LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
 ENV OS_DISTRIBUTION=fedora
-ENV OS_DISTRIBUTION_CODE_NAME=40
+ENV OS_DISTRIBUTION_CODE_NAME=rawhide
 
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT

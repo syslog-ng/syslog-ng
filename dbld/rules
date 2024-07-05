@@ -2,7 +2,10 @@
 
 BUILDER_IMAGES=		\
 	almalinux-8	\
-	fedora-40	\
+	almalinux-9	\
+	centos-stream9  \
+	fedora-latest	\
+	fedora-rawhide	\
 	debian-stretch	\
 	debian-bullseye	\
 	debian-bookworm	\

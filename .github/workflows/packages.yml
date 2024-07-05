@@ -35,8 +35,9 @@ jobs:
       dbld-image-mode: cache
       distros: '[
         "almalinux-8",
+        "almalinux-9",
         "debian-bookworm",
         "debian-testing",
-        "fedora-40",
+        "fedora-latest",
         "ubuntu-noble"
       ]'
