@@ -10,12 +10,7 @@ Source0: https://github.com/syslog-ng/syslog-ng/releases/download/syslog-ng-%{ve
 Source1: syslog-ng.conf
 Source2: syslog-ng.logrotate
 Source3: syslog-ng.service
-# keeping the original logrotate file for RHEL/CentOS 7
-# under a new name
-Source4: syslog-ng.logrotate7
 
-
-%bcond_without sql
 %bcond_without mongodb
 %bcond_without systemd
 %bcond_without redis
@@ -25,46 +20,36 @@ Source4: syslog-ng.logrotate7
 %bcond_without kafka
 %bcond_without afsnmp
 %bcond_without mqtt
-
-
-%if 0%{?rhel} == 8
-%global		python_devel python39-devel
-%global         py_ver  3.9
-%else
-%if 0%{?rhel} == 7
-%global		python_devel python36-devel
-%global         py_ver  3.6
-%else
-%global		python_devel python3-devel
-%global         py_ver  %{python3_version}
-%endif
-%endif
-
-%if 0%{?rhel} >= 7 || 0%{?fedora} <= 32
+%bcond_without cloudauth
 %bcond_without java
+
+%if 0%{?rhel} == 9
+%bcond_with sql
 %else
-%bcond_with java
+%bcond_without sql
 %endif
 
-%if 0%{?rhel} == 7
-%bcond_with cloud_auth
+%if 0%{?fedora} >= 36 || 0%{?rhel} == 9
+%bcond_without	grpc
 %else
-%bcond_without cloud_auth
+%bcond_with grpc
 %endif
 
-%global ivykis_ver 0.36.1
+%if 0%{?fedora} >= 37 || 0%{?rhel} == 9
+%bcond_without bpf
+%else
+%bcond_with bpf
+%endif
 
 BuildRequires: pkgconfig
 BuildRequires: libtool
 BuildRequires: bison
 BuildRequires: flex
-BuildRequires: gperf
 BuildRequires: libxslt
 BuildRequires: glib2-devel
 BuildRequires: ivykis-devel
 BuildRequires: json-c-devel
 BuildRequires: libcap-devel
-BuildRequires: libdbi-devel
 BuildRequires: libnet-devel
 BuildRequires: openssl-devel
 BuildRequires: pcre2-devel
@@ -72,7 +57,52 @@ BuildRequires: libuuid-devel
 BuildRequires: libesmtp-devel
 BuildRequires: libcurl-devel
 
+%if 0%{?rhel} == 8
+%global		python_devel python39-devel
+%global         py_ver  3.9
+%else
+%global		python_devel python3-devel
+%global         py_ver  %{python3_version}
+%endif
+
 BuildRequires: %{python_devel}
+BuildRequires: python3-setuptools
+BuildRequires: python3-pip
+
+%if 0%{?rhel} == 8
+%else
+BuildRequires:  python3-cachetools
+BuildRequires:  python3-certifi
+BuildRequires:  python3-charset-normalizer
+BuildRequires:  python3-google-auth
+BuildRequires:  python3-idna
+BuildRequires:  python3-kubernetes
+BuildRequires:  python3-oauthlib
+BuildRequires:  python3-pyasn1
+BuildRequires:  python3-pyasn1-modules
+BuildRequires:  python3-dateutil
+BuildRequires:  python3-PyYAML
+BuildRequires:  python3-requests
+BuildRequires:  python3-requests-oauthlib
+BuildRequires:  python3-rsa
+BuildRequires:  python3-six
+BuildRequires:  python3-urllib3
+BuildRequires:  python3-websocket-client
+BuildRequires:  python3-boto3
+BuildRequires:  python3-botocore
+%endif
+
+%if %{with grpc}
+BuildRequires:	grpc-devel
+BuildRequires:	protobuf-devel
+BuildRequires:	gcc-c++
+%endif
+
+%global ivykis_ver 0.36.1
+
+%if %{with sql}
+BuildRequires: libdbi-devel
+%endif
 
 %if %{with amqp}
 BuildRequires: librabbitmq-devel
@@ -93,9 +123,6 @@ BuildRequires: hiredis-devel
 %if %{with systemd}
 BuildRequires: systemd-units
 BuildRequires: systemd-devel
-Requires(post): systemd-units
-Requires(preun): systemd-units
-Requires(postun): systemd-units
 %endif
 
 %if %{with mongodb}
@@ -105,6 +132,7 @@ BuildRequires: cyrus-sasl-devel
 
 %if %{with java}
 BuildRequires: java-devel
+BuildRequires: tzdata-java
 %endif
 
 %if %{with kafka}
@@ -120,9 +148,10 @@ BuildRequires: paho-c-devel
 BuildRequires: net-snmp-devel
 %endif
 
-%if 0%{?rhel} == 7
-BuildRequires: tcp_wrappers-devel
-Obsoletes: syslog-ng-json
+%if %{with bpf}
+BuildRequires: libbpf-devel
+BuildRequires: bpftool
+BuildRequires: clang
 %endif
 
 Requires: logrotate
@@ -133,9 +162,7 @@ Provides: syslog
 # Fedora 17’s unified filesystem (/usr-move)
 Conflicts: filesystem < 3
 
-%if 0%{?rhel} != 7
 Recommends: syslog-ng-logrotate
-%endif
 
 %description
 syslog-ng is an enhanced log daemon, supporting a wide range of input and
@@ -209,13 +236,14 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description mqtt
 This module supports sending logs to mqtt through MQTT.
 
-%package cloud-auth
-Summary: cloud auth support for %{name}
+%package cloudauth
+Summary: cloud authentication support for %{name}: pubsub
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
 
-%description cloud-auth
-This module supports authentication to cloud providers.
+%description cloudauth
+This module supports cloud authentication, currently used
+for Google PubSub.
 
 %package java
 Summary:        Java destination support for syslog-ng
@@ -260,6 +288,52 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description http
 This module supports the HTTP destination.
 
+
+%package grpc
+Summary: GRPC support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description grpc
+This module supports the GRPC, a common requirement
+for OpenTelemetry and Loki support.
+
+
+%package opentelemetry
+Summary: OpenTelemetry support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: %{name}-grpc
+
+%description opentelemetry
+This module adds OpenTelemetry support.
+
+%package loki
+Summary: Loki support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: %{name}-grpc
+
+%description loki
+This module adds loki support.
+
+%package bigquery
+Summary: Google BigQuery support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: %{name}-grpc
+
+%description bigquery
+This module adds Google BigQuery support.
+
+%package bpf
+Summary: Faster UDP log collection for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description bpf
+This module provides faster UDP log collection using bpf.
+
 %package slog
 Summary: $(slog) support for %{name}
 Group: Development/Libraries
@@ -269,12 +343,46 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 This module adds support for the $(slog) template function plus command line utilities.
 
 %package python
-Summary:        Python destination support for syslog-ng
+Summary:        Python support for syslog-ng
 Group:          System/Libraries
 Requires:       %{name} = %{version}
 
 %description python
-This package provides python destination support for syslog-ng.
+This package provides python support for syslog-ng.
+
+%package python-modules
+Summary:        Python-based drivers for syslog-ng
+Group:          System/Libraries
+Requires:       %{name} = %{version}
+Requires:       %{name}-python
+%if 0%{?rhel} == 8
+%else
+Requires:  python3-cachetools
+Requires:  python3-certifi
+Requires:  python3-charset-normalizer
+Requires:  python3-google-auth
+Requires:  python3-idna
+Requires:  python3-kubernetes
+Requires:  python3-oauthlib
+Requires:  python3-pyasn1
+Requires:  python3-pyasn1-modules
+Requires:  python3-dateutil
+Requires:  python3-PyYAML
+Requires:  python3-requests
+Requires:  python3-requests-oauthlib
+Requires:  python3-rsa
+Requires:  python3-six
+Requires:  python3-urllib3
+Requires:  python3-websocket-client
+Requires:  python3-boto3
+Requires:  python3-botocore
+%endif
+
+%description python-modules
+This package provides Python-based (Kubernetes, Hypr) drivers for syslog-ng.
+On RHEL 8 you have to use syslog-ng-update-virtualenv to initialize
+a Python virtual environment for Python dependencies, as they are not
+available in the distribution.
 
 %package devel
 Summary: Development files for %{name}
@@ -297,9 +405,6 @@ ryslog is not on the system.
 
 %prep
 %setup -q
-# %patch0 -p1
-# %patch1 -p1
-# %patch2 -p1
 
 # fix perl path
 %{__sed} -i 's|^#!/usr/local/bin/perl|#!%{__perl}|' contrib/relogger.pl
@@ -317,11 +422,16 @@ ryslog is not on the system.
     --with-module-dir=%{_libdir}/%{name} \
     --with-systemdsystemunitdir=%{_unitdir} \
     --with-ivykis=system \
-%if 0%{?rhel} == 7
-    --enable-tcp-wrapper \
-%else
     --disable-tcp-wrapper \
+%if 0%{?rhel} == 9
+    --disable-cpp \
 %endif
+%if %{with cloudauth}
+    --enable-cloud-auth \
+%else
+    --disable-cloud-auth \
+%endif
+    --with-python-packages=none \
     --with-embedded-crypto \
     --enable-manpages \
     --enable-ipv6 \
@@ -335,11 +445,13 @@ ryslog is not on the system.
     --disable-static \
     --enable-dynamic-linking \
     --enable-python \
+%if %{with grpc}
+    --enable-cpp --enable-grpc \
+%endif
     --disable-java-modules \
     --with-python=%{py_ver} \
     %{?with_kafka:--enable-kafka} \
     %{?with_mqtt:--enable-mqtt} \
-    %{?with_cloud_auth:--enable-cloud-auth} %{!?with_cloud_auth:--disable-cloud-auth} \
     %{?with_afsnmp:--enable-afsnmp} %{!?with_afsnmp:--disable-afsnmp} \
     %{?with_java:--enable-java} %{!?with_java:--disable-java} \
     %{?with_maxminddb:--enable-geoip2} %{!?with_maxminddb:--disable-geoip2} \
@@ -348,7 +460,8 @@ ryslog is not on the system.
     %{?with_mongodb:--enable-mongodb} \
     %{?with_amqp:--enable-amqp} \
     %{?with_redis:--enable-redis} \
-    %{?with_riemann:--enable-riemann}
+    %{?with_riemann:--enable-riemann} \
+    %{?with_bpf:--enable-ebpf}
 
 # disable broken test by setting a different target
 sed -i 's/libs build/libs assemble/' Makefile
@@ -363,16 +476,10 @@ make DESTDIR=%{buildroot} install
 %{__install} -p -m 644 %{SOURCE1} %{buildroot}%{_sysconfdir}/%{name}/syslog-ng.conf
 
 %{__install} -d -m 755 %{buildroot}%{_sysconfdir}/logrotate.d
-%if 0%{?rhel} == 7
-%{__install} -p -m 644 %{SOURCE4} %{buildroot}%{_sysconfdir}/logrotate.d/syslog
-%endif
 %if 0%{?rhel} == 8
 %{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog
 %endif
-%if 0%{?rhel} == 9
-%{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog-ng
-%endif
-%if 0%{?fedora} >= 28
+%if 0%{?fedora} >= 28 || 0%{?rhel} == 9
 %{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog-ng
 %endif
 
@@ -390,7 +497,6 @@ rm %{buildroot}/usr/lib/systemd/system/syslog-ng@.service
 %{__install} -d -m 755 %{buildroot}%{_includedir}/%{name}
 %{__install} -p -m 644 config.h %{buildroot}%{_includedir}/%{name}
 %{__install} -p -m 644 lib/*.h %{buildroot}%{_includedir}/%{name}
-
 
 find %{buildroot} -name "*.la" -exec rm -f {} \;
 
@@ -423,9 +529,6 @@ fi
 %dir %{_sysconfdir}/%{name}/patterndb.d
 %config(noreplace) %{_sysconfdir}/%{name}/%{name}.conf
 %config(noreplace) %{_datadir}/%{name}/include/scl.conf
-%if 0%{?rhel} == 7
-%config(noreplace) %{_sysconfdir}/logrotate.d/syslog
-%endif
 %dir %{_sharedstatedir}/%{name}
 %{_sbindir}/%{name}
 %{_sbindir}/%{name}-debun
@@ -434,6 +537,7 @@ fi
 %{_bindir}/pdbtool
 %{_bindir}/dqtool
 %{_bindir}/update-patterndb
+%{_bindir}/syslog-ng-update-virtualenv
 %{_bindir}/persist-tool
 %{_libdir}/lib%{name}-*.so.*
 %{_libdir}/libevtlog-*.so.*
@@ -488,6 +592,7 @@ fi
 # uhm, some better places for those?
 %{_datadir}/%{name}/xsd/
 %{_datadir}/%{name}/smart-multi-line.fsm
+%dir %{_datadir}/%{name}
 
 %{_mandir}/man1/loggen.1*
 %{_mandir}/man1/pdbtool.1*
@@ -501,6 +606,20 @@ fi
 %if %{with sql}
 %files sql
 %{_libdir}/%{name}/libafsql.so
+%endif
+
+%if %{with grpc}
+%files grpc
+%{_libdir}/libgrpc-protos.*
+
+%files opentelemetry
+%{_libdir}/%{name}/libotel.so
+
+%files loki
+%{_libdir}/%{name}/libloki.so
+
+%files bigquery
+%{_libdir}/%{name}/libbigquery.so
 %endif
 
 %if %{with amqp}
@@ -533,8 +652,8 @@ fi
 %{_libdir}/%{name}/libmqtt.so
 %endif
 
-%if %{with cloud_auth}
-%files cloud-auth
+%if %{with cloudauth}
+%files cloudauth
 %{_libdir}/%{name}/libcloud_auth.so
 %endif
 
@@ -558,6 +677,11 @@ fi
 %{_libdir}/%{name}/libriemann.so
 %endif
 
+%if %{with bpf}
+%files bpf
+%{_libdir}/%{name}/libebpf.so
+%endif
+
 %files http
 %{_libdir}/%{name}/libhttp.so
 %{_libdir}/%{name}/libazure-auth-header.so
@@ -573,16 +697,17 @@ fi
 %{_mandir}/man7/secure-logging.7*
 
 %files python
-%{_libdir}/%{name}/python/syslogng-1.0-py%{py_ver}.egg-info
-%{_libdir}/%{name}/python/syslogng/*
-%{_libdir}/%{name}/python/requirements.txt
 %{_libdir}/%{name}/libmod-python.so
 %dir %{_sysconfdir}/%{name}/python
 %{_sysconfdir}/%{name}/python/README.md
-%{_bindir}/syslog-ng-update-virtualenv
+%{_libdir}/%{name}/python/syslogng-1.0-py%{py_ver}.egg-info
+%{_libdir}/%{name}/python/syslogng/*
+%{_libdir}/%{name}/python/requirements.txt
+%exclude %{_libdir}/syslog-ng/python/syslogng/modules/
 
-%post python
-/usr/bin/syslog-ng-update-virtualenv -y
+%files python-modules
+%dir %{_libdir}/syslog-ng/python/syslogng/modules/
+%{_libdir}/syslog-ng/python/syslogng/modules/*
 
 %files devel
 %{_libdir}/libsyslog-ng.so
@@ -606,61 +731,68 @@ fi
 %{_libdir}/pkgconfig/syslog-ng-native-connector.pc
 %{_datadir}/%{name}/tools/
 
-%if 0%{?rhel} != 7
 %files logrotate
 %if 0%{?rhel} == 8
 %config(noreplace) %{_sysconfdir}/logrotate.d/syslog
 %else
 %config(noreplace) %{_sysconfdir}/logrotate.d/syslog-ng
 %endif
-%endif
 
 
 %changelog
-* Fri Apr 19 2024 github-actions <41898282+github-actions@users.noreply.github.com> - 4.7.1-1
-- updated to 4.7.1
+* Fri Jul 5 2024 Balint Horvath <bal.horv.98@gmail.com> - 4.7.1-1
+- Merged spec file from Peter Czanik's copr repo
 
-* Thu Apr 11 2024 github-actions <41898282+github-actions@users.noreply.github.com> - 4.7.0-1
-- updated to 4.7.0
+* Fri Jun 14 2024 Peter Czanik <peter@czanik.hu> - 4.7.1-1
+- removing RHEL 7 support from the spec file, as it is no
+  more supported by syslog-ng
 
-* Tue Jan  9 2024 github-actions <41898282+github-actions@users.noreply.github.com> - 4.6.0-1
-- updated to 4.6.0
+* Mon Apr 22 2024 Peter Czanik <peter@czanik.hu> - 4.7.1-1
+- update to 4.7.1
 
-* Wed Nov 22 2023 github-actions <41898282+github-actions@users.noreply.github.com> - 4.5.0-1
-- updated to 4.5.0
+* Thu Apr 18 2024 Peter Czanik <peter@czanik.hu> - 4.7.0-1
+- update to 4.7.0
 
-* Tue Sep 19 2023 github-actions <41898282+github-actions@users.noreply.github.com> - 4.4.0-1
-- updated to 4.4.0
+* Thu Jan 25 2024 Peter Czanik <peter@czanik.hu> - 4.6.0-1
+- update to 4.6.0
 
-* Fri Jul 28 2023 github-actions <41898282+github-actions@users.noreply.github.com> - 4.3.1-1
-- updated to 4.3.1
+* Mon Nov 27 2023 Peter Czanik <peter@czanik.hu> - 4.5.0-1
+- update to 4.5.0
 
-* Wed Jul 19 2023 github-actions <41898282+github-actions@users.noreply.github.com> - 4.3.0-1
-- updated to 4.3.0
+* Mon Sep 25 2023 Peter Czanik <peter@czanik.hu> - 4.4.0-1
+- update to 4.4.0
+- add Loki support
 
-* Mon May  8 2023 github-actions <41898282+github-actions@users.noreply.github.com> - 4.2.0-1
-- updated to 4.2.0
+* Wed Sep  6 2023 Peter Czanik <peter@czanik.hu> - 4.3.1-1
+- remove vim syntax, as it moved to a separate repository
+  https://github.com/syslog-ng/vim-syslog-ng
 
-* Fri Mar 10 2023 github-actions <41898282+github-actions@users.noreply.github.com> - 4.1.1-1
-- updated to 4.1.1
+* Mon Jul 24 2023 Peter Czanik <peter@czanik.hu> - 4.3.0-1
+- update to 4.3.1
+- add opentelemetry support
+- add tzdata-java as dependency
 
-* Tue Feb 28 2023 github-actions <41898282+github-actions@users.noreply.github.com> - 4.1.0-1
-- updated to 4.1.0
+* Mon Jun  5 2023 Peter Czanik <peter@czanik.hu> - 4.2.0-2
+- update to 4.2.0
+- Python-based drivers (Kubernetes, etc.) split from Python support
 
-* Wed Dec 21 2022 github-actions <github-actions@github.com> - 4.0.1-1
-- updated to 4.0.1
+* Wed Dec 21 2022 Peter Czanik <peter@czanik.hu> - 4.0.0-1
+- update to 4.0.0
+- Python support reworked
 
-* Fri Nov  4 2022 github-actions <github-actions@github.com> - 4.0.0-1
-- updated to 4.0.0
+* Mon Aug 29 2022 Peter Czanik <peter@czanik.hu> - 3.38.1-1
+- update to 3.38.1
 
-* Mon Aug 15 2022 github-actions <github-actions@github.com> - 3.38.1-1
-- updated to 3.38.1
-
-* Mon May 30 2022 github-actions <github-actions@github.com> - 3.37.1-1
+* Tue Jun  7 2022 Peter Czanik <peter@czanik.hu> - 3.37.1
 - updated to 3.37.1
+- added kubernetes support
 
-* Mon Feb 28 2022 github-actions <github-actions@github.com> - 3.36.1-1
+* Tue May 24 2022 Peter Czanik <peter@czanik.hu> - 3.36.1-1
 - updated to 3.36.1
+- add RHEL 9 support with disabled SQL support
+- do not depend on systemd-units (smaller footprint)
+- depend on recent glib2 to make sure that installation fails if
+  unavailable (helps with Copr packages on ancient RHEL7)
 
 * Wed Nov 10 2021 github-actions <github-actions@github.com> - 3.35.1-1
 - updated to 3.35.1
