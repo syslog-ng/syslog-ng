@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -50,6 +52,8 @@ void bigquery_dd_set_keepalive_max_pings(LogDriver *d, gint p);
 
 void bigquery_dd_add_int_channel_arg(LogDriver *s, const gchar *name, glong value);
 void bigquery_dd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value);
+
+void bigquery_dd_add_header(LogDriver *s, const gchar *name, const gchar *value);
 
 LogTemplateOptions *bigquery_dd_get_template_options(LogDriver *d);
 

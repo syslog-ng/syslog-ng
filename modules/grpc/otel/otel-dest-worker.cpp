@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Attila Szakacs
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -431,10 +432,19 @@ permanent_error:
   return LTR_DROP;
 }
 
+void
+DestWorker::prepare_context(::grpc::ClientContext &context)
+{
+  for (auto nv : owner.headers)
+    context.AddMetadata(nv.first, nv.second);
+}
+
 LogThreadedResult
 DestWorker::flush_log_records()
 {
   ::grpc::ClientContext client_context;
+  prepare_context(client_context);
+
   logs_service_response.Clear();
   ::grpc::Status status = logs_service_stub->Export(&client_context, logs_service_request,
                                                     &logs_service_response);
@@ -454,6 +464,8 @@ LogThreadedResult
 DestWorker::flush_metrics()
 {
   ::grpc::ClientContext client_context;
+  prepare_context(client_context);
+
   metrics_service_response.Clear();
   ::grpc::Status status = metrics_service_stub->Export(&client_context, metrics_service_request,
                                                        &metrics_service_response);
@@ -473,6 +485,8 @@ LogThreadedResult
 DestWorker::flush_spans()
 {
   ::grpc::ClientContext client_context;
+  prepare_context(client_context);
+
   trace_service_response.Clear();
   ::grpc::Status status = trace_service_stub->Export(&client_context, trace_service_request,
                                                      &trace_service_response);

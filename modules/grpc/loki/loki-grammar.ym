@@ -71,6 +71,7 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_MAX_PINGS_WITHOUT_DATA
 
 %token KW_CHANNEL_ARGS
+%token KW_HEADERS
 
 %type <ptr> loki_dest
 
@@ -106,6 +107,7 @@ loki_dest_option
   | KW_TEMPLATE '(' template_name_or_content ')' { loki_dd_set_message_template_ref(last_driver, $3); }
   | KW_AUTH { last_grpc_client_credentials_builder = loki_dd_get_credentials_builder(last_driver); } '(' grpc_client_credentials_option ')'
   | KW_CHANNEL_ARGS '(' loki_dest_channel_args ')'
+  | KW_HEADERS '(' loki_dest_headers ')'
   | threaded_dest_driver_general_option
   | threaded_dest_driver_workers_option
   | threaded_dest_driver_batch_option
@@ -146,6 +148,16 @@ loki_dest_channel_arg
   : string LL_ARROW LL_NUMBER { loki_dd_add_int_channel_arg(last_driver, $1, $3); free($1); }
   | string LL_ARROW string { loki_dd_add_string_channel_arg(last_driver, $1, $3); free($1); free($3); }
   ;
+
+loki_dest_headers
+  : loki_dest_header loki_dest_headers
+  |
+  ;
+
+loki_dest_header
+  : string LL_ARROW string { loki_dd_add_header(last_driver, $1, $3); free($1); free($3); }
+  ;
+
 
 /*
  * gRPC Credentials Builders

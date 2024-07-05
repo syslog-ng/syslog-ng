@@ -1,6 +1,7 @@
 /*
+ * Copyright (c) 2024 Axoflow
  * Copyright (c) 2023 László Várady
- * Copyright (c) 2023 Attila Szakacs
+ * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -65,6 +66,13 @@ DestinationWorker::~DestinationWorker()
 {
 }
 
+void
+DestinationWorker::prepare_context(::grpc::ClientContext &ctx)
+{
+  for (auto nv : this->get_owner()->headers)
+    ctx.AddMetadata(nv.first, nv.second);
+}
+
 bool
 DestinationWorker::connect()
 {
@@ -79,6 +87,7 @@ DestinationWorker::connect()
 
   this->construct_write_stream();
   this->batch_writer_ctx = std::make_unique<::grpc::ClientContext>();
+  this->prepare_context(*this->batch_writer_ctx.get());
   this->batch_writer = this->stub->AppendRows(this->batch_writer_ctx.get());
 
   this->prepare_batch();
@@ -115,6 +124,7 @@ DestinationWorker::disconnect()
     }
 
   ::grpc::ClientContext ctx;
+  this->prepare_context(ctx);
   google::cloud::bigquery::storage::v1::FinalizeWriteStreamRequest finalize_request;
   google::cloud::bigquery::storage::v1::FinalizeWriteStreamResponse finalize_response;
   finalize_request.set_name(write_stream.name());
@@ -466,6 +476,7 @@ void
 DestinationWorker::construct_write_stream()
 {
   ::grpc::ClientContext ctx;
+  this->prepare_context(ctx);
   google::cloud::bigquery::storage::v1::CreateWriteStreamRequest create_write_stream_request;
   google::cloud::bigquery::storage::v1::WriteStream wstream;
 

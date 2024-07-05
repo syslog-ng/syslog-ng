@@ -65,6 +65,7 @@ public:
   LogThreadedResult flush(LogThreadedFlushMode mode);
 
 private:
+  void prepare_context(::grpc::ClientContext &ctx);
   std::shared_ptr<::grpc::Channel> create_channel();
   void construct_write_stream();
   void prepare_batch();

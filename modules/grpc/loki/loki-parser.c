@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -49,6 +51,7 @@ static CfgLexerKeyword loki_keywords[] =
   { "adc", KW_ADC },
   { "tenant_id", KW_TENANT_ID },
   { "channel_args", KW_CHANNEL_ARGS },
+  { "headers", KW_HEADERS },
   { NULL }
 };
 

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Attila Szakacs
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -38,6 +39,7 @@ void otel_dd_set_compression(LogDriver *s, gboolean enable);
 void otel_dd_set_batch_bytes(LogDriver *s, glong b);
 void otel_dd_add_int_channel_arg(LogDriver *s, const gchar *name, glong value);
 void otel_dd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value);
+void otel_dd_add_header(LogDriver *s, const gchar *name, const gchar *value);
 GrpcClientCredentialsBuilderW *otel_dd_get_credentials_builder(LogDriver *s);
 
 #include "compat/cpp-end.h"

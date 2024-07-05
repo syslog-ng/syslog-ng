@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -241,6 +243,8 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
   logproto::PushResponse response{};
 
   ::grpc::ClientContext ctx;
+  for (auto nv : owner->headers)
+    ctx.AddMetadata(nv.first, nv.second);
 
   if (!owner->tenant_id.empty())
     ctx.AddMetadata("x-scope-orgid", owner->tenant_id);

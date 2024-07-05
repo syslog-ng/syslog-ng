@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Attila Szakacs
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -52,6 +53,7 @@ static CfgLexerKeyword otel_keywords[] =
   { "batch_bytes",               KW_BATCH_BYTES },
   { "concurrent_requests",       KW_CONCURRENT_REQUESTS },
   { "channel_args",              KW_CHANNEL_ARGS },
+  { "headers",                   KW_HEADERS },
   { "set_hostname",              KW_SET_HOSTNAME },
   { NULL }
 };
