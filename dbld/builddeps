@@ -116,7 +116,7 @@ function add_copr_repo {
             $YUM_INSTALL yum-plugin-copr
             yum copr enable -y czanik/syslog-ng-githead
             case "${OS_DISTRIBUTION_CODE_NAME}" in
-                7|8)
+                8)
                     yum config-manager --set-enabled powertools
                     ;;
                 9|stream9)
