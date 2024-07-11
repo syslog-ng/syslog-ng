@@ -27,7 +27,7 @@ from src.syslog_ng_config.renderer import render_statement
 
 
 def render_filterx_exprs(expressions):
-    return '\n'.join(f"filterx {{ { expr } }};" for expr in expressions)
+    return '\n'.join(f"filterx {{ {expr} }};" for expr in expressions)
 
 
 def create_config(config, init_exprs, true_exprs=(), false_exprs=(), final_exprs=(), msg="foobar"):

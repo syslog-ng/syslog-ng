@@ -108,8 +108,8 @@ class FramedStreamReader(object):
 # FileIO and this method too operate on partial string matches
 # TODO: LogMessage instances should be used instead, matching the full msg body
 def _list_remove_partially_matching_element(list, elem):
-    for l in list:
-        if l in elem:
-            list.remove(l)
+    for match in list:
+        if match in elem:
+            list.remove(match)
             return True
     return False
