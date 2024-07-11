@@ -29,8 +29,8 @@ from src.executors.process_executor import ProcessExecutor
 
 
 class Loggen(object):
-
     instanceIndex = -1
+
     @staticmethod
     def __get_new_instance_index():
         Loggen.instanceIndex += 1
@@ -41,10 +41,10 @@ class Loggen(object):
         self.loggen_bin_path = tc_parameters.INSTANCE_PATH.get_loggen_bin()
 
     def __decode_start_parameters(
-        self, inet, unix, stream, dgram, use_ssl, dont_parse, read_file, skip_tokens, loop_reading,
-        rate, interval, permanent, syslog_proto, proxied, sdata, no_framing, active_connections,
-        idle_connections, ipv6, debug, number, csv, quiet, size, reconnect, proxied_tls_passthrough,
-        proxy_src_ip, proxy_dst_ip, proxy_src_port, proxy_dst_port,
+            self, inet, unix, stream, dgram, use_ssl, dont_parse, read_file, skip_tokens, loop_reading,
+            rate, interval, permanent, syslog_proto, proxied, sdata, no_framing, active_connections,
+            idle_connections, ipv6, debug, number, csv, quiet, size, reconnect, proxied_tls_passthrough,
+            proxy_src_ip, proxy_dst_ip, proxy_src_port, proxy_dst_port,
     ):
 
         start_parameters = []
@@ -145,10 +145,13 @@ class Loggen(object):
         return start_parameters
 
     def start(
-        self, target, port, inet=None, unix=None, stream=None, dgram=None, use_ssl=None, dont_parse=None, read_file=None, skip_tokens=None, loop_reading=None,
-        rate=None, interval=None, permanent=None, syslog_proto=None, proxied=None, sdata=None, no_framing=None, active_connections=None,
-        idle_connections=None, ipv6=None, debug=None, number=None, csv=None, quiet=None, size=None, reconnect=None, proxied_tls_passthrough=None,
-        proxy_src_ip=None, proxy_dst_ip=None, proxy_src_port=None, proxy_dst_port=None,
+            self, target, port, inet=None, unix=None, stream=None, dgram=None, use_ssl=None, dont_parse=None,
+            read_file=None, skip_tokens=None, loop_reading=None,
+            rate=None, interval=None, permanent=None, syslog_proto=None, proxied=None, sdata=None, no_framing=None,
+            active_connections=None,
+            idle_connections=None, ipv6=None, debug=None, number=None, csv=None, quiet=None, size=None, reconnect=None,
+            proxied_tls_passthrough=None,
+            proxy_src_ip=None, proxy_dst_ip=None, proxy_src_port=None, proxy_dst_port=None,
     ):
 
         if self.loggen_proc is not None and self.loggen_proc.is_running():

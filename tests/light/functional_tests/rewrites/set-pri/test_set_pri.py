@@ -34,7 +34,7 @@ SYSLOG_NG_DEFAULT_PRI = "38"
         ("'-2'", SYSLOG_NG_DEFAULT_PRI),
         ("'test'", SYSLOG_NG_DEFAULT_PRI),
         ("''", SYSLOG_NG_DEFAULT_PRI),
-    ], ids=["min_value", "valid_value", "max_value", "invalid_big_number", "invalid_negative", "invalid_letters", "empty_value", ],
+    ], ids=["min_value", "valid_value", "max_value", "invalid_big_number", "invalid_negative", "invalid_letters", "empty_value"],
 )
 def test_set_pri(config, syslog_ng, log_message, bsd_formatter, pri_number, expected_pri):
     input_message = bsd_formatter.format_message(log_message.priority(38))
