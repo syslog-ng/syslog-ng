@@ -20,6 +20,8 @@ RUN /dbld/builddeps install_rpm_build_deps
 RUN /dbld/builddeps install_criterion
 RUN /dbld/builddeps install_gradle
 
+RUN dnf upgrade -y
+
 VOLUME /source
 VOLUME /build
 
