@@ -19,6 +19,8 @@ RUN /dbld/builddeps install_dbld_dependencies
 RUN /dbld/builddeps install_apt_packages
 RUN /dbld/builddeps install_debian_build_deps
 
+RUN apt upgrade -y
+
 VOLUME /source
 VOLUME /build
 

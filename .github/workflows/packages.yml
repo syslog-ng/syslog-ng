@@ -36,8 +36,10 @@ jobs:
       distros: '[
         "almalinux-8",
         "almalinux-9",
+        "centos-stream9",
         "debian-bookworm",
         "debian-testing",
         "fedora-latest",
+        "fedora-rawhide",
         "ubuntu-noble"
       ]'

@@ -31,14 +31,14 @@ function install_dbld_dependencies()
 {
     case "${OS_DISTRIBUTION}" in
         centos|almalinux)
-            $YUM_INSTALL wget yum-utils
+            $YUM_INSTALL yum-utils
             ;;
         debian|ubuntu)
             apt-get update
-            $APT_INSTALL wget gnupg2
+            $APT_INSTALL curl gnupg2
             ;;
         fedora)
-            $DNF_INSTALL -y wget dnf-plugins-core
+            $DNF_INSTALL -y dnf-plugins-core
             ;;
     esac
 }
@@ -92,7 +92,7 @@ function install_pip2 {
 function download_target() {
     target=$1
     output=$2
-    wget --no-check-certificate $target --output-document=$output
+    curl --location --insecure "$target" --output "$output"
 }
 
 function filter_packages_by_platform {
@@ -214,9 +214,9 @@ function install_perf {
 function install_bison_from_source {
     BISON_VERSION=3.7.6
     cd /tmp
-    wget https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}.tar.gz
-    tar xvfz bison-${BISON_VERSION}.tar.gz
-    cd bison-${BISON_VERSION}
+    download_target https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}.tar.gz /tmp/bison-${BISON_VERSION}.tar.gz
+    tar xvfz /tmp/bison-${BISON_VERSION}.tar.gz
+    cd /tmp/bison-${BISON_VERSION}
     ./configure --prefix=/usr/local --disable-nls
     make && make install
 }
