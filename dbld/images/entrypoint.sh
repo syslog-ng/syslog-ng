@@ -25,10 +25,14 @@ function create_user() {
 if [[ "$USER_ID" -eq 0 ]]; then
     "$@"
 else
-    if ! getent passwd $USER_ID > /dev/null
+    if getent passwd $USER_ID > /dev/null
     then
+        echo "USER_ID: $USER_ID already exist in passwd database, performing cleanup"
+        userdel --remove $(getent passwd $USER_ID | cut -d":" -f1)
+	create_user
+    else
         create_user
     fi
-
+    echo "Added new user: $USER_NAME"
     exec sudo --preserve-env -Hu "${USER_NAME}" "$@"
 fi
