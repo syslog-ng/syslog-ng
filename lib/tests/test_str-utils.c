@@ -78,7 +78,7 @@ ParameterizedTestParameters(str_utils, test_str_utils_find_char)
 
 ParameterizedTest(StrChrTestData *test_data, str_utils, test_str_utils_find_char)
 {
-  char *result = strchr_under_test(test_data->str, test_data->c);
+  const char *result = strchr_under_test(test_data->str, test_data->c);
 
   cr_assert_not_null(result, "expected a non-NULL return");
   cr_assert(result - test_data->str <= strlen(test_data->str),
