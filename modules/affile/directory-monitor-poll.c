@@ -24,6 +24,8 @@
 #include "directory-monitor-poll.h"
 #include "messages.h"
 #include "timeutils/misc.h"
+#include "glib.h"
+#include "glib/gstdio.h"
 
 #include <iv.h>
 
@@ -35,70 +37,98 @@ typedef struct _DirectoryMonitorPoll
 } DirectoryMonitorPoll;
 
 static void
-_handle_new_entry(const gchar *filename, gpointer user_data)
+_handle_new_entry(CollectionComparatorEntry *entry, gpointer user_data)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)user_data;
-  DirectoryMonitorEvent event;
-
-  event.name = filename;
-  event.full_path = build_filename(self->super.real_path, event.name);
-  event.event_type = g_file_test(event.full_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
   if (self->super.callback)
     {
+      DirectoryMonitorEvent event;
+
+      event.name = entry->value;
+      event.full_path = build_filename(self->super.real_path, event.name);
+      event.event_type = g_file_test(event.full_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
+
       self->super.callback(&event, self->super.callback_data);
+
+      g_free(event.full_path);
     }
-  g_free(event.full_path);
 }
 
 static void
-_handle_deleted_entry(const gchar *filename, gpointer user_data)
+_handle_deleted_entry(CollectionComparatorEntry *entry, gpointer user_data)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)user_data;
-  DirectoryMonitorEvent event;
-
-  event.name = filename;
-  event.event_type = FILE_DELETED;
-  event.full_path = build_filename(self->super.real_path, event.name);
   if (self->super.callback)
     {
+      DirectoryMonitorEvent event;
+
+      event.name = entry->value;
+      event.event_type = FILE_DELETED;
+      event.full_path = build_filename(self->super.real_path, event.name);
+
       self->super.callback(&event, self->super.callback_data);
+
+      g_free(event.full_path);
     }
-  g_free(event.full_path);
 }
 
 static void
 _handle_deleted_self(DirectoryMonitorPoll *self)
 {
-  DirectoryMonitorEvent event;
-
-  event.name = self->super.real_path;
-  event.event_type = DIRECTORY_DELETED;
-  event.full_path = self->super.real_path;
   if (self->super.callback)
     {
+      DirectoryMonitorEvent event;
+
+      event.name = self->super.real_path;
+      event.event_type = DIRECTORY_DELETED;
+      event.full_path = self->super.real_path;
+
       self->super.callback(&event, self->super.callback_data);
     }
 }
 
 static void
-_rescan_directory(DirectoryMonitorPoll *self)
+_rescan_directory(DirectoryMonitorPoll *self, gboolean initial_scan)
 {
   GError *error = NULL;
   GDir *directory = g_dir_open(self->super.real_path, 0, &error);
-  collection_comparator_start(self->comparator);
+
+  if (FALSE == initial_scan)
+    collection_comparator_start(self->comparator);
+
   if (directory)
     {
       const gchar *filename;
       while((filename = g_dir_read_name(directory)))
         {
-          collection_comparator_add_value(self->comparator, filename);
+          gchar *full_filename = build_filename(self->super.real_path, filename);
+          GStatBuf file_stat;
+
+          if (g_stat(full_filename, &file_stat) == 0)
+            {
+              g_free(full_filename);
+              gint64 fids[2] = { file_stat.st_dev, file_stat.st_ino };
+              if (initial_scan)
+                collection_comparator_add_initial_value(self->comparator, fids, filename);
+              else
+                collection_comparator_add_value(self->comparator, fids, filename);
+            }
+          else
+            {
+              g_free(full_filename);
+              msg_error("Error invoking g_stat() on file", evt_tag_str("filename", filename));
+            }
         }
       g_dir_close(directory);
-      collection_comparator_stop(self->comparator);
+
+      if (FALSE == initial_scan)
+        collection_comparator_stop(self->comparator);
     }
   else
     {
-      collection_comparator_stop(self->comparator);
+      if (FALSE == initial_scan)
+        collection_comparator_stop(self->comparator);
+
       _handle_deleted_self(self);
       msg_debug("Error while opening directory",
                 evt_tag_str("dirname", self->super.real_path),
@@ -120,18 +150,10 @@ static void
 _start_watches(DirectoryMonitor *s)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)s;
-  GDir *directory = NULL;
-  directory = g_dir_open(self->super.real_path, 0, NULL);
-  if (directory)
-    {
-      const gchar *filename = g_dir_read_name(directory);
-      while (filename)
-        {
-          collection_comparator_add_initial_value(self->comparator, filename);
-          filename = g_dir_read_name(directory);
-        }
-      g_dir_close(directory);
-    }
+  msg_trace("Starting to poll directory changes",
+            evt_tag_str("dir", self->super.dir),
+            evt_tag_int("freq", self->super.recheck_time));
+  _rescan_directory(self, TRUE);
   _rearm_rescan_timer(self);
 }
 
@@ -141,9 +163,7 @@ _stop_watches(DirectoryMonitor *s)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)s;
   if (iv_timer_registered(&self->rescan_timer))
-    {
-      iv_timer_unregister(&self->rescan_timer);
-    }
+    iv_timer_unregister(&self->rescan_timer);
 }
 
 static void
@@ -157,7 +177,7 @@ static void
 _triggered_timer(gpointer data)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)data;
-  _rescan_directory(self);
+  _rescan_directory(self, FALSE);
   _rearm_rescan_timer(self);
 }
 
@@ -165,7 +185,7 @@ DirectoryMonitor *
 directory_monitor_poll_new(const gchar *dir, guint recheck_time)
 {
   DirectoryMonitorPoll *self = g_new0(DirectoryMonitorPoll, 1);
-  directory_monitor_init_instance(&self->super, dir, recheck_time);
+  directory_monitor_init_instance(&self->super, dir, recheck_time, "poll");
 
   IV_TIMER_INIT(&self->rescan_timer);
   self->rescan_timer.cookie = self;

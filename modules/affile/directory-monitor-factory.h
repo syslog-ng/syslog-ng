@@ -37,7 +37,7 @@ typedef enum
 typedef struct _DirectoryMonitorOptions
 {
   const gchar *dir;
-  guint follow_freq;
+  guint monitor_freq;
   MonitorMethod method;
 } DirectoryMonitorOptions;
 

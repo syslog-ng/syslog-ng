@@ -78,6 +78,52 @@ _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 }
 
 static gboolean
+_reader_check_eof(FileReader *self, gint fd)
+{
+  if (fd < 0)
+    return FALSE;
+
+  off_t pos = lseek(fd, 0, SEEK_CUR);
+  if (pos == (off_t) -1)
+    {
+      msg_error("Error invoking seek on file",
+                evt_tag_str("filename", self->filename->str),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+
+  struct stat st;
+  gboolean end_of_file = fstat(fd, &st) == 0 && pos == st.st_size;
+  return end_of_file;
+}
+
+static inline gboolean
+_reader_on_eof(FileReader *self)
+{
+  gboolean result = TRUE;
+  if (log_pipe_notify(&self->super, NC_FILE_EOF, self) & NR_STOP_ON_EOF)
+    result = FALSE;
+  return result;
+}
+
+static inline gboolean
+_reader_check_watches(PollEvents *poll_events, gpointer user_data)
+{
+  FileReader *self = (FileReader *) user_data;
+  gboolean check_again = TRUE;
+  gint fd = poll_events_get_fd(poll_events);
+
+  if (_reader_check_eof(self, fd))
+    {
+      msg_trace("End of file, following file",
+                evt_tag_str("follow_filename", self->filename->str),
+                evt_tag_int("fn", fd));
+      check_again = _reader_on_eof(self);
+    }
+  return check_again;
+}
+
+static gboolean
 _is_fd_pollable(gint fd)
 {
   struct iv_fd check_fd;
@@ -96,27 +142,36 @@ _is_fd_pollable(gint fd)
 static PollEvents *
 _construct_poll_events(FileReader *self, gint fd)
 {
+  PollEvents *poll_events = NULL;
   if (self->options->follow_freq > 0)
     {
       LogProtoFileReaderOptions *proto_opts = file_reader_options_get_log_proto_options(self->options);
 
       if (proto_opts->multi_line_options.mode == MLM_NONE)
-        return poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
+        poll_events = poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
       else
-        return poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
-                                               self->options->multi_line_timeout, self);
+        poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
+                                                      self->options->multi_line_timeout, self);
+      msg_trace("File follow-mode is syslog-ng poll");
     }
   else if (fd >= 0 && _is_fd_pollable(fd))
-    return poll_fd_events_new(fd);
+    {
+      poll_events = poll_fd_events_new(fd);
+      msg_trace("File follow-mode is ivykis poll");
+      msg_trace("Selected ivykis poll method", evt_tag_str("selected_poll_method", iv_poll_method_name()));
+    }
   else
     {
       msg_error("Unable to determine how to monitor this file, follow_freq() unset and it is not possible to poll it "
                 "with the current ivykis polling method. Set follow-freq() for regular files or change "
                 "IV_EXCLUDE_POLL_METHOD environment variable to override the automatically selected polling method",
+                evt_tag_str("selected_poll_method", iv_poll_method_name()),
                 evt_tag_str("filename", self->filename->str),
                 evt_tag_int("fd", fd));
       return NULL;
     }
+  poll_events_set_checker(poll_events, _reader_check_watches, self);
+  return poll_events;
 }
 
 static LogTransport *
@@ -130,12 +185,9 @@ _construct_proto(FileReader *self, gint fd)
 {
   LogReaderOptions *reader_options = &self->options->reader_options;
   LogProtoFileReaderOptions *proto_options = file_reader_options_get_log_proto_options(self->options);
-  LogTransport *transport;
-  MsgFormatHandler *format_handler;
+  LogTransport *transport = _construct_transport(self, fd);
+  MsgFormatHandler *format_handler = reader_options->parse_options.format_handler;
 
-  transport = _construct_transport(self, fd);
-
-  format_handler = reader_options->parse_options.format_handler;
   if ((format_handler && format_handler->construct_proto))
     {
       log_proto_server_options_set_ack_tracker_factory(&proto_options->super,
@@ -258,8 +310,51 @@ _reopen_on_notify(LogPipe *s, gboolean recover_state)
   _reader_open_file(s, recover_state);
 }
 
+static void
+_on_file_close(FileReader *self)
+{
+  if (self->options->exit_on_eof)
+    cfg_shutdown(log_pipe_get_config(&self->super));
+}
+
+static void
+_on_file_moved(FileReader *self)
+{
+  msg_verbose("Follow-mode file source moved, tracking of the new file is started",
+              evt_tag_str("filename", self->filename->str));
+  if (self->on_file_moved)
+    self->on_file_moved(self);
+  else
+    _reopen_on_notify(&self->super, TRUE);
+}
+
+static void
+_on_file_deleted(FileReader *self)
+{
+  /* We want to handle the events like file deleted in the same workflow.
+   * Manually polled file readers like poll-file-changes can handle this case,
+   * read the remaining file content to the end, and signal the EOF, this is
+   * happening from poll_events_update_watches, but that one is not always triggered
+   * automatically for system file event notifications (like poll-fd-events), as there
+   * might be no more file events after the file is fully read.
+   * So, we have to trigger one more read.
+   * NOTE: Do not try to close the reader directly from here, as there might already be
+   *       an io-operation in progress!
+   */
+  if (poll_events_system_polled(self->reader->poll_events))
+    log_reader_trigger_one_check(self->reader);
+}
+
+static void
+_on_read_error(FileReader *self)
+{
+  msg_verbose("Error while following source file, reopening in the hope it would work",
+              evt_tag_str("filename", self->filename->str));
+  _reopen_on_notify(&self->super, FALSE);
+}
+
 /* NOTE: runs in the main thread */
-void
+gint
 file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
 {
   FileReader *self = (FileReader *) s;
@@ -267,25 +362,25 @@ file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
   switch (notify_code)
     {
     case NC_CLOSE:
-      if (self->options->exit_on_eof)
-        cfg_shutdown(log_pipe_get_config(s));
+      _on_file_close(self);
       break;
 
     case NC_FILE_MOVED:
-      msg_verbose("Follow-mode file source moved, tracking of the new file is started",
-                  evt_tag_str("filename", self->filename->str));
-      _reopen_on_notify(s, TRUE);
+      _on_file_moved(self);
       break;
 
     case NC_READ_ERROR:
-      msg_verbose("Error while following source file, reopening in the hope it would work",
-                  evt_tag_str("filename", self->filename->str));
-      _reopen_on_notify(s, FALSE);
+      _on_read_error(self);
+      break;
+
+    case NC_FILE_DELETED:
+      _on_file_deleted(self);
       break;
 
     default:
       break;
     }
+  return NR_OK;
 }
 
 void

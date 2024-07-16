@@ -48,6 +48,7 @@ typedef struct _DirectoryMonitor DirectoryMonitor;
 
 struct _DirectoryMonitor
 {
+  const gchar *method;
   gchar *dir;
   gchar *real_path;
   DirectoryMonitorEventCallback callback;
@@ -64,7 +65,7 @@ struct _DirectoryMonitor
 };
 
 DirectoryMonitor *directory_monitor_new(const gchar *dir, guint recheck_time);
-void directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint recheck_time);
+void directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint recheck_time, const gchar *method);
 void directory_monitor_free(DirectoryMonitor *self);
 void directory_monitor_set_callback(DirectoryMonitor *self, DirectoryMonitorEventCallback callback, gpointer user_data);
 

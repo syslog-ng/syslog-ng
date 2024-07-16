@@ -79,7 +79,6 @@ struct _LogReader
   guint watches_running:1, suspended:1, realloc_window_after_fetch:1;
   gint notify_code;
 
-
   /* proto & poll_events pending to be applied. As long as the previous
    * processing is being done, we can't replace these in self->proto and
    * self->poll_events, they get applied to the production ones as soon as
@@ -99,6 +98,8 @@ void log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr);
 void log_reader_set_local_addr(LogReader *s, GSockAddr *local_addr);
 void log_reader_set_immediate_check(LogReader *s);
 void log_reader_disable_bookmark_saving(LogReader *s);
+void log_reader_trigger_one_check(LogReader *s);
+gboolean log_reader_is_opened(LogReader *s);
 void log_reader_open(LogReader *s, LogProtoServer *proto, PollEvents *poll_events);
 void log_reader_close_proto(LogReader *s);
 LogReader *log_reader_new(GlobalConfig *cfg);

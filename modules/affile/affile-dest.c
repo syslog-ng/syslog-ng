@@ -353,7 +353,7 @@ affile_dw_free(LogPipe *s)
   log_pipe_free_method(s);
 }
 
-static void
+static gint
 affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
   AFFileDestWriter *self = (AFFileDestWriter *)s;
@@ -368,6 +368,7 @@ affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
     default:
       break;
     }
+  return NR_OK;
 }
 
 static AFFileDestWriter *
