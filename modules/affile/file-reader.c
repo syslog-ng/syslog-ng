@@ -342,7 +342,7 @@ _on_file_deleted(FileReader *self)
    *       an io-operation in progress!
    */
   if (poll_events_system_polled(self->reader->poll_events))
-    log_reader_trigger_one_read(self->reader);
+    log_reader_trigger_one_check(self->reader);
 }
 
 static void

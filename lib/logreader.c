@@ -352,18 +352,24 @@ log_reader_update_watches(LogReader *self)
 static inline gboolean
 log_reader_work_in_progress(LogReader *self)
 {
-  return g_atomic_counter_get(&self->io_work_in_progress);
+  main_loop_assert_main_thread();
+
+  return self->io_job.working;
 }
 
 static inline void
 log_reader_set_work_in_progress(LogReader *self, gboolean state)
 {
-  g_atomic_counter_set(&self->io_work_in_progress, state);
+  if ((self->options->flags & LR_THREADED) == 0)
+    {
+      main_loop_assert_main_thread();
+      self->io_job.working = state;
+    }
 }
 
 /* NOTE: See file-reader, file_reader_notify_method() why this is needed */
 inline void
-log_reader_trigger_one_read(LogReader *self)
+log_reader_trigger_one_check(LogReader *self)
 {
   if (FALSE == log_reader_work_in_progress(self))
     log_reader_force_check_in_next_poll(self);
@@ -387,6 +393,8 @@ static void
 log_reader_work_finished(void *s, gpointer arg)
 {
   LogReader *self = (LogReader *) s;
+
+  log_reader_set_work_in_progress(self, FALSE);
 
   if (self->pending_close)
     {
@@ -425,8 +433,6 @@ log_reader_work_finished(void *s, gpointer arg)
       log_proto_server_reset_error(self->proto);
       log_reader_update_watches(self);
     }
-
-  log_reader_set_work_in_progress(self, FALSE);
 }
 
 /*****************************************************************************
