@@ -67,11 +67,13 @@ static void
 _validate_args_callback(gpointer k, gpointer v, gpointer user_data)
 {
   CfgArgs *defs = ((gpointer *) user_data)[0];
-  const gchar *reference = ((gpointer *) user_data)[1];
-  gboolean *problem_found = ((gpointer *) user_data)[2];
 
-  if ((!defs || !cfg_args_contains(defs, k)))
+  if (defs == NULL)
+    return;
+
+  if (FALSE == cfg_args_contains(defs, k))
     {
+      const gchar *reference = ((gpointer *) user_data)[1];
       if (cfg_args_is_accepting_varargs(defs))
         {
           msg_verbose("Unknown argument, adding it to __VARARGS__",
@@ -85,6 +87,7 @@ _validate_args_callback(gpointer k, gpointer v, gpointer user_data)
                     evt_tag_str("argument", k),
                     evt_tag_str("value", v),
                     evt_tag_str("reference", reference));
+          gboolean *problem_found = ((gpointer *) user_data)[2];
           *problem_found = TRUE;
         }
     }
