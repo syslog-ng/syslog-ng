@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2002-2014 Balabit
  * Copyright (c) 1998-2014 Balázs Scheidler
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -233,12 +235,12 @@ static struct timespec app_uptime;
 static GHashTable *macro_hash;
 
 static void
-_result_append_value(GString *result, const LogMessage *lm, NVHandle handle)
+_result_append_value(GString *result, const LogMessage *lm, NVHandle handle, LogMessageValueType *type)
 {
   const gchar *str;
   gssize len = 0;
 
-  str = log_msg_get_value(lm, handle, &len);
+  str = log_msg_get_value_with_type(lm, handle, &len, type);
   g_string_append_len(result, str, len);
 }
 
@@ -530,7 +532,7 @@ log_macro_expand(gint id, LogTemplateEvalOptions *options, const LogMessage *msg
           const gchar *p1, *p2;
           int remaining, length;
           gssize host_len;
-          const gchar *host = log_msg_get_value(msg, LM_V_HOST, &host_len);
+          const gchar *host = log_msg_get_value_with_type(msg, LM_V_HOST, &host_len, &t);
 
           p1 = memchr(host, '@', host_len);
 
@@ -547,7 +549,7 @@ log_macro_expand(gint id, LogTemplateEvalOptions *options, const LogMessage *msg
         }
       else
         {
-          _result_append_value(result, msg, LM_V_HOST);
+          _result_append_value(result, msg, LM_V_HOST, &t);
         }
       break;
     }
@@ -561,14 +563,14 @@ log_macro_expand(gint id, LogTemplateEvalOptions *options, const LogMessage *msg
       gssize len;
       const gchar *p;
 
-      p = log_msg_get_value(msg, LM_V_LEGACY_MSGHDR, &len);
+      p = log_msg_get_value_with_type(msg, LM_V_LEGACY_MSGHDR, &len, &t);
       if (len > 0)
         g_string_append_len(result, p, len);
       else
         {
           /* message, complete with program name and pid */
           len = result->len;
-          _result_append_value(result, msg, LM_V_PROGRAM);
+          _result_append_value(result, msg, LM_V_PROGRAM, &t);
           if (len != result->len)
             {
               const gchar *pid = log_msg_get_value(msg, LM_V_PID, &len);
@@ -585,7 +587,7 @@ log_macro_expand(gint id, LogTemplateEvalOptions *options, const LogMessage *msg
     }
     case M_MESSAGE:
     {
-      _result_append_value(result, msg, LM_V_MESSAGE);
+      _result_append_value(result, msg, LM_V_MESSAGE, &t);
       break;
     }
     case M_SOURCE_IP:
