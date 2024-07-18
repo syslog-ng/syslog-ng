@@ -693,9 +693,10 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
 
       if (self->user_version == 0)
         {
-          msg_error("ERROR: configuration files without a version number have become unsupported in " VERSION_3_13
-                    ", please specify a version number using @version as the first line in the configuration file");
-          return FALSE;
+          msg_warning("WARNING: no version information provided in the configuration file. Please specify `current` "
+                      "to use the latest version and silence this warning, or specify a specific version number using "
+                      "@version as the first line in the configuration file.");
+          cfg_set_current_version(self);
         }
 
       if (res)
