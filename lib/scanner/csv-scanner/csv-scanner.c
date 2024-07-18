@@ -163,7 +163,7 @@ _skip_whitespace(const gchar **src)
 static void
 _parse_opening_quote_character(CSVScanner *self)
 {
-  gchar *quote = _strchr_optimized_for_single_char_haystack(self->options->quotes_start, *self->src);
+  const gchar *quote = _strchr_optimized_for_single_char_haystack(self->options->quotes_start, *self->src);
 
   if (quote != NULL)
     {
