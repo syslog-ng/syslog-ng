@@ -158,14 +158,14 @@ _construct_poll_events(FileReader *self, gint fd)
     {
       poll_events = poll_fd_events_new(fd);
       msg_trace("File follow-mode is ivykis poll");
-      msg_trace("Selected ivykis poll method", evt_tag_str("selected_poll_method", iv_poll_method_name()));
+      msg_trace("Selected ivykis poll method", evt_tag_str("file_poll_method", iv_poll_method_name()));
     }
   else
     {
       msg_error("Unable to determine how to monitor this file, follow_freq() unset and it is not possible to poll it "
                 "with the current ivykis polling method. Set follow-freq() for regular files or change "
                 "IV_EXCLUDE_POLL_METHOD environment variable to override the automatically selected polling method",
-                evt_tag_str("selected_poll_method", iv_poll_method_name()),
+                evt_tag_str("file_poll_method", iv_poll_method_name()),
                 evt_tag_str("filename", self->filename->str),
                 evt_tag_int("fd", fd));
       return NULL;
