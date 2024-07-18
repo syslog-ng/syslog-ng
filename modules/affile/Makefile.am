@@ -22,6 +22,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/directory-monitor-factory.c			\
 	modules/affile/collection-comparator.h		\
 	modules/affile/collection-comparator.c		\
+	modules/affile/directory-monitor-content-comparator.h \
+	modules/affile/directory-monitor-content-comparator.c \
 	modules/affile/directory-monitor-poll.h   \
 	modules/affile/directory-monitor-poll.c   \
 	modules/affile/file-opener.c				\
