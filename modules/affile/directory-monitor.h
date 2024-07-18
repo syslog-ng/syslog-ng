@@ -76,5 +76,6 @@ void directory_monitor_stop_and_destroy(DirectoryMonitor *self);
 void directory_monitor_schedule_destroy(DirectoryMonitor *self);
 
 gchar *build_filename(const gchar *basedir, const gchar *path);
+void rearm_timer(struct iv_timer *rescan_timer, gint rearm_time);
 
 #endif /* MODULES_AFFILE_DIRECTORY_MONITOR_H_ */

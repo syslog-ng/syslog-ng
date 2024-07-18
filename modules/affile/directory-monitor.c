@@ -178,22 +178,20 @@ _collect_all_files(DirectoryMonitor *self, GDir *directory)
 }
 
 static void
-_arm_recheck_timer(DirectoryMonitor *self)
-{
-  iv_validate_now();
-  self->check_timer.cookie = self;
-  self->check_timer.handler = (GDestroyNotify) directory_monitor_start;
-  self->check_timer.expires = iv_now;
-  timespec_add_msec(&self->check_timer.expires, self->recheck_time);
-  iv_timer_register(&self->check_timer);
-}
-
-static void
 _set_real_path(DirectoryMonitor *self)
 {
   if (self->real_path)
     g_free(self->real_path);
   self->real_path = _get_real_path(self);
+}
+
+void
+rearm_timer(struct iv_timer *rescan_timer, gint rearm_time)
+{
+  iv_validate_now();
+  rescan_timer->expires = iv_now;
+  timespec_add_msec(&rescan_timer->expires, rearm_time);
+  iv_timer_register(rescan_timer);
 }
 
 void
@@ -214,7 +212,7 @@ directory_monitor_start(DirectoryMonitor *self)
       msg_error("Can not open directory",
                 evt_tag_str("base_dir", self->real_path),
                 evt_tag_str("error", error->message));
-      _arm_recheck_timer(self);
+      rearm_timer(&self->check_timer, self->recheck_time);
       g_error_free(error);
       return;
     }
@@ -258,7 +256,11 @@ directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint 
   self->method = method;
   self->dir = g_strdup(dir);
   self->recheck_time = recheck_time;
+
   IV_TIMER_INIT(&self->check_timer);
+  self->check_timer.handler = (GDestroyNotify) directory_monitor_start;
+  self->check_timer.cookie = self;
+
   IV_TASK_INIT(&self->scheduled_destructor);
   self->scheduled_destructor.cookie = self;
   self->scheduled_destructor.handler = (GDestroyNotify)directory_monitor_stop_and_destroy;
