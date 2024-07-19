@@ -312,6 +312,15 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
 }
 
 static void
+affile_dw_unset_owner(AFFileDestWriter *self)
+{
+  if (self->owner)
+    log_pipe_unref(&self->owner->super.super.super);
+
+  self->owner = NULL;
+}
+
+static void
 affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
 {
   GlobalConfig *cfg = log_pipe_get_config(&owner->super.super.super);
@@ -520,7 +529,7 @@ affile_dd_reuse_writer(gpointer key, gpointer value, gpointer user_data)
   affile_dw_set_owner(writer, self);
   if (!log_pipe_init(&writer->super))
     {
-      affile_dw_set_owner(writer, NULL);
+      affile_dw_unset_owner(writer);
       log_pipe_unref(&writer->super);
       g_hash_table_remove(self->writer_hash, key);
     }
