@@ -138,7 +138,7 @@ _validate_spurious_args(CfgArgs *self, CfgArgs *defs, const gchar *reference)
 static gboolean
 _validate_args(CfgArgs *self, CfgArgs *defs, const gchar *reference)
 {
-  return _validate_mandatory_options(defs, self, reference) && _validate_spurious_args(self, defs, reference);
+  return defs && _validate_mandatory_options(defs, self, reference) && _validate_spurious_args(self, defs, reference);
 }
 
 /*
