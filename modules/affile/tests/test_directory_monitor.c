@@ -27,6 +27,8 @@
 
 #if SYSLOG_NG_HAVE_INOTIFY
 #include "directory-monitor-inotify.h"
+#elif SYSLOG_NG_HAVE_KQUEUE
+#include "directory-monitor-kqueue.h"
 #endif
 
 #include "directory-monitor-poll.h"
@@ -111,6 +113,8 @@ Test(directory_monitor_factory, check_monitor_method)
 {
 #if SYSLOG_NG_HAVE_INOTIFY
   cr_assert_eq(MM_INOTIFY, directory_monitor_factory_get_monitor_method("inotify"));
+#elif SYSLOG_NG_HAVE_KQUEUE
+  cr_assert_eq(MM_KQUEUE, directory_monitor_factory_get_monitor_method("kqueue"));
 #endif
   cr_assert_eq(MM_AUTO, directory_monitor_factory_get_monitor_method("auto"));
   cr_assert_eq(MM_POLL, directory_monitor_factory_get_monitor_method("poll"));
@@ -124,6 +128,10 @@ Test(directory_monitor_factory, check_constructor)
   cr_assert_eq(directory_monitor_factory_get_constructor(&options), directory_monitor_inotify_new);
   options.method = MM_INOTIFY;
   cr_assert_eq(directory_monitor_factory_get_constructor(&options), directory_monitor_inotify_new);
+#elif SYSLOG_NG_HAVE_KQUEUE
+  cr_assert_eq(directory_monitor_factory_get_constructor(&options), directory_monitor_kqueue_new);
+  options.method = MM_KQUEUE;
+  cr_assert_eq(directory_monitor_factory_get_constructor(&options), directory_monitor_kqueue_new);
 #else
   cr_assert_eq(directory_monitor_factory_get_constructor(&options), directory_monitor_poll_new);
 #endif
