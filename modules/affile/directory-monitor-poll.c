@@ -37,15 +37,6 @@ typedef struct _DirectoryMonitorPoll
 
 
 static void
-_rearm_rescan_timer(DirectoryMonitorPoll *self)
-{
-  iv_validate_now();
-  self->rescan_timer.expires = iv_now;
-  timespec_add_msec(&self->rescan_timer.expires, self->super.super.recheck_time);
-  iv_timer_register(&self->rescan_timer);
-}
-
-static void
 _start_watches(DirectoryMonitor *s)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)s;
@@ -53,7 +44,7 @@ _start_watches(DirectoryMonitor *s)
             evt_tag_str("dir", self->super.super.dir),
             evt_tag_int("freq", self->super.super.recheck_time));
   directory_monitor_content_comparator_rescan_directory(&self->super, TRUE);
-  _rearm_rescan_timer(self);
+  rearm_timer(&self->rescan_timer, self->super.super.recheck_time);
 }
 
 
@@ -70,7 +61,7 @@ _triggered_timer(gpointer data)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)data;
   directory_monitor_content_comparator_rescan_directory(&self->super, FALSE);
-  _rearm_rescan_timer(self);
+  rearm_timer(&self->rescan_timer, self->super.super.recheck_time);
 }
 
 DirectoryMonitor *
