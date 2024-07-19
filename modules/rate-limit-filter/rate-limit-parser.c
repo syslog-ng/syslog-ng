@@ -1,5 +1,7 @@
 /*
  * Copyright (c) 2021 One Identity
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -46,7 +48,7 @@ CfgParser rate_limit_filter_parser =
   .name = "rate-limit-filter",
   .keywords = rate_limit_filter_keywords,
   .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) rate_limit_filter_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
+  .cleanup = (void (*)(gpointer)) filter_expr_unref,
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(rate_limit_filter_, RATE_LIMIT_FILTER_, FilterExprNode **)
