@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2017 Balabit
+ * Copyright (c) 2024 OneIdentity
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -19,32 +20,11 @@
  * COPYING for details.
  *
  */
-#ifndef MODULES_AFFILE_DIRECTORY_MONITOR_FACTORY_H_
-#define MODULES_AFFILE_DIRECTORY_MONITOR_FACTORY_H_
+#ifndef MODULES_AFFILE_DIRECTORY_MONITOR_KQUEUE_H_
+#define MODULES_AFFILE_DIRECTORY_MONITOR_KQUEUE_H_
 
 #include "directory-monitor.h"
 
-typedef DirectoryMonitor *(*DirectoryMonitorConstructor)(const gchar *dir, guint recheck_time);
+DirectoryMonitor *directory_monitor_kqueue_new(const gchar *dir, guint recheck_time);
 
-typedef enum
-{
-  MM_AUTO,
-  MM_POLL,
-  MM_INOTIFY,
-  MM_KQUEUE,
-  MM_UNKNOWN
-} MonitorMethod;
-
-typedef struct _DirectoryMonitorOptions
-{
-  const gchar *dir;
-  guint monitor_freq;
-  MonitorMethod method;
-} DirectoryMonitorOptions;
-
-DirectoryMonitorConstructor directory_monitor_factory_get_constructor(DirectoryMonitorOptions *options);
-MonitorMethod directory_monitor_factory_get_monitor_method(const gchar *method_name);
-
-DirectoryMonitor *create_directory_monitor(DirectoryMonitorOptions *options);
-
-#endif /* MODULES_AFFILE_DIRECTORY_MONITOR_FACTORY_H_ */
+#endif /* MODULES_AFFILE_DIRECTORY_MONITOR_KQUEUE_H_ */

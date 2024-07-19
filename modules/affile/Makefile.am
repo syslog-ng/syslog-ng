@@ -59,6 +59,16 @@ else
   modules/affile/directory-monitor-inotify.c
 endif
 
+if HAVE_KQUEUE
+  modules_affile_libaffile_la_SOURCES +=      \
+  modules/affile/directory-monitor-kqueue.h  \
+  modules/affile/directory-monitor-kqueue.c
+else
+  EXTRA_DIST +=                               \
+  modules/affile/directory-monitor-kqueue.h  \
+  modules/affile/directory-monitor-kqueue.c
+endif
+
 BUILT_SOURCES				+= 			\
 	modules/affile/affile-grammar.y				\
 	modules/affile/affile-grammar.c				\

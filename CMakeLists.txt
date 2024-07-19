@@ -41,6 +41,7 @@ set(BISON_FLAGS "-Wno-other -Werror=conflicts-sr -Werror=conflicts-rr -Wcountere
 set(BISON_BUILT_SOURCE_CFLAGS "-Wno-unused-but-set-variable")
 
 include(CheckIncludeFiles)
+include(CheckFunctionExists)
 include(ExternalProject)
 include(external_or_find_package)
 include(add_module)
@@ -318,6 +319,7 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 set(SYSLOG_NG_HAVE_INOTIFY "${Inotify_FOUND}")
+check_function_exists(kqueue SYSLOG_NG_HAVE_KQUEUE)
 
 set (PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library" )
 

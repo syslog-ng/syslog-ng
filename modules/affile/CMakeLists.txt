@@ -50,10 +50,15 @@ set (AFFILE_SOURCES
 
 if(SYSLOG_NG_HAVE_INOTIFY)
   list(APPEND AFFILE_SOURCES
-        "directory-monitor-inotify.h"
-        "directory-monitor-inotify.c"
-    )
-endif()
+    "directory-monitor-inotify.h"
+    "directory-monitor-inotify.c"
+  )
+elseif(SYSLOG_NG_HAVE_KQUEUE)
+  list(APPEND AFFILE_SOURCES
+    "directory-monitor-kqueue.h"
+    "directory-monitor-kqueue.c"
+  )
+endif ()
 
 add_module(
   TARGET affile
