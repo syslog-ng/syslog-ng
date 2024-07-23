@@ -30,7 +30,7 @@
     <refmeta>
       <refentrytitle>secure-logging</refentrytitle>
       <manvolnum>7</manvolnum>
-      <refmiscinfo class="version">4.7</refmiscinfo>
+      <refmiscinfo class="version">4.8</refmiscinfo>
       <refmiscinfo class="source"/>
     </refmeta>
     <refnamediv>
@@ -190,7 +190,7 @@ AgAAAAAAAAA=:5UVybnKL1EAbgC4CLfd8HpgurjREf4LEN61/yWHSD2hbXjRD4QmQdtbwguT1chzdItK
 # entries will be logged to a single file called /var/log/messages.slog
 #
 
-@version: 4.7
+@version: 4.8
 @include "scl.conf"
 
 source s_local {

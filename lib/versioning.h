@@ -142,6 +142,7 @@
 #define VERSION_4_5 "syslog-ng 4.5"
 #define VERSION_4_6 "syslog-ng 4.6"
 #define VERSION_4_7 "syslog-ng 4.7"
+#define VERSION_4_8 "syslog-ng 4.8"
 
 /* VERSION_VALUE_* references versions as integers to be compared against stuff like cfg->user_version */
 /* VERSION_STR_* references versions as strings to be shown to the user */
@@ -193,11 +194,12 @@
 #define VERSION_VALUE_4_5 0x0405
 #define VERSION_VALUE_4_6 0x0406
 #define VERSION_VALUE_4_7 0x0407
+#define VERSION_VALUE_4_8 0x0408
 
 /* config version code, in the same format as GlobalConfig->version */
-#define VERSION_VALUE_CURRENT   VERSION_VALUE_4_7
-#define VERSION_STR_CURRENT     "4.7"
-#define VERSION_PRODUCT_CURRENT VERSION_4_7
+#define VERSION_VALUE_CURRENT   VERSION_VALUE_4_8
+#define VERSION_STR_CURRENT     "4.8"
+#define VERSION_PRODUCT_CURRENT VERSION_4_8
 
 /* this value points to the last syslog-ng version where we changed the
  * meaning of any setting in the configuration file.  Basically, it is the
