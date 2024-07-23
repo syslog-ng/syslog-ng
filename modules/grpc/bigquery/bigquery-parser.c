@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -44,6 +46,7 @@ static CfgLexerKeyword bigquery_keywords[] =
   { "timeout", KW_TIMEOUT },
   { "max_pings_without_data", KW_MAX_PINGS_WITHOUT_DATA },
   { "channel_args", KW_CHANNEL_ARGS },
+  { "headers", KW_HEADERS },
   { NULL }
 };
 

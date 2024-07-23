@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Attila Szakacs
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -58,6 +59,8 @@ public:
   void add_extra_channel_arg(std::string name, long value);
   void add_extra_channel_arg(std::string name, std::string value);
 
+  void add_header(std::string name, std::string value);
+
   virtual bool init();
   virtual bool deinit();
   virtual const char *format_stats_key(StatsClusterKeyBuilder *kb);
@@ -77,6 +80,7 @@ protected:
   size_t batch_bytes;
   std::list<std::pair<std::string, long>> int_extra_channel_args;
   std::list<std::pair<std::string, std::string>> string_extra_channel_args;
+  std::list<std::pair<std::string, std::string>> headers;
   GrpcClientCredentialsBuilderW credentials_builder_wrapper;
   DestDriverMetrics metrics;
 };

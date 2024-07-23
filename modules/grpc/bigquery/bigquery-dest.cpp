@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -442,6 +444,13 @@ bigquery_dd_add_string_channel_arg(LogDriver *d, const gchar *name, const gchar 
 {
   BigQueryDestDriver *self = (BigQueryDestDriver *) d;
   self->cpp->add_extra_channel_arg(name, value);
+}
+
+void
+bigquery_dd_add_header(LogDriver *d, const gchar *name, const gchar *value)
+{
+  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
+  self->cpp->add_header(name, value);
 }
 
 LogTemplateOptions *

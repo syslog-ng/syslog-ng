@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -63,6 +65,7 @@
 %token KW_MAX_PINGS_WITHOUT_DATA
 
 %token KW_CHANNEL_ARGS
+%token KW_HEADERS
 
 %type <ptr> bigquery_dest
 
@@ -107,6 +110,7 @@ bigquery_dest_option
     }
   | KW_KEEP_ALIVE '(' bigquery_keepalive_options ')'
   | KW_CHANNEL_ARGS '(' bigquery_dest_channel_args ')'
+  | KW_HEADERS '(' bigquery_dest_headers ')'
   | threaded_dest_driver_general_option
   | threaded_dest_driver_workers_option
   | threaded_dest_driver_batch_option
@@ -147,6 +151,15 @@ bigquery_dest_channel_args
 bigquery_dest_channel_arg
   : string LL_ARROW LL_NUMBER { bigquery_dd_add_int_channel_arg(last_driver, $1, $3); free($1); }
   | string LL_ARROW string { bigquery_dd_add_string_channel_arg(last_driver, $1, $3); free($1); free($3); }
+  ;
+
+bigquery_dest_headers
+  : bigquery_dest_header bigquery_dest_headers
+  |
+  ;
+
+bigquery_dest_header
+  : string LL_ARROW string { bigquery_dd_add_header(last_driver, $1, $3); free($1); free($3); }
   ;
 
 /* INCLUDE_RULES */

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Attila Szakacs
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -70,6 +71,8 @@ public:
   virtual LogThreadedResult flush(LogThreadedFlushMode mode);
 
 protected:
+  void prepare_context(::grpc::ClientContext &context);
+
   void clear_current_msg_metadata();
   void get_metadata_for_current_msg(LogMessage *msg);
 

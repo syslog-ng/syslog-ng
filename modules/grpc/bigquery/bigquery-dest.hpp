@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -150,6 +152,12 @@ public:
     this->string_extra_channel_args.push_back(std::pair<std::string, std::string> {name, value});
   }
 
+  void add_header(std::string name, std::string value)
+  {
+    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+    this->headers.push_back(std::pair<std::string, std::string> {name, value});
+  }
+
   const std::string &get_url()
   {
     return this->url;
@@ -213,6 +221,7 @@ private:
 
   std::list<std::pair<std::string, long>> int_extra_channel_args;
   std::list<std::pair<std::string, std::string>> string_extra_channel_args;
+  std::list<std::pair<std::string, std::string>> headers;
 
   DestDriverMetrics metrics;
 };

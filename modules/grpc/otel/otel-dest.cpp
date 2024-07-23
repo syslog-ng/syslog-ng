@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Attila Szakacs
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -81,6 +82,13 @@ void
 DestDriver::add_extra_channel_arg(std::string name, std::string value)
 {
   string_extra_channel_args.push_back(std::pair<std::string, std::string> {name, value});
+}
+
+void
+DestDriver::add_header(std::string name, std::string value)
+{
+  std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+  headers.push_back(std::pair<std::string, std::string> {name, value});
 }
 
 const char *
@@ -183,6 +191,12 @@ void
 otel_dd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value)
 {
   get_DestDriver(s)->add_extra_channel_arg(name, value);
+}
+
+void
+otel_dd_add_header(LogDriver *s, const gchar *name, const gchar *value)
+{
+  get_DestDriver(s)->add_header(name, value);
 }
 
 GrpcClientCredentialsBuilderW *
