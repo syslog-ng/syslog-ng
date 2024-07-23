@@ -1,297 +1,193 @@
-4.7.1
+4.8.0
 =====
-
-*This is the combination of the news entries of `4.7.0` and `4.7.1`.*
-*`4.7.1` hotfixed two crashes related to configuration reload.*
-
-Read Axoflow's [blog post](https://axoflow.com/axosyslog-release-4-7/) for more details.
-You can read more about the new features in the AxoSyslog [documentation](https://axoflow.com/docs/axosyslog-core/).
 
 ## Highlights
 
-### Collecting Jellyfin logs
+### Default config version in configuration files
 
-The new `jellyfin()` source, reads Jellyfin logs from its log file output.
+`cfg`: allow usage of `current` in config @version by default if it is not presented
 
-Example minimal config:
-```
-source s_jellyfin {
-  jellyfin(
-    base-dir("/path/to/my/jellyfin/root/log/dir")
-    filename-pattern("log_*.log")
-  );
-};
-```
+This change allows syslog-ng to start even if the `@version` information is not present in the configuration file and treats the version as the latest in that case.
 
-For more details about Jellyfin logging, see:
-  * https://jellyfin.org/docs/general/administration/configuration/#main-configuration
-  * https://jellyfin.org/docs/general/administration/configuration/#log-directory
+**NOTE:** syslog-ng will still raise a warning if `@version` is not present. Please use `@version: current` to confirm the intention of always using the latest version and silence the warning. ([#5030](https://github.com/syslog-ng/syslog-ng/pull/5030))
 
-As the `jellyfin()` source is based on a `wildcard-file()` source, all of the
-`wildcard-file()` source options are applicable, too.
-([#4802](https://github.com/syslog-ng/syslog-ng/pull/4802))
+### BSD directory monitoring with kqueue
 
-### Collecting *arr logs
+`directory-monitor`: Added a kqueue based directory monitor implementation.
 
-Use the newly added `*arr()` sources to read various *arr logs:
-  * `lidarr()`
-  * `prowlarr()`
-  * `radarr()`
-  * `readarr()`
-  * `sonarr()`
-  * `whisparr()`
+`wildcard-file()` sources are using a [directory monitor](https://syslog-ng.github.io/admin-guide/060_Sources/020_File/001_File_following) as well to aid detection of changes in the folders of the followed files. The new kqueue-based directory monitor uses far fewer resources than the `poll` based version on BSD-based systems.
+([#5022](https://github.com/syslog-ng/syslog-ng/pull/5022))
 
-Example minimal config:
-```
-source s_radarr {
-  radarr(
-    dir("/path/to/my/radarr/log/dir")
-  );
-};
-```
+See more at the [new syslog-ng documentation](https://syslog-ng.github.io/admin-guide/060_Sources/020_File/001_File_following).
 
-The logging module is stored in the `<prefix><module>` name-value pair,
-for example: `.radarr.module` => `ImportListSyncService`.
-The prefix can be modified with the `prefix()` option.
-([#4803](https://github.com/syslog-ng/syslog-ng/pull/4803))
+### Wildcard file source fine-tuning
+
+`wildcard-file()`: Added a dedicated `monitor_freq` option to control the poll frequency of the change detection in the directories separately when the `poll` method is selected via the `monitor-method()` option.
+
+The `monitor-method()` option controls only the change detection method in the directories, not the following of the file changes, and if `poll` is the selected method the frequency must not necessarily be the same, e.g. if the (earlier) commonly used `follow-freq()` is set to 0 for switching to the `poll_fd_events` method for file content change detection, that also might be meant a directory change poll with zero delays (if `monitor-method()` was set to `poll` as well), and that could cause a heavy CPU load unnecessarily.
+([#4998](https://github.com/syslog-ng/syslog-ng/pull/4998))
+
+See more at the [new syslog-ng documentation](https://syslog-ng.github.io/admin-guide/060_Sources/020_File/001_File_following).
 
 ## Features
 
-  * `opentelemetry()`, `syslog-ng-otlp()` source: Added `concurrent-requests()` option.
+  * `s3()`: Introduced server side encryption related options
 
-    This option configures the maximal number of in-flight gRPC requests per worker.
-    Setting this value to the range of 10s or 100s is recommended when there are a
-    high number of clients sending simultaneously.
+    `server-side-encryption()` and `kms-key()` can be used to configure encryption.
 
-    Ideally, `workers() * concurrent-requests()` should be greater or equal to
-    the number of clients, but this can increase the memory usage.
-    ([#4827](https://github.com/syslog-ng/syslog-ng/pull/4827))
+    Currently only `server-side-encryption("aws:kms")` is supported.
+    The `kms-key()` should be:
+      * an ID of a key
+      * an alias of a key, but in that case you have to add the alias/prefix
+      * an ARN of a key
 
-  * `loki()`: Support multi-tenancy with the new `tenant-id()` option
-    ([#4812](https://github.com/syslog-ng/syslog-ng/pull/4812))
+    To be able to use the aws:kms encryption the AWS Role or User has to have the following
+    permissions on the given key:
+      * `kms:Decrypt`
+      * `kms:Encrypt`
+      * `kms:GenerateDataKey`
 
-  * `s3()`: Added support for authentication from environment.
-
-    The `access-key()` and `secret-key()` options are now optional,
-    which makes it possible to use authentication methods originated
-    from the environment, e.g. `AWS_...` environment variables or
-    credentials files from the `~/.aws/` directory.
-
-    For more info, see:
-    https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html
-    ([#4881](https://github.com/syslog-ng/syslog-ng/pull/4881))
-
-  * gRPC based drivers: Added `channel-args()` option.
-
-    Affected drivers are:
-     * `bigquery()` destination
-     * `loki()` destination
-     * `opentelemetry()` source and destination
-     * `syslog-ng-otlp()` source and destination
-
-    The `channel-args()` option accepts name-value pairs and sets channel arguments
-    defined in https://grpc.github.io/grpc/core/group__grpc__arg__keys.html
+    Check [this](https://repost.aws/knowledge-center/s3-large-file-encryption-kms-key) page on why the `kms:Decrypt` is mandatory.
 
     Example config:
     ```
-      opentelemetry(
-        channel-args(
-          "grpc.loadreporting" => 1
-          "grpc.minimal_stack" => 0
-        )
+    destination d_s3 {
+      s3(
+        bucket("log-archive-bucket")
+        object-key("logs/syslog")
+        server-side-encryption("aws:kms")
+        kms-key("alias/log-archive")
       );
-    ```
-    ([#4827](https://github.com/syslog-ng/syslog-ng/pull/4827))
-
-  * `${TRANSPORT}` macro: Added support for locally created logs.
-
-    New values are:
-     * "local+unix-stream"
-     * "local+unix-dgram"
-     * "local+file"
-     * "local+pipe"
-     * "local+program"
-     * "local+devkmsg"
-     * "local+journal"
-     * "local+afstreams"
-     * "local+openbsd"
-    ([#4777](https://github.com/syslog-ng/syslog-ng/pull/4777))
-
-  * `tags`: Added new built-in tags that help identifying parse errors.
-
-    New tags are:
-     * "message.utf8_sanitized"
-     * "message.parse_error"
-     * "syslog.missing_pri"
-     * "syslog.missing_timestamp"
-     * "syslog.invalid_hostname"
-     * "syslog.unexpected_framing"
-     * "syslog.rfc3164_missing_header"
-     * "syslog.rfc5424_unquoted_sdata_value"
-    ([#4804](https://github.com/syslog-ng/syslog-ng/pull/4804))
-
-  * `mqtt()` source: Added `${MQTT_TOPIC}` name-value pair.
-
-    It is useful for the cases where `topic()` contains wildcards.
-
-    Example config:
-    ```
-    log {
-      source { mqtt(topic("#")); };
-      destination { stdout(template("${MQTT_TOPIC} - ${MESSAGE}\n")); };
     };
     ```
-    ([#4824](https://github.com/syslog-ng/syslog-ng/pull/4824))
 
-  * `template()`: Added a new template function: `$(tags-head)`
+    See the [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html) documentation for more details.
+    ([#4993](https://github.com/syslog-ng/syslog-ng/pull/4993))
 
-    This template function accepts multiple tag names, and returns the
-    first one that is set.
+  * `filter`: Added numerical severity settings.
+
+    The `level` filter option now accepts numerical values similar to `facility`.
 
     Example config:
     ```
-    # resolves to "bar" if "bar" tag is set, but "foo" is not
-    template("$(tags-head foo bar baz)")
+    filter f_severity {
+      level(4)
+    };
     ```
-    ([#4804](https://github.com/syslog-ng/syslog-ng/pull/4804))
+    This is equivalent to
+    ```
+    filter f_severity {
+      level("warning")
+    };
+    ```
 
-  * `s3()`: Use default AWS URL if `url()` is not set.
-    ([#4813](https://github.com/syslog-ng/syslog-ng/pull/4813))
+    For more information, consult the [documentation](https://syslog-ng.github.io/admin-guide/080_Log/030_Filters/005_Filter_functions/004_level_priority.html).
+    ([#5016](https://github.com/syslog-ng/syslog-ng/pull/5016))
 
-  * `opentelemetry()`, `syslog-ng-otlp()` source: Added `log-fetch-limit()` option.
+  * `opentelemetry()`, `loki()`, `bigquery()`: Added `headers()` option
 
-    This option can be used to fine tune the performance. To minimize locking while
-    moving messages between source and destination side queues, syslog-ng can move
-    messages in batches. The `log-fetch-limit()` option sets the maximal size of
-    the batch moved by a worker. By default it is equal to `log-iw-size() / workers()`.
-    ([#4827](https://github.com/syslog-ng/syslog-ng/pull/4827))
+    Enables adding headers to RPC calls.
 
-  * `dqtool`: add option for truncating (compacting) abandoned disk-buffers
-    ([#4875](https://github.com/syslog-ng/syslog-ng/pull/4875))
+    Example config:
+    ```
+    opentelemetry(
+      ...
+      headers(
+        "my_header" = "my_value"
+      )
+    );
+    ```
+    ([#5012](https://github.com/syslog-ng/syslog-ng/pull/5012))
+
+  * #### Added new proxy options to the `syslog()` and `network()` source drivers
+
+    The `transport(proxied-tcp)`, `transport(proxied-tls)`, and `transport(proxied-tls-passthrough)` options are now available when configuring `syslog()` and `network()` sources.
+    ([#4544](https://github.com/syslog-ng/syslog-ng/pull/4544))
+
 
 ## Bugfixes
 
-  * `opentelemetry()`: fix crash when an invalid configuration needs to be reverted
-    ([#4910](https://github.com/syslog-ng/syslog-ng/pull/4910))
+  * `disk-buffer()`: fix crash when pipeline initialization fails
 
-  * gRPC drivers: fixed a crash when gRPC drivers were used and syslog-ng was reloaded
-    ([#4909](https://github.com/syslog-ng/syslog-ng/pull/4909))
+    `log_queue_disk_free_method: assertion failed: (!qdisk_started(self->qdisk))`
+    ([#4994](https://github.com/syslog-ng/syslog-ng/pull/4994))
 
-  * `opentelemetry()`, `syslog-ng-otlp()` source: Fixed a crash.
+  * `rate-limit()`: Fixed a crash which occured on a config parse failure.
+    ([#5033](https://github.com/syslog-ng/syslog-ng/pull/5033))
 
-    It occurred with multiple `workers()` during high load.
-    ([#4827](https://github.com/syslog-ng/syslog-ng/pull/4827))
+  * Fixed potential null pointer deref issues
+    ([#5035](https://github.com/syslog-ng/syslog-ng/pull/5035))
 
-  * `rename()`: Fixed a bug, which always converted the renamed NV pair to string type.
-    ([#4847](https://github.com/syslog-ng/syslog-ng/pull/4847))
+  * `wildcard-file()`: fix a crash and detection of file delete/move when using ivykis poll events
 
-  * With IPv6 disabled, there were linking errors
-    ([#4880](https://github.com/syslog-ng/syslog-ng/pull/4880))
+    Two issues were fixed
 
-## Metrics
+    - Fixed a crash in log pipe queue during file deletion and EOF detection (#4989)
 
-  * `http()`: Added a new counter for HTTP requests.
+       The crash was caused by a concurrency issue in the EOF and file deletion detection when using a `wildcard-file()` source.
 
-    It is activated on `stats(level(1));`.
+       If a file is written after being deleted (e.g. with an application keeping the file open), or if these events happen concurrently, the file state change poller mechanism might schedule another read cycle even though the file has already been marked as fully read and deleted.
 
-    Example metrics:
-    ```
-    syslogng_output_http_requests_total{url="http://localhost:8888/bar",response_code="200",driver="http",id="#anon-destination0#0"} 16
-    syslogng_output_http_requests_total{url="http://localhost:8888/bar",response_code="401",driver="http",id="#anon-destination0#0"} 2
-    syslogng_output_http_requests_total{url="http://localhost:8888/bar",response_code="502",driver="http",id="#anon-destination0#0"} 1
-    syslogng_output_http_requests_total{url="http://localhost:8888/foo",response_code="200",driver="http",id="#anon-destination0#0"} 24
-    ```
-    ([#4805](https://github.com/syslog-ng/syslog-ng/pull/4805))
+       To prevent this re-scheduling between these two checks, the following changes have been made:
+       Instead of maintaining an internal EOF state in the `WildcardFileReader`, when a file deletion notification is received, the poller will be signaled to stop after reaching the next EOF. Only after both conditions are set the reader instance will be deleted.
 
-  * gRPC based destination drivers: Added gRPC request related metrics.
+    - Fixed the file deletion and removal detection when the `file-reader` uses `poll_fd_events` to follow file changes, which were mishandled. For example, files that were moved or deleted (such as those rolled by a log-rotator) were read to the end but never read again if they were not touched anymore, therefore switching to the new file never happened.
+    ([#4998](https://github.com/syslog-ng/syslog-ng/pull/4998))
 
-    Affected drivers:
-      * `opentelemetry()`
-      * `syslog-ng-otlp()`
-      * `bigquery()`
-      * `loki()`
+  * `syslog-ng-ctl query`: fix showing Prometheus metrics as unnamed values
 
-    Example metrics:
-    ```
-    syslogng_output_grpc_requests_total{driver="syslog-ng-otlp",url="localhost:12345",response_code="ok"} 49
-    syslogng_output_grpc_requests_total{driver="syslog-ng-otlp",url="localhost:12345",response_code="unavailable"} 11
-    ```
-    ([#4811](https://github.com/syslog-ng/syslog-ng/pull/4811))
+    `none.value=726685`
+    ([#4995](https://github.com/syslog-ng/syslog-ng/pull/4995))
 
-  * New metric to monitor destination reachability
+  * macros: Fixed a bug which always set certain macros to string type
 
-    `syslogng_output_unreachable` is a bool-like metric, which shows whether a
-    destination is reachable or not.
+    The affected macros are `$PROGRAM`, `$HOST` and `$MESSAGE`.
+    ([#5024](https://github.com/syslog-ng/syslog-ng/pull/5024))
+ 
+  * `syslog-ng-ctl query`: show timestamps and fix `g_pattern_spec_match_string` assert
+    ([#4995](https://github.com/syslog-ng/syslog-ng/pull/4995))
 
-    `sum()` can be used to count all unreachable outputs, hence the negated name.
+  * `csv-parser()`: fix escape-backslash-with-sequences dialect on ARM
 
-    It is currently available for the `network()`, `syslog()`, `unix-*()`
-    destinations, and threaded destinations (`http()`, `opentelemetry()`, `redis()`,
-    `mongodb()`, `python()`, etc.).
-    ([#4876](https://github.com/syslog-ng/syslog-ng/pull/4876))
+    `csv-parser()` produced invalid output on platforms where char is an unsigned type.
+    ([#4947](https://github.com/syslog-ng/syslog-ng/pull/4947))
 
-  * destinations: Added "syslogng_output_event_retries_total" counter.
-
-    This counter is available for the following destination drivers:
-     * `amqp()`
-     * `bigquery()`
-     * `http()` and all http based drivers
-     * `java()`
-     * `kafka()`
-     * `loki()`
-     * `mongodb()`
-     * `mqtt()`
-     * `opentelemetry()`
-     * `python()` and all python based drivers
-     * `redis()`
-     * `riemann()`
-     * `smtp()`
-     * `snmp()`
-     * `sql()`
-     * `stomp()`
-     * `syslog-ng-otlp()`
-
-    Example metrics:
-    ```
-    syslogng_output_event_retries_total{driver="http",url="http://localhost:8888/${path}",id="#anon-destination0#0"} 5
-    ```
-    ([#4807](https://github.com/syslog-ng/syslog-ng/pull/4807))
-
-  * `syslogng_memory_queue_capacity`
-
-    Shows the capacity (maximum possible size) of each queue.
-    Note that this metric publishes `log-fifo-size()`, which only limits non-flow-controlled messages.
-    Messages coming from flow-controlled paths are not limited by `log-fifo-size()`, their corresponding
-    source `log-iw-size()` is the upper limit.
-    ([#4831](https://github.com/syslog-ng/syslog-ng/pull/4831))
 
 ## Other changes
 
-  * `opentelemetry()`, `syslog-ng-otlp()` source: Changed the backpressure behavior.
+  * `bigquery()`, `loki()`, `opentelemetry()`, `cloud-auth()`: C++ modules can be compiled with clang
 
-    syslog-ng no longer returns `UNAVAILABLE` to the gRPC request, when it cannot forward
-    the received message because of backpressure. Instead, syslog-ng will block until the
-    destination can accept more messages.
-    ([#4827](https://github.com/syslog-ng/syslog-ng/pull/4827))
+    Compiling and using these C++ modules are now easier on FreeBSD and macOS.
+    ([#4933](https://github.com/syslog-ng/syslog-ng/pull/4933))
 
-  * `opentelemetry()`, `syslog-ng-otlp()` source: `log-iw-size()` is now split between workers.
-    ([#4827](https://github.com/syslog-ng/syslog-ng/pull/4827))
+  * `syslog-ng-ctl`: do not show orphan metrics for `stats prometheus`
 
-  * APT packages: Dropped Debian Buster support.
+    As the `stats prometheus` command is intended to be used to forward metrics
+    to Prometheus or any other time-series database, displaying orphaned metrics
+    should be avoided in order not to insert new data points when a given metric
+    is no longer alive.
 
-    Old packages are still available, but new syslog-ng versions will not
-    be available on Debian Buster
-    ([#4840](https://github.com/syslog-ng/syslog-ng/pull/4840))
+    In case you are interested in the last known value of orphaned counters, use
+    the `stats` or `query` subcommands.
+    ([#4921](https://github.com/syslog-ng/syslog-ng/pull/4921))
 
-  * `dbld`: AlmaLinux 8 support
-    ([#4902](https://github.com/syslog-ng/syslog-ng/pull/4902))
+  * `s3()`: new metric `syslogng_output_event_bytes_total`
+    ([#4958](https://github.com/syslog-ng/syslog-ng/pull/4958))
 
+  * multiline-options: Allow `multi_line_timeout` to be set to a non-integer value.
 
-## syslog-ng Discord
+    Since `multi_line_timeout` is suggested to be set as a multiple of `follow-freq`, and `follow-freq` can be much smaller than one second, it makes sense to allow this value to be a non-integer as well.
+    ([#5002](https://github.com/syslog-ng/syslog-ng/pull/5002))
 
-For a bit more interactive discussion, join our Discord server:
+  * packages/dbld: add support for Ubuntu 24.04 (Noble Numbat)
+    ([#4925](https://github.com/syslog-ng/syslog-ng/pull/4925))
 
-[![Axoflow Discord Server](https://discordapp.com/api/guilds/1082023686028148877/widget.png?style=banner2)](https://discord.gg/E65kP9aZGm)
+  * packages/dbld: add support for AlmaLinux 9
+    ([#5009](https://github.com/syslog-ng/syslog-ng/pull/5009))
+
+  * packages/dbld: added support for Fedora Rawhide and CentOS Stream 9 as testing platforms
+    ([#5009](https://github.com/syslog-ng/syslog-ng/pull/5009))
+
 
 ## Credits
 
@@ -304,5 +200,8 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 
-Arpad Kunszt, Attila Szakacs, Balazs Scheidler, Bálint Horváth, Hofi,
-Kovács, Gergő Ferenc, László Várady, Peter Marko, shifter
+Alex Becker, Andras Mitzki, Arpad Kunszt, Attila Szakacs,
+Balazs Scheidler, Bálint Horváth, Dmitry Levin, Hofi, Ilya Kheifets,
+joohoonmaeng, ktzsolt, László Várady, Mate Ory, Natanael Copa,
+Peter Czanik, qsunchiu, Robert Fekete, shifter, Szilárd Parrag,
+Tamas Pal, Wolfram Joost
