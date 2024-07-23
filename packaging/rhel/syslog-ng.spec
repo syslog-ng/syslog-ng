@@ -1,5 +1,5 @@
 Name: syslog-ng
-Version: 4.7.1
+Version: 4.8.0
 Release: 2%{?dist}
 Summary: Next-generation syslog server
 
@@ -740,6 +740,9 @@ fi
 
 
 %changelog
+* Tue Jul 23 2024 github-actions <41898282+github-actions@users.noreply.github.com> - 4.8.0-1
+- updated to 4.8.0
+
 * Fri Jul 5 2024 Balint Horvath <bal.horv.98@gmail.com> - 4.7.1-1
 - Merged spec file from Peter Czanik's copr repo
 
