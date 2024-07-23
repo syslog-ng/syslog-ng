@@ -420,7 +420,7 @@ log_reader_work_finished(void *s, gpointer arg)
       log_pipe_notify(self->control, notify_code, self);
     }
 
-  if (self->super.super.flags & PIF_INITIALIZED)
+  if ((self->super.super.flags & PIF_INITIALIZED) && self->proto)
     {
       /* reenable polling the source assuming that we're still in
        * business (e.g. the reader hasn't been uninitialized) */

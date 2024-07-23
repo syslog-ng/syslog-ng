@@ -312,22 +312,28 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
 }
 
 static void
-affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
+affile_dw_unset_owner(AFFileDestWriter *self)
 {
   if (self->owner)
     log_pipe_unref(&self->owner->super.super.super);
+
+  self->owner = NULL;
+}
+
+static void
+affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&owner->super.super.super);
+
+  if (self->owner)
+    log_pipe_unref(&self->owner->super.super.super);
+  log_pipe_ref(&owner->super.super.super);
   self->owner = owner;
-  if (self->owner)
-    log_pipe_ref(&self->owner->super.super.super);
+  self->super.expr_node = owner->super.super.super.expr_node;
 
-  self->super.expr_node = self->owner ? self->owner->super.super.super.expr_node : NULL;
-  if (self->owner)
-    log_pipe_set_options(&self->super, &self->owner->super.super.super.options);
-
-  GlobalConfig *cfg = self->owner ? log_pipe_get_config(&self->owner->super.super.super) : NULL;
+  log_pipe_set_options(&self->super, &owner->super.super.super.options);
   log_pipe_set_config(&self->super, cfg);
-
-  if (self->writer && self->owner)
+  if (self->writer)
     {
       StatsClusterKeyBuilder *writer_sck_builder = stats_cluster_key_builder_new();
       stats_cluster_key_builder_add_label(writer_sck_builder, stats_cluster_label("driver", "file"));
@@ -336,7 +342,7 @@ affile_dw_set_owner(AFFileDestWriter *self, AFFileDestDriver *owner)
       log_pipe_set_config((LogPipe *) self->writer, cfg);
       log_writer_set_options(self->writer,
                              &self->super,
-                             &self->owner->writer_options,
+                             &owner->writer_options,
                              self->owner->super.super.id,
                              writer_sck_builder);
     }
@@ -523,7 +529,7 @@ affile_dd_reuse_writer(gpointer key, gpointer value, gpointer user_data)
   affile_dw_set_owner(writer, self);
   if (!log_pipe_init(&writer->super))
     {
-      affile_dw_set_owner(writer, NULL);
+      affile_dw_unset_owner(writer);
       log_pipe_unref(&writer->super);
       g_hash_table_remove(self->writer_hash, key);
     }
