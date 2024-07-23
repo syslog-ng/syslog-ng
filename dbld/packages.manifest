@@ -90,17 +90,10 @@ automake                    [centos, almalinux, fedora]
 #
 # We are now using the same version for both.
 
-python3-dev                 [debian-sid]
+python3-dev                 [debian-sid, ubuntu-focal, devshell]
 python3-devel               [fedora]
-python3-dev                 [ubuntu-focal]
 python3-pip                     [debian, ubuntu]
 python3-venv			[debian, ubuntu, devshell]
-
-# python 3.10 has issues on Debian Testing
-# Nevertheless we should only downgrade for Light style-check tests, which uses pre-commit
-python3.12                   [devshell]
-python3.12-dev               [devshell]
-python3.12-venv              [devshell]
 
 # libmongoc and libbson packages on various platforms
 # Because we are using fixed version of libmongoc on Bionic, we need to
