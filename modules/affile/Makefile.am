@@ -22,6 +22,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/directory-monitor-factory.c			\
 	modules/affile/collection-comparator.h		\
 	modules/affile/collection-comparator.c		\
+	modules/affile/directory-monitor-content-comparator.h \
+	modules/affile/directory-monitor-content-comparator.c \
 	modules/affile/directory-monitor-poll.h   \
 	modules/affile/directory-monitor-poll.c   \
 	modules/affile/file-opener.c				\
@@ -55,6 +57,16 @@ else
   EXTRA_DIST +=                               \
   modules/affile/directory-monitor-inotify.h  \
   modules/affile/directory-monitor-inotify.c
+endif
+
+if HAVE_KQUEUE
+  modules_affile_libaffile_la_SOURCES +=      \
+  modules/affile/directory-monitor-kqueue.h  \
+  modules/affile/directory-monitor-kqueue.c
+else
+  EXTRA_DIST +=                               \
+  modules/affile/directory-monitor-kqueue.h  \
+  modules/affile/directory-monitor-kqueue.c
 endif
 
 BUILT_SOURCES				+= 			\

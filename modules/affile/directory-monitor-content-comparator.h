@@ -19,32 +19,23 @@
  * COPYING for details.
  *
  */
-#ifndef MODULES_AFFILE_DIRECTORY_MONITOR_FACTORY_H_
-#define MODULES_AFFILE_DIRECTORY_MONITOR_FACTORY_H_
+#ifndef MODULES_AFFILE_DIRECTORY_MONITOR_CONTENT_COMPARATOR_H_
+#define MODULES_AFFILE_DIRECTORY_MONITOR_CONTENT_COMPARATOR_H_
 
+#include <collection-comparator.h>
 #include "directory-monitor.h"
 
-typedef DirectoryMonitor *(*DirectoryMonitorConstructor)(const gchar *dir, guint recheck_time);
-
-typedef enum
+typedef struct _DirectoryMonitorContentComparator
 {
-  MM_AUTO,
-  MM_POLL,
-  MM_INOTIFY,
-  MM_KQUEUE,
-  MM_UNKNOWN
-} MonitorMethod;
+  DirectoryMonitor super;
+  CollectionComparator *comparator;
+} DirectoryMonitorContentComparator;
 
-typedef struct _DirectoryMonitorOptions
-{
-  const gchar *dir;
-  guint monitor_freq;
-  MonitorMethod method;
-} DirectoryMonitorOptions;
+DirectoryMonitor *directory_monitor_content_comparator_new(void);
+void directory_monitor_content_comparator_init_instance(DirectoryMonitorContentComparator *self, const gchar *dir,
+                                                        guint recheck_time, const gchar *method);
+void directory_monitor_content_comparator_free(DirectoryMonitorContentComparator *self);
+void directory_monitor_content_comparator_rescan_directory(DirectoryMonitorContentComparator *self,
+                                                           gboolean initial_scan);
 
-DirectoryMonitorConstructor directory_monitor_factory_get_constructor(DirectoryMonitorOptions *options);
-MonitorMethod directory_monitor_factory_get_monitor_method(const gchar *method_name);
-
-DirectoryMonitor *create_directory_monitor(DirectoryMonitorOptions *options);
-
-#endif /* MODULES_AFFILE_DIRECTORY_MONITOR_FACTORY_H_ */
+#endif /* MODULES_AFFILE_DIRECTORY_MONITOR_CONTENT_COMPARATOR_H_ */

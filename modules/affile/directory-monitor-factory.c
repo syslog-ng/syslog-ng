@@ -25,6 +25,8 @@
 
 #if SYSLOG_NG_HAVE_INOTIFY
 #include "directory-monitor-inotify.h"
+#elif SYSLOG_NG_HAVE_KQUEUE
+#include "directory-monitor-kqueue.h"
 #endif
 
 #include <string.h>
@@ -46,6 +48,11 @@ directory_monitor_factory_get_monitor_method(const gchar *method)
     {
       return MM_INOTIFY;
     }
+#elif SYSLOG_NG_HAVE_KQUEUE
+  else if (strcmp(method, "kqueue") == 0)
+    {
+      return MM_KQUEUE;
+    }
 #endif
   return MM_UNKNOWN;
 }
@@ -58,6 +65,15 @@ directory_monitor_factory_get_constructor(DirectoryMonitorOptions *options)
   if (options->method == MM_AUTO || options->method == MM_INOTIFY)
     {
       constructor = directory_monitor_inotify_new;
+    }
+  else if (options->method == MM_POLL)
+    {
+      constructor = directory_monitor_poll_new;
+    }
+#elif SYSLOG_NG_HAVE_KQUEUE
+  if (options->method == MM_AUTO || options->method == MM_KQUEUE)
+    {
+      constructor = directory_monitor_kqueue_new;
     }
   else if (options->method == MM_POLL)
     {
