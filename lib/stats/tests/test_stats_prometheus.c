@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 László Várady
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 László Várady
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -161,6 +162,33 @@ Test(stats_prometheus, test_prometheus_format_sanitize)
   StatsCluster *cluster = test_single_cluster("test.name-http://localhost/ű#", labels, G_N_ELEMENTS(labels));
   assert_prometheus_format(cluster, SC_TYPE_SINGLE_VALUE,
                            "syslogng_test_name_httplocalhost{app_name=\"a\",source_ip=\"\\\"b\\\"\",label=\"c\\n\"} 0\n");
+  stats_cluster_free(cluster);
+}
+
+Test(stats_prometheus, test_prometheus_format_label_escaping)
+{
+  /* Exposition format:
+   *
+   * A label value can be any sequence of UTF-8 characters, but the
+   * backslash (\), double-quote ("), and line feed (\n) characters have to be
+   * escaped as \\, \", and \n, respectively.
+   */
+
+  StatsClusterLabel labels[] =
+  {
+    stats_cluster_label("control_chars", "a\a\tb\nc"),
+    stats_cluster_label("backslashes", "a\\a\\t\\nb"),
+    stats_cluster_label("quotes", "\"\"hello\""),
+    stats_cluster_label("invalid_utf8", "a\xfa"),
+  };
+  StatsCluster *cluster = test_single_cluster("test_name", labels, G_N_ELEMENTS(labels));
+
+  assert_prometheus_format(cluster, SC_TYPE_SINGLE_VALUE,
+                           "syslogng_test_name{control_chars=\"a\a\tb\\nc\","
+                           "backslashes=\"a\\\\a\\\\t\\\\nb\","
+                           "quotes=\"\\\"\\\"hello\\\"\","
+                           "invalid_utf8=\"a\\\\xfa\"} 0\n");
+
   stats_cluster_free(cluster);
 }
 
