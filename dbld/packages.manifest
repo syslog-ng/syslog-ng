@@ -10,7 +10,7 @@ ca-certificates       	        [centos, almalinux, fedora, debian, ubuntu]
 
 # criterion compilation
 cmake                           [centos, almalinux, fedora, debian, ubuntu]
-gcc-c++				[centos, almalinux, fedora]
+gcc-c++                         [centos, almalinux, fedora]
 
 # to unpack gradle binary package (zip file)
 unzip                           [centos, almalinux, fedora, debian, ubuntu]
@@ -21,7 +21,7 @@ bzip2                           [centos, almalinux, fedora, debian, ubuntu]
 # Basic interactive tools
 less                            [centos, almalinux, fedora, debian, ubuntu]
 vim                             [centos, almalinux, fedora, debian, ubuntu]
-sudo				[centos, almalinux, fedora, debian, ubuntu]
+sudo                            [centos, almalinux, fedora, debian, ubuntu]
 
 #############################################################################
 # Essential build tools not explicitly referenced from
@@ -34,17 +34,17 @@ dh-autoreconf                   [debian, ubuntu]
 dh-exec                         [debian, ubuntu]
 dpkg-dev                        [debian, ubuntu]
 equivs                          [debian, ubuntu]
-libdistro-info-perl		[debian, ubuntu]
+libdistro-info-perl             [debian, ubuntu]
 make                            [centos, almalinux, fedora]
 rpm-build                       [centos, almalinux, fedora]
-which				[fedora]
+which                           [fedora]
 
 #############################################################################
 # eBPF related tools
 #############################################################################
-clang				[tarball]
-libbpf-dev			[tarball]
-bpftool				[tarball]
+clang                           [tarball]
+libbpf-dev                      [tarball]
+bpftool                         [tarball]
 
 #############################################################################
 # Tarball related tools
@@ -74,9 +74,9 @@ ccache                          [centos, almalinux, fedora, debian, ubuntu]
 # lines, so we don't need to list them here.
 #############################################################################
 
-autoconf                    [centos, almalinux, fedora]
-autoconf-archive            [centos, fedora]
-automake                    [centos, almalinux, fedora]
+autoconf                        [centos, almalinux, fedora]
+autoconf-archive                [centos, fedora]
+automake                        [centos, almalinux, fedora]
 
 #############################################################################
 # syslog-ng core dependencies
@@ -90,17 +90,17 @@ automake                    [centos, almalinux, fedora]
 #
 # We are now using the same version for both.
 
-python3-dev                 [debian-sid, ubuntu-focal, devshell]
-python3-devel               [fedora]
+python3-dev                     [debian-sid, ubuntu-focal, devshell]
+python3-devel                   [fedora]
 python3-pip                     [debian, ubuntu]
-python3-venv			[debian, ubuntu, devshell]
+python3-venv                    [debian, ubuntu, devshell]
 
 # libmongoc and libbson packages on various platforms
 # Because we are using fixed version of libmongoc on Bionic, we need to
 # specify non versioned packages on other platforms to continiously support
 
-libbson-dev                 [debian]
-libmongoc-dev               [debian]
+libbson-dev                     [debian]
+libmongoc-dev                   [debian]
 
 
 #############################################################################
@@ -163,4 +163,4 @@ openssh-client                  [devshell]
 astyle                          [devshell]
 snmptrapd                       [devshell]
 dwarves                         [devshell]
-jq	                        [devshell]
+jq                              [devshell]
