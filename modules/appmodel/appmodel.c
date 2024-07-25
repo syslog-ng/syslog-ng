@@ -23,6 +23,7 @@
  */
 #include "appmodel.h"
 #include "cfg.h"
+#include "appmodel-context.h"
 
 #define MODULE_CONFIG_KEY "appmodel"
 
@@ -43,5 +44,27 @@ appmodel_register_application(GlobalConfig *cfg, Application *application)
 {
   AppModelContext *ac = appmodel_get_context(cfg);
 
-  appmodel_context_register_application(ac, application);
+  appmodel_context_register_object(ac, &application->super);
+}
+
+void
+appmodel_iter_applications(GlobalConfig *cfg, void (*foreach)(Application *app, gpointer user_data), gpointer user_data)
+{
+  AppModelContext *appmodel = appmodel_get_context(cfg);
+  appmodel_context_iter_objects(appmodel, APPLICATION_TYPE_NAME, (AppModelContextIterFunc) foreach, user_data);
+}
+
+void
+appmodel_register_transformation(GlobalConfig *cfg, Transformation *transformation)
+{
+  AppModelContext *ac = appmodel_get_context(cfg);
+
+  appmodel_context_register_object(ac, &transformation->super);
+}
+
+void
+appmodel_iter_transformations(GlobalConfig *cfg, void (*foreach)(Transformation *transformation, gpointer user_data), gpointer user_data)
+{
+  AppModelContext *appmodel = appmodel_get_context(cfg);
+  appmodel_context_iter_objects(appmodel, TRANSFORMATION_TYPE_NAME, (AppModelContextIterFunc) foreach, user_data);
 }
