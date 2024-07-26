@@ -13,6 +13,7 @@ EXTRA_DIST +=	\
 	cmake/Modules/FindFLEX.cmake	\
 	cmake/Modules/FindGettext.cmake	\
 	cmake/Modules/FindGLIB.cmake	\
+	cmake/Modules/FindGperf.cmake	\
 	cmake/Modules/FindGradle.cmake	\
 	cmake/Modules/FindgRPC.cmake	\
 	cmake/Modules/FindHiredis.cmake	\
@@ -36,4 +37,5 @@ EXTRA_DIST +=	\
 	cmake/Modules/ProtobufGenerateCpp.cmake	\
 	cmake/module_switch.cmake		\
 	cmake/openssl_functions.cmake \
-	cmake/print_config_summary.cmake
+	cmake/print_config_summary.cmake \
+	cmake/python_build_venv.cmake
