@@ -59,7 +59,9 @@ docbook-style-xsl               [fedora]
 # but are needed by our dbld functionality.
 #############################################################################
 git                             [centos, almalinux, fedora, debian, ubuntu]
-ccache                          [centos, almalinux, fedora, debian, ubuntu]
+# NOTE: Fedora-rawhide started to use a newer ccache version that has multiple older dependencies.
+#       Avoiding the dependency hell it causes, temporary turned off the ccache usage for it.
+ccache                          [centos, almalinux, fedora-latest, debian, ubuntu]
 
 #############################################################################
 # packages to run successful autogen.sh
