@@ -54,7 +54,7 @@ jobs:
             --prefix=${SYSLOG_NG_INSTALL_DIR}
             --enable-all-modules
             --enable-tests
-            --with-ivykis=system
+            --with-ivykis=internal
             --with-python=3
             --with-systemd-journal=no
             --disable-smtp
@@ -68,7 +68,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Debug
             -DSUMMARY_VERBOSE=ON
             -DBUILD_TESTING=ON
-            -DIVYKIS_SOURCE=system
+            -DIVYKIS_SOURCE=internal
             -DPYTHON_VERSION=3
             -DENABLE_JOURNALD=OFF
             -DENABLE_AFSMTP=OFF
