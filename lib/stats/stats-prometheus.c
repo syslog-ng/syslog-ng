@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 László Várady
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 László Várady
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,16 +26,56 @@
 #include "stats/stats-cluster.h"
 #include "stats/stats-counter.h"
 #include "timeutils/unixtime.h"
-#include "utf8utils.h"
+#include "str-utils.h"
 #include "scratch-buffers.h"
 
 #include <string.h>
 
+
+/* Exposition format:
+ *
+ * A label value can be any sequence of UTF-8 characters, but the
+ * backslash (\), double-quote ("), and line feed (\n) characters have to be
+ * escaped as \\, \", and \n, respectively.
+ */
 static gchar *
 stats_format_prometheus_sanitize_label_value(const gchar *value)
 {
   GString *sanitized_value = scratch_buffers_alloc();
-  append_unsafe_utf8_as_escaped_binary(sanitized_value, value, -1, "\"");
+
+  const gchar *value_end = value + strlen(value);
+
+  while (value < value_end)
+    {
+      gunichar uchar = g_utf8_get_char_validated(value, value_end - value);
+
+      if (G_UNLIKELY(uchar == (gunichar) -1 || uchar == (gunichar) -2))
+        {
+          /* double backslash to conform to the format */
+          g_string_append_printf(sanitized_value, "\\\\x%02x", *(guint8 *) value);
+          value++;
+          continue;
+        }
+
+      switch (uchar)
+        {
+        case '\\':
+          g_string_append(sanitized_value, "\\\\");
+          break;
+        case '"':
+          g_string_append(sanitized_value, "\\\"");
+          break;
+        case '\n':
+          g_string_append(sanitized_value, "\\n");
+          break;
+        default:
+          g_string_append_unichar_optimized(sanitized_value, uchar);
+          break;
+        }
+
+      value = g_utf8_next_char(value);
+    }
+
   return sanitized_value->str;
 }
 
