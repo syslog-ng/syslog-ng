@@ -162,6 +162,11 @@ local-check:
 				TESTS="${current_tests} ${subdir_tests}"
 endif
 
+# We use VERSION.txt, as VERSION file can cause C++ build errors on case-insensitive file-systems.
+# Some step(s?) still can produce or leave behind a VERSION file, clean it up before packing the final dist tar.gz file.
+dist-hook:
+	rm -f VERSION
+
 check: check_target_guard
 
 check_target_guard:
