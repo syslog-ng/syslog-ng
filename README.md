@@ -245,8 +245,8 @@ Binaries are also available as a Docker image. To find out more, check out the b
 ## Documentation
 
 For the latest, markdown based version, see the [syslog-ng documentation](https://syslog-ng.github.io) center. \
-The official documentation of the earlier versions of syslog-ng Open Source Edition provided by One Identity is available
-[here](https://www.syslog-ng.com/technical-documents/doc/syslog-ng-open-source-edition/).
+The official documentation of the earlier versions (3.X) of syslog-ng Open Source Edition provided by One Identity is available
+[here](https://support.oneidentity.com/syslog-ng-open-source-edition/).
 
 ## Contributing
 
