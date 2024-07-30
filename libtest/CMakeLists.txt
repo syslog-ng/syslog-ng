@@ -1,3 +1,7 @@
+if (NOT BUILD_TESTING)
+    return ()
+endif ()
+
 set(LIBTEST_HEADERS
     config_parse_lib.h
     fake-time.h
