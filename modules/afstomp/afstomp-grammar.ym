@@ -32,6 +32,7 @@
 
 #include "cfg-parser.h"
 #include "cfg-grammar-internal.h"
+#include "cfg-helpers.h"
 #include "plugin.h"
 #include "value-pairs/value-pairs.h"
 
@@ -71,7 +72,7 @@ afstomp_options
 
 afstomp_option
         : KW_HOST '(' string ')'		{ afstomp_dd_set_host(last_driver, $3); free($3); }
-        | KW_PORT '(' positive_integer ')'		{ afstomp_dd_set_port(last_driver, $3); }
+        | KW_PORT '(' string_or_number ')' { CHECK_ERROR(cfg_check_port($3), @3, "Illegal port number: %s", $3); afstomp_dd_set_port(last_driver, atoi($3)); free($3); }
         | KW_STOMP_DESTINATION '(' string ')'	{ afstomp_dd_set_destination(last_driver, $3); free($3); }
         | KW_BODY '(' template_name_or_content ')'	{ afstomp_dd_set_body(last_driver, $3); }
         | KW_PERSISTENT '(' yesno ')'		{ afstomp_dd_set_persistent(last_driver, $3); }
