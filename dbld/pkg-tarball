@@ -14,7 +14,7 @@ rm -rf $SYSLOGNG_DIR
 tar xfz $SYSLOGNG_TARBALL
 cd $SYSLOGNG_DIR
 
-echo ${VERSION} > VERSION
+echo ${VERSION} > VERSION.txt
 
 /dbld/generate-debian-directory $MODE
 /dbld/generate-rpm-specfile $MODE
