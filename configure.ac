@@ -2301,6 +2301,7 @@ AM_CONDITIONAL([HAVE_FMEMOPEN], [test x$ac_cv_func_fmemopen = xyes])
 AM_CONDITIONAL([HAVE_JAVAH], [test -n "$JAVAH_BIN"])
 AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
 
+AM_CONDITIONAL(OS_TYPE_MACOS, [test $ostype = "Darwin"])
 
 AC_SUBST(PYTHON_VENV)
 AC_SUBST(PYTHON_VENV_DIR)
