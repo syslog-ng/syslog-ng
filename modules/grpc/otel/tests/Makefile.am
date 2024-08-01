@@ -1,5 +1,6 @@
 if ENABLE_GRPC
 
+if ! OS_TYPE_MACOS
 modules_grpc_otel_tests_TESTS = \
   modules/grpc/otel/tests/test_otel_protobuf_parser \
   modules/grpc/otel/tests/test_otel_protobuf_formatter \
@@ -7,6 +8,7 @@ modules_grpc_otel_tests_TESTS = \
   modules/grpc/otel/tests/test_otel_filterx
 
 check_PROGRAMS += ${modules_grpc_otel_tests_TESTS}
+endif
 
 modules_grpc_otel_tests_test_otel_protobuf_parser_SOURCES = \
   modules/grpc/otel/tests/test-otel-protobuf-parser.cpp
