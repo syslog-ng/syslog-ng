@@ -66,7 +66,7 @@ ccache                          [centos, almalinux, fedora, debian, ubuntu]
 #
 # NOTE: the versions installed may or may not be enough to regenerate
 # configure scripts, especially on older distros).  We only guarantee that
-# autogen.sh successfully runs within TARBALL_IMAGE (debian-testing at this
+# autogen.sh successfully runs within TARBALL_IMAGE (debian-bookworm at this
 # point).  All the other platforms are best-effort.
 #
 # NOTE/2: debian based platforms always regenerate configure script in their
@@ -146,10 +146,9 @@ gdbserver                       [devshell]
 joe                             [devshell]
 lcov                            [devshell]
 libc6-dbg                       [devshell]
-libglib2.0-0t64-dbgsym          [devshell]
+libglib2.0-dev                  [devshell]
 libjemalloc-dev                 [devshell]
-libjemalloc2-dbgsym             [devshell]
-libssl3t64-dbgsym               [devshell]
+libssl-dev                      [devshell]
 linux-perf                      [devshell]
 locales                         [devshell]
 lsof                            [devshell]
