@@ -42,16 +42,16 @@ which                           [fedora]
 #############################################################################
 # eBPF related tools
 #############################################################################
-clang                           [tarball]
-libbpf-dev                      [tarball]
-bpftool                         [tarball]
+clang                           [devshell, tarball]
+libbpf-dev                      [devshell, tarball]
+bpftool                         [devshell, tarball]
 
 #############################################################################
 # Tarball related tools
 #############################################################################
 
 # docbook to generate man pages
-docbook-xsl                     [tarball]
+docbook-xsl                     [devshell, tarball]
 docbook-style-xsl               [fedora]
 
 #############################################################################
