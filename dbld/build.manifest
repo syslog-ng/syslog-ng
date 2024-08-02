@@ -30,7 +30,7 @@
 # libcriterion-dev is available starting with bullseye
 debian-bullseye		python3,nojava,notzdatalegacy
 debian-bookworm		python3,nojava,notzdatalegacy
-debian-testing		python3,nojava
+debian-testing		python3,nojava,nosmtp
 debian-sid		python3,nojava
 
 # on ubuntu, we start using Python3 at focal onwards.
