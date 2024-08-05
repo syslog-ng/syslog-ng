@@ -31,6 +31,7 @@
 
 #include "afsql.h"
 #include "cfg-grammar-internal.h"
+#include "cfg-helpers.h"
 #include "cfg-parser.h"
 #include "messages.h"
 #include "plugin.h"
@@ -100,12 +101,7 @@ dest_afsql_options
 dest_afsql_option
         : KW_TYPE '(' string ')'		{ afsql_dd_set_type(last_driver, $3); free($3); }
         | KW_HOST '(' string ')'		{ afsql_dd_set_host(last_driver, $3); free($3); }
-        | KW_PORT '(' string_or_number ')'
-          {
-            CHECK_ERROR(afsql_dd_check_port($3), @3, "Illegal sql port number: %s", $3);
-            afsql_dd_set_port(last_driver, $3);
-            free($3);
-          }
+        | KW_PORT '(' string_or_number ')' { CHECK_ERROR(cfg_check_port($3), @3, "Illegal port number: %s", $3); afsql_dd_set_port(last_driver, $3); free($3); }
         | KW_USERNAME '(' string ')'		{ afsql_dd_set_user(last_driver, $3); free($3); }
         | KW_DBD_OPTION '(' string LL_NUMBER ')' { afsql_dd_add_dbd_option_numeric(last_driver, $3, $4); free($3); }
         | KW_DBD_OPTION '(' string string ')'    { afsql_dd_add_dbd_option(last_driver, $3, $4); free($3); free($4); }

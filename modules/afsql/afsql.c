@@ -101,17 +101,6 @@ afsql_dd_set_host(LogDriver *s, const gchar *host)
   self->host = g_strdup(host);
 }
 
-gboolean
-afsql_dd_check_port(const gchar *port)
-{
-  /* only digits (->numbers) are allowed */
-  int len = strlen(port);
-  for (int i = 0; i < len; ++i)
-    if (port[i] < '0' || port[i] > '9')
-      return FALSE;
-  return TRUE;
-}
-
 void
 afsql_dd_set_port(LogDriver *s, const gchar *port)
 {

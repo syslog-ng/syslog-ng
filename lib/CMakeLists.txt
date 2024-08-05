@@ -87,6 +87,7 @@ set (LIB_HEADERS
     cfg-block.h
     cfg-block-generator.h
     cfg-grammar-internal.h
+    cfg-helpers.h
     cfg-parser.h
     cfg-path.h
     cfg-source.h
@@ -186,6 +187,7 @@ set(LIB_SOURCES
     cfg-lexer.c
     cfg-lexer-subst.c
     cfg-grammar-internal.c
+    cfg-helpers.c
     cfg-parser.c
     cfg-path.c
     cfg-source.c
