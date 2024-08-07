@@ -28,6 +28,11 @@
 #include "value-pairs/value-pairs.h"
 #include "stats/stats-cluster.h"
 
+/*
+ * DynMetricsTemplate utilizes dyn-metrics-cache to achieve better performance
+ * and to provide proper lifetime for dynamic counters.
+ */
+
 typedef struct _DynMetricsTemplate
 {
   gchar *key;
