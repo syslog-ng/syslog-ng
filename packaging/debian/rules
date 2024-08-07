@@ -64,6 +64,10 @@ endif
 
 PYTHON_VERSION = 3
 
+ifneq ($(filter sng-nosmtp,$(DEB_BUILD_PROFILES)),)
+DH_OPTIONS += -Nsyslog-ng-mod-smtp
+endif
+
 ifneq ($(filter sng-nokafka,$(DEB_BUILD_PROFILES)),)
 DH_OPTIONS += -Nsyslog-ng-mod-rdkafka
 endif
