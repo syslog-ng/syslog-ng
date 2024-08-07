@@ -637,7 +637,7 @@ _update_status_code_metrics(HTTPDestinationWorker *self, const gchar *url, glong
                                dyn_metrics_store_get_labels(self->metrics.cache),
                                dyn_metrics_store_get_labels_len(self->metrics.cache));
 
-  StatsCounterItem *counter = dyn_metrics_store_get_counter(self->metrics.cache, &key, level);
+  StatsCounterItem *counter = dyn_metrics_store_retrieve_counter(self->metrics.cache, &key, level);
   stats_counter_inc(counter);
 }
 
