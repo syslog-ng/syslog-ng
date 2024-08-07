@@ -23,16 +23,16 @@
  */
 
 #include "metrics.h"
-#include "metrics-tls-cache.h"
+#include "dyn-metrics-cache.h"
 
 void
 metrics_global_init(void)
 {
-  metrics_tls_cache_global_init();
+  dyn_metrics_cache_global_init();
 }
 
 void
 metrics_global_deinit(void)
 {
-  metrics_tls_cache_global_deinit();
+  dyn_metrics_cache_global_deinit();
 }
