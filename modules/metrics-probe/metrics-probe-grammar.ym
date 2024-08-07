@@ -78,7 +78,7 @@ metrics_probe_opt
         : KW_INCREMENT '(' template_content ')' { metrics_probe_set_increment_template(last_parser, $3); log_template_unref($3); }
         | { last_template_options = metrics_probe_get_template_options(last_parser); } template_option
         | parser_opt
-	| { last_metrics_template = metrics_probe_get_metrics_template(last_parser); } metrics_template_opt
+	| { last_dyn_metrics_template = metrics_probe_get_metrics_template(last_parser); } dyn_metrics_template_opt
         ;
 
 /* INCLUDE_RULES */

@@ -50,4 +50,4 @@ LogRewrite *last_rewrite;
 CfgArgs *last_block_args;
 DNSCacheOptions *last_dns_cache_options;
 MultiLineOptions *last_multi_line_options;
-MetricsTemplate *last_metrics_template;
+DynMetricsTemplate *last_dyn_metrics_template;

@@ -1630,25 +1630,25 @@ vp_rekey_option
 	| KW_LOWER '(' ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_lower()); }
 	;
 
-metrics_template_opt
-        : KW_KEY '(' string ')' { metrics_template_set_key(last_metrics_template, $3); g_free($3); }
-        | KW_LABELS '(' metrics_template_labels_opts ')'
-        | KW_LEVEL '(' nonnegative_integer ')' { metrics_template_set_level(last_metrics_template, $3); }
+dyn_metrics_template_opt
+        : KW_KEY '(' string ')' { dyn_metrics_template_set_key(last_dyn_metrics_template, $3); g_free($3); }
+        | KW_LABELS '(' dyn_metrics_template_labels_opts ')'
+        | KW_LEVEL '(' nonnegative_integer ')' { dyn_metrics_template_set_level(last_dyn_metrics_template, $3); }
 
-metrics_template_labels_opts
-        : metrics_template_labels_opt metrics_template_labels_opts
+dyn_metrics_template_labels_opts
+        : dyn_metrics_template_labels_opt dyn_metrics_template_labels_opts
         |
         ;
 
-metrics_template_labels_opt
-        : metrics_template_label_template
-        | { last_value_pairs = metrics_template_get_value_pairs(last_metrics_template); } vp_option
+dyn_metrics_template_labels_opt
+        : dyn_metrics_template_label_template
+        | { last_value_pairs = dyn_metrics_template_get_value_pairs(last_dyn_metrics_template); } vp_option
         ;
 
-metrics_template_label_template
+dyn_metrics_template_label_template
         : string LL_ARROW template_content
           {
-            metrics_template_add_label_template(last_metrics_template, $1, $3);
+            dyn_metrics_template_add_label_template(last_dyn_metrics_template, $1, $3);
             free($1);
             log_template_unref($3);
           }
