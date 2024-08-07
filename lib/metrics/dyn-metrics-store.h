@@ -55,10 +55,11 @@ void dyn_metrics_store_free(DynMetricsStore *self);
 
 StatsCounterItem *dyn_metrics_store_retrieve_counter(DynMetricsStore *self, StatsClusterKey *key, gint level);
 gboolean dyn_metrics_store_remove_counter(DynMetricsStore *self, StatsClusterKey *key);
-void dyn_metrics_store_reset_labels(DynMetricsStore *self);
-StatsClusterLabel *dyn_metrics_store_alloc_label(DynMetricsStore *self);
-StatsClusterLabel *dyn_metrics_store_get_labels(DynMetricsStore *self);
-guint dyn_metrics_store_get_labels_len(DynMetricsStore *self);
-void dyn_metrics_store_sort_labels(DynMetricsStore *self);
+
+void dyn_metrics_store_reset_labels_cache(DynMetricsStore *self);
+StatsClusterLabel *dyn_metrics_store_cache_label(DynMetricsStore *self);
+StatsClusterLabel *dyn_metrics_store_get_cached_labels(DynMetricsStore *self);
+guint dyn_metrics_store_get_cached_labels_len(DynMetricsStore *self);
+void dyn_metrics_store_sort_cached_labels(DynMetricsStore *self);
 
 #endif

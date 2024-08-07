@@ -64,7 +64,7 @@ _add_dynamic_labels_vp_helper(const gchar *name, LogMessageValueType type, const
   g_string_assign(name_buffer, name);
   g_string_append_len(value_buffer, value, value_len);
 
-  StatsClusterLabel *label = dyn_metrics_store_alloc_label(cache);
+  StatsClusterLabel *label = dyn_metrics_store_cache_label(cache);
   label->name = name_buffer->str;
   label->value = value_buffer->str;
 
@@ -88,7 +88,7 @@ static void
 _build_sck(MetricsTemplate *self, LogTemplateOptions *template_options, LogMessage *msg, DynMetricsStore *cache,
            StatsClusterKey *key)
 {
-  dyn_metrics_store_reset_labels(cache);
+  dyn_metrics_store_reset_labels_cache(cache);
 
   for (GList *elem = g_list_first(self->label_templates); elem; elem = elem->next)
     {
@@ -96,15 +96,15 @@ _build_sck(MetricsTemplate *self, LogTemplateOptions *template_options, LogMessa
       GString *value_buffer = scratch_buffers_alloc();
 
       label_template_format(label_template, template_options, msg, value_buffer,
-                            dyn_metrics_store_alloc_label(cache));
+                            dyn_metrics_store_cache_label(cache));
     }
 
   if (self->vp)
     _add_dynamic_labels(self, template_options, msg, cache);
 
   stats_cluster_single_key_set(key, self->key,
-                               dyn_metrics_store_get_labels(cache),
-                               dyn_metrics_store_get_labels_len(cache));
+                               dyn_metrics_store_get_cached_labels(cache),
+                               dyn_metrics_store_get_cached_labels_len(cache));
 }
 
 StatsCounterItem *

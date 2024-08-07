@@ -104,26 +104,26 @@ dyn_metrics_store_remove_counter(DynMetricsStore *self, StatsClusterKey *key)
 }
 
 void
-dyn_metrics_store_reset_labels(DynMetricsStore *self)
+dyn_metrics_store_reset_labels_cache(DynMetricsStore *self)
 {
   self->label_buffers = g_array_set_size(self->label_buffers, 0);
 }
 
 StatsClusterLabel *
-dyn_metrics_store_alloc_label(DynMetricsStore *self)
+dyn_metrics_store_cache_label(DynMetricsStore *self)
 {
   self->label_buffers = g_array_set_size(self->label_buffers, self->label_buffers->len + 1);
   return &g_array_index(self->label_buffers, StatsClusterLabel, self->label_buffers->len - 1);
 }
 
 StatsClusterLabel *
-dyn_metrics_store_get_labels(DynMetricsStore *self)
+dyn_metrics_store_get_cached_labels(DynMetricsStore *self)
 {
   return (StatsClusterLabel *) self->label_buffers->data;
 }
 
 guint
-dyn_metrics_store_get_labels_len(DynMetricsStore *self)
+dyn_metrics_store_get_cached_labels_len(DynMetricsStore *self)
 {
   return self->label_buffers->len;
 }
@@ -135,7 +135,7 @@ _label_cmp(StatsClusterLabel *lhs, StatsClusterLabel *rhs)
 }
 
 void
-dyn_metrics_store_sort_labels(DynMetricsStore *self)
+dyn_metrics_store_sort_cached_labels(DynMetricsStore *self)
 {
   g_array_sort(self->label_buffers, (GCompareFunc) _label_cmp);
 }
