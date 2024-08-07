@@ -53,7 +53,7 @@ typedef struct _DynMetricsStore DynMetricsStore;
 DynMetricsStore *dyn_metrics_store_new(void);
 void dyn_metrics_store_free(DynMetricsStore *self);
 
-StatsCounterItem *dyn_metrics_store_get_counter(DynMetricsStore *self, StatsClusterKey *key, gint level);
+StatsCounterItem *dyn_metrics_store_retrieve_counter(DynMetricsStore *self, StatsClusterKey *key, gint level);
 gboolean dyn_metrics_store_remove_counter(DynMetricsStore *self, StatsClusterKey *key);
 void dyn_metrics_store_reset_labels(DynMetricsStore *self);
 StatsClusterLabel *dyn_metrics_store_alloc_label(DynMetricsStore *self);

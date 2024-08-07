@@ -120,7 +120,7 @@ metrics_template_get_stats_counter(MetricsTemplate *self,
   scratch_buffers_mark(&marker);
   _build_sck(self, template_options, msg, cache, &key);
 
-  StatsCounterItem *counter = dyn_metrics_store_get_counter(cache, &key, self->level);
+  StatsCounterItem *counter = dyn_metrics_store_retrieve_counter(cache, &key, self->level);
 
   scratch_buffers_reclaim_marked(marker);
   return counter;

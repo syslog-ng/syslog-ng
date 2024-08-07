@@ -179,10 +179,10 @@ _set_abandoned_disk_buffer_file_metrics(const gchar *dir, const gchar *filename)
   _init_abandoned_disk_buffer_sc_keys(&queued_sc_key, &capacity_sc_key, &disk_allocated_sc_key, &disk_usage_sc_key,
                                       abs_filename, options.reliable);
 
-  queued = dyn_metrics_store_get_counter(diskq_global_metrics.cache, &queued_sc_key, STATS_LEVEL1);
-  capacity = dyn_metrics_store_get_counter(diskq_global_metrics.cache, &capacity_sc_key, STATS_LEVEL1);
-  disk_allocated = dyn_metrics_store_get_counter(diskq_global_metrics.cache, &disk_allocated_sc_key, STATS_LEVEL1);
-  disk_usage = dyn_metrics_store_get_counter(diskq_global_metrics.cache, &disk_usage_sc_key, STATS_LEVEL1);
+  queued = dyn_metrics_store_retrieve_counter(diskq_global_metrics.cache, &queued_sc_key, STATS_LEVEL1);
+  capacity = dyn_metrics_store_retrieve_counter(diskq_global_metrics.cache, &capacity_sc_key, STATS_LEVEL1);
+  disk_allocated = dyn_metrics_store_retrieve_counter(diskq_global_metrics.cache, &disk_allocated_sc_key, STATS_LEVEL1);
+  disk_usage = dyn_metrics_store_retrieve_counter(diskq_global_metrics.cache, &disk_usage_sc_key, STATS_LEVEL1);
 
   stats_counter_set(queued, log_queue_get_length(&queue->super));
   stats_counter_set(capacity, B_TO_KiB(qdisk_get_max_useful_space(queue->qdisk)));
@@ -289,8 +289,8 @@ _update_dir_metrics(gpointer key, gpointer value, gpointer user_data)
   StatsClusterKey available_bytes_sc_key;
   _init_dir_sc_keys(&available_bytes_sc_key, dir);
 
-  StatsCounterItem *counter = dyn_metrics_store_get_counter(diskq_global_metrics.cache, &available_bytes_sc_key,
-                                                        STATS_LEVEL1);
+  StatsCounterItem *counter = dyn_metrics_store_retrieve_counter(diskq_global_metrics.cache, &available_bytes_sc_key,
+                              STATS_LEVEL1);
   stats_counter_set(counter, available_space_mib);
 }
 

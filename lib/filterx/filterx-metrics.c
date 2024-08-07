@@ -173,7 +173,7 @@ filterx_metrics_get_stats_counter(FilterXMetrics *self, StatsCounterItem **count
   if (!_format_sck(self, &sck))
     goto exit;
 
-  *counter = dyn_metrics_store_get_counter(metrics_tls_cache(), &sck, self->level);
+  *counter = dyn_metrics_store_retrieve_counter(metrics_tls_cache(), &sck, self->level);
   success = TRUE;
 
 exit:

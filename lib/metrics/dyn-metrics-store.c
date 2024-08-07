@@ -84,7 +84,7 @@ dyn_metrics_store_free(DynMetricsStore *self)
 }
 
 StatsCounterItem *
-dyn_metrics_store_get_counter(DynMetricsStore *self, StatsClusterKey *key, gint level)
+dyn_metrics_store_retrieve_counter(DynMetricsStore *self, StatsClusterKey *key, gint level)
 {
   StatsCluster *cluster = g_hash_table_lookup(self->clusters, key);
   if (!cluster)
