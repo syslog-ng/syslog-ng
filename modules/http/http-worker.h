@@ -29,7 +29,7 @@
 #include "http-loadbalancer.h"
 #include "http-curl-header-list.h"
 #include "compression.h"
-#include "metrics/metrics-cache.h"
+#include "metrics/dyn-metrics-store.h"
 
 typedef struct _HTTPDestinationWorker
 {
@@ -45,7 +45,7 @@ typedef struct _HTTPDestinationWorker
 
   struct
   {
-    MetricsCache *cache;
+    DynMetricsStore *cache;
     gchar requests_response_code_str_buffer[4];
   } metrics;
 } HTTPDestinationWorker;
