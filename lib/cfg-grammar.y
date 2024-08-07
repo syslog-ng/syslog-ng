@@ -160,7 +160,7 @@
 %left ';'
 
 /* operators in the filter language, the order of this determines precedence */
-%right KW_ASSIGN 9000
+%right KW_ASSIGN 9000, KW_PLUS_ASSIGN 9001
 %right '?' ':'
 %left  KW_OR 9010
 %left  KW_AND 9020
