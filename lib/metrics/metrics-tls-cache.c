@@ -29,30 +29,30 @@
 
 TLS_BLOCK_START
 {
-  MetricsCache *metrics_cache;
+  DynMetricsStore *dyn_metrics_store;
 }
 TLS_BLOCK_END;
 
-#define metrics_cache __tls_deref(metrics_cache)
+#define dyn_metrics_store __tls_deref(dyn_metrics_store)
 
 static void
 _init_tls_cache(gpointer user_data)
 {
-  g_assert(!metrics_cache);
+  g_assert(!dyn_metrics_store);
 
-  metrics_cache = metrics_cache_new();
+  dyn_metrics_store = dyn_metrics_store_new();
 }
 
 static void
 _deinit_tls_cache(gpointer user_data)
 {
-  metrics_cache_free(metrics_cache);
+  dyn_metrics_store_free(dyn_metrics_store);
 }
 
-MetricsCache *
+DynMetricsStore *
 metrics_tls_cache(void)
 {
-  return metrics_cache;
+  return dyn_metrics_store;
 }
 
 void

@@ -30,7 +30,7 @@
 #include "messages.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster-single.h"
-#include "metrics/metrics-cache.h"
+#include "metrics/dyn-metrics-store.h"
 #include "timeutils/misc.h"
 #include "qdisk.h"
 
@@ -49,7 +49,7 @@ typedef struct DiskQGlobalMetrics_
   GMutex lock;
   struct iv_timer dir_watch_timer;
 
-  MetricsCache *cache;
+  DynMetricsStore *cache;
   GHashTable *dirs;
   gint freq;
 } DiskQGlobalMetrics;
@@ -179,10 +179,10 @@ _set_abandoned_disk_buffer_file_metrics(const gchar *dir, const gchar *filename)
   _init_abandoned_disk_buffer_sc_keys(&queued_sc_key, &capacity_sc_key, &disk_allocated_sc_key, &disk_usage_sc_key,
                                       abs_filename, options.reliable);
 
-  queued = metrics_cache_get_counter(diskq_global_metrics.cache, &queued_sc_key, STATS_LEVEL1);
-  capacity = metrics_cache_get_counter(diskq_global_metrics.cache, &capacity_sc_key, STATS_LEVEL1);
-  disk_allocated = metrics_cache_get_counter(diskq_global_metrics.cache, &disk_allocated_sc_key, STATS_LEVEL1);
-  disk_usage = metrics_cache_get_counter(diskq_global_metrics.cache, &disk_usage_sc_key, STATS_LEVEL1);
+  queued = dyn_metrics_store_get_counter(diskq_global_metrics.cache, &queued_sc_key, STATS_LEVEL1);
+  capacity = dyn_metrics_store_get_counter(diskq_global_metrics.cache, &capacity_sc_key, STATS_LEVEL1);
+  disk_allocated = dyn_metrics_store_get_counter(diskq_global_metrics.cache, &disk_allocated_sc_key, STATS_LEVEL1);
+  disk_usage = dyn_metrics_store_get_counter(diskq_global_metrics.cache, &disk_usage_sc_key, STATS_LEVEL1);
 
   stats_counter_set(queued, log_queue_get_length(&queue->super));
   stats_counter_set(capacity, B_TO_KiB(qdisk_get_max_useful_space(queue->qdisk)));
@@ -208,10 +208,10 @@ _unset_abandoned_disk_buffer_file_metrics(const gchar *dir, const gchar *filenam
   _init_abandoned_disk_buffer_sc_keys(&queued_sc_key, &capacity_sc_key, &disk_allocated_sc_key, &disk_usage_sc_key,
                                       abs_filename, reliable);
 
-  metrics_cache_remove_counter(diskq_global_metrics.cache, &queued_sc_key);
-  metrics_cache_remove_counter(diskq_global_metrics.cache, &capacity_sc_key);
-  metrics_cache_remove_counter(diskq_global_metrics.cache, &disk_allocated_sc_key);
-  metrics_cache_remove_counter(diskq_global_metrics.cache, &disk_usage_sc_key);
+  dyn_metrics_store_remove_counter(diskq_global_metrics.cache, &queued_sc_key);
+  dyn_metrics_store_remove_counter(diskq_global_metrics.cache, &capacity_sc_key);
+  dyn_metrics_store_remove_counter(diskq_global_metrics.cache, &disk_allocated_sc_key);
+  dyn_metrics_store_remove_counter(diskq_global_metrics.cache, &disk_usage_sc_key);
 
   g_free(abs_filename);
 }
@@ -289,7 +289,7 @@ _update_dir_metrics(gpointer key, gpointer value, gpointer user_data)
   StatsClusterKey available_bytes_sc_key;
   _init_dir_sc_keys(&available_bytes_sc_key, dir);
 
-  StatsCounterItem *counter = metrics_cache_get_counter(diskq_global_metrics.cache, &available_bytes_sc_key,
+  StatsCounterItem *counter = dyn_metrics_store_get_counter(diskq_global_metrics.cache, &available_bytes_sc_key,
                                                         STATS_LEVEL1);
   stats_counter_set(counter, available_space_mib);
 }
@@ -356,7 +356,7 @@ _new(gint type, gpointer c)
   self->dir_watch_timer.handler = _update_all_dir_metrics;
   self->dir_watch_timer.cookie = self;
 
-  self->cache = metrics_cache_new();
+  self->cache = dyn_metrics_store_new();
   self->dirs = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_hash_table_destroy);
 }
 
@@ -397,7 +397,7 @@ _free(gint type, gpointer c)
   DiskQGlobalMetrics *self = &diskq_global_metrics;
 
   g_hash_table_destroy(self->dirs);
-  metrics_cache_free(self->cache);
+  dyn_metrics_store_free(self->cache);
 }
 
 void

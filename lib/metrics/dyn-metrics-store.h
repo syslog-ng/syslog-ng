@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2024 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 László Várady
  * Copyright (c) 2024 Axoflow
  *
  * This library is free software; you can redistribute it and/or
@@ -23,8 +24,8 @@
  *
  */
 
-#ifndef METRICS_CACHE_H_INCLUDED
-#define METRICS_CACHE_H_INCLUDED
+#ifndef DYN_METRICS_STORE_H_INCLUDED
+#define DYN_METRICS_STORE_H_INCLUDED
 
 #include "stats/stats-registry.h"
 
@@ -36,28 +37,28 @@
  * issue, as they are always stored on their call-site, binding their
  * lifecycle to the call-site.
  *
- * This class intends to solve this problem by providing a cache,
- * which keeps alive its counters until the cache is freed. On the
- * call-site you only need to keep the cache alive, to keep the
+ * This class intends to solve this problem by providing a store,
+ * which keeps alive its counters until the store is freed. On the
+ * call-site you only need to keep the store alive, to keep the
  * counters alive.
  *
  * It also grants a label cache for performance optimization needs.
  *
- * Note: The cache is NOT thread safe, make sure to eliminate
- * concurrency on the call site. If you need a cache that is bound
- * to the current thread, see metrics/metrics-tls-cache.h.
+ * Note: The store is NOT thread safe, make sure to eliminate
+ * concurrency on the call site.
  */
 
-typedef struct _MetricsCache MetricsCache;
+typedef struct _DynMetricsStore DynMetricsStore;
 
-MetricsCache *metrics_cache_new(void);
-void metrics_cache_free(MetricsCache *self);
+DynMetricsStore *dyn_metrics_store_new(void);
+void dyn_metrics_store_free(DynMetricsStore *self);
 
-StatsCounterItem *metrics_cache_get_counter(MetricsCache *self, StatsClusterKey *key, gint level);
-gboolean metrics_cache_remove_counter(MetricsCache *self, StatsClusterKey *key);
-void metrics_cache_reset_labels(MetricsCache *self);
-StatsClusterLabel *metrics_cache_alloc_label(MetricsCache *self);
-StatsClusterLabel *metrics_cache_get_labels(MetricsCache *self);
-guint metrics_cache_get_labels_len(MetricsCache *self);
+StatsCounterItem *dyn_metrics_store_get_counter(DynMetricsStore *self, StatsClusterKey *key, gint level);
+gboolean dyn_metrics_store_remove_counter(DynMetricsStore *self, StatsClusterKey *key);
+void dyn_metrics_store_reset_labels(DynMetricsStore *self);
+StatsClusterLabel *dyn_metrics_store_alloc_label(DynMetricsStore *self);
+StatsClusterLabel *dyn_metrics_store_get_labels(DynMetricsStore *self);
+guint dyn_metrics_store_get_labels_len(DynMetricsStore *self);
+void dyn_metrics_store_sort_labels(DynMetricsStore *self);
 
 #endif

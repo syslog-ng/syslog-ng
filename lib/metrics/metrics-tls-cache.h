@@ -27,9 +27,9 @@
 #define METRICS_TLS_CACHE_H_INCLUDED
 
 #include "stats/stats-registry.h"
-#include "metrics-cache.h"
+#include "dyn-metrics-store.h"
 
-MetricsCache *metrics_tls_cache(void);
+DynMetricsStore *metrics_tls_cache(void);
 
 void metrics_tls_cache_global_init(void);
 void metrics_tls_cache_global_deinit(void);
