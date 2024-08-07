@@ -24,7 +24,7 @@
 
 #include "metrics-template.h"
 #include "label-template.h"
-#include "metrics-tls-cache.h"
+#include "dyn-metrics-cache.h"
 #include "stats/stats-cluster-single.h"
 #include "scratch-buffers.h"
 
@@ -112,7 +112,7 @@ metrics_template_get_stats_counter(MetricsTemplate *self,
                                    LogTemplateOptions *template_options,
                                    LogMessage *msg)
 {
-  DynMetricsStore *cache = metrics_tls_cache();
+  DynMetricsStore *cache = dyn_metrics_cache();
 
   StatsClusterKey key;
   ScratchBuffersMarker marker;

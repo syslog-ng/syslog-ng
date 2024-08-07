@@ -30,7 +30,7 @@
 #include "filterx-eval.h"
 #include "stats/stats-cluster-single.h"
 #include "stats/stats-registry.h"
-#include "metrics/metrics-tls-cache.h"
+#include "metrics/dyn-metrics-cache.h"
 #include "scratch-buffers.h"
 #include "atomic.h"
 
@@ -173,7 +173,7 @@ filterx_metrics_get_stats_counter(FilterXMetrics *self, StatsCounterItem **count
   if (!_format_sck(self, &sck))
     goto exit;
 
-  *counter = dyn_metrics_store_retrieve_counter(metrics_tls_cache(), &sck, self->level);
+  *counter = dyn_metrics_store_retrieve_counter(dyn_metrics_cache(), &sck, self->level);
   success = TRUE;
 
 exit:

@@ -28,7 +28,7 @@
 #include "expr-literal-generator.h"
 #include "object-string.h"
 #include "object-dict-interface.h"
-#include "metrics/metrics-tls-cache.h"
+#include "metrics/dyn-metrics-cache.h"
 #include "stats/stats-cluster-single.h"
 #include "scratch-buffers.h"
 
@@ -260,7 +260,7 @@ _format_label_to_cache(gpointer data, gpointer user_data)
 gboolean
 filterx_metrics_labels_format(FilterXMetricsLabels *self, StatsClusterLabel **labels, gsize *len)
 {
-  DynMetricsStore *cache = metrics_tls_cache();
+  DynMetricsStore *cache = dyn_metrics_cache();
 
   dyn_metrics_store_reset_labels_cache(cache);
 
