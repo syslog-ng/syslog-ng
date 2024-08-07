@@ -25,6 +25,7 @@
  */
 
 #include "dyn-metrics-cache.h"
+#include "syslog-ng.h"
 #include "apphook.h"
 #include "tls-support.h"
 
@@ -34,8 +35,26 @@ TLS_BLOCK_START
 }
 TLS_BLOCK_END;
 
-
 #define metrics_cache __tls_deref(metrics_cache)
+
+static DynMetricsStore *global_metrics_cache;
+static GMutex global_metrics_cache_lock;
+
+static void
+_sync_with_global_cache(DynMetricsStore *store)
+{
+  g_mutex_lock(&global_metrics_cache_lock);
+  dyn_metrics_store_merge(global_metrics_cache, store);
+  g_mutex_unlock(&global_metrics_cache_lock);
+}
+
+static void
+_purge_global_cache(gint type, gpointer c)
+{
+  g_mutex_lock(&global_metrics_cache_lock);
+  dyn_metrics_store_reset(global_metrics_cache);
+  g_mutex_unlock(&global_metrics_cache_lock);
+}
 
 static void
 _init_tls_cache(gpointer user_data)
@@ -48,6 +67,7 @@ _init_tls_cache(gpointer user_data)
 static void
 _deinit_tls_cache(gpointer user_data)
 {
+  _sync_with_global_cache(metrics_cache);
   dyn_metrics_store_free(metrics_cache);
 }
 
@@ -60,8 +80,14 @@ dyn_metrics_cache(void)
 void
 dyn_metrics_cache_global_init(void)
 {
+  g_assert(!global_metrics_cache);
+  g_mutex_init(&global_metrics_cache_lock);
+  global_metrics_cache = dyn_metrics_store_new();
+
   register_application_thread_init_hook(_init_tls_cache, NULL);
   register_application_thread_deinit_hook(_deinit_tls_cache, NULL);
+
+  register_application_hook(AH_CONFIG_CHANGED, _purge_global_cache, NULL, AHM_RUN_REPEAT);
 
   _init_tls_cache(NULL);
 }
@@ -70,4 +96,7 @@ void
 dyn_metrics_cache_global_deinit(void)
 {
   _deinit_tls_cache(NULL);
+
+  dyn_metrics_store_free(global_metrics_cache);
+  g_mutex_clear(&global_metrics_cache_lock);
 }
