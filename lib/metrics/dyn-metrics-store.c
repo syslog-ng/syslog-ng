@@ -104,6 +104,12 @@ dyn_metrics_store_remove_counter(DynMetricsStore *self, StatsClusterKey *key)
 }
 
 void
+dyn_metrics_store_reset(DynMetricsStore *self)
+{
+  g_hash_table_remove_all(self->clusters);
+}
+
+void
 dyn_metrics_store_merge(DynMetricsStore *self, DynMetricsStore *other)
 {
   GHashTableIter iter;
