@@ -52,7 +52,7 @@
 #include "cfg-block.h"
 #include "cfg-path.h"
 #include "multi-line/multi-line-factory.h"
-#include "metrics/metrics-template.h"
+#include "metrics/dyn-metrics-template.h"
 
 #include "logthrsource/logthrfetcherdrv.h"
 #include "logthrdest/logthrdestdrv.h"
@@ -91,7 +91,7 @@ extern LogRewrite *last_rewrite;
 extern CfgArgs *last_block_args;
 extern DNSCacheOptions *last_dns_cache_options;
 extern MultiLineOptions *last_multi_line_options;
-extern MetricsTemplate *last_metrics_template;
+extern DynMetricsTemplate *last_dyn_metrics_template;
 
 
 #endif

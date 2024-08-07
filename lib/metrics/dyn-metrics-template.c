@@ -22,32 +22,32 @@
  *
  */
 
-#include "metrics-template.h"
+#include "dyn-metrics-template.h"
 #include "label-template.h"
 #include "dyn-metrics-cache.h"
 #include "stats/stats-cluster-single.h"
 #include "scratch-buffers.h"
 
 void
-metrics_template_set_level(MetricsTemplate *self, gint level)
+dyn_metrics_template_set_level(DynMetricsTemplate *self, gint level)
 {
   self->level = level;
 }
 
 void
-metrics_template_add_label_template(MetricsTemplate *self, const gchar *label, LogTemplate *value_template)
+dyn_metrics_template_add_label_template(DynMetricsTemplate *self, const gchar *label, LogTemplate *value_template)
 {
   self->label_templates = g_list_append(self->label_templates, label_template_new(label, value_template));
 }
 
 ValuePairs *
-metrics_template_get_value_pairs(MetricsTemplate *self)
+dyn_metrics_template_get_value_pairs(DynMetricsTemplate *self)
 {
   return self->vp;
 }
 
 void
-metrics_template_set_key(MetricsTemplate *self, const gchar *key)
+dyn_metrics_template_set_key(DynMetricsTemplate *self, const gchar *key)
 {
   g_free(self->key);
   self->key = g_strdup(key);
@@ -72,20 +72,21 @@ _add_dynamic_labels_vp_helper(const gchar *name, LogMessageValueType type, const
 }
 
 static void
-_add_dynamic_labels(MetricsTemplate *self, LogTemplateOptions *template_options, LogMessage *msg, DynMetricsStore *cache)
+_add_dynamic_labels(DynMetricsTemplate *self, LogTemplateOptions *template_options, LogMessage *msg,
+                    DynMetricsStore *cache)
 {
   LogTemplateEvalOptions template_eval_options = { template_options, LTZ_SEND, 0, NULL, LM_VT_STRING };
   value_pairs_foreach(self->vp, _add_dynamic_labels_vp_helper, msg, &template_eval_options, cache);
 }
 
 gboolean
-metrics_template_is_enabled(MetricsTemplate *self)
+dyn_metrics_template_is_enabled(DynMetricsTemplate *self)
 {
   return stats_check_level(self->level);
 }
 
 static void
-_build_sck(MetricsTemplate *self, LogTemplateOptions *template_options, LogMessage *msg, DynMetricsStore *cache,
+_build_sck(DynMetricsTemplate *self, LogTemplateOptions *template_options, LogMessage *msg, DynMetricsStore *cache,
            StatsClusterKey *key)
 {
   dyn_metrics_store_reset_labels_cache(cache);
@@ -108,9 +109,9 @@ _build_sck(MetricsTemplate *self, LogTemplateOptions *template_options, LogMessa
 }
 
 StatsCounterItem *
-metrics_template_get_stats_counter(MetricsTemplate *self,
-                                   LogTemplateOptions *template_options,
-                                   LogMessage *msg)
+dyn_metrics_template_get_stats_counter(DynMetricsTemplate *self,
+                                       LogTemplateOptions *template_options,
+                                       LogMessage *msg)
 {
   DynMetricsStore *cache = dyn_metrics_cache();
 
@@ -127,23 +128,23 @@ metrics_template_get_stats_counter(MetricsTemplate *self,
 }
 
 gboolean
-metrics_template_init(MetricsTemplate *self)
+dyn_metrics_template_init(DynMetricsTemplate *self)
 {
   self->label_templates = g_list_sort(self->label_templates, (GCompareFunc) label_template_compare);
   return TRUE;
 }
 
-MetricsTemplate *
-metrics_template_new(GlobalConfig *cfg)
+DynMetricsTemplate *
+dyn_metrics_template_new(GlobalConfig *cfg)
 {
-  MetricsTemplate *self = g_new0(MetricsTemplate, 1);
+  DynMetricsTemplate *self = g_new0(DynMetricsTemplate, 1);
 
   self->vp = value_pairs_new(cfg);
   return self;
 }
 
 void
-metrics_template_free(MetricsTemplate *self)
+dyn_metrics_template_free(DynMetricsTemplate *self)
 {
   g_free(self->key);
   g_list_free_full(self->label_templates, (GDestroyNotify) label_template_free);
@@ -151,12 +152,12 @@ metrics_template_free(MetricsTemplate *self)
   g_free(self);
 }
 
-MetricsTemplate *
-metrics_template_clone(MetricsTemplate *self, GlobalConfig *cfg)
+DynMetricsTemplate *
+dyn_metrics_template_clone(DynMetricsTemplate *self, GlobalConfig *cfg)
 {
-  MetricsTemplate *cloned = metrics_template_new(cfg);
-  metrics_template_set_key(cloned, self->key);
-  metrics_template_set_level(cloned, self->level);
+  DynMetricsTemplate *cloned = dyn_metrics_template_new(cfg);
+  dyn_metrics_template_set_key(cloned, self->key);
+  dyn_metrics_template_set_level(cloned, self->level);
 
   for (GList *elem = g_list_first(self->label_templates); elem; elem = elem->next)
     {

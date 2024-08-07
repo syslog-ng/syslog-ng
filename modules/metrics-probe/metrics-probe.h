@@ -23,7 +23,7 @@
 #ifndef METRICS_PROBE_H_INCLUDED
 #define METRICS_PROBE_H_INCLUDED
 
-#include "metrics/metrics-template.h"
+#include "metrics/dyn-metrics-template.h"
 #include "parser/parser-expr.h"
 #include "template/templates.h"
 
@@ -31,6 +31,6 @@ LogParser *metrics_probe_new(GlobalConfig *cfg);
 void metrics_probe_set_increment_template(LogParser *s, LogTemplate *increment_template);
 
 LogTemplateOptions *metrics_probe_get_template_options(LogParser *s);
-MetricsTemplate *metrics_probe_get_metrics_template(LogParser *s);
+DynMetricsTemplate *metrics_probe_get_metrics_template(LogParser *s);
 
 #endif
