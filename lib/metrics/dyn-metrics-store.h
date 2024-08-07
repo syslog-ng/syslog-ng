@@ -55,6 +55,7 @@ void dyn_metrics_store_free(DynMetricsStore *self);
 
 StatsCounterItem *dyn_metrics_store_retrieve_counter(DynMetricsStore *self, StatsClusterKey *key, gint level);
 gboolean dyn_metrics_store_remove_counter(DynMetricsStore *self, StatsClusterKey *key);
+void dyn_metrics_store_merge(DynMetricsStore *self, DynMetricsStore *other);
 
 void dyn_metrics_store_reset_labels_cache(DynMetricsStore *self);
 StatsClusterLabel *dyn_metrics_store_cache_label(DynMetricsStore *self);

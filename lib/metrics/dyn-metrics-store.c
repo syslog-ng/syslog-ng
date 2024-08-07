@@ -104,6 +104,20 @@ dyn_metrics_store_remove_counter(DynMetricsStore *self, StatsClusterKey *key)
 }
 
 void
+dyn_metrics_store_merge(DynMetricsStore *self, DynMetricsStore *other)
+{
+  GHashTableIter iter;
+  g_hash_table_iter_init(&iter, other->clusters);
+
+  gpointer key, value;
+  while (g_hash_table_iter_next(&iter, &key, &value))
+    {
+      stats_cluster_track_counter(value, SC_TYPE_SINGLE_VALUE);
+      g_hash_table_insert(self->clusters, key, value);
+    }
+}
+
+void
 dyn_metrics_store_reset_labels_cache(DynMetricsStore *self)
 {
   self->label_buffers = g_array_set_size(self->label_buffers, 0);
