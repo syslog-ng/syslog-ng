@@ -45,7 +45,9 @@
  * It also grants a label cache for performance optimization needs.
  *
  * Note: The store is NOT thread safe, make sure to eliminate
- * concurrency on the call site.
+ * concurrency on the call site. If you need a cache that is purged only
+ * during reload, use metrics/dyn-metrics-cache.h.
+ *
  */
 
 typedef struct _DynMetricsStore DynMetricsStore;
