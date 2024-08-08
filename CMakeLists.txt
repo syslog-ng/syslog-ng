@@ -379,10 +379,6 @@ endif()
 
 include(add_tests)
 
-# The inclusion of CTest triggers enable_testing()
-# CMake will generate tests only if the enable_testing() command has been invoked.
-# The CTest module invokes the command automatically when the BUILD_TESTING option is ON.
-
 if (BUILD_TESTING)
   if (NOT CRITERION_FOUND)
     message(FATAL_ERROR "BUILD_TESTING enabled without criterion detected!")
@@ -390,6 +386,10 @@ if (BUILD_TESTING)
     set(CTEST_ENVIRONMENT
       "G_SLICE=always-malloc,debug-blocks"
       "G_DEBUG=fatal-warnings,fatal-criticals,gc-friendly")
+
+    # The inclusion of CTest triggers enable_testing()
+    # CMake will generate tests only if the enable_testing() command has been invoked.
+    # The CTest module invokes the command automatically when the BUILD_TESTING option is ON.
     include(CTest)
 
     # This flag might be a security issue, do not use in production code, unfortunately we still need it for criterion tests and the current mocking soution
