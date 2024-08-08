@@ -31,6 +31,7 @@
 #include "gsockaddr.h"
 #include "timeutils/cache.h"
 #include "timeutils/misc.h"
+#include "scratch-buffers.h"
 #include "cfg.h"
 #include "plugin.h"
 
@@ -138,6 +139,7 @@ setup(void)
 void
 teardown(void)
 {
+  scratch_buffers_explicit_gc();
   deinit_syslogformat_module();
   app_shutdown();
 }
@@ -175,7 +177,8 @@ test_log_messages_can_be_parsed(struct msgparse_params *param)
 
   cr_assert_eq(parsed_message->pri, param->expected_pri, "Unexpected message priority %d != %d",
                parsed_message->pri, param->expected_pri);
-  assert_log_message_value(parsed_message, LM_V_HOST, param->expected_host);
+  if (param->expected_host)
+    assert_log_message_value(parsed_message, LM_V_HOST, param->expected_host);
   assert_log_message_value(parsed_message, LM_V_PROGRAM, param->expected_program);
   assert_log_message_value(parsed_message, LM_V_MESSAGE, param->expected_msg);
   if (param->expected_pid)
@@ -244,7 +247,7 @@ Test(msgparse, test_bad_sd_data_unescaped)
       LP_SYSLOG_PROTOCOL, NULL,
       43,             // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
-      "",        // host
+      NULL,        // host
       "syslog-ng", //app
       "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\">@<\"ok\"] An application event log entry...", // msg
       "", //sd_str
@@ -694,7 +697,7 @@ Test(msgparse, test_expected_sd_pairs_1)
       "<7>1 2006-10-29T01:59:59.156Z mymachine.example.com evntslog - ID47 [ exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       43,             // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
-      "",        // host
+      NULL,        // host
       "syslog-ng", //app
       "Error processing log message: <7>1 2006-10-29T01:59:59.156Z mymachine.example.com evntslog - ID47 >@<[ exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...", // msg
       "",
@@ -882,7 +885,7 @@ Test(msgparse, test_expected_sd_pairs_long)
       "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"long\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       43,                         // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
-      "",         // host
+      NULL,         // host
       "syslog-ng", //app
       "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>@<aaaaaaaa i=\"long\"] An application event log entry...", // msg
       "", //sd_str      0,//processid
@@ -926,7 +929,7 @@ Test(msgparse, test_unescaped_too_long_message_parts)
       "<132>1 2006-10-29T01:59:59.156+01:00 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa evntslog - - [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       43,        // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
-      "", //host
+      NULL, //host
       "syslog-ng", //app
       "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 >@<aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa evntslog - - [a i=\"ok\"] An application event log entry...",        // msg
       "", //sd_str
@@ -982,7 +985,7 @@ Test(msgparse, test_unescaped_too_long_message_parts)
       "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       43,             // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
-      "",        // host
+      NULL,        // host
       "syslog-ng", //app
       "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\">@<]ok\"] An application event log entry...", // msg
       "", //sd_str
@@ -997,7 +1000,7 @@ Test(msgparse, test_unescaped_too_long_message_parts)
       "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
       43,      // pri
       0, 0, 0, // timestamp (sec/usec/zone)
-      "",    // host
+      NULL,    // host
       "syslog-ng", //app
       "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\">@<\"ok\"] An application event log entry...", // msg
       "", //sd_str
@@ -1221,7 +1224,7 @@ Test(msgparse, test_no_rfc3164_fallback_flag)
       .parse_flags = LP_SYSLOG_PROTOCOL | LP_NO_RFC3164_FALLBACK,
       .expected_pri = 43,
       .expected_program = "syslog-ng",
-      .expected_host = "",
+      .expected_host = NULL,
       .expected_msg = "Error processing log message: <189>some message",
     },
     {NULL}
