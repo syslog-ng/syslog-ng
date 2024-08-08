@@ -59,6 +59,7 @@ enum
   LP_GUESS_TIMEZONE = 0x1000,
   LP_NO_HEADER = 0x2000,
   LP_NO_RFC3164_FALLBACK = 0x4000,
+  LP_PIGGYBACK_ERRORS = 0x8000,
 };
 
 typedef struct _MsgFormatHandler MsgFormatHandler;

@@ -244,7 +244,7 @@ Test(msgparse, test_bad_sd_data_unescaped)
   {
     {
       "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...",
-      LP_SYSLOG_PROTOCOL, NULL,
+      LP_SYSLOG_PROTOCOL | LP_PIGGYBACK_ERRORS, NULL,
       43,             // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
       NULL,        // host
@@ -694,7 +694,8 @@ Test(msgparse, test_expected_sd_pairs_1)
       expected_sd_pairs_test_1
     },
     {
-      "<7>1 2006-10-29T01:59:59.156Z mymachine.example.com evntslog - ID47 [ exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+      "<7>1 2006-10-29T01:59:59.156Z mymachine.example.com evntslog - ID47 [ exampleSDID@0 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@0 class=\"high\"] \xEF\xBB\xBF" "An application event log entry...",
+      LP_PIGGYBACK_ERRORS | LP_SYSLOG_PROTOCOL, NULL,
       43,             // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
       NULL,        // host
@@ -882,7 +883,8 @@ Test(msgparse, test_expected_sd_pairs_long)
 
     // parse longer than 255 sd id
     {
-      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"long\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"long\"] An application event log entry...",
+      LP_PIGGYBACK_ERRORS | LP_SYSLOG_PROTOCOL, NULL,
       43,                         // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
       NULL,         // host
@@ -926,7 +928,8 @@ Test(msgparse, test_unescaped_too_long_message_parts)
   {
     // too long hostname
     {
-      "<132>1 2006-10-29T01:59:59.156+01:00 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa evntslog - - [a i=\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+      "<132>1 2006-10-29T01:59:59.156+01:00 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa evntslog - - [a i=\"ok\"] An application event log entry...",
+      LP_PIGGYBACK_ERRORS | LP_SYSLOG_PROTOCOL, NULL,
       43,        // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
       NULL, //host
@@ -982,7 +985,8 @@ Test(msgparse, test_unescaped_too_long_message_parts)
 
     // unescaped ]
     {
-      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"]ok\"] An application event log entry...",
+      LP_PIGGYBACK_ERRORS | LP_SYSLOG_PROTOCOL, NULL,
       43,             // pri
       0, 0, 0,    // timestamp (sec/usec/zone)
       NULL,        // host
@@ -997,7 +1001,8 @@ Test(msgparse, test_unescaped_too_long_message_parts)
 
     // bad sd data unescaped "
     {
-      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a i=\"\"ok\"] An application event log entry...",
+      LP_PIGGYBACK_ERRORS | LP_SYSLOG_PROTOCOL, NULL,
       43,      // pri
       0, 0, 0, // timestamp (sec/usec/zone)
       NULL,    // host
@@ -1221,7 +1226,7 @@ Test(msgparse, test_no_rfc3164_fallback_flag)
   {
     {
       .msg = "<189>some message",
-      .parse_flags = LP_SYSLOG_PROTOCOL | LP_NO_RFC3164_FALLBACK,
+      .parse_flags = LP_SYSLOG_PROTOCOL | LP_NO_RFC3164_FALLBACK | LP_PIGGYBACK_ERRORS,
       .expected_pri = 43,
       .expected_program = "syslog-ng",
       .expected_host = NULL,
