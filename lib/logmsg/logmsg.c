@@ -2019,6 +2019,14 @@ log_msg_tags_init(void)
   log_tags_register_predefined_tag("syslog.unexpected_framing", LM_T_SYSLOG_UNEXPECTED_FRAMING);
   log_tags_register_predefined_tag("syslog.rfc3164_missing_header", LM_T_SYSLOG_RFC3164_MISSING_HEADER);
   log_tags_register_predefined_tag("syslog.rfc5424_unquoted_sdata_value", LM_T_SYSLOG_RFC5424_UNQUOTED_SDATA_VALUE);
+
+  log_tags_register_predefined_tag("syslog.rfc5424_missing_hostname", LM_T_SYSLOG_RFC5424_MISSING_HOSTNAME);
+  log_tags_register_predefined_tag("syslog.rfc5424_missing_app_name", LM_T_SYSLOG_RFC5424_MISSING_APP_NAME);
+  log_tags_register_predefined_tag("syslog.rfc5424_missing_procid", LM_T_SYSLOG_RFC5424_MISSING_PROCID);
+  log_tags_register_predefined_tag("syslog.rfc5424_missing_msgid", LM_T_SYSLOG_RFC5424_MISSING_MSGID);
+  log_tags_register_predefined_tag("syslog.rfc5424_missing_sdata", LM_T_SYSLOG_RFC5424_MISSING_SDATA);
+  log_tags_register_predefined_tag("syslog.rfc5424_invalid_sdata", LM_T_SYSLOG_RFC5424_INVALID_SDATA);
+  log_tags_register_predefined_tag("syslog.rfc5424_missing_message", LM_T_SYSLOG_RFC5424_MISSING_MESSAGE);
 }
 
 void

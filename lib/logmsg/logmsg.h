@@ -120,6 +120,22 @@ enum
   LM_T_SYSLOG_RFC3164_MISSING_HEADER,
   /* incorrectly quoted RFC5424 SDATA */
   LM_T_SYSLOG_RFC5424_UNQUOTED_SDATA_VALUE,
+  /* hostname field missing */
+  LM_T_SYSLOG_RFC5424_MISSING_HOSTNAME,
+  /* program field missing */
+  LM_T_SYSLOG_RFC5424_MISSING_APP_NAME,
+  /* pid field missing */
+  LM_T_SYSLOG_RFC5424_MISSING_PROCID,
+  /* msgid field missing */
+  LM_T_SYSLOG_RFC5424_MISSING_MSGID,
+  /* sdata field missing */
+  LM_T_SYSLOG_RFC5424_MISSING_SDATA,
+  /* invalid SDATA */
+  LM_T_SYSLOG_RFC5424_INVALID_SDATA,
+  /* sdata field missing */
+  LM_T_SYSLOG_RFC5424_MISSING_MESSAGE,
+  /* message field missing */
+  LM_T_SYSLOG_MISSING_MESSAGE,
   LM_T_PREDEFINED_MAX,
 };
 
