@@ -1263,6 +1263,19 @@ log_msg_format_sdata(const LogMessage *self, GString *result,  guint32 seq_num)
   log_msg_append_format_sdata(self, result, seq_num);
 }
 
+void
+log_msg_clear_sdata(LogMessage *self)
+{
+  for (gint i = 0; i < self->num_sdata; i++)
+    log_msg_unset_value(self, self->sdata[i]);
+  if (!log_msg_chk_flag(self, LF_STATE_OWN_SDATA))
+    {
+      self->sdata = NULL;
+      self->alloc_sdata = 0;
+    }
+  self->num_sdata = 0;
+}
+
 gboolean
 log_msg_append_tags_callback(const LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data)
 {
@@ -1388,12 +1401,7 @@ log_msg_clear(LogMessage *self)
     }
 
   log_msg_clear_matches(self);
-  if (!log_msg_chk_flag(self, LF_STATE_OWN_SDATA))
-    {
-      self->sdata = NULL;
-      self->alloc_sdata = 0;
-    }
-  self->num_sdata = 0;
+  log_msg_clear_sdata(self);
 
   if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR))
     g_sockaddr_unref(self->saddr);

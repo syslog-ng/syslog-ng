@@ -483,6 +483,7 @@ void log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to);
 
 void log_msg_append_format_sdata(const LogMessage *self, GString *result, guint32 seq_num);
 void log_msg_format_sdata(const LogMessage *self, GString *result, guint32 seq_num);
+void log_msg_clear_sdata(LogMessage *self);
 
 void log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on);
 void log_msg_set_tag_by_id(LogMessage *self, LogTagId id);

@@ -189,6 +189,19 @@ Test(log_message, test_log_message_can_be_cleared)
   log_message_test_params_free(params);
 }
 
+Test(log_message, test_log_message_clear_sdata_unsets_all_sdata)
+{
+  LogMessageTestParams *params = log_message_test_params_new();
+
+  log_msg_clear_sdata(params->message);
+
+  cr_assert(params->message->num_sdata == 0);
+  cr_assert_str_empty(log_msg_get_value(params->message, params->sd_handle, NULL),
+                      "Message still contains sdata value after log_msg_clear_sdata");
+
+  log_message_test_params_free(params);
+}
+
 Test(log_message, test_log_msg_clear_handles_cloned_noninline_tags_properly)
 {
   LogMessage *msg = _construct_log_message();
