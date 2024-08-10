@@ -1366,6 +1366,8 @@ log_msg_init(LogMessage *self)
 void
 log_msg_clear(LogMessage *self)
 {
+  g_assert(!log_msg_is_write_protected(self));
+
   if(log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     nv_table_unref(self->payload);
   self->payload = nv_table_new(LM_V_MAX, 16, 256);

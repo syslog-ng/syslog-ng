@@ -77,6 +77,9 @@ assert_log_msg_clear_clears_all_properties(LogMessage *message, NVHandle nv_hand
                                            NVHandle sd_handle, const gchar *tag_name)
 {
   message->flags |= LF_LOCAL + LF_UTF8 + LF_INTERNAL + LF_MARK;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+  log_msg_make_writable(&message, &path_options);
   log_msg_clear(message);
 
   cr_assert_str_empty(log_msg_get_value(message, nv_handle, NULL),
