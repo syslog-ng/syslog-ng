@@ -1,5 +1,6 @@
 #############################################################################
 # Copyright (c) 2015-2023 Balabit
+# Copyright (c) 2024 One Identity LLC.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -21,8 +22,8 @@
 #
 #############################################################################
 
-FROM debian:testing
-LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, László Várady <laszlo.varady@balabit.com>"
+FROM debian:bookworm
+LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/syslog-ng/syslog-ng"
 
 ARG PKG_TYPE=stable
@@ -34,7 +35,7 @@ RUN apt-get update -qq && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor > /usr/share/keyrings/ose-repo-archive-keyring.gpg && \
-  echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg] https://ose-repo.syslog-ng.com/apt/ ${PKG_TYPE} debian-testing" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
+  echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg] https://ose-repo.syslog-ng.com/apt/ ${PKG_TYPE} debian-bookworm" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
 
 RUN apt-get update -qq && apt-get install -y \
     libdbd-mysql libdbd-pgsql libdbd-sqlite3 syslog-ng libjemalloc2 \
