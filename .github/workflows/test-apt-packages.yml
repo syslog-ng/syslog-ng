@@ -27,11 +27,6 @@ jobs:
         upgrade-from:
           - "debian-official"
           - "syslog-ng-last"
-        exclude:
-          # The official syslog-ng got removed from debian:testing because of libesmtp:
-          # https://tracker.debian.org/news/1550704/syslog-ng-removed-from-testing/
-          - distro: "debian:testing"
-            upgrade-from: "debian-official"
       fail-fast: false
     runs-on: ubuntu-latest
     container: ${{ matrix.distro }}
