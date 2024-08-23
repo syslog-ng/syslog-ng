@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2024 Axoflow
  * Copyright (c) 2024 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -57,4 +58,10 @@ grpc_register_global_initializers(void)
       register_application_hook(AH_SHUTDOWN, grpc_global_deinit, NULL, AHM_RUN_ONCE);
       initialized = TRUE;
     }
+}
+
+static void __attribute__((destructor))
+_protobuf_cleanup(void)
+{
+  google::protobuf::ShutdownProtobufLibrary();
 }
