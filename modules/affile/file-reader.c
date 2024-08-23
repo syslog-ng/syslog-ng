@@ -78,6 +78,13 @@ _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 }
 
 static gboolean
+_can_check_eof(gint fd)
+{
+  struct stat st;
+  return fstat(fd, &st) == 0 && S_ISFIFO(st.st_mode) == 0;
+}
+
+static gboolean
 _reader_check_eof(FileReader *self, gint fd)
 {
   if (fd < 0)
@@ -170,7 +177,10 @@ _construct_poll_events(FileReader *self, gint fd)
                 evt_tag_int("fd", fd));
       return NULL;
     }
-  poll_events_set_checker(poll_events, _reader_check_watches, self);
+
+  if (_can_check_eof(fd))
+    poll_events_set_checker(poll_events, _reader_check_watches, self);
+
   return poll_events;
 }
 
