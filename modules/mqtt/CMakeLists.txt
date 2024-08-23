@@ -3,6 +3,11 @@ if (NOT DEFINED ENABLE_MQTT OR ENABLE_MQTT)
 endif()
 
 module_switch(ENABLE_MQTT "Enable mqtt" eclipse-paho-mqtt-c_FOUND)
+
+if (ENABLE_MQTT AND NOT eclipse-paho-mqtt-c_FOUND)
+  message (FATAL_ERROR "MQTT enabled but no eclipse-paho-mqtt-c library found")
+endif ()
+
 if (NOT ENABLE_MQTT)
   return()
 endif()
