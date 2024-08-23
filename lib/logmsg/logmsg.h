@@ -120,6 +120,22 @@ enum
   LM_T_SYSLOG_RFC3164_MISSING_HEADER,
   /* incorrectly quoted RFC5424 SDATA */
   LM_T_SYSLOG_RFC5424_UNQUOTED_SDATA_VALUE,
+  /* hostname field missing */
+  LM_T_SYSLOG_RFC5424_MISSING_HOSTNAME,
+  /* program field missing */
+  LM_T_SYSLOG_RFC5424_MISSING_APP_NAME,
+  /* pid field missing */
+  LM_T_SYSLOG_RFC5424_MISSING_PROCID,
+  /* msgid field missing */
+  LM_T_SYSLOG_RFC5424_MISSING_MSGID,
+  /* sdata field missing */
+  LM_T_SYSLOG_RFC5424_MISSING_SDATA,
+  /* invalid SDATA */
+  LM_T_SYSLOG_RFC5424_INVALID_SDATA,
+  /* sdata field missing */
+  LM_T_SYSLOG_RFC5424_MISSING_MESSAGE,
+  /* message field missing */
+  LM_T_SYSLOG_MISSING_MESSAGE,
   LM_T_PREDEFINED_MAX,
 };
 
@@ -483,6 +499,7 @@ void log_msg_rename_value(LogMessage *self, NVHandle from, NVHandle to);
 
 void log_msg_append_format_sdata(const LogMessage *self, GString *result, guint32 seq_num);
 void log_msg_format_sdata(const LogMessage *self, GString *result, guint32 seq_num);
+void log_msg_clear_sdata(LogMessage *self);
 
 void log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on);
 void log_msg_set_tag_by_id(LogMessage *self, LogTagId id);

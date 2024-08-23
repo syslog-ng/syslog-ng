@@ -1263,6 +1263,19 @@ log_msg_format_sdata(const LogMessage *self, GString *result,  guint32 seq_num)
   log_msg_append_format_sdata(self, result, seq_num);
 }
 
+void
+log_msg_clear_sdata(LogMessage *self)
+{
+  for (gint i = 0; i < self->num_sdata; i++)
+    log_msg_unset_value(self, self->sdata[i]);
+  if (!log_msg_chk_flag(self, LF_STATE_OWN_SDATA))
+    {
+      self->sdata = NULL;
+      self->alloc_sdata = 0;
+    }
+  self->num_sdata = 0;
+}
+
 gboolean
 log_msg_append_tags_callback(const LogMessage *self, LogTagId tag_id, const gchar *name, gpointer user_data)
 {
@@ -1366,6 +1379,8 @@ log_msg_init(LogMessage *self)
 void
 log_msg_clear(LogMessage *self)
 {
+  g_assert(!log_msg_is_write_protected(self));
+
   if(log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     nv_table_unref(self->payload);
   self->payload = nv_table_new(LM_V_MAX, 16, 256);
@@ -1386,12 +1401,7 @@ log_msg_clear(LogMessage *self)
     }
 
   log_msg_clear_matches(self);
-  if (!log_msg_chk_flag(self, LF_STATE_OWN_SDATA))
-    {
-      self->sdata = NULL;
-      self->alloc_sdata = 0;
-    }
-  self->num_sdata = 0;
+  log_msg_clear_sdata(self);
 
   if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR))
     g_sockaddr_unref(self->saddr);
@@ -2009,6 +2019,14 @@ log_msg_tags_init(void)
   log_tags_register_predefined_tag("syslog.unexpected_framing", LM_T_SYSLOG_UNEXPECTED_FRAMING);
   log_tags_register_predefined_tag("syslog.rfc3164_missing_header", LM_T_SYSLOG_RFC3164_MISSING_HEADER);
   log_tags_register_predefined_tag("syslog.rfc5424_unquoted_sdata_value", LM_T_SYSLOG_RFC5424_UNQUOTED_SDATA_VALUE);
+
+  log_tags_register_predefined_tag("syslog.rfc5424_missing_hostname", LM_T_SYSLOG_RFC5424_MISSING_HOSTNAME);
+  log_tags_register_predefined_tag("syslog.rfc5424_missing_app_name", LM_T_SYSLOG_RFC5424_MISSING_APP_NAME);
+  log_tags_register_predefined_tag("syslog.rfc5424_missing_procid", LM_T_SYSLOG_RFC5424_MISSING_PROCID);
+  log_tags_register_predefined_tag("syslog.rfc5424_missing_msgid", LM_T_SYSLOG_RFC5424_MISSING_MSGID);
+  log_tags_register_predefined_tag("syslog.rfc5424_missing_sdata", LM_T_SYSLOG_RFC5424_MISSING_SDATA);
+  log_tags_register_predefined_tag("syslog.rfc5424_invalid_sdata", LM_T_SYSLOG_RFC5424_INVALID_SDATA);
+  log_tags_register_predefined_tag("syslog.rfc5424_missing_message", LM_T_SYSLOG_RFC5424_MISSING_MESSAGE);
 }
 
 void

@@ -1085,13 +1085,17 @@ _syslog_format_parse_syslog_proto(const MsgFormatOptions *parse_options, const g
     goto error;
 
   if (!_skip_space(&src, &left))
-    goto error;
+    {
+      log_msg_set_tag_by_id(msg, LM_T_SYSLOG_RFC5424_MISSING_HOSTNAME);
+      goto error;
+    }
 
   /* hostname 255 ascii */
   _syslog_format_parse_hostname(msg, &src, &left, &hostname_start, &hostname_len, parse_options->flags, NULL);
   if (!_skip_space(&src, &left))
     {
       src++;
+      log_msg_set_tag_by_id(msg, LM_T_SYSLOG_RFC5424_MISSING_APP_NAME);
       goto error;
     }
   /* If we did manage to find a hostname, store it. */
@@ -1105,24 +1109,39 @@ _syslog_format_parse_syslog_proto(const MsgFormatOptions *parse_options, const g
   /* application name 48 ascii*/
   _syslog_format_parse_column(msg, LM_V_PROGRAM, &src, &left, 48);
   if (!_skip_space(&src, &left))
-    goto error;
+    {
+      log_msg_set_tag_by_id(msg, LM_T_SYSLOG_RFC5424_MISSING_PROCID);
+      goto error;
+    }
 
   /* process id 128 ascii */
   _syslog_format_parse_column(msg, LM_V_PID, &src, &left, 128);
   if (!_skip_space(&src, &left))
-    goto error;
+    {
+      log_msg_set_tag_by_id(msg, LM_T_SYSLOG_RFC5424_MISSING_MSGID);
+      goto error;
+    }
 
   /* message id 32 ascii */
   _syslog_format_parse_column(msg, LM_V_MSGID, &src, &left, 32);
   if (!_skip_space(&src, &left))
-    goto error;
+    {
+      log_msg_set_tag_by_id(msg, LM_T_SYSLOG_RFC5424_MISSING_SDATA);
+      goto error;
+    }
 
   /* structured data part */
   if (!_syslog_format_parse_sd_column(msg, &src, &left, parse_options))
-    goto error;
+    {
+      log_msg_set_tag_by_id(msg, LM_T_SYSLOG_RFC5424_INVALID_SDATA);
+      goto error;
+    }
 
   if (!_syslog_format_parse_message_column(msg, &src, &left, parse_options))
-    goto error;
+    {
+      log_msg_set_tag_by_id(msg, LM_T_SYSLOG_MISSING_MESSAGE);
+      goto error;
+    }
 
   log_msg_set_value_to_string(msg, LM_V_MSGFORMAT, "rfc5424");
 

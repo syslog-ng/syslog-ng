@@ -77,6 +77,9 @@ assert_log_msg_clear_clears_all_properties(LogMessage *message, NVHandle nv_hand
                                            NVHandle sd_handle, const gchar *tag_name)
 {
   message->flags |= LF_LOCAL + LF_UTF8 + LF_INTERNAL + LF_MARK;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+  log_msg_make_writable(&message, &path_options);
   log_msg_clear(message);
 
   cr_assert_str_empty(log_msg_get_value(message, nv_handle, NULL),
@@ -182,6 +185,19 @@ Test(log_message, test_log_message_can_be_cleared)
                                              params->sd_handle, params->tag_name);
   assert_log_msg_clear_clears_all_properties(params->cloned_message, params->nv_handle,
                                              params->sd_handle, params->tag_name);
+
+  log_message_test_params_free(params);
+}
+
+Test(log_message, test_log_message_clear_sdata_unsets_all_sdata)
+{
+  LogMessageTestParams *params = log_message_test_params_new();
+
+  log_msg_clear_sdata(params->message);
+
+  cr_assert(params->message->num_sdata == 0);
+  cr_assert_str_empty(log_msg_get_value(params->message, params->sd_handle, NULL),
+                      "Message still contains sdata value after log_msg_clear_sdata");
 
   log_message_test_params_free(params);
 }
