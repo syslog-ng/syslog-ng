@@ -26,4 +26,6 @@ brew "python@3", link: true, force: true
 brew "rabbitmq-c"
 brew "riemann-client"
 
+brew "grpc"
+
 brew "criterion"

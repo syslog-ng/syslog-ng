@@ -58,7 +58,6 @@ jobs:
             --with-python=3
             --with-systemd-journal=no
             --disable-smtp
-            --disable-grpc
             --disable-java
             --disable-java-modules
             --disable-mqtt
