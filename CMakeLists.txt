@@ -265,6 +265,7 @@ find_package(RabbitMQ)
 if (RabbitMQ_FOUND)
   set(CMAKE_REQUIRED_INCLUDES ${RabbitMQ_INCLUDE_DIR})
   set(CMAKE_REQUIRED_LIBRARIES ${RabbitMQ_LIBRARY})
+  check_include_file("rabbitmq-c/tcp_socket.h" SYSLOG_NG_HAVE_RABBITMQ_C_TCP_SOCKET_H)
   check_symbol_exists(amqp_ssl_socket_set_verify_peer "amqp.h;amqp_ssl_socket.h" SYSLOG_NG_HAVE_AMQP_SSL_SOCKET_SET_VERIFY_PEER)
 endif()
 

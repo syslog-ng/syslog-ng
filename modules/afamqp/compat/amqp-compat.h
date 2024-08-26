@@ -23,7 +23,14 @@
 #ifndef AFAMQP_COMPAT_H_INCLUDED
 #define AFAMQP_COMPAT_H_INCLUDED
 
+#include "syslog-ng.h"
+
+#ifdef SYSLOG_NG_HAVE_RABBITMQ_C_TCP_SOCKET_H
+#include <rabbitmq-c/amqp.h>
+#else
 #include <amqp.h>
+#endif
+
 void amqp_compat_set_verify(amqp_socket_t *self, gboolean verify);
 
 #endif
