@@ -219,6 +219,7 @@ modules/json/filterx-cache-json-file\.[ch]$
 modules/json/tests/test_filterx_format_json\.c$
 scl/fortigate/.*\.conf$
 scl/cee/.*\.conf$
+scl/elasticsearch/elastic-datastream.conf$
 scl/logscale/logscale\.conf$
 scl/mariadb/.*\.conf$
 scl/python/python-modules\.conf$
