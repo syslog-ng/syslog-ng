@@ -28,6 +28,7 @@
 #define X509_MAX_CN_LEN 64
 #define X509_MAX_O_LEN 64
 #define X509_MAX_OU_LEN 32
+#define X509_MAX_FP_LEN 256
 
 typedef struct _TLSContext TLSContext;
 typedef struct _TLSSession
@@ -41,6 +42,7 @@ typedef struct _TLSSession
     gchar o[X509_MAX_O_LEN];
     gchar ou[X509_MAX_OU_LEN];
     gchar cn[X509_MAX_CN_LEN];
+    gchar fingerprint[X509_MAX_FP_LEN];
   } peer_info;
 } TLSSession;
 
