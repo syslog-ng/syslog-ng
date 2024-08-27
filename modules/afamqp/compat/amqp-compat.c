@@ -23,7 +23,11 @@
 #include "syslog-ng.h"
 #include "compat/amqp-compat.h"
 
+#ifdef SYSLOG_NG_HAVE_RABBITMQ_C_TCP_SOCKET_H
+#include <rabbitmq-c/ssl_socket.h>
+#else
 #include <amqp_ssl_socket.h>
+#endif
 
 void
 amqp_compat_set_verify(amqp_socket_t *self, gboolean verify)

@@ -1680,10 +1680,16 @@ if test "$enable_amqp" = "yes" && test "$with_librabbitmq_client" = "no"; then
        AC_MSG_ERROR([Could not find librabbitmq-c, and AMQP support was explicitly enabled.])
 fi
 
+CFLAGS_SAVE="$CFLAGS"
+CFLAGS="$CFLAGS $LIBRABBITMQ_CFLAGS"
 old_LIBS=$LIBS
 LIBS=$LIBRABBITMQ_LIBS
+
 AC_CHECK_FUNCS(amqp_ssl_socket_set_verify_peer)
+AC_CHECK_HEADERS(rabbitmq-c/tcp_socket.h)
+
 LIBS=$old_LIBS
+CFLAGS="$CFLAGS_SAVE"
 
 dnl ***************************************************************************
 dnl rdkafka headers/libraries

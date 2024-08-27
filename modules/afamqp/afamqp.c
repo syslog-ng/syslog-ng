@@ -23,6 +23,7 @@
  */
 
 #include "afamqp.h"
+#include "syslog-ng.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
 #include "logmsg/nvtable.h"
@@ -32,10 +33,17 @@
 #include "timeutils/misc.h"
 #include "compat/amqp-compat.h"
 
+#ifdef SYSLOG_NG_HAVE_RABBITMQ_C_TCP_SOCKET_H
+#include <rabbitmq-c/amqp.h>
+#include <rabbitmq-c/framing.h>
+#include <rabbitmq-c/tcp_socket.h>
+#include <rabbitmq-c/ssl_socket.h>
+#else
 #include <amqp.h>
 #include <amqp_framing.h>
 #include <amqp_tcp_socket.h>
 #include <amqp_ssl_socket.h>
+#endif
 
 typedef struct
 {
