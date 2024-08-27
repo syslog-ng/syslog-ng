@@ -366,28 +366,32 @@ filterx_word	[^ \#'"/\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 <INITIAL,filterx>.         { return (unsigned char) yytext[0]; }
 
     /* continuation line within a string: just move the location and skip the newline character as if it was never there */
-<string,qstring,slash_string>\\\r?\n   { _cfg_lex_extend_token_location_to_next_line(yyextra); }
-<string>\\a		   { g_string_append_c(yyextra->string_buffer, 7); }
-<string>\\n	   	   { g_string_append_c(yyextra->string_buffer, 10); }
-<string>\\r		   { g_string_append_c(yyextra->string_buffer, 13); }
-<string>\\t		   { g_string_append_c(yyextra->string_buffer, 9); }
-<string>\\v		   { g_string_append_c(yyextra->string_buffer, 11); }
-<string>\\x{xdigit}{1,2}   { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 16)); }
-<string>\\o{odigit}{1,3}   { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 8)); }
-<string>\\[^anrtv]	   { g_string_append_c(yyextra->string_buffer, yytext[1]); }
-<string>\"		   {
-			     yy_pop_state(yyscanner);
-			     yylval->cptr = strdup(yyextra->string_buffer->str);
-			     return LL_STRING;
-		           }
-<slash_string>\\\/	   { g_string_append_c(yyextra->string_buffer, '/'); }
-<slash_string>[^/\r\n]+	   { g_string_append(yyextra->string_buffer, yytext); }
-<slash_string>\/	   {
-			     yy_pop_state(yyscanner);
-			     yylval->cptr = strdup(yyextra->string_buffer->str);
-			     return LL_STRING;
-			   }
-<string>[^"\\\r\n]+	   { g_string_append(yyextra->string_buffer, yytext); }
+<string,qstring,slash_string>\\\r?\n    { _cfg_lex_extend_token_location_to_next_line(yyextra); }
+<string,slash_string>\\a		{ g_string_append_c(yyextra->string_buffer, 7); }
+<string,slash_string>\\n	   	{ g_string_append_c(yyextra->string_buffer, 10); }
+<string,slash_string>\\r		{ g_string_append_c(yyextra->string_buffer, 13); }
+<string,slash_string>\\t		{ g_string_append_c(yyextra->string_buffer, 9); }
+<string,slash_string>\\v		{ g_string_append_c(yyextra->string_buffer, 11); }
+<string,slash_string>\\x{xdigit}{1,2}   { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 16)); }
+<string,slash_string>\\o{odigit}{1,3}   { g_string_append_c(yyextra->string_buffer, strtol(yytext+2, NULL, 8)); }
+<string>\\[^anrtv]	                { g_string_append_c(yyextra->string_buffer, yytext[1]); }
+<string>[^"\\\r\n]+	                { g_string_append(yyextra->string_buffer, yytext); }
+<string>\"		                {
+			                        yy_pop_state(yyscanner);
+			                        yylval->cptr = strdup(yyextra->string_buffer->str);
+			                        return LL_STRING;
+		                        }
+<slash_string>\\b		        { g_string_append_c(yyextra->string_buffer, 8); }
+<slash_string>\\f		        { g_string_append_c(yyextra->string_buffer, 12); }
+<slash_string>\\\\	                { g_string_append_c(yyextra->string_buffer, '\\'); }
+<slash_string>\\\/	                { g_string_append_c(yyextra->string_buffer, '/'); }
+<slash_string>\\[^anrtvbfox]	        { g_string_append_c(yyextra->string_buffer, yytext[1]); }
+<slash_string>[^\/\\\r\n]+              { g_string_append(yyextra->string_buffer, yytext); }
+<slash_string>\/	                {
+			                        yy_pop_state(yyscanner);
+			                        yylval->cptr = strdup(yyextra->string_buffer->str);
+			                        return LL_STRING;
+			                }
 <qstring>[^'\r\n]+	   { g_string_append(yyextra->string_buffer, yytext); }
 <qstring>\'		   {
 			     yy_pop_state(yyscanner);
@@ -420,7 +424,7 @@ filterx_word	[^ \#'"/\(\)\{\}\[\]\\;\r\n\t,|\.@:]
      *   - the rule below gets matched and the newline is included in the string
      */
 
-<string,qstring>\r?\n	   {
+<string,qstring,slash_string>\r?\n	   {
                              g_string_append(yyextra->string_buffer, yytext);
                              _cfg_lex_extend_token_location_to_next_line(yyextra);
                            }
