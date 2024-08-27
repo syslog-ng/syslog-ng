@@ -145,9 +145,6 @@ _init(LogPipe *s)
   if (!metrics_template_init(self->metrics_template))
     return FALSE;
 
-  /* FIXME: move this to earlier, e.g. module loading */
-  metrics_template_global_init();
-
   return log_parser_init_method(s);
 }
 

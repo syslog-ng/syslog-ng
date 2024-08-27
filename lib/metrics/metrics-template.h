@@ -54,7 +54,4 @@ MetricsTemplate *metrics_template_new(GlobalConfig *cfg);
 void metrics_template_free(MetricsTemplate *self);
 MetricsTemplate *metrics_template_clone(MetricsTemplate *self, GlobalConfig *cfg);
 
-
-void metrics_template_global_init(void);
-
 #endif

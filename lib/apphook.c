@@ -28,6 +28,7 @@
 #include "dnscache.h"
 #include "alarms.h"
 #include "stats/stats-registry.h"
+#include "metrics/metrics.h"
 #include "healthcheck/healthcheck-stats.h"
 #include "logmsg/logmsg.h"
 #include "logsource.h"
@@ -227,6 +228,7 @@ app_startup(void)
   alarm_init();
   main_loop_thread_resource_init();
   stats_init();
+  metrics_global_init();
   healthcheck_stats_global_init();
   tzset();
   log_msg_global_init();
@@ -281,6 +283,7 @@ app_shutdown(void)
   log_msg_global_deinit();
 
   afinter_global_deinit();
+  metrics_global_deinit();
   stats_destroy();
   child_manager_deinit();
   g_list_foreach(application_hooks, (GFunc) g_free, NULL);
