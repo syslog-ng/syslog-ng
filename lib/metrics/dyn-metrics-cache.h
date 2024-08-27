@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2024 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 László Várady
  * Copyright (c) 2024 Axoflow
  *
  * This library is free software; you can redistribute it and/or
@@ -23,49 +24,15 @@
  *
  */
 
-#include "metrics-tls-cache.h"
-#include "apphook.h"
-#include "tls-support.h"
+#ifndef DYN_METRICS_CACHE_H_INCLUDED
+#define DYN_METRICS_CACHE_H_INCLUDED
 
-TLS_BLOCK_START
-{
-  MetricsCache *metrics_cache;
-}
-TLS_BLOCK_END;
+#include "stats/stats-registry.h"
+#include "dyn-metrics-store.h"
 
-#define metrics_cache __tls_deref(metrics_cache)
+DynMetricsStore *dyn_metrics_cache(void);
 
-static void
-_init_tls_cache(gpointer user_data)
-{
-  g_assert(!metrics_cache);
+void dyn_metrics_cache_global_init(void);
+void dyn_metrics_cache_global_deinit(void);
 
-  metrics_cache = metrics_cache_new();
-}
-
-static void
-_deinit_tls_cache(gpointer user_data)
-{
-  metrics_cache_free(metrics_cache);
-}
-
-MetricsCache *
-metrics_tls_cache(void)
-{
-  return metrics_cache;
-}
-
-void
-metrics_tls_cache_global_init(void)
-{
-  register_application_thread_init_hook(_init_tls_cache, NULL);
-  register_application_thread_deinit_hook(_deinit_tls_cache, NULL);
-
-  _init_tls_cache(NULL);
-}
-
-void
-metrics_tls_cache_global_deinit(void)
-{
-  _deinit_tls_cache(NULL);
-}
+#endif

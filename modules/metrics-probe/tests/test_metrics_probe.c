@@ -31,7 +31,7 @@ _add_label(LogParser *s, const gchar *label, const gchar *value_template_str)
 {
   LogTemplate *value_template = log_template_new(s->super.cfg, NULL);
   log_template_compile(value_template, value_template_str, NULL);
-  metrics_template_add_label_template(metrics_probe_get_metrics_template(s), label, value_template);
+  dyn_metrics_template_add_label_template(metrics_probe_get_metrics_template(s), label, value_template);
   log_template_unref(value_template);
 }
 
@@ -183,7 +183,7 @@ Test(metrics_probe, test_metrics_probe_custom_labels_only)
 Test(metrics_probe, test_metrics_probe_custom_key_only)
 {
   LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
-  metrics_template_set_key(metrics_probe_get_metrics_template(tmp_metrics_probe), "custom_key");
+  dyn_metrics_template_set_key(metrics_probe_get_metrics_template(tmp_metrics_probe), "custom_key");
 
   LogParser *metrics_probe = (LogParser *) log_pipe_clone(&tmp_metrics_probe->super);
   log_pipe_unref(&tmp_metrics_probe->super);
@@ -212,7 +212,7 @@ Test(metrics_probe, test_metrics_probe_custom_key_only)
 Test(metrics_probe, test_metrics_probe_custom_full)
 {
   LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
-  metrics_template_set_key(metrics_probe_get_metrics_template(tmp_metrics_probe), "custom_key");
+  dyn_metrics_template_set_key(metrics_probe_get_metrics_template(tmp_metrics_probe), "custom_key");
 
   _add_label(tmp_metrics_probe, "test_label_3", "foo");
   _add_label(tmp_metrics_probe, "test_label_1", "${test_field_1}");
@@ -274,7 +274,7 @@ Test(metrics_probe, test_metrics_probe_stats_max_dynamics)
   stats_reinit(&configuration->stats_options);
 
   LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
-  metrics_template_set_key(metrics_probe_get_metrics_template(tmp_metrics_probe), "custom_key");
+  dyn_metrics_template_set_key(metrics_probe_get_metrics_template(tmp_metrics_probe), "custom_key");
   _add_label(tmp_metrics_probe, "test_label", "${test_field}");
 
   LogParser *metrics_probe = (LogParser *) log_pipe_clone(&tmp_metrics_probe->super);
@@ -315,7 +315,7 @@ Test(metrics_probe, test_metrics_probe_stats_max_dynamics)
 Test(metrics_probe, test_metrics_probe_increment)
 {
   LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
-  metrics_template_set_key(metrics_probe_get_metrics_template(tmp_metrics_probe), "custom_key");
+  dyn_metrics_template_set_key(metrics_probe_get_metrics_template(tmp_metrics_probe), "custom_key");
   LogTemplate *increment_template = log_template_new(tmp_metrics_probe->super.cfg, NULL);
   log_template_compile(increment_template, "${custom_increment}", NULL);
   metrics_probe_set_increment_template(tmp_metrics_probe, increment_template);
@@ -343,8 +343,8 @@ Test(metrics_probe, test_metrics_probe_increment)
 Test(metrics_probe, test_metrics_probe_level)
 {
   LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
-  metrics_template_set_key(metrics_probe_get_metrics_template(tmp_metrics_probe), "custom_key");
-  metrics_template_set_level(metrics_probe_get_metrics_template(tmp_metrics_probe), STATS_LEVEL2);
+  dyn_metrics_template_set_key(metrics_probe_get_metrics_template(tmp_metrics_probe), "custom_key");
+  dyn_metrics_template_set_level(metrics_probe_get_metrics_template(tmp_metrics_probe), STATS_LEVEL2);
 
   LogParser *metrics_probe = (LogParser *) log_pipe_clone(&tmp_metrics_probe->super);
   log_pipe_unref(&tmp_metrics_probe->super);
@@ -382,9 +382,9 @@ Test(metrics_probe, test_metrics_probe_level)
 Test(metrics_probe, test_metrics_probe_dynamic_labels)
 {
   LogParser *tmp_metrics_probe = metrics_probe_new(configuration);
-  metrics_template_set_key(metrics_probe_get_metrics_template(tmp_metrics_probe), "custom_key");
+  dyn_metrics_template_set_key(metrics_probe_get_metrics_template(tmp_metrics_probe), "custom_key");
   _add_label(tmp_metrics_probe, "test_label", "${test_field}");
-  ValuePairs *vp = metrics_template_get_value_pairs(metrics_probe_get_metrics_template(tmp_metrics_probe));
+  ValuePairs *vp = dyn_metrics_template_get_value_pairs(metrics_probe_get_metrics_template(tmp_metrics_probe));
   value_pairs_add_glob_pattern(vp, "test_prefix.*", TRUE);
 
   LogParser *metrics_probe = (LogParser *) log_pipe_clone(&tmp_metrics_probe->super);

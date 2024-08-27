@@ -88,9 +88,9 @@ lib/cfg-monitor\.[ch]
 lib/cfg-source\.[ch]
 lib/metrics-pipe\.[ch]
 lib/metrics/label-template\.(c|h)$
-lib/metrics/metrics-template\.(c|h)$
-lib/metrics/metrics-cache\.(c|h)$
-lib/metrics/metrics-tls-cache\.(c|h)$
+lib/metrics/dyn-metrics-template\.(c|h)$
+lib/metrics/dyn-metrics-store\.(c|h)$
+lib/metrics/dyn-metrics-cache\.(c|h)$
 lib/metrics/metrics\.(c|h)$
 lib/rewrite/rewrite-set-facility\.h
 lib/rewrite/rewrite-set-matches\.[ch]

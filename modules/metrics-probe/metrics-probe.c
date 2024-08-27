@@ -21,14 +21,14 @@
  */
 
 #include "metrics-probe.h"
-#include "metrics/metrics-template.h"
+#include "metrics/dyn-metrics-template.h"
 #include "scratch-buffers.h"
 
 typedef struct _MetricsProbe
 {
   LogParser super;
   LogTemplateOptions template_options;
-  MetricsTemplate *metrics_template;
+  DynMetricsTemplate *metrics_template;
   LogTemplate *increment_template;
 } MetricsProbe;
 
@@ -49,7 +49,7 @@ metrics_probe_get_template_options(LogParser *s)
   return &self->template_options;
 }
 
-MetricsTemplate *
+DynMetricsTemplate *
 metrics_probe_get_metrics_template(LogParser *s)
 {
   MetricsProbe *self = (MetricsProbe *) s;
@@ -98,10 +98,11 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
             evt_tag_str("key", self->metrics_template->key),
             evt_tag_msg_reference(*pmsg));
 
-  if (!metrics_template_is_enabled(self->metrics_template))
+  if (!dyn_metrics_template_is_enabled(self->metrics_template))
     return TRUE;
 
-  StatsCounterItem *counter = metrics_template_get_stats_counter(self->metrics_template, &self->template_options, *pmsg);
+  StatsCounterItem *counter = dyn_metrics_template_get_stats_counter(self->metrics_template,
+                              &self->template_options, *pmsg);
   gssize increment = _calculate_increment(self, *pmsg);
   stats_counter_add(counter, increment);
 
@@ -113,7 +114,7 @@ _add_default_label_template(MetricsProbe *self, const gchar *label, const gchar 
 {
   LogTemplate *value_template = log_template_new(self->super.super.cfg, NULL);
   log_template_compile(value_template, value_template_str, NULL);
-  metrics_template_add_label_template(self->metrics_template, label, value_template);
+  dyn_metrics_template_add_label_template(self->metrics_template, label, value_template);
   log_template_unref(value_template);
 }
 
@@ -127,7 +128,7 @@ _init(LogPipe *s)
 
   if (!self->metrics_template->key && !self->metrics_template->label_templates)
     {
-      metrics_template_set_key(self->metrics_template, "classified_events_total");
+      dyn_metrics_template_set_key(self->metrics_template, "classified_events_total");
 
       _add_default_label_template(self, "app", "${APP}");
       _add_default_label_template(self, "host", "${HOST}");
@@ -142,7 +143,7 @@ _init(LogPipe *s)
       return FALSE;
     }
 
-  if (!metrics_template_init(self->metrics_template))
+  if (!dyn_metrics_template_init(self->metrics_template))
     return FALSE;
 
   return log_parser_init_method(s);
@@ -156,7 +157,7 @@ _clone(LogPipe *s)
   MetricsProbe *cloned = (MetricsProbe *) metrics_probe_new(s->cfg);
 
   log_parser_clone_settings(&self->super, &cloned->super);
-  cloned->metrics_template = metrics_template_clone(self->metrics_template, s->cfg);
+  cloned->metrics_template = dyn_metrics_template_clone(self->metrics_template, s->cfg);
 
   metrics_probe_set_increment_template(&cloned->super, self->increment_template);
   log_template_options_clone(&self->template_options, &cloned->template_options);
@@ -171,7 +172,7 @@ _free(LogPipe *s)
 
   log_template_unref(self->increment_template);
   log_template_options_destroy(&self->template_options);
-  metrics_template_free(self->metrics_template);
+  dyn_metrics_template_free(self->metrics_template);
 
   log_parser_free_method(s);
 }
@@ -187,7 +188,7 @@ metrics_probe_new(GlobalConfig *cfg)
   self->super.super.clone = _clone;
   self->super.process = _process;
 
-  self->metrics_template = metrics_template_new(cfg);
+  self->metrics_template = dyn_metrics_template_new(cfg);
 
   log_template_options_defaults(&self->template_options);
 

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2024 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 László Várady
  * Copyright (c) 2024 Axoflow
  *
  * This library is free software; you can redistribute it and/or
@@ -23,10 +24,12 @@
  *
  */
 
-#include "metrics-cache.h"
+#include "dyn-metrics-store.h"
 #include "stats/stats-cluster-single.h"
 
-struct _MetricsCache
+#include <string.h>
+
+struct _DynMetricsStore
 {
   GHashTable *clusters;
   GArray *label_buffers;
@@ -58,10 +61,10 @@ _unregister_single_cluster_locked(StatsCluster *cluster)
   stats_unlock();
 }
 
-MetricsCache *
-metrics_cache_new(void)
+DynMetricsStore *
+dyn_metrics_store_new(void)
 {
-  MetricsCache *self = g_new0(MetricsCache, 1);
+  DynMetricsStore *self = g_new0(DynMetricsStore, 1);
 
   self->clusters = g_hash_table_new_full((GHashFunc) stats_cluster_key_hash,
                                          (GEqualFunc) stats_cluster_key_equal,
@@ -73,7 +76,7 @@ metrics_cache_new(void)
 }
 
 void
-metrics_cache_free(MetricsCache *self)
+dyn_metrics_store_free(DynMetricsStore *self)
 {
   g_hash_table_destroy(self->clusters);
   g_array_free(self->label_buffers, TRUE);
@@ -81,7 +84,7 @@ metrics_cache_free(MetricsCache *self)
 }
 
 StatsCounterItem *
-metrics_cache_get_counter(MetricsCache *self, StatsClusterKey *key, gint level)
+dyn_metrics_store_retrieve_counter(DynMetricsStore *self, StatsClusterKey *key, gint level)
 {
   StatsCluster *cluster = g_hash_table_lookup(self->clusters, key);
   if (!cluster)
@@ -95,32 +98,64 @@ metrics_cache_get_counter(MetricsCache *self, StatsClusterKey *key, gint level)
 }
 
 gboolean
-metrics_cache_remove_counter(MetricsCache *self, StatsClusterKey *key)
+dyn_metrics_store_remove_counter(DynMetricsStore *self, StatsClusterKey *key)
 {
   return g_hash_table_remove(self->clusters, key);
 }
 
 void
-metrics_cache_reset_labels(MetricsCache *self)
+dyn_metrics_store_reset(DynMetricsStore *self)
+{
+  g_hash_table_remove_all(self->clusters);
+}
+
+void
+dyn_metrics_store_merge(DynMetricsStore *self, DynMetricsStore *other)
+{
+  GHashTableIter iter;
+  g_hash_table_iter_init(&iter, other->clusters);
+
+  gpointer key, value;
+  while (g_hash_table_iter_next(&iter, &key, &value))
+    {
+      stats_cluster_track_counter(value, SC_TYPE_SINGLE_VALUE);
+      g_hash_table_insert(self->clusters, key, value);
+    }
+}
+
+void
+dyn_metrics_store_reset_labels_cache(DynMetricsStore *self)
 {
   self->label_buffers = g_array_set_size(self->label_buffers, 0);
 }
 
 StatsClusterLabel *
-metrics_cache_alloc_label(MetricsCache *self)
+dyn_metrics_store_cache_label(DynMetricsStore *self)
 {
   self->label_buffers = g_array_set_size(self->label_buffers, self->label_buffers->len + 1);
   return &g_array_index(self->label_buffers, StatsClusterLabel, self->label_buffers->len - 1);
 }
 
 StatsClusterLabel *
-metrics_cache_get_labels(MetricsCache *self)
+dyn_metrics_store_get_cached_labels(DynMetricsStore *self)
 {
   return (StatsClusterLabel *) self->label_buffers->data;
 }
 
 guint
-metrics_cache_get_labels_len(MetricsCache *self)
+dyn_metrics_store_get_cached_labels_len(DynMetricsStore *self)
 {
   return self->label_buffers->len;
+}
+
+static gint
+_label_cmp(StatsClusterLabel *lhs, StatsClusterLabel *rhs)
+{
+  return strcmp(lhs->name, rhs->name);
+}
+
+void
+dyn_metrics_store_sort_cached_labels(DynMetricsStore *self)
+{
+  g_array_sort(self->label_buffers, (GCompareFunc) _label_cmp);
 }

@@ -612,32 +612,32 @@ _update_status_code_metrics(HTTPDestinationWorker *self, const gchar *url, glong
 {
   gint level = log_pipe_is_internal(&self->super.owner->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1;
 
-  metrics_cache_reset_labels(self->metrics.cache);
+  dyn_metrics_store_reset_labels_cache(self->metrics.cache);
 
-  StatsClusterLabel *url_label = metrics_cache_alloc_label(self->metrics.cache);
+  StatsClusterLabel *url_label = dyn_metrics_store_cache_label(self->metrics.cache);
   url_label->name = "url";
   url_label->value = url;
 
-  StatsClusterLabel *response_code_label = metrics_cache_alloc_label(self->metrics.cache);
+  StatsClusterLabel *response_code_label = dyn_metrics_store_cache_label(self->metrics.cache);
   g_snprintf(self->metrics.requests_response_code_str_buffer, sizeof(self->metrics.requests_response_code_str_buffer),
              "%ld", http_code);
   response_code_label->name = "response_code";
   response_code_label->value = self->metrics.requests_response_code_str_buffer;
 
-  StatsClusterLabel *driver_label = metrics_cache_alloc_label(self->metrics.cache);
+  StatsClusterLabel *driver_label = dyn_metrics_store_cache_label(self->metrics.cache);
   driver_label->name = "driver";
   driver_label->value = "http";
 
-  StatsClusterLabel *id_label = metrics_cache_alloc_label(self->metrics.cache);
+  StatsClusterLabel *id_label = dyn_metrics_store_cache_label(self->metrics.cache);
   id_label->name = "id";
   id_label->value = self->super.owner->super.super.id;
 
   StatsClusterKey key;
   stats_cluster_single_key_set(&key, "output_http_requests_total",
-                               metrics_cache_get_labels(self->metrics.cache),
-                               metrics_cache_get_labels_len(self->metrics.cache));
+                               dyn_metrics_store_get_cached_labels(self->metrics.cache),
+                               dyn_metrics_store_get_cached_labels_len(self->metrics.cache));
 
-  StatsCounterItem *counter = metrics_cache_get_counter(self->metrics.cache, &key, level);
+  StatsCounterItem *counter = dyn_metrics_store_retrieve_counter(self->metrics.cache, &key, level);
   stats_counter_inc(counter);
 }
 
@@ -902,7 +902,7 @@ http_dw_free(LogThreadedDestWorker *s)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
 
-  metrics_cache_free(self->metrics.cache);
+  dyn_metrics_store_free(self->metrics.cache);
   http_lb_client_deinit(&self->lbc);
   log_threaded_dest_worker_free_method(s);
 }
@@ -924,7 +924,7 @@ http_dw_new(LogThreadedDestDriver *o, gint worker_index)
   else
     self->super.insert = _insert_single;
 
-  self->metrics.cache = metrics_cache_new();
+  self->metrics.cache = dyn_metrics_store_new();
 
   http_lb_client_init(&self->lbc, owner->load_balancer);
   return &self->super;
