@@ -64,3 +64,11 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.TAGS }}
           build-args: PKG_TYPE=${{ inputs.pkg-type }}
+
+      - name: Scan docker image on CVEs
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.tags.outputs.TAGS }}
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
