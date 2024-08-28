@@ -79,8 +79,7 @@ jobs:
         with:
           image-ref: ${{ steps.tags.outputs.TAGS }}
 
-          format: 'template'
-          template: '@/contrib/sarif.tpl'
+          format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
 
