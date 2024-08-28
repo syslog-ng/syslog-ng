@@ -41,6 +41,9 @@ RUN apt-get update -qq && apt-get install -y \
     libdbd-mysql libdbd-pgsql libdbd-sqlite3 syslog-ng libjemalloc2 \
     && rm -rf /var/lib/apt/lists/*
 
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get upgrade -y
+
 ADD syslog-ng.conf /etc/syslog-ng/syslog-ng.conf
 
 EXPOSE 514/udp
