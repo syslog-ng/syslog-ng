@@ -65,16 +65,7 @@ jobs:
           tags: ${{ steps.tags.outputs.TAGS }}
           build-args: PKG_TYPE=${{ inputs.pkg-type }}
 
-      - name: Scan docker image on CVEs (ALL to a table) # https://aquasecurity.github.io/trivy/v0.54/docs/
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ steps.tags.outputs.TAGS }}
-
-          format: 'table'
-          dependency-tree: true
-          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
-
-      - name: Scan docker image on CVEs (CRITICAL,HIGH to a sarif file)
+      - name: Scan docker image on CVEs (CRITICAL,HIGH to a sarif file) # https://aquasecurity.github.io/trivy/v0.54/docs/
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ steps.tags.outputs.TAGS }}
@@ -85,6 +76,15 @@ jobs:
 
           # DO NOT break the build yet if an issue is detected
           #exit-code: '1'
+
+      - name: Scan docker image on CVEs (ALL to a table)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.tags.outputs.TAGS }}
+
+          format: 'table'
+          dependency-tree: true
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
 
       - name: Upload Trivy scan sarif file results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
