@@ -110,6 +110,8 @@ enum
   LM_T_MSG_PARSE_ERROR,
   /* missing <pri> value */
   LM_T_SYSLOG_MISSING_PRI,
+  /* invalid <pri> value */
+  LM_T_SYSLOG_INVALID_PRI,
   /* no timestamp present in the original message */
   LM_T_SYSLOG_MISSING_TIMESTAMP,
   /* hostname field does not seem valid, check-hostname(yes) failed */
