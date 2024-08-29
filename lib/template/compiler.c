@@ -224,6 +224,7 @@ log_template_compiler_process_arg_list(LogTemplateCompiler *self, GPtrArray *res
 {
   GString *arg_buf = g_string_sized_new(32);
   gboolean arg_buf_has_a_value = FALSE;
+  gboolean kv_expr = FALSE;
   gint parens = 1;
   self->cursor++;
 
@@ -257,17 +258,35 @@ log_template_compiler_process_arg_list(LogTemplateCompiler *self, GPtrArray *res
               return FALSE;
             }
           arg_buf_has_a_value = TRUE;
+          kv_expr = FALSE;
           continue;
+        }
+      else if (*self->cursor == '=')
+        {
+          kv_expr = TRUE;
         }
       else if (parens == 1 && g_ascii_isspace(*self->cursor))
         {
-          g_ptr_array_add(result, g_strndup(arg_buf->str, arg_buf->len));
-          g_string_truncate(arg_buf, 0);
-          arg_buf_has_a_value = FALSE;
           while (*self->cursor && g_ascii_isspace(*self->cursor))
             self->cursor++;
-          continue;
+          if (*self->cursor == '=' || kv_expr)
+            {
+              if (kv_expr)
+                continue;
+              else
+                kv_expr = TRUE;
+            }
+          else
+            {
+              g_ptr_array_add(result, g_strndup(arg_buf->str, arg_buf->len));
+              g_string_truncate(arg_buf, 0);
+              arg_buf_has_a_value = FALSE;
+              kv_expr = FALSE;
+              continue;
+            }
         }
+      else
+        kv_expr = FALSE;
       log_template_compiler_append_and_increment(self, arg_buf);
       arg_buf_has_a_value = TRUE;
     }
