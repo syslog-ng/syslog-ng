@@ -54,6 +54,7 @@ class AsyncServiceCallInterface
 {
 public:
   virtual void Proceed(bool ok) = 0;
+  virtual ~AsyncServiceCallInterface() = default;
 };
 
 template <class S, class Req, class Res>
