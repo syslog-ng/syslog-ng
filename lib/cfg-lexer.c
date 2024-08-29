@@ -628,9 +628,7 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, CfgIncludeLevel *level, const gch
 
   r = glob(pattern, GLOB_NOMAGIC, _cfg_lexer_glob_err, &globbuf);
 
-  if (r == 0 && globbuf.gl_pathc == 0)
-    r = GLOB_NOMATCH;
-  if (r != 0)
+  if (r != 0 || globbuf.gl_pathc == 0)
     {
       globfree(&globbuf);
       if (r == GLOB_NOMATCH)
@@ -642,9 +640,8 @@ cfg_lexer_include_file_glob_at(CfgLexer *self, CfgIncludeLevel *level, const gch
               return TRUE;
             }
 #endif
-          return FALSE;
         }
-      return TRUE;
+      return FALSE;
     }
 
   for (i = 0; i < globbuf.gl_pathc; i++)
