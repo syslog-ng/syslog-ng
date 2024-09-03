@@ -40,6 +40,7 @@ struct _LogTransportSocket
 };
 
 void log_transport_socket_parse_cmsg_method(LogTransportSocket *s, struct cmsghdr *cmsg, LogTransportAuxData *aux);
+gssize log_transport_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux);
 
 void log_transport_dgram_socket_init_instance(LogTransportSocket *self, gint fd);
 LogTransport *log_transport_dgram_socket_new(gint fd);
