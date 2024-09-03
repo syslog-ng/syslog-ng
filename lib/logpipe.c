@@ -119,7 +119,7 @@ _free(LogPipe *self)
   g_free((gpointer)self->persist_name);
   g_free(self->plugin_name);
   g_list_free_full(self->info, g_free);
-  signal_slot_connector_free(self->signal_slot_connector);
+  signal_slot_connector_unref(self->signal_slot_connector);
   g_free(self);
 }
 
