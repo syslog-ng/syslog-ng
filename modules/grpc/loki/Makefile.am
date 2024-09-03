@@ -6,7 +6,6 @@ modules_grpc_loki_libloki_cpp_la_SOURCES = \
   modules/grpc/loki/loki-dest.h \
   modules/grpc/loki/loki-dest.hpp \
   modules/grpc/loki/loki-dest.cpp \
-  modules/grpc/loki/loki-worker.h \
   modules/grpc/loki/loki-worker.hpp \
   modules/grpc/loki/loki-worker.cpp
 
@@ -36,7 +35,6 @@ modules_grpc_loki_libloki_la_SOURCES = \
 modules_grpc_loki_libloki_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
   $(GRPC_COMMON_CFLAGS) \
-  -I$(top_srcdir)/modules/grpc \
   -I$(top_srcdir)/modules/grpc/loki \
   -I$(top_builddir)/modules/grpc/loki \
   -I$(top_srcdir)/modules/grpc
