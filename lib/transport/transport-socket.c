@@ -160,7 +160,7 @@ _extract_from_msghdr_method(LogTransportSocket *self, struct msghdr *msg, LogTra
   _parse_cmsg_to_aux(self, msg, aux);
 }
 
-static gssize
+gssize
 log_transport_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportSocket *self = (LogTransportSocket *) s;
