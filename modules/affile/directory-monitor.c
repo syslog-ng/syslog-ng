@@ -22,6 +22,7 @@
 
 #include "directory-monitor.h"
 #include "timeutils/misc.h"
+#include "mainloop-call.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -144,6 +145,14 @@ _get_real_path(DirectoryMonitor *self)
 void
 directory_monitor_stop(DirectoryMonitor *self)
 {
+  msg_debug("Stopping directory monitor", evt_tag_str("dir", self->dir));
+
+  if (FALSE == main_loop_is_main_thread())
+    {
+      main_loop_call((MainLoopTaskFunc) directory_monitor_stop, self, TRUE);
+      return;
+    }
+
   if (iv_timer_registered(&self->check_timer))
     {
       iv_timer_unregister(&self->check_timer);
@@ -199,6 +208,8 @@ directory_monitor_start(DirectoryMonitor *self)
 {
   msg_debug("Starting directory monitor", evt_tag_str("dir", self->dir), evt_tag_str("dir_monitor_method", self->method));
 
+  main_loop_assert_main_thread();
+
   GDir *directory = NULL;
   GError *error = NULL;
   if (self->watches_running)
@@ -245,7 +256,12 @@ directory_monitor_schedule_destroy(DirectoryMonitor *self)
 void
 directory_monitor_stop_and_destroy(DirectoryMonitor *self)
 {
-  msg_debug("Stopping directory monitor", evt_tag_str("dir", self->dir));
+  if (FALSE == main_loop_is_main_thread())
+    {
+      main_loop_call((MainLoopTaskFunc) directory_monitor_stop_and_destroy, self, TRUE);
+      return;
+    }
+
   directory_monitor_stop(self);
   directory_monitor_free(self);
 }
