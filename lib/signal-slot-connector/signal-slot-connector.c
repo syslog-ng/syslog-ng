@@ -23,6 +23,7 @@
  */
 
 #include "signal-slot-connector.h"
+#include "atomic.h"
 
 static EVTTAG *
 evt_tag_slot(SignalSlotConnector *connector, Signal signal, Slot slot, gpointer object)
@@ -78,6 +79,7 @@ _slot_functor_cmp(gconstpointer a, gconstpointer b)
 
 struct _SignalSlotConnector
 {
+  GAtomicCounter ref_cnt;
   // map<Signal, set<SlotFunctor>> connections;
   GHashTable *connections;
   GMutex lock; // connect/disconnect guarded by lock, emit is not
@@ -241,6 +243,7 @@ signal_slot_connector_new(void)
 {
   SignalSlotConnector *self = g_new0(SignalSlotConnector, 1);
 
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->connections = g_hash_table_new_full(g_str_hash,
                                             g_str_equal,
                                             NULL,
@@ -251,10 +254,29 @@ signal_slot_connector_new(void)
   return self;
 }
 
-void
+static void
 signal_slot_connector_free(SignalSlotConnector *self)
 {
   g_mutex_clear(&self->lock);
   g_hash_table_unref(self->connections);
   g_free(self);
+}
+
+SignalSlotConnector *
+signal_slot_connector_ref(SignalSlotConnector *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+
+  if (self)
+    g_atomic_counter_inc(&self->ref_cnt);
+
+  return self;
+}
+
+void
+signal_slot_connector_unref(SignalSlotConnector *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    signal_slot_connector_free(self);
 }
