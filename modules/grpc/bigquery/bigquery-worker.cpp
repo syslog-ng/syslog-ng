@@ -45,32 +45,19 @@ using syslogng::grpc::bigquery::DestinationWorker;
 using syslogng::grpc::bigquery::DestinationDriver;
 using google::protobuf::FieldDescriptor;
 
-struct _BigQueryDestWorker
+DestinationWorker::DestinationWorker(GrpcDestWorker *s)
+  : syslogng::grpc::DestWorker(s)
 {
-  LogThreadedDestWorker super;
-  DestinationWorker *cpp;
-};
-
-DestinationWorker::DestinationWorker(BigQueryDestWorker *s) : super(s)
-{
-  DestinationDriver *owner = this->get_owner();
-
   std::stringstream table_name;
-  table_name << "projects/" << owner->get_project()
-             << "/datasets/" << owner->get_dataset()
-             << "/tables/" << owner->get_table();
+  DestinationDriver *owner_ = this->get_owner();
+  table_name << "projects/" << owner_->get_project()
+             << "/datasets/" << owner_->get_dataset()
+             << "/tables/" << owner_->get_table();
   this->table = table_name.str();
 }
 
 DestinationWorker::~DestinationWorker()
 {
-}
-
-void
-DestinationWorker::prepare_context(::grpc::ClientContext &ctx)
-{
-  for (auto nv : this->get_owner()->headers)
-    ctx.AddMetadata(nv.first, nv.second);
 }
 
 bool
@@ -164,7 +151,7 @@ DestinationWorker::should_initiate_flush()
 DestinationWorker::Slice
 DestinationWorker::format_template(LogTemplate *tmpl, LogMessage *msg, GString *value, LogMessageValueType *type)
 {
-  DestinationDriver *owner = this->get_owner();
+  DestinationDriver *owner_ = this->get_owner();
 
   if (log_template_is_trivial(tmpl))
     {
@@ -177,7 +164,7 @@ DestinationWorker::format_template(LogTemplate *tmpl, LogMessage *msg, GString *
       return Slice{trivial_value, (std::size_t) trivial_value_len};
     }
 
-  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, this->super->super.seq_num, NULL, LM_VT_STRING};
+  LogTemplateEvalOptions options = {&owner_->template_options, LTZ_SEND, this->super->super.seq_num, NULL, LM_VT_STRING};
   log_template_format_value_and_type(tmpl, msg, &options, value, type);
   return Slice{value->str, value->len};
 }
@@ -186,7 +173,7 @@ bool
 DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, const Field &field,
                                 LogMessage *msg, google::protobuf::Message *message)
 {
-  DestinationDriver *owner = this->get_owner();
+  DestinationDriver *owner_ = this->get_owner();
 
   ScratchBuffersMarker m;
   GString *buf = scratch_buffers_alloc_and_mark(&m);
@@ -218,7 +205,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       int32_t v;
       if (!type_cast_to_int32(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "integer");
+          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "integer");
           goto error;
         }
       reflection->SetInt32(message, field.field_desc, v);
@@ -229,7 +216,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       gint64 v;
       if (!type_cast_to_int64(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "integer");
+          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "integer");
           goto error;
         }
       reflection->SetInt64(message, field.field_desc, v);
@@ -240,7 +227,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       gint64 v;
       if (!type_cast_to_int64(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "integer");
+          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "integer");
           goto error;
         }
       reflection->SetUInt32(message, field.field_desc, (uint32_t) v);
@@ -251,7 +238,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       gint64 v;
       if (!type_cast_to_int64(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "integer");
+          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "integer");
           goto error;
         }
       reflection->SetUInt64(message, field.field_desc, (uint64_t) v);
@@ -262,7 +249,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       double v;
       if (!type_cast_to_double(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "double");
+          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "double");
           goto error;
         }
       reflection->SetDouble(message, field.field_desc, v);
@@ -273,7 +260,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       double v;
       if (!type_cast_to_double(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "double");
+          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "double");
           goto error;
         }
       reflection->SetFloat(message, field.field_desc, (float) v);
@@ -284,7 +271,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
       gboolean v;
       if (!type_cast_to_boolean(value.str, -1, &v, NULL))
         {
-          type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "boolean");
+          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "boolean");
           goto error;
         }
       reflection->SetBool(message, field.field_desc, v);
@@ -305,22 +292,22 @@ error:
 LogThreadedResult
 DestinationWorker::insert(LogMessage *msg)
 {
-  DestinationDriver *owner = this->get_owner();
+  DestinationDriver *owner_ = this->get_owner();
   std::string serialized_row;
   size_t row_bytes = 0;
 
   google::cloud::bigquery::storage::v1::ProtoRows *rows = this->current_batch.mutable_proto_rows()->mutable_rows();
 
-  google::protobuf::Message *message = owner->schema_prototype->New();
+  google::protobuf::Message *message = owner_->schema_prototype->New();
   const google::protobuf::Reflection *reflection = message->GetReflection();
 
   bool msg_has_field = false;
-  for (const auto &field : owner->fields)
+  for (const auto &field : owner_->fields)
     {
       bool field_inserted = this->insert_field(reflection, field, msg, message);
       msg_has_field |= field_inserted;
 
-      if (!field_inserted && (owner->template_options.on_error & ON_ERROR_DROP_MESSAGE))
+      if (!field_inserted && (owner_->template_options.on_error & ON_ERROR_DROP_MESSAGE))
         goto drop;
     }
 
@@ -346,7 +333,7 @@ DestinationWorker::insert(LogMessage *msg)
   return LTR_QUEUED;
 
 drop:
-  if (!(owner->template_options.on_error & ON_ERROR_SILENT))
+  if (!(owner_->template_options.on_error & ON_ERROR_SILENT))
     {
       msg_error("Failed to format message for BigQuery, dropping message",
                 log_pipe_location_tag((LogPipe *) this->super->super.owner));
@@ -434,35 +421,17 @@ exit:
 std::shared_ptr<::grpc::Channel>
 DestinationWorker::create_channel()
 {
-  DestinationDriver *owner = this->get_owner();
-
-  ::grpc::ChannelArguments args{};
-
-  if (owner->keepalive_time != -1)
-    args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, owner->keepalive_time);
-  if (owner->keepalive_timeout != -1)
-    args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, owner->keepalive_timeout);
-  if (owner->keepalive_max_pings_without_data != -1)
-    args.SetInt(GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA, owner->keepalive_max_pings_without_data);
-
-  if (owner->compression)
-    args.SetCompressionAlgorithm(GRPC_COMPRESS_GZIP);
-
-  args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
-
-  for (auto nv : owner->int_extra_channel_args)
-    args.SetInt(nv.first, nv.second);
-  for (auto nv : owner->string_extra_channel_args)
-    args.SetString(nv.first, nv.second);
+  DestinationDriver *owner_ = this->get_owner();
 
   auto credentials = ::grpc::GoogleDefaultCredentials();
+  ::grpc::ChannelArguments args = this->create_channel_args();
   if (!credentials)
     {
       msg_error("Error querying BigQuery credentials", log_pipe_location_tag((LogPipe *) this->super->super.owner));
       return nullptr;
     }
 
-  auto channel_ = ::grpc::CreateCustomChannel(owner->get_url(), credentials, args);
+  auto channel_ = ::grpc::CreateCustomChannel(owner_->get_url(), credentials, args);
   if (!channel_)
     {
       msg_error("Error creating BigQuery gRPC channel", log_pipe_location_tag((LogPipe *) this->super->super.owner));
@@ -492,62 +461,5 @@ DestinationWorker::construct_write_stream()
 DestinationDriver *
 DestinationWorker::get_owner()
 {
-  return bigquery_dd_get_cpp((BigQueryDestDriver *) this->super->super.owner);
-}
-
-/* C Wrappers */
-
-static LogThreadedResult
-_insert(LogThreadedDestWorker *s, LogMessage *msg)
-{
-  BigQueryDestWorker *self = (BigQueryDestWorker *) s;
-  return self->cpp->insert(msg);
-}
-
-static LogThreadedResult
-_flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
-{
-  BigQueryDestWorker *self = (BigQueryDestWorker *) s;
-  return self->cpp->flush(mode);
-}
-
-static gboolean
-_connect(LogThreadedDestWorker *s)
-{
-  BigQueryDestWorker *self = (BigQueryDestWorker *) s;
-  return self->cpp->connect();
-}
-
-static void
-_disconnect(LogThreadedDestWorker *s)
-{
-  BigQueryDestWorker *self = (BigQueryDestWorker *) s;
-  self->cpp->disconnect();
-}
-
-static void
-_free(LogThreadedDestWorker *s)
-{
-  BigQueryDestWorker *self = (BigQueryDestWorker *) s;
-  delete self->cpp;
-
-  log_threaded_dest_worker_free_method(s);
-}
-
-LogThreadedDestWorker *
-bigquery_dw_new(LogThreadedDestDriver *o, gint worker_index)
-{
-  BigQueryDestWorker *self = g_new0(BigQueryDestWorker, 1);
-
-  log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
-
-  self->cpp = new DestinationWorker(self);
-
-  self->super.connect = _connect;
-  self->super.disconnect = _disconnect;
-  self->super.insert = _insert;
-  self->super.flush = _flush;
-  self->super.free_fn = _free;
-
-  return &self->super;
+  return bigquery_dd_get_cpp(this->owner.super);
 }

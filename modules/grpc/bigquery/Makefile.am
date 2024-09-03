@@ -6,7 +6,6 @@ modules_grpc_bigquery_libbigquery_cpp_la_SOURCES = \
   modules/grpc/bigquery/bigquery-dest.h \
   modules/grpc/bigquery/bigquery-dest.hpp \
   modules/grpc/bigquery/bigquery-dest.cpp \
-  modules/grpc/bigquery/bigquery-worker.h \
   modules/grpc/bigquery/bigquery-worker.hpp \
   modules/grpc/bigquery/bigquery-worker.cpp
 
