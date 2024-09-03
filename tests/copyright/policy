@@ -204,8 +204,7 @@ modules/grpc/otel/tests/test-syslog-ng-otlp\.cpp$
 modules/grpc/otel/tests/test-otel-filterx\.cpp$
 modules/grpc/loki
 modules/grpc/bigquery
-modules/grpc/credentials
-modules/grpc/metrics
+modules/grpc/common
 modules/grpc/protos/apphook\.(cpp|h)$
 modules/cloud-auth/cloud-auth(|-grammar|-parser|-plugin)\.(c|h|cpp|hpp|ym)$
 modules/cloud-auth/google-auth\.(h|cpp|hpp)$
