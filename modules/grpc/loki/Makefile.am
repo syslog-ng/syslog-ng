@@ -3,8 +3,6 @@ if ENABLE_GRPC
 noinst_LTLIBRARIES += modules/grpc/loki/libloki_cpp.la
 
 modules_grpc_loki_libloki_cpp_la_SOURCES = \
-  $(grpc_credentials_sources) \
-  $(grpc_metrics_sources) \
   modules/grpc/loki/loki-dest.h \
   modules/grpc/loki/loki-dest.hpp \
   modules/grpc/loki/loki-dest.cpp \
@@ -17,6 +15,7 @@ modules_grpc_loki_libloki_cpp_la_CXXFLAGS = \
   -Wno-deprecated -Wno-double-promotion -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0 \
   $(PROTOBUF_CFLAGS) \
   $(GRPCPP_CFLAGS) \
+  $(GRPC_COMMON_CFLAGS) \
   -I$(LOKI_PROTO_BUILDDIR) \
   -I$(top_srcdir)/modules/grpc \
   -I$(top_srcdir)/modules/grpc/loki \
@@ -36,6 +35,7 @@ modules_grpc_loki_libloki_la_SOURCES = \
 
 modules_grpc_loki_libloki_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
+  $(GRPC_COMMON_CFLAGS) \
   -I$(top_srcdir)/modules/grpc \
   -I$(top_srcdir)/modules/grpc/loki \
   -I$(top_builddir)/modules/grpc/loki \
@@ -43,6 +43,7 @@ modules_grpc_loki_libloki_la_CPPFLAGS = \
 
 modules_grpc_loki_libloki_la_LIBADD = \
   $(MODULE_DEPS_LIBS) \
+  $(GRPC_COMMON_LIBS) \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la \
   $(top_builddir)/modules/grpc/loki/libloki_cpp.la
 
@@ -51,6 +52,7 @@ nodist_EXTRA_modules_grpc_loki_libloki_la_SOURCES = force-cpp-linker-with-defaul
 modules_grpc_loki_libloki_la_LDFLAGS = $(MODULE_LDFLAGS)
 EXTRA_modules_grpc_loki_libloki_la_DEPENDENCIES = \
   $(MODULE_DEPS_LIBS) \
+  $(GRPC_COMMON_LIBS) \
   $(top_builddir)/modules/grpc/protos/libgrpc-protos.la \
   $(top_builddir)/modules/grpc/loki/libloki_cpp.la
 
