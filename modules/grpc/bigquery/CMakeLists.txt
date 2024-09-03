@@ -21,7 +21,7 @@ set(BIGQUERY_SOURCES
 add_module(
   TARGET bigquery-cpp
   SOURCES ${BIGQUERY_CPP_SOURCES}
-  DEPENDS ${MODULE_GRPC_LIBS} grpc-protos
+  DEPENDS ${MODULE_GRPC_LIBS} grpc-protos grpc-common-cpp
   INCLUDES ${BIGQUERY_PROTO_BUILDDIR} ${PROJECT_SOURCE_DIR}/modules/grpc
   LIBRARY_TYPE STATIC
 )
@@ -29,7 +29,7 @@ add_module(
 add_module(
   TARGET bigquery
   GRAMMAR bigquery-grammar
-  DEPENDS bigquery-cpp
+  DEPENDS bigquery-cpp grpc-common-cpp
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc
   SOURCES ${BIGQUERY_SOURCES}
 )
