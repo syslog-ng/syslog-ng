@@ -10,7 +10,6 @@ set(LOKI_CPP_SOURCES
   loki-dest.h
   loki-worker.hpp
   loki-worker.cpp
-  loki-worker.h
 )
 
 set(LOKI_SOURCES
