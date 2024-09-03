@@ -41,4 +41,5 @@ EXTRA_modules_grpc_common_libgrpc_common_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 endif
 
 EXTRA_DIST += \
-  modules/grpc/common/CMakeLists.txt
+  modules/grpc/common/CMakeLists.txt \
+  modules/grpc/common/grpc-grammar.ym
