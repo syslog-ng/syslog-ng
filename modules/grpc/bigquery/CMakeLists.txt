@@ -9,7 +9,6 @@ set(BIGQUERY_CPP_SOURCES
   bigquery-dest.h
   bigquery-worker.hpp
   bigquery-worker.cpp
-  bigquery-worker.h
 )
 
 set(BIGQUERY_SOURCES
