@@ -33,8 +33,7 @@
 #include "logmsg/logmsg.h"
 #include "compat/cpp-end.h"
 
-#include "credentials/grpc-credentials-builder.hpp"
-#include "metrics/grpc-metrics.hpp"
+#include "grpc-dest.hpp"
 
 #include <string>
 #include <vector>
@@ -71,27 +70,21 @@ struct Label
 
 };
 
-class DestinationDriver final
+class DestinationDriver final : public syslogng::grpc::DestDriver
 {
 public:
-  DestinationDriver(LokiDestDriver *s);
+  DestinationDriver(GrpcDestDriver *s);
   ~DestinationDriver();
   bool init();
-  bool deinit();
-  const gchar *format_persist_name();
+  const gchar *generate_persist_name();
   const gchar *format_stats_key(StatsClusterKeyBuilder *kb);
-  GrpcClientCredentialsBuilderW *get_credentials_builder_wrapper();
+  LogThreadedDestWorker *construct_worker(int worker_index);
 
   void add_label(std::string name, LogTemplate *value);
 
   LogTemplateOptions &get_template_options()
   {
     return this->template_options;
-  }
-
-  void set_url(std::string u)
-  {
-    this->url = u;
   }
 
   void set_message_template_ref(LogTemplate *msg)
@@ -113,73 +106,20 @@ public:
     return true;
   }
 
-  void set_keepalive_time(int t)
-  {
-    this->keepalive_time = t;
-  }
-
-  void set_keepalive_timeout(int t)
-  {
-    this->keepalive_timeout = t;
-  }
-
-  void set_keepalive_max_pings(int p)
-  {
-    this->keepalive_max_pings_without_data = p;
-  }
-
   void set_tenant_id(std::string tid)
   {
     this->tenant_id = tid;
   }
 
-  void add_extra_channel_arg(std::string name, long value)
-  {
-    this->int_extra_channel_args.push_back(std::pair<std::string, long> {name, value});
-  }
-
-  void add_extra_channel_arg(std::string name, std::string value)
-  {
-    this->string_extra_channel_args.push_back(std::pair<std::string, std::string> {name, value});
-  }
-
-  void add_header(std::string name, std::string value)
-  {
-    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-    this->headers.push_back(std::pair<std::string, std::string> {name, value});
-  }
-
-  const std::string &get_url()
-  {
-    return this->url;
-  }
-
 private:
   friend class DestinationWorker;
-
-private:
-  LokiDestDriver *super;
   LogTemplateOptions template_options;
 
-  std::string url;
   std::string tenant_id;
 
   LogTemplate *message = nullptr;
   std::vector<Label> labels;
   LogMessageTimeStamp timestamp;
-
-  syslogng::grpc::ClientCredentialsBuilder credentials_builder;
-  GrpcClientCredentialsBuilderW credentials_builder_wrapper;
-
-  int keepalive_time;
-  int keepalive_timeout;
-  int keepalive_max_pings_without_data;
-
-  std::list<std::pair<std::string, long>> int_extra_channel_args;
-  std::list<std::pair<std::string, std::string>> string_extra_channel_args;
-  std::list<std::pair<std::string, std::string>> headers;
-
-  DestDriverMetrics metrics;
 };
 
 
@@ -187,6 +127,6 @@ private:
 }
 }
 
-syslogng::grpc::loki::DestinationDriver *loki_dd_get_cpp(LokiDestDriver *self);
+syslogng::grpc::loki::DestinationDriver *loki_dd_get_cpp(GrpcDestDriver *self);
 
 #endif
