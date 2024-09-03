@@ -15,7 +15,12 @@ GRPC_COMMON_LIBS = \
 
 modules_grpc_common_libgrpc_common_la_SOURCES = \
   $(grpc_credentials_sources) \
-  $(grpc_metrics_sources)
+  $(grpc_metrics_sources) \
+  modules/grpc/common/grpc-dest.h \
+  modules/grpc/common/grpc-dest.hpp \
+  modules/grpc/common/grpc-dest.cpp \
+  modules/grpc/common/grpc-dest-worker.hpp \
+  modules/grpc/common/grpc-dest-worker.cpp
 
 modules_grpc_common_libgrpc_common_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
