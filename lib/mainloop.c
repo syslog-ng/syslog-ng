@@ -290,7 +290,7 @@ main_loop_reload_config_apply(gpointer user_data)
 
   /* The threads have stopped, deinit methods were called, but
    * self->current_configuration still points to the old config.  We either
-   * go to the new config is cfg_init() is successful (just below) or revert
+   * go to the new config if cfg_init() is successful (just below) or revert
    * to the old one if it's not.
    * */
 

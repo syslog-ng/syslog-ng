@@ -40,8 +40,11 @@ _attach(LogDriverPlugin *s, LogDriver *d)
   if (!cloud_authenticator_init(self->authenticator))
     return FALSE;
 
-  SignalSlotConnector *ssc = driver->super.super.signal_slot_connector;
-  CONNECT(ssc, signal_http_header_request, cloud_authenticator_handle_http_header_request, self->authenticator);
+  g_assert(s->signal_connector == NULL);
+  s->signal_connector = signal_slot_connector_ref(driver->super.super.signal_slot_connector);
+
+  CONNECT(s->signal_connector, signal_http_header_request, cloud_authenticator_handle_http_header_request,
+          self->authenticator);
 
   return TRUE;
 }
@@ -50,12 +53,14 @@ static void
 _detach(LogDriverPlugin *s, LogDriver *d)
 {
   CloudAuthDestPlugin *self = (CloudAuthDestPlugin *) s;
-  LogDestDriver *driver = (LogDestDriver *) d;
 
   cloud_authenticator_deinit(self->authenticator);
 
-  SignalSlotConnector *ssc = driver->super.super.signal_slot_connector;
-  DISCONNECT(ssc, signal_http_header_request, cloud_authenticator_handle_http_header_request, self->authenticator);
+  DISCONNECT(s->signal_connector, signal_http_header_request, cloud_authenticator_handle_http_header_request,
+             self->authenticator);
+
+  signal_slot_connector_unref(s->signal_connector);
+  s->signal_connector = NULL;
 }
 
 void

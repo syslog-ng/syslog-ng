@@ -288,8 +288,6 @@ cfg_is_shutting_down(GlobalConfig *cfg)
 gboolean
 cfg_init(GlobalConfig *cfg)
 {
-  gint regerr;
-
   msg_apply_config_log_level(cfg->log_level);
   if (cfg->file_template_name && !(cfg->file_template = cfg_tree_lookup_template(&cfg->tree, cfg->file_template_name)))
     msg_error("Error resolving file template",
@@ -300,6 +298,7 @@ cfg_init(GlobalConfig *cfg)
 
   if (cfg->bad_hostname_re)
     {
+      gint regerr;
       if ((regerr = regcomp(&cfg->bad_hostname, cfg->bad_hostname_re, REG_NOSUB | REG_EXTENDED)) != 0)
         {
           gchar buf[256];

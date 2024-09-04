@@ -166,7 +166,7 @@ afinet_dd_tls_verify_data_new(TLSContext *ctx, const gchar *hostname, SignalSlot
 
   self->tls_context = tls_context_ref(ctx);
   self->hostname = g_strdup(hostname);
-  self->signal_connector = signal_connector;
+  self->signal_connector = signal_slot_connector_ref(signal_connector);
   return self;
 }
 
@@ -180,6 +180,7 @@ afinet_dd_tls_verify_data_free(gpointer s)
   if (self)
     {
       tls_context_unref(self->tls_context);
+      signal_slot_connector_unref(self->signal_connector);
       g_free(self->hostname);
       g_free(self);
     }
@@ -219,10 +220,10 @@ void
 afinet_dd_setup_tls_verifier(AFInetDestDriver *self)
 {
   TransportMapperInet *transport_mapper_inet = (TransportMapperInet *) self->super.transport_mapper;
-
-  AFInetDestDriverTLSVerifyData *verify_data;
-  verify_data = afinet_dd_tls_verify_data_new(transport_mapper_inet->tls_context, _afinet_dd_get_hostname(self),
-                                              self->super.super.super.super.signal_slot_connector);
+  SignalSlotConnector *slot_connector = self->super.super.super.super.signal_slot_connector;
+  AFInetDestDriverTLSVerifyData *verify_data = afinet_dd_tls_verify_data_new(transport_mapper_inet->tls_context,
+                                               _afinet_dd_get_hostname(self),
+                                               slot_connector);
   TLSVerifier *verifier = tls_verifier_new(afinet_dd_verify_callback, verify_data, afinet_dd_tls_verify_data_free);
 
   transport_mapper_inet_set_tls_verifier(transport_mapper_inet, verifier);

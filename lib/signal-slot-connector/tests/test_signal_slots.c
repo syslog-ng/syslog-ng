@@ -97,7 +97,7 @@ Test(basic_signal_slots, when_the_signal_is_emitted_then_the_connected_slot_is_e
   cr_expect_eq(slot_obj1.ctr, 1);
   cr_expect_eq(slot_obj2.ctr, 1);
 
-  signal_slot_connector_free(ssc);
+  signal_slot_connector_unref(ssc);
 }
 
 Test(basic_signal_slots, abort_when_trying_to_connect_multiple_times_the_same_connection, .signal = SIGABRT)
@@ -128,7 +128,7 @@ Test(basic_signal_slots, abort_when_trying_to_disconnect_multiple_times_the_same
 
   cr_expect_eq(test_data.slot_ctr, 1);
 
-  signal_slot_connector_free(ssc);
+  signal_slot_connector_unref(ssc);
 }
 
 Test(basic_signal_slots,
@@ -160,7 +160,7 @@ Test(basic_signal_slots,
   cr_expect_eq(test_data.slot_ctr, 1);
   cr_expect_eq(slot_obj.ctr, 1);
 
-  signal_slot_connector_free(ssc);
+  signal_slot_connector_unref(ssc);
 }
 
 Test(basic_signal_slots, when_disconnect_the_connected_slot_from_a_signal_then_the_signal_is_unregistered)
@@ -178,7 +178,7 @@ Test(basic_signal_slots, when_disconnect_the_connected_slot_from_a_signal_then_t
   cr_expect_eq(test_data.slot_ctr, 0);
   cr_expect_eq(slot_obj.ctr, 0);
 
-  signal_slot_connector_free(ssc);
+  signal_slot_connector_unref(ssc);
 }
 
 Test(basic_signal_slots,
@@ -266,7 +266,7 @@ Test(multiple_signals_slots,
 
   _disconnect_all_test_slots_from_a_signal(ssc, signals[0]);
 
-  signal_slot_connector_free(ssc);
+  signal_slot_connector_unref(ssc);
 }
 
 Test(multiple_signals_slots,
@@ -300,7 +300,7 @@ Test(multiple_signals_slots,
   cr_expect_eq(slot_objects[1].ctr, 1);
   cr_expect_eq(slot_objects[2].ctr, 2);
 
-  signal_slot_connector_free(ssc);
+  signal_slot_connector_unref(ssc);
 }
 
 void

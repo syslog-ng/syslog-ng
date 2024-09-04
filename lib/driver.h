@@ -29,6 +29,7 @@
 #include "logpipe.h"
 #include "logqueue.h"
 #include "cfg.h"
+#include "signal-slot-connector/signal-slot-connector.h"
 
 /*
  * Drivers overview
@@ -70,6 +71,7 @@ typedef struct _LogDriverPlugin LogDriverPlugin;
 
 struct _LogDriverPlugin
 {
+  SignalSlotConnector *signal_connector;
   const gchar *name;
   /* this function is called when the plugin is attached to a LogDriver
    * instance.  It should do whatever it is necessary to extend the

@@ -41,6 +41,7 @@ log_driver_plugin_free_method(LogDriverPlugin *self)
 void
 log_driver_plugin_init_instance(LogDriverPlugin *self, const gchar *name)
 {
+  self->signal_connector = NULL;
   self->name = name;
   self->free_fn = log_driver_plugin_free_method;
 }
