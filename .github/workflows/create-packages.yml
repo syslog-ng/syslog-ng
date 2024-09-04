@@ -82,7 +82,7 @@ jobs:
           cp -r syslog-ng/dbld/build/${{ matrix.distro }} package/
 
       - name: Store package as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: package-${{ matrix.distro }}
           path: package/*
