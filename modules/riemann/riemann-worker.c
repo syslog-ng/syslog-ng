@@ -28,7 +28,12 @@
 #include "generic-number.h"
 #include "parse-number.h"
 
+#include <riemann/riemann-client.h>
+
+#if RCC_VERSION_NUMBER < 0x020100
 #include <riemann/simple.h>
+#endif
+
 #include <stdlib.h>
 
 static void

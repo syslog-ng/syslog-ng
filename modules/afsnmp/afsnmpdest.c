@@ -45,6 +45,8 @@
 #include "afsnmp-parser.h"
 #include "logthrdest/logthrdestdrv.h"
 
+#include <stdlib.h>
+
 const gchar *s_v2c = "v2c";
 const gchar *s_v3 = "v3";
 const gchar *s_sha = "SHA";
@@ -481,7 +483,7 @@ snmpdest_dd_session_init(SNMPDestDriver *self)
   /* SNMP session setup */
   memset(&self->session, 0, sizeof(self->session));
 
-  putenv("POSIXLY_CORRECT=1");
+  setenv("POSIXLY_CORRECT", "1", 1);
   gchar *args[24];
   gint argc = 0;
   gint i;
