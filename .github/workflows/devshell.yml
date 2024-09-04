@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.7
 
       - name: Setup Git safedir
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
@@ -106,7 +106,7 @@ jobs:
         run: make VERBOSE=1 func-test
 
       - name: "Artifact: test-suite.log"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.4.0
         if: always() && steps.make_check.outcome == 'failure'
         with:
           name: test-suite-${{ matrix.build-tool }}-${{ matrix.cc }}
@@ -122,7 +122,7 @@ jobs:
           tar -cz -f /tmp/light-reports.tar.gz /tmp/light-reports 
 
       - name: "Artifact: light-reports"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.4.0
         if: always() && steps.prepare-light-reports.outcome == 'success'
         with:
           name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}
@@ -136,7 +136,7 @@ jobs:
             gdb --ex="thread apply all bt full" --ex="quit" ${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng --core {} \;
 
       - name: "Artifact: corefiles"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.4.0
         if: failure()
         with:
           name: corefiles-${{ matrix.build-tool }}-${{ matrix.cc }}
@@ -150,7 +150,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.7
 
       - name: Setup Git safedir
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
@@ -194,7 +194,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.7
 
       - name: Setup Git safedir
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
@@ -228,14 +228,14 @@ jobs:
             (git diff > ../light-style-problems.diff ; git reset --hard HEAD && exit 1)
 
       - name: "Artifact: c-style-problems"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.4.0
         if: always() && steps.c-style-check.outcome == 'failure'
         with:
           name: c-style-problems
           path: c-style-problems.diff
 
       - name: "Artifact: light-style-problems"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.4.0
         if: always() && steps.light-style-check.outcome == 'failure'
         with:
           name: light-style-problems
@@ -250,7 +250,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.7
 
       - name: Setup Git safedir
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
@@ -259,7 +259,7 @@ jobs:
         run: tests/copyright/check.sh . .
 
       - name: "Artifact: copyright-run.log"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.4.0
         if: failure()
         with:
           name: copyright-run.log
@@ -272,7 +272,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.7
         with:
           fetch-depth: 0
 
