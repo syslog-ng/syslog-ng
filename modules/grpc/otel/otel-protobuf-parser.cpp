@@ -255,14 +255,16 @@ _extract_saddr(const grpc::string &peer)
       else
         host = peer.substr(first + 1, last - first - 1);
 
-      if (ip_version.compare("ipv6") == 0)
-        {
-          return g_sockaddr_inet6_new(host.c_str(), port);
-        }
-      else if (ip_version.compare("ipv4") == 0)
+      if (ip_version.compare("ipv4") == 0)
         {
           return g_sockaddr_inet_new(host.c_str(), port);
         }
+#if SYSLOG_NG_ENABLE_IPV6
+      else if (ip_version.compare("ipv6") == 0)
+        {
+          return g_sockaddr_inet6_new(host.c_str(), port);
+        }
+#endif
     }
 
   return NULL;
@@ -1311,6 +1313,7 @@ syslogng::grpc::otel::ProtobufParser::set_syslog_ng_address(LogMessage *msg, GSo
       sin.sin_port = htons(port);
       *sa = g_sockaddr_inet_new2(&sin);
     }
+#if SYSLOG_NG_ENABLE_IPV6
   else if (addr_bytes->length() == 16)
     {
       /* ipv6 */
@@ -1320,6 +1323,7 @@ syslogng::grpc::otel::ProtobufParser::set_syslog_ng_address(LogMessage *msg, GSo
       sin6.sin6_port = htons(port);
       *sa = g_sockaddr_inet6_new2(&sin6);
     }
+#endif
 }
 
 void

@@ -23,6 +23,8 @@
 #ifndef OTEL_PROTOBUF_PARSER_HPP
 #define OTEL_PROTOBUF_PARSER_HPP
 
+#include "syslog-ng.h"
+
 #include "otel-protobuf-parser.h"
 
 #include "compat/cpp-start.h"
