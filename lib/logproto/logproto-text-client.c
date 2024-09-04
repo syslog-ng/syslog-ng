@@ -202,7 +202,6 @@ log_proto_text_client_init(LogProtoTextClient *self, LogTransport *transport, co
     self->super.process_in = log_proto_text_client_drop_input;
   self->super.post = log_proto_text_client_post;
   self->super.free_fn = log_proto_text_client_free;
-  self->super.transport = transport;
   self->next_state = -1;
 }
 
