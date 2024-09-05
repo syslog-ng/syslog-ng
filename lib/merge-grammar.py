@@ -69,10 +69,16 @@ def include_block(block_type):
             elif in_block:
                 print_to_stdout(line)
 
-for line in fileinput.input(openhook=fileinput.hook_encoded("utf-8")):
-    if 'INCLUDE_DECLS' in line:
-        include_block('DECLS')
-    elif 'INCLUDE_RULES' in line:
-        include_block('RULES')
-    else:
-        print_to_stdout(line)
+
+def main():
+    for line in fileinput.input(openhook=fileinput.hook_encoded("utf-8")):
+        if 'INCLUDE_DECLS' in line:
+            include_block('DECLS')
+        elif 'INCLUDE_RULES' in line:
+            include_block('RULES')
+        else:
+            print_to_stdout(line)
+
+
+if __name__ == '__main__':
+    main()
