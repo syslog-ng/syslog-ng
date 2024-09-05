@@ -69,8 +69,6 @@ struct _FakeTransportFactory
   TransportFactory super;
 };
 
-DEFINE_TRANSPORT_FACTORY_ID_FUN("fake", _fake_transport_factory_id);
-
 static LogTransport *
 _transport_factory_construct(const TransportFactory *s, gint fd)
 {
@@ -85,7 +83,7 @@ TransportFactory *
 _fake_transport_factory_new(void)
 {
   FakeTransportFactory *instance = g_new0(FakeTransportFactory, 1);
-  instance->super.id = _fake_transport_factory_id();
+  instance->super.id = "fake";
   instance->super.construct_transport = _transport_factory_construct;
   return &instance->super;
 }
