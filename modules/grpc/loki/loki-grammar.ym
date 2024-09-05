@@ -55,6 +55,7 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_LABELS
 %token KW_TIMESTAMP
 
+%token KW_COMPRESSION
 %token KW_AUTH
 %token KW_INSECURE
 %token KW_TLS
@@ -108,6 +109,7 @@ loki_dest_option
       free($3);
     }
   | KW_TEMPLATE '(' template_name_or_content ')' { loki_dd_set_message_template_ref(last_driver, $3); }
+  | KW_COMPRESSION '(' yesno ')' { grpc_dd_set_compression(last_driver, $3); }
   | KW_BATCH_BYTES '(' positive_integer ')'
     {
       grpc_dd_set_batch_bytes(last_driver, $3);
