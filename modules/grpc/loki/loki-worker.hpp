@@ -57,6 +57,7 @@ public:
 
 private:
   void prepare_batch();
+  bool should_initiate_flush();
   void set_labels(LogMessage *msg);
   void set_timestamp(logproto::EntryAdapter *entry, LogMessage *msg);
   DestinationDriver *get_owner();
@@ -67,6 +68,7 @@ private:
   std::shared_ptr<::grpc::Channel> channel;
   std::unique_ptr<logproto::Pusher::Stub> stub;
   logproto::PushRequest current_batch;
+  size_t current_batch_bytes = 0;
 };
 
 }
