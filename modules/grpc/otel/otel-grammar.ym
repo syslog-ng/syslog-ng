@@ -79,6 +79,10 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_CHANNEL_ARGS
 %token KW_HEADERS
 %token KW_SET_HOSTNAME
+%token KW_KEEP_ALIVE
+%token KW_TIME
+%token KW_TIMEOUT
+%token KW_MAX_PINGS_WITHOUT_DATA
 
 %type <ptr> source_otel
 %type <ptr> parser_otel
@@ -171,6 +175,7 @@ destination_otel_option
   | KW_BATCH_BYTES '(' positive_integer ')' { grpc_dd_set_batch_bytes(last_driver, $3); }
   | KW_CHANNEL_ARGS '(' destination_otel_channel_args ')'
   | KW_HEADERS '(' destination_otel_headers ')'
+  | KW_KEEP_ALIVE '(' destination_otel_keepalive_options ')'
   | threaded_dest_driver_general_option
   | threaded_dest_driver_batch_option
   | threaded_dest_driver_workers_option
@@ -193,6 +198,17 @@ destination_otel_headers
 
 destination_otel_header
   : string LL_ARROW string { grpc_dd_add_header(last_driver, $1, $3); free($1); free($3); }
+  ;
+
+destination_otel_keepalive_options
+  : destination_otel_keepalive_option destination_otel_keepalive_options
+  |
+  ;
+
+destination_otel_keepalive_option
+  : KW_TIME '(' nonnegative_integer ')' { grpc_dd_set_keepalive_time(last_driver, $3); }
+  | KW_TIMEOUT '(' nonnegative_integer ')' { grpc_dd_set_keepalive_timeout(last_driver, $3); }
+  | KW_MAX_PINGS_WITHOUT_DATA '(' nonnegative_integer ')' { grpc_dd_set_keepalive_max_pings(last_driver, $3); }
   ;
 
 destination_syslog_ng_otlp

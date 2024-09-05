@@ -55,6 +55,10 @@ static CfgLexerKeyword otel_keywords[] =
   { "channel_args",              KW_CHANNEL_ARGS },
   { "headers",                   KW_HEADERS },
   { "set_hostname",              KW_SET_HOSTNAME },
+  { "keep_alive",                KW_KEEP_ALIVE },
+  { "time",                      KW_TIME },
+  { "timeout",                   KW_TIMEOUT },
+  { "max_pings_without_data",    KW_MAX_PINGS_WITHOUT_DATA },
   { NULL }
 };
 
