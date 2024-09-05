@@ -78,15 +78,18 @@ def include_block(block_type):
         sys.exit('Block not found: ' + block_type)
 
 
-def main():
-    collect_block_definitions(COMMON_GRAMMAR_FILE)
-
+def print_preprocessed_grammar():
     for line in fileinput.input(openhook=fileinput.hook_encoded("utf-8")):
         if line.startswith('/* INCLUDE_') and line.endswith(' */\n'):
             block_name = line[len('/* INCLUDE_'):-len(' */\n')]
             include_block(block_name)
         else:
             print_to_stdout(line)
+
+
+def main():
+    collect_block_definitions(COMMON_GRAMMAR_FILE)
+    print_preprocessed_grammar()
 
 
 if __name__ == '__main__':
