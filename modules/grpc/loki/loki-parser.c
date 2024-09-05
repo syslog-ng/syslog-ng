@@ -25,6 +25,7 @@
 #include "driver.h"
 #include "cfg-parser.h"
 #include "loki-grammar.h"
+#include "grpc-parser.h"
 
 extern int loki_debug;
 
@@ -32,28 +33,11 @@ int loki_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword loki_keywords[] =
 {
+  GRPC_KEYWORDS,
   { "loki", KW_LOKI },
-  { "url", KW_URL },
   { "labels", KW_LABELS },
   { "timestamp", KW_TIMESTAMP },
-  { "keep_alive", KW_KEEP_ALIVE },
-  { "time", KW_TIME },
-  { "timeout", KW_TIMEOUT },
-  { "max_pings_without_data", KW_MAX_PINGS_WITHOUT_DATA },
-  { "auth", KW_AUTH },
-  { "insecure", KW_INSECURE },
-  { "tls", KW_TLS },
-  { "key_file", KW_KEY_FILE },
-  { "cert_file", KW_CERT_FILE },
-  { "ca_file", KW_CA_FILE },
-  { "alts", KW_ALTS },
-  { "target_service_accounts", KW_TARGET_SERVICE_ACCOUNTS },
-  { "adc", KW_ADC },
   { "tenant_id", KW_TENANT_ID },
-  { "batch_bytes", KW_BATCH_BYTES},
-  { "compression", KW_COMPRESSION },
-  { "channel_args", KW_CHANNEL_ARGS },
-  { "headers", KW_HEADERS },
   { NULL }
 };
 
