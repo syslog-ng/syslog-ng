@@ -21,6 +21,8 @@
  *
  */
 
+/* REQUIRE modules/grpc/common/grpc-grammar.ym */
+
 %code top {
 #include "otel-parser.h"
 
@@ -36,12 +38,6 @@
 #include "otel-protobuf-parser.h"
 #include "otel-dest.h"
 #include "syslog-ng-otlp-dest.h"
-#include "grpc-source.h"
-#include "grpc-dest.h"
-
-GrpcServerCredentialsBuilderW *last_grpc_server_credentials_builder;
-GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
-
 }
 
 %define api.prefix {otel_}
@@ -57,37 +53,11 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 /* INCLUDE_DECLS */
 
 %token KW_OPENTELEMETRY
-%token KW_PORT
-%token KW_AUTH
-%token KW_INSECURE
-%token KW_TLS
-%token KW_KEY_FILE
-%token KW_CERT_FILE
-%token KW_CA_FILE
-%token KW_PEER_VERIFY
-%token KW_OPTIONAL_UNTRUSTED
-%token KW_OPTIONAL_TRUSTED
-%token KW_REQUIRED_UNTRUSTED
-%token KW_REQUIRED_TRUSTED
-%token KW_ALTS
-%token KW_URL
-%token KW_TARGET_SERVICE_ACCOUNTS
-%token KW_ADC
 %token KW_SYSLOG_NG_OTLP
-%token KW_COMPRESSION
-%token KW_BATCH_BYTES
-%token KW_CONCURRENT_REQUESTS
-%token KW_CHANNEL_ARGS
-%token KW_HEADERS
 %token KW_SET_HOSTNAME
-%token KW_KEEP_ALIVE
-%token KW_TIME
-%token KW_TIMEOUT
-%token KW_MAX_PINGS_WITHOUT_DATA
 
 %type <ptr> source_otel
 %type <ptr> parser_otel
-%type <num> grpc_server_credentials_builder_tls_peer_verify
 %type <ptr> destination_otel
 %type <ptr> destination_syslog_ng_otlp
 
@@ -119,23 +89,7 @@ source_otel_options
   ;
 
 source_otel_option
-  : KW_PORT '(' positive_integer ')' { CHECK_ERROR(cfg_check_port($3), @3, "Illegal port number: %s", $3); grpc_sd_set_port(last_driver, $3); }
-  | KW_LOG_FETCH_LIMIT '(' nonnegative_integer ')' { grpc_sd_set_fetch_limit(last_driver, $3); }
-  | KW_CONCURRENT_REQUESTS '(' positive_integer ')' { CHECK_ERROR($3 >= 2, @1, "concurrent-requests() must be greater than 1"); grpc_sd_set_concurrent_requests(last_driver, $3); }
-  | KW_CHANNEL_ARGS '(' source_otel_channel_args ')'
-  | KW_AUTH { last_grpc_server_credentials_builder = grpc_sd_get_credentials_builder(last_driver); } '(' grpc_server_credentials_builder_option ')'
-  | threaded_source_driver_option
-  | threaded_source_driver_workers_option
-  ;
-
-source_otel_channel_args
-  : source_otel_channel_arg source_otel_channel_args
-  |
-  ;
-
-source_otel_channel_arg
-  : string LL_ARROW LL_NUMBER { grpc_sd_add_int_channel_arg(last_driver, $1, $3); free($1); }
-  | string LL_ARROW string { grpc_sd_add_string_channel_arg(last_driver, $1, $3); free($1); free($3); }
+  : grpc_source_option
   ;
 
 parser_otel
@@ -170,46 +124,7 @@ destination_otel_options
   ;
 
 destination_otel_option
-  : KW_URL '(' string ')' { grpc_dd_set_url(last_driver, $3); free($3); }
-  | KW_AUTH { last_grpc_client_credentials_builder = grpc_dd_get_credentials_builder(last_driver); } '(' grpc_client_credentials_option ')'
-  | KW_COMPRESSION '(' yesno ')' { grpc_dd_set_compression(last_driver, $3); }
-  | KW_BATCH_BYTES '(' positive_integer ')' { grpc_dd_set_batch_bytes(last_driver, $3); }
-  | KW_CHANNEL_ARGS '(' destination_otel_channel_args ')'
-  | KW_HEADERS '(' destination_otel_headers ')'
-  | KW_KEEP_ALIVE '(' destination_otel_keepalive_options ')'
-  | threaded_dest_driver_general_option
-  | threaded_dest_driver_batch_option
-  | threaded_dest_driver_workers_option
-  ;
-
-destination_otel_channel_args
-  : destination_otel_channel_arg destination_otel_channel_args
-  |
-  ;
-
-destination_otel_channel_arg
-  : string LL_ARROW LL_NUMBER { grpc_dd_add_int_channel_arg(last_driver, $1, $3); free($1); }
-  | string LL_ARROW string { grpc_dd_add_string_channel_arg(last_driver, $1, $3); free($1); free($3); }
-  ;
-
-destination_otel_headers
-  : destination_otel_header destination_otel_headers
-  |
-  ;
-
-destination_otel_header
-  : string LL_ARROW string { grpc_dd_add_header(last_driver, $1, $3); free($1); free($3); }
-  ;
-
-destination_otel_keepalive_options
-  : destination_otel_keepalive_option destination_otel_keepalive_options
-  |
-  ;
-
-destination_otel_keepalive_option
-  : KW_TIME '(' nonnegative_integer ')' { grpc_dd_set_keepalive_time(last_driver, $3); }
-  | KW_TIMEOUT '(' nonnegative_integer ')' { grpc_dd_set_keepalive_timeout(last_driver, $3); }
-  | KW_MAX_PINGS_WITHOUT_DATA '(' nonnegative_integer ')' { grpc_dd_set_keepalive_max_pings(last_driver, $3); }
+  : grpc_dest_option
   ;
 
 destination_syslog_ng_otlp
@@ -227,101 +142,6 @@ destination_syslog_ng_otlp_options
 
 destination_syslog_ng_otlp_option
   : destination_otel_option
-  ;
-
-/*
- * gRPC Credentials Builders
- *
- * TODO: These should be in a separate file, which can be included to other gRPC based drivers' grammar.
- */
-
-grpc_server_credentials_builder_option
-  : KW_INSECURE { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_INSECURE); } '(' ')'
-  | KW_TLS { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_TLS); } '(' grpc_server_credentials_builder_tls_options ')'
-  | KW_ALTS { grpc_server_credentials_builder_set_mode(last_grpc_server_credentials_builder, GSAM_ALTS); } '(' ')'
-  ;
-
-grpc_server_credentials_builder_tls_options
-  : grpc_server_credentials_builder_tls_option grpc_server_credentials_builder_tls_options
-  |
-  ;
-
-grpc_server_credentials_builder_tls_option
-  : KW_KEY_FILE '(' string ')'
-      {
-        CHECK_ERROR(grpc_server_credentials_builder_set_tls_key_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set key-file()");
-        free($3);
-      }
-  | KW_CERT_FILE '(' string ')'
-      {
-        CHECK_ERROR(grpc_server_credentials_builder_set_tls_cert_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set cert-file()");
-        free($3);
-      }
-  | KW_CA_FILE '(' string ')'
-      {
-        CHECK_ERROR(grpc_server_credentials_builder_set_tls_ca_path(last_grpc_server_credentials_builder, $3), @1, "Failed to set ca-file()");
-        free($3);
-      }
-  | KW_PEER_VERIFY '(' grpc_server_credentials_builder_tls_peer_verify ')'
-      {
-        grpc_server_credentials_builder_set_tls_peer_verify(last_grpc_server_credentials_builder, $3);
-      }
-  ;
-
-grpc_server_credentials_builder_tls_peer_verify
-  : KW_OPTIONAL_UNTRUSTED { $$ = GSTPV_OPTIONAL_UNTRUSTED; }
-  | KW_OPTIONAL_TRUSTED { $$ = GSTPV_OPTIONAL_TRUSTED; }
-  | KW_REQUIRED_UNTRUSTED { $$ = GSTPV_REQUIRED_UNTRUSTED; }
-  | KW_REQUIRED_TRUSTED { $$ = GSTPV_REQUIRED_TRUSTED; }
-  ;
-
-grpc_client_credentials_option
-  : KW_INSECURE { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_INSECURE); } '(' ')'
-  | KW_TLS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_TLS); } '(' grpc_client_credentials_builder_tls_options ')'
-  | KW_ALTS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ALTS); } '(' grpc_client_credentials_builder_alts_options ')'
-  | KW_ADC { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ADC); } '(' ')'
-  ;
-
-grpc_client_credentials_builder_tls_options
-  : grpc_client_credentials_builder_tls_option grpc_client_credentials_builder_tls_options
-  |
-  ;
-
-grpc_client_credentials_builder_tls_option
-  : KW_KEY_FILE '(' string ')'
-      {
-        CHECK_ERROR(grpc_client_credentials_builder_set_tls_key_path(last_grpc_client_credentials_builder, $3), @1, "Failed to set key-file()");
-        free($3);
-      }
-  | KW_CERT_FILE '(' string ')'
-      {
-        CHECK_ERROR(grpc_client_credentials_builder_set_tls_cert_path(last_grpc_client_credentials_builder, $3), @1, "Failed to set cert-file()");
-        free($3);
-      }
-  | KW_CA_FILE '(' string ')'
-      {
-        CHECK_ERROR(grpc_client_credentials_builder_set_tls_ca_path(last_grpc_client_credentials_builder, $3), @1, "Failed to set ca-file()");
-        free($3);
-      }
-  ;
-
-grpc_client_credentials_builder_alts_options
-  : grpc_client_credentials_builder_alts_option grpc_client_credentials_builder_alts_options
-  |
-  ;
-
-grpc_client_credentials_builder_alts_option
-  : KW_TARGET_SERVICE_ACCOUNTS '(' grpc_client_credentials_builder_alts_target_service_accounts ')'
-  ;
-
-grpc_client_credentials_builder_alts_target_service_accounts
-  : string
-      {
-        grpc_client_credentials_builder_add_alts_target_service_account(last_grpc_client_credentials_builder, $1);
-        free($1);
-      }
-    grpc_client_credentials_builder_alts_target_service_accounts
-  |
   ;
 
 /* INCLUDE_RULES */
