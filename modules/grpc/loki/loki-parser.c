@@ -51,6 +51,7 @@ static CfgLexerKeyword loki_keywords[] =
   { "adc", KW_ADC },
   { "tenant_id", KW_TENANT_ID },
   { "batch_bytes", KW_BATCH_BYTES},
+  { "compression", KW_COMPRESSION },
   { "channel_args", KW_CHANNEL_ARGS },
   { "headers", KW_HEADERS },
   { NULL }
