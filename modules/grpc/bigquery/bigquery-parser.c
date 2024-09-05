@@ -25,6 +25,7 @@
 #include "driver.h"
 #include "cfg-parser.h"
 #include "bigquery-grammar.h"
+#include "grpc-parser.h"
 
 extern int bigquery_debug;
 
@@ -32,30 +33,13 @@ int bigquery_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword bigquery_keywords[] =
 {
+  GRPC_KEYWORDS,
   { "bigquery", KW_BIGQUERY },
-  { "url", KW_URL },
   { "project", KW_PROJECT },
   { "dataset", KW_DATASET },
   { "table", KW_TABLE },
   { "schema", KW_SCHEMA },
   { "protobuf_schema", KW_PROTOBUF_SCHEMA },
-  { "batch_bytes", KW_BATCH_BYTES },
-  { "compression", KW_COMPRESSION },
-  { "keep_alive", KW_KEEP_ALIVE },
-  { "time", KW_TIME },
-  { "timeout", KW_TIMEOUT },
-  { "max_pings_without_data", KW_MAX_PINGS_WITHOUT_DATA },
-  { "channel_args", KW_CHANNEL_ARGS },
-  { "headers", KW_HEADERS },
-  { "auth", KW_AUTH },
-  { "insecure", KW_INSECURE },
-  { "tls", KW_TLS },
-  { "key_file", KW_KEY_FILE },
-  { "cert_file", KW_CERT_FILE },
-  { "ca_file", KW_CA_FILE },
-  { "alts", KW_ALTS },
-  { "target_service_accounts", KW_TARGET_SERVICE_ACCOUNTS },
-  { "adc", KW_ADC },
   { NULL }
 };
 
