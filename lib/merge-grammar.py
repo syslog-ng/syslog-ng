@@ -37,6 +37,7 @@ import codecs
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COMMON_GRAMMAR_FILE = 'lib/cfg-grammar.y'
+BLOCKS = {}
 
 
 def locate_file(file_name):
@@ -55,22 +56,31 @@ def print_to_stdout(line):
         print(line.encode("utf-8"), end='')
 
 
-def include_block(block_type):
-    start_marker = 'START_' + block_type
-    end_marker = 'END_' + block_type
-
-    with codecs.open(locate_file(COMMON_GRAMMAR_FILE), encoding="utf-8") as f:
-        in_block = False
+def collect_block_definitions(file_name):
+    with codecs.open(locate_file(file_name), encoding="utf-8") as f:
+        block_name = None
+        block = []
         for line in f:
-            if start_marker in line:
-                in_block = True
-            elif end_marker in line:
-                in_block = False
-            elif in_block:
-                print_to_stdout(line)
+            if line.startswith('/* START_') and line.endswith(' */\n'):
+                block_name = line[len('/* START_'):-len(' */\n')]
+            elif block_name and line == '/* END_' + block_name + ' */\n':
+                BLOCKS[block_name] = BLOCKS.get(block_name, '') + ''.join(block)
+                block_name = None
+                block = []
+            elif block_name:
+                block.append(line)
+
+
+def include_block(block_type):
+    try:
+        print_to_stdout(BLOCKS[block_type])
+    except KeyError:
+        sys.exit('Block not found: ' + block_type)
 
 
 def main():
+    collect_block_definitions(COMMON_GRAMMAR_FILE)
+
     for line in fileinput.input(openhook=fileinput.hook_encoded("utf-8")):
         if line.startswith('/* INCLUDE_') and line.endswith(' */\n'):
             block_name = line[len('/* INCLUDE_'):-len(' */\n')]
