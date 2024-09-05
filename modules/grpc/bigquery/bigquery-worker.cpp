@@ -423,8 +423,8 @@ DestinationWorker::create_channel()
 {
   DestinationDriver *owner_ = this->get_owner();
 
-  auto credentials = ::grpc::GoogleDefaultCredentials();
   ::grpc::ChannelArguments args = this->create_channel_args();
+  auto credentials = this->create_credentials();
   if (!credentials)
     {
       msg_error("Error querying BigQuery credentials", log_pipe_location_tag((LogPipe *) this->super->super.owner));
