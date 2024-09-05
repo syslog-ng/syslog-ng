@@ -120,6 +120,13 @@ DestinationWorker::prepare_batch()
 {
   this->current_batch = logproto::PushRequest{};
   this->current_batch.add_streams();
+  this->current_batch_bytes = 0;
+}
+
+bool
+DestinationWorker::should_initiate_flush()
+{
+  return (this->current_batch_bytes >= this->get_owner()->batch_bytes);
 }
 
 void
@@ -195,7 +202,13 @@ DestinationWorker::insert(LogMessage *msg)
   entry->set_line(message->str);
   scratch_buffers_reclaim_marked(m);
 
+  this->current_batch_bytes += message->len;
+  log_threaded_dest_driver_insert_msg_length_stats(super->super.owner, message->len);
+
   msg_trace("Message added to Loki batch", log_pipe_location_tag((LogPipe *) this->super->super.owner));
+
+  if (this->should_initiate_flush())
+    return log_threaded_dest_worker_flush(&this->super->super, LTF_FLUSH_NORMAL);
 
   return LTR_QUEUED;
 }
@@ -229,6 +242,9 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
       result = LTR_ERROR;
       goto exit;
     }
+
+  log_threaded_dest_worker_written_bytes_add(&this->super->super, this->current_batch_bytes);
+  log_threaded_dest_driver_insert_batch_length_stats(this->super->super.owner, this->current_batch_bytes);
 
   msg_debug("Loki batch delivered", log_pipe_location_tag((LogPipe *) this->super->super.owner));
   result = LTR_SUCCESS;
