@@ -27,22 +27,21 @@
 
 #include "transport/logtransport.h"
 #include "transport/transport-factory.h"
-#include "transport/transport-factory-registry.h"
 
 typedef struct _MultiTransport MultiTransport;
 
 struct _MultiTransport
 {
   LogTransport super;
-  TransportFactoryRegistry *registry;
+  GHashTable *registry;
   LogTransport *active_transport;
   const TransportFactory *active_transport_factory;
 };
 
 LogTransport *multitransport_new(TransportFactory *default_transport_factory, gint fd);
-void multitransport_add_factory(MultiTransport *, TransportFactory *);
-gboolean multitransport_switch(MultiTransport *, const TransportFactoryId *);
-gboolean multitransport_contains_factory(MultiTransport *, const TransportFactoryId *);
+void multitransport_add_factory(MultiTransport *self, TransportFactory *);
+gboolean multitransport_switch(MultiTransport *self, const gchar *id);
+gboolean multitransport_contains_factory(MultiTransport *self, const gchar *id);
 
 #endif
 

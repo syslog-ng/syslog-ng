@@ -43,6 +43,6 @@ TransportFactory *transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_ve
 void transport_factory_tls_enable_compression(TransportFactory *);
 void transport_factory_tls_disable_compression(TransportFactory *);
 
-const TransportFactoryId *transport_factory_tls_id(void);
+#define TRANSPORT_FACTORY_TLS_ID "tls"
 
 #endif

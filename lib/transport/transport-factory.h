@@ -26,7 +26,6 @@
 #define TRANSPORT_FACTORY_H_INCLUDED
 
 #include "transport/logtransport.h"
-#include "transport/transport-factory-id.h"
 
 /* TransportFactory is an interface for representing
  * concrete TransportFactory instances
@@ -39,7 +38,7 @@ typedef struct _TransportFactory TransportFactory;
 
 struct _TransportFactory
 {
-  const TransportFactoryId *id;
+  const gchar *id;
   LogTransport *(*construct_transport)(const TransportFactory *self, gint fd);
   void (*free_fn)(TransportFactory *self);
 };
@@ -50,7 +49,7 @@ static inline LogTransport
   g_assert(self->construct_transport);
 
   LogTransport *transport = self->construct_transport(self, fd);
-  transport->name = transport_factory_id_get_transport_name(self->id);
+  transport->name = self->id;
 
   return transport;
 }
@@ -63,8 +62,8 @@ transport_factory_free(TransportFactory *self)
   g_free(self);
 }
 
-static inline const
-TransportFactoryId *transport_factory_get_id(const TransportFactory *self)
+static inline const gchar *
+transport_factory_get_id(const TransportFactory *self)
 {
   /* each concrete TransportFactory has to have an id
    */
