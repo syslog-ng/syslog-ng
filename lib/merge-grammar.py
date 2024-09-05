@@ -83,6 +83,9 @@ def print_preprocessed_grammar():
         if line.startswith('/* INCLUDE_') and line.endswith(' */\n'):
             block_name = line[len('/* INCLUDE_'):-len(' */\n')]
             include_block(block_name)
+        elif line.startswith('/* REQUIRE ') and line.endswith(' */\n'):
+            file_name = line[len('/* REQUIRE '):-len(' */\n')]
+            collect_block_definitions(file_name)
         else:
             print_to_stdout(line)
 
