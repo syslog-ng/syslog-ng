@@ -94,6 +94,7 @@ DestinationDriver::DestinationDriver(GrpcDestDriver *s)
   : syslogng::grpc::DestDriver(s)
 {
   this->url = "bigquerystorage.googleapis.com";
+  this->credentials_builder.set_mode(GCAM_ADC);
   log_template_options_defaults(&this->template_options);
 }
 

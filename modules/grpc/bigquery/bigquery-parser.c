@@ -47,6 +47,15 @@ static CfgLexerKeyword bigquery_keywords[] =
   { "max_pings_without_data", KW_MAX_PINGS_WITHOUT_DATA },
   { "channel_args", KW_CHANNEL_ARGS },
   { "headers", KW_HEADERS },
+  { "auth", KW_AUTH },
+  { "insecure", KW_INSECURE },
+  { "tls", KW_TLS },
+  { "key_file", KW_KEY_FILE },
+  { "cert_file", KW_CERT_FILE },
+  { "ca_file", KW_CA_FILE },
+  { "alts", KW_ALTS },
+  { "target_service_accounts", KW_TARGET_SERVICE_ACCOUNTS },
+  { "adc", KW_ADC },
   { NULL }
 };
 
