@@ -72,10 +72,9 @@ def include_block(block_type):
 
 def main():
     for line in fileinput.input(openhook=fileinput.hook_encoded("utf-8")):
-        if 'INCLUDE_DECLS' in line:
-            include_block('DECLS')
-        elif 'INCLUDE_RULES' in line:
-            include_block('RULES')
+        if line.startswith('/* INCLUDE_') and line.endswith(' */\n'):
+            block_name = line[len('/* INCLUDE_'):-len(' */\n')]
+            include_block(block_name)
         else:
             print_to_stdout(line)
 
