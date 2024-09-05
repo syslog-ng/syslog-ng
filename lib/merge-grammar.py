@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 #############################################################################
+# Copyright (c) 2024 Axoflow
+# Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
 # Copyright (c) 2010-2017 Balabit
 #
 # This library is free software; you can redistribute it and/or
@@ -33,11 +35,18 @@ import os
 import sys
 import codecs
 
-grammar_file = os.path.join(os.environ.get('top_srcdir', ''), 'lib/cfg-grammar.y')
-if not os.path.isfile(grammar_file):
-    grammar_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cfg-grammar.y')
-if not os.path.isfile(grammar_file):
-    sys.exit('Error opening cfg-grammar.y')
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+COMMON_GRAMMAR_FILE = 'lib/cfg-grammar.y'
+
+
+def locate_file(file_name):
+    full_path = os.path.join(os.environ.get('top_srcdir', ''), file_name)
+    if not os.path.isfile(full_path):
+        full_path = os.path.join(ROOT_DIR, file_name)
+    if not os.path.isfile(full_path):
+        sys.exit('Error opening ' + file_name)
+    return full_path
+
 
 def print_to_stdout(line):
     if sys.hexversion >= 0x3000000:
@@ -45,11 +54,12 @@ def print_to_stdout(line):
     else:
         print(line.encode("utf-8"), end='')
 
+
 def include_block(block_type):
     start_marker = 'START_' + block_type
     end_marker = 'END_' + block_type
 
-    with codecs.open(grammar_file, encoding="utf-8") as f:
+    with codecs.open(locate_file(COMMON_GRAMMAR_FILE), encoding="utf-8") as f:
         in_block = False
         for line in f:
             if start_marker in line:
