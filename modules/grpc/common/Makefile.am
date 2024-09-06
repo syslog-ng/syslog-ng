@@ -20,7 +20,12 @@ modules_grpc_common_libgrpc_common_la_SOURCES = \
   modules/grpc/common/grpc-dest.hpp \
   modules/grpc/common/grpc-dest.cpp \
   modules/grpc/common/grpc-dest-worker.hpp \
-  modules/grpc/common/grpc-dest-worker.cpp
+  modules/grpc/common/grpc-dest-worker.cpp \
+  modules/grpc/common/grpc-source.h \
+  modules/grpc/common/grpc-source.hpp \
+  modules/grpc/common/grpc-source.cpp \
+  modules/grpc/common/grpc-source-worker.hpp \
+  modules/grpc/common/grpc-source-worker.cpp
 
 modules_grpc_common_libgrpc_common_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
