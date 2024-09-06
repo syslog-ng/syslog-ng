@@ -8,7 +8,12 @@ set(GRPC_COMMON_CPP_SOURCES
   grpc-dest.cpp
   grpc-dest.h
   grpc-dest-worker.hpp
-  grpc-dest-worker.cpp)
+  grpc-dest-worker.cpp
+  grpc-source.hpp
+  grpc-source.cpp
+  grpc-source.h
+  grpc-source-worker.hpp
+  grpc-source-worker.cpp)
 
 add_module(
   TARGET grpc-common-cpp
