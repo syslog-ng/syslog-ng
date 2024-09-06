@@ -129,7 +129,7 @@ syslogng::grpc::otel::TraceServiceCall::Proceed(bool ok)
               worker.post(msg);
 
               msgs_in_fetch_round++;
-              if (msgs_in_fetch_round == worker.driver.fetch_limit)
+              if (msgs_in_fetch_round == worker.driver.get_fetch_limit())
                 {
                   log_threaded_source_worker_close_batch(&worker.super->super);
                   msgs_in_fetch_round = 0;
@@ -194,7 +194,7 @@ syslogng::grpc::otel::LogsServiceCall::Proceed(bool ok)
               worker.post(msg);
 
               msgs_in_fetch_round++;
-              if (msgs_in_fetch_round == worker.driver.fetch_limit)
+              if (msgs_in_fetch_round == worker.driver.get_fetch_limit())
                 {
                   log_threaded_source_worker_close_batch(&worker.super->super);
                   msgs_in_fetch_round = 0;
@@ -251,7 +251,7 @@ syslogng::grpc::otel::MetricsServiceCall::Proceed(bool ok)
               worker.post(msg);
 
               msgs_in_fetch_round++;
-              if (msgs_in_fetch_round == worker.driver.fetch_limit)
+              if (msgs_in_fetch_round == worker.driver.get_fetch_limit())
                 {
                   log_threaded_source_worker_close_batch(&worker.super->super);
                   msgs_in_fetch_round = 0;
