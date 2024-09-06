@@ -30,7 +30,8 @@ using namespace syslogng::grpc;
 /* C++ Implementations */
 
 DestDriver::DestDriver(GrpcDestDriver *s)
-  : super(s), compression(false), batch_bytes(4 * 1000 * 1000)
+  : super(s), compression(false), batch_bytes(4 * 1000 * 1000),
+    keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1)
 {
   credentials_builder_wrapper.self = &credentials_builder;
 }
