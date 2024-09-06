@@ -161,6 +161,14 @@ DestinationDriver::set_protobuf_schema(std::string proto_path, GList *values)
 bool
 DestinationDriver::init()
 {
+  if (this->batch_bytes > 10 * 1000 * 1000)
+    {
+      msg_error("Error initializing BigQuery destination, batch-bytes() cannot be larger than 10 MB. "
+                "For more info see https://cloud.google.com/bigquery/quotas#write-api-limits",
+                log_pipe_location_tag(&this->super->super.super.super.super));
+      return false;
+    }
+
   GlobalConfig *cfg = log_pipe_get_config(&this->super->super.super.super.super);
   log_template_options_init(&this->template_options, cfg);
 
