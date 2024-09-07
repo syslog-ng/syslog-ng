@@ -5,6 +5,7 @@ EXTRA_DIST += lib/transport/CMakeLists.txt
 transportinclude_HEADERS = \
 	lib/transport/logtransport.h	\
 	lib/transport/transport-aux-data.h	\
+	lib/transport/transport-adapter.h	\
 	lib/transport/transport-tls.h	\
 	lib/transport/transport-file.h	\
 	lib/transport/transport-pipe.h	\
@@ -22,6 +23,7 @@ transportinclude_HEADERS = \
 transport_sources = \
 	lib/transport/logtransport.c	\
 	lib/transport/transport-aux-data.c	\
+	lib/transport/transport-adapter.c	\
 	lib/transport/transport-file.c	\
 	lib/transport/transport-pipe.c	\
 	lib/transport/transport-socket.c \
