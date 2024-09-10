@@ -51,14 +51,39 @@ static inline const gchar *
 _format_persist_name(const LogPipe *s)
 {
   const FileReader *self = (const FileReader *)s;
-  static gchar persist_name[1024];
+  guint name_hash = g_str_hash(self->filename->str);
+  gchar persist_name[1024];
 
+  /* same wildcard file sources even with persist-name defined can be the same
+     file name hash is added as well to ensure uniquiness
+   */
   if (self->owner->super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "affile_sd.%s.curpos", self->owner->super.super.persist_name);
+    {
+      g_snprintf(persist_name, sizeof(persist_name), "affile_sd.%s.%u.curpos",
+                 self->owner->super.super.persist_name, name_hash);
+    }
   else
-    g_snprintf(persist_name, sizeof(persist_name), "affile_sd_curpos(%s)", self->filename->str);
+    g_snprintf(persist_name, sizeof(persist_name), "affile_sd.%u.curpos", name_hash);
 
-  return persist_name;
+  return g_strdup(persist_name);
+}
+
+static const gchar *
+_generate_persist_name(const LogPipe *s)
+{
+  FileReader *self = (FileReader *) s;
+
+  if (self->persist_name == NULL)
+    {
+      if (self->super.generate_persist_name == _generate_persist_name)
+        self->persist_name = _format_persist_name(s);
+      else
+        {
+          const gchar *name = log_pipe_get_persist_name(s);
+          self->persist_name = name ? g_strdup(name) : _format_persist_name(s);
+        }
+    }
+  return self->persist_name;
 }
 
 static void
@@ -69,7 +94,7 @@ _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
   if (!self->options->restore_state)
     return;
 
-  if (!log_proto_server_restart_with_state(proto, cfg->state, _format_persist_name(s)))
+  if (!log_proto_server_restart_with_state(proto, cfg->state, _generate_persist_name(s)))
     {
       msg_error("Error converting persistent state from on-disk format, losing file position information",
                 evt_tag_str("filename", self->filename->str));
@@ -424,13 +449,14 @@ file_reader_free_method(LogPipe *s)
 
   g_assert(!self->reader);
   g_string_free(self->filename, TRUE);
+  g_free((gpointer)self->persist_name);
 }
 
 void
 file_reader_remove_persist_state(FileReader *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super);
-  const gchar *old_persist_name = _format_persist_name(&self->super);
+  const gchar *old_persist_name = _generate_persist_name(&self->super);
   gchar *new_persist_name = g_strdup_printf("%s_REMOVED", old_persist_name);
   /* This is required to clean the persist entry from file during restart */
   persist_state_remove_entry(cfg->state, old_persist_name);
@@ -464,7 +490,7 @@ file_reader_init_instance (FileReader *self, const gchar *filename,
   self->super.deinit = file_reader_deinit_method;
   self->super.notify = file_reader_notify_method;
   self->super.free_fn = file_reader_free_method;
-  self->super.generate_persist_name = _format_persist_name;
+  self->super.generate_persist_name = _generate_persist_name;
   self->filename = g_string_new (filename);
   self->options = options;
   self->opener = opener;

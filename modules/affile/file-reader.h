@@ -44,6 +44,7 @@ struct _FileReader
   FileReaderOptions *options;
   FileOpener *opener;
   LogReader *reader;
+  const gchar *persist_name;
 
   void (*on_file_moved)(FileReader *);
 };
