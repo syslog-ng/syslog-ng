@@ -165,6 +165,7 @@ typedef struct _CfgTree
 {
   GlobalConfig *cfg;
   GPtrArray *initialized_pipes;
+  GHashTable *pipes_with_persis_name;
   gint anon_counters[ENC_MAX];
   /* hash of predefined source/filter/rewrite/parser/destination objects */
   GHashTable *objects;
@@ -191,6 +192,9 @@ gboolean cfg_tree_start(CfgTree *self);
 gboolean cfg_tree_stop(CfgTree *self);
 gboolean cfg_tree_pre_config_init(CfgTree *self);
 gboolean cfg_tree_post_config_init(CfgTree *self);
+
+void cfg_tree_register_initialized_pipe(CfgTree *self, LogPipe *s);
+void cfg_tree_deregister_initialized_pipe(CfgTree *self, LogPipe *s);
 
 void cfg_tree_init_instance(CfgTree *self, GlobalConfig *cfg);
 void cfg_tree_free_instance(CfgTree *self);

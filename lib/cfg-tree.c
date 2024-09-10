@@ -26,6 +26,7 @@
 #include "logmpx.h"
 #include "logpipe.h"
 #include "metrics-pipe.h"
+#include "mainloop.h"
 
 #include <string.h>
 
@@ -643,6 +644,59 @@ log_expr_node_lookup_flag(const gchar *flag)
     }
   msg_error("Unknown log statement flag", evt_tag_str("flag", flag));
   return 0;
+}
+
+static void
+_log_pipe_unref(void *s)
+{
+  log_pipe_unref(s);
+}
+
+static void
+cfg_tree_start_registering_pipes_with_persist_name(CfgTree *self)
+{
+  main_loop_assert_main_thread();
+
+  self->pipes_with_persis_name = g_hash_table_new_full(NULL, NULL, NULL, _log_pipe_unref);
+}
+
+static void
+cfg_tree_stop_registering_pipes_with_persist_name(CfgTree *self)
+{
+  if (self->pipes_with_persis_name)
+    {
+      main_loop_assert_main_thread();
+
+      g_hash_table_unref(self->pipes_with_persis_name);
+      self->pipes_with_persis_name = NULL;
+    }
+}
+
+void
+cfg_tree_register_initialized_pipe(CfgTree *self, LogPipe *s)
+{
+  if (self->pipes_with_persis_name)
+    {
+      main_loop_assert_main_thread();
+
+      if (FALSE == g_hash_table_contains(self->pipes_with_persis_name, s) && log_pipe_get_persist_name(s))
+        {
+          log_pipe_ref(s);
+          g_hash_table_add(self->pipes_with_persis_name, s);
+        }
+    }
+}
+
+void
+cfg_tree_deregister_initialized_pipe(CfgTree *self, LogPipe *s)
+{
+  if (self->pipes_with_persis_name)
+    {
+      main_loop_assert_main_thread();
+
+      if (g_hash_table_contains(self->pipes_with_persis_name, s))
+        g_hash_table_remove(self->pipes_with_persis_name, s);
+    }
 }
 
 static LogPipe *
@@ -1527,14 +1581,15 @@ cfg_tree_compile(CfgTree *self)
 }
 
 static gboolean
-_verify_unique_persist_names_among_pipes(const GPtrArray *initialized_pipes)
+_verify_unique_persist_names_among_pipes(GHashTable *pipes_with_persis_name)
 {
   GHashTable *pipe_persist_names = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   gboolean result = TRUE;
 
-  for (gint i = 0; i < initialized_pipes->len; ++i)
+  GList *pipes_with_persis_name_list = g_hash_table_get_values(pipes_with_persis_name);
+  for (GList *pipe_list = pipes_with_persis_name_list; pipe_list != NULL; pipe_list = pipe_list->next)
     {
-      LogPipe *current_pipe = g_ptr_array_index(initialized_pipes, i);
+      LogPipe *current_pipe = (LogPipe *) pipe_list->data;
       const gchar *current_pipe_name = g_strdup(log_pipe_get_persist_name(current_pipe));
 
       if (current_pipe_name != NULL)
@@ -1550,7 +1605,9 @@ _verify_unique_persist_names_among_pipes(const GPtrArray *initialized_pipes)
                         evt_tag_str("persist_name", current_pipe_name),
                         log_pipe_location_tag(current_pipe),
                         log_pipe_location_tag(other_pipe));
+              g_free((void *) current_pipe_name);
               result = FALSE;
+              continue;
             }
           else
             {
@@ -1560,6 +1617,7 @@ _verify_unique_persist_names_among_pipes(const GPtrArray *initialized_pipes)
             }
         }
     }
+  g_list_free(pipes_with_persis_name_list);
 
   g_hash_table_destroy(pipe_persist_names);
 
@@ -1569,6 +1627,7 @@ _verify_unique_persist_names_among_pipes(const GPtrArray *initialized_pipes)
 gboolean
 cfg_tree_start(CfgTree *self)
 {
+  gboolean fine = TRUE;
   gint i;
 
   g_assert(self->compiled);
@@ -1579,6 +1638,8 @@ cfg_tree_start(CfgTree *self)
    *   circular references will inhibit the free of the configuration
    *   structure.
    */
+  cfg_tree_start_registering_pipes_with_persist_name(self);
+
   for (i = 0; i < self->initialized_pipes->len; i++)
     {
       LogPipe *pipe = g_ptr_array_index(self->initialized_pipes, i);
@@ -1588,11 +1649,17 @@ cfg_tree_start(CfgTree *self)
           msg_error("Error initializing message pipeline",
                     evt_tag_str("plugin_name", pipe->plugin_name ? pipe->plugin_name : "not a plugin"),
                     log_pipe_location_tag(pipe));
-          return FALSE;
+          fine = FALSE;
+          break;
         }
     }
 
-  return _verify_unique_persist_names_among_pipes(self->initialized_pipes);
+  if (fine)
+    fine = _verify_unique_persist_names_among_pipes(self->pipes_with_persis_name);
+
+  cfg_tree_stop_registering_pipes_with_persist_name(self);
+
+  return fine;
 }
 
 gboolean
@@ -1659,6 +1726,7 @@ cfg_tree_init_instance(CfgTree *self, GlobalConfig *cfg)
 {
   memset(self, 0, sizeof(*self));
   self->initialized_pipes = g_ptr_array_new();
+  self->pipes_with_persis_name = NULL;
   self->objects = g_hash_table_new_full(cfg_tree_objects_hash, cfg_tree_objects_equal, NULL,
                                         (GDestroyNotify) log_expr_node_unref);
   self->templates = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_template_unref);
