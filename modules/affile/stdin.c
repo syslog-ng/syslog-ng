@@ -55,11 +55,27 @@ file_opener_for_stdin_new(void)
   return self;
 }
 
+gboolean
+stdin_sd_init(LogPipe *s)
+{
+  AFFileSourceDriver *self = (AFFileSourceDriver *) s;
+
+  if (affile_sd_init(s))
+    {
+      self->file_reader->super.generate_persist_name = NULL;
+      return TRUE;
+    }
+  return FALSE;
+}
+
 LogDriver *
 stdin_sd_new(GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance("-", cfg);
 
+  self->super.super.super.init = stdin_sd_init;
+
+  self->file_reader_options.restore_state = FALSE;
   self->file_reader_options.exit_on_eof = TRUE;
   self->file_reader_options.reader_options.super.stats_source = stats_register_type("stdin");
   self->file_opener = file_opener_for_stdin_new();

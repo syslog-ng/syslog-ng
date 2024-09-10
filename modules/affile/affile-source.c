@@ -84,7 +84,7 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   log_src_driver_queue_method(s, msg, path_options);
 }
 
-static gboolean
+gboolean
 affile_sd_init(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
