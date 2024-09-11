@@ -31,8 +31,7 @@
 #include "str-repr/encode.h"
 #include "scratch-buffers.h"
 #include "compat/cpp-end.h"
-
-#include <inttypes.h>
+#include "compat/inttypes.h"
 
 using namespace syslogng::grpc::otel;
 using namespace google::protobuf;
