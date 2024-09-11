@@ -22,15 +22,15 @@
  *
  */
 
-#ifndef MULTITRANSPORT_H_INCLUDED
-#define MULTITRANSPORT_H_INCLUDED
+#ifndef TRANSPORT_STACK_H_INCLUDED
+#define TRANSPORT_STACK_H_INCLUDED
 
 #include "transport/logtransport.h"
 #include "transport/transport-factory.h"
 
-typedef struct _MultiTransport MultiTransport;
+typedef struct _LogTransportStack LogTransportStack;
 
-struct _MultiTransport
+struct _LogTransportStack
 {
   LogTransport super;
   GHashTable *registry;
@@ -38,10 +38,9 @@ struct _MultiTransport
   const TransportFactory *active_transport_factory;
 };
 
-LogTransport *multitransport_new(TransportFactory *default_transport_factory, gint fd);
-void multitransport_add_factory(MultiTransport *self, TransportFactory *);
-gboolean multitransport_switch(MultiTransport *self, const gchar *id);
-gboolean multitransport_contains_factory(MultiTransport *self, const gchar *id);
+LogTransport *log_transport_stack_new(TransportFactory *default_transport_factory, gint fd);
+void log_transport_stack_add_factory(LogTransportStack *self, TransportFactory *);
+gboolean log_transport_stack_switch(LogTransportStack *self, const gchar *id);
+gboolean log_transport_stack_contains_factory(LogTransportStack *self, const gchar *id);
 
 #endif
-
