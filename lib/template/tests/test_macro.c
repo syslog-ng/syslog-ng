@@ -142,6 +142,7 @@ Test(macro, test_ipv4_saddr_related_macros)
   log_msg_unref(msg);
 }
 
+#if SYSLOG_NG_ENABLE_IPV6
 Test(macro, test_ipv6_saddr_related_macros)
 {
   LogMessage *msg = log_msg_new_empty();
@@ -167,6 +168,7 @@ Test(macro, test_ipv6_mapped_ipv4_saddr_related_macros)
   assert_macro_value(M_IP_PROTOCOL, msg, "4", LM_VT_INTEGER);
   log_msg_unref(msg);
 }
+#endif
 
 void
 setup(void)
