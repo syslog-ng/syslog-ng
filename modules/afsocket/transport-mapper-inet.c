@@ -26,7 +26,7 @@
 #include "messages.h"
 #include "stats/stats-registry.h"
 #include "transport/transport-tls.h"
-#include "transport/multitransport.h"
+#include "transport/transport-stack.h"
 #include "transport/transport-factory-tls.h"
 #include "transport/transport-factory-socket.h"
 #include "transport/transport-udp-socket.h"
@@ -89,7 +89,7 @@ static LogTransport *
 _construct_multitransport_with_tls_factory(TransportMapperInet *self, gint fd)
 {
   TransportFactory *default_factory = transport_factory_tls_new(self->tls_context, self->tls_verifier, self->flags);
-  return multitransport_new(default_factory, fd);
+  return log_transport_stack_new(default_factory, fd);
 }
 
 static LogTransport *
@@ -112,7 +112,8 @@ static LogTransport *
 _construct_multitransport_with_plain_tcp_factory(TransportMapperInet *self, gint fd)
 {
   TransportFactory *default_factory = transport_factory_socket_new(self->super.sock_type);
-  return multitransport_new(default_factory, fd);
+
+  return log_transport_stack_new(default_factory, fd);
 }
 
 static LogTransport *
@@ -121,7 +122,7 @@ _construct_multitransport_with_plain_and_tls_factories(TransportMapperInet *self
   LogTransport *transport = _construct_multitransport_with_plain_tcp_factory(self, fd);
 
   TransportFactory *tls_factory = transport_factory_tls_new(self->tls_context, self->tls_verifier, self->flags);
-  multitransport_add_factory((MultiTransport *)transport, tls_factory);
+  log_transport_stack_add_factory((LogTransportStack *)transport, tls_factory);
 
   return transport;
 }

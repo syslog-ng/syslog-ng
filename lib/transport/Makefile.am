@@ -13,7 +13,7 @@ transportinclude_HEADERS = \
 	lib/transport/transport-socket-proxy-private.h \
 	lib/transport/transport-udp-socket.h \
 	lib/transport/transport-factory.h \
-	lib/transport/multitransport.h \
+	lib/transport/transport-stack.h \
 	lib/transport/transport-factory-tls.h \
 	lib/transport/transport-factory-socket.h \
 	lib/transport/tls-context.h \
@@ -28,7 +28,7 @@ transport_sources = \
 	lib/transport/transport-socket.c \
 	lib/transport/transport-socket-proxy.c \
 	lib/transport/transport-udp-socket.c \
-	lib/transport/multitransport.c \
+	lib/transport/transport-stack.c \
 	lib/transport/transport-factory-tls.c \
 	lib/transport/transport-factory-socket.c \
 	lib/transport/tls-context.c \

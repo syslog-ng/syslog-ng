@@ -9,7 +9,7 @@ set(TRANSPORT_HEADERS
     transport/transport-socket-proxy-private.h
     transport/transport-udp-socket.h
     transport/transport-factory.h
-    transport/multitransport.h
+    transport/transport-stack.h
     transport/transport-factory-tls.h
     transport/transport-factory-socket.h
     transport/tls-context.h
@@ -26,7 +26,7 @@ set(TRANSPORT_SOURCES
     transport/transport-socket-proxy.c
     transport/transport-udp-socket.c
     transport/transport-tls.c
-    transport/multitransport.c
+    transport/transport-stack.c
     transport/transport-factory-tls.c
     transport/transport-factory-socket.c
     transport/tls-context.c
