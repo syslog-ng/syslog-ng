@@ -34,6 +34,9 @@
 #include <unistd.h>
 
 #include "messages.h"
+#include "logproto-proxied-text-server.h"
+#include "transport/transport-stack.h"
+#include "transport/transport-factory-tls.h"
 #include "str-utils.h"
 
 
@@ -497,27 +500,7 @@ _log_transport_proxied_read_method(LogTransport *s, gpointer buf, gsize buflen, 
 static void
 _apply_proxied_state(LogTransportSocketProxy *self, LogTransportSocket *transport_socket)
 {
-  self->base_read = transport_socket->super.read;
-  transport_socket->super.read = _log_transport_proxied_read_method;
-
-  self->base_write = transport_socket->super.write;
-  transport_socket->super.write = NULL;
-
-  log_transport_socket_set_proxied(transport_socket, self);
-}
-
-static gboolean
-_switch_to_tls(LogTransportSocketProxy *self)
-{
-  /* NOTE: We should handle the proxy ownership here as the proxy is in LogTransportSocket,
-   *       and not presented in LogTransport
-   *       See more at _do_transport_switch
-   * Re-assigned back immediately in _apply_proxied_state to the new owner (the socket we switched to)
-   */
-  LogTransportSocket *transport_socket = _active_log_transport_socket(self);
-  transport_socket->proxy = NULL;
-
-  if (!multitransport_switch((MultiTransport *)self->base_transport, TRANSPORT_FACTORY_TLS_ID))
+  if (!log_transport_stack_switch((LogTransportStack *)self->super.super.super.transport, TRANSPORT_FACTORY_TLS_ID))
     {
       msg_error("socket-proxy failed to switch to TLS");
       return FALSE;

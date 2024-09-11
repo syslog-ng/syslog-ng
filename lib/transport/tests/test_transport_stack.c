@@ -23,7 +23,7 @@
 
 #include <criterion/criterion.h>
 
-#include "transport/multitransport.h"
+#include "transport/transport-stack.h"
 #include "transport/transport-factory.h"
 #include "apphook.h"
 
@@ -72,39 +72,38 @@
     return &self->super; \
   } \
 
-TestSuite(multitransport, .init = app_startup, .fini = app_shutdown);
+TestSuite(transport_stack, .init = app_startup, .fini = app_shutdown);
 
 DEFINE_TEST_TRANSPORT_WITH_FACTORY(Fake, fake);
 DEFINE_TEST_TRANSPORT_WITH_FACTORY(Default, default);
 DEFINE_TEST_TRANSPORT_WITH_FACTORY(Unregistered, unregistered);
 
-Test(multitransport, test_switch_transport)
+Test(transport_stack, test_switch_transport)
 {
   TransportFactory *default_factory = default_transport_factory_new();
   TransportFactory *fake_factory = fake_transport_factory_new();
   gint fd = -2;
 
-  MultiTransport *multi_transport = (MultiTransport *) multitransport_new(default_factory, fd);
+  LogTransportStack *transport_stack = (LogTransportStack *) log_transport_stack_new(default_factory, fd);
 
-  cr_expect_eq(multi_transport->active_transport->read, default_read);
-  cr_expect_eq(multi_transport->active_transport->write, default_write);
-  cr_expect_str_eq(multi_transport->active_transport->name, "default");
+  cr_expect_eq(transport_stack->active_transport->read, default_read);
+  cr_expect_eq(transport_stack->active_transport->write, default_write);
+  cr_expect_str_eq(transport_stack->active_transport->name, "default");
 
-  multitransport_add_factory(multi_transport, fake_factory);
-  cr_expect_not(multitransport_contains_factory(multi_transport, "unregistered"));
-  cr_expect(multitransport_contains_factory(multi_transport, "fake"));
-  cr_expect_not(multitransport_switch(multi_transport, "unregistered"));
-  cr_expect_eq(multi_transport->active_transport->read, default_read);
-  cr_expect_eq(multi_transport->active_transport->write, default_write);
-  cr_expect_eq(multi_transport->active_transport_factory, default_factory);
-  cr_expect_str_eq(multi_transport->active_transport->name, "default");
+  log_transport_stack_add_factory(transport_stack, fake_factory);
+  cr_expect_not(log_transport_stack_contains_factory(transport_stack, "unregistered"));
+  cr_expect(log_transport_stack_contains_factory(transport_stack, "fake"));
+  cr_expect_not(log_transport_stack_switch(transport_stack, "unregistered"));
+  cr_expect_eq(transport_stack->active_transport->read, default_read);
+  cr_expect_eq(transport_stack->active_transport->write, default_write);
+  cr_expect_eq(transport_stack->active_transport_factory, default_factory);
+  cr_expect_str_eq(transport_stack->active_transport->name, "default");
 
-  cr_expect(multitransport_switch(multi_transport, "fake"));
-  cr_expect_eq(multi_transport->active_transport->read, fake_read);
-  cr_expect_eq(multi_transport->active_transport->write, fake_write);
-  cr_expect_eq(multi_transport->active_transport_factory, fake_factory);
-  cr_expect_str_eq(multi_transport->active_transport->name, "fake");
+  cr_expect(log_transport_stack_switch(transport_stack, "fake"));
+  cr_expect_eq(transport_stack->active_transport->read, fake_read);
+  cr_expect_eq(transport_stack->active_transport->write, fake_write);
+  cr_expect_eq(transport_stack->active_transport_factory, fake_factory);
+  cr_expect_str_eq(transport_stack->active_transport->name, "fake");
 
-  log_transport_free(&multi_transport->super);
+  log_transport_free(&transport_stack->super);
 }
-
