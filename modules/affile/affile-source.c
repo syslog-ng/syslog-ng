@@ -75,13 +75,6 @@ _is_device_node(const gchar *filename)
   return !S_ISREG(st.st_mode);
 }
 
-static inline const gchar *
-affile_sd_format_persist_name(const LogPipe *s)
-{
-  AFFileSourceDriver *self = (AFFileSourceDriver *)s;
-  return log_pipe_get_persist_name(&self->file_reader->super);
-}
-
 static void
 affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -91,7 +84,7 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   log_src_driver_queue_method(s, msg, path_options);
 }
 
-static gboolean
+gboolean
 affile_sd_init(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
@@ -152,7 +145,6 @@ affile_sd_new_instance(gchar *filename, GlobalConfig *cfg)
   self->super.super.super.queue = affile_sd_queue;
   self->super.super.super.deinit = affile_sd_deinit;
   self->super.super.super.free_fn = affile_sd_free;
-  self->super.super.super.generate_persist_name = affile_sd_format_persist_name;
 
   self->filename = g_string_new(filename);
 

@@ -391,6 +391,8 @@ log_pipe_init(LogPipe *s)
       if (!s->init || s->init(s))
         {
           s->flags |= PIF_INITIALIZED;
+          if (s->cfg)
+            cfg_tree_register_initialized_pipe(&s->cfg->tree, s);
           return TRUE;
         }
       return FALSE;
@@ -409,6 +411,8 @@ log_pipe_deinit(LogPipe *s)
 
           if (s->post_deinit)
             s->post_deinit(s);
+          if (s->cfg)
+            cfg_tree_deregister_initialized_pipe(&s->cfg->tree, s);
           return TRUE;
         }
       return FALSE;
