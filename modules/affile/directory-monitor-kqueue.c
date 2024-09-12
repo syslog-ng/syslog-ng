@@ -67,7 +67,12 @@ static void handle_kqueue_event(void *s)
 static gboolean
 _register_kqueue_watches(DirectoryMonitorKQueue *self)
 {
-  gint fd = open(self->super.super.dir, O_EVTONLY);
+#ifdef __APPLE__
+  gint open_mode = O_EVTONLY | O_DIRECTORY;
+#else
+  gint open_mode = O_NONBLOCK | O_RDONLY | O_DIRECTORY;
+#endif
+  gint fd = open(self->super.super.dir, open_mode);
   if (fd < 0)
     {
       msg_error("directory-monitor-kqueue: could not open directory for watching",
