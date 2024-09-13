@@ -104,7 +104,10 @@ static gboolean stderr_present = TRUE;
 static int have_capsyslog = FALSE;
 static cap_value_t cap_syslog;
 #endif
-#ifdef SYSLOG_NG_HAVE_ENVIRON
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#else
 extern char **environ;
 #endif
 
@@ -553,7 +556,6 @@ g_process_set_caps(const gchar *caps)
 void
 g_process_set_argv_space(gint argc, gchar **argv)
 {
-#ifdef SYSLOG_NG_HAVE_ENVIRON
   gchar *lastargv = NULL;
   gchar **envp    = environ;
   gint i;
@@ -595,7 +597,6 @@ g_process_set_argv_space(gint argc, gchar **argv)
   for (i = 0; envp[i] != NULL; i++)
     environ[i] = g_strdup(envp[i]);
   environ[i] = NULL;
-#endif
 }
 
 /**
@@ -1132,7 +1133,6 @@ g_process_perform_startup(void)
 static void
 g_process_setproctitle(const gchar *proc_title)
 {
-#ifdef SYSLOG_NG_HAVE_ENVIRON
   size_t len;
 
   g_assert(process_opts.argv_start != NULL);
@@ -1140,7 +1140,6 @@ g_process_setproctitle(const gchar *proc_title)
   len = g_strlcpy(process_opts.argv_start, proc_title, process_opts.argv_env_len);
   for (; len < process_opts.argv_env_len; ++len)
     process_opts.argv_start[len] = SPT_PADCHAR;
-#endif
 }
 
 
@@ -1526,7 +1525,6 @@ g_process_startup_ok(void)
 void
 g_process_finish(void)
 {
-#ifdef SYSLOG_NG_HAVE_ENVIRON
   /**
    * There is a memory leak for **environ and elements that should be
    * freed here theoretically.
@@ -1548,7 +1546,6 @@ g_process_finish(void)
    * As this leak does not cause any real problem like accumulating over
    * time, it is safe to leave it as it is.
   */
-#endif
 
   g_process_remove_pidfile();
 }
