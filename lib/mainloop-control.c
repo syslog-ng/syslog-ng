@@ -22,6 +22,7 @@
  *
  */
 #include "mainloop.h"
+#include "gprocess.h"
 #include "control/control-commands.h"
 #include "control/control-connection.h"
 #include "messages.h"
@@ -460,6 +461,12 @@ control_internal_logs(ControlConnection *cc, GString *command, gpointer user_dat
 
   if (g_str_equal(arguments[1], "START"))
     {
+      if (g_process_get_mode() == G_PM_FOREGROUND)
+        {
+          g_string_assign(result, "FAIL Error: Cannot collect internal logs while syslog-ng is running in foreground");
+          goto exit;
+        }
+
       ret = afinter_start_live_collection();
 
       switch (ret)
@@ -490,6 +497,8 @@ control_internal_logs(ControlConnection *cc, GString *command, gpointer user_dat
       g_string_assign(result, "FAIL Invalid arguments received");
     }
 
+exit:
+  g_strfreev(arguments);
   control_connection_send_reply(cc, result);
 }
 

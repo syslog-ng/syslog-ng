@@ -83,7 +83,10 @@ slng_internal(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
   else if (config_options_stop)
     g_string_assign(cmd, "INTERLOGS STOP");
   else
-    return 1;
+    {
+      fprintf(stderr, "Error: Unknown command\n");
+      return 1;
+    }
 
   gint res = dispatch_command(cmd->str);
   g_string_free(cmd, TRUE);
