@@ -27,24 +27,24 @@
 
 #include "transport/logtransport.h"
 
-/* TransportFactory is an interface for representing
- * concrete TransportFactory instances
- * Each TransportFactory has
+/* LogTransportFactory is an interface for representing
+ * concrete LogTransportFactory instances
+ * Each LogTransportFactory has
  *  - a reference to a unique id
  *  - a construct method for creating new LogTransport instances
  *  - a destroy method for releasing resources that are needed for construct()
  */
-typedef struct _TransportFactory TransportFactory;
+typedef struct _LogTransportFactory LogTransportFactory;
 
-struct _TransportFactory
+struct _LogTransportFactory
 {
   const gchar *id;
-  LogTransport *(*construct_transport)(const TransportFactory *self, gint fd);
-  void (*free_fn)(TransportFactory *self);
+  LogTransport *(*construct_transport)(const LogTransportFactory *self, gint fd);
+  void (*free_fn)(LogTransportFactory *self);
 };
 
-static inline LogTransport
-*transport_factory_construct_transport(const TransportFactory *self, gint fd)
+static inline LogTransport *
+log_transport_factory_construct_transport(const LogTransportFactory *self, gint fd)
 {
   g_assert(self->construct_transport);
 
@@ -55,7 +55,7 @@ static inline LogTransport
 }
 
 static inline void
-transport_factory_free(TransportFactory *self)
+log_transport_factory_free(LogTransportFactory *self)
 {
   if (self->free_fn)
     self->free_fn(self);
@@ -63,9 +63,9 @@ transport_factory_free(TransportFactory *self)
 }
 
 static inline const gchar *
-transport_factory_get_id(const TransportFactory *self)
+log_transport_factory_get_id(const LogTransportFactory *self)
 {
-  /* each concrete TransportFactory has to have an id
+  /* each concrete LogTransportFactory has to have an id
    */
   g_assert(self->id);
   return self->id;

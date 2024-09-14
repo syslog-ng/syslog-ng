@@ -27,9 +27,9 @@
 #include "transport/transport-tls.h"
 
 static LogTransport *
-_construct_transport(const TransportFactory *s, gint fd)
+_construct_transport(const LogTransportFactory *s, gint fd)
 {
-  TransportFactoryTLS *self = (TransportFactoryTLS *)s;
+  LogTransportFactoryTLS *self = (LogTransportFactoryTLS *)s;
   TLSSession *tls_session = tls_context_setup_session(self->tls_context);
 
   if (!tls_session)
@@ -43,32 +43,32 @@ _construct_transport(const TransportFactory *s, gint fd)
 }
 
 void
-transport_factory_tls_enable_compression(TransportFactory *s)
+log_transport_factory_tls_enable_compression(LogTransportFactory *s)
 {
-  TransportFactoryTLS *self = (TransportFactoryTLS *)s;
+  LogTransportFactoryTLS *self = (LogTransportFactoryTLS *)s;
   self->allow_compress = TRUE;
 }
 
 void
-transport_factory_tls_disable_compression(TransportFactory *s)
+log_transport_factory_tls_disable_compression(LogTransportFactory *s)
 {
-  TransportFactoryTLS *self = (TransportFactoryTLS *)s;
+  LogTransportFactoryTLS *self = (LogTransportFactoryTLS *)s;
   self->allow_compress = FALSE;
 }
 
 static void
-_free(TransportFactory *s)
+_free(LogTransportFactory *s)
 {
-  TransportFactoryTLS *self = (TransportFactoryTLS *)s;
+  LogTransportFactoryTLS *self = (LogTransportFactoryTLS *)s;
   tls_context_unref(self->tls_context);
   if (self->tls_verifier)
     tls_verifier_unref(self->tls_verifier);
 }
 
-TransportFactory *
-transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags)
+LogTransportFactory *
+log_transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags)
 {
-  TransportFactoryTLS *instance = g_new0(TransportFactoryTLS, 1);
+  LogTransportFactoryTLS *instance = g_new0(LogTransportFactoryTLS, 1);
 
   instance->tls_context = tls_context_ref(ctx);
   instance->tls_verifier = tls_verifier ? tls_verifier_ref(tls_verifier) : NULL;
@@ -78,9 +78,9 @@ transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 fl
   instance->super.free_fn = _free;
 
   if (flags & TMI_ALLOW_COMPRESS)
-    transport_factory_tls_enable_compression((TransportFactory *)instance);
+    log_transport_factory_tls_enable_compression((LogTransportFactory *)instance);
   else
-    transport_factory_tls_disable_compression((TransportFactory *)instance);
+    log_transport_factory_tls_disable_compression((LogTransportFactory *)instance);
 
   return &instance->super;
 }

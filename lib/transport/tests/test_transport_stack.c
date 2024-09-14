@@ -54,16 +54,16 @@
   } \
   struct TypePrefix ## TransportFactory_\
   { \
-    TransportFactory super; \
+    LogTransportFactory super; \
   }; \
   static LogTransport * \
-  FunPrefix ## _factory_construct(const TransportFactory *s, gint fd) \
+  FunPrefix ## _factory_construct(const LogTransportFactory *s, gint fd) \
   {\
     LogTransport *transport = FunPrefix ## _transport_new(); \
     log_transport_init_instance(transport, fd); \
     return transport; \
   } \
-  TransportFactory * \
+  LogTransportFactory * \
   FunPrefix ## _transport_factory_new(void) \
   { \
     TypePrefix ## TransportFactory *self = g_new0(TypePrefix ## TransportFactory, 1); \
@@ -80,8 +80,8 @@ DEFINE_TEST_TRANSPORT_WITH_FACTORY(Unregistered, unregistered);
 
 Test(transport_stack, test_switch_transport)
 {
-  TransportFactory *default_factory = default_transport_factory_new();
-  TransportFactory *fake_factory = fake_transport_factory_new();
+  LogTransportFactory *default_factory = default_transport_factory_new();
+  LogTransportFactory *fake_factory = fake_transport_factory_new();
   gint fd = -2;
 
   LogTransportStack *transport_stack = (LogTransportStack *) log_transport_stack_new(default_factory, fd);
