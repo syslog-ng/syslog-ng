@@ -863,10 +863,6 @@ if test "x$blb_cv_keepcaps" = "xyes"; then
 	AC_DEFINE(HAVE_PR_SET_KEEPCAPS, 1, [have PR_SET_KEEPCAPS])
 fi
 
-if test "$ostype" != "Darwin" ; then
-	AC_DEFINE(HAVE_ENVIRON, [1], [Specifies whether the environ global variable exists])
-fi
-
 AC_CACHE_CHECK(for modern utmp,
                blb_cv_c_modern_utmp,
 [AC_TRY_COMPILE([
