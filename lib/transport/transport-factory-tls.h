@@ -28,20 +28,20 @@
 #include "transport/transport-factory.h"
 #include "transport/tls-context.h"
 
-typedef struct _TransportFactoryTLS TransportFactoryTLS;
+typedef struct _LogTransportFactoryTLS LogTransportFactoryTLS;
 
-struct _TransportFactoryTLS
+struct _LogTransportFactoryTLS
 {
-  TransportFactory super;
+  LogTransportFactory super;
   TLSContext *tls_context;
   TLSVerifier *tls_verifier;
   gboolean allow_compress;
 };
 
-TransportFactory *transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags);
+LogTransportFactory *log_transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags);
 
-void transport_factory_tls_enable_compression(TransportFactory *);
-void transport_factory_tls_disable_compression(TransportFactory *);
+void log_transport_factory_tls_enable_compression(LogTransportFactory *);
+void log_transport_factory_tls_disable_compression(LogTransportFactory *);
 
 #define TRANSPORT_FACTORY_TLS_ID "tls"
 

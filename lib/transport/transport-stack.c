@@ -26,13 +26,13 @@
 #include "messages.h"
 
 void
-log_transport_stack_add_factory(LogTransportStack *self, TransportFactory *transport_factory)
+log_transport_stack_add_factory(LogTransportStack *self, LogTransportFactory *transport_factory)
 {
   g_hash_table_insert(self->registry, (gpointer) transport_factory->id, transport_factory);
 }
 
 static void
-_do_transport_switch(LogTransportStack *self, LogTransport *new_transport, const TransportFactory *new_transport_factory)
+_do_transport_switch(LogTransportStack *self, LogTransport *new_transport, const LogTransportFactory *new_transport_factory)
 {
   self->super.fd = log_transport_release_fd(self->active_transport);
   self->super.cond = new_transport->cond;
@@ -45,10 +45,10 @@ _do_transport_switch(LogTransportStack *self, LogTransport *new_transport, const
   self->active_transport_factory = new_transport_factory;
 }
 
-static const TransportFactory *
+static const LogTransportFactory *
 _lookup_transport_factory(LogTransportStack *self, const gchar *factory_id)
 {
-  const TransportFactory *factory = g_hash_table_lookup(self->registry, factory_id);
+  const LogTransportFactory *factory = g_hash_table_lookup(self->registry, factory_id);
 
   if (!factory)
     {
@@ -61,9 +61,9 @@ _lookup_transport_factory(LogTransportStack *self, const gchar *factory_id)
 }
 
 static LogTransport *
-_construct_transport(const TransportFactory *factory, gint fd)
+_construct_transport(const LogTransportFactory *factory, gint fd)
 {
-  LogTransport *transport = transport_factory_construct_transport(factory, fd);
+  LogTransport *transport = log_transport_factory_construct_transport(factory, fd);
 
   if (!transport)
     {
@@ -82,7 +82,7 @@ log_transport_stack_switch(LogTransportStack *self, const gchar *factory_id)
             evt_tag_str("active-transport", self->active_transport->name),
             evt_tag_str("requested-transport", factory_id));
 
-  const TransportFactory *transport_factory = _lookup_transport_factory(self, factory_id);
+  const LogTransportFactory *transport_factory = _lookup_transport_factory(self, factory_id);
   if (!transport_factory)
     return FALSE;
 
@@ -101,7 +101,7 @@ log_transport_stack_switch(LogTransportStack *self, const gchar *factory_id)
 gboolean
 log_transport_stack_contains_factory(LogTransportStack *self, const gchar *factory_id)
 {
-  const TransportFactory *factory = g_hash_table_lookup(self->registry, factory_id);
+  const LogTransportFactory *factory = g_hash_table_lookup(self->registry, factory_id);
 
   return (factory != NULL);
 }
@@ -137,7 +137,7 @@ _log_transport_stack_free(LogTransport *s)
 }
 
 LogTransport *
-log_transport_stack_new(TransportFactory *default_transport_factory, gint fd)
+log_transport_stack_new(LogTransportFactory *default_transport_factory, gint fd)
 {
   LogTransportStack *self = g_new0(LogTransportStack, 1);
 
@@ -145,8 +145,8 @@ log_transport_stack_new(TransportFactory *default_transport_factory, gint fd)
   self->super.read = _log_transport_stack_read;
   self->super.write = _log_transport_stack_write;
   self->super.free_fn = _log_transport_stack_free;
-  self->registry = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) transport_factory_free);
-  self->active_transport = transport_factory_construct_transport(default_transport_factory, fd);
+  self->registry = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_transport_factory_free);
+  self->active_transport = log_transport_factory_construct_transport(default_transport_factory, fd);
   self->active_transport_factory = default_transport_factory;
 
   return &self->super;

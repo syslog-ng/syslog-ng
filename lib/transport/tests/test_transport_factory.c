@@ -66,11 +66,11 @@ _fake_transport_new(void)
 
 struct _FakeTransportFactory
 {
-  TransportFactory super;
+  LogTransportFactory super;
 };
 
 static LogTransport *
-_transport_factory_construct(const TransportFactory *s, gint fd)
+_transport_factory_construct(const LogTransportFactory *s, gint fd)
 {
   LogTransport *fake_transport = _fake_transport_new();
   log_transport_init_instance(fake_transport, fd);
@@ -79,7 +79,7 @@ _transport_factory_construct(const TransportFactory *s, gint fd)
   return fake_transport;
 }
 
-TransportFactory *
+LogTransportFactory *
 _fake_transport_factory_new(void)
 {
   FakeTransportFactory *instance = g_new0(FakeTransportFactory, 1);
@@ -92,15 +92,15 @@ TestSuite(transport_factory, .init = app_startup, .fini = app_shutdown);
 
 Test(transport_factory, fake_transport_factory)
 {
-  TransportFactory *fake_factory = _fake_transport_factory_new();
+  LogTransportFactory *fake_factory = _fake_transport_factory_new();
   cr_expect_not_null(fake_factory->id);
 
   gint fd = 11;
-  FakeTransport *fake_transport = (FakeTransport *) transport_factory_construct_transport(fake_factory, fd);
+  FakeTransport *fake_transport = (FakeTransport *) log_transport_factory_construct_transport(fake_factory, fd);
   cr_expect_eq(fake_transport->constructed, TRUE);
   cr_expect_eq(fake_transport->super.read, _fake_read);
   cr_expect_eq(fake_transport->super.write, _fake_write);
   log_transport_free(&fake_transport->super);
 
-  transport_factory_free(fake_factory);
+  log_transport_factory_free(fake_factory);
 }
