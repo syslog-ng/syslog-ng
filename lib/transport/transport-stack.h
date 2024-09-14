@@ -35,11 +35,11 @@ struct _LogTransportStack
   LogTransport super;
   GHashTable *registry;
   LogTransport *active_transport;
-  const TransportFactory *active_transport_factory;
+  const LogTransportFactory *active_transport_factory;
 };
 
-LogTransport *log_transport_stack_new(TransportFactory *default_transport_factory, gint fd);
-void log_transport_stack_add_factory(LogTransportStack *self, TransportFactory *);
+LogTransport *log_transport_stack_new(LogTransportFactory *default_transport_factory, gint fd);
+void log_transport_stack_add_factory(LogTransportStack *self, LogTransportFactory *);
 gboolean log_transport_stack_switch(LogTransportStack *self, const gchar *id);
 gboolean log_transport_stack_contains_factory(LogTransportStack *self, const gchar *id);
 

@@ -88,7 +88,7 @@ transport_mapper_inet_apply_transport_method(TransportMapper *s, GlobalConfig *c
 static LogTransport *
 _construct_multitransport_with_tls_factory(TransportMapperInet *self, gint fd)
 {
-  TransportFactory *default_factory = transport_factory_tls_new(self->tls_context, self->tls_verifier, self->flags);
+  LogTransportFactory *default_factory = log_transport_factory_tls_new(self->tls_context, self->tls_verifier, self->flags);
   return log_transport_stack_new(default_factory, fd);
 }
 
@@ -111,7 +111,7 @@ _construct_tls_or_multi_transport(TransportMapperInet *self, gboolean create_mul
 static LogTransport *
 _construct_multitransport_with_plain_tcp_factory(TransportMapperInet *self, gint fd)
 {
-  TransportFactory *default_factory = transport_factory_socket_new(self->super.sock_type);
+  LogTransportFactory *default_factory = log_transport_factory_socket_new(self->super.sock_type);
 
   return log_transport_stack_new(default_factory, fd);
 }
@@ -121,7 +121,7 @@ _construct_multitransport_with_plain_and_tls_factories(TransportMapperInet *self
 {
   LogTransport *transport = _construct_multitransport_with_plain_tcp_factory(self, fd);
 
-  TransportFactory *tls_factory = transport_factory_tls_new(self->tls_context, self->tls_verifier, self->flags);
+  LogTransportFactory *tls_factory = log_transport_factory_tls_new(self->tls_context, self->tls_verifier, self->flags);
   log_transport_stack_add_factory((LogTransportStack *)transport, tls_factory);
 
   return transport;

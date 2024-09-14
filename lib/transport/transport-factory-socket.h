@@ -28,15 +28,15 @@
 #include "transport/transport-factory.h"
 #include "transport/transport-socket.h"
 
-typedef struct _TransportFactorySocket TransportFactorySocket;
+typedef struct _LogTransportFactorySocket LogTransportFactorySocket;
 
-struct _TransportFactorySocket
+struct _LogTransportFactorySocket
 {
-  TransportFactory super;
+  LogTransportFactory super;
 };
 
 #define TRANSPORT_FACTORY_SOCKET_ID "socket"
 
-TransportFactory *transport_factory_socket_new(gint sock_type);
+LogTransportFactory *log_transport_factory_socket_new(gint sock_type);
 
 #endif
