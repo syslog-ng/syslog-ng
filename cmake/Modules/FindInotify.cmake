@@ -46,33 +46,39 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #=============================================================================
 
-find_path(Inotify_INCLUDE_DIRS sys/inotify.h)
-if(Inotify_INCLUDE_DIRS)
-# On Linux there is no library to link against, on the BSDs there is.
-# On the BSD's, inotify is implemented through a library, libinotify.
-    if( CMAKE_SYSTEM_NAME MATCHES "Linux")
+set(Inotify_FOUND FALSE)
+
+find_path (Inotify_INCLUDE_DIRS sys/inotify.h)
+if (Inotify_INCLUDE_DIRS)
+    if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+        # On Linux there is no library to link against, on the BSDs there is.
         set(Inotify_FOUND TRUE)
 
         set(Inotify_INCLUDE_DIRS "")
-    else()
-        find_library(Inotify_LIBRARIES NAMES inotify)
-        include(FindPackageHandleStandardArgs)
-        find_package_handle_standard_args(Inotify
-            FOUND_VAR
-                Inotify_FOUND
-            REQUIRED_VARS
-                Inotify_LIBRARIES
-                Inotify_INCLUDE_DIRS
-        )
-        mark_as_advanced(Inotify_LIBRARIES Inotify_INCLUDE_DIRS)
-        include(FeatureSummary)
-        set_package_properties(Inotify PROPERTIES
-            URL "https://github.com/libinotify-kqueue/"
-            DESCRIPTION "inotify API on the *BSD family of operating systems."
-        )
+    #else()
+        # On the BSD's, inotify is implemented through a library, libinotify.
+        # But we disabled that for now because
+        #   - Ivykis currently supports inotify only for directory monitoring, not for files
+        #   - libinotify is just a wrapper around kqueue, why would we want a wrapper around
+        #     a natively supported solution, instead of using it directly
+        # https://github.com/buytenh/ivykis/issues/37
+
+        #find_library(Inotify_LIBRARIES NAMES inotify)
+        #include(FindPackageHandleStandardArgs)
+        #find_package_handle_standard_args(Inotify
+        #    FOUND_VAR
+        #        Inotify_FOUND
+        #    REQUIRED_VARS
+        #        Inotify_LIBRARIES
+        #        Inotify_INCLUDE_DIRS
+        #)
+        #mark_as_advanced(Inotify_LIBRARIES Inotify_INCLUDE_DIRS)
+        #include(FeatureSummary)
+        #set_package_properties(Inotify PROPERTIES
+        #    URL "https://github.com/libinotify-kqueue/"
+        #    DESCRIPTION "inotify API on the *BSD family of operating systems."
+        #)
     endif()
-else()
-   set(Inotify_FOUND FALSE)
 endif()
 
 mark_as_advanced(Inotify_LIBRARIES Inotify_INCLUDE_DIRS) 
