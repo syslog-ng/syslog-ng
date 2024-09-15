@@ -6,8 +6,7 @@ set(TRANSPORT_HEADERS
     transport/transport-file.h
     transport/transport-pipe.h
     transport/transport-socket.h
-    transport/transport-socket-proxy.h
-    transport/transport-socket-proxy-private.h
+    transport/transport-haproxy.h
     transport/transport-udp-socket.h
     transport/transport-stack.h
     transport/transport-factory-tls.h
@@ -24,7 +23,7 @@ set(TRANSPORT_SOURCES
     transport/transport-file.c
     transport/transport-pipe.c
     transport/transport-socket.c
-    transport/transport-socket-proxy.c
+    transport/transport-haproxy.c
     transport/transport-udp-socket.c
     transport/transport-tls.c
     transport/transport-stack.c
