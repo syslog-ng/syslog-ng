@@ -8,7 +8,6 @@ set(TRANSPORT_HEADERS
     transport/transport-socket-proxy.h
     transport/transport-socket-proxy-private.h
     transport/transport-udp-socket.h
-    transport/transport-factory.h
     transport/transport-stack.h
     transport/transport-factory-tls.h
     transport/transport-factory-socket.h

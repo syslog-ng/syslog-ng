@@ -1,3 +1,2 @@
 add_unit_test(CRITERION TARGET test_aux_data)
-add_unit_test(CRITERION TARGET test_transport_factory)
 add_unit_test(CRITERION TARGET test_transport_stack)
