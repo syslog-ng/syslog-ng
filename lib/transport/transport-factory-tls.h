@@ -25,7 +25,7 @@
 #ifndef TRANSPORT_FACTORY_TLS_H_INCLUDED
 #define TRANSPORT_FACTORY_TLS_H_INCLUDED
 
-#include "transport/transport-factory.h"
+#include "transport/transport-stack.h"
 #include "transport/tls-context.h"
 
 typedef struct _LogTransportFactoryTLS LogTransportFactoryTLS;

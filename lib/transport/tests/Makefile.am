@@ -1,6 +1,5 @@
 lib_transport_tests_TESTS		 = \
 	lib/transport/tests/test_aux_data \
-	lib/transport/tests/test_transport_factory \
 	lib/transport/tests/test_transport_stack
 
 EXTRA_DIST += lib/transport/tests/CMakeLists.txt
@@ -12,12 +11,6 @@ lib_transport_tests_test_aux_data_CFLAGS  = $(TEST_CFLAGS) \
 lib_transport_tests_test_aux_data_LDADD	 = $(TEST_LDADD)
 lib_transport_tests_test_aux_data_SOURCES = 			\
 	lib/transport/tests/test_aux_data.c
-
-lib_transport_tests_test_transport_factory_CFLAGS  = $(TEST_CFLAGS) \
-	-I${top_srcdir}/lib/transport/tests
-lib_transport_tests_test_transport_factory_LDADD	 = $(TEST_LDADD)
-lib_transport_tests_test_transport_factory_SOURCES = 			\
-	lib/transport/tests/test_transport_factory.c
 
 lib_transport_tests_test_transport_stack_CFLAGS  = $(TEST_CFLAGS) \
 	-I${top_srcdir}/lib/transport/tests

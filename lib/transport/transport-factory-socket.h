@@ -25,7 +25,7 @@
 #ifndef TRANSPORT_FACTORY_SOCKET_H_INCLUDED
 #define TRANSPORT_FACTORY_SOCKET_H_INCLUDED
 
-#include "transport/transport-factory.h"
+#include "transport/transport-stack.h"
 #include "transport/transport-socket.h"
 
 typedef struct _LogTransportFactorySocket LogTransportFactorySocket;
