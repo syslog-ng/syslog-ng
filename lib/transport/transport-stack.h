@@ -49,7 +49,6 @@ log_transport_factory_construct_transport(const LogTransportFactory *self, gint 
   g_assert(self->construct_transport);
 
   LogTransport *transport = self->construct_transport(self, fd);
-  transport->name = self->id;
 
   return transport;
 }
