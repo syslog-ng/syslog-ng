@@ -63,7 +63,6 @@ jobs:
             --disable-smtp
             --disable-java
             --disable-java-modules
-            --disable-mqtt
             --disable-pacct
           "
           CMAKE_CONFIGURE_FLAGS="
@@ -77,7 +76,6 @@ jobs:
             -DENABLE_GRPC=OFF
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF
-            -DENABLE_MQTT=OFF
             -DENABLE_PACCT=OFF
           "
           PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@3/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${HOMEBREW_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}"
