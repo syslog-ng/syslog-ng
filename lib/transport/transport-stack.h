@@ -26,7 +26,50 @@
 #define TRANSPORT_STACK_H_INCLUDED
 
 #include "transport/logtransport.h"
-#include "transport/transport-factory.h"
+
+/* LogTransportFactory is an interface for representing
+ * concrete LogTransportFactory instances
+ * Each LogTransportFactory has
+ *  - a reference to a unique id
+ *  - a construct method for creating new LogTransport instances
+ *  - a destroy method for releasing resources that are needed for construct()
+ */
+typedef struct _LogTransportFactory LogTransportFactory;
+
+struct _LogTransportFactory
+{
+  const gchar *id;
+  LogTransport *(*construct_transport)(const LogTransportFactory *self, gint fd);
+  void (*free_fn)(LogTransportFactory *self);
+};
+
+static inline LogTransport *
+log_transport_factory_construct_transport(const LogTransportFactory *self, gint fd)
+{
+  g_assert(self->construct_transport);
+
+  LogTransport *transport = self->construct_transport(self, fd);
+  transport->name = self->id;
+
+  return transport;
+}
+
+static inline void
+log_transport_factory_free(LogTransportFactory *self)
+{
+  if (self->free_fn)
+    self->free_fn(self);
+  g_free(self);
+}
+
+static inline const gchar *
+log_transport_factory_get_id(const LogTransportFactory *self)
+{
+  /* each concrete LogTransportFactory has to have an id
+   */
+  g_assert(self->id);
+  return self->id;
+}
 
 typedef struct _LogTransportStack LogTransportStack;
 

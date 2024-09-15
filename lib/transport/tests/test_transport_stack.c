@@ -24,7 +24,6 @@
 #include <criterion/criterion.h>
 
 #include "transport/transport-stack.h"
-#include "transport/transport-factory.h"
 #include "apphook.h"
 
 #define DEFINE_TEST_TRANSPORT_WITH_FACTORY(TypePrefix, FunPrefix) \
