@@ -141,7 +141,7 @@ log_transport_stack_new(LogTransportFactory *default_transport_factory, gint fd)
 {
   LogTransportStack *self = g_new0(LogTransportStack, 1);
 
-  log_transport_init_instance(&self->super, fd);
+  log_transport_init_instance(&self->super, "transport_stack", fd);
   self->super.read = _log_transport_stack_read;
   self->super.write = _log_transport_stack_write;
   self->super.free_fn = _log_transport_stack_free;

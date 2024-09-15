@@ -59,7 +59,7 @@ log_transport_read(LogTransport *self, gpointer buf, gsize count, LogTransportAu
   return self->read(self, buf, count, aux);
 }
 
-void log_transport_init_instance(LogTransport *s, gint fd);
+void log_transport_init_instance(LogTransport *s, const gchar *name, gint fd);
 void log_transport_free_method(LogTransport *s);
 void log_transport_free(LogTransport *s);
 gint log_transport_release_fd(LogTransport *s);
