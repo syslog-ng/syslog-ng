@@ -59,7 +59,7 @@
   FunPrefix ## _factory_construct(const LogTransportFactory *s, gint fd) \
   {\
     LogTransport *transport = FunPrefix ## _transport_new(); \
-    log_transport_init_instance(transport, fd); \
+    log_transport_init_instance(transport, # FunPrefix, fd); \
     return transport; \
   } \
   LogTransportFactory * \

@@ -248,6 +248,7 @@ log_transport_tls_new(TLSSession *tls_session, gint fd)
   LogTransportTLS *self = g_new0(LogTransportTLS, 1);
 
   log_transport_stream_socket_init_instance(&self->super, fd);
+  self->super.super.name = "tls";
   self->super.super.cond = 0;
   self->super.super.read = log_transport_tls_read_method;
   self->super.super.write = log_transport_tls_write_method;

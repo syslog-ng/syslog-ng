@@ -83,7 +83,7 @@ log_transport_file_writev_method(LogTransport *self, struct iovec *iov, gint iov
 void
 log_transport_file_init_instance(LogTransportFile *self, gint fd)
 {
-  log_transport_init_instance(&self->super, fd);
+  log_transport_init_instance(&self->super, "file", fd);
   self->super.read = log_transport_file_read_method;
   self->super.write = log_transport_file_write_method;
   self->super.writev = log_transport_file_writev_method;
