@@ -263,15 +263,6 @@ log_transport_dgram_socket_write_method(LogTransport *s, const gpointer buf, gsi
 }
 
 void
-log_transport_socket_set_proxied(LogTransportSocket *self, LogTransportSocketProxy *proxy)
-{
-  g_assert(self->proto == IPPROTO_TCP);
-  g_assert(self->proxy == NULL && "Transport socket already proxied");
-
-  self->proxy = proxy;
-}
-
-void
 log_transport_dgram_socket_init_instance(LogTransportSocket *self, gint fd)
 {
   log_transport_socket_init_instance(self, "dgram-socket", fd);
