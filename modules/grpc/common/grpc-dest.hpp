@@ -100,18 +100,18 @@ public:
 
   void add_extra_channel_arg(std::string name, long value)
   {
-    this->int_extra_channel_args.push_back(std::pair<std::string, long> {name, value});
+    this->int_extra_channel_args.push_back(std::make_pair(name, value));
   }
 
   void add_extra_channel_arg(std::string name, std::string value)
   {
-    this->string_extra_channel_args.push_back(std::pair<std::string, std::string> {name, value});
+    this->string_extra_channel_args.push_back(std::make_pair(name, value));
   }
 
   void add_header(std::string name, std::string value)
   {
     std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-    this->headers.push_back(std::pair<std::string, std::string> {name, value});
+    this->headers.push_back(std::make_pair(name, value));
   }
 
   GrpcClientCredentialsBuilderW *get_credentials_builder_wrapper()
