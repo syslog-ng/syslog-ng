@@ -29,7 +29,7 @@ endif()
 
 if (ENABLE_CPP)
   enable_language(CXX)
-  set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard")
+  set(CMAKE_CXX_STANDARD 11 CACHE STRING "C++ standard")
   set(CMAKE_CXX_STANDARD_REQUIRED OFF CACHE BOOL "C++ standard is a requirement")
   set(CMAKE_CXX_EXTENSIONS OFF CACHE BOOL "C++ compiler specific extensions")
   set(SYSLOG_NG_ENABLE_CPP ${ENABLE_CPP})
