@@ -506,11 +506,11 @@ dnl C++
 AC_PROG_CXX([$CPP_COMPILER])
 
 if test "x$enable_cpp" = "xyes"; then
-        AX_CXX_COMPILE_STDCXX(11,, mandatory)
+        AX_CXX_COMPILE_STDCXX(14,, mandatory)
         AX_CXX_COMPILE_STDCXX(17,, optional)
 elif test "x$enable_cpp" = "xauto"; then
-        AX_CXX_COMPILE_STDCXX(11,, optional)
-        if test "x$HAVE_CXX11" = "x1"; then
+        AX_CXX_COMPILE_STDCXX(14,, optional)
+        if test "x$HAVE_CXX14" = "x1"; then
                 enable_cpp=yes
         else
                 enable_cpp=no
