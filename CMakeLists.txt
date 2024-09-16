@@ -279,7 +279,6 @@ find_package(FLEX REQUIRED)
 find_package(LIBNET REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(WRAP)
-find_package(criterion)
 find_package(Inotify)
 find_package(LIBCAP)
 
@@ -368,17 +367,16 @@ set_target_properties(check-copyright PROPERTIES
   ADDITIONAL_MAKE_CLEAN_FILES
   "copyright-run.log;copyright-err.log")
 
-if (CRITERION_FOUND)
-  option(BUILD_TESTING "Enable unit tests" ON)
-else()
-  option(BUILD_TESTING "Enable unit tests" OFF)
+option(BUILD_TESTING "Enable unit tests" ON)
+if (BUILD_TESTING)
+  find_package (criterion)
 endif()
 
 include(add_tests)
 
 if (BUILD_TESTING)
   if (NOT CRITERION_FOUND)
-    message(FATAL_ERROR "BUILD_TESTING enabled without criterion detected!")
+    message(FATAL_ERROR "BUILD_TESTING is enabled (by default, or explicitely) without criterion detected! You can turn off testing via the -DBUILD_TESTING=OFF cmake option.")
   else()
     set(CTEST_ENVIRONMENT
       "G_SLICE=always-malloc,debug-blocks"
