@@ -86,12 +86,12 @@ public:
 
   void add_extra_channel_arg(std::string name, long value)
   {
-    this->int_extra_channel_args.push_back(std::pair<std::string, long> {name, value});
+    this->int_extra_channel_args.push_back(std::make_pair(name, value));
   }
 
   void add_extra_channel_arg(std::string name, std::string value)
   {
-    this->string_extra_channel_args.push_back(std::pair<std::string, std::string> {name, value});
+    this->string_extra_channel_args.push_back(std::make_pair(name, value));
   }
 
   GrpcServerCredentialsBuilderW *get_credentials_builder_wrapper()
