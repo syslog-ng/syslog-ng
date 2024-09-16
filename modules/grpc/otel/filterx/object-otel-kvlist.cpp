@@ -274,7 +274,7 @@ _unset_key(FilterXDict *s, FilterXObject *key)
   return self->cpp->unset_key(key);
 }
 
-static uint64_t
+static guint64
 _len(FilterXDict *s)
 {
   FilterXOtelKVList *self = (FilterXOtelKVList *) s;

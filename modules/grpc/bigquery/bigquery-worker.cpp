@@ -226,7 +226,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
     }
     case FieldDescriptor::CppType::CPPTYPE_INT64:
     {
-      int64_t v;
+      gint64 v;
       if (!type_cast_to_int64(value.str, -1, &v, NULL))
         {
           type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "integer");
@@ -237,7 +237,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
     }
     case FieldDescriptor::CppType::CPPTYPE_UINT32:
     {
-      int64_t v;
+      gint64 v;
       if (!type_cast_to_int64(value.str, -1, &v, NULL))
         {
           type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "integer");
@@ -248,7 +248,7 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
     }
     case FieldDescriptor::CppType::CPPTYPE_UINT64:
     {
-      int64_t v;
+      gint64 v;
       if (!type_cast_to_int64(value.str, -1, &v, NULL))
         {
           type_cast_drop_helper(owner->template_options.on_error, value.str, -1, "integer");
