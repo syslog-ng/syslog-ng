@@ -183,6 +183,8 @@ msg_format_parse_into(MsgFormatOptions *options, LogMessage *msg,
     {
       if (options->flags & LP_PIGGYBACK_ERRORS)
         msg_format_inject_parse_error(options, msg, data, _rstripped_message_length(data, length), problem_position);
+      else
+        log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) data, length);
 
       /* the injected error message needs to be postprocessed too */
       msg_format_postprocess_message(options, msg, data, length);
