@@ -47,6 +47,14 @@ DestWorker::DestWorker(GrpcDestWorker *s)
     formatter(s->super.owner->super.super.super.cfg)
 {
   std::shared_ptr<::grpc::ChannelCredentials> credentials = DestWorker::create_credentials();
+  if (!credentials)
+    {
+      msg_error("Error querying OTel credentials",
+                evt_tag_str("url", this->owner.get_url().c_str()),
+                log_pipe_location_tag((LogPipe *) this->super->super.owner));
+      throw std::runtime_error("Error querying OTel credentials");
+    }
+
   ::grpc::ChannelArguments args = this->create_channel_args();
 
   channel = ::grpc::CreateCustomChannel(owner.get_url(), credentials, args);

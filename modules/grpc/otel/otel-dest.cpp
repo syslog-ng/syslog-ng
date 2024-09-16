@@ -56,7 +56,15 @@ LogThreadedDestWorker *
 DestDriver::construct_worker(int worker_index)
 {
   GrpcDestWorker *worker = grpc_dw_new(this->super, worker_index);
-  worker->cpp = new DestWorker(worker);
+  try
+    {
+      worker->cpp = new DestWorker(worker);
+    }
+  catch (const std::runtime_error &e)
+    {
+      log_threaded_dest_worker_free(&worker->super);
+      return NULL;
+    }
   return &worker->super;
 }
 
