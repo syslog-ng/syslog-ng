@@ -2011,7 +2011,6 @@ void
 log_msg_tags_init(void)
 {
   log_tags_register_predefined_tag("message.utf8_sanitized", LM_T_MSG_UTF8_SANITIZED);
-  log_tags_register_predefined_tag("message.parse_error", LM_T_MSG_PARSE_ERROR);
 
   log_tags_register_predefined_tag("syslog.invalid_pri", LM_T_SYSLOG_INVALID_PRI);
   log_tags_register_predefined_tag("syslog.missing_pri", LM_T_SYSLOG_MISSING_PRI);

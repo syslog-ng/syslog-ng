@@ -106,8 +106,6 @@ enum
 {
   /* means that the message is not valid utf8 */
   LM_T_MSG_UTF8_SANITIZED,
-  /* msg-format parsing failed, "Error parsing ..." */
-  LM_T_MSG_PARSE_ERROR,
   /* missing <pri> value */
   LM_T_SYSLOG_MISSING_PRI,
   /* invalid <pri> value */
