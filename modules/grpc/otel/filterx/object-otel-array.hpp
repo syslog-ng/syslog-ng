@@ -55,11 +55,11 @@ public:
   ~Array();
 
   std::string marshal();
-  bool set_subscript(uint64_t index, FilterXObject **value);
-  FilterXObject *get_subscript(uint64_t index);
+  bool set_subscript(guint64 index, FilterXObject **value);
+  FilterXObject *get_subscript(guint64 index);
   bool append(FilterXObject **value);
-  bool unset_index(uint64_t index);
-  uint64_t len() const;
+  bool unset_index(guint64 index);
+  guint64 len() const;
   const ArrayValue &get_value() const;
 
 private:

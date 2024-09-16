@@ -92,7 +92,7 @@ Array::marshal(void)
 }
 
 bool
-Array::set_subscript(uint64_t index, FilterXObject **value)
+Array::set_subscript(guint64 index, FilterXObject **value)
 {
   FilterXObject *assoc_object = NULL;
   if (!any_field_converter.FilterXObjectDirectSetter(array->mutable_values(index), *value, &assoc_object))
@@ -116,23 +116,23 @@ Array::append(FilterXObject **value)
 }
 
 bool
-Array::unset_index(uint64_t index)
+Array::unset_index(guint64 index)
 {
   array->mutable_values()->DeleteSubrange(index, 1);
   return true;
 }
 
 FilterXObject *
-Array::get_subscript(uint64_t index)
+Array::get_subscript(guint64 index)
 {
   AnyValue *any_value = array->mutable_values(index);
   return any_field_converter.FilterXObjectDirectGetter(any_value);
 }
 
-uint64_t
+guint64
 Array::len() const
 {
-  return (uint64_t) array->values_size();
+  return (guint64) array->values_size();
 }
 
 const ArrayValue &
@@ -153,7 +153,7 @@ _free(FilterXObject *s)
 }
 
 static gboolean
-_set_subscript(FilterXList *s, uint64_t index, FilterXObject **new_value)
+_set_subscript(FilterXList *s, guint64 index, FilterXObject **new_value)
 {
   FilterXOtelArray *self = (FilterXOtelArray *) s;
 
@@ -169,7 +169,7 @@ _append(FilterXList *s, FilterXObject **new_value)
 }
 
 static FilterXObject *
-_get_subscript(FilterXList *s, uint64_t index)
+_get_subscript(FilterXList *s, guint64 index)
 {
   FilterXOtelArray *self = (FilterXOtelArray *) s;
 
@@ -177,14 +177,14 @@ _get_subscript(FilterXList *s, uint64_t index)
 }
 
 static gboolean
-_unset_index(FilterXList *s, uint64_t index)
+_unset_index(FilterXList *s, guint64 index)
 {
   FilterXOtelArray *self = (FilterXOtelArray *) s;
 
   return self->cpp->unset_index(index);
 }
 
-static uint64_t
+static guint64
 _len(FilterXList *s)
 {
   FilterXOtelArray *self = (FilterXOtelArray *) s;

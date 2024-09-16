@@ -278,7 +278,7 @@ public:
   {
     if (filterx_object_is_type(object, &FILTERX_TYPE_NAME(integer)))
       {
-        int64_t value;
+        gint64 value;
         filterx_integer_unwrap(object, &value);
         if (!SeverityNumber_IsValid((int) value))
           {
