@@ -72,4 +72,5 @@ AFInterLive afinter_start_live_collection(void);
 void afinter_stop_live_collection(void);
 void afinter_reset_live_collection(void);
 void afinter_get_collected_messages(GString *result);
+void afinter_get_size_of_internal_logs(GString *result);
 #endif

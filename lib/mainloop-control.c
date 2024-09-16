@@ -457,10 +457,11 @@ control_internal_logs(ControlConnection *cc, GString *command, gpointer user_dat
 {
   GString *result = g_string_new("");
   gchar **arguments = g_strsplit(command->str, " ", 0);
-  AFInterLive ret;
 
   if (g_str_equal(arguments[1], "START"))
     {
+      AFInterLive ret;
+
       if (g_process_get_mode() == G_PM_FOREGROUND)
         {
           g_string_assign(result, "FAIL Error: Cannot collect internal logs while syslog-ng is running in foreground");
@@ -491,6 +492,10 @@ control_internal_logs(ControlConnection *cc, GString *command, gpointer user_dat
     {
       afinter_stop_live_collection();
       afinter_get_collected_messages(result);
+    }
+  else if (g_str_equal(arguments[1], "SIZE"))
+    {
+      afinter_get_size_of_internal_logs(result);
     }
   else
     {

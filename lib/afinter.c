@@ -481,6 +481,8 @@ afinter_sd_deinit(LogPipe *s)
       self->source = NULL;
     }
 
+  afinter_stop_live_collection();
+
   if (!log_src_driver_deinit_method(s))
     return FALSE;
 
@@ -651,6 +653,8 @@ afinter_start_live_collection(void)
 {
   AFInterSource *self;
 
+  g_mutex_lock(&internal_msg_lock);
+
   if (is_live_collection)
     return AFINTER_LIVE_COLLECTION_RUNNING;
 
@@ -664,11 +668,10 @@ afinter_start_live_collection(void)
   self->options = options;
   stats_counter_set(metrics.queue_capacity, self->options->queue_capacity);
 
-  g_mutex_lock(&internal_msg_lock);
   current_internal_source = self;
-  g_mutex_unlock(&internal_msg_lock);
-
   is_live_collection = TRUE;
+
+  g_mutex_unlock(&internal_msg_lock);
 
   return AFINTER_LIVE_COLLECTION_STARTED;
 }
@@ -688,20 +691,26 @@ afinter_reset_live_collection(void)
 void
 afinter_stop_live_collection(void)
 {
+  g_mutex_lock(&internal_msg_lock);
   if (is_live_collection)
     {
       if (current_internal_source != NULL)
         {
           AFInterSource *self = current_internal_source;
 
-          g_mutex_lock(&internal_msg_lock);
           current_internal_source = NULL;
-          g_mutex_unlock(&internal_msg_lock);
 
           is_live_collection = FALSE;
           g_free(self);
         }
     }
+  g_mutex_unlock(&internal_msg_lock);
+}
+
+void
+afinter_get_size_of_internal_logs(GString *result)
+{
+  g_string_append_printf(result, "Size of internal logs: %d", g_queue_get_length(internal_msg_queue));
 }
 
 void
@@ -711,16 +720,14 @@ afinter_get_collected_messages(GString *result)
   GString *msg;
   LogTemplate *template = NULL;
 
+  g_mutex_lock(&internal_msg_lock);
   if (internal_msg_queue != NULL)
     {
       msg = g_string_sized_new(1024);
 
       while (!g_queue_is_empty(internal_msg_queue))
         {
-          g_mutex_lock(&internal_msg_lock);
           log_msg = g_queue_pop_head(internal_msg_queue);
-          g_mutex_unlock(&internal_msg_lock);
-
           /* format log */
           template = log_template_new(configuration, NULL);
           log_template_compile(template, "[$DATE] $HOST $MSGHDR$MSG\n", NULL);
@@ -735,6 +742,7 @@ afinter_get_collected_messages(GString *result)
       g_string_free(msg, TRUE);
       internal_msg_queue = NULL;
     }
+  g_mutex_unlock(&internal_msg_lock);
 
   if (!strlen(result->str))
     g_string_assign(result, "No live messages collected");

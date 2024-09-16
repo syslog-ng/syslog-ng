@@ -65,11 +65,13 @@ slng_reload(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 
 static gboolean config_options_start = FALSE;
 static gboolean config_options_stop = FALSE;
+static gboolean config_options_size = FALSE;
 
 static GOptionEntry internal_options[] =
 {
   { "start", 's', 0, G_OPTION_ARG_NONE, &config_options_start, "start live collection of internal logs", NULL },
   { "stop", 'x', 0, G_OPTION_ARG_NONE, &config_options_stop, "stop live collection of internal logs", NULL },
+  { "size", 'l', 0, G_OPTION_ARG_NONE, &config_options_size, "get size of internal logs", NULL },
   { NULL,           0,   0, G_OPTION_ARG_NONE, NULL,                         NULL,           NULL }
 };
 
@@ -82,6 +84,8 @@ slng_internal(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
     g_string_assign(cmd, "INTERLOGS START");
   else if (config_options_stop)
     g_string_assign(cmd, "INTERLOGS STOP");
+  else if (config_options_size)
+    g_string_assign(cmd, "INTERLOGS SIZE");
   else
     {
       fprintf(stderr, "Error: Unknown command\n");
