@@ -11,7 +11,8 @@ jobs:
     strategy:
       matrix:
         version: [13, 14]
-        build-tool: [autotools, cmake]
+        build-tool: [ autotools, cmake ]
+        compiler: [ {cpp: clang++, c: clang}, {cpp: g++, c: gcc} ]
       fail-fast: false
 
     runs-on: macOS-${{ matrix.version }}
@@ -39,16 +40,18 @@ jobs:
           brew bundle --file=contrib/Brewfile
 
       - name: Set ENV variables
+        env:
+          CC: ${{ matrix.compiler.c }}
+          CXX: ${{ matrix.compiler.cpp }}
+
         run: |
           . .github/workflows/gh-tools.sh
 
           HOMEBREW_PREFIX="$(brew --prefix)"
           PYTHONUSERBASE="${HOME}/python_packages"
-          PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@3/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${HOMEBREW_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}"
-          CFLAGS="-I${HOMEBREW_PREFIX}/include/"
-
-          LDFLAGS="-L${HOMEBREW_PREFIX}/lib"
           THREADS="$(sysctl -n hw.physicalcpu)"
+          CFLAGS="-I${HOMEBREW_PREFIX}/include/"
+          LDFLAGS="-L${HOMEBREW_PREFIX}/lib"
           CONFIGURE_FLAGS="
             --enable-force-gnu99
             --prefix=${SYSLOG_NG_INSTALL_DIR}
@@ -60,7 +63,6 @@ jobs:
             --disable-smtp
             --disable-java
             --disable-java-modules
-            --disable-mqtt
             --disable-pacct
           "
           CMAKE_CONFIGURE_FLAGS="
@@ -74,9 +76,9 @@ jobs:
             -DENABLE_GRPC=OFF
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF
-            -DENABLE_MQTT=OFF
             -DENABLE_PACCT=OFF
           "
+          PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@3/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${HOMEBREW_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}"
           PATH="${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/sbin:${PYTHONUSERBASE}/bin:${PATH}"
 
           gh_export HOMEBREW_PREFIX PYTHONUSERBASE CC CXX PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS PATH
