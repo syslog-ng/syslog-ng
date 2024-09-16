@@ -86,6 +86,76 @@ Test(syslog_format, cisco_sequence_id_non_zero_termination)
   log_msg_unref(msg);
 }
 
+Test(syslog_format, rfc3164_error_invalid_pri)
+{
+  /* incorrect pri value */
+  const gchar *data = "<189 Feb  3 12:34:56 host program[pid]: message";
+  gsize data_length = strlen(data);
+
+  LogMessage *msg = log_msg_new_empty();
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  assert_log_message_value_by_name(msg, "MSG", "<189 Feb  3 12:34:56 host program[pid]: message");
+  assert_log_message_has_tag(msg, "syslog.invalid_pri");
+
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, rfc3164_error_missing_timestamp)
+{
+  /* incorrect pri value */
+  const gchar *data = "<189> program[pid]: message";
+  gsize data_length = strlen(data);
+
+  LogMessage *msg = log_msg_new_empty();
+
+  gsize problem_position;
+  cr_assert(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  /* without timestamp, host is not expected */
+  assert_log_message_value_by_name(msg, "HOST", "");
+  assert_log_message_value_by_name(msg, "PROGRAM", "program");
+  assert_log_message_value_by_name(msg, "PID", "pid");
+  assert_log_message_value_by_name(msg, "MSG", "message");
+  assert_log_message_value_by_name(msg, "MSGFORMAT", "syslog:rfc3164");
+  assert_log_message_has_tag(msg, "syslog.missing_timestamp");
+  assert_log_message_has_tag(msg, "syslog.rfc3164_missing_header");
+
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, rfc5424_error_invalid_timestamp)
+{
+  const gchar *data = "<189>1 2024-09-16Q11:22:33+02:00 host program pid msgid [foo bar=baz] message";
+  gsize data_length = strlen(data);
+
+  parse_options.flags |= LP_SYSLOG_PROTOCOL;
+  LogMessage *msg = log_msg_new_empty();
+
+  gsize problem_position;
+  cr_assert_not(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  assert_log_message_value_by_name(msg, "MSGFORMAT", "");
+  assert_log_message_has_tag(msg, "syslog.missing_timestamp");
+
+  log_msg_unref(msg);
+}
+
+Test(syslog_format, rfc5424_error_invalid_sdata)
+{
+  const gchar *data = "<189>1 2024-09-16T11:22:33+02:00 host program pid msgid [foo bar=baz message";
+  gsize data_length = strlen(data);
+
+  parse_options.flags |= LP_SYSLOG_PROTOCOL;
+  LogMessage *msg = log_msg_new_empty();
+
+  gsize problem_position;
+  cr_assert_not(syslog_format_handler(&parse_options, msg, (const guchar *) data, data_length, &problem_position));
+  assert_log_message_value_by_name(msg, "MSGFORMAT", "");
+  assert_log_message_has_tag(msg, "syslog.rfc5424_invalid_sdata");
+
+  log_msg_unref(msg);
+}
+
 Test(syslog_format, rfc3164_style_message_when_parsed_as_rfc5424_is_marked_as_such_in_msgformat)
 {
   const gchar *data = "<189>Feb  3 12:34:56 host program[pid]: message";
