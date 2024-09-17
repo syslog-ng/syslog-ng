@@ -343,12 +343,14 @@ _read_with_active_log_transport(LogTransportSocketProxy *self, gpointer buf, gsi
 static Status
 _fetch_chunk(LogTransportSocketProxy *self, gsize upto_bytes)
 {
+  LogTransport *transport = log_transport_stack_get_active(&self->super.super.super.transport_stack);
+
   g_assert(upto_bytes < sizeof(self->proxy_header_buff));
   if (self->proxy_header_buff_len < upto_bytes)
     {
-      gssize rc = _read_with_active_log_transport(self,
-                                                  &(self->proxy_header_buff[self->proxy_header_buff_len]),
-                                                  upto_bytes - self->proxy_header_buff_len, NULL);
+      gssize rc = log_transport_read(transport,
+                                     &(self->proxy_header_buff[self->proxy_header_buff_len]),
+                                     upto_bytes - self->proxy_header_buff_len, NULL);
       if (rc < 0)
         {
           if (errno == EAGAIN)
@@ -357,7 +359,7 @@ _fetch_chunk(LogTransportSocketProxy *self, gsize upto_bytes)
             {
               LogTransportSocket *active_log_transport_socket = _active_log_transport_socket(self);
               msg_error("I/O error occurred while reading proxy header",
-                        evt_tag_int(EVT_TAG_FD, active_log_transport_socket->super.fd),
+                        evt_tag_int(EVT_TAG_FD, transport->fd),
                         evt_tag_error(EVT_TAG_OSERROR));
               return STATUS_ERROR;
             }
@@ -441,7 +443,8 @@ _is_proxy_version_v2(LogTransportSocketProxy *self)
 static inline Status
 _fetch_into_proxy_buffer(LogTransportSocketProxy *self)
 {
-  Status status;
+  LogTransport *transport = log_transport_stack_get_active(&self->super.super.super.transport_stack);
+  LogProtoStatus status;
 
   switch (self->header_fetch_state)
     {
@@ -470,8 +473,8 @@ _fetch_into_proxy_buffer(LogTransportSocketProxy *self)
         {
           LogTransportSocket *active_log_transport_socket = _active_log_transport_socket(self);
           msg_error("Unable to determine PROXY protocol version",
-                    evt_tag_int(EVT_TAG_FD, active_log_transport_socket->super.fd));
-          return STATUS_ERROR;
+                    evt_tag_int(EVT_TAG_FD, transport->fd));
+          return LPS_ERROR;
         }
       g_assert_not_reached();
 
@@ -500,7 +503,7 @@ _log_transport_proxied_read_method(LogTransport *s, gpointer buf, gsize buflen, 
 static void
 _apply_proxied_state(LogTransportSocketProxy *self, LogTransportSocket *transport_socket)
 {
-  if (!log_transport_stack_switch((LogTransportStack *)self->super.super.super.transport, TRANSPORT_FACTORY_TLS_ID))
+  if (!log_transport_stack_switch(&self->super.super.super.transport_stack, LOG_TRANSPORT_TLS))
     {
       msg_error("socket-proxy failed to switch to TLS");
       return FALSE;
@@ -514,11 +517,31 @@ _apply_proxied_state(LogTransportSocketProxy *self, LogTransportSocket *transpor
 static gboolean
 _proccess_proxy_header(LogTransportSocketProxy *self)
 {
-  Status status = _fetch_into_proxy_buffer(self);
+  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
+  LogTransport *transport = log_transport_stack_get_active(&s->transport_stack);
 
-  self->proxy_header_processed = (status == STATUS_SUCCESS);
-  if (status != STATUS_SUCCESS)
-    return FALSE;
+  *cond = transport->cond;
+
+  if (self->handshake_done)
+    return log_proto_text_server_prepare_method(s, cond, timeout);
+
+  /* if there's no pending I/O in the transport layer, then we want to do a read */
+  if (*cond == 0)
+    *cond = G_IO_IN;
+
+  return LPPA_POLL_IO;
+}
+
+static LogProtoStatus
+log_proto_proxied_text_server_handshake(LogProtoServer *s, gboolean *handshake_finished)
+{
+  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
+
+  LogProtoStatus status = _fetch_into_proxy_buffer(self);
+
+  self->handshake_done = *handshake_finished = (status == LPS_SUCCESS);
+  if (status != LPS_SUCCESS)
+    return status;
 
   gboolean parsable = _parse_proxy_header(self);
 

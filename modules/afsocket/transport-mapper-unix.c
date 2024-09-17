@@ -34,13 +34,17 @@ struct _TransportMapperUnix
   TransportMapper super;
 };
 
-static LogTransport *
-_construct_log_transport(TransportMapper *s, gint fd)
+static gboolean
+_setup_stack(TransportMapper *s, LogTransportStack *stack)
 {
+  LogTransport *transport;
   if (s->sock_type == SOCK_DGRAM)
-    return log_transport_unix_dgram_socket_new(fd);
+    transport = log_transport_unix_dgram_socket_new(stack->fd);
   else
-    return log_transport_unix_stream_socket_new(fd);
+    transport = log_transport_unix_stream_socket_new(stack->fd);
+  log_transport_stack_add_transport(stack, LOG_TRANSPORT_SOCKET, transport);
+  log_transport_stack_switch(stack, LOG_TRANSPORT_SOCKET);
+  return TRUE;
 }
 
 static TransportMapperUnix *
@@ -49,7 +53,7 @@ transport_mapper_unix_new_instance(const gchar *transport, gint sock_type)
   TransportMapperUnix *self = g_new0(TransportMapperUnix, 1);
 
   transport_mapper_init_instance(&self->super, transport);
-  self->super.construct_log_transport = _construct_log_transport;
+  self->super.setup_stack = _setup_stack;
   self->super.address_family = AF_UNIX;
   self->super.sock_type = sock_type;
   return self;

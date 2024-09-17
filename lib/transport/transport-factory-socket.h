@@ -35,8 +35,6 @@ struct _LogTransportFactorySocket
   LogTransportFactory super;
 };
 
-#define TRANSPORT_FACTORY_SOCKET_ID "socket"
-
-LogTransportFactory *log_transport_factory_socket_new(gint sock_type);
+LogTransportFactory *transport_factory_socket_new(gint sock_type);
 
 #endif

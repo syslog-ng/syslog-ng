@@ -85,86 +85,40 @@ transport_mapper_inet_apply_transport_method(TransportMapper *s, GlobalConfig *c
   return transport_mapper_inet_validate_tls_options(self);
 }
 
-static LogTransport *
-_construct_multitransport_with_tls_factory(TransportMapperInet *self, gint fd)
+static gboolean
+_setup_socket_transport(TransportMapperInet *self, LogTransportStack *stack)
 {
-  LogTransportFactory *default_factory = log_transport_factory_tls_new(self->tls_context, self->tls_verifier, self->flags);
-  return log_transport_stack_new(default_factory, fd);
+  log_transport_stack_add_factory(stack, transport_factory_socket_new(self->super.sock_type));
+  return TRUE;
 }
 
-static LogTransport *
-_construct_tls_or_multi_transport(TransportMapperInet *self, gboolean create_multi_transport, gint fd)
+static gboolean
+_setup_tls_transport(TransportMapperInet *self, LogTransportStack *stack)
 {
-  if (create_multi_transport)
-    return _construct_multitransport_with_tls_factory(self, fd);
-
-  TLSSession *tls_session = tls_context_setup_session(self->tls_context);
-  if (!tls_session)
-    return NULL;
-
-  tls_session_configure_allow_compress(tls_session, self->flags & TMI_ALLOW_COMPRESS);
-  tls_session_set_verifier(tls_session, self->tls_verifier);
-
-  return log_transport_tls_new(tls_session, fd);
+  log_transport_stack_add_factory(stack, transport_factory_tls_new(self->tls_context, self->tls_verifier, self->flags));
+  return TRUE;
 }
 
-static LogTransport *
-_construct_multitransport_with_plain_tcp_factory(TransportMapperInet *self, gint fd)
-{
-  LogTransportFactory *default_factory = log_transport_factory_socket_new(self->super.sock_type);
-
-  return log_transport_stack_new(default_factory, fd);
-}
-
-static LogTransport *
-_construct_multitransport_with_plain_and_tls_factories(TransportMapperInet *self, gint fd)
-{
-  LogTransport *transport = _construct_multitransport_with_plain_tcp_factory(self, fd);
-
-  LogTransportFactory *tls_factory = log_transport_factory_tls_new(self->tls_context, self->tls_verifier, self->flags);
-  log_transport_stack_add_factory((LogTransportStack *)transport, tls_factory);
-
-  return transport;
-}
-
-static LogTransport *
-_construct_plain_tcp_or_multi_transport(TransportMapperInet *self, gboolean create_multi_transport, gint fd)
-{
-  if (create_multi_transport)
-    return _construct_multitransport_with_plain_tcp_factory(self, fd);
-
-  if (self->super.sock_type == SOCK_DGRAM)
-    return log_transport_udp_socket_new(fd);
-  else
-    return log_transport_stream_socket_new(fd);
-}
-
-static LogTransport *
-transport_mapper_inet_construct_log_transport(TransportMapper *s, gint fd)
+static gboolean
+transport_mapper_inet_setup_stack(TransportMapper *s, LogTransportStack *stack)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
+  LogTransportIndex initial_transport_index = LOG_TRANSPORT_SOCKET;
 
-  gboolean proxy_should_switch_transport = FALSE;
-  LogTransport *transport = NULL;
+  if (!_setup_socket_transport(self, stack))
+    return FALSE;
 
-  if (self->tls_context && _is_tls_required(self))
+  if (self->tls_context)
     {
-      transport = _construct_tls_or_multi_transport(self, self->super.create_multitransport, fd);
-    }
-  else if (self->tls_context)
-    {
-      proxy_should_switch_transport = TRUE;
-      transport = _construct_multitransport_with_plain_and_tls_factories(self, fd);
-    }
-  else
-    {
-      transport = _construct_plain_tcp_or_multi_transport(self, self->super.create_multitransport, fd);
+      /* if TLS context is set up (either required or optional), add a TLS transport */
+      if (!_setup_tls_transport(self, stack))
+        return FALSE;
+      if (_is_tls_required(self))
+        initial_transport_index = LOG_TRANSPORT_TLS;
     }
 
-  if (self->proxied)
-    log_transport_socket_proxy_new(transport, proxy_should_switch_transport);
-
-  return transport;
+  log_transport_stack_switch(stack, initial_transport_index);
+  return TRUE;
 }
 
 static gboolean
@@ -298,7 +252,7 @@ transport_mapper_inet_init_instance(TransportMapperInet *self, const gchar *tran
 {
   transport_mapper_init_instance(&self->super, transport);
   self->super.apply_transport = transport_mapper_inet_apply_transport_method;
-  self->super.construct_log_transport = transport_mapper_inet_construct_log_transport;
+  self->super.setup_stack = transport_mapper_inet_setup_stack;
   self->super.init = transport_mapper_inet_init;
   self->super.async_init = transport_mapper_inet_async_init;
   self->super.free_fn = transport_mapper_inet_free_method;
