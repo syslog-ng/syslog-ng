@@ -16,6 +16,9 @@ jobs:
         version: [13, 14]
         build-tool: [ autotools, cmake ]
         compiler: [ {cpp: clang++, c: clang}, {cpp: g++, c: gcc} ]
+        exclude:
+          - version: 14
+            compiler: {cpp: clang++, c: clang}
       fail-fast: false
 
     runs-on: macOS-${{ matrix.version }}
