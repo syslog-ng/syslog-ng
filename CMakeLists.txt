@@ -18,21 +18,25 @@ project(syslog-ng C)
 
 option(ENABLE_CPP "Enable C++" ON)
 
-if(APPLE)
-  # Turned out that even the latest gcc has no proper support of the required ObjC version
-  # Once gcc was able to compile our ObjC modules properly this requirement could be removed again
-  set(CMAKE_OBJC_COMPILER clang)
-
-  set_property(GLOBAL PROPERTY OBJC_STANDARD 11)
-  set_property(GLOBAL PROPERTY OBJC_STANDARD_REQUIRED ON)
-endif()
-
 if (ENABLE_CPP)
   enable_language(CXX)
   set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard")
   set(CMAKE_CXX_STANDARD_REQUIRED OFF CACHE BOOL "C++ standard is a requirement")
   set(CMAKE_CXX_EXTENSIONS OFF CACHE BOOL "C++ compiler specific extensions")
   set(SYSLOG_NG_ENABLE_CPP ${ENABLE_CPP})
+endif()
+
+if(APPLE)
+  option(ENABLE_OBJC "Enable OSLog" ENABLE_DARWIN_OSL)
+endif()
+
+if(ENABLE_OBJC)
+  # Turned out that even the latest gcc has no proper support of the required ObjC version
+  # Once gcc was able to compile our ObjC modules properly this requirement could be removed again
+  set(CMAKE_OBJC_COMPILER clang)
+
+  set_property(GLOBAL PROPERTY OBJC_STANDARD 11)
+  set_property(GLOBAL PROPERTY OBJC_STANDARD_REQUIRED ON)
 endif()
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake/)
