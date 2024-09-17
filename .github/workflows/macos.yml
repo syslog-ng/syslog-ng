@@ -57,7 +57,7 @@ jobs:
             --prefix=${SYSLOG_NG_INSTALL_DIR}
             --enable-all-modules
             --enable-tests
-            --with-ivykis=internal
+            --with-ivykis=system
             --with-python=3
             --with-systemd-journal=no
             --disable-smtp
