@@ -22,6 +22,7 @@
 
 #include "maxminddb-helper.h"
 #include "scratch-buffers.h"
+#include "compat/inttypes.h"
 #include <logmsg/logmsg.h>
 #include <messages.h>
 

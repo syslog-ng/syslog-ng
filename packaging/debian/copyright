@@ -84,6 +84,7 @@ Files: lib/cache.*
        lib/compat/socket.h
        lib/compat/string.h
        lib/compat/strtok_r.c
+       lib/compat/inttypes.h
        lib/control/control-server.*
        lib/control/control-server-unix.c
        lib/hostname.h

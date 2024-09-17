@@ -28,6 +28,7 @@
 #include "value-pairs/value-pairs.h"
 #include "scanner/list-scanner/list-scanner.h"
 #include "compat/cpp-end.h"
+#include "compat/inttypes.h"
 
 #include <syslog.h>
 
