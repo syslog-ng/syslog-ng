@@ -145,32 +145,25 @@ afsocket_sc_format_name(AFSocketSourceConnection *self)
   return _format_sc_name(self, GSA_FULL);
 }
 
-static LogTransport *
-afsocket_sc_construct_transport(AFSocketSourceConnection *self, gint fd)
-{
-  return transport_mapper_construct_log_transport(self->owner->transport_mapper, fd);
-}
-
 static gboolean
 afsocket_sc_init(LogPipe *s)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
-  LogTransport *transport;
   LogProtoServer *proto;
 
   gboolean restored_kept_alive_source = !!self->reader;
   if (!restored_kept_alive_source)
     {
-      transport = afsocket_sc_construct_transport(self, self->sock);
-      /* transport_mapper_inet_construct_log_transport() can return NULL on TLS errors */
-      if (!transport)
-        return FALSE;
-
-      proto = log_proto_server_factory_construct(self->owner->proto_factory, transport,
+      proto = log_proto_server_factory_construct(self->owner->proto_factory, NULL,
                                                  &self->owner->reader_options.proto_options.super);
       if (!proto)
         {
-          log_transport_free(transport);
+          return FALSE;
+        }
+
+      if (!transport_mapper_setup_stack(self->owner->transport_mapper, &proto->transport_stack, self->sock))
+        {
+          log_proto_server_free(proto);
           return FALSE;
         }
 

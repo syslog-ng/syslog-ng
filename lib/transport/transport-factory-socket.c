@@ -27,28 +27,28 @@
 #include "transport/transport-udp-socket.h"
 
 static LogTransport *
-_construct_transport_dgram(const LogTransportFactory *s, gint fd)
+_construct_transport_dgram(const LogTransportFactory *s, LogTransportStack *stack)
 {
-  return log_transport_udp_socket_new(fd);
+  return log_transport_udp_socket_new(stack->fd);
 }
 
 static LogTransport *
-_construct_transport_stream(const LogTransportFactory *s, gint fd)
+_construct_transport_stream(const LogTransportFactory *s, LogTransportStack *stack)
 {
-  return log_transport_stream_socket_new(fd);
+  return log_transport_stream_socket_new(stack->fd);
 }
 
 LogTransportFactory *
-log_transport_factory_socket_new(int sock_type)
+transport_factory_socket_new(int sock_type)
 {
   LogTransportFactorySocket *self = g_new0(LogTransportFactorySocket, 1);
+
+  log_transport_factory_init_instance(&self->super, LOG_TRANSPORT_SOCKET);
 
   if (sock_type == SOCK_DGRAM)
     self->super.construct_transport = _construct_transport_dgram;
   else
     self->super.construct_transport = _construct_transport_stream;
-
-  self->super.id = TRANSPORT_FACTORY_SOCKET_ID;
 
   return &self->super;
 }

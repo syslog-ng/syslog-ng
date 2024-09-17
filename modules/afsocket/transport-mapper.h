@@ -25,7 +25,7 @@
 #define TRANSPORT_MAPPER_H_INCLUDED
 
 #include "socket-options.h"
-#include "transport/logtransport.h"
+#include "transport/transport-stack.h"
 #include "gsockaddr.h"
 
 typedef struct _TransportMapper TransportMapper;
@@ -52,7 +52,7 @@ struct _TransportMapper
   gint stats_source;
 
   gboolean (*apply_transport)(TransportMapper *self, GlobalConfig *cfg);
-  LogTransport *(*construct_log_transport)(TransportMapper *self, gint fd);
+  gboolean (*setup_stack)(TransportMapper *self, LogTransportStack *stack);
   gboolean (*init)(TransportMapper *self);
   gboolean (*async_init)(TransportMapper *self, TransportMapperAsyncInitCB func, gpointer arg);
   void (*free_fn)(TransportMapper *self);
@@ -96,10 +96,11 @@ transport_mapper_apply_transport(TransportMapper *self, GlobalConfig *cfg)
   return result;
 }
 
-static inline LogTransport *
-transport_mapper_construct_log_transport(TransportMapper *self, gint fd)
+static inline gboolean
+transport_mapper_setup_stack(TransportMapper *self, LogTransportStack *stack, gint fd)
 {
-  return self->construct_log_transport(self, fd);
+  stack->fd = fd;
+  return self->setup_stack(self, stack);
 }
 
 static inline gboolean

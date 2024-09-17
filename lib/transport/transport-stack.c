@@ -25,129 +25,81 @@
 #include "transport/transport-stack.h"
 #include "messages.h"
 
+#include <unistd.h>
+
+void
+log_transport_factory_init_instance(LogTransportFactory *self, LogTransportIndex index)
+{
+  memset(self, 0, sizeof(*self));
+  self->index = index;
+}
+
 void
 log_transport_stack_add_factory(LogTransportStack *self, LogTransportFactory *transport_factory)
 {
-  g_hash_table_insert(self->registry, (gpointer) transport_factory->id, transport_factory);
+  gint index = transport_factory->index;
+  g_assert(self->transport_factories[index] == NULL);
+  self->transport_factories[index] = transport_factory;
 }
 
-static void
-_do_transport_switch(LogTransportStack *self, LogTransport *new_transport, const LogTransportFactory *new_transport_factory)
+void
+log_transport_stack_add_transport(LogTransportStack *self, gint index, LogTransport *transport)
 {
-  self->super.fd = log_transport_release_fd(self->active_transport);
-  self->super.cond = new_transport->cond;
-  /* At this point the proxy of the active transport must be released, and would be nice to handle the ownership passing here, but
-   *   - the proxy is not in the LogTransport, it is socket only now, and
-   *   - multitransport is a generic class, can handle none LogTransportSocket based transports
-   */
-  log_transport_free(self->active_transport);
-  self->active_transport = new_transport;
-  self->active_transport_factory = new_transport_factory;
-}
-
-static const LogTransportFactory *
-_lookup_transport_factory(LogTransportStack *self, const gchar *factory_id)
-{
-  const LogTransportFactory *factory = g_hash_table_lookup(self->registry, factory_id);
-
-  if (!factory)
-    {
-      msg_error("Requested transport not found",
-                evt_tag_str("transport", factory_id));
-      return NULL;
-    }
-
-  return factory;
-}
-
-static LogTransport *
-_construct_transport(const LogTransportFactory *factory, gint fd)
-{
-  LogTransport *transport = log_transport_factory_construct_transport(factory, fd);
-
-  if (!transport)
-    {
-      msg_error("Failed to construct transport",
-                evt_tag_str("transport", factory->id));
-      return NULL;
-    }
-
-  return transport;
+  g_assert(self->transports[index] == NULL);
+  self->transports[index] = transport;
+  if (self->fd == -1)
+    self->fd = transport->fd;
+  else
+    g_assert(self->fd == transport->fd);
 }
 
 gboolean
-log_transport_stack_switch(LogTransportStack *self, const gchar *factory_id)
+log_transport_stack_switch(LogTransportStack *self, gint index)
 {
+  LogTransport *active_transport = log_transport_stack_get_active(self);
+  LogTransport *requested_transport = log_transport_stack_get_transport(self, index);
+
+  g_assert(requested_transport != NULL);
+
   msg_debug("Transport switch requested",
-            evt_tag_str("active-transport", self->active_transport->name),
-            evt_tag_str("requested-transport", factory_id));
+            evt_tag_str("active-transport", active_transport ? active_transport->name : "none"),
+            evt_tag_str("requested-transport", requested_transport->name));
 
-  const LogTransportFactory *transport_factory = _lookup_transport_factory(self, factory_id);
-  if (!transport_factory)
-    return FALSE;
+  /* FIXME: is this cond initialization really needed? */
+  if (active_transport)
+    requested_transport->cond = active_transport->cond;
+  self->active_transport = index;
+  active_transport = log_transport_stack_get_active(self);
 
-  LogTransport *transport = _construct_transport(transport_factory, self->super.fd);
-  if (!transport)
-    return FALSE;
-
-  _do_transport_switch(self, transport, transport_factory);
-
-  msg_debug("Transport switch succeeded",
-            evt_tag_str("new-active-transport", self->active_transport->name));
+  msg_debug("Transport switch successful",
+            evt_tag_str("new-active-transport", active_transport->name));
 
   return TRUE;
 }
 
-gboolean
-log_transport_stack_contains_factory(LogTransportStack *self, const gchar *factory_id)
+void
+log_transport_stack_init(LogTransportStack *self, LogTransport *initial_transport)
 {
-  const LogTransportFactory *factory = g_hash_table_lookup(self->registry, factory_id);
-
-  return (factory != NULL);
+  memset(self, 0, sizeof(*self));
+  self->fd = -1;
+  if (initial_transport)
+    log_transport_stack_add_transport(self, LOG_TRANSPORT_INITIAL, initial_transport);
 }
 
-static gssize
-_log_transport_stack_write(LogTransport *s, gpointer buf, gsize count)
+void
+log_transport_stack_deinit(LogTransportStack *self)
 {
-  LogTransportStack *self = (LogTransportStack *)s;
-  gssize r = log_transport_write(self->active_transport, buf, count);
-  self->super.cond = self->active_transport->cond;
-
-  return r;
-}
-
-static gssize
-_log_transport_stack_read(LogTransport *s, gpointer buf, gsize count, LogTransportAuxData *aux)
-{
-  LogTransportStack *self = (LogTransportStack *)s;
-  gssize r = log_transport_read(self->active_transport, buf, count, aux);
-  self->super.cond = self->active_transport->cond;
-
-  return r;
-}
-
-static void
-_log_transport_stack_free(LogTransport *s)
-{
-  LogTransportStack *self = (LogTransportStack *)s;
-  s->fd = log_transport_release_fd(self->active_transport);
-  log_transport_free(self->active_transport);
-  g_hash_table_unref(self->registry);
-  log_transport_free_method(s);
-}
-
-LogTransport *
-log_transport_stack_new(LogTransportFactory *default_transport_factory, gint fd)
-{
-  LogTransportStack *self = g_new0(LogTransportStack, 1);
-
-  log_transport_init_instance(&self->super, "transport_stack", fd);
-  self->super.read = _log_transport_stack_read;
-  self->super.write = _log_transport_stack_write;
-  self->super.free_fn = _log_transport_stack_free;
-  self->registry = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_transport_factory_free);
-  self->active_transport = log_transport_factory_construct_transport(default_transport_factory, fd);
-  self->active_transport_factory = default_transport_factory;
-
-  return &self->super;
+  if (self->fd != -1)
+    {
+      msg_trace("Closing log transport fd",
+                evt_tag_int("fd", self->fd));
+      close(self->fd);
+    }
+  for (gint i = 0; i < LOG_TRANSPORT__MAX; i++)
+    {
+      if (self->transports[i])
+        log_transport_free(self->transports[i]);
+      if (self->transport_factories[i])
+        log_transport_factory_free(self->transport_factories[i]);
+    }
 }

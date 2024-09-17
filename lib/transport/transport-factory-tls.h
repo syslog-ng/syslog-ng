@@ -38,11 +38,9 @@ struct _LogTransportFactoryTLS
   gboolean allow_compress;
 };
 
-LogTransportFactory *log_transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags);
+LogTransportFactory *transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags);
 
-void log_transport_factory_tls_enable_compression(LogTransportFactory *);
-void log_transport_factory_tls_disable_compression(LogTransportFactory *);
-
-#define TRANSPORT_FACTORY_TLS_ID "tls"
+void transport_factory_tls_enable_compression(LogTransportFactory *);
+void transport_factory_tls_disable_compression(LogTransportFactory *);
 
 #endif

@@ -179,9 +179,10 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
   struct stat st;
   gint64 ofs = 0;
   LogProtoBufferedServerState *state;
+  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
   gint fd;
 
-  fd = self->super.transport->fd;
+  fd = transport->fd;
   self->persist_handle = handle;
 
   if (fstat(fd, &st) < 0)
@@ -254,7 +255,7 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
           raw_buffer = g_alloca(state->raw_buffer_size);
         }
 
-      rc = log_transport_read(self->super.transport, raw_buffer, state->raw_buffer_size, NULL);
+      rc = log_transport_read(transport, raw_buffer, state->raw_buffer_size, NULL);
       if (rc != state->raw_buffer_size)
         {
           msg_notice("Error re-reading buffer contents of the file to be continued, restarting from the beginning",
@@ -586,8 +587,9 @@ LogProtoPrepareAction
 log_proto_buffered_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
+  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
 
-  *cond = self->super.transport->cond;
+  *cond = transport->cond;
 
   /* if there's no pending I/O in the transport layer, then we want to do a read */
   if (*cond == 0)
@@ -600,7 +602,9 @@ static gint
 log_proto_buffered_server_read_data_method(LogProtoBufferedServer *self, guchar *buf, gsize len,
                                            LogTransportAuxData *aux)
 {
-  return log_transport_read(self->super.transport, buf, len, aux);
+  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
+
+  return log_transport_read(transport, buf, len, aux);
 }
 
 static void
@@ -816,7 +820,7 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
         {
           /* an error occurred while reading */
           msg_error("I/O error occurred while reading",
-                    evt_tag_int(EVT_TAG_FD, self->super.transport->fd),
+                    evt_tag_int(EVT_TAG_FD, self->super.transport_stack.fd),
                     evt_tag_error(EVT_TAG_OSERROR));
           result = G_IO_STATUS_ERROR;
         }
@@ -825,7 +829,7 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
     {
       /* EOF read */
       msg_trace("EOF occurred while reading",
-                evt_tag_int(EVT_TAG_FD, self->super.transport->fd));
+                evt_tag_int(EVT_TAG_FD, self->super.transport_stack.fd));
       if (state->raw_buffer_leftover_size > 0)
         {
           msg_error("EOF read on a channel with leftovers from previous character conversion, dropping input");
@@ -1080,7 +1084,6 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
   self->super.prepare = log_proto_buffered_server_prepare;
   self->super.fetch = log_proto_buffered_server_fetch;
   self->super.free_fn = log_proto_buffered_server_free_method;
-  self->super.transport = transport;
   self->super.restart_with_state = log_proto_buffered_server_restart_with_state;
   self->super.validate_options = log_proto_buffered_server_validate_options_method;
   self->convert = (GIConv) -1;

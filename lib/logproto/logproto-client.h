@@ -66,7 +66,7 @@ struct _LogProtoClient
 {
   LogProtoStatus status;
   const LogProtoClientOptions *options;
-  LogTransport *transport;
+  LogTransportStack transport_stack;
   /* FIXME: rename to something else */
   gboolean (*prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout);
   LogProtoStatus (*post)(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
@@ -175,7 +175,7 @@ static inline gint
 log_proto_client_get_fd(LogProtoClient *s)
 {
   /* FIXME: Layering violation */
-  return s->transport->fd;
+  return s->transport_stack.fd;
 }
 
 static inline void
