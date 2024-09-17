@@ -118,8 +118,6 @@ enum
   LM_T_SYSLOG_UNEXPECTED_FRAMING,
   /* no date & host information in the syslog message */
   LM_T_SYSLOG_RFC3164_MISSING_HEADER,
-  /* incorrectly quoted RFC5424 SDATA */
-  LM_T_SYSLOG_RFC5424_UNQUOTED_SDATA_VALUE,
   /* hostname field missing */
   LM_T_SYSLOG_RFC5424_MISSING_HOSTNAME,
   /* program field missing */
