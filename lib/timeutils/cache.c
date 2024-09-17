@@ -147,7 +147,7 @@ _get_system_tzofs(void)
 {
 #ifdef SYSLOG_NG_HAVE_TIMEZONE
   /* global variable */
-  return timezone;
+  return (glong) timezone;
 #elif SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF
   time_t t = time(NULL);
   struct tm *tm;
