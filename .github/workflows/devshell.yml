@@ -54,7 +54,7 @@ jobs:
           CMAKE_FLAGS="
             -DCMAKE_BUILD_TYPE=Debug
             -DCMAKE_C_FLAGS=-Werror
-            -DCMAKE_INSTALL_PREFIX=${HOME}/install/syslog-ng
+            -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
             -DPYTHON_VERSION=3
           "
           gh_export COREFILES_DIR PYTHONUSERBASE CC CXX SYSLOG_NG_INSTALL_DIR CONFIGURE_FLAGS CMAKE_FLAGS
@@ -89,7 +89,9 @@ jobs:
 
       - name: make install
         working-directory: ./build
-        run: make install
+        run: |
+          make install
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -V
 
       - name: Python virtualenv for syslog-ng runtime
         run: ${SYSLOG_NG_INSTALL_DIR}/bin/syslog-ng-update-virtualenv -y

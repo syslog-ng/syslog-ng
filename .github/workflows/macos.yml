@@ -59,6 +59,7 @@ jobs:
 
           HOMEBREW_PREFIX="$(brew --prefix)"
           MACPORTS_PREFIX=/opt/local
+          SYSLOG_NG_INSTALL_DIR="${HOME}/install/syslog-ng"
           PYTHONUSERBASE="${HOME}/python_packages"
           THREADS="$(sysctl -n hw.physicalcpu)"
           CFLAGS="-I${HOMEBREW_PREFIX}/include/ -I${MACPORTS_PREFIX}/include"
@@ -87,7 +88,7 @@ jobs:
           PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@3/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${HOMEBREW_PREFIX}/lib/pkgconfig:${MACPORTS_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}"
           PATH="${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/sbin:${PYTHONUSERBASE}/bin:${MACPORTS_PREFIX}/bin:${MACPORTS_PREFIX}/sbin:${PATH}"
 
-          gh_export HOMEBREW_PREFIX MACPORTS_PREFIX PYTHONUSERBASE CC CXX PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS PATH
+          gh_export HOMEBREW_PREFIX MACPORTS_PREFIX SYSLOG_NG_INSTALL_DIR PYTHONUSERBASE CC CXX PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS PATH
           gh_path "${PATH}"
 
           echo "ARCH: " $(arch)
@@ -107,18 +108,17 @@ jobs:
       - name: cmake configure
         if: matrix.build-tool == 'cmake'
         run: |
-          mkdir build
-
           # If you know the valid syntax to provide the quoted string for -DCMAKE_C_FLAGS inplace in CMAKE_CONFIGURE_FLAGS above (in Set ENV variables step) instead of this hack, please contribute!
           #
           # TODO: -Wall must be replaced here with -Werror but now multiple warnings could occure in several modules that needs to be corrected first
           #
-          cmake --install-prefix "${HOME}/install/syslog-ng" -B build . -DCMAKE_C_FLAGS="-Wall ${CFLAGS}" ${CMAKE_CONFIGURE_FLAGS}
+          cmake --install-prefix "${SYSLOG_NG_INSTALL_DIR}" -B build . -DCMAKE_C_FLAGS="-Wall ${CFLAGS}" ${CMAKE_CONFIGURE_FLAGS}
 
       - name: cmake install
         if: matrix.build-tool == 'cmake'
         run: |
           cmake --build ./build -j ${THREADS} --target install
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -V
 
       - name: cmake check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
@@ -126,17 +126,18 @@ jobs:
         run: |
           cmake --build ./build -j ${THREADS} --target check
 
-      - name: make
+      - name: make install
         if: matrix.build-tool == 'autotools'
         run: |
           set -e
 
-          make --keep-going -j ${THREADS} || \
+          make --keep-going install -j ${THREADS} || \
             { \
               S=$?; \
               make V=1; \
               return $S; \
             }
+          "${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng" -V
 
       - name: make check
         # FIXME: Some of our checks still do not run correctly on silicon yet (and probably never will)
