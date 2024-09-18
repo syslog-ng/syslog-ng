@@ -360,6 +360,28 @@ _persist_state_copy_entry(PersistState *self, const PersistEntryHandle from, Per
 }
 
 gboolean
+persist_state_copy_entry(PersistState *self, const gchar *old_key, const gchar *new_key)
+{
+  gsize size;
+  guint8 version;
+  PersistEntryHandle old_handle = persist_state_lookup_entry(self, old_key, &size, &version);
+  if (!old_handle)
+    return FALSE;
+
+  PersistEntryHandle new_handle = persist_state_alloc_entry(self, new_key, size);
+  if (!new_handle)
+    return FALSE;
+
+  _persist_state_copy_entry(self, old_handle, new_handle, size);
+
+  msg_debug("Persistent entry copied",
+            evt_tag_str("from", old_key),
+            evt_tag_str("to", new_key));
+
+  return TRUE;
+}
+
+gboolean
 persist_state_move_entry(PersistState *self, const gchar *old_key, const gchar *new_key)
 {
   gsize size;
