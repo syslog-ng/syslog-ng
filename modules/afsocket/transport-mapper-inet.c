@@ -28,8 +28,8 @@
 #include "transport/transport-tls.h"
 #include "transport/transport-stack.h"
 #include "transport/transport-factory-tls.h"
-#include "transport/transport-factory-socket.h"
 #include "transport/transport-haproxy.h"
+#include "transport/transport-socket.h"
 #include "transport/transport-udp-socket.h"
 #include "secret-storage/secret-storage.h"
 
@@ -89,7 +89,10 @@ transport_mapper_inet_apply_transport_method(TransportMapper *s, GlobalConfig *c
 static gboolean
 _setup_socket_transport(TransportMapperInet *self, LogTransportStack *stack)
 {
-  log_transport_stack_add_factory(stack, transport_factory_socket_new(self->super.sock_type));
+  log_transport_stack_add_transport(stack, LOG_TRANSPORT_SOCKET,
+                                    self->super.sock_type == SOCK_DGRAM
+                                    ? log_transport_udp_socket_new(stack->fd)
+                                    : log_transport_stream_socket_new(stack->fd));
   return TRUE;
 }
 
