@@ -1,4 +1,4 @@
-`wildcard-file*(`: fix crashes can occure if the same wildcard file is used in multiple sources
+`wildcard-file()`: fix crashes can occure if the same wildcard file is used in multiple sources
 
 Because of some persistent name construction and validation bugs the following config crashed `syslog-ng`
 (if there were more than one log file is in the `/path` folder)
