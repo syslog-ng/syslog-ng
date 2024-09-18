@@ -39,7 +39,7 @@ DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
 	-e CCACHE_DIR=/build/ccache \
 	-e MODE=$(MODE) \
 	-e VERSION=$(VERSION) \
-	-e PATH=/usr/lib/ccache:/usr/lib64/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+	-e PATH=/usr/lib/ccache:/usr/lib64/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin$(if $(DOCKER_EXTRA_PATH),:$(DOCKER_EXTRA_PATH)) \
 	-e GRADLE_USER_HOME=/build/gradle-home \
 	-e GRADLE_PROJECT_CACHE_DIR=/build/gradle-cache \
 	-e GRADLE_FLAGS=--build-cache \
