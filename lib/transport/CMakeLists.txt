@@ -10,7 +10,6 @@ set(TRANSPORT_HEADERS
     transport/transport-udp-socket.h
     transport/transport-stack.h
     transport/transport-factory-tls.h
-    transport/transport-factory-socket.h
     transport/tls-context.h
     transport/tls-verifier.h
     transport/tls-session.h
@@ -28,7 +27,6 @@ set(TRANSPORT_SOURCES
     transport/transport-tls.c
     transport/transport-stack.c
     transport/transport-factory-tls.c
-    transport/transport-factory-socket.c
     transport/tls-context.c
     transport/tls-verifier.c
     transport/tls-session.c
