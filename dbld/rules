@@ -58,7 +58,7 @@ DBLD_RULES=$(MAKE) --no-print-directory -f $(DBLD_DIR)/rules
 
 DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti ${CONTAINER_REGISTRY}/dbld-$* /dbld/shell
 
--include dbld/rules.conf
+-include $(if $(RULES_CONF),$(RULES_CONF),$(DBLD_DIR)/rules.conf)
 
 help:
 	@echo "This script allows you to build release/snapshot artifacts, such "
