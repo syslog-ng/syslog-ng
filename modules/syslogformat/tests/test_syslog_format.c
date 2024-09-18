@@ -117,7 +117,7 @@ Test(syslog_format, rfc3164_error_missing_timestamp)
   assert_log_message_value_by_name(msg, "PROGRAM", "program");
   assert_log_message_value_by_name(msg, "PID", "pid");
   assert_log_message_value_by_name(msg, "MSG", "message");
-  assert_log_message_value_by_name(msg, "MSGFORMAT", "syslog:rfc3164");
+  assert_log_message_value_by_name(msg, "MSGFORMAT", "rfc3164");
   assert_log_message_has_tag(msg, "syslog.missing_timestamp");
   assert_log_message_has_tag(msg, "syslog.rfc3164_missing_header");
 
