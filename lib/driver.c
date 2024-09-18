@@ -266,17 +266,6 @@ _create_memory_queue(LogDestDriver *self, const gchar *persist_name, gint stats_
 
   gint log_fifo_size = self->log_fifo_size < 0 ? cfg->log_fifo_size : self->log_fifo_size;
 
-  if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_22))
-    {
-      msg_warning_once("WARNING: log-fifo-size() works differently starting with " VERSION_3_22 " to avoid dropping "
-                       "flow-controlled messages when log-fifo-size() is misconfigured. From now on, log-fifo-size() "
-                       "only affects messages that are not flow-controlled. (Flow-controlled log paths have the "
-                       "flags(flow-control) option set.) To enable the new behaviour, update the @version string in "
-                       "your configuration and consider lowering the value of log-fifo-size().");
-
-      return log_queue_fifo_legacy_new(log_fifo_size, persist_name, stats_level, driver_sck_builder, queue_sck_builder);
-    }
-
   return log_queue_fifo_new(log_fifo_size, persist_name, stats_level, driver_sck_builder, queue_sck_builder);
 }
 
