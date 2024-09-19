@@ -538,8 +538,6 @@ _unregister_counters(LogSource *self)
                                        instance_name);
   stats_unregister_counter(&sc_key, SC_TYPE_STAMP, &self->metrics.last_message_seen);
 
-  _unregister_window_stats(self);
-
   stats_unlock();
 }
 
@@ -824,6 +822,10 @@ log_source_free(LogPipe *s)
 
   g_free(self->name);
   g_free(self->stats_id);
+
+  stats_lock();
+  _unregister_window_stats(self);
+  stats_unlock();
 
   if (self->metrics.stats_kb)
     stats_cluster_key_builder_free(self->metrics.stats_kb);
