@@ -86,6 +86,40 @@ _generate_persist_name(const LogPipe *s)
   return self->persist_name;
 }
 
+static inline const gchar *
+_format_legacy_persist_name(const LogPipe *s)
+{
+  const FileReader *self = (const FileReader *)s;
+  static gchar persist_name[1024];
+
+  if (self->owner->super.super.persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "affile_sd.%s.curpos", self->owner->super.super.persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "affile_sd_curpos(%s)", self->filename->str);
+
+  return persist_name;
+}
+
+static gboolean
+_update_legacy_persist_name(FileReader *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super);
+
+  if (cfg->state == NULL)
+    return TRUE;
+
+  const gchar *current_persist_name = _generate_persist_name(&self->super);
+  const gchar *legacy_persist_name = _format_legacy_persist_name(&self->super);
+
+  if (persist_state_entry_exists(cfg->state, current_persist_name))
+    return TRUE;
+
+  if (FALSE == persist_state_entry_exists(cfg->state, legacy_persist_name))
+    return TRUE;
+
+  return persist_state_copy_entry(cfg->state, legacy_persist_name, current_persist_name);
+}
+
 static void
 _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
@@ -430,6 +464,8 @@ file_reader_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path
 gboolean
 file_reader_init_method(LogPipe *s)
 {
+  _update_legacy_persist_name((FileReader *)s);
+
   return _reader_open_file(s, TRUE);
 }
 
