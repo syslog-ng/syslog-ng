@@ -106,10 +106,10 @@ enum
 {
   /* means that the message is not valid utf8 */
   LM_T_MSG_UTF8_SANITIZED,
-  /* msg-format parsing failed, "Error parsing ..." */
-  LM_T_MSG_PARSE_ERROR,
   /* missing <pri> value */
   LM_T_SYSLOG_MISSING_PRI,
+  /* invalid <pri> value */
+  LM_T_SYSLOG_INVALID_PRI,
   /* no timestamp present in the original message */
   LM_T_SYSLOG_MISSING_TIMESTAMP,
   /* hostname field does not seem valid, check-hostname(yes) failed */
@@ -118,8 +118,6 @@ enum
   LM_T_SYSLOG_UNEXPECTED_FRAMING,
   /* no date & host information in the syslog message */
   LM_T_SYSLOG_RFC3164_MISSING_HEADER,
-  /* incorrectly quoted RFC5424 SDATA */
-  LM_T_SYSLOG_RFC5424_UNQUOTED_SDATA_VALUE,
   /* hostname field missing */
   LM_T_SYSLOG_RFC5424_MISSING_HOSTNAME,
   /* program field missing */

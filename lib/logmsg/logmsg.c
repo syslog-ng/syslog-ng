@@ -2011,14 +2011,13 @@ void
 log_msg_tags_init(void)
 {
   log_tags_register_predefined_tag("message.utf8_sanitized", LM_T_MSG_UTF8_SANITIZED);
-  log_tags_register_predefined_tag("message.parse_error", LM_T_MSG_PARSE_ERROR);
 
+  log_tags_register_predefined_tag("syslog.invalid_pri", LM_T_SYSLOG_INVALID_PRI);
   log_tags_register_predefined_tag("syslog.missing_pri", LM_T_SYSLOG_MISSING_PRI);
   log_tags_register_predefined_tag("syslog.missing_timestamp", LM_T_SYSLOG_MISSING_TIMESTAMP);
   log_tags_register_predefined_tag("syslog.invalid_hostname", LM_T_SYSLOG_INVALID_HOSTNAME);
   log_tags_register_predefined_tag("syslog.unexpected_framing", LM_T_SYSLOG_UNEXPECTED_FRAMING);
   log_tags_register_predefined_tag("syslog.rfc3164_missing_header", LM_T_SYSLOG_RFC3164_MISSING_HEADER);
-  log_tags_register_predefined_tag("syslog.rfc5424_unquoted_sdata_value", LM_T_SYSLOG_RFC5424_UNQUOTED_SDATA_VALUE);
 
   log_tags_register_predefined_tag("syslog.rfc5424_missing_hostname", LM_T_SYSLOG_RFC5424_MISSING_HOSTNAME);
   log_tags_register_predefined_tag("syslog.rfc5424_missing_app_name", LM_T_SYSLOG_RFC5424_MISSING_APP_NAME);

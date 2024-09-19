@@ -1005,6 +1005,9 @@ _syslog_format_parse_legacy_message(LogMessage *msg,
  *
  * Parse an RFC3164 formatted log message and store the parsed information
  * in @msg. Parsing is affected by the bits set @flags argument.
+ *
+ * This parser is _very_ forgiving, it basically accepts anything any device
+ * would barf on the line.
  **/
 static gboolean
 _syslog_format_parse_legacy(const MsgFormatOptions *parse_options,
@@ -1020,19 +1023,27 @@ _syslog_format_parse_legacy(const MsgFormatOptions *parse_options,
   _syslog_format_check_framing(msg, &src, &left);
   if (!_syslog_format_parse_pri(msg, &src, &left, parse_options->flags, parse_options->default_pri))
     {
-      goto error;
+      /* invalid <pri> value, that's really difficult to do, as it needs to
+       * start with an opening bracket and then no number OR no closing bracket
+       * follows. A missing <pri> value would be accepted.
+       *
+       * This is a very rare case, but it's best handled like all the other
+       * formatting errors, accept it and shove the entire line into $MSG.
+       * This basically disables error piggybacking for RFC3164 inputs.  */
+
+      log_msg_set_tag_by_id(msg, LM_T_SYSLOG_INVALID_PRI);
+      _syslog_format_parse_legacy_message(msg, &src, &left, parse_options);
     }
+  else
+    {
+      if ((parse_options->flags & LP_NO_HEADER) == 0)
+        _syslog_format_parse_legacy_header(msg, &src, &left, parse_options);
 
-  if ((parse_options->flags & LP_NO_HEADER) == 0)
-    _syslog_format_parse_legacy_header(msg, &src, &left, parse_options);
-
-  _syslog_format_parse_legacy_message(msg, &src, &left, parse_options);
+      _syslog_format_parse_legacy_message(msg, &src, &left, parse_options);
+    }
 
   log_msg_set_value_to_string(msg, LM_V_MSGFORMAT, "rfc3164");
   return TRUE;
-error:
-  *position = src - data;
-  return FALSE;
 }
 
 /**
