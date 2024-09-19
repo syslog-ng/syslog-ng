@@ -45,6 +45,7 @@ struct _FileReader
   FileOpener *opener;
   LogReader *reader;
   const gchar *persist_name;
+  const gchar *persist_name_prefix;
 
   void (*on_file_moved)(FileReader *);
 };
@@ -59,8 +60,7 @@ FileReader *file_reader_new(const gchar *filename, FileReaderOptions *options, F
                             GlobalConfig *cfg);
 
 void file_reader_init_instance(FileReader *self, const gchar *filename, FileReaderOptions *options, FileOpener *opener,
-                               LogSrcDriver *owner,
-                               GlobalConfig *cfg);
+                               LogSrcDriver *owner, GlobalConfig *cfg, const gchar *persist_name_prefix);
 
 gboolean file_reader_init_method(LogPipe *s);
 gboolean file_reader_deinit_method(LogPipe *s);

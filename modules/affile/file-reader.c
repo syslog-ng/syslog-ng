@@ -59,11 +59,13 @@ _format_persist_name(const LogPipe *s)
    */
   if (self->owner->super.super.persist_name)
     {
-      g_snprintf(persist_name, sizeof(persist_name), "affile_sd.%s.%u.curpos",
-                 self->owner->super.super.persist_name, name_hash);
+      g_snprintf(persist_name, sizeof(persist_name), "%s.%s.%u.curpos",
+                 self->persist_name_prefix, self->owner->super.super.persist_name, name_hash);
     }
   else
-    g_snprintf(persist_name, sizeof(persist_name), "affile_sd.%u.curpos", name_hash);
+    {
+      g_snprintf(persist_name, sizeof(persist_name), "%s.%u.curpos", self->persist_name_prefix, name_hash);
+    }
 
   return g_strdup(persist_name);
 }
@@ -518,7 +520,8 @@ file_reader_cue_buffer_flush(FileReader *self)
 void
 file_reader_init_instance (FileReader *self, const gchar *filename,
                            FileReaderOptions *options, FileOpener *opener,
-                           LogSrcDriver *owner, GlobalConfig *cfg)
+                           LogSrcDriver *owner, GlobalConfig *cfg,
+                           const gchar *persist_name_prefix)
 {
   log_pipe_init_instance (&self->super, cfg);
   self->super.init = file_reader_init_method;
@@ -527,6 +530,7 @@ file_reader_init_instance (FileReader *self, const gchar *filename,
   self->super.notify = file_reader_notify_method;
   self->super.free_fn = file_reader_free_method;
   self->super.generate_persist_name = _generate_persist_name;
+  self->persist_name_prefix = persist_name_prefix;
   self->filename = g_string_new (filename);
   self->options = options;
   self->opener = opener;
@@ -540,7 +544,7 @@ file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *o
 {
   FileReader *self = g_new0(FileReader, 1);
 
-  file_reader_init_instance (self, filename, options, opener, owner, cfg);
+  file_reader_init_instance (self, filename, options, opener, owner, cfg, "affile_sd");
   return self;
 }
 
