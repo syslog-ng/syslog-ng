@@ -94,7 +94,7 @@ _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
   if (!self->options->restore_state)
     return;
 
-  if (!log_proto_server_restart_with_state(proto, cfg->state, _generate_persist_name(s)))
+  if (!log_proto_server_restart_with_state(proto, cfg->state, log_pipe_get_persist_name(s)))
     {
       msg_error("Error converting persistent state from on-disk format, losing file position information",
                 evt_tag_str("filename", self->filename->str));
@@ -456,7 +456,7 @@ void
 file_reader_remove_persist_state(FileReader *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super);
-  const gchar *old_persist_name = _generate_persist_name(&self->super);
+  const gchar *old_persist_name = log_pipe_get_persist_name(&self->super);
   gchar *new_persist_name = g_strdup_printf("%s_REMOVED", old_persist_name);
   /* This is required to clean the persist entry from file during restart */
   persist_state_remove_entry(cfg->state, old_persist_name);
