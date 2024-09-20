@@ -69,6 +69,7 @@ jobs:
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
           CONFIGURE_FLAGS="
             --enable-force-gnu99
+            --enable-extra-warnings
             --prefix=${SYSLOG_NG_INSTALL_DIR}
             --enable-all-modules
             --enable-tests

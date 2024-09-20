@@ -42,6 +42,7 @@ jobs:
           CXX=`[ $CC = gcc ] && echo g++ || echo clang++`
           SYSLOG_NG_INSTALL_DIR=${HOME}/install/syslog-ng
           CONFIGURE_FLAGS="
+            --enable-extra-warnings
             --prefix=${SYSLOG_NG_INSTALL_DIR}
             --enable-debug
             --enable-all-modules
