@@ -296,7 +296,7 @@ AC_ARG_ENABLE(stomp,
 
 AC_ARG_WITH(ivykis,
               [  --with-ivykis=[system/internal]
-                                         Link against the system supplied or the built-in ivykis library.]
+                                         Link against the system supplied or the built-in ivykis library. (default: internal)]
               ,,with_ivykis="internal")
 
 AC_ARG_ENABLE(smtp,
