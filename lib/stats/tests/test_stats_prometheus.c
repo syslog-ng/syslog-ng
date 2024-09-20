@@ -223,11 +223,11 @@ Test(stats_prometheus, test_prometheus_format_value)
 
   stats_cluster_single_key_add_unit(&key, SCU_MILLISECONDS);
   gdouble actual = g_ascii_strtod(stats_format_prometheus_format_value(&key, &counter), NULL);
-  cr_assert_float_eq(actual, 0.009L, DBL_EPSILON);
+  cr_assert_float_eq(actual, (gdouble) 0.009L, DBL_EPSILON);
 
   stats_cluster_single_key_add_unit(&key, SCU_NANOSECONDS);
   actual = g_ascii_strtod(stats_format_prometheus_format_value(&key, &counter), NULL);
-  cr_assert_float_eq(actual, 9e-9, DBL_EPSILON);
+  cr_assert_float_eq(actual, (gdouble) 9e-9, DBL_EPSILON);
 
   /* Relative to time of query */
   stats_cluster_single_key_add_frame_of_reference(&key, SCFOR_RELATIVE_TO_TIME_OF_QUERY);
@@ -250,11 +250,11 @@ Test(stats_prometheus, test_prometheus_format_value)
 
   stats_cluster_single_key_add_unit(&key, SCU_MILLISECONDS);
   actual = g_ascii_strtod(stats_format_prometheus_format_value(&key, &counter), NULL);
-  cr_assert_float_eq(actual, 0.009L, DBL_EPSILON);
+  cr_assert_float_eq(actual, (gdouble) 0.009L, DBL_EPSILON);
 
   stats_cluster_single_key_add_unit(&key, SCU_NANOSECONDS);
   actual = g_ascii_strtod(stats_format_prometheus_format_value(&key, &counter), NULL);
-  cr_assert_float_eq(actual, 9e-9, DBL_EPSILON);
+  cr_assert_float_eq(actual, (gdouble) 9e-9, DBL_EPSILON);
 
   /* Hours, minutes and seconds are affected */
   stats_cluster_single_key_add_unit(&key, SCU_HOURS);

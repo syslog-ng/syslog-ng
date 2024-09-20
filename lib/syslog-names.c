@@ -139,6 +139,9 @@ syslog_make_range(guint32 value1, guint32 value2)
   return ((1 << (value2 + 1)) - 1) & ~((1 << value1) - 1);
 }
 
+#if (defined(__clang__) && __clang_major__ >= 15)
+#pragma GCC diagnostic ignored "-Wdeprecated-non-prototype"
+#endif
 #include "severity-aliases.h"
 
 gint
