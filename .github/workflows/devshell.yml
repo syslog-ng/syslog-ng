@@ -42,23 +42,29 @@ jobs:
           CXX=`[ $CC = gcc ] && echo g++ || echo clang++`
           SYSLOG_NG_INSTALL_DIR=${HOME}/install/syslog-ng
           CONFIGURE_FLAGS="
+            `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
             --enable-extra-warnings
-            --prefix=${SYSLOG_NG_INSTALL_DIR}
             --enable-debug
+            --prefix=${SYSLOG_NG_INSTALL_DIR}
+            --enable-tests
             --enable-all-modules
+            --with-python=3
             --disable-java
             --disable-java-modules
             --enable-ebpf
-            --with-python=3
-            `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
           "
-          CMAKE_FLAGS="
-            -DCMAKE_BUILD_TYPE=Debug
+          CMAKE_CONFIGURE_FLAGS="
             -DCMAKE_C_FLAGS=-Werror
+            -DSUMMARY_VERBOSE=ON
+            -DCMAKE_BUILD_TYPE=Debug
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
+            -DBUILD_TESTING=ON
             -DPYTHON_VERSION=3
+            -DENABLE_JAVA=OFF
+            -DENABLE_JAVA_MODULES=OFF
+            -DENABLE_EBPF=ON
           "
-          gh_export COREFILES_DIR PYTHONUSERBASE CC CXX SYSLOG_NG_INSTALL_DIR CONFIGURE_FLAGS CMAKE_FLAGS
+          gh_export COREFILES_DIR PYTHONUSERBASE CC CXX SYSLOG_NG_INSTALL_DIR CONFIGURE_FLAGS CMAKE_CONFIGURE_FLAGS
           gh_path "${PYTHONUSERBASE}"
 
       - name: autogen.sh
@@ -77,7 +83,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ${CMAKE_FLAGS} ..
+          cmake ${CMAKE_CONFIGURE_FLAGS} ..
 
       - name: make
         working-directory: ./build
