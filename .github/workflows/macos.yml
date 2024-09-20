@@ -90,6 +90,7 @@ jobs:
             -DENABLE_JOURNALD=OFF
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF
+            -DENABLE_GRPC=OFF
           "
           PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@3/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${HOMEBREW_PREFIX}/lib/pkgconfig:${MACPORTS_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}"
           PATH="${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/sbin:${PYTHONUSERBASE}/bin:${MACPORTS_PREFIX}/bin:${MACPORTS_PREFIX}/sbin:${PATH}"
