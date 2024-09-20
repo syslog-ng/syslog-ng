@@ -164,6 +164,7 @@ dyn_metrics_template_clone(DynMetricsTemplate *self, GlobalConfig *cfg)
       LabelTemplate *label_template = (LabelTemplate *) elem->data;
       cloned->label_templates = g_list_append(cloned->label_templates, label_template_clone(label_template));
     }
+  value_pairs_unref(cloned->vp);
   cloned->vp = value_pairs_ref(self->vp);
   return cloned;
 }
