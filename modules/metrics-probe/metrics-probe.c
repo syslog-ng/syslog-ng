@@ -157,6 +157,7 @@ _clone(LogPipe *s)
   MetricsProbe *cloned = (MetricsProbe *) metrics_probe_new(s->cfg);
 
   log_parser_clone_settings(&self->super, &cloned->super);
+  dyn_metrics_template_free(cloned->metrics_template);
   cloned->metrics_template = dyn_metrics_template_clone(self->metrics_template, s->cfg);
 
   metrics_probe_set_increment_template(&cloned->super, self->increment_template);
