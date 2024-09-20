@@ -57,7 +57,7 @@ class TestLangCompleter(CompleterTestCase):
         'PARTIAL_TOKEN': ChoiceCompleter(("tokenP-a", "tokenP-b"), prefix='@', suffix='')
     }
 
-    # pylint: disable=arguments-differ,too-many-arguments
+    # pylint: disable=arguments-differ,too-many-arguments,too-many-positional-arguments
     def _construct_completer(self, expected_token=None, expected_tokens=None,
                              replaced_token=None, replaced_token_pos=-1,
                              completers=None, prefix="<!--"):
