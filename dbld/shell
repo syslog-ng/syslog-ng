@@ -14,4 +14,4 @@ if [ "$IMAGE_PLATFORM" != "devshell" ]; then
 	echo -e "NOTE: the 'devshell' dbld image is more developer friendly, you might want to use that"
 fi
 cd /source
-debian_chroot="dbld" HOME=/build exec bash
+debian_chroot="dbld" HOME=/build exec bash -c "$*"

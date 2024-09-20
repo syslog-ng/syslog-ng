@@ -39,7 +39,7 @@ DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
 	-e CCACHE_DIR=/build/ccache \
 	-e MODE=$(MODE) \
 	-e VERSION=$(VERSION) \
-	-e PATH=/usr/lib/ccache:/usr/lib64/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+	-e PATH=/usr/lib/ccache:/usr/lib64/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin$(if $(DOCKER_EXTRA_PATH),:$(DOCKER_EXTRA_PATH)) \
 	-e GRADLE_USER_HOME=/build/gradle-home \
 	-e GRADLE_PROJECT_CACHE_DIR=/build/gradle-cache \
 	-e GRADLE_FLAGS=--build-cache \
@@ -56,9 +56,9 @@ GIT_RELEASE_TAG=syslog-ng-$(VERSION)
 CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=3 --prefix=/install $(CONFIGURE_ADD)
 DBLD_RULES=$(MAKE) --no-print-directory -f $(DBLD_DIR)/rules
 
-DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti ${CONTAINER_REGISTRY}/dbld-$* /dbld/shell
+DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti ${CONTAINER_REGISTRY}/dbld-$* /dbld/shell $(if $(SHELL_COMMAND),"$(SHELL_COMMAND)",bash)
 
--include dbld/rules.conf
+-include $(if $(RULES_CONF),$(RULES_CONF),$(DBLD_DIR)/rules.conf)
 
 help:
 	@echo "This script allows you to build release/snapshot artifacts, such "

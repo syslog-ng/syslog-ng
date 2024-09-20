@@ -34,5 +34,5 @@ else
         create_user
     fi
     echo "Added new user: $USER_NAME"
-    exec sudo --preserve-env -Hu "${USER_NAME}" "$@"
+    exec sudo --preserve-env --preserve-env=PATH -Hu "${USER_NAME}" "$@"
 fi
