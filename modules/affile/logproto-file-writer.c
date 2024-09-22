@@ -45,6 +45,47 @@ typedef struct _LogProtoFileWriter
   struct iovec buffer[0];
 } LogProtoFileWriter;
 
+static inline gboolean
+_flush_partial(LogProtoFileWriter *self, LogProtoStatus *status)
+{
+  /* there is still some data from the previous file writing process */
+
+  gint len = self->partial_len - self->partial_pos;
+  gssize rc = log_transport_write(self->super.transport, self->partial + self->partial_pos, len);
+
+  if (rc > 0 && self->fsync)
+    fsync(self->fd);
+
+  if (rc < 0)
+    {
+      if (errno == EINTR || errno == EAGAIN)
+        {
+          *status = LPS_SUCCESS;
+          return FALSE;
+        }
+
+      log_proto_client_msg_rewind(&self->super);
+      msg_error("I/O error occurred while writing",
+                evt_tag_int("fd", self->super.transport->fd),
+                evt_tag_error(EVT_TAG_OSERROR));
+
+      *status = LPS_ERROR;
+      return FALSE;
+    }
+
+  if (rc != len)
+    {
+      self->partial_pos += rc;
+      *status = LPS_PARTIAL;
+      return FALSE;
+    }
+
+  log_proto_client_msg_ack(&self->super, self->partial_messages);
+  g_free(self->partial);
+  self->partial = NULL;
+  return TRUE;
+}
+
 /*
  * log_proto_file_writer_flush:
  *
@@ -60,27 +101,9 @@ log_proto_file_writer_flush(LogProtoClient *s)
 
   if (self->partial)
     {
-      /* there is still some data from the previous file writing process */
-      gint len = self->partial_len - self->partial_pos;
-
-      gssize rc = log_transport_write(self->super.transport, self->partial + self->partial_pos, len);
-      if (rc > 0 && self->fsync)
-        fsync(self->fd);
-      if (rc < 0)
-        {
-          goto write_error;
-        }
-      else if (rc != len)
-        {
-          self->partial_pos += rc;
-          return LPS_PARTIAL;
-        }
-      else
-        {
-          log_proto_client_msg_ack(&self->super, self->partial_messages);
-          g_free(self->partial);
-          self->partial = NULL;
-        }
+      LogProtoStatus partial_flush_status;
+      if (!_flush_partial(self, &partial_flush_status))
+        return partial_flush_status;
     }
 
   /* we might be called from log_writer_deinit() without having a buffer at all */
@@ -88,6 +111,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
     return LPS_SUCCESS;
 
   gssize rc = log_transport_writev(self->super.transport, self->buffer, self->buf_count);
+
   if (rc > 0 && self->fsync)
     fsync(self->fd);
 
