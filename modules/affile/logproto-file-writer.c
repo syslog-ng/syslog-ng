@@ -118,9 +118,17 @@ log_proto_file_writer_flush(LogProtoClient *s)
 
   if (rc < 0)
     {
-      goto write_error;
+      if (errno == EINTR || errno == EAGAIN)
+        return LPS_SUCCESS;
+
+      log_proto_client_msg_rewind(&self->super);
+      msg_error("I/O error occurred while writing",
+                evt_tag_int("fd", self->super.transport->fd),
+                evt_tag_error(EVT_TAG_OSERROR));
+      return LPS_ERROR;
     }
-  else if (rc != self->sum_len)
+
+  if (rc != self->sum_len)
     {
       /* partial success: not everything has been written out */
       /* look for the first chunk that has been cut */
@@ -150,9 +158,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
       self->partial_messages = self->buf_count - i0;
     }
   else
-    {
-      log_proto_client_msg_ack(&self->super, self->buf_count);
-    }
+    log_proto_client_msg_ack(&self->super, self->buf_count);
 
   /* free the previous message strings (the remaining part has been copied to the partial buffer) */
   for (gint i = 0; i < self->buf_count; ++i)
@@ -161,19 +167,6 @@ log_proto_file_writer_flush(LogProtoClient *s)
   self->sum_len = 0;
 
   return LPS_SUCCESS;
-
-write_error:
-  if (errno != EINTR && errno != EAGAIN)
-    {
-      log_proto_client_msg_rewind(&self->super);
-      msg_error("I/O error occurred while writing",
-                evt_tag_int("fd", self->super.transport->fd),
-                evt_tag_error(EVT_TAG_OSERROR));
-      return LPS_ERROR;
-    }
-
-  return LPS_SUCCESS;
-
 }
 
 /*
