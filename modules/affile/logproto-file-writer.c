@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2002-2012 Balabit
+ * Copyright (c) 2024 Axoflow
  * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2024 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -38,7 +40,7 @@ typedef struct _LogProtoFileWriter
   gint buf_size;
   gint buf_count;
   gint fd;
-  gint sum_len;
+  gsize sum_len;
   gboolean fsync;
   struct iovec buffer[0];
 } LogProtoFileWriter;
@@ -55,14 +57,13 @@ static LogProtoStatus
 log_proto_file_writer_flush(LogProtoClient *s)
 {
   LogProtoFileWriter *self = (LogProtoFileWriter *)s;
-  gint rc, i, i0, sum, ofs, pos;
 
   if (self->partial)
     {
       /* there is still some data from the previous file writing process */
       gint len = self->partial_len - self->partial_pos;
 
-      rc = log_transport_write(self->super.transport, self->partial + self->partial_pos, len);
+      gssize rc = log_transport_write(self->super.transport, self->partial + self->partial_pos, len);
       if (rc > 0 && self->fsync)
         fsync(self->fd);
       if (rc < 0)
@@ -86,7 +87,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
   if (self->buf_count == 0)
     return LPS_SUCCESS;
 
-  rc = log_transport_writev(self->super.transport, self->buffer, self->buf_count);
+  gssize rc = log_transport_writev(self->super.transport, self->buffer, self->buf_count);
   if (rc > 0 && self->fsync)
     fsync(self->fd);
 
@@ -98,20 +99,20 @@ log_proto_file_writer_flush(LogProtoClient *s)
     {
       /* partial success: not everything has been written out */
       /* look for the first chunk that has been cut */
-      sum = self->buffer[0].iov_len; /* sum is the cumulated length of the already processed items */
-      i = 0;
+      gsize sum = self->buffer[0].iov_len; /* sum is the cumulated length of the already processed items */
+      gint i = 0;
       while (rc > sum)
         sum += self->buffer[++i].iov_len;
       self->partial_len = sum - rc; /* this is the length of the first non-written chunk */
-      i0 = i;
+      gint i0 = i;
       ++i;
       /* add the lengths of the following messages */
       while (i < self->buf_count)
         self->partial_len += self->buffer[i++].iov_len;
       /* allocate and copy the remaining data */
       self->partial = (guchar *)g_malloc(self->partial_len);
-      ofs = sum - rc; /* the length of the remaining (not processed) chunk in the first message */
-      pos = self->buffer[i0].iov_len - ofs;
+      gsize ofs = sum - rc; /* the length of the remaining (not processed) chunk in the first message */
+      gsize pos = self->buffer[i0].iov_len - ofs;
       memcpy(self->partial, (guchar *) self->buffer[i0].iov_base + pos, ofs);
       i = i0 + 1;
       while (i < self->buf_count)
@@ -129,7 +130,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
     }
 
   /* free the previous message strings (the remaining part has been copied to the partial buffer) */
-  for (i = 0; i < self->buf_count; ++i)
+  for (gint i = 0; i < self->buf_count; ++i)
     g_free(self->buffer[i].iov_base);
   self->buf_count = 0;
   self->sum_len = 0;
