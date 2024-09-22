@@ -122,6 +122,8 @@ _process_partial_write(LogProtoFileWriter *self, gsize written)
 
   self->partial_pos = 0;
   self->partial_messages = self->buf_count - first_non_written_chunk_index;
+
+  log_proto_client_msg_ack(&self->super, self->buf_count - self->partial_messages);
 }
 
 /*
