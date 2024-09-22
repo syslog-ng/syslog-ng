@@ -87,6 +87,43 @@ _flush_partial(LogProtoFileWriter *self, LogProtoStatus *status)
   return TRUE;
 }
 
+static inline void
+_process_partial_write(LogProtoFileWriter *self, gsize written)
+{
+  /* partial success: not everything has been written out */
+
+  /* look for the first chunk that has been cut */
+  gsize sum = self->buffer[0].iov_len; /* sum is the cumulated length of the already processed items */
+  gint i = 0;
+  while (written > sum)
+    sum += self->buffer[++i].iov_len;
+
+  gsize first_non_written_msg_chunk_len = sum - written;
+  self->partial_len = first_non_written_msg_chunk_len;
+  gint first_non_written_chunk_index = i;
+  ++i;
+
+  /* add the lengths of the following messages */
+  while (i < self->buf_count)
+    self->partial_len += self->buffer[i++].iov_len;
+
+  /* allocate and copy the remaining data */
+  self->partial = (guchar *)g_malloc(self->partial_len);
+  gsize ofs = first_non_written_msg_chunk_len;
+  gsize pos = self->buffer[first_non_written_chunk_index].iov_len - ofs;
+  memcpy(self->partial, (guchar *) self->buffer[first_non_written_chunk_index].iov_base + pos, ofs);
+  i = first_non_written_chunk_index + 1;
+  while (i < self->buf_count)
+    {
+      memcpy(self->partial + ofs, self->buffer[i].iov_base, self->buffer[i].iov_len);
+      ofs += self->buffer[i].iov_len;
+      ++i;
+    }
+
+  self->partial_pos = 0;
+  self->partial_messages = self->buf_count - first_non_written_chunk_index;
+}
+
 /*
  * log_proto_file_writer_flush:
  *
@@ -129,34 +166,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
     }
 
   if (rc != self->sum_len)
-    {
-      /* partial success: not everything has been written out */
-      /* look for the first chunk that has been cut */
-      gsize sum = self->buffer[0].iov_len; /* sum is the cumulated length of the already processed items */
-      gint i = 0;
-      while (rc > sum)
-        sum += self->buffer[++i].iov_len;
-      self->partial_len = sum - rc; /* this is the length of the first non-written chunk */
-      gint i0 = i;
-      ++i;
-      /* add the lengths of the following messages */
-      while (i < self->buf_count)
-        self->partial_len += self->buffer[i++].iov_len;
-      /* allocate and copy the remaining data */
-      self->partial = (guchar *)g_malloc(self->partial_len);
-      gsize ofs = sum - rc; /* the length of the remaining (not processed) chunk in the first message */
-      gsize pos = self->buffer[i0].iov_len - ofs;
-      memcpy(self->partial, (guchar *) self->buffer[i0].iov_base + pos, ofs);
-      i = i0 + 1;
-      while (i < self->buf_count)
-        {
-          memcpy(self->partial + ofs, self->buffer[i].iov_base, self->buffer[i].iov_len);
-          ofs += self->buffer[i].iov_len;
-          ++i;
-        }
-      self->partial_pos = 0;
-      self->partial_messages = self->buf_count - i0;
-    }
+    _process_partial_write(self, rc);
   else
     log_proto_client_msg_ack(&self->super, self->buf_count);
 
