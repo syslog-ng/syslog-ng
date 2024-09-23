@@ -156,7 +156,7 @@ endif()
 
 # NOTE: This is now seems to be an Apple/Xcode "only" issue, but probably much better a clang one, so later we might want to add this globally
 if (APPLE)
-  module_switch(FORCE_CLASSIC_LINKING "Enable classic linking" OFF)
+  option(FORCE_CLASSIC_LINKING "Enable classic linking" OFF)
   if (FORCE_CLASSIC_LINKING)
     # XCode15 new linker has some issues (e.g. https://developer.apple.com/forums/thread/737707)
     # switch back to classic linking till not fixed (https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking)
