@@ -30,8 +30,9 @@ set(ResetFG "${Esc}[39m")
 set(_maxHeaderLen 39)
 
 list(APPEND _envInfo "CMAKE_HOST_SYSTEM" "CMAKE_HOST_SYSTEM_NAME" "CMAKE_HOST_SYSTEM_PROCESSOR" "CMAKE_HOST_SYSTEM_VERSION")
+list(APPEND _subModules "IVYKIS_SOURCE")
 list(APPEND _compilersInfo "CMAKE_C_COMPILER" "CMAKE_CXX_COMPILER" "CMAKE_OBJC_COMPILER")
-list(APPEND _compilationsOptions "IVYKIS_INTERNAL" "CMAKE_BUILD_TYPE" "BUILD_TESTING" "ENABLE_EXTRA_WARNINGS")
+list(APPEND _compilationsOptions "CMAKE_BUILD_TYPE" "BUILD_TESTING" "ENABLE_EXTRA_WARNINGS")
 if(APPLE)
   list(APPEND _compilationsOptions "FORCE_CLASSIC_LINKING")
 endif()
@@ -180,7 +181,7 @@ function(print_config_summary)
     endif()
   endif()
 
-  _print_separator ("")
+  _print_separator("")
   message (NOTICE "syslog-ng Open Source Edition ${SYSLOG_NG_VERSION} configured")
 
   _print_separator("Environment")
@@ -191,6 +192,9 @@ function(print_config_summary)
 
   _print_separator("Compilation")
   _print_options("${_variableNames}" "${_compilationsOptions}")
+
+  _print_separator("Sub-modules")
+  _print_options("${_variableNames}" "${_subModules}")
 
   _print_separator("Modules")
   _print_module_options("${_variableNames}")
