@@ -105,7 +105,8 @@ void iv_task_register(struct iv_task *_t)
 
 void file_reader_init_instance(FileReader *self, const gchar *filename,
                                FileReaderOptions *options, FileOpener *opener,
-                               LogSrcDriver *owner, GlobalConfig *cfg)
+                               LogSrcDriver *owner, GlobalConfig *cfg,
+                               const gchar *persist_name_prefix)
 {
   log_pipe_init_instance(&self->super, cfg);
   self->reader = log_reader_new(cfg);

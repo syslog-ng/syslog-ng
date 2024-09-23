@@ -44,31 +44,57 @@
 #include <errno.h>
 #include <time.h>
 #include <stdlib.h>
+#include <glib/gprintf.h>
 
 #include <iv.h>
 
-static inline const gchar *
+static inline gint G_GNUC_PRINTF(2, 3)
+_format_g_va_string(gchar **strp, const gchar *format, ...)
+{
+  va_list args;
+
+  va_start(args, format);
+  gint result = g_vasprintf(strp, format, args);
+  va_end(args);
+
+  return result;
+}
+
+static const gchar *
 _format_persist_name(const LogPipe *s)
 {
   const FileReader *self = (const FileReader *)s;
   guint name_hash = g_str_hash(self->filename->str);
-  gchar persist_name[1024];
+  const gint max_persist_name_len = 1024;
+  gchar *persist_name = NULL;
 
-  /* same wildcard file sources even with persist-name defined can be the same
-     file name hash is added as well to ensure uniquiness
+  /* same wildcard file sources even with persist-name defined can be the same, so
+     file name hash is added as well to ensure uniquiness always
+     also adding now the filename (or at least an end part of it) for debug aid purpose
    */
+  gint used_len;
   if (self->owner->super.super.persist_name)
-    {
-      g_snprintf(persist_name, sizeof(persist_name), "affile_sd.%s.%u.curpos",
-                 self->owner->super.super.persist_name, name_hash);
-    }
+    used_len = _format_g_va_string(&persist_name, "%s.%s.%u.curpos", self->persist_name_prefix,
+                                   self->owner->super.super.persist_name, name_hash);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "affile_sd.%u.curpos", name_hash);
+    used_len = _format_g_va_string(&persist_name, "%s.%u.curpos", self->persist_name_prefix, name_hash);
+  g_assert(used_len > 0);
 
-  return g_strdup(persist_name);
+  if (used_len < max_persist_name_len - 2 - 1) /* () and the terminating NUL */
+    {
+      gchar *base_name = persist_name;
+      gint filename_len = strlen(self->filename->str);
+      gint remaining_len = max_persist_name_len - used_len - 2 - 1;  /* () and the terminating NUL */
+      persist_name = NULL; /* glib requires the input ptr to be NULL otherwise returning with -1 from g_vasprintf */
+      _format_g_va_string(&persist_name, "%s(%s)", base_name,
+                          self->filename->str + MAX(0, filename_len - remaining_len));
+      g_free(base_name);
+    }
+
+  return persist_name;
 }
 
-static const gchar *
+static inline const gchar *
 _generate_persist_name(const LogPipe *s)
 {
   FileReader *self = (FileReader *) s;
@@ -86,6 +112,40 @@ _generate_persist_name(const LogPipe *s)
   return self->persist_name;
 }
 
+static inline const gchar *
+_format_legacy_persist_name(const LogPipe *s)
+{
+  const FileReader *self = (const FileReader *)s;
+  static gchar persist_name[1024];
+
+  if (self->owner->super.super.persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "affile_sd.%s.curpos", self->owner->super.super.persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "affile_sd_curpos(%s)", self->filename->str);
+
+  return persist_name;
+}
+
+static gboolean
+_update_legacy_persist_name(FileReader *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super);
+
+  if (cfg->state == NULL)
+    return TRUE;
+
+  const gchar *current_persist_name = _generate_persist_name(&self->super);
+  const gchar *legacy_persist_name = _format_legacy_persist_name(&self->super);
+
+  if (persist_state_entry_exists(cfg->state, current_persist_name))
+    return TRUE;
+
+  if (FALSE == persist_state_entry_exists(cfg->state, legacy_persist_name))
+    return TRUE;
+
+  return persist_state_copy_entry(cfg->state, legacy_persist_name, current_persist_name);
+}
+
 static void
 _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 {
@@ -94,7 +154,7 @@ _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
   if (!self->options->restore_state)
     return;
 
-  if (!log_proto_server_restart_with_state(proto, cfg->state, _generate_persist_name(s)))
+  if (!log_proto_server_restart_with_state(proto, cfg->state, log_pipe_get_persist_name(s)))
     {
       msg_error("Error converting persistent state from on-disk format, losing file position information",
                 evt_tag_str("filename", self->filename->str));
@@ -430,6 +490,8 @@ file_reader_queue_method(LogPipe *s, LogMessage *msg, const LogPathOptions *path
 gboolean
 file_reader_init_method(LogPipe *s)
 {
+  _update_legacy_persist_name((FileReader *)s);
+
   return _reader_open_file(s, TRUE);
 }
 
@@ -456,7 +518,7 @@ void
 file_reader_remove_persist_state(FileReader *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super);
-  const gchar *old_persist_name = _generate_persist_name(&self->super);
+  const gchar *old_persist_name = log_pipe_get_persist_name(&self->super);
   gchar *new_persist_name = g_strdup_printf("%s_REMOVED", old_persist_name);
   /* This is required to clean the persist entry from file during restart */
   persist_state_remove_entry(cfg->state, old_persist_name);
@@ -482,7 +544,8 @@ file_reader_cue_buffer_flush(FileReader *self)
 void
 file_reader_init_instance (FileReader *self, const gchar *filename,
                            FileReaderOptions *options, FileOpener *opener,
-                           LogSrcDriver *owner, GlobalConfig *cfg)
+                           LogSrcDriver *owner, GlobalConfig *cfg,
+                           const gchar *persist_name_prefix)
 {
   log_pipe_init_instance (&self->super, cfg);
   self->super.init = file_reader_init_method;
@@ -491,6 +554,7 @@ file_reader_init_instance (FileReader *self, const gchar *filename,
   self->super.notify = file_reader_notify_method;
   self->super.free_fn = file_reader_free_method;
   self->super.generate_persist_name = _generate_persist_name;
+  self->persist_name_prefix = persist_name_prefix;
   self->filename = g_string_new (filename);
   self->options = options;
   self->opener = opener;
@@ -504,7 +568,7 @@ file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *o
 {
   FileReader *self = g_new0(FileReader, 1);
 
-  file_reader_init_instance (self, filename, options, opener, owner, cfg);
+  file_reader_init_instance (self, filename, options, opener, owner, cfg, "affile_sd");
   return self;
 }
 

@@ -162,7 +162,7 @@ wildcard_file_reader_new(const gchar *filename, FileReaderOptions *options, File
                          GlobalConfig *cfg)
 {
   WildcardFileReader *self = g_new0(WildcardFileReader, 1);
-  file_reader_init_instance(&self->super, filename, options, opener, owner, cfg);
+  file_reader_init_instance(&self->super, filename, options, opener, owner, cfg, "wildcard_file_sd");
   self->super.super.init = _init;
   self->super.super.notify = _notify;
   self->super.super.deinit = _deinit;
