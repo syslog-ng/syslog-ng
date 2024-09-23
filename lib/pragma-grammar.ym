@@ -190,6 +190,7 @@ requires_stmt
                               evt_tag_str("details", $3 ? : "none"),
                               cfg_lexer_format_location_tag(lexer,&@1));
                     free($2);
+                    free($3);
                     PRAGMA_ERROR();
                   }
                 else
@@ -201,6 +202,7 @@ requires_stmt
                   }
               }
             free($2);
+            free($3);
           }
 	;
 

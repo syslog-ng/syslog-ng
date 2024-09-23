@@ -1324,6 +1324,15 @@ _unregister_driver_stats(LogThreadedDestDriver *self)
         stats_cluster_key_free(self->metrics.processed_sc_key);
         self->metrics.processed_sc_key = NULL;
       }
+
+    if (self->metrics.output_event_retries_sc_key)
+      {
+        stats_unregister_counter(self->metrics.output_event_retries_sc_key, SC_TYPE_SINGLE_VALUE,
+                                 &self->metrics.output_event_retries);
+
+        stats_cluster_key_free(self->metrics.output_event_retries_sc_key);
+        self->metrics.output_event_retries_sc_key = NULL;
+      }
   }
   stats_unlock();
 }

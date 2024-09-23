@@ -752,6 +752,8 @@ _set_metric_options(LogSource *self, const gchar *stats_id, StatsClusterKeyBuild
                                                self->stats_id, instance_name);
     stats_cluster_key_builder_set_legacy_alias_name(self->metrics.stats_kb, "processed");
     stats_cluster_key_builder_add_label(self->metrics.stats_kb, stats_cluster_label("id", self->stats_id));
+    if (self->metrics.recvd_messages_key)
+      stats_cluster_key_free(self->metrics.recvd_messages_key);
     self->metrics.recvd_messages_key = stats_cluster_key_builder_build_single(self->metrics.stats_kb);
   }
   stats_cluster_key_builder_pop(self->metrics.stats_kb);
@@ -760,6 +762,8 @@ _set_metric_options(LogSource *self, const gchar *stats_id, StatsClusterKeyBuild
   {
     stats_cluster_key_builder_set_name(self->metrics.stats_kb, "input_event_bytes_total");;
     stats_cluster_key_builder_add_label(self->metrics.stats_kb, stats_cluster_label("id", self->stats_id));
+    if (self->metrics.recvd_bytes_key)
+      stats_cluster_key_free(self->metrics.recvd_bytes_key);
     self->metrics.recvd_bytes_key = stats_cluster_key_builder_build_single(self->metrics.stats_kb);
   }
   stats_cluster_key_builder_pop(self->metrics.stats_kb);
