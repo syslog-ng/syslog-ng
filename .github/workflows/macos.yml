@@ -68,25 +68,29 @@ jobs:
           CFLAGS="-I${HOMEBREW_PREFIX}/include/ -I${MACPORTS_PREFIX}/include"
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
           CONFIGURE_FLAGS="
-            --enable-force-gnu99
+            `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
+            --enable-extra-warnings
+            --enable-debug
             --prefix=${SYSLOG_NG_INSTALL_DIR}
-            --enable-all-modules
             --enable-tests
-            --with-ivykis=system
+            --enable-all-modules
             --with-python=3
+            --with-ivykis=system
             --with-systemd-journal=no
             --disable-java
             --disable-java-modules
           "
           CMAKE_CONFIGURE_FLAGS="
-            -DCMAKE_BUILD_TYPE=Debug
             -DSUMMARY_VERBOSE=ON
+            -DCMAKE_BUILD_TYPE=Debug
+            -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
             -DBUILD_TESTING=ON
-            -DIVYKIS_SOURCE=internal
             -DPYTHON_VERSION=3
+            -DIVYKIS_SOURCE=internal
             -DENABLE_JOURNALD=OFF
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF
+            -DENABLE_GRPC=OFF
           "
           PKG_CONFIG_PATH="${HOMEBREW_PREFIX}/opt/openssl@3/lib/pkgconfig:${HOMEBREW_PREFIX}/opt/net-snmp/lib/pkgconfig:${HOMEBREW_PREFIX}/lib/pkgconfig:${MACPORTS_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}"
           PATH="${HOMEBREW_PREFIX}/opt/bison/bin:${HOMEBREW_PREFIX}/opt/libnet/bin:${HOMEBREW_PREFIX}/opt/net-snmp/bin:${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/sbin:${PYTHONUSERBASE}/bin:${MACPORTS_PREFIX}/bin:${MACPORTS_PREFIX}/sbin:${PATH}"
