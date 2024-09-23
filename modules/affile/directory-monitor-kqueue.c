@@ -147,14 +147,6 @@ _stop_watches(DirectoryMonitor *s)
 }
 
 static void
-_triggered_timer(gpointer data)
-{
-  DirectoryMonitorKQueue *self = (DirectoryMonitorKQueue *)data;
-
-  _start_watches(&self->super.super);
-}
-
-static void
 _free_fn(DirectoryMonitor *s)
 {
   DirectoryMonitorKQueue *self = (DirectoryMonitorKQueue *)s;

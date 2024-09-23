@@ -115,11 +115,10 @@ jobs:
       - name: cmake configure
         if: matrix.build-tool == 'cmake'
         run: |
-          # If you know the valid syntax to provide the quoted string for -DCMAKE_C_FLAGS inplace in CMAKE_CONFIGURE_FLAGS above (in Set ENV variables step) instead of this hack, please contribute!
+          # If you know the valid syntax to provide the quoted string for -DCMAKE_C_FLAGS inplace in CMAKE_CONFIGURE_FLAGS above
+          # (in Set ENV variables step) instead of this hack, please contribute!
           #
-          # TODO: -Wall must be replaced here with -Werror but now multiple warnings could occure in several modules that needs to be corrected first
-          #
-          cmake --install-prefix "${SYSLOG_NG_INSTALL_DIR}" -B build . -DCMAKE_C_FLAGS="-Wall ${CFLAGS}" ${CMAKE_CONFIGURE_FLAGS}
+          cmake --install-prefix "${SYSLOG_NG_INSTALL_DIR}" -B build . -DCMAKE_C_FLAGS="${CFLAGS} -Werror" ${CMAKE_CONFIGURE_FLAGS}
 
       - name: cmake install
         if: matrix.build-tool == 'cmake'
