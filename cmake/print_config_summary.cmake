@@ -36,6 +36,8 @@ if(APPLE)
   list(APPEND _compilationsOptions "FORCE_CLASSIC_LINKING")
 endif()
 
+option(SUMMARY_LEVEL "Detail level of the cmake options summary information (0,1 or 2)" 0)
+
 function(_space_tabbed_string _variableName _maxVarNameLen _outputVariable)
   set(_spaces "")
 
@@ -168,30 +170,30 @@ function(print_config_summary)
   list(SORT _variableNames)
   list(REMOVE_DUPLICATES _variableNames)
 
-  _print_separator("")
-  message(NOTICE "syslog-ng Open Source Edition ${SYSLOG_NG_VERSION} configured")
-
-  if(SUMMARY_FULL)
+  if(SUMMARY_FULL OR SUMMARY_LEVEL GREATER_EQUAL 2)
     _print_separator("")
     _print_full("${_variableNames}")
   else()
-    if(SUMMARY_VERBOSE)
+    if(SUMMARY_VERBOSE OR SUMMARY_LEVEL EQUAL 1)
       _print_separator("")
       _print_libraries("${_variableNames}")
     endif()
-
-    _print_separator("Environment")
-    _print_options ("${_variableNames}" "${_envInfo}")
-
-    _print_separator("Compilers")
-    _print_compilers_info("${_variableNames}" "${_compilersInfo}")
-
-    _print_separator("Compilation")
-    _print_options("${_variableNames}" "${_compilationsOptions}")
-
-    _print_separator("Modules")
-    _print_module_options("${_variableNames}")
   endif()
+
+  _print_separator ("")
+  message (NOTICE "syslog-ng Open Source Edition ${SYSLOG_NG_VERSION} configured")
+
+  _print_separator("Environment")
+  _print_options ("${_variableNames}" "${_envInfo}")
+
+  _print_separator("Compilers")
+  _print_compilers_info("${_variableNames}" "${_compilersInfo}")
+
+  _print_separator("Compilation")
+  _print_options("${_variableNames}" "${_compilationsOptions}")
+
+  _print_separator("Modules")
+  _print_module_options("${_variableNames}")
 
   _print_separator("")
 endfunction()
