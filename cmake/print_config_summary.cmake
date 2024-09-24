@@ -114,16 +114,19 @@ function(_print_compilers_info _variableNames _importantVariableNames)
 
         if(_isCompiler)
           set(_compilerVersion "")
-          get_filename_component (_executable_name "${${_variableName}}" NAME_WE)
-          execute_process (
-            COMMAND ${${_variableName}} --version
-            COMMAND grep -i ${_executable_name}
-            OUTPUT_VARIABLE _compilerVersion
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-          )
-          execute_process (
+          get_filename_component(_executable_name "${${_variableName}}" NAME_WE)
+          execute_process(
             COMMAND which ${${_variableName}}
             OUTPUT_VARIABLE _compilerPath
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+          )
+          execute_process(
+            COMMAND "${_compilerPath}" --version
+            # version info does not always contain the exact executable name (clang++ -> clang)
+            # using now the hardcoded first line content instead :S
+            #COMMAND grep -i ${_executable_name}
+            COMMAND head -n 1
+            OUTPUT_VARIABLE _compilerVersion
             OUTPUT_STRIP_TRAILING_WHITESPACE
           )
           _space_tabbed_string("${_variableName}" 32 _spaceTabbedVariableName)
