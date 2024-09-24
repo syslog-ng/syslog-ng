@@ -83,6 +83,7 @@ _flush_partial(LogProtoFileWriter *self, LogProtoStatus *status)
   log_proto_client_msg_ack(&self->super, self->partial_messages);
   g_free(self->partial);
   self->partial = NULL;
+  self->partial_messages = 0;
   return TRUE;
 }
 
