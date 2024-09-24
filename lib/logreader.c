@@ -335,6 +335,7 @@ log_reader_update_watches(LogReader *self)
   switch (prepare_action)
     {
     case LPPA_POLL_IO:
+      self->suspended = FALSE;
       poll_events_update_watches(self->poll_events, cond);
       break;
     case LPPA_FORCE_SCHEDULE_FETCH:
