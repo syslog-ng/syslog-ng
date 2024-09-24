@@ -85,7 +85,7 @@ def setup(request):
     global base_number_of_open_fds
     number_of_open_fds = len(psutil.Process().open_files())
     assert base_number_of_open_fds + 1 == number_of_open_fds, "Previous testcase has unclosed opened fds"
-    assert len(psutil.Process().connections(kind="inet")) == 0, "Previous testcase has unclosed opened sockets"
+    assert len(psutil.Process().net_connections(kind="inet")) == 0, "Previous testcase has unclosed opened sockets"
     testcase_parameters = request.getfixturevalue("testcase_parameters")
 
     copy_file(testcase_parameters.get_testcase_file(), Path.cwd())
