@@ -41,6 +41,8 @@ Array::Array(FilterXOtelArray *s) :
   array(new ArrayValue()),
   borrowed(false)
 {
+  if (super && super->super.get_subscript)
+    ; // silence private field 'super' is not used [-Werror,-Wunused-private-field]
 }
 
 Array::Array(FilterXOtelArray *s, ArrayValue *a) :

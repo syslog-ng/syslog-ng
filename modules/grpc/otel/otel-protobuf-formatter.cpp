@@ -327,6 +327,9 @@ _set_KeyValue_log_msg_foreach_fn(NVHandle handle, const gchar *name, const gchar
 static SeverityNumber
 _get_log_msg_severity_number(LogMessage *msg)
 {
+#if (defined(__clang__) && __clang_major__ >= 10)
+# pragma GCC diagnostic ignored "-Wc99-designator"
+#endif
   static SeverityNumber mapping[] =
   {
     [LOG_EMERG] = SeverityNumber::SEVERITY_NUMBER_FATAL,
@@ -1381,4 +1384,6 @@ ProtobufFormatter::format(LogMessage *msg, Span &span)
 syslogng::grpc::otel::ProtobufFormatter::ProtobufFormatter(GlobalConfig *cfg_)
   : cfg(cfg_)
 {
+  if (cfg)
+    ; // silence private field 'cfg' is not used [-Werror,-Wunused-private-field]
 }

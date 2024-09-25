@@ -31,6 +31,7 @@ modules_grpc_otel_libotel_cpp_la_SOURCES = \
 
 modules_grpc_otel_libotel_cpp_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
+  -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0 \
   $(PROTOBUF_CFLAGS) \
   $(GRPCPP_CFLAGS) \
   -I$(OPENTELEMETRY_PROTO_BUILDDIR) \

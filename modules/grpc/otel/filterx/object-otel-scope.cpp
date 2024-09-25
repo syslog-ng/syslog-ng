@@ -35,6 +35,8 @@ using namespace syslogng::grpc::otel::filterx;
 
 Scope::Scope(FilterXOtelScope *s) : super(s)
 {
+  if (super && super->super.type)
+    ; // silence private field 'super' is not used [-Werror,-Wunused-private-field]
 }
 
 Scope::Scope(FilterXOtelScope *s, FilterXObject *protobuf_object) : super(s)

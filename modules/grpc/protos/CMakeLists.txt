@@ -91,5 +91,5 @@ target_include_directories(grpc-protos
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}
 )
 
-target_compile_options(grpc-protos PRIVATE -Wno-switch-default)
+target_compile_options(grpc-protos PRIVATE -Wno-switch-default -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0)
 install(TARGETS grpc-protos LIBRARY DESTINATION lib/syslog-ng COMPONENT grpc-protos)
