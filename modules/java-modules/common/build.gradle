@@ -15,6 +15,8 @@ dependencies {
   testImplementation 'org.hamcrest:hamcrest-core:1.3'
 }
 
+configurations.default.setCanBeResolved(true)
+
 ext.jarDestDir = project.hasProperty('jarDestDir') ? project.getProperty('jarDestDir') : '/'
 task copyLog4j(type: Copy) {
      from findJar('log4j-core')
