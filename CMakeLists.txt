@@ -435,22 +435,27 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wfloat-conversion
     $<$<COMPILE_LANGUAGE:C>:-Wbad-function-cast>)
 
-if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-  set(EXTRA_WARNINGS
-    ${EXTRA_WARNINGS}
-    )
-else()
-  set(EXTRA_WARNINGS
-    $<$<COMPILE_LANGUAGE:C>:-Wold-style-declaration>
-    -Wunused-but-set-parameter
-    $<$<COMPILE_LANGUAGE:C>:-Woverride-init>
-    ${EXTRA_WARNINGS}
-    )
+  if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+    set(EXTRA_WARNINGS
+      ${EXTRA_WARNINGS}
+      )
+  else()
+    set(EXTRA_WARNINGS
+      $<$<COMPILE_LANGUAGE:C>:-Wold-style-declaration>
+      -Wunused-but-set-parameter
+      $<$<COMPILE_LANGUAGE:C>:-Woverride-init>
+      ${EXTRA_WARNINGS}
+      )
+  endif()
 endif()
 
-endif()
+add_compile_options (${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})
 
-add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})
+option(ENABLE_FORCE_GNU99 "Enforce C99 with gnu extensions" OFF)
+if (ENABLE_FORCE_GNU99)
+  set(EXTRA_CFLAGS -std=gnu99)
+endif()
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EXTRA_CFLAGS}")
 
 # Sanatizer configuration
 set(SANITIZER "OFF" CACHE STRING "Enable clang sanitizer")

@@ -148,7 +148,8 @@ EXTRA_DIST += \
     modules/java/native/java-grammar.ym \
     modules/java/CMakeLists.txt	\
     modules/java/tools/syslog-ng.conf.example	\
-    $(patsubst %, $(SYSLOG_NG_CORE_SRC_DIR)/%, $(JAVA_FILES))
+    $(patsubst %, $(SYSLOG_NG_CORE_SRC_DIR)/%, $(JAVA_FILES))	\
+    cmake/syslog_ng_core_java_native.cmake
 
 .SECONDEXPANSION:
 
