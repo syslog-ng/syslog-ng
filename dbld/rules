@@ -56,7 +56,8 @@ GIT_RELEASE_TAG=syslog-ng-$(VERSION)
 CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=3 --prefix=/install $(CONFIGURE_ADD)
 DBLD_RULES=$(MAKE) --no-print-directory -f $(DBLD_DIR)/rules
 
-DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti ${CONTAINER_REGISTRY}/dbld-$* /dbld/shell $(if $(SHELL_COMMAND),"$(SHELL_COMMAND)",bash)
+DOCKER_INTERACTIVE=$(shell if tty -s; then echo "-ti"; else echo "-i"; fi)
+DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -${DOCKER_INTERACTIVE} ${CONTAINER_REGISTRY}/dbld-$* /dbld/shell $(if $(SHELL_COMMAND),"$(SHELL_COMMAND)",bash)
 
 -include $(if $(RULES_CONF),$(RULES_CONF),$(DBLD_DIR)/rules.conf)
 
@@ -205,7 +206,7 @@ clean:
 run: run-$(DEFAULT_IMAGE)
 run: RUN_COMMAND=echo Specify RUN_COMMAND to do something sensible here
 run-%: setup
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti ${CONTAINER_REGISTRY}/dbld-$* bash -c "$(RUN_COMMAND)"
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm ${DOCKER_INTERACTIVE} ${CONTAINER_REGISTRY}/dbld-$* bash -c "$(RUN_COMMAND)"
 
 shell: shell-$(DEFAULT_IMAGE)
 shell-%: setup
@@ -261,7 +262,7 @@ exec: exec-$(DEFAULT_IMAGE)
 exec: EXEC_COMMAND=echo Specify EXEC_COMMAND to do something sensible here
 exec-%: setup
 	@container=`$(DOCKER) ps | grep dbld-$* | head -1 | cut -d ' ' -f1`; \
-	$(DOCKER) exec -ti  $$container $(EXEC_COMMAND)
+	$(DOCKER) exec ${DOCKER_INTERACTIVE}  $$container $(EXEC_COMMAND)
 
 login: login-$(DEFAULT_IMAGE)
 login-%: EXEC_COMMAND=sudo -u $(shell whoami) /dbld/shell
