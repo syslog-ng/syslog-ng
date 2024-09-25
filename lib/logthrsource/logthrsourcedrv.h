@@ -84,7 +84,7 @@ struct _LogThreadedSourceDriver
 
 void log_threaded_source_worker_options_defaults(LogThreadedSourceWorkerOptions *options);
 void log_threaded_source_worker_options_init(LogThreadedSourceWorkerOptions *options, GlobalConfig *cfg,
-                                             const gchar *group_name);
+                                             const gchar *group_name, gint num_workers);
 void log_threaded_source_worker_options_destroy(LogThreadedSourceWorkerOptions *options);
 
 void log_threaded_source_driver_set_transport_name(LogThreadedSourceDriver *self, const gchar *transport_name);

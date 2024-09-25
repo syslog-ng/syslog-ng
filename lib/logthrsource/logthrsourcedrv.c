@@ -108,8 +108,15 @@ log_threaded_source_worker_options_defaults(LogThreadedSourceWorkerOptions *opti
 
 void
 log_threaded_source_worker_options_init(LogThreadedSourceWorkerOptions *options, GlobalConfig *cfg,
-                                        const gchar *group_name)
+                                        const gchar *group_name, gint num_workers)
 {
+  if (options->super.init_window_size == -1)
+    {
+      options->super.init_window_size = 100 * num_workers;
+    }
+
+  options->super.init_window_size /= num_workers;
+
   log_source_options_init(&options->super, cfg, group_name);
   msg_format_options_init(&options->parse_options, cfg);
 }
@@ -285,7 +292,7 @@ _init_workers(LogThreadedSourceDriver *self)
 
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
-  log_threaded_source_worker_options_init(&self->worker_options, cfg, self->super.super.group);
+  log_threaded_source_worker_options_init(&self->worker_options, cfg, self->super.super.group, self->num_workers);
 
   for (size_t i = 0; i < self->num_workers; i++)
     {
