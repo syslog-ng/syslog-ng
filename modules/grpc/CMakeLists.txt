@@ -58,6 +58,9 @@ endif()
 module_switch(ENABLE_GRPC "Enable GRPC" GRPC_DEPS_FOUND)
 
 if (ENABLE_GRPC)
+  set (CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard" FORCE)
+  set (CMAKE_CXX_STANDARD_REQUIRED ON CACHE BOOL "C++ standard is a requirement" FORCE)
+
   include(ProtobufGenerateCpp)
 
   set(MODULE_GRPC_LIBS
@@ -72,7 +75,7 @@ endif()
 
 # These are intentionally not inside the above if (ENABLE_GRPC) block
 # Let any other possible module_switch-es take effect and is being always visible
-# (both modules are protected via ENABLE_GRPC as well)
+# (all modules are protected via ENABLE_GRPC as well)
 add_subdirectory(loki)
 add_subdirectory(otel)
 add_subdirectory(bigquery)
