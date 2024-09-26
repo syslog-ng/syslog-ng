@@ -32,7 +32,6 @@ except ImportError:
     deps_installed = False
 
 from concurrent.futures import ThreadPoolExecutor
-from glob import glob
 from logging import getLogger
 from pathlib import Path
 from signal import signal, SIGINT, SIG_IGN
@@ -182,8 +181,7 @@ class S3Destination(LogDestination):
         return f"s3({','.join([options['url'], options['bucket'], str(options['object_key'])])})"
 
     def __load_persist(self) -> None:
-        for path_str in glob(pathname="*.json", root_dir=self.working_dir):
-            path = Path(self.working_dir, path_str)
+        for path in Path(self.working_dir).glob("*.json"):
             try:
                 persist = S3ObjectPersist.load(path=path)
             except PersistLoadError:
