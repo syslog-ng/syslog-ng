@@ -81,6 +81,7 @@ jobs:
             --disable-java-modules
           "
           CMAKE_CONFIGURE_FLAGS="
+            `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
             -DSUMMARY_VERBOSE=ON
             -DCMAKE_BUILD_TYPE=Debug
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
