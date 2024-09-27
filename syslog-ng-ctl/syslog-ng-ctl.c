@@ -37,6 +37,7 @@
 #include "commands/query.h"
 #include "commands/license.h"
 #include "commands/healthcheck.h"
+#include "commands/internal-logs.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -61,41 +62,6 @@ static gint
 slng_reload(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   return dispatch_command("RELOAD");
-}
-
-static gboolean config_options_start = FALSE;
-static gboolean config_options_stop = FALSE;
-static gboolean config_options_size = FALSE;
-
-static GOptionEntry internal_options[] =
-{
-  { "start", 's', 0, G_OPTION_ARG_NONE, &config_options_start, "start live collection of internal logs", NULL },
-  { "stop", 'x', 0, G_OPTION_ARG_NONE, &config_options_stop, "stop live collection of internal logs", NULL },
-  { "size", 'l', 0, G_OPTION_ARG_NONE, &config_options_size, "get size of internal logs", NULL },
-  { NULL,           0,   0, G_OPTION_ARG_NONE, NULL,                         NULL,           NULL }
-};
-
-static gint
-slng_internal(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
-{
-  GString *cmd = g_string_new("");
-
-  if (config_options_start)
-    g_string_assign(cmd, "INTERLOGS START");
-  else if (config_options_stop)
-    g_string_assign(cmd, "INTERLOGS STOP");
-  else if (config_options_size)
-    g_string_assign(cmd, "INTERLOGS SIZE");
-  else
-    {
-      fprintf(stderr, "Error: Unknown command\n");
-      return 1;
-    }
-
-  gint res = dispatch_command(cmd->str);
-  g_string_free(cmd, TRUE);
-
-  return res;
 }
 
 static gint
@@ -161,7 +127,7 @@ static CommandDescriptor modes[] =
   { "list-files", no_options, "Print files present in config", slng_listfiles, NULL },
   { "export-config-graph", no_options, "export configuration graph", slng_export_config_graph, NULL },
   { "healthcheck", healthcheck_options, "Health check", slng_healthcheck, NULL },
-  { "internal-logs", internal_options, "Collect internal syslog-ng logs", slng_internal, NULL },
+  { "internal-logs", internal_options, "Collect internal syslog-ng logs. Possible commands: --start, --stop, --size", slng_internal_logs, NULL },
   { NULL, NULL },
 };
 

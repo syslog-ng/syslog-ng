@@ -460,17 +460,15 @@ control_internal_logs(ControlConnection *cc, GString *command, gpointer user_dat
 
   if (g_str_equal(arguments[1], "START"))
     {
-      AFInterLive ret;
-
       if (g_process_get_mode() == G_PM_FOREGROUND)
         {
           g_string_assign(result, "FAIL Error: Cannot collect internal logs while syslog-ng is running in foreground");
           goto exit;
         }
 
-      ret = afinter_start_live_collection();
+      AFInterLive status = afinter_start_live_collection();
 
-      switch (ret)
+      switch (status)
         {
         case AFINTER_LIVE_COLLECTION_STARTED:
           g_string_assign(result, "OK Started to collect internal messages");
@@ -490,17 +488,16 @@ control_internal_logs(ControlConnection *cc, GString *command, gpointer user_dat
     }
   else if (g_str_equal(arguments[1], "STOP"))
     {
-      afinter_stop_live_collection();
-      afinter_get_collected_messages(result);
+      if (AFINTER_LIVE_COLLECTION_INIT == afinter_stop_live_collection(result))
+        g_string_assign(result, "FAIL Error: 'STOP' command received without a prior 'START' command.");
     }
   else if (g_str_equal(arguments[1], "SIZE"))
     {
-      afinter_get_size_of_internal_logs(result);
+      if (AFINTER_LIVE_COLLECTION_INIT == afinter_get_size_of_internal_logs(result))
+        g_string_assign(result, "FAIL Error: 'SIZE' command received without a prior 'START' command.");
     }
   else
-    {
-      g_string_assign(result, "FAIL Invalid arguments received");
-    }
+    g_string_assign(result, "FAIL Invalid arguments received");
 
 exit:
   g_strfreev(arguments);
