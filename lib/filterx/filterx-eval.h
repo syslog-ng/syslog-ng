@@ -79,7 +79,6 @@ filterx_eval_prepare_for_fork(FilterXEvalContext *context, LogMessage **pmsg, co
   filterx_eval_sync_message(context, pmsg, path_options);
   if (context)
     filterx_scope_write_protect(context->scope);
-  log_msg_write_protect(*pmsg);
 }
 
 #endif
