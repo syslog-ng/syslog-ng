@@ -79,6 +79,9 @@ public:
   }
 
 private:
+#if (defined(__clang__) && __clang_major__ >= 10)
+#pragma GCC diagnostic ignored "-Winconsistent-missing-override"
+#endif
   /* deprecated interface */
   void AddError(const std::string &filename, int line, int column, const std::string &message)
   {

@@ -115,6 +115,7 @@ modules_grpc_protos_libgrpc_protos_la_SOURCES = \
 
 modules_grpc_protos_libgrpc_protos_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
+  -Wno-switch-default -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0 \
   $(PROTOBUF_CFLAGS) \
   $(GRPCPP_CFLAGS) \
   -I$(GOOGLEAPIS_PROTO_SRCDIR) \

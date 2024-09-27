@@ -35,6 +35,8 @@ using namespace syslogng::grpc::otel::filterx;
 
 Resource::Resource(FilterXOtelResource *s) : super(s)
 {
+  if (super && super->super.type)
+    ; // silence private field 'super' is not used [-Werror,-Wunused-private-field]
 }
 
 Resource::Resource(FilterXOtelResource *s, FilterXObject *protobuf_object) : super(s)

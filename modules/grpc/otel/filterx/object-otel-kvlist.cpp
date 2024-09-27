@@ -42,6 +42,8 @@ KVList::KVList(FilterXOtelKVList *s) :
   repeated_kv(new RepeatedPtrField<KeyValue>()),
   borrowed(false)
 {
+  if (super && super->super.support_attr)
+    ; // silence private field 'super' is not used [-Werror,-Wunused-private-field]
 }
 
 KVList::KVList(FilterXOtelKVList *s, RepeatedPtrField<KeyValue> *k) :

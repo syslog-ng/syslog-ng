@@ -45,6 +45,8 @@ using namespace syslogng::grpc::otel::filterx;
 
 LogRecord::LogRecord(FilterXOtelLogRecord *super_) : super(super_)
 {
+  if (super && super_->super.type)
+    ; // silence private field 'super' is not used [-Werror,-Wunused-private-field]
 }
 
 LogRecord::LogRecord(FilterXOtelLogRecord *super_, FilterXObject *protobuf_object) : super(super_)

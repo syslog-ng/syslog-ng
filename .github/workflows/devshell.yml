@@ -40,6 +40,8 @@ jobs:
           PYTHONUSERBASE="${HOME}/python_packages"
           CC="${{ matrix.cc }}"
           CXX=`[ $CC = gcc ] && echo g++ || echo clang++`
+          CFLAGS="-Werror -Wno-unused-command-line-argument"
+          CXXFLAGS="${CFLAGS}"
           SYSLOG_NG_INSTALL_DIR=${HOME}/install/syslog-ng
           CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
@@ -66,7 +68,7 @@ jobs:
             -DENABLE_JAVA_MODULES=OFF
             -DENABLE_EBPF=ON
           "
-          gh_export COREFILES_DIR PYTHONUSERBASE CC CXX SYSLOG_NG_INSTALL_DIR CONFIGURE_FLAGS CMAKE_CONFIGURE_FLAGS
+          gh_export COREFILES_DIR PYTHONUSERBASE CC CXX SYSLOG_NG_INSTALL_DIR CFLAGS CXXFLAGS CONFIGURE_FLAGS CMAKE_CONFIGURE_FLAGS
           gh_path "${PYTHONUSERBASE}"
 
       - name: autogen.sh
@@ -129,8 +131,8 @@ jobs:
         run: |
           REPORTS_DIR=tests/light/reports
           cp -r ${REPORTS_DIR} /tmp/light-reports
-          find /tmp/light-reports -type p,s -print0 | xargs -0 rm -f 
-          tar -cz -f /tmp/light-reports.tar.gz /tmp/light-reports 
+          find /tmp/light-reports -type p,s -print0 | xargs -0 rm -f
+          tar -cz -f /tmp/light-reports.tar.gz /tmp/light-reports
 
       - name: "Artifact: light-reports"
         uses: actions/upload-artifact@v4.4.0

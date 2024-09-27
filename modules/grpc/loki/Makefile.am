@@ -14,6 +14,7 @@ modules_grpc_loki_libloki_cpp_la_SOURCES = \
 
 modules_grpc_loki_libloki_cpp_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
+  -Wno-deprecated -Wno-double-promotion -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0 \
   $(PROTOBUF_CFLAGS) \
   $(GRPCPP_CFLAGS) \
   -I$(LOKI_PROTO_BUILDDIR) \
