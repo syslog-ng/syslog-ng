@@ -22,7 +22,10 @@
  *
  */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
 #include <hiredis/hiredis.h>
+#pragma GCC diagnostic pop
 
 #include "redis.h"
 #include "redis-parser.h"

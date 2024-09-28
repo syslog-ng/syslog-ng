@@ -68,9 +68,7 @@ serialize_archive_write_bytes(SerializeArchive *self, const gchar *buf, gsize bu
 static inline gboolean
 serialize_write_uint32(SerializeArchive *archive, guint32 value)
 {
-  guint32 n;
-
-  n = GUINT32_TO_BE(value);
+  guint32 n = GUINT32_TO_BE(value);
   return serialize_archive_write_bytes(archive, (gchar *) &n, sizeof(n));
 }
 
@@ -127,23 +125,23 @@ serialize_read_uint32_array(SerializeArchive *archive, guint32 *values, gsize el
 static inline gboolean
 serialize_read_uint16_array(SerializeArchive *archive, guint32 *values, gsize elements)
 {
-  guint16 buffer[elements];
+  gboolean ret = FALSE;
+  guint16 *buffer = g_new(guint16, elements);
 
   if (serialize_archive_read_bytes(archive, (gchar *) &buffer, elements * sizeof(guint16)))
     {
       for (gsize i = 0; i < elements; i++)
         values[i] = GUINT16_FROM_BE(buffer[i]);
-      return TRUE;
+      ret = TRUE;
     }
-  return FALSE;
+  g_free(buffer);
+  return ret;
 }
 
 static inline gboolean
 serialize_write_uint64(SerializeArchive *archive, guint64 value)
 {
-  guint64 n;
-
-  n = GUINT64_TO_BE(value);
+  guint64 n = GUINT64_TO_BE(value);
   return serialize_archive_write_bytes(archive, (gchar *) &n, sizeof(n));
 }
 
@@ -163,9 +161,7 @@ serialize_read_uint64(SerializeArchive *archive, guint64 *value)
 static inline gboolean
 serialize_write_uint16(SerializeArchive *archive, guint16 value)
 {
-  guint16 n;
-
-  n = GUINT16_TO_BE(value);
+  guint16 n = GUINT16_TO_BE(value);
   return serialize_archive_write_bytes(archive, (gchar *) &n, sizeof(n));
 }
 
@@ -185,9 +181,7 @@ serialize_read_uint16(SerializeArchive *archive, guint16 *value)
 static inline gboolean
 serialize_write_uint8(SerializeArchive *archive, guint8 value)
 {
-  guint8 n;
-
-  n = value;
+  guint8 n = value;
   return serialize_archive_write_bytes(archive, (gchar *) &n, sizeof(n));
 }
 
