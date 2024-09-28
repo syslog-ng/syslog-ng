@@ -43,10 +43,10 @@
 #endif
 
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
-#pragma GCC diagnostic push "-Wundef"
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wundef"
 #include <libnet.h>
-#pragma GCC diagnostic pop "-Wundef"
+#pragma GCC diagnostic pop
 #endif
 
 #if _GNU_SOURCE_DEFINED

@@ -26,7 +26,10 @@
 #ifndef REDIS_WORKER_H_INCLUDED
 #define REDIS_WORKER_H_INCLUDED
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-default"
 #include <hiredis/hiredis.h>
+#pragma GCC diagnostic pop
 
 #include "syslog-ng.h"
 #include "logthrdest/logthrdestdrv.h"
