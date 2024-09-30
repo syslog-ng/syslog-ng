@@ -26,6 +26,7 @@
 #include "cfg-lexer-subst.h"
 #include "cfg-block-generator.h"
 #include "cfg-grammar.h"
+#include "cfg.h"
 #include "block-ref-parser.h"
 #include "pragma-parser.h"
 #include "messages.h"
@@ -1106,6 +1107,15 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, CFG_STYPE *yylval, CFG_LTYPE *yyl
         return CLPR_ERROR;
 
       return CLPR_LEX_AGAIN;
+    }
+  else if (cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA && !self->first_non_pragma_seen)
+    {
+      /* Config version must be set before the first non-pragma element to avoid
+       * version-specific inconsistencies (e.g. template functions). */
+      if (cfg_get_user_version(self->cfg) == 0)
+        cfg_set_current_version(self->cfg);
+
+      self->first_non_pragma_seen = TRUE;
     }
 
   return CLPR_OK;
