@@ -431,6 +431,10 @@ log_threaded_source_worker_blocking_post(LogThreadedSourceWorker *self, LogMessa
 {
   log_threaded_source_worker_post(self, msg);
 
+  /* unlocked, as only this thread can decrease the window size */
+  if (!self->control->auto_close_batches && !log_threaded_source_worker_free_to_send(self))
+    log_threaded_source_worker_close_batch(self);
+
   /*
    * The wakeup lock must be held before calling free_to_send() and suspend(),
    * otherwise g_cond_signal() might be called between free_to_send() and

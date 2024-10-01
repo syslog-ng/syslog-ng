@@ -127,7 +127,7 @@ void log_threaded_source_worker_close_batch(LogThreadedSourceWorker *self);
 /* blocking API */
 void log_threaded_source_worker_blocking_post(LogThreadedSourceWorker *self, LogMessage *msg);
 
-/* non-blocking API, use it wisely (thread boundaries) */
+/* non-blocking API, use it wisely (thread boundaries); call close_batch() at least before suspending */
 void log_threaded_source_worker_post(LogThreadedSourceWorker *self, LogMessage *msg);
 gboolean log_threaded_source_worker_free_to_send(LogThreadedSourceWorker *self);
 
