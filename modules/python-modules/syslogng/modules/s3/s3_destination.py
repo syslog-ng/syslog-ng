@@ -249,13 +249,13 @@ class S3Destination(LogDestination):
         if self.is_opened():
             return True
 
-        self.session = Session(
-            aws_access_key_id=self.access_key if self.access_key != "" else None,
-            aws_secret_access_key=self.secret_key if self.secret_key != "" else None,
-            region_name=self.region,
-        )
-
         if self.role != "":
+            self.session = Session(
+                aws_access_key_id=self.access_key if self.access_key != "" else None,
+                aws_secret_access_key=self.secret_key if self.secret_key != "" else None,
+                region_name=self.region,
+            )
+
             # NOTE: The Session.set_credentials always creates a new Credentials object from the given keys.
             # NOTE: The DeferredRefreshableCredentials class is a child of RefreshableCredentials which is a
             # NOTE: child of the Credentials class.
@@ -271,10 +271,18 @@ class S3Destination(LogDestination):
             whoami = sts.get_caller_identity().get("Arn")
             self.logger.info(f"Using {whoami} to access the bucket")
 
-        self.client = self.session.client(
-            service_name="s3",
-            endpoint_url=self.url if self.url != "" else None,
-        )
+            self.client = self.session.client(
+                service_name="s3",
+                endpoint_url=self.url if self.url != "" else None,
+            )
+        else:
+            self.client = client(
+                service_name="s3",
+                endpoint_url=self.url if self.url != "" else None,
+                aws_access_key_id=self.access_key if self.access_key != "" else None,
+                aws_secret_access_key=self.secret_key if self.secret_key != "" else None,
+                region_name=self.region,
+            )
 
         is_opened = False
         try:
