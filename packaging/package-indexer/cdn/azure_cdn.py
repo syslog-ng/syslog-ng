@@ -95,19 +95,19 @@ class AzureCDN(CDN):
             tenant_id=cfg["tenant-id"],
             client_id=cfg["client-id"],
             client_secret=cfg["client-secret"],
-            domains=cfg["domains"]
+            domains=cfg["domains"],
         )
 
     def refresh_cache(self, path: Path) -> None:
         path_str = str(Path("/", path))
 
-        self._log_info("Refreshing CDN cache.", path=path_str, domains=self.__domains)
+        self._log_info("Refreshing CDN cache.", path=path_str, domains=str(self.__domains))
 
         poller: LROPoller = self.__cdn.afd_endpoints.begin_purge_content(
             resource_group_name=self.__resource_group_name,
             profile_name=self.__profile_name,
             endpoint_name=self.__endpoint_name,
-            contents={'contentPaths': [path_str], "domains": self.__domains},
+            contents={"contentPaths": [path_str], "domains": self.__domains},
         )
         poller.wait()
 
@@ -115,4 +115,4 @@ class AzureCDN(CDN):
         if not status == "Succeeded":
             raise Exception("Failed to refresh CDN cache. status: {}".format(status))
 
-        self._log_info("Successfully refreshed CDN cache.", path=path_str, domains=self.__domains)
+        self._log_info("Successfully refreshed CDN cache.", path=path_str, domains=str(self.__domains))

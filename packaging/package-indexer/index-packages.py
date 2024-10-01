@@ -73,6 +73,11 @@ def add_optional_arguments(parser: ArgumentParser) -> None:
         type=str,
         help="Also log more verbosely into this file.",
     )
+    parser.add_argument(
+        "--flush-cache-only",
+        action="store_true",
+        help="Only flush the caches of the Azure CDN. Used for testing that part.",
+    )
 
 
 def parse_args() -> dict:
@@ -157,8 +162,12 @@ def main() -> None:
     cfg = load_config(args)
 
     indexers = construct_indexers(cfg, args)
-    for indexer in indexers:
-        indexer.index()
+    if args["flush_cache_only"]:
+        for indexer in indexers:
+            indexer.flush_cdn_cache()
+    else:
+        for indexer in indexers:
+            indexer.index()
 
 
 if __name__ == "__main__":

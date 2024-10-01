@@ -86,6 +86,9 @@ class Indexer(ABC):
         self.__sync_to_remote()
         self.__refresh_cdn_cache()
 
+    def flush_cdn_cache(self) -> None:
+        self.__refresh_cdn_cache()
+
     @staticmethod
     def __create_logger() -> logging.Logger:
         logger = logging.getLogger("Indexer")
