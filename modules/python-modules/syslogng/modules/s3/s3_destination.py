@@ -249,6 +249,9 @@ class S3Destination(LogDestination):
         if self.is_opened():
             return True
 
+        # NOTE: Creating a client via a Session object does some unusual caching, which increases memory usage
+        # NOTE: each reload.  Because of this, we only create Session object if the role is set, and in that case
+        # NOTE: the memory usage is expected to behave unusually.  Sometime we should investigate this further.
         if self.role != "":
             self.session = Session(
                 aws_access_key_id=self.access_key if self.access_key != "" else None,
