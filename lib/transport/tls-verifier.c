@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2024 Franco Fichtner
  * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
@@ -91,6 +92,12 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
       if (!hostname_parts[i])
         {
           /* number of dot separated entries is not the same in the hostname and the pattern spec */
+          goto exit;
+        }
+      char *wildcard_matched = g_strrstr(pattern_parts[i], "*");
+      if (wildcard_matched && (i != 0 || wildcard_matched != strstr(pattern_parts[i], "*")))
+        {
+          /* wildcard only on leftmost part and never as multiple wildcards as per both RFC 6125 and 9525 */
           goto exit;
         }
 
