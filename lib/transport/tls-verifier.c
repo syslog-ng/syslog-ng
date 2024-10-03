@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2024 One Identity LLC.
  * Copyright (c) 2024 Franco Fichtner
  * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
@@ -92,6 +93,11 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
       if (!hostname_parts[i])
         {
           /* number of dot separated entries is not the same in the hostname and the pattern spec */
+          goto exit;
+        }
+      if (g_strrstr(pattern_parts[i], "?"))
+        {
+          /* Glib would treat any question marks as jokers */
           goto exit;
         }
       char *wildcard_matched = g_strrstr(pattern_parts[i], "*");
