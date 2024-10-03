@@ -11,6 +11,7 @@ LABEL COMMIT=${COMMIT}
 COPY images/entrypoint.sh /
 COPY . /dbld/
 
+RUN /dbld/builddeps update_packages
 RUN /dbld/builddeps workaround_rpm_repos
 RUN /dbld/builddeps install_dbld_dependencies
 RUN /dbld/builddeps add_copr_repo
