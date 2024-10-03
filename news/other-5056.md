@@ -1,1 +1,0 @@
-`docker`: Changed the container image's base to debian:bookworm.

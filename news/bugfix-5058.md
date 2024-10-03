@@ -1,1 +1,0 @@
-`affile`: Fix an invalid `lseek` call mainly on the `pipe()` source, but also possible if using affile on pipe like files (pipe, socket and FIFO).

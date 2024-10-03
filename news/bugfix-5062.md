@@ -1,1 +1,0 @@
-`grpc`: Fix potential memoryleak when the grpc module is loaded but not used. 
