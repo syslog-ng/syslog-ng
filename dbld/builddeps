@@ -10,6 +10,21 @@ APT_INSTALL="apt-get install -y --no-install-recommends"
 set -e
 set -x
 
+function update_packages() {
+    case "${OS_DISTRIBUTION}" in
+        centos|almalinux)
+            yum update -y
+            ;;
+        debian|ubuntu)
+            apt-get update
+            apt-get upgrade -y
+            ;;
+        fedora)
+            dnf upgrade -y
+            ;;
+    esac
+}
+
 function workaround_rpm_repos() {
     MIRROR_URL='https://ftp.halifax.rwth-aachen.de/fedora/linux'
     case "${OS_DISTRIBUTION}" in

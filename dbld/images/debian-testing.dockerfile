@@ -15,11 +15,10 @@ ENV LANG C.UTF-8
 COPY images/entrypoint.sh /
 COPY . /dbld/
 
+RUN /dbld/builddeps update_packages
 RUN /dbld/builddeps install_dbld_dependencies
 RUN /dbld/builddeps install_apt_packages
 RUN /dbld/builddeps install_debian_build_deps
-
-RUN apt upgrade -y
 
 VOLUME /source
 VOLUME /build
