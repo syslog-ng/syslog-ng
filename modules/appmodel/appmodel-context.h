@@ -24,15 +24,32 @@
 #define APPMODEL_CONTEXT_H_INCLUDED 1
 
 #include "module-config.h"
-#include "application.h"
 
 typedef struct _AppModelContext AppModelContext;
+typedef struct _AppModelObject AppModelObject;
+typedef void(*AppModelContextIterFunc)(AppModelObject *object, gpointer user_data);
 
-void appmodel_context_iter_applications(AppModelContext *self,
-                                        void (*foreach)(Application *app, Application *base_app, gpointer user_data),
-                                        gpointer user_data);
-Application *appmodel_context_lookup_application(AppModelContext *self, const gchar *name, const gchar *topic);
-void appmodel_context_register_application(AppModelContext *self, Application *app);
+struct _AppModelObject
+{
+  void (*free_fn)(AppModelObject *s);
+  gchar *type;
+  gchar *name;
+  gchar *instance;
+};
+
+void appmodel_object_init_instance(AppModelObject *self,
+                                   const gchar *type, const gchar *name,
+                                   const gchar *instance);
+void appmodel_object_free(AppModelObject *self);
+
+void appmodel_context_iter_objects(AppModelContext *self,
+                                   const gchar *type,
+                                   AppModelContextIterFunc foreach,
+                                   gpointer user_data);
+AppModelObject *appmodel_context_lookup_object(AppModelContext *self,
+                                               const gchar *type, const gchar *name,
+                                               const gchar *instance);
+void appmodel_context_register_object(AppModelContext *self, AppModelObject *object);
 void appmodel_context_free(AppModelContext *self);
 AppModelContext *appmodel_context_new(void);
 
