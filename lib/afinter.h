@@ -36,6 +36,15 @@ typedef struct AFInterSourceOptions
   gint queue_capacity;
 } AFInterSourceOptions;
 
+typedef enum
+{
+  AFINTER_LIVE_COLLECTION_INIT,
+  AFINTER_LIVE_COLLECTION_STARTED,
+  AFINTER_LIVE_COLLECTION_RUNNING,
+  AFINTER_INTERNAL_SRC_PRESENT,
+  AFINTER_LIVE_COLLECTION_NONE,
+} AFInterLive;
+
 /*
  * This is the actual source driver, linked into the configuration tree.
  */
@@ -61,4 +70,7 @@ void afinter_global_deinit(void);
 
 AFInterMetrics afinter_get_metrics(void);
 
+AFInterLive afinter_start_live_collection(void);
+AFInterLive afinter_stop_live_collection(GString *result);
+AFInterLive afinter_get_size_of_internal_logs(GString *result);
 #endif

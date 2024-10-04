@@ -22,6 +22,7 @@
  *
  */
 #include "mainloop.h"
+#include "gprocess.h"
 #include "control/control-commands.h"
 #include "control/control-connection.h"
 #include "messages.h"
@@ -31,6 +32,7 @@
 #include "secret-storage/secret-storage.h"
 #include "cfg-walker.h"
 #include "logpipe.h"
+#include "afinter.h"
 
 #include <string.h>
 
@@ -450,6 +452,58 @@ export_config_graph(ControlConnection *cc, GString *command, gpointer user_data,
   control_connection_send_reply(cc, result);
 }
 
+static void
+control_internal_logs(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
+{
+  GString *result = g_string_new("");
+  gchar **arguments = g_strsplit(command->str, " ", 0);
+
+  if (g_str_equal(arguments[1], "START"))
+    {
+      if (g_process_get_mode() == G_PM_FOREGROUND)
+        {
+          g_string_assign(result, "FAIL Error: Cannot collect internal logs while syslog-ng is running in foreground");
+          goto exit;
+        }
+
+      AFInterLive status = afinter_start_live_collection();
+
+      switch (status)
+        {
+        case AFINTER_LIVE_COLLECTION_STARTED:
+          g_string_assign(result, "OK Started to collect internal messages");
+          break;
+
+        case AFINTER_LIVE_COLLECTION_RUNNING:
+          g_string_assign(result, "FAIL Error: Live collection of internal logs is already running");
+          break;
+
+        case AFINTER_INTERNAL_SRC_PRESENT:
+          g_string_assign(result, "FAIL Error: Internal source is already configured");
+          break;
+
+        default:
+          break;
+        }
+    }
+  else if (g_str_equal(arguments[1], "STOP"))
+    {
+      if (AFINTER_LIVE_COLLECTION_INIT == afinter_stop_live_collection(result))
+        g_string_assign(result, "FAIL Error: 'STOP' command received without a prior 'START' command.");
+    }
+  else if (g_str_equal(arguments[1], "SIZE"))
+    {
+      if (AFINTER_LIVE_COLLECTION_INIT == afinter_get_size_of_internal_logs(result))
+        g_string_assign(result, "FAIL Error: 'SIZE' command received without a prior 'START' command.");
+    }
+  else
+    g_string_assign(result, "FAIL Invalid arguments received");
+
+exit:
+  g_strfreev(arguments);
+  control_connection_send_reply(cc, result);
+}
+
 ControlCommand default_commands[] =
 {
   { "LOG", control_connection_message_log },
@@ -461,6 +515,7 @@ ControlCommand default_commands[] =
   { "PWD", process_credentials },
   { "LISTFILES", control_connection_list_files },
   { "EXPORT_CONFIG_GRAPH", export_config_graph },
+  { "INTERLOGS", control_internal_logs },
   { NULL, NULL },
 };
 
