@@ -44,6 +44,12 @@ struct _ControlCommandThread
   struct iv_event thread_finished;
 };
 
+gboolean
+control_command_thread_relates_to_connection(ControlCommandThread *self, ControlConnection *cc)
+{
+  return self->connection == cc;
+}
+
 static void
 _on_thread_finished(gpointer user_data)
 {
