@@ -31,6 +31,16 @@ void
 _cancel_worker(gpointer data, gpointer user_data)
 {
   ControlCommandThread *thread = (ControlCommandThread *) data;
+  ControlConnection *cc = (ControlConnection *) user_data;
+
+  if (cc && !control_command_thread_relates_to_connection(thread, cc))
+    {
+      /* check if we relate to a specific connection and cancel only those.
+       * This is only used when a connection closed while the thread is
+       * still running.
+       */
+      return;
+    }
 
   msg_warning("Requesting the cancellation of control command thread",
               evt_tag_str("control_command", control_command_thread_get_command(thread)));
@@ -52,15 +62,21 @@ _cancel_worker(gpointer data, gpointer user_data)
    */
 }
 
-void
-control_server_cancel_workers(ControlServer *self)
+static void
+control_server_cancel_workers(ControlServer *self, ControlConnection *cc)
 {
   if (self->worker_threads)
     {
       msg_debug("Cancelling control server worker threads");
-      g_list_foreach(self->worker_threads, _cancel_worker, NULL);
+      g_list_foreach(self->worker_threads, _cancel_worker, cc);
       msg_debug("Control server worker threads have been cancelled");
     }
+}
+
+void
+control_server_cancel_all_workers(ControlServer *self)
+{
+  control_server_cancel_workers(self, NULL);
 }
 
 void
@@ -80,6 +96,7 @@ control_server_worker_finished(ControlServer *self, ControlCommandThread *worker
 void
 control_server_connection_closed(ControlServer *self, ControlConnection *cc)
 {
+  control_server_cancel_workers(self, cc);
   control_connection_stop_watches(cc);
   control_connection_unref(cc);
 }
