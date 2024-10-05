@@ -42,7 +42,20 @@ typedef struct _ControlConnectionUnix
   ControlConnection super;
   struct iv_fd control_io;
   gint fd;
+  /* stdin, stdout, stderr as passed by syslog-ng-ctl */
+  gint attached_fds[3];
 } ControlConnectionUnix;
+
+static gboolean
+control_connection_unix_get_attached_fds(ControlConnection *s, gint *fds, gsize *num_fds)
+{
+  ControlConnectionUnix *self = (ControlConnectionUnix *)s;
+
+  g_assert(*num_fds >= 3);
+  memcpy(fds, self->attached_fds, sizeof(self->attached_fds));
+  *num_fds = 3;
+  return TRUE;
+}
 
 gint
 control_connection_unix_write(ControlConnection *s, gpointer buffer, gsize size)
@@ -51,11 +64,58 @@ control_connection_unix_write(ControlConnection *s, gpointer buffer, gsize size)
   return write(self->control_io.fd, buffer, size);
 }
 
+static gint
+_extract_ancillary_data(ControlConnectionUnix *self, gint rc, struct msghdr *msg)
+{
+  if (G_UNLIKELY(msg->msg_flags & MSG_CTRUNC))
+    {
+      msg_warning_once("WARNING: recvmsg() on control socket returned truncated control data",
+                       evt_tag_int("control_len", msg->msg_controllen));
+      return -1;
+    }
+
+  for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(msg); cmsg != NULL; cmsg = CMSG_NXTHDR(msg, cmsg))
+    {
+      if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS)
+        {
+          gint header_len = CMSG_DATA(cmsg) - (unsigned char *) cmsg;
+          gint fd_array_size = (cmsg->cmsg_len - header_len);
+
+          if (fd_array_size != sizeof(self->attached_fds))
+            {
+              msg_warning_once("WARNING: invalid number of fds received on control socket",
+                               evt_tag_int("fd_array_size", fd_array_size));
+              return -1;
+            }
+          memcpy(&self->attached_fds, CMSG_DATA(cmsg), sizeof(self->attached_fds));
+          break;
+        }
+    }
+
+  return rc;
+}
+
 gint
 control_connection_unix_read(ControlConnection *s, gpointer buffer, gsize size)
 {
   ControlConnectionUnix *self = (ControlConnectionUnix *)s;
-  return read(self->control_io.fd, buffer, size);
+  gchar cmsg_buf[256];
+  struct iovec iov[1] =
+  {
+    { .iov_base = buffer, .iov_len = size },
+  };
+  struct msghdr msg =
+  {
+    .msg_iov = iov,
+    .msg_iovlen = G_N_ELEMENTS(iov),
+    .msg_control = cmsg_buf,
+    .msg_controllen = sizeof(cmsg_buf),
+  };
+  gint rc = recvmsg(self->control_io.fd, &msg, 0);
+  if (rc < 0)
+    return rc;
+
+  return _extract_ancillary_data(self, rc, &msg);
 }
 
 static void
@@ -114,6 +174,11 @@ control_connection_unix_free(ControlConnection *s)
 {
   ControlConnectionUnix *self = (ControlConnectionUnix *)s;
   close(self->control_io.fd);
+  for (gint i = 0; i < G_N_ELEMENTS(self->attached_fds); i++)
+    {
+      if (self->attached_fds[i] >= 0)
+        close(self->attached_fds[i]);
+    }
 }
 
 ControlConnection *
@@ -129,6 +194,12 @@ control_connection_unix_new(ControlServer *server, gint sock)
   self->super.events.start_watches = control_connection_unix_start_watches;
   self->super.events.update_watches = control_connection_unix_update_watches;
   self->super.events.stop_watches = control_connection_unix_stop_watches;
+  self->super.get_attached_fds = control_connection_unix_get_attached_fds;
+
+  for (gint i = 0; i < G_N_ELEMENTS(self->attached_fds); i++)
+    {
+      self->attached_fds[i] = -1;
+    }
 
   return &self->super;
 }
@@ -151,7 +222,6 @@ _control_socket_accept(void *cookie)
                 evt_tag_error("error"));
       goto error;
     }
-
 
   cc = control_connection_unix_new(&self->super, conn_socket);
 
