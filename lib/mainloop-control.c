@@ -31,6 +31,7 @@
 #include "secret-storage/secret-storage.h"
 #include "cfg-walker.h"
 #include "logpipe.h"
+#include "console.h"
 
 #include <string.h>
 
@@ -102,6 +103,97 @@ control_connection_message_log(ControlConnection *cc, GString *command, gpointer
 exit:
   g_strfreev(cmds);
   control_connection_send_reply(cc, result);
+}
+
+void
+_wait_until_peer_disappears(ControlConnection *cc, gint max_seconds, gboolean *cancelled)
+{
+  while (max_seconds != 0 && !(*cancelled))
+    {
+      sleep(1);
+      if (max_seconds > 0)
+        max_seconds--;
+      control_connection_send_batched_reply(cc, g_string_new("ALIVE\n"));
+    }
+  console_release();
+}
+
+static void
+control_connection_attach(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
+{
+  gchar **cmds = g_strsplit(command->str, " ", 4);
+  GString *result = g_string_sized_new(128);
+  gint n_seconds = -1;
+  struct
+  {
+    gboolean log_stderr;
+    gint log_level;
+  } old_values, new_values;
+
+  old_values.log_stderr = log_stderr;
+  old_values.log_level = msg_get_log_level();
+  new_values = old_values;
+
+  if (!cmds[1])
+    {
+      g_string_assign(result, "FAIL Invalid arguments received");
+      goto exit;
+    }
+
+  if (g_str_equal(cmds[1], "STDIO"))
+    {
+      ;
+    }
+  else if (g_str_equal(cmds[1], "LOGS"))
+    {
+      new_values.log_stderr = TRUE;
+      if (cmds[3])
+        new_values.log_level = msg_map_string_to_log_level(cmds[3]);
+      if (new_values.log_level < 0)
+        {
+          g_string_assign(result, "FAIL Invalid log level");
+          goto exit;
+        }
+    }
+  else
+    {
+      g_string_assign(result, "FAIL This version of syslog-ng only supports attaching to STDIO or LOGS");
+      goto exit;
+    }
+
+  if (cmds[2])
+    n_seconds = atoi(cmds[2]);
+
+  gint fds[3];
+  gsize num_fds = G_N_ELEMENTS(fds);
+  if (!control_connection_get_attached_fds(cc, fds, &num_fds) || num_fds != 3)
+    {
+      g_string_assign(result,
+                      "FAIL The underlying transport for syslog-ng-ctl does not support fd passing or incorrect number of fds received");
+      goto exit;
+    }
+
+  if (!console_acquire_from_fds(fds))
+    {
+      g_string_assign(result,
+                      "FAIL Error acquiring console");
+      goto exit;
+    }
+
+  log_stderr = new_values.log_stderr;
+  msg_set_log_level(new_values.log_level);
+
+  _wait_until_peer_disappears(cc, n_seconds, cancelled);
+
+  log_stderr = old_values.log_stderr;
+  msg_set_log_level(old_values.log_level);
+
+  g_string_assign(result, "OK [console output ends here]");
+exit:
+
+  control_connection_send_batched_reply(cc, result);
+  control_connection_send_close_batch(cc);
+  g_strfreev(cmds);
 }
 
 static void
@@ -452,6 +544,7 @@ export_config_graph(ControlConnection *cc, GString *command, gpointer user_data,
 
 ControlCommand default_commands[] =
 {
+  { "ATTACH", control_connection_attach, .threaded = TRUE },
   { "LOG", control_connection_message_log },
   { "STOP", control_connection_stop_process },
   { "RELOAD", control_connection_reload },

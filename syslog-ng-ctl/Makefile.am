@@ -6,6 +6,8 @@ syslog_ng_ctl_syslog_ng_ctl_SOURCES		= 	\
 	syslog-ng-ctl/syslog-ng-ctl.c			\
 	syslog-ng-ctl/commands/commands.h		\
 	syslog-ng-ctl/commands/commands.c		\
+	syslog-ng-ctl/commands/attach.h			\
+	syslog-ng-ctl/commands/attach.c			\
 	syslog-ng-ctl/commands/config.h			\
 	syslog-ng-ctl/commands/config.c			\
 	syslog-ng-ctl/commands/credentials.h		\
