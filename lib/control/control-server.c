@@ -67,9 +67,7 @@ control_server_cancel_workers(ControlServer *self, ControlConnection *cc)
 {
   if (self->worker_threads)
     {
-      msg_debug("Cancelling control server worker threads");
       g_list_foreach(self->worker_threads, _cancel_worker, cc);
-      msg_debug("Control server worker threads have been cancelled");
     }
 }
 

@@ -223,7 +223,7 @@ control_connection_io_input(void *s)
     }
   else if (rc == 0)
     {
-      msg_debug("EOF on control channel, closing connection");
+      msg_trace("EOF on control channel, closing connection");
       goto destroy_connection;
     }
   else
