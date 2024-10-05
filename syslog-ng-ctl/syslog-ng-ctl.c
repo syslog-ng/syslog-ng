@@ -37,6 +37,7 @@
 #include "commands/query.h"
 #include "commands/license.h"
 #include "commands/healthcheck.h"
+#include "commands/attach.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -111,6 +112,7 @@ slng_export_config_graph(int argc, char *argv[], const gchar *mode, GOptionConte
 
 static CommandDescriptor modes[] =
 {
+  { "attach", attach_options, "Attach to a running syslog-ng instance", slng_attach, NULL },
   { "stats", stats_options, "Get syslog-ng statistics. Possible commands: csv, prometheus; default: csv", slng_stats, NULL },
   { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose, NULL },
   { "debug", verbose_options, "Enable/query debug messages", slng_verbose, NULL },

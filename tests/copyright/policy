@@ -118,6 +118,7 @@ lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
 lib/severity-aliases\.table
 syslog-ng-ctl/commands/log-level.[ch]
+syslog-ng-ctl/commands/attach.[ch]
 modules/afsocket/afsocket-signals.h
 syslog-ng-ctl/commands/healthcheck.[ch]
 modules/python-modules/syslogng/confgen\.py
