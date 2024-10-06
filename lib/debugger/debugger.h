@@ -32,13 +32,16 @@ typedef struct _Debugger Debugger;
 
 typedef gchar *(*FetchCommandFunc)(void);
 
-Debugger *debugger_new(MainLoop *main_loop, GlobalConfig *cfg);
-void debugger_free(Debugger *self);
 
 gchar *debugger_builtin_fetch_command(void);
 void debugger_register_command_fetcher(FetchCommandFunc fetcher);
+void debugger_exit(Debugger *self);
 void debugger_start_console(Debugger *self);
 gboolean debugger_perform_tracing(Debugger *self, LogPipe *pipe, LogMessage *msg);
 gboolean debugger_stop_at_breakpoint(Debugger *self, LogPipe *pipe, LogMessage *msg);
+
+Debugger *debugger_new(MainLoop *main_loop, GlobalConfig *cfg);
+void debugger_free(Debugger *self);
+
 
 #endif
