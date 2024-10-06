@@ -29,6 +29,7 @@
 #include "mainloop.h"
 #include "timeutils/misc.h"
 #include "compat/time.h"
+#include "scratch-buffers.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -44,6 +45,7 @@ struct _Debugger
   LogPipe *current_pipe;
   gboolean drop_current_message;
   struct timespec last_trace_event;
+  GThread *interactive_thread;
 };
 
 static gboolean
@@ -272,6 +274,7 @@ debugger_builtin_fetch_command(void)
 
   printf("(syslog-ng) ");
   fflush(stdout);
+  clearerr(stdin);
 
   if (!fgets(buf, sizeof(buf), stdin))
     return NULL;
@@ -372,11 +375,13 @@ _interactive_console_thread_func(Debugger *self)
   printf("Waiting for breakpoint...\n");
   while (1)
     {
-      tracer_wait_for_breakpoint(self->tracer);
+      if (!tracer_wait_for_breakpoint(self->tracer))
+        break;
 
       _handle_interactive_prompt(self);
       tracer_resume_after_breakpoint(self->tracer);
     }
+  scratch_buffers_explicit_gc();
   app_thread_stop();
   return NULL;
 }
@@ -384,7 +389,7 @@ _interactive_console_thread_func(Debugger *self)
 void
 debugger_start_console(Debugger *self)
 {
-  g_thread_new(NULL, (GThreadFunc) _interactive_console_thread_func, self);
+  self->interactive_thread = g_thread_new(NULL, (GThreadFunc) _interactive_console_thread_func, self);
 }
 
 gboolean
@@ -415,6 +420,13 @@ debugger_perform_tracing(Debugger *self, LogPipe *pipe_, LogMessage *msg)
          log_expr_node_format_location(pipe_->expr_node, buf, sizeof(buf)));
   *prev_ts = ts;
   return TRUE;
+}
+
+void
+debugger_exit(Debugger *self)
+{
+  tracer_cancel(self->tracer);
+  g_thread_join(self->interactive_thread);
 }
 
 Debugger *
