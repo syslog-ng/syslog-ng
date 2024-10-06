@@ -45,7 +45,7 @@ struct _Debugger
   LogPipe *current_pipe;
   gboolean drop_current_message;
   struct timespec last_trace_event;
-  GThread *interactive_thread;
+  GThread *debugger_thread;
 };
 
 static gboolean
@@ -369,7 +369,7 @@ _handle_interactive_prompt(Debugger *self)
 }
 
 static gpointer
-_interactive_console_thread_func(Debugger *self)
+_debugger_thread_func(Debugger *self)
 {
   app_thread_start();
   printf("Waiting for breakpoint...\n");
@@ -389,7 +389,7 @@ _interactive_console_thread_func(Debugger *self)
 void
 debugger_start_console(Debugger *self)
 {
-  self->interactive_thread = g_thread_new(NULL, (GThreadFunc) _interactive_console_thread_func, self);
+  self->debugger_thread = g_thread_new(NULL, (GThreadFunc) _debugger_thread_func, self);
 }
 
 gboolean
@@ -426,7 +426,7 @@ void
 debugger_exit(Debugger *self)
 {
   tracer_cancel(self->tracer);
-  g_thread_join(self->interactive_thread);
+  g_thread_join(self->debugger_thread);
 }
 
 Debugger *
