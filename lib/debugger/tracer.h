@@ -26,15 +26,7 @@
 
 #include "syslog-ng.h"
 
-typedef struct _Tracer
-{
-  GMutex breakpoint_mutex;
-  GCond breakpoint_cond;
-  GCond resume_cond;
-  gboolean breakpoint_hit;
-  gboolean resume_requested;
-  gboolean cancel_requested;
-} Tracer;
+typedef struct _Tracer Tracer;
 
 void tracer_stop_on_breakpoint(Tracer *self);
 gboolean tracer_wait_for_breakpoint(Tracer *self);

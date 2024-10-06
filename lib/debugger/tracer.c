@@ -23,6 +23,16 @@
  */
 #include "debugger/tracer.h"
 
+struct _Tracer
+{
+  GMutex breakpoint_mutex;
+  GCond breakpoint_cond;
+  GCond resume_cond;
+  gboolean breakpoint_hit;
+  gboolean resume_requested;
+  gboolean cancel_requested;
+};
+
 /* NOTE: called by workers to stop on a breakpoint, wait for the debugger to
  * do its stuff and return to continue */
 void
