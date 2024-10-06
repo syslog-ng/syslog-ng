@@ -29,5 +29,6 @@
 #include "cfg.h"
 
 void debugger_start(MainLoop *main_loop, GlobalConfig *cfg);
+void debugger_stop(void);
 
 #endif
