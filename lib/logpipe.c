@@ -47,7 +47,7 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   LogPathOptions local_path_options;
   g_assert((s->flags & PIF_INITIALIZED) != 0);
 
-  if (G_UNLIKELY(pipe_single_step_hook))
+  if (G_UNLIKELY((s->flags & PIF_CONFIG_RELATED) != 0 && pipe_single_step_hook))
     {
       if (!pipe_single_step_hook(s, msg, path_options))
         {
