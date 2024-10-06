@@ -23,38 +23,69 @@
  */
 #include "debugger/tracer.h"
 
+/* NOTE: called by workers to stop on a breakpoint, wait for the debugger to
+ * do its stuff and return to continue */
 void
 tracer_stop_on_breakpoint(Tracer *self)
 {
   g_mutex_lock(&self->breakpoint_mutex);
 
+  if (self->cancel_requested)
+    goto exit;
+
   /* send break point */
   self->breakpoint_hit = TRUE;
   g_cond_signal(&self->breakpoint_cond);
 
-  /* wait for resume */
-  while (!self->resume_requested)
+  /* wait for resume or cancel */
+  while (!(self->resume_requested || self->cancel_requested))
     g_cond_wait(&self->resume_cond, &self->breakpoint_mutex);
   self->resume_requested = FALSE;
+
+exit:
   g_mutex_unlock(&self->breakpoint_mutex);
 }
 
-void
+/* NOTE: called by the interactive debugger to wait for a breakpoint to
+ * trigger, a return of FALSE indicates that the tracing was cancelled */
+gboolean
 tracer_wait_for_breakpoint(Tracer *self)
 {
+  gboolean cancelled = FALSE;
   g_mutex_lock(&self->breakpoint_mutex);
-  while (!self->breakpoint_hit)
+  while (!(self->breakpoint_hit || self->cancel_requested))
     g_cond_wait(&self->breakpoint_cond, &self->breakpoint_mutex);
   self->breakpoint_hit = FALSE;
+  if (self->cancel_requested)
+    {
+      cancelled = TRUE;
+
+      /* cancel out threads waiting on breakpoint, e.g.  in the cancelled
+       * case no need to call tracer_resume_after_breakpoint() */
+      g_cond_signal(&self->resume_cond);
+    }
   g_mutex_unlock(&self->breakpoint_mutex);
+  return !cancelled;
 }
 
+/* NOTE: called by the interactive debugger to resume the worker after a breakpoint */
 void
 tracer_resume_after_breakpoint(Tracer *self)
 {
   g_mutex_lock(&self->breakpoint_mutex);
   self->resume_requested = TRUE;
   g_cond_signal(&self->resume_cond);
+  g_mutex_unlock(&self->breakpoint_mutex);
+}
+
+/* NOTE: called by any thread, not necessarily the debugger thread or worker
+ * threads.  It cancels out the tracer_wait_for_breakpoint() calls */
+void
+tracer_cancel(Tracer *self)
+{
+  g_mutex_lock(&self->breakpoint_mutex);
+  self->cancel_requested = TRUE;
+  g_cond_signal(&self->breakpoint_cond);
   g_mutex_unlock(&self->breakpoint_mutex);
 }
 
