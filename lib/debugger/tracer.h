@@ -28,9 +28,19 @@
 
 typedef struct _Tracer Tracer;
 
-void tracer_stop_on_breakpoint(Tracer *self);
-gboolean tracer_wait_for_breakpoint(Tracer *self);
-void tracer_resume_after_breakpoint(Tracer *self);
+/* struct to track the invocation of a breakpoint, we have an instance for each thread */
+typedef struct _BreakpointSite
+{
+  gboolean resume_requested;
+  LogMessage *msg;
+  LogPipe *pipe;
+  gboolean drop;
+} BreakpointSite;
+
+
+void tracer_stop_on_breakpoint(Tracer *self, BreakpointSite *breakpoint_site);
+gboolean tracer_wait_for_breakpoint(Tracer *self, BreakpointSite **breakpoint_site);
+void tracer_resume_after_breakpoint(Tracer *self, BreakpointSite *breakpoint_site);
 void tracer_cancel(Tracer *self);
 
 Tracer *tracer_new(GlobalConfig *cfg);

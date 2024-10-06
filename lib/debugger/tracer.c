@@ -25,32 +25,38 @@
 
 struct _Tracer
 {
+  GQueue *waiting_breakpoints;
   GMutex breakpoint_mutex;
   GCond breakpoint_cond;
+
+  /* this condition variable is shared between all breakpoints, but each of
+   * them has its own "resume_requested" variable, this means that all
+   * resumes will wake up all waiting breakpoints, but only one of them will
+   * actually resume, it's not the most efficient implementation, but avoids
+   * us having to free the GCond instance as a thread is terminated. */
+
   GCond resume_cond;
-  gboolean breakpoint_hit;
-  gboolean resume_requested;
+  BreakpointSite *pending_breakpoint;
   gboolean cancel_requested;
 };
 
 /* NOTE: called by workers to stop on a breakpoint, wait for the debugger to
  * do its stuff and return to continue */
 void
-tracer_stop_on_breakpoint(Tracer *self)
+tracer_stop_on_breakpoint(Tracer *self, BreakpointSite *breakpoint_site)
 {
   g_mutex_lock(&self->breakpoint_mutex);
 
   if (self->cancel_requested)
     goto exit;
-
+  breakpoint_site->resume_requested = FALSE;
   /* send break point */
-  self->breakpoint_hit = TRUE;
+  g_queue_push_tail(self->waiting_breakpoints, breakpoint_site);
   g_cond_signal(&self->breakpoint_cond);
 
   /* wait for resume or cancel */
-  while (!(self->resume_requested || self->cancel_requested))
+  while (!(breakpoint_site->resume_requested || self->cancel_requested))
     g_cond_wait(&self->resume_cond, &self->breakpoint_mutex);
-  self->resume_requested = FALSE;
 
 exit:
   g_mutex_unlock(&self->breakpoint_mutex);
@@ -59,20 +65,26 @@ exit:
 /* NOTE: called by the interactive debugger to wait for a breakpoint to
  * trigger, a return of FALSE indicates that the tracing was cancelled */
 gboolean
-tracer_wait_for_breakpoint(Tracer *self)
+tracer_wait_for_breakpoint(Tracer *self, BreakpointSite **breakpoint_site)
 {
   gboolean cancelled = FALSE;
   g_mutex_lock(&self->breakpoint_mutex);
-  while (!(self->breakpoint_hit || self->cancel_requested))
+  while (g_queue_is_empty(self->waiting_breakpoints) && !self->cancel_requested)
     g_cond_wait(&self->breakpoint_cond, &self->breakpoint_mutex);
-  self->breakpoint_hit = FALSE;
-  if (self->cancel_requested)
+
+  g_assert(self->pending_breakpoint == NULL);
+  *breakpoint_site = NULL;
+  if (!self->cancel_requested)
+    {
+      *breakpoint_site = self->pending_breakpoint = g_queue_pop_head(self->waiting_breakpoints);
+    }
+  else
     {
       cancelled = TRUE;
 
       /* cancel out threads waiting on breakpoint, e.g.  in the cancelled
        * case no need to call tracer_resume_after_breakpoint() */
-      g_cond_signal(&self->resume_cond);
+      g_cond_broadcast(&self->resume_cond);
     }
   g_mutex_unlock(&self->breakpoint_mutex);
   return !cancelled;
@@ -80,11 +92,13 @@ tracer_wait_for_breakpoint(Tracer *self)
 
 /* NOTE: called by the interactive debugger to resume the worker after a breakpoint */
 void
-tracer_resume_after_breakpoint(Tracer *self)
+tracer_resume_after_breakpoint(Tracer *self, BreakpointSite *breakpoint_site)
 {
   g_mutex_lock(&self->breakpoint_mutex);
-  self->resume_requested = TRUE;
-  g_cond_signal(&self->resume_cond);
+  g_assert(self->pending_breakpoint == breakpoint_site);
+  self->pending_breakpoint->resume_requested = TRUE;
+  self->pending_breakpoint = NULL;
+  g_cond_broadcast(&self->resume_cond);
   g_mutex_unlock(&self->breakpoint_mutex);
 }
 
@@ -107,7 +121,7 @@ tracer_new(GlobalConfig *cfg)
   g_mutex_init(&self->breakpoint_mutex);
   g_cond_init(&self->breakpoint_cond);
   g_cond_init(&self->resume_cond);
-
+  self->waiting_breakpoints = g_queue_new();
   return self;
 }
 
@@ -117,5 +131,6 @@ tracer_free(Tracer *self)
   g_mutex_clear(&self->breakpoint_mutex);
   g_cond_clear(&self->breakpoint_cond);
   g_cond_clear(&self->resume_cond);
+  g_queue_free(self->waiting_breakpoints);
   g_free(self);
 }
