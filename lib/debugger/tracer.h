@@ -33,11 +33,13 @@ typedef struct _Tracer
   GCond resume_cond;
   gboolean breakpoint_hit;
   gboolean resume_requested;
+  gboolean cancel_requested;
 } Tracer;
 
 void tracer_stop_on_breakpoint(Tracer *self);
-void tracer_wait_for_breakpoint(Tracer *self);
+gboolean tracer_wait_for_breakpoint(Tracer *self);
 void tracer_resume_after_breakpoint(Tracer *self);
+void tracer_cancel(Tracer *self);
 
 Tracer *tracer_new(GlobalConfig *cfg);
 void tracer_free(Tracer *self);
