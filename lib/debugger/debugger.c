@@ -389,6 +389,8 @@ _debugger_thread_func(Debugger *self)
 void
 debugger_start_console(Debugger *self)
 {
+  main_loop_assert_main_thread();
+
   self->debugger_thread = g_thread_new(NULL, (GThreadFunc) _debugger_thread_func, self);
 }
 
@@ -425,6 +427,8 @@ debugger_perform_tracing(Debugger *self, LogPipe *pipe_, LogMessage *msg)
 void
 debugger_exit(Debugger *self)
 {
+  main_loop_assert_main_thread();
+
   tracer_cancel(self->tracer);
   g_thread_join(self->debugger_thread);
 }

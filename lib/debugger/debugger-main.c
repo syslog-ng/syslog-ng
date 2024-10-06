@@ -55,6 +55,8 @@ _attach_debugger(gpointer user_data)
 {
   /* NOTE: this function is always run in the main thread via main_loop_call. */
   main_loop_worker_sync_call(_install_hook, NULL);
+
+  debugger_start_console(current_debugger);
   return NULL;
 }
 
@@ -85,8 +87,7 @@ debugger_start(MainLoop *main_loop, GlobalConfig *cfg)
   /* we don't support threaded mode (yet), force it to non-threaded */
   cfg->threaded = FALSE;
   current_debugger = debugger_new(main_loop, cfg);
-  debugger_start_console(current_debugger);
-  main_loop_call(_attach_debugger, NULL, FALSE);
+  main_loop_call(_attach_debugger, current_debugger, FALSE);
 }
 
 void
