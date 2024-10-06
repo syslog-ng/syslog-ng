@@ -38,9 +38,10 @@ typedef struct _BreakpointSite
 } BreakpointSite;
 
 
+void tracer_stop_on_interrupt(Tracer *self);
 void tracer_stop_on_breakpoint(Tracer *self, BreakpointSite *breakpoint_site);
-gboolean tracer_wait_for_breakpoint(Tracer *self, BreakpointSite **breakpoint_site);
-void tracer_resume_after_breakpoint(Tracer *self, BreakpointSite *breakpoint_site);
+gboolean tracer_wait_for_event(Tracer *self, BreakpointSite **breakpoint_site);
+void tracer_resume_after_event(Tracer *self, BreakpointSite *breakpoint_site);
 void tracer_cancel(Tracer *self);
 
 Tracer *tracer_new(GlobalConfig *cfg);
