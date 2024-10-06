@@ -28,6 +28,7 @@
 #include "debugger/debugger.h"
 #include "cfg.h"
 
+gboolean debugger_is_running(void);
 void debugger_start(MainLoop *main_loop, GlobalConfig *cfg);
 void debugger_stop(void);
 

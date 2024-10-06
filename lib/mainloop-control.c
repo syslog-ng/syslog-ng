@@ -32,6 +32,7 @@
 #include "cfg-walker.h"
 #include "logpipe.h"
 #include "console.h"
+#include "debugger/debugger-main.h"
 
 #include <string.h>
 
@@ -121,9 +122,12 @@ _wait_until_peer_disappears(ControlConnection *cc, gint max_seconds, gboolean *c
 static void
 control_connection_attach(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
+  MainLoop *main_loop = (MainLoop *) user_data;
   gchar **cmds = g_strsplit(command->str, " ", 4);
+
   GString *result = g_string_sized_new(128);
   gint n_seconds = -1;
+  gboolean start_debugger = FALSE;
   struct
   {
     gboolean log_stderr;
@@ -155,6 +159,10 @@ control_connection_attach(ControlConnection *cc, GString *command, gpointer user
           goto exit;
         }
     }
+  else if (g_str_equal(cmds[1], "DEBUGGER"))
+    {
+      start_debugger = TRUE;
+    }
   else
     {
       g_string_assign(result, "FAIL This version of syslog-ng only supports attaching to STDIO or LOGS");
@@ -183,7 +191,18 @@ control_connection_attach(ControlConnection *cc, GString *command, gpointer user
   log_stderr = new_values.log_stderr;
   msg_set_log_level(new_values.log_level);
 
+  if (start_debugger && !debugger_is_running())
+    {
+      //cfg_load_module(self->current_configuration, "mod-python");
+      debugger_start(main_loop, main_loop_get_current_config(main_loop));
+    }
+
   _wait_until_peer_disappears(cc, n_seconds, cancelled);
+
+  if (start_debugger && debugger_is_running())
+    {
+      debugger_stop();
+    }
 
   log_stderr = old_values.log_stderr;
   msg_set_log_level(old_values.log_level);

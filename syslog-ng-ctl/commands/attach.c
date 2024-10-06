@@ -47,7 +47,7 @@ GOptionEntry attach_options[] =
 {
   { "seconds", 0, 0, G_OPTION_ARG_INT, &attach_options_seconds, "amount of time to attach for", NULL },
   { "log-level", 0, 0, G_OPTION_ARG_CALLBACK, _store_log_level, "change syslog-ng log level", "<default|verbose|debug|trace>" },
-  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &attach_commands, "attach mode: logs, stdio", NULL },
+  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &attach_commands, "attach mode: logs, debugger, stdio", NULL },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL, NULL }
 };
 
@@ -73,6 +73,8 @@ slng_attach(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
     g_string_append(command, " STDIO");
   else if (g_str_equal(attach_mode, "logs"))
     g_string_append(command, " LOGS");
+  else if (g_str_equal(attach_mode, "debugger"))
+    g_string_append(command, " DEBUGGER");
   else
     {
       fprintf(stderr, "Unknown attach mode\n");
