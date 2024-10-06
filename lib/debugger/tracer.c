@@ -62,10 +62,20 @@ exit:
   g_mutex_unlock(&self->breakpoint_mutex);
 }
 
+void
+tracer_stop_on_interrupt(Tracer *self)
+{
+  g_mutex_lock(&self->breakpoint_mutex);
+  /* send interrupt signal as a NULL */
+  g_queue_push_tail(self->waiting_breakpoints, NULL);
+  g_cond_signal(&self->breakpoint_cond);
+  g_mutex_unlock(&self->breakpoint_mutex);
+}
+
 /* NOTE: called by the interactive debugger to wait for a breakpoint to
  * trigger, a return of FALSE indicates that the tracing was cancelled */
 gboolean
-tracer_wait_for_breakpoint(Tracer *self, BreakpointSite **breakpoint_site)
+tracer_wait_for_event(Tracer *self, BreakpointSite **breakpoint_site)
 {
   gboolean cancelled = FALSE;
   g_mutex_lock(&self->breakpoint_mutex);
@@ -92,13 +102,19 @@ tracer_wait_for_breakpoint(Tracer *self, BreakpointSite **breakpoint_site)
 
 /* NOTE: called by the interactive debugger to resume the worker after a breakpoint */
 void
-tracer_resume_after_breakpoint(Tracer *self, BreakpointSite *breakpoint_site)
+tracer_resume_after_event(Tracer *self, BreakpointSite *breakpoint_site)
 {
   g_mutex_lock(&self->breakpoint_mutex);
   g_assert(self->pending_breakpoint == breakpoint_site);
-  self->pending_breakpoint->resume_requested = TRUE;
-  self->pending_breakpoint = NULL;
-  g_cond_broadcast(&self->resume_cond);
+  if (self->pending_breakpoint)
+    {
+      /* we might be returning from an interrupt in which case
+       * pending_breakpoint is NULL, nothing to resume */
+
+      self->pending_breakpoint->resume_requested = TRUE;
+      self->pending_breakpoint = NULL;
+      g_cond_broadcast(&self->resume_cond);
+    }
   g_mutex_unlock(&self->breakpoint_mutex);
 }
 
