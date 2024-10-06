@@ -57,6 +57,28 @@ _attach_debugger(gpointer user_data)
   main_loop_worker_sync_call(_install_hook, NULL);
   return NULL;
 }
+
+static void
+_remove_hook_and_clean_up_the_debugger(gpointer user_data)
+{
+  /* NOTE: this is invoked via main_loop_worker_sync_call(), e.g. all workers are stopped */
+
+  pipe_single_step_hook = NULL;
+
+  Debugger *d = current_debugger;
+  current_debugger = NULL;
+
+  debugger_exit(d);
+  debugger_free(d);
+}
+
+static gpointer
+_detach_debugger(gpointer user_data)
+{
+  main_loop_worker_sync_call(_remove_hook_and_clean_up_the_debugger, NULL);
+  return NULL;
+}
+
 void
 debugger_start(MainLoop *main_loop, GlobalConfig *cfg)
 {
@@ -65,4 +87,10 @@ debugger_start(MainLoop *main_loop, GlobalConfig *cfg)
   current_debugger = debugger_new(main_loop, cfg);
   debugger_start_console(current_debugger);
   main_loop_call(_attach_debugger, NULL, FALSE);
+}
+
+void
+debugger_stop(void)
+{
+  main_loop_call(_detach_debugger, NULL, FALSE);
 }
