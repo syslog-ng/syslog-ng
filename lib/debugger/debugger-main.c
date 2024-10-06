@@ -24,6 +24,8 @@
 
 #include "debugger/debugger.h"
 #include "logpipe.h"
+#include "mainloop-worker.h"
+#include "mainloop-call.h"
 
 static Debugger *current_debugger;
 
@@ -39,12 +41,28 @@ _pipe_hook(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
     return debugger_stop_at_breakpoint(current_debugger, s, msg);
 }
 
+
+static void
+_install_hook(gpointer user_data)
+{
+  /* NOTE: this is invoked via main_loop_worker_sync_call(), e.g. all workers are stopped */
+
+  pipe_single_step_hook = _pipe_hook;
+}
+
+static gpointer
+_attach_debugger(gpointer user_data)
+{
+  /* NOTE: this function is always run in the main thread via main_loop_call. */
+  main_loop_worker_sync_call(_install_hook, NULL);
+  return NULL;
+}
 void
 debugger_start(MainLoop *main_loop, GlobalConfig *cfg)
 {
   /* we don't support threaded mode (yet), force it to non-threaded */
   cfg->threaded = FALSE;
   current_debugger = debugger_new(main_loop, cfg);
-  pipe_single_step_hook = _pipe_hook;
   debugger_start_console(current_debugger);
+  main_loop_call(_attach_debugger, NULL, FALSE);
 }
