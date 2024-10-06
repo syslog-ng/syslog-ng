@@ -41,6 +41,11 @@ _pipe_hook(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
     return debugger_stop_at_breakpoint(current_debugger, s, msg);
 }
 
+gboolean
+debugger_is_running(void)
+{
+  return current_debugger != NULL;
+}
 
 static void
 _install_hook(gpointer user_data)
