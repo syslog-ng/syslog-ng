@@ -84,8 +84,6 @@ _detach_debugger(gpointer user_data)
 void
 debugger_start(MainLoop *main_loop, GlobalConfig *cfg)
 {
-  /* we don't support threaded mode (yet), force it to non-threaded */
-  cfg->threaded = FALSE;
   current_debugger = debugger_new(main_loop, cfg);
   main_loop_call(_attach_debugger, current_debugger, FALSE);
 }
