@@ -93,7 +93,8 @@ log_pipe_attach_expr_node(LogPipe *self, LogExprNode *expr_node)
   self->expr_node = log_expr_node_ref(expr_node);
 }
 
-void log_pipe_detach_expr_node(LogPipe *self)
+void
+log_pipe_detach_expr_node(LogPipe *self)
 {
   if (!self->expr_node)
     return;
