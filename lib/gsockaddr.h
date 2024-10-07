@@ -162,6 +162,7 @@ gboolean g_sockaddr_inet6_is_v4_mapped(GSockAddr *s);
 #endif
 
 GSockAddr *g_sockaddr_inet_or_inet6_new(const gchar *name, guint16 port);
+gboolean g_sockaddr_inet_or_inet6_check(GSockAddr *a);
 
 GSockAddr *g_sockaddr_unix_new(const gchar *name);
 GSockAddr *g_sockaddr_unix_new2(struct sockaddr_un *s_un, int sunlen);
