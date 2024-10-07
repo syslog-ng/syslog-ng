@@ -512,6 +512,17 @@ g_sockaddr_inet_or_inet6_new(const gchar *name, guint16 port)
   return addr;
 }
 
+gboolean
+g_sockaddr_inet_or_inet6_check(GSockAddr *a)
+{
+#if SYSLOG_NG_ENABLE_IPV6
+  if (G_UNLIKELY(g_sockaddr_inet6_check(a)))
+    return TRUE;
+#endif
+
+  return g_sockaddr_inet_check(a);
+}
+
 /* AF_UNIX socket address */
 
 /*+
