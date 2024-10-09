@@ -84,6 +84,6 @@ ${SYSTEM_PYTHON} -m venv ${python_venvdir}
 echo "Running python -m pip install..."
 ${VENV_PYTHON} -m pip install --upgrade pip
 ${VENV_PYTHON} -m pip install --upgrade pip setuptools
-${VENV_PYTHON} -m pip install --upgrade -r "${REQUIREMENTS_FILE}"
+${VENV_PYTHON} -m pip install --no-compile --upgrade -r "${REQUIREMENTS_FILE}"
 cp "${REQUIREMENTS_FILE}" "${python_venvdir}"
 echo "Finished."
