@@ -37,6 +37,7 @@
 #include <grpcpp/server.h>
 
 #include <list>
+#include <sstream>
 
 namespace syslogng {
 namespace grpc {
@@ -118,10 +119,20 @@ public:
     this->headers.push_back(std::make_pair(name, value));
   }
 
+  void extend_worker_partition_key(const std::string &extension)
+  {
+    if (this->worker_partition_key.rdbuf()->in_avail())
+      this->worker_partition_key << ",";
+    this->worker_partition_key << extension;
+  }
+
   GrpcClientCredentialsBuilderW *get_credentials_builder_wrapper()
   {
     return &this->credentials_builder_wrapper;
   }
+
+private:
+  bool set_worker_partition_key();
 
 public:
   GrpcDestDriver *super;
@@ -138,6 +149,9 @@ protected:
   int keepalive_time;
   int keepalive_timeout;
   int keepalive_max_pings_without_data;
+
+  std::stringstream worker_partition_key;
+  bool flush_on_key_change;
 
   std::list<std::pair<std::string, long>> int_extra_channel_args;
   std::list<std::pair<std::string, std::string>> string_extra_channel_args;
