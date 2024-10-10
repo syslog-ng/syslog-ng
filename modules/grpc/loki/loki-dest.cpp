@@ -43,6 +43,7 @@ DestinationDriver::DestinationDriver(GrpcDestDriver *s)
   : syslogng::grpc::DestDriver(s), timestamp(LM_TS_PROCESSED)
 {
   this->url = "localhost:9095";
+  this->flush_on_key_change = true;
   log_template_options_defaults(&this->template_options);
 }
 
@@ -71,36 +72,8 @@ DestinationDriver::init()
 
   log_template_options_init(&this->template_options, cfg);
 
-  LogTemplate *worker_partition_key = log_template_new(cfg, NULL);
-
-  std::stringstream template_str;
-  bool comma_needed = false;
   for (const auto &label : this->labels)
-    {
-      if (comma_needed)
-        template_str << ",";
-      template_str << label.name << "=" << label.value->template_str;
-
-      comma_needed = true;
-    }
-
-  std::string worker_partition_key_str = template_str.str();
-  if (!log_template_compile(worker_partition_key, worker_partition_key_str.c_str(), NULL))
-    {
-      msg_error("Error compiling worker partition key template",
-                evt_tag_str("template", worker_partition_key_str.c_str()));
-      return false;
-    }
-
-  if (log_template_is_literal_string(worker_partition_key))
-    {
-      log_template_unref(worker_partition_key);
-    }
-  else
-    {
-      log_threaded_dest_driver_set_worker_partition_key_ref(&this->super->super.super.super, worker_partition_key);
-      log_threaded_dest_driver_set_flush_on_worker_key_change(&this->super->super.super.super, TRUE);
-    }
+    this->extend_worker_partition_key(label.name + "=" + label.value->template_str);
 
   return syslogng::grpc::DestDriver::init();
 }
