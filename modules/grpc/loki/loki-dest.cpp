@@ -93,9 +93,14 @@ DestinationDriver::init()
     }
 
   if (log_template_is_literal_string(worker_partition_key))
-    log_template_unref(worker_partition_key);
+    {
+      log_template_unref(worker_partition_key);
+    }
   else
-    log_threaded_dest_driver_set_worker_partition_key_ref(&this->super->super.super.super, worker_partition_key);
+    {
+      log_threaded_dest_driver_set_worker_partition_key_ref(&this->super->super.super.super, worker_partition_key);
+      log_threaded_dest_driver_set_flush_on_worker_key_change(&this->super->super.super.super, TRUE);
+    }
 
   return syslogng::grpc::DestDriver::init();
 }
