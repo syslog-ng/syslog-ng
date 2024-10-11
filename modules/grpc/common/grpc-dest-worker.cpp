@@ -28,6 +28,10 @@
 
 #include "grpc-dest-worker.hpp"
 
+#include "compat/cpp-start.h"
+#include "scratch-buffers.h"
+#include "compat/cpp-end.h"
+
 using namespace syslogng::grpc;
 
 /* C++ Implementations */
@@ -95,8 +99,37 @@ DestWorker::disconnect()
 void
 DestWorker::prepare_context(::grpc::ClientContext &context)
 {
+  g_assert(!this->owner.dynamic_headers_enabled);
+
   for (auto nv : owner.headers)
-    context.AddMetadata(nv.first, nv.second);
+    context.AddMetadata(nv.name, nv.value->template_str);
+}
+
+void
+DestWorker::prepare_context_dynamic(::grpc::ClientContext &context, LogMessage *msg)
+{
+  g_assert(this->owner.dynamic_headers_enabled);
+
+  LogTemplateEvalOptions options = {&this->owner.template_options, LTZ_SEND, this->super->super.seq_num, NULL,
+                                    LM_VT_STRING
+                                   };
+
+  ScratchBuffersMarker marker;
+  GString *buf = scratch_buffers_alloc_and_mark(&marker);
+
+  for (auto nv : owner.headers)
+    {
+      if (log_template_is_literal_string(nv.value))
+        {
+          context.AddMetadata(nv.name, log_template_get_literal_value(nv.value, NULL));
+          continue;
+        }
+
+      log_template_format(nv.value, msg, &options, buf);
+      context.AddMetadata(nv.name, buf->str);
+    }
+
+  scratch_buffers_reclaim_marked(marker);
 }
 
 /* C Wrappers */
