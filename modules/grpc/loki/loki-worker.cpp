@@ -121,6 +121,7 @@ DestinationWorker::prepare_batch()
   this->current_batch = logproto::PushRequest{};
   this->current_batch.add_streams();
   this->current_batch_bytes = 0;
+  this->client_context.reset();
 }
 
 bool
@@ -205,6 +206,14 @@ DestinationWorker::insert(LogMessage *msg)
   this->current_batch_bytes += message->len;
   log_threaded_dest_driver_insert_msg_length_stats(super->super.owner, message->len);
 
+  if (!this->client_context.get())
+    {
+      this->client_context = std::make_unique<::grpc::ClientContext>();
+      this->prepare_context_dynamic(*this->client_context, msg);
+      if (!owner_->tenant_id.empty())
+        client_context->AddMetadata("x-scope-orgid", owner_->tenant_id);
+    }
+
   msg_trace("Message added to Loki batch", log_pipe_location_tag((LogPipe *) this->super->super.owner));
 
   if (this->should_initiate_flush())
@@ -224,13 +233,7 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
   LogThreadedResult result;
   logproto::PushResponse response{};
 
-  ::grpc::ClientContext ctx;
-  this->prepare_context(ctx);
-
-  if (!owner_->tenant_id.empty())
-    ctx.AddMetadata("x-scope-orgid", owner_->tenant_id);
-
-  ::grpc::Status status = this->stub->Push(&ctx, this->current_batch, &response);
+  ::grpc::Status status = this->stub->Push(client_context.get(), this->current_batch, &response);
   this->get_owner()->metrics.insert_grpc_request_stats(status);
 
   if (!status.ok())
