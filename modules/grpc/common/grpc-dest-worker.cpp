@@ -64,6 +64,7 @@ DestWorker::create_channel_args()
     args.SetCompressionAlgorithm(GRPC_COMPRESS_GZIP);
 
   args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
+  args.SetInt(GRPC_ARG_USE_LOCAL_SUBCHANNEL_POOL, 1);
 
   for (auto nv : this->owner.int_extra_channel_args)
     args.SetInt(nv.first, nv.second);
