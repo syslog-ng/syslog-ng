@@ -249,7 +249,7 @@ DestinationDriver::construct_schema_prototype()
   for (auto &field : this->fields)
     {
       google::protobuf::FieldDescriptorProto *field_desc_proto = descriptor_proto->add_field();
-      field_desc_proto->set_name(field.name);
+      field_desc_proto->set_name(field.nv.name);
       field_desc_proto->set_type(field.type);
       field_desc_proto->set_number(num++);
     }
