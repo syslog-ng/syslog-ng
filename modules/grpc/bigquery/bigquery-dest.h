@@ -40,8 +40,6 @@ void bigquery_dd_set_table(LogDriver *d, const gchar *table);
 gboolean bigquery_dd_add_field(LogDriver *d, const gchar *name, const gchar *type, LogTemplate *value);
 void bigquery_dd_set_protobuf_schema(LogDriver *d, const gchar *proto_path, GList *values);
 
-LogTemplateOptions *bigquery_dd_get_template_options(LogDriver *d);
-
 #include "compat/cpp-end.h"
 
 #endif

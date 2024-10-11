@@ -34,7 +34,13 @@ DestDriver::DestDriver(GrpcDestDriver *s)
     keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1),
     flush_on_key_change(false)
 {
+  log_template_options_defaults(&this->template_options);
   credentials_builder_wrapper.self = &credentials_builder;
+}
+
+DestDriver::~DestDriver()
+{
+  log_template_options_destroy(&this->template_options);
 }
 
 bool
@@ -67,6 +73,8 @@ DestDriver::set_worker_partition_key()
 bool
 DestDriver::init()
 {
+  GlobalConfig *cfg = log_pipe_get_config(&this->super->super.super.super.super);
+
   if (url.length() == 0)
     {
       msg_error("url() option is mandatory",
@@ -81,6 +89,8 @@ DestDriver::init()
 
   if (this->worker_partition_key.rdbuf()->in_avail() && !this->set_worker_partition_key())
     return false;
+
+  log_template_options_init(&this->template_options, cfg);
 
   if (!log_threaded_dest_driver_init_method(&this->super->super.super.super.super))
     return false;
@@ -164,6 +174,13 @@ grpc_dd_add_header(LogDriver *s, const gchar *name, const gchar *value)
 {
   GrpcDestDriver *self = (GrpcDestDriver *) s;
   self->cpp->add_header(name, value);
+}
+
+LogTemplateOptions *
+grpc_dd_get_template_options(LogDriver *d)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  return &self->cpp->get_template_options();
 }
 
 GrpcClientCredentialsBuilderW *

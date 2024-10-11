@@ -55,11 +55,6 @@ public:
 
   void add_label(std::string name, LogTemplate *value);
 
-  LogTemplateOptions &get_template_options()
-  {
-    return this->template_options;
-  }
-
   void set_message_template_ref(LogTemplate *msg)
   {
     log_template_unref(this->message);
@@ -86,7 +81,6 @@ public:
 
 private:
   friend class DestinationWorker;
-  LogTemplateOptions template_options;
 
   std::string tenant_id;
 
