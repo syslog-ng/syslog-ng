@@ -78,6 +78,7 @@ DestWorker::init()
 void
 DestWorker::deinit()
 {
+  log_threaded_dest_worker_deinit_method(&super->super);
 }
 
 bool
