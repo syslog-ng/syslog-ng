@@ -83,11 +83,6 @@ public:
   bool add_field(std::string name, std::string type, LogTemplate *value);
   void set_protobuf_schema(std::string proto_path, GList *values);
 
-  LogTemplateOptions &get_template_options()
-  {
-    return this->template_options;
-  }
-
   void set_project(std::string p)
   {
     this->project = p;
@@ -124,8 +119,6 @@ private:
   bool load_protobuf_schema();
 
 private:
-  LogTemplateOptions template_options;
-
   std::string project;
   std::string dataset;
   std::string table;

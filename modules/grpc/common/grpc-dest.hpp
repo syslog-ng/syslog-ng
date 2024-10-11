@@ -73,7 +73,7 @@ class DestDriver
 {
 public:
   DestDriver(GrpcDestDriver *s);
-  virtual ~DestDriver() {};
+  virtual ~DestDriver();
 
   virtual bool init();
   virtual bool deinit();
@@ -153,6 +153,11 @@ public:
     this->worker_partition_key << extension;
   }
 
+  LogTemplateOptions &get_template_options()
+  {
+    return this->template_options;
+  }
+
   GrpcClientCredentialsBuilderW *get_credentials_builder_wrapper()
   {
     return &this->credentials_builder_wrapper;
@@ -184,6 +189,8 @@ protected:
   std::list<std::pair<std::string, std::string>> string_extra_channel_args;
 
   std::list<std::pair<std::string, std::string>> headers;
+
+  LogTemplateOptions template_options;
 
   GrpcClientCredentialsBuilderW credentials_builder_wrapper;
 };
