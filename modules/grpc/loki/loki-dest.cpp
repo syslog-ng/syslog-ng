@@ -44,12 +44,10 @@ DestinationDriver::DestinationDriver(GrpcDestDriver *s)
 {
   this->url = "localhost:9095";
   this->flush_on_key_change = true;
-  log_template_options_defaults(&this->template_options);
 }
 
 DestinationDriver::~DestinationDriver()
 {
-  log_template_options_destroy(&this->template_options);
   log_template_unref(this->message);
 }
 
@@ -69,8 +67,6 @@ DestinationDriver::init()
       this->message = log_template_new(cfg, NULL);
       log_template_compile(this->message, DEFAULT_MESSAGE_TEMPLATE, NULL);
     }
-
-  log_template_options_init(&this->template_options, cfg);
 
   for (const auto &label : this->labels)
     this->extend_worker_partition_key(label.name + "=" + label.value->template_str);
@@ -147,14 +143,6 @@ loki_dd_set_tenant_id(LogDriver *d, const gchar *tid)
   GrpcDestDriver *self = (GrpcDestDriver *) d;
   DestinationDriver *cpp = loki_dd_get_cpp(self);
   return cpp->set_tenant_id(tid);
-}
-
-LogTemplateOptions *
-loki_dd_get_template_options(LogDriver *d)
-{
-  GrpcDestDriver *self = (GrpcDestDriver *) d;
-  DestinationDriver *cpp = loki_dd_get_cpp(self);
-  return &cpp->get_template_options();
 }
 
 LogDriver *

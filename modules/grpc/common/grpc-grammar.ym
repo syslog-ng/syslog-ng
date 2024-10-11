@@ -101,6 +101,7 @@ grpc_dest_option
   | threaded_dest_driver_general_option
   | threaded_dest_driver_batch_option
   | threaded_dest_driver_workers_option
+  | { last_template_options = grpc_dd_get_template_options(last_driver); } template_option
   ;
 
 grpc_keepalive_options
