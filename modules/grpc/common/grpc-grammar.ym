@@ -132,7 +132,12 @@ grpc_dest_headers
   ;
 
 grpc_dest_header
-  : string LL_ARROW string { grpc_dd_add_header(last_driver, $1, $3); free($1); free($3); }
+  : string LL_ARROW template_name_or_content
+      {
+        CHECK_ERROR(grpc_dd_add_header(last_driver, $1, $3), @3, "Failed to set header: templating is not supported");
+        free($1);
+        log_template_unref($3);
+      }
   ;
 
 grpc_server_credentials_builder_option

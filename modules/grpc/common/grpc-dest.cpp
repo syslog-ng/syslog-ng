@@ -32,7 +32,7 @@ using namespace syslogng::grpc;
 DestDriver::DestDriver(GrpcDestDriver *s)
   : super(s), compression(false), batch_bytes(4 * 1000 * 1000),
     keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1),
-    flush_on_key_change(false)
+    flush_on_key_change(false), dynamic_headers_enabled(false)
 {
   log_template_options_defaults(&this->template_options);
   credentials_builder_wrapper.self = &credentials_builder;
@@ -169,11 +169,11 @@ grpc_dd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *val
   self->cpp->add_extra_channel_arg(name, value);
 }
 
-void
-grpc_dd_add_header(LogDriver *s, const gchar *name, const gchar *value)
+gboolean
+grpc_dd_add_header(LogDriver *s, const gchar *name, LogTemplate *value)
 {
   GrpcDestDriver *self = (GrpcDestDriver *) s;
-  self->cpp->add_header(name, value);
+  return self->cpp->add_header(name, value);
 }
 
 LogTemplateOptions *
