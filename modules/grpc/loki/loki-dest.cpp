@@ -56,7 +56,7 @@ DestinationDriver::~DestinationDriver()
 void
 DestinationDriver::add_label(std::string name, LogTemplate *value)
 {
-  this->labels.push_back(Label{name, value});
+  this->labels.push_back(NameValueTemplatePair{name, value});
 }
 
 bool
