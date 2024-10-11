@@ -136,14 +136,24 @@ public:
     this->string_extra_channel_args.push_back(std::make_pair(name, value));
   }
 
-  void add_header(std::string name, std::string value)
+  bool add_header(std::string name, LogTemplate *value)
   {
+    bool is_literal_string = log_template_is_literal_string(value);
+
+    if (!this->dynamic_headers_enabled && !is_literal_string)
+      return false;
+
     std::transform(name.begin(), name.end(), name.begin(),
                    [](auto c)
     {
       return ::tolower(c);
     });
-    this->headers.push_back(std::make_pair(name, value));
+    this->headers.push_back(NameValueTemplatePair{name, value});
+
+    if (!is_literal_string)
+      this->extend_worker_partition_key(value->template_str);
+
+    return true;
   }
 
   void extend_worker_partition_key(const std::string &extension)
@@ -151,6 +161,12 @@ public:
     if (this->worker_partition_key.rdbuf()->in_avail())
       this->worker_partition_key << ",";
     this->worker_partition_key << extension;
+  }
+
+  void enable_dynamic_headers()
+  {
+    this->dynamic_headers_enabled = true;
+    this->flush_on_key_change = true;
   }
 
   LogTemplateOptions &get_template_options()
@@ -188,7 +204,8 @@ protected:
   std::list<std::pair<std::string, long>> int_extra_channel_args;
   std::list<std::pair<std::string, std::string>> string_extra_channel_args;
 
-  std::list<std::pair<std::string, std::string>> headers;
+  std::list<NameValueTemplatePair> headers;
+  bool dynamic_headers_enabled;
 
   LogTemplateOptions template_options;
 
