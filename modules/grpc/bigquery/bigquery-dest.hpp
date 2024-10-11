@@ -49,31 +49,23 @@ namespace bigquery {
 
 struct Field
 {
-  std::string name;
+  NameValueTemplatePair nv;
   google::protobuf::FieldDescriptorProto::Type type;
-  LogTemplate *value;
   const google::protobuf::FieldDescriptor *field_desc;
 
   Field(std::string name_, google::protobuf::FieldDescriptorProto::Type type_, LogTemplate *value_)
-    : name(name_), type(type_), value(log_template_ref(value_)), field_desc(nullptr) {}
+    : nv(name_, value_), type(type_), field_desc(nullptr) {}
 
   Field(const Field &a)
-    : name(a.name), type(a.type), value(log_template_ref(a.value)), field_desc(a.field_desc) {}
+    : nv(a.nv), type(a.type), field_desc(a.field_desc) {}
 
   Field &operator=(const Field &a)
   {
-    name = a.name;
+    nv = a.nv;
     type = a.type;
-    log_template_unref(value);
-    value = log_template_ref(a.value);
     field_desc = a.field_desc;
 
     return *this;
-  }
-
-  ~Field()
-  {
-    log_template_unref(value);
   }
 
 };
