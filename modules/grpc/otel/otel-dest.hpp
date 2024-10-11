@@ -43,7 +43,7 @@ namespace otel {
 class DestDriver: public syslogng::grpc::DestDriver
 {
 public:
-  DestDriver(GrpcDestDriver *s) : syslogng::grpc::DestDriver(s) {};
+  DestDriver(GrpcDestDriver *s);
 
   const char *format_stats_key(StatsClusterKeyBuilder *kb);
   const char *generate_persist_name();
