@@ -43,7 +43,7 @@ DestinationDriver::DestinationDriver(GrpcDestDriver *s)
   : syslogng::grpc::DestDriver(s), timestamp(LM_TS_PROCESSED)
 {
   this->url = "localhost:9095";
-  this->flush_on_key_change = true;
+  this->enable_dynamic_headers();
 }
 
 DestinationDriver::~DestinationDriver()
