@@ -316,7 +316,7 @@ AC_ARG_WITH(libpaho-mqtt,
                             [use libpaho-mqtt library from (prefix) directory DIR]),,)
 
 AC_ARG_ENABLE(grpc,
-              [  --enable-grpc           Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery) (default: auto)]
+              [  --enable-grpc           Enable GRPC based modules support (OpenTelemetry, Loki, BigQuery, ClickHouse) (default: auto)]
               ,,enable_grpc="auto")
 
 AC_ARG_WITH(protoc,
