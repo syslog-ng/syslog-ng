@@ -139,154 +139,13 @@ DestinationWorker::prepare_batch()
   google::cloud::bigquery::storage::v1::AppendRowsRequest_ProtoData *proto_rows =
     this->current_batch.mutable_proto_rows();
   google::cloud::bigquery::storage::v1::ProtoSchema *schema = proto_rows->mutable_writer_schema();
-  this->get_owner()->schema_descriptor->CopyTo(schema->mutable_proto_descriptor());
+  this->get_owner()->schema.get_schema_descriptor().CopyTo(schema->mutable_proto_descriptor());
 }
 
 bool
 DestinationWorker::should_initiate_flush()
 {
   return (this->current_batch_bytes >= this->get_owner()->batch_bytes);
-}
-
-DestinationWorker::Slice
-DestinationWorker::format_template(LogTemplate *tmpl, LogMessage *msg, GString *value, LogMessageValueType *type)
-{
-  DestinationDriver *owner_ = this->get_owner();
-
-  if (log_template_is_trivial(tmpl))
-    {
-      gssize trivial_value_len;
-      const gchar *trivial_value = log_template_get_trivial_value_and_type(tmpl, msg, &trivial_value_len, type);
-
-      if (trivial_value_len < 0)
-        return Slice{"", 0};
-
-      return Slice{trivial_value, (std::size_t) trivial_value_len};
-    }
-
-  LogTemplateEvalOptions options = {&owner_->template_options, LTZ_SEND, this->super->super.seq_num, NULL, LM_VT_STRING};
-  log_template_format_value_and_type(tmpl, msg, &options, value, type);
-  return Slice{value->str, value->len};
-}
-
-bool
-DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, const Field &field,
-                                LogMessage *msg, google::protobuf::Message *message)
-{
-  DestinationDriver *owner_ = this->get_owner();
-
-  ScratchBuffersMarker m;
-  GString *buf = scratch_buffers_alloc_and_mark(&m);
-
-  LogMessageValueType type;
-
-  Slice value = this->format_template(field.nv.value, msg, buf, &type);
-
-  if (type == LM_VT_NULL)
-    {
-      if (field.field_desc->is_required())
-        {
-          msg_error("Missing required field", evt_tag_str("field", field.nv.name.c_str()));
-          goto error;
-        }
-
-      scratch_buffers_reclaim_marked(m);
-      return true;
-    }
-
-  switch (field.field_desc->cpp_type())
-    {
-    /* TYPE_STRING, TYPE_BYTES (embedded nulls are possible, no null-termination is assumed) */
-    case FieldDescriptor::CppType::CPPTYPE_STRING:
-      reflection->SetString(message, field.field_desc, std::string{value.str, value.len});
-      break;
-    case FieldDescriptor::CppType::CPPTYPE_INT32:
-    {
-      int32_t v;
-      if (!type_cast_to_int32(value.str, -1, &v, NULL))
-        {
-          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "integer");
-          goto error;
-        }
-      reflection->SetInt32(message, field.field_desc, v);
-      break;
-    }
-    case FieldDescriptor::CppType::CPPTYPE_INT64:
-    {
-      gint64 v;
-      if (!type_cast_to_int64(value.str, -1, &v, NULL))
-        {
-          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "integer");
-          goto error;
-        }
-      reflection->SetInt64(message, field.field_desc, v);
-      break;
-    }
-    case FieldDescriptor::CppType::CPPTYPE_UINT32:
-    {
-      gint64 v;
-      if (!type_cast_to_int64(value.str, -1, &v, NULL))
-        {
-          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "integer");
-          goto error;
-        }
-      reflection->SetUInt32(message, field.field_desc, (uint32_t) v);
-      break;
-    }
-    case FieldDescriptor::CppType::CPPTYPE_UINT64:
-    {
-      gint64 v;
-      if (!type_cast_to_int64(value.str, -1, &v, NULL))
-        {
-          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "integer");
-          goto error;
-        }
-      reflection->SetUInt64(message, field.field_desc, (uint64_t) v);
-      break;
-    }
-    case FieldDescriptor::CppType::CPPTYPE_DOUBLE:
-    {
-      double v;
-      if (!type_cast_to_double(value.str, -1, &v, NULL))
-        {
-          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "double");
-          goto error;
-        }
-      reflection->SetDouble(message, field.field_desc, v);
-      break;
-    }
-    case FieldDescriptor::CppType::CPPTYPE_FLOAT:
-    {
-      double v;
-      if (!type_cast_to_double(value.str, -1, &v, NULL))
-        {
-          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "double");
-          goto error;
-        }
-      reflection->SetFloat(message, field.field_desc, (float) v);
-      break;
-    }
-    case FieldDescriptor::CppType::CPPTYPE_BOOL:
-    {
-      gboolean v;
-      if (!type_cast_to_boolean(value.str, -1, &v, NULL))
-        {
-          type_cast_drop_helper(owner_->template_options.on_error, value.str, -1, "boolean");
-          goto error;
-        }
-      reflection->SetBool(message, field.field_desc, v);
-      break;
-    }
-    default:
-      goto error;
-    }
-
-  scratch_buffers_reclaim_marked(m);
-  return true;
-
-error:
-  scratch_buffers_reclaim_marked(m);
-  return false;
 }
 
 LogThreadedResult
@@ -298,20 +157,8 @@ DestinationWorker::insert(LogMessage *msg)
 
   google::cloud::bigquery::storage::v1::ProtoRows *rows = this->current_batch.mutable_proto_rows()->mutable_rows();
 
-  google::protobuf::Message *message = owner_->schema_prototype->New();
-  const google::protobuf::Reflection *reflection = message->GetReflection();
-
-  bool msg_has_field = false;
-  for (const auto &field : owner_->fields)
-    {
-      bool field_inserted = this->insert_field(reflection, field, msg, message);
-      msg_has_field |= field_inserted;
-
-      if (!field_inserted && (owner_->template_options.on_error & ON_ERROR_DROP_MESSAGE))
-        goto drop;
-    }
-
-  if (!msg_has_field)
+  google::protobuf::Message *message = owner_->schema.format(msg, this->super->super.seq_num);
+  if (!message)
     goto drop;
 
   this->batch_size++;
@@ -338,7 +185,6 @@ drop:
       msg_error("Failed to format message for BigQuery, dropping message",
                 log_pipe_location_tag((LogPipe *) this->super->super.owner));
     }
-  delete message;
 
   /* LTR_DROP currently drops the entire batch */
   return LTR_QUEUED;

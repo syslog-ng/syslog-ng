@@ -39,6 +39,8 @@
   { "batch_bytes",               KW_BATCH_BYTES }, \
   { "channel_args",              KW_CHANNEL_ARGS }, \
   { "headers",                   KW_HEADERS }, \
+  { "schema",                    KW_SCHEMA }, \
+  { "protobuf_schema",           KW_PROTOBUF_SCHEMA }, \
   { "keep_alive",                KW_KEEP_ALIVE }, \
   { "time",                      KW_TIME }, \
   { "timeout",                   KW_TIMEOUT }, \
