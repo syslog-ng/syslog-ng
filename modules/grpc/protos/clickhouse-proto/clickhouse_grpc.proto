@@ -145,15 +145,15 @@ message QueryInfo {
 }
 
 enum LogsLevel {
-   LOG_NONE = 0;
-   LOG_FATAL = 1;
-   LOG_CRITICAL = 2;
-   LOG_ERROR = 3;
-   LOG_WARNING = 4;
-   LOG_NOTICE = 5;
-   LOG_INFORMATION = 6;
-   LOG_DEBUG = 7;
-   LOG_TRACE = 8;
+   CH_LOG_NONE = 0;
+   CH_LOG_FATAL = 1;
+   CH_LOG_CRITICAL = 2;
+   CH_LOG_ERROR = 3;
+   CH_LOG_WARNING = 4;
+   CH_LOG_NOTICE = 5;
+   CH_LOG_INFORMATION = 6;
+   CH_LOG_DEBUG = 7;
+   CH_LOG_TRACE = 8;
 }
 
 message LogEntry {
