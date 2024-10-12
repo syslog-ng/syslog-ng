@@ -32,6 +32,11 @@
 
 LogDriver *clickhouse_dd_new(GlobalConfig *cfg);
 
+void clickhouse_dd_set_database(LogDriver *d, const gchar *database);
+void clickhouse_dd_set_table(LogDriver *d, const gchar *table);
+void clickhouse_dd_set_user(LogDriver *d, const gchar *user);
+void clickhouse_dd_set_password(LogDriver *d, const gchar *password);
+
 #include "compat/cpp-end.h"
 
 #endif

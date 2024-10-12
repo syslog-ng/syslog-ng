@@ -42,8 +42,54 @@ public:
   const gchar *format_stats_key(StatsClusterKeyBuilder *kb);
   LogThreadedDestWorker *construct_worker(int worker_index);
 
+  void set_database(const std::string &d)
+  {
+    this->database = d;
+  }
+
+  void set_table(const std::string &t)
+  {
+    this->table = t;
+  }
+
+  void set_user(const std::string &u)
+  {
+    this->user = u;
+  }
+
+  void set_password(const std::string &p)
+  {
+    this->password = p;
+  }
+
+  const std::string &get_database()
+  {
+    return this->database;
+  }
+
+  const std::string &get_table()
+  {
+    return this->table;
+  }
+
+  const std::string &get_user()
+  {
+    return this->user;
+  }
+
+  const std::string &get_password()
+  {
+    return this->password;
+  }
+
 private:
   friend class DestWorker;
+
+private:
+  std::string database;
+  std::string table;
+  std::string user;
+  std::string password;
 };
 
 
