@@ -83,13 +83,13 @@ bigquery_dest_option
   : KW_PROJECT '(' string ')' { bigquery_dd_set_project(last_driver, $3); free($3); }
   | KW_DATASET '(' string ')' { bigquery_dd_set_dataset(last_driver, $3); free($3); }
   | KW_TABLE '(' string ')' { bigquery_dd_set_table(last_driver, $3); free($3); }
+  | grpc_dest_general_option
   | KW_SCHEMA '(' bigquery_schema_fields ')'
   | KW_PROTOBUF_SCHEMA '(' path_check LL_ARROW template_content_list ')'
     {
       bigquery_dd_set_protobuf_schema(last_driver, $3, $5);
       free($3);
     }
-  | grpc_dest_option
   ;
 
 bigquery_schema_fields
