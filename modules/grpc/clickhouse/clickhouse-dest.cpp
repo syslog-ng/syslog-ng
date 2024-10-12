@@ -52,6 +52,12 @@ DestDriver::init()
       return false;
     }
 
+  std::string quoted_table;
+  if (!this->quote_identifier(this->table, quoted_table))
+    return false;
+
+  this->query = "INSERT INTO " + quoted_table + " FORMAT Protobuf";
+
   if (!this->schema.init())
     return false;
 
@@ -268,6 +274,27 @@ DestDriver::map_schema_type(const std::string &type_in, google::protobuf::FieldD
       return false;
     }
 
+  return true;
+}
+
+bool
+DestDriver::quote_identifier(const std::string &identifier, std::string &quoted_identifier)
+{
+  /* https://clickhouse.com/docs/en/sql-reference/syntax#identifiers */
+
+  bool has_backtick = identifier.find('`') != std::string::npos;
+  bool has_double_quotes = identifier.find('"') != std::string::npos;
+
+  if (has_backtick && has_double_quotes)
+    {
+      msg_error("Error quoting identifier, identifier contains both backtick and double quotes",
+                log_pipe_location_tag(&this->super->super.super.super.super),
+                evt_tag_str("identifier", identifier.c_str()));
+      return false;
+    }
+
+  char quote_char = has_backtick ? '"' : '`';
+  quoted_identifier.assign(quote_char + identifier + quote_char);
   return true;
 }
 
