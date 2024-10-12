@@ -27,6 +27,10 @@
 #include "clickhouse-dest.hpp"
 #include "grpc-dest-worker.hpp"
 
+#include <sstream>
+
+#include "clickhouse_grpc.grpc.pb.h"
+
 namespace syslogng {
 namespace grpc {
 namespace clickhouse {
@@ -40,7 +44,19 @@ public:
   LogThreadedResult flush(LogThreadedFlushMode mode);
 
 private:
+  bool should_initiate_flush();
+  void prepare_query_info(::clickhouse::grpc::QueryInfo &query_info);
+  void prepare_batch();
   DestDriver *get_owner();
+
+private:
+  std::shared_ptr<::grpc::Channel> channel;
+  std::unique_ptr<::clickhouse::grpc::ClickHouse::Stub> stub;
+  std::unique_ptr<::grpc::ClientContext> client_context;
+
+  std::ostringstream query_data;
+  size_t batch_size = 0;
+  size_t current_batch_bytes = 0;
 };
 
 }

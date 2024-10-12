@@ -40,6 +40,7 @@ DestDriver::DestDriver(GrpcDestDriver *s)
            &this->template_options, &this->super->super.super.super.super)
 {
   this->url = "localhost:9100";
+  this->enable_dynamic_headers();
 }
 
 bool
