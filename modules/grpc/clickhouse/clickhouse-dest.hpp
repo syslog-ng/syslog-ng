@@ -82,6 +82,14 @@ public:
     return this->password;
   }
 
+  Schema *get_schema()
+  {
+    return &this->schema;
+  }
+
+private:
+  static bool map_schema_type(const std::string &type_in, google::protobuf::FieldDescriptorProto::Type &type_out);
+
 private:
   friend class DestWorker;
 
@@ -90,6 +98,8 @@ private:
   std::string table;
   std::string user;
   std::string password;
+
+  Schema schema;
 };
 
 

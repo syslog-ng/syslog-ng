@@ -29,10 +29,15 @@
 #include "messages.h"
 #include "compat/cpp-end.h"
 
+#include <map>
+
 using syslogng::grpc::clickhouse::DestDriver;
+using google::protobuf::FieldDescriptorProto;
 
 DestDriver::DestDriver(GrpcDestDriver *s)
-  : syslogng::grpc::DestDriver(s)
+  : syslogng::grpc::DestDriver(s),
+    schema(2, "clickhouse_message.proto", "MessageType", map_schema_type,
+           &this->template_options, &this->super->super.super.super.super)
 {
   this->url = "localhost:9100";
 }
@@ -43,6 +48,16 @@ DestDriver::init()
   if (this->database.empty() || this->table.empty() || this->user.empty())
     {
       msg_error("Error initializing ClickHouse destination, database(), table() and user() are mandatory options",
+                log_pipe_location_tag(&this->super->super.super.super.super));
+      return false;
+    }
+
+  if (!this->schema.init())
+    return false;
+
+  if (this->schema.empty())
+    {
+      msg_error("Error initializing ClickHouse destination, schema() or protobuf-schema() is empty",
                 log_pipe_location_tag(&this->super->super.super.super.super));
       return false;
     }
@@ -82,6 +97,178 @@ DestDriver::construct_worker(int worker_index)
   GrpcDestWorker *worker = grpc_dw_new(this->super, worker_index);
   worker->cpp = new DestWorker(worker);
   return &worker->super;
+}
+
+bool
+DestDriver::map_schema_type(const std::string &type_in, google::protobuf::FieldDescriptorProto::Type &type_out)
+{
+  /* TODO: E2E test these. */
+
+  /*
+   * https://clickhouse.com/docs/en/interfaces/schema-inference#protobuf
+   * https://clickhouse.com/docs/en/sql-reference/data-types
+   */
+
+  static const std::map<std::string, google::protobuf::FieldDescriptorProto::Type> mapping =
+  {
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/int-uint */
+
+    { "INT8",               FieldDescriptorProto::TYPE_INT32 },
+    { "TINYINT",            FieldDescriptorProto::TYPE_INT32 },
+    { "INT1",               FieldDescriptorProto::TYPE_INT32 },
+    { "TINYINT SIGNED",     FieldDescriptorProto::TYPE_INT32 },
+    { "INT1 SIGNED",        FieldDescriptorProto::TYPE_INT32 },
+    { "INT16",              FieldDescriptorProto::TYPE_INT32 },
+    { "SMALLINT",           FieldDescriptorProto::TYPE_INT32 },
+    { "SMALLINT SIGNED",    FieldDescriptorProto::TYPE_INT32 },
+    { "INT32",              FieldDescriptorProto::TYPE_INT32 },
+    { "INT",                FieldDescriptorProto::TYPE_INT32 },
+    { "INTEGER",            FieldDescriptorProto::TYPE_INT32 },
+    { "MEDIUMINT",          FieldDescriptorProto::TYPE_INT32 },
+    { "MEDIUMINT SIGNED",   FieldDescriptorProto::TYPE_INT32 },
+    { "INT SIGNED",         FieldDescriptorProto::TYPE_INT32 },
+    { "INTEGER SIGNED",     FieldDescriptorProto::TYPE_INT32 },
+
+    { "INT64",              FieldDescriptorProto::TYPE_INT64 },
+    { "BIGINT",             FieldDescriptorProto::TYPE_INT64 },
+    { "SIGNED",             FieldDescriptorProto::TYPE_INT64 },
+    { "BIGINT SIGNED",      FieldDescriptorProto::TYPE_INT64 },
+    { "TIME",               FieldDescriptorProto::TYPE_INT64 },
+
+    { "UINT8",              FieldDescriptorProto::TYPE_BOOL },
+    { "TINYINT UNSIGNED",   FieldDescriptorProto::TYPE_BOOL },
+    { "INT1 UNSIGNED",      FieldDescriptorProto::TYPE_BOOL },
+    { "UINT16",             FieldDescriptorProto::TYPE_UINT32 },
+    { "SMALLINT UNSIGNED",  FieldDescriptorProto::TYPE_UINT32 },
+    { "UINT32",             FieldDescriptorProto::TYPE_UINT32 },
+    { "MEDIUMINT UNSIGNED", FieldDescriptorProto::TYPE_UINT32 },
+    { "INT UNSIGNED",       FieldDescriptorProto::TYPE_UINT32 },
+    { "INTEGER UNSIGNED",   FieldDescriptorProto::TYPE_UINT32 },
+
+    { "UINT64",             FieldDescriptorProto::TYPE_UINT64 },
+    { "UNSIGNED",           FieldDescriptorProto::TYPE_UINT64 },
+    { "BIGINT UNSIGNED",    FieldDescriptorProto::TYPE_UINT64 },
+    { "BIT",                FieldDescriptorProto::TYPE_UINT64 },
+    { "SET",                FieldDescriptorProto::TYPE_UINT64 },
+
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/float */
+
+    { "FLOAT32",            FieldDescriptorProto::TYPE_FLOAT },
+    { "FLOAT",              FieldDescriptorProto::TYPE_FLOAT },
+    { "REAL",               FieldDescriptorProto::TYPE_FLOAT },
+    { "SINGLE",             FieldDescriptorProto::TYPE_FLOAT },
+    { "FLOAT64",            FieldDescriptorProto::TYPE_DOUBLE },
+    { "DOUBLE",             FieldDescriptorProto::TYPE_DOUBLE },
+    { "DOUBLE PRECISION",   FieldDescriptorProto::TYPE_DOUBLE },
+
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/decimal */
+
+    /* Skipped. */
+
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/boolean */
+
+    { "BOOL",               FieldDescriptorProto::TYPE_BOOL },
+
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/string */
+
+    { "STRING",                          FieldDescriptorProto::TYPE_STRING },
+    { "LONGTEXT",                        FieldDescriptorProto::TYPE_STRING },
+    { "MEDIUMTEXT",                      FieldDescriptorProto::TYPE_STRING },
+    { "TINYTEXT",                        FieldDescriptorProto::TYPE_STRING },
+    { "TEXT",                            FieldDescriptorProto::TYPE_STRING },
+    { "LONGBLOB",                        FieldDescriptorProto::TYPE_STRING },
+    { "MEDIUMBLOB",                      FieldDescriptorProto::TYPE_STRING },
+    { "TINYBLOB",                        FieldDescriptorProto::TYPE_STRING },
+    { "BLOB",                            FieldDescriptorProto::TYPE_STRING },
+    { "VARCHAR",                         FieldDescriptorProto::TYPE_STRING },
+    { "CHAR",                            FieldDescriptorProto::TYPE_STRING },
+    { "CHAR LARGE OBJECT",               FieldDescriptorProto::TYPE_STRING },
+    { "CHAR VARYING",                    FieldDescriptorProto::TYPE_STRING },
+    { "CHARACTER LARGE OBJECT",          FieldDescriptorProto::TYPE_STRING },
+    { "CHARACTER VARYING",               FieldDescriptorProto::TYPE_STRING },
+    { "NCHAR LARGE OBJECT",              FieldDescriptorProto::TYPE_STRING },
+    { "NCHAR VARYING",                   FieldDescriptorProto::TYPE_STRING },
+    { "NATIONAL CHARACTER LARGE OBJECT", FieldDescriptorProto::TYPE_STRING },
+    { "NATIONAL CHARACTER VARYING",      FieldDescriptorProto::TYPE_STRING },
+    { "NATIONAL CHAR VARYING",           FieldDescriptorProto::TYPE_STRING },
+    { "NATIONAL CHARACTER",              FieldDescriptorProto::TYPE_STRING },
+    { "NATIONAL CHAR",                   FieldDescriptorProto::TYPE_STRING },
+    { "BINARY LARGE OBJECT",             FieldDescriptorProto::TYPE_STRING },
+    { "BINARY VARYING",                  FieldDescriptorProto::TYPE_STRING },
+
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/date */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/date32 */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/datetime */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/datetime64 */
+
+    { "DATE",               FieldDescriptorProto::TYPE_UINT32 },
+    { "DATE32",             FieldDescriptorProto::TYPE_INT32 },
+    { "DATETIME",           FieldDescriptorProto::TYPE_UINT32 },
+    { "DATETIME64",         FieldDescriptorProto::TYPE_UINT64 },
+
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/object-data-type */
+
+    /* Deprecated, skipped. */
+
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/uuid */
+
+    { "UUID",               FieldDescriptorProto::TYPE_STRING },
+
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/enum */
+
+    { "ENUM",               FieldDescriptorProto::TYPE_STRING },
+    { "ENUM8",              FieldDescriptorProto::TYPE_STRING },
+    { "ENUM16",             FieldDescriptorProto::TYPE_STRING },
+
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/lowcardinality */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/array */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/map */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/simpleaggregatefunction */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/aggregatefunction */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/nested-data-structures/nested */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/tuple */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/nullable */
+
+    /* Skipped. */
+
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/ipv4 */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/ipv6 */
+
+    { "IPV4",               FieldDescriptorProto::TYPE_STRING },
+    { "IPV6",               FieldDescriptorProto::TYPE_STRING },
+
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/geo */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/special-data-types/expression */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/special-data-types/set */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/special-data-types/nothing */
+    /* https://clickhouse.com/docs/en/sql-reference/data-types/special-data-types/interval */
+
+    /* Skipped. */
+  };
+
+  /* default */
+  if (type_in.empty())
+    {
+      type_out = FieldDescriptorProto::TYPE_STRING;
+      return true;
+    }
+
+  std::string type_upper = type_in;
+  std::transform(type_upper.begin(), type_upper.end(), type_upper.begin(), [](auto c)
+  {
+    return ::toupper(c);
+  });
+
+  try
+    {
+      type_out = mapping.at(type_upper);
+    }
+  catch (const std::out_of_range &)
+    {
+      return false;
+    }
+
+  return true;
 }
 
 
