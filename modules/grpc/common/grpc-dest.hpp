@@ -143,6 +143,11 @@ public:
     this->flush_on_key_change = true;
   }
 
+  virtual Schema *get_schema()
+  {
+    return nullptr;
+  }
+
   LogTemplateOptions &get_template_options()
   {
     return this->template_options;
