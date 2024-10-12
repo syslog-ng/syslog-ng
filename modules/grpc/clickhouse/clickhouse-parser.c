@@ -34,6 +34,10 @@ static CfgLexerKeyword clickhouse_keywords[] =
 {
   GRPC_KEYWORDS,
   { "clickhouse", KW_CLICKHOUSE },
+  { "database", KW_DATABASE },
+  { "table", KW_TABLE },
+  { "user", KW_USER },
+  { "password", KW_PASSWORD },
   { NULL }
 };
 

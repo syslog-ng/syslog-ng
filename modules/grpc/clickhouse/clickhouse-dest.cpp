@@ -34,11 +34,19 @@ using syslogng::grpc::clickhouse::DestDriver;
 DestDriver::DestDriver(GrpcDestDriver *s)
   : syslogng::grpc::DestDriver(s)
 {
+  this->url = "localhost:9100";
 }
 
 bool
 DestDriver::init()
 {
+  if (this->database.empty() || this->table.empty() || this->user.empty())
+    {
+      msg_error("Error initializing ClickHouse destination, database(), table() and user() are mandatory options",
+                log_pipe_location_tag(&this->super->super.super.super.super));
+      return false;
+    }
+
   return syslogng::grpc::DestDriver::init();
 }
 
@@ -47,13 +55,12 @@ DestDriver::generate_persist_name()
 {
   static gchar persist_name[1024];
 
-  // TODO: update when options are available
-
   LogPipe *s = &this->super->super.super.super.super;
   if (s->persist_name)
     g_snprintf(persist_name, sizeof(persist_name), "clickhouse.%s", s->persist_name);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "clickhouse(%s)", this->url.c_str());
+    g_snprintf(persist_name, sizeof(persist_name), "clickhouse(%s,%s,%s)",
+               this->url.c_str(), this->database.c_str(), this->table.c_str());
 
   return persist_name;
 }
@@ -61,10 +68,10 @@ DestDriver::generate_persist_name()
 const gchar *
 DestDriver::format_stats_key(StatsClusterKeyBuilder *kb)
 {
-  // TODO: update when options are available
-
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "clickhouse"));
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("url", this->url.c_str()));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("database", this->database.c_str()));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("table", this->table.c_str()));
 
   return nullptr;
 }
@@ -84,6 +91,38 @@ DestDriver *
 clickhouse_dd_get_cpp(GrpcDestDriver *self)
 {
   return (DestDriver *) self->cpp;
+}
+
+void
+clickhouse_dd_set_database(LogDriver *d, const gchar *database)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestDriver *cpp = clickhouse_dd_get_cpp(self);
+  cpp->set_database(database);
+}
+
+void
+clickhouse_dd_set_table(LogDriver *d, const gchar *table)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestDriver *cpp = clickhouse_dd_get_cpp(self);
+  cpp->set_table(table);
+}
+
+void
+clickhouse_dd_set_user(LogDriver *d, const gchar *user)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestDriver *cpp = clickhouse_dd_get_cpp(self);
+  cpp->set_user(user);
+}
+
+void
+clickhouse_dd_set_password(LogDriver *d, const gchar *password)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestDriver *cpp = clickhouse_dd_get_cpp(self);
+  cpp->set_password(password);
 }
 
 LogDriver *

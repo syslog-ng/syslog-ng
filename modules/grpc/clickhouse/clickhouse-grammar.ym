@@ -51,6 +51,10 @@
 /* INCLUDE_DECLS */
 
 %token KW_CLICKHOUSE
+%token KW_DATABASE
+%token KW_TABLE
+%token KW_USER
+%token KW_PASSWORD
 
 %type <ptr> clickhouse_dest
 
@@ -74,7 +78,11 @@ clickhouse_dest_options
   ;
 
 clickhouse_dest_option
-  : grpc_dest_general_option
+  : KW_DATABASE '(' string ')'{ clickhouse_dd_set_database(last_driver, $3); free($3); }
+  | KW_TABLE '(' string ')'{ clickhouse_dd_set_table(last_driver, $3); free($3); }
+  | KW_USER '(' string ')'{ clickhouse_dd_set_user(last_driver, $3); free($3); }
+  | KW_PASSWORD '(' string ')'{ clickhouse_dd_set_password(last_driver, $3); free($3); }
+  | grpc_dest_general_option
   ;
 
 /* INCLUDE_RULES */
