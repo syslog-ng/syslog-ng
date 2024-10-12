@@ -61,6 +61,8 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_MAX_PINGS_WITHOUT_DATA
 %token KW_CHANNEL_ARGS
 %token KW_HEADERS
+%token KW_SCHEMA
+%token KW_PROTOBUF_SCHEMA
 
 %type <num> grpc_server_credentials_builder_tls_peer_verify
 
@@ -102,6 +104,30 @@ grpc_dest_general_option
   | threaded_dest_driver_batch_option
   | threaded_dest_driver_workers_option
   | { last_template_options = grpc_dd_get_template_options(last_driver); } template_option
+  ;
+
+grpc_dest_schema_option
+  : KW_SCHEMA '(' grpc_dest_schema_fields ')'
+  | KW_PROTOBUF_SCHEMA '(' path_check LL_ARROW template_content_list ')'
+    {
+      grpc_dd_set_protobuf_schema(last_driver, $3, $5);
+      free($3);
+    }
+  ;
+
+grpc_dest_schema_fields
+  : grpc_dest_schema_field grpc_dest_schema_fields
+  |
+  ;
+
+grpc_dest_schema_field
+  : string optional_string LL_ARROW template_content
+    {
+      CHECK_ERROR(grpc_dd_add_schema_field(last_driver, $1, $2, $4), @2, "Error adding schema() field, invalid type");
+      free($1);
+      free($2);
+      log_template_unref($4);
+    }
   ;
 
 grpc_keepalive_options

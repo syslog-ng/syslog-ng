@@ -38,8 +38,6 @@ static CfgLexerKeyword bigquery_keywords[] =
   { "project", KW_PROJECT },
   { "dataset", KW_DATASET },
   { "table", KW_TABLE },
-  { "schema", KW_SCHEMA },
-  { "protobuf_schema", KW_PROTOBUF_SCHEMA },
   { NULL }
 };
 
