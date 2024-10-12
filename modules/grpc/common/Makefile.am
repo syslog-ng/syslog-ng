@@ -1,5 +1,6 @@
 include modules/grpc/common/credentials/Makefile.am
 include modules/grpc/common/metrics/Makefile.am
+include modules/grpc/common/schema/Makefile.am
 
 if ENABLE_GRPC
 
@@ -16,6 +17,7 @@ GRPC_COMMON_LIBS = \
 modules_grpc_common_libgrpc_common_la_SOURCES = \
   $(grpc_credentials_sources) \
   $(grpc_metrics_sources) \
+  $(grpc_schema_sources) \
   modules/grpc/common/grpc-parser.h \
   modules/grpc/common/grpc-dest.h \
   modules/grpc/common/grpc-dest.hpp \
