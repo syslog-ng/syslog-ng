@@ -83,6 +83,7 @@ clickhouse_dest_option
   | KW_USER '(' string ')'{ clickhouse_dd_set_user(last_driver, $3); free($3); }
   | KW_PASSWORD '(' string ')'{ clickhouse_dd_set_password(last_driver, $3); free($3); }
   | grpc_dest_general_option
+  | grpc_dest_schema_option
   ;
 
 /* INCLUDE_RULES */
