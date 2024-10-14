@@ -419,6 +419,11 @@ log_reader_work_finished(void *s, gpointer arg)
 
       self->notify_code = 0;
       log_pipe_notify(self->control, notify_code, self);
+
+      if (notify_code == NC_CLOSE && (self->options->flags & LR_EXIT_ON_EOF))
+        {
+          cfg_shutdown(log_pipe_get_config(s));
+        }
     }
 
   if ((self->super.super.flags & PIF_INITIALIZED) && self->proto)
@@ -896,6 +901,7 @@ CfgFlagHandler log_reader_flag_handlers[] =
   { "empty-lines",                CFH_SET, offsetof(LogReaderOptions, flags),               LR_EMPTY_LINES },
   { "threaded",                   CFH_SET, offsetof(LogReaderOptions, flags),               LR_THREADED },
   { "ignore-aux-data",            CFH_SET, offsetof(LogReaderOptions, flags),               LR_IGNORE_AUX_DATA },
+  { "exit-on-eof",                CFH_SET, offsetof(LogReaderOptions, flags),               LR_EXIT_ON_EOF },
   { NULL },
 };
 

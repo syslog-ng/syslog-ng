@@ -39,6 +39,7 @@
 #define LR_EMPTY_LINES     0x0004
 #define LR_IGNORE_AUX_DATA 0x0008
 #define LR_THREADED        0x0040
+#define LR_EXIT_ON_EOF     0x0080
 
 /* options */
 
