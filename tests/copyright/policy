@@ -107,6 +107,7 @@ lib/stats/stats-compat\.h
 lib/stats/tests/test_stats_prometheus\.c
 lib/stats/tests/test_stats_cluster_key_builder\.c
 lib/timeutils/timeutils\.h
+lib/stackdump\.[ch]
 lib/logscheduler\.[ch]
 lib/logscheduler-pipe\.[ch]
 lib/logmsg/tests/dump_logmsg\.c
