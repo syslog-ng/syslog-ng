@@ -30,8 +30,8 @@
 extern LogProtoServerOptions proto_server_options;
 
 
-void assert_proto_server_handshake(LogProtoServer *proto);
-void assert_proto_server_handshake_failure(LogProtoServer *proto, LogProtoStatus expected_status);
+void assert_proto_server_handshake(LogProtoServer **proto);
+void assert_proto_server_handshake_failure(LogProtoServer **proto, LogProtoStatus expected_status);
 void assert_proto_server_status(LogProtoServer *proto, LogProtoStatus status, LogProtoStatus expected_status);
 void assert_proto_server_fetch(LogProtoServer *proto, const gchar *expected_msg, gssize expected_msg_len);
 void assert_proto_server_fetch_single_read(LogProtoServer *proto, const gchar *expected_msg, gssize expected_msg_len);

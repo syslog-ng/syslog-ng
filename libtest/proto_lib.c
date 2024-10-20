@@ -38,7 +38,7 @@ assert_proto_server_status(LogProtoServer *proto, LogProtoStatus status, LogProt
 }
 
 LogProtoStatus
-proto_server_handshake(LogProtoServer *proto)
+proto_server_handshake(LogProtoServer **proto)
 {
   gboolean handshake_finished = FALSE;
   LogProtoStatus status;
@@ -46,7 +46,7 @@ proto_server_handshake(LogProtoServer *proto)
   start_grabbing_messages();
   do
     {
-      status = log_proto_server_handshake(proto, &handshake_finished);
+      status = log_proto_server_handshake(*proto, &handshake_finished);
       if (status == LPS_AGAIN)
         status = LPS_SUCCESS;
     }
@@ -99,13 +99,13 @@ construct_server_proto_plugin(const gchar *name, LogTransport *transport)
 }
 
 void
-assert_proto_server_handshake(LogProtoServer *proto)
+assert_proto_server_handshake(LogProtoServer **proto)
 {
   LogProtoStatus status;
 
   status = proto_server_handshake(proto);
 
-  assert_proto_server_status(proto, status, LPS_SUCCESS);
+  assert_proto_server_status(*proto, status, LPS_SUCCESS);
 }
 
 void
@@ -175,13 +175,13 @@ assert_proto_server_fetch_failure(LogProtoServer *proto, LogProtoStatus expected
 }
 
 void
-assert_proto_server_handshake_failure(LogProtoServer *proto, LogProtoStatus expected_status)
+assert_proto_server_handshake_failure(LogProtoServer **proto, LogProtoStatus expected_status)
 {
   LogProtoStatus status;
 
   status = proto_server_handshake(proto);
 
-  assert_proto_server_status(proto, status, expected_status);
+  assert_proto_server_status(*proto, status, expected_status);
 }
 
 void

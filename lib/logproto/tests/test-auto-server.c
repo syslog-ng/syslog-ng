@@ -41,7 +41,7 @@ Test(log_proto, test_log_proto_initial_framing_too_long)
               LTM_EOF),
             get_inited_proto_server_options());
 
-  assert_proto_server_handshake_failure(proto, LPS_SUCCESS);
+  assert_proto_server_handshake_failure(&proto, LPS_SUCCESS);
   assert_proto_server_fetch_failure(proto, LPS_ERROR, NULL);
   log_proto_server_free(proto);
 }
@@ -55,7 +55,7 @@ Test(log_proto, test_log_proto_error_in_initial_frame)
               LTM_INJECT_ERROR(EIO)),
             get_inited_proto_server_options());
 
-  assert_proto_server_handshake_failure(proto, LPS_ERROR);
+  assert_proto_server_handshake_failure(&proto, LPS_ERROR);
   log_proto_server_free(proto);
 }
 
@@ -72,7 +72,7 @@ Test(log_proto, test_log_proto_auto_server_no_framing)
               LTM_EOF),
             get_inited_proto_server_options());
 
-  assert_proto_server_handshake(proto);
+  assert_proto_server_handshake(&proto);
   assert_proto_server_fetch(proto, "abcdefghijklmnopqstuvwxyz", -1);
   assert_proto_server_fetch(proto, "01234567", -1);
   assert_proto_server_fetch(proto, "01234567", 8);
@@ -94,7 +94,7 @@ Test(log_proto, test_log_proto_auto_server_opening_bracket)
               LTM_EOF),
             get_inited_proto_server_options());
 
-  assert_proto_server_handshake(proto);
+  assert_proto_server_handshake(&proto);
   assert_proto_server_fetch(proto, "<55> abcdefghijklmnopqstuvwxyz", -1);
   assert_proto_server_fetch(proto, "01234567", -1);
   assert_proto_server_fetch(proto, "01234567", 8);
@@ -123,7 +123,7 @@ Test(log_proto, test_log_proto_auto_server_with_framing)
               LTM_EOF),
             get_inited_proto_server_options());
 
-  assert_proto_server_handshake(proto);
+  assert_proto_server_handshake(&proto);
   assert_proto_server_fetch(proto, "0123456789ABCDEF0123456789ABCDEF", -1);
   assert_proto_server_fetch(proto, "01234567\n\n", -1);
   assert_proto_server_fetch(proto, "01234567\0\0", 10);
