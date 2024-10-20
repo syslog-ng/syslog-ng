@@ -28,10 +28,6 @@
 typedef struct _LogProtoAutoServer
 {
   LogProtoServer super;
-
-  /* the actual LogProto instance that we run after auto-detecting the protocol */
-  LogProtoServer *proto_impl;
-  LogTransport *transport;
 } LogProtoAutoServer;
 
 static LogProtoServer *
@@ -65,9 +61,6 @@ log_proto_auto_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeo
   LogProtoAutoServer *self = (LogProtoAutoServer *) s;
   LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
 
-  if (self->proto_impl)
-    return log_proto_server_prepare(self->proto_impl, cond, timeout);
-
   *cond = transport->cond;
   if (*cond == 0)
     *cond = G_IO_IN;
@@ -76,26 +69,10 @@ log_proto_auto_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeo
 }
 
 static LogProtoStatus
-log_proto_auto_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
-                            LogTransportAuxData *aux, Bookmark *bookmark)
-{
-  LogProtoAutoServer *self = (LogProtoAutoServer *) s;
-
-  if (self->proto_impl)
-    return log_proto_server_fetch(self->proto_impl, msg, msg_len, may_read, aux, bookmark);
-
-  g_assert_not_reached();
-}
-
-static LogProtoStatus
-log_proto_auto_handshake(LogProtoServer *s, gboolean *handshake_finished)
+log_proto_auto_handshake(LogProtoServer *s, gboolean *handshake_finished, LogProtoServer **proto_replacement)
 {
   LogProtoAutoServer *self = (LogProtoAutoServer *) s;
   LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
-  /* allow the impl to do its handshake */
-  if (self->proto_impl)
-    return log_proto_server_handshake(self->proto_impl, handshake_finished);
-
   gchar detect_buffer[8];
   gboolean moved_forward;
   gint rc;
@@ -110,24 +87,8 @@ log_proto_auto_handshake(LogProtoServer *s, gboolean *handshake_finished)
       return LPS_ERROR;
     }
 
-  self->proto_impl = _construct_detected_proto(self, detect_buffer, rc);
-  if (self->proto_impl)
-    {
-      /* transport is handed over to the new proto */
-      log_transport_stack_move(&self->proto_impl->transport_stack, &self->super.transport_stack);
-      return LPS_SUCCESS;
-    }
-  return LPS_ERROR;
-}
-
-static void
-log_proto_auto_server_free(LogProtoServer *s)
-{
-  LogProtoAutoServer *self = (LogProtoAutoServer *) s;
-
-  if (self->proto_impl)
-    log_proto_server_free(self->proto_impl);
-  log_proto_server_free_method(s);
+  *proto_replacement = _construct_detected_proto(self, detect_buffer, rc);
+  return LPS_SUCCESS;
 }
 
 LogProtoServer *
@@ -141,7 +102,5 @@ log_proto_auto_server_new(LogTransport *transport, const LogProtoServerOptions *
   log_proto_server_init(&self->super, transport, options);
   self->super.handshake = log_proto_auto_handshake;
   self->super.prepare = log_proto_auto_server_prepare;
-  self->super.fetch = log_proto_auto_server_fetch;
-  self->super.free_fn = log_proto_auto_server_free;
   return &self->super;
 }
