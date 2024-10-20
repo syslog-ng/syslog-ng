@@ -135,6 +135,8 @@ modules/python/python-confgen\.[ch]
 lib/tests/test_logscheduler\.c
 lib/filterx/.*\.[ch]
 lib/filterx/filterx-grammar\.ym
+lib/logproto/logproto-auto-server\.[ch]
+lib/transport/tests/test_transport\.c
 
 ###########################################################################
 # These tests are GPLd even though they reside under lib/ and are excluded
@@ -267,6 +269,7 @@ tests/light/functional_tests/filters/test_multiple_filters\.py
 tests/light/functional_tests/filterx/test_filterx\.py
 tests/light/functional_tests/filterx/test_filterx_scope\.py
 tests/light/functional_tests/parsers/metrics-probe/test_metrics_probe\.py
+tests/light/functional_tests/source_drivers/syslog_source/auto/test_auto_proto\.py
 tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py
 tests/light/src/syslog_ng_config/statements/template/template\.py
 tests/light/src/syslog_ng_config/statements/__init__\.py
