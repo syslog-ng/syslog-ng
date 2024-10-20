@@ -89,7 +89,7 @@ struct _LogProtoServer
   LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                           LogTransportAuxData *aux, Bookmark *bookmark);
   gboolean (*validate_options)(LogProtoServer *s);
-  LogProtoStatus (*handshake)(LogProtoServer *s, gboolean *handshake_finished);
+  LogProtoStatus (*handshake)(LogProtoServer *s, gboolean *handshake_finished, LogProtoServer **proto_replacement);
   void (*free_fn)(LogProtoServer *s);
 };
 
@@ -100,11 +100,19 @@ log_proto_server_validate_options(LogProtoServer *self)
 }
 
 static inline LogProtoStatus
-log_proto_server_handshake(LogProtoServer *s, gboolean *handshake_finished)
+log_proto_server_handshake(LogProtoServer *s, gboolean *handshake_finished, LogProtoServer **proto_replacement)
 {
   if (s->handshake)
     {
-      return s->handshake(s, handshake_finished);
+      LogProtoStatus status;
+
+      g_assert(*proto_replacement == NULL);
+      status = s->handshake(s, handshake_finished, proto_replacement);
+      if (*proto_replacement)
+        {
+          g_assert(status == LPS_SUCCESS || status == LPS_AGAIN);
+        }
+      return status;
     }
   *handshake_finished = TRUE;
   return LPS_SUCCESS;

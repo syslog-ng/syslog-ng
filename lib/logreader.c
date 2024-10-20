@@ -441,7 +441,16 @@ static inline gint
 log_reader_process_handshake(LogReader *self)
 {
   gboolean handshake_finished = FALSE;
-  LogProtoStatus status = log_proto_server_handshake(self->proto, &handshake_finished);
+  LogProtoServer *proto_replacement = NULL;
+  LogProtoStatus status = log_proto_server_handshake(self->proto, &handshake_finished, &proto_replacement);
+
+  if (proto_replacement)
+    {
+      g_assert(handshake_finished == FALSE);
+      log_transport_stack_move(&proto_replacement->transport_stack, &self->proto->transport_stack);
+      log_proto_server_free(self->proto);
+      self->proto = proto_replacement;
+    }
 
   switch (status)
     {

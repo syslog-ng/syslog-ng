@@ -46,9 +46,16 @@ proto_server_handshake(LogProtoServer **proto)
   start_grabbing_messages();
   do
     {
-      status = log_proto_server_handshake(*proto, &handshake_finished);
+      LogProtoServer *proto_replacement = NULL;
+      status = log_proto_server_handshake(*proto, &handshake_finished, &proto_replacement);
       if (status == LPS_AGAIN)
         status = LPS_SUCCESS;
+      if (proto_replacement)
+        {
+          log_transport_stack_move(&proto_replacement->transport_stack, &(*proto)->transport_stack);
+          log_proto_server_free(*proto);
+          *proto = proto_replacement;
+        }
     }
   while (status == LPS_SUCCESS && handshake_finished == FALSE);
   stop_grabbing_messages();
