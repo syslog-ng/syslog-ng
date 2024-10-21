@@ -679,10 +679,15 @@ cfg_tree_register_initialized_pipe(CfgTree *self, LogPipe *s)
     {
       main_loop_assert_main_thread();
 
-      if (FALSE == g_hash_table_contains(self->pipes_with_persis_name, s) && log_pipe_get_persist_name(s))
+      if (FALSE == g_hash_table_contains(self->pipes_with_persis_name, s))
         {
-          log_pipe_ref(s);
-          g_hash_table_add(self->pipes_with_persis_name, s);
+          const gchar *persist_name = log_pipe_get_persist_name(s);
+          if (persist_name)
+            {
+              log_pipe_ref(s);
+              g_hash_table_add(self->pipes_with_persis_name, s);
+              msg_trace("Pipe registered", evt_tag_str("persist-name", persist_name));
+            }
         }
     }
 }
