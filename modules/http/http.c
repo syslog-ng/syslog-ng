@@ -443,14 +443,19 @@ http_dd_init(LogPipe *s)
     return FALSE;
 
   if ((self->super.batch_lines || self->batch_bytes) && http_load_balancer_is_url_templated(self->load_balancer) &&
-      self->super.num_workers > 1 && !self->super.worker_partition_key)
+      self->super.num_workers > 1)
     {
-      msg_error("http: worker-partition-key() must be set if using templates in the url() option "
-                "while batching is enabled and multiple workers are configured. "
-                "Make sure to set worker-partition-key() with a template that contains all the templates "
-                "used in the url() option",
-                log_pipe_location_tag(&self->super.super.super.super));
-      return FALSE;
+      log_threaded_dest_driver_set_flush_on_worker_key_change(&self->super.super.super, TRUE);
+
+      if (!self->super.worker_partition_key)
+        {
+          msg_error("http: worker-partition-key() must be set if using templates in the url() option "
+                    "while batching is enabled and multiple workers are configured. "
+                    "Make sure to set worker-partition-key() with a template that contains all the templates "
+                    "used in the url() option",
+                    log_pipe_location_tag(&self->super.super.super.super));
+          return FALSE;
+        }
     }
 
   log_template_options_init(&self->template_options, cfg);
@@ -509,8 +514,6 @@ http_dd_new(GlobalConfig *cfg)
   self->super.metrics.raw_bytes_enabled = TRUE;
   self->super.stats_source = stats_register_type("http");
   self->super.worker.construct = http_dw_new;
-
-  log_threaded_dest_driver_set_flush_on_worker_key_change(&self->super.super.super, TRUE);
 
   curl_global_init(CURL_GLOBAL_ALL);
 
