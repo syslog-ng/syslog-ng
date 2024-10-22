@@ -35,7 +35,7 @@ typedef struct _LogProtoClient LogProtoClient;
 typedef struct _LogProtoClientOptions
 {
   gboolean drop_input;
-  gint timeout;
+  gint idle_timeout;
 } LogProtoClientOptions;
 
 typedef union _LogProtoClientOptionsStorage
@@ -126,7 +126,11 @@ log_proto_client_handshake(LogProtoClient *s, gboolean *handshake_finished)
 static inline gboolean
 log_proto_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
-  return s->prepare(s, fd, cond, timeout);
+  gboolean result = s->prepare(s, fd, cond, timeout);
+
+  if (!result && *timeout < 0)
+    *timeout = s->options->idle_timeout;
+  return result;
 }
 
 static inline LogProtoStatus
