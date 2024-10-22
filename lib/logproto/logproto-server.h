@@ -52,6 +52,7 @@ struct _LogProtoServerOptions
   gboolean trim_large_messages;
   gint max_buffer_size;
   gint init_buffer_size;
+  gint idle_timeout;
   AckTrackerFactory *ack_tracker_factory;
 };
 
@@ -115,10 +116,14 @@ log_proto_server_set_options(LogProtoServer *self, const LogProtoServerOptions *
   self->options = options;
 }
 
-static inline gboolean
+static inline LogProtoPrepareAction
 log_proto_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
 {
-  return s->prepare(s, cond, timeout);
+  LogProtoPrepareAction result = s->prepare(s, cond, timeout);
+
+  if (result == LPPA_POLL_IO && *timeout < 0)
+    *timeout = s->options->idle_timeout;
+  return result;
 }
 
 static inline gboolean
