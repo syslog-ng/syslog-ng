@@ -58,6 +58,7 @@ struct _AFSocketDestDriver
   {
     StatsCounterItem *output_unreachable;
   } metrics;
+  const gchar *original_dest_name;
 
   LogWriter *(*construct_writer)(AFSocketDestDriver *self);
   gboolean (*setup_addresses)(AFSocketDestDriver *s);

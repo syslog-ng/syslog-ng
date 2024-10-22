@@ -168,12 +168,20 @@ afsocket_dd_format_legacy_connection_name(const AFSocketDestDriver *self)
   return legacy_persist_name;
 }
 
+static const gchar *
+_get_original_dest_name(AFSocketDestDriver *self)
+{
+  if (self->original_dest_name == NULL)
+    self->original_dest_name = g_strdup(afsocket_dd_get_dest_name(self));
+  return self->original_dest_name;
+}
+
 static gchar *
 afsocket_dd_stats_instance(AFSocketDestDriver *self)
 {
   static gchar buf[256];
 
-  g_snprintf(buf, sizeof(buf), "%s,%s", self->transport_mapper->transport, afsocket_dd_get_dest_name(self));
+  g_snprintf(buf, sizeof(buf), "%s,%s", self->transport_mapper->transport, _get_original_dest_name(self));
   return buf;
 }
 
@@ -508,7 +516,7 @@ _init_stats_key_builders(AFSocketDestDriver *self, StatsClusterKeyBuilder **writ
   stats_cluster_key_builder_add_legacy_label(*writer_sck_builder, stats_cluster_label("transport",
                                              self->transport_mapper->transport));
   stats_cluster_key_builder_add_legacy_label(*writer_sck_builder, stats_cluster_label("address",
-                                             afsocket_dd_get_dest_name(self)));
+                                             _get_original_dest_name(self)));
 
   *driver_sck_builder = stats_cluster_key_builder_new();
   stats_cluster_key_builder_add_label(*driver_sck_builder, stats_cluster_label("driver", "afsocket"));
@@ -516,7 +524,7 @@ _init_stats_key_builders(AFSocketDestDriver *self, StatsClusterKeyBuilder **writ
   stats_cluster_key_builder_add_legacy_label(*driver_sck_builder, stats_cluster_label("transport",
                                              self->transport_mapper->transport));
   stats_cluster_key_builder_add_legacy_label(*driver_sck_builder, stats_cluster_label("address",
-                                             afsocket_dd_get_dest_name(self)));
+                                             _get_original_dest_name(self)));
   stats_cluster_key_builder_set_legacy_alias(*driver_sck_builder,
                                              self->writer_options.stats_source | SCS_DESTINATION,
                                              self->super.super.id, afsocket_dd_stats_instance(self));
@@ -527,7 +535,7 @@ _init_stats_key_builders(AFSocketDestDriver *self, StatsClusterKeyBuilder **writ
   stats_cluster_key_builder_add_legacy_label(*queue_sck_builder, stats_cluster_label("transport",
                                              self->transport_mapper->transport));
   stats_cluster_key_builder_add_legacy_label(*queue_sck_builder, stats_cluster_label("address",
-                                             afsocket_dd_get_dest_name(self)));
+                                             _get_original_dest_name(self)));
 }
 
 static void
@@ -538,7 +546,7 @@ afsocket_dd_register_stats(AFSocketDestDriver *self)
     stats_cluster_label("id", self->super.super.id),
     stats_cluster_label("driver", "afsocket"),
     stats_cluster_label("transport", self->transport_mapper->transport),
-    stats_cluster_label("address", afsocket_dd_get_dest_name(self)),
+    stats_cluster_label("address", _get_original_dest_name(self)),
   };
 
   gint level = log_pipe_is_internal(&self->super.super.super) ? STATS_LEVEL3 : STATS_LEVEL0;
@@ -558,7 +566,7 @@ afsocket_dd_unregister_stats(AFSocketDestDriver *self)
     stats_cluster_label("id", self->super.super.id),
     stats_cluster_label("driver", "afsocket"),
     stats_cluster_label("transport", self->transport_mapper->transport),
-    stats_cluster_label("address", afsocket_dd_get_dest_name(self)),
+    stats_cluster_label("address", _get_original_dest_name(self)),
   };
 
   StatsClusterKey sc_key;
@@ -778,6 +786,7 @@ afsocket_dd_free(LogPipe *s)
   transport_mapper_free(self->transport_mapper);
   socket_options_free(self->socket_options);
   log_dest_driver_free(s);
+  g_free((void *) self->original_dest_name);
 }
 
 void
@@ -801,7 +810,6 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->connections_kept_alive_across_reloads = TRUE;
   self->close_on_input = TRUE;
   self->connection_initialized = FALSE;
-
 
   self->writer_options.mark_mode = MM_GLOBAL;
   self->writer_options.stats_level = STATS_LEVEL0;
