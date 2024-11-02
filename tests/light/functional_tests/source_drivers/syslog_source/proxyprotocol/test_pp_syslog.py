@@ -92,32 +92,32 @@ def _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_
 
 
 def test_pp_syslog_tcp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
-    TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
+    TEMPLATE = r'"${SOURCEIP} ${SOURCEPORT} ${DESTIP} ${DESTPORT} ${MESSAGE}\n"'
     INPUT_MESSAGES = "53 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\r\n"
-    EXPECTED_MESSAGES = "1.1.1.1 2.2.2.2 3333 4444 4 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\n"
+    EXPECTED_MESSAGES = "1.1.1.1 3333 2.2.2.2 4444 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\n"
     NUMBER_OF_MESSAGES = 2
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"proxied-tcp"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
 
 
 def test_pp_syslog_tls(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
-    TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
+    TEMPLATE = r'"${SOURCEIP} ${SOURCEPORT} ${DESTIP} ${DESTPORT} ${MESSAGE}\n"'
     INPUT_MESSAGES = "53 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\r\n"
-    EXPECTED_MESSAGES = "1.1.1.1 2.2.2.2 3333 4444 4 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\n"
+    EXPECTED_MESSAGES = "1.1.1.1 3333 2.2.2.2 4444 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\n"
     NUMBER_OF_MESSAGES = 2
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"proxied-tls"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
 
 
 def test_pp_syslog_tls_with_passphrase(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
-    TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
+    TEMPLATE = r'"${SOURCEIP} ${SOURCEPORT} ${DESTIP} ${DESTPORT} ${MESSAGE}\n"'
     INPUT_MESSAGES = "53 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\r\n"
-    EXPECTED_MESSAGES = "1.1.1.1 2.2.2.2 3333 4444 4 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\n"
+    EXPECTED_MESSAGES = "1.1.1.1 3333 2.2.2.2 4444 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\n"
     NUMBER_OF_MESSAGES = 2
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"proxied-tls"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE, password="asdfg")
 
 
 def test_pp_syslog_tls_passthrough(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
-    TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
+    TEMPLATE = r'"${SOURCEIP} ${SOURCEPORT} ${DESTIP} ${DESTPORT} ${MESSAGE}\n"'
     INPUT_MESSAGES = "53 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\r\n"
-    EXPECTED_MESSAGES = "1.1.1.1 2.2.2.2 3333 4444 4 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\n"
+    EXPECTED_MESSAGES = "1.1.1.1 3333 2.2.2.2 4444 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\n"
     NUMBER_OF_MESSAGES = 2
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"proxied-tls-passthrough"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)

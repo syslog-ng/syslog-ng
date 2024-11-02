@@ -89,33 +89,23 @@ def _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_
     assert file_destination.read_log() == expected_messages
 
 
+TEMPLATE = r'"${SOURCEIP} ${SOURCEPORT} ${DESTIP} ${DESTPORT} ${IP_PROTO} ${MESSAGE}\n"'
+EXPECTED_MESSAGES = "1.1.1.1 3333 2.2.2.2 4444 4 message 0\n"
+INPUT_MESSAGES = "message 0\n"
+NUMBER_OF_MESSAGES = 2
+
+
 def test_pp_network_tcp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
-    TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
-    INPUT_MESSAGES = "message 0\n"
-    EXPECTED_MESSAGES = "1.1.1.1 2.2.2.2 3333 4444 4 message 0\n"
-    NUMBER_OF_MESSAGES = 2
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"proxied-tcp"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
 
 
 def test_pp_network_tls(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
-    TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
-    INPUT_MESSAGES = "message 0\n"
-    EXPECTED_MESSAGES = "1.1.1.1 2.2.2.2 3333 4444 4 message 0\n"
-    NUMBER_OF_MESSAGES = 2
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"proxied-tls"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
 
 
 def test_pp_network_tls_with_passphrase(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
-    TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
-    INPUT_MESSAGES = "message 0\n"
-    EXPECTED_MESSAGES = "1.1.1.1 2.2.2.2 3333 4444 4 message 0\n"
-    NUMBER_OF_MESSAGES = 2
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"proxied-tls"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE, password="asdfg")
 
 
 def test_pp_network_tls_passthrough(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
-    TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
-    INPUT_MESSAGES = "message 0\n"
-    EXPECTED_MESSAGES = "1.1.1.1 2.2.2.2 3333 4444 4 message 0\n"
-    NUMBER_OF_MESSAGES = 2
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"proxied-tls-passthrough"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
