@@ -146,7 +146,8 @@ ParameterizedTest(ProtocolHeaderTestParams *params, log_transport_proxy, test_pr
   gssize rc;
 
   log_transport_stack_init(&stack, mock);
-  LogTransport *transport = log_transport_haproxy_new(&stack, LOG_TRANSPORT_INITIAL, LOG_TRANSPORT_NONE);
+  LogTransport *transport = log_transport_haproxy_new(LOG_TRANSPORT_INITIAL, LOG_TRANSPORT_NONE);
+  log_transport_assign_to_stack(transport, &stack);
 
   do
     {

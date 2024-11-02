@@ -27,7 +27,7 @@ gssize
 log_transport_adapter_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportAdapter *self = (LogTransportAdapter *) s;
-  LogTransport *transport = log_transport_stack_get_transport(self->stack, self->base_index);
+  LogTransport *transport = log_transport_stack_get_transport(s->stack, self->base_index);
 
   return log_transport_read(transport, buf, buflen, aux);
 }
@@ -36,7 +36,7 @@ gssize
 log_transport_adapter_write_method(LogTransport *s, const gpointer buf, gsize count)
 {
   LogTransportAdapter *self = (LogTransportAdapter *) s;
-  LogTransport *transport = log_transport_stack_get_transport(self->stack, self->base_index);
+  LogTransport *transport = log_transport_stack_get_transport(s->stack, self->base_index);
 
   return log_transport_write(transport, buf, count);
 }
@@ -45,20 +45,19 @@ gssize
 log_transport_adapter_writev_method(LogTransport *s, struct iovec *iov, gint iov_count)
 {
   LogTransportAdapter *self = (LogTransportAdapter *) s;
-  LogTransport *transport = log_transport_stack_get_transport(self->stack, self->base_index);
+  LogTransport *transport = log_transport_stack_get_transport(s->stack, self->base_index);
 
   return log_transport_writev(transport, iov, iov_count);
 }
 
 void
 log_transport_adapter_init_instance(LogTransportAdapter *self, const gchar *name,
-                                    LogTransportStack *stack, LogTransportIndex base_index)
+                                    LogTransportIndex base_index)
 {
-  log_transport_init_instance(&self->super, name, stack->fd);
+  log_transport_init_instance(&self->super, name, -1);
   self->super.read = log_transport_adapter_read_method;
   self->super.write = log_transport_adapter_write_method;
   self->super.writev = log_transport_adapter_writev_method;
 
-  self->stack = stack;
   self->base_index = base_index;
 }

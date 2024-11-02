@@ -108,7 +108,7 @@ _setup_haproxy_transport(TransportMapperInet *self, LogTransportStack *stack,
                          LogTransportIndex base_index, LogTransportIndex switch_to)
 {
   log_transport_stack_add_transport(stack, LOG_TRANSPORT_HAPROXY,
-                                    log_transport_haproxy_new(stack, base_index, switch_to));
+                                    log_transport_haproxy_new(base_index, switch_to));
   return TRUE;
 }
 
