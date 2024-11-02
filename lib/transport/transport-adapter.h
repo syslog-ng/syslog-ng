@@ -30,7 +30,6 @@ typedef struct _LogTransportAdapter LogTransportAdapter;
 struct _LogTransportAdapter
 {
   LogTransport super;
-  LogTransportStack *stack;
   LogTransportIndex base_index;
 };
 
@@ -39,6 +38,6 @@ gssize log_transport_adapter_write_method(LogTransport *s, const gpointer buf, g
 gssize log_transport_adapter_writev_method(LogTransport *s, struct iovec *iov, gint iov_count);
 
 void log_transport_adapter_init_instance(LogTransportAdapter *self, const gchar *name,
-                                         LogTransportStack *stack, LogTransportIndex base);
+                                         LogTransportIndex base);
 
 #endif
