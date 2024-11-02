@@ -585,11 +585,11 @@ _haproxy_read(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *
 }
 
 LogTransport *
-log_transport_haproxy_new(LogTransportStack *stack, LogTransportIndex base, LogTransportIndex switch_to)
+log_transport_haproxy_new(LogTransportIndex base, LogTransportIndex switch_to)
 {
   LogTransportHAProxy *self = g_new0(LogTransportHAProxy, 1);
 
-  log_transport_adapter_init_instance(&self->super, "haproxy", stack, base);
+  log_transport_adapter_init_instance(&self->super, "haproxy", base);
   self->super.super.read = _haproxy_read;
   self->switch_to = switch_to;
 
