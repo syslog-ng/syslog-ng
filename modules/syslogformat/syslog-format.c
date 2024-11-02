@@ -953,7 +953,7 @@ _syslog_format_check_framing(LogMessage *msg, const guchar **data, gint *length)
   /* we did indeed find a series of digits that look like framing, that's
    * probably not what was intended. */
   msg_debug("RFC5425 style octet count was found at the start of the message, this is probably not what was intended",
-            evt_tag_mem("data", data, src - (*data)),
+            evt_tag_mem("data", *data, src - (*data)),
             evt_tag_msg_reference(msg));
   log_msg_set_tag_by_id(msg, LM_T_SYSLOG_UNEXPECTED_FRAMING);
   *data = src;
