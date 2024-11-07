@@ -78,20 +78,6 @@ console_is_present(void)
   return result;
 }
 
-gboolean
-console_is_attached(void)
-{
-  gboolean result;
-  /* the lock only serves a memory barrier but is not a real synchronization */
-  g_mutex_lock(&console_lock);
-  if (using_initial_console)
-    result = FALSE;
-  else
-    result = console_present;
-  g_mutex_unlock(&console_lock);
-  return result;
-}
-
 /* re-acquire a console after startup using an array of fds */
 gboolean
 console_acquire_from_fds(gint fds[3])
