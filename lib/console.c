@@ -93,18 +93,19 @@ console_is_attached(void)
 }
 
 /* re-acquire a console after startup using an array of fds */
-void
+gboolean
 console_acquire_from_fds(gint fds[3])
 {
   const gchar *takeover_message_on_old_console = "[Console taken over, no further output here]\n";
-  g_assert(!console_is_attached());
-
-  if (using_initial_console)
-    {
-      (void) write(1, takeover_message_on_old_console, strlen(takeover_message_on_old_console));
-    }
+  gboolean result = FALSE;
 
   g_mutex_lock(&console_lock);
+  if (console_present)
+    {
+      if (!using_initial_console)
+        goto exit;
+      (void) write(1, takeover_message_on_old_console, strlen(takeover_message_on_old_console));
+    }
 
   dup2(fds[0], STDIN_FILENO);
   dup2(fds[1], STDOUT_FILENO);
@@ -112,7 +113,10 @@ console_acquire_from_fds(gint fds[3])
 
   console_present = TRUE;
   using_initial_console = FALSE;
+  result = TRUE;
+exit:
   g_mutex_unlock(&console_lock);
+  return result;
 }
 
 /**

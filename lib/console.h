@@ -31,8 +31,7 @@ void console_printf(const gchar *fmt, ...) __attribute__ ((format (printf, 1, 2)
 
 gboolean console_is_present(void);
 gboolean console_is_attached(void);
-void console_acquire_from_fds(gint fds[3]);
-void console_acquire_from_stdio(void);
+gboolean console_acquire_from_fds(gint fds[3]);
 void console_release(void);
 
 void console_global_init(const gchar *console_prefix);
