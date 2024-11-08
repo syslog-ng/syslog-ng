@@ -48,11 +48,10 @@ typedef struct _LogProtoFileWriter
 static inline gboolean
 _flush_partial(LogProtoFileWriter *self, LogProtoStatus *status)
 {
-  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
   /* there is still some data from the previous file writing process */
 
   gint len = self->partial_len - self->partial_pos;
-  gssize rc = log_transport_write(transport, self->partial + self->partial_pos, len);
+  gssize rc = log_transport_stack_write(&self->super.transport_stack, self->partial + self->partial_pos, len);
 
   if (rc > 0 && self->fsync)
     fsync(self->fd);
@@ -67,7 +66,7 @@ _flush_partial(LogProtoFileWriter *self, LogProtoStatus *status)
 
       log_proto_client_msg_rewind(&self->super);
       msg_error("I/O error occurred while writing",
-                evt_tag_int("fd", transport->fd),
+                evt_tag_int("fd", self->super.transport_stack.fd),
                 evt_tag_error(EVT_TAG_OSERROR));
 
       *status = LPS_ERROR;
@@ -139,7 +138,6 @@ static LogProtoStatus
 log_proto_file_writer_flush(LogProtoClient *s)
 {
   LogProtoFileWriter *self = (LogProtoFileWriter *)s;
-  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
 
   if (self->partial)
     {
@@ -152,10 +150,10 @@ log_proto_file_writer_flush(LogProtoClient *s)
   if (self->buf_count == 0)
     return LPS_SUCCESS;
 
-  gssize rc = log_transport_writev(transport, self->buffer, self->buf_count);
+  gssize rc = log_transport_stack_writev(&self->super.transport_stack, self->buffer, self->buf_count);
 
   if (rc > 0 && self->fsync)
-    fsync(transport->fd);
+    fsync(self->super.transport_stack.fd);
 
   if (rc < 0)
     {
@@ -164,7 +162,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
 
       log_proto_client_msg_rewind(&self->super);
       msg_error("I/O error occurred while writing",
-                evt_tag_int("fd", transport->fd),
+                evt_tag_int("fd", self->super.transport_stack.fd),
                 evt_tag_error(EVT_TAG_OSERROR));
       return LPS_ERROR;
     }
@@ -235,10 +233,11 @@ static gboolean
 log_proto_file_writer_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   LogProtoFileWriter *self = (LogProtoFileWriter *) s;
-  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
 
-  *fd = transport->fd;
-  *cond = transport->cond;
+  if (log_transport_stack_poll_prepare(&self->super.transport_stack, cond))
+    return TRUE;
+
+  *fd = self->super.transport_stack.fd;
 
   /* if there's no pending I/O in the transport layer, then we want to do a write */
   if (*cond == 0)
