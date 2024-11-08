@@ -143,7 +143,8 @@ transport_mapper_inet_setup_stack(TransportMapper *s, LogTransportStack *stack)
       initial_transport_index = LOG_TRANSPORT_HAPROXY;
     }
 
-  log_transport_stack_switch(stack, initial_transport_index);
+  if (!log_transport_stack_switch(stack, initial_transport_index))
+    g_assert_not_reached();
   return TRUE;
 }
 
