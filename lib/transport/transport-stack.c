@@ -61,7 +61,8 @@ log_transport_stack_switch(LogTransportStack *self, gint index)
   LogTransport *active_transport = log_transport_stack_get_active(self);
   LogTransport *requested_transport = log_transport_stack_get_transport(self, index);
 
-  g_assert(requested_transport != NULL);
+  if (!requested_transport)
+    return FALSE;
 
   msg_debug("Transport switch requested",
             evt_tag_str("active-transport", active_transport ? active_transport->name : "none"),

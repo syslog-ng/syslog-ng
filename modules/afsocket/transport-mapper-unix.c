@@ -43,7 +43,8 @@ _setup_stack(TransportMapper *s, LogTransportStack *stack)
   else
     transport = log_transport_unix_stream_socket_new(stack->fd);
   log_transport_stack_add_transport(stack, LOG_TRANSPORT_SOCKET, transport);
-  log_transport_stack_switch(stack, LOG_TRANSPORT_SOCKET);
+  if (!log_transport_stack_switch(stack, LOG_TRANSPORT_SOCKET))
+    g_assert_not_reached();
   return TRUE;
 }
 
