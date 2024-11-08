@@ -68,6 +68,15 @@ struct _LogTransport
   const gchar *name;
 };
 
+static inline gboolean
+log_transport_poll_prepare(LogTransport *self, GIOCondition *cond)
+{
+  if (self->ra.buf_len != self->ra.pos)
+    return TRUE;
+  *cond = self->cond;
+  return FALSE;
+}
+
 static inline void
 log_transport_assign_to_stack(LogTransport *self, LogTransportStack *stack)
 {
