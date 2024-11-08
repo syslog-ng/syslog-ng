@@ -37,7 +37,7 @@ _construct_transport(const LogTransportFactory *s, LogTransportStack *stack)
 
   tls_session_set_verifier(tls_session, self->tls_verifier);
 
-  return log_transport_tls_new(tls_session, stack->fd);
+  return log_transport_tls_new(tls_session, LOG_TRANSPORT_SOCKET);
 }
 
 static void
