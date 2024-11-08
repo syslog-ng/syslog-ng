@@ -304,7 +304,7 @@ log_reader_update_watches(LogReader *self)
       return;
     }
 
-  LogProtoPrepareAction prepare_action = log_proto_server_prepare(self->proto, &cond, &idle_timeout);
+  LogProtoPrepareAction prepare_action = log_proto_server_poll_prepare(self->proto, &cond, &idle_timeout);
 
   if (idle_timeout > 0)
     {

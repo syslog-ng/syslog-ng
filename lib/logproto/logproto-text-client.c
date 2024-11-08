@@ -27,7 +27,7 @@
 #include <errno.h>
 
 static gboolean
-log_proto_text_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
+log_proto_text_client_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
   LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
@@ -194,7 +194,7 @@ void
 log_proto_text_client_init(LogProtoTextClient *self, LogTransport *transport, const LogProtoClientOptions *options)
 {
   log_proto_client_init(&self->super, transport, options);
-  self->super.prepare = log_proto_text_client_prepare;
+  self->super.poll_prepare = log_proto_text_client_poll_prepare;
   self->super.flush = log_proto_text_client_flush;
   if (options->drop_input)
     self->super.process_in = log_proto_text_client_drop_input;

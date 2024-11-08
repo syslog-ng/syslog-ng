@@ -584,7 +584,7 @@ error:
 }
 
 LogProtoPrepareAction
-log_proto_buffered_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
+log_proto_buffered_server_poll_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
   LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
@@ -1081,7 +1081,7 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
                                const LogProtoServerOptions *options)
 {
   log_proto_server_init(&self->super, transport, options);
-  self->super.prepare = log_proto_buffered_server_prepare;
+  self->super.poll_prepare = log_proto_buffered_server_poll_prepare;
   self->super.fetch = log_proto_buffered_server_fetch;
   self->super.free_fn = log_proto_buffered_server_free_method;
   self->super.restart_with_state = log_proto_buffered_server_restart_with_state;

@@ -83,8 +83,7 @@ struct _LogProtoServer
   AckTracker *ack_tracker;
 
   LogProtoServerWakeupCallback wakeup_callback;
-  /* FIXME: rename to something else */
-  LogProtoPrepareAction (*prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
+  LogProtoPrepareAction (*poll_prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
   gboolean (*restart_with_state)(LogProtoServer *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                           LogTransportAuxData *aux, Bookmark *bookmark);
@@ -125,9 +124,9 @@ log_proto_server_set_options(LogProtoServer *self, const LogProtoServerOptions *
 }
 
 static inline LogProtoPrepareAction
-log_proto_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
+log_proto_server_poll_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
 {
-  LogProtoPrepareAction result = s->prepare(s, cond, timeout);
+  LogProtoPrepareAction result = s->poll_prepare(s, cond, timeout);
 
   if (result == LPPA_POLL_IO && *timeout < 0)
     *timeout = s->options->idle_timeout;
