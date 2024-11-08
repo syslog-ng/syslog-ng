@@ -24,10 +24,10 @@
 #ifndef TLSTRANSPORT_H_INCLUDED
 #define TLSTRANSPORT_H_INCLUDED
 
-#include "transport/logtransport.h"
+#include "transport/transport-adapter.h"
 #include "transport/tls-context.h"
 
-LogTransport *log_transport_tls_new(TLSSession *tls_session, gint fd);
+LogTransport *log_transport_tls_new(TLSSession *tls_session, LogTransportIndex base_index);
 TLSSession *log_tansport_tls_get_session(LogTransport *s);
 
 #endif

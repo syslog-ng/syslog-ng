@@ -24,7 +24,7 @@
  */
 
 #include "transport/transport-tls.h"
-#include "transport/transport-socket.h"
+#include "transport/transport-adapter.h"
 
 #include "messages.h"
 
@@ -32,14 +32,111 @@
 #include <openssl/err.h>
 #include <errno.h>
 
-const gchar *TLS_TRANSPORT_NAME = "tls";
-
 typedef struct _LogTransportTLS
 {
-  LogTransportSocket super;
+  LogTransportAdapter super;
   TLSSession *tls_session;
   gboolean sending_shutdown;
 } LogTransportTLS;
+
+const gchar *TLS_TRANSPORT_NAME = "tls";
+
+static int
+_BIO_transport_write(BIO *bio, const char *buf, size_t buflen, size_t *written_bytes)
+{
+  LogTransportTLS *transport = BIO_get_data(bio);
+  gssize ret;
+
+  ret = log_transport_adapter_write_method(&transport->super.super, (gpointer) buf, buflen);
+  BIO_clear_retry_flags(bio);
+
+  if (ret < 0)
+    {
+      *written_bytes = 0;
+      if (errno == EAGAIN)
+        BIO_set_retry_write(bio);
+      return -1;
+    }
+  *written_bytes = ret;
+  return 1;
+}
+
+static int
+_BIO_transport_read(BIO *bio, char *buf, size_t buflen, size_t *read_bytes)
+{
+  LogTransportTLS *transport = BIO_get_data(bio);
+  gssize ret;
+
+  ret = log_transport_adapter_read_method(&transport->super.super, buf, buflen, NULL);
+  if (ret < 0)
+    {
+      *read_bytes = 0;
+      if (errno == EAGAIN)
+        BIO_set_retry_read(bio);
+      return -1;
+    }
+  *read_bytes = ret;
+  return 1;
+}
+
+static long
+_BIO_transport_ctrl(BIO *bio, int cmd, long num, void *ptr)
+{
+  long ret = 1;
+
+  switch (cmd)
+    {
+    case BIO_CTRL_GET_CLOSE:
+      ret = BIO_get_shutdown(bio);
+      break;
+    case BIO_CTRL_SET_CLOSE:
+      BIO_set_shutdown(bio, (int)num);
+      break;
+    case BIO_CTRL_DUP:
+    case BIO_CTRL_FLUSH:
+      ret = 1;
+      break;
+    case BIO_CTRL_RESET:
+    case BIO_C_FILE_SEEK:
+    case BIO_C_FILE_TELL:
+    case BIO_CTRL_INFO:
+    case BIO_C_SET_FD:
+    case BIO_C_GET_FD:
+    case BIO_CTRL_PENDING:
+    case BIO_CTRL_WPENDING:
+    default:
+      ret = 0;
+      break;
+    }
+
+  return ret;
+}
+
+BIO_METHOD *
+BIO_s_transport(void)
+{
+  static BIO_METHOD *meth = NULL;
+
+  if (meth)
+    return meth;
+
+  meth = BIO_meth_new(BIO_TYPE_NONE, "LogTransportBIO");
+  BIO_meth_set_write_ex(meth, _BIO_transport_write);
+  BIO_meth_set_read_ex(meth, _BIO_transport_read);
+  BIO_meth_set_ctrl(meth, _BIO_transport_ctrl);
+
+  return meth;
+}
+
+BIO *
+BIO_transport_new(LogTransportTLS *transport)
+{
+  BIO *bio = BIO_new(BIO_s_transport());
+
+  g_assert(transport != NULL);
+  BIO_set_data(bio, transport);
+  return bio;
+}
 
 static inline gboolean
 _is_shutdown_sent(gint shutdown_rc)
@@ -254,19 +351,19 @@ log_tansport_tls_get_session(LogTransport *s)
 static void log_transport_tls_free_method(LogTransport *s);
 
 LogTransport *
-log_transport_tls_new(TLSSession *tls_session, gint fd)
+log_transport_tls_new(TLSSession *tls_session, LogTransportIndex base)
 {
   LogTransportTLS *self = g_new0(LogTransportTLS, 1);
 
-  log_transport_stream_socket_init_instance(&self->super, fd);
-  self->super.super.name = TLS_TRANSPORT_NAME;
+  log_transport_adapter_init_instance(&self->super, TLS_TRANSPORT_NAME, base);
   self->super.super.cond = 0;
   self->super.super.read = log_transport_tls_read_method;
   self->super.super.write = log_transport_tls_write_method;
   self->super.super.free_fn = log_transport_tls_free_method;
   self->tls_session = tls_session;
 
-  SSL_set_fd(self->tls_session->ssl, fd);
+  BIO *bio = BIO_transport_new(self);
+  SSL_set_bio(self->tls_session->ssl, bio, bio);
   return &self->super.super;
 }
 
@@ -280,5 +377,5 @@ log_transport_tls_free_method(LogTransport *s)
     log_transport_tls_send_shutdown(self);
 
   tls_session_free(self->tls_session);
-  log_transport_stream_socket_free_method(s);
+  log_transport_adapter_free_method(s);
 }

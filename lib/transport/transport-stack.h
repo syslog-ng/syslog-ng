@@ -31,10 +31,9 @@ typedef struct _LogTransportFactory LogTransportFactory;
 
 typedef enum
 {
-  /* this is a special index for simple cases where we only use a single
-   * LogTransport which never changes */
   LOG_TRANSPORT_INITIAL,
-  LOG_TRANSPORT_SOCKET,
+  LOG_TRANSPORT_FD = LOG_TRANSPORT_INITIAL,
+  LOG_TRANSPORT_SOCKET = LOG_TRANSPORT_INITIAL,
   LOG_TRANSPORT_TLS,
   LOG_TRANSPORT_HAPROXY,
   LOG_TRANSPORT_GZIP,
