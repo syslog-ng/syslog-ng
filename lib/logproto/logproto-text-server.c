@@ -27,12 +27,12 @@
 #include <string.h>
 
 LogProtoPrepareAction
-log_proto_text_server_prepare_method(LogProtoServer *s, GIOCondition *cond, gint *timeout)
+log_proto_text_server_poll_prepare_method(LogProtoServer *s, GIOCondition *cond, gint *timeout)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
   gboolean avail;
 
-  LogProtoPrepareAction action = log_proto_buffered_server_prepare(s, cond, timeout);
+  LogProtoPrepareAction action = log_proto_buffered_server_poll_prepare(s, cond, timeout);
   if (action != LPPA_POLL_IO)
     return action;
 
@@ -331,7 +331,7 @@ void
 log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, const LogProtoServerOptions *options)
 {
   log_proto_buffered_server_init(&self->super, transport, options);
-  self->super.super.prepare = log_proto_text_server_prepare_method;
+  self->super.super.poll_prepare = log_proto_text_server_poll_prepare_method;
   self->super.super.free_fn = log_proto_text_server_free;
   self->super.super.restart_with_state = log_proto_text_server_restart_with_state;
   self->super.fetch_from_buffer = log_proto_text_server_fetch_from_buffer;

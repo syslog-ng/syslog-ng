@@ -232,7 +232,7 @@ log_proto_file_writer_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg, g
 }
 
 static gboolean
-log_proto_file_writer_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
+log_proto_file_writer_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   LogProtoFileWriter *self = (LogProtoFileWriter *) s;
   LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
@@ -265,7 +265,7 @@ log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *
   log_proto_client_init(&self->super, transport, options);
   self->buf_size = flush_lines;
   self->fsync = fsync_;
-  self->super.prepare = log_proto_file_writer_prepare;
+  self->super.poll_prepare = log_proto_file_writer_poll_prepare;
   self->super.post = log_proto_file_writer_post;
   self->super.flush = log_proto_file_writer_flush;
   return &self->super;

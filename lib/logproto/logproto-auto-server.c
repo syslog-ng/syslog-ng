@@ -56,7 +56,7 @@ _construct_detected_proto(LogProtoAutoServer *self, const gchar *detect_buffer, 
 }
 
 static LogProtoPrepareAction
-log_proto_auto_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
+log_proto_auto_server_poll_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
 {
   LogProtoAutoServer *self = (LogProtoAutoServer *) s;
   LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
@@ -101,6 +101,6 @@ log_proto_auto_server_new(LogTransport *transport, const LogProtoServerOptions *
 
   log_proto_server_init(&self->super, transport, options);
   self->super.handshake = log_proto_auto_handshake;
-  self->super.prepare = log_proto_auto_server_prepare;
+  self->super.poll_prepare = log_proto_auto_server_poll_prepare;
   return &self->super;
 }
