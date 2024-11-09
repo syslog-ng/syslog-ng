@@ -28,8 +28,25 @@
 #include "syslog-ng.h"
 #include "transport/transport-aux-data.h"
 
-typedef struct _LogTransport LogTransport;
+/*
+ * LogTransport:
+ *
+ * This is an interface that a LogProto implementation can use to do I/O.
+ * There might be multiple LogTransport implementations alive for a specific
+ * connection: for instance we might do both plain text and SSL encrypted
+ * communication on the same socket, when the haproxy proxy protocol is in
+ * use and SSL is enabled.  It might also make sense to instantiate a
+ * transport doing gzip compression transparently.
+ *
+ * The combination of interoperating LogTransport instances is called the
+ * LogTransportStack (see transport-stack.h)
+ *
+ * There's a circular, borrowed reference between the stack and the
+ * constituent LogTransport instances.
+ */
 
+typedef struct _LogTransport LogTransport;
+typedef struct _LogTransportStack LogTransportStack;
 struct _LogTransport
 {
   gint fd;
@@ -39,6 +56,7 @@ struct _LogTransport
   gssize (*write)(LogTransport *self, const gpointer buf, gsize count);
   gssize (*writev)(LogTransport *self, struct iovec *iov, gint iov_count);
   void (*free_fn)(LogTransport *self);
+
   /* read ahead */
   struct
   {
@@ -46,8 +64,15 @@ struct _LogTransport
     gint buf_len;
     gint pos;
   } ra;
+  LogTransportStack *stack;
   const gchar *name;
 };
+
+static inline void
+log_transport_assign_to_stack(LogTransport *self, LogTransportStack *stack)
+{
+  self->stack = stack;
+}
 
 static inline gssize
 log_transport_write(LogTransport *self, const gpointer buf, gsize count)
