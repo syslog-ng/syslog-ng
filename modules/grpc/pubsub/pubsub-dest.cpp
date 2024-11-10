@@ -38,7 +38,7 @@ DestDriver::DestDriver(GrpcDestDriver *s)
 {
   this->url = "pubsub.googleapis.com:443";
   this->credentials_builder.set_mode(GCAM_ADC);
-  this->flush_on_key_change = true;
+  this->enable_dynamic_headers();
 
   GlobalConfig *cfg = log_pipe_get_config(&s->super.super.super.super);
   LogTemplate *default_data_template = log_template_new(cfg, NULL);
