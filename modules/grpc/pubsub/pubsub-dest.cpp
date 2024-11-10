@@ -37,6 +37,7 @@ DestDriver::DestDriver(GrpcDestDriver *s)
   : syslogng::grpc::DestDriver(s)
 {
   this->url = "pubsub.googleapis.com:443";
+  this->credentials_builder.set_mode(GCAM_ADC);
   this->flush_on_key_change = true;
 }
 
