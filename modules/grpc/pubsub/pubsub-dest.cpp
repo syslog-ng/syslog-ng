@@ -36,6 +36,7 @@ using syslogng::grpc::pubsub::DestDriver;
 DestDriver::DestDriver(GrpcDestDriver *s)
   : syslogng::grpc::DestDriver(s)
 {
+  this->url = "pubsub.googleapis.com:443";
   this->flush_on_key_change = true;
 }
 
