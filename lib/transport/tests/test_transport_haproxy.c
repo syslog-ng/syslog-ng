@@ -151,13 +151,14 @@ ParameterizedTest(ProtocolHeaderTestParams *params, log_transport_proxy, test_pr
   gssize rc;
 
   log_transport_stack_init(&stack, mock);
-  LogTransport *transport = log_transport_haproxy_new(LOG_TRANSPORT_INITIAL, LOG_TRANSPORT_NONE);
-  log_transport_assign_to_stack(transport, &stack);
-
+  log_transport_stack_add_transport(&stack,
+                                    LOG_TRANSPORT_HAPROXY, log_transport_haproxy_new(LOG_TRANSPORT_INITIAL, LOG_TRANSPORT_INITIAL));
+  log_transport_stack_switch(&stack, LOG_TRANSPORT_HAPROXY);
   do
     {
       log_transport_aux_data_init(&aux);
-      rc = log_transport_read(transport, buf, sizeof(buf), &aux);
+      rc = log_transport_stack_read(&stack, buf, sizeof(buf), &aux);
+      log_transport_aux_data_destroy(&aux);
     }
   while (rc == -1 && errno == EAGAIN);
 
@@ -174,7 +175,5 @@ ParameterizedTest(ProtocolHeaderTestParams *params, log_transport_proxy, test_pr
       g_string_free(addresses, TRUE);
     }
 
-
-  log_transport_free(transport);
   log_transport_stack_deinit(&stack);
 }
