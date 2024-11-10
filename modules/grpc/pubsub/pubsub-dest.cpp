@@ -29,16 +29,36 @@
 #include "messages.h"
 #include "compat/cpp-end.h"
 
+#include <string.h>
+
 using syslogng::grpc::pubsub::DestDriver;
 
 DestDriver::DestDriver(GrpcDestDriver *s)
   : syslogng::grpc::DestDriver(s)
 {
+  this->flush_on_key_change = true;
+}
+
+DestDriver::~DestDriver()
+{
+  log_template_unref(this->project);
+  log_template_unref(this->topic);
 }
 
 bool
 DestDriver::init()
 {
+  if ((!this->project || strlen(this->project->template_str) == 0) ||
+      (!this->topic || strlen(this->topic->template_str) == 0))
+    {
+      msg_error("Error initializing Google Pub/Sub destination, project() and topic() are mandatory options",
+                log_pipe_location_tag(&this->super->super.super.super.super));
+      return false;
+    }
+
+  this->extend_worker_partition_key(std::string("project=") + this->project->template_str);
+  this->extend_worker_partition_key(std::string("topic=") + this->topic->template_str);
+
   return syslogng::grpc::DestDriver::init();
 }
 
@@ -47,13 +67,12 @@ DestDriver::generate_persist_name()
 {
   static gchar persist_name[1024];
 
-  // TODO: update when options are available
-
   LogPipe *s = &this->super->super.super.super.super;
   if (s->persist_name)
     g_snprintf(persist_name, sizeof(persist_name), "google_pubsub_grpc.%s", s->persist_name);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "google_pubsub_grpc(%s)", this->url.c_str());
+    g_snprintf(persist_name, sizeof(persist_name), "google_pubsub_grpc(%s,%s,%s)",
+               this->url.c_str(), this->project->template_str, this->topic->template_str);
 
   return persist_name;
 }
@@ -61,10 +80,10 @@ DestDriver::generate_persist_name()
 const gchar *
 DestDriver::format_stats_key(StatsClusterKeyBuilder *kb)
 {
-  // TODO: update when options are available
-
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("driver", "pubsub"));
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("url", this->url.c_str()));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("project", this->project->template_str));
+  stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("topic", this->topic->template_str));
 
   return nullptr;
 }
@@ -84,6 +103,22 @@ DestDriver *
 pubsub_dd_get_cpp(GrpcDestDriver *self)
 {
   return (DestDriver *) self->cpp;
+}
+
+void
+pubsub_dd_set_project(LogDriver *d, LogTemplate *project)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestDriver *cpp = pubsub_dd_get_cpp(self);
+  cpp->set_project(project);
+}
+
+void
+pubsub_dd_set_topic(LogDriver *d, LogTemplate *topic)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestDriver *cpp = pubsub_dd_get_cpp(self);
+  cpp->set_topic(topic);
 }
 
 LogDriver *
