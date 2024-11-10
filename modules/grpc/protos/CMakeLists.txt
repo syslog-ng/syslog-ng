@@ -44,6 +44,8 @@ set(GOOGLEAPIS_PROTO_SOURCES
 
 set(GOOGLEAPIS_PROTO_GRPC_SOURCES
   google/cloud/bigquery/storage/v1/storage.proto
+  google/pubsub/v1/pubsub.proto
+  google/pubsub/v1/schema.proto
 )
 
 set(LOKI_PROTO_GRPC_SOURCES
