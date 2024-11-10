@@ -104,6 +104,7 @@ struct _LogTransportStack
   gint fd;
   LogTransport *transports[LOG_TRANSPORT__MAX];
   LogTransportFactory *transport_factories[LOG_TRANSPORT__MAX];
+  LogTransportAuxData aux_data;
 };
 
 static inline LogTransport *
@@ -163,6 +164,7 @@ static inline gssize
 log_transport_stack_read(LogTransportStack *self, gpointer buf, gsize count, LogTransportAuxData *aux)
 {
   LogTransport *transport = log_transport_stack_get_active(self);
+  log_transport_aux_data_copy(aux, &self->aux_data);
   return log_transport_read(transport, buf, count, aux);
 }
 

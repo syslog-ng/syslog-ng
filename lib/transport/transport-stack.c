@@ -110,6 +110,7 @@ log_transport_stack_move(LogTransportStack *self, LogTransportStack *other)
           other->transport_factories[i] = NULL;
         }
     }
+  log_transport_aux_data_move(&self->aux_data, &other->aux_data);
 }
 
 void
@@ -119,17 +120,12 @@ log_transport_stack_init(LogTransportStack *self, LogTransport *initial_transpor
   self->fd = -1;
   if (initial_transport)
     log_transport_stack_add_transport(self, LOG_TRANSPORT_INITIAL, initial_transport);
+  log_transport_aux_data_init(&self->aux_data);
 }
 
 void
 log_transport_stack_deinit(LogTransportStack *self)
 {
-  if (self->fd != -1)
-    {
-      msg_trace("Closing log transport fd",
-                evt_tag_int("fd", self->fd));
-      close(self->fd);
-    }
   for (gint i = 0; i < LOG_TRANSPORT__MAX; i++)
     {
       if (self->transports[i])
@@ -137,4 +133,12 @@ log_transport_stack_deinit(LogTransportStack *self)
       if (self->transport_factories[i])
         log_transport_factory_free(self->transport_factories[i]);
     }
+
+  if (self->fd != -1)
+    {
+      msg_trace("Closing log transport fd",
+                evt_tag_int("fd", self->fd));
+      close(self->fd);
+    }
+  log_transport_aux_data_destroy(&self->aux_data);
 }
