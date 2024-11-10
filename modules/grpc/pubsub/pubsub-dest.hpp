@@ -37,13 +37,30 @@ class DestDriver final : public syslogng::grpc::DestDriver
 {
 public:
   DestDriver(GrpcDestDriver *s);
+  ~DestDriver();
   bool init();
   const gchar *generate_persist_name();
   const gchar *format_stats_key(StatsClusterKeyBuilder *kb);
   LogThreadedDestWorker *construct_worker(int worker_index);
 
+  void set_project(LogTemplate *p)
+  {
+    log_template_unref(this->project);
+    this->project = log_template_ref(p);
+  }
+
+  void set_topic(LogTemplate *t)
+  {
+    log_template_unref(this->topic);
+    this->topic = log_template_ref(t);
+  }
+
 private:
   friend class DestWorker;
+
+private:
+  LogTemplate *project = nullptr;
+  LogTemplate *topic = nullptr;
 };
 
 

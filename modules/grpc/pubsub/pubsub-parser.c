@@ -34,6 +34,8 @@ static CfgLexerKeyword pubsub_keywords[] =
 {
   GRPC_KEYWORDS,
   { "google_pubsub_grpc", KW_GOOGLE_PUBSUB_GRPC },
+  { "project", KW_PROJECT },
+  { "topic", KW_TOPIC },
   { NULL }
 };
 

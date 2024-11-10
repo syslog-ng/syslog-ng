@@ -51,6 +51,8 @@
 /* INCLUDE_DECLS */
 
 %token KW_GOOGLE_PUBSUB_GRPC
+%token KW_PROJECT
+%token KW_TOPIC
 
 %type <ptr> pubsub_dest
 
@@ -74,7 +76,9 @@ pubsub_dest_options
   ;
 
 pubsub_dest_option
-  : grpc_dest_general_option
+  : KW_PROJECT '(' template_name_or_content ')' { pubsub_dd_set_project(last_driver, $3); log_template_unref($3); }
+  | KW_TOPIC '(' template_name_or_content ')' { pubsub_dd_set_topic(last_driver, $3); log_template_unref($3); }
+  | grpc_dest_general_option
   ;
 
 /* INCLUDE_RULES */
