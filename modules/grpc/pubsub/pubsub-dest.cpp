@@ -33,12 +33,17 @@
 
 using syslogng::grpc::pubsub::DestDriver;
 
+const size_t MAX_BATCH_BYTES = 10 * 1000 * 1000;
+
 DestDriver::DestDriver(GrpcDestDriver *s)
   : syslogng::grpc::DestDriver(s)
 {
   this->url = "pubsub.googleapis.com:443";
   this->credentials_builder.set_mode(GCAM_ADC);
   this->enable_dynamic_headers();
+
+  /* https://cloud.google.com/pubsub/quotas#resource_limits */
+  this->batch_bytes = MAX_BATCH_BYTES;
 
   GlobalConfig *cfg = log_pipe_get_config(&s->super.super.super.super);
   LogTemplate *default_data_template = log_template_new(cfg, NULL);
@@ -57,6 +62,14 @@ DestDriver::~DestDriver()
 bool
 DestDriver::init()
 {
+  if (this->batch_bytes > MAX_BATCH_BYTES)
+    {
+      msg_error("Error initializing Google Pub/Sub destination, batch-bytes() cannot be larger than 10 MB. "
+                "For more info see https://cloud.google.com/pubsub/quotas#resource_limits",
+                log_pipe_location_tag(&this->super->super.super.super.super));
+      return false;
+    }
+
   if ((!this->project || strlen(this->project->template_str) == 0) ||
       (!this->topic || strlen(this->topic->template_str) == 0))
     {
