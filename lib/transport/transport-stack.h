@@ -110,6 +110,8 @@ struct _LogTransportStack
 static inline LogTransport *
 log_transport_stack_get_transport(LogTransportStack *self, gint index)
 {
+  g_assert(index < LOG_TRANSPORT__MAX);
+
   if (self->transports[index])
     return self->transports[index];
 

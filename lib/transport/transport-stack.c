@@ -57,6 +57,7 @@ log_transport_stack_add_transport(LogTransportStack *self, gint index, LogTransp
 gboolean
 log_transport_stack_switch(LogTransportStack *self, gint index)
 {
+  g_assert(index < LOG_TRANSPORT__MAX);
   LogTransport *active_transport = log_transport_stack_get_active(self);
   LogTransport *requested_transport = log_transport_stack_get_transport(self, index);
 
