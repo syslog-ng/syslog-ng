@@ -579,13 +579,14 @@ _haproxy_read(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *
             errno = EAGAIN;
           return -1;
         }
-      if (self->switch_to != LOG_TRANSPORT_NONE)
-        self->super.base_index = self->switch_to;
+
+      if (!log_transport_stack_switch(self->super.super.stack, self->switch_to))
+        g_assert_not_reached();
+
       errno = EAGAIN;
       return -1;
     }
-
-  return log_transport_adapter_read_method(s, buf, buflen, aux);
+  g_assert_not_reached();
 }
 
 LogTransport *
