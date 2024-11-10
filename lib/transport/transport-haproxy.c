@@ -60,8 +60,6 @@ struct _LogTransportHAProxy
     int src_port;
     int dst_port;
   } info;
-  GSockAddr *src_addr;
-  GSockAddr *dst_addr;
 
   /* Flag to only process proxy header once */
   gboolean proxy_header_processed;
@@ -512,18 +510,23 @@ process_proxy_v2:
 static void
 _save_addresses(LogTransportHAProxy *self)
 {
+  LogTransportStack *stack = self->super.super.stack;
   if (self->info.unknown)
     return;
 
   if (self->info.ip_version == 4)
     {
-      self->src_addr = g_sockaddr_inet_new(self->info.src_ip, self->info.src_port);
-      self->dst_addr = g_sockaddr_inet_new(self->info.dst_ip, self->info.dst_port);
+      log_transport_aux_data_set_peer_addr_ref(&stack->aux_data,
+                                               g_sockaddr_inet_new(self->info.src_ip, self->info.src_port));
+      log_transport_aux_data_set_local_addr_ref(&stack->aux_data,
+                                                g_sockaddr_inet_new(self->info.dst_ip, self->info.dst_port));
     }
   else if (self->info.ip_version == 6)
     {
-      self->src_addr = g_sockaddr_inet6_new(self->info.src_ip, self->info.src_port);
-      self->dst_addr = g_sockaddr_inet6_new(self->info.dst_ip, self->info.dst_port);
+      log_transport_aux_data_set_peer_addr_ref(&stack->aux_data,
+                                               g_sockaddr_inet6_new(self->info.src_ip, self->info.src_port));
+      log_transport_aux_data_set_local_addr_ref(&stack->aux_data,
+                                                g_sockaddr_inet6_new(self->info.dst_ip, self->info.dst_port));
     }
   else
     g_assert_not_reached();
@@ -560,16 +563,6 @@ _proccess_proxy_header(LogTransportHAProxy *self)
     }
 }
 
-static void
-_augment_aux_data(LogTransportHAProxy *self, LogTransportAuxData *aux)
-{
-  if (aux)
-    {
-      log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_ref(self->src_addr));
-      log_transport_aux_data_set_local_addr_ref(aux, g_sockaddr_ref(self->dst_addr));
-    }
-}
-
 static gssize
 _haproxy_read(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
@@ -588,19 +581,11 @@ _haproxy_read(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *
         }
       if (self->switch_to != LOG_TRANSPORT_NONE)
         self->super.base_index = self->switch_to;
+      errno = EAGAIN;
+      return -1;
     }
 
-  _augment_aux_data(self, aux);
   return log_transport_adapter_read_method(s, buf, buflen, aux);
-}
-
-static void
-_haproxy_free(LogTransport *s)
-{
-  LogTransportHAProxy *self = (LogTransportHAProxy *) s;
-  g_sockaddr_unref(self->src_addr);
-  g_sockaddr_unref(self->dst_addr);
-  log_transport_free_method(s);
 }
 
 LogTransport *
@@ -610,7 +595,6 @@ log_transport_haproxy_new(LogTransportIndex base, LogTransportIndex switch_to)
 
   log_transport_adapter_init_instance(&self->super, "haproxy", base);
   self->super.super.read = _haproxy_read;
-  self->super.super.free_fn = _haproxy_free;
   self->switch_to = switch_to;
 
   return &self->super.super;
