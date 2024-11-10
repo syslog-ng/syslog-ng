@@ -483,7 +483,8 @@ _fetch_into_proxy_buffer(LogTransportHAProxy *self)
         }
       else
         {
-          msg_error("Unable to determine PROXY protocol version");
+          msg_error("Unable to determine PROXY protocol version",
+                    evt_tag_mem("proxy_header", self->proxy_header_buff, PROXY_PROTO_HDR_MAGIC_LEN));
           return STATUS_ERROR;
         }
       g_assert_not_reached();
