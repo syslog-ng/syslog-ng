@@ -115,6 +115,14 @@ GRPC_PROTOS_BUILT_SOURCES = \
   $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/stream.pb.h \
   $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/table.pb.cc \
   $(GOOGLEAPIS_PROTO_BUILDDIR)/google/cloud/bigquery/storage/v1/table.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/pubsub.grpc.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/pubsub.grpc.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/pubsub.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/pubsub.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/schema.grpc.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/schema.grpc.pb.h \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/schema.pb.cc \
+  $(GOOGLEAPIS_PROTO_BUILDDIR)/google/pubsub/v1/schema.pb.h \
   $(GOOGLEAPIS_PROTO_BUILDDIR)/google/rpc/status.pb.cc \
   $(GOOGLEAPIS_PROTO_BUILDDIR)/google/rpc/status.pb.h \
   \
