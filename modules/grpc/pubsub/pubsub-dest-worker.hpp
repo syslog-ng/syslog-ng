@@ -27,12 +27,21 @@
 #include "pubsub-dest.hpp"
 #include "grpc-dest-worker.hpp"
 
+#include "google/pubsub/v1/pubsub.grpc.pb.h"
+
 namespace syslogng {
 namespace grpc {
 namespace pubsub {
 
 class DestWorker final : public syslogng::grpc::DestWorker
 {
+private:
+  struct Slice
+  {
+    const char *str;
+    std::size_t len;
+  };
+
 public:
   DestWorker(GrpcDestWorker *s);
 
@@ -40,7 +49,21 @@ public:
   LogThreadedResult flush(LogThreadedFlushMode mode);
 
 private:
+  bool should_initiate_flush();
+  void prepare_batch();
+  const std::string format_topic(LogMessage *msg);
+  DestWorker::Slice format_template(LogTemplate *tmpl, LogMessage *msg, GString *value, LogMessageValueType *type,
+                                    gint seq_num) const;
   DestDriver *get_owner();
+
+private:
+  std::shared_ptr<::grpc::Channel> channel;
+  std::unique_ptr<::google::pubsub::v1::Publisher::Stub> stub;
+  std::unique_ptr<::grpc::ClientContext> client_context;
+
+  ::google::pubsub::v1::PublishRequest request;
+  size_t batch_size = 0;
+  size_t current_batch_bytes = 0;
 };
 
 }
