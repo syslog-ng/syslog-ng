@@ -28,6 +28,7 @@
 #include "grpc-dest.hpp"
 
 #include <string>
+#include <vector>
 
 namespace syslogng {
 namespace grpc {
@@ -55,12 +56,25 @@ public:
     this->topic = log_template_ref(t);
   }
 
+  void set_data(LogTemplate *d)
+  {
+    log_template_unref(this->data);
+    this->data = log_template_ref(d);
+  }
+
+  void add_attribute(const std::string &name, LogTemplate *value)
+  {
+    this->attributes.push_back(NameValueTemplatePair{name, value});
+  }
+
 private:
   friend class DestWorker;
 
 private:
   LogTemplate *project = nullptr;
   LogTemplate *topic = nullptr;
+  LogTemplate *data = nullptr;
+  std::vector<NameValueTemplatePair> attributes;
 };
 
 

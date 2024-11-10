@@ -39,12 +39,19 @@ DestDriver::DestDriver(GrpcDestDriver *s)
   this->url = "pubsub.googleapis.com:443";
   this->credentials_builder.set_mode(GCAM_ADC);
   this->flush_on_key_change = true;
+
+  GlobalConfig *cfg = log_pipe_get_config(&s->super.super.super.super);
+  LogTemplate *default_data_template = log_template_new(cfg, NULL);
+  g_assert(log_template_compile(default_data_template, "$MESSAGE", NULL));
+  this->set_data(default_data_template);
+  log_template_unref(default_data_template);
 }
 
 DestDriver::~DestDriver()
 {
   log_template_unref(this->project);
   log_template_unref(this->topic);
+  log_template_unref(this->data);
 }
 
 bool
@@ -121,6 +128,22 @@ pubsub_dd_set_topic(LogDriver *d, LogTemplate *topic)
   GrpcDestDriver *self = (GrpcDestDriver *) d;
   DestDriver *cpp = pubsub_dd_get_cpp(self);
   cpp->set_topic(topic);
+}
+
+void
+pubsub_dd_set_data(LogDriver *d, LogTemplate *data)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestDriver *cpp = pubsub_dd_get_cpp(self);
+  cpp->set_data(data);
+}
+
+void
+pubsub_dd_add_attribute(LogDriver *d, const gchar *name, LogTemplate *value)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestDriver *cpp = pubsub_dd_get_cpp(self);
+  cpp->add_attribute(name, value);
 }
 
 LogDriver *
