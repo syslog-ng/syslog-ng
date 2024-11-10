@@ -37,6 +37,8 @@ static CfgLexerKeyword pubsub_keywords[] =
   { "service_endpoint", KW_SERVICE_ENDPOINT },
   { "project", KW_PROJECT },
   { "topic", KW_TOPIC },
+  { "data", KW_DATA },
+  { "attributes", KW_ATTRIBUTES },
   { NULL }
 };
 

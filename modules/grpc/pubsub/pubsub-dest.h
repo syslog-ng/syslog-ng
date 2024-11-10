@@ -34,6 +34,8 @@ LogDriver *pubsub_dd_new(GlobalConfig *cfg);
 
 void pubsub_dd_set_project(LogDriver *d, LogTemplate *project);
 void pubsub_dd_set_topic(LogDriver *d, LogTemplate *topic);
+void pubsub_dd_set_data(LogDriver *d, LogTemplate *data);
+void pubsub_dd_add_attribute(LogDriver *d, const gchar *name, LogTemplate *value);
 
 #include "compat/cpp-end.h"
 

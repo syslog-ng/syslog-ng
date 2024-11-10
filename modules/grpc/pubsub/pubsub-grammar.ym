@@ -54,6 +54,8 @@
 %token KW_SERVICE_ENDPOINT
 %token KW_PROJECT
 %token KW_TOPIC
+%token KW_DATA
+%token KW_ATTRIBUTES
 
 %type <ptr> pubsub_dest
 
@@ -80,7 +82,23 @@ pubsub_dest_option
   : KW_SERVICE_ENDPOINT '(' string ')' { grpc_dd_set_url(last_driver, $3); free($3); }
   | KW_PROJECT '(' template_name_or_content ')' { pubsub_dd_set_project(last_driver, $3); log_template_unref($3); }
   | KW_TOPIC '(' template_name_or_content ')' { pubsub_dd_set_topic(last_driver, $3); log_template_unref($3); }
+  | KW_DATA '(' template_name_or_content ')' { pubsub_dd_set_data(last_driver, $3); log_template_unref($3); }
+  | KW_ATTRIBUTES '(' pubsub_dest_attributes ')'
   | grpc_dest_general_option
+  ;
+
+pubsub_dest_attributes
+  : pubsub_dest_attribute pubsub_dest_attributes
+  |
+  ;
+
+pubsub_dest_attribute
+  : string LL_ARROW template_name_or_content
+    {
+      pubsub_dd_add_attribute(last_driver, $1, $3);
+      free($1);
+      log_template_unref($3);
+    }
   ;
 
 /* INCLUDE_RULES */
