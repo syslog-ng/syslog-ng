@@ -1,0 +1,82 @@
+/*
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+/* REQUIRE modules/grpc/common/grpc-grammar.ym */
+
+%code top {
+#include "pubsub-parser.h"
+
+}
+
+
+%code {
+
+#include "cfg-grammar-internal.h"
+#include "plugin.h"
+#include "syslog-names.h"
+
+#include "pubsub-dest.h"
+
+#include <stdlib.h>
+
+}
+
+%define api.prefix {pubsub_}
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_GOOGLE_PUBSUB_GRPC
+
+%type <ptr> pubsub_dest
+
+%%
+
+start
+  : LL_CONTEXT_DESTINATION pubsub_dest { YYACCEPT; }
+  ;
+
+pubsub_dest
+  : KW_GOOGLE_PUBSUB_GRPC
+    {
+      last_driver = *instance = pubsub_dd_new(configuration);
+    }
+    '(' _inner_dest_context_push pubsub_dest_options _inner_dest_context_pop ')' { $$ = last_driver; }
+  ;
+
+pubsub_dest_options
+  : pubsub_dest_option pubsub_dest_options
+  |
+  ;
+
+pubsub_dest_option
+  : grpc_dest_general_option
+  ;
+
+/* INCLUDE_RULES */
+
+%%
