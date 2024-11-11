@@ -163,10 +163,26 @@ _recover_state(LogPipe *s, GlobalConfig *cfg, LogProtoServer *proto)
 }
 
 static gboolean
-_can_check_eof(gint fd)
+_can_check_eof(FileReader *self, gint fd)
 {
   struct stat st;
-  return fstat(fd, &st) == 0 && S_ISFIFO(st.st_mode) == 0;
+
+  if (fstat(fd, &st) == -1 || S_ISFIFO(st.st_mode) || S_ISSOCK(st.st_mode) || S_ISCHR(st.st_mode))
+    return FALSE;
+
+  off_t pos = lseek(fd, 0, SEEK_CUR);
+  if (pos == -1)
+    return FALSE;
+
+  off_t reset = lseek(fd, pos, SEEK_SET);
+  if (reset != pos)
+    {
+      msg_trace("File seek pos is different after testing if seekable",
+                evt_tag_str("follow_filename", self->filename->str),
+                evt_tag_int("fn", fd));
+    }
+
+  return TRUE;
 }
 
 static gboolean
@@ -263,7 +279,7 @@ _construct_poll_events(FileReader *self, gint fd)
       return NULL;
     }
 
-  if (_can_check_eof(fd))
+  if (_can_check_eof(self, fd))
     poll_events_set_checker(poll_events, _reader_check_watches, self);
 
   return poll_events;
