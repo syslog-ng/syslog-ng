@@ -140,16 +140,31 @@ _display_source_line(LogExprNode *expr_node)
 static gboolean
 _cmd_help(Debugger *self, gint argc, gchar *argv[])
 {
-  printf("syslog-ng interactive console, the following commands are available\n\n"
-         "  help, h, ?               Display this help\n"
-         "  info, i                  Display information about the current execution state\n"
-         "  continue, c              Continue until the next breakpoint\n"
-         "  display                  Set the displayed message template\n"
-         "  trace, t                 Display timing information as the message traverses the config\n"
-         "  print, p                 Print the current log message\n"
-         "  drop, d                  Drop the current message\n"
-         "  quit, q                  Tell syslog-ng to exit\n"
-        );
+  if (self->breakpoint_site)
+    {
+      printf("syslog-ng interactive console\n"
+             "Stopped on a breakpoint.\n"
+             "The following commands are available:\n\n"
+             "  help, h, ?               Display this help\n"
+             "  info, i                  Display information about the current execution state\n"
+             "  continue, c              Continue until the next breakpoint\n"
+             "  display                  Set the displayed message template\n"
+             "  trace, t                 Display timing information as the message traverses the config\n"
+             "  print, p                 Print the current log message\n"
+             "  drop, d                  Drop the current message\n"
+             "  quit, q                  Tell syslog-ng to exit\n"
+            );
+    }
+  else
+    {
+      printf("syslog-ng interactive console\n"
+             "Stopped on an interrupt.\n"
+             "The following commands are available:\n\n"
+             "  help, h, ?               Display this help\n"
+             "  continue, c              Continue until the next breakpoint\n"
+             "  quit, q                  Tell syslog-ng to exit\n"
+            );
+    }
   return TRUE;
 }
 
