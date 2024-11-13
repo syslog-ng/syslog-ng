@@ -141,10 +141,11 @@ static gboolean
 _cmd_help(Debugger *self, gint argc, gchar *argv[])
 {
   printf("syslog-ng interactive console, the following commands are available\n\n"
-         "  help, h, or ?            Display this help\n"
-         "  info                     Display information about the current execution state\n"
-         "  continue or c            Continue until the next breakpoint\n"
-         "  trace                    Display timing information as the message traverses the config\n"
+         "  help, h, ?               Display this help\n"
+         "  info, i                  Display information about the current execution state\n"
+         "  continue, c              Continue until the next breakpoint\n"
+         "  display                  Set the displayed message template\n"
+         "  trace, t                 Display timing information as the message traverses the config\n"
          "  print, p                 Print the current log message\n"
          "  drop, d                  Drop the current message\n"
          "  quit, q                  Tell syslog-ng to exit\n"
@@ -260,9 +261,11 @@ struct
   { "p",        _cmd_print, .requires_breakpoint_site = TRUE },
   { "display",  _cmd_display },
   { "drop",     _cmd_drop, .requires_breakpoint_site = TRUE },
+  { "d",        _cmd_drop, .requires_breakpoint_site = TRUE },
   { "quit",     _cmd_quit },
   { "q",        _cmd_quit },
   { "trace",    _cmd_trace, .requires_breakpoint_site = TRUE },
+  { "t",        _cmd_trace, .requires_breakpoint_site = TRUE },
   { "info",     _cmd_info, .requires_breakpoint_site = TRUE },
   { "i",        _cmd_info, .requires_breakpoint_site = TRUE },
   { NULL, NULL }
