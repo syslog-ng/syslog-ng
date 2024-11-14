@@ -134,6 +134,9 @@ enum
   LM_T_SYSLOG_RFC5424_MISSING_MESSAGE,
   /* message field missing */
   LM_T_SYSLOG_MISSING_MESSAGE,
+  /* invalid program name */
+  LM_T_SYSLOG_RFC_3164_INVALID_PROGRAM,
+
   LM_T_PREDEFINED_MAX,
 };
 
