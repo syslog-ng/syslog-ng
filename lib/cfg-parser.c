@@ -116,6 +116,7 @@ static CfgLexerKeyword main_keywords[] =
   { "normalize_hostnames", KW_NORMALIZE_HOSTNAMES },
   { "keep_hostname",      KW_KEEP_HOSTNAME },
   { "check_hostname",     KW_CHECK_HOSTNAME },
+  { "check_program",      KW_CHECK_PROGRAM },
   { "bad_hostname",       KW_BAD_HOSTNAME },
   { "custom_domain",      KW_CUSTOM_DOMAIN },
   { "keep_timestamp",     KW_KEEP_TIMESTAMP },

@@ -52,6 +52,7 @@ typedef struct _LogReaderOptions
   gint fetch_limit;
   const gchar *group_name;
   gboolean check_hostname;
+  gboolean check_program;
 } LogReaderOptions;
 
 typedef struct _LogReader LogReader;
