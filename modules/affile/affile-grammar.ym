@@ -94,6 +94,10 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
 %token KW_SYMLINK_AS
 %token KW_MULTI_LINE_TIMEOUT
 %token KW_TIME_REAP
+%token KW_LOGROTATE
+%token KW_LOGROTATE_ENABLE
+%token KW_LOGROTATE_SIZE
+%token KW_LOGROTATE_ROTATIONS
 
 %token KW_WILDCARD_FILE
 %token KW_BASE_DIR
@@ -277,8 +281,21 @@ dest_affile_option
 	| KW_OVERWRITE_IF_OLDER '(' nonnegative_integer ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
 	| KW_SYMLINK_AS '(' string ')'		{ affile_dd_set_symlink_as(last_driver, $3); }
 	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
-        | dest_affile_common_option
+	| KW_LOGROTATE '(' dest_affile_logrotate_options ')' { } 
+    | dest_affile_common_option
 	;
+
+dest_affile_logrotate_options 
+	: dest_affile_logrotate_option dest_affile_logrotate_options
+	|
+
+dest_affile_logrotate_option
+	: KW_LOGROTATE_ENABLE '(' yesno ')' {affile_dd_set_logrotate_enable(last_driver, $3);}
+	| KW_LOGROTATE_SIZE '(' nonnegative_integer ')' {affile_dd_set_logrotate_size(last_driver, $3);}
+	| KW_LOGROTATE_ROTATIONS '(' nonnegative_integer ')'
+		{gint max_rotations = $3; 
+		if (max_rotations == 0) YYERROR;
+		else affile_dd_set_logrotate_rotations(last_driver, $3);}
 
 dest_afpipe_params
 	: template_content

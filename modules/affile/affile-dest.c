@@ -38,6 +38,7 @@
 #include "apphook.h"
 #include "timeutils/cache.h"
 #include "timeutils/misc.h"
+#include "logrotate.h"
 
 #include <iv.h>
 #include <sys/types.h>
@@ -510,6 +511,28 @@ affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw)
   log_pipe_unref(&dw->super);
 }
 
+void
+affile_dd_set_logrotate_enable(LogDriver *s, gboolean use_logrotate)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+
+  self->logrotate_options.enable = use_logrotate;
+}
+
+void affile_dd_set_logrotate_rotations(LogDriver *s, gint max_rotations)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+
+  self->logrotate_options.max_rotations = max_rotations;
+}
+
+void affile_dd_set_logrotate_size(LogDriver *s, gint size)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+
+  self->logrotate_options.size = size;
+}
+
 
 /**
  * affile_dd_reuse_writer:
@@ -836,6 +859,7 @@ affile_dd_new_instance(LogTemplate *filename_template, GlobalConfig *cfg)
   self->super.super.super.generate_persist_name = affile_dd_format_persist_name;
   self->filename_template = filename_template;
   log_writer_options_defaults(&self->writer_options);
+  logrotate_options_defaults(&self->logrotate_options);
   self->writer_options.mark_mode = MM_NONE;
   self->writer_options.stats_level = STATS_LEVEL1;
   self->writer_flags = LW_FORMAT_FILE;
