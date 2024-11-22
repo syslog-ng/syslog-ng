@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: |
           brew update --preinstall
-          brew bundle --file=contrib/Brewfile
+          brew bundle --force --file=contrib/Brewfile
 
           OS_NAME=$([[ ${{ matrix.version }} -eq 13 ]] && echo "Ventura" || echo "Sonoma")
           MACPORTS_PKG_NAME=MacPorts-2.10.1-${{ matrix.version }}-${OS_NAME}.pkg
