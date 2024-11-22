@@ -12,7 +12,7 @@ brew "json-c"
 brew "libtool"
 brew "openssl@3"
 brew "pcre2"
-brew "pkg-config"
+brew "pkgconf"
 
 brew "curl"
 brew "gradle"
