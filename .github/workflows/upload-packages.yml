@@ -18,8 +18,7 @@ on:
           "ubuntu-focal",
           "ubuntu-jammy",
           "ubuntu-noble",
-          "ubuntu-lunar",
-          "ubuntu-mantic"
+          "ubuntu-lunar"
         ]'
     secrets:
       azure-sas-token:

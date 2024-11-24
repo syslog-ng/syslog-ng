@@ -15,7 +15,6 @@ BUILDER_IMAGES=		\
 	ubuntu-jammy \
 	ubuntu-noble \
 	ubuntu-lunar	\
-	ubuntu-mantic	\
 	kira		\
 	tarball
 
