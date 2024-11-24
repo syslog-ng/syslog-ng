@@ -7,14 +7,17 @@ on:
       - 'packaging/rhel/**'
       - 'packaging/debian/**'
       - '.github/workflows/dbld-images.yml'
+
   push:
     paths:
       - 'dbld/**'
       - 'packaging/rhel/**'
       - 'packaging/debian/**'
       - '.github/workflows/dbld-images.yml'
+
   schedule:
     - cron: '00 22 * * *'
+
   workflow_dispatch:
     inputs:
       testing_image_upload:
@@ -23,9 +26,9 @@ on:
         default: "false"
 
 jobs:
-
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform }}
+
     strategy:
       matrix:
         image:
@@ -45,8 +48,32 @@ jobs:
           - devshell
           - kira
           - tarball
+        platform:
+          - linux-arm64
+          - ubuntu-latest
+        exclude:
+            - platform: linux-arm64
+        include:
+            - image: ubuntu-lunar
+              platform: linux-arm64
       fail-fast: false
+
     steps:
+      - name: Prepare
+        run: |
+          # TODO: remove this block once the arm64 runner is available for open-source and has docker pre-installed
+          if [ "${{ matrix.platform }}" = "linux/arm64" ]; then
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+            $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+            sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update && sudo apt-get install -y acl docker-ce docker-ce-cli containerd.io docker-buildx-plugin
+            USERID=$(id -u)
+            sudo setfacl --modify user:${USERID}:rw /var/run/docker.sock
+          fi
+
       - name: Checkout source code
         uses: actions/checkout@v4.1.7
 
