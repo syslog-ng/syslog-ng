@@ -19,6 +19,8 @@ set(SYSLOG_NG_CTL_SOURCES
     commands/config.c
     commands/healthcheck.h
     commands/healthcheck.c
+    commands/internal-logs.h
+    commands/internal-logs.c
     control-client.c
 )
 

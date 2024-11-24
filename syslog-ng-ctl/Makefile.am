@@ -22,6 +22,8 @@ syslog_ng_ctl_syslog_ng_ctl_SOURCES		= 	\
 	syslog-ng-ctl/commands/license.c		\
 	syslog-ng-ctl/commands/healthcheck.h \
 	syslog-ng-ctl/commands/healthcheck.c \
+	syslog-ng-ctl/commands/internal-logs.h \
+	syslog-ng-ctl/commands/internal-logs.c \
 	syslog-ng-ctl/control-client.h			\
 	syslog-ng-ctl/control-client.c
 
