@@ -1,17 +1,17 @@
 #!/bin/bash
 
-echo -e "\n\nWelcome to the syslog-ng developer's shell... ($IMAGE_PLATFORM)\n"
+echo -e "\n\nWelcome to the syslog-ng developer's shell... (${IMAGE_PLATFORM} ARCH:$(arch))\n"
 
 echo -e "You can find the source in /source, you can build the source using:\n"
 echo -e "\t\$ cd /build"
 echo -e "\t\$ /source/configure"
-echo -e "\t\$ make"
+echo -e "\t\$ make\n"
 echo -e "If configure is not yet available, run '/dbld/bootstrap' (in the container) or"
-echo -e "'./dbld/rules bootstrap' (on the host) or manually execute autogen.sh in the "
+echo -e "'./dbld/rules bootstrap' (on the host) or manually execute './autogen.sh' in the "
 echo -e "source dir.\n"
 
-if [ "$IMAGE_PLATFORM" != "devshell" ]; then
-	echo -e "NOTE: the 'devshell' dbld image is more developer friendly, you might want to use that"
+if [[ ! "$IMAGE_PLATFORM" =~ ^devshell ]]; then
+	echo -e "NOTE: the 'devshell' dbld image is more developer friendly, you might want to use that\n"
 fi
 cd /source
 debian_chroot="dbld" HOME=/build exec bash -c "$*"

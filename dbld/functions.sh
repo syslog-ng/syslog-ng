@@ -15,6 +15,12 @@ function _map_env_null()
 	echo "_=_"
 }
 
+function image_platform_base() {
+    local BASE=${IMAGE_PLATFORM%-amd64}
+    BASE=${BASE%-arm64}
+    echo ${BASE}
+}
+
 function run_build_command_with_build_manifest_parameters() {
 	map_environment=$1
 	map_cmdline=$2
@@ -24,9 +30,10 @@ function run_build_command_with_build_manifest_parameters() {
 	# first.
 
 	TMPDIR=$(mktemp -d)
+	local IMAGE_PLATFORM_BASE=$(image_platform_base)
 
 	IFS=$'\t'
-	egrep -e "^${OS_DISTRIBUTION}([^-]|$)" -e "^${IMAGE_PLATFORM}" /dbld/build.manifest | sort -r | head -1 | while read os featureflags env cmdline; do
+	egrep -e "^${OS_DISTRIBUTION}([^-]|$)" -e "^${IMAGE_PLATFORM_BASE}" /dbld/build.manifest | sort -r | head -1 | while read os featureflags env cmdline; do
 		unset IFS
 		echo $os $featureflags $env $cmdline
 		declare -a env_values
