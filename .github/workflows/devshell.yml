@@ -8,15 +8,21 @@ on:
 
 jobs:
   general:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform }}
     container:
-      image: ghcr.io/syslog-ng/dbld-devshell:latest
+      image: ghcr.io/syslog-ng/dbld-devshell${{ matrix.image_arch_suffix }}:latest
       options: --privileged --ulimit core=-1
 
     strategy:
       matrix:
         build-tool: [autotools, cmake]
         cc: [gcc, clang]
+        platform: [ ubuntu-24.04-arm, ubuntu-latest]
+        include:
+          - platform: ubuntu-24.04-arm
+            image_arch_suffix: '-arm64'
+          - platform: ubuntu-latest
+            image_arch_suffix: ''
       fail-fast: false
 
     steps:

@@ -7,14 +7,17 @@ on:
       - 'packaging/rhel/**'
       - 'packaging/debian/**'
       - '.github/workflows/dbld-images.yml'
+
   push:
     paths:
       - 'dbld/**'
       - 'packaging/rhel/**'
       - 'packaging/debian/**'
       - '.github/workflows/dbld-images.yml'
+
   schedule:
     - cron: '00 22 * * *'
+
   workflow_dispatch:
     inputs:
       testing_image_upload:
@@ -23,10 +26,9 @@ on:
         default: "false"
 
 jobs:
-
   build:
-    # FIXME: temporary because sudo doesn't work in RedHat and descendants on an ubuntu-24.04 hosts
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.platform }}
+
     strategy:
       matrix:
         image:
@@ -45,7 +47,23 @@ jobs:
           - devshell
           - kira
           - tarball
+        arch:
+          - amd64
+        platform:
+          # FIXME: temporary because sudo doesn't work in RedHat and descendants on an ubuntu-24.04 hosts (ubuntu-latest)
+          - ubuntu-22.04
+          - ubuntu-22.04-arm
+        exclude:
+          - platform: ubuntu-22.04-arm
+        include:
+          - image: debian-bookworm
+            platform: ubuntu-22.04-arm
+            arch: arm64
+          - image: devshell
+            platform: ubuntu-22.04-arm
+            arch: arm64
       fail-fast: false
+
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4.1.7
@@ -54,12 +72,14 @@ jobs:
         run: |
           CONTAINER_REGISTRY="ghcr.io/${{ github.repository_owner }}"
           CONTAINER_REGISTRY="$(echo "$CONTAINER_REGISTRY" | tr '[:upper:]' '[:lower:]')"
+          CONTAINER_ARCH=${{ matrix.arch }}
+          CONTAINER_NAME_SUFFIX="$([ ${{ matrix.arch }} = amd64 ] && echo '' || echo '-arm64')"
 
           . .github/workflows/gh-tools.sh
-          gh_export CONTAINER_REGISTRY
+          gh_export CONTAINER_REGISTRY CONTAINER_ARCH CONTAINER_NAME_SUFFIX
 
       - name: Build the images
-        run: dbld/rules image-${{ matrix.image }}
+        run: dbld/rules image-${{ matrix.image }}${CONTAINER_NAME_SUFFIX}
 
       - name: Should we upload the images?
         run: |
@@ -89,4 +109,4 @@ jobs:
       - name: Push the images
         if: env.UPLOAD_IMAGES_INTERNAL == 'true'
         run: |
-          dbld/rules push-image-${{ matrix.image }}
+          dbld/rules push-image-${{ matrix.image }}${CONTAINER_NAME_SUFFIX}
