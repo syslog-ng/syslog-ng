@@ -42,7 +42,6 @@ jobs:
           - ubuntu-jammy
           - ubuntu-noble
           - ubuntu-lunar
-          - ubuntu-mantic
           - devshell
           - kira
           - tarball

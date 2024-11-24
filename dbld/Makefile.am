@@ -40,7 +40,6 @@ EXTRA_DIST += \
 	dbld/images/ubuntu-jammy.dockerfile \
 	dbld/images/ubuntu-noble.dockerfile \
 	dbld/images/ubuntu-lunar.dockerfile \
-	dbld/images/ubuntu-mantic.dockerfile \
 	dbld/images/kira.dockerfile \
 	dbld/images/tarball.dockerfile \
 	dbld/images/hooks/build \
