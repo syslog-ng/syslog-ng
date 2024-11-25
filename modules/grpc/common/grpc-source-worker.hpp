@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 László Várady
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,18 +21,40 @@
  *
  */
 
-#ifndef LOKI_WORKER_H
-#define LOKI_WORKER_H
+#ifndef GRPC_SOURCE_WORKER_HPP
+#define GRPC_SOURCE_WORKER_HPP
 
-#include "syslog-ng.h"
+#include "grpc-source.hpp"
 
-#include "compat/cpp-start.h"
-#include "logthrdest/logthrdestdrv.h"
+typedef struct GrpcSourceWorker_ GrpcSourceWorker;
 
-typedef struct _LokiDestWorker LokiDestWorker;
+namespace syslogng {
+namespace grpc {
 
-LogThreadedDestWorker *loki_dw_new(LogThreadedDestDriver *o, gint worker_index);
+class SourceWorker
+{
+public:
+  SourceWorker(GrpcSourceWorker *s, SourceDriver &d);
+  virtual ~SourceWorker() {};
 
-#include "compat/cpp-end.h"
+  virtual void run() = 0;
+  virtual void request_exit() = 0;
+  void post(LogMessage *msg);
+
+public:
+  GrpcSourceWorker *super;
+  SourceDriver &driver;
+};
+
+}
+}
+
+GrpcSourceWorker *grpc_sw_new(GrpcSourceDriver *o, gint worker_index);
+
+struct GrpcSourceWorker_
+{
+  LogThreadedSourceWorker super;
+  syslogng::grpc::SourceWorker *cpp;
+};
 
 #endif
