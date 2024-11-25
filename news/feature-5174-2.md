@@ -4,7 +4,7 @@ Similarly to other gRPC based destination drivers, the `bigquery()`
 destination now accepts different authentication methods, like
 `adc()`, `alts()`, `insecure()` and `tls()`.
 
-```
+``` config
 bigquery (
     ...
     auth(
