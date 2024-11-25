@@ -24,3 +24,5 @@ add_module(
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc/common
   LIBRARY_TYPE STATIC
 )
+
+target_compile_options(grpc-common-cpp PRIVATE -Wno-inconsistent-missing-override -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0)

@@ -30,4 +30,4 @@ add_module(
   LIBRARY_TYPE STATIC
 )
 
-target_compile_options (otel_filterx_logrecord_cpp PRIVATE -Wno-switch-default -Wno-double-promotion -Wno-deprecated -Wno-deprecated-declarations -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0)
+target_compile_options (otel_filterx_logrecord_cpp PRIVATE -Wno-double-promotion -Wno-deprecated -Wno-deprecated-declarations -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0)
