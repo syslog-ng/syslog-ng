@@ -26,10 +26,10 @@
 #define KAFKA_H_INCLUDED
 
 #include "logthrdest/logthrdestdrv.h"
-#pragma GCC diagnostic push "-Wignored-qualifiers"
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
 #include <librdkafka/rdkafka.h>
-#pragma GCC diagnostic pop "-Wignored-qualifiers"
+#pragma GCC diagnostic pop
 
 typedef struct
 {
