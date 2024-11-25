@@ -24,6 +24,7 @@
 
 #include "bigquery-dest.hpp"
 #include "bigquery-worker.hpp"
+#include "grpc-dest-worker.hpp"
 
 #include "compat/cpp-start.h"
 #include "logthrdest/logthrdestdrv.h"
@@ -35,12 +36,6 @@
 #include <cstring>
 
 using syslogng::grpc::bigquery::DestinationDriver;
-
-struct _BigQueryDestDriver
-{
-  LogThreadedDestDriver super;
-  DestinationDriver *cpp;
-};
 
 static void
 _template_unref(gpointer data)
@@ -95,11 +90,11 @@ private:
 };
 }
 
-DestinationDriver::DestinationDriver(BigQueryDestDriver *s)
-  : super(s), url("bigquerystorage.googleapis.com"),
-    batch_bytes(10 * 1000 * 1000), keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1),
-    compression(false)
+DestinationDriver::DestinationDriver(GrpcDestDriver *s)
+  : syslogng::grpc::DestDriver(s)
 {
+  this->url = "bigquerystorage.googleapis.com";
+  this->credentials_builder.set_mode(GCAM_ADC);
   log_template_options_defaults(&this->template_options);
 }
 
@@ -166,6 +161,14 @@ DestinationDriver::set_protobuf_schema(std::string proto_path, GList *values)
 bool
 DestinationDriver::init()
 {
+  if (this->batch_bytes > 10 * 1000 * 1000)
+    {
+      msg_error("Error initializing BigQuery destination, batch-bytes() cannot be larger than 10 MB. "
+                "For more info see https://cloud.google.com/bigquery/quotas#write-api-limits",
+                log_pipe_location_tag(&this->super->super.super.super.super));
+      return false;
+    }
+
   GlobalConfig *cfg = log_pipe_get_config(&this->super->super.super.super.super);
   log_template_options_init(&this->template_options, cfg);
 
@@ -191,27 +194,11 @@ DestinationDriver::init()
       return false;
     }
 
-  if (!log_threaded_dest_driver_init_method(&this->super->super.super.super.super))
-    return false;
-
-  log_threaded_dest_driver_register_aggregated_stats(&this->super->super);
-
-  StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
-  this->format_stats_key(kb);
-  this->metrics.init(kb, log_pipe_is_internal(&this->super->super.super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1);
-
-  return true;
-}
-
-bool
-DestinationDriver::deinit()
-{
-  this->metrics.deinit();
-  return log_threaded_dest_driver_deinit_method(&this->super->super.super.super.super);
+  return syslogng::grpc::DestDriver::init();
 }
 
 const gchar *
-DestinationDriver::format_persist_name()
+DestinationDriver::generate_persist_name()
 {
   static gchar persist_name[1024];
 
@@ -235,6 +222,14 @@ DestinationDriver::format_stats_key(StatsClusterKeyBuilder *kb)
   stats_cluster_key_builder_add_legacy_label(kb, stats_cluster_label("table", this->table.c_str()));
 
   return nullptr;
+}
+
+LogThreadedDestWorker *
+DestinationDriver::construct_worker(int worker_index)
+{
+  GrpcDestWorker *worker = grpc_dw_new(this->super, worker_index);
+  worker->cpp = new DestinationWorker(worker);
+  return &worker->super;
 }
 
 void
@@ -340,171 +335,62 @@ DestinationDriver::load_protobuf_schema()
 /* C Wrappers */
 
 DestinationDriver *
-bigquery_dd_get_cpp(BigQueryDestDriver *self)
+bigquery_dd_get_cpp(GrpcDestDriver *self)
 {
-  return self->cpp;
-}
-
-static const gchar *
-_format_persist_name(const LogPipe *s)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) s;
-  return self->cpp->format_persist_name();
-}
-
-static const gchar *
-_format_stats_key(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) s;
-  return self->cpp->format_stats_key(kb);
-}
-
-void
-bigquery_dd_set_url(LogDriver *d, const gchar *url)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->set_url(url);
+  return (DestinationDriver *) self->cpp;
 }
 
 void
 bigquery_dd_set_project(LogDriver *d, const gchar *project)
 {
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->set_project(project);
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestinationDriver *cpp = bigquery_dd_get_cpp(self);
+  cpp->set_project(project);
 }
 
 void
 bigquery_dd_set_dataset(LogDriver *d, const gchar *dataset)
 {
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->set_dataset(dataset);
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestinationDriver *cpp = bigquery_dd_get_cpp(self);
+  cpp->set_dataset(dataset);
 }
 
 void bigquery_dd_set_table(LogDriver *d, const gchar *table)
 {
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->set_table(table);
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestinationDriver *cpp = bigquery_dd_get_cpp(self);
+  cpp->set_table(table);
 }
 
 gboolean
 bigquery_dd_add_field(LogDriver *d, const gchar *name, const gchar *type, LogTemplate *value)
 {
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  return self->cpp->add_field(name, type ? type : "", value);
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestinationDriver *cpp = bigquery_dd_get_cpp(self);
+  return cpp->add_field(name, type ? type : "", value);
 }
 
 void
 bigquery_dd_set_protobuf_schema(LogDriver *d, const gchar *proto_path, GList *values)
 {
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->set_protobuf_schema(proto_path, values);
-}
-
-void
-bigquery_dd_set_batch_bytes(LogDriver *d, glong b)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->set_batch_bytes((size_t) b);
-}
-
-void
-bigquery_dd_set_compression(LogDriver *d, gboolean b)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->set_compression((bool) b);
-}
-
-void
-bigquery_dd_set_keepalive_time(LogDriver *d, gint t)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->set_keepalive_time(t);
-}
-
-void
-bigquery_dd_set_keepalive_timeout(LogDriver *d, gint t)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->set_keepalive_timeout(t);
-}
-
-void
-bigquery_dd_set_keepalive_max_pings(LogDriver *d, gint p)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->set_keepalive_max_pings(p);
-}
-
-void
-bigquery_dd_add_int_channel_arg(LogDriver *d, const gchar *name, glong value)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->add_extra_channel_arg(name, value);
-}
-
-void
-bigquery_dd_add_string_channel_arg(LogDriver *d, const gchar *name, const gchar *value)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->add_extra_channel_arg(name, value);
-}
-
-void
-bigquery_dd_add_header(LogDriver *d, const gchar *name, const gchar *value)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  self->cpp->add_header(name, value);
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestinationDriver *cpp = bigquery_dd_get_cpp(self);
+  cpp->set_protobuf_schema(proto_path, values);
 }
 
 LogTemplateOptions *
 bigquery_dd_get_template_options(LogDriver *d)
 {
-  BigQueryDestDriver *self = (BigQueryDestDriver *) d;
-  return &self->cpp->get_template_options();
-}
-
-static gboolean
-_init(LogPipe *s)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) s;
-  return self->cpp->init();
-}
-
-static gboolean
-_deinit(LogPipe *s)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) s;
-  return self->cpp->deinit();
-}
-
-static void
-_free(LogPipe *s)
-{
-  BigQueryDestDriver *self = (BigQueryDestDriver *) s;
-  delete self->cpp;
-
-  log_threaded_dest_driver_free(s);
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestinationDriver *cpp = bigquery_dd_get_cpp(self);
+  return &cpp->get_template_options();
 }
 
 LogDriver *
 bigquery_dd_new(GlobalConfig *cfg)
 {
-  BigQueryDestDriver *self = g_new0(BigQueryDestDriver, 1);
-
-  log_threaded_dest_driver_init_instance(&self->super, cfg);
-
+  GrpcDestDriver *self = grpc_dd_new(cfg, "bigquery");
   self->cpp = new DestinationDriver(self);
-
-  self->super.super.super.super.init = _init;
-  self->super.super.super.super.deinit = _deinit;
-  self->super.super.super.super.free_fn = _free;
-  self->super.super.super.super.generate_persist_name = _format_persist_name;
-
-  self->super.format_stats_key = _format_stats_key;
-  self->super.stats_source = stats_register_type("bigquery");
-  self->super.metrics.raw_bytes_enabled = TRUE;
-
-  self->super.worker.construct = bigquery_dw_new;
-
   return &self->super.super.super;
 }
