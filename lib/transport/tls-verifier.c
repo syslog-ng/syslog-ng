@@ -88,33 +88,40 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
 
   pattern_parts = g_strsplit(pattern, ".", 0);
   hostname_parts = g_strsplit(host_name, ".", 0);
+
+  success = TRUE;
   for (i = 0; pattern_parts[i]; i++)
     {
-      if (!hostname_parts[i])
+      if (hostname_parts[i] == NULL)
         {
           /* number of dot separated entries is not the same in the hostname and the pattern spec */
-          goto exit;
+          success = FALSE;
+          break;
         }
       if (g_strrstr(pattern_parts[i], "?"))
         {
           /* Glib would treat any question marks as jokers */
-          goto exit;
+          success = FALSE;
+          break;
         }
       char *wildcard_matched = g_strrstr(pattern_parts[i], "*");
       if (wildcard_matched && (i != 0 || wildcard_matched != strstr(pattern_parts[i], "*")))
         {
           /* wildcard only on leftmost part and never as multiple wildcards as per both RFC 6125 and 9525 */
-          goto exit;
+          success = FALSE;
+          break;
         }
 
       lower_pattern = g_ascii_strdown(pattern_parts[i], -1);
       lower_hostname = g_ascii_strdown(hostname_parts[i], -1);
 
       if (!g_pattern_match_simple(lower_pattern, lower_hostname))
-        goto exit;
+        {
+          success = FALSE;
+          break;
+        }
     }
-  success = TRUE;
-exit:
+
   g_free(lower_pattern);
   g_free(lower_hostname);
   g_strfreev(pattern_parts);
