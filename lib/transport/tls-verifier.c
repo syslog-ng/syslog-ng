@@ -75,7 +75,7 @@ tls_verifier_unref(TLSVerifier *self)
 
 /* helper functions */
 
-static gboolean
+gboolean
 tls_wildcard_match(const gchar *host_name, const gchar *pattern)
 {
   gchar **pattern_parts, **hostname_parts;
