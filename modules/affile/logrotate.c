@@ -66,9 +66,17 @@ gboolean is_logrotate_pending(LogRotateOptions *logrotate_options, const gchar *
   return (size >= logrotate_options->size);
 }
 
+/* TODO:
+ * Do renaming in separate thread?
+ * i.e. in writer thread delete oldest log file and create a new temp logfile --> filename_tmp
+ * the writer only does this if not already a tmp file is created (otherwise the renaming thread is working)
+ * checked is this condition via the gcond-lock waiting for the thread to finish.
+ *
+ * The renaming thread renames all other files including the tmp file to filename.1
+ *
+ */
 LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *filename)
 {
-
   if (logrotate_options == NULL || filename == NULL) return LR_ERROR;
 
   g_assert (logrotate_options->max_rotations > 0);
