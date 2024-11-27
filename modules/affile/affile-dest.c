@@ -182,6 +182,42 @@ affile_dw_reopen(AFFileDestWriter *self)
   return TRUE;
 }
 
+/*
+ * This function checks is logrotation should be performed based on the current
+ * options and the filename. After rotating the logs the current logfile is
+ * reopened and the new fd returned through the pointer arg.
+ *
+ * Alternativly the reopened could be triggered through a main-thread call here:
+ *
+ *      main_loop_call((MainLoopTaskFunc) affile_dw_reopen, (gpointer) self, TRUE);
+ *
+ */
+static gboolean
+affile_dw_logrotate(AFFileDestWriter *self, gint *fd)
+{
+
+  LogRotateOptions *logrotate_options = &(self->owner->logrotate_options);
+  const gchar *filename = self->filename;
+
+  if (is_logrotate_enabled(logrotate_options) && is_logrotate_pending(logrotate_options, filename))
+    {
+      LogRotateStatus status = do_logrotate(logrotate_options, filename);
+
+      if (status == LR_SUCCESS)
+        {
+          /* Open logfile */
+          FileOpenerResult open_result = file_opener_open_fd(self->owner->file_opener, self->filename, AFFILE_DIR_WRITE, fd);
+          if (open_result != FILE_OPENER_RESULT_SUCCESS) return FALSE;
+
+          msg_debug("LOGROTATE: Reopened log file",
+                    evt_tag_str("filename", self->filename),
+                    evt_tag_int("new-fd", *fd));
+        }
+    }
+
+  return TRUE;
+}
+
 static void
 _init_stats_key_builders(AFFileDestWriter *self, StatsClusterKeyBuilder **writer_sck_builder,
                          StatsClusterKeyBuilder **driver_sck_builder, StatsClusterKeyBuilder **queue_sck_builder)
@@ -374,6 +410,9 @@ affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
       break;
     case NC_CLOSE:
       affile_dw_reap(self);
+      break;
+    case NC_LOGROTATE:
+      affile_dw_logrotate(self, (gint *) user_data);
       break;
     default:
       break;
