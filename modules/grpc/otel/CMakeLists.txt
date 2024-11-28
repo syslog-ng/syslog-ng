@@ -3,8 +3,6 @@ if(NOT ENABLE_GRPC)
 endif()
 
 set(OTEL_CPP_SOURCES
-  ${GRPC_CREDENTIALS_SOURCES}
-  ${GRPC_METRICS_SOURCES}
   otel-source.cpp
   otel-source.hpp
   otel-source.h
@@ -38,7 +36,7 @@ set(OTEL_SOURCES
 add_module(
   TARGET otel-cpp
   SOURCES ${OTEL_CPP_SOURCES}
-  DEPENDS ${MODULE_GRPC_LIBS} grpc-protos
+  DEPENDS ${MODULE_GRPC_LIBS} grpc-protos grpc-common-cpp
   INCLUDES ${OTEL_PROTO_BUILDDIR} ${PROJECT_SOURCE_DIR}/modules/grpc
   LIBRARY_TYPE STATIC
 )
@@ -46,7 +44,7 @@ add_module(
 add_module(
   TARGET otel
   GRAMMAR otel-grammar
-  DEPENDS otel-cpp
+  DEPENDS otel-cpp grpc-common-cpp
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc
   SOURCES ${OTEL_SOURCES}
 )
