@@ -188,7 +188,7 @@ syslog-ng packages are released for the following distribution versions (x86-64)
 2. Add the repository containing the latest build of syslog-ng to the APT sources. For example, stable releases on Ubuntu 22.04:
 
     ``` shell
-    echo "deb https://ose-repo.syslog-ng.com/apt/ stable ubuntu-noble" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
+    echo "deb https://ose-repo.syslog-ng.com/apt/ stable ubuntu-jammy" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
     ```
 
 3. Run `apt update`
