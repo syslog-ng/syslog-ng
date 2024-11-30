@@ -230,8 +230,8 @@ _thread_maintenance_period_elapsed(void)
   if (!scratch_buffers_time_of_last_maintenance)
     return TRUE;
 
-  iv_validate_now();
-  if (scratch_buffers_time_of_last_maintenance - iv_now.tv_sec >= SCRATCH_BUFFERS_MAINTENANCE_PERIOD)
+  time_t now = get_cached_realtime_sec();
+  if (scratch_buffers_time_of_last_maintenance - now >= SCRATCH_BUFFERS_MAINTENANCE_PERIOD)
     return TRUE;
   return FALSE;
 }
@@ -239,7 +239,7 @@ _thread_maintenance_period_elapsed(void)
 static void
 _thread_maintenance_update_time(void)
 {
-  scratch_buffers_time_of_last_maintenance = iv_now.tv_sec;
+  scratch_buffers_time_of_last_maintenance = get_cached_realtime_sec();
 }
 
 void
