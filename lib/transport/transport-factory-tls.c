@@ -26,8 +26,6 @@
 #include "transport/transport-factory-tls.h"
 #include "transport/transport-tls.h"
 
-DEFINE_TRANSPORT_FACTORY_ID_FUN("tls", transport_factory_tls_id);
-
 static LogTransport *
 _construct_transport(const TransportFactory *s, gint fd)
 {
@@ -75,7 +73,7 @@ transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 fl
   instance->tls_context = tls_context_ref(ctx);
   instance->tls_verifier = tls_verifier ? tls_verifier_ref(tls_verifier) : NULL;
 
-  instance->super.id = transport_factory_tls_id();
+  instance->super.id = TRANSPORT_FACTORY_TLS_ID;
   instance->super.construct_transport = _construct_transport;
   instance->super.free_fn = _free;
 
