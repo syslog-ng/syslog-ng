@@ -534,16 +534,10 @@ afsocket_sd_accept(gpointer s)
         {
           socket_options_setup_peer_socket(self->socket_options, new_fd, peer_addr);
 
-          if (peer_addr->sa.sa_family != AF_UNIX)
-            msg_notice("Syslog connection accepted",
-                       evt_tag_int("fd", new_fd),
-                       evt_tag_str("client", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
-                       evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)));
-          else
-            msg_verbose("Syslog connection accepted",
-                        evt_tag_int("fd", new_fd),
-                        evt_tag_str("client", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
-                        evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)));
+          msg_verbose("Syslog connection accepted",
+                      evt_tag_int("fd", new_fd),
+                      evt_tag_str("client", g_sockaddr_format(peer_addr, buf1, sizeof(buf1), GSA_FULL)),
+                      evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)));
         }
       else
         {
@@ -561,16 +555,10 @@ afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnectio
 {
   gchar buf1[MAX_SOCKADDR_STRING], buf2[MAX_SOCKADDR_STRING];
 
-  if (sc->peer_addr->sa.sa_family != AF_UNIX)
-    msg_notice("Syslog connection closed",
-               evt_tag_int("fd", sc->sock),
-               evt_tag_str("client", g_sockaddr_format(sc->peer_addr, buf1, sizeof(buf1), GSA_FULL)),
-               evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)));
-  else
-    msg_verbose("Syslog connection closed",
-                evt_tag_int("fd", sc->sock),
-                evt_tag_str("client", g_sockaddr_format(sc->peer_addr, buf1, sizeof(buf1), GSA_FULL)),
-                evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)));
+  msg_verbose("Syslog connection closed",
+              evt_tag_int("fd", sc->sock),
+              evt_tag_str("client", g_sockaddr_format(sc->peer_addr, buf1, sizeof(buf1), GSA_FULL)),
+              evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf2, sizeof(buf2), GSA_FULL)));
 
   log_reader_close_proto(sc->reader);
   log_pipe_deinit(&sc->super);
