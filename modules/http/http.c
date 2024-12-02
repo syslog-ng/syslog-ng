@@ -458,6 +458,8 @@ http_dd_init(LogPipe *s)
           return FALSE;
         }
     }
+  if (self->batch_bytes > 0 && self->super.batch_lines == 0)
+    self->super.batch_lines = G_MAXINT;
 
   log_template_options_init(&self->template_options, cfg);
 
