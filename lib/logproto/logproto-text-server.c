@@ -291,6 +291,33 @@ log_proto_text_server_set_multi_line(LogProtoServer *s, MultiLineLogic *multi_li
   self->multi_line = multi_line;
 }
 
+static gboolean
+log_proto_text_server_restart_with_state(LogProtoServer *s, PersistState *persist_state, const gchar *persist_name)
+{
+  LogProtoTextServer *self = (LogProtoTextServer *) s;
+
+  gboolean res = log_proto_buffered_server_restart_with_state(s, persist_state, persist_name);
+  if (!res)
+    return FALSE;
+
+  if (!self->super.buffer)
+    return FALSE;
+
+  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(&self->super);
+  const guchar *buffer_start = self->super.buffer + state->pending_buffer_pos;
+  gsize buffer_bytes = state->pending_buffer_end - state->pending_buffer_pos;
+
+  if (buffer_bytes > 0)
+    {
+      const guchar *eom = self->find_eom(buffer_start, buffer_bytes);
+      if (eom)
+        self->cached_eol_pos = eom - self->super.buffer;
+    }
+  log_proto_buffered_server_put_state(&self->super);
+
+  return TRUE;
+}
+
 void
 log_proto_text_server_free(LogProtoServer *s)
 {
@@ -306,6 +333,7 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, co
   log_proto_buffered_server_init(&self->super, transport, options);
   self->super.super.prepare = log_proto_text_server_prepare_method;
   self->super.super.free_fn = log_proto_text_server_free;
+  self->super.super.restart_with_state = log_proto_text_server_restart_with_state;
   self->super.fetch_from_buffer = log_proto_text_server_fetch_from_buffer;
   self->super.flush = log_proto_text_server_flush;
   self->find_eom = find_eom;
