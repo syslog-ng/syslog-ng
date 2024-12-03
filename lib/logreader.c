@@ -56,14 +56,6 @@ log_reader_set_local_addr(LogReader *s, GSockAddr *local_addr)
 }
 
 void
-log_reader_set_immediate_check(LogReader *s)
-{
-  LogReader *self = (LogReader *) s;
-
-  self->immediate_check = TRUE;
-}
-
-void
 log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options,
                        const gchar *stats_id, StatsClusterKeyBuilder *kb)
 {
@@ -160,7 +152,6 @@ log_reader_disable_watches(LogReader *self)
 static void
 log_reader_suspend_until_awoken(LogReader *self)
 {
-  self->immediate_check = FALSE;
   log_reader_disable_watches(self);
   self->suspended = TRUE;
 }
@@ -168,7 +159,6 @@ log_reader_suspend_until_awoken(LogReader *self)
 static void
 log_reader_force_check_in_next_poll(LogReader *self)
 {
-  self->immediate_check = FALSE;
   log_reader_disable_watches(self);
   self->suspended = FALSE;
 
@@ -324,12 +314,6 @@ log_reader_update_watches(LogReader *self)
       self->idle_timer.expires.tv_sec += idle_timeout;
 
       iv_timer_register(&self->idle_timer);
-    }
-
-  if (self->immediate_check)
-    {
-      log_reader_force_check_in_next_poll(self);
-      return;
     }
 
   switch (prepare_action)
@@ -596,8 +580,6 @@ log_reader_fetch_log(LogReader *self)
     }
   log_transport_aux_data_destroy(aux);
 
-  if (msg_count == self->options->fetch_limit)
-    self->immediate_check = TRUE;
   return 0;
 }
 
@@ -808,7 +790,6 @@ log_reader_new(GlobalConfig *cfg)
   self->super.wakeup = log_reader_wakeup;
   self->super.schedule_dynamic_window_realloc = _schedule_dynamic_window_realloc;
   self->super.metrics.raw_bytes_enabled = TRUE;
-  self->immediate_check = FALSE;
   self->handshake_in_progress = TRUE;
   log_reader_init_watches(self);
   g_mutex_init(&self->pending_close_lock);
