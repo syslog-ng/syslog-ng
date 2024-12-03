@@ -188,9 +188,6 @@ _can_check_eof(FileReader *self, gint fd)
 static gboolean
 _reader_check_eof(FileReader *self, gint fd)
 {
-  if (fd < 0)
-    return FALSE;
-
   off_t pos = lseek(fd, 0, SEEK_CUR);
   if (pos == (off_t) -1)
     {
