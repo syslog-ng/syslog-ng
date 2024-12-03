@@ -315,7 +315,7 @@ _deinit_sd_logreader(FileReader *self)
 }
 
 static void
-_setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gboolean check_immediately)
+_setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto)
 {
   FileReader *self = (FileReader *) s;
 
@@ -332,23 +332,10 @@ _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gbo
                          self->owner->super.id,
                          kb);
 
-  if (check_immediately)
-    log_reader_set_immediate_check(self->reader);
-
   /* NOTE: if the file could not be opened, we ignore the last
    * remembered file position, if the file is created in the future
    * we're going to read from the start. */
   log_pipe_append((LogPipe *) self->reader, s);
-}
-
-static gboolean
-_is_immediate_check_needed(gboolean file_opened, gboolean open_deferred)
-{
-  if (file_opened)
-    return TRUE;
-  else if (open_deferred)
-    return FALSE;
-  return FALSE;
 }
 
 static gboolean
@@ -374,7 +361,6 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
     {
       LogProtoServer *proto;
       PollEvents *poll_events;
-      gboolean check_immediately;
 
       poll_events = _construct_poll_events(self, fd);
       if (!poll_events)
@@ -384,8 +370,9 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
         }
       proto = _construct_proto(self, fd);
 
-      check_immediately = _is_immediate_check_needed(file_opened, open_deferred);
-      _setup_logreader(s, poll_events, proto, check_immediately);
+      _setup_logreader(s, poll_events, proto);
+      if (recover_state)
+        _recover_state(s, cfg, proto);
       if (!log_pipe_init((LogPipe *) self->reader))
         {
           msg_error("Error initializing log_reader, closing fd",
@@ -395,8 +382,6 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
           close(fd);
           return FALSE;
         }
-      if (recover_state)
-        _recover_state(s, cfg, proto);
     }
   else
     {
