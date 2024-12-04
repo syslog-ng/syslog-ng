@@ -53,6 +53,10 @@ static CfgLexerKeyword affile_keywords[] =
   { "monitor_freq",       KW_MONITOR_FREQ },
   { "multi_line_timeout", KW_MULTI_LINE_TIMEOUT },
   { "time_reap",          KW_TIME_REAP },
+  { "logrotate",          KW_LOGROTATE },
+  { "enable",             KW_LOGROTATE_ENABLE },
+  { "size",               KW_LOGROTATE_SIZE },
+  { "rotate",             KW_LOGROTATE_ROTATIONS},
   { NULL }
 };
 
