@@ -90,3 +90,15 @@ Test(tls_wildcard, test_ip_wildcard_rejection)
                FALSE);
   cr_assert_eq(tls_wildcard_match("2001:0:130F::9C0:876A:130B", "*:0000:130F:0000:0000:09C0:876A:130B"), FALSE);
 }
+
+Test(tls_wildcard, test_case_insensivity)
+{
+  cr_assert_eq(tls_wildcard_match("test", "TEST"), TRUE);
+  cr_assert_eq(tls_wildcard_match("TEST", "test"), TRUE);
+  cr_assert_eq(tls_wildcard_match("TeST", "TEst"), TRUE);
+  cr_assert_eq(tls_wildcard_match("test.one", "test.ONE"), TRUE);
+  cr_assert_eq(tls_wildcard_match("test.TWO", "test.two"), TRUE);
+  cr_assert_eq(tls_wildcard_match("test.three", "*T.three"), TRUE);
+  cr_assert_eq(tls_wildcard_match("2001:0000:130F:0000:0000:09C0:876A:130B", "2001:0000:130f:0000:0000:09c0:876a:130b"),
+               TRUE);
+}
