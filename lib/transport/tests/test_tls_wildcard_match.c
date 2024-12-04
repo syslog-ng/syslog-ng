@@ -38,6 +38,15 @@ Test(tls_wildcard, test_wildcard_match_pattern_acceptance)
   cr_assert_eq(tls_wildcard_match("", ""), TRUE);
   cr_assert_eq(tls_wildcard_match("test.one", "test.one"), TRUE);
   cr_assert_eq(tls_wildcard_match("test.one.two", "test.one.two"), TRUE);
+  cr_assert_eq(tls_wildcard_match("192.0.2.0", "192.0.2.0"), TRUE);
+  cr_assert_eq(tls_wildcard_match("2001:0000:130F:0000:0000:09C0:876A:130B", "2001:0000:130F:0000:0000:09C0:876A:130B"),
+               TRUE);
+  cr_assert_eq(tls_wildcard_match("2001:0000:130F:0000:0000:09C0:876A:130B", "2001:0:130F:0:0:9C0:876A:130B"), TRUE);
+  cr_assert_eq(tls_wildcard_match("2001:0:130F:0:0:9C0:876A:130B", "2001:0000:130F:0000:0000:09C0:876A:130B"), TRUE);
+  cr_assert_eq(tls_wildcard_match("2001:0000:130F::09C0:876A:130B", "2001:0000:130F:0000:0000:09C0:876A:130B"), TRUE);
+  cr_assert_eq(tls_wildcard_match("2001:0000:130F:0000:0000:09C0:876A:130B", "2001:0000:130F::09C0:876A:130B"), TRUE);
+  cr_assert_eq(tls_wildcard_match("2001:0000:130F:0000:0000:09C0:876A:130B", "2001:0:130F::9C0:876A:130B"), TRUE);
+  cr_assert_eq(tls_wildcard_match("2001:0:130F::9C0:876A:130B", "2001:0000:130F:0000:0000:09C0:876A:130B"), TRUE);
 }
 
 Test(tls_wildcard, test_wildcard_match_wildcard_rejection)
@@ -72,4 +81,12 @@ Test(tls_wildcard, test_wildcard_match_complex_rejection)
 {
   cr_assert_eq(tls_wildcard_match("test.two", "test.???"), FALSE);
   cr_assert_eq(tls_wildcard_match("test.one.two", "test.one.?wo"), FALSE);
+}
+
+Test(tls_wildcard, test_ip_wildcard_rejection)
+{
+  cr_assert_eq(tls_wildcard_match("192.0.2.0", "*.0.2.0"), FALSE);
+  cr_assert_eq(tls_wildcard_match("2001:0000:130F:0000:0000:09C0:876A:130B", "*:0000:130F:0000:0000:09C0:876A:130B"),
+               FALSE);
+  cr_assert_eq(tls_wildcard_match("2001:0:130F::9C0:876A:130B", "*:0000:130F:0000:0000:09C0:876A:130B"), FALSE);
 }
