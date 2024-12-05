@@ -80,6 +80,8 @@ else
 modules/grpc/otel modules/grpc/otel/ mod-otel:
 endif
 
+modules/grpc/otel/otel-grammar.y: modules/grpc/common/grpc-grammar.ym
+
 BUILT_SOURCES += \
   modules/grpc/otel/otel-grammar.y \
   modules/grpc/otel/otel-grammar.c \
