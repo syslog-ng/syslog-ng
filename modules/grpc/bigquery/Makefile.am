@@ -60,6 +60,8 @@ else
 modules/grpc/bigquery modules/grpc/bigquery/ mod-bigquery:
 endif
 
+modules/grpc/bigquery/bigquery-grammar.y: modules/grpc/common/grpc-grammar.ym
+
 BUILT_SOURCES += \
   modules/grpc/bigquery/bigquery-grammar.y \
   modules/grpc/bigquery/bigquery-grammar.c \
