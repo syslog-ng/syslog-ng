@@ -28,6 +28,7 @@ add_module(
 add_module(
   TARGET bigquery
   GRAMMAR bigquery-grammar
+  GRAMMAR_DEPENDS ${GRPC_COMMON_GRAMMAR}
   DEPENDS bigquery-cpp grpc-common-cpp
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc
   SOURCES ${BIGQUERY_SOURCES}
