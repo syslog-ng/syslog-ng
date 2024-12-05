@@ -29,6 +29,7 @@ add_module(
 add_module(
   TARGET loki
   GRAMMAR loki-grammar
+  GRAMMAR_DEPENDS ${GRPC_COMMON_GRAMMAR}
   DEPENDS loki-cpp grpc-common-cpp
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc
   SOURCES ${LOKI_SOURCES}

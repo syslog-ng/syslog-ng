@@ -18,6 +18,8 @@ set(GRPC_COMMON_CPP_SOURCES
   grpc-source-worker.hpp
   grpc-source-worker.cpp)
 
+set(GRPC_COMMON_GRAMMAR ${PROJECT_SOURCE_DIR}/modules/grpc/common/grpc-grammar.ym PARENT_SCOPE)
+
 add_module(
   TARGET grpc-common-cpp
   SOURCES ${GRPC_COMMON_CPP_SOURCES}
