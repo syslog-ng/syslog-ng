@@ -60,6 +60,8 @@ else
 modules/grpc/loki modules/grpc/loki/ mod-loki:
 endif
 
+modules/grpc/loki/loki-grammar.y: modules/grpc/common/grpc-grammar.ym
+
 BUILT_SOURCES += \
   modules/grpc/loki/loki-grammar.y \
   modules/grpc/loki/loki-grammar.c \

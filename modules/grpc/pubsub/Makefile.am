@@ -59,6 +59,8 @@ else
 modules/grpc/pubsub modules/grpc/pubsub/ mod-pubsub:
 endif
 
+modules/grpc/pubsub/pubsub-grammar.y: modules/grpc/common/grpc-grammar.ym
+
 BUILT_SOURCES += \
   modules/grpc/pubsub/pubsub-grammar.y \
   modules/grpc/pubsub/pubsub-grammar.c \
