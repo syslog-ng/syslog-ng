@@ -29,6 +29,7 @@ add_module(
   TARGET pubsub
   GRAMMAR pubsub-grammar
   DEPENDS pubsub-cpp grpc-common-cpp
+  GRAMMAR_DEPENDS ${GRPC_COMMON_GRAMMAR}
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc
   SOURCES ${PUBSUB_SOURCES}
 )
