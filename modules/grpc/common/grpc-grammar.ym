@@ -52,6 +52,9 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_TARGET_SERVICE_ACCOUNTS
 %token KW_URL
 %token KW_ADC
+%token KW_SERVICE_ACCOUNT
+%token KW_TOKEN_VALIDITY_DURATION
+%token KW_KEY
 %token KW_COMPRESSION
 %token KW_BATCH_BYTES
 %token KW_CONCURRENT_REQUESTS
@@ -211,6 +214,7 @@ grpc_client_credentials_option
   | KW_TLS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_TLS); } '(' grpc_client_credentials_builder_tls_options ')'
   | KW_ALTS { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ALTS); } '(' grpc_client_credentials_builder_alts_options ')'
   | KW_ADC { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_ADC); } '(' ')'
+  | KW_SERVICE_ACCOUNT { grpc_client_credentials_builder_set_mode(last_grpc_client_credentials_builder, GCAM_SERVICE_ACCOUNT); } '(' grpc_client_credentials_builder_service_account_options ')'
   ;
 
 grpc_client_credentials_builder_tls_options
@@ -253,6 +257,16 @@ grpc_client_credentials_builder_alts_target_service_accounts
       }
     grpc_client_credentials_builder_alts_target_service_accounts
   |
+  ;
+
+grpc_client_credentials_builder_service_account_options
+  : grpc_client_credentials_builder_service_account_option grpc_client_credentials_builder_service_account_options
+  |
+  ;
+
+grpc_client_credentials_builder_service_account_option
+  : KW_KEY '(' path_secret ')' { grpc_client_credentials_builder_service_account_set_key(last_grpc_client_credentials_builder, $3); free($3); }
+  | KW_TOKEN_VALIDITY_DURATION '(' nonnegative_integer64 ')' { grpc_client_credentials_builder_service_account_set_validity_duration(last_grpc_client_credentials_builder, $3); }
   ;
 
 /* END_RULES */
