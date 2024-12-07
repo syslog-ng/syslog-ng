@@ -73,6 +73,10 @@ public:
   /* ALTS */
   void add_alts_target_service_account(const char *target_service_account);
 
+  /*SERVICE ACCOUNTS*/
+  bool set_service_account_key_path(const char *key_path);
+  void set_service_account_validity_duration(guint64 validity_duration);
+
 private:
   ClientAuthMode mode = GCAM_INSECURE;
 
@@ -81,6 +85,13 @@ private:
 
   /* ALTS */
   ::grpc::experimental::AltsCredentialsOptions alts_credentials_options;
+
+  /* SERVICE ACCOUNT */
+  struct
+  {
+    std::string key;
+    guint64 validity_duration = 3600L;
+  } service_account;
 };
 
 }

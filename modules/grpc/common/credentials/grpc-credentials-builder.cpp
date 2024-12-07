@@ -220,6 +220,18 @@ ClientCredentialsBuilder::add_alts_target_service_account(const char *target_ser
 }
 
 bool
+ClientCredentialsBuilder::set_service_account_key_path(const char *key_path)
+{
+  return _get_file_content(key_path, service_account.key);
+}
+
+void
+ClientCredentialsBuilder::set_service_account_validity_duration(guint64 validity_duration)
+{
+  service_account.validity_duration = validity_duration;
+}
+
+bool
 ClientCredentialsBuilder::validate() const
 {
   switch (mode)
@@ -231,6 +243,14 @@ ClientCredentialsBuilder::validate() const
     case GCAM_ALTS:
       break;
     case GCAM_ADC:
+      break;
+    case GCAM_SERVICE_ACCOUNT:
+      if (service_account.key.empty())
+        {
+          msg_error("gRPC: Service account configuration requires the path to the "
+                    "json file containing the service account key");
+          return false;
+        }
       break;
     default:
       g_assert_not_reached();
@@ -252,6 +272,18 @@ ClientCredentialsBuilder::build() const
       return ::grpc::experimental::AltsCredentials(alts_credentials_options);
     case GCAM_ADC:
       return ::grpc::GoogleDefaultCredentials();
+    case GCAM_SERVICE_ACCOUNT:
+    {
+      auto channel_creds = ::grpc::SslCredentials(::grpc::SslCredentialsOptions());
+      auto call_creds = ::grpc::ServiceAccountJWTAccessCredentials(service_account.key,
+                        service_account.validity_duration);
+      if (!call_creds)
+        {
+          msg_error("gRPC: The specified file doesn't contain a service account key");
+          return nullptr;
+        }
+      return ::grpc::CompositeChannelCredentials(channel_creds, call_creds);
+    }
     default:
       g_assert_not_reached();
     }
@@ -287,4 +319,17 @@ grpc_client_credentials_builder_add_alts_target_service_account(GrpcClientCreden
     const gchar *target_service_acount)
 {
   return s->self->add_alts_target_service_account(target_service_acount);
+}
+
+gboolean
+grpc_client_credentials_builder_service_account_set_key(GrpcClientCredentialsBuilderW *s, const gchar *key_path)
+{
+  return s->self->set_service_account_key_path(key_path);
+}
+
+void
+grpc_client_credentials_builder_service_account_set_validity_duration(GrpcClientCredentialsBuilderW *s,
+    guint64 validity_duration)
+{
+  s->self->set_service_account_validity_duration(validity_duration);
 }
