@@ -61,6 +61,7 @@ typedef enum
   GCAM_TLS,
   GCAM_ALTS,
   GCAM_ADC,
+  GCAM_SERVICE_ACCOUNT,
 } GrpcClientAuthMode;
 
 typedef struct GrpcClientCredentialsBuilderW_ GrpcClientCredentialsBuilderW; // Wrapper struct
@@ -71,6 +72,10 @@ gboolean grpc_client_credentials_builder_set_tls_key_path(GrpcClientCredentialsB
 gboolean grpc_client_credentials_builder_set_tls_cert_path(GrpcClientCredentialsBuilderW *s, const gchar *cert_path);
 void grpc_client_credentials_builder_add_alts_target_service_account(GrpcClientCredentialsBuilderW *s,
     const gchar *target_service_account);
+gboolean grpc_client_credentials_builder_service_account_set_key(GrpcClientCredentialsBuilderW *s,
+    const gchar *key_path);
+void grpc_client_credentials_builder_service_account_set_validity_duration(GrpcClientCredentialsBuilderW *s,
+    guint64 validity_duration);
 
 #include "compat/cpp-end.h"
 
