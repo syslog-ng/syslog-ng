@@ -204,11 +204,21 @@ _curl_debug_function(CURL *handle, curl_infotype type,
   return 0;
 }
 
+#define HTTP_RESPONSE_MAX_LENGTH 1024
+
 static size_t
 _curl_write_function(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
-  // Discard response content
-  return nmemb * size;
+  HTTPDestinationWorker *self = (HTTPDestinationWorker *) userdata;
+  gsize count = nmemb * size;
+
+  if (self->response_buffer->len >= HTTP_RESPONSE_MAX_LENGTH)
+    return count;
+
+  gsize remaining = HTTP_RESPONSE_MAX_LENGTH - self->response_buffer->len;
+  g_string_append_len(self->response_buffer, (gchar *) ptr, MIN(remaining, count));
+
+  return count;
 }
 
 /* Set up options that are static over the course of a single configuration,
@@ -222,6 +232,7 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
   curl_easy_reset(self->curl);
 
   curl_easy_setopt(self->curl, CURLOPT_WRITEFUNCTION, _curl_write_function);
+  curl_easy_setopt(self->curl, CURLOPT_WRITEDATA, self);
 
   curl_easy_setopt(self->curl, CURLOPT_URL, owner->url);
 
@@ -427,7 +438,7 @@ static LogThreadedResult
 _default_1XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  msg_error("http: Server returned with a 1XX (continuation) status code, which was not handled by curl. ",
+  msg_error("http: Server returned with a 1XX (continuation) status code, which was not handled by curl",
             evt_tag_str("url", url),
             evt_tag_int("status_code", http_code),
             evt_tag_str("driver", owner->super.super.super.id),
@@ -445,7 +456,7 @@ _default_3XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   msg_notice("http: Server returned with a 3XX (redirect) status code. "
-             "Either accept-redirect() is set to no, or this status code is unknown.",
+             "Either accept-redirect() is set to no, or this status code is unknown",
              evt_tag_str("url", url),
              evt_tag_int("status_code", http_code),
              evt_tag_str("driver", owner->super.super.super.id),
@@ -464,6 +475,7 @@ _default_4XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
              "authorized or the URL is not found or the request is malformed.",
              evt_tag_str("url", url),
              evt_tag_int("status_code", http_code),
+             evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
              evt_tag_str("driver", owner->super.super.super.id),
              log_pipe_location_tag(&owner->super.super.super.super));
 
@@ -482,9 +494,10 @@ static LogThreadedResult
 _default_5XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  msg_notice("http: Server returned with a 5XX (server errors) status code, which indicates server failure.",
+  msg_notice("http: Server returned with a 5XX (server errors) status code, which indicates server failure",
              evt_tag_str("url", url),
              evt_tag_int("status_code", http_code),
+             evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
              evt_tag_str("driver", owner->super.super.super.id),
              log_pipe_location_tag(&owner->super.super.super.super));
   if (http_code == 508)
@@ -576,6 +589,7 @@ _debug_response_info(HTTPDestinationWorker *self, const gchar *url, glong http_c
   msg_debug("http: HTTP response received",
             evt_tag_str("url", url),
             evt_tag_int("status_code", http_code),
+            evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
             evt_tag_int("body_size", self->request_body->len),
             evt_tag_int("batch_size", self->super.batch_size),
             evt_tag_int("redirected", redirect_count != 0),
@@ -600,6 +614,7 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
                 evt_tag_str("action", "success"),
                 evt_tag_str("url", url),
                 evt_tag_int("status_code", http_code),
+                evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_SUCCESS;
@@ -609,6 +624,7 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
                  evt_tag_str("action", "retry"),
                  evt_tag_str("url", url),
                  evt_tag_int("status_code", http_code),
+                 evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
                  evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_ERROR;
@@ -618,6 +634,7 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
                  evt_tag_str("action", "drop"),
                  evt_tag_str("url", url),
                  evt_tag_int("status_code", http_code),
+                 evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
                  evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_DROP;
@@ -627,6 +644,7 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
                  evt_tag_str("action", "disconnect"),
                  evt_tag_str("url", url),
                  evt_tag_int("status_code", http_code),
+                 evt_tag_mem("response", self->response_buffer->str, self->response_buffer->len),
                  evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_NOT_CONNECTED;
@@ -669,6 +687,7 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
   curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, G_UNLIKELY(trace_flag) ? _curl_debug_function : NULL);
   curl_easy_setopt(self->curl, CURLOPT_HEADERFUNCTION, G_UNLIKELY(trace_flag) ? _curl_header_function : NULL);
 
+  g_string_truncate(self->response_buffer, 0);
   CURLcode ret = curl_easy_perform(self->curl);
   if (ret != CURLE_OK)
     {
@@ -1011,6 +1030,7 @@ http_dw_free(LogThreadedDestWorker *s)
 
   dyn_metrics_store_free(self->metrics.cache);
   http_lb_client_deinit(&self->lbc);
+  g_string_free(self->response_buffer, TRUE);
   log_threaded_dest_worker_free_method(s);
 }
 
@@ -1032,6 +1052,7 @@ http_dw_new(LogThreadedDestDriver *o, gint worker_index)
     self->super.insert = _insert_single;
 
   self->metrics.cache = dyn_metrics_store_new();
+  self->response_buffer = g_string_sized_new(HTTP_RESPONSE_MAX_LENGTH);
 
   http_lb_client_init(&self->lbc, owner->load_balancer);
   return &self->super;
