@@ -37,6 +37,7 @@
 #include "commands/query.h"
 #include "commands/license.h"
 #include "commands/healthcheck.h"
+#include "commands/internal-logs.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -126,6 +127,7 @@ static CommandDescriptor modes[] =
   { "list-files", no_options, "Print files present in config", slng_listfiles, NULL },
   { "export-config-graph", no_options, "export configuration graph", slng_export_config_graph, NULL },
   { "healthcheck", healthcheck_options, "Health check", slng_healthcheck, NULL },
+  { "internal-logs", internal_options, "Collect internal syslog-ng logs. Possible commands: --start, --stop, --size", slng_internal_logs, NULL },
   { NULL, NULL },
 };
 
