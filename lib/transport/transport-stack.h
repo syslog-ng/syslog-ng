@@ -108,7 +108,7 @@ struct _LogTransportStack
 };
 
 static inline LogTransport *
-log_transport_stack_get_transport(LogTransportStack *self, gint index)
+log_transport_stack_get_or_create_transport(LogTransportStack *self, gint index)
 {
   g_assert(index < LOG_TRANSPORT__MAX);
 
@@ -127,7 +127,16 @@ log_transport_stack_get_transport(LogTransportStack *self, gint index)
 static inline LogTransport *
 log_transport_stack_get_active(LogTransportStack *self)
 {
-  return log_transport_stack_get_transport(self, self->active_transport);
+  // TODO - Change it to log_transport_stack_get_transport after checking call sites
+  return log_transport_stack_get_or_create_transport(self, self->active_transport);
+}
+
+static inline LogTransport *
+log_transport_stack_get_transport(LogTransportStack *self, gint index)
+{
+  g_assert(index < LOG_TRANSPORT__MAX);
+
+  return self->transports[index];
 }
 
 void log_transport_stack_add_factory(LogTransportStack *self, LogTransportFactory *);
