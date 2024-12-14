@@ -1741,6 +1741,12 @@ log_writer_steal_proto(LogWriter *self)
   return proto;
 }
 
+LogProtoClient *
+log_writer_get_proto(LogWriter *self)
+{
+  return self->proto;
+}
+
 
 /* run in the main thread in reaction to a log_writer_reopen to change
  * the destination LogProtoClient instance. It needs to be ran in the main
