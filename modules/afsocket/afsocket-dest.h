@@ -32,14 +32,8 @@
 
 #include <iv.h>
 
-typedef struct _ReloadStoreItem
-{
-  LogProtoClientFactory *proto_factory;
-  GSockAddr *dest_addr;
-  LogWriter *writer;
-} ReloadStoreItem;
-
 typedef struct _AFSocketDestDriver AFSocketDestDriver;
+typedef struct _AFSocketDestKeptAliveConnection AFSocketDestKeptAliveConnection;
 
 struct _AFSocketDestDriver
 {
@@ -70,7 +64,21 @@ struct _AFSocketDestDriver
   LogWriter *(*construct_writer)(AFSocketDestDriver *self);
   gboolean (*setup_addresses)(AFSocketDestDriver *s);
   const gchar *(*get_dest_name)(const AFSocketDestDriver *s);
+
+  void (*save_connection)(AFSocketDestDriver *s);
+  gboolean (*should_restore_connection)(AFSocketDestDriver *s, AFSocketDestKeptAliveConnection *c);
+  void (*restore_connection)(AFSocketDestDriver *s, AFSocketDestKeptAliveConnection *c);
 };
+
+struct _AFSocketDestKeptAliveConnection
+{
+  LogProtoClientFactory *proto_factory; // gchar *transport;
+  GSockAddr *dest_addr;
+  LogWriter *writer;
+
+  void (*free_fn)(AFSocketDestKeptAliveConnection *s);
+};
+
 
 static inline LogWriter *
 afsocket_dd_construct_writer(AFSocketDestDriver *self)
@@ -103,5 +111,23 @@ gboolean afsocket_dd_init(LogPipe *s);
 gboolean afsocket_dd_deinit(LogPipe *s);
 void afsocket_dd_free(LogPipe *s);
 void afsocket_dd_connected_with_fd(gpointer self, gint fd, GSockAddr *saddr);
+
+
+void afsocket_dd_save_connection(AFSocketDestDriver *self, AFSocketDestKeptAliveConnection *c);
+gboolean afsocket_dd_should_restore_connection_method(AFSocketDestDriver *self, AFSocketDestKeptAliveConnection *c);
+void afsocket_dd_restore_connection_method(AFSocketDestDriver *self, AFSocketDestKeptAliveConnection *item);
+
+void afsocket_kept_alive_connection_init_instance(AFSocketDestKeptAliveConnection *s,
+                                                  LogProtoClientFactory *proto_factory,
+                                                  GSockAddr *dest_addr, LogWriter *writer);
+
+void afsocket_kept_alive_connection_free_method(AFSocketDestKeptAliveConnection *s);
+
+static inline void
+afsocket_kept_alive_connection_free(AFSocketDestKeptAliveConnection *self)
+{
+  self->free_fn(self);
+  g_free(self);
+}
 
 #endif
