@@ -32,6 +32,13 @@
 
 #include <iv.h>
 
+typedef struct _ReloadStoreItem
+{
+  LogProtoClientFactory *proto_factory;
+  GSockAddr *dest_addr;
+  LogWriter *writer;
+} ReloadStoreItem;
+
 typedef struct _AFSocketDestDriver AFSocketDestDriver;
 
 struct _AFSocketDestDriver
