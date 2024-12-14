@@ -37,13 +37,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-typedef struct _ReloadStoreItem
-{
-  LogProtoClientFactory *proto_factory;
-  GSockAddr *dest_addr;
-  LogWriter *writer;
-} ReloadStoreItem;
-
 static ReloadStoreItem *
 _reload_store_item_new(AFSocketDestDriver *afsocket_dd)
 {
