@@ -32,6 +32,8 @@
 #include <openssl/err.h>
 #include <errno.h>
 
+const gchar *TLS_TRANSPORT_NAME = "tls";
+
 typedef struct _LogTransportTLS
 {
   LogTransportSocket super;
@@ -239,6 +241,15 @@ tls_error:
   return -1;
 }
 
+TLSSession *
+log_tansport_tls_get_session(LogTransport *s)
+{
+  g_assert(s->name == TLS_TRANSPORT_NAME);
+
+  LogTransportTLS *self = (LogTransportTLS *)s;
+  return self->tls_session;
+}
+
 
 static void log_transport_tls_free_method(LogTransport *s);
 
@@ -248,7 +259,7 @@ log_transport_tls_new(TLSSession *tls_session, gint fd)
   LogTransportTLS *self = g_new0(LogTransportTLS, 1);
 
   log_transport_stream_socket_init_instance(&self->super, fd);
-  self->super.super.name = "tls";
+  self->super.super.name = TLS_TRANSPORT_NAME;
   self->super.super.cond = 0;
   self->super.super.read = log_transport_tls_read_method;
   self->super.super.write = log_transport_tls_write_method;
