@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 2024 Axoflow
  * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2020-2024 László Várady
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -260,6 +262,10 @@ static void
 log_transport_tls_free_method(LogTransport *s)
 {
   LogTransportTLS *self = (LogTransportTLS *) s;
+
+  /* TODO: should handle SSL_ERROR_WANT_* and retry */
+  if (!SSL_in_init(self->tls_session->ssl))
+    log_transport_tls_send_shutdown(self);
 
   tls_session_free(self->tls_session);
   log_transport_stream_socket_free_method(s);
