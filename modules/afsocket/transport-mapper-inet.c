@@ -364,14 +364,13 @@ static gboolean
 transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
-  const gchar *transport;
 
   /* determine default port, apply transport setting to afsocket flags */
 
   if (!transport_mapper_apply_transport_method(s, cfg))
     return FALSE;
 
-  transport = self->super.transport;
+  const gchar *transport = self->super.transport;
   self->server_port = NETWORK_PORT;
   if (strcasecmp(transport, "udp") == 0)
     {

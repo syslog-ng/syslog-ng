@@ -73,6 +73,18 @@ void transport_mapper_free(TransportMapper *self);
 void transport_mapper_free_method(TransportMapper *self);
 
 static inline const gchar *
+transport_mapper_get_transport(TransportMapper *self)
+{
+  return self->transport;
+}
+
+static inline const gchar *
+transport_mapper_get_logproto(TransportMapper *self)
+{
+  return self->logproto;
+}
+
+static inline const gchar *
 transport_mapper_get_transport_name(TransportMapper *self, gsize *len)
 {
   if (self->transport_name)
