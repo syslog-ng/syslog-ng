@@ -61,6 +61,7 @@ static const gint MAX_UDP_PAYLOAD_SIZE = 65507;
 typedef struct _AFInetDestKeptAliveConnection
 {
   AFSocketDestKeptAliveConnection super;
+  gchar *hostname;
 } AFInetDestKeptAliveConnection;
 
 typedef struct _AFInetDestDriverTLSVerifyData
@@ -714,6 +715,18 @@ afinet_dd_free(LogPipe *s)
   afsocket_dd_free(s);
 }
 
+gboolean
+afinet_dd_should_restore_connection(AFSocketDestDriver *s, AFSocketDestKeptAliveConnection *c)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  AFInetDestKeptAliveConnection *conn = (AFInetDestKeptAliveConnection *) c;
+
+  if (g_strcmp0(_afinet_dd_get_hostname(self), conn->hostname) != 0)
+    return FALSE;
+
+  return afsocket_dd_should_restore_connection_method(&self->super, c);
+}
+
 static void
 afinet_dd_restore_connection(AFSocketDestDriver *s, AFSocketDestKeptAliveConnection *item)
 {
@@ -747,16 +760,21 @@ _kept_alive_connection_free(AFSocketDestKeptAliveConnection *s)
 {
   AFInetDestKeptAliveConnection *self = (AFInetDestKeptAliveConnection *) s;
 
+  g_free(self->hostname);
+
   afsocket_kept_alive_connection_free_method(&self->super);
 }
 
 static AFInetDestKeptAliveConnection *
-_kept_alive_connection_new(const gchar *transport, const gchar *proto, GSockAddr *dest_addr, LogWriter *writer)
+_kept_alive_connection_new(const gchar *transport, const gchar *proto, const gchar *hostname,
+                           GSockAddr *dest_addr, LogWriter *writer)
 {
   AFInetDestKeptAliveConnection *self = g_new(AFInetDestKeptAliveConnection, 1);
   afsocket_kept_alive_connection_init_instance(&self->super, transport, proto, dest_addr, writer);
 
   self->super.free_fn = _kept_alive_connection_free;
+
+  self->hostname = g_strdup(hostname);
 
   return self;
 }
@@ -768,8 +786,8 @@ afinet_dd_save_connection(AFSocketDestDriver *s)
 
   const gchar *transport = transport_mapper_get_transport(self->super.transport_mapper);
   const gchar *proto = transport_mapper_get_logproto(self->super.transport_mapper);
-  AFInetDestKeptAliveConnection *item = _kept_alive_connection_new(transport, proto, self->super.dest_addr,
-                                                                   self->super.writer);
+  AFInetDestKeptAliveConnection *item = _kept_alive_connection_new(transport, proto, _afinet_dd_get_hostname(self),
+                                        self->super.dest_addr, self->super.writer);
 
   afsocket_dd_save_connection(&self->super, &item->super);
 }
@@ -787,6 +805,7 @@ afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname, Globa
   self->super.construct_writer = afinet_dd_construct_writer;
   self->super.setup_addresses = afinet_dd_setup_addresses;
   self->super.get_dest_name = afinet_dd_get_dest_name;
+  self->super.should_restore_connection = afinet_dd_should_restore_connection;
   self->super.restore_connection = afinet_dd_restore_connection;
   self->super.save_connection = afinet_dd_save_connection;
 
