@@ -354,7 +354,7 @@ _collect_rest_headers(HTTPDestinationWorker *self, GError **error)
 
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
-  EMIT(owner->super.super.super.super.signal_slot_connector, signal_http_header_request, &signal_data);
+  EMIT(owner->super.super.super.signal_slot_connector, signal_http_header_request, &signal_data);
 
   _set_error_from_slot_result(signal_http_header_request, signal_data.result, error);
 }
@@ -784,7 +784,7 @@ _flush_on_target(HTTPDestinationWorker *self, const gchar *url)
     .http_code = http_code
   };
 
-  EMIT(owner->super.super.super.super.signal_slot_connector, signal_http_response_received, &signal_data);
+  EMIT(owner->super.super.super.signal_slot_connector, signal_http_response_received, &signal_data);
 
   if (signal_data.result == HTTP_SLOT_RESOLVED)
     {
