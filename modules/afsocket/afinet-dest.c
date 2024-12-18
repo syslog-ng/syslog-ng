@@ -751,10 +751,10 @@ _kept_alive_connection_free(AFSocketDestKeptAliveConnection *s)
 }
 
 static AFInetDestKeptAliveConnection *
-_kept_alive_connection_new(LogProtoClientFactory *proto_factory, GSockAddr *dest_addr, LogWriter *writer)
+_kept_alive_connection_new(const gchar *transport, const gchar *proto, GSockAddr *dest_addr, LogWriter *writer)
 {
   AFInetDestKeptAliveConnection *self = g_new(AFInetDestKeptAliveConnection, 1);
-  afsocket_kept_alive_connection_init_instance(&self->super, proto_factory, dest_addr, writer);
+  afsocket_kept_alive_connection_init_instance(&self->super, transport, proto, dest_addr, writer);
 
   self->super.free_fn = _kept_alive_connection_free;
 
@@ -765,7 +765,10 @@ static void
 afinet_dd_save_connection(AFSocketDestDriver *s)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
-  AFInetDestKeptAliveConnection *item = _kept_alive_connection_new(self->super.proto_factory, self->super.dest_addr,
+
+  const gchar *transport = transport_mapper_get_transport(self->super.transport_mapper);
+  const gchar *proto = transport_mapper_get_logproto(self->super.transport_mapper);
+  AFInetDestKeptAliveConnection *item = _kept_alive_connection_new(transport, proto, self->super.dest_addr,
                                                                    self->super.writer);
 
   afsocket_dd_save_connection(&self->super, &item->super);

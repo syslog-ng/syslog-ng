@@ -72,7 +72,9 @@ struct _AFSocketDestDriver
 
 struct _AFSocketDestKeptAliveConnection
 {
-  LogProtoClientFactory *proto_factory; // gchar *transport;
+  gchar *transport;
+  gchar *proto;
+
   GSockAddr *dest_addr;
   LogWriter *writer;
 
@@ -118,7 +120,7 @@ gboolean afsocket_dd_should_restore_connection_method(AFSocketDestDriver *self, 
 void afsocket_dd_restore_connection_method(AFSocketDestDriver *self, AFSocketDestKeptAliveConnection *item);
 
 void afsocket_kept_alive_connection_init_instance(AFSocketDestKeptAliveConnection *s,
-                                                  LogProtoClientFactory *proto_factory,
+                                                  const gchar *transport, const gchar *proto,
                                                   GSockAddr *dest_addr, LogWriter *writer);
 
 void afsocket_kept_alive_connection_free_method(AFSocketDestKeptAliveConnection *s);

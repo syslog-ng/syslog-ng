@@ -39,20 +39,21 @@
 
 
 void
-afsocket_kept_alive_connection_init_instance(AFSocketDestKeptAliveConnection *s, LogProtoClientFactory *proto_factory,
-                                             GSockAddr *dest_addr, LogWriter *writer)
+afsocket_kept_alive_connection_init_instance(AFSocketDestKeptAliveConnection *s, const gchar *transport,
+                                             const gchar *proto, GSockAddr *dest_addr, LogWriter *writer)
 {
-  s->proto_factory = proto_factory;
+  s->transport = g_strdup(transport);
+  s->proto = g_strdup(proto);
   s->writer = writer;
   s->dest_addr = g_sockaddr_ref(dest_addr);
   s->free_fn = afsocket_kept_alive_connection_free_method;
 }
 
 static AFSocketDestKeptAliveConnection *
-_kept_alive_connection_new(LogProtoClientFactory *proto_factory, GSockAddr *dest_addr, LogWriter *writer)
+_kept_alive_connection_new(const gchar *transport, const gchar *proto, GSockAddr *dest_addr, LogWriter *writer)
 {
   AFSocketDestKeptAliveConnection *conn = g_new(AFSocketDestKeptAliveConnection, 1);
-  afsocket_kept_alive_connection_init_instance(conn, proto_factory, dest_addr, writer);
+  afsocket_kept_alive_connection_init_instance(conn, transport, proto, dest_addr, writer);
 
   return conn;
 }
@@ -67,6 +68,8 @@ afsocket_kept_alive_connection_free_method(AFSocketDestKeptAliveConnection *self
     log_pipe_unref((LogPipe *) self->writer);
 
   g_sockaddr_unref(self->dest_addr);
+  g_free(self->transport);
+  g_free(self->proto);
 }
 
 static LogWriter *
@@ -81,7 +84,8 @@ _kept_alive_connection_steal_writer(AFSocketDestKeptAliveConnection *self)
 gboolean
 afsocket_dd_should_restore_connection_method(AFSocketDestDriver *self, AFSocketDestKeptAliveConnection *c)
 {
-  return self->proto_factory->construct == c->proto_factory->construct;
+  return g_strcmp0(transport_mapper_get_transport(self->transport_mapper), c->transport) == 0
+         && g_strcmp0(transport_mapper_get_logproto(self->transport_mapper), c->proto) == 0;
 }
 
 void
@@ -736,8 +740,9 @@ afsocket_dd_save_connection(AFSocketDestDriver *self, AFSocketDestKeptAliveConne
 static void
 afsocket_dd_save_connection_method(AFSocketDestDriver *self)
 {
-  AFSocketDestKeptAliveConnection *item = _kept_alive_connection_new(self->proto_factory, self->dest_addr,
-                                                                      self->writer);
+  const gchar *transport = transport_mapper_get_transport(self->transport_mapper);
+  const gchar *proto = transport_mapper_get_logproto(self->transport_mapper);
+  AFSocketDestKeptAliveConnection *item = _kept_alive_connection_new(transport, proto, self->dest_addr, self->writer);
 
   afsocket_dd_save_connection(self, item);
 }
