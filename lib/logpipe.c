@@ -41,43 +41,71 @@ log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_
     }
 }
 
-void
-log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+/*
+ * LogPipeQueue slow path that can potentially change "msg" and
+ * "path_options", causing tail call optimization to be disabled.
+ */
+static void
+log_pipe_queue_slow_path(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogPathOptions local_path_options;
-  g_assert((s->flags & PIF_INITIALIZED) != 0);
+  if ((self->flags & PIF_SYNC_FILTERX))
+    filterx_eval_sync_message(path_options->filterx_context, &msg, path_options);
 
-  if (G_UNLIKELY((s->flags & PIF_CONFIG_RELATED) != 0 && pipe_single_step_hook))
+  if (G_UNLIKELY(self->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT)))
     {
-      if (!pipe_single_step_hook(s, msg, path_options))
+      path_options = log_path_options_chain(&local_path_options, path_options);
+      if (self->flags & PIF_HARD_FLOW_CONTROL)
+        {
+          local_path_options.flow_control_requested = 1;
+          msg_trace("Requesting flow control", log_pipe_location_tag(self));
+        }
+      if (self->flags & PIF_JUNCTION_END)
+        {
+          log_path_options_pop_junction(&local_path_options);
+        }
+      if (self->flags & PIF_CONDITIONAL_MIDPOINT)
+        {
+          log_path_options_pop_conditional(&local_path_options);
+        }
+    }
+  self->queue(self, msg, path_options);
+}
+
+static inline gboolean
+_is_fastpath(LogPipe *self)
+{
+  if (self->flags & PIF_SYNC_FILTERX)
+    return FALSE;
+
+  if (self->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT))
+    return FALSE;
+
+  return TRUE;
+}
+
+void
+log_pipe_queue(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options)
+{
+  g_assert((self->flags & PIF_INITIALIZED) != 0);
+
+  if (G_UNLIKELY((self->flags & PIF_CONFIG_RELATED) != 0 && pipe_single_step_hook))
+    {
+      if (!pipe_single_step_hook(self, msg, path_options))
         {
           log_msg_drop(msg, path_options, AT_PROCESSED);
           return;
         }
     }
 
-  if ((s->flags & PIF_SYNC_FILTERX))
-    filterx_eval_sync_message(path_options->filterx_context, &msg, path_options);
-
-  if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT)))
-    {
-      path_options = log_path_options_chain(&local_path_options, path_options);
-      if (s->flags & PIF_HARD_FLOW_CONTROL)
-        {
-          local_path_options.flow_control_requested = 1;
-          msg_trace("Requesting flow control", log_pipe_location_tag(s));
-        }
-      if (s->flags & PIF_JUNCTION_END)
-        {
-          log_path_options_pop_junction(&local_path_options);
-        }
-      if (s->flags & PIF_CONDITIONAL_MIDPOINT)
-        {
-          log_path_options_pop_conditional(&local_path_options);
-        }
-    }
-
-  s->queue(s, msg, path_options);
+  /* on the fastpath we can use tail call optimization, so we won't have a
+   * series of log_pipe_queue() calls on the stack, it improves perf traces
+   * if nothing else, but I believe it also helps locality by using a lot
+   * less stack space */
+  if (_is_fastpath(self))
+    self->queue(self, msg, path_options);
+  else
+    log_pipe_queue_slow_path(self, msg, path_options);
 }
 
 
