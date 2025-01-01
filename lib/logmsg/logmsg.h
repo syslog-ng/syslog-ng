@@ -254,9 +254,7 @@ struct _LogMessage
    * 8 bytes, and it's highly unlikely that we'd be using more than 4GB for
    * a LogMessage */
 
-  guint allocated_bytes;
-
-  guint32 recvd_rawmsg_size;
+  guint32 allocated_bytes;
 
   AckRecord *ack_record;
   LMAckFunc ack_func;
@@ -293,6 +291,7 @@ struct _LogMessage
          proto:6;
   guint8 num_matches;
   guint32 host_id;
+  guint32 recvd_rawmsg_size;
   guint64 rcptid;
   guint8 num_tags;
   guint8 alloc_sdata;
