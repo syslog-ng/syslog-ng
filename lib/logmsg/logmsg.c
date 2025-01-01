@@ -1480,6 +1480,24 @@ log_msg_clone_ack(LogMessage *msg, AckType ack_type)
   log_msg_ack(msg->original, &path_options, ack_type);
 }
 
+static inline LogMessage *
+log_msg_alloc_clone(LogMessage *original)
+{
+  LogMessage *msg;
+
+  /* NOTE: logmsg_node_max is updated from parallel threads without locking. */
+  gint nodes = (volatile gint) logmsg_queue_node_max;
+
+  gsize alloc_size = sizeof(LogMessage) + sizeof(LogMessageQueueNode) * nodes;
+  msg = g_malloc(alloc_size);
+
+  memcpy(msg, original, sizeof(*msg));
+  msg->num_nodes = nodes;
+  msg->allocated_bytes = alloc_size;
+  stats_counter_add(count_allocated_bytes, msg->allocated_bytes);
+  return msg;
+}
+
 /*
  * log_msg_clone_cow:
  *
@@ -1488,14 +1506,10 @@ log_msg_clone_ack(LogMessage *msg, AckType ack_type)
 LogMessage *
 log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 {
-  LogMessage *self = log_msg_alloc(0);
-  gsize allocated_bytes = self->allocated_bytes;
+  LogMessage *self = log_msg_alloc_clone(msg);
 
   stats_counter_inc(count_msg_clones);
   log_msg_write_protect(msg);
-
-  memcpy(self, msg, sizeof(*msg));
-  msg->allocated_bytes = allocated_bytes;
 
   msg_trace("Message was cloned",
             evt_tag_printf("original_msg", "%p", msg),
@@ -1514,7 +1528,7 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
   log_msg_add_ack(self, path_options);
   if (!path_options->ack_needed)
     {
-      self->ack_func  = NULL;
+      self->ack_func = NULL;
     }
   else
     {
