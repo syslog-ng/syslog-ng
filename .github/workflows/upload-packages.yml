@@ -17,9 +17,8 @@ on:
           "debian-bookworm",
           "ubuntu-focal",
           "ubuntu-jammy",
-          "ubuntu-noble",
-          "ubuntu-lunar"
-        ]'
+          "ubuntu-noble"
+          ]'
     secrets:
       azure-sas-token:
         required: true
