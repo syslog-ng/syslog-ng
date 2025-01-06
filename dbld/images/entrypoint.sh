@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 SOURCE_DIR=/source
 USER_NAME=${USER_NAME_ON_HOST:-dockerguest}
@@ -29,10 +29,19 @@ else
     then
         echo "USER_ID: $USER_ID already exist in passwd database, performing cleanup"
         userdel --remove $(getent passwd $USER_ID | cut -d":" -f1)
-	create_user
+        create_user
     else
         create_user
     fi
+	ls -l /etc/sudoers
+	ls -l /etc/pam.d
+	echo =====
+	cat /etc/pam.d/sudo
+	echo =====
+	cat /etc/shadow
+	echo =====
+	cat /etc/gshadow
+    id $USER_NAME
     echo "Added new user: $USER_NAME"
     exec sudo --preserve-env --preserve-env=PATH -Hu "${USER_NAME}" "$@"
 fi

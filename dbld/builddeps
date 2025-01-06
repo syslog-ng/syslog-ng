@@ -46,14 +46,14 @@ function install_dbld_dependencies()
 {
     case "${OS_DISTRIBUTION}" in
         centos|almalinux)
-            $YUM_INSTALL yum-utils sudo
+            $YUM_INSTALL yum-utils
             ;;
         debian|ubuntu)
             apt-get update
             $APT_INSTALL curl gnupg2
             ;;
         fedora)
-            $DNF_INSTALL -y dnf-plugins-core sudo
+            $DNF_INSTALL -y dnf-plugins-core
             ;;
     esac
 }

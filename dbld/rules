@@ -149,6 +149,8 @@ pkg-tarball-%: tarball-%
 
 package: package-$(DEFAULT_IMAGE)
 package-%: pkg-tarball
+	uname -a
+	$(DOCKER) version
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  ${CONTAINER_REGISTRY}/dbld-$* /dbld/package
 
 deb: deb-$(DEFAULT_DEB_IMAGE)

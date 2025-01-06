@@ -1,5 +1,7 @@
 name: Compile dbld-images
 
+permissions: write-all
+
 on:
   pull_request:
     paths:
@@ -25,7 +27,7 @@ on:
 jobs:
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         image:
@@ -48,7 +50,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4
 
       - name: Set container registry
         run: |
