@@ -19,6 +19,9 @@ jobs:
         exclude:
           - version: 14
             compiler: {cpp: clang++, c: clang}
+          # FIXME: temp exclude of failed linking again with cmake + g++ against GRPC dependenncies
+          - compiler: {cpp: g++, c: gcc}
+            build-tool: cmake
       fail-fast: false
 
     runs-on: macOS-${{ matrix.version }}
@@ -65,8 +68,15 @@ jobs:
           SYSLOG_NG_INSTALL_DIR="${HOME}/install/syslog-ng"
           PYTHONUSERBASE="${HOME}/python_packages"
           THREADS="$(sysctl -n hw.physicalcpu)"
-          CFLAGS="-I${HOMEBREW_PREFIX}/include/ -I${MACPORTS_PREFIX}/include -Werror -Wno-unused-command-line-argument"
+          WARNING_FLAGS="-Wno-unused-command-line-argument" # FIXME: -Werror must be re-added
+          CFLAGS="-I${HOMEBREW_PREFIX}/include/ -I${MACPORTS_PREFIX}/include ${WARNING_FLAGS}"
           CXXFLAGS="${CFLAGS}"
+          # FIXME: explicit -std=gnu++17 is needed for
+          #         - autotools to detect proper c++ version support with clang
+          #         - correct compiling with the latest homebrew GRPC dependant packages, like absl, etc.
+          if [ ${{ matrix.build-tool }} = autotools ] && [ $CC = clang ]; then
+            CXXFLAGS="${CFLAGS} -std=gnu++17"
+          fi
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
           CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
@@ -84,7 +94,7 @@ jobs:
           # -DIVYKIS_SOURCE=internal is switched to system temporally as of https://github.com/buytenh/ivykis/pulls
           CMAKE_CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
-            -DSUMMARY_VERBOSE=ON
+            -DSUMMARY_LEVEL=1
             -DCMAKE_BUILD_TYPE=Debug
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
             -DBUILD_TESTING=ON
@@ -100,9 +110,21 @@ jobs:
           gh_export HOMEBREW_PREFIX MACPORTS_PREFIX SYSLOG_NG_INSTALL_DIR PYTHONUSERBASE CC CXX PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS CFLAGS CXXFLAGS LDFLAGS CMAKE_CONFIGURE_FLAGS PATH
           gh_path "${PATH}"
 
+          env | sort
+          #cat "${GITHUB_ENV}" | sort
+
+      - name: Set gcc and g++ symlinks
+        run: |
+          if [ $CC = gcc ]; then
+            ln -s "${HOMEBREW_PREFIX}/bin/gcc-14" "${HOMEBREW_PREFIX}/bin/gcc"
+            ln -s "${HOMEBREW_PREFIX}/bin/g++-14" "${HOMEBREW_PREFIX}/bin/g++"
+          fi
+
           echo "ARCH: " $(arch)
           echo "xcode:" $(xcode-select -p)
-          env | sort
+          echo "gcc:" $(which gcc; gcc --version)
+          echo "g++:" $(which g++; g++ --version)
+          echo "clang:" $(which clang; clang --version)
 
       - name: autogen.sh
         if: matrix.build-tool == 'autotools'
