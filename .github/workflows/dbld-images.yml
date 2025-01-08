@@ -25,7 +25,8 @@ on:
 jobs:
 
   build:
-    runs-on: ubuntu-latest
+    # FIXME: temporary because sudo doesn't work in RedHat and descendants on an ubuntu-24.04 hosts
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         image:
