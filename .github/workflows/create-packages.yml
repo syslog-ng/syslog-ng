@@ -21,7 +21,6 @@ on:
           "ubuntu-focal",
           "ubuntu-jammy",
           "ubuntu-noble",
-          "ubuntu-lunar",
           "almalinux-8",
           "almalinux-9",
           "centos-stream9",

@@ -14,7 +14,6 @@ BUILDER_IMAGES=		\
 	ubuntu-focal	\
 	ubuntu-jammy \
 	ubuntu-noble \
-	ubuntu-lunar	\
 	kira		\
 	tarball
 
