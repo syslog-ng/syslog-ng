@@ -46,10 +46,9 @@ DestDriver::DestDriver(GrpcDestDriver *s)
   this->batch_bytes = MAX_BATCH_BYTES;
 
   GlobalConfig *cfg = log_pipe_get_config(&s->super.super.super.super);
-  LogTemplate *default_data_template = log_template_new(cfg, NULL);
-  g_assert(log_template_compile(default_data_template, "$MESSAGE", NULL));
-  this->set_data(default_data_template);
-  log_template_unref(default_data_template);
+  this->default_data_template = log_template_new(cfg, NULL);
+  g_assert(log_template_compile(this->default_data_template, "$MESSAGE", NULL));
+  this->set_data(this->default_data_template);
 }
 
 DestDriver::~DestDriver()
@@ -57,6 +56,8 @@ DestDriver::~DestDriver()
   log_template_unref(this->project);
   log_template_unref(this->topic);
   log_template_unref(this->data);
+  log_template_unref(this->protovar);
+  log_template_unref(this->default_data_template);
 }
 
 bool
@@ -74,6 +75,12 @@ DestDriver::init()
       (!this->topic || strlen(this->topic->template_str) == 0))
     {
       msg_error("Error initializing Google Pub/Sub destination, project() and topic() are mandatory options",
+                log_pipe_location_tag(&this->super->super.super.super.super));
+      return false;
+    }
+  if ((!this->attributes.empty() || this->data != this->default_data_template) && this->protovar != nullptr)
+    {
+      msg_error("Error initializing Google Pub/Sub destination: 'attributes()' and 'data()' cannot be used together with 'protovar()'. Please use either 'attributes()' and 'data()', or 'protovar()', but not both.",
                 log_pipe_location_tag(&this->super->super.super.super.super));
       return false;
     }
@@ -149,6 +156,18 @@ pubsub_dd_set_data(LogDriver *d, LogTemplate *data)
   GrpcDestDriver *self = (GrpcDestDriver *) d;
   DestDriver *cpp = pubsub_dd_get_cpp(self);
   cpp->set_data(data);
+}
+
+gboolean
+pubsub_dd_set_protovar(LogDriver *d, LogTemplate *proto)
+{
+  if (!log_template_is_trivial(proto))
+    return FALSE;
+
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestDriver *cpp = pubsub_dd_get_cpp(self);
+  cpp->set_protovar(proto);
+  return TRUE;
 }
 
 void
