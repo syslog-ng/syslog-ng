@@ -233,6 +233,7 @@ scl/python/python-modules\.conf$
 scl/darwinosl/plugin\.conf$
 scl/splunk/splunk\.conf$
 scl/google/google-pubsub\.conf$
+scl/azure/azure-monitor\.conf$
 scl/openobserve/.*\.conf$
 scl/pgsql/pgsql\.conf$
 scl/qbittorrent/qbittorrent\.conf$
