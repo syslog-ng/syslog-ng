@@ -36,8 +36,14 @@ static CfgLexerKeyword cloud_auth_keywords[] =
   { "audience",                 KW_AUDIENCE },
   { "token_validity_duration",  KW_TOKEN_VALIDITY_DURATION },
   { "user_managed_service_account",  KW_USER_MANAGED_SERVICE_ACCOUNT },
-  { "name",                          KW_NAME},
+  { "name",                          KW_NAME },
   { "metadata_url",                  KW_METADATA_URL },
+  { "azure",                         KW_AZURE },
+  { "monitor",                       KW_MONITOR },
+  { "tenant_id",                     KW_TENANT_ID },
+  { "app_id",                        KW_APP_ID },
+  { "app_secret",                    KW_APP_SECRET },
+  { "scope",                         KW_SCOPE },
   { NULL }
 };
 
