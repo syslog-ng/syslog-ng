@@ -63,13 +63,6 @@ stats_aggregator_aggregate(StatsAggregator *self)
     self->aggregate(self);
 }
 
-static inline void
-stats_aggregator_reset(StatsAggregator *self)
-{
-  if (self && self->reset)
-    self->reset(self);
-}
-
 static inline gboolean
 stats_aggregator_is_orphaned(StatsAggregator *self)
 {
