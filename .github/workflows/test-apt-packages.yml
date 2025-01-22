@@ -22,8 +22,6 @@ jobs:
           - "ubuntu:focal"
           - "ubuntu:jammy"
           - "ubuntu:noble"
-          - "ubuntu:lunar"
-          - "ubuntu:mantic"
         upgrade-from:
           - "debian-official"
           - "syslog-ng-last"
