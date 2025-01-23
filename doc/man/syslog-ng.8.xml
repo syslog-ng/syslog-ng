@@ -66,10 +66,10 @@
             <para>Run  process with the specified POSIX capability flags.</para>
             <itemizedlist>
               <listitem>
-                <para>If the <parameter>--no-caps</parameter> option is not set, and the host supports CAP_SYSLOG,  uses the following capabilities: "cap_net_bind_service, cap_net_broadcast, cap_net_raw, cap_dac_read_search, cap_dac_override, cap_chown, cap_fowner=p cap_syslog=ep"</para>
+                <para>If the <parameter>--no-caps</parameter> option is not set, and the host supports CAP_SYSLOG, uses the following capabilities: "cap_net_bind_service,cap_net_broadcast,cap_net_raw,cap_dac_read_search,cap_dac_override,cap_chown,cap_fowner=p cap_syslog=ep"</para>
               </listitem>
               <listitem>
-                <para>If the <parameter>--no-caps</parameter> option is not set, and the host does not support CAP_SYSLOG,  uses the following capabilities: "cap_net_bind_service, cap_net_broadcast, cap_net_raw,cap_dac_read_search, cap_dac_override, cap_chown, cap_fowner=p cap_sys_admin=ep"</para>
+                <para>If the <parameter>--no-caps</parameter> option is not set, and the host does not support CAP_SYSLOG, uses the following capabilities: "cap_net_bind_service,cap_net_broadcast,cap_net_raw,cap_dac_read_search,cap_dac_override,cap_chown,cap_fowner=p cap_sys_admin=ep"</para>
               </listitem>
             </itemizedlist>
             <para>For example:</para>
