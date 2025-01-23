@@ -129,6 +129,24 @@ stats_aggregator_stop(StatsAggregator *self)
     stats_aggregator_unregister(self);
 }
 
+void
+stats_aggregator_reset(StatsAggregator *self)
+{
+  main_loop_assert_main_thread();
+
+  if (self && self->reset)
+    self->reset(self);
+
+  /* NOTE: This will align all the timers to the next period boundary that leads to
+   *    - a consistent update time for all the aggregators
+   *    - a consistent time period for the calculation of the aggregated value
+   * The latter is important because the users and our tests expect the aggregated value to be
+   * calculated for the same time period, and expect similar values for the same time period.
+   */
+  _stop_timer(self);
+  _restart_timer(self);
+}
+
 static gboolean
 _is_orphaned(StatsAggregator *self)
 {
