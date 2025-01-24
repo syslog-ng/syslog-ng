@@ -45,9 +45,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # TODO: Seems the latest HomeBrew version silently removed the --preinstall option, started a discussion on the topic to confirm
-          # https://github.com/orgs/Homebrew/discussions/5896
-          brew update # --preinstall
+          brew update --auto-update
           brew bundle --force --file=contrib/Brewfile
 
           OS_NAME=$([[ ${{ matrix.version }} -eq 13 ]] && echo "Ventura" || echo "Sonoma")
