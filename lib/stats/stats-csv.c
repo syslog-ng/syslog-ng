@@ -47,13 +47,13 @@ stats_format_csv_escapevar(const gchar *var)
     {
       gchar *result;
       /* quote */
-      result = convert_unsafe_utf8_to_escaped_binary(var, -1, "\"");
+      result = convert_unsafe_utf8_to_escaped_binary(var, -1, AUTF8_UNSAFE_QUOTE);
       escaped_result = g_strdup_printf("\"%s\"", result);
       g_free(result);
     }
   else
     {
-      escaped_result = convert_unsafe_utf8_to_escaped_binary(var, -1, NULL);
+      escaped_result = convert_unsafe_utf8_to_escaped_binary(var, -1, 0);
     }
   return escaped_result;
 }

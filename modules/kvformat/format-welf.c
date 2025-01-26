@@ -65,11 +65,11 @@ tf_format_welf_foreach(const gchar *name, LogMessageValueType type, const gchar 
   g_string_append(result, name);
   g_string_append_c(result, '=');
   if (memchr(value, ' ', value_len) == NULL)
-    append_unsafe_utf8_as_escaped_binary(result, value, value_len, NULL);
+    append_unsafe_utf8_as_escaped_binary(result, value, value_len, 0);
   else
     {
       g_string_append_c(result, '"');
-      append_unsafe_utf8_as_escaped_binary(result, value, value_len, "\"");
+      append_unsafe_utf8_as_escaped_binary(result, value, value_len, AUTF8_UNSAFE_QUOTE);
       g_string_append_c(result, '"');
     }
 
