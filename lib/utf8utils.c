@@ -59,10 +59,10 @@ _is_character_unsafe(gunichar uchar, const gchar *unsafe_chars)
  *   - utf8 characters are reproduced as is
  */
 static inline gsize
-_append_escaped_utf8_character(GString *escaped_output, const gchar **raw,
-                               gssize raw_len, const gchar *unsafe_chars,
-                               const gchar *control_format,
-                               const gchar *invalid_format)
+_append_escaped_utf8_character_not_ascii(GString *escaped_output, const gchar **raw,
+                                         gssize raw_len, const gchar *unsafe_chars,
+                                         const gchar *control_format,
+                                         const gchar *invalid_format)
 {
   const gchar *char_ptr = *raw;
   gunichar uchar = g_utf8_get_char_validated(char_ptr, raw_len);
@@ -107,6 +107,63 @@ _append_escaped_utf8_character(GString *escaped_output, const gchar **raw,
 
   *raw = g_utf8_next_char(char_ptr);
   return *raw - char_ptr;
+}
+
+static inline gsize
+_append_escaped_utf8_character_ascii(GString *escaped_output, const gchar **raw,
+                                     gssize raw_len, const gchar *unsafe_chars,
+                                     const gchar *control_format,
+                                     const gchar *invalid_format)
+{
+  const gchar *char_ptr = *raw;
+  gchar achar = *char_ptr;
+
+  if (G_UNLIKELY(achar < 32 || achar == '\\'))
+    {
+      switch (achar)
+        {
+        case '\b':
+          g_string_append(escaped_output, "\\b");
+          break;
+        case '\f':
+          g_string_append(escaped_output, "\\f");
+          break;
+        case '\n':
+          g_string_append(escaped_output, "\\n");
+          break;
+        case '\r':
+          g_string_append(escaped_output, "\\r");
+          break;
+        case '\t':
+          g_string_append(escaped_output, "\\t");
+          break;
+        case '\\':
+          g_string_append(escaped_output, "\\\\");
+          break;
+        default:
+          g_string_append_printf(escaped_output, control_format, achar);
+          break;
+        }
+    }
+  else if (G_UNLIKELY(_is_character_unsafe(achar, unsafe_chars)))
+    g_string_append_printf(escaped_output, "\\%c", (gchar) achar);
+  else
+    g_string_append_c(escaped_output, achar);
+
+  *raw = char_ptr + 1;
+  return 1;
+}
+
+static inline gsize
+_append_escaped_utf8_character(GString *escaped_output, const gchar **raw,
+                               gssize raw_len, const gchar *unsafe_chars,
+                               const gchar *control_format,
+                               const gchar *invalid_format)
+{
+  if (**raw > 0 && **raw <= 127)
+    return _append_escaped_utf8_character_ascii(escaped_output, raw, raw_len, unsafe_chars, control_format, invalid_format);
+  else
+    return _append_escaped_utf8_character_not_ascii(escaped_output, raw, raw_len, unsafe_chars, control_format, invalid_format);
 }
 
 static inline void
