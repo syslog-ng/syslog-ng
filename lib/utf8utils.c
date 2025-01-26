@@ -58,7 +58,7 @@ _is_character_unsafe(gunichar uchar, const gchar *unsafe_chars)
  *   - invalid utf8 sequences are converted as per invalid_format
  *   - utf8 characters are reproduced as is
  */
-static gsize
+static inline gsize
 _append_escaped_utf8_character(GString *escaped_output, const gchar **raw,
                                gssize raw_len, const gchar *unsafe_chars,
                                const gchar *control_format,
@@ -109,7 +109,7 @@ _append_escaped_utf8_character(GString *escaped_output, const gchar **raw,
   return *raw - char_ptr;
 }
 
-static void
+static inline void
 _append_unsafe_utf8_as_escaped_with_specific_length(GString *escaped_output, const gchar *raw,
                                                     gsize raw_len,
                                                     const gchar *unsafe_chars,
@@ -123,7 +123,7 @@ _append_unsafe_utf8_as_escaped_with_specific_length(GString *escaped_output, con
                                    control_format, invalid_format);
 }
 
-static void
+static inline void
 _append_unsafe_utf8_as_escaped_nul_terminated(GString *escaped_output, const gchar *raw,
                                               const gchar *unsafe_chars,
                                               const gchar *control_format,
@@ -178,6 +178,7 @@ append_unsafe_utf8_as_escaped_binary(GString *escaped_string, const gchar *str,
   append_unsafe_utf8_as_escaped(escaped_string, str, str_len, unsafe_chars,
                                 "\\x%02x", "\\x%02x");
 }
+
 gchar *
 convert_unsafe_utf8_to_escaped_binary(const gchar *str, gssize str_len,
                                       const gchar *unsafe_chars)
