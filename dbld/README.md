@@ -58,6 +58,8 @@ Steps for the manual build after entering into the containers shell:
 
 ```bash
 $ ./dbld/rules shell-devshell
+# or, for ARM-64 builds
+#$ ./dbld/rules shell-devshell-arm64
 
 # inside the container
 $ cd /source/

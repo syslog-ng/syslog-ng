@@ -138,7 +138,11 @@ The extra effort in contrast with the dbld based build is the need to fetch
 and install all build dependencies of syslog-ng (of which there are a few).
 
 If you don't have a configure script (because of cloning from git, for example),
-run `./autogen.sh` to generate it.
+run
+
+    ./autogen.sh
+
+to generate it.
 
 Some of the functionality of syslog-ng is compiled only if the required
 development libraries are present. The configure script displays a
