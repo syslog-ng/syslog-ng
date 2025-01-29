@@ -75,6 +75,25 @@ Test(wallclocktime, test_strptime_parses_broken_down_time)
   cr_expect(wct.wct_gmtoff == -1);
 }
 
+Test(wallclocktime, test_strptime_percentf_skips_optional_dot)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gchar *end;
+
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S%f", "Jan 16 2019 18:23:12.012345");
+  cr_assert(*end == 0);
+  cr_expect(wct.wct_year == 119);
+  cr_expect(wct.wct_mon == 0);
+  cr_expect(wct.wct_mday == 16);
+
+  cr_expect(wct.wct_hour == 18);
+  cr_expect(wct.wct_min == 23);
+  cr_expect(wct.wct_sec == 12);
+  cr_expect(wct.wct_usec == 12345);
+
+  cr_expect(wct.wct_gmtoff == -1);
+}
+
 Test(wallclocktime, test_strptime_parses_truncated_usec)
 {
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
