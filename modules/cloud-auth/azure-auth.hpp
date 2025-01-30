@@ -28,7 +28,7 @@
 #include "cloud-auth.hpp"
 
 #include <mutex>
-#include <picojson/picojson.h>
+#include <jwt-cpp/jwt.h>
 
 namespace syslogng {
 namespace cloud_auth {
