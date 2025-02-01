@@ -136,6 +136,7 @@ lib/tests/test_logscheduler\.c
 lib/filterx/.*\.[ch]
 lib/filterx/filterx-grammar\.ym
 lib/logproto/logproto-auto-server\.[ch]
+lib/transport/transport-factory-haproxy\.[ch]
 lib/transport/tests/test_transport\.c
 
 ###########################################################################
