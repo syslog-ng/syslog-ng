@@ -25,10 +25,11 @@
 #include "cfg.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
-#include "transport/transport-tls.h"
 #include "transport/transport-stack.h"
-#include "transport/transport-factory-tls.h"
+#include "transport/transport-tls.h"
 #include "transport/transport-haproxy.h"
+#include "transport/transport-factory-tls.h"
+#include "transport/transport-factory-haproxy.h"
 #include "transport/transport-socket.h"
 #include "transport/transport-udp-socket.h"
 #include "secret-storage/secret-storage.h"
@@ -95,8 +96,7 @@ static gboolean
 _setup_haproxy_transport(TransportMapperInet *self, LogTransportStack *stack,
                          LogTransportIndex base_index, LogTransportIndex switch_to)
 {
-  log_transport_stack_add_transport(stack, LOG_TRANSPORT_HAPROXY,
-                                    log_transport_haproxy_new(base_index, switch_to));
+  log_transport_stack_add_factory(stack, transport_factory_haproxy_new(base_index, switch_to));
   return TRUE;
 }
 
