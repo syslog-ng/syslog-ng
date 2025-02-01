@@ -427,6 +427,21 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->delegate_tls_start_to_logproto = TRUE;
       self->super.transport_name = g_strdup("rfc3164+proxied-tls-passthrough");
     }
+  else if (strcasecmp(transport, "auto") == 0)
+    {
+      /* NOTE: this is temporary until TLS auto detection does not exist.
+       * In this case transport(auto) + tls() configuration means we want to
+       * start TLS first and then do the framing auto-detection.  If we have
+       * TLS auto-detection this entire block can be removed, as the "auto"
+       * proto would detect TLS and start it if needed.
+       */
+
+      self->super.logproto = self->super.transport;
+      self->super.sock_type = SOCK_STREAM;
+      self->super.sock_proto = IPPROTO_TCP;
+      self->allow_tls_configuration = TRUE;
+      self->super.transport_name = g_strdup_printf("bsdsyslog+%s", self->super.transport);
+    }
   else
     {
       self->super.logproto = self->super.transport;
@@ -543,6 +558,22 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->require_tls_configuration = TRUE;
       self->delegate_tls_start_to_logproto = TRUE;
       self->super.transport_name = g_strdup("rfc5425+proxied-tls-passthrough");
+    }
+  else if (strcasecmp(transport, "auto") == 0)
+    {
+      /* NOTE: this is temporary until TLS auto detection does not exist.
+       * In this case transport(auto) + tls() configuration means we want to
+       * start TLS first and then do the framing auto-detection.  If we have
+       * TLS auto-detection this entire block can be removed, as the "auto"
+       * proto would detect TLS and start it if needed.
+       */
+
+      self->super.logproto = self->super.transport;
+      self->super.sock_type = SOCK_STREAM;
+      self->super.sock_proto = IPPROTO_TCP;
+      self->server_port = SYSLOG_TRANSPORT_TCP_PORT;
+      self->allow_tls_configuration = TRUE;
+      self->super.transport_name = g_strdup_printf("rfc5424+%s", self->super.transport);
     }
   else
     {
