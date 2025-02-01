@@ -136,6 +136,7 @@ Test(macro, test_ipv4_saddr_related_macros)
   log_msg_set_saddr_ref(msg, g_sockaddr_inet_new("127.0.0.1", 2000));
   log_msg_set_daddr_ref(msg, g_sockaddr_inet_new("127.0.127.1", 2020));
   assert_macro_value(M_SOURCE_IP, msg, "127.0.0.1", LM_VT_STRING);
+  assert_macro_value(M_SOURCE_PORT, msg, "2000", LM_VT_INTEGER);
   assert_macro_value(M_DEST_IP, msg, "127.0.127.1", LM_VT_STRING);
   assert_macro_value(M_DEST_PORT, msg, "2020", LM_VT_INTEGER);
   assert_macro_value(M_IP_PROTOCOL, msg, "4", LM_VT_INTEGER);
