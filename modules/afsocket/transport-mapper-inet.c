@@ -99,7 +99,7 @@ _setup_socket_transport(TransportMapperInet *self, LogTransportStack *stack)
 static gboolean
 _setup_tls_transport(TransportMapperInet *self, LogTransportStack *stack)
 {
-  log_transport_stack_add_factory(stack, transport_factory_tls_new(self->tls_context, self->tls_verifier, self->flags));
+  log_transport_stack_add_factory(stack, transport_factory_tls_new(self->tls_context, self->tls_verifier));
   return TRUE;
 }
 

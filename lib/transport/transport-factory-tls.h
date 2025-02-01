@@ -35,12 +35,8 @@ struct _LogTransportFactoryTLS
   LogTransportFactory super;
   TLSContext *tls_context;
   TLSVerifier *tls_verifier;
-  gboolean allow_compress;
 };
 
-LogTransportFactory *transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags);
-
-void transport_factory_tls_enable_compression(LogTransportFactory *);
-void transport_factory_tls_disable_compression(LogTransportFactory *);
+LogTransportFactory *transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier);
 
 #endif

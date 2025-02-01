@@ -901,7 +901,7 @@ tls_option
     }
   | KW_ALLOW_COMPRESS '(' yesno ')'
     {
-      transport_mapper_inet_set_allow_compress(last_transport_mapper, $3);
+      tls_context_set_allow_compress(last_tls_context, $3);
     }
 	| KW_CONF_CMDS '(' tls_conf_cmds ')'
 	  {
