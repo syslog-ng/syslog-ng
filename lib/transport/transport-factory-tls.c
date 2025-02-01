@@ -35,25 +35,9 @@ _construct_transport(const LogTransportFactory *s, LogTransportStack *stack)
   if (!tls_session)
     return NULL;
 
-  tls_session_configure_allow_compress(tls_session, self->allow_compress);
-
   tls_session_set_verifier(tls_session, self->tls_verifier);
 
   return log_transport_tls_new(tls_session, stack->fd);
-}
-
-void
-transport_factory_tls_enable_compression(LogTransportFactory *s)
-{
-  LogTransportFactoryTLS *self = (LogTransportFactoryTLS *)s;
-  self->allow_compress = TRUE;
-}
-
-void
-transport_factory_tls_disable_compression(LogTransportFactory *s)
-{
-  LogTransportFactoryTLS *self = (LogTransportFactoryTLS *)s;
-  self->allow_compress = FALSE;
 }
 
 static void
@@ -66,7 +50,7 @@ _free(LogTransportFactory *s)
 }
 
 LogTransportFactory *
-transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags)
+transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier)
 {
   LogTransportFactoryTLS *instance = g_new0(LogTransportFactoryTLS, 1);
 
@@ -76,11 +60,5 @@ transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 fl
 
   instance->super.construct_transport = _construct_transport;
   instance->super.free_fn = _free;
-
-  if (flags & TMI_ALLOW_COMPRESS)
-    transport_factory_tls_enable_compression((LogTransportFactory *)instance);
-  else
-    transport_factory_tls_disable_compression((LogTransportFactory *)instance);
-
   return &instance->super;
 }

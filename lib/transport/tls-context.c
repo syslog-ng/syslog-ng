@@ -310,6 +310,16 @@ tls_context_setup_cipher_suite(TLSContext *self)
 }
 
 static gboolean
+tls_context_setup_compression(TLSContext *self)
+{
+  if (self->allow_compress)
+    SSL_CTX_clear_options(self->ssl_ctx, SSL_OP_NO_COMPRESSION);
+  else
+    SSL_CTX_set_options(self->ssl_ctx, SSL_OP_NO_COMPRESSION);
+  return TRUE;
+}
+
+static gboolean
 tls_context_setup_sigalgs(TLSContext *self)
 {
 #if SYSLOG_NG_HAVE_DECL_SSL_CTX_SET1_SIGALGS_LIST
@@ -609,6 +619,9 @@ tls_context_setup_context(TLSContext *self)
   if (!tls_context_setup_cipher_suite(self))
     goto error;
 
+  if (!tls_context_setup_compression(self))
+    goto error;
+
   if (!tls_context_setup_sigalgs(self))
     goto error;
 
@@ -854,6 +867,18 @@ tls_context_set_cipher_suite(TLSContext *self, const gchar *cipher_suite)
 {
   g_free(self->cipher_suite);
   self->cipher_suite = g_strdup(cipher_suite);
+}
+
+void
+tls_context_set_allow_compress(TLSContext *self, gboolean allow_compress)
+{
+  if (allow_compress)
+    {
+      msg_warning("WARNING: you are setting tls(allow-compress(yes)), please note that SSL compression is not considered "
+                  "safe anymore and OpenSSL 3.2 completely disallows it at its default security level. You might be able "
+                  "to re-enable it using @SEC_LEVEL in the cipher list. Without extra steps, OpenSSL ignores this setting");
+    }
+  self->allow_compress = allow_compress;
 }
 
 gboolean
