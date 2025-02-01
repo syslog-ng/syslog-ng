@@ -28,7 +28,7 @@ from src.common.file import File
 from src.common.random_id import get_unique_id
 
 
-def _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, transport, input_messages, number_of_messages, expected_messages, template=None, password=None):
+def _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, transport, input_messages, number_of_messages, expected_messages, template=None, password=None, use_ssl=False):
     if password:
         server_key_path = copy_shared_file(testcase_parameters, "server-protected-asdfg.key")
         server_cert_path = copy_shared_file(testcase_parameters, "server-protected-asdfg.crt")
@@ -36,12 +36,13 @@ def _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_
         server_key_path = copy_shared_file(testcase_parameters, "server.key")
         server_cert_path = copy_shared_file(testcase_parameters, "server.crt")
     output_file = "output.log"
-    use_ssl = True if "tls" in transport else None
+    use_ssl = True if "tls" in transport or use_ssl else None
     use_inet = None if use_ssl else True
     use_passthrough = True if "passthrough" in transport else None
+    proxied = 'proxied' in transport
 
     if (use_ssl):
-        syslog_source = config.create_syslog_source(
+        network_source = config.create_network_source(
             ip="localhost",
             port=port_allocator(),
             transport=transport,
@@ -53,17 +54,18 @@ def _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_
             },
         )
     else:
-        syslog_source = config.create_syslog_source(
+        network_source = config.create_network_source(
             ip="localhost",
             port=port_allocator(),
             transport=transport,
             flags="no-parse",
         )
-    if template:
+
+    if (template):
         file_destination = config.create_file_destination(file_name=output_file, template=template)
     else:
         file_destination = config.create_file_destination(file_name=output_file)
-    config.create_logpath(statements=[syslog_source, file_destination])
+    config.create_logpath(statements=[network_source, file_destination])
 
     syslog_ng.start(config)
     if password is not None:
@@ -73,51 +75,82 @@ def _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_
     loggen_input_file = File(loggen_input_file_path)
     loggen_input_file.write_content_and_close(input_messages)
     loggen.start(
-        syslog_source.options["ip"], syslog_source.options["port"],
-        number=number_of_messages,
-        dont_parse=True,
-        read_file=str(loggen_input_file_path),
-        syslog_proto=True,
+        network_source.options["ip"], network_source.options["port"], number=number_of_messages,
         inet=use_inet,
         use_ssl=use_ssl,
-        proxied=1,
+        read_file=str(loggen_input_file_path),
+        dont_parse=True,
+        proxied=int(proxied),
         proxied_tls_passthrough=use_passthrough,
         proxy_src_ip="1.1.1.1", proxy_dst_ip="2.2.2.2", proxy_src_port="3333", proxy_dst_port="4444",
     )
-
     # seems proxy header is counted in get_sent_message_count(), so we need '-1'
     wait_until_true(lambda: loggen.get_sent_message_count() == number_of_messages - 1)
 
     assert file_destination.read_log() == expected_messages
 
 
-def test_pp_syslog_tcp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
-    TEMPLATE = r'"${SOURCEIP} ${SOURCEPORT} ${DESTIP} ${DESTPORT} ${MESSAGE}\n"'
-    INPUT_MESSAGES = "53 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\r\n"
-    EXPECTED_MESSAGES = "1.1.1.1 3333 2.2.2.2 4444 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\n"
-    NUMBER_OF_MESSAGES = 2
+TEMPLATE = r'"${SOURCEIP} ${SOURCEPORT} ${DESTIP} ${DESTPORT} ${IP_PROTO} ${MESSAGE}\n"'
+EXPECTED_MESSAGES = "1.1.1.1 3333 2.2.2.2 4444 4 message 0\n"
+INPUT_MESSAGES = "message 0\n"
+NUMBER_OF_MESSAGES = 2
+
+
+def test_pp_network_tcp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"proxied-tcp"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
 
 
-def test_pp_syslog_tls(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
-    TEMPLATE = r'"${SOURCEIP} ${SOURCEPORT} ${DESTIP} ${DESTPORT} ${MESSAGE}\n"'
-    INPUT_MESSAGES = "53 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\r\n"
-    EXPECTED_MESSAGES = "1.1.1.1 3333 2.2.2.2 4444 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\n"
-    NUMBER_OF_MESSAGES = 2
+def test_pp_network_tls(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"proxied-tls"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
 
 
-def test_pp_syslog_tls_with_passphrase(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
-    TEMPLATE = r'"${SOURCEIP} ${SOURCEPORT} ${DESTIP} ${DESTPORT} ${MESSAGE}\n"'
-    INPUT_MESSAGES = "53 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\r\n"
-    EXPECTED_MESSAGES = "1.1.1.1 3333 2.2.2.2 4444 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\n"
-    NUMBER_OF_MESSAGES = 2
+def test_pp_network_tls_with_passphrase(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"proxied-tls"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE, password="asdfg")
 
 
-def test_pp_syslog_tls_passthrough(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
-    TEMPLATE = r'"${SOURCEIP} ${SOURCEPORT} ${DESTIP} ${DESTPORT} ${MESSAGE}\n"'
-    INPUT_MESSAGES = "53 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\r\n"
-    EXPECTED_MESSAGES = "1.1.1.1 3333 2.2.2.2 4444 <2>Oct 11 22:14:15 myhostname sshd[1234]: message 0\n"
-    NUMBER_OF_MESSAGES = 2
+def test_pp_network_tls_passthrough(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
     _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"proxied-tls-passthrough"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
+
+
+def test_network_tcp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
+    TEMPLATE = r'"${MESSAGE}\n"'
+    EXPECTED_MESSAGES = "message 0\n"
+    NUMBER_OF_MESSAGES = 1
+    _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"tcp"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
+
+
+def test_network_tls(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
+    TEMPLATE = r'"${MESSAGE}\n"'
+    EXPECTED_MESSAGES = "message 0\n"
+    NUMBER_OF_MESSAGES = 1
+    _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"tls"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
+
+
+def test_network_auto_no_framing(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
+    TEMPLATE = r'"${MESSAGE}\n"'
+    EXPECTED_MESSAGES = "message 0\n"
+    NUMBER_OF_MESSAGES = 1
+    _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"auto"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
+
+
+def test_network_auto_w_framing(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
+    TEMPLATE = r'"${MESSAGE}\n"'
+    EXPECTED_MESSAGES = "message 0\n"
+    INPUT_MESSAGES = "10 message 0\n"
+    NUMBER_OF_MESSAGES = 1
+    _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"auto"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE)
+
+
+def test_network_auto_tls_no_framing(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
+    TEMPLATE = r'"${MESSAGE}\n"'
+    EXPECTED_MESSAGES = "message 0\n"
+    NUMBER_OF_MESSAGES = 1
+    _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"auto"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE, use_ssl=True)
+
+
+def test_network_auto_tls_w_framing(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters):
+    TEMPLATE = r'"${MESSAGE}\n"'
+    EXPECTED_MESSAGES = "message 0\n"
+    INPUT_MESSAGES = "10 message 0\n"
+    NUMBER_OF_MESSAGES = 1
+    _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, '"auto"', INPUT_MESSAGES, NUMBER_OF_MESSAGES, EXPECTED_MESSAGES, TEMPLATE, use_ssl=True)

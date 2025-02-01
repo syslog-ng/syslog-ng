@@ -52,12 +52,13 @@ EXTRA_DIST += \
 	tests/light/functional_tests/source_drivers/internal_source/test_internal_acceptance.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_acceptance.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_reload.py \
-	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_network.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_multiple_clients.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_simple_tcp_connection.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_syslog_proto.py \
+	tests/light/functional_tests/source_drivers/network_source/test_network_transports.py \
 	tests/light/functional_tests/source_drivers/network_source/test_syslog_parser_timestamp_spinning.py \
 	tests/light/functional_tests/source_drivers/network_source/text_with_nuls/test_nul_acceptance.py \
+	tests/light/functional_tests/source_drivers/syslog_source/test_syslog_transports.py \
 	tests/light/functional_tests/source_options/test_use_syslogng_pid.py \
 	tests/light/functional_tests/template_functions/graphite-output/test_graphite_output.py \
 	tests/light/functional_tests/template_functions/slog/test_secure_logging.py \
