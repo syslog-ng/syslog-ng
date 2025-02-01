@@ -37,18 +37,18 @@ _construct_detected_proto(LogProtoAutoServer *self, const gchar *detect_buffer, 
 
   if (g_ascii_isdigit(detect_buffer[0]))
     {
-      msg_debug("Auto-detected octet-counted-framing on RFC6587 connection, using framed protocol",
+      msg_debug("Auto-detected octet-counted-framing, using framed protocol",
                 evt_tag_int("fd", fd));
       return log_proto_framed_server_new(NULL, self->super.options);
     }
   if (detect_buffer[0] == '<')
     {
-      msg_debug("Auto-detected non-transparent-framing on RFC6587 connection, using simple text protocol",
+      msg_debug("Auto-detected non-transparent-framing, using simple text protocol",
                 evt_tag_int("fd", fd));
     }
   else
     {
-      msg_debug("Unable to detect framing on RFC6587 connection, falling back to simple text transport",
+      msg_debug("Unable to detect framing, falling back to simple text transport",
                 evt_tag_int("fd", fd),
                 evt_tag_mem("detect_buffer", detect_buffer, detect_buffer_len));
     }
