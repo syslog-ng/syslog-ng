@@ -40,4 +40,6 @@ gssize log_transport_adapter_writev_method(LogTransport *s, struct iovec *iov, g
 void log_transport_adapter_init_instance(LogTransportAdapter *self, const gchar *name,
                                          LogTransportIndex base);
 
+void log_transport_adapter_free_method(LogTransport *s);
+
 #endif
