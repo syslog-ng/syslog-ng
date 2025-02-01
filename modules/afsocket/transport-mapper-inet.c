@@ -46,27 +46,15 @@
 #define SYSLOG_TRANSPORT_TCP_PORT 601
 #define SYSLOG_TRANSPORT_TLS_PORT 6514
 
-static inline gboolean
-_is_tls_required(TransportMapperInet *self)
-{
-  return self->require_tls || (self->tls_context && self->require_tls_when_has_tls_context);
-}
-
-static inline gboolean
-_is_tls_allowed(TransportMapperInet *self)
-{
-  return self->require_tls || self->allow_tls || self->require_tls_when_has_tls_context;
-}
-
 static gboolean
 transport_mapper_inet_validate_tls_options(TransportMapperInet *self)
 {
-  if (!self->tls_context && _is_tls_required(self))
+  if (!self->tls_context && self->require_tls_configuration)
     {
       msg_error("transport(tls) was specified, but tls() options missing");
       return FALSE;
     }
-  else if (self->tls_context && !_is_tls_allowed(self))
+  else if (self->tls_context && !(self->allow_tls_configuration || self->require_tls_configuration))
     {
       msg_error("tls() options specified for a transport that doesn't allow TLS encryption",
                 evt_tag_str("transport", self->super.transport));
@@ -112,6 +100,19 @@ _setup_haproxy_transport(TransportMapperInet *self, LogTransportStack *stack,
   return TRUE;
 }
 
+static inline gboolean
+_should_start_with_tls(TransportMapperInet *self)
+{
+  g_assert(self->tls_context);
+  return (self->require_tls_configuration || self->allow_tls_configuration) && !self->delegate_tls_start_to_logproto;
+}
+
+static inline gboolean
+_should_switch_to_tls_after_proxy_handshake(TransportMapperInet *self)
+{
+  return self->tls_context && self->proxied_passthrough;
+}
+
 static gboolean
 transport_mapper_inet_setup_stack(TransportMapper *s, LogTransportStack *stack)
 {
@@ -126,7 +127,7 @@ transport_mapper_inet_setup_stack(TransportMapper *s, LogTransportStack *stack)
       /* if TLS context is set up (either required or optional), add a TLS transport */
       if (!_setup_tls_transport(self, stack))
         return FALSE;
-      if (_is_tls_required(self))
+      if (_should_start_with_tls(self))
         initial_transport_index = LOG_TRANSPORT_TLS;
     }
 
@@ -134,7 +135,7 @@ transport_mapper_inet_setup_stack(TransportMapper *s, LogTransportStack *stack)
     {
       LogTransportIndex switch_to;
 
-      if (self->tls_context && !_is_tls_required(self))
+      if (_should_switch_to_tls_after_proxy_handshake(self))
         switch_to = LOG_TRANSPORT_TLS;
       else
         switch_to = initial_transport_index;
@@ -322,7 +323,7 @@ transport_mapper_tcp_new(void)
   self->super.logproto = "text";
   self->super.stats_source = stats_register_type("tcp");
   self->server_port = TCP_PORT;
-  self->require_tls_when_has_tls_context = TRUE;
+  self->allow_tls_configuration = TRUE;
   return &self->super;
 }
 
@@ -372,6 +373,7 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
 
   const gchar *transport = self->super.transport;
   self->server_port = NETWORK_PORT;
+  self->delegate_tls_start_to_logproto = FALSE;
   if (strcasecmp(transport, "udp") == 0)
     {
       self->super.logproto = "dgram";
@@ -391,11 +393,12 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.logproto = "text";
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
-      self->require_tls = TRUE;
+      self->require_tls_configuration = TRUE;
       self->super.transport_name = g_strdup("rfc3164+tls");
     }
   else if (strcasecmp(transport, "proxied-tcp") == 0)
     {
+      /* plain haproxy -> plain syslog */
       self->super.logproto = "text";
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
@@ -404,20 +407,24 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
     }
   else if (strcasecmp(transport, "proxied-tls") == 0)
     {
+      /* SSL haproxy -> SSL syslog */
       self->super.logproto = "text";
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
+      self->require_tls_configuration = TRUE;
       self->proxied = TRUE;
-      self->require_tls = TRUE;
       self->super.transport_name = g_strdup("rfc3164+proxied-tls");
     }
   else if (strcasecmp(transport, "proxied-tls-passthrough") == 0)
     {
+      /* plain haproxy -> SSL syslog */
       self->super.logproto = "text";
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
+      self->require_tls_configuration = TRUE;
       self->proxied = TRUE;
-      self->allow_tls = TRUE;
+      self->proxied_passthrough = TRUE;
+      self->delegate_tls_start_to_logproto = TRUE;
       self->super.transport_name = g_strdup("rfc3164+proxied-tls-passthrough");
     }
   else
@@ -427,7 +434,9 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_proto = IPPROTO_TCP;
       /* FIXME: look up port/protocol from the logproto */
       self->server_port = TCP_PORT;
-      self->allow_tls = TRUE;
+      self->allow_tls_configuration = TRUE;
+      /* it is up to the transport plugin to start TLS */
+      self->delegate_tls_start_to_logproto = TRUE;
       self->super.transport_name = g_strdup_printf("rfc3164+%s", self->super.transport);
     }
 
@@ -460,6 +469,7 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
   if (!transport_mapper_apply_transport_method(s, cfg))
     return FALSE;
 
+  self->delegate_tls_start_to_logproto = FALSE;
   if (strcasecmp(transport, "udp") == 0)
     {
       if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_3))
@@ -497,11 +507,12 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.logproto = "framed";
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
-      self->require_tls = TRUE;
+      self->require_tls_configuration = TRUE;
       self->super.transport_name = g_strdup("rfc5425");
     }
   else if (strcasecmp(transport, "proxied-tcp") == 0)
     {
+      /* plain HAProxy -> plain syslog */
       self->server_port = SYSLOG_TRANSPORT_TCP_PORT;
       self->super.logproto = "framed";
       self->super.sock_type = SOCK_STREAM;
@@ -511,22 +522,26 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
     }
   else if (strcasecmp(transport, "proxied-tls") == 0)
     {
+      /* SSL HAProxy -> SSL syslog */
       self->server_port = SYSLOG_TRANSPORT_TCP_PORT;
       self->super.logproto = "framed";
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->proxied = TRUE;
-      self->require_tls = TRUE;
+      self->require_tls_configuration = TRUE;
       self->super.transport_name = g_strdup("rfc5425+proxied-tls");
     }
   else if (strcasecmp(transport, "proxied-tls-passthrough") == 0)
     {
+      /* plain HAProxy -> SSL syslog */
       self->server_port = SYSLOG_TRANSPORT_TCP_PORT;
       self->super.logproto = "framed";
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->proxied = TRUE;
-      self->allow_tls = TRUE;
+      self->proxied_passthrough = TRUE;
+      self->require_tls_configuration = TRUE;
+      self->delegate_tls_start_to_logproto = TRUE;
       self->super.transport_name = g_strdup("rfc5425+proxied-tls-passthrough");
     }
   else
@@ -536,7 +551,9 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       /* FIXME: look up port/protocol from the logproto */
       self->server_port = 514;
       self->super.sock_proto = IPPROTO_TCP;
-      self->allow_tls = TRUE;
+      self->allow_tls_configuration = TRUE;
+      /* the proto can start TLS but we won't do that ourselves */
+      self->delegate_tls_start_to_logproto = TRUE;
       self->super.transport_name = g_strdup_printf("rfc5424+%s", self->super.transport);
     }
   g_assert(self->server_port != 0);
