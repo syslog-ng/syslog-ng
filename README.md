@@ -184,13 +184,21 @@ syslog-ng packages are released for the following distribution versions (x86-64)
     wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | sudo apt-key add -
     ```
 
-2. Add the repository containing the latest build of syslog-ng to the APT sources. For example, stable releases on Ubuntu 22.04:
+2. Add the repository containing the latest build of syslog-ng to your APT sources.  
+   For example if you are running Ubuntu 24.04, you would use `ubuntu-noble`, see chart above:
 
     ``` shell
-    echo "deb https://ose-repo.syslog-ng.com/apt/ stable ubuntu-jammy" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
+    echo "deb https://ose-repo.syslog-ng.com/apt/ stable ubuntu-noble" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
     ```
+3. Update your repositories with
+   ```` shell
+   sudo apt update
+   ````
 
-3. Run `apt update`
+4. Now install syslog-ng:
+   ```` shell
+   sudo apt install syslog-ng
+   ````
 
 #### Nightly builds
 
