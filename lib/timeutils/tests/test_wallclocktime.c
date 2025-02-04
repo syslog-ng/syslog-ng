@@ -94,6 +94,25 @@ Test(wallclocktime, test_strptime_percentf_skips_optional_dot)
   cr_expect(wct.wct_gmtoff == -1);
 }
 
+Test(wallclocktime, test_strptime_percentf_fractions_are_optional)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gchar *end;
+
+  /* end of the string */
+  wct.wct_usec = 999999;
+  end = wall_clock_time_strptime(&wct, "%S%f", "12");
+  cr_assert(*end == 0);
+  cr_expect(wct.wct_usec == 0);
+
+  /* something else follows */
+  wct.wct_usec = 999999;
+  end = wall_clock_time_strptime(&wct, "%S%f %z", "12 +02:00");
+  cr_assert(*end == 0, "%s", end);
+  cr_expect(wct.wct_usec == 0);
+  cr_expect(wct.wct_gmtoff == 7200);
+}
+
 Test(wallclocktime, test_strptime_parses_truncated_usec)
 {
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
@@ -119,9 +138,11 @@ Test(wallclocktime, test_strptime_usec_parse_finds_character)
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
   gchar *end;
 
-  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S.%f", "Jan 16 2019 18:23:12.boom");
-  cr_assert(end == NULL);
-  cr_expect(wct.wct_usec == 0);
+  /* invalid value */
+  wct.wct_usec = 1000000;
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S.%f boom", "Jan 16 2019 18:23:12.boom");
+  cr_assert(*end == 0);
+  cr_expect(wct.wct_usec == 0, "%d", wct.wct_usec);
 }
 
 Test(wallclocktime, test_strptime_percent_z_parses_rfc822_timezone)

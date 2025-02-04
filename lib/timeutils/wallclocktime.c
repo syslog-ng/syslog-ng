@@ -421,6 +421,12 @@ recurse:
 
         case 'f':
         {
+          if (!(*bp == '.' || isdigit(*bp)))
+            {
+              /* %f is optional, and is empty */
+              wct->wct_usec = 0;
+              continue;
+            }
           if (*bp == '.')
             bp++;
           const unsigned char *end = conv_num(bp, &wct->wct_usec, 0, 999999);
