@@ -766,6 +766,8 @@ python_sd_new(GlobalConfig *cfg)
   self->super.worker_options.super.stats_source = stats_register_type("python");
   self->super.worker_construct = _construct_worker;
 
+  log_threaded_source_enable_raw_bytes_metrics(&self->super);
+
   self->post_message = _post_message_blocking;
 
   python_binding_init_instance(&self->binding);
