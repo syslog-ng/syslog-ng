@@ -78,6 +78,8 @@ struct _LogThreadedSourceDriver
   gchar *transport_name;
   gsize transport_name_len;
 
+  gboolean raw_bytes_metrics_enabled;
+
   void (*format_stats_key)(LogThreadedSourceDriver *self, StatsClusterKeyBuilder *kb);
   LogThreadedSourceWorker *(*worker_construct)(LogThreadedSourceDriver *self, gint worker_index);
 };
@@ -114,6 +116,12 @@ log_threaded_source_driver_get_parse_options(LogDriver *s)
   LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
 
   return &self->worker_options.parse_options;
+}
+
+static inline void
+log_threaded_source_enable_raw_bytes_metrics(LogThreadedSourceDriver *self)
+{
+  self->raw_bytes_metrics_enabled = TRUE;
 }
 
 /* Worker */
