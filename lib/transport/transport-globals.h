@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2025 Axoflow
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,16 +20,12 @@
  * COPYING for details.
  */
 
-#ifndef TLSTRANSPORT_H_INCLUDED
-#define TLSTRANSPORT_H_INCLUDED
+#ifndef TRANSPORT_GLOBALS_H_INCLUDED
+#define TRANSPORT_GLOBALS_H_INCLUDED
 
-#include "transport/transport-adapter.h"
-#include "transport/tls-context.h"
+#include "syslog-ng.h"
 
-LogTransport *log_transport_tls_new(TLSSession *tls_session, LogTransportIndex base_index);
-TLSSession *log_tansport_tls_get_session(LogTransport *s);
-
-void log_transport_tls_global_init(void);
-void log_transport_tls_global_deinit(void);
+void log_transport_global_init(void);
+void log_transport_global_deinit(void);
 
 #endif

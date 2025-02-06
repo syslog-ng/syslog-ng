@@ -40,6 +40,7 @@ typedef struct _LogTransportTLS
 } LogTransportTLS;
 
 const gchar *TLS_TRANSPORT_NAME = "tls";
+static BIO_METHOD *meth_transport = NULL;
 
 static int
 _BIO_transport_write(BIO *bio, const char *buf, size_t buflen, size_t *written_bytes)
@@ -112,15 +113,11 @@ _BIO_transport_ctrl(BIO *bio, int cmd, long num, void *ptr)
   return ret;
 }
 
-BIO_METHOD *
+static BIO_METHOD *
 BIO_s_transport(void)
 {
-  static BIO_METHOD *meth = NULL;
+  BIO_METHOD *meth = BIO_meth_new(BIO_TYPE_NONE, "LogTransportBIO");
 
-  if (meth)
-    return meth;
-
-  meth = BIO_meth_new(BIO_TYPE_NONE, "LogTransportBIO");
   BIO_meth_set_write_ex(meth, _BIO_transport_write);
   BIO_meth_set_read_ex(meth, _BIO_transport_read);
   BIO_meth_set_ctrl(meth, _BIO_transport_ctrl);
@@ -128,7 +125,7 @@ BIO_s_transport(void)
   return meth;
 }
 
-BIO *
+static BIO *
 BIO_transport_new(LogTransportTLS *transport)
 {
   BIO *bio = BIO_new(BIO_s_transport());
@@ -378,4 +375,17 @@ log_transport_tls_free_method(LogTransport *s)
 
   tls_session_free(self->tls_session);
   log_transport_adapter_free_method(s);
+}
+
+void
+log_transport_tls_global_init(void)
+{
+  meth_transport = BIO_s_transport();
+}
+
+void
+log_transport_tls_global_deinit(void)
+{
+  BIO_meth_free(meth_transport);
+  meth_transport = NULL;
 }
