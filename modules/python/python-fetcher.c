@@ -675,8 +675,6 @@ python_fetcher_new(GlobalConfig *cfg)
   self->super.super.worker_options.super.stats_level = STATS_LEVEL0;
   self->super.super.worker_options.super.stats_source = stats_register_type("python");
 
-  log_threaded_source_enable_raw_bytes_metrics(&self->super.super);
-
   self->super.fetch = python_fetcher_fetch;
 
   python_binding_init_instance(&self->binding);

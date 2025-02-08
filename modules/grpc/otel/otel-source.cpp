@@ -175,9 +175,6 @@ LogDriver *
 otel_sd_new(GlobalConfig *cfg)
 {
   GrpcSourceDriver *self = grpc_sd_new(cfg, "opentelemetry", "otlp");
-
-  log_threaded_source_enable_raw_bytes_metrics(&self->super);
-
   self->cpp = new SourceDriver(self);
   return &self->super.super.super;
 }
