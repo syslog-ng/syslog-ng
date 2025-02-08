@@ -495,11 +495,8 @@ _register_counters(LogSource *self)
 
   stats_unlock();
 
-  if (self->metrics.raw_bytes_enabled)
-    {
-      level = log_pipe_is_internal(&self->super) ? STATS_LEVEL3 : STATS_LEVEL1;
-      _register_raw_bytes_stats(self, level);
-    }
+  level = log_pipe_is_internal(&self->super) ? STATS_LEVEL3 : STATS_LEVEL1;
+  _register_raw_bytes_stats(self, level);
 }
 
 gboolean
@@ -522,8 +519,7 @@ log_source_init(LogPipe *s)
 static void
 _unregister_counters(LogSource *self)
 {
-  if (self->metrics.raw_bytes_enabled)
-    _unregister_raw_bytes_stats(self);
+  _unregister_raw_bytes_stats(self);
 
   stats_lock();
 

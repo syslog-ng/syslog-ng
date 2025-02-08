@@ -145,8 +145,6 @@ struct _LogThreadedDestDriver
     StatsCounterItem *written_messages;
     StatsCounterItem *output_event_retries;
 
-    gboolean raw_bytes_enabled;
-
     StatsAggregator *max_message_size;
     StatsAggregator *average_messages_size;
     StatsAggregator *max_batch_size;

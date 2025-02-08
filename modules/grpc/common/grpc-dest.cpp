@@ -269,7 +269,6 @@ grpc_dd_new(GlobalConfig *cfg, const gchar *stats_name)
   self->super.worker.construct = _construct_worker;
   self->super.stats_source = stats_register_type(stats_name);
   self->super.format_stats_key = _format_stats_key;
-  self->super.metrics.raw_bytes_enabled = TRUE;
 
   return self;
 }
