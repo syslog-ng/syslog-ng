@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4
 
       - name: Set xcode version
         if: matrix.version == 14

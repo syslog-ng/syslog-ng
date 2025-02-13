@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4
 
       - name: Prepare environment
         run: |
@@ -82,7 +82,7 @@ jobs:
           rm -f "${GPG_KEY_PATH}"
 
       - name: "Artifact: verbose run log"
-        uses: actions/upload-artifact@v4.4.0
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ${{ env.VERBOSE_LOG_PATH }}
