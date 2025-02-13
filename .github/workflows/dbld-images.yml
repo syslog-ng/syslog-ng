@@ -66,7 +66,7 @@ jobs:
 
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4
 
       - name: Set container registry
         run: |

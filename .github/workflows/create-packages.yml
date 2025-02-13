@@ -43,7 +43,7 @@ jobs:
 
     steps:
       - name: Download source tarball artifact
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.source-tarball-artifact-name }}
 
@@ -81,7 +81,7 @@ jobs:
           cp -r syslog-ng/dbld/build/${{ matrix.distro }} package/
 
       - name: Store package as artifact
-        uses: actions/upload-artifact@v4.4.0
+        uses: actions/upload-artifact@v4
         with:
           name: package-${{ matrix.distro }}
           path: package/*

@@ -39,7 +39,7 @@ jobs:
       TARBALL_NAME: ${{ steps.setup-environment.outputs.TARBALL_NAME }}
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4
 
       - name: "Comment: job started"
         if: github.event_name == 'pull_request'
@@ -69,7 +69,7 @@ jobs:
           ./dbld/rules release VERSION=${VERSION}
 
       - name: Store release tarball as artifact
-        uses: actions/upload-artifact@v4.4.0
+        uses: actions/upload-artifact@v4
         with:
           name: release-tarball
           path: ${{ env.TARBALL_PATH }}
@@ -95,10 +95,10 @@ jobs:
     needs: [create-release-tarball, upload-packages]
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4
 
       - name: Download release tarball artifact
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v4
         with:
           name: release-tarball
 

@@ -19,7 +19,7 @@ jobs:
         # The download-artifact action cannot download artifacts from other workflows.
         # Copied from https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflow_run
       - name: Download comment artifact
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
