@@ -112,13 +112,15 @@ function download_target() {
 
 function filter_packages_by_platform {
     FILENAME=$1
-    grep -v "#" ${FILENAME} | grep -e "${IMAGE_PLATFORM}" -e "${OS_DISTRIBUTION}[^-]" | cut -d"[" -f1
+    local IMAGE_PLATFORM_BASE=$(image_platform_base)
+    grep -v "#" ${FILENAME} | grep -e "${IMAGE_PLATFORM_BASE}" -e "${OS_DISTRIBUTION}[^-]" | cut -d"[" -f1
 }
 
 function filter_pip_packages_by_platform_and_python_version {
     FILENAME=$1
     PYTHON_VERSION=$2
-    grep -v "#" ${FILENAME} | grep -e "${IMAGE_PLATFORM}" -e "${OS_DISTRIBUTION}[^-]" | grep -e "${PYTHON_VERSION}" | cut -d"[" -f1
+    local IMAGE_PLATFORM_BASE=$(image_platform_base)
+    grep -v "#" ${FILENAME} | grep -e "${IMAGE_PLATFORM_BASE}" -e "${OS_DISTRIBUTION}[^-]" | grep -e "${PYTHON_VERSION}" | cut -d"[" -f1
 }
 
 function add_copr_repo {

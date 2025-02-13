@@ -6,31 +6,34 @@ BUILDER_IMAGES=		\
 	centos-stream9  \
 	fedora-latest	\
 	fedora-rawhide	\
-	debian-stretch	\
 	debian-bullseye	\
 	debian-bookworm	\
-	debian-testing	\
+	debian-bookworm-arm64	\
 	debian-sid	\
+	debian-testing	\
 	ubuntu-focal	\
 	ubuntu-jammy \
 	ubuntu-noble \
 	kira		\
 	tarball
 
-IMAGES=${BUILDER_IMAGES} devshell
+IMAGES=${BUILDER_IMAGES} devshell devshell-arm64
 DEFAULT_IMAGE ?= ubuntu-noble
 TARBALL_IMAGE ?= tarball
 DEFAULT_DEB_IMAGE=ubuntu-noble
 DEFAULT_RPM_IMAGE=almalinux-8
 DOCKER=docker
 CONTAINER_REGISTRY ?= ghcr.io/syslog-ng
+CONTAINER_ARCH ?= amd64
+CONTAINER_NAME_SUFFIX := $(if $(filter-out amd64,$(CONTAINER_ARCH)),-$(CONTAINER_ARCH))
+
 MODE ?= snapshot
 VERSION ?= $(shell MODE=${MODE} scripts/version.sh)
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
-        --network=host --privileged \
+	--network=host --privileged \
 	--ulimit nofile=1024:1024 \
 	-v $(ROOT_DIR):/source \
-        -v $(DBLD_DIR):/dbld \
+	-v $(DBLD_DIR):/dbld \
 	-v $(DBLD_DIR)/build:/build \
 	-v $(DBLD_DIR)/install:/install \
 	-e CONFIGURE_OPTS="$${CONFIGURE_OPTS:-$(CONFIGURE_OPTS)}" \
@@ -55,7 +58,7 @@ CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=3 --prefix=/instal
 DBLD_RULES=$(MAKE) --no-print-directory -f $(DBLD_DIR)/rules
 
 DOCKER_INTERACTIVE=$(shell if tty -s; then echo "-ti"; else echo "-i"; fi)
-DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -${DOCKER_INTERACTIVE} ${CONTAINER_REGISTRY}/dbld-$* /dbld/shell $(if $(SHELL_COMMAND),"$(SHELL_COMMAND)",bash)
+DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm ${DOCKER_INTERACTIVE} ${CONTAINER_REGISTRY}/dbld-$* /dbld/shell $(if $(SHELL_COMMAND),"$(SHELL_COMMAND)",bash)
 
 -include $(if $(RULES_CONF),$(RULES_CONF),$(DBLD_DIR)/rules.conf)
 
@@ -215,10 +218,18 @@ images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-kira: image-ubuntu-focal
 image-devshell: image-debian-bookworm
+image-devshell-arm64: image-debian-bookworm-arm64
 image-tarball: image-debian-bookworm
 image-%:
-	$(DBLD_DIR)/prepare-image-build $* && \
-        $(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=ARG_IMAGE_PLATFORM=$* --build-arg=COMMIT=$$($(GIT) rev-parse --short HEAD || echo "") --build-arg=CONTAINER_REGISTRY=${CONTAINER_REGISTRY} --network=host -t ${CONTAINER_REGISTRY}/dbld-$* -f $(DBLD_DIR)/images/$*.dockerfile $(DBLD_DIR)
+# NOTE: This dockerfile name magic eliminates usage of separate dockerfiles for each image type
+#			  I do not like it either, but it is a necessary evil to avoid code duplication or introduction of
+#			  new (wrapper) dockerfiles for each architecure.
+	BASE_IMAGE=$*; \
+	BASE_IMAGE=$${BASE_IMAGE%-amd64}; \
+	BASE_IMAGE=$${BASE_IMAGE%-arm64}; \
+	DOCKERFILE=$(DBLD_DIR)/images/$${BASE_IMAGE}.dockerfile; \
+	$(DBLD_DIR)/prepare-image-build $*; \
+	$(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=ARG_IMAGE_PLATFORM=$* --build-arg=COMMIT=$$($(GIT) rev-parse --short HEAD || echo "") --build-arg=CONTAINER_REGISTRY=${CONTAINER_REGISTRY} --build-arg=CONTAINER_ARCH=${CONTAINER_ARCH} --build-arg=CONTAINER_NAME_SUFFIX=${CONTAINER_NAME_SUFFIX} --network=host -t ${CONTAINER_REGISTRY}/dbld-$* -f $${DOCKERFILE} $(DBLD_DIR)
 
 push-images: $(foreach image,$(IMAGES), push-image-$(image))
 push-image-%:
