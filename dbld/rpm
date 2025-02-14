@@ -17,8 +17,25 @@ function copy_rpm_packaging_src_files_to_build_folder() {
     find /build/syslog-ng-${VERSION}/packaging/rhel/ -type f | grep --invert-match '\.spec$' | xargs -i cp {} /build/
 }
 
+function patch_source()
+{
+    # fedora-rawhide latest has a new gcc 15, the old bison headers are not compatible with it
+    if [[ "${IMAGE_PLATFORM}" == "fedora-rawhide" ]]; then
+        echo "Pathing ${IMAGE_PLATFORM} sources..."
+        pushd /build/syslog-ng-${VERSION}
+        # Consider adding a reusable, proper patching mechanism in the future, e.g.
+        #patch -p1 < /build/syslog-ng-${VERSION}/packaging/rhel/syslog-ng-3.35.1-bison-3.8.patch
+        sudo sed -i '/#define BSON_NORETURN/{N;/#endif/a\
+#undef BSON_NORETURN\
+#define BSON_NORETURN
+}' /usr/include/libbson-1.0/bson/bson-macros.h
+        popd
+    fi
+}
+
 function prepare_source() {
     copy_rpm_packaging_src_files_to_build_folder
+    patch_source
     cp syslog-ng-${VERSION}.tar.gz $RPMBUILD_SOURCES
 }
 
