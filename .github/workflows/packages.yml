@@ -42,4 +42,4 @@ jobs:
         "fedora-latest",
         "fedora-rawhide",
         "ubuntu-noble"
-      ]'
+        ]'

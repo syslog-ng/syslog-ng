@@ -1,5 +1,6 @@
 name: Compile dbld-images
 
+
 on:
   pull_request:
     paths:
@@ -68,7 +69,7 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set container registry
+      - name: Set container ENV
         run: |
           CONTAINER_REGISTRY="ghcr.io/${{ github.repository_owner }}"
           CONTAINER_REGISTRY="$(echo "$CONTAINER_REGISTRY" | tr '[:upper:]' '[:lower:]')"
