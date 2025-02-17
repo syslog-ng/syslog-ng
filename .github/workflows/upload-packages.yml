@@ -10,14 +10,15 @@ on:
       distros:
         required: false
         type: string
-        default: '[
-          "debian-testing",
-          "debian-sid",
-          "debian-bullseye",
-          "debian-bookworm",
-          "ubuntu-focal",
-          "ubuntu-jammy",
-          "ubuntu-noble"
+        default: 
+          '[
+            "debian-testing",
+            "debian-bullseye",
+            "debian-bookworm",
+            "debian-sid",
+            "ubuntu-focal",
+            "ubuntu-jammy",
+            "ubuntu-noble"
           ]'
     secrets:
       azure-sas-token:
@@ -35,6 +36,13 @@ jobs:
     strategy:
       matrix:
         distro: ${{ fromJson(inputs.distros) }}
+        arch:
+          - amd64
+        include:
+          - distro: debian-bookworm-arm64
+            arch: arm64
+          - distro: ubuntu-noble-arm64
+            arch: arm64
       fail-fast: false
 
     steps:

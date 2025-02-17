@@ -1,3 +1,7 @@
+# Please note that the syslog-ng git repository is not available in this workflow.
+# It means that certain convenience/helper functions are not available (e.g. gh_output).
+# This is intentional as syslog-ng will be acquired from the tarball.
+
 name: Create package from source tarball
 
 
@@ -13,32 +17,53 @@ on:
       distros:
         required: false
         type: string
-        default: '[
-          "debian-testing",
-          "debian-sid",
-          "debian-bullseye",
-          "debian-bookworm",
-          "ubuntu-focal",
-          "ubuntu-jammy",
-          "ubuntu-noble",
-          "almalinux-8",
-          "almalinux-9",
-          "centos-stream9",
-          "fedora-latest",
-          "fedora-rawhide"
-        ]'
-
+        default: 
+          # Curently only the bellow packages are needed
+          #     - dbld images used by this package builder are already run and published their results, scheduled, prior this one runs
+          #     - the draft, and based on that the stable, releases are published only from this images (to AZURE)
+          #     - from this packager we do have a single published docker image, the bookworm one Tagged as Nighlty
+          # These are also built and published by the dbld-images builder, but not used now in the above steps at all
+          #   "almalinux-8",
+          #   "almalinux-9",
+          #   "centos-stream9",
+          #   "fedora-latest",
+          #   "fedora-rawhide"
+          #
+          '[
+            "debian-testing",
+            "debian-bullseye",
+            "debian-bookworm",
+            "debian-sid",
+            "ubuntu-focal",
+            "ubuntu-jammy",
+            "ubuntu-noble",
+          ]'
 
 jobs:
   create-packages:
-    name: ${{ matrix.distro }}
+    name: ${{ matrix.distro }}-${{ matrix.arch }}
 
     # FIXME: temporary because sudo doesn't work in RedHat and descendants on an ubuntu-24.04 hosts
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04${{ matrix.runner-arch-suffix }}
 
     strategy:
       matrix:
         distro: ${{ fromJson(inputs.distros) }}
+        arch:
+          - amd64
+        arch-suffix:
+          - ''
+        runner-arch-suffix:
+          - ''
+        include:
+          - distro: debian-bookworm
+            arch: arm64
+            arch-suffix: '-arm64'
+            runner-arch-suffix: '-arm'
+          - distro: ubuntu-noble
+            arch: arm64
+            arch-suffix: '-arm64'
+            runner-arch-suffix: '-arm'
       fail-fast: false
 
     steps:
@@ -52,15 +77,33 @@ jobs:
           mkdir syslog-ng
           tar --strip-components=1 -xvf syslog-ng*.tar.gz -C syslog-ng
 
+      - name: Set container ENV
+        working-directory: syslog-ng
+        run: |
+          gh_export()
+          {
+              while [ "x$1" != "x" ]; do
+                  echo "$1<<__EOF__" >> $GITHUB_ENV
+                  eval echo \$$1     >> $GITHUB_ENV
+                  echo "__EOF__"     >> $GITHUB_ENV
+                  shift;
+              done
+          }
+
+          CONTAINER_ARCH=${{ matrix.arch }}
+          CONTAINER_NAME_SUFFIX=${{ matrix.arch-suffix }}
+
+          gh_export CONTAINER_ARCH CONTAINER_NAME_SUFFIX
+
       - name: Prepare docker image
         working-directory: syslog-ng
         run: |
           if [[ "${{ inputs.dbld-image-mode }}" = "build" ]]
           then
-            ./dbld/rules image-${{ matrix.distro }}
+            ./dbld/rules image-${{ matrix.distro }}${CONTAINER_NAME_SUFFIX}
           elif [[ "${{ inputs.dbld-image-mode }}" = "cache" ]]
           then
-            ./dbld/rules cache-image-${{ matrix.distro }}
+            ./dbld/rules cache-image-${{ matrix.distro }}${CONTAINER_NAME_SUFFIX}
           else
             echo Unexpected input: dbld-image-mode=${{ inputs.dbld-image-mode }}
             false
@@ -69,7 +112,7 @@ jobs:
       - name: Create package
         working-directory: syslog-ng
         run: |
-          ./dbld/rules package-${{ matrix.distro }}
+          ./dbld/rules package-${{ matrix.distro }}${CONTAINER_NAME_SUFFIX}
 
       - name: Prepare package for artifact
         # We want to keep the directory structure starting with ${{ matrix.distro }},
@@ -78,10 +121,10 @@ jobs:
         # so let's make a temporary directory and move the ${{ matrix.distro }} directory there.
         run: |
           mkdir package
-          cp -r syslog-ng/dbld/build/${{ matrix.distro }} package/
+          cp -r syslog-ng/dbld/build/${{ matrix.distro }}${CONTAINER_NAME_SUFFIX} package/
 
       - name: Store package as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: package-${{ matrix.distro }}
+          name: package-${{ matrix.distro }}${{ matrix.arch-suffix }}
           path: package/*

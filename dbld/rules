@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-BUILDER_IMAGES=		\
+BUILDER_IMAGES=	\
 	almalinux-8	\
 	almalinux-9	\
 	centos-stream9  \
@@ -14,7 +14,8 @@ BUILDER_IMAGES=		\
 	ubuntu-focal	\
 	ubuntu-jammy \
 	ubuntu-noble \
-	kira		\
+	ubuntu-noble-arm64	\
+	kira	\
 	tarball
 
 IMAGES=${BUILDER_IMAGES} devshell devshell-arm64
