@@ -40,7 +40,7 @@ jobs:
           - fedora-rawhide
           - debian-bullseye
           - debian-bookworm
-          - debian-sid
+          #- debian-sid - curently this is broken again
           - debian-testing
           - ubuntu-focal
           - ubuntu-jammy

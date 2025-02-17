@@ -29,11 +29,11 @@ on:
           #   "fedora-latest",
           #   "fedora-rawhide"
           #
+          #"debian-sid", - curently this is broken again
           '[
             "debian-testing",
             "debian-bullseye",
             "debian-bookworm",
-            "debian-sid",
             "ubuntu-focal",
             "ubuntu-jammy",
             "ubuntu-noble",
