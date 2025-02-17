@@ -27,6 +27,8 @@ LABEL org.opencontainers.image.authors="kira.syslogng@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/syslog-ng/syslog-ng"
 
 ARG PKG_TYPE=stable
+ARG CONTAINER_ARCH=amd64
+ARG CONTAINER_NAME_SUFFIX
 
 RUN apt-get update -qq && apt-get install -y \
     wget \
@@ -34,8 +36,15 @@ RUN apt-get update -qq && apt-get install -y \
     gnupg2 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor > /usr/share/keyrings/ose-repo-archive-keyring.gpg && \
-  echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg] https://ose-repo.syslog-ng.com/apt/ ${PKG_TYPE} debian-bookworm" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
+# See .github/workflows/publish-docker-image.yml for why cannot use the ARG versions of these here currenty.
+RUN ARCH=$(arch) && \
+  if [ "$ARCH" = "aarch64" ]; then \
+    CONTAINER_ARCH="arm64"; CONTAINER_NAME_SUFFIX="-arm64"; \
+  else \
+    CONTAINER_ARCH="amd64"; CONTAINER_NAME_SUFFIX=""; \
+  fi && \
+  wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | gpg --dearmor > /usr/share/keyrings/ose-repo-archive-keyring.gpg && \
+  echo "deb [signed-by=/usr/share/keyrings/ose-repo-archive-keyring.gpg arch=$CONTAINER_ARCH] https://ose-repo.syslog-ng.com/apt/ ${PKG_TYPE} debian-bookworm$CONTAINER_NAME_SUFFIX" | tee --append /etc/apt/sources.list.d/syslog-ng-ose.list
 
 RUN apt-get update -qq && apt-get install -y \
     libdbd-mysql libdbd-pgsql libdbd-sqlite3 syslog-ng libjemalloc2 \
@@ -51,5 +60,10 @@ EXPOSE 601/tcp
 EXPOSE 6514/tcp
 
 HEALTHCHECK --interval=2m --timeout=5s --start-period=30s CMD /usr/sbin/syslog-ng-ctl healthcheck --timeout 5
-ENV LD_PRELOAD /usr/lib/x86_64-linux-gnu/libjemalloc.so.2
-ENTRYPOINT ["/usr/sbin/syslog-ng", "-F"]
+
+ENV LD_PRELOAD=""
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

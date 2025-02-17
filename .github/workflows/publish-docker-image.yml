@@ -81,8 +81,14 @@ jobs:
         with:
           context: docker/
           tags: ${{ steps.tags.outputs.TAGS }}
-          build-args: PKG_TYPE=${{ inputs.pkg-type }}
           platforms: linux/amd64,linux/arm64
+          # TODO: Add proper build-args generation
+          # This simple task is actually would require a pretty complex change, with a matrix strategy, and merging results of multiple generated images
+          # See https://docs.docker.com/build/ci/github-actions/multi-platform/#distribute-build-across-multiple-runners
+          # So, as we are lucky, and these required only once, and only in a RUN docker command that can be dynamic
+          # now generating these in the Dockerfile
+          #build-args: PKG_TYPE=${{ inputs.pkg-type }} CONTAINER_ARCH= CONTAINER_NAME_SUFFIX=
+          build-args: PKG_TYPE=${{ inputs.pkg-type }}
           push: true
 
       - name: Scan docker image on CVEs (CRITICAL,HIGH to a sarif file) # https://aquasecurity.github.io/trivy/v0.54/docs/

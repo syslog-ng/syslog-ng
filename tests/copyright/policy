@@ -308,3 +308,5 @@ modules/http/http\.[ch]
 modules/http/http-parser.c
 modules/http/http-grammar.ym
 modules/correlation/group-lines.c
+docker/Dockerfile
+docker/entrypoint.sh
