@@ -181,7 +181,7 @@ function install_rpm_build_deps {
             rpm_run_build_command yum-builddep -y ${RPM_SPEC_FILE}
             ;;
         fedora)
-            rpm_run_build_command dnf builddep -y ${RPM_SPEC_FILE}
+            rpm_run_build_command dnf builddep -y --allowerasing ${RPM_SPEC_FILE}
             ;;
     esac
 }
