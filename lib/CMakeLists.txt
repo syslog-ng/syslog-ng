@@ -95,7 +95,6 @@ set (LIB_HEADERS
     cfg-tree.h
     cfg-walker.h
     cfg-persist.h
-    cfg-monitor.h
     children.h
     crypto.h
     dnscache.h
@@ -103,6 +102,7 @@ set (LIB_HEADERS
     dynamic-window-pool.h
     dynamic-window.h
     fdhelpers.h
+    file-monitor.h
     file-perms.h
     find-crlf.h
     generic-number.h
@@ -197,13 +197,13 @@ set(LIB_SOURCES
     cfg-tree.c
     cfg-walker.c
     cfg-persist.c
-    cfg-monitor.c
     children.c
     dnscache.c
     driver.c
     dynamic-window.c
     dynamic-window-pool.c
     fdhelpers.c
+    file-monitor.c
     file-perms.c
     find-crlf.c
     globals.c
