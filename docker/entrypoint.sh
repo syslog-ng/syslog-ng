@@ -26,6 +26,7 @@ ARCH=$(uname -m)
 
 unset LD_PRELOAD
 export LD_PRELOAD="/usr/lib/${ARCH}-linux-gnu/libjemalloc.so.2"
-set
+echo; set; echo
 
-/usr/sbin/syslog-ng -F
+echo "Starting syslog-ng with params: $@"
+/usr/sbin/syslog-ng -F $@
