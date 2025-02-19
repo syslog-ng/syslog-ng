@@ -178,6 +178,7 @@ collection_comparator_stop(CollectionComparator *self)
   g_list_foreach(self->deleted_entries, _deleted_entries_callback, self);
   g_list_free_full(self->deleted_entries, free_collection_comparator_entry);
   g_list_foreach(self->added_entries, _added_entries_callback, self);
+  /* the items in self->added_entries are not owned here */
   g_list_free(self->added_entries);
   self->running = FALSE;
 }

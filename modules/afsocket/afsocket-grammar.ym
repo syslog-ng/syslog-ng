@@ -44,6 +44,7 @@
 #include "socket-options-unix.h"
 #include "transport-mapper-inet.h"
 #include "service-management.h"
+#include "string-list.h"
 
 #include "systemd-syslog-source.h"
 #include "afsocket-systemd-override.h"
@@ -890,6 +891,7 @@ tls_option
 	| KW_SSL_OPTIONS '(' string_list ')'
 	  {
       CHECK_ERROR(tls_context_set_ssl_options_by_name(last_tls_context, $3), @3, "unknown ssl-options() argument");
+      string_list_free($3);
 	  }
 	| KW_SSL_VERSION '(' string ')'
 	  {
