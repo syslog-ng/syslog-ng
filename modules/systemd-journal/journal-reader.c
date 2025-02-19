@@ -504,8 +504,9 @@ _set_starting_position(JournalReader *self)
 static gchar *
 _get_cursor(JournalReader *self)
 {
-  gchar *cursor;
-  sd_journal_get_cursor(self->journal, &cursor);
+  gchar *cursor = NULL;
+  if (sd_journal_get_cursor(self->journal, &cursor) < 0)
+    msg_warning("systemd-journal: Failed to get cursor position for bookmark saving", evt_tag_errno("error", errno));
   return cursor;
 }
 
@@ -514,7 +515,10 @@ _reader_save_state(Bookmark *bookmark)
 {
   JournalBookmarkData *bookmark_data = (JournalBookmarkData *)(&bookmark->container);
   JournalReaderState *state = persist_state_map_entry(bookmark->persist_state, bookmark_data->persist_handle);
-  strcpy(state->cursor, bookmark_data->cursor);
+  if (bookmark_data->cursor != NULL)
+    strcpy(state->cursor, bookmark_data->cursor);
+  else
+    strcpy(state->cursor, "");
   persist_state_unmap_entry(bookmark->persist_state, bookmark_data->persist_handle);
 }
 
