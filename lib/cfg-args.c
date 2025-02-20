@@ -97,9 +97,12 @@ cfg_args_get(CfgArgs *self, const gchar *name)
 }
 
 gboolean
-cfg_args_get_as_boolean(CfgArgs *self, const gchar *name)
+cfg_args_get_as_boolean(CfgArgs *self, const gchar *name, gboolean default_value)
 {
   const gchar *value = cfg_args_get(self, name);
+
+  if (!value)
+    return default_value;
 
   if (strcmp(value, "yes") == 0)
     return TRUE;
