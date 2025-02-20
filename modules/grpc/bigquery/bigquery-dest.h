@@ -31,29 +31,14 @@
 #include "driver.h"
 #include "template/templates.h"
 
-typedef struct _BigQueryDestDriver BigQueryDestDriver;
-
 LogDriver *bigquery_dd_new(GlobalConfig *cfg);
 
-void bigquery_dd_set_url(LogDriver *d, const gchar *url);
 void bigquery_dd_set_project(LogDriver *d, const gchar *project);
 void bigquery_dd_set_dataset(LogDriver *d, const gchar *dataset);
 void bigquery_dd_set_table(LogDriver *d, const gchar *table);
 
 gboolean bigquery_dd_add_field(LogDriver *d, const gchar *name, const gchar *type, LogTemplate *value);
 void bigquery_dd_set_protobuf_schema(LogDriver *d, const gchar *proto_path, GList *values);
-
-void bigquery_dd_set_batch_bytes(LogDriver *d, glong b);
-void bigquery_dd_set_compression(LogDriver *d, gboolean b);
-
-void bigquery_dd_set_keepalive_time(LogDriver *d, gint t);
-void bigquery_dd_set_keepalive_timeout(LogDriver *d, gint t);
-void bigquery_dd_set_keepalive_max_pings(LogDriver *d, gint p);
-
-void bigquery_dd_add_int_channel_arg(LogDriver *s, const gchar *name, glong value);
-void bigquery_dd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value);
-
-void bigquery_dd_add_header(LogDriver *s, const gchar *name, const gchar *value);
 
 LogTemplateOptions *bigquery_dd_get_template_options(LogDriver *d);
 

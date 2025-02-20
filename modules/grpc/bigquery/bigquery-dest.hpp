@@ -26,13 +26,12 @@
 #define BIGQUERY_DEST_HPP
 
 #include "bigquery-dest.h"
+#include "grpc-dest.hpp"
 
 #include "compat/cpp-start.h"
 #include "template/templates.h"
 #include "stats/stats-cluster-key-builder.h"
 #include "compat/cpp-end.h"
-
-#include "metrics/grpc-metrics.hpp"
 
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
@@ -79,15 +78,15 @@ struct Field
 
 };
 
-class DestinationDriver final
+class DestinationDriver final : public syslogng::grpc::DestDriver
 {
 public:
-  DestinationDriver(BigQueryDestDriver *s);
+  DestinationDriver(GrpcDestDriver *s);
   ~DestinationDriver();
   bool init();
-  bool deinit();
-  const gchar *format_persist_name();
+  const gchar *generate_persist_name();
   const gchar *format_stats_key(StatsClusterKeyBuilder *kb);
+  LogThreadedDestWorker *construct_worker(int worker_index);
 
   bool add_field(std::string name, std::string type, LogTemplate *value);
   void set_protobuf_schema(std::string proto_path, GList *values);
@@ -95,11 +94,6 @@ public:
   LogTemplateOptions &get_template_options()
   {
     return this->template_options;
-  }
-
-  void set_url(std::string u)
-  {
-    this->url = u;
   }
 
   void set_project(std::string p)
@@ -115,52 +109,6 @@ public:
   void set_table(std::string t)
   {
     this->table = t;
-  }
-
-  void set_batch_bytes(size_t b)
-  {
-    this->batch_bytes = b;
-  }
-
-  void set_compression(bool b)
-  {
-    this->compression = b;
-  }
-
-  void set_keepalive_time(int t)
-  {
-    this->keepalive_time = t;
-  }
-
-  void set_keepalive_timeout(int t)
-  {
-    this->keepalive_timeout = t;
-  }
-
-  void set_keepalive_max_pings(int p)
-  {
-    this->keepalive_max_pings_without_data = p;
-  }
-
-  void add_extra_channel_arg(std::string name, long value)
-  {
-    this->int_extra_channel_args.push_back(std::pair<std::string, long> {name, value});
-  }
-
-  void add_extra_channel_arg(std::string name, std::string value)
-  {
-    this->string_extra_channel_args.push_back(std::pair<std::string, std::string> {name, value});
-  }
-
-  void add_header(std::string name, std::string value)
-  {
-    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-    this->headers.push_back(std::pair<std::string, std::string> {name, value});
-  }
-
-  const std::string &get_url()
-  {
-    return this->url;
   }
 
   const std::string &get_project()
@@ -184,20 +132,11 @@ private:
   bool load_protobuf_schema();
 
 private:
-  BigQueryDestDriver *super;
   LogTemplateOptions template_options;
 
-  std::string url;
   std::string project;
   std::string dataset;
   std::string table;
-
-  size_t batch_bytes;
-
-  int keepalive_time;
-  int keepalive_timeout;
-  int keepalive_max_pings_without_data;
-  bool compression;
 
   struct
   {
@@ -218,12 +157,6 @@ private:
   std::unique_ptr<google::protobuf::DynamicMessageFactory> msg_factory;
   const google::protobuf::Descriptor *schema_descriptor = nullptr;
   const google::protobuf::Message *schema_prototype  = nullptr;
-
-  std::list<std::pair<std::string, long>> int_extra_channel_args;
-  std::list<std::pair<std::string, std::string>> string_extra_channel_args;
-  std::list<std::pair<std::string, std::string>> headers;
-
-  DestDriverMetrics metrics;
 };
 
 
@@ -231,6 +164,6 @@ private:
 }
 }
 
-syslogng::grpc::bigquery::DestinationDriver *bigquery_dd_get_cpp(BigQueryDestDriver *self);
+syslogng::grpc::bigquery::DestinationDriver *bigquery_dd_get_cpp(GrpcDestDriver *self);
 
 #endif

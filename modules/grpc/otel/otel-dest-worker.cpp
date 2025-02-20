@@ -31,8 +31,6 @@
 
 #include "otel-dest-worker.hpp"
 
-#define get_DestWorker(s) (((OtelDestWorker *) s)->cpp)
-
 using namespace syslogng::grpc::otel;
 using namespace google::protobuf::util;
 using namespace opentelemetry::proto::logs::v1;
@@ -41,53 +39,28 @@ using namespace opentelemetry::proto::trace::v1;
 
 /* C++ Implementations */
 
-DestWorker::DestWorker(OtelDestWorker *s)
-  : super(s),
-    owner(*((OtelDestDriver *) s->super.owner)->cpp),
+DestWorker::DestWorker(GrpcDestWorker *s)
+  : syslogng::grpc::DestWorker(s),
     logs_current_batch_bytes(0),
     metrics_current_batch_bytes(0),
     spans_current_batch_bytes(0),
     formatter(s->super.owner->super.super.super.cfg)
 {
-  ::grpc::ChannelArguments args;
-
-  if (owner.get_compression())
+  std::shared_ptr<::grpc::ChannelCredentials> credentials = DestWorker::create_credentials();
+  if (!credentials)
     {
-      args.SetCompressionAlgorithm(GRPC_COMPRESS_GZIP);
+      msg_error("Error querying OTel credentials",
+                evt_tag_str("url", this->owner.get_url().c_str()),
+                log_pipe_location_tag((LogPipe *) this->super->super.owner));
+      throw std::runtime_error("Error querying OTel credentials");
     }
 
-  for (auto nv : owner.int_extra_channel_args)
-    args.SetInt(nv.first, nv.second);
-  for (auto nv : owner.string_extra_channel_args)
-    args.SetString(nv.first, nv.second);
+  ::grpc::ChannelArguments args = this->create_channel_args();
 
-  channel = ::grpc::CreateCustomChannel(owner.get_url(), owner.credentials_builder.build(), args);
+  channel = ::grpc::CreateCustomChannel(owner.get_url(), credentials, args);
   logs_service_stub = LogsService::NewStub(channel);
   metrics_service_stub = MetricsService::NewStub(channel);
   trace_service_stub = TraceService::NewStub(channel);
-}
-
-bool
-DestWorker::init()
-{
-  return log_threaded_dest_worker_init_method(&super->super);
-}
-
-void
-DestWorker::deinit()
-{
-  log_threaded_dest_worker_deinit_method(&super->super);
-}
-
-bool
-DestWorker::connect()
-{
-  return true;
-}
-
-void
-DestWorker::disconnect()
-{
 }
 
 void
@@ -432,13 +405,6 @@ permanent_error:
   return LTR_DROP;
 }
 
-void
-DestWorker::prepare_context(::grpc::ClientContext &context)
-{
-  for (auto nv : owner.headers)
-    context.AddMetadata(nv.first, nv.second);
-}
-
 LogThreadedResult
 DestWorker::flush_log_records()
 {
@@ -540,74 +506,4 @@ exit:
   logs_current_batch_bytes = metrics_current_batch_bytes = spans_current_batch_bytes = 0;
 
   return result;
-}
-
-/* C Wrappers */
-
-static gboolean
-_init(LogThreadedDestWorker *s)
-{
-  return get_DestWorker(s)->init();
-}
-
-static void
-_deinit(LogThreadedDestWorker *s)
-{
-  get_DestWorker(s)->deinit();
-}
-
-static gboolean
-_connect(LogThreadedDestWorker *s)
-{
-  return get_DestWorker(s)->connect();
-}
-
-static void
-_disconnect(LogThreadedDestWorker *s)
-{
-  get_DestWorker(s)->disconnect();
-}
-
-LogThreadedResult
-_insert(LogThreadedDestWorker *s, LogMessage *msg)
-{
-  return get_DestWorker(s)->insert(msg);
-}
-
-LogThreadedResult
-_flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
-{
-  return get_DestWorker(s)->flush(mode);
-}
-
-static void
-_free(LogThreadedDestWorker *s)
-{
-  delete get_DestWorker(s);
-  log_threaded_dest_worker_free_method(s);
-}
-
-void
-otel_dw_init_super(LogThreadedDestWorker *s, LogThreadedDestDriver *o, gint worker_index)
-{
-  log_threaded_dest_worker_init_instance(s, o, worker_index);
-
-  s->init = _init;
-  s->deinit = _deinit;
-  s->connect = _connect;
-  s->disconnect = _disconnect;
-  s->insert = _insert;
-  s->flush = _flush;
-  s->free_fn = _free;
-}
-
-LogThreadedDestWorker *
-DestWorker::construct(LogThreadedDestDriver *o, gint worker_index)
-{
-  OtelDestWorker *self = g_new0(OtelDestWorker, 1);
-
-  otel_dw_init_super(&self->super, o, worker_index);
-  self->cpp = new DestWorker(self);
-
-  return &self->super;
 }

@@ -39,18 +39,11 @@ constexpr const auto DEFAULT_MESSAGE_TEMPLATE = "$ISODATE $HOST $MSGHDR$MSG";
 
 using syslogng::grpc::loki::DestinationDriver;
 
-struct _LokiDestDriver
+DestinationDriver::DestinationDriver(GrpcDestDriver *s)
+  : syslogng::grpc::DestDriver(s), timestamp(LM_TS_PROCESSED)
 {
-  LogThreadedDestDriver super;
-  DestinationDriver *cpp;
-};
-
-DestinationDriver::DestinationDriver(LokiDestDriver *s)
-  : super(s), url("localhost:9095"), timestamp(LM_TS_PROCESSED),
-    keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1)
-{
+  this->url = "localhost:9095";
   log_template_options_defaults(&this->template_options);
-  credentials_builder_wrapper.self = &credentials_builder;
 }
 
 DestinationDriver::~DestinationDriver()
@@ -69,11 +62,6 @@ bool
 DestinationDriver::init()
 {
   GlobalConfig *cfg = log_pipe_get_config(&this->super->super.super.super.super);
-
-  if (!credentials_builder.validate())
-    {
-      return false;
-    }
 
   if (!this->message)
     {
@@ -109,25 +97,11 @@ DestinationDriver::init()
   else
     log_threaded_dest_driver_set_worker_partition_key_ref(&this->super->super.super.super, worker_partition_key);
 
-  if (!log_threaded_dest_driver_init_method(&this->super->super.super.super.super))
-    return false;
-
-  StatsClusterKeyBuilder *kb = stats_cluster_key_builder_new();
-  this->format_stats_key(kb);
-  this->metrics.init(kb, log_pipe_is_internal(&this->super->super.super.super.super) ? STATS_LEVEL3 : STATS_LEVEL1);
-
-  return true;
-}
-
-bool
-DestinationDriver::deinit()
-{
-  this->metrics.deinit();
-  return log_threaded_dest_driver_deinit_method(&this->super->super.super.super.super);
+  return syslogng::grpc::DestDriver::init();
 }
 
 const gchar *
-DestinationDriver::format_persist_name()
+DestinationDriver::generate_persist_name()
 {
   static gchar persist_name[1024];
 
@@ -149,169 +123,66 @@ DestinationDriver::format_stats_key(StatsClusterKeyBuilder *kb)
   return nullptr;
 }
 
-GrpcClientCredentialsBuilderW *
-DestinationDriver::get_credentials_builder_wrapper()
+LogThreadedDestWorker *
+DestinationDriver::construct_worker(int worker_index)
 {
-  return &this->credentials_builder_wrapper;
+  GrpcDestWorker *worker = grpc_dw_new(this->super, worker_index);
+  worker->cpp = new DestinationWorker(worker);
+  return &worker->super;
 }
-
 
 /* C Wrappers */
 
 DestinationDriver *
-loki_dd_get_cpp(LokiDestDriver *self)
+loki_dd_get_cpp(GrpcDestDriver *self)
 {
-  return self->cpp;
-}
-
-static const gchar *
-_format_persist_name(const LogPipe *s)
-{
-  LokiDestDriver *self = (LokiDestDriver *) s;
-  return self->cpp->format_persist_name();
-}
-
-static const gchar *
-_format_stats_key(LogThreadedDestDriver *s, StatsClusterKeyBuilder *kb)
-{
-  LokiDestDriver *self = (LokiDestDriver *) s;
-  return self->cpp->format_stats_key(kb);
-}
-
-GrpcClientCredentialsBuilderW *
-loki_dd_get_credentials_builder(LogDriver *s)
-{
-  LokiDestDriver *self = (LokiDestDriver *) s;
-  return self->cpp->get_credentials_builder_wrapper();
-}
-
-void
-loki_dd_set_url(LogDriver *d, const gchar *url)
-{
-  LokiDestDriver *self = (LokiDestDriver *) d;
-  self->cpp->set_url(url);
+  return (DestinationDriver *) self->cpp;
 }
 
 void
 loki_dd_set_message_template_ref(LogDriver *d, LogTemplate *message)
 {
-  LokiDestDriver *self = (LokiDestDriver *) d;
-  self->cpp->set_message_template_ref(message);
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestinationDriver *cpp = loki_dd_get_cpp(self);
+  cpp->set_message_template_ref(message);
 }
 
 void
 loki_dd_add_label(LogDriver *d, const gchar *name, LogTemplate *value)
 {
-  LokiDestDriver *self = (LokiDestDriver *) d;
-  self->cpp->add_label(name, value);
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestinationDriver *cpp = loki_dd_get_cpp(self);
+  cpp->add_label(name, value);
 }
 
 gboolean
 loki_dd_set_timestamp(LogDriver *d, const gchar *t)
 {
-  LokiDestDriver *self = (LokiDestDriver *) d;
-  return self->cpp->set_timestamp(t);
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestinationDriver *cpp = loki_dd_get_cpp(self);
+  return cpp->set_timestamp(t);
 }
 
 void
 loki_dd_set_tenant_id(LogDriver *d, const gchar *tid)
 {
-  LokiDestDriver *self = (LokiDestDriver *) d;
-  return self->cpp->set_tenant_id(tid);
-}
-
-void
-loki_dd_set_keepalive_time(LogDriver *d, gint t)
-{
-  LokiDestDriver *self = (LokiDestDriver *) d;
-  self->cpp->set_keepalive_time(t);
-}
-
-void
-loki_dd_set_keepalive_timeout(LogDriver *d, gint t)
-{
-  LokiDestDriver *self = (LokiDestDriver *) d;
-  self->cpp->set_keepalive_timeout(t);
-}
-
-void
-loki_dd_set_keepalive_max_pings(LogDriver *d, gint p)
-{
-  LokiDestDriver *self = (LokiDestDriver *) d;
-  self->cpp->set_keepalive_max_pings(p);
-}
-
-void
-loki_dd_add_int_channel_arg(LogDriver *d, const gchar *name, glong value)
-{
-  LokiDestDriver *self = (LokiDestDriver *) d;
-  self->cpp->add_extra_channel_arg(name, value);
-}
-
-void
-loki_dd_add_string_channel_arg(LogDriver *d, const gchar *name, const gchar *value)
-{
-  LokiDestDriver *self = (LokiDestDriver *) d;
-  self->cpp->add_extra_channel_arg(name, value);
-}
-
-void
-loki_dd_add_header(LogDriver *d, const gchar *name, const gchar *value)
-{
-  LokiDestDriver *self = (LokiDestDriver *) d;
-  self->cpp->add_header(name, value);
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestinationDriver *cpp = loki_dd_get_cpp(self);
+  return cpp->set_tenant_id(tid);
 }
 
 LogTemplateOptions *
 loki_dd_get_template_options(LogDriver *d)
 {
-  LokiDestDriver *self = (LokiDestDriver *) d;
-  return &self->cpp->get_template_options();
-}
-
-static gboolean
-_init(LogPipe *s)
-{
-  LokiDestDriver *self = (LokiDestDriver *) s;
-  return self->cpp->init();
-}
-
-static gboolean
-_deinit(LogPipe *s)
-{
-  LokiDestDriver *self = (LokiDestDriver *) s;
-  return self->cpp->deinit();
-}
-
-static void
-_free(LogPipe *s)
-{
-  LokiDestDriver *self = (LokiDestDriver *) s;
-  delete self->cpp;
-
-  log_threaded_dest_driver_free(s);
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  DestinationDriver *cpp = loki_dd_get_cpp(self);
+  return &cpp->get_template_options();
 }
 
 LogDriver *
 loki_dd_new(GlobalConfig *cfg)
 {
-  LokiDestDriver *self = g_new0(LokiDestDriver, 1);
-
-  log_threaded_dest_driver_init_instance(&self->super, cfg);
-
+  GrpcDestDriver *self = grpc_dd_new(cfg, "loki");
   self->cpp = new DestinationDriver(self);
-
-  self->super.super.super.super.init = _init;
-  self->super.super.super.super.deinit = _deinit;
-  self->super.super.super.super.free_fn = _free;
-  self->super.super.super.super.generate_persist_name = _format_persist_name;
-
-  self->super.format_stats_key = _format_stats_key;
-  self->super.stats_source = stats_register_type("loki");
-
-  self->super.worker.construct = loki_dw_new;
-
-  self->super.flush_on_key_change = TRUE;
-
   return &self->super.super.super;
 }
