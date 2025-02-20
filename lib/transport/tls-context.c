@@ -25,6 +25,7 @@
 #include "messages.h"
 #include "compat/openssl_support.h"
 #include "secret-storage/secret-storage.h"
+#include "string-list.h"
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -901,7 +902,7 @@ gboolean
 tls_context_set_conf_cmds(TLSContext *self, GList *cmds, GError **error)
 {
 #if SYSLOG_NG_HAVE_DECL_SSL_CONF_CTX_NEW
-  g_list_foreach(self->conf_cmds_list, (GFunc) g_free, NULL);
+  string_list_free(self->conf_cmds_list);
   self->conf_cmds_list = cmds;
   return TRUE;
 #else
@@ -967,9 +968,9 @@ _tls_context_free(TLSContext *self)
 {
   g_free(self->location);
   SSL_CTX_free(self->ssl_ctx);
-  g_list_foreach(self->conf_cmds_list, (GFunc) g_free, NULL);
-  g_list_foreach(self->trusted_fingerprint_list, (GFunc) g_free, NULL);
-  g_list_foreach(self->trusted_dn_list, (GFunc) g_free, NULL);
+  string_list_free(self->conf_cmds_list);
+  string_list_free(self->trusted_fingerprint_list);
+  string_list_free(self->trusted_dn_list);
   g_free(self->key_file);
   g_free(self->pkcs12_file);
   g_free(self->cert_file);

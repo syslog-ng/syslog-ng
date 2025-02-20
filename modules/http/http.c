@@ -24,6 +24,7 @@
 #include "http.h"
 #include "http-worker.h"
 #include "compression.h"
+#include "string-list.h"
 
 /* HTTPDestinationDriver */
 void
@@ -104,8 +105,8 @@ http_dd_set_headers(LogDriver *d, GList *headers)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
-  g_list_free_full(self->headers, g_free);
-  self->headers = g_list_copy_deep(headers, ((GCopyFunc)g_strdup), NULL);
+  string_list_free(self->headers);
+  self->headers = string_list_clone(headers);
 }
 
 void

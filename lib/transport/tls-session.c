@@ -23,6 +23,7 @@
 #include "transport/tls-session.h"
 #include "transport/tls-context.h"
 #include "str-utils.h"
+#include "string-list.h"
 
 #include <glib/gstdio.h>
 #include <openssl/x509_vfy.h>
@@ -501,7 +502,7 @@ tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints)
 {
   g_assert(fingerprints);
 
-  g_list_foreach(self->trusted_fingerprint_list, (GFunc) g_free, NULL);
+  string_list_free(self->trusted_fingerprint_list);
   self->trusted_fingerprint_list = fingerprints;
 }
 
@@ -510,7 +511,7 @@ tls_session_set_trusted_dn(TLSContext *self, GList *dn)
 {
   g_assert(dn);
 
-  g_list_foreach(self->trusted_dn_list, (GFunc) g_free, NULL);
+  string_list_free(self->trusted_dn_list);
   self->trusted_dn_list = dn;
 }
 

@@ -24,7 +24,7 @@
 #include "xml-scanner.h"
 #include "scratch-buffers.h"
 #include "compat/glib.h"
-
+#include "string-list.h"
 
 /*
   For some patterns, GPatternSpec stores the pattern as reversed
@@ -86,8 +86,8 @@ xml_scanner_options_compile_exclude_tags_to_patterns(XMLScannerOptions *self)
 void
 xml_scanner_options_set_and_compile_exclude_tags(XMLScannerOptions *self, GList *exclude_tags)
 {
-  g_list_free_full(self->exclude_tags, g_free);
-  self->exclude_tags = g_list_copy_deep(exclude_tags, ((GCopyFunc)g_strdup), NULL);
+  string_list_free(self->exclude_tags);
+  self->exclude_tags = string_list_clone(exclude_tags);
   xml_scanner_options_compile_exclude_tags_to_patterns(self);
 }
 

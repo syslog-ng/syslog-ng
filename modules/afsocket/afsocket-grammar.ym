@@ -44,6 +44,7 @@
 #include "socket-options-unix.h"
 #include "transport-mapper-inet.h"
 #include "service-management.h"
+#include "string-list.h"
 
 #include "systemd-syslog-source.h"
 #include "afsocket-systemd-override.h"
@@ -800,25 +801,25 @@ tls_options
 	;
 
 tls_option
-        : KW_IFDEF {
-}
+  : KW_IFDEF
+    {
+    }
 
 	| KW_PEER_VERIFY '(' yesno ')'
 	  {
 	    gint verify_mode = $3 ? (TVM_REQUIRED | TVM_TRUSTED) : (TVM_OPTIONAL | TVM_UNTRUSTED);
 	    tls_context_set_verify_mode(last_tls_context, verify_mode);
-          }
+    }
 	| KW_PEER_VERIFY '(' string ')'
 	  {
-	    CHECK_ERROR(tls_context_set_verify_mode_by_name(last_tls_context, $3), @3,
-	                "unknown peer-verify() argument");
-            free($3);
-          }
+	    CHECK_ERROR(tls_context_set_verify_mode_by_name(last_tls_context, $3), @3, "unknown peer-verify() argument");
+      free($3);
+    }
 	| KW_KEY_FILE '(' path_secret ')'
 	  {
 	    tls_context_set_key_file(last_tls_context, $3);
-            free($3);
-          }
+      free($3);
+    }
 	| KW_KEYLOG_FILE '(' string ')'
 	  {
 	    GError *error = NULL;
@@ -828,88 +829,88 @@ tls_option
 	| KW_CERT_FILE '(' path_check ')'
 	  {
 	    tls_context_set_cert_file(last_tls_context, $3);
-            free($3);
-          }
-        | KW_DHPARAM_FILE '(' path_check ')'
-          {
-            tls_context_set_dhparam_file(last_tls_context, $3);
-            free($3);
-          }
-        | KW_PKCS12_FILE '(' path_check ')'
-          {
-            tls_context_set_pkcs12_file(last_tls_context, $3);
-            free($3);
-          }
-	| KW_CA_DIR '(' string ')'
+      free($3);
+    }
+  | KW_DHPARAM_FILE '(' path_check ')'
+    {
+      tls_context_set_dhparam_file(last_tls_context, $3);
+      free($3);
+    }
+  | KW_PKCS12_FILE '(' path_check ')'
+    {
+      tls_context_set_pkcs12_file(last_tls_context, $3);
+      free($3);
+    }
+  | KW_CA_DIR '(' string ')'
 	  {
 	    tls_context_set_ca_dir(last_tls_context, $3);
-            free($3);
-          }
+      free($3);
+    }
 	| KW_CRL_DIR '(' string ')'
 	  {
 	    tls_context_set_crl_dir(last_tls_context, $3);
-            free($3);
-          }
-        | KW_CA_FILE '(' path_check ')'
-          {
-            tls_context_set_ca_file(last_tls_context, $3);
-            free($3);
-          }
-        | KW_TRUSTED_KEYS '(' string_list ')'
-          {
-            tls_session_set_trusted_fingerprints(last_tls_context, $3);
-          }
-        | KW_TRUSTED_DN '(' string_list ')'
-          {
-            tls_session_set_trusted_dn(last_tls_context, $3);
-          }
-        | KW_CIPHER_SUITE '(' tls_cipher_suites ')'
-        | KW_CIPHER_SUITE '(' string ')'
-          {
-            /* compat for specifying TLS 1.2-or-older ciphers */
-            tls_context_set_cipher_suite(last_tls_context, $3);
-            free($3);
-          }
-        | KW_SIGALGS '(' string ')'
-          {
-            GError *error = NULL;
-            CHECK_ERROR_GERROR(tls_context_set_sigalgs(last_tls_context, $3, &error), @3, error, "Error setting sigalgs()");
-            free($3);
-          }
-        | KW_CLIENT_SIGALGS '(' string ')'
-          {
-            GError *error = NULL;
-            CHECK_ERROR_GERROR(tls_context_set_client_sigalgs(last_tls_context, $3, &error), @3, error, "Error setting client-sigalgs()");
-            free($3);
-          }
-        | KW_ECDH_CURVE_LIST '(' string ')'
-          {
-            tls_context_set_ecdh_curve_list(last_tls_context, $3);
-            free($3);
-          }
+      free($3);
+    }
+  | KW_CA_FILE '(' path_check ')'
+    {
+      tls_context_set_ca_file(last_tls_context, $3);
+      free($3);
+    }
+  | KW_TRUSTED_KEYS '(' string_list ')'
+    {
+      tls_session_set_trusted_fingerprints(last_tls_context, $3);
+    }
+  | KW_TRUSTED_DN '(' string_list ')'
+    {
+      tls_session_set_trusted_dn(last_tls_context, $3);
+    }
+  | KW_CIPHER_SUITE '(' tls_cipher_suites ')'
+  | KW_CIPHER_SUITE '(' string ')'
+    {
+      /* compat for specifying TLS 1.2-or-older ciphers */
+      tls_context_set_cipher_suite(last_tls_context, $3);
+      free($3);
+    }
+  | KW_SIGALGS '(' string ')'
+    {
+      GError *error = NULL;
+      CHECK_ERROR_GERROR(tls_context_set_sigalgs(last_tls_context, $3, &error), @3, error, "Error setting sigalgs()");
+      free($3);
+    }
+  | KW_CLIENT_SIGALGS '(' string ')'
+    {
+      GError *error = NULL;
+      CHECK_ERROR_GERROR(tls_context_set_client_sigalgs(last_tls_context, $3, &error), @3, error, "Error setting client-sigalgs()");
+      free($3);
+    }
+  | KW_ECDH_CURVE_LIST '(' string ')'
+    {
+      tls_context_set_ecdh_curve_list(last_tls_context, $3);
+      free($3);
+    }
 	| KW_SSL_OPTIONS '(' string_list ')'
 	  {
-            CHECK_ERROR(tls_context_set_ssl_options_by_name(last_tls_context, $3), @3,
-                        "unknown ssl-options() argument");
+      CHECK_ERROR(tls_context_set_ssl_options_by_name(last_tls_context, $3), @3, "unknown ssl-options() argument");
+      string_list_free($3);
 	  }
 	| KW_SSL_VERSION '(' string ')'
 	  {
-            CHECK_ERROR(tls_context_set_ssl_version_by_name(last_tls_context, $3), @3,
-                        "unknown ssl-version() argument");
-	    free($3);
-          }
-        | KW_ALLOW_COMPRESS '(' yesno ')'
-          {
-            transport_mapper_inet_set_allow_compress(last_transport_mapper, $3);
-          }
+      CHECK_ERROR(tls_context_set_ssl_version_by_name(last_tls_context, $3), @3, "unknown ssl-version() argument");
+      free($3);
+    }
+  | KW_ALLOW_COMPRESS '(' yesno ')'
+    {
+      transport_mapper_inet_set_allow_compress(last_transport_mapper, $3);
+    }
 	| KW_CONF_CMDS '(' tls_conf_cmds ')'
 	  {
 	    GError *error = NULL;
 	    CHECK_ERROR_GERROR(tls_context_set_conf_cmds(last_tls_context, $3, &error), @3, error, "Error setting conf-cmds()");
 	  }
-        | KW_ENDIF {
-}
-        ;
+  | KW_ENDIF
+    {
+    }
+  ;
 
 tls_conf_cmds
 	: tls_conf_cmd_list_build
