@@ -122,9 +122,6 @@ _curl_debug_function(CURL *handle, curl_infotype type,
                      void *userp)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) userp;
-  if (!G_UNLIKELY(trace_flag))
-    return 0;
-
   g_assert(type < sizeof(curl_infotype_to_text)/sizeof(curl_infotype_to_text[0]));
 
   const gchar *text = curl_infotype_to_text[type];
@@ -200,7 +197,7 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, owner->peer_verify ? 2L : 0L);
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, owner->peer_verify ? 1L : 0L);
 
-  curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, _curl_debug_function);
+  curl_easy_setopt(self->curl, CURLOPT_HEADERDATA, self);
   curl_easy_setopt(self->curl, CURLOPT_DEBUGDATA, self);
   curl_easy_setopt(self->curl, CURLOPT_VERBOSE, 1L);
 
@@ -483,6 +480,12 @@ _reinit_request_body(HTTPDestinationWorker *self)
 }
 
 static void
+_reinit_response_headers(HTTPDestinationWorker *self)
+{
+  g_string_truncate(self->response_encoding, 0);
+}
+
+static void
 _finish_request_body(HTTPDestinationWorker *self)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
@@ -593,6 +596,9 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
   else
     curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
   curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, http_curl_header_list_as_slist(self->request_headers));
+
+  curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, G_UNLIKELY(trace_flag) ? _curl_debug_function : NULL);
+  curl_easy_setopt(self->curl, CURLOPT_HEADERFUNCTION, G_UNLIKELY(trace_flag) ? _curl_header_function : NULL);
 
   CURLcode ret = curl_easy_perform(self->curl);
   if (ret != CURLE_OK)
@@ -818,6 +824,7 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
 
   _reinit_request_headers(self);
   _reinit_request_body(self);
+  _reinit_response_headers(self);
 
   log_msg_unref(self->msg_for_templated_url);
   self->msg_for_templated_url = NULL;
@@ -889,6 +896,7 @@ _init(LogThreadedDestWorker *s)
       self->compressor = construct_compressor_by_type(owner->content_compression);
     }
   self->request_headers = http_curl_header_list_new();
+  self->response_encoding = g_string_new(NULL);
   if (!(self->curl = curl_easy_init()))
     {
       msg_error("http: cannot initialize libcurl",
@@ -900,6 +908,7 @@ _init(LogThreadedDestWorker *s)
   _setup_static_options_in_curl(self);
   _reinit_request_headers(self);
   _reinit_request_body(self);
+  _reinit_response_headers(self);
   return log_threaded_dest_worker_init_method(s);
 }
 
@@ -918,6 +927,10 @@ _deinit(LogThreadedDestWorker *s)
   if (self->compressor)
     compressor_free(self->compressor);
   list_free(self->request_headers);
+
+  if (self->response_encoding)
+    g_string_free(self->response_encoding, TRUE);
+
   curl_easy_cleanup(self->curl);
   log_threaded_dest_worker_deinit_method(s);
 }
