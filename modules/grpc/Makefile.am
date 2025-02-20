@@ -1,7 +1,6 @@
 include modules/grpc/protos/Makefile.am
 
-include modules/grpc/credentials/Makefile.am
-include modules/grpc/metrics/Makefile.am
+include modules/grpc/common/Makefile.am
 
 include modules/grpc/otel/Makefile.am
 include modules/grpc/loki/Makefile.am

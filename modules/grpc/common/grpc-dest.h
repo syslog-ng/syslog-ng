@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -20,17 +22,28 @@
  *
  */
 
-#ifndef BIGQUERY_WORKER_H
-#define BIGQUERY_WORKER_H
+#ifndef GRPC_DEST_H
+#define GRPC_DEST_H
 
 #include "syslog-ng.h"
 
 #include "compat/cpp-start.h"
-#include "logthrdest/logthrdestdrv.h"
 
-typedef struct _BigQueryDestWorker BigQueryDestWorker;
+#include "driver.h"
+#include "credentials/grpc-credentials-builder.h"
 
-LogThreadedDestWorker *bigquery_dw_new(LogThreadedDestDriver *o, gint worker_index);
+typedef struct GrpcDestDriver_ GrpcDestDriver;
+
+void grpc_dd_set_url(LogDriver *s, const gchar *url);
+void grpc_dd_set_compression(LogDriver *s, gboolean enable);
+void grpc_dd_set_batch_bytes(LogDriver *s, glong b);
+void grpc_dd_set_keepalive_time(LogDriver *s, gint t);
+void grpc_dd_set_keepalive_timeout(LogDriver *s, gint t);
+void grpc_dd_set_keepalive_max_pings(LogDriver *s, gint p);
+void grpc_dd_add_int_channel_arg(LogDriver *s, const gchar *name, glong value);
+void grpc_dd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value);
+void grpc_dd_add_header(LogDriver *s, const gchar *name, const gchar *value);
+GrpcClientCredentialsBuilderW *grpc_dd_get_credentials_builder(LogDriver *s);
 
 #include "compat/cpp-end.h"
 

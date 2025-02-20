@@ -21,40 +21,53 @@
  *
  */
 
-#ifndef OTEL_DEST_HPP
-#define OTEL_DEST_HPP
+#ifndef GRPC_DEST_WORKER_HPP
+#define GRPC_DEST_WORKER_HPP
 
-#include "otel-dest.h"
-
-#include "compat/cpp-start.h"
-#include "logthrdest/logthrdestdrv.h"
-#include "compat/cpp-end.h"
+#include <grpcpp/channel.h>
+#include <grpcpp/client_context.h>
+#include <grpcpp/create_channel.h>
+#include <grpcpp/security/credentials.h>
 
 #include "grpc-dest.hpp"
 
-#include <grpcpp/server.h>
-
-#include <list>
+typedef struct GrpcDestWorker_ GrpcDestWorker;
 
 namespace syslogng {
 namespace grpc {
-namespace otel {
 
-class DestDriver: public syslogng::grpc::DestDriver
+class DestWorker
 {
 public:
-  DestDriver(GrpcDestDriver *s) : syslogng::grpc::DestDriver(s) {};
+  DestWorker(GrpcDestWorker *s);
+  virtual ~DestWorker() {};
 
-  const char *format_stats_key(StatsClusterKeyBuilder *kb);
-  const char *generate_persist_name();
-  LogThreadedDestWorker *construct_worker(int worker_index);
+  virtual bool init();
+  virtual void deinit();
+  virtual bool connect();
+  virtual void disconnect();
+  virtual LogThreadedResult insert(LogMessage *msg) = 0;
+  virtual LogThreadedResult flush(LogThreadedFlushMode mode) = 0;
 
 protected:
-  friend class DestWorker;
+  void prepare_context(::grpc::ClientContext &context);
+  std::shared_ptr<::grpc::ChannelCredentials> create_credentials();
+  ::grpc::ChannelArguments create_channel_args();
+
+protected:
+  GrpcDestWorker *super;
+  DestDriver &owner;
 };
 
 }
 }
-}
+
+GrpcDestWorker *grpc_dw_new(GrpcDestDriver *o, gint worker_index);
+
+struct GrpcDestWorker_
+{
+  LogThreadedDestWorker super;
+  syslogng::grpc::DestWorker *cpp;
+};
 
 #endif
