@@ -50,7 +50,7 @@ _sanitize_curl_debug_message(const gchar *data, gsize size)
 {
   GString *sanitized = g_string_sized_new(size * 2);
 
-  for (gsize i = 0; i < size && data[i]; i++)
+  for (gsize i = 0; i < size; i++)
     {
       if (g_ascii_isprint(data[i]))
         g_string_append_c(sanitized, data[i]);
