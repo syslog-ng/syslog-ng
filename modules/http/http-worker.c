@@ -55,7 +55,7 @@ _curl_get_status_code(HTTPDestinationWorker *self, const gchar *url, glong *http
   if (ret != CURLE_OK)
     {
       msg_error("http: error querying response code",
-                evt_tag_str("url", url),
+                evt_tag_str("url", url ? url : ""),
                 evt_tag_str("error", curl_easy_strerror(ret)),
                 evt_tag_int("worker_index", self->super.worker_index),
                 evt_tag_str("driver", owner->super.super.super.id),
@@ -116,6 +116,44 @@ static const gchar *curl_infotype_to_text[] =
   "ssl_data_out",
 };
 
+static GString *
+_decompress_response_error_data(HTTPDestinationWorker *self, const gchar *text, const gchar *data, size_t size)
+{
+  GString *decompressed_error_data = NULL;
+
+  if (g_str_equal(text, "data_in") && self->response_encoding->len > 0 &&
+      (g_str_equal(self->response_encoding->str, "gzip") || g_str_equal(self->response_encoding->str, "deflate")))
+    {
+      glong http_code = 0;
+      gboolean show_hint = TRUE;
+      if (_curl_get_status_code(self, NULL, &http_code))
+        {
+          show_hint = FALSE;
+          // TODO: We might want to always decompress the data or show the hint regardless of the http code?!?
+          if (HTTP_CODE_BASE(http_code) != 2)
+            {
+              /*
+                In case of a http error and the response data is compressed it would be nice to see the full response data
+                that might contain more detailed and useful information about the error.
+                But that requires a decompressor similar to the compressor in compressor.c we do not have currently
+                At least we can give a hint to the user that the response data is compressed, we cannot show it curently,
+                but they can turn off compression temporary to get the full response data.
+                TODO: Handle compressed data instead of printing the hint bellow
+              */
+              //decompressed_error_data = decompress(self->response_encoding->str, data, size);
+              show_hint = (decompressed_error_data == NULL);
+            }
+        }
+      if (show_hint)
+        msg_trace("cURL debug",
+                  evt_tag_int("worker", self->super.worker_index),
+                  evt_tag_str("type", text),
+                  evt_tag_str("hint",
+                              "The response header data is compressed and cannot be shown correctly, try turning off compression in the used http-destination - accept_encoding(none) - to see the full error data"));
+    }
+  return decompressed_error_data;
+}
+
 static gint
 _curl_debug_function(CURL *handle, curl_infotype type,
                      char *data, size_t size,
@@ -123,17 +161,48 @@ _curl_debug_function(CURL *handle, curl_infotype type,
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) userp;
   g_assert(type < sizeof(curl_infotype_to_text)/sizeof(curl_infotype_to_text[0]));
-
   const gchar *text = curl_infotype_to_text[type];
-  gchar *sanitized = _sanitize_curl_debug_message(data, size);
+  GString *decompressed_error_data = _decompress_response_error_data(self, text, data, size);
+  gchar *sanitized = _sanitize_curl_debug_message(decompressed_error_data ? decompressed_error_data->str : data,
+                                                  decompressed_error_data ? decompressed_error_data->len : size);
   msg_trace("cURL debug",
             evt_tag_int("worker", self->super.worker_index),
             evt_tag_str("type", text),
-            evt_tag_str("data", sanitized));
+            evt_tag_str(decompressed_error_data ? "decompressed_data" : "data", sanitized));
+
   g_free(sanitized);
+  if (decompressed_error_data)
+    g_string_free(decompressed_error_data, TRUE);
+
   return 0;
 }
 
+static size_t
+_curl_header_function(char *buffer, size_t size, size_t nitems, void *userp)
+{
+  HTTPDestinationWorker *self = (HTTPDestinationWorker *) userp;
+  size_t total_size = size * nitems;
+  static const gchar encoding_caption[] = "content-encoding:";
+  const size_t caption_len = sizeof(encoding_caption) / sizeof(encoding_caption[0]) - 1;
+
+  // Save the encoding/comression type of the response if it is presented
+  if (strncasecmp(buffer, encoding_caption, caption_len) == 0)
+    {
+      // Skip whitespaces
+      gchar *start = buffer + caption_len;
+      while (*start == ' ' || *start == '\t')
+        start++;
+
+      // Read the encoding string only, we assume the first /r or /n will be only at the end of the line
+      while (start - buffer < total_size && *start && *start != '\r' && *start != '\n')
+        {
+          g_string_append_c(self->response_encoding, g_ascii_tolower(*start));
+          ++start;
+        }
+    }
+
+  return total_size;
+}
 
 static size_t
 _curl_write_function(char *ptr, size_t size, size_t nmemb, void *userdata)
