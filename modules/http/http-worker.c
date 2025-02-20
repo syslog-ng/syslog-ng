@@ -48,15 +48,40 @@ enum HttpHeaderFormatError
 static gchar *
 _sanitize_curl_debug_message(const gchar *data, gsize size)
 {
-  gchar *sanitized = g_new0(gchar, size + 1);
-  gint i;
+  GString *sanitized = g_string_sized_new(size * 2);
 
-  for (i = 0; i < size && data[i]; i++)
+  for (gsize i = 0; i < size && data[i]; i++)
     {
-      sanitized[i] = g_ascii_isprint(data[i]) ? data[i] : '.';
+      if (g_ascii_isprint(data[i]))
+        g_string_append_c(sanitized, data[i]);
+      else
+        switch (data[i])
+          {
+          case '\r':
+            g_string_append(sanitized, "<CR>");
+            break;
+          case '\n':
+            g_string_append(sanitized, "<LF>");
+            break;
+          case '\t':
+            g_string_append(sanitized, "<TAB>");
+            break;
+          case '\f':
+            g_string_append(sanitized, "<FF>");
+            break;
+          case '\v':
+            g_string_append(sanitized, "<VT>");
+            break;
+          case '\0':
+            g_string_append(sanitized, "<NUL>");
+            break;
+          default:
+            g_string_append_printf(sanitized, "\\0x%02X", (guint) (data[i] & 0xFF));
+            break;
+          }
     }
-  sanitized[i] = 0;
-  return sanitized;
+
+  return g_string_free(sanitized, FALSE);
 }
 
 static const gchar *curl_infotype_to_text[] =
@@ -349,7 +374,7 @@ _default_4XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   msg_notice("http: Server returned with a 4XX (client errors) status code, which means we are not "
-             "authorized or the URL is not found.",
+             "authorized or the URL is not found or the request is malformed.",
              evt_tag_str("url", url),
              evt_tag_int("status_code", http_code),
              evt_tag_str("driver", owner->super.super.super.id),
