@@ -1482,6 +1482,7 @@ log_threaded_dest_driver_free(LogPipe *s)
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
   g_free(self->workers);
+  log_template_unref(self->worker_partition_key);
   log_dest_driver_free((LogPipe *)self);
 }
 

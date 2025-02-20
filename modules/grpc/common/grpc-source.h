@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Attila Szakacs
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2023-2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,16 +21,24 @@
  *
  */
 
-#ifndef SYSLOG_NG_OTLP_DEST_H
-#define SYSLOG_NG_OTLP_DEST_H
+#ifndef GRPC_SOURCE_H
+#define GRPC_SOURCE_H
 
 #include "syslog-ng.h"
 
 #include "compat/cpp-start.h"
 
-#include "otel-dest.h"
+#include "driver.h"
+#include "credentials/grpc-credentials-builder.h"
 
-LogDriver *syslog_ng_otlp_dd_new(GlobalConfig *cfg);
+typedef struct GrpcSourceDriver_ GrpcSourceDriver;
+
+void grpc_sd_set_port(LogDriver *s, guint64 port);
+void grpc_sd_set_fetch_limit(LogDriver *s, gint fetch_limit);
+void grpc_sd_set_concurrent_requests(LogDriver *s, gint concurrent_requests);
+void grpc_sd_add_int_channel_arg(LogDriver *s, const gchar *name, gint64 value);
+void grpc_sd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value);
+GrpcServerCredentialsBuilderW *grpc_sd_get_credentials_builder(LogDriver *s);
 
 #include "compat/cpp-end.h"
 
