@@ -27,6 +27,7 @@
 #include "mainloop-call.h"
 #include "ack-tracker/ack_tracker.h"
 #include "ack-tracker/ack_tracker_factory.h"
+#include "str-format.h"
 
 static void log_reader_io_handle_in(gpointer s);
 static gboolean log_reader_fetch_log(LogReader *self);
@@ -481,10 +482,25 @@ static inline void
 _set_addresses(LogReader *self, LogMessage *msg, LogTransportAuxData *aux)
 {
   GSockAddr *source_addr = self->peer_addr;
-  if (aux->peer_addr)
-    source_addr = aux->peer_addr;
-  log_msg_set_saddr(msg, source_addr);
+  if (!aux->peer_addr)
+    goto set;
 
+  source_addr = aux->peer_addr;
+
+  if (!self->peer_addr)
+    goto set;
+
+  gchar buf[MAX_SOCKADDR_STRING];
+
+  const gchar *ip = g_sockaddr_format(self->peer_addr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
+  log_msg_set_value(msg, LM_V_PEER_IP, ip, -1);
+
+  guint16 port = g_sockaddr_get_port(self->peer_addr);
+  gint len = format_uint32_base10_rev(buf, sizeof(buf), 0, port);
+  log_msg_set_value(msg, LM_V_PEER_PORT, buf, len);
+
+set:
+  log_msg_set_saddr(msg, source_addr);
   log_msg_set_daddr(msg, aux->local_addr ? : self->local_addr);
 }
 
