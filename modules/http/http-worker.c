@@ -45,6 +45,26 @@ enum HttpHeaderFormatError
 
 /* HTTPDestinationWorker */
 
+static gboolean
+_curl_get_status_code(HTTPDestinationWorker *self, const gchar *url, glong *http_code)
+{
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+  CURLcode ret = curl_easy_getinfo(self->curl, CURLINFO_RESPONSE_CODE, http_code);
+
+  if (ret != CURLE_OK)
+    {
+      msg_error("http: error querying response code",
+                evt_tag_str("url", url),
+                evt_tag_str("error", curl_easy_strerror(ret)),
+                evt_tag_int("worker_index", self->super.worker_index),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
 static gchar *
 _sanitize_curl_debug_message(const gchar *data, gsize size)
 {
@@ -587,27 +607,6 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
 
   return TRUE;
 }
-
-static gboolean
-_curl_get_status_code(HTTPDestinationWorker *self, const gchar *url, glong *http_code)
-{
-  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  CURLcode ret = curl_easy_getinfo(self->curl, CURLINFO_RESPONSE_CODE, http_code);
-
-  if (ret != CURLE_OK)
-    {
-      msg_error("http: error querying response code",
-                evt_tag_str("url", url),
-                evt_tag_str("error", curl_easy_strerror(ret)),
-                evt_tag_int("worker_index", self->super.worker_index),
-                evt_tag_str("driver", owner->super.super.super.id),
-                log_pipe_location_tag(&owner->super.super.super.super));
-      return FALSE;
-    }
-
-  return TRUE;
-}
-
 
 static LogThreadedResult
 _try_to_custom_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code)
