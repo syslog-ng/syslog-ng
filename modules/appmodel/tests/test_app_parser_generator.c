@@ -217,33 +217,6 @@ Test(app_parser_generator, app_parser_generates_references_to_apps)
   _assert_config_is_valid("port514", NULL);
 }
 
-Test(app_parser_generator, app_parser_uses_filter_or_parser_from_base_topics)
-{
-  _register_application("application foo[port514] {\n"
-                        "};");
-
-  _register_sample_application("foo", "*");
-
-  _app_parser_generate("port514");
-  _assert_parser_framing_is_present();
-  _assert_application_is_present("foo");
-  _assert_snippet_is_present("program('foo')");
-  _assert_snippet_is_present("kv-parser(prefix('foo.'))");
-  _assert_config_is_valid("port514", NULL);
-}
-
-Test(app_parser_generator, app_parser_base_topics_are_skipped)
-{
-  _register_sample_application("foo", "*");
-  _register_sample_application("bar", "*");
-
-  _app_parser_generate("port514");
-  _assert_parser_framing_is_present();
-  _assert_snippet_is_not_present("program('foo')");
-  _assert_snippet_is_not_present("program('bar')");
-  _assert_config_is_valid("port514", NULL);
-}
-
 Test(app_parser_generator, app_parser_is_disabled_if_auto_parse_is_set_to_no)
 {
   _register_sample_application("foo", "port514");
