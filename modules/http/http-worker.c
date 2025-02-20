@@ -31,6 +31,7 @@
 #include "http-signals.h"
 
 #define HTTP_HEADER_FORMAT_ERROR http_header_format_error_quark()
+#define HTTP_CODE_BASE(x) ((x) / 100)
 
 static GQuark http_header_format_error_quark(void)
 {
@@ -436,7 +437,7 @@ default_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gcha
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   LogThreadedResult retval = LTR_ERROR;
 
-  switch (http_code/100)
+  switch (HTTP_CODE_BASE(http_code))
     {
     case 1:
       return _default_1XX(self, url, http_code);
