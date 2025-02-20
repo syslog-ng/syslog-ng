@@ -23,12 +23,12 @@
  */
 
 #include "transport/multitransport.h"
-#include "transport/transport-factory-registry.h"
 #include "messages.h"
 
-void multitransport_add_factory(MultiTransport *self, TransportFactory *transport_factory)
+void
+multitransport_add_factory(MultiTransport *self, TransportFactory *transport_factory)
 {
-  transport_factory_registry_add(self->registry, transport_factory);
+  g_hash_table_insert(self->registry, (gpointer) transport_factory->id, transport_factory);
 }
 
 static void
@@ -46,14 +46,14 @@ _do_transport_switch(MultiTransport *self, LogTransport *new_transport, const Tr
 }
 
 static const TransportFactory *
-_lookup_transport_factory(TransportFactoryRegistry *registry, const TransportFactoryId *factory_id)
+_lookup_transport_factory(MultiTransport *self, const gchar *factory_id)
 {
-  const TransportFactory *factory = transport_factory_registry_lookup(registry, factory_id);
+  const TransportFactory *factory = g_hash_table_lookup(self->registry, factory_id);
 
   if (!factory)
     {
       msg_error("Requested transport not found",
-                evt_tag_str("transport", transport_factory_id_get_transport_name(factory_id)));
+                evt_tag_str("transport", factory_id));
       return NULL;
     }
 
@@ -64,25 +64,25 @@ static LogTransport *
 _construct_transport(const TransportFactory *factory, gint fd)
 {
   LogTransport *transport = transport_factory_construct_transport(factory, fd);
-  const TransportFactoryId *factory_id = transport_factory_get_id(factory);
 
   if (!transport)
     {
       msg_error("Failed to construct transport",
-                evt_tag_str("transport", transport_factory_id_get_transport_name(factory_id)));
+                evt_tag_str("transport", factory->id));
       return NULL;
     }
 
   return transport;
 }
 
-gboolean multitransport_switch(MultiTransport *self, const TransportFactoryId *factory_id)
+gboolean
+multitransport_switch(MultiTransport *self, const gchar *factory_id)
 {
   msg_debug("Transport switch requested",
             evt_tag_str("active-transport", self->active_transport->name),
-            evt_tag_str("requested-transport", transport_factory_id_get_transport_name(factory_id)));
+            evt_tag_str("requested-transport", factory_id));
 
-  const TransportFactory *transport_factory = _lookup_transport_factory(self->registry, factory_id);
+  const TransportFactory *transport_factory = _lookup_transport_factory(self, factory_id);
   if (!transport_factory)
     return FALSE;
 
@@ -99,9 +99,9 @@ gboolean multitransport_switch(MultiTransport *self, const TransportFactoryId *f
 }
 
 gboolean
-multitransport_contains_factory(MultiTransport *self, const TransportFactoryId *factory_id)
+multitransport_contains_factory(MultiTransport *self, const gchar *factory_id)
 {
-  const TransportFactory *factory = transport_factory_registry_lookup(self->registry, factory_id);
+  const TransportFactory *factory = g_hash_table_lookup(self->registry, factory_id);
 
   return (factory != NULL);
 }
@@ -132,7 +132,7 @@ _multitransport_free(LogTransport *s)
   MultiTransport *self = (MultiTransport *)s;
   s->fd = log_transport_release_fd(self->active_transport);
   log_transport_free(self->active_transport);
-  transport_factory_registry_free(self->registry);
+  g_hash_table_unref(self->registry);
   log_transport_free_method(s);
 }
 
@@ -140,13 +140,12 @@ LogTransport *
 multitransport_new(TransportFactory *default_transport_factory, gint fd)
 {
   MultiTransport *self = g_new0(MultiTransport, 1);
-  self->registry = transport_factory_registry_new();
-  transport_factory_registry_add(self->registry, default_transport_factory);
 
   log_transport_init_instance(&self->super, fd);
   self->super.read = _multitransport_read;
   self->super.write = _multitransport_write;
   self->super.free_fn = _multitransport_free;
+  self->registry = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) transport_factory_free);
   self->active_transport = transport_factory_construct_transport(default_transport_factory, fd);
   self->active_transport_factory = default_transport_factory;
 

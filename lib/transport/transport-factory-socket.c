@@ -26,8 +26,6 @@
 #include "transport/transport-socket.h"
 #include "transport/transport-udp-socket.h"
 
-DEFINE_TRANSPORT_FACTORY_ID_FUN("socket", transport_factory_socket_id);
-
 static LogTransport *
 _construct_transport_dgram(const TransportFactory *s, gint fd)
 {
@@ -50,7 +48,7 @@ transport_factory_socket_new(int sock_type)
   else
     self->super.construct_transport = _construct_transport_stream;
 
-  self->super.id = transport_factory_socket_id();
+  self->super.id = TRANSPORT_FACTORY_SOCKET_ID;
 
   return &self->super;
 }
