@@ -116,6 +116,71 @@ static const gchar *curl_infotype_to_text[] =
   "ssl_data_out",
 };
 
+static GString *
+_decompress_response_data(HTTPDestinationWorker *self, const gchar *text, const gchar *data, size_t size)
+{
+  GString *decompressed_error_data = NULL;
+
+  if (g_str_equal(text, "data_in") && self->response_encoding->len > 0
+      && FALSE == g_str_equal(self->response_encoding->str, "identity"))
+    {
+      gboolean show_hint = FALSE;
+
+      // TODO: Once we have the decomressors we should update this list
+      if (g_str_equal(self->response_encoding->str, "gzip") || g_str_equal(self->response_encoding->str, "deflate"))
+        {
+          /* In case of a http error and the response data is compressed it would be nice to see the full response data
+           * that might contain more detailed and useful information about the error.
+           * But that requires a decompressor similar to the compressor in compressor.c we do not have currently
+           * At least we can give a hint to the user that the response data is compressed, we cannot show it curently,
+           * but they can turn off compression temporary to get the full response data. */
+          // TODO: Handle compressed data instead of printing the hint bellow
+          //decompressed_error_data = decompress(self->response_encoding->str, data, size);
+        }
+      show_hint = (decompressed_error_data == NULL);
+      if (show_hint)
+        msg_trace("cURL debug",
+                  evt_tag_int("worker", self->super.worker_index),
+                  evt_tag_str("type", text),
+                  evt_tag_str("hint",
+                              "The response header data is compressed and cannot be shown correctly, for debug purpose you try turning off compression temporally in the used http-destination - accept_encoding(none) - to see the full data"));
+    }
+  return decompressed_error_data;
+}
+
+static size_t
+_curl_header_function(char *buffer, size_t size, size_t nitems, void *userp)
+{
+  HTTPDestinationWorker *self = (HTTPDestinationWorker *) userp;
+  size_t total_size = nitems * size; // everything bellow assumes what curl doc says, that the size is always 1
+  static const gchar encoding_caption[] = "content-encoding:";
+  const size_t caption_len = sizeof(encoding_caption) / sizeof(encoding_caption[0]) - 1;
+
+  /* Save the encoding/comression type of the response if it is presented
+   * https://www.rfc-editor.org/rfc/rfc2616#section-14.3 */
+  if (strncasecmp(buffer, encoding_caption, caption_len) == 0)
+    {
+      // Skip whitespaces
+      gchar *start = buffer + caption_len;
+      while (*start == ' ' || *start == '\t')
+        start++;
+
+      if (self->response_encoding->len > 0 && self->response_encoding->str[self->response_encoding->len - 1] != ',')
+        g_string_append_c(self->response_encoding, ',');
+
+      /* Read the encoding string only, strip whitesapces and convert to lowercase
+       * We assume the first /r or /n will be only at the end of the line */
+      while (start - buffer < total_size && *start && *start != '\r' && *start != '\n')
+        {
+          if (*start != ' ' && *start != '\t')
+            g_string_append_c(self->response_encoding, g_ascii_tolower(*start));
+          ++start;
+        }
+    }
+
+  return total_size;
+}
+
 static gint
 _curl_debug_function(CURL *handle, curl_infotype type,
                      char *data, size_t size,
@@ -123,17 +188,21 @@ _curl_debug_function(CURL *handle, curl_infotype type,
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) userp;
   g_assert(type < sizeof(curl_infotype_to_text)/sizeof(curl_infotype_to_text[0]));
-
   const gchar *text = curl_infotype_to_text[type];
-  gchar *sanitized = _sanitize_curl_debug_message(data, size);
+  GString *decompressed_error_data = _decompress_response_data(self, text, data, size);
+  gchar *sanitized = _sanitize_curl_debug_message(decompressed_error_data ? decompressed_error_data->str : data,
+                                                  decompressed_error_data ? decompressed_error_data->len : size);
   msg_trace("cURL debug",
             evt_tag_int("worker", self->super.worker_index),
             evt_tag_str("type", text),
-            evt_tag_str("data", sanitized));
+            evt_tag_str(decompressed_error_data ? "decompressed_data" : "data", sanitized));
+
   g_free(sanitized);
+  if (decompressed_error_data)
+    g_string_free(decompressed_error_data, TRUE);
+
   return 0;
 }
-
 
 static size_t
 _curl_write_function(char *ptr, size_t size, size_t nmemb, void *userdata)
