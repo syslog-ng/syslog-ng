@@ -32,6 +32,7 @@ GMutex console_lock;
 gboolean console_present = TRUE;
 gboolean using_initial_console = TRUE;
 const gchar *console_prefix;
+gint initial_console_fds[3];
 
 /**
  * console_printf:
@@ -93,6 +94,10 @@ console_acquire_from_fds(gint fds[3])
       (void) write(1, takeover_message_on_old_console, strlen(takeover_message_on_old_console));
     }
 
+  initial_console_fds[0] = dup(STDIN_FILENO);
+  initial_console_fds[1] = dup(STDOUT_FILENO);
+  initial_console_fds[2] = dup(STDERR_FILENO);
+
   dup2(fds[0], STDIN_FILENO);
   dup2(fds[1], STDOUT_FILENO);
   dup2(fds[2], STDERR_FILENO);
@@ -121,25 +126,27 @@ console_release(void)
   if (!console_present)
     goto exit;
 
-  devnull_fd = open("/dev/null", O_RDONLY);
-  if (devnull_fd >= 0)
+  if (initial_console_fds[0] > 0)
     {
-      dup2(devnull_fd, STDIN_FILENO);
-      close(devnull_fd);
+      dup2(initial_console_fds[0], STDIN_FILENO);
+      close(initial_console_fds[0]);
+      initial_console_fds[0] = -1;
     }
-  devnull_fd = open("/dev/null", O_WRONLY);
-  if (devnull_fd >= 0)
+  if (initial_console_fds[1] > 0)
     {
-      dup2(devnull_fd, STDOUT_FILENO);
-      dup2(devnull_fd, STDERR_FILENO);
-      close(devnull_fd);
+      dup2(initial_console_fds[1], STDOUT_FILENO);
+      close(initial_console_fds[1]);
+      initial_console_fds[1] = -1;
     }
-  clearerr(stdin);
-  clearerr(stdout);
-  clearerr(stderr);
-  console_present = FALSE;
-  using_initial_console = FALSE;
+  if (initial_console_fds[2] > 0)
+    {
+      dup2(initial_console_fds[2], STDERR_FILENO);
+      close(initial_console_fds[2]);
+      initial_console_fds[2] = -1;
+    }
 
+  console_present = TRUE;
+  using_initial_console = TRUE;
 exit:
   g_mutex_unlock(&console_lock);
 }
@@ -149,6 +156,9 @@ console_global_init(const gchar *console_prefix_)
 {
   g_mutex_init(&console_lock);
   console_prefix = console_prefix_;
+  initial_console_fds[0] = -1;
+  initial_console_fds[1] = -1;
+  initial_console_fds[2] = -1;
 }
 
 void
