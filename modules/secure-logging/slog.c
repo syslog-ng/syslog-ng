@@ -306,6 +306,21 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
 void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey, unsigned char *inputBigMac,
                GString *output, unsigned char *outputBigMac, gsize outputBigMac_capacity)
 {
+  int slen = (int) text->len;
+
+  // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
+  // Binary data cannot be larger than its base64 encoding
+  unsigned char *bigBuf = g_new0(unsigned char, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+slen);
+
+  if (bigBuf == NULL)
+    {
+      const char *error_msg ="[SLOG] ERROR: Unable to allocate memory buffer";
+      msg_error(error_msg);
+
+      g_string_printf(output, "%s", error_msg);
+
+      return;
+    }
 
   unsigned char encKey[KEY_LENGTH];
   unsigned char MACKey[KEY_LENGTH];
@@ -313,12 +328,6 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
 
   // Compute current log entry number
   gchar *counterString = convertToBase64((unsigned char *)&numberOfLogEntries, sizeof(numberOfLogEntries));
-
-  int slen = (int) text->len;
-
-  // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
-  // Binary data cannot be larger than its base64 encoding
-  unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+slen];
 
   // This is where are ciphertext related data starts
   unsigned char *ctBuf = &bigBuf[AES_BLOCKSIZE];
@@ -338,7 +347,10 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
 
           g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
                           "[SLOG] ERROR: Unable to correctly encrypt the following log message:", text->str);
+
+          // Free resources
           g_free(counterString);
+          g_free(bigBuf);
 
           return;
         }
@@ -366,7 +378,7 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
         {
           gsize outlen = 0;
 
-          cmac(MACKey, &bigBuf[AES_BLOCKSIZE], IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen, outputBigMac_capacity);
+          cmac(MACKey, bigBuf+AES_BLOCKSIZE, IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen, outputBigMac_capacity);
         }
     }
   else
@@ -378,8 +390,12 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
                       "[SLOG] ERROR: Could not obtain enough random bytes for the following log message:", text->str);
       g_free(counterString);
 
-      return;
+      // MAC cannot contain meaningful data -> Initialize contents
+      memset(outputBigMac, 0, outputBigMac_capacity);
     }
+
+  // Free buffer
+  g_free(bigBuf);
 }
 
 /*
@@ -439,8 +455,7 @@ void cmac(unsigned char *key, const void *input, gsize length, unsigned char *ou
 
   EVP_MAC_init(ctx, key, KEY_LENGTH, params);
   EVP_MAC_update(ctx, input, length);
-  size_t out_len;
-  EVP_MAC_final(ctx, out, &out_len, out_capacity);
+  EVP_MAC_final(ctx, out, outlen, out_capacity);
 
   EVP_MAC_CTX_free(ctx);
   EVP_MAC_free(mac);
@@ -474,7 +489,10 @@ void evolveKey(unsigned char *key)
 }
 
 /*
- * AES-CMAC based pseudo-random function (with variable input length and output length)
+ * AES-CMAC based pseudo-random function (with variable input and output lengths)
+ *
+ * https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-56Cr2.pdf
+ * https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-108r1-upd1.pdf
  *
  * 1. Parameter: Pointer to key (input)
  * 2. Parameter: Pointer to input (input)
@@ -482,37 +500,77 @@ void evolveKey(unsigned char *key)
  * 4. Parameter: Pointer to output (output)
  * 5. Parameter: Required output length (input)
  *
- * Note: For security, outputLength must be less than 255 * AES_BLOCKSIZE.
- *
  */
 void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, unsigned char *output,
          guint64 outputLength)
 {
+  // Define data type sizes
+  gsize gs = sizeof(gsize);
+  gsize gsout = sizeof(outputLength);
 
-  unsigned char input[inputLength];
-  memcpy(input, originalInput, inputLength);
+  // First, extraction
+  guchar ktmp[KEY_LENGTH]; // Temporary key
 
-  // Make sure that temporary buffer can hold at least outputLength bytes, rounded up to a multiple of AES_BLOCKSIZE
-  unsigned char buf[outputLength+AES_BLOCKSIZE];
-  gsize buf_capacity = G_N_ELEMENTS(buf);
-  // Prepare plaintext
-  for (int i=0; i<outputLength/AES_BLOCKSIZE; i++)
+  // Initialize to all zero, in case CMAC_LENGTH < KEY_LENGTH
+  bzero(ktmp, KEY_LENGTH);
+  gsize outlen = -1;
+
+  // Assume that KEY_LENGTH >= CMAC_LENGTH
+  cmac(key, originalInput, inputLength, ktmp, &outlen, CMAC_LENGTH);
+
+  // Then, expansion
+  gsize n = outputLength / CMAC_LENGTH;
+
+  gchar label[] = "key-expansion";
+  gchar context[] = "none";
+  gsize label_len = strlen(label);
+  gsize context_len = strlen(context);
+
+  // Total space needed for i || Label || 00 || Context || outputLength;
+  gsize total_input_length = gs + label_len + 1 + context_len + gsout;
+  guchar input[total_input_length];
+
+  for (gsize i = 0 ; i < n ; i++)
     {
-      gsize outlen;
-      cmac(key, input, AES_BLOCKSIZE, buf + (i*AES_BLOCKSIZE), &outlen, buf_capacity - (i*AES_BLOCKSIZE));
-      input[inputLength-1]++;
+      // input = i || Label || 00 || Context || outputLength;
+
+      // Write input chunk and label
+      memcpy(input, &i, gs);
+      memcpy(input + gs, label, label_len);
+
+      // Write the 0x00 byte
+      *(input + gs + label_len) = 0;
+
+      // Write the context and output
+      memcpy(input + gs + label_len + 1, context, context_len);
+      memcpy(input + gs + label_len + 1 + context_len, &outputLength, gsout);
+
+      // Finally apply the CMAC
+      cmac(ktmp, input, total_input_length, output + (i*CMAC_LENGTH), &outlen, CMAC_LENGTH);
     }
 
-  if (outputLength % AES_BLOCKSIZE!=0)
+  // Finalize the output
+  if (outputLength % CMAC_LENGTH != 0)
     {
-      int index = outputLength/AES_BLOCKSIZE;
-      gsize outlen;
-      cmac(key, input, AES_BLOCKSIZE, buf + (index*AES_BLOCKSIZE), &outlen, buf_capacity - (index*AES_BLOCKSIZE));
-    }
+      guchar buf[CMAC_LENGTH];
 
-  memcpy(output, buf, outputLength);
+      // Write last input chunk and label
+      memcpy(input, &n, gs);
+      memcpy(input + gs, label, label_len);
+
+      // Write the 0x00 byte
+      *(input + gs + label_len) = 0;
+
+      // Write the context and output
+      memcpy(input + gs + label_len + 1, context, context_len);
+      memcpy(input + gs + label_len + 1 + context_len, &outputLength, gsout);
+      // Apply the final CMAC
+      cmac(ktmp, input, total_input_length, buf, &outlen, CMAC_LENGTH);
+
+      // Copy result to output buffer
+      memcpy(output + n * CMAC_LENGTH, buf, outputLength % CMAC_LENGTH);
+    }
 }
-
 
 /*
  * Generate a master key
@@ -532,20 +590,32 @@ int generateMasterKey(guchar *masterkey)
 /*
  * Generate a host key based on a previously created master key
  *
- * 1. Parameter: master key
- * 2. Parameter: Host MAC address
- * 3. Parameter: Host S/N
+ * 1. Parameter: master key (input)
+ * 2. Parameter: Host MAC address (input)
+ * 3. Parameter: Host S/N (input)
+ * 4. Parameter: Host key (output)
  *
- * The specific unique host key k_0 is k_0 = H(master key|| MAC address || S/N)
- * and requires 48 bytes of storage. Additional 8 bytes need to be allocated to store
- * the serial number of the host key. The caller has to allocate this memory.
+ * The specific unique host key k_0 is k_0 = PRF_{master_key}(MAC address ||
+ * S/N) and requires 32 bytes of storage. The caller has to allocate this
+ * memory.
  *
  * Return:
  * 1 on success
  * 0 on error
  */
+#define newDeriveHostKey
 int deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar *hostkey)
 {
+
+#ifdef newDeriveHostKey
+  gchar concatString[strlen(macAddr) + strlen(serial) + 1];
+  strncpy(concatString, macAddr, strlen(macAddr));
+  strncat(concatString, serial, strlen(serial));
+
+  PRF(masterkey, (guchar *) concatString, strlen(concatString), hostkey, KEY_LENGTH);
+
+  return 1;
+#else
   EVP_MD_CTX *ctx;
 
   if((ctx = EVP_MD_CTX_create()) == NULL)
@@ -578,6 +648,7 @@ int deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar *host
   EVP_MD_CTX_destroy(ctx);
 
   return 1;
+#endif
 }
 
 /*
@@ -1225,6 +1296,12 @@ int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *
 int initVerify(guint64 entriesInFile, unsigned char *mainKey, guint64 *nextLogEntry, guint64 *startingEntry,
                GString **input, GHashTable **tab)
 {
+  if (input[0] == NULL)
+    {
+      msg_error("[SLOG] ERROR: Input == NULL in initVerify");
+      return 0;
+    }
+
   // Create hash table
   *tab = g_hash_table_new(g_str_hash, g_str_equal);
   if (*tab == NULL)
@@ -1380,8 +1457,15 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
       g_io_channel_unref(output);
       g_clear_error(&myError);
 
-      g_free(inputBuffer);
-      g_free(outputBuffer);
+      if(inputBuffer != NULL)
+        {
+          g_free(inputBuffer);
+        }
+
+      if (outputBuffer != NULL)
+        {
+          g_free(outputBuffer);
+        }
 
       return 0;
     }
@@ -1687,6 +1771,16 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
       g_clear_error(&myError);
 
+      if (inputBuffer != NULL)
+        {
+          g_free(inputBuffer);
+        }
+
+      if (outputBuffer != NULL)
+        {
+          g_free(outputBuffer);
+        }
+
       return 0;
     }
 
@@ -1704,6 +1798,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
   for (guint64 i = 0; i < chunkLength; i++)
     {
       inputBuffer[i] = g_string_new(NULL);
+
       status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
       if (status != G_IO_STATUS_NORMAL)
         {
@@ -1738,6 +1833,15 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
   // Write to file
   for (guint64 i = 0; i < chunkLength; i++)
     {
+      if (outputBuffer[i] == NULL)
+        {
+          msg_error ("[SLOG] ERROR: Invalid output buffer (== NULL)");
+          g_free(inputBuffer);
+          g_free(outputBuffer);
+
+          return 0;
+        }
+
       if (outputBuffer[i]->len!=0)
         {
           gsize size;
