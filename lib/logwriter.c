@@ -1164,6 +1164,37 @@ log_writer_realloc_line_buffer(LogWriter *self)
 }
 
 /*
+ * This function is intended to be called by the current logwriter worker thread.
+ * As the writer thread is the only one currently working with proto, we can set it without lock.
+ *
+ * It is also not necessary to register or start watches, as this happens in _work_finished.
+ * In contrast to log_writer_reopen this function takes immediate effect and does not deadlock
+ * when called within the writer thread.
+ *
+ * Other threads should call log_writer_reopen, as there could be an ongoing write operation!
+ */
+static void
+log_writer_logrotate(LogWriter *self)
+{
+  gint fd = -1;
+
+  /* Signal AFFileDestWriter to check for logrotation */
+  log_pipe_notify(self->control, NC_LOGROTATE, (gpointer) &fd);
+
+  if (fd > 0)
+    {
+      LogProtoClient *proto = log_writer_steal_proto(self);
+
+      if (proto)
+        {
+          log_proto_client_update_fd(proto, fd);
+          log_writer_set_proto(self, proto);
+        }
+
+    }
+}
+
+/*
  * Write messages to the underlying file descriptor using the installed
  * LogProtoClient instance.  This is called whenever the output is ready to accept
  * further messages, and once during config deinitialization, in order to
@@ -1181,8 +1212,10 @@ log_writer_flush_finalize(LogWriter *self)
   LogProtoStatus status = log_proto_client_flush(self->proto);
 
   if (status == LPS_SUCCESS || status == LPS_PARTIAL)
-    return TRUE;
-
+    {
+      log_writer_logrotate(self);
+      return TRUE;
+    }
 
   return FALSE;
 }
