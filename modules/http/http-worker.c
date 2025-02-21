@@ -31,6 +31,7 @@
 #include "http-signals.h"
 
 #define HTTP_HEADER_FORMAT_ERROR http_header_format_error_quark()
+#define HTTP_CODE_BASE(x) ((x) / 100)
 
 static GQuark http_header_format_error_quark(void)
 {
@@ -45,18 +46,63 @@ enum HttpHeaderFormatError
 
 /* HTTPDestinationWorker */
 
+static gboolean
+_curl_get_status_code(HTTPDestinationWorker *self, const gchar *url, glong *http_code)
+{
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+  CURLcode ret = curl_easy_getinfo(self->curl, CURLINFO_RESPONSE_CODE, http_code);
+
+  if (ret != CURLE_OK)
+    {
+      msg_error("http: error querying response code",
+                evt_tag_str("url", url),
+                evt_tag_str("error", curl_easy_strerror(ret)),
+                evt_tag_int("worker_index", self->super.worker_index),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
 static gchar *
 _sanitize_curl_debug_message(const gchar *data, gsize size)
 {
-  gchar *sanitized = g_new0(gchar, size + 1);
-  gint i;
+  GString *sanitized = g_string_sized_new(size * 2);
 
-  for (i = 0; i < size && data[i]; i++)
+  for (gsize i = 0; i < size; i++)
     {
-      sanitized[i] = g_ascii_isprint(data[i]) ? data[i] : '.';
+      if (g_ascii_isprint(data[i]))
+        g_string_append_c(sanitized, data[i]);
+      else
+        switch (data[i])
+          {
+          case '\r':
+            g_string_append(sanitized, "<CR>");
+            break;
+          case '\n':
+            g_string_append(sanitized, "<LF>");
+            break;
+          case '\t':
+            g_string_append(sanitized, "<TAB>");
+            break;
+          case '\f':
+            g_string_append(sanitized, "<FF>");
+            break;
+          case '\v':
+            g_string_append(sanitized, "<VT>");
+            break;
+          case '\0':
+            g_string_append(sanitized, "<NUL>");
+            break;
+          default:
+            g_string_append_printf(sanitized, "\\0x%02X", (guint) (data[i] & 0xFF));
+            break;
+          }
     }
-  sanitized[i] = 0;
-  return sanitized;
+
+  return g_string_free(sanitized, FALSE);
 }
 
 static const gchar *curl_infotype_to_text[] =
@@ -70,27 +116,93 @@ static const gchar *curl_infotype_to_text[] =
   "ssl_data_out",
 };
 
+static GString *
+_decompress_response_data(HTTPDestinationWorker *self, const gchar *text, const gchar *data, size_t size)
+{
+  GString *decompressed_error_data = NULL;
+
+  if (g_str_equal(text, "data_in") && self->response_encoding->len > 0
+      && FALSE == g_str_equal(self->response_encoding->str, "identity"))
+    {
+      gboolean show_hint = FALSE;
+
+      // TODO: Once we have the decomressors we should update this list
+      if (g_str_equal(self->response_encoding->str, "gzip") || g_str_equal(self->response_encoding->str, "deflate"))
+        {
+          /* In case of a http error and the response data is compressed it would be nice to see the full response data
+           * that might contain more detailed and useful information about the error.
+           * But that requires a decompressor similar to the compressor in compressor.c we do not have currently
+           * At least we can give a hint to the user that the response data is compressed, we cannot show it curently,
+           * but they can turn off compression temporary to get the full response data. */
+          // TODO: Handle compressed data instead of printing the hint bellow
+          //decompressed_error_data = decompress(self->response_encoding->str, data, size);
+        }
+      show_hint = (decompressed_error_data == NULL);
+      if (show_hint)
+        msg_trace("cURL debug",
+                  evt_tag_int("worker", self->super.worker_index),
+                  evt_tag_str("type", text),
+                  evt_tag_str("hint",
+                              "The response header data is compressed and cannot be shown correctly, for debug purpose you try turning off compression temporally in the used http-destination - accept_encoding(none) - to see the full data"));
+    }
+  return decompressed_error_data;
+}
+
+static size_t
+_curl_header_function(char *buffer, size_t size, size_t nitems, void *userp)
+{
+  HTTPDestinationWorker *self = (HTTPDestinationWorker *) userp;
+  size_t total_size = nitems * size; // everything bellow assumes what curl doc says, that the size is always 1
+  static const gchar encoding_caption[] = "content-encoding:";
+  const size_t caption_len = sizeof(encoding_caption) / sizeof(encoding_caption[0]) - 1;
+
+  /* Save the encoding/comression type of the response if it is presented
+   * https://www.rfc-editor.org/rfc/rfc2616#section-14.3 */
+  if (strncasecmp(buffer, encoding_caption, caption_len) == 0)
+    {
+      // Skip whitespaces
+      gchar *start = buffer + caption_len;
+      while (*start == ' ' || *start == '\t')
+        start++;
+
+      if (self->response_encoding->len > 0 && self->response_encoding->str[self->response_encoding->len - 1] != ',')
+        g_string_append_c(self->response_encoding, ',');
+
+      /* Read the encoding string only, strip whitesapces and convert to lowercase
+       * We assume the first /r or /n will be only at the end of the line */
+      while (start - buffer < total_size && *start && *start != '\r' && *start != '\n')
+        {
+          if (*start != ' ' && *start != '\t')
+            g_string_append_c(self->response_encoding, g_ascii_tolower(*start));
+          ++start;
+        }
+    }
+
+  return total_size;
+}
+
 static gint
 _curl_debug_function(CURL *handle, curl_infotype type,
                      char *data, size_t size,
                      void *userp)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) userp;
-  if (!G_UNLIKELY(trace_flag))
-    return 0;
-
   g_assert(type < sizeof(curl_infotype_to_text)/sizeof(curl_infotype_to_text[0]));
-
   const gchar *text = curl_infotype_to_text[type];
-  gchar *sanitized = _sanitize_curl_debug_message(data, size);
+  GString *decompressed_error_data = _decompress_response_data(self, text, data, size);
+  gchar *sanitized = _sanitize_curl_debug_message(decompressed_error_data ? decompressed_error_data->str : data,
+                                                  decompressed_error_data ? decompressed_error_data->len : size);
   msg_trace("cURL debug",
             evt_tag_int("worker", self->super.worker_index),
             evt_tag_str("type", text),
-            evt_tag_str("data", sanitized));
+            evt_tag_str(decompressed_error_data ? "decompressed_data" : "data", sanitized));
+
   g_free(sanitized);
+  if (decompressed_error_data)
+    g_string_free(decompressed_error_data, TRUE);
+
   return 0;
 }
-
 
 static size_t
 _curl_write_function(char *ptr, size_t size, size_t nmemb, void *userdata)
@@ -154,7 +266,7 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, owner->peer_verify ? 2L : 0L);
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, owner->peer_verify ? 1L : 0L);
 
-  curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, _curl_debug_function);
+  curl_easy_setopt(self->curl, CURLOPT_HEADERDATA, self);
   curl_easy_setopt(self->curl, CURLOPT_DEBUGDATA, self);
   curl_easy_setopt(self->curl, CURLOPT_VERBOSE, 1L);
 
@@ -349,7 +461,7 @@ _default_4XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   msg_notice("http: Server returned with a 4XX (client errors) status code, which means we are not "
-             "authorized or the URL is not found.",
+             "authorized or the URL is not found or the request is malformed.",
              evt_tag_str("url", url),
              evt_tag_int("status_code", http_code),
              evt_tag_str("driver", owner->super.super.super.id),
@@ -391,7 +503,7 @@ default_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gcha
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   LogThreadedResult retval = LTR_ERROR;
 
-  switch (http_code/100)
+  switch (HTTP_CODE_BASE(http_code))
     {
     case 1:
       return _default_1XX(self, url, http_code);
@@ -434,6 +546,12 @@ _reinit_request_body(HTTPDestinationWorker *self)
   if (owner->body_prefix->len > 0)
     g_string_append_len(self->request_body, owner->body_prefix->str, owner->body_prefix->len);
 
+}
+
+static void
+_reinit_response_headers(HTTPDestinationWorker *self)
+{
+  g_string_truncate(self->response_encoding, 0);
 }
 
 static void
@@ -548,6 +666,9 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
     curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
   curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, http_curl_header_list_as_slist(self->request_headers));
 
+  curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, G_UNLIKELY(trace_flag) ? _curl_debug_function : NULL);
+  curl_easy_setopt(self->curl, CURLOPT_HEADERFUNCTION, G_UNLIKELY(trace_flag) ? _curl_header_function : NULL);
+
   CURLcode ret = curl_easy_perform(self->curl);
   if (ret != CURLE_OK)
     {
@@ -562,27 +683,6 @@ _curl_perform_request(HTTPDestinationWorker *self, const gchar *url)
 
   return TRUE;
 }
-
-static gboolean
-_curl_get_status_code(HTTPDestinationWorker *self, const gchar *url, glong *http_code)
-{
-  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  CURLcode ret = curl_easy_getinfo(self->curl, CURLINFO_RESPONSE_CODE, http_code);
-
-  if (ret != CURLE_OK)
-    {
-      msg_error("http: error querying response code",
-                evt_tag_str("url", url),
-                evt_tag_str("error", curl_easy_strerror(ret)),
-                evt_tag_int("worker_index", self->super.worker_index),
-                evt_tag_str("driver", owner->super.super.super.id),
-                log_pipe_location_tag(&owner->super.super.super.super));
-      return FALSE;
-    }
-
-  return TRUE;
-}
-
 
 static LogThreadedResult
 _try_to_custom_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code)
@@ -793,6 +893,7 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
 
   _reinit_request_headers(self);
   _reinit_request_body(self);
+  _reinit_response_headers(self);
 
   log_msg_unref(self->msg_for_templated_url);
   self->msg_for_templated_url = NULL;
@@ -864,6 +965,7 @@ _init(LogThreadedDestWorker *s)
       self->compressor = construct_compressor_by_type(owner->content_compression);
     }
   self->request_headers = http_curl_header_list_new();
+  self->response_encoding = g_string_new(NULL);
   if (!(self->curl = curl_easy_init()))
     {
       msg_error("http: cannot initialize libcurl",
@@ -875,6 +977,7 @@ _init(LogThreadedDestWorker *s)
   _setup_static_options_in_curl(self);
   _reinit_request_headers(self);
   _reinit_request_body(self);
+  _reinit_response_headers(self);
   return log_threaded_dest_worker_init_method(s);
 }
 
@@ -893,6 +996,10 @@ _deinit(LogThreadedDestWorker *s)
   if (self->compressor)
     compressor_free(self->compressor);
   list_free(self->request_headers);
+
+  if (self->response_encoding)
+    g_string_free(self->response_encoding, TRUE);
+
   curl_easy_cleanup(self->curl);
   log_threaded_dest_worker_deinit_method(s);
 }
