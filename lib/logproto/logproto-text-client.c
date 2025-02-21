@@ -38,12 +38,7 @@ log_proto_text_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, g
   if (*cond == 0)
     *cond = G_IO_OUT;
 
-  const gboolean pending_write = self->partial != NULL;
-
-  if (!pending_write && s->options->timeout > 0)
-    *timeout = s->options->timeout;
-
-  return pending_write;
+  return self->partial != NULL;
 }
 
 static LogProtoStatus

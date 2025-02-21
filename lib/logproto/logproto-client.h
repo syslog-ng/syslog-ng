@@ -35,7 +35,7 @@ typedef struct _LogProtoClient LogProtoClient;
 typedef struct _LogProtoClientOptions
 {
   gboolean drop_input;
-  gint timeout;
+  gint idle_timeout;
 } LogProtoClientOptions;
 
 typedef union _LogProtoClientOptionsStorage
@@ -73,8 +73,7 @@ struct _LogProtoClient
   LogProtoStatus (*process_in)(LogProtoClient *s);
   LogProtoStatus (*flush)(LogProtoClient *s);
   gboolean (*validate_options)(LogProtoClient *s);
-  gboolean (*handshake_in_progess)(LogProtoClient *s);
-  LogProtoStatus (*handshake)(LogProtoClient *s);
+  LogProtoStatus (*handshake)(LogProtoClient *s, gboolean *handshake_finished);
   gboolean (*restart_with_state)(LogProtoClient *s, PersistState *state, const gchar *persist_name);
   void (*free_fn)(LogProtoClient *s);
   LogProtoClientFlowControlFuncs flow_control_funcs;
@@ -113,30 +112,25 @@ log_proto_client_validate_options(LogProtoClient *self)
   return self->validate_options(self);
 }
 
-static inline gboolean
-log_proto_client_handshake_in_progress(LogProtoClient *s)
-{
-  if (s->handshake_in_progess)
-    {
-      return s->handshake_in_progess(s);
-    }
-  return FALSE;
-}
-
 static inline LogProtoStatus
-log_proto_client_handshake(LogProtoClient *s)
+log_proto_client_handshake(LogProtoClient *s, gboolean *handshake_finished)
 {
   if (s->handshake)
     {
-      return s->handshake(s);
+      return s->handshake(s, handshake_finished);
     }
+  *handshake_finished = TRUE;
   return LPS_SUCCESS;
 }
 
 static inline gboolean
 log_proto_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
-  return s->prepare(s, fd, cond, timeout);
+  gboolean result = s->prepare(s, fd, cond, timeout);
+
+  if (!result && *timeout < 0)
+    *timeout = s->options->idle_timeout;
+  return result;
 }
 
 static inline LogProtoStatus
