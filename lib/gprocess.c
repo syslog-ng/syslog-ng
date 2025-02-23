@@ -27,7 +27,6 @@
 #include "messages.h"
 #include "reloc.h"
 #include "console.h"
-#include "perf/perf.h"
 #include "stackdump.h"
 
 #include <sys/types.h>
@@ -51,8 +50,8 @@
 #include <grp.h>
 
 #if SYSLOG_NG_ENABLE_LINUX_CAPS
-#  include <sys/capability.h>
-#  include <sys/prctl.h>
+# include <sys/capability.h>
+# include <sys/prctl.h>
 #endif
 
 /*
