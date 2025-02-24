@@ -24,8 +24,11 @@
 #include "ctl-stats.h"
 #include "syslog-ng.h"
 
-static gint attach_options_seconds;
+#include <unistd.h>
+
+static gint attach_options_seconds = -1;
 static gchar *attach_options_log_level = NULL;
+static gint attach_options_fds_to_steel = 0;
 static gchar **attach_commands = NULL;
 
 static gboolean
@@ -43,10 +46,39 @@ _store_log_level(const gchar *option_name,
   return FALSE;
 }
 
+static gboolean
+_parse_fd_names(const gchar *option_name,
+                const gchar *value,
+                gpointer data,
+                GError **error)
+{
+  gboolean result = TRUE;
+  gchar **fds = g_strsplit(value, ",", 3);
+
+  attach_options_fds_to_steel = 0;
+  for (gchar **fd = fds; *fd; fd++)
+    {
+      if (g_str_equal(*fd, "stdin"))
+        attach_options_fds_to_steel |= (1 << STDIN_FILENO);
+      else if (g_str_equal(*fd, "stdout"))
+        attach_options_fds_to_steel |= (1 << STDOUT_FILENO);
+      else if (g_str_equal(*fd, "stderr"))
+        attach_options_fds_to_steel |= (1 << STDERR_FILENO);
+      else
+        {
+          g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED, "Unknown %s option value: %s", option_name, *fd);
+          result = FALSE;
+        }
+    }
+  g_strfreev(fds);
+  return result;
+}
+
 GOptionEntry attach_options[] =
 {
-  { "seconds", 0, 0, G_OPTION_ARG_INT, &attach_options_seconds, "amount of time to attach for", NULL },
-  { "log-level", 0, 0, G_OPTION_ARG_CALLBACK, _store_log_level, "change syslog-ng log level", "<default|verbose|debug|trace>" },
+  { "seconds", 's', 0, G_OPTION_ARG_INT, &attach_options_seconds, "amount of time to attach for", NULL },
+  { "log-level", 'l', 0, G_OPTION_ARG_CALLBACK, _store_log_level, "change syslog-ng log level", "<default|verbose|debug|trace>" },
+  { "fds-to-steel", 'f', 0, G_OPTION_ARG_CALLBACK, _parse_fd_names, "which stdio file handlers to attach to, default is <stdout,stderr>, valid only with the `stdio` attach mode", "<stdin|stdout|stderr> in a comma separated list"  },
   { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &attach_commands, "attach mode: logs, debugger, stdio", NULL },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL, NULL }
 };
@@ -61,7 +93,7 @@ slng_attach(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
     {
       if (attach_commands[1])
         {
-          fprintf(stderr, "Too many arguments");
+          fprintf(stderr, "Error parsing command line arguments: Too many arguments");
           return 1;
         }
       attach_mode = attach_commands[0];
@@ -77,13 +109,22 @@ slng_attach(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
     g_string_append(command, " DEBUGGER");
   else
     {
-      fprintf(stderr, "Unknown attach mode\n");
+      fprintf(stderr, "Error parsing command line arguments: Unknown attach mode\n");
+      return 1;
+    }
+  if (FALSE == g_str_equal(attach_mode, "stdio") && attach_options_fds_to_steel > 0)
+    {
+      fprintf(stderr, "Error parsing command line arguments: %s is valid only with %s attach mode\n",
+              "fds-to-steel", "stdio");
       return 1;
     }
 
-  g_string_append_printf(command, " %d", attach_options_seconds ? : -1);
+  g_string_append_printf(command, " %d", attach_options_seconds > 0 ? attach_options_seconds : -1);
+  g_string_append_printf(command, " %d",
+                         attach_options_fds_to_steel > 0 ? attach_options_fds_to_steel : (1 << STDOUT_FILENO) | (1 << STDERR_FILENO));
   if (attach_options_log_level)
     g_string_append_printf(command, " %s", attach_options_log_level);
+
   gint result = attach_command(command->str);
   g_string_free(command, TRUE);
   return result;

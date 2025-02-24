@@ -32,6 +32,7 @@ GMutex console_lock;
 gboolean using_initial_console = TRUE;
 const gchar *console_prefix;
 gint initial_console_fds[3];
+gint stolen_fds;
 
 /**
  * console_printf:
@@ -65,7 +66,7 @@ console_printf(const gchar *fmt, ...)
 }
 
 
-/* NOTE: this is not synced with any changes and is just an indication whether we have a console */
+/* NOTE: this is not synced with any changes and is just an indication whether we already acquired the console */
 gboolean
 console_is_initial(void)
 {
@@ -78,26 +79,61 @@ console_is_initial(void)
   return result;
 }
 
+GString *
+_get_fn_names(gint fns)
+{
+  GString *result = g_string_new(NULL);
+
+  if (fns & (1 << STDIN_FILENO))
+    g_string_append(result, "stdin");
+  if (fns & (1 << STDOUT_FILENO))
+    {
+      if (result->len > 0)
+        g_string_append_c(result, ',');
+      g_string_append(result, "stdout");
+    }
+  if (fns & (1 << STDERR_FILENO))
+    {
+      if (result->len > 0)
+        g_string_append_c(result, ',');
+      g_string_append(result, "stderr");
+    }
+
+  return result;
+}
+
 /* re-acquire a console after startup using an array of fds */
 gboolean
-console_acquire_from_fds(gint fds[3])
+console_acquire_from_fds(gint fds[3], gint fds_to_steel)
 {
-  const gchar *takeover_message_on_old_console = "[Console taken over, no further output here]\n";
   gboolean result = FALSE;
 
   g_mutex_lock(&console_lock);
-  if (using_initial_console)
-      goto exit;
+  if (!using_initial_console)
+    goto exit;
 
-  (void) write(1, takeover_message_on_old_console, strlen(takeover_message_on_old_console));
+  GString *stolen_fn_names = _get_fn_names(fds_to_steel);
+  gchar *takeover_message_on_old_console = g_strdup_printf("[Console(%s) taken over, no further output here]\n",
+                                                           stolen_fn_names->str);
+  (void) write(STDOUT_FILENO, takeover_message_on_old_console, strlen(takeover_message_on_old_console));
+  g_free(takeover_message_on_old_console);
+  g_string_free(stolen_fn_names, TRUE);
 
-  initial_console_fds[0] = dup(STDIN_FILENO);
-  initial_console_fds[1] = dup(STDOUT_FILENO);
-  initial_console_fds[2] = dup(STDERR_FILENO);
+  stolen_fds = fds_to_steel;
 
-  dup2(fds[0], STDIN_FILENO);
-  dup2(fds[1], STDOUT_FILENO);
-  dup2(fds[2], STDERR_FILENO);
+  if (stolen_fds & (1 << STDIN_FILENO))
+    initial_console_fds[0] = dup(STDIN_FILENO);
+  if (stolen_fds & (1 << STDOUT_FILENO))
+    initial_console_fds[1] = dup(STDOUT_FILENO);
+  if (stolen_fds & (1 << STDERR_FILENO))
+    initial_console_fds[2] = dup(STDERR_FILENO);
+
+  if (stolen_fds & (1 << STDIN_FILENO))
+    dup2(fds[0], STDIN_FILENO);
+  if (stolen_fds & (1 << STDOUT_FILENO))
+    dup2(fds[1], STDOUT_FILENO);
+  if (stolen_fds & (1 << STDERR_FILENO))
+    dup2(fds[2], STDERR_FILENO);
 
   using_initial_console = FALSE;
   result = TRUE;
@@ -109,14 +145,12 @@ exit:
 /**
  * console_release:
  *
- * Use /dev/null as input/output/error. This function is idempotent, can be
+ * Restore input/output/error. This function is idempotent, can be
  * called any number of times without harm.
  **/
 void
 console_release(void)
 {
-  gint devnull_fd;
-
   g_mutex_lock(&console_lock);
 
   if (using_initial_console)
