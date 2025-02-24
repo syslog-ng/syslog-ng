@@ -29,7 +29,6 @@
 #include <syslog.h>
 
 GMutex console_lock;
-gboolean console_present = TRUE;
 gboolean using_initial_console = TRUE;
 const gchar *console_prefix;
 gint initial_console_fds[3];
@@ -55,7 +54,7 @@ console_printf(const gchar *fmt, ...)
   va_start(ap, fmt);
   g_vsnprintf(buf, sizeof(buf), fmt, ap);
   va_end(ap);
-  if (console_is_present())
+  if (console_is_initial())
     fprintf(stderr, "%s: %s\n", console_prefix, buf);
   else
     {
@@ -68,13 +67,13 @@ console_printf(const gchar *fmt, ...)
 
 /* NOTE: this is not synced with any changes and is just an indication whether we have a console */
 gboolean
-console_is_present(void)
+console_is_initial(void)
 {
   gboolean result;
 
   /* the lock only serves a memory barrier but is not a real synchronization */
   g_mutex_lock(&console_lock);
-  result = console_present;
+  result = using_initial_console;
   g_mutex_unlock(&console_lock);
   return result;
 }
@@ -87,12 +86,10 @@ console_acquire_from_fds(gint fds[3])
   gboolean result = FALSE;
 
   g_mutex_lock(&console_lock);
-  if (console_present)
-    {
-      if (!using_initial_console)
-        goto exit;
-      (void) write(1, takeover_message_on_old_console, strlen(takeover_message_on_old_console));
-    }
+  if (using_initial_console)
+      goto exit;
+
+  (void) write(1, takeover_message_on_old_console, strlen(takeover_message_on_old_console));
 
   initial_console_fds[0] = dup(STDIN_FILENO);
   initial_console_fds[1] = dup(STDOUT_FILENO);
@@ -102,7 +99,6 @@ console_acquire_from_fds(gint fds[3])
   dup2(fds[1], STDOUT_FILENO);
   dup2(fds[2], STDERR_FILENO);
 
-  console_present = TRUE;
   using_initial_console = FALSE;
   result = TRUE;
 exit:
@@ -123,7 +119,7 @@ console_release(void)
 
   g_mutex_lock(&console_lock);
 
-  if (!console_present)
+  if (using_initial_console)
     goto exit;
 
   if (initial_console_fds[0] > 0)
@@ -144,8 +140,6 @@ console_release(void)
       close(initial_console_fds[2]);
       initial_console_fds[2] = -1;
     }
-
-  console_present = TRUE;
   using_initial_console = TRUE;
 exit:
   g_mutex_unlock(&console_lock);
