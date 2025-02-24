@@ -112,7 +112,8 @@ slng_export_config_graph(int argc, char *argv[], const gchar *mode, GOptionConte
 
 static CommandDescriptor modes[] =
 {
-  { "attach", attach_options, "Attach to a running syslog-ng instance", slng_attach, NULL },
+  { "attach", no_options, "Attach to a running syslog-ng instance", NULL, attach_commands },
+  // TODO: Add proper details of the sub-commands like attach and credentials have
   { "stats", stats_options, "Get syslog-ng statistics. Possible commands: csv, prometheus; default: csv", slng_stats, NULL },
   { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose, NULL },
   { "debug", verbose_options, "Enable/query debug messages", slng_verbose, NULL },
@@ -121,6 +122,7 @@ static CommandDescriptor modes[] =
   { "stop", no_options, "Stop syslog-ng process", slng_stop, NULL },
   { "reload", no_options, "Reload syslog-ng", slng_reload, NULL },
   { "reopen", no_options, "Re-open of log destination files", slng_reopen, NULL },
+  // TODO: Add proper details of the sub-commands like attach and credentials have
   { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query, NULL },
   { "show-license-info", license_options, "Show information about the license", slng_license, NULL },
   { "credentials", no_options, "Credentials manager", NULL, credentials_commands },

@@ -21,7 +21,7 @@
  *
  */
 
-#include "ctl-stats.h"
+#include "commands.h"
 #include "syslog-ng.h"
 
 #include <unistd.h>
@@ -29,7 +29,6 @@
 static gint attach_options_seconds = -1;
 static gchar *attach_options_log_level = NULL;
 static gint attach_options_fds_to_steel = 0;
-static gchar **attach_commands = NULL;
 
 static gboolean
 _store_log_level(const gchar *option_name,
@@ -74,32 +73,11 @@ _parse_fd_names(const gchar *option_name,
   return result;
 }
 
-GOptionEntry attach_options[] =
-{
-  { "seconds", 's', 0, G_OPTION_ARG_INT, &attach_options_seconds, "amount of time to attach for", NULL },
-  { "log-level", 'l', 0, G_OPTION_ARG_CALLBACK, _store_log_level, "change syslog-ng log level", "<default|verbose|debug|trace>" },
-  { "fds-to-steel", 'f', 0, G_OPTION_ARG_CALLBACK, _parse_fd_names, "which stdio file handlers to attach to, default is <stdout,stderr>, valid only with the `stdio` attach mode", "<stdin|stdout|stderr> in a comma separated list"  },
-  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &attach_commands, "attach mode: logs, debugger, stdio", NULL },
-  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL, NULL }
-};
-
 gint
 slng_attach(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   GString *command = g_string_new("ATTACH");
-  const gchar *attach_mode;
-
-  if (attach_commands)
-    {
-      if (attach_commands[1])
-        {
-          fprintf(stderr, "Error parsing command line arguments: Too many arguments");
-          return 1;
-        }
-      attach_mode = attach_commands[0];
-    }
-  else
-    attach_mode = "stdio";
+  const gchar *attach_mode = mode ? : "stdio";
 
   if (g_str_equal(attach_mode, "stdio"))
     g_string_append(command, " STDIO");
@@ -129,3 +107,29 @@ slng_attach(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
   g_string_free(command, TRUE);
   return result;
 }
+
+#define SECONDS_OPTION_ENTRY OPTIONS_ENTRY("seconds", 's', 0, G_OPTION_ARG_INT, &attach_options_seconds, "amount of time to attach for", NULL)
+#define LOG_LEVEL_OPTION_ENTRY OPTIONS_ENTRY("log-level", 'l', 0, G_OPTION_ARG_CALLBACK, _store_log_level, "change syslog-ng log level", "<default|verbose|debug|trace>")
+
+const GOptionEntry attach_stdio_options[] =
+{
+  SECONDS_OPTION_ENTRY,
+  LOG_LEVEL_OPTION_ENTRY,
+  { "fds-to-steel", 'f', 0, G_OPTION_ARG_CALLBACK, _parse_fd_names, "which stdio file handlers to attach to, default is <stdout,stderr>", "<stdin|stdout|stderr> in a comma separated list"  },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL, NULL }
+};
+
+GOptionEntry attach_logs_and_debugger_options[] =
+{
+  SECONDS_OPTION_ENTRY,
+  LOG_LEVEL_OPTION_ENTRY,
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL, NULL }
+};
+
+CommandDescriptor attach_commands[] =
+{
+  { "stdio", attach_stdio_options, "Attach to syslog-ng console using the given file handlers", slng_attach },
+  { "logs", attach_logs_and_debugger_options, "Attach to syslog-ng internal logs, which are normally redirected via stderr; for further processing, use another redirection, e.g., `syslog-ng-ctl attach logs |& grep -i error.`", slng_attach },
+  { "debugger", attach_logs_and_debugger_options, "Start and attach to syslog-ng debugger", slng_attach },
+  { NULL, NULL, NULL, NULL }
+};
