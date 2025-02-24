@@ -50,7 +50,7 @@
 #endif
 
 static const gchar *control_name;
-static void print_usage(const gchar *bin_name, CommandDescriptor *descriptors);
+static void print_usage(const gchar *bin_name, const gchar *command, CommandDescriptor *descriptors);
 
 static gint
 slng_stop(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
@@ -132,24 +132,34 @@ static CommandDescriptor modes[] =
 };
 
 static void
-print_usage(const gchar *bin_name, CommandDescriptor *descriptors)
+print_usage(const gchar *bin_name, const gchar *command, CommandDescriptor *descriptors)
 {
   gint mode;
+  gboolean has_command = command && *command;
 
-  fprintf(stderr, "Syntax: %s <command> [options]\nPossible commands are:\n", bin_name);
+  // NOTE: this does not handle more than 2 commands, but currently we do not have such a case
+  fprintf(stderr, "Usage:\n  %s%s%s <%s[command]> [options]\n\nPossible commands are:\n",
+          bin_name,
+          has_command ? " " : "",
+          has_command ? command : "",
+          has_command ? "" : "command ");
   for (mode = 0; descriptors[mode].mode; mode++)
     {
       fprintf(stderr, "    %-20s %s\n", descriptors[mode].mode, descriptors[mode].description);
     }
+  fprintf(stderr,
+          "\nFor detailed help of a given command use:\n    %s <command> --help|-h\n    %s --help|-h <command>\n\nFor options of the given command use:\n    %s <command> [option] --help|-h\n    %s --help|-h <command> [option]\n",
+          bin_name, bin_name, bin_name, bin_name);
 }
 
 static CommandDescriptor *
-find_active_mode(CommandDescriptor descriptors[], gint *argc, char **argv, GString *cmdname_accumulator)
+find_active_mode(GString *bin_name, CommandDescriptor descriptors[], gint *argc, char **argv,
+                 GString *cmdname_accumulator)
 {
   const gchar *mode_string = get_mode(argc, &argv);
   if (!mode_string)
     {
-      print_usage(cmdname_accumulator->str, descriptors);
+      print_usage(bin_name->str, cmdname_accumulator->str, descriptors);
       exit(1);
     }
 
@@ -157,11 +167,14 @@ find_active_mode(CommandDescriptor descriptors[], gint *argc, char **argv, GStri
     if (strcmp(descriptors[mode].mode, mode_string) == 0)
       {
         if (descriptors[mode].main)
-          return &descriptors[mode];
+          {
+            g_string_append_printf(cmdname_accumulator, "%s%s", cmdname_accumulator->len > 0 ? " " : "", mode_string);
+            return &descriptors[mode];
+          }
 
         g_assert(descriptors[mode].subcommands);
-        g_string_append_printf(cmdname_accumulator, " %s", mode_string);
-        return find_active_mode(descriptors[mode].subcommands, argc, argv, cmdname_accumulator);
+        g_string_append_printf(cmdname_accumulator, "%s%s", cmdname_accumulator->len > 0 ? " " : "", mode_string);
+        return find_active_mode(bin_name, descriptors[mode].subcommands, argc, argv, cmdname_accumulator);
       }
 
   return NULL;
@@ -173,10 +186,12 @@ setup_help_context(const gchar *cmdname, CommandDescriptor *active_mode)
   if (!active_mode)
     return NULL;
 
-  GOptionContext *ctx = g_option_context_new(cmdname);
+  GOptionContext *ctx = g_option_context_new(cmdname ? : active_mode->mode);
   g_option_context_set_summary(ctx, active_mode->description);
   g_option_context_add_main_entries(ctx, active_mode->options, NULL);
   g_option_context_add_main_entries(ctx, slng_options, NULL);
+  // Further detailed descriptions might go to the end of the list
+  //g_option_context_set_description(ctx, active_mode->detailed_description);
 
   return ctx;
 }
@@ -191,15 +206,16 @@ main(int argc, char *argv[])
 
   control_name = get_installation_path_for(PATH_CONTROL_SOCKET);
 
-  GString *cmdname_accumulator = g_string_new(argv[0]);
-  CommandDescriptor *active_mode = find_active_mode(modes, &argc, argv, cmdname_accumulator);
-  GOptionContext *ctx = setup_help_context(cmdname_accumulator->str, active_mode);
+  GString *bin_name = g_string_new(g_path_get_basename(argv[0]));
+  GString *cmdname_accumulator = g_string_new(NULL);
+  CommandDescriptor *active_mode = find_active_mode(bin_name, modes, &argc, argv, cmdname_accumulator);
+  GOptionContext *ctx = setup_help_context(cmdname_accumulator->len > 0 ? cmdname_accumulator->str : NULL, active_mode);
   g_string_free(cmdname_accumulator, TRUE);
 
   if (!ctx)
     {
-      fprintf(stderr, "Unknown command\n");
-      print_usage(argv[0], modes);
+      fprintf(stderr, "Unknown command\n\n");
+      print_usage(bin_name->str, "", modes);
       exit(1);
     }
 
