@@ -143,12 +143,6 @@ print_usage(const gchar *bin_name, CommandDescriptor *descriptors)
     }
 }
 
-gboolean
-_is_help(gchar *cmd)
-{
-  return g_str_equal(cmd, "--help");
-}
-
 static CommandDescriptor *
 find_active_mode(CommandDescriptor descriptors[], gint *argc, char **argv, GString *cmdname_accumulator)
 {
@@ -196,12 +190,6 @@ main(int argc, char *argv[])
   setlocale(LC_ALL, "");
 
   control_name = get_installation_path_for(PATH_CONTROL_SOCKET);
-
-  if (argc > 1 && _is_help(argv[1]))
-    {
-      print_usage(argv[0], modes);
-      exit(0);
-    }
 
   GString *cmdname_accumulator = g_string_new(argv[0]);
   CommandDescriptor *active_mode = find_active_mode(modes, &argc, argv, cmdname_accumulator);
