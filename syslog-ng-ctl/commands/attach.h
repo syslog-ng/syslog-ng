@@ -26,7 +26,6 @@
 
 #include "commands.h"
 
-extern GOptionEntry attach_options[];
-gint slng_attach(int argc, char *argv[], const gchar *mode, GOptionContext *ctx);
+extern CommandDescriptor attach_commands[];
 
 #endif

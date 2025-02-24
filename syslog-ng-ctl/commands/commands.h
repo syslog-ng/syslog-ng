@@ -29,6 +29,10 @@
 
 #include <stdio.h>
 
+/* Though clang has no issues, but gcc is stricter about requiring initializer elements to be compile-time constants when initializing structures directly
+ * This helper macro is used to initialize GOptionEntry structures with the same values as the GOptionEntry initializers without having to repeat the initializer values */
+#define OPTIONS_ENTRY(long_name, short_name, flags, arg, arg_data, description, arg_description) { long_name, short_name, flags, arg, arg_data, description, arg_description }
+
 extern GOptionEntry no_options[];
 
 typedef struct _CommandDescriptor
