@@ -275,12 +275,12 @@ exec-%: setup
 	$(DOCKER) exec ${DOCKER_INTERACTIVE}  $$container $(EXEC_COMMAND)
 
 login: login-$(DEFAULT_IMAGE)
-login-%: EXEC_COMMAND=sudo -u $(shell whoami) /dbld/shell
+login-%: EXEC_COMMAND=sudo -E -u $(shell whoami) /dbld/shell $(if $(SHELL_COMMAND),"$(SHELL_COMMAND)",bash)
 login-%: exec-%
 	@true
 
 root-login: root-login-$(DEFAULT_IMAGE)
-root-login-%: EXEC_COMMAND=bash
+root-login-%: EXEC_COMMAND=/dbld/shell $(if $(SHELL_COMMAND),"$(SHELL_COMMAND)",bash)
 root-login-%: exec-%
 	@true
 
