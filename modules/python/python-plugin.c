@@ -73,7 +73,7 @@ static Plugin python_plugins[] =
 gboolean
 python_module_init(PluginContext *context, CfgArgs *args)
 {
-  gboolean use_virtualenv = args ? cfg_args_get_as_boolean(args, "use-virtualenv") : TRUE;
+  gboolean use_virtualenv = args ? cfg_args_get_as_boolean(args, "use-virtualenv", TRUE) : TRUE;
   if (!_py_init_interpreter(use_virtualenv))
     return FALSE;
   python_debugger_init();
