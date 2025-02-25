@@ -179,6 +179,7 @@ version(void)
   printf("Enable-Debug: %s\n"
          "Enable-GProf: %s\n"
          "Enable-Memtrace: %s\n"
+         "Enable-Stackdump: %s\n"
          "Enable-IPv6: %s\n"
          "Enable-Spoof-Source: %s\n"
          "Enable-TCP-Wrapper: %s\n"
@@ -187,6 +188,7 @@ version(void)
          ON_OFF_STR(SYSLOG_NG_ENABLE_DEBUG),
          ON_OFF_STR(SYSLOG_NG_ENABLE_GPROF),
          ON_OFF_STR(SYSLOG_NG_ENABLE_MEMTRACE),
+         ON_OFF_STR(SYSLOG_NG_ENABLE_STACKDUMP),
          ON_OFF_STR(SYSLOG_NG_ENABLE_IPV6),
          ON_OFF_STR(SYSLOG_NG_ENABLE_SPOOF_SOURCE),
          ON_OFF_STR(SYSLOG_NG_ENABLE_TCP_WRAPPER),
@@ -296,7 +298,7 @@ main(int argc, char *argv[])
   if (debug_flag && !log_stderr)
     {
       fprintf(stderr,
-              "The -d/--debug option no longer implies -e/--stderr, if you want to redirect internal() source to stderr please also include -e/--stderr option");
+              "The -d/--debug option no longer implies -e/--stderr, if you want to redirect internal() source to stderr please also include -e/--stderr option\n");
     }
 
   gboolean exit_before_main_loop_run = main_loop_options.syntax_only
