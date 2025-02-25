@@ -102,15 +102,15 @@ void msg_add_option_group(GOptionContext *ctx);
 #define msg_debug(desc, tags...)              \
   do {                    \
     if (G_UNLIKELY(debug_flag))                                             \
-      msg_event_suppress_recursions_and_send(                               \
-            msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL ));          \
+      CAPTURE_ERRNO(msg_event_suppress_recursions_and_send(                 \
+            msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL )));         \
   } while (0)
 
 #define msg_trace(desc, tags...)              \
   do {                    \
     if (G_UNLIKELY(trace_flag))                     \
-      msg_event_suppress_recursions_and_send(                               \
-            msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL ));          \
+      CAPTURE_ERRNO(msg_event_suppress_recursions_and_send(                 \
+            msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL )));         \
   } while (0)
 
 #define msg_trace_printf(fmt, values...)       \
@@ -122,8 +122,8 @@ void msg_add_option_group(GOptionContext *ctx);
 #define msg_diagnostics(desc, tags...)              \
   do {                    \
     if (G_UNLIKELY(trace_flag))                     \
-      msg_event_print_event_to_stderr(              \
-            msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL ));          \
+      CAPTURE_ERRNO(msg_event_print_event_to_stderr(                         \
+            msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL )));          \
   } while (0)
 
 #define __once()          \
