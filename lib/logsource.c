@@ -691,6 +691,8 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   /* message setup finished, send it out */
 
+  guint64 rcptid = msg->rcptid;
+
   stats_counter_inc(self->metrics.recvd_messages);
   stats_counter_set_time(self->metrics.last_message_seen, msg->timestamps[LM_TS_RECVD].ut_sec);
   stats_byte_counter_add(&self->metrics.recvd_bytes, msg->recvd_rawmsg_size);
@@ -707,7 +709,8 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
     }
   msg_diagnostics("<<<<<< Source side message processing finish",
                   log_pipe_location_tag(s),
-                  evt_tag_msg_reference(msg));
+                  evt_tag_printf("msg", "%p", msg),
+                  evt_tag_printf("rcptid", "%" G_GUINT64_FORMAT, rcptid));
 
   msg_set_context(NULL);
 }
