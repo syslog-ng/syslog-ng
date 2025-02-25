@@ -28,11 +28,12 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#if SYSLOG_NG_ENABLE_LIBUNWIND
+#if SYSLOG_NG_ENABLE_STACKDUMP
 
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 #include <dlfcn.h>
+#include <link.h>
 
 /* this is Linux only for now */
 
