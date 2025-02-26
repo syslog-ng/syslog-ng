@@ -33,68 +33,20 @@
 #include "stats/stats-cluster-key-builder.h"
 #include "compat/cpp-end.h"
 
-#include <google/protobuf/descriptor.h>
-#include <google/protobuf/descriptor.pb.h>
-#include <google/protobuf/dynamic_message.h>
-#include <google/protobuf/message.h>
-#include <google/protobuf/compiler/importer.h>
-
 #include <string>
-#include <memory>
-#include <vector>
 
 namespace syslogng {
 namespace grpc {
 namespace bigquery {
 
-struct Field
-{
-  std::string name;
-  google::protobuf::FieldDescriptorProto::Type type;
-  LogTemplate *value;
-  const google::protobuf::FieldDescriptor *field_desc;
-
-  Field(std::string name_, google::protobuf::FieldDescriptorProto::Type type_, LogTemplate *value_)
-    : name(name_), type(type_), value(log_template_ref(value_)), field_desc(nullptr) {}
-
-  Field(const Field &a)
-    : name(a.name), type(a.type), value(log_template_ref(a.value)), field_desc(a.field_desc) {}
-
-  Field &operator=(const Field &a)
-  {
-    name = a.name;
-    type = a.type;
-    log_template_unref(value);
-    value = log_template_ref(a.value);
-    field_desc = a.field_desc;
-
-    return *this;
-  }
-
-  ~Field()
-  {
-    log_template_unref(value);
-  }
-
-};
-
 class DestinationDriver final : public syslogng::grpc::DestDriver
 {
 public:
   DestinationDriver(GrpcDestDriver *s);
-  ~DestinationDriver();
   bool init();
   const gchar *generate_persist_name();
   const gchar *format_stats_key(StatsClusterKeyBuilder *kb);
   LogThreadedDestWorker *construct_worker(int worker_index);
-
-  bool add_field(std::string name, std::string type, LogTemplate *value);
-  void set_protobuf_schema(std::string proto_path, GList *values);
-
-  LogTemplateOptions &get_template_options()
-  {
-    return this->template_options;
-  }
 
   void set_project(std::string p)
   {
@@ -126,37 +78,23 @@ public:
     return this->table;
   }
 
-private:
-  friend class DestinationWorker;
-  void construct_schema_prototype();
-  bool load_protobuf_schema();
+  Schema *get_schema()
+  {
+    return &this->schema;
+  }
 
 private:
-  LogTemplateOptions template_options;
+  static bool map_schema_type(const std::string &type_in, google::protobuf::FieldDescriptorProto::Type &type_out);
+
+private:
+  friend class DestinationWorker;
+
+private:
+  Schema schema;
 
   std::string project;
   std::string dataset;
   std::string table;
-
-  struct
-  {
-    std::string proto_path;
-    GList *values = nullptr;
-
-    std::unique_ptr<google::protobuf::compiler::DiskSourceTree> src_tree;
-    std::unique_ptr<google::protobuf::compiler::MultiFileErrorCollector> error_coll;
-    std::unique_ptr<google::protobuf::compiler::Importer> importer;
-    bool loaded = false;
-  } protobuf_schema;
-
-  std::vector<Field> fields;
-
-  google::protobuf::DescriptorPool descriptor_pool;
-
-  /* A given descriptor_pool/importer instance should outlive msg_factory, as msg_factory caches prototypes */
-  std::unique_ptr<google::protobuf::DynamicMessageFactory> msg_factory;
-  const google::protobuf::Descriptor *schema_descriptor = nullptr;
-  const google::protobuf::Message *schema_prototype  = nullptr;
 };
 
 

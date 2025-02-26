@@ -66,6 +66,7 @@ private:
   bool connected;
 
   std::shared_ptr<::grpc::Channel> channel;
+  std::unique_ptr<::grpc::ClientContext> client_context;
   std::unique_ptr<logproto::Pusher::Stub> stub;
   logproto::PushRequest current_batch;
   size_t current_batch_bytes = 0;

@@ -74,6 +74,8 @@ SourceDriver::prepare_server_builder(::grpc::ServerBuilder &builder)
 
   builder.AddListeningPort(address, credentials_builder.build());
 
+  builder.AddChannelArgument(GRPC_ARG_USE_LOCAL_SUBCHANNEL_POOL, 1);
+
   for (auto nv : int_extra_channel_args)
     builder.AddChannelArgument(nv.first, nv.second);
   for (auto nv : string_extra_channel_args)
