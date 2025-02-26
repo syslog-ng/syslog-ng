@@ -517,7 +517,7 @@ _switch_to_tls(LogTransportSocketProxy *self)
   LogTransportSocket *transport_socket = _active_log_transport_socket(self);
   transport_socket->proxy = NULL;
 
-  if (!multitransport_switch((MultiTransport *)self->base_transport, transport_factory_tls_id()))
+  if (!multitransport_switch((MultiTransport *)self->base_transport, TRANSPORT_FACTORY_TLS_ID))
     {
       msg_error("socket-proxy failed to switch to TLS");
       return FALSE;

@@ -35,8 +35,8 @@ struct _TransportFactorySocket
   TransportFactory super;
 };
 
-TransportFactory *transport_factory_socket_new(gint sock_type);
+#define TRANSPORT_FACTORY_SOCKET_ID "socket"
 
-const TransportFactoryId *transport_factory_socket_id(void);
+TransportFactory *transport_factory_socket_new(gint sock_type);
 
 #endif
