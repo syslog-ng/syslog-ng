@@ -61,6 +61,7 @@ jobs:
             --disable-java
             --disable-java-modules
             --enable-ebpf
+            --enable-stackdump
           "
           CMAKE_CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
@@ -73,6 +74,7 @@ jobs:
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF
             -DENABLE_EBPF=ON
+            -DENABLE_LIBUNWIND=ON
           "
           gh_export COREFILES_DIR PYTHONUSERBASE CC CXX SYSLOG_NG_INSTALL_DIR CFLAGS CXXFLAGS CONFIGURE_FLAGS CMAKE_CONFIGURE_FLAGS
           gh_path "${PYTHONUSERBASE}"
