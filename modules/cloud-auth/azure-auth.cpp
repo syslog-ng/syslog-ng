@@ -124,7 +124,7 @@ AzureMonitorAuthenticator::send_token_post_request(std::string &response_payload
   ret = curl_easy_perform(hnd);
   if (ret != CURLE_OK)
     {
-      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+      msg_error("cloud_auth::azure::AzureMonitorAuthenticator: "
                 "error sending HTTP request to metadata server",
                 evt_tag_str("url", auth_url.c_str()),
                 evt_tag_str("error", curl_easy_strerror(ret)));
@@ -135,7 +135,7 @@ AzureMonitorAuthenticator::send_token_post_request(std::string &response_payload
   ret = curl_easy_getinfo(hnd, CURLINFO_RESPONSE_CODE, &http_result_code);
   if (ret != CURLE_OK)
     {
-      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+      msg_error("cloud_auth::azure::AzureMonitorAuthenticator: "
                 "failed to get HTTP result code",
                 evt_tag_str("url", auth_url.c_str()),
                 evt_tag_str("error", curl_easy_strerror(ret)));
@@ -144,7 +144,7 @@ AzureMonitorAuthenticator::send_token_post_request(std::string &response_payload
 
   if (http_result_code != 200)
     {
-      msg_error("cloud_auth::google::UserManagedServiceAccountAuthenticator: "
+      msg_error("cloud_auth::azure::AzureMonitorAuthenticator: "
                 "non 200 HTTP result code received",
                 evt_tag_str("url", auth_url.c_str()),
                 evt_tag_int("http_result_code", http_result_code));
