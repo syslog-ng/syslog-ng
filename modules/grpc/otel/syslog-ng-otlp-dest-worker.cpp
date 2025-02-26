@@ -25,17 +25,6 @@
 using namespace syslogng::grpc::otel;
 using namespace opentelemetry::proto::logs::v1;
 
-LogThreadedDestWorker *
-SyslogNgDestWorker::construct(LogThreadedDestDriver *o, gint worker_index)
-{
-  SyslogNgOtlpDestWorker *self = g_new0(SyslogNgOtlpDestWorker, 1);
-
-  otel_dw_init_super(&self->super, o, worker_index);
-  self->cpp = new SyslogNgDestWorker(self);
-
-  return &self->super;
-}
-
 ScopeLogs *
 SyslogNgDestWorker::lookup_scope_logs(LogMessage *msg)
 {

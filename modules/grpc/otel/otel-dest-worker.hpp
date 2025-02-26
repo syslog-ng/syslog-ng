@@ -24,9 +24,6 @@
 #ifndef OTEL_DEST_WORKER_HPP
 #define OTEL_DEST_WORKER_HPP
 
-#include <grpcpp/channel.h>
-#include <grpcpp/client_context.h>
-
 #include "opentelemetry/proto/collector/logs/v1/logs_service.grpc.pb.h"
 #include "opentelemetry/proto/collector/metrics/v1/metrics_service.grpc.pb.h"
 #include "opentelemetry/proto/collector/trace/v1/trace_service.grpc.pb.h"
@@ -34,10 +31,9 @@
 #include "opentelemetry/proto/metrics/v1/metrics.pb.h"
 #include "opentelemetry/proto/trace/v1/trace.pb.h"
 
+#include "grpc-dest-worker.hpp"
 #include "otel-dest.hpp"
 #include "otel-protobuf-formatter.hpp"
-
-typedef struct OtelDestWorker_ OtelDestWorker;
 
 namespace syslogng {
 namespace grpc {
@@ -56,23 +52,15 @@ using opentelemetry::proto::logs::v1::ScopeLogs;
 using opentelemetry::proto::metrics::v1::ScopeMetrics;
 using opentelemetry::proto::trace::v1::ScopeSpans;
 
-class DestWorker
+class DestWorker : public syslogng::grpc::DestWorker
 {
 public:
-  DestWorker(OtelDestWorker *s);
-  virtual ~DestWorker() {};
-  static LogThreadedDestWorker *construct(LogThreadedDestDriver *o, gint worker_index);
+  DestWorker(GrpcDestWorker *s);
 
-  virtual bool init();
-  virtual void deinit();
-  virtual bool connect();
-  virtual void disconnect();
-  virtual LogThreadedResult insert(LogMessage *msg);
-  virtual LogThreadedResult flush(LogThreadedFlushMode mode);
+  LogThreadedResult insert(LogMessage *msg);
+  LogThreadedResult flush(LogThreadedFlushMode mode);
 
 protected:
-  void prepare_context(::grpc::ClientContext &context);
-
   void clear_current_msg_metadata();
   void get_metadata_for_current_msg(LogMessage *msg);
 
@@ -93,9 +81,6 @@ protected:
   LogThreadedResult flush_spans();
 
 protected:
-  OtelDestWorker *super;
-  DestDriver &owner;
-
   std::shared_ptr<::grpc::Channel> channel;
   std::unique_ptr<LogsService::Stub> logs_service_stub;
   std::unique_ptr<MetricsService::Stub> metrics_service_stub;
@@ -127,13 +112,5 @@ protected:
 }
 }
 }
-
-struct OtelDestWorker_
-{
-  LogThreadedDestWorker super;
-  syslogng::grpc::otel::DestWorker *cpp;
-};
-
-void otel_dw_init_super(LogThreadedDestWorker *s, LogThreadedDestDriver *o, gint worker_index);
 
 #endif

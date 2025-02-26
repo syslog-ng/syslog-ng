@@ -55,68 +55,37 @@ struct _LokiDestWorker
   DestinationWorker *cpp;
 };
 
-DestinationWorker::DestinationWorker(LokiDestWorker *s) : super(s)
-{
-}
-
-DestinationWorker::~DestinationWorker()
-{
-}
-
 bool
 DestinationWorker::init()
 {
-  DestinationDriver *owner = this->get_owner();
-
-  ::grpc::ChannelArguments args{};
-
-  if (owner->keepalive_time != -1)
-    args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, owner->keepalive_time);
-  if (owner->keepalive_timeout != -1)
-    args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, owner->keepalive_timeout);
-  if (owner->keepalive_max_pings_without_data != -1)
-    args.SetInt(GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA, owner->keepalive_max_pings_without_data);
-
-  args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
-
-  for (auto nv : owner->int_extra_channel_args)
-    args.SetInt(nv.first, nv.second);
-  for (auto nv : owner->string_extra_channel_args)
-    args.SetString(nv.first, nv.second);
-
-  auto credentials = owner->credentials_builder.build();
+  ::grpc::ChannelArguments args = this->create_channel_args();
+  auto credentials = this->create_credentials();
   if (!credentials)
     {
       msg_error("Error querying Loki credentials",
-                evt_tag_str("url", owner->get_url().c_str()),
+                evt_tag_str("url", this->owner.get_url().c_str()),
                 log_pipe_location_tag((LogPipe *) this->super->super.owner));
       return false;
     }
 
-  this->channel = ::grpc::CreateCustomChannel(owner->get_url(), credentials, args);
+  this->channel = ::grpc::CreateCustomChannel(this->owner.get_url(), credentials, args);
   if (!this->channel)
     {
       msg_error("Error creating Loki gRPC channel",
-                evt_tag_str("url", owner->get_url().c_str()),
+                evt_tag_str("url", this->owner.get_url().c_str()),
                 log_pipe_location_tag((LogPipe *) this->super->super.owner));
       return false;
     }
 
   this->stub = logproto::Pusher().NewStub(channel);
 
-  return log_threaded_dest_worker_init_method(&this->super->super);
-}
-
-void
-DestinationWorker::deinit()
-{
-  log_threaded_dest_worker_deinit_method(&this->super->super);
+  return syslogng::grpc::DestWorker::init();
 }
 
 bool
 DestinationWorker::connect()
 {
-  DestinationDriver *owner = this->get_owner();
+  DestinationDriver *owner_ = this->get_owner();
 
   this->prepare_batch();
 
@@ -128,7 +97,7 @@ DestinationWorker::connect()
   if (!this->channel->WaitForConnected(connect_timeout))
     {
       msg_error("Time out connecting to Loki",
-                evt_tag_str("url", owner->get_url().c_str()),
+                evt_tag_str("url", owner_->get_url().c_str()),
                 log_pipe_location_tag((LogPipe *) this->super->super.owner));
       return false;
     }
@@ -151,15 +120,22 @@ DestinationWorker::prepare_batch()
 {
   this->current_batch = logproto::PushRequest{};
   this->current_batch.add_streams();
+  this->current_batch_bytes = 0;
+}
+
+bool
+DestinationWorker::should_initiate_flush()
+{
+  return (this->current_batch_bytes >= this->get_owner()->batch_bytes);
 }
 
 void
 DestinationWorker::set_labels(LogMessage *msg)
 {
-  DestinationDriver *owner = this->get_owner();
+  DestinationDriver *owner_ = this->get_owner();
   logproto::StreamAdapter *stream = this->current_batch.mutable_streams(0);
 
-  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, this->super->super.seq_num, NULL, LM_VT_STRING};
+  LogTemplateEvalOptions options = {&owner_->template_options, LTZ_SEND, this->super->super.seq_num, NULL, LM_VT_STRING};
 
   ScratchBuffersMarker m;
   GString *buf = scratch_buffers_alloc_and_mark(&m);
@@ -168,7 +144,7 @@ DestinationWorker::set_labels(LogMessage *msg)
   std::stringstream formatted_labels;
   bool comma_needed = false;
   formatted_labels << "{";
-  for (const auto &label : owner->labels)
+  for (const auto &label : owner_->labels)
     {
       if (comma_needed)
         formatted_labels << ", ";
@@ -191,15 +167,15 @@ DestinationWorker::set_labels(LogMessage *msg)
 void
 DestinationWorker::set_timestamp(logproto::EntryAdapter *entry, LogMessage *msg)
 {
-  DestinationDriver *owner = this->get_owner();
+  DestinationDriver *owner_ = this->get_owner();
 
-  if (owner->timestamp == LM_TS_PROCESSED)
+  if (owner_->timestamp == LM_TS_PROCESSED)
     {
       *entry->mutable_timestamp() = google::protobuf::util::TimeUtil::GetCurrentTime();
       return;
     }
 
-  UnixTime *time = &msg->timestamps[owner->timestamp];
+  UnixTime *time = &msg->timestamps[owner_->timestamp];
   struct timeval tv = timeval_from_unix_time(time);
   *entry->mutable_timestamp() = google::protobuf::util::TimeUtil::TimevalToTimestamp(tv);
 }
@@ -207,7 +183,7 @@ DestinationWorker::set_timestamp(logproto::EntryAdapter *entry, LogMessage *msg)
 LogThreadedResult
 DestinationWorker::insert(LogMessage *msg)
 {
-  DestinationDriver *owner = this->get_owner();
+  DestinationDriver *owner_ = this->get_owner();
   logproto::StreamAdapter *stream = this->current_batch.mutable_streams(0);
 
   if (stream->entries_size() == 0)
@@ -220,13 +196,19 @@ DestinationWorker::insert(LogMessage *msg)
   ScratchBuffersMarker m;
   GString *message = scratch_buffers_alloc_and_mark(&m);
 
-  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, this->super->super.seq_num, NULL, LM_VT_STRING};
-  log_template_format(owner->message, msg, &options, message);
+  LogTemplateEvalOptions options = {&owner_->template_options, LTZ_SEND, this->super->super.seq_num, NULL, LM_VT_STRING};
+  log_template_format(owner_->message, msg, &options, message);
 
   entry->set_line(message->str);
   scratch_buffers_reclaim_marked(m);
 
+  this->current_batch_bytes += message->len;
+  log_threaded_dest_driver_insert_msg_length_stats(super->super.owner, message->len);
+
   msg_trace("Message added to Loki batch", log_pipe_location_tag((LogPipe *) this->super->super.owner));
+
+  if (this->should_initiate_flush())
+    return log_threaded_dest_worker_flush(&this->super->super, LTF_FLUSH_NORMAL);
 
   return LTR_QUEUED;
 }
@@ -234,7 +216,7 @@ DestinationWorker::insert(LogMessage *msg)
 LogThreadedResult
 DestinationWorker::flush(LogThreadedFlushMode mode)
 {
-  DestinationDriver *owner = this->get_owner();
+  DestinationDriver *owner_ = this->get_owner();
 
   if (this->super->super.batch_size == 0)
     return LTR_SUCCESS;
@@ -243,11 +225,10 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
   logproto::PushResponse response{};
 
   ::grpc::ClientContext ctx;
-  for (auto nv : owner->headers)
-    ctx.AddMetadata(nv.first, nv.second);
+  this->prepare_context(ctx);
 
-  if (!owner->tenant_id.empty())
-    ctx.AddMetadata("x-scope-orgid", owner->tenant_id);
+  if (!owner_->tenant_id.empty())
+    ctx.AddMetadata("x-scope-orgid", owner_->tenant_id);
 
   ::grpc::Status status = this->stub->Push(&ctx, this->current_batch, &response);
   this->get_owner()->metrics.insert_grpc_request_stats(status);
@@ -255,12 +236,15 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
   if (!status.ok())
     {
       msg_error("Error sending Loki batch", evt_tag_str("error", status.error_message().c_str()),
-                evt_tag_str("url", owner->get_url().c_str()),
+                evt_tag_str("url", owner_->get_url().c_str()),
                 evt_tag_str("details", status.error_details().c_str()),
                 log_pipe_location_tag((LogPipe *) this->super->super.owner));
       result = LTR_ERROR;
       goto exit;
     }
+
+  log_threaded_dest_worker_written_bytes_add(&this->super->super, this->current_batch_bytes);
+  log_threaded_dest_driver_insert_batch_length_stats(this->super->super.owner, this->current_batch_bytes);
 
   msg_debug("Loki batch delivered", log_pipe_location_tag((LogPipe *) this->super->super.owner));
   result = LTR_SUCCESS;
@@ -273,78 +257,5 @@ exit:
 DestinationDriver *
 DestinationWorker::get_owner()
 {
-  return loki_dd_get_cpp((LokiDestDriver *) this->super->super.owner);
-}
-
-/* C Wrappers */
-
-static LogThreadedResult
-_insert(LogThreadedDestWorker *s, LogMessage *msg)
-{
-  LokiDestWorker *self = (LokiDestWorker *) s;
-  return self->cpp->insert(msg);
-}
-
-static LogThreadedResult
-_flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
-{
-  LokiDestWorker *self = (LokiDestWorker *) s;
-  return self->cpp->flush(mode);
-}
-
-static gboolean
-_connect(LogThreadedDestWorker *s)
-{
-  LokiDestWorker *self = (LokiDestWorker *) s;
-  return self->cpp->connect();
-}
-
-static void
-_disconnect(LogThreadedDestWorker *s)
-{
-  LokiDestWorker *self = (LokiDestWorker *) s;
-  self->cpp->disconnect();
-}
-
-static gboolean
-_init(LogThreadedDestWorker *s)
-{
-  LokiDestWorker *self = (LokiDestWorker *) s;
-  return self->cpp->init();
-}
-
-static void
-_deinit(LogThreadedDestWorker *s)
-{
-  LokiDestWorker *self = (LokiDestWorker *) s;
-  self->cpp->deinit();
-}
-
-static void
-_free(LogThreadedDestWorker *s)
-{
-  LokiDestWorker *self = (LokiDestWorker *) s;
-  delete self->cpp;
-
-  log_threaded_dest_worker_free_method(s);
-}
-
-LogThreadedDestWorker *
-loki_dw_new(LogThreadedDestDriver *o, gint worker_index)
-{
-  LokiDestWorker *self = g_new0(LokiDestWorker, 1);
-
-  log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
-
-  self->cpp = new DestinationWorker(self);
-
-  self->super.init = _init;
-  self->super.deinit = _deinit;
-  self->super.connect = _connect;
-  self->super.disconnect = _disconnect;
-  self->super.insert = _insert;
-  self->super.flush = _flush;
-  self->super.free_fn = _free;
-
-  return &self->super;
+  return loki_dd_get_cpp(this->owner.super);
 }
