@@ -344,6 +344,12 @@ DestWorker::insert(LogMessage *msg)
       g_assert_not_reached();
     }
 
+  if (!client_context.get())
+    {
+      client_context = std::make_unique<::grpc::ClientContext>();
+      prepare_context_dynamic(*client_context, msg);
+    }
+
   if (should_initiate_flush())
     return log_threaded_dest_worker_flush(&super->super, LTF_FLUSH_NORMAL);
 
@@ -408,11 +414,8 @@ permanent_error:
 LogThreadedResult
 DestWorker::flush_log_records()
 {
-  ::grpc::ClientContext client_context;
-  prepare_context(client_context);
-
   logs_service_response.Clear();
-  ::grpc::Status status = logs_service_stub->Export(&client_context, logs_service_request,
+  ::grpc::Status status = logs_service_stub->Export(client_context.get(), logs_service_request,
                                                     &logs_service_response);
   owner.metrics.insert_grpc_request_stats(status);
   LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
@@ -429,11 +432,8 @@ DestWorker::flush_log_records()
 LogThreadedResult
 DestWorker::flush_metrics()
 {
-  ::grpc::ClientContext client_context;
-  prepare_context(client_context);
-
   metrics_service_response.Clear();
-  ::grpc::Status status = metrics_service_stub->Export(&client_context, metrics_service_request,
+  ::grpc::Status status = metrics_service_stub->Export(client_context.get(), metrics_service_request,
                                                        &metrics_service_response);
   owner.metrics.insert_grpc_request_stats(status);
   LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
@@ -450,11 +450,8 @@ DestWorker::flush_metrics()
 LogThreadedResult
 DestWorker::flush_spans()
 {
-  ::grpc::ClientContext client_context;
-  prepare_context(client_context);
-
   trace_service_response.Clear();
-  ::grpc::Status status = trace_service_stub->Export(&client_context, trace_service_request,
+  ::grpc::Status status = trace_service_stub->Export(client_context.get(), trace_service_request,
                                                      &trace_service_response);
   owner.metrics.insert_grpc_request_stats(status);
   LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
@@ -471,7 +468,7 @@ DestWorker::flush_spans()
 LogThreadedResult
 DestWorker::flush(LogThreadedFlushMode mode)
 {
-  LogThreadedResult result;
+  LogThreadedResult result = LTR_SUCCESS;
 
   if (mode == LTF_FLUSH_EXPEDITE)
     return LTR_RETRY;
@@ -498,6 +495,7 @@ DestWorker::flush(LogThreadedFlushMode mode)
     }
 
 exit:
+  client_context.reset();
   logs_service_request.Clear();
   metrics_service_request.Clear();
   trace_service_request.Clear();

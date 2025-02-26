@@ -82,6 +82,7 @@ protected:
 
 protected:
   std::shared_ptr<::grpc::Channel> channel;
+  std::unique_ptr<::grpc::ClientContext> client_context;
   std::unique_ptr<LogsService::Stub> logs_service_stub;
   std::unique_ptr<MetricsService::Stub> metrics_service_stub;
   std::unique_ptr<TraceService::Stub> trace_service_stub;

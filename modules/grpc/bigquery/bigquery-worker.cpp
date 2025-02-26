@@ -180,13 +180,13 @@ DestinationWorker::insert_field(const google::protobuf::Reflection *reflection, 
 
   LogMessageValueType type;
 
-  Slice value = this->format_template(field.value, msg, buf, &type);
+  Slice value = this->format_template(field.nv.value, msg, buf, &type);
 
   if (type == LM_VT_NULL)
     {
       if (field.field_desc->is_required())
         {
-          msg_error("Missing required field", evt_tag_str("field", field.name.c_str()));
+          msg_error("Missing required field", evt_tag_str("field", field.nv.name.c_str()));
           goto error;
         }
 

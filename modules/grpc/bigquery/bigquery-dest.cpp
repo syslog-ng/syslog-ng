@@ -95,13 +95,11 @@ DestinationDriver::DestinationDriver(GrpcDestDriver *s)
 {
   this->url = "bigquerystorage.googleapis.com";
   this->credentials_builder.set_mode(GCAM_ADC);
-  log_template_options_defaults(&this->template_options);
 }
 
 DestinationDriver::~DestinationDriver()
 {
   g_list_free_full(this->protobuf_schema.values, _template_unref);
-  log_template_options_destroy(&this->template_options);
 }
 
 bool
@@ -168,9 +166,6 @@ DestinationDriver::init()
                 log_pipe_location_tag(&this->super->super.super.super.super));
       return false;
     }
-
-  GlobalConfig *cfg = log_pipe_get_config(&this->super->super.super.super.super);
-  log_template_options_init(&this->template_options, cfg);
 
   if (this->protobuf_schema.proto_path.empty())
     this->construct_schema_prototype();
@@ -249,7 +244,7 @@ DestinationDriver::construct_schema_prototype()
   for (auto &field : this->fields)
     {
       google::protobuf::FieldDescriptorProto *field_desc_proto = descriptor_proto->add_field();
-      field_desc_proto->set_name(field.name);
+      field_desc_proto->set_name(field.nv.name);
       field_desc_proto->set_type(field.type);
       field_desc_proto->set_number(num++);
     }
@@ -377,14 +372,6 @@ bigquery_dd_set_protobuf_schema(LogDriver *d, const gchar *proto_path, GList *va
   GrpcDestDriver *self = (GrpcDestDriver *) d;
   DestinationDriver *cpp = bigquery_dd_get_cpp(self);
   cpp->set_protobuf_schema(proto_path, values);
-}
-
-LogTemplateOptions *
-bigquery_dd_get_template_options(LogDriver *d)
-{
-  GrpcDestDriver *self = (GrpcDestDriver *) d;
-  DestinationDriver *cpp = bigquery_dd_get_cpp(self);
-  return &cpp->get_template_options();
 }
 
 LogDriver *

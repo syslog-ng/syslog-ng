@@ -49,31 +49,23 @@ namespace bigquery {
 
 struct Field
 {
-  std::string name;
+  NameValueTemplatePair nv;
   google::protobuf::FieldDescriptorProto::Type type;
-  LogTemplate *value;
   const google::protobuf::FieldDescriptor *field_desc;
 
   Field(std::string name_, google::protobuf::FieldDescriptorProto::Type type_, LogTemplate *value_)
-    : name(name_), type(type_), value(log_template_ref(value_)), field_desc(nullptr) {}
+    : nv(name_, value_), type(type_), field_desc(nullptr) {}
 
   Field(const Field &a)
-    : name(a.name), type(a.type), value(log_template_ref(a.value)), field_desc(a.field_desc) {}
+    : nv(a.nv), type(a.type), field_desc(a.field_desc) {}
 
   Field &operator=(const Field &a)
   {
-    name = a.name;
+    nv = a.nv;
     type = a.type;
-    log_template_unref(value);
-    value = log_template_ref(a.value);
     field_desc = a.field_desc;
 
     return *this;
-  }
-
-  ~Field()
-  {
-    log_template_unref(value);
   }
 
 };
@@ -90,11 +82,6 @@ public:
 
   bool add_field(std::string name, std::string type, LogTemplate *value);
   void set_protobuf_schema(std::string proto_path, GList *values);
-
-  LogTemplateOptions &get_template_options()
-  {
-    return this->template_options;
-  }
 
   void set_project(std::string p)
   {
@@ -132,8 +119,6 @@ private:
   bool load_protobuf_schema();
 
 private:
-  LogTemplateOptions template_options;
-
   std::string project;
   std::string dataset;
   std::string table;

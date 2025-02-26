@@ -40,8 +40,6 @@ void loki_dd_add_label(LogDriver *d, const gchar *name, LogTemplate *value);
 gboolean loki_dd_set_timestamp(LogDriver *d, const gchar *t);
 void loki_dd_set_tenant_id(LogDriver *d, const gchar *tid);
 
-LogTemplateOptions *loki_dd_get_template_options(LogDriver *d);
-
 #include "compat/cpp-end.h"
 
 #endif
