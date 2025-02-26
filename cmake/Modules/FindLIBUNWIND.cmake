@@ -24,4 +24,14 @@
 include (LibFindMacros)
 
 libfind_pkg_detect (LIBUNWIND libunwind FIND_PATH libunwind.h FIND_LIBRARY unwind)
-libfind_process (LIBUNWIND)
+
+if (NOT APPLE)
+  libfind_process (LIBUNWIND)
+else ()
+  # On macOS, libunwind is part of the system libraries
+  if (LIBUNWIND_INCLUDE_DIR)
+    set (LIBUNWIND_FOUND ON)
+    set (LIBUNWIND_LIBRARY "")
+    set (LIBUNWIND_LIBRARIES "")
+  endif ()
+endif ()
