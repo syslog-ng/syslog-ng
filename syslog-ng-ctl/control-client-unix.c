@@ -79,9 +79,38 @@ error:
 }
 
 gint
-control_client_send_command(ControlClient *self, const gchar *cmd)
+control_client_send_command(ControlClient *self, const gchar *cmd, gboolean attach)
 {
-  return fwrite(cmd, strlen(cmd), 1, self->control_socket);
+  struct iovec iov[1] =
+  {
+    { .iov_base = (gchar *) cmd, .iov_len = strlen(cmd) },
+  };
+  gint fds[3] = { 0, 1, 2 };
+  union
+  {
+    char buf[CMSG_SPACE(sizeof(fds))];
+    struct cmsghdr align;
+  } u;
+  struct msghdr msg =
+  {
+    .msg_iov = iov,
+    .msg_iovlen = G_N_ELEMENTS(iov),
+    0
+  };
+  if (attach)
+    {
+      msg.msg_control = u.buf;
+      msg.msg_controllen = sizeof(u.buf);
+
+      struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+      cmsg->cmsg_level = SOL_SOCKET;
+      cmsg->cmsg_type = SCM_RIGHTS;
+      cmsg->cmsg_len = CMSG_LEN(sizeof(fds));
+      memcpy(CMSG_DATA(cmsg), fds, sizeof(fds));
+    }
+
+  return sendmsg(self->control_fd, &msg, 0);
+//  return fwrite(cmd, strlen(cmd), 1, self->control_socket);
 }
 
 #define BUFF_LEN 8192
