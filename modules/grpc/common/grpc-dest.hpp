@@ -110,7 +110,11 @@ public:
 
   void add_header(std::string name, std::string value)
   {
-    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+    std::transform(name.begin(), name.end(), name.begin(),
+                   [](auto c)
+    {
+      return ::tolower(c);
+    });
     this->headers.push_back(std::make_pair(name, value));
   }
 
