@@ -27,6 +27,8 @@
 
 #include "control.h"
 
+gboolean control_command_thread_relates_to_connection(ControlCommandThread *self, ControlConnection *cc);
+
 void control_command_thread_run(ControlCommandThread *self);
 void control_command_thread_cancel(ControlCommandThread *self);
 const gchar *control_command_thread_get_command(ControlCommandThread *self);

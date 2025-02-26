@@ -97,6 +97,7 @@ pkginclude_HEADERS			+= \
 	lib/atomic-gssize.h \
 	lib/block-ref-parser.h		\
 	lib/cache.h			\
+	lib/console.h			\
 	lib/cfg.h			\
 	lib/cfg-grammar.h		\
 	lib/cfg-grammar-internal.h	\
@@ -172,6 +173,7 @@ pkginclude_HEADERS			+= \
 	lib/service-management.h	\
 	lib/seqnum.h			\
 	lib/signal-handler.h		\
+	lib/stackdump.h			\
 	lib/str-format.h		\
 	lib/str-utils.h			\
 	lib/syslog-names.h		\
@@ -197,6 +199,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/apphook.c			\
 	lib/block-ref-parser.c		\
 	lib/cache.c			\
+	lib/console.c			\
 	lib/cfg.c			\
 	lib/cfg-args.c			\
 	lib/cfg-block.c			\
@@ -265,6 +268,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/scratch-buffers.c		\
 	lib/serialize.c			\
 	lib/service-management.c	\
+	lib/stackdump.c			\
 	lib/str-format.c		\
 	lib/str-utils.c			\
 	lib/syslog-names.c		\
