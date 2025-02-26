@@ -585,14 +585,14 @@ ProtobufFormatter::set_syslog_ng_addresses(LogMessage *msg, LogRecord &log_recor
 {
   /* source address */
 
-  if (msg->saddr)
+  if (msg->saddr && g_sockaddr_inet_or_inet6_check(msg->saddr))
     {
       KeyValue *sa = log_record.add_attributes();
       sa->set_key("sa");
       set_syslog_ng_address_attrs(msg->saddr, sa->mutable_value()->mutable_kvlist_value(), false);
     }
 
-  if (msg->daddr)
+  if (msg->daddr && g_sockaddr_inet_or_inet6_check(msg->daddr))
     {
       /* dest address */
       KeyValue *da = log_record.add_attributes();

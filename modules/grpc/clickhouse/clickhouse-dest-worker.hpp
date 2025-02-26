@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2024 Axoflow
  * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
- * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,53 +21,41 @@
  *
  */
 
-#ifndef LOKI_WORKER_HPP
-#define LOKI_WORKER_HPP
+#ifndef CLICKHOUSE_DEST_WORKER_HPP
+#define CLICKHOUSE_DEST_WORKER_HPP
 
-#include "loki-dest.hpp"
+#include "clickhouse-dest.hpp"
 #include "grpc-dest-worker.hpp"
 
-#include "compat/cpp-start.h"
-#include "messages.h"
-#include "compat/cpp-end.h"
+#include <sstream>
 
-#include <grpcpp/create_channel.h>
-
-#include <string>
-#include <memory>
-
-#include "push.grpc.pb.h"
+#include "clickhouse_grpc.grpc.pb.h"
 
 namespace syslogng {
 namespace grpc {
-namespace loki {
+namespace clickhouse {
 
-class DestinationWorker final: public syslogng::grpc::DestWorker
+class DestWorker final : public syslogng::grpc::DestWorker
 {
 public:
-  DestinationWorker(GrpcDestWorker *s) : syslogng::grpc::DestWorker(s) {};
-  ~DestinationWorker() {};
+  DestWorker(GrpcDestWorker *s);
 
-  bool init();
-  bool connect();
-  void disconnect();
   LogThreadedResult insert(LogMessage *msg);
   LogThreadedResult flush(LogThreadedFlushMode mode);
 
 private:
-  void prepare_batch();
   bool should_initiate_flush();
-  void set_labels(LogMessage *msg);
-  void set_timestamp(logproto::EntryAdapter *entry, LogMessage *msg);
-  DestinationDriver *get_owner();
+  void prepare_query_info(::clickhouse::grpc::QueryInfo &query_info);
+  void prepare_batch();
+  DestDriver *get_owner();
 
 private:
-  bool connected;
-
   std::shared_ptr<::grpc::Channel> channel;
+  std::unique_ptr<::clickhouse::grpc::ClickHouse::Stub> stub;
   std::unique_ptr<::grpc::ClientContext> client_context;
-  std::unique_ptr<logproto::Pusher::Stub> stub;
-  logproto::PushRequest current_batch;
+
+  std::ostringstream query_data;
+  size_t batch_size = 0;
   size_t current_batch_bytes = 0;
 };
 

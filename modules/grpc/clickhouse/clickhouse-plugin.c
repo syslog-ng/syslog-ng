@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2024 Axoflow
  * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
- * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,21 +21,36 @@
  *
  */
 
-#ifndef BIGQUERY_DEST_H
-#define BIGQUERY_DEST_H
+#include "cfg-parser.h"
+#include "plugin.h"
+#include "plugin-types.h"
+#include "protos/apphook.h"
 
-#include "syslog-ng.h"
+extern CfgParser clickhouse_parser;
 
-#include "compat/cpp-start.h"
-#include "driver.h"
-#include "template/templates.h"
+static Plugin clickhouse_plugins[] =
+{
+  {
+    .type = LL_CONTEXT_DESTINATION,
+    .name = "clickhouse",
+    .parser = &clickhouse_parser,
+  },
+};
 
-LogDriver *bigquery_dd_new(GlobalConfig *cfg);
+gboolean
+clickhouse_module_init(PluginContext *context, CfgArgs *args)
+{
+  plugin_register(context, clickhouse_plugins, G_N_ELEMENTS(clickhouse_plugins));
+  grpc_register_global_initializers();
+  return TRUE;
+}
 
-void bigquery_dd_set_project(LogDriver *d, const gchar *project);
-void bigquery_dd_set_dataset(LogDriver *d, const gchar *dataset);
-void bigquery_dd_set_table(LogDriver *d, const gchar *table);
-
-#include "compat/cpp-end.h"
-
-#endif
+const ModuleInfo module_info =
+{
+  .canonical_name = "clickhouse",
+  .version = SYSLOG_NG_VERSION,
+  .description = "Clickhouse plugins",
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
+  .plugins = clickhouse_plugins,
+  .plugins_len = G_N_ELEMENTS(clickhouse_plugins),
+};

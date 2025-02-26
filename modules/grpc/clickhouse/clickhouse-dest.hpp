@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2024 Axoflow
  * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
- * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,60 +21,70 @@
  *
  */
 
-#ifndef BIGQUERY_DEST_HPP
-#define BIGQUERY_DEST_HPP
+#ifndef CLICKHOUSE_DEST_HPP
+#define CLICKHOUSE_DEST_HPP
 
-#include "bigquery-dest.h"
+#include "clickhouse-dest.h"
 #include "grpc-dest.hpp"
-
-#include "compat/cpp-start.h"
-#include "template/templates.h"
-#include "stats/stats-cluster-key-builder.h"
-#include "compat/cpp-end.h"
 
 #include <string>
 
 namespace syslogng {
 namespace grpc {
-namespace bigquery {
+namespace clickhouse {
 
-class DestinationDriver final : public syslogng::grpc::DestDriver
+class DestDriver final : public syslogng::grpc::DestDriver
 {
 public:
-  DestinationDriver(GrpcDestDriver *s);
+  DestDriver(GrpcDestDriver *s);
   bool init();
   const gchar *generate_persist_name();
   const gchar *format_stats_key(StatsClusterKeyBuilder *kb);
   LogThreadedDestWorker *construct_worker(int worker_index);
 
-  void set_project(std::string p)
+  void set_database(const std::string &d)
   {
-    this->project = p;
+    this->database = d;
   }
 
-  void set_dataset(std::string d)
-  {
-    this->dataset = d;
-  }
-
-  void set_table(std::string t)
+  void set_table(const std::string &t)
   {
     this->table = t;
   }
 
-  const std::string &get_project()
+  void set_user(const std::string &u)
   {
-    return this->project;
+    this->user = u;
   }
 
-  const std::string &get_dataset()
+  void set_password(const std::string &p)
   {
-    return this->dataset;
+    this->password = p;
+  }
+
+  const std::string &get_database()
+  {
+    return this->database;
   }
 
   const std::string &get_table()
   {
     return this->table;
+  }
+
+  const std::string &get_user()
+  {
+    return this->user;
+  }
+
+  const std::string &get_password()
+  {
+    return this->password;
+  }
+
+  const std::string &get_query()
+  {
+    return this->query;
   }
 
   Schema *get_schema()
@@ -85,16 +94,19 @@ public:
 
 private:
   static bool map_schema_type(const std::string &type_in, google::protobuf::FieldDescriptorProto::Type &type_out);
+  bool quote_identifier(const std::string &identifier, std::string &quoted_identifier);
 
 private:
-  friend class DestinationWorker;
+  friend class DestWorker;
 
 private:
-  Schema schema;
-
-  std::string project;
-  std::string dataset;
+  std::string database;
   std::string table;
+  std::string user;
+  std::string password;
+  std::string query;
+
+  Schema schema;
 };
 
 
@@ -102,6 +114,6 @@ private:
 }
 }
 
-syslogng::grpc::bigquery::DestinationDriver *bigquery_dd_get_cpp(GrpcDestDriver *self);
+syslogng::grpc::clickhouse::DestDriver *clickhouse_dd_get_cpp(GrpcDestDriver *self);
 
 #endif

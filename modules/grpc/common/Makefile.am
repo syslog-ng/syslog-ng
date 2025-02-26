@@ -1,5 +1,6 @@
 include modules/grpc/common/credentials/Makefile.am
 include modules/grpc/common/metrics/Makefile.am
+include modules/grpc/common/schema/Makefile.am
 
 if ENABLE_GRPC
 
@@ -12,10 +13,10 @@ GRPC_COMMON_CFLAGS = \
 GRPC_COMMON_LIBS = \
   $(top_builddir)/modules/grpc/common/libgrpc-common.la
 
-
 modules_grpc_common_libgrpc_common_la_SOURCES = \
   $(grpc_credentials_sources) \
   $(grpc_metrics_sources) \
+  $(grpc_schema_sources) \
   modules/grpc/common/grpc-parser.h \
   modules/grpc/common/grpc-dest.h \
   modules/grpc/common/grpc-dest.hpp \
@@ -30,6 +31,7 @@ modules_grpc_common_libgrpc_common_la_SOURCES = \
 
 modules_grpc_common_libgrpc_common_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
+  -Wno-inconsistent-missing-override -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0 \
   $(PROTOBUF_CFLAGS) \
   $(GRPCPP_CFLAGS) \
   $(GRPC_COMMON_CFLAGS)

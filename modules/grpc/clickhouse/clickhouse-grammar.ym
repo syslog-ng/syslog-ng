@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 László Várady
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -23,7 +24,7 @@
 /* REQUIRE modules/grpc/common/grpc-grammar.ym */
 
 %code top {
-#include "loki-parser.h"
+#include "clickhouse-parser.h"
 
 }
 
@@ -34,13 +35,13 @@
 #include "plugin.h"
 #include "syslog-names.h"
 
-#include "loki-dest.h"
+#include "clickhouse-dest.h"
 
 #include <stdlib.h>
 
 }
 
-%define api.prefix {loki_}
+%define api.prefix {clickhouse_}
 
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
@@ -49,56 +50,40 @@
 
 /* INCLUDE_DECLS */
 
-%token KW_LOKI
-%token KW_LABELS
-%token KW_TIMESTAMP
-%token KW_TENANT_ID
+%token KW_CLICKHOUSE
+%token KW_DATABASE
+%token KW_TABLE
+%token KW_USER
+%token KW_PASSWORD
 
-%type <ptr> loki_dest
+%type <ptr> clickhouse_dest
 
 %%
 
 start
-  : LL_CONTEXT_DESTINATION loki_dest { YYACCEPT; }
+  : LL_CONTEXT_DESTINATION clickhouse_dest { YYACCEPT; }
   ;
 
-loki_dest
-  : KW_LOKI
+clickhouse_dest
+  : KW_CLICKHOUSE
     {
-      last_driver = *instance = loki_dd_new(configuration);
+      last_driver = *instance = clickhouse_dd_new(configuration);
     }
-    '(' _inner_dest_context_push loki_dest_options _inner_dest_context_pop ')' { $$ = last_driver; }
+    '(' _inner_dest_context_push clickhouse_dest_options _inner_dest_context_pop ')' { $$ = last_driver; }
   ;
 
-loki_dest_options
-  : loki_dest_option loki_dest_options
+clickhouse_dest_options
+  : clickhouse_dest_option clickhouse_dest_options
   |
   ;
 
-loki_dest_option
-  : KW_LABELS '(' loki_labels ')'
-  | KW_TENANT_ID '(' string ')' { loki_dd_set_tenant_id(last_driver, $3); free($3); }
-  | KW_TIMESTAMP '(' string ')'
-    {
-      CHECK_ERROR(loki_dd_set_timestamp(last_driver, $3), @1, "Failed to set timestamp(). Valid values are: \"current\", \"received\", \"msg\"");
-      free($3);
-    }
-  | KW_TEMPLATE '(' template_name_or_content ')' { loki_dd_set_message_template_ref(last_driver, $3); }
+clickhouse_dest_option
+  : KW_DATABASE '(' string ')'{ clickhouse_dd_set_database(last_driver, $3); free($3); }
+  | KW_TABLE '(' string ')'{ clickhouse_dd_set_table(last_driver, $3); free($3); }
+  | KW_USER '(' string ')'{ clickhouse_dd_set_user(last_driver, $3); free($3); }
+  | KW_PASSWORD '(' string ')'{ clickhouse_dd_set_password(last_driver, $3); free($3); }
   | grpc_dest_general_option
-  ;
-
-loki_labels
-  : loki_label loki_labels
-  |
-  ;
-
-loki_label
-  : string LL_ARROW template_content
-    {
-	    loki_dd_add_label(last_driver, $1, $3);
-      free($1);
-      log_template_unref($3);
-    }
+  | grpc_dest_schema_option
   ;
 
 /* INCLUDE_RULES */

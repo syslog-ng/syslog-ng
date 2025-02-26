@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2024 Axoflow
  * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
- * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,21 +21,14 @@
  *
  */
 
-#ifndef BIGQUERY_DEST_H
-#define BIGQUERY_DEST_H
+#ifndef CLICKHOUSE_PARSER_H_INCLUDED
+#define CLICKHOUSE_PARSER_H_INCLUDED
 
-#include "syslog-ng.h"
-
-#include "compat/cpp-start.h"
+#include "cfg-parser.h"
 #include "driver.h"
-#include "template/templates.h"
 
-LogDriver *bigquery_dd_new(GlobalConfig *cfg);
+extern CfgParser clickhouse_parser;
 
-void bigquery_dd_set_project(LogDriver *d, const gchar *project);
-void bigquery_dd_set_dataset(LogDriver *d, const gchar *dataset);
-void bigquery_dd_set_table(LogDriver *d, const gchar *table);
-
-#include "compat/cpp-end.h"
+CFG_PARSER_DECLARE_LEXER_BINDING(clickhouse_, CLICKHOUSE_, LogDriver **)
 
 #endif

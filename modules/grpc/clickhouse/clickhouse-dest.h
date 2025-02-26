@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2024 Axoflow
  * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
- * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,8 +21,8 @@
  *
  */
 
-#ifndef BIGQUERY_DEST_H
-#define BIGQUERY_DEST_H
+#ifndef CLICKHOUSE_DEST_H
+#define CLICKHOUSE_DEST_H
 
 #include "syslog-ng.h"
 
@@ -31,11 +30,12 @@
 #include "driver.h"
 #include "template/templates.h"
 
-LogDriver *bigquery_dd_new(GlobalConfig *cfg);
+LogDriver *clickhouse_dd_new(GlobalConfig *cfg);
 
-void bigquery_dd_set_project(LogDriver *d, const gchar *project);
-void bigquery_dd_set_dataset(LogDriver *d, const gchar *dataset);
-void bigquery_dd_set_table(LogDriver *d, const gchar *table);
+void clickhouse_dd_set_database(LogDriver *d, const gchar *database);
+void clickhouse_dd_set_table(LogDriver *d, const gchar *table);
+void clickhouse_dd_set_user(LogDriver *d, const gchar *user);
+void clickhouse_dd_set_password(LogDriver *d, const gchar *password);
 
 #include "compat/cpp-end.h"
 

@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2024 Axoflow
  * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
- * Copyright (c) 2023 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,21 +21,35 @@
  *
  */
 
-#ifndef BIGQUERY_DEST_H
-#define BIGQUERY_DEST_H
-
-#include "syslog-ng.h"
-
-#include "compat/cpp-start.h"
 #include "driver.h"
-#include "template/templates.h"
+#include "cfg-parser.h"
+#include "clickhouse-grammar.h"
+#include "grpc-parser.h"
 
-LogDriver *bigquery_dd_new(GlobalConfig *cfg);
+extern int clickhouse_debug;
 
-void bigquery_dd_set_project(LogDriver *d, const gchar *project);
-void bigquery_dd_set_dataset(LogDriver *d, const gchar *dataset);
-void bigquery_dd_set_table(LogDriver *d, const gchar *table);
+int clickhouse_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-#include "compat/cpp-end.h"
+static CfgLexerKeyword clickhouse_keywords[] =
+{
+  GRPC_KEYWORDS,
+  { "clickhouse", KW_CLICKHOUSE },
+  { "database", KW_DATABASE },
+  { "table", KW_TABLE },
+  { "user", KW_USER },
+  { "password", KW_PASSWORD },
+  { NULL }
+};
 
+CfgParser clickhouse_parser =
+{
+#if SYSLOG_NG_ENABLE_DEBUG
+  .debug_flag = &clickhouse_debug,
 #endif
+  .name = "clickhouse",
+  .keywords = clickhouse_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) clickhouse_parse,
+  .cleanup = (void (*)(gpointer)) log_pipe_unref,
+};
+
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(clickhouse_, CLICKHOUSE_, LogDriver **)
