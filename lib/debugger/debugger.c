@@ -29,6 +29,7 @@
 #include "mainloop.h"
 #include "timeutils/misc.h"
 #include "compat/time.h"
+#include "scratch-buffers.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -40,10 +41,9 @@ struct _Debugger
   GlobalConfig *cfg;
   gchar *command_buffer;
   LogTemplate *display_template;
-  LogMessage *current_msg;
-  LogPipe *current_pipe;
-  gboolean drop_current_message;
+  BreakpointSite *breakpoint_site;
   struct timespec last_trace_event;
+  GThread *debugger_thread;
 };
 
 static gboolean
@@ -160,11 +160,11 @@ static gboolean
 _cmd_print(Debugger *self, gint argc, gchar *argv[])
 {
   if (argc == 1)
-    _display_msg_details(self, self->current_msg);
+    _display_msg_details(self, self->breakpoint_site->msg);
   else if (argc == 2)
     {
       GError *error = NULL;
-      if (!_display_msg_with_template_string(self, self->current_msg, argv[1], &error))
+      if (!_display_msg_with_template_string(self, self->breakpoint_site->msg, argv[1], &error))
         {
           printf("print: %s\n", error->message);
           g_clear_error(&error);
@@ -195,14 +195,14 @@ _cmd_display(Debugger *self, gint argc, gchar *argv[])
 static gboolean
 _cmd_drop(Debugger *self, gint argc, gchar *argv[])
 {
-  self->drop_current_message = TRUE;
+  self->breakpoint_site->drop = TRUE;
   return FALSE;
 }
 
 static gboolean
 _cmd_trace(Debugger *self, gint argc, gchar *argv[])
 {
-  self->current_msg->flags |= LF_STATE_TRACING;
+  self->breakpoint_site->msg->flags |= LF_STATE_TRACING;
   return FALSE;
 }
 
@@ -210,7 +210,7 @@ static gboolean
 _cmd_quit(Debugger *self, gint argc, gchar *argv[])
 {
   main_loop_exit(self->main_loop);
-  self->drop_current_message = TRUE;
+  self->breakpoint_site->drop = TRUE;
   return FALSE;
 }
 
@@ -231,7 +231,7 @@ _cmd_info(Debugger *self, gint argc, gchar *argv[])
   if (argc >= 2)
     {
       if (strcmp(argv[1], "pipe") == 0)
-        return _cmd_info_pipe(self, self->current_pipe);
+        return _cmd_info_pipe(self, self->breakpoint_site->pipe);
     }
 
   printf("info: List of info subcommands\n"
@@ -272,6 +272,7 @@ debugger_builtin_fetch_command(void)
 
   printf("(syslog-ng) ");
   fflush(stdout);
+  clearerr(stdin);
 
   if (!fgets(buf, sizeof(buf), stdin))
     return NULL;
@@ -349,11 +350,11 @@ static void
 _handle_interactive_prompt(Debugger *self)
 {
   gchar buf[1024];
-  LogPipe *current_pipe = self->current_pipe;
+  LogPipe *current_pipe = self->breakpoint_site->pipe;
 
   printf("Breakpoint hit %s\n", log_expr_node_format_location(current_pipe->expr_node, buf, sizeof(buf)));
   _display_source_line(current_pipe->expr_node);
-  _display_msg_with_template(self, self->current_msg, self->display_template);
+  _display_msg_with_template(self, self->breakpoint_site->msg, self->display_template);
   while (1)
     {
       _fetch_command(self);
@@ -366,17 +367,20 @@ _handle_interactive_prompt(Debugger *self)
 }
 
 static gpointer
-_interactive_console_thread_func(Debugger *self)
+_debugger_thread_func(Debugger *self)
 {
   app_thread_start();
   printf("Waiting for breakpoint...\n");
   while (1)
     {
-      tracer_wait_for_breakpoint(self->tracer);
+      self->breakpoint_site = NULL;
+      if (!tracer_wait_for_breakpoint(self->tracer, &self->breakpoint_site))
+        break;
 
       _handle_interactive_prompt(self);
-      tracer_resume_after_breakpoint(self->tracer);
+      tracer_resume_after_breakpoint(self->tracer, self->breakpoint_site);
     }
+  scratch_buffers_explicit_gc();
   app_thread_stop();
   return NULL;
 }
@@ -384,21 +388,24 @@ _interactive_console_thread_func(Debugger *self)
 void
 debugger_start_console(Debugger *self)
 {
-  g_thread_new(NULL, (GThreadFunc) _interactive_console_thread_func, self);
+  main_loop_assert_main_thread();
+
+  self->debugger_thread = g_thread_new(NULL, (GThreadFunc) _debugger_thread_func, self);
 }
 
 gboolean
 debugger_stop_at_breakpoint(Debugger *self, LogPipe *pipe_, LogMessage *msg)
 {
-  self->drop_current_message = FALSE;
-  self->current_msg = log_msg_ref(msg);
-  self->current_pipe = log_pipe_ref(pipe_);
-  tracer_stop_on_breakpoint(self->tracer);
-  log_msg_unref(self->current_msg);
-  log_pipe_unref(self->current_pipe);
-  self->current_msg = NULL;
-  self->current_pipe = NULL;
-  return !self->drop_current_message;
+  BreakpointSite breakpoint_site = {0};
+  msg_trace("Debugger: stopping at breakpoint",
+            log_pipe_location_tag(pipe_));
+
+  breakpoint_site.msg = log_msg_ref(msg);
+  breakpoint_site.pipe = log_pipe_ref(pipe_);
+  tracer_stop_on_breakpoint(self->tracer, &breakpoint_site);
+  log_msg_unref(breakpoint_site.msg);
+  log_pipe_unref(breakpoint_site.pipe);
+  return !breakpoint_site.drop;
 }
 
 gboolean
@@ -415,6 +422,15 @@ debugger_perform_tracing(Debugger *self, LogPipe *pipe_, LogMessage *msg)
          log_expr_node_format_location(pipe_->expr_node, buf, sizeof(buf)));
   *prev_ts = ts;
   return TRUE;
+}
+
+void
+debugger_exit(Debugger *self)
+{
+  main_loop_assert_main_thread();
+
+  tracer_cancel(self->tracer);
+  g_thread_join(self->debugger_thread);
 }
 
 Debugger *
