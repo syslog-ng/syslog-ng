@@ -245,10 +245,17 @@ _thread_maintenance_update_time(void)
 void
 scratch_buffers_lazy_update_stats(void)
 {
-  if (_thread_maintenance_period_elapsed())
+  if (iv_inited())
+    {
+      if (_thread_maintenance_period_elapsed())
+        {
+          scratch_buffers_update_stats();
+          _thread_maintenance_update_time();
+        }
+    }
+  else
     {
       scratch_buffers_update_stats();
-      _thread_maintenance_update_time();
     }
 }
 
