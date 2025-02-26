@@ -97,6 +97,7 @@ pkginclude_HEADERS			+= \
 	lib/atomic-gssize.h \
 	lib/block-ref-parser.h		\
 	lib/cache.h			\
+	lib/console.h			\
 	lib/cfg.h			\
 	lib/cfg-grammar.h		\
 	lib/cfg-grammar-internal.h	\
@@ -197,6 +198,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/apphook.c			\
 	lib/block-ref-parser.c		\
 	lib/cache.c			\
+	lib/console.c			\
 	lib/cfg.c			\
 	lib/cfg-args.c			\
 	lib/cfg-block.c			\
