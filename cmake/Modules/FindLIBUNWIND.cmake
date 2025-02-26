@@ -23,5 +23,21 @@
 
 include (LibFindMacros)
 
-libfind_pkg_detect (LIBUNWIND libunwind FIND_PATH libunwind.h FIND_LIBRARY unwind)
-libfind_process (LIBUNWIND)
+set (LIBUNWIND_FOUND OFF)
+
+if (NOT APPLE)
+  libfind_pkg_detect (LIBUNWIND libunwind FIND_PATH libunwind.h FIND_LIBRARY unwind)
+  libfind_process (LIBUNWIND)
+else ()
+  libfind_pkg_detect (LIBUNWIND libunwind FIND_PATH libunwind.h PATH_HINT "$ENV{HOMEBREW_PREFIX}/opt/libunwind-headers/include" FIND_LIBRARY unwind)
+  # On macOS, libunwind is part of the system libraries
+  if (LIBUNWIND_INCLUDE_DIR)
+    string (REGEX MATCH "SDKs/MacOS" macOSSDKUsed "${LIBUNWIND_INCLUDE_DIR}")
+    if (macOSSDKUsed)
+      message (FATAL_ERROR "LIBUNWIND_INCLUDE_DIR is found in the Apple SDK, please use the libunwind library provided version. e.g. the one that\n   `brew install libunwind-headers`\nprovides.")
+    endif ()
+    set (LIBUNWIND_FOUND ON)
+    set (LIBUNWIND_LIBRARY "")
+    set (LIBUNWIND_LIBRARIES "")
+  endif ()
+endif ()

@@ -33,9 +33,12 @@
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 #include <dlfcn.h>
-#include <link.h>
 
 /* this is Linux only for now */
+#ifdef __linux__
+#include <link.h>
+
+#define _STRUCT_MCONTEXT struct sigcontext
 
 static void
 _stackdump_print_stack(gpointer stack_pointer)
@@ -93,6 +96,21 @@ _stackdump_print_backtrace(void)
     }
 }
 
+#elif defined(__APPLE__)
+#define _XOPEN_SOURCE 1
+#include <ucontext.h>
+
+static void
+_stackdump_print_stack(gpointer stack_pointer)
+{
+}
+
+static void
+_stackdump_print_backtrace(void)
+{
+}
+
+#endif
 
 #ifdef __x86_64__
 /****************************************************************************
@@ -116,7 +134,7 @@ _stackdump_print_registers(struct sigcontext *p)
   _stackdump_print_stack((gpointer) p->rsp);
 }
 
-#elif __x86__
+#elif defined(__x86__)
 /****************************************************************************
  *
  *
@@ -167,7 +185,7 @@ static void
 _fatal_signal_handler(int signo, siginfo_t *info, void *uc)
 {
   struct ucontext_t *ucontext = (struct ucontext_t *) uc;
-  struct sigcontext *p = (struct sigcontext *) &ucontext->uc_mcontext;
+  _STRUCT_MCONTEXT  *p = (_STRUCT_MCONTEXT *) &ucontext->uc_mcontext;
   struct sigaction act;
 
   memset(&act, 0, sizeof(act));
@@ -192,11 +210,11 @@ stackdump_setup_signal(gint signal_number)
   sigaction(signal_number, &act, NULL);
 }
 
-#else
+#else // #if SYSLOG_NG_ENABLE_STACKDUMP
 
 void
 stackdump_setup_signal(gint signal_number)
 {
 }
 
-#endif
+#endif // #if SYSLOG_NG_ENABLE_STACKDUMP
