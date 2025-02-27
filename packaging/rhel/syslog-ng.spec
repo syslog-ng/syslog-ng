@@ -326,6 +326,15 @@ Requires: %{name}-grpc
 %description bigquery
 This module adds Google BigQuery support.
 
+%package clickhouse
+Summary: ClickHouse support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: %{name}-grpc
+
+%description clickhouse
+This module adds ClickHouse support.
+
 %package bpf
 Summary: Faster UDP log collection for %{name}
 Group: Development/Libraries
@@ -620,6 +629,9 @@ fi
 
 %files bigquery
 %{_libdir}/%{name}/libbigquery.so
+
+%files clickhouse
+%{_libdir}/%{name}/libclickhouse.so
 %endif
 
 %if %{with amqp}
