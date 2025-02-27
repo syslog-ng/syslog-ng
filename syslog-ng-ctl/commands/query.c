@@ -145,7 +145,7 @@ slng_query(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 
   gchar *cmd = _get_dispatchable_query_command();
   if (cmd == NULL)
-    return 1;
+    return ERR_CMD_PARSING_FAILED;
 
   result = dispatch_command(cmd);
 
