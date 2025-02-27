@@ -103,18 +103,6 @@ _shift_query_command_out_of_params(void)
     ++raw_query_params;
 }
 
-static gboolean
-_validate_get_params(gint query_cmd)
-{
-  if(query_cmd == QUERY_CMD_GET || query_cmd == QUERY_CMD_GET_SUM)
-    if (*raw_query_params == NULL)
-      {
-        fprintf(stderr, "error: need a path argument\n");
-        return TRUE;
-      }
-  return FALSE;
-}
-
 static gchar *
 _get_query_command_string(gint query_cmd)
 {
@@ -146,8 +134,6 @@ _get_dispatchable_query_command(void)
     return NULL;
 
   _shift_query_command_out_of_params();
-  if(_validate_get_params(query_cmd))
-    return NULL;
 
   return _get_query_command_string(query_cmd);
 }
