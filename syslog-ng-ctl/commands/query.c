@@ -122,16 +122,22 @@ _get_query_command_string(gint query_cmd)
 }
 
 static gchar *
-_get_dispatchable_query_command(void)
+_get_dispatchable_query_command(GOptionContext *ctx)
 {
   gint query_cmd;
 
   if (_is_query_params_empty())
+    {
+      g_option_context_set_description(ctx, "stats");
     return NULL;
+    }
 
   query_cmd = _get_query_cmd(raw_query_params[QUERY_COMMAND]);
   if (query_cmd < 0)
+    {
+      g_option_context_set_description(ctx, "stats");
     return NULL;
+    }
 
   _shift_query_command_out_of_params();
 
@@ -143,7 +149,7 @@ slng_query(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   gint result;
 
-  gchar *cmd = _get_dispatchable_query_command();
+  gchar *cmd = _get_dispatchable_query_command(ctx);
   if (cmd == NULL)
     return ERR_CMD_PARSING_FAILED;
 
