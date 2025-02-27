@@ -475,7 +475,7 @@ main_loop_exit_initiate(gpointer user_data)
   if (main_loop_is_terminating(self))
     return;
 
-  control_server_cancel_workers(self->control_server);
+  control_server_cancel_all_workers(self->control_server);
 
   app_pre_shutdown();
 

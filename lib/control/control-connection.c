@@ -36,6 +36,14 @@ _g_string_destroy(gpointer user_data)
   g_string_free(str, TRUE);
 }
 
+gboolean
+control_connection_get_attached_fds(ControlConnection *self, gint *fds, gsize *num_fds)
+{
+  if (self->get_attached_fds)
+    return self->get_attached_fds(self, fds, num_fds);
+  return FALSE;
+}
+
 static void
 _control_connection_free(ControlConnection *self)
 {
@@ -215,7 +223,7 @@ control_connection_io_input(void *s)
     }
   else if (rc == 0)
     {
-      msg_debug("EOF on control channel, closing connection");
+      msg_trace("EOF on control channel, closing connection");
       goto destroy_connection;
     }
   else

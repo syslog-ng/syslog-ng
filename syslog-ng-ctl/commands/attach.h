@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2024 Balazs Scheidler <balazs.scheidler@axoflow.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,18 +21,12 @@
  *
  */
 
-#ifndef CONTROL_CLIENT_H
-#define CONTROL_CLIENT_H 1
+#ifndef SYSLOG_NG_CTL_ATTACH_H_INCLUDED
+#define SYSLOG_NG_CTL_ATTACH_H_INCLUDED 1
 
-#include "syslog-ng.h"
-#include "commands/commands.h"
+#include "commands.h"
 
-typedef struct _ControlClient ControlClient;
-
-ControlClient *control_client_new(const gchar *path);
-gboolean control_client_connect(ControlClient *self);
-gint control_client_send_command(ControlClient *self, const gchar *cmd, gboolean attach);
-gint control_client_read_reply(ControlClient *self, CommandResponseHandlerFunc cb, gpointer user_data);
-void control_client_free(ControlClient *self);
+extern GOptionEntry attach_options[];
+gint slng_attach(int argc, char *argv[], const gchar *mode, GOptionContext *ctx);
 
 #endif

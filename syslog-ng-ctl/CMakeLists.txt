@@ -1,6 +1,8 @@
 set(SYSLOG_NG_CTL_SOURCES
     syslog-ng-ctl.c
     control-client.h
+    commands/attach.h
+    commands/attach.c
     commands/commands.h
     commands/commands.c
     commands/credentials.h
