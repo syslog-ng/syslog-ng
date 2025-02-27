@@ -370,7 +370,7 @@ set (SYSLOG_NG_ENABLE_PERF ${ENABLE_PERF})
 
 option (ENABLE_LIBUNWIND "Enable stackdump using libunwind" OFF)
 if (ENABLE_LIBUNWIND)
-  if (NOT LINUX)
+  if (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message (FATAL_ERROR "ENABLE_LIBUNWIND is defined, but it is only supported on Linux currently.")
   endif ()
   find_package (LIBUNWIND)
