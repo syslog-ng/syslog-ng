@@ -29,9 +29,10 @@
 #include <syslog.h>
 
 GMutex console_lock;
-gboolean console_present = TRUE;
 gboolean using_initial_console = TRUE;
 const gchar *console_prefix;
+gint initial_console_fds[3];
+gint stolen_fds;
 
 /**
  * console_printf:
@@ -54,7 +55,7 @@ console_printf(const gchar *fmt, ...)
   va_start(ap, fmt);
   g_vsnprintf(buf, sizeof(buf), fmt, ap);
   va_end(ap);
-  if (console_is_present())
+  if (console_is_initial())
     fprintf(stderr, "%s: %s\n", console_prefix, buf);
   else
     {
@@ -65,39 +66,75 @@ console_printf(const gchar *fmt, ...)
 }
 
 
-/* NOTE: this is not synced with any changes and is just an indication whether we have a console */
+/* NOTE: this is not synced with any changes and is just an indication whether we already acquired the console */
 gboolean
-console_is_present(void)
+console_is_initial(void)
 {
   gboolean result;
 
   /* the lock only serves a memory barrier but is not a real synchronization */
   g_mutex_lock(&console_lock);
-  result = console_present;
+  result = using_initial_console;
   g_mutex_unlock(&console_lock);
+  return result;
+}
+
+GString *
+_get_fn_names(gint fns)
+{
+  GString *result = g_string_new(NULL);
+
+  if (fns & (1 << STDIN_FILENO))
+    g_string_append(result, "stdin");
+  if (fns & (1 << STDOUT_FILENO))
+    {
+      if (result->len > 0)
+        g_string_append_c(result, ',');
+      g_string_append(result, "stdout");
+    }
+  if (fns & (1 << STDERR_FILENO))
+    {
+      if (result->len > 0)
+        g_string_append_c(result, ',');
+      g_string_append(result, "stderr");
+    }
+
   return result;
 }
 
 /* re-acquire a console after startup using an array of fds */
 gboolean
-console_acquire_from_fds(gint fds[3])
+console_acquire_from_fds(gint fds[3], gint fds_to_steal)
 {
-  const gchar *takeover_message_on_old_console = "[Console taken over, no further output here]\n";
   gboolean result = FALSE;
 
   g_mutex_lock(&console_lock);
-  if (console_present)
-    {
-      if (!using_initial_console)
-        goto exit;
-      (void) write(1, takeover_message_on_old_console, strlen(takeover_message_on_old_console));
-    }
+  if (!using_initial_console)
+    goto exit;
 
-  dup2(fds[0], STDIN_FILENO);
-  dup2(fds[1], STDOUT_FILENO);
-  dup2(fds[2], STDERR_FILENO);
+  GString *stolen_fn_names = _get_fn_names(fds_to_steal);
+  gchar *takeover_message_on_old_console = g_strdup_printf("[Console(%s) taken over, no further output here]\n",
+                                                           stolen_fn_names->str);
+  (void) write(STDOUT_FILENO, takeover_message_on_old_console, strlen(takeover_message_on_old_console));
+  g_free(takeover_message_on_old_console);
+  g_string_free(stolen_fn_names, TRUE);
 
-  console_present = TRUE;
+  stolen_fds = fds_to_steal;
+
+  if (stolen_fds & (1 << STDIN_FILENO))
+    initial_console_fds[0] = dup(STDIN_FILENO);
+  if (stolen_fds & (1 << STDOUT_FILENO))
+    initial_console_fds[1] = dup(STDOUT_FILENO);
+  if (stolen_fds & (1 << STDERR_FILENO))
+    initial_console_fds[2] = dup(STDERR_FILENO);
+
+  if (stolen_fds & (1 << STDIN_FILENO))
+    dup2(fds[0], STDIN_FILENO);
+  if (stolen_fds & (1 << STDOUT_FILENO))
+    dup2(fds[1], STDOUT_FILENO);
+  if (stolen_fds & (1 << STDERR_FILENO))
+    dup2(fds[2], STDERR_FILENO);
+
   using_initial_console = FALSE;
   result = TRUE;
 exit:
@@ -108,38 +145,36 @@ exit:
 /**
  * console_release:
  *
- * Use /dev/null as input/output/error. This function is idempotent, can be
+ * Restore input/output/error. This function is idempotent, can be
  * called any number of times without harm.
  **/
 void
 console_release(void)
 {
-  gint devnull_fd;
-
   g_mutex_lock(&console_lock);
 
-  if (!console_present)
+  if (using_initial_console)
     goto exit;
 
-  devnull_fd = open("/dev/null", O_RDONLY);
-  if (devnull_fd >= 0)
+  if (initial_console_fds[0] > 0)
     {
-      dup2(devnull_fd, STDIN_FILENO);
-      close(devnull_fd);
+      dup2(initial_console_fds[0], STDIN_FILENO);
+      close(initial_console_fds[0]);
+      initial_console_fds[0] = -1;
     }
-  devnull_fd = open("/dev/null", O_WRONLY);
-  if (devnull_fd >= 0)
+  if (initial_console_fds[1] > 0)
     {
-      dup2(devnull_fd, STDOUT_FILENO);
-      dup2(devnull_fd, STDERR_FILENO);
-      close(devnull_fd);
+      dup2(initial_console_fds[1], STDOUT_FILENO);
+      close(initial_console_fds[1]);
+      initial_console_fds[1] = -1;
     }
-  clearerr(stdin);
-  clearerr(stdout);
-  clearerr(stderr);
-  console_present = FALSE;
-  using_initial_console = FALSE;
-
+  if (initial_console_fds[2] > 0)
+    {
+      dup2(initial_console_fds[2], STDERR_FILENO);
+      close(initial_console_fds[2]);
+      initial_console_fds[2] = -1;
+    }
+  using_initial_console = TRUE;
 exit:
   g_mutex_unlock(&console_lock);
 }
@@ -149,6 +184,9 @@ console_global_init(const gchar *console_prefix_)
 {
   g_mutex_init(&console_lock);
   console_prefix = console_prefix_;
+  initial_console_fds[0] = -1;
+  initial_console_fds[1] = -1;
+  initial_console_fds[2] = -1;
 }
 
 void
