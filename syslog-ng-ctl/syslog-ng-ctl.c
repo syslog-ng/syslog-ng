@@ -218,7 +218,7 @@ main(int argc, char *argv[])
     {
       fprintf(stderr, "Unknown command\n\n");
       print_usage(bin_name->str, "", modes);
-      exit(1);
+      exit(ERR_CMD_PARSING_FAILED);
     }
 
   if (!g_option_context_parse(ctx, &argc, &argv, &error))
@@ -226,7 +226,7 @@ main(int argc, char *argv[])
       fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");
       g_clear_error(&error);
       g_option_context_free(ctx);
-      return 1;
+      return ERR_CMD_PARSING_FAILED;
     }
 
   result = run(control_name, argc, argv, active_mode, ctx);
