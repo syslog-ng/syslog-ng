@@ -154,6 +154,7 @@ set (LIB_HEADERS
     serialize.h
     service-management.h
     seqnum.h
+    stackdump.h
     str-format.h
     str-utils.h
     syslog-names.h
@@ -251,6 +252,7 @@ set(LIB_SOURCES
     scratch-buffers.c
     serialize.c
     service-management.c
+    stackdump.c
     str-format.c
     str-utils.c
     syslog-names.c
@@ -368,6 +370,7 @@ set(CORE_INCLUDE_DIRS
     ${JSONC_INCLUDE_DIR}
     ${LIBPCRE_INCLUDE_DIRS}
     ${Libsystemd_INCLUDE_DIRS}
+    ${LIBUNWIND_INCLUDE_DIRS}
 )
 
 add_library(syslog-ng SHARED ${LIB_SOURCES})
@@ -396,6 +399,7 @@ target_link_libraries(
     ${JSONC_LIBRARY}
     ${LIBPCRE_LIBRARIES}
     ${Libsystemd_LIBRARIES}
+    ${LIBUNWIND_LIBRARIES}
     resolv
     libcap
     OpenSSL::SSL
