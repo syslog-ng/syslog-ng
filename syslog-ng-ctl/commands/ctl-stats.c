@@ -66,8 +66,8 @@ gint
 slng_stats(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   const gchar *command = _stats_command_builder();
-  if (!command)
-    return 1;
+  if (command == NULL)
+    return EINVAL;
 
   return dispatch_command(command);
 }

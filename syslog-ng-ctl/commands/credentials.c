@@ -95,7 +95,7 @@ slng_passwd_add(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
       gchar *usage = g_option_context_get_help(ctx, TRUE, NULL);
       fprintf(stderr, "Error: missing arguments!\n%s\n", usage);
       g_free(usage);
-      return 1;
+      return EINVAL;
     }
 
   if (!is_syslog_ng_running())
