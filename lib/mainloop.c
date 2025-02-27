@@ -562,7 +562,6 @@ _register_signal_handler(struct iv_signal *signal_poll, gint signum, void (*hand
 {
   IV_SIGNAL_INIT(signal_poll);
   signal_poll->signum = signum;
-  signal_poll->flags = IV_SIGNAL_FLAG_EXCLUSIVE;
   signal_poll->cookie = user_data;
   signal_poll->handler = handler;
   iv_signal_register(signal_poll);

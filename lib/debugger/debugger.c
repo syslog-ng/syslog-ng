@@ -31,12 +31,14 @@
 #include "compat/time.h"
 #include "scratch-buffers.h"
 
+#include <iv_signal.h>
 #include <stdio.h>
 #include <unistd.h>
 
 struct _Debugger
 {
   Tracer *tracer;
+  struct iv_signal sigint;
   MainLoop *main_loop;
   GlobalConfig *cfg;
   gchar *command_buffer;
@@ -138,15 +140,31 @@ _display_source_line(LogExprNode *expr_node)
 static gboolean
 _cmd_help(Debugger *self, gint argc, gchar *argv[])
 {
-  printf("syslog-ng interactive console, the following commands are available\n\n"
-         "  help, h, or ?            Display this help\n"
-         "  info                     Display information about the current execution state\n"
-         "  continue or c            Continue until the next breakpoint\n"
-         "  trace                    Display timing information as the message traverses the config\n"
-         "  print, p                 Print the current log message\n"
-         "  drop, d                  Drop the current message\n"
-         "  quit, q                  Tell syslog-ng to exit\n"
-        );
+  if (self->breakpoint_site)
+    {
+      printf("syslog-ng interactive console\n"
+             "Stopped on a breakpoint.\n"
+             "The following commands are available:\n\n"
+             "  help, h, ?               Display this help\n"
+             "  info, i                  Display information about the current execution state\n"
+             "  continue, c              Continue until the next breakpoint\n"
+             "  display                  Set the displayed message template\n"
+             "  trace, t                 Display timing information as the message traverses the config\n"
+             "  print, p                 Print the current log message\n"
+             "  drop, d                  Drop the current message\n"
+             "  quit, q                  Tell syslog-ng to exit\n"
+            );
+    }
+  else
+    {
+      printf("syslog-ng interactive console\n"
+             "Stopped on an interrupt.\n"
+             "The following commands are available:\n\n"
+             "  help, h, ?               Display this help\n"
+             "  continue, c              Continue until the next breakpoint\n"
+             "  quit, q                  Tell syslog-ng to exit\n"
+            );
+    }
   return TRUE;
 }
 
@@ -210,7 +228,8 @@ static gboolean
 _cmd_quit(Debugger *self, gint argc, gchar *argv[])
 {
   main_loop_exit(self->main_loop);
-  self->breakpoint_site->drop = TRUE;
+  if (self->breakpoint_site)
+    self->breakpoint_site->drop = TRUE;
   return FALSE;
 }
 
@@ -245,6 +264,7 @@ struct
 {
   const gchar *name;
   DebuggerCommandFunc command;
+  gboolean requires_breakpoint_site;
 } command_table[] =
 {
   { "help",     _cmd_help },
@@ -252,15 +272,17 @@ struct
   { "?",        _cmd_help },
   { "continue", _cmd_continue },
   { "c",        _cmd_continue },
-  { "print",    _cmd_print },
-  { "p",        _cmd_print },
+  { "print",    _cmd_print, .requires_breakpoint_site = TRUE },
+  { "p",        _cmd_print, .requires_breakpoint_site = TRUE },
   { "display",  _cmd_display },
-  { "drop",     _cmd_drop },
+  { "drop",     _cmd_drop, .requires_breakpoint_site = TRUE },
+  { "d",        _cmd_drop, .requires_breakpoint_site = TRUE },
   { "quit",     _cmd_quit },
   { "q",        _cmd_quit },
-  { "trace",    _cmd_trace },
-  { "info",     _cmd_info },
-  { "i",        _cmd_info },
+  { "trace",    _cmd_trace, .requires_breakpoint_site = TRUE },
+  { "t",        _cmd_trace, .requires_breakpoint_site = TRUE },
+  { "info",     _cmd_info, .requires_breakpoint_site = TRUE },
+  { "i",        _cmd_info, .requires_breakpoint_site = TRUE },
   { NULL, NULL }
 };
 
@@ -319,6 +341,7 @@ _handle_command(Debugger *self)
   gint argc;
   gchar **argv;
   GError *error = NULL;
+  gboolean requires_breakpoint_site = TRUE;
   DebuggerCommandFunc command = NULL;
 
   if (!g_shell_parse_argv(self->command_buffer ? : "", &argc, &argv, &error))
@@ -333,12 +356,18 @@ _handle_command(Debugger *self)
       if (strcmp(command_table[i].name, argv[0]) == 0)
         {
           command = command_table[i].command;
+          requires_breakpoint_site = command_table[i].requires_breakpoint_site;
           break;
         }
     }
   if (!command)
     {
       printf("Undefined command %s, try \"help\"\n", argv[0]);
+      return TRUE;
+    }
+  else if (requires_breakpoint_site && self->breakpoint_site == NULL)
+    {
+      printf("Running in interrupt context, command %s requires pipeline context\n", argv[0]);
       return TRUE;
     }
   gboolean result = command(self, argc, argv);
@@ -350,11 +379,20 @@ static void
 _handle_interactive_prompt(Debugger *self)
 {
   gchar buf[1024];
-  LogPipe *current_pipe = self->breakpoint_site->pipe;
+  LogPipe *current_pipe;
 
-  printf("Breakpoint hit %s\n", log_expr_node_format_location(current_pipe->expr_node, buf, sizeof(buf)));
-  _display_source_line(current_pipe->expr_node);
-  _display_msg_with_template(self, self->breakpoint_site->msg, self->display_template);
+  if (self->breakpoint_site)
+    {
+      current_pipe = self->breakpoint_site->pipe;
+
+      printf("Breakpoint hit %s\n", log_expr_node_format_location(current_pipe->expr_node, buf, sizeof(buf)));
+      _display_source_line(current_pipe->expr_node);
+      _display_msg_with_template(self, self->breakpoint_site->msg, self->display_template);
+    }
+  else
+    {
+      printf("Stopping on interrupt, message related commands are unavailable...\n");
+    }
   while (1)
     {
       _fetch_command(self);
@@ -374,21 +412,36 @@ _debugger_thread_func(Debugger *self)
   while (1)
     {
       self->breakpoint_site = NULL;
-      if (!tracer_wait_for_breakpoint(self->tracer, &self->breakpoint_site))
+      if (!tracer_wait_for_event(self->tracer, &self->breakpoint_site))
         break;
 
       _handle_interactive_prompt(self);
-      tracer_resume_after_breakpoint(self->tracer, self->breakpoint_site);
+      tracer_resume_after_event(self->tracer, self->breakpoint_site);
     }
   scratch_buffers_explicit_gc();
   app_thread_stop();
   return NULL;
 }
 
+static void
+_interrupt(gpointer user_data)
+{
+  Debugger *self = (Debugger *) user_data;
+
+  tracer_stop_on_interrupt(self->tracer);
+}
+
 void
 debugger_start_console(Debugger *self)
 {
   main_loop_assert_main_thread();
+
+  IV_SIGNAL_INIT(&self->sigint);
+  self->sigint.signum = SIGINT;
+  self->sigint.flags = IV_SIGNAL_FLAG_EXCLUSIVE;
+  self->sigint.cookie = self;
+  self->sigint.handler = _interrupt;
+  iv_signal_register(&self->sigint);
 
   self->debugger_thread = g_thread_new(NULL, (GThreadFunc) _debugger_thread_func, self);
 }
@@ -429,6 +482,7 @@ debugger_exit(Debugger *self)
 {
   main_loop_assert_main_thread();
 
+  iv_signal_unregister(&self->sigint);
   tracer_cancel(self->tracer);
   g_thread_join(self->debugger_thread);
 }
