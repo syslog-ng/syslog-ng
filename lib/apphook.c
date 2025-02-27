@@ -44,7 +44,6 @@
 #include "mainloop.h"
 #include "secret-storage/nondumpable-allocator.h"
 #include "secret-storage/secret-storage.h"
-#include "transport/transport-factory-id.h"
 #include "timeutils/timeutils.h"
 #include "msg-stats.h"
 #include "timeutils/cache.h"
@@ -239,7 +238,6 @@ app_startup(void)
   scratch_buffers_allocator_init();
   nondumpable_setlogger(nondumpable_allocator_msg_debug, nondumpable_allocator_msg_fatal);
   secret_storage_init();
-  transport_factory_id_global_init();
   scratch_buffers_global_init();
   msg_stats_init();
   timeutils_global_init();
@@ -295,7 +293,6 @@ app_shutdown(void)
   hostname_global_deinit();
   crypto_deinit();
   msg_deinit();
-  transport_factory_id_global_deinit();
 
 
   /* NOTE: the iv_deinit() call should come here, but there's some exit
