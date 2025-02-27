@@ -192,8 +192,6 @@ setup_help_context(const gchar *cmdname, CommandDescriptor *active_mode)
   g_option_context_set_summary(ctx, active_mode->description);
   g_option_context_add_main_entries(ctx, active_mode->options, NULL);
   g_option_context_add_main_entries(ctx, slng_options, NULL);
-  // Further detailed descriptions might go to the end of the list
-  //g_option_context_set_description(ctx, active_mode->detailed_description);
 
   return ctx;
 }
@@ -214,22 +212,26 @@ main(int argc, char *argv[])
   GOptionContext *ctx = setup_help_context(cmdname_accumulator->len > 0 ? cmdname_accumulator->str : NULL, active_mode);
   g_string_free(cmdname_accumulator, TRUE);
 
-  if (!ctx)
+  if (ctx == NULL)
     {
       fprintf(stderr, "Unknown command\n\n");
       print_usage(bin_name->str, "", modes);
       exit(ERR_CMD_PARSING_FAILED);
     }
 
-  if (!g_option_context_parse(ctx, &argc, &argv, &error))
+  if (FALSE == g_option_context_parse(ctx, &argc, &argv, &error))
     {
       fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");
       g_clear_error(&error);
-      g_option_context_free(ctx);
-      return ERR_CMD_PARSING_FAILED;
+      print_usage(bin_name->str, g_option_context_get_description(ctx), modes);
+      result = ERR_CMD_PARSING_FAILED;
+    }
+  else
+    {
+  if ((result = run(control_name, argc, argv, active_mode, ctx)) == ERR_CMD_PARSING_FAILED)
+    print_usage(bin_name->str, g_option_context_get_description(ctx), modes);
     }
 
-  result = run(control_name, argc, argv, active_mode, ctx);
   g_option_context_free(ctx);
   return result;
 }
