@@ -73,6 +73,8 @@ _parse_fd_names(const gchar *option_name,
   return result;
 }
 
+/* NOTE: this attach command handler uses the normal, automatic GLib Commandline Option Parser
+ *       to parse the sub-command arguments with options, so need to validate the sub-command and the options manually. */
 gint
 slng_attach(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
@@ -85,17 +87,6 @@ slng_attach(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
     g_string_append(command, " LOGS");
   else if (g_str_equal(attach_mode, "debugger"))
     g_string_append(command, " DEBUGGER");
-  else
-    {
-      fprintf(stderr, "Error parsing command line arguments: Unknown attach mode\n");
-      return 1;
-    }
-  if (FALSE == g_str_equal(attach_mode, "stdio") && attach_options_fds_to_steal > 0)
-    {
-      fprintf(stderr, "Error parsing command line arguments: %s is valid only with %s attach mode\n",
-              "fds-to-steel", "stdio");
-      return 1;
-    }
 
   g_string_append_printf(command, " %d", attach_options_seconds > 0 ? attach_options_seconds : -1);
   g_string_append_printf(command, " %d",
