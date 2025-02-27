@@ -121,8 +121,7 @@ static CommandDescriptor modes[] =
   { "stop", no_options, "Stop syslog-ng process", slng_stop, NULL },
   { "reload", no_options, "Reload syslog-ng", slng_reload, NULL },
   { "reopen", no_options, "Re-open of log destination files", slng_reopen, NULL },
-  // TODO: Add proper details of the sub-commands like attach and credentials have
-  { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query, NULL },
+  { "query", no_options, "Query syslog-ng statistics. Possible commands: list [pattern], get [pattern]", NULL, query_commands },
   { "show-license-info", license_options, "Show information about the license", slng_license, NULL },
   { "credentials", no_options, "Credentials manager", NULL, credentials_commands },
   { "config", config_options, "Print current config", slng_config, NULL },
