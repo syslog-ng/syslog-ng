@@ -127,9 +127,6 @@ _format_selected_counter(StatsCounterItem *counter, gpointer user_data, StatsFor
 gboolean
 _stats_query_get(const gchar *expr, StatsFormatCb format_cb, gpointer result, gboolean must_reset)
 {
-  if (!expr)
-    return FALSE;
-
   const gchar *key_str = _setup_filter_expression(expr);
   return _process_matching_counters(key_str, _format_selected_counter, NULL, format_cb, result, must_reset);
 }
