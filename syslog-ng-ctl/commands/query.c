@@ -23,18 +23,10 @@
 
 #include "query.h"
 
-static const gint QUERY_COMMAND = 0;
 static gboolean query_is_get_sum = FALSE;
 static gboolean query_reset = FALSE;
+static gchar *query_options_out_format = "kv";
 static gchar **raw_query_params = NULL;
-
-GOptionEntry query_options[] =
-{
-  { "sum", 0, 0, G_OPTION_ARG_NONE, &query_is_get_sum, "aggregate sum", NULL },
-  { "reset", 0, 0, G_OPTION_ARG_NONE, &query_reset, "reset counters after query", NULL },
-  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &raw_query_params, NULL, NULL },
-  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL, NULL }
-};
 
 enum
 {
@@ -78,8 +70,8 @@ _get_query_get_cmd(void)
 
 }
 
-static gint
-_get_query_cmd(gchar *cmd)
+static inline gint
+_get_query_cmd(const gchar *cmd)
 {
   if (g_str_equal(cmd, "list"))
     return _get_query_list_cmd();
@@ -90,56 +82,53 @@ _get_query_cmd(gchar *cmd)
   return -1;
 }
 
+static inline gboolean
+_check_out_format(void)
+{
+  return g_str_equal(query_options_out_format, "kv") ||  g_str_equal(query_options_out_format, "csv")
+         ||  g_str_equal(query_options_out_format, "prometheus");
+}
+
 static gboolean
 _is_query_params_empty(void)
 {
   return raw_query_params == NULL;
 }
 
-static void
-_shift_query_command_out_of_params(void)
-{
-  if (raw_query_params[QUERY_COMMAND] != NULL)
-    ++raw_query_params;
-}
-
 static gchar *
 _get_query_command_string(gint query_cmd)
 {
-  gchar *query_params_to_pass, *command_to_dispatch;
-  query_params_to_pass = g_strjoinv(" ", raw_query_params);
+  gchar *command_to_dispatch;
+  gchar *query_params_to_pass = _is_query_params_empty() ? NULL : g_strjoinv(" ", raw_query_params);
+
   if (query_params_to_pass)
-    {
-      command_to_dispatch = g_strdup_printf("QUERY %s %s", QUERY_COMMANDS[query_cmd], query_params_to_pass);
-    }
+    command_to_dispatch = g_strdup_printf("QUERY %s %s %s", QUERY_COMMANDS[query_cmd], query_options_out_format,
+                                          query_params_to_pass);
   else
-    {
-      command_to_dispatch = g_strdup_printf("QUERY %s", QUERY_COMMANDS[query_cmd]);
-    }
-  g_free(query_params_to_pass);
+    command_to_dispatch = g_strdup_printf("QUERY %s %s", QUERY_COMMANDS[query_cmd], query_options_out_format);
+
+  if (_is_query_params_empty())
+    g_free(query_params_to_pass);
 
   return command_to_dispatch;
 }
 
 static gchar *
-_get_dispatchable_query_command(GOptionContext *ctx)
+_get_dispatchable_query_command(const gchar *mode, GOptionContext *ctx)
 {
-  gint query_cmd;
-
-  if (_is_query_params_empty())
+  if (FALSE == _check_out_format())
     {
-      g_option_context_set_description(ctx, "stats");
-    return NULL;
+      fprintf(stderr, "Error parsing command line arguments: Unknown stats format, %s\n", query_options_out_format);
+      g_option_context_set_description(ctx, "query");
+      return NULL;
     }
 
-  query_cmd = _get_query_cmd(raw_query_params[QUERY_COMMAND]);
+  gint query_cmd = _get_query_cmd(mode);
   if (query_cmd < 0)
     {
-      g_option_context_set_description(ctx, "stats");
-    return NULL;
+      g_option_context_set_description(ctx, "query");
+      return NULL;
     }
-
-  _shift_query_command_out_of_params();
 
   return _get_query_command_string(query_cmd);
 }
@@ -149,7 +138,7 @@ slng_query(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
   gint result;
 
-  gchar *cmd = _get_dispatchable_query_command(ctx);
+  gchar *cmd = _get_dispatchable_query_command(mode, ctx);
   if (cmd == NULL)
     return ERR_CMD_PARSING_FAILED;
 
@@ -159,3 +148,26 @@ slng_query(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 
   return result;
 }
+
+GOptionEntry query_list_options[] =
+{
+  { "reset", 0, 0, G_OPTION_ARG_NONE, &query_reset, "reset counters after query", NULL },
+  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &raw_query_params, "pattern", NULL },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL, NULL }
+};
+
+GOptionEntry query_get_options[] =
+{
+  { "sum", 0, 0, G_OPTION_ARG_NONE, &query_is_get_sum, "aggregate sum", NULL },
+  { "reset", 0, 0, G_OPTION_ARG_NONE, &query_reset, "reset counters after query", NULL },
+  { "format", 'm', 0, G_OPTION_ARG_STRING, &query_options_out_format, "output format, default is <kv>", "<kv|csv|prometheus>" },
+  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &raw_query_params, "pattern", NULL },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL, NULL }
+};
+
+CommandDescriptor query_commands[] =
+{
+  { "list", query_list_options, "List available counters with names matching a pattern", slng_query },
+  { "get", query_get_options, "Query the values of counters with names matching a pattern", slng_query },
+  { NULL, NULL, NULL, NULL }
+};
