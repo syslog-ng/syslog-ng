@@ -112,9 +112,8 @@ slng_export_config_graph(int argc, char *argv[], const gchar *mode, GOptionConte
 
 static CommandDescriptor modes[] =
 {
-  { "attach", no_options, "Attach to a running syslog-ng instance", NULL, attach_commands },
-  // TODO: Add proper details of the sub-commands like attach and credentials have
-  { "stats", stats_options, "Get syslog-ng statistics. Possible commands: csv, prometheus; default: csv", slng_stats, NULL },
+  { "attach", no_options, "Attach to a running syslog-ng instance. Possible commands: stdio, logs, debugger", NULL, attach_commands },
+  { "stats", stats_options, "Get syslog-ng statistics", slng_stats, NULL }, // do not reference the legacy sub-commands anymore, use the new --format option instead
   { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose, NULL },
   { "debug", verbose_options, "Enable/query debug messages", slng_verbose, NULL },
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose, NULL },
@@ -228,8 +227,8 @@ main(int argc, char *argv[])
     }
   else
     {
-  if ((result = run(control_name, argc, argv, active_mode, ctx)) == ERR_CMD_PARSING_FAILED)
-    print_usage(bin_name->str, g_option_context_get_description(ctx), modes);
+      if ((result = run(control_name, argc, argv, active_mode, ctx)) == ERR_CMD_PARSING_FAILED)
+        print_usage(bin_name->str, g_option_context_get_description(ctx), modes);
     }
 
   g_option_context_free(ctx);
