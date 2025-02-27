@@ -37,11 +37,12 @@ typedef enum _QueryCommand
   QUERY_CMD_MAX
 } QueryCommand;
 
-typedef gboolean (*query_cmd)(const gchar *filter_expr, GString *result);
+typedef gboolean (*query_cmd)(const gchar *output_fmt, const gchar *filter_expr, GString *result);
 
 const gint CMD_STR = 0;
 const gint QUERY_CMD_STR = 1;
-const gint QUERY_FILTER_STR = 2;
+const gint QUERY_OUT_FMT_STR = 2;
+const gint QUERY_FILTER_STR = 3;
 
 
 static void
@@ -86,13 +87,13 @@ _ctl_format_get_sum(gpointer user_data)
 }
 
 static gboolean
-_query_get(const gchar *filter_expr, GString *result)
+_query_get(const gchar *output_fmt, const gchar *filter_expr, GString *result)
 {
   return stats_query_get(filter_expr, _ctl_format_get, (gpointer)result);
 }
 
 static gboolean
-_query_get_and_reset(const gchar *filter_expr, GString *result)
+_query_get_and_reset(const gchar *output_fmt, const gchar *filter_expr, GString *result)
 {
   gboolean found_match;
 
@@ -103,13 +104,13 @@ _query_get_and_reset(const gchar *filter_expr, GString *result)
 }
 
 static gboolean
-_query_list(const gchar *filter_expr, GString *result)
+_query_list(const gchar *output_fmt, const gchar *filter_expr, GString *result)
 {
   return stats_query_list(filter_expr, _ctl_format_name_without_value, (gpointer)result);
 }
 
 static gboolean
-_query_list_and_reset(const gchar *filter_expr, GString *result)
+_query_list_and_reset(const gchar *output_fmt, const gchar *filter_expr, GString *result)
 {
   gboolean found_match;
 
@@ -120,13 +121,13 @@ _query_list_and_reset(const gchar *filter_expr, GString *result)
 }
 
 static gboolean
-_query_get_sum(const gchar *filter_expr, GString *result)
+_query_get_sum(const gchar *output_fmt, const gchar *filter_expr, GString *result)
 {
   return stats_query_get_sum(filter_expr, _ctl_format_get_sum, (gpointer)result);
 }
 
 static gboolean
-_query_get_sum_and_reset(const gchar *filter_expr, GString *result)
+_query_get_sum_and_reset(const gchar *output_fmt, const gchar *filter_expr, GString *result)
 {
   gboolean found_match;
 
@@ -173,28 +174,29 @@ static query_cmd QUERY_CMDS[] =
 };
 
 static gboolean
-_dispatch_query(gint cmd_id, const gchar *filter_expr, GString *result)
+_dispatch_query(gint cmd_id, const gchar *output_fmt, const gchar *filter_expr, GString *result)
 {
   if (cmd_id < QUERY_GET || cmd_id >= QUERY_CMD_MAX)
     {
       msg_error("Invalid query command",
                 evt_tag_int("cmd_id", cmd_id),
+                evt_tag_str("out_fmt", output_fmt),
                 evt_tag_str("query", filter_expr));
       return FALSE;
     }
 
-  return QUERY_CMDS[cmd_id](filter_expr, result);
+  return QUERY_CMDS[cmd_id](output_fmt, filter_expr, result);
 }
 
 void
 process_query_command(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
 {
   GString *result = g_string_new("");
-  gchar **cmds = g_strsplit(command->str, " ", 3);
+  gchar **cmds = g_strsplit(command->str, " ", 4);
 
   g_assert(g_str_equal(cmds[CMD_STR], "QUERY"));
 
-  _dispatch_query(_command_str_to_id(cmds[QUERY_CMD_STR]), cmds[QUERY_FILTER_STR], result);
+  _dispatch_query(_command_str_to_id(cmds[QUERY_CMD_STR]), cmds[QUERY_OUT_FMT_STR], cmds[QUERY_FILTER_STR], result);
 
   g_strfreev(cmds);
 
