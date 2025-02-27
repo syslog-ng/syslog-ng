@@ -30,7 +30,7 @@
 void console_printf(const gchar *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 
 gboolean console_is_initial(void);
-gboolean console_acquire_from_fds(gint fds[3], gint fds_to_steel);
+gboolean console_acquire_from_fds(gint fds[3], gint fds_to_steal);
 void console_release(void);
 
 void console_global_init(const gchar *console_prefix);

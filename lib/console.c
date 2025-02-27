@@ -104,7 +104,7 @@ _get_fn_names(gint fns)
 
 /* re-acquire a console after startup using an array of fds */
 gboolean
-console_acquire_from_fds(gint fds[3], gint fds_to_steel)
+console_acquire_from_fds(gint fds[3], gint fds_to_steal)
 {
   gboolean result = FALSE;
 
@@ -112,14 +112,14 @@ console_acquire_from_fds(gint fds[3], gint fds_to_steel)
   if (!using_initial_console)
     goto exit;
 
-  GString *stolen_fn_names = _get_fn_names(fds_to_steel);
+  GString *stolen_fn_names = _get_fn_names(fds_to_steal);
   gchar *takeover_message_on_old_console = g_strdup_printf("[Console(%s) taken over, no further output here]\n",
                                                            stolen_fn_names->str);
   (void) write(STDOUT_FILENO, takeover_message_on_old_console, strlen(takeover_message_on_old_console));
   g_free(takeover_message_on_old_console);
   g_string_free(stolen_fn_names, TRUE);
 
-  stolen_fds = fds_to_steel;
+  stolen_fds = fds_to_steal;
 
   if (stolen_fds & (1 << STDIN_FILENO))
     initial_console_fds[0] = dup(STDIN_FILENO);

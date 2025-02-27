@@ -123,7 +123,7 @@ _wait_until_peer_disappears(ControlConnection *cc, gint max_seconds, gboolean *c
 typedef struct _AttachCommandArgs
 {
   gboolean start_debugger;
-  gint fds_to_steel;
+  gint fds_to_steal;
   gint n_seconds;
   gboolean log_stderr;
   gint log_level;
@@ -144,7 +144,7 @@ _parse_attach_command_args(GString *command, AttachCommandArgs *args, GString *r
   if (g_str_equal(cmds[1], "STDIO"))
     {
       if (cmds[3])
-        args->fds_to_steel = atoi(cmds[3]);
+        args->fds_to_steal = atoi(cmds[3]);
     }
   else if (g_str_equal(cmds[1], "LOGS"))
     {
@@ -156,7 +156,7 @@ _parse_attach_command_args(GString *command, AttachCommandArgs *args, GString *r
        *            further processing e.g.
        *                syslog-ng-ctl attach logs |& grep -i error
        */
-      args->fds_to_steel = (1 << STDERR_FILENO);
+      args->fds_to_steal = (1 << STDERR_FILENO);
     }
   else if (g_str_equal(cmds[1], "DEBUGGER"))
     {
@@ -202,7 +202,7 @@ control_connection_attach(ControlConnection *cc, GString *command, gpointer user
   AttachCommandArgs cmd_args =
   {
     .start_debugger = FALSE,
-    .fds_to_steel = (1 << STDOUT_FILENO) | (1 << STDERR_FILENO),
+    .fds_to_steal = (1 << STDOUT_FILENO) | (1 << STDERR_FILENO),
     .n_seconds = -1,
     .log_stderr = old_values.log_stderr,
     .log_level = old_values.log_level
@@ -220,7 +220,7 @@ control_connection_attach(ControlConnection *cc, GString *command, gpointer user
       goto exit;
     }
 
-  if (FALSE == console_acquire_from_fds(fds, cmd_args.fds_to_steel))
+  if (FALSE == console_acquire_from_fds(fds, cmd_args.fds_to_steal))
     {
       g_string_assign(result, "FAIL Error acquiring console");
       goto exit;

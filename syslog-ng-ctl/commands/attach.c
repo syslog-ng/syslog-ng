@@ -28,7 +28,7 @@
 
 static gint attach_options_seconds = -1;
 static gchar *attach_options_log_level = NULL;
-static gint attach_options_fds_to_steel = 0;
+static gint attach_options_fds_to_steal = 0;
 
 static gboolean
 _store_log_level(const gchar *option_name,
@@ -54,15 +54,15 @@ _parse_fd_names(const gchar *option_name,
   gboolean result = TRUE;
   gchar **fds = g_strsplit(value, ",", 3);
 
-  attach_options_fds_to_steel = 0;
+  attach_options_fds_to_steal = 0;
   for (gchar **fd = fds; *fd; fd++)
     {
       if (g_str_equal(*fd, "stdin"))
-        attach_options_fds_to_steel |= (1 << STDIN_FILENO);
+        attach_options_fds_to_steal |= (1 << STDIN_FILENO);
       else if (g_str_equal(*fd, "stdout"))
-        attach_options_fds_to_steel |= (1 << STDOUT_FILENO);
+        attach_options_fds_to_steal |= (1 << STDOUT_FILENO);
       else if (g_str_equal(*fd, "stderr"))
-        attach_options_fds_to_steel |= (1 << STDERR_FILENO);
+        attach_options_fds_to_steal |= (1 << STDERR_FILENO);
       else
         {
           g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED, "Unknown %s option value: %s", option_name, *fd);
@@ -90,7 +90,7 @@ slng_attach(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
       fprintf(stderr, "Error parsing command line arguments: Unknown attach mode\n");
       return 1;
     }
-  if (FALSE == g_str_equal(attach_mode, "stdio") && attach_options_fds_to_steel > 0)
+  if (FALSE == g_str_equal(attach_mode, "stdio") && attach_options_fds_to_steal > 0)
     {
       fprintf(stderr, "Error parsing command line arguments: %s is valid only with %s attach mode\n",
               "fds-to-steel", "stdio");
@@ -99,7 +99,7 @@ slng_attach(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 
   g_string_append_printf(command, " %d", attach_options_seconds > 0 ? attach_options_seconds : -1);
   g_string_append_printf(command, " %d",
-                         attach_options_fds_to_steel > 0 ? attach_options_fds_to_steel : (1 << STDOUT_FILENO) | (1 << STDERR_FILENO));
+                         attach_options_fds_to_steal > 0 ? attach_options_fds_to_steal : (1 << STDOUT_FILENO) | (1 << STDERR_FILENO));
   if (attach_options_log_level)
     g_string_append_printf(command, " %s", attach_options_log_level);
 
