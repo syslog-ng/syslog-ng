@@ -17,7 +17,7 @@ on:
       distros:
         required: false
         type: string
-        default: 
+        default:
           # Curently only the bellow packages are needed
           #     - dbld images used by this package builder are already run and published their results, scheduled, prior this one runs
           #     - the draft, and based on that the stable, releases are published only from this images (to AZURE)
@@ -29,11 +29,11 @@ on:
           #   "fedora-latest",
           #   "fedora-rawhide"
           #
-          #"debian-sid", - curently this is broken again
           '[
             "debian-testing",
             "debian-bullseye",
             "debian-bookworm",
+            "debian-sid",
             "ubuntu-focal",
             "ubuntu-jammy",
             "ubuntu-noble",
