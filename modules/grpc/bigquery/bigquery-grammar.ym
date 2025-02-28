@@ -90,7 +90,6 @@ bigquery_dest_option
       free($3);
     }
   | grpc_dest_option
-  | { last_template_options = bigquery_dd_get_template_options(last_driver); } template_option
   ;
 
 bigquery_schema_fields

@@ -31,14 +31,50 @@ using namespace syslogng::grpc;
 
 DestDriver::DestDriver(GrpcDestDriver *s)
   : super(s), compression(false), batch_bytes(4 * 1000 * 1000),
-    keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1)
+    keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1),
+    flush_on_key_change(false), dynamic_headers_enabled(false)
 {
+  log_template_options_defaults(&this->template_options);
   credentials_builder_wrapper.self = &credentials_builder;
+}
+
+DestDriver::~DestDriver()
+{
+  log_template_options_destroy(&this->template_options);
+}
+
+bool
+DestDriver::set_worker_partition_key()
+{
+  GlobalConfig *cfg = log_pipe_get_config(&this->super->super.super.super.super);
+
+  LogTemplate *worker_partition_key_tpl = log_template_new(cfg, NULL);
+  if (!log_template_compile(worker_partition_key_tpl, this->worker_partition_key.str().c_str(), NULL))
+    {
+      msg_error("Error compiling worker partition key template",
+                evt_tag_str("template", this->worker_partition_key.str().c_str()));
+      return false;
+    }
+
+  if (log_template_is_literal_string(worker_partition_key_tpl))
+    {
+      log_template_unref(worker_partition_key_tpl);
+    }
+  else
+    {
+      log_threaded_dest_driver_set_worker_partition_key_ref(&this->super->super.super.super, worker_partition_key_tpl);
+      log_threaded_dest_driver_set_flush_on_worker_key_change(&this->super->super.super.super,
+                                                              this->flush_on_key_change);
+    }
+
+  return true;
 }
 
 bool
 DestDriver::init()
 {
+  GlobalConfig *cfg = log_pipe_get_config(&this->super->super.super.super.super);
+
   if (url.length() == 0)
     {
       msg_error("url() option is mandatory",
@@ -50,6 +86,11 @@ DestDriver::init()
     {
       return false;
     }
+
+  if (this->worker_partition_key.rdbuf()->in_avail() && !this->set_worker_partition_key())
+    return false;
+
+  log_template_options_init(&this->template_options, cfg);
 
   if (!log_threaded_dest_driver_init_method(&this->super->super.super.super.super))
     return false;
@@ -128,11 +169,18 @@ grpc_dd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *val
   self->cpp->add_extra_channel_arg(name, value);
 }
 
-void
-grpc_dd_add_header(LogDriver *s, const gchar *name, const gchar *value)
+gboolean
+grpc_dd_add_header(LogDriver *s, const gchar *name, LogTemplate *value)
 {
   GrpcDestDriver *self = (GrpcDestDriver *) s;
-  self->cpp->add_header(name, value);
+  return self->cpp->add_header(name, value);
+}
+
+LogTemplateOptions *
+grpc_dd_get_template_options(LogDriver *d)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  return &self->cpp->get_template_options();
 }
 
 GrpcClientCredentialsBuilderW *

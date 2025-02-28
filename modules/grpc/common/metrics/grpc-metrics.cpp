@@ -99,6 +99,8 @@ DestDriverMetrics::create_grpc_request_cluster(::grpc::StatusCode response_code)
 
     StatsCounterItem *counter;
     cluster = stats_register_counter(stats_level, sc_key, SC_TYPE_SINGLE_VALUE, &counter);
+
+    stats_cluster_key_free(sc_key);
   }
   stats_cluster_key_builder_pop(kb);
 

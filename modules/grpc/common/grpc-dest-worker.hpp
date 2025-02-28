@@ -51,6 +51,7 @@ public:
 
 protected:
   void prepare_context(::grpc::ClientContext &context);
+  void prepare_context_dynamic(::grpc::ClientContext &context, LogMessage *msg);
   std::shared_ptr<::grpc::ChannelCredentials> create_credentials();
   ::grpc::ChannelArguments create_channel_args();
 

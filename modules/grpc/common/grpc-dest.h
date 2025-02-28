@@ -42,7 +42,8 @@ void grpc_dd_set_keepalive_timeout(LogDriver *s, gint t);
 void grpc_dd_set_keepalive_max_pings(LogDriver *s, gint p);
 void grpc_dd_add_int_channel_arg(LogDriver *s, const gchar *name, glong value);
 void grpc_dd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar *value);
-void grpc_dd_add_header(LogDriver *s, const gchar *name, const gchar *value);
+gboolean grpc_dd_add_header(LogDriver *s, const gchar *name, LogTemplate *value);
+LogTemplateOptions *grpc_dd_get_template_options(LogDriver *d);
 GrpcClientCredentialsBuilderW *grpc_dd_get_credentials_builder(LogDriver *s);
 
 #include "compat/cpp-end.h"

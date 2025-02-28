@@ -43,19 +43,18 @@ DestinationDriver::DestinationDriver(GrpcDestDriver *s)
   : syslogng::grpc::DestDriver(s), timestamp(LM_TS_PROCESSED)
 {
   this->url = "localhost:9095";
-  log_template_options_defaults(&this->template_options);
+  this->enable_dynamic_headers();
 }
 
 DestinationDriver::~DestinationDriver()
 {
-  log_template_options_destroy(&this->template_options);
   log_template_unref(this->message);
 }
 
 void
 DestinationDriver::add_label(std::string name, LogTemplate *value)
 {
-  this->labels.push_back(Label{name, value});
+  this->labels.push_back(NameValueTemplatePair{name, value});
 }
 
 bool
@@ -69,33 +68,8 @@ DestinationDriver::init()
       log_template_compile(this->message, DEFAULT_MESSAGE_TEMPLATE, NULL);
     }
 
-  log_template_options_init(&this->template_options, cfg);
-
-  LogTemplate *worker_partition_key = log_template_new(cfg, NULL);
-
-  std::stringstream template_str;
-  bool comma_needed = false;
   for (const auto &label : this->labels)
-    {
-      if (comma_needed)
-        template_str << ",";
-      template_str << label.name << "=" << label.value->template_str;
-
-      comma_needed = true;
-    }
-
-  std::string worker_partition_key_str = template_str.str();
-  if (!log_template_compile(worker_partition_key, worker_partition_key_str.c_str(), NULL))
-    {
-      msg_error("Error compiling worker partition key template",
-                evt_tag_str("template", worker_partition_key_str.c_str()));
-      return false;
-    }
-
-  if (log_template_is_literal_string(worker_partition_key))
-    log_template_unref(worker_partition_key);
-  else
-    log_threaded_dest_driver_set_worker_partition_key_ref(&this->super->super.super.super, worker_partition_key);
+    this->extend_worker_partition_key(label.name + "=" + label.value->template_str);
 
   return syslogng::grpc::DestDriver::init();
 }
@@ -169,14 +143,6 @@ loki_dd_set_tenant_id(LogDriver *d, const gchar *tid)
   GrpcDestDriver *self = (GrpcDestDriver *) d;
   DestinationDriver *cpp = loki_dd_get_cpp(self);
   return cpp->set_tenant_id(tid);
-}
-
-LogTemplateOptions *
-loki_dd_get_template_options(LogDriver *d)
-{
-  GrpcDestDriver *self = (GrpcDestDriver *) d;
-  DestinationDriver *cpp = loki_dd_get_cpp(self);
-  return &cpp->get_template_options();
 }
 
 LogDriver *

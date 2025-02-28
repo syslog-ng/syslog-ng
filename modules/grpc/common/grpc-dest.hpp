@@ -37,15 +37,43 @@
 #include <grpcpp/server.h>
 
 #include <list>
+#include <sstream>
 
 namespace syslogng {
 namespace grpc {
+
+struct NameValueTemplatePair
+{
+  std::string name;
+  LogTemplate *value;
+
+  NameValueTemplatePair(std::string name_, LogTemplate *value_)
+    : name(name_), value(log_template_ref(value_)) {}
+
+  NameValueTemplatePair(const NameValueTemplatePair &a)
+    : name(a.name), value(log_template_ref(a.value)) {}
+
+  NameValueTemplatePair &operator=(const NameValueTemplatePair &a)
+  {
+    name = a.name;
+    log_template_unref(value);
+    value = log_template_ref(a.value);
+
+    return *this;
+  }
+
+  ~NameValueTemplatePair()
+  {
+    log_template_unref(value);
+  }
+
+};
 
 class DestDriver
 {
 public:
   DestDriver(GrpcDestDriver *s);
-  virtual ~DestDriver() {};
+  virtual ~DestDriver();
 
   virtual bool init();
   virtual bool deinit();
@@ -108,20 +136,51 @@ public:
     this->string_extra_channel_args.push_back(std::make_pair(name, value));
   }
 
-  void add_header(std::string name, std::string value)
+  bool add_header(std::string name, LogTemplate *value)
   {
+    bool is_literal_string = log_template_is_literal_string(value);
+
+    if (!this->dynamic_headers_enabled && !is_literal_string)
+      return false;
+
     std::transform(name.begin(), name.end(), name.begin(),
                    [](auto c)
     {
       return ::tolower(c);
     });
-    this->headers.push_back(std::make_pair(name, value));
+    this->headers.push_back(NameValueTemplatePair{name, value});
+
+    if (!is_literal_string)
+      this->extend_worker_partition_key(value->template_str);
+
+    return true;
+  }
+
+  void extend_worker_partition_key(const std::string &extension)
+  {
+    if (this->worker_partition_key.rdbuf()->in_avail())
+      this->worker_partition_key << ",";
+    this->worker_partition_key << extension;
+  }
+
+  void enable_dynamic_headers()
+  {
+    this->dynamic_headers_enabled = true;
+    this->flush_on_key_change = true;
+  }
+
+  LogTemplateOptions &get_template_options()
+  {
+    return this->template_options;
   }
 
   GrpcClientCredentialsBuilderW *get_credentials_builder_wrapper()
   {
     return &this->credentials_builder_wrapper;
   }
+
+private:
+  bool set_worker_partition_key();
 
 public:
   GrpcDestDriver *super;
@@ -139,10 +198,16 @@ protected:
   int keepalive_timeout;
   int keepalive_max_pings_without_data;
 
+  std::stringstream worker_partition_key;
+  bool flush_on_key_change;
+
   std::list<std::pair<std::string, long>> int_extra_channel_args;
   std::list<std::pair<std::string, std::string>> string_extra_channel_args;
 
-  std::list<std::pair<std::string, std::string>> headers;
+  std::list<NameValueTemplatePair> headers;
+  bool dynamic_headers_enabled;
+
+  LogTemplateOptions template_options;
 
   GrpcClientCredentialsBuilderW credentials_builder_wrapper;
 };

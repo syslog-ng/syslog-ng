@@ -85,7 +85,6 @@ loki_dest_option
     }
   | KW_TEMPLATE '(' template_name_or_content ')' { loki_dd_set_message_template_ref(last_driver, $3); }
   | grpc_dest_option
-  | { last_template_options = loki_dd_get_template_options(last_driver); } template_option
   ;
 
 loki_labels

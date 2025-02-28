@@ -28,6 +28,12 @@ using namespace syslogng::grpc::otel;
 
 /* C++ Implementations */
 
+DestDriver::DestDriver(GrpcDestDriver *s) :
+  syslogng::grpc::DestDriver(s)
+{
+  this->enable_dynamic_headers();
+}
+
 const char *
 DestDriver::generate_persist_name()
 {

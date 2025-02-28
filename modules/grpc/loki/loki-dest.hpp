@@ -43,33 +43,6 @@ namespace syslogng {
 namespace grpc {
 namespace loki {
 
-struct Label
-{
-  std::string name;
-  LogTemplate *value;
-
-  Label(std::string name_, LogTemplate *value_)
-    : name(name_), value(log_template_ref(value_)) {}
-
-  Label(const Label &a)
-    : name(a.name), value(log_template_ref(a.value)) {}
-
-  Label &operator=(const Label &a)
-  {
-    name = a.name;
-    log_template_unref(value);
-    value = log_template_ref(a.value);
-
-    return *this;
-  }
-
-  ~Label()
-  {
-    log_template_unref(value);
-  }
-
-};
-
 class DestinationDriver final : public syslogng::grpc::DestDriver
 {
 public:
@@ -81,11 +54,6 @@ public:
   LogThreadedDestWorker *construct_worker(int worker_index);
 
   void add_label(std::string name, LogTemplate *value);
-
-  LogTemplateOptions &get_template_options()
-  {
-    return this->template_options;
-  }
 
   void set_message_template_ref(LogTemplate *msg)
   {
@@ -113,12 +81,11 @@ public:
 
 private:
   friend class DestinationWorker;
-  LogTemplateOptions template_options;
 
   std::string tenant_id;
 
   LogTemplate *message = nullptr;
-  std::vector<Label> labels;
+  std::vector<NameValueTemplatePair> labels;
   LogMessageTimeStamp timestamp;
 };
 
