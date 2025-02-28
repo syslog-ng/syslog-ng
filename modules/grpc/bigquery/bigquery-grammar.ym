@@ -55,8 +55,6 @@
 %token KW_PROJECT
 %token KW_DATASET
 %token KW_TABLE
-%token KW_SCHEMA
-%token KW_PROTOBUF_SCHEMA
 
 %type <ptr> bigquery_dest
 
@@ -83,28 +81,8 @@ bigquery_dest_option
   : KW_PROJECT '(' string ')' { bigquery_dd_set_project(last_driver, $3); free($3); }
   | KW_DATASET '(' string ')' { bigquery_dd_set_dataset(last_driver, $3); free($3); }
   | KW_TABLE '(' string ')' { bigquery_dd_set_table(last_driver, $3); free($3); }
-  | KW_SCHEMA '(' bigquery_schema_fields ')'
-  | KW_PROTOBUF_SCHEMA '(' path_check LL_ARROW template_content_list ')'
-    {
-      bigquery_dd_set_protobuf_schema(last_driver, $3, $5);
-      free($3);
-    }
-  | grpc_dest_option
-  ;
-
-bigquery_schema_fields
-  : bigquery_schema_field bigquery_schema_fields
-  |
-  ;
-
-bigquery_schema_field
-  : string optional_string LL_ARROW template_content
-    {
-	    CHECK_ERROR(bigquery_dd_add_field(last_driver, $1, $2, $4), @2, "Error adding schema() field, invalid type");
-      free($1);
-      free($2);
-      log_template_unref($4);
-    }
+  | grpc_dest_general_option
+  | grpc_dest_schema_option
   ;
 
 /* INCLUDE_RULES */

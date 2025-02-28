@@ -61,6 +61,8 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_MAX_PINGS_WITHOUT_DATA
 %token KW_CHANNEL_ARGS
 %token KW_HEADERS
+%token KW_SCHEMA
+%token KW_PROTOBUF_SCHEMA
 
 %type <num> grpc_server_credentials_builder_tls_peer_verify
 
@@ -90,7 +92,7 @@ grpc_source_channel_arg
   | string LL_ARROW string { grpc_sd_add_string_channel_arg(last_driver, $1, $3); free($1); free($3); }
   ;
 
-grpc_dest_option
+grpc_dest_general_option
   : KW_URL '(' string ')' { grpc_dd_set_url(last_driver, $3); free($3); }
   | KW_AUTH { last_grpc_client_credentials_builder = grpc_dd_get_credentials_builder(last_driver); } '(' grpc_client_credentials_option ')'
   | KW_COMPRESSION '(' yesno ')' { grpc_dd_set_compression(last_driver, $3); }
@@ -102,6 +104,30 @@ grpc_dest_option
   | threaded_dest_driver_batch_option
   | threaded_dest_driver_workers_option
   | { last_template_options = grpc_dd_get_template_options(last_driver); } template_option
+  ;
+
+grpc_dest_schema_option
+  : KW_SCHEMA '(' grpc_dest_schema_fields ')'
+  | KW_PROTOBUF_SCHEMA '(' path_check LL_ARROW template_content_list ')'
+    {
+      grpc_dd_set_protobuf_schema(last_driver, $3, $5);
+      free($3);
+    }
+  ;
+
+grpc_dest_schema_fields
+  : grpc_dest_schema_field grpc_dest_schema_fields
+  |
+  ;
+
+grpc_dest_schema_field
+  : string optional_string LL_ARROW template_content
+    {
+      CHECK_ERROR(grpc_dd_add_schema_field(last_driver, $1, $2, $4), @2, "Error adding schema() field, invalid type");
+      free($1);
+      free($2);
+      log_template_unref($4);
+    }
   ;
 
 grpc_keepalive_options

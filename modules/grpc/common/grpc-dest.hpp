@@ -33,6 +33,7 @@
 
 #include "credentials/grpc-credentials-builder.hpp"
 #include "metrics/grpc-metrics.hpp"
+#include "schema/grpc-schema.hpp"
 
 #include <grpcpp/server.h>
 
@@ -41,33 +42,6 @@
 
 namespace syslogng {
 namespace grpc {
-
-struct NameValueTemplatePair
-{
-  std::string name;
-  LogTemplate *value;
-
-  NameValueTemplatePair(std::string name_, LogTemplate *value_)
-    : name(name_), value(log_template_ref(value_)) {}
-
-  NameValueTemplatePair(const NameValueTemplatePair &a)
-    : name(a.name), value(log_template_ref(a.value)) {}
-
-  NameValueTemplatePair &operator=(const NameValueTemplatePair &a)
-  {
-    name = a.name;
-    log_template_unref(value);
-    value = log_template_ref(a.value);
-
-    return *this;
-  }
-
-  ~NameValueTemplatePair()
-  {
-    log_template_unref(value);
-  }
-
-};
 
 class DestDriver
 {
@@ -167,6 +141,11 @@ public:
   {
     this->dynamic_headers_enabled = true;
     this->flush_on_key_change = true;
+  }
+
+  virtual Schema *get_schema()
+  {
+    return nullptr;
   }
 
   LogTemplateOptions &get_template_options()

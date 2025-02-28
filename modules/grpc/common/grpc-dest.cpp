@@ -176,6 +176,24 @@ grpc_dd_add_header(LogDriver *s, const gchar *name, LogTemplate *value)
   return self->cpp->add_header(name, value);
 }
 
+gboolean
+grpc_dd_add_schema_field(LogDriver *d, const gchar *name, const gchar *type, LogTemplate *value)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  Schema *schema = self->cpp->get_schema();
+  g_assert(schema);
+  return schema->add_field(name, type ? type : "", value);
+}
+
+void
+grpc_dd_set_protobuf_schema(LogDriver *d, const gchar *proto_path, GList *values)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  Schema *schema = self->cpp->get_schema();
+  g_assert(schema);
+  schema->set_protobuf_schema(proto_path, values);
+}
+
 LogTemplateOptions *
 grpc_dd_get_template_options(LogDriver *d)
 {

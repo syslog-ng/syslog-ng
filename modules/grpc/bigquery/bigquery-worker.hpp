@@ -31,8 +31,6 @@
 #include "compat/cpp-end.h"
 
 #include <grpcpp/create_channel.h>
-#include <google/protobuf/descriptor.h>
-#include <google/protobuf/message.h>
 
 #include <string>
 #include <memory>
@@ -67,10 +65,7 @@ private:
   void construct_write_stream();
   void prepare_batch();
   bool should_initiate_flush();
-  bool insert_field(const google::protobuf::Reflection *reflection, const Field &field,
-                    LogMessage *msg, google::protobuf::Message *message);
   LogThreadedResult handle_row_errors(const google::cloud::bigquery::storage::v1::AppendRowsResponse &response);
-  Slice format_template(LogTemplate *tmpl, LogMessage *msg, GString *value, LogMessageValueType *type);
   DestinationDriver *get_owner();
 
 private:

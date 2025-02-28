@@ -35,4 +35,4 @@ add_module(
 
 set_target_properties(bigquery PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${CMAKE_INSTALL_PREFIX}/lib/syslog-ng")
 
-target_compile_options (bigquery-cpp PRIVATE -Wno-switch-default -Wno-double-promotion -Wno-deprecated -Wno-inconsistent-missing-override -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0)
+target_compile_options(bigquery-cpp PRIVATE -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0)

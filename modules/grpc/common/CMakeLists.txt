@@ -1,9 +1,11 @@
 add_subdirectory(credentials)
 add_subdirectory(metrics)
+add_subdirectory(schema)
 
 set(GRPC_COMMON_CPP_SOURCES
   ${GRPC_CREDENTIALS_SOURCES}
   ${GRPC_METRICS_SOURCES}
+  ${GRPC_SCHEMA_SOURCES}
   grpc-parser.h
   grpc-dest.hpp
   grpc-dest.cpp
@@ -22,3 +24,5 @@ add_module(
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc/common
   LIBRARY_TYPE STATIC
 )
+
+target_compile_options(grpc-common-cpp PRIVATE -Wno-inconsistent-missing-override -Wno-double-promotion -Wno-deprecated -DPROTOBUF_ENABLE_DEBUG_LOGGING_MAY_LEAK_PII=0)
