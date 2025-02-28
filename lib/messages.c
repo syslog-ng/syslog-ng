@@ -215,7 +215,8 @@ msg_event_send(EVTREC *e)
 void
 msg_event_suppress_recursions_and_send(EVTREC *e)
 {
-  msg_event_send_with_suppression(e, msg_limit_internal_message);
+  if(G_LIKELY(e != NULL))
+    msg_event_send_with_suppression(e, msg_limit_internal_message);
 }
 
 void
@@ -235,6 +236,11 @@ msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
 {
   EVTREC *e;
   va_list va;
+
+  if(G_UNLIKELY(evt_context == NULL))
+    {
+      return NULL;
+    }
 
   g_mutex_lock(&evtlog_lock);
   e = evt_rec_init(evt_context, prio, desc);
