@@ -37,10 +37,10 @@ jobs:
           - almalinux-9
           - centos-stream9
           - fedora-latest
-          - fedora-rawhide
+          # - fedora-rawhide - rawhide is always a problem turning it off now
           - debian-bullseye
           - debian-bookworm
-          #- debian-sid - curently this is broken again
+          - debian-sid
           - debian-testing
           - ubuntu-focal
           - ubuntu-jammy

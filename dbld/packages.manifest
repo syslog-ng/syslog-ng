@@ -8,7 +8,7 @@ gnupg                           [centos, almalinux, fedora]
 wget                            [centos, almalinux, fedora, debian, ubuntu]
 ca-certificates       	        [centos, almalinux, fedora, debian, ubuntu]
 
-# criterion compilation
+# cmake, c++ modules, criterion compilation
 cmake                           [centos, almalinux, fedora, debian, ubuntu]
 gcc-c++                         [centos, almalinux, fedora]
 
