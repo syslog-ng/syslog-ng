@@ -18,6 +18,7 @@ modules/kafka/tests/sample\.properties
 modules/grpc/protos/opentelemetry-proto
 modules/grpc/protos/grafana-loki
 modules/grpc/protos/googleapis-proto
+modules/grpc/protos/clickhouse-proto
 modules/cloud-auth/jwt-cpp
 dev-utils/plugin_skeleton_creator/plugin_template.*
 (lib|modules)/.*\.conf$
@@ -206,6 +207,7 @@ modules/grpc/otel/tests/test-syslog-ng-otlp\.cpp$
 modules/grpc/otel/tests/test-otel-filterx\.cpp$
 modules/grpc/loki
 modules/grpc/bigquery
+modules/grpc/clickhouse
 modules/grpc/common
 modules/grpc/protos/apphook\.(cpp|h)$
 modules/cloud-auth/cloud-auth(|-grammar|-parser|-plugin)\.(c|h|cpp|hpp|ym)$
