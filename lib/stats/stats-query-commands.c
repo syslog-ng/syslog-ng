@@ -23,8 +23,11 @@
 
 #include "messages.h"
 #include "stats-query-commands.h"
+#include "stats-prometheus.h"
+#include "stats-csv.h"
 #include "stats/stats-query.h"
 #include "control/control-connection.h"
+#include "scratch-buffers.h"
 
 typedef enum _QueryCommand
 {
@@ -58,18 +61,54 @@ static gboolean
 _ctl_format_get(gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
-  StatsCounterItem *ctr = (StatsCounterItem *) args[0];
-  GString *str = (GString *)args[1];
-  g_string_append_printf(str, "%s=%"G_GSIZE_FORMAT"\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
+  StatsCluster *sc = (StatsCluster *) args[0];
+  gint type = GPOINTER_TO_INT(args[1]);
+  StatsCounterItem *ctr = (StatsCounterItem *) args[2];
+  const gchar *fmt = (const gchar *) args[3];
+  GString *str = (GString *)args[4];
+
+  // This one is the legacy format, kept for backward compatibility
+  if (g_str_equal(fmt, "kv"))
+    g_string_append_printf(str, "%s=%"G_GSIZE_FORMAT"\n", stats_counter_get_name(ctr), stats_counter_get(ctr));
+  else if (g_str_equal(fmt, "prometheus"))
+    {
+      ScratchBuffersMarker marker;
+      scratch_buffers_mark(&marker);
+
+      GString *record = stats_prometheus_format_counter(sc, type, ctr);
+      if (record == NULL)
+        return FALSE;
+
+      g_string_append(str, record->str);
+      scratch_buffers_reclaim_marked(marker);
+    }
+  else if (g_str_equal(fmt, "csv"))
+    {
+      ScratchBuffersMarker marker;
+      scratch_buffers_mark(&marker);
+
+      GString *record = stats_csv_format_counter(sc, type, ctr);
+      if (record == NULL)
+        return FALSE;
+
+      g_string_append(str, record->str);
+      scratch_buffers_reclaim_marked(marker);
+    }
+
   return TRUE;
 }
 
 static gboolean
 _ctl_format_name_without_value(gpointer user_data)
 {
+  // Other user_data elements are
+  //  - StatsCluster * = args[0]
+  //  - gint type = args[1];
+  //  - const gchar * fmt = args[3];
   gpointer *args = (gpointer *) user_data;
-  StatsCounterItem *ctr = (StatsCounterItem *) args[0];
-  GString *str = (GString *)args[1];
+  StatsCounterItem *ctr = (StatsCounterItem *) args[2];
+  GString *str = (GString *)args[4];
+
   g_string_append_printf(str, "%s\n", stats_counter_get_name(ctr));
   return TRUE;
 }
@@ -82,14 +121,13 @@ _ctl_format_get_sum(gpointer user_data)
   gint64 *sum = (gint64 *) args[1];
 
   g_string_printf(result, "%" G_GINT64_FORMAT "\n", *sum);
-
   return TRUE;
 }
 
 static gboolean
 _query_get(const gchar *output_fmt, const gchar *filter_expr, GString *result)
 {
-  return stats_query_get(filter_expr, _ctl_format_get, (gpointer)result);
+  return stats_query_get(filter_expr, _ctl_format_get, output_fmt, (gpointer)result);
 }
 
 static gboolean
@@ -97,7 +135,7 @@ _query_get_and_reset(const gchar *output_fmt, const gchar *filter_expr, GString 
 {
   gboolean found_match;
 
-  found_match = stats_query_get_and_reset_counters(filter_expr, _ctl_format_get, (gpointer)result);
+  found_match = stats_query_get_and_reset_counters(filter_expr, _ctl_format_get, output_fmt, (gpointer)result);
   _append_reset_msg_if_found_matching_counters(found_match, result);
 
   return found_match;
