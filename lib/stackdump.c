@@ -134,6 +134,36 @@ _stackdump_print_registers(struct sigcontext *p)
   _stackdump_print_stack((gpointer) p->rsp);
 }
 
+#elif __aarch64__
+/****************************************************************************
+ *
+ *
+ * arm_64 support
+ *
+ *
+ ****************************************************************************/
+
+void
+_stackdump_print_registers(struct sigcontext *p)
+{
+  console_printf(
+    "Registers: "
+    "x0=%016llx x1=%016llx x2=%016llx x3=%016llx x4=%016llx x5=%016llx "
+    "x6=%016llx x7=%016llx x8=%016llx x9=%016llx x10=%016llx x11=%016llx "
+    "x12=%016llx x13=%016llx x14=%016llx x15=%016llx x16=%016llx x17=%016llx "
+    "x18=%016llx x19=%016llx x20=%016llx x21=%016llx x22=%016llx x23=%016llx "
+    "x24=%016llx x25=%016llx x26=%016llx x27=%016llx x28=%016llx fp=%016llx "
+    "lr=%016llx sp=%016llx pc=%016llx pstate=%016llx",
+    p->regs[0], p->regs[1], p->regs[2], p->regs[3], p->regs[4], p->regs[5],
+    p->regs[6], p->regs[7], p->regs[8], p->regs[9], p->regs[10], p->regs[11],
+    p->regs[12], p->regs[13], p->regs[14], p->regs[15], p->regs[16], p->regs[17],
+    p->regs[18], p->regs[19], p->regs[20], p->regs[21], p->regs[22], p->regs[23],
+    p->regs[24], p->regs[25], p->regs[26], p->regs[27], p->regs[28], p->regs[29],
+    p->regs[30], p->sp, p->pc, p->pstate);
+
+  _stackdump_print_stack((gpointer) p->sp);
+}
+
 #elif defined(__x86__)
 /****************************************************************************
  *
