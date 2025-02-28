@@ -29,7 +29,8 @@
 
 #include <string.h>
 
-typedef void (*ProcessCounterCb)(StatsCounterItem *counter, gpointer user_data, StatsFormatCb format_cb,
+typedef void (*ProcessCounterCb)(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data,
+                                 StatsFormatCb format_cb,
                                  gpointer result);
 
 static const gchar *
@@ -75,7 +76,7 @@ _process_counter_if_matching(StatsCluster *sc, gint type, StatsCounterItem *coun
         {
           *found = TRUE;
 
-          process_func(counter, process_func_user_data, format_cb, format_cb_user_data);
+          process_func(sc, type, counter, process_func_user_data, format_cb, format_cb_user_data);
           if (must_reset)
             stats_cluster_reset_counter_if_needed(sc, counter);
 
@@ -118,29 +119,32 @@ _process_matching_counters(const gchar *key_str, ProcessCounterCb process_func, 
 }
 
 static void
-_format_selected_counter(StatsCounterItem *counter, gpointer user_data, StatsFormatCb format_cb, gpointer result)
+_format_selected_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data,
+                         StatsFormatCb format_cb, gpointer result)
 {
-  gpointer args[] = {counter, result};
+  gpointer args[] = {sc, GINT_TO_POINTER(type), counter, user_data, result};
   format_cb(args);
 }
 
 gboolean
-_stats_query_get(const gchar *expr, StatsFormatCb format_cb, gpointer result, gboolean must_reset)
+_stats_query_get(const gchar *expr, StatsFormatCb format_cb, const gchar *output_fmt, gpointer result,
+                 gboolean must_reset)
 {
   const gchar *key_str = _setup_filter_expression(expr);
-  return _process_matching_counters(key_str, _format_selected_counter, NULL, format_cb, result, must_reset);
+  return _process_matching_counters(key_str, _format_selected_counter, (gpointer) output_fmt, format_cb, result,
+                                    must_reset);
 }
 
 gboolean
-stats_query_get(const gchar *expr, StatsFormatCb format_cb, gpointer result)
+stats_query_get(const gchar *expr, StatsFormatCb format_cb, const gchar *output_fmt, gpointer result)
 {
-  return _stats_query_get(expr, format_cb, result, FALSE);
+  return _stats_query_get(expr, format_cb, output_fmt, result, FALSE);
 }
 
 gboolean
-stats_query_get_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, gpointer result)
+stats_query_get_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, const gchar *output_fmt, gpointer result)
 {
-  return _stats_query_get(expr, format_cb, result, TRUE);
+  return _stats_query_get(expr, format_cb, output_fmt, result, TRUE);
 }
 
 static gboolean
@@ -151,7 +155,8 @@ _is_timestamp(gchar *counter_name)
 }
 
 void
-_sum_selected_counters(StatsCounterItem *counter, gpointer user_data, StatsFormatCb format_cb, gpointer result)
+_sum_selected_counters(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data,
+                       StatsFormatCb format_cb, gpointer result)
 {
   gpointer *args = (gpointer *) user_data;
   gint64 *sum = (gint64 *) args[1];
