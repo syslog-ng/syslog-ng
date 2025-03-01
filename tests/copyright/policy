@@ -313,3 +313,4 @@ modules/http/http-grammar.ym
 modules/correlation/group-lines.c
 docker/Dockerfile
 docker/entrypoint.sh
+Doxyfile
