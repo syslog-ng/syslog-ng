@@ -33,6 +33,7 @@ from src.helpers.loggen.loggen import Loggen
 from src.message_builder.bsd_format import BSDFormat
 from src.message_builder.log_message import LogMessage
 from src.syslog_ng.syslog_ng import SyslogNg
+from src.syslog_ng.syslog_ng_executor import SyslogNgExecutor
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 from src.syslog_ng_config.syslog_ng_config import SyslogNgConfig
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
@@ -109,7 +110,12 @@ def config(request, teardown):
 @pytest.fixture
 def syslog_ng(request, testcase_parameters, teardown):
     tc_parameters.INSTANCE_PATH = SyslogNgPaths(testcase_parameters).set_syslog_ng_paths("server")
-    syslog_ng = SyslogNg(tc_parameters.INSTANCE_PATH, testcase_parameters, teardown)
+    syslog_ng = SyslogNg(
+        SyslogNgExecutor(tc_parameters.INSTANCE_PATH.get_syslog_ng_bin()),
+        tc_parameters.INSTANCE_PATH,
+        testcase_parameters,
+        teardown,
+    )
     teardown.register(syslog_ng.stop)
     return syslog_ng
 
