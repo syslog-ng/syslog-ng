@@ -37,6 +37,7 @@ from src.syslog_ng.syslog_ng_local_executor import SyslogNgLocalExecutor
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 from src.syslog_ng_config.syslog_ng_config import SyslogNgConfig
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
+from src.syslog_ng_ctl.syslog_ng_ctl_local_executor import SyslogNgCtlLocalExecutor
 from src.testcase_parameters.testcase_parameters import TestcaseParameters
 
 logger = logging.getLogger(__name__)
@@ -108,10 +109,10 @@ def config(request, teardown):
 
 
 @pytest.fixture
-def syslog_ng(request, testcase_parameters, teardown):
-    tc_parameters.INSTANCE_PATH = SyslogNgPaths(testcase_parameters).set_syslog_ng_paths("server")
+def syslog_ng(request: pytest.FixtureRequest, testcase_parameters: TestcaseParameters, syslog_ng_ctl: SyslogNgCtl, teardown):
     syslog_ng = SyslogNg(
         SyslogNgLocalExecutor(tc_parameters.INSTANCE_PATH.get_syslog_ng_bin()),
+        syslog_ng_ctl,
         tc_parameters.INSTANCE_PATH,
         testcase_parameters,
         teardown,
@@ -139,8 +140,15 @@ def teardown():
 
 
 @pytest.fixture
-def syslog_ng_ctl(syslog_ng):
-    return SyslogNgCtl(syslog_ng.instance_paths)
+def syslog_ng_ctl(request: pytest.FixtureRequest, testcase_parameters):
+    tc_parameters.INSTANCE_PATH = SyslogNgPaths(testcase_parameters).set_syslog_ng_paths("server")
+    return SyslogNgCtl(
+        tc_parameters.INSTANCE_PATH,
+        SyslogNgCtlLocalExecutor(
+            tc_parameters.INSTANCE_PATH.get_syslog_ng_ctl_bin(),
+            tc_parameters.INSTANCE_PATH.get_control_socket_path(),
+        ),
+    )
 
 
 @pytest.fixture

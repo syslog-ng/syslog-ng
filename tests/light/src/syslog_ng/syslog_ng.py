@@ -44,6 +44,7 @@ class SyslogNg(object):
     def __init__(
         self,
         syslog_ng_executor: SyslogNgExecutor,
+        syslog_ng_ctl: SyslogNgCtl,
         instance_paths: SyslogNgPaths,
         testcase_parameters: TestcaseParameters,
         teardown,
@@ -57,7 +58,7 @@ class SyslogNg(object):
         )
         self.__external_tool = testcase_parameters.get_external_tool()
         self.__console_log_reader = ConsoleLogReader(self.instance_paths, teardown)
-        self.__syslog_ng_ctl = SyslogNgCtl(self.instance_paths)
+        self.__syslog_ng_ctl = syslog_ng_ctl
         self.__syslog_ng_executor = syslog_ng_executor
         self.__process: typing.Optional[Popen] = None
 
