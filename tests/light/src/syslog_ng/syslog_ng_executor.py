@@ -22,14 +22,12 @@
 # COPYING for details.
 #
 #############################################################################
-import shlex
 import typing
+from abc import ABC
+from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from subprocess import Popen
-
-from src.executors.command_executor import CommandExecutor
-from src.executors.process_executor import ProcessExecutor
 
 
 @dataclass
@@ -85,27 +83,17 @@ class SyslogNgStartParams:
         return params
 
 
-class SyslogNgExecutor(object):
-    def __init__(
-        self,
-        syslog_ng_binary_path: Path,
-    ) -> None:
-        self.__process_executor = ProcessExecutor()
-        self.__command_executor = CommandExecutor()
-        self.__syslog_ng_binary_path = syslog_ng_binary_path
-
+class SyslogNgExecutor(ABC):
+    @abstractmethod
     def run_process(
         self,
         start_params: SyslogNgStartParams,
         stderr_path: Path,
         stdout_path: Path,
     ) -> Popen:
-        return self.__process_executor.start(
-            command=self.__construct_syslog_ng_command(start_params),
-            stdout_path=stdout_path,
-            stderr_path=stderr_path,
-        )
+        pass
 
+    @abstractmethod
     def run_process_with_valgrind(
         self,
         start_params: SyslogNgStartParams,
@@ -113,44 +101,18 @@ class SyslogNgExecutor(object):
         stdout_path: Path,
         valgrind_output_path: Path,
     ) -> Popen:
-        valgrind_command_args = [
-            "valgrind",
-            "--show-leak-kinds=all",
-            "--track-origins=yes",
-            "--tool=memcheck",
-            "--leak-check=full",
-            "--keep-stacktraces=alloc-and-free",
-            "--read-var-info=yes",
-            "--error-limit=no",
-            "--num-callers=40",
-            "--verbose",
-            f"--log-file={str(valgrind_output_path)}",
-        ]
-        full_command_args = valgrind_command_args + self.__construct_syslog_ng_command(start_params)
-        return self.__process_executor.start(
-            command=full_command_args,
-            stdout_path=stdout_path,
-            stderr_path=stderr_path,
-        )
+        pass
 
+    @abstractmethod
     def run_process_with_gdb(
         self,
         start_params: SyslogNgStartParams,
         stderr_path: Path,
         stdout_path: Path,
     ) -> Popen:
-        gdb_command_args = [
-            "gdb",
-            "-ex",
-            f"r {shlex.join(start_params.format())} > {str(stdout_path)} 2> {str(stderr_path)}",
-            str(self.__syslog_ng_binary_path()),
-        ]
-        return self.__process_executor.start(
-            command=["xterm", "-e", shlex.join(gdb_command_args)],
-            stdout_path="/dev/null",
-            stderr_path="/dev/null",
-        )
+        pass
 
+    @abstractmethod
     def run_process_with_strace(
         self,
         start_params: SyslogNgStartParams,
@@ -158,46 +120,13 @@ class SyslogNgExecutor(object):
         stdout_path: Path,
         strace_output_path: Path,
     ) -> Popen:
-        strace_command_args = [
-            "strace",
-            "-s",
-            "4096",
-            "-tt",
-            "-T",
-            "-ff",
-            "-o",
-            str(strace_output_path),
-        ]
-        full_command_args = strace_command_args + self.__construct_syslog_ng_command(start_params)
-        return self.__process_executor.start(
-            command=full_command_args,
-            stdout_path=stdout_path,
-            stderr_path=stderr_path,
-        )
+        pass
 
+    @abstractmethod
     def get_backtrace_from_core(
         self,
         core_file_path: Path,
         stderr_path: Path,
         stdout_path: Path,
     ) -> typing.Dict[str, typing.Any]:
-        gdb_command_args = [
-            "gdb",
-            "-ex",
-            "bt full",
-            "--batch",
-            str(self.__syslog_ng_binary_path),
-            "--core",
-            str(core_file_path),
-        ]
-        return self.__command_executor.run(
-            command=gdb_command_args,
-            stdout_path=stdout_path,
-            stderr_path=stderr_path,
-        )
-
-    def __construct_syslog_ng_command(
-        self,
-        start_params: typing.Optional[SyslogNgStartParams] = None,
-    ) -> typing.List[str]:
-        return [str(self.__syslog_ng_binary_path)] + start_params.format()
+        pass

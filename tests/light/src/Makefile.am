@@ -76,6 +76,7 @@ EXTRA_DIST += \
 	tests/light/src/syslog_ng_ctl/syslog_ng_ctl.py \
 	tests/light/src/syslog_ng/__init__.py \
 	tests/light/src/syslog_ng/syslog_ng_executor.py \
+	tests/light/src/syslog_ng/syslog_ng_local_executor.py \
 	tests/light/src/syslog_ng/syslog_ng_paths.py \
 	tests/light/src/syslog_ng/syslog_ng.py \
 	tests/light/src/syslog_ng/tests/__init__.py \
