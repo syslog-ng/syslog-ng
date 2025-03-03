@@ -37,6 +37,7 @@ main() {
  BUILDDIR="$2"
  DATADIR="`dirname "$0"`"
  POLICY="$DATADIR/${3-policy}"
+ MAXDEPTH=${MAXDEPTH:=""}
  local WORKDIR="`mktemp -t "cpy-XXXXXXX.check_copyright.tmp"`"
  rm "$WORKDIR" &&
  mkdir "$WORKDIR" ||
@@ -108,6 +109,7 @@ main_logged() {
   . \
   -iname '.git' -prune -o -iname 'dbld' -prune \
   -o \
+  ${MAXDEPTH} \
  -type f \
  -exec grep -Iq . {} \; -print |
  sed "s~^\./~~" |
@@ -294,7 +296,7 @@ extract_holder_license() {
  local FILE="$1"
 
  case "$FILE" in
-  configure.in)
+  configure.in|Doxyfile)
     extract_holder_license_sh
     return $?
  esac
