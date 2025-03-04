@@ -21,6 +21,7 @@
 #
 #############################################################################
 import logging
+import typing
 
 from src.common.file import File
 from src.common.operations import cast_to_list
@@ -51,7 +52,9 @@ from src.syslog_ng_config.statements.sources.network_source import NetworkSource
 from src.syslog_ng_config.statements.sources.syslog_source import SyslogSource
 from src.syslog_ng_config.statements.template.template import Template
 from src.syslog_ng_config.statements.template.template import TemplateFunction
+from src.syslog_ng_ctl.prometheus_stats_handler import MetricFilter
 from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
+from src.syslog_ng_ctl.prometheus_stats_handler import Sample
 
 
 logger = logging.getLogger(__name__)
@@ -254,5 +257,5 @@ class SyslogNgConfig(object):
             logpath.add_flags(cast_to_list(flags))
         return logpath
 
-    def get_prometheus_samples(self, metric_filter):
-        return PrometheusStatsHandler(metric_filter).get_samples()
+    def get_prometheus_samples(self, metric_filter: typing.List[MetricFilter]) -> typing.List[Sample]:
+        return PrometheusStatsHandler().get_samples(metric_filter)

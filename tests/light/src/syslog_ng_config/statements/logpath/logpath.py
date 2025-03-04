@@ -31,14 +31,14 @@ class LogPath(object):
         self.__logpath = []
         self.__flags = []
 
-        metric_filters = []
+        self.__metric_filters = []
         if name:
-            metric_filters += [
+            self.__metric_filters += [
                 MetricFilter("syslogng_route_ingress_total", {"id": name}),
                 MetricFilter("syslogng_route_egress_total", {"id": name}),
             ]
 
-        self.__prometheus_stats_handler = PrometheusStatsHandler(metric_filters)
+        self.__prometheus_stats_handler = PrometheusStatsHandler()
 
     @property
     def group_type(self):
@@ -71,4 +71,4 @@ class LogPath(object):
             self.add_flag(flag)
 
     def get_prometheus_stats(self):
-        return self.__prometheus_stats_handler.get_samples()
+        return self.__prometheus_stats_handler.get_samples(self.__metric_filters)
