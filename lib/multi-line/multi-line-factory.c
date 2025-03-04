@@ -27,6 +27,7 @@
 #include "multi-line/regexp-multi-line.h"
 #include "multi-line/indented-multi-line.h"
 #include "multi-line/smart-multi-line.h"
+#include "multi-line/empty-line-separated-multi-line.h"
 #include "messages.h"
 
 #include <string.h>
@@ -45,6 +46,8 @@ multi_line_factory_construct(const MultiLineOptions *options)
       return regexp_multi_line_new(RML_PREFIX_SUFFIX, options->regexp.prefix, options->regexp.garbage);
     case MLM_SMART:
       return smart_multi_line_new();
+    case MLM_EMPTY_LINE_SEPARATED:
+      return empty_line_separated_multi_line_new();
     case MLM_NONE:
       return NULL;
 
@@ -68,6 +71,8 @@ multi_line_options_set_mode(MultiLineOptions *options, const gchar *mode)
     options->mode = MLM_REGEXP_PREFIX_SUFFIX;
   else if (strcasecmp(mode, "smart") == 0)
     options->mode = MLM_SMART;
+  else if (strcasecmp(mode, "empty-line-separated") == 0)
+    options->mode = MLM_EMPTY_LINE_SEPARATED;
   else if (strcasecmp(mode, "none") == 0)
     options->mode = MLM_NONE;
   else
@@ -94,7 +99,7 @@ multi_line_options_set_garbage(MultiLineOptions *options, const gchar *garbage_r
 }
 
 gboolean
-multi_line_options_validate(MultiLineOptions *options)
+multi_line_options_validate(const MultiLineOptions *options)
 {
   gboolean is_garbage_mode = options->mode == MLM_REGEXP_PREFIX_GARBAGE;
   gboolean is_suffix_mode = options->mode == MLM_REGEXP_PREFIX_SUFFIX;
@@ -116,7 +121,7 @@ multi_line_options_defaults(MultiLineOptions *options)
 }
 
 void
-multi_line_options_copy(MultiLineOptions *dest, MultiLineOptions *source)
+multi_line_options_copy(MultiLineOptions *dest, const MultiLineOptions *source)
 {
   dest->mode = source->mode;
   if (dest->mode == MLM_REGEXP_PREFIX_GARBAGE || dest->mode == MLM_REGEXP_PREFIX_SUFFIX)
