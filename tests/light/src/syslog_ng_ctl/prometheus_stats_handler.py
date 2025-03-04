@@ -25,7 +25,6 @@ import typing
 import prometheus_client.parser
 from prometheus_client.samples import Sample
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 
 __all__ = ["PrometheusStatsHandler", "MetricFilter", "Sample"]
@@ -37,8 +36,8 @@ class MetricFilter(typing.NamedTuple):
 
 
 class PrometheusStatsHandler(object):
-    def __init__(self):
-        self.__syslog_ng_ctl = SyslogNgCtl(tc_parameters.INSTANCE_PATH)
+    def __init__(self, syslog_ng_ctl: SyslogNgCtl) -> None:
+        self.__syslog_ng_ctl = syslog_ng_ctl
 
     def __filter_raw_samples(self, metric_filters: typing.List[MetricFilter], raw_samples: str) -> typing.List[Sample]:
         samples = []

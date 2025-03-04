@@ -34,6 +34,8 @@ from src.syslog_ng.syslog_ng_executor import SyslogNgExecutor
 from src.syslog_ng.syslog_ng_executor import SyslogNgStartParams
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 from src.syslog_ng_config.syslog_ng_config import SyslogNgConfig
+from src.syslog_ng_ctl.legacy_stats_handler import LegacyStatsHandler
+from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 from src.testcase_parameters.testcase_parameters import TestcaseParameters
 
@@ -61,6 +63,14 @@ class SyslogNg(object):
         self.__syslog_ng_ctl = syslog_ng_ctl
         self.__syslog_ng_executor = syslog_ng_executor
         self.__process: typing.Optional[Popen] = None
+
+    def create_config(self, version: str, teardown) -> SyslogNgConfig:
+        return SyslogNgConfig(
+            version,
+            LegacyStatsHandler(self.__syslog_ng_ctl),
+            PrometheusStatsHandler(self.__syslog_ng_ctl),
+            teardown,
+        )
 
     def start(self, config: SyslogNgConfig) -> Popen:
         if self.__process:

@@ -25,13 +25,12 @@
 import re
 import typing
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 
 
 class LegacyStatsHandler(object):
-    def __init__(self) -> None:
-        self.__syslog_ng_ctl = SyslogNgCtl(tc_parameters.INSTANCE_PATH)
+    def __init__(self, syslog_ng_ctl: SyslogNgCtl) -> None:
+        self.__syslog_ng_ctl = syslog_ng_ctl
 
     def get_query(self, group_type: str, driver_name: str) -> typing.Dict[str, int]:
         component = LegacyStatsHandler.__build_component(group_type, driver_name)

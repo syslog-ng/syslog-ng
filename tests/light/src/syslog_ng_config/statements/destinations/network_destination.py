@@ -22,6 +22,8 @@
 #############################################################################
 from src.driver_io.network.network_io import NetworkIO
 from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
+from src.syslog_ng_ctl.legacy_stats_handler import LegacyStatsHandler
+from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
 
 
 def map_transport(transport):
@@ -41,11 +43,17 @@ def create_io(ip, options):
 
 
 class NetworkDestination(DestinationDriver):
-    def __init__(self, ip, **options):
+    def __init__(
+        self,
+        stats_handler: LegacyStatsHandler,
+        prometheus_stats_handler: PrometheusStatsHandler,
+        ip: str,
+        **options,
+    ) -> None:
         self.driver_name = "network"
         self.ip = ip
         self.io = create_io(self.ip, options)
-        super(NetworkDestination, self).__init__([self.ip], options)
+        super(NetworkDestination, self).__init__(stats_handler, prometheus_stats_handler, [self.ip], options)
 
     def start_listener(self):
         self.io.start_listener()

@@ -25,7 +25,7 @@ from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
 
 
 class LogPath(object):
-    def __init__(self, name=None):
+    def __init__(self, prometheus_stats_handler: PrometheusStatsHandler, name=None):
         self.__group_type = "log"
         self.__name = name
         self.__logpath = []
@@ -38,7 +38,7 @@ class LogPath(object):
                 MetricFilter("syslogng_route_egress_total", {"id": name}),
             ]
 
-        self.__prometheus_stats_handler = PrometheusStatsHandler()
+        self.__prometheus_stats_handler = prometheus_stats_handler
 
     @property
     def group_type(self):
