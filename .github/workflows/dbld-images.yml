@@ -84,10 +84,11 @@ jobs:
 
       - name: Should we upload the images?
         run: |
+          # Use the develop for the published dbld images/packages
           if [ "${{ github.event.inputs.testing_image_upload }}" = "true" ] || \
              ( \
               [ "${{ github.repository_owner }}" = "syslog-ng" ] && \
-              [ "${{ github.ref }}" = "refs/heads/master" ] && \
+              [ "${{ github.ref }}" = "refs/heads/develop" ] && \
               [[ "${{ github.event_name }}" =~ ^(push|workflow_dispatch|schedule)$ ]] \
             )
           then
