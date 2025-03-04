@@ -30,13 +30,13 @@ class Filter(object):
         self.options = options
         self.driver_name = driver_name
         self.positional_parameters = positional_parameters
-        self.stats_handler = DriverStatsHandler(group_type=self.group_type, driver_name=self.driver_name)
+        self.stats_handler = DriverStatsHandler()
 
     def get_stats(self):
-        return self.stats_handler.get_stats()
+        return self.stats_handler.get_stats(self.group_type, self.driver_name)
 
     def get_query(self):
-        return self.stats_handler.get_query()
+        return self.stats_handler.get_query(self.group_type, self.driver_name)
 
 
 class Match(Filter):

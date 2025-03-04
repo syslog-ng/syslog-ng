@@ -21,42 +21,60 @@
 #
 #############################################################################
 import re
+import typing
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 
 
 class DriverStatsHandler(object):
-    def __init__(self, group_type, driver_name, instance=""):
+    def __init__(self) -> None:
+        self.__syslog_ng_ctl = SyslogNgCtl(tc_parameters.INSTANCE_PATH)
+
+    def get_query(self, group_type: str, driver_name: str) -> typing.Dict[str, int]:
+        component = DriverStatsHandler.__build_component(group_type, driver_name)
+        query_pattern = DriverStatsHandler.__build_query_pattern(component)
+        query_result = self.__syslog_ng_ctl.query(pattern="*{}*".format(query_pattern))['stdout'].splitlines()
+
+        return self.__parse_result(result=query_result, result_type="query")
+
+    def get_stats(self, group_type: str, driver_name: str, driver_instance: str = "") -> typing.Dict[str, int]:
+        component = DriverStatsHandler.__build_component(group_type, driver_name)
+        stats_pattern = DriverStatsHandler.__build_stats_pattern(component)
+        stats_result = self.__syslog_ng_ctl.stats()['stdout'].splitlines()
+
+        filtered_stats_result = DriverStatsHandler.__filter_stats_result(stats_result, stats_pattern, driver_instance)
+        return DriverStatsHandler.__parse_result(result=filtered_stats_result, result_type="stats")
+
+    @staticmethod
+    def __build_component(group_type: str, driver_name: str) -> str:
         if group_type == "destination":
             statement_short_name = "dst"
-            self.component = "{}.{}".format(statement_short_name, driver_name)
+            return "{}.{}".format(statement_short_name, driver_name)
         elif group_type == "source":
             statement_short_name = "src"
-            self.component = "{}.{}".format(statement_short_name, driver_name)
+            return "{}.{}".format(statement_short_name, driver_name)
         elif group_type == "parser":
-            self.component = "{}".format(group_type)
+            return "{}".format(group_type)
         elif group_type == "filter":
-            self.component = "{}".format(group_type)
+            return "{}".format(group_type)
         else:
             raise Exception("Unknown group_type: {}".format(group_type))
 
-        self.instance = instance
-        self.syslog_ng_ctl = SyslogNgCtl(tc_parameters.INSTANCE_PATH)
+    @staticmethod
+    def __build_query_pattern(component: str) -> str:
+        return DriverStatsHandler.__build_pattern(component=component, delimiter=".")
 
-    def build_query_pattern(self):
-        return self.build_pattern(delimiter=".")
+    @staticmethod
+    def __build_stats_pattern(component: str) -> str:
+        return DriverStatsHandler.__build_pattern(component=component, delimiter=";")
 
-    def build_stats_pattern(self):
-        return self.build_pattern(delimiter=";")
+    @staticmethod
+    def __build_pattern(component: str, delimiter: str) -> str:
+        return f"{component}{delimiter}"
 
-    def build_pattern(self, delimiter):
-        return "{}{}".format(
-            self.component,
-            delimiter,
-        )
-
-    def __parse_query_result(self, line: str):
+    @staticmethod
+    def __parse_query_result(line: str) -> typing.Dict[str, int]:
         split = re.split(r"\.|=", line)
         if len(split) < 2:
             return dict()
@@ -64,7 +82,8 @@ class DriverStatsHandler(object):
         key, value = split[-2:]
         return {key: int(value)}
 
-    def __parse_stats_result(self, line):
+    @staticmethod
+    def __parse_stats_result(line: str) -> typing.Dict[str, int]:
         split = line.split(";")
         if len(split) < 2:
             return dict()
@@ -72,33 +91,26 @@ class DriverStatsHandler(object):
         key, value = split[-2:]
         return {key: int(value)}
 
-    def parse_result(self, result, result_type):
+    @staticmethod
+    def __parse_result(result: typing.List[str], result_type: str) -> typing.Dict[str, int]:
         parsed_output = {}
         for line in result:
             if result_type == "query":
-                parsed_output.update(self.__parse_query_result(line))
+                parsed_output.update(DriverStatsHandler.__parse_query_result(line))
             elif result_type == "stats":
-                parsed_output.update(self.__parse_stats_result(line))
+                parsed_output.update(DriverStatsHandler.__parse_stats_result(line))
             else:
                 raise Exception("Unknown result_type: {}".format(result_type))
         return parsed_output
 
-    def filter_stats_result(self, stats_result, stats_pattern):
+    @staticmethod
+    def __filter_stats_result(
+        stats_result: typing.List[str],
+        stats_pattern: str,
+        driver_instance: str,
+    ) -> typing.List[str]:
         filtered_list = []
         for stats_line in stats_result:
-            if stats_pattern in stats_line and self.instance in stats_line:
+            if stats_pattern in stats_line and driver_instance in stats_line:
                 filtered_list.append(stats_line)
         return filtered_list
-
-    def get_query(self):
-        query_pattern = self.build_query_pattern()
-        query_result = self.syslog_ng_ctl.query(pattern="*{}*".format(query_pattern))['stdout'].splitlines()
-
-        return self.parse_result(result=query_result, result_type="query")
-
-    def get_stats(self):
-        stats_pattern = self.build_stats_pattern()
-        stats_result = self.syslog_ng_ctl.stats()['stdout'].splitlines()
-
-        filtered_stats_result = self.filter_stats_result(stats_result, stats_pattern)
-        return self.parse_result(result=filtered_stats_result, result_type="stats")
