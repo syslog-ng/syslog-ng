@@ -52,6 +52,7 @@ from src.syslog_ng_config.statements.sources.network_source import NetworkSource
 from src.syslog_ng_config.statements.sources.syslog_source import SyslogSource
 from src.syslog_ng_config.statements.template.template import Template
 from src.syslog_ng_config.statements.template.template import TemplateFunction
+from src.syslog_ng_ctl.legacy_stats_handler import LegacyStatsHandler
 from src.syslog_ng_ctl.prometheus_stats_handler import MetricFilter
 from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
 from src.syslog_ng_ctl.prometheus_stats_handler import Sample

@@ -20,7 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
-from src.syslog_ng_ctl.driver_stats_handler import DriverStatsHandler
+from src.syslog_ng_ctl.legacy_stats_handler import LegacyStatsHandler
 
 
 class Filter(object):
@@ -30,7 +30,7 @@ class Filter(object):
         self.options = options
         self.driver_name = driver_name
         self.positional_parameters = positional_parameters
-        self.stats_handler = DriverStatsHandler()
+        self.stats_handler = LegacyStatsHandler()
 
     def get_stats(self):
         return self.stats_handler.get_stats(self.group_type, self.driver_name)

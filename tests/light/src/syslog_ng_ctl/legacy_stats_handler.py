@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 #############################################################################
+# Copyright (c) 2025 Axoflow
+# Copyright (c) 2025 Attila Szakacs <attila.szakacs@axoflow.com>
 # Copyright (c) 2015-2018 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -27,24 +29,24 @@ import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 
 
-class DriverStatsHandler(object):
+class LegacyStatsHandler(object):
     def __init__(self) -> None:
         self.__syslog_ng_ctl = SyslogNgCtl(tc_parameters.INSTANCE_PATH)
 
     def get_query(self, group_type: str, driver_name: str) -> typing.Dict[str, int]:
-        component = DriverStatsHandler.__build_component(group_type, driver_name)
-        query_pattern = DriverStatsHandler.__build_query_pattern(component)
+        component = LegacyStatsHandler.__build_component(group_type, driver_name)
+        query_pattern = LegacyStatsHandler.__build_query_pattern(component)
         query_result = self.__syslog_ng_ctl.query(pattern="*{}*".format(query_pattern))['stdout'].splitlines()
 
         return self.__parse_result(result=query_result, result_type="query")
 
     def get_stats(self, group_type: str, driver_name: str, driver_instance: str = "") -> typing.Dict[str, int]:
-        component = DriverStatsHandler.__build_component(group_type, driver_name)
-        stats_pattern = DriverStatsHandler.__build_stats_pattern(component)
+        component = LegacyStatsHandler.__build_component(group_type, driver_name)
+        stats_pattern = LegacyStatsHandler.__build_stats_pattern(component)
         stats_result = self.__syslog_ng_ctl.stats()['stdout'].splitlines()
 
-        filtered_stats_result = DriverStatsHandler.__filter_stats_result(stats_result, stats_pattern, driver_instance)
-        return DriverStatsHandler.__parse_result(result=filtered_stats_result, result_type="stats")
+        filtered_stats_result = LegacyStatsHandler.__filter_stats_result(stats_result, stats_pattern, driver_instance)
+        return LegacyStatsHandler.__parse_result(result=filtered_stats_result, result_type="stats")
 
     @staticmethod
     def __build_component(group_type: str, driver_name: str) -> str:
@@ -63,11 +65,11 @@ class DriverStatsHandler(object):
 
     @staticmethod
     def __build_query_pattern(component: str) -> str:
-        return DriverStatsHandler.__build_pattern(component=component, delimiter=".")
+        return LegacyStatsHandler.__build_pattern(component=component, delimiter=".")
 
     @staticmethod
     def __build_stats_pattern(component: str) -> str:
-        return DriverStatsHandler.__build_pattern(component=component, delimiter=";")
+        return LegacyStatsHandler.__build_pattern(component=component, delimiter=";")
 
     @staticmethod
     def __build_pattern(component: str, delimiter: str) -> str:
@@ -96,9 +98,9 @@ class DriverStatsHandler(object):
         parsed_output = {}
         for line in result:
             if result_type == "query":
-                parsed_output.update(DriverStatsHandler.__parse_query_result(line))
+                parsed_output.update(LegacyStatsHandler.__parse_query_result(line))
             elif result_type == "stats":
-                parsed_output.update(DriverStatsHandler.__parse_stats_result(line))
+                parsed_output.update(LegacyStatsHandler.__parse_stats_result(line))
             else:
                 raise Exception("Unknown result_type: {}".format(result_type))
         return parsed_output

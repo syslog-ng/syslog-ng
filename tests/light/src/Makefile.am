@@ -69,7 +69,7 @@ EXTRA_DIST += \
 	tests/light/src/syslog_ng_config/statements/sources/source_driver.py \
 	tests/light/src/syslog_ng_config/syslog_ng_config.py \
 	tests/light/src/syslog_ng/console_log_reader.py \
-	tests/light/src/syslog_ng_ctl/driver_stats_handler.py \
+	tests/light/src/syslog_ng_ctl/legacy_stats_handler.py \
 	tests/light/src/syslog_ng_ctl/__init__.py \
 	tests/light/src/syslog_ng_ctl/prometheus_stats_handler.py \
 	tests/light/src/syslog_ng_ctl/syslog_ng_ctl_executor.py \
