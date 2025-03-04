@@ -35,6 +35,7 @@ enum
   MLM_REGEXP_PREFIX_GARBAGE,
   MLM_REGEXP_PREFIX_SUFFIX,
   MLM_SMART,
+  MLM_EMPTY_LINE_SEPARATED,
 };
 
 typedef struct _MultiLineOptions
@@ -58,8 +59,8 @@ gboolean multi_line_options_set_prefix(MultiLineOptions *options,
 gboolean multi_line_options_set_garbage(MultiLineOptions *options,
                                         const gchar *garbage_regexp, GError **error);
 
-gboolean multi_line_options_validate(MultiLineOptions *options);
-void multi_line_options_copy(MultiLineOptions *dest, MultiLineOptions *source);
+gboolean multi_line_options_validate(const MultiLineOptions *options);
+void multi_line_options_copy(MultiLineOptions *dest, const MultiLineOptions *source);
 void multi_line_options_defaults(MultiLineOptions *options);
 gboolean multi_line_options_init(MultiLineOptions *options);
 void multi_line_options_destroy(MultiLineOptions *options);
