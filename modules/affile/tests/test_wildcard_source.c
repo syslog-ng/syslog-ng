@@ -96,11 +96,13 @@ Test(wildcard_source, test_option_inheritance_multiline)
                                                              "multi-line-prefix('\\d+')"
                                                              "multi-line-garbage(garbage)");
   cr_assert_eq(driver->file_reader_options.follow_freq, 10000);
-  cr_assert_eq(file_reader_options_get_log_proto_options(&driver->file_reader_options)->multi_line_options.mode,
+  cr_assert_eq(file_reader_options_get_log_proto_options(&driver->file_reader_options)->super.multi_line_options.mode,
                MLM_REGEXP_PREFIX_GARBAGE);
-  cr_assert(file_reader_options_get_log_proto_options(&driver->file_reader_options)->multi_line_options.regexp.prefix !=
+  cr_assert(file_reader_options_get_log_proto_options(
+              &driver->file_reader_options)->super.multi_line_options.regexp.prefix !=
             NULL);
-  cr_assert(file_reader_options_get_log_proto_options(&driver->file_reader_options)->multi_line_options.regexp.garbage !=
+  cr_assert(file_reader_options_get_log_proto_options(
+              &driver->file_reader_options)->super.multi_line_options.regexp.garbage !=
             NULL);
 }
 

@@ -30,7 +30,7 @@
 #include "libtest/msg_parse_lib.h"
 
 #include "multi-line/multi-line-factory.h"
-#include "logproto/logproto-multiline-server.h"
+#include "logproto/logproto-text-server.h"
 
 
 static LogProtoServer *
@@ -38,19 +38,15 @@ log_proto_prefix_garbage_multiline_server_new(LogTransport *transport,
                                               const gchar *prefix,
                                               const gchar *garbage)
 {
-  MultiLineOptions multi_line_options;
-
-  multi_line_options_defaults(&multi_line_options);
-  multi_line_options_set_mode(&multi_line_options, "prefix-garbage");
+  LogProtoServerOptions *options = get_inited_proto_server_options();
+  MultiLineOptions *multi_line_options = &options->multi_line_options;
+  multi_line_options_set_mode(multi_line_options, "prefix-garbage");
   if (prefix)
-    multi_line_options_set_prefix(&multi_line_options, prefix, NULL);
+    multi_line_options_set_prefix(multi_line_options, prefix, NULL);
   if (garbage)
-    multi_line_options_set_garbage(&multi_line_options, garbage, NULL);
+    multi_line_options_set_garbage(multi_line_options, garbage, NULL);
 
-  LogProtoServer *server = log_proto_multiline_server_new(transport, get_inited_proto_server_options(),
-                                                          multi_line_factory_construct(&multi_line_options));
-  multi_line_options_destroy(&multi_line_options);
-  return server;
+  return log_proto_text_multiline_server_new(transport, get_inited_proto_server_options());
 }
 
 static LogProtoServer *
@@ -58,19 +54,15 @@ log_proto_prefix_suffix_multiline_server_new(LogTransport *transport,
                                              const gchar *prefix,
                                              const gchar *suffix)
 {
-  MultiLineOptions multi_line_options;
-
-  multi_line_options_defaults(&multi_line_options);
-  multi_line_options_set_mode(&multi_line_options, "prefix-suffix");
+  LogProtoServerOptions *options = get_inited_proto_server_options();
+  MultiLineOptions *multi_line_options = &options->multi_line_options;
+  multi_line_options_set_mode(multi_line_options, "prefix-suffix");
   if (prefix)
-    multi_line_options_set_prefix(&multi_line_options, prefix, NULL);
+    multi_line_options_set_prefix(multi_line_options, prefix, NULL);
   if (suffix)
-    multi_line_options_set_garbage(&multi_line_options, suffix, NULL);
+    multi_line_options_set_garbage(multi_line_options, suffix, NULL);
 
-  LogProtoServer *server = log_proto_multiline_server_new(transport, get_inited_proto_server_options(),
-                                                          multi_line_factory_construct(&multi_line_options));
-  multi_line_options_destroy(&multi_line_options);
-  return server;
+  return log_proto_text_multiline_server_new(transport, get_inited_proto_server_options());
 }
 
 
