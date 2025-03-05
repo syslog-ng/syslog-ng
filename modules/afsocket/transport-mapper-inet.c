@@ -439,6 +439,13 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->allow_tls = TRUE;
       self->super.transport_name = g_strdup("rfc3164+proxied-tls-passthrough");
     }
+  else if (strcasecmp(transport, "http") == 0)
+    {
+      self->super.logproto = "http";
+      self->super.sock_type = SOCK_STREAM;
+      self->super.sock_proto = IPPROTO_TCP;
+      self->super.transport_name = g_strdup("http");
+    }
   else
     {
       self->super.logproto = self->super.transport;
