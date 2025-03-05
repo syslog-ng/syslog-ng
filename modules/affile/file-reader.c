@@ -255,7 +255,7 @@ _construct_poll_events(FileReader *self, gint fd)
     {
       LogProtoFileReaderOptions *proto_opts = file_reader_options_get_log_proto_options(self->options);
 
-      if (proto_opts->multi_line_options.mode == MLM_NONE)
+      if (proto_opts->super.multi_line_options.mode == MLM_NONE)
         poll_events = poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
       else
         poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
