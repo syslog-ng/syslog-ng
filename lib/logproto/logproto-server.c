@@ -116,9 +116,9 @@ log_proto_server_is_position_tracked(LogProtoServer *s)
 }
 
 gboolean
-log_proto_server_validate_options_method(LogProtoServer *s)
+log_proto_server_validate_options_method(LogProtoServer *self)
 {
-  return TRUE;
+  return multi_line_options_validate(&self->options->multi_line_options);
 }
 
 void
@@ -176,6 +176,8 @@ log_proto_server_options_defaults(LogProtoServerOptions *options)
   options->init_buffer_size = -1;
   options->max_buffer_size = -1;
   options->ack_tracker_factory = instant_ack_tracker_bookmarkless_factory_new();
+  /* see logproto-file-reader.h for the detailed of the options mess */
+  multi_line_options_defaults(&options->multi_line_options);
 }
 
 void
@@ -215,6 +217,7 @@ log_proto_server_options_init(LogProtoServerOptions *options, GlobalConfig *cfg)
 void
 log_proto_server_options_destroy(LogProtoServerOptions *options)
 {
+  multi_line_options_destroy(&options->multi_line_options);
   g_free(options->encoding);
   ack_tracker_factory_unref(options->ack_tracker_factory);
   if (options->destroy)
