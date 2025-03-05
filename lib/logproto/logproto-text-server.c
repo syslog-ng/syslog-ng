@@ -364,3 +364,19 @@ log_proto_text_with_nuls_server_new(LogTransport *transport, const LogProtoServe
   self->find_eom = _find_nl_as_eom;
   return &self->super.super;
 }
+
+LogProtoServer *
+log_proto_text_multiline_server_new(LogTransport *transport, const LogProtoServerOptions *options)
+{
+  LogProtoTextServer *self = g_new0(LogProtoTextServer, 1);
+  log_proto_text_server_init(self, transport, options);
+
+  if (options->multi_line_options.mode != MLM_NONE)
+    {
+      /* see logproto-file-reader.h for the detailed of the options mess */
+      MultiLineLogic *multi_line_logic = multi_line_factory_construct(&options->multi_line_options);
+      log_proto_text_server_set_multi_line((LogProtoServer *)self, multi_line_logic);
+    }
+
+  return &self->super.super;
+}
