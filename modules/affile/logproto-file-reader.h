@@ -24,13 +24,12 @@
 #ifndef LOG_PROTO_FILE_READER_H_INCLUDED
 #define LOG_PROTO_FILE_READER_H_INCLUDED
 
-#include "logproto/logproto-multiline-server.h"
+#include "logproto/logproto-text-server.h"
 #include "multi-line/multi-line-factory.h"
 
 typedef struct _LogProtoFileReaderOptions
 {
   LogProtoServerOptions super;
-  MultiLineOptions multi_line_options;
   gint pad_size;
 } LogProtoFileReaderOptions;
 
