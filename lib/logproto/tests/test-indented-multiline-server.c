@@ -29,12 +29,15 @@
 #include "libtest/msg_parse_lib.h"
 
 #include "multi-line/indented-multi-line.h"
-#include "logproto/logproto-multiline-server.h"
+#include "logproto/logproto-text-server.h"
 
 LogProtoServer *
-log_proto_indented_multiline_server_new(LogTransport *transport, const LogProtoServerOptions *options)
+log_proto_indented_multiline_server_new(LogTransport *transport)
 {
-  return log_proto_multiline_server_new(transport, options, indented_multi_line_new());
+  LogProtoServerOptions *options = get_inited_proto_server_options();
+  options->multi_line_options.mode = MLM_INDENTED;
+
+  return log_proto_text_multiline_server_new(transport, options);
 }
 
 static void
@@ -52,8 +55,7 @@ test_proper_multiline(LogTransportMockConstructor log_transport_mock_new)
               " 3=4\n"
               "newline\n", -1,
               LTM_PADDING,
-              LTM_EOF),
-            get_inited_proto_server_options());
+              LTM_EOF));
 
   assert_proto_server_fetch(proto, "0\n"
                             " 1=2\n"
@@ -82,8 +84,7 @@ test_line_without_continuation(LogTransportMockConstructor log_transport_mock_ne
               "01234567\n", -1,
               "newline\n", -1,
               LTM_PADDING,
-              LTM_EOF),
-            get_inited_proto_server_options());
+              LTM_EOF));
 
   assert_proto_server_fetch(proto, "01234567", -1);
   assert_proto_server_fetch(proto, "01234567", -1);
@@ -111,8 +112,7 @@ test_input_starts_with_continuation(LogTransportMockConstructor log_transport_mo
               "01234567\n", -1,
               "newline\n", -1,
               LTM_PADDING,
-              LTM_EOF),
-            get_inited_proto_server_options());
+              LTM_EOF));
 
   assert_proto_server_fetch(proto, " 01234567", -1);
   assert_proto_server_fetch(proto, "01234567", -1);
@@ -139,8 +139,7 @@ test_multiline_at_eof(LogTransportMockConstructor log_transport_mock_new)
               "01234567\n", -1,
               " 01234567\n", -1,
               " end\n", -1,
-              LTM_EOF),
-            get_inited_proto_server_options());
+              LTM_EOF));
 
   assert_proto_server_fetch(proto, "01234567\n"
                             " 01234567\n"
