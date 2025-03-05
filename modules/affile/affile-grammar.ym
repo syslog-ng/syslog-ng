@@ -56,7 +56,7 @@ affile_grammar_set_file_source_driver(AFFileSourceDriver *sd)
   last_reader_options = &last_file_reader_options->reader_options;
   last_file_perm_options = &sd->file_opener_options.file_perm_options;
   last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
-  last_multi_line_options = &last_log_proto_options->multi_line_options;
+  last_multi_line_options = &last_log_proto_options->super.multi_line_options;
 }
 
 static void
@@ -67,7 +67,7 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
   last_reader_options = &last_file_reader_options->reader_options;
   last_file_perm_options = &sd->file_opener_options.file_perm_options;
   last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
-  last_multi_line_options = &last_log_proto_options->multi_line_options;
+  last_multi_line_options = &last_log_proto_options->super.multi_line_options;
 }
 
 }
