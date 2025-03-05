@@ -29,6 +29,7 @@
 #include "persist-state.h"
 #include "transport/transport-aux-data.h"
 #include "ack-tracker/bookmark.h"
+#include "multi-line/multi-line-factory.h"
 
 typedef struct _LogProtoServer LogProtoServer;
 typedef struct _LogProtoServerOptions LogProtoServerOptions;
@@ -49,12 +50,14 @@ struct _LogProtoServerOptions
   gchar *encoding;
   /* maximum message length in bytes */
   gint max_msg_size;
+  MultiLineOptions multi_line_options;
   gboolean trim_large_messages;
   gint max_buffer_size;
   gint init_buffer_size;
   AckTrackerFactory *ack_tracker_factory;
 };
 
+/* see logproto-file-reader.h and logreader.c - log_reader_options_defaults for the detailes of the options mess */
 typedef union LogProtoServerOptionsStorage
 {
   LogProtoServerOptions super;
@@ -123,6 +126,18 @@ static inline void
 log_proto_server_set_options(LogProtoServer *self, const LogProtoServerOptions *options)
 {
   self->options = options;
+}
+
+static inline const LogProtoServerOptions *
+log_proto_server_get_options(LogProtoServer *self)
+{
+  return self->options;
+}
+
+static inline const MultiLineOptions *
+log_proto_server_get_multi_line_options(LogProtoServer *self)
+{
+  return &self->options->multi_line_options;
 }
 
 static inline gboolean
