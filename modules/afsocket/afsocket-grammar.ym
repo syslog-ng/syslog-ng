@@ -45,6 +45,7 @@
 #include "transport-mapper-inet.h"
 #include "service-management.h"
 #include "string-list.h"
+#include "multi-line/multi-line-factory.h"
 
 #include "systemd-syslog-source.h"
 #include "afsocket-systemd-override.h"
@@ -56,6 +57,7 @@ static SocketOptions *last_sock_options;
 static TransportMapper *last_transport_mapper;
 
 TLSContext *last_tls_context;
+MultiLineOptions *last_multi_line_options;
 
 
 #if ! SYSLOG_NG_ENABLE_IPV6
@@ -70,9 +72,10 @@ afsocket_grammar_set_source_driver(AFSocketSourceDriver *sd)
   last_driver = &sd->super.super;
 
   last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
+  last_proto_server_options = &last_reader_options->proto_options.super;
+  last_multi_line_options = &last_proto_server_options->multi_line_options;
   last_sock_options = ((AFSocketSourceDriver *) last_driver)->socket_options;
   last_transport_mapper = ((AFSocketSourceDriver *) last_driver)->transport_mapper;
-  last_proto_server_options = &last_reader_options->proto_options.super;
 }
 
 static void
@@ -351,11 +354,21 @@ source_afinet_udp_option
 	: source_afinet_option
 	;
 
+source_afinet_multi_line_option
+	: KW_MULTI_LINE_MODE '(' string ')'
+		{
+			CHECK_ERROR(multi_line_options_set_mode(last_multi_line_options, $3), @3, "Invalid multi-line mode");
+			CHECK_ERROR(last_multi_line_options->mode == MLM_EMPTY_LINE_SEPARATED, @3, "Invalid multi-line mode, only 'empty-line-separated' supported for an AFInetSource yet");
+			free($3);
+		}
+	;
+
 source_afinet_option
 	: KW_LOCALIP '(' string ')'		{ afinet_sd_set_localip(last_driver, $3); free($3); }
 	| KW_IP '(' string ')'			{ afinet_sd_set_localip(last_driver, $3); free($3); }
 	| KW_LOCALPORT '(' string_or_number ')' { CHECK_ERROR(cfg_check_port($3), @3, "Illegal port number: %s", $3); afinet_sd_set_localport(last_driver, $3); free($3); }
 	| KW_PORT '(' string_or_number ')' { CHECK_ERROR(cfg_check_port($3), @3, "Illegal port number: %s", $3); afinet_sd_set_localport(last_driver, $3); free($3); }
+	| source_afinet_multi_line_option
 	| source_reader_option
 	| source_driver_option
 	| inet_socket_option
