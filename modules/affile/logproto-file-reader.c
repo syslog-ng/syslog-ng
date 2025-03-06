@@ -29,13 +29,13 @@ LogProtoServer *
 log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptions *options)
 {
   if (options->pad_size > 0)
-    return log_proto_padded_record_server_new(transport, &options->super, options->pad_size);
+    return log_proto_padded_record_server_new(transport, (LogProtoServerOptionsStorage *)options, options->pad_size);
   else
-    return log_proto_text_multiline_server_new(transport, &options->super);
+    return log_proto_text_multiline_server_new(transport, (LogProtoServerOptionsStorage *)options);
 }
 
 /* TODO: these functions only initialize the fields added on top of
- * LogProtoServerOptions, the rest is the responsibility of the LogReader.
+ * LogProtoServerOptionsStorage, the rest is the responsibility of the LogReader.
  * This whole Options structure has become very messy. There are a lot of them.
  *
  *   FileReaderOptions ->
@@ -48,10 +48,10 @@ log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptio
  * FileOpenerOptions is fortunately independent of this mess.
  *
  * LogProtoFileReaderOptions only needs to take care about its "extra"
- * fields on top of LogProtoServerOptions, that's why we don't call anything
+ * fields on top of LogProtoServerOptionsStorage, that's why we don't call anything
  * from the "inherited" class.  This is because that class is
  * defaulted/initialized/destroyed by LogReader.  This layer just manages
- * what we happen to store in addition to LogProtoServerOptions.
+ * what we happen to store in addition to LogProtoServerOptionsStorage.
  *
  * You have been warned!
  *
