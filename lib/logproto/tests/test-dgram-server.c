@@ -34,7 +34,7 @@ Test(log_proto, test_log_proto_dgram_server_no_encoding)
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
   proto = log_proto_dgram_server_new(
             log_transport_mock_endless_records_new(
               "0123456789ABCDEF0123456789ABCDEF", -1,
@@ -79,7 +79,7 @@ Test(log_proto, test_log_proto_dgram_server_ucs4)
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
   log_proto_server_options_set_encoding(&proto_server_options, "ucs-4");
   proto = log_proto_dgram_server_new(
             log_transport_mock_endless_records_new(
@@ -102,7 +102,7 @@ Test(log_proto, test_log_proto_dgram_server_invalid_ucs4)
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
   log_proto_server_options_set_encoding(&proto_server_options, "ucs-4");
   proto = log_proto_dgram_server_new(
             /* 31 bytes record size */
@@ -121,7 +121,7 @@ Test(log_proto, test_log_proto_dgram_server_iso_8859_2)
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
   log_proto_server_options_set_encoding(&proto_server_options, "iso-8859-2");
   proto = log_proto_dgram_server_new(
             log_transport_mock_endless_records_new(
@@ -142,7 +142,7 @@ Test(log_proto, test_log_proto_dgram_server_eof_handling)
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
   proto = log_proto_dgram_server_new(
             log_transport_mock_endless_records_new(
               /* no eol before EOF */

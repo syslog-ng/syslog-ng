@@ -222,7 +222,7 @@ log_proto_text_server_locate_next_eol(LogProtoTextServer *self, LogProtoBuffered
 static gboolean
 log_proto_text_server_message_size_too_large(LogProtoTextServer *self, gsize buffer_bytes)
 {
-  return buffer_bytes >= self->super.super.options->max_msg_size;
+  return buffer_bytes >= self->super.super.options->super.max_msg_size;
 }
 
 static inline gboolean
@@ -303,7 +303,8 @@ log_proto_text_server_free(LogProtoServer *s)
 }
 
 void
-log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, const LogProtoServerOptions *options)
+log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport,
+                           const LogProtoServerOptionsStorage *options)
 {
   log_proto_buffered_server_init(&self->super, transport, options);
   self->super.super.prepare = log_proto_text_server_prepare_method;
@@ -323,7 +324,7 @@ _find_nl_as_eom(const guchar *s, gsize n)
 
 void
 log_proto_text_with_nuls_server_init(LogProtoTextServer *self, LogTransport *transport,
-                                     const LogProtoServerOptions *options)
+                                     const LogProtoServerOptionsStorage *options)
 {
   log_proto_text_server_init(self, transport, options);
   self->find_eom = _find_nl_as_eom;
@@ -331,19 +332,19 @@ log_proto_text_with_nuls_server_init(LogProtoTextServer *self, LogTransport *tra
 
 void
 log_proto_text_multiline_server_init(LogProtoTextServer *self, LogTransport *transport,
-                                     const LogProtoServerOptions *options)
+                                     const LogProtoServerOptionsStorage *options)
 {
   log_proto_text_server_init(self, transport, options);
-  if (options->multi_line_options.mode != MLM_NONE)
+  if (options->super.multi_line_options.mode != MLM_NONE)
     {
       /* see logproto-file-reader.h for the detailed of the options mess */
-      MultiLineLogic *multi_line_logic = multi_line_factory_construct(&options->multi_line_options);
+      MultiLineLogic *multi_line_logic = multi_line_factory_construct(&options->super.multi_line_options);
       log_proto_text_server_set_multi_line((LogProtoServer *)self, multi_line_logic);
     }
 }
 
 LogProtoServer *
-log_proto_text_server_new(LogTransport *transport, const LogProtoServerOptions *options)
+log_proto_text_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options)
 {
   LogProtoTextServer *self = g_new0(LogProtoTextServer, 1);
 
@@ -352,7 +353,7 @@ log_proto_text_server_new(LogTransport *transport, const LogProtoServerOptions *
 }
 
 LogProtoServer *
-log_proto_text_with_nuls_server_new(LogTransport *transport, const LogProtoServerOptions *options)
+log_proto_text_with_nuls_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options)
 {
   LogProtoTextServer *self = g_new0(LogProtoTextServer, 1);
 
@@ -361,7 +362,7 @@ log_proto_text_with_nuls_server_new(LogTransport *transport, const LogProtoServe
 }
 
 LogProtoServer *
-log_proto_text_multiline_server_new(LogTransport *transport, const LogProtoServerOptions *options)
+log_proto_text_multiline_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options)
 {
   LogProtoTextServer *self = g_new0(LogProtoTextServer, 1);
 

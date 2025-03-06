@@ -34,8 +34,8 @@
 LogProtoServer *
 log_proto_indented_multiline_server_new(LogTransport *transport)
 {
-  LogProtoServerOptions *options = get_inited_proto_server_options();
-  options->multi_line_options.mode = MLM_INDENTED;
+  LogProtoServerOptionsStorage *options = get_inited_proto_server_options();
+  options->super.multi_line_options.mode = MLM_INDENTED;
 
   return log_proto_text_multiline_server_new(transport, options);
 }
@@ -45,7 +45,7 @@ test_proper_multiline(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
 
   proto = log_proto_indented_multiline_server_new(
             /* 32 bytes max line length */
@@ -75,7 +75,7 @@ test_line_without_continuation(LogTransportMockConstructor log_transport_mock_ne
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
 
   proto = log_proto_indented_multiline_server_new(
             /* 32 bytes max line length */
@@ -103,7 +103,7 @@ test_input_starts_with_continuation(LogTransportMockConstructor log_transport_mo
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
 
   proto = log_proto_indented_multiline_server_new(
             /* 32 bytes max line length */
@@ -131,7 +131,7 @@ test_multiline_at_eof(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
 
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
 
   proto = log_proto_indented_multiline_server_new(
             /* 32 bytes max line length */
