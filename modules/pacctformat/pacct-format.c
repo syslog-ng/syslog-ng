@@ -161,7 +161,7 @@ pacct_format_handler(const MsgFormatOptions *options, LogMessage *msg,
 
 static LogProtoServer *
 pacct_construct_proto(const MsgFormatOptions *options, LogTransport *transport,
-                      const LogProtoServerOptions *proto_options)
+                      const LogProtoServerOptionsStorage *proto_options)
 {
   return log_proto_binary_record_server_new(transport, proto_options, sizeof(acct_t));
 }

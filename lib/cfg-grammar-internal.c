@@ -30,7 +30,7 @@ LogSchedulerOptions *last_scheduler_options;
 LogParser *last_parser;
 FilterExprNode *last_filter_expr;
 LogSourceOptions *last_source_options;
-LogProtoServerOptions *last_proto_server_options;
+LogProtoServerOptionsStorage *last_proto_server_options;
 LogProtoClientOptions *last_proto_client_options;
 LogReaderOptions *last_reader_options;
 LogWriterOptions *last_writer_options;

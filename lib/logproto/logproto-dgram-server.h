@@ -32,6 +32,6 @@
  * This class reads input as datagrams, each datagram is a separate
  * message, regardless of embedded EOL/NUL characters.
  */
-LogProtoServer *log_proto_dgram_server_new(LogTransport *transport, const LogProtoServerOptions *options);
+LogProtoServer *log_proto_dgram_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options);
 
 #endif

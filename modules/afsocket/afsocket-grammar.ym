@@ -72,8 +72,8 @@ afsocket_grammar_set_source_driver(AFSocketSourceDriver *sd)
   last_driver = &sd->super.super;
 
   last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
-  last_proto_server_options = &last_reader_options->proto_options.super;
-  last_multi_line_options = &last_proto_server_options->multi_line_options;
+  last_proto_server_options = &last_reader_options->proto_options;
+  last_multi_line_options = &last_proto_server_options->super.multi_line_options;
   last_sock_options = ((AFSocketSourceDriver *) last_driver)->socket_options;
   last_transport_mapper = ((AFSocketSourceDriver *) last_driver)->transport_mapper;
 }

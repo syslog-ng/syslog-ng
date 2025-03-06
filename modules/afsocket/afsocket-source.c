@@ -155,7 +155,7 @@ afsocket_sc_init(LogPipe *s)
   if (!restored_kept_alive_source)
     {
       proto = log_proto_server_factory_construct(self->owner->proto_factory, NULL,
-                                                 &self->owner->reader_options.proto_options.super);
+                                                 &self->owner->reader_options.proto_options);
       if (!proto)
         {
           return FALSE;

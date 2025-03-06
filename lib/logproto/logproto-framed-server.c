@@ -224,7 +224,7 @@ _ensure_buffer(LogProtoFramedServer *self)
   if (G_LIKELY(self->buffer))
     return;
 
-  self->buffer_size = self->super.options->init_buffer_size;
+  self->buffer_size = self->super.options->super.init_buffer_size;
   self->buffer = g_malloc(self->buffer_size);
 }
 
@@ -259,19 +259,19 @@ _on_frame_extract(LogProtoFramedServer *self, LogProtoStatus *status)
 
   self->state = LPFSS_MESSAGE_EXTRACT;
 
-  if (self->frame_len > self->super.options->max_msg_size)
+  if (self->frame_len > self->super.options->super.max_msg_size)
     {
-      if (self->super.options->trim_large_messages)
+      if (self->super.options->super.trim_large_messages)
         {
           msg_debug("Incoming frame larger than log_msg_size(), need to trim.",
-                    evt_tag_int("log_msg_size", self->super.options->max_msg_size),
+                    evt_tag_int("log_msg_size", self->super.options->super.max_msg_size),
                     evt_tag_int("frame_length", self->frame_len));
           self->state = LPFSS_TRIM_MESSAGE_READ;
         }
       else
         {
           msg_error("Incoming frame larger than log_msg_size()",
-                    evt_tag_int("log_msg_size", self->super.options->max_msg_size),
+                    evt_tag_int("log_msg_size", self->super.options->super.max_msg_size),
                     evt_tag_int("frame_length", self->frame_len));
           *status = LPS_ERROR;
           return LPFSSCTRL_RETURN_WITH_STATUS;
@@ -425,7 +425,7 @@ log_proto_framed_server_free(LogProtoServer *s)
 }
 
 LogProtoServer *
-log_proto_framed_server_new(LogTransport *transport, const LogProtoServerOptions *options)
+log_proto_framed_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options)
 {
   LogProtoFramedServer *self = g_new0(LogProtoFramedServer, 1);
 

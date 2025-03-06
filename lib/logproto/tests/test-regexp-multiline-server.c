@@ -38,7 +38,7 @@ log_proto_prefix_garbage_multiline_server_new(LogTransport *transport,
                                               const gchar *prefix,
                                               const gchar *garbage)
 {
-  LogProtoServerOptions *options = get_inited_proto_server_options();
+  LogProtoServerOptions *options = &get_inited_proto_server_options()->super;
   MultiLineOptions *multi_line_options = &options->multi_line_options;
   multi_line_options_set_mode(multi_line_options, "prefix-garbage");
   if (prefix)
@@ -54,7 +54,7 @@ log_proto_prefix_suffix_multiline_server_new(LogTransport *transport,
                                              const gchar *prefix,
                                              const gchar *suffix)
 {
-  LogProtoServerOptions *options = get_inited_proto_server_options();
+  LogProtoServerOptions *options = &get_inited_proto_server_options()->super;
   MultiLineOptions *multi_line_options = &options->multi_line_options;
   multi_line_options_set_mode(multi_line_options, "prefix-suffix");
   if (prefix)

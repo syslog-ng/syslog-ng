@@ -99,9 +99,9 @@ _http_request_handler(LogProtoTextServer *s, LogProtoBufferedServerState *state,
 
 void
 log_proto_http_server_init(LogProtoHTTPServer *self, LogTransport *transport,
-                           const LogProtoServerOptions /* LogProtoHTTPServerOptions */ *options)
+                           const LogProtoHTTPServerOptionsStorage *options)
 {
-  log_proto_text_multiline_server_init((LogProtoTextServer *)self, transport, options);
+  log_proto_text_multiline_server_init((LogProtoTextServer *)self, transport, &options->storage);
   self->super.extracted_raw_data_handler = _http_request_handler;
   self->request_processor = _http_request_processor;
   self->request_header_checker = _check_request_headers;
@@ -112,10 +112,10 @@ log_proto_http_server_init(LogProtoHTTPServer *self, LogTransport *transport,
 
 LogProtoServer *
 log_proto_http_server_new(LogTransport *transport,
-                          const LogProtoServerOptions /* LogProtoHTTPServerOptions */ *options)
+                          const LogProtoServerOptionsStorage *options)
 {
   LogProtoHTTPServer *self = g_new0(LogProtoHTTPServer, 1);
 
-  log_proto_http_server_init(self, transport, options);
+  log_proto_http_server_init(self, transport, (LogProtoHTTPServerOptionsStorage *)options);
   return &self->super.super.super;
 }

@@ -32,7 +32,7 @@
  * This class reads input in equally sized chunks. The message is the
  * whole record, regardless of embedded NUL/NL characters.
  */
-LogProtoServer *log_proto_binary_record_server_new(LogTransport *transport, const LogProtoServerOptions *options,
+LogProtoServer *log_proto_binary_record_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options,
                                                    gint record_size);
 
 /*
@@ -41,7 +41,7 @@ LogProtoServer *log_proto_binary_record_server_new(LogTransport *transport, cons
  * This class reads input in equally sized chunks. The message lasts
  * until the first EOL/NUL character within the chunk.
  */
-LogProtoServer *log_proto_padded_record_server_new(LogTransport *transport, const LogProtoServerOptions *options,
+LogProtoServer *log_proto_padded_record_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options,
                                                    gint record_size);
 
 

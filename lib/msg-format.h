@@ -88,7 +88,7 @@ struct _MsgFormatHandler
    * the "pacct" plugin to set the record length the proper size
    */
   LogProtoServer *(*construct_proto)(const MsgFormatOptions *options, LogTransport *transport,
-                                     const LogProtoServerOptions *proto_options);
+                                     const LogProtoServerOptionsStorage *proto_options);
   gboolean (*parse)(const MsgFormatOptions *options, LogMessage *msg,
                     const guchar *data, gsize length,
                     gsize *problem_position);
