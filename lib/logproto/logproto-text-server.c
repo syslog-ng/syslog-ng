@@ -255,6 +255,8 @@ _fetch_msg_from_buffer(LogProtoTextServer *self, LogProtoBufferedServerState *st
   return FALSE;
 
 success:
+  if (self->extracted_raw_data_handler)
+    self->extracted_raw_data_handler(self, state, buffer_start, buffer_bytes);
   log_proto_text_server_remove_trailing_newline(msg, msg_len);
   return TRUE;
 }
