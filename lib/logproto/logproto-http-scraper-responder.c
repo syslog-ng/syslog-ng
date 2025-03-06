@@ -84,21 +84,22 @@ _check_request_headers(LogProtoHTTPServer *s, gchar *buffer_start, gsize buffer_
 
 void
 log_proto_http_scraper_responder_server_init(LogProtoHTTPScraperResponder *self, LogTransport *transport,
-                                             const LogProtoServerOptions *options)
+                                             const LogProtoHTTPScraperResponderOptionsStoreage *options)
 {
-  log_proto_http_server_init((LogProtoHTTPServer *)self, transport, options); //&options->super);
-  self->options = options;
+  log_proto_http_server_init((LogProtoHTTPServer *)self, transport,
+                             (LogProtoHTTPServerOptionsStorage *)options);
+  self->options = (const LogProtoHTTPScraperResponderOptions *)options;
   self->super.request_header_checker = _check_request_headers;
   self->super.response_body_composer = _compose_response_body;
 }
 
 LogProtoServer *
 log_proto_http_scraper_responder_server_new(LogTransport *transport,
-                                            const LogProtoServerOptions *options)
+                                            const LogProtoServerOptionsStorage *options)
 {
   LogProtoHTTPScraperResponder *self = g_new0(LogProtoHTTPScraperResponder, 1);
 
-  log_proto_http_scraper_responder_server_init(self, transport, options);
+  log_proto_http_scraper_responder_server_init(self, transport, (LogProtoHTTPScraperResponderOptionsStoreage *)options);
   return &self->super.super.super.super;
 }
 
@@ -117,14 +118,13 @@ log_proto_http_scraper_responder_options_init(LogProtoHTTPScraperResponderOption
 {
   if (options->initialized)
     return;
-  log_proto_server_options_init(&options->super, cfg);
+  log_proto_server_options_init((LogProtoServerOptionsStorage *)options, cfg);
   options->initialized = TRUE;
 }
 
 void
 log_proto_http_scraper_responder_destroy(LogProtoHTTPScraperResponderOptions *options)
 {
-  // if (options->destroy)
-  //   options->destroy(options);
+  log_proto_server_options_destroy((LogProtoServerOptionsStorage *)options);
   options->initialized = FALSE;
 }

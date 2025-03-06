@@ -380,9 +380,10 @@ _construct_proto(FileReader *self, gint fd)
 
   if ((format_handler && format_handler->construct_proto))
     {
-      log_proto_server_options_set_ack_tracker_factory(&proto_options->super,
+      log_proto_server_options_set_ack_tracker_factory(&proto_options->storage,
                                                        consecutive_ack_tracker_factory_new());
-      return format_handler->construct_proto(&reader_options->parse_options, transport, &proto_options->super);
+      return format_handler->construct_proto(&reader_options->parse_options, transport,
+                                             &proto_options->storage);
     }
 
   return file_opener_construct_src_proto(self->opener, transport, proto_options);
