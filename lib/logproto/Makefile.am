@@ -27,7 +27,7 @@ logproto_sources = \
 	lib/logproto/logproto-text-client.c  \
 	lib/logproto/logproto-text-server.c	\
 	lib/logproto/logproto-http-server.c \
-	lib/logproto/logproto-http-scraper-responder.h \
+	lib/logproto/logproto-http-scraper-responder.c \
 	lib/logproto/logproto-record-server.c \
 	lib/logproto/logproto-builtins.c
 

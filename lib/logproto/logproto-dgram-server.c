@@ -49,7 +49,7 @@ log_proto_dgram_server_fetch_from_buffer(LogProtoBufferedServer *s, const guchar
 }
 
 LogProtoServer *
-log_proto_dgram_server_new(LogTransport *transport, const LogProtoServerOptions *options)
+log_proto_dgram_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options)
 {
   LogProtoDGramServer *self = g_new0(LogProtoDGramServer, 1);
 
