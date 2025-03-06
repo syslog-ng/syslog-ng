@@ -133,5 +133,5 @@ stats_register_control_commands(void)
   control_register_command("STATS", control_connection_send_stats, NULL, TRUE);
   control_register_command("RESET_STATS", control_connection_reset_stats, NULL, FALSE);
   control_register_command("REMOVE_ORPHANED_STATS", control_connection_remove_orphans, NULL, FALSE);
-  control_register_command("QUERY", process_query_command, NULL, TRUE);
+  control_register_command("QUERY", stats_process_query_command, NULL, TRUE);
 }
