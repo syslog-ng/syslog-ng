@@ -85,7 +85,7 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
   self->control = log_pipe_ref(control);
 
   self->options = options;
-  log_proto_server_set_options(self->proto, &self->options->proto_options.super);
+  log_proto_server_set_options(self->proto, &self->options->proto_options);
 }
 
 void
@@ -815,7 +815,7 @@ void
 log_reader_options_defaults(LogReaderOptions *options)
 {
   log_source_options_defaults(&options->super);
-  log_proto_server_options_defaults(&options->proto_options.super);
+  log_proto_server_options_defaults(&options->proto_options);
   msg_format_options_defaults(&options->parse_options);
   options->fetch_limit = 10;
 }
@@ -851,7 +851,7 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
     return;
 
   log_source_options_init(&options->super, cfg, group_name);
-  log_proto_server_options_init(&options->proto_options.super, cfg);
+  log_proto_server_options_init(&options->proto_options, cfg);
   msg_format_options_init(&options->parse_options, cfg);
 
   if (options->check_hostname == -1)
@@ -882,7 +882,7 @@ void
 log_reader_options_destroy(LogReaderOptions *options)
 {
   log_source_options_destroy(&options->super);
-  log_proto_server_options_destroy(&options->proto_options.super);
+  log_proto_server_options_destroy(&options->proto_options);
   msg_format_options_destroy(&options->parse_options);
   options->initialized = FALSE;
 }

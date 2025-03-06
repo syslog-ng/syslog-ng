@@ -44,16 +44,18 @@ struct _LogProtoTextServer
  *
  * This class processes text files/streams. Each record is terminated via an EOL character.
  */
-LogProtoServer *log_proto_text_server_new(LogTransport *transport, const LogProtoServerOptions *options);
-LogProtoServer *log_proto_text_with_nuls_server_new(LogTransport *transport, const LogProtoServerOptions *options);
-LogProtoServer *log_proto_text_multiline_server_new(LogTransport *transport, const LogProtoServerOptions *options);
+LogProtoServer *log_proto_text_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options);
+LogProtoServer *log_proto_text_with_nuls_server_new(LogTransport *transport,
+                                                    const LogProtoServerOptionsStorage *options);
+LogProtoServer *log_proto_text_multiline_server_new(LogTransport *transport,
+                                                    const LogProtoServerOptionsStorage *options);
 
 void log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport,
-                                const LogProtoServerOptions *options);
+                                const LogProtoServerOptionsStorage *options);
 void log_proto_text_with_nuls_server_init(LogProtoTextServer *self, LogTransport *transport,
-                                          const LogProtoServerOptions *options);
+                                          const LogProtoServerOptionsStorage *options);
 void log_proto_text_multiline_server_init(LogProtoTextServer *self, LogTransport *transport,
-                                          const LogProtoServerOptions *options);
+                                          const LogProtoServerOptionsStorage *options);
 
 LogProtoPrepareAction log_proto_text_server_prepare_method(LogProtoServer *s, GIOCondition *cond, gint *timeout);
 
