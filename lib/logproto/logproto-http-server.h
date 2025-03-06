@@ -26,21 +26,18 @@
 #include "logproto/logproto-server.h"
 #include "logproto/logproto-text-server.h"
 
-/* NOTE: This class is just a very-very thin, basic http request hendler.
- *       A more complex implementation, if ever needed, should have its own
- *       settings by a good chance.
- *       Now, it is added to the builtin protos and DEFINE_LOG_PROTO_SERVER
- *       can generate a proto server with the default LogProtoServerOptions
- *       so, a more complex impl. either requires modification of
- *       DEFINE_LOG_PROTO_SERVER, and probably the rewriting of the options
- *       handling, and/or will need its own grammar, etc.
- *
-  // typedef struct _LogProtoHTTPServerOptions LogProtoHTTPServerOptions;
-  // struct _LogProtoHTTPServerOptions
-  // {
-  //   LogProtoServerOptions super; // LogProtoServerOptionsStorage ???
-// };
-*/
+typedef struct _LogProtoHTTPServerOptions
+{
+  LogProtoServerOptions super;
+
+} LogProtoHTTPServerOptions;
+
+typedef union _LogProtoHTTPServerOptionsStorage
+{
+  LogProtoServerOptionsStorage storage;
+  LogProtoHTTPServerOptions super;
+
+} LogProtoHTTPServerOptionsStorage;
 
 typedef struct _LogProtoHTTPServer LogProtoHTTPServer;
 struct _LogProtoHTTPServer
@@ -57,8 +54,8 @@ struct _LogProtoHTTPServer
 };
 
 LogProtoServer *log_proto_http_server_new(LogTransport *transport,
-                                          const LogProtoServerOptions /* LogProtoHTTPServerOptions */ *options);
+                                          const LogProtoServerOptionsStorage *options);
 void log_proto_http_server_init(LogProtoHTTPServer *self, LogTransport *transport,
-                                const LogProtoServerOptions /* LogProtoHTTPServerOptions */ *options);
+                                const LogProtoHTTPServerOptionsStorage *options);
 
 #endif

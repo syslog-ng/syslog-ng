@@ -26,7 +26,7 @@
 
 #include "control/control.h"
 
-GString * stats_execute_query_command(const gchar *cmd, gpointer user_data, gboolean *cancelled);
+GString *stats_execute_query_command(const gchar *cmd, gpointer user_data, gboolean *cancelled);
 void stats_process_query_command(ControlConnection *cc, GString *cmd, gpointer user_data, gboolean *cancelled);
 
 #endif

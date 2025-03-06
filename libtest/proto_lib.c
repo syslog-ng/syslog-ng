@@ -29,7 +29,7 @@
 #include "cfg.h"
 #include <string.h>
 
-LogProtoServerOptions proto_server_options;
+LogProtoServerOptionsStorage proto_server_options;
 
 void
 assert_proto_server_status(LogProtoServer *proto, LogProtoStatus status, LogProtoStatus expected_status)

@@ -30,20 +30,27 @@
 #define STT_QUERY 0x02
 
 /* options */
-typedef struct _LogProtoHTTPScraperResponderOptions LogProtoHTTPScraperResponderOptions;
-struct _LogProtoHTTPScraperResponderOptions
+typedef struct _LogProtoHTTPScraperResponderOptions
 {
-  LogProtoServerOptions /* LogProtoHTTPServerOptions */ super;
+  LogProtoHTTPServerOptions super;
   guint8 stat_type;
   gboolean initialized;
-};
+
+} LogProtoHTTPScraperResponderOptions;
+
+typedef union _LogProtoHTTPScraperResponderOptionsStoreage
+{
+  LogProtoServerOptionsStorage storage;
+  LogProtoHTTPScraperResponderOptions super;
+
+} LogProtoHTTPScraperResponderOptionsStoreage;
 
 /* LogProtoHTTPScraperResponder */
 typedef struct _LogProtoHTTPScraperResponder LogProtoHTTPScraperResponder;
 struct _LogProtoHTTPScraperResponder
 {
   LogProtoHTTPServer super;
-  LogProtoServerOptions/*Storage*/ *options;
+  const LogProtoHTTPScraperResponderOptions *options;
 };
 
 void log_proto_http_scraper_responder_options_defaults(LogProtoHTTPScraperResponderOptions *options);
@@ -53,9 +60,9 @@ void log_proto_http_scraper_responder_destroy(LogProtoHTTPScraperResponderOption
 
 LogProtoServer *log_proto_http_scraper_responder_server_new(
   LogTransport *transport,
-  const LogProtoServerOptions *options);
+  const LogProtoServerOptionsStorage *options);
 void log_proto_http_scraper_responder_server_init(LogProtoHTTPScraperResponder *self,
                                                   LogTransport *transport,
-                                                  const LogProtoServerOptions *options);
+                                                  const LogProtoHTTPScraperResponderOptionsStoreage *options);
 
 #endif
