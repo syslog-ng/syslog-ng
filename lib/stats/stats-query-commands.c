@@ -226,17 +226,24 @@ _dispatch_query(gint cmd_id, const gchar *output_fmt, const gchar *filter_expr, 
   return QUERY_CMDS[cmd_id](output_fmt, filter_expr, result);
 }
 
-void
-process_query_command(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
+GString *
+stats_execute_query_command(const gchar *command, gpointer user_data, gboolean *cancelled)
 {
   GString *result = g_string_new("");
-  gchar **cmds = g_strsplit(command->str, " ", 4);
+  gchar **cmds = g_strsplit(command, " ", 4);
 
   g_assert(g_str_equal(cmds[CMD_STR], "QUERY"));
 
   _dispatch_query(_command_str_to_id(cmds[QUERY_CMD_STR]), cmds[QUERY_OUT_FMT_STR], cmds[QUERY_FILTER_STR], result);
 
   g_strfreev(cmds);
+  return result;
+}
+
+void
+stats_process_query_command(ControlConnection *cc, GString *command, gpointer user_data, gboolean *cancelled)
+{
+  GString *result = stats_execute_query_command(command->str, user_data, cancelled);
 
   if (result->len == 0)
     g_string_assign(result, "\n");
