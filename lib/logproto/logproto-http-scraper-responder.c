@@ -36,14 +36,14 @@ _generate_batched_response(const gchar *record, gpointer user_data)
 }
 
 static GString *
-_compose_response_body(LogProtoHTTPServer *s)
+_compose_prometheus_response_body(LogProtoHTTPServer *s)
 {
   LogProtoHTTPScraperResponder *self = (LogProtoHTTPScraperResponder *)s;
 
   GString *stats = NULL;
   gboolean cancelled = FALSE;
 
-  if (TRUE)//self->options->stat_type == STT_STAT)
+  if (self->options->stat_type == STT_STAT)
     {
       stats = g_string_new(NULL);
       gpointer args[] = {self, &stats};
@@ -56,11 +56,29 @@ _compose_response_body(LogProtoHTTPServer *s)
   return stats;
 }
 
-static gboolean
-_check_request_headers(LogProtoHTTPServer *s, gchar *buffer_start, gsize buffer_bytes)
+static GString *
+_compose_response_body(LogProtoHTTPServer *s)
 {
-  //LogProtoHTTPScraperResponder *self = (LogProtoHTTPScraperResponder *)s;
+  LogProtoHTTPScraperResponder *self = (LogProtoHTTPScraperResponder *)s;
+  GString *stats = NULL;
 
+  // Once we have more scraspers to handle these should go into a separate class instead
+  switch (self->options->scraper_type)
+    {
+    case SCT_PROMETHEUS:
+      stats = _compose_prometheus_response_body(s);
+      break;
+    default:
+      g_assert(FALSE && "Unknown scraper type");
+      break;
+    }
+
+  return stats;
+}
+
+static gboolean
+_check_prometheus_request_headers(LogProtoHTTPServer *s, gchar *buffer_start, gsize buffer_bytes)
+{
   // TODO: add a generic header pareser to LogProtoHTTPServer and use it here
   gchar **lines = g_strsplit(buffer_start, "\r\n", 2);
 
@@ -82,12 +100,32 @@ _check_request_headers(LogProtoHTTPServer *s, gchar *buffer_start, gsize buffer_
   return FALSE == broken;
 }
 
+static gboolean
+_check_request_headers(LogProtoHTTPServer *s, gchar *buffer_start, gsize buffer_bytes)
+{
+  LogProtoHTTPScraperResponder *self = (LogProtoHTTPScraperResponder *)s;
+  gboolean result = FALSE;
+
+  // Once we have more scraspers to handle these should go into a separate class instead
+  switch (self->options->scraper_type)
+    {
+    case SCT_PROMETHEUS:
+      result = _check_prometheus_request_headers(s, buffer_start, buffer_bytes);
+      break;
+    default:
+      g_assert(FALSE && "Unknown scraper type");
+      break;
+    }
+  return result;
+}
+
 void
 log_proto_http_scraper_responder_server_init(LogProtoHTTPScraperResponder *self, LogTransport *transport,
-                                             const LogProtoHTTPScraperResponderOptionsStoreage *options)
+                                             const LogProtoHTTPScraperResponderOptionsStorage *options)
 {
   log_proto_http_server_init((LogProtoHTTPServer *)self, transport,
                              (LogProtoHTTPServerOptionsStorage *)options);
+
   self->options = (const LogProtoHTTPScraperResponderOptions *)options;
   self->super.request_header_checker = _check_request_headers;
   self->super.response_body_composer = _compose_response_body;
@@ -99,32 +137,53 @@ log_proto_http_scraper_responder_server_new(LogTransport *transport,
 {
   LogProtoHTTPScraperResponder *self = g_new0(LogProtoHTTPScraperResponder, 1);
 
-  log_proto_http_scraper_responder_server_init(self, transport, (LogProtoHTTPScraperResponderOptionsStoreage *)options);
+  log_proto_http_scraper_responder_server_init(self, transport, (LogProtoHTTPScraperResponderOptionsStorage *)options);
   return &self->super.super.super.super;
 }
 
 /* Options */
 
 void
-log_proto_http_scraper_responder_options_defaults(LogProtoHTTPScraperResponderOptions *options)
+log_proto_http_scraper_responder_options_defaults(LogProtoHTTPScraperResponderOptionsStorage *options)
 {
-  memset(options, 0, sizeof(*options));
-  options->stat_type = STT_STAT;
+  log_proto_http_server_options_defaults((LogProtoHTTPServerOptionsStorage *)&options->storage);
+
+  options->super.stat_type = STT_STAT;
+  options->super.scraper_type = SCT_PROMETHEUS;
 }
 
 void
-log_proto_http_scraper_responder_options_init(LogProtoHTTPScraperResponderOptions *options,
+log_proto_http_scraper_responder_options_init(LogProtoHTTPScraperResponderOptionsStorage *options,
                                               GlobalConfig *cfg)
 {
-  if (options->initialized)
+  if (options->super.initialized)
     return;
-  log_proto_server_options_init((LogProtoServerOptionsStorage *)options, cfg);
-  options->initialized = TRUE;
+
+  log_proto_http_server_options_init((LogProtoHTTPServerOptionsStorage *)&options->storage, cfg);
+
+  if (options->super.stat_type == 0)
+    options->super.stat_type = STT_STAT;
+  if (options->super.scraper_type == 0)
+    options->super.scraper_type = SCT_PROMETHEUS;
+
+  options->super.initialized = TRUE;
+}
+
+gboolean
+log_proto_http_scraper_responder_options_validate(LogProtoHTTPScraperResponderOptionsStorage *options)
+{
+  if (options->super.stat_type == STT_STAT || options->super.stat_type == STT_QUERY)
+    {
+      msg_error("prometheus-scraper-response(), type must be 'stat' or 'query'");
+      return FALSE;
+    }
+
+  return TRUE;
 }
 
 void
-log_proto_http_scraper_responder_destroy(LogProtoHTTPScraperResponderOptions *options)
+log_proto_http_scraper_responder_destroy(LogProtoHTTPScraperResponderOptionsStorage *options)
 {
-  log_proto_server_options_destroy((LogProtoServerOptionsStorage *)options);
-  options->initialized = FALSE;
+  log_proto_http_server_destroy((LogProtoHTTPServerOptionsStorage *)&options->storage);
+  options->super.initialized = FALSE;
 }
