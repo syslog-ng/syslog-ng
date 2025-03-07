@@ -28,7 +28,8 @@
 
 typedef struct _LogProtoHTTPServerOptions
 {
-  LogProtoServerOptions super;
+  LogProtoServerOptions super; // This must be the first !!!
+  gboolean initialized;
 
 } LogProtoHTTPServerOptions;
 
@@ -43,6 +44,7 @@ typedef struct _LogProtoHTTPServer LogProtoHTTPServer;
 struct _LogProtoHTTPServer
 {
   LogProtoTextServer super;
+  const LogProtoHTTPServerOptionsStorage *options;
 
   GString *(*request_processor)(LogProtoHTTPServer *s, LogProtoBufferedServerState *state,
                                 const guchar *buffer_start, gsize buffer_bytes);
@@ -52,6 +54,10 @@ struct _LogProtoHTTPServer
   GString *(*response_body_composer)(LogProtoHTTPServer *self);
   gssize (*response_sender)(LogProtoHTTPServer *self, const gchar *data, gsize data_len, gboolean close_after_sent);
 };
+
+void log_proto_http_server_options_defaults(LogProtoHTTPServerOptionsStorage *options);
+void log_proto_http_server_options_init(LogProtoHTTPServerOptionsStorage *options, GlobalConfig *cfg);
+void log_proto_http_server_destroy(LogProtoHTTPServerOptionsStorage *options);
 
 LogProtoServer *log_proto_http_server_new(LogTransport *transport,
                                           const LogProtoServerOptionsStorage *options);

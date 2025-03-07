@@ -102,6 +102,7 @@ log_proto_http_server_init(LogProtoHTTPServer *self, LogTransport *transport,
                            const LogProtoHTTPServerOptionsStorage *options)
 {
   log_proto_text_multiline_server_init((LogProtoTextServer *)self, transport, &options->storage);
+  self->options = options;
   self->super.extracted_raw_data_handler = _http_request_handler;
   self->request_processor = _http_request_processor;
   self->request_header_checker = _check_request_headers;
@@ -118,4 +119,37 @@ log_proto_http_server_new(LogTransport *transport,
 
   log_proto_http_server_init(self, transport, (LogProtoHTTPServerOptionsStorage *)options);
   return &self->super.super.super;
+}
+
+/* Options */
+
+void
+log_proto_http_server_options_defaults(LogProtoHTTPServerOptionsStorage *options)
+{
+  log_proto_server_options_defaults((LogProtoServerOptionsStorage *)options);
+}
+
+void
+log_proto_http_server_options_init(LogProtoHTTPServerOptionsStorage *options,
+                                   GlobalConfig *cfg)
+{
+  if (options->super.initialized)
+    return;
+
+  log_proto_server_options_init(&options->storage, cfg);
+
+  options->super.initialized = TRUE;
+}
+
+gboolean
+log_proto_http_server_options_validate(LogProtoHTTPServerOptionsStorage *options)
+{
+  return log_proto_server_options_validate(&options->storage);
+}
+
+void
+log_proto_http_server_destroy(LogProtoHTTPServerOptionsStorage *options)
+{
+  log_proto_server_options_destroy(&options->storage);
+  options->super.initialized = FALSE;
 }
