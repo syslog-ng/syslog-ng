@@ -29,12 +29,17 @@
 #define STT_STAT  0x01
 #define STT_QUERY 0x02
 
+/* Stat type flags */
+#define SCT_PROMETHEUS  0x01
+
 /* options */
 typedef struct _LogProtoHTTPScraperResponderOptions
 {
-  LogProtoHTTPServerOptions super;
-  guint8 stat_type;
+  LogProtoHTTPServerOptions super; // This must be the first !!!
   gboolean initialized;
+  guint8 stat_type;
+  // Once we have more scraspers to handle these should go into a separate class
+  guint8 scraper_type;
 
 } LogProtoHTTPScraperResponderOptions;
 
@@ -43,7 +48,7 @@ typedef union _LogProtoHTTPScraperResponderOptionsStoreage
   LogProtoServerOptionsStorage storage;
   LogProtoHTTPScraperResponderOptions super;
 
-} LogProtoHTTPScraperResponderOptionsStoreage;
+} LogProtoHTTPScraperResponderOptionsStorage;
 
 /* LogProtoHTTPScraperResponder */
 typedef struct _LogProtoHTTPScraperResponder LogProtoHTTPScraperResponder;
@@ -53,16 +58,16 @@ struct _LogProtoHTTPScraperResponder
   const LogProtoHTTPScraperResponderOptions *options;
 };
 
-void log_proto_http_scraper_responder_options_defaults(LogProtoHTTPScraperResponderOptions *options);
-void log_proto_http_scraper_responder_options_init(LogProtoHTTPScraperResponderOptions *options,
+void log_proto_http_scraper_responder_options_defaults(LogProtoHTTPScraperResponderOptionsStorage *options);
+void log_proto_http_scraper_responder_options_init(LogProtoHTTPScraperResponderOptionsStorage *options,
                                                    GlobalConfig *cfg);
-void log_proto_http_scraper_responder_destroy(LogProtoHTTPScraperResponderOptions *options);
+void log_proto_http_scraper_responder_destroy(LogProtoHTTPScraperResponderOptionsStorage *options);
 
 LogProtoServer *log_proto_http_scraper_responder_server_new(
   LogTransport *transport,
   const LogProtoServerOptionsStorage *options);
 void log_proto_http_scraper_responder_server_init(LogProtoHTTPScraperResponder *self,
                                                   LogTransport *transport,
-                                                  const LogProtoHTTPScraperResponderOptionsStoreage *options);
+                                                  const LogProtoHTTPScraperResponderOptionsStorage *options);
 
 #endif
