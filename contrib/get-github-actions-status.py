@@ -7,8 +7,8 @@ import urllib.request
 from time import sleep
 
 
-def get_workflow_runs(workflow):
-    url = "https://api.github.com/repos/syslog-ng/syslog-ng/actions/workflows/{}.yml/runs?branch=master".format(workflow)
+def get_workflow_runs(workflow, branch='develop'):
+    url = "https://api.github.com/repos/syslog-ng/syslog-ng/actions/workflows/{}.yml/runs?branch={}".format(workflow, branch)
     request = urllib.request.Request(url, None, {})
     try:
         with urllib.request.urlopen(request) as response:
@@ -27,8 +27,12 @@ def get_workflow_runs(workflow):
 
 def main():
     workflow = sys.argv[1]
+    try:
+      branch = sys.argv[2]
+    except IndexError:
+      branch = 'develop'
     while True:
-        runs = get_workflow_runs(workflow)
+        runs = get_workflow_runs(workflow, branch)
         not_pr_runs = filter(lambda run: run["event"] != "pull_request", runs)
         latest_run = max(not_pr_runs, key=lambda run: run["updated_at"])
 
