@@ -47,7 +47,7 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/affile-plugin.c \
 	modules/affile/file-list.h				\
 	modules/affile/file-list.c				\
-  modules/affile/affile-dest-internal-queue-filter.h \
+	modules/affile/affile-dest-internal-queue-filter.h \
 	modules/affile/logrotate.h \
 	modules/affile/logrotate.c
 
