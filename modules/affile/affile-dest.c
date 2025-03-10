@@ -183,7 +183,7 @@ affile_dw_reopen(AFFileDestWriter *self)
 }
 
 /*
- * This function checks is logrotation should be performed based on the current
+ * This function checks if logrotation should be performed based on the current
  * options and the filename. After rotating the logs the current logfile is
  * reopened and the new fd returned through the pointer arg.
  *
