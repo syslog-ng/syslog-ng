@@ -209,7 +209,7 @@ affile_dw_logrotate(AFFileDestWriter *self, gint *fd)
           FileOpenerResult open_result = file_opener_open_fd(self->owner->file_opener, self->filename, AFFILE_DIR_WRITE, fd);
           if (open_result != FILE_OPENER_RESULT_SUCCESS) return FALSE;
 
-          msg_debug("LOGROTATE: Reopened log file",
+          msg_debug("Reopened log file",
                     evt_tag_str("filename", self->filename),
                     evt_tag_int("new-fd", *fd));
         }

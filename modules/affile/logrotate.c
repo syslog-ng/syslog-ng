@@ -56,7 +56,7 @@ gboolean is_logrotate_pending(LogRotateOptions *logrotate_options, const gchar *
   int res = stat(filename, &st);
   if (res == -1)
     {
-      msg_error("LOGROTATE: Error reading file stats",
+      msg_error("Error reading file stats during log-rotation",
                 evt_tag_str("filename", filename),
                 evt_tag_errno("errno", errno));
       return LR_ERROR;
@@ -81,7 +81,7 @@ LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *f
 
   g_assert (logrotate_options->max_rotations > 0);
 
-  msg_info("LOGROTATE: Maximum log-file size reached, rotating log file ... ",
+  msg_info("Maximum log file size reached, rotating log file ... ",
            evt_tag_str("filename", filename));
 
   int res;
@@ -93,7 +93,7 @@ LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *f
   current_filename = g_strdup_printf("%s.%ld", filename, logrotate_options->max_rotations);
   if (g_file_test(current_filename, G_FILE_TEST_EXISTS))
     {
-      msg_debug("LOGROTATE: Deleting oldest log-file",
+      msg_debug("Deleting oldest log file",
                 evt_tag_str("filename", current_filename));
       res = remove(current_filename);
 
@@ -109,7 +109,7 @@ LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *f
       if (g_file_test(current_filename, G_FILE_TEST_EXISTS))
         {
           rotated_filename = g_strdup_printf("%s.%ld", filename, i+1);
-          msg_debug("LOGROTATE: Rotating log-file",
+          msg_debug("Rotating log file",
                     evt_tag_str("filename", current_filename),
                     evt_tag_str("new_filename", rotated_filename));
           res = rename(current_filename, rotated_filename);
@@ -126,7 +126,7 @@ LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *f
     {
       current_filename = g_strdup(filename);
       rotated_filename = g_strdup_printf("%s.%d", filename, 1);
-      msg_debug("LOGROTATE: Rotating ACTIVE log-file",
+      msg_debug("Rotating ACTIVE log file",
                 evt_tag_str("filename", current_filename),
                 evt_tag_str("new_filename", rotated_filename));
       res = rename(current_filename, rotated_filename);
@@ -145,7 +145,7 @@ LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *f
 logrotate_error_free_rotated_filename:
   g_free(rotated_filename);
 logrotate_error_free_current_filename:
-  msg_error("LOGROTATE: Error renaming or deleting log file",
+  msg_error("Error renaming or deleting log file during log-rotation",
             evt_tag_str("filename", current_filename),
             evt_tag_errno("errno", errno));
   g_free(current_filename);
