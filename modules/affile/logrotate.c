@@ -91,7 +91,7 @@ LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *f
   // (1) check if max_rotations is already reached, if so delete oldest file
   // assuming 'filename' is the prefix of all logfiles, whereas the orginal log is named after the prefix
   current_filename = g_strdup_printf("%s.%ld", filename, logrotate_options->max_rotations);
-  if(g_file_test(current_filename, G_FILE_TEST_EXISTS))
+  if (g_file_test(current_filename, G_FILE_TEST_EXISTS))
     {
       msg_debug("LOGROTATE: Deleting oldest log-file",
                 evt_tag_str("filename", current_filename));
@@ -103,10 +103,10 @@ LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *f
 
 
   // (2) rename existing rotated files, shift file name by postfix
-  for(gsize i = logrotate_options->max_rotations-1; i > 0; i--)
+  for (gsize i = logrotate_options->max_rotations-1; i > 0; i--)
     {
       current_filename = g_strdup_printf("%s.%ld", filename, i);
-      if(g_file_test(current_filename, G_FILE_TEST_EXISTS))
+      if (g_file_test(current_filename, G_FILE_TEST_EXISTS))
         {
           rotated_filename = g_strdup_printf("%s.%ld", filename, i+1);
           msg_debug("LOGROTATE: Rotating log-file",
@@ -122,7 +122,7 @@ LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *f
     }
 
   // (3) rename current logfile
-  if(g_file_test(filename, G_FILE_TEST_EXISTS))
+  if (g_file_test(filename, G_FILE_TEST_EXISTS))
     {
       current_filename = g_strdup(filename);
       rotated_filename = g_strdup_printf("%s.%d", filename, 1);
