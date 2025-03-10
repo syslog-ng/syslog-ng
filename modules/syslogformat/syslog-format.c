@@ -135,7 +135,10 @@ _syslog_format_parse_pri(LogMessage *msg, const guchar **data, gint *length, gui
         {
           if (isdigit(*src))
             {
-              pri = pri * 10 + ((*src) - '0');
+              if (__builtin_mul_overflow(pri, 10, &pri))
+                return FALSE;
+              if (__builtin_add_overflow(pri, ((*src) - '0'), &pri))
+                return FALSE;
             }
           else
             {
