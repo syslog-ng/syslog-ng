@@ -44,13 +44,22 @@ void logrotate_options_defaults(LogRotateOptions *logrotate_options)
 
 gboolean is_logrotate_enabled(LogRotateOptions *logrotate_options)
 {
-  if (logrotate_options == NULL) return FALSE;
-  else return logrotate_options->enable;
+  if (logrotate_options == NULL)
+    {
+      return FALSE;
+    }
+  else
+    {
+      return logrotate_options->enable;
+    }
 }
 
 gboolean is_logrotate_pending(LogRotateOptions *logrotate_options, const gchar *filename)
 {
-  if (logrotate_options == NULL || filename == NULL) return FALSE;
+  if (logrotate_options == NULL || filename == NULL)
+    {
+      return FALSE;
+    }
 
   struct stat st;
   int res = stat(filename, &st);
@@ -77,7 +86,10 @@ gboolean is_logrotate_pending(LogRotateOptions *logrotate_options, const gchar *
  */
 LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *filename)
 {
-  if (logrotate_options == NULL || filename == NULL) return LR_ERROR;
+  if (logrotate_options == NULL || filename == NULL)
+    {
+      return LR_ERROR;
+    }
 
   g_assert (logrotate_options->max_rotations > 0);
 
@@ -97,7 +109,10 @@ LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *f
                 evt_tag_str("filename", current_filename));
       res = remove(current_filename);
 
-      if (res == -1) goto logrotate_error_free_current_filename;
+      if (res == -1)
+        {
+          goto logrotate_error_free_current_filename;
+        }
     }
   g_free(current_filename);
 
@@ -114,7 +129,10 @@ LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *f
                     evt_tag_str("new_filename", rotated_filename));
           res = rename(current_filename, rotated_filename);
 
-          if (res == -1) goto logrotate_error_free_rotated_filename;
+          if (res == -1)
+            {
+              goto logrotate_error_free_rotated_filename;
+            }
 
           g_free(rotated_filename);
         }
@@ -131,7 +149,10 @@ LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *f
                 evt_tag_str("new_filename", rotated_filename));
       res = rename(current_filename, rotated_filename);
 
-      if (res == -1) goto logrotate_error_free_rotated_filename;
+      if (res == -1)
+        {
+          goto logrotate_error_free_rotated_filename;
+        }
 
       g_free(rotated_filename);
       g_free(current_filename);
