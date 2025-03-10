@@ -24,9 +24,16 @@
 #define APPMODEL_H_INCLUDED 1
 
 #include "module-config.h"
-#include "appmodel-context.h"
+#include "application.h"
+#include "transformation.h"
 
 AppModelContext *appmodel_get_context(GlobalConfig *cfg);
 void appmodel_register_application(GlobalConfig *cfg, Application *application);
+void appmodel_iter_applications(GlobalConfig *cfg,
+                                void (*foreach)(Application *app, gpointer user_data),
+                                gpointer user_data);
+
+void appmodel_register_transformation(GlobalConfig *cfg, Transformation *transformation);
+void appmodel_iter_transformations(GlobalConfig *cfg, void (*foreach)(Transformation *transformation, gpointer user_data), gpointer user_data);
 
 #endif

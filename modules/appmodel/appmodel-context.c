@@ -25,83 +25,105 @@
 
 #include <string.h>
 
+void
+appmodel_object_init_instance(AppModelObject *self, const gchar *type, const gchar *name, const gchar *instance)
+{
+  self->type = g_strdup(type);
+  self->name = g_strdup(name);
+  self->instance = g_strdup(instance);
+}
+
+void
+appmodel_object_free(AppModelObject *self)
+{
+  if (self->free_fn)
+    self->free_fn(self);
+
+  g_free(self->instance);
+  g_free(self->type);
+  g_free(self->name);
+
+  g_free(self);
+}
+
 struct _AppModelContext
 {
   /* the context structure is registered into GlobalConfig, thus it must be
    * derived from ModuleConfig */
   ModuleConfig super;
-  GHashTable *applications;
-  GPtrArray *application_ptrs;
+  GHashTable *objects;
+  GPtrArray *object_ptrs;
 };
 
 static gboolean
-_application_equal(gconstpointer v1, gconstpointer v2)
+_object_equal(gconstpointer v1, gconstpointer v2)
 {
-  Application *r1 = (Application *) v1;
-  Application *r2 = (Application *) v2;
+  AppModelObject *r1 = (AppModelObject *) v1;
+  AppModelObject *r2 = (AppModelObject *) v2;
 
   if (strcmp(r1->name, r2->name) != 0)
     return FALSE;
 
-  if (strcmp(r1->topic, r2->topic) != 0)
+  if (strcmp(r1->instance, r2->instance) != 0)
     return FALSE;
 
   return TRUE;
 }
 
 static guint
-_application_hash(gconstpointer v)
+_object_hash(gconstpointer v)
 {
-  Application *r = (Application *) v;
+  AppModelObject *r = (AppModelObject *) v;
 
-  return g_str_hash(r->name) + g_str_hash(r->topic);
+  return g_str_hash(r->name) + g_str_hash(r->instance);
 }
 
 void
-appmodel_context_register_application(AppModelContext *self, Application *app)
+appmodel_context_register_object(AppModelContext *self, AppModelObject *app)
 {
-  Application *orig_app;
+  AppModelObject *orig_app;
 
-  orig_app = g_hash_table_lookup(self->applications, app);
+  orig_app = g_hash_table_lookup(self->objects, app);
   if (!orig_app)
     {
-      g_hash_table_insert(self->applications, app, app);
-      g_ptr_array_add(self->application_ptrs, app);
+      g_hash_table_insert(self->objects, app, app);
+      g_ptr_array_add(self->object_ptrs, app);
     }
   else
     {
-      g_hash_table_replace(self->applications, app, app);
+      g_hash_table_replace(self->objects, app, app);
 
-      g_ptr_array_remove(self->application_ptrs, orig_app);
-      g_ptr_array_add(self->application_ptrs, app);
+      g_ptr_array_remove(self->object_ptrs, orig_app);
+      g_ptr_array_add(self->object_ptrs, app);
     }
 }
 
-Application *
-appmodel_context_lookup_application(AppModelContext *self, const gchar *name, const gchar *topic)
+AppModelObject *
+appmodel_context_lookup_object(AppModelContext *self, const gchar *type, const gchar *name, const gchar *instance)
 {
-  Application lookup_app = { 0 };
+  AppModelObject lookup_app = { 0 };
 
+  lookup_app.type = (gchar *) type;
   lookup_app.name = (gchar *) name;
-  lookup_app.topic = (gchar *) topic;
-  return (Application *) g_hash_table_lookup(self->applications, &lookup_app);
+  lookup_app.instance = (gchar *) instance;
+  return (AppModelObject *) g_hash_table_lookup(self->objects, &lookup_app);
 }
 
 void
-appmodel_context_iter_applications(AppModelContext *self, void (*foreach)(Application *app, Application *base_app,
-                                   gpointer user_data), gpointer user_data)
+appmodel_context_iter_objects(AppModelContext *self,
+                              const gchar *type,
+                              AppModelContextIterFunc foreach,
+                              gpointer user_data)
 {
   gint i;
 
-  for (i = 0; i < self->application_ptrs->len; i++)
+  for (i = 0; i < self->object_ptrs->len; i++)
     {
-      Application *app = g_ptr_array_index(self->application_ptrs, i);
+      AppModelObject *app = g_ptr_array_index(self->object_ptrs, i);
 
-      if (strcmp(app->topic, "*") == 0)
+      if (strcmp(app->type, type) != 0)
         continue;
-
-      Application *base_app = appmodel_context_lookup_application(self, app->name, "*");
-      foreach(app, base_app, user_data);
+      foreach(app, user_data);
     }
 }
 
@@ -110,8 +132,8 @@ appmodel_context_free_method(ModuleConfig *s)
 {
   AppModelContext *self = (AppModelContext *) s;
 
-  g_hash_table_destroy(self->applications);
-  g_ptr_array_free(self->application_ptrs, TRUE);
+  g_hash_table_destroy(self->objects);
+  g_ptr_array_free(self->object_ptrs, TRUE);
   module_config_free_method(s);
 }
 
@@ -121,9 +143,9 @@ appmodel_context_new(void)
   AppModelContext *self = g_new0(AppModelContext, 1);
 
   self->super.free_fn = appmodel_context_free_method;
-  self->applications = g_hash_table_new_full(_application_hash, _application_equal,
-                                             NULL, (GDestroyNotify) application_free);
-  self->application_ptrs = g_ptr_array_new();
+  self->objects = g_hash_table_new_full(_object_hash, _object_equal,
+                                        NULL, (GDestroyNotify) appmodel_object_free);
+  self->object_ptrs = g_ptr_array_new();
   return self;
 }
 

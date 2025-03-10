@@ -9,7 +9,9 @@ set (APPMODEL_SOURCES
     appmodel-parser.c
     appmodel-plugin.c
     appmodel-context.c
+    app-object-generator.c
     app-parser-generator.c
+    app-transform-generator.c
     application.c
 )
 
