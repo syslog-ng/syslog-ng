@@ -16,6 +16,7 @@ SCL_SUBDIRS	= \
 	graphite	\
 	graylog2	\
 	hdfs		\
+	http-scraper		\
 	iptables	\
 	jellyfin	\
 	junos		\
