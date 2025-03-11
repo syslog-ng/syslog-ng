@@ -219,6 +219,8 @@ class S3Destination(LogDestination):
         except FileExistsError:
             pass
 
+        self.__load_uncompleted_buffers()
+
         return True
 
     def deinit(self) -> None:
@@ -227,6 +229,49 @@ class S3Destination(LogDestination):
     @staticmethod
     def generate_persist_name(options: Dict[str, Any]) -> str:
         return f"s3({','.join([options['url'], options['bucket'], str(options['object_key'])])})"
+
+    def __load_uncompleted_buffers(self) -> None:
+        with self.__objects_lock and self.__indices_lock:
+            self.logger.info(f"Trying to load uncompleted object buffers.")
+            json_list = listdir(self.working_dir)
+            json_list = filter(lambda file: file.endswith(".json"), json_list)
+            for s3_buffer_meta in json_list:
+                s3_object_buffer = S3ObjectBuffer(self.working_dir, "", 0, "", self.__persist_name, self.object_config)
+                try:
+                    s3_object_buffer.load_metadata(Path(self.working_dir, s3_buffer_meta))
+                except KeyError as e:
+                    self.logger.info(f"File {s3_buffer_meta} does not describe an object buffer.")
+                    continue
+                if s3_object_buffer.creator != self.__persist_name:
+                    self.logger.info(f"File buffer {s3_object_buffer.path} does not belong to this driver. Will not load.")
+                    continue
+                if s3_object_buffer.finished:
+                    self.s3_object_ready_queue.enqueue(s3_object_buffer, None)
+                    self.logger.info(f"Completed object {s3_object_buffer.path} loaded.")
+                else:
+                    if s3_object_buffer.object_key in self.s3_objects_active:
+                        if self.s3_objects_active[s3_object_buffer.object_key].target_index < s3_object_buffer.target_index:
+                            self.s3_object_ready_queue.enqueue(self.s3_objects_active[s3_object_buffer.object_key], None)
+                            self.s3_objects_active[s3_object_buffer.object_key] = s3_object_buffer
+                        elif self.s3_objects_active[s3_object_buffer.object_key].target_index > s3_object_buffer.target_index:
+                            self.s3_object_ready_queue.enqueue(s3_object_buffer, None)
+                        else:
+                            self.logger.error(
+                                f"Invalid indices found for object key {s3_object_buffer.object_key} "
+                                f"({self.s3_objects_active[s3_object_buffer.object_key].full_target_key} "
+                                f"conflicts {s3_object_buffer.full_target_key}). "
+                                f"Manual intervention necessary, withholding files from upload."
+                            )
+                            json_list = filter(lambda file: file.startswith(s3_object_buffer.object_key), json_list)
+                            self.s3_objects_active.pop(s3_object_buffer.object_key)
+                            continue
+                    else:
+                        self.s3_objects_active[s3_object_buffer.object_key] = s3_object_buffer
+                    self.logger.info(f"Incomplete object {s3_object_buffer.path} loaded")
+                self.__indices[s3_object_buffer.object_key] = s3_object_buffer.target_index
+        if not self.s3_object_ready_queue.queue.empty():
+            self.__session_handler.trigger_upload()
+        self.logger.info(f"Finished loading uncompleted object buffers.")
 
     def open(self) -> bool:
         self.logger.debug("Opening S3 connection.")
@@ -250,6 +295,15 @@ class S3Destination(LogDestination):
 
         return True
 
+    def __flush_queue(self):
+        self.logger.debug("Flushing S3 queue.")
+        keys = list(self.s3_objects_active.keys())
+        with self.__objects_lock:
+            for s3_object in keys:
+                self.__finish_s3_object(self.s3_objects_active[s3_object])
+
+        self.__session_handler.wait_for_queue_empty(10)
+
     def is_opened(self) -> bool:
         return self.__session_handler.connection_open
 
@@ -265,6 +319,7 @@ class S3Destination(LogDestination):
             self.flush_poll_event.cancel()
             self.flush_poll_event = None
 
+        self.__flush_queue()
         self.__session_handler.disable_upload()
         self.__session_handler.close_connection()
 
