@@ -90,7 +90,7 @@ _http_request_handler(LogProtoTextServer *s, LogProtoBufferedServerState *state,
   GString *response = self->request_processor(self, state, buffer_start, buffer_bytes);
   if (response)
     {
-      if (self->response_sender(self, response->str, response->len, TRUE) >= 0)
+      if (self->response_sender(self, response->str, response->len, self->options->super.close_after_send) >= 0)
         msg_trace("Sent response", evt_tag_str("http-server-response", response->str));
     }
   if (response)
@@ -127,6 +127,8 @@ void
 log_proto_http_server_options_defaults(LogProtoHTTPServerOptionsStorage *options)
 {
   log_proto_server_options_defaults((LogProtoServerOptionsStorage *)options);
+  options->super.close_after_send = FALSE;
+  options->super.initialized = FALSE;
 }
 
 void
@@ -137,6 +139,7 @@ log_proto_http_server_options_init(LogProtoHTTPServerOptionsStorage *options,
     return;
 
   log_proto_server_options_init(&options->storage, cfg);
+  options->super.close_after_send = FALSE;
 
   options->super.initialized = TRUE;
 }
@@ -148,8 +151,8 @@ log_proto_http_server_options_validate(LogProtoHTTPServerOptionsStorage *options
 }
 
 void
-log_proto_http_server_destroy(LogProtoHTTPServerOptionsStorage *options)
+log_proto_http_server_options_set_close_after_send(LogProtoHTTPServerOptionsStorage *options,
+                                                   gboolean value)
 {
-  log_proto_server_options_destroy(&options->storage);
-  options->super.initialized = FALSE;
+  options->super.close_after_send = value;
 }

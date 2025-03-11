@@ -30,6 +30,7 @@ typedef struct _LogProtoHTTPServerOptions
 {
   LogProtoServerOptions super; // This must be the first !!!
   gboolean initialized;
+  gboolean close_after_send;
 
 } LogProtoHTTPServerOptions;
 
@@ -58,6 +59,9 @@ struct _LogProtoHTTPServer
 void log_proto_http_server_options_defaults(LogProtoHTTPServerOptionsStorage *options);
 void log_proto_http_server_options_init(LogProtoHTTPServerOptionsStorage *options, GlobalConfig *cfg);
 void log_proto_http_server_destroy(LogProtoHTTPServerOptionsStorage *options);
+void log_proto_http_server_options_set_close_after_send(
+  LogProtoHTTPServerOptionsStorage *options,
+  gboolean value);
 
 LogProtoServer *log_proto_http_server_new(LogTransport *transport,
                                           const LogProtoServerOptionsStorage *options);
