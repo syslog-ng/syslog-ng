@@ -25,6 +25,7 @@ from .s3_object import S3Object, S3ObjectPersist, ConstructorError, PersistLoadE
 
 try:
     from boto3 import client, Session
+    from boto3.s3.transfer import TransferConfig
     from botocore.credentials import create_assume_role_refresher, DeferredRefreshableCredentials
     from botocore.exceptions import ClientError, EndpointConnectionError
 
@@ -47,6 +48,9 @@ signal(SIGINT, SIG_IGN)
 
 class S3Destination(LogDestination):
     S3_OBJECT_TIMEOUT_INTERVAL_SECONDS = 60
+    S3_OBJECT_MIN_CHUNK_SIZE = 5 * 1024 * 1024
+
+    logger = getLogger("S3")
 
     def __init_options(self, options: Dict[str, Any]) -> None:
         try:
@@ -57,8 +61,11 @@ class S3Destination(LogDestination):
             self.role = str(options["role"])
             self.object_key: LogTemplate = options["object_key"]
             self.object_key_timestamp: Optional[LogTemplate] = options["object_key_timestamp"]
+            self.object_key_suffix: Optional[str] = options["object_key_suffix"]
             self.message_template: LogTemplate = options["template"]
             self.compression = bool(options["compression"])
+            if self.compression:
+                self.object_key_suffix += ".gz"
             self.compresslevel = int(options["compresslevel"])
             self.chunk_size = int(options["chunk_size"])
             self.max_object_size = int(options["max_object_size"])
@@ -77,6 +84,8 @@ class S3Destination(LogDestination):
                 "The option validation and propagation should be done by the s3.conf SCL."
             )
 
+        self.__persist_name = self.generate_persist_name(options)
+
         if str(self.object_key_timestamp) == "":
             self.object_key_timestamp = None
 
@@ -84,9 +93,9 @@ class S3Destination(LogDestination):
             self.logger.warning("compresslevel() must be an integer between 0 and 9. Using 9")
             self.compresslevel = 9
 
-        if self.chunk_size < S3Object.MIN_CHUNK_SIZE_BYTES:
-            self.logger.warning(f"chunk-size() must be at least {S3Object.MIN_CHUNK_SIZE_BYTES}. Using minimal value")
-            self.chunk_size = S3Object.MIN_CHUNK_SIZE_BYTES
+        if self.chunk_size < self.S3_OBJECT_MIN_CHUNK_SIZE:
+            self.logger.warning(f"chunk-size() must be at least {self.S3_OBJECT_MIN_CHUNK_SIZE}. Using minimal value")
+            self.chunk_size = self.S3_OBJECT_MIN_CHUNK_SIZE
 
         if self.upload_threads < 1:
             self.logger.warning("upload-threads() must be a positive integer. Using 1")
@@ -148,8 +157,6 @@ class S3Destination(LogDestination):
             self.canned_acl = ""
 
     def init(self, options: Dict[str, Any]) -> bool:
-        self.logger = getLogger("S3")
-
         if not deps_installed:
             self.logger.error(
                 "Unable to start the Python based S3 destination, the required Python dependencies (`boto3` and/or `botocore`) are missing"
@@ -163,6 +170,33 @@ class S3Destination(LogDestination):
         self.finished_s3_objects: Dict[str, Dict[str, Dict[int, S3Object]]] = dict()
 
         self.__init_options(options)
+
+        self.s3_session_config: Dict[str, Any] = {
+            "aws_access_key_id": self.access_key if self.access_key != "" else None,
+            "aws_secret_access_key": self.secret_key if self.secret_key != "" else None,
+            "region_name": self.region,
+        }
+        self.s3_client_config: Dict[str, Any] = {
+            "endpoint_url": self.url if self.url != "" else None,
+        }
+        self.s3_sse_options: Dict[str, Any] = {
+            "ServerSideEncryption": self.server_side_encryption if self.server_side_encryption != "" else None,
+            "SSEKMSKeyId": self.kms_key if self.server_side_encryption != "" else None,
+        }
+        self.transfer_config = TransferConfig(
+            multipart_threshold=int(self.chunk_size * 1.5),
+            max_concurrency=self.upload_threads,
+            multipart_chunksize=self.chunk_size,
+            use_threads=True if self.upload_threads > 1 else False,
+        )
+        self.object_config: Dict[str, Any] = {
+            "suffix": self.object_key_suffix,
+            "storage_class": self.storage_class,
+            "compression": self.compression,
+            "compresslevel": self.compresslevel,
+            "max_object_size": self.max_object_size,
+            "canned_acl": self.canned_acl,
+        }
 
         self.exit_requested = Event()
         self.executor = ThreadPoolExecutor(max_workers=self.upload_threads)
