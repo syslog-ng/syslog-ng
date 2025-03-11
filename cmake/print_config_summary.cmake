@@ -84,8 +84,8 @@ function(_get_feature_list _result_list _variableNames _exceptNames)
   _get_matching_options(_filteredNames "${_variableNames}" "SYSLOG_NG_ENABLE_" "${_exceptName}")
 
   foreach(_variableName ${_filteredNames})
-      string (REPLACE "SYSLOG_NG_" "" _featureName "${_variableName}")
-      list (APPEND _final_list "${_featureName}")
+    string(REPLACE "SYSLOG_NG_" "" _featureName "${_variableName}")
+    list(APPEND _final_list "${_featureName}")
   endforeach()
   set(${_result_list} "${_final_list}" PARENT_SCOPE)
 endfunction()
@@ -143,13 +143,13 @@ function(_print_compilers_info _variableNames _importantVariableNames)
             COMMAND "${_compilerPath}" --version
             # version info does not always contain the exact executable name (clang++ -> clang)
             # using now the hardcoded first line content instead :S
-            #COMMAND grep -i ${_executable_name}
+            # COMMAND grep -i ${_executable_name}
             COMMAND head -n 1
             OUTPUT_VARIABLE _compilerVersion
             OUTPUT_STRIP_TRAILING_WHITESPACE
           )
           _space_tabbed_string("${_variableName}" ${_maxSummaryLineLen} _spaceTabbedVariableName)
-          _space_tabbed_string ("${_executable_name}" 10 _spaceTabbedExecutable_name)
+          _space_tabbed_string("${_executable_name}" 10 _spaceTabbedExecutable_name)
           _print_summary_line("${_spaceTabbedVariableName}" "${_spaceTabbedExecutable_name}${Green}[${Yellow}${_compilerVersion}${Green}]${ResetFG} - ${_compilerPath}" ${_maxSummaryLineLen})
           unset(_compilerVersion)
         else()
@@ -194,7 +194,7 @@ function(print_config_summary)
 
       list(APPEND _libraryOptions ".*(_FOUND)$" ".*(_LIBRARY|_LIBRARIES|_LIBRARY_OPTS)$" ".*(INCLUDE_DIR|INCLUDEDIR|INCLUDE_DIRS|INCLUDE_OPTS)$")
       list(APPEND _libraryExcludeOptions "^(CMAKE_|_).*")
-      _print_options ("${_variableNames}" "${_libraryOptions}" "${_libraryExcludeOptions}")
+      _print_options("${_variableNames}" "${_libraryOptions}" "${_libraryExcludeOptions}")
     endif()
   endif()
 
@@ -211,29 +211,30 @@ function(print_config_summary)
 
   _print_separator("Compilation")
   list(APPEND _compilationOptions "CMAKE_BUILD_TYPE" "^ENABLE_CPP" "ENABLE_EXTRA_WARNINGS" "ENABLE_FORCE_GNU99" "ENV_LD_LIBRARY_PATH")
+
   if(APPLE)
     list(APPEND _compilationOptions "FORCE_CLASSIC_LINKING")
   endif()
   _print_options("${_variableNames}" "${_compilationOptions}")
 
-  _print_separator ("Testing")
-  list (APPEND _testingOptions "BUILD_TESTING")
+  _print_separator("Testing")
+  list(APPEND _testingOptions "BUILD_TESTING")
   _print_options("${_variableNames}" "${_testingOptions}")
 
   # No man pages support et in the cmake builds
   # _print_separator ("Man pages")
   # list (APPEND _manPages "ENABLE_MANPAGES" "ENABLE_MANPAGES_INSTALL")
   # _print_options ("${_variableNames}" "${_manPages}")
-
   _get_matching_options(_evaluatedFeaturesOptions "${_variableNames}" "^SYSLOG_NG_ENABLE_")
 
-  _print_separator ("Features")
+  _print_separator("Features")
   list(APPEND _featuresExcludeOptions "ENABLE_DEBUG" "ENABLE_CPP" "ENABLE_AFSOCKET_MEMINFO_METRICS")
   _get_feature_list(_featuresOptions "${_evaluatedFeaturesOptions}" "${_featuresExcludeOptions}")
+  list(APPEND _featuresOptions "SANITIZER")
   _print_options("${_featuresOptions}" "")
 
   if(SUMMARY_FULL OR SUMMARY_VERBOSE OR SUMMARY_LEVEL GREATER_EQUAL 1)
-    _print_separator ("Evaluated features")
+    _print_separator("Evaluated features")
     list(APPEND _evaluatedFeaturesOptions "SYSLOG_NG_SYSTEMD_JOURNAL_MODE")
     _print_options("${_evaluatedFeaturesOptions}" "")
   endif()
