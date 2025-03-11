@@ -33,6 +33,7 @@
 
 typedef struct _LogProtoServer LogProtoServer;
 typedef struct _LogProtoServerOptions LogProtoServerOptions;
+typedef union _LogProtoServerOptionsStorage LogProtoServerOptionsStorage;
 
 typedef enum
 {
@@ -45,25 +46,28 @@ typedef enum
 
 struct _LogProtoServerOptions
 {
-  void (*destroy)(LogProtoServerOptions *self);
+  void (*init)(LogProtoServerOptionsStorage *self, GlobalConfig *cfg);
+  void (*destroy)(LogProtoServerOptionsStorage *self);
+  gboolean (*validate)(LogProtoServerOptionsStorage *self);
   gboolean initialized;
+
   gchar *encoding;
   /* maximum message length in bytes */
   gint max_msg_size;
-  MultiLineOptions multi_line_options;
   gboolean trim_large_messages;
-  gint max_buffer_size;
   gint init_buffer_size;
+  gint max_buffer_size;
   gint idle_timeout;
   AckTrackerFactory *ack_tracker_factory;
+  MultiLineOptions multi_line_options;
 };
 
-/* see logproto-file-reader.h and logreader.c - log_reader_options_defaults for the detailes of the options mess */
-typedef union LogProtoServerOptionsStorage
+/* See logproto-file-reader.h and logreader.c - log_reader_options_defaults for the details of the options mess */
+union _LogProtoServerOptionsStorage
 {
   LogProtoServerOptions super;
   gchar __padding[LOG_PROTO_SERVER_OPTIONS_SIZE];
-} LogProtoServerOptionsStorage;
+};
 
 gboolean log_proto_server_options_set_encoding(LogProtoServerOptionsStorage *s, const gchar *encoding);
 void log_proto_server_options_set_ack_tracker_factory(LogProtoServerOptionsStorage *s, AckTrackerFactory *factory);
