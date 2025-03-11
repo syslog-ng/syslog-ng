@@ -139,6 +139,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_TCP6
 %token KW_UDP6
 %token KW_NETWORK
+%token KW_HTTP
 %token KW_TRANSPORT
 %token KW_IP_PROTOCOL
 %token KW_SYSTEMD_SYSLOG

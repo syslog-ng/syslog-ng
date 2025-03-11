@@ -322,6 +322,7 @@
 %token KW_SDATA_PREFIX                10302
 
 %token KW_PORT                        10323
+%token KW_HTTP                        10324
 /* misc options */
 
 %token KW_USE_TIME_RECVD              10340
