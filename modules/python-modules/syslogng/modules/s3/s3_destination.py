@@ -161,7 +161,6 @@ class S3Destination(LogDestination):
 
         self.s3_objects: Dict[str, S3Object] = dict()
         self.finished_s3_objects: Dict[str, Dict[str, Dict[int, S3Object]]] = dict()
-        self.backfill_s3_objects: Dict[str, Dict[str, S3Object]] = dict()
 
         self.__init_options(options)
 
@@ -332,11 +331,6 @@ class S3Destination(LogDestination):
             if not s3_object.finished:
                 self.__finish_s3_object(s3_object)
 
-        for backfill_timestamps in self.backfill_s3_objects.values():
-            for s3_object in backfill_timestamps.values():
-                if not s3_object.finished:
-                    self.__finish_s3_object(s3_object)
-
         for finished_timestamps in self.finished_s3_objects.values():
             for indexes in finished_timestamps.values():
                 for s3_object in indexes.values():
@@ -362,11 +356,6 @@ class S3Destination(LogDestination):
         for s3_object in self.s3_objects.values():
             if should_flush_s3_object(s3_object, now):
                 self.__finish_s3_object(s3_object)
-
-        for timestamps in self.backfill_s3_objects.values():
-            for s3_object in timestamps.values():
-                if should_flush_s3_object(s3_object, now):
-                    self.__finish_s3_object(s3_object)
 
         self.__start_flush_poll_timer()
 
@@ -403,30 +392,6 @@ class S3Destination(LogDestination):
         d = self.finished_s3_objects.setdefault(s3_object.target_key, dict()).setdefault(s3_object.timestamp, dict())
         d[s3_object.index] = s3_object
 
-    def __get_backfill_s3_object(self, target_key: str, timestamp: str) -> S3Object:
-        backfill_target_s3_objects = self.backfill_s3_objects.setdefault(target_key, dict())
-
-        # Completely new backfill
-        if timestamp not in backfill_target_s3_objects:
-            try:
-                # Backfill for a previously finished target
-                indexes = list(self.finished_s3_objects[target_key][timestamp].keys())
-                s3_object = self.finished_s3_objects[target_key][timestamp][max(indexes)].create_next()
-            except KeyError:
-                # Backfill for an unprocessed target
-                s3_object = self.__create_initial_s3_object(target_key, timestamp)
-            backfill_target_s3_objects[timestamp] = s3_object
-            return s3_object
-
-        # Existing backfill
-        s3_object = backfill_target_s3_objects[timestamp]
-
-        if not s3_object.finished:
-            return s3_object
-
-        s3_object = backfill_target_s3_objects[timestamp] = s3_object.create_next()
-        return s3_object
-
     def __get_s3_object(self, msg: LogMessage) -> S3Object:
         target_key = self.__format_target_key(msg)
         timestamp = self.__format_timestamp(msg)
@@ -452,9 +417,6 @@ class S3Destination(LogDestination):
             self.__finish_s3_object(s3_object)
             s3_object = self.s3_objects[target_key] = self.__create_initial_s3_object(target_key, timestamp)
             return s3_object
-
-        # Target for an older timestamp
-        return self.__get_backfill_s3_object(target_key, timestamp)
 
     def __ensure_free_space_in_executor_queue(self) -> bool:
         """Waits for 1 minute."""
