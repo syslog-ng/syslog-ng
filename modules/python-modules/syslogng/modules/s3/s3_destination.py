@@ -21,27 +21,32 @@
 #
 #############################################################################
 
-from .s3_object import S3Object, S3ObjectPersist, ConstructorError, PersistLoadError, AlreadyFinishedError
 
 try:
+    from .s3_object import S3Object, S3ObjectPersist, ConstructorError, PersistLoadError, AlreadyFinishedError
+
+    # NOTE: These are imports required to get to the part processing `deps_installed`
+    from logging import getLogger
+    from signal import signal, SIGINT, SIG_IGN
+    from syslogng import LogDestination, LogMessage, LogTemplate, get_installation_path_for
+
+    from concurrent.futures import ThreadPoolExecutor
+    from pathlib import Path
+    from sys import exc_info
+    from threading import Event, Timer
+    from time import monotonic, sleep
+    from typing import Any, Dict, Optional
+
     from boto3 import client, Session
     from boto3.s3.transfer import TransferConfig
     from botocore.credentials import create_assume_role_refresher, DeferredRefreshableCredentials
     from botocore.exceptions import ClientError, EndpointConnectionError
 
+    deps_missing = None
     deps_installed = True
-except ImportError:
+except ImportError as import_error:
+    deps_missing = import_error.name
     deps_installed = False
-
-from concurrent.futures import ThreadPoolExecutor
-from logging import getLogger
-from pathlib import Path
-from signal import signal, SIGINT, SIG_IGN
-from sys import exc_info
-from syslogng import LogDestination, LogMessage, LogTemplate, get_installation_path_for
-from threading import Event, Timer
-from time import monotonic, sleep
-from typing import Any, Dict, Optional
 
 signal(SIGINT, SIG_IGN)
 
@@ -158,9 +163,14 @@ class S3Destination(LogDestination):
 
     def init(self, options: Dict[str, Any]) -> bool:
         if not deps_installed:
-            self.logger.error(
-                "Unable to start the Python based S3 destination, the required Python dependencies (`boto3` and/or `botocore`) are missing"
-            )
+            if deps_missing:
+                self.logger.error(
+                    f"Unable to start the Python based S3 destination. The required module dependency '{deps_missing}' could not be found.'"
+                )
+            else:
+                self.logger.error(
+                    "Unable to start the Python based S3 destination, some required Python dependencies (likely `boto3` and/or `botocore`) are missing"
+                )
             return False
 
         self.session: Optional[Session] = None
