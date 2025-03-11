@@ -185,7 +185,6 @@ log_proto_server_options_init(LogProtoServerOptionsStorage *options, GlobalConfi
   if (options->super.initialized)
     return;
 
-  //memset(options, 0, sizeof(*options));
   if (options->super.max_msg_size == -1)
     {
       options->super.max_msg_size = cfg->log_msg_size;
@@ -213,13 +212,22 @@ log_proto_server_options_init(LogProtoServerOptionsStorage *options, GlobalConfi
     options->super.init_buffer_size = MIN(options->super.max_msg_size, options->super.max_buffer_size);
   multi_line_options_init(&options->super.multi_line_options);
 
+  if (options->super.init)
+    options->super.init(options, cfg);
+
   options->super.initialized = TRUE;
 }
 
 gboolean
 log_proto_server_options_validate(LogProtoServerOptionsStorage *options)
 {
-  return multi_line_options_validate(&options->super.multi_line_options);
+  if (FALSE == multi_line_options_validate(&options->super.multi_line_options))
+    return FALSE;
+
+  gboolean result = TRUE;
+  if (options->super.validate)
+    result = options->super.validate(options);
+  return result;
 }
 
 void
@@ -228,8 +236,10 @@ log_proto_server_options_destroy(LogProtoServerOptionsStorage *options)
   multi_line_options_destroy(&options->super.multi_line_options);
   g_free(options->super.encoding);
   ack_tracker_factory_unref(options->super.ack_tracker_factory);
+
   if (options->super.destroy)
-    options->super.destroy(&options->super);
+    options->super.destroy(options);
+
   options->super.initialized = FALSE;
 }
 
