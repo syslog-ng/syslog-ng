@@ -132,8 +132,8 @@ affile_dw_reap(AFFileDestWriter *self)
   g_mutex_unlock(&owner->lock);
 }
 
-static gboolean
-affile_dw_reopen(AFFileDestWriter *self)
+static LogProtoClient *
+_dw_reopen(AFFileDestWriter *self)
 {
   int fd;
   struct stat st;
@@ -166,15 +166,24 @@ affile_dw_reopen(AFFileDestWriter *self)
       proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
                                               &self->owner->writer_options.proto_options.super);
     }
-  else if (open_result == FILE_OPENER_RESULT_ERROR_PERMANENT)
-    {
-      return FALSE;
-    }
-  else
+  else if (open_result != FILE_OPENER_RESULT_ERROR_PERMANENT)
     {
       msg_error("Error opening file for writing",
                 evt_tag_str("filename", self->filename),
                 evt_tag_error(EVT_TAG_OSERROR));
+    }
+
+  return proto;
+}
+
+static gboolean
+affile_dw_reopen(AFFileDestWriter *self)
+{
+  LogProtoClient *proto = _dw_reopen(self);
+
+  if (proto == NULL)
+    {
+      return FALSE;
     }
 
   log_writer_reopen(self->writer, proto);
@@ -193,7 +202,7 @@ affile_dw_reopen(AFFileDestWriter *self)
  *
  */
 static gboolean
-affile_dw_logrotate(AFFileDestWriter *self, gint *fd)
+affile_dw_logrotate(AFFileDestWriter *self, LogProtoClient **p)
 {
 
   LogRotateOptions *logrotate_options = &(self->owner->logrotate_options);
@@ -205,16 +214,14 @@ affile_dw_logrotate(AFFileDestWriter *self, gint *fd)
 
       if (status == LR_SUCCESS)
         {
-          /* Open logfile */
-          FileOpenerResult open_result = file_opener_open_fd(self->owner->file_opener, self->filename, AFFILE_DIR_WRITE, fd);
-          if (open_result != FILE_OPENER_RESULT_SUCCESS)
+          *p = _dw_reopen(self);
+          if (*p == NULL)
             {
               return FALSE;
             }
 
           msg_debug("Reopened log file",
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_int("new-fd", *fd));
+                    evt_tag_str("filename", self->filename));
         }
     }
 
@@ -415,7 +422,7 @@ affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
       affile_dw_reap(self);
       break;
     case NC_LOGROTATE:
-      affile_dw_logrotate(self, (gint *) user_data);
+      affile_dw_logrotate(self, user_data);
       break;
     default:
       break;

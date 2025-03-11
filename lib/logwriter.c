@@ -1172,25 +1172,21 @@ log_writer_realloc_line_buffer(LogWriter *self)
  * when called within the writer thread.
  *
  * Other threads should call log_writer_reopen, as there could be an ongoing write operation!
+ *
+ * The log_pipe_notify call creates a new LogProtoClient, and the log_writer is updated.
  */
 static void
 log_writer_logrotate(LogWriter *self)
 {
-  gint fd = -1;
+  LogProtoClient *proto = NULL;
 
   /* Signal AFFileDestWriter to check for logrotation */
-  log_pipe_notify(self->control, NC_LOGROTATE, (gpointer) &fd);
+  log_pipe_notify(self->control, NC_LOGROTATE, &proto);
 
-  if (fd > 0)
+  if (proto)
     {
-      LogProtoClient *proto = log_writer_steal_proto(self);
-
-      if (proto)
-        {
-          log_proto_client_update_fd(proto, fd);
-          log_writer_set_proto(self, proto);
-        }
-
+      log_writer_free_proto(self);
+      log_writer_set_proto(self, proto);
     }
 }
 
