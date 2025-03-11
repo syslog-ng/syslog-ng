@@ -17,6 +17,7 @@ set(SCL_DIRS
     graphite
     graylog2
     hdfs
+    http-scraper
     iptables
     jellyfin
     junos
