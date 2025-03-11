@@ -1,4 +1,5 @@
 #############################################################################
+# Copyright (c) 2025 One Identity LLC
 # Copyright (c) 2023 Attila Szakacs
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -80,23 +81,23 @@ class S3Destination(LogDestination):
             self.object_key_timestamp = None
 
         if self.compresslevel < 0 or self.compresslevel > 9:
-            self.logger.warn("compresslevel() must be an integer between 0 and 9. Using 9")
+            self.logger.warning("compresslevel() must be an integer between 0 and 9. Using 9")
             self.compresslevel = 9
 
         if self.chunk_size < S3Object.MIN_CHUNK_SIZE_BYTES:
-            self.logger.warn(f"chunk-size() must be at least {S3Object.MIN_CHUNK_SIZE_BYTES}. Using minimal value")
+            self.logger.warning(f"chunk-size() must be at least {S3Object.MIN_CHUNK_SIZE_BYTES}. Using minimal value")
             self.chunk_size = S3Object.MIN_CHUNK_SIZE_BYTES
 
         if self.upload_threads < 1:
-            self.logger.warn("upload-threads() must be a positive integer. Using 1")
+            self.logger.warning("upload-threads() must be a positive integer. Using 1")
             self.upload_threads = 1
 
         if self.max_pending_uploads < 1:
-            self.logger.warn("max-pending-uploads() must be a positive integer. Using 1")
+            self.logger.warning("max-pending-uploads() must be a positive integer. Using 1")
             self.max_pending_uploads = 1
 
         if self.flush_grace_period < 1:
-            self.logger.warn("flush-grace-period() must be a positive integer. Using 1")
+            self.logger.warning("flush-grace-period() must be a positive integer. Using 1")
             self.flush_grace_period = 1
 
         if self.region == "":
@@ -109,7 +110,7 @@ class S3Destination(LogDestination):
             assert False, "kms-key() must be set when server-side-encryption() is aws:kms"
 
         if self.kms_key != "" and self.server_side_encryption == "":
-            self.logger.warn("ignoring kms-key() as server-side-encryption() is disabled")
+            self.logger.warning("ignoring kms-key() as server-side-encryption() is disabled")
             self.kms_key = ""
 
         VALID_STORAGE_CLASSES = {
@@ -125,7 +126,7 @@ class S3Destination(LogDestination):
             "SNOW",
         }
         if self.storage_class not in VALID_STORAGE_CLASSES:
-            self.logger.warn(
+            self.logger.warning(
                 f"Invalid storage-class(). Valid values are: f{', '.join(sorted(VALID_STORAGE_CLASSES))}. Using STANDARD"
             )
             self.storage_class = "STANDARD"
@@ -141,7 +142,7 @@ class S3Destination(LogDestination):
             "log-delivery-write",
         }
         if self.canned_acl != "" and self.canned_acl not in VALID_CANNED_ACLS:
-            self.logger.warn(
+            self.logger.warning(
                 f"Invalid canned-acl(). Valid values are: f{', '.join(sorted(VALID_CANNED_ACLS))} or empty. Using empty"
             )
             self.canned_acl = ""
