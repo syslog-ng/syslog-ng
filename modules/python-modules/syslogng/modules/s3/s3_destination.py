@@ -23,18 +23,19 @@
 
 
 try:
-    from .s3_object import S3Object, S3ObjectPersist, ConstructorError, PersistLoadError, AlreadyFinishedError
+    from .s3_object_buffer import S3ObjectBuffer, S3ObjectQueue
+    from .s3_session_handler import S3SessionHandler
 
     # NOTE: These are imports required to get to the part processing `deps_installed`
     from logging import getLogger
     from signal import signal, SIGINT, SIG_IGN
     from syslogng import LogDestination, LogMessage, LogTemplate, get_installation_path_for
 
-    from concurrent.futures import ThreadPoolExecutor
+    from os import listdir, mkdir
     from pathlib import Path
     from sys import exc_info
-    from threading import Event, Timer
-    from time import monotonic, sleep
+    from threading import Timer, Lock
+    from time import time
     from typing import Any, Dict, Optional
 
     from boto3 import client, Session
@@ -173,12 +174,6 @@ class S3Destination(LogDestination):
                 )
             return False
 
-        self.session: Optional[Session] = None
-        self.client: Optional[Any] = None
-
-        self.s3_objects: Dict[str, S3Object] = dict()
-        self.finished_s3_objects: Dict[str, Dict[str, Dict[int, S3Object]]] = dict()
-
         self.__init_options(options)
 
         self.s3_session_config: Dict[str, Any] = {
@@ -208,182 +203,70 @@ class S3Destination(LogDestination):
             "canned_acl": self.canned_acl,
         }
 
-        self.exit_requested = Event()
-        self.executor = ThreadPoolExecutor(max_workers=self.upload_threads)
+        self.s3_object_ready_queue: S3ObjectQueue = S3ObjectQueue()
+        self.s3_objects_active: Dict[str, S3ObjectBuffer] = {}
+        self.__objects_lock = Lock()
+        self.__indices_lock = Lock()
+        self.__indices: Dict[str, int] = {}
+
+        self.__session_handler: S3SessionHandler = S3SessionHandler(self.max_pending_uploads, self.upload_threads, self.s3_object_ready_queue, self.bucket, self.role, self.s3_session_config, self.s3_client_config, self.s3_sse_options, self.transfer_config)
+
         self.flush_poll_event: Optional[Timer] = None
 
         self.working_dir = Path(get_installation_path_for(r"${localstatedir}"), "s3")
-        self.persist_loaded = False
+        try:
+            mkdir(self.working_dir)
+        except FileExistsError:
+            pass
 
         return True
 
     def deinit(self) -> None:
-        self.executor.shutdown()
+        pass
 
     @staticmethod
     def generate_persist_name(options: Dict[str, Any]) -> str:
         return f"s3({','.join([options['url'], options['bucket'], str(options['object_key'])])})"
 
-    def __load_persist(self) -> None:
-        for path in Path(self.working_dir).glob("*.json"):
-            try:
-                persist = S3ObjectPersist.load(path=path)
-            except PersistLoadError:
-                self.logger.error(f"Cannot load persist file: {str(path)}")
-                continue
-
-            if persist.persist_name != self.persist_name:
-                continue
-
-            try:
-                s3_object = S3Object.load_finished(
-                    persist=persist,
-                    executor=self.executor,
-                    client=self.client,
-                    logger=self.logger,
-                    exit_requested=self.exit_requested,
-                )
-            except ConstructorError as e:
-                self.logger.error(str(e))
-                continue
-
-            assert s3_object.finished
-
-            target_key = s3_object.target_key
-            self.finished_s3_objects.setdefault(target_key, dict()).setdefault(s3_object.timestamp, dict())[
-                s3_object.index
-            ] = s3_object
-
-            # Completely new target
-            if target_key not in self.s3_objects:
-                self.s3_objects[target_key] = s3_object
-                continue
-
-            # Existing target
-            existing_s3_object = self.s3_objects[target_key]
-
-            # Same target and timestamp as stored
-            if existing_s3_object.timestamp == s3_object.timestamp:
-                if existing_s3_object.index < s3_object.index:
-                    self.s3_objects[target_key] = s3_object
-                continue
-
-            # Target for a fresher timestamp
-            if existing_s3_object.timestamp < s3_object.timestamp:
-                self.s3_objects[target_key] = s3_object
-                continue
-
-            # Target for an older timestamp
-            continue
-
-        self.persist_loaded = True
-
-    def __create_bucket(self) -> bool:
-        assert self.client
-        try:
-            self.client.create_bucket(Bucket=self.bucket)
-        except (ClientError, EndpointConnectionError) as e:
-            self.logger.error(f"Failed to create bucket ({self.bucket}): {e}")
-            return False
-
-        self.logger.info(f"Bucket ({self.bucket}) successfully created")
-        return True
-
     def open(self) -> bool:
-        if self.is_opened():
+        self.logger.debug("Opening S3 connection.")
+        if self.__session_handler.connection_open:
+            self.logger.debug("S3 connection already open.")
             return True
 
-        # NOTE: Creating a client via a Session object does some unusual caching, which increases memory usage
-        # NOTE: each reload.  Because of this, we only create Session object if the role is set, and in that case
-        # NOTE: the memory usage is expected to behave unusually.  Sometime we should investigate this further.
-        if self.role != "":
-            self.session = Session(
-                aws_access_key_id=self.access_key if self.access_key != "" else None,
-                aws_secret_access_key=self.secret_key if self.secret_key != "" else None,
-                region_name=self.region,
-            )
-
-            # NOTE: The Session.set_credentials always creates a new Credentials object from the given keys.
-            # NOTE: The DeferredRefreshableCredentials class is a child of RefreshableCredentials which is a
-            # NOTE: child of the Credentials class.
-            self.session._session._credentials = DeferredRefreshableCredentials(
-                refresh_using=create_assume_role_refresher(
-                    self.session.client("sts"),
-                    {"RoleArn": self.role, "RoleSessionName": "syslog-ng"}
-                ),
-                method="sts-assume-role",
-            )
-
-            sts = self.session.client("sts")
-            whoami = sts.get_caller_identity().get("Arn")
-            self.logger.info(f"Using {whoami} to access the bucket")
-
-            self.client = self.session.client(
-                service_name="s3",
-                endpoint_url=self.url if self.url != "" else None,
-            )
-        else:
-            self.client = client(
-                service_name="s3",
-                endpoint_url=self.url if self.url != "" else None,
-                aws_access_key_id=self.access_key if self.access_key != "" else None,
-                aws_secret_access_key=self.secret_key if self.secret_key != "" else None,
-                region_name=self.region,
-            )
-
-        is_opened = False
         try:
-            self.client.head_bucket(Bucket=self.bucket)
-            is_opened = True
-        except ClientError as e:
-            if e.response["Error"]["Code"] == "404":
-                self.logger.info(f"Bucket ({self.bucket}) does not exist, trying to create it")
-                is_opened = self.__create_bucket()
-        except EndpointConnectionError:
-            pass
+            self.__session_handler.open_connection()
 
-        if not is_opened:
-            self.client = None
-            return False
+            if not self.__session_handler.ready_bucket():
+                return False
 
-        if not self.persist_loaded:
-            self.__load_persist()
+            if self.flush_poll_event is None:
+                self.__start_flush_poll_timer()
 
-        self.exit_requested.clear()
+        except EndpointConnectionError as e:
+            self.logger.error(f"Could not connect to S3 endpoint {self.url}. Reason: {e}")
 
-        if self.flush_poll_event is None:
-            self.__start_flush_poll_timer()
+        self.__session_handler.enable_upload()
 
         return True
 
     def is_opened(self) -> bool:
-        return self.client is not None
+        return self.__session_handler.connection_open
 
     def close(self) -> None:
+        self.logger.debug(f"Closing S3 connection.")
         if not self.is_opened():
+            self.logger.debug(f"S3 connection already closed.")
             return
 
-        assert self.client is not None
-
-        self.exit_requested.set()
+        assert self.__session_handler.connection_open
 
         if self.flush_poll_event is not None:
             self.flush_poll_event.cancel()
             self.flush_poll_event = None
 
-        for s3_object in self.s3_objects.values():
-            if not s3_object.finished:
-                self.__finish_s3_object(s3_object)
-
-        for finished_timestamps in self.finished_s3_objects.values():
-            for indexes in finished_timestamps.values():
-                for s3_object in indexes.values():
-                    s3_object.wait_for_upload_to_complete()
-
-        self.finished_s3_objects.clear()
-
-        self.client.close()
-        self.client = None
+        self.__session_handler.disable_upload()
+        self.__session_handler.close_connection()
 
     def __start_flush_poll_timer(self) -> None:
         self.flush_poll_event = Timer(
@@ -392,14 +275,22 @@ class S3Destination(LogDestination):
         self.flush_poll_event.start()
 
     def __flush_timed_out_s3_objects(self) -> None:
-        def should_flush_s3_object(s3_object: S3Object, now: float) -> bool:
-            return not s3_object.finished and s3_object.modified_at + self.flush_grace_period * 60 <= now
+        self.logger.debug("Flushing timed out S3 objects.")
 
-        now = monotonic()
+        def should_flush_s3_object(s3_target_object: S3ObjectBuffer, current_time: float) -> bool:
+            return not s3_target_object.finished and s3_target_object.last_modified + self.flush_grace_period * 60 <= current_time
 
-        for s3_object in self.s3_objects.values():
-            if should_flush_s3_object(s3_object, now):
-                self.__finish_s3_object(s3_object)
+        # NOTE: This used to be a monotonic value, but comparison with unix timestamps proved to be problematic
+        now = int(time())
+
+        with self.__objects_lock:
+            object_list = list(self.s3_objects_active.values())
+            for s3_object in object_list:
+                if should_flush_s3_object(s3_object, now):
+                    self.__finish_s3_object(s3_object)
+                    with self.__indices_lock:
+                        last_index = self.__indices.pop(s3_object.object_key)
+                        self.__indices[s3_object.object_key] = last_index
 
         self.__start_flush_poll_timer()
 
@@ -411,102 +302,55 @@ class S3Destination(LogDestination):
             return self.object_key_timestamp.format(msg, self.template_options)
         return ""
 
-    def __create_initial_s3_object(self, target_key: str, timestamp: str) -> S3Object:
-        return S3Object.create_initial(
-            working_dir=self.working_dir,
-            bucket=self.bucket,
-            target_key=target_key,
-            timestamp=timestamp,
-            compress=self.compression,
-            server_side_encryption=self.server_side_encryption,
-            kms_key=self.kms_key,
-            storage_class=self.storage_class,
-            persist_name=self.persist_name,
-            executor=self.executor,
-            compresslevel=self.compresslevel,
-            chunk_size=self.chunk_size,
-            canned_acl=self.canned_acl,
-            client=self.client,
-            logger=self.logger,
-            exit_requested=self.exit_requested,
-        )
+    def __finish_s3_object(self, s3_object: S3ObjectBuffer) -> None:
+        if not s3_object.finished:
+            s3_object.finish()
+        self.s3_objects_active.pop(s3_object.object_key)
+        self.s3_object_ready_queue.enqueue(s3_object, self.__session_handler.trigger_upload)
 
-    def __finish_s3_object(self, s3_object: S3Object) -> None:
-        s3_object.finish()
-        d = self.finished_s3_objects.setdefault(s3_object.target_key, dict()).setdefault(s3_object.timestamp, dict())
-        d[s3_object.index] = s3_object
+    def __update_target_index(self, target_key):
+        with self.__objects_lock and self.__indices_lock:
+            greatest_online_index = self.__session_handler.get_top_index_for_key(target_key, self.object_key_suffix)
+            if greatest_online_index is None:
+                self.logger.error(f"Could not get latest online index for target key {target_key}. Continuing with internal indexing only.")
+                greatest_online_index = -1
+            if target_key in self.__indices.keys():
+                self.__indices[target_key] = max(self.__indices[target_key] + 1, greatest_online_index + 1)
+            else:
+                self.__indices[target_key] = greatest_online_index + 1
 
-    def __get_s3_object(self, msg: LogMessage) -> S3Object:
-        target_key = self.__format_target_key(msg)
+    def __get_s3_object(self, msg: LogMessage) -> S3ObjectBuffer:
         timestamp = self.__format_timestamp(msg)
+        target_key = self.__format_target_key(msg) + timestamp
 
-        # Completely new target
-        if target_key not in self.s3_objects:
-            s3_object = self.s3_objects[target_key] = self.__create_initial_s3_object(target_key, timestamp)
-            return s3_object
-
-        # Existing target
-        s3_object = self.s3_objects[target_key]
-
-        # Same target and timestamp as stored
-        if s3_object.timestamp == timestamp:
-            if not s3_object.finished:
+        with self.__objects_lock:
+            # Completely new target
+            if target_key not in self.s3_objects_active:
+                self.logger.debug(f"Could not fetch S3 object, creating new one.")
+                self.__update_target_index(target_key)
+                with self.__indices_lock:
+                    s3_object = self.s3_objects_active[target_key] = S3ObjectBuffer(self.working_dir, target_key, self.__indices[target_key], timestamp, self.__persist_name, self.object_config)
                 return s3_object
-
-            s3_object = self.s3_objects[target_key] = s3_object.create_next()
-            return s3_object
-
-        # Target for a fresher timestamp
-        if s3_object.timestamp < timestamp:
-            self.__finish_s3_object(s3_object)
-            s3_object = self.s3_objects[target_key] = self.__create_initial_s3_object(target_key, timestamp)
-            return s3_object
-
-    def __ensure_free_space_in_executor_queue(self) -> bool:
-        """Waits for 1 minute."""
-        retries = 0
-
-        while self.executor._work_queue.qsize() >= self.max_pending_uploads:
-            if retries >= 600:
-                self.logger.error("Upload queue is still full after 1 minute, reconnecting")
-                return False
-
-            if retries == 0:
-                self.logger.info("Upload queue is full, waiting for available space")
-
-            sleep(0.1)
-            retries += 1
-
-        return True
+            else:
+                return self.s3_objects_active[target_key]
 
     def send(self, msg: LogMessage) -> int:
-        if not self.__ensure_free_space_in_executor_queue():
-            return self.NOT_CONNECTED
 
-        try:
-            s3_object = self.__get_s3_object(msg)
-        except ConstructorError as e:
-            self.logger.error(str(e))
-            return self.NOT_CONNECTED
+        s3_object = self.__get_s3_object(msg)
 
         data = self.message_template.format(msg, self.template_options).encode("utf-8")
 
         try:
-            s3_object.write(data)
+            if not s3_object.write(data):
+                self.logger.error(f"Failed to write data: {data}")
         except OSError as e:
             self.logger.error(f"Failed to write data: {e}")
-            return self.ERROR
-        except AlreadyFinishedError as e:
-            self.logger.error(f"Failed to write data: {e}")
-            self.__finish_s3_object(s3_object)
             return self.ERROR
 
         if s3_object.finished:
             # The S3 object finished itself after a successful write.
-            self.__finish_s3_object(s3_object)
-
-        if s3_object.size >= self.max_object_size:
-            self.__finish_s3_object(s3_object)
+            with self.__objects_lock:
+                self.__finish_s3_object(s3_object)
 
         self.stats_written_bytes_add(len(data))
         return self.SUCCESS
