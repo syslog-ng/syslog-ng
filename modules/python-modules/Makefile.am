@@ -58,6 +58,8 @@ EXTRA_DIST += \
 	modules/python-modules/syslogng/modules/s3/__init__.py		\
 	modules/python-modules/syslogng/modules/s3/compressable_file_buffer.py		\
 	modules/python-modules/syslogng/modules/s3/s3_object.py		\
+	modules/python-modules/syslogng/modules/s3/s3_object_buffer.py		\
+	modules/python-modules/syslogng/modules/s3/s3_session_handler.py		\
 	modules/python-modules/syslogng/modules/s3/s3_destination.py		\
 	modules/python-modules/syslogng/modules/s3/scl/s3.conf		\
 	modules/python-modules/setup.py						\
