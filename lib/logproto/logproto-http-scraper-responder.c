@@ -65,7 +65,7 @@ _compose_prometheus_response_body(LogProtoHTTPServer *s)
   GString *stats = NULL;
   gboolean cancelled = FALSE;
 
-  if (self->options->stat_type == STT_STAT)
+  if (self->options->stat_type == STT_STATS)
     {
       stats = g_string_new(NULL);
       gpointer args[] = {self, &stats};
@@ -244,7 +244,7 @@ log_proto_http_scraper_responder_options_init(LogProtoServerOptionsStorage *opti
   log_proto_http_server_options_set_close_after_send(options_storage, TRUE);
 
   if (options->stat_type == 0)
-    options->stat_type = STT_STAT;
+    options->stat_type = STT_STATS;
   if (options->scraper_type == 0)
     options->scraper_type = SCT_PROMETHEUS;
   if (options->scrape_freq_limit == -1)
@@ -268,7 +268,7 @@ log_proto_http_scraper_responder_options_validate(LogProtoServerOptionsStorage *
   if (FALSE == log_proto_http_server_options_validate(options_storage))
     return FALSE;
 
-  if (options->stat_type != STT_STAT && options->stat_type != STT_QUERY)
+  if (options->stat_type != STT_STATS && options->stat_type != STT_QUERY)
     {
       msg_error("prometheus-stats() stat type must be 'stat' or 'query'");
       return FALSE;
@@ -323,9 +323,9 @@ log_proto_http_scraper_responder_options_set_stat_type(LogProtoServerOptionsStor
 {
   LogProtoHTTPScraperResponderOptions *options = &((LogProtoHTTPScraperResponderOptionsStorage *)options_storage)->super;
 
-  if (strcmp(value, "stat") == 0)
+  if (strcmp(value, "stats") == 0)
     {
-      options->stat_type = STT_STAT;
+      options->stat_type = STT_STATS;
       return TRUE;
     }
   else if (strcmp(value, "query") == 0)
