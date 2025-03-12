@@ -27,7 +27,7 @@
 #include "logproto/logproto-http-server.h"
 
 /* Stat type flags */
-#define STT_STAT  0x01
+#define STT_STATS  0x01
 #define STT_QUERY 0x02
 
 /* Stat type flags */
