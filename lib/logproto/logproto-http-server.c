@@ -99,10 +99,12 @@ _http_request_handler(LogProtoTextServer *s, LogProtoBufferedServerState *state,
 
 void
 log_proto_http_server_init(LogProtoHTTPServer *self, LogTransport *transport,
-                           const LogProtoHTTPServerOptionsStorage *options)
+                           const LogProtoServerOptionsStorage *options)
 {
-  log_proto_text_multiline_server_init((LogProtoTextServer *)self, transport, &options->storage);
-  self->options = options;
+  log_proto_text_multiline_server_init((LogProtoTextServer *)self, transport, options);
+
+  self->options = (const LogProtoHTTPServerOptionsStorage *)options;
+
   self->super.extracted_raw_data_handler = _http_request_handler;
   self->request_processor = _http_request_processor;
   self->request_header_checker = _check_request_headers;
@@ -117,42 +119,50 @@ log_proto_http_server_new(LogTransport *transport,
 {
   LogProtoHTTPServer *self = g_new0(LogProtoHTTPServer, 1);
 
-  log_proto_http_server_init(self, transport, (LogProtoHTTPServerOptionsStorage *)options);
+  log_proto_http_server_init(self, transport, options);
   return &self->super.super.super;
 }
 
-/* Options */
+/*-----------------  Options  -----------------*/
 
+/* NOTE: We do not maintain here the initialized state at all, it is the responsibility of the
+ *       LogProtoServer/LogProtoServerOptions functions
+ */
 void
-log_proto_http_server_options_defaults(LogProtoHTTPServerOptionsStorage *options)
+log_proto_http_server_options_defaults(LogProtoServerOptionsStorage *proto_server_options)
 {
-  log_proto_server_options_defaults((LogProtoServerOptionsStorage *)options);
+  LogProtoHTTPServerOptionsStorage *options = (LogProtoHTTPServerOptionsStorage *) proto_server_options;
+
+  proto_server_options->super.init = log_proto_http_server_options_init;
+  proto_server_options->super.validate = log_proto_http_server_options_validate;
+  proto_server_options->super.destroy = log_proto_http_server_options_destroy;
+
   options->super.close_after_send = FALSE;
-  options->super.initialized = FALSE;
 }
 
 void
-log_proto_http_server_options_init(LogProtoHTTPServerOptionsStorage *options,
+log_proto_http_server_options_init(LogProtoServerOptionsStorage *proto_server_options,
                                    GlobalConfig *cfg)
 {
-  if (options->super.initialized)
-    return;
-
-  log_proto_server_options_init(&options->storage, cfg);
+  LogProtoHTTPServerOptionsStorage *options = (LogProtoHTTPServerOptionsStorage *) proto_server_options;
   options->super.close_after_send = FALSE;
+}
 
-  options->super.initialized = TRUE;
+void
+log_proto_http_server_options_destroy(LogProtoServerOptionsStorage *proto_server_options)
+{
 }
 
 gboolean
-log_proto_http_server_options_validate(LogProtoHTTPServerOptionsStorage *options)
+log_proto_http_server_options_validate(LogProtoServerOptionsStorage *proto_server_options)
 {
-  return log_proto_server_options_validate(&options->storage);
+  return TRUE;
 }
 
 void
-log_proto_http_server_options_set_close_after_send(LogProtoHTTPServerOptionsStorage *options,
+log_proto_http_server_options_set_close_after_send(LogProtoServerOptionsStorage *proto_server_options,
                                                    gboolean value)
 {
+  LogProtoHTTPServerOptionsStorage *options = (LogProtoHTTPServerOptionsStorage *) proto_server_options;
   options->super.close_after_send = value;
 }
