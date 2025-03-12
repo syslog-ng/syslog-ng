@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2025 One Identity
+ * Copyright (c) 2025 Hofi <hofione@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -100,7 +101,7 @@ _compose_response_body(LogProtoHTTPServer *s)
                 evt_tag_int("last-request", now - last_scrape_request_time),
                 evt_tag_int("allowed-freq", self->options->scrape_freq_limit));
       g_mutex_unlock(_mutex());
-      /* NOTE: Using an empty response body with the close_after_send=TRUEoption
+      /* NOTE: Using an empty response body with the close_after_send=TRUE option
        *       prevents the scraper waiting for the response till its own timeout */
       return g_string_new("");
     }
