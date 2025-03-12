@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2025 One Identity
+ * Copyright (c) 2025 Hofi <hofione@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
