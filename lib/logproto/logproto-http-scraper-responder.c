@@ -124,7 +124,7 @@ _compose_response_body(LogProtoHTTPServer *s)
 static gboolean
 _check_prometheus_request_headers(LogProtoHTTPServer *s, gchar *buffer_start, gsize buffer_bytes)
 {
-  // TODO: add a generic header pareser to LogProtoHTTPServer and use it here
+  // TODO: add a generic header parser to LogProtoHTTPServer and use it here
   gchar **lines = g_strsplit(buffer_start, "\r\n", 2);
 
   // First line must be like 'GET /metrics HTTP/1.1\x0d\x0a'
@@ -176,26 +176,26 @@ _log_proto_http_scraper_responder_server_free(LogProtoServer *s)
 
 void
 log_proto_http_scraper_responder_server_init(LogProtoHTTPScraperResponder *self, LogTransport *transport,
-                                             const LogProtoHTTPScraperResponderOptionsStorage *options)
+                                             const LogProtoServerOptionsStorage *options)
 {
-  log_proto_http_server_init((LogProtoHTTPServer *)self, transport,
-                             (LogProtoHTTPServerOptionsStorage *)options);
-  self->super.super.super.super.free_fn = _log_proto_http_scraper_responder_server_free;
-  self->super.super.super.no_multi_read = TRUE;
-  self->options = (const LogProtoHTTPScraperResponderOptions *)options;
-
+  log_proto_http_server_init((LogProtoHTTPServer *)self, transport, options);
   self->super.request_header_checker = _check_request_headers;
   self->super.response_body_composer = _compose_response_body;
+
+  self->super.super.super.super.free_fn = _log_proto_http_scraper_responder_server_free;
+  self->super.super.super.no_multi_read = TRUE;
+
+  self->options = (const LogProtoHTTPScraperResponderOptions *)options;
 }
 
 LogProtoServer *
 log_proto_http_scraper_responder_server_new(LogTransport *transport,
-                                            const LogProtoServerOptionsStorage *options)
+                                            const LogProtoServerOptionsStorage *proto_server_options)
 {
   g_mutex_lock(_mutex());
 
-  LogProtoHTTPScraperResponderOptionsStorage *server_options = (LogProtoHTTPScraperResponderOptionsStorage *)options;
-  if (server_options->super.single_instance && single_instance)
+  LogProtoHTTPScraperResponderOptions *options = (LogProtoHTTPScraperResponderOptions *)&proto_server_options->super;
+  if (options->single_instance && single_instance)
     {
       msg_trace("Only one Prometheus scraper responder instance is allowed");
       g_mutex_unlock(_mutex());
@@ -203,9 +203,9 @@ log_proto_http_scraper_responder_server_new(LogTransport *transport,
     }
 
   LogProtoHTTPScraperResponder *self = g_new0(LogProtoHTTPScraperResponder, 1);
-  if (server_options->super.single_instance)
+  if (options->single_instance)
     single_instance = self;
-  log_proto_http_scraper_responder_server_init(self, transport, server_options);
+  log_proto_http_scraper_responder_server_init(self, transport, proto_server_options);
 
   g_mutex_unlock(_mutex());
   return &self->super.super.super.super;
@@ -213,51 +213,64 @@ log_proto_http_scraper_responder_server_new(LogTransport *transport,
 
 /*-----------------  Options  -----------------*/
 
+/* NOTE: We do not maintain here the initialized state at all, it is the responsibility of the
+ *       LogProtoServer/LogProtoServerOptions functions
+ */
 void
-log_proto_http_scraper_responder_options_defaults(LogProtoHTTPScraperResponderOptionsStorage *options)
+log_proto_http_scraper_responder_options_defaults(LogProtoServerOptionsStorage *proto_server_options)
 {
-  log_proto_http_server_options_defaults((LogProtoHTTPServerOptionsStorage *)&options->storage);
-  log_proto_http_server_options_set_close_after_send((LogProtoHTTPServerOptionsStorage *)&options->storage, TRUE);
+  LogProtoHTTPScraperResponderOptions *options = (LogProtoHTTPScraperResponderOptions *) &proto_server_options->super;
 
-  options->super.stat_type = 0;
-  options->super.scraper_type = 0;
-  options->super.scrape_freq_limit = -1;
+  log_proto_http_server_options_defaults(proto_server_options);
+  log_proto_http_server_options_set_close_after_send(proto_server_options, TRUE);
+
+  proto_server_options->super.init = log_proto_http_scraper_responder_options_init;
+  proto_server_options->super.validate = log_proto_http_scraper_responder_options_validate;
+  proto_server_options->super.destroy = log_proto_http_scraper_responder_options_destroy;
+
+  options->stat_type = 0;
+  options->scraper_type = 0;
+  options->scrape_freq_limit = -1;
 }
 
 void
-log_proto_http_scraper_responder_options_init(LogProtoHTTPScraperResponderOptionsStorage *options,
+log_proto_http_scraper_responder_options_init(LogProtoServerOptionsStorage *proto_server_options,
                                               GlobalConfig *cfg)
 {
-  if (options->super.initialized)
-    return;
+  LogProtoHTTPScraperResponderOptions *options = (LogProtoHTTPScraperResponderOptions *) &proto_server_options->super;
 
-  log_proto_http_server_options_init((LogProtoHTTPServerOptionsStorage *)&options->storage, cfg);
-  log_proto_http_server_options_set_close_after_send((LogProtoHTTPServerOptionsStorage *)&options->storage, TRUE);
+  log_proto_http_server_options_init(proto_server_options, cfg);
+  log_proto_http_server_options_set_close_after_send(proto_server_options, TRUE);
 
-  if (options->super.stat_type == 0)
-    options->super.stat_type = STT_STAT;
-  if (options->super.scraper_type == 0)
-    options->super.scraper_type = SCT_PROMETHEUS;
-  if (options->super.scrape_freq_limit == -1)
-    options->super.scraper_type = 0;
-
-  options->super.initialized = TRUE;
+  if (options->stat_type == 0)
+    options->stat_type = STT_STAT;
+  if (options->scraper_type == 0)
+    options->scraper_type = SCT_PROMETHEUS;
+  if (options->scrape_freq_limit == -1)
+    options->scraper_type = 0;
 }
 
 void
-log_proto_http_scraper_responder_options_destroy(LogProtoHTTPScraperResponderOptionsStorage *options)
+log_proto_http_scraper_responder_options_destroy(LogProtoServerOptionsStorage *proto_server_options)
 {
-  log_proto_http_server_options_destroy((LogProtoHTTPServerOptionsStorage *)&options->storage);
-  g_free(options->super.stat_query);
-  options->super.initialized = FALSE;
+  LogProtoHTTPScraperResponderOptions *options = (LogProtoHTTPScraperResponderOptions *) &proto_server_options->super;
+
+  log_proto_http_server_options_destroy(proto_server_options);
+  g_free(options->stat_query);
 }
 
 gboolean
-log_proto_http_scraper_responder_options_validate(LogProtoHTTPScraperResponderOptionsStorage *options)
+log_proto_http_scraper_responder_options_validate(LogProtoServerOptionsStorage *proto_server_options)
 {
-  if (options->super.stat_type == STT_STAT || options->super.stat_type == STT_QUERY)
+  return TRUE;
+  LogProtoHTTPScraperResponderOptions *options = (LogProtoHTTPScraperResponderOptions *) &proto_server_options->super;
+
+  if (FALSE == log_proto_http_server_options_validate(proto_server_options))
+    return FALSE;
+
+  if (options->stat_type == STT_STAT || options->stat_type == STT_QUERY)
     {
-      msg_error("prometheus-scraper-response(), type must be 'stat' or 'query'");
+      msg_error("prometheus-stats() stat type must be 'stat' or 'query'");
       return FALSE;
     }
 
@@ -265,12 +278,14 @@ log_proto_http_scraper_responder_options_validate(LogProtoHTTPScraperResponderOp
 }
 
 gboolean
-log_proto_http_scraper_responder_options_set_scraper_type(LogProtoHTTPScraperResponderOptionsStorage *options,
+log_proto_http_scraper_responder_options_set_scraper_type(LogProtoServerOptionsStorage *proto_server_options,
                                                           const gchar *value)
 {
+  LogProtoHTTPScraperResponderOptions *options = (LogProtoHTTPScraperResponderOptions *) &proto_server_options->super;
+
   if (strcmp(value, "prometheus") == 0)
     {
-      options->super.scraper_type = SCT_PROMETHEUS;
+      options->scraper_type = SCT_PROMETHEUS;
       return TRUE;
     }
   return FALSE;
@@ -278,41 +293,49 @@ log_proto_http_scraper_responder_options_set_scraper_type(LogProtoHTTPScraperRes
 
 void
 log_proto_http_scraper_responder_options_set_scrape_freq_limit(
-  LogProtoHTTPScraperResponderOptionsStorage *options,
+  LogProtoServerOptionsStorage *proto_server_options,
   gint value)
 {
-  options->super.scrape_freq_limit = value;
+  LogProtoHTTPScraperResponderOptions *options = (LogProtoHTTPScraperResponderOptions *) &proto_server_options->super;
+
+  options->scrape_freq_limit = value;
 }
 
 void
 log_proto_http_scraper_responder_options_set_single_instance(
-  LogProtoHTTPScraperResponderOptionsStorage *options,
+  LogProtoServerOptionsStorage *proto_server_options,
   gboolean value)
 {
-  options->super.single_instance = value;
+  LogProtoHTTPScraperResponderOptions *options = (LogProtoHTTPScraperResponderOptions *) &proto_server_options->super;
+
+  options->single_instance = value;
 }
 
 gboolean
-log_proto_http_scraper_responder_options_set_stat_type(LogProtoHTTPScraperResponderOptionsStorage *options,
+log_proto_http_scraper_responder_options_set_stat_type(LogProtoServerOptionsStorage *proto_server_options,
                                                        const gchar *value)
 {
+  LogProtoHTTPScraperResponderOptions *options = (LogProtoHTTPScraperResponderOptions *) &proto_server_options->super;
+
   if (strcmp(value, "stat") == 0)
     {
-      options->super.stat_type = STT_STAT;
+      options->stat_type = STT_STAT;
       return TRUE;
     }
   else if (strcmp(value, "query") == 0)
     {
-      options->super.stat_type = STT_QUERY;
+      options->stat_type = STT_QUERY;
       return TRUE;
     }
   return FALSE;
 }
 
 void
-log_proto_http_scraper_responder_options_set_stat_query(LogProtoHTTPScraperResponderOptionsStorage *options,
+log_proto_http_scraper_responder_options_set_stat_query(LogProtoServerOptionsStorage *proto_server_options,
                                                         const gchar *value)
 {
-  g_free(options->super.stat_query);
-  options->super.stat_query = g_strdup(value);
+  LogProtoHTTPScraperResponderOptions *options = (LogProtoHTTPScraperResponderOptions *) &proto_server_options->super;
+
+  g_free(options->stat_query);
+  options->stat_query = g_strdup(value);
 }
