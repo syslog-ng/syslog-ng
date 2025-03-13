@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-#include "logproto/logproto-http-scraper-responder.h"
+#include "logproto/logproto-http-scraper-responder-server.h"
 #include "stats/stats-prometheus.h"
 #include "stats/stats-query-commands.h"
 #include "timeutils/cache.h"
