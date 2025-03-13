@@ -63,6 +63,5 @@ void log_transport_init_instance(LogTransport *s, gint fd);
 void log_transport_free_method(LogTransport *s);
 void log_transport_free(LogTransport *s);
 gint log_transport_release_fd(LogTransport *s);
-void log_transport_update_fd(LogTransport *s, gint new_fd);
 
 #endif

@@ -179,15 +179,6 @@ log_proto_client_get_fd(LogProtoClient *s)
 }
 
 static inline void
-log_proto_client_update_fd(LogProtoClient *s, gint new_fd)
-{
-  if (s->transport != NULL)
-    {
-      log_transport_update_fd(s->transport, new_fd);
-    }
-}
-
-static inline void
 log_proto_client_reset_error(LogProtoClient *s)
 {
   s->status = LPS_SUCCESS;

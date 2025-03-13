@@ -61,14 +61,3 @@ log_transport_release_fd(LogTransport *s)
 
   return fd;
 }
-
-void
-log_transport_update_fd(LogTransport *s, gint new_fd)
-{
-  if (s->fd != -1)
-    {
-      close(s->fd);
-    }
-
-  s->fd = new_fd;
-}
