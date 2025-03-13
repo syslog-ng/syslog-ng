@@ -46,7 +46,7 @@
 #include "service-management.h"
 #include "string-list.h"
 #include "multi-line/multi-line-factory.h"
-#include "logproto/logproto-http-scraper-responder.h"
+#include "logproto/logproto-http-scraper-responder-server.h"
 
 #include "systemd-syslog-source.h"
 #include "afsocket-systemd-override.h"
