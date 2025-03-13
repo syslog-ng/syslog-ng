@@ -28,7 +28,7 @@
 #include "logproto-framed-server.h"
 #include "logproto-auto-server.h"
 #include "logproto/logproto-http-server.h"
-#include "logproto/logproto-http-scraper-responder.h"
+#include "logproto/logproto-http-scraper-responder-server.h"
 #include "plugin.h"
 #include "plugin-types.h"
 
