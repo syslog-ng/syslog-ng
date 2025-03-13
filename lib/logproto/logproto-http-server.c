@@ -146,6 +146,7 @@ log_proto_http_server_options_init(LogProtoServerOptionsStorage *options_storage
                                    GlobalConfig *cfg)
 {
   LogProtoHTTPServerOptions *options = &((LogProtoHTTPServerOptionsStorage *)options_storage)->super;
+  multi_line_options_set_mode(&options->super.multi_line_options, "empty-line-separated");
   options->close_after_send = FALSE;
 }
 
