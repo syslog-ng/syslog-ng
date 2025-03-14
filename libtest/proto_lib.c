@@ -25,6 +25,7 @@
 #include <criterion/criterion.h>
 #include "proto_lib.h"
 #include "grab-logging.h"
+#include "logproto/logproto-http-scraper-responder-server.h"
 
 #include "cfg.h"
 #include <string.h>
