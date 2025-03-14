@@ -34,8 +34,8 @@ struct _LogProtoTextServer
   MultiLineLogic *multi_line;
 
   const guchar *(*find_eom)(const guchar *s, gsize n);
-  void (*extracted_raw_data_handler)(LogProtoTextServer *self, LogProtoBufferedServerState *state,
-                                     const guchar *buffer_start, gsize buffer_bytesl);
+  gboolean (*extracted_raw_data_handler)(LogProtoTextServer *self, LogProtoBufferedServerState *state,
+                                         const guchar *buffer_start, gsize buffer_bytesl);
   gint32 consumed_len;
   gint32 cached_eol_pos;
 };
