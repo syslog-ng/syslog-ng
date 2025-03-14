@@ -43,7 +43,7 @@ _accumulate_line(MultiLineLogic *s,
 
   g_mutex_lock(&self->lock);
   gint result = MLL_WAITING | MLL_CONSUME_SEGMENT;
-  if ((segment_len == 1 && segment[0] == '\r') || (segment_len == 2 && segment[0] == '\r' && segment[1] == '\n'))
+  if (segment_len == 0 || (segment_len == 1 && segment[0] == '\r'))
     result = MLL_EXTRACTED | MLL_CONSUME_SEGMENT;
   g_mutex_unlock(&self->lock);
   return result;
