@@ -25,7 +25,8 @@
 #define MULTI_LINE_EMPTY_LINE_SEP_MULTI_LINE_H_INCLUDED
 
 #include "multi-line/multi-line-logic.h"
+#include "multi-line/multi-line-factory.h"
 
-MultiLineLogic *empty_line_separated_multi_line_new(void);
+MultiLineLogic *empty_line_separated_multi_line_new(const MultiLineOptions *options);
 
 #endif

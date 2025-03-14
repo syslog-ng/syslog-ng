@@ -109,15 +109,15 @@ regexp_multi_line_free(MultiLineLogic *s)
 }
 
 MultiLineLogic *
-regexp_multi_line_new(gint mode, MultiLinePattern *prefix, MultiLinePattern *garbage_or_suffix)
+regexp_multi_line_new(gint mode, const MultiLineOptions *options)
 {
   RegexpMultiLine *self = g_new0(RegexpMultiLine, 1);
 
-  multi_line_logic_init_instance(&self->super);
+  multi_line_logic_init_instance(&self->super, options->keep_trailing_newline);
   self->super.accumulate_line = regexp_multi_line_accumulate_line;
   self->super.free_fn = regexp_multi_line_free;
   self->mode = mode;
-  self->prefix = multi_line_pattern_ref(prefix);
-  self->garbage = multi_line_pattern_ref(garbage_or_suffix);
+  self->prefix = multi_line_pattern_ref(options->regexp.prefix);
+  self->garbage = multi_line_pattern_ref(options->regexp.garbage);
   return &self->super;
 }

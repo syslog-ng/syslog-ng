@@ -25,8 +25,9 @@
 #define MULTI_LINE_SMART_MULTI_LINE_H_INCLUDED
 
 #include "multi-line/multi-line-logic.h"
+#include "multi-line/multi-line-factory.h"
 
-MultiLineLogic *smart_multi_line_new(void);
+MultiLineLogic *smart_multi_line_new(const MultiLineOptions *options);
 
 void smart_multi_line_global_init(void);
 void smart_multi_line_global_deinit(void);

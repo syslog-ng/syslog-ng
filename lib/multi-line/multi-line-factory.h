@@ -26,7 +26,8 @@
 #ifndef MULTI_LINE_MULTI_LINE_FACTORY_H_INCLUDED
 #define MULTI_LINE_MULTI_LINE_FACTORY_H_INCLUDED
 
-#include "multi-line/regexp-multi-line.h"
+#include "multi-line/multi-line-pattern.h"
+#include "multi-line/multi-line-logic.h"
 
 enum
 {
@@ -41,6 +42,7 @@ enum
 typedef struct _MultiLineOptions
 {
   gint mode;
+  gboolean keep_trailing_newline;
   union
   {
     struct
@@ -58,6 +60,7 @@ gboolean multi_line_options_set_prefix(MultiLineOptions *options,
                                        const gchar *prefix_regexp, GError **error);
 gboolean multi_line_options_set_garbage(MultiLineOptions *options,
                                         const gchar *garbage_regexp, GError **error);
+void multi_line_options_set_keep_trailing_newline(MultiLineOptions *options, gboolean value);
 
 gboolean multi_line_options_validate(const MultiLineOptions *options);
 void multi_line_options_copy(MultiLineOptions *dest, const MultiLineOptions *source);
