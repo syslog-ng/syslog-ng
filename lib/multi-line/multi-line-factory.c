@@ -39,15 +39,15 @@ multi_line_factory_construct(const MultiLineOptions *options)
   switch (options->mode)
     {
     case MLM_INDENTED:
-      return indented_multi_line_new();
+      return indented_multi_line_new(options);
     case MLM_REGEXP_PREFIX_GARBAGE:
-      return regexp_multi_line_new(RML_PREFIX_GARBAGE, options->regexp.prefix, options->regexp.garbage);
+      return regexp_multi_line_new(RML_PREFIX_GARBAGE, options);
     case MLM_REGEXP_PREFIX_SUFFIX:
-      return regexp_multi_line_new(RML_PREFIX_SUFFIX, options->regexp.prefix, options->regexp.garbage);
+      return regexp_multi_line_new(RML_PREFIX_SUFFIX, options);
     case MLM_SMART:
-      return smart_multi_line_new();
+      return smart_multi_line_new(options);
     case MLM_EMPTY_LINE_SEPARATED:
-      return empty_line_separated_multi_line_new();
+      return empty_line_separated_multi_line_new(options);
     case MLM_NONE:
       return NULL;
 
@@ -114,16 +114,24 @@ multi_line_options_validate(const MultiLineOptions *options)
 }
 
 void
+multi_line_options_set_keep_trailing_newline(MultiLineOptions *options, gboolean value)
+{
+  options->keep_trailing_newline = value;
+}
+
+void
 multi_line_options_defaults(MultiLineOptions *options)
 {
   memset(options, 0, sizeof(*options));
   options->mode = MLM_NONE;
+  options->keep_trailing_newline = FALSE;
 }
 
 void
 multi_line_options_copy(MultiLineOptions *dest, const MultiLineOptions *source)
 {
   dest->mode = source->mode;
+  dest->keep_trailing_newline = source->keep_trailing_newline;
   if (dest->mode == MLM_REGEXP_PREFIX_GARBAGE || dest->mode == MLM_REGEXP_PREFIX_SUFFIX)
     {
       dest->regexp.prefix = multi_line_pattern_ref(source->regexp.prefix);
@@ -134,6 +142,7 @@ multi_line_options_copy(MultiLineOptions *dest, const MultiLineOptions *source)
 gboolean
 multi_line_options_init(MultiLineOptions *options)
 {
+  options->keep_trailing_newline = FALSE;
   if (!multi_line_options_validate(options))
     return FALSE;
   return TRUE;

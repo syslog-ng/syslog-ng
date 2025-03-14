@@ -52,7 +52,7 @@ struct _MultiLineLogic
   gboolean keep_trailing_newline;
 };
 
-void multi_line_logic_init_instance(MultiLineLogic *self);
+void multi_line_logic_init_instance(MultiLineLogic *self, gboolean keep_trailing_newline);
 void multi_line_logic_free_method(MultiLineLogic *s);
 
 /*

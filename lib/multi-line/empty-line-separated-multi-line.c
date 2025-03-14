@@ -58,14 +58,14 @@ _free(MultiLineLogic *s)
 }
 
 MultiLineLogic *
-empty_line_separated_multi_line_new(void)
+empty_line_separated_multi_line_new(const MultiLineOptions *options)
 {
   EmpytLineSeparatedMultiLine *self = g_new0(EmpytLineSeparatedMultiLine, 1);
 
-  multi_line_logic_init_instance(&self->super);
+  multi_line_logic_init_instance(&self->super, options->keep_trailing_newline);
   self->super.free_fn = _free;
   self->super.accumulate_line = _accumulate_line;
-  self->super.keep_trailing_newline = TRUE;
+  self->super.keep_trailing_newline = options->keep_trailing_newline;
   g_mutex_init(&self->lock);
 
   return &self->super;

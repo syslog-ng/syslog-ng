@@ -32,8 +32,8 @@ multi_line_logic_free_method(MultiLineLogic *s)
 }
 
 void
-multi_line_logic_init_instance(MultiLineLogic *self)
+multi_line_logic_init_instance(MultiLineLogic *self, gboolean keep_trailing_newline)
 {
   self->free_fn = multi_line_logic_free_method;
-  self->keep_trailing_newline = FALSE;
+  self->keep_trailing_newline = keep_trailing_newline;
 }
