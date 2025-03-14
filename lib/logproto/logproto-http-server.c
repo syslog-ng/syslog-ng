@@ -138,6 +138,7 @@ log_proto_http_server_options_defaults(LogProtoServerOptionsStorage *options_sto
   options->super.validate = log_proto_http_server_options_validate;
   options->super.destroy = log_proto_http_server_options_destroy;
 
+  multi_line_options_set_keep_trailing_newline(&options->super.multi_line_options, TRUE);
   options->close_after_send = FALSE;
 }
 
