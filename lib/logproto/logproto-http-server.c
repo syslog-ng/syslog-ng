@@ -82,20 +82,23 @@ _send_response(LogProtoHTTPServer *self, const gchar *data, gsize data_len, gboo
   return sent_bytes;
 }
 
-static void
+static gboolean
 _http_request_handler(LogProtoTextServer *s, LogProtoBufferedServerState *state,
                       const guchar *buffer_start, gsize buffer_bytes)
 {
+  gboolean result = FALSE;
   LogProtoHTTPServer *self = (LogProtoHTTPServer *)s;
 
   GString *response = self->request_processor(self, state, buffer_start, buffer_bytes);
   if (response)
     {
+      result = response->len > 0;
       if (self->response_sender(self, response->str, response->len, self->options->super.close_after_send) >= 0)
         msg_trace("Sent response", evt_tag_str("http-server-response", response->str));
     }
   if (response)
     g_string_free(response, TRUE);
+  return result;
 }
 
 void
