@@ -151,12 +151,18 @@ log_proto_http_server_options_init(LogProtoServerOptionsStorage *options_storage
 {
   LogProtoHTTPServerOptions *options = &((LogProtoHTTPServerOptionsStorage *)options_storage)->super;
   multi_line_options_set_mode(&options->super.multi_line_options, "empty-line-separated");
+  multi_line_options_set_keep_trailing_newline(&options->super.multi_line_options, TRUE);
   options->close_after_send = FALSE;
 }
 
 void
 log_proto_http_server_options_destroy(LogProtoServerOptionsStorage *options_storage)
 {
+  LogProtoHTTPServerOptions *options = &((LogProtoHTTPServerOptionsStorage *)options_storage)->super;
+
+  options->super.init = NULL;
+  options->super.validate = NULL;
+  options->super.destroy = NULL;
 }
 
 gboolean
