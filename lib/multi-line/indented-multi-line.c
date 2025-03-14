@@ -21,7 +21,7 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
-#include "multi-line-logic.h"
+#include "indented-multi-line.h"
 
 static inline gboolean
 _is_line_a_continuation_line(guchar first_char)
@@ -55,11 +55,11 @@ _accumulate_line(MultiLineLogic *s,
 }
 
 MultiLineLogic *
-indented_multi_line_new(void)
+indented_multi_line_new(const MultiLineOptions *options)
 {
   MultiLineLogic *self = g_new0(MultiLineLogic, 1);
 
-  multi_line_logic_init_instance(self);
+  multi_line_logic_init_instance(self, options->keep_trailing_newline);
   self->accumulate_line = _accumulate_line;
   return self;
 }

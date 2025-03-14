@@ -22,14 +22,17 @@
 #include <criterion/criterion.h>
 
 #include "multi-line/smart-multi-line.h"
+#include "libtest/proto_lib.h"
 #include "scratch-buffers.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "reloc.h"
 
+static MultiLineOptions options;
+
 Test(smart_multi_line, three_unrelated_lines_that_are_not_backtraces)
 {
-  MultiLineLogic *mll = smart_multi_line_new();
+  MultiLineLogic *mll = smart_multi_line_new(&options);
   const gchar *first_line = "this is an initial line that is consumed";
   const gchar *second_line = "another line that is not part of a traceback";
   const gchar *third_line = "yet another line that is not part of a traceback";
@@ -149,7 +152,7 @@ _output_equals(gint ndx, const gchar *expected_value)
 
 Test(smart_multi_line, feed_smart_multi_line_with_single_and_multi_line_messages)
 {
-  MultiLineLogic *mll = smart_multi_line_new();
+  MultiLineLogic *mll = smart_multi_line_new(&options);
   const gchar *messages[] =
   {
 
@@ -220,7 +223,7 @@ Test(smart_multi_line, feed_smart_multi_line_with_single_and_multi_line_messages
 
 Test(smart_multi_line, test_python_backtrace)
 {
-  MultiLineLogic *mll = smart_multi_line_new();
+  MultiLineLogic *mll = smart_multi_line_new(&options);
   const gchar *messages[] =
   {
     "Traceback (most recent call last):",
@@ -250,7 +253,7 @@ Test(smart_multi_line, test_python_backtrace)
 
 Test(smart_multi_line, test_python_backtrace_with_tailing_exception_text)
 {
-  MultiLineLogic *mll = smart_multi_line_new();
+  MultiLineLogic *mll = smart_multi_line_new(&options);
   const gchar *messages[] =
   {
     "Traceback (most recent call last):",
@@ -282,7 +285,7 @@ Test(smart_multi_line, test_python_backtrace_with_tailing_exception_text)
 
 Test(smart_multi_line, test_java_backtrace)
 {
-  MultiLineLogic *mll = smart_multi_line_new();
+  MultiLineLogic *mll = smart_multi_line_new(&options);
   const gchar *messages[] =
   {
     "java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;",
@@ -344,7 +347,7 @@ Test(smart_multi_line, test_java_backtrace)
 
 Test(smart_multi_line, test_php_backtrace)
 {
-  MultiLineLogic *mll = smart_multi_line_new();
+  MultiLineLogic *mll = smart_multi_line_new(&options);
   const gchar *messages[] =
   {
     "exception 'Exception' with message 'Custom exception' in /home/joe/work/test-php/test.php:5",
@@ -390,7 +393,7 @@ Test(smart_multi_line, test_php_backtrace)
 
 Test(smart_multi_line, test_js_backtrace)
 {
-  MultiLineLogic *mll = smart_multi_line_new();
+  MultiLineLogic *mll = smart_multi_line_new(&options);
   const gchar *messages[] =
   {
     "ReferenceError: myArray is not defined",
@@ -428,7 +431,7 @@ Test(smart_multi_line, test_js_backtrace)
 
 Test(smart_multi_line, test_go_backtrace)
 {
-  MultiLineLogic *mll = smart_multi_line_new();
+  MultiLineLogic *mll = smart_multi_line_new(&options);
   const gchar *messages[] =
   {
     "panic: my panic",
@@ -547,7 +550,7 @@ Test(smart_multi_line, test_go_backtrace)
 
 Test(smart_multi_line, test_ruby_backtrace)
 {
-  MultiLineLogic *mll = smart_multi_line_new();
+  MultiLineLogic *mll = smart_multi_line_new(&options);
   const gchar *messages[] =
   {
 
@@ -636,7 +639,7 @@ Test(smart_multi_line, test_ruby_backtrace)
 
 Test(smart_multi_line, test_dart_backtrace)
 {
-  MultiLineLogic *mll = smart_multi_line_new();
+  MultiLineLogic *mll = smart_multi_line_new(&options);
   const gchar *messages[] =
   {
     "Unhandled exception:",
