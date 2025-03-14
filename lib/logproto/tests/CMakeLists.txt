@@ -7,7 +7,8 @@ set(TEST_LOGPROTO_SOURCES
   test-framed-server.c
   test-auto-server.c
   test-indented-multiline-server.c
-  test-regexp-multiline-server.c)
+  test-regexp-multiline-server.c
+  test-http-scraper-responder-server.c)
 
 add_unit_test(LIBTEST CRITERION
   TARGET test_logproto
