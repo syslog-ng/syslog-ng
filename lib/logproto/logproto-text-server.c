@@ -257,7 +257,15 @@ _fetch_msg_from_buffer(LogProtoTextServer *self, LogProtoBufferedServerState *st
 success:
   if (self->extracted_raw_data_handler)
     self->extracted_raw_data_handler(self, state, buffer_start, buffer_bytes);
-  log_proto_text_server_remove_trailing_newline(msg, msg_len);
+
+  if (G_UNLIKELY(self->multi_line && multi_line_logic_keep_trailing_newline(self->multi_line)))
+    {
+      if (eol && buffer_bytes > *msg_len)
+        ++*msg_len; // This must always be a '\n' at this point
+    }
+  else
+    log_proto_text_server_remove_trailing_newline(msg, msg_len);
+
   return TRUE;
 }
 
