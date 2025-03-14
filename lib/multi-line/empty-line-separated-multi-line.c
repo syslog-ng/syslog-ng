@@ -65,6 +65,7 @@ empty_line_separated_multi_line_new(void)
   multi_line_logic_init_instance(&self->super);
   self->super.free_fn = _free;
   self->super.accumulate_line = _accumulate_line;
+  self->super.keep_trailing_newline = TRUE;
   g_mutex_init(&self->lock);
 
   return &self->super;
