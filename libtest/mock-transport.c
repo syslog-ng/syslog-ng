@@ -424,3 +424,16 @@ log_transport_mock_endless_records_new(const gchar *read_buffer1, gssize read_bu
   self->eof_is_eagain = TRUE;
   return &self->super;
 }
+
+LogTransport *
+log_transport_mock_http_screaper_new(const gchar *read_buffer1, gssize read_buffer_length1, ...)
+{
+  LogTransportMock *self = log_transport_mock_new();
+  va_list va;
+
+  va_start(va, read_buffer_length1);
+  log_transport_mock_init(self, read_buffer1, read_buffer_length1, va);
+  va_end(va);
+  self->input_is_a_stream = TRUE;
+  return &self->super;
+}
