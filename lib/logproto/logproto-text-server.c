@@ -256,7 +256,11 @@ _fetch_msg_from_buffer(LogProtoTextServer *self, LogProtoBufferedServerState *st
 
 success:
   if (self->extracted_raw_data_handler)
-    self->extracted_raw_data_handler(self, state, buffer_start, buffer_bytes);
+    if (FALSE == self->extracted_raw_data_handler(self, state, buffer_start, buffer_bytes))
+      {
+        *msg_len = 0;
+        return TRUE;
+      }
 
   if (G_UNLIKELY(self->multi_line && multi_line_logic_keep_trailing_newline(self->multi_line)))
     {
