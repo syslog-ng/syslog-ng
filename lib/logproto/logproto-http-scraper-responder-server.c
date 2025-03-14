@@ -95,10 +95,11 @@ _compose_response_body(LogProtoHTTPServer *s)
   g_mutex_lock(_mutex());
   iv_validate_now();
   time_t now = iv_now.tv_sec;
-  if (self->options->scrape_freq_limit && (now - last_scrape_request_time) < self->options->scrape_freq_limit)
+  time_t ellapsed = now - last_scrape_request_time;
+  if (self->options->scrape_freq_limit && ellapsed < self->options->scrape_freq_limit)
     {
       msg_trace("Too frequent scraper requests, ignoring for now",
-                evt_tag_int("last-request", now - last_scrape_request_time),
+                evt_tag_int("last-request", ellapsed),
                 evt_tag_int("allowed-freq", self->options->scrape_freq_limit));
       g_mutex_unlock(_mutex());
       /* NOTE: Using an empty response body with the close_after_send=TRUE option
@@ -126,12 +127,10 @@ static gboolean
 _check_prometheus_request_headers(LogProtoHTTPServer *s, gchar *buffer_start, gsize buffer_bytes)
 {
   // TODO: add a generic header parser to LogProtoHTTPServer and use it here
-  gchar **lines = g_strsplit(buffer_start, "\r\n", 2);
-
   // First line must be like 'GET /metrics HTTP/1.1\x0d\x0a'
-  gchar *line = lines && lines[0] ? lines[0] : buffer_start;
-  gchar **tokens = g_strsplit(line, " ", 3);
-
+  // We do not care about lines for now, just trying to split the first three items
+  // from the beginning (first line) and search for an exact match
+  gchar **tokens = g_strsplit(buffer_start, " ", 3);
   gboolean broken = (tokens == NULL || tokens[0] == NULL || strcmp(tokens[0], "GET")
                      || tokens[1] == NULL || strcmp(tokens[1], "/metrics"));
 
@@ -141,8 +140,6 @@ _check_prometheus_request_headers(LogProtoHTTPServer *s, gchar *buffer_start, gs
 
   if (tokens)
     g_strfreev(tokens);
-  if (lines)
-    g_strfreev(lines);
   return FALSE == broken;
 }
 
@@ -184,7 +181,6 @@ log_proto_http_scraper_responder_server_init(LogProtoHTTPScraperResponder *self,
   self->super.response_body_composer = _compose_response_body;
 
   self->super.super.super.super.free_fn = _log_proto_http_scraper_responder_server_free;
-  self->super.super.super.no_multi_read = TRUE;
 
   self->options = (const LogProtoHTTPScraperResponderOptions *)options_storage;
 }
@@ -258,6 +254,7 @@ log_proto_http_scraper_responder_options_destroy(LogProtoServerOptionsStorage *o
 
   log_proto_http_server_options_destroy(options_storage);
   g_free(options->stat_query);
+  options->stat_query = NULL;
 }
 
 gboolean
