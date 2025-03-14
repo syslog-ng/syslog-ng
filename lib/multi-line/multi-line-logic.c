@@ -35,4 +35,5 @@ void
 multi_line_logic_init_instance(MultiLineLogic *self)
 {
   self->free_fn = multi_line_logic_free_method;
+  self->keep_trailing_newline = FALSE;
 }
