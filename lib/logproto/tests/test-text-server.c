@@ -59,7 +59,7 @@ construct_test_proto_with_accumulator(gint (*accumulator)(MultiLineLogic *, cons
 {
   MultiLineLogic *multi_line = g_new0(MultiLineLogic, 1);
 
-  multi_line_logic_init_instance(multi_line);
+  multi_line_logic_init_instance(multi_line, proto_server_options.super.multi_line_options.keep_trailing_newline);
   multi_line->accumulate_line = accumulator;
 
   LogProtoServer *proto = construct_test_proto(transport);

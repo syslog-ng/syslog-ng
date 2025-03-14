@@ -426,11 +426,11 @@ _free(MultiLineLogic *s)
 }
 
 MultiLineLogic *
-smart_multi_line_new(void)
+smart_multi_line_new(const MultiLineOptions *options)
 {
   SmartMultiLine *self = g_new0(SmartMultiLine, 1);
 
-  multi_line_logic_init_instance(&self->super);
+  multi_line_logic_init_instance(&self->super, options->keep_trailing_newline);
   self->super.free_fn = _free;
   self->super.accumulate_line = _accumulate_line;
   self->last_segment_rewound = FALSE;
