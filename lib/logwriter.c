@@ -1202,16 +1202,15 @@ log_writer_logrotate(LogWriter *self)
  *
  */
 
+
 static gboolean
 log_writer_flush_finalize(LogWriter *self)
 {
   LogProtoStatus status = log_proto_client_flush(self->proto);
 
   if (status == LPS_SUCCESS || status == LPS_PARTIAL)
-    {
-      log_writer_logrotate(self);
-      return TRUE;
-    }
+    return TRUE;
+
 
   return FALSE;
 }
