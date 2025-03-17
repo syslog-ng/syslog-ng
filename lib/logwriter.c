@@ -1860,6 +1860,7 @@ log_writer_reopen(LogWriter *s, LogProtoClient *proto)
     }
 }
 
+
 static void
 _set_metric_options(LogWriter *self, const gchar *stats_id, StatsClusterKeyBuilder *kb)
 {

@@ -132,12 +132,11 @@ affile_dw_reap(AFFileDestWriter *self)
   g_mutex_unlock(&owner->lock);
 }
 
-static LogProtoClient *
-_dw_reopen(AFFileDestWriter *self)
+static FileOpenerResult
+_dw_reopen(AFFileDestWriter *self, LogProtoClient **p)
 {
   int fd;
   struct stat st;
-  LogProtoClient *proto = NULL;
 
   msg_verbose("Initializing destination file writer",
               evt_tag_str("template", self->owner->filename_template->template_str),
@@ -163,25 +162,26 @@ _dw_reopen(AFFileDestWriter *self)
 
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
 
-      proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
-                                              &self->owner->writer_options.proto_options.super);
+      *p = file_opener_construct_dst_proto(self->owner->file_opener, transport,
+                                           &self->owner->writer_options.proto_options.super);
     }
-  else if (open_result != FILE_OPENER_RESULT_ERROR_PERMANENT)
+  else if (open_result == FILE_OPENER_RESULT_ERROR_TRANSIENT)
     {
       msg_error("Error opening file for writing",
                 evt_tag_str("filename", self->filename),
                 evt_tag_error(EVT_TAG_OSERROR));
     }
 
-  return proto;
+  return open_result;
 }
 
 static gboolean
 affile_dw_reopen(AFFileDestWriter *self)
 {
-  LogProtoClient *proto = _dw_reopen(self);
+  LogProtoClient *proto = NULL;
+  FileOpenerResult open_result = _dw_reopen(self, &proto);
 
-  if (proto == NULL)
+  if (open_result == FILE_OPENER_RESULT_ERROR_PERMANENT)
     {
       return FALSE;
     }
@@ -212,16 +212,29 @@ affile_dw_logrotate(AFFileDestWriter *self, LogProtoClient **p)
     {
       LogRotateStatus status = do_logrotate(logrotate_options, filename);
 
-      if (status == LR_SUCCESS)
+      if (status != LR_SUCCESS)
         {
-          *p = _dw_reopen(self);
-          if (*p == NULL)
-            {
-              return FALSE;
-            }
+          return FALSE;
+        }
 
+      FileOpenerResult open_result = _dw_reopen(self, p);
+      if (open_result == FILE_OPENER_RESULT_SUCCESS)
+        {
+          /* best case --> continue with opened file */
           msg_debug("Reopened log file",
                     evt_tag_str("filename", self->filename));
+
+        }
+      else if (open_result == FILE_OPENER_RESULT_ERROR_TRANSIENT)
+        {
+          /* try again to reopen */
+          msg_info("Trying to re-open file", evt_tag_str("filename", self->filename));
+          main_loop_call((MainLoopTaskFunc) affile_dw_reopen, (gpointer) self, TRUE);
+        }
+      else
+        {
+          /* TODO: Do something */
+          return FALSE;
         }
     }
 
