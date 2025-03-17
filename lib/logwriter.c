@@ -1387,6 +1387,14 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 
       if (!write_error)
         stats_counter_inc(self->metrics.written_messages);
+
+      /* check if we should rotate */
+      log_writer_logrotate(self);
+      /* in case that the new log file could not be opened return */
+      if (!self->proto)
+        {
+          return FALSE;;
+        }
     }
 
   if (write_error)
