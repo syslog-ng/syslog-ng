@@ -100,7 +100,7 @@ AnyField::FilterXObjectGetter(Message *message, ProtoReflectors reflectors)
     }
 
   msg_error("otel-field: Unexpected protobuf field type",
-            evt_tag_str("name", reflectors.fieldDescriptor->name().c_str()),
+            evt_tag_str("name", reflectors.fieldDescriptor->name().data()),
             evt_tag_int("type", reflectors.fieldType));
   return nullptr;
 }
@@ -258,7 +258,7 @@ public:
         return true;
       }
 
-    return protobuf_converter_by_type(reflectors.fieldDescriptor->type())->Set(message, reflectors.fieldDescriptor->name(),
+    return protobuf_converter_by_type(reflectors.fieldDescriptor->type())->Set(message, std::string(reflectors.fieldDescriptor->name()),
            object, assoc_object);
   }
 };
@@ -313,7 +313,7 @@ ProtobufField *syslogng::grpc::otel::otel_converter_by_type(FieldDescriptor::Typ
 
 ProtobufField *syslogng::grpc::otel::otel_converter_by_field_descriptor(const FieldDescriptor *fd)
 {
-  const std::string &fieldName = fd->name();
+  const std::string_view &fieldName = fd->name();
   if (fieldName.compare("time_unix_nano") == 0 ||
       fieldName.compare("observed_time_unix_nano") == 0)
     {
