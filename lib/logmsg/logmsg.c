@@ -172,33 +172,6 @@ TLS_BLOCK_END;
  * LogMessage
  **********************************************************************/
 
-gboolean
-log_msg_is_handle_macro(NVHandle handle)
-{
-  guint16 flags;
-
-  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  return !!(flags & LM_VF_MACRO);
-}
-
-gboolean
-log_msg_is_handle_sdata(NVHandle handle)
-{
-  guint16 flags;
-
-  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  return !!(flags & LM_VF_SDATA);
-}
-
-gboolean
-log_msg_is_handle_match(NVHandle handle)
-{
-  guint16 flags;
-
-  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
-  return !!(flags & LM_VF_MATCH);
-}
-
 static inline gboolean
 log_msg_chk_flag(const LogMessage *self, gint32 flag)
 {
