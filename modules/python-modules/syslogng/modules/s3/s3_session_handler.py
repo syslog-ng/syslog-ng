@@ -122,7 +122,7 @@ class S3SessionHandler:
         if not self.__upload_enabled:
             return rc
         try:
-            self.__client.upload_file(Filename=s3_object.path, Bucket=self.__bucket, Key=s3_object.full_target_key, Config=self.__transfer_config, ExtraArgs={"StorageClass": s3_object.storage_class, "ACL": s3_object.acl})
+            self.__client.upload_file(Filename=s3_object.path, Bucket=self.__bucket, Key=s3_object.full_target_key, Config=self.__transfer_config, ExtraArgs={"StorageClass": s3_object.storage_class, "ACL": s3_object.acl, "ContentType": s3_object.content_type})
             rc = True
             self.logger.debug(f"Object {s3_object.full_target_key} successfully uploaded.")
             s3_object.deprecate()

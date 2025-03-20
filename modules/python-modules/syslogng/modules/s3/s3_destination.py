@@ -83,6 +83,7 @@ class S3Destination(LogDestination):
             self.kms_key = str(options["kms_key"])
             self.storage_class = str(options["storage_class"]).upper().replace("-", "_")
             self.canned_acl = str(options["canned_acl"]).lower().replace("_", "-")
+            self.content_type = str(options["content_type"])
         except KeyError:
             assert False, (
                 f"S3: {str(exc_info()[1])[1:-1]}() option is missing. "
@@ -201,6 +202,7 @@ class S3Destination(LogDestination):
             "compresslevel": self.compresslevel,
             "max_object_size": self.max_object_size,
             "canned_acl": self.canned_acl,
+            "content_type": self.content_type,
         }
 
         self.s3_object_ready_queue: S3ObjectQueue = S3ObjectQueue()
