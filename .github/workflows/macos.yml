@@ -94,6 +94,7 @@ jobs:
           # -DIVYKIS_SOURCE=internal is switched to system temporally as of https://github.com/buytenh/ivykis/pulls
           CMAKE_CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
+            -DENABLE_EXTRA_WARNINGS=ON
             -DSUMMARY_LEVEL=1
             -DCMAKE_BUILD_TYPE=Debug
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
