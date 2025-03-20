@@ -422,13 +422,6 @@ _reopen_on_notify(LogPipe *s, gboolean recover_state)
 }
 
 static void
-_on_file_close(FileReader *self)
-{
-  if (self->options->exit_on_eof)
-    cfg_shutdown(log_pipe_get_config(&self->super));
-}
-
-static void
 _on_file_moved(FileReader *self)
 {
   msg_verbose("Follow-mode file source moved, tracking of the new file is started",
@@ -473,7 +466,6 @@ file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
   switch (notify_code)
     {
     case NC_CLOSE:
-      _on_file_close(self);
       break;
 
     case NC_FILE_MOVED:

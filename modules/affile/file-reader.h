@@ -32,7 +32,6 @@ typedef struct _FileReaderOptions
   gint multi_line_timeout;
   gboolean restore_state;
   LogReaderOptions reader_options;
-  gboolean exit_on_eof;
 } FileReaderOptions;
 
 typedef struct _FileReader FileReader;
