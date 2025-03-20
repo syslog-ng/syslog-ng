@@ -212,6 +212,7 @@ modules/grpc/common
 modules/grpc/protos/apphook\.(cpp|h)$
 modules/cloud-auth/cloud-auth(|-grammar|-parser|-plugin)\.(c|h|cpp|hpp|ym)$
 modules/cloud-auth/google-auth\.(h|cpp|hpp)$
+modules/cloud-auth/azure-auth\.(h|cpp|hpp)$
 modules/examples/inner-destinations/tls-test-validation
 modules/examples/sources/random-choice-generator
 modules/python/python-options.(c|h)$
@@ -232,6 +233,7 @@ scl/python/python-modules\.conf$
 scl/darwinosl/plugin\.conf$
 scl/splunk/splunk\.conf$
 scl/google/google-pubsub\.conf$
+scl/azure/azure-monitor\.conf$
 scl/openobserve/.*\.conf$
 scl/pgsql/pgsql\.conf$
 scl/qbittorrent/qbittorrent\.conf$
