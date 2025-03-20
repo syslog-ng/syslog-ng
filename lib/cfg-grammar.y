@@ -228,6 +228,7 @@
 %token KW_CHECK_HOSTNAME              10093
 %token KW_BAD_HOSTNAME                10094
 %token KW_LOG_LEVEL                   10095
+%token KW_CHECK_PROGRAM               10097
 
 %token KW_KEEP_TIMESTAMP              10100
 
@@ -1053,6 +1054,7 @@ options_item
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ configuration->chain_hostnames = $3; }
 	| KW_KEEP_HOSTNAME '(' yesno ')'	{ configuration->keep_hostname = $3; }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ configuration->check_hostname = $3; }
+	| KW_CHECK_PROGRAM '(' yesno ')' { configuration->check_program = $3; }
 	| KW_BAD_HOSTNAME '(' string ')'	{ cfg_bad_hostname_set(configuration, $3); free($3); }
 	| KW_TIME_REOPEN '(' positive_integer ')'		{ configuration->time_reopen = $3; }
 	| KW_TIME_REAP '(' nonnegative_integer ')'		{ configuration->time_reap = $3; }
@@ -1097,7 +1099,7 @@ stat_option
 	: KW_STATS_FREQ '(' nonnegative_integer ')'          { last_stats_options->log_freq = $3; }
 	| KW_STATS_LEVEL '(' nonnegative_integer ')'         { last_stats_options->level = $3; }
 	| KW_STATS_LIFETIME '(' positive_integer ')'      { last_stats_options->lifetime = $3; }
-  | KW_STATS_MAX_DYNAMIC '(' nonnegative_integer ')'   { last_stats_options->max_dynamic = $3; }
+	| KW_STATS_MAX_DYNAMIC '(' nonnegative_integer ')'   { last_stats_options->max_dynamic = $3; }
 	| KW_STATS '(' stats_group_options ')'
 	;
 
@@ -1436,6 +1438,7 @@ source_reader_option
         /* NOTE: plugins need to set "last_reader_options" in order to incorporate this rule in their grammar */
 
 	: KW_CHECK_HOSTNAME '(' yesno ')'	{ last_reader_options->check_hostname = $3; }
+	| KW_CHECK_PROGRAM '(' yesno ')' { last_reader_options->check_program = $3; }
 	| KW_FLAGS '(' source_reader_option_flags ')'
 	| KW_LOG_FETCH_LIMIT '(' positive_integer ')'	{ last_reader_options->fetch_limit = $3; }
         | KW_FORMAT '(' string ')'              { last_reader_options->parse_options.format = g_strdup($3); free($3); }
@@ -1447,6 +1450,7 @@ source_reader_option
 source_reader_option_flags
         : string source_reader_option_flags     { CHECK_ERROR(log_reader_options_process_flag(last_reader_options, $1), @1, "Unknown flag \"%s\"", $1); free($1); }
         | KW_CHECK_HOSTNAME source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-hostname"); }
+        | KW_CHECK_PROGRAM source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-program"); }
 	|
 	;
 

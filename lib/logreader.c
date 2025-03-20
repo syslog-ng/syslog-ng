@@ -875,6 +875,11 @@ log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gcha
     options->parse_options.flags |= LP_ASSUME_UTF8;
   if (cfg->threaded)
     options->flags |= LR_THREADED;
+  if (options->check_program == -1)
+    options->check_program = cfg->check_program;
+  if (options->check_program)
+    options->parse_options.flags |= LP_CHECK_PROGRAM;
+
   options->initialized = TRUE;
 }
 
