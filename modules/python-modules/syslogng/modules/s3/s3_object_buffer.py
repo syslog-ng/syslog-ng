@@ -68,7 +68,7 @@ class S3ObjectBuffer:
         self.__meta_path = meta_path
         self.__path = Path(str(meta_path).removesuffix("_meta.json"))
         with open(self.__meta_path, "r") as meta_file:
-            self.__meta = json.loads(meta_file.read())
+            self.__meta = self.__meta | json.loads(meta_file.read())
         self.buffer = CompressableFileBuffer(self.__path, self.__meta["compression"], self.__meta["compresslevel"])
         self.__buffer_source = "loaded"
 
