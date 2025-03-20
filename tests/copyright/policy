@@ -65,6 +65,7 @@ lib/logmsg/tests/messages/syslog-ng-(pe-)?[.0-9]*-msg.h$
 modules/python-modules/requirements\.lock
 scl/darwinosl/darwinosl-metadata-db.csv
 lib/multi-line/smart-multi-line\.fsm$
+.editorconfig
 
 ###########################################################################
 # These files are LGPLd and are external contributions _without_ a Balabit
