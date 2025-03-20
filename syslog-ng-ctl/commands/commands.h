@@ -28,6 +28,7 @@
 #include "secret-storage/secret-storage.h"
 
 #include <stdio.h>
+#include <errno.h>
 
 /* Though clang has no issues, but gcc is stricter about requiring initializer elements to be compile-time constants when initializing structures directly
  * This helper macro is used to initialize GOptionEntry structures with the same values as the GOptionEntry initializers without having to repeat the initializer values */

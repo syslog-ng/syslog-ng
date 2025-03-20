@@ -25,6 +25,7 @@
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster.h"
 #include "utf8utils.h"
+#include "scratch-buffers.h"
 
 #include <string.h>
 
@@ -58,16 +59,13 @@ stats_format_csv_escapevar(const gchar *var)
   return escaped_result;
 }
 
-static void
-stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
+GString *
+stats_csv_format_counter(StatsCluster *sc, gint type, StatsCounterItem *counter)
 {
-  gpointer *args = (gpointer *) user_data;
-  StatsCSVRecordFunc process_record = (StatsCSVRecordFunc) args[0];
-  gpointer process_record_arg = args[1];
   gchar *s_id, *s_instance, *tag_name;
   gchar buf[32];
   gchar state;
-  GString *csv = g_string_sized_new(512);
+  GString *csv = scratch_buffers_alloc();
 
   s_id = stats_format_csv_escapevar(sc->key.legacy.id);
   s_instance = stats_format_csv_escapevar(sc->key.legacy.instance);
@@ -80,14 +78,34 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
     state = 'a';
 
   tag_name = stats_format_csv_escapevar(stats_cluster_get_type_name(sc, type));
+
   g_string_printf(csv, "%s;%s;%s;%c;%s;%"G_GSIZE_FORMAT"\n",
                   stats_cluster_get_component_name(sc, buf, sizeof(buf)),
                   s_id, s_instance, state, tag_name, stats_counter_get(&sc->counter_group.counters[type]));
-  process_record(csv->str, process_record_arg);
-  g_string_free(csv, TRUE);
+
   g_free(tag_name);
   g_free(s_id);
   g_free(s_instance);
+
+  return csv;
+}
+
+static void
+stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  StatsCSVRecordFunc process_record = (StatsCSVRecordFunc) args[0];
+  gpointer process_record_arg = args[1];
+
+  ScratchBuffersMarker marker;
+  scratch_buffers_mark(&marker);
+
+  GString *record = stats_csv_format_counter(sc, type, counter);
+  if (!record)
+    return;
+
+  process_record(record->str, process_record_arg);
+  scratch_buffers_reclaim_marked(marker);
 }
 
 void

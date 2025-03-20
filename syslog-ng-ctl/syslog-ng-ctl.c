@@ -112,9 +112,8 @@ slng_export_config_graph(int argc, char *argv[], const gchar *mode, GOptionConte
 
 static CommandDescriptor modes[] =
 {
-  { "attach", no_options, "Attach to a running syslog-ng instance", NULL, attach_commands },
-  // TODO: Add proper details of the sub-commands like attach and credentials have
-  { "stats", stats_options, "Get syslog-ng statistics. Possible commands: csv, prometheus; default: csv", slng_stats, NULL },
+  { "attach", no_options, "Attach to a running syslog-ng instance. Possible commands: stdio, logs, debugger", NULL, attach_commands },
+  { "stats", stats_options, "Get syslog-ng statistics", slng_stats, NULL }, // do not reference the legacy sub-commands anymore, use the new --format option instead
   { "verbose", verbose_options, "Enable/query verbose messages", slng_verbose, NULL },
   { "debug", verbose_options, "Enable/query debug messages", slng_verbose, NULL },
   { "trace", verbose_options, "Enable/query trace messages", slng_verbose, NULL },
@@ -122,8 +121,7 @@ static CommandDescriptor modes[] =
   { "stop", no_options, "Stop syslog-ng process", slng_stop, NULL },
   { "reload", no_options, "Reload syslog-ng", slng_reload, NULL },
   { "reopen", no_options, "Re-open of log destination files", slng_reopen, NULL },
-  // TODO: Add proper details of the sub-commands like attach and credentials have
-  { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query, NULL },
+  { "query", no_options, "Query syslog-ng statistics. Possible commands: list [pattern], get [pattern]", NULL, query_commands },
   { "show-license-info", license_options, "Show information about the license", slng_license, NULL },
   { "credentials", no_options, "Credentials manager", NULL, credentials_commands },
   { "config", config_options, "Print current config", slng_config, NULL },
@@ -192,8 +190,6 @@ setup_help_context(const gchar *cmdname, CommandDescriptor *active_mode)
   g_option_context_set_summary(ctx, active_mode->description);
   g_option_context_add_main_entries(ctx, active_mode->options, NULL);
   g_option_context_add_main_entries(ctx, slng_options, NULL);
-  // Further detailed descriptions might go to the end of the list
-  //g_option_context_set_description(ctx, active_mode->detailed_description);
 
   return ctx;
 }
@@ -214,22 +210,26 @@ main(int argc, char *argv[])
   GOptionContext *ctx = setup_help_context(cmdname_accumulator->len > 0 ? cmdname_accumulator->str : NULL, active_mode);
   g_string_free(cmdname_accumulator, TRUE);
 
-  if (!ctx)
+  if (ctx == NULL)
     {
       fprintf(stderr, "Unknown command\n\n");
       print_usage(bin_name->str, "", modes);
-      exit(1);
+      return EINVAL;
     }
 
-  if (!g_option_context_parse(ctx, &argc, &argv, &error))
+  if (FALSE == g_option_context_parse(ctx, &argc, &argv, &error))
     {
       fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");
       g_clear_error(&error);
-      g_option_context_free(ctx);
-      return 1;
+      print_usage(bin_name->str, g_option_context_get_description(ctx), modes);
+      result = EINVAL;
+    }
+  else
+    {
+      if ((result = run(control_name, argc, argv, active_mode, ctx)) == EINVAL)
+        print_usage(bin_name->str, g_option_context_get_description(ctx), modes);
     }
 
-  result = run(control_name, argc, argv, active_mode, ctx);
   g_option_context_free(ctx);
   return result;
 }
