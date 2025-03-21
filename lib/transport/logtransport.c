@@ -61,4 +61,3 @@ log_transport_release_fd(LogTransport *s)
 
   return fd;
 }
-

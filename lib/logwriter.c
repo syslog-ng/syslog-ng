@@ -1164,6 +1164,33 @@ log_writer_realloc_line_buffer(LogWriter *self)
 }
 
 /*
+ * This function is intended to be called by the current logwriter worker thread.
+ * As the writer thread is the only one currently working with proto, we can set it without lock.
+ *
+ * It is also not necessary to register or start watches, as this happens in _work_finished.
+ * In contrast to log_writer_reopen this function takes immediate effect and does not deadlock
+ * when called within the writer thread.
+ *
+ * Other threads should call log_writer_reopen, as there could be an ongoing write operation!
+ *
+ * The log_pipe_notify call creates a new LogProtoClient, and the log_writer is updated.
+ */
+static void
+log_writer_logrotate(LogWriter *self)
+{
+  LogProtoClient *proto = NULL;
+
+  /* Signal AFFileDestWriter to check for logrotation */
+  log_pipe_notify(self->control, NC_LOGROTATE, &proto);
+
+  if (proto)
+    {
+      log_writer_free_proto(self);
+      log_writer_set_proto(self, proto);
+    }
+}
+
+/*
  * Write messages to the underlying file descriptor using the installed
  * LogProtoClient instance.  This is called whenever the output is ready to accept
  * further messages, and once during config deinitialization, in order to
@@ -1174,6 +1201,7 @@ log_writer_realloc_line_buffer(LogWriter *self)
  * (in essence, this is the function that performs the output task).
  *
  */
+
 
 static gboolean
 log_writer_flush_finalize(LogWriter *self)
@@ -1358,6 +1386,14 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 
       if (!write_error)
         stats_counter_inc(self->metrics.written_messages);
+
+      /* check if we should rotate */
+      log_writer_logrotate(self);
+      /* in case that the new log file could not be opened return */
+      if (!self->proto)
+        {
+          return FALSE;;
+        }
     }
 
   if (write_error)
@@ -1830,6 +1866,7 @@ log_writer_reopen(LogWriter *s, LogProtoClient *proto)
       g_mutex_unlock(&self->pending_proto_lock);
     }
 }
+
 
 static void
 _set_metric_options(LogWriter *self, const gchar *stats_id, StatsClusterKeyBuilder *kb)
