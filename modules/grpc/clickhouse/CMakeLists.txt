@@ -28,6 +28,7 @@ add_module(
 add_module(
   TARGET clickhouse
   GRAMMAR clickhouse-grammar
+  GRAMMAR_DEPENDS ${GRPC_COMMON_GRAMMAR}
   DEPENDS clickhouse-cpp grpc-common-cpp
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc
   SOURCES ${CLICKHOUSE_SOURCES}
