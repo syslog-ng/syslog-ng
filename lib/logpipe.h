@@ -436,69 +436,6 @@ log_pipe_post_config_init(LogPipe *s)
   return TRUE;
 }
 
-static inline void
-log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options);
-
-static inline void
-log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options)
-{
-  if (self->pipe_next)
-    {
-      log_pipe_queue(self->pipe_next, msg, path_options);
-    }
-  else
-    {
-      log_msg_drop(msg, path_options, AT_PROCESSED);
-    }
-}
-
-static inline void
-log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
-{
-  LogPathOptions local_path_options;
-  g_assert((s->flags & PIF_INITIALIZED) != 0);
-
-  if (G_UNLIKELY(pipe_single_step_hook))
-    {
-      if (!pipe_single_step_hook(s, msg, path_options))
-        {
-          log_msg_drop(msg, path_options, AT_PROCESSED);
-          return;
-        }
-    }
-
-  if ((s->flags & PIF_SYNC_FILTERX))
-    filterx_eval_sync_message(path_options->filterx_context, &msg, path_options);
-
-  if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL | PIF_JUNCTION_END | PIF_CONDITIONAL_MIDPOINT)))
-    {
-      path_options = log_path_options_chain(&local_path_options, path_options);
-      if (s->flags & PIF_HARD_FLOW_CONTROL)
-        {
-          local_path_options.flow_control_requested = 1;
-          msg_trace("Requesting flow control", log_pipe_location_tag(s));
-        }
-      if (s->flags & PIF_JUNCTION_END)
-        {
-          log_path_options_pop_junction(&local_path_options);
-        }
-      if (s->flags & PIF_CONDITIONAL_MIDPOINT)
-        {
-          log_path_options_pop_conditional(&local_path_options);
-        }
-    }
-
-  if (s->queue)
-    {
-      s->queue(s, msg, path_options);
-    }
-  else
-    {
-      log_pipe_forward_msg(s, msg, path_options);
-    }
-
-}
-
 static inline LogPipe *
 log_pipe_clone(LogPipe *self)
 {
@@ -520,11 +457,11 @@ log_pipe_append(LogPipe *s, LogPipe *next)
   s->pipe_next = next;
 }
 
-void
-log_pipe_set_persist_name(LogPipe *self, const gchar *persist_name);
+void log_pipe_set_persist_name(LogPipe *self, const gchar *persist_name);
+const gchar *log_pipe_get_persist_name(const LogPipe *self);
 
-const gchar *
-log_pipe_get_persist_name(const LogPipe *self);
+void log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options);
+void log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_options);
 
 void log_pipe_set_options(LogPipe *self, const LogPipeOptions *options);
 void log_pipe_set_internal(LogPipe *self, gboolean internal);
