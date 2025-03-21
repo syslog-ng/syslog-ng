@@ -32,9 +32,6 @@ static Debugger *current_debugger;
 static gboolean
 _pipe_hook(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
-  if ((s->flags & PIF_CONFIG_RELATED) == 0)
-    return TRUE;
-
   if (msg->flags & LF_STATE_TRACING)
     return debugger_perform_tracing(current_debugger, s, msg);
   else
