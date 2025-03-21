@@ -25,11 +25,12 @@
 #include <criterion/criterion.h>
 #include "proto_lib.h"
 #include "grab-logging.h"
+#include "logproto/logproto-http-scraper-responder-server.h"
 
 #include "cfg.h"
 #include <string.h>
 
-LogProtoServerOptions proto_server_options;
+LogProtoServerOptionsStorage proto_server_options;
 
 void
 assert_proto_server_status(LogProtoServer *proto, LogProtoStatus status, LogProtoStatus expected_status)

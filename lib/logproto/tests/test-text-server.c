@@ -39,7 +39,7 @@ static gint accumulate_seq;
 LogProtoServer *
 construct_test_proto(LogTransport *transport)
 {
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
 
   return log_proto_text_server_new(transport, get_inited_proto_server_options());
 }
@@ -47,7 +47,7 @@ construct_test_proto(LogTransport *transport)
 LogProtoServer *
 construct_test_proto_with_nuls(LogTransport *transport)
 {
-  proto_server_options.max_msg_size = 32;
+  proto_server_options.super.max_msg_size = 32;
 
   return log_proto_text_with_nuls_server_new(transport, get_inited_proto_server_options());
 }
@@ -59,7 +59,7 @@ construct_test_proto_with_accumulator(gint (*accumulator)(MultiLineLogic *, cons
 {
   MultiLineLogic *multi_line = g_new0(MultiLineLogic, 1);
 
-  multi_line_logic_init_instance(multi_line);
+  multi_line_logic_init_instance(multi_line, proto_server_options.super.multi_line_options.keep_trailing_newline);
   multi_line->accumulate_line = accumulator;
 
   LogProtoServer *proto = construct_test_proto(transport);
@@ -651,8 +651,8 @@ Test(log_proto, buffer_split_with_encoding_and_position_tracking)
   GString *data_smaller = g_string_new("muspi merol\n");
   gsize bytes_should_not_fit = 5;
 
-  proto_server_options.max_msg_size = data->len + data_smaller->len - bytes_should_not_fit;
-  proto_server_options.max_buffer_size = proto_server_options.max_msg_size;
+  proto_server_options.super.max_msg_size = data->len + data_smaller->len - bytes_should_not_fit;
+  proto_server_options.super.max_buffer_size = proto_server_options.super.max_msg_size;
   log_proto_server_options_set_encoding(&proto_server_options, "utf-8");
   log_proto_server_options_set_ack_tracker_factory(&proto_server_options, consecutive_ack_tracker_factory_new());
 
