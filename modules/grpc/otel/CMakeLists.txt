@@ -44,6 +44,7 @@ add_module(
 add_module(
   TARGET otel
   GRAMMAR otel-grammar
+  GRAMMAR_DEPENDS ${GRPC_COMMON_GRAMMAR}
   DEPENDS otel-cpp grpc-common-cpp
   INCLUDES ${PROJECT_SOURCE_DIR}/modules/grpc
   SOURCES ${OTEL_SOURCES}

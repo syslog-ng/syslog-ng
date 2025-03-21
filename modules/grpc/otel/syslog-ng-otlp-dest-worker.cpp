@@ -57,6 +57,12 @@ SyslogNgDestWorker::insert(LogMessage *msg)
   logs_current_batch_bytes += log_record_bytes;
   log_threaded_dest_driver_insert_msg_length_stats(super->super.owner, log_record_bytes);
 
+  if (!client_context.get())
+    {
+      client_context = std::make_unique<::grpc::ClientContext>();
+      prepare_context_dynamic(*client_context, msg);
+    }
+
   if (should_initiate_flush())
     return log_threaded_dest_worker_flush(&super->super, LTF_FLUSH_NORMAL);
 

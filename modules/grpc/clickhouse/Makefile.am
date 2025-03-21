@@ -59,6 +59,8 @@ else
 modules/grpc/clickhouse modules/grpc/clickhouse/ mod-clickhouse:
 endif
 
+modules/grpc/clickhouse/clickhouse-grammar.y: modules/grpc/common/grpc-grammar.ym
+
 BUILT_SOURCES += \
   modules/grpc/clickhouse/clickhouse-grammar.y \
   modules/grpc/clickhouse/clickhouse-grammar.c \
