@@ -5,6 +5,7 @@ include modules/grpc/common/Makefile.am
 include modules/grpc/otel/Makefile.am
 include modules/grpc/loki/Makefile.am
 include modules/grpc/bigquery/Makefile.am
+include modules/grpc/pubsub/Makefile.am
 include modules/grpc/clickhouse/Makefile.am
 
 if ENABLE_GRPC
