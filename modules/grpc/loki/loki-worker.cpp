@@ -153,7 +153,7 @@ DestinationWorker::set_labels(LogMessage *msg)
       log_template_format(label.value, msg, &options, buf);
 
       g_string_truncate(sanitized_value, 0);
-      append_unsafe_utf8_as_escaped_binary(sanitized_value, buf->str, -1, "\"");
+      append_unsafe_utf8_as_escaped_binary(sanitized_value, buf->str, -1, AUTF8_UNSAFE_QUOTE);
 
       formatted_labels << label.name << "=\"" << sanitized_value->str << "\"";
 

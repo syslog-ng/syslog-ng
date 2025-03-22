@@ -76,7 +76,7 @@ _append_kv_to_buffer(FilterXObject *key, FilterXObject *value, gpointer user_dat
       g_string_assign(value_buffer, buffer->str + len_before_value);
       g_string_truncate(buffer, len_before_value);
       g_string_append_c(buffer, '"');
-      append_unsafe_utf8_as_escaped_binary(buffer, value_buffer->str, value_buffer->len, "\"");
+      append_unsafe_utf8_as_escaped_binary(buffer, value_buffer->str, value_buffer->len, AUTF8_UNSAFE_QUOTE);
       g_string_append_c(buffer, '"');
 
       scratch_buffers_reclaim_marked(marker);
