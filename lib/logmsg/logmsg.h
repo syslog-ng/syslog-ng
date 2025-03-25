@@ -339,9 +339,32 @@ NVHandle log_msg_get_value_handle(const gchar *value_name);
 gboolean log_msg_is_value_name_valid(const gchar *value);
 const gchar *log_msg_get_handle_name(NVHandle handle, gssize *length);
 
-gboolean log_msg_is_handle_macro(NVHandle handle);
-gboolean log_msg_is_handle_sdata(NVHandle handle);
-gboolean log_msg_is_handle_match(NVHandle handle);
+static inline gboolean
+log_msg_is_handle_macro(NVHandle handle)
+{
+  guint16 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  return !!(flags & LM_VF_MACRO);
+}
+
+static inline gboolean
+log_msg_is_handle_sdata(NVHandle handle)
+{
+  guint16 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  return !!(flags & LM_VF_SDATA);
+}
+
+static inline gboolean
+log_msg_is_handle_match(NVHandle handle)
+{
+  guint16 flags;
+
+  flags = nv_registry_get_handle_flags(logmsg_registry, handle);
+  return !!(flags & LM_VF_MATCH);
+}
 
 static inline gboolean
 log_msg_is_handle_referencable_from_an_indirect_value(NVHandle handle)
