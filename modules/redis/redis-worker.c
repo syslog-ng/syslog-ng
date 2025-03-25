@@ -106,7 +106,7 @@ _argv_to_string(RedisDestWorker *self)
   for (gint i = 1; i < self->argc; i++)
     {
       g_string_append(full_command, " \"");
-      append_unsafe_utf8_as_escaped_text(full_command, self->argv[i], self->argvlen[i], "\"");
+      append_unsafe_utf8_as_escaped_text(full_command, self->argv[i], self->argvlen[i], AUTF8_UNSAFE_QUOTE);
       g_string_append(full_command, "\"");
     }
   return full_command->str;
