@@ -32,6 +32,36 @@
 #include "driver.h"
 #include "credentials/grpc-credentials-builder.h"
 
+typedef enum
+{
+  GDRA_UNSET = 0,
+  GDRA_DISCONNECT,
+  GDRA_DROP,
+  GDRA_RETRY,
+  GDRA_SUCCESS,
+} GrpcDestResponseAction;
+
+typedef enum
+{
+  GDR_OK,
+  GDR_UNAVAILABLE,
+  GDR_CANCELLED,
+  GDR_DEADLINE_EXCEEDED,
+  GDR_ABORTED,
+  GDR_OUT_OF_RANGE,
+  GDR_DATA_LOSS,
+  GDR_UNKNOWN,
+  GDR_INVALID_ARGUMENT,
+  GDR_NOT_FOUND,
+  GDR_ALREADY_EXISTS,
+  GDR_PERMISSION_DENIED,
+  GDR_UNAUTHENTICATED,
+  GDR_FAILED_PRECONDITION,
+  GDR_UNIMPLEMENTED,
+  GDR_INTERNAL,
+  GDR_RESOURCE_EXHAUSTED,
+} GrpcDestResponse;
+
 typedef struct GrpcDestDriver_ GrpcDestDriver;
 
 void grpc_dd_set_url(LogDriver *s, const gchar *url);
@@ -45,6 +75,7 @@ void grpc_dd_add_string_channel_arg(LogDriver *s, const gchar *name, const gchar
 gboolean grpc_dd_add_header(LogDriver *s, const gchar *name, LogTemplate *value);
 gboolean grpc_dd_add_schema_field(LogDriver *d, const gchar *name, const gchar *type, LogTemplate *value);
 void grpc_dd_set_protobuf_schema(LogDriver *d, const gchar *proto_path, GList *values);
+void grpc_dd_set_response_action(LogDriver *d, GrpcDestResponse response, GrpcDestResponseAction action);
 
 LogTemplateOptions *grpc_dd_get_template_options(LogDriver *d);
 GrpcClientCredentialsBuilderW *grpc_dd_get_credentials_builder(LogDriver *s);

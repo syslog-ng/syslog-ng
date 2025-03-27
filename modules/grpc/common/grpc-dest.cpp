@@ -27,12 +27,34 @@
 
 using namespace syslogng::grpc;
 
+static const std::map<GrpcDestResponse, ::grpc::StatusCode> GRD_TO_GRPC_STATUSCODE_MAPPING =
+{
+  { GDR_OK, ::grpc::StatusCode::OK },
+  { GDR_UNAVAILABLE, ::grpc::StatusCode::UNAVAILABLE },
+  { GDR_CANCELLED, ::grpc::StatusCode::CANCELLED },
+  { GDR_DEADLINE_EXCEEDED, ::grpc::StatusCode::DEADLINE_EXCEEDED },
+  { GDR_ABORTED, ::grpc::StatusCode::ABORTED },
+  { GDR_OUT_OF_RANGE, ::grpc::StatusCode::OUT_OF_RANGE },
+  { GDR_DATA_LOSS, ::grpc::StatusCode::DATA_LOSS },
+  { GDR_UNKNOWN, ::grpc::StatusCode::UNKNOWN },
+  { GDR_INVALID_ARGUMENT, ::grpc::StatusCode::INVALID_ARGUMENT },
+  { GDR_NOT_FOUND, ::grpc::StatusCode::NOT_FOUND },
+  { GDR_ALREADY_EXISTS, ::grpc::StatusCode::ALREADY_EXISTS },
+  { GDR_PERMISSION_DENIED, ::grpc::StatusCode::PERMISSION_DENIED },
+  { GDR_UNAUTHENTICATED, ::grpc::StatusCode::UNAUTHENTICATED },
+  { GDR_FAILED_PRECONDITION, ::grpc::StatusCode::FAILED_PRECONDITION },
+  { GDR_UNIMPLEMENTED, ::grpc::StatusCode::UNIMPLEMENTED },
+  { GDR_INTERNAL, ::grpc::StatusCode::INTERNAL },
+  { GDR_RESOURCE_EXHAUSTED, ::grpc::StatusCode::RESOURCE_EXHAUSTED },
+};
+
 /* C++ Implementations */
 
 DestDriver::DestDriver(GrpcDestDriver *s)
   : super(s), compression(false), batch_bytes(4 * 1000 * 1000),
     keepalive_time(-1), keepalive_timeout(-1), keepalive_max_pings_without_data(-1),
-    flush_on_key_change(false), dynamic_headers_enabled(false)
+    flush_on_key_change(false), dynamic_headers_enabled(false),
+    response_actions({ GDRA_UNSET })
 {
   log_template_options_defaults(&this->template_options);
   credentials_builder_wrapper.self = &credentials_builder;
@@ -112,6 +134,75 @@ DestDriver::deinit()
 {
   metrics.deinit();
   return log_threaded_dest_driver_deinit_method(&super->super.super.super.super);
+}
+
+bool
+DestDriver::handle_response(const ::grpc::Status &status, LogThreadedResult *ltr)
+{
+  if (status.error_code() >= GRPC_DEST_RESPONSE_ACTIONS_ARRAY_LEN)
+    {
+      msg_error("Invalid gRPC status code", evt_tag_int("status_code", status.error_code()));
+      return false;
+    }
+
+  const char *action_as_string;
+  bool debug_log = false;
+
+  GrpcDestResponseAction action = this->response_actions[status.error_code()];
+  switch (action)
+    {
+    case GDRA_UNSET:
+      return false;
+
+    case GDRA_DISCONNECT:
+      action_as_string = "disconnect";
+      *ltr = LTR_NOT_CONNECTED;
+      break;
+
+    case GDRA_DROP:
+      action_as_string = "drop";
+      *ltr = LTR_DROP;
+      break;
+
+    case GDRA_RETRY:
+      action_as_string = "retry";
+      *ltr = LTR_ERROR;
+      break;
+
+    case GDRA_SUCCESS:
+      action_as_string = "success";
+      debug_log = true;
+      *ltr = LTR_SUCCESS;
+      break;
+
+    default:
+      g_assert_not_reached();
+    }
+
+  if (debug_log)
+    {
+      msg_debug("gRPC: handled by response-action()",
+                evt_tag_str("action", action_as_string),
+                evt_tag_str("url", this->url.c_str()),
+                evt_tag_int("error_code", status.error_code()),
+                evt_tag_str("error_message", status.error_message().c_str()),
+                evt_tag_str("error_details", status.error_details().c_str()),
+                evt_tag_str("driver", this->super->super.super.super.id),
+                log_pipe_location_tag(&this->super->super.super.super.super));
+    }
+  else
+    {
+      msg_notice("gRPC: handled by response-action()",
+                 evt_tag_str("action", action_as_string),
+                 evt_tag_str("url", this->url.c_str()),
+                 evt_tag_int("error_code", status.error_code()),
+                 evt_tag_str("error_message", status.error_message().c_str()),
+                 evt_tag_str("error_details", status.error_details().c_str()),
+                 evt_tag_str("driver", this->super->super.super.super.id),
+                 log_pipe_location_tag(&this->super->super.super.super.super));
+    }
+
+  return true;
 }
 
 /* C Wrappers */
@@ -195,6 +286,13 @@ grpc_dd_set_protobuf_schema(LogDriver *d, const gchar *proto_path, GList *values
   Schema *schema = self->cpp->get_schema();
   g_assert(schema);
   schema->set_protobuf_schema(proto_path, values);
+}
+
+void
+grpc_dd_set_response_action(LogDriver *d, GrpcDestResponse response, GrpcDestResponseAction action)
+{
+  GrpcDestDriver *self = (GrpcDestDriver *) d;
+  self->cpp->set_response_action(GRD_TO_GRPC_STATUSCODE_MAPPING.at(response), action);
 }
 
 LogTemplateOptions *
