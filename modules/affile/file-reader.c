@@ -257,13 +257,13 @@ _construct_poll_events(FileReader *self, gint fd)
       else
         poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
                                                       self->options->multi_line_timeout, self);
-      msg_trace("File follow-mode is syslog-ng poll");
+      msg_debug("File follow-mode is syslog-ng poll");
     }
   else if (fd >= 0 && _is_fd_pollable(fd))
     {
       poll_events = poll_fd_events_new(fd);
-      msg_trace("File follow-mode is ivykis poll");
-      msg_trace("Selected ivykis poll method", evt_tag_str("file_poll_method", iv_poll_method_name()));
+      msg_debug("File follow-mode is ivykis poll");
+      msg_debug("Selected ivykis poll method", evt_tag_str("file_poll_method", iv_poll_method_name()));
     }
   else
     {
