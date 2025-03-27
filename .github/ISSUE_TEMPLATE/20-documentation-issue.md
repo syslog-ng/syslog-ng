@@ -1,6 +1,6 @@
 ---
 name: Documentation issue
-about: Please use [https://github.com/syslog-ng/syslog-ng.github.io/issues/new/choose](https://github.com/syslog-ng/syslog-ng.github.io/issues/new/choose).
+about: Use this template for reporting an issue in the documentation.
 title: ''
 labels: 'doc-bug'
 assignees: ''
