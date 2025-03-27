@@ -181,9 +181,18 @@ DestWorker::flush(LogThreadedFlushMode mode)
   this->prepare_query_info(query_info);
 
   ::grpc::Status status = this->stub->ExecuteQuery(this->client_context.get(), query_info, &query_result);
-  LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
+
+  LogThreadedResult result;
+  if (owner.handle_response(status, &result))
+    {
+      if (result == LTR_SUCCESS)
+        goto success;
+      goto error;
+    }
+
+  result = _map_grpc_status_to_log_threaded_result(status);
   if (result != LTR_SUCCESS)
-    goto exit;
+    goto error;
 
   if (query_result.has_exception())
     {
@@ -194,15 +203,16 @@ DestWorker::flush(LogThreadedFlushMode mode)
                 evt_tag_str("display_text", exception.display_text().c_str()),
                 evt_tag_str("stack_trace", exception.stack_trace().c_str()));
       result = LTR_DROP;
-      goto exit;
+      goto error;
     }
 
+success:
   log_threaded_dest_worker_written_bytes_add(&this->super->super, this->current_batch_bytes);
   log_threaded_dest_driver_insert_batch_length_stats(this->super->super.owner, this->current_batch_bytes);
 
   msg_debug("ClickHouse batch delivered", log_pipe_location_tag(&this->super->super.owner->super.super.super));
 
-exit:
+error:
   this->get_owner()->metrics.insert_grpc_request_stats(status);
   this->prepare_batch();
   return result;

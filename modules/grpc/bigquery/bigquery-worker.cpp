@@ -227,14 +227,21 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
     {
       msg_error("Error writing BigQuery batch", log_pipe_location_tag((LogPipe *) this->super->super.owner));
       result = LTR_ERROR;
-      goto exit;
+      goto error;
     }
 
   if (!this->batch_writer->Read(&append_rows_response))
     {
       msg_error("Error reading BigQuery batch response", log_pipe_location_tag((LogPipe *) this->super->super.owner));
       result = LTR_ERROR;
-      goto exit;
+      goto error;
+    }
+
+  if (this->get_owner()->handle_response(_append_rows_response_get_status(append_rows_response), &result))
+    {
+      if (result == LTR_SUCCESS)
+        goto success;
+      goto error;
     }
 
   if (append_rows_response.has_error() && append_rows_response.error().code() != ::grpc::StatusCode::ALREADY_EXISTS)
@@ -249,16 +256,17 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
       if (append_rows_response.row_errors_size() != 0)
         result = handle_row_errors(append_rows_response);
 
-      goto exit;
+      goto error;
     }
 
+success:
   log_threaded_dest_worker_written_bytes_add(&this->super->super, this->current_batch_bytes);
   log_threaded_dest_driver_insert_batch_length_stats(this->super->super.owner, this->current_batch_bytes);
 
   msg_debug("BigQuery batch delivered", log_pipe_location_tag((LogPipe *) this->super->super.owner));
   result = LTR_SUCCESS;
 
-exit:
+error:
   this->get_owner()->metrics.insert_grpc_request_stats(_append_rows_response_get_status(append_rows_response));
   this->prepare_batch();
   return result;
