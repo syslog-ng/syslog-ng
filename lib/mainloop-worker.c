@@ -110,12 +110,10 @@ _allocate_thread_id(void)
 
   if (main_loop_worker_id == 0)
     {
-      msg_warning_once("Unable to allocate a unique thread ID. This can only "
-                       "happen if the number of syslog-ng worker threads exceeds the "
-                       "compile time constant MAIN_LOOP_MAX_WORKER_THREADS. "
-                       "This is not a fatal problem but can be a cause for "
-                       "decreased performance. Increase this number and recompile "
-                       "or contact the syslog-ng authors",
+      msg_warning_once("Unable to allocate a unique thread ID. This means the number of "
+                       "syslog-ng worker threads have reached the internal thread count limit. "
+                       "This is not a fatal problem but can decrease performance. If this "
+                       "problem persists, contact the syslog-ng authors",
                        evt_tag_int("max-worker-threads-hard-limit", MAIN_LOOP_MAX_WORKER_THREADS));
     }
 
