@@ -3,3 +3,5 @@ distro                  [kira]                                                 [
 hy                      [kira]                                                 [python3]
 hyrule                  [kira]                                                 [python3]
 requests                [kira]                                                 [python2, python3]
+botocore                [kira]                                                 [python2, python3]
+boto3                   [kira]                                                 [python2, python3]
