@@ -20,39 +20,35 @@
 # COPYING for details.
 #
 #############################################################################
+import typing
 from pathlib import Path
 
-from src.driver_io.file.file_io import FileIO
-from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
-from src.syslog_ng_ctl.legacy_stats_handler import LegacyStatsHandler
-from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
+from src.executors.command_executor import CommandExecutor
+from src.syslog_ng_ctl.syslog_ng_ctl_executor import SyslogNgCtlExecutor
 
 
-class FileDestination(DestinationDriver):
+class SyslogNgCtlLocalExecutor(SyslogNgCtlExecutor):
     def __init__(
         self,
-        stats_handler: LegacyStatsHandler,
-        prometheus_stats_handler: PrometheusStatsHandler,
-        file_name: str,
-        **options,
+        syslog_ng_ctl_binary_path: Path,
+        syslog_ng_control_socket_path: Path,
     ) -> None:
-        self.driver_name = "file"
-        self.driver_instance = file_name
-        self.path = Path(file_name)
-        self.io = FileIO(self.path)
-        super(FileDestination, self).__init__(stats_handler, prometheus_stats_handler, [self.path], options)
+        self.__syslog_ng_ctl_binary_path = syslog_ng_ctl_binary_path
+        self.__syslog_ng_control_socket_path = syslog_ng_control_socket_path
+        self.__command_executor = CommandExecutor()
 
-    def get_path(self):
-        return self.path
+    def run_command(
+        self,
+        instance_name: str,
+        command_short_name: str,
+        command: typing.List[str],
+    ) -> typing.Dict[str, typing.Any]:
+        ctl_command = [self.__syslog_ng_ctl_binary_path]
+        ctl_command += command
+        ctl_command.append("--control={}".format(self.__syslog_ng_control_socket_path))
 
-    def read_log(self):
-        return self.read_logs(1)[0]
-
-    def read_logs(self, counter):
-        return self.io.read_number_of_messages(counter)
-
-    def read_until_logs(self, logs):
-        return self.io.read_until_messages(logs)
-
-    def close_file(self):
-        self.io.close_readable_file()
+        return self.__command_executor.run(
+            command=ctl_command,
+            stdout_path=self.construct_std_file_path(instance_name, command_short_name, "stdout"),
+            stderr_path=self.construct_std_file_path(instance_name, command_short_name, "stderr"),
+        )

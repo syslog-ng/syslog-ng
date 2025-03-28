@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2019 Balabit
+# Copyright (c) 2015-2018 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,28 +20,29 @@
 # COPYING for details.
 #
 #############################################################################
-from src.syslog_ng_ctl.legacy_stats_handler import LegacyStatsHandler
-from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
+import typing
+
+from src.executors.command_executor import CommandExecutor
+from src.syslog_ng_ctl.syslog_ng_ctl_executor import SyslogNgCtlExecutor
 
 
-class Parser(object):
-    group_type = "parser"
+class SyslogNgCtlDockerExecutor(SyslogNgCtlExecutor):
+    def __init__(self, container_name: str) -> None:
+        self.__container_name = container_name
+        self.__command_executor = CommandExecutor()
 
-    def __init__(
+    def run_command(
         self,
-        driver_name: str,
-        stats_handler: LegacyStatsHandler,
-        prometheus_stats_handler: PrometheusStatsHandler,
-        **options,
-    ) -> None:
-        self.driver_name = driver_name
-        self.stats_handler = stats_handler
-        self.prometheus_stats_handler = prometheus_stats_handler
-        self.options = options
-        self.positional_parameters = []
+        instance_name: str,
+        command_short_name: str,
+        command: typing.List[str],
+    ) -> typing.Dict[str, typing.Any]:
+        ctl_command = ["docker", "exec", self.__container_name, "syslog-ng-ctl"]
+        ctl_command += ["--control=/tmp/syslog-ng.ctl"]
+        ctl_command += command
 
-    def get_stats(self):
-        return self.stats_handler.get_stats(self.group_type, self.driver_name)
-
-    def get_query(self):
-        return self.stats_handler.get_query(self.group_type, self.driver_name)
+        return self.__command_executor.run(
+            command=ctl_command,
+            stdout_path=self.construct_std_file_path(instance_name, command_short_name, "stdout"),
+            stderr_path=self.construct_std_file_path(instance_name, command_short_name, "stderr"),
+        )

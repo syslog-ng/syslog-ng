@@ -20,30 +20,50 @@
 # COPYING for details.
 #
 #############################################################################
-from src.syslog_ng_ctl.driver_stats_handler import DriverStatsHandler
+from src.syslog_ng_ctl.legacy_stats_handler import LegacyStatsHandler
+from src.syslog_ng_ctl.prometheus_stats_handler import PrometheusStatsHandler
 
 
 class Filter(object):
     group_type = "filter"
 
-    def __init__(self, driver_name, positional_parameters, **options):
+    def __init__(
+        self,
+        driver_name: str,
+        stats_handler: LegacyStatsHandler,
+        prometheus_stats_handler: PrometheusStatsHandler,
+        positional_parameters,
+        **options,
+    ) -> None:
         self.options = options
         self.driver_name = driver_name
+        self.stats_handler = stats_handler
+        self.prometheus_stats_handler = prometheus_stats_handler
         self.positional_parameters = positional_parameters
-        self.stats_handler = DriverStatsHandler(group_type=self.group_type, driver_name=self.driver_name)
 
     def get_stats(self):
-        return self.stats_handler.get_stats()
+        return self.stats_handler.get_stats(self.group_type, self.driver_name)
 
     def get_query(self):
-        return self.stats_handler.get_query()
+        return self.stats_handler.get_query(self.group_type, self.driver_name)
 
 
 class Match(Filter):
-    def __init__(self, match_string, **options):
-        super(Match, self).__init__("match", [match_string], **options)
+    def __init__(
+        self,
+        stats_handler: LegacyStatsHandler,
+        prometheus_stats_handler: PrometheusStatsHandler,
+        match_string: str,
+        **options,
+    ) -> None:
+        super(Match, self).__init__("match", stats_handler, prometheus_stats_handler, [match_string], **options)
 
 
 class RateLimit(Filter):
-    def __init__(self, **options):
-        super(RateLimit, self).__init__("rate-limit", [], **options)
+    def __init__(
+        self,
+        stats_handler: LegacyStatsHandler,
+        prometheus_stats_handler: PrometheusStatsHandler,
+        **options,
+    ) -> None:
+        super(RateLimit, self).__init__("rate-limit", stats_handler, prometheus_stats_handler, [], **options)
