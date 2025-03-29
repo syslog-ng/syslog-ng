@@ -22,28 +22,35 @@
 #
 #############################################################################
 
+# NOTE: This file is used to build the ivykis INTERNAL source
+#       no matter what its name suggests.
+#
 set(LIB_NAME "IVYKIS")
 
-if (EXISTS ${PROJECT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
+if(EXISTS ${PROJECT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
+  IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
+    set(INTERNAL_IVYKIS_DEBUG_FLAGS "-g -O0")
+  ENDIF()
 
-    ExternalProject_Add(
-        ${LIB_NAME}
-        PREFIX            ${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/
-        INSTALL_DIR       ${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/
-        SOURCE_DIR        ${PROJECT_SOURCE_DIR}/lib/ivykis/
-        DOWNLOAD_COMMAND  echo
-        BUILD_COMMAND     make
-        INSTALL_COMMAND   make install
-        CONFIGURE_COMMAND autoreconf -i ${PROJECT_SOURCE_DIR}/lib/ivykis && ${PROJECT_SOURCE_DIR}/lib/ivykis/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/
-    )
+  ExternalProject_Add(
+    ${LIB_NAME}
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/
+    INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/ivykis/
 
-    set(${LIB_NAME}_INTERNAL TRUE)
-    set(${LIB_NAME}_INTERNAL_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/include" CACHE STRING "${LIB_NAME} include path")
-    set(${LIB_NAME}_INTERNAL_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/lib/libivykis${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "${LIB_NAME} library path")
-    set(SYSLOG_NG_HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION 1 PARENT_SCOPE)
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/lib/ DESTINATION lib USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "libivykis${CMAKE_SHARED_LIBRARY_SUFFIX}*")
+    DOWNLOAD_COMMAND echo
+    BUILD_COMMAND make
+    INSTALL_COMMAND make install
+    CONFIGURE_COMMAND
+    COMMAND /bin/sh -vc "autoreconf -i ${PROJECT_SOURCE_DIR}/lib/ivykis && CFLAGS='${CFLAGS} ${INTERNAL_IVYKIS_DEBUG_FLAGS}' ${PROJECT_SOURCE_DIR}/lib/ivykis/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/"
+  )
+
+  set(${LIB_NAME}_INTERNAL TRUE)
+  set(${LIB_NAME}_INTERNAL_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/include" CACHE STRING "${LIB_NAME} include path")
+  set(${LIB_NAME}_INTERNAL_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/lib/libivykis${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "${LIB_NAME} library path")
+  set(SYSLOG_NG_HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION 1 PARENT_SCOPE)
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/lib/ DESTINATION lib USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "libivykis${CMAKE_SHARED_LIBRARY_SUFFIX}*")
 
 else()
   set(${LIB_NAME}_INTERNAL FALSE)
 endif()
-
