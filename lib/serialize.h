@@ -128,7 +128,7 @@ serialize_read_uint16_array(SerializeArchive *archive, guint32 *values, gsize el
   gboolean ret = FALSE;
   guint16 *buffer = g_new(guint16, elements);
 
-  if (serialize_archive_read_bytes(archive, (gchar *) &buffer, elements * sizeof(guint16)))
+  if (serialize_archive_read_bytes(archive, (gchar *) buffer, elements * sizeof(guint16)))
     {
       for (gsize i = 0; i < elements; i++)
         values[i] = GUINT16_FROM_BE(buffer[i]);
