@@ -19,23 +19,28 @@ Source3: syslog-ng.service
 %bcond_without amqp
 %bcond_without kafka
 %bcond_without afsnmp
-%bcond_without mqtt
 %bcond_without cloudauth
 %bcond_without java
 
-%if 0%{?rhel} == 9
+%if 0%{?fedora} >= 36 || 0%{?rhel} < 10
+%bcond_without mqtt
+%else
+%bcond_with mqtt
+%endif
+
+%if 0%{?rhel} >= 9
 %bcond_with sql
 %else
 %bcond_without sql
 %endif
 
-%if 0%{?fedora} >= 36 || 0%{?rhel} == 9
+%if 0%{?fedora} >= 36 || 0%{?rhel} >= 9
 %bcond_without	grpc
 %else
 %bcond_with grpc
 %endif
 
-%if 0%{?fedora} >= 37 || 0%{?rhel} == 9
+%if 0%{?fedora} >= 37 || 0%{?rhel} >= 9
 %bcond_without bpf
 %else
 %bcond_with bpf
@@ -432,9 +437,6 @@ ryslog is not on the system.
     --with-systemdsystemunitdir=%{_unitdir} \
     --with-ivykis=system \
     --disable-tcp-wrapper \
-%if 0%{?rhel} == 9
-    --disable-cpp \
-%endif
 %if %{with cloudauth}
     --enable-cloud-auth \
 %else
@@ -488,7 +490,7 @@ make DESTDIR=%{buildroot} install
 %if 0%{?rhel} == 8
 %{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog
 %endif
-%if 0%{?fedora} >= 28 || 0%{?rhel} == 9
+%if 0%{?fedora} >= 28 || 0%{?rhel} >= 9
 %{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog-ng
 %endif
 
