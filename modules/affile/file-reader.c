@@ -262,6 +262,11 @@ _construct_poll_events(FileReader *self, gint fd)
                                                       self->options->multi_line_timeout, self);
       msg_debug("File follow-mode is syslog-ng poll");
     }
+  else if (fd >= 0 && FALSE == self->should_poll_for_events)
+    {
+      poll_events = notified_fd_events_new(fd);
+      msg_debug("File follow-mode is inotify from directory-monitor");
+    }
   else if (fd >= 0 && _is_fd_pollable(fd))
     {
       poll_events = poll_fd_events_new(fd);
@@ -479,6 +484,11 @@ file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
       _on_file_deleted(self);
       break;
 
+    case NC_FILE_MODIFIED:
+      /* This is a notification from the directory monitor, we can read the file for changes */
+      log_reader_trigger_one_check(self->reader);
+      break;
+
     default:
       break;
     }
@@ -565,6 +575,7 @@ file_reader_init_instance (FileReader *self, const gchar *filename,
   self->filename = g_string_new (filename);
   self->options = options;
   self->opener = opener;
+  self->should_poll_for_events = TRUE;
   self->owner = owner;
   self->super.expr_node = owner->super.super.expr_node;
 }
