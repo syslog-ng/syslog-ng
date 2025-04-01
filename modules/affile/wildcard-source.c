@@ -55,7 +55,7 @@ _check_required_options(WildcardSourceDriver *self)
 }
 
 static void
-_remove_file_reader(FileReader *reader, gpointer user_data)
+_remove_and_readd_file_reader(FileReader *reader, gpointer user_data)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *) user_data;
 
@@ -119,7 +119,7 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
                                     cfg);
   log_pipe_set_options(&reader->super.super, &self->super.super.super.options);
 
-  wildcard_file_reader_on_deleted_file_eof(reader, _remove_file_reader, self);
+  wildcard_file_reader_on_deleted_file_eof(reader, _remove_and_readd_file_reader, self);
 
   log_pipe_append(&reader->super.super, &self->super.super.super);
   if (!log_pipe_init(&reader->super.super))
