@@ -266,11 +266,17 @@ directory_monitor_stop_and_destroy(DirectoryMonitor *self)
   directory_monitor_free(self);
 }
 
+gboolean directory_monitor_can_notify_file_changes(DirectoryMonitor *self)
+{
+  return self->can_notify_file_changes;
+}
+
 void
 directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint recheck_time, const gchar *method)
 {
   self->method = method;
   self->dir = g_strdup(dir);
+  self->can_notify_file_changes = FALSE;
   self->recheck_time = recheck_time;
 
   IV_TIMER_INIT(&self->check_timer);
