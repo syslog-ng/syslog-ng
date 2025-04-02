@@ -301,7 +301,7 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description grpc
 This module supports the GRPC, a common requirement
-for OpenTelemetry and Loki support.
+for OpenTelemetry, Google BigQuery, Google Pub/Sub, Grafana Loki and ClickHouse support.
 
 
 %package opentelemetry
@@ -339,6 +339,15 @@ Requires: %{name}-grpc
 
 %description clickhouse
 This module adds ClickHouse support.
+
+%package pubsub
+Summary: Google Pub/Sub support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: %{name}-grpc
+
+%description pubsub
+This module adds Foofle Pub/Sub support.
 
 %package bpf
 Summary: Faster UDP log collection for %{name}
@@ -634,6 +643,9 @@ fi
 
 %files clickhouse
 %{_libdir}/%{name}/libclickhouse.so
+
+%files pubsub
+%{_libdir}/%{name}/libpubsub.so
 %endif
 
 %if %{with amqp}

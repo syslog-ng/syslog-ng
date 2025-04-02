@@ -848,6 +848,10 @@ Description: Enhanced system logging daemon (GRPC plugins)
  This package provides the GRPC plugin, that allows receiving and sending:
  .
   * OpenTelemetry logs, traces and metrics
+  * Google BigQuery
+  * Google Pub/Sub
+  * Grafana Loki
+  * ClickHouse
 
 Package: syslog-ng-mod-cloud-auth
 Architecture: any

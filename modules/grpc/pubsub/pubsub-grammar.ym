@@ -1,0 +1,106 @@
+/*
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Attila Szakacs <attila.szakacs@axoflow.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+/* REQUIRE modules/grpc/common/grpc-grammar.ym */
+
+%code top {
+#include "pubsub-parser.h"
+
+}
+
+
+%code {
+
+#include "cfg-grammar-internal.h"
+#include "plugin.h"
+#include "syslog-names.h"
+
+#include "pubsub-dest.h"
+
+#include <stdlib.h>
+
+}
+
+%define api.prefix {pubsub_}
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_GOOGLE_PUBSUB_GRPC
+%token KW_SERVICE_ENDPOINT
+%token KW_PROJECT
+%token KW_TOPIC
+%token KW_DATA
+%token KW_ATTRIBUTES
+
+%type <ptr> pubsub_dest
+
+%%
+
+start
+  : LL_CONTEXT_DESTINATION pubsub_dest { YYACCEPT; }
+  ;
+
+pubsub_dest
+  : KW_GOOGLE_PUBSUB_GRPC
+    {
+      last_driver = *instance = pubsub_dd_new(configuration);
+    }
+    '(' _inner_dest_context_push pubsub_dest_options _inner_dest_context_pop ')' { $$ = last_driver; }
+  ;
+
+pubsub_dest_options
+  : pubsub_dest_option pubsub_dest_options
+  |
+  ;
+
+pubsub_dest_option
+  : KW_SERVICE_ENDPOINT '(' string ')' { grpc_dd_set_url(last_driver, $3); free($3); }
+  | KW_PROJECT '(' template_name_or_content ')' { pubsub_dd_set_project(last_driver, $3); log_template_unref($3); }
+  | KW_TOPIC '(' template_name_or_content ')' { pubsub_dd_set_topic(last_driver, $3); log_template_unref($3); }
+  | KW_DATA '(' template_name_or_content ')' { pubsub_dd_set_data(last_driver, $3); log_template_unref($3); }
+  | KW_ATTRIBUTES '(' pubsub_dest_attributes ')'
+  | grpc_dest_general_option
+  ;
+
+pubsub_dest_attributes
+  : pubsub_dest_attribute pubsub_dest_attributes
+  |
+  ;
+
+pubsub_dest_attribute
+  : string LL_ARROW template_name_or_content
+    {
+      pubsub_dd_add_attribute(last_driver, $1, $3);
+      free($1);
+      log_template_unref($3);
+    }
+  ;
+
+/* INCLUDE_RULES */
+
+%%
