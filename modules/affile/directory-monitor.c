@@ -210,6 +210,16 @@ directory_monitor_start(DirectoryMonitor *self)
   if (self->watches_running)
     return;
 
+  /* FIXME: This must be fixed.
+   *    - this must be composed once in the directory_monitor_init_instance
+   *    - composing and using the real_path only is messed up. We need a full path instead everywhere, but
+   *      even the build_filename function can produce relative paths currenty that could lead to reader
+   *      persist name issues (as the wildcard file readers created by the monitor will get
+   *      their path based on this value, and their persist name will be based on this value as well)
+   *      Consistent setting the value of it is important, otherwise the persist name can be be different
+   *      after a config reload.
+   *    - once it fixed, we can use it in the maintenance/storage of the directory monitors
+   */
   _set_real_path(self);
 
   msg_debug("Starting directory monitor", evt_tag_str("dir", self->real_path), evt_tag_str("dir_monitor_method",
@@ -274,6 +284,8 @@ directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint 
 {
   self->method = method;
   self->dir = g_strdup(dir);
+  // See directory_monitor_start notes above why cannot do this here as it would be the normal way
+  //_set_real_path(self);
   self->can_notify_file_changes = FALSE;
   self->recheck_time = recheck_time;
 
