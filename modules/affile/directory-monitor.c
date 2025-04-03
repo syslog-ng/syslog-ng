@@ -33,23 +33,6 @@
 #include <messages.h>
 #include <iv.h>
 
-static gchar *
-_get_real_path(DirectoryMonitor *self)
-{
-  gchar *dir_real_path = NULL;
-  if (!g_path_is_absolute(self->dir))
-    {
-      gchar *wd = g_get_current_dir();
-      dir_real_path = resolve_to_absolute_path(self->dir, wd);
-      g_free(wd);
-    }
-  else
-    {
-      dir_real_path = resolve_to_absolute_path(self->dir, NULL);
-    }
-  return dir_real_path;
-}
-
 void
 directory_monitor_stop(DirectoryMonitor *self)
 {
@@ -82,24 +65,13 @@ _collect_all_files(DirectoryMonitor *self, GDir *directory)
   const gchar *filename = g_dir_read_name(directory);
   while (filename)
     {
-      DirectoryMonitorEvent event =
-      { .name = filename };
-      gchar *filename_real_path = resolve_to_absolute_path(filename, self->real_path);
-      event.full_path = build_filename(self->real_path, filename);
-      event.event_type = g_file_test(filename_real_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
+      DirectoryMonitorEvent event = { .name = filename };
+      event.full_path = build_filename(self->full_path, filename);
+      event.event_type = g_file_test(event.full_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
       self->callback(&event, self->callback_data);
-      g_free(filename_real_path);
       g_free(event.full_path);
       filename = g_dir_read_name(directory);
     }
-}
-
-static void
-_set_real_path(DirectoryMonitor *self)
-{
-  if (self->real_path)
-    g_free(self->real_path);
-  self->real_path = _get_real_path(self);
 }
 
 void
@@ -118,16 +90,14 @@ directory_monitor_start(DirectoryMonitor *self)
   if (self->watches_running)
     return;
 
-  _set_real_path(self);
-
-  msg_debug("Starting directory monitor", evt_tag_str("dir", self->real_path), evt_tag_str("dir_monitor_method",
+  msg_debug("Starting directory monitor", evt_tag_str("dir", self->full_path), evt_tag_str("dir_monitor_method",
             self->method));
   GError *error = NULL;
-  GDir *directory = g_dir_open(self->real_path, 0, &error);
+  GDir *directory = g_dir_open(self->full_path, 0, &error);
   if (!directory)
     {
       msg_error("Can not open directory",
-                evt_tag_str("base_dir", self->real_path),
+                evt_tag_str("base_dir", self->full_path),
                 evt_tag_str("error", error->message));
       rearm_timer(&self->check_timer, self->recheck_time);
       g_error_free(error);
@@ -182,8 +152,7 @@ directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint 
 {
   self->method = method;
   self->dir = g_strdup(dir);
-  // See directory_monitor_start notes above why cannot do this here as it would be the normal way
-  //_set_real_path(self);
+  self->full_path = canonicalize_filename(self->dir);
   self->can_notify_file_changes = FALSE;
   self->recheck_time = recheck_time;
 
@@ -215,7 +184,7 @@ directory_monitor_free(DirectoryMonitor *self)
         {
           self->free_fn(self);
         }
-      g_free(self->real_path);
+      g_free(self->full_path);
       g_free(self->dir);
       g_free(self);
     }

@@ -51,7 +51,7 @@ struct _DirectoryMonitor
 {
   const gchar *method;
   gchar *dir;
-  gchar *real_path;
+  gchar *full_path;
   gboolean can_notify_file_changes;
   DirectoryMonitorEventCallback callback;
   gpointer callback_data;

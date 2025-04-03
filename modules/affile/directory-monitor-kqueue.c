@@ -72,11 +72,11 @@ _register_kqueue_watches(DirectoryMonitorKQueue *self)
 #else
   gint open_mode = O_NONBLOCK | O_RDONLY | O_DIRECTORY;
 #endif
-  gint fd = open(self->super.super.dir, open_mode);
+  gint fd = open(self->super.super.full_path, open_mode);
   if (fd < 0)
     {
       msg_error("directory-monitor-kqueue: could not open directory for watching",
-                evt_tag_str("dir", self->super.super.dir),
+                evt_tag_str("dir", self->super.super.full_path),
                 evt_tag_error("errno"));
       return FALSE;
     }
@@ -127,7 +127,7 @@ _start_watches(DirectoryMonitor *s)
 
   if (_register_kqueue_watches(self))
     {
-      msg_trace("Starting to watch directory changes", evt_tag_str("dir", self->super.super.dir));
+      msg_trace("Starting to watch directory changes", evt_tag_str("dir", self->super.super.full_path));
       directory_monitor_content_comparator_rescan_directory(&self->super, TRUE);
 
       iv_fd_register(&self->kqueue_fd);
