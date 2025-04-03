@@ -21,6 +21,7 @@
  */
 #include "directory-monitor-inotify.h"
 #include "messages.h"
+#include "pathutils.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

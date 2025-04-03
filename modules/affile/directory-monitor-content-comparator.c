@@ -22,6 +22,7 @@
 
 #include "directory-monitor-content-comparator.h"
 #include "messages.h"
+#include "pathutils.h"
 #include "timeutils/misc.h"
 #include "glib.h"
 #include "glib/gstdio.h"
