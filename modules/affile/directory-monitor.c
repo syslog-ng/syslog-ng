@@ -23,6 +23,7 @@
 #include "directory-monitor.h"
 #include "timeutils/misc.h"
 #include "mainloop-call.h"
+#include "pathutils.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -31,99 +32,6 @@
 #include <string.h>
 #include <messages.h>
 #include <iv.h>
-
-gchar *
-build_filename(const gchar *basedir, const gchar *path)
-{
-  gchar *result;
-
-  if (!path)
-    return NULL;
-
-  if (basedir)
-    {
-      result = g_build_path(G_DIR_SEPARATOR_S, basedir, path, NULL);
-    }
-  else
-    {
-      result = g_strdup(path);
-    }
-
-  return result;
-}
-
-#define PATH_MAX_GUESS 1024
-
-static inline long
-get_path_max(void)
-{
-  static long path_max = 0;
-  if (path_max == 0)
-    {
-#ifdef PATH_MAX
-      path_max = PATH_MAX;
-#else
-      /* This code based on example from the Advanced Programming in the UNIX environment
-       * on how to determine the max path length
-       */
-      static long posix_version = 0;
-      static long xsi_version = 0;
-      if (posix_version == 0)
-        posix_version = sysconf(_SC_VERSION);
-
-      if (xsi_version == 0)
-        xsi_version = sysconf(_SC_XOPEN_VERSION);
-
-      if ((path_max = pathconf("/", _PC_PATH_MAX)) < 0)
-        path_max = PATH_MAX_GUESS;
-      else
-        path_max++;    /* add one since it's relative to root */
-
-      /*
-       * Before POSIX.1-2001, we aren't guaranteed that PATH_MAX includes
-       * the terminating null byte.  Same goes for XPG3.
-       */
-      if ((posix_version < 200112L) && (xsi_version < 4))
-        path_max++;
-
-#endif
-    }
-  return path_max;
-}
-
-/*
- Resolve . and ..
- Resolve symlinks
- Resolve tricki symlinks like a -> ../a/../a/./b
-*/
-gchar *
-resolve_to_absolute_path(const gchar *path, const gchar *basedir)
-{
-  long path_max = get_path_max();
-  gchar *res;
-  gchar *w_name;
-
-  w_name = build_filename(basedir, path);
-  res = (char *)g_malloc(path_max);
-
-  if (!realpath(w_name, res))
-    {
-      g_free(res);
-      if (errno == ENOENT)
-        {
-          res = g_strdup(path);
-        }
-      else
-        {
-          msg_error("Can't resolve to absolute path",
-                    evt_tag_str("path", path),
-                    evt_tag_error("error"));
-          res = NULL;
-        }
-    }
-  g_free(w_name);
-  return res;
-}
 
 static gchar *
 _get_real_path(DirectoryMonitor *self)
