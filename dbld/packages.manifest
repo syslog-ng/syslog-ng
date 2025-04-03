@@ -166,3 +166,10 @@ snmptrapd                       [devshell]
 dwarves                         [devshell]
 jq                              [devshell]
 curl                            [devshell]
+
+#############################################################################
+# Functional tests in the devshell
+#############################################################################
+
+sqlite3                         [devshell]
+libdbd-sqlite3                  [devshell]
