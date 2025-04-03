@@ -206,18 +206,16 @@ rearm_timer(struct iv_timer *rescan_timer, gint rearm_time)
 void
 directory_monitor_start(DirectoryMonitor *self)
 {
-  msg_debug("Starting directory monitor", evt_tag_str("dir", self->dir), evt_tag_str("dir_monitor_method", self->method));
-
   main_loop_assert_main_thread();
-
-  GDir *directory = NULL;
-  GError *error = NULL;
   if (self->watches_running)
-    {
-      return;
-    }
+    return;
+
   _set_real_path(self);
-  directory = g_dir_open(self->real_path, 0, &error);
+
+  msg_debug("Starting directory monitor", evt_tag_str("dir", self->real_path), evt_tag_str("dir_monitor_method",
+            self->method));
+  GError *error = NULL;
+  GDir *directory = g_dir_open(self->real_path, 0, &error);
   if (!directory)
     {
       msg_error("Can not open directory",
