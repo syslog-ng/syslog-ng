@@ -138,7 +138,7 @@ get_path_max(void)
  Resolve tricki symlinks like a -> ../a/../a/./b
 */
 gchar *
-resolve_to_absolute_path(const gchar *path, const gchar *basedir)
+resolve_to_absolute_path(const gchar *basedir, const gchar *path)
 {
   long path_max = get_path_max();
   gchar *res;
@@ -169,19 +169,22 @@ resolve_to_absolute_path(const gchar *path, const gchar *basedir)
 gchar *
 build_filename(const gchar *basedir, const gchar *path)
 {
-  gchar *result;
-
   if (!path)
     return NULL;
 
+  gchar *result;
   if (basedir)
-    {
-      result = g_build_path(G_DIR_SEPARATOR_S, basedir, path, NULL);
-    }
+    result = g_build_path(G_DIR_SEPARATOR_S, basedir, path, NULL);
   else
-    {
-      result = g_strdup(path);
-    }
-
+    result = g_strdup(path);
   return result;
+}
+
+gchar *
+canonicalize_filename(const gchar *path)
+{
+  gchar *absolute_path = resolve_to_absolute_path(NULL, path);
+  gchar *resolved_path = g_canonicalize_filename(absolute_path, NULL);
+  g_free(absolute_path);
+  return resolved_path;
 }
