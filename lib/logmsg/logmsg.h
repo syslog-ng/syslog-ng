@@ -260,6 +260,10 @@ struct _LogMessage
   gulong *tags;
   NVHandle *sdata;
 
+  /* this member is incremented for any write operation and it can also
+   * overflow, so only track it for changes and assume that 2^16 operations
+   * would suffice between two checks */
+  guint16 generation;
   guint16 pri;
   guint8 initial_parse:1,
          recursed:1,
