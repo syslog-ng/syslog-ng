@@ -35,5 +35,6 @@ gchar *find_file_in_path(const gchar *path, const gchar *filename, GFileTest tes
 const gchar *get_filename_extension(const gchar *filename);
 
 gchar *build_filename(const gchar *basedir, const gchar *path);
+gchar *canonicalize_filename(const gchar *path);
 
 #endif
