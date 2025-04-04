@@ -49,6 +49,7 @@
 #include "timeutils/cache.h"
 #include "multi-line/multi-line-factory.h"
 #include "filterx/filterx-globals.h"
+#include "transport/transport-globals.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -243,6 +244,7 @@ app_startup(void)
   timeutils_global_init();
   multi_line_global_init();
   filterx_global_init();
+  log_transport_global_init();
 }
 
 void
@@ -270,6 +272,7 @@ app_shutdown(void)
   msg_stats_deinit();
   run_application_hook(AH_SHUTDOWN);
 
+  log_transport_global_deinit();
   filterx_global_deinit();
   multi_line_global_deinit();
   main_loop_thread_resource_deinit();
