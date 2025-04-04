@@ -188,9 +188,6 @@ _can_check_eof(FileReader *self, gint fd)
 static gboolean
 _reader_check_eof(FileReader *self, gint fd)
 {
-  if (fd < 0)
-    return FALSE;
-
   off_t pos = lseek(fd, 0, SEEK_CUR);
   if (pos == (off_t) -1)
     {
@@ -260,13 +257,13 @@ _construct_poll_events(FileReader *self, gint fd)
       else
         poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
                                                       self->options->multi_line_timeout, self);
-      msg_trace("File follow-mode is syslog-ng poll");
+      msg_debug("File follow-mode is syslog-ng poll");
     }
   else if (fd >= 0 && _is_fd_pollable(fd))
     {
       poll_events = poll_fd_events_new(fd);
-      msg_trace("File follow-mode is ivykis poll");
-      msg_trace("Selected ivykis poll method", evt_tag_str("file_poll_method", iv_poll_method_name()));
+      msg_debug("File follow-mode is ivykis poll");
+      msg_debug("Selected ivykis poll method", evt_tag_str("file_poll_method", iv_poll_method_name()));
     }
   else
     {
@@ -318,7 +315,7 @@ _deinit_sd_logreader(FileReader *self)
 }
 
 static void
-_setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gboolean check_immediately)
+_setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto)
 {
   FileReader *self = (FileReader *) s;
 
@@ -335,23 +332,10 @@ _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto, gbo
                          self->owner->super.id,
                          kb);
 
-  if (check_immediately)
-    log_reader_set_immediate_check(self->reader);
-
   /* NOTE: if the file could not be opened, we ignore the last
    * remembered file position, if the file is created in the future
    * we're going to read from the start. */
   log_pipe_append((LogPipe *) self->reader, s);
-}
-
-static gboolean
-_is_immediate_check_needed(gboolean file_opened, gboolean open_deferred)
-{
-  if (file_opened)
-    return TRUE;
-  else if (open_deferred)
-    return FALSE;
-  return FALSE;
 }
 
 static gboolean
@@ -377,7 +361,6 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
     {
       LogProtoServer *proto;
       PollEvents *poll_events;
-      gboolean check_immediately;
 
       poll_events = _construct_poll_events(self, fd);
       if (!poll_events)
@@ -387,8 +370,9 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
         }
       proto = _construct_proto(self, fd);
 
-      check_immediately = _is_immediate_check_needed(file_opened, open_deferred);
-      _setup_logreader(s, poll_events, proto, check_immediately);
+      _setup_logreader(s, poll_events, proto);
+      if (recover_state)
+        _recover_state(s, cfg, proto);
       if (!log_pipe_init((LogPipe *) self->reader))
         {
           msg_error("Error initializing log_reader, closing fd",
@@ -398,8 +382,6 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
           close(fd);
           return FALSE;
         }
-      if (recover_state)
-        _recover_state(s, cfg, proto);
     }
   else
     {

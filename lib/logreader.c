@@ -27,6 +27,7 @@
 #include "mainloop-call.h"
 #include "ack-tracker/ack_tracker.h"
 #include "ack-tracker/ack_tracker_factory.h"
+#include "str-format.h"
 
 static void log_reader_io_handle_in(gpointer s);
 static gboolean log_reader_fetch_log(LogReader *self);
@@ -53,14 +54,6 @@ log_reader_set_local_addr(LogReader *s, GSockAddr *local_addr)
 
   g_sockaddr_unref(self->local_addr);
   self->local_addr = g_sockaddr_ref(local_addr);
-}
-
-void
-log_reader_set_immediate_check(LogReader *s)
-{
-  LogReader *self = (LogReader *) s;
-
-  self->immediate_check = TRUE;
 }
 
 void
@@ -160,7 +153,6 @@ log_reader_disable_watches(LogReader *self)
 static void
 log_reader_suspend_until_awoken(LogReader *self)
 {
-  self->immediate_check = FALSE;
   log_reader_disable_watches(self);
   self->suspended = TRUE;
 }
@@ -168,7 +160,6 @@ log_reader_suspend_until_awoken(LogReader *self)
 static void
 log_reader_force_check_in_next_poll(LogReader *self)
 {
-  self->immediate_check = FALSE;
   log_reader_disable_watches(self);
   self->suspended = FALSE;
 
@@ -314,7 +305,7 @@ log_reader_update_watches(LogReader *self)
       return;
     }
 
-  LogProtoPrepareAction prepare_action = log_proto_server_prepare(self->proto, &cond, &idle_timeout);
+  LogProtoPrepareAction prepare_action = log_proto_server_poll_prepare(self->proto, &cond, &idle_timeout);
 
   if (idle_timeout > 0)
     {
@@ -324,12 +315,6 @@ log_reader_update_watches(LogReader *self)
       self->idle_timer.expires.tv_sec += idle_timeout;
 
       iv_timer_register(&self->idle_timer);
-    }
-
-  if (self->immediate_check)
-    {
-      log_reader_force_check_in_next_poll(self);
-      return;
     }
 
   switch (prepare_action)
@@ -456,7 +441,17 @@ _add_aux_nvpair(const gchar *name, const gchar *value, gsize value_len, gpointer
 static inline gint
 log_reader_process_handshake(LogReader *self)
 {
-  LogProtoStatus status = log_proto_server_handshake(self->proto);
+  gboolean handshake_finished = FALSE;
+  LogProtoServer *proto_replacement = NULL;
+  LogProtoStatus status = log_proto_server_handshake(self->proto, &handshake_finished, &proto_replacement);
+
+  if (proto_replacement)
+    {
+      g_assert(handshake_finished == FALSE);
+      log_transport_stack_move(&proto_replacement->transport_stack, &self->proto->transport_stack);
+      log_proto_server_free(self->proto);
+      self->proto = proto_replacement;
+    }
 
   switch (status)
     {
@@ -464,6 +459,8 @@ log_reader_process_handshake(LogReader *self)
     case LPS_ERROR:
       return status == LPS_ERROR ? NC_READ_ERROR : NC_CLOSE;
     case LPS_SUCCESS:
+      if (handshake_finished)
+        self->handshake_in_progress = FALSE;
       break;
     case LPS_AGAIN:
       break;
@@ -479,6 +476,32 @@ _log_reader_insert_msg_length_stats(LogReader *self, gsize len)
 {
   stats_aggregator_add_data_point(self->max_message_size, len);
   stats_aggregator_add_data_point(self->average_messages_size, len);
+}
+
+static inline void
+_set_addresses(LogReader *self, LogMessage *msg, LogTransportAuxData *aux)
+{
+  GSockAddr *source_addr = self->peer_addr;
+  if (!aux->peer_addr)
+    goto set;
+
+  source_addr = aux->peer_addr;
+
+  if (!self->peer_addr)
+    goto set;
+
+  gchar buf[MAX_SOCKADDR_STRING];
+
+  const gchar *ip = g_sockaddr_format(self->peer_addr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
+  log_msg_set_value(msg, LM_V_PEER_IP, ip, -1);
+
+  guint16 port = g_sockaddr_get_port(self->peer_addr);
+  gint len = format_uint32_base10_rev(buf, sizeof(buf), 0, port);
+  log_msg_set_value(msg, LM_V_PEER_PORT, buf, len);
+
+set:
+  log_msg_set_saddr(msg, source_addr);
+  log_msg_set_daddr(msg, aux->local_addr ? : self->local_addr);
 }
 
 static gboolean
@@ -499,8 +522,9 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
 
   if (aux)
     {
-      log_msg_set_saddr(m, aux->peer_addr ? : self->peer_addr);
-      log_msg_set_daddr(m, aux->local_addr ? : self->local_addr);
+      _set_addresses(self, m, aux);
+      m->proto = aux->proto;
+
       if (aux->timestamp.tv_sec)
         {
           /* accurate timestamp was received from the transport layer, use
@@ -508,7 +532,6 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
           m->timestamps[LM_TS_RECVD].ut_sec = aux->timestamp.tv_sec;
           m->timestamps[LM_TS_RECVD].ut_usec = aux->timestamp.tv_nsec / 1000;
         }
-      m->proto = aux->proto;
     }
   log_msg_refcache_start_producer(m);
 
@@ -531,7 +554,7 @@ log_reader_fetch_log(LogReader *self)
     aux = NULL;
 
   log_transport_aux_data_init(aux);
-  if (log_proto_server_handshake_in_progress(self->proto))
+  if (self->handshake_in_progress)
     {
       return log_reader_process_handshake(self);
     }
@@ -593,8 +616,6 @@ log_reader_fetch_log(LogReader *self)
     }
   log_transport_aux_data_destroy(aux);
 
-  if (msg_count == self->options->fetch_limit)
-    self->immediate_check = TRUE;
   return 0;
 }
 
@@ -804,8 +825,7 @@ log_reader_new(GlobalConfig *cfg)
   self->super.super.free_fn = log_reader_free;
   self->super.wakeup = log_reader_wakeup;
   self->super.schedule_dynamic_window_realloc = _schedule_dynamic_window_realloc;
-  self->super.metrics.raw_bytes_enabled = TRUE;
-  self->immediate_check = FALSE;
+  self->handshake_in_progress = TRUE;
   log_reader_init_watches(self);
   g_mutex_init(&self->pending_close_lock);
   g_cond_init(&self->pending_close_cond);

@@ -254,29 +254,10 @@ signal_slot_connector_new(void)
   return self;
 }
 
-static void
+void
 signal_slot_connector_free(SignalSlotConnector *self)
 {
   g_mutex_clear(&self->lock);
   g_hash_table_unref(self->connections);
   g_free(self);
-}
-
-SignalSlotConnector *
-signal_slot_connector_ref(SignalSlotConnector *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
-
-  if (self)
-    g_atomic_counter_inc(&self->ref_cnt);
-
-  return self;
-}
-
-void
-signal_slot_connector_unref(SignalSlotConnector *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
-  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
-    signal_slot_connector_free(self);
 }

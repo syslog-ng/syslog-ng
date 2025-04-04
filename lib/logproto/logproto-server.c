@@ -122,17 +122,17 @@ log_proto_server_validate_options_method(LogProtoServer *s)
 }
 
 void
-log_proto_server_free_method(LogProtoServer *s)
+log_proto_server_free_method(LogProtoServer *self)
 {
-  log_transport_free(s->transport);
+  log_transport_stack_deinit(&self->transport_stack);
 }
 
 void
-log_proto_server_free(LogProtoServer *s)
+log_proto_server_free(LogProtoServer *self)
 {
-  if (s->free_fn)
-    s->free_fn(s);
-  g_free(s);
+  if (self->free_fn)
+    self->free_fn(self);
+  g_free(self);
 }
 
 void
@@ -141,7 +141,7 @@ log_proto_server_init(LogProtoServer *self, LogTransport *transport, const LogPr
   self->validate_options = log_proto_server_validate_options_method;
   self->free_fn = log_proto_server_free_method;
   self->options = options;
-  self->transport = transport;
+  log_transport_stack_init(&self->transport_stack, transport);
 }
 
 gboolean
@@ -175,6 +175,7 @@ log_proto_server_options_defaults(LogProtoServerOptions *options)
   options->trim_large_messages = -1;
   options->init_buffer_size = -1;
   options->max_buffer_size = -1;
+  options->idle_timeout = -1;
   options->ack_tracker_factory = instant_ack_tracker_bookmarkless_factory_new();
 }
 

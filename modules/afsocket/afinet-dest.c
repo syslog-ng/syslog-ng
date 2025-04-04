@@ -28,6 +28,8 @@
 #include "gprocess.h"
 #include "compat/openssl_support.h"
 #include "afsocket-signals.h"
+#include "transport/transport-tls.h"
+#include "transport/transport-stack.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -55,6 +57,12 @@
 #endif
 
 static const gint MAX_UDP_PAYLOAD_SIZE = 65507;
+
+typedef struct _AFInetDestKeptAliveConnection
+{
+  AFSocketDestKeptAliveConnection super;
+  gchar *hostname;
+} AFInetDestKeptAliveConnection;
 
 typedef struct _AFInetDestDriverTLSVerifyData
 {
@@ -169,7 +177,7 @@ afinet_dd_tls_verify_data_new(TLSContext *ctx, const gchar *hostname, SignalSlot
 
   self->tls_context = tls_context_ref(ctx);
   self->hostname = g_strdup(hostname);
-  self->signal_connector = signal_slot_connector_ref(signal_connector);
+  self->signal_connector = signal_connector;
   return self;
 }
 
@@ -183,7 +191,7 @@ afinet_dd_tls_verify_data_free(gpointer s)
   if (self)
     {
       tls_context_unref(self->tls_context);
-      signal_slot_connector_unref(self->signal_connector);
+      self->signal_connector = NULL;
       g_free(self->hostname);
       g_free(self);
     }
@@ -223,13 +231,19 @@ void
 afinet_dd_setup_tls_verifier(AFInetDestDriver *self)
 {
   TransportMapperInet *transport_mapper_inet = (TransportMapperInet *) self->super.transport_mapper;
-  SignalSlotConnector *slot_connector = self->super.super.super.super.signal_slot_connector;
-  AFInetDestDriverTLSVerifyData *verify_data = afinet_dd_tls_verify_data_new(transport_mapper_inet->tls_context,
-                                               _afinet_dd_get_hostname(self),
-                                               slot_connector);
+
+  AFInetDestDriverTLSVerifyData *verify_data;
+  verify_data = afinet_dd_tls_verify_data_new(transport_mapper_inet->tls_context, _afinet_dd_get_hostname(self),
+                                              self->super.super.super.signal_slot_connector);
   TLSVerifier *verifier = tls_verifier_new(afinet_dd_verify_callback, verify_data, afinet_dd_tls_verify_data_free);
 
   transport_mapper_inet_set_tls_verifier(transport_mapper_inet, verifier);
+}
+
+static AFInetDestDriverTLSVerifyData *
+_get_tls_verify_data (TLSVerifier *verifier)
+{
+  return (AFInetDestDriverTLSVerifyData *)verifier->verify_data;
 }
 
 void
@@ -701,6 +715,83 @@ afinet_dd_free(LogPipe *s)
   afsocket_dd_free(s);
 }
 
+gboolean
+afinet_dd_should_restore_connection(AFSocketDestDriver *s, AFSocketDestKeptAliveConnection *c)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  AFInetDestKeptAliveConnection *conn = (AFInetDestKeptAliveConnection *) c;
+
+  if (g_strcmp0(_afinet_dd_get_hostname(self), conn->hostname) != 0)
+    return FALSE;
+
+  return afsocket_dd_should_restore_connection_method(&self->super, c);
+}
+
+static void
+afinet_dd_restore_connection(AFSocketDestDriver *s, AFSocketDestKeptAliveConnection *item)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+
+  LogWriter *writer = item->writer;
+
+  if (!writer)
+    goto exit;
+
+  LogProtoClient *proto = log_writer_get_proto(writer);
+
+  if (!proto)
+    goto exit;
+
+  LogTransport *transport = log_transport_stack_get_transport(&proto->transport_stack, LOG_TRANSPORT_TLS);
+
+  if (transport)
+    {
+      TLSSession *session = log_tansport_tls_get_session(transport);
+      AFInetDestDriverTLSVerifyData *verify_data = _get_tls_verify_data (session->verifier);
+      verify_data->signal_connector = self->super.super.super.signal_slot_connector;
+    }
+
+exit:
+  afsocket_dd_restore_connection_method(&self->super, item);
+}
+
+static void
+_kept_alive_connection_free(AFSocketDestKeptAliveConnection *s)
+{
+  AFInetDestKeptAliveConnection *self = (AFInetDestKeptAliveConnection *) s;
+
+  g_free(self->hostname);
+
+  afsocket_kept_alive_connection_free_method(&self->super);
+}
+
+static AFInetDestKeptAliveConnection *
+_kept_alive_connection_new(const gchar *transport, const gchar *proto, const gchar *hostname,
+                           GSockAddr *dest_addr, LogWriter *writer)
+{
+  AFInetDestKeptAliveConnection *self = g_new(AFInetDestKeptAliveConnection, 1);
+  afsocket_kept_alive_connection_init_instance(&self->super, transport, proto, dest_addr, writer);
+
+  self->super.free_fn = _kept_alive_connection_free;
+
+  self->hostname = g_strdup(hostname);
+
+  return self;
+}
+
+static void
+afinet_dd_save_connection(AFSocketDestDriver *s)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+
+  const gchar *transport = transport_mapper_get_transport(self->super.transport_mapper);
+  const gchar *proto = transport_mapper_get_logproto(self->super.transport_mapper);
+  AFInetDestKeptAliveConnection *item = _kept_alive_connection_new(transport, proto, _afinet_dd_get_hostname(self),
+                                        self->super.dest_addr, self->super.writer);
+
+  afsocket_dd_save_connection(&self->super, &item->super);
+}
+
 static AFInetDestDriver *
 afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname, GlobalConfig *cfg)
 {
@@ -714,6 +805,9 @@ afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname, Globa
   self->super.construct_writer = afinet_dd_construct_writer;
   self->super.setup_addresses = afinet_dd_setup_addresses;
   self->super.get_dest_name = afinet_dd_get_dest_name;
+  self->super.should_restore_connection = afinet_dd_should_restore_connection;
+  self->super.restore_connection = afinet_dd_restore_connection;
+  self->super.save_connection = afinet_dd_save_connection;
 
   self->primary = g_strdup(hostname);
 

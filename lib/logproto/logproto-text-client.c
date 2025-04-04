@@ -27,23 +27,20 @@
 #include <errno.h>
 
 static gboolean
-log_proto_text_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
+log_proto_text_client_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
 
-  *fd = self->super.transport->fd;
-  *cond = self->super.transport->cond;
+  if (log_transport_stack_poll_prepare(&self->super.transport_stack, cond))
+    return TRUE;
+
+  *fd = self->super.transport_stack.fd;
 
   /* if there's no pending I/O in the transport layer, then we want to do a write */
   if (*cond == 0)
     *cond = G_IO_OUT;
 
-  const gboolean pending_write = self->partial != NULL;
-
-  if (!pending_write && s->options->timeout > 0)
-    *timeout = s->options->timeout;
-
-  return pending_write;
+  return self->partial != NULL;
 }
 
 static LogProtoStatus
@@ -55,18 +52,21 @@ log_proto_text_client_drop_input(LogProtoClient *s)
 
   do
     {
-      rc = log_transport_read(self->super.transport, buf, sizeof(buf), NULL);
+      rc = log_transport_stack_read(&self->super.transport_stack, buf, sizeof(buf), NULL);
     }
   while (rc > 0);
 
   if (rc == -1 && errno != EAGAIN)
     {
-      msg_error("Error reading data", evt_tag_int("fd", self->super.transport->fd), evt_tag_error("error"));
+      msg_error("Error reading data",
+                evt_tag_int("fd", self->super.transport_stack.fd),
+                evt_tag_error("error"));
       return LPS_ERROR;
     }
   else if (rc == 0)
     {
-      msg_error("EOF occurred while idle", evt_tag_int("fd", log_proto_client_get_fd(&self->super)));
+      msg_error("EOF occurred while idle",
+                evt_tag_int("fd", self->super.transport_stack.fd));
       return LPS_ERROR;
     }
 
@@ -87,13 +87,13 @@ log_proto_text_client_flush(LogProtoClient *s)
   /* attempt to flush previously buffered data */
   gint len = self->partial_len - self->partial_pos;
 
-  rc = log_transport_write(self->super.transport, &self->partial[self->partial_pos], len);
+  rc = log_transport_stack_write(&self->super.transport_stack, &self->partial[self->partial_pos], len);
   if (rc < 0)
     {
       if (errno != EAGAIN && errno != EINTR)
         {
           msg_error("I/O error occurred while writing",
-                    evt_tag_int("fd", self->super.transport->fd),
+                    evt_tag_int("fd", self->super.transport_stack.fd),
                     evt_tag_error(EVT_TAG_OSERROR));
           return LPS_ERROR;
         }
@@ -196,13 +196,12 @@ void
 log_proto_text_client_init(LogProtoTextClient *self, LogTransport *transport, const LogProtoClientOptions *options)
 {
   log_proto_client_init(&self->super, transport, options);
-  self->super.prepare = log_proto_text_client_prepare;
+  self->super.poll_prepare = log_proto_text_client_poll_prepare;
   self->super.flush = log_proto_text_client_flush;
   if (options->drop_input)
     self->super.process_in = log_proto_text_client_drop_input;
   self->super.post = log_proto_text_client_post;
   self->super.free_fn = log_proto_text_client_free;
-  self->super.transport = transport;
   self->next_state = -1;
 }
 

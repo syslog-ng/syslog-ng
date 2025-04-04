@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2018 Balabit
- * Copyright (c) 2018 Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2025 Axoflow
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,29 +18,14 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
- *
  */
 
-#ifndef MULTITRANSPORT_H_INCLUDED
-#define MULTITRANSPORT_H_INCLUDED
+#ifndef TRANSPORT_GLOBALS_H_INCLUDED
+#define TRANSPORT_GLOBALS_H_INCLUDED
 
-#include "transport/logtransport.h"
-#include "transport/transport-factory.h"
+#include "syslog-ng.h"
 
-typedef struct _MultiTransport MultiTransport;
-
-struct _MultiTransport
-{
-  LogTransport super;
-  GHashTable *registry;
-  LogTransport *active_transport;
-  const TransportFactory *active_transport_factory;
-};
-
-LogTransport *multitransport_new(TransportFactory *default_transport_factory, gint fd);
-void multitransport_add_factory(MultiTransport *self, TransportFactory *);
-gboolean multitransport_switch(MultiTransport *self, const gchar *id);
-gboolean multitransport_contains_factory(MultiTransport *self, const gchar *id);
+void log_transport_global_init(void);
+void log_transport_global_deinit(void);
 
 #endif
-
