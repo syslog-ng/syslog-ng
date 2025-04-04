@@ -52,9 +52,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/source_drivers/internal_source/test_internal_acceptance.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_acceptance.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_reload.py \
-	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_tls_passthrough.py \
-	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_tls.py \
-	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_tls_with_passphrase.py \
+	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_network.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_multiple_clients.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_simple_tcp_connection.py \
 	tests/light/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_syslog_proto.py \

@@ -119,6 +119,7 @@ libtest/filterx-lib\.[ch]
 lib/generic-number\.[ch]
 lib/tests/test_generic_number\.c
 lib/severity-aliases\.table
+lib/transport/transport-adapter\.[ch]
 syslog-ng-ctl/commands/log-level.[ch]
 syslog-ng-ctl/commands/attach.[ch]
 modules/afsocket/afsocket-signals.h

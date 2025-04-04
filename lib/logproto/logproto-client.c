@@ -38,7 +38,7 @@ log_proto_client_validate_options_method(LogProtoClient *s)
 void
 log_proto_client_free_method(LogProtoClient *s)
 {
-  log_transport_free(s->transport);
+  log_transport_stack_deinit(&s->transport_stack);
 }
 
 void
@@ -55,7 +55,7 @@ log_proto_client_init(LogProtoClient *self, LogTransport *transport, const LogPr
   self->validate_options = log_proto_client_validate_options_method;
   self->free_fn = log_proto_client_free_method;
   self->options = options;
-  self->transport = transport;
+  log_transport_stack_init(&self->transport_stack, transport);
 }
 
 void
