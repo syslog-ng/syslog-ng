@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2018 Balabit
- * Copyright (c) 2018 Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2024 Balázs Scheidler <balazs.scheidler@axoflow.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,27 +20,11 @@
  * COPYING for details.
  *
  */
+#ifndef LOGPROTO_AUTO_SERVER_H_INCLUDED
+#define LOGPROTO_AUTO_SERVER_H_INCLUDED
 
-#ifndef MULTITRANSPORT_H_INCLUDED
-#define MULTITRANSPORT_H_INCLUDED
+#include "logproto-server.h"
 
-#include "transport/logtransport.h"
-#include "transport/transport-factory.h"
-
-typedef struct _MultiTransport MultiTransport;
-
-struct _MultiTransport
-{
-  LogTransport super;
-  GHashTable *registry;
-  LogTransport *active_transport;
-  const TransportFactory *active_transport_factory;
-};
-
-LogTransport *multitransport_new(TransportFactory *default_transport_factory, gint fd);
-void multitransport_add_factory(MultiTransport *self, TransportFactory *);
-gboolean multitransport_switch(MultiTransport *self, const gchar *id);
-gboolean multitransport_contains_factory(MultiTransport *self, const gchar *id);
+LogProtoServer *log_proto_auto_server_new(LogTransport *transport, const LogProtoServerOptions *options);
 
 #endif
-
