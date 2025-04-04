@@ -48,7 +48,7 @@
       <para>The main objective of the secure logging module is to provide tamper evident logging, i.e. to adequately protect log records of an information system and to provide a sensor indicating
 attack attempts. The secure logging module achieves this by authentically encrypting each
 log record with an individual cryptographic key used only once and protecting the integrity of
-the whole log archive by a cryptographic authentication code. Each attempt to tamper
+the whole log archive with a hash-based message authentication code (HMAC). Each attempt to tamper
 with either an individual log record or the log archive itself will be immediately detected
 during log archive verification. Therefore, an attacker can no longer tamper with log
       records without being detected.</para>
@@ -104,11 +104,11 @@ AgAAAAAAAAA=:5UVybnKL1EAbgC4CLfd8HpgurjREf4LEN61/yWHSD2hbXjRD4QmQdtbwguT1chzdItK
     </refsection>
     <refsection version="5.0">
       <title>Key generation</title>
-      <para> In order to bootstrap the system, an initial key k0 must be created and installed on the log host before secure logging environment is started for the first time.</para>
+      <para> In order to bootstrap the system, an initial host key k0 must be created and installed on the log host before secure logging environment is started for the first time.</para>
       <para>
         The newly created host key k0 has its counter set to 0 indicating that it represents the initial host key k0. This host key k0 must be kept secret and not be disclosed to third parties. It will be required to successfully decrypt
         and verify log archives processed by the secure logging environment. As each log entry will be encrypted with its
-        own key, a new host key will be created after successful processing of a log entry and will replace the previous key. Therefore, the initial host key needs to be stored in a safe place before starting the secure logging environment, as it will be deleted from the log host after processing of the first log entry. The following steps must be done before starting the secure logging environment. Steps 1 and 2 are performed with the <command>slogkey</command> utility. See <link linkend="slogkey.1"><command>slogkey</command>(1)</link> for details on how to generate a master key and to derive a host key from it. Step 3 and 4 depend on the actual deployment in a target environment.</para>
+        own key, a new host key will be created after the successful processing of a single log entry and will replace the previous key. Therefore, the initial host key needs to be stored in a safe place before starting the secure logging environment, as it will be deleted from the log host after processing of the first log entry. The following steps must be done before starting the secure logging environment. Steps 1 and 2 are performed with the <command>slogkey</command> utility. See <link linkend="slogkey.1"><command>slogkey</command>(1)</link> for details on how to generate a master key and to derive a host key from it. Step 3 and 4 depend on the actual deployment in a target environment.</para>
       <orderedlist numeration="arabic">
 	<listitem> <para>Create a master key</para>
         </listitem>
@@ -134,7 +134,7 @@ AgAAAAAAAAA=:5UVybnKL1EAbgC4CLfd8HpgurjREf4LEN61/yWHSD2hbXjRD4QmQdtbwguT1chzdItK
            <command>slog</command>
           </term>
           <listitem>
-            <para>The name of the secure logging template function. This name can be also be found by calling <command>syslog-ng</command> with the <command>--module-registry</command> arguments and checking the <command>template-func</command> property of the secure logging module in the corresponding output.</para>
+            <para>The name of the secure logging template function. This name can be also be found by calling <command>syslog-ng</command> with the <command>--module-registry</command> argument and checking the <command>template-func</command> property of the secure logging module in the corresponding output.</para>
          </listitem>
         </varlistentry>
         <varlistentry>
@@ -142,7 +142,7 @@ AgAAAAAAAAA=:5UVybnKL1EAbgC4CLfd8HpgurjREf4LEN61/yWHSD2hbXjRD4QmQdtbwguT1chzdItK
            <command>--key-file</command> or <command>-k</command>
           </term>
           <listitem>
-            <para>The host key. &lt;host key file&gt; is the full path of the file storing the host key on the log host. If this arguments is not supplied or does not point to a valid regular key file, <command>syslog-ng</command> will not start and a display a corresponding error message.</para>
+            <para>The host key. &lt;host key file&gt; is the full path of the file storing the host key on the log host. If this argument is not supplied or does not point to a valid regular key file, <command>syslog-ng</command> will not start and a display a corresponding error message.</para>
          </listitem>
         </varlistentry>
         <varlistentry>
@@ -231,8 +231,7 @@ log {
     </refsection>      
     <refsection version="5.0">
       <title>Log Verification</title>
-      <para>In order to analyze the log file created in a secure logging environment, the log files must be decrypted and their integrity
-      be verified. Verification requires both the initial host key k0 and the corresponding MAC file and is performed with the <command>slogverify</command> utility. It is not normally performed on the log host where the secure logging environment is producing log data. In a typical deployment, log files would be retrieved from the log host and transferred to a central log collector where verification it performed. As verification requires the use of the initial host key k0, it should only be performed in a trusted environment. </para>
+      <para>In order to analyze the log file created in a secure logging environment, the log files must be decrypted and their integrity must be verified. Verification requires both the initial host key k0 and the corresponding MAC file and is performed with the <command>slogverify</command> utility. It is not normally performed on the log host where the secure logging environment is producing log data. In a typical deployment, log files would be retrieved from the log host and transferred to a central log collector where verification it performed. As verification requires the use of the initial host key k0, it should only be performed in a trusted environment. </para>
       <refsection version="5.0">
       <title>Normal mode</title>
       <para>In normal mode, a complete log archive is verified at once. In a typical environment, this would mean retrieving a log file together with is MAC file from a log host and retrieving the corresponding initial key k0 form a safe location and supplying them to the <command>slogverify </command> utility. A typical call sequence for verification in normal mode would look like this</para>
@@ -283,7 +282,7 @@ log {
       <refsection version="5.0">
       <title>Iterative mode</title>
       <para>
-      Verification in normal mode may not be suitable for some application scenarios. Many log hosts use log rotation in order to preserve storage space. In log rotation, a threshold for the maximum amount of storage space and the number of generations is defined for different type of log files. When either storage space is exhausted or the number of generations is reached, the oldest log file will be overwritten by new incoming log data. This procedure is not possible in secure logging environment, as overwriting, i.e. deleting a log file would break the cryptographic chain that is established between the log entries. This comes as no surprise, as one of the main objectives of secure logging is to protect against deletion of log entries by a potential attacker.</para>
+      Verification in normal mode may not be suitable for some application scenarios. Many log hosts use log rotation in order to preserve storage space. In log rotation, a threshold for the maximum amount of storage space and the number of generations is defined for different type of log files. When either storage space is exhausted or the number of generations is reached, the oldest log file will be overwritten by newly incoming log data. This procedure is not suitable for use in secure logging environment, as overwriting, i.e. deleting a log file would break the cryptographic chain that is established between the log entries. This comes as no surprise, as one of the main objectives of secure logging is to protect against deletion of log entries by a potential attacker.</para>
       <para>In order allow for a procedure similar to log rotation, the secure logging environment features an iterative mode. In iterative mode, log files can be split into different files and each of these files can be verified separately. Care must be taken when performing verification in iterative mode, as each of the different log files needs to be accompanied by a copy of the host key and the MAC files present on the system at the time of retrieval. A typical usage scenario for the iterative mode would look like this:
       <orderedlist>
 	<listitem> <para>Define a storage threshold for the secure logging file destination. In this example we assume 500MB.</para>
@@ -304,7 +303,7 @@ log {
         </listitem>
           </orderedlist>
       </para>
-      <para>Steps 2-6 have to repeated each time the log file reaches a size of 50 MB. Assuming that the log file parts will be named after the iteration, e.g. log.1, log.2, log.3, etc. and a similar convention is applied to the host keys and MAC files, a typical call sequence for the validation of a log file part in iterative mode after three iterations will look like this:
+      <para>Steps 2-6 have to repeated each time the log file reaches a size of 500 MB. Assuming that the log file parts will be named after the iteration, e.g. log.1, log.2, log.3, etc. and a similar convention is applied to the host keys and MAC files, a typical call sequence for the validation of a log file part in iterative mode after three iterations will look like this:
       </para>
       <para><command>slogverify --iterative --prev-key-file host.key.2 --prev-mac-file mac.dat.2 --mac-file mac.dat /var/log/messages.slog.3 /var/log/verified/messages.3</command></para>
       <para>with</para>
@@ -353,7 +352,7 @@ log {
         </varlistentry>
       </variablelist>
     </para>
-      <para>In a real deployment, the above steps would typically be automated using a scripting engine.
+      <para>In a real deployment, the above steps would typically be automated, e.g. with a scripting engine.
       </para>
       <para> See <link linkend="slogverify.1"><command>slogverify</command>(1)</link> for details on verification in iterative mode.</para>
       </refsection>
@@ -388,9 +387,9 @@ log {
         <link linkend="slogverify.1"><command>slogverify</command>(1)</link>
       </para>
       <note version="5.0">
-        <para>For the detailed documentation of see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The syslog-ng Administrator Guide</command></link></para>
+        <para>For the detailed documentation of see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.github.io/admin-guide/README"><command>The syslog-ng Administrator Guide</command></link></para>
         <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
-        <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
+        <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.syslog-ng.com/community/b/blog/"><command>syslog-ng blogs</command></link>.</para>
         <para>For specific information requests related to secure logging send a mail to the Airbus Secure Logging Team &lt;secure-logging@airbus.com&gt;.</para>
       </note>
     </refsection>
