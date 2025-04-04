@@ -17,6 +17,7 @@ lib_logproto_tests_test_logproto_SOURCES = 			\
 	lib/logproto/tests/test-text-server.c			\
 	lib/logproto/tests/test-dgram-server.c			\
 	lib/logproto/tests/test-framed-server.c			\
+	lib/logproto/tests/test-auto-server.c			\
 	lib/logproto/tests/test-indented-multiline-server.c	\
 	lib/logproto/tests/test-regexp-multiline-server.c
 

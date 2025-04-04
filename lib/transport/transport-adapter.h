@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2018 Balabit
- * Copyright (c) 2018 Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2024 Balazs Scheidler <balazs.scheidler@axoflow.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,34 +21,25 @@
  *
  */
 
-#include "transport/transport-factory-socket.h"
-#include "transport/transport-socket.h"
-#include "transport/transport-udp-socket.h"
+#ifndef TRANSPORT_ADAPTER_H_INCLUDED
+#define TRANSPORT_ADAPTER_H_INCLUDED
 
-static LogTransport *
-_construct_transport_dgram(const TransportFactory *s, gint fd)
+#include "transport-stack.h"
+
+typedef struct _LogTransportAdapter LogTransportAdapter;
+struct _LogTransportAdapter
 {
-  return log_transport_udp_socket_new(fd);
-}
+  LogTransport super;
+  LogTransportIndex base_index;
+};
 
-static LogTransport *
-_construct_transport_stream(const TransportFactory *s, gint fd)
-{
-  return log_transport_stream_socket_new(fd);
-}
+gssize log_transport_adapter_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux);
+gssize log_transport_adapter_write_method(LogTransport *s, const gpointer buf, gsize count);
+gssize log_transport_adapter_writev_method(LogTransport *s, struct iovec *iov, gint iov_count);
 
-TransportFactory *
-transport_factory_socket_new(int sock_type)
-{
-  TransportFactorySocket *self = g_new0(TransportFactorySocket, 1);
+void log_transport_adapter_init_instance(LogTransportAdapter *self, const gchar *name,
+                                         LogTransportIndex base);
 
-  if (sock_type == SOCK_DGRAM)
-    self->super.construct_transport = _construct_transport_dgram;
-  else
-    self->super.construct_transport = _construct_transport_stream;
+void log_transport_adapter_free_method(LogTransport *s);
 
-  self->super.id = TRANSPORT_FACTORY_SOCKET_ID;
-
-  return &self->super;
-}
-
+#endif

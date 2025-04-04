@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2020-2023 One Identity LLC.
+ * Copyright (c) 2025 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2025 Axoflow
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,18 +22,11 @@
  *
  */
 
-#ifndef TRANSPORT_SOCKET_PROXY_PRIVATE_H_INCLUDED
-#define TRANSPORT_SOCKET_PROXY_PRIVATE_H_INCLUDED
+#ifndef TRANSPORT_FACTORY_HAPROXY_H_INCLUDED
+#define TRANSPORT_FACTORY_HAPROXY_H_INCLUDED
 
-#include "transport/transport-socket-proxy.h"
+#include "transport/transport-stack.h"
 
-// private functions used also with tests
-gboolean _parse_proxy_header(LogTransportSocketProxy *self);
-
-gboolean _is_proxy_version_v1(LogTransportSocketProxy *self);
-
-gboolean _is_proxy_version_v2(LogTransportSocketProxy *self);
-
-void _augment_aux_data(LogTransportSocketProxy *self, LogTransportAuxData *aux);
+LogTransportFactory *transport_factory_haproxy_new(LogTransportIndex base, LogTransportIndex switch_to);
 
 #endif

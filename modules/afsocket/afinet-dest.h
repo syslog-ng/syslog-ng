@@ -57,7 +57,6 @@ typedef struct _AFInetDestDriver
   gchar *bind_ip;
   /* character as it can contain a service name from /etc/services */
   gchar *dest_port;
-  /* destination hostname is stored in super.hostname */
 } AFInetDestDriver;
 
 void afinet_dd_set_localport(LogDriver *self, gchar *service);

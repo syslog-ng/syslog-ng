@@ -52,6 +52,7 @@ struct _LogProtoServerOptions
   gboolean trim_large_messages;
   gint max_buffer_size;
   gint init_buffer_size;
+  gint idle_timeout;
   AckTrackerFactory *ack_tracker_factory;
 };
 
@@ -78,18 +79,16 @@ struct _LogProtoServer
 {
   LogProtoStatus status;
   const LogProtoServerOptions *options;
-  LogTransport *transport;
+  LogTransportStack transport_stack;
   AckTracker *ack_tracker;
 
   LogProtoServerWakeupCallback wakeup_callback;
-  /* FIXME: rename to something else */
-  LogProtoPrepareAction (*prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
+  LogProtoPrepareAction (*poll_prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
   gboolean (*restart_with_state)(LogProtoServer *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                           LogTransportAuxData *aux, Bookmark *bookmark);
   gboolean (*validate_options)(LogProtoServer *s);
-  gboolean (*handshake_in_progess)(LogProtoServer *s);
-  LogProtoStatus (*handshake)(LogProtoServer *s);
+  LogProtoStatus (*handshake)(LogProtoServer *s, gboolean *handshake_finished, LogProtoServer **proto_replacement);
   void (*free_fn)(LogProtoServer *s);
 };
 
@@ -99,23 +98,22 @@ log_proto_server_validate_options(LogProtoServer *self)
   return self->validate_options(self);
 }
 
-static inline gboolean
-log_proto_server_handshake_in_progress(LogProtoServer *s)
-{
-  if (s->handshake_in_progess)
-    {
-      return s->handshake_in_progess(s);
-    }
-  return FALSE;
-}
-
 static inline LogProtoStatus
-log_proto_server_handshake(LogProtoServer *s)
+log_proto_server_handshake(LogProtoServer *s, gboolean *handshake_finished, LogProtoServer **proto_replacement)
 {
   if (s->handshake)
     {
-      return s->handshake(s);
+      LogProtoStatus status;
+
+      g_assert(*proto_replacement == NULL);
+      status = s->handshake(s, handshake_finished, proto_replacement);
+      if (*proto_replacement)
+        {
+          g_assert(status == LPS_SUCCESS || status == LPS_AGAIN);
+        }
+      return status;
     }
+  *handshake_finished = TRUE;
   return LPS_SUCCESS;
 }
 
@@ -125,10 +123,14 @@ log_proto_server_set_options(LogProtoServer *self, const LogProtoServerOptions *
   self->options = options;
 }
 
-static inline gboolean
-log_proto_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
+static inline LogProtoPrepareAction
+log_proto_server_poll_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
 {
-  return s->prepare(s, cond, timeout);
+  LogProtoPrepareAction result = s->poll_prepare(s, cond, timeout);
+
+  if (result == LPPA_POLL_IO && *timeout < 0)
+    *timeout = s->options->idle_timeout;
+  return result;
 }
 
 static inline gboolean
@@ -154,7 +156,7 @@ log_proto_server_get_fd(LogProtoServer *s)
   /* FIXME: Layering violation, as transport may not be fd based at all.
    * But LogReader assumes it is.  */
 
-  return s->transport->fd;
+  return s->transport_stack.fd;
 }
 
 static inline void
@@ -223,7 +225,6 @@ struct _LogProtoServerFactory
 {
   LogProtoServer *(*construct)(LogTransport *transport, const LogProtoServerOptions *options);
   gint default_inet_port;
-  gboolean use_multitransport;
 };
 
 static inline LogProtoServer *

@@ -82,6 +82,16 @@ log_transport_aux_data_copy(LogTransportAuxData *dst, LogTransportAuxData *src)
 }
 
 static inline void
+log_transport_aux_data_move(LogTransportAuxData *dst, LogTransportAuxData *src)
+{
+  gsize data_to_copy = sizeof(*src) - sizeof(src->data) + src->end_ptr;
+
+  if (dst)
+    memcpy(dst, src, data_to_copy);
+  log_transport_aux_data_init(src);
+}
+
+static inline void
 log_transport_aux_data_set_peer_addr_ref(LogTransportAuxData *self, GSockAddr *peer_addr)
 {
   if (self)

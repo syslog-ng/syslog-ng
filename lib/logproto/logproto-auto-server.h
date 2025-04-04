@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2018 Balabit
- * Copyright (c) 2018 Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2024 Balázs Scheidler <balazs.scheidler@axoflow.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,22 +20,11 @@
  * COPYING for details.
  *
  */
+#ifndef LOGPROTO_AUTO_SERVER_H_INCLUDED
+#define LOGPROTO_AUTO_SERVER_H_INCLUDED
 
-#ifndef TRANSPORT_FACTORY_SOCKET_H_INCLUDED
-#define TRANSPORT_FACTORY_SOCKET_H_INCLUDED
+#include "logproto-server.h"
 
-#include "transport/transport-factory.h"
-#include "transport/transport-socket.h"
-
-typedef struct _TransportFactorySocket TransportFactorySocket;
-
-struct _TransportFactorySocket
-{
-  TransportFactory super;
-};
-
-#define TRANSPORT_FACTORY_SOCKET_ID "socket"
-
-TransportFactory *transport_factory_socket_new(gint sock_type);
+LogProtoServer *log_proto_auto_server_new(LogTransport *transport, const LogProtoServerOptions *options);
 
 #endif

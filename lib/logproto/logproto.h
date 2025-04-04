@@ -25,7 +25,7 @@
 #ifndef LOGPROTO_H_INCLUDED
 #define LOGPROTO_H_INCLUDED
 
-#include "transport/logtransport.h"
+#include "transport/transport-stack.h"
 
 #define RFC6587_MAX_FRAME_LEN_DIGITS 10
 
