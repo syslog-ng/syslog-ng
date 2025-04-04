@@ -41,6 +41,7 @@
 #define NC_FILE_EOF    5
 #define NC_REOPEN_REQUIRED 6
 #define NC_FILE_DELETED 7
+#define NC_LOGROTATE 8
 
 /* notify result mask values */
 #define NR_OK          0x0000
