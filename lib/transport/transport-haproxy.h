@@ -21,18 +21,11 @@
  *
  */
 
-#ifndef TRANSPORT_SOCKET_PROXY_PRIVATE_H_INCLUDED
-#define TRANSPORT_SOCKET_PROXY_PRIVATE_H_INCLUDED
+#ifndef TRANSPORT_HAPROXY_H_INCLUDED
+#define TRANSPORT_HAPROXY_H_INCLUDED
 
-#include "transport/transport-socket-proxy.h"
+#include "transport-adapter.h"
 
-// private functions used also with tests
-gboolean _parse_proxy_header(LogTransportSocketProxy *self);
-
-gboolean _is_proxy_version_v1(LogTransportSocketProxy *self);
-
-gboolean _is_proxy_version_v2(LogTransportSocketProxy *self);
-
-void _augment_aux_data(LogTransportSocketProxy *self, LogTransportAuxData *aux);
+LogTransport *log_transport_haproxy_new(LogTransportIndex base, LogTransportIndex flip);
 
 #endif
