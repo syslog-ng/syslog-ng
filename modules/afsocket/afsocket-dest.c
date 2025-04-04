@@ -259,17 +259,10 @@ _update_legacy_connection_persist_name(AFSocketDestDriver *self)
   return persist_state_move_entry(cfg->state, legacy_persist_name, current_persist_name);
 }
 
-static LogTransport *
-afsocket_dd_construct_transport(AFSocketDestDriver *self, gint fd)
-{
-  return transport_mapper_construct_log_transport(self->transport_mapper, fd);
-}
-
 static gboolean
 afsocket_dd_connected(AFSocketDestDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-  LogTransport *transport;
   LogProtoClient *proto;
   gchar buf1[256], buf2[256];
 
@@ -281,11 +274,13 @@ afsocket_dd_connected(AFSocketDestDriver *self)
              evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
              evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)));
 
-  transport = afsocket_dd_construct_transport(self, self->fd);
-  if (!transport)
-    return FALSE;
+  proto = log_proto_client_factory_construct(self->proto_factory, NULL, &self->writer_options.proto_options.super);
 
-  proto = log_proto_client_factory_construct(self->proto_factory, transport, &self->writer_options.proto_options.super);
+  if (!transport_mapper_setup_stack(self->transport_mapper, &proto->transport_stack, self->fd))
+    {
+      log_proto_client_free(proto);
+      return FALSE;
+    }
 
   log_proto_client_restart_with_state(proto, cfg->state, afsocket_dd_format_connections_name(self));
   log_writer_reopen(self->writer, proto);
@@ -431,8 +426,6 @@ afsocket_dd_setup_proto_factory(AFSocketDestDriver *self)
                 evt_tag_str("transport", self->transport_mapper->logproto));
       return FALSE;
     }
-
-  self->transport_mapper->create_multitransport = self->proto_factory->use_multitransport;
 
   return TRUE;
 }

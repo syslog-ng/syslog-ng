@@ -30,17 +30,12 @@
 void
 log_transport_free_method(LogTransport *s)
 {
-  if (s->fd != -1)
-    {
-      msg_trace("Closing log transport fd",
-                evt_tag_int("fd", s->fd));
-      close(s->fd);
-    }
 }
 
 void
-log_transport_init_instance(LogTransport *self, gint fd)
+log_transport_init_instance(LogTransport *self, const gchar *name, gint fd)
 {
+  self->name = name;
   self->fd = fd;
   self->cond = 0;
   self->free_fn = log_transport_free_method;
@@ -52,13 +47,3 @@ log_transport_free(LogTransport *self)
   self->free_fn(self);
   g_free(self);
 }
-
-gint
-log_transport_release_fd(LogTransport *s)
-{
-  gint fd = s->fd;
-  s->fd = -1;
-
-  return fd;
-}
-
