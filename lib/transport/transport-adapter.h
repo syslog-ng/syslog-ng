@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2018 Balabit
- * Copyright (c) 2018 Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2024 Balazs Scheidler <balazs.scheidler@axoflow.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,21 +21,24 @@
  *
  */
 
-#ifndef TRANSPORT_FACTORY_SOCKET_H_INCLUDED
-#define TRANSPORT_FACTORY_SOCKET_H_INCLUDED
+#ifndef TRANSPORT_ADAPTER_H_INCLUDED
+#define TRANSPORT_ADAPTER_H_INCLUDED
 
-#include "transport/transport-factory.h"
-#include "transport/transport-socket.h"
+#include "transport-stack.h"
 
-typedef struct _TransportFactorySocket TransportFactorySocket;
-
-struct _TransportFactorySocket
+typedef struct _LogTransportAdapter LogTransportAdapter;
+struct _LogTransportAdapter
 {
-  TransportFactory super;
+  LogTransport super;
+  LogTransportStack *stack;
+  LogTransportIndex base_index;
 };
 
-#define TRANSPORT_FACTORY_SOCKET_ID "socket"
+gssize log_transport_adapter_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux);
+gssize log_transport_adapter_write_method(LogTransport *s, const gpointer buf, gsize count);
+gssize log_transport_adapter_writev_method(LogTransport *s, struct iovec *iov, gint iov_count);
 
-TransportFactory *transport_factory_socket_new(gint sock_type);
+void log_transport_adapter_init_instance(LogTransportAdapter *self, const gchar *name,
+                                         LogTransportStack *stack, LogTransportIndex base);
 
 #endif

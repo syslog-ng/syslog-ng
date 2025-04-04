@@ -56,14 +56,6 @@ log_reader_set_local_addr(LogReader *s, GSockAddr *local_addr)
 }
 
 void
-log_reader_set_immediate_check(LogReader *s)
-{
-  LogReader *self = (LogReader *) s;
-
-  self->immediate_check = TRUE;
-}
-
-void
 log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options,
                        const gchar *stats_id, StatsClusterKeyBuilder *kb)
 {
@@ -160,7 +152,6 @@ log_reader_disable_watches(LogReader *self)
 static void
 log_reader_suspend_until_awoken(LogReader *self)
 {
-  self->immediate_check = FALSE;
   log_reader_disable_watches(self);
   self->suspended = TRUE;
 }
@@ -168,7 +159,6 @@ log_reader_suspend_until_awoken(LogReader *self)
 static void
 log_reader_force_check_in_next_poll(LogReader *self)
 {
-  self->immediate_check = FALSE;
   log_reader_disable_watches(self);
   self->suspended = FALSE;
 
@@ -326,12 +316,6 @@ log_reader_update_watches(LogReader *self)
       iv_timer_register(&self->idle_timer);
     }
 
-  if (self->immediate_check)
-    {
-      log_reader_force_check_in_next_poll(self);
-      return;
-    }
-
   switch (prepare_action)
     {
     case LPPA_POLL_IO:
@@ -456,7 +440,8 @@ _add_aux_nvpair(const gchar *name, const gchar *value, gsize value_len, gpointer
 static inline gint
 log_reader_process_handshake(LogReader *self)
 {
-  LogProtoStatus status = log_proto_server_handshake(self->proto);
+  gboolean handshake_finished = FALSE;
+  LogProtoStatus status = log_proto_server_handshake(self->proto, &handshake_finished);
 
   switch (status)
     {
@@ -464,6 +449,8 @@ log_reader_process_handshake(LogReader *self)
     case LPS_ERROR:
       return status == LPS_ERROR ? NC_READ_ERROR : NC_CLOSE;
     case LPS_SUCCESS:
+      if (handshake_finished)
+        self->handshake_in_progress = FALSE;
       break;
     case LPS_AGAIN:
       break;
@@ -531,7 +518,7 @@ log_reader_fetch_log(LogReader *self)
     aux = NULL;
 
   log_transport_aux_data_init(aux);
-  if (log_proto_server_handshake_in_progress(self->proto))
+  if (self->handshake_in_progress)
     {
       return log_reader_process_handshake(self);
     }
@@ -593,8 +580,6 @@ log_reader_fetch_log(LogReader *self)
     }
   log_transport_aux_data_destroy(aux);
 
-  if (msg_count == self->options->fetch_limit)
-    self->immediate_check = TRUE;
   return 0;
 }
 
@@ -805,7 +790,7 @@ log_reader_new(GlobalConfig *cfg)
   self->super.wakeup = log_reader_wakeup;
   self->super.schedule_dynamic_window_realloc = _schedule_dynamic_window_realloc;
   self->super.metrics.raw_bytes_enabled = TRUE;
-  self->immediate_check = FALSE;
+  self->handshake_in_progress = TRUE;
   log_reader_init_watches(self);
   g_mutex_init(&self->pending_close_lock);
   g_cond_init(&self->pending_close_cond);

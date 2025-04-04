@@ -69,8 +69,9 @@ static LogProtoPrepareAction
 log_proto_framed_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
+  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
 
-  *cond = self->super.transport->cond;
+  *cond = transport->cond;
 
   /* there is a half message in our buffer so try to wait */
   if (!self->half_message_in_buffer)
@@ -96,6 +97,7 @@ static gboolean
 log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_read,
                                    LogProtoStatus *status)
 {
+  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
   gint rc;
   *status = LPS_SUCCESS;
 
@@ -109,7 +111,7 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
     return FALSE;
 
   log_transport_aux_data_reinit(&self->buffer_aux);
-  rc = log_transport_read(self->super.transport, &self->buffer[self->buffer_end], self->buffer_size - self->buffer_end,
+  rc = log_transport_read(transport, &self->buffer[self->buffer_end], self->buffer_size - self->buffer_end,
                           &self->buffer_aux);
 
   if (rc < 0)
@@ -117,7 +119,7 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
       if (errno != EAGAIN)
         {
           msg_error("Error reading RFC6587 style framed data",
-                    evt_tag_int("fd", self->super.transport->fd),
+                    evt_tag_int("fd", transport->fd),
                     evt_tag_error("error"));
           *status = LPS_ERROR;
         }
@@ -132,7 +134,7 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
   if (rc == 0)
     {
       msg_trace("EOF occurred while reading",
-                evt_tag_int(EVT_TAG_FD, self->super.transport->fd));
+                evt_tag_int(EVT_TAG_FD, transport->fd));
       *status = LPS_EOF;
       return FALSE;
     }

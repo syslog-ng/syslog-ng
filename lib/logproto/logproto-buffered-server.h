@@ -118,6 +118,8 @@ LogProtoPrepareAction log_proto_buffered_server_prepare(LogProtoServer *s, GIOCo
                                                         gint *timeout G_GNUC_UNUSED);
 LogProtoBufferedServerState *log_proto_buffered_server_get_state(LogProtoBufferedServer *self);
 void log_proto_buffered_server_put_state(LogProtoBufferedServer *self);
+gboolean log_proto_buffered_server_restart_with_state(LogProtoServer *s,
+                                                      PersistState *persist_state, const gchar *persist_name);
 
 /* LogProtoBufferedServer */
 gboolean log_proto_buffered_server_validate_options_method(LogProtoServer *s);

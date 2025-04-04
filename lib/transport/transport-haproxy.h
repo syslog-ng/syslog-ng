@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2018 Balabit
- * Copyright (c) 2018 Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2020-2023 One Identity LLC.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,26 +21,11 @@
  *
  */
 
-#ifndef MULTITRANSPORT_H_INCLUDED
-#define MULTITRANSPORT_H_INCLUDED
+#ifndef TRANSPORT_HAPROXY_H_INCLUDED
+#define TRANSPORT_HAPROXY_H_INCLUDED
 
-#include "transport/logtransport.h"
-#include "transport/transport-factory.h"
+#include "transport-adapter.h"
 
-typedef struct _MultiTransport MultiTransport;
-
-struct _MultiTransport
-{
-  LogTransport super;
-  GHashTable *registry;
-  LogTransport *active_transport;
-  const TransportFactory *active_transport_factory;
-};
-
-LogTransport *multitransport_new(TransportFactory *default_transport_factory, gint fd);
-void multitransport_add_factory(MultiTransport *self, TransportFactory *);
-gboolean multitransport_switch(MultiTransport *self, const gchar *id);
-gboolean multitransport_contains_factory(MultiTransport *self, const gchar *id);
+LogTransport *log_transport_haproxy_new(LogTransportStack *stack, LogTransportIndex base, LogTransportIndex flip);
 
 #endif
-
