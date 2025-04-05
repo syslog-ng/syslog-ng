@@ -31,6 +31,7 @@ typedef enum
   DIRECTORY_CREATED,
   FILE_DELETED,
   DIRECTORY_DELETED,
+  FILE_MODIFIED,
   UNKNOWN
 } DirectoryMonitorEventType;
 
@@ -51,6 +52,7 @@ struct _DirectoryMonitor
   const gchar *method;
   gchar *dir;
   gchar *real_path;
+  gboolean can_notify_file_changes;
   DirectoryMonitorEventCallback callback;
   gpointer callback_data;
 
@@ -74,6 +76,8 @@ void directory_monitor_stop(DirectoryMonitor *self);
 
 void directory_monitor_stop_and_destroy(DirectoryMonitor *self);
 void directory_monitor_schedule_destroy(DirectoryMonitor *self);
+
+gboolean directory_monitor_can_notify_file_changes(DirectoryMonitor *self);
 
 gchar *build_filename(const gchar *basedir, const gchar *path);
 void rearm_timer(struct iv_timer *rescan_timer, gint rearm_time);

@@ -29,6 +29,7 @@ typedef struct _PollFdEvents
 {
   PollEvents super;
   struct iv_fd fd_watch;
+  gboolean notified;
 } PollFdEvents;
 
 #define IV_FD_CALLBACK(x) ((void (*)(void *)) (x))
@@ -75,7 +76,7 @@ poll_fd_events_update_watches(PollEvents *s, GIOCondition cond)
 
   poll_events_suspend_watches(s);
 
-  if (poll_events_check_watches(s))
+  if (poll_events_check_watches(s) && FALSE == self->notified)
     {
       if (cond & G_IO_IN)
         iv_fd_set_handler_in(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
@@ -101,10 +102,24 @@ poll_fd_events_new(gint fd)
   self->super.suspend_watches = poll_fd_events_suspend_watches;
   self->super.system_polled = TRUE;
   self->super.get_fd = _get_fd;
+  self->notified = FALSE;
 
   IV_FD_INIT(&self->fd_watch);
   self->fd_watch.fd = fd;
   self->fd_watch.cookie = self;
+
+  return &self->super;
+}
+
+PollEvents *
+notified_fd_events_new(gint fd)
+{
+  PollFdEvents *self = (PollFdEvents *)poll_fd_events_new(fd);
+
+  self->notified = TRUE;
+  self->super.start_watches = NULL;
+  self->super.stop_watches = NULL;
+  self->super.suspend_watches = NULL;
 
   return &self->super;
 }
