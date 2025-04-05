@@ -167,7 +167,7 @@ afsocket_sc_init(LogPipe *s)
         return FALSE;
 
       proto = log_proto_server_factory_construct(self->owner->proto_factory, transport,
-                                                 &self->owner->reader_options.proto_options.super);
+                                                 &self->owner->reader_options.proto_options);
       if (!proto)
         {
           log_transport_free(transport);
