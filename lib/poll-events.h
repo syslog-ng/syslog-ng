@@ -70,7 +70,8 @@ poll_events_start_watches(PollEvents *self)
 static inline void
 poll_events_stop_watches(PollEvents *self)
 {
-  self->stop_watches(self);
+  if (self->stop_watches)
+    self->stop_watches(self);
 }
 
 static inline gboolean

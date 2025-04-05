@@ -45,6 +45,7 @@ struct _FileReader
   LogReader *reader;
   const gchar *persist_name;
   const gchar *persist_name_prefix;
+  gboolean should_poll_for_events;
 
   void (*on_file_moved)(FileReader *);
 };

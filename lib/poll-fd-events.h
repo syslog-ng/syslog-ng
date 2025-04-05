@@ -27,5 +27,6 @@
 #include "poll-events.h"
 
 PollEvents *poll_fd_events_new(gint fd);
+PollEvents *notified_fd_events_new(gint fd);
 
 #endif

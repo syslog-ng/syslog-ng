@@ -55,7 +55,7 @@ _check_required_options(WildcardSourceDriver *self)
 }
 
 static void
-_remove_file_reader(FileReader *reader, gpointer user_data)
+_remove_and_readd_file_reader(FileReader *reader, gpointer user_data)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *) user_data;
 
@@ -99,9 +99,6 @@ _remove_file_reader(FileReader *reader, gpointer user_data)
 void
 _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
 {
-  WildcardFileReader *reader = NULL;
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-
   if (g_hash_table_size(self->file_readers) >= self->max_files)
     {
       msg_warning("wildcard-file(): number of monitored files reached the configured maximum, rejecting to tail file, increase max-files() along with scaling log-iw-size()",
@@ -112,15 +109,20 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
       return;
     }
 
-  reader = wildcard_file_reader_new(full_path,
-                                    &self->file_reader_options,
-                                    self->file_opener,
-                                    &self->super,
-                                    cfg);
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+  gchar *base_dir = g_path_get_dirname(full_path);
+  DirectoryMonitor *monitor = g_hash_table_lookup(self->directory_monitors, base_dir);
+  g_free(base_dir);
+  gboolean file_reader_should_poll_for_events = (FALSE == monitor->can_notify_file_changes);
+  WildcardFileReader *reader = wildcard_file_reader_new(full_path,
+                                                        &self->file_reader_options,
+                                                        self->file_opener,
+                                                        &self->super,
+                                                        cfg,
+                                                        file_reader_should_poll_for_events);
+  wildcard_file_reader_on_deleted_file_eof(reader, _remove_and_readd_file_reader, self);
+
   log_pipe_set_options(&reader->super.super, &self->super.super.super.options);
-
-  wildcard_file_reader_on_deleted_file_eof(reader, _remove_file_reader, self);
-
   log_pipe_append(&reader->super.super, &self->super.super.super);
   if (!log_pipe_init(&reader->super.super))
     {
@@ -223,6 +225,15 @@ _handler_directory_deleted(WildcardSourceDriver *self, const DirectoryMonitorEve
 }
 
 static void
+_handler_file_modified(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
+{
+  FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
+
+  if (reader)
+    log_pipe_notify(&reader->super, NC_FILE_MODIFIED, NULL);
+}
+
+static void
 _on_directory_monitor_changed(const DirectoryMonitorEvent *event, gpointer user_data)
 {
   main_loop_assert_main_thread();
@@ -244,6 +255,10 @@ _on_directory_monitor_changed(const DirectoryMonitorEvent *event, gpointer user_
   else if (event->event_type == DIRECTORY_DELETED)
     {
       _handler_directory_deleted(self, event);
+    }
+  else if (event->event_type == FILE_MODIFIED)
+    {
+      _handler_file_modified(self, event);
     }
 }
 
@@ -313,10 +328,9 @@ _add_directory_monitor(WildcardSourceDriver *self, const gchar *directory)
                 log_pipe_location_tag(&self->super.super.super));
       return NULL;
     }
-
   directory_monitor_set_callback(monitor, _on_directory_monitor_changed, self);
+  g_hash_table_insert(self->directory_monitors, g_strdup(monitor->full_path), monitor);
   directory_monitor_start(monitor);
-  g_hash_table_insert(self->directory_monitors, g_strdup(directory), monitor);
   return monitor;
 }
 
