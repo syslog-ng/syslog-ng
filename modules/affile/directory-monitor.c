@@ -206,18 +206,26 @@ rearm_timer(struct iv_timer *rescan_timer, gint rearm_time)
 void
 directory_monitor_start(DirectoryMonitor *self)
 {
-  msg_debug("Starting directory monitor", evt_tag_str("dir", self->dir), evt_tag_str("dir_monitor_method", self->method));
-
   main_loop_assert_main_thread();
-
-  GDir *directory = NULL;
-  GError *error = NULL;
   if (self->watches_running)
-    {
-      return;
-    }
+    return;
+
+  /* FIXME: This must be fixed.
+   *    - this must be composed once in the directory_monitor_init_instance
+   *    - composing and using the real_path only is messed up. We need a full path instead everywhere, but
+   *      even the build_filename function can produce relative paths currenty that could lead to reader
+   *      persist name issues (as the wildcard file readers created by the monitor will get
+   *      their path based on this value, and their persist name will be based on this value as well)
+   *      Consistent setting the value of it is important, otherwise the persist name can be be different
+   *      after a config reload.
+   *    - once it fixed, we can use it in the maintenance/storage of the directory monitors
+   */
   _set_real_path(self);
-  directory = g_dir_open(self->real_path, 0, &error);
+
+  msg_debug("Starting directory monitor", evt_tag_str("dir", self->real_path), evt_tag_str("dir_monitor_method",
+            self->method));
+  GError *error = NULL;
+  GDir *directory = g_dir_open(self->real_path, 0, &error);
   if (!directory)
     {
       msg_error("Can not open directory",
@@ -266,11 +274,19 @@ directory_monitor_stop_and_destroy(DirectoryMonitor *self)
   directory_monitor_free(self);
 }
 
+gboolean directory_monitor_can_notify_file_changes(DirectoryMonitor *self)
+{
+  return self->can_notify_file_changes;
+}
+
 void
 directory_monitor_init_instance(DirectoryMonitor *self, const gchar *dir, guint recheck_time, const gchar *method)
 {
   self->method = method;
   self->dir = g_strdup(dir);
+  // See directory_monitor_start notes above why cannot do this here as it would be the normal way
+  //_set_real_path(self);
+  self->can_notify_file_changes = FALSE;
   self->recheck_time = recheck_time;
 
   IV_TIMER_INIT(&self->check_timer);
