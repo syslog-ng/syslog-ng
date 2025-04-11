@@ -22,6 +22,7 @@
 
 #include "directory-monitor-content-comparator.h"
 #include "messages.h"
+#include "pathutils.h"
 #include "timeutils/misc.h"
 #include "glib.h"
 #include "glib/gstdio.h"
@@ -38,7 +39,7 @@ _handle_new_entry(CollectionComparatorEntry *entry, gpointer user_data)
       DirectoryMonitorEvent event;
 
       event.name = entry->value;
-      event.full_path = build_filename(self->super.real_path, event.name);
+      event.full_path = build_filename(self->super.full_path, event.name);
       event.event_type = g_file_test(event.full_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
 
       self->super.callback(&event, self->super.callback_data);
@@ -57,7 +58,7 @@ _handle_deleted_entry(CollectionComparatorEntry *entry, gpointer user_data)
 
       event.name = entry->value;
       event.event_type = FILE_DELETED;
-      event.full_path = build_filename(self->super.real_path, event.name);
+      event.full_path = build_filename(self->super.full_path, event.name);
 
       self->super.callback(&event, self->super.callback_data);
 
@@ -72,9 +73,9 @@ _handle_deleted_self(DirectoryMonitorContentComparator *self)
     {
       DirectoryMonitorEvent event;
 
-      event.name = self->super.real_path;
+      event.name = self->super.full_path;
       event.event_type = DIRECTORY_DELETED;
-      event.full_path = self->super.real_path;
+      event.full_path = self->super.full_path;
 
       self->super.callback(&event, self->super.callback_data);
     }
@@ -84,7 +85,7 @@ void
 directory_monitor_content_comparator_rescan_directory(DirectoryMonitorContentComparator *self, gboolean initial_scan)
 {
   GError *error = NULL;
-  GDir *directory = g_dir_open(self->super.real_path, 0, &error);
+  GDir *directory = g_dir_open(self->super.full_path, 0, &error);
 
   if (FALSE == initial_scan)
     collection_comparator_start(self->comparator);
@@ -94,7 +95,7 @@ directory_monitor_content_comparator_rescan_directory(DirectoryMonitorContentCom
       const gchar *filename;
       while((filename = g_dir_read_name(directory)))
         {
-          gchar *full_filename = build_filename(self->super.real_path, filename);
+          gchar *full_filename = build_filename(self->super.full_path, filename);
           GStatBuf file_stat;
 
           if (g_stat(full_filename, &file_stat) == 0)
@@ -124,7 +125,7 @@ directory_monitor_content_comparator_rescan_directory(DirectoryMonitorContentCom
 
       _handle_deleted_self(self);
       msg_debug("Error while opening directory",
-                evt_tag_str("dirname", self->super.real_path),
+                evt_tag_str("dirname", self->super.full_path),
                 evt_tag_str("error", error->message));
       g_clear_error(&error);
     }

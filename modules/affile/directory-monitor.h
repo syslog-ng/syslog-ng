@@ -51,7 +51,7 @@ struct _DirectoryMonitor
 {
   const gchar *method;
   gchar *dir;
-  gchar *real_path;
+  gchar *full_path;
   gboolean can_notify_file_changes;
   DirectoryMonitorEventCallback callback;
   gpointer callback_data;
@@ -79,7 +79,6 @@ void directory_monitor_schedule_destroy(DirectoryMonitor *self);
 
 gboolean directory_monitor_can_notify_file_changes(DirectoryMonitor *self);
 
-gchar *build_filename(const gchar *basedir, const gchar *path);
 void rearm_timer(struct iv_timer *rescan_timer, gint rearm_time);
 
 #endif /* MODULES_AFFILE_DIRECTORY_MONITOR_H_ */

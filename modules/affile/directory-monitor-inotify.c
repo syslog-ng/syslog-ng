@@ -21,6 +21,7 @@
  */
 #include "directory-monitor-inotify.h"
 #include "messages.h"
+#include "pathutils.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -65,8 +66,8 @@ _handle_event(gpointer s, struct inotify_event *event)
 {
   DirectoryMonitorInotify *self = (DirectoryMonitorInotify *)s;
   DirectoryMonitorEvent dir_event;
-  dir_event.name = g_strdup_printf("%.*s", event->len, &event->name[0]);
-  dir_event.full_path = build_filename(self->super.real_path, dir_event.name);
+  dir_event.name = g_strdup_printf("%.*s", event->len, event->name);
+  dir_event.full_path = build_filename(self->super.full_path, dir_event.name);
   dir_event.event_type = _get_event_type(event, dir_event.full_path);
   if (self->super.callback && dir_event.event_type != UNKNOWN)
     {
@@ -83,11 +84,11 @@ _start_watches(DirectoryMonitor *s)
 
   IV_INOTIFY_WATCH_INIT(&self->watcher);
   self->watcher.inotify = &self->inotify;
-  self->watcher.pathname = self->super.dir;
+  self->watcher.pathname = self->super.full_path;
   self->watcher.mask = IN_CREATE | IN_DELETE | IN_MOVE | IN_DELETE_SELF | IN_MOVE_SELF | IN_MODIFY;
   self->watcher.cookie = self;
   self->watcher.handler = _handle_event;
-  msg_trace("Starting to watch directory changes", evt_tag_str("dir", self->super.dir));
+  msg_trace("Starting to watch directory changes", evt_tag_str("dir", self->super.full_path));
   iv_inotify_watch_register(&self->watcher);
 }
 

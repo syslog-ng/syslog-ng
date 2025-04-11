@@ -41,7 +41,7 @@ _start_watches(DirectoryMonitor *s)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)s;
   msg_trace("Starting to poll directory changes",
-            evt_tag_str("dir", self->super.super.dir),
+            evt_tag_str("dir", self->super.super.full_path),
             evt_tag_int("freq", self->super.super.recheck_time));
   directory_monitor_content_comparator_rescan_directory(&self->super, TRUE);
   rearm_timer(&self->rescan_timer, self->super.super.recheck_time);
