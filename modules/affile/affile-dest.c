@@ -95,6 +95,7 @@ struct _AFFileDestWriter
   GMutex lock;
   AFFileDestDriver *owner;
   gchar *filename;
+  gsize cached_filesize;
   LogWriter *writer;
   time_t last_msg_stamp;
   time_t last_open_stamp;
@@ -164,6 +165,20 @@ _dw_reopen(AFFileDestWriter *self, LogProtoClient **p)
 
       *p = file_opener_construct_dst_proto(self->owner->file_opener, transport,
                                            &self->owner->writer_options.proto_options.super);
+
+      // get current filesize
+      if (stat(self->filename, &st) == 0)
+        {
+          self->cached_filesize = st.st_size;
+        }
+      else
+        {
+          // TODO: what happens here?
+          msg_error("Error reading file size after opening file; assuming size = 0",
+                    evt_tag_str("filename", self->filename),
+                    evt_tag_errno("errno", errno));
+          self->cached_filesize = 0;
+        }
     }
   else if (open_result == FILE_OPENER_RESULT_ERROR_TRANSIENT)
     {
@@ -206,13 +221,16 @@ affile_dw_logrotate(AFFileDestWriter *self, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   LogProtoClient **p = (LogProtoClient **) args[0];
-  const gsize filesize = (gsize) args[1];
+  const gsize buf_len = (gsize) args[1];
 
   LogRotateOptions *logrotate_options = &(self->owner->logrotate_options);
   const gchar *filename = self->filename;
 
-  if (is_logrotate_enabled(logrotate_options) && is_logrotate_pending(logrotate_options, filesize))
+  self->cached_filesize+=buf_len;
+
+  if (is_logrotate_enabled(logrotate_options) && is_logrotate_pending(logrotate_options, self->cached_filesize))
     {
+      // we need to flush the buffer here!
       LogRotateStatus status = do_logrotate(logrotate_options, filename);
 
       if (status != LR_SUCCESS)

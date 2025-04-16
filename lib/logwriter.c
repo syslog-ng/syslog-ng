@@ -1327,30 +1327,28 @@ log_writer_process_handshake(LogWriter *self)
  *
  * The log_pipe_notify call creates a new LogProtoClient, and the log_writer is updated.
  */
-static gboolean
-log_writer_logrotate(LogWriter *self, gsize filesize)
+static void
+log_writer_logrotate(LogWriter *self, gsize buf_len, gboolean *write_error)
 {
   LogProtoClient *proto = NULL;
 
   /* Signal AFFileDestWriter to check for logrotation */
-  gpointer args[] = { &proto, (gpointer *) filesize };
+  gpointer args[] = { &proto, (gpointer *) buf_len };
   log_pipe_notify(self->control, NC_LOGROTATE, args);
 
   if (proto)
     {
       // reopening was successful
       // flush remaining messages to 'old' log file
-      log_writer_flush_finalize(self);
+      if (!log_writer_flush_finalize(self)) {
+        *write_error = TRUE;
+        return;
+      }
 
       // update proto-client
       log_writer_free_proto(self);
       log_writer_set_proto(self, proto);
-
-      return TRUE;
     }
-
-  // either no logrotaion or reopening failed
-  return FALSE;
 }
 
 /*
@@ -1375,20 +1373,6 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       return log_writer_process_handshake(self);
     }
 
-  // get current filesize before flushing the message queue
-  struct stat st;
-  gsize cached_filesize = 0;
-  if (fstat(log_proto_client_get_fd(self->proto), &st) == 0)
-    {
-      cached_filesize = st.st_size;
-    }
-  else
-    {
-      msg_error("Error reading file stats when writing file",
-                evt_tag_errno("errno", errno));
-      return FALSE;
-    }
-
   /* NOTE: in case we're reloading or exiting we flush all queued items as
    * long as the destination can consume it.  This is not going to be an
    * infinite loop, since the reader will cease to produce new messages when
@@ -1396,17 +1380,6 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 
   while ((!main_loop_worker_job_quit() || flush_mode == LW_FLUSH_FORCE) && !write_error)
     {
-      if (log_writer_logrotate(self, cached_filesize))
-        {
-          // reopened file, reset size counter
-          cached_filesize = 0;
-        }
-      else if (!self->proto)
-        {
-          // if there was an error during reopening quit
-          return FALSE;
-        }
-
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
       LogMessage *msg = log_writer_queue_pop_message(self, &path_options, flush_mode == LW_FLUSH_FORCE);
 
@@ -1426,7 +1399,15 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       if (!write_error)
         {
           stats_counter_inc(self->metrics.written_messages);
-          cached_filesize += msg_len;
+
+          // TODO: need to know if logrotation is pending and flush before potential error!
+          log_writer_logrotate(self, msg_len, &write_error);
+
+          // if there was an error during reopening quit
+          if (!self->proto)
+            {
+              return FALSE;
+            }
         }
     }
 
