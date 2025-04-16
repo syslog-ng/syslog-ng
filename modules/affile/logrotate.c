@@ -54,25 +54,14 @@ gboolean is_logrotate_enabled(LogRotateOptions *logrotate_options)
     }
 }
 
-gboolean is_logrotate_pending(LogRotateOptions *logrotate_options, const gchar *filename)
+gboolean is_logrotate_pending(LogRotateOptions *logrotate_options, const gsize filesize)
 {
-  if (logrotate_options == NULL || filename == NULL)
+  if (logrotate_options == NULL)
     {
       return FALSE;
     }
 
-  struct stat st;
-  int res = stat(filename, &st);
-  if (res == -1)
-    {
-      msg_error("Error reading file stats during log-rotation",
-                evt_tag_str("filename", filename),
-                evt_tag_errno("errno", errno));
-      return LR_ERROR;
-    }
-  gsize size = st.st_size;
-
-  return (size >= logrotate_options->size);
+  return (filesize >= logrotate_options->size);
 }
 
 /* TODO:

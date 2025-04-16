@@ -48,7 +48,7 @@ typedef struct _LogRotateOptions
 } LogRotateOptions;
 
 gboolean is_logrotate_enabled(LogRotateOptions *logrotate_options);
-gboolean is_logrotate_pending(LogRotateOptions *logrotate_options, const gchar *filename);
+gboolean is_logrotate_pending(LogRotateOptions *logrotate_options, const gsize filesize);
 void logrotate_options_defaults(LogRotateOptions *logrotate_options);
 LogRotateStatus do_logrotate(LogRotateOptions *logrotate_options, const gchar *filename);
 

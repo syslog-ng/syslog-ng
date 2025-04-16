@@ -202,13 +202,16 @@ affile_dw_reopen(AFFileDestWriter *self)
  *
  */
 static gboolean
-affile_dw_logrotate(AFFileDestWriter *self, LogProtoClient **p)
+affile_dw_logrotate(AFFileDestWriter *self, gpointer user_data)
 {
+  gpointer *args = (gpointer *) user_data;
+  LogProtoClient **p = (LogProtoClient **) args[0];
+  const gsize filesize = (gsize) args[1];
 
   LogRotateOptions *logrotate_options = &(self->owner->logrotate_options);
   const gchar *filename = self->filename;
 
-  if (is_logrotate_enabled(logrotate_options) && is_logrotate_pending(logrotate_options, filename))
+  if (is_logrotate_enabled(logrotate_options) && is_logrotate_pending(logrotate_options, filesize))
     {
       LogRotateStatus status = do_logrotate(logrotate_options, filename);
 

@@ -1164,33 +1164,6 @@ log_writer_realloc_line_buffer(LogWriter *self)
 }
 
 /*
- * This function is intended to be called by the current logwriter worker thread.
- * As the writer thread is the only one currently working with proto, we can set it without lock.
- *
- * It is also not necessary to register or start watches, as this happens in _work_finished.
- * In contrast to log_writer_reopen this function takes immediate effect and does not deadlock
- * when called within the writer thread.
- *
- * Other threads should call log_writer_reopen, as there could be an ongoing write operation!
- *
- * The log_pipe_notify call creates a new LogProtoClient, and the log_writer is updated.
- */
-static void
-log_writer_logrotate(LogWriter *self)
-{
-  LogProtoClient *proto = NULL;
-
-  /* Signal AFFileDestWriter to check for logrotation */
-  log_pipe_notify(self->control, NC_LOGROTATE, &proto);
-
-  if (proto)
-    {
-      log_writer_free_proto(self);
-      log_writer_set_proto(self, proto);
-    }
-}
-
-/*
  * Write messages to the underlying file descriptor using the installed
  * LogProtoClient instance.  This is called whenever the output is ready to accept
  * further messages, and once during config deinitialization, in order to
@@ -1238,7 +1211,8 @@ log_writer_update_message_stats(LogWriter *self, const LogMessage *msg, gsize ms
 }
 
 static gboolean
-log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_options, gboolean *write_error)
+log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_options, gsize *msg_len,
+                         gboolean *write_error)
 {
   gboolean consumed = FALSE;
 
@@ -1255,10 +1229,10 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
                 evt_tag_printf("message", "%s", self->line_buffer->str));
     }
 
-  gsize msg_len = 0;
+  *msg_len = 0;
   if (self->line_buffer->len)
     {
-      msg_len = self->line_buffer->len;
+      *msg_len = self->line_buffer->len;
       LogProtoStatus status = log_proto_client_post(self->proto, msg, (guchar *)self->line_buffer->str,
                                                     self->line_buffer->len,
                                                     &consumed);
@@ -1297,8 +1271,8 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
       if ((self->options->options & LWO_SEQNUM_ALL) || (msg->flags & LF_LOCAL))
         step_sequence_number(&self->seq_num);
 
-      log_writer_update_message_stats(self, msg, msg_len);
-      stats_byte_counter_add(&self->metrics.written_bytes, msg_len);
+      log_writer_update_message_stats(self, msg, *msg_len);
+      stats_byte_counter_add(&self->metrics.written_bytes, *msg_len);
       log_msg_unref(msg);
       msg_set_context(NULL);
       log_msg_refcache_stop();
@@ -1340,6 +1314,45 @@ log_writer_process_handshake(LogWriter *self)
   return TRUE;
 }
 
+
+/*
+ * This function is intended to be called by the current logwriter worker thread.
+ * As the writer thread is the only one currently working with proto, we can set it without lock.
+ *
+ * It is also not necessary to register or start watches, as this happens in _work_finished.
+ * In contrast to log_writer_reopen this function takes immediate effect and does not deadlock
+ * when called within the writer thread.
+ *
+ * Other threads should call log_writer_reopen, as there could be an ongoing write operation!
+ *
+ * The log_pipe_notify call creates a new LogProtoClient, and the log_writer is updated.
+ */
+static gboolean
+log_writer_logrotate(LogWriter *self, gsize filesize)
+{
+  LogProtoClient *proto = NULL;
+
+  /* Signal AFFileDestWriter to check for logrotation */
+  gpointer args[] = { &proto, (gpointer *) filesize };
+  log_pipe_notify(self->control, NC_LOGROTATE, args);
+
+  if (proto)
+    {
+      // reopening was successful
+      // flush remaining messages to 'old' log file
+      log_writer_flush_finalize(self);
+
+      // update proto-client
+      log_writer_free_proto(self);
+      log_writer_set_proto(self, proto);
+
+      return TRUE;
+    }
+
+  // either no logrotaion or reopening failed
+  return FALSE;
+}
+
 /*
  * @flush_mode specifies how hard LogWriter is trying to send messages to
  * the actual destination:
@@ -1362,6 +1375,20 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       return log_writer_process_handshake(self);
     }
 
+  // get current filesize before flushing the message queue
+  struct stat st;
+  gsize cached_filesize = 0;
+  if (fstat(log_proto_client_get_fd(self->proto), &st) == 0)
+    {
+      cached_filesize = st.st_size;
+    }
+  else
+    {
+      msg_error("Error reading file stats when writing file",
+                evt_tag_errno("errno", errno));
+      return FALSE;
+    }
+
   /* NOTE: in case we're reloading or exiting we flush all queued items as
    * long as the destination can consume it.  This is not going to be an
    * infinite loop, since the reader will cease to produce new messages when
@@ -1369,15 +1396,27 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 
   while ((!main_loop_worker_job_quit() || flush_mode == LW_FLUSH_FORCE) && !write_error)
     {
+      if (log_writer_logrotate(self, cached_filesize))
+        {
+          // reopened file, reset size counter
+          cached_filesize = 0;
+        }
+      else if (!self->proto)
+        {
+          // if there was an error during reopening quit
+          return FALSE;
+        }
+
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
       LogMessage *msg = log_writer_queue_pop_message(self, &path_options, flush_mode == LW_FLUSH_FORCE);
 
       if (!msg)
         break;
 
+      gsize msg_len = 0;
       ScratchBuffersMarker mark;
       scratch_buffers_mark(&mark);
-      if (!log_writer_write_message(self, msg, &path_options, &write_error))
+      if (!log_writer_write_message(self, msg, &path_options, &msg_len, &write_error))
         {
           scratch_buffers_reclaim_marked(mark);
           break;
@@ -1385,14 +1424,9 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
       scratch_buffers_reclaim_marked(mark);
 
       if (!write_error)
-        stats_counter_inc(self->metrics.written_messages);
-
-      /* check if we should rotate */
-      log_writer_logrotate(self);
-      /* in case that the new log file could not be opened return */
-      if (!self->proto)
         {
-          return FALSE;;
+          stats_counter_inc(self->metrics.written_messages);
+          cached_filesize += msg_len;
         }
     }
 
