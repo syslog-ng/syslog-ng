@@ -86,12 +86,11 @@ jobs:
             --enable-tests
             --enable-all-modules
             --with-python=3
-            --with-ivykis=system
+            --with-ivykis=internal
             --with-systemd-journal=no
             --disable-java
             --disable-java-modules
           "
-          # -DIVYKIS_SOURCE=internal is switched to system temporally as of https://github.com/buytenh/ivykis/pulls
           CMAKE_CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
             -DENABLE_EXTRA_WARNINGS=ON
@@ -100,7 +99,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
             -DBUILD_TESTING=ON
             -DPYTHON_VERSION=3
-            -DIVYKIS_SOURCE=system
+            -DIVYKIS_SOURCE=internal
             -DENABLE_JOURNALD=OFF
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF
