@@ -71,11 +71,11 @@ jobs:
           WARNING_FLAGS="-Wno-unused-command-line-argument" # FIXME: -Werror must be re-added
           CFLAGS="-I${HOMEBREW_PREFIX}/include/ -I${MACPORTS_PREFIX}/include ${WARNING_FLAGS}"
           CXXFLAGS="${CFLAGS}"
-          # FIXME: explicit -std=gnu++17 is needed for
-          #         - autotools to detect proper c++ version support with clang
-          #         - correct compiling with the latest homebrew GRPC dependant packages, like absl, etc.
+          # brew has an old autoconf-archive -> ax_cxx_compile_stdcxx.m4 version, which cannot detect
+          # correctly the c++14 and c++17 support of clang currently, get the latest one from the git repo
           if [ ${{ matrix.build-tool }} = autotools ] && [ $CC = clang ]; then
-            CXXFLAGS="${CFLAGS} -std=gnu++17"
+            mkdir -p ./m4 || true
+            wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://git.savannah.gnu.org/gitweb/\?p\=autoconf-archive.git\;a\=blob_plain\;f\=m4/ax_cxx_compile_stdcxx.m4
           fi
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
           CONFIGURE_FLAGS="
