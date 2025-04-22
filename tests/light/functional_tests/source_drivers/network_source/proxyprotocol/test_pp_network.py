@@ -29,8 +29,12 @@ from src.common.random_id import get_unique_id
 
 
 def _test_pp(config, syslog_ng, syslog_ng_ctl, port_allocator, loggen, testcase_parameters, transport, input_messages, number_of_messages, expected_messages, template=None, password=None):
-    server_key_path = copy_shared_file(testcase_parameters, "server.key")
-    server_cert_path = copy_shared_file(testcase_parameters, "server.crt")
+    if password:
+        server_key_path = copy_shared_file(testcase_parameters, "server-protected-asdfg.key")
+        server_cert_path = copy_shared_file(testcase_parameters, "server-protected-asdfg.crt")
+    else:
+        server_key_path = copy_shared_file(testcase_parameters, "server.key")
+        server_cert_path = copy_shared_file(testcase_parameters, "server.crt")
     output_file = "output.log"
     use_ssl = True if "tls" in transport else None
     use_inet = None if use_ssl else True

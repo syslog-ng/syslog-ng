@@ -75,6 +75,7 @@ log_transport_pipe_new(gint fd)
   LogTransportFile *self = g_new0(LogTransportFile, 1);
 
   log_transport_file_init_instance(self, fd);
+  self->super.name = "pipe";
   self->super.write = log_transport_pipe_write_method;
   return &self->super;
 }

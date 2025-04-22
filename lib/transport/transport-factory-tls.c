@@ -27,9 +27,9 @@
 #include "transport/transport-tls.h"
 
 static LogTransport *
-_construct_transport(const TransportFactory *s, gint fd)
+_construct_transport(const LogTransportFactory *s, LogTransportStack *stack)
 {
-  TransportFactoryTLS *self = (TransportFactoryTLS *)s;
+  LogTransportFactoryTLS *self = (LogTransportFactoryTLS *)s;
   TLSSession *tls_session = tls_context_setup_session(self->tls_context);
 
   if (!tls_session)
@@ -39,48 +39,48 @@ _construct_transport(const TransportFactory *s, gint fd)
 
   tls_session_set_verifier(tls_session, self->tls_verifier);
 
-  return log_transport_tls_new(tls_session, fd);
+  return log_transport_tls_new(tls_session, stack->fd);
 }
 
 void
-transport_factory_tls_enable_compression(TransportFactory *s)
+transport_factory_tls_enable_compression(LogTransportFactory *s)
 {
-  TransportFactoryTLS *self = (TransportFactoryTLS *)s;
+  LogTransportFactoryTLS *self = (LogTransportFactoryTLS *)s;
   self->allow_compress = TRUE;
 }
 
 void
-transport_factory_tls_disable_compression(TransportFactory *s)
+transport_factory_tls_disable_compression(LogTransportFactory *s)
 {
-  TransportFactoryTLS *self = (TransportFactoryTLS *)s;
+  LogTransportFactoryTLS *self = (LogTransportFactoryTLS *)s;
   self->allow_compress = FALSE;
 }
 
 static void
-_free(TransportFactory *s)
+_free(LogTransportFactory *s)
 {
-  TransportFactoryTLS *self = (TransportFactoryTLS *)s;
+  LogTransportFactoryTLS *self = (LogTransportFactoryTLS *)s;
   tls_context_unref(self->tls_context);
   if (self->tls_verifier)
     tls_verifier_unref(self->tls_verifier);
 }
 
-TransportFactory *
+LogTransportFactory *
 transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags)
 {
-  TransportFactoryTLS *instance = g_new0(TransportFactoryTLS, 1);
+  LogTransportFactoryTLS *instance = g_new0(LogTransportFactoryTLS, 1);
 
+  log_transport_factory_init_instance(&instance->super, LOG_TRANSPORT_TLS);
   instance->tls_context = tls_context_ref(ctx);
   instance->tls_verifier = tls_verifier ? tls_verifier_ref(tls_verifier) : NULL;
 
-  instance->super.id = TRANSPORT_FACTORY_TLS_ID;
   instance->super.construct_transport = _construct_transport;
   instance->super.free_fn = _free;
 
   if (flags & TMI_ALLOW_COMPRESS)
-    transport_factory_tls_enable_compression((TransportFactory *)instance);
+    transport_factory_tls_enable_compression((LogTransportFactory *)instance);
   else
-    transport_factory_tls_disable_compression((TransportFactory *)instance);
+    transport_factory_tls_disable_compression((LogTransportFactory *)instance);
 
   return &instance->super;
 }
