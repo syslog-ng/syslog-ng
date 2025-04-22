@@ -28,18 +28,51 @@
 #include "syslog-ng.h"
 #include "transport/transport-aux-data.h"
 
-typedef struct _LogTransport LogTransport;
+/*
+ * LogTransport:
+ *
+ * This is an interface that a LogProto implementation can use to do I/O.
+ * There might be multiple LogTransport implementations alive for a specific
+ * connection: for instance we might do both plain text and SSL encrypted
+ * communication on the same socket, when the haproxy proxy protocol is in
+ * use and SSL is enabled.  It might also make sense to instantiate a
+ * transport doing gzip compression transparently.
+ *
+ * The combination of interoperating LogTransport instances is called the
+ * LogTransportStack (see transport-stack.h)
+ *
+ * There's a circular, borrowed reference between the stack and the
+ * constituent LogTransport instances.
+ */
 
+typedef struct _LogTransport LogTransport;
+typedef struct _LogTransportStack LogTransportStack;
 struct _LogTransport
 {
   gint fd;
   GIOCondition cond;
-  const gchar *name;
+
   gssize (*read)(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux);
   gssize (*write)(LogTransport *self, const gpointer buf, gsize count);
   gssize (*writev)(LogTransport *self, struct iovec *iov, gint iov_count);
   void (*free_fn)(LogTransport *self);
+
+  /* read ahead */
+  struct
+  {
+    gchar buf[16];
+    gint buf_len;
+    gint pos;
+  } ra;
+  LogTransportStack *stack;
+  const gchar *name;
 };
+
+static inline void
+log_transport_assign_to_stack(LogTransport *self, LogTransportStack *stack)
+{
+  self->stack = stack;
+}
 
 static inline gssize
 log_transport_write(LogTransport *self, const gpointer buf, gsize count)
@@ -53,11 +86,20 @@ log_transport_writev(LogTransport *self, struct iovec *iov, gint iov_count)
   return self->writev(self, iov, iov_count);
 }
 
+gssize _log_transport_combined_read_with_read_ahead(LogTransport *self,
+                                                    gpointer buf, gsize count,
+                                                    LogTransportAuxData *aux);
+
 static inline gssize
 log_transport_read(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux)
 {
-  return self->read(self, buf, count, aux);
+  if (G_LIKELY(self->ra.buf_len == 0))
+    return self->read(self, buf, count, aux);
+
+  return _log_transport_combined_read_with_read_ahead(self, buf, count, aux);
 }
+
+gssize log_transport_read_ahead(LogTransport *self, gpointer buf, gsize count, gboolean *moved_forward);
 
 void log_transport_init_instance(LogTransport *s, const gchar *name, gint fd);
 void log_transport_free_method(LogTransport *s);

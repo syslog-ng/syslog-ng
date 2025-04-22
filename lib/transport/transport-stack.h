@@ -27,7 +27,6 @@
 
 #include "transport/logtransport.h"
 
-typedef struct _LogTransportStack LogTransportStack;
 typedef struct _LogTransportFactory LogTransportFactory;
 
 typedef enum
@@ -111,12 +110,15 @@ struct _LogTransportStack
 static inline LogTransport *
 log_transport_stack_get_transport(LogTransportStack *self, gint index)
 {
+  g_assert(index < LOG_TRANSPORT__MAX);
+
   if (self->transports[index])
     return self->transports[index];
 
   if (self->transport_factories[index])
     {
       self->transports[index] = log_transport_factory_construct_transport(self->transport_factories[index], self);
+      log_transport_assign_to_stack(self->transports[index], self);
       return self->transports[index];
     }
   return NULL;
@@ -131,6 +133,7 @@ log_transport_stack_get_active(LogTransportStack *self)
 void log_transport_stack_add_factory(LogTransportStack *self, LogTransportFactory *);
 void log_transport_stack_add_transport(LogTransportStack *self, gint index, LogTransport *);
 gboolean log_transport_stack_switch(LogTransportStack *self, gint index);
+void log_transport_stack_move(LogTransportStack *self, LogTransportStack *other);
 
 void log_transport_stack_init(LogTransportStack *self, LogTransport *initial_transport);
 void log_transport_stack_deinit(LogTransportStack *self);

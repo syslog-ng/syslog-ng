@@ -46,20 +46,23 @@ void
 log_transport_stack_add_transport(LogTransportStack *self, gint index, LogTransport *transport)
 {
   g_assert(self->transports[index] == NULL);
+  log_transport_assign_to_stack(transport, self);
   self->transports[index] = transport;
   if (self->fd == -1)
     self->fd = transport->fd;
-  else
+  else if (transport->fd != -1)
     g_assert(self->fd == transport->fd);
 }
 
 gboolean
 log_transport_stack_switch(LogTransportStack *self, gint index)
 {
+  g_assert(index < LOG_TRANSPORT__MAX);
   LogTransport *active_transport = log_transport_stack_get_active(self);
   LogTransport *requested_transport = log_transport_stack_get_transport(self, index);
 
-  g_assert(requested_transport != NULL);
+  if (!requested_transport)
+    return FALSE;
 
   msg_debug("Transport switch requested",
             evt_tag_str("active-transport", active_transport ? active_transport->name : "none"),
@@ -75,6 +78,38 @@ log_transport_stack_switch(LogTransportStack *self, gint index)
             evt_tag_str("new-active-transport", active_transport->name));
 
   return TRUE;
+}
+
+/*
+ * Move the transport stack state to another LogTransportStack instance.
+ * Normally LogTransportStack instances are embedded in LogProto instances,
+ * so in case the LogProto instance is replaced, the transport stack may
+ * need to be moved.
+ */
+void
+log_transport_stack_move(LogTransportStack *self, LogTransportStack *other)
+{
+  self->fd = other->fd;
+  self->active_transport = other->active_transport;
+  other->fd = -1;
+
+  for (gint i = 0; i < LOG_TRANSPORT__MAX; i++)
+    {
+      g_assert(self->transports[i] == NULL);
+      g_assert(self->transport_factories[i] == NULL);
+
+      if (other->transports[i])
+        {
+          self->transports[i] = other->transports[i];
+          log_transport_assign_to_stack(self->transports[i], self);
+          other->transports[i] = NULL;
+        }
+      if (other->transport_factories[i])
+        {
+          self->transport_factories[i] = other->transport_factories[i];
+          other->transport_factories[i] = NULL;
+        }
+    }
 }
 
 void
