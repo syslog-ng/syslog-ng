@@ -106,7 +106,7 @@ _flow_control_rate_adjust(LogSource *self)
       if ((cur_ack_count & 0x3FFF) == 0)
         {
           struct timespec now;
-          glong diff;
+          gint64 diff;
 
           /* do this every once in a while, once in 16k messages should be fine */
 

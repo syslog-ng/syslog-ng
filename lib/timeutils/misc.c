@@ -42,7 +42,7 @@ gboolean
 check_nanosleep(void)
 {
   struct timespec start, stop, sleep_amount;
-  glong diff;
+  gint64 diff;
   gint attempts;
 
   for (attempts = 0; attempts < 3; attempts++)
@@ -85,7 +85,7 @@ timespec_add_msec(struct timespec *ts, glong msec)
 }
 
 void
-timespec_add_usec(struct timespec *ts, glong usec)
+timespec_add_usec(struct timespec *ts, gint64 usec)
 {
   ts->tv_sec += usec / 1000000;
   usec = usec % 1000000;
@@ -108,14 +108,14 @@ timespec_diff_msec(const struct timespec *t1, const struct timespec *t2)
   return ((t1->tv_sec - t2->tv_sec) * 1000 + (t1->tv_nsec - t2->tv_nsec) / 1000000);
 }
 
-glong
+gint64
 timespec_diff_usec(const struct timespec *t1, const struct timespec *t2)
 {
-  return ((t1->tv_sec - t2->tv_sec) * 1000000 + (t1->tv_nsec - t2->tv_nsec) / 1000);
+  return (((gint64)t1->tv_sec - t2->tv_sec) * 1000000 + (t1->tv_nsec - t2->tv_nsec) / 1000);
 }
 
-glong
+gint64
 timespec_diff_nsec(struct timespec *t1, struct timespec *t2)
 {
-  return (glong)((t1->tv_sec - t2->tv_sec) * 1000000000) + (t1->tv_nsec - t2->tv_nsec);
+  return (((gint64)t1->tv_sec - t2->tv_sec) * 1000000000) + (t1->tv_nsec - t2->tv_nsec);
 }
