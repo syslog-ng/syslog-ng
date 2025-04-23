@@ -154,7 +154,6 @@ log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
   self->pipe_next = NULL;
   self->persist_name = NULL;
   self->plugin_name = NULL;
-  self->signal_slot_connector = signal_slot_connector_new();
 
   self->queue = log_pipe_forward_msg;
   self->free_fn = log_pipe_free_method;
@@ -196,7 +195,6 @@ _free(LogPipe *self)
   g_free((gpointer)self->persist_name);
   g_free(self->plugin_name);
   g_list_free_full(self->info, g_free);
-  signal_slot_connector_unref(self->signal_slot_connector);
   g_free(self);
 }
 

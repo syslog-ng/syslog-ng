@@ -1071,7 +1071,7 @@ afsocket_sd_open_socket(AFSocketSourceDriver *self, gint *sock)
   AFSocketSetupSocketSignalData signal_data = {0};
 
   signal_data.sock = *sock;
-  EMIT(self->super.super.super.signal_slot_connector, signal_afsocket_setup_socket, &signal_data);
+  EMIT(self->super.super.signal_slot_connector, signal_afsocket_setup_socket, &signal_data);
   return !signal_data.failure;
 }
 
