@@ -27,6 +27,7 @@
 #include "mainloop-call.h"
 #include "ack-tracker/ack_tracker.h"
 #include "ack-tracker/ack_tracker_factory.h"
+#include "str-format.h"
 
 static void log_reader_io_handle_in(gpointer s);
 static gboolean log_reader_fetch_log(LogReader *self);
@@ -477,6 +478,32 @@ _log_reader_insert_msg_length_stats(LogReader *self, gsize len)
   stats_aggregator_add_data_point(self->average_messages_size, len);
 }
 
+static inline void
+_set_addresses(LogReader *self, LogMessage *msg, LogTransportAuxData *aux)
+{
+  GSockAddr *source_addr = self->peer_addr;
+  if (!aux->peer_addr)
+    goto set;
+
+  source_addr = aux->peer_addr;
+
+  if (!self->peer_addr)
+    goto set;
+
+  gchar buf[MAX_SOCKADDR_STRING];
+
+  const gchar *ip = g_sockaddr_format(self->peer_addr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
+  log_msg_set_value(msg, LM_V_PEER_IP, ip, -1);
+
+  guint16 port = g_sockaddr_get_port(self->peer_addr);
+  gint len = format_uint32_base10_rev(buf, sizeof(buf), 0, port);
+  log_msg_set_value(msg, LM_V_PEER_PORT, buf, len);
+
+set:
+  log_msg_set_saddr(msg, source_addr);
+  log_msg_set_daddr(msg, aux->local_addr ? : self->local_addr);
+}
+
 static gboolean
 log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTransportAuxData *aux)
 {
@@ -495,8 +522,9 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
 
   if (aux)
     {
-      log_msg_set_saddr(m, aux->peer_addr ? : self->peer_addr);
-      log_msg_set_daddr(m, aux->local_addr ? : self->local_addr);
+      _set_addresses(self, m, aux);
+      m->proto = aux->proto;
+
       if (aux->timestamp.tv_sec)
         {
           /* accurate timestamp was received from the transport layer, use
@@ -504,7 +532,6 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
           m->timestamps[LM_TS_RECVD].ut_sec = aux->timestamp.tv_sec;
           m->timestamps[LM_TS_RECVD].ut_usec = aux->timestamp.tv_nsec / 1000;
         }
-      m->proto = aux->proto;
     }
   log_msg_refcache_start_producer(m);
 
