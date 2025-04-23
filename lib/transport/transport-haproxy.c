@@ -483,7 +483,8 @@ _fetch_into_proxy_buffer(LogTransportHAProxy *self)
         }
       else
         {
-          msg_error("Unable to determine PROXY protocol version");
+          msg_error("Unable to determine PROXY protocol version",
+                    evt_tag_mem("proxy_header", self->proxy_header_buff, PROXY_PROTO_HDR_MAGIC_LEN));
           return STATUS_ERROR;
         }
       g_assert_not_reached();
@@ -507,6 +508,31 @@ process_proxy_v2:
     }
 }
 
+static void
+_save_addresses(LogTransportHAProxy *self)
+{
+  LogTransportStack *stack = self->super.super.stack;
+  if (self->info.unknown)
+    return;
+
+  if (self->info.ip_version == 4)
+    {
+      log_transport_aux_data_set_peer_addr_ref(&stack->aux_data,
+                                               g_sockaddr_inet_new(self->info.src_ip, self->info.src_port));
+      log_transport_aux_data_set_local_addr_ref(&stack->aux_data,
+                                                g_sockaddr_inet_new(self->info.dst_ip, self->info.dst_port));
+    }
+  else if (self->info.ip_version == 6)
+    {
+      log_transport_aux_data_set_peer_addr_ref(&stack->aux_data,
+                                               g_sockaddr_inet6_new(self->info.src_ip, self->info.src_port));
+      log_transport_aux_data_set_local_addr_ref(&stack->aux_data,
+                                                g_sockaddr_inet6_new(self->info.dst_ip, self->info.dst_port));
+    }
+  else
+    g_assert_not_reached();
+}
+
 static Status
 _proccess_proxy_header(LogTransportHAProxy *self)
 {
@@ -527,6 +553,7 @@ _proccess_proxy_header(LogTransportHAProxy *self)
   if (parsable)
     {
       msg_trace("PROXY protocol header parsed successfully");
+      _save_addresses(self);
 
       return STATUS_SUCCESS;
     }
@@ -535,29 +562,6 @@ _proccess_proxy_header(LogTransportHAProxy *self)
       msg_error("Error parsing PROXY protocol header");
       return STATUS_ERROR;
     }
-}
-
-static void
-_augment_aux_data(LogTransportHAProxy *self, LogTransportAuxData *aux)
-{
-  gchar buf1[8];
-  gchar buf2[8];
-  gchar buf3[8];
-
-  if (self->info.unknown)
-    return;
-
-  snprintf(buf1, 8, "%i", self->info.src_port);
-  snprintf(buf2, 8, "%i", self->info.dst_port);
-  snprintf(buf3, 8, "%i", self->info.ip_version);
-
-  log_transport_aux_data_add_nv_pair(aux, "PROXIED_SRCIP", self->info.src_ip);
-  log_transport_aux_data_add_nv_pair(aux, "PROXIED_DSTIP", self->info.dst_ip);
-  log_transport_aux_data_add_nv_pair(aux, "PROXIED_SRCPORT", buf1);
-  log_transport_aux_data_add_nv_pair(aux, "PROXIED_DSTPORT", buf2);
-  log_transport_aux_data_add_nv_pair(aux, "PROXIED_IP_VERSION", buf3);
-
-  return;
 }
 
 static gssize
@@ -576,12 +580,14 @@ _haproxy_read(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *
             errno = EAGAIN;
           return -1;
         }
-      if (self->switch_to != LOG_TRANSPORT_NONE)
-        self->super.base_index = self->switch_to;
-    }
 
-  _augment_aux_data(self, aux);
-  return log_transport_adapter_read_method(s, buf, buflen, aux);
+      if (!log_transport_stack_switch(self->super.super.stack, self->switch_to))
+        g_assert_not_reached();
+
+      errno = EAGAIN;
+      return -1;
+    }
+  g_assert_not_reached();
 }
 
 LogTransport *

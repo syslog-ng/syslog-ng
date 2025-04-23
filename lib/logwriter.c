@@ -478,7 +478,7 @@ log_writer_update_watches(LogWriter *self)
 
   /* NOTE: we either start the suspend_timer or enable the fd_watch. The two MUST not happen at the same time. */
 
-  if (log_proto_client_prepare(self->proto, &fd, &cond, &idle_timeout) ||
+  if (log_proto_client_poll_prepare(self->proto, &fd, &cond, &idle_timeout) ||
       self->waiting_for_throttle ||
       log_queue_check_items(self->queue, &timeout_msec,
                             (LogQueuePushNotifyFunc) log_writer_schedule_update_watches, self, NULL))
@@ -540,7 +540,7 @@ log_writer_start_watches(LogWriter *self)
   if (self->watches_running)
     return;
 
-  log_proto_client_prepare(self->proto, &fd, &cond, &idle_timeout);
+  log_proto_client_poll_prepare(self->proto, &fd, &cond, &idle_timeout);
 
   self->fd_watch.fd = fd;
 

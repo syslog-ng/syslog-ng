@@ -67,8 +67,7 @@ struct _LogProtoClient
   LogProtoStatus status;
   const LogProtoClientOptions *options;
   LogTransportStack transport_stack;
-  /* FIXME: rename to something else */
-  gboolean (*prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout);
+  gboolean (*poll_prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout);
   LogProtoStatus (*post)(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
   LogProtoStatus (*process_in)(LogProtoClient *s);
   LogProtoStatus (*flush)(LogProtoClient *s);
@@ -124,9 +123,9 @@ log_proto_client_handshake(LogProtoClient *s, gboolean *handshake_finished)
 }
 
 static inline gboolean
-log_proto_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
+log_proto_client_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
-  gboolean result = s->prepare(s, fd, cond, timeout);
+  gboolean result = s->poll_prepare(s, fd, cond, timeout);
 
   if (!result && *timeout < 0)
     *timeout = s->options->idle_timeout;

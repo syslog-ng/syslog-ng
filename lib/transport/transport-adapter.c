@@ -61,3 +61,9 @@ log_transport_adapter_init_instance(LogTransportAdapter *self, const gchar *name
 
   self->base_index = base_index;
 }
+
+void
+log_transport_adapter_free_method(LogTransport *s)
+{
+  return log_transport_free_method(s);
+}

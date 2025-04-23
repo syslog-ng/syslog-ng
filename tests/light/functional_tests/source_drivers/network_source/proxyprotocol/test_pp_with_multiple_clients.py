@@ -21,7 +21,7 @@
 #
 #############################################################################
 
-TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
+TEMPLATE = r'"${SOURCEIP} ${SOURCEPORT} ${DESTIP} ${DESTPORT} ${IP_PROTO} ${MESSAGE}\n"'
 
 CLIENT_A_INPUT = "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\r\n" \
                  "message A 0\n" \
@@ -31,12 +31,12 @@ CLIENT_B_INPUT = "PROXY TCP4 5.5.5.5 6.6.6.6 7777 8888\r\n" \
                  "message B 1\n"
 
 CLIENT_A_EXPECTED = (
-    "1.1.1.1 2.2.2.2 3333 4444 4 message A 0\n",
-    "1.1.1.1 2.2.2.2 3333 4444 4 message A 1\n",
+    "1.1.1.1 3333 2.2.2.2 4444 4 message A 0\n",
+    "1.1.1.1 3333 2.2.2.2 4444 4 message A 1\n",
 )
 CLIENT_B_EXPECTED = (
-    "5.5.5.5 6.6.6.6 7777 8888 4 message B 0\n",
-    "5.5.5.5 6.6.6.6 7777 8888 4 message B 1\n",
+    "5.5.5.5 7777 6.6.6.6 8888 4 message B 0\n",
+    "5.5.5.5 7777 6.6.6.6 8888 4 message B 1\n",
 )
 
 

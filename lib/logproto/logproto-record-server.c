@@ -54,17 +54,16 @@ static gint
 log_proto_record_server_read_data(LogProtoBufferedServer *s, guchar *buf, gsize len, LogTransportAuxData *aux)
 {
   LogProtoRecordServer *self = (LogProtoRecordServer *) s;
-  LogTransport *transport = log_transport_stack_get_active(&self->super.super.transport_stack);
   gint rc;
 
   /* assert that we have enough space in the buffer to read record_size bytes */
   g_assert(len >= self->record_size);
   len = self->record_size;
-  rc = log_transport_read(transport, buf, len, aux);
+  rc = log_transport_stack_read(&s->super.transport_stack, buf, len, aux);
   if (rc > 0 && rc != self->record_size)
     {
       msg_error("Record size was set, and couldn't read enough bytes",
-                evt_tag_int(EVT_TAG_FD, transport->fd),
+                evt_tag_int(EVT_TAG_FD, s->super.transport_stack.fd),
                 evt_tag_int("record_size", self->record_size),
                 evt_tag_int("read", rc));
       errno = EIO;

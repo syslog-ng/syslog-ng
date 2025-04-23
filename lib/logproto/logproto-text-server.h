@@ -50,7 +50,7 @@ LogProtoServer *log_proto_text_with_nuls_server_new(LogTransport *transport, con
 void log_proto_text_server_free(LogProtoServer *self);
 void log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport,
                                 const LogProtoServerOptions *options);
-LogProtoPrepareAction log_proto_text_server_prepare_method(LogProtoServer *s, GIOCondition *cond, gint *timeout);
+LogProtoPrepareAction log_proto_text_server_poll_prepare_method(LogProtoServer *s, GIOCondition *cond, gint *timeout);
 
 static inline gboolean
 log_proto_text_server_validate_options_method(LogProtoServer *s)

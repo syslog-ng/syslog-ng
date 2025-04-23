@@ -114,8 +114,8 @@ log_proto_buffered_server_cue_flush(LogProtoBufferedServer *self)
   self->flush_partial_message = TRUE;
 }
 
-LogProtoPrepareAction log_proto_buffered_server_prepare(LogProtoServer *s, GIOCondition *cond,
-                                                        gint *timeout G_GNUC_UNUSED);
+LogProtoPrepareAction log_proto_buffered_server_poll_prepare(LogProtoServer *s, GIOCondition *cond,
+    gint *timeout G_GNUC_UNUSED);
 LogProtoBufferedServerState *log_proto_buffered_server_get_state(LogProtoBufferedServer *self);
 void log_proto_buffered_server_put_state(LogProtoBufferedServer *self);
 gboolean log_proto_buffered_server_restart_with_state(LogProtoServer *s,

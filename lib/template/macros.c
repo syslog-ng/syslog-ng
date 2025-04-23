@@ -207,6 +207,7 @@ LogMacroDef macros[] =
   { "SDATA", M_SDATA },
   { "MSGHDR", M_MSGHDR },
   { "SOURCEIP", M_SOURCE_IP },
+  { "SOURCEPORT", M_SOURCE_PORT },
   { "DESTIP", M_DEST_IP },
   { "DESTPORT", M_DEST_PORT },
   { "IP_PROTO", M_IP_PROTOCOL },
@@ -631,6 +632,22 @@ log_macro_expand(gint id, LogTemplateEvalOptions *options, const LogMessage *msg
       if (_is_message_dest_an_ip_address(msg))
         {
           port = g_sockaddr_get_port(msg->daddr);
+        }
+      else
+        {
+          port = 0;
+        }
+      t = LM_VT_INTEGER;
+      format_uint32_padded(result, 0, 0, 10, port);
+      break;
+    }
+    case M_SOURCE_PORT:
+    {
+      gint port;
+
+      if (_is_message_dest_an_ip_address(msg))
+        {
+          port = g_sockaddr_get_port(msg->saddr);
         }
       else
         {

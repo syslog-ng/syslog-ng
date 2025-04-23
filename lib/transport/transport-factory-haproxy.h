@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2025 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2025 Axoflow
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,18 +19,14 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
+ *
  */
 
-#ifndef TLSTRANSPORT_H_INCLUDED
-#define TLSTRANSPORT_H_INCLUDED
+#ifndef TRANSPORT_FACTORY_HAPROXY_H_INCLUDED
+#define TRANSPORT_FACTORY_HAPROXY_H_INCLUDED
 
-#include "transport/transport-adapter.h"
-#include "transport/tls-context.h"
+#include "transport/transport-stack.h"
 
-LogTransport *log_transport_tls_new(TLSSession *tls_session, LogTransportIndex base_index);
-TLSSession *log_tansport_tls_get_session(LogTransport *s);
-
-void log_transport_tls_global_init(void);
-void log_transport_tls_global_deinit(void);
+LogTransportFactory *transport_factory_haproxy_new(LogTransportIndex base, LogTransportIndex switch_to);
 
 #endif

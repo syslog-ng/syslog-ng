@@ -179,10 +179,9 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
   struct stat st;
   gint64 ofs = 0;
   LogProtoBufferedServerState *state;
-  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
   gint fd;
 
-  fd = transport->fd;
+  fd = self->super.transport_stack.fd;
   self->persist_handle = handle;
 
   if (fstat(fd, &st) < 0)
@@ -255,7 +254,7 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
           raw_buffer = g_alloca(state->raw_buffer_size);
         }
 
-      rc = log_transport_read(transport, raw_buffer, state->raw_buffer_size, NULL);
+      rc = log_transport_stack_read(&self->super.transport_stack, raw_buffer, state->raw_buffer_size, NULL);
       if (rc != state->raw_buffer_size)
         {
           msg_notice("Error re-reading buffer contents of the file to be continued, restarting from the beginning",
@@ -584,12 +583,12 @@ error:
 }
 
 LogProtoPrepareAction
-log_proto_buffered_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
+log_proto_buffered_server_poll_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
-  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
 
-  *cond = transport->cond;
+  if (log_transport_stack_poll_prepare(&self->super.transport_stack, cond))
+    return LPPA_FORCE_SCHEDULE_FETCH;
 
   /* if there's no pending I/O in the transport layer, then we want to do a read */
   if (*cond == 0)
@@ -602,9 +601,7 @@ static gint
 log_proto_buffered_server_read_data_method(LogProtoBufferedServer *self, guchar *buf, gsize len,
                                            LogTransportAuxData *aux)
 {
-  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
-
-  return log_transport_read(transport, buf, len, aux);
+  return log_transport_stack_read(&self->super.transport_stack, buf, len, aux);
 }
 
 static void
@@ -1081,7 +1078,7 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
                                const LogProtoServerOptions *options)
 {
   log_proto_server_init(&self->super, transport, options);
-  self->super.prepare = log_proto_buffered_server_prepare;
+  self->super.poll_prepare = log_proto_buffered_server_poll_prepare;
   self->super.fetch = log_proto_buffered_server_fetch;
   self->super.free_fn = log_proto_buffered_server_free_method;
   self->super.restart_with_state = log_proto_buffered_server_restart_with_state;

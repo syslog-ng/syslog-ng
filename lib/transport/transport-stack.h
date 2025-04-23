@@ -31,10 +31,9 @@ typedef struct _LogTransportFactory LogTransportFactory;
 
 typedef enum
 {
-  /* this is a special index for simple cases where we only use a single
-   * LogTransport which never changes */
   LOG_TRANSPORT_INITIAL,
-  LOG_TRANSPORT_SOCKET,
+  LOG_TRANSPORT_FD = LOG_TRANSPORT_INITIAL,
+  LOG_TRANSPORT_SOCKET = LOG_TRANSPORT_INITIAL,
   LOG_TRANSPORT_TLS,
   LOG_TRANSPORT_HAPROXY,
   LOG_TRANSPORT_GZIP,
@@ -105,6 +104,7 @@ struct _LogTransportStack
   gint fd;
   LogTransport *transports[LOG_TRANSPORT__MAX];
   LogTransportFactory *transport_factories[LOG_TRANSPORT__MAX];
+  LogTransportAuxData aux_data;
 };
 
 static inline LogTransport *
@@ -137,6 +137,42 @@ log_transport_stack_get_transport(LogTransportStack *self, gint index)
   g_assert(index < LOG_TRANSPORT__MAX);
 
   return self->transports[index];
+}
+
+static inline gboolean
+log_transport_stack_poll_prepare(LogTransportStack *self, GIOCondition *cond)
+{
+  LogTransport *transport = log_transport_stack_get_active(self);
+  return log_transport_poll_prepare(transport, cond);
+}
+
+static inline gssize
+log_transport_stack_write(LogTransportStack *self, const gpointer buf, gsize count)
+{
+  LogTransport *transport = log_transport_stack_get_active(self);
+  return log_transport_write(transport, buf, count);
+}
+
+static inline gssize
+log_transport_stack_writev(LogTransportStack *self, struct iovec *iov, gint iov_count)
+{
+  LogTransport *transport = log_transport_stack_get_active(self);
+  return log_transport_writev(transport, iov, iov_count);
+}
+
+static inline gssize
+log_transport_stack_read(LogTransportStack *self, gpointer buf, gsize count, LogTransportAuxData *aux)
+{
+  LogTransport *transport = log_transport_stack_get_active(self);
+  log_transport_aux_data_copy(aux, &self->aux_data);
+  return log_transport_read(transport, buf, count, aux);
+}
+
+static inline gssize
+log_transport_stack_read_ahead(LogTransportStack *self, gpointer buf, gsize count, gboolean *moved_forward)
+{
+  LogTransport *transport = log_transport_stack_get_active(self);
+  return log_transport_read_ahead(transport, buf, count, moved_forward);
 }
 
 void log_transport_stack_add_factory(LogTransportStack *self, LogTransportFactory *);

@@ -33,35 +33,36 @@ typedef struct _LogProtoAutoServer
 static LogProtoServer *
 _construct_detected_proto(LogProtoAutoServer *self, const gchar *detect_buffer, gsize detect_buffer_len)
 {
-  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
+  gint fd = self->super.transport_stack.fd;
 
   if (g_ascii_isdigit(detect_buffer[0]))
     {
-      msg_debug("Auto-detected octet-counted-framing on RFC6587 connection, using framed protocol",
-                evt_tag_int("fd", transport->fd));
+      msg_debug("Auto-detected octet-counted-framing, using framed protocol",
+                evt_tag_int("fd", fd));
       return log_proto_framed_server_new(NULL, self->super.options);
     }
   if (detect_buffer[0] == '<')
     {
-      msg_debug("Auto-detected non-transparent-framing on RFC6587 connection, using simple text protocol",
-                evt_tag_int("fd", transport->fd));
+      msg_debug("Auto-detected non-transparent-framing, using simple text protocol",
+                evt_tag_int("fd", fd));
     }
   else
     {
-      msg_debug("Unable to detect framing on RFC6587 connection, falling back to simple text transport",
-                evt_tag_int("fd", transport->fd),
+      msg_debug("Unable to detect framing, falling back to simple text transport",
+                evt_tag_int("fd", fd),
                 evt_tag_mem("detect_buffer", detect_buffer, detect_buffer_len));
     }
   return log_proto_text_server_new(NULL, self->super.options);
 }
 
 static LogProtoPrepareAction
-log_proto_auto_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
+log_proto_auto_server_poll_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
 {
   LogProtoAutoServer *self = (LogProtoAutoServer *) s;
-  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
 
-  *cond = transport->cond;
+  if (log_transport_stack_poll_prepare(&self->super.transport_stack, cond))
+    return LPPA_FORCE_SCHEDULE_FETCH;
+
   if (*cond == 0)
     *cond = G_IO_IN;
 
@@ -72,12 +73,11 @@ static LogProtoStatus
 log_proto_auto_handshake(LogProtoServer *s, gboolean *handshake_finished, LogProtoServer **proto_replacement)
 {
   LogProtoAutoServer *self = (LogProtoAutoServer *) s;
-  LogTransport *transport = log_transport_stack_get_active(&self->super.transport_stack);
   gchar detect_buffer[8];
   gboolean moved_forward;
   gint rc;
 
-  rc = log_transport_read_ahead(transport, detect_buffer, sizeof(detect_buffer), &moved_forward);
+  rc = log_transport_stack_read_ahead(&self->super.transport_stack, detect_buffer, sizeof(detect_buffer), &moved_forward);
   if (rc == 0)
     return LPS_EOF;
   else if (rc < 0)
@@ -101,6 +101,6 @@ log_proto_auto_server_new(LogTransport *transport, const LogProtoServerOptions *
 
   log_proto_server_init(&self->super, transport, options);
   self->super.handshake = log_proto_auto_handshake;
-  self->super.prepare = log_proto_auto_server_prepare;
+  self->super.poll_prepare = log_proto_auto_server_poll_prepare;
   return &self->super;
 }
