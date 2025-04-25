@@ -220,7 +220,7 @@ poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *fol
 {
   self->super.stop_watches = poll_file_changes_stop_watches;
   self->super.update_watches = poll_file_changes_update_watches;
-  self->super.system_polled = FALSE;
+  self->super.type = PET_SYLOG_NG;
   self->super.get_fd = _get_fd;
   self->super.free_fn = poll_file_changes_free;
 
