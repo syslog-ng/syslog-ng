@@ -71,10 +71,6 @@ struct _LogReader
   StatsAggregator *max_message_size;
   StatsAggregator *average_messages_size;
   StatsAggregator *CPS;
-
-  /* NOTE: these used to be LogReaderWatch members, which were merged into
-   * LogReader with the multi-thread refactorization */
-
   struct iv_task restart_task;
   struct iv_event schedule_wakeup;
   MainLoopIOWorkerJob io_job;
