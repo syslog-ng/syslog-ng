@@ -398,7 +398,7 @@ log_reader_work_finished(void *s, gpointer arg)
       g_mutex_unlock(&self->pending_close_lock);
     }
 
-  if (self->notify_code)
+  if (self->notify_code && self->notify_code != NC_AGAIN)
     {
       gint notify_code = self->notify_code;
 
@@ -424,6 +424,11 @@ log_reader_work_finished(void *s, gpointer arg)
         }
       log_proto_server_reset_error(self->proto);
       log_reader_update_watches(self);
+
+      if (self->notify_code == NC_AGAIN && poll_events_system_notified(self->poll_events))
+        {
+          log_reader_force_check_in_next_poll(self);
+        }
     }
 }
 
@@ -572,12 +577,19 @@ log_reader_fetch_log(LogReader *self)
    * to fetch a couple of messages in a single run (but only up to
    * fetch_limit).
    */
-  while (msg_count < self->options->fetch_limit && !main_loop_worker_job_quit())
+  gint result = 0;
+  while (!main_loop_worker_job_quit())
     {
       Bookmark *bookmark;
       const guchar *msg;
       gsize msg_len;
       LogProtoStatus status;
+
+      if (msg_count >= self->options->fetch_limit)
+        {
+          result = NC_AGAIN;
+          break;
+        }
 
       msg = NULL;
 
@@ -625,7 +637,7 @@ log_reader_fetch_log(LogReader *self)
     }
   log_transport_aux_data_destroy(aux);
 
-  return 0;
+  return result;
 }
 
 static void
