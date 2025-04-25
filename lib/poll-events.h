@@ -26,13 +26,17 @@
 
 #include "syslog-ng.h"
 
+#define PET_SYLOG_NG  0x0001
+#define PET_SYSTEM    0x0002
+#define PET_NOTIFIED  0x0003
+
 typedef struct _PollEvents PollEvents;
 typedef void (*PollCallback)(gpointer user_data);
 typedef gboolean (*PollChecker)(PollEvents *self, gpointer user_data);
 
 struct _PollEvents
 {
-  gboolean system_polled;
+  gint32 type;
   PollCallback callback;
   gpointer callback_data;
   gpointer checker_data;
@@ -57,7 +61,13 @@ poll_events_get_fd(PollEvents *self)
 static inline gboolean
 poll_events_system_polled(PollEvents *self)
 {
-  return self->system_polled;
+  return self->type == PET_SYSTEM;
+}
+
+static inline gboolean
+poll_events_system_notified(PollEvents *self)
+{
+  return self->type == PET_NOTIFIED;
 }
 
 static inline void
