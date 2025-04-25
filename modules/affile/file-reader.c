@@ -324,6 +324,7 @@ _setup_logreader(LogPipe *s, PollEvents *poll_events, LogProtoServer *proto)
   FileReader *self = (FileReader *) s;
 
   self->reader = log_reader_new(log_pipe_get_config(s));
+  self->reader->can_fetch_after_handshake = TRUE;
   log_pipe_set_options(&self->reader->super.super, &self->super.options);
   log_reader_open(self->reader, proto, poll_events);
 

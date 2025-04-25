@@ -557,7 +557,15 @@ log_reader_fetch_log(LogReader *self)
   log_transport_aux_data_init(aux);
   if (self->handshake_in_progress)
     {
-      return log_reader_process_handshake(self);
+      gint result = log_reader_process_handshake(self);
+      /* TODO: usage of can_fetch_after_handshake might not needed at all here, just wanted to keep the original flow
+       *       to be surely backward compatible, my bet is that every successfull handshake can be followed by an
+       *       immediate fetch normally */
+      if (FALSE == self->can_fetch_after_handshake || result != 0 || self->handshake_in_progress)
+        {
+          log_transport_aux_data_destroy(aux);
+          return result;
+        }
     }
 
   /* NOTE: this loop is here to decrease the load on the main loop, we try
