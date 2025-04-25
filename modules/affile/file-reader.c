@@ -541,10 +541,10 @@ file_reader_cue_buffer_flush(FileReader *self)
 }
 
 void
-file_reader_init_instance (FileReader *self, const gchar *filename,
-                           FileReaderOptions *options, FileOpener *opener,
-                           LogSrcDriver *owner, GlobalConfig *cfg,
-                           const gchar *persist_name_prefix)
+file_reader_init_instance(FileReader *self, const gchar *filename,
+                          FileReaderOptions *options, FileOpener *opener,
+                          LogSrcDriver *owner, GlobalConfig *cfg,
+                          const gchar *persist_name_prefix)
 {
   log_pipe_init_instance (&self->super, cfg);
   self->super.init = file_reader_init_method;
@@ -568,7 +568,7 @@ file_reader_new(const gchar *filename, FileReaderOptions *options, FileOpener *o
 {
   FileReader *self = g_new0(FileReader, 1);
 
-  file_reader_init_instance (self, filename, options, opener, owner, cfg, "affile_sd");
+  file_reader_init_instance(self, filename, options, opener, owner, cfg, "affile_sd");
   return self;
 }
 
