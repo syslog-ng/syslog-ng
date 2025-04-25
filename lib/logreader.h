@@ -62,7 +62,6 @@ struct _LogReader
 {
   LogSource super;
   LogProtoServer *proto;
-  gboolean handshake_in_progress;
   LogPipe *control;
   LogReaderOptions *options;
   PollEvents *poll_events;
@@ -74,7 +73,11 @@ struct _LogReader
   struct iv_task restart_task;
   struct iv_event schedule_wakeup;
   MainLoopIOWorkerJob io_job;
-  guint watches_running:1, suspended:1, realloc_window_after_fetch:1;
+  guint watches_running:1,
+        suspended:1,
+        realloc_window_after_fetch:1,
+        handshake_in_progress:1,
+        can_fetch_after_handshake:1;
   gint notify_code;
 
   /* proto & poll_events pending to be applied. As long as the previous
