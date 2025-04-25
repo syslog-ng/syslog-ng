@@ -134,6 +134,8 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
   else
     {
       g_hash_table_insert(self->file_readers, g_strdup(full_path), reader);
+      msg_debug("wildcard-file(): file created, start tailing",
+                evt_tag_str("filename", full_path));
     }
 }
 
@@ -147,8 +149,6 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
       if (!reader)
         {
           _create_file_reader(self, event->full_path);
-          msg_debug("wildcard-file(): file created, start tailing",
-                    evt_tag_str("filename", event->full_path));
         }
       else
         {
