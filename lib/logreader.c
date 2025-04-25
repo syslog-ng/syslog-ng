@@ -407,6 +407,7 @@ log_reader_work_finished(void *s, gpointer arg)
 
       if (notify_code == NC_CLOSE && (self->options->flags & LR_EXIT_ON_EOF))
         {
+          msg_trace("Exiting because exit-on-eof was set");
           cfg_shutdown(log_pipe_get_config(s));
         }
     }

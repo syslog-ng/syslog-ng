@@ -71,7 +71,7 @@ stdin_sd_init(LogPipe *s)
 LogDriver *
 stdin_sd_new(GlobalConfig *cfg)
 {
-  AFFileSourceDriver *self = affile_sd_new_instance("-", cfg);
+  AFFileSourceDriver *self = affile_sd_new_instance("/dev/stdin", cfg);
 
   self->super.super.super.init = stdin_sd_init;
 
