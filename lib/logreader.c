@@ -30,7 +30,7 @@
 #include "str-format.h"
 
 static void log_reader_io_handle_in(gpointer s);
-static gboolean log_reader_fetch_log(LogReader *self);
+static gint log_reader_fetch_log(LogReader *self);
 static void log_reader_update_watches(LogReader *self);
 
 /*****************************************************************************
