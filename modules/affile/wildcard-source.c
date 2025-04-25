@@ -191,13 +191,13 @@ _handle_directory_created(WildcardSourceDriver *self, const DirectoryMonitorEven
 void
 _handle_file_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
 {
-  FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
+  WildcardFileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
 
   if (reader)
     {
       msg_debug("wildcard-file(): Monitored file was deleted, reading it to the end",
                 evt_tag_str("filename", event->full_path));
-      log_pipe_notify(&reader->super, NC_FILE_DELETED, NULL);
+      log_pipe_notify(&reader->super.super, NC_FILE_DELETED, NULL);
     }
 
   if (pending_file_list_remove(self->waiting_list, event->full_path))
@@ -227,10 +227,10 @@ _handler_directory_deleted(WildcardSourceDriver *self, const DirectoryMonitorEve
 static void
 _handler_file_modified(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
 {
-  FileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
+  WildcardFileReader *reader = g_hash_table_lookup(self->file_readers, event->full_path);
 
   if (reader)
-    log_pipe_notify(&reader->super, NC_FILE_MODIFIED, NULL);
+    log_pipe_notify(&reader->super.super, NC_FILE_MODIFIED, NULL);
 }
 
 static void
