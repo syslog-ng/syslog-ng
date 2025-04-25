@@ -225,6 +225,12 @@ _reader_check_watches(PollEvents *poll_events, gpointer user_data)
                 evt_tag_int("fn", fd));
       check_again = _reader_on_eof(self);
     }
+  else
+    {
+      if (poll_events_system_notified(poll_events))
+        log_reader_trigger_one_check(self->reader);
+    }
+
   return check_again;
 }
 
