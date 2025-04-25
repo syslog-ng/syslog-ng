@@ -431,7 +431,7 @@ _on_file_deleted(FileReader *self)
    * NOTE: Do not try to close the reader directly from here, as there might already be
    *       an io-operation in progress!
    */
-  if (poll_events_system_polled(self->reader->poll_events))
+  if (poll_events_system_polled(self->reader->poll_events) || poll_events_system_notified(self->reader->poll_events))
     log_reader_trigger_one_check(self->reader);
 }
 
