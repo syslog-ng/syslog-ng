@@ -435,6 +435,12 @@ _on_file_deleted(FileReader *self)
     log_reader_trigger_one_check(self->reader);
 }
 
+static inline void
+_on_file_modified(FileReader *self)
+{
+  log_reader_trigger_one_check(self->reader);
+}
+
 static void
 _on_read_error(FileReader *self)
 {
@@ -468,7 +474,7 @@ file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
 
     case NC_FILE_MODIFIED:
       /* This is a notification from the directory monitor, we can read the file for changes */
-      log_reader_trigger_one_check(self->reader);
+      _on_file_modified(self);
       break;
 
     default:
