@@ -395,7 +395,7 @@ target_link_libraries(
     GLib::GThread
     GLib::GModule
     ${Gettext_LIBRARIES}
-    ${IVYKIS_LIBRARY}
+    ${IVYKIS_LIBRARIES}
     ${JSONC_LIBRARY}
     ${LIBPCRE_LIBRARIES}
     ${Libsystemd_LIBRARIES}

@@ -58,7 +58,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
             -DBUILD_TESTING=ON
             -DPYTHON_VERSION=3
-            -DIVYKIS_SOURCE=system
+            -DIVYKIS_SOURCE=internal
             -DENABLE_JOURNALD=OFF
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF

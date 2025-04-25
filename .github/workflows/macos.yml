@@ -71,11 +71,11 @@ jobs:
           WARNING_FLAGS="-Wno-unused-command-line-argument" # FIXME: -Werror must be re-added
           CFLAGS="-I${HOMEBREW_PREFIX}/include/ -I${MACPORTS_PREFIX}/include ${WARNING_FLAGS}"
           CXXFLAGS="${CFLAGS}"
-          # FIXME: explicit -std=gnu++17 is needed for
-          #         - autotools to detect proper c++ version support with clang
-          #         - correct compiling with the latest homebrew GRPC dependant packages, like absl, etc.
+          # brew has an old autoconf-archive -> ax_cxx_compile_stdcxx.m4 version, which cannot detect
+          # correctly the c++14 and c++17 support of clang currently, get the latest one from the git repo
           if [ ${{ matrix.build-tool }} = autotools ] && [ $CC = clang ]; then
-            CXXFLAGS="${CFLAGS} -std=gnu++17"
+            mkdir -p ./m4 || true
+            wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://git.savannah.gnu.org/gitweb/\?p\=autoconf-archive.git\;a\=blob_plain\;f\=m4/ax_cxx_compile_stdcxx.m4
           fi
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
           CONFIGURE_FLAGS="
@@ -86,12 +86,11 @@ jobs:
             --enable-tests
             --enable-all-modules
             --with-python=3
-            --with-ivykis=system
+            --with-ivykis=internal
             --with-systemd-journal=no
             --disable-java
             --disable-java-modules
           "
-          # -DIVYKIS_SOURCE=internal is switched to system temporally as of https://github.com/buytenh/ivykis/pulls
           CMAKE_CONFIGURE_FLAGS="
             `[ $CC = clang ] && echo '-DENABLE_FORCE_GNU99=ON' || true`
             -DENABLE_EXTRA_WARNINGS=ON
@@ -100,7 +99,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=${SYSLOG_NG_INSTALL_DIR}
             -DBUILD_TESTING=ON
             -DPYTHON_VERSION=3
-            -DIVYKIS_SOURCE=system
+            -DIVYKIS_SOURCE=internal
             -DENABLE_JOURNALD=OFF
             -DENABLE_JAVA=OFF
             -DENABLE_JAVA_MODULES=OFF

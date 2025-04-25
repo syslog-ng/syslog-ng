@@ -509,6 +509,9 @@ dnl C++
 # AC_MSG_RESULT(C++ compilers to be used $CPP_COMPILER)
 AC_PROG_CXX([$CPP_COMPILER])
 
+# NOTE: on macOS brew has an old autoconf-archive -> ax_cxx_compile_stdcxx.m4 version, which cannot detect
+#       correctly the c++14 and c++17 support of clang currently, you might want to get the latest one from the git repo
+#       wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://git.savannah.gnu.org/gitweb/\?p\=autoconf-archive.git\;a\=blob_plain\;f\=m4/ax_cxx_compile_stdcxx.m4
 if test "x$enable_cpp" = "xyes"; then
         AX_CXX_COMPILE_STDCXX(14,, mandatory)
         AX_CXX_COMPILE_STDCXX(17,, optional)
@@ -1340,6 +1343,8 @@ if test "x$with_ivykis" = "xinternal"; then
 		# LIBS to use when libtool is not applicable (when linking the main syslog-ng executable in mixed linking mode)
 		IVYKIS_NO_LIBTOOL_LIBS="-Wl,${WHOLE_ARCHIVE_OPT} -L\$(top_builddir)/lib/ivykis/src/.libs -livykis -Wl,${NO_WHOLE_ARCHIVE_OPT}"
 
+                # internal ivykis is linked statically, io_uring might be available and linked against too, we have to use it as well
+                AC_SEARCH_LIBS([io_uring_queue_init], [uring])
 		AC_DEFINE(HAVE_IV_WORK_POOL_SUBMIT_CONTINUATION, 1)
 	else
 		AC_MSG_ERROR([Internal ivykis sources not found in lib/ivykis. This is a hard dependency, unable to build syslog-ng without them.])

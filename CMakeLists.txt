@@ -273,9 +273,17 @@ endif()
 
 
 set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
+set (IVYKIS_SOURCE "internal")
 external_or_find_package(IVYKIS REQUIRED)
-if ((NOT IVYKIS_INTERNAL) AND (IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
+set(IVYKIS_LIBRARIES ${IVYKIS_LIBRARY} CACHE STRING "IVYKIS libraries path")
+if((NOT IVYKIS_INTERNAL) AND(IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
   set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 0)
+elseif(IVYKIS_INTERNAL)
+  # internal ivykis is linked statically, io_uring might be available and linked against too, we have to use it as well
+  find_package(uring)
+  if(URING_FOUND)
+    set(IVYKIS_LIBRARIES ${IVYKIS_LIBRARIES} ${URING_LIBRARIES})
+  endif()
 endif()
 
 external_or_find_package(JSONC REQUIRED)
