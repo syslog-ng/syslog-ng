@@ -266,11 +266,13 @@ _construct_poll_events(FileReader *self, gint fd)
                                                       self->options->multi_line_timeout, self);
       msg_debug("File follow-mode is syslog-ng poll");
     }
+#if SYSLOG_NG_HAVE_INOTIFY
   else if (fd >= 0 && FALSE == self->should_poll_for_events)
     {
       poll_events = notified_fd_events_new(fd);
       msg_debug("File follow-mode is inotify from directory-monitor");
     }
+#endif
   else if (fd >= 0 && _is_fd_pollable(fd))
     {
       poll_events = poll_fd_events_new(fd);
