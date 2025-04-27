@@ -4,7 +4,6 @@ pycodestyle
 isort
 pylint
 astroid
-logilab-common<=0.63.0
 prometheus-client
 psutil
 pytest
