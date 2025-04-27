@@ -153,6 +153,7 @@ pkginclude_HEADERS			+= \
 	lib/ml-batched-timer.h		\
 	lib/msg-format.h		\
 	lib/msg-stats.h			\
+	lib/notified-fd-events.h		\
 	lib/on-error.h			\
 	lib/parse-number.h		\
 	lib/pathutils.h         \
