@@ -30,6 +30,7 @@
 #include "transport/transport-pipe.h"
 #include "transport-prockmsg.h"
 #include "logproto/logproto-buffered-server.h"
+#include "notified-fd-events.h"
 #include "poll-fd-events.h"
 #include "poll-file-changes.h"
 #include "poll-multiline-file-changes.h"
