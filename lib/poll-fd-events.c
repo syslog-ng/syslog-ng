@@ -23,14 +23,6 @@
  */
 #include "poll-fd-events.h"
 
-#include <iv.h>
-
-typedef struct _PollFdEvents
-{
-  PollEvents super;
-  struct iv_fd fd_watch;
-} PollFdEvents;
-
 #define IV_FD_CALLBACK(x) ((void (*)(void *)) (x))
 
 static inline gint
@@ -105,19 +97,6 @@ poll_fd_events_new(gint fd)
   IV_FD_INIT(&self->fd_watch);
   self->fd_watch.fd = fd;
   self->fd_watch.cookie = self;
-
-  return &self->super;
-}
-
-PollEvents *
-notified_fd_events_new(gint fd)
-{
-  PollFdEvents *self = (PollFdEvents *)poll_fd_events_new(fd);
-
-  self->super.type = PET_NOTIFIED;
-  self->super.start_watches = NULL;
-  self->super.stop_watches = NULL;
-  self->super.suspend_watches = NULL;
 
   return &self->super;
 }

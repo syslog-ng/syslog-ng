@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2025 One Identity LLC.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,18 +20,29 @@
  * COPYING for details.
  *
  */
-#ifndef POLL_FD_EVENTS_H_INCLUDED
-#define POLL_FD_EVENTS_H_INCLUDED
+#ifndef NOTIFIED_FD_EVENTS_H_INCLUDED
+#define NOTIFIED_FD_EVENTS_H_INCLUDED
 
-#include "poll-events.h"
-#include <iv.h>
+#include "poll-fd-events.h"
 
-typedef struct _PollFdEvents
+static inline void
+notified_fd_events_update_watches(PollEvents *s, GIOCondition cond)
 {
-  PollEvents super;
-  struct iv_fd fd_watch;
-} PollFdEvents;
+  poll_events_check_watches(s);
+}
 
-PollEvents *poll_fd_events_new(gint fd);
+static inline PollEvents *
+notified_fd_events_new(gint fd)
+{
+  PollFdEvents *self = (PollFdEvents *) poll_fd_events_new(fd);
+
+  self->super.type = PET_NOTIFIED;
+  self->super.start_watches = NULL;
+  self->super.stop_watches = NULL;
+  self->super.suspend_watches = NULL;
+  self->super.update_watches = notified_fd_events_update_watches;
+
+  return &self->super;
+}
 
 #endif
