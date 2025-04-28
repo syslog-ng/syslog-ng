@@ -251,31 +251,26 @@ iv_can_poll_fd(gint fd)
   return pollable;
 }
 
-static PollEvents *
-_construct_poll_events(FileReader *self, gint fd)
+static FollowMethod
+_get_file_follow_mode(FileReader *self, gint fd)
 {
-  PollEvents *poll_events = NULL;
+  FollowMethod file_follow_mode = FM_UNKNOWN;
+
   if (self->options->follow_freq > 0)
     {
-      LogProtoFileReaderOptions *proto_opts = file_reader_options_get_log_proto_options(self->options);
-
-      if (proto_opts->multi_line_options.mode == MLM_NONE)
-        poll_events = poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
-      else
-        poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
-                                                      self->options->multi_line_timeout, self);
+      file_follow_mode = FM_POLL;
       msg_debug("File follow-mode is syslog-ng poll");
     }
 #if SYSLOG_NG_HAVE_INOTIFY
   else if (fd >= 0 && FALSE == self->should_poll_for_events)
     {
-      poll_events = notified_fd_events_new(fd);
+      file_follow_mode = FM_INOTIFY;
       msg_debug("File follow-mode is inotify from directory-monitor");
     }
 #endif
   else if (fd >= 0 && iv_can_poll_fd(fd))
     {
-      poll_events = poll_fd_events_new(fd);
+      file_follow_mode = FM_SYSTEM_POLL;
       msg_debug("File follow-mode is ivykis poll", evt_tag_str("poll_method", iv_poll_method_name()));
     }
   else
@@ -286,10 +281,47 @@ _construct_poll_events(FileReader *self, gint fd)
                 evt_tag_str("file_poll_method", iv_poll_method_name()),
                 evt_tag_str("filename", self->filename->str),
                 evt_tag_int("fd", fd));
-      return NULL;
     }
+  return file_follow_mode;
+}
 
-  if (_can_check_eof(self, fd))
+PollEvents *
+create_file_monitor(FileReader *self, FollowMethod file_follow_mode, gint fd)
+{
+  PollEvents *poll_events = NULL;
+
+  switch (file_follow_mode)
+    {
+    case FM_SYSTEM_POLL:
+      poll_events = poll_fd_events_new(fd);
+      break;
+
+#if SYSLOG_NG_HAVE_INOTIFY
+    case FM_INOTIFY:
+      poll_events = notified_fd_events_new(fd);
+      break;
+#endif
+
+    case FM_POLL:
+      if (file_reader_options_get_log_proto_options(self->options)->multi_line_options.mode == MLM_NONE)
+        poll_events = poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
+      else
+        poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
+                                                      self->options->multi_line_timeout, self);
+      break;
+
+    default:
+      break;
+    }
+  return poll_events;
+}
+
+static PollEvents *
+_construct_file_monitor(FileReader *self, FollowMethod file_follow_mode, gint fd)
+{
+  PollEvents *poll_events = create_file_monitor(self, file_follow_mode, fd);
+
+  if (poll_events && _can_check_eof(self, fd))
     poll_events_set_checker(poll_events, _reader_check_watches, self);
 
   return poll_events;
@@ -363,7 +395,14 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
   FileOpenerResult res = file_opener_open_fd(self->opener, self->filename->str, AFFILE_DIR_READ, &fd);
   gboolean file_opened =  res == FILE_OPENER_RESULT_SUCCESS;
 
-  if (!file_opened && self->options->follow_freq > 0)
+  FollowMethod file_follow_mode = _get_file_follow_mode(self, fd);
+  if (file_follow_mode == FM_UNKNOWN)
+    {
+      close(fd);
+      return FALSE;
+    }
+
+  if (!file_opened && file_follow_mode == FM_POLL)
     {
       msg_info("Follow-mode file source not found, deferring open",
                evt_tag_str("filename", self->filename->str));
@@ -374,9 +413,7 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
   if (file_opened || open_deferred)
     {
       LogProtoServer *proto;
-      PollEvents *poll_events;
-
-      poll_events = _construct_poll_events(self, fd);
+      PollEvents *poll_events = _construct_file_monitor(self, file_follow_mode, fd);
       if (!poll_events)
         {
           close(fd);
