@@ -55,7 +55,7 @@ struct _WildcardFileReader
 WildcardFileReader *
 wildcard_file_reader_new(const gchar *filename, FileReaderOptions *options,
                          FileOpener *opener, LogSrcDriver *owner,
-                         GlobalConfig *cfg, gboolean should_poll_for_events);
+                         GlobalConfig *cfg, gboolean monitor_can_notify_file_changes);
 
 void wildcard_file_reader_on_deleted_file_eof(WildcardFileReader *self, FileStateEventCallback cb, gpointer user_data);
 gboolean wildcard_file_reader_is_deleted(WildcardFileReader *self);

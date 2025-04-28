@@ -113,13 +113,12 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
   gchar *base_dir = g_path_get_dirname(full_path);
   DirectoryMonitor *monitor = g_hash_table_lookup(self->directory_monitors, base_dir);
   g_free(base_dir);
-  gboolean file_reader_should_poll_for_events = (FALSE == monitor->can_notify_file_changes);
   WildcardFileReader *reader = wildcard_file_reader_new(full_path,
                                                         &self->file_reader_options,
                                                         self->file_opener,
                                                         &self->super,
                                                         cfg,
-                                                        file_reader_should_poll_for_events);
+                                                        monitor->can_notify_file_changes);
   wildcard_file_reader_on_deleted_file_eof(reader, _remove_and_readd_file_reader, self);
 
   log_pipe_set_options(&reader->super.super, &self->super.super.super.options);

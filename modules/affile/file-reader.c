@@ -257,7 +257,7 @@ _get_file_follow_mode(FileReader *self, gint fd)
       msg_debug("File follow-mode is syslog-ng poll");
     }
 #if SYSLOG_NG_HAVE_INOTIFY
-  else if (fd >= 0 && FALSE == self->should_poll_for_events)
+  else if (fd >= 0 && self->monitor_can_notify_file_changes)
     {
       file_follow_mode = FM_INOTIFY;
       msg_debug("File follow-mode is inotify from directory-monitor");
@@ -575,7 +575,7 @@ file_reader_init_instance(FileReader *self, const gchar *filename,
   self->filename = g_string_new (filename);
   self->options = options;
   self->opener = opener;
-  self->should_poll_for_events = TRUE;
+  self->monitor_can_notify_file_changes = FALSE;
   self->owner = owner;
   self->super.expr_node = owner->super.super.expr_node;
 }
