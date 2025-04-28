@@ -91,7 +91,7 @@ poll_fd_events_new(gint fd)
   self->super.stop_watches = poll_fd_events_stop_watches;
   self->super.update_watches = poll_fd_events_update_watches;
   self->super.suspend_watches = poll_fd_events_suspend_watches;
-  self->super.type = PET_SYSTEM;
+  self->super.type = FM_SYSTEM_POLL;
   self->super.get_fd = _get_fd;
 
   IV_FD_INIT(&self->fd_watch);
