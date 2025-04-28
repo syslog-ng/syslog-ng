@@ -594,6 +594,22 @@ file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq
   options->follow_freq = follow_freq;
 }
 
+gboolean
+file_reader_options_set_follow_method(FileReaderOptions *options, const gchar *follow_method)
+{
+  FollowMethod new_method = file_monitor_factory_follow_method_from_string(follow_method);
+
+  if (new_method == FM_UNKNOWN)
+    {
+      msg_error("file-reader(): Invalid value for follow-method()",
+                evt_tag_str("follow-method", follow_method));
+      return FALSE;
+    }
+  options->follow_method = new_method;
+  return TRUE;
+
+}
+
 void
 file_reader_options_set_multi_line_timeout(FileReaderOptions *options, gint multi_line_timeout)
 {
