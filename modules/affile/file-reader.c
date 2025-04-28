@@ -30,10 +30,7 @@
 #include "transport/transport-pipe.h"
 #include "transport-prockmsg.h"
 #include "logproto/logproto-buffered-server.h"
-#include "notified-fd-events.h"
-#include "poll-fd-events.h"
-#include "poll-file-changes.h"
-#include "poll-multiline-file-changes.h"
+#include "file-monitor-factory.h"
 #include "ack-tracker/ack_tracker_factory.h"
 #include "stats/stats-cluster-key-builder.h"
 
@@ -283,37 +280,6 @@ _get_file_follow_mode(FileReader *self, gint fd)
                 evt_tag_int("fd", fd));
     }
   return file_follow_mode;
-}
-
-PollEvents *
-create_file_monitor(FileReader *self, FollowMethod file_follow_mode, gint fd)
-{
-  PollEvents *poll_events = NULL;
-
-  switch (file_follow_mode)
-    {
-    case FM_SYSTEM_POLL:
-      poll_events = poll_fd_events_new(fd);
-      break;
-
-#if SYSLOG_NG_HAVE_INOTIFY
-    case FM_INOTIFY:
-      poll_events = notified_fd_events_new(fd);
-      break;
-#endif
-
-    case FM_POLL:
-      if (file_reader_options_get_log_proto_options(self->options)->multi_line_options.mode == MLM_NONE)
-        poll_events = poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
-      else
-        poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
-                                                      self->options->multi_line_timeout, self);
-      break;
-
-    default:
-      break;
-    }
-  return poll_events;
 }
 
 static PollEvents *

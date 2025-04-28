@@ -26,4 +26,6 @@
 
 FollowMethod file_monitor_factory_follow_method_from_string(const gchar *method_name);
 
+PollEvents *create_file_monitor(FileReader *self, FollowMethod poll_event_type, gint fd);
+
 #endif /* MODULES_AFFILE_FILE_MONITOR_FACTORY_H_ */
