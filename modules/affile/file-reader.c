@@ -236,13 +236,11 @@ gboolean
 iv_can_poll_fd(gint fd)
 {
   struct iv_fd check_fd;
-  gboolean pollable;
-
   IV_FD_INIT(&check_fd);
   check_fd.fd = fd;
   check_fd.cookie = NULL;
 
-  pollable = (iv_fd_register_try(&check_fd) == 0);
+  gboolean pollable = (iv_fd_register_try(&check_fd) == 0);
   if (pollable)
     iv_fd_unregister(&check_fd);
   return pollable;
@@ -355,11 +353,9 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
 {
   FileReader *self = (FileReader *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  gint fd;
-  gboolean open_deferred = FALSE;
 
+  gint fd;
   FileOpenerResult res = file_opener_open_fd(self->opener, self->filename->str, AFFILE_DIR_READ, &fd);
-  gboolean file_opened =  res == FILE_OPENER_RESULT_SUCCESS;
 
   FollowMethod file_follow_mode = _get_file_follow_mode(self, fd);
   if (file_follow_mode == FM_UNKNOWN)
@@ -368,6 +364,8 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
       return FALSE;
     }
 
+  gboolean file_opened = (res == FILE_OPENER_RESULT_SUCCESS);
+  gboolean open_deferred = FALSE;
   if (!file_opened && file_follow_mode == FM_POLL)
     {
       msg_info("Follow-mode file source not found, deferring open",
@@ -378,18 +376,19 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
 
   if (file_opened || open_deferred)
     {
-      LogProtoServer *proto;
       PollEvents *poll_events = _construct_file_monitor(self, file_follow_mode, fd);
       if (!poll_events)
         {
           close(fd);
           return FALSE;
         }
-      proto = _construct_proto(self, fd);
 
+      LogProtoServer *proto = _construct_proto(self, fd);
       _setup_logreader(s, poll_events, proto);
+
       if (recover_state)
         _recover_state(s, cfg, proto);
+
       if (!log_pipe_init((LogPipe *) self->reader))
         {
           msg_error("Error initializing log_reader, closing fd",
