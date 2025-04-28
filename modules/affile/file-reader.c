@@ -235,8 +235,8 @@ _reader_check_watches(PollEvents *poll_events, gpointer user_data)
   return check_again;
 }
 
-static gboolean
-_is_fd_pollable(gint fd)
+gboolean
+iv_can_poll_fd(gint fd)
 {
   struct iv_fd check_fd;
   gboolean pollable;
@@ -273,7 +273,7 @@ _construct_poll_events(FileReader *self, gint fd)
       msg_debug("File follow-mode is inotify from directory-monitor");
     }
 #endif
-  else if (fd >= 0 && _is_fd_pollable(fd))
+  else if (fd >= 0 && iv_can_poll_fd(fd))
     {
       poll_events = poll_fd_events_new(fd);
       msg_debug("File follow-mode is ivykis poll", evt_tag_str("poll_method", iv_poll_method_name()));
