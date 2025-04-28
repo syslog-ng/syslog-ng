@@ -54,7 +54,7 @@ file_monitor_factory_follow_method_from_string(const gchar *method)
 }
 
 PollEvents *
-create_file_monitor(FileReader *self, FollowMethod file_follow_mode, gint fd)
+create_file_monitor_events(FileReader *self, FollowMethod file_follow_mode, gint fd)
 {
   PollEvents *poll_events = NULL;
 
@@ -79,6 +79,7 @@ create_file_monitor(FileReader *self, FollowMethod file_follow_mode, gint fd)
       break;
 
     default:
+      g_assert_not_reached();
       break;
     }
   return poll_events;
