@@ -21,7 +21,10 @@
  */
 
 #include "file-monitor-factory.h"
+#include "notified-fd-events.h"
 #include "poll-fd-events.h"
+#include "poll-file-changes.h"
+#include "poll-multiline-file-changes.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -48,4 +51,35 @@ file_monitor_factory_follow_method_from_string(const gchar *method)
     }
 #endif
   return FM_UNKNOWN;
+}
+
+PollEvents *
+create_file_monitor(FileReader *self, FollowMethod file_follow_mode, gint fd)
+{
+  PollEvents *poll_events = NULL;
+
+  switch (file_follow_mode)
+    {
+    case FM_SYSTEM_POLL:
+      poll_events = poll_fd_events_new(fd);
+      break;
+
+#if SYSLOG_NG_HAVE_INOTIFY
+    case FM_INOTIFY:
+      poll_events = notified_fd_events_new(fd);
+      break;
+#endif
+
+    case FM_POLL:
+      if (file_reader_options_get_log_proto_options(self->options)->multi_line_options.mode == MLM_NONE)
+        poll_events = poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
+      else
+        poll_events = poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
+                                                      self->options->multi_line_timeout, self);
+      break;
+
+    default:
+      break;
+    }
+  return poll_events;
 }
