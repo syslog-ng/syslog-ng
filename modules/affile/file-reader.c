@@ -472,7 +472,6 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
       return self->owner->super.optional;
     }
   return TRUE;
-
 }
 
 static void
@@ -674,7 +673,6 @@ file_reader_options_set_follow_method(FileReaderOptions *options, const gchar *f
     }
   options->follow_method = new_method;
   return TRUE;
-
 }
 
 void
