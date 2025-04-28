@@ -1,4 +1,4 @@
-set (AFFILE_SOURCES
+set(AFFILE_SOURCES
   "affile-dest.h"
   "affile-dest-internal-queue-filter.h"
   "affile-parser.h"
@@ -10,6 +10,7 @@ set (AFFILE_SOURCES
   "directory-monitor-poll.h"
   "file-opener.h"
   "file-reader.h"
+  "file-monitor-factory.h"
   "file-specializations.h"
   "logproto-file-reader.h"
   "logproto-file-writer.h"
@@ -31,6 +32,7 @@ set (AFFILE_SOURCES
   "directory-monitor-factory.c"
   "directory-monitor-content-comparator.c"
   "directory-monitor-poll.c"
+  "file-monitor-factory.c"
   "file-opener.c"
   "file-reader.c"
   "linux-kmsg.c"
