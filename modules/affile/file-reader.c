@@ -625,6 +625,7 @@ file_reader_options_defaults(FileReaderOptions *options)
   log_proto_file_reader_options_defaults(file_reader_options_get_log_proto_options(options));
   options->reader_options.parse_options.flags |= LP_LOCAL;
   options->restore_state = FALSE;
+  options->follow_method = FM_LEGACY;
 }
 
 static gboolean

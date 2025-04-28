@@ -28,7 +28,7 @@
 
 typedef enum
 {
-  FM_AUTO,
+  FM_LEGACY,
   FM_POLL,
   FM_SYSTEM_POLL,
   FM_INOTIFY,
