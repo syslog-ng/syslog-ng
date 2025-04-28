@@ -283,7 +283,7 @@ _get_file_follow_mode(FileReader *self, gint fd)
 static PollEvents *
 _construct_file_monitor(FileReader *self, FollowMethod file_follow_mode, gint fd)
 {
-  PollEvents *poll_events = create_file_monitor(self, file_follow_mode, fd);
+  PollEvents *poll_events = create_file_monitor_events(self, file_follow_mode, fd);
 
   if (poll_events && _can_check_eof(self, fd))
     poll_events_set_checker(poll_events, _reader_check_watches, self);
