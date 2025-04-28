@@ -36,7 +36,7 @@ notified_fd_events_new(gint fd)
 {
   PollFdEvents *self = (PollFdEvents *) poll_fd_events_new(fd);
 
-  self->super.type = PET_NOTIFIED;
+  self->super.type = FM_INOTIFY;
   self->super.start_watches = NULL;
   self->super.stop_watches = NULL;
   self->super.suspend_watches = NULL;
