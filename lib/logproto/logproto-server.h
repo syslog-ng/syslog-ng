@@ -149,7 +149,7 @@ log_proto_server_poll_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeo
   LogProtoPrepareAction result = s->poll_prepare(s, cond, timeout);
 
   if (result == LPPA_POLL_IO && *timeout < 0)
-    *timeout = s->options->idle_timeout;
+    *timeout = s->options->super.idle_timeout;
   return result;
 }
 
