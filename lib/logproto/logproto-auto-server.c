@@ -92,7 +92,7 @@ log_proto_auto_handshake(LogProtoServer *s, gboolean *handshake_finished, LogPro
 }
 
 LogProtoServer *
-log_proto_auto_server_new(LogTransport *transport, const LogProtoServerOptions *options)
+log_proto_auto_server_new(LogTransport *transport, const LogProtoServerOptionsStorage *options)
 {
   LogProtoAutoServer *self = g_new0(LogProtoAutoServer, 1);
 
