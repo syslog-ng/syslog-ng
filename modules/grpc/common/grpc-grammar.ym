@@ -67,7 +67,32 @@ GrpcClientCredentialsBuilderW *last_grpc_client_credentials_builder;
 %token KW_SCHEMA
 %token KW_PROTOBUF_SCHEMA
 
+%token KW_RESPONSE_ACTION
+%token KW_DISCONNECT
+%token KW_DROP
+%token KW_RETRY
+%token KW_SUCCESS
+%token KW_OK
+%token KW_UNAVAILABLE
+%token KW_CANCELLED
+%token KW_DEADLINE_EXCEEDED
+%token KW_ABORTED
+%token KW_OUT_OF_RANGE
+%token KW_DATA_LOSS
+%token KW_UNKNOWN
+%token KW_INVALID_ARGUMENT
+%token KW_NOT_FOUND
+%token KW_ALREADY_EXISTS
+%token KW_PERMISSION_DENIED
+%token KW_UNAUTHENTICATED
+%token KW_FAILED_PRECONDITION
+%token KW_UNIMPLEMENTED
+%token KW_INTERNAL
+%token KW_RESOURCE_EXHAUSTED
+
 %type <num> grpc_server_credentials_builder_tls_peer_verify
+%type <num> grpc_dest_response
+%type <num> grpc_dest_response_action
 
 /* END_DECLS */
 
@@ -103,6 +128,7 @@ grpc_dest_general_option
   | KW_KEEP_ALIVE '(' grpc_keepalive_options ')'
   | KW_CHANNEL_ARGS '(' grpc_dest_channel_args ')'
   | KW_HEADERS '(' grpc_dest_headers ')'
+  | KW_RESPONSE_ACTION '(' grpc_dest_response_action_items ')'
   | threaded_dest_driver_general_option
   | threaded_dest_driver_batch_option
   | threaded_dest_driver_workers_option
@@ -167,6 +193,42 @@ grpc_dest_header
         free($1);
         log_template_unref($3);
       }
+  ;
+
+grpc_dest_response_action_items
+  : grpc_dest_response_action_item grpc_dest_response_action_items
+  |
+  ;
+
+grpc_dest_response_action_item
+  : grpc_dest_response LL_ARROW grpc_dest_response_action { grpc_dd_set_response_action(last_driver, $1, $3); }
+  ;
+
+grpc_dest_response
+  : KW_OK { $$ = GDR_OK; }
+  | KW_UNAVAILABLE { $$ = GDR_UNAVAILABLE; }
+  | KW_CANCELLED { $$ = GDR_CANCELLED; }
+  | KW_DEADLINE_EXCEEDED { $$ = GDR_DEADLINE_EXCEEDED; }
+  | KW_ABORTED { $$ = GDR_ABORTED; }
+  | KW_OUT_OF_RANGE { $$ = GDR_OUT_OF_RANGE; }
+  | KW_DATA_LOSS { $$ = GDR_DATA_LOSS; }
+  | KW_UNKNOWN { $$ = GDR_UNKNOWN; }
+  | KW_INVALID_ARGUMENT { $$ = GDR_INVALID_ARGUMENT; }
+  | KW_NOT_FOUND { $$ = GDR_NOT_FOUND; }
+  | KW_ALREADY_EXISTS { $$ = GDR_ALREADY_EXISTS; }
+  | KW_PERMISSION_DENIED { $$ = GDR_PERMISSION_DENIED; }
+  | KW_UNAUTHENTICATED { $$ = GDR_UNAUTHENTICATED; }
+  | KW_FAILED_PRECONDITION { $$ = GDR_FAILED_PRECONDITION; }
+  | KW_UNIMPLEMENTED { $$ = GDR_UNIMPLEMENTED; }
+  | KW_INTERNAL { $$ = GDR_INTERNAL; }
+  | KW_RESOURCE_EXHAUSTED { $$ = GDR_RESOURCE_EXHAUSTED; }
+  ;
+
+grpc_dest_response_action
+  : KW_DISCONNECT { $$ = GDRA_DISCONNECT; }
+  | KW_DROP { $$ = GDRA_DROP; }
+  | KW_RETRY { $$ = GDRA_RETRY; }
+  | KW_SUCCESS { $$ = GDRA_SUCCESS; }
   ;
 
 grpc_server_credentials_builder_option

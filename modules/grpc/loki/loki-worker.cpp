@@ -236,6 +236,13 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
   ::grpc::Status status = this->stub->Push(client_context.get(), this->current_batch, &response);
   this->get_owner()->metrics.insert_grpc_request_stats(status);
 
+  if (this->get_owner()->handle_response(status, &result))
+    {
+      if (result == LTR_SUCCESS)
+        goto success;
+      goto error;
+    }
+
   if (!status.ok())
     {
       msg_error("Error sending Loki batch", evt_tag_str("error", status.error_message().c_str()),
@@ -243,16 +250,17 @@ DestinationWorker::flush(LogThreadedFlushMode mode)
                 evt_tag_str("details", status.error_details().c_str()),
                 log_pipe_location_tag((LogPipe *) this->super->super.owner));
       result = LTR_ERROR;
-      goto exit;
+      goto error;
     }
 
+success:
   log_threaded_dest_worker_written_bytes_add(&this->super->super, this->current_batch_bytes);
   log_threaded_dest_driver_insert_batch_length_stats(this->super->super.owner, this->current_batch_bytes);
 
   msg_debug("Loki batch delivered", log_pipe_location_tag((LogPipe *) this->super->super.owner));
   result = LTR_SUCCESS;
 
-exit:
+error:
   this->prepare_batch();
   return result;
 }

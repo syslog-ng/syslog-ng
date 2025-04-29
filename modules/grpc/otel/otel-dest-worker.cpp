@@ -418,7 +418,10 @@ DestWorker::flush_log_records()
   ::grpc::Status status = logs_service_stub->Export(client_context.get(), logs_service_request,
                                                     &logs_service_response);
   owner.metrics.insert_grpc_request_stats(status);
-  LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
+
+  LogThreadedResult result;
+  if (!owner.handle_response(status, &result))
+    result = _map_grpc_status_to_log_threaded_result(status);
 
   if (result == LTR_SUCCESS)
     {
@@ -436,7 +439,10 @@ DestWorker::flush_metrics()
   ::grpc::Status status = metrics_service_stub->Export(client_context.get(), metrics_service_request,
                                                        &metrics_service_response);
   owner.metrics.insert_grpc_request_stats(status);
-  LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
+
+  LogThreadedResult result;
+  if (!owner.handle_response(status, &result))
+    result = _map_grpc_status_to_log_threaded_result(status);
 
   if (result == LTR_SUCCESS)
     {
@@ -454,7 +460,10 @@ DestWorker::flush_spans()
   ::grpc::Status status = trace_service_stub->Export(client_context.get(), trace_service_request,
                                                      &trace_service_response);
   owner.metrics.insert_grpc_request_stats(status);
-  LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
+
+  LogThreadedResult result;
+  if (!owner.handle_response(status, &result))
+    result = _map_grpc_status_to_log_threaded_result(status);
 
   if (result == LTR_SUCCESS)
     {

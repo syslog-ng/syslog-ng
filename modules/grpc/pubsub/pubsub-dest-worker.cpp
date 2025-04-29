@@ -210,7 +210,11 @@ DestWorker::flush(LogThreadedFlushMode mode)
   ::google::pubsub::v1::PublishResponse response;
 
   ::grpc::Status status = this->stub->Publish(this->client_context.get(), this->request, &response);
-  LogThreadedResult result = _map_grpc_status_to_log_threaded_result(status);
+
+  LogThreadedResult result;
+  if (!owner.handle_response(status, &result))
+    result = _map_grpc_status_to_log_threaded_result(status);
+
   if (result != LTR_SUCCESS)
     goto exit;
 

@@ -54,6 +54,28 @@
   { "optional_trusted",          KW_OPTIONAL_TRUSTED }, \
   { "required_untrusted",        KW_REQUIRED_UNTRUSTED }, \
   { "required_trusted",          KW_REQUIRED_TRUSTED }, \
-  { "concurrent_requests",       KW_CONCURRENT_REQUESTS }
+  { "concurrent_requests",       KW_CONCURRENT_REQUESTS }, \
+  { "response_action",           KW_RESPONSE_ACTION }, \
+  { "disconnect",                KW_DISCONNECT }, \
+  { "drop",                      KW_DROP }, \
+  { "retry",                     KW_RETRY }, \
+  { "success",                   KW_SUCCESS }, \
+  { "ok",                        KW_OK }, \
+  { "unavailable",               KW_UNAVAILABLE }, \
+  { "cancelled",                 KW_CANCELLED }, \
+  { "deadline_exceeded",         KW_DEADLINE_EXCEEDED }, \
+  { "aborted",                   KW_ABORTED }, \
+  { "out_of_range",              KW_OUT_OF_RANGE }, \
+  { "data_loss",                 KW_DATA_LOSS }, \
+  { "unknown",                   KW_UNKNOWN }, \
+  { "invalid_argument",          KW_INVALID_ARGUMENT }, \
+  { "not_found",                 KW_NOT_FOUND }, \
+  { "already_exists",            KW_ALREADY_EXISTS }, \
+  { "permission_denied",         KW_PERMISSION_DENIED }, \
+  { "unauthenticated",           KW_UNAUTHENTICATED }, \
+  { "failed_precondition",       KW_FAILED_PRECONDITION }, \
+  { "unimplemented",             KW_UNIMPLEMENTED }, \
+  { "internal",                  KW_INTERNAL }, \
+  { "resource_exhausted",        KW_RESOURCE_EXHAUSTED }
 
 #endif

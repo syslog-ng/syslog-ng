@@ -40,6 +40,8 @@
 #include <list>
 #include <sstream>
 
+#define GRPC_DEST_RESPONSE_ACTIONS_ARRAY_LEN (64)
+
 namespace syslogng {
 namespace grpc {
 
@@ -54,6 +56,7 @@ public:
   virtual const char *format_stats_key(StatsClusterKeyBuilder *kb) = 0;
   virtual const char *generate_persist_name() = 0;
   virtual LogThreadedDestWorker *construct_worker(int worker_index) = 0;
+  virtual bool handle_response(const ::grpc::Status &status, LogThreadedResult *ltr);
 
   void set_url(const char *u)
   {
@@ -130,6 +133,11 @@ public:
     return true;
   }
 
+  void set_response_action(const ::grpc::StatusCode status_code, GrpcDestResponseAction action)
+  {
+    this->response_actions[status_code] = action;
+  }
+
   void extend_worker_partition_key(const std::string &extension)
   {
     if (this->worker_partition_key.rdbuf()->in_avail())
@@ -185,6 +193,8 @@ protected:
 
   std::list<NameValueTemplatePair> headers;
   bool dynamic_headers_enabled;
+
+  std::array<GrpcDestResponseAction, GRPC_DEST_RESPONSE_ACTIONS_ARRAY_LEN> response_actions;
 
   LogTemplateOptions template_options;
 
