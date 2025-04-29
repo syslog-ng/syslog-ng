@@ -100,7 +100,7 @@ _send_response(LogProtoHTTPServer *self, const gchar *data, gsize data_len, gboo
 
   gssize sent_bytes = -1;
   if (response && response->len)
-    sent_bytes = self->super.super.super.transport->write(self->super.super.super.transport, response->str, response->len);
+    sent_bytes = log_transport_stack_write(&self->super.super.super.transport_stack, response->str, response->len);
 
   if (response)
     g_string_free(response, TRUE);

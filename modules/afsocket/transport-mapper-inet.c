@@ -441,6 +441,7 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_proto = IPPROTO_TCP;
       self->allow_tls_configuration = TRUE;
       self->super.transport_name = g_strdup_printf("bsdsyslog+%s", self->super.transport);
+    }
   else if (strcasecmp(transport, "http") == 0)
     {
       self->super.logproto = "http";
