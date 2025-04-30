@@ -107,89 +107,89 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
 %token KW_STDIN
 %token KW_STDOUT
 
-%type	<ptr> source_affile
-%type	<ptr> source_affile_params
-%type	<ptr> source_afpipe_params
-%type	<ptr> source_stdin_params
-%type   <ptr> dest_affile
-%type	<ptr> dest_affile_params
-%type   <ptr> dest_afpipe_params
-%type   <ptr> dest_stdout_params
+%type  <ptr> source_affile
+%type  <ptr> source_affile_params
+%type  <ptr> source_afpipe_params
+%type  <ptr> source_stdin_params
+%type  <ptr> dest_affile
+%type  <ptr> dest_affile_params
+%type  <ptr> dest_afpipe_params
+%type  <ptr> dest_stdout_params
 
 %%
 
 start
-        : LL_CONTEXT_SOURCE source_affile                        { YYACCEPT; }
-	| LL_CONTEXT_DESTINATION dest_affile			 { YYACCEPT; }
-        ;
+  : LL_CONTEXT_SOURCE source_affile { YYACCEPT; }
+  | LL_CONTEXT_DESTINATION dest_affile { YYACCEPT; }
+  ;
 
 source_affile
-	: KW_FILE '(' _inner_src_context_push source_affile_params _inner_src_context_pop ')'	{ $$ = $4; }
-	| KW_PIPE '(' _inner_src_context_push source_afpipe_params _inner_src_context_pop ')'	{ $$ = $4; }
-	| KW_STDIN '(' _inner_src_context_push source_stdin_params _inner_src_context_pop ')'	{ $$ = $4; }
-	| KW_WILDCARD_FILE
-	{
-	  WildcardSourceDriver *sd = (WildcardSourceDriver *) wildcard_sd_new(configuration);;
-	  *instance = &sd->super.super;
-	  affile_grammar_set_wildcard_file_source_driver(sd);
-	} '(' _inner_src_context_push source_wildcard_params _inner_src_context_pop ')' { $$ = last_driver; }
-	;
+  : KW_FILE '(' _inner_src_context_push source_affile_params _inner_src_context_pop ')'  { $$ = $4; }
+  | KW_PIPE '(' _inner_src_context_push source_afpipe_params _inner_src_context_pop ')'  { $$ = $4; }
+  | KW_STDIN '(' _inner_src_context_push source_stdin_params _inner_src_context_pop ')'  { $$ = $4; }
+  | KW_WILDCARD_FILE
+  {
+    WildcardSourceDriver *sd = (WildcardSourceDriver *) wildcard_sd_new(configuration);;
+    *instance = &sd->super.super;
+    affile_grammar_set_wildcard_file_source_driver(sd);
+  } '(' _inner_src_context_push source_wildcard_params _inner_src_context_pop ')' { $$ = last_driver; }
+  ;
 
 source_wildcard_params
-    : source_wildcard_options
-    ;
+  : source_wildcard_options
+  ;
 
 source_wildcard_options
-    : source_wildcard_option source_wildcard_options
-    |
-    ;
+  : source_wildcard_option source_wildcard_options
+  |
+  ;
 
 source_stdin_params
-	:
-	  {
-	    AFFileSourceDriver *sd = (AFFileSourceDriver *) stdin_sd_new(configuration);
-	    *instance = &sd->super.super;
-	    affile_grammar_set_file_source_driver(sd);
-	  }
-          source_affile_options                 { $$ = last_driver; }
-	;
+  :
+    {
+      AFFileSourceDriver *sd = (AFFileSourceDriver *) stdin_sd_new(configuration);
+      *instance = &sd->super.super;
+      affile_grammar_set_file_source_driver(sd);
+    }
+    source_affile_options { $$ = last_driver; }
+  ;
 
 source_affile_params
-	: string
-	  {
-	    if (!affile_is_legacy_wildcard_source($1))
-	      {
-	        AFFileSourceDriver *sd = (AFFileSourceDriver *) affile_sd_new($1, configuration);
-	        *instance = &sd->super.super;
-	        affile_grammar_set_file_source_driver(sd);
-	      }
-	    else
-	      {
-	        WildcardSourceDriver *sd = (WildcardSourceDriver *) wildcard_sd_legacy_new($1, configuration);
-	        last_legacy_wildcard_src_driver = sd;
-	        *instance = &sd->super.super;
-	        affile_grammar_set_wildcard_file_source_driver(sd);
-	      }
-	  }
-          source_affile_options                 { $$ = last_driver; last_legacy_wildcard_src_driver = NULL; free($1); }
-        ;
+  : string
+    {
+      if (!affile_is_legacy_wildcard_source($1))
+        {
+          AFFileSourceDriver *sd = (AFFileSourceDriver *) affile_sd_new($1, configuration);
+          *instance = &sd->super.super;
+          affile_grammar_set_file_source_driver(sd);
+        }
+      else
+        {
+          WildcardSourceDriver *sd = (WildcardSourceDriver *) wildcard_sd_legacy_new($1, configuration);
+          last_legacy_wildcard_src_driver = sd;
+          *instance = &sd->super.super;
+          affile_grammar_set_wildcard_file_source_driver(sd);
+        }
+    }
+    source_affile_options { $$ = last_driver; last_legacy_wildcard_src_driver = NULL; free($1); }
+  ;
 
 source_affile_options
-        : source_affile_option source_affile_options
-        | source_legacy_wildcard_option source_affile_options
-        |
-        ;
+  : source_affile_option source_affile_options
+  | source_legacy_wildcard_option source_affile_options
+  |
+  ;
 
 source_affile_option
-	: KW_FOLLOW_FREQ '(' nonnegative_float ')' { file_reader_options_set_follow_freq(last_file_reader_options, (gint) ($3 * 1000)); }
-	| KW_FOLLOW_METHOD '(' string ')' { CHECK_ERROR(file_reader_options_set_follow_method(last_file_reader_options, $3), @3, "Invalid follow-method"); free($3); }
-	| KW_PAD_SIZE '(' nonnegative_integer ')' { last_log_proto_options->pad_size = $3; }
-	| multi_line_option
-	| multi_line_timeout
-	| file_perm_option
-        | source_reader_option
-	| source_driver_option
-        ;
+  : KW_FOLLOW_FREQ '(' nonnegative_float ')' { file_reader_options_set_follow_freq(last_file_reader_options, (gint) ($3 * 1000)); }
+  | KW_FOLLOW_METHOD '(' string ')' { CHECK_ERROR(file_reader_options_set_follow_method(last_file_reader_options, $3), @3, "Invalid follow-method"); free($3); }
+  | KW_PAD_SIZE '(' nonnegative_integer ')' { last_log_proto_options->pad_size = $3; }
+  | multi_line_option
+  | multi_line_timeout
+  | file_perm_option
+  | source_reader_option
+  | source_driver_option
+  ;
 
 source_wildcard_option
   : KW_BASE_DIR '(' string ')' { wildcard_sd_set_base_dir(last_driver, $3); free($3); }
@@ -198,135 +198,136 @@ source_wildcard_option
       wildcard_sd_set_filename_pattern(last_driver, $3);
       free($3);
     }
-	| KW_RECURSIVE '(' yesno ')' { wildcard_sd_set_recursive(last_driver, $3); }
-	| KW_MAX_FILES '(' positive_integer ')' { wildcard_sd_set_max_files(last_driver, $3); }
-	| KW_MONITOR_METHOD '(' string ')' { CHECK_ERROR(wildcard_sd_set_monitor_method(last_driver, $3), @3, "Invalid monitor-method"); free($3); }
-	| KW_MONITOR_FREQ '(' nonnegative_float ')' { wildcard_sd_set_monitor_freq(last_driver, (gint) ($3 * 1000)); }
-	| source_affile_option
-	;
+  | KW_RECURSIVE '(' yesno ')' { wildcard_sd_set_recursive(last_driver, $3); }
+  | KW_MAX_FILES '(' positive_integer ')' { wildcard_sd_set_max_files(last_driver, $3); }
+  | KW_MONITOR_METHOD '(' string ')' { CHECK_ERROR(wildcard_sd_set_monitor_method(last_driver, $3), @3, "Invalid monitor-method"); free($3); }
+  | KW_MONITOR_FREQ '(' nonnegative_float ')' { wildcard_sd_set_monitor_freq(last_driver, (gint) ($3 * 1000)); }
+  | source_affile_option
+  ;
 
 source_legacy_wildcard_option
-	: KW_FORCE_DIRECTORY_POLLING '(' yesno ')'
-	  {
-	    CHECK_ERROR(last_legacy_wildcard_src_driver, @1, "Invalid option, force-directory-polling() can only be used in legacy wildcard file sources");
-	    wildcard_sd_set_monitor_method(&last_legacy_wildcard_src_driver->super.super, $3 ? "poll" : "auto");
-	  }
-	| KW_RECURSIVE '(' yesno ')'
-	  {
-	    CHECK_ERROR(last_legacy_wildcard_src_driver, @1, "Invalid option, recursive() can only be used in legacy wildcard file sources");
-	    wildcard_sd_set_recursive(&last_legacy_wildcard_src_driver->super.super, $3);
-	  }
-	;
+  : KW_FORCE_DIRECTORY_POLLING '(' yesno ')'
+    {
+      CHECK_ERROR(last_legacy_wildcard_src_driver, @1, "Invalid option, force-directory-polling() can only be used in legacy wildcard file sources");
+      wildcard_sd_set_monitor_method(&last_legacy_wildcard_src_driver->super.super, $3 ? "poll" : "auto");
+    }
+  | KW_RECURSIVE '(' yesno ')'
+    {
+      CHECK_ERROR(last_legacy_wildcard_src_driver, @1, "Invalid option, recursive() can only be used in legacy wildcard file sources");
+      wildcard_sd_set_recursive(&last_legacy_wildcard_src_driver->super.super, $3);
+    }
+  ;
 
 source_afpipe_params
-	: string
-	  {
-	    AFFileSourceDriver *sd = (AFFileSourceDriver *) pipe_sd_new($1, configuration);
-	    *instance = &sd->super.super;
-	    affile_grammar_set_file_source_driver(sd);
-	  }
-	  source_afpipe_options				{ $$ = last_driver; free($1); }
-	;
+  : string
+    {
+      AFFileSourceDriver *sd = (AFFileSourceDriver *) pipe_sd_new($1, configuration);
+      *instance = &sd->super.super;
+      affile_grammar_set_file_source_driver(sd);
+    }
+    source_afpipe_options { $$ = last_driver; free($1); }
+  ;
 
 source_afpipe_options
-        : source_afpipe_option source_afpipe_options
-        |
-        ;
+  : source_afpipe_option source_afpipe_options
+  |
+  ;
 
 source_afpipe_option
-	: KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
-	| KW_PAD_SIZE '(' nonnegative_integer ')'	{ last_log_proto_options->pad_size = $3; }
-	| KW_CREATE_DIRS '(' yesno ')'			{ pipe_sd_set_create_dirs(last_driver, $3); }
-	| multi_line_option
-	| file_perm_option
-	| source_reader_option
-	| source_driver_option
-	;
+  : KW_OPTIONAL '(' yesno ')' { last_driver->optional = $3; }
+  | KW_PAD_SIZE '(' nonnegative_integer ')'  { last_log_proto_options->pad_size = $3; }
+  | KW_CREATE_DIRS '(' yesno ')' { pipe_sd_set_create_dirs(last_driver, $3); }
+  | multi_line_option
+  | file_perm_option
+  | source_reader_option
+  | source_driver_option
+  ;
 
 multi_line_timeout
-	: KW_MULTI_LINE_TIMEOUT '(' nonnegative_float ')'
-	  {
-		file_reader_options_set_multi_line_timeout(last_file_reader_options, (gint) ($3 * 1000));
-	  }
-	;
+  : KW_MULTI_LINE_TIMEOUT '(' nonnegative_float ')'
+    {
+    file_reader_options_set_multi_line_timeout(last_file_reader_options, (gint) ($3 * 1000));
+    }
+  ;
 
 dest_affile
-	: KW_FILE '(' _inner_dest_context_push dest_affile_params _inner_dest_context_pop ')'	{ $$ = $4; }
-	| KW_PIPE '(' _inner_dest_context_push dest_afpipe_params _inner_dest_context_pop ')'   { $$ = $4; }
-	| KW_STDOUT '(' _inner_dest_context_push dest_stdout_params _inner_dest_context_pop ')'	{ $$ = $4; }
-	;
+  : KW_FILE '(' _inner_dest_context_push dest_affile_params _inner_dest_context_pop ')'  { $$ = $4; }
+  | KW_PIPE '(' _inner_dest_context_push dest_afpipe_params _inner_dest_context_pop ')' { $$ = $4; }
+  | KW_STDOUT '(' _inner_dest_context_push dest_stdout_params _inner_dest_context_pop ')'  { $$ = $4; }
+  ;
 
 dest_affile_params
-	: template_content
-	  {
-	    last_driver = *instance = affile_dd_new($1, configuration);
-	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
-	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
-	  }
-	  dest_affile_options                           { $$ = last_driver; }
-	;
+  : template_content
+    {
+      last_driver = *instance = affile_dd_new($1, configuration);
+      last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
+      last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
+    }
+    dest_affile_options { $$ = last_driver; }
+  ;
 
 dest_affile_options
-	: dest_affile_option dest_affile_options
-        |
-	;
+  : dest_affile_option dest_affile_options
+  |
+  ;
 
 dest_affile_option
-	: dest_writer_option
-	| dest_driver_option
-        | file_perm_option
-	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
-	| KW_OVERWRITE_IF_OLDER '(' nonnegative_integer ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
-	| KW_SYMLINK_AS '(' string ')'		{ affile_dd_set_symlink_as(last_driver, $3); }
-	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
-        | dest_affile_common_option
-	;
+  : dest_writer_option
+  | dest_driver_option
+  | file_perm_option
+  | KW_OPTIONAL '(' yesno ')' { last_driver->optional = $3; }
+  | KW_OVERWRITE_IF_OLDER '(' nonnegative_integer ')'  { affile_dd_set_overwrite_if_older(last_driver, $3); }
+  | KW_SYMLINK_AS '(' string ')' { affile_dd_set_symlink_as(last_driver, $3); }
+  | KW_FSYNC '(' yesno ')' { affile_dd_set_fsync(last_driver, $3); }
+  | dest_affile_common_option
+  ;
 
 dest_afpipe_params
-	: template_content
-	  {
-	    last_driver = *instance = pipe_dd_new($1, configuration);
-	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
-	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
-	  }
-	  dest_afpipe_options                   { $$ = last_driver; }
-	;
+  : template_content
+    {
+      last_driver = *instance = pipe_dd_new($1, configuration);
+      last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
+      last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
+    }
+    dest_afpipe_options { $$ = last_driver; }
+  ;
 
 dest_afpipe_options
-	: dest_afpipe_option dest_afpipe_options
-	|
-	;
+  : dest_afpipe_option dest_afpipe_options
+  |
+  ;
 
 dest_afpipe_option
-	: dest_writer_option
-	| dest_driver_option
-	| file_perm_option
-        | dest_affile_common_option
-	;
+  : dest_writer_option
+  | dest_driver_option
+  | file_perm_option
+  | dest_affile_common_option
+  ;
 
 dest_affile_common_option
-	: KW_TIME_REAP '(' nonnegative_integer ')'		{ affile_dd_set_time_reap(last_driver, $3); }
-	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs(last_driver, $3); }
-        ;
+  : KW_TIME_REAP '(' nonnegative_integer ')' { affile_dd_set_time_reap(last_driver, $3); }
+  | KW_CREATE_DIRS '(' yesno ')' { affile_dd_set_create_dirs(last_driver, $3); }
+  ;
 
 dest_stdout_params
-	:
-          {
-            last_driver = *instance = stdout_dd_new(configuration);
-            last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
-            last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
-          } dest_stdout_options
-	;
+  :
+    {
+      last_driver = *instance = stdout_dd_new(configuration);
+      last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
+      last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
+    }
+    dest_stdout_options
+  ;
 
 dest_stdout_options
-        : dest_stdout_option dest_stdout_options
-        |
-        ;
+  : dest_stdout_option dest_stdout_options
+  |
+  ;
 
 dest_stdout_option
-	: dest_writer_option
-	| dest_driver_option
-        ;
+  : dest_writer_option
+  | dest_driver_option
+  ;
 
 /* INCLUDE_RULES */
 
