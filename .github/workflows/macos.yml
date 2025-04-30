@@ -75,7 +75,7 @@ jobs:
           # correctly the c++14 and c++17 support of clang currently, get the latest one from the git repo
           if [ ${{ matrix.build-tool }} = autotools ] && [ $CC = clang ]; then
             mkdir -p ./m4 || true
-            wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://git.savannah.gnu.org/gitweb/\?p\=autoconf-archive.git\;a\=blob_plain\;f\=m4/ax_cxx_compile_stdcxx.m4
+            wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://raw.githubusercontent.com/autoconf-archive/autoconf-archive/master/m4/ax_cxx_compile_stdcxx.m4
           fi
           LDFLAGS="-L${HOMEBREW_PREFIX}/lib -L${MACPORTS_PREFIX}/lib"
           CONFIGURE_FLAGS="

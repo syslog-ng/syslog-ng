@@ -511,7 +511,7 @@ AC_PROG_CXX([$CPP_COMPILER])
 
 # NOTE: on macOS brew has an old autoconf-archive -> ax_cxx_compile_stdcxx.m4 version, which cannot detect
 #       correctly the c++14 and c++17 support of clang currently, you might want to get the latest one from the git repo
-#       wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://git.savannah.gnu.org/gitweb/\?p\=autoconf-archive.git\;a\=blob_plain\;f\=m4/ax_cxx_compile_stdcxx.m4
+#       wget -O ./m4/ax_cxx_compile_stdcxx.m4 https://raw.githubusercontent.com/autoconf-archive/autoconf-archive/master/m4/ax_cxx_compile_stdcxx.m4
 if test "x$enable_cpp" = "xyes"; then
         AX_CXX_COMPILE_STDCXX(14,, mandatory)
         AX_CXX_COMPILE_STDCXX(17,, optional)
