@@ -340,7 +340,7 @@ log_writer_io_error(gpointer s)
 }
 
 static void
-log_writer_io_check_eof(gpointer s)
+log_writer_io_close_on_input(gpointer s)
 {
   LogWriter *self = (LogWriter *) s;
 
@@ -368,8 +368,8 @@ log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
     {
       if (cond & G_IO_IN)
         iv_fd_set_handler_in(&self->fd_watch, log_writer_io_handle_in);
-      else if (self->flags & LW_DETECT_EOF)
-        iv_fd_set_handler_in(&self->fd_watch, log_writer_io_check_eof);
+      else if (self->flags & LW_CLOSE_ON_INPUT)
+        iv_fd_set_handler_in(&self->fd_watch, log_writer_io_close_on_input);
       else
         iv_fd_set_handler_in(&self->fd_watch, NULL);
 

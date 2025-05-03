@@ -301,12 +301,12 @@ _disable_connection_closure_on_input(LogWriter *writer)
 {
   /* SSL is duplex, so we can certainly expect input from the server, which
    * would cause the LogWriter to close this connection.  In a better world
-   * LW_DETECT_EOF would be implemented by the LogProto class and would
+   * LW_CLOSE_ON_INPUT would be implemented by the LogProto class and would
    * inherently work w/o mockery in LogWriter.  Defer that change for now
    * (and possibly for all eternity :)
    */
 
-  log_writer_set_flags(writer, log_writer_get_flags(writer) & ~LW_DETECT_EOF);
+  log_writer_set_flags(writer, log_writer_get_flags(writer) & ~LW_CLOSE_ON_INPUT);
 }
 
 static LogWriter *
