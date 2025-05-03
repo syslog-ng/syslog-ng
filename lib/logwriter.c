@@ -118,7 +118,7 @@ struct _LogWriter
   MlBatchedTimer mark_timer;
   struct iv_timer reopen_timer;
   struct iv_timer idle_timer;
-  gboolean work_result;
+  LogProtoStatus work_result;
   gint pollable_state;
   LogProtoClient *proto, *pending_proto;
   guint watches_running:1, suspended:1, waiting_for_throttle:1;
@@ -150,8 +150,8 @@ struct _LogWriter
  *
  **/
 
-static gboolean log_writer_process_out(LogWriter *self);
-static gboolean log_writer_process_in(LogWriter *self);
+static LogProtoStatus log_writer_process_out(LogWriter *self);
+static LogProtoStatus log_writer_process_in(LogWriter *self);
 static void log_writer_broken(LogWriter *self, gint notify_code);
 static void log_writer_start_watches(LogWriter *self);
 static void log_writer_stop_watches(LogWriter *self);
@@ -253,7 +253,13 @@ log_writer_work_finished(gpointer s, gpointer arg)
       g_mutex_unlock(&self->pending_proto_lock);
     }
 
-  if (!self->work_result)
+  if (self->work_result == LPS_EOF)
+    {
+      log_writer_broken(self, NC_CLOSE);
+      return;
+    }
+
+  if (self->work_result != LPS_SUCCESS && self->work_result != LPS_PARTIAL)
     {
       log_writer_broken(self, NC_WRITE_ERROR);
       if (self->proto)
@@ -340,16 +346,6 @@ log_writer_io_error(gpointer s)
 }
 
 static void
-log_writer_io_close_on_input(gpointer s)
-{
-  LogWriter *self = (LogWriter *) s;
-
-  msg_error("EOF occurred while idle",
-            evt_tag_int("fd", log_proto_client_get_fd(self->proto)));
-  log_writer_broken(self, NC_CLOSE);
-}
-
-static void
 log_writer_error_suspend_elapsed(gpointer s)
 {
   LogWriter *self = (LogWriter *) s;
@@ -368,8 +364,6 @@ log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
     {
       if (cond & G_IO_IN)
         iv_fd_set_handler_in(&self->fd_watch, log_writer_io_handle_in);
-      else if (self->flags & LW_CLOSE_ON_INPUT)
-        iv_fd_set_handler_in(&self->fd_watch, log_writer_io_close_on_input);
       else
         iv_fd_set_handler_in(&self->fd_watch, NULL);
 
@@ -1176,16 +1170,11 @@ log_writer_realloc_line_buffer(LogWriter *self)
  *
  */
 
-static gboolean
+static LogProtoStatus
 log_writer_flush_finalize(LogWriter *self)
 {
   LogProtoStatus status = log_proto_client_flush(self->proto);
-
-  if (status == LPS_SUCCESS || status == LPS_PARTIAL)
-    return TRUE;
-
-
-  return FALSE;
+  return status;
 }
 
 static void
@@ -1302,18 +1291,18 @@ log_writer_queue_pop_message(LogWriter *self, LogPathOptions *path_options, gboo
     return log_queue_pop_head(self->queue, path_options);
 }
 
-static inline gboolean
+static inline LogProtoStatus
 log_writer_process_handshake(LogWriter *self)
 {
   gboolean handshake_finished = FALSE;
   LogProtoStatus status = log_proto_client_handshake(self->proto, &handshake_finished);
 
   if (status != LPS_SUCCESS)
-    return FALSE;
+    return LPS_ERROR;
 
   if (handshake_finished)
     self->handshake_in_progress = FALSE;
-  return TRUE;
+  return LPS_SUCCESS;
 }
 
 /*
@@ -1325,13 +1314,13 @@ log_writer_process_handshake(LogWriter *self)
  * LW_FLUSH_FORCE     - flush the buffer immediately please
  *
  */
-static gboolean
+static LogProtoStatus
 log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 {
   gboolean write_error = FALSE;
 
   if (!self->proto)
-    return FALSE;
+    return LPS_ERROR;
 
   if (self->handshake_in_progress)
     return log_writer_process_handshake(self);
@@ -1363,27 +1352,27 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
     }
 
   if (write_error)
-    return FALSE;
+    return LPS_ERROR;
 
   return log_writer_flush_finalize(self);
 }
 
-static gboolean
+static LogProtoStatus
 log_writer_forced_flush(LogWriter *self)
 {
   return log_writer_flush(self, LW_FLUSH_FORCE);
 }
 
-static gboolean
+static LogProtoStatus
 log_writer_process_in(LogWriter *self)
 {
   if (!self->proto)
     return FALSE;
 
-  return (log_proto_client_process_in(self->proto) == LPS_SUCCESS);
+  return log_proto_client_process_in(self->proto);
 }
 
-static gboolean
+static LogProtoStatus
 log_writer_process_out(LogWriter *self)
 {
   return log_writer_flush(self, LW_FLUSH_NORMAL);
