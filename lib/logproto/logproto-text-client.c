@@ -48,13 +48,15 @@ log_proto_text_client_drop_input(LogProtoClient *s)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
   guchar buf[1024];
-  gint rc = -1;
+  gssize rc = -1;
+  gsize read_limit = 0;
 
   do
     {
       rc = log_transport_stack_read(&self->super.transport_stack, buf, sizeof(buf), NULL);
+      read_limit++;
     }
-  while (rc > 0);
+  while (rc > 0 && read_limit < 100);
 
   if (rc == -1 && errno != EAGAIN)
     {
