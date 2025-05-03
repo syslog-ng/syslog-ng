@@ -36,9 +36,9 @@ log_proto_text_client_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *co
 
   *fd = self->super.transport_stack.fd;
 
-  /* if there's no pending I/O in the transport layer, then we want to do a write */
+  /* if there's no pending I/O in the transport layer, then we want to do a write and allow reads as well*/
   if (*cond == 0)
-    *cond = G_IO_OUT;
+    *cond = G_IO_OUT | (self->super.options->drop_input ? G_IO_IN : 0);
 
   return self->partial != NULL;
 }
