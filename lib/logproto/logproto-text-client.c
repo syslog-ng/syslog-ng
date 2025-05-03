@@ -38,27 +38,37 @@ log_proto_text_client_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *co
 
   /* if there's no pending I/O in the transport layer, then we want to do a write and allow reads as well*/
   if (*cond == 0)
-    *cond = G_IO_OUT | (self->super.options->drop_input ? G_IO_IN : 0);
+    *cond = G_IO_OUT | G_IO_IN;
 
   return self->partial != NULL;
 }
 
 static LogProtoStatus
-log_proto_text_client_drop_input(LogProtoClient *s)
+log_proto_text_client_process_input(LogProtoClient *s)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
   guchar buf[1024];
   gssize rc = -1;
   gsize read_limit = 0;
+  gsize read = 0;
 
   do
     {
       rc = log_transport_stack_read(&self->super.transport_stack, buf, sizeof(buf), NULL);
       read_limit++;
+
+      if (rc > 0)
+        read += rc;
     }
   while (rc > 0 && read_limit < 100);
 
-  if (rc == -1 && errno != EAGAIN)
+  if (read > 0 && !self->super.options->super.drop_input)
+    {
+      msg_error("Unexpected input, closing", evt_tag_int("fd", self->super.transport_stack.fd));
+      return LPS_ERROR;
+    }
+
+  if (rc < 0 && errno != EAGAIN)
     {
       msg_error("Error reading data",
                 evt_tag_int("fd", self->super.transport_stack.fd),
@@ -67,9 +77,8 @@ log_proto_text_client_drop_input(LogProtoClient *s)
     }
   else if (rc == 0)
     {
-      msg_error("EOF occurred while idle",
-                evt_tag_int("fd", self->super.transport_stack.fd));
-      return LPS_ERROR;
+      msg_notice("EOF occurred", evt_tag_int("fd", self->super.transport_stack.fd));
+      return LPS_EOF;
     }
 
   return LPS_SUCCESS;
@@ -201,8 +210,7 @@ log_proto_text_client_init(LogProtoTextClient *self, LogTransport *transport,
   log_proto_client_init(&self->super, transport, options);
   self->super.poll_prepare = log_proto_text_client_poll_prepare;
   self->super.flush = log_proto_text_client_flush;
-  if (options->super.drop_input)
-    self->super.process_in = log_proto_text_client_drop_input;
+  self->super.process_in = log_proto_text_client_process_input;
   self->super.post = log_proto_text_client_post;
   self->super.free_fn = log_proto_text_client_free;
   self->next_state = -1;
