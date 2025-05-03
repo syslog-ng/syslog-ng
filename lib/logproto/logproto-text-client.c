@@ -26,6 +26,8 @@
 
 #include <errno.h>
 
+static LogProtoStatus log_proto_text_client_flush(LogProtoClient *s);
+
 static gboolean
 log_proto_text_client_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
 {
@@ -52,6 +54,9 @@ log_proto_text_client_process_input(LogProtoClient *s)
   gsize read_limit = 0;
   gsize read = 0;
 
+  if (self->pending_flush)
+    return log_proto_text_client_flush(s);
+
   do
     {
       rc = log_transport_stack_read(&self->super.transport_stack, buf, sizeof(buf), NULL);
@@ -68,14 +73,23 @@ log_proto_text_client_process_input(LogProtoClient *s)
       return LPS_ERROR;
     }
 
-  if (rc < 0 && errno != EAGAIN)
+  if (rc < 0)
     {
-      msg_error("Error reading data",
-                evt_tag_int("fd", self->super.transport_stack.fd),
-                evt_tag_error("error"));
-      return LPS_ERROR;
+      if (errno != EAGAIN)
+        {
+          msg_error("Error reading data", evt_tag_int("fd", self->super.transport_stack.fd), evt_tag_error("error"));
+          return LPS_ERROR;
+        }
+
+      if (log_transport_stack_get_active(&self->super.transport_stack)->cond & G_IO_OUT)
+        self->pending_in = TRUE;
+
+      return LPS_SUCCESS;
     }
-  else if (rc == 0)
+
+  self->pending_in = FALSE;
+
+  if (rc == 0)
     {
       msg_notice("EOF occurred", evt_tag_int("fd", self->super.transport_stack.fd));
       return LPS_EOF;
@@ -89,6 +103,9 @@ log_proto_text_client_flush(LogProtoClient *s)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
   gint rc;
+
+  if (self->pending_in)
+    return log_proto_text_client_process_input(s);
 
   if (!self->partial)
     {
@@ -108,8 +125,12 @@ log_proto_text_client_flush(LogProtoClient *s)
                     evt_tag_error(EVT_TAG_OSERROR));
           return LPS_ERROR;
         }
+
+      self->pending_flush = TRUE;
       return LPS_SUCCESS;
     }
+
+  self->pending_flush = FALSE;
 
   if (rc != len)
     {
