@@ -447,6 +447,7 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->super.transport_name = g_strdup("http");
+      self->allow_tls_configuration = TRUE;
     }
   else if (strcasecmp(transport, "http-scraper") == 0)
     {
@@ -454,6 +455,7 @@ transport_mapper_network_apply_transport(TransportMapper *s, GlobalConfig *cfg)
       self->super.sock_type = SOCK_STREAM;
       self->super.sock_proto = IPPROTO_TCP;
       self->super.transport_name = g_strdup("http-scraper");
+      self->allow_tls_configuration = TRUE;
     }
   else
     {
