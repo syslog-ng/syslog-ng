@@ -527,20 +527,13 @@ is_file_regular(gint fd)
 static void
 log_writer_start_watches(LogWriter *self)
 {
-  gint fd;
-  GIOCondition cond;
-  gint idle_timeout = -1;
-
   if (self->watches_running)
     return;
 
-  log_proto_client_poll_prepare(self->proto, &fd, &cond, &idle_timeout);
-
-  self->fd_watch.fd = fd;
-
+  self->fd_watch.fd = log_proto_client_get_fd(self->proto);;
   if (self->pollable_state < 0)
     {
-      if (is_file_regular(fd))
+      if (is_file_regular(self->fd_watch.fd))
         self->pollable_state = 0;
       else
         self->pollable_state = !iv_fd_register_try(&self->fd_watch);
