@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2024 Axoflow
- * Copyright (c) 2023 László Várady
+ * Copyright (c) 2024-2025 Axoflow
+ * Copyright (c) 2023-2025 László Várady
  * Copyright (c) 2024 shifter
  *
  * This library is free software; you can redistribute it and/or
@@ -53,6 +53,7 @@ struct _FileMonitor
 
 #if SYSLOG_NG_HAVE_INOTIFY
   gboolean in_started;
+  const gchar *file_basename;
   struct iv_inotify inotify;
   struct iv_inotify_watch in_watch;
 #endif
@@ -168,7 +169,7 @@ static void _inotify_event_handler(void *c, struct inotify_event *event)
 {
   FileMonitor *self = (FileMonitor *) c;
 
-  if (g_strcmp0(self->file_name, event->name) == 0)
+  if (g_strcmp0(self->file_basename, event->name) == 0)
     _run_callbacks_if_file_was_modified(self);
 }
 
@@ -204,6 +205,8 @@ _inotify_start(FileMonitor *self)
 
   g_free(file_dir);
 
+  self->file_basename = g_path_get_basename(self->file_name);
+
   self->in_started = TRUE;
   return TRUE;
 }
@@ -216,6 +219,8 @@ _inotify_stop(FileMonitor *self)
 
   iv_inotify_watch_unregister(&self->in_watch);
   iv_inotify_unregister(&self->inotify);
+
+  g_free((gchar *) self->file_basename);
 
   self->in_started = FALSE;
 }
