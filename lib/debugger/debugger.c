@@ -469,8 +469,8 @@ debugger_perform_tracing(Debugger *self, LogPipe *pipe_, LogMessage *msg)
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
 
-  long diff = prev_ts->tv_sec == 0 ? 0 : timespec_diff_nsec(&ts, prev_ts);
-  printf("[%"G_GINT64_FORMAT".%09"G_GINT64_FORMAT" +%ld] Tracing %s\n",
+  gint64 diff = prev_ts->tv_sec == 0 ? 0 : timespec_diff_nsec(&ts, prev_ts);
+  printf("[%"G_GINT64_FORMAT".%09"G_GINT64_FORMAT" +%"G_GINT64_FORMAT"] Tracing %s\n",
          (gint64)ts.tv_sec, (gint64)ts.tv_nsec, diff,
          log_expr_node_format_location(pipe_->expr_node, buf, sizeof(buf)));
   *prev_ts = ts;

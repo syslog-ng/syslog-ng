@@ -67,20 +67,17 @@ rate_limiter_free(RateLimiter *self)
 static void
 rate_limiter_add_new_tokens(RateLimiter *self)
 {
-  glong usec_since_last_fill;
-  gint num_new_tokens;
-  struct timespec now;
-
   iv_validate_now();
-  now = iv_now;
+  struct timespec now = iv_now;
+
   g_mutex_lock(&self->lock);
   {
-    usec_since_last_fill = timespec_diff_usec(&now, &self->last_check);
+    gint64 usec_since_last_fill = timespec_diff_usec(&now, &self->last_check);
+    gint64 num_new_tokens = (usec_since_last_fill * self->rate) / G_USEC_PER_SEC;
 
-    num_new_tokens = (usec_since_last_fill * self->rate) / G_USEC_PER_SEC;
     if (num_new_tokens)
       {
-        self->tokens = MIN(self->rate, self->tokens + num_new_tokens);
+        self->tokens = (gint) MIN(self->rate, self->tokens + num_new_tokens);
         self->last_check = now;
       }
   }

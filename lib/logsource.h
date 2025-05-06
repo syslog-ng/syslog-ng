@@ -99,7 +99,7 @@ struct _LogSource
 
   guint32 last_ack_count;
   guint32 ack_count;
-  glong window_full_sleep_nsec;
+  gint64 window_full_sleep_nsec;
   struct timespec last_ack_rate_time;
   AckTrackerFactory *ack_tracker_factory;
   AckTracker *ack_tracker;

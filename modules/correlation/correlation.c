@@ -123,7 +123,7 @@ gboolean
 correlation_state_timer_tick(CorrelationState *self, gpointer caller_context)
 {
   struct timespec now;
-  glong diff;
+  gint64 diff;
   gboolean updated = FALSE;
 
   g_mutex_lock(&self->lock);
@@ -138,7 +138,7 @@ correlation_state_timer_tick(CorrelationState *self, gpointer caller_context)
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
 
       self->last_tick = now;
-      timespec_add_usec(&self->last_tick, - (glong)(diff - diff_sec * 1e6));
+      timespec_add_usec(&self->last_tick, - (gint64)(diff - diff_sec * 1e6));
       updated = TRUE;
     }
   else if (diff < 0)
