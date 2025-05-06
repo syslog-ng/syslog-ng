@@ -109,6 +109,7 @@ DestDriver::construct_worker(int worker_index)
 bool
 DestDriver::map_schema_type(const std::string &type_in, google::protobuf::FieldDescriptorProto::Type &type_out)
 {
+  using fd = google::protobuf::FieldDescriptorProto;
   /* TODO: E2E test these. */
 
   /*
@@ -116,57 +117,57 @@ DestDriver::map_schema_type(const std::string &type_in, google::protobuf::FieldD
    * https://clickhouse.com/docs/en/sql-reference/data-types
    */
 
-  static const std::map<std::string, google::protobuf::FieldDescriptorProto::Type> mapping =
+  static const std::map<std::string, FieldDescriptorProto::Type> mapping =
   {
     /* https://clickhouse.com/docs/en/sql-reference/data-types/int-uint */
 
-    { "INT8",               FieldDescriptorProto::TYPE_INT32 },
-    { "TINYINT",            FieldDescriptorProto::TYPE_INT32 },
-    { "INT1",               FieldDescriptorProto::TYPE_INT32 },
-    { "TINYINT SIGNED",     FieldDescriptorProto::TYPE_INT32 },
-    { "INT1 SIGNED",        FieldDescriptorProto::TYPE_INT32 },
-    { "INT16",              FieldDescriptorProto::TYPE_INT32 },
-    { "SMALLINT",           FieldDescriptorProto::TYPE_INT32 },
-    { "SMALLINT SIGNED",    FieldDescriptorProto::TYPE_INT32 },
-    { "INT32",              FieldDescriptorProto::TYPE_INT32 },
-    { "INT",                FieldDescriptorProto::TYPE_INT32 },
-    { "INTEGER",            FieldDescriptorProto::TYPE_INT32 },
-    { "MEDIUMINT",          FieldDescriptorProto::TYPE_INT32 },
-    { "MEDIUMINT SIGNED",   FieldDescriptorProto::TYPE_INT32 },
-    { "INT SIGNED",         FieldDescriptorProto::TYPE_INT32 },
-    { "INTEGER SIGNED",     FieldDescriptorProto::TYPE_INT32 },
+    { "INT8",               static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "TINYINT",            static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "INT1",               static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "TINYINT SIGNED",     static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "INT1 SIGNED",        static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "INT16",              static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "SMALLINT",           static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "SMALLINT SIGNED",    static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "INT32",              static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "INT",                static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "INTEGER",            static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "MEDIUMINT",          static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "MEDIUMINT SIGNED",   static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "INT SIGNED",         static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "INTEGER SIGNED",     static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
 
-    { "INT64",              FieldDescriptorProto::TYPE_INT64 },
-    { "BIGINT",             FieldDescriptorProto::TYPE_INT64 },
-    { "SIGNED",             FieldDescriptorProto::TYPE_INT64 },
-    { "BIGINT SIGNED",      FieldDescriptorProto::TYPE_INT64 },
-    { "TIME",               FieldDescriptorProto::TYPE_INT64 },
+    { "INT64",              static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT64) },
+    { "BIGINT",             static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT64) },
+    { "SIGNED",             static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT64) },
+    { "BIGINT SIGNED",      static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT64) },
+    { "TIME",               static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT64) },
 
-    { "UINT8",              FieldDescriptorProto::TYPE_BOOL },
-    { "TINYINT UNSIGNED",   FieldDescriptorProto::TYPE_BOOL },
-    { "INT1 UNSIGNED",      FieldDescriptorProto::TYPE_BOOL },
-    { "UINT16",             FieldDescriptorProto::TYPE_UINT32 },
-    { "SMALLINT UNSIGNED",  FieldDescriptorProto::TYPE_UINT32 },
-    { "UINT32",             FieldDescriptorProto::TYPE_UINT32 },
-    { "MEDIUMINT UNSIGNED", FieldDescriptorProto::TYPE_UINT32 },
-    { "INT UNSIGNED",       FieldDescriptorProto::TYPE_UINT32 },
-    { "INTEGER UNSIGNED",   FieldDescriptorProto::TYPE_UINT32 },
+    { "UINT8",              static_cast<FieldDescriptorProto::Type>(fd::TYPE_BOOL) },
+    { "TINYINT UNSIGNED",   static_cast<FieldDescriptorProto::Type>(fd::TYPE_BOOL) },
+    { "INT1 UNSIGNED",      static_cast<FieldDescriptorProto::Type>(fd::TYPE_BOOL) },
+    { "UINT16",             static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT32) },
+    { "SMALLINT UNSIGNED",  static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT32) },
+    { "UINT32",             static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT32) },
+    { "MEDIUMINT UNSIGNED", static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT32) },
+    { "INT UNSIGNED",       static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT32) },
+    { "INTEGER UNSIGNED",   static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT32) },
 
-    { "UINT64",             FieldDescriptorProto::TYPE_UINT64 },
-    { "UNSIGNED",           FieldDescriptorProto::TYPE_UINT64 },
-    { "BIGINT UNSIGNED",    FieldDescriptorProto::TYPE_UINT64 },
-    { "BIT",                FieldDescriptorProto::TYPE_UINT64 },
-    { "SET",                FieldDescriptorProto::TYPE_UINT64 },
+    { "UINT64",             static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT64) },
+    { "UNSIGNED",           static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT64) },
+    { "BIGINT UNSIGNED",    static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT64) },
+    { "BIT",                static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT64) },
+    { "SET",                static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT64) },
 
     /* https://clickhouse.com/docs/en/sql-reference/data-types/float */
 
-    { "FLOAT32",            FieldDescriptorProto::TYPE_FLOAT },
-    { "FLOAT",              FieldDescriptorProto::TYPE_FLOAT },
-    { "REAL",               FieldDescriptorProto::TYPE_FLOAT },
-    { "SINGLE",             FieldDescriptorProto::TYPE_FLOAT },
-    { "FLOAT64",            FieldDescriptorProto::TYPE_DOUBLE },
-    { "DOUBLE",             FieldDescriptorProto::TYPE_DOUBLE },
-    { "DOUBLE PRECISION",   FieldDescriptorProto::TYPE_DOUBLE },
+    { "FLOAT32",            static_cast<FieldDescriptorProto::Type>(fd::TYPE_FLOAT) },
+    { "FLOAT",              static_cast<FieldDescriptorProto::Type>(fd::TYPE_FLOAT) },
+    { "REAL",               static_cast<FieldDescriptorProto::Type>(fd::TYPE_FLOAT) },
+    { "SINGLE",             static_cast<FieldDescriptorProto::Type>(fd::TYPE_FLOAT) },
+    { "FLOAT64",            static_cast<FieldDescriptorProto::Type>(fd::TYPE_DOUBLE) },
+    { "DOUBLE",             static_cast<FieldDescriptorProto::Type>(fd::TYPE_DOUBLE) },
+    { "DOUBLE PRECISION",   static_cast<FieldDescriptorProto::Type>(fd::TYPE_DOUBLE) },
 
     /* https://clickhouse.com/docs/en/sql-reference/data-types/decimal */
 
@@ -174,44 +175,44 @@ DestDriver::map_schema_type(const std::string &type_in, google::protobuf::FieldD
 
     /* https://clickhouse.com/docs/en/sql-reference/data-types/boolean */
 
-    { "BOOL",               FieldDescriptorProto::TYPE_BOOL },
+    { "BOOL",               static_cast<FieldDescriptorProto::Type>(fd::TYPE_BOOL) },
 
     /* https://clickhouse.com/docs/en/sql-reference/data-types/string */
 
-    { "STRING",                          FieldDescriptorProto::TYPE_STRING },
-    { "LONGTEXT",                        FieldDescriptorProto::TYPE_STRING },
-    { "MEDIUMTEXT",                      FieldDescriptorProto::TYPE_STRING },
-    { "TINYTEXT",                        FieldDescriptorProto::TYPE_STRING },
-    { "TEXT",                            FieldDescriptorProto::TYPE_STRING },
-    { "LONGBLOB",                        FieldDescriptorProto::TYPE_STRING },
-    { "MEDIUMBLOB",                      FieldDescriptorProto::TYPE_STRING },
-    { "TINYBLOB",                        FieldDescriptorProto::TYPE_STRING },
-    { "BLOB",                            FieldDescriptorProto::TYPE_STRING },
-    { "VARCHAR",                         FieldDescriptorProto::TYPE_STRING },
-    { "CHAR",                            FieldDescriptorProto::TYPE_STRING },
-    { "CHAR LARGE OBJECT",               FieldDescriptorProto::TYPE_STRING },
-    { "CHAR VARYING",                    FieldDescriptorProto::TYPE_STRING },
-    { "CHARACTER LARGE OBJECT",          FieldDescriptorProto::TYPE_STRING },
-    { "CHARACTER VARYING",               FieldDescriptorProto::TYPE_STRING },
-    { "NCHAR LARGE OBJECT",              FieldDescriptorProto::TYPE_STRING },
-    { "NCHAR VARYING",                   FieldDescriptorProto::TYPE_STRING },
-    { "NATIONAL CHARACTER LARGE OBJECT", FieldDescriptorProto::TYPE_STRING },
-    { "NATIONAL CHARACTER VARYING",      FieldDescriptorProto::TYPE_STRING },
-    { "NATIONAL CHAR VARYING",           FieldDescriptorProto::TYPE_STRING },
-    { "NATIONAL CHARACTER",              FieldDescriptorProto::TYPE_STRING },
-    { "NATIONAL CHAR",                   FieldDescriptorProto::TYPE_STRING },
-    { "BINARY LARGE OBJECT",             FieldDescriptorProto::TYPE_STRING },
-    { "BINARY VARYING",                  FieldDescriptorProto::TYPE_STRING },
+    { "STRING",                          static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "LONGTEXT",                        static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "MEDIUMTEXT",                      static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "TINYTEXT",                        static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "TEXT",                            static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "LONGBLOB",                        static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "MEDIUMBLOB",                      static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "TINYBLOB",                        static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "BLOB",                            static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "VARCHAR",                         static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "CHAR",                            static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "CHAR LARGE OBJECT",               static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "CHAR VARYING",                    static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "CHARACTER LARGE OBJECT",          static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "CHARACTER VARYING",               static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "NCHAR LARGE OBJECT",              static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "NCHAR VARYING",                   static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "NATIONAL CHARACTER LARGE OBJECT", static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "NATIONAL CHARACTER VARYING",      static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "NATIONAL CHAR VARYING",           static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "NATIONAL CHARACTER",              static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "NATIONAL CHAR",                   static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "BINARY LARGE OBJECT",             static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "BINARY VARYING",                  static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
 
     /* https://clickhouse.com/docs/en/sql-reference/data-types/date */
     /* https://clickhouse.com/docs/en/sql-reference/data-types/date32 */
     /* https://clickhouse.com/docs/en/sql-reference/data-types/datetime */
     /* https://clickhouse.com/docs/en/sql-reference/data-types/datetime64 */
 
-    { "DATE",               FieldDescriptorProto::TYPE_UINT32 },
-    { "DATE32",             FieldDescriptorProto::TYPE_INT32 },
-    { "DATETIME",           FieldDescriptorProto::TYPE_UINT32 },
-    { "DATETIME64",         FieldDescriptorProto::TYPE_UINT64 },
+    { "DATE",               static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT32) },
+    { "DATE32",             static_cast<FieldDescriptorProto::Type>(fd::TYPE_INT32) },
+    { "DATETIME",           static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT32) },
+    { "DATETIME64",         static_cast<FieldDescriptorProto::Type>(fd::TYPE_UINT64) },
 
     /* https://clickhouse.com/docs/en/sql-reference/data-types/object-data-type */
 
@@ -219,13 +220,13 @@ DestDriver::map_schema_type(const std::string &type_in, google::protobuf::FieldD
 
     /* https://clickhouse.com/docs/en/sql-reference/data-types/uuid */
 
-    { "UUID",               FieldDescriptorProto::TYPE_STRING },
+    { "UUID",               static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
 
     /* https://clickhouse.com/docs/en/sql-reference/data-types/enum */
 
-    { "ENUM",               FieldDescriptorProto::TYPE_STRING },
-    { "ENUM8",              FieldDescriptorProto::TYPE_STRING },
-    { "ENUM16",             FieldDescriptorProto::TYPE_STRING },
+    { "ENUM",               static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "ENUM8",              static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "ENUM16",             static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
 
     /* https://clickhouse.com/docs/en/sql-reference/data-types/lowcardinality */
     /* https://clickhouse.com/docs/en/sql-reference/data-types/array */
@@ -241,8 +242,8 @@ DestDriver::map_schema_type(const std::string &type_in, google::protobuf::FieldD
     /* https://clickhouse.com/docs/en/sql-reference/data-types/ipv4 */
     /* https://clickhouse.com/docs/en/sql-reference/data-types/ipv6 */
 
-    { "IPV4",               FieldDescriptorProto::TYPE_STRING },
-    { "IPV6",               FieldDescriptorProto::TYPE_STRING },
+    { "IPV4",               static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
+    { "IPV6",               static_cast<FieldDescriptorProto::Type>(fd::TYPE_STRING) },
 
     /* https://clickhouse.com/docs/en/sql-reference/data-types/geo */
     /* https://clickhouse.com/docs/en/sql-reference/data-types/special-data-types/expression */
@@ -256,7 +257,7 @@ DestDriver::map_schema_type(const std::string &type_in, google::protobuf::FieldD
   /* default */
   if (type_in.empty())
     {
-      type_out = FieldDescriptorProto::TYPE_STRING;
+      type_out = fd::TYPE_STRING;
       return true;
     }
 
