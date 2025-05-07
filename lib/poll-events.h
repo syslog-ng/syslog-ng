@@ -26,13 +26,23 @@
 
 #include "syslog-ng.h"
 
+typedef enum
+{
+  FM_LEGACY,
+  FM_POLL,
+  FM_SYSTEM_POLL,
+  FM_INOTIFY,
+  FM_UNKNOWN
+} FollowMethod;
+
 typedef struct _PollEvents PollEvents;
 typedef void (*PollCallback)(gpointer user_data);
 typedef gboolean (*PollChecker)(PollEvents *self, gpointer user_data);
 
+/* TODO: Poll is just a legacy word here, rename to sg. more appropriate (e.g. FollowEvents) */
 struct _PollEvents
 {
-  gboolean system_polled;
+  FollowMethod type;
   PollCallback callback;
   gpointer callback_data;
   gpointer checker_data;
@@ -57,7 +67,13 @@ poll_events_get_fd(PollEvents *self)
 static inline gboolean
 poll_events_system_polled(PollEvents *self)
 {
-  return self->system_polled;
+  return self->type == FM_SYSTEM_POLL;
+}
+
+static inline gboolean
+poll_events_system_notified(PollEvents *self)
+{
+  return self->type == FM_INOTIFY;
 }
 
 static inline void

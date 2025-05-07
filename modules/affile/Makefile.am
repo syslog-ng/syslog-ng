@@ -12,6 +12,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/transport-prockmsg.h			\
 	modules/affile/file-reader.c				\
 	modules/affile/file-reader.h				\
+	modules/affile/file-monitor-factory.h			\
+	modules/affile/file-monitor-factory.c			\
 	modules/affile/wildcard-file-reader.c		\
 	modules/affile/wildcard-file-reader.h		\
 	modules/affile/wildcard-source.h			\

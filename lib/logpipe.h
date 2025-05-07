@@ -33,14 +33,15 @@
 #include "messages.h"
 
 /* notify code values */
-#define NC_CLOSE       1
-#define NC_READ_ERROR  2
-#define NC_WRITE_ERROR 3
-#define NC_FILE_MOVED  4
-#define NC_FILE_EOF    5
-#define NC_REOPEN_REQUIRED 6
-#define NC_FILE_DELETED 7
-#define NC_FILE_MODIFIED 8
+#define NC_CLOSE            1
+#define NC_READ_ERROR       2
+#define NC_WRITE_ERROR      3
+#define NC_FILE_MOVED       4
+#define NC_FILE_EOF         5
+#define NC_REOPEN_REQUIRED  6
+#define NC_FILE_DELETED     7
+#define NC_FILE_MODIFIED    8
+#define NC_AGAIN            9
 
 /* notify result mask values */
 #define NR_OK          0x0000
