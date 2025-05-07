@@ -1,5 +1,7 @@
 /*
+ * Copyright (c) 2024 Axoflow
  * Copyright (c) 2023 László Várady
+ * Copyright (c) 2024 shifter
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,33 +23,35 @@
  *
  */
 
-#ifndef CFG_MONITOR_H
-#define CFG_MONITOR_H
+#ifndef FILE_MONITOR_H
+#define FILE_MONITOR_H
 
 #include "syslog-ng.h"
 #include <sys/stat.h>
 
-typedef struct _CfgMonitor CfgMonitor;
+typedef struct _FileMonitor FileMonitor;
 
-typedef struct _CfgMonitorEvent
+typedef struct _FileMonitorEvent
 {
   const gchar *name;
   struct stat st;
   enum
   {
-    MODIFIED
+    MODIFIED,
+    DELETED
   } event;
-} CfgMonitorEvent;
+} FileMonitorEvent;
 
-typedef void (*CfgMonitorEventCB)(const CfgMonitorEvent *event, gpointer c);
+typedef void (*FileMonitorEventCB)(const FileMonitorEvent *event, gpointer c);
 
-CfgMonitor *cfg_monitor_new(void);
-void cfg_monitor_free(CfgMonitor *self);
+FileMonitor *file_monitor_new(const gchar *file_name);
+void file_monitor_free(FileMonitor *self);
 
-void cfg_monitor_add_watch(CfgMonitor *self, CfgMonitorEventCB cb,  gpointer cb_data);
-void cfg_monitor_remove_watch(CfgMonitor *self, CfgMonitorEventCB cb, gpointer cb_data);
+void file_monitor_add_watch(FileMonitor *self, FileMonitorEventCB cb,  gpointer cb_data);
+void file_monitor_remove_watch(FileMonitor *self, FileMonitorEventCB cb, gpointer cb_data);
 
-void cfg_monitor_start(CfgMonitor *self);
-void cfg_monitor_stop(CfgMonitor *self);
+void file_monitor_start_and_check(FileMonitor *self);
+void file_monitor_start(FileMonitor *self);
+void file_monitor_stop(FileMonitor *self);
 
 #endif
