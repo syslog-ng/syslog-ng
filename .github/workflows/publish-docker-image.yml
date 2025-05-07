@@ -27,7 +27,7 @@ jobs:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v4
 
-      
+
       - name: Set up Docker
         # Build and load multi-platform images
         # https://docs.docker.com/build/ci/github-actions/multi-platform/#build-and-load-multi-platform-images
@@ -68,8 +68,27 @@ jobs:
             false
           fi
 
+          # Split comma-separated tags into an array
+          IFS=',' read -ra TAG_ARRAY <<< "$TAGS"
+
+          # Determine cve_input
+          if [[ ${#TAG_ARRAY[@]} -eq 1 ]]; then
+            CVE_INPUT="${TAG_ARRAY[0]}"
+          else
+            CVE_INPUT=""
+            for TAG in "${TAG_ARRAY[@]}"; do
+              if [[ "$TAG" == *:latest ]]; then
+                CVE_INPUT="$TAG"
+                break
+              fi
+            done
+          fi
+
+          echo "TAGS=$TAGS"
+          echo "CVE_INPUT=$CVE_INPUT"
+
           . .github/workflows/gh-tools.sh
-          gh_output TAGS
+          gh_output TAGS CVE_INPUT
 
       - name: Set up QEMU
         # Build and load multi-platform images
@@ -94,7 +113,7 @@ jobs:
       - name: Scan docker image on CVEs (CRITICAL,HIGH to a sarif file) # https://aquasecurity.github.io/trivy/v0.54/docs/
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.tags.outputs.TAGS }}
+          image-ref: ${{ steps.tags.outputs.CVE_INPUT }}
 
           format: 'sarif'
           output: 'trivy-results.sarif'
@@ -106,7 +125,7 @@ jobs:
       - name: Scan docker image on CVEs (ALL to a table)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.tags.outputs.TAGS }}
+          image-ref: ${{ steps.tags.outputs.CVE_INPUT }}
 
           format: 'table'
           dependency-tree: true
