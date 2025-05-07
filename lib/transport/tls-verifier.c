@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2024 One Identity LLC.
+ * Copyright (c) 2024 Franco Fichtner
  * Copyright (c) 2002-2011 Balabit
  * Copyright (c) 1998-2011 Balázs Scheidler
  *
@@ -75,7 +77,7 @@ tls_verifier_unref(TLSVerifier *self)
 
 /* helper functions */
 
-static gboolean
+gboolean
 tls_wildcard_match(const gchar *host_name, const gchar *pattern)
 {
   gchar **pattern_parts, **hostname_parts;
@@ -86,22 +88,84 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
 
   pattern_parts = g_strsplit(pattern, ".", 0);
   hostname_parts = g_strsplit(host_name, ".", 0);
-  for (i = 0; pattern_parts[i]; i++)
+
+  if(g_strrstr(pattern, "\?"))
     {
-      if (!hostname_parts[i])
-        {
-          /* number of dot separated entries is not the same in the hostname and the pattern spec */
-          goto exit;
-        }
-
-      lower_pattern = g_ascii_strdown(pattern_parts[i], -1);
-      lower_hostname = g_ascii_strdown(hostname_parts[i], -1);
-
-      if (!g_pattern_match_simple(lower_pattern, lower_hostname))
-        goto exit;
+      /* Glib would treat any question marks as jokers */
+      success = FALSE;
     }
-  success = TRUE;
-exit:
+  else if (g_hostname_is_ip_address(host_name))
+    {
+      /* no wildcards in IP */
+      if (g_strrstr(pattern, "*"))
+        {
+          success = FALSE;
+        }
+      else
+        {
+          struct in6_addr host_buffer, pattern_buffer;
+          gint INET_TYPE, INET_ADDRLEN;
+          if(strstr(host_name, ":"))
+            {
+              INET_TYPE = AF_INET6;
+              INET_ADDRLEN = INET6_ADDRSTRLEN;
+            }
+          else
+            {
+              INET_TYPE = AF_INET;
+              INET_ADDRLEN = INET_ADDRSTRLEN;
+            }
+          char host_ip[INET_ADDRLEN], pattern_ip[INET_ADDRLEN];
+          gint host_ip_ok = inet_pton(INET_TYPE, host_name, &host_buffer);
+          gint pattern_ip_ok = inet_pton(INET_TYPE, pattern, &pattern_buffer);
+          inet_ntop(INET_TYPE, &host_buffer, host_ip, INET_ADDRLEN);
+          inet_ntop(INET_TYPE, &pattern_buffer, pattern_ip, INET_ADDRLEN);
+          success = (host_ip_ok && pattern_ip_ok && strcmp(host_ip, pattern_ip) == 0);
+        }
+    }
+  else
+    {
+      if (pattern_parts[0] == NULL)
+        {
+          if (hostname_parts[0] == NULL)
+            success = TRUE;
+          else
+            success = FALSE;
+        }
+      else
+        {
+          success = TRUE;
+          for (i = 0; pattern_parts[i]; i++)
+            {
+              if (hostname_parts[i] == NULL)
+                {
+                  /* number of dot separated entries is not the same in the hostname and the pattern spec */
+                  success = FALSE;
+                  break;
+                }
+              char *wildcard_matched = g_strrstr(pattern_parts[i], "*");
+              if (wildcard_matched && (i != 0 || wildcard_matched != strstr(pattern_parts[i], "*")))
+                {
+                  /* wildcard only on leftmost part and never as multiple wildcards as per both RFC 6125 and 9525 */
+                  success = FALSE;
+                  break;
+                }
+
+              lower_pattern = g_ascii_strdown(pattern_parts[i], -1);
+              lower_hostname = g_ascii_strdown(hostname_parts[i], -1);
+
+              if (!g_pattern_match_simple(lower_pattern, lower_hostname))
+                {
+                  success = FALSE;
+                  break;
+                }
+            }
+          if (hostname_parts[i])
+            /* hostname has more parts than the pattern */
+            success = FALSE;
+        }
+    }
+
   g_free(lower_pattern);
   g_free(lower_hostname);
   g_strfreev(pattern_parts);
