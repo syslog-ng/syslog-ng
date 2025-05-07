@@ -1217,11 +1217,8 @@ dnl ***************************************************************************
 dnl libnet headers/libraries
 dnl ***************************************************************************
 AC_MSG_CHECKING(for LIBNET)
-if test "x$with_libnet" = "x"; then
-        LIBNET_CONFIG="`which libnet-config`"
-else
-        LIBNET_CONFIG="$with_libnet/libnet-config"
-fi
+AS_IF([test "x$with_libnet" = "x"], [libnet_config_path="$PATH"], [libnet_config_path="$with_libnet"])
+AC_PATH_PROG([LIBNET_CONFIG], [libnet-config], , [$libnet_config_path])
 
 if test -n "$LIBNET_CONFIG" -a -x "$LIBNET_CONFIG"; then
         LIBNET_CFLAGS="`$LIBNET_CONFIG --defines`"
@@ -1266,11 +1263,8 @@ dnl afsnmp module & net-snmp headers/libraries
 dnl ***************************************************************************
 AC_MSG_CHECKING(whether to enable snmp destination driver)
 
-if test "x$with_net_snmp" = "x"; then
-   NETSNMP_CONFIG="`which net-snmp-config`"
-else
-   NETSNMP_CONFIG="$with_net_snmp/net-snmp-config"
-fi
+AS_IF([test "x$with_net_snmp" = "x"], [netsnmp_config_path="$PATH"], [netsnmp_config_path="$with_net_snmp"])
+AC_PATH_PROG([NETSNMP_CONFIG], [net-snmp-config], , [$netsnmp_config_path])
 
 if test "x$enable_afsnmp" = "xyes"; then
    if test -n "$NETSNMP_CONFIG" -a -x "$NETSNMP_CONFIG"; then
@@ -2418,12 +2412,12 @@ echo "  Pretty version              : $BROCHURE_VERSION"
 echo "  Combined vers.              : $COMBINED_VERSION"
 echo "  Package name                : $PACKAGE_NAME"
 echo " Compiler options:"
-echo "  compiler                    : $CC - $($CC -v 2>&1 | grep -i ' version ') - $(which $CC)"
+echo "  compiler                    : $CC - $($CC -v 2>&1 | grep -i ' version ') - $(command -v $CC)"
 echo "  compiler options            : $CFLAGS $CPPFLAGS"
-echo "  ObjC compiler               : $OBJC - $($OBJC -v 2>&1 | grep -i ' version ') - $(which $OBJC)"
+echo "  ObjC compiler               : $OBJC - $($OBJC -v 2>&1 | grep -i ' version ') - $(command -v $OBJC)"
 echo "  C++ enabled                 : ${enable_cpp:=no}"
 if test "x$enable_cpp" = "xyes"; then
-echo "  C++ compiler                : $CXX - $($CXX -v 2>&1 | grep -i ' version ') - $(which $CXX)"
+echo "  C++ compiler                : $CXX - $($CXX -v 2>&1 | grep -i ' version ') - $(command -v $CXX)"
 echo "  C++ compiler options        : $CXXFLAGS"
 fi
 echo "  linker flags                : $LDFLAGS $LIBS"
