@@ -23,21 +23,19 @@
 
 #include "logproto-file-reader.h"
 #include "logproto/logproto-record-server.h"
-#include "logproto/logproto-multiline-server.h"
 #include "messages.h"
 
 LogProtoServer *
 log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptions *options)
 {
   if (options->pad_size > 0)
-    return log_proto_padded_record_server_new(transport, &options->super, options->pad_size);
+    return log_proto_padded_record_server_new(transport, &options->storage, options->pad_size);
   else
-    return log_proto_multiline_server_new(transport, &options->super,
-                                          multi_line_factory_construct(&options->multi_line_options));
+    return log_proto_text_multiline_server_new(transport, &options->storage);
 }
 
-/* these functions only initialize the fields added on top of
- * LogProtoServerOptions, the rest is the responsibility of the LogReader.
+/* TODO: these functions only initialize the fields added on top of
+ * LogProtoServerOptionsStorage, the rest is the responsibility of the LogReader.
  * This whole Options structure has become very messy. There are a lot of them.
  *
  *   FileReaderOptions ->
@@ -50,10 +48,10 @@ log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptio
  * FileOpenerOptions is fortunately independent of this mess.
  *
  * LogProtoFileReaderOptions only needs to take care about its "extra"
- * fields on top of LogProtoServerOptions, that's why we don't call anything
+ * fields on top of LogProtoServerOptionsStorage, that's why we don't call anything
  * from the "inherited" class.  This is because that class is
  * defaulted/initialized/destroyed by LogReader.  This layer just manages
- * what we happen to store in addition to LogProtoServerOptions.
+ * what we happen to store in addition to LogProtoServerOptionsStorage.
  *
  * You have been warned!
  *
@@ -62,40 +60,25 @@ log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptio
  **/
 
 void
-_destroy_callback(LogProtoServerOptions *o)
-{
-  LogProtoFileReaderOptions *options = (LogProtoFileReaderOptions *) o;
-  multi_line_options_destroy(&options->multi_line_options);
-}
-
-void
 log_proto_file_reader_options_defaults(LogProtoFileReaderOptions *options)
 {
-  options->super.destroy = _destroy_callback;
-  multi_line_options_defaults(&options->multi_line_options);
   options->pad_size = 0;
 }
 
 static gboolean
 log_proto_file_reader_options_validate(LogProtoFileReaderOptions *options)
 {
-  if (options->pad_size > 0 && options->multi_line_options.mode != MLM_NONE)
+  if (options->pad_size > 0 && options->super.multi_line_options.mode != MLM_NONE)
     {
       msg_error("pad-size() and multi-line-mode() can not be used together");
       return FALSE;
     }
 
-  return multi_line_options_validate(&options->multi_line_options);
+  return TRUE;
 }
 
 gboolean
 log_proto_file_reader_options_init(LogProtoFileReaderOptions *options, GlobalConfig *cfg)
 {
-  if (!log_proto_file_reader_options_validate(options))
-    return FALSE;
-
-  if (!multi_line_options_init(&options->multi_line_options))
-    return FALSE;
-
-  return TRUE;
+  return log_proto_file_reader_options_validate(options);
 }

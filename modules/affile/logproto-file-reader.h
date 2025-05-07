@@ -24,14 +24,17 @@
 #ifndef LOG_PROTO_FILE_READER_H_INCLUDED
 #define LOG_PROTO_FILE_READER_H_INCLUDED
 
-#include "logproto/logproto-multiline-server.h"
+#include "logproto/logproto-text-server.h"
 #include "multi-line/multi-line-factory.h"
 
-typedef struct _LogProtoFileReaderOptions
+typedef union _LogProtoFileReaderOptions
 {
-  LogProtoServerOptions super;
-  MultiLineOptions multi_line_options;
-  gint pad_size;
+  LogProtoServerOptionsStorage storage;
+  struct
+  {
+    LogProtoServerOptions super;
+    gint pad_size;
+  };
 } LogProtoFileReaderOptions;
 
 LogProtoServer *log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptions *options);

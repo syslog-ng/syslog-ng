@@ -104,7 +104,7 @@ find_eom(const guchar *s, gsize n)
 AckTrackerFactory *
 log_proto_server_get_ack_tracker_factory(LogProtoServer *s)
 {
-  return s->options->ack_tracker_factory;
+  return s->options->super.ack_tracker_factory;
 }
 
 gboolean
@@ -116,9 +116,9 @@ log_proto_server_is_position_tracked(LogProtoServer *s)
 }
 
 gboolean
-log_proto_server_validate_options_method(LogProtoServer *s)
+log_proto_server_validate_options_method(LogProtoServer *self)
 {
-  return TRUE;
+  return log_proto_server_options_validate((LogProtoServerOptionsStorage *)self->options);
 }
 
 void
@@ -136,7 +136,7 @@ log_proto_server_free(LogProtoServer *self)
 }
 
 void
-log_proto_server_init(LogProtoServer *self, LogTransport *transport, const LogProtoServerOptions *options)
+log_proto_server_init(LogProtoServer *self, LogTransport *transport, const LogProtoServerOptionsStorage *options)
 {
   self->validate_options = log_proto_server_validate_options_method;
   self->free_fn = log_proto_server_free_method;
@@ -145,12 +145,12 @@ log_proto_server_init(LogProtoServer *self, LogTransport *transport, const LogPr
 }
 
 gboolean
-log_proto_server_options_set_encoding(LogProtoServerOptions *self, const gchar *encoding)
+log_proto_server_options_set_encoding(LogProtoServerOptionsStorage *self, const gchar *encoding)
 {
   GIConv convert;
 
-  g_free(self->encoding);
-  self->encoding = g_strdup(encoding);
+  g_free(self->super.encoding);
+  self->super.encoding = g_strdup(encoding);
 
   /* validate encoding */
   convert = g_iconv_open("utf-8", encoding);
@@ -161,41 +161,41 @@ log_proto_server_options_set_encoding(LogProtoServerOptions *self, const gchar *
 }
 
 void
-log_proto_server_options_set_ack_tracker_factory(LogProtoServerOptions *self, AckTrackerFactory *factory)
+log_proto_server_options_set_ack_tracker_factory(LogProtoServerOptionsStorage *self, AckTrackerFactory *factory)
 {
-  ack_tracker_factory_unref(self->ack_tracker_factory);
-  self->ack_tracker_factory = factory;
+  ack_tracker_factory_unref(self->super.ack_tracker_factory);
+  self->super.ack_tracker_factory = factory;
 }
 
 void
-log_proto_server_options_defaults(LogProtoServerOptions *options)
+log_proto_server_options_defaults(LogProtoServerOptionsStorage *options)
 {
   memset(options, 0, sizeof(*options));
-  options->max_msg_size = -1;
-  options->trim_large_messages = -1;
-  options->init_buffer_size = -1;
-  options->max_buffer_size = -1;
-  options->idle_timeout = -1;
-  options->ack_tracker_factory = instant_ack_tracker_bookmarkless_factory_new();
+  options->super.max_msg_size = -1;
+  options->super.trim_large_messages = -1;
+  options->super.init_buffer_size = -1;
+  options->super.max_buffer_size = -1;
+  options->super.ack_tracker_factory = instant_ack_tracker_bookmarkless_factory_new();
+  multi_line_options_defaults(&options->super.multi_line_options);
 }
 
 void
-log_proto_server_options_init(LogProtoServerOptions *options, GlobalConfig *cfg)
+log_proto_server_options_init(LogProtoServerOptionsStorage *options, GlobalConfig *cfg)
 {
-  if (options->initialized)
+  if (options->super.initialized)
     return;
 
-  if (options->max_msg_size == -1)
+  if (options->super.max_msg_size == -1)
     {
-      options->max_msg_size = cfg->log_msg_size;
+      options->super.max_msg_size = cfg->log_msg_size;
     }
-  if (options->trim_large_messages == -1)
+  if (options->super.trim_large_messages == -1)
     {
-      options->trim_large_messages = cfg->trim_large_messages;
+      options->super.trim_large_messages = cfg->trim_large_messages;
     }
-  if (options->max_buffer_size == -1)
+  if (options->super.max_buffer_size == -1)
     {
-      if (options->encoding)
+      if (options->super.encoding)
         {
           /* Based on the implementation of LogProtoTextServer, the buffer is yielded as
              a complete message when max_msg_size is reached and there is no EOM in the buffer.
@@ -203,24 +203,44 @@ log_proto_server_options_init(LogProtoServerOptions *options, GlobalConfig *cfg)
              which can be 6 times max_msg_size due to the utf8 conversion.
              And additional space is required because of the possible leftover bytes.
           */
-          options->max_buffer_size = 8 * options->max_msg_size;
+          options->super.max_buffer_size = 8 * options->super.max_msg_size;
         }
       else
-        options->max_buffer_size = options->max_msg_size;
+        options->super.max_buffer_size = options->super.max_msg_size;
     }
-  if (options->init_buffer_size == -1)
-    options->init_buffer_size = MIN(options->max_msg_size, options->max_buffer_size);
-  options->initialized = TRUE;
+  if (options->super.init_buffer_size == -1)
+    options->super.init_buffer_size = MIN(options->super.max_msg_size, options->super.max_buffer_size);
+  multi_line_options_init(&options->super.multi_line_options);
+
+  if (options->super.init)
+    options->super.init(options, cfg);
+
+  options->super.initialized = TRUE;
+}
+
+gboolean
+log_proto_server_options_validate(LogProtoServerOptionsStorage *options)
+{
+  if (FALSE == multi_line_options_validate(&options->super.multi_line_options))
+    return FALSE;
+
+  gboolean result = TRUE;
+  if (options->super.validate)
+    result = options->super.validate(options);
+  return result;
 }
 
 void
-log_proto_server_options_destroy(LogProtoServerOptions *options)
+log_proto_server_options_destroy(LogProtoServerOptionsStorage *options)
 {
-  g_free(options->encoding);
-  ack_tracker_factory_unref(options->ack_tracker_factory);
-  if (options->destroy)
-    options->destroy(options);
-  options->initialized = FALSE;
+  multi_line_options_destroy(&options->super.multi_line_options);
+  g_free(options->super.encoding);
+  ack_tracker_factory_unref(options->super.ack_tracker_factory);
+
+  if (options->super.destroy)
+    options->super.destroy(options);
+
+  options->super.initialized = FALSE;
 }
 
 LogProtoServerFactory *

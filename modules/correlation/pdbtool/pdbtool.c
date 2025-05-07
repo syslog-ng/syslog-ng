@@ -402,7 +402,7 @@ pdbtool_match(int argc, char *argv[])
   GString *output = NULL;
   FilterExprNode *filter = NULL;
   LogProtoServer *proto = NULL;
-  LogProtoServerOptions proto_options;
+  LogProtoServerOptionsStorage proto_options;
   gboolean may_read = TRUE;
   gpointer args[4];
 
@@ -457,7 +457,7 @@ pdbtool_match(int argc, char *argv[])
   parse_options.flags |= LP_SYSLOG_PROTOCOL | LP_EXPECT_HOSTNAME;
   msg_format_options_init(&parse_options, configuration);
   log_proto_server_options_defaults(&proto_options);
-  proto_options.max_msg_size = 65536;
+  proto_options.super.max_msg_size = 65536;
   log_proto_server_options_init(&proto_options, configuration);
 
   patterndb = pattern_db_new(NULL);

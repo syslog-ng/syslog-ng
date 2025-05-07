@@ -124,7 +124,7 @@ gboolean log_proto_buffered_server_restart_with_state(LogProtoServer *s,
 /* LogProtoBufferedServer */
 gboolean log_proto_buffered_server_validate_options_method(LogProtoServer *s);
 void log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *transport,
-                                    const LogProtoServerOptions *options);
+                                    const LogProtoServerOptionsStorage *options);
 void log_proto_buffered_server_free_method(LogProtoServer *s);
 
 LogProtoStatus log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len,

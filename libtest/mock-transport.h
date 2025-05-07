@@ -50,6 +50,9 @@ log_transport_mock_records_new(const gchar *read_buffer1, gssize read_buffer_len
 LogTransport *
 log_transport_mock_endless_records_new(const gchar *read_buffer1, gssize read_buffer_length1, ...);
 
+LogTransport *
+log_transport_mock_http_screaper_new(const gchar *read_buffer1, gssize read_buffer_length1, ...);
+
 void
 log_transport_mock_inject_data(LogTransportMock *self, const gchar *buffer, gssize length);
 

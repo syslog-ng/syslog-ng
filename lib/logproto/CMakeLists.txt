@@ -6,7 +6,8 @@ set(LOGPROTO_HEADERS
     logproto/logproto-framed-client.h
     logproto/logproto-framed-server.h
     logproto/logproto.h
-    logproto/logproto-multiline-server.h
+    logproto/logproto-http-server.h
+    logproto/logproto-http-scraper-responder-server.h
     logproto/logproto-record-server.h
     logproto/logproto-server.h
     logproto/logproto-text-client.h
@@ -21,7 +22,8 @@ set(LOGPROTO_SOURCES
     logproto/logproto-dgram-server.c
     logproto/logproto-framed-client.c
     logproto/logproto-framed-server.c
-    logproto/logproto-multiline-server.c
+    logproto/logproto-http-server.c
+    logproto/logproto-http-scraper-responder-server.c
     logproto/logproto-record-server.c
     logproto/logproto-server.c
     logproto/logproto-text-client.c

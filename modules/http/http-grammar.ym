@@ -53,7 +53,6 @@ HttpResponseHandler last_response_handler;
 %parse-param {LogDriver **instance}
 %parse-param {gpointer arg}
 
-%token KW_HTTP
 %token KW_URL
 %token KW_USER
 %token KW_PASSWORD

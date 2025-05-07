@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2017 Balabit
- * Copyright (c) 2017 Balazs Scheidler <bazsi@balabit.hu>
+ * Copyright (c) 2025 One Identity
+ * Copyright (c) 2025 Hofi <hofione@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,17 +19,14 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
- *
  */
-#ifndef LOGPROTO_MULTILINE_SERVER_INCLUDED
-#define LOGPROTO_MULTILINE_SERVER_INCLUDED
 
-#include "logproto/logproto-server.h"
+#ifndef MULTI_LINE_EMPTY_LINE_SEP_MULTI_LINE_H_INCLUDED
+#define MULTI_LINE_EMPTY_LINE_SEP_MULTI_LINE_H_INCLUDED
+
 #include "multi-line/multi-line-logic.h"
+#include "multi-line/multi-line-factory.h"
 
-LogProtoServer *
-log_proto_multiline_server_new(LogTransport *transport,
-                               const LogProtoServerOptions *options,
-                               MultiLineLogic *multi_line);
+MultiLineLogic *empty_line_separated_multi_line_new(const MultiLineOptions *options);
 
 #endif
