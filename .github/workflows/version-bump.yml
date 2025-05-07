@@ -44,6 +44,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Ensure we're on master
+        if: github.ref_name != 'master'
+        run: |
+          echo "⚠️ Please run this workflow from the 'master' branch."
+          exit 1
+
       - name: Check existing PR
         run: |
           EXISTS=$(gh pr list --state open --head "${VERSION_BUMP_BRANCH}" --json "number" --jq ". | length")
