@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Check branch
         run: |
-          if  echo ${GITHUB_HEAD_REF} | grep -Eq '^advisory.*' || echo ${GITHUB_HEAD_REF} | grep -Eq '.*hotfix.*'; then
+          if  echo ${GITHUB_HEAD_REF} | grep -Eq '^advisory.*' || echo ${GITHUB_HEAD_REF} | grep -Eq '.*hotfix.*' || echo ${GITHUB_HEAD_REF} | grep -Eq '.*release.*'; then
             exit 0
           fi
           if [[ ${GITHUB_HEAD_REF} != develop ]];
