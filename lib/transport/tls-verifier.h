@@ -44,5 +44,7 @@ void tls_verifier_unref(TLSVerifier *self);
 
 gboolean tls_verify_certificate_name(X509 *cert, const gchar *hostname);
 
+gboolean tls_wildcard_match(const gchar *host_name, const gchar *pattern);
+
 
 #endif
