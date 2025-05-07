@@ -5,5 +5,6 @@ usr/lib/syslog-ng/*/python/syslogng/debuggercli/*
 usr/lib/syslog-ng/*/python/syslogng/modules/kubernetes/*
 usr/lib/syslog-ng/*/python/syslogng/modules/hypr/*
 usr/lib/syslog-ng/*/python/syslogng/modules/s3/*
+usr/lib/syslog-ng/*/python/syslogng/modules/webhook/*
 usr/lib/syslog-ng/*/python/syslogng*.egg-info/*
 usr/bin/syslog-ng-update-virtualenv

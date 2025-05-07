@@ -38,6 +38,7 @@ packages_addons=[
   "syslogng.modules.kubernetes",
   "syslogng.modules.hypr",
   "syslogng.modules.s3",
+  "syslogng.modules.webhook",
 ]
 
 requires_addons=[
@@ -47,6 +48,8 @@ requires_addons=[
   "requests",
   # s3
   "boto3",
+  # webhook
+  "tornado",
 ]
 
 packages = packages_builtin
