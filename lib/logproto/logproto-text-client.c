@@ -33,13 +33,7 @@ log_proto_text_client_poll_prepare(LogProtoClient *s, GIOCondition *cond, GIOCon
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
 
-  if (log_transport_stack_poll_prepare(&self->super.transport_stack, cond))
-    return TRUE;
-
-  /* if there's no pending I/O in the transport layer, then we want to do a write and allow reads as well*/
-  if (*cond == 0)
-    *cond = G_IO_OUT | G_IO_IN;
-
+  *cond = G_IO_OUT | G_IO_IN;
   *idle_cond = G_IO_IN;
 
   return self->partial != NULL;
@@ -53,9 +47,6 @@ log_proto_text_client_process_input(LogProtoClient *s)
   gssize rc = -1;
   gsize read_limit = 0;
   gsize read = 0;
-
-  if (self->pending_flush)
-    return log_proto_text_client_flush(s);
 
   do
     {
@@ -81,13 +72,8 @@ log_proto_text_client_process_input(LogProtoClient *s)
           return LPS_ERROR;
         }
 
-      if (log_transport_stack_get_active(&self->super.transport_stack)->cond & G_IO_OUT)
-        self->pending_in = TRUE;
-
       return LPS_SUCCESS;
     }
-
-  self->pending_in = FALSE;
 
   if (rc == 0)
     {
@@ -103,9 +89,6 @@ log_proto_text_client_flush(LogProtoClient *s)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
   gint rc;
-
-  if (self->pending_in)
-    return log_proto_text_client_process_input(s);
 
   if (!self->partial)
     {
@@ -126,11 +109,8 @@ log_proto_text_client_flush(LogProtoClient *s)
           return LPS_ERROR;
         }
 
-      self->pending_flush = TRUE;
       return LPS_SUCCESS;
     }
-
-  self->pending_flush = FALSE;
 
   if (rc != len)
     {
