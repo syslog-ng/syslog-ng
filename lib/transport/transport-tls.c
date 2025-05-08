@@ -48,13 +48,14 @@ _BIO_transport_write(BIO *bio, const char *buf, size_t buflen, size_t *written_b
   LogTransportTLS *transport = BIO_get_data(bio);
   gssize ret;
 
-  ret = log_transport_adapter_write_method(&transport->super.super, (gpointer) buf, buflen);
   BIO_clear_retry_flags(bio);
+
+  ret = log_transport_adapter_write_method(&transport->super.super, (gpointer) buf, buflen);
 
   if (ret < 0)
     {
       *written_bytes = 0;
-      if (errno == EAGAIN)
+      if (errno == EAGAIN || errno == EINTR)
         BIO_set_retry_write(bio);
       return -1;
     }
@@ -68,11 +69,14 @@ _BIO_transport_read(BIO *bio, char *buf, size_t buflen, size_t *read_bytes)
   LogTransportTLS *transport = BIO_get_data(bio);
   gssize ret;
 
+  BIO_clear_retry_flags(bio);
+
   ret = log_transport_adapter_read_method(&transport->super.super, buf, buflen, NULL);
+
   if (ret < 0)
     {
       *read_bytes = 0;
-      if (errno == EAGAIN)
+      if (errno == EAGAIN || errno == EINTR)
         BIO_set_retry_read(bio);
       return -1;
     }
