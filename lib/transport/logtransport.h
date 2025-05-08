@@ -50,6 +50,7 @@ typedef struct _LogTransportStack LogTransportStack;
 struct _LogTransport
 {
   gint fd;
+  /* should only be used to reverse the original I/O direction */
   GIOCondition cond;
 
   gssize (*read)(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux);
@@ -71,9 +72,11 @@ struct _LogTransport
 static inline gboolean
 log_transport_poll_prepare(LogTransport *self, GIOCondition *cond)
 {
+  *cond = self->cond;
+
   if (self->ra.buf_len != self->ra.pos)
     return TRUE;
-  *cond = self->cond;
+
   return FALSE;
 }
 

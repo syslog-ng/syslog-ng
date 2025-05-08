@@ -294,7 +294,6 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
           errno = EAGAIN;
           break;
         case SSL_ERROR_WANT_WRITE:
-          self->super.super.cond = G_IO_OUT;
           errno = EAGAIN;
           break;
         case SSL_ERROR_SYSCALL:
