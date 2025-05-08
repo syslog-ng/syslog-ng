@@ -461,8 +461,8 @@ log_writer_suspend(LogWriter *self)
 static void
 log_writer_update_watches(LogWriter *self)
 {
-  gint fd;
   GIOCondition cond = 0;
+  GIOCondition idle_cond = 0;
   gint timeout_msec = 0;
   gint idle_timeout = -1;
 
@@ -472,7 +472,7 @@ log_writer_update_watches(LogWriter *self)
 
   /* NOTE: we either start the suspend_timer or enable the fd_watch. The two MUST not happen at the same time. */
 
-  if (log_proto_client_poll_prepare(self->proto, &fd, &cond, &idle_timeout) ||
+  if (log_proto_client_poll_prepare(self->proto, &cond, &idle_cond, &idle_timeout) ||
       self->waiting_for_throttle ||
       log_queue_check_items(self->queue, &timeout_msec,
                             (LogQueuePushNotifyFunc) log_writer_schedule_update_watches, self, NULL))
@@ -484,7 +484,7 @@ log_writer_update_watches(LogWriter *self)
     {
       /* few elements are available, but less than flush_lines, we need to start a timer to initiate a flush */
 
-      log_writer_update_fd_callbacks(self, cond & ~G_IO_OUT);
+      log_writer_update_fd_callbacks(self, idle_cond);
       self->waiting_for_throttle = TRUE;
       log_writer_arm_suspend_timer(self, (void (*)(void *)) log_writer_update_watches, (glong)timeout_msec);
     }
@@ -494,7 +494,7 @@ log_writer_update_watches(LogWriter *self)
        * when the required number of items are added.  see the
        * log_queue_check_items and its parallel_push argument above
        */
-      log_writer_update_fd_callbacks(self, cond & ~G_IO_OUT);
+      log_writer_update_fd_callbacks(self, idle_cond);
     }
 
   if (idle_timeout > 0)

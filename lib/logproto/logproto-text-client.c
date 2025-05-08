@@ -29,18 +29,18 @@
 static LogProtoStatus log_proto_text_client_flush(LogProtoClient *s);
 
 static gboolean
-log_proto_text_client_poll_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout)
+log_proto_text_client_poll_prepare(LogProtoClient *s, GIOCondition *cond, GIOCondition *idle_cond, gint *timeout)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
 
   if (log_transport_stack_poll_prepare(&self->super.transport_stack, cond))
     return TRUE;
 
-  *fd = self->super.transport_stack.fd;
-
   /* if there's no pending I/O in the transport layer, then we want to do a write and allow reads as well*/
   if (*cond == 0)
     *cond = G_IO_OUT | G_IO_IN;
+
+  *idle_cond = G_IO_IN;
 
   return self->partial != NULL;
 }
