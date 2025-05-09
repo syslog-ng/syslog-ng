@@ -49,7 +49,7 @@ struct ProtoReflectors
     this->descriptor = message.GetDescriptor();
     if (!this->reflection || !this->descriptor)
       {
-        std::string error_msg = "unable to access reflector for protobuf message: " + message.GetTypeName();
+        std::string error_msg = "unable to access reflector for protobuf message: " + std::string(message.GetTypeName());
         throw std::invalid_argument(error_msg);
       }
     this->fieldDescriptor = this->descriptor->FindFieldByName(fieldName);

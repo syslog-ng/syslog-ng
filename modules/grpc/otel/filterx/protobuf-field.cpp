@@ -43,8 +43,8 @@ void
 log_type_error(ProtoReflectors reflectors, const char *type)
 {
   msg_error("protobuf-field: Failed to convert field, type is unsupported",
-            evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()),
-            evt_tag_str("expected_type", reflectors.fieldDescriptor->type_name()),
+            evt_tag_str("field", reflectors.fieldDescriptor->name().data()),
+            evt_tag_str("expected_type", reflectors.fieldDescriptor->type_name().data()),
             evt_tag_str("type", type));
 }
 
@@ -160,7 +160,7 @@ public:
     if (val > INT64_MAX)
       {
         msg_error("protobuf-field: exceeding FilterX number value range",
-                  evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()),
+                  evt_tag_str("field", reflectors.fieldDescriptor->name().data()),
                   evt_tag_long("range_min", INT64_MIN),
                   evt_tag_long("range_max", INT64_MAX),
                   evt_tag_printf("current", "%" G_GUINT64_FORMAT, val));
@@ -219,7 +219,7 @@ public:
         if (!json_literal)
           {
             msg_error("protobuf-field: json marshal error",
-                      evt_tag_str("field", reflectors.fieldDescriptor->name().c_str()));
+                      evt_tag_str("field", reflectors.fieldDescriptor->name().data()));
             return false;
           }
         reflectors.reflection->SetString(message, reflectors.fieldDescriptor, json_literal);
