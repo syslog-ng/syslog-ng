@@ -48,7 +48,8 @@ class S3ObjectBuffer:
             "compression": object_settings.get("compression", False),
             "compresslevel": object_settings.get("compresslevel", 0),
             "max_size": object_settings.get("max_object_size", None),
-            "acl": object_settings.get("canned_acl", None)
+            "acl": object_settings.get("canned_acl", None),
+            "content_type": object_settings.get("content_type", "application/octet-stream"),
         }
         self.__basename = f"{object_key}_{uuid4()}"
         self.__path = Path(working_dir, self.__basename)
@@ -68,7 +69,7 @@ class S3ObjectBuffer:
         self.__meta_path = meta_path
         self.__path = Path(str(meta_path).removesuffix("_meta.json"))
         with open(self.__meta_path, "r") as meta_file:
-            self.__meta = json.loads(meta_file.read())
+            self.__meta = self.__meta | json.loads(meta_file.read())
         self.buffer = CompressableFileBuffer(self.__path, self.__meta["compression"], self.__meta["compresslevel"])
         self.__buffer_source = "loaded"
 
@@ -149,6 +150,10 @@ class S3ObjectBuffer:
     @property
     def acl(self):
         return self.__meta["acl"]
+
+    @property
+    def content_type(self):
+        return self.__meta["content_type"]
 
 
 class S3ObjectQueue:

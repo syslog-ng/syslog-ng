@@ -31,6 +31,7 @@ try:
     from signal import signal, SIGINT, SIG_IGN
     from syslogng import LogDestination, LogMessage, LogTemplate, get_installation_path_for
 
+    from importlib.metadata import version
     from os import listdir, mkdir
     from pathlib import Path
     from sys import exc_info
@@ -40,6 +41,8 @@ try:
 
     from boto3 import client, Session
     from boto3.s3.transfer import TransferConfig
+    import botocore
+    from botocore.config import Config
     from botocore.credentials import create_assume_role_refresher, DeferredRefreshableCredentials
     from botocore.exceptions import ClientError, EndpointConnectionError
 
@@ -83,6 +86,8 @@ class S3Destination(LogDestination):
             self.kms_key = str(options["kms_key"])
             self.storage_class = str(options["storage_class"]).upper().replace("-", "_")
             self.canned_acl = str(options["canned_acl"]).lower().replace("_", "-")
+            self.content_type = str(options["content_type"])
+            self.use_checksum = str(options["use_checksum"])
         except KeyError:
             assert False, (
                 f"S3: {str(exc_info()[1])[1:-1]}() option is missing. "
@@ -162,6 +167,16 @@ class S3Destination(LogDestination):
             )
             self.canned_acl = ""
 
+        VALID_CHECKSUM_SETTINGS = {
+            "when_supported",
+            "when_required",
+        }
+        if self.use_checksum not in VALID_CHECKSUM_SETTINGS:
+            self.logger.warning(
+                f"Invalid use-checksum(). Valid values are: {', '.join(sorted(VALID_CHECKSUM_SETTINGS))} or empty. Using when_supported."
+            )
+            self.use_checksum = "when_supported"
+
     def init(self, options: Dict[str, Any]) -> bool:
         if not deps_installed:
             if deps_missing:
@@ -184,6 +199,15 @@ class S3Destination(LogDestination):
         self.s3_client_config: Dict[str, Any] = {
             "endpoint_url": self.url if self.url != "" else None,
         }
+        if version('botocore') > '1.36':
+            self.s3_client_config.update({
+                "config": Config(
+                    request_checksum_calculation=self.use_checksum,
+                    response_checksum_validation=self.use_checksum,
+                )
+            })
+        else:
+            self.logger.info("The option 'use-checksum()' requires at least botocore version 1.36. Current version is {}".format(version('botocore')))
         self.s3_sse_options: Dict[str, Any] = {
             "ServerSideEncryption": self.server_side_encryption if self.server_side_encryption != "" else None,
             "SSEKMSKeyId": self.kms_key if self.server_side_encryption != "" else None,
@@ -201,6 +225,7 @@ class S3Destination(LogDestination):
             "compresslevel": self.compresslevel,
             "max_object_size": self.max_object_size,
             "canned_acl": self.canned_acl,
+            "content_type": self.content_type,
         }
 
         self.s3_object_ready_queue: S3ObjectQueue = S3ObjectQueue()
