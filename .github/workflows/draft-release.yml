@@ -109,7 +109,8 @@ jobs:
             "${{ needs.create-release-tarball.outputs.TARBALL_NAME }}" \
             --draft \
             --title "${{ needs.create-release-tarball.outputs.RELEASE_NAME }}" \
-            --notes-file "NEWS.md"
+            --notes-file "NEWS.md" \
+            --target master
 
   comment-workflow-result:
     runs-on: ubuntu-latest
