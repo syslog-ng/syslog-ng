@@ -1,5 +1,5 @@
 Name: syslog-ng
-Version: 4.8.2
+Version: 4.8.3
 Release: 2%{?dist}
 Summary: Next-generation syslog server
 
@@ -740,6 +740,9 @@ fi
 
 
 %changelog
+* Mon May 12 2025 github-actions <41898282+github-actions@users.noreply.github.com> - 4.8.3-1
+- updated to 4.8.3
+
 * Wed May  7 2025 github-actions <41898282+github-actions@users.noreply.github.com> - 4.8.2-1
 - updated to 4.8.2
 
