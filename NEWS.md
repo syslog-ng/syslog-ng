@@ -3,7 +3,15 @@
 
 ## Highlights
 
-<Fill this block manually from the blocks below>
+Version 4.8.3 fixes a problem in the syslog-ng release process (side 
+effects of the master -> develop change on GitHub). Nothing has changed
+at the code level compared to the 4.8.2 release, if you use the 
+'official' tarball source release. The problem only affects you, if you
+use the release archives (listed as 'source code (zip)' and 'source code
+(tar.gz)' under the release and the tags page) instead of the 'official'
+release tarball. For example, Debian uses these files. In that case some
+of the very latest commits, including the CVE fix, were missing from the
+archives.
 
 ## Credits
 
